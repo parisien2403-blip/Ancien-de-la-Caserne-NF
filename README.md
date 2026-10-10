@@ -3,7 +3,7 @@
 Application des anciens de la Caserne de la Nouvelle France (Garde républicaine, années 70 à 90).
 
 > **Ce qui est enregistré** (sur Cloudflare) : les laissez-passer (numéros 0001, 0002…), le registre des
-> membres et le courrier du vaguemestre. Pas encore enregistrés : la photo du laissez-passer, les photos de la
+> membres (avec leur photo d'identité) et le courrier du vaguemestre. Pas encore enregistrés : les photos de la
 > bibliothèque, les anecdotes et les médias de la salle des fêtes (ils disparaissent en fermant la page).
 
 ## Les pages
@@ -11,11 +11,17 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 | Onglet | Rôle |
 | --- | --- |
 | **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…), son **adresse de la caserne** (`prenom.nom@caserne-nf`) et un **code provisoire à 6 chiffres**. |
-| **Bibliothèque** | Partage de photos, classées par période (années 70, 80, 90, aujourd'hui), avec commentaires. |
+| **Bibliothèque** | Partage de photos, chacune rangée sous un **thème libre** choisi par celui qui la dépose ; filtre par thème, commentaires. |
 | **Salle des jeunes** | Anecdotes de la caserne, avec image facultative et commentaires. |
 | **Salle des fêtes** | Musique (MP3), vidéos et photos des soirées. |
-| **Membres de la Caserne** | Le registre des anciens inscrits, avec recherche et bouton « Écrire ». |
+| **Membres de la Caserne** | Le registre des anciens, **par ordre alphabétique du nom de famille**, avec photo ; un clic ouvre **la carte (laissez-passer) du membre**. |
 | **Vaguemestre** | Le courrier interne : reçus, envoyés, écrire, répondre. |
+
+## Pastille du membre (en haut à droite)
+
+Photo d'identité du membre, avec un **point vert** (connecté) ou **rouge** (déconnecté). Un clic ouvre les réglages :
+voir son laissez-passer, changer sa photo, activer / désactiver les **notifications du téléphone** (nouveau courrier
+du vaguemestre), se déconnecter.
 
 ## Connexion
 

@@ -28,6 +28,10 @@ async function verifier(secret, empreinte) {
 const codeProvisoire = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
 const ESSAIS_MAX = 5, BLOCAGE_MIN = 15;
 
+// photo d'identité : petite image JPEG réduite par l'appli (quelques dizaines de Ko)
+const PHOTO_MAX = 400000;
+const photoValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;base64,") && v.length <= PHOTO_MAX ? v : null;
+
 class Refus extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
@@ -43,7 +47,7 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, a TEXT, sujet TEXT, texte TEXT,
       envoye TEXT, lu INTEGER DEFAULT 0)`);
     // colonnes ajoutées avec la connexion (code provisoire puis mot de passe personnel)
-    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0"]) {
+    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0", "photo TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -120,17 +124,17 @@ export class Compteur extends DurableObject {
     if (admin) {
       // l'administrateur se connecte avec son propre mot de passe : pas de code provisoire
       const jeton = crypto.randomUUID();
-      this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, admin)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`, n, nom, prenom, qualite, parent, email, jeton, new Date().toISOString());
+      this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, admin, photo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`, n, nom, prenom, qualite, parent, email, jeton, new Date().toISOString(), photoValide(fiche.photo));
       await this.ctx.storage.delete("admin_sessions");
-      return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, admin: true } };
+      return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, admin: true, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() } };
     }
     const code = codeProvisoire();
-    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      n, nom, prenom, qualite, parent, email, crypto.randomUUID(), new Date().toISOString(), await hacher(code));
+    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash, photo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      n, nom, prenom, qualite, parent, email, crypto.randomUUID(), new Date().toISOString(), await hacher(code), photoValide(fiche.photo));
     // le code provisoire n'est donné qu'une fois, ici ; il sert à la première connexion
-    return { numero: numero(n), email, code, nom, prenom, qualite, parent };
+    return { numero: numero(n), email, code, nom, prenom, qualite, parent, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() };
   }
 
   // Connexion : prénom + nom + mot de passe (ou code provisoire à la première connexion)
@@ -177,16 +181,31 @@ export class Compteur extends DurableObject {
   }
 
   public(m) {
-    return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email, admin: !!m.admin };
+    return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email,
+      admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo };
   }
 
   async membres() {
-    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin FROM membres ORDER BY numero")
-      .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin }));
+    const fr = new Intl.Collator("fr", { sensitivity: "base" });
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo FROM membres")
+      .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin, a_photo: !!m.a_photo }))
+      .sort((a, b) => fr.compare(a.nom, b.nom) || fr.compare(a.prenom, b.prenom));
+  }
+
+  async photo(num) {
+    const m = this.sql.exec("SELECT photo FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    return m && m.photo || null;
+  }
+
+  async changerPhoto(token, photo) {
+    const moi = this.moi(token), ok = photoValide(photo);
+    if (!ok) throw new Refus("Photo invalide ou trop lourde");
+    this.sql.exec("UPDATE membres SET photo = ? WHERE email = ?", ok, moi.email);
+    return { ok: true };
   }
 
   moi(token) {
-    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin FROM membres WHERE token = ?", token).toArray()[0];
+    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo FROM membres WHERE token = ?", token).toArray()[0];
     if (!m) {
       if (String(token).startsWith("adm-")) throw new Refus("Fais d'abord ton laissez-passer au poste de police", 403);
       throw new Refus("Laissez-passer inconnu", 401);
@@ -227,12 +246,21 @@ export default {
     const corps = async () => { try { return await request.json(); } catch { return {}; } };
     const route = `${request.method} ${url.pathname}`;
 
+    // photo d'identité d'un membre (image)
+    if (request.method === "GET" && /^\/api\/photo\/\d+$/.test(url.pathname)) {
+      const data = await registre.photo(url.pathname.split("/")[3]);
+      if (!data) return new Response("Pas de photo", { status: 404 });
+      const bin = Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0));
+      return new Response(bin, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=300" } });
+    }
+
     try {
       let r;
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
       else if (route === "POST /api/connexion") r = await registre.connexion(await corps());
       else if (route === "POST /api/mot-de-passe") r = await registre.motDePasse(await corps());
       else if (route === "GET /api/membres") r = await registre.membres();
+      else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
       else if (route === "GET /api/boite") r = await registre.boite(token);
       else if (route === "POST /api/messages") r = await registre.envoyer(token, await corps());
       else if (request.method === "DELETE" && /^\/api\/membres\/\d+$/.test(url.pathname)) r = await registre.supprimer(token, url.pathname.split("/")[3]);

@@ -1,7 +1,7 @@
 // Service worker : permet d'installer l'appli (Android, iPhone, PC) et de l'ouvrir sans réseau.
 // Les pages sont servies « réseau d'abord » (toujours la dernière version), les images « cache d'abord ».
 // Le courrier et le registre (/api/) ne sont jamais mis en cache.
-const CACHE = "caserne-nf-v2";
+const CACHE = "caserne-nf-v3";
 const SHELL = ["/", "/images/garde.jpg", "/images/plaque.jpg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", e => {
@@ -28,4 +28,13 @@ self.addEventListener("fetch", e => {
     if (res.ok) { const copie = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copie)); }
     return res;
   })));
+});
+
+// toucher une notification (courrier du vaguemestre) : ouvre ou ramène l'appli
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(liste => {
+    const ouverte = liste.find(c => new URL(c.url).origin === location.origin);
+    return ouverte ? ouverte.focus() : self.clients.openWindow("/");
+  }));
 });
