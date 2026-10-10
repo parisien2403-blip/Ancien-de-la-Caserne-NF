@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f6eedf">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caserne NF">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Caserne Nouvelle-France</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -156,7 +163,7 @@
   .composer button { border: 0; border-radius: 99px; background: var(--terra); color: #fff; font-weight: 700; padding: 0 18px; }
 
   /* ---------- Onglets (4) ---------- */
-  .tabbar button { font-size: 10.5px; line-height: 1.15; text-align: center; }
+  .tabbar button { font-size: 10px; line-height: 1.15; text-align: center; min-width: 0; }
 
   /* ---------- Poste de police ---------- */
   .guichet { padding: 0; overflow: hidden; position: relative; }
@@ -246,6 +253,26 @@
   .track-progress { height: 3px; border-radius: 2px; background: var(--line); margin-top: 6px; overflow: hidden; }
   .track-progress div { height: 100%; width: 0; background: var(--terra); }
   .legal { font-size: 12px; color: var(--muted); text-align: center; margin: 4px 8px 16px; line-height: 1.4; }
+  /* ---------- Membres / Vaguemestre ---------- */
+  .member .who { flex: 1; min-width: 0; }
+  .member .mail { font-size: 12px; color: var(--terra-dark); word-break: break-all; }
+  .btn.small { padding: 8px 14px; font-size: 13px; box-shadow: none; flex: none; }
+  .adresse { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--terra-soft); color: var(--terra-dark); margin-bottom: 14px; font-size: 14px; }
+  .adresse b { word-break: break-all; }
+  .letter { cursor: pointer; align-items: flex-start; }
+  .letter .t { display: flex; gap: 8px; align-items: center; }
+  .letter.unread .t::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--terra); flex: none; }
+  .letter .corps { margin-top: 8px; white-space: pre-line; line-height: 1.5; color: var(--text); font-size: 15px; }
+  .letter .date { margin-left: auto; font-size: 12px; color: var(--muted); flex: none; padding-left: 8px; }
+  .tabbar button { position: relative; }
+  .tabbar .dot { position: absolute; top: 2px; right: calc(50% - 16px); min-width: 16px; height: 16px; border-radius: 8px; background: var(--terra); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; padding: 0 4px; }
+  .media-card { padding: 10px; }
+  .media-card video, .media-card img { width: 100%; border-radius: 12px; display: block; background: #000; max-height: 60vh; }
+  .media-card img { background: none; }
+  .media-card .t { font-weight: 700; color: var(--navy); margin: 10px 4px 2px; }
+  .media-card .s { font-size: 13px; color: var(--muted); margin: 0 4px 4px; }
+  .install { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .install button { margin-top: 6px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -264,6 +291,7 @@
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       </div>
       <button class="link" id="signup">Pas encore inscrit ? Demander un laissez-passer</button>
+      <div class="install" id="install" hidden></div>
     </div>
 
     <div class="sheet-bg" id="sheetBg"></div>
@@ -314,6 +342,7 @@
             <label class="field">N° d'inscription<input class="readonly" id="fNum" readonly></label>
             <label class="field">Délivré le<input class="readonly" id="fDate" readonly></label>
           </div>
+          <label class="field" id="fMailWrap" hidden>Mon adresse de la caserne<input class="readonly" id="fMail" readonly></label>
           <label class="file"><svg class="ico" style="width:24px;height:24px" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
             <span id="fPhotoLbl">Ajouter ma photo d'identité</span><input type="file" accept="image/*" id="fPhoto"></label>
         </div>
@@ -395,17 +424,51 @@
       <!-- ===== SALLE DES FÊTES ===== -->
       <div class="tab" data-tab="fetes" hidden>
         <h1 class="hello">La Salle des fêtes</h1>
-        <p class="hello-sub">La musique des soirées de la caserne</p>
+        <p class="hello-sub">Musique, vidéos et photos des soirées de la caserne</p>
         <div class="card fete-head">
           <div class="garland" id="garland"></div>
           <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
           <h3>Ce soir, c'est vous le DJ</h3>
-          <p>Partagez vos morceaux en MP3</p>
+          <p>Partagez vos MP3, vos vidéos et vos photos</p>
           <label class="file" style="margin-top:14px;justify-content:center"><svg class="ico" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Ajouter un MP3<input type="file" accept="audio/*" id="mFile" multiple></label>
+            Ajouter musique, vidéo ou photo<input type="file" accept="audio/*,video/*,image/*" id="mFile" multiple></label>
         </div>
-        <p class="legal">Partagez de préférence vos propres enregistrements (fanfare, fêtes, cassettes de l'époque). Pour les chansons du commerce, il faudra vérifier les droits avant la mise en ligne.</p>
+        <p class="legal">Partagez de préférence vos propres enregistrements, films et photos (fanfare, fêtes, cassettes de l'époque). Pour les chansons et films du commerce, il faudra vérifier les droits avant la mise en ligne.</p>
         <div id="tracks"></div>
+      </div>
+
+      <!-- ===== MEMBRES DE LA CASERNE ===== -->
+      <div class="tab" data-tab="membres" hidden>
+        <h1 class="hello">Membres de la Caserne</h1>
+        <p class="hello-sub">Tous les anciens qui ont leur laissez-passer</p>
+        <input class="search" id="mSearch" placeholder="Rechercher un nom, une famille de Garde…">
+        <div id="membres"></div>
+      </div>
+
+      <!-- ===== VAGUEMESTRE ===== -->
+      <div class="tab" data-tab="vague" hidden>
+        <h1 class="hello">Le Vaguemestre</h1>
+        <p class="hello-sub">Le courrier de la caserne</p>
+        <div id="vNoPass" class="card empty" hidden>
+          <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <b>Pas de courrier sans laissez-passer</b>Passez d'abord au poste de police : votre adresse de la caserne sera créée avec votre laissez-passer.
+          <div style="margin-top:14px"><button class="btn small" data-go="poste">Aller au poste de police</button></div>
+        </div>
+        <div id="vBox" hidden>
+          <div class="adresse"><svg class="ico" style="width:22px;height:22px;flex:none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <div>Mon adresse : <b id="vMail"></b></div></div>
+          <div class="seg" id="vSeg">
+            <button class="on" data-v="recus">Reçus</button><button data-v="envoyes">Envoyés</button><button data-v="ecrire">✎ Écrire</button>
+          </div>
+          <div id="vListe"></div>
+          <form class="card" id="vForm" hidden>
+            <h3>Nouveau courrier</h3>
+            <label class="field">À<select id="vA" required></select></label>
+            <label class="field">Objet<input id="vSujet" maxlength="120" placeholder="Ex. : Tu te souviens du 14 juillet 86 ?"></label>
+            <label class="field">Message<textarea id="vTexte" maxlength="5000" required placeholder="Salut, c'est…"></textarea></label>
+            <button class="btn" style="width:100%">Confier au vaguemestre</button>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -414,6 +477,8 @@
       <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg>Biblio-<br>thèque</button>
       <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Salle<br>des jeunes</button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Salle<br>des fêtes</button>
+      <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg>Membres<br>caserne</button>
+      <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Vague-<br>mestre<span class="dot" id="vDot" hidden></span></button>
     </nav>
 
     <div class="viewer" id="viewer">
@@ -693,6 +758,8 @@
     document.querySelectorAll("#tabbar button").forEach(b => b.classList.toggle("on", b.dataset.go === tab));
     $("scroll").scrollTop = 0;
     if (tab === "poste") fitCard();
+    if (tab === "membres") chargerMembres();
+    if (tab === "vague") chargerBoite();
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
 
@@ -709,17 +776,44 @@
   let NUM = "";                       // attribué par le serveur au moment du tampon : 0001, 0002…
   $("fNum").value = "au tampon"; $("fDate").value = today.toLocaleDateString("fr-FR");
 
-  // Demande le numéro suivant au compteur de la caserne (Cloudflare).
-  // Hors ligne (fichier ouvert sur l'ordinateur), on numérote localement pour la démonstration.
-  async function nouveauNumero() {
-    try {
-      const res = await fetch("/api/inscription", { method: "POST" });
-      if (res.ok) return (await res.json()).numero;
-    } catch (e) {}
-    let n = 1;
-    try { n = (+localStorage.getItem("caserne-numero") || 0) + 1; localStorage.setItem("caserne-numero", n); } catch (e) {}
-    return String(n).padStart(4, "0");
+  /* ===== Registre de la caserne =====
+     En ligne : le serveur Cloudflare (src/index.js) tient les numéros, les membres et le courrier.
+     Fichier ouvert sur l'ordinateur : même fonctionnement, mais stocké dans ce navigateur (démonstration). */
+  const DOMAINE = "caserne-nf";
+  const lire = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
+  const ecrire = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  let moi = lire("caserne-moi", null);
+  const enLigne = location.protocol.startsWith("http");
+
+  async function api(method, path, body) {
+    const res = await fetch(path, { method, headers: { "Content-Type": "application/json", ...(moi ? { Authorization: "Bearer " + moi.token } : {}) },
+      body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.erreur || "Le vaguemestre est injoignable");
+    return data;
   }
+  const slug = v => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const demo = {
+    get: () => lire("caserne-demo", { dernier: 0, membres: [], messages: [] }),
+    inscrire(f) {
+      const d = this.get(), n = d.dernier + 1, num = String(n).padStart(4, "0");
+      let email = `${slug(f.prenom)}.${slug(f.nom)}@${DOMAINE}`;
+      if (d.membres.some(m => m.email === email)) email = email.replace("@", "." + num + "@");
+      const m = { numero: num, nom: f.nom, prenom: f.prenom, qualite: f.qualite, parent: f.parent, email, token: "demo-" + num, cree: new Date().toISOString() };
+      d.dernier = n; d.membres.push(m); ecrire("caserne-demo", d); return m;
+    },
+    membres() { return this.get().membres; },
+    boite() { const d = this.get(); return { recus: d.messages.filter(x => x.a === moi.email).reverse(), envoyes: d.messages.filter(x => x.de === moi.email).reverse() }; },
+    envoyer(l) { const d = this.get(); d.messages.push({ id: d.messages.length + 1, de: moi.email, a: l.a, sujet: l.sujet || "(sans objet)", texte: l.texte, envoye: new Date().toISOString(), lu: 0 }); ecrire("caserne-demo", d); },
+    lu(id) { const d = this.get(); const x = d.messages.find(m => m.id === id); if (x) x.lu = 1; ecrire("caserne-demo", d); },
+  };
+  const registre = {
+    inscrire: f => enLigne ? api("POST", "/api/inscription", f) : demo.inscrire(f),
+    membres: () => enLigne ? api("GET", "/api/membres") : demo.membres(),
+    boite: () => enLigne ? api("GET", "/api/boite") : demo.boite(),
+    envoyer: l => enLigne ? api("POST", "/api/messages", l) : demo.envoyer(l),
+    lu: id => enLigne ? api("POST", `/api/messages/${id}/lu`) : demo.lu(id),
+  };
 
   function renderCard() {
     me.nom = $("fNom").value.trim().toUpperCase(); me.prenom = $("fPrenom").value.trim();
@@ -742,14 +836,27 @@
     if (!me.nom || !me.prenom) { $("bubble").innerHTML = "<b>Hé !</b> Nom et prénom d'abord, on n'est pas au bal ici."; $("fNom").focus(); return; }
     if (NUM) return;
     $("stampBtn").disabled = true; $("stampBtn").textContent = "Le chef de poste tamponne…";
-    NUM = await nouveauNumero();
-    $("fNum").value = NUM; renderCard();
-    $("lpCard").classList.add("stamped");
-    $("st3").classList.add("on");
-    $("dlBtn").disabled = false;
-    $("stampBtn").textContent = "Tamponné ✓";
-    $("bubble").innerHTML = `<b>C'est en règle, ${esc(me.prenom)}.</b> Laissez-passer n° ${NUM}. Bienvenue à la caserne, vous pouvez circuler.`;
+    try {
+      const q = $("fQual").value;
+      moi = await registre.inscrire({ nom: me.nom, prenom: me.prenom, qualite: q, parent: q === "Gendarme" ? me.nom : ($("fParent").value.trim().toUpperCase() || me.nom) });
+    } catch (e) {
+      $("stampBtn").disabled = false; $("stampBtn").textContent = "Faire tamponner";
+      $("bubble").innerHTML = `<b>Hé !</b> Le tampon ne marche pas : ${esc(e.message)}. Réessayez dans un instant.`;
+      return;
+    }
+    ecrire("caserne-moi", moi);
+    afficherTamponne();
+    $("bubble").innerHTML = `<b>C'est en règle, ${esc(me.prenom)}.</b> Laissez-passer n° ${NUM}. Ton adresse de la caserne : <b>${esc(moi.email)}</b>. Le vaguemestre t'attend !`;
   };
+  function afficherTamponne() {
+    NUM = moi.numero;
+    $("fNum").value = NUM; $("fMail").value = moi.email; $("fMailWrap").hidden = false;
+    renderCard();
+    $("lpCard").classList.add("stamped");
+    $("st2").classList.add("on"); $("st3").classList.add("on");
+    $("dlBtn").disabled = false;
+    $("stampBtn").disabled = true; $("stampBtn").textContent = "Tamponné ✓";
+  }
   $("dlBtn").onclick = async () => {
     if (!window.html2canvas) { alert("Le téléchargement nécessite une connexion internet."); return; }
     const sc = $("lpScaler"), prev = sc.style.transform; sc.style.transform = "none";
@@ -763,7 +870,12 @@
     const s = w / 960; $("lpScaler").style.transform = `scale(${s})`; $("lpStage").style.height = 660 * s + "px";
   }
   addEventListener("resize", fitCard);
-  renderCard();
+  if (moi) {
+    $("fNom").value = moi.nom; $("fPrenom").value = moi.prenom; $("fQual").value = moi.qualite;
+    if (moi.qualite !== "Gendarme") $("fParent").value = moi.parent;
+    afficherTamponne();
+    $("bubble").innerHTML = `<b>Repos, ${esc(moi.prenom)} !</b> Ton laissez-passer n° ${esc(moi.numero)} est en règle. Tu peux circuler.`;
+  } else renderCard();
 
   /* ===== Bibliothèque ===== */
   const decLabel = { "70": "Années 70", "80": "Années 80", "90": "Années 90", auj: "Aujourd'hui" };
@@ -798,12 +910,10 @@
   grid();
 
   /* ===== Salle des jeunes ===== */
-  const posts = [
-    { a: "PL", n: "Patrick L.", w: "il y a 2 jours", t: "Le foot contre le mur du garage", txt: "On jouait tous les soirs contre la porte du garage du fond. Jusqu'au jour où le ballon est passé par la fenêtre du bureau du Commandant… On a tous disparu en 30 secondes.", c: [["ND", "Nathalie D.", "Je me souviens ! Ton père t'a privé de sortie un mois 😂"]] },
-    { a: "SM", n: "Sylvie M.", w: "la semaine dernière", t: "Les goûters sous l'horloge", txt: "Le mercredi, toutes les mamans descendaient avec les goûters et on se retrouvait sous l'horloge du porche. Les meilleurs souvenirs de mon enfance.", c: [] },
-  ];
+  const posts = [];
   let aImg = null;
   function renderPosts() {
+    if (!posts.length) { $("posts").innerHTML = `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><b>Pas encore d'anecdote</b>Racontez la première histoire de la caserne !</div>`; return; }
     $("posts").innerHTML = posts.map((p, i) => `<article class="card post">
       <div class="who"><div class="av">${p.a}</div><div><b>${esc(p.n)}</b><small>${p.w}</small></div></div>
       <h3>${esc(p.t)}</h3><p>${esc(p.txt)}</p>${p.img ? `<img src="${p.img}" alt="">` : ""}
@@ -824,25 +934,131 @@
   /* ===== Salle des fêtes ===== */
   const garlandColors = ["#e7b33a", "#c4694a", "#7aa0c9", "#8bb174", "#d77ba6"];
   $("garland").innerHTML = Array.from({ length: 16 }, (_, i) => `<i style="background:${garlandColors[i % 5]}"></i>`).join("");
-  const tracks = [], audio = new Audio();
+  const medias = [], audio = new Audio();
   let playing = -1;
+  const PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>', PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
   function renderTracks() {
-    $("tracks").innerHTML = tracks.length ? tracks.map((t, i) => `<div class="list-item ${i === playing ? "playing" : ""}"><div class="disc"></div>
-      <div style="flex:1;min-width:0"><div class="t">${esc(t.title)}</div><div class="s">partagé par ${esc(t.by)}</div><div class="track-progress"><div id="pg${i}"></div></div></div>
-      <button class="play" data-i="${i}" aria-label="Lecture">${i === playing ? '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>'}</button></div>`).join("")
-      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>La piste de danse est vide</b>Ajoutez le premier morceau de la soirée.</div>`;
+    $("tracks").innerHTML = medias.length ? medias.map((m, i) => {
+      const meta = `<div class="t">${esc(m.title)}</div><div class="s">partagé par ${esc(m.by)}</div>`;
+      if (m.type === "video") return `<div class="card media-card"><video src="${m.url}" controls playsinline preload="metadata"></video>${meta}</div>`;
+      if (m.type === "image") return `<div class="card media-card"><img src="${m.url}" alt="${esc(m.title)}">${meta}</div>`;
+      return `<div class="list-item ${i === playing ? "playing" : ""}"><div class="disc"></div>
+        <div style="flex:1;min-width:0">${meta}<div class="track-progress"><div id="pg${i}"></div></div></div>
+        <button class="play" data-i="${i}" aria-label="Lecture">${i === playing ? PAUSE : PLAY}</button></div>`;
+    }).join("")
+      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>La salle est vide</b>Ajoutez la première musique, vidéo ou photo de la soirée.</div>`;
     document.querySelectorAll("#tracks .play").forEach(b => b.onclick = () => toggle(+b.dataset.i));
   }
   function toggle(i) {
     if (playing === i) { audio.pause(); playing = -1; }
-    else { audio.src = tracks[i].url; audio.play(); playing = i; }
+    else { audio.src = medias[i].url; audio.play(); playing = i; }
     renderTracks();
   }
   audio.ontimeupdate = () => { const el = $("pg" + playing); if (el && audio.duration) el.style.width = (audio.currentTime / audio.duration * 100) + "%"; };
   audio.onended = () => { playing = -1; renderTracks(); };
-  $("mFile").onchange = e => { [...e.target.files].forEach(f => tracks.push({ title: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), by: who(), url: URL.createObjectURL(f) }));
+  $("mFile").onchange = e => {
+    [...e.target.files].forEach(f => medias.unshift({
+      type: f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "image" : "audio",
+      title: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), by: who(), url: URL.createObjectURL(f) }));
+    playing = -1; audio.pause();
     e.target.value = ""; renderTracks(); };
   renderTracks();
+
+  /* ===== Membres de la Caserne ===== */
+  let membres = [];
+  const nomComplet = m => `${m.prenom} ${m.nom}`;
+  const qualiteTxt = m => m.qualite === "Gendarme" ? "Gendarme" : `${m.qualite} ${m.parent}`;
+  const initiales = m => ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase();
+  async function chargerMembres() {
+    try { membres = await registre.membres(); } catch (e) { $("membres").innerHTML = `<div class="card empty"><b>Registre injoignable</b>${esc(e.message)}</div>`; return; }
+    afficherMembres();
+  }
+  function afficherMembres() {
+    const q = $("mSearch").value.trim().toLowerCase();
+    const liste = membres.filter(m => (nomComplet(m) + " " + qualiteTxt(m) + " " + m.numero).toLowerCase().includes(q));
+    $("membres").innerHTML = liste.length ? liste.map(m => `<div class="list-item member"><div class="av">${esc(initiales(m))}</div>
+        <div class="who"><div class="t">${esc(nomComplet(m))}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div><div class="mail">${esc(m.email)}</div></div>
+        ${moi && m.email !== moi.email ? `<button class="btn small" data-ecrire="${esc(m.email)}">Écrire</button>` : ""}</div>`).join("")
+      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/></svg>
+         <b>${membres.length ? "Personne à ce nom" : "Le registre est vide"}</b>${membres.length ? "Essayez une autre recherche." : "Les anciens apparaîtront ici dès qu'ils auront leur laissez-passer."}</div>`;
+    document.querySelectorAll("[data-ecrire]").forEach(b => b.onclick = () => { go("vague"); ouvrirEcrire(b.dataset.ecrire); });
+  }
+  $("mSearch").oninput = afficherMembres;
+
+  /* ===== Le Vaguemestre ===== */
+  let boite = { recus: [], envoyes: [] }, vue = "recus", ouvert = null;
+  const quand = iso => { const d = new Date(iso); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
+  const nomDe = email => { const m = membres.find(x => x.email === email); return m ? nomComplet(m) : email; };
+  async function chargerBoite() {
+    $("vNoPass").hidden = !!moi; $("vBox").hidden = !moi;
+    if (!moi) return;
+    $("vMail").textContent = moi.email;
+    try {
+      if (!membres.length) membres = await registre.membres();
+      boite = await registre.boite();
+    } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Vaguemestre injoignable</b>${esc(e.message)}</div>`; return; }
+    afficherBoite();
+  }
+  function afficherBoite() {
+    const nonLus = boite.recus.filter(x => !x.lu).length;
+    $("vDot").hidden = !nonLus; $("vDot").textContent = nonLus;
+    document.querySelector('#vSeg [data-v="recus"]').textContent = nonLus ? `Reçus (${nonLus})` : "Reçus";
+    document.querySelectorAll("#vSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === vue));
+    $("vForm").hidden = vue !== "ecrire"; $("vListe").hidden = vue === "ecrire";
+    if (vue === "ecrire") return;
+    const liste = boite[vue];
+    $("vListe").innerHTML = liste.length ? liste.map(l => `<div class="list-item letter ${vue === "recus" && !l.lu ? "unread" : ""}" data-id="${l.id}">
+        <div class="av">${esc(initiales(membres.find(x => x.email === (vue === "recus" ? l.de : l.a)) || { prenom: "?", nom: "" }))}</div>
+        <div style="flex:1;min-width:0"><div class="t">${esc(vue === "recus" ? nomDe(l.de) : "À " + nomDe(l.a))}</div><div class="s">${esc(l.sujet)}</div>
+        ${ouvert === l.id ? `<div class="corps">${esc(l.texte)}</div>${vue === "recus" ? `<button class="btn small" style="margin-top:10px" data-repondre="${esc(l.de)}" data-sujet="${esc(l.sujet)}">Répondre</button>` : ""}` : ""}</div>
+        <div class="date">${quand(l.envoye)}</div></div>`).join("")
+      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+         <b>${vue === "recus" ? "Pas de courrier pour le moment" : "Aucun courrier envoyé"}</b>${vue === "recus" ? "Le vaguemestre passe régulièrement…" : "Écrivez à un ancien depuis l'onglet Membres ou « Écrire »."}</div>`;
+    document.querySelectorAll(".letter").forEach(el => el.onclick = async e => {
+      const b = e.target.closest("[data-repondre]");
+      if (b) { ouvrirEcrire(b.dataset.repondre, b.dataset.sujet.startsWith("Re :") ? b.dataset.sujet : "Re : " + b.dataset.sujet); return; }
+      const id = +el.dataset.id; ouvert = ouvert === id ? null : id;
+      const l = boite.recus.find(x => x.id === id);
+      if (vue === "recus" && l && !l.lu) { l.lu = 1; registre.lu(id).catch(() => {}); }
+      afficherBoite();
+    });
+  }
+  function ouvrirEcrire(email, sujet = "") {
+    vue = "ecrire";
+    const autres = membres.filter(m => !moi || m.email !== moi.email);
+    $("vA").innerHTML = `<option value="" disabled ${email ? "" : "selected"}>Choisir un ancien…</option>` +
+      autres.map(m => `<option value="${esc(m.email)}" ${m.email === email ? "selected" : ""}>${esc(nomComplet(m))} — ${esc(m.email)}</option>`).join("");
+    $("vSujet").value = sujet;
+    afficherBoite();
+  }
+  $("vSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.v === "ecrire") ouvrirEcrire(""); else { vue = b.dataset.v; ouvert = null; afficherBoite(); } };
+  $("vForm").onsubmit = async e => {
+    e.preventDefault();
+    const btn = $("vForm").querySelector("button"); btn.disabled = true;
+    try {
+      await registre.envoyer({ a: $("vA").value, sujet: $("vSujet").value.trim(), texte: $("vTexte").value.trim() });
+      $("vForm").reset(); vue = "envoyes"; await chargerBoite();
+    } catch (err) { alert("Le vaguemestre n'a pas pu partir : " + err.message); }
+    btn.disabled = false;
+  };
+  // le vaguemestre repasse toutes les minutes
+  setInterval(() => { if (moi && !$("inside").hidden) registre.boite().then(b => { boite = b; if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite(); else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; } }).catch(() => {}); }, 60000);
+
+  /* ===== Appli installable : Android, iPhone / iPad, PC ===== */
+  if ("serviceWorker" in navigator && enLigne) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  let invite = null;
+  const installee = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); invite = e;
+    $("install").hidden = false;
+    $("install").innerHTML = `<button class="btn alt small" id="installBtn">📲 Installer l'appli</button>`;
+    $("installBtn").onclick = async () => { invite.prompt(); await invite.userChoice; invite = null; $("install").hidden = true; };
+  });
+  if (!installee && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    $("install").hidden = false;
+    $("install").innerHTML = `Pour installer l'appli sur iPhone : touchez <b>Partager</b> ⬆︎ puis <b>« Sur l'écran d'accueil »</b>.`;
+  }
 </script>
 </body>
 </html>

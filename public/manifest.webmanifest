@@ -1,0 +1,17 @@
+{
+  "name": "Caserne de la Nouvelle France",
+  "short_name": "Caserne NF",
+  "description": "L'appli des anciens de la Caserne de la Nouvelle France : laissez-passer, photos, anecdotes, musique et courrier.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6eedf",
+  "theme_color": "#f6eedf",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

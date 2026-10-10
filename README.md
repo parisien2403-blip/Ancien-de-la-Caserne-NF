@@ -2,17 +2,30 @@
 
 Application des anciens de la Caserne de la Nouvelle France (Garde républicaine, années 70 à 90).
 
-> **Maquette** : seul le **numéro d'inscription** est enregistré (compteur partagé 0001, 0002, …
-> tenu par Cloudflare). Le reste (fiches, photos, anecdotes, MP3) disparaît en fermant la page.
+> **Ce qui est enregistré** (sur Cloudflare) : les laissez-passer (numéros 0001, 0002…), le registre des
+> membres et le courrier du vaguemestre. Pas encore enregistrés : la photo du laissez-passer, les photos de la
+> bibliothèque, les anecdotes et les médias de la salle des fêtes (ils disparaissent en fermant la page).
 
 ## Les pages
 
 | Onglet | Rôle |
 | --- | --- |
-| **Poste de police** | Le planton accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, téléchargeable en image. |
+| **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…) et son **adresse de la caserne** (`prenom.nom@caserne-nf`). |
 | **Bibliothèque** | Partage de photos, classées par période (années 70, 80, 90, aujourd'hui), avec commentaires. |
 | **Salle des jeunes** | Anecdotes de la caserne, avec image facultative et commentaires. |
-| **Salle des fêtes** | Partage et écoute de morceaux MP3. |
+| **Salle des fêtes** | Musique (MP3), vidéos et photos des soirées. |
+| **Membres de la Caserne** | Le registre des anciens inscrits, avec recherche et bouton « Écrire ». |
+| **Vaguemestre** | Le courrier interne : reçus, envoyés, écrire, répondre. |
+
+## Android, iPhone / iPad et PC
+
+L'appli est **installable** (Progressive Web App) depuis son adresse :
+
+- **Android** (Chrome) : bouton « Installer l'appli » sur l'écran d'accueil, ou menu ⋮ → « Installer l'application ».
+- **iPhone / iPad** (Safari) : Partager ⬆︎ → « Sur l'écran d'accueil ».
+- **PC / Mac** (Chrome ou Edge) : icône d'installation dans la barre d'adresse.
+
+Elle s'ouvre alors en plein écran, avec l'icône de l'horloge de la caserne.
 
 ## Voir l'appli
 
@@ -25,17 +38,24 @@ poussée sur la branche `main` est redéployée automatiquement. La configuratio
 
 ```
 public/index.html          l'application (HTML, CSS et JavaScript dans un seul fichier)
+public/manifest.webmanifest, public/sw.js, public/icons/   ce qui rend l'appli installable
 public/images/porche.jpg   le porche de la caserne (bateau sculpté + plaque), écran d'accueil
 public/images/plaque.jpg   la plaque « Caserne de la Nouvelle France », en-tête des pages
 public/images/garde.jpg    le planton du poste de police
-src/index.js               petit serveur Cloudflare : sert le site et tient le compteur des laissez-passer
-wrangler.jsonc             configuration Cloudflare (site public/ + compteur)
+src/index.js               serveur Cloudflare : sert le site, tient les laissez-passer, les membres et le courrier
+wrangler.jsonc             configuration Cloudflare (site public/ + registre de la caserne)
 ```
 
 ## À prévoir avant une vraie mise en ligne
 
-- Comptes et sauvegarde (par exemple avec Supabase) : inscriptions validées par les administrateurs,
-  numéro de laissez-passer attribué automatiquement, photos, anecdotes et MP3 enregistrés.
-- Droits sur la photo du planton (`images/garde.jpg`), ou la remplacer par une illustration.
-- Musique : privilégier les enregistrements personnels ; les chansons du commerce sont soumises aux droits d'auteur.
+- **Connexion** : aujourd'hui, le laissez-passer est mémorisé sur l'appareil où il a été créé. Il faudra un vrai
+  mot de passe (ou un code reçu par e-mail) pour le retrouver sur un autre téléphone ou ordinateur.
+- **Validation par les administrateurs** des nouvelles inscriptions, et protection du site
+  (par exemple Cloudflare Access) pour que seuls les anciens voient le registre et le courrier.
+- **Enregistrer les fichiers** (photos, vidéos, MP3, photo du laissez-passer) : stockage Cloudflare R2.
+- **Adresses e-mail réelles** : les adresses `@caserne-nf` ne servent qu'au courrier interne. Pour de vraies
+  adresses, il faut un nom de domaine et un service d'e-mail.
+- **Applications dans les stores** (Google Play, App Store) si besoin, en plus de l'appli installable.
+- Droits sur la photo du chef de poste (`public/images/garde.jpg`), ou la remplacer par une illustration.
+- Musique et vidéos : privilégier les enregistrements personnels ; les œuvres du commerce sont soumises aux droits d'auteur.
 - Photos de personnes : pouvoir retirer une photo ou une identification sur demande (RGPD).
