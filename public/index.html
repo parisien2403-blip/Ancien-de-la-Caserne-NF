@@ -508,7 +508,6 @@
   .lp-verso .code { font: 700 33px "Courier Prime", monospace; letter-spacing: .02em; white-space: nowrap; margin: 6px 0 26px; line-height: 1.3; }
   .lp-verso .aide { font: 16px/1.5 Arial, sans-serif; }
   .lp-verso .secret { position: absolute; left: 80px; right: 70px; bottom: 56px; font: italic 15px Georgia, serif; text-align: center; }
-  .cv-retourner { border: 0; border-radius: 99px; padding: 8px 14px; font: 700 13px "Lato", sans-serif; background: #f6d465; color: #3b2a12; cursor: pointer; }
   /* boîte des signalements (administrateur) */
   .signal .cat { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--terra-soft); color: var(--terra-dark); margin-right: 6px; }
   .signal.traite { opacity: .6; }
@@ -2020,13 +2019,15 @@
           <b>Entrer → 🔗 Code de liaison</b>, puis scanne ce QR code ou recopie ton prénom, ton nom et ce code.</div></div>
       <div class="secret">Ce code ouvre ton compte et ton courrier chiffré : ne le communique à personne.</div></div>`;
   }
+  let carteVue = null;   // { m, verso, recto } : la carte affichée, pour la retourner d'un toucher
   function voirCarte(m, verso = false) {
     const k = moi && m.email === moi.email ? mesCles() : null;
+    carteVue = { m, verso: !!(verso && k), recto: !!k };
     if (verso && k) {
       $("cvScaler").innerHTML = versoHTML(m, k.code);
-      $("cvInfo").innerHTML = `<div class="who"><b>Verso de ta carte</b><small>Code de liaison et QR code</small></div>
-        <button class="cv-retourner" id="cvRetourner">↻ Recto</button><button class="cv-plein" id="cvPlein">⛶ Plein écran</button>`;
-      $("cvRetourner").onclick = () => voirCarte(m, false); $("cvPlein").onclick = pleinEcran;
+      $("cvInfo").innerHTML = `<div class="who"><b>Verso de ta carte</b><small>Touche la carte pour la retourner</small></div>
+        <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>`;
+      $("cvPlein").onclick = pleinEcran;
       $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
       return;
     }
@@ -2043,12 +2044,10 @@
     else { ph.style.backgroundImage = ""; ph.innerHTML = `<svg viewBox="0 0 100 100" style="width:60%;opacity:.45"><circle cx="50" cy="36" r="20" fill="#7a746a"/><path d="M12 100c4-24 20-36 38-36s34 12 38 36z" fill="#7a746a"/></svg>`; }
     $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
     const peutEcrire = moi && moi.email && m.email !== moi.email;
-    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${esc(m.email)}</small></div>
-      ${k ? `<button class="cv-retourner" id="cvRetourner">↻ Verso</button>` : ""}
+    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${k ? "Touche la carte pour voir le verso" : esc(m.email)}</small></div>
       <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
       ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
     $("cvPlein").onclick = pleinEcran;
-    if (k) $("cvRetourner").onclick = () => voirCarte(m, true);
     if (peutEcrire) $("cvEcrire").onclick = () => { $("carteVue").hidden = true; go("vague"); ouvrirEcrire(m.email); };
     $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
   }
@@ -2083,7 +2082,22 @@
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) quitterPleinEcran(); });
   addEventListener("resize", () => { if (!$("carteVue").hidden) ajusterCarte(); });
   $("cvClose").onclick = () => { if (!quitterPleinEcran()) $("carteVue").hidden = true; };
-  $("cvStage").onclick = () => { if (!$("carteVue").classList.contains("plein")) pleinEcran(); else quitterPleinEcran(); };
+  let enRotation = false;
+  async function retournerCarte() {
+    if (enRotation) return; enRotation = true;
+    const sc = $("cvScaler"), anim = { duration: 230, easing: "ease-in", fill: "forwards" };
+    const face = () => sc.firstElementChild;
+    await face().animate([{ transform: "perspective(1800px) rotateY(0)" }, { transform: "perspective(1800px) rotateY(90deg)" }], anim).finished;
+    const plein = $("carteVue").classList.contains("plein");
+    voirCarte(carteVue.m, !carteVue.verso);
+    if (plein) { $("carteVue").classList.add("plein"); ajusterCarte(); }
+    await face().animate([{ transform: "perspective(1800px) rotateY(-90deg)" }, { transform: "perspective(1800px) rotateY(0)" }], { ...anim, easing: "ease-out" }).finished;
+    enRotation = false;
+  }
+  $("cvStage").onclick = () => {
+    if (carteVue && carteVue.recto) { retournerCarte(); return; }
+    if (!$("carteVue").classList.contains("plein")) pleinEcran(); else quitterPleinEcran();
+  };
   $("carteVue").onclick = e => { if (e.target === $("carteVue") && !quitterPleinEcran()) $("carteVue").hidden = true; };
 
   /* ===== Le Vaguemestre ===== */
