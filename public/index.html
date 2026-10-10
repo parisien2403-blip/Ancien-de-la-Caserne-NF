@@ -68,6 +68,10 @@
   .splash .content { position: relative; margin-top: auto; padding: 0 28px 28px; text-align: center;
     background: linear-gradient(180deg, transparent, rgba(246,238,223,.7) 30%, rgba(246,238,223,.55) 100%); padding-top: 60px; }
   .splash h1 { margin: 0; font-size: clamp(30px, 8.5vw, 38px); letter-spacing: .03em; line-height: 1.1; }
+  /* titre sur 3 lignes, comme la plaque : CASERNE / DE LA / NOUVELLE-FRANCE */
+  .titre3 span { display: block; white-space: nowrap; }
+  .titre3 .dela { font-size: .55em; letter-spacing: .3em; margin: .15em 0 .1em; }
+  .titre3 .nf { font-size: .82em; }
   .splash p { margin: 12px 0 26px; font-size: 18px; line-height: 1.4; color: var(--navy); }
   .splash .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .splash .row .btn { flex: 1; max-width: 240px; }
@@ -297,7 +301,7 @@
     .splash { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
     .splash svg.scene { position: relative; inset: auto; grid-column: 1; grid-row: 1; height: 100%; }
     .splash .content { grid-column: 2; grid-row: 1; align-self: center; margin: 0; padding: 48px 64px; background: none; }
-    .splash h1 { font-size: 54px; }
+    .splash h1 { font-size: 58px; }
     .splash p { font-size: 22px; }
     .splash .row { justify-content: center; gap: 28px; }
     /* connexion : fenêtre centrée */
@@ -470,7 +474,7 @@
   <section class="screen splash" id="splash">
     <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
     <div class="content">
-      <h1>CASERNE<br>NOUVELLE-FRANCE</h1>
+      <h1 class="titre3"><span>CASERNE</span><span class="dela">DE LA</span><span class="nf">NOUVELLE-FRANCE</span></h1>
       <p>Retrouvez la caserne<br>de votre enfance</p>
       <div class="row">
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg>
@@ -1007,10 +1011,14 @@
     [40, 190, 340].forEach(y => { s += win(18, y, 46, 72) + win(326, y, 46, 72); });
     // bandeaux de pierre blanche
     [150, 300, 450].forEach(y => { s += `<rect x="0" y="${y}" width="92" height="12" fill="${C}"/><rect x="298" y="${y}" width="92" height="12" fill="${C}"/>`; });
+    // bâtiment de droite : porte noire sous la dernière fenêtre, plaque bleu marine « Z » au-dessus
+    s += `<rect x="338" y="470" width="22" height="22" rx="2" fill="#1f2a44"/>
+      <text x="349" y="487" text-anchor="middle" font-family="Lato, Arial, sans-serif" font-weight="700" font-size="15" fill="#fff">Z</text>
+      <rect x="329" y="498" width="40" height="92" fill="#fbf7ef"/>
+      <rect x="333" y="502" width="32" height="88" fill="#141414"/>`;
     // porche
     s += `<path d="M112 590V420A83 83 0 0 1 278 420V590Z" fill="#fbf7ef" stroke="${L}" stroke-width="2"/>
-      <path d="M130 590V430A65 65 0 0 1 260 430V590" fill="none" stroke="${L}" stroke-width="1.5"/>
-      <path d="M150 590V455A45 45 0 0 1 240 455V590M150 500H240M195 455V590" fill="none" stroke="${L}" stroke-width="1.5"/>`;
+      <path d="M130 590V430A65 65 0 0 1 260 430V590Z" fill="#141414"/>`;
     // halo + horloge
     s += `<circle cx="195" cy="250" r="190" fill="url(#glow)"/>` + clockSVG(195, 255, 100, true);
     // arbre
