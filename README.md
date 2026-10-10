@@ -10,12 +10,21 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 
 | Onglet | Rôle |
 | --- | --- |
-| **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…) et son **adresse de la caserne** (`prenom.nom@caserne-nf`). |
+| **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…), son **adresse de la caserne** (`prenom.nom@caserne-nf`) et un **code provisoire à 6 chiffres**. |
 | **Bibliothèque** | Partage de photos, classées par période (années 70, 80, 90, aujourd'hui), avec commentaires. |
 | **Salle des jeunes** | Anecdotes de la caserne, avec image facultative et commentaires. |
 | **Salle des fêtes** | Musique (MP3), vidéos et photos des soirées. |
 | **Membres de la Caserne** | Le registre des anciens inscrits, avec recherche et bouton « Écrire ». |
 | **Vaguemestre** | Le courrier interne : reçus, envoyés, écrire, répondre. |
+
+## Connexion
+
+1. Au poste de police, le laissez-passer tamponné donne un **code provisoire à 6 chiffres** (affiché une seule fois).
+2. On se connecte avec **prénom + nom + code provisoire**.
+3. L'appli demande alors de **créer son mot de passe** (8 caractères minimum) ; le code provisoire ne sert plus.
+4. Ensuite : **prénom + nom + mot de passe**.
+
+Les mots de passe et codes sont stockés chiffrés (PBKDF2). Après 5 essais ratés, le compte est bloqué 15 minutes.
 
 ## Android, iPhone / iPad et PC
 
@@ -25,7 +34,8 @@ L'appli est **installable** (Progressive Web App) depuis son adresse :
 - **iPhone / iPad** (Safari) : Partager ⬆︎ → « Sur l'écran d'accueil ».
 - **PC / Mac** (Chrome ou Edge) : icône d'installation dans la barre d'adresse.
 
-Elle s'ouvre alors en plein écran, avec l'icône de l'horloge de la caserne.
+Elle s'ouvre alors en plein écran, avec l'icône de l'horloge de la caserne. Sur un écran large (PC), la mise en page
+passe en version ordinateur : menu à gauche, contenu sur toute la largeur.
 
 ## Voir l'appli
 
@@ -48,8 +58,7 @@ wrangler.jsonc             configuration Cloudflare (site public/ + registre de 
 
 ## À prévoir avant une vraie mise en ligne
 
-- **Connexion** : aujourd'hui, le laissez-passer est mémorisé sur l'appareil où il a été créé. Il faudra un vrai
-  mot de passe (ou un code reçu par e-mail) pour le retrouver sur un autre téléphone ou ordinateur.
+- **Mot de passe oublié** : pour l'instant, un administrateur doit réinitialiser le compte.
 - **Validation par les administrateurs** des nouvelles inscriptions, et protection du site
   (par exemple Cloudflare Access) pour que seuls les anciens voient le registre et le courrier.
 - **Enregistrer les fichiers** (photos, vidéos, MP3, photo du laissez-passer) : stockage Cloudflare R2.
