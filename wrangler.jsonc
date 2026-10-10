@@ -8,7 +8,7 @@
   // garde les journaux activés dans le tableau de bord
   "observability": { "enabled": true },
   // l'administrateur (le mot de passe est un secret Cloudflare : ADMIN_MOT_DE_PASSE, jamais dans ce fichier)
-  "vars": { "ADMIN_PRENOM": "Olivier", "ADMIN_NOM": "Bouquet" },
+  "vars": { "ADMIN_PRENOM": "Germain-Pierre", "ADMIN_NOM": "Bouquet" },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

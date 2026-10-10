@@ -28,7 +28,7 @@ Les mots de passe et codes sont stockés chiffrés (PBKDF2). Après 5 essais rat
 
 ## Administrateur
 
-Un seul administrateur : **Olivier Bouquet** (prénom et nom dans `wrangler.jsonc`, variables `ADMIN_PRENOM` / `ADMIN_NOM`).
+Un seul administrateur : **Germain-Pierre Bouquet** (prénom et nom dans `wrangler.jsonc`, variables `ADMIN_PRENOM` / `ADMIN_NOM`).
 Son mot de passe n'est **jamais dans le code** : c'est un **secret Cloudflare** nommé `ADMIN_MOT_DE_PASSE`
 (tableau de bord Cloudflare → le Worker → Paramètres → Variables et secrets).
 
