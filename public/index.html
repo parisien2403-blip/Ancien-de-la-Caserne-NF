@@ -261,6 +261,10 @@
   /* ---------- Membres / Vaguemestre ---------- */
   .member .who { flex: 1; min-width: 0; }
   .member .mail { font-size: 12px; color: var(--terra-dark); word-break: break-all; }
+  .me.admin { background: var(--gold); color: #3b2a12; }
+  .tag-admin { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: var(--gold); color: #3b2a12; font-size: 11px; font-weight: 700; vertical-align: middle; }
+  .btn.danger { background: #fff; color: #b3261e; border: 1.5px solid #e2b4ae; box-shadow: none; }
+  .member .actions-m { display: flex; flex-direction: column; gap: 6px; flex: none; }
   .btn.small { padding: 8px 14px; font-size: 13px; box-shadow: none; flex: none; }
   .adresse { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--terra-soft); color: var(--terra-dark); margin-bottom: 14px; font-size: 14px; }
   .adresse b { word-break: break-all; }
@@ -512,12 +516,12 @@
     </div>
 
     <nav class="tabbar" id="tabbar">
-      <button data-go="poste" class="on"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Poste<br> de police</button>
-      <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg>Biblio<span class="cesure">-</span><br>thèque</button>
-      <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Salle<br> des jeunes</button>
-      <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Salle<br> des fêtes</button>
-      <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg>Membres<br> caserne</button>
-      <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Vague<span class="cesure">-</span><br>mestre<span class="dot" id="vDot" hidden></span></button>
+      <button data-go="poste" class="on"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
+      <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
+      <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span class="lbl">Salle<br> des jeunes</span></button>
+      <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
+      <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
+      <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl">Vague<span class="cesure">-</span><br>mestre</span><span class="dot" id="vDot" hidden></span></button>
     </nav>
 
     <div class="viewer" id="viewer">
@@ -891,6 +895,7 @@
     boite: () => enLigne ? api("GET", "/api/boite") : demo.boite(),
     envoyer: l => enLigne ? api("POST", "/api/messages", l) : demo.envoyer(l),
     lu: id => enLigne ? api("POST", `/api/messages/${id}/lu`) : demo.lu(id),
+    supprimer: n => enLigne ? api("DELETE", `/api/membres/${n}`) : null,
   };
 
   function renderCard() {
@@ -903,6 +908,7 @@
     $("cJour").textContent = today.getDate() + " " + mois[today.getMonth()];
     $("cAn").textContent = today.getFullYear();
     $("me").textContent = moi ? ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase() : "?";
+    $("me").classList.toggle("admin", !!(moi && moi.admin));
     const filled = me.nom && me.prenom;
     $("st2").classList.toggle("on", !!filled);
   }
@@ -916,7 +922,14 @@
     $("stampBtn").disabled = true; $("stampBtn").textContent = "Le chef de poste tamponne…";
     try {
       const q = $("fQual").value;
-      fiche = await registre.inscrire({ nom: me.nom, prenom: me.prenom, qualite: q, parent: q === "Gendarme" ? me.nom : ($("fParent").value.trim().toUpperCase() || me.nom) });
+      const r = await registre.inscrire({ nom: me.nom, prenom: me.prenom, qualite: q, parent: q === "Gendarme" ? me.nom : ($("fParent").value.trim().toUpperCase() || me.nom) });
+      if (r.token) {   // administrateur : déjà connecté, laissez-passer et adresse créés d'office
+        moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
+        afficherTamponne(moi);
+        $("bubble").innerHTML = `<b>Mes respects, ${esc(moi.prenom)} !</b> Laissez-passer n° ${NUM} tamponné. Ton adresse de la caserne : <b>${esc(moi.email)}</b>.`;
+        return;
+      }
+      fiche = r;
     } catch (e) {
       $("stampBtn").disabled = false; $("stampBtn").textContent = "Faire tamponner";
       $("bubble").innerHTML = `<b>Hé !</b> Le tampon ne marche pas : ${esc(e.message)}. Réessayez dans un instant.`;
@@ -953,7 +966,11 @@
   }
   addEventListener("resize", fitCard);
   function etatPoste() {
-    if (moi) {
+    if (moi && !moi.numero) {   // administrateur connecté, laissez-passer à faire
+      $("fNom").value = moi.nom; $("fPrenom").value = moi.prenom; $("loginBtn").hidden = true;
+      renderCard();
+      $("bubble").innerHTML = `<b>Mes respects, mon administrateur !</b> Il ne te manque que ton laissez-passer : remplis ta demande et fais tamponner.`;
+    } else if (moi) {
       afficherTamponne(moi);
       $("bubble").innerHTML = `<b>Repos, ${esc(moi.prenom)} !</b> Ton laissez-passer n° ${esc(moi.numero)} est en règle. Tu peux circuler.`;
     } else if (fiche) {
@@ -976,7 +993,7 @@
   function entrer(tab = "poste") { fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab); }
   function connecte(r) {
     moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
-    if (fiche) { delete fiche.code; ecrire("caserne-fiche", fiche); }
+    if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
     etatPoste(); entrer("poste");
   }
@@ -1112,11 +1129,17 @@
     const q = $("mSearch").value.trim().toLowerCase();
     const liste = membres.filter(m => (nomComplet(m) + " " + qualiteTxt(m) + " " + m.numero).toLowerCase().includes(q));
     $("membres").innerHTML = liste.length ? liste.map(m => `<div class="list-item member"><div class="av">${esc(initiales(m))}</div>
-        <div class="who"><div class="t">${esc(nomComplet(m))}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div><div class="mail">${esc(m.email)}</div></div>
-        ${moi && m.email !== moi.email ? `<button class="btn small" data-ecrire="${esc(m.email)}">Écrire</button>` : ""}</div>`).join("")
+        <div class="who"><div class="t">${esc(nomComplet(m))}${m.admin ? '<span class="tag-admin">Administrateur</span>' : ""}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div><div class="mail">${esc(m.email)}</div></div>
+        <div class="actions-m">${moi && moi.email && m.email !== moi.email ? `<button class="btn small" data-ecrire="${esc(m.email)}">Écrire</button>` : ""}
+        ${moi && moi.admin && !m.admin ? `<button class="btn small danger" data-suppr="${esc(m.numero)}" data-nom="${esc(nomComplet(m))}">Supprimer</button>` : ""}</div></div>`).join("")
       : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/></svg>
          <b>${membres.length ? "Personne à ce nom" : "Le registre est vide"}</b>${membres.length ? "Essayez une autre recherche." : "Les anciens apparaîtront ici dès qu'ils auront leur laissez-passer."}</div>`;
     document.querySelectorAll("[data-ecrire]").forEach(b => b.onclick = () => { go("vague"); ouvrirEcrire(b.dataset.ecrire); });
+    document.querySelectorAll("[data-suppr]").forEach(b => b.onclick = async () => {
+      if (!confirm(`Supprimer définitivement le compte de ${b.dataset.nom} (n° ${b.dataset.suppr}) et son courrier ?`)) return;
+      try { await registre.supprimer(b.dataset.suppr); await chargerMembres(); }
+      catch (e) { alert("Suppression impossible : " + e.message); }
+    });
   }
   $("mSearch").oninput = afficherMembres;
 
@@ -1125,8 +1148,9 @@
   const quand = iso => { const d = new Date(iso); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
   const nomDe = email => { const m = membres.find(x => x.email === email); return m ? nomComplet(m) : email; };
   async function chargerBoite() {
-    $("vNoPass").hidden = !!moi; $("vBox").hidden = !moi;
-    if (!moi) return;
+    const ok = !!(moi && moi.email);
+    $("vNoPass").hidden = ok; $("vBox").hidden = !ok;
+    if (!ok) return;
     $("vMail").textContent = moi.email;
     try {
       if (!membres.length) membres = await registre.membres();
@@ -1178,7 +1202,7 @@
     btn.disabled = false;
   };
   // le vaguemestre repasse toutes les minutes
-  setInterval(() => { if (moi && !$("inside").hidden) registre.boite().then(b => { boite = b; if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite(); else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; } }).catch(() => {}); }, 60000);
+  setInterval(() => { if (moi && moi.email && !$("inside").hidden) registre.boite().then(b => { boite = b; if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite(); else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; } }).catch(() => {}); }, 60000);
 
   /* ===== Appli installable : Android, iPhone / iPad, PC ===== */
   if ("serviceWorker" in navigator && enLigne) navigator.serviceWorker.register("/sw.js").catch(() => {});

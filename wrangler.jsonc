@@ -1,4 +1,4 @@
-// Configuration Cloudflare : le site (dossier public/) + le compteur des laissez-passer (src/index.js).
+// Configuration Cloudflare : le site (dossier public/) + le registre de la caserne (src/index.js).
 {
   "name": "ancien-de-la-caserne-nf",
   "main": "src/index.js",
@@ -7,6 +7,8 @@
   "workers_dev": true,
   // garde les journaux activés dans le tableau de bord
   "observability": { "enabled": true },
+  // l'administrateur (le mot de passe est un secret Cloudflare : ADMIN_MOT_DE_PASSE, jamais dans ce fichier)
+  "vars": { "ADMIN_PRENOM": "Olivier", "ADMIN_NOM": "Bouquet" },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

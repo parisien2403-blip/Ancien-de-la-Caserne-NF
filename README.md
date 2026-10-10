@@ -26,6 +26,17 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 
 Les mots de passe et codes sont stockés chiffrés (PBKDF2). Après 5 essais ratés, le compte est bloqué 15 minutes.
 
+## Administrateur
+
+Un seul administrateur : **Olivier Bouquet** (prénom et nom dans `wrangler.jsonc`, variables `ADMIN_PRENOM` / `ADMIN_NOM`).
+Son mot de passe n'est **jamais dans le code** : c'est un **secret Cloudflare** nommé `ADMIN_MOT_DE_PASSE`
+(tableau de bord Cloudflare → le Worker → Paramètres → Variables et secrets).
+
+- Il se connecte d'office avec prénom + nom + ce mot de passe, sans code provisoire.
+- Il fait son laissez-passer au poste de police : numéro et adresse de la caserne créés comme pour tout le monde.
+- Dans **Membres de la Caserne**, il voit un bouton **Supprimer** sur chaque compte (le compte et son courrier sont effacés).
+- Personne d'autre ne peut s'inscrire sous son nom.
+
 ## Android, iPhone / iPad et PC
 
 L'appli est **installable** (Progressive Web App) depuis son adresse :

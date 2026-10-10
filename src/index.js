@@ -43,14 +43,66 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, a TEXT, sujet TEXT, texte TEXT,
       envoye TEXT, lu INTEGER DEFAULT 0)`);
     // colonnes ajoutées avec la connexion (code provisoire puis mot de passe personnel)
-    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT"]) {
+    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
 
-  async inscrire(fiche) {
+  /* ----- Administrateur -----
+     Un seul administrateur : prénom et nom dans la configuration (ADMIN_PRENOM, ADMIN_NOM),
+     mot de passe dans un secret Cloudflare (ADMIN_MOT_DE_PASSE), jamais dans le code. */
+  estNomAdmin(prenom, nom) {
+    const e = this.env;
+    return !!(e.ADMIN_PRENOM && e.ADMIN_NOM && slug(prenom) === slug(e.ADMIN_PRENOM) && slug(nom) === slug(e.ADMIN_NOM));
+  }
+  async estAdmin(token) {
+    if (!token) return false;
+    if (((await this.ctx.storage.get("admin_sessions")) || []).includes(token)) return true;
+    return !!this.sql.exec("SELECT 1 FROM membres WHERE token = ? AND admin = 1", token).toArray().length;
+  }
+  async exigerAdmin(token) {
+    if (!(await this.estAdmin(token))) throw new Refus("Réservé à l'administrateur", 403);
+  }
+  async connexionAdmin(secret) {
+    const attendu = this.env.ADMIN_MOT_DE_PASSE;
+    const bloque = await this.ctx.storage.get("admin_bloque");
+    if (bloque && new Date(bloque) > new Date()) throw new Refus(`Trop d'essais : réessayez dans ${BLOCAGE_MIN} minutes`, 429);
+    const a = new TextEncoder().encode(String(secret || "")), b = new TextEncoder().encode(String(attendu || ""));
+    const ok = !!attendu && a.byteLength === b.byteLength && crypto.subtle.timingSafeEqual(a, b);
+    if (!ok) {
+      const essais = ((await this.ctx.storage.get("admin_essais")) || 0) + 1;
+      if (essais >= ESSAIS_MAX) {
+        await this.ctx.storage.put("admin_bloque", new Date(Date.now() + BLOCAGE_MIN * 60000).toISOString());
+        await this.ctx.storage.put("admin_essais", 0);
+      } else await this.ctx.storage.put("admin_essais", essais);
+      throw new Refus("Prénom, nom ou mot de passe incorrect", 401);
+    }
+    await this.ctx.storage.put("admin_essais", 0);
+    const m = this.sql.exec("SELECT * FROM membres WHERE admin = 1").toArray()[0];
+    if (m) return { token: m.token, moi: this.public(m) };
+    // pas encore de laissez-passer : session d'administrateur, il le fera au poste de police
+    const token = "adm-" + crypto.randomUUID();
+    const sessions = ((await this.ctx.storage.get("admin_sessions")) || []).slice(-4);
+    await this.ctx.storage.put("admin_sessions", [...sessions, token]);
+    return { token, moi: { admin: true, prenom: this.env.ADMIN_PRENOM, nom: String(this.env.ADMIN_NOM).toUpperCase(), numero: null, email: null } };
+  }
+
+  async supprimer(token, num) {
+    await this.exigerAdmin(token);
+    const m = this.sql.exec("SELECT * FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    if (!m) throw new Refus("Membre introuvable", 404);
+    if (m.admin) throw new Refus("Le compte de l'administrateur ne peut pas être supprimé");
+    this.sql.exec("DELETE FROM messages WHERE de = ? OR a = ?", m.email, m.email);
+    this.sql.exec("DELETE FROM membres WHERE numero = ?", m.numero);
+    return { ok: true };
+  }
+
+  async inscrire(fiche, token) {
     const nom = texte(fiche.nom, 40).toUpperCase(), prenom = texte(fiche.prenom, 40);
     if (!slug(nom) || !slug(prenom)) throw new Refus("Nom et prénom obligatoires");
+    const admin = this.estNomAdmin(prenom, nom);
+    if (admin && !(await this.estAdmin(token))) throw new Refus("Ce nom est réservé à l'administrateur : connectez-vous d'abord", 403);
+    if (admin && this.sql.exec("SELECT 1 FROM membres WHERE admin = 1").toArray().length) throw new Refus("L'administrateur a déjà son laissez-passer");
     const qualite = QUALITES.includes(fiche.qualite) ? fiche.qualite : QUALITES[0];
     const parent = qualite === "Gendarme" ? nom : texte(fiche.parent, 40).toUpperCase() || nom;
 
@@ -60,6 +112,14 @@ export class Compteur extends DurableObject {
     let email = `${slug(prenom)}.${slug(nom)}@${DOMAINE}`;
     if (this.sql.exec("SELECT 1 FROM membres WHERE email = ?", email).toArray().length) {
       email = `${slug(prenom)}.${slug(nom)}.${numero(n)}@${DOMAINE}`;
+    }
+    if (admin) {
+      // l'administrateur se connecte avec son propre mot de passe : pas de code provisoire
+      const jeton = crypto.randomUUID();
+      this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, admin)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`, n, nom, prenom, qualite, parent, email, jeton, new Date().toISOString());
+      await this.ctx.storage.delete("admin_sessions");
+      return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, admin: true } };
     }
     const code = codeProvisoire();
     this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash)
@@ -71,6 +131,7 @@ export class Compteur extends DurableObject {
 
   // Connexion : prénom + nom + mot de passe (ou code provisoire à la première connexion)
   async connexion({ prenom, nom, secret }) {
+    if (this.estNomAdmin(prenom, nom)) return this.connexionAdmin(secret);
     const p = slug(prenom), n = slug(nom), maintenant = new Date();
     const candidats = this.sql.exec("SELECT * FROM membres").toArray().filter(m => slug(m.prenom) === p && slug(m.nom) === n);
     for (const m of candidats) {
@@ -112,18 +173,21 @@ export class Compteur extends DurableObject {
   }
 
   public(m) {
-    return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email };
+    return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email, admin: !!m.admin };
   }
 
   async membres() {
-    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree FROM membres ORDER BY numero")
-      .toArray().map(m => ({ ...m, numero: numero(m.numero) }));
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin FROM membres ORDER BY numero")
+      .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin }));
   }
 
   moi(token) {
-    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email FROM membres WHERE token = ?", token).toArray()[0];
-    if (!m) throw new Refus("Laissez-passer inconnu", 401);
-    return { ...m, numero: numero(m.numero) };
+    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin FROM membres WHERE token = ?", token).toArray()[0];
+    if (!m) {
+      if (String(token).startsWith("adm-")) throw new Refus("Fais d'abord ton laissez-passer au poste de police", 403);
+      throw new Refus("Laissez-passer inconnu", 401);
+    }
+    return this.public(m);
   }
 
   async boite(token) {
@@ -161,18 +225,21 @@ export default {
 
     try {
       let r;
-      if (route === "POST /api/inscription") r = await registre.inscrire(await corps());
+      if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
       else if (route === "POST /api/connexion") r = await registre.connexion(await corps());
       else if (route === "POST /api/mot-de-passe") r = await registre.motDePasse(await corps());
       else if (route === "GET /api/membres") r = await registre.membres();
       else if (route === "GET /api/boite") r = await registre.boite(token);
       else if (route === "POST /api/messages") r = await registre.envoyer(token, await corps());
+      else if (request.method === "DELETE" && /^\/api\/membres\/\d+$/.test(url.pathname)) r = await registre.supprimer(token, url.pathname.split("/")[3]);
       else if (request.method === "POST" && /^\/api\/messages\/\d+\/lu$/.test(url.pathname)) r = await registre.marquerLu(token, url.pathname.split("/")[3]);
       else return Response.json({ erreur: "Introuvable" }, { status: 404 });
       return Response.json(r);
     } catch (e) {
       // les erreurs traversent le Durable Object sans leur classe : on retrouve le statut par le message
-      const status = e.status || (/Laissez-passer inconnu|incorrect|Session expirée/.test(e.message) ? 401 : /Trop d'essais/.test(e.message) ? 429 : 400);
+      const m = e.message || "";
+      const status = e.status || (/Laissez-passer inconnu|incorrect|Session expirée/.test(m) ? 401
+        : /Trop d'essais/.test(m) ? 429 : /réservé|Réservé|Fais d'abord/.test(m) ? 403 : /introuvable/.test(m) ? 404 : 400);
       return Response.json({ erreur: e.message || "Erreur" }, { status });
     }
   },
