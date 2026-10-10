@@ -255,7 +255,6 @@
   <!-- ====== ÉCRAN D'ACCUEIL ====== -->
   <section class="screen splash" id="splash">
     <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
-    <svg class="banner" id="bannerTop" viewBox="0 0 390 196" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Garde Républicaine"></svg>
     <div class="content">
       <h1>CASERNE<br>NOUVELLE-FRANCE</h1>
       <p>Retrouvez la caserne<br>de votre enfance</p>
@@ -264,7 +263,7 @@
         <button class="btn" id="enter">Entrer</button>
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       </div>
-      <button class="link" id="signup">Pas encore inscrit ? Demander mon laissez-passer</button>
+      <button class="link" id="signup">Pas encore inscrit ? Demander un laissez-passer</button>
     </div>
 
     <div class="sheet-bg" id="sheetBg"></div>
@@ -660,7 +659,7 @@
       <path d="M130 590V430A65 65 0 0 1 260 430V590" fill="none" stroke="${L}" stroke-width="1.5"/>
       <path d="M150 590V455A45 45 0 0 1 240 455V590M150 500H240M195 455V590" fill="none" stroke="${L}" stroke-width="1.5"/>`;
     // halo + horloge
-    s += `<circle cx="195" cy="350" r="180" fill="url(#glow)"/>` + clockSVG(195, 352, 84, true);
+    s += `<circle cx="195" cy="250" r="190" fill="url(#glow)"/>` + clockSVG(195, 255, 100, true);
     // arbre
     s += `<g><path d="M58 580 C60 540 70 520 80 500 M76 545 C90 530 100 520 112 512 M70 560 C60 540 48 530 40 524" stroke="#3d3a33" stroke-width="5" fill="none" stroke-linecap="round"/>
       <path d="M14 470c10-22 40-30 60-18 16-14 46-10 56 8 18 0 30 14 22 28-6 12-26 12-34 8-10 12-34 12-44 2-14 10-40 6-46-8-14-2-20-12-14-20z" fill="#727a3e"/>
@@ -676,7 +675,6 @@
     $("scene").innerHTML = s;
   }
   scene();
-  $("bannerTop").innerHTML = bannerAccueil(390, 196, { x: 40, y: 64, w: 310, h: 86 });
   document.querySelectorAll("[data-clock]").forEach(el => el.innerHTML = DEFS + clockSVG(60, 60, 52, false));
   setHands(); setInterval(setHands, 15000);
 
