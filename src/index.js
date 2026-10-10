@@ -68,7 +68,9 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, cible TEXT, cible_id INTEGER, texte TEXT, auteur TEXT, cree TEXT)`);
     for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0", "photo TEXT",
       // chiffrement de bout en bout du courrier : clé publique, clé privée verrouillée par le code de liaison
-      "cle_pub TEXT", "cle_privee TEXT", "liaison_hash TEXT"]) {
+      "cle_pub TEXT", "cle_privee TEXT", "liaison_hash TEXT",
+      // validation des inscriptions par l'administrateur (les comptes déjà là restent validés)
+      "statut TEXT DEFAULT 'valide'", "motif TEXT", "decide TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -160,8 +162,8 @@ export class Compteur extends DurableObject {
       return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, admin: true, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() } };
     }
     const code = codeProvisoire();
-    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash, photo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash, photo, statut)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'attente')`,
       n, nom, prenom, qualite, parent, email, crypto.randomUUID(), new Date().toISOString(), await hacher(code), photoValide(fiche.photo));
     // le code provisoire n'est donné qu'une fois, ici ; il sert à la première connexion
     return { numero: numero(n), email, code, nom, prenom, qualite, parent, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() };
@@ -212,7 +214,8 @@ export class Compteur extends DurableObject {
 
   public(m) {
     return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email,
-      admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo };
+      admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo,
+      statut: m.statut || "valide", motif: m.motif || null };
   }
 
   // réservé aux anciens connectés (ou à l'administrateur avant son laissez-passer)
@@ -224,7 +227,7 @@ export class Compteur extends DurableObject {
   async membres(token) {
     await this.verifierAcces(token);
     const fr = new Intl.Collator("fr", { sensitivity: "base" });
-    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo, cle_pub FROM membres")
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo, cle_pub FROM membres WHERE statut IS NULL OR statut = 'valide'")
       .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin, a_photo: !!m.a_photo }))
       .sort((a, b) => fr.compare(a.nom, b.nom) || fr.compare(a.prenom, b.prenom));
   }
@@ -236,19 +239,45 @@ export class Compteur extends DurableObject {
   }
 
   async changerPhoto(token, photo) {
-    const moi = this.moi(token), ok = photoValide(photo);
+    const moi = this.moi(token, { tous: true }), ok = photoValide(photo);
     if (!ok) throw new Refus("Photo invalide ou trop lourde");
     this.sql.exec("UPDATE membres SET photo = ? WHERE email = ?", ok, moi.email);
     return { ok: true };
   }
 
-  moi(token) {
-    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo FROM membres WHERE token = ?", token).toArray()[0];
+  // tous: true → aussi les comptes en attente ou refusés (pour leur statut, leur photo)
+  moi(token, { tous = false } = {}) {
+    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo, statut, motif FROM membres WHERE token = ?", token).toArray()[0];
     if (!m) {
       if (String(token).startsWith("adm-")) throw new Refus("Fais d'abord ton laissez-passer au poste de police", 403);
       throw new Refus("Laissez-passer inconnu", 401);
     }
+    if (!tous && (m.statut || "valide") !== "valide") throw new Refus("Compte en attente de validation", 403);
     return this.public(m);
+  }
+
+  /* ----- Validation des inscriptions par l'administrateur ----- */
+  statut(token) { return this.moi(token, { tous: true }); }
+  async demandes(token) {
+    await this.exigerAdmin(token);
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, photo IS NOT NULL AS a_photo FROM membres WHERE statut = 'attente' AND mdp_hash IS NOT NULL ORDER BY numero")
+      .toArray().map(m => ({ ...m, numero: numero(m.numero), a_photo: !!m.a_photo }));
+  }
+  async decider(token, num, x) {
+    await this.exigerAdmin(token);
+    const m = this.sql.exec("SELECT numero, statut FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    if (!m) throw new Refus("Membre introuvable", 404);
+    if (x.decision === "valider") this.sql.exec("UPDATE membres SET statut = 'valide', motif = NULL, decide = ? WHERE numero = ?", new Date().toISOString(), m.numero);
+    else if (x.decision === "refuser") this.sql.exec("UPDATE membres SET statut = 'refuse', motif = ?, decide = ? WHERE numero = ?", texte(x.motif, 1000) || null, new Date().toISOString(), m.numero);
+    else throw new Refus("Décision inconnue");
+    return { ok: true };
+  }
+  // demande refusée : le demandeur peut effacer sa demande pour en refaire une
+  async abandonner(token) {
+    const moi = this.moi(token, { tous: true });
+    if (moi.statut !== "refuse") throw new Refus("Seule une demande refusée peut être retirée");
+    this.sql.exec("DELETE FROM membres WHERE email = ?", moi.email);
+    return { ok: true };
   }
 
   async boite(token) {
@@ -512,6 +541,10 @@ export default {
       else if (route === "PUT /api/cles/code") r = await registre.changerCode(token, await corps());
       else if (route === "POST /api/signalements") r = await registre.signaler(token, await corps());
       else if (route === "GET /api/signalements") r = await registre.signalements(token);
+      else if (route === "GET /api/statut") r = await registre.statut(token);
+      else if (route === "GET /api/demandes") r = await registre.demandes(token);
+      else if (request.method === "POST" && /^\/api\/demandes\/\d+$/.test(url.pathname)) r = await registre.decider(token, url.pathname.split("/")[3], await corps());
+      else if (route === "POST /api/moi/abandon") r = await registre.abandonner(token);
       else if (request.method === "POST" && /^\/api\/signalements\/\d+$/.test(url.pathname)) r = await registre.majSignalement(token, url.pathname.split("/")[3], await corps());
       else if (route === "GET /api/membres") r = await registre.membres(token);
       else if (route === "GET /api/bibliotheque") r = await registre.bibliotheque(token);
@@ -537,6 +570,7 @@ export default {
       const m = e.message || "";
       const status = e.status || (/Laissez-passer inconnu|incorrect|Session expirée/.test(m) ? 401
         : /existent déjà/.test(m) ? 409
+        : /en attente de validation/.test(m) ? 403
         : /Trop d'essais/.test(m) ? 429 : /réservé|Réservé|Fais d'abord/.test(m) ? 403 : /introuvable/.test(m) ? 404
         : /pas encore configurée/.test(m) ? 503 : 400);
       return Response.json({ erreur: e.message || "Erreur" }, { status });

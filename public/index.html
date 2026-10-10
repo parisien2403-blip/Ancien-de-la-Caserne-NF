@@ -513,6 +513,47 @@
   .signal.traite { opacity: .6; }
   .signal .appareil { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .signal .act { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  /* inscription : le poste de police seul, sans onglets */
+  .retour-accueil { display: none; margin: 0 0 6px; padding: 0; }
+  .app.inscription .tabbar, .app.inscription #me, .app.inscription #vueBtn { display: none !important; }
+  .app.inscription .retour-accueil { display: inline-block; }
+  .app.inscription .scroll { padding-bottom: 32px; }
+  @media (min-width: 960px) { .app.inscription .inside { grid-template-columns: minmax(0, 1fr); } .app.inscription .scroll { grid-column: 1 / -1; } }
+  /* écran d'attente */
+  .attente { height: 100%; overflow-y: auto; background: var(--cream); }
+  .att-plaque { display: block; width: 100%; max-height: 150px; object-fit: cover; object-position: 50% 60%; box-shadow: 0 4px 10px rgba(60,30,15,.25); }
+  .att-corps { max-width: 560px; margin: 0 auto; padding: 20px 20px 40px; }
+  .att-garde { border-radius: 18px; overflow: hidden; box-shadow: 0 6px 18px rgba(60,30,15,.2); }
+  .att-garde img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; object-position: 50% 70%; }
+  .att-carte { margin-top: 16px; }
+  .att-carte h2 { margin: 4px 0 8px; font-size: 24px; }
+  .att-carte p { margin: 0 0 14px; line-height: 1.55; white-space: pre-line; }
+  .att-actions { display: flex; flex-direction: column; gap: 10px; }
+  .att-actions .btn { width: 100%; }
+  .att-motif { background: #fff4f2; border-left: 3px solid #b3261e; padding: 10px 12px; border-radius: 8px; margin: 0 0 14px; font-style: italic; }
+  .sablier { display: inline-block; animation: tourne 2.4s ease-in-out infinite; }
+  @keyframes tourne { 50% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
+  /* validations (administrateur) */
+  .demande .haut { display: flex; gap: 12px; align-items: center; }
+  .demande .ph { width: 64px; height: 82px; flex: none; border-radius: 8px; background: #cfc8bb center/cover; display: grid; place-items: center; font: 700 22px "Lato", sans-serif; color: #8d8270; }
+  .demande .act { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .demande textarea { min-height: 70px; margin-top: 10px; }
+  .pin-etat { margin-left: auto; margin-right: 8px; font-size: 13px; color: var(--muted); }
+  /* écran verrouillé */
+  .verrou { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: linear-gradient(180deg, #2b2340, #1f2a37); color: #f6eedf; padding: 24px; }
+  .verrou[hidden] { display: none; }
+  .v-av { width: 84px; height: 84px; border-radius: 50%; background: var(--terra-soft) center/cover; display: grid; place-items: center; font: 700 28px "Lato", sans-serif; color: var(--terra-dark); border: 3px solid #f6d465; }
+  .v-nom { font: 22px "Marcellus", serif; }
+  .v-aide { margin: 0; opacity: .85; }
+  .v-points { display: flex; gap: 16px; margin: 6px 0 10px; }
+  .v-points i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #f6d465; }
+  .v-points i.on { background: #f6d465; }
+  .v-points.faux { animation: secoue .4s; }
+  @keyframes secoue { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .v-clavier { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
+  .v-clavier button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 26px "Lato", sans-serif; cursor: pointer; }
+  .v-clavier button:active { background: rgba(255,255,255,.3); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -535,6 +576,21 @@
       <div class="install" id="install" hidden></div>
     </div>
 
+  </section>
+
+  <!-- ====== EN ATTENTE DE VALIDATION ====== -->
+  <section class="screen attente" id="attente" hidden>
+    <img class="att-plaque" src="images/plaque.jpg" alt="Caserne de la Nouvelle France">
+    <div class="att-corps">
+      <div class="att-garde"><img src="images/garde.jpg" alt="Le chef de poste"></div>
+      <div class="bubble" id="attBulle"></div>
+      <div class="card att-carte">
+        <div class="kicker" id="attKicker">Demande de laissez-passer</div>
+        <h2 id="attTitre"></h2>
+        <p id="attTexte"></p>
+        <div class="att-actions" id="attActions"></div>
+      </div>
+    </div>
   </section>
 
   <section class="screen inside" id="inside" hidden>
@@ -600,6 +656,7 @@
       </div>
 
       <div class="tab" data-tab="poste" hidden>
+        <button class="link retour-accueil" type="button" id="retourAccueil">← Retour à l'accueil</button>
         <h1 class="hello">Poste de police</h1>
         <p class="hello-sub">Présentez-vous au chef de poste pour obtenir votre laissez-passer</p>
 
@@ -760,7 +817,7 @@
           <div class="adresse"><svg class="ico" style="width:22px;height:22px;flex:none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
             <div>Mon adresse : <b id="vMail"></b></div></div>
           <div class="seg" id="vSeg">
-            <button class="on" data-v="recus">Reçus</button><button data-v="envoyes">Envoyés</button><button data-v="ecrire">✎ Écrire</button><button data-v="signal" id="vSigBtn" hidden>🛠️ Signalements</button>
+            <button class="on" data-v="recus">Reçus</button><button data-v="envoyes">Envoyés</button><button data-v="ecrire">✎ Écrire</button><button data-v="valid" id="vValBtn" hidden>✅ Validations</button><button data-v="signal" id="vSigBtn" hidden>🛠️ Signalements</button>
           </div>
           <div id="vListe"></div>
           <form class="card" id="vForm" hidden>
@@ -808,6 +865,7 @@
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
+    <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
     <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
     <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
@@ -822,6 +880,30 @@
       <div class="f-actions"><button class="btn small" id="fLire">Lire</button><button class="btn small alt" id="fPlusTard">Plus tard</button></div>
     </div>
     </div>
+  </div>
+  <form class="sheet" id="pinForm">
+    <div class="grab"></div>
+    <h2>🔢 Code de déverrouillage</h2>
+    <p class="sub" id="pinSub">Si tu le souhaites, choisis un code à 4 chiffres : il sera demandé pour ouvrir l'appli sur cet appareil.</p>
+    <div class="row2">
+      <label class="field">Code (4 chiffres)<input id="pin1" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required></label>
+      <label class="field">Confirmer<input id="pin2" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" required></label>
+    </div>
+    <p class="erreur" id="pinErreur" hidden></p>
+    <button class="btn" style="width:100%">Enregistrer mon code</button>
+    <button class="link" type="button" id="pinPlusTard" style="display:block;margin:12px auto 0">Plus tard</button>
+    <button class="link" type="button" id="pinRetirer" style="display:block;margin:8px auto 0;color:#b3261e" hidden>Retirer le code</button>
+  </form>
+  <div class="verrou" id="verrou" hidden>
+    <div class="v-av" id="vrAv"></div>
+    <div class="v-nom" id="vrNom"></div>
+    <p class="v-aide" id="vrAide">Entre ton code à 4 chiffres</p>
+    <div class="v-points" id="vrPoints"><i></i><i></i><i></i><i></i></div>
+    <div class="v-clavier" id="vrClavier">
+      <button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button>
+      <button>7</button><button>8</button><button>9</button><span></span><button>0</button><button data-eff aria-label="Effacer">⌫</button>
+    </div>
+    <button class="link" id="vrOubli" style="color:#f6eedf">Code oublié ? Se reconnecter avec le mot de passe</button>
   </div>
   <form class="sheet" id="probleme">
     <div class="grab"></div>
@@ -1182,10 +1264,11 @@
 
   /* ===== Connexion ===== */
   // « Entrer » : déjà connecté sur cet appareil → directement dans la caserne ; sinon, connexion
-  $("enter").onclick = () => moi ? entrer("accueil") : ouvrirConnexion();
+  $("enter").onclick = () => !moi ? ouvrirConnexion() : estValide() ? entrer("accueil") : afficherAttente();
   $("sheetBg").onclick = () => fermerConnexion();
   // « Pas encore inscrit ? » : on entre directement au poste de police pour faire sa demande
-  $("signup").onclick = () => { $("splash").hidden = true; $("inside").hidden = false; go("poste"); };
+  $("signup").onclick = () => { modeInscription(true); $("splash").hidden = true; $("inside").hidden = false; go("poste"); };
+  $("retourAccueil").onclick = () => { $("inside").hidden = true; $("splash").hidden = false; };
 
 
   /* ===== Navigation ===== */
@@ -1333,7 +1416,7 @@
   const garderCles = k => ecrire("caserne-cles-" + moi.email, k);
   let aRelier = false;   // le compte a des clés, mais pas cet appareil
   async function assurerCles() {
-    if (!enLigne || !moi || !moi.email || !window.crypto?.subtle) return false;
+    if (!enLigne || !moi || !moi.email || !estValide() || !window.crypto?.subtle) return false;
     if (mesCles()) { aRelier = false; return true; }
     const srv = await api("GET", "/api/cles");
     if (srv.cle_pub) { aRelier = true; return false; }
@@ -1376,6 +1459,9 @@
     }
     return b;
   }
+
+  const estValide = () => !!moi && (moi.statut || "valide") === "valide";
+  const modeInscription = on => $("app").classList.toggle("inscription", !!on);
 
   const registre = {
     inscrire: f => enLigne ? api("POST", "/api/inscription", f) : demo.inscrire(f),
@@ -1514,13 +1600,15 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
-    fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab);
+    modeInscription(!moi);
+    fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
     if (versoEnAttente) { versoEnAttente = false; setTimeout(annonceVerso, 700); }
   }
   function connecte(r) {
     moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
+    if (!estValide()) { $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = ""; afficherAttente(); return; }
     setTimeout(() => assurerCles().catch(() => {}), 300);
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
@@ -1595,14 +1683,17 @@
     const a = $("mNouveau").value, b = $("mConfirme").value;
     if (a.length < 8) { $("mErreur").textContent = "8 caractères minimum."; $("mErreur").hidden = false; return; }
     if (a !== b) { $("mErreur").textContent = "Les deux mots de passe ne sont pas identiques."; $("mErreur").hidden = false; return; }
-    try { connecte(await registre.motDePasse({ setup, motdepasse: a })); }
-    catch (err) { $("mErreur").textContent = err.message; $("mErreur").hidden = false; }
+    let r;
+    try { r = await registre.motDePasse({ setup, motdepasse: a }); }
+    catch (err) { $("mErreur").textContent = err.message; $("mErreur").hidden = false; return; }
+    proposerPin(r.moi.email, () => connecte(r));
   };
   $("loginBtn").onclick = ouvrirConnexion;
   document.querySelectorAll("[data-login]").forEach(b => b.onclick = ouvrirConnexion);
   document.querySelectorAll("[data-inscription]").forEach(b => b.onclick = () => entrer("poste"));
   $("me").onclick = () => moi ? ouvrirReglages() : ouvrirConnexion();
   function ouvrirReglages() {
+    $("rPinEtat").textContent = pinDe() ? "activé" : "désactivé";
     const url = photoUrl(moi);
     $("rPhoto").style.backgroundImage = url ? `url(${url})` : "";
     $("rPhoto").textContent = url ? "" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase();
@@ -2125,10 +2216,11 @@
     $("vRelier").hidden = !aRelier;
     document.querySelector('#vSeg [data-v="recus"]').textContent = nonLus ? `Reçus (${nonLus})` : "Reçus";
     document.querySelectorAll("#vSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === vue));
-    $("vSigBtn").hidden = !moi.admin;
+    $("vSigBtn").hidden = !moi.admin; $("vValBtn").hidden = !moi.admin;
     $("vForm").hidden = vue !== "ecrire"; $("vListe").hidden = vue === "ecrire";
     if (vue === "ecrire") return;
     if (vue === "signal") { afficherSignalements(); return; }
+    if (vue === "valid") { afficherDemandes(); return; }
     const liste = boite[vue];
     $("vListe").innerHTML = liste.length ? liste.map(l => `<div class="list-item letter ${vue === "recus" && !l.lu ? "unread" : ""}" data-id="${l.id}">
         <div class="av">${esc(initiales(membres.find(x => x.email === (vue === "recus" ? l.de : l.a)) || { prenom: "?", nom: "" }))}</div>
@@ -2188,8 +2280,46 @@
       ouvrirEcrire(b.dataset.sigRepondre, `Ton signalement : ${x.categorie}`);
     });
   }
+  // --- validations des inscriptions (administrateur seulement)
+  let demandesVues = null;
+  async function afficherDemandes() {
+    $("vListe").innerHTML = `<p style="color:var(--muted)">Le chef de poste apporte les demandes…</p>`;
+    let l;
+    try { l = await api("GET", "/api/demandes"); } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Demandes injoignables</b>${esc(e.message)}</div>`; return; }
+    $("vValBtn").textContent = l.length ? `✅ Validations (${l.length})` : "✅ Validations";
+    $("vListe").innerHTML = l.length ? l.map(m => {
+      const u = m.a_photo ? `/api/photo/${m.numero}?v=${photoV}&t=${encodeURIComponent(moi.token)}` : null;
+      return `<div class="card demande" data-num="${esc(m.numero)}">
+        <div class="haut"><div class="ph" ${u ? `style="background-image:url('${u}')"` : ""}>${u ? "" : esc(initiales(m))}</div>
+          <div style="flex:1;min-width:0"><b style="font-size:17px;color:var(--navy)">${esc(m.prenom)} ${esc(m.nom)}</b>
+            <div class="s" style="font-size:14px">${esc(qualiteTxt(m))}</div>
+            <div class="s" style="font-size:12px;color:var(--muted)">Laissez-passer n° ${esc(m.numero)} · demandé le ${quandCourt(m.cree)}</div></div></div>
+        <div class="act"><button class="btn small" data-valider="${esc(m.numero)}">✓ Valider</button>
+          <button class="btn small danger" data-refuser="${esc(m.numero)}">✗ Refuser</button>
+          <button class="btn small alt" data-voir="${esc(m.numero)}">Voir la carte</button></div>
+        <div class="refus" hidden><textarea placeholder="Message pour ${esc(m.prenom)} (facultatif) : pourquoi la demande est refusée…" maxlength="1000"></textarea>
+          <button class="btn small danger" data-confirmer-refus="${esc(m.numero)}" style="margin-top:8px">Confirmer le refus</button></div>
+      </div>`; }).join("")
+      : `<div class="card empty"><b>Aucune demande en attente</b>Le poste de police est calme.</div>`;
+    const decider = async (num, decision, motif) => { await api("POST", `/api/demandes/${num}`, { decision, motif }); membres = []; afficherDemandes(); };
+    document.querySelectorAll("[data-valider]").forEach(b => b.onclick = () => decider(b.dataset.valider, "valider").catch(e => alert(e.message)));
+    document.querySelectorAll("[data-refuser]").forEach(b => b.onclick = () => { const z = b.closest(".demande").querySelector(".refus"); z.hidden = !z.hidden; z.querySelector("textarea").focus(); });
+    document.querySelectorAll("[data-confirmer-refus]").forEach(b => b.onclick = () => decider(b.dataset.confirmerRefus, "refuser", b.closest(".refus").querySelector("textarea").value.trim()).catch(e => alert(e.message)));
+    document.querySelectorAll("[data-voir]").forEach(b => b.onclick = () => { const m = l.find(x => x.numero === b.dataset.voir); voirCarte(m); });
+  }
+  async function compterDemandes() {
+    if (!moi || !moi.admin || !enLigne) return;
+    try {
+      const l = await api("GET", "/api/demandes");
+      $("vValBtn").textContent = l.length ? `✅ Validations (${l.length})` : "✅ Validations";
+      const nums = new Set(l.map(x => x.numero));
+      if (demandesVues) l.filter(x => !demandesVues.has(x.numero)).forEach(x => notifier("Nouvelle demande de laissez-passer", `${x.prenom} ${x.nom} attend ta validation.`));
+      demandesVues = nums;
+    } catch (e) {}
+  }
   // nombre de signalements non lus sur le bouton (administrateur)
   async function compterSignalements() {
+    compterDemandes();
     if (!moi || !moi.admin || !enLigne) return;
     try { const l = await api("GET", "/api/signalements"); const nb = l.filter(x => !x.lu).length; $("vSigBtn").textContent = nb ? `🛠️ Signalements (${nb})` : "🛠️ Signalements"; } catch (e) {}
   }
@@ -2243,7 +2373,7 @@
   }
   $("fPlusTard").onclick = () => $("facteur").hidden = true;
   async function verifierCourrier() {
-    if (!moi || !moi.email) return;
+    if (!moi || !moi.email || !estValide()) return;
     try {
       await assurerCles().catch(() => {});
       const b = await registre.boite();
@@ -2276,6 +2406,144 @@
 
   // après un changement de vue, on revient directement là où on était
   try { const t = sessionStorage.getItem("caserne-retour"); if (t && moi) { sessionStorage.removeItem("caserne-retour"); entrer(t); } } catch (e) {}
+
+  /* ===== Écran d'attente : la demande attend la validation de l'administrateur ===== */
+  let attenteMinuteur = null;
+  function afficherAttente() {
+    fermerConnexion();
+    $("splash").hidden = true; $("inside").hidden = true; $("attente").hidden = false;
+    const p = esc(moi.prenom), st = moi.statut || "attente", A = $("attActions");
+    if (st === "refuse") {
+      $("attBulle").innerHTML = `<b>Désolé ${p}…</b> L'administrateur n'a pas pu valider ta demande.`;
+      $("attKicker").textContent = "Demande refusée";
+      $("attTitre").textContent = "Ta demande n'a pas été acceptée";
+      $("attTexte").innerHTML = (moi.motif ? `<div class="att-motif">« ${esc(moi.motif)} »<br>— l'administrateur</div>` : "")
+        + "Tu peux refaire une demande en corrigeant tes informations au poste de police.";
+      A.innerHTML = `<button class="btn" id="attRefaire">Refaire une demande</button><button class="btn alt" id="attQuitter">Retour à l'accueil</button>`;
+      $("attRefaire").onclick = async () => {
+        try { await api("POST", "/api/moi/abandon"); } catch (e) {}
+        ["caserne-moi", "caserne-fiche"].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+        location.reload();
+      };
+    } else if (st === "valide") {
+      $("attBulle").innerHTML = `<b>Bienvenue à la caserne, ${p} !</b> L'administrateur a validé ton laissez-passer. Tu peux circuler.`;
+      $("attKicker").textContent = "Demande acceptée";
+      $("attTitre").textContent = "Ton laissez-passer est validé 🎉";
+      $("attTexte").textContent = "Les portes de la caserne te sont ouvertes : retrouve les anciens, partage tes photos et tes souvenirs.";
+      A.innerHTML = `<button class="btn" id="attEntrer">Entrer dans la caserne</button>`;
+      $("attEntrer").onclick = () => { clearInterval(attenteMinuteur); entrer("accueil"); setTimeout(() => assurerCles().catch(() => {}), 300); setTimeout(verifierCourrier, 800); };
+    } else {
+      $("attBulle").innerHTML = `<b>Repos, ${p}.</b> Ta demande est bien enregistrée. Elle attend le tampon de l'administrateur : je te préviens dès que c'est en règle.`;
+      $("attKicker").textContent = "Demande de laissez-passer";
+      $("attTitre").innerHTML = `<span class="sablier">⏳</span> En attente de validation`;
+      $("attTexte").textContent = `Laissez-passer n° ${moi.numero} au nom de ${moi.prenom} ${moi.nom}.\nL'administrateur va vérifier que tu es bien un ancien de la caserne. Tu peux fermer l'appli : tu seras prévenu.`;
+      A.innerHTML = `<button class="btn" id="attVerifier">Vérifier maintenant</button>
+        ${notifActives() ? "" : `<button class="btn alt" id="attNotif">🔔 Me prévenir par notification</button>`}
+        <button class="link" id="attQuitter">Retour à l'accueil</button>`;
+      $("attVerifier").onclick = () => verifierStatut(true);
+      if ($("attNotif")) $("attNotif").onclick = async () => {
+        if (!("Notification" in window)) { alert("Ce navigateur ne permet pas les notifications. Sur iPhone, installe d'abord l'appli sur l'écran d'accueil."); return; }
+        if (await Notification.requestPermission() === "granted") { ecrire("caserne-notif", true); $("attNotif").remove(); notifier("Caserne Nouvelle-France", "C'est noté : tu seras prévenu dès que ta demande est validée."); }
+      };
+    }
+    if ($("attQuitter")) $("attQuitter").onclick = () => { $("attente").hidden = true; $("splash").hidden = false; };
+    clearInterval(attenteMinuteur);
+    if (st === "attente") attenteMinuteur = setInterval(() => verifierStatut(false), 30000);
+  }
+  async function verifierStatut(manuel) {
+    if (!moi || !enLigne) return;
+    let r;
+    try { r = await api("GET", "/api/statut"); }
+    catch (e) {
+      if (/inconnu/.test(e.message)) { try { localStorage.removeItem("caserne-moi"); } catch (x) {} location.reload(); }
+      return;
+    }
+    const avant = moi.statut;
+    moi = { ...moi, ...r }; ecrire("caserne-moi", moi);
+    if (avant !== moi.statut) {
+      if (moi.statut === "valide") notifier("Laissez-passer validé !", `Bienvenue à la caserne, ${moi.prenom} !`);
+      if (moi.statut === "refuse") notifier("Demande de laissez-passer", "L'administrateur a répondu à ta demande.");
+      if (!$("attente").hidden || moi.statut !== "valide") afficherAttente();
+    } else if (manuel) {
+      $("attBulle").innerHTML = `<b>Toujours rien, ${esc(moi.prenom)}.</b> L'administrateur n'a pas encore tamponné ta demande. Patience !`;
+    }
+  }
+
+  /* ===== Code de déverrouillage à 4 chiffres (sur cet appareil) ===== */
+  const clePin = email => "caserne-pin-" + email;
+  const pinDe = () => moi && moi.email ? lire(clePin(moi.email), null) : null;
+  async function hachePin(pin, sel) {
+    const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("caserne-nf|pin|" + sel + "|" + pin));
+    return [...new Uint8Array(h)].map(v => v.toString(16).padStart(2, "0")).join("");
+  }
+  let pinSuite = null, pinEmail = null;
+  function proposerPin(email, suite) {
+    pinEmail = email; pinSuite = suite;
+    $("pinForm").reset(); $("pinErreur").hidden = true;
+    $("pinSub").textContent = "Si tu le souhaites, choisis un code à 4 chiffres : il sera demandé pour ouvrir l'appli sur cet appareil. Tu pourras le changer dans les réglages.";
+    $("pinPlusTard").hidden = false; $("pinRetirer").hidden = true;
+    ["sheet", "reglages"].forEach(id => $(id).classList.remove("open"));
+    $("pinForm").classList.add("open"); $("sheetBg").classList.add("open");
+    setTimeout(() => $("pin1").focus(), 350);
+  }
+  function finPin() { $("pinForm").classList.remove("open"); $("sheetBg").classList.remove("open"); const f = pinSuite; pinSuite = null; if (f) f(); }
+  $("pinForm").onsubmit = async e => {
+    e.preventDefault(); $("pinErreur").hidden = true;
+    const a = $("pin1").value, b = $("pin2").value;
+    if (!/^\d{4}$/.test(a)) { $("pinErreur").textContent = "Le code doit faire 4 chiffres."; $("pinErreur").hidden = false; return; }
+    if (a !== b) { $("pinErreur").textContent = "Les deux codes ne sont pas identiques."; $("pinErreur").hidden = false; return; }
+    const sel = crypto.getRandomValues(new Uint32Array(2)).join("-");
+    ecrire(clePin(pinEmail), { sel, h: await hachePin(a, sel) });
+    finPin();
+  };
+  $("pinPlusTard").onclick = finPin;
+  $("pinRetirer").onclick = () => { try { localStorage.removeItem(clePin(pinEmail)); } catch (e) {} finPin(); };
+  $("rPin").onclick = () => {
+    pinEmail = moi.email; pinSuite = null;
+    $("pinForm").reset(); $("pinErreur").hidden = true;
+    $("pinSub").textContent = pinDe() ? "Choisis un nouveau code à 4 chiffres, ou retire-le." : "Choisis un code à 4 chiffres : il sera demandé pour ouvrir l'appli sur cet appareil.";
+    $("pinPlusTard").hidden = true; $("pinRetirer").hidden = !pinDe();
+    $("reglages").classList.remove("open"); $("pinForm").classList.add("open"); $("sheetBg").classList.add("open");
+  };
+  // écran verrouillé
+  let saisie = "", essaisPin = 0;
+  function verrouiller() {
+    if (!pinDe() || !$("verrou").hidden) return;
+    saisie = ""; majPoints(); $("vrAide").textContent = "Entre ton code à 4 chiffres";
+    const u = photoUrl(moi);
+    $("vrAv").style.backgroundImage = u ? `url(${u})` : ""; $("vrAv").textContent = u ? "" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase();
+    $("vrNom").textContent = `${moi.prenom} ${moi.nom}`;
+    $("verrou").hidden = false;
+  }
+  const majPoints = () => document.querySelectorAll("#vrPoints i").forEach((i, k) => i.classList.toggle("on", k < saisie.length));
+  async function touche(c) {
+    if (c === "⌫") saisie = saisie.slice(0, -1); else if (saisie.length < 4) saisie += c;
+    majPoints();
+    if (saisie.length < 4) return;
+    const p = pinDe();
+    if (p && await hachePin(saisie, p.sel) === p.h) { essaisPin = 0; $("verrou").hidden = true; return; }
+    essaisPin++; saisie = ""; majPoints();
+    $("vrPoints").classList.remove("faux"); void $("vrPoints").offsetWidth; $("vrPoints").classList.add("faux");
+    if (essaisPin >= 5) {
+      try { localStorage.removeItem(clePin(moi.email)); localStorage.removeItem("caserne-moi"); } catch (e) {}
+      alert("5 codes faux : par sécurité, reconnecte-toi avec ton mot de passe."); location.reload(); return;
+    }
+    $("vrAide").textContent = `Code incorrect (encore ${5 - essaisPin} essai${5 - essaisPin > 1 ? "s" : ""})`;
+  }
+  $("vrClavier").onclick = e => { const b = e.target.closest("button"); if (b) touche(b.dataset.eff !== undefined ? "⌫" : b.textContent); };
+  addEventListener("keydown", e => { if ($("verrou").hidden) return; if (/^\d$/.test(e.key)) touche(e.key); else if (e.key === "Backspace") touche("⌫"); });
+  $("vrOubli").onclick = () => { try { localStorage.removeItem(clePin(moi.email)); localStorage.removeItem("caserne-moi"); } catch (e) {} location.reload(); };
+  // reverrouille après 1 minute en arrière-plan
+  let cacheDepuis = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cacheDepuis = Date.now();
+    else if (cacheDepuis && Date.now() - cacheDepuis > 60000) verrouiller();
+  });
+
+  // au démarrage : code de déverrouillage, puis où en est la demande
+  if (moi && moi.email) verrouiller();
+  if (moi && moi.token && enLigne) verifierStatut(false).then(() => { if (moi && !estValide()) afficherAttente(); });
+  else if (moi && !estValide()) afficherAttente();
 
   /* ===== Appli installable : Android, iPhone / iPad, PC ===== */
   if ("serviceWorker" in navigator && enLigne) navigator.serviceWorker.register("/sw.js").catch(() => {});
