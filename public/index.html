@@ -509,6 +509,11 @@
   .lp-verso .aide { font: 16px/1.5 Arial, sans-serif; }
   .lp-verso .secret { position: absolute; left: 80px; right: 70px; bottom: 56px; font: italic 15px Georgia, serif; text-align: center; }
   .cv-retourner { border: 0; border-radius: 99px; padding: 8px 14px; font: 700 13px "Lato", sans-serif; background: #f6d465; color: #3b2a12; cursor: pointer; }
+  /* boîte des signalements (administrateur) */
+  .signal .cat { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--terra-soft); color: var(--terra-dark); margin-right: 6px; }
+  .signal.traite { opacity: .6; }
+  .signal .appareil { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .signal .act { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -756,7 +761,7 @@
           <div class="adresse"><svg class="ico" style="width:22px;height:22px;flex:none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
             <div>Mon adresse : <b id="vMail"></b></div></div>
           <div class="seg" id="vSeg">
-            <button class="on" data-v="recus">Reçus</button><button data-v="envoyes">Envoyés</button><button data-v="ecrire">✎ Écrire</button>
+            <button class="on" data-v="recus">Reçus</button><button data-v="envoyes">Envoyés</button><button data-v="ecrire">✎ Écrire</button><button data-v="signal" id="vSigBtn" hidden>🛠️ Signalements</button>
           </div>
           <div id="vListe"></div>
           <form class="card" id="vForm" hidden>
@@ -804,6 +809,8 @@
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
+    <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
+    <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
     <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
   </div>
   <div class="facteur" id="facteur" hidden>
@@ -817,6 +824,21 @@
     </div>
     </div>
   </div>
+  <form class="sheet" id="probleme">
+    <div class="grab"></div>
+    <h2>🛠️ Un problème ?</h2>
+    <p class="sub">Dis-nous ce qui ne va pas : ton message part directement chez l'administrateur, dans une boîte que lui seul peut ouvrir.</p>
+    <label class="field">C'est à propos de…
+      <select id="pCat">
+        <option>Connexion</option><option>Laissez-passer</option><option>Courrier</option>
+        <option>Photos et publications</option><option>Affichage</option><option selected>Autre</option>
+      </select>
+    </label>
+    <label class="field">Ce qui se passe<textarea id="pTexte" maxlength="4000" required placeholder="Ex. : quand je touche « Lire », rien ne s'ouvre…"></textarea></label>
+    <p class="info-notif">Pour aider à comprendre, le type d'appareil (téléphone ou PC, navigateur) est joint automatiquement.</p>
+    <p class="erreur" id="pErreur" hidden></p>
+    <button class="btn" style="width:100%">Envoyer à l'administrateur</button>
+  </form>
   <div class="sheet confid" id="confid">
     <div class="grab"></div>
     <h2>🛡️ Protection de tes données</h2>
@@ -1493,7 +1515,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab);
     if (versoEnAttente) { versoEnAttente = false; setTimeout(annonceVerso, 700); }
@@ -1592,6 +1614,31 @@
     $("rNotifInfo").textContent = notifActives() ? "Tu es prévenu quand le vaguemestre t'apporte du courrier." : "";
     $("reglages").classList.add("open"); $("sheetBg").classList.add("open");
   }
+  // --- signaler un problème
+  $("rProbleme").onclick = () => { $("reglages").classList.remove("open"); $("pErreur").hidden = true; $("probleme").classList.add("open"); $("sheetBg").classList.add("open"); setTimeout(() => $("pTexte").focus(), 350); };
+  $("probleme").onsubmit = async e => {
+    e.preventDefault(); $("pErreur").hidden = true;
+    const btn = $("probleme").querySelector("button"); btn.disabled = true;
+    const appareil = `${/Mobi|Android/i.test(navigator.userAgent) ? "Téléphone" : "Ordinateur"} · ${innerWidth}×${innerHeight} · ${navigator.userAgent.slice(0, 200)}`;
+    try {
+      await api("POST", "/api/signalements", { categorie: $("pCat").value, texte: $("pTexte").value.trim(), appareil });
+      $("pTexte").value = ""; fermerConnexion();
+      alert("Merci ! Ton message est bien parti chez l'administrateur.");
+    } catch (err) { $("pErreur").textContent = err.message; $("pErreur").hidden = false; }
+    btn.disabled = false;
+  };
+  // --- changer son code de liaison
+  $("rCode").onclick = async () => {
+    const k = mesCles();
+    if (!k) { alert("Relie d'abord cet appareil à ton courrier chiffré (onglet Vaguemestre)."); return; }
+    if (!confirm("Créer un NOUVEAU code de liaison ?\n\nL'ancien code et l'ancien QR du verso ne marcheront plus. Tes autres appareils déjà reliés continuent de fonctionner.")) return;
+    try {
+      const code = CR.nouveauCode();
+      await api("PUT", "/api/cles/code", { cle_privee: await CR.verrouiller(k.prive, code), preuve: await CR.preuve(code) });
+      garderCles({ ...k, code }); fermerConnexion(); annonceVerso();
+      $("cvInfo").querySelector("p").innerHTML = "🔗 Voici ton <b>nouveau</b> code de liaison. L'ancien ne fonctionne plus : note celui-ci.";
+    } catch (err) { alert("Code non changé : " + err.message); }
+  };
   $("rConfid").onclick = () => { $("reglages").classList.remove("open"); $("confid").scrollTop = 0; $("confid").classList.add("open"); $("sheetBg").classList.add("open"); };
   $("confidOk").onclick = () => fermerConnexion();
   $("rLogout").onclick = () => {
@@ -2051,7 +2098,7 @@
     try {
       if (!membres.length) membres = await registre.membres();
       await assurerCles().catch(() => {});
-      boite = await dechiffrerBoite(await registre.boite()); guetterCourrier(boite);
+      boite = await dechiffrerBoite(await registre.boite()); guetterCourrier(boite); compterSignalements();
     } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Vaguemestre injoignable</b>${esc(e.message)}</div>`; return; }
     afficherBoite();
   }
@@ -2064,8 +2111,10 @@
     $("vRelier").hidden = !aRelier;
     document.querySelector('#vSeg [data-v="recus"]').textContent = nonLus ? `Reçus (${nonLus})` : "Reçus";
     document.querySelectorAll("#vSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === vue));
+    $("vSigBtn").hidden = !moi.admin;
     $("vForm").hidden = vue !== "ecrire"; $("vListe").hidden = vue === "ecrire";
     if (vue === "ecrire") return;
+    if (vue === "signal") { afficherSignalements(); return; }
     const liste = boite[vue];
     $("vListe").innerHTML = liste.length ? liste.map(l => `<div class="list-item letter ${vue === "recus" && !l.lu ? "unread" : ""}" data-id="${l.id}">
         <div class="av">${esc(initiales(membres.find(x => x.email === (vue === "recus" ? l.de : l.a)) || { prenom: "?", nom: "" }))}</div>
@@ -2100,6 +2149,36 @@
     if (moi && (CR.norm(v.nom) !== CR.norm(moi.nom) || CR.norm(v.prenom) !== CR.norm(moi.prenom))) { alert("Ce QR code est celui d'un autre ancien."); return; }
     $("rlCode").value = CR.joli(v.code); $("vRelier").requestSubmit();
   });
+  // --- boîte des signalements (administrateur seulement)
+  let signalements = [];
+  async function afficherSignalements() {
+    $("vListe").innerHTML = `<p style="color:var(--muted)">Le vaguemestre apporte les signalements…</p>`;
+    try { signalements = await api("GET", "/api/signalements"); } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Signalements injoignables</b>${esc(e.message)}</div>`; return; }
+    const nb = signalements.filter(x => !x.lu).length;
+    $("vSigBtn").textContent = nb ? `🛠️ Signalements (${nb})` : "🛠️ Signalements";
+    $("vListe").innerHTML = signalements.length ? signalements.map(x => `<div class="card signal ${x.traite ? "traite" : ""}">
+        <div class="who" style="display:flex;gap:10px;align-items:center"><div class="av">${esc(x.de.ini)}</div>
+          <div style="flex:1;min-width:0"><b>${esc(x.de.nom)}</b>${x.de.numero ? ` · n° ${esc(x.de.numero)}` : ""}<div class="s" style="font-size:12px;color:var(--muted);display:block">${quand(x.cree)}</div></div>
+          ${x.lu ? "" : '<span class="badge">Nouveau</span>'}</div>
+        <p style="margin:10px 0 0;white-space:pre-line"><span class="cat">${esc(x.categorie)}</span>${esc(x.texte)}</p>
+        <div class="appareil">📱 ${esc(x.appareil || "appareil inconnu")}</div>
+        <div class="act">
+          <button class="btn small" data-sig-repondre="${esc(x.auteur)}" data-sig-id="${x.id}">Répondre par le vaguemestre</button>
+          <button class="btn small alt" data-sig-traite="${x.id}" data-val="${x.traite ? 0 : 1}">${x.traite ? "Rouvrir" : "✓ Réglé"}</button>
+        </div></div>`).join("")
+      : `<div class="card empty"><b>Aucun signalement</b>Tout roule à la caserne !</div>`;
+    signalements.filter(x => !x.lu).forEach(x => api("POST", `/api/signalements/${x.id}`, { lu: true }).catch(() => {}));
+    document.querySelectorAll("[data-sig-traite]").forEach(b => b.onclick = async () => { await api("POST", `/api/signalements/${b.dataset.sigTraite}`, { traite: b.dataset.val === "1" }); afficherSignalements(); });
+    document.querySelectorAll("[data-sig-repondre]").forEach(b => b.onclick = () => {
+      const x = signalements.find(s => s.id === +b.dataset.sigId);
+      ouvrirEcrire(b.dataset.sigRepondre, `Ton signalement : ${x.categorie}`);
+    });
+  }
+  // nombre de signalements non lus sur le bouton (administrateur)
+  async function compterSignalements() {
+    if (!moi || !moi.admin || !enLigne) return;
+    try { const l = await api("GET", "/api/signalements"); const nb = l.filter(x => !x.lu).length; $("vSigBtn").textContent = nb ? `🛠️ Signalements (${nb})` : "🛠️ Signalements"; } catch (e) {}
+  }
   $("vSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.v === "ecrire") ouvrirEcrire(""); else { vue = b.dataset.v; ouvert = null; afficherBoite(); } };
   $("vForm").onsubmit = async e => {
@@ -2155,7 +2234,7 @@
       await assurerCles().catch(() => {});
       const b = await registre.boite();
       if (!membres.length) membres = await registre.membres();
-      await dechiffrerBoite(b); guetterCourrier(b); boite = b;
+      await dechiffrerBoite(b); guetterCourrier(b); boite = b; compterSignalements();
       if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite();
       else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; }
     } catch (e) {}

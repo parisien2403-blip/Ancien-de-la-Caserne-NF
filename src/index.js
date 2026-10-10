@@ -59,6 +59,8 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, theme TEXT, annee TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS anecdotes (
       id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, texte TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS signalements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, auteur TEXT, categorie TEXT, texte TEXT, appareil TEXT, cree TEXT, lu INTEGER DEFAULT 0, traite INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS publications (
       id INTEGER PRIMARY KEY AUTOINCREMENT, texte TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS aimes (publication INTEGER, auteur TEXT, PRIMARY KEY (publication, auteur))`);
@@ -293,6 +295,37 @@ export class Compteur extends DurableObject {
       x.cle_pub, JSON.stringify(x.cle_privee), await hacher(x.preuve), moi.email);
     return { ok: true };
   }
+  // changer son code de liaison : la même clé privée, reverrouillée avec le nouveau code
+  async changerCode(token, x) {
+    const moi = this.moi(token);
+    const ok = x.cle_privee && typeof x.cle_privee.ct === "string" && typeof x.preuve === "string" && /^[0-9a-f]{64}$/.test(x.preuve);
+    if (!ok) throw new Refus("Code invalide");
+    if (!this.sql.exec("SELECT 1 FROM membres WHERE email = ? AND cle_pub IS NOT NULL", moi.email).toArray().length) throw new Refus("Pas encore de clés sur ce compte");
+    this.sql.exec("UPDATE membres SET cle_privee = ?, liaison_hash = ? WHERE email = ?", JSON.stringify(x.cle_privee), await hacher(x.preuve), moi.email);
+    return { ok: true };
+  }
+
+  /* ----- Signalements : « un problème ? » → boîte que seul l'administrateur voit ----- */
+  async signaler(token, x) {
+    const moi = this.moi(token);
+    const CATS = ["Connexion", "Laissez-passer", "Courrier", "Photos et publications", "Affichage", "Autre"];
+    const t = texte(x.texte, 4000); if (!t) throw new Refus("Décris ton problème");
+    this.sql.exec("INSERT INTO signalements (auteur, categorie, texte, appareil, cree) VALUES (?, ?, ?, ?, ?)",
+      moi.email, CATS.includes(x.categorie) ? x.categorie : "Autre", t, texte(x.appareil, 300), new Date().toISOString());
+    return { ok: true };
+  }
+  async signalements(token) {
+    await this.exigerAdmin(token);
+    const qui = this.auteurs();
+    return this.sql.exec("SELECT * FROM signalements ORDER BY traite, id DESC LIMIT 300").toArray().map(x => ({ ...x, de: qui(x.auteur) }));
+  }
+  async majSignalement(token, id, x) {
+    await this.exigerAdmin(token);
+    if (x.lu) this.sql.exec("UPDATE signalements SET lu = 1 WHERE id = ?", Number(id));
+    if (x.traite !== undefined) this.sql.exec("UPDATE signalements SET traite = ?, lu = 1 WHERE id = ?", x.traite ? 1 : 0, Number(id));
+    return { ok: true };
+  }
+
   // connexion d'un deuxième écran avec le code du verso (prénom + nom + preuve du code)
   async liaison({ prenom, nom, preuve }) {
     const p = slug(prenom), n = slug(nom), maintenant = new Date();
@@ -476,6 +509,10 @@ export default {
       else if (route === "POST /api/liaison") r = await registre.liaison(await corps());
       else if (route === "GET /api/cles") r = await registre.mesCles(token);
       else if (route === "POST /api/cles") r = await registre.enregistrerCles(token, await corps());
+      else if (route === "PUT /api/cles/code") r = await registre.changerCode(token, await corps());
+      else if (route === "POST /api/signalements") r = await registre.signaler(token, await corps());
+      else if (route === "GET /api/signalements") r = await registre.signalements(token);
+      else if (request.method === "POST" && /^\/api\/signalements\/\d+$/.test(url.pathname)) r = await registre.majSignalement(token, url.pathname.split("/")[3], await corps());
       else if (route === "GET /api/membres") r = await registre.membres(token);
       else if (route === "GET /api/bibliotheque") r = await registre.bibliotheque(token);
       else if (route === "POST /api/bibliotheque") r = await registre.deposerPhoto(token, await corps());
