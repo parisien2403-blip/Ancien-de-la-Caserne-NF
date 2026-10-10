@@ -478,8 +478,40 @@
   .confid p, .confid li { font-size: 15px; line-height: 1.55; color: var(--text); margin: 0 0 8px; }
   .confid ul { padding-left: 20px; margin: 0; }
   @media (min-width: 960px) { .sheet.confid { width: 620px; max-height: 86vh; } }
+  /* connexion par code de liaison */
+  .onglets-cx { margin: 0 0 14px; }
+  .onglets-cx button { flex: 1; }
+  .relier p { font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
+  .relier h3 { margin: 0 0 6px; }
+  .relier-ligne { display: flex; gap: 8px; }
+  .relier-ligne input, #kCode { flex: 1; min-width: 0; font: 700 16px "Courier Prime", monospace; letter-spacing: .08em; text-transform: uppercase; }
+  .relier-ligne input { padding: 12px; border-radius: 12px; border: 1.5px solid var(--line); }
+  .cadenas { font-size: 12px; margin-left: 4px; }
+  .letter .non-lisible { font-style: italic; color: var(--muted); }
+  /* scanner de QR code */
+  .scanner { position: fixed; inset: 0; z-index: 2000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; text-align: center; padding: 20px; }
+  .scanner[hidden] { display: none; }
+  .scanner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .scanner .scan-cadre { position: relative; width: min(64vw, 280px); aspect-ratio: 1; border: 3px solid #fff; border-radius: 18px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.45); }
+  .scanner p, .scanner button { position: relative; }
+  /* verso du laissez-passer */
+  .lp-verso { position: relative; width: 960px; height: 660px; overflow: hidden; color: #2a2622;
+    background: radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.35), transparent 50%), radial-gradient(ellipse at 15% 90%, rgba(120,90,40,.25), transparent 55%), linear-gradient(180deg, #efe3c4, #d9c79c); }
+  .lp-verso .cadre { position: absolute; inset: 28px 40px 40px; border: 2px solid #3b342c; }
+  .lp-verso .vt { position: absolute; top: 48px; left: 0; right: 0; text-align: center; font: 25px Arial, sans-serif; letter-spacing: .14em; }
+  .lp-verso .vs { position: absolute; top: 86px; left: 0; right: 0; text-align: center; font: 900 26px "Arial Black", Arial, sans-serif; letter-spacing: .12em; }
+  .lp-verso .qr { position: absolute; left: 80px; top: 160px; width: 360px; height: 360px; background: #fff; padding: 18px; border: 2px solid #3b342c; }
+  .lp-verso .qr svg { width: 100%; height: 100%; display: block; }
+  .lp-verso .infos { position: absolute; left: 480px; right: 70px; top: 170px; }
+  .lp-verso .lbl { font: italic 20px Georgia, serif; }
+  .lp-verso .nom { font: 700 26px "Courier Prime", monospace; margin: 4px 0 26px; border-bottom: 2px dotted #666; padding-bottom: 6px; }
+  .lp-verso .code { font: 700 33px "Courier Prime", monospace; letter-spacing: .02em; white-space: nowrap; margin: 6px 0 26px; line-height: 1.3; }
+  .lp-verso .aide { font: 16px/1.5 Arial, sans-serif; }
+  .lp-verso .secret { position: absolute; left: 80px; right: 70px; bottom: 56px; font: italic 15px Georgia, serif; text-align: center; }
+  .cv-retourner { border: 0; border-radius: 99px; padding: 8px 14px; font: 700 13px "Lato", sans-serif; background: #f6d465; color: #3b2a12; cursor: pointer; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="lib/qrcode.js"></script>
 </head>
 <body>
 <div class="app" id="app">
@@ -712,6 +744,15 @@
           <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn small" data-login>Me connecter</button><button class="btn alt small" data-go="poste">Aller au poste de police</button></div>
         </div>
         <div id="vBox" hidden>
+          <form class="card relier" id="vRelier" hidden>
+            <h3>🔒 Relie cet appareil pour lire ton courrier</h3>
+            <p>Ton courrier est chiffré de bout en bout. Pour l'ouvrir sur cet écran, entre le <b>code de liaison</b>
+              inscrit au dos de ton laissez-passer (ou scanne son QR code).</p>
+            <div class="relier-ligne"><input id="rlCode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+              <button class="btn small" type="submit">Relier</button></div>
+            <button class="link" type="button" id="rlScan" style="margin:10px 0 0">📷 Scanner le QR code</button>
+            <p class="erreur" id="rlErreur" hidden style="margin-top:8px"></p>
+          </form>
           <div class="adresse"><svg class="ico" style="width:22px;height:22px;flex:none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
             <div>Mon adresse : <b id="vMail"></b></div></div>
           <div class="seg" id="vSeg">
@@ -797,8 +838,15 @@
     <ul>
       <li>Rien n'est public : il faut être <b>un ancien connecté</b> pour voir les membres, les photos, les anecdotes et les publications.</li>
       <li>Ton <b>courrier</b> n'apparaît que chez toi et chez la personne à qui tu écris. Les notifications n'affichent que le nom de l'expéditeur, jamais le message.</li>
-      <li>Les messages ne sont pas chiffrés « de bout en bout » comme sur WhatsApp : l'hébergeur et l'administrateur du compte pourraient techniquement y accéder. Ils ne le font pas, mais garde pour les messageries dédiées ce qui est vraiment confidentiel (codes, papiers…).</li>
+      <li>Le <b>courrier du Vaguemestre est chiffré de bout en bout</b>, comme sur WhatsApp : il est verrouillé sur ton appareil et seul ton destinataire peut l'ouvrir. Le serveur ne garde qu'un contenu illisible, que ni l'hébergeur ni l'administrateur ne peuvent lire (un 🔒 l'indique).</li>
+      <li>Les photos, anecdotes et publications, faites pour être vues par tous les anciens, ne sont pas chiffrées de bout en bout.</li>
     </ul>
+
+    <h3>🔗 Le verso de ta carte</h3>
+    <p>Au dos de ton laissez-passer se trouvent un <b>QR code</b> et un <b>code de liaison</b>. Ils servent à ouvrir la caserne,
+      et ton courrier chiffré, sur un autre écran (PC, tablette, nouveau téléphone). Ce code n'est connu que de toi :
+      le serveur ne le possède pas. <b>Garde-le précieusement et ne le communique à personne</b> : si tu le perds en même temps
+      que ton téléphone, ton ancien courrier ne pourra plus être ouvert.</p>
 
     <h3>🔑 Ton mot de passe</h3>
     <p>Ton mot de passe et ton code provisoire sont <b>chiffrés de façon irréversible</b> : personne ne peut les lire,
@@ -810,6 +858,12 @@
 
     <button class="btn" id="confidOk" style="width:100%;margin-top:6px">J'ai compris</button>
   </div>
+  <div class="scanner" id="scanner" hidden>
+    <video id="scanVideo" playsinline muted></video>
+    <div class="scan-cadre"></div>
+    <p>Place le QR code du verso de ta carte dans le cadre</p>
+    <button class="btn alt small" id="scanFermer">Annuler</button>
+  </div>
   <div class="carte-vue" id="carteVue" hidden>
     <div class="cv-box">
       <button class="cv-close" id="cvClose" aria-label="Fermer">×</button>
@@ -819,6 +873,7 @@
   </div>
   <div class="sheet" id="sheet">
     <div class="grab"></div>
+    <div class="seg onglets-cx" id="cxOnglets"><button class="on" type="button" data-cx="mdp">Mot de passe</button><button type="button" data-cx="liaison">🔗 Code de liaison</button></div>
     <form id="loginForm">
       <h2>Présentez votre laissez-passer</h2>
       <p class="sub">Connectez-vous avec votre prénom, votre nom et votre mot de passe.<br>Première fois ? Utilisez le <b>code provisoire à 6 chiffres</b> reçu au poste de police.</p>
@@ -830,6 +885,19 @@
       <p class="erreur" id="lErreur" hidden></p>
       <button class="btn" type="submit">Entrer dans la caserne</button>
       <button class="link" type="button" data-inscription>Pas encore de laissez-passer ? Passer au poste de police</button>
+    </form>
+    <form id="liaisonForm" hidden>
+      <h2>Ouvrir sur un autre écran</h2>
+      <p class="sub">Tu as déjà ton laissez-passer sur un autre appareil ? Scanne le <b>QR code au dos de ta carte</b>,
+        ou recopie ton <b>prénom, ton nom et le code</b> qui y sont inscrits. Ton courrier chiffré s'ouvrira aussi ici.</p>
+      <button class="btn alt" type="button" id="lScan" style="width:100%;margin-bottom:14px">📷 Scanner le QR code du verso</button>
+      <div class="row2">
+        <label class="field">Prénom<input id="kPrenom" autocomplete="given-name" required></label>
+        <label class="field">Nom<input id="kNom" autocomplete="family-name" required></label>
+      </div>
+      <label class="field">Code de liaison<input id="kCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>
+      <p class="erreur" id="kErreur" hidden></p>
+      <button class="btn" type="submit">Entrer dans la caserne</button>
     </form>
     <form id="mdpForm" hidden>
       <h2>Créez votre mot de passe</h2>
@@ -1190,10 +1258,109 @@
   let photoV = Date.now();
   const photoUrl = m => !m ? null : m.photo ? m.photo : m.a_photo && enLigne && moi ? `/api/photo/${m.numero}?v=${photoV}&t=${encodeURIComponent(moi.token)}` : null;
 
+  /* ===== Courrier chiffré de bout en bout =====
+     Chaque ancien a une paire de clés (ECDH P-256) créée sur son appareil. La clé privée ne part jamais en clair :
+     le serveur n'en garde qu'une copie verrouillée par le CODE DE LIAISON (verso de la carte), qu'il ne connaît pas.
+     Un message est chiffré (AES-GCM) avec une clé commune à l'expéditeur et au destinataire : eux seuls peuvent le lire. */
+  const CR = (() => {
+    const te = new TextEncoder(), td = new TextDecoder(), sub = crypto.subtle;
+    const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+    const deB64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+    const ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    const norm = code => String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const joli = code => norm(code).match(/.{1,4}/g)?.join("-") || "";
+    const nouveauCode = () => joli(Array.from(crypto.getRandomValues(new Uint8Array(16)), v => ALPHA[v % ALPHA.length]).join(""));
+    const hex = buf => [...new Uint8Array(buf)].map(v => v.toString(16).padStart(2, "0")).join("");
+    const preuve = async code => hex(await sub.digest("SHA-256", te.encode("caserne-nf|liaison|" + norm(code))));
+    async function cleVerrou(code, sel) {
+      const base = await sub.importKey("raw", te.encode("caserne-nf|verrou|" + norm(code)), "PBKDF2", false, ["deriveKey"]);
+      return sub.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: sel, iterations: 200000 }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    }
+    async function verrouiller(jwkPrive, code) {
+      const sel = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await sub.encrypt({ name: "AES-GCM", iv }, await cleVerrou(code, sel), te.encode(JSON.stringify(jwkPrive)));
+      return { sel: b64(sel), iv: b64(iv), ct: b64(ct) };
+    }
+    async function deverrouiller(v, code) {
+      const clair = await sub.decrypt({ name: "AES-GCM", iv: deB64(v.iv) }, await cleVerrou(code, deB64(v.sel)), deB64(v.ct));
+      return JSON.parse(td.decode(clair));
+    }
+    const pubDe = jwk => JSON.stringify({ kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y });
+    async function paire() {
+      const k = await sub.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
+      const prive = await sub.exportKey("jwk", k.privateKey);
+      return { prive, pub: pubDe(prive) };
+    }
+    async function cleCommune(jwkPrive, pubTexte) {
+      const priv = await sub.importKey("jwk", jwkPrive, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveKey"]);
+      const pub = await sub.importKey("jwk", JSON.parse(pubTexte), { name: "ECDH", namedCurve: "P-256" }, false, []);
+      return sub.deriveKey({ name: "ECDH", public: pub }, priv, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    }
+    async function chiffrer(jwkPrive, pubAutre, objet) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await sub.encrypt({ name: "AES-GCM", iv }, await cleCommune(jwkPrive, pubAutre), te.encode(JSON.stringify(objet)));
+      return { iv: b64(iv), ct: b64(ct) };
+    }
+    async function dechiffrer(jwkPrive, pubAutre, c) {
+      const clair = await sub.decrypt({ name: "AES-GCM", iv: deB64(c.iv) }, await cleCommune(jwkPrive, pubAutre), deB64(c.ct));
+      return JSON.parse(td.decode(clair));
+    }
+    return { norm, joli, nouveauCode, preuve, verrouiller, deverrouiller, paire, pubDe, chiffrer, dechiffrer };
+  })();
+  // clés du membre connecté, gardées sur CET appareil : { prive, pub, code }
+  const mesCles = () => moi && moi.email ? lire("caserne-cles-" + moi.email, null) : null;
+  const garderCles = k => ecrire("caserne-cles-" + moi.email, k);
+  let aRelier = false;   // le compte a des clés, mais pas cet appareil
+  async function assurerCles() {
+    if (!enLigne || !moi || !moi.email || !window.crypto?.subtle) return false;
+    if (mesCles()) { aRelier = false; return true; }
+    const srv = await api("GET", "/api/cles");
+    if (srv.cle_pub) { aRelier = true; return false; }
+    // première fois : on crée les clés et le code de liaison du verso
+    const code = CR.nouveauCode(), p = await CR.paire();
+    await api("POST", "/api/cles", { cle_pub: p.pub, cle_privee: await CR.verrouiller(p.prive, code), preuve: await CR.preuve(code) });
+    garderCles({ prive: p.prive, pub: p.pub, code });
+    aRelier = false; membres = [];
+    setTimeout(() => annonceVerso(), 600);
+    return true;
+  }
+  async function relierAvecCode(code) {
+    const srv = await api("GET", "/api/cles");
+    let prive;
+    try { prive = await CR.deverrouiller(srv.cle_privee, code); } catch (e) { throw new Error("Code de liaison incorrect"); }
+    garderCles({ prive, pub: srv.cle_pub, code: CR.joli(code) });
+    aRelier = false;
+  }
+  let versoEnAttente = false;
+  function annonceVerso() {
+    if (!moi || !moi.numero) return;
+    if ($("inside").hidden) { versoEnAttente = true; return; }
+    voirCarte(moi, true);
+    $("cvInfo").insertAdjacentHTML("afterbegin", `<p style="width:100%;margin:0 0 6px;color:#f6d465;font-weight:700">🔒 Ton courrier est maintenant chiffré de bout en bout.
+      Voici le verso de ta carte : garde ce code pour ouvrir la caserne sur un autre écran.</p>`);
+  }
+  // déchiffre les lettres reçues et envoyées (sur place)
+  async function dechiffrerBoite(b) {
+    const k = mesCles();
+    for (const l of [...b.recus, ...b.envoyes]) {
+      if (!l.chiffre || l.lisible) continue;
+      const c = typeof l.chiffre === "string" ? JSON.parse(l.chiffre) : l.chiffre;
+      if (!k) { l.sujet = "🔒 Message chiffré"; l.texte = ""; l.illisible = true; continue; }
+      try {
+        // la clé commune se calcule avec la clé publique de l'autre personne
+        const autre = l.de === moi.email ? (membres.find(m => m.email === l.a) || {}).cle_pub : c.cle;
+        const o = await CR.dechiffrer(k.prive, autre, c);
+        l.sujet = o.sujet || "(sans objet)"; l.texte = o.texte; l.lisible = true; l.illisible = false;
+      } catch (e) { l.sujet = "🔒 Message illisible sur cet appareil"; l.texte = ""; l.illisible = true; }
+    }
+    return b;
+  }
+
   const registre = {
     inscrire: f => enLigne ? api("POST", "/api/inscription", f) : demo.inscrire(f),
     connexion: x => enLigne ? api("POST", "/api/connexion", x) : demo.connexion(x),
     motDePasse: x => enLigne ? api("POST", "/api/mot-de-passe", x) : demo.motDePasse(x),
+    liaison: x => api("POST", "/api/liaison", x),
     membres: () => enLigne ? api("GET", "/api/membres") : demo.membres(),
     boite: () => enLigne ? api("GET", "/api/boite") : demo.boite(),
     envoyer: l => enLigne ? api("POST", "/api/messages", l) : demo.envoyer(l),
@@ -1242,6 +1409,7 @@
       if (r.token) {   // administrateur : déjà connecté, laissez-passer et adresse créés d'office
         moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
         afficherTamponne(moi);
+        setTimeout(() => assurerCles().catch(() => {}), 1500);
         $("bubble").innerHTML = `<b>Salut fiston !</b> Laissez-passer n° ${NUM} tamponné. Ton adresse de la caserne : <b>${esc(moi.email)}</b>.`;
         return;
       }
@@ -1312,22 +1480,82 @@
 
   /* ===== Connexion ===== */
   let setup = null;
+  function ongletConnexion(quoi) {
+    document.querySelectorAll("#cxOnglets button").forEach(b => b.classList.toggle("on", b.dataset.cx === quoi));
+    $("loginForm").hidden = quoi !== "mdp"; $("liaisonForm").hidden = quoi !== "liaison"; $("mdpForm").hidden = true;
+    $("cxOnglets").hidden = false;
+  }
+  $("cxOnglets").onclick = e => { const b = e.target.closest("button"); if (b) ongletConnexion(b.dataset.cx); };
   function ouvrirConnexion() {
-    $("loginForm").hidden = false; $("mdpForm").hidden = true; $("lErreur").hidden = true;
+    ongletConnexion("mdp"); $("lErreur").hidden = true; $("kErreur").hidden = true;
     const f = moi || fiche;
     if (f) { $("lPrenom").value = f.prenom; $("lNom").value = f.nom; }
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
   function fermerConnexion() { ["sheet", "reglages", "confid"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
-  function entrer(tab = "poste") { fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab); }
+  function entrer(tab = "poste") {
+    fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab);
+    if (versoEnAttente) { versoEnAttente = false; setTimeout(annonceVerso, 700); }
+  }
   function connecte(r) {
     moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
+    setTimeout(() => assurerCles().catch(() => {}), 300);
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
     etatPoste(); entrer(moi && moi.numero ? "accueil" : "poste");
     setTimeout(verifierCourrier, 800);
   }
+  // connexion d'un deuxième écran avec le code du verso
+  async function connexionLiaison(prenom, nom, code) {
+    $("kErreur").hidden = true;
+    const btn = $("liaisonForm").querySelector('[type="submit"]'); btn.disabled = true;
+    try {
+      const r = await registre.liaison({ prenom, nom, preuve: await CR.preuve(code) });
+      const prive = await CR.deverrouiller(r.cle_privee, code);
+      moi = { ...r.moi, token: r.token };
+      garderCles({ prive, pub: CR.pubDe(prive), code: CR.joli(code) });
+      $("kCode").value = "";
+      connecte(r);
+    } catch (err) { $("kErreur").textContent = err.message; $("kErreur").hidden = false; }
+    btn.disabled = false;
+  }
+  $("liaisonForm").onsubmit = e => { e.preventDefault(); connexionLiaison($("kPrenom").value.trim(), $("kNom").value.trim(), $("kCode").value); };
+  // QR du verso : « CNF1|prénom|nom|code »
+  const lireQR = t => { const p = String(t).split("|"); return p[0] === "CNF1" && p.length === 4 ? { prenom: p[1], nom: p[2], code: p[3] } : null; };
+  $("lScan").onclick = () => scanner(v => { $("kPrenom").value = v.prenom; $("kNom").value = v.nom; $("kCode").value = CR.joli(v.code); connexionLiaison(v.prenom, v.nom, v.code); });
+
+  /* ----- scanner de QR code (caméra) ----- */
+  let scanFlux = null, scanActif = false;
+  async function scanner(quandLu) {
+    if (!navigator.mediaDevices?.getUserMedia) { alert("La caméra n'est pas disponible ici : recopie le code à la main."); return; }
+    try { scanFlux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); }
+    catch (e) { alert("Accès à la caméra refusé : recopie le code à la main."); return; }
+    const v = $("scanVideo"); v.srcObject = scanFlux; await v.play().catch(() => {});
+    $("scanner").hidden = false; scanActif = true;
+    let detecteur = null;
+    if ("BarcodeDetector" in window) { try { detecteur = new BarcodeDetector({ formats: ["qr_code"] }); } catch (e) {} }
+    if (!detecteur && !window.jsQR) await new Promise(ok => { const sc = document.createElement("script"); sc.src = "lib/jsQR.js"; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); });
+    const c = document.createElement("canvas"), cx = c.getContext("2d", { willReadFrequently: true });
+    const tour = async () => {
+      if (!scanActif) return;
+      let texte = null;
+      try {
+        if (detecteur) { const r = await detecteur.detect(v); if (r[0]) texte = r[0].rawValue; }
+        else if (window.jsQR && v.videoWidth) {
+          c.width = v.videoWidth; c.height = v.videoHeight; cx.drawImage(v, 0, 0);
+          const r = jsQR(cx.getImageData(0, 0, c.width, c.height).data, c.width, c.height); if (r) texte = r.data;
+        }
+      } catch (e) {}
+      const lu = texte && lireQR(texte);
+      if (lu) { arreterScan(); quandLu(lu); return; }
+      requestAnimationFrame(tour);
+    };
+    tour();
+  }
+  function arreterScan() { scanActif = false; $("scanner").hidden = true; if (scanFlux) scanFlux.getTracks().forEach(t => t.stop()); scanFlux = null; }
+  $("scanFermer").onclick = arreterScan;
+
   $("loginForm").onsubmit = async e => {
     e.preventDefault(); $("lErreur").hidden = true;
     const btn = $("loginForm").querySelector('[type="submit"]'); btn.disabled = true;
@@ -1336,7 +1564,7 @@
       if (r.etape === "mot-de-passe") {
         setup = r.setup;
         $("mdpSub").innerHTML = `Bienvenue ${esc(r.prenom)} ! Ton code provisoire est validé. Choisis maintenant <b>ton</b> mot de passe : c'est lui qui te servira à chaque connexion.`;
-        $("loginForm").hidden = true; $("mdpForm").hidden = false; setTimeout(() => $("mNouveau").focus(), 50);
+        $("loginForm").hidden = true; $("cxOnglets").hidden = true; $("mdpForm").hidden = false; setTimeout(() => $("mNouveau").focus(), 50);
       } else connecte(r);
     } catch (err) { $("lErreur").textContent = err.message; $("lErreur").hidden = false; }
     btn.disabled = false;
@@ -1734,7 +1962,27 @@
   }
 
   /* ===== Carte (laissez-passer) d'un membre ===== */
-  function voirCarte(m) {
+  function versoHTML(m, code) {
+    const qr = qrcode(0, "M"); qr.addData(`CNF1|${m.prenom}|${m.nom}|${CR.norm(code)}`); qr.make();
+    return `<div class="lp-verso"><div class="cadre"></div>
+      <div class="vt">GARDE RÉPUBLICAINE</div><div class="vs">LAISSEZ-PASSER N° ${esc(m.numero)} — VERSO</div>
+      <div class="qr">${qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true })}</div>
+      <div class="infos"><div class="lbl">Titulaire</div><div class="nom">${esc(m.nom)}, ${esc(m.prenom)}</div>
+        <div class="lbl">Code de liaison</div><div class="code">${esc(CR.joli(code))}</div>
+        <div class="aide">Pour ouvrir la caserne sur un autre écran (PC, tablette, nouveau téléphone) :
+          <b>Entrer → 🔗 Code de liaison</b>, puis scanne ce QR code ou recopie ton prénom, ton nom et ce code.</div></div>
+      <div class="secret">Ce code ouvre ton compte et ton courrier chiffré : ne le communique à personne.</div></div>`;
+  }
+  function voirCarte(m, verso = false) {
+    const k = moi && m.email === moi.email ? mesCles() : null;
+    if (verso && k) {
+      $("cvScaler").innerHTML = versoHTML(m, k.code);
+      $("cvInfo").innerHTML = `<div class="who"><b>Verso de ta carte</b><small>Code de liaison et QR code</small></div>
+        <button class="cv-retourner" id="cvRetourner">↻ Recto</button><button class="cv-plein" id="cvPlein">⛶ Plein écran</button>`;
+      $("cvRetourner").onclick = () => voirCarte(m, false); $("cvPlein").onclick = pleinEcran;
+      $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
+      return;
+    }
     const carte = $("lpCard").cloneNode(true);
     carte.removeAttribute("id"); carte.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     carte.classList.add("stamped");
@@ -1749,9 +1997,11 @@
     $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
     const peutEcrire = moi && moi.email && m.email !== moi.email;
     $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${esc(m.email)}</small></div>
+      ${k ? `<button class="cv-retourner" id="cvRetourner">↻ Verso</button>` : ""}
       <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
       ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
     $("cvPlein").onclick = pleinEcran;
+    if (k) $("cvRetourner").onclick = () => voirCarte(m, true);
     if (peutEcrire) $("cvEcrire").onclick = () => { $("carteVue").hidden = true; go("vague"); ouvrirEcrire(m.email); };
     $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
   }
@@ -1800,7 +2050,8 @@
     $("vMail").textContent = moi.email;
     try {
       if (!membres.length) membres = await registre.membres();
-      boite = await registre.boite(); guetterCourrier(boite);
+      await assurerCles().catch(() => {});
+      boite = await dechiffrerBoite(await registre.boite()); guetterCourrier(boite);
     } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Vaguemestre injoignable</b>${esc(e.message)}</div>`; return; }
     afficherBoite();
   }
@@ -1810,6 +2061,7 @@
       ? `<b>Du courrier pour toi, ${esc(moi.prenom)} !</b> ${nonLus === 1 ? "Une lettre t'attend" : `${nonLus} lettres t'attendent`} dans ton casier.`
       : `<b>Rien pour toi aujourd'hui, ${esc(moi.prenom)}.</b> Mais tu peux écrire aux anciens, je m'occupe de la distribution !`;
     $("vDot").hidden = !nonLus; $("vDot").textContent = nonLus;
+    $("vRelier").hidden = !aRelier;
     document.querySelector('#vSeg [data-v="recus"]').textContent = nonLus ? `Reçus (${nonLus})` : "Reçus";
     document.querySelectorAll("#vSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === vue));
     $("vForm").hidden = vue !== "ecrire"; $("vListe").hidden = vue === "ecrire";
@@ -1817,8 +2069,8 @@
     const liste = boite[vue];
     $("vListe").innerHTML = liste.length ? liste.map(l => `<div class="list-item letter ${vue === "recus" && !l.lu ? "unread" : ""}" data-id="${l.id}">
         <div class="av">${esc(initiales(membres.find(x => x.email === (vue === "recus" ? l.de : l.a)) || { prenom: "?", nom: "" }))}</div>
-        <div style="flex:1;min-width:0"><div class="t">${esc(vue === "recus" ? nomDe(l.de) : "À " + nomDe(l.a))}</div><div class="s">${esc(l.sujet)}</div>
-        ${ouvert === l.id ? `<div class="corps">${esc(l.texte)}</div>${vue === "recus" ? `<button class="btn small" style="margin-top:10px" data-repondre="${esc(l.de)}" data-sujet="${esc(l.sujet)}">Répondre</button>` : ""}` : ""}</div>
+        <div style="flex:1;min-width:0"><div class="t">${esc(vue === "recus" ? nomDe(l.de) : "À " + nomDe(l.a))}${l.chiffre ? '<span class="cadenas" title="Chiffré de bout en bout">🔒</span>' : ""}</div><div class="s ${l.illisible ? "non-lisible" : ""}">${esc(l.sujet)}</div>
+        ${ouvert === l.id && !l.illisible ? `<div class="corps">${esc(l.texte)}</div>${vue === "recus" ? `<button class="btn small" style="margin-top:10px" data-repondre="${esc(l.de)}" data-sujet="${esc(l.sujet)}">Répondre</button>` : ""}` : ""}</div>
         <div class="date">${quand(l.envoye)}</div></div>`).join("")
       : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
          <b>${vue === "recus" ? "Pas de courrier pour le moment" : "Aucun courrier envoyé"}</b>${vue === "recus" ? "Le vaguemestre passe régulièrement…" : "Écrivez à un ancien depuis l'onglet Membres ou « Écrire »."}</div>`;
@@ -1839,13 +2091,34 @@
     $("vSujet").value = sujet;
     afficherBoite();
   }
+  $("vRelier").onsubmit = async e => {
+    e.preventDefault(); $("rlErreur").hidden = true;
+    try { await relierAvecCode($("rlCode").value); $("rlCode").value = ""; boite = await dechiffrerBoite(await registre.boite()); afficherBoite(); }
+    catch (err) { $("rlErreur").textContent = err.message; $("rlErreur").hidden = false; }
+  };
+  $("rlScan").onclick = () => scanner(async v => {
+    if (moi && (CR.norm(v.nom) !== CR.norm(moi.nom) || CR.norm(v.prenom) !== CR.norm(moi.prenom))) { alert("Ce QR code est celui d'un autre ancien."); return; }
+    $("rlCode").value = CR.joli(v.code); $("vRelier").requestSubmit();
+  });
   $("vSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.v === "ecrire") ouvrirEcrire(""); else { vue = b.dataset.v; ouvert = null; afficherBoite(); } };
   $("vForm").onsubmit = async e => {
     e.preventDefault();
     const btn = $("vForm").querySelector("button"); btn.disabled = true;
     try {
-      await registre.envoyer({ a: $("vA").value, sujet: $("vSujet").value.trim(), texte: $("vTexte").value.trim() });
+      const a = $("vA").value, sujet = $("vSujet").value.trim(), texte = $("vTexte").value.trim();
+      if (!texte) throw new Error("le message est vide");
+      const k = mesCles();
+      let dest = membres.find(m => m.email === a);
+      if (dest && !dest.cle_pub) { membres = await registre.membres(); dest = membres.find(m => m.email === a); }
+      if (enLigne && k && dest && dest.cle_pub) {
+        const c = await CR.chiffrer(k.prive, dest.cle_pub, { sujet, texte });
+        await registre.envoyer({ a, chiffre: { ...c, cle: k.pub } });
+      } else {
+        if (enLigne && !confirm(k ? `${nomDe(a)} ne s'est pas encore connecté depuis l'arrivée du courrier chiffré.\nEnvoyer quand même SANS chiffrement ?`
+          : "Cet appareil n'est pas relié à ton courrier chiffré.\nEnvoyer quand même SANS chiffrement ?")) { btn.disabled = false; return; }
+        await registre.envoyer({ a, sujet, texte });
+      }
       $("vForm").reset(); vue = "envoyes"; await chargerBoite();
     } catch (err) { alert("Le vaguemestre n'a pas pu partir : " + err.message); }
     btn.disabled = false;
@@ -1879,9 +2152,10 @@
   async function verifierCourrier() {
     if (!moi || !moi.email) return;
     try {
+      await assurerCles().catch(() => {});
       const b = await registre.boite();
       if (!membres.length) membres = await registre.membres();
-      guetterCourrier(b); boite = b;
+      await dechiffrerBoite(b); guetterCourrier(b); boite = b;
       if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite();
       else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; }
     } catch (e) {}

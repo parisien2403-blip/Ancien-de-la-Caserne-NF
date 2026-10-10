@@ -52,6 +52,7 @@ export class Compteur extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, a TEXT, sujet TEXT, texte TEXT,
       envoye TEXT, lu INTEGER DEFAULT 0)`);
+    for (const col of ["chiffre TEXT"]) { try { this.sql.exec(`ALTER TABLE messages ADD COLUMN ${col}`); } catch (e) { /* déjà là */ } }
     // colonnes ajoutées avec la connexion (code provisoire puis mot de passe personnel)
     this.sql.exec(`CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS photos (
@@ -63,7 +64,9 @@ export class Compteur extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS aimes (publication INTEGER, auteur TEXT, PRIMARY KEY (publication, auteur))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS commentaires (
       id INTEGER PRIMARY KEY AUTOINCREMENT, cible TEXT, cible_id INTEGER, texte TEXT, auteur TEXT, cree TEXT)`);
-    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0", "photo TEXT"]) {
+    for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0", "photo TEXT",
+      // chiffrement de bout en bout du courrier : clé publique, clé privée verrouillée par le code de liaison
+      "cle_pub TEXT", "cle_privee TEXT", "liaison_hash TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -219,7 +222,7 @@ export class Compteur extends DurableObject {
   async membres(token) {
     await this.verifierAcces(token);
     const fr = new Intl.Collator("fr", { sensitivity: "base" });
-    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo FROM membres")
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo, cle_pub FROM membres")
       .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin, a_photo: !!m.a_photo }))
       .sort((a, b) => fr.compare(a.nom, b.nom) || fr.compare(a.prenom, b.prenom));
   }
@@ -248,7 +251,7 @@ export class Compteur extends DurableObject {
 
   async boite(token) {
     const moi = this.moi(token);
-    const liste = col => this.sql.exec(`SELECT id, de, a, sujet, texte, envoye, lu FROM messages WHERE ${col} = ? ORDER BY id DESC LIMIT 200`, moi.email).toArray();
+    const liste = col => this.sql.exec(`SELECT id, de, a, sujet, texte, envoye, lu, chiffre FROM messages WHERE ${col} = ? ORDER BY id DESC LIMIT 200`, moi.email).toArray();
     return { moi, recus: liste("a"), envoyes: liste("de") };
   }
 
@@ -256,10 +259,59 @@ export class Compteur extends DurableObject {
     const moi = this.moi(token);
     const a = texte(lettre.a, 120).toLowerCase();
     if (!this.sql.exec("SELECT 1 FROM membres WHERE email = ?", a).toArray().length) throw new Refus("Destinataire inconnu");
+    if (lettre.chiffre) {
+      // message chiffré de bout en bout : le serveur ne garde qu'un contenu illisible
+      const c = lettre.chiffre;
+      if (typeof c.iv !== "string" || typeof c.ct !== "string" || typeof c.cle !== "string" || c.ct.length > 40000) throw new Refus("Message chiffré invalide");
+      this.sql.exec("INSERT INTO messages (de, a, sujet, texte, envoye, chiffre) VALUES (?, ?, ?, ?, ?, ?)",
+        moi.email, a, "🔒", "", new Date().toISOString(), JSON.stringify({ iv: c.iv, ct: c.ct, cle: c.cle }));
+      return { ok: true };
+    }
     const sujet = texte(lettre.sujet, 120) || "(sans objet)", corps = texte(lettre.texte, 5000);
     if (!corps) throw new Refus("Le message est vide");
     this.sql.exec("INSERT INTO messages (de, a, sujet, texte, envoye) VALUES (?, ?, ?, ?, ?)", moi.email, a, sujet, corps, new Date().toISOString());
     return { ok: true };
+  }
+
+  /* ----- Clés du courrier chiffré et code de liaison (verso de la carte) -----
+     Le code de liaison ne quitte jamais l'appareil : le serveur ne reçoit que
+     - la clé privée verrouillée par ce code (illisible sans lui),
+     - une « preuve » dérivée du code, qu'il garde chiffrée de façon irréversible. */
+  async mesCles(token) {
+    const moi = this.moi(token);
+    const m = this.sql.exec("SELECT cle_pub, cle_privee FROM membres WHERE email = ?", moi.email).toArray()[0];
+    return { cle_pub: m.cle_pub || null, cle_privee: m.cle_privee ? JSON.parse(m.cle_privee) : null };
+  }
+  async enregistrerCles(token, x) {
+    const moi = this.moi(token);
+    const m = this.sql.exec("SELECT cle_pub FROM membres WHERE email = ?", moi.email).toArray()[0];
+    if (m.cle_pub) throw new Refus("Les clés de ce compte existent déjà");
+    const ok = typeof x.cle_pub === "string" && x.cle_pub.length < 2000 && x.cle_privee && typeof x.cle_privee.ct === "string"
+      && typeof x.preuve === "string" && /^[0-9a-f]{64}$/.test(x.preuve);
+    if (!ok) throw new Refus("Clés invalides");
+    this.sql.exec("UPDATE membres SET cle_pub = ?, cle_privee = ?, liaison_hash = ? WHERE email = ?",
+      x.cle_pub, JSON.stringify(x.cle_privee), await hacher(x.preuve), moi.email);
+    return { ok: true };
+  }
+  // connexion d'un deuxième écran avec le code du verso (prénom + nom + preuve du code)
+  async liaison({ prenom, nom, preuve }) {
+    const p = slug(prenom), n = slug(nom), maintenant = new Date();
+    const candidats = this.sql.exec("SELECT * FROM membres WHERE liaison_hash IS NOT NULL").toArray().filter(m => slug(m.prenom) === p && slug(m.nom) === n);
+    for (const m of candidats) {
+      if (m.bloque_jusqua && new Date(m.bloque_jusqua) > maintenant) throw new Refus(`Trop d'essais : réessayez dans ${BLOCAGE_MIN} minutes`, 429);
+    }
+    for (const m of candidats) {
+      if (await verifier(preuve, m.liaison_hash)) {
+        this.sql.exec("UPDATE membres SET essais = 0, bloque_jusqua = NULL WHERE numero = ?", m.numero);
+        return { token: m.token, moi: this.public(m), cle_privee: JSON.parse(m.cle_privee) };
+      }
+    }
+    for (const m of candidats) {
+      const essais = (m.essais || 0) + 1;
+      if (essais >= ESSAIS_MAX) this.sql.exec("UPDATE membres SET essais = 0, bloque_jusqua = ? WHERE numero = ?", new Date(maintenant.getTime() + BLOCAGE_MIN * 60000).toISOString(), m.numero);
+      else this.sql.exec("UPDATE membres SET essais = ? WHERE numero = ?", essais, m.numero);
+    }
+    throw new Refus("Prénom, nom ou code de liaison incorrect", 401);
   }
 
   /* ----- Bibliothèque, anecdotes, commentaires : partagés entre tous les appareils ----- */
@@ -421,6 +473,9 @@ export default {
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
       else if (route === "POST /api/connexion") r = await registre.connexion(await corps());
       else if (route === "POST /api/mot-de-passe") r = await registre.motDePasse(await corps());
+      else if (route === "POST /api/liaison") r = await registre.liaison(await corps());
+      else if (route === "GET /api/cles") r = await registre.mesCles(token);
+      else if (route === "POST /api/cles") r = await registre.enregistrerCles(token, await corps());
       else if (route === "GET /api/membres") r = await registre.membres(token);
       else if (route === "GET /api/bibliotheque") r = await registre.bibliotheque(token);
       else if (route === "POST /api/bibliotheque") r = await registre.deposerPhoto(token, await corps());
@@ -444,6 +499,7 @@ export default {
       // les erreurs traversent le Durable Object sans leur classe : on retrouve le statut par le message
       const m = e.message || "";
       const status = e.status || (/Laissez-passer inconnu|incorrect|Session expirée/.test(m) ? 401
+        : /existent déjà/.test(m) ? 409
         : /Trop d'essais/.test(m) ? 429 : /réservé|Réservé|Fais d'abord/.test(m) ? 403 : /introuvable/.test(m) ? 404
         : /pas encore configurée/.test(m) ? 503 : 400);
       return Response.json({ erreur: e.message || "Erreur" }, { status });
