@@ -443,6 +443,20 @@
   .pub .bar button.on { color: #c4302b; }
   .pub .compte { font-size: 13px; color: var(--muted); margin-top: 10px; }
   .pub .comments { margin-top: 8px; }
+  /* Vaguemestre : les casiers */
+  .casiers img { aspect-ratio: 4/3; object-position: 50% 30%; }
+  /* le vaguemestre surgit quand du courrier arrive */
+  .facteur { position: absolute; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 35; display: flex; gap: 12px;
+    align-items: flex-end; padding: 0 14px 14px 0; border-radius: 20px; background: #fffaf2; box-shadow: 0 14px 40px rgba(40,20,10,.35);
+    border: 1px solid #f0e2cc; overflow: hidden; animation: facteur-entre .55s cubic-bezier(.2,1.4,.4,1); }
+  .facteur[hidden] { display: none; }
+  .facteur img { width: 108px; flex: none; align-self: stretch; object-fit: cover; object-position: 50% 15%; }
+  .facteur .f-corps { padding-top: 14px; min-width: 0; }
+  .facteur b { font: 18px "Marcellus", serif; color: var(--navy); display: block; }
+  .facteur p { margin: 4px 0 10px; font-size: 14px; color: var(--text); line-height: 1.4; }
+  .facteur .f-actions { display: flex; gap: 8px; }
+  @keyframes facteur-entre { from { transform: translateY(120%) rotate(-3deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (min-width: 960px) { .facteur { left: auto; right: 28px; bottom: 28px; width: 420px; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -667,6 +681,10 @@
       <div class="tab" data-tab="vague" hidden>
         <h1 class="hello">Le Vaguemestre</h1>
         <p class="hello-sub">Le courrier de la caserne</p>
+        <div class="card guichet casiers">
+          <img src="images/vaguemestre-casiers.jpg" alt="Le vaguemestre devant les casiers du courrier, sa sacoche pleine de lettres">
+        </div>
+        <div class="bubble" id="vBulle"><b>Bonjour !</b> Je trie le courrier de la caserne…</div>
         <div id="vNoPass" class="card empty" hidden>
           <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
           <b>Pas de courrier sans connexion</b>Connectez-vous pour lire votre courrier. Pas encore de laissez-passer ? Votre adresse de la caserne sera créée au poste de police.
@@ -724,6 +742,14 @@
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
     <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
+  </div>
+  <div class="facteur" id="facteur" hidden>
+    <img src="images/vaguemestre-buste.jpg" alt="Le vaguemestre">
+    <div class="f-corps">
+      <b id="fTitre">Le vaguemestre est passé !</b>
+      <p id="fTexte"></p>
+      <div class="f-actions"><button class="btn small" id="fLire">Lire</button><button class="btn small alt" id="fPlusTard">Plus tard</button></div>
+    </div>
   </div>
   <div class="carte-vue" id="carteVue" hidden>
     <div class="cv-box">
@@ -1237,6 +1263,7 @@
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
     etatPoste(); entrer(moi && moi.numero ? "accueil" : "poste");
+    setTimeout(verifierCourrier, 800);
   }
   $("loginForm").onsubmit = async e => {
     e.preventDefault(); $("lErreur").hidden = true;
@@ -1291,7 +1318,7 @@
   const notifActives = () => lire("caserne-notif", false) && "Notification" in window && Notification.permission === "granted";
   async function notifier(titre, corps) {
     if (!notifActives()) return;
-    const opts = { body: corps, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: "courrier" };
+    const opts = { body: corps, icon: "/images/vaguemestre-tete.jpg", badge: "/icons/icon-192.png", tag: "courrier" };
     try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) { reg.showNotification(titre, opts); return; } } catch (e) {}
     try { new Notification(titre, opts); } catch (e) {}
   }
@@ -1712,6 +1739,9 @@
   }
   function afficherBoite() {
     const nonLus = boite.recus.filter(x => !x.lu).length;
+    $("vBulle").innerHTML = nonLus
+      ? `<b>Du courrier pour toi, ${esc(moi.prenom)} !</b> ${nonLus === 1 ? "Une lettre t'attend" : `${nonLus} lettres t'attendent`} dans ton casier.`
+      : `<b>Rien pour toi aujourd'hui, ${esc(moi.prenom)}.</b> Mais tu peux écrire aux anciens, je m'occupe de la distribution !`;
     $("vDot").hidden = !nonLus; $("vDot").textContent = nonLus;
     document.querySelector('#vSeg [data-v="recus"]').textContent = nonLus ? `Reçus (${nonLus})` : "Reçus";
     document.querySelectorAll("#vSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === vue));
@@ -1756,11 +1786,41 @@
   // le vaguemestre repasse toutes les minutes
   let dejaVus = null;   // courriers déjà connus : on ne notifie que les nouveaux
   function guetterCourrier(b) {
-    const ids = new Set(b.recus.map(x => x.id));
-    if (dejaVus) b.recus.filter(x => !x.lu && !dejaVus.has(x.id)).forEach(x => notifier("Le vaguemestre est passé", `${nomDe(x.de)} : ${x.sujet}`));
+    const ids = new Set(b.recus.map(x => x.id)), nonLus = b.recus.filter(x => !x.lu);
+    if (dejaVus) {
+      const nouveaux = nonLus.filter(x => !dejaVus.has(x.id));
+      nouveaux.forEach(x => notifier("Le vaguemestre est passé !", `${nomDe(x.de)} t'a écrit : ${x.sujet}`));
+      if (nouveaux.length) apparitionFacteur(nouveaux);
+    } else if (nonLus.length) {
+      // à l'arrivée dans l'appli : une fois par session, s'il reste du courrier non lu
+      let deja = false; try { deja = sessionStorage.getItem("caserne-facteur") === "1"; sessionStorage.setItem("caserne-facteur", "1"); } catch (e) {}
+      if (!deja) apparitionFacteur(nonLus);
+    }
     dejaVus = ids;
   }
-  setInterval(() => { if (moi && moi.email) registre.boite().then(b => { guetterCourrier(b); boite = b; if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite(); else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; } }).catch(() => {}); }, 60000);
+  function apparitionFacteur(lettres) {
+    if (!moi || $("inside").hidden) return;
+    const l = lettres[0];
+    $("fTitre").textContent = "Le vaguemestre est passé !";
+    $("fTexte").innerHTML = lettres.length === 1
+      ? `<b style="font:inherit;display:inline;color:inherit">${esc(nomDe(l.de))}</b> t'a écrit : « ${esc(l.sujet)} »`
+      : `${lettres.length} lettres t'attendent, dont une de <b style="font:inherit;display:inline;color:inherit">${esc(nomDe(l.de))}</b>.`;
+    $("facteur").hidden = false;
+    $("fLire").onclick = () => { $("facteur").hidden = true; vue = "recus"; ouvert = lettres.length === 1 ? l.id : null; go("vague"); };
+  }
+  $("fPlusTard").onclick = () => $("facteur").hidden = true;
+  async function verifierCourrier() {
+    if (!moi || !moi.email) return;
+    try {
+      const b = await registre.boite();
+      if (!membres.length) membres = await registre.membres();
+      guetterCourrier(b); boite = b;
+      if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite();
+      else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; }
+    } catch (e) {}
+  }
+  setInterval(verifierCourrier, 60000);
+  setTimeout(verifierCourrier, 1200);
 
   /* ===== Vue PC / vue téléphone (pour les grands téléphones et tablettes : Fold…) ===== */
   (() => {
