@@ -446,6 +446,8 @@
   /* Vaguemestre : les casiers */
   /* casiers : bandeau moins haut, cadré sur le vaguemestre (téléphones ouverts type Fold, tablettes, PC) */
   .casiers img { aspect-ratio: 16/9; max-height: 240px; width: 100%; object-fit: cover; object-position: 50% 45%; }
+  /* vue PC : image plus grande, cadrée sur le vaguemestre et ses casiers */
+  @media (min-width: 960px) { .casiers img { aspect-ratio: 16/9; max-height: 460px; object-position: 50% 38%; } }
   /* le vaguemestre surgit quand du courrier arrive */
   .facteur { position: absolute; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 35; display: flex; gap: 12px;
     align-items: flex-end; padding: 0 14px 14px 0; border-radius: 20px; background: #fffaf2; box-shadow: 0 14px 40px rgba(40,20,10,.35);
