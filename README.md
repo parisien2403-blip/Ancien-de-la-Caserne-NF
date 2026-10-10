@@ -2,9 +2,10 @@
 
 Application des anciens de la Caserne de la Nouvelle France (Garde républicaine, années 70 à 90).
 
-> **Ce qui est enregistré** (sur Cloudflare) : les laissez-passer (numéros 0001, 0002…), le registre des
-> membres (avec leur photo d'identité) et le courrier du vaguemestre. Pas encore enregistrés : les photos de la
-> bibliothèque, les anecdotes et les médias de la salle des fêtes (ils disparaissent en fermant la page).
+> **Tout est enregistré sur le serveur Cloudflare** et se retrouve sur n'importe quel appareil (téléphone, PC)
+> dès qu'on se connecte : laissez-passer, photo d'identité, membres, courrier, photos de la bibliothèque, anecdotes
+> et commentaires. Seule exception pour l'instant : les médias de la **Salle des fêtes** (MP3, vidéos), trop lourds
+> pour ce stockage — il faudra Cloudflare R2.
 
 ## Les pages
 
@@ -78,7 +79,7 @@ wrangler.jsonc             configuration Cloudflare (site public/ + registre de 
 - **Mot de passe oublié** : pour l'instant, un administrateur doit réinitialiser le compte.
 - **Validation par les administrateurs** des nouvelles inscriptions, et protection du site
   (par exemple Cloudflare Access) pour que seuls les anciens voient le registre et le courrier.
-- **Enregistrer les fichiers** (photos, vidéos, MP3, photo du laissez-passer) : stockage Cloudflare R2.
+- **Salle des fêtes** (vidéos, MP3) : stockage Cloudflare R2 à activer.
 - **Adresses e-mail réelles** : les adresses `@caserne-nf` ne servent qu'au courrier interne. Pour de vraies
   adresses, il faut un nom de domaine et un service d'e-mail.
 - **Applications dans les stores** (Google Play, App Store) si besoin, en plus de l'appli installable.

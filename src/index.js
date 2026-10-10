@@ -30,6 +30,9 @@ const ESSAIS_MAX = 5, BLOCAGE_MIN = 15;
 
 // photo d'identité : petite image JPEG réduite par l'appli (quelques dizaines de Ko)
 const PHOTO_MAX = 400000;
+// images partagées (bibliothèque, anecdotes) : JPEG réduit par l'appli, ≤ 1,5 Mo encodé
+const IMAGE_MAX = 1500000;
+const imageValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;base64,") && v.length <= IMAGE_MAX ? v : null;
 const photoValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;base64,") && v.length <= PHOTO_MAX ? v : null;
 
 class Refus extends Error {
@@ -47,6 +50,13 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, a TEXT, sujet TEXT, texte TEXT,
       envoye TEXT, lu INTEGER DEFAULT 0)`);
     // colonnes ajoutées avec la connexion (code provisoire puis mot de passe personnel)
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, theme TEXT, annee TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS anecdotes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, texte TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS commentaires (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, cible TEXT, cible_id INTEGER, texte TEXT, auteur TEXT, cree TEXT)`);
     for (const col of ["code_hash TEXT", "mdp_hash TEXT", "setup TEXT", "essais INTEGER DEFAULT 0", "bloque_jusqua TEXT", "admin INTEGER DEFAULT 0", "photo TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
@@ -101,6 +111,14 @@ export class Compteur extends DurableObject {
     if (!m) throw new Refus("Membre introuvable", 404);
     if (m.admin) throw new Refus("Le compte de l'administrateur ne peut pas être supprimé");
     this.sql.exec("DELETE FROM messages WHERE de = ? OR a = ?", m.email, m.email);
+    for (const [type, table] of [["photo", "photos"], ["anecdote", "anecdotes"]]) {
+      for (const x of this.sql.exec(`SELECT id, image FROM ${table} WHERE auteur = ?`, m.email).toArray()) {
+        if (x.image) this.sql.exec("DELETE FROM images WHERE id = ?", x.image);
+        this.sql.exec("DELETE FROM commentaires WHERE cible = ? AND cible_id = ?", type, x.id);
+      }
+      this.sql.exec(`DELETE FROM ${table} WHERE auteur = ?`, m.email);
+    }
+    this.sql.exec("DELETE FROM commentaires WHERE auteur = ?", m.email);
     this.sql.exec("DELETE FROM membres WHERE numero = ?", m.numero);
     return { ok: true };
   }
@@ -229,6 +247,77 @@ export class Compteur extends DurableObject {
     return { ok: true };
   }
 
+  /* ----- Bibliothèque, anecdotes, commentaires : partagés entre tous les appareils ----- */
+  auteurs() {
+    const m = {};
+    for (const x of this.sql.exec("SELECT email, prenom, nom, numero FROM membres").toArray()) m[x.email] = x;
+    return e => { const a = m[e]; return a ? { nom: `${a.prenom} ${a.nom.charAt(0)}.`, ini: (a.prenom[0] + a.nom[0]).toUpperCase(), numero: numero(a.numero) } : { nom: "Ancien membre", ini: "?", numero: null }; };
+  }
+  commentairesDe(cible, id, qui) {
+    return this.sql.exec("SELECT id, texte, auteur, cree FROM commentaires WHERE cible = ? AND cible_id = ? ORDER BY id", cible, id).toArray()
+      .map(c => ({ id: c.id, texte: c.texte, cree: c.cree, de: qui(c.auteur) }));
+  }
+  garderImage(data) {
+    const ok = imageValide(data); if (!ok) return null;
+    this.sql.exec("INSERT INTO images (data) VALUES (?)", ok);
+    return this.sql.exec("SELECT last_insert_rowid() AS id").one().id;
+  }
+  image(token, id) {
+    this.moi(token);
+    const x = this.sql.exec("SELECT data FROM images WHERE id = ?", Number(id)).toArray()[0];
+    return x ? x.data : null;
+  }
+  async bibliotheque(token) {
+    this.moi(token); const qui = this.auteurs();
+    return this.sql.exec("SELECT * FROM photos ORDER BY id DESC").toArray().map(p => ({
+      id: p.id, titre: p.titre, theme: p.theme, annee: p.annee, image: p.image, cree: p.cree,
+      de: qui(p.auteur), mien: p.auteur, commentaires: this.commentairesDe("photo", p.id, qui) }));
+  }
+  async deposerPhoto(token, x) {
+    const moi = this.moi(token);
+    const titre = texte(x.titre, 120), theme = texte(x.theme, 40);
+    if (!titre || !theme) throw new Refus("Titre et thème obligatoires");
+    const img = this.garderImage(x.image); if (!img) throw new Refus("Photo invalide ou trop lourde");
+    this.sql.exec("INSERT INTO photos (titre, theme, annee, image, auteur, cree) VALUES (?, ?, ?, ?, ?, ?)",
+      titre, theme.charAt(0).toUpperCase() + theme.slice(1), texte(x.annee, 20), img, moi.email, new Date().toISOString());
+    return { ok: true };
+  }
+  async anecdotes(token) {
+    this.moi(token); const qui = this.auteurs();
+    return this.sql.exec("SELECT * FROM anecdotes ORDER BY id DESC").toArray().map(a => ({
+      id: a.id, titre: a.titre, texte: a.texte, image: a.image, cree: a.cree,
+      de: qui(a.auteur), mien: a.auteur, commentaires: this.commentairesDe("anecdote", a.id, qui) }));
+  }
+  async raconter(token, x) {
+    const moi = this.moi(token);
+    const titre = texte(x.titre, 120), corps = texte(x.texte, 10000);
+    if (!titre || !corps) throw new Refus("Titre et histoire obligatoires");
+    const img = x.image ? this.garderImage(x.image) : null;
+    if (x.image && !img) throw new Refus("Image invalide ou trop lourde");
+    this.sql.exec("INSERT INTO anecdotes (titre, texte, image, auteur, cree) VALUES (?, ?, ?, ?, ?)", titre, corps, img, moi.email, new Date().toISOString());
+    return { ok: true };
+  }
+  async commenter(token, x) {
+    const moi = this.moi(token);
+    const cible = x.cible === "photo" ? "photos" : x.cible === "anecdote" ? "anecdotes" : null;
+    if (!cible) throw new Refus("Cible inconnue");
+    if (!this.sql.exec(`SELECT 1 FROM ${cible} WHERE id = ?`, Number(x.id)).toArray().length) throw new Refus("Introuvable", 404);
+    const t = texte(x.texte, 2000); if (!t) throw new Refus("Commentaire vide");
+    this.sql.exec("INSERT INTO commentaires (cible, cible_id, texte, auteur, cree) VALUES (?, ?, ?, ?, ?)", x.cible, Number(x.id), t, moi.email, new Date().toISOString());
+    return { ok: true };
+  }
+  // retirer une photo ou une anecdote : son auteur ou l'administrateur
+  async retirer(token, type, id) {
+    const moi = this.moi(token), table = type === "photo" ? "photos" : "anecdotes";
+    const x = this.sql.exec(`SELECT * FROM ${table} WHERE id = ?`, Number(id)).toArray()[0];
+    if (!x) throw new Refus("Introuvable", 404);
+    if (x.auteur !== moi.email && !moi.admin) throw new Refus("Réservé à l'auteur ou à l'administrateur", 403);
+    if (x.image) this.sql.exec("DELETE FROM images WHERE id = ?", x.image);
+    this.sql.exec("DELETE FROM commentaires WHERE cible = ? AND cible_id = ?", type, x.id);
+    this.sql.exec(`DELETE FROM ${table} WHERE id = ?`, x.id);
+    return { ok: true };
+  }
+
   async marquerLu(token, id) {
     const moi = this.moi(token);
     this.sql.exec("UPDATE messages SET lu = 1 WHERE id = ? AND a = ?", Number(id), moi.email);
@@ -254,12 +343,30 @@ export default {
       return new Response(bin, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=300" } });
     }
 
+    // image partagée (une balise <img> ne peut pas envoyer d'en-tête : jeton dans l'adresse)
+    if (request.method === "GET" && /^\/api\/image\/\d+$/.test(url.pathname)) {
+      try {
+        const data = await registre.image(url.searchParams.get("t") || "", url.pathname.split("/")[3]);
+        if (!data) return new Response("Introuvable", { status: 404 });
+        const bin = Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0));
+        return new Response(bin, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=86400" } });
+      } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+    }
+
     try {
       let r;
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
       else if (route === "POST /api/connexion") r = await registre.connexion(await corps());
       else if (route === "POST /api/mot-de-passe") r = await registre.motDePasse(await corps());
       else if (route === "GET /api/membres") r = await registre.membres();
+      else if (route === "GET /api/bibliotheque") r = await registre.bibliotheque(token);
+      else if (route === "POST /api/bibliotheque") r = await registre.deposerPhoto(token, await corps());
+      else if (route === "GET /api/anecdotes") r = await registre.anecdotes(token);
+      else if (route === "POST /api/anecdotes") r = await registre.raconter(token, await corps());
+      else if (route === "POST /api/commentaires") r = await registre.commenter(token, await corps());
+      else if (request.method === "DELETE" && /^\/api\/(photo|anecdote)\/\d+$/.test(url.pathname)) {
+        const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
+      }
       else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
       else if (route === "GET /api/boite") r = await registre.boite(token);
       else if (route === "POST /api/messages") r = await registre.envoyer(token, await corps());

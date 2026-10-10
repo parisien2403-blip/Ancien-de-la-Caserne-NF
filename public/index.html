@@ -878,6 +878,8 @@
     $("scroll").scrollTop = 0;
     if (tab === "poste") fitCard();
     if (tab === "membres") chargerMembres();
+    if (tab === "biblio") chargerBiblio();
+    if (tab === "jeunes") chargerAnecdotes();
     if (tab === "vague") chargerBoite();
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
@@ -1173,9 +1175,52 @@
     }
   };
 
+  /* ===== Partagé entre tous les appareils : bibliothèque, anecdotes, commentaires =====
+     En ligne : sur le serveur (il faut être connecté). Fichier ouvert hors ligne : démonstration en mémoire. */
+  function reduireImage(file, max = 1600, q = .8) {
+    return new Promise((ok, ko) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg", q));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); ko(new Error("Image illisible")); };
+      img.src = url;
+    });
+  }
+  const demoPartage = { photos: [], anecdotes: [], images: [] };
+  const auteurDemo = () => ({ nom: who(), ini: ini() });
+  const partage = {
+    liste: type => enLigne ? api("GET", type === "photo" ? "/api/bibliotheque" : "/api/anecdotes")
+      : (type === "photo" ? demoPartage.photos : demoPartage.anecdotes),
+    deposer: (type, x) => {
+      if (enLigne) return api("POST", type === "photo" ? "/api/bibliotheque" : "/api/anecdotes", x);
+      const img = x.image ? demoPartage.images.push(x.image) - 1 : null;
+      (type === "photo" ? demoPartage.photos : demoPartage.anecdotes).unshift({ ...x, id: Date.now(), image: img, de: auteurDemo(), mien: moi && moi.email, cree: new Date().toISOString(), commentaires: [] });
+    },
+    commenter: (type, id, texte) => {
+      if (enLigne) return api("POST", "/api/commentaires", { cible: type, id, texte });
+      const x = (type === "photo" ? demoPartage.photos : demoPartage.anecdotes).find(o => o.id === id);
+      x.commentaires.push({ texte, de: auteurDemo(), cree: new Date().toISOString() });
+    },
+    retirer: (type, id) => {
+      if (enLigne) return api("DELETE", `/api/${type}/${id}`);
+      const l = type === "photo" ? demoPartage.photos : demoPartage.anecdotes; l.splice(l.findIndex(o => o.id === id), 1);
+    },
+    image: id => id === null || id === undefined ? null : enLigne ? `/api/image/${id}?t=${encodeURIComponent(moi.token)}` : demoPartage.images[id],
+  };
+  const membreConnecte = () => !enLigne || !!(moi && moi.numero);
+  const peutRetirer = x => moi && (x.mien === moi.email || moi.admin);
+  const quandCourt = iso => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const commentHTML = c => c.map(x => `<div class="comment"><div class="av">${esc(x.de.ini)}</div><div><b>${esc(x.de.nom)}</b><br>${esc(x.texte)}</div></div>`).join("");
+  const bloqueConnexion = quoi => `<div class="card empty" style="grid-column:1/-1"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+    <b>Réservé aux anciens connectés</b>Connecte-toi pour voir ${quoi}.<div style="margin-top:14px"><button class="btn small" data-login-ici>Me connecter</button></div></div>`;
+  const brancherConnexion = () => document.querySelectorAll("[data-login-ici]").forEach(b => b.onclick = ouvrirConnexion);
+
   /* ===== Bibliothèque ===== */
-  const photos = [];
-  let pending = null, cur = 0, theme = "";
+  let photos = [], pending = null, cur = null, theme = "";
   function themes() {
     const liste = [...new Set(photos.map(p => p.theme))].sort((a, b) => a.localeCompare(b, "fr"));
     if (theme && !liste.includes(theme)) theme = "";
@@ -1184,55 +1229,97 @@
       .concat(liste.map(t => `<button class="${t === theme ? "on" : ""}" data-theme="${esc(t)}">${esc(t)}</button>`)).join("");
     $("bThemes").innerHTML = liste.map(t => `<option value="${esc(t)}">`).join("");
   }
+  async function chargerBiblio() {
+    if (!membreConnecte()) { photos = []; $("seg").hidden = true; $("grid").innerHTML = bloqueConnexion("les photos de la bibliothèque"); brancherConnexion(); return; }
+    try { photos = await partage.liste("photo"); } catch (e) { $("grid").innerHTML = `<div class="card empty" style="grid-column:1/-1"><b>Bibliothèque injoignable</b>${esc(e.message)}</div>`; return; }
+    grid();
+  }
   function grid() {
     themes();
-    const list = photos.map((p, i) => [p, i]).filter(([p]) => !theme || p.theme === theme);
-    $("grid").innerHTML = list.length ? list.map(([p, i]) => `<button class="tile" data-i="${i}"><img src="${p.img}" alt="${esc(p.t)}"><div>${esc(p.t)}<br><small>${esc(p.theme)}${p.y ? " · " + esc(p.y) : ""} · ${p.c.length} 💬</small></div></button>`).join("")
+    const list = photos.filter(p => !theme || p.theme === theme);
+    $("grid").innerHTML = list.length ? list.map(p => `<button class="tile" data-id="${p.id}"><img src="${partage.image(p.image)}" alt="${esc(p.titre)}" loading="lazy"><div>${esc(p.titre)}<br><small>${esc(p.theme)}${p.annee ? " · " + esc(p.annee) : ""} · ${p.commentaires.length} 💬</small></div></button>`).join("")
       : `<div class="card empty" style="grid-column:1/-1"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M14.5 5l3.5-1 3 15-3.6 1z"/></svg>
-         <b>Les étagères sont vides</b>Soyez le premier à déposer une photo de la caserne.</div>`;
-    document.querySelectorAll(".tile").forEach(t => t.onclick = () => openPhoto(+t.dataset.i));
+         <b>Les étagères sont vides</b>Sois le premier à déposer une photo de la caserne.</div>`;
+    document.querySelectorAll(".tile").forEach(t => t.onclick = () => openPhoto(+t.dataset.id));
   }
   $("seg").onclick = e => { const b = e.target.closest("button"); if (!b) return; theme = b.dataset.theme; grid(); };
-  $("bPhoto").onchange = e => { const f = e.target.files[0]; if (!f) return;
-    readImg(f, url => { pending = url; $("bPrev").src = url; $("bForm").hidden = false; $("bTitre").focus(); }); e.target.value = ""; };
-  $("bForm").onsubmit = e => { e.preventDefault();
-    const t = $("bTheme").value.trim().replace(/\s+/g, " ");
-    photos.unshift({ img: pending, t: $("bTitre").value.trim(), theme: t.charAt(0).toUpperCase() + t.slice(1), y: $("bAn").value.trim(), by: who(), c: [] });
-    $("bForm").reset(); $("bForm").hidden = true; grid(); };
-  function openPhoto(i) {
-    cur = i; const p = photos[i];
-    $("vImg").src = p.img; $("vTitle").textContent = p.t;
-    $("vMeta").textContent = `${p.theme}${p.y ? " · " + p.y : ""} · déposée par ${p.by}`;
+  $("bPhoto").onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    if (!membreConnecte()) { ouvrirConnexion(); return; }
+    try { pending = await reduireImage(f); $("bPrev").src = pending; $("bForm").hidden = false; $("bTitre").focus(); }
+    catch (err) { alert(err.message); }
+  };
+  $("bForm").onsubmit = async e => {
+    e.preventDefault();
+    const btn = $("bForm").querySelector("button"); btn.disabled = true; btn.textContent = "Rangement…";
+    try {
+      await partage.deposer("photo", { titre: $("bTitre").value.trim(), theme: $("bTheme").value.trim().replace(/\s+/g, " "), annee: $("bAn").value.trim(), image: pending });
+      $("bForm").reset(); $("bForm").hidden = true; pending = null; await chargerBiblio();
+    } catch (err) { alert("Photo non rangée : " + err.message); }
+    btn.disabled = false; btn.textContent = "Ranger la photo";
+  };
+  function openPhoto(id) {
+    const p = photos.find(x => x.id === id); if (!p) return; cur = id;
+    $("vImg").src = partage.image(p.image); $("vTitle").textContent = p.titre;
+    $("vMeta").innerHTML = `${esc(p.theme)}${p.annee ? " · " + esc(p.annee) : ""} · déposée par ${esc(p.de.nom)} le ${quandCourt(p.cree)}`
+      + (peutRetirer(p) ? ` · <button class="link" id="vRetirer" style="margin:0;display:inline">Retirer la photo</button>` : "");
+    if (peutRetirer(p)) $("vRetirer").onclick = async () => {
+      if (!confirm("Retirer cette photo de la bibliothèque ?")) return;
+      try { await partage.retirer("photo", p.id); $("viewer").classList.remove("open"); await chargerBiblio(); } catch (err) { alert(err.message); }
+    };
     comments(); $("viewer").classList.add("open");
   }
-  const commentHTML = c => c.map(([a, n, t]) => `<div class="comment"><div class="av">${a}</div><div><b>${esc(n)}</b><br>${esc(t)}</div></div>`).join("");
-  function comments() { $("vComments").innerHTML = commentHTML(photos[cur].c) || `<p style="color:var(--muted)">Pas encore de commentaire. Qui reconnaît quelqu'un ?</p>`; }
+  function comments() {
+    const p = photos.find(x => x.id === cur);
+    $("vComments").innerHTML = (p && commentHTML(p.commentaires)) || `<p style="color:var(--muted)">Pas encore de commentaire. Qui reconnaît quelqu'un ?</p>`;
+  }
   $("close").onclick = () => $("viewer").classList.remove("open");
-  $("composer").onsubmit = e => { e.preventDefault(); const i = e.target.querySelector("input"); if (!i.value.trim()) return;
-    photos[cur].c.push([ini(), who(), i.value.trim()]); i.value = ""; comments(); grid(); };
-  grid();
+  $("composer").onsubmit = async e => {
+    e.preventDefault(); const i = e.target.querySelector("input"), t = i.value.trim(); if (!t || cur === null) return;
+    try { await partage.commenter("photo", cur, t); i.value = ""; photos = await partage.liste("photo"); comments(); grid(); }
+    catch (err) { alert("Commentaire non envoyé : " + err.message); }
+  };
 
   /* ===== Salle des jeunes ===== */
-  const posts = [];
-  let aImg = null;
-  function renderPosts() {
-    if (!posts.length) { $("posts").innerHTML = `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><b>Pas encore d'anecdote</b>Racontez la première histoire de la caserne !</div>`; return; }
-    $("posts").innerHTML = posts.map((p, i) => `<article class="card post">
-      <div class="who"><div class="av">${p.a}</div><div><b>${esc(p.n)}</b><small>${p.w}</small></div></div>
-      <h3>${esc(p.t)}</h3><p>${esc(p.txt)}</p>${p.img ? `<img src="${p.img}" alt="">` : ""}
-      <div class="bar"><span>💬 ${p.c.length} commentaire${p.c.length > 1 ? "s" : ""}</span></div>
-      <div class="comments">${commentHTML(p.c)}</div>
-      <form class="mini-composer" data-i="${i}"><input placeholder="Commenter…"><button>OK</button></form>
-    </article>`).join("");
-    document.querySelectorAll(".mini-composer").forEach(f => f.onsubmit = e => { e.preventDefault();
-      const inp = f.querySelector("input"); if (!inp.value.trim()) return;
-      posts[+f.dataset.i].c.push([ini(), who(), inp.value.trim()]); renderPosts(); });
+  let posts = [], aImg = null;
+  async function chargerAnecdotes() {
+    $("aForm").hidden = !membreConnecte();
+    if (!membreConnecte()) { $("posts").innerHTML = bloqueConnexion("les anecdotes de la caserne"); brancherConnexion(); return; }
+    try { posts = await partage.liste("anecdote"); } catch (e) { $("posts").innerHTML = `<div class="card empty"><b>Salle des jeunes injoignable</b>${esc(e.message)}</div>`; return; }
+    renderPosts();
   }
-  $("aImg").onchange = e => { const f = e.target.files[0]; if (!f) return; readImg(f, url => { aImg = url; $("aImgLbl").textContent = "Image ajoutée ✓"; }); };
-  $("aForm").onsubmit = e => { e.preventDefault();
-    posts.unshift({ a: ini(), n: who(), w: "à l'instant", t: $("aTitre").value.trim(), txt: $("aTexte").value.trim(), img: aImg, c: [] });
-    aImg = null; $("aForm").reset(); $("aImgLbl").textContent = "Ajouter une image (facultatif)"; renderPosts(); };
-  renderPosts();
+  function renderPosts() {
+    if (!posts.length) { $("posts").innerHTML = `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><b>Pas encore d'anecdote</b>Raconte la première histoire de la caserne !</div>`; return; }
+    $("posts").innerHTML = posts.map(p => `<article class="card post">
+      <div class="who"><div class="av">${esc(p.de.ini)}</div><div><b>${esc(p.de.nom)}</b><small>${quandCourt(p.cree)}</small></div>
+        ${peutRetirer(p) ? `<button class="link" data-retirer="${p.id}" style="margin:0 0 0 auto">Retirer</button>` : ""}</div>
+      <h3>${esc(p.titre)}</h3><p>${esc(p.texte)}</p>${p.image !== null && p.image !== undefined ? `<img src="${partage.image(p.image)}" alt="" loading="lazy">` : ""}
+      <div class="bar"><span>💬 ${p.commentaires.length} commentaire${p.commentaires.length > 1 ? "s" : ""}</span></div>
+      <div class="comments">${commentHTML(p.commentaires)}</div>
+      <form class="mini-composer" data-id="${p.id}"><input placeholder="Commenter…"><button>OK</button></form>
+    </article>`).join("");
+    document.querySelectorAll(".mini-composer").forEach(f => f.onsubmit = async e => {
+      e.preventDefault(); const inp = f.querySelector("input"), t = inp.value.trim(); if (!t) return;
+      try { await partage.commenter("anecdote", +f.dataset.id, t); await chargerAnecdotes(); } catch (err) { alert("Commentaire non envoyé : " + err.message); }
+    });
+    document.querySelectorAll("[data-retirer]").forEach(b => b.onclick = async () => {
+      if (!confirm("Retirer cette anecdote ?")) return;
+      try { await partage.retirer("anecdote", +b.dataset.retirer); await chargerAnecdotes(); } catch (err) { alert(err.message); }
+    });
+  }
+  $("aImg").onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try { aImg = await reduireImage(f); $("aImgLbl").textContent = "Image ajoutée ✓"; } catch (err) { alert(err.message); }
+  };
+  $("aForm").onsubmit = async e => {
+    e.preventDefault();
+    const btn = $("aForm").querySelector("button"); btn.disabled = true;
+    try {
+      await partage.deposer("anecdote", { titre: $("aTitre").value.trim(), texte: $("aTexte").value.trim(), image: aImg });
+      aImg = null; $("aForm").reset(); $("aImgLbl").textContent = "Ajouter une image (facultatif)"; await chargerAnecdotes();
+    } catch (err) { alert("Anecdote non publiée : " + err.message); }
+    btn.disabled = false;
+  };
 
   /* ===== Salle des fêtes ===== */
   const garlandColors = ["#e7b33a", "#c4694a", "#7aa0c9", "#8bb174", "#d77ba6"];
