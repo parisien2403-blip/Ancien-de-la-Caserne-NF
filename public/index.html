@@ -448,9 +448,9 @@
   /* le vaguemestre surgit quand du courrier arrive */
   .facteur { position: absolute; left: 12px; right: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 35; display: flex; gap: 12px;
     align-items: flex-end; padding: 0 14px 14px 0; border-radius: 20px; background: #fffaf2; box-shadow: 0 14px 40px rgba(40,20,10,.35);
-    border: 1px solid #f0e2cc; overflow: hidden; animation: facteur-entre .55s cubic-bezier(.2,1.4,.4,1); }
+    border: 1px solid #f0e2cc; overflow: visible; animation: facteur-entre .55s cubic-bezier(.2,1.4,.4,1); }
   .facteur[hidden] { display: none; }
-  .facteur img { width: 108px; flex: none; align-self: stretch; object-fit: cover; object-position: 50% 15%; }
+  .facteur img { width: 92px; flex: none; align-self: flex-end; height: auto; margin: -36px 0 0 6px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
   .facteur .f-corps { padding-top: 14px; min-width: 0; }
   .facteur b { font: 18px "Marcellus", serif; color: var(--navy); display: block; }
   .facteur p { margin: 4px 0 10px; font-size: 14px; color: var(--text); line-height: 1.4; }
@@ -744,7 +744,7 @@
     <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
   </div>
   <div class="facteur" id="facteur" hidden>
-    <img src="images/vaguemestre-buste.jpg" alt="Le vaguemestre">
+    <img src="images/vaguemestre-detoure.webp" alt="Le vaguemestre et sa sacoche">
     <div class="f-corps">
       <b id="fTitre">Le vaguemestre est passé !</b>
       <p id="fTexte"></p>
@@ -1318,7 +1318,7 @@
   const notifActives = () => lire("caserne-notif", false) && "Notification" in window && Notification.permission === "granted";
   async function notifier(titre, corps) {
     if (!notifActives()) return;
-    const opts = { body: corps, icon: "/images/vaguemestre-tete.jpg", badge: "/icons/icon-192.png", tag: "courrier" };
+    const opts = { body: corps, icon: "/images/vaguemestre-notif.png", image: "/images/vaguemestre-notif-grande.jpg", badge: "/icons/icon-192.png", tag: "courrier" };
     try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) { reg.showNotification(titre, opts); return; } } catch (e) {}
     try { new Notification(titre, opts); } catch (e) {}
   }
