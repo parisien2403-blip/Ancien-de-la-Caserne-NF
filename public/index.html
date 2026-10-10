@@ -682,7 +682,8 @@
   const openSheet = () => { $("sheet").classList.add("open"); $("sheetBg").classList.add("open"); };
   $("enter").onclick = openSheet;
   $("sheetBg").onclick = () => { $("sheet").classList.remove("open"); $("sheetBg").classList.remove("open"); };
-  $("signup").onclick = () => alert("Inscription : nom, prénom, Fils / Fille du Garde ou Gendarme, photo… puis validation par un administrateur. Le laissez-passer est délivré à la validation.");
+  // « Pas encore inscrit ? » : on entre directement au poste de police pour faire sa demande
+  $("signup").onclick = () => { $("splash").hidden = true; $("inside").hidden = false; go("poste"); };
   $("sheet").onsubmit = e => { e.preventDefault(); $("splash").hidden = true; $("inside").hidden = false; go("poste"); };
 
 
