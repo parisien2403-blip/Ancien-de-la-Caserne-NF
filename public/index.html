@@ -472,6 +472,12 @@
   @keyframes fondu { from { opacity: 0; } }
   @keyframes carte-entre { from { transform: scale(.85); opacity: 0; } }
   @keyframes facteur-sort { from { transform: translateX(-55%) rotate(-4deg); opacity: 0; } to { transform: rotate(4deg); opacity: 1; } }
+  /* page Protection de tes données */
+  .sheet.confid { max-height: 88%; overflow-y: auto; }
+  .confid h3 { margin: 18px 0 6px; font-size: 17px; }
+  .confid p, .confid li { font-size: 15px; line-height: 1.55; color: var(--text); margin: 0 0 8px; }
+  .confid ul { padding-left: 20px; margin: 0; }
+  @media (min-width: 960px) { .sheet.confid { width: 620px; max-height: 86vh; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -756,6 +762,7 @@
     <label class="reglage"><span>📷 Changer ma photo</span>›<input type="file" accept="image/*" id="rPhotoFile" hidden></label>
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
+    <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
     <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
   </div>
   <div class="facteur" id="facteur" hidden>
@@ -768,6 +775,40 @@
       <div class="f-actions"><button class="btn small" id="fLire">Lire</button><button class="btn small alt" id="fPlusTard">Plus tard</button></div>
     </div>
     </div>
+  </div>
+  <div class="sheet confid" id="confid">
+    <div class="grab"></div>
+    <h2>🛡️ Protection de tes données</h2>
+    <p class="sub">Ce que devient ce que tu partages dans la Caserne, expliqué simplement.</p>
+
+    <h3>🔒 Les échanges sont chiffrés</h3>
+    <p>Tout ce qui circule entre ton téléphone (ou ton PC) et la caserne passe par une connexion <b>chiffrée (HTTPS)</b>,
+      le petit cadenas du navigateur. Personne ne peut lire tes photos, vidéos ou messages pendant le trajet,
+      même sur un Wi-Fi public.</p>
+
+    <h3>🗄️ Où sont gardées tes données</h3>
+    <p>Pour que tu retrouves tout sur ton téléphone <b>et</b> sur ton PC, ce que tu partages est gardé sur le serveur
+      de la caserne, hébergé chez <b>Cloudflare</b> : ton laissez-passer et ta photo d'identité, les photos de la
+      Bibliothèque, les anecdotes, les publications, les commentaires et le courrier du Vaguemestre.</p>
+    <p>Restent <b>uniquement sur ton appareil</b> : les musiques, vidéos et photos de la Salle des fêtes (pour l'instant),
+      ton laissez-passer téléchargé, et tes réglages (notifications, vue PC).</p>
+
+    <h3>👥 Qui peut voir quoi</h3>
+    <ul>
+      <li>Rien n'est public : il faut être <b>un ancien connecté</b> pour voir les membres, les photos, les anecdotes et les publications.</li>
+      <li>Ton <b>courrier</b> n'apparaît que chez toi et chez la personne à qui tu écris. Les notifications n'affichent que le nom de l'expéditeur, jamais le message.</li>
+      <li>Les messages ne sont pas chiffrés « de bout en bout » comme sur WhatsApp : l'hébergeur et l'administrateur du compte pourraient techniquement y accéder. Ils ne le font pas, mais garde pour les messageries dédiées ce qui est vraiment confidentiel (codes, papiers…).</li>
+    </ul>
+
+    <h3>🔑 Ton mot de passe</h3>
+    <p>Ton mot de passe et ton code provisoire sont <b>chiffrés de façon irréversible</b> : personne ne peut les lire,
+      pas même l'administrateur. Après 5 essais ratés, la connexion est bloquée 15 minutes.</p>
+
+    <h3>🗑️ Effacer tes données</h3>
+    <p>Tu peux retirer à tout moment tes photos, anecdotes et publications. Pour effacer ton compte entier (avec ton courrier),
+      écris à l'administrateur par le Vaguemestre : il le supprime, et tout part avec.</p>
+
+    <button class="btn" id="confidOk" style="width:100%;margin-top:6px">J'ai compris</button>
   </div>
   <div class="carte-vue" id="carteVue" hidden>
     <div class="cv-box">
@@ -1147,7 +1188,7 @@
     });
   }
   let photoV = Date.now();
-  const photoUrl = m => !m ? null : m.photo ? m.photo : m.a_photo && enLigne ? `/api/photo/${m.numero}?v=${photoV}` : null;
+  const photoUrl = m => !m ? null : m.photo ? m.photo : m.a_photo && enLigne && moi ? `/api/photo/${m.numero}?v=${photoV}&t=${encodeURIComponent(moi.token)}` : null;
 
   const registre = {
     inscrire: f => enLigne ? api("POST", "/api/inscription", f) : demo.inscrire(f),
@@ -1278,7 +1319,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { $("sheet").classList.remove("open"); $("reglages").classList.remove("open"); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") { fermerConnexion(); $("splash").hidden = true; $("inside").hidden = false; go(tab); }
   function connecte(r) {
     moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
@@ -1323,6 +1364,8 @@
     $("rNotifInfo").textContent = notifActives() ? "Tu es prévenu quand le vaguemestre t'apporte du courrier." : "";
     $("reglages").classList.add("open"); $("sheetBg").classList.add("open");
   }
+  $("rConfid").onclick = () => { $("reglages").classList.remove("open"); $("confid").scrollTop = 0; $("confid").classList.add("open"); $("sheetBg").classList.add("open"); };
+  $("confidOk").onclick = () => fermerConnexion();
   $("rLogout").onclick = () => {
     if (!confirm("Se déconnecter de la caserne ?")) return;
     try { localStorage.removeItem("caserne-moi"); } catch (e) {}
@@ -1549,6 +1592,7 @@
   const qualiteTxt = m => m.qualite === "Gendarme" ? "Gendarme" : `${m.qualite} ${m.parent}`;
   const initiales = m => ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase();
   async function chargerMembres() {
+    if (enLigne && !moi) { $("membres").innerHTML = bloqueConnexion("la liste des anciens"); brancherConnexion(); return; }
     try { membres = await registre.membres(); } catch (e) { $("membres").innerHTML = `<div class="card empty"><b>Registre injoignable</b>${esc(e.message)}</div>`; return; }
     afficherMembres();
   }
@@ -1675,6 +1719,7 @@
       } catch (e) { $("accMeteo").hidden = true; }
     }
     try {
+      if (enLigne && !moi) throw new Error("connexion");
       if (!membres.length || Date.now() - (chargerAccueil.t || 0) > 60000) { membres = await registre.membres(); chargerAccueil.t = Date.now(); }
       const derniers = [...membres].sort((a, b) => b.numero.localeCompare(a.numero)).slice(0, 5);
       $("accArrivees").innerHTML = derniers.length ? derniers.map(m => `<div class="list-item member" data-carte-acc="${esc(m.numero)}">${photoUrl(m)

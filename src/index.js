@@ -210,14 +210,22 @@ export class Compteur extends DurableObject {
       admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo };
   }
 
-  async membres() {
+  // réservé aux anciens connectés (ou à l'administrateur avant son laissez-passer)
+  async verifierAcces(token) {
+    if (await this.estAdmin(token)) return;
+    this.moi(token);
+  }
+
+  async membres(token) {
+    await this.verifierAcces(token);
     const fr = new Intl.Collator("fr", { sensitivity: "base" });
     return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo FROM membres")
       .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin, a_photo: !!m.a_photo }))
       .sort((a, b) => fr.compare(a.nom, b.nom) || fr.compare(a.prenom, b.prenom));
   }
 
-  async photo(num) {
+  async photo(token, num) {
+    await this.verifierAcces(token);
     const m = this.sql.exec("SELECT photo FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.photo || null;
   }
@@ -375,10 +383,12 @@ export default {
 
     // photo d'identité d'un membre (image)
     if (request.method === "GET" && /^\/api\/photo\/\d+$/.test(url.pathname)) {
-      const data = await registre.photo(url.pathname.split("/")[3]);
+      let data;
+      try { data = await registre.photo(url.searchParams.get("t") || "", url.pathname.split("/")[3]); }
+      catch (e) { return new Response("Connexion requise", { status: 401 }); }
       if (!data) return new Response("Pas de photo", { status: 404 });
       const bin = Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0));
-      return new Response(bin, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=300" } });
+      return new Response(bin, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=300" } });
     }
 
     // image partagée (une balise <img> ne peut pas envoyer d'en-tête : jeton dans l'adresse)
@@ -411,7 +421,7 @@ export default {
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
       else if (route === "POST /api/connexion") r = await registre.connexion(await corps());
       else if (route === "POST /api/mot-de-passe") r = await registre.motDePasse(await corps());
-      else if (route === "GET /api/membres") r = await registre.membres();
+      else if (route === "GET /api/membres") r = await registre.membres(token);
       else if (route === "GET /api/bibliotheque") r = await registre.bibliotheque(token);
       else if (route === "POST /api/bibliotheque") r = await registre.deposerPhoto(token, await corps());
       else if (route === "GET /api/anecdotes") r = await registre.anecdotes(token);
