@@ -65,19 +65,23 @@ export class Compteur extends DurableObject {
   }
   async connexionAdmin(secret) {
     const attendu = this.env.ADMIN_MOT_DE_PASSE;
-    const bloque = await this.ctx.storage.get("admin_bloque");
+    // secret pas encore créé dans Cloudflare : on le dit, et on ne compte pas l'essai
+    if (!attendu) throw new Refus("Connexion administrateur pas encore configurée (secret ADMIN_MOT_DE_PASSE manquant)", 503);
+    const bloque = await this.ctx.storage.get("admin_bloque_v2");
     if (bloque && new Date(bloque) > new Date()) throw new Refus(`Trop d'essais : réessayez dans ${BLOCAGE_MIN} minutes`, 429);
     const a = new TextEncoder().encode(String(secret || "")), b = new TextEncoder().encode(String(attendu || ""));
     const ok = !!attendu && a.byteLength === b.byteLength && crypto.subtle.timingSafeEqual(a, b);
     if (!ok) {
-      const essais = ((await this.ctx.storage.get("admin_essais")) || 0) + 1;
+      const essais = ((await this.ctx.storage.get("admin_essais_v2")) || 0) + 1;
       if (essais >= ESSAIS_MAX) {
-        await this.ctx.storage.put("admin_bloque", new Date(Date.now() + BLOCAGE_MIN * 60000).toISOString());
-        await this.ctx.storage.put("admin_essais", 0);
-      } else await this.ctx.storage.put("admin_essais", essais);
+        await this.ctx.storage.put("admin_bloque_v2", new Date(Date.now() + BLOCAGE_MIN * 60000).toISOString());
+        await this.ctx.storage.put("admin_essais_v2", 0);
+      } else await this.ctx.storage.put("admin_essais_v2", essais);
       throw new Refus("Prénom, nom ou mot de passe incorrect", 401);
     }
-    await this.ctx.storage.put("admin_essais", 0);
+    await this.ctx.storage.put("admin_essais_v2", 0);
+    // anciens compteurs (avant la v2) : on fait le ménage
+    await this.ctx.storage.delete(["admin_bloque", "admin_essais"]);
     const m = this.sql.exec("SELECT * FROM membres WHERE admin = 1").toArray()[0];
     if (m) return { token: m.token, moi: this.public(m) };
     // pas encore de laissez-passer : session d'administrateur, il le fera au poste de police
@@ -239,7 +243,8 @@ export default {
       // les erreurs traversent le Durable Object sans leur classe : on retrouve le statut par le message
       const m = e.message || "";
       const status = e.status || (/Laissez-passer inconnu|incorrect|Session expirée/.test(m) ? 401
-        : /Trop d'essais/.test(m) ? 429 : /réservé|Réservé|Fais d'abord/.test(m) ? 403 : /introuvable/.test(m) ? 404 : 400);
+        : /Trop d'essais/.test(m) ? 429 : /réservé|Réservé|Fais d'abord/.test(m) ? 403 : /introuvable/.test(m) ? 404
+        : /pas encore configurée/.test(m) ? 503 : 400);
       return Response.json({ erreur: e.message || "Erreur" }, { status });
     }
   },
