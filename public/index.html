@@ -2,7 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" id="vp" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+  // vue PC sur téléphone ou tablette (Fold…) : la page est dessinée sur 1100 px de large puis ajustée à l'écran
+  try { if (localStorage.getItem("caserne-vue-pc") === "1") document.getElementById("vp").setAttribute("content", "width=1100, viewport-fit=cover"); } catch (e) {}
+</script>
 <meta name="theme-color" content="#f6eedf">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon-192.png" type="image/png">
@@ -402,6 +406,11 @@
     .acc-cols { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; }
     .acc-hero img { aspect-ratio: 21/8; }
   }
+  /* bouton vue PC / vue téléphone */
+  .vue-btn { position: absolute; right: 62px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid #fff; background: rgba(255,250,242,.92); box-shadow: 0 2px 6px rgba(0,0,0,.3); display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .vue-btn svg { width: 22px; height: 22px; stroke: var(--terra-dark); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .vue-btn[hidden] { display: none; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -428,6 +437,7 @@
   <section class="screen inside" id="inside" hidden>
     <div class="topbar">
       <img class="plaque-photo" src="images/plaque.jpg" alt="Caserne de la Nouvelle France">
+      <button class="vue-btn" id="vueBtn" title="Passer en vue PC" hidden></button>
       <button class="me" title="Mon profil" id="me"><span class="ini" id="meIni">?</span><span class="statut"></span></button>
     </div>
 
@@ -1637,6 +1647,27 @@
     dejaVus = ids;
   }
   setInterval(() => { if (moi && moi.email) registre.boite().then(b => { guetterCourrier(b); boite = b; if (!document.querySelector('[data-tab="vague"]').hidden) afficherBoite(); else { const n = b.recus.filter(x => !x.lu).length; $("vDot").hidden = !n; $("vDot").textContent = n; } }).catch(() => {}); }, 60000);
+
+  /* ===== Vue PC / vue téléphone (pour les grands téléphones et tablettes : Fold…) ===== */
+  (() => {
+    let pc = false; try { pc = localStorage.getItem("caserne-vue-pc") === "1"; } catch (e) {}
+    const ECRAN = '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+    const TEL = '<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>';
+    const tactile = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+    const b = $("vueBtn");
+    // proposé sur les appareils tactiles qui ne sont pas déjà en vue PC d'eux-mêmes (ou quand la vue PC est choisie)
+    b.hidden = !(pc || (tactile && screen.width < 960));
+    b.innerHTML = pc ? TEL : ECRAN;
+    b.title = pc ? "Revenir à la vue téléphone" : "Passer en vue PC";
+    b.onclick = () => {
+      try { localStorage.setItem("caserne-vue-pc", pc ? "0" : "1"); sessionStorage.setItem("caserne-retour", document.querySelector(".tab:not([hidden])")?.dataset.tab || "accueil"); } catch (e) {}
+      $("vp").setAttribute("content", pc ? "width=device-width, initial-scale=1, viewport-fit=cover" : "width=1100, viewport-fit=cover");
+      setTimeout(() => location.reload(), 60);
+    };
+  })();
+
+  // après un changement de vue, on revient directement là où on était
+  try { const t = sessionStorage.getItem("caserne-retour"); if (t && moi) { sessionStorage.removeItem("caserne-retour"); entrer(t); } } catch (e) {}
 
   /* ===== Appli installable : Android, iPhone / iPad, PC ===== */
   if ("serviceWorker" in navigator && enLigne) navigator.serviceWorker.register("/sw.js").catch(() => {});
