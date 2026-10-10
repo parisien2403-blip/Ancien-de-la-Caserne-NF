@@ -372,7 +372,7 @@
   .av.ph { background: var(--terra-soft) center/cover; color: transparent; }
   /* ---------- Page d'accueil ---------- */
   .acc-hero { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(60,30,15,.18); }
-  .acc-hero img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: 50% 35%; filter: sepia(.25) contrast(1.02); }
+  .acc-hero img { display: block; width: 100%; aspect-ratio: 16/8; object-fit: cover; object-position: 50% 35%; filter: sepia(.25) contrast(1.02); }
   .acc-hero .voile { position: absolute; inset: auto 0 0 0; padding: 40px 18px 16px; background: linear-gradient(transparent, rgba(20,12,6,.82)); color: #f6eedf; }
   .acc-hero h1 { margin: 0; color: #fff; font-size: clamp(22px, 5.5vw, 34px); line-height: 1.15; }
   .acc-hero p { margin: 4px 0 0; font-size: 14px; opacity: .9; }
@@ -384,7 +384,7 @@
   @media (max-width: 959px) {
     .acc-cols { display: flex; flex-direction: column; gap: 0; }
     .acc-cols > div { display: contents; }
-    .acc-meteo { order: 1; } .mot { order: 2; } .adresse-carte { order: 3; } .arrivees { order: 4; }
+    .mot { order: 1; } .composer-pub { order: 2; } #fil { order: 3; } .arrivees { order: 4; } .adresse-carte { order: 5; }
   }
   .adresse-carte { padding: 0; overflow: hidden; }
   .adresse-carte .entete { display: flex; gap: 12px; align-items: center; padding: 16px; }
@@ -411,6 +411,38 @@
     border: 2px solid #fff; background: rgba(255,250,242,.92); box-shadow: 0 2px 6px rgba(0,0,0,.3); display: grid; place-items: center; cursor: pointer; padding: 0; }
   .vue-btn svg { width: 22px; height: 22px; stroke: var(--terra-dark); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .vue-btn[hidden] { display: none; }
+  /* météo compacte, posée sur la photo du porche */
+  .meteo-pill { position: absolute; top: 12px; right: 12px; z-index: 1; display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 99px; background: rgba(255,250,242,.9); color: var(--navy); font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25); backdrop-filter: blur(4px); }
+  .meteo-pill b { font: 18px "Marcellus", serif; }
+  .meteo-pill small { color: var(--muted); }
+  /* mot de l'administrateur, repliable */
+  .mot summary { list-style: none; display: flex; align-items: center; cursor: pointer; }
+  .mot summary::-webkit-details-marker { display: none; }
+  .mot summary .kicker { margin: 0; }
+  .mot .replier { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--terra-dark); }
+  .mot[open] .replier { font-size: 0; } .mot[open] .replier::after { content: "Replier"; font-size: 13px; }
+  .mot[open] summary { margin-bottom: 10px; }
+  /* fil des publications */
+  .composer-pub .haut { display: flex; gap: 12px; align-items: flex-start; }
+  .composer-pub .av { background-size: cover; background-position: center; }
+  .composer-pub textarea { margin: 0; min-height: 0; border-radius: 18px; padding: 10px 14px; resize: none; font-size: 16px; }
+  .composer-pub .bas { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 10px; }
+  .pub-photo { display: flex; align-items: center; gap: 6px; color: var(--terra-dark); font-weight: 700; cursor: pointer; font-size: 14px; }
+  .pub-photo .ico { width: 22px; height: 22px; }
+  .pub .who { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .pub .who b { color: var(--navy); }
+  .pub .who small { display: block; color: var(--muted); font-size: 12px; }
+  .pub .who .av { background-size: cover; background-position: center; }
+  .pub p { margin: 0; line-height: 1.55; white-space: pre-line; font-size: 16px; }
+  .pub > img { width: calc(100% + 32px); margin: 12px -16px 0; display: block; max-height: 70vh; object-fit: cover; }
+  .pub .bar { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #f0e5d3; }
+  .pub .bar button { flex: 1; border: 0; background: none; padding: 8px; border-radius: 10px; font: 700 14px "Lato", sans-serif; color: var(--muted); cursor: pointer; }
+  .pub .bar button:hover { background: var(--cream-2); }
+  .pub .bar button.on { color: #c4302b; }
+  .pub .compte { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .pub .comments { margin-top: 8px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -448,12 +480,26 @@
       <div class="tab" data-tab="accueil" hidden>
         <div class="acc-hero">
           <img src="images/porche.jpg" alt="Le porche de la Caserne de la Nouvelle France, son bateau sculpté et sa plaque gravée">
+          <div class="meteo-pill" id="accMeteo" title="La météo à la caserne">…</div>
           <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
         </div>
         <div class="acc-cols">
           <div>
-            <div class="card mot">
-              <div class="kicker">Le mot de l'administrateur</div>
+            <form class="card composer-pub" id="pubForm">
+              <div class="haut"><div class="av" id="pubAv">?</div>
+                <textarea id="pubTexte" rows="2" maxlength="5000" placeholder="Quoi de neuf ?"></textarea></div>
+              <img id="pubPrev" class="preview-img" alt="" hidden>
+              <div class="bas">
+                <label class="pub-photo"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>
+                  <span id="pubPhotoLbl">Photo</span><input type="file" accept="image/*" id="pubPhoto" hidden></label>
+                <button class="btn small" id="pubBtn">Publier</button>
+              </div>
+            </form>
+            <div id="fil"></div>
+          </div>
+          <div>
+            <details class="card mot" id="accMot">
+              <summary><span class="kicker">Le mot de l'administrateur</span><span class="replier">Lire</span></summary>
               <p><b>Bienvenue à tous !</b></p>
               <p>Cette application a été créée pour nous retrouver, nous rassembler et faire revivre la caserne de la Nouvelle France,
                 celle de notre enfance et de notre jeunesse.</p>
@@ -463,16 +509,10 @@
                 <b>donner de ses nouvelles</b> et écrire aux camarades par le <b>vaguemestre</b>.</p>
               <p>Alors entrez, installez-vous, et faites passer le mot : les anciens de Nouvelle France sont de retour !</p>
               <p class="signe">G-P Bouquet, administrateur de la Caserne NF</p>
-            </div>
+            </details>
             <div class="card arrivees">
               <h3>Les derniers arrivés</h3>
               <div id="accArrivees"></div>
-            </div>
-          </div>
-          <div>
-            <div class="card acc-meteo">
-              <div class="kicker">La météo à la caserne</div>
-              <div id="accMeteo"><p style="color:var(--muted);margin:0">Le planton regarde par la fenêtre…</p></div>
             </div>
             <div class="card adresse-carte">
               <div class="entete"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
@@ -1498,6 +1538,80 @@
   const meteoDe = c => METEO[c] || ["🌡️", "—"];
   const jours = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
   let meteoChargee = 0;
+  /* ===== Le fil des publications ===== */
+  const demoPubs = [];
+  const pubs = {
+    liste: () => enLigne ? api("GET", "/api/publications") : demoPubs,
+    publier: x => {
+      if (enLigne) return api("POST", "/api/publications", x);
+      demoPubs.unshift({ id: Date.now(), texte: x.texte, image: x.image ? demoPartage.images.push(x.image) - 1 : null, cree: new Date().toISOString(),
+        de: auteurDemo(), mien: moi && moi.email, aimes: 0, jaime: false, commentaires: [] });
+    },
+    aimer: id => { if (enLigne) return api("POST", `/api/publications/${id}/aime`); const p = demoPubs.find(x => x.id === id); p.jaime = !p.jaime; p.aimes += p.jaime ? 1 : -1; },
+    commenter: (id, texte) => partage.commenter("publication", id, texte),
+    retirer: id => { if (enLigne) return api("DELETE", `/api/publication/${id}`); demoPubs.splice(demoPubs.findIndex(x => x.id === id), 1); },
+  };
+  let pubImg = null, filOuverts = new Set();
+  const ilYa = iso => {
+    const s = (Date.now() - new Date(iso)) / 1000;
+    if (s < 60) return "à l'instant"; if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
+    if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`; if (s < 7 * 86400) return `il y a ${Math.floor(s / 86400)} j`;
+    return quandCourt(iso);
+  };
+  const avatar = de => { const m = membres.find(x => x.numero === de.numero), u = m && photoUrl(m);
+    return u ? `<div class="av" style="background-image:url('${u}');color:transparent">${esc(de.ini)}</div>` : `<div class="av">${esc(de.ini)}</div>`; };
+  async function chargerFil() {
+    $("pubForm").hidden = !membreConnecte();
+    if (!membreConnecte()) { $("fil").innerHTML = bloqueConnexion("les nouvelles des anciens"); brancherConnexion(); return; }
+    const u = photoUrl(moi); $("pubAv").style.backgroundImage = u ? `url(${u})` : ""; $("pubAv").style.color = u ? "transparent" : "";
+    $("pubAv").textContent = moi ? ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase() : "?";
+    $("pubTexte").placeholder = moi ? `Quoi de neuf, ${moi.prenom} ?` : "Quoi de neuf ?";
+    let liste;
+    try { liste = await pubs.liste(); } catch (e) { $("fil").innerHTML = `<div class="card empty"><b>Fil injoignable</b>${esc(e.message)}</div>`; return; }
+    $("fil").innerHTML = liste.length ? liste.map(p => `<article class="card pub" data-pub="${p.id}">
+        <div class="who">${avatar(p.de)}<div><b>${esc(p.de.nom)}</b><small>${ilYa(p.cree)}</small></div>
+          ${peutRetirer(p) ? `<button class="link" data-pub-retirer="${p.id}" style="margin:0 0 0 auto">Retirer</button>` : ""}</div>
+        ${p.texte ? `<p>${esc(p.texte)}</p>` : ""}${p.image !== null && p.image !== undefined ? `<img src="${partage.image(p.image)}" alt="" loading="lazy">` : ""}
+        ${p.aimes || p.commentaires.length ? `<div class="compte">${p.aimes ? `❤️ ${p.aimes}` : ""}${p.aimes && p.commentaires.length ? " · " : ""}${p.commentaires.length ? `${p.commentaires.length} commentaire${p.commentaires.length > 1 ? "s" : ""}` : ""}</div>` : ""}
+        <div class="bar"><button class="${p.jaime ? "on" : ""}" data-aime="${p.id}">${p.jaime ? "❤️" : "🤍"} J'aime</button><button data-commenter="${p.id}">💬 Commenter</button></div>
+        <div class="comments" ${p.commentaires.length || filOuverts.has(p.id) ? "" : "hidden"}>${commentHTML(p.commentaires)}
+          <form class="mini-composer" data-pub-com="${p.id}"><input placeholder="Écrire un commentaire…"><button>OK</button></form></div>
+      </article>`).join("")
+      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg><b>Le fil est encore calme</b>Donne la première nouvelle aux anciens !</div>`;
+    document.querySelectorAll("[data-aime]").forEach(b => b.onclick = async () => { try { await pubs.aimer(+b.dataset.aime); chargerFil(); } catch (e) { alert(e.message); } });
+    document.querySelectorAll("[data-commenter]").forEach(b => b.onclick = () => {
+      const id = +b.dataset.commenter, bloc = b.closest(".pub").querySelector(".comments");
+      filOuverts.add(id); bloc.hidden = false; bloc.querySelector("input").focus();
+    });
+    document.querySelectorAll("[data-pub-com]").forEach(f => f.onsubmit = async e => {
+      e.preventDefault(); const i = f.querySelector("input"), t = i.value.trim(); if (!t) return;
+      try { await pubs.commenter(+f.dataset.pubCom, t); filOuverts.add(+f.dataset.pubCom); chargerFil(); } catch (err) { alert("Commentaire non envoyé : " + err.message); }
+    });
+    document.querySelectorAll("[data-pub-retirer]").forEach(b => b.onclick = async () => {
+      if (!confirm("Retirer cette publication ?")) return;
+      try { await pubs.retirer(+b.dataset.pubRetirer); chargerFil(); } catch (e) { alert(e.message); }
+    });
+  }
+  $("pubTexte").oninput = e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 300) + "px"; };
+  $("pubPhoto").onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try { pubImg = await reduireImage(f); $("pubPrev").src = pubImg; $("pubPrev").hidden = false; $("pubPhotoLbl").textContent = "Changer la photo"; }
+    catch (err) { alert(err.message); }
+  };
+  $("pubForm").onsubmit = async e => {
+    e.preventDefault();
+    const t = $("pubTexte").value.trim(); if (!t && !pubImg) { $("pubTexte").focus(); return; }
+    $("pubBtn").disabled = true; $("pubBtn").textContent = "Publication…";
+    try {
+      await pubs.publier({ texte: t, image: pubImg });
+      $("pubTexte").value = ""; $("pubTexte").style.height = ""; pubImg = null; $("pubPrev").hidden = true; $("pubPhotoLbl").textContent = "Photo";
+      await chargerFil();
+    } catch (err) { alert("Publication impossible : " + err.message); }
+    $("pubBtn").disabled = false; $("pubBtn").textContent = "Publier";
+  };
+  // le mot de l'administrateur est ouvert la première fois, puis replié
+  try { if (!localStorage.getItem("caserne-mot-lu")) { $("accMot").open = true; localStorage.setItem("caserne-mot-lu", "1"); } } catch (e) {}
+
   async function chargerAccueil() {
     const h = new Date().getHours(), salut = h < 5 || h >= 18 ? "Bonsoir" : "Bonjour";
     $("accBonjour").textContent = moi ? `${salut} ${moi.prenom} !` : "Bienvenue à la caserne";
@@ -1505,12 +1619,11 @@
       try {
         const m = await fetch(enLigne ? "/api/meteo" : "https://api.open-meteo.com/v1/forecast?latitude=48.8767&longitude=2.3488&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=4").then(r => { if (!r.ok) throw 0; return r.json(); });
         const [ic, txt] = meteoDe(m.current.weather_code);
-        $("accMeteo").innerHTML = `<div class="meteo"><div class="icone">${ic}</div><div><div class="temp">${Math.round(m.current.temperature_2m)}°</div>
-            <div class="desc">${txt} · ressenti ${Math.round(m.current.apparent_temperature)}° · vent ${Math.round(m.current.wind_speed_10m)} km/h</div></div></div>
-          <div class="previsions">${[1, 2, 3].map(i => { const d = new Date(m.daily.time[i] + "T12:00"), [pi] = meteoDe(m.daily.weather_code[i]);
-            return `<div>${jours[d.getDay()]} ${d.getDate()}<b>${pi}</b><span>${Math.round(m.daily.temperature_2m_max[i])}°</span> / ${Math.round(m.daily.temperature_2m_min[i])}°</div>`; }).join("")}</div>`;
+        const prev = [1, 2, 3].map(i => { const d = new Date(m.daily.time[i] + "T12:00"); return `${jours[d.getDay()]} ${meteoDe(m.daily.weather_code[i])[1].toLowerCase()} ${Math.round(m.daily.temperature_2m_max[i])}°/${Math.round(m.daily.temperature_2m_min[i])}°`; });
+        $("accMeteo").innerHTML = `<span>${ic}</span><b>${Math.round(m.current.temperature_2m)}°</b><small>${txt}</small>`;
+        $("accMeteo").title = `La météo à la caserne — ressenti ${Math.round(m.current.apparent_temperature)}°, vent ${Math.round(m.current.wind_speed_10m)} km/h\n` + prev.join("\n");
         meteoChargee = Date.now();
-      } catch (e) { $("accMeteo").innerHTML = `<p style="color:var(--muted);margin:0">Météo indisponible pour le moment.</p>`; }
+      } catch (e) { $("accMeteo").hidden = true; }
     }
     try {
       if (!membres.length || Date.now() - (chargerAccueil.t || 0) > 60000) { membres = await registre.membres(); chargerAccueil.t = Date.now(); }
@@ -1522,7 +1635,8 @@
         : `<p style="color:var(--muted);margin:0">Sois le premier à faire ton laissez-passer au poste de police !</p>`;
       document.querySelectorAll("[data-carte-acc]").forEach(el => el.onclick = () => { const m = membres.find(x => x.numero === el.dataset.carteAcc); if (m) voirCarte(m); });
       document.querySelectorAll("[data-go-membres]").forEach(b => b.onclick = () => go("membres"));
-    } catch (e) { $("accArrivees").innerHTML = `<p style="color:var(--muted);margin:0">Registre injoignable.</p>`; }
+      chargerFil();
+    } catch (e) { $("accArrivees").innerHTML = `<p style="color:var(--muted);margin:0">Registre injoignable.</p>`; chargerFil(); }
   }
 
   /* ===== Carte (laissez-passer) d'un membre ===== */
