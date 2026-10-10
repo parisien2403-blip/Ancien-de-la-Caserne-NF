@@ -54,11 +54,10 @@
   .plaque-photo { display: block; width: 100%; height: auto; }
   .splash .banner { position: absolute; top: 0; left: 0; filter: drop-shadow(0 4px 6px rgba(60,30,15,.25)); }
   .splash svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .splash .content { position: relative; margin: auto 0; padding: 0 28px 28px; text-align: center;
-    padding-top: 24px; }
+  .splash .content { position: relative; margin-top: auto; padding: 0 28px 28px; text-align: center;
+    background: linear-gradient(180deg, transparent, rgba(246,238,223,.7) 30%, rgba(246,238,223,.55) 100%); padding-top: 60px; }
   .splash h1 { margin: 0; font-size: clamp(30px, 8.5vw, 38px); letter-spacing: .03em; line-height: 1.1; }
-  .splash p { margin: 12px 0 26px; font-size: 20px; font-family: "Marcellus", serif; line-height: 1.4; color: var(--navy); }
-  .since { margin: -14px 0 26px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--terra-dark); font-weight: 700; }
+  .splash p { margin: 12px 0 26px; font-size: 18px; line-height: 1.4; color: var(--navy); }
   .splash .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .splash .row .btn { flex: 1; max-width: 240px; }
   .ico { width: 30px; height: 30px; stroke: var(--terra); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -256,10 +255,10 @@
   <!-- ====== ÉCRAN D'ACCUEIL ====== -->
   <section class="screen splash" id="splash">
     <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
-    <img class="porche" src="images/porche.jpg" alt="Le porche de la Caserne de la Nouvelle France : le bateau sculpté et la plaque gravée">
+    <svg class="banner" id="bannerTop" viewBox="0 0 390 196" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Garde Républicaine"></svg>
     <div class="content">
+      <h1>CASERNE<br>NOUVELLE-FRANCE</h1>
       <p>Retrouvez la caserne<br>de votre enfance</p>
-      <div class="since">Les anciens · années 70 à 90 · 351 membres</div>
       <div class="row">
         <svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg>
         <button class="btn" id="enter">Entrer</button>
@@ -278,7 +277,6 @@
       <button class="btn" type="submit">Entrer dans la caserne</button>
     </form>
   </section>
-
 
   <section class="screen inside" id="inside" hidden>
     <div class="topbar">
@@ -445,7 +443,7 @@
     const a = (Math.PI / 8) + i * Math.PI / 4;
     return (cx + r * Math.cos(a)).toFixed(1) + "," + (cy + r * Math.sin(a)).toFixed(1);
   }).join(" ");
-  const ROMAN = ["XII","I","II","III","IIII","V","VI","VII","VIII","IX","X","XI"];
+  const ROMAN = ["XII","I","II","III","IV","V","VI","VII","VIII","IX","X","XI"];
 
   function clockSVG(cx, cy, R, withHousing) {
     let s = "";
@@ -560,6 +558,66 @@
     return s;
   }
 
+  function bannerAccueil(W, H, L) {           // L = {x, y, w, h} : la plaque de pierre
+    seed = 7;
+    const id = "b" + W + H;
+    let s = `<defs>
+      <linearGradient id="${id}st" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3eee4"/><stop offset="1" stop-color="#ddd5c5"/></linearGradient>
+      <linearGradient id="${id}sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f06" stop-opacity=".45"/><stop offset="1" stop-color="#2a0f06" stop-opacity="0"/></linearGradient>
+      <filter id="${id}gr" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 .4  0 0 0 0 .37  0 0 0 0 .32  0 0 0 .9 0"/></filter>
+      <clipPath id="${id}cl"><rect x="${L.x}" y="${L.y}" width="${L.w}" height="${L.h}"/></clipPath>
+    </defs>`;
+
+    // mur de briques en relief
+    const bw = 30, bh = 11, m = 3;
+    s += `<rect width="${W}" height="${H}" fill="#c3b49b"/>`;
+    const tints = ["#a8462e", "#b2503a", "#9b3f29", "#b85a40", "#a14a33", "#8f3a26", "#ad4f36"];
+    for (let row = 0, y = 0; y < H; row++, y += bh + m) {
+      for (let x = row % 2 ? -bw / 2 : 0; x < W; x += bw + m) {
+        const t = tints[Math.floor(rnd() * tints.length)];
+        s += `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="1.2" fill="${t}"/>
+          <rect x="${x}" y="${y}" width="${bw}" height="1.6" fill="#fff" opacity=".22"/>
+          <rect x="${x}" y="${y}" width="1.4" height="${bh}" fill="#fff" opacity=".12"/>
+          <rect x="${x}" y="${y + bh - 2.2}" width="${bw}" height="2.2" fill="#000" opacity=".3"/>
+          <rect x="${x + bw - 1.6}" y="${y}" width="1.6" height="${bh}" fill="#000" opacity=".2"/>
+          <rect x="${x}" y="${y + bh}" width="${bw + m}" height="1.2" fill="#000" opacity=".18"/>`;
+      }
+    }
+
+    // ombre portée de la plaque sur les briques
+    s += `<rect x="${L.x + 4}" y="${L.y + L.h}" width="${L.w}" height="${L.h * .18}" fill="url(#${id}sh)"/>`;
+    // corbeaux en brique sous la plaque
+    [.2, .27, .73, .8].forEach(f => {
+      const cx = L.x + L.w * f, cw = L.w * .045, chh = L.h * .11;
+      s += `<rect x="${cx - cw / 2}" y="${L.y + L.h}" width="${cw}" height="${chh}" fill="#9b3f29"/>
+        <rect x="${cx - cw / 2}" y="${L.y + L.h + chh - 1.5}" width="${cw}" height="1.5" fill="#000" opacity=".35"/>`;
+    });
+
+    // plaque de pierre
+    const c = L.h * .13;   // corniche
+    s += `<rect x="${L.x - 8}" y="${L.y - c + 3}" width="${L.w + 16}" height="${c + 4}" fill="#000" opacity=".25"/>
+      <rect x="${L.x - 8}" y="${L.y - c}" width="${L.w + 16}" height="${c}" fill="url(#${id}st)"/>
+      <rect x="${L.x - 8}" y="${L.y - c}" width="${L.w + 16}" height="1.5" fill="#fff"/>
+      <rect x="${L.x - 8}" y="${L.y - 2}" width="${L.w + 16}" height="2" fill="#000" opacity=".2"/>
+      <rect x="${L.x}" y="${L.y}" width="${L.w}" height="${L.h}" fill="url(#${id}st)"/>
+      <rect x="${L.x}" y="${L.y}" width="${L.w}" height="${L.h}" filter="url(#${id}gr)" clip-path="url(#${id}cl)" opacity=".16"/>
+      <rect x="${L.x}" y="${L.y}" width="1.5" height="${L.h}" fill="#fff" opacity=".8"/>
+      <rect x="${L.x + L.w - 2}" y="${L.y}" width="2" height="${L.h}" fill="#000" opacity=".15"/>
+      <rect x="${L.x}" y="${L.y + L.h - 3}" width="${L.w}" height="3" fill="#000" opacity=".18"/>`;
+
+    // gravure : ombre en haut du creux, lumière en bas
+    const fs = L.h * .3, cx = L.x + L.w / 2;
+    const carve = (txt, y, ls) => [["#fffdf7", 1.1], ["#6f6352", -.9], ["#a89c86", 0]].map(([col, dy]) =>
+      `<text x="${cx}" y="${y + dy}" font-family="Marcellus, Georgia, serif" font-size="${fs}" letter-spacing="${ls}" text-anchor="middle" fill="${col}">${txt}</text>`).join("");
+    const groove = (x, y, w) => `<rect x="${x}" y="${y - .9}" width="${w}" height="${fs * .09}" fill="#6f6352"/>
+      <rect x="${x}" y="${y + 1.1}" width="${w}" height="${fs * .09}" fill="#fffdf7"/>
+      <rect x="${x}" y="${y}" width="${w}" height="${fs * .09}" fill="#a89c86"/>`;
+    const gy1 = L.y + L.h * .27, gy2 = L.y + L.h * .37, gw = L.w * .17;
+    [gy1, gy2].forEach(gy => { s += groove(L.x + L.w * .1, gy, gw) + groove(L.x + L.w * .9 - gw, gy, gw); });
+    s += carve("GARDE", L.y + L.h * .44, fs * .32) + carve("RÉPUBLICAINE", L.y + L.h * .84, fs * .2);
+    return s;
+  }
   function setHands() {
     const d = new Date(), h = d.getHours() % 12, m = d.getMinutes();
     document.querySelectorAll(".hands").forEach(g => {
@@ -580,6 +638,34 @@
   function scene() {
     const L = "#e2d2b8", C = "#f6eedf", T = "#c8714f", Td = "#b9623f";
     let s = DEFS + `<rect width="390" height="760" fill="${C}"/>`;
+    // bâtiment du fond en trait fin
+    s += `<g fill="none" stroke="${L}" stroke-width="1.5">
+      <path d="M95 0V560M295 0V560"/>
+      <rect x="125" y="40" width="40" height="56"/><rect x="225" y="40" width="40" height="56"/>
+      <path d="M118 104h54M218 104h54M95 120h200"/>
+      <rect x="138" y="360" width="30" height="40"/><rect x="222" y="360" width="30" height="40"/>
+    </g>`;
+    // bâtiments terracotta gauche / droite
+    s += `<path d="M0 0H92V600H0Z" fill="${T}"/><path d="M298 0H390V600H298Z" fill="${T}"/>`;
+    s += `<path d="M78 0H92V600H78Z" fill="${Td}" opacity=".5"/><path d="M298 0H312V600H298Z" fill="${Td}" opacity=".5"/>`;
+    const win = (x, y, w, h) => `<rect x="${x - 6}" y="${y - 6}" width="${w + 12}" height="${h + 14}" fill="${C}"/>
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fbf6ec" stroke="${L}" stroke-width="1.5"/>
+      <path d="M${x + w / 2} ${y}V${y + h}M${x} ${y + h * .45}H${x + w}" stroke="${L}" stroke-width="1.5"/>
+      <rect x="${x - 10}" y="${y + h + 6}" width="${w + 20}" height="7" fill="${C}" stroke="${L}"/>`;
+    [40, 190, 340].forEach(y => { s += win(18, y, 46, 72) + win(326, y, 46, 72); });
+    // bandeaux de pierre blanche
+    [150, 300, 450].forEach(y => { s += `<rect x="0" y="${y}" width="92" height="12" fill="${C}"/><rect x="298" y="${y}" width="92" height="12" fill="${C}"/>`; });
+    // porche
+    s += `<path d="M112 590V420A83 83 0 0 1 278 420V590Z" fill="#fbf7ef" stroke="${L}" stroke-width="2"/>
+      <path d="M130 590V430A65 65 0 0 1 260 430V590" fill="none" stroke="${L}" stroke-width="1.5"/>
+      <path d="M150 590V455A45 45 0 0 1 240 455V590M150 500H240M195 455V590" fill="none" stroke="${L}" stroke-width="1.5"/>`;
+    // halo + horloge
+    s += `<circle cx="195" cy="350" r="180" fill="url(#glow)"/>` + clockSVG(195, 352, 84, true);
+    // arbre
+    s += `<g><path d="M58 580 C60 540 70 520 80 500 M76 545 C90 530 100 520 112 512 M70 560 C60 540 48 530 40 524" stroke="#3d3a33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M14 470c10-22 40-30 60-18 16-14 46-10 56 8 18 0 30 14 22 28-6 12-26 12-34 8-10 12-34 12-44 2-14 10-40 6-46-8-14-2-20-12-14-20z" fill="#727a3e"/>
+      <path d="M30 470c12-10 30-12 44-4 14-10 34-8 44 2" stroke="#8d9450" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <rect x="40" y="572" width="62" height="34" fill="#fbf7ef" stroke="${L}" stroke-width="1.5"/></g>`;
     // pavés
     s += `<rect x="0" y="590" width="390" height="170" fill="#f1e7d6"/>`;
     for (let row = 0; row < 12; row++) {
@@ -590,6 +676,7 @@
     $("scene").innerHTML = s;
   }
   scene();
+  $("bannerTop").innerHTML = bannerAccueil(390, 196, { x: 40, y: 64, w: 310, h: 86 });
   document.querySelectorAll("[data-clock]").forEach(el => el.innerHTML = DEFS + clockSVG(60, 60, 52, false));
   setHands(); setInterval(setHands, 15000);
 
