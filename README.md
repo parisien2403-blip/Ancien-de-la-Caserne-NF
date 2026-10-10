@@ -11,6 +11,7 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 
 | Onglet | Rôle |
 | --- | --- |
+| **Accueil** | Page de garde à l'entrée : photo du porche, mot de bienvenue, météo en direct à la caserne (Open-Meteo), adresse avec carte et itinéraire, derniers anciens arrivés. |
 | **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…), son **adresse de la caserne** (`prenom.nom@caserne-nf`) et un **code provisoire à 6 chiffres**. |
 | **Bibliothèque** | Partage de photos, chacune rangée sous un **thème libre** choisi par celui qui la dépose ; filtre par thème, commentaires. |
 | **Salle des jeunes** | Anecdotes de la caserne, avec image facultative et commentaires. |

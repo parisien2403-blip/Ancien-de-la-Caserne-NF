@@ -171,7 +171,7 @@
   .composer button { border: 0; border-radius: 99px; background: var(--terra); color: #fff; font-weight: 700; padding: 0 18px; }
 
   /* ---------- Onglets (4) ---------- */
-  .tabbar button { font-size: 10px; line-height: 1.15; text-align: center; min-width: 0; }
+  .tabbar button { font-size: 9.5px; line-height: 1.15; text-align: center; min-width: 0; padding-left: 0; padding-right: 0; }
 
   /* ---------- Poste de police ---------- */
   .guichet { padding: 0; overflow: hidden; position: relative; }
@@ -366,6 +366,42 @@
   .cv-close { position: absolute; top: -12px; right: -12px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; font-size: 22px; cursor: pointer; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   .member { cursor: pointer; }
   .av.ph { background: var(--terra-soft) center/cover; color: transparent; }
+  /* ---------- Page d'accueil ---------- */
+  .acc-hero { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(60,30,15,.18); }
+  .acc-hero img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: 50% 35%; filter: sepia(.25) contrast(1.02); }
+  .acc-hero .voile { position: absolute; inset: auto 0 0 0; padding: 40px 18px 16px; background: linear-gradient(transparent, rgba(20,12,6,.82)); color: #f6eedf; }
+  .acc-hero h1 { margin: 0; color: #fff; font-size: clamp(22px, 5.5vw, 34px); line-height: 1.15; }
+  .acc-hero p { margin: 4px 0 0; font-size: 14px; opacity: .9; }
+  .mot { font-size: 16px; line-height: 1.7; }
+  .mot p { margin: 0 0 12px; }
+  .mot .signe { font: italic 16px "Marcellus", serif; color: var(--terra-dark); text-align: right; margin: 6px 0 0; }
+  .acc-cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  /* téléphone : météo juste sous la photo, puis le mot, la carte, les derniers arrivés */
+  @media (max-width: 959px) {
+    .acc-cols { display: flex; flex-direction: column; gap: 0; }
+    .acc-cols > div { display: contents; }
+    .acc-meteo { order: 1; } .mot { order: 2; } .adresse-carte { order: 3; } .arrivees { order: 4; }
+  }
+  .adresse-carte { padding: 0; overflow: hidden; }
+  .adresse-carte .entete { display: flex; gap: 12px; align-items: center; padding: 16px; }
+  .adresse-carte .entete b { display: block; color: var(--navy); font: 18px "Marcellus", serif; }
+  .adresse-carte .entete small { color: var(--muted); }
+  .adresse-carte iframe { display: block; width: 100%; height: 230px; border: 0; filter: sepia(.35) saturate(.85); }
+  a.btn { text-decoration: none; display: inline-block; }
+  .adresse-carte .liens { display: flex; gap: 8px; padding: 12px 16px; flex-wrap: wrap; }
+  .meteo { display: flex; align-items: center; gap: 16px; }
+  .meteo .icone { font-size: 52px; line-height: 1; }
+  .meteo .temp { font: 42px "Marcellus", serif; color: var(--navy); line-height: 1; }
+  .meteo .desc { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .previsions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .previsions div { text-align: center; background: var(--cream-2); border-radius: 12px; padding: 8px 4px; font-size: 13px; color: var(--muted); }
+  .previsions b { display: block; font-size: 22px; margin: 2px 0; }
+  .previsions span { color: var(--navy); font-weight: 700; }
+  .arrivees .list-item { margin-bottom: 8px; }
+  @media (min-width: 960px) {
+    .acc-cols { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; }
+    .acc-hero img { aspect-ratio: 21/8; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -398,7 +434,51 @@
     <div class="scroll" id="scroll">
 
       <!-- ===== POSTE DE POLICE ===== -->
-      <div class="tab" data-tab="poste">
+      <!-- ===== ACCUEIL (page de garde) ===== -->
+      <div class="tab" data-tab="accueil" hidden>
+        <div class="acc-hero">
+          <img src="images/porche.jpg" alt="Le porche de la Caserne de la Nouvelle France, son bateau sculpté et sa plaque gravée">
+          <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
+        </div>
+        <div class="acc-cols">
+          <div>
+            <div class="card mot">
+              <div class="kicker">Le mot de l'administrateur</div>
+              <p><b>Bienvenue à tous !</b></p>
+              <p>Cette application a été créée pour nous retrouver, nous rassembler et faire revivre la caserne de la Nouvelle France,
+                celle de notre enfance et de notre jeunesse.</p>
+              <p>Derrière ce porche au bateau, nous avons grandi ensemble : les parties de foot dans la cour, les goûters du mercredi,
+                les bals du 14 juillet, les copains de l'escalier d'à côté… Des années 70 aux années 90, toute une famille.</p>
+              <p>Ici, chacun peut <b>partager ses photos</b>, <b>raconter ses anecdotes</b>, <b>retrouver les anciens</b>,
+                <b>donner de ses nouvelles</b> et écrire aux camarades par le <b>vaguemestre</b>.</p>
+              <p>Alors entrez, installez-vous, et faites passer le mot : la caserne vous attend.</p>
+              <p class="signe">G-P Bouquet, administrateur de la Caserne NF</p>
+            </div>
+            <div class="card arrivees">
+              <h3>Les derniers arrivés</h3>
+              <div id="accArrivees"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card acc-meteo">
+              <div class="kicker">La météo à la caserne</div>
+              <div id="accMeteo"><p style="color:var(--muted);margin:0">Le planton regarde par la fenêtre…</p></div>
+            </div>
+            <div class="card adresse-carte">
+              <div class="entete"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                <div><b>Caserne de la Nouvelle France</b><small>82, rue du Faubourg-Poissonnière · 75010 Paris</small></div></div>
+              <iframe title="Carte : 82 rue du Faubourg-Poissonnière, Paris 10e" loading="lazy" referrerpolicy="no-referrer"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=2.3438%2C48.8742%2C2.3538%2C48.8792&amp;layer=mapnik&amp;marker=48.8767%2C2.3488"></iframe>
+              <div class="liens">
+                <a class="btn small" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=82+rue+du+Faubourg+Poissonni%C3%A8re+75010+Paris">Ouvrir dans Google Maps</a>
+                <a class="btn small alt" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=82+rue+du+Faubourg+Poissonni%C3%A8re+75010+Paris">Itinéraire</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" data-tab="poste" hidden>
         <h1 class="hello">Poste de police</h1>
         <p class="hello-sub">Présentez-vous au chef de poste pour obtenir votre laissez-passer</p>
 
@@ -561,7 +641,8 @@
     </div>
 
     <nav class="tabbar" id="tabbar">
-      <button data-go="poste" class="on"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
+      <button data-go="accueil"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg><span class="lbl">Accueil</span></button>
+      <button data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
       <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
       <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span class="lbl">Salle<br> des jeunes</span></button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
@@ -873,7 +954,7 @@
 
   /* ===== Connexion ===== */
   // « Entrer » : déjà connecté sur cet appareil → directement dans la caserne ; sinon, connexion
-  $("enter").onclick = () => moi ? entrer("poste") : ouvrirConnexion();
+  $("enter").onclick = () => moi ? entrer("accueil") : ouvrirConnexion();
   $("sheetBg").onclick = () => fermerConnexion();
   // « Pas encore inscrit ? » : on entre directement au poste de police pour faire sa demande
   $("signup").onclick = () => { $("splash").hidden = true; $("inside").hidden = false; go("poste"); };
@@ -885,6 +966,7 @@
     document.querySelectorAll("#tabbar button").forEach(b => b.classList.toggle("on", b.dataset.go === tab));
     $("scroll").scrollTop = 0;
     if (tab === "poste") fitCard();
+    if (tab === "accueil") chargerAccueil();
     if (tab === "membres") chargerMembres();
     if (tab === "biblio") chargerBiblio();
     if (tab === "jeunes") chargerAnecdotes();
@@ -1104,7 +1186,7 @@
     moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
-    etatPoste(); entrer("poste");
+    etatPoste(); entrer(moi && moi.numero ? "accueil" : "poste");
   }
   $("loginForm").onsubmit = async e => {
     e.preventDefault(); $("lErreur").hidden = true;
@@ -1395,6 +1477,43 @@
     });
   }
   $("mSearch").oninput = afficherMembres;
+
+  /* ===== Page d'accueil : bonjour, météo, derniers arrivés ===== */
+  const METEO = { 0: ["☀️", "Grand soleil"], 1: ["🌤️", "Plutôt dégagé"], 2: ["⛅", "Quelques nuages"], 3: ["☁️", "Couvert"],
+    45: ["🌫️", "Brouillard"], 48: ["🌫️", "Brouillard givrant"], 51: ["🌦️", "Bruine légère"], 53: ["🌦️", "Bruine"], 55: ["🌧️", "Bruine forte"],
+    56: ["🌧️", "Bruine verglaçante"], 57: ["🌧️", "Bruine verglaçante"], 61: ["🌦️", "Petite pluie"], 63: ["🌧️", "Pluie"], 65: ["🌧️", "Forte pluie"],
+    66: ["🌧️", "Pluie verglaçante"], 67: ["🌧️", "Pluie verglaçante"], 71: ["🌨️", "Petite neige"], 73: ["🌨️", "Neige"], 75: ["❄️", "Forte neige"],
+    77: ["🌨️", "Grains de neige"], 80: ["🌦️", "Averses"], 81: ["🌧️", "Averses"], 82: ["⛈️", "Fortes averses"], 85: ["🌨️", "Averses de neige"],
+    86: ["🌨️", "Averses de neige"], 95: ["⛈️", "Orage"], 96: ["⛈️", "Orage et grêle"], 99: ["⛈️", "Orage et grêle"] };
+  const meteoDe = c => METEO[c] || ["🌡️", "—"];
+  const jours = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+  let meteoChargee = 0;
+  async function chargerAccueil() {
+    const h = new Date().getHours(), salut = h < 5 || h >= 18 ? "Bonsoir" : "Bonjour";
+    $("accBonjour").textContent = moi ? `${salut} ${moi.prenom} !` : "Bienvenue à la caserne";
+    if (Date.now() - meteoChargee > 15 * 60000) {
+      try {
+        const m = await fetch(enLigne ? "/api/meteo" : "https://api.open-meteo.com/v1/forecast?latitude=48.8767&longitude=2.3488&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=4").then(r => { if (!r.ok) throw 0; return r.json(); });
+        const [ic, txt] = meteoDe(m.current.weather_code);
+        $("accMeteo").innerHTML = `<div class="meteo"><div class="icone">${ic}</div><div><div class="temp">${Math.round(m.current.temperature_2m)}°</div>
+            <div class="desc">${txt} · ressenti ${Math.round(m.current.apparent_temperature)}° · vent ${Math.round(m.current.wind_speed_10m)} km/h</div></div></div>
+          <div class="previsions">${[1, 2, 3].map(i => { const d = new Date(m.daily.time[i] + "T12:00"), [pi] = meteoDe(m.daily.weather_code[i]);
+            return `<div>${jours[d.getDay()]} ${d.getDate()}<b>${pi}</b><span>${Math.round(m.daily.temperature_2m_max[i])}°</span> / ${Math.round(m.daily.temperature_2m_min[i])}°</div>`; }).join("")}</div>`;
+        meteoChargee = Date.now();
+      } catch (e) { $("accMeteo").innerHTML = `<p style="color:var(--muted);margin:0">Météo indisponible pour le moment.</p>`; }
+    }
+    try {
+      if (!membres.length || Date.now() - (chargerAccueil.t || 0) > 60000) { membres = await registre.membres(); chargerAccueil.t = Date.now(); }
+      const derniers = [...membres].sort((a, b) => b.numero.localeCompare(a.numero)).slice(0, 5);
+      $("accArrivees").innerHTML = derniers.length ? derniers.map(m => `<div class="list-item member" data-carte-acc="${esc(m.numero)}">${photoUrl(m)
+          ? `<div class="av ph" style="background-image:url('${photoUrl(m)}')"></div>` : `<div class="av">${esc(initiales(m))}</div>`}
+          <div class="who"><div class="t">${esc(nomComplet(m))}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div></div></div>`).join("")
+        + `<button class="btn small alt" data-go-membres style="margin-top:4px">Voir tous les membres (${membres.length})</button>`
+        : `<p style="color:var(--muted);margin:0">Sois le premier à faire ton laissez-passer au poste de police !</p>`;
+      document.querySelectorAll("[data-carte-acc]").forEach(el => el.onclick = () => { const m = membres.find(x => x.numero === el.dataset.carteAcc); if (m) voirCarte(m); });
+      document.querySelectorAll("[data-go-membres]").forEach(b => b.onclick = () => go("membres"));
+    } catch (e) { $("accArrivees").innerHTML = `<p style="color:var(--muted);margin:0">Registre injoignable.</p>`; }
+  }
 
   /* ===== Carte (laissez-passer) d'un membre ===== */
   function voirCarte(m) {

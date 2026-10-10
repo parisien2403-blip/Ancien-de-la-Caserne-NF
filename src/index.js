@@ -353,6 +353,21 @@ export default {
       } catch (e) { return new Response("Connexion requise", { status: 401 }); }
     }
 
+    // météo à la caserne (Open-Meteo, gratuit, sans clé), gardée 15 minutes en cache
+    if (route === "GET /api/meteo") {
+      const cache = caches.default, cle = new Request("https://caserne-nf/meteo");
+      let res = await cache.match(cle);
+      if (!res) {
+        const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.8767&longitude=2.3488"
+          + "&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature"
+          + "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=4");
+        if (!r.ok) return Response.json({ erreur: "Météo indisponible" }, { status: 502 });
+        res = new Response(await r.text(), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=900" } });
+        await cache.put(cle, res.clone());
+      }
+      return res;
+    }
+
     try {
       let r;
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
