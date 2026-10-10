@@ -346,9 +346,17 @@
   .switch input:checked + span::after { transform: translateX(20px); }
   .info-notif { font-size: 13px; color: var(--muted); margin: -4px 4px 8px; line-height: 1.4; }
   /* ---------- Carte d'un membre ---------- */
-  .carte-vue { position: absolute; inset: 0; z-index: 40; background: rgba(20,14,10,.78); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+  .carte-vue { position: absolute; inset: 0; z-index: 40; background: rgba(20,14,10,.9); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 24px 16px; overflow-y: auto; }
   .carte-vue[hidden] { display: none; }
-  .cv-box { position: relative; width: min(680px, 100%); }
+  .cv-box { position: relative; width: 100%; max-width: 680px; }
+  .cv-plein { border: 0; border-radius: 99px; padding: 8px 14px; font: 700 13px "Lato", sans-serif; background: rgba(255,255,255,.14); color: #f6eedf; cursor: pointer; }
+  /* plein écran : la carte occupe tout l'écran, tournée en paysage si le téléphone est tenu droit */
+  .carte-vue.plein { position: fixed; z-index: 1000; background: #120d09; padding: 0; overflow: hidden; }
+  .carte-vue.plein .cv-box { max-width: none; width: auto; position: static; }
+  .carte-vue.plein .cv-info { display: none; }
+  .carte-vue.plein .cv-stage { position: fixed; left: 50%; top: 50%; box-shadow: 0 10px 50px rgba(0,0,0,.7); }
+  .carte-vue.plein .cv-close { position: fixed; top: max(12px, env(safe-area-inset-top)); right: 12px; }
   .cv-stage { width: 100%; overflow: hidden; border-radius: 6px; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
   .cv-scaler { transform-origin: top left; width: 960px; height: 660px; }
   .cv-info { margin-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: #f6eedf; }
@@ -1404,17 +1412,45 @@
     $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
     const peutEcrire = moi && moi.email && m.email !== moi.email;
     $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${esc(m.email)}</small></div>
+      <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
       ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
+    $("cvPlein").onclick = pleinEcran;
     if (peutEcrire) $("cvEcrire").onclick = () => { $("carteVue").hidden = true; go("vague"); ouvrirEcrire(m.email); };
-    $("carteVue").hidden = false; ajusterCarte();
+    $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
   }
   function ajusterCarte() {
-    const w = $("cvStage").clientWidth; if (!w) return;
-    const k = w / 960; $("cvScaler").style.transform = `scale(${k})`; $("cvStage").style.height = 660 * k + "px";
+    const st = $("cvStage"), sc = $("cvScaler");
+    if ($("carteVue").classList.contains("plein")) {
+      // tout l'écran ; en portrait, la carte est tournée d'un quart de tour pour être plus grande
+      const W = innerWidth, H = innerHeight, portrait = H > W;
+      const k = portrait ? Math.min(H / 960, W / 660) * .96 : Math.min(W / 960, H / 660) * .96;
+      sc.style.transform = `scale(${k})`;
+      st.style.width = 960 * k + "px"; st.style.height = 660 * k + "px";
+      st.style.transform = `translate(-50%, -50%)${portrait ? " rotate(90deg)" : ""}`;
+      return;
+    }
+    st.style.width = ""; st.style.transform = "";
+    const w = st.clientWidth; if (!w) return;
+    const k = w / 960; sc.style.transform = `scale(${k})`; st.style.height = 660 * k + "px";
   }
+  async function pleinEcran() {
+    const v = $("carteVue"); v.classList.add("plein"); ajusterCarte();
+    try { if (v.requestFullscreen) await v.requestFullscreen(); } catch (e) {}
+    try { await screen.orientation.lock("landscape"); } catch (e) {}
+    ajusterCarte();
+  }
+  function quitterPleinEcran() {
+    const v = $("carteVue"); if (!v.classList.contains("plein")) return false;
+    v.classList.remove("plein");
+    try { screen.orientation.unlock(); } catch (e) {}
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    ajusterCarte(); return true;
+  }
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) quitterPleinEcran(); });
   addEventListener("resize", () => { if (!$("carteVue").hidden) ajusterCarte(); });
-  $("cvClose").onclick = () => $("carteVue").hidden = true;
-  $("carteVue").onclick = e => { if (e.target === $("carteVue")) $("carteVue").hidden = true; };
+  $("cvClose").onclick = () => { if (!quitterPleinEcran()) $("carteVue").hidden = true; };
+  $("cvStage").onclick = () => { if (!$("carteVue").classList.contains("plein")) pleinEcran(); else quitterPleinEcran(); };
+  $("carteVue").onclick = e => { if (e.target === $("carteVue") && !quitterPleinEcran()) $("carteVue").hidden = true; };
 
   /* ===== Le Vaguemestre ===== */
   let boite = { recus: [], envoyes: [] }, vue = "recus", ouvert = null;
