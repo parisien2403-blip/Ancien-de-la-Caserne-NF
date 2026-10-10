@@ -1,0 +1,10 @@
+// Configuration Cloudflare : site statique (dossier public/), sans code serveur.
+{
+  "name": "ancien-de-la-caserne-nf",
+  "compatibility_date": "2025-09-01",
+  // active l'adresse publique https://ancien-de-la-caserne-nf.<compte>.workers.dev
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public"
+  }
+}

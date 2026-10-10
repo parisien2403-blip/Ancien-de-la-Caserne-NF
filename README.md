@@ -16,17 +16,19 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 
 ## Voir l'appli
 
-Ouvrir `index.html` dans un navigateur, ou activer **GitHub Pages** sur le dépôt
-(Settings → Pages → branche `main`, dossier `/root`) : l'appli sera alors en ligne à l'adresse
-`https://<votre-compte>.github.io/<nom-du-depot>/`.
+Ouvrir `public/index.html` dans un navigateur.
+
+En ligne, le site est hébergé par **Cloudflare** (Workers, fichiers statiques) : chaque modification
+poussée sur la branche `main` est redéployée automatiquement. La configuration est dans `wrangler.jsonc`.
 
 ## Fichiers
 
 ```
-index.html          l'application (HTML, CSS et JavaScript dans un seul fichier)
-images/porche.jpg   le porche de la caserne (bateau sculpté + plaque), écran d'accueil
-images/plaque.jpg   la plaque « Caserne de la Nouvelle France », en-tête des pages
-images/garde.jpg    le planton du poste de police
+public/index.html          l'application (HTML, CSS et JavaScript dans un seul fichier)
+public/images/porche.jpg   le porche de la caserne (bateau sculpté + plaque), écran d'accueil
+public/images/plaque.jpg   la plaque « Caserne de la Nouvelle France », en-tête des pages
+public/images/garde.jpg    le planton du poste de police
+wrangler.jsonc             configuration Cloudflare (publie le dossier public/)
 ```
 
 ## À prévoir avant une vraie mise en ligne
