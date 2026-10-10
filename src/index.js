@@ -233,7 +233,9 @@ export class Compteur extends DurableObject {
   }
 
   async photo(token, num) {
-    await this.verifierAcces(token);
+    // chacun voit sa propre photo, même en attente de validation
+    let soi = false; try { soi = Number(this.moi(token, { tous: true }).numero) === Number(num); } catch (e) {}
+    if (!soi) await this.verifierAcces(token);
     const m = this.sql.exec("SELECT photo FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.photo || null;
   }

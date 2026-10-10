@@ -554,6 +554,20 @@
   .v-clavier { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
   .v-clavier button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 26px "Lato", sans-serif; cursor: pointer; }
   .v-clavier button:active { background: rgba(255,255,255,.3); }
+  /* la carte dans l'écran d'attente, avec son tampon */
+  .att-stage { width: 100%; overflow: hidden; border-radius: 6px; margin: 18px 0 16px; box-shadow: 0 10px 28px rgba(60,30,15,.3); }
+  .att-scaler { transform-origin: top left; width: 960px; height: 660px; }
+  .lp-card .tampon-etat { position: absolute; z-index: 5; pointer-events: none; display: grid; place-items: center; text-align: center;
+    font: 900 44px/1.05 "Arial Black", Arial, sans-serif; letter-spacing: .06em; border-radius: 14px; mix-blend-mode: multiply;
+    animation: coup-tampon .45s cubic-bezier(.5,1.6,.5,1) both .2s; }
+  .lp-card .tampon-etat.attente { left: 330px; top: 190px; width: 560px; height: 170px; transform: rotate(-9deg);
+    color: rgba(30,70,160,.9); border: 9px double rgba(30,70,160,.9); font-size: 46px; }
+  .lp-card .tampon-etat.refuse { left: 140px; top: 190px; width: 700px; height: 230px; transform: rotate(-16deg);
+    color: rgba(200,30,30,.9); border: 12px solid rgba(200,30,30,.9); font-size: 120px; letter-spacing: .12em; }
+  .lp-card .tampon-etat::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(circle at 30% 40%, transparent 0 60%, rgba(239,227,196,.55) 61% 63%, transparent 64%),
+      radial-gradient(circle at 75% 70%, transparent 0 45%, rgba(239,227,196,.5) 46% 48%, transparent 49%); }
+  @keyframes coup-tampon { from { opacity: 0; scale: 1.8; } to { opacity: 1; scale: 1; } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -584,12 +598,8 @@
     <div class="att-corps">
       <div class="att-garde"><img src="images/garde.jpg" alt="Le chef de poste"></div>
       <div class="bubble" id="attBulle"></div>
-      <div class="card att-carte">
-        <div class="kicker" id="attKicker">Demande de laissez-passer</div>
-        <h2 id="attTitre"></h2>
-        <p id="attTexte"></p>
-        <div class="att-actions" id="attActions"></div>
-      </div>
+      <div class="att-stage" id="attStage"><div class="att-scaler" id="attScaler"></div></div>
+      <div class="att-actions" id="attActions"></div>
     </div>
   </section>
 
@@ -2408,17 +2418,34 @@
   try { const t = sessionStorage.getItem("caserne-retour"); if (t && moi) { sessionStorage.removeItem("caserne-retour"); entrer(t); } } catch (e) {}
 
   /* ===== Écran d'attente : la demande attend la validation de l'administrateur ===== */
+  function carteMembre(m) {
+    const carte = $("lpCard").cloneNode(true);
+    carte.removeAttribute("id"); carte.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+    carte.querySelector(".num").textContent = m.numero;
+    carte.querySelector(".l1 .ty").textContent = `${m.nom}, ${m.prenom}`;
+    carte.querySelector(".l2 .ty").textContent = m.qualite === "Gendarme" ? `Gendarme ${m.nom}` : `${m.qualite} ${m.parent}`;
+    const d = m.cree ? new Date(m.cree) : new Date(), dates = carte.querySelectorAll(".date span");
+    dates[0].textContent = d.getDate() + " " + mois[d.getMonth()]; dates[1].textContent = d.getFullYear();
+    const ph = carte.querySelector(".ph div"), url = (fiche && fiche.numero === m.numero && fiche.photo) || photoUrl(m);
+    if (url) { ph.style.backgroundImage = `url(${url})`; ph.innerHTML = ""; }
+    return carte;
+  }
   let attenteMinuteur = null;
   function afficherAttente() {
     fermerConnexion();
     $("splash").hidden = true; $("inside").hidden = true; $("attente").hidden = false;
     const p = esc(moi.prenom), st = moi.statut || "attente", A = $("attActions");
+    // la carte du demandeur, avec le tampon qui correspond à sa demande
+    const carte = carteMembre(moi);
+    carte.classList.remove("stamped");
+    if (st === "valide") carte.classList.add("stamped");
+    else carte.insertAdjacentHTML("beforeend", st === "refuse"
+      ? `<div class="tampon-etat refuse">REFUSÉ</div>` : `<div class="tampon-etat attente">EN COURS<br>DE VALIDATION</div>`);
+    $("attScaler").innerHTML = ""; $("attScaler").appendChild(carte);
+    const ajuste = () => { const w = $("attStage").clientWidth; if (!w) return; const k = w / 960; $("attScaler").style.transform = `scale(${k})`; $("attStage").style.height = 660 * k + "px"; };
+    ajuste(); requestAnimationFrame(ajuste); addEventListener("resize", ajuste);
     if (st === "refuse") {
-      $("attBulle").innerHTML = `<b>Désolé ${p}…</b> L'administrateur n'a pas pu valider ta demande.`;
-      $("attKicker").textContent = "Demande refusée";
-      $("attTitre").textContent = "Ta demande n'a pas été acceptée";
-      $("attTexte").innerHTML = (moi.motif ? `<div class="att-motif">« ${esc(moi.motif)} »<br>— l'administrateur</div>` : "")
-        + "Tu peux refaire une demande en corrigeant tes informations au poste de police.";
+      $("attBulle").innerHTML = `<b>Désolé ${p}…</b> ` + (moi.motif ? `L'administrateur a laissé un mot : « ${esc(moi.motif)} »` : "Ton laissez-passer n'a pas été accepté.");
       A.innerHTML = `<button class="btn" id="attRefaire">Refaire une demande</button><button class="btn alt" id="attQuitter">Retour à l'accueil</button>`;
       $("attRefaire").onclick = async () => {
         try { await api("POST", "/api/moi/abandon"); } catch (e) {}
@@ -2426,17 +2453,11 @@
         location.reload();
       };
     } else if (st === "valide") {
-      $("attBulle").innerHTML = `<b>Bienvenue à la caserne, ${p} !</b> L'administrateur a validé ton laissez-passer. Tu peux circuler.`;
-      $("attKicker").textContent = "Demande acceptée";
-      $("attTitre").textContent = "Ton laissez-passer est validé 🎉";
-      $("attTexte").textContent = "Les portes de la caserne te sont ouvertes : retrouve les anciens, partage tes photos et tes souvenirs.";
+      $("attBulle").innerHTML = `<b>Bienvenue à la caserne, ${p} !</b> Ton laissez-passer est tamponné. Tu peux circuler.`;
       A.innerHTML = `<button class="btn" id="attEntrer">Entrer dans la caserne</button>`;
       $("attEntrer").onclick = () => { clearInterval(attenteMinuteur); entrer("accueil"); setTimeout(() => assurerCles().catch(() => {}), 300); setTimeout(verifierCourrier, 800); };
     } else {
-      $("attBulle").innerHTML = `<b>Repos, ${p}.</b> Ta demande est bien enregistrée. Elle attend le tampon de l'administrateur : je te préviens dès que c'est en règle.`;
-      $("attKicker").textContent = "Demande de laissez-passer";
-      $("attTitre").innerHTML = `<span class="sablier">⏳</span> En attente de validation`;
-      $("attTexte").textContent = `Laissez-passer n° ${moi.numero} au nom de ${moi.prenom} ${moi.nom}.\nL'administrateur va vérifier que tu es bien un ancien de la caserne. Tu peux fermer l'appli : tu seras prévenu.`;
+      $("attBulle").innerHTML = `<b>Repos, ${p}.</b> Ton laissez-passer attend le tampon de l'administrateur. Je te préviens dès que c'est en règle.`;
       A.innerHTML = `<button class="btn" id="attVerifier">Vérifier maintenant</button>
         ${notifActives() ? "" : `<button class="btn alt" id="attNotif">🔔 Me prévenir par notification</button>`}
         <button class="link" id="attQuitter">Retour à l'accueil</button>`;
