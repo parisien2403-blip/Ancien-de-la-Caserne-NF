@@ -1,12 +1,20 @@
-// Configuration Cloudflare : site statique (dossier public/), sans code serveur.
+// Configuration Cloudflare : le site (dossier public/) + le compteur des laissez-passer (src/index.js).
 {
   "name": "ancien-de-la-caserne-nf",
+  "main": "src/index.js",
   "compatibility_date": "2025-09-01",
   // active l'adresse publique https://ancien-de-la-caserne-nf.<compte>.workers.dev
   "workers_dev": true,
   // garde les journaux activés dans le tableau de bord
   "observability": { "enabled": true },
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // compteur des numéros d'inscription (0001, 0002, …)
+  "durable_objects": {
+    "bindings": [{ "name": "COMPTEUR", "class_name": "Compteur" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Compteur"] }]
 }

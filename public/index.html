@@ -288,12 +288,12 @@
       <!-- ===== POSTE DE POLICE ===== -->
       <div class="tab" data-tab="poste">
         <h1 class="hello">Poste de police</h1>
-        <p class="hello-sub">Présentez-vous au planton pour obtenir votre laissez-passer</p>
+        <p class="hello-sub">Présentez-vous au chef de poste pour obtenir votre laissez-passer</p>
 
         <div class="card guichet">
           <img src="images/garde.jpg" alt="Le garde de faction au poste de police, bras croisés derrière son bureau">
         </div>
-        <div class="bubble" id="bubble"><b>Halte !</b> Vos papiers… Pas de laissez-passer ? Remplissez-moi ça, et que ça saute.</div>
+        <div class="bubble" id="bubble"><b>Halte mon gars !</b> Vos papiers… Pas de laissez-passer ? Remplissez-moi ça, et que ça saute.</div>
 
         <div class="card">
           <div class="steps"><span class="on" id="st1"></span><span id="st2"></span><span id="st3"></span></div>
@@ -705,14 +705,27 @@
 
   /* ===== Poste de police : laissez-passer ===== */
   const mois = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  const today = new Date(), NUM = 352;
-  $("fNum").value = NUM; $("fDate").value = today.toLocaleDateString("fr-FR");
+  const today = new Date();
+  let NUM = "";                       // attribué par le serveur au moment du tampon : 0001, 0002…
+  $("fNum").value = "au tampon"; $("fDate").value = today.toLocaleDateString("fr-FR");
+
+  // Demande le numéro suivant au compteur de la caserne (Cloudflare).
+  // Hors ligne (fichier ouvert sur l'ordinateur), on numérote localement pour la démonstration.
+  async function nouveauNumero() {
+    try {
+      const res = await fetch("/api/inscription", { method: "POST" });
+      if (res.ok) return (await res.json()).numero;
+    } catch (e) {}
+    let n = 1;
+    try { n = (+localStorage.getItem("caserne-numero") || 0) + 1; localStorage.setItem("caserne-numero", n); } catch (e) {}
+    return String(n).padStart(4, "0");
+  }
 
   function renderCard() {
     me.nom = $("fNom").value.trim().toUpperCase(); me.prenom = $("fPrenom").value.trim();
     const q = $("fQual").value;
     $("fParentWrap").style.display = q === "Gendarme" ? "none" : "";
-    $("cNum").textContent = NUM;
+    $("cNum").textContent = NUM || "····";
     $("cNom").textContent = me.nom + (me.prenom ? ", " + me.prenom : "");
     $("cQual").textContent = q === "Gendarme" ? "Gendarme " + me.nom : q + " " + $("fParent").value.trim().toUpperCase();
     $("cJour").textContent = today.getDate() + " " + mois[today.getMonth()];
@@ -725,8 +738,12 @@
   $("fPhoto").onchange = e => { const f = e.target.files[0]; if (!f) return;
     readImg(f, url => { const el = $("cPhoto"); el.style.backgroundImage = `url(${url})`; el.innerHTML = ""; $("fPhotoLbl").textContent = "Photo ajoutée ✓"; }); };
 
-  $("stampBtn").onclick = () => {
+  $("stampBtn").onclick = async () => {
     if (!me.nom || !me.prenom) { $("bubble").innerHTML = "<b>Hé !</b> Nom et prénom d'abord, on n'est pas au bal ici."; $("fNom").focus(); return; }
+    if (NUM) return;
+    $("stampBtn").disabled = true; $("stampBtn").textContent = "Le chef de poste tamponne…";
+    NUM = await nouveauNumero();
+    $("fNum").value = NUM; renderCard();
     $("lpCard").classList.add("stamped");
     $("st3").classList.add("on");
     $("dlBtn").disabled = false;

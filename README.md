@@ -2,8 +2,8 @@
 
 Application des anciens de la Caserne de la Nouvelle France (Garde républicaine, années 70 à 90).
 
-> **Maquette** : tout fonctionne dans le navigateur, mais rien n'est encore enregistré.
-> Ce qu'on ajoute (laissez-passer, photos, anecdotes, MP3) disparaît en fermant la page.
+> **Maquette** : seul le **numéro d'inscription** est enregistré (compteur partagé 0001, 0002, …
+> tenu par Cloudflare). Le reste (fiches, photos, anecdotes, MP3) disparaît en fermant la page.
 
 ## Les pages
 
@@ -28,7 +28,8 @@ public/index.html          l'application (HTML, CSS et JavaScript dans un seul f
 public/images/porche.jpg   le porche de la caserne (bateau sculpté + plaque), écran d'accueil
 public/images/plaque.jpg   la plaque « Caserne de la Nouvelle France », en-tête des pages
 public/images/garde.jpg    le planton du poste de police
-wrangler.jsonc             configuration Cloudflare (publie le dossier public/)
+src/index.js               petit serveur Cloudflare : sert le site et tient le compteur des laissez-passer
+wrangler.jsonc             configuration Cloudflare (site public/ + compteur)
 ```
 
 ## À prévoir avant une vraie mise en ligne
