@@ -42,7 +42,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["grande", "horloge", "allee", "fetes"];
+const LIEUX_MATRICE = ["grande", "fetes"];
 const MUSIQUE_MAX = 15 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const TENUES_MATRICE = ["garde", "civil", "survet", "robe", "costume"];
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);

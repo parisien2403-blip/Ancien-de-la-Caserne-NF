@@ -1088,7 +1088,7 @@
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
-        <p class="legal" style="text-align:left">Touche le sol pour marcher, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), passe sous les porches pour changer de cour, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
+        <p class="legal" style="text-align:left">Touche le sol pour marcher, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
       </div>
 
       <div class="tab" data-tab="vague" hidden>
@@ -1874,7 +1874,7 @@
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
-        surPresents: liste => { $("mxPresents").innerHTML = liste.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
+        surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
         surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6; },
         surInfo: t => infoMatrice(t),
@@ -2362,6 +2362,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.7", "11 octobre 2026", ["Matrice : la cour de l'horloge et l'allée sont retirées ; restent la cour d'honneur et la salle des fêtes", "Le chef de poste se promène dans la Matrice (touche-le, il te répond)", "Les têtes détourées sont centrées sur le milieu du visage"]],
     ["2.6", "11 octobre 2026", ["Mon bonhomme : tu places ta tête toi-même (glisser du doigt, pincer, taille, pencher) ; nouvelle tenue de gendarme (pull bleu marine à bande blanche, galons, ceinturon) ; bonshommes à taille humaine ; on tourne la vue en glissant le doigt (↻ pour se retourner)"]],
     ["2.5", "11 octobre 2026", ["Salle des fêtes de la Matrice : le DJ ! Chacun dépose ses musiques dans la discothèque des anciens, et ce qui passe est entendu en même temps par tous ceux qui sont dans la salle (file d'attente, suivant, arrêter)"]],
     ["2.4", "11 octobre 2026", ["Matrice : la salle des fêtes, à l'intérieur du bâtiment de droite (carrelage à petits carreaux, lambris, portes vitrées sur la cour, long bar en bois à l'ancienne sur les trois quarts, boule à facettes au plafond, tables à nappes blanches et chaises d'école au fond, escalier carrelé de 5 marches avec ses rampes en fer forgé vers une double porte marron, coin du DJ avec platines, enceintes, jeux de lumière et fumée) ; on y entre par les portes vitrées des marches"]],
