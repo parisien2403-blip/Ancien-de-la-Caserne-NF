@@ -7,6 +7,9 @@
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   #jeu { width: 100%; height: 100%; }
+  /* les touches tactiles d'EmulatorJS cachent l'image dans la petite télé : la manette est dessinée sous la télé.
+     En plein écran, on les remet (la manette de la page n'est plus visible). */
+  body:not(.plein) .ejs_virtualGamepad_parent, body:not(.plein) .ejs_virtualGamepad_open { display: none !important; }
   .msg { position: absolute; inset: 0; display: grid; place-items: center; color: #9fd; font: 700 15px "Courier New", monospace; text-align: center; padding: 12px; text-shadow: 0 0 6px #6fc; }
 </style>
 </head>

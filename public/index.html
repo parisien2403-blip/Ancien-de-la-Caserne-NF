@@ -583,6 +583,31 @@
     animation: neige .25s steps(4) infinite; }
   .borne .neige span { background: rgba(0,0,0,.65); color: #9fd; font: 700 clamp(9px, 2.4vw, 15px) "Courier New", monospace; padding: 6px 10px; letter-spacing: .1em; text-shadow: 0 0 6px #6fc; }
   @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
+  /* manette sous la télé */
+  .manette { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 18px 8px 4px; max-width: 520px;
+    padding: 26px 18px 18px; border-radius: 70px; background: linear-gradient(180deg, #d9d6d2, #b9b5b0); box-shadow: 0 6px 0 #8e8a85, 0 10px 22px rgba(40,20,10,.25);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .manette[hidden] { display: none; }
+  @media (min-width: 540px) { .manette { margin: 18px auto 4px; } }
+  .manette button { font-family: "Lato", sans-serif; -webkit-tap-highlight-color: transparent; touch-action: none; }
+  .manette .epaule { position: absolute; top: -10px; width: 30%; height: 24px; border: 0; border-radius: 14px 14px 4px 4px; background: #9f9b96; color: #4b4844; font-weight: 900; font-size: 12px; }
+  .manette .epaule.g { left: 8%; } .manette .epaule.d { right: 8%; }
+  .manette .croix { position: relative; width: 132px; height: 132px; justify-self: center; }
+  .manette .croix .h, .manette .croix .v { position: absolute; background: #2c2b2a; border-radius: 6px; box-shadow: 0 3px 0 #111; }
+  .manette .croix .h { left: 0; right: 0; top: 34%; height: 32%; } .manette .croix .v { top: 0; bottom: 0; left: 34%; width: 32%; }
+  .manette .croix .fl { position: absolute; width: 0; height: 0; border: 7px solid transparent; opacity: .45; }
+  .manette .croix .haut { left: calc(50% - 7px); top: 6px; border-bottom-color: #ddd; } .manette .croix .bas { left: calc(50% - 7px); bottom: 6px; border-top-color: #ddd; }
+  .manette .croix .gauche { top: calc(50% - 7px); left: 6px; border-right-color: #ddd; } .manette .croix .droite { top: calc(50% - 7px); right: 6px; border-left-color: #ddd; }
+  .manette .croix.haut .haut, .manette .croix.bas .bas, .manette .croix.gauche .gauche, .manette .croix.droite .droite { opacity: 1; border-color: transparent; }
+  .manette .croix.haut .haut { border-bottom-color: var(--gold); } .manette .croix.bas .bas { border-top-color: var(--gold); }
+  .manette .croix.gauche .gauche { border-right-color: var(--gold); } .manette .croix.droite .droite { border-left-color: var(--gold); }
+  .manette .milieu { display: flex; gap: 10px; transform: rotate(-22deg); }
+  .manette .pilule { border: 0; border-radius: 12px; padding: 7px 10px; background: #7d7975; color: #eee; font-size: 9px; font-weight: 900; letter-spacing: .08em; box-shadow: 0 2px 0 #555; }
+  .manette .boutons { position: relative; width: 140px; height: 132px; justify-self: center; }
+  .manette .bt { position: absolute; width: 48px; height: 48px; border-radius: 50%; border: 0; color: #fff; font-weight: 900; font-size: 17px; box-shadow: 0 4px 0 rgba(0,0,0,.35); }
+  .manette .bt.long { width: auto; padding: 0 10px; border-radius: 24px; font-size: 13px; }
+  .manette button.appui { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.35); filter: brightness(1.15); }
+  @media (max-width: 420px) { .manette { padding: 24px 10px 14px; gap: 2px; } .manette .croix { width: 112px; height: 112px; } .manette .boutons { width: 122px; height: 116px; } .manette .bt { width: 42px; height: 42px; } }
   .borne-barre { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 2px 8px; flex-wrap: wrap; }
   .borne-barre .kicker { margin: 0; }
   .borne-actions { display: flex; gap: 8px; }
@@ -823,6 +848,13 @@
               <div class="neige" id="neige"><span id="ecranTexte">CHOISIS UNE CARTOUCHE</span></div>
               <iframe id="jeuFrame" title="La borne de la caserne" allow="fullscreen; gamepad; autoplay" hidden></iframe>
             </div>
+          </div>
+          <!-- la manette (téléphone / tablette) : sous la télé pour ne rien cacher du jeu -->
+          <div class="manette" id="manette" hidden>
+            <button class="epaule g" data-touche="10">L</button><button class="epaule d" data-touche="11">R</button>
+            <div class="croix" id="croix"><span class="h"></span><span class="v"></span><i class="fl haut"></i><i class="fl bas"></i><i class="fl gauche"></i><i class="fl droite"></i></div>
+            <div class="milieu"><button class="pilule" data-touche="2">SELECT</button><button class="pilule" data-touche="3">START</button></div>
+            <div class="boutons" id="boutons"></div>
           </div>
           <div class="borne-barre">
             <div class="kicker">🎮 La borne de la caserne</div>
@@ -2643,6 +2675,21 @@
   const EXTENSIONS = { sfc: "snes", smc: "snes", nes: "nes", gb: "gb", gbc: "gb", gba: "gba", md: "segaMD", gen: "segaMD", smd: "segaMD", bin: "segaMD",
     sms: "segaMS", gg: "segaGG", n64: "n64", z64: "n64", v64: "n64", pce: "pce", a26: "atari2600" };
   let jeux = [], jeuEnCours = null;
+  // boutons d'action de chaque console : [étiquette, n° de touche EmulatorJS, couleur, position (x, y en % du cadre)]
+  const ROUGE = "#c8202f", JAUNE = "#e8b40c", BLEU = "#2448b3", VERT = "#1f8a3c", GRIS = "#3c3a38", BORDEAUX = "#7a1f3d";
+  const MANETTES = {
+    snes: { boutons: [["X", 9, BLEU, 50, 0], ["Y", 1, VERT, 14, 33], ["A", 8, ROUGE, 86, 33], ["B", 0, JAUNE, 50, 66]], epaules: true },
+    nes: { boutons: [["B", 0, ROUGE, 20, 45], ["A", 8, ROUGE, 80, 30]] },
+    gb: { boutons: [["B", 0, BORDEAUX, 20, 45], ["A", 8, BORDEAUX, 80, 30]] },
+    gba: { boutons: [["B", 0, GRIS, 20, 45], ["A", 8, GRIS, 80, 30]], epaules: true },
+    segaMD: { boutons: [["A", 1, GRIS, 10, 55], ["B", 0, GRIS, 50, 40], ["C", 8, GRIS, 90, 25]], noms: ["MODE", "START"] },
+    segaMS: { boutons: [["1", 0, GRIS, 20, 45], ["2", 8, GRIS, 80, 30]], sansMilieu: true },
+    segaGG: { boutons: [["1", 0, GRIS, 20, 45], ["2", 8, GRIS, 80, 30]], noms: [null, "START"] },
+    pce: { boutons: [["II", 0, GRIS, 20, 45], ["I", 8, GRIS, 80, 30]], noms: ["SELECT", "RUN"] },
+    atari2600: { boutons: [["FEU", 0, ROUGE, 50, 33]], noms: ["SELECT", "RESET"] },
+    n64: { boutons: [["A", 0, BLEU, 30, 55], ["B", 1, VERT, 5, 25], ["C▲", 23, JAUNE, 74, 0, 1], ["C▼", 22, JAUNE, 74, 66, 1], ["C◀", 21, JAUNE, 52, 33, 1], ["C▶", 20, JAUNE, 96, 33, 1], ["Z", 12, GRIS, -6, 66]],
+      epaules: true, noms: [null, "START"], stick: true }
+  };
   async function chargerBorne() {
     $("borneAdmin").hidden = !(moi && moi.admin);
     if (!enLigne || !estValide()) { $("cartouches").innerHTML = ""; $("ecranTexte").textContent = "CONNECTE-TOI POUR JOUER"; return; }
@@ -2685,14 +2732,78 @@
     const f = $("jeuFrame"); f.hidden = false;
     f.src = `jeu.html?id=${j.id}&console=${encodeURIComponent(j.console)}&titre=${encodeURIComponent(j.titre)}`;
     $("borneEteindre").hidden = false; $("bornePlein").hidden = false;
+    preparerManette(j.console);
     document.querySelectorAll(".cartouche").forEach(c => c.classList.toggle("on", +c.dataset.jeu === j.id));
     $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
   }
+  // la manette : elle appuie directement sur les touches de l'émulateur dans la télé
+  const tactile = matchMedia("(pointer: coarse)").matches;
+  let manetteCourante = null;
+  function emu() { try { return $("jeuFrame").contentWindow.EJS_emulator; } catch (e) { return null; } }
+  function touche(n, appui, analogique) {
+    const e = emu();
+    if (!e || !e.started || !e.gameManager) {
+      // START avant que le jeu ait démarré : on appuie sur « ▶ JOUER »
+      if (appui && n === 3) { try { $("jeuFrame").contentDocument.querySelector(".ejs_start_button").click(); } catch (err) {} }
+      return;
+    }
+    e.gameManager.simulateInput(0, n, appui ? (analogique ? 0x7fff : 1) : 0);
+    if (appui && navigator.vibrate) navigator.vibrate(8);
+  }
+  function preparerManette(consoleJeu) {
+    const m = MANETTES[consoleJeu] || MANETTES.snes; manetteCourante = m;
+    $("boutons").innerHTML = m.boutons.map(([t, n, c, x, y, a]) => `<button class="bt ${t.length > 2 ? "long" : ""}" data-touche="${n}" ${a ? 'data-analogique="1"' : ""}
+      style="background:${c};left:calc(${x}% - 24px);top:${y}%">${t}</button>`).join("");
+    $("manette").querySelectorAll(".epaule").forEach(b => b.hidden = !m.epaules);
+    const [sel, start] = m.sansMilieu ? [null, null] : (m.noms || ["SELECT", "START"]);
+    const pil = $("manette").querySelectorAll(".pilule");
+    pil[0].hidden = !sel; pil[0].textContent = sel || ""; pil[1].hidden = !start; pil[1].textContent = start || "";
+    $("manette").querySelectorAll("[data-touche]").forEach(b => {
+      const n = +b.dataset.touche, an = !!b.dataset.analogique;
+      const bas = e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) {} b.classList.add("appui"); touche(n, true, an); };
+      const haut = e => { e.preventDefault(); if (!b.classList.contains("appui")) return; b.classList.remove("appui"); touche(n, false, an); };
+      b.onpointerdown = bas; b.onpointerup = haut; b.onpointercancel = haut; b.onlostpointercapture = haut; b.oncontextmenu = e => e.preventDefault();
+    });
+    $("manette").hidden = !tactile;
+  }
+  // la croix : on peut glisser le doigt d'une direction à l'autre (diagonales comprises)
+  (() => {
+    const c = $("croix"); let dirs = new Set();
+    const fixer = nouv => {
+      const stick = manetteCourante && manetteCourante.stick;
+      // haut, bas, gauche, droite : touches 4 à 7 (croix), ou le stick analogique pour la N64
+      const code = { haut: stick ? 19 : 4, bas: stick ? 18 : 5, gauche: stick ? 17 : 6, droite: stick ? 16 : 7 };
+      for (const d of ["haut", "bas", "gauche", "droite"]) {
+        if (dirs.has(d) && !nouv.has(d)) touche(code[d], false, stick);
+        if (!dirs.has(d) && nouv.has(d)) touche(code[d], true, stick);
+        c.classList.toggle(d, nouv.has(d));
+      }
+      dirs = nouv;
+    };
+    const lire = e => {
+      const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5, s = new Set();
+      if (Math.hypot(x, y) < .1) return s;
+      const ang = Math.atan2(y, x) * 180 / Math.PI;
+      if (ang > -157.5 && ang < -22.5) s.add("haut"); if (ang > 22.5 && ang < 157.5) s.add("bas");
+      if (ang > 112.5 || ang < -112.5) s.add("gauche"); if (ang > -67.5 && ang < 67.5) s.add("droite");
+      return s;
+    };
+    let doigt = null;
+    c.onpointerdown = e => { e.preventDefault(); doigt = e.pointerId; try { c.setPointerCapture(e.pointerId); } catch (err) {} fixer(lire(e)); };
+    c.onpointermove = e => { if (doigt === e.pointerId) fixer(lire(e)); };
+    c.onpointerup = c.onpointercancel = c.onlostpointercapture = e => { if (doigt !== e.pointerId) return; doigt = null; fixer(new Set()); };
+    c.oncontextmenu = e => e.preventDefault();
+  })();
+  // en plein écran, la manette de la page n'est plus visible : on rend ses touches à l'émulateur
+  document.addEventListener("fullscreenchange", () => {
+    try { $("jeuFrame").contentDocument.body.classList.toggle("plein", document.fullscreenElement === $("jeuFrame")); } catch (e) {}
+  });
   function eteindre() {
     jeuEnCours = null;
     const f = $("jeuFrame"); f.src = "about:blank"; f.hidden = true;
     $("neige").hidden = false; $("ecranTexte").textContent = "CHOISIS UNE CARTOUCHE";
     $("borneEteindre").hidden = true; $("bornePlein").hidden = true;
+    $("manette").hidden = true;
     document.querySelectorAll(".cartouche").forEach(c => c.classList.remove("on"));
   }
   $("borneEteindre").onclick = eteindre;
