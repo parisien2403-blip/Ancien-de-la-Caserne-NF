@@ -372,7 +372,7 @@ export class Compteur extends DurableObject {
       const dits = this.sql.exec("SELECT id, numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
-      if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));
+      ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && a.lieu === "fetes") {
@@ -557,7 +557,7 @@ export class Compteur extends DurableObject {
   }
   // ce qui passe chez le DJ (pour toute la salle des fêtes), et la file d'attente
   async etatDJ() { return (await this.ctx.storage.get("dj")) || { courant: null, file: [] }; }
-  async majDJ(dj) { await this.ctx.storage.put("dj", dj); this.diffuser("fetes", { t: "dj", dj }); }
+  async majDJ(dj) { await this.ctx.storage.put("dj", dj); for (const l of LIEUX_MATRICE) this.diffuser(l, { t: "dj", dj }); }
   ficheDJ(id, qui) {
     const m = this.sql.exec("SELECT id, titre, artiste, duree FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
     return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui } : null;

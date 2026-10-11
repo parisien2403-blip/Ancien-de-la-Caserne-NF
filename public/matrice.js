@@ -215,6 +215,14 @@ function atelier(scene) {
     const toit = new THREE.Mesh(new THREE.ExtrudeGeometry(t, { depth: largeur, bevelEnabled: false }), zinc);
     toit.rotation.y = Math.PI / 2; toit.position.set(-largeur / 2, H, 0); toit.castShadow = true; grp.add(toit);
     const corniche = new THREE.Mesh(new THREE.BoxGeometry(largeur + .4, .35, .7), mat({ color: 0xefe8d8 })); corniche.position.set(0, H + .1, .1); grp.add(corniche);
+    // la nuit : des fenêtres allumées (et parfois quelqu'un qui passe derrière)
+    grp.userData.nuit = []; grp.userData.silhouettes = [];
+    const n = Math.max(3, Math.round(largeur / 3.4)), pas = largeur / n;
+    for (let e = 0; e < etages; e++) for (let c = 0; c < n; c++) if (alea() < .3) {
+      const fx = -largeur / 2 + c * pas + pas / 2, fy = H - (e * 3.1 + .55 + .78);
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.55), lumiere()); f.position.set(fx, fy, .02); f.visible = false; grp.add(f); grp.userData.nuit.push(f);
+      if (alea() < .45) { const s = silhouette(1.1, 1.55); s.position.set(fx, fy, .03); grp.add(s); grp.userData.nuit.push(s); grp.userData.silhouettes.push(s); }
+    }
     // lucarnes
     const nl = Math.max(2, Math.round(largeur / 3.4));
     for (let i = 0; i < nl; i++) { const lx = -largeur / 2 + (i + .5) * largeur / nl;
@@ -258,6 +266,30 @@ function horlogeOcto(x, cx, cy, r) {
   x.strokeStyle = "#111"; x.lineCap = "round"; x.lineWidth = r * .07; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + r * .08, cy - r * .45); x.moveTo(cx, cy); x.lineTo(cx + r * .32, cy + r * .2); x.stroke();
   x.fillStyle = "#c0392b"; x.beginPath(); x.arc(cx, cy, r * .07, 0, 7); x.fill();
 }
+/* --- la nuit : la lumière des fenêtres, et des silhouettes qui vont et viennent derrière --- */
+let lumieres = null;
+const lumiere = () => (lumieres || (lumieres = [0xffd58a, 0xffe2b0, 0xffc870, 0xf6e6c8].map(c => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .88 }))))[Math.floor(alea() * 4)];
+let texSilhouette = null;
+// une ombre (tête et épaules) dans une fenêtre de largeur w et hauteur h ; elle traverse la fenêtre de temps en temps
+function silhouette(w, h) {
+  if (!texSilhouette) texSilhouette = tex(toile(64, 128, (x) => { x.fillStyle = "rgba(48,30,18,.9)"; x.beginPath(); x.arc(32, 34, 15, 0, 7); x.fill();
+    x.beginPath(); x.moveTo(4, 128); x.quadraticCurveTo(4, 62, 32, 58); x.quadraticCurveTo(60, 62, 60, 128); x.fill(); }));
+  const sh = h * .82, sw = sh / 2;
+  const s = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), new THREE.MeshBasicMaterial({ map: texSilhouette, transparent: true, depthWrite: false, opacity: 0 }));
+  s.userData = { course: (w - sw) / 2, base: -(h - sh) / 2, periode: 9000 + alea() * 14000, phase: alea(), sens: alea() < .5 ? 1 : -1 };
+  s.visible = false; return s;
+}
+function animerSilhouette(s, t) {
+  const u = s.userData, p = ((t / u.periode) + u.phase) % 1, dep = s.userData.x0 ?? (s.userData.x0 = s.position.x);
+  if (u.y0 === undefined) u.y0 = s.position.y + u.base;
+  // traverse la fenêtre pendant le premier quart du temps, puis personne ; un aller, puis un retour au tour suivant
+  const tour = Math.floor((t / u.periode) + u.phase), sens = tour % 2 ? -u.sens : u.sens;
+  if (p > .28) { s.material.opacity = 0; return; }
+  const k = p / .28;
+  s.position.x = dep + sens * (k * 2 - 1) * u.course; s.position.y = u.y0 + Math.abs(Math.sin(k * 14)) * .03;
+  s.material.opacity = Math.min(1, Math.min(k, 1 - k) * 8) * .9;
+}
+
 // façade haussmannienne : pierre de taille, balcons filants au 2e et au 5e, boutiques en bas (40 px/m)
 function toileHaussmann(largeur, etages, teinte, graineF) {
   graine = graineF;
@@ -338,11 +370,12 @@ function construireLieu(id, scene) {
     // les balcons en relief
     for (let r = 0; r < 7; r++) for (let c = 1; c < 14; c += 2) A.ajoute(new THREE.BoxGeometry(2.3, .16, .9), A.mat({ color: 0xfbfaf6 }), -fondW / 2 + (c + .5) * fondW / 14, fondH - (34 + r * 112 + 80) / 40, -17.55);
     // la nuit : des fenêtres allumées çà et là
-    L.nuitObjets = [];
+    L.nuitObjets = []; L.silhouettes = [];
     graine = 77;
     const chaud = new THREE.MeshBasicMaterial({ color: 0xffd58a, transparent: true, opacity: .85 });
     for (let r = 0; r < 7; r++) for (let c = 0; c < 14; c++) if (alea() < .32) {
-      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 1.8), chaud); f.position.set(-fondW / 2 + (c + .5) * fondW / 14, fondH - (34 + r * 112 + 37) / 40, -17.97); f.visible = false; scene.add(f); L.nuitObjets.push(f); }
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 1.8), chaud); f.position.set(-fondW / 2 + (c + .5) * fondW / 14, fondH - (34 + r * 112 + 37) / 40, -17.97); f.visible = false; scene.add(f); L.nuitObjets.push(f);
+      if (alea() < .45) { const s = silhouette(1.45, 1.8); s.position.set(f.position.x, f.position.y, -17.96); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
     // dans le passage : quelques marches et la lumière au bout
     for (let k = 0; k < 3; k++) A.ajoute(new THREE.BoxGeometry(4.8, .17, .5), A.mat({ color: 0xbdb5a6 }), 0, .085 + k * .17, -26 - k * .5);
     A.ajoute(new THREE.BoxGeometry(4.8, .51, 3.5), A.mat({ color: 0xc9c1b2 }), 0, .255, -28.5);
@@ -397,7 +430,22 @@ function construireLieu(id, scene) {
           const m = new THREE.MeshBasicMaterial({ color: cols[i % cols.length], transparent: true, opacity: .0, blending: THREE.AdditiveBlending, depthWrite: false });
           const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), m); pl.rotation.y = -Math.PI / 2; pl.position.set(fx - .04, 3.05, z); pl.visible = false; scene.add(pl);
           const fond = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), new THREE.MeshBasicMaterial({ color: 0x120c22, transparent: true, opacity: .75 })); fond.rotation.y = -Math.PI / 2; fond.position.set(fx - .03, 3.05, z); fond.visible = false; scene.add(fond);
-          L.baiesFete.push({ pl, fond, i }); L.nuitObjets.push(pl, fond); }
+          L.baiesFete.push({ pl, fond, i }); L.nuitObjets.push(pl, fond);
+          if (i === 8) {
+            // la nuit, une des portes vitrées de la salle des fêtes reste ouverte : la lumière et la musique sortent dans la cour
+            fond.material = new THREE.MeshBasicMaterial({ color: 0x5a3a2a }); pl.material.opacity = 1;
+            const battant = new THREE.Group(); battant.position.set(fx - .06, .65, z + .95); battant.rotation.y = 1.25; battant.visible = false; scene.add(battant);
+            const cadre = A.mat({ color: 0xf2eee4 });
+            // le cadre du battant : deux montants et trois traverses
+            for (const [h, l, y, zz] of [[4.8, .1, 2.4, -.05], [4.8, .1, 2.4, -.9], [.1, .95, 4.75, -.475], [.1, .95, .05, -.475], [.08, .95, 1.6, -.475]]) {
+              const b = new THREE.Mesh(new THREE.BoxGeometry(.06, h, l), cadre); b.position.set(0, y, zz); battant.add(b); }
+            const verre = new THREE.Mesh(new THREE.BoxGeometry(.02, 4.7, .8), new THREE.MeshStandardMaterial({ color: 0xcfe0ea, transparent: true, opacity: .35, roughness: .1 })); verre.position.set(0, 2.4, -.475); battant.add(verre);
+            L.nuitObjets.push(battant);
+            const vide = new THREE.Mesh(new THREE.PlaneGeometry(.95, 4.8), new THREE.MeshBasicMaterial({ color: 0xffe0b0 })); vide.rotation.y = -Math.PI / 2; vide.position.set(fx - .05, 3.05, z + .475); vide.visible = false; scene.add(vide); L.nuitObjets.push(vide);
+            // la lumière de la fête qui se répand sur les marches et les pavés
+            const spot = new THREE.SpotLight(0xff3d7a, 0, 16, .75, .7, 1.2); spot.position.set(fx + .8, 3.6, z); spot.target.position.set(fx - 6, 0, z - .5); scene.add(spot); scene.add(spot.target);
+            L.porteFete = { vide, spot, x: fx - .5, z }; }
+        }
       }
       const bat = A.ajoute(new THREE.ExtrudeGeometry(f, { depth: PROF, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], cote < 0 ? fx - PROF : fx + PROF, 0, -2);
       bat.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -416,17 +464,22 @@ function construireLieu(id, scene) {
       }
     }
     // derrière : les vieux immeubles parisiens (la caserne est en plein Paris)
-    const teintes = ["#e6dcc6", "#ece3cf", "#dfd3bb", "#e9e0cc"];
+    const teintes = ["#e6dcc6", "#ece3cf", "#dfd3bb", "#e9e0cc"], immeubles = [];
     [[-32, 9, 4], [-21, 11, 5], [-9, 12, 5], [4.5, 13, 6], [17, 10, 5]].forEach(([z, l, e], i) => {
-      A.haussmann({ x: -27, z, largeur: l, etages: e, rot: Math.PI / 2, teinte: teintes[i % 4], graine: 11 + i });
-      A.haussmann({ x: 27, z: z + 2, largeur: l, etages: e + (i % 2 ? -1 : 0), rot: -Math.PI / 2, teinte: teintes[(i + 2) % 4], graine: 31 + i }); });
-    [[-33, 14, 6], [33, 14, 6]].forEach(([x, l, e], i) => A.haussmann({ x, z: -34, largeur: l, etages: e, rot: 0, teinte: teintes[i + 1], graine: 51 + i }));
+      immeubles.push(A.haussmann({ x: -27, z, largeur: l, etages: e, rot: Math.PI / 2, teinte: teintes[i % 4], graine: 11 + i }));
+      immeubles.push(A.haussmann({ x: 27, z: z + 2, largeur: l, etages: e + (i % 2 ? -1 : 0), rot: -Math.PI / 2, teinte: teintes[(i + 2) % 4], graine: 31 + i })); });
+    [[-33, 14, 6], [33, 14, 6]].forEach(([x, l, e], i) => immeubles.push(A.haussmann({ x, z: -34, largeur: l, etages: e, rot: 0, teinte: teintes[i + 1], graine: 51 + i })));
+    for (const im of immeubles) { L.nuitObjets.push(...im.userData.nuit); L.silhouettes.push(...im.userData.silhouettes); }
     L.limites = (x, z) => Math.abs(x) < 10.2 && z > -17.4 && z < 15;
     const cols5 = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
-    L.anim = (temps) => { if (!L.nuit || !L.baiesFete) return;
+    L.anim = (temps) => {
+      const P = L.porteFete; if (P) P.spot.intensity = L.nuit ? 70 + 50 * Math.max(0, Math.sin(temps / 300)) : 0;
+      if (!L.nuit || !L.baiesFete) return;
       for (const b of L.baiesFete) { const ph = temps / 420 + b.i * 1.3;
-        b.pl.material.opacity = .4 + .6 * Math.max(0, Math.sin(ph)) * (.6 + .4 * Math.sin(ph * 2.7));
-        if (Math.floor(ph / Math.PI) % 3 === 0) b.pl.material.color.setHex(cols5[(b.i + Math.floor(temps / 1700)) % 5]); } };
+        b.pl.material.opacity = b.i === 8 ? .55 + .45 * Math.max(0, Math.sin(ph)) : .4 + .6 * Math.max(0, Math.sin(ph)) * (.6 + .4 * Math.sin(ph * 2.7));
+        if (Math.floor(ph / Math.PI) % 3 === 0) b.pl.material.color.setHex(cols5[(b.i + Math.floor(temps / 1700)) % 5]); }
+      if (P) { const c = cols5[Math.floor(temps / 1700) % 5]; P.spot.color.setHex(c); P.vide.material.color.setHex(c).lerp(new THREE.Color(0xffe0b0), .55); }
+      for (const s of L.silhouettes) animerSilhouette(s, temps); };
     L.portails.push({ dans: (x, z) => x > 10 && z > -1 && z < 14, vers: "fetes", arrivee: [-4.4, 6] });
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
@@ -775,6 +828,11 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     animerPNJ();
+    // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
+    const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
+    let vol = M.L.interieur ? 1 : 0;
+    if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .07 + .38 * Math.max(0, 1 - d / 22); }
+    if (Math.abs(vol - (M.volume ?? -1)) > .015) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     placerCamera(false);
     rendu.render(M.scene, M.camera);
   });

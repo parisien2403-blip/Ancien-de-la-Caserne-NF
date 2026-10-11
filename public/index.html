@@ -314,6 +314,7 @@
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
   .mx-scene:fullscreen .mx-musique { bottom: 122px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
+  .mx-musique.mx-son { left: auto; right: 12px; transform: none; background: rgba(31,42,55,.8); color: #fff; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
   .mx-musique { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
     background: #f6d465; color: #2b2340; font: 700 15px "Lato", sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; }
@@ -1096,6 +1097,7 @@
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
+          <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
           <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
@@ -1912,7 +1914,8 @@
           $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = id !== "fetes";
-          if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
+          if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
+        surVolume: v => { djVolume = v; djSynchro(); },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
@@ -1942,7 +1945,7 @@
   }
   /* ----- Le DJ : la même musique, au même moment, pour tous ceux de la salle des fêtes ----- */
   const djAudio = new Audio(); djAudio.preload = "auto";
-  let djEtat = { courant: null, file: [] }, djEcoute = false, djDisco = [], djFiniEnvoye = null;
+  let djEtat = { courant: null, file: [] }, djEcoute = false, djDisco = [], djFiniEnvoye = null, djVolume = 1;
   const djSecondes = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   function djSynchro() {
     const c = djEtat.courant;
@@ -1953,7 +1956,9 @@
     $("djFileTitre").hidden = !djEtat.file.length;
     $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} <button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button></li>`).join("");
     $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
-    if (!c || !djEcoute) { djAudio.pause(); return; }
+    $("mxSon").hidden = !(c && mxLieu === "grande" && djVolume > 0); $("mxSon").textContent = djEcoute ? "🔇" : "🔊 La fête";
+    if (!c || !djEcoute || !djVolume) { djAudio.pause(); return; }
+    djAudio.volume = Math.min(1, djVolume);
     const src = `/api/musiques/${c.id}/fichier?t=${encodeURIComponent(moi.token)}`;
     const cale = () => { const pos = (Date.now() - c.debut) / 1000; if (pos < 0) { setTimeout(djSynchro, -pos * 1000); return; }
       if (Math.abs(djAudio.currentTime - pos) > 1.5) { try { djAudio.currentTime = pos; } catch (e) {} } djAudio.play().catch(() => {}); };
@@ -1963,6 +1968,7 @@
   djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && mxLieu === "fetes") { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
+  $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djPasser").onclick = () => MX && MX.dj("passer");
   $("djStop").onclick = async () => { if (await garde("La musique s'arrêtera pour tout le monde dans la salle.", { titre: "Arrêter la musique ?", annuler: true, ok: "Arrêter" })) MX && MX.dj("stop"); };
@@ -2444,6 +2450,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.11", "11 octobre 2026", ["Cour d'honneur la nuit : une porte de la salle des fêtes reste ouverte, la lumière de la fête se répand dans la cour et on entend la musique (moins fort, et plus fort en s'approchant ; bouton 🔊 La fête)", "Les immeubles parisiens ont des fenêtres allumées la nuit, et on voit des silhouettes aller et venir derrière"]],
     ["2.10", "11 octobre 2026", ["Matrice : nouvelle danse 🕺 Disco, façon John Travolta : le doigt en l'air, puis vers le sol", "Les bras ne sont plus coupés quand on danse", "Discussion : les messages s'effacent au bout d'une heure ; chacun retire les siens (✕), l'administrateur peut tout effacer ; en plein écran ils disparaissent au bout d'une minute", "Plein écran : le bouton Musique ne passe plus sous Danser"]],
     ["2.9.1", "11 octobre 2026", ["Matrice : les bulles au-dessus des bonshommes disparaissent plus vite (6 secondes au plus)"]],
     ["2.9", "11 octobre 2026", ["Mon bonhomme : nouvelles tenues T-shirt et jean, Polo et jean ; on choisit aussi la couleur du pantalon et des chaussures", "Matrice en plein écran : on peut discuter sans en sortir (barre en bas et derniers messages)", "Matrice : on danse ! Bouton 💃 Danser, ou touche ton bonhomme ; tout le monde te voit danser", "Cour d'honneur : la nuit tombe à l'heure réelle de Paris (lune, fenêtres allumées, lumières de la fête derrière les baies) ; l'administrateur peut imposer jour ou nuit", "Salle des fêtes : musiques jusqu'à 50 Mo"]],
