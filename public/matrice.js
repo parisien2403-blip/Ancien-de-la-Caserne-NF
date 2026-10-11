@@ -1082,7 +1082,7 @@ function construireSousSol(A, L, scene, o = {}) {
       A.ajoute(new THREE.BoxGeometry(x1 - x0, .05, z1 - z0), vernis, cx, .75, cz);
       for (const [a, b] of [[x0 + .06, z0 + .06], [x1 - .06, z0 + .06], [x0 + .06, z1 - .06], [x1 - .06, z1 - .06]]) A.ajoute(new THREE.BoxGeometry(.05, .73, .05), acajou, a, .365, b);
       obstacles.push([x0 - .05, x1 + .05, z0 - .05, z1 + .05]); };
-    for (const sg of [-1, 1]) for (const z of [-5.7, -7.6]) {          // le long des murs de côté
+    for (const sg of [-1, 1]) for (const z of [-5.7, -7.6]) { if (sg < 0 && z === -5.7) continue;   // (pas de table à côté des tabourets du bar : on y circule)          // le long des murs de côté
       const xw = sg * GX, x0 = sg > 0 ? xw - .75 : xw, x1 = sg > 0 ? xw : xw + .75; table(x0, x1, z - .6, z + .6);
       for (const dz of [-.33, .33]) fauteuil(xw - sg * 1.12, z + dz, sg, 0); }
     for (const x of [-1.1, 1.1]) { table(x - .6, x + .6, GZ0, GZ0 + .75); for (const dx of [-.33, .33]) fauteuil(x + dx, GZ0 + 1.12, 0, -1); }   // contre le mur du fond
@@ -2450,7 +2450,9 @@ function asseoir(p, i) {
 export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "asseoir") { if (moi.info.danse) danser(false); const [x, z] = M.L.tabourets[a.i]; envoyerWS({ t: "aller", x, z }); asseoir(moi, a.i); envoyerWS({ t: "assis", i: a.i }); }
-  else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); allerVers(moi.g.position.x - .7, moi.g.position.z, true); }
+  else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null });
+    // on se lève à côté du tabouret, là où l'on peut marcher (jamais coincé contre le comptoir ou les tabourets)
+    const [fx, fz] = viserLibre(moi.g.position.x, moi.g.position.z); moi.g.position.x = fx; moi.g.position.z = fz; moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: fx, z: fz }); }
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
