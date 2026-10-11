@@ -809,6 +809,62 @@
   .borne-admin h3 small { font: 12px "Lato", sans-serif; color: var(--muted); }
   .borne-admin .progression { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 0 0 12px; }
   .borne-admin .progression div { height: 100%; width: 0; background: var(--terra); transition: width .2s; }
+
+  /* ===================== Style « comme avant » : la brique rouge et la pierre blanche de la caserne ===================== */
+  :root { --cream: #f6efe5; --card: #fffdf8; --pierre: #ece6da url("images/pierre.jpg") 0 0 / 360px auto; --brique: #8e3a28 url("images/escaliers/brique.jpg") 0 0 / 352px auto; }
+  .app { background: var(--cream); }
+  .topbar { background: var(--brique); padding: 10px 12px 0; box-shadow: none; }
+  .enseigne { display: flex; align-items: center; gap: 10px; padding-right: 50px; }
+  .ens-logo { width: 42px; height: 42px; border-radius: 6px; border: 2px solid #ece6da; flex: none; }
+  .plaque-pierre { flex: 1; min-width: 0; background: var(--pierre); border-radius: 3px; padding: 7px 10px; text-align: center;
+    box-shadow: 0 2px 0 #b9ae9b, 0 4px 8px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.6); }
+  .plaque-pierre b { display: block; font: 14px "Marcellus", serif; letter-spacing: .6px; text-transform: uppercase; color: #3b3127; text-shadow: 0 1px 0 rgba(255,255,255,.85);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plaque-pierre small { display: block; font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: #6d5f50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .corniche { height: 10px; margin: 12px -12px 0; background: var(--pierre); box-shadow: 0 3px 6px rgba(0,0,0,.25); }
+  .topbar .me { top: calc(50% - 5px); border-color: #ece6da; }
+  .topbar .vue-btn { top: calc(50% - 5px); }
+  .tabbar .long { display: none; }
+  .tabbar { background: var(--pierre); border-top: 0; box-shadow: 0 -3px 0 var(--terra), 0 -6px 14px rgba(60,30,15,.12); }
+  .tabbar button { font-size: 10.5px; color: #6d5f50; }
+  .tabbar .ico { stroke: #6d5f50; }
+  .tabbar button.on { color: var(--terra-dark); }
+  .tabbar button.on .ico { stroke: var(--terra-dark); }
+  .card { border-radius: 6px; border: 0; box-shadow: 0 1px 0 #e3d5c2, 0 3px 10px rgba(60,30,15,.08); }
+  .btn { border-radius: 6px; }
+  .hello { font-family: "Marcellus", serif; color: #3a2318; letter-spacing: .3px; }
+  .photo { border-radius: 2px; border: 5px solid #fff; box-shadow: 0 2px 6px rgba(60,30,15,.2); filter: sepia(.25) saturate(.9); }
+  /* l'accueil : la photo comme un vieux tirage, les rubriques sur des plaques de pierre, les tuiles de la caserne */
+  .acc-hero { border-radius: 2px; box-shadow: none; overflow: visible; background: transparent; margin-bottom: 6px; }
+  .acc-hero img { border: 7px solid #fffdf7; box-shadow: 0 3px 12px rgba(60,30,15,.25); filter: sepia(.35) contrast(1.03); border-radius: 2px; }
+  .acc-hero .voile { background: transparent; color: var(--muted); padding: 14px 2px 0; }
+  .acc-hero .meteo-pill { top: 16px; right: 16px; }
+  .acc-hero h1 { color: #3a2318; font-family: "Marcellus", serif; }
+  .acc-hero p { color: var(--muted); }
+  .rubrique { display: flex; align-items: center; gap: 8px; margin: 22px 0 12px; font: 13px "Marcellus", serif; letter-spacing: 2px; text-transform: uppercase; color: #5c4635; }
+  .rubrique span { background: var(--pierre); padding: 5px 11px; border-radius: 2px; box-shadow: 0 1px 0 #b9ae9b, inset 0 0 0 1px rgba(255,255,255,.6); text-shadow: 0 1px 0 #fff; }
+  .rubrique::after { content: ""; flex: 1; height: 1px; background: #d3c3ad; }
+  .tuiles-cas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tuile-cas { text-align: left; border: 0; border-top: 5px solid var(--terra-dark); border-radius: 4px; background: var(--card); padding: 13px 12px; display: flex; flex-direction: column; gap: 6px;
+    box-shadow: 0 1px 0 #e3d5c2, 0 3px 8px rgba(60,30,15,.08); cursor: pointer; font: inherit; color: inherit; }
+  .tuile-cas .ico { width: 26px; height: 26px; }
+  .tuile-cas b { font: 16px "Marcellus", serif; color: #3a2318; }
+  .tuile-cas small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+  .card.mot { background: var(--pierre); box-shadow: 0 2px 0 #b9ae9b, 0 4px 10px rgba(60,30,15,.12); border-left: 8px solid #9c4a2f; }
+  @media (min-width: 960px) {
+    .tabbar .long { display: inline; } .tabbar .court { display: none; }
+    .tabbar { background: var(--brique); box-shadow: inset -8px 0 0 #ece6da; border-right: 0; }
+    .tabbar button { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); background: rgba(60,20,10,.4); font-size: 15px; }
+    .tabbar .ico { stroke: #fff; }
+    .tabbar button.on { background: var(--pierre); color: #3b3127; text-shadow: none; box-shadow: inset 4px 0 0 var(--terra-dark); }
+    .tabbar button.on .ico { stroke: var(--terra-dark); }
+    .enseigne { max-width: 760px; margin: 0 auto; }
+    .plaque-pierre b { font-size: 22px; } .plaque-pierre small { font-size: 12px; }
+    .ens-logo { width: 54px; height: 54px; }
+    .tuiles-cas { grid-template-columns: repeat(3, 1fr); }
+    .acc-hero img { aspect-ratio: 2.6/1; object-position: 50% 92%; }
+    .scroll > .tab[data-tab="accueil"] { max-width: 980px; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -847,7 +903,9 @@
 
   <section class="screen inside" id="inside" hidden>
     <div class="topbar">
-      <img class="plaque-photo" src="images/plaque.jpg" alt="Caserne de la Nouvelle France">
+      <div class="enseigne"><img class="ens-logo" src="icons/icon-192.png" alt="">
+        <div class="plaque-pierre"><b>Caserne de la Nouvelle France</b><small>82, rue du Faubourg-Poissonnière · Paris X<sup>e</sup></small></div></div>
+      <div class="corniche"></div>
       <button class="vue-btn" id="vueBtn" title="Passer en vue PC" hidden></button>
       <button class="me" title="Mon profil" id="me"><span class="ini" id="meIni">?</span><span class="statut"></span></button>
     </div>
@@ -862,6 +920,9 @@
           <div class="meteo-pill" id="accMeteo" title="La météo à la caserne">…</div>
           <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
         </div>
+        <h2 class="rubrique"><span>La caserne</span></h2>
+        <div class="tuiles-cas"><button type="button" class="tuile-cas" data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Poste de police</b><small>Ma carte d'ancien</small></button><button type="button" class="tuile-cas" data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 7l9 6 9-6"/></svg><b>Vaguemestre</b><small>Mon courrier</small></button><button type="button" class="tuile-cas" data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16 5l3.5-1 3 15-3.5 1z"/></svg><b>Bibliothèque</b><small>Les photos d'époque</small></button><button type="button" class="tuile-cas" data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>Salle des fêtes</b><small>Musique et borne d'arcade</small></button><button type="button" class="tuile-cas" data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.5 3.5 6"/></svg><b>Membres</b><small>Les anciens, escalier par escalier</small></button><button type="button" class="tuile-cas" data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><b>La Matrice</b><small>La caserne en 3D</small></button></div>
+        <h2 class="rubrique"><span>La vie de la caserne</span></h2>
         <div class="acc-cols">
           <div>
             <form class="card composer-pub" id="pubForm">
@@ -884,7 +945,7 @@
                 celle de notre enfance et de notre jeunesse.</p>
               <p>Derrière ce porche au bateau, nous avons grandi ensemble : les parties de chat cave, les goûters du mercredi,
                 les bals du 14 juillet, les copains de l'escalier d'à côté… Des années 70 aux années 90, toute une famille.</p>
-              <p>Ici, chacun peut <b>partager ses photos</b>, <b>raconter ses anecdotes</b>, <b>retrouver les anciens</b>,
+              <p>Ici, chacun peut <b>partager ses photos</b>, <b>raconter ses souvenirs</b>, <b>retrouver les anciens</b>,
                 <b>donner de ses nouvelles</b> et écrire aux camarades par le <b>vaguemestre</b>.</p>
               <p>Alors entrez, installez-vous, et faites passer le mot : les anciens de Nouvelle France sont de retour !</p>
               <p class="signe">G-P Bouquet, administrateur de la Caserne NF</p>
@@ -1185,13 +1246,12 @@
 
     <nav class="tabbar" id="tabbar">
       <button data-go="accueil"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg><span class="lbl">Accueil</span></button>
-      <button data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
-      <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
-      <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span class="lbl">Salle<br> des jeunes</span></button>
-      <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
-      <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
+      <button data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl"><span class="court">Poste</span><span class="long">Poste de police</span></span></button>
+      <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl"><span class="court">Biblio</span><span class="long">Bibliothèque</span></span></button>
+      <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl"><span class="court">Fêtes</span><span class="long">Salle des fêtes</span></span></button>
+      <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl"><span class="court">Membres</span><span class="long">Membres de la caserne</span></span></button>
       <button data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Matrice</span></button>
-      <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl">Vague<span class="cesure">-</span><br>mestre</span><span class="dot" id="vDot" hidden></span></button>
+      <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl"><span class="court">Courrier</span><span class="long">Vaguemestre</span></span><span class="dot" id="vDot" hidden></span></button>
     </nav>
 
     <div class="viewer" id="viewer">
@@ -1699,7 +1759,6 @@
     if (tab === "fetes") { chargerBorne(); if (moi) chargerDisco(); else renderTracks(); } else if (playing !== -1) { audio.pause(); playing = -1; }
     if (tab === "membres") chargerMembres();
     if (tab === "biblio") chargerBiblio();
-    if (tab === "jeunes") chargerAnecdotes();
     if (tab === "vague") chargerBoite();
     if (tab === "matrice") ouvrirMatrice(); else fermerMatrice();
   }
@@ -2512,6 +2571,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.0", "11 octobre 2026", ["Nouvelle présentation « comme avant » : mur de brique rouge et plaque de pierre blanche gravée en haut, photos façon tirages d'époque, rubriques sur des plaques de pierre", "Accueil : les tuiles de la caserne (Poste, Vaguemestre, Bibliothèque, Salle des fêtes, Membres, Matrice)", "La Salle des jeunes est retirée ; la barre du bas a 7 onglets aux noms courts (sur PC, le menu en brique à gauche)"]],
     ["2.27.1", "11 octobre 2026", ["Accueil : une seule photo du porche, le navire et, juste dessous, la plaque « Caserne de la Nouvelle France », comme en vrai"]],
     ["2.27", "11 octobre 2026", ["Cour d'honneur : le porche de l'autre façade montre le même passage que côté rue (plantes, affiche, porte du poste de police, barrière levée, battants noirs), dans son prolongement"]],
     ["2.26", "11 octobre 2026", ["Salle des fêtes : dans le coin entre le bar et le mur du fond, le flipper Bally « Viking » et le baby-foot", "Salle des fêtes le jour : pas de projecteurs, de fumée, de lasers ni de reflets de la boule, et Manu n'est pas là ; tout s'allume à la nuit tombée (ou quand l'administrateur impose la nuit)"]],
