@@ -547,7 +547,7 @@ function construireLieu(id, scene) {
       for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(L3 + .04, .32, .015), nappe, xt, .61, zt + sgn * (P / 2 + .008), false);   // la nappe qui retombe
       for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.015, .32, P + .03), nappe, xt + sgn * (L3 / 2 + .008), .61, zt, false);
       for (const [dx, dz] of [[-1.65, -.36], [1.65, -.36], [-1.65, .36], [1.65, .36]]) A.ajoute(new THREE.CylinderGeometry(.02, .02, .45, 6), tube, xt + dx, .225, zt + dz, false);
-      for (let k = 0; k < 4; k++) { const cx = xt - 1.35 + k * .9; chaise(cx, zt - .62, Math.PI); chaise(cx, zt + .62, 0); }
+      for (let k = 0; k < 4; k++) { const cx = xt - 1.35 + k * .9; chaise(cx, zt - .47, Math.PI); chaise(cx, zt + .47, 0); /* rangées sous la table, dossier vers l'extérieur */ }
       tables.push([xt - L3 / 2 - .2, xt + L3 / 2 + .2, zt - 1, zt + 1]);
     }
 
