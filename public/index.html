@@ -537,8 +537,9 @@
   .av.ph { background: var(--terra-soft) center/cover; color: transparent; }
   /* ---------- Page d'accueil ---------- */
   .acc-hero { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(60,30,15,.18); }
-  .acc-hero img { display: block; width: 100%; aspect-ratio: 16/8; object-fit: cover; object-position: 50% 35%; filter: sepia(.25) contrast(1.02); }
-  .acc-hero .voile { position: absolute; inset: auto 0 0 0; padding: 40px 18px 16px; background: linear-gradient(transparent, rgba(20,12,6,.82)); color: #f6eedf; }
+  .acc-hero img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: 50% 100%; filter: sepia(.25) contrast(1.02); }
+  /* le texte sous la photo, pour laisser voir le navire et la plaque « Caserne de la Nouvelle France » en entier */
+  .acc-hero .voile { position: relative; padding: 14px 18px 16px; background: linear-gradient(#3a2a1e, #24180f); color: #f6eedf; }
   .acc-hero h1 { margin: 0; color: #fff; font-size: clamp(22px, 5.5vw, 34px); line-height: 1.15; }
   .acc-hero p { margin: 4px 0 0; font-size: 14px; opacity: .9; }
   .mot { font-size: 16px; line-height: 1.7; }
@@ -569,7 +570,7 @@
   .arrivees .list-item { margin-bottom: 8px; }
   @media (min-width: 960px) {
     .acc-cols { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; }
-    .acc-hero img { aspect-ratio: 21/8; }
+    .acc-hero img { aspect-ratio: 2/1; }
   }
   /* bouton vue PC / vue téléphone */
   .vue-btn { position: absolute; right: 62px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%;
@@ -857,7 +858,7 @@
       <!-- ===== ACCUEIL (page de garde) ===== -->
       <div class="tab" data-tab="accueil" hidden>
         <div class="acc-hero">
-          <img src="images/porche.jpg" alt="Le porche de la Caserne de la Nouvelle France, son bateau sculpté et sa plaque gravée">
+          <img src="images/accueil-porche.jpg" alt="Le porche de la Caserne de la Nouvelle France : le navire sculpté et, dessous, la plaque « Caserne de la Nouvelle France »">
           <div class="meteo-pill" id="accMeteo" title="La météo à la caserne">…</div>
           <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
         </div>
@@ -2511,6 +2512,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.27.1", "11 octobre 2026", ["Accueil : une seule photo du porche, le navire et, juste dessous, la plaque « Caserne de la Nouvelle France », comme en vrai"]],
     ["2.27", "11 octobre 2026", ["Cour d'honneur : le porche de l'autre façade montre le même passage que côté rue (plantes, affiche, porte du poste de police, barrière levée, battants noirs), dans son prolongement"]],
     ["2.26", "11 octobre 2026", ["Salle des fêtes : dans le coin entre le bar et le mur du fond, le flipper Bally « Viking » et le baby-foot", "Salle des fêtes le jour : pas de projecteurs, de fumée, de lasers ni de reflets de la boule, et Manu n'est pas là ; tout s'allume à la nuit tombée (ou quand l'administrateur impose la nuit)"]],
     ["2.25", "11 octobre 2026", ["Le passage sous le porche : au bout, on voit maintenant la vraie cour d'honneur (le même bâtiment du fond et son horloge, les bâtiments de plain-pied) ; la barrière est levée et placée côté rue, on traverse librement"]],
