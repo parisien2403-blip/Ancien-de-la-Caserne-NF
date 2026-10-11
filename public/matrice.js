@@ -128,12 +128,14 @@ function atelier(scene) {
   const mat = (o) => new THREE.MeshStandardMaterial({ roughness: .9, metalness: 0, ...o });
   const ajoute = (geo, m, x, y, z, ombre = true) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = ombre; o.receiveShadow = true; scene.add(o); return o; };
   // une façade percée d'un passage (carré ou voûté) qu'on traverse : volume extrudé, texture plaquée sur la façade
-  const facadePercee = ({ largeur, hauteur, profondeur, toileFacade, passage, x, z, couleurCote = 0x9a4b38, couleurPassage = 0xd9cfbd }) => {
+  const facadePercee = ({ largeur, hauteur, profondeur, toileFacade, passage, autres = [], x, z, couleurCote = 0x9a4b38, couleurPassage = 0xd9cfbd }) => {
     const f = new THREE.Shape(); f.moveTo(-largeur / 2, 0); f.lineTo(largeur / 2, 0); f.lineTo(largeur / 2, hauteur); f.lineTo(-largeur / 2, hauteur); f.closePath();
     const p = new THREE.Path(), L = passage.largeur / 2;
     if (passage.voute) { p.moveTo(-L, 0); p.lineTo(-L, passage.hauteur - L); p.absarc(0, passage.hauteur - L, L, Math.PI, 0, true); p.lineTo(L, 0); }
     else { p.moveTo(-L, 0); p.lineTo(-L, passage.hauteur); p.lineTo(L, passage.hauteur); p.lineTo(L, 0); }
     p.closePath(); f.holes.push(p);
+    for (const v of autres) { const q = new THREE.Path(), l = v.largeur / 2;
+      q.moveTo(v.x - l, 0); q.lineTo(v.x - l, v.hauteur - l); q.absarc(v.x, v.hauteur - l, l, Math.PI, 0, true); q.lineTo(v.x + l, 0); q.closePath(); f.holes.push(q); }
     const t = tex(toileFacade); t.repeat.set(1 / largeur, 1 / hauteur); t.offset.set(.5, 0);
     const o = ajoute(new THREE.ExtrudeGeometry(f, { depth: profondeur, bevelEnabled: false, curveSegments: 20 }), [mat({ map: t }), mat({ color: couleurPassage })], x, 0, z - profondeur);
     ajoute(new THREE.BoxGeometry(largeur, .3, profondeur), mat({ color: 0x6b6b6b }), x, hauteur + .15, z - profondeur / 2);
@@ -296,9 +298,14 @@ function construireLieu(id, scene) {
       }
       // socle : portes et grandes baies de part et d'autre du passage, l'encadrement du passage
       const cx = w / 2;
-      for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const X = cx + s * (170 + k * 190) - (s < 0 ? 120 : 0);
-        x.fillStyle = "#f4f0e8"; x.fillRect(X, h - 190, 120, 150); x.strokeStyle = "#cbbfa8"; x.lineWidth = 6; x.strokeRect(X, h - 190, 120, 150);
-        x.strokeStyle = "#d9d0bf"; x.lineWidth = 3; x.beginPath(); x.moveTo(X + 60, h - 190); x.lineTo(X + 60, h - 40); x.stroke(); }
+      // une porte vitrée de chaque côté du porche, et au-delà des voûtes de garage
+      for (const s of [-1, 1]) for (const [d, L] of [[124, 66], [392, 56], [560, 110], [760, 110]]) { const X = cx + s * d - (s < 0 ? L : 0);
+        x.fillStyle = "#f4f0e8"; x.fillRect(X, h - 180, L, 140); x.strokeStyle = "#cbbfa8"; x.lineWidth = 5; x.strokeRect(X, h - 180, L, 140);
+        x.strokeStyle = "#d9d0bf"; x.lineWidth = 3; x.beginPath(); x.moveTo(X + L / 2, h - 180); x.lineTo(X + L / 2, h - 40); x.stroke(); }
+      // l'encadrement de pierre des deux voûtes de garage (centres à ±7 m, 3,8 m de large, 4,6 m de haut)
+      for (const s of [-1, 1]) { const vx = cx + s * 280, R = 76, ny = h - (4.6 * 40 - R);
+        x.strokeStyle = "#d6ccb6"; x.lineWidth = 18; x.beginPath(); x.moveTo(vx - R - 9, h); x.lineTo(vx - R - 9, ny); x.arc(vx, ny, R + 9, Math.PI, 0); x.lineTo(vx + R + 9, h); x.stroke();
+        x.fillStyle = "#cdbfa5"; x.fillRect(vx - 12, ny - R - 20, 24, 24); }
       x.fillStyle = "#ded4c0"; x.fillRect(cx - 112, h - 196, 224, 16);          // linteau du passage carré
       // l'horloge ronde, centrée au-dessus du porche carré
       const hx = cx, hy = h - 226;
@@ -307,7 +314,37 @@ function construireLieu(id, scene) {
       x.lineWidth = 4; x.lineCap = "round"; x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx, hy - 16); x.moveTo(hx, hy); x.lineTo(hx + 12, hy + 4); x.stroke();
     });
     // le bâtiment du fond, percé du passage carré (4,8 m × 4,4 m) qu'on traverse
-    A.facadePercee({ largeur: fondW, hauteur: fondH, profondeur: 12, toileFacade: fond, passage: { largeur: 4.8, hauteur: 4.4 }, x: 0, z: -18, couleurPassage: 0xcfc4b0 });
+    A.facadePercee({ largeur: fondW, hauteur: fondH, profondeur: 12, toileFacade: fond, passage: { largeur: 4.8, hauteur: 4.4 },
+      autres: [{ x: -7, largeur: 3.8, hauteur: 4.6 }, { x: 7, largeur: 3.8, hauteur: 4.6 }], x: 0, z: -18, couleurPassage: 0xcfc4b0 });
+    // les garages sous les voûtes : fond fermé, et un bus bleu marine de la gendarmerie garé dans chacun
+    const avant = toile(512, 512, (x, w, h) => {
+      x.fillStyle = "#1b2a4a"; x.fillRect(0, 0, w, h);
+      x.fillStyle = "#24365e"; x.fillRect(20, 40, w - 40, 30);
+      x.fillStyle = "#fff"; x.font = "bold 44px Arial"; x.textAlign = "center"; x.fillText("GENDARMERIE", w / 2, 66);
+      const g = x.createLinearGradient(0, 90, 0, 290); g.addColorStop(0, "#5d7186"); g.addColorStop(1, "#1d2733"); x.fillStyle = g; x.beginPath(); x.roundRect(30, 90, w - 60, 200, 14); x.fill();
+      x.fillStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.moveTo(50, 100); x.lineTo(200, 100); x.lineTo(120, 280); x.lineTo(50, 280); x.fill();
+      x.fillStyle = "#0f1626"; x.fillRect(0, 420, w, 92);                                  // pare-chocs
+      x.fillStyle = "#f4f1e6"; x.beginPath(); x.roundRect(40, 340, 90, 50, 10); x.roundRect(w - 130, 340, 90, 50, 10); x.fill();   // phares
+      x.fillStyle = "#c9a227"; x.fillRect(w / 2 - 70, 335, 140, 6);
+      x.fillStyle = "#3a4c78"; for (let i = 0; i < 6; i++) x.fillRect(180 + i * 26, 350, 16, 50);                                // calandre
+      x.fillStyle = "#eee"; x.fillRect(w / 2 - 60, 440, 120, 36); x.fillStyle = "#1f3a8a"; x.fillRect(w / 2 - 60, 440, 14, 36);  // plaque
+    });
+    const flanc = toile(1024, 256, (x, w, h) => {
+      x.fillStyle = "#1b2a4a"; x.fillRect(0, 0, w, h);
+      x.fillStyle = "#2c3a52"; for (let i = 0; i < 8; i++) x.fillRect(40 + i * 120, 40, 104, 90);
+      x.fillStyle = "#fff"; x.fillRect(0, 150, w, 10); x.font = "bold 40px Arial"; x.fillText("GENDARMERIE", 330, 210);
+    });
+    const marine = A.mat({ color: 0x1b2a4a, roughness: .45, metalness: .2 });
+    for (const s of [-1, 1]) {
+      A.ajoute(new THREE.BoxGeometry(3.8, 4.6, .3), A.mat({ color: 0x3a3631 }), s * 7, 2.3, -29.6);   // fond du garage
+      const bus = new THREE.Group(); bus.position.set(s * 7, 0, -25); scene.add(bus);
+      const fa = A.mat({ map: tex(avant), roughness: .45 }), fl = A.mat({ map: tex(flanc), roughness: .45 });
+      const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.8, 9), [fl, fl, marine, marine, fa, marine]); caisse.position.y = 1.75; caisse.castShadow = true; bus.add(caisse);
+      for (const [rx, rz] of [[-1.15, 3.2], [1.15, 3.2], [-1.15, -3], [1.15, -3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.48, .48, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .48, rz); bus.add(roue); }
+      // la rampe de gyrophares bleus sur le toit
+      const rampe = new THREE.Mesh(new THREE.BoxGeometry(1.4, .18, .3), A.mat({ color: 0x2a2a2a })); rampe.position.set(0, 3.25, 3.9); bus.add(rampe);
+      for (const gx of [-.5, .5]) { const g = new THREE.Mesh(new THREE.BoxGeometry(.38, .2, .28), new THREE.MeshStandardMaterial({ color: 0x2f6bff, emissive: 0x1a44cc, emissiveIntensity: .9 })); g.position.set(gx, 3.42, 3.9); bus.add(g); }
+    }
     // les balcons en relief
     for (let r = 0; r < 7; r++) for (let c = 1; c < 14; c += 2) A.ajoute(new THREE.BoxGeometry(2.3, .16, .9), A.mat({ color: 0xfbfaf6 }), -fondW / 2 + (c + .5) * fondW / 14, fondH - (34 + r * 112 + 80) / 40, -17.55);
     // dans le passage : quelques marches et la lumière au bout
