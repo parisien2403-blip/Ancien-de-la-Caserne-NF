@@ -509,7 +509,7 @@ function construireLieu(id, scene) {
         if (i > 0 && i < nF) { const b = new THREE.Mesh(new THREE.SphereGeometry(.24, 20, 12, 0, Math.PI), applique); b.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2; b.position.set(x + s * .27, 3.6, z); scene.add(b);
           const lum = new THREE.PointLight(0xffe6c0, 4, 9, 1.6); lum.position.set(x + s * .7, 3.6, z); scene.add(lum); } } }
     // côté intérieur (x = X1) : un long bar en bois à l'ancienne, sur presque toute la longueur
-    const bzA = Z0 + 1.2, bzB = Z1 - 2.2, bl = bzB - bzA, bc = (bzA + bzB) / 2, bx = X1 - 1.6;
+    const bzA = Z0 + long * .25, bzB = Z1 - 1.2, bl = bzB - bzA, bc = (bzA + bzB) / 2, bx = X1 - 1.6;
     const acajou = A.mat({ color: 0x5b2c16, roughness: .35 }), acajouC = A.mat({ color: 0x7a3d1f, roughness: .4 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 });
     A.ajoute(new THREE.BoxGeometry(.7, 1.05, bl), acajou, bx, .525, bc);                                         // le comptoir
     A.ajoute(new THREE.BoxGeometry(.95, .08, bl + .15), A.mat({ color: 0x3e1c0c, roughness: .2 }), bx - .08, 1.09, bc);   // le dessus verni
@@ -530,6 +530,18 @@ function construireLieu(id, scene) {
     A.ajoute(new THREE.BoxGeometry(2.2, 2.8, .06), porte, 0, 1.4, Z1 - .02, false);
     for (const d of [-.55, .55]) { const pv = A.ajoute(new THREE.PlaneGeometry(.7, 1.4), vitre, d, 1.85, Z1 - .06, false); pv.rotation.y = Math.PI; }
     A.ajoute(new THREE.BoxGeometry(2.5, .14, .12), cadre, 0, 2.86, Z1 - .08, false);
+    // la boule à facettes, au centre du plafond
+    const facettes = toile(512, 256, (x, w, h) => { for (let i = 0; i < w; i += 16) for (let j = 0; j < h; j += 16) { const v = alea();
+      x.fillStyle = v > .93 ? "#ffffff" : `hsl(${200 + v * 40}, ${6 + v * 14}%, ${70 + v * 28}%)`; x.fillRect(i + 1, j + 1, 14, 14); } x.fillStyle = "rgba(0,0,0,.5)"; });
+    const boule = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 16), new THREE.MeshStandardMaterial({ map: tex(facettes), metalness: .25, roughness: .2, flatShading: true, emissive: 0xb8c4d0, emissiveIntensity: .35, emissiveMap: tex(facettes) }));
+    boule.position.set(0, HT - 1.45, cz); boule.castShadow = true; scene.add(boule);
+    A.ajoute(new THREE.CylinderGeometry(.015, .015, .9, 6), A.mat({ color: 0x8a8a8a, metalness: .6 }), 0, HT - .5, cz, false);   // la chaînette
+    // petits reflets colorés au sol et aux murs
+    const reflets = [];
+    for (let i = 0; i < 26; i++) { const a = alea() * Math.PI * 2, d = 1.5 + alea() * 4.5;
+      const t = new THREE.Mesh(new THREE.CircleGeometry(.07 + alea() * .05, 10), new THREE.MeshBasicMaterial({ color: [0xffffff, 0xfff1a8, 0xa8d8ff, 0xffb8e0][i % 4], transparent: true, opacity: .55, depthWrite: false }));
+      t.rotation.x = -Math.PI / 2; t.position.set(Math.cos(a) * d * .55, .02, cz + Math.sin(a) * d); scene.add(t); reflets.push([t, a, d]); }
+    L.anim = (temps) => { boule.rotation.y = temps / 3000; for (const [t, a, d] of reflets) { const b = a + temps / 3000; t.position.x = Math.max(X0 + .3, Math.min(X1 - .3, Math.cos(b) * d * .55)); t.position.z = cz + Math.sin(b) * d; } };
     // lumière de la salle
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
     for (const z of [Z0 + 4, cz, Z1 - 4]) { const l = new THREE.PointLight(0xfff0d8, 6, 14, 1.4); l.position.set(0, HT - .6, z); scene.add(l); }
@@ -605,6 +617,7 @@ export async function ouvrir(ctx) {
           if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; changerLieu(pt.vers, pt.arrivee); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
     }
+    if (M.L.anim) M.L.anim(t);
     placerCamera(false);
     rendu.render(M.scene, M.camera);
   });
