@@ -38,10 +38,10 @@ const photoValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;
 // ce qu'on peut commenter ou retirer : type → table
 const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publications" };
 
-// escalier : une lettre de A à Z, sauf Q, T, U, V et W (ces escaliers n'existaient pas à la caserne) ; étage : 0 (rez-de-chaussée) à 12
+// escalier : une lettre de A à Z, sauf Q, T, U, V et W (ces escaliers n'existaient pas à la caserne) ; étage : 0 (rez-de-chaussée) à 7 (7 étages au plus)
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
-const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 12 ? n : null; };
+const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
 // image d'une cartouche : une petite image JPEG/PNG/WebP déjà réduite par l'appli (300 Ko maximum)
 function jaquette(v) {
@@ -263,6 +263,7 @@ export class Compteur extends DurableObject {
 
   async changerEscalier(token, x) {
     const moi = this.moi(token, { tous: true }), bat = batValide(x.bat), etage = bat ? etageValide(x.etage) : null;
+    if (bat && x.etage !== null && x.etage !== undefined && x.etage !== "" && etageValide(x.etage) === null) throw new Refus("L'étage va du rez-de-chaussée au 7e");
     if (x.bat && !bat) throw new Refus("Cet escalier n'existe pas à la caserne (il n'y avait pas de Q, T, U, V ni W)");
     this.sql.exec("UPDATE membres SET bat = ?, etage = ? WHERE email = ?", bat, etage, moi.email);
     return { ok: true, bat, etage };
