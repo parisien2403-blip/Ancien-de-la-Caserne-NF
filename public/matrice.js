@@ -319,55 +319,61 @@ function construireLieu(id, scene) {
     A.ajoute(new THREE.BoxGeometry(40, 18, 2), A.mat({ color: 0xd8cdb8 }), 0, 9, -42);
 
     // les deux bâtiments de plain-pied, identiques, en pierre, grandes baies vitrées ; au bout du fond, une voûte de garage avec un bus de la gendarmerie
-    const LONG = 32, HPP = 7, PROF = 12, VZ = -14;            // voûte centrée à z = -14 (bout du fond)
-    const piedToile = (voutePx) => toile(1600, 280, (x, w, h) => {      // 50 px/m en longueur, 40 px/m en hauteur
+    const LONG = 32, HPP = 7, PROF = 12, VOUTES = [-14.4, -9.8, -5.2];   // trois voûtes au bout du fond
+    const piedToile = (voutesPx) => toile(1600, 280, (x, w, h) => {      // 50 px/m en longueur, 40 px/m en hauteur
       pierre(x, 0, 0, w, h, "#e4dccb");
       x.fillStyle = "#d3c9b3"; x.fillRect(0, 0, w, 30); x.fillStyle = "#c9bea7"; x.fillRect(0, 30, w, 5);
-      for (let i = 0; i < 11; i++) { const X = 40 + i * 142; if (Math.abs(X + 50 - voutePx) < 160) continue;
+      for (let i = 0; i < 11; i++) { const X = 40 + i * 142; if (voutesPx.some(v => Math.abs(X + 50 - v) < 150)) continue;
         x.fillStyle = "#555"; x.fillRect(X - 26, 44, 20, 7);
         fenetre(x, X, 60, 100, 196, "#f2eee4"); x.fillStyle = "#f2eee4"; x.fillRect(X + 32, 60, 3, 196); x.fillRect(X + 65, 60, 3, 196); }
       // encadrement de pierre de la voûte (3,8 m de large = 190 px, 4,8 m de haut)
-      const R = 95, ny = h - (4.8 * 40 - 4.8 * 40 * 0 - 1.9 * 40);
-      x.strokeStyle = "#d6ccb6"; x.lineWidth = 16; x.beginPath(); x.moveTo(voutePx - R - 8, h); x.lineTo(voutePx - R - 8, ny); x.ellipse(voutePx, ny, R + 8, 1.9 * 40 + 8, 0, Math.PI, 0); x.lineTo(voutePx + R + 8, h); x.stroke();
+      const R = 95, ny = h - (4.8 * 40 - 1.9 * 40);
+      for (const vp of voutesPx) { x.strokeStyle = "#d6ccb6"; x.lineWidth = 16; x.beginPath(); x.moveTo(vp - R - 8, h); x.lineTo(vp - R - 8, ny); x.ellipse(vp, ny, R + 8, 1.9 * 40 + 8, 0, Math.PI, 0); x.lineTo(vp + R + 8, h); x.stroke(); }
     });
     const bleu = "#2c5bb0", bleuF = "#24498f";
-    const avantBus = toile(512, 512, (x, w, h) => {
+    // autocar standard bleu gendarmerie (sans gyrophare)
+    const avantBus = toile(512, 640, (x, w, h) => {
       x.fillStyle = bleu; x.fillRect(0, 0, w, h);
-      x.fillStyle = "#fff"; x.fillRect(0, 26, w, 52); x.fillStyle = bleuF; x.font = "bold 42px Arial"; x.textAlign = "center"; x.fillText("GENDARMERIE", w / 2, 66);
-      const g = x.createLinearGradient(0, 96, 0, 290); g.addColorStop(0, "#6f8396"); g.addColorStop(1, "#1d2733"); x.fillStyle = g; x.beginPath(); x.roundRect(30, 96, w - 60, 196, 14); x.fill();
-      x.fillStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.moveTo(50, 106); x.lineTo(200, 106); x.lineTo(120, 282); x.lineTo(50, 282); x.fill();
-      x.fillStyle = "#1a1d22"; x.fillRect(0, 420, w, 92);
-      x.fillStyle = "#f4f1e6"; x.beginPath(); x.roundRect(40, 340, 90, 50, 10); x.roundRect(w - 130, 340, 90, 50, 10); x.fill();
-      x.fillStyle = bleuF; for (let i = 0; i < 6; i++) x.fillRect(180 + i * 26, 350, 16, 50);
-      x.fillStyle = "#eee"; x.fillRect(w / 2 - 60, 440, 120, 36); x.fillStyle = "#1f3a8a"; x.fillRect(w / 2 - 60, 440, 14, 36);
+      x.fillStyle = "#1d2a3a"; x.fillRect(40, 22, w - 80, 52);                                     // girouette
+      x.fillStyle = "#f6c84a"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText("GENDARMERIE", w / 2, 60);
+      const g = x.createLinearGradient(0, 90, 0, 400); g.addColorStop(0, "#7c90a3"); g.addColorStop(1, "#1d2733");
+      x.fillStyle = g; x.beginPath(); x.roundRect(22, 90, w - 44, 310, 22); x.fill();                // grand pare-brise
+      x.fillStyle = "rgba(255,255,255,.16)"; x.beginPath(); x.moveTo(40, 100); x.lineTo(220, 100); x.lineTo(110, 390); x.lineTo(40, 390); x.fill();
+      x.fillStyle = "#fff"; x.fillRect(0, 430, w, 40); x.fillStyle = bleuF; x.font = "bold 30px Arial"; x.fillText("GENDARMERIE", w / 2, 462);
+      x.fillStyle = "#f4f1e6"; x.beginPath(); x.roundRect(30, 500, 110, 40, 10); x.roundRect(w - 140, 500, 110, 40, 10); x.fill();   // phares
+      x.fillStyle = "#1a1d22"; x.fillRect(0, 570, w, 70);
+      x.fillStyle = "#eee"; x.fillRect(w / 2 - 70, 584, 140, 36); x.fillStyle = "#1f3a8a"; x.fillRect(w / 2 - 70, 584, 16, 36);
     });
-    const flancBus = toile(1024, 256, (x, w, h) => {
+    const flancBus = toile(1280, 256, (x, w, h) => {
       x.fillStyle = bleu; x.fillRect(0, 0, w, h);
-      x.fillStyle = "#33414f"; for (let i = 0; i < 8; i++) x.fillRect(40 + i * 120, 34, 104, 92);
-      x.fillStyle = "#fff"; x.fillRect(0, 146, w, 52); x.fillStyle = bleuF; x.font = "bold 40px Arial"; x.fillText("GENDARMERIE", 330, 186);
+      x.fillStyle = "#2f3d4c"; x.fillRect(30, 26, w - 60, 100);                                       // vitrage continu
+      x.fillStyle = bleu; for (let i = 1; i < 9; i++) x.fillRect(30 + i * (w - 60) / 9 - 4, 26, 8, 100);
+      x.fillStyle = "#fff"; x.fillRect(0, 140, w, 40); x.fillStyle = bleuF; x.font = "bold 34px Arial"; x.fillText("GENDARMERIE", 420, 172);
+      x.fillStyle = "#24498f"; x.fillRect(260, 196, 760, 44);                                         // soutes à bagages
+      x.strokeStyle = "#1c3b78"; x.lineWidth = 3; for (let i = 0; i < 4; i++) x.strokeRect(264 + i * 190, 198, 184, 40);
     });
     for (const cote of [-1, 1]) {
       const fx = cote * 12.5;
       // façade extrudée (profil dans la longueur), percée de la voûte au bout du fond
-      const u = cote < 0 ? -(VZ + 2) : VZ + 2;                 // position de la voûte dans le profil
+      const us = VOUTES.map(VZ => cote < 0 ? -(VZ + 2) : VZ + 2);   // positions des voûtes dans le profil
       const f = new THREE.Shape(); f.moveTo(-LONG / 2, 0); f.lineTo(LONG / 2, 0); f.lineTo(LONG / 2, HPP); f.lineTo(-LONG / 2, HPP); f.closePath();
-      const v = new THREE.Path(); v.moveTo(u - 1.9, 0); v.lineTo(u - 1.9, 2.9); v.absellipse(u, 2.9, 1.9, 1.9, Math.PI, 0, true); v.lineTo(u + 1.9, 0); v.closePath(); f.holes.push(v);
-      const t = tex(piedToile((u / LONG + .5) * 1600)); t.repeat.set(1 / LONG, 1 / HPP); t.offset.set(.5, 0);
+      for (const u of us) { const v = new THREE.Path(); v.moveTo(u - 1.9, 0); v.lineTo(u - 1.9, 2.9); v.absellipse(u, 2.9, 1.9, 1.9, Math.PI, 0, true); v.lineTo(u + 1.9, 0); v.closePath(); f.holes.push(v); }
+      const t = tex(piedToile(us.map(u => (u / LONG + .5) * 1600))); t.repeat.set(1 / LONG, 1 / HPP); t.offset.set(.5, 0);
       const bat = A.ajoute(new THREE.ExtrudeGeometry(f, { depth: PROF, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], cote < 0 ? fx - PROF : fx + PROF, 0, -2);
       bat.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2;
       A.ajoute(new THREE.BoxGeometry(PROF + .6, .45, LONG + .6), A.mat({ color: 0xd3c9b3 }), fx + cote * PROF / 2, HPP + .2, -2);   // corniche du toit
-      A.ajoute(new THREE.BoxGeometry(.3, 4.8, 3.8), A.mat({ color: 0x3a3631 }), fx + cote * (PROF - .4), 2.4, VZ);                   // fond du garage
+      for (const VZ of VOUTES) A.ajoute(new THREE.BoxGeometry(.3, 4.8, 3.8), A.mat({ color: 0x3a3631 }), fx + cote * (PROF - .4), 2.4, VZ);   // fond des garages
       // les marches le long du bâtiment, arrêtées avant la voûte
-      for (let k = 0; k < 4; k++) { const larg = 2 - k * .45; A.ajoute(new THREE.BoxGeometry(larg, .17, 24), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, .5); }
+      for (let k = 0; k < 4; k++) { const larg = 2 - k * .45; A.ajoute(new THREE.BoxGeometry(larg, .17, 16.4), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, 5.7); }
       const al = A.ajoute(new THREE.PlaneGeometry(3, 34), A.mat({ map: tex(T.dalles, 1.5, 17) }), fx - cote * 3.5, .012, -2, false); al.rotation.x = -Math.PI / 2;
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
-      // le bus bleu gendarme, garé l'avant vers la cour
-      const bus = new THREE.Group(); bus.position.set(fx + cote * 5.6, 0, VZ); bus.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(bus);
-      const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .45, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .45 }), fl = A.mat({ map: tex(flancBus), roughness: .45 });
-      const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.8, 9), [fl, fl, caisseMat, caisseMat, fa, caisseMat]); caisse.position.y = 1.75; caisse.castShadow = true; bus.add(caisse);
-      for (const [rx, rz] of [[-1.15, 3.2], [1.15, 3.2], [-1.15, -3], [1.15, -3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.48, .48, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .48, rz); bus.add(roue); }
-      const rampe = new THREE.Mesh(new THREE.BoxGeometry(1.4, .18, .3), A.mat({ color: 0x2a2a2a })); rampe.position.set(0, 3.25, 3.9); bus.add(rampe);
-      for (const gx of [-.5, .5]) { const g = new THREE.Mesh(new THREE.BoxGeometry(.38, .2, .28), new THREE.MeshStandardMaterial({ color: 0x2f6bff, emissive: 0x1a44cc, emissiveIntensity: .9 })); g.position.set(gx, 3.42, 3.9); bus.add(g); }
+      // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
+      const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .4, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .4 }), fl = A.mat({ map: tex(flancBus), roughness: .4 });
+      for (const VZ of VOUTES) {
+        const car = new THREE.Group(); car.position.set(fx + cote * 6.2, 0, VZ); car.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(car);
+        const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.3, 11), [fl, fl, caisseMat, caisseMat, fa, caisseMat]); caisse.position.y = 1.95; caisse.castShadow = true; car.add(caisse);
+        for (const [rx, rz] of [[-1.15, 3.6], [1.15, 3.6], [-1.15, -3], [1.15, -3], [-1.15, -4.3], [1.15, -4.3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .5, rz); car.add(roue); }
+      }
     }
     // derrière : les vieux immeubles parisiens (la caserne est en plein Paris)
     const teintes = ["#e6dcc6", "#ece3cf", "#dfd3bb", "#e9e0cc"];
