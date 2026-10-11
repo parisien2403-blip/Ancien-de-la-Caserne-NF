@@ -1624,7 +1624,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const acajou = A.mat({ color: 0x5b2c16, roughness: .35 }), acajouC = A.mat({ color: 0x7a3d1f, roughness: .4 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 });
     A.ajoute(new THREE.BoxGeometry(.7, 1.05, bl), acajou, bx, .525, bc);                                         // le comptoir
     A.ajoute(new THREE.BoxGeometry(.95, .08, bl + .15), A.mat({ color: 0x3e1c0c, roughness: .2 }), bx - .08, 1.09, bc);   // le dessus verni
-    L.posBar = { x: bx + .75, z0: bzA + .35, z1: bzB - .35, xVerre: bx - .22, yVerre: 1.13 };   // le barman va et vient derrière le comptoir
+    L.posBar = { x: bx + .62, z0: bzA + .35, z1: bzB - .35, xVerre: bx - .22, yVerre: 1.13 };   // le barman va et vient derrière le comptoir
     A.ajoute(new THREE.BoxGeometry(.08, .12, bl), acajouC, bx - .4, .98, bc, false);                             // moulure sous le dessus
     A.ajoute(new THREE.BoxGeometry(.06, .16, bl), A.mat({ color: 0x2a1408 }), bx - .36, .08, bc, false);          // socle
     const np = Math.round(bl / 1.1);
@@ -2152,6 +2152,7 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     animerPNJ(); animerDJ(t); animerBarman(t);
+    for (const p of M.gens.values()) if (p.corps && p.corps.droit) p.corps.rotation.y = Math.atan2(M.camera.position.x - p.g.position.x, M.camera.position.z - p.g.position.z);
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur ? 1 : 0;
@@ -2292,7 +2293,14 @@ async function dessinerCorps(p) {
     assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); // les bonshommes passent après le décor transparent (bouteilles, verres) : jamais un objet de derrière dessiné par-dessus eux
-    p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
+    if (p.info.barman) {
+      /* le barman travaille tout contre l'étagère : un panneau qui reste droit (il ne tourne qu'autour de la verticale, face à la caméra),
+         pour que, vu d'en haut, il ne bascule pas dans les bouteilles et le mur de derrière */
+      const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+      p.corps = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: p.poses.repos, transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+      p.corps.droit = true;
+    } else { p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.center.set(.5, 0); }
+    p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
