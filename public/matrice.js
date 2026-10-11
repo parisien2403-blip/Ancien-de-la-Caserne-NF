@@ -908,13 +908,23 @@ function construireLieu(id, scene) {
       x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
       x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
       x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
-      const porteX = visibleAGauche ? v0 + vw - 80 : v0 + 24, fenX = visibleAGauche ? v0 + 22 : v0 + vw - 90;
-      x.fillStyle = "#efe9dd"; x.fillRect(porteX - 7, h - 122, 70, 122); x.fillStyle = "#b8452f"; x.fillRect(porteX, h - 115, 56, 115);
-      x.fillStyle = "#e9d7c8"; x.fillRect(porteX + 8, h - 107, 40, 60); x.fillStyle = "#b8452f"; x.fillRect(porteX + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(porteX + 22, h - 140, 12, 7);
+      // sur la face tournée vers la cour : une seule fenêtre, centrée
+      const fenX = v0 + vw / 2 - 34;
       x.fillStyle = "#efe9dd"; x.fillRect(fenX - 7, h - 133, 82, 101); const g = x.createLinearGradient(0, h - 126, 0, h - 38); g.addColorStop(0, "#56677a"); g.addColorStop(1, "#2c3642"); x.fillStyle = g; x.fillRect(fenX, h - 126, 68, 88);
-      x.fillStyle = "#f4f1ea"; x.fillRect(fenX + 32, h - 126, 4, 88); x.fillRect(fenX, h - 72, 68, 3); });
-    for (const s of [-1, 1]) { const brique = A.mat({ map: tex(toileAile(s < 0)) }), cote2 = A.mat({ map: tex(toileAile(true)) }), toitA = A.mat({ color: 0x6b6b6b });
-      A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), [cote2, cote2, toitA, toitA, cote2, brique], s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
+      x.fillStyle = "#f4f1ea"; x.fillRect(fenX + 32, h - 126, 4, 88); x.fillRect(fenX, h - 72, 68, 3); x.fillStyle = "#2a2a2a"; x.fillRect(fenX + 28, h - 152, 12, 7); });
+    // l'autre face de l'aile, tournée vers le porche : la porte rouge (seule la partie devant la façade se voit)
+    const toileCote = (visibleAGauche, avecPorte) => toile((AZ1 - AZ0) * 40, AH * 40, (x, w, h) => { briquesFines(x, w, h);
+      x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
+      x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
+      x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
+      if (!avecPorte) return;
+      const vw = (ZF - AZ0) * 40, v0 = visibleAGauche ? 0 : w - vw, px = v0 + vw / 2 - 28;
+      x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122); x.fillStyle = "#b8452f"; x.fillRect(px, h - 115, 56, 115);
+      x.fillStyle = "#e9d7c8"; x.fillRect(px + 8, h - 107, 40, 60); x.fillStyle = "#b8452f"; x.fillRect(px + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
+    const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
+    for (const s of [-1, 1]) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
+      const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
+      A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
     // la nuit : fenêtres allumées sur cette façade aussi
     for (let f = 0; f < 5; f++) for (const cx of CF) { if (alea() > .26) continue;
       const y = HSOC + .55 + f * 3 + .875, fe = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.65), lumiere()); fe.rotation.y = Math.PI; fe.position.set(cx, y, ZF - .02); fe.visible = false; scene.add(fe); L.nuitObjets.push(fe);
