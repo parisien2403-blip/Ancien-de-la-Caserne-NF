@@ -1908,6 +1908,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.8.1", "11 octobre 2026", ["Manette recalibrée : toute la moitié gauche sert de croix, les boutons répondent au plus proche du doigt, on glisse d'un bouton à l'autre, plusieurs doigts à la fois"]],
     ["1.8", "11 octobre 2026", ["Borne : quand on appuie sur ▶ JOUER, la télé et la manette prennent tout l'écran du téléphone (✕ pour revenir)"]],
     ["1.7.3", "11 octobre 2026", ["Borne : la télé et la manette tiennent ensemble à l'écran, même sur le Fold ouvert"]],
     ["1.7.2", "11 octobre 2026", ["Le code à 4 chiffres marche de nouveau sur l'écran verrouillé (les chiffres ne répondaient plus depuis la 1.6)"]],
@@ -2905,7 +2906,7 @@
       return;
     }
     e.gameManager.simulateInput(0, n, appui ? (analogique ? 0x7fff : 1) : 0);
-    if (appui && navigator.vibrate) navigator.vibrate(8);
+    if (appui && navigator.vibrate && !(n >= 4 && n <= 7) && !(n >= 16 && n <= 19)) navigator.vibrate(8);
   }
   function preparerManette(consoleJeu) {
     const m = MANETTES[consoleJeu] || MANETTES.snes; manetteCourante = m;
@@ -2915,9 +2916,10 @@
     const [sel, start] = m.sansMilieu ? [null, null] : (m.noms || ["SELECT", "START"]);
     const pil = $("manette").querySelectorAll(".pilule");
     pil[0].hidden = !sel; pil[0].textContent = sel || ""; pil[1].hidden = !start; pil[1].textContent = start || "";
-    $("manette").querySelectorAll("[data-touche]").forEach(b => {
+    // SELECT / START et les gâchettes : chacun son bouton (la croix et les boutons d'action sont gérés plus bas, par zone)
+    $("manette").querySelectorAll(".pilule, .epaule").forEach(b => {
       const n = +b.dataset.touche, an = !!b.dataset.analogique;
-      const bas = e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) {} b.classList.add("appui"); toucheManette(n, true, an); };
+      const bas = e => { e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch (err) {} b.classList.add("appui"); toucheManette(n, true, an); };
       const haut = e => { e.preventDefault(); if (!b.classList.contains("appui")) return; b.classList.remove("appui"); toucheManette(n, false, an); };
       b.onpointerdown = bas; b.onpointerup = haut; b.onpointercancel = haut; b.onlostpointercapture = haut; b.oncontextmenu = e => e.preventDefault();
     });
@@ -2967,33 +2969,69 @@
   $("quitterBorne").onclick = quitterImmersion;
   // le geste « retour » d'Android quitte le plein écran : on revient aussi à la salle des fêtes
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) quitterImmersion(); });
-  // la croix : on peut glisser le doigt d'une direction à l'autre (diagonales comprises)
+  /* La manette, réglée pour le doigt :
+     - toute la moitié gauche de la manette sert de croix (pas besoin de viser la croix dessinée) ;
+       directions droites larges (60°), diagonales étroites (30°), petite zone morte au centre ;
+     - toute la moitié droite sert aux boutons : c'est le bouton le plus proche du doigt qui est appuyé,
+       et on peut glisser d'un bouton à l'autre sans lever le doigt ;
+     - plusieurs doigts en même temps (croix + boutons, deux boutons). */
   (() => {
-    const c = $("croix"); let dirs = new Set();
-    const fixer = nouv => {
+    const man = $("manette"), c = $("croix"), doigts = new Map(), appuis = new Map();
+    let dirs = new Set(), doigtCroix = null;
+    const presser = (n, oui, an) => {
+      const k = appuis.get(n) || 0, v = Math.max(0, k + (oui ? 1 : -1)); appuis.set(n, v);
+      if (oui && k === 0) toucheManette(n, true, an); else if (!oui && v === 0 && k > 0) toucheManette(n, false, an);
+    };
+    const fixerCroix = nouv => {
       const stick = manetteCourante && manetteCourante.stick;
       // haut, bas, gauche, droite : touches 4 à 7 (croix), ou le stick analogique pour la N64
       const code = { haut: stick ? 19 : 4, bas: stick ? 18 : 5, gauche: stick ? 17 : 6, droite: stick ? 16 : 7 };
       for (const d of ["haut", "bas", "gauche", "droite"]) {
-        if (dirs.has(d) && !nouv.has(d)) toucheManette(code[d], false, stick);
-        if (!dirs.has(d) && nouv.has(d)) toucheManette(code[d], true, stick);
+        if (dirs.has(d) && !nouv.has(d)) presser(code[d], false, stick);
+        if (!dirs.has(d) && nouv.has(d)) presser(code[d], true, stick);
         c.classList.toggle(d, nouv.has(d));
       }
       dirs = nouv;
     };
-    const lire = e => {
-      const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5, s = new Set();
-      if (Math.hypot(x, y) < .1) return s;
-      const ang = Math.atan2(y, x) * 180 / Math.PI;
-      if (ang > -157.5 && ang < -22.5) s.add("haut"); if (ang > 22.5 && ang < 157.5) s.add("bas");
-      if (ang > 112.5 || ang < -112.5) s.add("gauche"); if (ang > -67.5 && ang < 67.5) s.add("droite");
+    const lireCroix = e => {
+      const r = c.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2), s = new Set();
+      if (Math.hypot(x, y) < r.width * .12) return s;
+      const a = Math.atan2(y, x) * 180 / Math.PI;
+      if (Math.abs(a) < 60) s.add("droite"); if (Math.abs(a) > 120) s.add("gauche");
+      if (a > 30 && a < 150) s.add("bas"); if (a < -30 && a > -150) s.add("haut");
       return s;
     };
-    let doigt = null;
-    c.onpointerdown = e => { e.preventDefault(); doigt = e.pointerId; try { c.setPointerCapture(e.pointerId); } catch (err) {} fixer(lire(e)); };
-    c.onpointermove = e => { if (doigt === e.pointerId) fixer(lire(e)); };
-    c.onpointerup = c.onpointercancel = c.onlostpointercapture = e => { if (doigt !== e.pointerId) return; doigt = null; fixer(new Set()); };
-    c.oncontextmenu = e => e.preventDefault();
+    const boutonProche = e => {
+      let meilleur = null, dmin = Infinity;
+      $("boutons").querySelectorAll(".bt").forEach(b => {
+        const r = b.getBoundingClientRect(), d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+        if (d < dmin) { dmin = d; meilleur = b; }
+      });
+      return meilleur && dmin < Math.max(64, meilleur.offsetWidth * 1.5) ? meilleur : null;
+    };
+    const bouton = (b, oui) => { if (!b) return; b.classList.toggle("appui", oui); presser(+b.dataset.touche, oui, !!b.dataset.analogique); };
+    man.addEventListener("pointerdown", e => {
+      if (e.target.closest(".pilule, .epaule")) return;
+      e.preventDefault();
+      const mil = man.querySelector(".milieu").getBoundingClientRect();
+      const cote = e.clientX < mil.left ? "croix" : e.clientX > mil.right ? "boutons" : null;
+      if (!cote || (cote === "croix" && doigtCroix !== null)) return;
+      try { man.setPointerCapture(e.pointerId); } catch (err) {}
+      if (cote === "croix") { doigtCroix = e.pointerId; doigts.set(e.pointerId, { cote }); fixerCroix(lireCroix(e)); }
+      else { const b = boutonProche(e); doigts.set(e.pointerId, { cote, b }); bouton(b, true); }
+    });
+    man.addEventListener("pointermove", e => {
+      const d = doigts.get(e.pointerId); if (!d) return;
+      if (d.cote === "croix") fixerCroix(lireCroix(e));
+      else { const b = boutonProche(e); if (b !== d.b) { bouton(d.b, false); bouton(b, true); d.b = b; } }
+    });
+    const fin = e => {
+      const d = doigts.get(e.pointerId); if (!d) return;
+      doigts.delete(e.pointerId);
+      if (d.cote === "croix") { doigtCroix = null; fixerCroix(new Set()); } else bouton(d.b, false);
+    };
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(t => man.addEventListener(t, fin));
+    man.addEventListener("contextmenu", e => e.preventDefault());
   })();
   // en plein écran, la manette de la page n'est plus visible : on rend ses touches à l'émulateur
   document.addEventListener("fullscreenchange", () => {
