@@ -19,7 +19,7 @@
 <title>Caserne Nouvelle-France</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
 <style>
   :root {
     --cream: #f6eedf;
@@ -869,6 +869,79 @@
     .acc-hero img { aspect-ratio: 2.6/1; object-position: 50% 92%; }
     .scroll > .tab[data-tab="accueil"] { max-width: 980px; }
   }
+
+  /* ===================== Style « souvenirs » (d'après la maquette de l'administrateur) ===================== */
+  :root { --papier: #ece2cc url("images/deco/papier.jpg") 0 0 / 600px auto; --bois: #4e2f1b url("images/deco/bois.jpg") 0 0 / 300px auto; }
+  .app, .scroll { background: var(--papier); }
+  .plaque-pierre { border: 2px solid #5a4636; box-shadow: 0 0 0 2px #cfc3ad, 0 4px 10px rgba(0,0,0,.45), inset 0 0 18px rgba(120,100,70,.25); }
+  .plaque-pierre { padding: 6px 6px; }
+  .plaque-pierre b { font: 700 clamp(10.5px, 3.3vw, 15px) "Libre Baskerville", serif; letter-spacing: 0; color: #2a2019; }
+  .plaque-pierre small { font: 700 clamp(7.5px, 2.25vw, 10px) "Libre Baskerville", serif; letter-spacing: 0; color: #3b3127; }
+  .ens-logo { border: 2px solid #5a4636; box-shadow: 0 0 0 2px #cfc3ad, 0 3px 6px rgba(0,0,0,.4); }
+  .corniche { background: #5a3a24; height: 5px; }
+  .hello, .acc-hero h1 { font-family: "Courier Prime", monospace; font-weight: 700; letter-spacing: -.3px; color: #2a2019; }
+  .acc-hero img { border-color: #f7f1e3; box-shadow: 0 4px 14px rgba(60,30,15,.35); filter: sepia(.25) contrast(1.05) saturate(.9); }
+  .acc-hero p { color: #3b3127; }
+  .rubrique span { background: linear-gradient(#e9d79b, #c8a95a 55%, #a88a3e); color: #2a2019; border: 1px solid #6e5523; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 2px 3px rgba(0,0,0,.3);
+    font-family: "Libre Baskerville", serif; font-weight: 700; letter-spacing: 1px; text-shadow: 0 1px 0 rgba(255,255,255,.5); }
+  .rubrique::after { background: #8a7a62; }
+  /* les tuiles : chacune sa matière, son illustration, et son étiquette */
+  .tuile-cas { position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,.35); border-top: 1px solid rgba(255,255,255,.35); border-radius: 5px; min-height: 104px; padding: 12px 12px 10px;
+    box-shadow: 0 3px 8px rgba(40,20,10,.35), inset 0 1px 0 rgba(255,255,255,.3); justify-content: flex-end; }
+  .tuile-cas .illu { position: absolute; right: 4px; top: 6px; height: 62px; max-width: 48%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35));
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 58%, transparent 78%); mask-image: radial-gradient(ellipse at center, #000 58%, transparent 78%); }
+  .tuile-cas { min-height: 122px; }
+  .tuile-cas b { font-size: 14.5px; line-height: 1.2; }
+  .tuiles-cas .tuile-cas small { max-width: 100%; font-size: 10.5px; }
+  .tuiles-cas .tuile-cas .illu { height: 54px; }
+  @media (max-width: 480px) { .ens-logo { display: none; } .enseigne { padding-right: 46px; } }
+  .tuile-cas .ico, .tuile-cas b, .tuile-cas small { position: relative; z-index: 1; }
+  .tuile-cas .ico { width: 22px; height: 22px; margin-bottom: auto; }
+  .tuile-cas b { font: 16px "Libre Baskerville", serif; font-weight: 400; }
+  .tuile-cas small { align-self: flex-start; font: 700 11px "Courier Prime", monospace; padding: 2px 6px; border-radius: 1px; max-width: 58%; }
+  .mat-laiton { background: linear-gradient(135deg, #e8d69b, #c9ab5c 45%, #b8994a 70%, #d9c27e); }
+  .mat-laiton b, .mat-laiton .ico { color: #2a2019; stroke: #3b2c16; } .mat-laiton small { background: #2b2b2b; color: #f3ead2; }
+  .mat-cuir { background: radial-gradient(circle at 30% 30%, #9a5d3a, #6f3d22 70%); }
+  .mat-cuir2 { background: radial-gradient(circle at 30% 30%, #8b5534, #5e3219 70%); }
+  .mat-cuir b, .mat-cuir2 b { color: #f6e8d2; } .mat-cuir .ico, .mat-cuir2 .ico { stroke: #f6e8d2; }
+  .mat-cuir small { background: #1d1d1d; color: #f3ead2; } .mat-cuir2 small { background: #e8b763; color: #2a1a0c; transform: rotate(-1.5deg); }
+  .mat-metal { background: linear-gradient(160deg, #e6e5e1, #b9bab6 50%, #d2d2ce); }
+  .mat-metal b, .mat-metal .ico { color: #222; stroke: #333; } .mat-metal small { background: #f1e7c4; color: #222; }
+  .mat-olive { background: linear-gradient(150deg, #b3b07a, #8c8a52 70%); }
+  .mat-olive b, .mat-olive .ico { color: #1f1d10; stroke: #2c2a16; } .mat-olive small { background: #f1e7c4; color: #222; }
+  .mat-pierre { background: var(--pierre); } .mat-pierre b { color: #2a2019; } .mat-pierre .ico { stroke: #3b3127; } .mat-pierre small { background: transparent; color: #3b3127; padding-left: 0; }
+  .card { background: rgba(255,252,244,.92); }
+  .card.mot { background: var(--pierre); }
+  /* barre du bas (téléphone) : bois sombre */
+  .tabbar { background: var(--bois); box-shadow: 0 -3px 0 #2e1b0f, 0 -6px 14px rgba(0,0,0,.25); }
+  .tabbar button { color: #e9dcc4; } .tabbar .ico { stroke: #e9dcc4; }
+  .tabbar button.on { color: #f3cf6b; } .tabbar button.on .ico { stroke: #f3cf6b; }
+  @media (min-width: 960px) {
+    /* le panneau de bois et ses plaques de couleur, posé sur le mur de pierre blanche */
+    .tabbar { background: linear-gradient(var(--bois-h, transparent), transparent), var(--pierre); padding: 0; box-shadow: none; gap: 0; }
+    .tabbar::before { content: none; }
+    .tabbar { --bois-h: transparent; }
+    .tabbar { display: flex; flex-direction: column; }
+    .tabbar > button:first-child { margin-top: 16px; }
+    .tabbar { background: url("images/deco/bois.jpg") 0 0 / 100% 470px no-repeat, #ece6da url("images/pierre.jpg") 0 0 / 360px auto repeat;
+      box-shadow: inset 0 -1px 0 transparent; }
+    .tabbar::after { content: ""; position: absolute; left: 0; right: 0; top: 468px; height: 6px; background: linear-gradient(rgba(0,0,0,.35), transparent); pointer-events: none; }
+    .tabbar { position: relative; }
+    .tabbar { padding: 0 12px 26px; border-bottom: 0; }
+    .tabbar button { margin: 0 0 10px; border: 2px solid #3a2414; border-radius: 6px; padding: 11px 14px; font: 15px "Libre Baskerville", serif; color: #1f170f; text-shadow: 0 1px 0 rgba(255,255,255,.45);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.25), 0 2px 3px rgba(0,0,0,.45); background: linear-gradient(#c9a95a, #a8873b); }
+    .tabbar .ico { stroke: #2a1f12; }
+    .tabbar button[data-go="biblio"], .tabbar button[data-go="fetes"] { background: linear-gradient(#a3ae5f, #7e8a3f); }
+    .tabbar button[data-go="membres"], .tabbar button[data-go="matrice"], .tabbar button[data-go="vague"] { background: linear-gradient(#b8994f, #8f7232); }
+    .tabbar button.on { background: linear-gradient(#f0d483, #d2a93f); color: #1f170f; box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 2px #f3e3a8, 0 3px 6px rgba(0,0,0,.45); }
+    .tabbar button.on .ico { stroke: #2a1f12; }
+    .tabbar button:hover { filter: brightness(1.06); }
+    .plaque-pierre b { font-size: 21px; } .plaque-pierre small { font-size: 12px; }
+    .tuile-cas { min-height: 118px; }
+    .tuile-cas .illu { top: auto; bottom: 6px; height: 84%; max-width: 46%; }
+    .tuiles-cas .tuile-cas b { font-size: 17px; } .tuiles-cas .tuile-cas small { max-width: 56%; font-size: 11px; }
+    .tuiles-cas .tuile-cas .illu { height: 84%; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -925,7 +998,7 @@
           <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
         </div>
         <h2 class="rubrique"><span>La caserne</span></h2>
-        <div class="tuiles-cas"><button type="button" class="tuile-cas" data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Poste de police</b><small>Ma carte d'ancien</small></button><button type="button" class="tuile-cas" data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 7l9 6 9-6"/></svg><b>Vaguemestre</b><small>Mon courrier</small></button><button type="button" class="tuile-cas" data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16 5l3.5-1 3 15-3.5 1z"/></svg><b>Bibliothèque</b><small>Les photos d'époque</small></button><button type="button" class="tuile-cas" data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>Salle des fêtes</b><small>Musique et borne d'arcade</small></button><button type="button" class="tuile-cas" data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.5 3.5 6"/></svg><b>Membres</b><small>Les anciens, escalier par escalier</small></button><button type="button" class="tuile-cas" data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><b>La Matrice</b><small>La caserne en 3D</small></button></div>
+        <div class="tuiles-cas"><button type="button" class="tuile-cas mat-laiton" data-go="poste"><img class="illu" src="images/deco/badge.png" alt=""><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Poste de police</b><small>Ma carte d'ancien</small></button><button type="button" class="tuile-cas mat-cuir" data-go="vague"><img class="illu" src="images/deco/sacoche.png" alt=""><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 7l9 6 9-6"/></svg><b>Vaguemestre</b><small>Mon courrier</small></button><button type="button" class="tuile-cas mat-cuir2" data-go="biblio"><img class="illu" src="images/deco/livres.png" alt=""><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16 5l3.5-1 3 15-3.5 1z"/></svg><b>Bibliothèque</b><small>Les photos d'époque</small></button><button type="button" class="tuile-cas mat-metal" data-go="fetes"><img class="illu" src="images/deco/cassette.png" alt=""><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>Salle des fêtes</b><small>Musique et borne d'arcade</small></button><button type="button" class="tuile-cas mat-olive" data-go="membres"><img class="illu" src="images/deco/statues.png" alt=""><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.5 3.5 6"/></svg><b>Membres</b><small>Les anciens, escalier par escalier</small></button><button type="button" class="tuile-cas mat-pierre" data-go="matrice"><img class="illu" src="images/deco/cloche.png" alt=""><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><b>La Matrice</b><small>La caserne en 3D</small></button></div>
         <h2 class="rubrique"><span>La vie de la caserne</span></h2>
         <div class="acc-cols">
           <div>
@@ -2575,6 +2648,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.1", "11 octobre 2026", ["Nouvelle présentation « souvenirs » : papier ancien, plaque de pierre au titre gravé, menu en panneau de bois à plaques de couleur, tuiles de la caserne en laiton, cuir, métal, pierre avec leur illustration"]],
     ["3.0.1", "11 octobre 2026", ["Sur PC : le menu de gauche est en pierre blanche sculptée (plaques gravées), au lieu de la brique"]],
     ["3.0", "11 octobre 2026", ["Nouvelle présentation « comme avant » : mur de brique rouge et plaque de pierre blanche gravée en haut, photos façon tirages d'époque, rubriques sur des plaques de pierre", "Accueil : les tuiles de la caserne (Poste, Vaguemestre, Bibliothèque, Salle des fêtes, Membres, Matrice)", "La Salle des jeunes est retirée ; la barre du bas a 7 onglets aux noms courts (sur PC, le menu en brique à gauche)"]],
     ["2.27.1", "11 octobre 2026", ["Accueil : une seule photo du porche, le navire et, juste dessous, la plaque « Caserne de la Nouvelle France », comme en vrai"]],
