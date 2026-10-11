@@ -857,7 +857,7 @@ function toileParquet() {
 // Construit dans le sous-sol, et aussi dans la cour d'honneur (tourné) pour qu'on y entre sans coupure par la porte « BAR »
 // le vestibule : demi-largeur VX (vers la porte « BAR »), demi-longueur VZ ; dans la cour, son centre est en (VEST_X, VEST_Z), tourné d'un demi-tour
 const VEST_VX = 1.9, VEST_VZ = 1.8, VEST_X = 16 + VEST_VX + .15, VEST_Z = 9.12;
-const FETE_SZ = 15 + .3 + 2.6 + .15 + VEST_VZ;     // dans la salle des fêtes : le centre du vestibule (au bout du couloir de l'escalier)
+const FETE_SZ = 15 + .3 + 2.6 + .15 + VEST_VZ, FETE_HSS = -1.53;   // (le niveau du sous-sol : 5 + 4 marches de 17 cm)     // dans la salle des fêtes : le centre du vestibule (au bout du couloir de l'escalier)
 function vestibuleSousSol(A, scene, o = {}) {
   const HT = 3.1, LAMB = 1.15, VX = VEST_VX, VZ0 = -VEST_VZ, VZ1 = VEST_VZ;
   const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), bois = A.mat({ color: 0x5a3018, roughness: .5 });
@@ -987,7 +987,7 @@ function construireSousSol(A, L, scene, o = {}) {
 
     /* --- le vestibule (le même, construit aussi dans la cour d'honneur, derrière la porte « BAR ») --- */
     const lpE = 1.4, hp = 2.3, lpB = 1.0, lpF = 1.3;
-    const solV = vestibuleSousSol(A, scene, { dehors: true, sansEscalier: o.fusion }); L.sol = solV;
+    const solV = vestibuleSousSol(A, scene, { dehors: !o.fusion, sansEscalier: o.fusion }); L.sol = solV;
     // l'autre porte du vestibule, côté grande pièce
     mur("x", VZ0 - .15, -GX, -lpF / 2, -1); mur("x", VZ0 - .15, lpF / 2, GX, -1);                         // côté grande pièce
     A.ajoute(new THREE.BoxGeometry(lpF, HT - hp, .3), peinture, 0, hp + (HT - hp) / 2, VZ0 - .15, false);
@@ -1116,7 +1116,7 @@ function construireSousSol(A, L, scene, o = {}) {
     obstacles.push(babyFoot(A, 2.25, FM - 1.6));
     L.limites = (x, z) => (Math.abs(x) < VX - .35 && z > VZ0 + .3 && z < VZ1 - .3)
       || (Math.abs(x) < .4 && z >= VZ1 - .3 && z < VZ1 + .5)                                               // la porte de l'escalier
-      || (Math.abs(z) < .25 && x >= VX - .35 && x < VX + .3)                                               // la porte de la cour (BAR), de plain-pied
+      || (Math.abs(z) < .25 && x >= VX - .35 && x < VX + .75)                                               // la porte de la cour (BAR), de plain-pied
       || (Math.abs(x) < lpF / 2 - .25 && z > VZ0 - .7 && z <= VZ0 + .3)                                  // la porte d'en face
       || (Math.abs(x) < GX - .4 && z > GZ0 + .4 && z < GZ1 - .65 && !obstacles.some(([a, b, c, d]) => x > a - .15 && x < b + .15 && z > c - .15 && z < d + .15));
     L.portails.push({ dans: (x, z) => Math.abs(x) < .8 && z > VZ1 + .3, vers: "fetes", arrivee: [0, 14.55], yaw: 0 });
@@ -1131,7 +1131,7 @@ function construireSousSol(A, L, scene, o = {}) {
     L.interieur = true; L.boite = [-GX, GX, GZ0, VZ1]; L.zone = [-GX, GX, GZ0, VZ1 + .6]; L.plafond = HT - .25;
     L.depart = [0, -3.2]; L.cam = { pos: [0, 2.2, VZ1 - .2], vise: [0, 1.2, GZ0] };
   }
-function construireLieu(id, scene) {
+function construireLieu(id, scene, copie = false) {   // copie : la cour vue depuis le sous-sol de la salle des fêtes (sans le bâtiment de droite)
   const A = atelier(scene), T = textures();
   const sol = (map, rx, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(90, 90), A.mat({ map: tex(map, rx, ry) }), 0, 0, 0, false); o.rotation.x = -Math.PI / 2; return o; };
   const L = { portails: [], cam: { pos: [-9, 9, 27], vise: [0, 5, -8] }, sol: null };
@@ -1204,7 +1204,7 @@ function construireLieu(id, scene) {
       const f = new THREE.Shape(); f.moveTo(-LONG / 2, 0); f.lineTo(FIN, 0); f.lineTo(FIN, HPP); f.lineTo(-LONG / 2, HPP); f.closePath();
       for (const u of us) { const v = new THREE.Path(); v.moveTo(u - 1.9, 0); v.lineTo(u - 1.9, 2.9); v.absellipse(u, 2.9, 1.9, 1.9, Math.PI, 0, true); v.lineTo(u + 1.9, 0); v.closePath(); f.holes.push(v); }
       const t = tex(piedToile(us.map(u => (u / LONG + .5) * 1600))); t.repeat.set(1 / LONG, 1 / HPP); t.offset.set(.5, 0);
-      if (cote > 0) {   // la nuit, on voit bouger les jeux de lumière de la fête à travers les baies vitrées
+      if (cote > 0 && !copie) {   // la nuit, on voit bouger les jeux de lumière de la fête à travers les baies vitrées
         const vpx = us.map(u => (u / LONG + .5) * 1600), cols = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
         L.baiesFete = [];
         for (let i = 0; i < 11; i++) { const X = 40 + i * 142; if (vpx.some(v => Math.abs(X + 50 - v) < 150)) continue;
@@ -1229,7 +1229,11 @@ function construireLieu(id, scene) {
             L.porteFete = { vide, spot, x: fx - .5, z }; }
         }
       }
-      if (cote < 0) { const bat = A.ajoute(new THREE.ExtrudeGeometry(f, { depth: PROF, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], fx - PROF, 0, -2); bat.rotation.y = Math.PI / 2; }
+      if (cote > 0 && copie) {   // copie : seulement le bout de la façade, côté renfoncement (le reste est la salle des fêtes elle-même)
+        const fb = new THREE.Shape(); fb.moveTo(6.6, 0); fb.lineTo(FIN, 0); fb.lineTo(FIN, HPP); fb.lineTo(6.6, HPP); fb.closePath();
+        const b2 = A.ajoute(new THREE.ExtrudeGeometry(fb, { depth: 3.5, bevelEnabled: false }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], fx + 3.5, 0, -2); b2.rotation.y = -Math.PI / 2;
+      }
+      else if (cote < 0) { const bat = A.ajoute(new THREE.ExtrudeGeometry(f, { depth: PROF, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], fx - PROF, 0, -2); bat.rotation.y = Math.PI / 2; }
       else {
         /* à droite : derrière le bout de la façade, il faut la place du vestibule du sous-sol et de son escalier (porte « BAR ») ;
            le bâtiment s'arrête donc plus tôt (z = 1,3 dans la cour), et seule une tranche de 3,5 m de façade continue jusqu'au renfoncement */
@@ -1242,10 +1246,12 @@ function construireLieu(id, scene) {
         A.ajoute(new THREE.BoxGeometry(fx + PROF - xv, HPP, FIN - ZC), A.mat({ color: 0xd9d0bd }), (xv + fx + PROF) / 2, HPP / 2, (ZC + FIN) / 2 - 2);
         A.ajoute(new THREE.BoxGeometry(xv - fx - 3.5, .3, FIN - ZC), A.mat({ color: 0xd9d0bd }), (xv + fx + 3.5) / 2, HPP - .15, (ZC + FIN) / 2 - 2, false);
       }
+      if (!(copie && cote > 0)) {
       A.ajoute(new THREE.BoxGeometry(PROF + .6, .45, (cote > 0 ? LONG - 6 : LONG) + .6), A.mat({ color: 0xd3c9b3 }), fx + cote * PROF / 2, HPP + .2, cote > 0 ? -5 : -2);   // corniche du toit
       for (const VZ of VOUTES) A.ajoute(new THREE.BoxGeometry(.3, 4.8, 3.8), A.mat({ color: 0x3a3631 }), fx + cote * (PROF - .4), 2.4, VZ);   // fond des garages
       // les marches le long du bâtiment, arrêtées avant la voûte
       for (let k = 0; k < 4; k++) { const larg = 2 - k * .45, lgM = cote > 0 ? 10.4 : 16.4; A.ajoute(new THREE.BoxGeometry(larg, .17, lgM), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, cote > 0 ? 2.7 : 5.7); }
+      }
       if (cote > 0) {
         /* l'ancien bar, bien en retrait au bout du bâtiment (entre la salle des fêtes et la grande aile en brique) :
            la double porte à gauche, ses deux fenêtres à droite */
@@ -1266,10 +1272,11 @@ function construireLieu(id, scene) {
         const mb = A.mat({ map: tex(bar), alphaTest: .5 }), mc = A.mat({ color: 0xddd4c2 }), mt = A.mat({ color: 0x8a8378 });
         // la façade (avec son embrasure), le bâtiment derrière le vestibule, le plein au-dessus du vestibule
         const fa = A.ajoute(new THREE.PlaneGeometry(RL, RH), mb, RX - .17, RH / 2, RZ, false); fa.rotation.y = -Math.PI / 2;
-        A.ajoute(new THREE.BoxGeometry(PROF - 6.7, RH, RL), [mc, mc, mt, mc, mc, mc], RX + 3.2 + (PROF - 6.7) / 2, RH / 2, RZ);
-        A.ajoute(new THREE.BoxGeometry(3.3, RH - 3.4, RL), [mc, mc, mt, mc, mc, mc], RX + 1.6, 3.4 + (RH - 3.4) / 2, RZ, false);
+        if (!copie) { const xv = VEST_X + VEST_VX + .35;
+          A.ajoute(new THREE.BoxGeometry(fx + PROF - xv, RH, RL), [mc, mc, mt, mc, mc, mc], (xv + fx + PROF) / 2, RH / 2, RZ);
+          A.ajoute(new THREE.BoxGeometry(xv - RX, RH - 3.4, RL), [mc, mc, mt, mc, mc, mc], (RX + xv) / 2, 3.4 + (RH - 3.4) / 2, RZ, false); }
         // le vestibule du sous-sol, juste derrière (le même que dans le sous-sol : carrelage, lambris, l'escalier de la salle des fêtes, la porte de la grande pièce)
-        { const grp = new THREE.Group(); grp.position.set(VEST_X, 0, VEST_Z); grp.rotation.y = Math.PI; scene.add(grp); const AV = atelier(grp);
+        if (!copie) { const grp = new THREE.Group(); grp.position.set(VEST_X, 0, VEST_Z); grp.rotation.y = Math.PI; scene.add(grp); const AV = atelier(grp);
           vestibuleSousSol(AV, grp, { plafond: true, escalierFete: true });
           // par la porte d'en face : un aperçu de la grande pièce (parquet foncé, lambris, le bar et ses bouteilles au fond)
           const parquetA = AV.mat({ map: tex(toileParquet(), .55, 1.1), roughness: .3 });
@@ -1297,7 +1304,7 @@ function construireLieu(id, scene) {
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
       const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .4, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .4 }), fl = A.mat({ map: tex(flancBus), roughness: .4 });
-      for (const VZ of VOUTES) {
+      for (const VZ of (copie && cote > 0 ? [] : VOUTES)) {
         const car = new THREE.Group(); car.position.set(fx + cote * 6.2, 0, VZ); car.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(car);
         const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.3, 11), [fl, fl, caisseMat, caisseMat, fa, caisseMat]); caisse.position.y = 1.95; caisse.castShadow = true; car.add(caisse);
         for (const [rx, rz] of [[-1.15, 3.6], [1.15, 3.6], [-1.15, -3], [1.15, -3], [-1.15, -4.3], [1.15, -4.3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .5, rz); car.add(roue); }
@@ -1413,7 +1420,7 @@ function construireLieu(id, scene) {
       x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122); x.fillStyle = "#b8452f"; x.fillRect(px, h - 115, 56, 115);
       x.fillStyle = "#e9d7c8"; x.fillRect(px + 8, h - 107, 40, 60); x.fillStyle = "#b8452f"; x.fillRect(px + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
     const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
-    for (const s of [-1, 1]) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
+    for (const s of (copie ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
       A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
     // la nuit : fenêtres allumées sur cette façade aussi
@@ -1435,7 +1442,7 @@ function construireLieu(id, scene) {
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
     // du vestibule, vers la grande pièce au bar ou l'escalier : on continue dans la salle des fêtes (même géométrie, simple décalage — pas de coupure)
-    L.portails.push({ dans: (x, z) => x > 16.4 && Math.abs(x - VEST_X) < .7 && Math.abs(z - VEST_Z) > VEST_VZ + .03, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z] });
+    L.portails.push({ dans: (x, z) => x > PB[0] + .55 && Math.abs(z - VEST_Z) < VEST_VZ + 1, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z, FETE_HSS] });
     raccourci(L, scene, [.6, 2.3, 1.0], [PB[0], 1.15, PB[1]], { marche: [VEST_X, VEST_Z] });
     L.horsPNJ = (x, z) => x > 15.2 && z > 6.3 && z < 12.5;       // le chef de poste n'entre pas au bar
     // la caméra reste sous la voûte quand on est dans le passage
@@ -1665,7 +1672,8 @@ function construireLieu(id, scene) {
       // la caméra : dans le couloir, le vestibule ou la grande pièce, elle reste dedans
       L.contraindreCam = (pos, moi) => { const mp = moi.g.position; if (mp.z < CZ0 - .1) return false;
         const [lx, lz] = loc(pos.x, pos.z), q = { x: lx, y: pos.y - HSS, z: lz };
-        if (lz > VEST_VZ - .1) { q.x = Math.max(-.8, Math.min(.8, q.x)); q.z = Math.min(q.z, VEST_VZ + 2.9); q.y = Math.min(q.y, 3.2); }
+        if (Math.abs(lz) < .4 && lx > VEST_VX - .3) { q.x = Math.min(q.x, VEST_VX + 1.55); q.y = Math.min(q.y, 2.9); }   // dans l'axe de la porte « BAR », comme dans la cour
+        else if (lz > VEST_VZ - .1) { q.x = Math.max(-.8, Math.min(.8, q.x)); q.z = Math.min(q.z, VEST_VZ + 2.9); q.y = Math.min(q.y, 3.2); }
         else { SL.contraindreCam(q); }
         const [wx, wz] = loc(q.x, q.z); pos.set(wx, q.y + HSS, wz); return true; };
     }
@@ -1921,10 +1929,31 @@ function construireLieu(id, scene) {
     L.portails.push({ dans: (x, z) => x < X0 + .7 && Math.abs(z - (Z0 + 2.5 * long / 5)) < 1.1, vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
-    L.portails.push({ dans: (x, z) => z > FETE_SZ - VEST_VZ + .25 && z < FETE_SZ + VEST_VZ - .25 && Math.abs(x) < VEST_VX, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ] });
+    // par la porte « BAR » du vestibule, on sort dans la cour d'honneur, en marchant (même géométrie de part et d'autre : pas de coupure)
+    L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < .6, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS] });
     L.horsPNJ = (x, z) => Math.abs(x) < EL + .5 && z > EZ - 1.5;          // le chef de poste ne descend pas l'escalier
     raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 2.4] });
     L.plafond = HT - .35;
+    /* la cour d'honneur, vue par la porte « BAR » du vestibule : la vraie cour (sans le bâtiment de la salle, qui est ici même),
+       à sa place exacte, éclairée par son propre jour (matières non éclairées, pour ne pas alourdir la salle) */
+    { const cour = new THREE.Group(); cour.position.set(-VEST_X, FETE_HSS - .03, FETE_SZ - VEST_Z); scene.add(cour);
+      const LC = construireLieu("grande", cour, true);
+      const lum = [], basic = new Map(), teints = [], nuages = [];
+      cour.traverse(o => { if (o.isLight) lum.push(o); if (o.isSprite) nuages.push(o);
+        if (!o.isMesh) return;
+        const conv = m => { if (!m || !m.isMeshStandardMaterial) return m; if (basic.has(m)) return basic.get(m);
+          const b = new THREE.MeshBasicMaterial({ map: m.map, color: m.color.clone(), transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side });
+          if (!m.map) b.color.multiplyScalar(.92); teints.push([b, b.color.clone()]); basic.set(m, b); return b; };
+        o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = false; });
+      for (const l of lum) l.parent && l.parent.remove(l);
+      const T2 = textures(), ciel = new THREE.Mesh(new THREE.SphereGeometry(150, 24, 12), new THREE.MeshBasicMaterial({ map: tex(T2.ciel), side: THREE.BackSide, depthWrite: false }));
+      cour.add(ciel);
+      const nuitAvant = L.setNuit;
+      L.setNuit = (n) => { nuitAvant(n);
+        for (const [b, c] of teints) b.color.copy(c).multiplyScalar(n ? .3 : 1).lerp(new THREE.Color(0x1a2448), n ? .25 : 0);
+        ciel.material.map = n ? null : tex(T2.ciel); ciel.material.color.setHex(n ? 0x0c1530 : 0xffffff); ciel.material.needsUpdate = true;
+        for (const o of LC.nuitObjets || []) if (!o.isLight) o.visible = n; for (const o of nuages) o.visible = !n; };
+    }
     L.depart = [0, Z1 - 6]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
   }
 
@@ -2444,15 +2473,16 @@ export function danser(on) {
 export function tourner(a = Math.PI) { if (M && M.L && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) + a; }
 /* passer d'un lieu à l'autre sans coupure : les deux lieux ont la même géométrie à cet endroit (décalée de d) ;
    on garde sa position, son regard, la caméra, et l'on continue de marcher vers le même point */
-function changerLieuContinu(id, [dx, dz]) {
+function changerLieuContinu(id, [dx, dz, dy = 0]) {
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) { changerLieu(id); return; }
   const info = moi.info, x = moi.g.position.x + dx, z = moi.g.position.z + dz;
   const but = moi.chemin && moi.chemin.length ? moi.chemin[moi.chemin.length - 1] : moi.cible, fin = but ? [but.x + dx, but.z + dz] : null;
-  const yaw = M.yaw, E = M.camE, D = M.camD, num = M.moiNum;
+  const yaw = M.yaw, E = M.camE, D = M.camD, num = M.moiNum, d3 = new THREE.Vector3(dx, dy, dz), vise = M.camVise && M.camVise.clone().add(d3);
   changerLieu(id, [x, z], yaw);
   M.camE = E; M.camD = D; M.moiNum = num;
   ajouterAncien({ ...info, numero: num, x, z }); M.gens.get(num).moi = true;
-  placerCamera(true);
+  M.gens.get(num).g.position.y = M.L.hauteur ? M.L.hauteur(x, z) : 0;
+  M.camera.position.add(d3); if (vise) M.camVise = vise; else placerCamera(true);
   if (fin) allerVers(fin[0], fin[1], true);
 }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
