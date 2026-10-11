@@ -42,6 +42,9 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
+const LIEUX_MATRICE = ["grande", "horloge", "allee"];
+const TENUES_MATRICE = ["garde", "civil", "survet", "robe", "costume"];
+const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
 // image d'une cartouche : une petite image JPEG/PNG/WebP déjà réduite par l'appli (300 Ko maximum)
 function jaquette(v) {
@@ -77,6 +80,9 @@ export class Compteur extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux_morceaux (jeu INTEGER, n INTEGER, data BLOB, PRIMARY KEY (jeu, n))`);
     // l'image collée sur la cartouche (jaquette réduite, en JPEG)
     try { this.sql.exec(`ALTER TABLE jeux ADD COLUMN jaquette TEXT`); } catch (e) { /* déjà là */ }
+    // la Matrice : ce qui s'est dit dans chaque lieu (les 50 derniers), et les sanctions de l'administrateur
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_dits (id INTEGER PRIMARY KEY AUTOINCREMENT, lieu TEXT, numero INTEGER, nom TEXT, texte TEXT, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_sanctions (numero INTEGER PRIMARY KEY, muet_jusqua TEXT, exclu_jusqua TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS signalements (
       id INTEGER PRIMARY KEY AUTOINCREMENT, auteur TEXT, categorie TEXT, texte TEXT, appareil TEXT, cree TEXT, lu INTEGER DEFAULT 0, traite INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS publications (
@@ -90,7 +96,9 @@ export class Compteur extends DurableObject {
       // validation des inscriptions par l'administrateur (les comptes déjà là restent validés)
       "statut TEXT DEFAULT 'valide'", "motif TEXT", "decide TEXT",
       // l'escalier (lettre A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
-      "bat TEXT", "etage INTEGER"]) {
+      "bat TEXT", "etage INTEGER",
+      // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
+      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -259,6 +267,101 @@ export class Compteur extends DurableObject {
     if (!soi) await this.verifierAcces(token);
     const m = this.sql.exec("SELECT photo FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.photo || null;
+  }
+
+  /* ----- La Matrice : le bonhomme ----- */
+  async changerAvatar(token, x) {
+    const moi = this.moi(token);
+    const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "civil";
+    const couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#22324f";
+    let tete;
+    if (x.tete === null) tete = null;
+    else if (x.tete !== undefined) {
+      if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
+      tete = x.tete;
+    }
+    if (tete === undefined) this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, moi.email);
+    else this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_tete = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, tete, moi.email);
+    const p = this.personneMatrice(moi.numero);
+    // ceux qui sont dans la Matrice voient tout de suite le nouveau bonhomme
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
+    return { ok: true, tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v };
+  }
+  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, fait: p.fait }; }
+  teteAvatar(token, num) {
+    this.moi(token);
+    const m = this.sql.exec("SELECT av_tete FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    return m && m.av_tete;
+  }
+  personneMatrice(num) {
+    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
+      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0 };
+  }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, tete_v: a.tete_v, x: a.x, z: a.z }; }
+
+  /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.headers.get("Upgrade") !== "websocket") return new Response("WebSocket attendu", { status: 426 });
+    let moi;
+    try { moi = this.moi(url.searchParams.get("t") || ""); } catch (e) { return new Response(e.message, { status: e.status || 401 }); }
+    const s = this.sql.exec("SELECT exclu_jusqua FROM matrice_sanctions WHERE numero = ?", Number(moi.numero)).toArray()[0];
+    if (s && s.exclu_jusqua && new Date(s.exclu_jusqua) > new Date()) return new Response("Exclu de la Matrice jusqu'au " + new Date(s.exclu_jusqua).toLocaleString("fr-FR", { timeZone: "Europe/Paris" }), { status: 403 });
+    const p = this.personneMatrice(moi.numero);
+    // un seul appareil à la fois dans la Matrice : l'ancien est fermé
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { try { ws.close(4000, "Ouvert sur un autre appareil"); } catch (e) {} } }
+    const [client, serveur] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(serveur);
+    serveur.serializeAttachment({ ...p, lieu: null, x: 0, z: 0 });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+  presents(lieu, sauf) {
+    return this.ctx.getWebSockets().map(ws => [ws, ws.deserializeAttachment()]).filter(([ws, a]) => a && a.lieu === lieu && ws !== sauf);
+  }
+  diffuser(lieu, msg, sauf) { const t = JSON.stringify(msg); for (const [ws] of this.presents(lieu, sauf)) { try { ws.send(t); } catch (e) {} } }
+  comptes() { const c = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu) c[a.lieu] = (c[a.lieu] || 0) + 1; } return c; }
+  diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
+  async webSocketMessage(ws, brut) {
+    let m; try { m = JSON.parse(brut); } catch (e) { return; }
+    const a = ws.deserializeAttachment(); if (!a) return;
+    const nb = v => Math.max(-60, Math.min(60, Number(v) || 0));
+    if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu)) {
+      const ancien = a.lieu;
+      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
+      if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
+      const dits = this.sql.exec("SELECT numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
+      ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
+      this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
+      this.diffuserComptes();
+    } else if (m.t === "aller" && a.lieu) {
+      Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
+      this.diffuser(a.lieu, { t: "aller", numero: a.numero, x: a.x, z: a.z }, ws);
+    } else if (m.t === "dire" && a.lieu) {
+      const texte = texte_(m.texte, 140); if (!texte) return;
+      const s = this.sql.exec("SELECT muet_jusqua FROM matrice_sanctions WHERE numero = ?", a.numero).toArray()[0];
+      if (s && s.muet_jusqua && new Date(s.muet_jusqua) > new Date()) { ws.send(JSON.stringify({ t: "info", texte: "L'administrateur t'a demandé de te taire un moment." })); return; }
+      const cree = new Date().toISOString();
+      this.sql.exec("INSERT INTO matrice_dits (lieu, numero, nom, texte, cree) VALUES (?, ?, ?, ?, ?)", a.lieu, a.numero, a.nom, texte, cree);
+      this.sql.exec("DELETE FROM matrice_dits WHERE lieu = ? AND id NOT IN (SELECT id FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 50)", a.lieu, a.lieu);
+      this.diffuser(a.lieu, { t: "dit", numero: a.numero, nom: a.nom, texte, cree });
+    } else if ((m.t === "taire" || m.t === "exclure") && a.admin) {
+      const cible = Number(m.numero); if (!cible || cible === a.numero) return;
+      const jusqua = new Date(Date.now() + (m.t === "taire" ? 3600e3 : 24 * 3600e3)).toISOString();
+      this.sql.exec(`INSERT INTO matrice_sanctions (numero, ${m.t === "taire" ? "muet_jusqua" : "exclu_jusqua"}) VALUES (?, ?)
+        ON CONFLICT(numero) DO UPDATE SET ${m.t === "taire" ? "muet_jusqua" : "exclu_jusqua"} = excluded.${m.t === "taire" ? "muet_jusqua" : "exclu_jusqua"}`, cible, jusqua);
+      for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.numero === cible) {
+        if (m.t === "taire") w.send(JSON.stringify({ t: "info", texte: "L'administrateur t'a demandé de te taire pendant une heure." }));
+        else { try { w.close(4003, "Exclu de la Matrice pour 24 heures par l'administrateur"); } catch (e) {} } } }
+      ws.send(JSON.stringify({ t: "info", texte: m.t === "taire" ? "C'est fait : il ne peut plus parler pendant une heure." : "C'est fait : il est exclu de la Matrice pour 24 heures." }));
+    }
+  }
+  async webSocketClose(ws) { this.quitter(ws); }
+  async webSocketError(ws) { this.quitter(ws); }
+  quitter(ws) {
+    const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
+    const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
+    this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
   }
 
   async changerEscalier(token, x) {
@@ -576,6 +679,18 @@ export default {
     const corps = async () => { try { return await request.json(); } catch { return {}; } };
     const route = `${request.method} ${url.pathname}`;
 
+    // la Matrice : connexion en direct (WebSocket) vers le registre
+    if (url.pathname === "/api/matrice" && request.headers.get("Upgrade") === "websocket") return registre.fetch(request);
+    // tête détourée du bonhomme d'un membre (image PNG)
+    if (request.method === "GET" && /^\/api\/avatar\/\d+\/tete$/.test(url.pathname)) {
+      let data;
+      try { data = await registre.teteAvatar(url.searchParams.get("t") || "", url.pathname.split("/")[3]); }
+      catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      if (!data) return new Response("Pas de tête", { status: 404 });
+      const bin = Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0));
+      return new Response(bin, { headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=604800" } });
+    }
+
     // photo d'identité d'un membre (image)
     if (request.method === "GET" && /^\/api\/photo\/\d+$/.test(url.pathname)) {
       let data;
@@ -672,6 +787,8 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/(photo|anecdote|publication)\/\d+$/.test(url.pathname)) {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
+      else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
+      else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());
       else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
       else if (route === "GET /api/boite") r = await registre.boite(token);

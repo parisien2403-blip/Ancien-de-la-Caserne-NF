@@ -280,6 +280,38 @@
   .lp-card .footl { position: absolute; left: 280px; right: 40px; top: 524px; border-top: 2px solid #3b342c; }
   .lp-card .souv { position: absolute; right: 52px; bottom: 30px; font: italic 11px Georgia, serif; color: rgba(42,38,34,.55); }
 
+  /* ---------- La Matrice ---------- */
+  .mx-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .mx-tete .btn { flex: none; margin-top: 10px; }
+  .mx-lieux { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none; }
+  .mx-lieux button { flex: none; border-radius: 99px; padding: 8px 14px; background: #fff; border: 1.5px solid var(--line); font: 700 14px "Lato", sans-serif; color: var(--muted); cursor: pointer; }
+  .mx-lieux button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
+  .mx-lieux .nb { display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 10px; background: #2ea043; color: #fff; font-size: 12px; }
+  .mx-scene { position: relative; height: min(62vh, 560px); min-height: 300px; border-radius: 18px; overflow: hidden; background: #8cc4ef; box-shadow: 0 10px 28px rgba(40,20,10,.25); touch-action: none; }
+  .mx-scene canvas { display: block; width: 100%; height: 100%; }
+  .mx-scene:fullscreen { height: 100%; border-radius: 0; }
+  .mx-voile { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, #5fa8e6, #bfe0f7); color: #1f2a37; font: 700 16px "Lato", sans-serif; text-align: center; padding: 20px; z-index: 2; }
+  .mx-voile[hidden], .mx-info[hidden] { display: none; }
+  .mx-presents { position: absolute; left: 10px; top: 10px; right: 56px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 1; }
+  .mx-presents span { background: rgba(31,42,55,.78); color: #fff; border-radius: 99px; padding: 4px 10px; font: 700 12px "Lato", sans-serif; }
+  .mx-presents span.moi { background: #c4694a; }
+  .mx-info { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(31,42,55,.88); color: #fff; padding: 8px 14px; border-radius: 12px; font: 700 13px "Lato", sans-serif; z-index: 3; max-width: 90%; text-align: center; }
+  .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
+  .mx-dire { display: flex; gap: 8px; margin: 10px 0 8px; }
+  .mx-dire input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 99px; padding: 12px 16px; font: 15px "Lato", sans-serif; outline: none; background: #fff; }
+  .mx-dire input:focus { border-color: var(--terra); }
+  .mx-fil { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 14px; }
+  .mx-fil div { background: var(--card); border-radius: 10px; padding: 6px 10px; } .mx-fil b { color: var(--navy); } .mx-fil small { color: var(--muted); margin-left: 6px; }
+  .bonhomme .bh-grille { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: start; }
+  .bonhomme canvas { width: 120px; height: 252px; border-radius: 14px; background: radial-gradient(circle at 50% 70%, #e9dfcf, #f7f1e6); }
+  .bh-titre { font: 700 13px "Lato", sans-serif; color: var(--muted); margin: 6px 0 6px; }
+  .bh-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .bh-choix { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bh-choix button { border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px; font: 13px "Lato", sans-serif; background: #fff; cursor: pointer; }
+  .bh-choix button.on { border-color: var(--terra); background: #fbe9e1; color: #8a3b22; font-weight: 700; }
+  .bh-choix .pastille { width: 30px; height: 30px; padding: 0; border-radius: 50%; }
+  .bh-choix .pastille.on { outline: 3px solid var(--gold); outline-offset: 2px; }
+
   /* ---------- Escaliers A à Z ---------- */
   .bat-saisie { position: relative; display: block; }
   .bat-saisie input { text-transform: uppercase; font-weight: 700; letter-spacing: .1em; }
@@ -997,6 +1029,22 @@
       </div>
 
       <!-- ===== VAGUEMESTRE ===== -->
+      <!-- ===== LA MATRICE : les cours de la caserne en 3D ===== -->
+      <div class="tab" data-tab="matrice" hidden>
+        <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
+          <button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button></div>
+        <div class="mx-lieux" id="mxLieux"></div>
+        <div class="mx-scene" id="mxScene">
+          <div class="mx-voile" id="mxVoile"><span>Ouverture des grilles…</span></div>
+          <div class="mx-presents" id="mxPresents"></div>
+          <div class="mx-info" id="mxInfo" hidden></div>
+          <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
+        </div>
+        <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
+        <div class="mx-fil" id="mxFil"></div>
+        <p class="legal" style="text-align:left">Touche les pavés pour marcher, passe sous les porches pour changer de cour, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
+      </div>
+
       <div class="tab" data-tab="vague" hidden>
         <h1 class="hello">Le Vaguemestre</h1>
         <p class="hello-sub">Le courrier de la caserne</p>
@@ -1043,6 +1091,7 @@
       <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span class="lbl">Salle<br> des jeunes</span></button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
       <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
+      <button data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Matrice</span></button>
       <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl">Vague<span class="cesure">-</span><br>mestre</span><span class="dot" id="vDot" hidden></span></button>
     </nav>
 
@@ -1096,6 +1145,25 @@
     </div>
     </div>
   </div>
+  <form class="sheet bonhomme" id="bonhommeForm">
+    <div class="grab"></div>
+    <h2>🧍 Mon bonhomme</h2>
+    <p class="sub">C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.</p>
+    <div class="bh-grille">
+      <canvas id="bhApercu" width="200" height="420" aria-label="Aperçu de mon bonhomme"></canvas>
+      <div>
+        <div class="bh-titre">Ma tête</div>
+        <div class="bh-actions"><button type="button" class="btn small" id="bhPhotoProfil">📷 Ma photo de profil</button>
+          <label class="btn small alt">🖼️ Une autre photo<input type="file" accept="image/*" id="bhFichier" hidden></label>
+          <button type="button" class="link" id="bhSansTete" style="margin:0">Sans photo</button></div>
+        <p class="aide-champ" id="bhEtat">Le détourage se fait dans ton téléphone : la photo n'est envoyée nulle part, seule la tête découpée est enregistrée.</p>
+        <div class="bh-titre">Ma tenue</div><div class="bh-choix" id="bhTenues"></div>
+        <div class="bh-titre">Ma couleur</div><div class="bh-choix" id="bhCouleurs"></div>
+      </div>
+    </div>
+    <p class="erreur" id="bhErreur" hidden></p>
+    <button class="btn" style="width:100%" id="bhEnregistrer">Enregistrer mon bonhomme</button>
+  </form>
   <form class="sheet" id="escalierForm">
     <div class="grab"></div>
     <h2>🏢 Mon escalier</h2>
@@ -1168,6 +1236,7 @@
       <li>Rien n'est public : il faut être <b>un ancien connecté</b> pour voir les membres, les photos, les anecdotes et les publications.</li>
       <li>Ton <b>courrier</b> n'apparaît que chez toi et chez la personne à qui tu écris. Les notifications n'affichent que le nom de l'expéditeur, jamais le message.</li>
       <li>Le <b>courrier du Vaguemestre est chiffré de bout en bout</b>, comme sur WhatsApp : il est verrouillé sur ton appareil et seul ton destinataire peut l'ouvrir. Le serveur ne garde qu'un contenu illisible, que ni l'hébergeur ni l'administrateur ne peuvent lire (un 🔒 l'indique).</li>
+      <li>Dans <b>la Matrice</b>, ce que tu dis est vu par les anciens présents dans la même cour et n'est <b>pas chiffré</b> ; les 50 derniers messages de chaque cour sont gardés. Ta tête est détourée <b>dans ton téléphone</b> : la photo n'est envoyée nulle part, seule la tête découpée est enregistrée sur le serveur de la caserne.</li>
       <li>Les photos, anecdotes et publications, faites pour être vues par tous les anciens, ne sont pas chiffrées de bout en bout.</li>
     </ul>
 
@@ -1522,6 +1591,7 @@
     if (tab === "biblio") chargerBiblio();
     if (tab === "jeunes") chargerAnecdotes();
     if (tab === "vague") chargerBoite();
+    if (tab === "matrice") ouvrirMatrice(); else fermerMatrice();
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
 
@@ -1731,6 +1801,107 @@
     $("st2").classList.toggle("on", !!filled);
   }
   ["fNom", "fPrenom", "fQual", "fParent", "fEtage"].forEach(id => $(id).addEventListener("input", renderCard));
+  /* ===== La Matrice (module chargé à la demande : matrice.js, moteur 3D three.js) ===== */
+  let MX = null, mxOuverte = false, monAvatar = null;
+  const chargerMX = () => MX ? Promise.resolve(MX) : import("./matrice.js").then(m => (MX = m));
+  const urlTete = (numero, v) => `/api/avatar/${numero}/tete?t=${encodeURIComponent(moi.token)}&v=${v}`;
+  function infoMatrice(texte, duree = 3500) { const el = $("mxInfo"); el.textContent = texte; el.hidden = false; clearTimeout(infoMatrice.t); infoMatrice.t = setTimeout(() => el.hidden = true, duree); }
+  async function ouvrirMatrice() {
+    if (mxOuverte) return;
+    if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
+    mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
+    try {
+      const [m, av] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar")]);
+      monAvatar = av;
+      if (!mxOuverte) return;
+      dessinerLieux(m, null, {});
+      await m.ouvrir({
+        conteneur: $("mxScene"), token: moi.token, urlTete,
+        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v }),
+        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; },
+        surPresents: liste => { $("mxPresents").innerHTML = liste.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
+        surComptes: c => { mxComptes = c; dessinerLieux(m); },
+        surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6; },
+        surInfo: t => infoMatrice(t),
+        surErreur: t => { $("mxVoile").innerHTML = `<span>${esc(t)}</span>`; $("mxVoile").hidden = false; },
+        surToucherAncien: p => menuAncien(m, p),
+      });
+      if (!monAvatar.fait) setTimeout(() => garde("Avant de te promener, fais ton bonhomme : ta tête détourée sur le corps de ton choix. Tu pourras le changer quand tu veux.", { titre: "Bienvenue dans la Matrice !", annuler: "Plus tard", ok: "Faire mon bonhomme" }).then(o => o && ouvrirBonhomme()), 900);
+    } catch (e) { mxOuverte = false; $("mxVoile").innerHTML = `<span>La Matrice ne s'ouvre pas : ${esc(e.message)}<br>Vérifie ta connexion internet.</span>`; $("mxVoile").hidden = false; }
+  }
+  let mxComptes = {}, mxLieu = null;
+  const MXmoi = () => moi && +moi.numero;
+  function dessinerLieux(m, lieu) {
+    if (lieu) mxLieu = lieu;
+    $("mxLieux").innerHTML = Object.entries(m.LIEUX).map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
+    $("mxLieux").querySelectorAll("[data-lieu]").forEach(b => b.onclick = () => m.allerAuLieu(b.dataset.lieu));
+  }
+  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
+  $("mxPlein").onclick = () => { const s = $("mxScene"); if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
+  async function menuAncien(m, p) {
+    if (!membres.length) { try { membres = await registre.membres(); } catch (e) {} }
+    const fiche = membres.find(x => +x.numero === +p.numero);
+    const boutons = [];
+    if (fiche) boutons.push({ label: "✉️ Lui écrire", f: () => { go("vague"); ouvrirEcrire(fiche.email); } }, { label: "🪪 Voir sa carte", alt: true, f: () => voirCarte(fiche) });
+    if (moi.admin && !p.admin) boutons.push({ label: "🤐 Le faire taire 1 h", alt: true, f: () => m.sanction("taire", p.numero) },
+      { label: "🚫 L'exclure 24 h", danger: true, f: async () => { if (await garde(`${p.nom} ne pourra plus entrer dans la Matrice pendant 24 heures.`, { titre: "Exclure de la Matrice ?", annuler: true, ok: "Exclure", danger: true })) m.sanction("exclure", p.numero); } });
+    boutons.push({ label: "Fermer", alt: true, f: () => {} });
+    const i = await garde(fiche ? `${fiche.prenom} ${fiche.nom}${fiche.bat ? ` · escalier ${fiche.bat}` : ""}` : p.nom, { titre: p.nom, boutons });
+    if (i >= 0) boutons[i].f();
+  }
+  $("mxBonhomme").onclick = () => ouvrirBonhomme();
+  // ----- la fenêtre « Mon bonhomme » -----
+  const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null };
+  async function ouvrirBonhomme() {
+    if (!enLigne || !moi || !moi.token) return;
+    $("bhErreur").hidden = true;
+    try {
+      const m = await chargerMX();
+      monAvatar = monAvatar || await api("GET", "/api/moi/avatar");
+      Object.assign(bh, { tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete: undefined, img: null });
+      if (monAvatar.tete_v) { const i = new Image(); i.src = urlTete(moi.numero, monAvatar.tete_v); try { await i.decode(); bh.img = i; } catch (e) {} }
+      $("bhTenues").innerHTML = Object.entries(m.TENUES).map(([id, t]) => `<button type="button" data-tenue="${id}">${esc(t.nom)}</button>`).join("");
+      $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
+      $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.onclick = () => { bh.tenue = b.dataset.tenue; apercuBonhomme(); });
+      $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.onclick = () => { bh.couleur = b.dataset.couleur; apercuBonhomme(); });
+      apercuBonhomme();
+      fermerConnexion(); $("bonhommeForm").scrollTop = 0; $("bonhommeForm").classList.add("open"); $("sheetBg").classList.add("open");
+    } catch (e) { garde("La fenêtre du bonhomme ne s'ouvre pas : " + e.message); }
+  }
+  function apercuBonhomme() {
+    if (!MX) return;
+    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: true }, bh.img);
+    const x = $("bhApercu").getContext("2d"); x.clearRect(0, 0, 200, 420); x.drawImage(c, 0, 0);
+    $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.classList.toggle("on", b.dataset.tenue === bh.tenue));
+    $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.classList.toggle("on", b.dataset.couleur === bh.couleur));
+  }
+  async function detourerDepuis(src) {
+    $("bhEtat").textContent = "Détourage en cours… (la première fois, l'outil se télécharge : quelques secondes)";
+    ["bhPhotoProfil", "bhEnregistrer"].forEach(id => $(id).disabled = true);
+    try {
+      const img = new Image(); img.src = src; await img.decode();
+      const r = await MX.detourerTete(img);
+      bh.tete = r.png; bh.img = new Image(); bh.img.src = r.png; await bh.img.decode();
+      $("bhEtat").textContent = r.auto ? "✓ Tête détourée automatiquement." : "Le détourage automatique n'a pas marché sur cette photo : j'ai gardé un ovale. Essaie une photo de face, bien éclairée.";
+      apercuBonhomme();
+    } catch (e) { $("bhEtat").textContent = "Photo illisible : " + e.message; }
+    ["bhPhotoProfil", "bhEnregistrer"].forEach(id => $(id).disabled = false);
+  }
+  $("bhPhotoProfil").onclick = () => { const u = photoUrl(moi); if (!u) { $("bhEtat").textContent = "Tu n'as pas encore de photo de profil : choisis « Une autre photo »."; return; } detourerDepuis(u); };
+  $("bhFichier").onchange = e => { const f = e.target.files[0]; if (!f) return; detourerDepuis(URL.createObjectURL(f)); e.target.value = ""; };
+  $("bhSansTete").onclick = () => { bh.tete = null; bh.img = null; $("bhEtat").textContent = "Sans photo : une tête dessinée avec tes initiales."; apercuBonhomme(); };
+  $("bonhommeForm").onsubmit = async e => {
+    e.preventDefault(); $("bhErreur").hidden = true;
+    try {
+      const corps = { tenue: bh.tenue, couleur: bh.couleur }; if (bh.tete !== undefined) corps.tete = bh.tete;
+      const r = await api("PUT", "/api/moi/avatar", corps);
+      monAvatar = { ...monAvatar, ...r, fait: true };
+      fermerCalque($("bonhommeForm"));
+      garde("Ton bonhomme est prêt. Les anciens présents dans la Matrice le voient déjà.", { titre: "🧍 C'est enregistré" });
+    } catch (err) { $("bhErreur").textContent = err.message; $("bhErreur").hidden = false; }
+  };
+
   /* ===== Escaliers : une lettre (A à Z, sans Q T U V W) et l'étage ===== */
   // les escaliers de la caserne : pas de Q, T, U, V ni W
   const LETTRES = "ABCDEFGHIJKLMNOPRSXYZ".split("");
@@ -1884,7 +2055,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes", "escalierForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes", "escalierForm", "bonhommeForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
@@ -2000,16 +2171,17 @@
       f.innerHTML = `<div class="garde-boite">
         <div class="garde-tete"><div class="garde-portrait" aria-hidden="true"></div><div class="garde-qui"><b>Le chef de poste</b><small>Caserne de la Nouvelle-France</small></div></div>
         <div class="garde-bulle"><h3></h3><p></p>
-          <div class="garde-actions">${o.annuler ? `<button class="btn alt" data-r="0">${esc(o.annuler === true ? "Annuler" : o.annuler)}</button>` : ""}
-            <button class="btn ${o.danger ? "danger" : ""}" data-r="1">${esc(o.ok || (o.annuler ? "Oui" : "Compris"))}</button></div></div></div>`;
+          <div class="garde-actions">${o.boutons ? o.boutons.map((b, i) => `<button class="btn ${b.alt ? "alt" : ""} ${b.danger ? "danger" : ""}" data-b="${i}">${esc(b.label)}</button>`).join("") : `${o.annuler ? `<button class="btn alt" data-r="0">${esc(o.annuler === true ? "Annuler" : o.annuler)}</button>` : ""}
+            <button class="btn ${o.danger ? "danger" : ""}" data-r="1">${esc(o.ok || (o.annuler ? "Oui" : "Compris"))}</button>`}</div></div></div>`;
       f.querySelector("h3").textContent = titre; f.querySelector("p").textContent = texte;
       document.body.appendChild(f); requestAnimationFrame(() => f.classList.add("ouvert"));
       const fermer = v => { f.classList.remove("ouvert"); document.removeEventListener("keydown", clavier); setTimeout(() => f.remove(), 200); try { precedent && precedent.focus(); } catch (e) {} fin(v); };
-      const clavier = e => { if (e.key === "Escape") fermer(false); };
+      const clavier = e => { if (e.key === "Escape") fermer(o.boutons ? -1 : false); };
       document.addEventListener("keydown", clavier);
       f.querySelectorAll("[data-r]").forEach(b => b.onclick = () => fermer(b.dataset.r === "1"));
-      f.onclick = e => { if (e.target === f && o.annuler) fermer(false); };
-      f.querySelector('[data-r="1"]').focus();
+      f.querySelectorAll("[data-b]").forEach(b => b.onclick = () => fermer(+b.dataset.b));
+      f.onclick = e => { if (e.target === f && (o.annuler || o.boutons)) fermer(o.boutons ? -1 : false); };
+      (f.querySelector('[data-r="1"]') || f.querySelector("[data-b]")).focus();
     });
   }
   window.alert = t => { garde(String(t)); };
@@ -2051,6 +2223,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.1", "11 octobre 2026", ["La Matrice : les anciens se retrouvent en 3D dans la grande cour, la cour de l'horloge et l'allée, reliées par leurs passages", "Mon bonhomme : ta tête détourée automatiquement (dans ton téléphone) sur la tenue et la couleur de ton choix", "On marche, on se voit en direct, on se parle en bulles ; l'administrateur peut faire taire ou exclure"]],
     ["2.0", "11 octobre 2026", ["Nouveau logo de l'appli : le porche de la Garde républicaine, n° 82"]],
     ["1.9.5", "11 octobre 2026", ["Écran verrouillé : tout tient à l'écran sur le Fold ouvert (photo, clavier, « Code oublié ? »)"]],
     ["1.9.4", "11 octobre 2026", ["Bouton « ← Retour » sur chaque fenêtre ; le geste retour du téléphone ferme la fenêtre ouverte", "Réglages : la fenêtre défile, plus rien de coupé en haut", "Écran verrouillé : ta photo en format photo, cadre jaune", "L'escalier changé au Poste de police est bien enregistré"]],
