@@ -86,6 +86,8 @@ export class Compteur extends DurableObject {
     try { this.sql.exec(`ALTER TABLE jeux ADD COLUMN jaquette TEXT`); } catch (e) { /* déjà là */ }
     // la Matrice : ce qui s'est dit dans chaque lieu (les 50 derniers), et les sanctions de l'administrateur
     this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_dits (id INTEGER PRIMARY KEY AUTOINCREMENT, lieu TEXT, numero INTEGER, nom TEXT, texte TEXT, cree TEXT)`);
+    // le bonhomme du chef de poste (le père de l'administrateur), réglé par l'administrateur
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS pnj (id INTEGER PRIMARY KEY, nom TEXT, tenue TEXT, couleur TEXT, reglage TEXT, tete TEXT, v INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_sanctions (numero INTEGER PRIMARY KEY, muet_jusqua TEXT, exclu_jusqua TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS signalements (
       id INTEGER PRIMARY KEY AUTOINCREMENT, auteur TEXT, categorie TEXT, texte TEXT, appareil TEXT, cree TEXT, lu INTEGER DEFAULT 0, traite INTEGER DEFAULT 0)`);
@@ -274,6 +276,31 @@ export class Compteur extends DurableObject {
   }
 
   /* ----- La Matrice : le bonhomme ----- */
+  infoPNJ(token) {
+    this.moi(token);
+    const p = this.sql.exec("SELECT nom, tenue, couleur, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = 1").toArray()[0];
+    let reglage = null; try { reglage = p && JSON.parse(p.reglage); } catch (e) {}
+    return { nom: (p && p.nom) || "Le chef de poste", tenue: (p && p.tenue) || "garde", couleur: (p && p.couleur) || "#1c2541", reglage, tete_v: p && p.a_tete ? p.v : 0 };
+  }
+  tetePNJ(token) { this.moi(token); const p = this.sql.exec("SELECT tete FROM pnj WHERE id = 1").toArray()[0]; return p && p.tete; }
+  async changerPNJ(token, x) {
+    await this.exigerAdmin(token);
+    const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "garde", couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#1c2541";
+    const nom = texte(x.nom, 40) || "Le chef de poste";
+    const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
+    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
+    if (!this.sql.exec("SELECT 1 FROM pnj WHERE id = 1").toArray().length) this.sql.exec("INSERT INTO pnj (id, v) VALUES (1, 0)");
+    this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, reglage = ?, v = v + 1 WHERE id = 1", nom, tenue, couleur, reglage);
+    if (x.tete === null) this.sql.exec("UPDATE pnj SET tete = NULL WHERE id = 1");
+    else if (x.tete !== undefined) {
+      if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
+      this.sql.exec("UPDATE pnj SET tete = ? WHERE id = 1", x.tete);
+    }
+    const info = this.infoPNJ(token), t = JSON.stringify({ t: "pnj", p: info });
+    for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} }
+    return info;
+  }
+
   async changerAvatar(token, x) {
     const moi = this.moi(token);
     const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "civil";
@@ -766,6 +793,12 @@ export default {
 
     // la Matrice : connexion en direct (WebSocket) vers le registre
     if (url.pathname === "/api/matrice" && request.headers.get("Upgrade") === "websocket") return registre.fetch(request);
+    // tête du chef de poste (réglée par l'administrateur)
+    if (request.method === "GET" && url.pathname === "/api/pnj/tete") {
+      let data; try { data = await registre.tetePNJ(url.searchParams.get("t") || ""); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      if (!data) return new Response("Pas de tête", { status: 404 });
+      return new Response(Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0)), { headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=604800" } });
+    }
     // tête détourée du bonhomme d'un membre (image PNG)
     if (request.method === "GET" && /^\/api\/avatar\/\d+\/tete$/.test(url.pathname)) {
       let data;
@@ -912,6 +945,8 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/(photo|anecdote|publication)\/\d+$/.test(url.pathname)) {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
+      else if (route === "GET /api/pnj") r = await registre.infoPNJ(token);
+      else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps());
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
       else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());

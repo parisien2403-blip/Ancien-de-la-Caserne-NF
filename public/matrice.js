@@ -615,6 +615,8 @@ function construireLieu(id, scene) {
       }
     };
     tables.push([-5.6, -1.3, dz - .8, Z1]);
+    // toucher le coin du DJ ouvre la musique
+    const zone = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.2, 1.6), new THREE.MeshBasicMaterial({ visible: false })); zone.position.set(-3.3, 1.6, dz); scene.add(zone); L.zoneDJ = [zone];
 
     // lumière de la salle
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
@@ -673,7 +675,7 @@ export async function ouvrir(ctx) {
     if (!glisse || glisse.id !== e.pointerId || !M) return;
     const dx = e.clientX - glisse.x;
     if (Math.abs(dx) > 10) glisse.bouge = true;
-    if (glisse.bouge) M.yaw = glisse.yaw - dx * .006;
+    if (glisse.bouge && M.L && M.L.interieur) M.yaw = glisse.yaw - dx * .006;
   });
   rendu.domElement.addEventListener("pointerup", e => {
     const g = glisse; glisse = null;
@@ -684,6 +686,7 @@ export async function ouvrir(ctx) {
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps)[0];
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.pnj) { dire(PNJ, PHRASES[Math.floor(Math.random() * PHRASES.length)]); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     const s = ray.intersectObject(M.L.sol)[0]; if (!s) return;
     allerVers(s.point.x, s.point.z, true);
   });
@@ -750,7 +753,7 @@ function placerCamera(net) {
     pos.set(mx - fx * 4.6, 2.5, mz - fz * 4.6); vise.set(mx + fx * 3, 1.2, mz + fz * 3);
   }
   // dehors : tourner la vue (glisser le doigt, ou ↻) fait tourner la caméra autour de son bonhomme
-  const yaw = M.L.interieur ? 0 : M.yaw || 0;
+  const yaw = 0;
   if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
@@ -811,7 +814,9 @@ const hasard = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x
 function ajouterPNJ() {
   if (!M || !M.L || M.gens.has(PNJ)) return;
   const [x, z] = pointPNJ(Math.floor(Date.now() / 9000) - 1);
-  ajouterAncien({ numero: PNJ, nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", teteUrl: "images/pere-tete.png", pnj: true, x, z });
+  const P = (M.ctx.pnj && M.ctx.pnj()) || {};
+  ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", reglage: P.reglage || null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x, z });
 }
 function pointPNJ(n) {
   const g = M.lieu === "fetes" ? 1000 : 0;
@@ -846,7 +851,7 @@ function changerLieu(id, arrivee) {
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
 }
-export function tourner(a = Math.PI) { if (M) M.yaw = (M.yaw || 0) + a; }
+export function tourner(a = Math.PI) { if (M && M.L && M.L.interieur) M.yaw = (M.yaw || 0) + a; }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 
 /* --- la connexion en direct --- */
@@ -876,6 +881,7 @@ function connecter() {
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "dj") ctx.surDJ && ctx.surDJ(m.dj);
+    else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };
   ws.onclose = ev => {
