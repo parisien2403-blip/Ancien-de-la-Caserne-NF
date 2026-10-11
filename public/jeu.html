@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La borne de la caserne</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #jeu { width: 100%; height: 100%; }
+  .msg { position: absolute; inset: 0; display: grid; place-items: center; color: #9fd; font: 700 15px "Courier New", monospace; text-align: center; padding: 12px; text-shadow: 0 0 6px #6fc; }
+</style>
+</head>
+<body>
+<div id="jeu"></div>
+<script>
+  // La borne : EmulatorJS (https://emulatorjs.org, licence GPL-3.0) chargé depuis son CDN officiel.
+  // Le fichier du jeu vient du serveur de la caserne, réservé aux anciens connectés.
+  const q = new URLSearchParams(location.search);
+  let moi = null; try { moi = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) {}
+  if (!moi || !moi.token || !q.get("id")) {
+    document.body.insertAdjacentHTML("beforeend", '<div class="msg">CONNECTE-TOI POUR JOUER</div>');
+  } else {
+    window.EJS_player = "#jeu";
+    window.EJS_core = q.get("console") || "snes";
+    window.EJS_gameName = q.get("titre") || "Jeu";
+    window.EJS_gameID = "caserne-" + q.get("id");
+    window.EJS_gameUrl = `/api/jeux/${encodeURIComponent(q.get("id"))}/fichier?t=${encodeURIComponent(moi.token)}`;
+    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_language = "fr-FR";
+    window.EJS_color = "#c4694a";
+    window.EJS_backgroundColor = "#000";
+    window.EJS_startButtonName = "▶ JOUER";
+    window.EJS_volume = 0.6;
+    const s = document.createElement("script");
+    s.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    s.onerror = () => document.body.insertAdjacentHTML("beforeend", '<div class="msg">LA BORNE NE RÉPOND PAS<br>(VÉRIFIE TA CONNEXION)</div>');
+    document.body.appendChild(s);
+  }
+</script>
+</body>
+</html>

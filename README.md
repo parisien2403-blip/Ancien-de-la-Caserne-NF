@@ -15,7 +15,7 @@ Application des anciens de la Caserne de la Nouvelle France (Garde républicaine
 | **Poste de police** | Le chef de poste accueille les nouveaux. On remplit sa demande (nom, prénom, Fils / Fille du Garde ou Gendarme, photo) et on obtient son **laissez-passer** tamponné, avec son **numéro** (0001, 0002…), son **adresse de la caserne** (`prenom.nom@caserne-nf`) et un **code provisoire à 6 chiffres**. |
 | **Bibliothèque** | Partage de photos, chacune rangée sous un **thème libre** choisi par celui qui la dépose ; filtre par thème, commentaires. |
 | **Salle des jeunes** | Anecdotes de la caserne, avec image facultative et commentaires. |
-| **Salle des fêtes** | Musique (MP3), vidéos et photos des soirées. |
+| **Salle des fêtes** | Musique (MP3), vidéos et photos des soirées, et **la borne** : un émulateur (EmulatorJS, chargé depuis cdn.emulatorjs.org) dont l'écran s'affiche dans la télé ; seul l'administrateur ajoute ou retire des jeux (stockés sur le serveur, réservés aux anciens validés). |
 | **Membres de la Caserne** | Le registre des anciens, **par ordre alphabétique du nom de famille**, avec photo ; un clic ouvre **la carte (laissez-passer) du membre**. |
 | **Vaguemestre** | Le courrier interne : reçus, envoyés, écrire, répondre. |
 

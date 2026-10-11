@@ -568,6 +568,34 @@
     background: radial-gradient(circle at 30% 40%, transparent 0 60%, rgba(239,227,196,.55) 61% 63%, transparent 64%),
       radial-gradient(circle at 75% 70%, transparent 0 45%, rgba(239,227,196,.5) 46% 48%, transparent 49%); }
   @keyframes coup-tampon { from { opacity: 0; scale: 1.8; } to { opacity: 1; scale: 1; } }
+  /* la borne de jeux */
+  .borne-zone { max-width: 620px; margin: 0 auto 18px; }
+  .borne { position: relative; border-radius: 18px; overflow: hidden; box-shadow: 0 8px 24px rgba(40,20,10,.3); background: #1b2230; }
+  .borne > img { display: block; width: 100%; height: auto; }
+  .borne .ecran { position: absolute; left: 25.9%; top: 16.95%; width: 49.3%; height: 32.15%; border-radius: 2.6% / 3.6%; overflow: hidden; background: #050806;
+    box-shadow: inset 0 0 18px 6px rgba(0,0,0,.85); }
+  .borne .ecran::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.12), transparent 45%), radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.45));
+    box-shadow: inset 0 0 22px rgba(0,0,0,.8); }
+  .borne iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .borne .neige { position: absolute; inset: 0; display: grid; place-items: center; background: #111 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    animation: neige .25s steps(4) infinite; }
+  .borne .neige span { background: rgba(0,0,0,.65); color: #9fd; font: 700 clamp(9px, 2.4vw, 15px) "Courier New", monospace; padding: 6px 10px; letter-spacing: .1em; text-shadow: 0 0 6px #6fc; }
+  @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
+  .borne-barre { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 2px 8px; flex-wrap: wrap; }
+  .borne-barre .kicker { margin: 0; }
+  .borne-actions { display: flex; gap: 8px; }
+  .cartouches { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
+  .cartouche { position: relative; flex: none; width: 128px; padding: 10px 10px 12px; border-radius: 8px 8px 4px 4px; border: 0; cursor: pointer; text-align: left;
+    background: linear-gradient(180deg, #8d8a86, #6b6865); color: #fff; box-shadow: 0 3px 0 #4a4744, inset 0 2px 0 rgba(255,255,255,.25); }
+  .cartouche .etiq { display: block; background: #f6eedf; color: #2a2420; border-radius: 3px; padding: 8px 6px; font: 700 13px "Lato", sans-serif; min-height: 52px; line-height: 1.2; }
+  .cartouche small { display: block; margin-top: 6px; font-size: 11px; opacity: .9; }
+  .cartouche.on { outline: 3px solid var(--gold); }
+  .cartouche .retirer { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #b3261e; color: #fff; font-size: 14px; cursor: pointer; }
+  .borne-admin h3 small { font: 12px "Lato", sans-serif; color: var(--muted); }
+  .borne-admin .progression { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 0 0 12px; }
+  .borne-admin .progression div { height: 100%; width: 0; background: var(--terra); transition: width .2s; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -781,6 +809,38 @@
       <div class="tab" data-tab="fetes" hidden>
         <h1 class="hello">La Salle des fêtes</h1>
         <p class="hello-sub">Musique, vidéos et photos des soirées de la caserne</p>
+
+        <!-- ===== La borne : le jeu s'affiche dans l'écran de la télé ===== -->
+        <div class="borne-zone">
+          <div class="borne" id="borne">
+            <img src="images/borne.jpg" alt="Une vieille télé, une Super Nintendo, une Game Boy et des cartouches sur un meuble en bois">
+            <div class="ecran" id="ecran">
+              <div class="neige" id="neige"><span id="ecranTexte">CHOISIS UNE CARTOUCHE</span></div>
+              <iframe id="jeuFrame" title="La borne de la caserne" allow="fullscreen; gamepad; autoplay" hidden></iframe>
+            </div>
+          </div>
+          <div class="borne-barre">
+            <div class="kicker">🎮 La borne de la caserne</div>
+            <div class="borne-actions"><button class="btn small alt" id="borneEteindre" hidden>⏻ Éteindre</button>
+              <button class="btn small" id="bornePlein" hidden>⛶ Plein écran</button></div>
+          </div>
+          <div class="cartouches" id="cartouches"></div>
+          <form class="card borne-admin" id="borneAdmin" hidden>
+            <h3>🔧 Ajouter un jeu à la borne <small>(toi seul vois ce cadre)</small></h3>
+            <label class="file"><span id="jeuFichierLbl">Choisir le fichier du jeu</span><input type="file" id="jeuFichier" hidden></label>
+            <div class="row2" style="margin-top:12px">
+              <label class="field">Titre<input id="jeuTitre" maxlength="80" required></label>
+              <label class="field">Console<select id="jeuConsole">
+                <option value="snes">Super Nintendo</option><option value="nes">NES</option><option value="gb">Game Boy / Color</option>
+                <option value="gba">Game Boy Advance</option><option value="segaMD">Mega Drive</option><option value="segaMS">Master System</option>
+                <option value="segaGG">Game Gear</option><option value="n64">Nintendo 64</option><option value="pce">PC Engine</option><option value="atari2600">Atari 2600</option>
+              </select></label>
+            </div>
+            <p class="legal" style="text-align:left;margin:0 0 12px">Ne dépose que des jeux que tu as le droit de partager (jeux gratuits « homebrew », jeux libres de droits…).</p>
+            <p class="erreur" id="jeuErreur" hidden></p>
+            <button class="btn" style="width:100%" id="jeuEnvoyer">Ranger la cartouche dans la borne</button>
+          </form>
+        </div>
         <div class="card fete-head">
           <div class="garland" id="garland"></div>
           <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
@@ -1288,6 +1348,7 @@
     $("scroll").scrollTop = 0;
     if (tab === "poste") fitCard();
     if (tab === "accueil") chargerAccueil();
+    if (tab === "fetes") chargerBorne();
     if (tab === "membres") chargerMembres();
     if (tab === "biblio") chargerBiblio();
     if (tab === "jeunes") chargerAnecdotes();
@@ -2565,6 +2626,83 @@
   if (moi && moi.email) verrouiller();
   if (moi && moi.token && enLigne) verifierStatut(false).then(() => { if (moi && !estValide()) afficherAttente(); });
   else if (moi && !estValide()) afficherAttente();
+
+  /* ===== La borne de jeux (salle des fêtes) ===== */
+  const NOMS_CONSOLES = { snes: "Super Nintendo", nes: "NES", gb: "Game Boy", gba: "Game Boy Advance", segaMD: "Mega Drive", segaMS: "Master System",
+    segaGG: "Game Gear", n64: "Nintendo 64", pce: "PC Engine", atari2600: "Atari 2600" };
+  const EXTENSIONS = { sfc: "snes", smc: "snes", nes: "nes", gb: "gb", gbc: "gb", gba: "gba", md: "segaMD", gen: "segaMD", smd: "segaMD", bin: "segaMD",
+    sms: "segaMS", gg: "segaGG", n64: "n64", z64: "n64", v64: "n64", pce: "pce", a26: "atari2600" };
+  let jeux = [], jeuEnCours = null;
+  async function chargerBorne() {
+    $("borneAdmin").hidden = !(moi && moi.admin);
+    if (!enLigne || !estValide()) { $("cartouches").innerHTML = ""; $("ecranTexte").textContent = "CONNECTE-TOI POUR JOUER"; return; }
+    try { jeux = await api("GET", "/api/jeux"); } catch (e) { $("cartouches").innerHTML = `<p style="color:var(--muted)">Borne injoignable : ${esc(e.message)}</p>`; return; }
+    if (!jeuEnCours) $("ecranTexte").textContent = jeux.length ? "CHOISIS UNE CARTOUCHE" : "PAS ENCORE DE CARTOUCHE";
+    $("cartouches").innerHTML = jeux.length ? jeux.map(j => `<button class="cartouche ${jeuEnCours === j.id ? "on" : ""}" data-jeu="${j.id}">
+        <span class="etiq">${esc(j.titre)}</span><small>${esc(NOMS_CONSOLES[j.console] || j.console)}</small>
+        ${moi.admin ? `<span class="retirer" data-retirer-jeu="${j.id}" title="Retirer de la borne">×</span>` : ""}</button>`).join("")
+      : `<p style="color:var(--muted);margin:4px 2px">${moi.admin ? "Ajoute la première cartouche avec le cadre ci-dessous." : "L'administrateur n'a pas encore rangé de cartouche dans la borne."}</p>`;
+    document.querySelectorAll("[data-jeu]").forEach(b => b.onclick = async e => {
+      const x = e.target.closest("[data-retirer-jeu]");
+      if (x) {
+        e.stopPropagation();
+        const j = jeux.find(v => v.id === +x.dataset.retirerJeu);
+        if (!confirm(`Retirer « ${j.titre} » de la borne ?`)) return;
+        try { await api("DELETE", `/api/jeux/${j.id}`); if (jeuEnCours === j.id) eteindre(); chargerBorne(); } catch (err) { alert(err.message); }
+        return;
+      }
+      allumer(jeux.find(v => v.id === +b.dataset.jeu));
+    });
+  }
+  function allumer(j) {
+    jeuEnCours = j.id;
+    $("neige").hidden = true;
+    const f = $("jeuFrame"); f.hidden = false;
+    f.src = `jeu.html?id=${j.id}&console=${encodeURIComponent(j.console)}&titre=${encodeURIComponent(j.titre)}`;
+    $("borneEteindre").hidden = false; $("bornePlein").hidden = false;
+    document.querySelectorAll(".cartouche").forEach(c => c.classList.toggle("on", +c.dataset.jeu === j.id));
+    $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function eteindre() {
+    jeuEnCours = null;
+    const f = $("jeuFrame"); f.src = "about:blank"; f.hidden = true;
+    $("neige").hidden = false; $("ecranTexte").textContent = "CHOISIS UNE CARTOUCHE";
+    $("borneEteindre").hidden = true; $("bornePlein").hidden = true;
+    document.querySelectorAll(".cartouche").forEach(c => c.classList.remove("on"));
+  }
+  $("borneEteindre").onclick = eteindre;
+  $("bornePlein").onclick = () => { const f = $("jeuFrame"); (f.requestFullscreen || f.webkitRequestFullscreen || (() => {})).call(f); };
+  // on éteint la borne en quittant la salle des fêtes
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => { if (b.dataset.go !== "fetes" && jeuEnCours) eteindre(); }));
+  // ajout d'un jeu (administrateur) : envoyé en morceaux de 1 Mo
+  $("jeuFichier").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    $("jeuFichierLbl").textContent = `${f.name} (${(f.size / 1048576).toFixed(1)} Mo)`;
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    if (EXTENSIONS[ext]) $("jeuConsole").value = EXTENSIONS[ext];
+    if (!$("jeuTitre").value) $("jeuTitre").value = f.name.replace(/\.[^.]+$/, "").replace(/[_.]+/g, " ").replace(/\s*[\(\[].*$/, "").trim();
+  };
+  $("borneAdmin").onsubmit = async e => {
+    e.preventDefault(); $("jeuErreur").hidden = true;
+    const f = $("jeuFichier").files[0];
+    if (!f) { $("jeuErreur").textContent = "Choisis d'abord le fichier du jeu."; $("jeuErreur").hidden = false; return; }
+    const btn = $("jeuEnvoyer"); btn.disabled = true;
+    let barre = $("borneAdmin").querySelector(".progression");
+    if (!barre) { barre = document.createElement("div"); barre.className = "progression"; barre.innerHTML = "<div></div>"; btn.before(barre); }
+    try {
+      const j = await api("POST", "/api/jeux", { titre: $("jeuTitre").value.trim(), console: $("jeuConsole").value, nom_fichier: f.name, taille: f.size });
+      for (let n = 0; n < j.morceaux; n++) {
+        const bout = await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer();
+        const res = await fetch(`/api/jeux/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + moi.token }, body: bout });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).erreur || "Envoi interrompu");
+        barre.firstChild.style.width = ((n + 1) / j.morceaux * 100) + "%";
+        btn.textContent = `Rangement… ${Math.round((n + 1) / j.morceaux * 100)} %`;
+      }
+      $("borneAdmin").reset(); $("jeuFichierLbl").textContent = "Choisir le fichier du jeu"; barre.remove();
+      await chargerBorne();
+    } catch (err) { $("jeuErreur").textContent = err.message; $("jeuErreur").hidden = false; }
+    btn.disabled = false; btn.textContent = "Ranger la cartouche dans la borne";
+  };
 
   /* ===== Appli installable : Android, iPhone / iPad, PC ===== */
   if ("serviceWorker" in navigator && enLigne) navigator.serviceWorker.register("/sw.js").catch(() => {});

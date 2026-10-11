@@ -38,6 +38,8 @@ const photoValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;
 // ce qu'on peut commenter ou retirer : type → table
 const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publications" };
 
+const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
+
 class Refus extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
@@ -59,6 +61,9 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, theme TEXT, annee TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS anecdotes (
       id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, texte TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
+    // la borne de jeux (salle des fêtes) : fichiers découpés en morceaux de 1 Mo
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, console TEXT, nom_fichier TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux_morceaux (jeu INTEGER, n INTEGER, data BLOB, PRIMARY KEY (jeu, n))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS signalements (
       id INTEGER PRIMARY KEY AUTOINCREMENT, auteur TEXT, categorie TEXT, texte TEXT, appareil TEXT, cree TEXT, lu INTEGER DEFAULT 0, traite INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS publications (
@@ -256,6 +261,50 @@ export class Compteur extends DurableObject {
     }
     if (!tous && (m.statut || "valide") !== "valide") throw new Refus("Compte en attente de validation", 403);
     return this.public(m);
+  }
+
+  /* ----- La borne de jeux : l'administrateur seul ajoute ou retire ----- */
+  async jeux(token) {
+    await this.verifierAcces(token);
+    return this.sql.exec("SELECT id, titre, console, nom_fichier, taille, cree FROM jeux WHERE complet = 1 ORDER BY titre COLLATE NOCASE").toArray();
+  }
+  async nouveauJeu(token, x) {
+    await this.exigerAdmin(token);
+    const CONSOLES = ["snes", "nes", "gb", "gba", "segaMD", "segaMS", "segaGG", "n64", "atari2600", "pce"];
+    const titre = texte(x.titre, 80), taille = Number(x.taille), morceaux = Math.ceil(taille / MORCEAU);
+    if (!titre) throw new Refus("Donne un titre au jeu");
+    if (!CONSOLES.includes(x.console)) throw new Refus("Console inconnue");
+    if (!(taille > 0 && taille <= JEU_MAX)) throw new Refus("Fichier trop lourd (32 Mo maximum)");
+    this.sql.exec("INSERT INTO jeux (titre, console, nom_fichier, taille, morceaux, cree) VALUES (?, ?, ?, ?, ?, ?)",
+      titre, x.console, texte(x.nom_fichier, 120).replace(/[^\w.\- ]/g, "_") || "jeu.bin", taille, morceaux, new Date().toISOString());
+    return { id: this.sql.exec("SELECT last_insert_rowid() AS id").one().id, morceaux, taille_morceau: MORCEAU };
+  }
+  async morceauJeu(token, id, n, data) {
+    await this.exigerAdmin(token);
+    const j = this.sql.exec("SELECT * FROM jeux WHERE id = ?", Number(id)).toArray()[0];
+    if (!j) throw new Refus("Jeu introuvable", 404);
+    n = Number(n);
+    if (!(n >= 0 && n < j.morceaux) || data.byteLength > MORCEAU) throw new Refus("Morceau invalide");
+    this.sql.exec("INSERT OR REPLACE INTO jeux_morceaux (jeu, n, data) VALUES (?, ?, ?)", j.id, n, data);
+    const recus = this.sql.exec("SELECT COUNT(*) AS c FROM jeux_morceaux WHERE jeu = ?", j.id).one().c;
+    if (recus === j.morceaux) this.sql.exec("UPDATE jeux SET complet = 1 WHERE id = ?", j.id);
+    return { ok: true, complet: recus === j.morceaux };
+  }
+  async fichierJeu(token, id) {
+    await this.verifierAcces(token);
+    const j = this.sql.exec("SELECT * FROM jeux WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
+    if (!j) return null;
+    const out = new Uint8Array(j.taille); let pos = 0;
+    for (const m of this.sql.exec("SELECT data FROM jeux_morceaux WHERE jeu = ? ORDER BY n", j.id).toArray()) {
+      const b = new Uint8Array(m.data); out.set(b, pos); pos += b.byteLength;
+    }
+    return { octets: out, nom: j.nom_fichier };
+  }
+  async retirerJeu(token, id) {
+    await this.exigerAdmin(token);
+    this.sql.exec("DELETE FROM jeux_morceaux WHERE jeu = ?", Number(id));
+    this.sql.exec("DELETE FROM jeux WHERE id = ?", Number(id));
+    return { ok: true };
   }
 
   /* ----- Validation des inscriptions par l'administrateur ----- */
@@ -532,6 +581,22 @@ export default {
       return res;
     }
 
+    // fichier d'un jeu de la borne (réservé aux anciens validés)
+    if (request.method === "GET" && /^\/api\/jeux\/\d+\/fichier$/.test(url.pathname)) {
+      try {
+        const f = await registre.fichierJeu(url.searchParams.get("t") || "", url.pathname.split("/")[3]);
+        if (!f) return new Response("Introuvable", { status: 404 });
+        return new Response(f.octets, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, max-age=86400",
+          "Content-Disposition": `inline; filename="${f.nom}"` } });
+      } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+    }
+    // dépôt d'un morceau de jeu (administrateur)
+    if (request.method === "PUT" && /^\/api\/jeux\/\d+\/morceau\/\d+$/.test(url.pathname)) {
+      const [, , , id, , n] = url.pathname.split("/");
+      try { return Response.json(await registre.morceauJeu(token, id, n, await request.arrayBuffer())); }
+      catch (e) { return Response.json({ erreur: e.message }, { status: e.status || (/Réservé/.test(e.message) ? 403 : 400) }); }
+    }
+
     try {
       let r;
       if (route === "POST /api/inscription") r = await registre.inscrire(await corps(), token);
@@ -544,6 +609,9 @@ export default {
       else if (route === "POST /api/signalements") r = await registre.signaler(token, await corps());
       else if (route === "GET /api/signalements") r = await registre.signalements(token);
       else if (route === "GET /api/statut") r = await registre.statut(token);
+      else if (route === "GET /api/jeux") r = await registre.jeux(token);
+      else if (route === "POST /api/jeux") r = await registre.nouveauJeu(token, await corps());
+      else if (request.method === "DELETE" && /^\/api\/jeux\/\d+$/.test(url.pathname)) r = await registre.retirerJeu(token, url.pathname.split("/")[3]);
       else if (route === "GET /api/demandes") r = await registre.demandes(token);
       else if (request.method === "POST" && /^\/api\/demandes\/\d+$/.test(url.pathname)) r = await registre.decider(token, url.pathname.split("/")[3], await corps());
       else if (route === "POST /api/moi/abandon") r = await registre.abandonner(token);
