@@ -462,17 +462,9 @@ function construireRue(A, T, L, scene) {
     if (muret && base > .1) { const m = A.ajoute(new THREE.BoxGeometry(lg + .5, base, .5), pierreM, (x1 + x2) / 2, base / 2, (z1 + z2) / 2); m.rotation.y = -ang; }
   };
   grille(-28, -7.5, -2.6, -7.5); grille(2.6, -7.5, 9.5, -7.5); grille(13.5, -7.5, 16, -7.5); grille(-28, -7.5, -28, -26);
-  // la cage d'entrée : grille plus haute, tourniquet, portillon ouvert, interphone
+  // la cage d'entrée : grille plus haute, portillon ouvert, interphone
   grille(-2.6, -7.5, -2.6, -12, 2.7, .12); grille(2.6, -7.5, 2.6, -12, 2.7, .12); grille(-2.6, -7.5, .1, -7.5, 2.7, .12); grille(1.5, -7.5, 2.6, -7.5, 2.7, .12);
   grille(1.5, -7.6, 1.02, -8.82, 2.5, .05, .13, false);
-  const tq = new THREE.Group(); tq.position.set(-1.25, 0, -8.7); scene.add(tq);
-  const tige = (lg, r = .022) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, lg, 6), fer);
-  const axe = tige(2.4, .06); axe.position.y = 1.2; tq.add(axe);
-  for (let a = 0; a < 3; a++) { const bras = new THREE.Group(); bras.rotation.y = a * Math.PI * 2 / 3 + .4; tq.add(bras);
-    for (let k = 0; k < 7; k++) { const b = tige(.62); b.rotation.z = Math.PI / 2; b.position.set(.31, .3 + k * .3, 0); bras.add(b); }
-    const v = tige(1.9); v.position.set(.62, 1.2, 0); bras.add(v); }
-  for (let k = 0; k < 9; k++) { const a = Math.PI * .55 + k * Math.PI * .9 / 8, b = tige(2.4); b.position.set(Math.cos(a) * .82, 1.2, Math.sin(a) * .82); tq.add(b); }
-  const arc = new THREE.Mesh(new THREE.TorusGeometry(.82, .03, 6, 24, Math.PI * .9), fer); arc.rotation.x = Math.PI / 2; arc.rotation.z = Math.PI * .55; arc.position.y = 2.4; tq.add(arc);
   A.ajoute(new THREE.BoxGeometry(.14, 1.5, .1), A.mat({ color: 0x9c9d9b, metalness: .4 }), .3, .75, -7.65);
   A.ajoute(new THREE.BoxGeometry(.2, .34, .08), A.mat({ color: 0xb9bab8, metalness: .4 }), .3, 1.35, -7.58);
   A.ajoute(new THREE.PlaneGeometry(.1, .08), new THREE.MeshBasicMaterial({ color: 0x0d1b2a }), .3, 1.43, -7.53, false);
@@ -635,17 +627,27 @@ function construireRue(A, T, L, scene) {
   /* --- où l'on peut marcher, la caméra, les passages --- */
   L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24) || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.2);
   L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -12.5, vers: "grande", arrivee: [0, 11] });
+  // la grille noire ne se traverse pas : entre le trottoir et la cage d'entrée, on passe par le portillon
+  L.trajet = (x0, z0, x1, z1) => { const dedans = z => z < -7.3;
+    if (dedans(z0) === dedans(z1)) return [[x1, z1]];
+    return dedans(z0) ? [[.8, -8.3], [.8, -6.7], [x1, z1]] : [[.8, -6.7], [.8, -8.3], [x1, z1]]; };
+  raccourci(L, scene, [5.4, 4.6, 2.4], [0, 2.3, -12.6], { vers: "grande", arrivee: [0, 11] });
   L.anim = (temps) => {
     // le drapeau ondule
     const p = geoD.attributes.position; for (let i = 0; i < p.count; i++) { const u = (baseD[i * 3] + 1.1) / 2.2; p.array[i * 3 + 2] = Math.sin(temps / 380 - u * 5 + baseD[i * 3 + 1] * .8) * .16 * u; }
     p.needsUpdate = true; geoD.computeVertexNormals();
     if (L.nuit) for (const s of L.silhouettes) animerSilhouette(s, temps);
   };
-  L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 3.4, av: 6, vy: 3.6 }; L.fov = [60, 72];
+  L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.boite = [-63, 63, -11.8, 6.3];
-  L.cam = { pos: [.8, 3.4, 2.3], vise: [.8, 3.6, -11] };
+  L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
 }
 
+// un porche ou une porte qu'on touche une fois pour passer directement de l'autre côté (zone invisible)
+function raccourci(L, scene, [w, h, d], [x, y, z], cible) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ visible: false })); o.position.set(x, y, z); scene.add(o);
+  (L.raccourcis = L.raccourcis || []).push({ obj: o, ...cible });
+}
 function construireLieu(id, scene) {
   const A = atelier(scene), T = textures();
   const sol = (map, rx, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(90, 90), A.mat({ map: tex(map, rx, ry) }), 0, 0, 0, false); o.rotation.x = -Math.PI / 2; return o; };
@@ -933,6 +935,7 @@ function construireLieu(id, scene) {
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 1.5 && z >= 14.8 && z < 24);
     // le porche de cette façade mène à la rue du Faubourg-Poissonnière (on arrive sur le trottoir, face à la caserne)
     L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [.8, -5.2] });
+    raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { vers: "rue", arrivee: [.8, -5.2] });
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
     L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72]; L.boite = [-11.6, 11.6, -17.4, 15.1];
     const cols5 = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
@@ -944,7 +947,9 @@ function construireLieu(id, scene) {
         if (Math.floor(ph / Math.PI) % 3 === 0) b.pl.material.color.setHex(cols5[(b.i + Math.floor(temps / 1700)) % 5]); }
       if (P) { const c = cols5[Math.floor(temps / 1700) % 5]; P.spot.color.setHex(c); P.vide.material.color.setHex(c).lerp(new THREE.Color(0xffe0b0), .55); }
       for (const s of L.silhouettes) animerSilhouette(s, temps); };
-    L.portails.push({ dans: (x, z) => x > 10 && z > -1 && z < 8, vers: "fetes", arrivee: [-4.4, 6] });
+    // on n'entre dans la salle des fêtes que par sa porte ouverte
+    L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-4.4, 6], yaw: -Math.PI / 2 });
+    raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-4.4, 6], yaw: -Math.PI / 2 });
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -1257,7 +1262,9 @@ function construireLieu(id, scene) {
       for (const [t] of reflets) { t.material.opacity = .55 + .45 * s; t.scale.setScalar(1 + .8 * s); } };
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
-    L.portails.push({ dans: (x, z) => x < X0 + .7, vers: "grande", arrivee: [8.8, 6], yaw: Math.PI / 2 });
+    L.portails.push({ dans: (x, z) => x < X0 + .7 && Math.abs(z - (Z0 + 2.5 * long / 5)) < 1.1, vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
+    raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
+    L.plafond = HT - .35;
     L.depart = [0, Z1 - 6]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
   }
 
@@ -1304,14 +1311,25 @@ export async function ouvrir(ctx) {
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
   // glisser le doigt à gauche ou à droite : tourner la vue ; toucher sans glisser : marcher (ou toucher un ancien)
   let glisse = null;
-  rendu.domElement.addEventListener("pointerdown", e => { glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0 }; });
+  // deux doigts : pincer pour rapprocher ou éloigner la caméra
+  const doigts = new Map(); let pince = null;
+  const bornerCam = () => { if (!M || M.camE == null) return; M.camE = Math.max(.04, Math.min(1.35, M.camE)); M.camD = Math.max(2.5, Math.min(M.L && M.L.interieur ? 8 : 24, M.camD)); };
+  rendu.domElement.addEventListener("pointerdown", e => { doigts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), D: M && M.camD }; if (glisse) glisse.bouge = true; return; }
+    glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, E: M ? M.camE : null }; });
   rendu.domElement.addEventListener("pointermove", e => {
+    if (doigts.has(e.pointerId)) doigts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pince && doigts.size === 2 && M && pince.D) { const [a, b] = [...doigts.values()]; M.camD = pince.D * pince.d / Math.max(20, Math.hypot(a[0] - b[0], a[1] - b[1])); bornerCam(); return; }
     if (!glisse || glisse.id !== e.pointerId || !M) return;
-    const dx = e.clientX - glisse.x;
-    if (Math.abs(dx) > 10) glisse.bouge = true;
-    if (glisse.bouge && M.L && (M.L.interieur || M.L.suivi)) M.yaw = glisse.yaw - dx * .006;
+    const dx = e.clientX - glisse.x, dy = e.clientY - glisse.y;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) glisse.bouge = true;
+    if (glisse.bouge && M.L && (M.L.interieur || M.L.suivi)) { M.yaw = glisse.yaw - dx * .006; if (glisse.E != null) { M.camE = glisse.E + dy * .005; bornerCam(); } }
   });
+  const leve = e => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
+  rendu.domElement.addEventListener("pointercancel", leve);
+  rendu.domElement.addEventListener("wheel", e => { if (!M || M.camD == null) return; e.preventDefault(); M.camD *= 1 + Math.sign(e.deltaY) * .12; bornerCam(); }, { passive: false });
   rendu.domElement.addEventListener("pointerup", e => {
+    const multi = doigts.size > 1 || pince; leve(e); if (multi) { glisse = null; return; }
     const g = glisse; glisse = null;
     if (!g || g.bouge || !M || !M.L) return;
     const r = rendu.domElement.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
@@ -1326,6 +1344,8 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(36, r.width * .045)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
+    const rc = (M.L.raccourcis || []).find(q => ray.intersectObject(q.obj)[0]);
+    if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
     const s = ray.intersectObject(M.L.sol)[0];
     if (s) allerVers(s.point.x, s.point.z, true);
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
@@ -1342,7 +1362,7 @@ export async function ouvrir(ctx) {
     const dt = Math.min(.05, (t - avant) / 1000); avant = t;
     for (const p of M.gens.values()) {
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
-        if (L < .05) { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
+        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
         else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt)); if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
@@ -1428,10 +1448,15 @@ function placerCamera(net) {
   const vise = new THREE.Vector3(c.vise[0] + sx, c.vise[1] - (portrait ? .5 : 0), c.vise[2] + sz);
   // à l'intérieur : la caméra suit derrière son bonhomme, à 4,5 m, et tourne avec la vue
   // dans la rue aussi (L.suivi : distance, hauteur, regard)
+  // glisser vers le haut ou le bas : la caméra monte (jusqu'à voir du ciel) ou descend ; pincer ou la molette : plus près, plus loin
   if ((M.L.interieur || M.L.suivi) && moi) {
-    const S = M.L.suivi || { d: 4.6, h: 2.5, av: 3, vy: 1.2 };
+    const S = M.L.suivi || { d: 4.6, h: 2.5, av: 3, vy: 1.2 }, E0 = Math.atan2(S.h - 1.2, S.d);
+    if (M.camE == null) { M.camE = E0; M.camD = Math.hypot(S.h - 1.2, S.d); }
+    const E = M.camE, D = M.camD, t = Math.max(0, (E - E0) / Math.max(.01, 1.35 - E0));
     const yw = M.yaw || 0, fx = -Math.sin(yw), fz = -Math.cos(yw), mx = moi.g.position.x, mz = moi.g.position.z;
-    pos.set(mx - fx * S.d, S.h, mz - fz * S.d); vise.set(mx + fx * S.av, S.vy, mz + fz * S.av);
+    pos.set(mx - fx * D * Math.cos(E), 1.2 + D * Math.sin(E), mz - fz * D * Math.cos(E));
+    const av = S.av * (1 - .85 * t); vise.set(mx + fx * av, S.vy + (1 - S.vy) * t, mz + fz * av);
+    if (M.L.plafond) pos.y = Math.min(pos.y, M.L.plafond);
   }
   // dehors : tourner la vue (glisser le doigt, ou ↻) fait tourner la caméra autour de son bonhomme
   const yaw = 0;
@@ -1492,7 +1517,7 @@ function ajouterAncien(info) {
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
   const H = tailleBonhomme();
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
-  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .8, H * .15); nom.position.y = H + .25; g.add(nom);
+  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .42, H * .08); nom.position.y = H + .14; g.add(nom);
   M.gens.set(info.numero, p);
   dessinerCorps(p);
   return p;
@@ -1535,7 +1560,7 @@ function pointPNJ(n) {
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
   const n = Math.floor(Date.now() / 9000);
-  if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); p.cible = new THREE.Vector3(x, 0, z); }
+  if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); viser(p, x, z); }
   const h = hasard(Math.floor(Date.now() / 20000) * 1.9);
   p.info.danse = M.lieu === "fetes" && h < .4 && (h < .2 ? "disco" : "balance");
   const b = Math.floor(Date.now() / 17000);
@@ -1548,6 +1573,11 @@ function animerPNJ() {
 }
 
 /* --- déplacements --- */
+// aller vers (x, z) : si le lieu impose un passage (le portillon de la grille, dans la rue), on fait le détour
+function viser(p, x, z) {
+  const pts = M.L.trajet ? M.L.trajet(p.g.position.x, p.g.position.z, x, z) : [[x, z]];
+  const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
+}
 function allerVers(x, z, envoyer) {
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return;
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
@@ -1557,7 +1587,7 @@ function allerVers(x, z, envoyer) {
     if (!best) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz);
       for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; } }
     if (!best) return; [px, pz] = best; }
-  moi.cible = new THREE.Vector3(px, 0, pz); M.repere.position.set(px, .04, pz); M.repere.material.opacity = 1;
+  viser(moi, px, pz); M.repere.position.set(px, .04, pz); M.repere.material.opacity = 1;
   if (envoyer) envoyerWS({ t: "aller", x: px, z: pz });
   if (envoyer && moi.info.danse) danser(false);
 }
@@ -1566,7 +1596,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   const { scene, L, repere } = construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
-  M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw;
+  M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z]; majAmbiance();
   envoyerWS({ t: "entrer", lieu: id, x, z });
@@ -1607,7 +1637,7 @@ function connecter() {
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
     } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
     else if (m.t === "part") { retirerAncien(m.numero); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
-    else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) p.cible = new THREE.Vector3(m.x, 0, m.z); }
+    else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) viser(p, m.x, m.z); }
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
