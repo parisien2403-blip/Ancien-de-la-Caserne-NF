@@ -778,32 +778,31 @@ function construireLieu(id, scene) {
       // les marches le long du bâtiment, arrêtées avant la voûte
       for (let k = 0; k < 4; k++) { const larg = 2 - k * .45, lgM = cote > 0 ? 10.4 : 16.4; A.ajoute(new THREE.BoxGeometry(larg, .17, lgM), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, cote > 0 ? 2.7 : 5.7); }
       if (cote > 0) {
-        /* l'ancien bar, en renfoncement au bout du bâtiment : une double porte vitrée, deux doubles fenêtres */
-        const RX = fx + 1.6, RL = 6, RH = 6.2, RZ = 11;
-        const bar = toile(300, 310, (x, w, h) => {
+        /* l'ancien bar, bien en retrait au bout du bâtiment (entre la salle des fêtes et la grande aile en brique) :
+           la double porte à gauche, ses deux fenêtres à droite */
+        const RX = fx + 3.5, RL = 4, RH = 6.2, RZ = 10;
+        const bar = toile(200, 310, (x, w, h) => {
           pierre(x, 0, 0, w, h, "#e2dac8"); x.fillStyle = "#d3c9b3"; x.fillRect(0, 0, w, 16); x.fillStyle = "rgba(60,45,30,.25)"; x.fillRect(0, 16, w, 3);
-          // la double porte : bois brun, vitrée en haut, imposte au-dessus
-          const PX = w / 2 - 46, PY = h - 150, PW = 92, PH = 150;
-          x.fillStyle = "#cfc6b3"; x.fillRect(PX - 10, PY - 40, PW + 20, PH + 40);
+          const PX = 14, PY = h - 150, PW = 84, PH = 150;
+          x.fillStyle = "#cfc6b3"; x.fillRect(PX - 8, PY - 40, PW + 16, PH + 40);
           x.fillStyle = "#5e3820"; x.fillRect(PX, PY - 32, PW, 28); x.fillStyle = "#9fb3bf"; x.fillRect(PX + 5, PY - 28, PW - 10, 20);
           for (const s of [0, 1]) { const X = PX + s * PW / 2; x.fillStyle = "#6b4226"; x.fillRect(X + 1, PY, PW / 2 - 2, PH);
-            x.fillStyle = "#8ea4b2"; x.fillRect(X + 7, PY + 8, PW / 2 - 14, PH * .52); x.fillStyle = "#6b4226"; x.fillRect(X + PW / 4 - 1, PY + 8, 3, PH * .52); x.fillRect(X + 7, PY + 8 + PH * .26, PW / 2 - 14, 3);
-            x.strokeStyle = "#4c2c17"; x.lineWidth = 2; x.strokeRect(X + 8, PY + PH * .64, PW / 2 - 16, PH * .28); x.fillStyle = "#c9a227"; x.fillRect(X + (s ? 6 : PW / 2 - 10), PY + PH * .55, 4, 12); }
-          // l'ancienne enseigne, à moitié effacée
-          x.fillStyle = "rgba(120,70,40,.45)"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("B A R", w / 2, PY - 52);
-          // deux doubles fenêtres à petits carreaux, une de chaque côté
-          for (const cx of [48, w - 48]) { const FX = cx - 34, FY = h - 168, FW = 68, FH = 96;
-            x.fillStyle = "#efe9dc"; x.fillRect(FX - 7, FY - 7, FW + 14, FH + 14); x.fillStyle = "#d6cdbb"; x.fillRect(FX - 10, FY + FH + 5, FW + 20, 6);
+            x.fillStyle = "#8ea4b2"; x.fillRect(X + 6, PY + 8, PW / 2 - 12, PH * .52); x.fillStyle = "#6b4226"; x.fillRect(X + PW / 4 - 1, PY + 8, 3, PH * .52); x.fillRect(X + 6, PY + 8 + PH * .26, PW / 2 - 12, 3);
+            x.strokeStyle = "#4c2c17"; x.lineWidth = 2; x.strokeRect(X + 7, PY + PH * .64, PW / 2 - 14, PH * .28); x.fillStyle = "#c9a227"; x.fillRect(X + (s ? 5 : PW / 2 - 9), PY + PH * .55, 4, 12); }
+          x.fillStyle = "rgba(120,70,40,.45)"; x.font = "bold 26px Georgia"; x.textAlign = "center"; x.fillText("B A R", PX + PW / 2, PY - 52);
+          x.fillStyle = "#2a2a2a"; x.fillRect(PX + PW / 2 - 6, PY - 96, 12, 8);
+          // les deux fenêtres, à droite de la porte
+          for (const cx of [128, 176]) { const FX = cx - 20, FY = h - 168, FW = 40, FH = 92;
+            x.fillStyle = "#efe9dc"; x.fillRect(FX - 6, FY - 6, FW + 12, FH + 12); x.fillStyle = "#d6cdbb"; x.fillRect(FX - 8, FY + FH + 4, FW + 16, 6);
             const g = x.createLinearGradient(FX, FY, FX, FY + FH); g.addColorStop(0, "#9db1bf"); g.addColorStop(1, "#56697a"); x.fillStyle = g; x.fillRect(FX, FY, FW, FH);
-            x.fillStyle = "#f4f1ea"; x.fillRect(FX + FW / 2 - 2, FY, 4, FH); for (const f2 of [1 / 3, 2 / 3]) x.fillRect(FX, FY + FH * f2, FW, 2.5); for (const f2 of [.25, .75]) x.fillRect(FX + FW * f2 - 1, FY, 2, FH); }
-          x.fillStyle = "#2a2a2a"; x.fillRect(w / 2 - 6, h - 246, 12, 8);   // la lanterne au-dessus de la porte
+            x.fillStyle = "#f4f1ea"; x.fillRect(FX + FW / 2 - 2, FY, 4, FH); for (const f2 of [1 / 3, 2 / 3]) x.fillRect(FX, FY + FH * f2, FW, 2.5); }
         });
         const mb = A.mat({ map: tex(bar) }), mc = A.mat({ color: 0xddd4c2 }), mt = A.mat({ color: 0x8a8378 });
-        A.ajoute(new THREE.BoxGeometry(PROF - 1.6, RH, RL), [mc, mb, mt, mc, mc, mc], RX + (PROF - 1.6) / 2, RH / 2, RZ);
-        A.ajoute(new THREE.BoxGeometry(.4, .35, RL + .2), A.mat({ color: 0xd3c9b3 }), RX - .1, RH + .1, RZ);                // sa corniche
-        A.ajoute(new THREE.BoxGeometry(1.4, .17, 2.4), A.mat({ color: 0xc9c3b6 }), RX - .7, .085, RZ);                      // une marche devant la porte
-        const sl = A.ajoute(new THREE.PlaneGeometry(1.6, RL), A.mat({ map: tex(T.dalles, 1, 3) }), fx + .8, .014, RZ, false); sl.rotation.x = -Math.PI / 2;
-        const lt = new THREE.PointLight(0xffd59a, 10, 7, 1.6); lt.position.set(RX - .4, 3.6, RZ); lt.visible = false; scene.add(lt); L.nuitObjets.push(lt);
+        A.ajoute(new THREE.BoxGeometry(PROF - 3.5, RH, RL), [mc, mb, mt, mc, mc, mc], RX + (PROF - 3.5) / 2, RH / 2, RZ);
+        A.ajoute(new THREE.BoxGeometry(.4, .35, RL), A.mat({ color: 0xd3c9b3 }), RX - .1, RH + .1, RZ);                     // sa corniche
+        A.ajoute(new THREE.BoxGeometry(.9, .17, 2.3), A.mat({ color: 0xc9c3b6 }), RX - .45, .085, RZ - 1.05);              // la marche devant la porte
+        const sl = A.ajoute(new THREE.PlaneGeometry(3.5, RL), A.mat({ map: tex(T.dalles, 2, 2) }), fx + 1.75, .014, RZ, false); sl.rotation.x = -Math.PI / 2;
+        const lt = new THREE.PointLight(0xffd59a, 12, 8, 1.6); lt.position.set(RX - .5, 3.6, RZ - 1.1); lt.visible = false; scene.add(lt); L.nuitObjets.push(lt);
       }
       const al = A.ajoute(new THREE.PlaneGeometry(3, 34), A.mat({ map: tex(T.dalles, 1.5, 17) }), fx - cote * 3.5, .012, -2, false); al.rotation.x = -Math.PI / 2;
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
@@ -843,8 +842,7 @@ function construireLieu(id, scene) {
         else { const g = x.createLinearGradient(X, Y, X, Y + H2); g.addColorStop(0, "#56677a"); g.addColorStop(1, "#2c3642"); x.fillStyle = g; x.fillRect(X, Y, W2, H2);
           x.fillStyle = "#f4f1ea"; x.fillRect(X + W2 / 2 - 2, Y, 4, H2); x.fillRect(X, Y + H2 * .62, W2, 3); for (const f of [.33, .66]) x.fillRect(X + W2 * f - 1, Y, 2, H2 * .62); }
         x.fillStyle = "#2a2a2a"; x.fillRect(X + W2 / 2 - 6, Y - 22, 12, 7); };   // la petite applique au-dessus
-      baie(CF[0], 1.4, .25, 2.9, true); baie(CF[7], 1.4, .25, 2.9, true);
-      for (const k of [1, 2, 5, 6]) baie(CF[k], 1.7, .9, 3.15, false);
+      for (const k of [2, 5]) baie(CF[k], 1.7, .9, 3.15, false);
       // au-dessus du porche : l'emblème sculpté (une flamme dans un médaillon)
       const ex = gX(-1.9), ey = gY(4.55); x.fillStyle = "#d9cfbd"; x.beginPath(); x.ellipse(ex, ey + 18, 16, 22, 0, 0, 7); x.fill();
       x.strokeStyle = "#b8ad99"; x.lineWidth = 2; x.stroke(); x.fillStyle = "#c7bca8"; x.beginPath(); x.moveTo(ex, ey + 2); x.quadraticCurveTo(ex + 12, ey + 18, ex, ey + 36); x.quadraticCurveTo(ex - 12, ey + 18, ex, ey + 2); x.fill();
@@ -901,18 +899,28 @@ function construireLieu(id, scene) {
     }
     for (let k = 0; k <= 16; k++) A.ajoute(new THREE.BoxGeometry(.04, .9, .04), fer2, -LF / 2 + k * LF / 16, HB + 6.45, ZF + 2.7, false);
     A.ajoute(new THREE.BoxGeometry(LF, .05, .05), fer2, 0, HB + 6.9, ZF + 2.7, false);
-    // les deux hautes ailes en brique, avec leur bande vitrée blanche
-    const aile = tex(toile(160, 1040, (x, w, h) => { briquesFines(x, w, h);
-      x.fillStyle = "#f1ece2"; x.fillRect(58, 60, 44, h - 120); for (let y = 66; y < h - 66; y += 22) { x.fillStyle = "#8ea2b2"; x.fillRect(64, y, 32, 17); }
-      x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14); x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); }));
-    for (const s of [-1, 1]) { const m = A.mat({ map: aile }), toitA = A.mat({ color: 0x6b6b6b });
-      A.ajoute(new THREE.BoxGeometry(4, 26, 14), [m, m, toitA, toitA, m, m], s * 14.5, 13, 19); }
+    // les deux hautes ailes en brique (comme deux grandes colonnes), qui avancent dans la cour : leur bande vitrée blanche,
+    // et au pied, sur le mur tourné vers la cour, la porte rouge et sa fenêtre
+    const AX0 = 8.6, AX1 = 16.5, AW = AX1 - AX0, AZ0 = 12, AZ1 = 26, AH = 26;
+    const toileAile = (visibleAGauche) => toile(Math.round(AW * 40), AH * 40, (x, w, h) => { briquesFines(x, w, h);
+      const v0 = visibleAGauche ? 0 : w - (12.5 - AX0) * 40, vw = (12.5 - AX0) * 40, sx = v0 + vw / 2 - 22;   // la partie qui donne sur la cour
+      x.fillStyle = "#f1ece2"; x.fillRect(sx, 60, 44, h - 260); for (let y = 66; y < h - 206; y += 22) { x.fillStyle = "#8ea2b2"; x.fillRect(sx + 6, y, 32, 17); }
+      x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
+      x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
+      x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
+      const porteX = visibleAGauche ? v0 + vw - 80 : v0 + 24, fenX = visibleAGauche ? v0 + 22 : v0 + vw - 90;
+      x.fillStyle = "#efe9dd"; x.fillRect(porteX - 7, h - 122, 70, 122); x.fillStyle = "#b8452f"; x.fillRect(porteX, h - 115, 56, 115);
+      x.fillStyle = "#e9d7c8"; x.fillRect(porteX + 8, h - 107, 40, 60); x.fillStyle = "#b8452f"; x.fillRect(porteX + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(porteX + 22, h - 140, 12, 7);
+      x.fillStyle = "#efe9dd"; x.fillRect(fenX - 7, h - 133, 82, 101); const g = x.createLinearGradient(0, h - 126, 0, h - 38); g.addColorStop(0, "#56677a"); g.addColorStop(1, "#2c3642"); x.fillStyle = g; x.fillRect(fenX, h - 126, 68, 88);
+      x.fillStyle = "#f4f1ea"; x.fillRect(fenX + 32, h - 126, 4, 88); x.fillRect(fenX, h - 72, 68, 3); });
+    for (const s of [-1, 1]) { const brique = A.mat({ map: tex(toileAile(s < 0)) }), cote2 = A.mat({ map: tex(toileAile(true)) }), toitA = A.mat({ color: 0x6b6b6b });
+      A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), [cote2, cote2, toitA, toitA, cote2, brique], s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
     // la nuit : fenêtres allumées sur cette façade aussi
     for (let f = 0; f < 5; f++) for (const cx of CF) { if (alea() > .26) continue;
       const y = HSOC + .55 + f * 3 + .875, fe = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.65), lumiere()); fe.rotation.y = Math.PI; fe.position.set(cx, y, ZF - .02); fe.visible = false; scene.add(fe); L.nuitObjets.push(fe);
       if (alea() < .4) { const s = silhouette(1.4, 1.65); s.rotation.y = Math.PI; s.position.set(cx, y, ZF - .03); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
 
-    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8) || (Math.abs(x) < 1.5 && z >= 14.8 && z < 24);
+    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 1.5 && z >= 14.8 && z < 24);
     // le porche de cette façade mène à la rue du Faubourg-Poissonnière (on arrive sur le trottoir, face à la caserne)
     L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [.8, -5.2] });
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
