@@ -42,7 +42,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["grande", "fetes"];
+const LIEUX_MATRICE = ["rue", "grande", "fetes"];
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume"];
@@ -373,6 +373,7 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
+      if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && a.lieu === "fetes") {
@@ -393,6 +394,10 @@ export class Compteur extends DurableObject {
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "lumiere" && a.admin) {
+      // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
+      const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
+      await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
     } else if (m.t === "danse" && a.lieu) {
       a.danse = m.on === "disco" ? "disco" : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);

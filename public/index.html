@@ -298,6 +298,8 @@
   .mx-info { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(31,42,55,.88); color: #fff; padding: 8px 14px; border-radius: 12px; font: 700 13px "Lato", sans-serif; z-index: 3; max-width: 90%; text-align: center; }
   .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
   .mx-tourner { top: 56px; font-size: 20px; }
+  .mx-lumiere { position: absolute; right: 10px; top: 102px; z-index: 3; border: 0; border-radius: 99px; padding: 8px 12px; background: rgba(31,42,55,.75); color: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
+  .mx-lumiere.basse { background: #f6d465; color: #1f2a37; } .mx-lumiere[hidden] { display: none; }
   .mx-dire-plein, .mx-fil-plein { display: none; }
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
   .mx-ambiance button { border: 1.5px solid var(--line); border-radius: 99px; padding: 5px 11px; background: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
@@ -1099,6 +1101,7 @@
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
+          <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
           <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button></div>
@@ -1122,7 +1125,7 @@
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
-        <p class="legal" style="text-align:left">Touche le sol pour marcher, touche ton bonhomme (ou 💃, ou 🕺 pour le disco façon Travolta) pour danser, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré ; les messages s'effacent tout seuls au bout d'une heure, et tu peux retirer les tiens avec ✕).</p>
+        <p class="legal" style="text-align:left">Touche le sol pour marcher, touche ton bonhomme (ou 💃, ou 🕺 pour le disco façon Travolta) pour danser, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), passe le porche pour aller de la rue à la cour d'honneur, entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré ; les messages s'effacent tout seuls au bout d'une heure, et tu peux retirer les tiens avec ✕).</p>
       </div>
 
       <div class="tab" data-tab="vague" hidden>
@@ -1914,9 +1917,10 @@
           $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
           $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = id !== "fetes";
+        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin;
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
+        surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `💡 ${Math.round(n * 100)} %`; },
         surVolume: v => { djVolume = v; djSynchro(); },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
@@ -1970,6 +1974,9 @@
   djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && mxLieu === "fetes") { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
+  // (administrateur) chaque appui baisse la lumière de la salle : 100 % → 60 % → 35 % → 15 % → 100 %
+  let mxLumiereNiv = 1;
+  $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djPasser").onclick = () => MX && MX.dj("passer");
@@ -2467,6 +2474,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.13", "11 octobre 2026", ["Matrice : nouveau lieu « L'entrée, rue du Faubourg » : la façade sur rue (l'arc au navire et la plaque), la grille et la cage d'entrée, le drapeau, le trottoir, et en face la Presse des Clubs, la boulangerie et sa terrasse ; le jour et la nuit", "Cour d'honneur : l'autre façade (brique, toit mansardé à lucarnes) ; son porche mène à la rue ; on peut maintenant faire demi-tour (↻ ou glisser le doigt)", "Cour d'honneur : au bout de la salle des fêtes, en retrait, l'ancien bar (double porte, deux doubles fenêtres)", "Salle des fêtes : une porte reste ouverte sur la cour, des bouteilles et des verres derrière le bar ; l'administrateur baisse la lumière (100 → 15 %)", "Le chef de poste a de nouvelles répliques, et il salue ceux qui s'approchent", "Toucher un mur ou le porche : on marche dans cette direction"]],
     ["2.12", "11 octobre 2026", ["Les musiques de la salle des fêtes s'ajoutent dans l'onglet « Salle des fêtes » (on peut les écouter pour soi et les retirer)", "Matrice : gros bouton ▶ / ⏹ au-dessus des platines du DJ pour lancer ou arrêter la musique de toute la salle"]],
     ["2.11", "11 octobre 2026", ["Cour d'honneur la nuit : une porte de la salle des fêtes reste ouverte, la lumière de la fête se répand dans la cour et on entend la musique (moins fort, et plus fort en s'approchant ; bouton 🔊 La fête)", "Les immeubles parisiens ont des fenêtres allumées la nuit, et on voit des silhouettes aller et venir derrière"]],
     ["2.10", "11 octobre 2026", ["Matrice : nouvelle danse 🕺 Disco, façon John Travolta : le doigt en l'air, puis vers le sol", "Les bras ne sont plus coupés quand on danse", "Discussion : les messages s'effacent au bout d'une heure ; chacun retire les siens (✕), l'administrateur peut tout effacer ; en plein écran ils disparaissent au bout d'une minute", "Plein écran : le bouton Musique ne passe plus sous Danser"]],

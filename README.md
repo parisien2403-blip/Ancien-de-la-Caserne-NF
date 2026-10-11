@@ -94,8 +94,8 @@ Le numéro de version est dans `public/index.html` (tableau `VERSIONS`, la plus 
 
 ## La Matrice (onglet « Matrice »)
 
-Les anciens se retrouvent en 3D dans la cour d'honneur et la salle des fêtes (on y entre par les portes vitrées du bâtiment de droite).
+Les anciens se retrouvent en 3D devant l'entrée, rue du Faubourg-Poissonnière (le porche mène à la cour d'honneur), dans la cour d'honneur et dans la salle des fêtes (on y entre par les portes vitrées du bâtiment de droite). L'arc au navire et la plaque de l'entrée sont la vraie photo `public/images/porche.jpg`.
 
 - `public/matrice.js` : les décors (three.js 0.160, chargé depuis cdn.jsdelivr.net), les bonshommes, la connexion en direct.
 - Le bonhomme : tenue, couleur et tête détourée **dans le téléphone** (MediaPipe, modèle `selfie_multiclass_256x256` chargé depuis storage.googleapis.com) ; seule la tête découpée (PNG) est envoyée (`PUT /api/moi/avatar`).
-- Présence et discussion : WebSocket `/api/matrice` vers le Durable Object (API « hibernation ») ; les 50 derniers messages de chaque lieu sont gardés. L'administrateur peut faire taire (1 h) ou exclure (24 h).
+- Présence et discussion : WebSocket `/api/matrice` vers le Durable Object (API « hibernation ») ; les messages s'effacent au bout d'une heure (20 au plus par lieu), chacun peut retirer les siens et l'administrateur tous. L'administrateur peut faire taire (1 h) ou exclure (24 h).
