@@ -40,12 +40,12 @@
     background: #e7e4df radial-gradient(circle at 30% 20%, #efede9, #dedad3);
   }
   .app {
-    position: relative; max-width: 480px; height: 100vh; height: 100dvh; margin: 0 auto;
+    position: relative; max-width: 480px; height: 100vh; height: 100dvh; height: var(--app-h, 100dvh); margin: 0 auto;
     background: var(--cream); overflow: hidden; overflow: clip;
   }
   @media (min-width: 560px) {
     body { padding: 28px 0; }
-    .app { height: calc(100vh - 56px); height: calc(100dvh - 56px); max-height: 940px; border-radius: 36px; box-shadow: 0 30px 70px rgba(40,30,20,.25); }
+    .app { height: calc(100vh - 56px); height: calc(100dvh - 56px); height: calc(var(--app-h, 100dvh) - 56px); max-height: 940px; border-radius: 36px; box-shadow: 0 30px 70px rgba(40,30,20,.25); }
   }
   h1, h2, h3 { font-family: "Marcellus", Georgia, serif; font-weight: 400; color: var(--navy); }
   button { font: inherit; cursor: pointer; }
@@ -354,7 +354,7 @@
   /* ---------- Version PC ---------- */
   @media (min-width: 960px) {
     body { padding: 0; }
-    .app { max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; box-shadow: none; }
+    .app { max-width: none; height: 100vh; height: 100dvh; height: var(--app-h, 100dvh); max-height: none; border-radius: 0; box-shadow: none; }
     /* accueil : illustration à gauche, texte à droite */
     .splash { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
     .splash svg.scene { position: relative; inset: auto; grid-column: 1; grid-row: 1; height: 100%; }
@@ -1233,6 +1233,19 @@
 </div>
 
 <script>
+  /* Hauteur réelle de l'écran, mesurée par l'appli : sur Android (Fold…), après un plein écran, un pliage
+     ou une rotation, le navigateur garde parfois une hauteur fausse (100dvh) et le bas de l'appli est coupé. */
+  (() => {
+    const majHauteur = () => document.documentElement.style.setProperty("--app-h", window.innerHeight + "px");
+    const plusTard = () => { majHauteur(); [100, 350, 800].forEach(t => setTimeout(majHauteur, t)); };
+    majHauteur();
+    ["resize", "orientationchange", "pageshow", "focus"].forEach(e => addEventListener(e, plusTard));
+    document.addEventListener("fullscreenchange", plusTard);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) plusTard(); });
+    if (window.visualViewport) visualViewport.addEventListener("resize", plusTard);
+  })();
+</script>
+<script>
   const $ = id => document.getElementById(id);
   const NS = "http://www.w3.org/2000/svg";
 
@@ -1979,6 +1992,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.9.2", "11 octobre 2026", ["Le bas de l'appli n'est plus coupé sur Android (Fold…) après un plein écran ou un pliage"]],
     ["1.9.1", "11 octobre 2026", ["Escaliers : 7 étages au plus"]],
     ["1.9", "11 octobre 2026", ["Les escaliers de la caserne : chacun indique son escalier (lettre) et son étage, sur son laissez-passer et dans ses réglages", "Membres : le mur des escaliers, et la liste rangée par escalier puis par étage"]],
     ["1.8.1", "11 octobre 2026", ["Manette recalibrée : toute la moitié gauche sert de croix, les boutons répondent au plus proche du doigt, on glisse d'un bouton à l'autre, plusieurs doigts à la fois"]],
