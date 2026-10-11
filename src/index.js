@@ -414,7 +414,7 @@ export class Compteur extends DurableObject {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
       const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
       await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
-    } else if (m.t === "assis" && a.lieu === "fetes") {
+    } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)
       a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < 20 ? m.i : null; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "assis", numero: a.numero, i: a.assis }, ws);
