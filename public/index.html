@@ -255,7 +255,8 @@
   .lp-card .ty { font: 700 25px "Courier Prime", "Courier New", monospace; color: #1f1d1b; letter-spacing: .03em; }
   .lp-card .l1 { top: 192px; } .lp-card .l1 .ty { margin-left: 34px; }
   .lp-card .l2 { top: 236px; } .lp-card .l2 .x { font: 700 22px "Courier Prime", monospace; display: inline-block; transform: scaleX(-1); margin-right: 8px; }
-  .lp-card .l3 { top: 285px; } .lp-card .l4 { top: 330px; left: 285px; right: 450px; }
+  .lp-card .l3 { top: 285px; } .lp-card .l4 { top: 330px; left: 285px; right: 400px; }
+  .lp-card .l4 .ty { margin-left: 12px; } .lp-card .l4 .etg-lb { margin-left: 26px; }
   .lp-card .struck { position: relative; display: inline-block; font: italic 20px Georgia, serif; }
   .lp-card .struck::after { content: "xxxxxxxxxxxxxxxxxxxxxx"; position: absolute; left: -2px; top: -4px; font: 700 22px "Courier Prime", monospace; letter-spacing: -2px; }
   .lp-card .ph { position: absolute; left: 8px; top: 324px; width: 268px; height: 345px; background: #f7f3ea; padding: 6px; transform: rotate(-.6deg); box-shadow: 2px 2px 8px rgba(0,0,0,.35); z-index: 3; }
@@ -272,6 +273,30 @@
   .lp-card .foot { position: absolute; left: 282px; top: 532px; right: 50px; font: 16.5px Arial, sans-serif; line-height: 1.55; z-index: 2; }
   .lp-card .footl { position: absolute; left: 280px; right: 40px; top: 524px; border-top: 2px solid #3b342c; }
   .lp-card .souv { position: absolute; right: 52px; bottom: 30px; font: italic 11px Georgia, serif; color: rgba(42,38,34,.55); }
+
+  /* ---------- Escaliers (bâtiments A à Z) ---------- */
+  .bat-saisie { position: relative; display: block; }
+  .bat-saisie input { text-transform: uppercase; font-weight: 700; letter-spacing: .1em; }
+  .bat-saisie img { position: absolute; right: 6px; bottom: 5px; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  .aide-champ { margin: -6px 0 14px; font-size: 12.5px; color: var(--muted); }
+  .escaliers-mur { display: flex; gap: 6px; overflow-x: auto; padding: 8px; margin: 0 0 14px; border-radius: 14px; scrollbar-width: none;
+    background: #a4462f url("images/escaliers/brique.jpg") center / cover; box-shadow: inset 0 0 0 2000px rgba(120,40,20,.15); }
+  .escaliers-mur::-webkit-scrollbar { display: none; }
+  .escaliers-mur button { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 7px; background: center / 152% no-repeat; cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,.35); transition: transform .15s, filter .15s; }
+  .escaliers-mur button.vide { filter: grayscale(.85) brightness(.75); opacity: .55; }
+  .escaliers-mur button.choisi { outline: 3px solid var(--gold); outline-offset: 2px; transform: translateY(-2px); }
+  .escaliers-mur .tous { width: auto; padding: 0 12px; background: #1f3a5f; color: #f6eedf; font: 700 13px "Lato", sans-serif; }
+  .escalier { margin: 0 0 18px; }
+  .escalier-tete { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 8px; border-radius: 14px;
+    background: #a4462f url("images/escaliers/brique.jpg") center / cover; box-shadow: inset 0 0 0 2000px rgba(60,20,10,.28); color: #fff; }
+  .escalier-tete img { width: 58px; height: 58px; border-radius: 8px; object-fit: cover; object-position: center; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  .escalier-tete .lettre-vide { width: 58px; height: 58px; border-radius: 8px; display: grid; place-items: center; background: #1f3a5f; color: #f6eedf; font: 700 26px "Lato", sans-serif; }
+  .escalier-tete b { display: block; font: 21px "Marcellus", serif; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .escalier-tete small { font-size: 13px; opacity: .95; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .etage-tete { display: flex; align-items: center; gap: 8px; margin: 10px 4px 6px; font: 700 13px "Lato", sans-serif; letter-spacing: .02em; color: var(--muted); }
+  .etage-tete::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+  .etage-pastille { display: inline-block; min-width: 34px; padding: 2px 7px; border-radius: 8px; background: #1f3a5f; color: #f6eedf; font: 700 11px "Lato", sans-serif; text-align: center; }
 
   /* ---------- Vides / listes ---------- */
   .empty { text-align: center; padding: 26px 18px; color: var(--muted); }
@@ -805,6 +830,11 @@
           </label>
           <label class="field" id="fParentWrap">Nom du Garde (ton père ou ta mère)<input id="fParent" placeholder="BOUQUET"></label>
           <div class="row2">
+            <label class="field">Bât. (escalier)<span class="bat-saisie"><input id="fBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="fBatImg" alt="" hidden></span></label>
+            <label class="field">Étage<select id="fEtage"><option value="">—</option><option value="0">Rez-de-chaussée</option><option value="1">1er étage</option><option value="2">2e étage</option><option value="3">3e étage</option><option value="4">4e étage</option><option value="5">5e étage</option><option value="6">6e étage</option><option value="7">7e étage</option><option value="8">8e étage</option><option value="9">9e étage</option><option value="10">10e étage</option><option value="11">11e étage</option><option value="12">12e étage</option></select></label>
+          </div>
+          <p class="aide-champ">L'escalier et l'étage où tu as vécu tes meilleurs moments à la caserne.</p>
+          <div class="row2">
             <label class="field">N° d'inscription<input class="readonly" id="fNum" readonly></label>
             <label class="field">Délivré le<input class="readonly" id="fDate" readonly></label>
           </div>
@@ -826,7 +856,7 @@
               <div class="ln l1"><span class="lb">délivré à M</span><span class="ty" id="cNom"></span></div>
               <div class="ln l2"><span class="x">X</span><span class="ty" id="cQual"></span></div>
               <div class="ln l3"><span class="struck">Immatriculation véhicule</span></div>
-              <div class="ln l4"></div>
+              <div class="ln l4"><span class="lb">Bât.</span><span class="ty bat"></span><span class="lb etg-lb">étage</span><span class="ty etg"></span></div>
               <svg class="stamp" viewBox="0 0 200 200" aria-hidden="true">
                 <defs><path id="lpc" d="M100,100 m-60,0 a60,60 0 1,1 120,0 a60,60 0 1,1 -120,0"/></defs>
                 <polygon points="62,8 138,8 192,62 192,138 138,192 62,192 8,138 8,62" fill="none" stroke="currentColor" stroke-width="4"/>
@@ -954,7 +984,8 @@
       <div class="tab" data-tab="membres" hidden>
         <h1 class="hello">Membres de la Caserne</h1>
         <p class="hello-sub">Tous les anciens qui ont leur laissez-passer</p>
-        <input class="search" id="mSearch" placeholder="Rechercher un nom, une famille de Garde…">
+        <input class="search" id="mSearch" placeholder="Rechercher un nom, une famille de Garde, un escalier…">
+        <div class="escaliers-mur" id="mMur" aria-label="Les escaliers de la caserne"></div>
         <div id="membres"></div>
       </div>
 
@@ -1032,6 +1063,7 @@
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
+    <button class="reglage" id="rEscalier"><span>🏢 Mon escalier et mon étage</span><span id="rEscEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
     <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
@@ -1057,6 +1089,17 @@
     </div>
     </div>
   </div>
+  <form class="sheet" id="escalierForm">
+    <div class="grab"></div>
+    <h2>🏢 Mon escalier</h2>
+    <p class="sub">L'escalier et l'étage où tu as vécu tes meilleurs moments à la caserne. Ils s'affichent sur ton laissez-passer et dans la liste des membres.</p>
+    <div class="row2">
+      <label class="field">Bât. (escalier)<span class="bat-saisie"><input id="eBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="eBatImg" alt="" hidden></span></label>
+      <label class="field">Étage<select id="eEtage"><option value="">—</option><option value="0">Rez-de-chaussée</option><option value="1">1er étage</option><option value="2">2e étage</option><option value="3">3e étage</option><option value="4">4e étage</option><option value="5">5e étage</option><option value="6">6e étage</option><option value="7">7e étage</option><option value="8">8e étage</option><option value="9">9e étage</option><option value="10">10e étage</option><option value="11">11e étage</option><option value="12">12e étage</option></select></label>
+    </div>
+    <p class="erreur" id="eErreur" hidden></p>
+    <button class="btn" style="width:100%">Enregistrer</button>
+  </form>
   <form class="sheet" id="pinForm">
     <div class="grab"></div>
     <h2>🔢 Code de déverrouillage</h2>
@@ -1660,13 +1703,38 @@
     $("cNum").textContent = NUM || "····";
     $("cNom").textContent = me.nom + (me.prenom ? ", " + me.prenom : "");
     $("cQual").textContent = q === "Gendarme" ? "Gendarme " + me.nom : q + " " + $("fParent").value.trim().toUpperCase();
+    remplirEscalier($("lpCard"), batSaisi(), $("fEtage").value);
     $("cJour").textContent = today.getDate() + " " + mois[today.getMonth()];
     $("cAn").textContent = today.getFullYear();
     majPastille();
     const filled = me.nom && me.prenom;
     $("st2").classList.toggle("on", !!filled);
   }
-  ["fNom", "fPrenom", "fQual", "fParent"].forEach(id => $(id).addEventListener("input", renderCard));
+  ["fNom", "fPrenom", "fQual", "fParent", "fEtage"].forEach(id => $(id).addEventListener("input", renderCard));
+  /* ===== Escaliers : une lettre A à Z (bâtiments de l'ancienne caserne) et l'étage ===== */
+  // les escaliers de la caserne : pas de Q, T, U, V ni W
+  const LETTRES = "ABCDEFGHIJKLMNOPRSXYZ".split("");
+  const imgEscalier = l => `images/escaliers/${l}.jpg`;
+  const etageTxt = e => e === null || e === undefined || e === "" ? "" : +e === 0 ? "RDC" : +e === 1 ? "1er" : `${+e}e`;
+  const etageLong = e => e === null || e === undefined || e === "" ? "Étage non précisé" : +e === 0 ? "Rez-de-chaussée" : `${etageTxt(e)} étage`;
+  const batSaisi = () => LETTRES.includes($("fBat").value) ? $("fBat").value : "";
+  function remplirEscalier(carte, bat, etage) {
+    carte.querySelector(".l4 .bat").textContent = bat || "";
+    carte.querySelector(".l4 .etg").textContent = bat ? etageTxt(etage) : "";
+  }
+  // saisie de la lettre : majuscule automatique, une seule lettre
+  function brancherSaisieBat(inp, img) {
+    inp.addEventListener("input", () => {
+      const brut = inp.value.replace(/[^a-z]/gi, "").slice(-1).toUpperCase(), l = LETTRES.includes(brut) ? brut : "";
+      inp.value = l; img.hidden = !l; if (l) img.src = imgEscalier(l);
+      // Q, T, U, V, W : ces escaliers n'existaient pas
+      let aide = inp.closest(".row2").nextElementSibling;
+      if (!aide || !aide.classList.contains("bat-refus")) { aide = document.createElement("p"); aide.className = "aide-champ bat-refus"; aide.style.color = "#b3261e"; inp.closest(".row2").after(aide); }
+      aide.hidden = !(brut && !l); aide.textContent = brut && !l ? `Il n'y avait pas d'escalier ${brut} à la caserne.` : "";
+    });
+  }
+  brancherSaisieBat($("fBat"), $("fBatImg"));
+  $("fBat").addEventListener("input", renderCard);
   let photoData = null;
   function montrerPhotoCarte(url) { const el = $("cPhoto"); if (!url) return; el.style.backgroundImage = `url(${url})`; el.innerHTML = ""; }
   async function nouvellePhoto(file) {
@@ -1689,7 +1757,8 @@
     $("stampBtn").disabled = true; $("stampBtn").textContent = "Le chef de poste tamponne…";
     try {
       const q = $("fQual").value;
-      const r = await registre.inscrire({ nom: me.nom, prenom: me.prenom, qualite: q, parent: q === "Gendarme" ? me.nom : ($("fParent").value.trim().toUpperCase() || me.nom), photo: photoData });
+      const r = await registre.inscrire({ nom: me.nom, prenom: me.prenom, qualite: q, parent: q === "Gendarme" ? me.nom : ($("fParent").value.trim().toUpperCase() || me.nom), photo: photoData,
+        bat: batSaisi() || null, etage: batSaisi() && $("fEtage").value !== "" ? +$("fEtage").value : null });
       if (r.token) {   // administrateur : déjà connecté, laissez-passer et adresse créés d'office
         moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi);
         afficherTamponne(moi);
@@ -1711,6 +1780,7 @@
     NUM = f.numero;
     $("fNom").value = f.nom; $("fPrenom").value = f.prenom; $("fQual").value = f.qualite;
     if (f.qualite !== "Gendarme") $("fParent").value = f.parent;
+    $("fBat").value = f.bat || ""; $("fEtage").value = f.etage ?? ""; $("fBatImg").hidden = !f.bat; if (f.bat) $("fBatImg").src = imgEscalier(f.bat);
     $("fNum").value = NUM; $("fMail").value = f.email; $("fMailWrap").hidden = false;
     $("fCodeWrap").hidden = !f.code || !!moi; $("fCode").textContent = f.code || "";
     $("loginBtn").hidden = !!moi;
@@ -1777,7 +1847,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes", "escalierForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
@@ -1871,6 +1941,7 @@
   $("me").onclick = () => moi ? ouvrirReglages() : ouvrirConnexion();
   function ouvrirReglages() {
     $("rPinEtat").textContent = pinDe() ? "activé" : "désactivé";
+    $("rEscEtat").textContent = moi && moi.bat ? `Esc. ${moi.bat}${moi.etage !== null && moi.etage !== undefined ? " · " + etageTxt(moi.etage) : ""}` : "à indiquer";
     const url = photoUrl(moi);
     $("rPhoto").style.backgroundImage = url ? `url(${url})` : "";
     $("rPhoto").textContent = url ? "" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase();
@@ -1908,6 +1979,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.9", "11 octobre 2026", ["Les escaliers de la caserne : chacun indique son escalier (lettre) et son étage, sur son laissez-passer et dans ses réglages", "Membres : le mur des escaliers, et la liste rangée par escalier puis par étage"]],
     ["1.8.1", "11 octobre 2026", ["Manette recalibrée : toute la moitié gauche sert de croix, les boutons répondent au plus proche du doigt, on glisse d'un bouton à l'autre, plusieurs doigts à la fois"]],
     ["1.8", "11 octobre 2026", ["Borne : quand on appuie sur ▶ JOUER, la télé et la manette prennent tout l'écran du téléphone (✕ pour revenir)"]],
     ["1.7.3", "11 octobre 2026", ["Borne : la télé et la manette tiennent ensemble à l'écran, même sur le Fold ouvert"]],
@@ -1975,6 +2047,25 @@
       b.setAttribute("aria-label", voir ? "Cacher" : "Afficher");
     };
   });
+
+  brancherSaisieBat($("eBat"), $("eBatImg"));
+  $("rEscalier").onclick = () => {
+    $("eBat").value = moi.bat || ""; $("eEtage").value = moi.etage ?? ""; $("eBatImg").hidden = !moi.bat; if (moi.bat) $("eBatImg").src = imgEscalier(moi.bat);
+    $("eErreur").hidden = true;
+    $("reglages").classList.remove("open"); $("escalierForm").classList.add("open"); $("sheetBg").classList.add("open");
+  };
+  $("escalierForm").onsubmit = async e => {
+    e.preventDefault(); $("eErreur").hidden = true;
+    const bat = $("eBat").value || null, etage = bat && $("eEtage").value !== "" ? +$("eEtage").value : null;
+    try {
+      const r = await api("PUT", "/api/moi/escalier", { bat, etage });
+      moi.bat = r.bat; moi.etage = r.etage; ecrire("caserne-moi", moi);
+      $("escalierForm").classList.remove("open"); $("sheetBg").classList.remove("open");
+      if ($("fBat")) { $("fBat").value = moi.bat || ""; $("fEtage").value = moi.etage ?? ""; renderCard(); }
+      const m = membres.find(x => x.email === moi.email); if (m) { m.bat = moi.bat; m.etage = moi.etage; afficherMembres(); }
+      garde(bat ? `C'est noté : escalier ${bat}${etage !== null ? `, ${etageLong(etage).toLowerCase()}` : ""}. Tu apparais maintenant avec ton escalier dans la liste des membres.` : "Ton escalier a été retiré.", { titre: "🏢 Escalier enregistré" });
+    } catch (err) { $("eErreur").textContent = err.message; $("eErreur").hidden = false; }
+  };
 
   $("rProbleme").onclick = () => { $("reglages").classList.remove("open"); $("pErreur").hidden = true; $("probleme").classList.add("open"); $("sheetBg").classList.add("open"); setTimeout(() => $("pTexte").focus(), 350); };
   $("probleme").onsubmit = async e => {
@@ -2232,18 +2323,42 @@
     try { membres = await registre.membres(); } catch (e) { $("membres").innerHTML = `<div class="card empty"><b>Registre injoignable</b>${esc(e.message)}</div>`; return; }
     afficherMembres();
   }
-  function afficherMembres() {
-    const q = $("mSearch").value.trim().toLowerCase();
-    const fr = (a, b) => a.localeCompare(b, "fr", { sensitivity: "base" });
-    const liste = membres.filter(m => (nomComplet(m) + " " + qualiteTxt(m) + " " + m.numero).toLowerCase().includes(q))
-      .sort((a, b) => fr(a.nom, b.nom) || fr(a.prenom, b.prenom));
-    $("membres").innerHTML = liste.length ? liste.map(m => `<div class="list-item member" data-carte="${esc(m.numero)}">${photoUrl(m)
+  let escalierChoisi = "";
+  function ligneMembre(m) {
+    return `<div class="list-item member" data-carte="${esc(m.numero)}">${photoUrl(m)
           ? `<div class="av ph" style="background-image:url('${photoUrl(m)}')"></div>` : `<div class="av">${esc(initiales(m))}</div>`}
         <div class="who"><div class="t">${esc(nomComplet(m))}${m.admin ? '<span class="tag-admin">Administrateur</span>' : ""}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div><div class="mail">${esc(m.email)}</div></div>
         <div class="actions-m">${moi && moi.email && m.email !== moi.email ? `<button class="btn small" data-ecrire="${esc(m.email)}">Écrire</button>` : ""}
-        ${moi && moi.admin && !m.admin ? `<button class="btn small danger" data-suppr="${esc(m.numero)}" data-nom="${esc(nomComplet(m))}">Supprimer</button>` : ""}</div></div>`).join("")
+        ${moi && moi.admin && !m.admin ? `<button class="btn small danger" data-suppr="${esc(m.numero)}" data-nom="${esc(nomComplet(m))}">Supprimer</button>` : ""}</div></div>`;
+  }
+  function afficherMembres() {
+    const q = $("mSearch").value.trim().toLowerCase();
+    const fr = (a, b) => a.localeCompare(b, "fr", { sensitivity: "base" });
+    const parNom = (a, b) => fr(a.nom, b.nom) || fr(a.prenom, b.prenom);
+    // « escalier z », « bât z » ou « z » seul dans la recherche → cet escalier
+    const qBat = (q.match(/^(?:escalier|esc\.?|b[aâ]t\.?|b[aâ]timent)\s*([a-z])$/) || [])[1];
+    const trouves = membres.filter(m => qBat ? (m.bat || "").toLowerCase() === qBat
+      : (nomComplet(m) + " " + qualiteTxt(m) + " " + m.numero + (m.bat ? " escalier " + m.bat + " bât " + m.bat : "")).toLowerCase().includes(q));
+    // le mur des escaliers : une plaque par lettre, grisée s'il n'y a encore personne
+    const compte = {}; membres.forEach(m => { if (m.bat) compte[m.bat] = (compte[m.bat] || 0) + 1; });
+    $("mMur").innerHTML = `<button class="tous ${escalierChoisi ? "" : "choisi"}" data-esc="">Tous</button>` + LETTRES.map(l =>
+      `<button class="${compte[l] ? "" : "vide"} ${escalierChoisi === l ? "choisi" : ""}" data-esc="${l}" style="background-image:url('${imgEscalier(l)}')"
+        title="Escalier ${l}${compte[l] ? ` : ${compte[l]} ancien${compte[l] > 1 ? "s" : ""}` : ""}" aria-label="Escalier ${l}"></button>`).join("");
+    $("mMur").querySelectorAll("[data-esc]").forEach(b => b.onclick = () => { escalierChoisi = escalierChoisi === b.dataset.esc ? "" : b.dataset.esc; afficherMembres(); });
+    const liste = trouves.filter(m => !escalierChoisi || m.bat === escalierChoisi);
+    // regroupés par escalier (A → Z), puis par étage (du rez-de-chaussée au dernier), puis par nom
+    const groupes = LETTRES.map(l => [l, liste.filter(m => m.bat === l)]).filter(([, g]) => g.length);
+    const sansBat = liste.filter(m => !m.bat).sort(parNom);
+    const blocEscalier = ([l, g]) => {
+      g.sort((a, b) => (a.etage ?? 99) - (b.etage ?? 99) || parNom(a, b));
+      let etg = Symbol(), html = "";
+      for (const m of g) { if ((m.etage ?? null) !== etg) { etg = m.etage ?? null; html += `<div class="etage-tete"><span class="etage-pastille">${etg === null ? "?" : etageTxt(etg)}</span>${etageLong(etg)}</div>`; } html += ligneMembre(m); }
+      return `<section class="escalier" id="esc-${l}"><div class="escalier-tete"><img src="${imgEscalier(l)}" alt="Plaque ${l}"><div><b>Escalier ${l}</b><small>${g.length} ancien${g.length > 1 ? "s" : ""}</small></div></div>${html}</section>`;
+    };
+    $("membres").innerHTML = liste.length ? groupes.map(blocEscalier).join("")
+        + (sansBat.length ? `<section class="escalier"><div class="escalier-tete"><div class="lettre-vide">?</div><div><b>Escalier pas encore indiqué</b><small>${sansBat.length} ancien${sansBat.length > 1 ? "s" : ""} · chacun peut l'ajouter dans ses réglages</small></div></div>${sansBat.map(ligneMembre).join("")}</section>` : "")
       : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/></svg>
-         <b>${membres.length ? "Personne à ce nom" : "Le registre est vide"}</b>${membres.length ? "Essayez une autre recherche." : "Les anciens apparaîtront ici dès qu'ils auront leur laissez-passer."}</div>`;
+         <b>${membres.length ? (escalierChoisi ? `Personne dans l'escalier ${escalierChoisi} pour l'instant` : "Personne à ce nom") : "Le registre est vide"}</b>${membres.length ? "Essayez une autre recherche ou un autre escalier." : "Les anciens apparaîtront ici dès qu'ils auront leur laissez-passer."}</div>`;
     document.querySelectorAll("[data-carte]").forEach(el => el.onclick = e => {
       if (e.target.closest("button")) return;
       const m = membres.find(x => x.numero === el.dataset.carte); if (m) voirCarte(m);
@@ -2397,6 +2512,7 @@
     carte.removeAttribute("id"); carte.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     carte.classList.add("stamped");
     carte.querySelector(".num").textContent = m.numero;
+    remplirEscalier(carte, m.bat, m.etage);
     carte.querySelector(".l1 .ty").textContent = `${m.nom}, ${m.prenom}`;
     carte.querySelector(".l2 .ty").textContent = m.qualite === "Gendarme" ? `Gendarme ${m.nom}` : `${m.qualite} ${m.parent}`;
     const d = m.cree ? new Date(m.cree) : new Date(), dates = carte.querySelectorAll(".date span");
@@ -2683,6 +2799,7 @@
     const carte = $("lpCard").cloneNode(true);
     carte.removeAttribute("id"); carte.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     carte.querySelector(".num").textContent = m.numero;
+    remplirEscalier(carte, m.bat, m.etage);
     carte.querySelector(".l1 .ty").textContent = `${m.nom}, ${m.prenom}`;
     carte.querySelector(".l2 .ty").textContent = m.qualite === "Gendarme" ? `Gendarme ${m.nom}` : `${m.qualite} ${m.parent}`;
     const d = m.cree ? new Date(m.cree) : new Date(), dates = carte.querySelectorAll(".date span");

@@ -38,6 +38,10 @@ const photoValide = v => typeof v === "string" && v.startsWith("data:image/jpeg;
 // ce qu'on peut commenter ou retirer : type → table
 const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publications" };
 
+// escalier : une lettre de A à Z, sauf Q, T, U, V et W (ces escaliers n'existaient pas à la caserne) ; étage : 0 (rez-de-chaussée) à 12
+const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
+const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
+const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 12 ? n : null; };
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
 // image d'une cartouche : une petite image JPEG/PNG/WebP déjà réduite par l'appli (300 Ko maximum)
 function jaquette(v) {
@@ -84,7 +88,9 @@ export class Compteur extends DurableObject {
       // chiffrement de bout en bout du courrier : clé publique, clé privée verrouillée par le code de liaison
       "cle_pub TEXT", "cle_privee TEXT", "liaison_hash TEXT",
       // validation des inscriptions par l'administrateur (les comptes déjà là restent validés)
-      "statut TEXT DEFAULT 'valide'", "motif TEXT", "decide TEXT"]) {
+      "statut TEXT DEFAULT 'valide'", "motif TEXT", "decide TEXT",
+      // l'escalier (bâtiment A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
+      "bat TEXT", "etage INTEGER"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -159,6 +165,7 @@ export class Compteur extends DurableObject {
     if (admin && this.sql.exec("SELECT 1 FROM membres WHERE admin = 1").toArray().length) throw new Refus("L'administrateur a déjà son laissez-passer");
     const qualite = QUALITES.includes(fiche.qualite) ? fiche.qualite : QUALITES[0];
     const parent = qualite === "Gendarme" ? nom : texte(fiche.parent, 40).toUpperCase() || nom;
+    const bat = batValide(fiche.bat), etage = bat ? etageValide(fiche.etage) : null;
 
     const n = ((await this.ctx.storage.get("dernier")) || 0) + 1;
     await this.ctx.storage.put("dernier", n);
@@ -170,17 +177,17 @@ export class Compteur extends DurableObject {
     if (admin) {
       // l'administrateur se connecte avec son propre mot de passe : pas de code provisoire
       const jeton = crypto.randomUUID();
-      this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, admin, photo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`, n, nom, prenom, qualite, parent, email, jeton, new Date().toISOString(), photoValide(fiche.photo));
+      this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, admin, photo, bat, etage)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`, n, nom, prenom, qualite, parent, email, jeton, new Date().toISOString(), photoValide(fiche.photo), bat, etage);
       await this.ctx.storage.delete("admin_sessions");
-      return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, admin: true, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() } };
+      return { token: jeton, moi: { numero: numero(n), email, nom, prenom, qualite, parent, bat, etage, admin: true, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() } };
     }
     const code = codeProvisoire();
-    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash, photo, statut)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'attente')`,
-      n, nom, prenom, qualite, parent, email, crypto.randomUUID(), new Date().toISOString(), await hacher(code), photoValide(fiche.photo));
+    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, code_hash, photo, statut, bat, etage)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'attente', ?, ?)`,
+      n, nom, prenom, qualite, parent, email, crypto.randomUUID(), new Date().toISOString(), await hacher(code), photoValide(fiche.photo), bat, etage);
     // le code provisoire n'est donné qu'une fois, ici ; il sert à la première connexion
-    return { numero: numero(n), email, code, nom, prenom, qualite, parent, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() };
+    return { numero: numero(n), email, code, nom, prenom, qualite, parent, bat, etage, a_photo: !!photoValide(fiche.photo), cree: new Date().toISOString() };
   }
 
   // Connexion : prénom + nom + mot de passe (ou code provisoire à la première connexion)
@@ -229,7 +236,7 @@ export class Compteur extends DurableObject {
   public(m) {
     return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email,
       admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo,
-      statut: m.statut || "valide", motif: m.motif || null };
+      statut: m.statut || "valide", motif: m.motif || null, bat: m.bat || null, etage: m.etage ?? null };
   }
 
   // réservé aux anciens connectés (ou à l'administrateur avant son laissez-passer)
@@ -241,7 +248,7 @@ export class Compteur extends DurableObject {
   async membres(token) {
     await this.verifierAcces(token);
     const fr = new Intl.Collator("fr", { sensitivity: "base" });
-    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo, cle_pub FROM membres WHERE statut IS NULL OR statut = 'valide'")
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, admin, photo IS NOT NULL AS a_photo, cle_pub, bat, etage FROM membres WHERE statut IS NULL OR statut = 'valide'")
       .toArray().map(m => ({ ...m, numero: numero(m.numero), admin: !!m.admin, a_photo: !!m.a_photo }))
       .sort((a, b) => fr.compare(a.nom, b.nom) || fr.compare(a.prenom, b.prenom));
   }
@@ -254,6 +261,12 @@ export class Compteur extends DurableObject {
     return m && m.photo || null;
   }
 
+  async changerEscalier(token, x) {
+    const moi = this.moi(token, { tous: true }), bat = batValide(x.bat), etage = bat ? etageValide(x.etage) : null;
+    if (x.bat && !bat) throw new Refus("Cet escalier n'existe pas à la caserne (il n'y avait pas de Q, T, U, V ni W)");
+    this.sql.exec("UPDATE membres SET bat = ?, etage = ? WHERE email = ?", bat, etage, moi.email);
+    return { ok: true, bat, etage };
+  }
   async changerPhoto(token, photo) {
     const moi = this.moi(token, { tous: true }), ok = photoValide(photo);
     if (!ok) throw new Refus("Photo invalide ou trop lourde");
@@ -263,7 +276,7 @@ export class Compteur extends DurableObject {
 
   // tous: true → aussi les comptes en attente ou refusés (pour leur statut, leur photo)
   moi(token, { tous = false } = {}) {
-    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo, statut, motif FROM membres WHERE token = ?", token).toArray()[0];
+    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo, statut, motif, bat, etage FROM membres WHERE token = ?", token).toArray()[0];
     if (!m) {
       if (String(token).startsWith("adm-")) throw new Refus("Fais d'abord ton laissez-passer au poste de police", 403);
       throw new Refus("Laissez-passer inconnu", 401);
@@ -658,6 +671,7 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/(photo|anecdote|publication)\/\d+$/.test(url.pathname)) {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
+      else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());
       else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
       else if (route === "GET /api/boite") r = await registre.boite(token);
       else if (route === "POST /api/messages") r = await registre.envoyer(token, await corps());
