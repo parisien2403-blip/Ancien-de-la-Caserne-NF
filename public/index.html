@@ -91,6 +91,39 @@
   .field input, .field select { display: block; width: 100%; margin-top: 6px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line);
     background: #fff; font: 16px "Lato", sans-serif; color: var(--text); outline: none; }
   .field input:focus, .field select:focus { border-color: var(--terra); }
+  /* l'œil pour voir ce qu'on tape (mots de passe, codes) */
+  .oeil-zone { position: relative; display: block; }
+  .oeil-zone input { padding-right: 52px; }
+  .oeil { position: absolute; right: 6px; bottom: 6px; width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+  .oeil:hover, .oeil.vu { color: var(--terra); }
+  .oeil svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* le chef de poste parle : remplace les fenêtres du navigateur */
+  .garde-fond { position: fixed; inset: 0; z-index: 5000; display: grid; place-items: center; padding: 20px; background: rgba(31,42,55,.55); backdrop-filter: blur(2px);
+    opacity: 0; transition: opacity .2s; }
+  .garde-fond.ouvert { opacity: 1; }
+  .garde-boite { width: min(420px, 100%); transform: translateY(14px) scale(.97); transition: transform .25s cubic-bezier(.2,.9,.3,1.2); }
+  .garde-fond.ouvert .garde-boite { transform: none; }
+  .garde-tete { display: flex; align-items: flex-end; gap: 10px; }
+  .garde-portrait { flex: none; width: 92px; height: 92px; border-radius: 50%; border: 4px solid var(--gold); background: #e9eef3 url("images/garde.jpg") 50% 18% / 300% auto no-repeat;
+    box-shadow: 0 6px 18px rgba(0,0,0,.3); position: relative; z-index: 2; }
+  .garde-qui { margin-bottom: 8px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .garde-qui b { display: block; font: 20px "Marcellus", serif; } .garde-qui small { font-size: 12px; opacity: .9; }
+  .garde-bulle { position: relative; margin-top: 12px; background: var(--card); border-radius: 20px; padding: 18px 20px 16px; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  .garde-bulle::before { content: ""; position: absolute; top: -12px; left: 34px; border: 12px solid transparent; border-top: 0; border-bottom-color: var(--card); }
+  .garde-bulle h3 { margin: 0 0 6px; font-size: 21px; }
+  .garde-bulle p { margin: 0; white-space: pre-line; line-height: 1.45; color: var(--ink, #2a2420); }
+  .garde-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+  .garde-actions .btn { flex: 1; min-width: 120px; }
+  .garde-actions .btn.danger { background: #b3261e; border-color: #b3261e; }
+  .maj-pastille { margin-left: auto; margin-right: 8px; background: #b3261e; color: #fff; font: 700 11px "Lato", sans-serif; padding: 3px 8px; border-radius: 10px; }
+  /* version de l'appli et nouveautés */
+  .version { display: block; margin: 16px auto 0; border: 0; background: none; color: var(--muted); font: 12px "Lato", sans-serif; cursor: pointer; text-decoration: underline dotted; }
+  .splash .version-splash { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 11px "Lato", sans-serif; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.5); pointer-events: none; }
+  .nouveautes { max-height: 86vh; overflow-y: auto; }
+  .nouveautes .ver { border-left: 3px solid var(--line); padding: 0 0 14px 14px; margin-left: 6px; }
+  .nouveautes .ver:first-of-type { border-left-color: var(--terra); }
+  .nouveautes .ver h3 { margin: 0 0 4px; font-size: 18px; } .nouveautes .ver h3 small { font: 12px "Lato", sans-serif; color: var(--muted); }
+  .nouveautes .ver ul { margin: 0; padding-left: 18px; font-size: 14px; } .nouveautes .ver li { margin: 2px 0; }
   .sheet .btn { width: 100%; }
   .sheet .link { display: block; margin: 12px auto 0; }
   .erreur { margin: -4px 0 12px; color: #b3261e; font-size: 14px; font-weight: 700; }
@@ -647,6 +680,7 @@
       <button class="link" id="signup">Pas encore inscrit ? Demander un laissez-passer</button>
       <div class="install" id="install" hidden></div>
     </div>
+    <div class="version-splash" id="versionSplash"></div>
 
   </section>
 
@@ -858,7 +892,7 @@
           </div>
           <div class="borne-barre">
             <div class="kicker">🎮 La borne de la caserne</div>
-            <div class="borne-actions"><button class="btn small alt" id="borneEteindre" hidden>⏻ Éteindre</button>
+            <div class="borne-actions"><button class="btn small alt" id="borneEteindre" hidden>🔌 Éteindre</button>
               <button class="btn small" id="bornePlein" hidden>⛶ Plein écran</button></div>
           </div>
           <div class="cartouches" id="cartouches"></div>
@@ -961,7 +995,7 @@
         <img class="photo" id="vImg" alt="" style="aspect-ratio:auto">
         <h2 id="vTitle"></h2>
         <div style="color:var(--muted);font-size:14px" id="vMeta"></div>
-        <div class="chips"><button class="chip add" type="button" onclick="alert('Touchez la photo pour identifier quelqu\'un (maquette)')">+ Identifier quelqu'un</button></div>
+        <div class="chips"><button class="chip add" type="button" onclick="garde('Touche la photo pour identifier quelqu\'un (bientôt disponible).')">+ Identifier quelqu'un</button></div>
         <div id="vComments"></div>
       </div>
       <form class="composer" id="composer"><input placeholder="Ajouter un souvenir…"><button>Envoyer</button></form>
@@ -980,7 +1014,16 @@
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
     <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
-    <button class="reglage danger" id="rLogout"><span>⏻ Se déconnecter</span></button>
+    <button class="reglage" id="rMaj"><span>🔄 Mise à jour de l'appli</span><span class="maj-pastille" id="rMajPastille" hidden>Nouvelle version !</span>›</button>
+    <button class="reglage danger" id="rLogout"><span>🚪 Se déconnecter</span></button>
+    <button class="version" id="rVersion"></button>
+  </div>
+  <div class="sheet nouveautes" id="nouveautes">
+    <div class="grab"></div>
+    <h2>🆕 Quoi de neuf ?</h2>
+    <p class="sub">L'évolution de l'appli, version après version.</p>
+    <div id="nvListe"></div>
+    <button class="btn alt" id="nvFermer" style="margin-top:8px">Fermer</button>
   </div>
   <div class="facteur" id="facteur" hidden>
     <div class="f-scene">
@@ -1713,7 +1756,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
@@ -1818,6 +1861,95 @@
     $("reglages").classList.add("open"); $("sheetBg").classList.add("open");
   }
   // --- signaler un problème
+  /* ===== Le chef de poste parle : remplace les fenêtres « … indique » du navigateur =====
+     garde(texte, { titre, ok, annuler, danger }) → Promise<true/false> */
+  function garde(texte, o = {}) {
+    return new Promise(fin => {
+      const precedent = document.activeElement;
+      const f = document.createElement("div"); f.className = "garde-fond"; f.setAttribute("role", "alertdialog"); f.setAttribute("aria-modal", "true");
+      const titre = o.titre || (o.annuler ? "Une petite question" : /impossible|non |refus|interrompu|erreur|faux|n'a pas pu|indisponible|introuvable/i.test(texte) ? "Oups !" : "Message du poste");
+      f.innerHTML = `<div class="garde-boite">
+        <div class="garde-tete"><div class="garde-portrait" aria-hidden="true"></div><div class="garde-qui"><b>Le chef de poste</b><small>Caserne de la Nouvelle-France</small></div></div>
+        <div class="garde-bulle"><h3></h3><p></p>
+          <div class="garde-actions">${o.annuler ? `<button class="btn alt" data-r="0">${esc(o.annuler === true ? "Annuler" : o.annuler)}</button>` : ""}
+            <button class="btn ${o.danger ? "danger" : ""}" data-r="1">${esc(o.ok || (o.annuler ? "Oui" : "Compris"))}</button></div></div></div>`;
+      f.querySelector("h3").textContent = titre; f.querySelector("p").textContent = texte;
+      document.body.appendChild(f); requestAnimationFrame(() => f.classList.add("ouvert"));
+      const fermer = v => { f.classList.remove("ouvert"); document.removeEventListener("keydown", clavier); setTimeout(() => f.remove(), 200); try { precedent && precedent.focus(); } catch (e) {} fin(v); };
+      const clavier = e => { if (e.key === "Escape") fermer(false); };
+      document.addEventListener("keydown", clavier);
+      f.querySelectorAll("[data-r]").forEach(b => b.onclick = () => fermer(b.dataset.r === "1"));
+      f.onclick = e => { if (e.target === f && o.annuler) fermer(false); };
+      f.querySelector('[data-r="1"]').focus();
+    });
+  }
+  window.alert = t => { garde(String(t)); };
+
+  /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
+  const VERSIONS = [
+    ["1.7", "11 octobre 2026", ["Un œil 👁 pour voir ce qu'on tape dans les mots de passe et les codes", "Les messages de l'appli sont donnés par le chef de poste", "Bouton 🔄 Mise à jour de l'appli dans les réglages", "Le numéro de version et cette page « Quoi de neuf ? »"]],
+    ["1.6", "11 octobre 2026", ["La borne de jeux dans la Salle des fêtes : le jeu s'affiche dans la télé", "Une image sur chaque cartouche", "Une manette sous la télé sur téléphone et tablette"]],
+    ["1.5", "10 octobre 2026", ["Les inscriptions sont validées par l'administrateur", "Écran d'attente avec ta carte et son tampon", "Code de déverrouillage à 4 chiffres (facultatif)"]],
+    ["1.4", "10 octobre 2026", ["Courrier du Vaguemestre chiffré de bout en bout", "Verso du laissez-passer avec QR code et code de liaison : touche la carte pour la retourner", "« Un problème ? » pour écrire à l'administrateur", "Page Protection de tes données"]],
+    ["1.3", "10 octobre 2026", ["Le Vaguemestre en personne : casiers, alerte de courrier et notifications", "Titre sur 3 lignes, porte noire et porte « Z » sur la page d'entrée"]],
+    ["1.2", "10 octobre 2026", ["Page d'accueil : porche, mot de bienvenue, météo, carte, derniers arrivés", "Fil de publications avec « J'aime » et commentaires", "Bouton vue PC pour les grands téléphones (Fold…)"]],
+    ["1.1", "10 octobre 2026", ["Photo de profil avec pastille, réglages, carte des membres", "Bibliothèque par thèmes, anecdotes et commentaires partagés", "Connexion par code provisoire puis mot de passe personnel"]],
+    ["1.0", "10 octobre 2026", ["Première version : Poste de police et laissez-passer numérotés", "Bibliothèque, Salle des jeunes, Salle des fêtes, Membres, Vaguemestre", "Appli installable sur Android, iPhone et PC"]]
+  ];
+  const VERSION = VERSIONS[0][0];
+  $("rVersion").textContent = `Version ${VERSION} · Quoi de neuf ?`;
+  $("versionSplash").textContent = `v${VERSION}`;
+  $("nvListe").innerHTML = VERSIONS.map(([v, d, l]) => `<div class="ver"><h3>Version ${v} <small>· ${d}</small></h3><ul>${l.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("");
+  $("rVersion").onclick = () => { $("reglages").classList.remove("open"); $("nouveautes").scrollTop = 0; $("nouveautes").classList.add("open"); $("sheetBg").classList.add("open"); };
+  $("nvFermer").onclick = () => { $("nouveautes").classList.remove("open"); $("sheetBg").classList.remove("open"); };
+
+  /* ===== Mise à jour : on compare avec la version en ligne (version.json, jamais gardé en cache) ===== */
+  async function versionEnLigne() {
+    const r = await fetch("/version.json?" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("injoignable");
+    return (await r.json()).version;
+  }
+  async function mettreAJour() {
+    try {
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
+      if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    } catch (e) {}
+    location.reload();
+  }
+  $("rMaj").onclick = async () => {
+    $("reglages").classList.remove("open"); $("sheetBg").classList.remove("open");
+    let v;
+    try { v = await versionEnLigne(); }
+    catch (e) { garde("Je n'arrive pas à joindre la caserne pour vérifier. Vérifie ta connexion internet et réessaie.", { titre: "Pas de réseau" }); return; }
+    if (v === VERSION) {
+      garde(`Tu as la toute dernière version de l'appli (v${VERSION}). Rien à faire, tout est en ordre !`, { titre: "✅ Ton appli est à jour", ok: "Parfait" });
+    } else if (await garde(`Une nouvelle version est arrivée à la caserne : la v${v} (tu as la v${VERSION}).\nL'appli va se recharger, ça ne prend que quelques secondes.`,
+        { titre: "🔄 Nouvelle version !", annuler: "Plus tard", ok: "Mettre à jour" })) {
+      mettreAJour();
+    }
+  };
+  // au démarrage, on regarde discrètement s'il y a du nouveau (pastille dans les réglages)
+  if (enLigne) versionEnLigne().then(v => { if (v !== VERSION) $("rMajPastille").hidden = false; }).catch(() => {});
+
+  /* ===== L'œil : voir ou cacher ce qu'on tape dans les mots de passe et les codes ===== */
+  const OEIL = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const OEIL_BARRE = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7c2 0 3.8.7 5.2 1.6M22 12s-3.6 7-10 7c-2 0-3.8-.7-5.2-1.6"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(inp => {
+    const z = document.createElement("span"); z.className = "oeil-zone";
+    inp.parentNode.insertBefore(z, inp); z.appendChild(inp);
+    const b = document.createElement("button"); b.type = "button"; b.className = "oeil"; b.innerHTML = OEIL;
+    b.setAttribute("aria-label", "Afficher"); z.appendChild(b);
+    // garder le doigt dans le champ : on ne perd pas le clavier du téléphone
+    b.onpointerdown = e => e.preventDefault();
+    b.onclick = () => {
+      const voir = inp.type === "password";
+      inp.type = voir ? "text" : "password";
+      b.innerHTML = voir ? OEIL_BARRE : OEIL; b.classList.toggle("vu", voir);
+      b.setAttribute("aria-label", voir ? "Cacher" : "Afficher");
+    };
+  });
+
   $("rProbleme").onclick = () => { $("reglages").classList.remove("open"); $("pErreur").hidden = true; $("probleme").classList.add("open"); $("sheetBg").classList.add("open"); setTimeout(() => $("pTexte").focus(), 350); };
   $("probleme").onsubmit = async e => {
     e.preventDefault(); $("pErreur").hidden = true;
@@ -1826,7 +1958,7 @@
     try {
       await api("POST", "/api/signalements", { categorie: $("pCat").value, texte: $("pTexte").value.trim(), appareil });
       $("pTexte").value = ""; fermerConnexion();
-      alert("Merci ! Ton message est bien parti chez l'administrateur.");
+      garde("Ton message est bien parti chez l'administrateur. Il va s'en occuper.", { titre: "Merci, mon gars !" });
     } catch (err) { $("pErreur").textContent = err.message; $("pErreur").hidden = false; }
     btn.disabled = false;
   };
@@ -1834,7 +1966,7 @@
   $("rCode").onclick = async () => {
     const k = mesCles();
     if (!k) { alert("Relie d'abord cet appareil à ton courrier chiffré (onglet Vaguemestre)."); return; }
-    if (!confirm("Créer un NOUVEAU code de liaison ?\n\nL'ancien code et l'ancien QR du verso ne marcheront plus. Tes autres appareils déjà reliés continuent de fonctionner.")) return;
+    if (!await garde("L'ancien code et l'ancien QR du verso ne marcheront plus. Tes autres appareils déjà reliés continuent de fonctionner.", { titre: "Nouveau code de liaison ?", annuler: true, ok: "Créer le code" })) return;
     try {
       const code = CR.nouveauCode();
       await api("PUT", "/api/cles/code", { cle_privee: await CR.verrouiller(k.prive, code), preuve: await CR.preuve(code) });
@@ -1844,8 +1976,8 @@
   };
   $("rConfid").onclick = () => { $("reglages").classList.remove("open"); $("confid").scrollTop = 0; $("confid").classList.add("open"); $("sheetBg").classList.add("open"); };
   $("confidOk").onclick = () => fermerConnexion();
-  $("rLogout").onclick = () => {
-    if (!confirm("Se déconnecter de la caserne ?")) return;
+  $("rLogout").onclick = async () => {
+    if (!await garde("Tu vas quitter la caserne sur cet appareil. Tu pourras revenir avec ton mot de passe.", { titre: "Se déconnecter ?", annuler: true, ok: "Se déconnecter", danger: true })) return;
     try { localStorage.removeItem("caserne-moi"); } catch (e) {}
     location.reload();
   };
@@ -1974,7 +2106,7 @@
     $("vMeta").innerHTML = `${esc(p.theme)}${p.annee ? " · " + esc(p.annee) : ""} · déposée par ${esc(p.de.nom)} le ${quandCourt(p.cree)}`
       + (peutRetirer(p) ? ` · <button class="link" id="vRetirer" style="margin:0;display:inline">Retirer la photo</button>` : "");
     if (peutRetirer(p)) $("vRetirer").onclick = async () => {
-      if (!confirm("Retirer cette photo de la bibliothèque ?")) return;
+      if (!await garde("Elle ne sera plus visible dans la bibliothèque.", { titre: "Retirer cette photo ?", annuler: true, ok: "Retirer", danger: true })) return;
       try { await partage.retirer("photo", p.id); $("viewer").classList.remove("open"); await chargerBiblio(); } catch (err) { alert(err.message); }
     };
     comments(); $("viewer").classList.add("open");
@@ -2013,7 +2145,7 @@
       try { await partage.commenter("anecdote", +f.dataset.id, t); await chargerAnecdotes(); } catch (err) { alert("Commentaire non envoyé : " + err.message); }
     });
     document.querySelectorAll("[data-retirer]").forEach(b => b.onclick = async () => {
-      if (!confirm("Retirer cette anecdote ?")) return;
+      if (!await garde("Elle ne sera plus visible par les anciens.", { titre: "Retirer cette anecdote ?", annuler: true, ok: "Retirer", danger: true })) return;
       try { await partage.retirer("anecdote", +b.dataset.retirer); await chargerAnecdotes(); } catch (err) { alert(err.message); }
     });
   }
@@ -2092,7 +2224,7 @@
     });
     document.querySelectorAll("[data-ecrire]").forEach(b => b.onclick = () => { go("vague"); ouvrirEcrire(b.dataset.ecrire); });
     document.querySelectorAll("[data-suppr]").forEach(b => b.onclick = async () => {
-      if (!confirm(`Supprimer définitivement le compte de ${b.dataset.nom} (n° ${b.dataset.suppr}) et son courrier ?`)) return;
+      if (!await garde(`Supprimer définitivement le compte de ${b.dataset.nom} (n° ${b.dataset.suppr}) et son courrier ?`, { titre: "Supprimer ce compte ?", annuler: true, ok: "Supprimer", danger: true })) return;
       try { await registre.supprimer(b.dataset.suppr); await chargerMembres(); }
       catch (e) { alert("Suppression impossible : " + e.message); }
     });
@@ -2159,7 +2291,7 @@
       try { await pubs.commenter(+f.dataset.pubCom, t); filOuverts.add(+f.dataset.pubCom); chargerFil(); } catch (err) { alert("Commentaire non envoyé : " + err.message); }
     });
     document.querySelectorAll("[data-pub-retirer]").forEach(b => b.onclick = async () => {
-      if (!confirm("Retirer cette publication ?")) return;
+      if (!await garde("Elle disparaîtra du fil d'accueil.", { titre: "Retirer cette publication ?", annuler: true, ok: "Retirer", danger: true })) return;
       try { await pubs.retirer(+b.dataset.pubRetirer); chargerFil(); } catch (e) { alert(e.message); }
     });
   }
@@ -2451,8 +2583,8 @@
         const c = await CR.chiffrer(k.prive, dest.cle_pub, { sujet, texte });
         await registre.envoyer({ a, chiffre: { ...c, cle: k.pub } });
       } else {
-        if (enLigne && !confirm(k ? `${nomDe(a)} ne s'est pas encore connecté depuis l'arrivée du courrier chiffré.\nEnvoyer quand même SANS chiffrement ?`
-          : "Cet appareil n'est pas relié à ton courrier chiffré.\nEnvoyer quand même SANS chiffrement ?")) { btn.disabled = false; return; }
+        if (enLigne && !await garde(k ? `${nomDe(a)} ne s'est pas encore connecté depuis l'arrivée du courrier chiffré.\nEnvoyer quand même SANS chiffrement ?`
+          : "Cet appareil n'est pas relié à ton courrier chiffré.\nEnvoyer quand même SANS chiffrement ?", { titre: "Courrier non chiffré", annuler: true, ok: "Envoyer quand même" })) { btn.disabled = false; return; }
         await registre.envoyer({ a, sujet, texte });
       }
       $("vForm").reset(); vue = "envoyes"; await chargerBoite();
@@ -2650,7 +2782,7 @@
     $("vrPoints").classList.remove("faux"); void $("vrPoints").offsetWidth; $("vrPoints").classList.add("faux");
     if (essaisPin >= 5) {
       try { localStorage.removeItem(clePin(moi.email)); localStorage.removeItem("caserne-moi"); } catch (e) {}
-      alert("5 codes faux : par sécurité, reconnecte-toi avec ton mot de passe."); location.reload(); return;
+      garde("5 codes faux : par sécurité, reconnecte-toi avec ton mot de passe.", { titre: "Halte !" }).then(() => location.reload()); return;
     }
     $("vrAide").textContent = `Code incorrect (encore ${5 - essaisPin} essai${5 - essaisPin > 1 ? "s" : ""})`;
   }
@@ -2706,7 +2838,7 @@
       if (x) {
         e.stopPropagation();
         const j = jeux.find(v => v.id === +x.dataset.retirerJeu);
-        if (!confirm(`Retirer « ${j.titre} » de la borne ?`)) return;
+        if (!await garde(`« ${j.titre} » ne sera plus dans la borne.`, { titre: "Retirer cette cartouche ?", annuler: true, ok: "Retirer", danger: true })) return;
         try { await api("DELETE", `/api/jeux/${j.id}`); if (jeuEnCours === j.id) eteindre(); chargerBorne(); } catch (err) { alert(err.message); }
         return;
       }

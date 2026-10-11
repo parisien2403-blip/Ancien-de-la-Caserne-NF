@@ -87,3 +87,7 @@ wrangler.jsonc             configuration Cloudflare (site public/ + registre de 
 - Droits sur la photo du chef de poste (`public/images/garde.jpg`), ou la remplacer par une illustration.
 - Musique et vidéos : privilégier les enregistrements personnels ; les œuvres du commerce sont soumises aux droits d'auteur.
 - Photos de personnes : pouvoir retirer une photo ou une identification sur demande (RGPD).
+
+## Version de l'appli
+
+Le numéro de version est dans `public/index.html` (tableau `VERSIONS`, la plus récente en premier, avec la liste des nouveautés affichée dans « Quoi de neuf ? ») **et** dans `public/version.json`. Les deux doivent être changés ensemble à chaque nouvelle version : le bouton « 🔄 Mise à jour de l'appli » compare les deux.

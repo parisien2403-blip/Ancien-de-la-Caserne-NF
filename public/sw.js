@@ -1,7 +1,7 @@
 // Service worker : permet d'installer l'appli (Android, iPhone, PC) et de l'ouvrir sans réseau.
 // Les pages sont servies « réseau d'abord » (toujours la dernière version), les images « cache d'abord ».
 // Le courrier et le registre (/api/) ne sont jamais mis en cache.
-const CACHE = "caserne-nf-v26";
+const CACHE = "caserne-nf-v28";
 const SHELL = ["/", "/images/garde.jpg", "/images/plaque.jpg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", e => {
@@ -16,7 +16,7 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname === "/version.json") return;
 
   if (e.request.mode === "navigate") {
     // seule la page d'accueil est gardée pour l'ouverture hors ligne (pas la page de la borne)
