@@ -386,18 +386,21 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
-    } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || (m.t === "dj_fini" && a.lieu === "grande"))) {
+    } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || ((m.t === "dj_fini" || m.t === "dj_auto") && a.lieu === "grande"))) {
       const dj = await this.etatDJ();
       if (m.t === "dj_etat") { ws.send(JSON.stringify({ t: "dj", dj })); return; }
       if (m.t === "dj_jouer" || m.t === "dj_file") {
         const f = this.ficheDJ(m.id, a.nom); if (!f) return;
-        if (m.t === "dj_jouer" || !dj.courant) dj.courant = { ...f, debut: Date.now() + 1500 };
+        if (m.t === "dj_jouer" || !dj.courant) { dj.courant = { ...f, debut: Date.now() + 1500 }; dj.arret = null; }
         else if (dj.file.length < 30) dj.file.push(f);
       } else if (m.t === "dj_fini") {
         if (!dj.courant || dj.courant.id !== Number(m.id) || Date.now() - dj.courant.debut < 5000) return;   // un seul passe au suivant
         await this.suivantDJ(dj);
       } else if (m.t === "dj_passer") { await this.suivantDJ(dj); }
-      else if (m.t === "dj_stop") { dj.courant = null; }
+      else if (m.t === "dj_stop") { dj.courant = null; dj.arret = Date.now(); }
+      else if (m.t === "dj_auto") {   // la nuit : si rien ne passe (et que personne ne vient d'arrêter la musique), on relance la discothèque en boucle
+        if (dj.courant || (dj.arret && Date.now() - dj.arret < 30 * 60e3)) return;
+        await this.suivantDJ(dj); if (!dj.courant) return; dj.courant.par = "la discothèque"; }
       else if (m.t === "dj_retirer") { dj.file.splice(Number(m.i), 1); }
       else return;
       await this.majDJ(dj);

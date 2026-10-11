@@ -748,6 +748,8 @@
   @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
   /* pendant une partie sur téléphone : on ne garde que la télé (de 10 % à 62 % de l'image), la manette remonte juste dessous */
   .borne.en-jeu { aspect-ratio: 1400 / 789; margin: 0 auto; }
+  /* la console est une surprise : dans l'onglet, seul l'administrateur la voit ; les autres la découvrent au bar du sous-sol (Matrice) */
+  .borne-zone.reserve:not(.console) { display: none; }
   /* immersion : quand on appuie sur JOUER (téléphone, tablette), la télé et la manette prennent tout l'écran */
   .quitter-borne { display: none; }
   .borne-zone.immersion { position: fixed; inset: 0; z-index: 2500; max-width: none; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1947,7 +1949,7 @@
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
-        surNuit: (n, lieu) => { if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
+        surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
         surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
@@ -2011,6 +2013,9 @@
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && (mxLieu === "fetes" || mxLieu === "grande")) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
   // (administrateur) chaque appui baisse la lumière de la salle : 100 % → 60 % → 35 % → 15 % → 100 %
+  /* la nuit, la musique de la fête tourne toute seule, en boucle : toutes les pistes de la discothèque, l'une après l'autre */
+  let mxNuit = false;
+  setInterval(() => { if (MX && mxOuverte && mxNuit && !djEtat.courant && (mxLieu === "fetes" || mxLieu === "grande")) MX.dj("auto", {}); }, 4000);
   let mxLumiereNiv = 1, mxLasersOn = false, mxInvitation = null, mxInviteMinuteur = null;
   $("mxAction").onclick = () => MX && MX.agir();
   const repondre = oui => { if (mxInvitation && MX) MX.repondreSlow(mxInvitation.de, oui); mxInvitation = null; $("mxInvite").hidden = true; };
@@ -2521,6 +2526,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.17", "11 octobre 2026", ["La nuit, la musique de la fête tourne toute seule, en boucle : toutes les pistes de la discothèque, l'une après l'autre (si quelqu'un l'arrête avec ⏹, elle reste arrêtée une demi-heure)", "Onglet Salle des fêtes : la console n'y est visible que pour l'administrateur ; les autres la découvrent en surprise au bar du sous-sol, dans la Matrice"]],
     ["3.16", "11 octobre 2026", ["La cour d'honneur fait partie du même ensemble : du vestibule, on voit la vraie cour par la porte « BAR » (et non plus une image), et l'on passe de la salle des fêtes, du bar ou du vestibule à la cour en marchant, sans aucune coupure, dans les deux sens"]],
     ["3.15", "11 octobre 2026", ["Salle des fêtes, escalier, vestibule, bar du sous-sol et porte « BAR » sur la cour : un seul et même endroit, sans aucune coupure ; on descend l'escalier, on traverse le vestibule jusqu'au bar, ou l'on sort dans la cour en marchant, en voyant toujours la suite"]],
     ["3.14.1", "11 octobre 2026", ["Le vestibule du sous-sol est agrandi (3,80 m × 3,60 m) ; depuis la cour, on voit de nouveau l'escalier qui remonte à la salle des fêtes (un mur le cachait)"]],
@@ -3569,6 +3575,7 @@
       epaules: true, noms: [null, "START"], stick: true }
   };
   async function chargerBorne() {
+    $("borneZone").classList.toggle("reserve", !(moi && moi.admin));
     $("borneAdmin").hidden = !(moi && moi.admin);
     if (!enLigne || !estValide()) { $("cartouches").innerHTML = ""; $("ecranTexte").textContent = "CONNECTE-TOI POUR JOUER"; return; }
     try { jeux = await api("GET", "/api/jeux"); } catch (e) { $("cartouches").innerHTML = `<p style="color:var(--muted)">Borne injoignable : ${esc(e.message)}</p>`; return; }
