@@ -991,6 +991,19 @@
   .card.mx-dj .kicker { color: #2a2019; }
   .card.mx-dj .search { background: #fffdf6; }
   .card.mx-dj .dj-file, .card.mx-dj .dj-file button { color: #f6eedf; }
+
+  /* l'accueil : la photo du porche occupe tout l'espace sous le titre, d'un bord à l'autre */
+  .tab[data-tab="accueil"] .acc-hero { margin: -14px -20px 6px; }
+  .tab[data-tab="accueil"] .acc-hero img { border: 0; border-radius: 0; box-shadow: 0 4px 12px rgba(60,30,15,.3); aspect-ratio: 4/3; object-position: 50% 100%; }
+  .tab[data-tab="accueil"] .acc-hero .voile { padding: 14px 20px 0; }
+  .tab[data-tab="accueil"] .acc-hero .meteo-pill { top: 12px; right: 12px; }
+  @media (min-width: 960px) {
+    .scroll > .tab[data-tab="accueil"] { max-width: none; }
+    .tab[data-tab="accueil"] > *:not(.acc-hero) { max-width: 980px; margin-left: auto; margin-right: auto; }
+    .tab[data-tab="accueil"] .acc-hero { margin: -32px -48px 6px; }
+    .tab[data-tab="accueil"] .acc-hero img { aspect-ratio: 2.4/1; }
+    .tab[data-tab="accueil"] .acc-hero .voile { max-width: 980px; margin: 0 auto; padding: 16px 0 0; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -2697,6 +2710,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.2.2", "11 octobre 2026", ["Accueil : la photo du porche remplit tout l'espace sous le titre, d'un bord à l'autre"]],
     ["3.2.1", "11 octobre 2026", ["Le panneau du DJ et l'en-tête de la Salle des fêtes sont lisibles (fond de bois foncé)"]],
     ["3.2", "11 octobre 2026", ["Le style « souvenirs » sur toutes les pages : titres à la machine à écrire, cartes en papier épais, champs et boutons à l'ancienne, grandes images en tirages photo, la Matrice encadrée de bois"]],
     ["3.1.1", "11 octobre 2026", ["En haut : le logo à côté du titre est retiré"]],
