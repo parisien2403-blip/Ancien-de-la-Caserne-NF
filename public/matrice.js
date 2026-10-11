@@ -530,6 +530,27 @@ function construireLieu(id, scene) {
     A.ajoute(new THREE.BoxGeometry(2.2, 2.8, .06), porte, 0, 1.4, Z1 - .02, false);
     for (const d of [-.55, .55]) { const pv = A.ajoute(new THREE.PlaneGeometry(.7, 1.4), vitre, d, 1.85, Z1 - .06, false); pv.rotation.y = Math.PI; }
     A.ajoute(new THREE.BoxGeometry(2.5, .14, .12), cadre, 0, 2.86, Z1 - .08, false);
+    // au fond de la salle : des tables rectangulaires avec nappes blanches, et des chaises d'école
+    const nappe = A.mat({ color: 0xf7f5ef, roughness: .9 }), tube = A.mat({ color: 0x3c3f44, metalness: .6, roughness: .4 });
+    const contreplaque = A.mat({ color: 0xb9814a, roughness: .55 });
+    const chaise = (x, z, rot) => {
+      const c = new THREE.Group(); c.position.set(x, 0, z); c.rotation.y = rot; scene.add(c);
+      for (const [px, pz] of [[-.19, -.17], [.19, -.17], [-.19, .17], [.19, .17]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .45, 6), tube); p.position.set(px, .225, pz); c.add(p); }
+      for (const px of [-.19, .19]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .42, 6), tube); m.position.set(px, .66, .19); c.add(m); }
+      const as = new THREE.Mesh(new THREE.BoxGeometry(.42, .025, .4), contreplaque); as.position.y = .46; as.castShadow = true; c.add(as);
+      const dos = new THREE.Mesh(new THREE.BoxGeometry(.42, .2, .02), contreplaque); dos.position.set(0, .76, .2); dos.rotation.x = -.12; dos.castShadow = true; c.add(dos);
+    };
+    const tables = [];
+    for (const zt of [Z0 + 1.35, Z0 + 3.35]) for (const xt of [-2.7, 1.9]) {
+      const L3 = 3.6, P = .9;
+      A.ajoute(new THREE.BoxGeometry(L3, .04, P), nappe, xt, .76, zt);                                            // le plateau et la nappe
+      for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(L3 + .04, .32, .015), nappe, xt, .61, zt + sgn * (P / 2 + .008), false);   // la nappe qui retombe
+      for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.015, .32, P + .03), nappe, xt + sgn * (L3 / 2 + .008), .61, zt, false);
+      for (const [dx, dz] of [[-1.65, -.36], [1.65, -.36], [-1.65, .36], [1.65, .36]]) A.ajoute(new THREE.CylinderGeometry(.02, .02, .45, 6), tube, xt + dx, .225, zt + dz, false);
+      for (let k = 0; k < 4; k++) { const cx = xt - 1.35 + k * .9; chaise(cx, zt - .62, Math.PI); chaise(cx, zt + .62, 0); }
+      tables.push([xt - L3 / 2 - .2, xt + L3 / 2 + .2, zt - 1, zt + 1]);
+    }
+
     // la boule à facettes, au centre du plafond
     const facettes = toile(512, 256, (x, w, h) => { for (let i = 0; i < w; i += 16) for (let j = 0; j < h; j += 16) { const v = alea();
       x.fillStyle = v > .93 ? "#ffffff" : `hsl(${200 + v * 40}, ${6 + v * 14}%, ${70 + v * 28}%)`; x.fillRect(i + 1, j + 1, 14, 14); } x.fillStyle = "rgba(0,0,0,.5)"; });
@@ -546,7 +567,7 @@ function construireLieu(id, scene) {
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
     for (const z of [Z0 + 4, cz, Z1 - 4]) { const l = new THREE.PointLight(0xfff0d8, 6, 14, 1.4); l.position.set(0, HT - .6, z); scene.add(l); }
     L.interieur = true;
-    L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6;
+    L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
     L.portails.push({ dans: (x, z) => x < X0 + .7, vers: "grande", arrivee: [8.8, 6] });
     L.depart = [0, Z1 - 3]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
   }
