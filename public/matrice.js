@@ -49,14 +49,21 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 24 : 16; x.lineCap = "round";
       x.beginPath(); x.moveTo(g ? 84 : 116, bas ? 262 : 336); x.lineTo(g ? 44 : 156, 396); x.stroke();
       x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
+    } else if (o.pose === "madison4" || o.pose === "madison5") {
+      // genou levé : la cuisse remonte, le pied décolle du sol
+      const g = o.pose === "madison4", hx = g ? 84 : 116;
+      x.strokeStyle = bas || peau; x.lineWidth = bas ? 24 : 16; x.lineCap = "round"; x.lineJoin = "round";
+      x.beginPath(); x.moveTo(hx, bas ? 262 : 330); x.lineTo(g ? 54 : 146, 292); x.lineTo(g ? 70 : 130, 348); x.stroke();
+      x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
     } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    const jambesDroites = !accroupi && o.pose !== "madison1" && o.pose !== "madison3";
+    const jambesDroites = !accroupi && !/^madison[1345]$/.test(o.pose || "");
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
-    const PD = [o.pose === "madison1" ? 46 : 82, o.pose === "madison3" ? 154 : 118];
-    x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], 404, 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], 404, 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
-    if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, 408, 40, 3); x.fillRect(PD[1] - 20, 408, 40, 3); }   // semelle des baskets
+    const PD = [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
+    const PY = [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
+    x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], PY[0], 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], PY[1], 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
+    if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, PY[0] + 4, 40, 3); x.fillRect(PD[1] - 20, PY[1] + 4, 40, 3); }   // semelle des baskets
     const haut = t === "garde" ? "#1c2541" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
@@ -68,7 +75,8 @@ export function dessinerBonhomme(o, tete) {
       const disco = DISCO[o.pose], doigt = disco && sens < 0;
       // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
       // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
-      const cible = accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228] : null;
+      const cible = accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228]
+        : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
       x.save(); x.translate(cx, 158); x.rotate(a);
@@ -88,12 +96,13 @@ export function dessinerBonhomme(o, tete) {
       x.restore();
     };
     bras(48, 1); bras(152, -1);
-    if (t === "tshirt") { x.fillStyle = peau; x.beginPath(); x.ellipse(100, 146, 14, 8, 0, 0, Math.PI); x.fill(); x.strokeStyle = assombrir(c, .8); x.lineWidth = 3; x.beginPath(); x.ellipse(100, 146, 15, 9, 0, 0, Math.PI); x.stroke(); }
-    if (t === "polo") { x.fillStyle = assombrir(c, .82); x.beginPath(); x.moveTo(82, 142); x.lineTo(100, 150); x.lineTo(90, 162); x.fill(); x.beginPath(); x.moveTo(118, 142); x.lineTo(100, 150); x.lineTo(110, 162); x.fill();
+    const dos = o.pose === "dos";
+    if (!dos && t === "tshirt") { x.fillStyle = peau; x.beginPath(); x.ellipse(100, 146, 14, 8, 0, 0, Math.PI); x.fill(); x.strokeStyle = assombrir(c, .8); x.lineWidth = 3; x.beginPath(); x.ellipse(100, 146, 15, 9, 0, 0, Math.PI); x.stroke(); }
+    if (!dos && t === "polo") { x.fillStyle = assombrir(c, .82); x.beginPath(); x.moveTo(82, 142); x.lineTo(100, 150); x.lineTo(90, 162); x.fill(); x.beginPath(); x.moveTo(118, 142); x.lineTo(100, 150); x.lineTo(110, 162); x.fill();
       x.fillStyle = assombrir(c, .9); x.fillRect(97, 150, 6, 26); x.fillStyle = "#f4f1ea"; for (const yb of [156, 166]) { x.beginPath(); x.arc(100, yb, 2, 0, 7); x.fill(); } }
-    if (t === "costume") { x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 190); x.lineTo(114, 146); x.fill(); x.fillStyle = "#8a1f2b"; x.fillRect(97, 152, 6, 40); }
-    if (t === "civil") { x.fillStyle = "#e9e2d0"; x.beginPath(); x.moveTo(88, 146); x.lineTo(100, 168); x.lineTo(112, 146); x.fill(); x.fillStyle = assombrir(c, .8); x.fillRect(98, 168, 4, 92); }
-    if (t === "garde") {
+    if (!dos && t === "costume") { x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 190); x.lineTo(114, 146); x.fill(); x.fillStyle = "#8a1f2b"; x.fillRect(97, 152, 6, 40); }
+    if (!dos && t === "civil") { x.fillStyle = "#e9e2d0"; x.beginPath(); x.moveTo(88, 146); x.lineTo(100, 168); x.lineTo(112, 146); x.fill(); x.fillStyle = assombrir(c, .8); x.fillRect(98, 168, 4, 92); }
+    if (!dos && t === "garde") {
       // col de chemise bleu clair
       x.fillStyle = "#a9c4e0"; x.beginPath(); x.moveTo(84, 145); x.lineTo(100, 166); x.lineTo(116, 145); x.lineTo(108, 141); x.lineTo(100, 152); x.lineTo(92, 141); x.fill();
       // la bande blanche du pull, sur la poitrine et le haut des bras
@@ -112,7 +121,14 @@ export function dessinerBonhomme(o, tete) {
       const k = Math.min(112 / tete.width, 124 / tete.height) * z, w = tete.width * k, h = tete.height * k;
       if (o.moi) { x.shadowColor = "#f6d465"; x.shadowBlur = 14; }
       x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate((R.r || 0) * Math.PI / 180);
-      x.drawImage(tete, -w / 2, -h, w, h); x.restore(); x.shadowBlur = 0;
+      if (o.pose === "dos") {
+        // de dos : la même silhouette de tête, en arrière du crâne (couleur peau, un peu d'ombre en bas)
+        const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
+        y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
+        const g = y2.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+        x.drawImage(c2, -w / 2, -h);
+      } else x.drawImage(tete, -w / 2, -h, w, h);
+      x.restore(); x.shadowBlur = 0;
     } else {
       x.fillStyle = peau; x.beginPath(); x.ellipse(100, 72, 44, 54, 0, 0, 7); x.fill();
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
@@ -1389,15 +1405,23 @@ export async function ouvrir(ctx) {
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
       if (p.corps && p.poses) {
-        const sx = Math.abs(p.corps.scale.x);
+        const sx = tailleBonhomme() * .476 * 1.6;
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         if (p.info.danse === "madison") {
-          // le Madison : pas à gauche (pied qui tape), frappé de mains, pas à droite, frappé… et un demi-tour tous les 8 temps
-          const ph = t / 340 + p.info.numero * .7, k = Math.floor(ph) % 4, pose = ["madison1", "madison2", "madison3", "madison2"][k];
+          /* le Madison, en boucle sur 16 temps :
+             1-4 pointe du pied gauche sur le côté, clap, pointe du pied droit, clap ;
+             5-8 genou gauche levé et clap sous le genou, clap, genou droit levé et clap, clap ;
+             9-12 on recommence les pointes de pied ;
+             13-16 un tour complet sur soi-même, en frappant dans les mains */
+          const ph = t / 340 + p.info.numero * .7, k = Math.floor(ph) % 16, v = ph % 1;
+          const SUITE = ["madison1", "madison2", "madison3", "madison2", "madison4", "madison2", "madison5", "madison2", "madison1", "madison2", "madison3", "madison2"];
+          let pose = SUITE[k] || "madison2", lx = sx;
+          if (k >= 12) { const a = ((k - 12) + v) / 4 * Math.PI * 2, cs = Math.cos(a); lx = sx * Math.max(.08, Math.abs(cs)); if (cs < 0) pose = "dos"; }
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
-          p.corps.scale.x = (Math.floor(ph / 8) % 2 ? -1 : 1) * sx; p.corps.material.rotation = 0;
-          p.corps.position.x += ((k === 0 ? -.16 : k === 2 ? .16 : 0) - p.corps.position.x) * .25;
-          if (!p.cible) p.corps.position.y = k % 2 ? Math.abs(Math.sin(ph * Math.PI)) * .05 : 0; p.dansait = true; }
+          p.corps.scale.x = lx; p.corps.material.rotation = 0;
+          const dx = pose === "madison1" ? -.16 : pose === "madison3" ? .16 : 0;
+          p.corps.position.x += (dx - p.corps.position.x) * .25;
+          if (!p.cible) p.corps.position.y = pose === "madison2" || pose === "dos" ? Math.abs(Math.sin(ph * Math.PI)) * .05 : 0; p.dansait = true; }
         else if (p.info.danse === "charleston") {
           // le Charleston : les genoux s'ouvrent et se croisent, les mains passent d'un genou à l'autre
           const ph = t / 280 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "genoux2" : "genoux1";
@@ -1412,7 +1436,7 @@ export async function ouvrir(ctx) {
         else if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(ph * Math.PI) * .13; p.corps.position.x = Math.sin(ph * Math.PI) * .14; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .07; p.dansait = true; }
-        else if (p.dansait) { p.dansait = false; p.corps.scale.x = Math.abs(p.corps.scale.x); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
+        else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6; p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
     if (M.L.anim) M.L.anim(t);
@@ -1541,7 +1565,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3") };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos") };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
