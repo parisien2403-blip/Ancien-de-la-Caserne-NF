@@ -42,7 +42,8 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["grande", "horloge", "allee"];
+const LIEUX_MATRICE = ["grande", "horloge", "allee", "fetes"];
+const MUSIQUE_MAX = 15 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const TENUES_MATRICE = ["garde", "civil", "survet", "robe", "costume"];
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
@@ -77,6 +78,9 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, texte TEXT, image INTEGER, auteur TEXT, cree TEXT)`);
     // la borne de jeux (salle des fêtes) : fichiers découpés en morceaux de 1 Mo
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, console TEXT, nom_fichier TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, cree TEXT)`);
+    // la discothèque du DJ : musiques déposées par les anciens, en morceaux de 1 Mo
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, artiste TEXT, auteur INTEGER, auteur_nom TEXT, type TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, duree REAL, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques_morceaux (m INTEGER, n INTEGER, data BLOB, PRIMARY KEY (m, n))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux_morceaux (jeu INTEGER, n INTEGER, data BLOB, PRIMARY KEY (jeu, n))`);
     // l'image collée sur la cartouche (jaquette réduite, en JPEG)
     try { this.sql.exec(`ALTER TABLE jeux ADD COLUMN jaquette TEXT`); } catch (e) { /* déjà là */ }
@@ -333,7 +337,23 @@ export class Compteur extends DurableObject {
       const dits = this.sql.exec("SELECT numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
+      if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));
       this.diffuserComptes();
+    } else if (m.t && m.t.startsWith("dj_") && a.lieu === "fetes") {
+      const dj = await this.etatDJ();
+      if (m.t === "dj_etat") { ws.send(JSON.stringify({ t: "dj", dj })); return; }
+      if (m.t === "dj_jouer" || m.t === "dj_file") {
+        const f = this.ficheDJ(m.id, a.nom); if (!f) return;
+        if (m.t === "dj_jouer" || !dj.courant) dj.courant = { ...f, debut: Date.now() + 1500 };
+        else if (dj.file.length < 30) dj.file.push(f);
+      } else if (m.t === "dj_fini") {
+        if (!dj.courant || dj.courant.id !== Number(m.id) || Date.now() - dj.courant.debut < 5000) return;   // un seul passe au suivant
+        await this.suivantDJ(dj);
+      } else if (m.t === "dj_passer") { await this.suivantDJ(dj); }
+      else if (m.t === "dj_stop") { dj.courant = null; }
+      else if (m.t === "dj_retirer") { dj.file.splice(Number(m.i), 1); }
+      else return;
+      await this.majDJ(dj);
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "aller", numero: a.numero, x: a.x, z: a.z }, ws);
@@ -433,6 +453,69 @@ export class Compteur extends DurableObject {
     this.sql.exec("UPDATE jeux SET jaquette = ? WHERE id = ?", jaquette(x.jaquette), Number(id));
     return { ok: true };
   }
+  /* ----- La discothèque du DJ : tous les anciens validés peuvent déposer ----- */
+  musiques(token) {
+    this.moi(token);
+    return this.sql.exec("SELECT id, titre, artiste, auteur, auteur_nom, taille, duree, cree FROM musiques WHERE complet = 1 ORDER BY id DESC").toArray();
+  }
+  nouvelleMusique(token, x) {
+    const moi = this.moi(token);
+    const titre = texte(x.titre, 90), artiste = texte(x.artiste, 60), taille = Number(x.taille), type = String(x.type || "");
+    if (!titre) throw new Refus("Donne un titre à la musique");
+    if (!/^audio\/(mpeg|mp3|mp4|x-m4a|aac|ogg|wav|x-wav|webm)$/.test(type)) throw new Refus("Seuls les fichiers audio sont acceptés (MP3, M4A, OGG…)");
+    if (!(taille > 0 && taille <= MUSIQUE_MAX)) throw new Refus("Fichier trop lourd (15 Mo maximum par musique)");
+    const total = this.sql.exec("SELECT COALESCE(SUM(taille), 0) AS t FROM musiques").one().t;
+    if (total + taille > DISCO_MAX) throw new Refus("La discothèque est pleine : demande à l'administrateur de faire de la place");
+    const morceaux = Math.ceil(taille / MORCEAU);
+    this.sql.exec("INSERT INTO musiques (titre, artiste, auteur, auteur_nom, type, taille, morceaux, duree, cree) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      titre, artiste, Number(moi.numero), `${moi.prenom} ${moi.nom}`, type, taille, morceaux, Number(x.duree) > 0 ? Math.min(3600, Number(x.duree)) : null, new Date().toISOString());
+    return { id: this.sql.exec("SELECT last_insert_rowid() AS id").one().id, morceaux, taille_morceau: MORCEAU };
+  }
+  morceauMusique(token, id, n, data) {
+    const moi = this.moi(token);
+    const m = this.sql.exec("SELECT * FROM musiques WHERE id = ?", Number(id)).toArray()[0];
+    if (!m) throw new Refus("Musique introuvable", 404);
+    if (m.auteur !== Number(moi.numero)) throw new Refus("Ce n'est pas ta musique", 403);
+    n = Number(n);
+    if (!(n >= 0 && n < m.morceaux) || data.byteLength > MORCEAU) throw new Refus("Morceau invalide");
+    this.sql.exec("INSERT OR REPLACE INTO musiques_morceaux (m, n, data) VALUES (?, ?, ?)", m.id, n, data);
+    const recus = this.sql.exec("SELECT COUNT(*) AS c FROM musiques_morceaux WHERE m = ?", m.id).one().c;
+    if (recus === m.morceaux) this.sql.exec("UPDATE musiques SET complet = 1 WHERE id = ?", m.id);
+    return { ok: true, complet: recus === m.morceaux };
+  }
+  infoMusique(token, id) {
+    this.moi(token);
+    const m = this.sql.exec("SELECT taille, morceaux, type FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
+    return m || null;
+  }
+  morceauDeMusique(token, id, n) {
+    this.moi(token);
+    const m = this.sql.exec("SELECT data FROM musiques_morceaux WHERE m = ? AND n = ?", Number(id), Number(n)).toArray()[0];
+    if (!m) throw new Refus("Morceau manquant", 404);
+    return m.data;
+  }
+  async retirerMusique(token, id) {
+    const moi = this.moi(token), admin = await this.estAdmin(token);
+    const m = this.sql.exec("SELECT auteur FROM musiques WHERE id = ?", Number(id)).toArray()[0];
+    if (!m) throw new Refus("Musique introuvable", 404);
+    if (!admin && m.auteur !== Number(moi.numero)) throw new Refus("Seul celui qui l'a déposée (ou l'administrateur) peut la retirer", 403);
+    this.sql.exec("DELETE FROM musiques_morceaux WHERE m = ?", Number(id));
+    this.sql.exec("DELETE FROM musiques WHERE id = ?", Number(id));
+    const dj = await this.etatDJ();
+    if (dj.courant && dj.courant.id === Number(id)) dj.courant = null;
+    dj.file = dj.file.filter(f => f.id !== Number(id));
+    await this.majDJ(dj);
+    return { ok: true };
+  }
+  // ce qui passe chez le DJ (pour toute la salle des fêtes), et la file d'attente
+  async etatDJ() { return (await this.ctx.storage.get("dj")) || { courant: null, file: [] }; }
+  async majDJ(dj) { await this.ctx.storage.put("dj", dj); this.diffuser("fetes", { t: "dj", dj }); }
+  ficheDJ(id, qui) {
+    const m = this.sql.exec("SELECT id, titre, artiste, duree FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
+    return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui } : null;
+  }
+  async suivantDJ(dj) { const f = dj.file.shift(); dj.courant = f ? { ...f, debut: Date.now() + 1500 } : null; }
+
   async retirerJeu(token, id) {
     await this.exigerAdmin(token);
     this.sql.exec("DELETE FROM jeux_morceaux WHERE jeu = ?", Number(id));
@@ -748,6 +831,43 @@ export default {
       })());
       return new Response(readable, { headers: entetes });
     }
+    // fichier d'une musique de la discothèque (lecture avec « Range » pour se caler au bon moment)
+    const mMus = url.pathname.match(/^\/api\/musiques\/(\d+)\/fichier$/);
+    if ((request.method === "GET" || request.method === "HEAD") && mMus) {
+      const t = url.searchParams.get("t") || "", id = mMus[1];
+      let info;
+      try { info = await registre.infoMusique(t, id); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      if (!info) return new Response("Introuvable", { status: 404 });
+      let debut = 0, fin = info.taille - 1, partiel = false;
+      const rg = (request.headers.get("Range") || "").match(/^bytes=(\d*)-(\d*)$/);
+      if (rg && (rg[1] || rg[2])) {
+        partiel = true;
+        if (rg[1]) { debut = Number(rg[1]); if (rg[2]) fin = Math.min(fin, Number(rg[2])); } else { debut = Math.max(0, info.taille - Number(rg[2])); }
+        if (debut > fin) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${info.taille}` } });
+      }
+      const L = fin - debut + 1;
+      const entetes = { "Content-Type": info.type, "Accept-Ranges": "bytes", "Content-Length": String(L), "Cache-Control": "private, max-age=86400" };
+      if (partiel) entetes["Content-Range"] = `bytes ${debut}-${fin}/${info.taille}`;
+      if (request.method === "HEAD") return new Response(null, { status: partiel ? 206 : 200, headers: entetes });
+      const { readable, writable } = new FixedLengthStream(L);
+      ctx.waitUntil((async () => {
+        const w = writable.getWriter();
+        try {
+          for (let n = Math.floor(debut / MORCEAU); n * MORCEAU <= fin; n++) {
+            const b = new Uint8Array(await registre.morceauDeMusique(t, id, n)), d0 = n * MORCEAU;
+            await w.write(b.subarray(Math.max(0, debut - d0), Math.min(b.byteLength, fin - d0 + 1)));
+          }
+          await w.close();
+        } catch (e) { await w.abort(e).catch(() => {}); }
+      })());
+      return new Response(readable, { status: partiel ? 206 : 200, headers: entetes });
+    }
+    if (request.method === "PUT" && /^\/api\/musiques\/\d+\/morceau\/\d+$/.test(url.pathname)) {
+      const [, , , id, , n] = url.pathname.split("/");
+      try { return Response.json(await registre.morceauMusique(token, id, n, await request.arrayBuffer())); }
+      catch (e) { return Response.json({ erreur: e.message }, { status: e.status || 400 }); }
+    }
+
     // dépôt d'un morceau de jeu (administrateur)
     if (request.method === "PUT" && /^\/api\/jeux\/\d+\/morceau\/\d+$/.test(url.pathname)) {
       const [, , , id, , n] = url.pathname.split("/");
@@ -768,6 +888,9 @@ export default {
       else if (route === "GET /api/signalements") r = await registre.signalements(token);
       else if (route === "GET /api/statut") r = await registre.statut(token);
       else if (route === "GET /api/jeux") r = await registre.jeux(token);
+      else if (route === "GET /api/musiques") r = await registre.musiques(token);
+      else if (route === "POST /api/musiques") r = await registre.nouvelleMusique(token, await corps());
+      else if (request.method === "DELETE" && /^\/api\/musiques\/\d+$/.test(url.pathname)) r = await registre.retirerMusique(token, url.pathname.split("/")[3]);
       else if (route === "POST /api/jeux") r = await registre.nouveauJeu(token, await corps());
       else if (request.method === "PUT" && /^\/api\/jeux\/\d+\/jaquette$/.test(url.pathname)) r = await registre.jaquetteJeu(token, url.pathname.split("/")[3], await corps());
       else if (request.method === "DELETE" && /^\/api\/jeux\/\d+$/.test(url.pathname)) r = await registre.retirerJeu(token, url.pathname.split("/")[3]);

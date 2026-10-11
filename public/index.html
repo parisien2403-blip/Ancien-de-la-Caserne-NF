@@ -312,6 +312,30 @@
   .bh-choix .pastille { width: 30px; height: 30px; padding: 0; border-radius: 50%; }
   .bh-choix .pastille.on { outline: 3px solid var(--gold); outline-offset: 2px; }
 
+  /* ---------- Le DJ de la salle des fêtes ---------- */
+  .mx-dj[hidden] { display: none; }
+  .mx-dj { margin-top: 10px; background: linear-gradient(160deg, #2b2340, #3d2a4a); color: #f6eedf; border: 0; }
+  .mx-dj .kicker { color: #f6d465; }
+  .dj-tete { display: flex; gap: 12px; align-items: center; }
+  .dj-tete b { display: block; font: 18px "Marcellus", serif; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dj-tete small { display: block; opacity: .8; font-size: 12px; }
+  .dj-disque { flex: none; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle, #c0392b 0 18%, #111 19% 22%, #222 23% 100%); box-shadow: 0 0 0 2px #444 inset; }
+  .dj-disque.tourne { animation: djTourne 1.8s linear infinite; }
+  @keyframes djTourne { to { transform: rotate(360deg); } }
+  .dj-barre { height: 4px; border-radius: 2px; background: rgba(255,255,255,.18); margin-top: 6px; overflow: hidden; } .dj-barre div { height: 100%; width: 0; background: #f6d465; }
+  .dj-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 6px; }
+  .mx-dj .btn.alt { background: rgba(255,255,255,.12); color: #fff; border-color: transparent; }
+  .dj-titre-liste { font: 700 12px "Lato", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f6d465; margin: 12px 0 4px; }
+  .dj-titre-liste small { text-transform: none; letter-spacing: 0; color: #f6eedf; opacity: .7; }
+  .dj-file { margin: 0; padding-left: 20px; font-size: 14px; } .dj-file li { margin: 2px 0; } .dj-file button { background: none; border: 0; color: #f6eedf; opacity: .6; cursor: pointer; }
+  .dj-liste { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .dj-piste { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px 8px; }
+  .dj-piste div { flex: 1; min-width: 0; } .dj-piste b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dj-piste small { font-size: 11.5px; opacity: .7; }
+  .dj-piste button { flex: none; border: 0; border-radius: 99px; padding: 5px 10px; font: 700 12px "Lato", sans-serif; cursor: pointer; background: #f6d465; color: #2b2340; }
+  .dj-piste button.alt { background: rgba(255,255,255,.14); color: #fff; } .dj-piste button.retirer { background: transparent; color: #ff9a9a; padding: 5px 6px; }
+  .dj-envoi .progression { height: 6px; border-radius: 3px; background: rgba(255,255,255,.2); overflow: hidden; } .dj-envoi .progression div { height: 100%; width: 0; background: #f6d465; }
+
   /* ---------- Escaliers A à Z ---------- */
   .bat-saisie { position: relative; display: block; }
   .bat-saisie input { text-transform: uppercase; font-weight: 700; letter-spacing: .1em; }
@@ -1039,6 +1063,22 @@
           <div class="mx-presents" id="mxPresents"></div>
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
+        </div>
+        <!-- le DJ de la salle des fêtes : la musique est entendue par tous ceux qui sont dans la salle -->
+        <div class="card mx-dj" id="mxDJ" hidden>
+          <div class="dj-tete"><div class="dj-disque" id="djDisque"></div>
+            <div style="min-width:0;flex:1"><div class="kicker">🎧 Chez le DJ</div><b id="djTitre">Pas de musique pour l'instant</b><small id="djPar"></small>
+              <div class="dj-barre"><div id="djProgres"></div></div></div></div>
+          <div class="dj-actions"><button class="btn small" type="button" id="djEcouter">🔊 Écouter</button>
+            <button class="btn small alt" type="button" id="djPasser">⏭ Suivant</button><button class="btn small alt" type="button" id="djStop">⏹ Arrêter</button>
+            <label class="btn small alt">➕ Ajouter une musique<input type="file" accept="audio/*" id="djFichier" hidden multiple></label></div>
+          <p class="erreur" id="djErreur" hidden></p>
+          <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
+          <div class="dj-titre-liste" id="djFileTitre" hidden>À suivre</div><ol class="dj-file" id="djFile"></ol>
+          <div class="dj-titre-liste">La discothèque des anciens <small id="djNb"></small></div>
+          <input class="search" id="djRecherche" placeholder="Chercher un titre, un artiste…" style="margin:4px 0 8px">
+          <div class="dj-liste" id="djListe"></div>
+          <p class="legal" style="text-align:left;margin:8px 0 0">Dépose de préférence tes propres enregistrements ou des musiques libres de droits. 15 Mo au plus par musique.</p>
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
@@ -1818,7 +1858,8 @@
       await m.ouvrir({
         conteneur: $("mxScene"), token: moi.token, urlTete,
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v }),
-        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; },
+        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
+        surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
         surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6; },
@@ -1836,7 +1877,73 @@
     $("mxLieux").innerHTML = Object.entries(m.LIEUX).map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
     $("mxLieux").querySelectorAll("[data-lieu]").forEach(b => b.onclick = () => m.allerAuLieu(b.dataset.lieu));
   }
-  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  /* ----- Le DJ : la même musique, au même moment, pour tous ceux de la salle des fêtes ----- */
+  const djAudio = new Audio(); djAudio.preload = "auto";
+  let djEtat = { courant: null, file: [] }, djEcoute = false, djDisco = [], djFiniEnvoye = null;
+  const djSecondes = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function djSynchro() {
+    const c = djEtat.courant;
+    $("djDisque").classList.toggle("tourne", !!(c && djEcoute));
+    $("djTitre").textContent = c ? c.titre : "Pas de musique pour l'instant";
+    $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}choisie par ${c.par}` : "Choisis un titre dans la discothèque ci-dessous";
+    $("djEcouter").textContent = djEcoute ? "🔇 Couper le son" : "🔊 Écouter";
+    $("djFileTitre").hidden = !djEtat.file.length;
+    $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} <button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button></li>`).join("");
+    $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
+    if (!c || !djEcoute) { djAudio.pause(); return; }
+    const src = `/api/musiques/${c.id}/fichier?t=${encodeURIComponent(moi.token)}`;
+    const cale = () => { const pos = (Date.now() - c.debut) / 1000; if (pos < 0) { setTimeout(djSynchro, -pos * 1000); return; }
+      if (Math.abs(djAudio.currentTime - pos) > 1.5) { try { djAudio.currentTime = pos; } catch (e) {} } djAudio.play().catch(() => {}); };
+    if (!djAudio.src.endsWith(src)) { djAudio.src = src; djAudio.onloadedmetadata = cale; djAudio.load(); } else cale();
+  }
+  djAudio.ontimeupdate = () => { const d = djAudio.duration; $("djProgres").style.width = d ? (djAudio.currentTime / d * 100) + "%" : "0"; };
+  djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
+  // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
+  setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && mxLieu === "fetes") { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
+  $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
+  $("djPasser").onclick = () => MX && MX.dj("passer");
+  $("djStop").onclick = async () => { if (await garde("La musique s'arrêtera pour tout le monde dans la salle.", { titre: "Arrêter la musique ?", annuler: true, ok: "Arrêter" })) MX && MX.dj("stop"); };
+  async function chargerDisco() {
+    try { djDisco = await api("GET", "/api/musiques"); } catch (e) { djDisco = []; }
+    afficherDisco();
+  }
+  function afficherDisco() {
+    const q = $("djRecherche").value.trim().toLowerCase();
+    const l = djDisco.filter(m => (m.titre + " " + (m.artiste || "") + " " + m.auteur_nom).toLowerCase().includes(q));
+    $("djNb").textContent = `· ${djDisco.length} titre${djDisco.length > 1 ? "s" : ""}`;
+    $("djListe").innerHTML = l.length ? l.map(m => `<div class="dj-piste"><div><b>${esc(m.titre)}</b><small>${m.artiste ? esc(m.artiste) + " · " : ""}${m.duree ? djSecondes(m.duree) + " · " : ""}déposée par ${esc(m.auteur_nom)}</small></div>
+        <button type="button" data-dj-jouer="${m.id}">▶ Jouer</button><button type="button" class="alt" data-dj-file="${m.id}">+ File</button>
+        ${moi.admin || +m.auteur === +moi.numero ? `<button type="button" class="retirer" data-dj-suppr="${m.id}" aria-label="Retirer de la discothèque">🗑</button>` : ""}</div>`).join("")
+      : `<p style="opacity:.75;margin:6px 2px">${djDisco.length ? "Aucun titre ne correspond." : "La discothèque est vide : ajoute la première musique !"}</p>`;
+    $("djListe").querySelectorAll("[data-dj-jouer]").forEach(b => b.onclick = () => { if (!djEcoute) { djEcoute = true; djAudio.play().catch(() => {}); } MX && MX.dj("jouer", { id: +b.dataset.djJouer }); });
+    $("djListe").querySelectorAll("[data-dj-file]").forEach(b => b.onclick = () => MX && MX.dj("file", { id: +b.dataset.djFile }));
+    $("djListe").querySelectorAll("[data-dj-suppr]").forEach(b => b.onclick = async () => { const m = djDisco.find(x => x.id === +b.dataset.djSuppr);
+      if (!await garde(`« ${m.titre} » sera retirée de la discothèque.`, { titre: "Retirer cette musique ?", annuler: true, ok: "Retirer", danger: true })) return;
+      try { await api("DELETE", `/api/musiques/${m.id}`); chargerDisco(); } catch (e) { garde(e.message); } });
+  }
+  $("djRecherche").oninput = afficherDisco;
+  setInterval(() => { if (mxOuverte && mxLieu === "fetes" && !document.hidden) chargerDisco(); }, 30000);
+  const dureeAudio = f => new Promise(ok => { const a = new Audio(), u = URL.createObjectURL(f); a.preload = "metadata"; a.onloadedmetadata = () => { URL.revokeObjectURL(u); ok(isFinite(a.duration) ? a.duration : null); }; a.onerror = () => { URL.revokeObjectURL(u); ok(null); }; a.src = u; });
+  $("djFichier").onchange = async e => {
+    const fichiers = [...e.target.files]; e.target.value = ""; $("djErreur").hidden = true; if (!fichiers.length) return;
+    $("djEnvoi").hidden = false;
+    for (const f of fichiers) {
+      try {
+        const nom = f.name.replace(/\.[^.]+$/, "").replace(/_/g, " ").trim(), parts = nom.split(/\s+-\s+/);
+        const [artiste, titre] = parts.length > 1 ? [parts[0], parts.slice(1).join(" - ")] : ["", nom];
+        const type = f.type || (/\.mp3$/i.test(f.name) ? "audio/mpeg" : /\.m4a$/i.test(f.name) ? "audio/mp4" : /\.ogg$/i.test(f.name) ? "audio/ogg" : "");
+        const j = await api("POST", "/api/musiques", { titre, artiste, taille: f.size, type, duree: await dureeAudio(f) });
+        for (let n = 0; n < j.morceaux; n++) {
+          const r = await fetch(`/api/musiques/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + moi.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() });
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).erreur || "Envoi interrompu");
+          $("djEnvoiBarre").style.width = ((n + 1) / j.morceaux * 100) + "%"; $("djEnvoiTxt").textContent = `${titre} : ${Math.round((n + 1) / j.morceaux * 100)} %`;
+        }
+      } catch (err) { $("djErreur").textContent = `${f.name} : ${err.message}`; $("djErreur").hidden = false; }
+    }
+    $("djEnvoi").hidden = true; chargerDisco();
+  };
+
+  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxPlein").onclick = () => { const s = $("mxScene"); if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
   async function menuAncien(m, p) {
@@ -2223,6 +2330,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.5", "11 octobre 2026", ["Salle des fêtes de la Matrice : le DJ ! Chacun dépose ses musiques dans la discothèque des anciens, et ce qui passe est entendu en même temps par tous ceux qui sont dans la salle (file d'attente, suivant, arrêter)"]],
     ["2.4", "11 octobre 2026", ["Matrice : la salle des fêtes, à l'intérieur du bâtiment de droite (carrelage à petits carreaux, lambris, portes vitrées sur la cour, long bar en bois à l'ancienne sur les trois quarts, boule à facettes au plafond, tables à nappes blanches et chaises d'école au fond, escalier carrelé de 5 marches avec ses rampes en fer forgé vers une double porte marron, coin du DJ avec platines, enceintes, jeux de lumière et fumée) ; on y entre par les portes vitrées des marches"]],
     ["2.3", "11 octobre 2026", ["Cour d'honneur : trois voûtes au bout de chacun des deux bâtiments de plain-pied, avec un autocar bleu de la gendarmerie garé dans chacune"]],
     ["2.2", "11 octobre 2026", ["Matrice : la cour d'honneur refaite d'après les photos (bâtiment de brique à balcons, porche carré et son horloge, bâtiments de plain-pied avec leurs marches) et les vieux immeubles parisiens tout autour"]],

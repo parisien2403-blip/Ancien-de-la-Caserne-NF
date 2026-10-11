@@ -865,6 +865,7 @@ export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 /* --- la connexion en direct --- */
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
+export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 export function avatarChange() { /* le serveur prévient tout le monde lui-même */ }
 function connecter() {
@@ -886,6 +887,7 @@ function connecter() {
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 30) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
+    else if (m.t === "dj") ctx.surDJ && ctx.surDJ(m.dj);
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };
   ws.onclose = ev => {
