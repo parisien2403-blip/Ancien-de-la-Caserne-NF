@@ -1353,7 +1353,7 @@ function construireLieu(id, scene) {
       if (signe === "play") { x.moveTo(48, 34); x.lineTo(96, 62); x.lineTo(48, 90); } else x.rect(40, 38, 48, 48); x.fill(); }));
     const texPlay = bouton("#2f9e5b", "play"), texStop = bouton("#c4394a", "stop");
     const btn = new THREE.Sprite(new THREE.SpriteMaterial({ map: texPlay, depthTest: false, transparent: true })); btn.renderOrder = 10;
-    btn.position.set(-1.75, 1.35, dz - .35); btn.scale.set(.55, .55, 1); scene.add(btn); L.boutonDJ = btn;
+    btn.position.set(-3.4, .5, dz - .46); btn.scale.set(.3, .3, 1); scene.add(btn); L.boutonDJ = btn;   // sur le devant de la nappe blanche, entre les deux tables
     L.majBoutonDJ = (joue) => { btn.material.map = joue ? texStop : texPlay; btn.material.needsUpdate = true; };
 
     // lumière de la salle
@@ -1451,7 +1451,7 @@ export async function ouvrir(ctx) {
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     if (M.L.boutonDJ) { const q = M.L.boutonDJ.position.clone().project(M.camera);
-      if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(36, r.width * .045)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
+      if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     const rc = (M.L.raccourcis || []).find(q => ray.intersectObject(q.obj)[0]);
     if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
