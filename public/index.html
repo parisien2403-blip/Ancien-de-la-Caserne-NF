@@ -1990,7 +1990,7 @@
   }
   /* ----- Le DJ : la même musique, au même moment, pour tous ceux de la salle des fêtes ----- */
   const djAudio = new Audio(); djAudio.preload = "auto";
-  let djEtat = { courant: null, file: [] }, djEcoute = false, djDisco = [], djFiniEnvoye = null, djVolume = 1;
+  let djEtat = { courant: null, file: [] }, djEcoute = true, djDisco = [], djFiniEnvoye = null, djVolume = 1;
   const djSecondes = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   function djSynchro() {
     const c = djEtat.courant;
@@ -2009,6 +2009,8 @@
       if (Math.abs(djAudio.currentTime - pos) > 1.5) { try { djAudio.currentTime = pos; } catch (e) {} } djAudio.play().catch(() => {}); };
     if (!djAudio.src.endsWith(src)) { djAudio.src = src; djAudio.onloadedmetadata = cale; djAudio.load(); } else cale();
   }
+  // le son est ouvert d'office ; le navigateur n'autorise la lecture qu'après un geste : au premier toucher dans la Matrice, la musique part
+  document.addEventListener("pointerdown", () => { if (mxOuverte && djEcoute && djEtat.courant && djAudio.paused) djSynchro(); }, true);
   djAudio.ontimeupdate = () => { const d = djAudio.duration; $("djProgres").style.width = d ? (djAudio.currentTime / d * 100) + "%" : "0"; };
   djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
@@ -2533,6 +2535,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.18.1", "11 octobre 2026", ["La musique de la fête s'entend d'office dans la Matrice (plus besoin d'appuyer sur « Écouter ») : elle démarre au premier toucher de l'écran ; 🔇 pour couper"]],
     ["3.18", "11 octobre 2026", ["Nouveau personnage : Mr Miner, le barman, en chemise et grand tablier bleu, derrière le grand comptoir de la salle des fêtes ; il va et vient, essuie les verres, les range ; dès que quelqu'un s'assoit au bar, il vient le voir et lui pose un verre sur le comptoir", "(Administrateur) bouton « 🍷 Mr Miner, le barman » pour régler sa tête, ses vêtements et son nom"]],
     ["3.17.1", "11 octobre 2026", ["Le vestibule est agrandi (5,20 m × 4,80 m) et la sortie vers la cour d'honneur est élargie (1,60 m) : on sort et on entre facilement"]],
     ["3.17", "11 octobre 2026", ["La nuit, la musique de la fête tourne toute seule, en boucle : toutes les pistes de la discothèque, l'une après l'autre (si quelqu'un l'arrête avec ⏹, elle reste arrêtée une demi-heure)", "Onglet Salle des fêtes : la console n'y est visible que pour l'administrateur ; les autres la découvrent en surprise au bar du sous-sol, dans la Matrice"]],
