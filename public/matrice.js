@@ -486,7 +486,7 @@ function construireRue(A, T, L, scene) {
   facade.castShadow = false;
   /* --- le passage sous le porche (d'après les photos) : on y marche jusqu'à la cour d'honneur.
      Les deux grands battants noirs ouverts contre les murs, les arceaux, le pavé, les trottoirs le long des murs,
-     les murs crème, à gauche la porte du poste de police, à droite celle du sas, la barrière, le « 10 », les plantes, les lampes ;
+     les murs crème, à gauche la porte du poste de police, la barrière, le « 10 », les plantes, les lampes ;
      au bout, la cour d'honneur (le bâtiment de brique aux balcons blancs et son horloge). */
   const PZ0 = FZ, PZ1 = FZ - 14, PL = 2.4, fer2 = A.mat({ color: 0x141414, roughness: .45, metalness: .5 });
   const pav = A.ajoute(new THREE.PlaneGeometry(PL * 2, 14), A.mat({ map: tex(T.paves, 2.5, 7), color: 0x9a948a }), 0, .012, FZ - 7, false); pav.rotation.x = -Math.PI / 2;
@@ -509,7 +509,7 @@ function construireRue(A, T, L, scene) {
     for (let k = 0; k < 9; k++) { const f = A.ajoute(new THREE.ConeGeometry(.14, .9, 5), A.mat({ color: k % 2 ? 0x3c6b32 : 0x4f8a3e, roughness: 1 }), sg * (PL - .45) + Math.cos(k * .7) * .2, 1.0, FZ - 13.2 + Math.sin(k * .7) * .2);
       f.rotation.set(Math.sin(k * 1.3) * .7, 0, Math.cos(k * 1.3) * .7); }
   }
-  // à gauche : la porte du poste de police ; à droite : la porte du sas
+  // à gauche : la porte du poste de police
   const porteMur = (sg, z, titre) => {
     const g = new THREE.Group(); g.position.set(sg * (PL - .02), 0, z); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
     const cadre = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.65, .06), A.mat({ color: 0xcfc5ae })); cadre.position.y = 1.47; g.add(cadre);
@@ -519,9 +519,8 @@ function construireRue(A, T, L, scene) {
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(.9, .26), new THREE.MeshStandardMaterial({ map: tex(toile(270, 78, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8);
       x.fillStyle = "#f4f1e6"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(titre, w / 2, 50); })) })); pl.position.set(0, 2.95, .05); g.add(pl);
     return g; };
-  porteMur(-1, FZ - 6.2, "POSTE DE POLICE"); porteMur(1, FZ - 8.6, "SAS");
+  porteMur(-1, FZ - 6.2, "POSTE DE POLICE");
   raccourci(L, scene, [.6, 2.5, 1.4], [-(PL - .2), 1.3, FZ - 6.2], { info: "🚓 Le poste de police : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
-  raccourci(L, scene, [.6, 2.5, 1.4], [PL - .2, 1.3, FZ - 8.6], { info: "🚪 Le sas : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
   // sur le mur de droite (face à la cour), sous vitrine : l'affiche du garde républicain de 1887 (Jeanniot), grandeur nature, de la largeur d'une porte
   const imgA = new Image(), tA = new THREE.Texture(imgA); tA.colorSpace = THREE.SRGBColorSpace; imgA.onload = () => { tA.needsUpdate = true; }; imgA.src = "images/affiche-1887.jpg";
   const vit = new THREE.Group(); vit.position.set(PL - .02, 1.38, FZ - 10.2); vit.rotation.y = -Math.PI / 2; scene.add(vit);
