@@ -973,9 +973,10 @@ function construireLieu(id, scene) {
           const PX = 14, PY = h - 150, PW = 84, PH = 150;
           x.fillStyle = "#cfc6b3"; x.fillRect(PX - 8, PY - 40, PW + 16, PH + 40);
           x.fillStyle = "#5e3820"; x.fillRect(PX, PY - 32, PW, 28); x.fillStyle = "#9fb3bf"; x.fillRect(PX + 5, PY - 28, PW - 10, 20);
-          for (const s of [0, 1]) { const X = PX + s * PW / 2; x.fillStyle = "#6b4226"; x.fillRect(X + 1, PY, PW / 2 - 2, PH);
-            x.fillStyle = "#8ea4b2"; x.fillRect(X + 6, PY + 8, PW / 2 - 12, PH * .52); x.fillStyle = "#6b4226"; x.fillRect(X + PW / 4 - 1, PY + 8, 3, PH * .52); x.fillRect(X + 6, PY + 8 + PH * .26, PW / 2 - 12, 3);
-            x.strokeStyle = "#4c2c17"; x.lineWidth = 2; x.strokeRect(X + 7, PY + PH * .64, PW / 2 - 14, PH * .28); x.fillStyle = "#c9a227"; x.fillRect(X + (s ? 5 : PW / 2 - 9), PY + PH * .55, 4, 12); }
+          // la porte est ouverte : dans l'embrasure, l'escalier qui descend au sous-sol, éclairé
+          { const g = x.createLinearGradient(0, PY, 0, PY + PH); g.addColorStop(0, "#2a1d14"); g.addColorStop(.45, "#6e4e33"); g.addColorStop(1, "#c9a67a"); x.fillStyle = g; x.fillRect(PX, PY, PW, PH);
+            x.fillStyle = "#e6d9bd"; x.fillRect(PX, PY, 10, PH); x.fillRect(PX + PW - 10, PY, 10, PH);
+            for (let k = 0; k < 6; k++) { const y = PY + PH - 8 - k * 14; x.fillStyle = `rgba(${200 - k * 22},${170 - k * 20},${120 - k * 15},1)`; x.fillRect(PX + 10, y - 10, PW - 20, 12); x.fillStyle = "rgba(60,40,20,.6)"; x.fillRect(PX + 10, y, PW - 20, 2); } }
           x.fillStyle = "rgba(120,70,40,.45)"; x.font = "bold 26px Georgia"; x.textAlign = "center"; x.fillText("B A R", PX + PW / 2, PY - 52);
           x.fillStyle = "#2a2a2a"; x.fillRect(PX + PW / 2 - 6, PY - 96, 12, 8);
           // les deux fenêtres, à droite de la porte
@@ -990,6 +991,13 @@ function construireLieu(id, scene) {
         A.ajoute(new THREE.BoxGeometry(.9, .17, 2.3), A.mat({ color: 0xc9c3b6 }), RX - .45, .085, RZ - 1.05);              // la marche devant la porte
         const sl = A.ajoute(new THREE.PlaneGeometry(3.5, RL), A.mat({ map: tex(T.dalles, 2, 2) }), fx + 1.75, .014, RZ, false); sl.rotation.x = -Math.PI / 2;
         const lt = new THREE.PointLight(0xffd59a, 12, 8, 1.6); lt.position.set(RX - .5, 3.6, RZ - 1.1); lt.visible = false; scene.add(lt); L.nuitObjets.push(lt);
+        // ses deux battants vitrés, ouverts à plat contre le mur de part et d'autre ; la porte mène au sous-sol (vestibule, bar, console)
+        const PZ0 = RZ - 2 + 14 / 200 * RL, PWm = 84 / 200 * RL, PHm = 150 / 310 * RH, brunP = A.mat({ color: 0x6b4226, roughness: .5 }), vitreP = A.mat({ color: 0x8ea4b2, roughness: .2 });
+        for (const [zc, sg] of [[PZ0, -1], [PZ0 + PWm, 1]]) { const bt = new THREE.Group(); bt.position.set(RX - .03, 0, zc + sg * PWm / 4); scene.add(bt);
+          const pa = new THREE.Mesh(new THREE.BoxGeometry(.05, PHm, PWm / 2 - .02), brunP); pa.position.y = PHm / 2; bt.add(pa);
+          const vi = new THREE.Mesh(new THREE.BoxGeometry(.06, PHm * .5, PWm / 2 - .16), vitreP); vi.position.y = PHm * .7; bt.add(vi); }
+        const lueurBar = new THREE.PointLight(0xffc98a, 3, 4, 1.5); lueurBar.position.set(RX - .6, 1.6, PZ0 + PWm / 2); scene.add(lueurBar);
+        L.porteBar = [RX, PZ0 + PWm / 2];
       }
       const al = A.ajoute(new THREE.PlaneGeometry(3, 34), A.mat({ map: tex(T.dalles, 1.5, 17) }), fx - cote * 3.5, .012, -2, false); al.rotation.x = -Math.PI / 2;
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
@@ -1119,12 +1127,19 @@ function construireLieu(id, scene) {
       const y = HSOC + .55 + f * 3 + .875, fe = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.65), lumiere()); fe.rotation.y = Math.PI; fe.position.set(cx, y, ZF - .02); fe.visible = false; scene.add(fe); L.nuitObjets.push(fe);
       if (alea() < .4) { const s = silhouette(1.4, 1.65); s.rotation.y = Math.PI; s.position.set(cx, y, ZF - .03); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
 
-    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
-    L.zone = [-10.4, 10.4, -17.6, 29.8];
+    const PB = L.porteBar || [16, 9.12];
+    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6))
+      || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
+      || (x >= PB[0] - .35 && x < PB[0] + .4 && Math.abs(z - PB[1]) < .45)                                      // sa porte, ouverte
+      || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
+    L.zone = [-10.4, 16.6, -17.6, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
+    // la porte « BAR » : on descend au sous-sol, on arrive dans le vestibule
+    L.portails.push({ dans: (x, z) => x > PB[0] - .1 && Math.abs(z - PB[1]) < .8, vers: "cave", arrivee: [.55, 0], yaw: Math.PI / 2 });
+    raccourci(L, scene, [.6, 3, 1.7], [PB[0], 1.5, PB[1]], { marche: [PB[0] + .2, PB[1]] });
     // la caméra reste sous la voûte quand on est dans le passage
     L.contraindreCam = (pos, moi) => { if (moi.g.position.z > 15.6) { pos.y = Math.min(pos.y, 3.7); pos.z = Math.min(pos.z, 29.3); if (pos.z > 15.2) pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); else { pos.x = Math.max(-11.3, Math.min(11.3, pos.x)); pos.z = Math.max(-17.1, pos.z); } return true; } };
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
@@ -1587,6 +1602,7 @@ function construireLieu(id, scene) {
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
     L.portails.push({ dans: (x, z) => Math.abs(x) < .9 && z > Z1 + 1.35, vers: "cave", arrivee: [0, .6], yaw: 0 });
+    L.horsPNJ = (x, z) => Math.abs(x) < EL + .5 && z > EZ - 1.5;          // le chef de poste ne descend pas l'escalier
     raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 1.5] });
     L.plafond = HT - .35;
     L.depart = [0, Z1 - 6]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
@@ -1632,7 +1648,22 @@ function construireLieu(id, scene) {
 
     /* --- le vestibule --- */
     const lpE = 1.4, hp = 2.3;
-    mur("z", -VX - .15, VZ0, VZ1, 1); mur("z", VX + .15, VZ0, VZ1, -1);
+    mur("z", -VX - .15, VZ0, VZ1, 1);
+    /* le mur de droite du vestibule : une porte ouverte, et derrière, l'escalier qui monte à la porte « BAR » de la cour d'honneur */
+    const lpB = 1.0;
+    mur("z", VX + .15, VZ0, -lpB / 2, -1); mur("z", VX + .15, lpB / 2, VZ1, -1);
+    A.ajoute(new THREE.BoxGeometry(.3, HT - hp, lpB), peinture, VX + .15, hp + (HT - hp) / 2, 0, false);
+    A.ajoute(new THREE.BoxGeometry(.1, .14, lpB + .3), cadre, VX - .04, hp + .07, 0, false);
+    for (const sg of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.1, hp, .14), cadre, VX - .04, hp / 2, sg * (lpB / 2 + .08), false);
+      // ses deux battants, rabattus à plat contre le mur du vestibule
+      A.ajoute(new THREE.BoxGeometry(.05, hp - .04, lpB / 2 - .02), brun, VX - .14, hp / 2, sg * (lpB / 2 + .17 + lpB / 4), false);
+      for (const [yy, hh] of [[.55, .7], [1.5, .95]]) A.ajoute(new THREE.BoxGeometry(.02, hh, lpB / 2 - .16), brunC, VX - .17, yy + (hh > .8 ? .1 : 0), sg * (lpB / 2 + .17 + lpB / 4), false); }
+    { const marcheB = A.mat({ map: tex(carreaux, .4, 1.2), roughness: .5 });
+      for (let i = 0; i < 9; i++) A.ajoute(new THREE.BoxGeometry(.3, .17 * (i + 1), lpB), marcheB, VX + .45 + i * .3, .17 * (i + 1) / 2, 0, false);
+      for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(3.2, 4.5, .3), peinture, VX + 1.9, 2.25, sg * (lpB / 2 + .15), false);
+      A.ajoute(new THREE.BoxGeometry(3.2, .3, lpB), peinture, VX + 1.9, 3.6, 0, false);
+      A.ajoute(new THREE.BoxGeometry(.2, 4.5, lpB), A.mat({ color: 0x2a2018 }), VX + 3.4, 2.25, 0, false);
+      const lb = new THREE.PointLight(0xffe0b0, 2.5, 5, 1.4); lb.position.set(VX + 2.4, 2.9, 0); scene.add(lb); }
     // la porte d'où l'on vient (+z) : derrière, les marches qui remontent vers la salle des fêtes
     mur("x", VZ1 + .15, -VX - .3, -lpE / 2, -1); mur("x", VZ1 + .15, lpE / 2, VX + .3, -1);
     A.ajoute(new THREE.BoxGeometry(lpE, HT - hp, .3), peinture, 0, hp + (HT - hp) / 2, VZ1 + .15, false);
@@ -1761,13 +1792,17 @@ function construireLieu(id, scene) {
     obstacles.push(babyFoot(A, 2.25, FM - 1.6));
     L.limites = (x, z) => (Math.abs(x) < VX - .35 && z > VZ0 + .3 && z < VZ1 - .3)
       || (Math.abs(x) < .4 && z >= VZ1 - .3 && z < VZ1 + .5)                                               // la porte de l'escalier
+      || (Math.abs(z) < .25 && x >= VX - .35 && x < VX + .5)                                               // la porte de la cour (BAR)
       || (Math.abs(x) < lpF / 2 - .25 && z > VZ0 - .7 && z <= VZ0 + .3)                                  // la porte d'en face
       || (Math.abs(x) < GX - .4 && z > GZ0 + .4 && z < GZ1 - .65 && !obstacles.some(([a, b, c, d]) => x > a - .15 && x < b + .15 && z > c - .15 && z < d + .15));
     L.portails.push({ dans: (x, z) => Math.abs(x) < .8 && z > VZ1 + .3, vers: "fetes", arrivee: [0, 14.55], yaw: 0 });
+    L.portails.push({ dans: (x, z) => Math.abs(z) < .6 && x > VX + .3, vers: "grande", arrivee: [14.6, 9.12], yaw: Math.PI / 2 });
+    raccourci(L, scene, [.4, hp, lpB], [VX + .5, hp / 2, 0], { vers: "grande", arrivee: [14.6, 9.12], yaw: Math.PI / 2 });
+    L.sansPNJ = true;
     raccourci(L, scene, [lpE, hp, .4], [0, hp / 2, VZ1 + .5], { vers: "fetes", arrivee: [0, 14.55], yaw: 0 });
     // la caméra reste dans la pièce où elle se trouve (le vestibule est étroit)
     L.contraindreCam = (pos) => { pos.y = Math.min(pos.y, HT - .25);
-      if (pos.z > VZ0 - .15) { pos.x = Math.max(-VX + .15, Math.min(VX - .15, pos.x)); pos.z = Math.min(pos.z, VZ1 - .1); }
+      if (pos.z > VZ0 - .15) { pos.x = Math.max(-VX + .15, Math.min(VX - .15, pos.x)); pos.z = Math.max(VZ0 + .1, Math.min(pos.z, VZ1 - .1)); }
       else { pos.x = Math.max(-GX + .2, Math.min(GX - .2, pos.x)); pos.z = Math.max(GZ0 + .2, pos.z); } return true; };
     L.interieur = true; L.boite = [-GX, GX, GZ0, VZ1]; L.zone = [-GX, GX, GZ0, VZ1 + .6]; L.plafond = HT - .25;
     L.depart = [0, .6]; L.cam = { pos: [0, 2.2, VZ1 - .2], vise: [0, 1.2, GZ0] };
@@ -1852,6 +1887,16 @@ export async function ouvrir(ctx) {
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
     if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
+    // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
+    if (M.L.interieur) {
+      const sols = [M.L.sol, ...(M.L.solsPlus || [])];
+      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere) return false; if (sols.includes(o)) return true;
+        const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
+      if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
+        if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true);
+        else { const c = M.camera.position, dx = c.x - h.point.x, dz = c.z - h.point.z, l = Math.hypot(dx, dz) || 1; allerVers(h.point.x + dx / l * .5, h.point.z + dz / l * .5, true); }
+        return; }
+    }
     const s = ray.intersectObjects([M.L.sol, ...(M.L.solsPlus || [])])[0];
     if (s) allerVers(s.point.x, s.point.z, true);
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
@@ -2109,7 +2154,7 @@ const PNJ = -1, PHRASES = {
 const phrasePNJ = (n) => { const l = [...PHRASES.tous, ...(PHRASES[M.lieu] || []), ...(M.lieu === "fetes" && M.djJoue ? PHRASES.musique : [])]; return l[Math.floor(hasard(n) * l.length)]; };
 const hasard = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 function ajouterPNJ() {
-  if (!M || !M.L || M.gens.has(PNJ)) return;
+  if (!M || !M.L || M.gens.has(PNJ) || M.L.sansPNJ) return;      // le chef de poste ne vient pas au sous-sol
   const [x, z] = pointPNJ(Math.floor(Date.now() / 9000) - 1);
   const P = (M.ctx.pnj && M.ctx.pnj()) || {};
   ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
@@ -2117,7 +2162,7 @@ function ajouterPNJ() {
 }
 function pointPNJ(n) {
   const g = M.lieu === "fetes" ? 1000 : 0;
-  for (let k = 0; k < 40; k++) { const x = -12 + hasard(g + n * 3.1 + k) * 24, z = -16 + hasard(g + n * 7.3 + k * 1.7) * 30; if (M.L.limites(x, z)) return [x, z]; }
+  for (let k = 0; k < 40; k++) { const x = -12 + hasard(g + n * 3.1 + k) * 24, z = -16 + hasard(g + n * 7.3 + k * 1.7) * 30; if (M.L.limites(x, z) && !(M.L.horsPNJ && M.L.horsPNJ(x, z))) return [x, z]; }
   return M.L.depart;
 }
 /* --- Manu, le DJ : il ne quitte pas ses platines (salle des fêtes seulement) --- */
