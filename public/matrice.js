@@ -522,12 +522,12 @@ function construireRue(A, T, L, scene) {
   porteMur(-1, FZ - 6.2, "POSTE DE POLICE"); porteMur(1, FZ - 8.6, "SAS");
   raccourci(L, scene, [.6, 2.5, 1.4], [-(PL - .2), 1.3, FZ - 6.2], { info: "🚓 Le poste de police : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
   raccourci(L, scene, [.6, 2.5, 1.4], [PL - .2, 1.3, FZ - 8.6], { info: "🚪 Le sas : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
-  // sur le mur de droite (face à la cour), sous vitrine : l'affiche du garde républicain de 1887 (Jeanniot)
+  // sur le mur de droite (face à la cour), sous vitrine : l'affiche du garde républicain de 1887 (Jeanniot), grandeur nature, de la largeur d'une porte
   const imgA = new Image(), tA = new THREE.Texture(imgA); tA.colorSpace = THREE.SRGBColorSpace; imgA.onload = () => { tA.needsUpdate = true; }; imgA.src = "images/affiche-1887.jpg";
-  const vit = new THREE.Group(); vit.position.set(PL - .02, 1.75, FZ - 10.2); vit.rotation.y = -Math.PI / 2; scene.add(vit);
-  const cadreV = new THREE.Mesh(new THREE.BoxGeometry(.98, 1.36, .08), A.mat({ color: 0x3a2a1c, roughness: .4 })); cadreV.position.z = .04; vit.add(cadreV);
-  const aff = new THREE.Mesh(new THREE.PlaneGeometry(.84, 1.2), new THREE.MeshStandardMaterial({ map: tA, roughness: .9 })); aff.position.z = .085; vit.add(aff);
-  const verreV = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV);
+  const vit = new THREE.Group(); vit.position.set(PL - .02, 1.38, FZ - 10.2); vit.rotation.y = -Math.PI / 2; scene.add(vit);
+  const cadreV = new THREE.Mesh(new THREE.BoxGeometry(1.14, 2.36, .08), A.mat({ color: 0x3a2a1c, roughness: .4 })); cadreV.position.z = .04; vit.add(cadreV);
+  const aff = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.2), new THREE.MeshStandardMaterial({ map: tA, roughness: .9 })); aff.position.z = .085; vit.add(aff);
+  const verreV = new THREE.Mesh(new THREE.PlaneGeometry(1.04, 2.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV);
   // à droite, vers le fond : l'armoire rouge, la borne de la barrière et sa lisse blanche, posée en travers
   A.ajoute(new THREE.BoxGeometry(.3, 1.3, .5), A.mat({ color: 0xc8202a, roughness: .5 }), PL - .2, .79, FZ - 11.6);
   A.ajoute(new THREE.BoxGeometry(.32, 1.0, .32), A.mat({ color: 0xd8262e, roughness: .45 }), 1.55, .5, FZ - 12.2);
