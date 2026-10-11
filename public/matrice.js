@@ -1073,11 +1073,14 @@ function construireLieu(id, scene) {
       const y = HSOC + .55 + f * 3 + .875, fe = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.65), lumiere()); fe.rotation.y = Math.PI; fe.position.set(cx, y, ZF - .02); fe.visible = false; scene.add(fe); L.nuitObjets.push(fe);
       if (alea() < .4) { const s = silhouette(1.4, 1.65); s.rotation.y = Math.PI; s.position.set(cx, y, ZF - .03); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
 
-    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 2.0 && z >= 14.8 && z < 19.5);
-    L.zone = [-10.4, 10.4, -17.6, 24.2];
-    // le porche de cette façade mène à la rue du Faubourg-Poissonnière (on arrive sur le trottoir, face à la caserne)
-    L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [0, -24.8], yaw: Math.PI });
-    raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { vers: "rue", arrivee: [0, -24.8], yaw: Math.PI });
+    L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
+    L.zone = [-10.4, 10.4, -17.6, 29.8];
+    /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
+       au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
+    L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
+    raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
+    // la caméra reste sous la voûte quand on est dans le passage
+    L.contraindreCam = (pos, moi) => { if (moi.g.position.z > 15.6) { pos.y = Math.min(pos.y, 3.7); pos.z = Math.min(pos.z, 29.3); if (pos.z > 15.2) pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); else { pos.x = Math.max(-11.3, Math.min(11.3, pos.x)); pos.z = Math.max(-17.1, pos.z); } return true; } };
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
     L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72]; L.boite = [-11.6, 11.6, -17.4, 15.1];
     const cols5 = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
@@ -1633,6 +1636,7 @@ export async function ouvrir(ctx) {
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     const rc = (M.L.raccourcis || []).find(q => ray.intersectObject(q.obj)[0]);
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
+    if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
     if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
     const s = ray.intersectObject(M.L.sol)[0];
     if (s) allerVers(s.point.x, s.point.z, true);
