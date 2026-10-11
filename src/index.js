@@ -337,7 +337,7 @@ export class Compteur extends DurableObject {
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, x: a.x, z: a.z }; }
 
   /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
   async fetch(request) {
@@ -408,7 +408,7 @@ export class Compteur extends DurableObject {
       const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
       await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
     } else if (m.t === "danse" && a.lieu) {
-      a.danse = ["disco", "charleston", "madison"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
+      a.danse = ["disco", "charleston", "madison", "thriller"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);

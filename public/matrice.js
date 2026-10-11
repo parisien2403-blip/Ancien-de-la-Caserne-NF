@@ -78,6 +78,9 @@ export function dessinerBonhomme(o, tete) {
       const cible = accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228]
         : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312]
         // le DJ : les deux mains sur les platines (mix1), une main au casque (mix2), le poing levé (mix3)
+        // Thriller : les deux bras pliés en griffes de zombie, d'un côté puis de l'autre
+        : o.pose === "thriller1" ? (sens > 0 ? [12, 176] : [70, 150]) : o.pose === "thriller2" ? (sens > 0 ? [130, 150] : [188, 176])
+        : o.pose === "thriller3" ? (sens > 0 ? [22, 96] : [178, 96])
         : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
@@ -94,7 +97,10 @@ export function dessinerBonhomme(o, tete) {
         x.beginPath(); x.roundRect(4, 98, 6, 30, 3); x.fill();
         x.beginPath(); x.ellipse(-12, 96, 4, 8, -.5, 0, 7); x.fill();
         x.strokeStyle = "rgba(120,70,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-8, 99); x.lineTo(3, 99); x.moveTo(-8, 103); x.lineTo(3, 103); x.stroke();
-      } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill(); }
+      } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();
+        // les griffes du zombie : quatre doigts crochus
+        if (/^thriller/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
+          for (let f = -1.5; f <= 1.5; f++) { x.beginPath(); x.moveTo(f * 5.5, 102); x.quadraticCurveTo(f * 7.5, 116, f * 4 + 3, 120); x.stroke(); } } }
       x.restore();
     };
     bras(48, 1); bras(152, -1);
@@ -1482,7 +1488,15 @@ export async function ouvrir(ctx) {
       if (p.corps && p.poses) {
         const sx = tailleBonhomme() * .476 * 1.6;
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
-        if (p.info.danse === "madison") {
+        if (p.info.danse === "thriller") {
+          /* Thriller : griffes à gauche (2 temps, la tête et les épaules penchées), griffes à droite (2 temps)… et tous les 8 temps, les bras levés devant, en avançant */
+          const ph = t / 380 + p.info.numero * .7, k = Math.floor(ph) % 8, v = ph % 1;
+          const pose = k >= 6 ? "thriller3" : Math.floor(k / 2) % 2 ? "thriller2" : "thriller1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          const sens = pose === "thriller1" ? -1 : pose === "thriller2" ? 1 : 0, coup = Math.sin(Math.min(1, v * 2.5) * Math.PI / 2);
+          p.corps.material.rotation = -sens * .1 * coup; p.corps.position.x += (sens * .14 * coup - p.corps.position.x) * .3;
+          if (!p.cible) p.corps.position.y = pose === "thriller3" ? Math.abs(Math.sin(ph * Math.PI)) * .06 : (v < .2 ? .04 * (1 - v / .2) : 0); p.dansait = true; }
+        else if (p.info.danse === "madison") {
           /* le Madison, en boucle sur 16 temps :
              1-4 pointe du pied gauche sur le côté, clap, pointe du pied droit, clap ;
              5-8 genou gauche levé et clap sous le genou, clap, genou droit levé et clap, clap ;
@@ -1640,7 +1654,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
@@ -1718,8 +1732,8 @@ function animerPNJ() {
   if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); viser(p, x, z); }
   const h = hasard(Math.floor(Date.now() / 20000) * 1.9);
   // si la musique qui passe est un Madison (ou un Charleston, ou du disco), il la danse tout du long
-  const air = M.lieu === "fetes" && M.djJoue ? (/madison/.test(M.djTitre) ? "madison" : /charleston/.test(M.djTitre) ? "charleston" : /disco|bee ?gees|travolta|stayin|night fever/.test(M.djTitre) ? "disco" : null) : null;
-  p.info.danse = air || (M.lieu === "fetes" && h < .5 && (h < .12 ? "disco" : h < .24 ? "charleston" : h < .36 ? "madison" : "balance"));
+  const air = M.lieu === "fetes" && M.djJoue ? (/madison/.test(M.djTitre) ? "madison" : /thriller|jackson/.test(M.djTitre) ? "thriller" : /charleston/.test(M.djTitre) ? "charleston" : /disco|bee ?gees|travolta|stayin|night fever/.test(M.djTitre) ? "disco" : null) : null;
+  p.info.danse = air || (M.lieu === "fetes" && h < .55 && (h < .12 ? "disco" : h < .24 ? "charleston" : h < .36 ? "madison" : h < .44 ? "thriller" : "balance"));
   const b = Math.floor(Date.now() / 17000);
   if (p.parole !== b) { p.parole = b; if (p.parole !== undefined && hasard(b * 9.7 + (M.lieu === "fetes" ? 5 : 0)) < .45) dire(PNJ, phrasePNJ(b * 3.3)); }
   // il salue celui qui s'approche de lui (pas plus d'une fois par minute et demie)
@@ -1794,7 +1808,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   M.ctx.surLieu && M.ctx.surLieu(id);
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
-const styleDanse = v => ["disco", "charleston", "madison"].includes(v) ? v : v ? "balance" : false;
+const styleDanse = v => ["disco", "charleston", "madison", "thriller"].includes(v) ? v : v ? "balance" : false;
 export function danser(on) {
   const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return;
   const style = styleDanse(on); if (style) M.styleDanse = style;

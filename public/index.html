@@ -1110,7 +1110,7 @@
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
-          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button></div>
+          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button><button class="mx-danse" id="mxThriller" type="button">🧟 Thriller</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
           <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
@@ -1923,7 +1923,8 @@
           $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
           $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco";
           $("mxCharleston").classList.toggle("on", on === "charleston"); $("mxCharleston").textContent = on === "charleston" ? "🛑 Stop" : "🦵 Charleston";
-          $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison"; },
+          $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
+          $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
@@ -1954,6 +1955,7 @@
   $("mxDisco").onclick = () => MX && MX.danser(jeDanse === "disco" ? false : "disco");
   $("mxCharleston").onclick = () => MX && MX.danser(jeDanse === "charleston" ? false : "charleston");
   $("mxMadison").onclick = () => MX && MX.danser(jeDanse === "madison" ? false : "madison");
+  $("mxThriller").onclick = () => MX && MX.danser(jeDanse === "thriller" ? false : "thriller");
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -2493,6 +2495,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.21", "11 octobre 2026", ["Matrice : nouvelle danse 🧟 Thriller (bras de zombie en griffes à gauche, puis à droite, puis levés) ; le chef de poste la danse aussi quand la musique s'appelle Thriller ou Michael Jackson"]],
     ["2.20.1", "11 octobre 2026", ["Salle des fêtes : le bouton ▶ / ⏹ est plus petit, en bas de la nappe blanche du DJ"]],
     ["2.20", "11 octobre 2026", ["Salle des fêtes : Manu, notre DJ, mixe derrière ses platines (avancées un peu) ; l'administrateur règle sa tête, ses vêtements et son nom (bouton 🎧 Manu, le DJ)", "Cour d'honneur la nuit : de petits reflets de la boule à facettes passent par les portes-fenêtres et la porte ouverte ; les lasers bleus sortent aussi, seulement quand ils sont allumés"]],
     ["2.19", "11 octobre 2026", ["Salle des fêtes : les reflets de la boule à facettes sont de petits points, sur le sol, les murs et le plafond, et tournent avec la boule"]],
