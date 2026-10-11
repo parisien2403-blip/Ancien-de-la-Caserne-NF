@@ -43,8 +43,9 @@ const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
 const LIEUX_MATRICE = ["grande", "fetes"];
-const MUSIQUE_MAX = 15 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
-const TENUES_MATRICE = ["garde", "civil", "survet", "robe", "costume"];
+const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume"];
+const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
 // image d'une cartouche : une petite image JPEG/PNG/WebP déjà réduite par l'appli (300 Ko maximum)
@@ -88,6 +89,7 @@ export class Compteur extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_dits (id INTEGER PRIMARY KEY AUTOINCREMENT, lieu TEXT, numero INTEGER, nom TEXT, texte TEXT, cree TEXT)`);
     // le bonhomme du chef de poste (le père de l'administrateur), réglé par l'administrateur
     this.sql.exec(`CREATE TABLE IF NOT EXISTS pnj (id INTEGER PRIMARY KEY, nom TEXT, tenue TEXT, couleur TEXT, reglage TEXT, tete TEXT, v INTEGER DEFAULT 0)`);
+    for (const col of ["bas TEXT", "pieds TEXT"]) { try { this.sql.exec(`ALTER TABLE pnj ADD COLUMN ${col}`); } catch (e) { /* déjà là */ } }
     this.sql.exec(`CREATE TABLE IF NOT EXISTS matrice_sanctions (numero INTEGER PRIMARY KEY, muet_jusqua TEXT, exclu_jusqua TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS signalements (
       id INTEGER PRIMARY KEY AUTOINCREMENT, auteur TEXT, categorie TEXT, texte TEXT, appareil TEXT, cree TEXT, lu INTEGER DEFAULT 0, traite INTEGER DEFAULT 0)`);
@@ -104,7 +106,7 @@ export class Compteur extends DurableObject {
       // l'escalier (lettre A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
       "bat TEXT", "etage INTEGER",
       // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
-      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT"]) {
+      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT", "av_bas TEXT", "av_pieds TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -278,9 +280,9 @@ export class Compteur extends DurableObject {
   /* ----- La Matrice : le bonhomme ----- */
   infoPNJ(token) {
     this.moi(token);
-    const p = this.sql.exec("SELECT nom, tenue, couleur, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = 1").toArray()[0];
+    const p = this.sql.exec("SELECT nom, tenue, couleur, bas, pieds, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = 1").toArray()[0];
     let reglage = null; try { reglage = p && JSON.parse(p.reglage); } catch (e) {}
-    return { nom: (p && p.nom) || "Le chef de poste", tenue: (p && p.tenue) || "garde", couleur: (p && p.couleur) || "#1c2541", reglage, tete_v: p && p.a_tete ? p.v : 0 };
+    return { nom: (p && p.nom) || "Le chef de poste", tenue: (p && p.tenue) || "garde", couleur: (p && p.couleur) || "#1c2541", bas: (p && p.bas) || null, pieds: (p && p.pieds) || null, reglage, tete_v: p && p.a_tete ? p.v : 0 };
   }
   tetePNJ(token) { this.moi(token); const p = this.sql.exec("SELECT tete FROM pnj WHERE id = 1").toArray()[0]; return p && p.tete; }
   async changerPNJ(token, x) {
@@ -290,7 +292,7 @@ export class Compteur extends DurableObject {
     const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
     const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
     if (!this.sql.exec("SELECT 1 FROM pnj WHERE id = 1").toArray().length) this.sql.exec("INSERT INTO pnj (id, v) VALUES (1, 0)");
-    this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, reglage = ?, v = v + 1 WHERE id = 1", nom, tenue, couleur, reglage);
+    this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, bas = ?, pieds = ?, reglage = ?, v = v + 1 WHERE id = 1", nom, tenue, couleur, hexa(x.bas, null), hexa(x.pieds, null), reglage);
     if (x.tete === null) this.sql.exec("UPDATE pnj SET tete = NULL WHERE id = 1");
     else if (x.tete !== undefined) {
       if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
@@ -313,25 +315,26 @@ export class Compteur extends DurableObject {
       if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
       tete = x.tete;
     }
+    this.sql.exec("UPDATE membres SET av_bas = ?, av_pieds = ? WHERE email = ?", hexa(x.bas, null), hexa(x.pieds, null), moi.email);
     if (tete === undefined) this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_reglage = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, reglage, moi.email);
     else this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_reglage = ?, av_tete = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, reglage, tete, moi.email);
     const p = this.personneMatrice(moi.numero);
     // ceux qui sont dans la Matrice voient tout de suite le nouveau bonhomme
-    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
-    return { ok: true, tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage };
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
+    return { ok: true, tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage };
   }
-  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage, fait: p.fait }; }
+  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage, fait: p.fait }; }
   teteAvatar(token, num) {
     this.moi(token);
     const m = this.sql.exec("SELECT av_tete FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.av_tete;
   }
   personneMatrice(num) {
-    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v, av_reglage FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v, av_reglage, av_bas, av_pieds FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
-      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
+      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, tete_v: a.tete_v, reglage: a.reglage, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: !!a.danse, x: a.x, z: a.z }; }
 
   /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
   async fetch(request) {
@@ -361,12 +364,13 @@ export class Compteur extends DurableObject {
     const nb = v => Math.max(-60, Math.min(60, Number(v) || 0));
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu)) {
       const ancien = a.lieu;
-      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
+      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
       const dits = this.sql.exec("SELECT numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));
+      ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && a.lieu === "fetes") {
       const dj = await this.etatDJ();
@@ -383,6 +387,12 @@ export class Compteur extends DurableObject {
       else if (m.t === "dj_retirer") { dj.file.splice(Number(m.i), 1); }
       else return;
       await this.majDJ(dj);
+    } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
+      await this.ctx.storage.put("ambiance", m.mode);
+      const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "danse" && a.lieu) {
+      a.danse = !!m.on; ws.serializeAttachment(a);
+      this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "aller", numero: a.numero, x: a.x, z: a.z }, ws);
@@ -492,7 +502,7 @@ export class Compteur extends DurableObject {
     const titre = texte(x.titre, 90), artiste = texte(x.artiste, 60), taille = Number(x.taille), type = String(x.type || "");
     if (!titre) throw new Refus("Donne un titre à la musique");
     if (!/^audio\/(mpeg|mp3|mp4|x-m4a|aac|ogg|wav|x-wav|webm)$/.test(type)) throw new Refus("Seuls les fichiers audio sont acceptés (MP3, M4A, OGG…)");
-    if (!(taille > 0 && taille <= MUSIQUE_MAX)) throw new Refus("Fichier trop lourd (15 Mo maximum par musique)");
+    if (!(taille > 0 && taille <= MUSIQUE_MAX)) throw new Refus("Fichier trop lourd (50 Mo maximum par musique)");
     const total = this.sql.exec("SELECT COALESCE(SUM(taille), 0) AS t FROM musiques").one().t;
     if (total + taille > DISCO_MAX) throw new Refus("La discothèque est pleine : demande à l'administrateur de faire de la place");
     const morceaux = Math.ceil(taille / MORCEAU);

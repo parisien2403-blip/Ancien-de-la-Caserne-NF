@@ -297,7 +297,22 @@
   .mx-presents span.moi { background: #c4694a; }
   .mx-info { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(31,42,55,.88); color: #fff; padding: 8px 14px; border-radius: 12px; font: 700 13px "Lato", sans-serif; z-index: 3; max-width: 90%; text-align: center; }
   .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
-  .mx-tourner { top: 56px; font-size: 20px; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
+  .mx-tourner { top: 56px; font-size: 20px; }
+  .mx-dire-plein, .mx-fil-plein { display: none; }
+  .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
+  .mx-ambiance button { border: 1.5px solid var(--line); border-radius: 99px; padding: 5px 11px; background: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
+  .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
+  .mx-danse { position: absolute; left: 12px; bottom: 14px; z-index: 3; border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
+  .mx-danse.on { background: #c4694a; }
+  .mx-scene:fullscreen .mx-danse { bottom: 74px; left: auto; right: 12px; }
+  .mx-scene:fullscreen .mx-musique { bottom: 122px; }
+  .mx-scene:fullscreen .mx-fil-plein { bottom: 70px; }
+  .mx-scene:fullscreen .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
+  .mx-dire-plein input { flex: 1; min-width: 0; border: 0; border-radius: 99px; padding: 12px 16px; font: 16px "Lato", sans-serif; background: rgba(255,255,255,.94); outline: none; }
+  .mx-scene:fullscreen .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
+  .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
+  .mx-fil-plein b { color: #f6d465; }
+  .mx-scene:fullscreen .mx-musique { bottom: 74px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
   .mx-musique { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
     background: #f6d465; color: #2b2340; font: 700 15px "Lato", sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; }
@@ -1067,6 +1082,8 @@
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
           <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button>
           <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button></div></div>
+        <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
+          <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
         <div class="mx-scene" id="mxScene">
           <div class="mx-voile" id="mxVoile"><span>Ouverture des grilles…</span></div>
@@ -1075,6 +1092,10 @@
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
+          <button class="mx-danse" id="mxDanse" type="button">💃 Danser</button>
+          <!-- en plein écran : la discussion reste dans la scène -->
+          <div class="mx-fil-plein" id="mxFilPlein"></div>
+          <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
         </div>
         <!-- le DJ de la salle des fêtes : la musique est entendue par tous ceux qui sont dans la salle -->
         <div class="card mx-dj" id="mxDJ" hidden>
@@ -1090,11 +1111,11 @@
           <div class="dj-titre-liste">La discothèque des anciens <small id="djNb"></small></div>
           <input class="search" id="djRecherche" placeholder="Chercher un titre, un artiste…" style="margin:4px 0 8px">
           <div class="dj-liste" id="djListe"></div>
-          <p class="legal" style="text-align:left;margin:8px 0 0">Dépose de préférence tes propres enregistrements ou des musiques libres de droits. 15 Mo au plus par musique.</p>
+          <p class="legal" style="text-align:left;margin:8px 0 0">Dépose de préférence tes propres enregistrements ou des musiques libres de droits. 50 Mo au plus par musique.</p>
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
-        <p class="legal" style="text-align:left">Touche le sol pour marcher, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
+        <p class="legal" style="text-align:left">Touche le sol pour marcher, touche ton bonhomme (ou 💃) pour danser, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
       </div>
 
       <div class="tab" data-tab="vague" hidden>
@@ -1219,7 +1240,9 @@
         </div>
         <p class="aide-champ" id="bhEtat">Le détourage se fait dans ton téléphone : la photo n'est envoyée nulle part, seule la tête découpée est enregistrée.</p>
         <div class="bh-titre">Ma tenue</div><div class="bh-choix" id="bhTenues"></div>
-        <div class="bh-titre">Ma couleur</div><div class="bh-choix" id="bhCouleurs"></div>
+        <div class="bh-titre">Couleur du haut</div><div class="bh-choix" id="bhCouleurs"></div>
+        <div class="bh-titre">Le pantalon</div><div class="bh-choix" id="bhBas"></div>
+        <div class="bh-titre">Les chaussures</div><div class="bh-choix" id="bhPieds"></div>
       </div>
     </div>
     <p class="erreur" id="bhErreur" hidden></p>
@@ -1873,19 +1896,22 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null)]);
-      monAvatar = av; pnjInfo = pj; $("mxPNJ").hidden = !moi.admin;
+      monAvatar = av; pnjInfo = pj; $("mxPNJ").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
         conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; },
         surToucherDJ: allerAuDJ,
-        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
+        surAmbiance: mode => document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)),
+        surDanse: on => { jeDanse = on; $("mxDanse").classList.toggle("on", on); $("mxDanse").textContent = on ? "🛑 Arrêter de danser" : "💃 Danser"; },
+        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
-        surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6; },
+        surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6;
+          $("mxFilPlein").innerHTML = fil.slice(-4).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}</div>`).join(""); },
         surInfo: t => infoMatrice(t),
         surErreur: t => { $("mxVoile").innerHTML = `<span>${esc(t)}</span>`; $("mxVoile").hidden = false; },
         surToucherAncien: p => menuAncien(m, p),
@@ -1900,6 +1926,8 @@
     if (document.fullscreenElement) document.exitFullscreen().then(() => setTimeout(ouvrir, 300)).catch(ouvrir); else ouvrir();
   }
   $("mxMusique").onclick = allerAuDJ;
+  let jeDanse = false;
+  $("mxDanse").onclick = () => MX && MX.danser(!jeDanse);
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -1973,6 +2001,7 @@
   };
 
   function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  $("mxDirePlein").onsubmit = e => { e.preventDefault(); const t = $("mxTextePlein").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTextePlein").value = ""; };
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
   $("mxPlein").onclick = () => { const s = $("mxScene"); if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
@@ -1989,6 +2018,7 @@
   }
   $("mxBonhomme").onclick = () => ouvrirBonhomme();
   $("mxPNJ").onclick = () => ouvrirBonhomme("pnj");
+  document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
   const majCurseurs = () => { $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhCadrage").hidden = !bh.img; };
@@ -2018,7 +2048,7 @@
     try {
       const m = await chargerMX();
       const src = pnj ? (pnjInfo = await api("GET", "/api/pnj")) : (monAvatar = monAvatar || await api("GET", "/api/moi/avatar"));
-      Object.assign(bh, { tenue: src.tenue, couleur: src.couleur, tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0, ...(src.reglage || {}) } });
+      Object.assign(bh, { tenue: src.tenue, couleur: src.couleur, bas: src.bas || null, pieds: src.pieds || null, tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0, ...(src.reglage || {}) } });
       if (pnj) $("bhNom").value = src.nom || "Le chef de poste";
       const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v) : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
       if (url) { const i = new Image(); i.src = url; try { await i.decode(); bh.img = i; } catch (e) {} }
@@ -2026,16 +2056,21 @@
       $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
       $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.onclick = () => { bh.tenue = b.dataset.tenue; apercuBonhomme(); });
       $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.onclick = () => { bh.couleur = b.dataset.couleur; apercuBonhomme(); });
+      const pastilles = (id, liste, champ) => { $(id).innerHTML = `<button type="button" data-${champ}="">Par défaut</button>` + liste.map(c => `<button type="button" class="pastille" data-${champ}="${c}" style="background:${c}" aria-label="${c}"></button>`).join("");
+        $(id).querySelectorAll(`[data-${champ}]`).forEach(b => b.onclick = () => { bh[champ] = b.dataset[champ] || null; apercuBonhomme(); }); };
+      pastilles("bhBas", m.PANTALONS, "bas"); pastilles("bhPieds", m.CHAUSSURES, "pieds");
       majCurseurs(); apercuBonhomme();
       fermerConnexion(); $("bonhommeForm").scrollTop = 0; $("bonhommeForm").classList.add("open"); $("sheetBg").classList.add("open");
     } catch (e) { garde("La fenêtre du bonhomme ne s'ouvre pas : " + e.message); }
   }
   function apercuBonhomme() {
     if (!MX) return;
-    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, reglage: bh.reglage, initiales: bh.mode === "pnj" ? "CP" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: bh.mode !== "pnj" }, bh.img);
+    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage, initiales: bh.mode === "pnj" ? "CP" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: bh.mode !== "pnj" }, bh.img);
     const x = $("bhApercu").getContext("2d"); x.clearRect(0, 0, 200, 420); x.drawImage(c, 0, 0);
     $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.classList.toggle("on", b.dataset.tenue === bh.tenue));
     $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.classList.toggle("on", b.dataset.couleur === bh.couleur));
+    $("bhBas").querySelectorAll("[data-bas]").forEach(b => b.classList.toggle("on", (b.dataset.bas || null) === (bh.bas || null)));
+    $("bhPieds").querySelectorAll("[data-pieds]").forEach(b => b.classList.toggle("on", (b.dataset.pieds || null) === (bh.pieds || null)));
   }
   async function detourerDepuis(src) {
     $("bhEtat").textContent = "Détourage en cours… (la première fois, l'outil se télécharge : quelques secondes)";
@@ -2055,7 +2090,7 @@
   $("bonhommeForm").onsubmit = async e => {
     e.preventDefault(); $("bhErreur").hidden = true;
     try {
-      const corps = { tenue: bh.tenue, couleur: bh.couleur, reglage: bh.reglage }; if (bh.tete !== undefined) corps.tete = bh.tete;
+      const corps = { tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage }; if (bh.tete !== undefined) corps.tete = bh.tete;
       if (bh.mode === "pnj") {
         pnjInfo = await api("PUT", "/api/pnj", { ...corps, nom: $("bhNom").value.trim() });
         fermerCalque($("bonhommeForm"));
@@ -2389,6 +2424,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.9", "11 octobre 2026", ["Mon bonhomme : nouvelles tenues T-shirt et jean, Polo et jean ; on choisit aussi la couleur du pantalon et des chaussures", "Matrice en plein écran : on peut discuter sans en sortir (barre en bas et derniers messages)", "Matrice : on danse ! Bouton 💃 Danser, ou touche ton bonhomme ; tout le monde te voit danser", "Cour d'honneur : la nuit tombe à l'heure réelle de Paris (lune, fenêtres allumées, lumières de la fête derrière les baies) ; l'administrateur peut imposer jour ou nuit", "Salle des fêtes : musiques jusqu'à 50 Mo"]],
     ["2.8", "11 octobre 2026", ["L'administrateur règle le bonhomme du chef de poste (tête, tenue, couleur, nom)", "Cour d'honneur : plus de demi-tour, la vue reste face au bâtiment", "Salle des fêtes : bouton « 🎧 Musique » et toucher le coin du DJ pour ouvrir la musique"]],
     ["2.7", "11 octobre 2026", ["Matrice : la cour de l'horloge et l'allée sont retirées ; restent la cour d'honneur et la salle des fêtes", "Le chef de poste se promène dans la Matrice (touche-le, il te répond)", "Les têtes détourées sont centrées sur le milieu du visage"]],
     ["2.6", "11 octobre 2026", ["Mon bonhomme : tu places ta tête toi-même (glisser du doigt, pincer, taille, pencher) ; nouvelle tenue de gendarme (pull bleu marine à bande blanche, galons, ceinturon) ; bonshommes à taille humaine ; on tourne la vue en glissant le doigt (↻ pour se retourner)"]],
