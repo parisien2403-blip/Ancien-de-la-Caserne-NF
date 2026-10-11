@@ -996,11 +996,8 @@ function construireLieu(id, scene) {
         A.ajoute(new THREE.BoxGeometry(.9, .17, 2.3), A.mat({ color: 0xc9c3b6 }), RX - .45, .085, RZ - 1.05);              // la marche devant la porte
         const sl = A.ajoute(new THREE.PlaneGeometry(3.5, RL), A.mat({ map: tex(T.dalles, 2, 2) }), fx + 1.75, .014, RZ, false); sl.rotation.x = -Math.PI / 2;
         const lt = new THREE.PointLight(0xffd59a, 12, 8, 1.6); lt.position.set(RX - .5, 3.6, RZ - 1.1); lt.visible = false; scene.add(lt); L.nuitObjets.push(lt);
-        // ses deux battants vitrés, ouverts à plat contre le mur de part et d'autre ; la porte mène au sous-sol (vestibule, bar, console)
-        const PZ0 = RZ - 2 + 14 / 200 * RL, PWm = 84 / 200 * RL, PHm = 150 / 310 * RH, brunP = A.mat({ color: 0x6b4226, roughness: .5 }), vitreP = A.mat({ color: 0x8ea4b2, roughness: .2 });
-        for (const [zc, sg] of [[PZ0, -1], [PZ0 + PWm, 1]]) { const bt = new THREE.Group(); bt.position.set(RX - .03, 0, zc + sg * PWm / 4); scene.add(bt);
-          const pa = new THREE.Mesh(new THREE.BoxGeometry(.05, PHm, PWm / 2 - .02), brunP); pa.position.y = PHm / 2; bt.add(pa);
-          const vi = new THREE.Mesh(new THREE.BoxGeometry(.06, PHm * .5, PWm / 2 - .16), vitreP); vi.position.y = PHm * .7; bt.add(vi); }
+        // l'embrasure, sans porte : on entre de plain-pied dans le vestibule (le bar, la console)
+        const PZ0 = RZ - 2 + 14 / 200 * RL, PWm = 84 / 200 * RL;
         const lueurBar = new THREE.PointLight(0xffc98a, 3, 4, 1.5); lueurBar.position.set(RX - .6, 1.6, PZ0 + PWm / 2); scene.add(lueurBar);
         L.porteBar = [RX, PZ0 + PWm / 2];
       }
@@ -1659,10 +1656,7 @@ function construireLieu(id, scene) {
     mur("z", VX + .15, VZ0, -lpB / 2, -1); mur("z", VX + .15, lpB / 2, VZ1, -1);
     A.ajoute(new THREE.BoxGeometry(.3, HT - hp, lpB), peinture, VX + .15, hp + (HT - hp) / 2, 0, false);
     A.ajoute(new THREE.BoxGeometry(.1, .14, lpB + .3), cadre, VX - .04, hp + .07, 0, false);
-    for (const sg of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.1, hp, .14), cadre, VX - .04, hp / 2, sg * (lpB / 2 + .08), false);
-      // ses deux battants, rabattus à plat contre le mur du vestibule
-      A.ajoute(new THREE.BoxGeometry(.05, hp - .04, lpB / 2 - .02), brun, VX - .14, hp / 2, sg * (lpB / 2 + .17 + lpB / 4), false);
-      for (const [yy, hh] of [[.55, .7], [1.5, .95]]) A.ajoute(new THREE.BoxGeometry(.02, hh, lpB / 2 - .16), brunC, VX - .17, yy + (hh > .8 ? .1 : 0), sg * (lpB / 2 + .17 + lpB / 4), false); }
+    for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.1, hp, .14), cadre, VX - .04, hp / 2, sg * (lpB / 2 + .08), false);   // une simple embrasure, sans porte
     { // dehors, par la porte : les dalles du renfoncement, la façade de la salle des fêtes en face, un peu de ciel
       const dehors = tex(toile(256, 600, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h * .3); g.addColorStop(0, "#8fb4d6"); g.addColorStop(1, "#c9dbe8"); x.fillStyle = g; x.fillRect(0, 0, w, h * .3);
         x.fillStyle = "#cfc8ba"; x.fillRect(0, h * .3, w, h * .42); x.fillStyle = "rgba(90,80,60,.18)"; for (let y = h * .3; y < h * .72; y += 22) x.fillRect(0, y, w, 2);
