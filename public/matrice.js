@@ -484,11 +484,76 @@ function construireRue(A, T, L, scene) {
   });
   const facade = A.facadePercee({ largeur: LARG, hauteur: HF, profondeur: 14, toileFacade: fac, passage: { largeur: 4.8, hauteur: 4.4 }, x: 0, z: FZ, couleurPassage: 0xd3cbbb });
   facade.castShadow = false;
-  // au fond du porche, la lumière de la cour d'honneur ; un battant de la porte en bois, ouvert contre le mur
-  const bout = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 4.4), new THREE.MeshBasicMaterial({ map: tex(toile(64, 64, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#f3f1ea"); g.addColorStop(.7, "#d9d2c4"); g.addColorStop(1, "#9c968c"); x.fillStyle = g; x.fillRect(0, 0, w, h); })) }));
-  bout.position.set(0, 2.2, FZ - 13.9); scene.add(bout);
-  A.ajoute(new THREE.BoxGeometry(.08, 3.9, 2.1), A.mat({ color: 0x6b4226, roughness: .7 }), 2.3, 1.95, FZ - 1.5);
-  for (let k = 0; k < 4; k++) A.ajoute(new THREE.BoxGeometry(.02, .7, 1.7), A.mat({ color: 0x5a361e }), 2.25, .6 + k * .95, FZ - 1.5, false);
+  /* --- le passage sous le porche (d'après les photos) : on y marche jusqu'à la cour d'honneur.
+     Les deux grands battants noirs ouverts contre les murs, les arceaux, le pavé, les trottoirs le long des murs,
+     les murs crème, à gauche la porte du poste de police, à droite celle du sas, la barrière, le « 10 », les plantes, les lampes ;
+     au bout, la cour d'honneur (le bâtiment de brique aux balcons blancs et son horloge). */
+  const PZ0 = FZ, PZ1 = FZ - 14, PL = 2.4, fer2 = A.mat({ color: 0x141414, roughness: .45, metalness: .5 });
+  const pav = A.ajoute(new THREE.PlaneGeometry(PL * 2, 14), A.mat({ map: tex(T.paves, 2.5, 7), color: 0x9a948a }), 0, .012, FZ - 7, false); pav.rotation.x = -Math.PI / 2;
+  for (const sg of [-1, 1]) {
+    A.ajoute(new THREE.BoxGeometry(.75, .14, 11.2), A.mat({ color: 0xbdb6a8 }), sg * (PL - .375), .07, FZ - 8.2);                 // le trottoir le long du mur
+    A.ajoute(new THREE.BoxGeometry(.06, .15, 11.2), A.mat({ color: 0x9c968b }), sg * (PL - .75), .075, FZ - 8.2, false);         // sa bordure
+    // le grand battant noir, ouvert contre le mur : panneaux, médaillons en fer, clous
+    const bat = new THREE.Group(); bat.position.set(sg * (PL - .06), 0, FZ - 1.45); scene.add(bat);
+    const pan = new THREE.Mesh(new THREE.BoxGeometry(.1, 4.2, 2.6), A.mat({ color: 0x1b1d1f, roughness: .55 })); pan.position.y = 2.1; pan.castShadow = true; bat.add(pan);
+    for (const [yy, hh] of [[1.0, 1.3], [2.75, 1.9]]) for (const zz of [-.62, .62]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.04, hh, 1.0), A.mat({ color: 0x24272a, roughness: .5 })); m.position.set(-sg * .07, yy, zz); bat.add(m); }
+    for (const [yy, zz] of [[1.6, -.62], [1.6, .62], [3.0, -.62], [3.0, .62]]) { const o = new THREE.Mesh(new THREE.TorusGeometry(.16, .035, 8, 20), fer2); o.rotation.y = Math.PI / 2; o.position.set(-sg * .1, yy, zz); bat.add(o);
+      const c = new THREE.Mesh(new THREE.SphereGeometry(.06, 10, 8), fer2); c.position.set(-sg * .1, yy, zz); bat.add(c); }
+    const poignee = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, .4), A.mat({ color: 0x9a9da1, metalness: .7 })); poignee.position.set(-sg * .1, 2.05, -1.0); bat.add(poignee);
+    // les arceaux noirs au pied des battants
+    const arc = A.ajoute(new THREE.TorusGeometry(.32, .04, 8, 16, Math.PI), fer2, sg * (PL - .35), 0, FZ - .5); arc.rotation.y = Math.PI / 2;
+    // les lampes noires, en haut des murs, vers le fond
+    A.ajoute(new THREE.BoxGeometry(.18, .12, .4), fer2, sg * (PL - .09), 3.75, FZ - 10.8, false);
+    // les plantes en pot, au bout du passage
+    A.ajoute(new THREE.CylinderGeometry(.28, .22, .5, 14), A.mat({ color: 0xd8d2c6 }), sg * (PL - .45), .39, FZ - 13.2);
+    for (let k = 0; k < 9; k++) { const f = A.ajoute(new THREE.ConeGeometry(.14, .9, 5), A.mat({ color: k % 2 ? 0x3c6b32 : 0x4f8a3e, roughness: 1 }), sg * (PL - .45) + Math.cos(k * .7) * .2, 1.0, FZ - 13.2 + Math.sin(k * .7) * .2);
+      f.rotation.set(Math.sin(k * 1.3) * .7, 0, Math.cos(k * 1.3) * .7); }
+  }
+  // à gauche : la porte du poste de police ; à droite : la porte du sas
+  const porteMur = (sg, z, titre) => {
+    const g = new THREE.Group(); g.position.set(sg * (PL - .02), 0, z); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+    const cadre = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.65, .06), A.mat({ color: 0xcfc5ae })); cadre.position.y = 1.47; g.add(cadre);
+    const p = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.4, .08), A.mat({ color: 0x8a6a45, roughness: .55 })); p.position.y = 1.34; g.add(p);
+    const v = new THREE.Mesh(new THREE.PlaneGeometry(.75, .9), A.mat({ color: 0x9fb3c0, roughness: .2 })); v.position.set(0, 1.85, .05); g.add(v);
+    const pg = new THREE.Mesh(new THREE.BoxGeometry(.05, .2, .06), A.mat({ color: 0xc9a227, metalness: .7 })); pg.position.set(.42, 1.2, .07); g.add(pg);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(.9, .26), new THREE.MeshStandardMaterial({ map: tex(toile(270, 78, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8);
+      x.fillStyle = "#f4f1e6"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(titre, w / 2, 50); })) })); pl.position.set(0, 2.95, .05); g.add(pl);
+    return g; };
+  porteMur(-1, FZ - 6.2, "POSTE DE POLICE"); porteMur(1, FZ - 8.6, "SAS");
+  raccourci(L, scene, [.6, 2.5, 1.4], [-(PL - .2), 1.3, FZ - 6.2], { info: "🚓 Le poste de police : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
+  raccourci(L, scene, [.6, 2.5, 1.4], [PL - .2, 1.3, FZ - 8.6], { info: "🚪 Le sas : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
+  // sur le mur de droite (face à la cour), sous vitrine : l'affiche du garde républicain de 1887 (Jeanniot)
+  const imgA = new Image(), tA = new THREE.Texture(imgA); tA.colorSpace = THREE.SRGBColorSpace; imgA.onload = () => { tA.needsUpdate = true; }; imgA.src = "images/affiche-1887.jpg";
+  const vit = new THREE.Group(); vit.position.set(PL - .02, 1.75, FZ - 10.2); vit.rotation.y = -Math.PI / 2; scene.add(vit);
+  const cadreV = new THREE.Mesh(new THREE.BoxGeometry(.98, 1.36, .08), A.mat({ color: 0x3a2a1c, roughness: .4 })); cadreV.position.z = .04; vit.add(cadreV);
+  const aff = new THREE.Mesh(new THREE.PlaneGeometry(.84, 1.2), new THREE.MeshStandardMaterial({ map: tA, roughness: .9 })); aff.position.z = .085; vit.add(aff);
+  const verreV = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV);
+  // à droite, vers le fond : l'armoire rouge, la borne de la barrière et sa lisse blanche, posée en travers
+  A.ajoute(new THREE.BoxGeometry(.3, 1.3, .5), A.mat({ color: 0xc8202a, roughness: .5 }), PL - .2, .79, FZ - 11.6);
+  A.ajoute(new THREE.BoxGeometry(.32, 1.0, .32), A.mat({ color: 0xd8262e, roughness: .45 }), 1.55, .5, FZ - 12.2);
+  // (les piétons passent à gauche, sur le trottoir)
+  A.ajoute(new THREE.BoxGeometry(2.95, .1, .08), A.mat({ color: 0xf2f2ee, roughness: .5 }), .05, .98, FZ - 12.2);
+  for (let k = 0; k < 5; k++) A.ajoute(new THREE.BoxGeometry(.25, .105, .085), A.mat({ color: 0xc8202a }), -1.2 + k * .55, .98, FZ - 12.2, false);
+  // le panneau « 10 » sur le pilier de gauche, la caméra de surveillance, le plafonnier
+  const dix = A.ajoute(new THREE.CircleGeometry(.24, 24), new THREE.MeshStandardMaterial({ map: tex(toile(96, 96, (x) => { x.fillStyle = "#fff"; x.beginPath(); x.arc(48, 48, 46, 0, 7); x.fill(); x.strokeStyle = "#c8102e"; x.lineWidth = 10; x.beginPath(); x.arc(48, 48, 40, 0, 7); x.stroke();
+    x.fillStyle = "#111"; x.font = "bold 40px Arial"; x.textAlign = "center"; x.fillText("10", 48, 62); })) }), -(PL - .03), 2.3, FZ - 12.9, false); dix.rotation.y = Math.PI / 2;
+  A.ajoute(new THREE.BoxGeometry(.12, .1, .3), A.mat({ color: 0xe6e6e6 }), -(PL - .12), 3.9, FZ - 13.4, false);
+  const plaf = A.ajoute(new THREE.PlaneGeometry(PL * 2, 14), A.mat({ color: 0xece5d6, roughness: 1, emissive: 0x6a6458 }), 0, 4.38, FZ - 7, false); plaf.rotation.x = Math.PI / 2;
+  A.ajoute(new THREE.BoxGeometry(1.2, .04, .5), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), 0, 4.35, FZ - 7, false);
+  const jourP = new THREE.PointLight(0xfff2dc, 14, 12, 1.4); jourP.position.set(0, 3.9, FZ - 7); scene.add(jourP);
+  // au bout : la cour d'honneur, au soleil (ou la nuit)
+  const vueCour = (nuit) => tex(toile(240, 220, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, 140); g.addColorStop(0, nuit ? "#081028" : "#7fb8ea"); g.addColorStop(1, nuit ? "#1b2a55" : "#cfe6f7"); x.fillStyle = g; x.fillRect(0, 0, w, 140);
+    x.fillStyle = nuit ? "#3a2622" : "#9a4436"; x.fillRect(0, 34, 18, 110); x.fillRect(w - 18, 34, 18, 110);   // les ailes de brique, de chaque côté
+    x.fillStyle = nuit ? "#4a2a26" : "#a8483a"; x.fillRect(16, 20, 208, 120);
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 9; c++) { const X = 22 + c * 22.5, Y = 26 + r * 18; x.fillStyle = nuit ? (hasard(r * 9 + c) < .3 ? "#ffd58a" : "#1c2434") : "#d9e2ea"; x.fillRect(X, Y, 10, 11);
+      if (c % 2) { x.fillStyle = nuit ? "#7a7a80" : "#fbfaf6"; x.fillRect(X - 4, Y + 11, 18, 3); } }
+    x.fillStyle = nuit ? "#5b5a5e" : "#e8e0cf"; x.fillRect(0, 140, w, 40); x.fillStyle = nuit ? "#2a2c34" : "#7a7266"; x.fillRect(102, 148, 36, 32);
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(120, 136, 6, 0, 7); x.fill(); x.strokeStyle = "#222"; x.lineWidth = 1.5; x.stroke();
+    x.fillStyle = nuit ? "#3c3d44" : "#b9b3a7"; x.fillRect(0, 180, w, 40); }));
+  const texJ = vueCour(false), texN = vueCour(true);
+  const bout = new THREE.Mesh(new THREE.PlaneGeometry(PL * 2, 4.4), new THREE.MeshBasicMaterial({ map: texJ })); bout.position.set(0, 2.2, FZ - 13.9); scene.add(bout);
+  L.vueCour = (n) => { bout.material.map = n ? texN : texJ; bout.material.needsUpdate = true; jourP.intensity = n ? 9 : 14; };
   // l'arc, la grille, le navire de Paris et la plaque : la vraie photo du porche
   const imgP = new Image(), tP = new THREE.Texture(imgP); tP.colorSpace = THREE.SRGBColorSpace; tP.repeat.set(1, 752 / 812); tP.anisotropy = 4;
   imgP.onload = () => { tP.needsUpdate = true; }; imgP.src = "images/porche.jpg";
@@ -686,7 +751,7 @@ function construireRue(A, T, L, scene) {
   // le jour, une lumière douce éclaire aussi les façades d'en face (tournées au nord)
   const appoint = new THREE.DirectionalLight(0xfff4e2, 1.25); appoint.position.set(12, 26, -40); appoint.target.position.set(0, 0, 0); scene.add(appoint, appoint.target); L.lumiereJour = appoint;
   // la nuit : le fond du porche s'assombrit, une lanterne éclaire l'entrée
-  const fondNuit = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 4.4), new THREE.MeshBasicMaterial({ color: 0x232838 })); fondNuit.position.set(0, 2.2, FZ - 13.85); fondNuit.visible = false; scene.add(fondNuit); L.nuitObjets.push(fondNuit);
+  const fondNuit = new THREE.Mesh(new THREE.PlaneGeometry(.01, .01), new THREE.MeshBasicMaterial({ color: 0x232838 })); fondNuit.position.set(0, -5, FZ - 13.85); fondNuit.visible = false; scene.add(fondNuit); L.nuitObjets.push(fondNuit);
   const lanterne = new THREE.PointLight(0xffd59a, 30, 12, 1.5); lanterne.position.set(0, 4.1, FZ + .6); lanterne.visible = false; scene.add(lanterne); L.nuitObjets.push(lanterne);
   // la petite plaque « République française » à gauche du porche
   emaille(.5, .34, (c, w, h) => { c.fillStyle = "#f7f5ef"; c.fillRect(0, 0, w, h); c.fillStyle = "#1d3f73"; c.fillRect(8, 8, 18, h - 16); c.fillStyle = "#c8102e"; c.fillRect(44, 8, 18, h - 16); c.fillStyle = "#1d3f73"; c.font = "bold 13px Georgia"; c.textAlign = "left"; c.fillText("RÉPUBLIQUE", 68, 30); c.fillText("FRANÇAISE", 68, 48); }, -4.75, 3.0, FZ + .04);
@@ -694,10 +759,15 @@ function construireRue(A, T, L, scene) {
   /* --- où l'on peut marcher, la caméra, les passages --- */
   // la grille noire (z = -7,5) ne s'ouvre qu'au portillon (x de 0,2 à 1,4)
   L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24)
-    || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15);
-  L.zone = [-62, 62, -24, 24];
-  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -12.5, vers: "grande", arrivee: [0, 11] });
-  raccourci(L, scene, [5.4, 4.6, 2.4], [0, 2.3, -12.6], { vers: "grande", arrivee: [0, 11] });
+    || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15)
+    // le passage sous le porche (sans traverser les plantes, l'armoire rouge ni la borne de la barrière)
+    || (Math.abs(x) < 2.0 && z <= -12 && z > -25.7 && !(Math.abs(x) > 1.45 && z < -24.6) && !(x > 1.3 && z < -23.2 && z > -24.6) && !(x > -1.45 && Math.abs(z + 24.2) < .15));
+
+  // au bout du passage : la cour d'honneur (toucher le fond du passage y mène tout de suite)
+  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -25.4, vers: "grande", arrivee: [0, 13.6] });
+  raccourci(L, scene, [4.6, 4.3, .6], [0, 2.2, -25.75], { vers: "grande", arrivee: [0, 13.6] });
+  // la caméra reste sous la voûte quand on est dans le passage
+  L.contraindreCam = (pos, moi) => { if (moi.g.position.z < -11.6) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 3.7); pos.z = Math.max(-25.6, Math.min(-3, pos.z)); return true; } };
   L.anim = (temps) => {
     // le drapeau ondule
     const p = geoD.attributes.position; for (let i = 0; i < p.count; i++) { const u = (baseD[i * 3] + 1.1) / 2.2; p.array[i * 3 + 2] = Math.sin(temps / 380 - u * 5 + baseD[i * 3 + 1] * .8) * .16 * u; }
@@ -705,7 +775,7 @@ function construireRue(A, T, L, scene) {
     if (L.nuit) for (const s of L.silhouettes) animerSilhouette(s, temps);
   };
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
-  L.boite = [-63, 63, -11.8, 6.3];
+  L.boite = [-63, 63, -11.8, 6.3]; L.zone = [-62, 62, -26, 24];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
 }
 
@@ -1001,8 +1071,8 @@ function construireLieu(id, scene) {
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 1.5 && z >= 14.8 && z < 24);
     L.zone = [-10.4, 10.4, -17.6, 24.2];
     // le porche de cette façade mène à la rue du Faubourg-Poissonnière (on arrive sur le trottoir, face à la caserne)
-    L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [.8, -5.2] });
-    raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { vers: "rue", arrivee: [.8, -5.2] });
+    L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [0, -24.8], yaw: Math.PI });
+    raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { vers: "rue", arrivee: [0, -24.8], yaw: Math.PI });
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
     L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72]; L.boite = [-11.6, 11.6, -17.4, 15.1];
     const cols5 = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
@@ -1491,6 +1561,7 @@ export async function ouvrir(ctx) {
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     const rc = (M.L.raccourcis || []).find(q => ray.intersectObject(q.obj)[0]);
+    if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
     if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
     const s = ray.intersectObject(M.L.sol)[0];
     if (s) allerVers(s.point.x, s.point.z, true);
@@ -1622,7 +1693,7 @@ function construireScene(id) {
       soleil.intensity = n ? .55 : 2.3; soleil.color.setHex(n ? 0xaec2ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
       clair.intensity = n ? .25 : 0; lune.visible = n; nuages.forEach(o => o.visible = !n);
       (L.nuitObjets || []).forEach(o => o.visible = n);
-      if (L.lumiereJour) L.lumiereJour.visible = !n;
+      if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
     };
   }
   const repere = new THREE.Mesh(new THREE.RingGeometry(.35, .5, 32), new THREE.MeshBasicMaterial({ color: 0xf6d465, transparent: true, opacity: 0 }));
@@ -1654,7 +1725,8 @@ function placerCamera(net) {
   const yaw = 0;
   if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
-  if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
+  if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
+  else if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
   else { M.camera.position.lerp(pos, .06); M.camVise.lerp(vise, .06); }
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
