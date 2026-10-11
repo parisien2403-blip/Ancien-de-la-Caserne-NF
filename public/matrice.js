@@ -1497,9 +1497,9 @@ export async function ouvrir(ctx) {
         if (p.info.danse === "thriller") {
           /* Thriller : griffes à gauche (2 temps, la tête et les épaules penchées), griffes à droite (2 temps)… et tous les 8 temps, les bras levés devant, en avançant */
           const ph = t / 380 + p.info.numero * .7, k = Math.floor(ph) % 8, v = ph % 1;
-          const pose = k >= 6 ? "thriller3" : "profil", sens = k >= 6 ? 0 : Math.floor(k / 2) % 2 ? 1 : -1;
+          // tourné vers la gauche (profil), puis vers la droite (profilD : l'image retournée, c'est l'autre pied qui se lève)
+          const sens = k >= 6 ? 0 : Math.floor(k / 2) % 2 ? 1 : -1, pose = sens === 0 ? "thriller3" : sens > 0 ? "profilD" : "profil";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
-          p.corps.scale.x = sens > 0 ? -sx : sx;   // tourné vers la droite : on retourne l'image (c'est l'autre pied qui se lève)
           const coup = Math.sin(Math.min(1, v * 2.5) * Math.PI / 2);
           p.corps.material.rotation = -sens * .1 * coup; p.corps.position.x += (sens * .14 * coup - p.corps.position.x) * .3;
           if (!p.cible) p.corps.position.y = pose === "thriller3" ? Math.abs(Math.sin(ph * Math.PI)) * .06 : (v < .2 ? .04 * (1 - v / .2) : 0); p.dansait = true; }
@@ -1654,6 +1654,8 @@ async function chargerTete(numero, v, url) {
   const p = (async () => { try { const i = new Image(); i.crossOrigin = "anonymous"; i.src = url || M.ctx.urlTete(numero, v); await i.decode(); return i; } catch (e) { return null; } })();
   M.teteCache.set(cle, p); return p;
 }
+// la même image, retournée gauche-droite (pour regarder de l'autre côté)
+const miroir = (c) => tex(toile(c.width, c.height, (x, w) => { x.translate(w, 0); x.scale(-1, 1); x.drawImage(c, 0, 0); }));
 async function dessinerCorps(p) {
   const tete = await chargerTete(p.info.numero, p.info.tete_v, p.info.teteUrl);
   if (!M) return;
@@ -1661,7 +1663,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
