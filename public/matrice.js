@@ -1784,9 +1784,15 @@ function construireLieu(id, scene) {
       const croix = new THREE.Mesh(new THREE.BoxGeometry(.012, .005, .03), noirT); croix.position.set(0, .022, -.065); man.add(croix);
       const croix2 = croix.clone(); croix2.scale.set(2.5, 1, .4); man.add(croix2);
       const fil = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(3.03, .785, tz - .24), new THREE.Vector3(3.1, .78, tz - .15), new THREE.Vector3(3.0, .78, tz - .05)]), 12, .004, 5), noirT); scene.add(fil);
-      // les cartouches empilées, la canette rouge
-      [[0x2e5fb0, 0], [0x1a1a1a, .025], [0x1a1a1a, .05]].forEach(([c, y]) => A.ajoute(new THREE.BoxGeometry(.13, .024, .19), A.mat({ color: c, roughness: .4 }), 3.25, .79 + y, tz + .45, false));
-      A.ajoute(new THREE.CylinderGeometry(.033, .033, .12, 16), A.mat({ color: 0xc8102e, roughness: .3, metalness: .3 }), 3.12, .835, tz - .45, false);
+      // comme sur la photo : les cartouches empilées à gauche, la canette rouge à droite de la console
+      [[0x2e5fb0, 0], [0x1a1a1a, .025], [0x1a1a1a, .05]].forEach(([c, y]) => A.ajoute(new THREE.BoxGeometry(.13, .024, .19), A.mat({ color: c, roughness: .4 }), 3.2, .79 + y, tz - .45, false));
+      const canette = tex(toile(128, 96, (x, w, h) => { x.fillStyle = "#c8102e"; x.fillRect(0, 0, w, h); x.strokeStyle = "#fff"; x.lineWidth = 5;
+        x.beginPath(); x.moveTo(0, h * .62); x.bezierCurveTo(w * .3, h * .35, w * .6, h * .9, w, h * .5); x.stroke(); x.fillStyle = "#f4f4f4"; x.font = "italic bold 22px Georgia"; x.fillText("Cola", 30, h * .42); }));
+      A.ajoute(new THREE.CylinderGeometry(.034, .034, .12, 18), [A.mat({ map: canette, roughness: .3, metalness: .2 }), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .3 }), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .3 })], 3.1, .835, tz + .26, false);
+      // sur le mur derrière la télé : les mêmes affiches (Super Mario World, le poster du milieu, Street Fighter II)
+      for (const [src, w, h, dz] of [["mario", .55, .62, -.75], ["milieu", .8, .36, 0], ["sf2", .6, .57, .75]]) {
+        const im = new Image(), t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; im.onload = () => { t.needsUpdate = true; }; im.src = `images/console/${src}.jpg`;
+        const af = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: .7 })); af.rotation.y = -Math.PI / 2; af.position.set(GX - .012, 1.3 + h / 2, tz + dz); scene.add(af); }
       L.console = [2.15, tz];
       raccourci(L, scene, [.6, .6, .7], [3.35, 1.05, tz], { marche: [2.12, tz] });
     }
