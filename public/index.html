@@ -603,10 +603,11 @@
   .demande textarea { min-height: 70px; margin-top: 10px; }
   .pin-etat { margin-left: auto; margin-right: 8px; font-size: 13px; color: var(--muted); }
   /* écran verrouillé */
-  .verrou { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  .verrou { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: min(14px, 1.6vh);
+    overflow-y: auto; overscroll-behavior: contain;
     background: linear-gradient(180deg, #2b2340, #1f2a37); color: #f6eedf; padding: 24px; }
   .verrou[hidden] { display: none; }
-  .v-av { flex: none; width: 112px; height: 140px; border-radius: 12px; box-shadow: 0 8px 22px rgba(0,0,0,.45); background: var(--terra-soft) center 30% / cover no-repeat; display: grid; place-items: center; font: 700 34px "Lato", sans-serif; color: var(--terra-dark); border: 5px solid #f6d465; }
+  .v-av { flex: none; height: min(140px, 17vh); width: auto; aspect-ratio: 4 / 5; border-radius: 12px; box-shadow: 0 8px 22px rgba(0,0,0,.45); background: var(--terra-soft) center 30% / cover no-repeat; display: grid; place-items: center; font: 700 34px "Lato", sans-serif; color: var(--terra-dark); border: 5px solid #f6d465; }
   .v-nom { font: 22px "Marcellus", serif; }
   .v-aide { margin: 0; opacity: .85; }
   .v-points { display: flex; gap: 16px; margin: 6px 0 10px; }
@@ -614,8 +615,8 @@
   .v-points i.on { background: #f6d465; }
   .v-points.faux { animation: secoue .4s; }
   @keyframes secoue { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-  .v-clavier { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
-  .v-clavier button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 26px "Lato", sans-serif; cursor: pointer; }
+  .v-clavier { display: grid; grid-template-columns: repeat(3, min(72px, 9.5vh)); gap: min(14px, 1.8vh) min(16px, 2.2vh); }
+  .v-clavier button { width: min(72px, 9.5vh); height: min(72px, 9.5vh); border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font: 26px "Lato", sans-serif; cursor: pointer; }
   .v-clavier button:active { background: rgba(255,255,255,.3); }
   /* la carte dans l'écran d'attente, avec son tampon */
   .att-stage { width: 100%; overflow: hidden; border-radius: 6px; margin: 18px 0 16px; box-shadow: 0 10px 28px rgba(60,30,15,.3); }
@@ -2049,6 +2050,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.9.5", "11 octobre 2026", ["Écran verrouillé : tout tient à l'écran sur le Fold ouvert (photo, clavier, « Code oublié ? »)"]],
     ["1.9.4", "11 octobre 2026", ["Bouton « ← Retour » sur chaque fenêtre ; le geste retour du téléphone ferme la fenêtre ouverte", "Réglages : la fenêtre défile, plus rien de coupé en haut", "Écran verrouillé : ta photo en format photo, cadre jaune", "L'escalier changé au Poste de police est bien enregistré"]],
     ["1.9.3", "11 octobre 2026", ["On parle d'escalier, plus de bâtiment : « Escalier Z » sur la carte et dans les formulaires"]],
     ["1.9.2", "11 octobre 2026", ["Le bas de l'appli n'est plus coupé sur Android (Fold…) après un plein écran ou un pliage"]],
