@@ -76,9 +76,11 @@ export function dessinerBonhomme(o, tete) {
       // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
       // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
       const cible = accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228]
-        : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312] : null;
+        : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312]
+        // le DJ : les deux mains sur les platines (mix1), une main au casque (mix2), le poing levé (mix3)
+        : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
-        : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
+        : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "tshirt" || t === "polo";
@@ -976,8 +978,38 @@ function construireLieu(id, scene) {
     // on se promène avec la caméra derrière soi, et on peut faire demi-tour (glisser le doigt, ou ↻)
     L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72]; L.boite = [-11.6, 11.6, -17.4, 15.1];
     const cols5 = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d, 0xc04dff];
+    /* ce qui passe par les portes-fenêtres et la porte ouverte de la salle des fêtes, la nuit :
+       quelques petits reflets de la boule à facettes sur les marches et les pavés (légers),
+       et les lasers bleus — seulement s'ils sont allumés dans la salle */
+    const baies = (L.baiesFete || []).map(b => b.pl.position.z), xF = 12.46;
+    const NB = 90, refMatC = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .45, depthWrite: false, blending: THREE.AdditiveBlending });
+    const refC = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 8), refMatC, NB); refC.frustumCulled = false; refC.visible = false; scene.add(refC);
+    const graines = []; graine = 99; for (let i = 0; i < NB; i++) graines.push([alea(), alea(), alea(), .025 + alea() * .03]);
+    const tc = [0xffffff, 0xfff1a8, 0xa8d8ff, 0xffc4e6].map(c => new THREE.Color(c)); for (let i = 0; i < NB; i++) refC.setColorAt(i, tc[i % 4]);
+    const mC = new THREE.Matrix4(), qC = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), vC = new THREE.Vector3(), sC = new THREE.Vector3();
+    const laserC = new THREE.MeshBasicMaterial({ color: 0x3a7dff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false });
+    const rayonsC = []; for (let i = 0; i < 8; i++) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, 1, 5), laserC); r.visible = false; scene.add(r);
+      const pt = new THREE.Mesh(new THREE.CircleGeometry(.08, 10), new THREE.MeshBasicMaterial({ color: 0x7fc4ff, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false })); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayonsC.push([r, pt, i]); }
+    L.setLasers = (on) => { L.lasers = on; };
+    const animDehors = (temps) => {
+      const nuit = !!L.nuit && baies.length; refC.visible = nuit;
+      if (nuit) { graines.forEach(([u, v, w, r], i) => {
+          // un reflet glisse devant une baie (ou la porte), sur les marches puis les pavés, et s'efface en s'éloignant
+          const zb = baies[Math.floor(u * baies.length)] + (v - .5) * 1.6 + Math.sin(temps / 2600 + u * 9) * .7;
+          const d = (temps / 5200 + w) % 1, x = xF - .3 - d * 5.5, y = x > xF - 2 ? .7 * (1 - (xF - x) / 2) + .02 : .02;
+          vC.set(x, y, zb); const k = r * (1 + d) * (d < .85 ? 1 : (1 - d) / .15); sC.set(k, k, 1); refC.setMatrixAt(i, mC.compose(vC, qC, sC)); });
+        refC.instanceMatrix.needsUpdate = true; }
+      const las = !!L.lasers && !!L.nuit;
+      for (const [r, pt, i] of rayonsC) { r.visible = pt.visible = las; if (!las) continue;
+        const z0 = baies.length ? baies[(i * 3) % baies.length] : 0, src = new THREE.Vector3(xF, 3.2, z0);
+        const a = Math.sin(temps / 900 + i) * .6, b = .28 + .18 * Math.sin(temps / 1300 + i * .7);
+        const dir = new THREE.Vector3(-Math.cos(b) * Math.cos(a), -Math.sin(b), Math.cos(b) * Math.sin(a)).normalize(), lg = -src.y / dir.y;
+        r.position.copy(src).addScaledVector(dir, lg / 2); r.scale.set(1, lg, 1); r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        pt.position.set(src.x + dir.x * lg, .03, src.z + dir.z * lg); }
+    };
     L.anim = (temps) => {
       const P = L.porteFete; if (P) P.spot.intensity = L.nuit ? 70 + 50 * Math.max(0, Math.sin(temps / 300)) : 0;
+      animDehors(temps);
       if (!L.nuit || !L.baiesFete) return;
       for (const b of L.baiesFete) { const ph = temps / 420 + b.i * 1.3;
         b.pl.material.opacity = b.i === 8 ? .55 + .45 * Math.max(0, Math.sin(ph)) : .4 + .6 * Math.max(0, Math.sin(ph)) * (.6 + .4 * Math.sin(ph * 2.7));
@@ -1220,7 +1252,7 @@ function construireLieu(id, scene) {
         reflets.setMatrixAt(i, mR.compose(vR, qR, sR)); });
       reflets.instanceMatrix.needsUpdate = true; };
     // à droite de l'escalier : le coin du DJ (deux tables à nappes blanches, platines, table de mixage, micro, casque, enceintes, lumières, fumée)
-    const dz = Z1 - .75, noir = A.mat({ color: 0x1a1a1c, roughness: .5 }), alu = A.mat({ color: 0xb8bcc2, metalness: .7, roughness: .3 });
+    const dz = Z1 - 1.45, noir = A.mat({ color: 0x1a1a1c, roughness: .5 }), alu = A.mat({ color: 0xb8bcc2, metalness: .7, roughness: .3 });
     for (const xt of [-2.6, -4.2]) {
       A.ajoute(new THREE.BoxGeometry(1.55, .04, .8), nappe, xt, .76, dz);
       for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(1.59, .5, .015), nappe, xt, .52, dz + sg * .408, false);
@@ -1312,6 +1344,7 @@ function construireLieu(id, scene) {
       }
     };
     tables.push([-5.6, -1.3, dz - .8, Z1]);
+    L.posDJ = [-3.4, dz + .75];   // Manu, derrière ses platines
     // toucher le coin du DJ ouvre la musique
     const zone = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.2, 1.6), new THREE.MeshBasicMaterial({ visible: false })); zone.position.set(-3.3, 1.6, dz); scene.add(zone); L.zoneDJ = [zone];
     // le gros bouton ▶ / ⏹ au-dessus des platines : on lance ou on arrête la musique pour toute la salle
@@ -1320,7 +1353,7 @@ function construireLieu(id, scene) {
       if (signe === "play") { x.moveTo(48, 34); x.lineTo(96, 62); x.lineTo(48, 90); } else x.rect(40, 38, 48, 48); x.fill(); }));
     const texPlay = bouton("#2f9e5b", "play"), texStop = bouton("#c4394a", "stop");
     const btn = new THREE.Sprite(new THREE.SpriteMaterial({ map: texPlay, depthTest: false, transparent: true })); btn.renderOrder = 10;
-    btn.position.set(-2.75, 1.5, dz - .2); btn.scale.set(.62, .62, 1); scene.add(btn); L.boutonDJ = btn;
+    btn.position.set(-1.75, 1.35, dz - .35); btn.scale.set(.55, .55, 1); scene.add(btn); L.boutonDJ = btn;
     L.majBoutonDJ = (joue) => { btn.material.map = joue ? texStop : texPlay; btn.material.needsUpdate = true; };
 
     // lumière de la salle
@@ -1415,7 +1448,7 @@ export async function ouvrir(ctx) {
     if (toi && toi.corps && ray.intersectObject(toi.corps)[0]) { danser(toi.info.danse ? false : M.styleDanse || "balance"); return; }
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps)[0];
-    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     if (M.L.boutonDJ) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(36, r.width * .045)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
@@ -1482,7 +1515,7 @@ export async function ouvrir(ctx) {
       }
     }
     if (M.L.anim) M.L.anim(t);
-    animerPNJ();
+    animerPNJ(); animerDJ(t);
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur ? 1 : 0;
@@ -1607,7 +1640,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos") };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
@@ -1657,6 +1690,27 @@ function pointPNJ(n) {
   const g = M.lieu === "fetes" ? 1000 : 0;
   for (let k = 0; k < 40; k++) { const x = -12 + hasard(g + n * 3.1 + k) * 24, z = -16 + hasard(g + n * 7.3 + k * 1.7) * 30; if (M.L.limites(x, z)) return [x, z]; }
   return M.L.depart;
+}
+/* --- Manu, le DJ : il ne quitte pas ses platines (salle des fêtes seulement) --- */
+const DJ = -2, PHRASES_DJ = ["Ça va, la piste ?", "Je vous en mets une bonne ?", "Allez, on lève les mains !", "Une petite dédicace ?", "Celle-là, c'est pour les anciens !", "On monte le son ?",
+  "Qui veut un Madison ?", "Pas touche aux platines !", "Ambiance, ambiance !", "Je passe ce que vous voulez… presque."];
+function ajouterDJ() {
+  if (!M || !M.L || !M.L.posDJ || M.gens.has(DJ)) return;
+  const P = (M.ctx.pnjDJ && M.ctx.pnjDJ()) || {}, [x, z] = M.L.posDJ;
+  ajouterAncien({ numero: DJ, nom: P.nom || "Manu", tenue: P.tenue || "polo", couleur: P.couleur || "#e8e2d6", bas: P.bas || "#c8b48a", pieds: P.pieds, reglage: P.reglage || null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 2) : "images/manu-tete.png", pnj: true, dj: true, x, z });
+}
+function animerDJ(t) {
+  const p = M && M.gens.get(DJ); if (!p || !p.corps || !p.poses || !p.poses.mix1) return;
+  // il mixe : les mains sur les platines, de temps en temps une main au casque ou le poing levé ; il hoche la tête en rythme (plus vite quand la musique passe)
+  const tempo = M.djJoue ? 260 : 520, ph = t / tempo, mesure = Math.floor(ph / 8);
+  const k = Math.floor(ph) % 8, special = hasard(mesure * 3.7) < .5 ? "mix2" : "mix3";
+  const pose = k < 5 ? "mix1" : k < 7 ? special : "mix1";
+  if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+  p.corps.position.y = Math.abs(Math.sin(ph * Math.PI)) * (M.djJoue ? .06 : .025);
+  p.corps.material.rotation = Math.sin(ph * Math.PI) * (M.djJoue ? .05 : .02);
+  const b = Math.floor(t / 19000);
+  if (p.parole !== b) { p.parole = b; if (hasard(b * 5.1) < .35) dire(DJ, PHRASES_DJ[Math.floor(hasard(b * 2.9) * PHRASES_DJ.length)]); }
 }
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
@@ -1773,7 +1827,7 @@ function connecter() {
       M.moiNum = m.moi;
       ajouterAncien({ ...ctx.moiInfo(), numero: m.moi, x: M.posEntree[0], z: M.posEntree[1] });
       m.gens.forEach(ajouterAncien);
-      ajouterPNJ();
+      ajouterPNJ(); ajouterDJ();
       M.fil = m.dits || []; ctx.surFil && ctx.surFil(M.fil);
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
     } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
@@ -1789,6 +1843,7 @@ function connecter() {
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? `${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`.toLowerCase() : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
+    else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };

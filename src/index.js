@@ -45,6 +45,7 @@ const etageValide = v => { if (v === null || v === undefined || v === "") return
 const LIEUX_MATRICE = ["rue", "grande", "fetes"];
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
+const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" } };
 const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -279,27 +280,28 @@ export class Compteur extends DurableObject {
   }
 
   /* ----- La Matrice : le bonhomme ----- */
-  infoPNJ(token) {
-    this.moi(token);
-    const p = this.sql.exec("SELECT nom, tenue, couleur, bas, pieds, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = 1").toArray()[0];
+  // les personnages qui vivent seuls dans la Matrice : 1 = le chef de poste, 2 = Manu, le DJ (réglés par l'administrateur)
+  infoPNJ(token, id = 1) {
+    this.moi(token); id = id === 2 ? 2 : 1;
+    const D = PNJ_DEFAUT[id], p = this.sql.exec("SELECT nom, tenue, couleur, bas, pieds, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = ?", id).toArray()[0];
     let reglage = null; try { reglage = p && JSON.parse(p.reglage); } catch (e) {}
-    return { nom: (p && p.nom) || "Le chef de poste", tenue: (p && p.tenue) || "garde", couleur: (p && p.couleur) || "#1c2541", bas: (p && p.bas) || null, pieds: (p && p.pieds) || null, reglage, tete_v: p && p.a_tete ? p.v : 0 };
+    return { id, nom: (p && p.nom) || D.nom, tenue: (p && p.tenue) || D.tenue, couleur: (p && p.couleur) || D.couleur, bas: (p && p.bas) || D.bas, pieds: (p && p.pieds) || null, reglage, tete_v: p && p.a_tete ? p.v : 0 };
   }
-  tetePNJ(token) { this.moi(token); const p = this.sql.exec("SELECT tete FROM pnj WHERE id = 1").toArray()[0]; return p && p.tete; }
-  async changerPNJ(token, x) {
-    await this.exigerAdmin(token);
-    const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "garde", couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#1c2541";
-    const nom = texte(x.nom, 40) || "Le chef de poste";
+  tetePNJ(token, id = 1) { this.moi(token); const p = this.sql.exec("SELECT tete FROM pnj WHERE id = ?", id === 2 ? 2 : 1).toArray()[0]; return p && p.tete; }
+  async changerPNJ(token, x, id = 1) {
+    await this.exigerAdmin(token); id = id === 2 ? 2 : 1; const D = PNJ_DEFAUT[id];
+    const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : D.tenue, couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : D.couleur;
+    const nom = texte(x.nom, 40) || D.nom;
     const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
     const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
-    if (!this.sql.exec("SELECT 1 FROM pnj WHERE id = 1").toArray().length) this.sql.exec("INSERT INTO pnj (id, v) VALUES (1, 0)");
-    this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, bas = ?, pieds = ?, reglage = ?, v = v + 1 WHERE id = 1", nom, tenue, couleur, hexa(x.bas, null), hexa(x.pieds, null), reglage);
-    if (x.tete === null) this.sql.exec("UPDATE pnj SET tete = NULL WHERE id = 1");
+    if (!this.sql.exec("SELECT 1 FROM pnj WHERE id = ?", id).toArray().length) this.sql.exec("INSERT INTO pnj (id, v) VALUES (?, 0)", id);
+    this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, bas = ?, pieds = ?, reglage = ?, v = v + 1 WHERE id = ?", nom, tenue, couleur, hexa(x.bas, null), hexa(x.pieds, null), reglage, id);
+    if (x.tete === null) this.sql.exec("UPDATE pnj SET tete = NULL WHERE id = ?", id);
     else if (x.tete !== undefined) {
       if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
-      this.sql.exec("UPDATE pnj SET tete = ? WHERE id = 1", x.tete);
+      this.sql.exec("UPDATE pnj SET tete = ? WHERE id = ?", x.tete, id);
     }
-    const info = this.infoPNJ(token), t = JSON.stringify({ t: "pnj", p: info });
+    const info = this.infoPNJ(token, id), t = JSON.stringify({ t: "pnj", p: info });
     for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} }
     return info;
   }
@@ -373,7 +375,7 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
-      if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
+      if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
@@ -400,7 +402,7 @@ export class Compteur extends DurableObject {
       const der = (await this.ctx.storage.get("fumee_fetes")) || 0; if (Date.now() - der < 8000) return;
       await this.ctx.storage.put("fumee_fetes", Date.now()); this.diffuser("fetes", { t: "fumee" });
     } else if (m.t === "lasers" && a.lieu === "fetes") {
-      await this.ctx.storage.put("lasers_fetes", !!m.on); this.diffuser("fetes", { t: "lasers", on: !!m.on });
+      await this.ctx.storage.put("lasers_fetes", !!m.on); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "lasers", on: !!m.on });   // on les voit aussi de la cour
     } else if (m.t === "lumiere" && a.admin) {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
       const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
@@ -826,7 +828,7 @@ export default {
     if (url.pathname === "/api/matrice" && request.headers.get("Upgrade") === "websocket") return registre.fetch(request);
     // tête du chef de poste (réglée par l'administrateur)
     if (request.method === "GET" && url.pathname === "/api/pnj/tete") {
-      let data; try { data = await registre.tetePNJ(url.searchParams.get("t") || ""); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      let data; try { data = await registre.tetePNJ(url.searchParams.get("t") || "", Number(url.searchParams.get("id")) || 1); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
       if (!data) return new Response("Pas de tête", { status: 404 });
       return new Response(Uint8Array.from(atob(data.split(",")[1]), c => c.charCodeAt(0)), { headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=604800" } });
     }
@@ -976,8 +978,8 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/(photo|anecdote|publication)\/\d+$/.test(url.pathname)) {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
-      else if (route === "GET /api/pnj") r = await registre.infoPNJ(token);
-      else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps());
+      else if (route === "GET /api/pnj") r = await registre.infoPNJ(token, Number(url.searchParams.get("id")) || 1);
+      else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps(), Number(url.searchParams.get("id")) || 1);
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
       else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());

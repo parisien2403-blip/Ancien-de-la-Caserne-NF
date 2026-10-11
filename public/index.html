@@ -1094,7 +1094,8 @@
       <div class="tab" data-tab="matrice" hidden>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
           <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button>
-          <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button></div></div>
+          <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button>
+          <button class="btn small alt" id="mxPNJDJ" type="button" hidden>🎧 Manu, le DJ</button></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
           <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
@@ -1910,12 +1911,12 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null)]);
-      monAvatar = av; pnjInfo = pj; $("mxPNJ").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null)]);
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
-        conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; },
+        conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; }, pnjDJ: () => djInfo, surPNJDJ: p => { djInfo = p; },
         surToucherDJ: allerAuDJ,
         surAmbiance: mode => document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)),
         surDanse: on => { jeDanse = on;
@@ -1941,8 +1942,8 @@
       if (!monAvatar.fait) setTimeout(() => garde("Avant de te promener, fais ton bonhomme : ta tête détourée sur le corps de ton choix. Tu pourras le changer quand tu veux.", { titre: "Bienvenue dans la Matrice !", annuler: "Plus tard", ok: "Faire mon bonhomme" }).then(o => o && ouvrirBonhomme()), 900);
     } catch (e) { mxOuverte = false; $("mxVoile").innerHTML = `<span>La Matrice ne s'ouvre pas : ${esc(e.message)}<br>Vérifie ta connexion internet.</span>`; $("mxVoile").hidden = false; }
   }
-  let mxComptes = {}, mxLieu = null, pnjInfo = null;
-  const urlTetePNJ = v => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}`;
+  let mxComptes = {}, mxLieu = null, pnjInfo = null, djInfo = null;
+  const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id === 2 ? "&id=2" : ""}`;
   function allerAuDJ() {
     const ouvrir = () => { $("mxDJ").scrollIntoView({ behavior: "smooth", block: "start" }); $("mxDJ").classList.remove("eclat"); void $("mxDJ").offsetWidth; $("mxDJ").classList.add("eclat"); };
     if (document.fullscreenElement) document.exitFullscreen().then(() => setTimeout(ouvrir, 300)).catch(ouvrir); else ouvrir();
@@ -2080,6 +2081,7 @@
   }
   $("mxBonhomme").onclick = () => ouvrirBonhomme();
   $("mxPNJ").onclick = () => ouvrirBonhomme("pnj");
+  $("mxPNJDJ").onclick = () => ouvrirBonhomme("dj");
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
@@ -2103,16 +2105,16 @@
   async function ouvrirBonhomme(mode = "moi") {
     if (!enLigne || !moi || !moi.token) return;
     $("bhErreur").hidden = true; bh.mode = mode;
-    const pnj = mode === "pnj";
-    $("bhTitreFen").textContent = pnj ? "👮 Le bonhomme du chef de poste" : "🧍 Mon bonhomme";
-    $("bhSousTitre").textContent = pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
+    const dj = mode === "dj", pnj = mode === "pnj" || dj, idP = dj ? 2 : 1;
+    $("bhTitreFen").textContent = dj ? "🎧 Manu, le DJ" : pnj ? "👮 Le bonhomme du chef de poste" : "🧍 Mon bonhomme";
+    $("bhSousTitre").textContent = dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
     $("bhNomZone").hidden = !pnj; $("bhPhotoProfil").hidden = pnj; $("bhTeteTitre").textContent = pnj ? "Sa tête" : "Ma tête";
     try {
       const m = await chargerMX();
-      const src = pnj ? (pnjInfo = await api("GET", "/api/pnj")) : (monAvatar = monAvatar || await api("GET", "/api/moi/avatar"));
+      const src = dj ? (djInfo = await api("GET", "/api/pnj?id=2")) : pnj ? (pnjInfo = await api("GET", "/api/pnj")) : (monAvatar = monAvatar || await api("GET", "/api/moi/avatar"));
       Object.assign(bh, { tenue: src.tenue, couleur: src.couleur, bas: src.bas || null, pieds: src.pieds || null, tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0, ...(src.reglage || {}) } });
-      if (pnj) $("bhNom").value = src.nom || "Le chef de poste";
-      const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v) : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
+      if (pnj) $("bhNom").value = src.nom || (dj ? "Manu" : "Le chef de poste");
+      const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v, idP) : dj ? "images/manu-tete.png" : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
       if (url) { const i = new Image(); i.src = url; try { await i.decode(); bh.img = i; } catch (e) {} }
       $("bhTenues").innerHTML = Object.entries(m.TENUES).map(([id, t]) => `<button type="button" data-tenue="${id}">${esc(t.nom)}</button>`).join("");
       $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
@@ -2127,7 +2129,7 @@
   }
   function apercuBonhomme() {
     if (!MX) return;
-    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage, initiales: bh.mode === "pnj" ? "CP" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: bh.mode !== "pnj" }, bh.img);
+    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage, initiales: bh.mode === "dj" ? "DJ" : bh.mode === "pnj" ? "CP" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: bh.mode === "moi" }, bh.img);
     const x = $("bhApercu").getContext("2d"); x.clearRect(0, 0, 200, 420); x.drawImage(c, 0, 0);
     $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.classList.toggle("on", b.dataset.tenue === bh.tenue));
     $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.classList.toggle("on", b.dataset.couleur === bh.couleur));
@@ -2153,6 +2155,11 @@
     e.preventDefault(); $("bhErreur").hidden = true;
     try {
       const corps = { tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage }; if (bh.tete !== undefined) corps.tete = bh.tete;
+      if (bh.mode === "dj") {
+        djInfo = await api("PUT", "/api/pnj?id=2", { ...corps, nom: $("bhNom").value.trim() });
+        fermerCalque($("bonhommeForm"));
+        garde("Manu a changé : tout le monde le voit déjà derrière ses platines.", { titre: "🎧 C'est enregistré" }); return;
+      }
       if (bh.mode === "pnj") {
         pnjInfo = await api("PUT", "/api/pnj", { ...corps, nom: $("bhNom").value.trim() });
         fermerCalque($("bonhommeForm"));
@@ -2486,6 +2493,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.20", "11 octobre 2026", ["Salle des fêtes : Manu, notre DJ, mixe derrière ses platines (avancées un peu) ; l'administrateur règle sa tête, ses vêtements et son nom (bouton 🎧 Manu, le DJ)", "Cour d'honneur la nuit : de petits reflets de la boule à facettes passent par les portes-fenêtres et la porte ouverte ; les lasers bleus sortent aussi, seulement quand ils sont allumés"]],
     ["2.19", "11 octobre 2026", ["Salle des fêtes : les reflets de la boule à facettes sont de petits points, sur le sol, les murs et le plafond, et tournent avec la boule"]],
     ["2.18", "11 octobre 2026", ["Matrice : les bonshommes (et le chef de poste) contournent les murs, les tables, le bar et la grille au lieu de passer au travers", "Salle des fêtes : bouton 💨 Fumée (un nuage envahit la piste) et 🔷 Lasers bleus, vus par tous ceux qui sont dans la salle"]],
     ["2.17", "11 octobre 2026", ["Madison complet : pointes de pied à gauche et à droite avec clap, genou levé et clap sous le genou de chaque côté, puis un tour complet sur soi-même"]],
