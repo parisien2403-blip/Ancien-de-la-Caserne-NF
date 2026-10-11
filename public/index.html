@@ -83,6 +83,11 @@
   .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 26px 26px 0 0; padding: 12px 24px 28px;
     transform: translateY(105%); transition: transform .35s cubic-bezier(.3,.8,.3,1); z-index: 21; box-shadow: 0 -10px 30px rgba(0,0,0,.12); }
   .sheet.open { transform: none; }
+  .sheet { max-height: calc(100% - 12px); overflow-y: auto; overscroll-behavior: contain; }
+  .sheet-fermer { position: absolute; top: 10px; left: 12px; z-index: 2; display: flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px 0 8px; border: 0; border-radius: 17px;
+    background: rgba(31,42,55,.07); color: var(--navy); font: 700 14px "Lato", sans-serif; cursor: pointer; }
+  .sheet-fermer:hover { background: rgba(31,42,55,.13); }
+  .sheet > .grab { margin-top: 32px; }
   .sheet-bg.open { opacity: 1; pointer-events: auto; }
   .grab { width: 44px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 16px; }
   .sheet h2 { margin: 0 0 4px; font-size: 24px; }
@@ -601,7 +606,7 @@
   .verrou { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     background: linear-gradient(180deg, #2b2340, #1f2a37); color: #f6eedf; padding: 24px; }
   .verrou[hidden] { display: none; }
-  .v-av { width: 84px; height: 84px; border-radius: 50%; background: var(--terra-soft) center/cover; display: grid; place-items: center; font: 700 28px "Lato", sans-serif; color: var(--terra-dark); border: 3px solid #f6d465; }
+  .v-av { flex: none; width: 112px; height: 140px; border-radius: 12px; box-shadow: 0 8px 22px rgba(0,0,0,.45); background: var(--terra-soft) center 30% / cover no-repeat; display: grid; place-items: center; font: 700 34px "Lato", sans-serif; color: var(--terra-dark); border: 5px solid #f6d465; }
   .v-nom { font: 22px "Marcellus", serif; }
   .v-aide { margin: 0; opacity: .85; }
   .v-points { display: flex; gap: 16px; margin: 6px 0 10px; }
@@ -1748,6 +1753,23 @@
   }
   brancherSaisieBat($("fBat"), $("fBatImg"));
   $("fBat").addEventListener("input", renderCard);
+  // laissez-passer déjà tamponné : changer l'escalier ou l'étage ici l'enregistre (comme dans les réglages)
+  let minuteurEsc = null;
+  const sauverEscalierPoste = () => {
+    if (!moi || !moi.numero || !NUM || !enLigne) return;
+    clearTimeout(minuteurEsc);
+    minuteurEsc = setTimeout(async () => {
+      const bat = batSaisi() || null, etage = bat && $("fEtage").value !== "" ? +$("fEtage").value : null;
+      if (bat === (moi.bat || null) && etage === (moi.etage ?? null)) return;
+      try {
+        const r = await api("PUT", "/api/moi/escalier", { bat, etage });
+        moi.bat = r.bat; moi.etage = r.etage; ecrire("caserne-moi", moi);
+        const m = membres.find(x => x.email === moi.email); if (m) { m.bat = moi.bat; m.etage = moi.etage; }
+        $("bubble").innerHTML = bat ? `<b>C'est noté !</b> Escalier ${bat}${etage !== null ? `, ${esc(etageLong(etage).toLowerCase())}` : ""}. Tu apparais avec ton escalier dans la liste des membres.` : "<b>C'est noté.</b> Ton escalier a été retiré.";
+      } catch (err) { $("bubble").innerHTML = `<b>Oups !</b> Escalier non enregistré : ${esc(err.message)}`; }
+    }, 700);
+  };
+  $("fBat").addEventListener("input", sauverEscalierPoste); $("fEtage").addEventListener("input", sauverEscalierPoste);
   let photoData = null;
   function montrerPhotoCarte(url) { const el = $("cPhoto"); if (!url) return; el.style.backgroundImage = `url(${url})`; el.innerHTML = ""; }
   async function nouvellePhoto(file) {
@@ -1990,8 +2012,44 @@
   }
   window.alert = t => { garde(String(t)); };
 
+  /* ===== Retour en arrière : bouton « ← Retour » sur chaque fenêtre, et le geste / bouton retour du téléphone
+     ferme la fenêtre ouverte (réglages, carte, photo, borne en plein écran) au lieu de quitter l'appli ===== */
+  function calqueOuvert() {
+    const s = [...document.querySelectorAll(".sheet.open")].pop();
+    if (s) return s;
+    if (!$("carteVue").hidden) return $("carteVue");
+    if ($("viewer").classList.contains("open")) return $("viewer");
+    if ($("borneZone") && $("borneZone").classList.contains("immersion")) return $("borneZone");
+    return null;
+  }
+  function fermerCalque(el) {
+    if (!el) return;
+    if (el.id === "carteVue") { if (!quitterPleinEcran()) $("carteVue").hidden = true; }
+    else if (el.id === "viewer") el.classList.remove("open");
+    else if (el.id === "borneZone") $("quitterBorne").click();
+    else if (el.id === "pinForm") finPin();
+    else { el.classList.remove("open"); if (!document.querySelector(".sheet.open")) $("sheetBg").classList.remove("open"); }
+  }
+  document.querySelectorAll(".sheet").forEach(sh => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sheet-fermer"; b.innerHTML = "← Retour";
+    b.setAttribute("aria-label", "Revenir en arrière"); b.onclick = () => fermerCalque(sh);
+    sh.prepend(b);
+  });
+  (() => {
+    let pousse = false;
+    const verifier = () => {
+      if (!$("verrou").hidden) return;
+      const o = calqueOuvert();
+      if (o && !pousse) { history.pushState({ calque: 1 }, ""); pousse = true; }
+      else if (!o && pousse) { pousse = false; history.back(); }
+    };
+    new MutationObserver(() => requestAnimationFrame(verifier)).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+    addEventListener("popstate", () => { if (!pousse) return; pousse = false; fermerCalque(calqueOuvert()); });
+  })();
+
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.9.4", "11 octobre 2026", ["Bouton « ← Retour » sur chaque fenêtre ; le geste retour du téléphone ferme la fenêtre ouverte", "Réglages : la fenêtre défile, plus rien de coupé en haut", "Écran verrouillé : ta photo en format photo, cadre jaune", "L'escalier changé au Poste de police est bien enregistré"]],
     ["1.9.3", "11 octobre 2026", ["On parle d'escalier, plus de bâtiment : « Escalier Z » sur la carte et dans les formulaires"]],
     ["1.9.2", "11 octobre 2026", ["Le bas de l'appli n'est plus coupé sur Android (Fold…) après un plein écran ou un pliage"]],
     ["1.9.1", "11 octobre 2026", ["Escaliers : 7 étages au plus"]],
