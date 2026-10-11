@@ -616,6 +616,10 @@
     animation: neige .25s steps(4) infinite; }
   .borne .neige span { background: rgba(0,0,0,.65); color: #9fd; font: 700 clamp(9px, 2.4vw, 15px) "Courier New", monospace; padding: 6px 10px; letter-spacing: .1em; text-shadow: 0 0 6px #6fc; }
   @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
+  /* pendant une partie sur téléphone : on ne garde que la télé (de 10 % à 62 % de l'image), la manette remonte juste dessous */
+  .borne.en-jeu { aspect-ratio: 1400 / 789; }
+  .borne.en-jeu > img { margin-top: -10.84%; }
+  .borne.en-jeu .ecran { top: 13.37%; height: 61.83%; }
   /* manette sous la télé */
   .manette { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 18px 8px 4px; max-width: 520px;
     padding: 26px 18px 18px; border-radius: 70px; background: linear-gradient(180deg, #d9d6d2, #b9b5b0); box-shadow: 0 6px 0 #8e8a85, 0 10px 22px rgba(40,20,10,.25);
@@ -1887,6 +1891,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.7.1", "11 octobre 2026", ["Borne : un jeu restait bloqué sur « Download Game Data », c'est réparé", "Borne : pendant une partie sur téléphone, la manette remonte juste sous la télé"]],
     ["1.7", "11 octobre 2026", ["Un œil 👁 pour voir ce qu'on tape dans les mots de passe et les codes", "Les messages de l'appli sont donnés par le chef de poste", "Bouton 🔄 Mise à jour de l'appli dans les réglages", "Le numéro de version et cette page « Quoi de neuf ? »"]],
     ["1.6", "11 octobre 2026", ["La borne de jeux dans la Salle des fêtes : le jeu s'affiche dans la télé", "Une image sur chaque cartouche", "Une manette sous la télé sur téléphone et tablette"]],
     ["1.5", "10 octobre 2026", ["Les inscriptions sont validées par l'administrateur", "Écran d'attente avec ta carte et son tampon", "Code de déverrouillage à 4 chiffres (facultatif)"]],
@@ -2862,11 +2867,11 @@
     jeuEnCours = j.id;
     $("neige").hidden = true;
     const f = $("jeuFrame"); f.hidden = false;
-    f.src = `jeu.html?id=${j.id}&console=${encodeURIComponent(j.console)}&titre=${encodeURIComponent(j.titre)}`;
+    f.src = `jeu.html?id=${j.id}&console=${encodeURIComponent(j.console)}&titre=${encodeURIComponent(j.titre)}&nom=${encodeURIComponent(j.nom_fichier || "jeu.bin")}`;
     $("borneEteindre").hidden = false; $("bornePlein").hidden = false;
     preparerManette(j.console);
     document.querySelectorAll(".cartouche").forEach(c => c.classList.toggle("on", +c.dataset.jeu === j.id));
-    $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
+    if (tactile) $("manette").scrollIntoView({ behavior: "smooth", block: "end" }); else $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
   }
   // la manette : elle appuie directement sur les touches de l'émulateur dans la télé
   const tactile = matchMedia("(pointer: coarse)").matches;
@@ -2897,6 +2902,7 @@
       b.onpointerdown = bas; b.onpointerup = haut; b.onpointercancel = haut; b.onlostpointercapture = haut; b.oncontextmenu = e => e.preventDefault();
     });
     $("manette").hidden = !tactile;
+    $("borne").classList.toggle("en-jeu", tactile);
   }
   // la croix : on peut glisser le doigt d'une direction à l'autre (diagonales comprises)
   (() => {
@@ -2935,7 +2941,7 @@
     const f = $("jeuFrame"); f.src = "about:blank"; f.hidden = true;
     $("neige").hidden = false; $("ecranTexte").textContent = "CHOISIS UNE CARTOUCHE";
     $("borneEteindre").hidden = true; $("bornePlein").hidden = true;
-    $("manette").hidden = true;
+    $("manette").hidden = true; $("borne").classList.remove("en-jeu");
     document.querySelectorAll(".cartouche").forEach(c => c.classList.remove("on"));
   }
   $("borneEteindre").onclick = eteindre;

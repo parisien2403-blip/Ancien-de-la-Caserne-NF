@@ -299,15 +299,17 @@ export class Compteur extends DurableObject {
     if (recus === j.morceaux) this.sql.exec("UPDATE jeux SET complet = 1 WHERE id = ?", j.id);
     return { ok: true, complet: recus === j.morceaux };
   }
-  async fichierJeu(token, id) {
+  // le fichier d'un jeu est envoyé morceau par morceau (un gros jeu dépasserait la taille d'un message)
+  async infoJeu(token, id) {
     await this.verifierAcces(token);
-    const j = this.sql.exec("SELECT * FROM jeux WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
-    if (!j) return null;
-    const out = new Uint8Array(j.taille); let pos = 0;
-    for (const m of this.sql.exec("SELECT data FROM jeux_morceaux WHERE jeu = ? ORDER BY n", j.id).toArray()) {
-      const b = new Uint8Array(m.data); out.set(b, pos); pos += b.byteLength;
-    }
-    return { octets: out, nom: j.nom_fichier };
+    const j = this.sql.exec("SELECT taille, morceaux, nom_fichier FROM jeux WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
+    return j ? { taille: j.taille, morceaux: j.morceaux, nom: j.nom_fichier } : null;
+  }
+  async morceauFichier(token, id, n) {
+    await this.verifierAcces(token);
+    const m = this.sql.exec("SELECT data FROM jeux_morceaux WHERE jeu = ? AND n = ?", Number(id), Number(n)).toArray()[0];
+    if (!m) throw new Refus("Morceau manquant", 404);
+    return m.data;
   }
   async jaquetteJeu(token, id, x) {
     await this.exigerAdmin(token);
@@ -551,7 +553,7 @@ export class Compteur extends DurableObject {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
@@ -595,14 +597,27 @@ export default {
       return res;
     }
 
-    // fichier d'un jeu de la borne (réservé aux anciens validés)
-    if (request.method === "GET" && /^\/api\/jeux\/\d+\/fichier$/.test(url.pathname)) {
-      try {
-        const f = await registre.fichierJeu(url.searchParams.get("t") || "", url.pathname.split("/")[3]);
-        if (!f) return new Response("Introuvable", { status: 404 });
-        return new Response(f.octets, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, max-age=86400",
-          "Content-Disposition": `inline; filename="${f.nom}"` } });
-      } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+    // fichier d'un jeu de la borne (réservé aux anciens validés).
+    // EmulatorJS demande d'abord la taille (HEAD), puis le fichier (GET), envoyé en flux morceau par morceau.
+    // Adresse : /api/jeux/<id>/rom/<id>-<nom du fichier> (l'ancienne /api/jeux/<id>/fichier marche toujours)
+    const mJeu = url.pathname.match(/^\/api\/jeux\/(\d+)\/(?:fichier|rom\/[^/]+)$/);
+    if ((request.method === "GET" || request.method === "HEAD") && mJeu) {
+      const t = url.searchParams.get("t") || "", id = mJeu[1];
+      let info;
+      try { info = await registre.infoJeu(t, id); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      if (!info) return new Response("Introuvable", { status: 404 });
+      const entetes = { "Content-Type": "application/octet-stream", "Content-Length": String(info.taille), "Cache-Control": "private, max-age=86400",
+        "Content-Disposition": `inline; filename="${info.nom}"` };
+      if (request.method === "HEAD") return new Response(null, { headers: entetes });
+      const { readable, writable } = new FixedLengthStream(info.taille);
+      ctx.waitUntil((async () => {
+        const w = writable.getWriter();
+        try {
+          for (let n = 0; n < info.morceaux; n++) await w.write(new Uint8Array(await registre.morceauFichier(t, id, n)));
+          await w.close();
+        } catch (e) { await w.abort(e).catch(() => {}); }
+      })());
+      return new Response(readable, { headers: entetes });
     }
     // dépôt d'un morceau de jeu (administrateur)
     if (request.method === "PUT" && /^\/api\/jeux\/\d+\/morceau\/\d+$/.test(url.pathname)) {

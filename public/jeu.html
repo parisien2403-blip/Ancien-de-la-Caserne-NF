@@ -27,7 +27,9 @@
     window.EJS_core = q.get("console") || "snes";
     window.EJS_gameName = q.get("titre") || "Jeu";
     window.EJS_gameID = "caserne-" + q.get("id");
-    window.EJS_gameUrl = `/api/jeux/${encodeURIComponent(q.get("id"))}/fichier?t=${encodeURIComponent(moi.token)}`;
+    // une adresse propre à chaque jeu (avec le nom du fichier) : EmulatorJS s'en sert pour sa mémoire et les sauvegardes
+    const id = encodeURIComponent(q.get("id")), nom = (q.get("nom") || "jeu.bin").replace(/[^\w.\-]/g, "_");
+    window.EJS_gameUrl = `/api/jeux/${id}/rom/${id}-${encodeURIComponent(nom)}?t=${encodeURIComponent(moi.token)}`;
     window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
     window.EJS_language = "fr-FR";
     window.EJS_color = "#c4694a";
