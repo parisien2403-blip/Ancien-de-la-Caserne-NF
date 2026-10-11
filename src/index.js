@@ -89,7 +89,7 @@ export class Compteur extends DurableObject {
       "cle_pub TEXT", "cle_privee TEXT", "liaison_hash TEXT",
       // validation des inscriptions par l'administrateur (les comptes déjà là restent validés)
       "statut TEXT DEFAULT 'valide'", "motif TEXT", "decide TEXT",
-      // l'escalier (bâtiment A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
+      // l'escalier (lettre A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
       "bat TEXT", "etage INTEGER"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }

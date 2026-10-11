@@ -274,7 +274,7 @@
   .lp-card .footl { position: absolute; left: 280px; right: 40px; top: 524px; border-top: 2px solid #3b342c; }
   .lp-card .souv { position: absolute; right: 52px; bottom: 30px; font: italic 11px Georgia, serif; color: rgba(42,38,34,.55); }
 
-  /* ---------- Escaliers (bâtiments A à Z) ---------- */
+  /* ---------- Escaliers A à Z ---------- */
   .bat-saisie { position: relative; display: block; }
   .bat-saisie input { text-transform: uppercase; font-weight: 700; letter-spacing: .1em; }
   .bat-saisie img { position: absolute; right: 6px; bottom: 5px; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
@@ -830,7 +830,7 @@
           </label>
           <label class="field" id="fParentWrap">Nom du Garde (ton père ou ta mère)<input id="fParent" placeholder="BOUQUET"></label>
           <div class="row2">
-            <label class="field">Bât. (escalier)<span class="bat-saisie"><input id="fBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="fBatImg" alt="" hidden></span></label>
+            <label class="field">Escalier<span class="bat-saisie"><input id="fBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="fBatImg" alt="" hidden></span></label>
             <label class="field">Étage<select id="fEtage"><option value="">—</option><option value="0">Rez-de-chaussée</option><option value="1">1er étage</option><option value="2">2e étage</option><option value="3">3e étage</option><option value="4">4e étage</option><option value="5">5e étage</option><option value="6">6e étage</option><option value="7">7e étage</option></select></label>
           </div>
           <p class="aide-champ">L'escalier et l'étage où tu as vécu tes meilleurs moments à la caserne.</p>
@@ -856,7 +856,7 @@
               <div class="ln l1"><span class="lb">délivré à M</span><span class="ty" id="cNom"></span></div>
               <div class="ln l2"><span class="x">X</span><span class="ty" id="cQual"></span></div>
               <div class="ln l3"><span class="struck">Immatriculation véhicule</span></div>
-              <div class="ln l4"><span class="lb">Bât.</span><span class="ty bat"></span><span class="lb etg-lb">étage</span><span class="ty etg"></span></div>
+              <div class="ln l4"><span class="lb">Escalier</span><span class="ty bat"></span><span class="lb etg-lb">étage</span><span class="ty etg"></span></div>
               <svg class="stamp" viewBox="0 0 200 200" aria-hidden="true">
                 <defs><path id="lpc" d="M100,100 m-60,0 a60,60 0 1,1 120,0 a60,60 0 1,1 -120,0"/></defs>
                 <polygon points="62,8 138,8 192,62 192,138 138,192 62,192 8,138 8,62" fill="none" stroke="currentColor" stroke-width="4"/>
@@ -1094,7 +1094,7 @@
     <h2>🏢 Mon escalier</h2>
     <p class="sub">L'escalier et l'étage où tu as vécu tes meilleurs moments à la caserne. Ils s'affichent sur ton laissez-passer et dans la liste des membres.</p>
     <div class="row2">
-      <label class="field">Bât. (escalier)<span class="bat-saisie"><input id="eBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="eBatImg" alt="" hidden></span></label>
+      <label class="field">Escalier<span class="bat-saisie"><input id="eBat" maxlength="2" placeholder="A, B, C…" autocapitalize="characters" autocomplete="off" spellcheck="false"><img id="eBatImg" alt="" hidden></span></label>
       <label class="field">Étage<select id="eEtage"><option value="">—</option><option value="0">Rez-de-chaussée</option><option value="1">1er étage</option><option value="2">2e étage</option><option value="3">3e étage</option><option value="4">4e étage</option><option value="5">5e étage</option><option value="6">6e étage</option><option value="7">7e étage</option></select></label>
     </div>
     <p class="erreur" id="eErreur" hidden></p>
@@ -1724,7 +1724,7 @@
     $("st2").classList.toggle("on", !!filled);
   }
   ["fNom", "fPrenom", "fQual", "fParent", "fEtage"].forEach(id => $(id).addEventListener("input", renderCard));
-  /* ===== Escaliers : une lettre A à Z (bâtiments de l'ancienne caserne) et l'étage ===== */
+  /* ===== Escaliers : une lettre (A à Z, sans Q T U V W) et l'étage ===== */
   // les escaliers de la caserne : pas de Q, T, U, V ni W
   const LETTRES = "ABCDEFGHIJKLMNOPRSXYZ".split("");
   const imgEscalier = l => `images/escaliers/${l}.jpg`;
@@ -1992,9 +1992,10 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.9.3", "11 octobre 2026", ["On parle d'escalier, plus de bâtiment : « Escalier Z » sur la carte et dans les formulaires"]],
     ["1.9.2", "11 octobre 2026", ["Le bas de l'appli n'est plus coupé sur Android (Fold…) après un plein écran ou un pliage"]],
     ["1.9.1", "11 octobre 2026", ["Escaliers : 7 étages au plus"]],
-    ["1.9", "11 octobre 2026", ["Les escaliers de la caserne : chacun indique son escalier (lettre) et son étage, sur son laissez-passer et dans ses réglages", "Membres : le mur des escaliers, et la liste rangée par escalier puis par étage"]],
+    ["1.9", "11 octobre 2026", ["Les escaliers de la caserne : chacun indique son escalier (une lettre) et son étage, sur son laissez-passer et dans ses réglages", "Membres : le mur des escaliers, et la liste rangée par escalier puis par étage"]],
     ["1.8.1", "11 octobre 2026", ["Manette recalibrée : toute la moitié gauche sert de croix, les boutons répondent au plus proche du doigt, on glisse d'un bouton à l'autre, plusieurs doigts à la fois"]],
     ["1.8", "11 octobre 2026", ["Borne : quand on appuie sur ▶ JOUER, la télé et la manette prennent tout l'écran du téléphone (✕ pour revenir)"]],
     ["1.7.3", "11 octobre 2026", ["Borne : la télé et la manette tiennent ensemble à l'écran, même sur le Fold ouvert"]],
