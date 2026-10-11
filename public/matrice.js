@@ -1202,12 +1202,23 @@ function construireLieu(id, scene) {
     const boule = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 16), new THREE.MeshStandardMaterial({ map: tex(facettes), metalness: .25, roughness: .2, flatShading: true, emissive: 0xb8c4d0, emissiveIntensity: .35, emissiveMap: tex(facettes) }));
     boule.position.set(0, HT - 1.45, cz); boule.castShadow = true; scene.add(boule);
     A.ajoute(new THREE.CylinderGeometry(.015, .015, .9, 6), A.mat({ color: 0x8a8a8a, metalness: .6 }), 0, HT - .5, cz, false);   // la chaînette
-    // petits reflets colorés au sol et aux murs
-    const reflets = [];
-    for (let i = 0; i < 26; i++) { const a = alea() * Math.PI * 2, d = 1.5 + alea() * 4.5;
-      const t = new THREE.Mesh(new THREE.CircleGeometry(.07 + alea() * .05, 10), new THREE.MeshBasicMaterial({ color: [0xffffff, 0xfff1a8, 0xa8d8ff, 0xffb8e0][i % 4], transparent: true, opacity: .55, depthWrite: false }));
-      t.rotation.x = -Math.PI / 2; t.position.set(Math.cos(a) * d * .55, .02, cz + Math.sin(a) * d); scene.add(t); reflets.push([t, a, d]); }
-    L.anim = (temps) => { boule.rotation.y = temps / 3000; for (const [t, a, d] of reflets) { const b = a + temps / 3000; t.position.x = Math.max(X0 + .3, Math.min(X1 - .3, Math.cos(b) * d * .55)); t.position.z = cz + Math.sin(b) * d; } };
+    // les reflets de la boule : de petits points lumineux, projetés depuis la boule sur le sol, les murs et le plafond, qui tournent avec elle
+    const NR = 260, centre = new THREE.Vector3(0, HT - 1.45, cz), dirs = [];
+    for (let i = 0; i < NR; i++) { const y = -.95 + alea() * 1.75, r = Math.sqrt(1 - y * y), a = alea() * Math.PI * 2; dirs.push([Math.cos(a) * r, y, Math.sin(a) * r, .022 + alea() * .02]); }
+    const refMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide });
+    const reflets = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 10), refMat, NR); reflets.frustumCulled = false; scene.add(reflets);
+    const teintes = [0xffffff, 0xfff1a8, 0xa8d8ff, 0xffc4e6].map(c => new THREE.Color(c));
+    for (let i = 0; i < NR; i++) reflets.setColorAt(i, teintes[i % 4]);
+    const mR = new THREE.Matrix4(), qR = new THREE.Quaternion(), vR = new THREE.Vector3(), sR = new THREE.Vector3(), nz = new THREE.Vector3(0, 0, 1);
+    const NORM = { x0: new THREE.Vector3(1, 0, 0), x1: new THREE.Vector3(-1, 0, 0), y0: new THREE.Vector3(0, 1, 0), y1: new THREE.Vector3(0, -1, 0), z0: new THREE.Vector3(0, 0, 1), z1: new THREE.Vector3(0, 0, -1) };
+    let refK = 1; L.refletsTaille = k => { refK = k; };
+    L.anim = (temps) => { const b = temps / 3000; boule.rotation.y = b; const cb = Math.cos(b), sb = Math.sin(b);
+      dirs.forEach(([dx, dy, dz2, r], i) => { const x = dx * cb - dz2 * sb, z = dx * sb + dz2 * cb, y = dy;
+        let t = 1e9, f = null; const essai = (v, c, o, nom) => { if (Math.abs(v) < 1e-4) return; const tt = (c - o) / v; if (tt > 0 && tt < t) { t = tt; f = nom; } };
+        essai(x, X0 + .17, centre.x, "x0"); essai(x, X1 - .17, centre.x, "x1"); essai(y, .015, centre.y, "y0"); essai(y, HT - .02, centre.y, "y1"); essai(z, Z0 + .17, centre.z, "z0"); essai(z, Z1 - .17, centre.z, "z1");
+        vR.set(centre.x + x * t, centre.y + y * t, centre.z + z * t); qR.setFromUnitVectors(nz, NORM[f]); const rr = r * refK * (1 + t * .04); sR.set(rr, rr, 1);
+        reflets.setMatrixAt(i, mR.compose(vR, qR, sR)); });
+      reflets.instanceMatrix.needsUpdate = true; };
     // à droite de l'escalier : le coin du DJ (deux tables à nappes blanches, platines, table de mixage, micro, casque, enceintes, lumières, fumée)
     const dz = Z1 - .75, noir = A.mat({ color: 0x1a1a1c, roughness: .5 }), alu = A.mat({ color: 0xb8bcc2, metalness: .7, roughness: .3 });
     for (const xt of [-2.6, -4.2]) {
@@ -1323,7 +1334,7 @@ function construireLieu(id, scene) {
       applique.emissiveIntensity = .9 * k; vitre.emissiveIntensity = vitreB.emissiveIntensity = .55 * Math.max(.4, k);
       scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35 * Math.max(.3, k));
       boule.material.emissiveIntensity = .35 + .4 * s;
-      for (const [t] of reflets) { t.material.opacity = .55 + .45 * s; t.scale.setScalar(1 + .8 * s); } };
+      refMat.opacity = .7 + .3 * s; L.refletsTaille(1 + .4 * s); };
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.zone = [X0, X1, Z0, Z1];
     L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
