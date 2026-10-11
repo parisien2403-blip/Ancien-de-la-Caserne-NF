@@ -1891,6 +1891,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.7.2", "11 octobre 2026", ["Le code à 4 chiffres marche de nouveau sur l'écran verrouillé (les chiffres ne répondaient plus depuis la 1.6)"]],
     ["1.7.1", "11 octobre 2026", ["Borne : un jeu restait bloqué sur « Download Game Data », c'est réparé", "Borne : pendant une partie sur téléphone, la manette remonte juste sous la télé"]],
     ["1.7", "11 octobre 2026", ["Un œil 👁 pour voir ce qu'on tape dans les mots de passe et les codes", "Les messages de l'appli sont donnés par le chef de poste", "Bouton 🔄 Mise à jour de l'appli dans les réglages", "Le numéro de version et cette page « Quoi de neuf ? »"]],
     ["1.6", "11 octobre 2026", ["La borne de jeux dans la Salle des fêtes : le jeu s'affiche dans la télé", "Une image sur chaque cartouche", "Une manette sous la télé sur téléphone et tablette"]],
@@ -2754,7 +2755,7 @@
     if (!/^\d{4}$/.test(a)) { $("pinErreur").textContent = "Le code doit faire 4 chiffres."; $("pinErreur").hidden = false; return; }
     if (a !== b) { $("pinErreur").textContent = "Les deux codes ne sont pas identiques."; $("pinErreur").hidden = false; return; }
     const sel = crypto.getRandomValues(new Uint32Array(2)).join("-");
-    ecrire(clePin(pinEmail), { sel, h: await hachePin(a, sel) });
+    ecrire(clePin(pinEmail || (moi && moi.email)), { sel, h: await hachePin(a, sel) });
     finPin();
   };
   $("pinPlusTard").onclick = finPin;
@@ -2877,7 +2878,7 @@
   const tactile = matchMedia("(pointer: coarse)").matches;
   let manetteCourante = null;
   function emu() { try { return $("jeuFrame").contentWindow.EJS_emulator; } catch (e) { return null; } }
-  function touche(n, appui, analogique) {
+  function toucheManette(n, appui, analogique) {
     const e = emu();
     if (!e || !e.started || !e.gameManager) {
       // START avant que le jeu ait démarré : on appuie sur « ▶ JOUER »
@@ -2897,8 +2898,8 @@
     pil[0].hidden = !sel; pil[0].textContent = sel || ""; pil[1].hidden = !start; pil[1].textContent = start || "";
     $("manette").querySelectorAll("[data-touche]").forEach(b => {
       const n = +b.dataset.touche, an = !!b.dataset.analogique;
-      const bas = e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) {} b.classList.add("appui"); touche(n, true, an); };
-      const haut = e => { e.preventDefault(); if (!b.classList.contains("appui")) return; b.classList.remove("appui"); touche(n, false, an); };
+      const bas = e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) {} b.classList.add("appui"); toucheManette(n, true, an); };
+      const haut = e => { e.preventDefault(); if (!b.classList.contains("appui")) return; b.classList.remove("appui"); toucheManette(n, false, an); };
       b.onpointerdown = bas; b.onpointerup = haut; b.onpointercancel = haut; b.onlostpointercapture = haut; b.oncontextmenu = e => e.preventDefault();
     });
     $("manette").hidden = !tactile;
@@ -2912,8 +2913,8 @@
       // haut, bas, gauche, droite : touches 4 à 7 (croix), ou le stick analogique pour la N64
       const code = { haut: stick ? 19 : 4, bas: stick ? 18 : 5, gauche: stick ? 17 : 6, droite: stick ? 16 : 7 };
       for (const d of ["haut", "bas", "gauche", "droite"]) {
-        if (dirs.has(d) && !nouv.has(d)) touche(code[d], false, stick);
-        if (!dirs.has(d) && nouv.has(d)) touche(code[d], true, stick);
+        if (dirs.has(d) && !nouv.has(d)) toucheManette(code[d], false, stick);
+        if (!dirs.has(d) && nouv.has(d)) toucheManette(code[d], true, stick);
         c.classList.toggle(d, nouv.has(d));
       }
       dirs = nouv;
