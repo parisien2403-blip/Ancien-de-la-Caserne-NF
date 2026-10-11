@@ -299,6 +299,8 @@
   .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
   .mx-tourner { top: 56px; font-size: 20px; }
   .mx-lumiere { position: absolute; right: 10px; top: 102px; z-index: 3; border: 0; border-radius: 99px; padding: 8px 12px; background: rgba(31,42,55,.75); color: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
+  .mx-effet { position: absolute; right: 10px; z-index: 3; border: 0; border-radius: 99px; padding: 8px 12px; background: rgba(31,42,55,.75); color: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
+  #mxFumee { top: 148px; } #mxLasers { top: 190px; } .mx-effet.on { background: #2d8bff; } .mx-effet[hidden] { display: none; }
   .mx-lumiere.basse { background: #f6d465; color: #1f2a37; } .mx-lumiere[hidden] { display: none; }
   .mx-dire-plein, .mx-fil-plein { display: none; }
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
@@ -1102,6 +1104,8 @@
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
+          <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
+          <button class="mx-effet" id="mxLasers" type="button" title="Allumer les lasers" hidden>🔷 Lasers</button>
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
@@ -1920,9 +1924,10 @@
           $("mxCharleston").classList.toggle("on", on === "charleston"); $("mxCharleston").textContent = on === "charleston" ? "🛑 Stop" : "🦵 Charleston";
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin;
+        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
+        surLasers: on => { mxLasersOn = on; $("mxLasers").classList.toggle("on", on); $("mxLasers").textContent = on ? "🔷 Lasers ✓" : "🔷 Lasers"; },
         surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `💡 ${Math.round(n * 100)} %`; },
         surVolume: v => { djVolume = v; djSynchro(); },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
@@ -1980,7 +1985,9 @@
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && mxLieu === "fetes") { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
   // (administrateur) chaque appui baisse la lumière de la salle : 100 % → 60 % → 35 % → 15 % → 100 %
-  let mxLumiereNiv = 1;
+  let mxLumiereNiv = 1, mxLasersOn = false;
+  $("mxFumee").onclick = () => { if (!MX) return; MX.fumee(); $("mxFumee").disabled = true; setTimeout(() => $("mxFumee").disabled = false, 8000); };
+  $("mxLasers").onclick = () => MX && MX.lasers(!mxLasersOn);
   $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
@@ -2479,6 +2486,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.18", "11 octobre 2026", ["Matrice : les bonshommes (et le chef de poste) contournent les murs, les tables, le bar et la grille au lieu de passer au travers", "Salle des fêtes : bouton 💨 Fumée (un nuage envahit la piste) et 🔷 Lasers bleus, vus par tous ceux qui sont dans la salle"]],
     ["2.17", "11 octobre 2026", ["Madison complet : pointes de pied à gauche et à droite avec clap, genou levé et clap sous le genou de chaque côté, puis un tour complet sur soi-même"]],
     ["2.16", "11 octobre 2026", ["Matrice : deux nouvelles danses, 🦵 Charleston (mains sur les genoux qui se croisent et se décroisent) et 👏 Madison (pas sur le côté, pied qui tape, frappé de mains, demi-tour)", "Le chef de poste danse le Madison quand la musique est un Madison (et le Charleston, ou le disco, selon le titre)"]],
     ["2.15", "11 octobre 2026", ["Matrice : on tourne la caméra comme on veut en glissant le doigt n'importe où (gauche/droite pour tourner, haut/bas pour voir d'en haut), on pince ou on utilise la molette pour zoomer", "Toucher un porche ou une porte : on passe tout de suite de l'autre côté", "La rue est vue d'un peu plus haut ; on ne traverse plus la grille, on passe par le portillon ; le tourniquet est retiré", "Salle des fêtes : on n'entre et ne sort que par la porte ouverte", "Les noms au-dessus des bonshommes sont plus petits"]],

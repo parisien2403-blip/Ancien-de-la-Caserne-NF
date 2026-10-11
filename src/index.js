@@ -373,6 +373,7 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
+      if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
@@ -394,6 +395,12 @@ export class Compteur extends DurableObject {
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "fumee" && a.lieu === "fetes") {
+      // un nuage de fumée, au plus un toutes les 8 secondes
+      const der = (await this.ctx.storage.get("fumee_fetes")) || 0; if (Date.now() - der < 8000) return;
+      await this.ctx.storage.put("fumee_fetes", Date.now()); this.diffuser("fetes", { t: "fumee" });
+    } else if (m.t === "lasers" && a.lieu === "fetes") {
+      await this.ctx.storage.put("lasers_fetes", !!m.on); this.diffuser("fetes", { t: "lasers", on: !!m.on });
     } else if (m.t === "lumiere" && a.admin) {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
       const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));

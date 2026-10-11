@@ -662,12 +662,11 @@ function construireRue(A, T, L, scene) {
   emaille(.5, .34, (c, w, h) => { c.fillStyle = "#f7f5ef"; c.fillRect(0, 0, w, h); c.fillStyle = "#1d3f73"; c.fillRect(8, 8, 18, h - 16); c.fillStyle = "#c8102e"; c.fillRect(44, 8, 18, h - 16); c.fillStyle = "#1d3f73"; c.font = "bold 13px Georgia"; c.textAlign = "left"; c.fillText("RÉPUBLIQUE", 68, 30); c.fillText("FRANÇAISE", 68, 48); }, -4.75, 3.0, FZ + .04);
 
   /* --- où l'on peut marcher, la caméra, les passages --- */
-  L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24) || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.2);
+  // la grille noire (z = -7,5) ne s'ouvre qu'au portillon (x de 0,2 à 1,4)
+  L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24)
+    || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15);
+  L.zone = [-62, 62, -24, 24];
   L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -12.5, vers: "grande", arrivee: [0, 11] });
-  // la grille noire ne se traverse pas : entre le trottoir et la cage d'entrée, on passe par le portillon
-  L.trajet = (x0, z0, x1, z1) => { const dedans = z => z < -7.3;
-    if (dedans(z0) === dedans(z1)) return [[x1, z1]];
-    return dedans(z0) ? [[.8, -8.3], [.8, -6.7], [x1, z1]] : [[.8, -6.7], [.8, -8.3], [x1, z1]]; };
   raccourci(L, scene, [5.4, 4.6, 2.4], [0, 2.3, -12.6], { vers: "grande", arrivee: [0, 11] });
   L.anim = (temps) => {
     // le drapeau ondule
@@ -970,6 +969,7 @@ function construireLieu(id, scene) {
       if (alea() < .4) { const s = silhouette(1.4, 1.65); s.rotation.y = Math.PI; s.position.set(cx, y, ZF - .03); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
 
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6)) || (Math.abs(x) < 1.5 && z >= 14.8 && z < 24);
+    L.zone = [-10.4, 10.4, -17.6, 24.2];
     // le porche de cette façade mène à la rue du Faubourg-Poissonnière (on arrive sur le trottoir, face à la caserne)
     L.portails.push({ dans: (x, z) => Math.abs(x) < 1.8 && z > 18.5, vers: "rue", arrivee: [.8, -5.2] });
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { vers: "rue", arrivee: [.8, -5.2] });
@@ -1257,9 +1257,36 @@ function construireLieu(id, scene) {
     const fumeeTex = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(240,240,250,.85)"); g.addColorStop(1, "rgba(235,235,245,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }));
     const fumees = [];
     for (let i = 0; i < 22; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex, transparent: true, depthWrite: false, opacity: .5 })); scene.add(sp); fumees.push([sp, alea() * 1000, .6 + alea() * .8]); }
+    // le gros nuage de fumée (bouton 💨) : il sort du poste du DJ et envahit la piste pendant une dizaine de secondes
+    const nuage = [];
+    for (let i = 0; i < 46; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex, transparent: true, depthWrite: false, opacity: 0 })); sp.visible = false; scene.add(sp); nuage.push([sp, alea(), alea(), alea()]); }
+    L.fumee = () => { L.fumeeDebut = performance.now(); };
+    // les lasers bleus (bouton 🔷) : une tête laser sur le portique du DJ, un éventail de rayons qui balaient la salle
+    const tete = A.ajoute(new THREE.BoxGeometry(.3, .18, .25), noir, -3.2, 3.05, dz + .1, false);
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0x3a7dff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    const halo = new THREE.MeshBasicMaterial({ color: 0x1144ff, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false });
+    const pointMat = new THREE.MeshBasicMaterial({ color: 0x7fc4ff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false });
+    const rayons = [], geoR = new THREE.CylinderGeometry(.016, .016, 1, 6), geoH = new THREE.CylinderGeometry(.07, .07, 1, 8), geoP = new THREE.CircleGeometry(.09, 12);
+    for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(geoR, laserMat); r.add(new THREE.Mesh(geoH, halo)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointMat); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayons.push([r, pt, i]); }
+    L.setLasers = (on) => { L.lasers = on; for (const [r, pt] of rayons) r.visible = pt.visible = on; };
     const animBoule = L.anim;
     L.anim = (temps) => {
       animBoule && animBoule(temps);
+      if (L.lasers) { const src = new THREE.Vector3(-3.2, 3, dz - .05);
+        for (const [r, pt, i] of rayons) {
+          const a = (i - 6.5) * .2 + Math.sin(temps / 900) * .6, b = .35 + .25 * Math.sin(temps / 1300 + i * .4);
+          const dir = new THREE.Vector3(Math.sin(a) * Math.cos(b), -Math.sin(b), -Math.cos(a) * Math.cos(b)).normalize();
+          let lg = 18; if (dir.y < 0) lg = Math.min(lg, -src.y / dir.y);   // le rayon s'arrête au sol (ou plus loin, sur un mur)
+          const fin = src.clone().addScaledVector(dir, lg);
+          if (fin.x < X0 || fin.x > X1 || fin.z < Z0 || fin.z > Z1) { const k = Math.min(...[[X0, "x"], [X1, "x"], [Z0, "z"], [Z1, "z"]].map(([v, ax]) => { const t = (v - src[ax]) / dir[ax]; return t > 0 ? t : 99; })); lg = Math.min(lg, k); fin.copy(src).addScaledVector(dir, lg); }
+          r.position.copy(src).addScaledVector(dir, lg / 2); r.scale.set(1, lg, 1); r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+          pt.position.set(fin.x, Math.max(.02, fin.y), fin.z); pt.visible = fin.y < .1;
+          } laserMat.opacity = .75 + .25 * Math.sin(temps / 90); }
+      if (L.fumeeDebut) { const e = (performance.now() - L.fumeeDebut) / 1000;
+        if (e > 14) { L.fumeeDebut = 0; for (const [sp] of nuage) sp.visible = false; }
+        else for (const [sp, u, v, w] of nuage) { const t = Math.min(1, e / (3 + u * 4)), fade = e < 10 ? 1 : 1 - (e - 10) / 4;
+          sp.visible = true; sp.position.set(-3.2 + (u - .5) * 10 * t + Math.sin(temps / 1500 + v * 6) * .4, .3 + w * 1.6 * t, dz - .3 - v * 13 * t);
+          const sc = 1 + t * (2.2 + w * 1.6); sp.scale.set(sc, sc * .6, 1); sp.material.opacity = .55 * Math.min(1, e * 2) * fade * (.6 + .4 * w); } }
       for (const v of vinyles) v.rotation.y = -temps / 300;
       for (const p of projos) {     // les faisceaux balaient la piste
         const a = temps / 1400 + p.k * 1.7, tx = p.x + Math.sin(a) * 2.2, tz = dz - 4.5 + Math.cos(a * .8) * 2.5;
@@ -1298,6 +1325,7 @@ function construireLieu(id, scene) {
       boule.material.emissiveIntensity = .35 + .4 * s;
       for (const [t] of reflets) { t.material.opacity = .55 + .45 * s; t.scale.setScalar(1 + .8 * s); } };
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
+    L.zone = [X0, X1, Z0, Z1];
     L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
     L.portails.push({ dans: (x, z) => x < X0 + .7 && Math.abs(z - (Z0 + 2.5 * long / 5)) < 1.1, vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
@@ -1400,6 +1428,9 @@ export async function ouvrir(ctx) {
     for (const p of M.gens.values()) {
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
+        else if (M.L.limites(p.g.position.x, p.g.position.z) && !M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15)) {
+          // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
+          p.cible = null; p.chemin = []; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
         else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt)); if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
@@ -1635,8 +1666,42 @@ function animerPNJ() {
 
 /* --- déplacements --- */
 // aller vers (x, z) : si le lieu impose un passage (le portillon de la grille, dans la rue), on fait le détour
+function ligneLibre(L, x0, z0, x1, z1) {
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .06);
+  for (let i = 1; i <= n; i++) if (!L.limites(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false;
+  return true;
+}
+function itineraire(L, x0, z0, x1, z1) {
+  if (ligneLibre(L, x0, z0, x1, z1) || !L.zone) return [[x1, z1]];
+  const P = .35, [ax, bx, az, bz] = L.zone, nx = Math.ceil((bx - ax) / P) + 1, nz = Math.ceil((bz - az) / P) + 1;
+  if (!L.grille) { L.grille = new Uint8Array(nx * nz); for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) L.grille[j * nx + i] = L.limites(ax + i * P, az + j * P) ? 1 : 0; }
+  const G = L.grille, cx = i => ax + i * P, cz = j => az + j * P;
+  const proche = (x, z) => { let best = -1, bd = 1e9; const i0 = Math.round((x - ax) / P), j0 = Math.round((z - az) / P);
+    for (let r = 0; r < 12 && best < 0; r++) for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) {
+      if (i < 0 || j < 0 || i >= nx || j >= nz || !G[j * nx + i]) continue; const dd = Math.hypot(cx(i) - x, cz(j) - z); if (dd < bd) { bd = dd; best = j * nx + i; } }
+    return best; };
+  const s = proche(x0, z0), g = proche(x1, z1); if (s < 0 || g < 0) return [[x1, z1]];
+  // A* (tas binaire)
+  const cout = new Float32Array(nx * nz).fill(Infinity), de = new Int32Array(nx * nz).fill(-1), tas = [], h = k => Math.hypot(k % nx - g % nx, ((k / nx) | 0) - ((g / nx) | 0));
+  const pousser = (k, f) => { tas.push([f, k]); let i = tas.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (tas[p][0] <= tas[i][0]) break; [tas[p], tas[i]] = [tas[i], tas[p]]; i = p; } };
+  const tirer = () => { const r = tas[0], d = tas.pop(); if (tas.length) { tas[0] = d; let i = 0; for (;;) { const a = 2 * i + 1, b = a + 1; let m = i;
+    if (a < tas.length && tas[a][0] < tas[m][0]) m = a; if (b < tas.length && tas[b][0] < tas[m][0]) m = b; if (m === i) break; [tas[m], tas[i]] = [tas[i], tas[m]]; i = m; } } return r; };
+  cout[s] = 0; pousser(s, h(s));
+  while (tas.length) { const [, k] = tirer(); if (k === g) break; const i = k % nx, j = (k / nx) | 0;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) { const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= nx || b >= nz) continue;
+      const n = b * nx + a; if (!G[n]) continue; if (di && dj && (!G[j * nx + a] || !G[b * nx + i])) continue;
+      const c = cout[k] + (di && dj ? 1.414 : 1); if (c < cout[n]) { cout[n] = c; de[n] = k; pousser(n, c + h(n)); } } }
+  if (de[g] < 0 && g !== s) return [];   // pas de chemin : on ne bouge pas
+  const pts = []; for (let k = g; k !== s && k >= 0; k = de[k]) pts.unshift([cx(k % nx), cz((k / nx) | 0)]);
+  pts.push([x1, z1]);
+  // on lisse : on file tout droit vers le point le plus loin qu'on voit
+  const out = []; let px = x0, pz = z0, i = 0;
+  while (i < pts.length) { let j = pts.length - 1; while (j > i && !ligneLibre(L, px, pz, pts[j][0], pts[j][1])) j--; out.push(pts[j]); [px, pz] = pts[j]; i = j + 1; }
+  return out;
+}
 function viser(p, x, z) {
-  const pts = M.L.trajet ? M.L.trajet(p.g.position.x, p.g.position.z, x, z) : [[x, z]];
+  const pts = itineraire(M.L, p.g.position.x, p.g.position.z, x, z);
+  if (!pts.length) { p.cible = null; p.chemin = []; return; }
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
 function allerVers(x, z, envoyer) {
@@ -1677,6 +1742,9 @@ export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
+// la fumée et les lasers du DJ (tous ceux qui sont dans la salle des fêtes les voient)
+export function fumee() { envoyerWS({ t: "fumee" }); }
+export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 // (administrateur) la luminosité de la salle des fêtes, de 0,15 à 1, pour tous ceux qui y sont
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
@@ -1704,6 +1772,8 @@ function connecter() {
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
+    else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
+    else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
     else if (m.t === "lumiere") { M.lumiere = +m.niveau || 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? `${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`.toLowerCase() : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
