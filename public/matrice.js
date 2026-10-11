@@ -34,6 +34,9 @@ const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = 
 export function dessinerBonhomme(o, tete) {
   return toile(o.large ? 320 : 200, 420, (x) => {
     if (o.large) x.translate(60, 0);
+    // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
+    const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
+    x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const bas = t === "robe" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
@@ -143,6 +146,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#121212"; x.fillRect(58, 252, 84, 11); x.fillStyle = "#b9b9b9"; x.fillRect(95, 253, 10, 9);
       x.fillStyle = "#1a1a1a"; x.beginPath(); x.roundRect(134, 258, 16, 34, 4); x.fill();
     }
+    x.translate(100, 0); x.scale(1 / LG, 1); x.translate(-100, 0);    // le cou et la tête : sans élargissement
     x.fillStyle = peau; x.fillRect(88, 118, 24, 32);
     if (tete) {
       // la tête détourée, posée sur le cou (cadrée sur 112 px de large au plus, 124 de haut)
@@ -163,6 +167,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92);
     }
+    x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);    // (les verres, le torchon : dans les mains, qui ont suivi la corpulence)
     if (assis) {
       // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
       const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
@@ -2091,7 +2096,7 @@ export async function ouvrir(ctx) {
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
       if (p.corps && p.poses) {
-        const sx = tailleBonhomme() * .476 * 1.6;
+        const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
         if (Number.isInteger(p.info.assis)) {
@@ -2142,7 +2147,7 @@ export async function ouvrir(ctx) {
         else if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(ph * Math.PI) * .13; p.corps.position.x = Math.sin(ph * Math.PI) * .14; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .07; p.dansait = true; }
-        else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6; p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
+        else if (p.dansait) { p.dansait = false; p.corps.scale.x = tailleBonhomme() * .476 * 1.6 * hauteurDe(p); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
     if (M.L.anim) M.L.anim(t);
@@ -2255,6 +2260,7 @@ function majAmbiance() {
 export function ambiance(mode) { envoyerWS({ t: "ambiance", mode }); }
 
 /* --- les bonshommes dans la scène --- */
+const hauteurDe = p => Math.max(.75, Math.min(1.3, (p.info.reglage && p.info.reglage.h) || 1));   // le réglage « h » : plus grand, plus petit
 const tailleBonhomme = () => M && M.L ? M.L.taille || (M.L.interieur ? 1.8 : 2.4) : 2.4;
 const sprite = (c, l, h) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, depthWrite: false })); s.scale.set(l, h, 1); return s; };
 const etiquette = (texte, moi, admin) => toile(512, 96, (x) => { x.font = "bold 44px Arial"; const t = (admin ? "★ " : "") + texte, w = x.measureText(t).width + 50;
@@ -2285,7 +2291,7 @@ async function dessinerCorps(p) {
   p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
     assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
-  else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
+  else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
@@ -2294,7 +2300,7 @@ function ajouterAncien(info) {
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
   const H = tailleBonhomme();
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
-  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .42, H * .08); nom.position.y = H + .14; g.add(nom);
+  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .42, H * .08); nom.position.y = H * hauteurDe(p) + .14; g.add(nom);
   M.gens.set(info.numero, p);
   if (Number.isInteger(info.assis)) asseoir(p, info.assis);
   dessinerCorps(p);
@@ -2304,7 +2310,7 @@ function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) retu
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (p.bulle) p.g.remove(p.bulle);
-  const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H + .5; p.g.add(p.bulle);
+  const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H * hauteurDe(p) + .5; p.g.add(p.bulle);
   p.bulleFin = performance.now() + Math.min(6000, 2500 + texte.length * 40);
 }
 
@@ -2585,7 +2591,7 @@ function connecter() {
     else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) viser(p, m.x, m.z); }
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
-    else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
+    else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }

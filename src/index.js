@@ -295,7 +295,7 @@ export class Compteur extends DurableObject {
     const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : D.tenue, couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : D.couleur;
     const nom = texte(x.nom, 40) || D.nom;
     const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
-    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
+    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0), l: borne(R.l, .7, 1.6, 1), h: borne(R.h, .75, 1.3, 1) });
     if (!this.sql.exec("SELECT 1 FROM pnj WHERE id = ?", id).toArray().length) this.sql.exec("INSERT INTO pnj (id, v) VALUES (?, 0)", id);
     this.sql.exec("UPDATE pnj SET nom = ?, tenue = ?, couleur = ?, bas = ?, pieds = ?, reglage = ?, v = v + 1 WHERE id = ?", nom, tenue, couleur, hexa(x.bas, null), hexa(x.pieds, null), reglage, id);
     if (x.tete === null) this.sql.exec("UPDATE pnj SET tete = NULL WHERE id = ?", id);
@@ -313,7 +313,7 @@ export class Compteur extends DurableObject {
     const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "civil";
     const couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#22324f";
     const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
-    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
+    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0), l: borne(R.l, .7, 1.6, 1), h: borne(R.h, .75, 1.3, 1) });
     let tete;
     if (x.tete === null) tete = null;
     else if (x.tete !== undefined) {

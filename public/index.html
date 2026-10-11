@@ -1267,6 +1267,12 @@
         <div class="bh-actions"><button type="button" class="btn small" id="bhPhotoProfil">📷 Ma photo de profil</button>
           <label class="btn small alt">🖼️ Une autre photo<input type="file" accept="image/*" id="bhFichier" hidden></label>
           <button type="button" class="link" id="bhSansTete" style="margin:0">Sans photo</button></div>
+        <div class="bh-cadrage bh-corps">
+          <div class="bh-titre">La silhouette <small>(pour tout le monde dans la Matrice)</small></div>
+          <label class="bh-curseur">Corpulence<input type="range" id="bhLarge" min="70" max="160" value="100"></label>
+          <label class="bh-curseur">Taille<input type="range" id="bhHaut" min="75" max="130" value="100"></label>
+          <button type="button" class="link" id="bhSilhouetteNormale" style="margin:2px 0 0">Silhouette normale</button>
+        </div>
         <div class="bh-cadrage" id="bhCadrage" hidden>
           <div class="bh-titre">Placer ma tête <small>(fais-la glisser du doigt sur le bonhomme)</small></div>
           <label class="bh-curseur">Taille<input type="range" id="bhTaille" min="40" max="250" value="100"></label>
@@ -2122,11 +2128,14 @@
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
-  const majCurseurs = () => { $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhCadrage").hidden = !bh.img; };
+  const majCurseurs = () => { $("bhLarge").value = Math.round((bh.reglage.l || 1) * 100); $("bhHaut").value = Math.round((bh.reglage.h || 1) * 100); $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhCadrage").hidden = !bh.img; };
+  $("bhLarge").oninput = () => { bh.reglage.l = $("bhLarge").value / 100; apercuBonhomme(); };
+  $("bhHaut").oninput = () => { bh.reglage.h = $("bhHaut").value / 100; apercuBonhomme(); };
+  $("bhSilhouetteNormale").onclick = () => { bh.reglage.l = 1; bh.reglage.h = 1; majCurseurs(); apercuBonhomme(); };
   $("bhTaille").oninput = () => { bh.reglage.k = $("bhTaille").value / 100; apercuBonhomme(); };
   $("bhPencher").oninput = () => { bh.reglage.r = +$("bhPencher").value; apercuBonhomme(); };
   document.querySelectorAll("[data-bh-dep]").forEach(b => b.onclick = () => { const [dx, dy] = b.dataset.bhDep.split(",").map(Number); bh.reglage.dx = Math.max(-80, Math.min(80, bh.reglage.dx + dx)); bh.reglage.dy = Math.max(-80, Math.min(80, bh.reglage.dy + dy)); apercuBonhomme(); });
-  $("bhRecentrer").onclick = () => { bh.reglage = { k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs(); apercuBonhomme(); };
+  $("bhRecentrer").onclick = () => { bh.reglage = { ...bh.reglage, k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs(); apercuBonhomme(); };
   // faire glisser la tête du doigt sur l'aperçu (et pincer à deux doigts pour la taille)
   (() => { const c = $("bhApercu"), doigts = new Map(); let depart = null;
     c.addEventListener("pointerdown", e => { if (!bh.img) return; c.setPointerCapture(e.pointerId); doigts.set(e.pointerId, [e.clientX, e.clientY]);
@@ -2167,7 +2176,9 @@
   function apercuBonhomme() {
     if (!MX) return;
     const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, bas: bh.bas, pieds: bh.pieds, reglage: bh.reglage, initiales: bh.mode === "bar" ? "MM" : bh.mode === "dj" ? "DJ" : bh.mode === "pnj" ? "CP" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: bh.mode === "moi" }, bh.img);
-    const x = $("bhApercu").getContext("2d"); x.clearRect(0, 0, 200, 420); x.drawImage(c, 0, 0);
+    // l'aperçu : plus grand ou plus petit, les pieds toujours en bas
+    const x = $("bhApercu").getContext("2d"), hh = bh.reglage.h || 1, f = hh / 1.3, dw = 200 * f, dh = 420 * f;
+    x.clearRect(0, 0, 200, 420); x.drawImage(c, (200 - dw) / 2, 420 - dh, dw, dh);
     $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.classList.toggle("on", b.dataset.tenue === bh.tenue));
     $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.classList.toggle("on", b.dataset.couleur === bh.couleur));
     $("bhBas").querySelectorAll("[data-bas]").forEach(b => b.classList.toggle("on", (b.dataset.bas || null) === (bh.bas || null)));
@@ -2179,7 +2190,7 @@
     try {
       const img = new Image(); img.src = src; await img.decode();
       const r = await MX.detourerTete(img);
-      bh.tete = r.png; bh.img = new Image(); bh.img.src = r.png; await bh.img.decode(); bh.reglage = { k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs();
+      bh.tete = r.png; bh.img = new Image(); bh.img.src = r.png; await bh.img.decode(); bh.reglage = { ...bh.reglage, k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs();
       $("bhEtat").textContent = r.auto ? "✓ Tête détourée automatiquement." : "Le détourage automatique n'a pas marché sur cette photo : j'ai gardé un ovale. Essaie une photo de face, bien éclairée.";
       apercuBonhomme();
     } catch (e) { $("bhEtat").textContent = "Photo illisible : " + e.message; }
@@ -2535,6 +2546,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.19", "11 octobre 2026", ["Mon bonhomme (et, pour l'administrateur, le chef de poste, Manu et Mr Miner) : deux nouveaux curseurs, « Corpulence » (plus mince, plus fort) et « Taille » (plus petit, plus grand) ; la tête garde ses proportions"]],
     ["3.18.2", "11 octobre 2026", ["Sous-sol : la table et les deux fauteuils à côté des tabourets du bar sont retirés ; en se relevant d'un tabouret, on n'est plus jamais coincé"]],
     ["3.18.1", "11 octobre 2026", ["La musique de la fête s'entend d'office dans la Matrice (plus besoin d'appuyer sur « Écouter ») : elle démarre au premier toucher de l'écran ; 🔇 pour couper"]],
     ["3.18", "11 octobre 2026", ["Nouveau personnage : Mr Miner, le barman, en chemise et grand tablier bleu, derrière le grand comptoir de la salle des fêtes ; il va et vient, essuie les verres, les range ; dès que quelqu'un s'assoit au bar, il vient le voir et lui pose un verre sur le comptoir", "(Administrateur) bouton « 🍷 Mr Miner, le barman » pour régler sa tête, ses vêtements et son nom"]],
