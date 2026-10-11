@@ -758,6 +758,14 @@
   .borne-zone.immersion .manette { width: 100%; flex: none; margin: 22px 0 0; }
   .borne-zone.immersion .quitter-borne { display: grid; place-items: center; position: absolute; z-index: 3; top: calc(14px + env(safe-area-inset-top)); right: 14px;
     width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; font-size: 20px; cursor: pointer; }
+  /* la console du sous-sol (Matrice) : la télé et ses cartouches par-dessus la Matrice */
+  .borne-zone.console { position: fixed; inset: 0; z-index: 2400; max-width: none; margin: 0; overflow: auto;
+    padding: calc(64px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 30%, #3a2a1e, #120c08 80%); }
+  .borne-zone.console > .borne, .borne-zone.console > .borne-barre, .borne-zone.console > .cartouches, .borne-zone.console > .manette { max-width: 620px; margin-left: auto; margin-right: auto; }
+  .borne-zone.console .borne-admin { display: none !important; }
+  .borne-zone.console .borne-barre .kicker { color: #f3e7d3; }
+  .borne-zone.console .quitter-borne { display: grid; place-items: center; position: fixed; z-index: 3; top: calc(14px + env(safe-area-inset-top)); right: 14px;
+    width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; font-size: 20px; cursor: pointer; }
   /* manette plus compacte quand l'écran est bas (Fold ouvert, tablette à l'horizontale) */
   .manette.compacte { padding: 18px 12px 10px; margin-top: 14px; }
   .manette.compacte .croix { width: 100px; height: 100px; }
@@ -1940,6 +1948,7 @@
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
+        surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
@@ -2068,7 +2077,7 @@
     $("djEnvoi").hidden = true; chargerDisco();
   };
 
-  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   /* la discussion : sous la scène les derniers messages (une heure au plus), chacun peut retirer les siens, l'administrateur tous ;
      en plein écran, un message ne reste affiché qu'une minute */
   let mxFilListe = [];
@@ -2512,6 +2521,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.11", "11 octobre 2026", ["Le sous-sol : sur la table du fond, la vieille télé et la Super Nintendo (manette, cartouches, canette) ; on s'en approche, « 🎮 Jouer à la console », et l'on se retrouve devant la télé de la borne avec les jeux à choisir ; ✕ pour revenir dans la Matrice"]],
     ["3.10", "11 octobre 2026", ["Le sous-sol, la grande pièce : un comptoir de bar verni à droite de la porte (on passe derrière), les étagères à bouteilles contre le mur avec leur miroir, des bouteilles et des verres, des tables rectangulaires le long des murs avec des fauteuils de bar en cuir devant, et un baby-foot"]],
     ["3.9", "11 octobre 2026", ["Le sous-sol : en bas de l'escalier, un tout petit vestibule vide (même carrelage, mêmes murs) ; en face, une porte ouverte sur une pièce un peu plus grande, mêmes murs, parquet vernis foncé"]],
     ["3.8", "11 octobre 2026", ["Salle des fêtes : la porte en bas des marches est ouverte ; on descend l'escalier et le petit couloir jusqu'à la petite salle du sous-sol (même carrelage, mêmes murs et lambris, un lustre, une table bistrot et un banc), puis on remonte par le même chemin"]],
@@ -3640,6 +3650,11 @@
       else { b.classList.add("en-jeu"); b.style.maxWidth = Math.round(Math.min(W, Math.max(150, dispo - hM) * 1400 / 789)) + "px"; }
       return;
     }
+    if (z.classList.contains("console")) {      // devant la console du sous-sol : la télé tient avec la manette dans la hauteur de l'écran
+      if (!jeuEnCours || m.hidden) { b.style.maxWidth = ""; m.classList.remove("compacte"); return; }
+      const dispo = z.clientHeight - 90; m.classList.toggle("compacte", dispo < 640);
+      b.style.maxWidth = Math.round(Math.max(150, dispo - m.offsetHeight - 30) * 1400 / 789) + "px"; return;
+    }
     if (tactile && jeuEnCours) b.classList.add("en-jeu");
     if (!b.classList.contains("en-jeu") || m.hidden) { b.style.maxWidth = ""; m.classList.remove("compacte"); return; }
     const sc = $("scroll").getBoundingClientRect(), tb = $("tabbar").getBoundingClientRect();
@@ -3667,7 +3682,22 @@
     if (document.fullscreenElement === document.documentElement) document.exitFullscreen().catch(() => {});
     ajusterBorne();
   }
-  $("quitterBorne").onclick = quitterImmersion;
+  $("quitterBorne").onclick = () => { if ($("borneZone").classList.contains("immersion")) quitterImmersion(); else fermerConsole(); };
+  /* la console du sous-sol, dans la Matrice : on s'avance vers la télé, « Jouer à la console », et l'on se retrouve devant la borne, les cartouches à choisir */
+  let consolePlace = null;
+  function ouvrirConsole() {
+    const z = $("borneZone"); if (z.classList.contains("console")) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    consolePlace = [z.parentNode, z.nextSibling]; document.body.appendChild(z);
+    z.classList.add("console"); z.scrollTop = 0; chargerBorne(); ajusterBorne();
+  }
+  function fermerConsole() {
+    const z = $("borneZone"); if (!z.classList.contains("console")) return;
+    eteindre(); z.classList.remove("console");
+    if (consolePlace) { consolePlace[0].insertBefore(z, consolePlace[1]); consolePlace = null; }
+    ajusterBorne();
+  }
+  window.ouvrirConsole = ouvrirConsole; window.fermerConsole = fermerConsole;
   // le geste « retour » d'Android quitte le plein écran : on revient aussi à la salle des fêtes
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) quitterImmersion(); });
   /* La manette, réglée pour le doigt :

@@ -1722,6 +1722,41 @@ function construireLieu(id, scene) {
       const xw = sg * GX, x0 = sg > 0 ? xw - .75 : xw, x1 = sg > 0 ? xw : xw + .75; table(x0, x1, z - .6, z + .6);
       for (const dz of [-.33, .33]) fauteuil(xw - sg * 1.12, z + dz, sg, 0); }
     for (const x of [-1.1, 1.1]) { table(x - .6, x + .6, GZ0, GZ0 + .75); for (const dx of [-.33, .33]) fauteuil(x + dx, GZ0 + 1.12, 0, -1); }   // contre le mur du fond
+    /* sur la table du fond, côté baby-foot : la vieille télé et la Super Nintendo (cartouches, manette, canette) ;
+       on s'en approche, « Jouer à la console », et l'on se retrouve devant la télé avec les jeux de la borne */
+    { const tz = -7.0, gris = A.mat({ color: 0xb9b8bd, roughness: .55 }), grisF = A.mat({ color: 0x6f6e75, roughness: .5 }), noirT = A.mat({ color: 0x1d1d20, roughness: .45 });
+      const tv = new THREE.Group(); tv.position.set(3.42, .775, tz); scene.add(tv);
+      const caisse = new THREE.Mesh(new THREE.BoxGeometry(.46, .5, .62), noirT); caisse.position.y = .27; caisse.castShadow = true; tv.add(caisse);
+      const arriere = new THREE.Mesh(new THREE.BoxGeometry(.3, .38, .46), noirT); arriere.position.set(.22, .25, 0); tv.add(arriere);
+      const ecranT = tex(toile(320, 240, (x, w, h) => { const g = x.createRadialGradient(w * .55, h * .5, 10, w / 2, h / 2, w * .7); g.addColorStop(0, "#6b4fb8"); g.addColorStop(.5, "#2b2a6e"); g.addColorStop(1, "#0b0c1c");
+        x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(255,255,255,.05)"; for (let y = 0; y < h; y += 3) x.fillRect(0, y, w, 1);
+        x.fillStyle = "#f4f1ea"; x.font = "bold 26px 'Arial Black', Arial"; x.textAlign = "center"; x.fillText("SUPER NINTENDO", w / 2, h / 2 - 8);
+        x.font = "bold 18px 'Courier New', monospace"; x.fillStyle = "#ffd75e"; x.fillText("▶ CHOISIS TON JEU", w / 2, h / 2 + 30); }));
+      const ecr = new THREE.Mesh(new THREE.PlaneGeometry(.5, .37), new THREE.MeshStandardMaterial({ map: ecranT, emissive: 0xffffff, emissiveMap: ecranT, emissiveIntensity: .75, roughness: .15 }));
+      ecr.rotation.y = -Math.PI / 2; ecr.position.set(-.235, .3, -.02); tv.add(ecr);
+      for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .01, 10), grisF); b.rotation.z = Math.PI / 2; b.position.set(-.235, .07, -.12 + k * .035); tv.add(b); }
+      const lueur = new THREE.PointLight(0x7c6cff, 1.2, 2.5, 2); lueur.position.set(2.9, 1.1, tz); scene.add(lueur);
+      // la Super Nintendo, devant la télé
+      const sn = new THREE.Group(); sn.position.set(3.08, .775, tz + .02); scene.add(sn);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(.2, .06, .24), gris); base.position.y = .03; sn.add(base);
+      const dessus = new THREE.Mesh(new THREE.BoxGeometry(.13, .012, .2), grisF); dessus.position.set(.02, .066, 0); sn.add(dessus);
+      const fente = new THREE.Mesh(new THREE.BoxGeometry(.03, .004, .13), noirT); fente.position.set(.03, .074, 0); sn.add(fente);
+      for (const [dz, c] of [[-.07, 0x6d6c74], [.07, 0x6d6c74], [0, 0x8b8a92]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.03, .012, dz ? .03 : .05), A.mat({ color: c })); b.position.set(-.06, .066, dz); sn.add(b); }
+      const voy = new THREE.Mesh(new THREE.BoxGeometry(.004, .006, .006), new THREE.MeshBasicMaterial({ color: 0xff5a2a })); voy.position.set(-.1, .045, .09); sn.add(voy);
+      // la manette (grise, boutons de couleur) et son fil
+      const man = new THREE.Group(); man.position.set(3.0, .78, tz - .3); man.rotation.y = -.4; scene.add(man);
+      const corpsM = new THREE.Mesh(new THREE.BoxGeometry(.06, .02, .13), gris); corpsM.position.y = .01; man.add(corpsM);
+      for (const sg of [-1, 1]) { const bout = new THREE.Mesh(new THREE.CylinderGeometry(.032, .032, .02, 16), gris); bout.position.set(0, .01, sg * .065); man.add(bout); }
+      [[0x2d5fb3, -.012, .07], [0x2e9a4a, 0, .058], [0xd8312a, 0, .082], [0xe9c22c, .012, .07]].forEach(([c, dx, dz]) => { const b = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .006, 8), A.mat({ color: c })); b.position.set(dx, .023, dz); man.add(b); });
+      const croix = new THREE.Mesh(new THREE.BoxGeometry(.012, .005, .03), noirT); croix.position.set(0, .022, -.065); man.add(croix);
+      const croix2 = croix.clone(); croix2.scale.set(2.5, 1, .4); man.add(croix2);
+      const fil = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(3.03, .785, tz - .24), new THREE.Vector3(3.1, .78, tz - .15), new THREE.Vector3(3.0, .78, tz - .05)]), 12, .004, 5), noirT); scene.add(fil);
+      // les cartouches empilées, la canette rouge
+      [[0x2e5fb0, 0], [0x1a1a1a, .025], [0x1a1a1a, .05]].forEach(([c, y]) => A.ajoute(new THREE.BoxGeometry(.13, .024, .19), A.mat({ color: c, roughness: .4 }), 3.25, .79 + y, tz + .45, false));
+      A.ajoute(new THREE.CylinderGeometry(.033, .033, .12, 16), A.mat({ color: 0xc8102e, roughness: .3, metalness: .3 }), 3.12, .835, tz - .45, false);
+      L.console = [2.15, tz];
+      raccourci(L, scene, [.6, .6, .7], [3.35, 1.05, tz], { marche: [2.12, tz] });
+    }
     // le baby-foot, vers le fond à gauche (vu de la porte d'en face, de l'autre côté du bar)
     obstacles.push(babyFoot(A, 2.25, FM - 1.6));
     L.limites = (x, z) => (Math.abs(x) < VX - .35 && z > VZ0 + .3 && z < VZ1 - .3)
@@ -2134,7 +2169,8 @@ function chercherAction(t) {
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
-      if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
+      if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
+      else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
       else { let best = null, bd = 1.9;
         for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
           const d = Math.hypot(p.g.position.x - x, p.g.position.z - z); if (d < bd) { bd = d; best = p; } }
@@ -2154,6 +2190,7 @@ export function agir() {
   else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); allerVers(moi.g.position.x - .7, moi.g.position.z, true); }
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
+  else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   M.actionT = 0;
 }
 export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }
