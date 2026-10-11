@@ -302,9 +302,10 @@
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
   .mx-ambiance button { border: 1.5px solid var(--line); border-radius: 99px; padding: 5px 11px; background: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
-  .mx-danse { position: absolute; left: 12px; bottom: 14px; z-index: 3; border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
+  .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; gap: 6px; }
+  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: auto; right: 12px; }
+  .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
-  .mx-scene:fullscreen .mx-danse { bottom: 74px; left: auto; right: 12px; }
   .mx-scene:fullscreen .mx-musique { bottom: 122px; }
   .mx-scene:fullscreen .mx-fil-plein { bottom: 70px; }
   .mx-scene:fullscreen .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
@@ -312,7 +313,7 @@
   .mx-scene:fullscreen .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
-  .mx-scene:fullscreen .mx-musique { bottom: 74px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
+  .mx-scene:fullscreen .mx-musique { bottom: 122px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
   .mx-musique { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
     background: #f6d465; color: #2b2340; font: 700 15px "Lato", sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; }
@@ -321,7 +322,10 @@
   .mx-dire input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 99px; padding: 12px 16px; font: 15px "Lato", sans-serif; outline: none; background: #fff; }
   .mx-dire input:focus { border-color: var(--terra); }
   .mx-fil { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 14px; }
-  .mx-fil div { background: var(--card); border-radius: 10px; padding: 6px 10px; } .mx-fil b { color: var(--navy); } .mx-fil small { color: var(--muted); margin-left: 6px; }
+  .mx-fil div { background: var(--card); border-radius: 10px; padding: 6px 10px; position: relative; padding-right: 34px; }
+  .mx-effacer { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+  .mx-effacer:hover { background: rgba(196,105,74,.15); color: #c4694a; }
+  .mx-tout-effacer { align-self: flex-end; border: 0; background: none; color: #c4694a; font: 700 13px "Lato", sans-serif; cursor: pointer; padding: 4px 6px; } .mx-fil b { color: var(--navy); } .mx-fil small { color: var(--muted); margin-left: 6px; }
   .bonhomme .bh-grille { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; }
   .bonhomme canvas { width: 150px; height: 315px; border-radius: 14px; background: radial-gradient(circle at 50% 70%, #e9dfcf, #f7f1e6); touch-action: none; cursor: grab; }
   .bh-cadrage { margin: 8px 0 4px; } .bh-cadrage[hidden] { display: none; } .bh-titre small { font-weight: 400; }
@@ -1092,7 +1096,7 @@
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
-          <button class="mx-danse" id="mxDanse" type="button">💃 Danser</button>
+          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
           <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
@@ -1115,7 +1119,7 @@
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
-        <p class="legal" style="text-align:left">Touche le sol pour marcher, touche ton bonhomme (ou 💃) pour danser, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
+        <p class="legal" style="text-align:left">Touche le sol pour marcher, touche ton bonhomme (ou 💃, ou 🕺 pour le disco façon Travolta) pour danser, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), entre dans la salle des fêtes par les portes vitrées de droite, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré ; les messages s'effacent tout seuls au bout d'une heure, et tu peux retirer les tiens avec ✕).</p>
       </div>
 
       <div class="tab" data-tab="vague" hidden>
@@ -1903,15 +1907,16 @@
         conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; },
         surToucherDJ: allerAuDJ,
         surAmbiance: mode => document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)),
-        surDanse: on => { jeDanse = on; $("mxDanse").classList.toggle("on", on); $("mxDanse").textContent = on ? "🛑 Arrêter de danser" : "💃 Danser"; },
+        surDanse: on => { jeDanse = on;
+          $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
+          $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
-        surFil: fil => { $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small></div>`).join(""); $("mxFil").scrollTop = 1e6;
-          $("mxFilPlein").innerHTML = fil.slice(-4).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}</div>`).join(""); },
+        surFil: fil => { mxFilListe = fil; dessinerFil(); },
         surInfo: t => infoMatrice(t),
         surErreur: t => { $("mxVoile").innerHTML = `<span>${esc(t)}</span>`; $("mxVoile").hidden = false; },
         surToucherAncien: p => menuAncien(m, p),
@@ -1927,7 +1932,8 @@
   }
   $("mxMusique").onclick = allerAuDJ;
   let jeDanse = false;
-  $("mxDanse").onclick = () => MX && MX.danser(!jeDanse);
+  $("mxDanse").onclick = () => MX && MX.danser(jeDanse === "balance" ? false : "balance");
+  $("mxDisco").onclick = () => MX && MX.danser(jeDanse === "disco" ? false : "disco");
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -2001,6 +2007,20 @@
   };
 
   function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  /* la discussion : sous la scène les derniers messages (une heure au plus), chacun peut retirer les siens, l'administrateur tous ;
+     en plein écran, un message ne reste affiché qu'une minute */
+  let mxFilListe = [];
+  function dessinerFil() {
+    const fil = mxFilListe, admin = !!moi.admin;
+    $("mxFil").innerHTML = fil.slice(-12).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}<small>${esc(new Date(d.cree).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))}</small>${d.id && (admin || d.numero === MXmoi()) ? `<button type="button" class="mx-effacer" data-efface="${+d.id}" title="Retirer ce message" aria-label="Retirer ce message">✕</button>` : ""}</div>`).join("")
+      + (admin && fil.length ? `<button type="button" class="mx-tout-effacer" data-efface="tout">🧹 Effacer toute la discussion</button>` : "");
+    $("mxFil").scrollTop = 1e6;
+    $("mxFilPlein").innerHTML = fil.filter(d => Date.now() - new Date(d.cree) < 60000).slice(-4).map(d => `<div><b>${esc(d.nom)}</b> ${esc(d.texte)}</div>`).join("");
+  }
+  setInterval(() => { if (mxFilListe.length && $("mxFilPlein").childElementCount) dessinerFil(); }, 5000);
+  $("mxFil").onclick = async e => { const b = e.target.closest("[data-efface]"); if (!b || !MX) return;
+    if (b.dataset.efface === "tout") { if (!await garde("Effacer toute la discussion de ce lieu, pour tout le monde ?", { titre: "Effacer la discussion", annuler: "Non", ok: "Effacer" })) return; MX.effacerDit("tout"); }
+    else MX.effacerDit(+b.dataset.efface); };
   $("mxDirePlein").onsubmit = e => { e.preventDefault(); const t = $("mxTextePlein").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTextePlein").value = ""; };
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
@@ -2424,6 +2444,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.10", "11 octobre 2026", ["Matrice : nouvelle danse 🕺 Disco, façon John Travolta : le doigt en l'air, puis vers le sol", "Les bras ne sont plus coupés quand on danse", "Discussion : les messages s'effacent au bout d'une heure ; chacun retire les siens (✕), l'administrateur peut tout effacer ; en plein écran ils disparaissent au bout d'une minute", "Plein écran : le bouton Musique ne passe plus sous Danser"]],
     ["2.9.1", "11 octobre 2026", ["Matrice : les bulles au-dessus des bonshommes disparaissent plus vite (6 secondes au plus)"]],
     ["2.9", "11 octobre 2026", ["Mon bonhomme : nouvelles tenues T-shirt et jean, Polo et jean ; on choisit aussi la couleur du pantalon et des chaussures", "Matrice en plein écran : on peut discuter sans en sortir (barre en bas et derniers messages)", "Matrice : on danse ! Bouton 💃 Danser, ou touche ton bonhomme ; tout le monde te voit danser", "Cour d'honneur : la nuit tombe à l'heure réelle de Paris (lune, fenêtres allumées, lumières de la fête derrière les baies) ; l'administrateur peut imposer jour ou nuit", "Salle des fêtes : musiques jusqu'à 50 Mo"]],
     ["2.8", "11 octobre 2026", ["L'administrateur règle le bonhomme du chef de poste (tête, tenue, couleur, nom)", "Cour d'honneur : plus de demi-tour, la vue reste face au bâtiment", "Salle des fêtes : bouton « 🎧 Musique » et toucher le coin du DJ pour ouvrir la musique"]],

@@ -28,8 +28,10 @@ let graine = 7; const alea = () => (graine = (graine * 16807) % 2147483647) / 21
 const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
 
 /* ---------- le bonhomme (dessiné en 2D, posé dans la 3D comme un panneau toujours tourné vers nous) ---------- */
+// o.large : marge de 60 px de chaque côté, pour que les bras levés de la danse ne soient pas coupés
 export function dessinerBonhomme(o, tete) {
-  return toile(200, 420, (x) => {
+  return toile(o.large ? 320 : 200, 420, (x) => {
+    if (o.large) x.translate(60, 0);
     const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const bas = t === "robe" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
@@ -43,16 +45,24 @@ export function dessinerBonhomme(o, tete) {
     x.fillStyle = haut; x.beginPath();
     if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
-    // les bras : pendants, ou levés pour danser (o.pose = "haut")
+    // les bras : pendants, ou levés pour danser (o.pose = "haut") ; en disco, le bras droit pointe le doigt en l'air puis vers le sol
+    const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
     const bras = (cx, sens) => {
-      const a = o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.3 : 0;
+      const disco = DISCO[o.pose], doigt = disco && sens < 0;
+      const a = disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1 : 0;
       x.save(); x.translate(cx, 158); x.rotate(a);
       const court = t === "tshirt" || t === "polo";
       if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
-      x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();
+      if (doigt) {
+        // le poing fermé, le pouce sur le côté et l'index tendu, façon Travolta
+        x.fillStyle = peau; x.beginPath(); x.roundRect(-11, 86, 22, 20, 7); x.fill();
+        x.beginPath(); x.roundRect(4, 98, 6, 30, 3); x.fill();
+        x.beginPath(); x.ellipse(-12, 96, 4, 8, -.5, 0, 7); x.fill();
+        x.strokeStyle = "rgba(120,70,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-8, 99); x.lineTo(3, 99); x.moveTo(-8, 103); x.lineTo(3, 103); x.stroke();
+      } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill(); }
       x.restore();
     };
     bras(48, 1); bras(152, -1);
@@ -725,7 +735,7 @@ export async function ouvrir(ctx) {
     ray.setFromCamera(v2, M.camera);
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
     const toi = M.moiNum && M.gens.get(M.moiNum);
-    if (toi && toi.corps && ray.intersectObject(toi.corps)[0]) { danser(!toi.info.danse); return; }
+    if (toi && toi.corps && ray.intersectObject(toi.corps)[0]) { danser(toi.info.danse ? false : M.styleDanse || "balance"); return; }
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps)[0];
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.pnj) { dire(PNJ, PHRASES[Math.floor(Math.random() * PHRASES.length)]); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
@@ -751,7 +761,13 @@ export async function ouvrir(ctx) {
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
       if (p.corps && p.poses) {
-        if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
+        if (p.info.danse === "disco") {
+          // façon Saturday Night Fever : le doigt en l'air, puis vers le sol, en roulant des hanches
+          const ph = t / 460 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "disco2" : "disco1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          const v = ph % 1, coup = Math.sin(Math.min(1, v * 3) * Math.PI / 2);
+          p.corps.material.rotation = (pose === "disco1" ? -.1 : .12) * coup; p.corps.position.x = (pose === "disco1" ? -.08 : .1) * coup; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .05; p.dansait = true; }
+        else if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(ph * Math.PI) * .13; p.corps.position.x = Math.sin(ph * Math.PI) * .14; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .07; p.dansait = true; }
         else if (p.dansait) { p.dansait = false; p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
@@ -866,12 +882,13 @@ async function chargerTete(numero, v, url) {
 async function dessinerCorps(p) {
   const tete = await chargerTete(p.info.numero, p.info.tete_v, p.info.teteUrl);
   if (!M) return;
-  const c = dessinerBonhomme({ ...p.info, moi: p.moi }, tete);
-  // les trois poses de la danse : bras en bas, à mi-hauteur, levés
+  const c = dessinerBonhomme({ ...p.info, moi: p.moi, large: true }, tete);
+  // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
-  p.poses = { repos: tex(c), mi: tex(dessinerBonhomme({ ...p.info, moi: p.moi, pose: "mi" }, tete)), haut: tex(dessinerBonhomme({ ...p.info, moi: p.moi, pose: "haut" }, tete)) };
+  const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2") };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
-  else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
+  else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
@@ -912,7 +929,8 @@ function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
   const n = Math.floor(Date.now() / 9000);
   if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); p.cible = new THREE.Vector3(x, 0, z); }
-  p.info.danse = M.lieu === "fetes" && hasard(Math.floor(Date.now() / 20000) * 1.9) < .4;
+  const h = hasard(Math.floor(Date.now() / 20000) * 1.9);
+  p.info.danse = M.lieu === "fetes" && h < .4 && (h < .2 ? "disco" : "balance");
   const b = Math.floor(Date.now() / 17000);
   if (p.parole !== b) { p.parole = b; if (p.parole !== undefined && hasard(b * 9.7 + (M.lieu === "fetes" ? 5 : 0)) < .45) dire(PNJ, PHRASES[Math.floor(hasard(b * 3.3) * PHRASES.length)]); }
 }
@@ -938,9 +956,11 @@ function changerLieu(id, arrivee) {
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
 }
+// on : false pour s'arrêter, "balance" (balancé, bras levés) ou "disco" (façon Travolta)
 export function danser(on) {
   const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return;
-  p.info.danse = !!on; envoyerWS({ t: "danse", on: !!on }); M.ctx.surDanse && M.ctx.surDanse(!!on);
+  const style = on === "disco" ? "disco" : on ? "balance" : false; if (style) M.styleDanse = style;
+  p.info.danse = style; envoyerWS({ t: "danse", on: style }); M.ctx.surDanse && M.ctx.surDanse(style);
 }
 export function tourner(a = Math.PI) { if (M && M.L && M.L.interieur) M.yaw = (M.yaw || 0) + a; }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
@@ -950,6 +970,8 @@ function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.s
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
+// retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
+export function effacerDit(id) { envoyerWS(id === "tout" ? { t: "effacer", tout: true } : { t: "effacer", id }); }
 export function avatarChange() { /* le serveur prévient tout le monde lui-même */ }
 function connecter() {
   const ctx = M.ctx, url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/matrice?t=" + encodeURIComponent(ctx.token);
@@ -968,12 +990,13 @@ function connecter() {
     } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
     else if (m.t === "part") { retirerAncien(m.numero); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
     else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) p.cible = new THREE.Vector3(m.x, 0, m.z); }
-    else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 30) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
+    else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
+    else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "dj") ctx.surDJ && ctx.surDJ(m.dj);
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
-    else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = !!m.on; }
+    else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = m.on === "disco" ? "disco" : !!m.on && "balance"; }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };

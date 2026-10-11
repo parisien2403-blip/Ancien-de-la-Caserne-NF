@@ -43,6 +43,7 @@ const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
 const LIEUX_MATRICE = ["grande", "fetes"];
+const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
@@ -334,7 +335,7 @@ export class Compteur extends DurableObject {
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: !!a.danse, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: a.danse === "disco" ? "disco" : a.danse ? "balance" : false, x: a.x, z: a.z }; }
 
   /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
   async fetch(request) {
@@ -366,7 +367,9 @@ export class Compteur extends DurableObject {
       const ancien = a.lieu;
       Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
-      const dits = this.sql.exec("SELECT numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
+      // les messages ne restent qu'une heure
+      this.sql.exec("DELETE FROM matrice_dits WHERE cree < ?", new Date(Date.now() - DITS_DUREE).toISOString());
+      const dits = this.sql.exec("SELECT id, numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));
@@ -391,7 +394,7 @@ export class Compteur extends DurableObject {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "danse" && a.lieu) {
-      a.danse = !!m.on; ws.serializeAttachment(a);
+      a.danse = m.on === "disco" ? "disco" : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
@@ -401,9 +404,15 @@ export class Compteur extends DurableObject {
       const s = this.sql.exec("SELECT muet_jusqua FROM matrice_sanctions WHERE numero = ?", a.numero).toArray()[0];
       if (s && s.muet_jusqua && new Date(s.muet_jusqua) > new Date()) { ws.send(JSON.stringify({ t: "info", texte: "L'administrateur t'a demandé de te taire un moment." })); return; }
       const cree = new Date().toISOString();
-      this.sql.exec("INSERT INTO matrice_dits (lieu, numero, nom, texte, cree) VALUES (?, ?, ?, ?, ?)", a.lieu, a.numero, a.nom, texte, cree);
-      this.sql.exec("DELETE FROM matrice_dits WHERE lieu = ? AND id NOT IN (SELECT id FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 50)", a.lieu, a.lieu);
-      this.diffuser(a.lieu, { t: "dit", numero: a.numero, nom: a.nom, texte, cree });
+      const id = this.sql.exec("INSERT INTO matrice_dits (lieu, numero, nom, texte, cree) VALUES (?, ?, ?, ?, ?) RETURNING id", a.lieu, a.numero, a.nom, texte, cree).one().id;
+      this.sql.exec("DELETE FROM matrice_dits WHERE (lieu = ? AND id NOT IN (SELECT id FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20)) OR cree < ?", a.lieu, a.lieu, new Date(Date.now() - DITS_DUREE).toISOString());
+      this.diffuser(a.lieu, { t: "dit", id, numero: a.numero, nom: a.nom, texte, cree });
+    } else if (m.t === "effacer" && a.lieu) {
+      // chacun retire ses propres messages ; l'administrateur peut tout retirer
+      if (m.tout && a.admin) { this.sql.exec("DELETE FROM matrice_dits WHERE lieu = ?", a.lieu); this.diffuser(a.lieu, { t: "efface", tout: true }); return; }
+      const d = this.sql.exec("SELECT numero FROM matrice_dits WHERE id = ? AND lieu = ?", Number(m.id), a.lieu).toArray()[0];
+      if (!d || (d.numero !== a.numero && !a.admin)) return;
+      this.sql.exec("DELETE FROM matrice_dits WHERE id = ?", Number(m.id)); this.diffuser(a.lieu, { t: "efface", id: Number(m.id) });
     } else if ((m.t === "taire" || m.t === "exclure") && a.admin) {
       const cible = Number(m.numero); if (!cible || cible === a.numero) return;
       const jusqua = new Date(Date.now() + (m.t === "taire" ? 3600e3 : 24 * 3600e3)).toISOString();
