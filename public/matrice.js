@@ -16,7 +16,7 @@ export const LIEUX = {
   fetes: { nom: "La salle des fêtes", icone: "🎉" },
 };
 export const TENUES = {
-  garde: { nom: "Uniforme de Garde" }, civil: { nom: "Jean et blouson" }, survet: { nom: "Survêtement 80" },
+  garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, survet: { nom: "Survêtement 80" },
   robe: { nom: "Robe" }, costume: { nom: "Costume" },
 };
 export const COULEURS = ["#22324f", "#8a3b22", "#2f6b3a", "#c9a227", "#6b3d7a", "#e8e2d6", "#2a2a2a", "#b2364a"];
@@ -30,26 +30,38 @@ const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = 
 export function dessinerBonhomme(o, tete) {
   return toile(200, 420, (x) => {
     const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
-    const bas = t === "garde" ? "#1b2638" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : t === "robe" ? null : "#3d5a80";
+    const bas = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : t === "robe" ? null : "#3d5a80";
     if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
-      if (t === "garde") { x.fillStyle = "#c0392b"; x.fillRect(80, 252, 5, 144); x.fillRect(116, 252, 5, 144); }
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
     x.fillStyle = "#2a2522"; x.beginPath(); x.ellipse(82, 404, 20, 10, 0, 0, 7); x.ellipse(118, 404, 20, 10, 0, 0, 7); x.fill();
-    const haut = t === "garde" ? "#22324f" : c;
+    const haut = t === "garde" ? "#1c2541" : c;
     x.fillStyle = haut; x.beginPath();
     if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else x.roundRect(58, 145, 84, 120, 22);
     x.fill(); x.beginPath(); x.roundRect(36, 150, 24, 100, 12); x.roundRect(140, 150, 24, 100, 12); x.fill();
     if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(42, 152, 4, 92); x.fillRect(154, 152, 4, 92); }
     if (t === "costume") { x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 190); x.lineTo(114, 146); x.fill(); x.fillStyle = "#8a1f2b"; x.fillRect(97, 152, 6, 40); }
     if (t === "civil") { x.fillStyle = "#e9e2d0"; x.beginPath(); x.moveTo(88, 146); x.lineTo(100, 168); x.lineTo(112, 146); x.fill(); x.fillStyle = assombrir(c, .8); x.fillRect(98, 168, 4, 92); }
-    if (t === "garde") { x.fillStyle = "#c9a227"; x.fillRect(58, 145, 84, 9); x.beginPath(); x.arc(100, 190, 4, 0, 7); x.arc(100, 218, 4, 0, 7); x.fill(); }
+    if (t === "garde") {
+      // col de chemise bleu clair
+      x.fillStyle = "#a9c4e0"; x.beginPath(); x.moveTo(84, 145); x.lineTo(100, 166); x.lineTo(116, 145); x.lineTo(108, 141); x.lineTo(100, 152); x.lineTo(92, 141); x.fill();
+      // la bande blanche du pull, sur la poitrine et le haut des bras
+      x.fillStyle = "#f2f2f0"; x.fillRect(58, 178, 84, 9); x.fillRect(36, 178, 24, 9); x.fillRect(140, 178, 24, 9);
+      // les pattes d'épaule et leurs galons dorés
+      for (const ex of [62, 116]) { x.fillStyle = "#141b30"; x.beginPath(); x.roundRect(ex, 146, 22, 12, 3); x.fill();
+        x.strokeStyle = "#d4b24a"; x.lineWidth = 3; x.beginPath(); x.moveTo(ex + 5, 149); x.lineTo(ex + 11, 155); x.lineTo(ex + 17, 149); x.stroke(); }
+      // le ceinturon noir, sa boucle et l'étui
+      x.fillStyle = "#121212"; x.fillRect(58, 252, 84, 11); x.fillStyle = "#b9b9b9"; x.fillRect(95, 253, 10, 9);
+      x.fillStyle = "#1a1a1a"; x.beginPath(); x.roundRect(134, 258, 16, 34, 4); x.fill();
+    }
     x.fillStyle = peau; x.beginPath(); x.arc(48, 254, 11, 0, 7); x.arc(152, 254, 11, 0, 7); x.fill(); x.fillRect(88, 118, 24, 32);
     if (tete) {
       // la tête détourée, posée sur le cou (cadrée sur 112 px de large au plus, 124 de haut)
-      const k = Math.min(112 / tete.width, 124 / tete.height), w = tete.width * k, h = tete.height * k;
+      const R = o.reglage || {}, z = R.k || 1;
+      const k = Math.min(112 / tete.width, 124 / tete.height) * z, w = tete.width * k, h = tete.height * k;
       if (o.moi) { x.shadowColor = "#f6d465"; x.shadowBlur = 14; }
-      x.drawImage(tete, 100 - w / 2, 132 - h, w, h); x.shadowBlur = 0;
+      x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate((R.r || 0) * Math.PI / 180);
+      x.drawImage(tete, -w / 2, -h, w, h); x.restore(); x.shadowBlur = 0;
     } else {
       x.fillStyle = peau; x.beginPath(); x.ellipse(100, 72, 44, 54, 0, 0, 7); x.fill();
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
@@ -678,10 +690,10 @@ function construireLieu(id, scene) {
     // lumière de la salle
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
     for (const z of [Z0 + 4, cz, Z1 - 4]) { const l = new THREE.PointLight(0xfff0d8, 6, 14, 1.4); l.position.set(0, HT - .6, z); scene.add(l); }
-    L.interieur = true;
+    L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
     L.portails.push({ dans: (x, z) => x < X0 + .7, vers: "grande", arrivee: [8.8, 6] });
-    L.depart = [0, Z1 - 3]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
+    L.depart = [0, Z1 - 6]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
   }
 
   // nuages
@@ -725,8 +737,18 @@ export async function ouvrir(ctx) {
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
-  rendu.domElement.addEventListener("pointerdown", e => {
-    if (!M || !M.L) return;
+  // glisser le doigt à gauche ou à droite : tourner la vue ; toucher sans glisser : marcher (ou toucher un ancien)
+  let glisse = null;
+  rendu.domElement.addEventListener("pointerdown", e => { glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0 }; });
+  rendu.domElement.addEventListener("pointermove", e => {
+    if (!glisse || glisse.id !== e.pointerId || !M) return;
+    const dx = e.clientX - glisse.x;
+    if (Math.abs(dx) > 10) glisse.bouge = true;
+    if (glisse.bouge) M.yaw = glisse.yaw - dx * .006;
+  });
+  rendu.domElement.addEventListener("pointerup", e => {
+    const g = glisse; glisse = null;
+    if (!g || g.bouge || !M || !M.L) return;
     const r = rendu.domElement.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(v2, M.camera);
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
@@ -736,6 +758,7 @@ export async function ouvrir(ctx) {
     const s = ray.intersectObject(M.L.sol)[0]; if (!s) return;
     allerVers(s.point.x, s.point.z, true);
   });
+  rendu.domElement.addEventListener("pointercancel", () => { glisse = null; });
   M.redim = () => { if (!M) return; const w = ctx.conteneur.clientWidth, h = ctx.conteneur.clientHeight; if (!w || !h) return; rendu.setSize(w, h); M.camera.aspect = w / h; placerCamera(true); };
   addEventListener("resize", M.redim);
   M.ro = new ResizeObserver(M.redim); M.ro.observe(ctx.conteneur);
@@ -791,12 +814,23 @@ function placerCamera(net) {
   const k = portrait && !M.L.interieur ? 1 : 0;
   const pos = new THREE.Vector3(c.pos[0] * (k ? .7 : 1) + sx, c.pos[1] + k * 2.5, c.pos[2] + k * 4 + sz);
   const vise = new THREE.Vector3(c.vise[0] + sx, c.vise[1] - (portrait ? .5 : 0), c.vise[2] + sz);
+  // à l'intérieur : la caméra suit derrière son bonhomme, à 4,5 m, et tourne avec la vue
+  if (M.L.interieur && moi) {
+    const yw = M.yaw || 0, fx = -Math.sin(yw), fz = -Math.cos(yw), mx = moi.g.position.x, mz = moi.g.position.z;
+    pos.set(mx - fx * 4.6, 2.5, mz - fz * 4.6); vise.set(mx + fx * 3, 1.2, mz + fz * 3);
+  }
+  // dehors : tourner la vue (glisser le doigt, ou ↻) fait tourner la caméra autour de son bonhomme
+  const yaw = M.L.interieur ? 0 : M.yaw || 0;
+  if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
+    for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
+  if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
   else { M.camera.position.lerp(pos, .06); M.camVise.lerp(vise, .06); }
   M.camera.fov = portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
 
 /* --- les bonshommes dans la scène --- */
+const tailleBonhomme = () => M && M.L && M.L.interieur ? 1.8 : 2.4;
 const sprite = (c, l, h) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, depthWrite: false })); s.scale.set(l, h, 1); return s; };
 const etiquette = (texte, moi, admin) => toile(512, 96, (x) => { x.font = "bold 44px Arial"; const t = (admin ? "★ " : "") + texte, w = x.measureText(t).width + 50;
   x.fillStyle = moi ? "#c4694a" : admin ? "#8a6d12" : "rgba(31,42,55,.85)"; x.beginPath(); x.roundRect(256 - w / 2, 14, w, 66, 33); x.fill(); x.fillStyle = "#fff"; x.textAlign = "center"; x.fillText(t, 256, 64); });
@@ -819,15 +853,16 @@ async function dessinerCorps(p) {
   if (!M) return;
   const c = dessinerBonhomme({ ...p.info, moi: p.moi }, tete);
   if (p.corps) { p.corps.material.map.dispose(); p.corps.material.map = tex(c); p.corps.material.needsUpdate = true; }
-  else { p.corps = sprite(c, 1.55, 3.25); p.corps.center.set(.5, 0); p.g.add(p.corps); }
+  else { const H = tailleBonhomme(); p.corps = sprite(c, H * .476, H); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
   const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); M.scene.add(g);
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
-  const om = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
-  const nom = sprite(etiquette(info.nom, p.moi, info.admin), 2.6, .49); nom.position.y = 3.55; g.add(nom);
+  const H = tailleBonhomme();
+  const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
+  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .8, H * .15); nom.position.y = H + .25; g.add(nom);
   M.gens.set(info.numero, p);
   dessinerCorps(p);
   return p;
@@ -836,7 +871,7 @@ function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) retu
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (p.bulle) p.g.remove(p.bulle);
-  const c = toileBulle(texte); p.bulle = sprite(c, 4, 4 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = 3.9; p.g.add(p.bulle);
+  const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H + .5; p.g.add(p.bulle);
   p.bulleFin = performance.now() + 7000 + texte.length * 60;
 }
 
@@ -854,12 +889,13 @@ function changerLieu(id, arrivee) {
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   const { scene, L, repere } = construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
-  M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false;
+  M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = 0;
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
 }
+export function tourner(a = Math.PI) { if (M) M.yaw = (M.yaw || 0) + a; }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 
 /* --- la connexion en direct --- */

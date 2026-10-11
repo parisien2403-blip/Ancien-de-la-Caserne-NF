@@ -297,13 +297,18 @@
   .mx-presents span.moi { background: #c4694a; }
   .mx-info { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(31,42,55,.88); color: #fff; padding: 8px 14px; border-radius: 12px; font: 700 13px "Lato", sans-serif; z-index: 3; max-width: 90%; text-align: center; }
   .mx-plein { position: absolute; right: 10px; top: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(31,42,55,.7); color: #fff; font-size: 18px; cursor: pointer; z-index: 3; }
+  .mx-tourner { top: 56px; font-size: 20px; }
   .mx-dire { display: flex; gap: 8px; margin: 10px 0 8px; }
   .mx-dire input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 99px; padding: 12px 16px; font: 15px "Lato", sans-serif; outline: none; background: #fff; }
   .mx-dire input:focus { border-color: var(--terra); }
   .mx-fil { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 14px; }
   .mx-fil div { background: var(--card); border-radius: 10px; padding: 6px 10px; } .mx-fil b { color: var(--navy); } .mx-fil small { color: var(--muted); margin-left: 6px; }
-  .bonhomme .bh-grille { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: start; }
-  .bonhomme canvas { width: 120px; height: 252px; border-radius: 14px; background: radial-gradient(circle at 50% 70%, #e9dfcf, #f7f1e6); }
+  .bonhomme .bh-grille { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; }
+  .bonhomme canvas { width: 150px; height: 315px; border-radius: 14px; background: radial-gradient(circle at 50% 70%, #e9dfcf, #f7f1e6); touch-action: none; cursor: grab; }
+  .bh-cadrage { margin: 8px 0 4px; } .bh-cadrage[hidden] { display: none; } .bh-titre small { font-weight: 400; }
+  .bh-curseur { display: flex; align-items: center; gap: 10px; font: 13px "Lato", sans-serif; color: var(--muted); margin: 4px 0; } .bh-curseur input { flex: 1; accent-color: var(--terra); }
+  .bh-fleches { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .bh-fleches button[data-bh-dep] { width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font-size: 13px; cursor: pointer; }
   .bh-titre { font: 700 13px "Lato", sans-serif; color: var(--muted); margin: 6px 0 6px; }
   .bh-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .bh-choix { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -1063,6 +1068,7 @@
           <div class="mx-presents" id="mxPresents"></div>
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
+          <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner">↻</button>
         </div>
         <!-- le DJ de la salle des fêtes : la musique est entendue par tous ceux qui sont dans la salle -->
         <div class="card mx-dj" id="mxDJ" hidden>
@@ -1082,7 +1088,7 @@
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
-        <p class="legal" style="text-align:left">Touche les pavés pour marcher, passe sous les porches pour changer de cour, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
+        <p class="legal" style="text-align:left">Touche le sol pour marcher, fais glisser le doigt à gauche ou à droite pour tourner la vue (↻ pour te retourner), passe sous les porches pour changer de cour, touche un ancien pour lui écrire. Ce qui se dit dans la Matrice est vu par les anciens présents (pas chiffré, les 50 derniers messages de chaque cour sont gardés).</p>
       </div>
 
       <div class="tab" data-tab="vague" hidden>
@@ -1196,6 +1202,14 @@
         <div class="bh-actions"><button type="button" class="btn small" id="bhPhotoProfil">📷 Ma photo de profil</button>
           <label class="btn small alt">🖼️ Une autre photo<input type="file" accept="image/*" id="bhFichier" hidden></label>
           <button type="button" class="link" id="bhSansTete" style="margin:0">Sans photo</button></div>
+        <div class="bh-cadrage" id="bhCadrage" hidden>
+          <div class="bh-titre">Placer ma tête <small>(fais-la glisser du doigt sur le bonhomme)</small></div>
+          <label class="bh-curseur">Taille<input type="range" id="bhTaille" min="40" max="250" value="100"></label>
+          <label class="bh-curseur">Pencher<input type="range" id="bhPencher" min="-45" max="45" value="0"></label>
+          <div class="bh-fleches"><button type="button" data-bh-dep="0,-3" aria-label="Monter">▲</button><button type="button" data-bh-dep="-3,0" aria-label="À gauche">◀</button>
+            <button type="button" data-bh-dep="3,0" aria-label="À droite">▶</button><button type="button" data-bh-dep="0,3" aria-label="Descendre">▼</button>
+            <button type="button" class="link" id="bhRecentrer" style="margin:0 0 0 6px">Recentrer</button></div>
+        </div>
         <p class="aide-champ" id="bhEtat">Le détourage se fait dans ton téléphone : la photo n'est envoyée nulle part, seule la tête découpée est enregistrée.</p>
         <div class="bh-titre">Ma tenue</div><div class="bh-choix" id="bhTenues"></div>
         <div class="bh-titre">Ma couleur</div><div class="bh-choix" id="bhCouleurs"></div>
@@ -1857,7 +1871,7 @@
       dessinerLieux(m, null, {});
       await m.ouvrir({
         conteneur: $("mxScene"), token: moi.token, urlTete,
-        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v }),
+        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; if (id === "fetes") chargerDisco(); else { djEtat = { courant: null, file: [] }; djSynchro(); } },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
@@ -1945,6 +1959,7 @@
 
   function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
+  $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
   $("mxPlein").onclick = () => { const s = $("mxScene"); if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
   async function menuAncien(m, p) {
     if (!membres.length) { try { membres = await registre.membres(); } catch (e) {} }
@@ -1959,26 +1974,43 @@
   }
   $("mxBonhomme").onclick = () => ouvrirBonhomme();
   // ----- la fenêtre « Mon bonhomme » -----
-  const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null };
+  const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
+  const majCurseurs = () => { $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhCadrage").hidden = !bh.img; };
+  $("bhTaille").oninput = () => { bh.reglage.k = $("bhTaille").value / 100; apercuBonhomme(); };
+  $("bhPencher").oninput = () => { bh.reglage.r = +$("bhPencher").value; apercuBonhomme(); };
+  document.querySelectorAll("[data-bh-dep]").forEach(b => b.onclick = () => { const [dx, dy] = b.dataset.bhDep.split(",").map(Number); bh.reglage.dx = Math.max(-80, Math.min(80, bh.reglage.dx + dx)); bh.reglage.dy = Math.max(-80, Math.min(80, bh.reglage.dy + dy)); apercuBonhomme(); });
+  $("bhRecentrer").onclick = () => { bh.reglage = { k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs(); apercuBonhomme(); };
+  // faire glisser la tête du doigt sur l'aperçu (et pincer à deux doigts pour la taille)
+  (() => { const c = $("bhApercu"), doigts = new Map(); let depart = null;
+    c.addEventListener("pointerdown", e => { if (!bh.img) return; c.setPointerCapture(e.pointerId); doigts.set(e.pointerId, [e.clientX, e.clientY]);
+      depart = { ...bh.reglage, pts: [...doigts.values()].map(p => [...p]) }; });
+    c.addEventListener("pointermove", e => { if (!doigts.has(e.pointerId) || !depart) return; doigts.set(e.pointerId, [e.clientX, e.clientY]);
+      const f = 200 / c.clientWidth, pts = [...doigts.values()];
+      if (pts.length >= 2 && depart.pts.length >= 2) { const d0 = Math.hypot(depart.pts[0][0] - depart.pts[1][0], depart.pts[0][1] - depart.pts[1][1]), d1 = Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]);
+        if (d0 > 10) bh.reglage.k = Math.max(.4, Math.min(2.5, depart.k * d1 / d0)); }
+      else { bh.reglage.dx = Math.max(-80, Math.min(80, depart.dx + (pts[0][0] - depart.pts[0][0]) * f)); bh.reglage.dy = Math.max(-80, Math.min(80, depart.dy + (pts[0][1] - depart.pts[0][1]) * f)); }
+      majCurseurs(); apercuBonhomme(); });
+    const fin = e => { doigts.delete(e.pointerId); depart = doigts.size ? { ...bh.reglage, pts: [...doigts.values()].map(p => [...p]) } : null; };
+    c.addEventListener("pointerup", fin); c.addEventListener("pointercancel", fin); })();
   async function ouvrirBonhomme() {
     if (!enLigne || !moi || !moi.token) return;
     $("bhErreur").hidden = true;
     try {
       const m = await chargerMX();
       monAvatar = monAvatar || await api("GET", "/api/moi/avatar");
-      Object.assign(bh, { tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete: undefined, img: null });
+      Object.assign(bh, { tenue: monAvatar.tenue, couleur: monAvatar.couleur, tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0, ...(monAvatar.reglage || {}) } });
       if (monAvatar.tete_v) { const i = new Image(); i.src = urlTete(moi.numero, monAvatar.tete_v); try { await i.decode(); bh.img = i; } catch (e) {} }
       $("bhTenues").innerHTML = Object.entries(m.TENUES).map(([id, t]) => `<button type="button" data-tenue="${id}">${esc(t.nom)}</button>`).join("");
       $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
       $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.onclick = () => { bh.tenue = b.dataset.tenue; apercuBonhomme(); });
       $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.onclick = () => { bh.couleur = b.dataset.couleur; apercuBonhomme(); });
-      apercuBonhomme();
+      majCurseurs(); apercuBonhomme();
       fermerConnexion(); $("bonhommeForm").scrollTop = 0; $("bonhommeForm").classList.add("open"); $("sheetBg").classList.add("open");
     } catch (e) { garde("La fenêtre du bonhomme ne s'ouvre pas : " + e.message); }
   }
   function apercuBonhomme() {
     if (!MX) return;
-    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: true }, bh.img);
+    const c = MX.dessinerBonhomme({ tenue: bh.tenue, couleur: bh.couleur, reglage: bh.reglage, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), moi: true }, bh.img);
     const x = $("bhApercu").getContext("2d"); x.clearRect(0, 0, 200, 420); x.drawImage(c, 0, 0);
     $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.classList.toggle("on", b.dataset.tenue === bh.tenue));
     $("bhCouleurs").querySelectorAll("[data-couleur]").forEach(b => b.classList.toggle("on", b.dataset.couleur === bh.couleur));
@@ -1989,7 +2021,7 @@
     try {
       const img = new Image(); img.src = src; await img.decode();
       const r = await MX.detourerTete(img);
-      bh.tete = r.png; bh.img = new Image(); bh.img.src = r.png; await bh.img.decode();
+      bh.tete = r.png; bh.img = new Image(); bh.img.src = r.png; await bh.img.decode(); bh.reglage = { k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs();
       $("bhEtat").textContent = r.auto ? "✓ Tête détourée automatiquement." : "Le détourage automatique n'a pas marché sur cette photo : j'ai gardé un ovale. Essaie une photo de face, bien éclairée.";
       apercuBonhomme();
     } catch (e) { $("bhEtat").textContent = "Photo illisible : " + e.message; }
@@ -1997,11 +2029,11 @@
   }
   $("bhPhotoProfil").onclick = () => { const u = photoUrl(moi); if (!u) { $("bhEtat").textContent = "Tu n'as pas encore de photo de profil : choisis « Une autre photo »."; return; } detourerDepuis(u); };
   $("bhFichier").onchange = e => { const f = e.target.files[0]; if (!f) return; detourerDepuis(URL.createObjectURL(f)); e.target.value = ""; };
-  $("bhSansTete").onclick = () => { bh.tete = null; bh.img = null; $("bhEtat").textContent = "Sans photo : une tête dessinée avec tes initiales."; apercuBonhomme(); };
+  $("bhSansTete").onclick = () => { bh.tete = null; bh.img = null; $("bhCadrage").hidden = true; $("bhEtat").textContent = "Sans photo : une tête dessinée avec tes initiales."; apercuBonhomme(); };
   $("bonhommeForm").onsubmit = async e => {
     e.preventDefault(); $("bhErreur").hidden = true;
     try {
-      const corps = { tenue: bh.tenue, couleur: bh.couleur }; if (bh.tete !== undefined) corps.tete = bh.tete;
+      const corps = { tenue: bh.tenue, couleur: bh.couleur, reglage: bh.reglage }; if (bh.tete !== undefined) corps.tete = bh.tete;
       const r = await api("PUT", "/api/moi/avatar", corps);
       monAvatar = { ...monAvatar, ...r, fait: true };
       fermerCalque($("bonhommeForm"));
@@ -2330,6 +2362,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.6", "11 octobre 2026", ["Mon bonhomme : tu places ta tête toi-même (glisser du doigt, pincer, taille, pencher) ; nouvelle tenue de gendarme (pull bleu marine à bande blanche, galons, ceinturon) ; bonshommes à taille humaine ; on tourne la vue en glissant le doigt (↻ pour se retourner)"]],
     ["2.5", "11 octobre 2026", ["Salle des fêtes de la Matrice : le DJ ! Chacun dépose ses musiques dans la discothèque des anciens, et ce qui passe est entendu en même temps par tous ceux qui sont dans la salle (file d'attente, suivant, arrêter)"]],
     ["2.4", "11 octobre 2026", ["Matrice : la salle des fêtes, à l'intérieur du bâtiment de droite (carrelage à petits carreaux, lambris, portes vitrées sur la cour, long bar en bois à l'ancienne sur les trois quarts, boule à facettes au plafond, tables à nappes blanches et chaises d'école au fond, escalier carrelé de 5 marches avec ses rampes en fer forgé vers une double porte marron, coin du DJ avec platines, enceintes, jeux de lumière et fumée) ; on y entre par les portes vitrées des marches"]],
     ["2.3", "11 octobre 2026", ["Cour d'honneur : trois voûtes au bout de chacun des deux bâtiments de plain-pied, avec un autocar bleu de la gendarmerie garé dans chacune"]],

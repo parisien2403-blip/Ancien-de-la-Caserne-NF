@@ -102,7 +102,7 @@ export class Compteur extends DurableObject {
       // l'escalier (lettre A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
       "bat TEXT", "etage INTEGER",
       // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
-      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0"]) {
+      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -278,31 +278,33 @@ export class Compteur extends DurableObject {
     const moi = this.moi(token);
     const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "civil";
     const couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#22324f";
+    const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
+    const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0) });
     let tete;
     if (x.tete === null) tete = null;
     else if (x.tete !== undefined) {
       if (typeof x.tete !== "string" || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.tete) || x.tete.length > 200000) throw new Refus("Tête invalide ou trop lourde");
       tete = x.tete;
     }
-    if (tete === undefined) this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, moi.email);
-    else this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_tete = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, tete, moi.email);
+    if (tete === undefined) this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_reglage = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, reglage, moi.email);
+    else this.sql.exec("UPDATE membres SET av_tenue = ?, av_couleur = ?, av_reglage = ?, av_tete = ?, av_v = COALESCE(av_v, 0) + 1 WHERE email = ?", tenue, couleur, reglage, tete, moi.email);
     const p = this.personneMatrice(moi.numero);
     // ceux qui sont dans la Matrice voient tout de suite le nouveau bonhomme
-    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
-    return { ok: true, tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v };
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
+    return { ok: true, tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage };
   }
-  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, fait: p.fait }; }
+  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, tete_v: p.tete_v, reglage: p.reglage, fait: p.fait }; }
   teteAvatar(token, num) {
     this.moi(token);
     const m = this.sql.exec("SELECT av_tete FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.av_tete;
   }
   personneMatrice(num) {
-    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v, av_reglage FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
-      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0 };
+      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, tete_v: a.tete_v, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, tete_v: a.tete_v, reglage: a.reglage, x: a.x, z: a.z }; }
 
   /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
   async fetch(request) {
