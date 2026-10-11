@@ -1389,7 +1389,7 @@ function construireLieu(id, scene) {
       const spot = new THREE.SpotLight(c, 14, 14, .32, .5, 1.3); spot.position.set(x, 2.95, dz + .2); spot.target.position.set(x + (k - 1.5) * .8, 0, dz - 5); scene.add(spot); scene.add(spot.target);
       const cone = new THREE.Mesh(new THREE.ConeGeometry(1.1, 5.2, 24, 1, true), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .09, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
       scene.add(cone);
-      return { spot, cone, x, k };
+      return { spot, cone, verre, x, k };
     });
     // la machine à fumée, sous la table, et les nappes de fumée au ras du sol
     A.ajoute(new THREE.BoxGeometry(.4, .22, .3), noir, -3.2, .11, dz + .05);
@@ -1399,7 +1399,7 @@ function construireLieu(id, scene) {
     // le gros nuage de fumée (bouton 💨) : il sort du poste du DJ et envahit la piste pendant une dizaine de secondes
     const nuage = [];
     for (let i = 0; i < 46; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex, transparent: true, depthWrite: false, opacity: 0 })); sp.visible = false; scene.add(sp); nuage.push([sp, alea(), alea(), alea()]); }
-    L.fumee = () => { L.fumeeDebut = performance.now(); };
+    L.fumee = () => { if (L.nuit !== false) L.fumeeDebut = performance.now(); };
     // les lasers bleus (bouton 🔷) : une tête laser sur le portique du DJ, un éventail de rayons qui balaient la salle
     const tete = A.ajoute(new THREE.BoxGeometry(.3, .18, .25), noir, -3.2, 3.05, dz + .1, false);
     const laserMat = new THREE.MeshBasicMaterial({ color: 0x3a7dff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -1407,7 +1407,13 @@ function construireLieu(id, scene) {
     const pointMat = new THREE.MeshBasicMaterial({ color: 0x7fc4ff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false });
     const rayons = [], geoR = new THREE.CylinderGeometry(.016, .016, 1, 6), geoH = new THREE.CylinderGeometry(.07, .07, 1, 8), geoP = new THREE.CircleGeometry(.09, 12);
     for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(geoR, laserMat); r.add(new THREE.Mesh(geoH, halo)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointMat); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayons.push([r, pt, i]); }
-    L.setLasers = (on) => { L.lasers = on; for (const [r, pt] of rayons) r.visible = pt.visible = on; };
+    L.setLasers = (on) => { L.lasersDemande = on; L.lasers = on && L.nuit !== false; for (const [r, pt] of rayons) r.visible = pt.visible = L.lasers; };
+    // le jour, la fête n'a pas commencé : pas de projecteurs ni de reflets de la boule, pas de fumée, pas de lasers (et Manu n'est pas encore là)
+    L.setNuit = (n) => { L.nuit = n;
+      for (const p of projos) p.spot.visible = p.cone.visible = n, p.verre.material.color.setHex(n ? p.spot.color.getHex() : 0x222222);
+      for (const [sp] of fumees) sp.visible = n; reflets.visible = n;
+      if (!n) { L.fumeeDebut = 0; for (const [sp] of nuage) sp.visible = false; }
+      L.setLasers(!!L.lasersDemande); };
     const animBoule = L.anim;
     L.anim = (temps) => {
       animBoule && animBoule(temps);
@@ -1466,6 +1472,66 @@ function construireLieu(id, scene) {
       refMat.opacity = .7 + .3 * s; L.refletsTaille(1 + .4 * s); };
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.zone = [X0, X1, Z0, Z1];
+    /* dans le coin, entre le bout du bar et le mur du fond : le flipper Bally « Viking » et le baby-foot (d'après les photos) */
+    const photo = (src, rx = 1, ry = 1) => { const im = new Image(), t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; im.onload = () => { t.needsUpdate = true; }; im.src = src; return t; };
+    {
+      const fx = 4.85, fz0 = 12.95, fz1 = 14.45, FL = fz1 - fz0, FW = .72, fzc = (fz0 + fz1) / 2;
+      const rouge = A.mat({ color: 0xb31b1b, roughness: .45 }), noirF = A.mat({ color: 0x141414, roughness: .5, metalness: .3 }), chrome = A.mat({ color: 0xc7cacd, metalness: .85, roughness: .25 });
+      const flanc = tex(toile(300, 120, (x, w, h) => { x.fillStyle = "#b31b1b"; x.fillRect(0, 0, w, h);
+        x.strokeStyle = "#f0c419"; x.lineWidth = 6; x.lineCap = "round";
+        for (const [cx, sg] of [[60, 1], [240, -1]]) { x.beginPath(); x.moveTo(cx - sg * 20, 100); x.quadraticCurveTo(cx + sg * 30, 70, cx, 40); x.quadraticCurveTo(cx - sg * 10, 20, cx + sg * 22, 18); x.stroke();
+          x.beginPath(); x.moveTo(cx + sg * 22, 18); x.lineTo(cx + sg * 34, 26); x.stroke(); }
+        x.strokeStyle = "#7a3a8a"; x.lineWidth = 5; x.beginPath(); for (let X = 0; X <= w; X += 20) x.lineTo(X, 104 + Math.sin(X / 18) * 6); x.stroke(); }));
+      const mf = A.mat({ map: flanc });
+      // la caisse (rouge, dragons jaunes), ses pieds noirs, la façade en inox avec la porte des pièces
+      const caisse = A.ajoute(new THREE.BoxGeometry(FW, .42, FL), [mf, mf, rouge, rouge, rouge, rouge], fx, .88, fzc);
+      for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const pied = A.ajoute(new THREE.BoxGeometry(.07, .7, .07), noirF, fx + dx * (FW / 2 - .05), .35, fzc + dz * (FL / 2 - .06)); pied.rotation.x = dz * -.06; }
+      const porte = A.ajoute(new THREE.PlaneGeometry(.42, .3), A.mat({ map: tex(toile(168, 120, (x, w, h) => { x.fillStyle = "#b8bcc0"; x.fillRect(0, 0, w, h); x.strokeStyle = "#8a8d90"; x.lineWidth = 3; x.strokeRect(2, 2, w - 4, h - 4);
+        for (let k = 0; k < 3; k++) { x.fillStyle = "#222"; x.fillRect(22 + k * 46, 14, 30, 22); x.fillStyle = "#f2d33a"; x.fillRect(27 + k * 46, 20, 20, 10); }
+        x.fillStyle = "#a3a6a9"; x.beginPath(); x.moveTo(84, 54); x.lineTo(124, 76); x.lineTo(84, 98); x.lineTo(44, 76); x.fill(); })), metalness: .5, roughness: .35 }), fx, .86, fz0 - .003, false);
+      porte.rotation.y = Math.PI;
+      // le plateau (la photo), légèrement incliné, sous sa vitre, avec son cadre en inox
+      const pl = A.ajoute(new THREE.PlaneGeometry(FW - .08, FL - .06), new THREE.MeshStandardMaterial({ map: photo("images/flipper-plateau.jpg"), roughness: .6, emissive: 0x3a1a08 }), fx, 1.115, fzc, false);
+      pl.rotation.x = -Math.PI / 2 - .06; pl.rotation.z = Math.PI;
+      const vitreF = A.ajoute(new THREE.PlaneGeometry(FW - .06, FL - .04), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .1, roughness: .05, metalness: .4 }), fx, 1.14, fzc, false);
+      vitreF.rotation.x = -Math.PI / 2 - .06;
+      for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.03, .04, FL), chrome, fx + sg * (FW / 2 - .015), 1.12, fzc, false);
+      A.ajoute(new THREE.BoxGeometry(FW, .04, .05), chrome, fx, 1.1, fz0 + .02, false);
+      // la tirette du lanceur et les deux boutons des batteurs
+      const tir = A.ajoute(new THREE.CylinderGeometry(.018, .018, .14, 8), chrome, fx - FW / 2 + .1, .98, fz0 - .07, false); tir.rotation.x = Math.PI / 2;
+      for (const sg of [-1, 1]) { const b = A.ajoute(new THREE.CylinderGeometry(.025, .025, .03, 10), A.mat({ color: 0xf2f2f2 }), fx + sg * (FW / 2 + .012), .98, fz0 + .12, false); b.rotation.z = Math.PI / 2; }
+      // le fronton : la vraie peinture du « Viking », éclairée, dans sa caisse rouge, sur son cou noir
+      A.ajoute(new THREE.BoxGeometry(.5, .14, .14), noirF, fx, 1.2, fz1 - .1);
+      A.ajoute(new THREE.BoxGeometry(FW + .02, .66, .2), rouge, fx, 1.6, fz1 - .1);
+      const fr = A.ajoute(new THREE.PlaneGeometry(FW - .06, .6), new THREE.MeshStandardMaterial({ map: photo("images/flipper-fronton.jpg"), emissive: 0xffffff, emissiveMap: photo("images/flipper-fronton.jpg"), emissiveIntensity: .55, roughness: .4 }), fx, 1.6, fz1 - .205, false);
+      fr.rotation.y = Math.PI;
+      const lumF = new THREE.PointLight(0xffa04a, 2.2, 3, 2); lumF.position.set(fx, 1.35, fzc - .2); scene.add(lumF);
+      tables.push([fx - FW / 2 - .25, fx + FW / 2 + .25, fz0 - .2, Z1]);
+    }
+    {
+      // le baby-foot : caisse en bois blond, bouts arrondis rouges, terrain vert, 8 barres et leurs joueurs rouges et bleus, poignées noires
+      const cx = 2.6, cz = 12.95, BL = 1.45, BW = .76;
+      const blond = A.mat({ color: 0xd4a464, roughness: .45 }), rougeB = A.mat({ color: 0xc0262c, roughness: .4 }), noirB = A.mat({ color: 0x151515, roughness: .5 }), inox = A.mat({ color: 0xd5d8db, metalness: .85, roughness: .2 });
+      A.ajoute(new THREE.BoxGeometry(BL - .3, .36, BW), blond, cx, .72, cz);
+      for (const sg of [-1, 1]) { const bout = A.ajoute(new THREE.CylinderGeometry(.18, .18, BW, 20, 1, false, sg > 0 ? 0 : Math.PI, Math.PI), blond, cx + sg * (BL / 2 - .15), .72, cz); bout.rotation.x = Math.PI / 2;
+        const cap = A.ajoute(new THREE.BoxGeometry(.05, .1, BW + .02), rougeB, cx + sg * (BL / 2 - .02), .93, cz, false);
+        for (const s2 of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.3, .06, .05), rougeB, cx + sg * (BL / 2 - .17), .92, cz + s2 * (BW / 2 + .005), false); }
+      for (const s2 of [-1, 1]) A.ajoute(new THREE.BoxGeometry(BL - .3, .05, .05), A.mat({ color: 0xc0262c }), cx, .92, cz + s2 * (BW / 2 + .005), false);
+      const terrain = A.ajoute(new THREE.PlaneGeometry(BL - .34, BW - .08), A.mat({ map: tex(toile(256, 140, (x, w, h) => { x.fillStyle = "#2f7a3a"; x.fillRect(0, 0, w, h); x.strokeStyle = "#e9f2e6"; x.lineWidth = 2;
+        x.strokeRect(6, 6, w - 12, h - 12); x.beginPath(); x.moveTo(w / 2, 6); x.lineTo(w / 2, h - 6); x.stroke(); x.beginPath(); x.arc(w / 2, h / 2, 18, 0, 7); x.stroke(); x.strokeRect(6, h / 2 - 28, 26, 56); x.strokeRect(w - 32, h / 2 - 28, 26, 56); })) }), cx, .905, cz, false);
+      terrain.rotation.x = -Math.PI / 2;
+      for (const sg of [-1, 1]) for (const s2 of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.08, .54, .08), noirB, cx + sg * (BL / 2 - .32), .27, cz + s2 * (BW / 2 - .12));
+      const NB = [1, 2, 5, 3, 3, 5, 2, 1], dEq = [0, 0, 1, 0, 1, 0, 1, 1];   // les huit barres, en partant d'un but
+      NB.forEach((n, k) => { const bxk = cx - (BL - .4) / 2 + (k + .5) * (BL - .4) / 8, joue = dEq[k] ? 0x2d5fb3 : 0xc0262c;
+        const barre = A.ajoute(new THREE.CylinderGeometry(.008, .008, BW + .5, 8), inox, bxk, 1.0, cz + (dEq[k] ? .22 : -.22), false); barre.rotation.x = Math.PI / 2;
+        const poi = A.ajoute(new THREE.CylinderGeometry(.022, .022, .13, 10), noirB, bxk, 1.0, cz + (dEq[k] ? 1 : -1) * (BW / 2 + .42), false); poi.rotation.x = Math.PI / 2;
+        for (let j = 0; j < n; j++) { const jz = cz - (BW - .16) / 2 + (j + .5) * (BW - .16) / n;
+          A.ajoute(new THREE.BoxGeometry(.035, .1, .045), A.mat({ color: joue }), bxk, .955, jz, false);
+          A.ajoute(new THREE.SphereGeometry(.022, 8, 6), A.mat({ color: 0xe9c4a0 }), bxk, 1.03, jz, false);
+          A.ajoute(new THREE.BoxGeometry(.03, .06, .03), A.mat({ color: 0x111111 }), bxk, .89, jz, false); } });
+      A.ajoute(new THREE.SphereGeometry(.018, 10, 8), A.mat({ color: 0xf2f2f2 }), cx + .08, .875, cz + .05, false);   // la balle
+      tables.push([cx - BL / 2 - .2, cx + BL / 2 + .2, cz - BW / 2 - .25, cz + BW / 2 + .25]);
+    }
     // les tabourets du bar : pied chromé, assise en cuir rouge, repose-pieds ; on s'y assoit en s'approchant
     L.tabourets = [];
     for (let z = bzA + .55; z < bzB - .3; z += 1.1) {
@@ -1739,7 +1805,11 @@ function estNuit() {
   const v = k => +f.find(p => p.type === k).value, h = v("hour") + v("minute") / 60, [lever, coucher] = SOLEIL_PARIS[v("month") - 1];
   return h < lever || h >= coucher;
 }
-function majAmbiance() { if (M && M.L && M.L.setNuit) M.L.setNuit(estNuit()); }
+function majAmbiance() {
+  if (!M || !M.L || !M.L.setNuit) return; const n = estNuit(); M.L.setNuit(n);
+  if (M.L.posDJ && M.gens) { if (n) ajouterDJ(); else if (M.gens.has(DJ)) retirerAncien(DJ); }
+  M.ctx && M.ctx.surNuit && M.ctx.surNuit(n, M.lieu);
+}
 export function ambiance(mode) { envoyerWS({ t: "ambiance", mode }); }
 
 /* --- les bonshommes dans la scène --- */
@@ -1827,7 +1897,7 @@ function pointPNJ(n) {
 const DJ = -2, PHRASES_DJ = ["Ça va, la piste ?", "Je vous en mets une bonne ?", "Allez, on lève les mains !", "Une petite dédicace ?", "Celle-là, c'est pour les anciens !", "On monte le son ?",
   "Qui veut un Madison ?", "Pas touche aux platines !", "Ambiance, ambiance !", "Je passe ce que vous voulez… presque."];
 function ajouterDJ() {
-  if (!M || !M.L || !M.L.posDJ || M.gens.has(DJ)) return;
+  if (!M || !M.L || !M.L.posDJ || M.gens.has(DJ) || M.L.nuit === false) return;   // Manu n'arrive qu'à la nuit tombée
   const P = (M.ctx.pnjDJ && M.ctx.pnjDJ()) || {}, [x, z] = M.L.posDJ;
   ajouterAncien({ numero: DJ, nom: P.nom || "Manu", tenue: P.tenue || "polo", couleur: P.couleur || "#e8e2d6", bas: P.bas || "#c8b48a", pieds: P.pieds, reglage: P.reglage || null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 2) : "images/manu-tete.png", pnj: true, dj: true, x, z });
@@ -1960,9 +2030,10 @@ function changerLieu(id, arrivee, yaw = 0) {
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
   M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
   const [x, z] = arrivee || L.depart;
-  M.posEntree = [x, z]; majAmbiance();
+  M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
+  majAmbiance();
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
 const styleDanse = v => ["disco", "charleston", "madison", "thriller"].includes(v) ? v : v ? "balance" : false;

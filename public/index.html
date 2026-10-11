@@ -1938,6 +1938,7 @@
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
+        surNuit: (n, lieu) => { if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
@@ -2510,6 +2511,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.26", "11 octobre 2026", ["Salle des fêtes : dans le coin entre le bar et le mur du fond, le flipper Bally « Viking » et le baby-foot", "Salle des fêtes le jour : pas de projecteurs, de fumée, de lasers ni de reflets de la boule, et Manu n'est pas là ; tout s'allume à la nuit tombée (ou quand l'administrateur impose la nuit)"]],
     ["2.25", "11 octobre 2026", ["Le passage sous le porche : au bout, on voit maintenant la vraie cour d'honneur (le même bâtiment du fond et son horloge, les bâtiments de plain-pied) ; la barrière est levée et placée côté rue, on traverse librement"]],
     ["2.24.2", "11 octobre 2026", ["Sous le porche : la porte « SAS » est retirée"]],
     ["2.24.1", "11 octobre 2026", ["Sous le porche : l'affiche du garde républicain de 1887 est grandeur nature, de la taille d'une porte"]],
