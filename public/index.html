@@ -1082,6 +1082,26 @@
   .pg-zone:active { background: rgba(255,240,200,.32); }
   .pg-bonsoir { position: absolute; font: 700 2.2cqw "Courier Prime", monospace; color: #2a2019; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
   .pg-me { position: absolute; border: 2px solid #7a5a2c; border-radius: 4px; background: #d9c27e center / cover; color: #2a1a0c; font: 700 1.2cqw "Lato", sans-serif; cursor: pointer; padding: 0; }
+
+  .pg-mobile { display: none; }
+  @media (max-width: 700px) {
+    /* en mode appli : la page de garde en hauteur, la barre du bas reste visible */
+    .page-garde { bottom: calc(64px + env(safe-area-inset-bottom)); display: block; }
+    .pg-cadre { display: none; }
+    .pg-mobile { display: block; padding-bottom: 18px; }
+    .pgm-haut { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+    .pgm-titre { flex: 1; min-width: 0; width: 100%; display: block; }
+    .pgm-me { flex: none; width: 44px; height: 44px; border: 2px solid #7a5a2c; border-radius: 4px; background: #d9c27e center / cover; font: 700 15px "Lato", sans-serif; color: #2a1a0c; padding: 0; }
+    .pgm-photo { display: block; width: 100%; border-top: 5px solid #5a3a24; border-bottom: 5px solid #5a3a24; }
+    .pgm-parchemin { position: relative; display: block; width: calc(100% - 20px); margin: 10px 10px 12px; padding: 0; border: 0; background: none; container-type: inline-size; cursor: pointer; }
+    .pgm-parchemin img { display: block; width: 100%; filter: drop-shadow(0 3px 5px rgba(40,20,10,.3)); }
+    .pgm-parchemin span { position: absolute; left: 4.3%; top: 8%; width: 82%; font: 700 5.6cqw "Courier Prime", monospace; color: #2a2019; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+    .pgm-brique { background: #8e3a28 url("images/escaliers/brique.jpg") 0 0 / 352px auto; padding: 10px 12px 14px; display: grid; gap: 12px; }
+    .pgm-plaque { height: 30px; width: auto; justify-self: start; box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+    .pgm-tuile { padding: 0; border: 0; background: none; cursor: pointer; display: block; }
+    .pgm-tuile img { display: block; width: 100%; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.45); }
+    .pgm-tuile:active img, .pgm-parchemin:active img { filter: brightness(1.08); }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -1147,6 +1167,21 @@
         <button type="button" class="pg-zone" data-pg="matrice" aria-label="La Matrice" style="left:71.429%;top:87.623%;width:23.707%;height:11.887%"></button>
         <div class="pg-bonsoir" id="pgBonsoir" style="left:23.166%;top:60.294%;width:36.680%">Bonsoir !</div>
         <button type="button" class="pg-me" id="pgMe" aria-label="Mon profil" style="left:96.062%;top:1.961%;width:3.398%;height:5.392%"></button>
+      </div>
+      <!-- en mode appli (téléphone tenu droit) : la même page de garde, remise en hauteur -->
+      <div class="pg-mobile">
+        <div class="pgm-haut"><img class="pgm-titre" src="images/garde/titre.jpg" alt="Caserne de la Nouvelle France — 82, rue du Faubourg-Poissonnière, Paris Xe">
+          <button type="button" class="pgm-me" id="pgmMe" aria-label="Mon profil"></button></div>
+        <img class="pgm-photo" src="images/garde/photo.jpg" alt="Le porche de la caserne, le navire et la plaque">
+        <button type="button" class="pgm-parchemin" data-pg="accueil-fil" aria-label="Le fil des anciens"><img src="images/garde/parchemin.jpg" alt=""><span id="pgmBonsoir">Bonsoir !</span></button>
+        <div class="pgm-brique"><img class="pgm-plaque" src="images/garde/plaque.jpg" alt="La caserne">
+          <button type="button" class="pgm-tuile" data-pg="poste"><img src="images/garde/poste.jpg" alt="Poste de police"></button>
+          <button type="button" class="pgm-tuile" data-pg="vague"><img src="images/garde/vague.jpg" alt="Vaguemestre"></button>
+          <button type="button" class="pgm-tuile" data-pg="biblio"><img src="images/garde/biblio.jpg" alt="Bibliothèque"></button>
+          <button type="button" class="pgm-tuile" data-pg="fetes"><img src="images/garde/fetes.jpg" alt="Salle des fêtes"></button>
+          <button type="button" class="pgm-tuile" data-pg="membres"><img src="images/garde/membres.jpg" alt="Membres"></button>
+          <button type="button" class="pgm-tuile" data-pg="matrice"><img src="images/garde/matrice.jpg" alt="La Matrice"></button>
+        </div>
       </div>
     </div>
     <div class="scroll" id="scroll">
@@ -2735,7 +2770,7 @@
   document.querySelectorAll("[data-login]").forEach(b => b.onclick = ouvrirConnexion);
   document.querySelectorAll("[data-inscription]").forEach(b => b.onclick = () => entrer("poste"));
   $("me").onclick = () => moi ? ouvrirReglages() : ouvrirConnexion();
-  $("pgMe").onclick = () => $("me").click();
+  $("pgMe").onclick = $("pgmMe").onclick = () => $("me").click();
   document.querySelectorAll("[data-pg]").forEach(b => b.onclick = () => b.dataset.pg === "accueil-fil" ? go("accueil", false) : go(b.dataset.pg));
   function ouvrirReglages() {
     $("rPinEtat").textContent = pinDe() ? "activé" : "désactivé";
@@ -2813,6 +2848,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.5", "11 octobre 2026", ["Page de garde en mode appli (téléphone) : le titre, la photo du porche, « Bonsoir » sur le parchemin, puis les tuiles de la caserne les unes sous les autres, en grand"]],
     ["3.4", "11 octobre 2026", ["La page de garde : l'image validée par l'administrateur (mur de pierre, porte-étiquettes, porche, tuiles de la caserne), avec le prénom de chacun et sa photo ; on touche une étiquette ou une tuile pour y aller, « Accueil » mène au fil des anciens"]],
     ["3.3", "11 octobre 2026", ["Nouvelle présentation d'après la maquette de l'administrateur : mur de pierre, titre sur un parchemin dans un cadre de laiton avec la montre à gousset, menu en porte-étiquettes vissés au mur, photo du porche dans un cadre de bois, « Bonsoir » sur un parchemin, tuiles de la caserne sur un pan de brique"]],
     ["3.2.2", "11 octobre 2026", ["Accueil : la photo du porche remplit tout l'espace sous le titre, d'un bord à l'autre"]],
@@ -3338,8 +3374,8 @@
   async function chargerAccueil() {
     const h = new Date().getHours(), salut = h < 5 || h >= 18 ? "Bonsoir" : "Bonjour";
     $("accBonjour").textContent = moi ? `${salut} ${moi.prenom} !` : "Bienvenue à la caserne";
-    $("pgBonsoir").textContent = moi ? `${salut} ${moi.prenom} !` : "Bienvenue à la caserne";
-    const ph = moi && photoUrl(moi); $("pgMe").style.backgroundImage = ph ? `url('${ph}')` : ""; $("pgMe").textContent = ph ? "" : (moi ? ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase() : "");
+    $("pgBonsoir").textContent = $("pgmBonsoir").textContent = moi ? `${salut} ${moi.prenom} !` : "Bienvenue à la caserne";
+    const ph = moi && photoUrl(moi); for (const id of ["pgMe", "pgmMe"]) { $(id).style.backgroundImage = ph ? `url('${ph}')` : ""; $(id).textContent = ph ? "" : (moi ? ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase() : ""); }
     if (Date.now() - meteoChargee > 15 * 60000) {
       try {
         const m = await fetch(enLigne ? "/api/meteo" : "https://api.open-meteo.com/v1/forecast?latitude=48.8767&longitude=2.3488&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=4").then(r => { if (!r.ok) throw 0; return r.json(); });
