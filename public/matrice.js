@@ -2152,7 +2152,8 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     animerPNJ(); animerDJ(t); animerBarman(t);
-    for (const p of M.gens.values()) if (p.corps && p.corps.droit) p.corps.rotation.y = Math.atan2(M.camera.position.x - p.g.position.x, M.camera.position.z - p.g.position.z);
+    for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
+      p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(.3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur ? 1 : 0;
@@ -2293,13 +2294,12 @@ async function dessinerCorps(p) {
     assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); // les bonshommes passent après le décor transparent (bouteilles, verres) : jamais un objet de derrière dessiné par-dessus eux
-    if (p.info.barman) {
-      /* le barman travaille tout contre l'étagère : un panneau qui reste droit (il ne tourne qu'autour de la verticale, face à la caméra),
-         pour que, vu d'en haut, il ne bascule pas dans les bouteilles et le mur de derrière */
-      const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
-      p.corps = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: p.poses.repos, transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
-      p.corps.droit = true;
-    } else { p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.center.set(.5, 0); }
+    /* chaque bonhomme est un panneau qui reste (presque) droit : il se tourne vers la caméra, mais ne se penche en arrière que de 17° au plus,
+       pour que, vu d'en haut, il ne bascule pas dans le comptoir, l'étagère ou un mur derrière lui */
+    const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+    const mat = new THREE.MeshBasicMaterial({ map: p.poses.repos, transparent: true, alphaTest: .4, side: THREE.DoubleSide });
+    p.corps = new THREE.Mesh(geo, mat); p.corps.droit = true; p.corps.rotation.order = "YXZ";
+    Object.defineProperty(mat, "rotation", { get: () => p.corps.rotation.z, set: v => { p.corps.rotation.z = v; } });   // (le balancement de la danse)
     p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
