@@ -529,10 +529,10 @@ function construireRue(A, T, L, scene) {
   const verreV = new THREE.Mesh(new THREE.PlaneGeometry(1.04, 2.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV);
   // à droite, vers le fond : l'armoire rouge, la borne de la barrière et sa lisse blanche, posée en travers
   A.ajoute(new THREE.BoxGeometry(.3, 1.3, .5), A.mat({ color: 0xc8202a, roughness: .5 }), PL - .2, .79, FZ - 11.6);
-  A.ajoute(new THREE.BoxGeometry(.32, 1.0, .32), A.mat({ color: 0xd8262e, roughness: .45 }), 1.55, .5, FZ - 12.2);
-  // (les piétons passent à gauche, sur le trottoir)
-  A.ajoute(new THREE.BoxGeometry(2.95, .1, .08), A.mat({ color: 0xf2f2ee, roughness: .5 }), .05, .98, FZ - 12.2);
-  for (let k = 0; k < 5; k++) A.ajoute(new THREE.BoxGeometry(.25, .105, .085), A.mat({ color: 0xc8202a }), -1.2 + k * .55, .98, FZ - 12.2, false);
+  // la barrière, côté rue, levée (on passe librement)
+  A.ajoute(new THREE.BoxGeometry(.32, 1.0, .32), A.mat({ color: 0xd8262e, roughness: .45 }), 1.55, .5, FZ - 3.2);
+  A.ajoute(new THREE.BoxGeometry(.1, 2.95, .08), A.mat({ color: 0xf2f2ee, roughness: .5 }), 1.55, 2.5, FZ - 3.2);
+  for (let k = 0; k < 5; k++) A.ajoute(new THREE.BoxGeometry(.105, .25, .085), A.mat({ color: 0xc8202a }), 1.55, 1.3 + k * .55, FZ - 3.2, false);
   // le panneau « 10 » sur le pilier de gauche, la caméra de surveillance, le plafonnier
   const dix = A.ajoute(new THREE.CircleGeometry(.24, 24), new THREE.MeshStandardMaterial({ map: tex(toile(96, 96, (x) => { x.fillStyle = "#fff"; x.beginPath(); x.arc(48, 48, 46, 0, 7); x.fill(); x.strokeStyle = "#c8102e"; x.lineWidth = 10; x.beginPath(); x.arc(48, 48, 40, 0, 7); x.stroke();
     x.fillStyle = "#111"; x.font = "bold 40px Arial"; x.textAlign = "center"; x.fillText("10", 48, 62); })) }), -(PL - .03), 2.3, FZ - 12.9, false); dix.rotation.y = Math.PI / 2;
@@ -540,19 +540,13 @@ function construireRue(A, T, L, scene) {
   const plaf = A.ajoute(new THREE.PlaneGeometry(PL * 2, 14), A.mat({ color: 0xece5d6, roughness: 1, emissive: 0x6a6458 }), 0, 4.38, FZ - 7, false); plaf.rotation.x = Math.PI / 2;
   A.ajoute(new THREE.BoxGeometry(1.2, .04, .5), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), 0, 4.35, FZ - 7, false);
   const jourP = new THREE.PointLight(0xfff2dc, 14, 12, 1.4); jourP.position.set(0, 3.9, FZ - 7); scene.add(jourP);
-  // au bout : la cour d'honneur, au soleil (ou la nuit)
-  const vueCour = (nuit) => tex(toile(240, 220, (x, w, h) => {
-    const g = x.createLinearGradient(0, 0, 0, 140); g.addColorStop(0, nuit ? "#081028" : "#7fb8ea"); g.addColorStop(1, nuit ? "#1b2a55" : "#cfe6f7"); x.fillStyle = g; x.fillRect(0, 0, w, 140);
-    x.fillStyle = nuit ? "#3a2622" : "#9a4436"; x.fillRect(0, 34, 18, 110); x.fillRect(w - 18, 34, 18, 110);   // les ailes de brique, de chaque côté
-    x.fillStyle = nuit ? "#4a2a26" : "#a8483a"; x.fillRect(16, 20, 208, 120);
-    for (let r = 0; r < 6; r++) for (let c = 0; c < 9; c++) { const X = 22 + c * 22.5, Y = 26 + r * 18; x.fillStyle = nuit ? (hasard(r * 9 + c) < .3 ? "#ffd58a" : "#1c2434") : "#d9e2ea"; x.fillRect(X, Y, 10, 11);
-      if (c % 2) { x.fillStyle = nuit ? "#7a7a80" : "#fbfaf6"; x.fillRect(X - 4, Y + 11, 18, 3); } }
-    x.fillStyle = nuit ? "#5b5a5e" : "#e8e0cf"; x.fillRect(0, 140, w, 40); x.fillStyle = nuit ? "#2a2c34" : "#7a7266"; x.fillRect(102, 148, 36, 32);
-    x.fillStyle = "#fff"; x.beginPath(); x.arc(120, 136, 6, 0, 7); x.fill(); x.strokeStyle = "#222"; x.lineWidth = 1.5; x.stroke();
-    x.fillStyle = nuit ? "#3c3d44" : "#b9b3a7"; x.fillRect(0, 180, w, 40); }));
-  const texJ = vueCour(false), texN = vueCour(true);
-  const bout = new THREE.Mesh(new THREE.PlaneGeometry(PL * 2, 4.4), new THREE.MeshBasicMaterial({ map: texJ })); bout.position.set(0, 2.2, FZ - 13.9); scene.add(bout);
-  L.vueCour = (n) => { bout.material.map = n ? texN : texJ; bout.material.needsUpdate = true; jourP.intensity = n ? 9 : 14; };
+  // au bout du passage : la cour d'honneur elle-même, comme quand on y est (pavés, bâtiments de plain-pied, bâtiment du fond et son horloge)
+  const cZ0 = FZ - 14, cZ1 = cZ0 - 33.5;
+  const pc = A.ajoute(new THREE.PlaneGeometry(22, 34), A.mat({ map: tex(T.paves, 11, 17) }), 0, .01, (cZ0 + cZ1) / 2, false); pc.rotation.x = -Math.PI / 2;
+  for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(12, 7, 34), A.mat({ color: 0xe4dccb }), sg * 18.5, 3.5, (cZ0 + cZ1) / 2);
+  const tF = tex(toileFondCour()); const fc = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tF }), 0, 13.5, cZ1, false);
+  A.ajoute(new THREE.BoxGeometry(46, 30, 1), A.mat({ color: 0x9a4b38 }), 0, 15, cZ1 - .6, false);
+  L.vueCour = (n) => { jourP.intensity = n ? 9 : 14; };
   // l'arc, la grille, le navire de Paris et la plaque : la vraie photo du porche
   const imgP = new Image(), tP = new THREE.Texture(imgP); tP.colorSpace = THREE.SRGBColorSpace; tP.repeat.set(1, 752 / 812); tP.anisotropy = 4;
   imgP.onload = () => { tP.needsUpdate = true; }; imgP.src = "images/porche.jpg";
@@ -760,7 +754,7 @@ function construireRue(A, T, L, scene) {
   L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24)
     || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15)
     // le passage sous le porche (sans traverser les plantes, l'armoire rouge ni la borne de la barrière)
-    || (Math.abs(x) < 2.0 && z <= -12 && z > -25.7 && !(Math.abs(x) > 1.45 && z < -24.6) && !(x > 1.3 && z < -23.2 && z > -24.6) && !(x > -1.45 && Math.abs(z + 24.2) < .15));
+    || (Math.abs(x) < 2.0 && z <= -12 && z > -25.7 && !(Math.abs(x) > 1.45 && z < -24.6) && !(x > 1.6 && z < -23.2 && z > -24.6) && !(x > 1.3 && Math.abs(z + 15.2) < .3));
 
   // au bout du passage : la cour d'honneur (toucher le fond du passage y mène tout de suite)
   L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -25.4, vers: "grande", arrivee: [0, 13.6] });
@@ -783,20 +777,10 @@ function raccourci(L, scene, [w, h, d], [x, y, z], cible) {
   const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ visible: false })); o.position.set(x, y, z); scene.add(o);
   (L.raccourcis = L.raccourcis || []).push({ obj: o, ...cible });
 }
-function construireLieu(id, scene) {
-  const A = atelier(scene), T = textures();
-  const sol = (map, rx, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(90, 90), A.mat({ map: tex(map, rx, ry) }), 0, 0, 0, false); o.rotation.x = -Math.PI / 2; return o; };
-  const L = { portails: [], cam: { pos: [-9, 9, 27], vise: [0, 5, -8] }, sol: null };
-  if (id === "rue") construireRue(A, T, L, scene);
-
-  if (id === "grande") {
-    /* La cour d'honneur (d'après les photos) :
-       - au fond, seul bâtiment à étages : brique rouge, balcons blancs, socle en pierre, passage carré au centre ;
-       - à gauche et à droite, deux bâtiments identiques de plain-pied en pierre, grandes baies vitrées, avec leurs marches ;
-       - pavés au centre, allées dallées et caniveaux le long des marches. */
-    L.sol = sol(T.paves, 30, 30);
-    const fondW = 44, fondH = 27, socle = 6.4;
-    const fond = toile(1760, 1080, (x, w, h) => {      // 40 px par mètre
+// la façade du bâtiment du fond de la cour d'honneur (brique, balcons, socle, porche, horloge) — vue aussi depuis le passage de la rue
+function toileFondCour() {
+  const socle = 6.4;
+  return toile(1760, 1080, (x, w, h) => {      // 40 px par mètre
       const ps = socle * 40;
       briques(x, w, h, 0, h - ps, 10);
       pierre(x, 0, h - ps, w, ps, "#e8e0cf");
@@ -823,7 +807,22 @@ function construireLieu(id, scene) {
       x.fillStyle = "#fff"; x.beginPath(); x.arc(hx, hy, 25, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = "#222"; x.stroke();
       x.fillStyle = "#222"; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.fillRect(hx + Math.cos(a) * 19 - 1.5, hy + Math.sin(a) * 19 - 1.5, 3, 3); }
       x.lineWidth = 4; x.lineCap = "round"; x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx, hy - 16); x.moveTo(hx, hy); x.lineTo(hx + 12, hy + 4); x.stroke();
-    });
+  });
+}
+function construireLieu(id, scene) {
+  const A = atelier(scene), T = textures();
+  const sol = (map, rx, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(90, 90), A.mat({ map: tex(map, rx, ry) }), 0, 0, 0, false); o.rotation.x = -Math.PI / 2; return o; };
+  const L = { portails: [], cam: { pos: [-9, 9, 27], vise: [0, 5, -8] }, sol: null };
+  if (id === "rue") construireRue(A, T, L, scene);
+
+  if (id === "grande") {
+    /* La cour d'honneur (d'après les photos) :
+       - au fond, seul bâtiment à étages : brique rouge, balcons blancs, socle en pierre, passage carré au centre ;
+       - à gauche et à droite, deux bâtiments identiques de plain-pied en pierre, grandes baies vitrées, avec leurs marches ;
+       - pavés au centre, allées dallées et caniveaux le long des marches. */
+    L.sol = sol(T.paves, 30, 30);
+    const fondW = 44, fondH = 27, socle = 6.4;
+    const fond = toileFondCour();
     // le bâtiment du fond, percé du passage carré (4,8 m × 4,4 m) qu'on traverse
     A.facadePercee({ largeur: fondW, hauteur: fondH, profondeur: 12, toileFacade: fond, passage: { largeur: 4.8, hauteur: 4.4 }, x: 0, z: -18, couleurPassage: 0xcfc4b0 });
     // les balcons en relief
