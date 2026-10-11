@@ -890,7 +890,7 @@ function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (p.bulle) p.g.remove(p.bulle);
   const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H + .5; p.g.add(p.bulle);
-  p.bulleFin = performance.now() + 7000 + texte.length * 60;
+  p.bulleFin = performance.now() + Math.min(6000, 2500 + texte.length * 40);
 }
 
 /* --- le chef de poste se promène tout seul (même trajet pour tout le monde : il dépend de l'heure) --- */
