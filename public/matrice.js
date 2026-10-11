@@ -37,13 +37,28 @@ export function dessinerBonhomme(o, tete) {
     const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const bas = t === "robe" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
-    if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
+    // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
+    const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
+    const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
+    if (accroupi) {
+      for (const [hx, [kx, ky], fx] of [[84, GEN[0], 80], [116, GEN[1], 120]]) { x.strokeStyle = bas || peau; x.lineWidth = bas ? 25 : 17; x.lineCap = "round"; x.lineJoin = "round";
+        x.beginPath(); x.moveTo(hx, 296); x.lineTo(kx, ky); x.lineTo(fx, 396); x.stroke(); }
+    } else if (o.pose === "madison1" || o.pose === "madison3") {
+      // le Madison : une jambe tendue sur le côté, la pointe du pied qui tape
+      const g = o.pose === "madison1";
+      x.strokeStyle = bas || peau; x.lineWidth = bas ? 24 : 16; x.lineCap = "round";
+      x.beginPath(); x.moveTo(g ? 84 : 116, bas ? 262 : 336); x.lineTo(g ? 44 : 156, 396); x.stroke();
+      x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
+    } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    if (bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
-    x.fillStyle = pieds; x.beginPath(); x.ellipse(82, 404, 20, 10, 0, 0, 7); x.ellipse(118, 404, 20, 10, 0, 0, 7); x.fill();
-    if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(62, 408, 40, 3); x.fillRect(98, 408, 40, 3); }   // semelle des baskets
+    const jambesDroites = !accroupi && o.pose !== "madison1" && o.pose !== "madison3";
+    if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
+    const PD = [o.pose === "madison1" ? 46 : 82, o.pose === "madison3" ? 154 : 118];
+    x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], 404, 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], 404, 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
+    if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, 408, 40, 3); x.fillRect(PD[1] - 20, 408, 40, 3); }   // semelle des baskets
     const haut = t === "garde" ? "#1c2541" : c;
+    if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
     if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
@@ -51,8 +66,13 @@ export function dessinerBonhomme(o, tete) {
     const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
     const bras = (cx, sens) => {
       const disco = DISCO[o.pose], doigt = disco && sens < 0;
-      const a = disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1 : 0;
+      // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
+      // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
+      const cible = accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228] : null;
+      const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
+        : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
       x.save(); x.translate(cx, 158); x.rotate(a);
+      if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "tshirt" || t === "polo";
       if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
@@ -98,6 +118,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92);
     }
+    if (accroupi) x.restore();
   });
 }
 
@@ -1368,7 +1389,21 @@ export async function ouvrir(ctx) {
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
       if (p.corps && p.poses) {
-        if (p.info.danse === "disco") {
+        const sx = Math.abs(p.corps.scale.x);
+        if (p.info.danse !== "madison") p.corps.scale.x = sx;
+        if (p.info.danse === "madison") {
+          // le Madison : pas à gauche (pied qui tape), frappé de mains, pas à droite, frappé… et un demi-tour tous les 8 temps
+          const ph = t / 340 + p.info.numero * .7, k = Math.floor(ph) % 4, pose = ["madison1", "madison2", "madison3", "madison2"][k];
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.scale.x = (Math.floor(ph / 8) % 2 ? -1 : 1) * sx; p.corps.material.rotation = 0;
+          p.corps.position.x += ((k === 0 ? -.16 : k === 2 ? .16 : 0) - p.corps.position.x) * .25;
+          if (!p.cible) p.corps.position.y = k % 2 ? Math.abs(Math.sin(ph * Math.PI)) * .05 : 0; p.dansait = true; }
+        else if (p.info.danse === "charleston") {
+          // le Charleston : les genoux s'ouvrent et se croisent, les mains passent d'un genou à l'autre
+          const ph = t / 280 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "genoux2" : "genoux1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI)) * .05; p.dansait = true; }
+        else if (p.info.danse === "disco") {
           // façon Saturday Night Fever : le doigt en l'air, puis vers le sol, en roulant des hanches
           const ph = t / 460 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "disco2" : "disco1";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
@@ -1377,7 +1412,7 @@ export async function ouvrir(ctx) {
         else if (p.info.danse) { const ph = t / 320 + p.info.numero * .7, pose = ["repos", "mi", "haut", "mi"][Math.floor(ph * 2) % 4];
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(ph * Math.PI) * .13; p.corps.position.x = Math.sin(ph * Math.PI) * .14; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI * 2)) * .07; p.dansait = true; }
-        else if (p.dansait) { p.dansait = false; p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
+        else if (p.dansait) { p.dansait = false; p.corps.scale.x = Math.abs(p.corps.scale.x); p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; }
       }
     }
     if (M.L.anim) M.L.anim(t);
@@ -1506,7 +1541,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2") };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3") };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
@@ -1562,7 +1597,9 @@ function animerPNJ() {
   const n = Math.floor(Date.now() / 9000);
   if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); viser(p, x, z); }
   const h = hasard(Math.floor(Date.now() / 20000) * 1.9);
-  p.info.danse = M.lieu === "fetes" && h < .4 && (h < .2 ? "disco" : "balance");
+  // si la musique qui passe est un Madison (ou un Charleston, ou du disco), il la danse tout du long
+  const air = M.lieu === "fetes" && M.djJoue ? (/madison/.test(M.djTitre) ? "madison" : /charleston/.test(M.djTitre) ? "charleston" : /disco|bee ?gees|travolta|stayin|night fever/.test(M.djTitre) ? "disco" : null) : null;
+  p.info.danse = air || (M.lieu === "fetes" && h < .5 && (h < .12 ? "disco" : h < .24 ? "charleston" : h < .36 ? "madison" : "balance"));
   const b = Math.floor(Date.now() / 17000);
   if (p.parole !== b) { p.parole = b; if (p.parole !== undefined && hasard(b * 9.7 + (M.lieu === "fetes" ? 5 : 0)) < .45) dire(PNJ, phrasePNJ(b * 3.3)); }
   // il salue celui qui s'approche de lui (pas plus d'une fois par minute et demie)
@@ -1602,10 +1639,11 @@ function changerLieu(id, arrivee, yaw = 0) {
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
 }
-// on : false pour s'arrêter, "balance" (balancé, bras levés) ou "disco" (façon Travolta)
+// on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
+const styleDanse = v => ["disco", "charleston", "madison"].includes(v) ? v : v ? "balance" : false;
 export function danser(on) {
   const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return;
-  const style = on === "disco" ? "disco" : on ? "balance" : false; if (style) M.styleDanse = style;
+  const style = styleDanse(on); if (style) M.styleDanse = style;
   p.info.danse = style; envoyerWS({ t: "danse", on: style }); M.ctx.surDanse && M.ctx.surDanse(style);
 }
 export function tourner(a = Math.PI) { if (M && M.L && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) + a; }
@@ -1643,9 +1681,9 @@ function connecter() {
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "lumiere") { M.lumiere = +m.niveau || 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
-    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
+    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? `${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`.toLowerCase() : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
-    else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = m.on === "disco" ? "disco" : !!m.on && "balance"; }
+    else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };

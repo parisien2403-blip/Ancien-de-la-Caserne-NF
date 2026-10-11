@@ -304,7 +304,8 @@
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
   .mx-ambiance button { border: 1.5px solid var(--line); border-radius: 99px; padding: 5px 11px; background: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
-  .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; gap: 6px; }
+  .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 140px); }
+  .mx-danses .mx-danse { padding: 7px 11px; font-size: 13px; }
   .mx-scene:fullscreen .mx-danses { bottom: 74px; left: auto; right: 12px; }
   .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
@@ -318,7 +319,7 @@
   .mx-scene:fullscreen .mx-musique { bottom: 122px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
   .mx-musique.mx-son { left: auto; right: 12px; transform: none; background: rgba(31,42,55,.8); color: #fff; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
-  .mx-musique { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
+  .mx-musique { position: absolute; left: auto; right: 12px; bottom: 14px; transform: none; z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
     background: #f6d465; color: #2b2340; font: 700 15px "Lato", sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; }
   .mx-dj.eclat { animation: djEclat 1.2s; } @keyframes djEclat { 30% { box-shadow: 0 0 0 4px #f6d465; } }
   .mx-dire { display: flex; gap: 8px; margin: 10px 0 8px; }
@@ -1104,7 +1105,7 @@
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
-          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button></div>
+          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
           <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
@@ -1915,7 +1916,9 @@
         surAmbiance: mode => document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)),
         surDanse: on => { jeDanse = on;
           $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
-          $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco"; },
+          $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco";
+          $("mxCharleston").classList.toggle("on", on === "charleston"); $("mxCharleston").textContent = on === "charleston" ? "🛑 Stop" : "🦵 Charleston";
+          $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin;
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
@@ -1943,6 +1946,8 @@
   let jeDanse = false;
   $("mxDanse").onclick = () => MX && MX.danser(jeDanse === "balance" ? false : "balance");
   $("mxDisco").onclick = () => MX && MX.danser(jeDanse === "disco" ? false : "disco");
+  $("mxCharleston").onclick = () => MX && MX.danser(jeDanse === "charleston" ? false : "charleston");
+  $("mxMadison").onclick = () => MX && MX.danser(jeDanse === "madison" ? false : "madison");
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -2474,6 +2479,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.16", "11 octobre 2026", ["Matrice : deux nouvelles danses, 🦵 Charleston (mains sur les genoux qui se croisent et se décroisent) et 👏 Madison (pas sur le côté, pied qui tape, frappé de mains, demi-tour)", "Le chef de poste danse le Madison quand la musique est un Madison (et le Charleston, ou le disco, selon le titre)"]],
     ["2.15", "11 octobre 2026", ["Matrice : on tourne la caméra comme on veut en glissant le doigt n'importe où (gauche/droite pour tourner, haut/bas pour voir d'en haut), on pince ou on utilise la molette pour zoomer", "Toucher un porche ou une porte : on passe tout de suite de l'autre côté", "La rue est vue d'un peu plus haut ; on ne traverse plus la grille, on passe par le portillon ; le tourniquet est retiré", "Salle des fêtes : on n'entre et ne sort que par la porte ouverte", "Les noms au-dessus des bonshommes sont plus petits"]],
     ["2.14.1", "11 octobre 2026", ["Cour d'honneur : la porte rouge est sur l'autre face de chaque aile (tournée vers le porche) ; côté cour, une seule fenêtre centrée"]],
     ["2.14", "11 octobre 2026", ["Cour d'honneur : l'ancien bar plus en retrait (la porte, et ses deux fenêtres à droite) ; les portes rouges et leurs fenêtres sont au pied des deux grandes ailes en brique"]],
