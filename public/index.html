@@ -1064,11 +1064,14 @@
           <div class="garland" id="garland"></div>
           <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
           <h3>Ce soir, c'est vous le DJ</h3>
-          <p>Partagez vos MP3, vos vidéos et vos photos</p>
+          <p>Déposez vos musiques : elles passent chez le DJ de la salle des fêtes, dans la Matrice</p>
           <label class="file" style="margin-top:14px;justify-content:center"><svg class="ico" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Ajouter musique, vidéo ou photo<input type="file" accept="audio/*,video/*,image/*" id="mFile" multiple></label>
+            Ajouter une musique<input type="file" accept="audio/*" id="djFichier" multiple></label>
+          <p class="erreur" id="djErreur" hidden></p>
+          <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
         </div>
-        <p class="legal">Partagez de préférence vos propres enregistrements, films et photos (fanfare, fêtes, cassettes de l'époque). Pour les chansons et films du commerce, il faudra vérifier les droits avant la mise en ligne.</p>
+        <p class="legal">Déposez de préférence vos propres enregistrements ou des musiques libres de droits (fanfare, fêtes, cassettes de l'époque). 50 Mo au plus par musique. Pour la passer à tout le monde : Matrice → salle des fêtes → bouton ▶ sur les platines du DJ.</p>
+        <input class="search" id="tracksRecherche" placeholder="Chercher un titre, un artiste…">
         <div id="tracks"></div>
       </div>
 
@@ -1110,14 +1113,12 @@
               <div class="dj-barre"><div id="djProgres"></div></div></div></div>
           <div class="dj-actions"><button class="btn small" type="button" id="djEcouter">🔊 Écouter</button>
             <button class="btn small alt" type="button" id="djPasser">⏭ Suivant</button><button class="btn small alt" type="button" id="djStop">⏹ Arrêter</button>
-            <label class="btn small alt">➕ Ajouter une musique<input type="file" accept="audio/*" id="djFichier" hidden multiple></label></div>
-          <p class="erreur" id="djErreur" hidden></p>
-          <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
+            <button class="btn small alt" type="button" id="djVersFetes">➕ Ajouter une musique</button></div>
           <div class="dj-titre-liste" id="djFileTitre" hidden>À suivre</div><ol class="dj-file" id="djFile"></ol>
           <div class="dj-titre-liste">La discothèque des anciens <small id="djNb"></small></div>
           <input class="search" id="djRecherche" placeholder="Chercher un titre, un artiste…" style="margin:4px 0 8px">
           <div class="dj-liste" id="djListe"></div>
-          <p class="legal" style="text-align:left;margin:8px 0 0">Dépose de préférence tes propres enregistrements ou des musiques libres de droits. 50 Mo au plus par musique.</p>
+          <p class="legal" style="text-align:left;margin:8px 0 0">Les musiques s'ajoutent dans l'onglet « Salle des fêtes ». Touche ▶ sur les platines pour lancer la musique, ⏹ pour l'arrêter.</p>
         </div>
         <form class="mx-dire" id="mxDire"><input id="mxTexte" maxlength="140" placeholder="Dire quelque chose dans la cour…" autocomplete="off"><button class="btn">Dire</button></form>
         <div class="mx-fil" id="mxFil"></div>
@@ -1676,7 +1677,7 @@
     $("scroll").scrollTop = 0;
     if (tab === "poste") fitCard();
     if (tab === "accueil") chargerAccueil();
-    if (tab === "fetes") chargerBorne();
+    if (tab === "fetes") { chargerBorne(); if (moi) chargerDisco(); else renderTracks(); } else if (playing !== -1) { audio.pause(); playing = -1; }
     if (tab === "membres") chargerMembres();
     if (tab === "biblio") chargerBiblio();
     if (tab === "jeunes") chargerAnecdotes();
@@ -1915,6 +1916,7 @@
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
+        surBoutonDJ: boutonDJ,
         surVolume: v => { djVolume = v; djSynchro(); },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
@@ -1974,7 +1976,7 @@
   $("djStop").onclick = async () => { if (await garde("La musique s'arrêtera pour tout le monde dans la salle.", { titre: "Arrêter la musique ?", annuler: true, ok: "Arrêter" })) MX && MX.dj("stop"); };
   async function chargerDisco() {
     try { djDisco = await api("GET", "/api/musiques"); } catch (e) { djDisco = []; }
-    afficherDisco();
+    afficherDisco(); renderTracks();
   }
   function afficherDisco() {
     const q = $("djRecherche").value.trim().toLowerCase();
@@ -1986,9 +1988,24 @@
       : `<p style="opacity:.75;margin:6px 2px">${djDisco.length ? "Aucun titre ne correspond." : "La discothèque est vide : ajoute la première musique !"}</p>`;
     $("djListe").querySelectorAll("[data-dj-jouer]").forEach(b => b.onclick = () => { if (!djEcoute) { djEcoute = true; djAudio.play().catch(() => {}); } MX && MX.dj("jouer", { id: +b.dataset.djJouer }); });
     $("djListe").querySelectorAll("[data-dj-file]").forEach(b => b.onclick = () => MX && MX.dj("file", { id: +b.dataset.djFile }));
-    $("djListe").querySelectorAll("[data-dj-suppr]").forEach(b => b.onclick = async () => { const m = djDisco.find(x => x.id === +b.dataset.djSuppr);
-      if (!await garde(`« ${m.titre} » sera retirée de la discothèque.`, { titre: "Retirer cette musique ?", annuler: true, ok: "Retirer", danger: true })) return;
-      try { await api("DELETE", `/api/musiques/${m.id}`); chargerDisco(); } catch (e) { garde(e.message); } });
+    $("djListe").querySelectorAll("[data-dj-suppr]").forEach(b => b.onclick = () => retirerMusique(+b.dataset.djSuppr));
+  }
+  async function retirerMusique(id) {
+    const m = djDisco.find(x => x.id === id); if (!m) return;
+    if (!await garde(`« ${m.titre} » sera retirée de la discothèque.`, { titre: "Retirer cette musique ?", annuler: true, ok: "Retirer", danger: true })) return;
+    if (playing === id) { audio.pause(); playing = -1; }
+    try { await api("DELETE", `/api/musiques/${m.id}`); chargerDisco(); } catch (e) { garde(e.message); }
+  }
+  $("djVersFetes").onclick = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); document.querySelector('[data-go="fetes"]').click(); setTimeout(() => $("djFichier").closest(".card").scrollIntoView({ behavior: "smooth", block: "center" }), 300); };
+  // le bouton ▶ / ⏹ sur les platines, dans la salle des fêtes de la Matrice
+  async function boutonDJ() {
+    if (!MX) return;
+    if (djEtat.courant) { MX.dj("stop"); return; }
+    if (!djEcoute) { djEcoute = true; djAudio.muted = false; djAudio.play().catch(() => {}); }
+    if (djEtat.file.length) { MX.dj("passer"); return; }
+    if (!djDisco.length) await chargerDisco();
+    if (!djDisco.length) { garde("La discothèque est vide. Ajoute des musiques dans l'onglet « Salle des fêtes », puis reviens les passer ici.", { titre: "Pas encore de musique", annuler: "Plus tard", ok: "Ajouter une musique" }).then(o => o && $("djVersFetes").click()); return; }
+    MX.dj("jouer", { id: djDisco[Math.floor(Math.random() * djDisco.length)].id });
   }
   $("djRecherche").oninput = afficherDisco;
   setInterval(() => { if (mxOuverte && mxLieu === "fetes" && !document.hidden) chargerDisco(); }, 30000);
@@ -2450,6 +2467,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.12", "11 octobre 2026", ["Les musiques de la salle des fêtes s'ajoutent dans l'onglet « Salle des fêtes » (on peut les écouter pour soi et les retirer)", "Matrice : gros bouton ▶ / ⏹ au-dessus des platines du DJ pour lancer ou arrêter la musique de toute la salle"]],
     ["2.11", "11 octobre 2026", ["Cour d'honneur la nuit : une porte de la salle des fêtes reste ouverte, la lumière de la fête se répand dans la cour et on entend la musique (moins fort, et plus fort en s'approchant ; bouton 🔊 La fête)", "Les immeubles parisiens ont des fenêtres allumées la nuit, et on voit des silhouettes aller et venir derrière"]],
     ["2.10", "11 octobre 2026", ["Matrice : nouvelle danse 🕺 Disco, façon John Travolta : le doigt en l'air, puis vers le sol", "Les bras ne sont plus coupés quand on danse", "Discussion : les messages s'effacent au bout d'une heure ; chacun retire les siens (✕), l'administrateur peut tout effacer ; en plein écran ils disparaissent au bout d'une minute", "Plein écran : le bouton Musique ne passe plus sous Danser"]],
     ["2.9.1", "11 octobre 2026", ["Matrice : les bulles au-dessus des bonshommes disparaissent plus vite (6 secondes au plus)"]],
@@ -2772,35 +2790,30 @@
   /* ===== Salle des fêtes ===== */
   const garlandColors = ["#e7b33a", "#c4694a", "#7aa0c9", "#8bb174", "#d77ba6"];
   $("garland").innerHTML = Array.from({ length: 16 }, (_, i) => `<i style="background:${garlandColors[i % 5]}"></i>`).join("");
-  const medias = [], audio = new Audio();
+  // la discothèque des anciens : on la remplit ici, le DJ de la Matrice la passe à toute la salle ; ici on peut écouter un titre pour soi
+  const audio = new Audio();
   let playing = -1;
   const PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>', PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
   function renderTracks() {
-    $("tracks").innerHTML = medias.length ? medias.map((m, i) => {
-      const meta = `<div class="t">${esc(m.title)}</div><div class="s">partagé par ${esc(m.by)}</div>`;
-      if (m.type === "video") return `<div class="card media-card"><video src="${m.url}" controls playsinline preload="metadata"></video>${meta}</div>`;
-      if (m.type === "image") return `<div class="card media-card"><img src="${m.url}" alt="${esc(m.title)}">${meta}</div>`;
-      return `<div class="list-item ${i === playing ? "playing" : ""}"><div class="disc"></div>
-        <div style="flex:1;min-width:0">${meta}<div class="track-progress"><div id="pg${i}"></div></div></div>
-        <button class="play" data-i="${i}" aria-label="Lecture">${i === playing ? PAUSE : PLAY}</button></div>`;
-    }).join("")
-      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>La salle est vide</b>Ajoutez la première musique, vidéo ou photo de la soirée.</div>`;
+    if (enLigne && !moi) { $("tracks").innerHTML = bloqueConnexion("la discothèque des anciens"); brancherConnexion(); return; }
+    const q = $("tracksRecherche").value.trim().toLowerCase();
+    const l = djDisco.filter(m => (m.titre + " " + (m.artiste || "") + " " + m.auteur_nom).toLowerCase().includes(q));
+    $("tracks").innerHTML = l.length ? l.map(m => `<div class="list-item ${m.id === playing ? "playing" : ""}"><div class="disc"></div>
+        <div style="flex:1;min-width:0"><div class="t">${esc(m.titre)}</div><div class="s">${m.artiste ? esc(m.artiste) + " · " : ""}${m.duree ? djSecondes(m.duree) + " · " : ""}déposée par ${esc(m.auteur_nom)}</div><div class="track-progress"><div id="pg${m.id}"></div></div></div>
+        <button class="play" data-i="${m.id}" aria-label="Écouter">${m.id === playing ? PAUSE : PLAY}</button>
+        ${moi && (moi.admin || +m.auteur === +moi.numero) ? `<button type="button" class="btn small danger" data-suppr-musique="${m.id}" aria-label="Retirer de la discothèque">🗑</button>` : ""}</div>`).join("")
+      : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>${djDisco.length ? "Aucun titre ne correspond" : "La discothèque est vide"}</b>${djDisco.length ? "" : "Ajoutez la première musique de la soirée."}</div>`;
     document.querySelectorAll("#tracks .play").forEach(b => b.onclick = () => toggle(+b.dataset.i));
+    document.querySelectorAll("#tracks [data-suppr-musique]").forEach(b => b.onclick = () => retirerMusique(+b.dataset.supprMusique));
   }
-  function toggle(i) {
-    if (playing === i) { audio.pause(); playing = -1; }
-    else { audio.src = medias[i].url; audio.play(); playing = i; }
+  function toggle(id) {
+    if (playing === id) { audio.pause(); playing = -1; }
+    else { audio.src = `/api/musiques/${id}/fichier?t=${encodeURIComponent(moi.token)}`; audio.play().catch(() => {}); playing = id; }
     renderTracks();
   }
   audio.ontimeupdate = () => { const el = $("pg" + playing); if (el && audio.duration) el.style.width = (audio.currentTime / audio.duration * 100) + "%"; };
   audio.onended = () => { playing = -1; renderTracks(); };
-  $("mFile").onchange = e => {
-    [...e.target.files].forEach(f => medias.unshift({
-      type: f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "image" : "audio",
-      title: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), by: who(), url: URL.createObjectURL(f) }));
-    playing = -1; audio.pause();
-    e.target.value = ""; renderTracks(); };
-  renderTracks();
+  $("tracksRecherche").oninput = renderTracks;
 
   /* ===== Membres de la Caserne ===== */
   let membres = [];

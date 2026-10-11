@@ -721,6 +721,14 @@ function construireLieu(id, scene) {
     tables.push([-5.6, -1.3, dz - .8, Z1]);
     // toucher le coin du DJ ouvre la musique
     const zone = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.2, 1.6), new THREE.MeshBasicMaterial({ visible: false })); zone.position.set(-3.3, 1.6, dz); scene.add(zone); L.zoneDJ = [zone];
+    // le gros bouton ▶ / ⏹ au-dessus des platines : on lance ou on arrête la musique pour toute la salle
+    const bouton = (fond, signe) => tex(toile(128, 128, (x) => { x.fillStyle = "rgba(0,0,0,.35)"; x.beginPath(); x.arc(64, 68, 58, 0, 7); x.fill();
+      x.fillStyle = fond; x.beginPath(); x.arc(64, 62, 56, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#fff"; x.stroke(); x.fillStyle = "#fff"; x.beginPath();
+      if (signe === "play") { x.moveTo(48, 34); x.lineTo(96, 62); x.lineTo(48, 90); } else x.rect(40, 38, 48, 48); x.fill(); }));
+    const texPlay = bouton("#2f9e5b", "play"), texStop = bouton("#c4394a", "stop");
+    const btn = new THREE.Sprite(new THREE.SpriteMaterial({ map: texPlay, depthTest: false, transparent: true })); btn.renderOrder = 10;
+    btn.position.set(-2.75, 1.5, dz - .2); btn.scale.set(.62, .62, 1); scene.add(btn); L.boutonDJ = btn;
+    L.majBoutonDJ = (joue) => { btn.material.map = joue ? texStop : texPlay; btn.material.needsUpdate = true; };
 
     // lumière de la salle
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
@@ -792,6 +800,9 @@ export async function ouvrir(ctx) {
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps)[0];
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.pnj) { dire(PNJ, PHRASES[Math.floor(Math.random() * PHRASES.length)]); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
+    if (M.L.boutonDJ) { const q = M.L.boutonDJ.position.clone().project(M.camera);
+      if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(36, r.width * .045)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     const s = ray.intersectObject(M.L.sol)[0]; if (!s) return;
     allerVers(s.point.x, s.point.z, true);
@@ -1052,7 +1063,7 @@ function connecter() {
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { Object.assign(p.info, m.p); dessinerCorps(p); } }
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
-    else if (m.t === "dj") ctx.surDJ && ctx.surDJ(m.dj);
+    else if (m.t === "dj") { M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = m.on === "disco" ? "disco" : !!m.on && "balance"; }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
