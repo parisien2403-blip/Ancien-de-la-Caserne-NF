@@ -617,7 +617,13 @@
   .borne .neige span { background: rgba(0,0,0,.65); color: #9fd; font: 700 clamp(9px, 2.4vw, 15px) "Courier New", monospace; padding: 6px 10px; letter-spacing: .1em; text-shadow: 0 0 6px #6fc; }
   @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
   /* pendant une partie sur téléphone : on ne garde que la télé (de 10 % à 62 % de l'image), la manette remonte juste dessous */
-  .borne.en-jeu { aspect-ratio: 1400 / 789; }
+  .borne.en-jeu { aspect-ratio: 1400 / 789; margin: 0 auto; }
+  /* manette plus compacte quand l'écran est bas (Fold ouvert, tablette à l'horizontale) */
+  .manette.compacte { padding: 18px 12px 10px; margin-top: 14px; }
+  .manette.compacte .croix { width: 100px; height: 100px; }
+  .manette.compacte .boutons { width: 112px; height: 100px; }
+  .manette.compacte .bt { width: 38px; height: 38px; font-size: 15px; }
+  .manette.compacte .epaule { height: 20px; top: -8px; }
   .borne.en-jeu > img { margin-top: -10.84%; }
   .borne.en-jeu .ecran { top: 13.37%; height: 61.83%; }
   /* manette sous la télé */
@@ -1891,6 +1897,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.7.3", "11 octobre 2026", ["Borne : la télé et la manette tiennent ensemble à l'écran, même sur le Fold ouvert"]],
     ["1.7.2", "11 octobre 2026", ["Le code à 4 chiffres marche de nouveau sur l'écran verrouillé (les chiffres ne répondaient plus depuis la 1.6)"]],
     ["1.7.1", "11 octobre 2026", ["Borne : un jeu restait bloqué sur « Download Game Data », c'est réparé", "Borne : pendant une partie sur téléphone, la manette remonte juste sous la télé"]],
     ["1.7", "11 octobre 2026", ["Un œil 👁 pour voir ce qu'on tape dans les mots de passe et les codes", "Les messages de l'appli sont donnés par le chef de poste", "Bouton 🔄 Mise à jour de l'appli dans les réglages", "Le numéro de version et cette page « Quoi de neuf ? »"]],
@@ -2872,7 +2879,7 @@
     $("borneEteindre").hidden = false; $("bornePlein").hidden = false;
     preparerManette(j.console);
     document.querySelectorAll(".cartouche").forEach(c => c.classList.toggle("on", +c.dataset.jeu === j.id));
-    if (tactile) $("manette").scrollIntoView({ behavior: "smooth", block: "end" }); else $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!tactile) $("borne").scrollIntoView({ behavior: "smooth", block: "center" });
   }
   // la manette : elle appuie directement sur les touches de l'émulateur dans la télé
   const tactile = matchMedia("(pointer: coarse)").matches;
@@ -2904,7 +2911,23 @@
     });
     $("manette").hidden = !tactile;
     $("borne").classList.toggle("en-jeu", tactile);
+    ajusterBorne();
   }
+  // pendant une partie sur téléphone : la télé et la manette doivent tenir ensemble entre l'en-tête et les onglets
+  function ajusterBorne() {
+    const b = $("borne"), m = $("manette");
+    if (!b.classList.contains("en-jeu") || m.hidden) { b.style.maxWidth = ""; m.classList.remove("compacte"); return; }
+    const sc = $("scroll").getBoundingClientRect(), tb = $("tabbar").getBoundingClientRect();
+    const bas = tb.height && tb.top > sc.top ? Math.min(tb.top, sc.bottom) : sc.bottom;
+    const dispo = bas - sc.top - 16;
+    m.classList.toggle("compacte", dispo < 640);
+    const hManette = m.offsetHeight + 24;
+    const hTele = Math.max(150, dispo - hManette);
+    b.style.maxWidth = Math.round(hTele * 1400 / 789) + "px";
+    // la télé juste sous l'en-tête
+    requestAnimationFrame(() => { $("scroll").scrollTop += b.getBoundingClientRect().top - sc.top - 8; });
+  }
+  addEventListener("resize", () => { if (jeuEnCours) ajusterBorne(); });
   // la croix : on peut glisser le doigt d'une direction à l'autre (diagonales comprises)
   (() => {
     const c = $("croix"); let dirs = new Set();
@@ -2942,7 +2965,7 @@
     const f = $("jeuFrame"); f.src = "about:blank"; f.hidden = true;
     $("neige").hidden = false; $("ecranTexte").textContent = "CHOISIS UNE CARTOUCHE";
     $("borneEteindre").hidden = true; $("bornePlein").hidden = true;
-    $("manette").hidden = true; $("borne").classList.remove("en-jeu");
+    $("manette").hidden = true; $("borne").classList.remove("en-jeu"); ajusterBorne();
     document.querySelectorAll(".cartouche").forEach(c => c.classList.remove("on"));
   }
   $("borneEteindre").onclick = eteindre;
