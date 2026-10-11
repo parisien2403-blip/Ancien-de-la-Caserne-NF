@@ -49,10 +49,16 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 24 : 16; x.lineCap = "round";
       x.beginPath(); x.moveTo(g ? 84 : 116, bas ? 262 : 336); x.lineTo(g ? 44 : 156, 396); x.stroke();
       x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
-    } else if (o.pose === "profil") {
+    } else if (o.pose === "profil" || o.pose === "slow") {
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 26 : 17; x.lineCap = "round"; x.lineJoin = "round";
       x.beginPath(); x.moveTo(108, bas ? 262 : 330); x.lineTo(110, 398); x.stroke();                                 // la jambe d'appui
-      x.beginPath(); x.moveTo(94, bas ? 262 : 330); x.lineTo(62, 300); x.lineTo(70, 350); x.stroke();                // le genou levé devant
+      x.beginPath(); x.moveTo(94, bas ? 262 : 330);
+      if (o.pose === "slow") x.lineTo(92, 398); else { x.lineTo(62, 300); x.lineTo(70, 350); } x.stroke();            // le genou levé devant (Thriller)
+    } else if (o.pose === "assis" || o.pose === "boire") {
+      // assis sur un tabouret : les cuisses vers l'avant (raccourcies), les jambes qui pendent, les pieds sur le repose-pieds
+      x.strokeStyle = bas || peau; x.lineWidth = bas ? 27 : 17; x.lineCap = "round"; x.lineJoin = "round";
+      for (const [hx, kx, fx] of [[84, 66, 76], [116, 134, 124]]) { x.beginPath(); x.moveTo(hx, 262); x.lineTo(kx, 284); x.lineTo(fx, 348); x.stroke();
+        x.fillStyle = "rgba(255,255,255,.14)"; x.beginPath(); x.ellipse(kx, 284, 13, 10, 0, 0, 7); x.fill(); }   // les genoux, vers nous
     } else if (o.pose === "madison4" || o.pose === "madison5") {
       // genou levé : la cuisse remonte, le pied décolle du sol
       const g = o.pose === "madison4", hx = g ? 84 : 116;
@@ -62,11 +68,11 @@ export function dessinerBonhomme(o, tete) {
     } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    const profil = o.pose === "profil";
-    const jambesDroites = !accroupi && !profil && !/^madison[1345]$/.test(o.pose || "");
+    const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire";
+    const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
-    const PD = profil ? [60, 102] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
-    const PY = profil ? [352, 404] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
+    const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
+    const PY = o.pose === "slow" ? [404, 404] : profil ? [352, 404] : assis ? [352, 352] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
     x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], PY[0], 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], PY[1], 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
     if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, PY[0] + 4, 40, 3); x.fillRect(PD[1] - 20, PY[1] + 4, 40, 3); }   // semelle des baskets
     const haut = t === "garde" ? "#1c2541" : c;
@@ -86,7 +92,9 @@ export function dessinerBonhomme(o, tete) {
         // Thriller : les deux bras pliés en griffes de zombie, d'un côté puis de l'autre
         : o.pose === "thriller1" ? (sens > 0 ? [12, 176] : [70, 150]) : o.pose === "thriller2" ? (sens > 0 ? [130, 150] : [188, 176])
         : o.pose === "thriller3" ? (sens > 0 ? [22, 96] : [178, 96])
+        : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
+        : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
         : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
@@ -105,7 +113,7 @@ export function dessinerBonhomme(o, tete) {
         x.strokeStyle = "rgba(120,70,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-8, 99); x.lineTo(3, 99); x.moveTo(-8, 103); x.lineTo(3, 103); x.stroke();
       } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();
         // les griffes du zombie : quatre doigts crochus
-        if (/^thriller|^profil/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
+        if (/^thriller|^profil$/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
           for (let f = -1.5; f <= 1.5; f++) { x.beginPath(); x.moveTo(f * 5.5, 102); x.quadraticCurveTo(f * 7.5, 116, f * 4 + 3, 120); x.stroke(); } } }
       x.restore();
     };
@@ -134,7 +142,7 @@ export function dessinerBonhomme(o, tete) {
       const R = o.reglage || {}, z = R.k || 1;
       const k = Math.min(112 / tete.width, 124 / tete.height) * z, w = tete.width * k, h = tete.height * k;
       if (o.moi) { x.shadowColor = "#f6d465"; x.shadowBlur = 14; }
-      x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate(((R.r || 0) + (profil ? 24 : 0)) * Math.PI / 180);   // de profil, la tête rejetée en arrière
+      x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate(((R.r || 0) + (o.pose === "slow" ? 6 : profil ? 24 : o.pose === "boire" ? 14 : 0)) * Math.PI / 180);   // de profil, la tête rejetée en arrière
       if (o.pose === "dos") {
         // de dos : la même silhouette de tête, en arrière du crâne (couleur peau, un peu d'ombre en bas)
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
@@ -147,6 +155,14 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = peau; x.beginPath(); x.ellipse(100, 72, 44, 54, 0, 0, 7); x.fill();
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92);
+    }
+    if (assis) {
+      // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
+      const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
+      x.save(); x.translate(gx, gy); x.rotate(a);
+      x.fillStyle = "rgba(230,240,245,.55)"; x.beginPath(); x.roundRect(-9, -26, 18, 30, 3); x.fill();
+      x.fillStyle = "#e3a92c"; x.fillRect(-7.5, -18, 15, 20); x.fillStyle = "#fbf6e8"; x.fillRect(-8, -24, 16, 7);
+      x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = 1.5; x.strokeRect(-9, -26, 18, 30); x.restore();
     }
     if (accroupi) x.restore();
   });
@@ -1382,7 +1398,16 @@ function construireLieu(id, scene) {
       refMat.opacity = .7 + .3 * s; L.refletsTaille(1 + .4 * s); };
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.zone = [X0, X1, Z0, Z1];
-    L.limites = (x, z) => x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
+    // les tabourets du bar : pied chromé, assise en cuir rouge, repose-pieds ; on s'y assoit en s'approchant
+    L.tabourets = [];
+    for (let z = bzA + .55; z < bzB - .3; z += 1.1) {
+      const tx = bx - 1.0; L.tabourets.push([tx, z]);
+      A.ajoute(new THREE.CylinderGeometry(.2, .22, .04, 18), A.mat({ color: 0x9a9da1, metalness: .7, roughness: .3 }), tx, .02, z, false);
+      A.ajoute(new THREE.CylinderGeometry(.03, .03, .58, 10), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .2 }), tx, .31, z);
+      const rp = A.ajoute(new THREE.TorusGeometry(.16, .015, 8, 20), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .2 }), tx, .26, z, false); rp.rotation.x = Math.PI / 2;
+      A.ajoute(new THREE.CylinderGeometry(.21, .19, .08, 20), A.mat({ color: 0x8e1c22, roughness: .45 }), tx, .62, z);
+    }
+    L.limites = (x, z) => !L.tabourets.some(([a, b]) => Math.hypot(x - a, z - b) < .3) && x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
     L.portails.push({ dans: (x, z) => x < X0 + .7 && Math.abs(z - (Z0 + 2.5 * long / 5)) < 1.1, vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     L.plafond = HT - .35;
@@ -1494,7 +1519,18 @@ export async function ouvrir(ctx) {
       if (p.corps && p.poses) {
         const sx = tailleBonhomme() * .476 * 1.6;
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
-        if (p.info.danse === "thriller") {
+        const partenaire = p.info.slow && M.gens.get(p.info.slow);
+        if (Number.isInteger(p.info.assis)) {
+          // assis au bar : il boit une gorgée de temps en temps
+          const ph = (t + p.info.numero * 1300) % 6000, pose = ph < 1300 ? "boire" : "assis";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
+        else if (partenaire) {
+          // le slow : chacun tourné vers l'autre, on se balance doucement ensemble
+          const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          const ph = t / 900; p.corps.material.rotation = Math.sin(ph) * .05; p.corps.position.x = Math.sin(ph) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.danse === "thriller") {
           /* Thriller : griffes à gauche (2 temps, la tête et les épaules penchées), griffes à droite (2 temps)… et tous les 8 temps, les bras levés devant, en avançant */
           const ph = t / 380 + p.info.numero * .7, k = Math.floor(ph) % 8, v = ph % 1;
           // tourné vers la gauche (profil), puis vers la droite (profilD : l'image retournée, c'est l'autre pied qui se lève)
@@ -1542,6 +1578,7 @@ export async function ouvrir(ctx) {
     let vol = M.L.interieur ? 1 : 0;
     if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .07 + .38 * Math.max(0, 1 - d / 22); }
     if (Math.abs(vol - (M.volume ?? -1)) > .015) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
+    chercherAction(t);
     placerCamera(false);
     rendu.render(M.scene, M.camera);
   });
@@ -1663,7 +1700,8 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
@@ -1676,6 +1714,7 @@ function ajouterAncien(info) {
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .42, H * .08); nom.position.y = H + .14; g.add(nom);
   M.gens.set(info.numero, p);
+  if (Number.isInteger(info.assis)) asseoir(p, info.assis);
   dessinerCorps(p);
   return p;
 }
@@ -1752,6 +1791,41 @@ function animerPNJ() {
     dire(PNJ, PHRASES.salut[Math.floor(Math.random() * PHRASES.salut.length)].replace("%s", nom)); }
 }
 
+/* --- ce qu'on peut faire là où l'on est : s'asseoir au bar, se relever, inviter quelqu'un à danser un slow, l'arrêter --- */
+function chercherAction(t) {
+  if (!M || (M.actionT && t - M.actionT < 300)) return; M.actionT = t;
+  const moi = M.moiNum && M.gens.get(M.moiNum); let a = null;
+  if (moi) {
+    const x = moi.g.position.x, z = moi.g.position.z;
+    if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
+    else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
+    else if (!moi.cible) {
+      const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
+      const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
+      if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
+      else { let best = null, bd = 1.9;
+        for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
+          const d = Math.hypot(p.g.position.x - x, p.g.position.z - z); if (d < bd) { bd = d; best = p; } }
+        if (best) a = { type: "slow", numero: best.info.numero, label: `💞 Danser un slow avec ${best.info.nom}` }; }
+    }
+  }
+  const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") : "";
+  if (cle !== M.actionCle) { M.actionCle = cle; M.action = a; M.ctx.surAction && M.ctx.surAction(a); }
+}
+function asseoir(p, i) {
+  const tb = M.L.tabourets && M.L.tabourets[i]; if (!tb) return;
+  p.info.assis = i; p.cible = null; p.chemin = []; p.info.danse = false; p.g.position.set(tb[0], 0, tb[1]);
+}
+export function agir() {
+  const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
+  if (a.type === "asseoir") { if (moi.info.danse) danser(false); const [x, z] = M.L.tabourets[a.i]; envoyerWS({ t: "aller", x, z }); asseoir(moi, a.i); envoyerWS({ t: "assis", i: a.i }); }
+  else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); allerVers(moi.g.position.x - .7, moi.g.position.z, true); }
+  else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
+  else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
+  M.actionT = 0;
+}
+export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }
+
 /* --- déplacements --- */
 // aller vers (x, z) : si le lieu impose un passage (le portillon de la grille, dans la rue), on fait le détour
 function ligneLibre(L, x0, z0, x1, z1) {
@@ -1787,6 +1861,8 @@ function itineraire(L, x0, z0, x1, z1) {
   while (i < pts.length) { let j = pts.length - 1; while (j > i && !ligneLibre(L, px, pz, pts[j][0], pts[j][1])) j--; out.push(pts[j]); [px, pz] = pts[j]; i = j + 1; }
   return out;
 }
+// le point libre le plus proche (pour ne pas se placer dans une table)
+function viserLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let k = 1; k <= 20; k++) for (let a = 0; a < 12; a++) { const tx = x + Math.cos(a / 12 * Math.PI * 2) * k * .15, tz = z + Math.sin(a / 12 * Math.PI * 2) * k * .15; if (M.L.limites(tx, tz)) return [tx, tz]; } return [x, z]; }
 function viser(p, x, z) {
   const pts = itineraire(M.L, p.g.position.x, p.g.position.z, x, z);
   if (!pts.length) { p.cible = null; p.chemin = []; return; }
@@ -1804,6 +1880,8 @@ function allerVers(x, z, envoyer) {
   viser(moi, px, pz); M.repere.position.set(px, .04, pz); M.repere.material.opacity = 1;
   if (envoyer) envoyerWS({ t: "aller", x: px, z: pz });
   if (envoyer && moi.info.danse) danser(false);
+  if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); }
+  if (envoyer && moi.info.slow) envoyerWS({ t: "slow_fin" });
 }
 function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
@@ -1865,6 +1943,19 @@ function connecter() {
     else if (m.t === "lumiere") { M.lumiere = +m.niveau || 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? `${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`.toLowerCase() : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
+    else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
+    else if (m.t === "slow_demande") ctx.surInvitation && ctx.surInvitation({ de: m.de, nom: m.nom });
+    else if (m.t === "slow_refus") ctx.surInfo && ctx.surInfo(`${m.nom} ne peut pas danser maintenant… une autre fois !`);
+    else if (m.t === "slow") {
+      const A2 = M.gens.get(m.a), B2 = M.gens.get(m.b);
+      for (const [p, q] of [[A2, B2], [B2, A2]]) if (p && q) { p.info.slow = q.info.numero; p.info.danse = false; p.info.assis = null; }
+      // chacun se place face à l'autre, à 60 cm
+      const moi = M.gens.get(M.moiNum);
+      if (moi && (m.a === M.moiNum || m.b === M.moiNum)) { if (moi.info.danse) { moi.info.danse = false; M.ctx.surDanse && M.ctx.surDanse(false); }
+        const cx = m.x, cz = m.z, k = m.a === M.moiNum ? -.3 : .3; const v = viserLibre(cx + k, cz); viser(moi, v[0], v[1]); envoyerWS({ t: "aller", x: v[0], z: v[1] });
+        ctx.surInfo && ctx.surInfo("💞 Un slow… profitez-en !"); }
+    }
+    else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }

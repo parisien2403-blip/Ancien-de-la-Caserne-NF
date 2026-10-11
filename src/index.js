@@ -337,7 +337,13 @@ export class Compteur extends DurableObject {
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
+  // le slow à deux : on libère les deux danseurs (départ, changement de lieu, « arrêter »)
+  finirSlow(ws, a) {
+    if (!a.slow) return; const autre = a.slow, lieu = a.lieu; a.slow = null; try { ws.serializeAttachment(a); } catch (e) {}
+    for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.numero === autre && b.slow === a.numero) { b.slow = null; w.serializeAttachment(b); } }
+    if (lieu) this.diffuser(lieu, { t: "slow_fin", a: a.numero, b: autre });
+  }
 
   /* ----- La Matrice : présence en direct (WebSocket, mise en veille possible) ----- */
   async fetch(request) {
@@ -367,7 +373,8 @@ export class Compteur extends DurableObject {
     const nb = v => Math.max(-60, Math.min(60, Number(v) || 0));
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu)) {
       const ancien = a.lieu;
-      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false }); ws.serializeAttachment(a);
+      this.finirSlow(ws, a);
+      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
       // les messages ne restent qu'une heure
       this.sql.exec("DELETE FROM matrice_dits WHERE cree < ?", new Date(Date.now() - DITS_DUREE).toISOString());
@@ -407,6 +414,21 @@ export class Compteur extends DurableObject {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
       const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
       await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
+    } else if (m.t === "assis" && a.lieu === "fetes") {
+      // assis sur un tabouret du bar (son numéro), ou debout (null)
+      a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < 20 ? m.i : null; ws.serializeAttachment(a);
+      this.diffuser(a.lieu, { t: "assis", numero: a.numero, i: a.assis }, ws);
+    } else if (m.t === "slow_demande" && a.lieu && !a.slow) {
+      // une invitation à danser un slow, envoyée seulement à la personne choisie
+      for (const [w, b] of this.presents(a.lieu)) if (String(b.numero) === String(m.a) && b.numero !== a.numero) { try { w.send(JSON.stringify({ t: "slow_demande", de: a.numero, nom: a.nom })); } catch (e) {} }
+    } else if (m.t === "slow_reponse" && a.lieu) {
+      const p = this.presents(a.lieu).find(([, b]) => String(b.numero) === String(m.de));
+      if (!p) return; const [w, b] = p;
+      if (!m.oui || a.slow || b.slow) { try { w.send(JSON.stringify({ t: "slow_refus", nom: a.nom })); } catch (e) {} return; }
+      a.slow = b.numero; b.slow = a.numero; a.danse = b.danse = false; a.assis = b.assis = null; ws.serializeAttachment(a); w.serializeAttachment(b);
+      this.diffuser(a.lieu, { t: "slow", a: b.numero, b: a.numero, x: ((b.x || 0) + (a.x || 0)) / 2, z: ((b.z || 0) + (a.z || 0)) / 2 });
+    } else if (m.t === "slow_fin" && a.lieu) {
+      this.finirSlow(ws, a);
     } else if (m.t === "danse" && a.lieu) {
       a.danse = ["disco", "charleston", "madison", "thriller"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
@@ -442,6 +464,7 @@ export class Compteur extends DurableObject {
   async webSocketError(ws) { this.quitter(ws); }
   quitter(ws) {
     const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
+    this.finirSlow(ws, a);
     const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
     this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
   }

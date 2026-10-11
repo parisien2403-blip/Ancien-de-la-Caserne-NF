@@ -301,6 +301,13 @@
   .mx-lumiere { position: absolute; right: 10px; top: 102px; z-index: 3; border: 0; border-radius: 99px; padding: 8px 12px; background: rgba(31,42,55,.75); color: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
   .mx-effet { position: absolute; right: 10px; z-index: 3; border: 0; border-radius: 99px; padding: 8px 12px; background: rgba(31,42,55,.75); color: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
   #mxFumee { top: 148px; } #mxLasers { top: 190px; } .mx-effet.on { background: #2d8bff; } .mx-effet[hidden] { display: none; }
+  .mx-action { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; border: 0; border-radius: 99px; padding: 10px 18px; background: #c4694a; color: #fff;
+    font: 700 15px "Lato", sans-serif; box-shadow: 0 6px 18px rgba(0,0,0,.35); cursor: pointer; max-width: calc(100% - 120px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: mxPulse 1.6s ease-in-out infinite; }
+  .mx-action[hidden], .mx-invite[hidden] { display: none; }
+  @keyframes mxPulse { 50% { transform: translateX(-50%) scale(1.06); } }
+  .mx-invite { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; background: rgba(255,250,240,.97); color: #1f2a37; border-radius: 18px; padding: 16px 18px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.4); text-align: center; font: 600 15px "Lato", sans-serif; width: min(86%, 340px); }
+  .mx-invite-btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
   .mx-lumiere.basse { background: #f6d465; color: #1f2a37; } .mx-lumiere[hidden] { display: none; }
   .mx-dire-plein, .mx-fil-plein { display: none; }
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
@@ -1105,6 +1112,8 @@
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
+          <button class="mx-action" id="mxAction" type="button" hidden></button>
+          <div class="mx-invite" id="mxInvite" hidden><div id="mxInviteTxt"></div><div class="mx-invite-btns"><button type="button" class="btn small" id="mxInviteOui">💞 Avec plaisir</button><button type="button" class="btn small alt" id="mxInviteNon">Non merci</button></div></div>
           <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
           <button class="mx-effet" id="mxLasers" type="button" title="Allumer les lasers" hidden>🔷 Lasers</button>
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
@@ -1929,6 +1938,9 @@
         surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
+        surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
+        surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
+          clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
         surLasers: on => { mxLasersOn = on; $("mxLasers").classList.toggle("on", on); $("mxLasers").textContent = on ? "🔷 Lasers ✓" : "🔷 Lasers"; },
         surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `💡 ${Math.round(n * 100)} %`; },
         surVolume: v => { djVolume = v; djSynchro(); },
@@ -1988,7 +2000,10 @@
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && (mxLieu === "fetes" || mxLieu === "grande")) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
   // (administrateur) chaque appui baisse la lumière de la salle : 100 % → 60 % → 35 % → 15 % → 100 %
-  let mxLumiereNiv = 1, mxLasersOn = false;
+  let mxLumiereNiv = 1, mxLasersOn = false, mxInvitation = null, mxInviteMinuteur = null;
+  $("mxAction").onclick = () => MX && MX.agir();
+  const repondre = oui => { if (mxInvitation && MX) MX.repondreSlow(mxInvitation.de, oui); mxInvitation = null; $("mxInvite").hidden = true; };
+  $("mxInviteOui").onclick = () => repondre(true); $("mxInviteNon").onclick = () => repondre(false);
   $("mxFumee").onclick = () => { if (!MX) return; MX.fumee(); $("mxFumee").disabled = true; setTimeout(() => $("mxFumee").disabled = false, 8000); };
   $("mxLasers").onclick = () => MX && MX.lasers(!mxLasersOn);
   $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
@@ -2495,6 +2510,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.23", "11 octobre 2026", ["Salle des fêtes : des tabourets au bar ; en s'approchant, « 🪑 S'asseoir au bar » : on s'assoit avec un verre à la main et on boit ; « 🧍 Se relever » pour repartir", "Matrice : en s'approchant de quelqu'un, « 💞 Danser un slow avec… » ; l'autre reçoit l'invitation et accepte ou refuse ; « 💔 Arrêter le slow » pour finir"]],
     ["2.22", "11 octobre 2026", ["Salle des fêtes : la musique s'enchaîne toute seule ; quand un titre se termine et que la file d'attente est vide, le DJ passe au titre suivant de la discothèque (et reprend au début une fois au bout)"]],
     ["2.21.2", "11 octobre 2026", ["Thriller : il se tourne bien à gauche puis à droite (le côté droit ne s'affichait pas)"]],
     ["2.21.1", "11 octobre 2026", ["Thriller : de profil, un pied levé, les mains en griffes devant et la tête en arrière, à gauche puis à droite (l'autre pied), puis les bras levés"]],
