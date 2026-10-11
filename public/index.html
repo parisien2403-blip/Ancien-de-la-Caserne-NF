@@ -586,12 +586,17 @@
   .borne-barre { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 2px 8px; flex-wrap: wrap; }
   .borne-barre .kicker { margin: 0; }
   .borne-actions { display: flex; gap: 8px; }
-  .cartouches { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
+  .cartouches { display: flex; gap: 14px; overflow-x: auto; padding: 10px 8px 10px; scrollbar-width: thin; }
   .cartouche { position: relative; flex: none; width: 128px; padding: 10px 10px 12px; border-radius: 8px 8px 4px 4px; border: 0; cursor: pointer; text-align: left;
     background: linear-gradient(180deg, #8d8a86, #6b6865); color: #fff; box-shadow: 0 3px 0 #4a4744, inset 0 2px 0 rgba(255,255,255,.25); }
   .cartouche .etiq { display: block; background: #f6eedf; color: #2a2420; border-radius: 3px; padding: 8px 6px; font: 700 13px "Lato", sans-serif; min-height: 52px; line-height: 1.2; }
   .cartouche small { display: block; margin-top: 6px; font-size: 11px; opacity: .9; }
   .cartouche.on { outline: 3px solid var(--gold); }
+  .cartouche .jaq { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 3px 3px 0 0; background: #2a2420; }
+  .cartouche .jaq + .etiq { border-radius: 0 0 3px 3px; min-height: 0; padding: 5px 6px; font-size: 12px; }
+  .cartouche .changer-jaq { position: absolute; top: -6px; left: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--navy, #1f2a44); color: #fff; font-size: 12px; line-height: 24px; text-align: center; cursor: pointer; }
+  .borne-admin .apercu-jaq { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .borne-admin .apercu-jaq img { width: 72px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); }
   .cartouche .retirer { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #b3261e; color: #fff; font-size: 14px; cursor: pointer; }
   .borne-admin h3 small { font: 12px "Lato", sans-serif; color: var(--muted); }
   .borne-admin .progression { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 0 0 12px; }
@@ -825,9 +830,14 @@
               <button class="btn small" id="bornePlein" hidden>⛶ Plein écran</button></div>
           </div>
           <div class="cartouches" id="cartouches"></div>
+          <input type="file" id="jaqChange" accept="image/*" hidden>
           <form class="card borne-admin" id="borneAdmin" hidden>
             <h3>🔧 Ajouter un jeu à la borne <small>(toi seul vois ce cadre)</small></h3>
             <label class="file"><span id="jeuFichierLbl">Choisir le fichier du jeu</span><input type="file" id="jeuFichier" hidden></label>
+            <div class="apercu-jaq">
+              <label class="file" style="flex:1"><span id="jeuImageLbl">🖼 Image de la cartouche (facultatif)</span><input type="file" id="jeuImage" accept="image/*" hidden></label>
+              <img id="jeuImageApercu" alt="" hidden>
+            </div>
             <div class="row2" style="margin-top:12px">
               <label class="field">Titre<input id="jeuTitre" maxlength="80" required></label>
               <label class="field">Console<select id="jeuConsole">
@@ -2639,10 +2649,12 @@
     try { jeux = await api("GET", "/api/jeux"); } catch (e) { $("cartouches").innerHTML = `<p style="color:var(--muted)">Borne injoignable : ${esc(e.message)}</p>`; return; }
     if (!jeuEnCours) $("ecranTexte").textContent = jeux.length ? "CHOISIS UNE CARTOUCHE" : "PAS ENCORE DE CARTOUCHE";
     $("cartouches").innerHTML = jeux.length ? jeux.map(j => `<button class="cartouche ${jeuEnCours === j.id ? "on" : ""}" data-jeu="${j.id}">
-        <span class="etiq">${esc(j.titre)}</span><small>${esc(NOMS_CONSOLES[j.console] || j.console)}</small>
-        ${moi.admin ? `<span class="retirer" data-retirer-jeu="${j.id}" title="Retirer de la borne">×</span>` : ""}</button>`).join("")
+        ${j.jaquette ? `<img class="jaq" src="${esc(j.jaquette)}" alt="">` : ""}<span class="etiq">${esc(j.titre)}</span><small>${esc(NOMS_CONSOLES[j.console] || j.console)}</small>
+        ${moi.admin ? `<span class="changer-jaq" data-jaq-jeu="${j.id}" title="Changer l'image">🖼</span><span class="retirer" data-retirer-jeu="${j.id}" title="Retirer de la borne">×</span>` : ""}</button>`).join("")
       : `<p style="color:var(--muted);margin:4px 2px">${moi.admin ? "Ajoute la première cartouche avec le cadre ci-dessous." : "L'administrateur n'a pas encore rangé de cartouche dans la borne."}</p>`;
     document.querySelectorAll("[data-jeu]").forEach(b => b.onclick = async e => {
+      const im = e.target.closest("[data-jaq-jeu]");
+      if (im) { e.stopPropagation(); jaqCible = +im.dataset.jaqJeu; $("jaqChange").value = ""; $("jaqChange").click(); return; }
       const x = e.target.closest("[data-retirer-jeu]");
       if (x) {
         e.stopPropagation();
@@ -2654,6 +2666,19 @@
       allumer(jeux.find(v => v.id === +b.dataset.jeu));
     });
   }
+  // image de cartouche : réduite dans l'appli avant l'envoi (JPEG, 360 px au plus)
+  let jaqCible = null, jaqNouvelle = null;
+  $("jaqChange").onchange = async e => {
+    const f = e.target.files[0]; if (!f || !jaqCible) return;
+    try { await api("PUT", `/api/jeux/${jaqCible}/jaquette`, { jaquette: await reduireImage(f, 360, .8) }); chargerBorne(); }
+    catch (err) { alert(err.message); }
+  };
+  $("jeuImage").onchange = async e => {
+    const f = e.target.files[0]; jaqNouvelle = null; $("jeuImageApercu").hidden = true;
+    if (!f) return;
+    try { jaqNouvelle = await reduireImage(f, 360, .8); $("jeuImageApercu").src = jaqNouvelle; $("jeuImageApercu").hidden = false; $("jeuImageLbl").textContent = "🖼 " + f.name; }
+    catch (err) { alert(err.message); }
+  };
   function allumer(j) {
     jeuEnCours = j.id;
     $("neige").hidden = true;
@@ -2690,7 +2715,7 @@
     let barre = $("borneAdmin").querySelector(".progression");
     if (!barre) { barre = document.createElement("div"); barre.className = "progression"; barre.innerHTML = "<div></div>"; btn.before(barre); }
     try {
-      const j = await api("POST", "/api/jeux", { titre: $("jeuTitre").value.trim(), console: $("jeuConsole").value, nom_fichier: f.name, taille: f.size });
+      const j = await api("POST", "/api/jeux", { titre: $("jeuTitre").value.trim(), console: $("jeuConsole").value, nom_fichier: f.name, taille: f.size, jaquette: jaqNouvelle });
       for (let n = 0; n < j.morceaux; n++) {
         const bout = await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer();
         const res = await fetch(`/api/jeux/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + moi.token }, body: bout });
@@ -2699,6 +2724,7 @@
         btn.textContent = `Rangement… ${Math.round((n + 1) / j.morceaux * 100)} %`;
       }
       $("borneAdmin").reset(); $("jeuFichierLbl").textContent = "Choisir le fichier du jeu"; barre.remove();
+      jaqNouvelle = null; $("jeuImageApercu").hidden = true; $("jeuImageLbl").textContent = "🖼 Image de la cartouche (facultatif)";
       await chargerBorne();
     } catch (err) { $("jeuErreur").textContent = err.message; $("jeuErreur").hidden = false; }
     btn.disabled = false; btn.textContent = "Ranger la cartouche dans la borne";
