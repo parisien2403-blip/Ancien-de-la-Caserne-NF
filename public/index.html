@@ -389,12 +389,12 @@
     box-shadow: 0 2px 4px rgba(0,0,0,.35); transition: transform .15s, filter .15s; }
   .escaliers-mur button.vide { filter: grayscale(.85) brightness(.75); opacity: .55; }
   .escaliers-mur button.choisi { outline: 3px solid var(--gold); outline-offset: 2px; transform: translateY(-2px); }
-  .escaliers-mur .tous { width: auto; padding: 0 12px; background: #1f3a5f; color: #f6eedf; font: 700 13px "Lato", sans-serif; }
+  .escaliers-mur .tous { width: auto; padding: 0 12px; background: #ece6da url("images/pierre.jpg") 0 0 / 360px auto; color: #2a2019; font: 700 13px "Libre Baskerville", serif; box-shadow: inset 0 0 0 1px #8a7a62; }
   .escalier { margin: 0 0 18px; }
   .escalier-tete { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 8px; border-radius: 14px;
     background: #a4462f url("images/escaliers/brique.jpg") center / cover; box-shadow: inset 0 0 0 2000px rgba(60,20,10,.28); color: #fff; }
   .escalier-tete img { width: 58px; height: 58px; border-radius: 8px; object-fit: cover; object-position: center; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
-  .escalier-tete .lettre-vide { width: 58px; height: 58px; border-radius: 8px; display: grid; place-items: center; background: #1f3a5f; color: #f6eedf; font: 700 26px "Lato", sans-serif; }
+  .escalier-tete .lettre-vide { width: 58px; height: 58px; border-radius: 8px; display: grid; place-items: center; background: #ece6da url("images/pierre.jpg") 0 0 / 360px auto; color: #2a2019; font: 700 26px "Libre Baskerville", serif; }
   .escalier-tete b { display: block; font: 21px "Marcellus", serif; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
   .escalier-tete small { font-size: 13px; opacity: .95; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
   .etage-tete { display: flex; align-items: center; gap: 8px; margin: 10px 4px 6px; font: 700 13px "Lato", sans-serif; letter-spacing: .02em; color: var(--muted); }
@@ -942,6 +942,42 @@
     .tuiles-cas .tuile-cas b { font-size: 17px; } .tuiles-cas .tuile-cas small { max-width: 56%; font-size: 11px; }
     .tuiles-cas .tuile-cas .illu { height: 84%; }
   }
+
+  /* ===================== Le même style sur toutes les pages ===================== */
+  /* titre de page : machine à écrire, souligné d'un double filet ; sous-titre en italique */
+  .hello { padding-bottom: 8px; border-bottom: 3px double #9c8a6c; display: inline-block; }
+  .hello-sub { font: italic 15px "Libre Baskerville", serif; color: #5c4c3c; margin-top: 8px; }
+  /* les cartes : papier épais, liseré intérieur, coins presque droits */
+  .card, .list-item { background: #fbf6ea; border: 1px solid #c9b896; border-radius: 4px;
+    box-shadow: inset 0 0 0 4px #fbf6ea, inset 0 0 0 5px rgba(160,135,95,.35), 0 3px 8px rgba(60,40,20,.14); }
+  .card h3, .empty b, .list-item .t { font-family: "Libre Baskerville", serif; color: #2a2019; }
+  .card h3 { font-size: 17px; }
+  .kicker { display: inline-block; background: linear-gradient(#e9d79b, #c8a95a 55%, #a88a3e); color: #2a2019; border: 1px solid #6e5523; border-radius: 2px; padding: 2px 8px;
+    font-family: "Libre Baskerville", serif; letter-spacing: .8px; text-shadow: 0 1px 0 rgba(255,255,255,.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+  .empty .ico { stroke: #8a6a3a; }
+  /* les champs : papier clair, liseré brun */
+  .field { color: #5c4c3c; font-family: "Courier Prime", monospace; letter-spacing: .2px; }
+  .field input, .field select, .field textarea, .search, textarea { background: #fffdf6; border: 1px solid #b9a582; border-radius: 3px; box-shadow: inset 0 1px 3px rgba(80,60,30,.15); }
+  .field input:focus, .field select:focus, .search:focus, textarea:focus { border-color: #8e3a28; box-shadow: inset 0 1px 3px rgba(80,60,30,.15), 0 0 0 2px rgba(142,58,40,.18); }
+  .readonly, .field input[readonly] { background: #efe5cf; }
+  .file { border: 1.5px dashed #a88a3e; border-radius: 3px; background: rgba(255,250,235,.7); color: #6e4a1e; }
+  /* les boutons : terre cuite en relief, ou laiton pour les secondaires */
+  .btn { font-family: "Libre Baskerville", serif; font-weight: 700; letter-spacing: .3px; border-radius: 4px; border: 1px solid #6e2c1c;
+    background: linear-gradient(#c56a48, #a14e31); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 4px rgba(60,30,15,.3); }
+  .btn:hover { background: linear-gradient(#b65f3f, #8e4329); }
+  .btn.alt { background: linear-gradient(#f3e6c2, #dcc58a); color: #3b2c16; border: 1px solid #8a6d32; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 3px rgba(60,30,15,.2); }
+  .btn.danger { background: linear-gradient(#b8383a, #8c2224); border-color: #5e1214; color: #fff; }
+  /* les grandes images (chef de poste, vaguemestre, borne…) : tirages photo à bord blanc */
+  .guichet, .casiers, .card.guichet { border: 0; box-shadow: none; background: transparent; }
+  .guichet img, .casiers img { border: 7px solid #fffdf7; border-radius: 2px; box-shadow: 0 4px 12px rgba(60,30,15,.3); filter: sepia(.12); }
+  .bubble { border-radius: 4px; border: 1px solid #c9b896; background: #fffdf6; font-family: "Courier Prime", monospace; font-size: 14.5px; box-shadow: 0 3px 8px rgba(60,40,20,.18); }
+  .bubble::before { border-bottom-color: #fffdf6; }
+  /* la Matrice, encadrée de bois comme un vieux téléviseur */
+  .mx-scene { border-radius: 6px; border: 8px solid #4e2f1b; box-shadow: inset 0 0 0 2px #2e1b0f, 0 4px 14px rgba(40,20,10,.35); }
+  .mx-scene:fullscreen { border: 0; border-radius: 0; }
+  .legal { font-family: "Courier Prime", monospace; color: #6b5a48; }
+  .seg button, .chip { font-family: "Libre Baskerville", serif; }
+  .tag-admin { background: linear-gradient(#e9d79b, #c8a95a); color: #2a2019; border: 1px solid #6e5523; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -2648,6 +2684,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.2", "11 octobre 2026", ["Le style « souvenirs » sur toutes les pages : titres à la machine à écrire, cartes en papier épais, champs et boutons à l'ancienne, grandes images en tirages photo, la Matrice encadrée de bois"]],
     ["3.1.1", "11 octobre 2026", ["En haut : le logo à côté du titre est retiré"]],
     ["3.1", "11 octobre 2026", ["Nouvelle présentation « souvenirs » : papier ancien, plaque de pierre au titre gravé, menu en panneau de bois à plaques de couleur, tuiles de la caserne en laiton, cuir, métal, pierre avec leur illustration"]],
     ["3.0.1", "11 octobre 2026", ["Sur PC : le menu de gauche est en pierre blanche sculptée (plaques gravées), au lieu de la brique"]],
