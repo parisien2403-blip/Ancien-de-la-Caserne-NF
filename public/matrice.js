@@ -15,6 +15,7 @@ export const LIEUX = {
   rue: { nom: "L'entrée, rue du Faubourg", icone: "🚪" },
   grande: { nom: "La cour d'honneur", icone: "🏛️" },
   fetes: { nom: "La salle des fêtes", icone: "🎉" },
+  cave: { nom: "La petite salle du sous-sol", icone: "🕯️" },
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -814,6 +815,26 @@ function decorPassage(A, T, L, scene, FZ) {
   const jourP = new THREE.PointLight(0xfff2dc, 14, 12, 1.4); jourP.position.set(0, 3.9, FZ - 7); scene.add(jourP);
   return jourP;
 }
+// le carrelage et le lambris de la salle des fêtes (repris dans la petite salle du sous-sol)
+function toileCarreaux() {
+  graine = 23;
+  return toile(640, 640, (x, w, h) => {     // 16 × 16 carreaux de 10 cm
+    x.fillStyle = "#4b4033"; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const v = alea(), r = alea();
+      x.fillStyle = r < .004 ? "#2e4f74" : r < .007 ? "#6e2a2a" : `hsl(${40 + v * 6}, ${34 + v * 10}%, ${60 + v * 9}%)`;
+      x.fillRect(i * 40 + 2, j * 40 + 2, 36, 36);
+      x.fillStyle = "rgba(255,255,255,.06)"; x.fillRect(i * 40 + 3, j * 40 + 3, 34, 10); }
+  });
+}
+function toileLambris() {
+  graine = 41;
+  return toile(512, 256, (x, w, h) => {      // planches verticales vernies
+    for (let X = 0; X < w; X += 32) { const v = alea(); const g = x.createLinearGradient(X, 0, X + 32, 0);
+      g.addColorStop(0, `hsl(24, 58%, ${30 + v * 6}%)`); g.addColorStop(.5, `hsl(26, 62%, ${40 + v * 6}%)`); g.addColorStop(1, `hsl(24, 58%, ${32 + v * 6}%)`);
+      x.fillStyle = g; x.fillRect(X, 0, 32, h); x.fillStyle = "rgba(40,20,10,.55)"; x.fillRect(X, 0, 2, h);
+      x.strokeStyle = "rgba(60,30,10,.25)"; x.lineWidth = 1; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(X + 6 + k * 6, 0); x.bezierCurveTo(X + 10 + k * 6, h / 3, X + 2 + k * 6, h * .66, X + 7 + k * 6, h); x.stroke(); } }
+  });
+}
 function construireLieu(id, scene) {
   const A = atelier(scene), T = textures();
   const sol = (map, rx, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(90, 90), A.mat({ map: tex(map, rx, ry) }), 0, 0, 0, false); o.rotation.x = -Math.PI / 2; return o; };
@@ -1134,14 +1155,7 @@ function construireLieu(id, scene) {
        grandes fenêtres à petits carreaux en verre dépoli côté cour, piliers et appliques en demi-boule. */
     const X0 = -5.8, X1 = 5.8, Z0 = -3, Z1 = 15, HT = 5.4, LAMB = 1.15;
     const larg = X1 - X0, long = Z1 - Z0, cz = (Z0 + Z1) / 2;
-    graine = 23;
-    const carreaux = toile(640, 640, (x, w, h) => {     // 16 × 16 carreaux de 10 cm
-      x.fillStyle = "#4b4033"; x.fillRect(0, 0, w, h);
-      for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { const v = alea(), r = alea();
-        x.fillStyle = r < .004 ? "#2e4f74" : r < .007 ? "#6e2a2a" : `hsl(${40 + v * 6}, ${34 + v * 10}%, ${60 + v * 9}%)`;
-        x.fillRect(i * 40 + 2, j * 40 + 2, 36, 36);
-        x.fillStyle = "rgba(255,255,255,.06)"; x.fillRect(i * 40 + 3, j * 40 + 3, 34, 10); }
-    });
+    const carreaux = toileCarreaux();
     const EL = 1.0, EZ = Z1 - 2.4, NM = 5, HM = .17, PM = .3;      // l'escalier : 2,5 m de large, 5 marches qui descendent vers la porte
     const fs = new THREE.Shape(); fs.moveTo(X0, -Z0); fs.lineTo(X1, -Z0); fs.lineTo(X1, -Z1); fs.lineTo(X0, -Z1); fs.closePath();
     const tr = new THREE.Path(); tr.moveTo(-EL, -EZ); tr.lineTo(-EL, -Z1); tr.lineTo(EL, -Z1); tr.lineTo(EL, -EZ); tr.closePath(); fs.holes.push(tr);
@@ -1155,16 +1169,9 @@ function construireLieu(id, scene) {
     const pal = A.ajoute(new THREE.PlaneGeometry(EL * 2, Z1 - (EZ + NM * PM)), A.mat({ map: tex(carreaux, 1.6, .6), roughness: .5 }), 0, -NM * HM + .001, (EZ + NM * PM + Z1) / 2, false); pal.rotation.x = -Math.PI / 2;
     // les murets de la trémie (carrelés) et le mur sous le niveau de la salle, derrière la porte
     for (const s of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.06, .86, Z1 - EZ), A.mat({ map: tex(carreaux, 1.5, .5), roughness: .6 }), s * (EL + .03), -.43, (EZ + Z1) / 2, false);
-    A.ajoute(new THREE.BoxGeometry(EL * 2, .86, .3), A.mat({ color: 0xe6d9bd }), 0, -.43, Z1 + .15, false);
     L.sol = solS;
-    graine = 41;
     const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 });
-    const lambris = toile(512, 256, (x, w, h) => {      // planches verticales vernies
-      for (let X = 0; X < w; X += 32) { const v = alea(); const g = x.createLinearGradient(X, 0, X + 32, 0);
-        g.addColorStop(0, `hsl(24, 58%, ${30 + v * 6}%)`); g.addColorStop(.5, `hsl(26, 62%, ${40 + v * 6}%)`); g.addColorStop(1, `hsl(24, 58%, ${32 + v * 6}%)`);
-        x.fillStyle = g; x.fillRect(X, 0, 32, h); x.fillStyle = "rgba(40,20,10,.55)"; x.fillRect(X, 0, 2, h);
-        x.strokeStyle = "rgba(60,30,10,.25)"; x.lineWidth = 1; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(X + 6 + k * 6, 0); x.bezierCurveTo(X + 10 + k * 6, h / 3, X + 2 + k * 6, h * .66, X + 7 + k * 6, h); x.stroke(); } }
-    });
+    const lambris = toileLambris();
     const bois = A.mat({ color: 0x5a3018, roughness: .5 });
     // un mur avec son lambris, sa baguette et sa plinthe ; (axe "x" : mur le long de x, à z donné ; axe "z" : le long de z, à x donné)
     const mur = (axe, pos, de, a, interieur, sansLambris) => {
@@ -1181,7 +1188,10 @@ function construireLieu(id, scene) {
     const zSortie = Z0 + 2.5 * long / 5, wSortie = long / 5 - 1.1;
     mur("z", X0 - .15, Z0, zSortie - wSortie / 2, 1, true); mur("z", X0 - .15, zSortie + wSortie / 2, Z1, 1, true);
     A.ajoute(new THREE.BoxGeometry(.3, HT - 2.9, wSortie), peinture, X0 - .15, 2.9 + (HT - 2.9) / 2, zSortie, false);
-    mur("z", X1 + .15, Z0, Z1, -1); mur("x", Z0 - .15, X0, X1, 1); mur("x", Z1 + .15, X0, X1, -1);
+    mur("z", X1 + .15, Z0, Z1, -1); mur("x", Z0 - .15, X0, X1, 1);
+    // le mur du fond est percé en bas des marches : la porte ouverte vers le sous-sol
+    mur("x", Z1 + .15, X0, -1.03, -1); mur("x", Z1 + .15, 1.03, X1, -1);
+    A.ajoute(new THREE.BoxGeometry(2.06, HT - 1.65, .3), peinture, 0, 1.65 + (HT - 1.65) / 2, Z1 + .15, false);
     A.ajoute(new THREE.BoxGeometry(larg + .6, .3, long + .6), A.mat({ color: 0xece4d2, roughness: 1 }), 0, HT + .15, cz, false);   // plafond
     // poutres du plafond
     for (let z = Z0 + 3; z < Z1; z += 3) A.ajoute(new THREE.BoxGeometry(larg, .35, .3), A.mat({ color: 0xe3d9c3 }), 0, HT - .17, z, false);
@@ -1280,10 +1290,27 @@ function construireLieu(id, scene) {
     // en bas des marches : la double porte marron (panneaux moulurés, poignées), dans son encadrement crème
     const brun = A.mat({ color: 0x6a3a1c, roughness: .5 }), brunC = A.mat({ color: 0x7d4823, roughness: .45 });
     const yb = -NM * HM, hp = 2.5, lp = 1.9;
-    for (const sg of [-1, 1]) { const xc = sg * lp / 4;
-      A.ajoute(new THREE.BoxGeometry(lp / 2 - .02, hp, .07), brun, xc, yb + hp / 2, Z1 - .05, false);
-      for (const [yy, hh] of [[.55, .7], [1.55, 1.0]]) A.ajoute(new THREE.BoxGeometry(lp / 2 - .28, hh, .03), brunC, xc, yb + yy + (hh > .8 ? .2 : 0), Z1 - .1, false);
-      A.ajoute(new THREE.BoxGeometry(.05, .18, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 }), sg * .1, yb + 1.05, Z1 - .13, false); }
+    // ses deux battants sont ouverts, rabattus contre les murs du petit couloir qui continue de descendre vers le sous-sol
+    for (const sg of [-1, 1]) { const bat = new THREE.Group(); bat.position.set(sg * (lp / 2 - .04), yb, Z1 + .32); scene.add(bat);
+      const pan = new THREE.Mesh(new THREE.BoxGeometry(.07, hp, lp / 2 - .02), brun); pan.position.set(0, hp / 2, (lp / 2) / 2); bat.add(pan);
+      for (const [yy, hh] of [[.55, .7], [1.55, 1.0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.03, hh, lp / 2 - .28), brunC); m.position.set(-sg * .045, yy + (hh > .8 ? .2 : 0), lp / 4); bat.add(m); }
+      const pg = new THREE.Mesh(new THREE.BoxGeometry(.05, .18, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 })); pg.position.set(-sg * .07, 1.05, lp / 2 - .12); bat.add(pg); }
+    // le couloir : murs crème, plafond, quatre marches de plus, une applique ; au fond, la lumière de la petite salle
+    { const CZ0 = Z1 + .3, CL = 2.6, CW = lp / 2 + .02;
+      for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.3, 4.2, CL), peinture, sg * (CW + .15), yb - .5, CZ0 + CL / 2, false);
+      A.ajoute(new THREE.BoxGeometry(CW * 2 + .6, .3, CL), peinture, 0, yb + hp + .15, CZ0 + CL / 2, false);
+      for (let i = 0; i < 4; i++) { const y = yb - (i + 1) * HM;
+        A.ajoute(new THREE.BoxGeometry(CW * 2, .6, PM), matMarche, 0, y - .3, CZ0 + (i + .5) * PM, false);
+        A.ajoute(new THREE.BoxGeometry(CW * 2, .03, .03), A.mat({ color: 0x8a7a5e }), 0, y - .015, CZ0 + i * PM + .015, false); }
+      const bas = A.ajoute(new THREE.PlaneGeometry(CW * 2, CL - 4 * PM), A.mat({ map: tex(carreaux, 1.6, .8), roughness: .5 }), 0, yb - 4 * HM + .001, CZ0 + 4 * PM + (CL - 4 * PM) / 2, false); bas.rotation.x = -Math.PI / 2;
+      const fond = A.ajoute(new THREE.PlaneGeometry(CW * 2, 3), new THREE.MeshBasicMaterial({ color: 0x4a3a2a }), 0, yb, CZ0 + CL - .01, false); fond.rotation.y = Math.PI;
+      const lc = new THREE.PointLight(0xffd9a0, 2.2, 5, 1.6); lc.position.set(0, yb + hp - .3, CZ0 + 1.2); scene.add(lc);
+      const ap = new THREE.Mesh(new THREE.SphereGeometry(.12, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xfff3dc, emissive: 0xffe2b0, emissiveIntensity: .9 })); ap.rotation.x = Math.PI; ap.position.set(0, yb + hp - .02, CZ0 + 1.2); scene.add(ap);
+      // on marche dans l'escalier : une zone de sol invisible pour viser du doigt, la hauteur suit les marches
+      const solE = new THREE.Mesh(new THREE.PlaneGeometry(EL * 2, CZ0 + CL - EZ + .3), new THREE.MeshBasicMaterial({ visible: false })); solE.rotation.x = -Math.PI / 2; solE.position.set(0, -.5, (EZ - .3 + CZ0 + CL) / 2); scene.add(solE);
+      L.solsPlus = [solE];
+      L.hauteur = (x, z) => Math.abs(x) > EL + .1 || z <= EZ ? 0 : z < EZ + NM * PM ? -(z - EZ) / PM * HM : z < CZ0 ? yb : Math.max(yb - 4 * HM, yb - (z - CZ0) / PM * HM);
+    }
     A.ajoute(new THREE.BoxGeometry(lp + .3, .14, .1), cadre, 0, yb + hp + .07, Z1 - .06, false);
     for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.14, hp, .1), cadre, sg * (lp / 2 + .08), yb + hp / 2, Z1 - .06, false);
     // les deux rampes en fer forgé noir, à volutes, qui descendent le long de l'escalier
@@ -1551,11 +1578,71 @@ function construireLieu(id, scene) {
       const rp = A.ajoute(new THREE.TorusGeometry(.16, .015, 8, 20), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .2 }), tx, .26, z, false); rp.rotation.x = Math.PI / 2;
       A.ajoute(new THREE.CylinderGeometry(.21, .19, .08, 20), A.mat({ color: 0x8e1c22, roughness: .45 }), tx, .62, z);
     }
-    L.limites = (x, z) => !L.tabourets.some(([a, b]) => Math.hypot(x - a, z - b) < .3) && x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && z < Z1 - .6 && !(Math.abs(x) < EL + .2 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
+    L.limites = (x, z) => !L.tabourets.some(([a, b]) => Math.hypot(x - a, z - b) < .3) && x > X0 + .4 && x < bx - .75 && z > Z0 + .6 && (z < Z1 - .6 || (Math.abs(x) < .55 && z < Z1 + 1.6)) && !(Math.abs(x) < EL + .2 && Math.abs(x) > .55 && z > EZ - 1) && !tables.some(([a, b, c, d]) => x > a && x < b && z > c && z < d);
     L.portails.push({ dans: (x, z) => x < X0 + .7 && Math.abs(z - (Z0 + 2.5 * long / 5)) < 1.1, vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
+    // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
+    L.portails.push({ dans: (x, z) => Math.abs(x) < .9 && z > Z1 + 1.35, vers: "cave", arrivee: [0, 1.9], yaw: 0 });
+    raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 1.5] });
     L.plafond = HT - .35;
     L.depart = [0, Z1 - 6]; L.cam = { pos: [-3.6, 2.4, Z1 - .8], vise: [1.2, 1.6, Z0 + 1] };
+  }
+
+  if (id === "cave") {
+    /* La petite salle du sous-sol, sous la salle des fêtes : on y descend par l'escalier et la porte ouverte.
+       Le même carrelage beige, les mêmes murs crème avec leur lambris verni, leur baguette et leur plinthe. */
+    const X0 = -3.2, X1 = 3.2, Z0 = -3.4, Z1 = 3.4, HT = 3.1, LAMB = 1.15;
+    const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), bois = A.mat({ color: 0x5a3018, roughness: .5 });
+    const carreaux = toileCarreaux(), lambris = toileLambris();
+    const solC = A.ajoute(new THREE.PlaneGeometry(X1 - X0, Z1 - Z0), A.mat({ map: tex(carreaux, (X1 - X0) / 1.6, (Z1 - Z0) / 1.6), roughness: .5 }), 0, 0, 0, false); solC.rotation.x = -Math.PI / 2;
+    L.sol = solC;
+    const mur = (axe, pos, de, a, interieur) => {
+      const L2 = a - de, mid = (de + a) / 2, ep = .3;
+      const m = A.ajoute(new THREE.BoxGeometry(...(axe === "z" ? [ep, HT, L2] : [L2, HT, ep])), peinture, ...(axe === "z" ? [pos, 0, mid] : [mid, 0, pos]), false); m.position.y = HT / 2;
+      const off = interieur * (ep / 2 + .02), place = (o, y) => { if (axe === "z") o.position.set(pos + off, y, mid); else o.position.set(mid, y, pos + off); };
+      const lm = new THREE.Mesh(new THREE.BoxGeometry(...(axe === "z" ? [.04, LAMB, L2] : [L2, LAMB, .04])), A.mat({ map: tex(lambris, L2 / 2.6, 1), roughness: .45 })); place(lm, LAMB / 2); scene.add(lm);
+      const bg = new THREE.Mesh(new THREE.BoxGeometry(...(axe === "z" ? [.09, .07, L2] : [L2, .07, .09])), bois); place(bg, LAMB + .03); scene.add(bg);
+      const pl = new THREE.Mesh(new THREE.BoxGeometry(...(axe === "z" ? [.07, .14, L2] : [L2, .14, .07])), bois); place(pl, .07); scene.add(pl);
+    };
+    mur("z", X0 - .15, Z0, Z1, 1); mur("z", X1 + .15, Z0, Z1, -1); mur("x", Z0 - .15, X0, X1, 1);
+    // le mur par où l'on arrive : la porte ouverte, et derrière elle les marches qui remontent vers la salle des fêtes
+    const lp = 1.9, hp = 2.3;
+    mur("x", Z1 + .15, X0, -lp / 2, -1); mur("x", Z1 + .15, lp / 2, X1, -1);
+    A.ajoute(new THREE.BoxGeometry(lp, HT - hp, .3), peinture, 0, hp + (HT - hp) / 2, Z1 + .15, false);
+    const cadre = A.mat({ color: 0xece3cf, roughness: .6 }), brun = A.mat({ color: 0x6a3a1c, roughness: .5 });
+    A.ajoute(new THREE.BoxGeometry(lp + .3, .14, .1), cadre, 0, hp + .07, Z1 - .04, false);
+    for (const sg of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.14, hp, .1), cadre, sg * (lp / 2 + .08), hp / 2, Z1 - .04, false);
+      A.ajoute(new THREE.BoxGeometry(.07, hp - .05, lp / 2 - .05), brun, sg * (lp / 2 - .05), hp / 2, Z1 + .3 + lp / 4, false); }   // les battants ouverts
+    const matMarche = A.mat({ map: tex(carreaux, 1.6, .4), roughness: .5 });
+    for (let i = 0; i < 9; i++) A.ajoute(new THREE.BoxGeometry(lp, .17 * (i + 1), .3), matMarche, 0, .17 * (i + 1) / 2, Z1 + .45 + i * .3, false);
+    for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.3, 4.5, 3.2), peinture, sg * (lp / 2 + .15), 2.25, Z1 + 1.9, false);
+    A.ajoute(new THREE.BoxGeometry(lp, .3, 3.2), peinture, 0, 3.6, Z1 + 1.9, false);
+    const haut = new THREE.PointLight(0xfff0d8, 3, 5, 1.4); haut.position.set(0, 2.6, Z1 + 2.6); scene.add(haut);
+    // le plafond, une poutre, et la lumière : un lustre à trois globes, des appliques en demi-boule
+    A.ajoute(new THREE.BoxGeometry(X1 - X0 + .6, .3, Z1 - Z0 + .6), A.mat({ color: 0xece4d2, roughness: 1 }), 0, HT + .15, 0, false);
+    A.ajoute(new THREE.BoxGeometry(X1 - X0, .3, .3), A.mat({ color: 0xe3d9c3 }), 0, HT - .15, 0, false);
+    const globe = new THREE.MeshStandardMaterial({ color: 0xfff6e0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 });
+    A.ajoute(new THREE.CylinderGeometry(.015, .015, .6, 6), A.mat({ color: 0x2a2a2a }), 0, HT - .6, -1.4, false);
+    for (let k = 0; k < 3; k++) { const a = k * Math.PI * 2 / 3, g = new THREE.Mesh(new THREE.SphereGeometry(.11, 14, 10), globe); g.position.set(Math.cos(a) * .25, HT - .95, -1.4 + Math.sin(a) * .25); scene.add(g); }
+    const lustre = new THREE.PointLight(0xffe9c8, 7, 10, 1.5); lustre.position.set(0, HT - 1.1, -1.4); scene.add(lustre);
+    for (const s of [-1, 1]) { const b = new THREE.Mesh(new THREE.SphereGeometry(.2, 20, 12, 0, Math.PI), globe); b.rotation.y = s < 0 ? Math.PI / 2 : -Math.PI / 2; b.position.set(s < 0 ? X0 + .02 : X1 - .02, 2.2, 0); scene.add(b);
+      const l = new THREE.PointLight(0xffe6c0, 2.5, 6, 1.6); l.position.set(s < 0 ? X0 + .5 : X1 - .5, 2.2, 0); scene.add(l); }
+    scene.add(new THREE.AmbientLight(0xfff1dc, .45));
+    // une petite table ronde et des chaises bistrot, un banc le long du mur
+    const acajou = A.mat({ color: 0x5b2c16, roughness: .4 }), noir = A.mat({ color: 0x1c1c1c, roughness: .5, metalness: .3 });
+    const tx = 0, tz = -1.4;
+    A.ajoute(new THREE.CylinderGeometry(.45, .45, .04, 28), acajou, tx, .75, tz); A.ajoute(new THREE.CylinderGeometry(.04, .04, .73, 10), noir, tx, .37, tz); A.ajoute(new THREE.CylinderGeometry(.22, .25, .03, 20), noir, tx, .015, tz);
+    for (const [dx, dz] of [[-.75, 0], [.75, 0]]) { const c = new THREE.Group(); c.position.set(tx + dx, 0, tz + dz); c.rotation.y = dx < 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(c);
+      const as = new THREE.Mesh(new THREE.CylinderGeometry(.19, .19, .04, 18), acajou); as.position.y = .46; c.add(as);
+      for (const [a, b] of [[-.12, -.12], [.12, -.12], [-.12, .12], [.12, .12]]) { const pd = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .46, 6), noir); pd.position.set(a, .23, b); c.add(pd); }
+      const dos = new THREE.Mesh(new THREE.TorusGeometry(.16, .014, 6, 18, Math.PI), noir); dos.position.set(0, .66, .17); c.add(dos); }
+    A.ajoute(new THREE.BoxGeometry(.42, .06, 3.4), acajou, X1 - .3, .46, -.3); for (const z of [-1.8, -.3, 1.2]) A.ajoute(new THREE.BoxGeometry(.38, .44, .06), acajou, X1 - .3, .22, z);
+    L.limites = (x, z) => (x > X0 + .4 && x < X1 - .4 && z > Z0 + .5 && z < Z1 - .4 && Math.hypot(x - tx, z - tz) > 1.2 && !(x > X1 - .75 && z > -2.1 && z < 1.5))
+      || (Math.abs(x) < .6 && z >= Z1 - .4 && z < Z1 + .5);
+    L.portails.push({ dans: (x, z) => Math.abs(x) < .8 && z > Z1 + .3, vers: "fetes", arrivee: [0, 14.55], yaw: 0 });
+    raccourci(L, scene, [lp, hp, .4], [0, hp / 2, Z1 + .5], { vers: "fetes", arrivee: [0, 14.55], yaw: 0 });
+    L.interieur = true; L.boite = [X0, X1, Z0, Z1]; L.zone = [X0, X1, Z0, Z1 + .6]; L.plafond = HT - .25;
+    L.depart = [0, 1.9]; L.cam = { pos: [0, 2.2, Z1 - .3], vise: [0, 1.2, Z0] };
   }
 
   // nuages
@@ -1638,7 +1725,7 @@ export async function ouvrir(ctx) {
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
     if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
-    const s = ray.intersectObject(M.L.sol)[0];
+    const s = ray.intersectObjects([M.L.sol, ...(M.L.solsPlus || [])])[0];
     if (s) allerVers(s.point.x, s.point.z, true);
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
   });
@@ -1653,6 +1740,7 @@ export async function ouvrir(ctx) {
     if (!M || !M.scene) return;
     const dt = Math.min(.05, (t - avant) / 1000); avant = t;
     for (const p of M.gens.values()) {
+      p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z) : 0;
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
         else if (M.L.limites(p.g.position.x, p.g.position.z) && !M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15)) {
@@ -1794,6 +1882,7 @@ function placerCamera(net) {
     const yw = M.yaw || 0, fx = -Math.sin(yw), fz = -Math.cos(yw), mx = moi.g.position.x, mz = moi.g.position.z;
     pos.set(mx - fx * D * Math.cos(E), 1.2 + D * Math.sin(E), mz - fz * D * Math.cos(E));
     const av = S.av * (1 - .85 * t); vise.set(mx + fx * av, S.vy + (1 - S.vy) * t, mz + fz * av);
+    pos.y += moi.g.position.y; vise.y += moi.g.position.y;      // dans l'escalier, la caméra descend avec soi
     if (M.L.plafond) pos.y = Math.min(pos.y, M.L.plafond);
   }
   // dehors : tourner la vue (glisser le doigt, ou ↻) fait tourner la caméra autour de son bonhomme
@@ -2028,7 +2117,7 @@ function allerVers(x, z, envoyer) {
     if (!best) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz);
       for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; } }
     if (!best) return; [px, pz] = best; }
-  viser(moi, px, pz); M.repere.position.set(px, .04, pz); M.repere.material.opacity = 1;
+  viser(moi, px, pz); M.repere.position.set(px, .04 + (M.L.hauteur ? M.L.hauteur(px, pz) : 0), pz); M.repere.material.opacity = 1;
   if (envoyer) envoyerWS({ t: "aller", x: px, z: pz });
   if (envoyer && moi.info.danse) danser(false);
   if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); }
