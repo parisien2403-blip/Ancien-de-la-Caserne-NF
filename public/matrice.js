@@ -49,6 +49,10 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 24 : 16; x.lineCap = "round";
       x.beginPath(); x.moveTo(g ? 84 : 116, bas ? 262 : 336); x.lineTo(g ? 44 : 156, 396); x.stroke();
       x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
+    } else if (o.pose === "profil") {
+      x.strokeStyle = bas || peau; x.lineWidth = bas ? 26 : 17; x.lineCap = "round"; x.lineJoin = "round";
+      x.beginPath(); x.moveTo(108, bas ? 262 : 330); x.lineTo(110, 398); x.stroke();                                 // la jambe d'appui
+      x.beginPath(); x.moveTo(94, bas ? 262 : 330); x.lineTo(62, 300); x.lineTo(70, 350); x.stroke();                // le genou levé devant
     } else if (o.pose === "madison4" || o.pose === "madison5") {
       // genou levé : la cuisse remonte, le pied décolle du sol
       const g = o.pose === "madison4", hx = g ? 84 : 116;
@@ -58,16 +62,17 @@ export function dessinerBonhomme(o, tete) {
     } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    const jambesDroites = !accroupi && !/^madison[1345]$/.test(o.pose || "");
+    const profil = o.pose === "profil";
+    const jambesDroites = !accroupi && !profil && !/^madison[1345]$/.test(o.pose || "");
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
-    const PD = [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
-    const PY = [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
+    const PD = profil ? [60, 102] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
+    const PY = profil ? [352, 404] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
     x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], PY[0], 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], PY[1], 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
     if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, PY[0] + 4, 40, 3); x.fillRect(PD[1] - 20, PY[1] + 4, 40, 3); }   // semelle des baskets
     const haut = t === "garde" ? "#1c2541" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else x.roundRect(58, 145, 84, 120, 22);
+    if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     // les bras : pendants, ou levés pour danser (o.pose = "haut") ; en disco, le bras droit pointe le doigt en l'air puis vers le sol
     const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
@@ -81,6 +86,7 @@ export function dessinerBonhomme(o, tete) {
         // Thriller : les deux bras pliés en griffes de zombie, d'un côté puis de l'autre
         : o.pose === "thriller1" ? (sens > 0 ? [12, 176] : [70, 150]) : o.pose === "thriller2" ? (sens > 0 ? [130, 150] : [188, 176])
         : o.pose === "thriller3" ? (sens > 0 ? [22, 96] : [178, 96])
+        : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
         : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
@@ -99,12 +105,12 @@ export function dessinerBonhomme(o, tete) {
         x.strokeStyle = "rgba(120,70,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-8, 99); x.lineTo(3, 99); x.moveTo(-8, 103); x.lineTo(3, 103); x.stroke();
       } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();
         // les griffes du zombie : quatre doigts crochus
-        if (/^thriller/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
+        if (/^thriller|^profil/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
           for (let f = -1.5; f <= 1.5; f++) { x.beginPath(); x.moveTo(f * 5.5, 102); x.quadraticCurveTo(f * 7.5, 116, f * 4 + 3, 120); x.stroke(); } } }
       x.restore();
     };
-    bras(48, 1); bras(152, -1);
-    const dos = o.pose === "dos";
+    if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
+    const dos = o.pose === "dos" || profil;
     if (!dos && t === "tshirt") { x.fillStyle = peau; x.beginPath(); x.ellipse(100, 146, 14, 8, 0, 0, Math.PI); x.fill(); x.strokeStyle = assombrir(c, .8); x.lineWidth = 3; x.beginPath(); x.ellipse(100, 146, 15, 9, 0, 0, Math.PI); x.stroke(); }
     if (!dos && t === "polo") { x.fillStyle = assombrir(c, .82); x.beginPath(); x.moveTo(82, 142); x.lineTo(100, 150); x.lineTo(90, 162); x.fill(); x.beginPath(); x.moveTo(118, 142); x.lineTo(100, 150); x.lineTo(110, 162); x.fill();
       x.fillStyle = assombrir(c, .9); x.fillRect(97, 150, 6, 26); x.fillStyle = "#f4f1ea"; for (const yb of [156, 166]) { x.beginPath(); x.arc(100, yb, 2, 0, 7); x.fill(); } }
@@ -128,7 +134,7 @@ export function dessinerBonhomme(o, tete) {
       const R = o.reglage || {}, z = R.k || 1;
       const k = Math.min(112 / tete.width, 124 / tete.height) * z, w = tete.width * k, h = tete.height * k;
       if (o.moi) { x.shadowColor = "#f6d465"; x.shadowBlur = 14; }
-      x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate((R.r || 0) * Math.PI / 180);
+      x.save(); x.translate(100 + (R.dx || 0), 132 + (R.dy || 0)); x.rotate(((R.r || 0) + (profil ? 24 : 0)) * Math.PI / 180);   // de profil, la tête rejetée en arrière
       if (o.pose === "dos") {
         // de dos : la même silhouette de tête, en arrière du crâne (couleur peau, un peu d'ombre en bas)
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
@@ -1491,9 +1497,10 @@ export async function ouvrir(ctx) {
         if (p.info.danse === "thriller") {
           /* Thriller : griffes à gauche (2 temps, la tête et les épaules penchées), griffes à droite (2 temps)… et tous les 8 temps, les bras levés devant, en avançant */
           const ph = t / 380 + p.info.numero * .7, k = Math.floor(ph) % 8, v = ph % 1;
-          const pose = k >= 6 ? "thriller3" : Math.floor(k / 2) % 2 ? "thriller2" : "thriller1";
+          const pose = k >= 6 ? "thriller3" : "profil", sens = k >= 6 ? 0 : Math.floor(k / 2) % 2 ? 1 : -1;
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
-          const sens = pose === "thriller1" ? -1 : pose === "thriller2" ? 1 : 0, coup = Math.sin(Math.min(1, v * 2.5) * Math.PI / 2);
+          p.corps.scale.x = sens > 0 ? -sx : sx;   // tourné vers la droite : on retourne l'image (c'est l'autre pied qui se lève)
+          const coup = Math.sin(Math.min(1, v * 2.5) * Math.PI / 2);
           p.corps.material.rotation = -sens * .1 * coup; p.corps.position.x += (sens * .14 * coup - p.corps.position.x) * .3;
           if (!p.cible) p.corps.position.y = pose === "thriller3" ? Math.abs(Math.sin(ph * Math.PI)) * .06 : (v < .2 ? .04 * (1 - v / .2) : 0); p.dansait = true; }
         else if (p.info.danse === "madison") {
@@ -1654,7 +1661,7 @@ async function dessinerCorps(p) {
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
+  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); p.corps = new THREE.Sprite(new THREE.SpriteMaterial({ map: p.poses.repos, transparent: true, depthWrite: false })); p.corps.scale.set(H * .476 * 1.6, H, 1); p.corps.center.set(.5, 0); p.g.add(p.corps); }
 }
