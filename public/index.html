@@ -618,6 +618,16 @@
   @keyframes neige { 25% { background-position: 40px 20px; } 50% { background-position: -30px 60px; } 75% { background-position: 70px -40px; } }
   /* pendant une partie sur téléphone : on ne garde que la télé (de 10 % à 62 % de l'image), la manette remonte juste dessous */
   .borne.en-jeu { aspect-ratio: 1400 / 789; margin: 0 auto; }
+  /* immersion : quand on appuie sur JOUER (téléphone, tablette), la télé et la manette prennent tout l'écran */
+  .quitter-borne { display: none; }
+  .borne-zone.immersion { position: fixed; inset: 0; z-index: 2500; max-width: none; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #33394a, #111318 75%); }
+  .borne-zone.immersion > :not(.borne):not(.manette):not(.quitter-borne) { display: none !important; }
+  .borne-zone.immersion .borne { width: 100%; flex: none; border-radius: 16px; }
+  .borne-zone.immersion .manette { width: 100%; flex: none; margin: 22px 0 0; }
+  .borne-zone.immersion .quitter-borne { display: grid; place-items: center; position: absolute; z-index: 3; top: calc(14px + env(safe-area-inset-top)); right: 14px;
+    width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(0,0,0,.55); color: #fff; font-size: 20px; cursor: pointer; }
   /* manette plus compacte quand l'écran est bas (Fold ouvert, tablette à l'horizontale) */
   .manette.compacte { padding: 18px 12px 10px; margin-top: 14px; }
   .manette.compacte .croix { width: 100px; height: 100px; }
@@ -885,7 +895,8 @@
         <p class="hello-sub">Musique, vidéos et photos des soirées de la caserne</p>
 
         <!-- ===== La borne : le jeu s'affiche dans l'écran de la télé ===== -->
-        <div class="borne-zone">
+        <div class="borne-zone" id="borneZone">
+          <button class="quitter-borne" id="quitterBorne" type="button" aria-label="Revenir à la salle des fêtes">✕</button>
           <div class="borne" id="borne">
             <img src="images/borne.jpg" alt="Une vieille télé, une Super Nintendo, une Game Boy et des cartouches sur un meuble en bois">
             <div class="ecran" id="ecran">
@@ -1897,6 +1908,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["1.8", "11 octobre 2026", ["Borne : quand on appuie sur ▶ JOUER, la télé et la manette prennent tout l'écran du téléphone (✕ pour revenir)"]],
     ["1.7.3", "11 octobre 2026", ["Borne : la télé et la manette tiennent ensemble à l'écran, même sur le Fold ouvert"]],
     ["1.7.2", "11 octobre 2026", ["Le code à 4 chiffres marche de nouveau sur l'écran verrouillé (les chiffres ne répondaient plus depuis la 1.6)"]],
     ["1.7.1", "11 octobre 2026", ["Borne : un jeu restait bloqué sur « Download Game Data », c'est réparé", "Borne : pendant une partie sur téléphone, la manette remonte juste sous la télé"]],
@@ -2915,7 +2927,17 @@
   }
   // pendant une partie sur téléphone : la télé et la manette doivent tenir ensemble entre l'en-tête et les onglets
   function ajusterBorne() {
-    const b = $("borne"), m = $("manette");
+    const b = $("borne"), m = $("manette"), z = $("borneZone");
+    if (z.classList.contains("immersion")) {
+      // tout l'écran : l'image entière si elle tient avec la manette, sinon recadrée sur la télé
+      const W = z.clientWidth - 20, dispo = z.clientHeight - 20;
+      m.classList.toggle("compacte", dispo < 640);
+      const hM = m.offsetHeight + 30, hEntiere = W * 1518 / 1400;
+      if (hEntiere + hM <= dispo) { b.classList.remove("en-jeu"); b.style.maxWidth = ""; }
+      else { b.classList.add("en-jeu"); b.style.maxWidth = Math.round(Math.min(W, Math.max(150, dispo - hM) * 1400 / 789)) + "px"; }
+      return;
+    }
+    if (tactile && jeuEnCours) b.classList.add("en-jeu");
     if (!b.classList.contains("en-jeu") || m.hidden) { b.style.maxWidth = ""; m.classList.remove("compacte"); return; }
     const sc = $("scroll").getBoundingClientRect(), tb = $("tabbar").getBoundingClientRect();
     const bas = tb.height && tb.top > sc.top ? Math.min(tb.top, sc.bottom) : sc.bottom;
@@ -2928,6 +2950,23 @@
     requestAnimationFrame(() => { $("scroll").scrollTop += b.getBoundingClientRect().top - sc.top - 8; });
   }
   addEventListener("resize", () => { if (jeuEnCours) ajusterBorne(); });
+  // appelée par la page du jeu (jeu.html) quand on touche « ▶ JOUER »
+  window.caserneImmersion = () => {
+    if (!tactile || !jeuEnCours || $("borneZone").classList.contains("immersion")) return;
+    $("borneZone").classList.add("immersion");
+    const d = document.documentElement;
+    try { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: "hide" }); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    ajusterBorne();
+  };
+  function quitterImmersion() {
+    if (!$("borneZone").classList.contains("immersion")) return;
+    $("borneZone").classList.remove("immersion");
+    if (document.fullscreenElement === document.documentElement) document.exitFullscreen().catch(() => {});
+    ajusterBorne();
+  }
+  $("quitterBorne").onclick = quitterImmersion;
+  // le geste « retour » d'Android quitte le plein écran : on revient aussi à la salle des fêtes
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) quitterImmersion(); });
   // la croix : on peut glisser le doigt d'une direction à l'autre (diagonales comprises)
   (() => {
     const c = $("croix"); let dirs = new Set();
@@ -2965,6 +3004,7 @@
     const f = $("jeuFrame"); f.src = "about:blank"; f.hidden = true;
     $("neige").hidden = false; $("ecranTexte").textContent = "CHOISIS UNE CARTOUCHE";
     $("borneEteindre").hidden = true; $("bornePlein").hidden = true;
+    quitterImmersion();
     $("manette").hidden = true; $("borne").classList.remove("en-jeu"); ajusterBorne();
     document.querySelectorAll(".cartouche").forEach(c => c.classList.remove("on"));
   }

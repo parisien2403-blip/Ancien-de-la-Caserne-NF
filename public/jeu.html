@@ -36,6 +36,10 @@
     window.EJS_backgroundColor = "#000";
     window.EJS_startButtonName = "▶ JOUER";
     window.EJS_volume = 0.6;
+    // « ▶ JOUER » : la borne passe en plein écran dans l'appli (télé + manette)
+    document.addEventListener("click", e => {
+      if (e.target.closest && e.target.closest(".ejs_start_button")) { try { parent.caserneImmersion && parent.caserneImmersion(); } catch (err) {} }
+    }, true);
     const s = document.createElement("script");
     s.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
     s.onerror = () => document.body.insertAdjacentHTML("beforeend", '<div class="msg">LA BORNE NE RÉPOND PAS<br>(VÉRIFIE TA CONNEXION)</div>');
