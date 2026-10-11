@@ -1970,7 +1970,7 @@
     const c = djEtat.courant;
     $("djDisque").classList.toggle("tourne", !!(c && djEcoute));
     $("djTitre").textContent = c ? c.titre : "Pas de musique pour l'instant";
-    $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}choisie par ${c.par}` : "Choisis un titre dans la discothèque ci-dessous";
+    $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}${c.par === "la discothèque" ? "enchaînée automatiquement" : "choisie par " + c.par}` : "Choisis un titre dans la discothèque ci-dessous";
     $("djEcouter").textContent = djEcoute ? "🔇 Couper le son" : "🔊 Écouter";
     $("djFileTitre").hidden = !djEtat.file.length;
     $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} <button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button></li>`).join("");
@@ -1986,7 +1986,7 @@
   djAudio.ontimeupdate = () => { const d = djAudio.duration; $("djProgres").style.width = d ? (djAudio.currentTime / d * 100) + "%" : "0"; };
   djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
-  setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && mxLieu === "fetes") { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
+  setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && (mxLieu === "fetes" || mxLieu === "grande")) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
   // (administrateur) chaque appui baisse la lumière de la salle : 100 % → 60 % → 35 % → 15 % → 100 %
   let mxLumiereNiv = 1, mxLasersOn = false;
   $("mxFumee").onclick = () => { if (!MX) return; MX.fumee(); $("mxFumee").disabled = true; setTimeout(() => $("mxFumee").disabled = false, 8000); };
@@ -2495,6 +2495,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["2.22", "11 octobre 2026", ["Salle des fêtes : la musique s'enchaîne toute seule ; quand un titre se termine et que la file d'attente est vide, le DJ passe au titre suivant de la discothèque (et reprend au début une fois au bout)"]],
     ["2.21.2", "11 octobre 2026", ["Thriller : il se tourne bien à gauche puis à droite (le côté droit ne s'affichait pas)"]],
     ["2.21.1", "11 octobre 2026", ["Thriller : de profil, un pied levé, les mains en griffes devant et la tête en arrière, à gauche puis à droite (l'autre pied), puis les bras levés"]],
     ["2.21", "11 octobre 2026", ["Matrice : nouvelle danse 🧟 Thriller (bras de zombie en griffes à gauche, puis à droite, puis levés) ; le chef de poste la danse aussi quand la musique s'appelle Thriller ou Michael Jackson"]],

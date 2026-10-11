@@ -379,7 +379,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
-    } else if (m.t && m.t.startsWith("dj_") && a.lieu === "fetes") {
+    } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || (m.t === "dj_fini" && a.lieu === "grande"))) {
       const dj = await this.etatDJ();
       if (m.t === "dj_etat") { ws.send(JSON.stringify({ t: "dj", dj })); return; }
       if (m.t === "dj_jouer" || m.t === "dj_file") {
@@ -576,7 +576,14 @@ export class Compteur extends DurableObject {
     const m = this.sql.exec("SELECT id, titre, artiste, duree FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
     return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui } : null;
   }
-  async suivantDJ(dj) { const f = dj.file.shift(); dj.courant = f ? { ...f, debut: Date.now() + 1500 } : null; }
+  // le titre suivant : celui de la file d'attente ; si elle est vide, on enchaîne sur le titre suivant de la discothèque (et on reboucle)
+  async suivantDJ(dj) {
+    let f = dj.file.shift();
+    if (!f) { const apres = dj.courant ? dj.courant.id : 0;
+      const m = this.sql.exec("SELECT id FROM musiques WHERE complet = 1 AND id > ? ORDER BY id LIMIT 1", apres).toArray()[0] || this.sql.exec("SELECT id FROM musiques WHERE complet = 1 ORDER BY id LIMIT 1").toArray()[0];
+      f = m ? this.ficheDJ(m.id, "la discothèque") : null; }
+    dj.courant = f ? { ...f, debut: Date.now() + 1500 } : null;
+  }
 
   async retirerJeu(token, id) {
     await this.exigerAdmin(token);
