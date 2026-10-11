@@ -717,6 +717,8 @@ function construireRue(A, T, L, scene) {
     p.needsUpdate = true; geoD.computeVertexNormals();
     if (L.nuit) for (const s of L.silhouettes) animerSilhouette(s, temps);
   };
+  // le chef de poste reste de ce côté-ci de la grille noire : il ne sort pas dans la rue
+  L.horsPNJ = (x, z) => z > -8.2; L.departPNJ = [0, -10.5];
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.boite = [-63, 63, -11.8, 6.3]; L.zone = [-62, 62, -26, 24];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
@@ -2163,7 +2165,7 @@ function ajouterPNJ() {
 function pointPNJ(n) {
   const g = M.lieu === "fetes" ? 1000 : 0;
   for (let k = 0; k < 40; k++) { const x = -12 + hasard(g + n * 3.1 + k) * 24, z = -16 + hasard(g + n * 7.3 + k * 1.7) * 30; if (M.L.limites(x, z) && !(M.L.horsPNJ && M.L.horsPNJ(x, z))) return [x, z]; }
-  return M.L.depart;
+  return M.L.departPNJ || M.L.depart;
 }
 /* --- Manu, le DJ : il ne quitte pas ses platines (salle des fêtes seulement) --- */
 const DJ = -2, PHRASES_DJ = ["Ça va, la piste ?", "Je vous en mets une bonne ?", "Allez, on lève les mains !", "Une petite dédicace ?", "Celle-là, c'est pour les anciens !", "On monte le son ?",
