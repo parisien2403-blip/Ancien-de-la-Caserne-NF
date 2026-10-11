@@ -453,7 +453,7 @@ function construireLieu(id, scene) {
         x.fillRect(i * 40 + 2, j * 40 + 2, 36, 36);
         x.fillStyle = "rgba(255,255,255,.06)"; x.fillRect(i * 40 + 3, j * 40 + 3, 34, 10); }
     });
-    const EL = 1.25, EZ = Z1 - 2.4, NM = 5, HM = .17, PM = .3;      // l'escalier : 2,5 m de large, 5 marches qui descendent vers la porte
+    const EL = 1.0, EZ = Z1 - 2.4, NM = 5, HM = .17, PM = .3;      // l'escalier : 2,5 m de large, 5 marches qui descendent vers la porte
     const fs = new THREE.Shape(); fs.moveTo(X0, -Z0); fs.lineTo(X1, -Z0); fs.lineTo(X1, -Z1); fs.lineTo(X0, -Z1); fs.closePath();
     const tr = new THREE.Path(); tr.moveTo(-EL, -EZ); tr.lineTo(-EL, -Z1); tr.lineTo(EL, -Z1); tr.lineTo(EL, -EZ); tr.closePath(); fs.holes.push(tr);
     const texSol = tex(carreaux, 1 / 1.6, 1 / 1.6);
@@ -523,7 +523,7 @@ function construireLieu(id, scene) {
         if (i > 0 && i < nF) { const b = new THREE.Mesh(new THREE.SphereGeometry(.24, 20, 12, 0, Math.PI), applique); b.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2; b.position.set(x + s * .27, 3.6, z); scene.add(b);
           const lum = new THREE.PointLight(0xffe6c0, 4, 9, 1.6); lum.position.set(x + s * .7, 3.6, z); scene.add(lum); } } }
     // côté intérieur (x = X1) : un long bar en bois à l'ancienne, sur presque toute la longueur
-    const bzA = Z0 + long * .25, bzB = Z1 - 1.2, bl = bzB - bzA, bc = (bzA + bzB) / 2, bx = X1 - 1.6;
+    const bzA = Z0 + long * .25, bzB = Z1 - 3.6, bl = bzB - bzA, bc = (bzA + bzB) / 2, bx = X1 - 1.6;
     const acajou = A.mat({ color: 0x5b2c16, roughness: .35 }), acajouC = A.mat({ color: 0x7a3d1f, roughness: .4 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 });
     A.ajoute(new THREE.BoxGeometry(.7, 1.05, bl), acajou, bx, .525, bc);                                         // le comptoir
     A.ajoute(new THREE.BoxGeometry(.95, .08, bl + .15), A.mat({ color: 0x3e1c0c, roughness: .2 }), bx - .08, 1.09, bc);   // le dessus verni
@@ -608,6 +608,73 @@ function construireLieu(id, scene) {
       const t = new THREE.Mesh(new THREE.CircleGeometry(.07 + alea() * .05, 10), new THREE.MeshBasicMaterial({ color: [0xffffff, 0xfff1a8, 0xa8d8ff, 0xffb8e0][i % 4], transparent: true, opacity: .55, depthWrite: false }));
       t.rotation.x = -Math.PI / 2; t.position.set(Math.cos(a) * d * .55, .02, cz + Math.sin(a) * d); scene.add(t); reflets.push([t, a, d]); }
     L.anim = (temps) => { boule.rotation.y = temps / 3000; for (const [t, a, d] of reflets) { const b = a + temps / 3000; t.position.x = Math.max(X0 + .3, Math.min(X1 - .3, Math.cos(b) * d * .55)); t.position.z = cz + Math.sin(b) * d; } };
+    // à droite de l'escalier : le coin du DJ (deux tables à nappes blanches, platines, table de mixage, micro, casque, enceintes, lumières, fumée)
+    const dz = Z1 - .75, noir = A.mat({ color: 0x1a1a1c, roughness: .5 }), alu = A.mat({ color: 0xb8bcc2, metalness: .7, roughness: .3 });
+    for (const xt of [-2.6, -4.2]) {
+      A.ajoute(new THREE.BoxGeometry(1.55, .04, .8), nappe, xt, .76, dz);
+      for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(1.59, .5, .015), nappe, xt, .52, dz + sg * .408, false);
+      for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.015, .5, .83), nappe, xt + sg * .788, .52, dz, false);
+    }
+    const platine = (x) => {
+      A.ajoute(new THREE.BoxGeometry(.45, .1, .36), alu, x, .83, dz);
+      const pl = new THREE.Mesh(new THREE.CylinderGeometry(.15, .15, .02, 32), noir); pl.position.set(x - .04, .89, dz); scene.add(pl);
+      const vinyle = new THREE.Mesh(new THREE.CylinderGeometry(.148, .148, .006, 32), A.mat({ color: 0x0c0c0c, roughness: .2 })); vinyle.position.set(x - .04, .903, dz); scene.add(vinyle);
+      const etiq = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .008, 20), A.mat({ color: 0xc0392b })); etiq.position.set(x - .04, .907, dz); scene.add(etiq);
+      const bras = A.ajoute(new THREE.BoxGeometry(.02, .02, .26), alu, x + .16, .92, dz - .02, false); bras.rotation.y = .35;
+      return vinyle;
+    };
+    const vinyles = [platine(-2.25), platine(-3.25)];
+    A.ajoute(new THREE.BoxGeometry(.32, .09, .34), noir, -2.75, .83, dz);                     // la table de mixage
+    for (let k = 0; k < 4; k++) A.ajoute(new THREE.BoxGeometry(.02, .015, .1), A.mat({ color: 0xdddddd }), -2.6 + k * .065, .882, dz + .05, false);
+    for (let k = 0; k < 6; k++) A.ajoute(new THREE.CylinderGeometry(.012, .012, .02, 8), A.mat({ color: [0xe53935, 0x43a047, 0x1e88e5][k % 3] }), -2.6 + (k % 3) * .1, .885, dz - .08 - Math.floor(k / 3) * .05, false);
+    // le casque posé sur la table
+    const casque = new THREE.Mesh(new THREE.TorusGeometry(.09, .012, 8, 20, Math.PI), noir); casque.position.set(-3.7, .83, dz + .1); casque.rotation.set(-Math.PI / 2, 0, .4); scene.add(casque);
+    for (const sg of [-1, 1]) A.ajoute(new THREE.CylinderGeometry(.045, .045, .03, 16), noir, -3.7 + sg * .08, .79, dz + .1 + sg * .03, false);
+    // le micro sur son pied, et son col de cygne
+    A.ajoute(new THREE.CylinderGeometry(.06, .07, .03, 16), noir, -4.35, .795, dz - .15, false);
+    const tige = A.ajoute(new THREE.CylinderGeometry(.01, .01, .55, 8), noir, -4.35, 1.07, dz - .15, false); tige.rotation.z = .25;
+    const micro = A.ajoute(new THREE.SphereGeometry(.04, 12, 10), A.mat({ color: 0x8a8a8a, metalness: .6 }), -4.42, 1.35, dz - .15, false);
+    // les enceintes, au sol de part et d'autre, et un retour sur la table
+    const enceinte = (x, h) => { A.ajoute(new THREE.BoxGeometry(.55, h, .45), noir, x, h / 2, dz - .1);
+      for (const [yy, rr] of [[h * .3, .17], [h * .72, .08]]) { const hp = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, .02, 24), A.mat({ color: 0x2c2c2e, roughness: .8 })); hp.rotation.x = Math.PI / 2; hp.position.set(x, yy, dz - .33); scene.add(hp);
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * .3, rr * .3, .03, 16), A.mat({ color: 0x555 })); c.rotation.x = Math.PI / 2; c.position.set(x, yy, dz - .34); scene.add(c); } };
+    enceinte(-1.5, 1.0); enceinte(-5.2, 1.15);
+    // le portique de lumières, ses projecteurs colorés et leurs faisceaux
+    for (const x of [-1.75, -5.05]) A.ajoute(new THREE.CylinderGeometry(.025, .025, 2.4, 8), noir, x, 1.2 + .76, dz + .25, false);
+    A.ajoute(new THREE.BoxGeometry(3.4, .05, .05), noir, -3.4, 3.15, dz + .25, false);
+    const couleurs = [0xff2d55, 0x2d7bff, 0x2dff8a, 0xffd22d];
+    const projos = couleurs.map((c, k) => {
+      const x = -2.2 - k * .8;
+      const p = A.ajoute(new THREE.CylinderGeometry(.08, .1, .18, 12), noir, x, 3.02, dz + .25, false); p.rotation.x = .9;
+      const verre = new THREE.Mesh(new THREE.CircleGeometry(.075, 16), new THREE.MeshBasicMaterial({ color: c })); verre.position.set(x, 2.95, dz + .17); verre.rotation.x = -.6; scene.add(verre);
+      const spot = new THREE.SpotLight(c, 14, 14, .32, .5, 1.3); spot.position.set(x, 2.95, dz + .2); spot.target.position.set(x + (k - 1.5) * .8, 0, dz - 5); scene.add(spot); scene.add(spot.target);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(1.1, 5.2, 24, 1, true), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .09, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+      scene.add(cone);
+      return { spot, cone, x, k };
+    });
+    // la machine à fumée, sous la table, et les nappes de fumée au ras du sol
+    A.ajoute(new THREE.BoxGeometry(.4, .22, .3), noir, -3.2, .11, dz + .05);
+    const fumeeTex = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(240,240,250,.85)"); g.addColorStop(1, "rgba(235,235,245,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }));
+    const fumees = [];
+    for (let i = 0; i < 22; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex, transparent: true, depthWrite: false, opacity: .5 })); scene.add(sp); fumees.push([sp, alea() * 1000, .6 + alea() * .8]); }
+    const animBoule = L.anim;
+    L.anim = (temps) => {
+      animBoule && animBoule(temps);
+      for (const v of vinyles) v.rotation.y = -temps / 300;
+      for (const p of projos) {     // les faisceaux balaient la piste
+        const a = temps / 1400 + p.k * 1.7, tx = p.x + Math.sin(a) * 2.2, tz = dz - 4.5 + Math.cos(a * .8) * 2.5;
+        p.spot.target.position.set(tx, 0, tz);
+        const from = new THREE.Vector3(p.x, 2.95, dz + .2), to = new THREE.Vector3(tx, 0, tz), mid = from.clone().add(to).multiplyScalar(.5), dir = to.clone().sub(from), L2 = dir.length();
+        p.cone.position.copy(mid); p.cone.scale.set(1, L2 / 5.2, 1); p.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.normalize());
+      }
+      for (const [sp, d, k] of fumees) {   // la fumée sort de la machine et s'étale
+        const t = ((temps / 1000 + d) % 9) / 9;
+        sp.position.set(-3.2 + Math.sin(d + t * 3) * (.4 + t * 2.4), .15 + t * .5, dz - .2 - t * 3.6 * k);
+        const sc = .7 + t * 3.2; sp.scale.set(sc, sc * .55, 1); sp.material.opacity = .75 * Math.sin(t * Math.PI);
+      }
+    };
+    tables.push([-5.6, -1.3, dz - .8, Z1]);
+
     // lumière de la salle
     scene.add(new THREE.AmbientLight(0xfff1dc, .55));
     for (const z of [Z0 + 4, cz, Z1 - 4]) { const l = new THREE.PointLight(0xfff0d8, 6, 14, 1.4); l.position.set(0, HT - .6, z); scene.add(l); }
@@ -641,6 +708,7 @@ export async function apercuLieu(conteneur, id) {
   const k = portrait && !L.interieur ? 1 : 0;
   camera.position.set(c.pos[0] * (k ? .7 : 1), c.pos[1] + k * 2.5, c.pos[2] + k * 4); camera.fov = portrait ? (L.interieur ? 74 : 66) : (L.interieur ? 62 : 50);
   camera.updateProjectionMatrix(); camera.lookAt(c.vise[0], c.vise[1] - (portrait ? .5 : 0), c.vise[2]);
+  if (L.anim) L.anim(4200);
   rendu.render(scene, camera);
   return { rendu, scene, camera };
 }
