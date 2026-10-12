@@ -182,9 +182,13 @@ export function dessinerBonhomme(o, tete) {
         x.fillStyle = "#cfcdc4"; x.beginPath(); x.moveTo(84, 144); x.lineTo(68, 154); x.lineTo(86, 172); x.closePath(); x.moveTo(116, 144); x.lineTo(132, 154); x.lineTo(114, 172); x.closePath(); x.fill(); ceint(); }
       if (t === "skinhead") { tee(262); x.fillStyle = "#222226"; x.beginPath(); x.moveTo(84, 144); x.lineTo(62, 156); x.lineTo(78, 196); x.lineTo(88, 160); x.closePath(); x.moveTo(116, 144); x.lineTo(138, 156); x.lineTo(122, 196); x.lineTo(112, 160); x.closePath(); x.fill();
         x.strokeStyle = "rgba(255,255,255,.14)"; x.lineWidth = 3; x.beginPath(); x.moveTo(66, 176); x.lineTo(70, 250); x.moveTo(134, 176); x.lineTo(130, 250); x.stroke(); ceint("#111"); }
-      if (t === "pois") { x.fillStyle = "#f4f2ec"; x.fillRect(66, 146, 68, 6);
-        x.fillStyle = "#f4f2ec"; for (let k = 0; k < 60; k++) { const a = 44 + (k * 41 % 112), b2 = 246 + (k * 29 % 70); if (Math.abs(a - 100) > (b2 - 236) * .32 + 36) continue; x.beginPath(); x.arc(a, b2, 3.6, 0, 7); x.fill(); }
-        x.fillStyle = "#c8102e"; x.fillRect(60, 230, 80, 12); x.beginPath(); x.moveTo(36, 314); x.lineTo(164, 314); x.lineTo(166, 322); x.lineTo(34, 322); x.fill(); x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(34, 322); x.lineTo(166, 322); x.lineTo(168, 330); x.lineTo(32, 330); x.fill(); }
+      if (t === "pois") {   // la robe rose à pois noirs, dos-nu (les épaules nues), la ceinture noire, le jupon de tulle
+        x.fillStyle = peau; x.beginPath(); x.moveTo(60, 146); x.lineTo(86, 146); x.lineTo(80, 168); x.lineTo(60, 168); x.closePath(); x.moveTo(140, 146); x.lineTo(114, 146); x.lineTo(120, 168); x.lineTo(140, 168); x.closePath(); x.fill();
+        x.save(); x.beginPath(); x.moveTo(78, 150); x.lineTo(122, 150); x.lineTo(138, 236); x.lineTo(168, 330); x.lineTo(32, 330); x.lineTo(62, 236); x.closePath(); x.clip();
+        x.fillStyle = "#1a1a1a"; for (let yy = 154; yy < 330; yy += 13) for (let xx = 30 + (yy / 13 % 2) * 7; xx < 172; xx += 14) { x.beginPath(); x.arc(xx, yy, 2.6, 0, 7); x.fill(); } x.restore();
+        x.fillStyle = "#151515"; x.fillRect(62, 228, 76, 12);
+        x.fillStyle = "rgba(250,250,250,.55)"; x.beginPath(); x.moveTo(30, 326); x.lineTo(170, 326); x.lineTo(166, 338); x.lineTo(34, 338); x.fill();
+        x.strokeStyle = "#f4f2ec"; x.lineWidth = 3; x.beginPath(); x.arc(100, 142, 13, .3, Math.PI - .3); x.stroke(); }   // le collier de perles
       if (t === "ecossaise") { x.save(); x.beginPath(); x.moveTo(62, 236); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.closePath(); x.clip();
         x.fillStyle = "#c48a2a"; x.fillRect(30, 236, 140, 120); x.strokeStyle = "rgba(40,70,40,.75)"; x.lineWidth = 5; for (let k = 240; k < 352; k += 18) { x.beginPath(); x.moveTo(30, k); x.lineTo(170, k); x.stroke(); } for (let k = 36; k < 170; k += 18) { x.beginPath(); x.moveTo(k, 236); x.lineTo(k, 352); x.stroke(); }
         x.strokeStyle = "rgba(160,40,20,.6)"; x.lineWidth = 1.5; for (let k = 249; k < 352; k += 18) { x.beginPath(); x.moveTo(30, k); x.lineTo(170, k); x.stroke(); } x.restore();
@@ -344,7 +348,7 @@ export function dessinerBonhomme(o, tete) {
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker";
-      if (t === "jill" || t === "gore" || t === "gahan") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
@@ -4973,7 +4977,7 @@ function construireHillValley(A, T, L, scene) {
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
 const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [39, "serveur"], [40, "serveur"], [43, "lou"], [44, "lou"], [32, "bande"], [33, "bande"], [34, "bande"], [35, "bande"]];
 const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
-  43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
+  36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z)) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
@@ -5009,7 +5013,7 @@ function animerHV(now) {
 }
 function defautsHV(id, P) { const D = { 31: ["marty", "#5f86b8", "#4a76ad", "#e2ddd2"], 32: ["biff", "#c8201c", "#1d2433", "#1a1a1a"], 33: ["skinhead", "#151517", "#8a7a5a", "#1a1a1a"], 34: ["troisd", "#e2e0d8", "#3a3a3c", "#1a1a1a"], 35: ["match", "#d9a520", "#2a2a2e", "#1a1a1a"],
     43: ["lou", "#ece4d2", "#3a3a3c", "#1a1a1a"], 44: ["lou", "#e8e2d4", "#3a3a3c", "#1a1a1a"], 45: ["pompiste", "#2f4a3a", "#2f4a3a", "#1a1a1a"],
-    36: ["pois", "#141414", null, "#c8102e"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#151517", "#151515"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
+    36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#151517", "#151515"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
