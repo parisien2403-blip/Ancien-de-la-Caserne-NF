@@ -3198,6 +3198,7 @@ export async function ouvrir(ctx) {
 
 export function fermer() {
   if (!M) return;
+  couperMusiqueBttf(0);
   couperSonsApo();
   M.ouvert = false;
   try { M.ws && M.ws.close(1000, "Fermé"); } catch (e) {}
@@ -4408,6 +4409,7 @@ function allerVers(x, z, envoyer) {
 function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
   if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
+  if (!estBttf(id)) couperMusiqueBttf(1500);
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
@@ -4472,6 +4474,11 @@ function majAlmanach() {
   const g = M.almMesh, s = a.taille || .3; g.visible = true; g.scale.set(s, s, s);
   g.position.set(a.x, (M.L.hauteur ? M.L.hauteur(a.x, a.z, {}) : 0) + .012 * s + .004, a.z); g.rotation.y = a.r || 0;
 }
+// ---- la musique du voyage : elle part dès qu'on ramasse l'Almanach ; elle s'éteint en fondu ----
+let musBttf = null;
+function musiqueBttf(src) { couperMusiqueBttf(0); try { const a = new Audio(src); a.volume = .85; a.play().catch(() => {}); musBttf = a; } catch (e) {} }
+function couperMusiqueBttf(ms = 2500) { const a = musBttf; musBttf = null; if (!a) return; if (!ms) { try { a.pause(); } catch (e) {} return; }
+  const v0 = a.volume, t0 = performance.now(), f = () => { const k = 1 - (performance.now() - t0) / ms; if (k <= 0) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * k; requestAnimationFrame(f); }; f(); }
 // ---- les bulles de Doc, l'éclair blanc, le fondu : par-dessus la scène ----
 function voile(css, duree) { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:8;pointer-events:none;" + css; M.ctx.conteneur.appendChild(d);
   if (duree) setTimeout(() => d.remove(), duree); return d; }
@@ -4634,7 +4641,7 @@ function cineHV() {
   const car = M.L.delorean; poser(car, -24, 16, -Math.PI / 2); ouvrirPortes(car, 0); const feu = [];
   const moi0 = () => M.gens.get(M.moiNum);
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; poser(car, -6, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
-    if (!M.gens.has(DOC)) ajouterDoc(-7.2, 13.9); finCine(); };
+    if (!M.gens.has(DOC)) ajouterDoc(-7.2, 13.9); finCine(); couperMusiqueBttf(4000); };
   M.passerBtn = boutonPasser(fin);
   eclairBlanc(1300); sonBruit(1.4, 300, .9);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera;
@@ -4943,7 +4950,7 @@ function connecter() {
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
-    else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); changerLieu("bttf-cour", [.2, 8.5], 0); }
+    else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [.2, 8.5], 0); }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
