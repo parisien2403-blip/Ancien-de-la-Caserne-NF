@@ -4508,14 +4508,10 @@ function creerDelorean() {
   // le bandeau de caoutchouc noir tout autour, les passages de roues, le bas de caisse
   const caout = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, roughness: .75 });
   for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.05, .07, 4.1), caout, sg * .965, .6, 0); add(new THREE.BoxGeometry(.05, .16, 2.4), caout, sg * .955, .31, 0); }
-  add(new THREE.BoxGeometry(1.96, .16, .1), caout, 0, .42, -2.22); add(new THREE.BoxGeometry(1.96, .2, .1), caout, 0, .42, 2.22);
   for (const [x, z] of [[-1, -1.35], [1, -1.35], [-1, 1.35], [1, 1.35]]) { const a = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .06, 24, 1, true, 0, Math.PI), caout); a.rotation.set(0, 0, Math.PI / 2); a.rotation.order = "ZYX"; a.position.set(x * .96, .33, z); g.add(a);
     const fond = new THREE.Mesh(new THREE.CircleGeometry(.41, 24, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x050505, side: THREE.DoubleSide })); fond.rotation.y = Math.sign(x) * Math.PI / 2; fond.position.set(x * .93, .33, z); g.add(fond); }
   // les vitres latérales fixes (derrière les portes)
   for (const sg of [-1, 1]) { const vg = new THREE.Mesh(new THREE.PlaneGeometry(.42, .2), vitre); vg.position.set(sg * .78, 1.03, .78); vg.rotation.set(0, sg * Math.PI / 2, 0); g.add(vg); }
-  // la plaque arrière : OUTATIME
-  const plaqueT = toile(256, 128, (x) => { x.fillStyle = "#f4f2ea"; x.fillRect(0, 0, 256, 128); x.strokeStyle = "#1a2a6a"; x.lineWidth = 6; x.strokeRect(4, 4, 248, 120); x.fillStyle = "#b81d24"; x.font = "bold italic 22px Georgia"; x.textAlign = "center"; x.fillText("California", 128, 34); x.fillStyle = "#1a2a6a"; x.font = "bold 50px Arial"; x.fillText("OUTATIME", 128, 96); });
-  add(new THREE.PlaneGeometry(.5, .25), new THREE.MeshBasicMaterial({ map: tex(plaqueT) }), 0, .52, 2.28);
   const quad = (pts, m) => { const b = new THREE.BufferGeometry(); b.setAttribute("position", new THREE.Float32BufferAttribute([...pts[0], ...pts[1], ...pts[2], ...pts[0], ...pts[2], ...pts[3]], 3)); b.computeVertexNormals();
     const o = new THREE.Mesh(b, m); m.side = THREE.DoubleSide; g.add(o); return o; };
   // le pare-brise : un joint noir, et la vitre teintée qui reflète le ciel (posés juste au-dessus de la tôle, qui s'effile vers le toit)
@@ -4529,28 +4525,35 @@ function creerDelorean() {
     x.fillStyle = "rgba(20,20,24,.55)"; x.fillRect(20, 90, 216, 38); });   // (le tableau de bord, en bas)
   quadUV(pb(.77, .69, .082), new THREE.MeshStandardMaterial({ map: tex(verre), metalness: .3, roughness: .08, envMap: reflets(), side: THREE.DoubleSide }));
   for (let k = 0; k < 6; k++) add(new THREE.BoxGeometry(1.6, .02, .1), noir, 0, 1.13 - k * .036, .95 + k * .18).rotation.x = -.19;   // les persiennes de la lunette arrière
-  // l'avant : la calandre noire « DMC », les doubles phares, le néon bleu dessous
-  add(new THREE.BoxGeometry(.7, .14, .04), noir, 0, .55, -2.19);
-  const dmc = toile(128, 32, (x) => { x.fillStyle = "#151515"; x.fillRect(0, 0, 128, 32); x.fillStyle = "#c9c9c9"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText("DMC", 64, 24); });
-  add(new THREE.PlaneGeometry(.24, .06), new THREE.MeshBasicMaterial({ map: tex(dmc) }), 0, .55, -2.215).rotation.y = Math.PI;
-  for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.4, .16, .03), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: .6, roughness: .3 }), sg * .59, .56, -2.19);
-    for (const k of [0, 1]) add(new THREE.BoxGeometry(.15, .11, .03), blanc, sg * (.5 + k * .18), .56, -2.205); add(new THREE.BoxGeometry(.2, .05, .03), new THREE.MeshBasicMaterial({ color: 0xffa020 }), sg * .59, .42, -2.24); }
-  const feuxAR = toile(128, 64, (x) => { x.fillStyle = "#b01515"; x.fillRect(0, 0, 128, 64); x.fillStyle = "#e8a020"; x.fillRect(0, 0, 30, 64); x.fillStyle = "#111"; for (let i = 0; i < 64; i += 9) x.fillRect(0, i, 128, 3); });
-  for (const sg of [-1, 1]) add(new THREE.PlaneGeometry(.62, .2), new THREE.MeshBasicMaterial({ map: tex(feuxAR) }), sg * .55, .72, 2.235);
+  // l'avant et l'arrière : les vraies photos (phares, calandre DMC, pare-chocs, plaque OUTATIME ; feux à grille, plaque de Californie)
+  const ldDL = new THREE.TextureLoader(), photo = n => { const t = ldDL.load(`images/bttf/${n}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  add(new THREE.PlaneGeometry(1.98, .54), new THREE.MeshStandardMaterial({ map: photo("dl-avant"), emissive: 0xffffff, emissiveMap: photo("dl-avant"), emissiveIntensity: .25, roughness: .4, metalness: .2 }), 0, .47, -2.255).rotation.y = Math.PI;
+  add(new THREE.PlaneGeometry(1.98, .8), new THREE.MeshStandardMaterial({ map: photo("dl-arriere"), emissive: 0xffffff, emissiveMap: photo("dl-arriere"), emissiveIntensity: .25, roughness: .45 }), 0, .55, 2.255);
+  // les rétroviseurs noirs
+  for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.2, .12, .1), noir, sg * .98, 1.0, -.62); add(new THREE.BoxGeometry(.12, .03, .03), noir, sg * .9, .97, -.62); }
+  // les deux grands évents noirs à lamelles, dressés sur le capot arrière
+  const grille = toile(128, 128, (x) => { x.fillStyle = "#0c0c0d"; x.fillRect(0, 0, 128, 128); x.strokeStyle = "#3a3a3e"; x.lineWidth = 5; for (let i = 0; i <= 128; i += 32) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); } });
+  const mGr = new THREE.MeshStandardMaterial({ map: tex(grille), roughness: .6 }), mEv = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: .55, metalness: .3 });
+  for (const sg of [-1, 1]) { const ev = new THREE.Mesh(new THREE.BoxGeometry(.46, .46, .3), [mEv, mEv, mEv, mEv, mEv, mGr]); ev.position.set(sg * .5, 1.08, 1.98); ev.rotation.x = -.3; ev.castShadow = true; g.add(ev); }
+  // le moteur à nu sur le capot arrière : les bobines rouges, les tuyaux chromés ; sur le toit, la boîte du convecteur
+  const chromeT = new THREE.MeshStandardMaterial({ color: 0xd8dce0, metalness: .95, roughness: .2, envMap: reflets() });
+  for (let k = 0; k < 4; k++) add(new THREE.CylinderGeometry(.045, .045, .16, 10), new THREE.MeshStandardMaterial({ color: 0xa81818, roughness: .4 }), -.18 + k * .12, 1.08, 1.45);
+  for (const sg of [-1, 1]) { const tu = add(new THREE.TorusGeometry(.32, .025, 6, 16, Math.PI), chromeT, sg * .9, .6, 1.4); tu.rotation.y = Math.PI / 2; }
+  add(new THREE.BoxGeometry(.36, .1, .24), chromeT, 0, 1.2, .25);
   add(new THREE.BoxGeometry(1.9, .04, .05), neon, 0, .28, -2.12); for (const sg of [-1, 1]) add(new THREE.BoxGeometry(.04, .04, 3.6), neon, sg * .96, .27, 0);
   // l'arrière : Mr. Fusion, les bobines, les évents, les câbles
-  add(new THREE.CylinderGeometry(.16, .18, .3, 16), new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: .4 }), 0, 1.06, 1.9);
-  add(new THREE.CylinderGeometry(.09, .09, .1, 12), noir, 0, 1.25, 1.9);
+  add(new THREE.CylinderGeometry(.12, .15, .42, 16), new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: .4 }), 0, 1.22, 1.7);
+  add(new THREE.CylinderGeometry(.09, .09, .1, 12), noir, 0, 1.47, 1.7);
   for (const sg of [-1, 1]) { for (let k = 0; k < 3; k++) add(new THREE.CylinderGeometry(.05, .05, .5, 8), noir, sg * .55, .98 + k * .07, 1.7).rotation.x = Math.PI / 2;
     add(new THREE.BoxGeometry(.22, .18, .4), noir, sg * .62, .98, 2.05);
     const bob = add(new THREE.TorusGeometry(.2, .04, 8, 16), new THREE.MeshStandardMaterial({ color: 0x8a5a2a, metalness: .6, roughness: .4 }), sg * .97, .62, 1.55); bob.rotation.y = Math.PI / 2;
     add(new THREE.CylinderGeometry(.02, .02, 3.2, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }), sg * .96, .74, -.2).rotation.x = Math.PI / 2; }
   // les roues, enjoliveurs à rayons
   const jante = toile(64, 64, (x) => { x.fillStyle = "#9da2a8"; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); x.strokeStyle = "#5a5e64"; x.lineWidth = 2; for (let a = 0; a < 20; a++) { x.beginPath(); x.moveTo(32, 32); x.lineTo(32 + Math.cos(a / 20 * 6.28) * 29, 32 + Math.sin(a / 20 * 6.28) * 29); x.stroke(); } x.fillStyle = "#3a3e44"; x.beginPath(); x.arc(32, 32, 7, 0, 7); x.fill(); });
-  const roues = [], mJ = new THREE.MeshStandardMaterial({ map: tex(jante), metalness: .7, roughness: .3 });
+  const roues = [], mJ = new THREE.MeshStandardMaterial({ map: photo("dl-jante"), metalness: .3, roughness: .4 });
   for (const [x, z] of [[-.9, -1.35], [.9, -1.35], [-.9, 1.35], [.9, 1.35]]) { const r = new THREE.Group(); r.position.set(x, .33, z); g.add(r);
     const pn = new THREE.Mesh(new THREE.CylinderGeometry(.33, .33, .24, 20), noir); pn.rotation.z = Math.PI / 2; r.add(pn);
-    const j = new THREE.Mesh(new THREE.CircleGeometry(.22, 20), mJ); j.position.x = Math.sign(x) * .125; j.rotation.y = Math.sign(x) * Math.PI / 2; r.add(j); roues.push(r); }
+    const j = new THREE.Mesh(new THREE.CircleGeometry(.31, 24), mJ); j.position.x = Math.sign(x) * .125; j.rotation.y = Math.sign(x) * Math.PI / 2; r.add(j); roues.push(r); }
   // les portes papillon : charnière en haut, elles s'ouvrent vers le ciel
   const vitreP = toile(256, 160, (x) => { x.fillStyle = x.createPattern(brosse().image, "repeat"); x.fillRect(0, 0, 256, 160); x.fillStyle = "rgba(190,195,200,.35)"; x.fillRect(0, 0, 256, 160);
     const gr = x.createLinearGradient(0, 0, 0, 66); gr.addColorStop(0, "#5d7488"); gr.addColorStop(1, "#141a22"); x.fillStyle = gr; x.beginPath(); x.moveTo(30, 6); x.lineTo(236, 6); x.lineTo(250, 66); x.lineTo(14, 66); x.fill();   // la vitre
