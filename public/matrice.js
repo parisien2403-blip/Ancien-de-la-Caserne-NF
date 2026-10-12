@@ -22,7 +22,7 @@ export const TENUES = {
   robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
-  pois: { nom: "Robe à pois (1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
+  pois: { nom: "Robe à pois (1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
   rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
@@ -162,7 +162,7 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = "#8a8d92"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(88, 152); x.lineTo(90, 262); x.moveTo(112, 152); x.lineTo(110, 262); x.stroke();
       x.fillStyle = "#1c1c1f"; x.fillRect(80, 142, 40, 9); x.fillStyle = "#e9e9e9"; x.fillRect(58, 150, 4, 100); x.fillRect(138, 150, 4, 100); }
     // les habitants de Hill Valley, 1955
-    if (o.pose !== "dos" && !profil && /^(marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity)$/.test(t)) {
+    if (o.pose !== "dos" && !profil && /^(marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou)$/.test(t)) {
       const cravate = (col) => { x.fillStyle = col; x.beginPath(); x.moveTo(96, 150); x.lineTo(104, 150); x.lineTo(106, 214); x.lineTo(100, 222); x.lineTo(94, 214); x.closePath(); x.fill(); };
       const noeud = (col) => { x.fillStyle = col; x.beginPath(); x.moveTo(100, 152); x.lineTo(87, 145); x.lineTo(87, 159); x.closePath(); x.moveTo(100, 152); x.lineTo(113, 145); x.lineTo(113, 159); x.closePath(); x.fill(); x.beginPath(); x.arc(100, 152, 3.5, 0, 7); x.fill(); };
       const tee = (y1 = 170) => { x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(110, y1); x.lineTo(90, y1); x.closePath(); x.fill(); };
@@ -197,6 +197,8 @@ export function dessinerBonhomme(o, tete) {
         if (t === "serveur") { noeud("#c8202a"); raye(70, 176, 60, 160); x.fillStyle = "#c8202a"; x.fillRect(72, 168, 4, 12); x.fillRect(124, 168, 4, 12); }
         else { x.save(); x.beginPath(); x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(158, 300); x.lineTo(42, 300); x.lineTo(62, 236); x.closePath(); x.clip(); raye(30, 146, 140, 160); x.restore();
           noeud("#c8202a"); x.fillStyle = "#f8f8f4"; x.beginPath(); x.moveTo(76, 240); x.lineTo(124, 240); x.lineTo(118, 290); x.lineTo(82, 290); x.closePath(); x.fill(); x.fillStyle = "#f8f8f4"; x.fillRect(62, 232, 76, 8); } }
+      if (t === "lou") { x.fillStyle = "rgba(0,0,0,.1)"; x.beginPath(); x.moveTo(84, 146); x.lineTo(72, 156); x.lineTo(88, 176); x.closePath(); x.moveTo(116, 146); x.lineTo(128, 156); x.lineTo(112, 176); x.closePath(); x.fill();
+        x.fillStyle = "#f8f6f0"; x.fillRect(70, 196, 60, 120); x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 2; x.strokeRect(70, 196, 60, 120); x.fillStyle = "#cfc8b8"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(100, 160 + k * 12, 2, 0, 7); x.fill(); } }   // la chemise crème, le tablier blanc
       if (t === "gilet") { x.fillStyle = "#4a463e"; x.beginPath(); x.moveTo(64, 150); x.lineTo(90, 150); x.lineTo(100, 200); x.lineTo(110, 150); x.lineTo(136, 150); x.lineTo(140, 266); x.lineTo(60, 266); x.closePath(); x.fill();
         cravate("#8a1a14"); x.fillStyle = "#4a463e"; x.beginPath(); x.moveTo(90, 150); x.lineTo(100, 200); x.lineTo(110, 150); x.lineTo(108, 150); x.lineTo(100, 186); x.lineTo(92, 150); x.closePath(); x.fill();
         x.fillStyle = "#2a2622"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(100, 208 + k * 12, 2.2, 0, 7); x.fill(); } ceint("#4a2c18", 262); }
@@ -479,9 +481,9 @@ export function dessinerBonhomme(o, tete) {
           y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
-        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
+        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
           const C = { marty: ["#6a4a2e", "#3e2a18"], biff: ["#b8925a", "#7a5a30"], match: ["#d0ae72", "#8a6a3a"], troisd: ["#2a2018", "#120c08"], skinhead: ["#a87850", "#6a4a2a"], pois: ["#5a3420", "#2a1a10"], ecossaise: ["#4a2a18", "#24140a"],
-            bretelles: ["#6e5a40", "#3e2e1e"], serveur: ["#f4f4f0", "#c9c9c2"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
+            bretelles: ["#6e5a40", "#3e2e1e"], lou: ["#ece8dc", "#c9c4b4"], serveur: ["#f4f4f0", "#c9c9c2"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
           g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
@@ -4923,10 +4925,29 @@ function construireHillValley(A, T, L, scene) {
     [B("RUTH'S FROCK SHOP", { couleurEnseigne: "#f4f0e6", texteEnseigne: "#1a1a1a", auvent: "#b81d24" }), 9, 8], [B("HILL VALLEY REALTY", { mur: "#7a3a28", couleurEnseigne: "#e9c84a", texteEnseigne: "#2a1a0a" }), 9, 9], [B("BARBER", { mur: "#d8c8a8", brique: false, couleurEnseigne: "#f4f0e6", texteEnseigne: "#b81d24", auvent: "#2a5aa0" }), 7, 7]], -24, -27.5, Math.PI / 2, "z");
   rangee([[B("STATLER MOTORS · STUDEBAKER", { mur: "#9ec9c4", brique: false, couleurEnseigne: "#dfe7e6", texteEnseigne: "#2a2a2a" }), 14, 8], [B("WESTERN AUTO STORES", { couleurEnseigne: "#b81d24", auvent: "#2f7a6a" }), 9, 9.5],
     [B("TEXACO", { mur: "#f2f0ea", brique: false, couleurEnseigne: "#c8102e", etages: 1 }), 9, 6], [B("HILL VALLEY DRUGS", { mur: "#8a4a30", couleurEnseigne: "#2a2a2a", auvent: "#d9a32a" }), 9, 8.5], [B("HARDWARE", { mur: "#b9a07a", brique: false, couleurEnseigne: "#2a4a2a", auvent: "#c8102e" }), 7, 7]], -24, 27.5, -Math.PI / 2, "z");
+  // ---- la station Texaco (d'après la photo) : l'auvent vert et blanc, l'enseigne rouge, les pompes, la dépanneuse rouge ----
+  { const gx = 22.2, gz = -1.0, g = new THREE.Group(); g.position.set(gx, 0, gz); scene.add(g);
+    const blanc = A.mat({ color: 0xf2f2ec, roughness: .6 }), vert = A.mat({ color: 0x2f7a5a, roughness: .5 }), rouge = A.mat({ color: 0xc8102e, roughness: .45 }), chromeG = A.mat({ color: 0xdfe2e6, metalness: .9, roughness: .2 });
+    const b = (w, h, d, m, x, y, z, p = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
+    b(3.2, .5, 8, blanc, 0, 4.3, 0); b(3.3, .14, 8.1, vert, 0, 4.02, 0); b(3.3, .1, 8.1, vert, 0, 4.58, 0);
+    for (const z of [-3.2, 3.2]) b(.28, 4, .28, blanc, -.6, 2, z);
+    const ens = toile(512, 128, (x) => { x.fillStyle = "#c8102e"; x.fillRect(0, 0, 512, 128); x.fillStyle = "#fff"; x.font = "bold 72px Georgia, serif"; x.textAlign = "center"; x.fillText("TEXACO", 300, 92); x.beginPath(); x.arc(64, 64, 48, 0, 7); x.fill(); x.fillStyle = "#c8102e"; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.fill();
+      x.fillStyle = "#fff"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 14 : 34; x.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f7a5a"; x.font = "bold 30px Arial"; x.fillText("T", 64, 75); });
+    const e = new THREE.Mesh(new THREE.PlaneGeometry(3.6, .9), new THREE.MeshStandardMaterial({ map: tex(ens), roughness: .5 })); e.position.set(-1.62, 4.9, 0); e.rotation.y = -Math.PI / 2; g.add(e);
+    for (const z of [-1.6, 1.6]) { b(.7, .2, .9, A.mat({ color: 0x9a9a94 }), -.3, .1, z); b(.5, 1.5, .6, rouge, -.3, .95, z); b(.02, .5, .42, blanc, -.56, 1.25, z);
+      const glo = new THREE.Mesh(new THREE.SphereGeometry(.22, 14, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff0d0, emissiveIntensity: .3 })); glo.position.set(-.3, 1.92, z); g.add(glo); }
+    const dep = new THREE.Group(); dep.position.set(-.2, 0, -6.6); g.add(dep);
+    b(1.9, .9, 4.6, rouge, 0, .85, 0, dep); b(1.8, .8, 1.5, rouge, 0, 1.6, -.6, dep); b(1.6, .5, .05, A.mat({ color: 0x223040, metalness: .5, roughness: .1 }), 0, 1.7, -1.36, dep);
+    b(.2, 1.4, .2, A.mat({ color: 0x2a2a2a }), 0, 1.9, 1.5, dep).rotation.x = -.5;
+    const tx = toile(256, 64, (x) => { x.fillStyle = "#c8102e"; x.fillRect(0, 0, 256, 64); x.fillStyle = "#fff"; x.font = "bold 34px Georgia"; x.textAlign = "center"; x.fillText("TEXACO", 128, 44); });
+    for (const sg of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .35), new THREE.MeshStandardMaterial({ map: tex(tx) })); pl.position.set(sg * .96, 1.6, -.6); pl.rotation.y = sg * Math.PI / 2; dep.add(pl);
+      for (const z of [-1.5, 1.5]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 16), A.mat({ color: 0x111111 })); r.rotation.z = Math.PI / 2; r.position.set(sg * .92, .42, z); dep.add(r); } }
+    b(1.95, .14, .12, chromeG, 0, .5, -2.32, dep);
+    obst.push([gx - .3, gz - 1.6, .6], [gx - .3, gz + 1.6, .6], [gx - .6, gz - 3.2, .3], [gx - .6, gz + 3.2, .3], [gx - .2, gz - 6.6, 1.3], [gx - .2, gz - 5.6, 1.3], [gx - .2, gz - 7.8, 1.3]); }
   // au loin, derrière le palais : des collines et des arbres
   for (let i = 0; i < 9; i++) A.ajoute(new THREE.SphereGeometry(14 + (i % 3) * 5, 12, 8), A.mat({ color: i % 2 ? 0x5e7a48 : 0x6e8a52, roughness: 1, flatShading: true }), -60 + i * 15, -4, -62 - (i % 2) * 8, false);
   // ---- les voitures des années 50, garées le long des trottoirs ----
-  const voitures = [["belair", -21, 19.9, Math.PI / 2], ["fairlane", 8, 19.9, Math.PI / 2], ["green", 17, 19.9, -Math.PI / 2], ["chevy50", 23.6, -4, 0], ["buick", 23.6, 6, Math.PI], ["fairlane", -23.6, -6, 0], ["belair", -23.6, 9, Math.PI], ["chevy50", 1, 19.9, -Math.PI / 2]];
+  const voitures = [["belair", -21, 19.9, Math.PI / 2], ["fairlane", 8, 19.9, Math.PI / 2], ["green", 17, 19.9, -Math.PI / 2], ["chevy50", 23.6, 9.5, Math.PI], ["buick", 23.6, -12, 0], ["fairlane", -23.6, -6, 0], ["belair", -23.6, 9, Math.PI], ["chevy50", 1, 19.9, -Math.PI / 2]];
   for (const [n, x, z, r] of voitures) { const v = voitureVraie(n); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
     for (const k of [-1.8, 0, 1.8]) obst.push([x - Math.sin(r) * k, z - Math.cos(r) * k, 1.05]); }
   // deux voitures qui roulent : l'une le long de la rue des boutiques, l'autre dans la rue de l'ouest ; elles s'arrêtent devant quelqu'un
@@ -4950,20 +4971,22 @@ function construireHillValley(A, T, L, scene) {
 }
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
-const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [39, "serveur"], [40, "serveur"], [32, "bande"], [33, "bande"], [34, "bande"], [35, "bande"]];
-const TETES_HV = { 31: "images/bttf/p-marty-tete.webp" };
+const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [39, "serveur"], [40, "serveur"], [43, "lou"], [44, "lou"], [32, "bande"], [33, "bande"], [34, "bande"], [35, "bande"]];
+const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
+  43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z)) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
   const moi = M.gens.get(M.moiNum), mp = moi && moi.g.position;
   if (!M.hvInit) { M.hvInit = true; M.bandeT = 0;
     for (const [id, role] of HABITANTS) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
-      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "serveur" ? [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
+      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)] : role === "serveur" ? [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
       const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P) });
       if (q) q.prochain = now + Math.random() * 4000; } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
   for (const [id, role] of HABITANTS) { const p = M.gens.get(-id); if (!p) continue;
     if (role === "serveur") { if (!p.cible && Math.random() < .002) viser(p, M.L.louCafe[0] + .2 + Math.random() * .6, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1) + (Math.random() - .5)); continue; }
+    if (role === "lou") { if (!p.cible && Math.random() < .003) viser(p, M.L.louCafe[0] + .7 + Math.random() * .8, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6) + (Math.random() - .5) * .8); continue; }
     if (role === "promene") { if (!p.cible && now > (p.prochain || 0)) { const [x, z] = pointLibreHV(); viser(p, x, z); p.prochain = now + 3000 + Math.random() * 6000; } continue; }
     // la bande : le chef rôde, les autres le suivent de près
     if (p !== chef && chef && now > (p.prochain || 0) && !M.chasse) { p.prochain = now + 900; const i = bande.indexOf(p); viser(p, chef.g.position.x + (i % 2 ? 1.1 : -1.1), chef.g.position.z + (i > 1 ? 1.2 : .6)); }
@@ -4984,7 +5007,8 @@ function animerHV(now) {
       sonBruit(.18, 700, .7); bulle(`😤 <b>Biff :</b> Dégage, ${prenomMoi()} ! Et que je ne te revoie plus traîner par ici !`, 2800); } }
   else if (M.chasse && (d > 14 || prèsDoc)) { M.chasse = false; bande.forEach(q => { q.rapide = false; q.cible = null; q.chemin = []; }); }
 }
-function defautsHV(id, P) { const D = { 31: ["marty", "#5f86b8", "#4a76ad", "#e2ddd2"], 32: ["biff", "#c8201c", "#1d2433", "#1a1a1a"], 33: ["match", "#d9a520", "#2a2a2e", "#1a1a1a"], 34: ["troisd", "#e2e0d8", "#3a3a3c", "#1a1a1a"], 35: ["skinhead", "#151517", "#8a7a5a", "#1a1a1a"],
+function defautsHV(id, P) { const D = { 31: ["marty", "#5f86b8", "#4a76ad", "#e2ddd2"], 32: ["biff", "#c8201c", "#1d2433", "#1a1a1a"], 33: ["skinhead", "#151517", "#8a7a5a", "#1a1a1a"], 34: ["troisd", "#e2e0d8", "#3a3a3c", "#1a1a1a"], 35: ["match", "#d9a520", "#2a2a2e", "#1a1a1a"],
+    43: ["lou", "#ece4d2", "#3a3a3c", "#1a1a1a"], 44: ["lou", "#e8e2d4", "#3a3a3c", "#1a1a1a"], 45: ["pompiste", "#2f4a3a", "#2f4a3a", "#1a1a1a"],
     36: ["pois", "#141414", null, "#c8102e"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#151517", "#151515"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
@@ -5084,7 +5108,7 @@ function connecter() {
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
-    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 42) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); M.hvInit = false; } }
+    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 45) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); M.hvInit = false; } }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
