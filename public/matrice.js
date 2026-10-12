@@ -3108,7 +3108,9 @@ function choreThriller() {
 const HERNANDEZ = -7, TEMPS_ALIVE = 460;
 /* --- les Bee Gees (réglés par l'administrateur) : dès que passe une de leurs chansons, Robin, Barry et Maurice arrivent au milieu de la piste, côte à côte, et dansent ensemble --- */
 const BEEGEES = [[-8, 8, -1.6, "Robin Gibb", "robin"], [-9, 9, 0, "Barry Gibb", "barry"], [-10, 10, 1.6, "Maurice Gibb", "maurice"]], TEMPS_DISCO = 560;
-const AIR_BEEGEES = /bee ?gees|stayin|night fever|tragedy|jive talkin|how deep is your love|more than a woman|you should be dancing|too much heaven|massachusetts/;
+const AIR_BEEGEES = /bee ?gees?|gibb|stayin|night fever|tragedy|jive talkin|how deep is your love|more than a woman|you should be dancing|too much heaven|massachusetts|nights on broadway|you win again|to love somebody|i started a joke|how can you mend|lonely days|spicks and specks|love you inside out|fanny be tender|boogie child|still waters/;
+/* le titre d'une musique, rendu facile à reconnaître : minuscules, sans accents, tirets, soulignés ni apostrophes (« Bee_Gees - Stayin'_Alive.mp3 » → « bee gees stayin alive mp3 ») */
+function normTitre(t) { return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/['’`]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
 function animerBeeGees() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && AIR_BEEGEES.test(M.djTitre || ""), present = M.gens.get(-9);
@@ -3365,7 +3367,7 @@ function connecter() {
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
     else if (m.t === "lumiere") { M.lumiere = +m.niveau || 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
-    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? `${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`.toLowerCase() : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
+    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
     else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
     else if (m.t === "slow_demande") ctx.surInvitation && ctx.surInvitation({ de: m.de, nom: m.nom });
