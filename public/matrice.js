@@ -389,7 +389,7 @@ export function dessinerBonhomme(o, tete) {
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
         else if (/^(rebecca|leon|barry|jill|wesker|chris)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil
-          const C = { rebecca: ["#4a3426", "#2a1c12"], leon: ["#6a5038", "#3e2c1c"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
+          const C = { rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
           g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
