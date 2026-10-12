@@ -1122,7 +1122,8 @@
           <button class="btn small alt" id="mxPNJHernandez" type="button" hidden>🕺 Mr Hernandez</button>
           <button class="btn small alt" id="mxPNJRobin" type="button" hidden>🕺 Robin</button>
           <button class="btn small alt" id="mxPNJBarry" type="button" hidden>🕺 Barry</button>
-          <button class="btn small alt" id="mxPNJMaurice" type="button" hidden>🕺 Maurice</button></div></div>
+          <button class="btn small alt" id="mxPNJMaurice" type="button" hidden>🕺 Maurice</button>
+          <button class="btn small alt" id="mxPNJTravolta" type="button" hidden>🕺 John Travolta</button></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
           <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
@@ -1947,8 +1948,8 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -1997,7 +1998,8 @@
   }
   let mxComptes = {}, mxLieu = null, pnjInfo = null, djInfo = null, barInfo = null, danseurInfo = null, trioInfo = {};
   const TRIO = { danseur: [4, "🧟 Le danseur Thriller", "Le danseur Thriller", "images/danseur-tete.png"], zombie: [5, "🧟‍♂️ Le zombie (danseur Thriller)", "Le zombie", "images/zombie-tete.png"], mariee: [6, "👰 La mariée (danseuse Thriller)", "La mariée", "images/mariee-tete.png"], hernandez: [7, "🕺 Mr Hernandez (Born to Be Alive)", "Mr Hernandez", "images/hernandez-tete.png"],
-    robin: [8, "🕺 Robin Gibb (Bee Gees)", "Robin Gibb", "images/beegees-robin-tete.png"], barry: [9, "🕺 Barry Gibb (Bee Gees)", "Barry Gibb", "images/beegees-barry-tete.png"], maurice: [10, "🕺 Maurice Gibb (Bee Gees)", "Maurice Gibb", "images/beegees-maurice-tete.png"] };
+    robin: [8, "🕺 Robin Gibb (Bee Gees)", "Robin Gibb", "images/beegees-robin-tete.png"], barry: [9, "🕺 Barry Gibb (Bee Gees)", "Barry Gibb", "images/beegees-barry-tete.png"], maurice: [10, "🕺 Maurice Gibb (Bee Gees)", "Maurice Gibb", "images/beegees-maurice-tete.png"],
+    travolta: [11, "🕺 John Travolta (Saturday Night Fever)", "John Travolta", "images/travolta-tete.png"] };
   const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id !== 1 ? "&id=" + id : ""}`;
   function allerAuDJ() {
     const ouvrir = () => { $("mxDJ").scrollIntoView({ behavior: "smooth", block: "start" }); $("mxDJ").classList.remove("eclat"); void $("mxDJ").offsetWidth; $("mxDJ").classList.add("eclat"); };
@@ -2154,6 +2156,7 @@
   $("mxPNJRobin").onclick = () => ouvrirBonhomme("robin");
   $("mxPNJBarry").onclick = () => ouvrirBonhomme("barry");
   $("mxPNJMaurice").onclick = () => ouvrirBonhomme("maurice");
+  $("mxPNJTravolta").onclick = () => ouvrirBonhomme("travolta");
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
@@ -2182,7 +2185,7 @@
     $("bhErreur").hidden = true; bh.mode = mode;
     const tr = TRIO[mode], dans = !!tr, bar = mode === "bar", dj = mode === "dj", pnj = mode === "pnj" || dj || bar || dans, idP = tr ? tr[0] : bar ? 3 : dj ? 2 : 1;
     $("bhTitreFen").textContent = tr ? tr[1] : bar ? "🍷 Mr Miner, le barman" : dj ? "🎧 Manu, le DJ" : pnj ? "👮 Le bonhomme du chef de poste" : "🧍 Mon bonhomme";
-    $("bhSousTitre").textContent = ["robin", "barry", "maurice"].includes(mode) ? "Toi seul règles ce Bee Gees, qui arrive au milieu de la piste avec ses frères dès que passe une chanson des Bee Gees : sa tête, ses vêtements, son nom." : mode === "hernandez" ? "Toi seul règles Mr Hernandez, qui arrive au milieu de la piste avec sa canne dès que passe Born to Be Alive : sa tête, ses vêtements, son nom." : dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
+    $("bhSousTitre").textContent = mode === "travolta" ? "Toi seul règles John Travolta, qui danse seul devant les Bee Gees, comme dans Saturday Night Fever, dès que passe une de leurs chansons : sa tête, ses vêtements, son nom." : ["robin", "barry", "maurice"].includes(mode) ? "Toi seul règles ce Bee Gees, qui arrive au milieu de la piste avec ses frères dès que passe une chanson des Bee Gees : sa tête, ses vêtements, son nom." : mode === "hernandez" ? "Toi seul règles Mr Hernandez, qui arrive au milieu de la piste avec sa canne dès que passe Born to Be Alive : sa tête, ses vêtements, son nom." : dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
     $("bhNomZone").hidden = !pnj; $("bhPhotoProfil").hidden = pnj; $("bhTeteTitre").textContent = pnj ? "Sa tête" : "Ma tête";
     try {
       const m = await chargerMX();
@@ -2580,6 +2583,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.35", "12 octobre 2026", ["Salle des fêtes : John Travolta, en costume trois pièces blanc et chemise noire au grand col, rejoint les Bee Gees dès qu'une de leurs chansons passe ; il danse seul, un peu devant eux, comme dans Saturday Night Fever : le doigt pointé vers le ciel puis vers le sol, la marche chaloupée, les coups de genou, les bras levés, la pose du film et un tour sur lui-même avec les frères", "Administrateur : bouton 🕺 John Travolta pour recadrer sa tête, changer ses vêtements, sa silhouette et son nom"]],
     ["3.34.2", "12 octobre 2026", ["Correction : après une mise à jour, le téléphone pouvait garder l'ancienne Matrice en mémoire (les nouveaux personnages, leurs tenues et leurs danses n'apparaissaient pas) ; elle est maintenant toujours rechargée"]],
     ["3.34.1", "12 octobre 2026", ["Salle des fêtes : les titres des musiques sont mieux reconnus (tirets, soulignés, apostrophes, majuscules, accents) pour faire venir les Bee Gees, Mr Hernandez et les danseurs Thriller ; plus de chansons des Bee Gees reconnues, et « Gibb » dans le nom suffit"]],
     ["3.34", "12 octobre 2026", ["Salle des fêtes : les Bee Gees ! Robin, Barry et Maurice arrivent au milieu de la piste dès que passe une de leurs chansons (Stayin' Alive, Night Fever, Tragedy, You Should Be Dancing…), en blouson et pantalon de satin doré, et dansent ensemble une chorégraphie disco : le doigt vers le ciel, les pas chassés en frappant dans les mains, les bras en l'air et un tour sur eux-mêmes", "Administrateur : boutons 🕺 Robin, 🕺 Barry et 🕺 Maurice pour recadrer leurs têtes, changer leurs vêtements, leur silhouette et leur nom"]],

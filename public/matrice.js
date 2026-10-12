@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -102,6 +102,23 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
       x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
       x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
+    // John Travolta (Saturday Night Fever) : costume trois pièces blanc, la veste ouverte, le gilet boutonné,
+    // la chemise noire au grand col posé sur les revers, ouverte sur la poitrine, la chaîne en or ; le pantalon blanc à pattes d'éléphant
+    if (t === "travolta" && o.pose !== "dos") {
+      if (!profil && !accroupi && !assis && !/^madison[1345]$/.test(o.pose || "")) { x.fillStyle = c;
+        for (const [a, b2] of [[72, 96], [104, 128]]) { x.beginPath(); x.moveTo(a, 340); x.lineTo(b2, 340); x.lineTo(b2 + 6, 396); x.lineTo(a - 6, 396); x.closePath(); x.fill(); }   // les pattes d'éléphant
+        x.strokeStyle = "rgba(0,0,0,.1)"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 262); x.lineTo(82, 396); x.moveTo(116, 262); x.lineTo(118, 396); x.stroke(); }   // le pli du pantalon
+      if (!profil) {
+        x.fillStyle = "#1c1616"; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(104, 214); x.lineTo(96, 214); x.closePath(); x.fill();   // la chemise noire
+        x.fillStyle = peau; x.beginPath(); x.moveTo(91, 146); x.lineTo(109, 146); x.lineTo(100, 176); x.closePath(); x.fill();   // ouverte sur la poitrine
+        x.strokeStyle = "#e3c04a"; x.lineWidth = 2; x.beginPath(); x.moveTo(92, 148); x.quadraticCurveTo(100, 168, 108, 148); x.stroke();
+        x.fillStyle = "#e3c04a"; x.beginPath(); x.arc(100, 163, 2.6, 0, 7); x.fill();   // la chaîne
+        x.fillStyle = "#1c1616"; x.beginPath(); x.moveTo(86, 144); x.lineTo(60, 156); x.lineTo(76, 180); x.lineTo(92, 154); x.closePath(); x.moveTo(114, 144); x.lineTo(140, 156); x.lineTo(124, 180); x.lineTo(108, 154); x.closePath(); x.fill();   // le grand col sur les revers
+        x.strokeStyle = "rgba(0,0,0,.16)"; x.lineWidth = 2.5; x.beginPath(); x.moveTo(76, 180); x.lineTo(86, 262); x.moveTo(124, 180); x.lineTo(114, 262); x.stroke();   // la veste ouverte
+        x.beginPath(); x.moveTo(88, 182); x.lineTo(100, 220); x.lineTo(112, 182); x.stroke();   // le gilet
+        x.fillStyle = "#e2ddd0"; for (let k = 0; k < 3; k++) { x.beginPath(); x.arc(100, 228 + k * 11, 2.6, 0, 7); x.fill(); }
+        x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 2; x.beginPath(); x.moveTo(64, 236); x.lineTo(80, 238); x.moveTo(120, 238); x.lineTo(136, 236); x.stroke(); }   // les poches
+      else { x.fillStyle = "#1c1616"; x.beginPath(); x.moveTo(110, 146); x.lineTo(128, 150); x.lineTo(116, 176); x.closePath(); x.fill(); } }
     // les Bee Gees : blouson en satin doré, ouvert sur la poitrine velue, col, poignets et ceinture en côtes kaki, pressions dorées ; pantalon de satin doré
     if (t === "beegees" && o.pose !== "dos") {
       x.fillStyle = "rgba(255,255,255,.22)"; for (const [a, l] of profil ? [[86, 8], [104, 5]] : [[66, 8], [80, 4], [122, 7], [134, 4]]) x.fillRect(a, 152, l, 96);   // les reflets du satin
@@ -228,10 +245,11 @@ export function dessinerBonhomme(o, tete) {
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
         const g = y2.createLinearGradient(0, 0, 0, h);
-        if (t === "hernandez" || t === "beegees") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees
-          if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+        if (t === "hernandez" || t === "beegees" || t === "travolta") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
+          if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); }
+          else if (t === "travolta") { g.addColorStop(0, "#2e1d12"); g.addColorStop(1, "#160d07"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
           y2.globalCompositeOperation = "source-atop";
-          if (t === "beegees") { y2.strokeStyle = "rgba(110,76,50,.45)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 28; k++) { const sx = (k + .5) / 28 * w; y2.beginPath(); y2.moveTo(sx, h * .05); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } }   // les cheveux longs et raides
+          if (t === "beegees" || t === "travolta") { y2.strokeStyle = "rgba(110,76,50,.45)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 28; k++) { const sx = (k + .5) / 28 * w; y2.beginPath(); y2.moveTo(sx, h * .05); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } }   // les cheveux longs et raides
           else { y2.fillStyle = "rgba(90,62,44,.45)"; for (let k = 0; k < 40; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .06, 0, 7); y2.fill(); } }
         } else { g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         x.drawImage(c2, -w / 2, -h);
@@ -2736,6 +2754,11 @@ export async function ouvrir(ctx) {
           const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           const ph = t / 900; p.corps.material.rotation = Math.sin(ph) * .05; p.corps.position.x = Math.sin(ph) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.danse === "travolta") {
+          // John Travolta, seul devant les Bee Gees (voir choreTravolta)
+          const c = choreTravolta();
+          if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
+          p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
         else if (p.info.danse === "beegees") {
           // les Bee Gees : la chorégraphie disco, tous les trois au même temps (voir choreBeeGees)
           const c = choreBeeGees();
@@ -3107,6 +3130,7 @@ function choreThriller() {
 /* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
 const HERNANDEZ = -7, TEMPS_ALIVE = 460;
 /* --- les Bee Gees (réglés par l'administrateur) : dès que passe une de leurs chansons, Robin, Barry et Maurice arrivent au milieu de la piste, côte à côte, et dansent ensemble --- */
+const TRAVOLTA = -11;
 const BEEGEES = [[-8, 8, -1.6, "Robin Gibb", "robin"], [-9, 9, 0, "Barry Gibb", "barry"], [-10, 10, 1.6, "Maurice Gibb", "maurice"]], TEMPS_DISCO = 560;
 const AIR_BEEGEES = /bee ?gees?|gibb|stayin|night fever|tragedy|jive talkin|how deep is your love|more than a woman|you should be dancing|too much heaven|massachusetts|nights on broadway|you win again|to love somebody|i started a joke|how can you mend|lonely days|spicks and specks|love you inside out|fanny be tender|boogie child|still waters/;
 /* le titre d'une musique, rendu facile à reconnaître : minuscules, sans accents, tirets, soulignés ni apostrophes (« Bee_Gees - Stayin'_Alive.mp3 » → « bee gees stayin alive mp3 ») */
@@ -3119,14 +3143,22 @@ function animerBeeGees() {
       const q = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || "beegees", couleur: P.couleur || "#c9b27c", bas: P.bas || "#c9b27c", pieds: P.pieds || "#b89a5a",
         reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/beegees-${cle}-tete.png`, pnj: true, danseur: true, x: x + dx, z: z + 3 });
       if (q) { viser(q, x + dx, z + (dx ? 0 : .35)); q.info.danse = "beegees"; } }
+    // et, un peu devant eux, tout seul : John Travolta
+    { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(11)) || {};
+      const q = ajouterAncien({ numero: TRAVOLTA, nom: P.nom || "John Travolta", tenue: P.tenue || "travolta", couleur: P.couleur || "#f4f1ea", bas: P.bas || "#f4f1ea", pieds: P.pieds || "#1a1a1a",
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 11) : "images/travolta-tete.png", pnj: true, danseur: true, x, z: z + 4 });
+      if (q) { viser(q, x, z + 1.7); q.info.danse = "travolta"; } }
     dire(-9, "Ah, ah, ah, ah, stayin' alive ! 🕺"); }
-  else if (!air && present) { for (const [num] of BEEGEES) retirerAncien(num); M.beeGeesPrets = false; }
+  else if (!air && present) { for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); M.beeGeesPrets = false; }
   else if (present) { const freres = BEEGEES.map(([num]) => M.gens.get(num)).filter(Boolean);
     for (const q of freres) { q.info.danse = "beegees"; if (!q.cible && !q.base) q.base = [q.g.position.x, q.g.position.z]; }
     // on part tous les trois ensemble, sur le premier temps
     if (!M.beeGeesPrets && freres.every(q => q.base) && choreBeeGees().k === 0) M.beeGeesPrets = true;
     if (M.beeGeesPrets) { const c = choreBeeGees();
       for (const q of freres) { const nx = q.base[0] + c.ox; if (M.L.limites(nx, q.base[1])) q.g.position.x = nx; }
+      const tv = M.gens.get(TRAVOLTA);
+      if (tv) { tv.info.danse = "travolta"; if (!tv.cible && !tv.base) tv.base = [tv.g.position.x, tv.g.position.z];
+        if (tv.base) { const ct = choreTravolta(), nx = tv.base[0] + ct.ox; if (M.L.limites(nx, tv.base[1])) tv.g.position.x = nx; } }
       const n = Math.floor(Date.now() / (TEMPS_DISCO * 32)); if (c.k === 0 && M.beeGeesCri !== n) { M.beeGeesCri = n; dire(-9, ["Ah, ah, ah, ah, stayin' alive ! 🕺", "Night fever, night fever ! 🪩", "You should be dancing, yeah ! ✨"][n % 3]); } } }
 }
 /* la chorégraphie disco des Bee Gees, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
@@ -3142,6 +3174,24 @@ function choreBeeGees() {
   else if (k < 8) { pose = k % 2 ? "madison2" : "mi"; ox = .6 * (k - 4 + f) / 4; saut = Math.sin(f * Math.PI) * .06; rot = .05; }
   else if (k < 12) { pose = k % 2 ? "repos" : "mi"; ox = .6 * (1 - (k - 8 + f) / 4); saut = Math.sin(f * Math.PI) * .06; rot = -.05; }
   else if (k < 14) { const m = Math.sin(ph * Math.PI); pose = "haut"; rot = m * .1; sx = m * .12; saut = Math.abs(m) * .03; }
+  else { const cs = Math.cos(((k - 14) + v) / 2 * Math.PI * 2); pose = cs < 0 ? "dos" : "disco1"; tour = Math.max(.08, Math.abs(cs)); }
+  return { k, pose, ox, rot, sx, saut, tour };
+}
+/* la danse de John Travolta dans Saturday Night Fever, sur 16 temps, au même tempo que les Bee Gees (mais ses propres pas)
+   1-4   le célèbre doigt pointé : vers le ciel en diagonale, puis vers le sol, en roulant fort des hanches
+   5-8   la marche chaloupée : jambe tendue sur le côté, deux pas vers la gauche, puis deux pour revenir
+   9-10  les coups de genou, d'un côté puis de l'autre
+   11-12 les bras levés, les hanches qui tournent
+   13-14 la pose du film : un bras pointé vers le ciel, les jambes écartées, penché
+   15-16 un tour complet sur lui-même, avec ses frères */
+function choreTravolta() {
+  const ph = Date.now() / TEMPS_DISCO, k = Math.floor(ph) % 16, v = ph % 1, f = Math.min(1, v * 1.6), coup = Math.sin(Math.min(1, v * 3) * Math.PI / 2);
+  let pose, ox = 0, rot = 0, sx = 0, saut = 0, tour = 1;
+  if (k < 4) { const ht = k % 2 === 0; pose = ht ? "disco1" : "disco2"; rot = (ht ? -.16 : .16) * coup; sx = (ht ? -.12 : .12) * coup; saut = Math.abs(Math.sin(v * Math.PI)) * .05; }
+  else if (k < 8) { const aller = k < 6; pose = aller ? "madison1" : "madison3"; ox = aller ? -.6 * (k - 4 + f) / 2 : -.6 * (1 - (k - 6 + f) / 2); rot = (aller ? .08 : -.08) * Math.sin(v * Math.PI); saut = Math.sin(f * Math.PI) * .05; }
+  else if (k < 10) { pose = k === 8 ? "profil" : "profilD"; saut = v < .3 ? .08 * Math.sin(v / .3 * Math.PI) : 0; rot = k === 8 ? .08 : -.08; }
+  else if (k < 12) { const m = Math.sin(ph * Math.PI * 2); pose = "haut"; rot = m * .12; sx = m * .14; }
+  else if (k < 14) { pose = "disco1"; rot = -.2 + Math.sin(v * Math.PI) * .03; sx = -.1; saut = Math.abs(Math.sin(v * Math.PI)) * .02; }
   else { const cs = Math.cos(((k - 14) + v) / 2 * Math.PI * 2); pose = cs < 0 ? "dos" : "disco1"; tour = Math.max(.08, Math.abs(cs)); }
   return { k, pose, ox, rot, sx, saut, tour };
 }
@@ -3384,7 +3434,7 @@ function connecter() {
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
-    else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 10) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
