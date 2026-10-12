@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -102,6 +102,19 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
       x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
       x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
+    // les Bee Gees : blouson en satin doré, ouvert sur la poitrine velue, col, poignets et ceinture en côtes kaki, pressions dorées ; pantalon de satin doré
+    if (t === "beegees" && o.pose !== "dos") {
+      x.fillStyle = "rgba(255,255,255,.22)"; for (const [a, l] of profil ? [[86, 8], [104, 5]] : [[66, 8], [80, 4], [122, 7], [134, 4]]) x.fillRect(a, 152, l, 96);   // les reflets du satin
+      if (!profil) { x.fillStyle = peau; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(110, 250); x.lineTo(90, 250); x.closePath(); x.fill();   // la poitrine, le blouson ouvert
+        const ha = k => { const v = Math.sin(k * 12.9898) * 43758.5453; return v - Math.floor(v); };
+        x.strokeStyle = "rgba(60,36,20,.5)"; x.lineWidth = 1.3; for (let k = 0; k < 70; k++) { const hy = 154 + ha(k) * 92, hx = 100 + (ha(k + 99) - .5) * (24 - (hy - 150) * .08); x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx + (ha(k + 7) - .5) * 5, hy + 3 + ha(k + 3) * 3); x.stroke(); }   // les poils
+        x.strokeStyle = "#e8d48a"; x.lineWidth = 2; x.beginPath(); x.moveTo(90, 148); x.quadraticCurveTo(100, 166, 110, 148); x.stroke();   // la chaîne
+        x.fillStyle = "#7d6d34"; x.beginPath(); x.moveTo(80, 142); x.lineTo(90, 146); x.lineTo(88, 170); x.lineTo(78, 160); x.closePath(); x.moveTo(120, 142); x.lineTo(110, 146); x.lineTo(112, 170); x.lineTo(122, 160); x.closePath(); x.fill();   // le col en côtes
+        x.fillStyle = "#f3e2a0"; for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(84, 172 + k * 14, 2.2, 0, 7); x.arc(116, 172 + k * 14, 2.2, 0, 7); x.fill(); }   // les pressions
+        x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 2; x.beginPath(); x.moveTo(86, 146); x.lineTo(90, 250); x.moveTo(114, 146); x.lineTo(110, 250); x.stroke(); }
+      if (!accroupi && !assis && !/^madison[1345]$/.test(o.pose || "") && !profil) { x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(76, 264, 5, 128); x.fillRect(108, 264, 5, 128); }   // le satin du pantalon
+      x.fillStyle = "#7d6d34"; if (profil) x.fillRect(74, 250, 54, 12); else { x.fillRect(58, 250, 32, 12); x.fillRect(110, 250, 32, 12); }   // la ceinture en côtes
+      x.fillStyle = "rgba(0,0,0,.15)"; for (let a = profil ? 76 : 60; a < (profil ? 128 : 142); a += 5) x.fillRect(a, 250, 1.5, 12); }
     // Mr Hernandez : chemise noire au col ouvert sur la poitrine, chaîne en or, gilet blanc boutonné à pointes
     if (t === "hernandez" && o.pose !== "dos") {
       if (profil) { x.fillStyle = "#f3f1ea"; x.beginPath(); x.roundRect(80, 150, 40, 108, 8); x.fill(); }
@@ -152,6 +165,7 @@ export function dessinerBonhomme(o, tete) {
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
+      if (t === "beegees") { x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(-7, -4, 5, 76); x.fillStyle = "#7d6d34"; x.fillRect(-12, 74, 24, 14); }
       if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
       if (t === "zombie") { x.fillStyle = "#2a2a2c"; x.beginPath(); x.moveTo(-12, 70); x.lineTo(-4, 84); x.lineTo(4, 74); x.lineTo(12, 88); x.lineTo(12, 96); x.lineTo(-12, 96); x.fill(); x.fillStyle = "rgba(120,10,10,.7)"; x.beginPath(); x.arc(3, 40, 6, 0, 7); x.fill(); }
       if (t === "mariee") { x.fillStyle = "rgba(255,255,255,.55)"; x.fillRect(-13, -8, 26, 30); }
@@ -214,9 +228,11 @@ export function dessinerBonhomme(o, tete) {
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
         const g = y2.createLinearGradient(0, 0, 0, h);
-        if (t === "hernandez") {   // Mr Hernandez : de dos, ses cheveux noirs et bouclés
-          g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); y2.fillStyle = g; y2.fillRect(0, 0, w, h);
-          y2.globalCompositeOperation = "source-atop"; y2.fillStyle = "rgba(90,62,44,.45)"; for (let k = 0; k < 40; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .06, 0, 7); y2.fill(); }
+        if (t === "hernandez" || t === "beegees") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees
+          if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+          y2.globalCompositeOperation = "source-atop";
+          if (t === "beegees") { y2.strokeStyle = "rgba(110,76,50,.45)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 28; k++) { const sx = (k + .5) / 28 * w; y2.beginPath(); y2.moveTo(sx, h * .05); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } }   // les cheveux longs et raides
+          else { y2.fillStyle = "rgba(90,62,44,.45)"; for (let k = 0; k < 40; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .06, 0, 7); y2.fill(); } }
         } else { g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         x.drawImage(c2, -w / 2, -h);
       } else x.drawImage(tete, -w / 2, -h, w, h);
@@ -2720,6 +2736,11 @@ export async function ouvrir(ctx) {
           const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           const ph = t / 900; p.corps.material.rotation = Math.sin(ph) * .05; p.corps.position.x = Math.sin(ph) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.danse === "beegees") {
+          // les Bee Gees : la chorégraphie disco, tous les trois au même temps (voir choreBeeGees)
+          const c = choreBeeGees();
+          if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
+          p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
         else if (p.info.danse === "alive" && p.poses.canne1) {
           // Mr Hernandez : la danse de Born to Be Alive (voir choreAlive)
           const c = choreAlive();
@@ -2772,7 +2793,7 @@ export async function ouvrir(ctx) {
       }
     }
     if (M.L.anim) M.L.anim(t);
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez();
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
@@ -3085,6 +3106,43 @@ function choreThriller() {
 }
 /* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
 const HERNANDEZ = -7, TEMPS_ALIVE = 460;
+/* --- les Bee Gees (réglés par l'administrateur) : dès que passe une de leurs chansons, Robin, Barry et Maurice arrivent au milieu de la piste, côte à côte, et dansent ensemble --- */
+const BEEGEES = [[-8, 8, -1.6, "Robin Gibb", "robin"], [-9, 9, 0, "Barry Gibb", "barry"], [-10, 10, 1.6, "Maurice Gibb", "maurice"]], TEMPS_DISCO = 560;
+const AIR_BEEGEES = /bee ?gees|stayin|night fever|tragedy|jive talkin|how deep is your love|more than a woman|you should be dancing|too much heaven|massachusetts/;
+function animerBeeGees() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && AIR_BEEGEES.test(M.djTitre || ""), present = M.gens.get(-9);
+  if (air && !present) { const [x, z] = M.L.pisteCentre; M.beeGeesPrets = false;
+    for (const [num, id, dx, nom, cle] of BEEGEES) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+      const q = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || "beegees", couleur: P.couleur || "#c9b27c", bas: P.bas || "#c9b27c", pieds: P.pieds || "#b89a5a",
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/beegees-${cle}-tete.png`, pnj: true, danseur: true, x: x + dx, z: z + 3 });
+      if (q) { viser(q, x + dx, z + (dx ? 0 : .35)); q.info.danse = "beegees"; } }
+    dire(-9, "Ah, ah, ah, ah, stayin' alive ! 🕺"); }
+  else if (!air && present) { for (const [num] of BEEGEES) retirerAncien(num); M.beeGeesPrets = false; }
+  else if (present) { const freres = BEEGEES.map(([num]) => M.gens.get(num)).filter(Boolean);
+    for (const q of freres) { q.info.danse = "beegees"; if (!q.cible && !q.base) q.base = [q.g.position.x, q.g.position.z]; }
+    // on part tous les trois ensemble, sur le premier temps
+    if (!M.beeGeesPrets && freres.every(q => q.base) && choreBeeGees().k === 0) M.beeGeesPrets = true;
+    if (M.beeGeesPrets) { const c = choreBeeGees();
+      for (const q of freres) { const nx = q.base[0] + c.ox; if (M.L.limites(nx, q.base[1])) q.g.position.x = nx; }
+      const n = Math.floor(Date.now() / (TEMPS_DISCO * 32)); if (c.k === 0 && M.beeGeesCri !== n) { M.beeGeesCri = n; dire(-9, ["Ah, ah, ah, ah, stayin' alive ! 🕺", "Night fever, night fever ! 🪩", "You should be dancing, yeah ! ✨"][n % 3]); } } }
+}
+/* la chorégraphie disco des Bee Gees, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
+   1-4   le doigt pointé vers le ciel puis vers le sol, façon Saturday Night Fever, en roulant des hanches
+   5-8   quatre pas chassés vers la droite, en frappant dans les mains
+   9-12  quatre pas pour revenir, bras à mi-hauteur
+   13-14 les bras en l'air, on se déhanche
+   15-16 un tour complet sur soi-même */
+function choreBeeGees() {
+  const ph = Date.now() / TEMPS_DISCO, k = Math.floor(ph) % 16, v = ph % 1, f = Math.min(1, v * 1.6);
+  let pose, ox = 0, rot = 0, sx = 0, saut = 0, tour = 1;
+  if (k < 4) { const haut = k % 2 === 0, coup = Math.sin(Math.min(1, v * 3) * Math.PI / 2); pose = haut ? "disco1" : "disco2"; rot = (haut ? -.1 : .12) * coup; sx = (haut ? -.08 : .1) * coup; saut = Math.abs(Math.sin(v * Math.PI)) * .04; }
+  else if (k < 8) { pose = k % 2 ? "madison2" : "mi"; ox = .6 * (k - 4 + f) / 4; saut = Math.sin(f * Math.PI) * .06; rot = .05; }
+  else if (k < 12) { pose = k % 2 ? "repos" : "mi"; ox = .6 * (1 - (k - 8 + f) / 4); saut = Math.sin(f * Math.PI) * .06; rot = -.05; }
+  else if (k < 14) { const m = Math.sin(ph * Math.PI); pose = "haut"; rot = m * .1; sx = m * .12; saut = Math.abs(m) * .03; }
+  else { const cs = Math.cos(((k - 14) + v) / 2 * Math.PI * 2); pose = cs < 0 ? "dos" : "disco1"; tour = Math.max(.08, Math.abs(cs)); }
+  return { k, pose, ox, rot, sx, saut, tour };
+}
 function animerHernandez() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && /born to be alive|hernandez/.test(M.djTitre || ""), p = M.gens.get(HERNANDEZ);
@@ -3324,6 +3382,7 @@ function connecter() {
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 10) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }

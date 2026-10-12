@@ -47,11 +47,13 @@ const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
-  4: { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e" },
-  5: { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52" }, 6: { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null },
-  7: { nom: "Mr Hernandez", tenue: "hernandez", couleur: "#161616", bas: "#161616" } };
-const idPNJ = id => [1, 2, 3, 4, 5, 6, 7].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez"];
+  4: { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" },
+  5: { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52", pieds: "#2a2522" }, 6: { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null, pieds: "#e8e4da" },
+  7: { nom: "Mr Hernandez", tenue: "hernandez", couleur: "#161616", bas: "#161616", pieds: "#f2f2f2" },
+  8: { nom: "Robin Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" }, 9: { nom: "Barry Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" },
+  10: { nom: "Maurice Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" } };
+const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(id) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
@@ -293,7 +295,7 @@ export class Compteur extends DurableObject {
     this.moi(token); id = idPNJ(id);
     const D = PNJ_DEFAUT[id], p = this.sql.exec("SELECT nom, tenue, couleur, bas, pieds, reglage, tete IS NOT NULL AS a_tete, v FROM pnj WHERE id = ?", id).toArray()[0];
     let reglage = null; try { reglage = p && JSON.parse(p.reglage); } catch (e) {}
-    return { id, nom: (p && p.nom) || D.nom, tenue: (p && p.tenue) || D.tenue, couleur: (p && p.couleur) || D.couleur, bas: (p && p.bas) || D.bas, pieds: (p && p.pieds) || null, reglage, tete_v: p && p.a_tete ? p.v : 0 };
+    return { id, nom: (p && p.nom) || D.nom, tenue: (p && p.tenue) || D.tenue, couleur: (p && p.couleur) || D.couleur, bas: (p && p.bas) || D.bas, pieds: (p && p.pieds) || D.pieds || null, reglage, tete_v: p && p.a_tete ? p.v : 0 };
   }
   tetePNJ(token, id = 1) { this.moi(token); const p = this.sql.exec("SELECT tete FROM pnj WHERE id = ?", idPNJ(id)).toArray()[0]; return p && p.tete; }
   async changerPNJ(token, x, id = 1) {
