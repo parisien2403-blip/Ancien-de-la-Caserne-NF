@@ -16,7 +16,7 @@ export function ouvrirFlipper({ envoyerScore }) {
       <div id="fpFinTop" style="text-align:left;margin:10px 0 16px"></div>
       <button id="fpRejouer" type="button" style="font:700 16px Arial;padding:10px 18px;border-radius:999px;border:0;background:#c9a227;color:#1b130d">Rejouer</button>
       <button id="fpFermer" type="button" style="font:700 16px Arial;padding:10px 18px;border-radius:999px;border:0;background:#4a3a2c;color:#f4ecd8;margin-left:8px">Revenir au bar</button></div></div>`;
-  document.body.appendChild(fond);
+  (document.fullscreenElement || document.body).appendChild(fond);   // (la Matrice en plein écran : le jeu s'ouvre par-dessus, dans le plein écran)
   const $ = id => fond.querySelector("#" + id), cv = $("fpCanvas"), x = cv.getContext("2d");
   const plateau = new Image(); plateau.src = "images/flipper-plateau.jpg";
 

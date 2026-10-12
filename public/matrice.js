@@ -1965,7 +1965,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       tables.push([fx - FW / 2 - .25, fx + FW / 2 + .25, fz0 - .2, Z1]);
     }
     {
-      tables.push(babyFoot(A, 2.6, 12.95));
+      tables.push(babyFoot(A, -4.2, 10.2));   // contre le mur des fenêtres, loin du flipper (on accède librement au flipper)
     }
     // les tabourets du bar : pied chromé, assise en cuir rouge, repose-pieds ; on s'y assoit en s'approchant
     L.tabourets = [];
