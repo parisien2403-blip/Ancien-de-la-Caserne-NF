@@ -2305,6 +2305,18 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .02, .04, .05), bord, sx, SH - .02, SZ1 + .005, false);                     // le nez de scène
       for (let k = 0; k <= 8; k++) A.ajoute(new THREE.BoxGeometry(.012, SH - .1, .012), bord, SX0 + k * (SX1 - SX0) / 8, (SH - .1) / 2, SZ1 + .006, false);   // les joints des praticables
       tables.push([SX0 - .1, SX1 + .1, SZ0 - .3, SZ1 + .15]); }
+    // deux projecteurs au plafond, braqués sur la scène (lumière blanche chaude, faisceau visible)
+    { const carter = A.mat({ color: 0x111113, roughness: .5, metalness: .4 }), geoF = new THREE.ConeGeometry(1, 1, 24, 1, true); geoF.translate(0, -.5, 0);
+      for (const [px, cx] of [[-3.2, -1.9], [2.4, 1.1]]) {
+        const pos = new THREE.Vector3(px, HT - .35, Z0 + 7.2), vise = new THREE.Vector3(cx, .8, Z0 + 2.2), dir = vise.clone().sub(pos), lg = dir.length();
+        A.ajoute(new THREE.CylinderGeometry(.02, .02, .3, 6), carter, px, HT - .15, Z0 + 7.2, false);                                     // la tige
+        const corps = new THREE.Mesh(new THREE.CylinderGeometry(.13, .17, .38, 16), carter); corps.position.copy(pos);
+        corps.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.clone().normalize()); scene.add(corps);
+        const lentille = new THREE.Mesh(new THREE.CircleGeometry(.15, 18), new THREE.MeshBasicMaterial({ color: 0xfff4dc })); lentille.position.copy(pos).addScaledVector(dir.clone().normalize(), .2);
+        lentille.lookAt(vise); scene.add(lentille);
+        const spot = new THREE.SpotLight(0xfff1d6, 26, 16, .3, .45, 1.2); spot.position.copy(pos); spot.target.position.copy(vise); scene.add(spot, spot.target);
+        const faisceau = new THREE.Mesh(geoF, new THREE.MeshBasicMaterial({ color: 0xfff1d6, transparent: true, opacity: .07, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+        faisceau.position.copy(pos); faisceau.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.clone().normalize()); faisceau.scale.set(lg * .3, lg, lg * .3); scene.add(faisceau); } }
 
     // la boule à facettes, au centre du plafond
     const facettes = toile(512, 256, (x, w, h) => { for (let i = 0; i < w; i += 16) for (let j = 0; j < h; j += 16) { const v = alea();
