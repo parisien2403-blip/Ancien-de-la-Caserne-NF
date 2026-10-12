@@ -1946,6 +1946,22 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const fr = A.ajoute(new THREE.PlaneGeometry(FW - .06, .6), new THREE.MeshStandardMaterial({ map: photo("images/flipper-fronton.jpg"), emissive: 0xffffff, emissiveMap: photo("images/flipper-fronton.jpg"), emissiveIntensity: .55, roughness: .4 }), fx, 1.6, fz1 - .205, false);
       fr.rotation.y = Math.PI;
       const lumF = new THREE.PointLight(0xffa04a, 2.2, 3, 2); lumF.position.set(fx, 1.35, fzc - .2); scene.add(lumF);
+      // au mur, au-dessus du flipper : le tableau des meilleurs scores (les 3 premiers)
+      const tabC = document.createElement("canvas"); tabC.width = 512; tabC.height = 360; const tabT = new THREE.CanvasTexture(tabC); tabT.colorSpace = THREE.SRGBColorSpace;
+      L.majClassement = (top = []) => { const x = tabC.getContext("2d"), w = 512, h = 360;
+        x.fillStyle = "#3a1d0e"; x.fillRect(0, 0, w, h); x.fillStyle = "#14100c"; x.fillRect(18, 18, w - 36, h - 36);
+        x.strokeStyle = "#c9a227"; x.lineWidth = 6; x.strokeRect(10, 10, w - 20, h - 20);
+        x.fillStyle = "#ffcf3a"; x.font = "bold 38px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.fillText("🏆 MEILLEURS SCORES", w / 2, 72);
+        x.fillStyle = "#e33"; x.font = "bold 20px Arial"; x.fillText("FLIPPER  VIKING", w / 2, 102);
+        const med = ["#ffd700", "#d9d9d9", "#cd7f32"];
+        for (let i = 0; i < 3; i++) { const e = top[i], y = 160 + i * 66;
+          x.fillStyle = med[i]; x.beginPath(); x.arc(64, y - 12, 22, 0, 7); x.fill(); x.fillStyle = "#14100c"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(String(i + 1), 64, y - 3);
+          x.textAlign = "left"; x.fillStyle = "#f4ecd8"; x.font = "bold 30px Arial"; x.fillText(e ? e.nom.slice(0, 14) : "—", 104, y);
+          x.textAlign = "right"; x.fillStyle = "#7ef0ff"; x.font = "bold 30px 'Courier New', monospace"; x.fillText(e ? e.score.toLocaleString("fr-FR") : "", w - 40, y); }
+        tabT.needsUpdate = true; };
+      L.majClassement(M && M.classementFlipper || []);
+      const tab = A.ajoute(new THREE.PlaneGeometry(1.4, .98), new THREE.MeshBasicMaterial({ map: tabT }), fx - .4, 2.75, Z1 - .17, false); tab.rotation.y = Math.PI;
+      L.flipper = [fx, fz0];
       tables.push([fx - FW / 2 - .25, fx + FW / 2 + .25, fz0 - .2, Z1]);
     }
     {
@@ -2489,6 +2505,7 @@ function chercherAction(t) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
       if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
+      else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
       else { let best = null, bd = 1.9;
         for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
@@ -2512,6 +2529,7 @@ export function agir() {
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
+  else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   M.actionT = 0;
 }
 export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }
@@ -2666,6 +2684,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper") { M.classementFlipper = m.top || []; M.L && M.L.majClassement && M.L.majClassement(M.classementFlipper); }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };
   ws.onclose = ev => {

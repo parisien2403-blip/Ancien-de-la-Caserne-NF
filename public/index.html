@@ -1959,6 +1959,7 @@
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
         surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
+        surFlipper: () => import("./flipper.js").then(f => f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }) })),
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
@@ -2553,6 +2554,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.22", "12 octobre 2026", ["Le flipper Viking de la salle des fêtes marche : on s'en approche, « 🎰 Jouer au flipper », et l'on joue une vraie partie (3 billes, bumpers, cibles, couloirs ; au doigt : à gauche / à droite pour les batteurs)", "Au mur, au-dessus du flipper : le tableau des 3 meilleurs scores (le meilleur de chacun), mis à jour pour tout le monde à la fin de chaque partie"]],
     ["3.21.1", "12 octobre 2026", ["Le danseur Thriller a sa tête de zombie (d'après la photo de l'administrateur)"]],
     ["3.21", "12 octobre 2026", ["Nouveau personnage : le danseur Thriller (blouson rouge à bandes noires en V, pantalon rouge, chaussettes blanches, mocassins noirs) ; dès qu'un Thriller passe dans la salle des fêtes, il arrive au milieu de la piste et le danse, puis repart quand la musique change", "(Administrateur) bouton « 🧟 Le danseur Thriller » pour régler sa tête, ses vêtements, sa silhouette et son nom"]],
     ["3.20", "12 octobre 2026", ["Salle des fêtes, la nuit : les grandes fenêtres et les portes vitrées s'assombrissent ; par la porte ouverte, on voit la vraie cour d'honneur (pavés, bâtiments, fenêtres allumées), de jour comme de nuit"]],
