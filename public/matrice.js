@@ -21,6 +21,7 @@ export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
   robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
+  gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
   rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
@@ -131,6 +132,23 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 150); x.lineTo(74, 196); x.lineTo(96, 236); x.moveTo(116, 150); x.lineTo(126, 196); x.lineTo(104, 236); x.stroke();   // les revers
       x.fillStyle = "#2a2a2e"; for (let k = 0; k < 2; k++) { x.beginPath(); x.arc(100, 244 + k * 12, 2.6, 0, 7); x.fill(); }
       x.fillStyle = "#7a3a2a"; x.fillRect(122, 214, 18, 3); x.fillRect(122, 222, 18, 3); }   // les liserés des poches
+    // Depeche Mode : Martin Gore (gilet de satin noir surpiqué, colliers, pantalon rayé), Dave Gahan (gilet pailleté au col profond, croix au cou),
+    // Andy Fletcher (veste de survêtement noire à bandes blanches, zippée sur un t-shirt noir)
+    if (t === "gore" && o.pose !== "dos" && !profil) {
+      x.fillStyle = peau; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(100, 186); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.22)"; x.lineWidth = 1.5; for (const a of [70, 80, 120, 130]) { x.beginPath(); x.moveTo(a, 152); x.quadraticCurveTo(a + (a < 100 ? 10 : -10), 200, a, 258); x.stroke(); }
+      x.fillStyle = "#3a3a3e"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(100, 196 + k * 16, 2.4, 0, 7); x.fill(); }
+      x.strokeStyle = "#d6d8dc"; x.lineWidth = 2.2; for (const r of [10, 14]) { x.beginPath(); x.arc(100, 140, r, .35, Math.PI - .35); x.stroke(); }
+      if (jambesDroites) { x.strokeStyle = "rgba(220,220,220,.35)"; x.lineWidth = 1.2; for (let k = 0; k < 6; k++) { x.beginPath(); x.moveTo(75 + k * 4, 262); x.lineTo(75 + k * 4, 396); x.moveTo(107 + k * 4, 262); x.lineTo(107 + k * 4, 396); x.stroke(); } } }
+    if (t === "gahan" && o.pose !== "dos" && !profil) {
+      x.fillStyle = peau; x.beginPath(); x.moveTo(82, 146); x.lineTo(118, 146); x.lineTo(100, 222); x.closePath(); x.fill();
+      x.fillStyle = "rgba(255,255,255,.55)"; for (let k = 0; k < 70; k++) { const a = 60 + (k * 37 % 80), b2 = 150 + (k * 53 % 110); if (Math.abs(a - 100) < (222 - b2) * .24 && b2 < 222) continue; x.fillRect(a, b2, 1.6, 1.6); }
+      x.strokeStyle = "#bfc3c8"; x.lineWidth = 1.4; x.beginPath(); x.moveTo(90, 148); x.lineTo(100, 196); x.lineTo(110, 148); x.stroke(); x.fillStyle = "#bfc3c8"; x.fillRect(98.5, 194, 3, 14); x.fillRect(95, 198, 10, 3);   // la croix
+      x.fillStyle = "#2a2a2e"; for (let k = 0; k < 3; k++) { x.beginPath(); x.arc(100, 230 + k * 10, 2.3, 0, 7); x.fill(); } }
+    if (t === "fletcher" && o.pose !== "dos" && !profil) {
+      x.fillStyle = "#0a0a0b"; x.beginPath(); x.moveTo(88, 150); x.lineTo(112, 150); x.lineTo(110, 262); x.lineTo(90, 262); x.closePath(); x.fill();
+      x.strokeStyle = "#8a8d92"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(88, 152); x.lineTo(90, 262); x.moveTo(112, 152); x.lineTo(110, 262); x.stroke();
+      x.fillStyle = "#1c1c1f"; x.fillRect(80, 142, 40, 9); x.fillStyle = "#e9e9e9"; x.fillRect(58, 150, 4, 100); x.fillRect(138, 150, 4, 100); }
     // les héros de Resident Evil
     if (o.pose !== "dos" && !profil && /^(rebecca|leon|barry|jill|wesker|chris)$/.test(t)) {
       const ceinture = (col, y = 246) => { x.fillStyle = col; x.fillRect(58, y, 84, 11); x.fillStyle = "#9a9ea4"; x.fillRect(95, y + 2, 10, 7); };
@@ -250,6 +268,9 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "canne4" ? (sens > 0 ? [24, 232] : [170, 46])
         : o.pose === "guitare1" || o.pose === "guitare2" ? (sens > 0 ? [36, 192] : (o.pose === "guitare1" ? [118, 232] : [124, 250]))   // la main gauche sur le manche, la droite qui gratte
         // la batteuse : une baguette qui frappe la caisse claire pendant que l'autre remonte (batterie1, batterie2), les deux sur les cymbales (batterie3), au repos sur la caisse (batterie0)
+        // Dave Gahan chante : le micro à la bouche (chant1), l'autre bras levé (chant2) ; Andy Fletcher aux claviers : les deux mains sur les touches
+        : o.pose === "chant1" ? (sens > 0 ? [36, 238] : [134, 174]) : o.pose === "chant2" ? (sens > 0 ? [-14, 64] : [134, 174])
+        : o.pose === "clavier1" ? (sens > 0 ? [66, 228] : [130, 234]) : o.pose === "clavier2" ? (sens > 0 ? [74, 234] : [138, 226])
         : o.pose === "batterie1" ? (sens > 0 ? [72, 232] : [170, 112]) : o.pose === "batterie2" ? (sens > 0 ? [30, 112] : [128, 232])
         : o.pose === "batterie3" ? (sens > 0 ? [4, 150] : [196, 150]) : o.pose === "batterie0" ? (sens > 0 ? [80, 238] : [120, 238])
         : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
@@ -265,10 +286,12 @@ export function dessinerBonhomme(o, tete) {
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker";
-      if (t === "jill") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire
+      if (t === "jill" || t === "gore" || t === "gahan") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+        if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
+        if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
-      if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
+      if (t === "survet" || t === "fletcher") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
       if (t === "leon") { x.fillStyle = "#9aa2aa"; x.fillRect(-12, 52, 24, 34); x.fillStyle = "#1a1a1c"; x.fillRect(-12, 34, 24, 16); if (sens < 0) { x.fillStyle = "#c9a227"; x.beginPath(); x.arc(0, 14, 7, 0, 7); x.fill(); x.fillStyle = "#1d3a6a"; x.beginPath(); x.arc(0, 14, 4, 0, 7); x.fill(); } }   // coudières grises, l'écusson du R.P.D.
       if (t === "chris" && sens < 0) { x.fillStyle = "#3a3a2e"; x.beginPath(); x.arc(0, 12, 7, 0, 7); x.fill(); x.fillStyle = "#d8c23a"; x.beginPath(); x.arc(0, 12, 4, 0, 7); x.fill(); }   // l'écusson S.T.A.R.S.
       if ((t === "barry" || t === "chris" || t === "wesker") && !profil) { x.fillStyle = "#1c1c1e"; x.beginPath(); x.arc(0, 96, 11.5, 0, 7); x.fill(); }   // les mitaines
@@ -293,13 +316,18 @@ export function dessinerBonhomme(o, tete) {
     };
     if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
     // la guitare de Robert Smith : le corps rouge sombre à la hanche, le manche vers le haut à gauche ; les mains par-dessus
+    // le micro de Dave Gahan, dans sa main, contre sa bouche
+    if ((o.pose === "chant1" || o.pose === "chant2") && mains[1]) { const [hx, hy] = mains[1]; x.save(); x.translate(hx, hy); x.rotate(Math.atan2(142 - hy, 104 - hx));
+      x.fillStyle = "#151515"; x.beginPath(); x.roundRect(-6, -5, 30, 11, 4); x.fill(); x.fillStyle = "#9ea3a8"; x.beginPath(); x.arc(30, 0, 11, 0, 7); x.fill();
+      x.strokeStyle = "rgba(0,0,0,.4)"; x.lineWidth = 1; for (let k = -6; k <= 6; k += 3) { x.beginPath(); x.moveTo(30 + k, -9); x.lineTo(30 + k, 9); x.stroke(); } x.restore();
+      x.fillStyle = peau; x.beginPath(); x.arc(hx, hy, 10, 0, 7); x.fill(); }
     // les baguettes de la batteuse, dans le prolongement des avant-bras
     if (/^batterie/.test(o.pose || "")) { x.strokeStyle = "#d8b47c"; x.lineWidth = 5; x.lineCap = "round";
       for (const [i, cx0] of [[0, 48], [1, 152]]) { const h = mains[i]; if (!h) continue; const dx = h[0] - cx0, dy = h[1] - 158, n = Math.hypot(dx, dy) || 1, bas = o.pose !== "batterie3" && h[1] > 200;
         const ux = bas ? (i ? -.7 : .7) : dx / n, uy = bas ? .25 : dy / n; x.beginPath(); x.moveTo(h[0] - ux * 6, h[1] - uy * 6); x.lineTo(h[0] + ux * 62, h[1] + uy * 62); x.stroke(); }
       x.fillStyle = peau; for (const h of mains) if (h) { x.beginPath(); x.arc(h[0], h[1], 10, 0, 7); x.fill(); } }
     // la guitare électrique du guitariste (Stratocaster sunburst, plaque blanche) et la basse noire du bassiste (manche plus long)
-    if ((o.pose === "guitare1" || o.pose === "guitare2") && (t === "guitariste" || t === "bassiste")) { const basse = t === "bassiste";
+    if ((o.pose === "guitare1" || o.pose === "guitare2") && (t === "guitariste" || t === "bassiste" || t === "gore")) { const basse = t === "bassiste", gore = t === "gore";
       x.save(); x.translate(112, 238); x.rotate(.55);
       const LM = basse ? 150 : 112;
       x.fillStyle = "#c99a5a"; x.fillRect(-LM, -6, LM - 8, 12);                                   // le manche (érable)
@@ -307,7 +335,10 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#c99a5a"; x.beginPath(); x.roundRect(-LM - 24, -11, 28, 22, 5); x.fill();    // la tête
       x.fillStyle = "#e8e8e8"; for (let k = 0; k < (basse ? 4 : 6); k++) { x.beginPath(); x.arc(-LM - 20 + k * (basse ? 6 : 4), -12, 2.2, 0, 7); x.fill(); }   // les mécaniques
       x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 1; for (let k = 1; k < 12; k++) { x.beginPath(); x.moveTo(-LM + k * (LM - 8) / 12, -6); x.lineTo(-LM + k * (LM - 8) / 12, 6); x.stroke(); }   // les frettes
-      if (basse) { x.fillStyle = "#0d0d0f"; x.beginPath(); x.ellipse(10, 0, 40, 31, 0, 0, 7); x.ellipse(-18, 0, 27, 23, 0, 0, 7); x.fill();
+      if (gore) { x.fillStyle = "#0b0b0d"; x.beginPath(); x.ellipse(8, 0, 34, 28, 0, 0, 7); x.ellipse(-16, 0, 24, 21, 0, 0, 7); x.fill();   // la guitare noire de Martin Gore, filet blanc, plaque et micros chromés
+        x.strokeStyle = "#e8e8e8"; x.lineWidth = 1.5; x.beginPath(); x.ellipse(8, 0, 34, 28, 0, 0, 7); x.stroke();
+        x.fillStyle = "#cfd2d6"; for (const px of [-6, 10]) x.fillRect(px, -8, 7, 16); x.beginPath(); x.ellipse(26, 6, 6, 4, 0, 0, 7); x.fill(); }
+      else if (basse) { x.fillStyle = "#0d0d0f"; x.beginPath(); x.ellipse(10, 0, 40, 31, 0, 0, 7); x.ellipse(-18, 0, 27, 23, 0, 0, 7); x.fill();
         x.strokeStyle = "#5a5a5e"; x.lineWidth = 2; x.beginPath(); x.ellipse(10, 0, 40, 31, 0, 0, 7); x.stroke();
         x.fillStyle = "#1c1c20"; x.beginPath(); x.ellipse(4, 6, 24, 16, .3, 0, 7); x.fill(); x.fillStyle = "#cfd2d6"; x.beginPath(); x.ellipse(30, 4, 9, 7, 0, 0, 7); x.fill(); }   // plaque noire, cache chromé
       else { const g = x.createRadialGradient(8, 0, 4, 8, 0, 36); g.addColorStop(0, "#f0a83a"); g.addColorStop(.55, "#b5481a"); g.addColorStop(1, "#2a0e06");
@@ -388,8 +419,8 @@ export function dessinerBonhomme(o, tete) {
           y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
-        else if (/^(rebecca|leon|barry|jill|wesker|chris)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil
-          const C = { rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
+        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
+          const C = { gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
           g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
@@ -2418,7 +2449,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const hS = L.hauteur; L.hauteur = (x, z, p) => x > SX0 && x < SX1 && z > SZ0 && z < SZ1 ? SH : hS ? hS(x, z, p) : 0;
       L.scene = { x0: SX0, x1: SX1, z0: SZ0, z1: SZ1, h: SH, centre: [sx, Z0 + 3.1], batterie: [sx, Z0 + .72], basse: [SX0 + 1.45, Z0 + 2.05], guitare: [SX1 - 1.4, Z0 + 2.05] };
       // la batterie : grosse caisse, deux toms, caisse claire, tom basse, charleston, deux crashs et une ride, le tabouret
-      const kit = new THREE.Group(); kit.position.set(sx, SH, Z0 + 1.38); scene.add(kit);
+      const kit = new THREE.Group(); kit.position.set(sx, SH, Z0 + 1.38); scene.add(kit); L.kit = kit;
       const coque = A.mat({ color: 0x7a0d16, metalness: .35, roughness: .28 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .18 }), peauF = A.mat({ color: 0xf1ece0, roughness: .6 }), cuivre = A.mat({ color: 0xc9a440, metalness: .85, roughness: .3 });
       const m3 = (geo, mat, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.castShadow = true; kit.add(o); return o; };
       const pied = (x, z, h) => m3(new THREE.CylinderGeometry(.012, .012, h, 6), chrome, x, h / 2, z);
@@ -2445,6 +2476,19 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           const cone = new THREE.Mesh(geoC, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .17, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
           cone.position.copy(pos); cone.quaternion.copy(q); cone.scale.set(lg * .24, lg, lg * .24); scene.add(cone);
           L.feuxScene.push({ verre, cone, x: fx, k }); } }
+      // Depeche Mode : les deux claviers d'Andy Fletcher sur leur pied, et le micro sur pied de Dave Gahan (sortis seulement pour leurs chansons)
+      { const g = new THREE.Group(); g.position.set(sx + 1.8, SH, Z0 + 1.95); g.visible = false; scene.add(g); L.claviers = g;
+        const noirK = A.mat({ color: 0x111113, roughness: .5, metalness: .3 }), grisK = A.mat({ color: 0x3a3c40, roughness: .45, metalness: .4 }), blanc = A.mat({ color: 0xe8e8e4, roughness: .5 }), etiq = A.mat({ color: 0xd9b46a, roughness: .6 });
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 1.15, 14), noirK); pole.position.y = .575; g.add(pole);
+        for (const [y, inc] of [[.82, .12], [1.1, .3]]) { const k = new THREE.Group(); k.position.set(0, y, 0); k.rotation.x = inc; g.add(k);
+          const corps = new THREE.Mesh(new THREE.BoxGeometry(1.25, .08, .36), grisK); k.add(corps);
+          const touches = new THREE.Mesh(new THREE.BoxGeometry(1.05, .02, .14), blanc); touches.position.set(-.05, .045, -.08); k.add(touches);
+          for (let i = 0; i < 18; i++) { const n = new THREE.Mesh(new THREE.BoxGeometry(.022, .022, .08), noirK); n.position.set(-.55 + i * .06 + (i % 7 === 2 || i % 7 === 6 ? 99 : 0), .06, -.11); if (n.position.x < 1) k.add(n); }
+          for (const ex of [-.55, .5]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.12, .005, .03), etiq); e.position.set(ex, .045, .11); k.add(e); } }
+        const m = new THREE.Group(); m.position.set(sx, SH, Z0 + 3.62); m.visible = false; scene.add(m); L.micDM = m;
+        const piedM = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, 1.42, 8), noirK); piedM.position.y = .71; m.add(piedM);
+        for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .38, 6), noirK); b.rotation.z = Math.PI / 2 - .5; b.rotation.y = i * 2.09; b.position.set(Math.cos(i * 2.09) * .15, .09, -Math.sin(i * 2.09) * .15); m.add(b); }
+        const pince = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .06, 8), noirK); pince.position.y = 1.44; m.add(pince); }
       // les amplis du bassiste et du guitariste, contre le mur du fond
       const tolex = A.mat({ color: 0x121214, roughness: .85 }), grille = A.mat({ color: 0x2a2a2e, roughness: .95 }), liseré = A.mat({ color: 0xc9b37a, metalness: .6, roughness: .35 });
       for (const ax of [SX0 + .75, SX1 - .75]) { A.ajoute(new THREE.BoxGeometry(.72, .78, .38), tolex, ax, SH + .39, Z0 + .52);
@@ -3035,6 +3079,16 @@ export async function ouvrir(ctx) {
           const c = choreBeeGees();
           if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
           p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
+        else if (p.info.danse === "chant" && p.poses.chant1) {
+          // Dave Gahan : il chante, le micro à la bouche ; de temps en temps il lève le bras vers la salle, se balance, tourne un peu sur lui-même
+          const ph = t / 520, k = Math.floor(ph) % 12, pose = k >= 8 && k <= 10 ? "chant2" : "chant1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 700) * .08; p.corps.position.x = Math.sin(t / 1100) * .08; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(t / 520 * Math.PI)) * .02; p.dansait = true; }
+        else if (p.info.danse === "clavier" && p.poses.clavier1) {
+          // Andy Fletcher aux claviers : les mains qui jouent, la tête qui hoche
+          const pose = Math.floor(t / 260) % 2 ? "clavier2" : "clavier1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 520 * Math.PI) * .025; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
         else if (p.info.danse === "batterie" && p.poses.batterie1) {
           // la batteuse : caisse claire main gauche, main droite, et un coup de cymbales toutes les quatre mesures ; au repos, les baguettes sur la caisse
           const ph = t / 230, k = Math.floor(ph) % 16, pose = !p.info.enMusique ? "batterie0" : k === 15 || k === 7 ? "batterie3" : k % 2 ? "batterie2" : "batterie1";
@@ -3784,7 +3838,8 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
@@ -4050,9 +4105,24 @@ function okScene(x, z) { const S = M.L.scene; return S ? x > S.x0 + .3 && x < S.
 /* --- le groupe de la scène (réglé par l'administrateur) : la batteuse au fond, au centre, derrière sa batterie ;
    le bassiste à gauche, le guitariste à droite. Ils sont toujours là ; quand la musique passe, ils jouent --- */
 const GROUPE = [[-18, 18, "batterie", "La batteuse", "batteuse", "#121214", "#141416", "#1a1a1a"], [-19, 19, "basse", "Le bassiste", "bassiste", "#2c2e31", "#151517", "#1a1a1a"], [-20, 20, "guitare", "Le guitariste", "guitariste", "#151517", "#151517", "#0e0e0e"]];
+// Depeche Mode : dès qu'une de leurs chansons passe, ils prennent la scène (le groupe habituel s'efface) : Dave Gahan au micro, devant ;
+// Martin Gore à la guitare, à gauche ; Andy Fletcher aux claviers, au fond
+const AIR_DM = /depeche|enjoy the silence|personal jesus|just cant get enough|people are people|never let me down|policy of truth|strangelove|walking in my shoes|i feel you|world in my eyes|everything counts|master and servant|behind the wheel|its no good|barrel of a gun|shake the disease|question of time|question of lust|black celebration|ghosts again/;
+const DM = [[-27, 27, "dmguitare", "Martin Gore", "gore", "#111113", "#141416", "#0e0e0e", -2.2, 2.2], [-28, 28, "chant", "Dave Gahan", "gahan", "#1a1a1d", "#121214", "#0e0e0e", 0, 3.18], [-29, 29, "clavier", "Andy Fletcher", "fletcher", "#141416", "#141416", "#0e0e0e", 1.8, 1.5]];
 function animerGroupe() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
-  for (const [num, id, place, nom, tenue, couleur, bas, pieds] of GROUPE) { let p = M.gens.get(num);
+  const dm = !!(M.djJoue && AIR_DM.test(M.djTitre || ""));
+  if (M.L.kit) M.L.kit.visible = !dm; if (M.L.claviers) M.L.claviers.visible = dm; if (M.L.micDM) M.L.micDM.visible = dm;
+  for (const [num, id, place, nom, tenue, couleur, bas, pieds, dx, dz] of DM) { let p = M.gens.get(num);
+    if (!dm) { if (p) retirerAncien(num); continue; }
+    if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, S = M.L.scene, x = S.centre[0] + dx, z = S.z0 + dz;
+      p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
+        teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/dm/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x, z }); if (!p) continue; p.base = [x, z]; }
+    p.info.danse = place === "dmguitare" ? "guitare" : place; p.info.enMusique = true;
+    if (place === "dmguitare") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .5) * .4, nz = p.base[1] + Math.sin(t2 * .37 + 1) * .25; if (okScene(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; } }
+    if (place === "chant") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .3) * .35; if (okScene(nx, p.base[1])) p.g.position.x = nx; if (M.L.micDM) M.L.micDM.position.x = p.g.position.x; } }
+  if (dm) { for (const [num] of GROUPE) if (M.gens.has(num)) retirerAncien(num); }
+  else for (const [num, id, place, nom, tenue, couleur, bas, pieds] of GROUPE) { let p = M.gens.get(num);
     if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, [x, z] = M.L.scene[place];
       p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
         teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x, z }); if (!p) continue; }
@@ -4452,6 +4522,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id >= 21 && m.p.id <= 26) { ctx.surPNJTrio && ctx.surPNJTrio(m.p);   // un héros de Resident Evil retouché : ceux qui le jouent, et les équipiers, sont redessinés
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
+    else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
