@@ -1082,6 +1082,7 @@ function construireEtage(A, L, scene) {
     x.fillStyle = "#c9a227"; x.beginPath(); x.arc(w - 26, 128, 5, 0, 7); x.fill(); x.fillRect(w - 30, 140, 8, 3); }));
   const matPorte = A.mat({ map: porteT, roughness: .6 });
   // les 6 couloirs
+  const nAvantCouloirs = scene.children.length;
   for (let k = 1; k <= N; k++) { const y = k * H;
     sol(CX0 * 2, Z1 - ZC0, 0, y, (ZC0 + Z1) / 2);
     for (const [zMur, sens] of [[ZC0, 1], [Z1, -1]]) {
@@ -1090,6 +1091,7 @@ function construireEtage(A, L, scene) {
       for (let i = 0; i < 6; i++) { const p = A.ajoute(new THREE.PlaneGeometry(1.0, 2.15), matPorte, -CX0 + (i + .5) * CX0 * 2 / 6, y + 1.075, zMur + sens * .012, false); p.rotation.y = sens > 0 ? 0 : Math.PI; } }
     A.ajoute(new THREE.BoxGeometry(CX0 * 2, .12, Z1 - ZC0 + .4), A.mat({ color: 0xece4d2 }), 0, y + HP + .06, (ZC0 + Z1) / 2, false);   // plafond
     for (let j = 0; j < 6; j++) ampoule(k, -CX0 + (j + .5) * CX0 * 2 / 6, y + HP, (ZC0 + Z1) / 2, etatAmpoule(k, j)); }
+  L.couloirs = scene.children.slice(nAvantCouloirs);
   // les deux cages d'escalier, sur toute la hauteur
   const mm = A.mat({ map: tex(carreaux, 1, .2), roughness: .5 }), cote = A.mat({ color: 0xc9bb9c, roughness: .9 }), matMarche = [cote, cote, mm, cote, mm, mm];
   const fer = A.mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 });
@@ -1104,14 +1106,7 @@ function construireEtage(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(.2, H, zp - lp / 2 - ZC0), beige, X(CX0 - .1), H / 2, (ZC0 + zp - lp / 2) / 2, false);
     A.ajoute(new THREE.BoxGeometry(.2, H, Z1 - zp - lp / 2), beige, X(CX0 - .1), H / 2, (Z1 + zp + lp / 2) / 2, false);
     A.ajoute(new THREE.BoxGeometry(.2, H - 2.3, lp), beige, X(CX0 - .1), 2.3 + (H - 2.3) / 2, zp, false);
-    const cour = A.ajoute(new THREE.PlaneGeometry(3.1, 3.1), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x, w, h) => {
-      const g = x.createLinearGradient(0, 0, 0, h * .3); g.addColorStop(0, "#8fb4d6"); g.addColorStop(1, "#cfe0ec"); x.fillStyle = g; x.fillRect(0, 0, w, h * .3);
-      x.fillStyle = "#e6decb"; x.fillRect(0, h * .3, w, h * .42); x.fillStyle = "#d3c9b3"; x.fillRect(0, h * .3, w, 8);
-      for (let X0 = 8; X0 < w; X0 += 56) { x.fillStyle = "#f2eee4"; x.fillRect(X0 - 3, h * .38 - 3, 38, h * .3 + 6); const gg = x.createLinearGradient(0, h * .38, 0, h * .68); gg.addColorStop(0, "#9db1bf"); gg.addColorStop(1, "#56697a"); x.fillStyle = gg; x.fillRect(X0, h * .38, 32, h * .3); }
-      x.fillStyle = "#c2bcb0"; x.fillRect(0, h * .72, w, 10); x.fillStyle = "#6d6e72"; x.fillRect(0, h * .76, w, h * .24);
-      for (let y = h * .76; y < h; y += 8) for (let X0 = (y / 8 % 2) * 6; X0 < w; X0 += 12) { x.fillStyle = `rgba(255,255,255,${.04 + (X0 * 7 % 5) / 60})`; x.fillRect(X0, y, 10, 6); } })) }), X(CX0 - .6), 1.55, zp, false);   // (sous le plancher du 1er : rien ne dépasse dans le couloir)
-    cour.rotation.y = sg < 0 ? -Math.PI / 2 : Math.PI / 2;
-    const pv = A.ajoute(new THREE.PlaneGeometry(.75, lp + .2), A.mat({ map: tex(textures().paves, .6, 1) }), X(CX0 - .35), .004, zp, false); pv.rotation.x = -Math.PI / 2;
+    // (par la porte : la vraie cour d'honneur, construite à part dans la scène de l'étage)
     const lumJour = new THREE.PointLight(0xf4f0e8, 1.6, 4, 1.6); lumJour.position.set(X(CX0 + .4), 1.6, zp); scene.add(lumJour);
     for (let k = 1; k <= N; k++) A.ajoute(new THREE.BoxGeometry(.2, H - HP, Z1 - ZC0), beige, X(CX0 - .1), k * H + HP + (H - HP) / 2, (ZC0 + Z1) / 2, false);
     for (let k = 0; k <= N; k++) { const y = k * H;
@@ -1635,7 +1630,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
             L.porteFete = { vide, spot, x: fx - .5, z }; }
         }
       }
-      if (cote > 0 && copie) {   // copie : seulement le bout de la façade, côté renfoncement (le reste est la salle des fêtes elle-même)
+      if (cote > 0 && copie === "fetes") {   // copie : seulement le bout de la façade, côté renfoncement (le reste est la salle des fêtes elle-même)
         const fb = new THREE.Shape(); fb.moveTo(6.6, 0); fb.lineTo(FIN, 0); fb.lineTo(FIN, HPP); fb.lineTo(6.6, HPP); fb.closePath();
         const b2 = A.ajoute(new THREE.ExtrudeGeometry(fb, { depth: 3.5, bevelEnabled: false }), [A.mat({ map: t }), A.mat({ color: 0xd9d0bd })], fx + 3.5, 0, -2); b2.rotation.y = -Math.PI / 2;
       }
@@ -1652,7 +1647,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         A.ajoute(new THREE.BoxGeometry(fx + PROF - xv, HPP, FIN - ZC), A.mat({ color: 0xd9d0bd }), (xv + fx + PROF) / 2, HPP / 2, (ZC + FIN) / 2 - 2);
         A.ajoute(new THREE.BoxGeometry(xv - fx - 3.5, .3, FIN - ZC), A.mat({ color: 0xd9d0bd }), (xv + fx + 3.5) / 2, HPP - .15, (ZC + FIN) / 2 - 2, false);
       }
-      if (!(copie && cote > 0)) {
+      if (!(copie === "fetes" && cote > 0)) {
       A.ajoute(new THREE.BoxGeometry(PROF + .6, .45, (cote > 0 ? LONG - 6 : LONG) + .6), A.mat({ color: 0xd3c9b3 }), fx + cote * PROF / 2, HPP + .2, cote > 0 ? -5 : -2);   // corniche du toit
       for (const VZ of VOUTES) A.ajoute(new THREE.BoxGeometry(.3, 4.8, 3.8), A.mat({ color: 0x3a3631 }), fx + cote * (PROF - .4), 2.4, VZ);   // fond des garages
       // les marches le long du bâtiment, arrêtées avant la voûte
@@ -1710,7 +1705,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
       const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .4, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .4 }), fl = A.mat({ map: tex(flancBus), roughness: .4 });
-      for (const VZ of (copie && cote > 0 ? [] : VOUTES)) {
+      for (const VZ of (copie === "fetes" && cote > 0 ? [] : VOUTES)) {
         const car = new THREE.Group(); car.position.set(fx + cote * 6.2, 0, VZ); car.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(car);
         const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.3, 11), [fl, fl, caisseMat, caisseMat, fa, caisseMat]); caisse.position.y = 1.95; caisse.castShadow = true; car.add(caisse);
         for (const [rx, rz] of [[-1.15, 3.6], [1.15, 3.6], [-1.15, -3], [1.15, -3], [-1.15, -4.3], [1.15, -4.3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .5, rz); car.add(roue); }
@@ -1832,7 +1827,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         for (let k = 0; k < 6; k++) { x.fillStyle = `rgb(${200 - k * 14},${178 - k * 13},${130 - k * 10})`; x.fillRect(px + 4, h - 10 - k * 13, 48, 6); }
         x.fillStyle = "#fff1c8"; x.beginPath(); x.arc(px + 28, h - 104, 3, 0, 7); x.fill(); x.fillStyle = "rgba(255,230,170,.2)"; x.fillRect(px, h - 115, 56, 50); } x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
     const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
-    for (const s of (copie ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
+    for (const s of (copie === "fetes" ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
       A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
     // la nuit : fenêtres allumées sur cette façade aussi
@@ -2378,7 +2373,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     /* la cour d'honneur, vue par la porte « BAR » du vestibule : la vraie cour (sans le bâtiment de la salle, qui est ici même),
        à sa place exacte, éclairée par son propre jour (matières non éclairées, pour ne pas alourdir la salle) */
     { const cour = new THREE.Group(); cour.position.set(-VEST_X, FETE_HSS - .03, FETE_SZ - VEST_Z); scene.add(cour);
-      const LC = construireLieu("grande", cour, true);
+      const LC = construireLieu("grande", cour, "fetes");
       const lum = [], basic = new Map(), teints = [], nuages = [];
       cour.traverse(o => { if (o.isLight) lum.push(o); if (o.isSprite) nuages.push(o);
         if (!o.isMesh) return;
@@ -2426,6 +2421,28 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const ok = E.allerEtage(moi, x, mz(z), y); pos.z = z0;
       if (ok) { if (moi.cible) moi.cible.z = mz(moi.cible.z); for (const v of moi.chemin || []) v.z = mz(v.z); M.repere.position.z = z; }
       return ok; };
+    /* par la porte du rez-de-chaussée : la vraie cour d'honneur, d'un seul bloc (non éclairée par l'étage), placée pour que la porte de l'aile
+       tombe pile sur la porte de la cage ; toucher la cour, ou marcher dedans, fait sortir */
+    { const cour = new THREE.Group(); scene.add(cour); const LC = construireLieu("grande", cour, "etage");
+      const lum = [], basic = new Map(), teints = [], nuitMats = new Set(); for (const o of LC.nuitObjets || []) if (o.material) nuitMats.add(o.material);
+      cour.traverse(o => { if (o.isLight) lum.push(o); if (!o.isMesh) return;
+        const conv = m => { if (!m || !(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) { if (m && m.isMeshBasicMaterial && !nuitMats.has(m) && m.blending !== THREE.AdditiveBlending && !basic.has(m)) { basic.set(m, m); teints.push([m, m.color.clone()]); } return m; }
+          if (basic.has(m)) return basic.get(m); const b = new THREE.MeshBasicMaterial({ map: m.map, color: m.color.clone(), transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side });
+          if (!m.map) b.color.multiplyScalar(.92); teints.push([b, b.color.clone()]); basic.set(m, b); return b; };
+        o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = false; });
+      for (const l of lum) l.parent && l.parent.remove(l);
+      const T2 = textures(), ciel = new THREE.Mesh(new THREE.SphereGeometry(150, 24, 12), new THREE.MeshBasicMaterial({ map: tex(T2.ciel), side: THREE.BackSide, depthWrite: false })); cour.add(ciel);
+      L.setNuit = (n) => { for (const [b, c] of teints) b.color.copy(c).multiplyScalar(n ? .07 : 1).lerp(new THREE.Color(0x0e1630), n ? .3 : 0);
+        ciel.material.map = n ? null : tex(T2.ciel); ciel.material.color.setHex(n ? 0x0c1530 : 0xffffff); ciel.material.needsUpdate = true;
+        for (const o of LC.nuitObjets || []) if (!o.isLight) o.visible = n; };
+      // la porte de l'aile (cour : x = ±8.6, z = 13.75) sur la porte de la cage (étage : x = ±11.2, z = −2) ; une seule copie, du côté où l'on est
+      let cote = 0;
+      const placer = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum), sg = moi ? (Math.sign(moi.g.position.x) || -1) : -1, n = moi && moi.etg ? moi.etg.n : 0;
+        cour.visible = n === 0; for (const o of E.couloirs || []) o.visible = n > 0;   // au rez-de-chaussée, on ne voit pas les couloirs du dessus par la porte
+        if (sg !== cote) { cote = sg; cour.position.set(sg * (11.2 - 8.6), 0, -2 - 13.75); } };
+      placer();
+      const animE = L.anim; L.anim = (t) => { placer(); animE && animE(t); };
+      L.copieCour = cour; L.sortieCour = () => [cote * 7.9, 13.75]; }
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
 
@@ -2518,8 +2535,10 @@ export async function ouvrir(ctx) {
     // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
     if (M.L.interieur) {
       const sols = [M.L.sol, ...(M.L.solsPlus || [])];
-      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere) return false; if (sols.includes(o)) return true;
+      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere) return false; for (let a = o; a; a = a.parent) if (!a.visible) return false; if (sols.includes(o)) return true;
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
+      if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
+        if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2); } return; } }   // on touche la cour : on sort
       if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         if ((sols.includes(h.object) || (n && n.y > .7)) && M.L.allerEtage) { const moi = M.gens.get(M.moiNum); if (moi && M.L.allerEtage(moi, h.point.x, h.point.z, h.point.y)) { envoyerWS({ t: "aller", x: h.point.x, z: h.point.z }); return; } }
         if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true);
