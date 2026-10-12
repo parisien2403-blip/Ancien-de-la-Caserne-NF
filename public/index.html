@@ -750,6 +750,7 @@
   .borne.en-jeu { aspect-ratio: 1400 / 789; margin: 0 auto; }
   /* la console est une surprise : dans l'onglet, seul l'administrateur la voit ; les autres la découvrent au bar du sous-sol (Matrice) */
   .borne-zone.reserve:not(.console) { display: none; }
+  @keyframes afficheEntree { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
   /* immersion : quand on appuie sur JOUER (téléphone, tablette), la télé et la manette prennent tout l'écran */
   .quitter-borne { display: none; }
   .borne-zone.immersion { position: fixed; inset: 0; z-index: 2500; max-width: none; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1959,6 +1960,11 @@
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
         surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
+        surAffiche: src => { const d = document.createElement("div");   // l'affiche en grand, comme dans un jeu vidéo ; on touche pour la reposer
+          d.style.cssText = "position:fixed;inset:0;z-index:2700;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:16px;cursor:zoom-out;animation:afficheEntree .25s ease-out";
+          d.innerHTML = `<img src="${src}" alt="Affiche" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.6)">
+            <button type="button" aria-label="Fermer" style="position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.55);color:#fff;font-size:20px">✕</button>`;
+          d.onclick = () => d.remove(); (document.fullscreenElement || document.body).appendChild(d); },
         surFlechettes: () => { infoMatrice("🎯 Les fléchettes…", 1500);
           import("./flechettes.js?v=" + VERSION).then(f => f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES }))
             .catch(e => infoMatrice("Les fléchettes n'ont pas pu démarrer : " + e.message, 6000)); },
@@ -2559,6 +2565,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.27", "12 octobre 2026", ["On peut toucher les affiches (l'affiche de DJ Manu, les panneaux de liège, l'affiche de 1887 sous le porche) : elles s'ouvrent en grand à l'écran, comme dans un jeu vidéo ; de loin, on marche d'abord jusqu'à elles"]],
     ["3.26", "12 octobre 2026", ["Sous l'horloge, dans le passage : deux grands panneaux de liège de part et d'autre, avec les informations punaisées (note de service, bal, loto, planning des gardes, objets trouvés, petites annonces…) et l'affiche de la soirée de DJ Manu"]],
     ["3.25", "12 octobre 2026", ["Rue du Faubourg-Poissonnière : de temps en temps, des voitures des années 80-90 descendent la rue (de toutes les couleurs, parfois deux ou trois à la suite), et parfois le bus parisien de l'époque, vert jade et blanc, avec son numéro"]],
     ["3.24", "12 octobre 2026", ["Cour d'honneur : on passe à pied sous la voûte carrée de l'horloge et l'on arrive dans la deuxième cour, plus petite (d'après la photo) : le verso du bâtiment à l'horloge (rez-de-chaussée blanc, étages de brique, balconnets), et en face un autre bâtiment pareil, avec son passage carré au centre"]],
