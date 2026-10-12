@@ -3080,6 +3080,13 @@ const ZTYPES = [
 const ZNOMBRE = { grande: [8, 3], rue: [5, 2], fetes: [4, 0], etage: [10, 0] };   // [zombies, chiens]
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
+// l'image du chien : celle d'origine, ou celle que l'administrateur a choisie (rechargée quand il la change)
+let texChienCle = null, texChienT = null;
+function texChien() { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(15)) || {}, cle = P.tete_v || 0;
+  if (cle !== texChienCle || !texChienT) { texChienCle = cle;
+    texChienT = new THREE.TextureLoader().load(cle ? M.ctx.urlTetePNJ(cle, 15) : ZTYPES[3].img, () => { for (const z of M.zomb ? M.zomb.values() : []) if (z.chien) tailleZ(z); });
+    texChienT.colorSpace = THREE.SRGBColorSpace; }
+  return texChienT; }
 // les poses d'un zombie : debout, puis les bras en avant, griffes d'un côté puis de l'autre (sa démarche)
 function posesZ(ty) {
   M.zTexB = M.zTexB || {}; if (M.zTexB[ty]) return M.zTexB[ty];
@@ -3109,7 +3116,7 @@ function limZ() {
 const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
 function creerZ(d) {
   const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texZ(d.ty) : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texChien() : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
   if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = true; }); }
   const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   M.scene.add(g);
@@ -3117,7 +3124,7 @@ function creerZ(d) {
   tailleZ(z); M.zomb.set(z.id, z); return z;
 }
 function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
-  if (T.chien) { z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * T.ratio * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
+  if (T.chien) { const im = z.mesh.material.map && z.mesh.material.map.image; z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * (im && im.width ? im.width / im.height : T.ratio) * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
   else { z.H = tailleBonhomme() * (R.h || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
 function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
@@ -3214,7 +3221,7 @@ function simulerZ(t, dt) {
     if (z.bloque && t < z.bloque) continue;
     if (z.chemin && z.chemin.length) { const [px, pz] = z.chemin[0], ddx = px - z.x, ddz = pz - z.z, d = Math.hypot(ddx, ddz);
       if (d < .12) z.chemin.shift();
-      else { const v = ZTYPES[z.ty].v * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;
+      else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(3).k || 1)) : 1) * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
         if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
   // ils ne se marchent pas dessus
   const zs = [...M.zomb.values()].filter(z => !z.mortT);
@@ -3997,7 +4004,7 @@ function connecter() {
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id >= 12 && m.p.id <= 15) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = m.p.id - 12; if (M.zTexB) delete M.zTexB[ty];
-      for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 3) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else tailleZ(z); } }
+      for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 3) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
