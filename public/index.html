@@ -313,9 +313,10 @@
   .mx-ambiance { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0 0 8px; font: 13px "Lato", sans-serif; color: var(--muted); } .mx-ambiance[hidden] { display: none; }
   .mx-ambiance button { border: 1.5px solid var(--line); border-radius: 99px; padding: 5px 11px; background: #fff; font: 700 13px "Lato", sans-serif; cursor: pointer; }
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
-  .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 140px); }
+  .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 200px); }
   .mx-danses .mx-danse { padding: 7px 11px; font-size: 13px; }
-  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: auto; right: 12px; }
+  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: 12px; right: auto; max-width: calc(100% - 200px); }   /* (à gauche : le bouton Musique reste seul à droite, sans chevauchement) */
+  .mx-scene:fullscreen .mx-fil-plein { bottom: 168px; }
   .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
   .mx-scene:fullscreen .mx-musique { bottom: 122px; }
@@ -2811,6 +2812,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.72", "12 octobre 2026", ["Matrice : les boutons de danse ne chevauchent plus le bouton Musique (en plein écran, ils passent à gauche)"]],
     ["3.71", "12 octobre 2026", ["Retour vers le futur : au moment du saut dans le temps, le logo « Retour vers le futur » apparaît en grand (à la place de « 88 miles à l'heure »)"]],
     ["3.70", "12 octobre 2026", ["Hill Valley : la tête de Goldie Wilson recadrée, le menton entier"]],
     ["3.69", "12 octobre 2026", ["Hill Valley : Lou retrouve sa tête naturelle (sans cheveux blancs ni calot)"]],
