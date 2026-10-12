@@ -443,8 +443,8 @@ export class Compteur extends DurableObject {
     } else if (m.t === "lasers" && a.lieu === "fetes" && a.admin) {   // les lasers : l'administrateur seul
       await this.ctx.storage.put("lasers_fetes", !!m.on); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "lasers", on: !!m.on });   // on les voit aussi de la cour
     } else if (m.t === "lumiere" && a.admin) {
-      // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde
-      const niveau = Math.max(.15, Math.min(1, Number(m.niveau) || 1));
+      // seul l'administrateur règle la luminosité de la salle des fêtes (de 0 %, éteinte, à 100 %), pour tout le monde
+      const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1));
       await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
     } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)

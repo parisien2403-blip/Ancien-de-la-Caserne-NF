@@ -2090,7 +2090,7 @@
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
         surLasers: on => { mxLasersOn = on; $("mxLasers").classList.toggle("on", on); $("mxLasers").textContent = on ? "🔷 Lasers ✓" : "🔷 Lasers"; },
-        surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `💡 ${Math.round(n * 100)} %`; },
+        surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `${n < .01 ? "🌑" : "💡"} ${Math.round(n * 100)} %`; },
         surVolume: v => { djVolume = v; djSynchro(); },
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
@@ -2166,7 +2166,7 @@
   $("mxInviteOui").onclick = () => repondre(true); $("mxInviteNon").onclick = () => repondre(false);
   $("mxFumee").onclick = () => { if (!MX) return; MX.fumee(); $("mxFumee").disabled = true; setTimeout(() => $("mxFumee").disabled = false, 8000); };
   $("mxLasers").onclick = () => MX && MX.lasers(!mxLasersOn);
-  $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
+  $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15, 0], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djPasser").onclick = () => MX && MX.dj("passer");
@@ -2733,6 +2733,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.45", "12 octobre 2026", ["Passage d'un lieu à l'autre bien plus rapide : le lieu derrière la porte la plus proche est préparé à l'avance (on y est tout de suite en passant la porte)", "Salle des fêtes de l'apocalypse plus fluide : six lumières seulement remplacent la trentaine de lampes", "La lumière de la salle des fêtes peut s'éteindre complètement (0 %) : il ne reste que les jeux de lumière du DJ"]],
     ["3.44", "12 octobre 2026", ["Matrice plus fluide, surtout sur ordinateur : moins de lumières dans le monde apocalyptique (les feux se partagent quatre lueurs), plus de saccade à chaque tir ni au passage de l'hélicoptère, et l'image s'allège toute seule si l'ordinateur peine"]],
     ["3.43", "12 octobre 2026", ["Apocalypse : marcher dans le feu fait perdre une vie ; zombies, chiens et Nemesis contournent les flammes", "Munitions et plantes au sol : on les ramasse en marchant dessus ; sur le comptoir du bar, un bouton « Prendre »", "La plante rend deux vies"]],
     ["3.42", "12 octobre 2026", ["Apocalypse : après 6 zombies ou chiens abattus, Nemesis arrive — immense, plus rapide, il frappe à coups de poing (2 vies) et il faut 5 balles pour l'abattre", "Le joueur a maintenant 4 vies et un chargeur de 9 balles", "Dehors, un hélicoptère passe de temps en temps et balaie le sol de son projecteur à la recherche de survivants, avec le bruit de ses pales, faible au loin et fort quand il passe au-dessus de soi", "Musique du vestibule et du bar plus forte", "Réglage de Nemesis (tête, taille) pour l'administrateur"]],

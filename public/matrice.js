@@ -2407,7 +2407,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const rayonsV = []; for (let i = 0; i < 12; i++) { const r = new THREE.Mesh(geoR, laserV); r.add(new THREE.Mesh(geoH, haloV)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointV); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayonsV.push([r, pt, i]); }
     L.setLasers = (on) => { L.lasersDemande = on; L.lasers = on && L.nuit !== false; for (const [r, pt] of [...rayons, ...rayonsV]) r.visible = pt.visible = L.lasers; };
     // le jour, la fête n'a pas commencé : pas de projecteurs ni de reflets de la boule, pas de fumée, pas de lasers (et Manu n'est pas encore là)
-    L.setNuit = (n) => { L.nuit = n; L.nuitPorte && L.nuitPorte(n); L.nuitSousSol && L.nuitSousSol(n); L.setLumiere && L.setLumiere(L.lumiere || 1);
+    L.setNuit = (n) => { L.nuit = n; L.nuitPorte && L.nuitPorte(n); L.nuitSousSol && L.nuitSousSol(n); L.setLumiere && L.setLumiere(L.lumiere ?? 1);
       for (const p of projos) p.spot.visible = p.cone.visible = n, p.verre.material.color.setHex(n ? p.spot.color.getHex() : 0x222222);
       for (const [sp] of fumees) sp.visible = n; reflets.visible = n;
       if (!n) { L.fumeeDebut = 0; for (const [sp] of nuage) sp.visible = false; }
@@ -2463,14 +2463,15 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // la lumière de la salle se baisse (l'administrateur règle de 100 % à 15 %) ; les jeux de lumière du DJ ne changent pas,
     // la boule à facettes et ses reflets ressortent d'autant plus
     for (const l of lumSalle) l.userData.base = l.intensity;
-    L.setLumiere = (niveau) => { const k = Math.max(.15, Math.min(1, +niveau || 1)), s = (1 - k) / .85; L.lumiere = k;
+    L.setLumiere = (niveau) => { const v = +niveau, k = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)), s = Math.min(1, (1 - k) / .85); L.lumiere = k;
+      const noir = k < .05;   // 0 % : la salle est éteinte, il ne reste que les jeux de lumière du DJ (et un soupçon de pénombre)
       // à 15 %, presque le noir, comme en boîte : seuls les jeux de lumière éclairent la piste
       const bas = k < .2 ? .35 : 1;
-      for (const l of lumSalle) l.intensity = l.userData.base * k * bas; ambiant.intensity = .55 * (k < .2 ? .1 : Math.max(.3, k));
+      for (const l of lumSalle) l.intensity = l.userData.base * k * bas; ambiant.intensity = noir ? .012 : .55 * (k < .2 ? .1 : Math.max(.3, k));
       applique.emissiveIntensity = .9 * k * bas; L.club = s;
-      if (L.sousSol && L.sousSol.ambiant) L.sousSol.ambiant.intensity = .45 * (k < .2 ? .12 : Math.max(.4, k)); vitre.emissiveIntensity = vitreB.emissiveIntensity = .55 * Math.max(.4, k) * (L.nuit ? .12 : 1);   // la nuit, les vitres dépolies sont sombres
+      if (L.sousSol && L.sousSol.ambiant) L.sousSol.ambiant.intensity = .45 * (noir ? .04 : k < .2 ? .12 : Math.max(.4, k)); vitre.emissiveIntensity = vitreB.emissiveIntensity = .55 * Math.max(.4, k) * (L.nuit ? .12 : 1);   // la nuit, les vitres dépolies sont sombres
       vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); vitreB.color.copy(vitre.color);
-      scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35 * (k < .2 ? .12 : Math.max(.3, k)));
+      scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35 * (noir ? .03 : k < .2 ? .12 : Math.max(.3, k)));
       boule.material.emissiveIntensity = .35 + .4 * s;
       refMat.opacity = .7 + .3 * s; L.refletsTaille(1 + .4 * s); };
     /* les lumières de boîte de nuit : quatre lyres au plafond qui balaient la piste de faisceaux rouge, vert, bleu (et leurs taches de couleur au sol),
@@ -2807,6 +2808,7 @@ export async function ouvrir(ctx) {
       const r = moy > 28 ? Math.max(.75, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
       if (r !== res) { res = r; rendu.setPixelRatio(res); M.redim && M.redim(); } } }
+    preparerVoisin();
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -3052,8 +3054,19 @@ function apocalypse(scene, L, base) {
   const eteindre = () => { (L.nuitObjets || []).forEach(o => { if (!o.isLight) o.visible = false; });
     if (L.fete) { for (const p of L.fete.projos) { p.spot.visible = p.cone.visible = false; p.verre.material.color.setHex(0x222222); } for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = false; L.fete.boule.visible = false; }
     if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; } };
-  L.setNuit = (n) => { if (setN) setN(true); L.nuit = true; teinter(); eteindre(); };
-  if (!setN) { teinter(); eteindre(); }
+  /* trop de lumières rendent tout lent (la salle des fêtes en a plus de trente) : les lampes de la pièce sont « éteintes »,
+     et six lumières seulement, toujours là, prennent la place des lampes allumées les plus proches de nous */
+  const sources = [], pool = [0, 1, 2, 3, 4, 5].map(() => { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  const regrouper = () => { if (base === "etage") return;   // (les étages ont déjà leur propre jeu de douze lampes)
+    scene.updateMatrixWorld(true); scene.traverse(o => { if (!o.isPointLight || o.userData.apo) return;
+      if (!o.userData.pos) { o.userData.pos = o.parent === scene ? o.position : o.getWorldPosition(new THREE.Vector3()); sources.push(o); }
+      o.userData.allumee = o.visible && o.parent && o.parent.visible !== false; o.visible = false; });
+    for (const o of scene.children.slice()) if (o.isSpotLight && !o.userData.apo && !o.intensity) o.visible = false; };
+  L.setNuit = (n) => { if (setN) setN(true); L.nuit = true; teinter(); eteindre(); regrouper(); };
+  if (!setN) { teinter(); eteindre(); regrouper(); }
+  L.lampesApo = (t) => { if (base === "etage") return; const c = M && M.camera ? M.camera.position : null; if (!c) return;
+    if (!L.lampesT || t > L.lampesT) { L.lampesT = t + 500; L.lampesProches = sources.filter(o => o.userData.allumee && o.userData.i0 > 0).sort((a, b) => a.userData.pos.distanceToSquared(c) - b.userData.pos.distanceToSquared(c)).slice(0, pool.length); }
+    pool.forEach((l, i) => { const o = L.lampesProches[i]; if (!o) { l.intensity = 0; return; } l.position.copy(o.userData.pos); l.color.copy(o.color); l.distance = o.distance; l.decay = o.decay; l.intensity = o.intensity; }); };
   const A = atelier(scene);
   const charbon = A.mat({ color: 0x1e1b19, roughness: 1 }), rouille = A.mat({ color: 0x5a2e1a, roughness: 1 }), cendre = A.mat({ color: 0x3a3634, roughness: 1 }), vitreN = A.mat({ color: 0x050505, roughness: .3 });
   const obstacles = [];
@@ -3153,7 +3166,8 @@ function apocalypse(scene, L, base) {
       L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
     lumsFeu.forEach((l, i) => { const f = L.feuxProches[i]; if (!f) { l.intensity = 0; return; }
       l.position.set(f.x, f.y, f.z); l.distance = 12 * f.k; l.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
-    for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1); };
+    for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1);
+    L.lampesApo(t); };
 }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
    L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
@@ -4043,7 +4057,10 @@ function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
   if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
   for (const n of [...M.gens.keys()]) retirerAncien(n);
-  const { scene, L, repere } = construireScene(id);
+  // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
+  const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
+  M.prets = {}; M.prepT = performance.now() + 1500;
+  const { scene, L, repere } = pret || construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; }
   M.chefZ = null;
@@ -4078,6 +4095,26 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
   if (fin) allerVers(fin[0], fin[1], true);
 }
 export const _etatMatrice = () => M;   // (pour les essais)
+/* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
+   pour qu'en la passant on y soit tout de suite, sans attendre */
+function preparerVoisin() {
+  const now = performance.now(); if (!M || !M.L || M.preparation || now < (M.prepT || 0)) return; M.prepT = now + 700;
+  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
+  let best = null, bd = 14;
+  for (const q of [...(M.L.portails || []), ...(M.L.raccourcis || [])]) { if (!q.vers || q.vers === M.lieu || M.prets[q.vers] || !LIEUX[baseLieu(q.vers)]) continue;
+    const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
+    const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
+  if (!best || Object.keys(M.prets).length >= 2) return;
+  M.preparation = true; const lieu = M.lieu;
+  setTimeout(() => { try { if (!M || M.lieu !== lieu) return;
+      const q = construireScene(best); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[best] = q;
+      const fin = () => { if (M) M.preparation = false; };
+      // les images (murs, sols, affiches…) sont envoyées à la carte graphique dès maintenant
+      const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
+      if (q.scene.background && q.scene.background.isTexture) try { M.rendu.initTexture(q.scene.background); } catch (e) {}
+      if (M.rendu.compileAsync) M.rendu.compileAsync(q.scene, M.camera).then(fin, fin); else fin();
+    } catch (e) { if (M) M.preparation = false; } finally { if (M && !M.prets[best]) M.preparation = false; } }, 30);
+}
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 
 /* --- la connexion en direct --- */
@@ -4091,7 +4128,7 @@ export function monterEtage(f) { const moi = M && M.moiNum && M.gens.get(M.moiNu
 // on joue (console, flipper, fléchettes) ou l'on a fini (null) : les autres voient une petite icône au-dessus de soi
 export function jouer(jeu) { envoyerWS({ t: "joue", jeu: jeu || null }); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) moi.info.joue = jeu || null; }
 export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
-// (administrateur) la luminosité de la salle des fêtes, de 0,15 à 1, pour tous ceux qui y sont
+// (administrateur) la luminosité de la salle des fêtes, de 0 (éteinte) à 1, pour tous ceux qui y sont
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
@@ -4120,7 +4157,7 @@ function connecter() {
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
-    else if (m.t === "lumiere") { M.lumiere = +m.niveau || 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
+    else if (m.t === "lumiere") { M.lumiere = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
     else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
