@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, smith: { nom: "Chemise noire (Robert Smith)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -102,6 +102,15 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
       x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
       x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
+    // Robert Smith : une grande chemise noire froissée, ouverte, qui tombe sur les hanches ; un t-shirt noir dessous ; les colliers
+    if (t === "smith" && o.pose !== "dos" && !profil) {
+      x.fillStyle = "#101010"; x.beginPath(); x.moveTo(56, 236); x.lineTo(144, 236); x.lineTo(150, 296); x.lineTo(50, 296); x.closePath(); x.fill();   // le bas de la chemise, sur les hanches
+      x.fillStyle = "#1e1e1e"; x.beginPath(); x.moveTo(90, 146); x.lineTo(110, 146); x.lineTo(108, 296); x.lineTo(92, 296); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.08)"; x.lineWidth = 2; for (const [a, b2, c2, d2] of [[66, 170, 80, 230], [124, 168, 132, 240], [70, 250, 60, 290], [130, 252, 140, 288]]) { x.beginPath(); x.moveTo(a, b2); x.lineTo(c2, d2); x.stroke(); }   // les plis
+      x.fillStyle = "#5a5a5a"; for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(86, 166 + k * 22, 1.8, 0, 7); x.fill(); }
+      x.fillStyle = "#0c0c0c"; x.beginPath(); x.moveTo(84, 144); x.lineTo(70, 152); x.lineTo(84, 176); x.closePath(); x.moveTo(116, 144); x.lineTo(130, 152); x.lineTo(116, 176); x.closePath(); x.fill();
+      x.strokeStyle = "#7a5a3a"; x.lineWidth = 2; x.beginPath(); x.moveTo(90, 148); x.quadraticCurveTo(100, 172, 110, 148); x.stroke();
+      x.strokeStyle = "#b8a890"; x.beginPath(); x.moveTo(88, 148); x.quadraticCurveTo(100, 182, 112, 148); x.stroke(); }
     // John Travolta (Saturday Night Fever) : costume trois pièces blanc, la veste ouverte, le gilet boutonné,
     // la chemise noire au grand col posé sur les revers, ouverte sur la poitrine, la chaîne en or ; le pantalon blanc à pattes d'éléphant
     if (t === "travolta" && o.pose !== "dos") {
@@ -166,6 +175,7 @@ export function dessinerBonhomme(o, tete) {
         // Mr Hernandez et sa canne : levée derrière la tête (canne1), tenue à deux mains au-dessus de la tête (canne2), pointée au loin (canne3), plantée au sol (canne4)
         : o.pose === "canne1" ? (sens > 0 ? [62, 36] : null) : o.pose === "canne2" ? (sens > 0 ? [36, 64] : [164, 64]) : o.pose === "canne3" ? (sens > 0 ? [-34, 112] : null)
         : o.pose === "canne4" ? (sens > 0 ? [24, 232] : [170, 46])
+        : o.pose === "guitare1" || o.pose === "guitare2" ? (sens > 0 ? [36, 192] : (o.pose === "guitare1" ? [118, 232] : [124, 250]))   // la main gauche sur le manche, la droite qui gratte
         : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
@@ -200,6 +210,18 @@ export function dessinerBonhomme(o, tete) {
       x.restore();
     };
     if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
+    // la guitare de Robert Smith : le corps rouge sombre à la hanche, le manche vers le haut à gauche ; les mains par-dessus
+    if (o.pose === "guitare1" || o.pose === "guitare2") {
+      x.save(); x.translate(112, 238); x.rotate(.55);
+      x.fillStyle = "#3a2414"; x.fillRect(-112, -6, 104, 12);                                  // le manche
+      x.fillStyle = "#1a1a1a"; x.beginPath(); x.roundRect(-132, -10, 24, 20, 4); x.fill();      // la tête du manche
+      x.strokeStyle = "#cfcfcf"; x.lineWidth = .8; for (let k = -2; k <= 2; k++) { x.beginPath(); x.moveTo(-112, k * 2); x.lineTo(30, k * 2); x.stroke(); }
+      x.fillStyle = "#6e1018"; x.beginPath(); x.ellipse(8, 0, 34, 28, 0, 0, 7); x.ellipse(-16, 0, 24, 21, 0, 0, 7); x.fill();
+      x.fillStyle = "#f2efe8"; x.beginPath(); x.ellipse(10, 8, 16, 11, .3, 0, 7); x.fill();      // la plaque blanche
+      x.fillStyle = "#c8c8c8"; x.fillRect(-4, -9, 4, 18); x.fillRect(10, -9, 4, 18);           // les micros
+      for (let k = -2; k <= 2; k++) { x.strokeStyle = "#e6e6e6"; x.lineWidth = .8; x.beginPath(); x.moveTo(-12, k * 2); x.lineTo(26, k * 2); x.stroke(); }
+      x.restore();
+      x.fillStyle = peau; for (const h of mains) if (h) { x.beginPath(); x.arc(h[0], h[1], 10, 0, 7); x.fill(); } }
     // à l'apocalypse : le pistolet, dans la main droite (pointé vers le sol, ou devant soi quand on tire)
     if (o.arme && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
       x.save(); x.translate(hx, hy); x.rotate(a); x.fillStyle = "#1b1b1d";
@@ -253,11 +275,13 @@ export function dessinerBonhomme(o, tete) {
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
         const g = y2.createLinearGradient(0, 0, 0, h);
-        if (t === "hernandez" || t === "beegees" || t === "travolta") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
+        if (t === "hernandez" || t === "beegees" || t === "travolta" || t === "smith") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
           if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); }
-          else if (t === "travolta") { g.addColorStop(0, "#2e1d12"); g.addColorStop(1, "#160d07"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+          else if (t === "travolta") { g.addColorStop(0, "#2e1d12"); g.addColorStop(1, "#160d07"); }
+          else if (t === "smith") { g.addColorStop(0, "#151414"); g.addColorStop(1, "#050505"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
           y2.globalCompositeOperation = "source-atop";
           if (t === "beegees" || t === "travolta") { y2.strokeStyle = "rgba(110,76,50,.45)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 28; k++) { const sx = (k + .5) / 28 * w; y2.beginPath(); y2.moveTo(sx, h * .05); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } }   // les cheveux longs et raides
+          else if (t === "smith") { y2.strokeStyle = "rgba(70,66,62,.55)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 60; k++) { const a = k * 2.399, r0 = .15 + (k % 7) / 18; y2.beginPath(); y2.moveTo(w / 2 + Math.cos(a) * w * r0 * .5, h * .45 + Math.sin(a) * h * r0 * .5); y2.lineTo(w / 2 + Math.cos(a) * w * .55, h * .45 + Math.sin(a) * h * .55); y2.stroke(); } }   // ébouriffés
           else { y2.fillStyle = "rgba(90,62,44,.45)"; for (let k = 0; k < 40; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .06, 0, 7); y2.fill(); } }
         } else { g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         x.drawImage(c2, -w / 2, -h);
@@ -2829,6 +2853,11 @@ export async function ouvrir(ctx) {
           const c = choreBeeGees();
           if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
           p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
+        else if (p.info.danse === "guitare" && p.poses.guitare1) {
+          // Robert Smith joue : il gratte en rythme, se balance doucement, la tête penchée vers le micro
+          const ph = t / 300, pose = Math.floor(ph) % 2 ? "guitare2" : "guitare1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 900) * .06; p.corps.position.x = Math.sin(t / 900) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
         else if (p.info.danse === "alive" && p.poses.canne1) {
           // Mr Hernandez : la danse de Born to Be Alive (voir choreAlive)
           const c = choreAlive();
@@ -2885,7 +2914,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       if (p.info.mortT) { const f = Math.min(1, (performance.now() - p.info.mortT) / 650); p.corps.rotation.x = -f * Math.PI / 2 * .96; p.corps.rotation.z = 0; } }
@@ -3421,7 +3450,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
@@ -3674,6 +3703,25 @@ function choreThriller() {
   else { pose = k % 2 ? "thriller2" : "thriller1"; oz = AV * (1 - (k - 28 + Math.min(1, v * 1.6)) / 4); rot = (k % 2 ? .05 : -.05) * coup; }
   return { k, pose, ox, oz, rot, sx, saut };
 }
+/* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
+const SMITH = -16;
+function animerSmith() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && /just like heaven|the cure|robert smith/.test(M.djTitre || ""), p = M.gens.get(SMITH), [x, z] = M.L.pisteCentre;
+  if (air && !p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(16)) || {};
+    const q = ajouterAncien({ numero: SMITH, nom: P.nom || "Robert Smith", tenue: P.tenue || "smith", couleur: P.couleur || "#141414", bas: P.bas || "#141414", pieds: P.pieds || "#1a1a1a",
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 16) : "images/smith-tete.png", pnj: true, danseur: true, smith: true, x, z: z + 3 });
+    if (q) { viser(q, x, z); q.info.danse = "guitare"; }
+    // le micro sur pied, devant lui (côté salle)
+    if (!M.micro) { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: .6, roughness: .4 }), H = tailleBonhomme();
+      const pied = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, H * .66, 8), noir); pied.position.y = H * .33; g.add(pied);
+      for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .42, 6), noir); b.rotation.z = Math.PI / 2 - .5; b.rotation.y = k * 2.09; b.position.y = .1; b.position.x = Math.cos(k * 2.09) * .16; b.position.z = -Math.sin(k * 2.09) * .16; g.add(b); }
+      const perche = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .4, 6), noir); perche.rotation.x = -1.1; perche.position.set(0, H * .66 + .08, -.17); g.add(perche);
+      const tete = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 8), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: .8, roughness: .3 })); tete.position.set(0, H * .66 + .16, -.34); g.add(tete);
+      g.position.set(x, 0, z + .75); M.scene.add(g); M.micro = g; } }
+  else if (!air && p) { retirerAncien(SMITH); if (M.micro) { M.scene.remove(M.micro); M.micro = null; } }
+  else if (p) { p.info.danse = "guitare"; if (M.micro && !p.cible) M.micro.position.set(p.g.position.x, 0, p.g.position.z + .75); }
+}
 /* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
 const HERNANDEZ = -7, TEMPS_ALIVE = 460;
 /* --- les Bee Gees (réglés par l'administrateur) : dès que passe une de leurs chansons, Robin, Barry et Maurice arrivent au milieu de la piste, côte à côte, et dansent ensemble --- */
@@ -3906,6 +3954,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 6; APO.vies = 3; APO.zombieFin = 0; }
   M.chefZ = null;
+  M.micro = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
@@ -4005,6 +4054,7 @@ function connecter() {
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id >= 12 && m.p.id <= 15) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = m.p.id - 12; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 3) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
+    else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }

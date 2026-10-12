@@ -54,9 +54,10 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   10: { nom: "Maurice Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" },
   12: { nom: "Le cadavre au bonnet", tenue: "zombie", couleur: "#3b3f52", bas: "#3d3326", pieds: "#2a2522" }, 13: { nom: "L'homme à la chemise", tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" },
   14: { nom: "Le policier zombie", tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" }, 15: { nom: "Le chien zombie", tenue: "civil", couleur: "#555555", bas: null },
+  16: { nom: "Robert Smith", tenue: "smith", couleur: "#141414", bas: "#141414", pieds: "#1a1a1a" },
   11: { nom: "John Travolta", tenue: "travolta", couleur: "#f4f1ea", bas: "#f4f1ea", pieds: "#1a1a1a" } };
-const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta"];
+const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(id) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
