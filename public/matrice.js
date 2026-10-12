@@ -1967,7 +1967,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       tables.push([fx - FW / 2 - .25, fx + FW / 2 + .25, fz0 - .2, Z1]);
     }
     {
-      tables.push(babyFoot(A, -4.2, 10.2));   // contre le mur des fenêtres, loin du flipper (on accède librement au flipper)
+      // (plus de baby-foot dans la salle des fêtes : il est au bar du sous-sol)
     }
     // les tabourets du bar : pied chromé, assise en cuir rouge, repose-pieds ; on s'y assoit en s'approchant
     L.tabourets = [];
