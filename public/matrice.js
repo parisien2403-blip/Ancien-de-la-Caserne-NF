@@ -2807,9 +2807,9 @@ export async function ouvrir(ctx) {
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
-  const budget = logiciel ? 4e5 : 1.1e6;
+  const budget = logiciel ? 4e5 : 2.4e6, resMin = logiciel ? .5 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
-    rendu.setPixelRatio(Math.max(.5, Math.min(res, Math.sqrt(budget / (w * h))))); };
+    rendu.setPixelRatio(Math.max(resMin, Math.min(res, Math.sqrt(budget / (w * h))))); };
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
   appliquerRes();
   rendu.shadowMap.enabled = true; rendu.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2906,7 +2906,7 @@ export async function ouvrir(ctx) {
     const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
-      const r = moy > 28 ? Math.max(.5, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
+      const r = moy > 34 ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
       if (r !== res) { res = r; M.redim && M.redim(); } } }
     preparerVoisin();
