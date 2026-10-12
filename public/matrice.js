@@ -4621,7 +4621,7 @@ function cineCour() {
       ouvrirPortes(car, t < 11.5 ? lisse((t - 5) / 1.2) : 1 - lisse((t - 11.5) / 1)); car.userData.portes.forEach(() => {});
       if (t > 6 && !M.gens.has(DOC)) ajouterDoc(1.0, 3.4);
       if (t > 6.3 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> ${prenomMoi()} ! Vite, monte dans la DeLorean !<br>Il faut partir en <b>1955</b> !`, 4300); }
-      if (t > 9 && moi && !M.monte) { M.monte = 1; moi.cible = new THREE.Vector3(1.75, 0, 4.9); moi.chemin = []; moi.rapide = true; }
+      if (t > 9 && moi && !M.monte) { M.monte = 1; moi.cible = new THREE.Vector3(1.6, 0, 4.6); moi.chemin = []; moi.rapide = true; }
       if (t > 10.3 && M.gens.has(DOC)) retirerAncien(DOC);
       if (t > 11 && moi) moi.g.visible = false;
       cam.position.lerp(new THREE.Vector3(-1.6, 2.4, 11), .05); cam.lookAt(1.6, 1.3, 5); }
@@ -4653,7 +4653,7 @@ function cineHV() {
       if (t > 4 && moi && !moi.g.visible) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
       if (t > 4.2 && !M.gens.has(DOC)) ajouterDoc(-7.2, 13.9);
       if (t > 4.6 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>5 novembre 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
-      cam.position.lerp(new THREE.Vector3(-8.5, 2.6, 7.5), .05); cam.lookAt(-5.5, 1.2, 15); }
+      cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1.2, 15.2); }
     else fin();
     animerFeu(feu, now, 7000); } };
   M.feuHV = feu;
@@ -4667,7 +4667,7 @@ function cineRetour() {
   M.passerBtn = boutonPasser(fin); bulle(`🧪 <b>Doc :</b> En route pour <b>2026</b> ! Accroche-toi, ${prenomMoi()} !`, 2600);
   M.cine = { t0: performance.now(), maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera;
     if (t < 3) { ouvrirPortes(car, t < 1.6 ? lisse(t / .8) : 1 - lisse((t - 1.6) / .9)); if (t > 1.2) { if (moi) moi.g.visible = false; if (M.gens.has(DOC)) retirerAncien(DOC); }
-      cam.position.lerp(new THREE.Vector3(-9, 2.4, 8), .05); cam.lookAt(-6, 1, 16); }
+      cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1, 16); }
     else if (t < 5.6) { const u = t - 3, x = -6 + .5 * 8 * u * u, dx = x - car.position.x; rouler(car, dx); poser(car, x, 16, -Math.PI / 2); if (!M.vroum2) { M.vroum2 = 1; sonBruit(2.2, 500, .9); }
       if (u > .2) { M.dx = (M.dx || 0) + dx; while (M.dx > .25) { M.dx -= .25; for (const sg of [-1, 1]) traineeFeu(feu, x - 1.35, 16 + sg * .9); } }
       arcs(car, u > 1.4); cam.position.lerp(new THREE.Vector3(-10, 1.8, 20.5), .06); cam.lookAt(x, .8, 16); }
@@ -4719,6 +4719,35 @@ function voiture50(couleur, toit = 0xf2efe6) {
     add(new THREE.BoxGeometry(.06, .3, .5), carr, sg * .9, 1.04, 2.2); add(new THREE.BoxGeometry(.03, .06, 4.6), chrome, sg * .96, .7, 0); }
   for (const [x, z] of [[-.88, -1.6], [.88, -1.6], [-.88, 1.6], [.88, 1.6]]) { const r = add(new THREE.CylinderGeometry(.36, .36, .26, 18), noir, x, .36, z); r.rotation.z = Math.PI / 2;
     const f = add(new THREE.TorusGeometry(.2, .06, 6, 18), blanc, x + Math.sign(x) * .135, .36, z); f.rotation.y = Math.PI / 2; }
+  return g;
+}
+// une voiture des années 50 d'après une photo : ses deux flancs (la photo détourée), son capot, son coffre, son toit ; L : longueur, H : hauteur
+const VOITURES50 = { belair: { L: 5, H: 1.85, coul: 0xc8251f, toit: 0xf2efe6, ceinture: .5 }, fairlane: { L: 5.1, H: 1.62, coul: 0xe39aa6, toit: 0xf2ecdf, ceinture: .5 },
+  buick: { L: 5.4, H: 1.62, coul: 0x6aaedc, toit: 0x6aaedc, ceinture: .52, face: "buick" }, chevy50: { L: 5, H: 1.66, coul: 0xe2357a, toit: null, ceinture: .55 }, green: { L: 4.9, H: 1.72, coul: 0x56b07a, toit: 0x56b07a, ceinture: .55, face: "green", cote: false } };
+let texV = {};
+function voitureVraie(nom) {
+  const V = VOITURES50[nom], g = new THREE.Group(), ld = new THREE.TextureLoader(), T = n => texV[n] || (texV[n] = (() => { const t = ld.load(`images/bttf/v-${n}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })());
+  const W = 1.95, carr = new THREE.MeshStandardMaterial({ color: V.coul, metalness: .45, roughness: .3, envMap: reflets(), envMapIntensity: .5 }), chrome = new THREE.MeshStandardMaterial({ color: 0xe6e9ec, metalness: .95, roughness: .15, envMap: reflets() });
+  const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const hc = V.H * V.ceinture;
+  // la caisse (un peu en retrait des flancs, pour qu'on ne la voie que d'en haut et de face)
+  add(new THREE.BoxGeometry(W - .1, hc - .5, V.L * .9), carr, 0, .5 + (hc - .5) / 2, 0);
+  if (V.toit != null) add(new THREE.BoxGeometry(W - .3, .06, V.L * .36), new THREE.MeshStandardMaterial({ color: V.toit, roughness: .5 }), 0, V.H * .93, V.L * .06);
+  else { add(new THREE.BoxGeometry(W - .3, .08, .5), new THREE.MeshStandardMaterial({ color: 0xf2efe6, roughness: .8 }), 0, hc + .05, V.L * .2); }   // (la capote repliée)
+  const pare = add(new THREE.PlaneGeometry(W - .3, V.H * .36), new THREE.MeshStandardMaterial({ color: 0x223040, metalness: .5, roughness: .1, transparent: true, opacity: .7 }), 0, hc + V.H * .17, -V.L * .13); pare.rotation.x = -.5;
+  // les flancs : la photo détourée, l'avant vers -z
+  if (V.cote !== false) { const t = T(nom + "-cote"), tm = t.clone(); tm.needsUpdate = true; tm.wrapS = THREE.RepeatWrapping; tm.repeat.x = -1;
+    for (const [sg, map] of [[1, t], [-1, tm]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(V.L * 1.04, V.H), new THREE.MeshStandardMaterial({ map, alphaTest: .5, roughness: .35, metalness: .2, side: THREE.DoubleSide }));
+      f.position.set(sg * W / 2, V.H / 2, 0); f.rotation.y = sg * Math.PI / 2; f.castShadow = true; g.add(f); } }
+  else for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.04, hc - .25, V.L * .96), carr, sg * W / 2, .25 + (hc - .25) / 2, 0); add(new THREE.BoxGeometry(.05, .05, V.L * .9), chrome, sg * (W / 2 + .01), hc * .8, 0);
+    for (const z of [-V.L * .3, V.L * .3]) { const r = add(new THREE.CylinderGeometry(.38, .38, .26, 20), new THREE.MeshStandardMaterial({ color: 0x111111 }), sg * (W / 2 - .1), .38, z); r.rotation.z = Math.PI / 2;
+      const j = add(new THREE.CircleGeometry(.24, 18), chrome, sg * (W / 2 + .035), .38, z); j.rotation.y = sg * Math.PI / 2; } }
+  // l'avant : la photo de la calandre, sinon les phares et le pare-chocs chromé
+  if (V.face) { const f = add(new THREE.PlaneGeometry(W, hc), new THREE.MeshStandardMaterial({ map: T(V.face + "-face"), roughness: .35 }), 0, hc / 2 + .05, -V.L * .47 - .02); f.rotation.y = Math.PI; }
+  else { add(new THREE.BoxGeometry(W - .12, .16, .12), chrome, 0, .5, -V.L * .45); for (const sg of [-1, 1]) add(new THREE.CylinderGeometry(.13, .13, .05, 14), new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), sg * .68, hc - .12, -V.L * .45 - .06).rotation.x = Math.PI / 2;
+    add(new THREE.BoxGeometry(1.1, .16, .04), chrome, 0, hc - .25, -V.L * .45 - .07); }
+  add(new THREE.BoxGeometry(W - .12, .14, .1), chrome, 0, .5, V.L * .45);
+  for (const sg of [-1, 1]) add(new THREE.BoxGeometry(.16, .12, .04), new THREE.MeshBasicMaterial({ color: 0xb01515 }), sg * .72, hc - .15, V.L * .45 + .06);
   return g;
 }
 function construireHillValley(A, T, L, scene) {
@@ -4843,16 +4872,27 @@ function construireHillValley(A, T, L, scene) {
   // au loin, derrière le palais : des collines et des arbres
   for (let i = 0; i < 9; i++) A.ajoute(new THREE.SphereGeometry(14 + (i % 3) * 5, 12, 8), A.mat({ color: i % 2 ? 0x5e7a48 : 0x6e8a52, roughness: 1, flatShading: true }), -60 + i * 15, -4, -62 - (i % 2) * 8, false);
   // ---- les voitures des années 50, garées le long des trottoirs ----
-  const voitures = [[0x9fd8c8, -21, 19.6, Math.PI / 2], [0xe9a6b8, 8, 19.6, Math.PI / 2], [0x1a1f2e, 17, 19.6, -Math.PI / 2], [0xd9c49a, 23.6, -4, 0], [0x8ab4d8, 23.6, 6, Math.PI], [0xb22a2a, -23.6, -6, 0], [0xf2efe6, -23.6, 9, Math.PI], [0x2a4a3a, 1, 19.6, -Math.PI / 2]];
-  for (const [c, x, z, r] of voitures) { const v = voiture50(c, c === 0xf2efe6 ? 0x2a2a2a : 0xf2efe6); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
+  const voitures = [["belair", -21, 19.9, Math.PI / 2], ["fairlane", 8, 19.9, Math.PI / 2], ["green", 17, 19.9, -Math.PI / 2], ["chevy50", 23.6, -4, 0], ["buick", 23.6, 6, Math.PI], ["fairlane", -23.6, -6, 0], ["belair", -23.6, 9, Math.PI], ["chevy50", 1, 19.9, -Math.PI / 2]];
+  for (const [n, x, z, r] of voitures) { const v = voitureVraie(n); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
     for (const k of [-1.8, 0, 1.8]) obst.push([x - Math.sin(r) * k, z - Math.cos(r) * k, 1.05]); }
+  // deux voitures qui roulent : l'une le long de la rue des boutiques, l'autre dans la rue de l'ouest ; elles s'arrêtent devant quelqu'un
+  L.roulent = [{ v: voitureVraie("buick"), axe: "x", de: -34, a: 34, fixe: 17.9, sens: 1, vit: 5.2, p: -10 }, { v: voitureVraie("belair"), axe: "z", de: 26, a: -18, fixe: -19.2, sens: -1, vit: 4.4, p: 4 }];
+  for (const R of L.roulent) { R.v.rotation.y = R.axe === "x" ? (R.sens > 0 ? -Math.PI / 2 : Math.PI / 2) : (R.sens > 0 ? Math.PI : 0); scene.add(R.v); }
   // ---- la DeLorean de Doc, garée au bord du trottoir : on y remonte pour rentrer ----
   const dl = creerDelorean(); poser(dl, -6, 16, -Math.PI / 2); scene.add(dl); L.delorean = dl; L.posDelorean = [-6, 16];
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
   L.limites = (x, z) => Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
     && !(Math.abs(x - dl.position.x) < 2.3 && Math.abs(z - dl.position.z) < 1.1 && dl.visible);
   L.portails = [];
-  L.anim = (t) => { for (let i = 0; i < drapP.count; i++) { const ox = drap0[i * 3], oy = drap0[i * 3 + 1], u = (ox + .95) / 1.9; drapP.setZ(i, Math.sin(t / 260 + u * 5) * .18 * u); drapP.setY(i, oy - u * u * .1); } drapP.needsUpdate = true; drap.geometry.computeVertexNormals(); };
+  let tPrec = 0;
+  L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
+    for (const R of L.roulent) { const x = R.axe === "x" ? R.p : R.fixe, z = R.axe === "x" ? R.fixe : R.p, dx = R.axe === "x" ? R.sens : 0, dz = R.axe === "x" ? 0 : R.sens;
+      let bloque = false; if (M && M.gens) for (const q of M.gens.values()) { const ax = q.g.position.x - x, az = q.g.position.z - z, av = ax * dx + az * dz, lat = Math.abs(ax * dz - az * dx); if (av > 0 && av < 5.5 && lat < 1.6) bloque = true; }
+      const dl = L.delorean; if (dl && dl.visible) { const ax = dl.position.x - x, az = dl.position.z - z, av = ax * dx + az * dz, lat = Math.abs(ax * dz - az * dx); if (av > 0 && av < 6 && lat < 1.9) bloque = true; }
+      R.cur = (R.cur || 0) + ((bloque ? 0 : R.vit) - (R.cur || 0)) * Math.min(1, dt * 2.5);
+      R.p += R.sens * R.cur * dt; if (R.sens > 0 ? R.p > R.a : R.p < R.a) R.p = R.de;
+      R.v.position.set(R.axe === "x" ? R.p : R.fixe, 0, R.axe === "x" ? R.fixe : R.p); }
+    for (let i = 0; i < drapP.count; i++) { const ox = drap0[i * 3], oy = drap0[i * 3 + 1], u = (ox + .95) / 1.9; drapP.setZ(i, Math.sin(t / 260 + u * 5) * .18 * u); drapP.setY(i, oy - u * u * .1); } drapP.needsUpdate = true; drap.geometry.computeVertexNormals(); };
 }
 
 export const _etatMatrice = () => M;   // (pour les essais)
@@ -4951,7 +4991,7 @@ function connecter() {
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
-    else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [.2, 8.5], 0); }
+    else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
