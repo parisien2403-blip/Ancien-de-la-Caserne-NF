@@ -2013,7 +2013,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
     // du vestibule, vers la grande pièce au bar ou l'escalier : on continue dans la salle des fêtes (même géométrie, simple décalage — pas de coupure)
-    L.portails.push({ dans: (x, z) => x > PB[0] + .55 && Math.abs(z - VEST_Z) < VEST_VZ + 1, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z, FETE_HSS], seuil: [PB[0] - .7, PB[1]] });
+    L.portails.push({ dans: (x, z) => x > PB[0] + .55 && Math.abs(z - VEST_Z) < VEST_VZ + 1, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z, FETE_HSS], seuil: [PB[0] - .7, PB[1]], traverse: [PB[0] + 1.3, PB[1]] });
     raccourci(L, scene, [.6, 2.3, VEST_LB], [PB[0], 1.15, PB[1]], { marche: [VEST_X, VEST_Z] });
     L.horsPNJ = (x, z) => x > 15.2 && z > 6.3 && z < 12.5;       // le chef de poste n'entre pas au bar
     // la caméra reste sous la voûte quand on est dans le passage
@@ -2570,7 +2570,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
     // par la porte « BAR » du vestibule, on sort dans la cour d'honneur, en marchant (même géométrie de part et d'autre : pas de coupure)
-    L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < VEST_LB / 2, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS], seuil: [-VEST_VX + .5, FETE_SZ] });
+    L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < VEST_LB / 2, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS], seuil: [-VEST_VX + .5, FETE_SZ], traverse: [-VEST_VX - .8, FETE_SZ] });
+    // l'escalier entre la salle et le vestibule : un cercle en haut, un en bas ; on s'y arrête, et l'on descend (ou remonte) tout seul
+    L.portails.push({ dans: () => false, vers: "fetes", continu: true, seuil: [0, 11.0], traverse: [0, 19.8], escalier: true },
+      { dans: () => false, vers: "fetes", continu: true, seuil: [0, 18.9], traverse: [0, 10.2], escalier: true });
     L.horsPNJ = (x, z) => Math.abs(x) < EL + .5 && z > EZ - 1.5;          // le chef de poste ne descend pas l'escalier
     raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 2.4] });
     L.plafond = HT - .35;
@@ -2739,7 +2742,7 @@ export async function ouvrir(ctx) {
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
     // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
     if (M.cercles) { const vus = M.cercles.filter(c => c.g && c.g.visible); const h = ray.intersectObjects(vus.flatMap(c => [c.disque, c.anneau, c.halo]))[0];
-      if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)); allerVers(c.pt.centre[0], c.pt.centre[1], true); return; } }
+      if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)), q = c.pt.traverse || c.pt.centre; allerVers(q[0], q[1], true); return; } }
     // le raccourci touché le plus près (une affiche posée sur un panneau passe avant le panneau)
     let rc = null, rd = Infinity; for (const q of M.L.raccourcis || []) { const h = ray.intersectObject(q.obj)[0]; if (h && h.distance - (q.affichePrio ? .3 : 0) < rd) { rd = h.distance - (q.affichePrio ? .3 : 0); rc = q; } }
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
@@ -3110,7 +3113,7 @@ const ZTYPES = [
   { tete: "images/apo/zombie2-tete.png", id: 13, son: "sons/zombie2.mp3", v: .9, def: { tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" } },
   { tete: "images/apo/zombie3-tete.png", id: 14, son: "sons/zombie3.mp3", v: .85, def: { tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" } },
   { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true } ];
-const ZNOMBRE = { grande: [8, 3], rue: [5, 2], fetes: [4, 0], etage: [10, 0] };   // [zombies, chiens]
+const ZNOMBRE = { grande: [5, 2], rue: [4, 1], fetes: [3, 0], etage: [7, 0] };   // [zombies, chiens]
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
 // l'image du chien : celle d'origine, ou celle que l'administrateur a choisie (rechargée quand il la change)
@@ -3229,11 +3232,13 @@ function pointLibreZ(seed, loin) {
   const Lz = limZ(), [a, b, c, d] = Lz.zone, ps = proies(), etage = baseLieu(M.lieu) === "etage";
   for (let k = 0; k < 400; k++) { const x = a + Math.random() * (b - a), z = c + Math.random() * (d - c), n = etage ? Math.floor(Math.random() * (ET.N + 1)) : 0;
     if (!Lz.limites(x, z)) continue;
-    if (ps.every(q => (etage && q.n !== n) || Math.hypot(q.x - x, q.z - z) > (k < 300 ? loin : 4))) return [x, z, n]; }
+    // loin des joueurs, et éparpillés : pas à moins de 5 m d'un autre zombie
+    if (k < 300 && M.zomb && [...M.zomb.values()].some(o => o.n === n && Math.hypot(o.x - x, o.z - z) < 5)) continue;
+    if (ps.every(q => (etage && q.n !== n) || Math.hypot(q.x - x, q.z - z) > (k < 300 ? loin : 6))) return [x, z, n]; }
   return null;
 }
 function apparaitreZ(chien) {
-  const pt = pointLibreZ(0, 10); if (!pt) return;
+  const pt = pointLibreZ(0, 16); if (!pt) return;
   M.zSeq = (M.zSeq || 0) + 1;
   creerZ({ id: Math.floor(Math.random() * 1e9), ty: chien ? 3 : Math.floor(Math.random() * 3), x: pt[0], z: pt[1], n: pt[2] });
 }
@@ -3243,11 +3248,11 @@ function simulerZ(t, dt) {
   const vivants = [...M.zomb.values()];
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
   for (const z of vivants) if (z.mortT && t - z.mortT > 8000) retirerZ(z);
-  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 6000; const zs = [...M.zomb.values()];
+  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 12000; const zs = [...M.zomb.values()];
     if (zs.filter(z => !z.chien).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
   for (const z of M.zomb.values()) { if (z.mortT) continue;
-    let cible = null, bd = z.chien ? 26 : 20;
+    let cible = null, bd = z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
     for (const q of ps) { if (base === "etage" && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
     if (cible) {
       if (bd < (z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : 1700);
@@ -3529,7 +3534,10 @@ function animerCercles(t) {
   }
   const moi = M.moiNum && M.gens.get(M.moiNum);
   // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
-  if (moi && !M.cerclePret && !M.cercles.some(c => c.pt.centre && !c.pt.continu && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
+  if (moi && !M.cerclePret && !M.cercles.some(c => !centrePortail(c.pt) || Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
+  // arrêté sur le cercle d'un passage ouvert (le vestibule) : on franchit la porte tout seul
+  if (moi && M.cerclePret && !moi.cible && !M.passage) for (const c of M.cercles) { const q = c.pt;
+    if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
       const rouge = estApo(c.pt.vers) !== estApo(M.lieu);   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge)
