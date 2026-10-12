@@ -862,13 +862,14 @@
   .topbar .me, .vue-btn { top: calc(100% - 14px); transform: none; z-index: 3; }
   /* la porte de la caserne, avant d'entrer dans la Matrice : le dessin de la façade, sa grille fermée */
   .mx-porte { display: none; position: relative; overflow: hidden; min-height: calc(var(--app-h, 100dvh) - 250px); border-radius: 18px; border: 1.5px solid #3a3430;
-    background: #b5573c url("images/dessin-facade.jpg") 50% 100% / cover no-repeat; }
+    background: #b5573c url("images/dessin-facade.jpg") 50% 88% / cover no-repeat; }
   .mx-ferme > .mx-porte { display: flex; flex-direction: column; justify-content: flex-start; }
   .mx-ferme > :not(.mx-porte) { display: none !important; }
-  .mx-porte-carte { margin: 14px; padding: 16px 18px 18px; border-radius: 14px; background: rgba(251,247,239,.96); border: 1.5px solid #3a3430; text-align: center; box-shadow: 0 6px 18px rgba(30,20,10,.35); }
-  .mx-porte h2 { margin: 0 0 6px; font-size: 24px; color: var(--navy); }
-  .mx-porte p { margin: 0 0 14px; color: var(--text); line-height: 1.45; font-size: 15px; }
-  .mx-porte-btn { font-size: 18px; padding: 15px 24px; width: 100%; }
+  /* la carte reste petite, tout en haut : on voit la grille de la caserne en entier en dessous */
+  .mx-porte-carte { margin: 10px 10px 0; padding: 8px 12px 10px; border-radius: 12px; background: rgba(251,247,239,.93); border: 1.5px solid #3a3430; text-align: center; box-shadow: 0 4px 12px rgba(30,20,10,.3); }
+  .mx-porte h2 { margin: 0 0 6px; font-size: 18px; color: var(--navy); }
+  .mx-porte p { display: none; }
+  .mx-porte-btn { font-size: 16px; padding: 11px 18px; width: 100%; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -2695,6 +2696,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.38.1", "12 octobre 2026", ["La porte « Entrer dans la caserne » : la carte est plus petite et tout en haut, on voit la grille en entier"]],
     ["3.38", "12 octobre 2026", ["La caserne de l'apocalypse : par la case ouverte de la déchetterie (cercle rouge), la même caserne la nuit de la fin du monde — voitures en feu, brasiers, fenêtres barricadées, sang, couloirs sombres ; ambiance sonore dehors et crépitement des feux", "La partie de zombies : 3 zombies et des chiens zombies poursuivent les joueurs ; touche-les pour tirer (2 balles pour en tuer un), 6 balles, boîtes de munitions et plantes de soin ; 3 morsures : YOU DIED, et retour devant la déchetterie", "La salle de repos (vestibule et bar) : intacte, sans zombie, avec sa musique, des munitions et des plantes", "Administrateur : boutons pour régler les 3 zombies (tête, tenue, silhouette) et le chien (taille, largeur, vitesse, image)"]],
     ["3.37", "12 octobre 2026", ["L'appli aux couleurs des dessins de la caserne : brique, pierre crème et fer forgé ; la plaque « Caserne de la Nouvelle France » dessinée en haut des pages et le porche au navire sur l'accueil, avec les casques de la Garde républicaine", "L'onglet « La caserne » : la façade dessinée et sa grille, puis « Entrer dans la caserne »", "Le chef de poste derrière son comptoir, devant un mur beige, deux fenêtres à barreaux et un lambris de bois", "Le vaguemestre n'apparaît plus en image (ni dans les notifications)", "La borne et les plaques d'escalier en style bande dessinée", "La pastille du profil descendue sous le bandeau", "Caserne : un cercle lumineux devant chaque entrée et sortie, on entre en marchant dessus ; dans les bâtiments, boutons « Monter au 1er »… et, au 6e, « Redescendre »", "Une icône 🎮 🕹️ 🎯 au-dessus de celui qui joue à la console, au flipper ou aux fléchettes", "Marche plus fluide ; plus de noms au-dessus des personnages ; les danseurs ne parlent plus ; le chef de poste n'est plus qu'à un seul endroit à la fois", "Salle des fêtes : la musique tourne toute la nuit ; seul l'administrateur l'arrête, allume les lasers et touche les platines ; chacun peut mettre une musique ou passer à la suivante", "Beaucoup de monde au même endroit : on ne dessine que les 50 plus proches, pour rester fluide"]],
     ["3.36", "12 octobre 2026", ["Nouveau logo de l'appli : l'horloge octogonale de la caserne, avec un peu de sa façade", "Les pages de l'appli aux couleurs de la nuit de la Matrice : bleu nuit, violet et rouge rosé des lumières de la fête", "L'onglet Salle des jeunes est retiré", "La Matrice devient une surprise : l'onglet « La caserne » montre d'abord la porte, la nuit ; on la découvre en touchant « 🚪 Entrer dans la caserne »"]],
