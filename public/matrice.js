@@ -15,6 +15,7 @@ export const LIEUX = {
   rue: { nom: "L'entrée, rue du Faubourg", icone: "🚪" },
   grande: { nom: "La cour d'honneur", icone: "🏛️" },
   fetes: { nom: "La salle des fêtes", icone: "🎉" },
+  etage: { nom: "Les étages", icone: "🚪" },
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
@@ -1054,6 +1055,102 @@ function circulation(L, scene) {
       if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); }); enRoute.splice(i, 1); } }
   };
 }
+/* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur), escalier, palier, escalier,
+   puis un long couloir qui traverse tout le bâtiment, 6 portes de chaque côté ; on redescend par l'autre cage d'escalier.
+   Sol et marches en carrelage (comme la salle des fêtes), murs beiges, ampoules au plafond, peu de lumière.
+   Plan (x : de gauche à droite ; la cage de gauche est en x < -11.2, celle de droite en x > 11.2) :
+   - palier du bas (porte) : 12.8 < |x| < 14.4, 1.6 < z < 3.5, y = 0 ; volée 1 : même bande, de z = 1.6 à -1.4, monte à 1.7 ;
+   - palier du milieu : 11.2 < |x| < 14.4, -3 < z < -1.4, y = 1.7 ; volée 2 : 11.2 < |x| < 12.8, de z = -1.4 à 1.6, monte à 3.4 ;
+   - palier du haut : 11.2 < |x| < 12.8, 1.6 < z < 3.5 ; le couloir : |x| < 11.2, 1.3 < z < 3.5, y = 3.4 */
+const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3 };
+function construireEtage(A, L, scene) {
+  const { H, HP, CX0, CXM, CX1, Z0, Z1, ZC0 } = ET, HT = H + HP, MH = .17, MP = .3;
+  const carreaux = toileCarreaux(), beige = A.mat({ color: 0xd8cbad, roughness: .95 }), plinthe = A.mat({ color: 0x6b4a2c });
+  const matSol = (w, d) => A.mat({ map: tex(carreaux, w / 1.6, d / 1.6), roughness: .5 });
+  const sol = (w, d, x, y, z) => { const o = A.ajoute(new THREE.PlaneGeometry(w, d), matSol(w, d), x, y + .002, z, false); o.rotation.x = -Math.PI / 2; return o; };
+  const sols = [];
+  // le couloir
+  sols.push(sol(CX0 * 2, Z1 - ZC0, 0, H, (ZC0 + Z1) / 2));
+  A.ajoute(new THREE.BoxGeometry(CX0 * 2, H, Z1 - ZC0), A.mat({ color: 0x8a8174 }), 0, H / 2 - .002, (ZC0 + Z1) / 2, false);   // (dessous, plein)
+  // les portes du couloir : 6 de chaque côté, en face des fenêtres
+  const porteT = (n) => tex(toile(120, 230, (x, w, h) => { x.fillStyle = "#e8dcc0"; x.fillRect(0, 0, w, h); x.fillStyle = "#6b4226"; x.fillRect(10, 14, w - 20, h - 14);
+    x.strokeStyle = "#4c2c17"; x.lineWidth = 3; x.strokeRect(20, 26, w - 40, 80); x.strokeRect(20, 120, w - 40, 96);
+    x.fillStyle = "#c9a227"; x.beginPath(); x.arc(w - 26, 128, 5, 0, 7); x.fill(); x.fillRect(w - 30, 140, 8, 3);
+    x.fillStyle = "#f4f1ea"; x.fillRect(w / 2 - 16, 34, 32, 22); x.fillStyle = "#222"; x.font = "bold 16px Arial"; x.textAlign = "center"; x.fillText(String(n), w / 2, 51); }));
+  const murCouloir = (zMur, sens) => {
+    A.ajoute(new THREE.BoxGeometry(CX0 * 2, HP, .2), beige, 0, H + HP / 2, zMur - sens * .1, false);
+    A.ajoute(new THREE.BoxGeometry(CX0 * 2, .12, .03), plinthe, 0, H + .06, zMur + sens * .015, false);
+    for (let i = 0; i < 6; i++) { const x = -CX0 + (i + .5) * CX0 * 2 / 6, n = sens > 0 ? i + 1 : 12 - i;
+      const p = A.ajoute(new THREE.PlaneGeometry(1.0, 2.15), A.mat({ map: porteT(n), roughness: .6 }), x, H + 1.075, zMur + sens * .012, false); p.rotation.y = sens > 0 ? 0 : Math.PI; } };
+  murCouloir(ZC0, 1); murCouloir(Z1, -1);
+  A.ajoute(new THREE.BoxGeometry(CX0 * 2, .2, Z1 - ZC0 + .4), A.mat({ color: 0xece4d2 }), 0, HT + .1, (ZC0 + Z1) / 2, false);   // plafond
+  // les ampoules nues au plafond : peu de lumière
+  const ampoule = new THREE.MeshBasicMaterial({ color: 0xfff1c8 });
+  const lampe = (x, y, z, i) => { A.ajoute(new THREE.CylinderGeometry(.008, .008, .3, 6), A.mat({ color: 0x222 }), x, y - .15, z, false);
+    A.ajoute(new THREE.SphereGeometry(.06, 10, 8), ampoule, x, y - .34, z, false);
+    const l = new THREE.PointLight(0xffd9a0, i, 7, 1.6); l.position.set(x, y - .4, z); scene.add(l); };
+  for (let k = 0; k < 6; k++) lampe(-CX0 + (k + .5) * CX0 * 2 / 6, HT, (ZC0 + Z1) / 2, 2.2);
+  scene.add(new THREE.AmbientLight(0xfff0d8, .28));
+  // les deux cages d'escalier
+  const mm = A.mat({ map: tex(carreaux, 1, .2), roughness: .5 }), cote = A.mat({ color: 0xc9bb9c, roughness: .9 }), matMarche = [cote, cote, mm, cote, mm, mm];   // (marches : carrelage dessus et devant, côtés beiges)
+  for (const sg of [-1, 1]) { const X = v => sg * v, xb = (a, b) => (X(a) + X(b)) / 2;
+    const cageW = CX1 - CX0, cz = (Z0 + Z1) / 2;
+    // les murs de la cage (la porte, côté extérieur, au palier du bas)
+    A.ajoute(new THREE.BoxGeometry(cageW + .4, HT, .2), beige, xb(CX0, CX1), HT / 2, Z0 - .1, false);
+    A.ajoute(new THREE.BoxGeometry(cageW + .4, HT, .2), beige, xb(CX0, CX1), HT / 2, Z1 + .1, false);
+    const zp = 2.5, lp = 1.2;
+    A.ajoute(new THREE.BoxGeometry(.2, HT, zp - lp / 2 - Z0), beige, X(CX1 + .1), HT / 2, (Z0 + zp - lp / 2) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.2, HT, Z1 - zp - lp / 2), beige, X(CX1 + .1), HT / 2, (Z1 + zp + lp / 2) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.2, HT - 2.3, lp), beige, X(CX1 + .1), 2.3 + (HT - 2.3) / 2, zp, false);
+    const jour = A.ajoute(new THREE.PlaneGeometry(lp, 2.3), new THREE.MeshBasicMaterial({ map: tex(toile(64, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#c9d6e0"); g.addColorStop(.7, "#e4dccb"); g.addColorStop(1, "#7d7a74"); x.fillStyle = g; x.fillRect(0, 0, w, h); })) }), X(CX1 + .2), 1.15, zp, false);
+    jour.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2;
+    // le mur du côté du couloir, ouvert en haut sur le couloir
+    A.ajoute(new THREE.BoxGeometry(.2, HT, ZC0 - Z0), beige, X(CX0 - .1), HT / 2, (Z0 + ZC0) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.2, H, Z1 - ZC0), beige, X(CX0 - .1), H / 2, (ZC0 + Z1) / 2, false);
+    // palier du bas
+    sols.push(sol(CX1 - CXM, Z1 - 1.6, xb(CXM, CX1), 0, (1.6 + Z1) / 2));
+    // volée 1 : de z = 1.6 vers -1.4, de 0 à 1.7
+    for (let i = 0; i < 10; i++) { const top = (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CX1 - CXM, top, MP), matMarche, xb(CXM, CX1), top / 2, 1.6 - (i + .5) * MP, false); }
+    // palier du milieu
+    A.ajoute(new THREE.BoxGeometry(cageW, 1.7, -1.4 - Z0), A.mat({ color: 0x8a8174 }), xb(CX0, CX1), .85, (Z0 - 1.4) / 2, false);
+    sols.push(sol(cageW, -1.4 - Z0, xb(CX0, CX1), 1.7, (Z0 - 1.4) / 2));
+    // volée 2 : de z = -1.4 vers 1.6, de 1.7 à 3.4
+    for (let i = 0; i < 10; i++) { const top = 1.7 + (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CXM - CX0, top, MP), matMarche, xb(CX0, CXM), top / 2, -1.4 + (i + .5) * MP, false); }
+    // palier du haut, qui donne sur le couloir
+    A.ajoute(new THREE.BoxGeometry(CXM - CX0, H, Z1 - 1.6), A.mat({ color: 0x8a8174 }), xb(CX0, CXM), H / 2 - .002, (1.6 + Z1) / 2, false);
+    sols.push(sol(CXM - CX0, Z1 - 1.6, xb(CX0, CXM), H, (1.6 + Z1) / 2));
+    // la rampe en fer noir le long de la volée 2 (côté vide), le plafond, les ampoules de la cage
+    const fer = A.mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 });
+    const rampe = A.ajoute(new THREE.BoxGeometry(.05, .05, 3.5), fer, X(CXM - .03), 1.7 + .95 + .85, .1, false); rampe.rotation.x = -Math.atan2(1.7, 3) * sg * 0 - Math.atan2(1.7, 3);
+    for (let k = 0; k <= 5; k++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM - .03), 1.7 + (k + .5) * .34 + .45, -1.4 + k * .6 + .15, false);
+    A.ajoute(new THREE.BoxGeometry(cageW + .4, .2, Z1 - Z0 + .4), A.mat({ color: 0xece4d2 }), xb(CX0, CX1), HT + .1, cz, false);
+    lampe(xb(CXM, CX1), HT, 2.5, 1.8); lampe(xb(CX0, CX1), HT, -2.2, 1.6); lampe(xb(CXM, CX1), 3.2, 2.5, 1.2);
+  }
+  L.sol = sols[0]; L.solsPlus = sols.slice(1);
+  // la hauteur du sol, selon où l'on est
+  L.hauteur = (x, z) => { const ax = Math.abs(x);
+    if (ax < CX0) return H;
+    if (z <= -1.4) return 1.7;
+    if (ax >= CXM) return z >= 1.6 ? 0 : Math.min(1.7, (1.6 - z) / 3 * 1.7);
+    return z >= 1.6 ? H : 1.7 + (z + 1.4) / 3 * 1.7; };
+  L.limites = (x, z) => { const ax = Math.abs(x);
+    return (ax < CX0 + .1 && z > ZC0 + .3 && z < Z1 - .3)                                   // le couloir
+      || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)                  // bande du palier du bas et de la volée 1
+      || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)                     // palier du milieu
+      || (ax > CX0 - .05 && ax < CXM - .15 && z > Z0 + .25 && z < Z1 - .3)                   // volée 2 et palier du haut
+      || (ax >= CX1 - .25 && ax < CX1 + .4 && Math.abs(z - 2.5) < .35); };                  // la porte
+  // on sort par la porte : dans la cour d'honneur, devant la porte marron de l'aile
+  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => sg * x > CX1 + .1 && Math.abs(z - 2.5) < .6, vers: "grande", arrivee: [sg * 7.9, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+  // la caméra reste dans la cage ou dans le couloir
+  L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1;
+    pos.y = Math.min(pos.y, HT - .15);
+    if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, H + .4); }
+    else { const a = Math.min(Math.abs(pos.x), CX1 - .15); pos.x = s * Math.max(Math.min(a, CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min(Z1 - .15, pos.z)); }
+    return true; };
+  L.interieur = true; L.sansPNJ = true; L.zone = [-CX1 - .5, CX1 + .5, Z0, Z1];
+  L.boite = [-CX1, CX1, Z0, Z1];
+  L.depart = [-13.6, 2.5]; L.cam = { pos: [-12, 2, 3], vise: [-14, 1, -2] };
+}
 // un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
 function tableauScores(A, sousTitre, x0, y0, z0) {
   const c = document.createElement("canvas"); c.width = 512; c.height = 360; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -1690,8 +1787,11 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       // la colonne de fenêtres, au-dessus de la porte
       x.fillStyle = "#f1ece2"; x.fillRect(px + 6, 60, 44, h - 260); for (let y = 66; y < h - 206; y += 22) { x.fillStyle = "#8ea2b2"; x.fillRect(px + 12, y, 32, 17); }
       // la porte, en bois marron
-      x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122); x.fillStyle = "#6b4226"; x.fillRect(px, h - 115, 56, 115);
-      x.fillStyle = "#e9d7c8"; x.fillRect(px + 8, h - 107, 40, 60); x.fillStyle = "#6b4226"; x.fillRect(px + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
+      // la porte a sauté : par l'embrasure, la cage d'escalier (murs beiges, les premières marches carrelées, une ampoule)
+      x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122);
+      { const g = x.createLinearGradient(0, h - 115, 0, h); g.addColorStop(0, "#5a5244"); g.addColorStop(1, "#9a8e76"); x.fillStyle = g; x.fillRect(px, h - 115, 56, 115);
+        for (let k = 0; k < 6; k++) { x.fillStyle = `rgb(${200 - k * 14},${178 - k * 13},${130 - k * 10})`; x.fillRect(px + 4, h - 10 - k * 13, 48, 6); }
+        x.fillStyle = "#fff1c8"; x.beginPath(); x.arc(px + 28, h - 104, 3, 0, 7); x.fill(); x.fillStyle = "rgba(255,230,170,.2)"; x.fillRect(px, h - 115, 56, 50); } x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
     const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
     for (const s of (copie ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
@@ -1703,6 +1803,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
 
     const PB = L.porteBar || [16, 9.12];
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6))
+      || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
       || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
@@ -1713,6 +1814,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.zone = [-10.6, 19.2, C2.z1, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
+    for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 13.6, 2.5], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+      raccourci(L, scene, [.5, 2.4, 1.5], [sg * 8.62, 1.2, 13.75], { marche: [sg * 8.72, 13.75] }); }
     L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
@@ -2269,6 +2372,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   }
 
   if (id === "cave") construireSousSol(A, L, scene);
+  if (id === "etage") construireEtage(A, L, scene);
 
   // nuages
   if (L.interieur) return L;

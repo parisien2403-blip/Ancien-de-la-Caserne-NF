@@ -42,7 +42,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave"];
+const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage"];
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
