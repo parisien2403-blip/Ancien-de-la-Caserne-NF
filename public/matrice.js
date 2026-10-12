@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, smith: { nom: "Chemise noire (Robert Smith)" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -38,9 +38,9 @@ export function dessinerBonhomme(o, tete) {
     // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
-    const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
+    const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = t === "nemesis" ? "#8f7f93" : "#e9c4a0";   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "mariee" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
+    const bas = t === "robe" || t === "mariee" || t === "nemesis" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -83,7 +83,8 @@ export function dessinerBonhomme(o, tete) {
     const haut = t === "garde" ? "#1c2541" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
+    if (t === "nemesis") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
+    else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     // le blouson rouge façon Thriller : les bandes noires en V, la ceinture noire
@@ -102,6 +103,13 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
       x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
       x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
+    // Nemesis : le manteau enroulé de sangles noires, les rubans jaunes « CAUTION », le gros tube sur la poitrine, la ceinture nouée
+    if (t === "nemesis" && o.pose !== "dos") {
+      x.strokeStyle = "rgba(255,255,255,.07)"; x.lineWidth = 3; for (let y = 150; y < 250; y += 9) { x.beginPath(); x.moveTo(52, y); x.quadraticCurveTo(100, y + 6, 148, y - 2); x.stroke(); }
+      x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 2; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(56 + k * 15, 262); x.lineTo(50 + k * 17, 378); x.stroke(); }
+      x.fillStyle = "#0e0e10"; x.fillRect(48, 238, 104, 18);
+      if (!profil) { x.fillStyle = "#4a5050"; x.beginPath(); x.roundRect(100, 160, 32, 34, 6); x.fill(); x.strokeStyle = "#a01818"; x.lineWidth = 2.5; x.beginPath(); x.moveTo(126, 162); x.quadraticCurveTo(142, 150, 128, 140); x.stroke(); }
+      x.fillStyle = "#d8c23a"; for (const [a, b2, r] of [[66, 172, -.3], [128, 150, .4], [80, 214, .2], [140, 204, -.5], [60, 300, .1]]) { x.save(); x.translate(a, b2); x.rotate(r); x.fillRect(-11, -3, 22, 6); x.restore(); } }
     // Robert Smith : une grande chemise noire froissée, ouverte, qui tombe sur les hanches ; un t-shirt noir dessous ; les colliers
     if (t === "smith" && o.pose !== "dos" && !profil) {
       x.fillStyle = "#101010"; x.beginPath(); x.moveTo(56, 236); x.lineTo(144, 236); x.lineTo(150, 296); x.lineTo(50, 296); x.closePath(); x.fill();   // le bas de la chemise, sur les hanches
@@ -195,6 +203,7 @@ export function dessinerBonhomme(o, tete) {
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
       if (t === "beegees") { x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(-7, -4, 5, 76); x.fillStyle = "#7d6d34"; x.fillRect(-12, 74, 24, 14); }
       if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
+      if (t === "nemesis") { x.fillStyle = "rgba(255,255,255,.08)"; for (let k = 6; k < 90; k += 12) x.fillRect(-12, k, 24, 4); x.fillStyle = "#d8c23a"; x.fillRect(-12, 60, 24, 7); }
       if (t === "zombie") { x.fillStyle = "#2a2a2c"; x.beginPath(); x.moveTo(-12, 70); x.lineTo(-4, 84); x.lineTo(4, 74); x.lineTo(12, 88); x.lineTo(12, 96); x.lineTo(-12, 96); x.fill(); x.fillStyle = "rgba(120,10,10,.7)"; x.beginPath(); x.arc(3, 40, 6, 0, 7); x.fill(); }
       if (t === "mariee") { x.fillStyle = "rgba(255,255,255,.55)"; x.fillRect(-13, -8, 26, 30); }
       if (doigt) {
@@ -275,7 +284,8 @@ export function dessinerBonhomme(o, tete) {
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
         const g = y2.createLinearGradient(0, 0, 0, h);
-        if (t === "hernandez" || t === "beegees" || t === "travolta" || t === "smith") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
+        if (t === "nemesis") { g.addColorStop(0, "#9a8ca0"); g.addColorStop(1, "#5e5064"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
+        else if (t === "hernandez" || t === "beegees" || t === "travolta" || t === "smith") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
           if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); }
           else if (t === "travolta") { g.addColorStop(0, "#2e1d12"); g.addColorStop(1, "#160d07"); }
           else if (t === "smith") { g.addColorStop(0, "#151414"); g.addColorStop(1, "#050505"); } else { g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); } y2.fillStyle = g; y2.fillRect(0, 0, w, h);
@@ -3092,6 +3102,29 @@ function apocalypse(scene, L, base) {
         pl.position.set((hasard(k + i) - .5) * .08, -h / 2 + (i + .5) * h / n, .05); pl.rotation.z = (hasard(k * 2 + i) - .5) * .35; g.add(pl);
         for (const sx of [-1, 1]) { const c2 = new THREE.Mesh(new THREE.BoxGeometry(.03, .03, .02), clou); c2.position.set(sx * w * .52, pl.position.y, .08); g.add(c2); } }
       if (hasard(k * 9.1) < .5) { const cr = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(w, h), .16, .05), bois[k % 3]); cr.position.z = .09; cr.rotation.z = Math.atan2(h, w) * (k % 2 ? 1 : -1); g.add(cr); } } }   // fenêtres barricadées, parfois une planche en diagonale
+  // dehors : de temps en temps, un hélicoptère passe très haut, son projecteur balaie le sol à la recherche de survivants
+  if (ext) {
+    const Zh = L.zone || [-30, 30, -30, 30], cx = (Zh[0] + Zh[1]) / 2, cz = (Zh[2] + Zh[3]) / 2, R = Math.max(Zh[1] - Zh[0], Zh[3] - Zh[2]) * .5;
+    const spot = new THREE.SpotLight(0xe8f0ff, 0, 90, .16, .35, .4); spot.userData.apo = true; scene.add(spot, spot.target);
+    const geoC = new THREE.ConeGeometry(1, 1, 24, 1, true); geoC.translate(0, -.5, 0);
+    const cone = new THREE.Mesh(geoC, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cone.userData.helico = true; scene.add(cone);
+    const tache = new THREE.Mesh(new THREE.CircleGeometry(2.6, 32), new THREE.MeshBasicMaterial({ color: 0xeef3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); tache.rotation.x = -Math.PI / 2; scene.add(tache);
+    const feuxH = [0xff2020, 0xffffff].map(c => { const m = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 6), new THREE.MeshBasicMaterial({ color: c, fog: false })); scene.add(m); return m; });
+    let debut = performance.now() + 6000 + Math.random() * 8000, a0 = 0;
+    const animH = L.anim;
+    L.anim = (t) => { animH && animH(t); const now = performance.now(), D = 22000, u = (now - debut) / D;
+      if (u > 1) { debut = now + 25000 + Math.random() * 30000; a0 = Math.random() * 7; }
+      const actif = u >= 0 && u <= 1, f = actif ? Math.sin(u * Math.PI) : 0;
+      // l'hélico passe en ligne droite, haut dans le ciel ; le projecteur balaie autour de sa trajectoire
+      const hx = cx + Math.cos(a0) * R * 1.4 * (u * 2 - 1), hz = cz + Math.sin(a0) * R * 1.4 * (u * 2 - 1), hy = 34;
+      const sx = hx + Math.sin(now / 1300) * 6 - Math.cos(a0) * 4, sz = hz + Math.cos(now / 1700) * 6 - Math.sin(a0) * 4;
+      spot.position.set(hx, hy, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 2600 * f; spot.visible = actif;
+      const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
+      cone.scale.set(lg * .16, lg, lg * .16); cone.material.opacity = .09 * f; cone.visible = actif;
+      tache.position.set(sx, .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
+      feuxH.forEach((m, i) => { m.visible = actif; m.position.set(hx + (i ? .6 : -.6), hy + .3, hz); m.material.color.setHex(i ? 0xffffff : (Math.floor(now / 500) % 2 ? 0xff2020 : 0x300000)); });
+      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); } if (!actif) L.helicoSon = false; };
+  }
   // on ne traverse pas les épaves ni les fûts
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
   // tout bouge : les flammes dansent, la fumée monte, les lumières vacillent ou grésillent
@@ -3106,12 +3139,13 @@ function apocalypse(scene, L, base) {
    L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
    cinq fois par seconde ; chacun tire de son côté (touche un zombie), le chef compte les balles reçues : deux balles, il tombe.
    Trois morsures : on devient zombie, et quinze secondes plus tard on est ramené dans la vraie caserne, devant la déchetterie. */
-const APO = { balles: 6, vies: 3, zombieFin: 0 };
+const APO = { balles: 9, vies: 4, zombieFin: 0 };   // (9 balles dans le chargeur, 4 vies)
 const ZTYPES = [
   // les trois zombies : des bonshommes (une tête découpée, un corps dessiné), réglables par l'administrateur comme les autres personnages
   { tete: "images/apo/zombie1-tete.png", id: 12, son: "sons/zombie1.mp3", v: .8, def: { tenue: "zombie", couleur: "#3b3f52", bas: "#3d3326", pieds: "#2a2522" } },
   { tete: "images/apo/zombie2-tete.png", id: 13, son: "sons/zombie2.mp3", v: .9, def: { tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" } },
   { tete: "images/apo/zombie3-tete.png", id: 14, son: "sons/zombie3.mp3", v: .85, def: { tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" } },
+  { boss: true, tete: "images/apo/nemesis-tete.png", id: 17, son: "sons/zombie3.mp3", v: 1.75, hp: 5, taille: 1.45, def: { tenue: "nemesis", couleur: "#1a1a1c", bas: null, pieds: "#111111" } },
   { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true } ];
 const ZNOMBRE = { grande: [5, 2], rue: [4, 1], fetes: [3, 0], etage: [7, 0] };   // [zombies, chiens]
 let zTex = null, texEclair = null, actx = null;
@@ -3120,7 +3154,7 @@ const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; con
 let texChienCle = null, texChienT = null;
 function texChien() { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(15)) || {}, cle = P.tete_v || 0;
   if (cle !== texChienCle || !texChienT) { texChienCle = cle;
-    texChienT = new THREE.TextureLoader().load(cle ? M.ctx.urlTetePNJ(cle, 15) : ZTYPES[3].img, () => { for (const z of M.zomb ? M.zomb.values() : []) if (z.chien) tailleZ(z); });
+    texChienT = new THREE.TextureLoader().load(cle ? M.ctx.urlTetePNJ(cle, 15) : ZTYPES[4].img, () => { for (const z of M.zomb ? M.zomb.values() : []) if (z.chien) tailleZ(z); });
     texChienT.colorSpace = THREE.SRGBColorSpace; }
   return texChienT; }
 // les poses d'un zombie : debout, puis les bras en avant, griffes d'un côté puis de l'autre (sa démarche)
@@ -3130,7 +3164,7 @@ function posesZ(ty) {
   const info = { tenue: P.tenue || T.def.tenue, couleur: P.couleur || T.def.couleur, bas: P.bas || T.def.bas, pieds: P.pieds || T.def.pieds, reglage: P.reglage || null, initiales: "" };
   const url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, T.id) : T.tete;
   return (M.zTexB[ty] = chargerTete(0, 0, url).then(tete => { const f = pose => tex(dessinerBonhomme({ ...info, large: true, pose }, tete));
-    return { repos: f(undefined), a: f("thriller1"), b: f("thriller2"), c: f("thriller3") }; }));
+    return { repos: f(undefined), a: f("thriller1"), b: f("thriller2"), c: f("thriller3"), poing: f("tir") }; }));
 }
 const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
 const sonsCourts = new Set();
@@ -3161,12 +3195,14 @@ function creerZ(d) {
   if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = true; }); }
   const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   M.scene.add(g);
-  const z = { id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? 2, mortT: 0, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
-  tailleZ(z); M.zomb.set(z.id, z); return z;
+  const z = { id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? (T.hp || 2), mortT: 0, boss: !!T.boss, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
+  tailleZ(z); M.zomb.set(z.id, z);
+  if (T.boss) { M.ctx.surInfo && M.ctx.surInfo("☠️ NEMESIS arrive…"); sonPos(T.son, 1); }
+  return z;
 }
 function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
   if (T.chien) { const im = z.mesh.material.map && z.mesh.material.map.image; z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * (im && im.width ? im.width / im.height : T.ratio) * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
-  else { z.H = tailleBonhomme() * (R.h || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
+  else { z.H = tailleBonhomme() * (R.h || 1) * (T.taille || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
 function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
@@ -3179,7 +3215,9 @@ function blesserZ(z, dx, dz) {   // (le chef) la balle compte
   if (z.mortT) return; z.hp--;
   const nx = z.x + dx * .4, nz = z.z + dz * .4; if (limZ().limites(nx, nz)) { z.x = nx; z.z = nz; }
   z.bloque = performance.now() + 350;
-  if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), 1.6); }
+  if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), z.boss ? 2.4 : 1.6);
+    if (z.boss) M.zKills = 0;
+    else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6 && ![...M.zomb.values()].some(q => q.boss && !q.mortT)) { M.zKills = 0; apparaitreZ(3); } } }   // (six zombies ou chiens abattus : Nemesis)
 }
 function tirer(z) {
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT) return;
@@ -3202,11 +3240,11 @@ function eclairDuCanon(p, dx, dz) {
   setTimeout(() => { if (!M || !M.scene) return; M.scene.remove(sp); M.scene.remove(l); sp.material.dispose(); }, 70);
 }
 // une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
-function subirMorsure(zx, zz) {
+function subirMorsure(zx, zz, deg = 1) {
   const moi = moiApo(); if (!moi || APO.zombieFin) return;
-  APO.vies--; M.ctx.surApoFlash && M.ctx.surApoFlash();
+  APO.vies -= deg; M.ctx.surApoFlash && M.ctx.surApoFlash();
   const dx = moi.g.position.x - zx, dz = moi.g.position.z - zz, d = Math.hypot(dx, dz) || 1;
-  for (let k = .8; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
+  for (let k = .8 * deg; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
   moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
   // la troisième : on tombe au sol, une flaque de sang s'étend, « YOU DIED » apparaît doucement ; quinze secondes plus tard, retour à la caserne
   if (APO.vies <= 0) { APO.vies = 0; APO.zombieFin = performance.now() + 15000; moi.info.mortT = performance.now(); moi.info.danse = false;
@@ -3237,10 +3275,10 @@ function pointLibreZ(seed, loin) {
     if (ps.every(q => (etage && q.n !== n) || Math.hypot(q.x - x, q.z - z) > (k < 300 ? loin : 6))) return [x, z, n]; }
   return null;
 }
-function apparaitreZ(chien) {
+function apparaitreZ(chien) {   // (true : un chien ; false : un zombie ; un nombre : ce type-là)
   const pt = pointLibreZ(0, 16); if (!pt) return;
   M.zSeq = (M.zSeq || 0) + 1;
-  creerZ({ id: Math.floor(Math.random() * 1e9), ty: chien ? 3 : Math.floor(Math.random() * 3), x: pt[0], z: pt[1], n: pt[2] });
+  creerZ({ id: Math.floor(Math.random() * 1e9), ty: typeof chien === "number" ? chien : chien ? 4 : Math.floor(Math.random() * 3), x: pt[0], z: pt[1], n: pt[2] });
 }
 // (le chef) chaque zombie poursuit le joueur le plus proche ; sinon il erre
 function simulerZ(t, dt) {
@@ -3249,14 +3287,15 @@ function simulerZ(t, dt) {
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
   for (const z of vivants) if (z.mortT && t - z.mortT > 8000) retirerZ(z);
   if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 12000; const zs = [...M.zomb.values()];
-    if (zs.filter(z => !z.chien).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
+    if (zs.filter(z => !z.chien && !z.boss).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
   for (const z of M.zomb.values()) { if (z.mortT) continue;
-    let cible = null, bd = z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
+    let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
     for (const q of ps) { if (base === "etage" && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
     if (cible) {
-      if (bd < (z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : 1700);
-          if (cible.p.moi) subirMorsure(z.x, z.z); else envoyerWS({ t: "z_mord", numero: cible.p.info.numero, x: z.x, z: z.z }); } }
+      if (bd < (z.boss ? 1.25 : z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : z.boss ? 1500 : 1700); z.coupT = performance.now();
+          const deg = z.boss ? 2 : 1;   // (le poing de Nemesis : deux vies)
+          if (cible.p.moi) subirMorsure(z.x, z.z, deg); else envoyerWS({ t: "z_mord", numero: cible.p.info.numero, x: z.x, z: z.z, d: deg }); } }
       else if (!z.chemin || !z.chemin.length || t > (z.recalc || 0)) { z.chemin = itineraire(Lz, z.x, z.z, cible.x, cible.z); z.recalc = t + 900 + Math.random() * 700; }
     } else if ((!z.chemin || !z.chemin.length) && t > (z.recalc || 0)) {
       const a = Math.random() * 7, r = 2 + Math.random() * 5, tx = z.x + Math.cos(a) * r, tz = z.z + Math.sin(a) * r;
@@ -3264,7 +3303,7 @@ function simulerZ(t, dt) {
     if (z.bloque && t < z.bloque) continue;
     if (z.chemin && z.chemin.length) { const [px, pz] = z.chemin[0], ddx = px - z.x, ddz = pz - z.z, d = Math.hypot(ddx, ddz);
       if (d < .12) z.chemin.shift();
-      else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(3).k || 1)) : 1) * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
+      else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(4).k || 1)) : 1) * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
         if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
   // ils ne se marchent pas dessus
   const zs = [...M.zomb.values()].filter(z => !z.mortT);
@@ -3332,7 +3371,8 @@ function animerApo(t, dt) {
     if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 550); z.mesh.rotation.x = -f * Math.PI / 2 * .97; z.mesh.rotation.z = 0; z.mesh.position.y = z.chien ? 0 : .05 * f;
       z.mesh.material.opacity = now - z.mortT > 6500 ? Math.max(0, 1 - (now - z.mortT - 6500) / 1500) : 1; continue; }
     const marche = Math.hypot(vx, vz) > 1e-4;
-    const PZ = z.mesh.userData.poses; if (PZ) { const m = marche ? (Math.floor((now + z.ph * 100) / 420) % 2 ? PZ.a : PZ.b) : PZ.c; if (z.mesh.material.map !== m) { z.mesh.material.map = m; z.mesh.material.needsUpdate = true; } }
+    const PZ = z.mesh.userData.poses; if (PZ && z.coupT && now - z.coupT < 350) { if (z.mesh.material.map !== PZ.poing) { z.mesh.material.map = PZ.poing; z.mesh.material.needsUpdate = true; } }
+    else if (PZ) { const m = marche ? (Math.floor((now + z.ph * 100) / 420) % 2 ? PZ.a : PZ.b) : PZ.c; if (z.mesh.material.map !== m) { z.mesh.material.map = m; z.mesh.material.needsUpdate = true; } }
     z.mesh.rotation.z = Math.sin(now / (z.chien ? 90 : 420) + z.ph) * (z.chien ? .05 : .09);
     z.mesh.position.y = marche ? Math.abs(Math.sin(now / (z.chien ? 70 : 260) + z.ph)) * (z.chien ? .08 : .05) : 0;
     // il grogne (le chien aboie) quand on est près
@@ -3341,12 +3381,12 @@ function animerApo(t, dt) {
   }
   // les objets : ils réapparaissent ; on ramasse les munitions en passant dessus
   for (const o of M.objets || []) { if (o.cache && now > o.cache) { o.cache = 0; o.sp.visible = true; }
-    if (o.cache || APO.zombieFin || o.type !== "balles" || APO.balles >= 6) continue;
+    if (o.cache || APO.zombieFin || o.type !== "balles" || APO.balles >= 9) continue;
     if (baseLieu(M.lieu) === "etage" && o.n !== etageDe(moi)) continue;
-    if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) { APO.balles = 6; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 6 balles."); } }
+    if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) { APO.balles = 9; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 9 balles."); } }
   // devenu zombie : quinze secondes, puis retour dans la vraie caserne, devant la déchetterie
   for (const [m, t0] of M.flaques || []) m.scale.setScalar(Math.min(1, .05 + (now - t0) / 2500));   // (la flaque s'étend doucement)
-  if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 3; APO.balles = 6; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
+  if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
 function construireScene(id) {
@@ -3901,7 +3941,7 @@ export function agir() {
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
   else if (a.type === "plante") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
-      if (APO.vies >= 3) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
+      if (APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
       else { APO.vies++; ramasser(o); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🌿 Une vie de plus !"); } } }
   M.actionT = 0;
 }
@@ -3970,7 +4010,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   const { scene, L, repere } = construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
-  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 6; APO.vies = 3; APO.zombieFin = 0; }
+  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; }
   M.chefZ = null;
   M.micro = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
@@ -4065,13 +4105,13 @@ function connecter() {
     else if (m.t === "z_etat") recevoirEtatZ(m.l || []);
     else if (m.t === "z_tir") { const z = M.zomb && M.zomb.get(m.id), p = M.gens.get(m.de); if (p) p.tirT = performance.now(); sonTir(.55);
       if (z) { impactZ(z, +m.dx || 0, +m.dz || 0); if (estChefZ()) blesserZ(z, +m.dx || 0, +m.dz || 0); } }
-    else if (m.t === "z_mord") { if (m.numero === M.moiNum) subirMorsure(+m.x || 0, +m.z || 0); }
+    else if (m.t === "z_mord") { if (m.numero === M.moiNum) subirMorsure(+m.x || 0, +m.z || 0, m.d === 2 ? 2 : 1); }
     else if (m.t === "z_zombi") { const p = M.gens.get(m.de); if (p) { p.info.mortT = m.on ? performance.now() : 0; if (m.on) flaqueMort(p); } }
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
-    else if (m.t === "pnj" && m.p && m.p.id >= 12 && m.p.id <= 15) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = m.p.id - 12; if (M.zTexB) delete M.zTexB[ty];
-      for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 3) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
+    else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
+      for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
