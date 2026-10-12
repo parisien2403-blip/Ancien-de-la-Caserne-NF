@@ -903,6 +903,43 @@ function deuxiemeCour(A, L, scene) {
   // les deux côtés de la cour : rez-de-chaussée blanc, étages de brique
   for (const sg of [-1, 1]) { const m = A.mat({ map: tex(toileVerso(prof, 20, false)) });
     A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x6b6b6b }), m, m, m], sg * (X + 3), 10, zc); }
+  /* dans le passage sous l'horloge, de part et d'autre : deux grands panneaux de liège, avec les informations punaisées (notes de service, fêtes, petites annonces) */
+  const AFF = [
+    [["NOTE DE SERVICE", "Le stationnement dans la", "cour d'honneur est réservé", "aux véhicules de service.", "", "Le Chef de corps"], "#fbf8ee", "#1d3f73"],
+    [["BAL DU 14 JUILLET", "Salle des fêtes", "à partir de 21 h", "Orchestre et buvette", "Venez nombreux !"], "#fff3c4", "#b31b1b"],
+    [["LOTO DE LA CASERNE", "Samedi 20 h 30", "Salle des fêtes", "Nombreux lots à gagner"], "#e3f1ff", "#1d3f73"],
+    [["PLANNING DES GARDES", "Lun.  — 1re compagnie", "Mar.  — 2e compagnie", "Mer.  — 3e compagnie", "Jeu.  — 4e compagnie", "Ven.  — Escadron"], "#ffffff", "#222"],
+    [["OBJETS TROUVÉS", "Un trousseau de clés,", "un képi, une écharpe.", "S'adresser au poste", "de police."], "#f4ffe6", "#2e6b3a"],
+    [["À VENDRE", "Vélo de course", "bon état — 300 F", "Esc. B, 3e étage"], "#ffe6ea", "#8a1f2b"],
+    [["ARBRE DE NOËL", "des enfants de la caserne", "Mercredi 14 h", "Inscriptions au", "vaguemestre"], "#fff7e0", "#2e6b3a"],
+    [["RAPPEL", "Les poubelles sont", "sorties le mardi soir.", "Merci !"], "#fbf8ee", "#444"],
+    [["TOURNOI DE PÉTANQUE", "Dimanche 10 h", "Cour d'honneur", "Équipes de 3"], "#e9f6ff", "#1d3f73"],
+    [["COURS DE JUDO", "pour les enfants", "le jeudi à 17 h", "gymnase"], "#fff", "#b31b1b"],
+  ];
+  const panneau = (graineP) => toile(880, 300, (x, w, h) => { graine = graineP;
+    x.fillStyle = "#5a3a1e"; x.fillRect(0, 0, w, h); x.fillStyle = "#b9875a"; x.fillRect(14, 14, w - 28, h - 28);   // le cadre de bois, le liège
+    for (let i = 0; i < 4000; i++) { x.fillStyle = `rgba(${alea() < .5 ? "90,55,25" : "220,180,130"},${.25 + alea() * .3})`; x.fillRect(14 + alea() * (w - 28), 14 + alea() * (h - 28), 2, 2); }
+    const ordre = AFF.slice().sort(() => alea() - .5);
+    let X = 34;
+    for (const [lignes, fond, encre] of ordre) { if (X > w - (graineP === 733 ? 290 : 150)) break;   // (sur le panneau de gauche, la place de l'affiche de DJ Manu)
+      const pw = 120 + alea() * 50, ph = 150 + alea() * 80, Y = 30 + alea() * (h - ph - 50), a = (alea() - .5) * .12;
+      x.save(); x.translate(X + pw / 2, Y + ph / 2); x.rotate(a);
+      x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(-pw / 2 + 4, -ph / 2 + 5, pw, ph); x.fillStyle = fond; x.fillRect(-pw / 2, -ph / 2, pw, ph);
+      x.fillStyle = encre; x.textAlign = "center"; x.font = "bold 14px Arial"; x.fillText(lignes[0], 0, -ph / 2 + 26, pw - 10);
+      x.fillRect(-pw / 2 + 12, -ph / 2 + 34, pw - 24, 2); x.font = "12px Georgia";
+      lignes.slice(1).forEach((l, i) => x.fillText(l, 0, -ph / 2 + 56 + i * 17, pw - 12));
+      x.fillStyle = ["#c8102e", "#1f4e8c", "#e2b11f", "#2e8a4a"][Math.floor(alea() * 4)]; x.beginPath(); x.arc(0, -ph / 2 + 8, 5, 0, 7); x.fill();   // la punaise
+      x.restore(); X += pw + 14 + alea() * 18; }
+  });
+  for (const sg of [-1, 1]) { const g = new THREE.Group(); g.position.set(sg * (2.4 - .03), 1.75, -24); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+    const t = tex(panneau(sg > 0 ? 311 : 733));
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.5, .04), [A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ map: t, roughness: .9 }), A.mat({ color: 0x5a3a1e })]);
+    pl.position.z = .02; g.add(pl);
+    if (sg < 0) {   // sur ce panneau-là : l'affiche de la soirée de DJ Manu (format A4), punaisée
+      const im = new Image(), ta = new THREE.Texture(im); ta.colorSpace = THREE.SRGBColorSpace; im.onload = () => { ta.needsUpdate = true; }; im.src = "images/affiche-dj-manu.jpg";
+      const af = new THREE.Mesh(new THREE.PlaneGeometry(.38, .68), new THREE.MeshStandardMaterial({ map: ta, roughness: .85 })); af.position.set(1.7, 0, .046); af.rotation.z = .03; g.add(af);
+      const pu = new THREE.Mesh(new THREE.SphereGeometry(.014, 8, 6), A.mat({ color: 0xc8102e })); pu.position.set(1.7, .32, .05); g.add(pu); } }
+  const lp = new THREE.PointLight(0xfff2dc, 5, 8, 1.4); lp.position.set(0, 3.9, -24); scene.add(lp);
   // une petite lumière le soir, au-dessus de chaque passage
   for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
 }
