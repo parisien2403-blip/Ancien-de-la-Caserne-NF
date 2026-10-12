@@ -849,6 +849,39 @@ function decorPassage(A, T, L, scene, FZ) {
   const jourP = new THREE.PointLight(0xfff2dc, 14, 12, 1.4); jourP.position.set(0, 3.9, FZ - 7); scene.add(jourP);
   return jourP;
 }
+// un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
+function tableauScores(A, sousTitre, x0, y0, z0) {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 360; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const maj = (top = []) => { const x = c.getContext("2d"), w = 512, h = 360;
+    x.fillStyle = "#3a1d0e"; x.fillRect(0, 0, w, h); x.fillStyle = "#14100c"; x.fillRect(18, 18, w - 36, h - 36);
+    x.strokeStyle = "#c9a227"; x.lineWidth = 6; x.strokeRect(10, 10, w - 20, h - 20);
+    x.fillStyle = "#ffcf3a"; x.font = "bold 38px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.fillText("🏆 MEILLEURS SCORES", w / 2, 72);
+    x.fillStyle = "#e33"; x.font = "bold 20px Arial"; x.fillText(sousTitre, w / 2, 102);
+    const med = ["#ffd700", "#d9d9d9", "#cd7f32"];
+    for (let i = 0; i < 3; i++) { const e = top[i], y = 160 + i * 66;
+      x.fillStyle = med[i]; x.beginPath(); x.arc(64, y - 12, 22, 0, 7); x.fill(); x.fillStyle = "#14100c"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(String(i + 1), 64, y - 3);
+      x.textAlign = "left"; x.fillStyle = "#f4ecd8"; x.font = "bold 30px Arial"; x.fillText(e ? e.nom.slice(0, 14) : "—", 104, y);
+      x.textAlign = "right"; x.fillStyle = "#7ef0ff"; x.font = "bold 30px 'Courier New', monospace"; x.fillText(e ? e.score.toLocaleString("fr-FR") : "", w - 40, y); }
+    t.needsUpdate = true; };
+  maj([]);
+  const m = A.ajoute(new THREE.PlaneGeometry(1.4, .98), new THREE.MeshBasicMaterial({ map: t }), x0, y0, z0, false); m.rotation.y = Math.PI;
+  return maj;
+}
+// la cible de fléchettes (dessinée dans un canevas, centre cx cy, rayon r) : 20 secteurs noirs et crème, doubles et triples rouges et verts, le bull
+export const SECTEURS_FLECHETTES = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+export function dessinerCibleFlechettes(x, cx, cy, r) {
+  const k = r / 225;   // (le plateau fait 451 mm de diamètre ; la zone de jeu, 170 mm de rayon)
+  x.fillStyle = "#141414"; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
+  const anneau = (r0, r1, coul) => { for (let i = 0; i < 20; i++) { const a0 = -Math.PI / 2 + (i - .5) * Math.PI / 10, a1 = a0 + Math.PI / 10;
+    x.fillStyle = coul(i); x.beginPath(); x.arc(cx, cy, r1 * k, a0, a1); x.arc(cx, cy, r0 * k, a1, a0, true); x.closePath(); x.fill(); } };
+  anneau(0, 170, i => i % 2 ? "#efe3c4" : "#1c1c1c");
+  anneau(162, 170, i => i % 2 ? "#1e8a3c" : "#c8202a"); anneau(99, 107, i => i % 2 ? "#1e8a3c" : "#c8202a");
+  x.fillStyle = "#1e8a3c"; x.beginPath(); x.arc(cx, cy, 15.9 * k, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); x.arc(cx, cy, 6.35 * k, 0, 7); x.fill();
+  x.strokeStyle = "#c9c9c9"; x.lineWidth = Math.max(1, k * 1.2); for (const rr of [170, 162, 107, 99, 15.9]) { x.beginPath(); x.arc(cx, cy, rr * k, 0, 7); x.stroke(); }
+  for (let i = 0; i < 20; i++) { const a = -Math.PI / 2 + (i - .5) * Math.PI / 10; x.beginPath(); x.moveTo(cx + Math.cos(a) * 15.9 * k, cy + Math.sin(a) * 15.9 * k); x.lineTo(cx + Math.cos(a) * 170 * k, cy + Math.sin(a) * 170 * k); x.stroke();
+    const am = a + Math.PI / 20; x.fillStyle = "#f4f1ea"; x.font = `bold ${Math.round(22 * k)}px Arial`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(SECTEURS_FLECHETTES[i]), cx + Math.cos(am) * 196 * k, cy + Math.sin(am) * 196 * k); }
+  x.textBaseline = "alphabetic";
+}
 // le baby-foot (salle des fêtes, sous-sol) ; rend la place qu'il occupe, poignées comprises : [x0, x1, z0, z1]
 function babyFoot(A, cx, cz) {
   // le baby-foot : caisse en bois blond, bouts arrondis rouges, terrain vert, 8 barres et leurs joueurs rouges et bleus, poignées noires
@@ -1949,20 +1982,21 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       fr.rotation.y = Math.PI;
       const lumF = new THREE.PointLight(0xffa04a, 2.2, 3, 2); lumF.position.set(fx, 1.35, fzc - .2); scene.add(lumF);
       // au mur, au-dessus du flipper : le tableau des meilleurs scores (les 3 premiers)
-      const tabC = document.createElement("canvas"); tabC.width = 512; tabC.height = 360; const tabT = new THREE.CanvasTexture(tabC); tabT.colorSpace = THREE.SRGBColorSpace;
-      L.majClassement = (top = []) => { const x = tabC.getContext("2d"), w = 512, h = 360;
-        x.fillStyle = "#3a1d0e"; x.fillRect(0, 0, w, h); x.fillStyle = "#14100c"; x.fillRect(18, 18, w - 36, h - 36);
-        x.strokeStyle = "#c9a227"; x.lineWidth = 6; x.strokeRect(10, 10, w - 20, h - 20);
-        x.fillStyle = "#ffcf3a"; x.font = "bold 38px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.fillText("🏆 MEILLEURS SCORES", w / 2, 72);
-        x.fillStyle = "#e33"; x.font = "bold 20px Arial"; x.fillText("FLIPPER  VIKING", w / 2, 102);
-        const med = ["#ffd700", "#d9d9d9", "#cd7f32"];
-        for (let i = 0; i < 3; i++) { const e = top[i], y = 160 + i * 66;
-          x.fillStyle = med[i]; x.beginPath(); x.arc(64, y - 12, 22, 0, 7); x.fill(); x.fillStyle = "#14100c"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(String(i + 1), 64, y - 3);
-          x.textAlign = "left"; x.fillStyle = "#f4ecd8"; x.font = "bold 30px Arial"; x.fillText(e ? e.nom.slice(0, 14) : "—", 104, y);
-          x.textAlign = "right"; x.fillStyle = "#7ef0ff"; x.font = "bold 30px 'Courier New', monospace"; x.fillText(e ? e.score.toLocaleString("fr-FR") : "", w - 40, y); }
-        tabT.needsUpdate = true; };
-      L.majClassement(M && M.classementFlipper || []);
-      const tab = A.ajoute(new THREE.PlaneGeometry(1.4, .98), new THREE.MeshBasicMaterial({ map: tabT }), fx - .4, 2.75, Z1 - .17, false); tab.rotation.y = Math.PI;
+      const tabF = tableauScores(A, "FLIPPER  VIKING", fx - .4, 2.75, Z1 - .17); L.majClassement = tabF;
+      tabF((M && M.classementFlipper) || []);
+      /* à côté, sur le même mur : la cible de fléchettes (à 1,73 m du sol, comme il se doit), et son propre tableau */
+      { const cxD = 2.4, cyD = 1.73, zD = Z1 - .17;
+        const cible = tex(toile(512, 512, (x, w) => { dessinerCibleFlechettes(x, w / 2, w / 2, w / 2 - 6); }));
+        const meuble = A.ajoute(new THREE.CylinderGeometry(.34, .34, .06, 40), A.mat({ color: 0x1a1210, roughness: .6 }), cxD, cyD, zD - .02, false); meuble.rotation.x = Math.PI / 2;
+        const d = A.ajoute(new THREE.CircleGeometry(.3, 48), new THREE.MeshStandardMaterial({ map: cible, roughness: .8 }), cxD, cyD, zD - .055, false); d.rotation.y = Math.PI;
+        for (const [dx, dy, a] of [[.05, .03, .3], [-.07, -.02, -.2], [.02, -.1, .1]]) {   // trois fléchettes plantées
+          const f = new THREE.Group(); f.position.set(cxD + dx, cyD + dy, zD - .06); f.rotation.set(a * .3, a, 0); scene.add(f);
+          const corps = new THREE.Mesh(new THREE.CylinderGeometry(.006, .004, .13, 8), A.mat({ color: 0xb9bcc2, metalness: .7 })); corps.rotation.x = Math.PI / 2; corps.position.z = -.065; f.add(corps);
+          const plume = new THREE.Mesh(new THREE.BoxGeometry(.05, .002, .04), A.mat({ color: 0xc8102e })); plume.position.z = -.13; f.add(plume);
+          const plume2 = plume.clone(); plume2.rotation.z = Math.PI / 2; f.add(plume2); }
+        const spot = new THREE.SpotLight(0xfff0d0, 6, 4, .45, .5, 1.2); spot.position.set(cxD, 2.6, zD - 1.2); spot.target.position.set(cxD, cyD, zD); scene.add(spot, spot.target);
+        const tabD = tableauScores(A, "FLÉCHETTES", cxD, 2.75, Z1 - .17); L.majClassementFlechettes = tabD; tabD((M && M.classementFlechettes) || []);
+        L.flechettes = [cxD, Z1 - .9]; }
       L.flipper = [fx, fz0];
       tables.push([fx - FW / 2 - .25, fx + FW / 2 + .25, fz0 - .2, Z1]);
     }
@@ -2507,6 +2541,7 @@ function chercherAction(t) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
       if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
+      else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
       else { let best = null, bd = 1.9;
@@ -2532,6 +2567,7 @@ export function agir() {
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
+  else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
   M.actionT = 0;
 }
 export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }
@@ -2686,6 +2722,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper" && m.jeu === "flechettes") { M.classementFlechettes = m.top || []; M.L && M.L.majClassementFlechettes && M.L.majClassementFlechettes(M.classementFlechettes); }
     else if (m.t === "flipper") { M.classementFlipper = m.top || []; M.L && M.L.majClassement && M.L.majClassement(M.classementFlipper); }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
   };

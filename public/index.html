@@ -1959,6 +1959,9 @@
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
         surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
+        surFlechettes: () => { infoMatrice("🎯 Les fléchettes…", 1500);
+          import("./flechettes.js?v=" + VERSION).then(f => f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES }))
+            .catch(e => infoMatrice("Les fléchettes n'ont pas pu démarrer : " + e.message, 6000)); },
         surFlipper: () => { infoMatrice("🎰 Le flipper s'allume…", 2000);
           import("./flipper.js?v=" + VERSION).then(f => f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }) }))
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
@@ -2556,6 +2559,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.23", "12 octobre 2026", ["Salle des fêtes : une cible de fléchettes au mur, à côté du flipper ; on s'en approche, « 🎯 Jouer aux fléchettes » : 3 volées de 3 fléchettes (doubles, triples, 25 et bull), on vise au doigt, le viseur tremble un peu", "Au-dessus de la cible : son tableau des 3 meilleurs scores, comme pour le flipper"]],
     ["3.22.4", "12 octobre 2026", ["Le baby-foot de la salle des fêtes est retiré (celui du bar du sous-sol reste)"]],
     ["3.22.3", "12 octobre 2026", ["Cour d'honneur : sur les deux grandes ailes en brique, la colonne de fenêtres est remontée au-dessus de la porte, et les portes sont en bois marron"]],
     ["3.22.2", "12 octobre 2026", ["Flipper : « Jouer au flipper » ouvre bien la partie, même quand la Matrice est en plein écran", "Le baby-foot est déplacé contre le mur des fenêtres : on accède librement au flipper"]],

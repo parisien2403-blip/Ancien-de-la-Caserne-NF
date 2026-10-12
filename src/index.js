@@ -87,6 +87,7 @@ export class Compteur extends DurableObject {
     // la discothèque du DJ : musiques déposées par les anciens, en morceaux de 1 Mo
     // le flipper de la salle des fêtes : les parties jouées, pour le classement affiché au mur
     this.sql.exec(`CREATE TABLE IF NOT EXISTS flipper_scores (id INTEGER PRIMARY KEY AUTOINCREMENT, numero INTEGER, nom TEXT, score INTEGER, cree TEXT)`);
+    try { this.sql.exec("ALTER TABLE flipper_scores ADD COLUMN jeu TEXT DEFAULT 'flipper'"); } catch (e) { /* déjà là */ }   // flipper, flechettes
     this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, artiste TEXT, auteur INTEGER, auteur_nom TEXT, type TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, duree REAL, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques_morceaux (m INTEGER, n INTEGER, data BLOB, PRIMARY KEY (m, n))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux_morceaux (jeu INTEGER, n INTEGER, data BLOB, PRIMARY KEY (jeu, n))`);
@@ -388,7 +389,7 @@ export class Compteur extends DurableObject {
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
-      if (m.lieu === "fetes") ws.send(JSON.stringify({ t: "flipper", top: this.classementFlipper() }));
+      if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
@@ -505,14 +506,15 @@ export class Compteur extends DurableObject {
 
   /* ----- La borne de jeux : l'administrateur seul ajoute ou retire ----- */
   // le classement du flipper : le meilleur score de chacun, les 3 premiers
-  classementFlipper() {
-    return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores GROUP BY numero ORDER BY score DESC LIMIT 3").toArray().map(r => ({ nom: r.nom, score: r.score }));
+  classementFlipper(jeu = "flipper") {
+    return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores WHERE COALESCE(jeu, 'flipper') = ? GROUP BY numero ORDER BY score DESC LIMIT 3", jeu).toArray().map(r => ({ nom: r.nom, score: r.score }));
   }
-  async scoreFlipper(token, x) {
-    const moi = this.moi(token), score = Math.max(0, Math.min(99999999, Math.floor(Number(x && x.score) || 0)));
-    if (score > 0) this.sql.exec("INSERT INTO flipper_scores (numero, nom, score, cree) VALUES (?, ?, ?, ?)", Number(moi.numero), moi.prenom, score, new Date().toISOString());
-    const top = this.classementFlipper(); this.diffuser("fetes", { t: "flipper", top });
-    const record = this.sql.exec("SELECT MAX(score) AS s FROM flipper_scores WHERE numero = ?", Number(moi.numero)).toArray()[0];
+  async scoreFlipper(token, x, jeu = "flipper") {
+    jeu = jeu === "flechettes" ? "flechettes" : "flipper";
+    const moi = this.moi(token), score = Math.max(0, Math.min(jeu === "flechettes" ? 540 : 99999999, Math.floor(Number(x && x.score) || 0)));
+    if (score > 0) this.sql.exec("INSERT INTO flipper_scores (numero, nom, score, cree, jeu) VALUES (?, ?, ?, ?, ?)", Number(moi.numero), moi.prenom, score, new Date().toISOString(), jeu);
+    const top = this.classementFlipper(jeu); this.diffuser("fetes", { t: "flipper", jeu, top });
+    const record = this.sql.exec("SELECT MAX(score) AS s FROM flipper_scores WHERE numero = ? AND COALESCE(jeu, 'flipper') = ?", Number(moi.numero), jeu).toArray()[0];
     return { top, record: (record && record.s) || 0 };
   }
   async jeux(token) {
@@ -1029,7 +1031,7 @@ export default {
         const [, , type, id] = url.pathname.split("/"); r = await registre.retirer(token, type, id);
       }
       else if (route === "GET /api/flipper") { await registre.verifierAcces(token); r = { top: await registre.classementFlipper() }; }
-      else if (route === "POST /api/flipper") r = await registre.scoreFlipper(token, await corps());
+      else if (route === "POST /api/flipper") r = await registre.scoreFlipper(token, await corps(), url.searchParams.get("jeu") || "flipper");
       else if (route === "GET /api/pnj") r = await registre.infoPNJ(token, Number(url.searchParams.get("id")) || 1);
       else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps(), Number(url.searchParams.get("id")) || 1);
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
