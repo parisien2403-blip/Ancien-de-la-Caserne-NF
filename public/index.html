@@ -1118,7 +1118,8 @@
           <button class="btn small alt" id="mxPNJBar" type="button" hidden>🍷 Mr Miner, le barman</button>
           <button class="btn small alt" id="mxPNJDanseur" type="button" hidden>🧟 Le danseur Thriller</button>
           <button class="btn small alt" id="mxPNJZombie" type="button" hidden>🧟‍♂️ Le zombie</button>
-          <button class="btn small alt" id="mxPNJMariee" type="button" hidden>👰 La mariée</button></div></div>
+          <button class="btn small alt" id="mxPNJMariee" type="button" hidden>👰 La mariée</button>
+          <button class="btn small alt" id="mxPNJHernandez" type="button" hidden>🕺 Mr Hernandez</button></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
           <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
@@ -1942,8 +1943,8 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; })]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; })]);
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -1991,7 +1992,7 @@
     } catch (e) { mxOuverte = false; $("mxVoile").innerHTML = `<span>La Matrice ne s'ouvre pas : ${esc(e.message)}<br>Vérifie ta connexion internet.</span>`; $("mxVoile").hidden = false; }
   }
   let mxComptes = {}, mxLieu = null, pnjInfo = null, djInfo = null, barInfo = null, danseurInfo = null, trioInfo = {};
-  const TRIO = { danseur: [4, "🧟 Le danseur Thriller", "Le danseur Thriller", "images/danseur-tete.png"], zombie: [5, "🧟‍♂️ Le zombie (danseur Thriller)", "Le zombie", "images/zombie-tete.png"], mariee: [6, "👰 La mariée (danseuse Thriller)", "La mariée", "images/mariee-tete.png"] };
+  const TRIO = { danseur: [4, "🧟 Le danseur Thriller", "Le danseur Thriller", "images/danseur-tete.png"], zombie: [5, "🧟‍♂️ Le zombie (danseur Thriller)", "Le zombie", "images/zombie-tete.png"], mariee: [6, "👰 La mariée (danseuse Thriller)", "La mariée", "images/mariee-tete.png"], hernandez: [7, "🕺 Mr Hernandez (Born to Be Alive)", "Mr Hernandez", "images/hernandez-tete.png"] };
   const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id !== 1 ? "&id=" + id : ""}`;
   function allerAuDJ() {
     const ouvrir = () => { $("mxDJ").scrollIntoView({ behavior: "smooth", block: "start" }); $("mxDJ").classList.remove("eclat"); void $("mxDJ").offsetWidth; $("mxDJ").classList.add("eclat"); };
@@ -2144,6 +2145,7 @@
   $("mxPNJDanseur").onclick = () => ouvrirBonhomme("danseur");
   $("mxPNJZombie").onclick = () => ouvrirBonhomme("zombie");
   $("mxPNJMariee").onclick = () => ouvrirBonhomme("mariee");
+  $("mxPNJHernandez").onclick = () => ouvrirBonhomme("hernandez");
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
@@ -2172,7 +2174,7 @@
     $("bhErreur").hidden = true; bh.mode = mode;
     const tr = TRIO[mode], dans = !!tr, bar = mode === "bar", dj = mode === "dj", pnj = mode === "pnj" || dj || bar || dans, idP = tr ? tr[0] : bar ? 3 : dj ? 2 : 1;
     $("bhTitreFen").textContent = tr ? tr[1] : bar ? "🍷 Mr Miner, le barman" : dj ? "🎧 Manu, le DJ" : pnj ? "👮 Le bonhomme du chef de poste" : "🧍 Mon bonhomme";
-    $("bhSousTitre").textContent = dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
+    $("bhSousTitre").textContent = mode === "hernandez" ? "Toi seul règles Mr Hernandez, qui arrive au milieu de la piste avec sa canne dès que passe Born to Be Alive : sa tête, ses vêtements, son nom." : dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
     $("bhNomZone").hidden = !pnj; $("bhPhotoProfil").hidden = pnj; $("bhTeteTitre").textContent = pnj ? "Sa tête" : "Ma tête";
     try {
       const m = await chargerMX();
@@ -2570,6 +2572,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.32", "12 octobre 2026", ["Salle des fêtes : Mr Hernandez arrive au milieu de la piste dès que passe Born to Be Alive, en chemise noire, gilet blanc et baskets, sa canne à la main, et danse comme dans le clip (la canne derrière la tête, pointée au loin, plantée au sol, au-dessus de la tête, et un tour sur lui-même)", "Administrateur : bouton 🕺 Mr Hernandez pour recadrer sa tête, changer ses vêtements, sa silhouette et son nom"]],
     ["3.31", "12 octobre 2026", ["Salle des fêtes : quand Thriller passe, le danseur, le zombie et la mariée font ensemble la danse du clip, parfaitement synchronisés : la marche des zombies vers la salle, les griffes à gauche et à droite, le pas chassé, les bras au ciel, puis ils reculent à leur place et recommencent"]],
     ["3.30", "12 octobre 2026", ["Deux nouveaux danseurs Thriller : le zombie en costume déchiré et la mariée zombie ; dès qu'un Thriller passe, ils arrivent avec le danseur au milieu de la piste, à sa gauche et à sa droite, et dansent comme lui", "(Administrateur) boutons « 🧟‍♂️ Le zombie » et « 👰 La mariée » pour recadrer leur tête, leurs vêtements, leur silhouette et leur nom"]],
     ["3.29.6", "12 octobre 2026", ["Les étages : on monte et on redescend de nouveau ; la cour vue par la porte ne déborde plus dans la cage d'escalier (toucher le sol de la cage ne fait plus sortir) ; toucher la cour par la porte fait bien sortir ; au rez-de-chaussée, on ne peut plus passer sous l'escalier", "Son propre bonhomme ne gêne plus quand on touche l'écran derrière lui", "Le bar du sous-sol : une fenêtre sur la cour d'honneur, au-dessus du lambris (de jour comme de nuit)"]],

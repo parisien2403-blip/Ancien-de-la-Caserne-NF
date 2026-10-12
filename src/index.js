@@ -48,9 +48,10 @@ const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
   4: { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e" },
-  5: { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52" }, 6: { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null } };
-const idPNJ = id => [1, 2, 3, 4, 5, 6].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee"];
+  5: { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52" }, 6: { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null },
+  7: { nom: "Mr Hernandez", tenue: "hernandez", couleur: "#161616", bas: "#161616" } };
+const idPNJ = id => [1, 2, 3, 4, 5, 6, 7].includes(id) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;

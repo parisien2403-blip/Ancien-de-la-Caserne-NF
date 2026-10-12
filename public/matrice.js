@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -102,6 +102,16 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
       x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
       x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
+    // Mr Hernandez : chemise noire au col ouvert sur la poitrine, chaîne en or, gilet blanc boutonné à pointes
+    if (t === "hernandez" && o.pose !== "dos") {
+      if (profil) { x.fillStyle = "#f3f1ea"; x.beginPath(); x.roundRect(80, 150, 40, 108, 8); x.fill(); }
+      else { x.fillStyle = "#f3f1ea"; x.beginPath(); x.moveTo(66, 150); x.lineTo(84, 147); x.lineTo(100, 206); x.lineTo(116, 147); x.lineTo(134, 150); x.lineTo(140, 262); x.lineTo(119, 278); x.lineTo(100, 264); x.lineTo(81, 278); x.lineTo(60, 262); x.closePath(); x.fill();
+        x.fillStyle = peau; x.beginPath(); x.moveTo(90, 146); x.lineTo(100, 178); x.lineTo(110, 146); x.fill();   // la poitrine, chemise ouverte
+        x.fillStyle = c; x.beginPath(); x.moveTo(84, 146); x.lineTo(74, 168); x.lineTo(92, 158); x.closePath(); x.moveTo(116, 146); x.lineTo(126, 168); x.lineTo(108, 158); x.closePath(); x.fill();   // le grand col
+        x.strokeStyle = "#d9b13b"; x.lineWidth = 2; x.beginPath(); x.moveTo(91, 148); x.quadraticCurveTo(100, 172, 109, 148); x.stroke();
+        x.fillStyle = "#e3c04a"; x.beginPath(); x.ellipse(100, 166, 3.5, 5, 0, 0, 7); x.fill();   // la chaîne et le pendentif
+        x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 2; x.beginPath(); x.moveTo(72, 236); x.lineTo(90, 234); x.moveTo(110, 234); x.lineTo(128, 236); x.stroke();   // les poches
+        x.fillStyle = "#dcd6c4"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(102, 214 + k * 11, 2.8, 0, 7); x.fill(); } } }
     // le barman : le grand tablier bleu, noué à la taille, qui descend sous les genoux (et ses bretelles)
     if (t === "barman" && !profil && o.pose !== "dos") { x.fillStyle = "#2f5276"; x.beginPath(); x.roundRect(72, 158, 56, 60, 6); x.fill();
       x.beginPath(); x.moveTo(60, 214); x.lineTo(140, 214); x.lineTo(146, 318); x.lineTo(54, 318); x.closePath(); x.fill();
@@ -109,7 +119,11 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(60, 212, 80, 4); x.fillStyle = "rgba(255,255,255,.06)"; for (let k = 0; k < 4; k++) x.fillRect(70 + k * 18, 222, 3, 90); }
     // les bras : pendants, ou levés pour danser (o.pose = "haut") ; en disco, le bras droit pointe le doigt en l'air puis vers le sol
     const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
+    const mains = [];
     const bras = (cx, sens) => {
+      // la main sur la hanche, le coude sorti (Mr Hernandez, comme sur la photo)
+      if (sens < 0 && !profil && (o.pose === "canne1" || o.pose === "canne3")) { x.strokeStyle = t === "tshirt" || t === "polo" ? peau : (t === "garde" ? "#1c2541" : c); x.lineWidth = 24; x.lineCap = "round"; x.lineJoin = "round";
+        x.beginPath(); x.moveTo(cx, 160); x.lineTo(cx + 36, 208); x.lineTo(cx - 8, 246); x.stroke(); x.fillStyle = peau; x.beginPath(); x.arc(cx - 10, 248, 11, 0, 7); x.fill(); mains[1] = [cx - 10, 248]; return; }
       const disco = DISCO[o.pose], doigt = disco && sens < 0;
       // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
       // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
@@ -119,6 +133,9 @@ export function dessinerBonhomme(o, tete) {
         // Thriller : les deux bras pliés en griffes de zombie, d'un côté puis de l'autre
         : o.pose === "thriller1" ? (sens > 0 ? [12, 176] : [70, 150]) : o.pose === "thriller2" ? (sens > 0 ? [130, 150] : [188, 176])
         : o.pose === "thriller3" ? (sens > 0 ? [22, 96] : [178, 96])
+        // Mr Hernandez et sa canne : levée derrière la tête (canne1), tenue à deux mains au-dessus de la tête (canne2), pointée au loin (canne3), plantée au sol (canne4)
+        : o.pose === "canne1" ? (sens > 0 ? [62, 36] : null) : o.pose === "canne2" ? (sens > 0 ? [36, 64] : [164, 64]) : o.pose === "canne3" ? (sens > 0 ? [-34, 112] : null)
+        : o.pose === "canne4" ? (sens > 0 ? [24, 232] : [170, 46])
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
         : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
@@ -127,6 +144,7 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
+      mains[sens > 0 ? 0 : 1] = cible || [cx - 96 * Math.sin(a), 158 + 96 * Math.cos(a)];
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "tshirt" || t === "polo";
@@ -150,6 +168,21 @@ export function dessinerBonhomme(o, tete) {
       x.restore();
     };
     if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
+    // la canne de Mr Hernandez (bois sombre, pommeau doré), dans sa main ; dessinée avant la tête, qui passe devant
+    if (t === "hernandez" && mains[0]) { const [hx, hy] = mains[0];
+      let a, b;
+      if (o.pose === "canne1") { a = [hx - 4, hy - 16]; b = [hx + 112, hy + 150]; }
+      else if (o.pose === "canne2") { a = [hx - 30, hy - 2]; b = [hx + 160, hy - 2]; }
+      else if (o.pose === "canne4") { a = [hx, hy - 12]; b = [hx + 4, 404]; }
+      else if (o.pose === "canne3") { a = [hx + 4, hy + 12]; b = [hx - 14, hy - 132]; }
+      else { const sx0 = profil ? 96 : 48, dx = hx - sx0, dy = hy - 158, L = Math.hypot(dx, dy) || 1; a = [hx - dx / L * 12, hy - dy / L * 12]; let lg = 150; while (lg > 50 && (hx + dx / L * lg < -55 || hx + dx / L * lg > 255 || hy + dy / L * lg < 6)) lg -= 10;   // (sans sortir de l'image)
+        b = [hx + dx / L * lg, Math.min(404, hy + dy / L * lg)]; }
+      x.strokeStyle = "#4a2a14"; x.lineWidth = 7; x.lineCap = "round"; x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke();
+      x.strokeStyle = "rgba(255,255,255,.18)"; x.lineWidth = 2; x.beginPath(); x.moveTo(a[0] + 1, a[1]); x.lineTo(b[0] + 1, b[1]); x.stroke();
+      x.fillStyle = "#c9a227"; x.beginPath(); x.arc(b[0], b[1], 4, 0, 7); x.fill();   // l'embout
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]); x.save(); x.translate(a[0], a[1]); x.rotate(ang);
+      x.strokeStyle = "#d4af37"; x.lineWidth = 8; x.beginPath(); x.moveTo(14, 0); x.lineTo(-6, 0); x.quadraticCurveTo(-20, 0, -20, -12); x.stroke(); x.restore();   // le pommeau doré, recourbé
+      x.fillStyle = peau; x.beginPath(); x.arc(hx, hy, 11, 0, 7); x.fill(); }   // la main par-dessus la canne
     const dos = o.pose === "dos" || profil;
     if (!dos && t === "tshirt") { x.fillStyle = peau; x.beginPath(); x.ellipse(100, 146, 14, 8, 0, 0, Math.PI); x.fill(); x.strokeStyle = assombrir(c, .8); x.lineWidth = 3; x.beginPath(); x.ellipse(100, 146, 15, 9, 0, 0, Math.PI); x.stroke(); }
     if (!dos && t === "polo") { x.fillStyle = assombrir(c, .82); x.beginPath(); x.moveTo(82, 142); x.lineTo(100, 150); x.lineTo(90, 162); x.fill(); x.beginPath(); x.moveTo(118, 142); x.lineTo(100, 150); x.lineTo(110, 162); x.fill();
@@ -180,7 +213,11 @@ export function dessinerBonhomme(o, tete) {
         // de dos : la même silhouette de tête, en arrière du crâne (couleur peau, un peu d'ombre en bas)
         const c2 = document.createElement("canvas"); c2.width = Math.ceil(w); c2.height = Math.ceil(h); const y2 = c2.getContext("2d");
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
-        const g = y2.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+        const g = y2.createLinearGradient(0, 0, 0, h);
+        if (t === "hernandez") {   // Mr Hernandez : de dos, ses cheveux noirs et bouclés
+          g.addColorStop(0, "#2a1c14"); g.addColorStop(1, "#120c08"); y2.fillStyle = g; y2.fillRect(0, 0, w, h);
+          y2.globalCompositeOperation = "source-atop"; y2.fillStyle = "rgba(90,62,44,.45)"; for (let k = 0; k < 40; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .06, 0, 7); y2.fill(); }
+        } else { g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         x.drawImage(c2, -w / 2, -h);
       } else x.drawImage(tete, -w / 2, -h, w, h);
       x.restore(); x.shadowBlur = 0;
@@ -2640,6 +2677,11 @@ export async function ouvrir(ctx) {
           const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           const ph = t / 900; p.corps.material.rotation = Math.sin(ph) * .05; p.corps.position.x = Math.sin(ph) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.danse === "alive" && p.poses.canne1) {
+          // Mr Hernandez : la danse de Born to Be Alive (voir choreAlive)
+          const c = choreAlive();
+          if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
+          p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
         else if (p.info.danse === "thriller" && p.info.danseur && M.trioPret) {
           // les trois danseurs du clip : la même chorégraphie, au même temps (voir choreThriller)
           const c = choreThriller();
@@ -2687,7 +2729,7 @@ export async function ouvrir(ctx) {
       }
     }
     if (M.L.anim) M.L.anim(t);
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur();
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
@@ -2828,7 +2870,7 @@ async function dessinerCorps(p) {
   if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
   const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); // les bonshommes passent après le décor transparent (bouteilles, verres) : jamais un objet de derrière dessiné par-dessus eux
     /* chaque bonhomme est un panneau qui reste (presque) droit : il se tourne vers la caméra, mais ne se penche en arrière que de 17° au plus,
@@ -2997,6 +3039,39 @@ function choreThriller() {
   else if (k < 28) { pose = "thriller3"; rot = Math.sin(ph * Math.PI * 2) * .08; saut = Math.abs(Math.sin(ph * Math.PI)) * .08; }
   else { pose = k % 2 ? "thriller2" : "thriller1"; oz = AV * (1 - (k - 28 + Math.min(1, v * 1.6)) / 4); rot = (k % 2 ? .05 : -.05) * coup; }
   return { k, pose, ox, oz, rot, sx, saut };
+}
+/* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
+const HERNANDEZ = -7, TEMPS_ALIVE = 460;
+function animerHernandez() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && /born to be alive|hernandez/.test(M.djTitre || ""), p = M.gens.get(HERNANDEZ);
+  if (air && !p) { const [x, z] = M.L.pisteCentre, P = (M.ctx.pnjTrio && M.ctx.pnjTrio(7)) || {};
+    const q = ajouterAncien({ numero: HERNANDEZ, nom: P.nom || "Mr Hernandez", tenue: P.tenue || "hernandez", couleur: P.couleur || "#161616", bas: P.bas || "#161616", pieds: P.pieds || "#f2f2f2",
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 7) : "images/hernandez-tete.png", pnj: true, danseur: true, hernandez: true, x, z: z + 3 });
+    if (q) { viser(q, x, z + .6); q.info.danse = "alive"; }
+    dire(HERNANDEZ, "Born to be alive ! 🕺"); }
+  else if (!air && p) retirerAncien(HERNANDEZ);
+  else if (p) { p.info.danse = "alive";
+    if (!p.cible && !p.base) p.base = [p.g.position.x, p.g.position.z];
+    if (p.base) { const c = choreAlive(), nx = p.base[0] + c.ox; if (M.L.limites(nx, p.base[1])) p.g.position.x = nx;
+      const n = Math.floor(Date.now() / (TEMPS_ALIVE * 32)); if (c.k === 0 && p.cri !== n) { p.cri = n; dire(HERNANDEZ, ["Born to be alive ! 🕺", "C'est la vie ! ✨", "Ouh ouh ! 🎶"][n % 3]); } } }
+}
+/* la danse du clip Born to Be Alive, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
+   1-4   la canne levée derrière la tête, l'autre main sur la hanche, on roule des hanches
+   5-8   la canne pointée au loin : deux pas à gauche, puis on revient en la pointant de l'autre côté
+   9-12  la canne plantée au sol, le bras en l'air, on rebondit sur les genoux
+   13-14 la canne tenue à deux mains au-dessus de la tête, en se déhanchant
+   15-16 un tour complet sur soi-même */
+function choreAlive() {
+  const ph = Date.now() / TEMPS_ALIVE, k = Math.floor(ph) % 16, v = ph % 1, f = Math.min(1, v * 1.6);
+  let pose, ox = 0, rot = 0, sx = 0, saut = 0, tour = 1;
+  if (k < 4) { const sg = k % 2 ? 1 : -1, m = Math.sin(v * Math.PI); pose = "canne1"; rot = sg * .08 * m; sx = sg * .1 * m; saut = m * .03; }
+  else if (k < 6) { pose = "canne3"; ox = -.5 * (k - 4 + f) / 2; saut = Math.sin(f * Math.PI) * .06; rot = .06; }
+  else if (k < 8) { pose = "canne3D"; ox = -.5 * (1 - (k - 6 + f) / 2); saut = Math.sin(f * Math.PI) * .06; rot = -.06; }
+  else if (k < 12) { pose = "canne4"; saut = Math.abs(Math.sin(ph * Math.PI)) * .07; rot = k % 2 ? -.05 : .05; }
+  else if (k < 14) { const m = Math.sin(ph * Math.PI); pose = "canne2"; rot = m * .1; sx = m * .12; }
+  else { const cs = Math.cos(((k - 14) + v) / 2 * Math.PI * 2); pose = cs < 0 ? "dos" : "canne1"; tour = Math.max(.08, Math.abs(cs)); }
+  return { k, pose, ox, rot, sx, saut, tour };
 }
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
@@ -3205,6 +3280,7 @@ function connecter() {
     }
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
+    else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
