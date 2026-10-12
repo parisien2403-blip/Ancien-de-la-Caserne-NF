@@ -1096,16 +1096,23 @@ function construireEtage(A, L, scene) {
   for (const sg of [-1, 1]) { const X = v => sg * v, xb = (a, b) => (X(a) + X(b)) / 2, cageW = CX1 - CX0, cz = (Z0 + Z1) / 2;
     A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z0 - .1, false);
     A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
-    // le mur extérieur et la porte (au rez-de-chaussée)
-    const zp = 2.5, lp = 1.2;
-    A.ajoute(new THREE.BoxGeometry(.2, HTOT, zp - lp / 2 - Z0), beige, X(CX1 + .1), HTOT / 2, (Z0 + zp - lp / 2) / 2, false);
-    A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - zp - lp / 2), beige, X(CX1 + .1), HTOT / 2, (Z1 + zp + lp / 2) / 2, false);
-    A.ajoute(new THREE.BoxGeometry(.2, HTOT - 2.3, lp), beige, X(CX1 + .1), 2.3 + (HTOT - 2.3) / 2, zp, false);
-    const jour = A.ajoute(new THREE.PlaneGeometry(lp, 2.3), new THREE.MeshBasicMaterial({ map: tex(toile(64, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#c9d6e0"); g.addColorStop(.7, "#e4dccb"); g.addColorStop(1, "#7d7a74"); x.fillStyle = g; x.fillRect(0, 0, w, h); })) }), X(CX1 + .2), 1.15, zp, false);
-    jour.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2;
+    A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - Z0), beige, X(CX1 + .1), HTOT / 2, cz, false);   // le mur extérieur, plein
     // le mur côté couloir : plein, sauf l'ouverture sur le couloir à chaque étage
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, ZC0 - Z0), beige, X(CX0 - .1), HTOT / 2, (Z0 + ZC0) / 2, false);
-    A.ajoute(new THREE.BoxGeometry(.2, H, Z1 - ZC0), beige, X(CX0 - .1), H / 2, (ZC0 + Z1) / 2, false);
+    // au rez-de-chaussée, sous le couloir : la porte par où l'on entre (on vient de la cour), et par l'embrasure, la cour d'honneur
+    const zp = 2.5, lp = 1.2;
+    A.ajoute(new THREE.BoxGeometry(.2, H, zp - lp / 2 - ZC0), beige, X(CX0 - .1), H / 2, (ZC0 + zp - lp / 2) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.2, H, Z1 - zp - lp / 2), beige, X(CX0 - .1), H / 2, (Z1 + zp + lp / 2) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.2, H - 2.3, lp), beige, X(CX0 - .1), 2.3 + (H - 2.3) / 2, zp, false);
+    const cour = A.ajoute(new THREE.PlaneGeometry(4.2, 4.2), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x, w, h) => {
+      const g = x.createLinearGradient(0, 0, 0, h * .3); g.addColorStop(0, "#8fb4d6"); g.addColorStop(1, "#cfe0ec"); x.fillStyle = g; x.fillRect(0, 0, w, h * .3);
+      x.fillStyle = "#e6decb"; x.fillRect(0, h * .3, w, h * .42); x.fillStyle = "#d3c9b3"; x.fillRect(0, h * .3, w, 8);
+      for (let X0 = 8; X0 < w; X0 += 56) { x.fillStyle = "#f2eee4"; x.fillRect(X0 - 3, h * .38 - 3, 38, h * .3 + 6); const gg = x.createLinearGradient(0, h * .38, 0, h * .68); gg.addColorStop(0, "#9db1bf"); gg.addColorStop(1, "#56697a"); x.fillStyle = gg; x.fillRect(X0, h * .38, 32, h * .3); }
+      x.fillStyle = "#c2bcb0"; x.fillRect(0, h * .72, w, 10); x.fillStyle = "#6d6e72"; x.fillRect(0, h * .76, w, h * .24);
+      for (let y = h * .76; y < h; y += 8) for (let X0 = (y / 8 % 2) * 6; X0 < w; X0 += 12) { x.fillStyle = `rgba(255,255,255,${.04 + (X0 * 7 % 5) / 60})`; x.fillRect(X0, y, 10, 6); } })) }), X(CX0 - .6), 2.1, zp, false);
+    cour.rotation.y = sg < 0 ? -Math.PI / 2 : Math.PI / 2;
+    const pv = A.ajoute(new THREE.PlaneGeometry(.75, lp + .2), A.mat({ map: tex(textures().paves, .6, 1) }), X(CX0 - .35), .004, zp, false); pv.rotation.x = -Math.PI / 2;
+    const lumJour = new THREE.PointLight(0xf4f0e8, 1.6, 4, 1.6); lumJour.position.set(X(CX0 + .4), 1.6, zp); scene.add(lumJour);
     for (let k = 1; k <= N; k++) A.ajoute(new THREE.BoxGeometry(.2, H - HP, Z1 - ZC0), beige, X(CX0 - .1), k * H + HP + (H - HP) / 2, (ZC0 + Z1) / 2, false);
     for (let k = 0; k <= N; k++) { const y = k * H;
       sol(cageW, Z1 - 1.6, xb(CX0, CX1), y, (1.6 + Z1) / 2);                                        // le palier de l'étage
@@ -1155,8 +1162,7 @@ function construireEtage(A, L, scene) {
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
       || (ax > CX0 - .05 && ax < CXM - .15 && z > Z0 + .25 && z < Z1 - .3)
-      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < Z1 - .3)
-      || (ax >= CX1 - .25 && ax < CX1 + .4 && Math.abs(z - 2.5) < .35); };
+      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < Z1 - .3); };
   /* toucher un endroit d'un autre étage : on y monte (ou descend) par l'escalier de la cage la plus proche */
   L.allerEtage = (moi, x, z, y) => { const e = moi.etg || { n: 0 }, ax = Math.abs(x), surPalier = ax < CX0 || z >= 1.6;
     const f = Math.max(0, Math.min(N, Math.round((y - (surPalier ? 0 : .85)) / H)));
@@ -1172,7 +1178,8 @@ function construireEtage(A, L, scene) {
     return true; };
   // on sort par la porte (au rez-de-chaussée seulement) : dans la cour d'honneur, devant la porte de l'aile
   const auRdc = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return !moi || !moi.etg || moi.etg.n === 0; };
-  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > CX1 + .1 && Math.abs(z - 2.5) < .6, vers: "grande", arrivee: [sg * 7.9, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > 0 && Math.abs(x) < CX0 - .25 && Math.abs(z - 2.5) < .7, vers: "grande", arrivee: [sg * 7.9, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+  L.sansMusique = true;   // (on n'entend pas la fête d'ici)
   // la caméra reste dans la cage ou dans le couloir, à hauteur du bonhomme
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
     pos.y = Math.min(pos.y, py + 2.3);
@@ -1181,7 +1188,7 @@ function construireEtage(A, L, scene) {
     return true; };
   L.interieur = true; L.sansPNJ = true; L.zone = [-CX1 - .5, CX1 + .5, Z0, Z1];
   L.boite = [-CX1, CX1, Z0, Z1];
-  L.depart = [-13.6, 2.5]; L.cam = { pos: [-12, 2, 3], vise: [-14, 1, -2] };
+  L.depart = [-12, 2.5]; L.cam = { pos: [-10.5, 2, 2.5], vise: [-14, 1, 0] };
 }
 // un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
 function tableauScores(A, sousTitre, x0, y0, z0) {
@@ -1846,7 +1853,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.zone = [-10.6, 19.2, C2.z1, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
-    for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 13.6, 2.5], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+    for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, 2.5], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
       raccourci(L, scene, [.5, 2.4, 1.5], [sg * 8.62, 1.2, 13.75], { marche: [sg * 8.72, 13.75] }); }
     L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
@@ -2474,9 +2481,9 @@ export async function ouvrir(ctx) {
     ray.setFromCamera(v2, M.camera);
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
     const toi = M.moiNum && M.gens.get(M.moiNum);
-    if (toi && toi.corps && ray.intersectObject(toi.corps)[0]) { danser(toi.info.danse ? false : M.styleDanse || "balance"); return; }
+    // (toucher son propre bonhomme ne fait plus rien : on vise le sol où l'on veut aller ; les danses sont dans les boutons)
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
-    const h = ray.intersectObjects(corps)[0];
+    const h = ray.intersectObjects(corps).find(q => !q.uv || (Math.abs(q.uv.x - .5) < .16 && q.uv.y > .08 && q.uv.y < .78));   // le corps seul, pas les marges
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { dire(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
@@ -2524,7 +2531,8 @@ export async function ouvrir(ctx) {
         else if (M.L.limites(p.g.position.x, p.g.position.z) && !M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15)) {
           // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
           p.cible = null; p.chemin = []; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
-        else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt)); if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
+        else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt));
+          if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
@@ -2589,7 +2597,7 @@ export async function ouvrir(ctx) {
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
-    let vol = M.L.interieur ? 1 : 0;
+    let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
     if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .07 + .38 * Math.max(0, 1 - d / 22); }
     if (Math.abs(vol - (M.volume ?? -1)) > .015) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
