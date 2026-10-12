@@ -221,7 +221,8 @@ export function dessinerBonhomme(o, tete) {
         x.fillStyle = "#e9e6dd"; x.beginPath(); x.moveTo(64, 150); x.lineTo(84, 150); x.quadraticCurveTo(100, 170, 116, 150); x.lineTo(136, 150); x.lineTo(140, 258); x.lineTo(60, 258); x.closePath(); x.fill();
         x.fillStyle = "#1c1c1c"; x.fillRect(66, 146, 9, 36); x.fillRect(125, 146, 9, 36); for (const [a, b2] of [[60, 206], [130, 206], [70, 240], [94, 240], [118, 240]]) x.fillRect(a, b2, 12, 14);
         x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 2; x.beginPath(); x.moveTo(100, 172); x.lineTo(100, 256); x.stroke(); poche(126, 252, 18, 22, "#e9e6dd");
-        x.fillStyle = "#2a2c26"; x.fillRect(68, 300, 26, 22); x.fillRect(106, 300, 26, 22); }   // les poches cargo
+        x.fillStyle = "#2a2c26"; x.fillRect(68, 300, 26, 22); x.fillRect(106, 300, 26, 22);   // les poches cargo
+        x.fillStyle = "#f4f2ec"; x.fillRect(77, 177, 20, 20); x.fillStyle = "#d4161e"; x.fillRect(84, 179, 6, 16); x.fillRect(79, 184, 16, 6); }   // la croix rouge médicale, sur la poitrine droite
       if (t === "leon") {   // l'uniforme bleu du R.P.D., le gilet pare-balles noir à rivets, la bandoulière en cuir, le ceinturon et l'étui de cuisse
         x.fillStyle = "#151517"; x.beginPath(); x.roundRect(62, 152, 76, 92, 10); x.fill();
         x.fillStyle = "#c9ccd0"; for (const [a, b2] of [[70, 160], [130, 160], [70, 236], [130, 236], [100, 236]]) { x.beginPath(); x.arc(a, b2, 2.4, 0, 7); x.fill(); }
