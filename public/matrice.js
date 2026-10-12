@@ -3112,7 +3112,7 @@ function apocalypse(scene, L, base) {
     const feuxH = [0xff2020, 0xffffff].map(c => { const m = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 6), new THREE.MeshBasicMaterial({ color: c, fog: false })); scene.add(m); return m; });
     let debut = performance.now() + 6000 + Math.random() * 8000, a0 = 0;
     const animH = L.anim;
-    L.anim = (t) => { animH && animH(t); const now = performance.now(), D = 22000, u = (now - debut) / D;
+    L.anim = (t) => { animH && animH(t); const now = performance.now(), D = 20500, u = (now - debut) / D;   // (la durée du bruit des pales)
       if (u > 1) { debut = now + 25000 + Math.random() * 30000; a0 = Math.random() * 7; }
       const actif = u >= 0 && u <= 1, f = actif ? Math.sin(u * Math.PI) : 0;
       // l'hélico passe en ligne droite, haut dans le ciel ; le projecteur balaie autour de sa trajectoire
@@ -3123,7 +3123,12 @@ function apocalypse(scene, L, base) {
       cone.scale.set(lg * .16, lg, lg * .16); cone.material.opacity = .09 * f; cone.visible = actif;
       tache.position.set(sx, .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
       feuxH.forEach((m, i) => { m.visible = actif; m.position.set(hx + (i ? .6 : -.6), hy + .3, hz); m.material.color.setHex(i ? 0xffffff : (Math.floor(now / 500) % 2 ? 0xff2020 : 0x300000)); });
-      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); sonPos("sons/apo-helico.mp3", .9); } if (!actif) L.helicoSon = false; };
+      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); try { const a = new Audio("sons/apo-helico.mp3"); a.volume = 0; sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); L.helicoA = a; } catch (e) {} }
+      if (!actif) { L.helicoSon = false; if (L.helicoA) { try { L.helicoA.pause(); } catch (e) {} sonsCourts.delete(L.helicoA); L.helicoA = null; } }
+      // le bruit suit l'hélico : faible au loin, fort quand il passe au-dessus de nous, puis il s'éloigne
+      else if (L.helicoA && M && M.gens) { const moi = M.gens.get(M.moiNum), p = moi ? moi.g.position : { x: cx, z: cz };
+        const d = Math.hypot(hx - p.x, hz - p.z), proche = 1 / (1 + (d / 16) ** 2), entree = Math.min(1, u * 8, (1 - u) * 8);
+        L.helicoA.volume = Math.max(0, Math.min(1, (.18 + .82 * proche) * entree)); } };
   }
   // on ne traverse pas les épaves ni les fûts
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
@@ -4130,4 +4135,4 @@ function connecter() {
     if (M.ouvert) { ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); M.reco = setTimeout(() => M && connecter(), 3000); }
   };
 }
-export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop()));   // (pour les essais)
+export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
