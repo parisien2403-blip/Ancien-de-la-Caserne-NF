@@ -409,11 +409,11 @@ export class Compteur extends DurableObject {
         if (!dj.courant || dj.courant.id !== Number(m.id) || Date.now() - dj.courant.debut < 5000) return;   // un seul passe au suivant
         await this.suivantDJ(dj);
       } else if (m.t === "dj_passer") { await this.suivantDJ(dj); }
-      else if (m.t === "dj_stop") { dj.courant = null; dj.arret = Date.now(); }
+      else if (m.t === "dj_stop") { if (!a.admin) return; dj.courant = null; dj.arret = Date.now(); }   // arrêter la musique : l'administrateur seul
       else if (m.t === "dj_auto") {   // la nuit : si rien ne passe (et que personne ne vient d'arrêter la musique), on relance la discothèque en boucle
         if (dj.courant || (dj.arret && Date.now() - dj.arret < 30 * 60e3)) return;
         await this.suivantDJ(dj); if (!dj.courant) return; dj.courant.par = "la discothèque"; }
-      else if (m.t === "dj_retirer") { dj.file.splice(Number(m.i), 1); }
+      else if (m.t === "dj_retirer") { if (!a.admin) return; dj.file.splice(Number(m.i), 1); }
       else return;
       await this.majDJ(dj);
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
@@ -423,7 +423,7 @@ export class Compteur extends DurableObject {
       // un nuage de fumée, au plus un toutes les 8 secondes
       const der = (await this.ctx.storage.get("fumee_fetes")) || 0; if (Date.now() - der < 8000) return;
       await this.ctx.storage.put("fumee_fetes", Date.now()); this.diffuser("fetes", { t: "fumee" });
-    } else if (m.t === "lasers" && a.lieu === "fetes") {
+    } else if (m.t === "lasers" && a.lieu === "fetes" && a.admin) {   // les lasers : l'administrateur seul
       await this.ctx.storage.put("lasers_fetes", !!m.on); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "lasers", on: !!m.on });   // on les voit aussi de la cour
     } else if (m.t === "lumiere" && a.admin) {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 15 % à 100 %), pour tout le monde

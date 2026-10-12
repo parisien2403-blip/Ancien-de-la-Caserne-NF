@@ -1983,7 +1983,7 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin;
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2000,7 +2000,7 @@
         surLieu: id => { dessinerLieux(m, id); if (id === "etage") { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
-        surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
+        surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") { $("mxFumee").hidden = !n; $("mxLasers").hidden = !n || !moi.admin; } },   // (les lasers : l'administrateur seul)
         surConsole: () => window.ouvrirConsole && window.ouvrirConsole(),
         surAffiche: src => { const d = document.createElement("div");   // l'affiche en grand, comme dans un jeu vidéo ; on touche pour la reposer
           d.style.cssText = "position:fixed;inset:0;z-index:2700;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:16px;cursor:zoom-out;animation:afficheEntree .25s ease-out";
@@ -2063,7 +2063,7 @@
     $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}${c.par === "la discothèque" ? "enchaînée automatiquement" : "choisie par " + c.par}` : "Choisis un titre dans la discothèque ci-dessous";
     $("djEcouter").textContent = djEcoute ? "🔇 Couper le son" : "🔊 Écouter";
     $("djFileTitre").hidden = !djEtat.file.length;
-    $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} <button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button></li>`).join("");
+    $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} ${moi.admin ? `<button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button>` : ""}</li>`).join("");
     $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
     $("mxSon").hidden = !(c && mxLieu === "grande" && djVolume > 0); $("mxSon").textContent = djEcoute ? "🔇" : "🔊 La fête";
     if (!c || !djEcoute || !djVolume || mxLieu === "etage") { djAudio.pause(); return; }   // (dans les étages, on n'entend pas la fête)

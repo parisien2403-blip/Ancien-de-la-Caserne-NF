@@ -2724,23 +2724,36 @@ export async function ouvrir(ctx) {
   let avant = performance.now();
   rendu.setAnimationLoop(t => {
     if (!M || !M.scene) return;
-    const dt = Math.min(.05, (t - avant) / 1000); avant = t;
+    const dt = Math.min(.05, (t - avant) / 1000); avant = t; M.dtCam = dt;
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
-        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
+        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
         else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
           // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
           if (!M.L.limites(p.g.position.x, p.g.position.z) && p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; }
           // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
-          p.cible = null; p.chemin = []; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
-        else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt));
+          p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
+        else {
+          /* une marche fluide : on accélère au départ, on ralentit en arrivant, et l'on tourne en douceur dans les virages au lieu de s'arrêter à chaque coin */
+          const dn = d.clone().normalize(), fin = !(p.chemin && p.chemin.length);
+          if (!p.dir) p.dir = dn.clone(); else { p.dir.lerp(dn, Math.min(1, dt * 9)); if (p.dir.lengthSq() < 1e-4) p.dir.copy(dn); p.dir.normalize(); }
+          const vmax = fin ? 3.3 * Math.max(.35, Math.min(1, L / .9)) : 3.3;
+          p.vit = (p.vit || 0) + (vmax - (p.vit || 0)) * Math.min(1, dt * 6);
+          const pas = Math.min(L, p.vit * dt);
+          let sens = L < .25 || p.dir.dot(dn) < .5 ? dn : p.dir;
+          if (sens !== dn && !M.L.limites(p.g.position.x + sens.x * (pas + .1), p.g.position.z + sens.z * (pas + .1))) sens = dn;   // (dans un passage étroit : tout droit vers le point)
+          p.g.position.addScaledVector(sens, pas);
+          if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
+          // le pas : un léger balancement du corps (pas pendant une danse)
+          p.pasT = (p.pasT || 0) + pas;
+          if (p.corps && !p.info.danse && !Number.isInteger(p.info.assis)) p.corps.position.y = Math.abs(Math.sin(p.pasT * 3.4)) * .045 * Math.min(1, p.vit / 1.5);
           if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // la danse : il se balance d'un côté à l'autre en levant les bras
-      if (p.corps && p.poses) {
+      if (p.corps && p.poses && !p.differe) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
@@ -2816,6 +2829,7 @@ export async function ouvrir(ctx) {
       }
     }
     if (M.L.anim) M.L.anim(t);
+    if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
     animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
@@ -2825,7 +2839,7 @@ export async function ouvrir(ctx) {
     if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .07 + .38 * Math.max(0, 1 - d / 22); }
     if (Math.abs(vol - (M.volume ?? -1)) > .015) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
-    if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2;
+    if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
     chercherAction(t);
     placerCamera(false);
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
@@ -2907,7 +2921,7 @@ function placerCamera(net) {
   if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
   else if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
-  else { M.camera.position.lerp(pos, .06); M.camVise.lerp(vise, .06); }
+  else { const k = 1 - Math.pow(.94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k); M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
 
@@ -2954,10 +2968,13 @@ async function dessinerCorps(p) {
   if (!M) return;
   const c = dessinerBonhomme({ ...p.info, moi: p.moi, large: true }, tete);
   // les poses de la danse : bras en bas, à mi-hauteur, levés ; et le disco (le doigt en l'air, puis vers le sol)
-  if (p.poses) Object.values(p.poses).forEach(t => t.dispose());
-  const pose = n => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
-  p.poses = { repos: tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+  libererPoses(p);
+  /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
+  const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
+  const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+  const cache = {}; p.posesCache = cache; p.poses = {};
+  for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); // les bonshommes passent après le décor transparent (bouteilles, verres) : jamais un objet de derrière dessiné par-dessus eux
     /* chaque bonhomme est un panneau qui reste (presque) droit : il se tourne vers la caméra, mais ne se penche en arrière que de 17° au plus,
@@ -2975,13 +2992,30 @@ function ajouterAncien(info) {
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
   const H = tailleBonhomme();
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
-  const nom = sprite(etiquette(info.nom, p.moi, info.admin), H * .42, H * .08); nom.position.y = H * hauteurDe(p) + .14; g.add(nom);
+  // (plus de nom au-dessus des personnages : ça prenait trop de place)
   M.gens.set(info.numero, p);
   if (Number.isInteger(info.assis)) asseoir(p, info.assis);
-  dessinerCorps(p);
+  // beaucoup de monde au même endroit : on ne dessine que les plus proches (voir trierVisibles)
+  if (info.numero > 0 && !p.moi && [...M.gens.values()].filter(q => q.info.numero > 0 && !q.moi && !q.differe).length > MAX_VUS) { p.differe = true; g.visible = false; }
+  else dessinerCorps(p);
   return p;
 }
-function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) return; M.scene.remove(p.g); M.gens.delete(numero); }
+/* avec beaucoup de monde dans le même lieu : seuls les MAX_VUS anciens les plus proches de soi sont dessinés (les autres sont bien là, mais pas affichés),
+   pour que le téléphone reste fluide ; on refait le tri toutes les secondes */
+const MAX_VUS = 50;
+function trierVisibles() {
+  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return;
+  const autres = [...M.gens.values()].filter(q => q.info.numero > 0 && !q.moi);
+  if (autres.length <= MAX_VUS && !autres.some(q => q.differe)) return;
+  autres.sort((a, b) => a.g.position.distanceToSquared(moi.g.position) - b.g.position.distanceToSquared(moi.g.position));
+  autres.forEach((q, i) => {
+    if (i < MAX_VUS) { if (q.differe) { q.differe = false; q.g.visible = true; dessinerCorps(q); } }
+    else if (i >= MAX_VUS + 8 && !q.differe) { q.differe = true; q.g.visible = false; libererPoses(q); }   // (un peu de marge, pour ne pas clignoter)
+  });
+}
+function libererPoses(p) { const c = p.posesCache; if (c) for (const k of Object.keys(c)) { c[k].dispose(); delete c[k]; } }
+function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) return; M.scene.remove(p.g); M.gens.delete(numero); libererPoses(p);
+  if (p.corps) { p.corps.geometry.dispose(); p.corps.material.dispose(); } }   // (la mémoire est rendue quand quelqu'un s'en va)
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (p.bulle) p.g.remove(p.bulle);
@@ -3004,8 +3038,12 @@ const PNJ = -1, PHRASES = {
 };
 const phrasePNJ = (n) => { const l = [...PHRASES.tous, ...(PHRASES[M.lieu] || []), ...(M.lieu === "fetes" && M.djJoue ? PHRASES.musique : [])]; return l[Math.floor(hasard(n) * l.length)]; };
 const hasard = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+/* le chef de poste n'est qu'à un seul endroit à la fois, le même pour tout le monde (il dépend de l'heure) :
+   le plus souvent dans la cour d'honneur, de temps en temps dans la salle des fêtes ; il change de lieu toutes les 5 minutes */
+const LIEUX_PNJ = ["grande", "grande", "fetes", "grande", "grande", "fetes"];
+const lieuPNJ = () => LIEUX_PNJ[Math.floor(Date.now() / 300000) % LIEUX_PNJ.length];
 function ajouterPNJ() {
-  if (!M || !M.L || M.gens.has(PNJ) || M.L.sansPNJ) return;      // le chef de poste ne vient pas au sous-sol
+  if (!M || !M.L || M.gens.has(PNJ) || M.L.sansPNJ || lieuPNJ() !== M.lieu) return;      // (jamais au sous-sol, ni dans la rue ou les étages)
   const [x, z] = pointPNJ(Math.floor(Date.now() / 9000) - 1);
   const P = (M.ctx.pnj && M.ctx.pnj()) || {};
   ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
@@ -3099,7 +3137,7 @@ function animerDanseur() {
       const q = ajouterAncien({ numero: num, nom: P.nom || def.nom, tenue: P.tenue || def.tenue, couleur: P.couleur || def.couleur, bas: P.bas || def.bas, pieds: P.pieds || def.pieds,
         reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete, pnj: true, danseur: true, x: x + dx, z: z + 3 });
       if (q) { viser(q, x + dx, z - Math.abs(dx) * .3); q.info.danse = "thriller"; } }
-    dire(DANSEUR, "It's close to midnight… 🧟"); }
+  }
   else if (!air && p) { for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); M.trioPret = false; }
   else if (p) { const trio = [DANSEUR, ZOMBIE, MARIEE].map(n => M.gens.get(n)).filter(Boolean);
     for (const q of trio) { q.info.danse = "thriller"; if (!q.cible && !q.base) q.base = [q.g.position.x, q.g.position.z]; }
@@ -3107,7 +3145,7 @@ function animerDanseur() {
     if (!M.trioPret && trio.every(q => q.base) && choreThriller().k === 0) M.trioPret = true;
     if (M.trioPret) { const c = choreThriller();
       for (const q of trio) if (q.base) { const nx = q.base[0] + c.ox, nz = q.base[1] + c.oz; if (M.L.limites(nx, nz)) { q.g.position.x = nx; q.g.position.z = nz; } }
-      if (c.k === 0 && M.trioCri !== Math.floor(Date.now() / (TEMPS_THRILLER * 32))) { M.trioCri = Math.floor(Date.now() / (TEMPS_THRILLER * 32)); dire(DANSEUR, ["It's close to midnight… 🧟", "'Cause this is thriller! 🎶", "Thriller night! 🌕"][M.trioCri % 3]); } } }
+    } }
 }
 /* la chorégraphie du clip Thriller, sur 32 temps, pour les trois danseurs ensemble ;
    réglée sur l'horloge (Date.now) : tout le monde voit les mêmes pas au même moment
@@ -3148,7 +3186,7 @@ function animerBeeGees() {
       const q = ajouterAncien({ numero: TRAVOLTA, nom: P.nom || "John Travolta", tenue: P.tenue || "travolta", couleur: P.couleur || "#f4f1ea", bas: P.bas || "#f4f1ea", pieds: P.pieds || "#1a1a1a",
         reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 11) : "images/travolta-tete.png", pnj: true, danseur: true, x, z: z + 4 });
       if (q) { viser(q, x, z + 1.7); q.info.danse = "travolta"; } }
-    dire(-9, "Ah, ah, ah, ah, stayin' alive ! 🕺"); }
+  }
   else if (!air && present) { for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); M.beeGeesPrets = false; }
   else if (present) { const freres = BEEGEES.map(([num]) => M.gens.get(num)).filter(Boolean);
     for (const q of freres) { q.info.danse = "beegees"; if (!q.cible && !q.base) q.base = [q.g.position.x, q.g.position.z]; }
@@ -3159,7 +3197,7 @@ function animerBeeGees() {
       const tv = M.gens.get(TRAVOLTA);
       if (tv) { tv.info.danse = "travolta"; if (!tv.cible && !tv.base) tv.base = [tv.g.position.x, tv.g.position.z];
         if (tv.base) { const ct = choreTravolta(), nx = tv.base[0] + ct.ox; if (M.L.limites(nx, tv.base[1])) tv.g.position.x = nx; } }
-      const n = Math.floor(Date.now() / (TEMPS_DISCO * 32)); if (c.k === 0 && M.beeGeesCri !== n) { M.beeGeesCri = n; dire(-9, ["Ah, ah, ah, ah, stayin' alive ! 🕺", "Night fever, night fever ! 🪩", "You should be dancing, yeah ! ✨"][n % 3]); } } }
+    } }
 }
 /* la chorégraphie disco des Bee Gees, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
    1-4   le doigt pointé vers le ciel puis vers le sol, façon Saturday Night Fever, en roulant des hanches
@@ -3202,12 +3240,12 @@ function animerHernandez() {
     const q = ajouterAncien({ numero: HERNANDEZ, nom: P.nom || "Mr Hernandez", tenue: P.tenue || "hernandez", couleur: P.couleur || "#161616", bas: P.bas || "#161616", pieds: P.pieds || "#f2f2f2",
       reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 7) : "images/hernandez-tete.png", pnj: true, danseur: true, hernandez: true, x, z: z + 3 });
     if (q) { viser(q, x, z + .6); q.info.danse = "alive"; }
-    dire(HERNANDEZ, "Born to be alive ! 🕺"); }
+  }
   else if (!air && p) retirerAncien(HERNANDEZ);
   else if (p) { p.info.danse = "alive";
     if (!p.cible && !p.base) p.base = [p.g.position.x, p.g.position.z];
     if (p.base) { const c = choreAlive(), nx = p.base[0] + c.ox; if (M.L.limites(nx, p.base[1])) p.g.position.x = nx;
-      const n = Math.floor(Date.now() / (TEMPS_ALIVE * 32)); if (c.k === 0 && p.cri !== n) { p.cri = n; dire(HERNANDEZ, ["Born to be alive ! 🕺", "C'est la vie ! ✨", "Ouh ouh ! 🎶"][n % 3]); } } }
+    } }
 }
 /* la danse du clip Born to Be Alive, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
    1-4   la canne levée derrière la tête, l'autre main sur la hanche, on roule des hanches
@@ -3227,7 +3265,11 @@ function choreAlive() {
   return { k, pose, ox, rot, sx, saut, tour };
 }
 function animerPNJ() {
-  const p = M && M.gens.get(PNJ); if (!p) return;
+  if (!M || !M.L) return;
+  const ici = lieuPNJ() === M.lieu && !M.L.sansPNJ, p0 = M.gens.get(PNJ);
+  if (!ici && p0) { retirerAncien(PNJ); return; }        // il est parti ailleurs
+  if (ici && !p0) { ajouterPNJ(); return; }              // il arrive
+  const p = p0; if (!p) return;
   const n = Math.floor(Date.now() / 9000);
   if (p.etape !== n) { p.etape = n; const [x, z] = pointPNJ(n); viser(p, x, z); }
   const h = hasard(Math.floor(Date.now() / 20000) * 1.9);
