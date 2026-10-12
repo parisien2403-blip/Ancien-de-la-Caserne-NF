@@ -1225,12 +1225,12 @@ function construireEtage(A, L, scene) {
   const ambiant = new THREE.AmbientLight(0xfff0d8, .28); scene.add(ambiant);
   const pool = []; for (let i = 0; i < 12; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 7, 1.6); scene.add(l); pool.push(l); }
   let etageVu = -1, actives = [];
-  const eclairer = (n) => { etageVu = n; const f = Math.max(1, n);
-    ambiant.intensity = Math.max(.05, .3 - (f - 1) * .045);
+  const eclairer = (n) => { etageVu = n; const f = Math.max(1, n), apo = M && estApo(M.lieu), kA = apo ? .35 : 1;
+    ambiant.intensity = Math.max(.05, .3 - (f - 1) * .045) * kA;
     const proches = bulbes.filter(b => b.k === f || (n === 0 && b.k === 1 && b.y < H + 1)).sort((a, b) => Math.abs(a.y - n * H - 2) - Math.abs(b.y - n * H - 2)).slice(0, pool.length);
     actives = [];
-    pool.forEach((l, i) => { const b = proches[i]; if (!b || b.etat === "mort") { l.intensity = 0; return; }
-      l.position.set(b.x, b.y, b.z); l.userData.base = 2.2 * (1 - (b.k - 1) * .12); l.intensity = l.userData.base; actives.push([l, b]); }); };
+    pool.forEach((l, i) => { const b = proches[i]; if (!b || b.etat === "mort" || (apo && hasard(b.x * 3 + b.k) < .45)) { l.intensity = 0; return; }
+      l.position.set(b.x, b.y, b.z); l.userData.base = 2.2 * (1 - (b.k - 1) * .12) * kA; l.intensity = l.userData.base; actives.push([l, apo && b.etat !== "clignote" ? { ...b, etat: "clignote" } : b]); }); };
   L.eclairer = eclairer;
   L.anim = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum), n = moi && moi.etg ? moi.etg.n : 0;
     if (n !== etageVu) eclairer(n);
@@ -2887,7 +2887,7 @@ export async function ouvrir(ctx) {
 
 export function fermer() {
   if (!M) return;
-  if (sonApo) sonApo.pause(); if (sonFeu) sonFeu.pause();
+  if (sonApo) sonApo.pause(); if (sonFeu) sonFeu.pause(); if (sonRepos) sonRepos.pause();
   M.ouvert = false;
   try { M.ws && M.ws.close(1000, "Fermé"); } catch (e) {}
   clearTimeout(M.reco); clearInterval(M.minuteur);
@@ -2901,11 +2901,14 @@ export function fermer() {
    qui brûlent dans la rue, débris, sang séché, lumières qui grésillent. Les lieux s'appellent « z-rue », « z-grande », « z-fetes », « z-etage » :
    même géométrie que les vrais, mais on n'y croise que ceux qui sont passés de l'autre côté. */
 /* l'ambiance sonore dehors, à l'apocalypse (sirènes lointaines, vent, cris) : en boucle, tant qu'on est à l'extérieur */
-let sonApo = null, sonFeu = null;
+let sonApo = null, sonFeu = null, sonRepos = null;
 function ambianceApo() {
+  const moiR = M && M.moiNum && M.gens.get(M.moiNum), auRepos = !!(moiR && M.L && estApo(M.lieu) && M.L.repos && M.L.repos(moiR.g.position.x, moiR.g.position.z));
+  if (auRepos && !sonRepos) { sonRepos = new Audio("sons/apo-repos.mp3"); sonRepos.loop = true; sonRepos.volume = .8; }
+  if (sonRepos) { if (auRepos && sonRepos.paused) { if (performance.now() - (sonRepos.essai || 0) > 2000) { sonRepos.essai = performance.now(); sonRepos.play().catch(() => {}); } } else if (!auRepos && !sonRepos.paused) sonRepos.pause(); }
   // le crépitement de l'essence qui brûle : plus fort en s'approchant d'une voiture en feu ou d'un brasier
   const moi = M && M.moiNum && M.gens.get(M.moiNum), F = M && M.L && estApo(M.lieu) && M.L.feuxSon || [];
-  let vf = 0; if (moi && F.length) { const d = Math.min(...F.map(([x, z]) => Math.hypot(moi.g.position.x - x, moi.g.position.z - z))); vf = Math.max(0, 1 - d / 16) ** 1.5; }
+  let vf = 0; if (moi && F.length && !auRepos) { const d = Math.min(...F.map(([x, z]) => Math.hypot(moi.g.position.x - x, moi.g.position.z - z))); vf = Math.max(0, 1 - d / 16) ** 1.5; }
   if (vf > 0 && !sonFeu) { sonFeu = new Audio("sons/apo-feu.mp3"); sonFeu.loop = true; }
   if (sonFeu) { sonFeu.volume = Math.min(1, vf);
     if (vf > .01 && sonFeu.paused) { if (performance.now() - (sonFeu.essai || 0) > 2000) { sonFeu.essai = performance.now(); sonFeu.play().catch(() => {}); } } else if (vf <= .01 && !sonFeu.paused) sonFeu.pause(); }
@@ -3005,11 +3008,17 @@ function apocalypse(scene, L, base) {
   const zone = L.zone || [-30, 30, -30, 30], libre = [];
   for (let i = 0; i < 4000 && libre.length < 160; i++) { const x = zone[0] + Math.random() * (zone[1] - zone[0]), z = zone[2] + Math.random() * (zone[3] - zone[2]); if (L.limites(x, z)) libre.push([x, z]); }
   const hauteurSol = (x, z) => base === "etage" ? 0 : (L.hauteur ? L.hauteur(x, z, {}) : 0);
-  libre.slice(0, base === "etage" ? 26 : 40).forEach(([x, z], i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + Math.random() * 1.4, 1.2 + Math.random() * 1.4), new THREE.MeshBasicMaterial({ map: texSang[i % 4], transparent: true, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x, hauteurSol(x, z) + .02 + i * .0004, z); m.renderOrder = 1; scene.add(m); });
-  libre.slice(60, base === "etage" ? 80 : 120).forEach(([x, z]) => { const planche = Math.random() < .5;
+  const repos = (x, z) => base === "fetes" && z > 17.6;   // le vestibule et le bar du sous-sol : la salle de repos, intacte
+  L.repos = repos;
+  for (let i = libre.length - 1; i >= 0; i--) if (repos(libre[i][0], libre[i][1])) libre.splice(i, 1);
+  if (base === "etage") { libre.length = 0;   // les couloirs : sur chaque étage
+    for (let n = 0; n <= ET.N; n++) for (let i = 0; i < 9; i++) { const x = (hasard(n * 17 + i) - .5) * 21, z = -1.15 - hasard(n * 5 + i * 3) * 1.5; libre.push([x, z, n * ET.H]); } }
+  const hauteurSol0 = hauteurSol;
+  libre.slice(0, base === "etage" ? 70 : 40).forEach(([x, z], i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + Math.random() * 1.4, 1.2 + Math.random() * 1.4), new THREE.MeshBasicMaterial({ map: texSang[i % 4], transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x, (libre[i][2] ?? hauteurSol0(x, z)) + .02 + i * .0004, z); m.renderOrder = 1; scene.add(m); });
+  (base === "etage" ? libre.filter((q, i) => i % 2) : libre.slice(60, 120)).forEach(([x, z, y0]) => { const planche = Math.random() < .5;
     const o = new THREE.Mesh(planche ? new THREE.BoxGeometry(1 + Math.random(), .05, .18) : new THREE.DodecahedronGeometry(.12 + Math.random() * .16), planche ? rouille : cendre);
-    o.position.set(x, hauteurSol(x, z) + .06, z); o.rotation.set(planche ? 0 : Math.random() * 3, Math.random() * 7, planche ? (Math.random() - .5) * .3 : Math.random() * 3); scene.add(o); });
+    o.position.set(x, (y0 ?? hauteurSol(x, z)) + .06, z); o.rotation.set(planche ? 0 : Math.random() * 3, Math.random() * 7, planche ? (Math.random() - .5) * .3 : Math.random() * 3); scene.add(o); });
   // le décor de chaque lieu
   if (base === "rue") { epave(-26, -1.2, .25); epave(-9, .8, -.5); epave(9, -.6, .35, false); epave(24, 1.2, -.2); epave(40, -1.5, .6); fut(-16, 4.2); fut(16, -5.2); fut(32, 4.6); fut(-36, 4.4); brasier(-20, 5.3); brasier(30, -5.6); }
   if (base === "grande") { epave(-4.5, 3, .7); epave(5.5, -9, -.4); fut(-8.5, -4); fut(8.6, 4); fut(0, -14); fut(-5, -24); fut(6, -40); fut(-8, 10); fut(3, 11); brasier(-1.5, -6); brasier(9.2, -2.5, 2.2); brasier(-9.3, 4, 2.2); }
