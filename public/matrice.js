@@ -1159,9 +1159,12 @@ function construireEtage(A, L, scene) {
     if (zo === "V1") return e.m * H + Math.max(0, Math.min(1.7, (1.6 - z) / 3 * 1.7));
     return e.m * H + 1.7 + Math.max(0, Math.min(1.7, (z + 1.4) / 3 * 1.7)); };
   // au dernier étage, il n'y a plus d'escalier qui monte : la moitié extérieure du palier est fermée par une barrière
+  const auRdcP = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return !moi || !moi.etg || (moi.etg.n === 0 && moi.etg.zone === "P"); };
   const auDernier = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return moi && moi.etg && moi.etg.n === N && moi.etg.zone === "P"; };
   L.limites = (x, z) => { const ax = Math.abs(x);
     if (ax > CXM - .15 && z < 1.6 + .25 && auDernier()) return false;
+    // au rez-de-chaussée, la moitié intérieure de la cage est sous la seconde volée : on n'y passe pas (on monte par la première)
+    if (ax < CXM + .15 && ax > CX0 - .1 && z < 1.6 + .25 && auRdcP()) return false;
     return (ax < CX0 + .1 && z > ZC0 + .3 && z < Z1 - .3)
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
@@ -1523,6 +1526,24 @@ function construireSousSol(A, L, scene, o = {}) {
       L.console = [2.15, tz];
       raccourci(L, scene, [.6, .6, .7], [3.35, 1.05, tz], { marche: [2.12, tz] });
     }
+    /* une fenêtre sur le mur côté cour (au-dessus du lambris, entre la table et la porte) : par elle, la cour d'honneur, de jour comme de nuit */
+    { const zf = (GZ1 - 1.9 + (GZ0 + GZ1) / 2) / 2, yf = 1.95, wf = 1.05, hf = 1.15, cadreF = A.mat({ color: 0xece3cf, roughness: .6 });
+      const vue = nuit => tex(toile(384, 300, (x, w, h) => {
+        const g = x.createLinearGradient(0, 0, 0, h * .35); g.addColorStop(0, nuit ? "#081128" : "#8fb4d6"); g.addColorStop(1, nuit ? "#1b2a55" : "#cfe0ec"); x.fillStyle = g; x.fillRect(0, 0, w, h * .35);
+        if (nuit) { x.fillStyle = "#fff"; for (let k = 0; k < 30; k++) x.fillRect((k * 97) % w, (k * 37) % (h * .3), 1.5, 1.5); }
+        x.fillStyle = nuit ? "#2a2d38" : "#9a4a38"; x.fillRect(w * .55, h * .05, w * .45, h * .55);        // l'aile en brique
+        x.fillStyle = nuit ? "#3a3a44" : "#e6decb"; x.fillRect(0, h * .3, w * .55, h * .38);              // le bâtiment de plain-pied, ses baies
+        for (let X = 10; X < w * .55 - 30; X += 54) { x.fillStyle = nuit ? (X % 108 ? "#ffd58a" : "#1c2232") : "#5d7180"; x.fillRect(X, h * .36, 30, h * .26); }
+        for (let r = 0; r < 4; r++) { x.fillStyle = nuit ? (r % 2 ? "#ffd58a" : "#202634") : "#f2eee4"; x.fillRect(w * .7, h * .1 + r * 30, 22, 20); }
+        x.fillStyle = nuit ? "#24262e" : "#8d8f94"; x.fillRect(0, h * .68, w, h * .32);                     // les pavés
+        for (let y = h * .68; y < h; y += 9) for (let X = (y / 9 % 2) * 7; X < w; X += 14) { x.fillStyle = `rgba(255,255,255,${nuit ? .02 : .06})`; x.fillRect(X, y, 12, 7); } }));
+      const tJ = vue(false), tN = vue(true);
+      const verre = A.ajoute(new THREE.PlaneGeometry(wf, hf), new THREE.MeshBasicMaterial({ map: tJ }), GX - .02, yf, zf, false); verre.rotation.y = -Math.PI / 2;
+      A.ajoute(new THREE.BoxGeometry(.08, .1, wf + .2), cadreF, GX - .04, yf + hf / 2 + .05, zf, false); A.ajoute(new THREE.BoxGeometry(.14, .08, wf + .3), cadreF, GX - .07, yf - hf / 2 - .04, zf, false);   // linteau, appui
+      for (const dz of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.08, hf + .2, .1), cadreF, GX - .04, yf, zf + dz * (wf / 2 + .05), false);
+      A.ajoute(new THREE.BoxGeometry(.05, hf, .05), cadreF, GX - .03, yf, zf, false); A.ajoute(new THREE.BoxGeometry(.05, .04, wf), cadreF, GX - .03, yf + hf * .18, zf, false);   // les petits bois
+      const jour = new THREE.PointLight(0xe8f0ff, 1.4, 4, 1.6); jour.position.set(GX - .6, yf, zf); scene.add(jour);
+      L.nuitFenetre = n => { verre.material.map = n ? tN : tJ; verre.material.needsUpdate = true; jour.intensity = n ? .2 : 1.4; }; }
     // le baby-foot, vers le fond à gauche (vu de la porte d'en face, de l'autre côté du bar)
     obstacles.push(babyFoot(A, 2.25, FM - 1.6));
     L.limites = (x, z) => (Math.abs(x) < VX - .35 && z > VZ0 + .3 && z < VZ1 - .3)
@@ -2089,7 +2110,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
          Construits tournés d'un demi-tour (la porte « BAR » du vestibule regarde la cour, côté x < 0) */
       const SS = new THREE.Group(); SS.position.set(0, yb - 4 * HM, FETE_SZ); SS.rotation.y = Math.PI; scene.add(SS);
       const SL = { portails: [], raccourcis: [] }; construireSousSol(atelier(SS), SL, SS, { fusion: true });
-      L.sousSol = SL;
+      L.sousSol = SL; L.nuitSousSol = SL.nuitFenetre;
       const loc = (x, z) => [-x, FETE_SZ - z];
       L.solsPlus.push(SL.sol, ...(SL.solsPlus || []));
       L.console = loc(...SL.console);
@@ -2239,7 +2260,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(geoR, laserMat); r.add(new THREE.Mesh(geoH, halo)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointMat); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayons.push([r, pt, i]); }
     L.setLasers = (on) => { L.lasersDemande = on; L.lasers = on && L.nuit !== false; for (const [r, pt] of rayons) r.visible = pt.visible = L.lasers; };
     // le jour, la fête n'a pas commencé : pas de projecteurs ni de reflets de la boule, pas de fumée, pas de lasers (et Manu n'est pas encore là)
-    L.setNuit = (n) => { L.nuit = n; L.nuitPorte && L.nuitPorte(n); L.setLumiere && L.setLumiere(L.lumiere || 1);
+    L.setNuit = (n) => { L.nuit = n; L.nuitPorte && L.nuitPorte(n); L.nuitSousSol && L.nuitSousSol(n); L.setLumiere && L.setLumiere(L.lumiere || 1);
       for (const p of projos) p.spot.visible = p.cone.visible = n, p.verre.material.color.setHex(n ? p.spot.color.getHex() : 0x222222);
       for (const [sp] of fumees) sp.visible = n; reflets.visible = n;
       if (!n) { L.fumeeDebut = 0; for (const [sp] of nuage) sp.visible = false; }
@@ -2440,6 +2461,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           if (!m.map) b.color.multiplyScalar(.92); teints.push([b, b.color.clone()]); basic.set(m, b); return b; };
         o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material); o.castShadow = o.receiveShadow = false; });
       for (const l of lum) l.parent && l.parent.remove(l);
+      // la cour n'existe que de l'autre côté de la porte : coupée au nu du mur (sinon son sol et ses murs débordent dans la cage d'escalier)
+      const coupe = new THREE.Plane(new THREE.Vector3(1, 0, 0), 11.15);
+      cour.traverse(o => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m) m.clippingPlanes = [coupe]; });
+      L.dansCour = (pt) => coupe.distanceToPoint(pt) > .05;
       const T2 = textures(), ciel = new THREE.Mesh(new THREE.SphereGeometry(150, 24, 12), new THREE.MeshBasicMaterial({ map: tex(T2.ciel), side: THREE.BackSide, depthWrite: false })); cour.add(ciel);
       L.setNuit = (n) => { for (const [b, c] of teints) b.color.copy(c).multiplyScalar(n ? .07 : 1).lerp(new THREE.Color(0x0e1630), n ? .3 : 0);
         ciel.material.map = n ? null : tex(T2.ciel); ciel.material.color.setHex(n ? 0x0c1530 : 0xffffff); ciel.material.needsUpdate = true;
@@ -2448,7 +2473,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       let cote = 0;
       const placer = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum), sg = moi ? (Math.sign(moi.g.position.x) || -1) : -1, n = moi && moi.etg ? moi.etg.n : 0;
         cour.visible = n === 0; for (const o of E.couloirs || []) o.visible = n > 0;   // au rez-de-chaussée, on ne voit pas les couloirs du dessus par la porte
-        if (sg !== cote) { cote = sg; cour.position.set(sg * (11.2 - 8.6), 0, -2 - 13.75); } };
+        if (sg !== cote) { cote = sg; cour.position.set(sg * (11.2 - 8.6), 0, -2 - 13.75); coupe.normal.set(-sg, 0, 0); coupe.constant = 11.15; } };
       placer();
       let nVu = -1; const animE = L.anim;
       L.anim = (t) => { placer(); const moi = M && M.moiNum && M.gens.get(M.moiNum), n = moi && moi.etg ? moi.etg.n * 10 + (moi.etg.zone === "P" ? 1 : 0) : 0;
@@ -2491,7 +2516,7 @@ export async function ouvrir(ctx) {
   if (M) fermer();
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const T = textures();
-  const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   rendu.setPixelRatio(Math.min(devicePixelRatio, matchMedia("(pointer: coarse)").matches ? 1.5 : 2));
   rendu.shadowMap.enabled = true; rendu.shadowMap.type = THREE.PCFSoftShadowMap;
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
@@ -2546,9 +2571,11 @@ export async function ouvrir(ctx) {
     // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
     if (M.L.interieur) {
       const sols = [M.L.sol, ...(M.L.solsPlus || [])];
-      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere) return false; for (let a = o; a; a = a.parent) if (!a.visible) return false; if (sols.includes(o)) return true;
+      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere || o.userData.perso || (o.parent && o.parent.userData.perso)) return false; for (let a = o; a; a = a.parent) if (!a.visible || a.userData.perso) return false;   // (les bonshommes ne bloquent pas le doigt)
+        if (M.L.dansCour && !M.L.dansCour(q.point)) { let a = o; while (a && a !== M.L.copieCour) a = a.parent; if (a) return false; }   // (la cour, coupée au mur : invisible de ce côté-ci) if (sols.includes(o)) return true;
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
       if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
+        if (o && M.L.dansCour && !M.L.dansCour(h.point)) o = null;
         if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2); } return; } }   // on touche la cour : on sort
       if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         if ((sols.includes(h.object) || (n && n.y > .7)) && M.L.allerEtage) { const moi = M.gens.get(M.moiNum); if (moi && M.L.allerEtage(moi, h.point.x, h.point.z, h.point.y)) { envoyerWS({ t: "aller", x: h.point.x, z: h.point.z }); return; } }
@@ -2789,14 +2816,14 @@ async function dessinerCorps(p) {
        pour que, vu d'en haut, il ne bascule pas dans le comptoir, l'étagère ou un mur derrière lui */
     const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
     const mat = new THREE.MeshBasicMaterial({ map: p.poses.repos, transparent: true, alphaTest: .4, side: THREE.DoubleSide });
-    p.corps = new THREE.Mesh(geo, mat); p.corps.droit = true; p.corps.rotation.order = "YXZ";
+    p.corps = new THREE.Mesh(geo, mat); p.corps.droit = true; p.corps.userData.perso = true; p.corps.rotation.order = "YXZ";
     Object.defineProperty(mat, "rotation", { get: () => p.corps.rotation.z, set: v => { p.corps.rotation.z = v; } });   // (le balancement de la danse)
     p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.g.add(p.corps); }
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
-  const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); M.scene.add(g);
+  const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); g.userData.perso = true; M.scene.add(g);
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
   const H = tailleBonhomme();
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .5, H * .5), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
@@ -3073,6 +3100,7 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
   M.camera.position.add(d3); if (vise) M.camVise = vise; else placerCamera(true);
   if (fin) allerVers(fin[0], fin[1], true);
 }
+export const _etatMatrice = () => M;   // (pour les essais)
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 
 /* --- la connexion en direct --- */
