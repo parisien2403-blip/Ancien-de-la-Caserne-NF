@@ -1241,7 +1241,7 @@
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
-          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button><button class="mx-danse" id="mxThriller" type="button">🧟 Thriller</button></div>
+          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button><button class="mx-danse" id="mxThriller" type="button">🧟 Thriller</button><button class="mx-danse" id="mxSaut" type="button">🙌 Saut</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
           <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
@@ -2059,7 +2059,8 @@
           $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco";
           $("mxCharleston").classList.toggle("on", on === "charleston"); $("mxCharleston").textContent = on === "charleston" ? "🛑 Stop" : "🦵 Charleston";
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
-          $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller"; },
+          $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller";
+          $("mxSaut").classList.toggle("on", on === "saut"); $("mxSaut").textContent = on === "saut" ? "🛑 Stop" : "🙌 Saut"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); document.querySelector(".mx-danses").style.display = /^z-/.test(id) ? "none" : "";   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
@@ -2128,6 +2129,7 @@
   $("mxCharleston").onclick = () => MX && MX.danser(jeDanse === "charleston" ? false : "charleston");
   $("mxMadison").onclick = () => MX && MX.danser(jeDanse === "madison" ? false : "madison");
   $("mxThriller").onclick = () => MX && MX.danser(jeDanse === "thriller" ? false : "thriller");
+  $("mxSaut").onclick = () => MX && MX.danser(jeDanse === "saut" ? false : "saut");
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -2739,6 +2741,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.50", "12 octobre 2026", ["Nouvelle danse 🙌 Saut : on saute en rythme, les mains en l'air", "Assis au bar : le bonhomme est bien assis devant le tabouret (le pouf rond ne passe plus entre ses jambes)"]],
     ["3.49", "12 octobre 2026", ["Le bassiste et le guitariste bougent un peu en jouant : quelques pas de côté, en avant, en arrière, en sautillant en rythme ; ils reviennent à leur place quand la musique s'arrête"]],
     ["3.48", "12 octobre 2026", ["Matrice : l'image redevient nette (sur ordinateur, presque la pleine définition de l'écran ; elle ne descend plus sous la définition normale, sauf sans carte graphique)"]],
     ["3.47", "12 octobre 2026", ["Salle des fêtes : une scène de concert noire remplace les tables et les chaises, avec deux projecteurs au plafond et six projecteurs de couleur au bord de la scène", "Le groupe de la scène : la batteuse au centre derrière sa batterie, le bassiste à gauche, le guitariste à droite (avec leurs amplis) ; ils jouent dès que la musique passe", "Les chanteurs et danseurs (Bee Gees, Travolta, trio Thriller, Mr Hernandez, Robert Smith) se produisent maintenant sur la scène", "Administrateur : boutons 🥁 La batteuse, 🎸 Le bassiste, 🎸 Le guitariste pour régler leur tête, leurs vêtements, leur taille"]],

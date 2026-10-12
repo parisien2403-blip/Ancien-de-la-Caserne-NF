@@ -464,7 +464,7 @@ export class Compteur extends DurableObject {
     } else if (m.t === "slow_fin" && a.lieu) {
       this.finirSlow(ws, a);
     } else if (m.t === "danse" && a.lieu) {
-      a.danse = ["disco", "charleston", "madison", "thriller"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
+      a.danse = ["disco", "charleston", "madison", "thriller", "saut"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);

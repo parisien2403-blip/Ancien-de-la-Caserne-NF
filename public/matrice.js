@@ -3025,6 +3025,12 @@ export async function ouvrir(ctx) {
           const dx = pose === "madison1" ? -.16 : pose === "madison3" ? .16 : 0;
           p.corps.position.x += (dx - p.corps.position.x) * .25;
           if (!p.cible) p.corps.position.y = pose === "madison2" || pose === "dos" ? Math.abs(Math.sin(ph * Math.PI)) * .05 : 0; p.dansait = true; }
+        else if (p.info.danse === "saut") {
+          // le saut, les mains en l'air : on saute en rythme, bras tendus vers le ciel ; à la réception, on plie un peu (bras à mi-hauteur)
+          const ph = t / 520 + p.info.numero * .37, v = ph % 1, enl = v < .78, pose = enl ? "haut" : "mi";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = enl ? Math.sin(ph * Math.PI) * .05 : 0; p.corps.position.x = 0;
+          if (!p.cible) p.corps.position.y = enl ? Math.sin(v / .78 * Math.PI) * .38 : 0; p.dansait = true; }
         else if (p.info.danse === "charleston") {
           // le Charleston : les genoux s'ouvrent et se croisent, les mains passent d'un genou à l'autre
           const ph = t / 280 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "genoux2" : "genoux1";
@@ -3050,6 +3056,9 @@ export async function ouvrir(ctx) {
     animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith(); animerGroupe();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
+      // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
+      const avance = Number.isInteger(p.info.assis) ? .3 - Math.sin(p.corps.rotation.x) * .7 : 0;   // (+ ce que le panneau penché recule à hauteur des hanches)
+      if (avance || p.avance) { const d = Math.hypot(dx, dz) || 1; p.corps.position.x = dx / d * avance; p.corps.position.z = dz / d * avance; p.avance = avance > 0; }
       if (p.info.mortT) { const f = Math.min(1, (performance.now() - p.info.mortT) / 650); p.corps.rotation.x = -f * Math.PI / 2 * .96; p.corps.rotation.z = 0; } }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
@@ -4205,7 +4214,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   majAmbiance();
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
-const styleDanse = v => ["disco", "charleston", "madison", "thriller"].includes(v) ? v : v ? "balance" : false;
+const styleDanse = v => ["disco", "charleston", "madison", "thriller", "saut"].includes(v) ? v : v ? "balance" : false;
 export function danser(on) {
   const p = M && M.moiNum && M.gens.get(M.moiNum); if (!p) return;
   const style = styleDanse(on); if (style) M.styleDanse = style;
