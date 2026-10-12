@@ -1104,12 +1104,12 @@ function construireEtage(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(.2, H, zp - lp / 2 - ZC0), beige, X(CX0 - .1), H / 2, (ZC0 + zp - lp / 2) / 2, false);
     A.ajoute(new THREE.BoxGeometry(.2, H, Z1 - zp - lp / 2), beige, X(CX0 - .1), H / 2, (Z1 + zp + lp / 2) / 2, false);
     A.ajoute(new THREE.BoxGeometry(.2, H - 2.3, lp), beige, X(CX0 - .1), 2.3 + (H - 2.3) / 2, zp, false);
-    const cour = A.ajoute(new THREE.PlaneGeometry(4.2, 4.2), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x, w, h) => {
+    const cour = A.ajoute(new THREE.PlaneGeometry(3.1, 3.1), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x, w, h) => {
       const g = x.createLinearGradient(0, 0, 0, h * .3); g.addColorStop(0, "#8fb4d6"); g.addColorStop(1, "#cfe0ec"); x.fillStyle = g; x.fillRect(0, 0, w, h * .3);
       x.fillStyle = "#e6decb"; x.fillRect(0, h * .3, w, h * .42); x.fillStyle = "#d3c9b3"; x.fillRect(0, h * .3, w, 8);
       for (let X0 = 8; X0 < w; X0 += 56) { x.fillStyle = "#f2eee4"; x.fillRect(X0 - 3, h * .38 - 3, 38, h * .3 + 6); const gg = x.createLinearGradient(0, h * .38, 0, h * .68); gg.addColorStop(0, "#9db1bf"); gg.addColorStop(1, "#56697a"); x.fillStyle = gg; x.fillRect(X0, h * .38, 32, h * .3); }
       x.fillStyle = "#c2bcb0"; x.fillRect(0, h * .72, w, 10); x.fillStyle = "#6d6e72"; x.fillRect(0, h * .76, w, h * .24);
-      for (let y = h * .76; y < h; y += 8) for (let X0 = (y / 8 % 2) * 6; X0 < w; X0 += 12) { x.fillStyle = `rgba(255,255,255,${.04 + (X0 * 7 % 5) / 60})`; x.fillRect(X0, y, 10, 6); } })) }), X(CX0 - .6), 2.1, zp, false);
+      for (let y = h * .76; y < h; y += 8) for (let X0 = (y / 8 % 2) * 6; X0 < w; X0 += 12) { x.fillStyle = `rgba(255,255,255,${.04 + (X0 * 7 % 5) / 60})`; x.fillRect(X0, y, 10, 6); } })) }), X(CX0 - .6), 1.55, zp, false);   // (sous le plancher du 1er : rien ne dépasse dans le couloir)
     cour.rotation.y = sg < 0 ? -Math.PI / 2 : Math.PI / 2;
     const pv = A.ajoute(new THREE.PlaneGeometry(.75, lp + .2), A.mat({ map: tex(textures().paves, .6, 1) }), X(CX0 - .35), .004, zp, false); pv.rotation.x = -Math.PI / 2;
     const lumJour = new THREE.PointLight(0xf4f0e8, 1.6, 4, 1.6); lumJour.position.set(X(CX0 + .4), 1.6, zp); scene.add(lumJour);
