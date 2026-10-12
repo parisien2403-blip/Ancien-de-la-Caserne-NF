@@ -4549,7 +4549,7 @@ function bulle(texte, ms) { if (!M) return; if (M.bulleEl) M.bulleEl.remove(); i
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
   d.innerHTML = texte; M.ctx.conteneur.appendChild(d); M.bulleEl = d; if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.remove(); M.bulleEl = null; } }, ms); }
 // le logo « Retour vers le futur » qui surgit en grand, puis s'efface
-function logoCine(ms) { const d = voile("display:grid;place-items:center;opacity:0;transition:opacity .35s, transform 2.6s ease-out;transform:scale(.7)", ms);
+function logoCine(ms) { const d = voile("display:grid;place-items:center;opacity:0;transition:opacity .35s, transform 5s ease-out;transform:scale(.7)", ms);
   d.innerHTML = '<img src="images/bttf/logo.webp" alt="Retour vers le futur" style="width:min(88%,620px);filter:drop-shadow(0 0 22px rgba(255,120,0,.7))">';
   requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; d.style.transform = "scale(1.05)"; })); setTimeout(() => { d.style.opacity = 0; }, ms - 450); }
 function titreCine(texte, ms) { const d = voile("display:grid;place-items:center;font:900 clamp(26px,7vw,54px)/1 'Marcellus',serif;color:#ffcf3a;text-shadow:0 0 18px #ff6a00,3px 3px 0 #7a1a00;letter-spacing:.04em;opacity:0;transition:opacity .4s", ms);
@@ -4696,9 +4696,9 @@ function cineCour() {
       if (u > .25) { M.dz = (M.dz || 0) + dz; while (M.dz > .22) { M.dz -= .22; for (const sg of [-1, 1]) traineeFeu(feu, x + sg * .9, z + 1.35 + M.dz); } }
       arcs(car, u > 1.1); car.position.y = 0;
       cam.position.lerp(new THREE.Vector3(-4, 1.5, 9.5), .06); cam.lookAt(x, .7, z - 2); }
-    else { if (car.visible) { car.visible = false; eclairBlanc(1500); sonBruit(1.6, 260, 1); sonBruit(.25, 5000, .7); setTimeout(() => M && M.cine && logoCine(3000), 450); }
+    else { if (car.visible) { car.visible = false; eclairBlanc(1500); sonBruit(1.6, 260, 1); sonBruit(.25, 5000, .7); setTimeout(() => M && M.cine && logoCine(5600), 450); }
       cam.position.lerp(new THREE.Vector3(-1.2, 1.4, 9.5), .04); cam.lookAt(.7, .3, -8);
-      if (t > 18.2) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
+      if (t > 20.6) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
     animerFeu(feu, now, 60000); } };
 }
 // 2. à Hill Valley : l'éclair, la DeLorean qui surgit et glisse jusqu'au trottoir, Doc et nous qui descendons
