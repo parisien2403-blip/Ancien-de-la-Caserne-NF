@@ -3123,7 +3123,7 @@ function apocalypse(scene, L, base) {
       cone.scale.set(lg * .16, lg, lg * .16); cone.material.opacity = .09 * f; cone.visible = actif;
       tache.position.set(sx, .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
       feuxH.forEach((m, i) => { m.visible = actif; m.position.set(hx + (i ? .6 : -.6), hy + .3, hz); m.material.color.setHex(i ? 0xffffff : (Math.floor(now / 500) % 2 ? 0xff2020 : 0x300000)); });
-      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); } if (!actif) L.helicoSon = false; };
+      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); sonPos("sons/apo-helico.mp3", .9); } if (!actif) L.helicoSon = false; };
   }
   // on ne traverse pas les épaves ni les fûts
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
@@ -4130,4 +4130,4 @@ function connecter() {
     if (M.ouvert) { ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); M.reco = setTimeout(() => M && connecter(), 3000); }
   };
 }
-export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun");   // (pour les essais)
+export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop()));   // (pour les essais)
