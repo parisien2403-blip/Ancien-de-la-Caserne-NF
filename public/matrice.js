@@ -1470,7 +1470,7 @@ function construireSousSol(A, L, scene, o = {}) {
     // le plafond et ses poutres
     A.ajoute(new THREE.BoxGeometry(GX * 2 + .6, .3, VZ1 - GZ0 + .6), A.mat({ color: 0xece4d2, roughness: 1 }), 0, HT + .15, (GZ0 + VZ1) / 2, false);
     for (const z of [GZ0 + 2.3, GZ0 + 4.6]) A.ajoute(new THREE.BoxGeometry(GX * 2, .28, .28), A.mat({ color: 0xe3d9c3 }), 0, HT - .14, z, false);
-    scene.add(new THREE.AmbientLight(0xfff1dc, .45));
+    const ambSS = new THREE.AmbientLight(0xfff1dc, .45); scene.add(ambSS); L.ambiant = ambSS;   // (dans la salle des fêtes, elle se baisse avec la lumière de la salle)
 
     /* --- l'ameublement de la grande pièce ---
        à droite de la porte (vu de la pièce) : le comptoir de bar verni, on passe derrière ; contre le mur, les étagères, bouteilles et verres ;
@@ -2309,7 +2309,13 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const pointMat = new THREE.MeshBasicMaterial({ color: 0x7fc4ff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false });
     const rayons = [], geoR = new THREE.CylinderGeometry(.016, .016, 1, 6), geoH = new THREE.CylinderGeometry(.07, .07, 1, 8), geoP = new THREE.CircleGeometry(.09, 12);
     for (let i = 0; i < 14; i++) { const r = new THREE.Mesh(geoR, laserMat); r.add(new THREE.Mesh(geoH, halo)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointMat); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayons.push([r, pt, i]); }
-    L.setLasers = (on) => { L.lasersDemande = on; L.lasers = on && L.nuit !== false; for (const [r, pt] of rayons) r.visible = pt.visible = L.lasers; };
+    // et, en face, une seconde tête : les lasers verts, qui balaient la salle à contretemps des bleus
+    A.ajoute(new THREE.BoxGeometry(.3, .18, .25), noir, 3.2, 3.05, dz + .1, false);
+    const laserV = new THREE.MeshBasicMaterial({ color: 0x22ff44, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    const haloV = new THREE.MeshBasicMaterial({ color: 0x11cc33, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false });
+    const pointV = new THREE.MeshBasicMaterial({ color: 0x9dff9d, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false });
+    const rayonsV = []; for (let i = 0; i < 12; i++) { const r = new THREE.Mesh(geoR, laserV); r.add(new THREE.Mesh(geoH, haloV)); r.visible = false; scene.add(r); const pt = new THREE.Mesh(geoP, pointV); pt.rotation.x = -Math.PI / 2; pt.visible = false; scene.add(pt); rayonsV.push([r, pt, i]); }
+    L.setLasers = (on) => { L.lasersDemande = on; L.lasers = on && L.nuit !== false; for (const [r, pt] of [...rayons, ...rayonsV]) r.visible = pt.visible = L.lasers; };
     // le jour, la fête n'a pas commencé : pas de projecteurs ni de reflets de la boule, pas de fumée, pas de lasers (et Manu n'est pas encore là)
     L.setNuit = (n) => { L.nuit = n; L.nuitPorte && L.nuitPorte(n); L.nuitSousSol && L.nuitSousSol(n); L.setLumiere && L.setLumiere(L.lumiere || 1);
       for (const p of projos) p.spot.visible = p.cone.visible = n, p.verre.material.color.setHex(n ? p.spot.color.getHex() : 0x222222);
@@ -2319,16 +2325,16 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const animBoule = L.anim;
     L.anim = (temps) => {
       animBoule && animBoule(temps);
-      if (L.lasers) { const src = new THREE.Vector3(-3.2, 3, dz - .05);
-        for (const [r, pt, i] of rayons) {
-          const a = (i - 6.5) * .2 + Math.sin(temps / 900) * .6, b = .35 + .25 * Math.sin(temps / 1300 + i * .4);
+      if (L.lasers) for (const [src, liste, n, ph] of [[new THREE.Vector3(-3.2, 3, dz - .05), rayons, 6.5, 0], [new THREE.Vector3(3.2, 3, dz - .05), rayonsV, 5.5, Math.PI]]) {
+        for (const [r, pt, i] of liste) {
+          const a = (i - n) * .2 + Math.sin(temps / 900 + ph) * .6, b = .35 + .25 * Math.sin(temps / 1300 + i * .4 + ph);
           const dir = new THREE.Vector3(Math.sin(a) * Math.cos(b), -Math.sin(b), -Math.cos(a) * Math.cos(b)).normalize();
           let lg = 18; if (dir.y < 0) lg = Math.min(lg, -src.y / dir.y);   // le rayon s'arrête au sol (ou plus loin, sur un mur)
           const fin = src.clone().addScaledVector(dir, lg);
           if (fin.x < X0 || fin.x > X1 || fin.z < Z0 || fin.z > Z1) { const k = Math.min(...[[X0, "x"], [X1, "x"], [Z0, "z"], [Z1, "z"]].map(([v, ax]) => { const t = (v - src[ax]) / dir[ax]; return t > 0 ? t : 99; })); lg = Math.min(lg, k); fin.copy(src).addScaledVector(dir, lg); }
           r.position.copy(src).addScaledVector(dir, lg / 2); r.scale.set(1, lg, 1); r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
           pt.position.set(fin.x, Math.max(.02, fin.y), fin.z); pt.visible = fin.y < .1;
-          } laserMat.opacity = .75 + .25 * Math.sin(temps / 90); }
+          } laserMat.opacity = .75 + .25 * Math.sin(temps / 90); laserV.opacity = .75 + .25 * Math.cos(temps / 110); }
       if (L.fumeeDebut) { const e = (performance.now() - L.fumeeDebut) / 1000;
         if (e > 14) { L.fumeeDebut = 0; for (const [sp] of nuage) sp.visible = false; }
         else for (const [sp, u, v, w] of nuage) { const t = Math.min(1, e / (3 + u * 4)), fade = e < 10 ? 1 : 1 - (e - 10) / 4;
@@ -2367,12 +2373,49 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // la boule à facettes et ses reflets ressortent d'autant plus
     for (const l of lumSalle) l.userData.base = l.intensity;
     L.setLumiere = (niveau) => { const k = Math.max(.15, Math.min(1, +niveau || 1)), s = (1 - k) / .85; L.lumiere = k;
-      for (const l of lumSalle) l.intensity = l.userData.base * k; ambiant.intensity = .55 * Math.max(.3, k);
-      applique.emissiveIntensity = .9 * k; vitre.emissiveIntensity = vitreB.emissiveIntensity = .55 * Math.max(.4, k) * (L.nuit ? .12 : 1);   // la nuit, les vitres dépolies sont sombres
+      // à 15 %, presque le noir, comme en boîte : seuls les jeux de lumière éclairent la piste
+      const bas = k < .2 ? .35 : 1;
+      for (const l of lumSalle) l.intensity = l.userData.base * k * bas; ambiant.intensity = .55 * (k < .2 ? .1 : Math.max(.3, k));
+      applique.emissiveIntensity = .9 * k * bas; L.club = s;
+      if (L.sousSol && L.sousSol.ambiant) L.sousSol.ambiant.intensity = .45 * (k < .2 ? .12 : Math.max(.4, k)); vitre.emissiveIntensity = vitreB.emissiveIntensity = .55 * Math.max(.4, k) * (L.nuit ? .12 : 1);   // la nuit, les vitres dépolies sont sombres
       vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); vitreB.color.copy(vitre.color);
-      scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35 * Math.max(.3, k));
+      scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35 * (k < .2 ? .12 : Math.max(.3, k)));
       boule.material.emissiveIntensity = .35 + .4 * s;
       refMat.opacity = .7 + .3 * s; L.refletsTaille(1 + .4 * s); };
+    /* les lumières de boîte de nuit : quatre lyres au plafond qui balaient la piste de faisceaux rouge, vert, bleu (et leurs taches de couleur au sol),
+       et trois lumières colorées qui tournent au-dessus de la piste ; d'autant plus fortes que la salle est sombre, et qui battent quand la musique joue */
+    {
+      const COUL = [0xff2244, 0x22ff66, 0x2266ff, 0xff22cc], noirL = A.mat({ color: 0x1a1a1a, roughness: .5, metalness: .4 });
+      const tache = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.55, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }));
+      const lyres = [[-3.2, 2.5], [3.2, 2.5], [-3.2, 10.5], [3.2, 10.5]].map(([lx, lz], i) => {
+        const pied = new THREE.Mesh(new THREE.BoxGeometry(.34, .14, .24), noirL); pied.position.set(lx, HT - .07, lz); scene.add(pied);
+        const tetL = new THREE.Mesh(new THREE.CylinderGeometry(.13, .16, .3, 14), noirL); tetL.position.set(lx, HT - .32, lz); scene.add(tetL);
+        const lentille = new THREE.Mesh(new THREE.CircleGeometry(.12, 16), new THREE.MeshBasicMaterial({ color: COUL[i] })); lentille.rotation.x = Math.PI / 2; lentille.position.set(lx, HT - .48, lz); scene.add(lentille);
+        const geo = new THREE.ConeGeometry(.9, 1, 20, 1, true); geo.translate(0, -.5, 0);   // la pointe en haut, à la lyre
+        const faisceau = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: COUL[i], transparent: true, opacity: .15, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        faisceau.position.set(lx, HT - .48, lz); scene.add(faisceau);
+        const sol = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: tache, color: COUL[i], transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false }));
+        sol.rotation.x = -Math.PI / 2; scene.add(sol);
+        return { lx, lz, i, lentille, faisceau, sol };
+      });
+      const tournantes = [0xff1133, 0x11ff55, 0x1144ff].map(c => { const l = new THREE.PointLight(c, 0, 13, 1.3); scene.add(l); return l; });
+      const haut = new THREE.Vector3(0, 1, 0), dirL = new THREE.Vector3();
+      L.club = 0;
+      const animAvantClub = L.anim;
+      L.anim = (temps) => {
+        animAvantClub && animAvantClub(temps);
+        const s2 = L.club || 0, joue = !!(M && M.djJoue), bat = joue ? .7 + .3 * Math.abs(Math.sin(temps / 240)) : .85, force = (.3 + .7 * s2) * bat;
+        for (const ly of lyres) {
+          // la lyre balaie la piste : un point au sol qui tourne autour du centre de la piste ; toutes les 6 s, elle change de couleur
+          const a = temps / 1400 + ly.i * 1.6, cx = Math.sin(a * 1.3) * 3.2, cz = 6.5 + Math.cos(a) * 4.5, c = COUL[(ly.i + Math.floor(temps / 6000)) % COUL.length];
+          dirL.set(cx - ly.lx, .02 - (HT - .48), cz - ly.lz); const lg = dirL.length(); dirL.normalize();
+          ly.faisceau.quaternion.setFromUnitVectors(haut, dirL.clone().negate()); ly.faisceau.scale.set(1, lg, 1);
+          for (const m of [ly.faisceau.material, ly.sol.material, ly.lentille.material]) m.color.setHex(c);
+          ly.faisceau.material.opacity = .04 + .12 * force; ly.sol.material.opacity = .25 + .6 * force;
+          ly.sol.position.set(cx, .025 + ly.i * .002, cz); }
+        tournantes.forEach((l, i) => { const a = temps / 1700 + i * 2.1; l.position.set(Math.cos(a) * 3.4, 3.2, 6.5 + Math.sin(a) * 4.2); l.intensity = 9 * force; });
+      };
+    }
     L.interieur = true; L.boite = [X0, X1, Z0, Z1];
     L.zone = [X0, X1, Z0, FETE_SZ + VEST_VZ + 7.2];      // jusqu’au fond du sous-sol
     /* dans le coin, entre le bout du bar et le mur du fond : le flipper Bally « Viking » et le baby-foot (d'après les photos) */
