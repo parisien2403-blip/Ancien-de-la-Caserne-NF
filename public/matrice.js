@@ -751,6 +751,8 @@ function construireRue(A, T, L, scene) {
   };
   // le chef de poste reste de ce côté-ci de la grille noire : il ne sort pas dans la rue
   L.horsPNJ = (x, z) => z > -8.2; L.departPNJ = [0, -10.5];
+  // la circulation : de temps en temps une voiture des années 80-90, ou un bus parisien, descend la rue
+  circulation(L, scene);
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.boite = [-63, 63, -11.8, 6.3]; L.zone = [-62, 62, -26, 24];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
@@ -903,6 +905,54 @@ function deuxiemeCour(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x6b6b6b }), m, m, m], sg * (X + 3), 10, zc); }
   // une petite lumière le soir, au-dessus de chaque passage
   for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
+}
+/* la circulation de la rue du Faubourg-Poissonnière (sens unique) : des voitures des années 80-90 (couleurs au hasard)
+   et, plus rarement, le bus parisien de l'époque (vert jade et blanc) ; jamais en continu, de temps en temps */
+function circulation(L, scene) {
+  const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
+  const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
+  const phare = new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), feu = new THREE.MeshBasicMaterial({ color: 0xc8102e }), chrome = new THREE.MeshStandardMaterial({ color: 0xd8dadd, metalness: .8, roughness: .25 });
+  const COULEURS_80 = [0xc8102e, 0xf2f0ea, 0xd8c9a3, 0x1f4e8c, 0x2e6b3a, 0x8a8f96, 0xe2b11f, 0x6b1e2b, 0x3a3a3a, 0x9fc2d8, 0xd95f1e, 0x4b3a6b];
+  const box = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const ajouterRoues = (g, xs, demiLarg) => { const r = []; for (const x of xs) for (const s of [-1, 1]) { const w = new THREE.Mesh(roues, noir); w.rotation.x = Math.PI / 2; w.position.set(x, .31, s * demiLarg); g.add(w);
+    const j = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .21, 10), jante); j.rotation.x = Math.PI / 2; j.position.copy(w.position); g.add(j); r.push(w, j); } return r; };
+  // une voiture : carrosserie anguleuse, habitacle, pare-chocs noirs (façon R5, 205, R21, BX, Golf…) ; l'avant vers +x
+  const voiture = () => { const g = new THREE.Group(), c = new THREE.MeshStandardMaterial({ color: COULEURS_80[Math.floor(Math.random() * COULEURS_80.length)], roughness: .45, metalness: .15 });
+    const L2 = 3.6 + Math.random() * .9, H1 = .62, H2 = .52 + Math.random() * .1, l2 = 1.62, bicorps = Math.random() < .55;
+    box(g, L2, H1, l2, c, 0, .32 + H1 / 2, 0);
+    const lc = bicorps ? L2 * .55 : L2 * .45, xc = bicorps ? -L2 * .12 : -L2 * .02;
+    box(g, lc, H2, l2 - .12, c, xc, .32 + H1 + H2 / 2, 0);
+    for (const s of [-1, 1]) box(g, lc - .2, H2 - .14, .01, vitre, xc, .32 + H1 + H2 / 2, s * (l2 / 2 - .055));
+    box(g, .02, H2 - .12, l2 - .3, vitre, xc + lc / 2 + .005, .32 + H1 + H2 / 2, 0); box(g, .02, H2 - .12, l2 - .3, vitre, xc - lc / 2 - .005, .32 + H1 + H2 / 2, 0);
+    for (const sx of [-1, 1]) box(g, .12, .16, l2 + .04, noir, sx * (L2 / 2 + .02), .42, 0);            // pare-chocs noirs
+    for (const s of [-1, 1]) { box(g, .03, .14, .3, phare, L2 / 2 + .01, .7, s * .52); box(g, .03, .12, .28, feu, -L2 / 2 - .01, .7, s * .55); }
+    box(g, .02, .08, .6, chrome, L2 / 2 + .015, .58, 0);
+    return { g, r: ajouterRoues(g, [L2 / 2 - .7, -L2 / 2 + .7], l2 / 2 - .05), v: 8.5 + Math.random() * 3, L: L2 }; };
+  // le bus parisien des années 80-90 : long, carré, vert jade en bas, blanc en haut, bandeau vitré sombre, girouette avec le numéro
+  const bus = () => { const g = new THREE.Group(), vert = new THREE.MeshStandardMaterial({ color: 0x2f8a6a, roughness: .5 }), blanc = new THREE.MeshStandardMaterial({ color: 0xf1efe8, roughness: .5 });
+    const L2 = 11, l2 = 2.5;
+    box(g, L2, 1.1, l2, vert, 0, .35 + .55, 0); box(g, L2, 1.75, l2, blanc, 0, 1.45 + .875, 0); box(g, L2, .14, l2, blanc, 0, 3.27, 0);
+    for (const s of [-1, 1]) box(g, L2 - .6, 1.15, .01, vitre, -.1, 2.25, s * (l2 / 2 + .005));
+    box(g, .02, 1.3, l2 - .2, vitre, L2 / 2 + .01, 2.15, 0);
+    const n = String([20, 26, 30, 31, 32, 39, 42, 43, 48, 85][Math.floor(Math.random() * 10)]);
+    const gir = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .3), new THREE.MeshBasicMaterial({ map: tex(toile(256, 48, (x, w, h) => { x.fillStyle = "#111"; x.fillRect(0, 0, w, h); x.fillStyle = "#ffcf3a"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(n + "  GARE DE L'EST", w / 2, 36); })) }));
+    gir.rotation.y = Math.PI / 2; gir.position.set(L2 / 2 + .03, 3.0, 0); g.add(gir);
+    for (const s of [-1, 1]) { box(g, .03, .18, .3, phare, L2 / 2 + .01, .75, s * .9); box(g, .03, .2, .25, feu, -L2 / 2 - .01, .9, s * 1); }
+    box(g, .14, .2, l2 + .04, noir, L2 / 2 + .05, .45, 0); box(g, .14, .2, l2 + .04, noir, -L2 / 2 - .05, .45, 0);
+    return { g, r: ajouterRoues(g, [L2 / 2 - 2.2, -L2 / 2 + 2.6], l2 / 2 - .1), v: 6.5, L: L2, bus: true }; };
+  const enRoute = []; let prochain = performance.now() + 2500 + Math.random() * 5000, avant = 0;
+  const animAvant = L.anim;
+  L.anim = (t) => { animAvant && animAvant(t);
+    const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
+    if (t > prochain) { const dernier = enRoute[enRoute.length - 1];
+      if (!dernier || dernier.g.position.x > -60 + dernier.L + 6) { const v = Math.random() < .17 ? bus() : voiture(); v.g.position.set(-72, 0, .55); scene.add(v.g); enRoute.push(v);
+        prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
+      else prochain = t + 800; }
+    for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
+      let vit = v.v; if (dev && dev.g.position.x - v.g.position.x < dev.L / 2 + v.L / 2 + 4) vit = Math.min(vit, dev.v);   // pas de dépassement
+      v.g.position.x += vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
+      if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); }); enRoute.splice(i, 1); } }
+  };
 }
 // un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
 function tableauScores(A, sousTitre, x0, y0, z0) {
