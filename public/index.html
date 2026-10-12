@@ -845,6 +845,16 @@
   .mx-apo-flash.on { opacity: 1; transition: none; }
   .mx-apo-mort { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; align-content: center; gap: 10px; background: rgba(0,0,0,.55); animation: mxMort 2.5s ease-in both; pointer-events: none; }
   .mx-apo-mort[hidden] { display: none; }
+  .mx-apo-intro { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 10px; background: rgba(0,0,0,.72); animation: mxMort .6s ease-out both; }
+  .mx-apo-intro[hidden] { display: none; }
+  .mx-apo-carte { position: relative; max-width: 460px; max-height: 100%; overflow: auto; padding: 16px 16px 14px; border-radius: 12px; background: linear-gradient(#1a0d09, #0b0605); border: 1.5px solid #7a1a12; color: #e9dccb; box-shadow: 0 0 30px rgba(160,20,10,.45); }
+  .mx-apo-an { position: absolute; right: 14px; top: 8px; font: 900 34px "Courier Prime", monospace; color: rgba(200,30,20,.35); }
+  .mx-apo-carte h2 { margin: 0 0 8px; color: #e8341f; font: 400 26px "Marcellus", serif; letter-spacing: .04em; }
+  .mx-apo-carte p { margin: 0 0 8px; font-size: 14px; line-height: 1.45; } .mx-apo-chapo { font-style: italic; color: #cbb59b; }
+  .mx-apo-carte ul { margin: 6px 0 10px; padding-left: 4px; list-style: none; font-size: 13.5px; line-height: 1.45; } .mx-apo-carte li { margin: 4px 0; }
+  .mx-apo-carte b { color: #ffcf9a; } .mx-apo-fin { color: #e8341f; font-weight: 700; }
+  .mx-apo-btns { display: flex; gap: 8px; margin: 6px -16px -14px; padding: 10px 16px 14px; position: sticky; bottom: -14px; background: linear-gradient(rgba(11,6,5,.85), #0b0605 40%); } .mx-apo-btns .btn { flex: 1; padding: 12px; font-size: 16px; }
+  .mx-apo-btns .btn.alt { color: #e9dccb; border-color: #6a4a3a; }
   .mx-apo-mort img { width: min(78%, 420px); animation: mxMort 3.5s ease-in both; }
   .mx-apo-mort small { color: #d9c9b0; font: 14px "Lato", sans-serif; }
   @keyframes mxMort { from { opacity: 0; } to { opacity: 1; } }
@@ -1201,6 +1211,23 @@
           <!-- l'apocalypse : les balles, les vies ; l'écran rougit à la morsure ; « YOU DIED » -->
           <div class="mx-apo" id="mxApo" hidden><span id="mxApoBalles"></span><span id="mxApoVies"></span></div>
           <div class="mx-apo-flash" id="mxApoFlash"></div>
+          <div class="mx-apo-intro" id="mxApoIntro" hidden><div class="mx-apo-carte">
+            <div class="mx-apo-an">1998</div>
+            <h2>Bienvenue en 1998</h2>
+            <p class="mx-apo-chapo">L'année de Resident Evil 2. Derrière cette porte, la caserne a basculé : la nuit ne finit plus, les rues brûlent et les morts se sont relevés.</p>
+            <p>Tu vas pouvoir y entrer <b>seul</b> ou <b>en coopération</b> avec les anciens qui y sont déjà : vous verrez les mêmes zombies et pourrez vous couvrir les uns les autres.</p>
+            <ul>
+              <li>🔫 <b>Tirer</b> : touche un zombie ou un chien (ou clique dessus sur PC). Il faut <b>2 balles</b> pour en abattre un.</li>
+              <li>🚶 <b>Te déplacer</b> : touche le sol, comme dans la caserne.</li>
+              <li>📦 <b>Munitions</b> : ton arme a <b>6 balles</b>. Marche sur une boîte de munitions pour revenir à 6.</li>
+              <li>🌿 <b>Plantes</b> : près d'un mur ou sur une table, « Prendre la plante » te rend <b>une vie</b>.</li>
+              <li>❤️ <b>Vies</b> : 3. À chaque morsure tu recules ; à la <b>troisième</b>, c'est fini… retour à la caserne.</li>
+              <li>☕ <b>Salle de repos</b> : le vestibule et le bar, en bas de la salle des fêtes. Aucun zombie n'y entre.</li>
+              <li>🧟 Les zombies te suivent sans relâche ; les <b>chiens</b>, eux, sont bien plus rapides.</li>
+            </ul>
+            <p class="mx-apo-fin">Il n'y a pas de fin : c'est une balade en mode survie. Pour revenir, repasse par le cercle rouge de la déchetterie.</p>
+            <div class="mx-apo-btns"><button class="btn" type="button" id="mxApoOui">🧟 Entrer</button><button class="btn alt" type="button" id="mxApoNon">Rester à la caserne</button></div>
+          </div></div>
           <div class="mx-apo-mort" id="mxApoMort" hidden><img src="images/apo/you-died.png" alt="You died"><small id="mxApoMortTxt"></small></div>
           <div class="mx-invite" id="mxInvite" hidden><div id="mxInviteTxt"></div><div class="mx-invite-btns"><button type="button" class="btn small" id="mxInviteOui">💞 Avec plaisir</button><button type="button" class="btn small alt" id="mxInviteNon">Non merci</button></div></div>
           <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
@@ -2049,6 +2076,8 @@
           if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },
         surApoFlash: () => { const f = $("mxApoFlash"); f.classList.add("on"); setTimeout(() => f.classList.remove("on"), 120); if (navigator.vibrate) navigator.vibrate(120); },
         surApoMort: on => { $("mxApoMort").hidden = !on; },
+        surAvantApo: suite => { const el = $("mxApoIntro"); el.hidden = false; el.querySelector(".mx-apo-carte").scrollTop = 0;
+          $("mxApoOui").onclick = () => { el.hidden = true; suite(true); }; $("mxApoNon").onclick = () => { el.hidden = true; suite(false); }; },
         surEtage: (n, N) => { const el = $("mxEtages"); if (n === null || n === undefined) { el.hidden = true; return; }
           const nom = k => k === 0 ? "rez-de-chaussée" : k === 1 ? "1er" : k + "e", court = k => k === 0 ? "RDC" : k === 1 ? "1er" : k + "e";
           el.innerHTML = n < N ? `<button type="button" data-etage="${n + 1}">⬆ Monter au ${nom(n + 1)}</button>`
@@ -2699,6 +2728,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.40", "12 octobre 2026", ["Caserne de l'apocalypse : avant d'entrer, un écran « Bienvenue en 1998 » explique les règles (solo ou coopération, tir, munitions, plantes, vies, salle de repos) ; on choisit d'entrer ou de rester", "Correction : en revenant de l'apocalypse (après la mort ou par la déchetterie), ses sons s'arrêtent tous"]],
     ["3.39", "12 octobre 2026", ["Salle des fêtes : Robert Smith (The Cure), en grande chemise noire, arrive au milieu de la piste avec sa guitare, devant son micro sur pied, dès que passe Just Like Heaven", "Administrateur : bouton 🎸 Robert Smith pour régler sa tête, ses vêtements, sa silhouette et son nom"]],
     ["3.38.1", "12 octobre 2026", ["La porte « Entrer dans la caserne » : la carte est plus petite et tout en haut, on voit la grille en entier"]],
     ["3.38", "12 octobre 2026", ["La caserne de l'apocalypse : par la case ouverte de la déchetterie (cercle rouge), la même caserne la nuit de la fin du monde — voitures en feu, brasiers, fenêtres barricadées, sang, couloirs sombres ; ambiance sonore dehors et crépitement des feux", "La partie de zombies : 3 zombies et des chiens zombies poursuivent les joueurs ; touche-les pour tirer (2 balles pour en tuer un), 6 balles, boîtes de munitions et plantes de soin ; 3 morsures : YOU DIED, et retour devant la déchetterie", "La salle de repos (vestibule et bar) : intacte, sans zombie, avec sa musique, des munitions et des plantes", "Administrateur : boutons pour régler les 3 zombies (tête, tenue, silhouette) et le chien (taille, largeur, vitesse, image)"]],

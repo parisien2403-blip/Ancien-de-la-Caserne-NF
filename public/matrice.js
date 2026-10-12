@@ -2812,7 +2812,11 @@ export async function ouvrir(ctx) {
           if (p.corps && !p.info.danse && !Number.isInteger(p.info.assis)) p.corps.position.y = Math.abs(Math.sin(p.pasT * 3.4)) * .045 * Math.min(1, p.vit / 1.5);
           if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const px = p.g.position.x, pz = p.g.position.z;
-            const pt = M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true; if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
+            const pt = M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true;
+              if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
+                M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw);
+                  else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
+              else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // il joue : 🎮 la console, 🕹️ le flipper, 🎯 les fléchettes, au-dessus de sa tête (elle flotte doucement)
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
@@ -2936,7 +2940,7 @@ export async function ouvrir(ctx) {
 
 export function fermer() {
   if (!M) return;
-  if (sonApo) sonApo.pause(); if (sonFeu) sonFeu.pause(); if (sonRepos) sonRepos.pause();
+  couperSonsApo();
   M.ouvert = false;
   try { M.ws && M.ws.close(1000, "Fermé"); } catch (e) {}
   clearTimeout(M.reco); clearInterval(M.minuteur);
@@ -3126,7 +3130,12 @@ function posesZ(ty) {
     return { repos: f(undefined), a: f("thriller1"), b: f("thriller2"), c: f("thriller3") }; }));
 }
 const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
-function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); a.play().catch(() => {}); } catch (e) {} }
+const sonsCourts = new Set();
+function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
+function couperSonsApo() {
+  for (const a of [sonApo, sonFeu, sonRepos, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
+  sonsCourts.clear(); sonApo = sonFeu = sonRepos = null;   // (recréés à la prochaine visite)
+}
 function sonBruit(duree, coupure, vol) {   // le coup de feu (et le « clic » à vide), fabriqué à la volée
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(actx.sampleRate * duree), b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
@@ -3949,6 +3958,7 @@ function allerVers(x, z, envoyer) {
 }
 function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
+  if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   const { scene, L, repere } = construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
@@ -4072,3 +4082,4 @@ function connecter() {
     if (M.ouvert) { ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); M.reco = setTimeout(() => M && connecter(), 3000); }
   };
 }
+export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun");   // (pour les essais)
