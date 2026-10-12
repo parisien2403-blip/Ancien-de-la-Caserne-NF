@@ -1436,7 +1436,6 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const AX0 = 8.6, AX1 = 16.5, AW = AX1 - AX0, AZ0 = 12, AZ1 = 26, AH = 26;
     const toileAile = (visibleAGauche) => toile(Math.round(AW * 40), AH * 40, (x, w, h) => { briquesFines(x, w, h);
       const v0 = visibleAGauche ? 0 : w - (12.5 - AX0) * 40, vw = (12.5 - AX0) * 40, sx = v0 + vw / 2 - 22;   // la partie qui donne sur la cour
-      x.fillStyle = "#f1ece2"; x.fillRect(sx, 60, 44, h - 260); for (let y = 66; y < h - 206; y += 22) { x.fillStyle = "#8ea2b2"; x.fillRect(sx + 6, y, 32, 17); }
       x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
       x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
       x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
@@ -1451,8 +1450,11 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
       if (!avecPorte) return;
       const vw = (ZF - AZ0) * 40, v0 = visibleAGauche ? 0 : w - vw, px = v0 + vw / 2 - 28;
-      x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122); x.fillStyle = "#b8452f"; x.fillRect(px, h - 115, 56, 115);
-      x.fillStyle = "#e9d7c8"; x.fillRect(px + 8, h - 107, 40, 60); x.fillStyle = "#b8452f"; x.fillRect(px + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
+      // la colonne de fenêtres, au-dessus de la porte
+      x.fillStyle = "#f1ece2"; x.fillRect(px + 6, 60, 44, h - 260); for (let y = 66; y < h - 206; y += 22) { x.fillStyle = "#8ea2b2"; x.fillRect(px + 12, y, 32, 17); }
+      // la porte, en bois marron
+      x.fillStyle = "#efe9dd"; x.fillRect(px - 7, h - 122, 70, 122); x.fillStyle = "#6b4226"; x.fillRect(px, h - 115, 56, 115);
+      x.fillStyle = "#e9d7c8"; x.fillRect(px + 8, h - 107, 40, 60); x.fillStyle = "#6b4226"; x.fillRect(px + 26, h - 107, 4, 60); x.fillStyle = "#2a2a2a"; x.fillRect(px + 22, h - 140, 12, 7); });
     const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
     for (const s of (copie ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
