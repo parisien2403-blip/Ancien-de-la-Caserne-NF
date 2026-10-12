@@ -70,9 +70,16 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   // Depeche Mode : sur scène dès qu'une de leurs chansons passe
   27: { nom: "Martin Gore", tenue: "gore", couleur: "#111113", bas: "#141416", pieds: "#0e0e0e" }, 28: { nom: "Dave Gahan", tenue: "gahan", couleur: "#1a1a1d", bas: "#121214", pieds: "#0e0e0e" },
   29: { nom: "Andy Fletcher", tenue: "fletcher", couleur: "#141416", bas: "#141416", pieds: "#0e0e0e" },
-  30: { nom: "Doc", tenue: "doc", couleur: "#f1efe6", bas: "#f1efe6", pieds: "#8a5a34" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 30) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc"];
+  30: { nom: "Doc", tenue: "doc", couleur: "#f1efe6", bas: "#f1efe6", pieds: "#8a5a34" },
+  // les habitants de Hill Valley en 1955
+  31: { nom: "Marty McFly", tenue: "marty", couleur: "#5f86b8", bas: "#4a76ad", pieds: "#e2ddd2" }, 32: { nom: "Biff Tannen", tenue: "biff", couleur: "#c8201c", bas: "#1d2433", pieds: "#1a1a1a" },
+  33: { nom: "Match", tenue: "match", couleur: "#d9a520", bas: "#2a2a2e", pieds: "#1a1a1a" }, 34: { nom: "3-D", tenue: "troisd", couleur: "#e2e0d8", bas: "#3a3a3c", pieds: "#1a1a1a" },
+  35: { nom: "Skinhead", tenue: "skinhead", couleur: "#151517", bas: "#8a7a5a", pieds: "#1a1a1a" }, 36: { nom: "La dame à la robe à pois", tenue: "pois", couleur: "#141414", bas: null, pieds: "#c8102e" },
+  37: { nom: "La dame à la jupe écossaise", tenue: "ecossaise", couleur: "#46543a", bas: null, pieds: "#c9932a" }, 38: { nom: "Le monsieur aux bretelles", tenue: "bretelles", couleur: "#f4f2ec", bas: "#6a5444", pieds: "#4a2414" },
+  39: { nom: "Le serveur", tenue: "serveur", couleur: "#f4f2ec", bas: "#151517", pieds: "#151515" }, 40: { nom: "La serveuse", tenue: "serveuse", couleur: "#c8202a", bas: null, pieds: "#c8102e" },
+  41: { nom: "Le monsieur au gilet", tenue: "gilet", couleur: "#f2f0ea", bas: "#2f3236", pieds: "#3a2414" }, 42: { nom: "Le garçon au blouson", tenue: "varsity", couleur: "#f2f2ee", bas: "#3c5a86", pieds: "#e8e8e8" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 42) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
