@@ -838,6 +838,20 @@
   .acc-hero img { aspect-ratio: 4 / 3; object-position: 50% 45%; filter: none; }
   .tab[data-tab="vague"] .bubble { margin-top: 0; } .tab[data-tab="vague"] .bubble::before { display: none; }
   .f-scene { margin-right: 0; }
+  .mx-apo { position: absolute; left: 10px; top: 52px; z-index: 4; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+  .mx-apo[hidden] { display: none; }
+  .mx-apo span { background: rgba(10,4,2,.72); color: #fbe9c8; border: 1px solid rgba(200,60,30,.6); border-radius: 10px; padding: 5px 10px; font: 700 15px "Courier Prime", monospace; }
+  .mx-apo-flash { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(circle, rgba(160,0,0,.15), rgba(150,0,0,.75)); opacity: 0; transition: opacity .5s; }
+  .mx-apo-flash.on { opacity: 1; transition: none; }
+  .mx-apo-mort { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; align-content: center; gap: 10px; background: rgba(0,0,0,.55); animation: mxMort 2.5s ease-in both; pointer-events: none; }
+  .mx-apo-mort[hidden] { display: none; }
+  .mx-apo-mort img { width: min(78%, 420px); animation: mxMort 3.5s ease-in both; }
+  .mx-apo-mort small { color: #d9c9b0; font: 14px "Lato", sans-serif; }
+  @keyframes mxMort { from { opacity: 0; } to { opacity: 1; } }
+  /* les réglages des zombies (administrateur) */
+  .zreg { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; align-items: center; margin: 10px 0; padding: 10px; border: 1.5px solid #d3c5aa; border-radius: 12px; }
+  .zreg img { width: 70px; height: 90px; object-fit: contain; background: #3a2a22; border-radius: 8px; grid-row: span 3; }
+  .zreg label { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); } .zreg input { flex: 1; accent-color: var(--terra); }
   /* dans les bâtiments : monter d'un étage (ou, au 6e, redescendre) d'un seul bouton */
   .mx-etages { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 92%; }
   .mx-etages[hidden] { display: none; }
@@ -1166,7 +1180,11 @@
           <button class="btn small alt" id="mxPNJRobin" type="button" hidden>🕺 Robin</button>
           <button class="btn small alt" id="mxPNJBarry" type="button" hidden>🕺 Barry</button>
           <button class="btn small alt" id="mxPNJMaurice" type="button" hidden>🕺 Maurice</button>
-          <button class="btn small alt" id="mxPNJTravolta" type="button" hidden>🕺 John Travolta</button></div></div>
+          <button class="btn small alt" id="mxPNJTravolta" type="button" hidden>🕺 John Travolta</button>
+          <button class="btn small alt" id="mxPNJZA" type="button" hidden>🧟 Le cadavre au bonnet</button>
+          <button class="btn small alt" id="mxPNJZB" type="button" hidden>🧟 L'homme à la chemise</button>
+          <button class="btn small alt" id="mxPNJZC" type="button" hidden>🧟 Le policier zombie</button>
+          <button class="btn small alt" id="mxPNJZombies" type="button" hidden>🐕 Le chien zombie</button></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
           <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
@@ -1178,6 +1196,10 @@
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-action" id="mxAction" type="button" hidden></button>
           <div class="mx-etages" id="mxEtages" hidden></div>
+          <!-- l'apocalypse : les balles, les vies ; l'écran rougit à la morsure ; « YOU DIED » -->
+          <div class="mx-apo" id="mxApo" hidden><span id="mxApoBalles"></span><span id="mxApoVies"></span></div>
+          <div class="mx-apo-flash" id="mxApoFlash"></div>
+          <div class="mx-apo-mort" id="mxApoMort" hidden><img src="images/apo/you-died.png" alt="You died"><small id="mxApoMortTxt"></small></div>
           <div class="mx-invite" id="mxInvite" hidden><div id="mxInviteTxt"></div><div class="mx-invite-btns"><button type="button" class="btn small" id="mxInviteOui">💞 Avec plaisir</button><button type="button" class="btn small alt" id="mxInviteNon">Non merci</button></div></div>
           <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
           <button class="mx-effet" id="mxLasers" type="button" title="Allumer les lasers" hidden>🔷 Lasers</button>
@@ -1989,8 +2011,8 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2004,7 +2026,7 @@
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
+        surLieu: id => { dessinerLieux(m, id); document.querySelector(".mx-danses").style.display = /^z-/.test(id) ? "none" : "";   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") { $("mxFumee").hidden = !n; $("mxLasers").hidden = !n || !moi.admin; } },   // (les lasers : l'administrateur seul)
@@ -2020,6 +2042,11 @@
         surFlipper: () => { infoMatrice("🎰 Le flipper s'allume…", 2000);
           import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
+        surApo: e => { $("mxApo").hidden = !e; if (!e) return;
+          $("mxApoBalles").textContent = `🔫 ${e.balles} / 6`; $("mxApoVies").textContent = "❤️".repeat(e.vies) + "🖤".repeat(3 - e.vies);
+          if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },
+        surApoFlash: () => { const f = $("mxApoFlash"); f.classList.add("on"); setTimeout(() => f.classList.remove("on"), 120); if (navigator.vibrate) navigator.vibrate(120); },
+        surApoMort: on => { $("mxApoMort").hidden = !on; },
         surEtage: (n, N) => { const el = $("mxEtages"); if (n === null || n === undefined) { el.hidden = true; return; }
           const nom = k => k === 0 ? "rez-de-chaussée" : k === 1 ? "1er" : k + "e", court = k => k === 0 ? "RDC" : k === 1 ? "1er" : k + "e";
           el.innerHTML = n < N ? `<button type="button" data-etage="${n + 1}">⬆ Monter au ${nom(n + 1)}</button>`
@@ -2045,7 +2072,9 @@
   let mxComptes = {}, mxLieu = null, pnjInfo = null, djInfo = null, barInfo = null, danseurInfo = null, trioInfo = {};
   const TRIO = { danseur: [4, "🧟 Le danseur Thriller", "Le danseur Thriller", "images/danseur-tete.png"], zombie: [5, "🧟‍♂️ Le zombie (danseur Thriller)", "Le zombie", "images/zombie-tete.png"], mariee: [6, "👰 La mariée (danseuse Thriller)", "La mariée", "images/mariee-tete.png"], hernandez: [7, "🕺 Mr Hernandez (Born to Be Alive)", "Mr Hernandez", "images/hernandez-tete.png"],
     robin: [8, "🕺 Robin Gibb (Bee Gees)", "Robin Gibb", "images/beegees-robin-tete.png"], barry: [9, "🕺 Barry Gibb (Bee Gees)", "Barry Gibb", "images/beegees-barry-tete.png"], maurice: [10, "🕺 Maurice Gibb (Bee Gees)", "Maurice Gibb", "images/beegees-maurice-tete.png"],
-    travolta: [11, "🕺 John Travolta (Saturday Night Fever)", "John Travolta", "images/travolta-tete.png"] };
+    travolta: [11, "🕺 John Travolta (Saturday Night Fever)", "John Travolta", "images/travolta-tete.png"],
+    zombieA: [12, "🧟 Le cadavre au bonnet", "Le cadavre au bonnet", "images/apo/zombie1-tete.png"], zombieB: [13, "🧟 L'homme à la chemise", "L'homme à la chemise", "images/apo/zombie2-tete.png"],
+    zombieC: [14, "🧟 Le policier zombie", "Le policier zombie", "images/apo/zombie3-tete.png"] };
   const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id !== 1 ? "&id=" + id : ""}`;
   function allerAuDJ() {
     const ouvrir = () => { $("mxDJ").scrollIntoView({ behavior: "smooth", block: "start" }); $("mxDJ").classList.remove("eclat"); void $("mxDJ").offsetWidth; $("mxDJ").classList.add("eclat"); };
@@ -2203,6 +2232,22 @@
   $("mxPNJBarry").onclick = () => ouvrirBonhomme("barry");
   $("mxPNJMaurice").onclick = () => ouvrirBonhomme("maurice");
   $("mxPNJTravolta").onclick = () => ouvrirBonhomme("travolta");
+  // (administrateur) la taille et la largeur des trois zombies et du chien de l'apocalypse
+  $("mxPNJZA").onclick = () => ouvrirBonhomme("zombieA"); $("mxPNJZB").onclick = () => ouvrirBonhomme("zombieB"); $("mxPNJZC").onclick = () => ouvrirBonhomme("zombieC");
+  $("mxPNJZombies").onclick = () => {
+    const Z = [[15, "Le chien zombie", "chien"]];
+    const d = document.createElement("div"); d.className = "garde-voile"; d.style.cssText = "position:fixed;inset:0;z-index:3000;background:rgba(20,14,10,.6);display:grid;place-items:center;padding:16px";
+    d.innerHTML = `<div class="card" style="max-width:420px;width:100%;max-height:90vh;overflow:auto"><h3 style="margin:0 0 4px">🐕 Le chien zombie</h3><p class="hello-sub" style="margin:0 0 6px">Leur taille et leur largeur, dans la caserne de l'apocalypse.</p>`
+      + Z.map(([id, nom, img]) => { const r = (trioInfo[id] && trioInfo[id].reglage) || {}; return `<div class="zreg" data-z="${id}"><img src="images/apo/${img}.png" alt=""><b>${esc(nom)}</b>
+        <label>Taille <input type="range" min=".75" max="1.3" step=".01" value="${r.h || 1}" data-c="h"></label><label>Largeur <input type="range" min=".7" max="1.6" step=".01" value="${r.l || 1}" data-c="l"></label></div>`; }).join("")
+      + `<div style="display:flex;gap:8px"><button class="btn small" type="button" data-ok>Enregistrer</button><button class="btn small alt" type="button" data-non>Fermer</button></div></div>`;
+    document.body.appendChild(d); d.querySelector("[data-non]").onclick = () => d.remove();
+    d.querySelector("[data-ok]").onclick = async () => { try {
+      for (const el of d.querySelectorAll("[data-z]")) { const id = +el.dataset.z, P = trioInfo[id] || {}, nom = Z.find(z => z[0] === id)[1];
+        const reglage = { k: 1, dx: 0, dy: 0, r: 0, ...(P.reglage || {}), h: +el.querySelector("[data-c=h]").value, l: +el.querySelector("[data-c=l]").value };
+        trioInfo[id] = await api("PUT", "/api/pnj?id=" + id, { nom, tenue: "civil", couleur: "#555555", reglage }); }
+      d.remove(); infoMatrice("🧟 Réglages enregistrés", 2000); } catch (e) { garde("Les réglages n'ont pas pu être enregistrés : " + e.message); } };
+  };
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
@@ -2231,7 +2276,7 @@
     $("bhErreur").hidden = true; bh.mode = mode;
     const tr = TRIO[mode], dans = !!tr, bar = mode === "bar", dj = mode === "dj", pnj = mode === "pnj" || dj || bar || dans, idP = tr ? tr[0] : bar ? 3 : dj ? 2 : 1;
     $("bhTitreFen").textContent = tr ? tr[1] : bar ? "🍷 Mr Miner, le barman" : dj ? "🎧 Manu, le DJ" : pnj ? "👮 Le bonhomme du chef de poste" : "🧍 Mon bonhomme";
-    $("bhSousTitre").textContent = mode === "travolta" ? "Toi seul règles John Travolta, qui danse seul devant les Bee Gees, comme dans Saturday Night Fever, dès que passe une de leurs chansons : sa tête, ses vêtements, son nom." : ["robin", "barry", "maurice"].includes(mode) ? "Toi seul règles ce Bee Gees, qui arrive au milieu de la piste avec ses frères dès que passe une chanson des Bee Gees : sa tête, ses vêtements, son nom." : mode === "hernandez" ? "Toi seul règles Mr Hernandez, qui arrive au milieu de la piste avec sa canne dès que passe Born to Be Alive : sa tête, ses vêtements, son nom." : dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
+    $("bhSousTitre").textContent = /^zombie[ABC]$/.test(mode) ? "Toi seul règles ce zombie de la caserne de l'apocalypse : sa tête, ses vêtements, sa silhouette, son nom." : mode === "travolta" ? "Toi seul règles John Travolta, qui danse seul devant les Bee Gees, comme dans Saturday Night Fever, dès que passe une de leurs chansons : sa tête, ses vêtements, son nom." : ["robin", "barry", "maurice"].includes(mode) ? "Toi seul règles ce Bee Gees, qui arrive au milieu de la piste avec ses frères dès que passe une chanson des Bee Gees : sa tête, ses vêtements, son nom." : mode === "hernandez" ? "Toi seul règles Mr Hernandez, qui arrive au milieu de la piste avec sa canne dès que passe Born to Be Alive : sa tête, ses vêtements, son nom." : dans ? "Toi seul règles ce danseur, qui arrive au milieu de la piste dès qu'un Thriller passe : sa tête, ses vêtements, son nom." : bar ? "Toi seul règles le barman qui sert derrière le grand comptoir de la salle des fêtes : sa tête, ses vêtements, son nom." : dj ? "Toi seul règles le DJ qui mixe derrière ses platines, dans la salle des fêtes : sa tête, ses vêtements, son nom." : pnj ? "Toi seul règles le chef de poste qui se promène dans la Matrice : sa tête, sa tenue, son nom." : "C'est lui qui te représente dans la Matrice : ta vraie tête, détourée automatiquement, sur un corps dessiné.";
     $("bhNomZone").hidden = !pnj; $("bhPhotoProfil").hidden = pnj; $("bhTeteTitre").textContent = pnj ? "Sa tête" : "Ma tête";
     try {
       const m = await chargerMX();

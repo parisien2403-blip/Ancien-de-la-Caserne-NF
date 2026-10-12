@@ -52,8 +52,10 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   7: { nom: "Mr Hernandez", tenue: "hernandez", couleur: "#161616", bas: "#161616", pieds: "#f2f2f2" },
   8: { nom: "Robin Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" }, 9: { nom: "Barry Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" },
   10: { nom: "Maurice Gibb", tenue: "beegees", couleur: "#c9b27c", bas: "#c9b27c", pieds: "#b89a5a" },
+  12: { nom: "Le cadavre au bonnet", tenue: "zombie", couleur: "#3b3f52", bas: "#3d3326", pieds: "#2a2522" }, 13: { nom: "L'homme à la chemise", tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" },
+  14: { nom: "Le policier zombie", tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" }, 15: { nom: "Le chien zombie", tenue: "civil", couleur: "#555555", bas: null },
   11: { nom: "John Travolta", tenue: "travolta", couleur: "#f4f1ea", bas: "#f4f1ea", pieds: "#1a1a1a" } };
-const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(id) ? id : 1;
+const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(id) ? id : 1;
 const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -392,6 +394,9 @@ export class Compteur extends DurableObject {
       const dits = this.sql.exec("SELECT id, numero, nom, texte, cree FROM matrice_dits WHERE lieu = ? ORDER BY id DESC LIMIT 20", m.lieu).toArray().reverse();
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
+      // la caserne de l'apocalypse : l'un des joueurs présents fait vivre les zombies pour tout le monde (le « chef »)
+      if (ancien && ancien !== m.lieu && ancien.startsWith("z-")) this.diffuser(ancien, { t: "z_chef", numero: this.chefDe(ancien) });
+      if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c)); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
@@ -419,6 +424,12 @@ export class Compteur extends DurableObject {
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (typeof m.t === "string" && m.t.startsWith("z_") && a.lieu && a.lieu.startsWith("z-")) {
+      // la partie de zombies : l'état des zombies (du chef seulement), les tirs, les morsures, les objets ramassés… relayés aux autres joueurs du lieu
+      if (m.t === "z_etat" && this.chefDe(a.lieu) !== Number(a.numero)) return;
+      if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse"].includes(m.t)) return;
+      const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
+      for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "joue") {
       // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)
       a.joue = ["console", "flipper", "flechettes"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
@@ -486,7 +497,9 @@ export class Compteur extends DurableObject {
     this.finirSlow(ws, a);
     const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
     this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
+    if (lieu.startsWith("z-")) this.diffuser(lieu, { t: "z_chef", numero: this.chefDe(lieu) }, ws);
   }
+  chefDe(lieu) { const n = this.presents(lieu).map(([, b]) => Number(b.numero)).filter(Number.isFinite); return n.length ? Math.min(...n) : null; }
 
   async changerEscalier(token, x) {
     const moi = this.moi(token, { tous: true }), bat = batValide(x.bat), etage = bat ? etageValide(x.etage) : null;

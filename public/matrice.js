@@ -166,6 +166,7 @@ export function dessinerBonhomme(o, tete) {
         // Mr Hernandez et sa canne : levée derrière la tête (canne1), tenue à deux mains au-dessus de la tête (canne2), pointée au loin (canne3), plantée au sol (canne4)
         : o.pose === "canne1" ? (sens > 0 ? [62, 36] : null) : o.pose === "canne2" ? (sens > 0 ? [36, 64] : [164, 64]) : o.pose === "canne3" ? (sens > 0 ? [-34, 112] : null)
         : o.pose === "canne4" ? (sens > 0 ? [24, 232] : [170, 46])
+        : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
         : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
@@ -199,6 +200,13 @@ export function dessinerBonhomme(o, tete) {
       x.restore();
     };
     if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
+    // à l'apocalypse : le pistolet, dans la main droite (pointé vers le sol, ou devant soi quand on tire)
+    if (o.arme && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
+      x.save(); x.translate(hx, hy); x.rotate(a); x.fillStyle = "#1b1b1d";
+      x.beginPath(); x.roundRect(-4, -6, 34, 11, 2); x.fill();                                // la culasse et le canon
+      x.fillStyle = "#3a3a3e"; x.fillRect(2, -5, 26, 3);
+      x.fillStyle = "#1b1b1d"; x.beginPath(); x.roundRect(-6, 2, 11, 18, 3); x.fill();          // la crosse
+      x.restore(); x.fillStyle = peau; x.beginPath(); x.arc(hx, hy, 10, 0, 7); x.fill(); }
     // la canne de Mr Hernandez (bois sombre, pommeau doré), dans sa main ; dessinée avant la tête, qui passe devant
     if (t === "hernandez" && mains[0]) { const [hx, hy] = mains[0];
       let a, b;
@@ -284,6 +292,11 @@ export function dessinerBonhomme(o, tete) {
         x.fillStyle = "#c8343a"; for (const yy of [226, 236]) x.fillRect(88, yy, 32, 3); }
     }
     if (accroupi) x.restore();
+    // un joueur devenu zombie : la peau verdâtre, les vêtements salis de sang
+    if (o.zombieJoueur) { x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-atop";
+      x.fillStyle = "rgba(70,120,40,.42)"; x.fillRect(0, 0, x.canvas.width, x.canvas.height);
+      x.fillStyle = "rgba(110,8,8,.7)"; for (const [a, b, r] of [[150, 200, 14], [190, 260, 10], [130, 300, 12], [175, 140, 9]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); }
+      x.restore(); }
   });
 }
 
@@ -2687,6 +2700,9 @@ export async function ouvrir(ctx) {
     if (!g || g.bouge || !M || !M.L) return;
     const r = rendu.domElement.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(v2, M.camera);
+    // à l'apocalypse : toucher un zombie (ou un chien), c'est lui tirer dessus
+    if (M.L.apo && M.zomb && M.zomb.size) { const vv = [...M.zomb.values()].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
+      if (hz) { tirer(vv.find(z => z.mesh === hz.object)); return; } }
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
     const toi = M.moiNum && M.gens.get(M.moiNum);
     // (toucher son propre bonhomme ne fait plus rien : on vise le sol où l'on veut aller ; les danses sont dans les boutons)
@@ -2786,7 +2802,10 @@ export async function ouvrir(ctx) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
-        if (p.info.joue && !p.moi) {
+        if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
+          if (p.corps.material.map !== p.poses.tir) { p.corps.material.map = p.poses.tir; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
+        else if (p.info.joue && !p.moi) {
           // il joue : de dos, tourné vers la machine, il remue un peu (les mains sur les commandes)
           if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(t / 260) * .03; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
@@ -2863,12 +2882,13 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
-    animerCercles(t); ambianceApo();
+    animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
-      p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
+      p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
+      if (p.info.mortT) { const f = Math.min(1, (performance.now() - p.info.mortT) / 650); p.corps.rotation.x = -f * Math.PI / 2 * .96; p.corps.rotation.z = 0; } }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
@@ -3046,6 +3066,239 @@ function apocalypse(scene, L, base) {
       f.lum.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80) * Math.sin(t / 53)); }
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1); };
 }
+/* ===================== la partie de zombies (caserne de l'apocalypse) =====================
+   L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
+   cinq fois par seconde ; chacun tire de son côté (touche un zombie), le chef compte les balles reçues : deux balles, il tombe.
+   Trois morsures : on devient zombie, et quinze secondes plus tard on est ramené dans la vraie caserne, devant la déchetterie. */
+const APO = { balles: 6, vies: 3, zombieFin: 0 };
+const ZTYPES = [
+  // les trois zombies : des bonshommes (une tête découpée, un corps dessiné), réglables par l'administrateur comme les autres personnages
+  { tete: "images/apo/zombie1-tete.png", id: 12, son: "sons/zombie1.mp3", v: .8, def: { tenue: "zombie", couleur: "#3b3f52", bas: "#3d3326", pieds: "#2a2522" } },
+  { tete: "images/apo/zombie2-tete.png", id: 13, son: "sons/zombie2.mp3", v: .9, def: { tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" } },
+  { tete: "images/apo/zombie3-tete.png", id: 14, son: "sons/zombie3.mp3", v: .85, def: { tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" } },
+  { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true } ];
+const ZNOMBRE = { grande: [8, 3], rue: [5, 2], fetes: [4, 0], etage: [10, 0] };   // [zombies, chiens]
+let zTex = null, texEclair = null, actx = null;
+const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
+// les poses d'un zombie : debout, puis les bras en avant, griffes d'un côté puis de l'autre (sa démarche)
+function posesZ(ty) {
+  M.zTexB = M.zTexB || {}; if (M.zTexB[ty]) return M.zTexB[ty];
+  const T = ZTYPES[ty], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(T.id)) || {};
+  const info = { tenue: P.tenue || T.def.tenue, couleur: P.couleur || T.def.couleur, bas: P.bas || T.def.bas, pieds: P.pieds || T.def.pieds, reglage: P.reglage || null, initiales: "" };
+  const url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, T.id) : T.tete;
+  return (M.zTexB[ty] = chargerTete(0, 0, url).then(tete => { const f = pose => tex(dessinerBonhomme({ ...info, large: true, pose }, tete));
+    return { repos: f(undefined), a: f("thriller1"), b: f("thriller2"), c: f("thriller3") }; }));
+}
+const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
+function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); a.play().catch(() => {}); } catch (e) {} }
+function sonBruit(duree, coupure, vol) {   // le coup de feu (et le « clic » à vide), fabriqué à la volée
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(actx.sampleRate * duree), b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
+    const src = actx.createBufferSource(); src.buffer = b; const f = actx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = coupure; const g = actx.createGain(); g.gain.value = vol;
+    src.connect(f).connect(g).connect(actx.destination); src.start(); } catch (e) {} }
+const sonTir = (v = 1) => sonBruit(.28, 1600, .95 * v), sonVide = () => sonBruit(.04, 6000, .4);
+const moiApo = () => M && M.moiNum && M.gens.get(M.moiNum);
+const etageDe = p => p && p.etg ? p.etg.n : 0;
+// où les zombies peuvent marcher : le lieu, sans la salle de repos ; dans les bâtiments, le couloir de leur étage
+function limZ() {
+  if (M.limZ && M.limZ.L === M.L) return M.limZ;
+  const L = M.L, base = baseLieu(M.lieu);
+  const f = base === "etage" ? (x, z) => Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : (x, z) => L.limites(x, z) && !(L.repos && L.repos(x, z));
+  return (M.limZ = { L, limites: f, zone: base === "etage" ? [-ET.CX0 - 1, ET.CX0 + 1, -3, -.5] : L.zone });
+}
+const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
+function creerZ(d) {
+  const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texZ(d.ty) : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
+  if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = true; }); }
+  const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
+  M.scene.add(g);
+  const z = { id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? 2, mortT: 0, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
+  tailleZ(z); M.zomb.set(z.id, z); return z;
+}
+function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
+  if (T.chien) { z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * T.ratio * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
+  else { z.H = tailleBonhomme() * (R.h || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
+function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
+// une tache de sang au sol, là où le zombie a été touché
+function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.8 * k, .8 * k), new THREE.MeshBasicMaterial({ map: texSang[Math.floor(Math.random() * 4)], transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x + (Math.random() - .5) * .4, y + .025 + M.sangs.length * .0003, z + (Math.random() - .5) * .4); m.renderOrder = 1; M.scene.add(m); M.sangs.push(m);
+  if (M.sangs.length > 40) { const o = M.sangs.shift(); M.scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
+// le zombie touché : il recule un peu, rougit, saigne
+function impactZ(z, dx, dz) { z.flashT = performance.now() + 160; z.recul = [dx, dz, performance.now()]; sangAuSol(z.x, z.z, yZ(z), z.chien ? .8 : 1); }
+function blesserZ(z, dx, dz) {   // (le chef) la balle compte
+  if (z.mortT) return; z.hp--;
+  const nx = z.x + dx * .4, nz = z.z + dz * .4; if (limZ().limites(nx, nz)) { z.x = nx; z.z = nz; }
+  z.bloque = performance.now() + 350;
+  if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), 1.6); }
+}
+function tirer(z) {
+  const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT) return;
+  if (APO.balles <= 0) { sonVide(); M.ctx.surInfo && M.ctx.surInfo("🔫 Plus de munitions ! Trouve une boîte de balles."); return; }
+  const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1;
+  if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
+  const dx = dx0 / d, dz = dz0 / d;
+  APO.balles--; majHudApo();
+  moi.cible = null; moi.chemin = []; moi.tirT = performance.now();
+  if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
+  eclairDuCanon(moi, dx, dz); sonTir();
+  impactZ(z, dx, dz); envoyerWS({ t: "z_tir", id: z.id, dx, dz });
+  if (estChefZ()) blesserZ(z, dx, dz);
+}
+function eclairDuCanon(p, dx, dz) {
+  texEclair = texEclair || tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,255,220,1)"); g.addColorStop(.4, "rgba(255,200,60,.9)"); g.addColorStop(1, "rgba(255,120,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const H = tailleBonhomme() * hauteurDe(p), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texEclair, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  sp.scale.set(.7, .7, 1); sp.position.set(p.g.position.x + dx * .55, p.g.position.y + H * .6, p.g.position.z + dz * .55); M.scene.add(sp);
+  const l = new THREE.PointLight(0xffc060, 8, 7, 1.5); l.position.copy(sp.position); M.scene.add(l);
+  setTimeout(() => { if (!M || !M.scene) return; M.scene.remove(sp); M.scene.remove(l); sp.material.dispose(); }, 70);
+}
+// une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
+function subirMorsure(zx, zz) {
+  const moi = moiApo(); if (!moi || APO.zombieFin) return;
+  APO.vies--; M.ctx.surApoFlash && M.ctx.surApoFlash();
+  const dx = moi.g.position.x - zx, dz = moi.g.position.z - zz, d = Math.hypot(dx, dz) || 1;
+  for (let k = .8; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
+  moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
+  // la troisième : on tombe au sol, une flaque de sang s'étend, « YOU DIED » apparaît doucement ; quinze secondes plus tard, retour à la caserne
+  if (APO.vies <= 0) { APO.vies = 0; APO.zombieFin = performance.now() + 15000; moi.info.mortT = performance.now(); moi.info.danse = false;
+    flaqueMort(moi); envoyerWS({ t: "z_zombi", on: true }); M.ctx.surApoMort && M.ctx.surApoMort(true); }
+  majHudApo();
+}
+const estChefZ = () => M.chefZ === M.moiNum || (M.chefZ == null && ![...M.gens.values()].some(p => !p.moi && p.info.numero > 0));
+// la flaque de sang qui s'étend sous un joueur tombé
+function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.position.y;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: texSang[1], transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
+// les joueurs que les zombies peuvent poursuivre (pas ceux de la salle de repos, ni ceux devenus zombies)
+function proies() {
+  const out = [];
+  for (const p of M.gens.values()) { if (p.info.numero <= 0) continue;
+    if (p.moi ? APO.zombieFin : p.info.mortT) continue;
+    const x = p.g.position.x, z = p.g.position.z; if (M.L.repos && M.L.repos(x, z)) continue;
+    if (baseLieu(M.lieu) === "etage" && !(p.etg && p.etg.zone === "P")) continue;
+    out.push({ p, x, z, n: etageDe(p) }); }
+  return out;
+}
+function pointLibreZ(seed, loin) {
+  const Lz = limZ(), [a, b, c, d] = Lz.zone, ps = proies(), etage = baseLieu(M.lieu) === "etage";
+  for (let k = 0; k < 400; k++) { const x = a + Math.random() * (b - a), z = c + Math.random() * (d - c), n = etage ? Math.floor(Math.random() * (ET.N + 1)) : 0;
+    if (!Lz.limites(x, z)) continue;
+    if (ps.every(q => (etage && q.n !== n) || Math.hypot(q.x - x, q.z - z) > (k < 300 ? loin : 4))) return [x, z, n]; }
+  return null;
+}
+function apparaitreZ(chien) {
+  const pt = pointLibreZ(0, 10); if (!pt) return;
+  M.zSeq = (M.zSeq || 0) + 1;
+  creerZ({ id: Math.floor(Math.random() * 1e9), ty: chien ? 3 : Math.floor(Math.random() * 3), x: pt[0], z: pt[1], n: pt[2] });
+}
+// (le chef) chaque zombie poursuit le joueur le plus proche ; sinon il erre
+function simulerZ(t, dt) {
+  const base = baseLieu(M.lieu), [nz, nc] = ZNOMBRE[base] || [0, 0], Lz = limZ();
+  const vivants = [...M.zomb.values()];
+  if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
+  for (const z of vivants) if (z.mortT && t - z.mortT > 8000) retirerZ(z);
+  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 6000; const zs = [...M.zomb.values()];
+    if (zs.filter(z => !z.chien).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
+  const ps = proies();
+  for (const z of M.zomb.values()) { if (z.mortT) continue;
+    let cible = null, bd = z.chien ? 26 : 20;
+    for (const q of ps) { if (base === "etage" && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
+    if (cible) {
+      if (bd < (z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : 1700);
+          if (cible.p.moi) subirMorsure(z.x, z.z); else envoyerWS({ t: "z_mord", numero: cible.p.info.numero, x: z.x, z: z.z }); } }
+      else if (!z.chemin || !z.chemin.length || t > (z.recalc || 0)) { z.chemin = itineraire(Lz, z.x, z.z, cible.x, cible.z); z.recalc = t + 900 + Math.random() * 700; }
+    } else if ((!z.chemin || !z.chemin.length) && t > (z.recalc || 0)) {
+      const a = Math.random() * 7, r = 2 + Math.random() * 5, tx = z.x + Math.cos(a) * r, tz = z.z + Math.sin(a) * r;
+      if (Lz.limites(tx, tz)) z.chemin = itineraire(Lz, z.x, z.z, tx, tz); z.recalc = t + 4000 + Math.random() * 4000; }
+    if (z.bloque && t < z.bloque) continue;
+    if (z.chemin && z.chemin.length) { const [px, pz] = z.chemin[0], ddx = px - z.x, ddz = pz - z.z, d = Math.hypot(ddx, ddz);
+      if (d < .12) z.chemin.shift();
+      else { const v = ZTYPES[z.ty].v * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;
+        if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
+  // ils ne se marchent pas dessus
+  const zs = [...M.zomb.values()].filter(z => !z.mortT);
+  for (let i = 0; i < zs.length; i++) for (let j = i + 1; j < zs.length; j++) { const a = zs[i], b = zs[j]; if (a.n !== b.n) continue;
+    const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz); if (d > .55 || d < 1e-3) continue; const k = (.55 - d) / 2 / d;
+    if (Lz.limites(a.x - dx * k, a.z - dz * k)) { a.x -= dx * k; a.z -= dz * k; } if (Lz.limites(b.x + dx * k, b.z + dz * k)) { b.x += dx * k; b.z += dz * k; } }
+  // l'état, pour les autres joueurs (cinq fois par seconde)
+  if (t > (M.zEnvoiT || 0) && [...M.gens.values()].some(p => !p.moi && p.info.numero > 0)) { M.zEnvoiT = t + 200;
+    envoyerWS({ t: "z_etat", l: [...M.zomb.values()].map(z => [z.id, z.ty, +z.x.toFixed(2), +z.z.toFixed(2), z.n, z.hp]) }); }
+}
+function recevoirEtatZ(l) {
+  if (!M.L || !M.L.apo || estChefZ()) return;
+  const vus = new Set();
+  for (const [id, ty, x, z, n, hp] of l) { vus.add(id); let q = M.zomb.get(id);
+    if (!q) { if (hp <= 0) continue; q = creerZ({ id, ty, x, z, n, hp }); }
+    q.tx = x; q.tz = z; q.n = n; q.hp = hp; if (hp <= 0 && !q.mortT) q.mortT = performance.now(); }
+  for (const q of [...M.zomb.values()]) if (!vus.has(q.id)) retirerZ(q);
+}
+// les munitions et les plantes : posées aux mêmes endroits pour tout le monde
+function objetsApo() {
+  if (M.objetsL === M.L) return; M.objetsL = M.L; for (const o of M.objets || []) M.scene.remove(o.sp); M.objets = [];
+  const L = M.L, base = baseLieu(M.lieu), Z = L.zone || [-20, 20, -20, 20], graine = { grande: 11, rue: 23, fetes: 37, etage: 51 }[base] || 1;
+  const pres = (x, z) => { for (let a = 0; a < 8; a++) { const t = a / 8 * Math.PI * 2; if (!L.limites(x + Math.cos(t) * .7, z + Math.sin(t) * .7)) return true; } return false; };   // contre un mur
+  const poser = (type, n, filtre) => { let k = 0, mis = 0;
+    while (mis < n && k < 4000) { k++; const x = Z[0] + hasard(graine * 97 + k * 3.1 + (type === "plante" ? 500 : 0)) * (Z[1] - Z[0]), z = Z[2] + hasard(graine * 53 + k * 7.7 + (type === "plante" ? 900 : 0)) * (Z[3] - Z[2]);
+      if (!L.limites(x, z) || !filtre(x, z) || (type === "plante" && !pres(x, z))) continue; if (M.objets.some(o => Math.hypot(o.x - x, o.z - z) < 3)) continue;
+      const etg = base === "etage" ? Math.floor(hasard(graine + k) * (ET.N + 1)) : 0;
+      if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
+      const y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
+      if (type === "plante") { sp.scale.set(.5, .65, 1); sp.position.set(x, y + .33, z); } else { sp.scale.set(.55, .37, 1); sp.position.set(x, y + .2, z); }
+      M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: etg, sp, cache: 0 }); mis++; } };
+  const nb = { grande: [5, 2], rue: [3, 1], fetes: [2, 1], etage: [5, 3] }[base] || [0, 0];
+  const horsRepos = (x, z) => !(L.repos && L.repos(x, z));
+  poser("balles", nb[0], horsRepos); poser("plante", nb[1], horsRepos);
+  if (L.repos) { poser("balles", 2, (x, z) => L.repos(x, z)); poser("plante", 2, (x, z) => L.repos(x, z)); }   // la salle de repos : de quoi se refaire
+}
+let texObjets = null;
+function texObj(type) { texObjets = texObjets || { balles: new THREE.TextureLoader().load("images/apo/munitions.png"), plante: new THREE.TextureLoader().load("images/apo/plante.png") };
+  for (const t of Object.values(texObjets)) t.colorSpace = THREE.SRGBColorSpace; return texObjets[type]; }
+function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
+// le compteur de balles et les vies, à l'écran
+function majHudApo() {
+  const e = M && M.L && M.L.apo ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0 } : null;
+  const cle = JSON.stringify(e); if (cle === M.hudCle) return; M.hudCle = cle; M.ctx.surApo && M.ctx.surApo(e);
+}
+// à chaque image : les zombies bougent, tombent, grognent ; on ramasse ; le compte à rebours du zombie
+function animerApo(t, dt) {
+  if (!M.L || !M.L.apo) { if (M.zomb && M.zomb.size) M.zomb.clear(); majHudApo(); return; }
+  if (!M.zomb || M.zombL !== M.L) { M.zomb = new Map(); M.zombL = M.L; M.zInit = false; M.sangs = []; }
+  const moi = moiApo(); if (!moi) return;
+  objetsApo();
+  if (estChefZ()) simulerZ(t, dt);
+  const cam = M.camera.position, now = performance.now();
+  for (const z of M.zomb.values()) {
+    if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
+    const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
+    let rx = 0, rz = 0; if (z.recul && now - z.recul[2] < 250) { const f = 1 - (now - z.recul[2]) / 250; rx = z.recul[0] * .35 * f; rz = z.recul[1] * .35 * f; }
+    z.g.position.set(z.x + rx, yZ(z), z.z + rz);
+    z.mesh.rotation.y = Math.atan2(cam.x - z.x, cam.z - z.z);
+    // le chien regarde là où il court
+    if (z.chien && Math.hypot(vx, vz) > 1e-4) { const droite = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); z.flip = (vx * droite.x + vz * droite.z) > 0 ? -1 : 1; }
+    z.mesh.scale.set(z.W * (z.flip || 1), z.H, 1);
+    z.mesh.material.color.setRGB(1, now < (z.flashT || 0) ? .35 : 1, now < (z.flashT || 0) ? .35 : 1);
+    if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 550); z.mesh.rotation.x = -f * Math.PI / 2 * .97; z.mesh.rotation.z = 0; z.mesh.position.y = z.chien ? 0 : .05 * f;
+      z.mesh.material.opacity = now - z.mortT > 6500 ? Math.max(0, 1 - (now - z.mortT - 6500) / 1500) : 1; continue; }
+    const marche = Math.hypot(vx, vz) > 1e-4;
+    const PZ = z.mesh.userData.poses; if (PZ) { const m = marche ? (Math.floor((now + z.ph * 100) / 420) % 2 ? PZ.a : PZ.b) : PZ.c; if (z.mesh.material.map !== m) { z.mesh.material.map = m; z.mesh.material.needsUpdate = true; } }
+    z.mesh.rotation.z = Math.sin(now / (z.chien ? 90 : 420) + z.ph) * (z.chien ? .05 : .09);
+    z.mesh.position.y = marche ? Math.abs(Math.sin(now / (z.chien ? 70 : 260) + z.ph)) * (z.chien ? .08 : .05) : 0;
+    // il grogne (le chien aboie) quand on est près
+    const d = Math.hypot(moi.g.position.x - z.x, moi.g.position.z - z.z);
+    if (now > z.sonT && d < 15 && (baseLieu(M.lieu) !== "etage" || z.n === etageDe(moi))) { z.sonT = now + (z.chien ? 5000 : 6500) + Math.random() * 5000; sonPos(ZTYPES[z.ty].son, (1 - d / 15) * .9); }
+  }
+  // les objets : ils réapparaissent ; on ramasse les munitions en passant dessus
+  for (const o of M.objets || []) { if (o.cache && now > o.cache) { o.cache = 0; o.sp.visible = true; }
+    if (o.cache || APO.zombieFin || o.type !== "balles" || APO.balles >= 6) continue;
+    if (baseLieu(M.lieu) === "etage" && o.n !== etageDe(moi)) continue;
+    if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) { APO.balles = 6; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 6 balles."); } }
+  // devenu zombie : quinze secondes, puis retour dans la vraie caserne, devant la déchetterie
+  for (const [m, t0] of M.flaques || []) m.scale.setScalar(Math.min(1, .05 + (now - t0) / 2500));   // (la flaque s'étend doucement)
+  if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 3; APO.balles = 6; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
+  majHudApo();
+}
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -3161,7 +3414,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
@@ -3176,6 +3429,7 @@ async function dessinerCorps(p) {
 }
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
+  if (M.L && M.L.apo && info.numero > 0) info.arme = true;   // (à l'apocalypse, chacun a son pistolet)
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
   const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); g.userData.perso = true; M.scene.add(g);
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
@@ -3548,13 +3802,15 @@ function chercherAction(t) {
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
+      else if (M.L.apo) { const o = (M.objets || []).find(q => q.type === "plante" && !q.cache && (baseLieu(M.lieu) !== "etage" || q.n === etageDe(moi)) && Math.hypot(q.x - x, q.z - z) < 1.3);
+        if (o && !APO.zombieFin) a = { type: "plante", id: o.id, label: "🌿 Prendre la plante" }; }
       else { let best = null, bd = 1.9;
         for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
           const d = Math.hypot(p.g.position.x - x, p.g.position.z - z); if (d < bd) { bd = d; best = p; } }
         if (best) a = { type: "slow", numero: best.info.numero, label: `💞 Danser un slow avec ${best.info.nom}` }; }
     }
   }
-  const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") : "";
+  const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") + (a.id ?? "") : "";
   if (cle !== M.actionCle) { M.actionCle = cle; M.action = a; M.ctx.surAction && M.ctx.surAction(a); }
 }
 function asseoir(p, i) {
@@ -3572,6 +3828,9 @@ export function agir() {
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
+  else if (a.type === "plante") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
+      if (APO.vies >= 3) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
+      else { APO.vies++; ramasser(o); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🌿 Une vie de plus !"); } } }
   M.actionT = 0;
 }
 export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }
@@ -3619,7 +3878,7 @@ function viser(p, x, z) {
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
 function allerVers(x, z, envoyer) {
-  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; moi.rapide = false;
+  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi || (M.L && M.L.apo && APO.zombieFin)) return; moi.rapide = false;
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   let px = x, pz = z;
   if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
@@ -3638,6 +3897,8 @@ function changerLieu(id, arrivee, yaw = 0) {
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   const { scene, L, repere } = construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
+  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 6; APO.vies = 3; APO.zombieFin = 0; }
+  M.chefZ = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
@@ -3726,8 +3987,17 @@ function connecter() {
         ctx.surInfo && ctx.surInfo("💞 Un slow… profitez-en !"); }
     }
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
+    else if (m.t === "z_chef") { const avant = estChefZ(); M.chefZ = m.numero; if (!avant && estChefZ()) { M.zInit = true; for (const z of M.zomb ? M.zomb.values() : []) { z.x = z.tx; z.z = z.tz; } } }
+    else if (m.t === "z_etat") recevoirEtatZ(m.l || []);
+    else if (m.t === "z_tir") { const z = M.zomb && M.zomb.get(m.id), p = M.gens.get(m.de); if (p) p.tirT = performance.now(); sonTir(.55);
+      if (z) { impactZ(z, +m.dx || 0, +m.dz || 0); if (estChefZ()) blesserZ(z, +m.dx || 0, +m.dz || 0); } }
+    else if (m.t === "z_mord") { if (m.numero === M.moiNum) subirMorsure(+m.x || 0, +m.z || 0); }
+    else if (m.t === "z_zombi") { const p = M.gens.get(m.de); if (p) { p.info.mortT = m.on ? performance.now() : 0; if (m.on) flaqueMort(p); } }
+    else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 12 && m.p.id <= 15) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = m.p.id - 12; if (M.zTexB) delete M.zTexB[ty];
+      for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 3) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else tailleZ(z); } }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
