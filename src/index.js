@@ -58,9 +58,13 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   16: { nom: "Robert Smith", tenue: "smith", couleur: "#141414", bas: "#141414", pieds: "#1a1a1a" },
   11: { nom: "John Travolta", tenue: "travolta", couleur: "#f4f1ea", bas: "#f4f1ea", pieds: "#1a1a1a" },
   18: { nom: "La batteuse", tenue: "batteuse", couleur: "#121214", bas: "#141416", pieds: "#1a1a1a" }, 19: { nom: "Le bassiste", tenue: "bassiste", couleur: "#2c2e31", bas: "#151517", pieds: "#1a1a1a" },
-  20: { nom: "Le guitariste", tenue: "guitariste", couleur: "#151517", bas: "#151517", pieds: "#0e0e0e" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste"];
+  20: { nom: "Le guitariste", tenue: "guitariste", couleur: "#151517", bas: "#151517", pieds: "#0e0e0e" },
+  // les héros de Resident Evil (l'apocalypse) : on peut jouer l'un d'eux, ou en prendre deux comme équipiers
+  21: { nom: "Rebecca Chambers", tenue: "rebecca", couleur: "#55534f", bas: "#3d3f37", pieds: "#141414" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111" },
+  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
+  25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 26) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
@@ -354,7 +358,7 @@ export class Compteur extends DurableObject {
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller", "saut"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, perso: a.perso || null, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
   // le slow à deux : on libère les deux danseurs (départ, changement de lieu, « arrêter »)
   finirSlow(ws, a) {
     if (!a.slow) return; const autre = a.slow, lieu = a.lieu; a.slow = null; try { ws.serializeAttachment(a); } catch (e) {}
@@ -431,9 +435,13 @@ export class Compteur extends DurableObject {
     } else if (typeof m.t === "string" && m.t.startsWith("z_") && a.lieu && a.lieu.startsWith("z-")) {
       // la partie de zombies : l'état des zombies (du chef seulement), les tirs, les morsures, les objets ramassés… relayés aux autres joueurs du lieu
       if (m.t === "z_etat" && this.chefDe(a.lieu) !== Number(a.numero)) return;
-      if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse"].includes(m.t)) return;
+      if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse", "z_equipe"].includes(m.t)) return;
       const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
       for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "perso") {
+      // à l'apocalypse, on joue l'un des héros de Resident Evil (ou soi-même) : les autres le voient avec sa tête et sa tenue
+      const id = Number(m.id); a.perso = Number.isInteger(id) && id >= 21 && id <= 26 ? id : null; ws.serializeAttachment(a);
+      if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }, ws);
     } else if (m.t === "joue") {
       // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)
       a.joue = ["console", "flipper", "flechettes"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);

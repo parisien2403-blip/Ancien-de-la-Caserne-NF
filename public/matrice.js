@@ -20,7 +20,8 @@ export const LIEUX = {
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
   robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
-  batteuse: { nom: "Perfecto noir (la batteuse)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  batteuse: { nom: "Perfecto noir (la batteuse)" },
+  rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -41,7 +42,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = t === "nemesis" ? "#8f7f93" : "#e9c4a0";   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "mariee" || t === "nemesis" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
+    const bas = t === "robe" || t === "mariee" || t === "nemesis" || t === "jill" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -130,6 +131,50 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 150); x.lineTo(74, 196); x.lineTo(96, 236); x.moveTo(116, 150); x.lineTo(126, 196); x.lineTo(104, 236); x.stroke();   // les revers
       x.fillStyle = "#2a2a2e"; for (let k = 0; k < 2; k++) { x.beginPath(); x.arc(100, 244 + k * 12, 2.6, 0, 7); x.fill(); }
       x.fillStyle = "#7a3a2a"; x.fillRect(122, 214, 18, 3); x.fillRect(122, 222, 18, 3); }   // les liserés des poches
+    // les héros de Resident Evil
+    if (o.pose !== "dos" && !profil && /^(rebecca|leon|barry|jill|wesker|chris)$/.test(t)) {
+      const ceinture = (col, y = 246) => { x.fillStyle = col; x.fillRect(58, y, 84, 11); x.fillStyle = "#9a9ea4"; x.fillRect(95, y + 2, 10, 7); };
+      const poche = (a, b2, w, h, col) => { x.fillStyle = col; x.fillRect(a, b2, w, h); x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(a, b2, w, 3); };
+      if (t === "rebecca") {   // le gilet tactique blanc sur un haut gris à manches longues, le t-shirt bordeaux qui dépasse ; pantalon cargo kaki retroussé
+        x.fillStyle = "#7a2a2a"; x.beginPath(); x.ellipse(100, 150, 18, 7, 0, 0, 7); x.fill();
+        x.fillStyle = "#e9e6dd"; x.beginPath(); x.moveTo(64, 150); x.lineTo(84, 150); x.quadraticCurveTo(100, 170, 116, 150); x.lineTo(136, 150); x.lineTo(140, 258); x.lineTo(60, 258); x.closePath(); x.fill();
+        x.fillStyle = "#1c1c1c"; x.fillRect(66, 146, 9, 36); x.fillRect(125, 146, 9, 36); for (const [a, b2] of [[60, 206], [130, 206], [70, 240], [94, 240], [118, 240]]) x.fillRect(a, b2, 12, 14);
+        x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 2; x.beginPath(); x.moveTo(100, 172); x.lineTo(100, 256); x.stroke(); poche(126, 252, 18, 22, "#e9e6dd");
+        x.fillStyle = "#2a2c26"; x.fillRect(68, 300, 26, 22); x.fillRect(106, 300, 26, 22); }   // les poches cargo
+      if (t === "leon") {   // l'uniforme bleu du R.P.D., le gilet pare-balles noir à rivets, la bandoulière en cuir, le ceinturon et l'étui de cuisse
+        x.fillStyle = "#151517"; x.beginPath(); x.roundRect(62, 152, 76, 92, 10); x.fill();
+        x.fillStyle = "#c9ccd0"; for (const [a, b2] of [[70, 160], [130, 160], [70, 236], [130, 236], [100, 236]]) { x.beginPath(); x.arc(a, b2, 2.4, 0, 7); x.fill(); }
+        x.fillStyle = "#2e3b57"; x.fillRect(92, 146, 16, 12);
+        x.strokeStyle = "#6e4a2a"; x.lineWidth = 9; x.beginPath(); x.moveTo(126, 148); x.lineTo(84, 250); x.stroke();
+        ceinture("#1a1a1c"); x.fillStyle = "#101012"; x.fillRect(60, 256, 14, 18); x.fillRect(126, 256, 14, 18); x.fillRect(66, 286, 22, 40); x.fillStyle = "#2a2a2c"; x.fillRect(62, 296, 30, 6); x.fillRect(62, 314, 30, 6); }
+      if (t === "barry") {   // le gilet rouge à poches, la bandoulière et l'étui en cuir, le ceinturon brun ; t-shirt gris-vert, pantalon cargo gris
+        x.fillStyle = "#8e2a24"; x.beginPath(); x.roundRect(60, 148, 80, 104, 14); x.fill();
+        x.strokeStyle = "rgba(0,0,0,.25)"; x.lineWidth = 2; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 250); x.stroke();
+        for (const [a, b2] of [[66, 176], [112, 176], [66, 214], [112, 214]]) poche(a, b2, 22, 22, "#7a221d");
+        x.strokeStyle = "#5a3a1e"; x.lineWidth = 8; x.beginPath(); x.moveTo(72, 148); x.lineTo(132, 224); x.stroke(); x.fillStyle = "#5a3a1e"; x.fillRect(122, 196, 18, 30);
+        ceinture("#5a3a1e"); x.fillStyle = "#4a4a44"; x.fillRect(68, 300, 26, 24); x.fillRect(106, 300, 26, 24); }
+      if (t === "jill") {   // le bustier bleu, les bretelles du sac, le ceinturon et sa pochette, le pull blanc noué à la taille, la mini-jupe noire, les bottes
+        x.fillStyle = peau; x.beginPath(); x.moveTo(60, 146); x.lineTo(140, 146); x.lineTo(138, 172); x.lineTo(62, 172); x.closePath(); x.fill();
+        x.fillStyle = "#5a3a22"; x.fillRect(66, 146, 8, 30); x.fillRect(126, 146, 8, 30);
+        ceinture("#5a3a22", 238); x.fillStyle = "#1e1e20"; x.fillRect(118, 240, 14, 22);
+        x.fillStyle = "#1b1d22"; x.beginPath(); x.moveTo(62, 250); x.lineTo(138, 250); x.lineTo(146, 312); x.lineTo(54, 312); x.closePath(); x.fill();
+        x.fillStyle = "#f2f0ea"; x.beginPath(); x.moveTo(56, 246); x.quadraticCurveTo(100, 262, 144, 246); x.lineTo(146, 266); x.quadraticCurveTo(100, 280, 54, 266); x.closePath(); x.fill();
+        x.beginPath(); x.ellipse(100, 268, 12, 10, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(92, 272); x.lineTo(84, 316); x.lineTo(98, 316); x.lineTo(102, 274); x.moveTo(106, 272); x.lineTo(116, 312); x.lineTo(104, 314); x.closePath(); x.fill();
+        x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(84, 306); x.lineTo(98, 306); x.stroke();
+        if (!assis && !accroupi) { x.fillStyle = "#151515"; x.fillRect(79, 342, 18, 56); x.fillRect(103, 342, 18, 56); } }   // les bottes
+      if (t === "wesker") {   // chemise bleu nuit à manches courtes, gilet tactique noir à poches, radio, ceinturon, étui de cuisse ; tout en noir dessous
+        x.fillStyle = "#121315"; x.beginPath(); x.roundRect(60, 150, 80, 96, 10); x.fill();
+        for (const [a, b2] of [[66, 196], [86, 196], [104, 196], [122, 196]]) poche(a, b2, 14, 30, "#1c1d20");
+        x.fillStyle = "#2a2b2e"; x.fillRect(70, 158, 12, 22); x.fillStyle = "#555"; x.fillRect(74, 150, 3, 10);   // la radio
+        ceinture("#0d0d0f"); x.fillStyle = "#0a0a0b"; x.fillRect(122, 262, 16, 46); }
+      if (t === "chris") {   // le gilet vert S.T.A.R.S. à poches sur un t-shirt gris, ceinturon noir, genouillères, pantalon cargo
+        x.fillStyle = "#4f5e3c"; x.beginPath(); x.roundRect(60, 148, 80, 104, 12); x.fill();
+        x.strokeStyle = "rgba(0,0,0,.3)"; x.lineWidth = 2; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 250); x.stroke();
+        for (const [a, b2] of [[66, 180], [112, 180], [66, 218], [112, 218]]) poche(a, b2, 22, 22, "#435032");
+        x.fillStyle = "#c4c4ba"; x.fillRect(90, 146, 20, 10);
+        ceinture("#151517");
+        if (!assis && !accroupi) { x.fillStyle = "#141414"; x.beginPath(); x.ellipse(84, 318, 13, 11, 0, 0, 7); x.ellipse(116, 318, 13, 11, 0, 0, 7); x.fill(); x.fillStyle = "#3e3d36"; x.fillRect(68, 290, 24, 20); } }
+    }
     // Robert Smith : une grande chemise noire froissée, ouverte, qui tombe sur les hanches ; un t-shirt noir dessous ; les colliers
     if (t === "smith" && o.pose !== "dos" && !profil) {
       x.fillStyle = "#101010"; x.beginPath(); x.moveTo(56, 236); x.lineTo(144, 236); x.lineTo(150, 296); x.lineTo(50, 296); x.closePath(); x.fill();   // le bas de la chemise, sur les hanches
@@ -219,10 +264,15 @@ export function dessinerBonhomme(o, tete) {
       mains[sens > 0 ? 0 : 1] = cible || [cx - 96 * Math.sin(a), 158 + 96 * Math.cos(a)];
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
-      const court = t === "tshirt" || t === "polo";
-      if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
+      const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker";
+      if (t === "jill") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire
+      else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
+      if (t === "leon") { x.fillStyle = "#9aa2aa"; x.fillRect(-12, 52, 24, 34); x.fillStyle = "#1a1a1c"; x.fillRect(-12, 34, 24, 16); if (sens < 0) { x.fillStyle = "#c9a227"; x.beginPath(); x.arc(0, 14, 7, 0, 7); x.fill(); x.fillStyle = "#1d3a6a"; x.beginPath(); x.arc(0, 14, 4, 0, 7); x.fill(); } }   // coudières grises, l'écusson du R.P.D.
+      if (t === "chris" && sens < 0) { x.fillStyle = "#3a3a2e"; x.beginPath(); x.arc(0, 12, 7, 0, 7); x.fill(); x.fillStyle = "#d8c23a"; x.beginPath(); x.arc(0, 12, 4, 0, 7); x.fill(); }   // l'écusson S.T.A.R.S.
+      if ((t === "barry" || t === "chris" || t === "wesker") && !profil) { x.fillStyle = "#1c1c1e"; x.beginPath(); x.arc(0, 96, 11.5, 0, 7); x.fill(); }   // les mitaines
+      if (t === "rebecca") { x.fillStyle = "rgba(255,255,255,.08)"; x.fillRect(-12, 20, 24, 3); x.fillRect(-12, 60, 24, 3); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
       if (t === "beegees") { x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(-7, -4, 5, 76); x.fillStyle = "#7d6d34"; x.fillRect(-12, 74, 24, 14); }
       if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
@@ -338,6 +388,10 @@ export function dessinerBonhomme(o, tete) {
           y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
+        else if (/^(rebecca|leon|barry|jill|wesker|chris)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil
+          const C = { rebecca: ["#4a3426", "#2a1c12"], leon: ["#6a5038", "#3e2c1c"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#221c16", "#100c08"] }[t];
+          g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
+          y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
           g.addColorStop(0, "#141416"); g.addColorStop(.48, "#141416"); g.addColorStop(.5, "#2b1d14"); g.addColorStop(1, "#1a110b"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         else if (t === "hernandez" || t === "beegees" || t === "travolta" || t === "smith") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
@@ -3059,6 +3113,7 @@ export async function ouvrir(ctx) {
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
       const avance = Number.isInteger(p.info.assis) ? .3 - Math.sin(p.corps.rotation.x) * .7 : 0;   // (+ ce que le panneau penché recule à hauteur des hanches)
       if (avance || p.avance) { const d = Math.hypot(dx, dz) || 1; p.corps.position.x = dx / d * avance; p.corps.position.z = dz / d * avance; p.avance = avance > 0; }
+      if (p.flashT) { const on = performance.now() < p.flashT; p.corps.material.color.setRGB(1, on ? .35 : 1, on ? .35 : 1); if (!on) p.flashT = 0; }   // (un équipier touché rougit)
       if (p.info.mortT) { const f = Math.min(1, (performance.now() - p.info.mortT) / 650); p.corps.rotation.x = -f * Math.PI / 2 * .96; p.corps.rotation.z = 0; } }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
@@ -3405,10 +3460,68 @@ const estChefZ = () => M.chefZ === M.moiNum || (M.chefZ == null && ![...M.gens.v
 function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.position.y;
   const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: texSang[1], transparent: true, depthWrite: false }));
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
+/* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
+export const HEROS = { 21: { nom: "Rebecca Chambers", tenue: "rebecca", couleur: "#55534f", bas: "#3d3f37", pieds: "#141414", cle: "rebecca", court: "Rebecca" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111", cle: "leon", court: "Leon" },
+  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22", cle: "barry", court: "Barry" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515", cle: "jill", court: "Jill" },
+  25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f", cle: "wesker", court: "Wesker" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616", cle: "chris", court: "Chris" } };
+function habillerHeros(info, id) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+  return { ...info, tenue: P.tenue || D.tenue, couleur: P.couleur || D.couleur, bas: P.tenue ? P.bas : D.bas, pieds: P.pieds || D.pieds, reglage: P.reglage || null, tete_v: null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/re/${D.cle}-tete.png`, heros: id }; }
+// (à l'entrée de l'apocalypse) qui l'on joue, et les équipiers qu'on emmène
+export function choisirApo(perso, equipe) {
+  if (!M) return; M.perso = HEROS[perso] ? +perso : null; envoyerWS({ t: "perso", id: M.perso });
+  M.equipe = (equipe || []).filter(id => HEROS[id] && +id !== M.perso).slice(0, 2).map(id => ({ id: +id, vies: 4, mort: false, tirT: 0, suiviT: 0 }));
+}
+const EQUIPIER = k => -(300 + k), FANTOME = (de, k) => -(5000 + de * 4 + k);
+function infoEquipier(id, numero, x, z, proprio, k) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+  return { ...habillerHeros({ numero, nom: P.nom || D.nom, initiales: "" }, id), pnj: true, arme: true, equipier: true, proprio, slot: k, x, z }; }
+function placeAPortee(moi, k) { const mp = moi.g.position, a = (M.yaw || 0) + (k ? .9 : -.9);
+  for (let r = 1.1; r < 3; r += .3) { const x = mp.x + Math.sin(a) * r, z = mp.z + Math.cos(a) * r; if (M.L.limites(x, z) && !(M.L.feuxZ || []).some(([fx, fz, rr]) => Math.hypot(x - fx, z - fz) < rr)) return [x, z]; }
+  return [mp.x, mp.z]; }
+// les équipiers : ils nous suivent, tirent tout seuls sur le zombie le plus proche, et peuvent tomber eux aussi
+function animerEquipe(now) {
+  const moi = moiApo(); if (!moi || !M.equipe || !M.equipe.length) return;
+  const etage = baseLieu(M.lieu) === "etage", mp = moi.g.position;
+  M.equipe.forEach((e, k) => { const num = EQUIPIER(k); let p = M.gens.get(num);
+    if (!p) { if (e.mort) return; const [x, z] = placeAPortee(moi, k); p = ajouterAncien(infoEquipier(e.id, num, x, z, M.moiNum, k)); if (!p) return; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; }
+    if (e.mort || APO.zombieFin) return;
+    const d = Math.hypot(p.g.position.x - mp.x, p.g.position.z - mp.z);
+    // perdu (un autre étage, trop loin) : il nous rejoint aussitôt
+    if ((etage && (etageDe(p) !== etageDe(moi) || (p.etg && moi.etg && p.etg.zone !== "P" && moi.etg.zone === "P" && d > 3))) || d > 13) { const [x, z] = placeAPortee(moi, k); p.g.position.x = x; p.g.position.z = z; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; p.cible = null; p.chemin = []; }
+    else if (d > 2.4 && now > e.suiviT) { e.suiviT = now + 550; const [x, z] = placeAPortee(moi, k); viser(p, x, z); p.rapide = d > 5; }
+    else if (d < 1.5 && p.cible) { p.cible = null; p.chemin = []; }
+    // il tire sur le zombie le plus proche (à moins de 10 m, au même étage), environ une balle par seconde
+    if (now > e.tirT && !(M.L.repos && M.L.repos(p.g.position.x, p.g.position.z))) { let best = null, bd = 10;
+      for (const z of M.zomb.values()) { if (z.mortT || (etage && z.n !== etageDe(p))) continue; const dz = Math.hypot(z.x - p.g.position.x, z.z - p.g.position.z); if (dz < bd) { bd = dz; best = z; } }
+      if (best) { e.tirT = now + 850 + Math.random() * 600; const dx = (best.x - p.g.position.x) / (bd || 1), dz = (best.z - p.g.position.z) / (bd || 1);
+        p.tirT = now; if (p.cible && d < 4) { p.cible = null; p.chemin = []; } eclairDuCanon(p, dx, dz); sonTir(.7); impactZ(best, dx, dz);
+        envoyerWS({ t: "z_tir", id: best.id, dx, dz, eq: k }); if (estChefZ()) blesserZ(best, dx, dz); } } });
+  // ce que font nos équipiers, pour les autres joueurs (cinq fois par seconde)
+  if (now > (M.eqEnvoiT || 0) && [...M.gens.values()].some(q => !q.moi && q.info.numero > 0)) { M.eqEnvoiT = now + 200;
+    envoyerWS({ t: "z_equipe", l: M.equipe.map((e, k) => { const q = M.gens.get(EQUIPIER(k)); return [k, e.id, q ? +q.g.position.x.toFixed(2) : 0, q ? +q.g.position.z.toFixed(2) : 0, e.mort ? 1 : 0, q && q.tirT && now - q.tirT < 300 ? 1 : 0, q ? etageDe(q) : 0]; }) }); }
+}
+// un équipier mordu (ou frappé par Nemesis) : il recule, rougit ; à zéro, il tombe
+function blesserEquipier(k, deg, zx, zz) {
+  const e = M.equipe && M.equipe[k], p = M.gens.get(EQUIPIER(k)); if (!e || e.mort || !p) return;
+  e.vies -= deg; p.flashT = performance.now() + 200;
+  const dx = p.g.position.x - zx, dz = p.g.position.z - zz, d = Math.hypot(dx, dz) || 1; const nx = p.g.position.x + dx / d * .6, nz = p.g.position.z + dz / d * .6; if (M.L.limites(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; }
+  if (e.vies <= 0) { e.vies = 0; e.mort = true; p.info.mortT = performance.now(); p.cible = null; p.chemin = []; flaqueMort(p); M.ctx.surInfo && M.ctx.surInfo(`💀 ${p.info.nom} est tombé…`); }
+  majHudApo();
+}
+// les équipiers des autres joueurs (on les voit bouger, tirer, tomber)
+function recevoirEquipe(de, l) {
+  if (!M.L || !M.L.apo) return; M.fantomesT = M.fantomesT || {}; M.fantomesT[de] = performance.now();
+  for (const [k, id, x, z, mort, tir, n] of l) { const num = FANTOME(de, k); let p = M.gens.get(num);
+    if (!p) { if (mort) continue; p = ajouterAncien(infoEquipier(id, num, x, z, de, k)); if (!p) continue; if (baseLieu(M.lieu) === "etage") p.etg = { n, m: n, zone: "P" }; }
+    if (mort) { if (!p.info.mortT) { p.info.mortT = performance.now(); p.cible = null; flaqueMort(p); } continue; }
+    if (p.etg && p.etg.n !== n) { p.etg = { n, m: n, zone: "P" }; p.g.position.x = x; p.g.position.z = z; }
+    else if (Math.hypot(p.g.position.x - x, p.g.position.z - z) > .25) { p.cible = new THREE.Vector3(x, 0, z); p.chemin = []; }
+    if (tir) p.tirT = performance.now(); }
+}
 // les joueurs que les zombies peuvent poursuivre (pas ceux de la salle de repos, ni ceux devenus zombies)
 function proies() {
   const out = [];
-  for (const p of M.gens.values()) { if (p.info.numero <= 0) continue;
+  for (const p of M.gens.values()) { if (p.info.numero <= 0 && !p.info.equipier) continue;
     if (p.moi ? APO.zombieFin : p.info.mortT) continue;
     const x = p.g.position.x, z = p.g.position.z; if (M.L.repos && M.L.repos(x, z)) continue;
     if (baseLieu(M.lieu) === "etage" && !(p.etg && p.etg.zone === "P")) continue;
@@ -3444,7 +3557,8 @@ function simulerZ(t, dt) {
     if (cible) {
       if (bd < (z.boss ? 1.25 : z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : z.boss ? 1500 : 1700); z.coupT = performance.now();
           const deg = z.boss ? 2 : 1;   // (le poing de Nemesis : deux vies)
-          if (cible.p.moi) subirMorsure(z.x, z.z, deg); else envoyerWS({ t: "z_mord", numero: cible.p.info.numero, x: z.x, z: z.z, d: deg }); } }
+          if (cible.p.info.equipier) { if (cible.p.info.proprio === M.moiNum) blesserEquipier(cible.p.info.slot, deg, z.x, z.z); else envoyerWS({ t: "z_mord", numero: cible.p.info.proprio, eq: cible.p.info.slot, x: z.x, z: z.z, d: deg }); }
+          else if (cible.p.moi) subirMorsure(z.x, z.z, deg); else envoyerWS({ t: "z_mord", numero: cible.p.info.numero, x: z.x, z: z.z, d: deg }); } }
       else if (!z.chemin || !z.chemin.length || t > (z.recalc || 0)) { z.chemin = itineraire(Lz, z.x, z.z, cible.x, cible.z); z.recalc = t + 900 + Math.random() * 700; }
     } else if ((!z.chemin || !z.chemin.length) && t > (z.recalc || 0)) {
       const a = Math.random() * 7, r = 2 + Math.random() * 5, tx = z.x + Math.cos(a) * r, tz = z.z + Math.sin(a) * r;
@@ -3505,7 +3619,8 @@ function prendreObjet(o) {
 function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
 // le compteur de balles et les vies, à l'écran
 function majHudApo() {
-  const e = M && M.L && M.L.apo ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0 } : null;
+  const e = M && M.L && M.L.apo ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0,
+    equipe: (M.equipe || []).map(q => ({ nom: HEROS[q.id].court, vies: q.vies, mort: q.mort })) } : null;
   const cle = JSON.stringify(e); if (cle === M.hudCle) return; M.hudCle = cle; M.ctx.surApo && M.ctx.surApo(e);
 }
 // à chaque image : les zombies bougent, tombent, grognent ; on ramasse ; le compte à rebours du zombie
@@ -3515,6 +3630,9 @@ function animerApo(t, dt) {
   const moi = moiApo(); if (!moi) return;
   objetsApo();
   if (estChefZ()) simulerZ(t, dt);
+  animerEquipe(performance.now());
+  // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
+  for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now();
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
@@ -3682,6 +3800,10 @@ async function dessinerCorps(p) {
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
   if (M.L && M.L.apo && info.numero > 0) info.arme = true;   // (à l'apocalypse, chacun a son pistolet)
+  // à l'apocalypse, on peut jouer l'un des héros de Resident Evil : sa tête, sa tenue (hors de l'apocalypse, on redevient soi-même)
+  if (info.vrai && !(M.L && M.L.apo)) info = info.vrai;
+  { const hid = info.numero > 0 ? (info.numero === M.moiNum ? M.perso : info.perso) : null;
+    if (M.L && M.L.apo && hid && HEROS[hid] && !info.vrai) info = { ...habillerHeros(info, hid), vrai: info }; }
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
   const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); g.userData.perso = true; M.scene.add(g);
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
@@ -4203,7 +4325,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   M.prets = {}; M.prepT = performance.now() + 1500;
   const { scene, L, repere } = pret || construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
-  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; }
+  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
@@ -4290,7 +4412,7 @@ function connecter() {
       M.fil = m.dits || []; ctx.surFil && ctx.surFil(M.fil);
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
     } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
-    else if (m.t === "part") { retirerAncien(m.numero); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
+    else if (m.t === "part") { retirerAncien(m.numero); for (const k of [0, 1]) retirerAncien(FANTOME(m.numero, k)); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
     else if (m.t === "aller") { const p = M.gens.get(m.numero); if (p) viser(p, m.x, m.z); }
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
@@ -4316,9 +4438,10 @@ function connecter() {
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "z_chef") { const avant = estChefZ(); M.chefZ = m.numero; if (!avant && estChefZ()) { M.zInit = true; for (const z of M.zomb ? M.zomb.values() : []) { z.x = z.tx; z.z = z.tz; } } }
     else if (m.t === "z_etat") recevoirEtatZ(m.l || []);
-    else if (m.t === "z_tir") { const z = M.zomb && M.zomb.get(m.id), p = M.gens.get(m.de); if (p) p.tirT = performance.now(); sonTir(.55);
+    else if (m.t === "z_tir") { const z = M.zomb && M.zomb.get(m.id), p = M.gens.get(Number.isInteger(m.eq) ? FANTOME(m.de, m.eq) : m.de); if (p) { p.tirT = performance.now(); if (z && Number.isInteger(m.eq)) eclairDuCanon(p, +m.dx || 0, +m.dz || 0); } sonTir(.55);
       if (z) { impactZ(z, +m.dx || 0, +m.dz || 0); if (estChefZ()) blesserZ(z, +m.dx || 0, +m.dz || 0); } }
-    else if (m.t === "z_mord") { if (m.numero === M.moiNum) subirMorsure(+m.x || 0, +m.z || 0, m.d === 2 ? 2 : 1); }
+    else if (m.t === "z_mord") { if (m.numero === M.moiNum) { if (Number.isInteger(m.eq)) blesserEquipier(m.eq, m.d === 2 ? 2 : 1, +m.x || 0, +m.z || 0); else subirMorsure(+m.x || 0, +m.z || 0, m.d === 2 ? 2 : 1); } }
+    else if (m.t === "z_equipe" && Array.isArray(m.l)) recevoirEquipe(m.de, m.l.slice(0, 2));
     else if (m.t === "z_zombi") { const p = M.gens.get(m.de); if (p) { p.info.mortT = m.on ? performance.now() : 0; if (m.on) flaqueMort(p); } }
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
@@ -4326,6 +4449,9 @@ function connecter() {
     else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 21 && m.p.id <= 26) { ctx.surPNJTrio && ctx.surPNJTrio(m.p);   // un héros de Resident Evil retouché : ceux qui le jouent, et les équipiers, sont redessinés
+      for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
+        const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
