@@ -849,6 +849,61 @@ function decorPassage(A, T, L, scene, FZ) {
   const jourP = new THREE.PointLight(0xfff2dc, 14, 12, 1.4); jourP.position.set(0, 3.9, FZ - 7); scene.add(jourP);
   return jourP;
 }
+/* la deuxième cour, derrière le bâtiment à l'horloge (passage de z = -18 à -30), de z = -30 à -44, entre x = -11 et 11 :
+   pavés, le verso du bâtiment à l'horloge (rez-de-chaussée blanc, étages en brique à bandeaux, balconnets noirs), l'autre bâtiment en face, pareil,
+   et son passage carré qui laisse voir encore une cour plus loin ; de chaque côté, des murs bas blancs et des étages de brique */
+const C2 = { z0: -30, z1: -44, x: 11 };
+function toileVerso(largeur, hauteur, avecPassage) {
+  return toile(Math.round(largeur * 40), Math.round(hauteur * 40), (x, w, h) => {
+    const rdc = 5.4 * 40, cx = w / 2;
+    // les étages : la brique rouge, en bandeaux horizontaux
+    x.fillStyle = "#9a4a38"; x.fillRect(0, 0, w, h - rdc);
+    for (let y = 0; y < h - rdc; y += 12) { x.fillStyle = y % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
+    for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(${alea() < .5 ? "60,20,10" : "200,120,90"},.08)`; x.fillRect(alea() * w, alea() * (h - rdc), 30 + alea() * 120, 8); }
+    // les fenêtres des étages : encadrement blanc, volets roulants ou rideaux, balconnet noir
+    const pas = 3.6 * 40, n = Math.floor(w / pas);
+    for (let et = 0; et < 6; et++) for (let c = 0; c < n; c++) { const X = (c + .5) * pas - 34 + (w - n * pas) / 2, Y = h - rdc - 34 - 110 - et * 3 * 40;
+      if (Y < 10) continue;
+      x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112);
+      const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
+      if (alea() < .35) { x.fillStyle = "#ecebe6"; x.fillRect(X, Y, 68, 40 + alea() * 50); x.fillStyle = "rgba(0,0,0,.08)"; for (let l = Y; l < Y + 90; l += 5) x.fillRect(X, l, 68, 1); }
+      x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100);
+      x.strokeStyle = "#141414"; x.lineWidth = 2.5; x.strokeRect(X - 4, Y + 70, 76, 28); for (let k = X; k < X + 72; k += 6) { x.beginPath(); x.moveTo(k, Y + 70); x.lineTo(k, Y + 98); x.stroke(); } }
+    // le rez-de-chaussée blanc, sa corniche
+    x.fillStyle = "#e9e6df"; x.fillRect(0, h - rdc, w, rdc); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - rdc, w, 14); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, h - rdc + 14, w, 3);
+    x.fillStyle = "#cfcac0"; x.fillRect(0, h - 24, w, 24);
+    // quelques portes vitrées, les petites appliques noires, les boîtiers rouges
+    for (const d of [-7.5, 7.5, -15, 15]) { const X = cx + d * 40 - 36; if (X < 0 || X > w - 72) continue;
+      x.fillStyle = "#cfcac0"; x.fillRect(X - 6, h - 150, 84, 150); x.fillStyle = "#2b3138"; x.fillRect(X, h - 144, 72, 144); x.fillStyle = "#5c6670"; x.fillRect(X + 34, h - 144, 4, 144); }
+    for (const d of [-4, 4]) { x.fillStyle = "#222"; x.fillRect(cx + d * 40 - 10, h - rdc + 40, 20, 8); x.fillStyle = "#c8202a"; x.fillRect(cx + d * 40 - 6, h - 120, 12, 16); }
+    // le passage carré, au centre (4,8 m × 4,4 m), sous son linteau
+    x.fillStyle = "#dedad2"; x.fillRect(cx - 2.6 * 40, h - 4.6 * 40, 5.2 * 40, 8);
+    if (avecPassage) x.clearRect(cx - 2.4 * 40, h - 4.4 * 40, 4.8 * 40, 4.4 * 40);
+  });
+}
+function deuxiemeCour(A, L, scene) {
+  const { z0, z1, x: X } = C2, prof = z0 - z1, zc = (z0 + z1) / 2;
+  const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2;
+  const pasS = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, -24, false); pasS.rotation.x = -Math.PI / 2;   // le sol du passage
+  // le verso du bâtiment à l'horloge (face à la deuxième cour), percé du passage
+  const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI;
+  // le bâtiment d'en face, pareil, et son passage
+  const face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
+  const tr = new THREE.Path(); tr.moveTo(-2.4, 0); tr.lineTo(-2.4, 4.4); tr.lineTo(2.4, 4.4); tr.lineTo(2.4, 0); tr.closePath(); face.holes.push(tr);
+  const tF = tex(toileVerso(44, 24, false)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+  A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12);
+  // au bout de ce passage-là : encore une cour, au loin
+  const loin = tex(toile(512, 400, (x, w, h) => { x.fillStyle = "#e8dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#d9b8a8"; x.fillRect(0, 0, w, 110);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) { x.fillStyle = "#f4f1ea"; x.fillRect(16 + c * 70, 30 + r * 80, 46, 56); x.fillStyle = "#6c7d8c"; x.fillRect(20 + c * 70, 34 + r * 80, 38, 48); }
+    x.fillStyle = "#8b8780"; x.fillRect(0, h - 50, w, 50); }));
+  A.ajoute(new THREE.PlaneGeometry(14, 11), new THREE.MeshBasicMaterial({ map: loin }), 0, 5.5, z1 - 22, false);
+  const solL = A.ajoute(new THREE.PlaneGeometry(14, 10), A.mat({ map: tex(textures().paves, 6, 4) }), 0, .01, z1 - 17, false); solL.rotation.x = -Math.PI / 2;
+  // les deux côtés de la cour : rez-de-chaussée blanc, étages de brique
+  for (const sg of [-1, 1]) { const m = A.mat({ map: tex(toileVerso(prof, 20, false)) });
+    A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x6b6b6b }), m, m, m], sg * (X + 3), 10, zc); }
+  // une petite lumière le soir, au-dessus de chaque passage
+  for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
+}
 // un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
 function tableauScores(A, sousTitre, x0, y0, z0) {
   const c = document.createElement("canvas"); c.width = 512; c.height = 360; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -1222,10 +1277,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     for (let r = 0; r < 7; r++) for (let c = 0; c < 14; c++) if (alea() < .32) {
       const f = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 1.8), chaud); f.position.set(-fondW / 2 + (c + .5) * fondW / 14, fondH - (34 + r * 112 + 37) / 40, -17.97); f.visible = false; scene.add(f); L.nuitObjets.push(f);
       if (alea() < .45) { const s = silhouette(1.45, 1.8); s.position.set(f.position.x, f.position.y, -17.96); scene.add(s); L.nuitObjets.push(s); L.silhouettes.push(s); } }
-    // dans le passage : quelques marches et la lumière au bout
-    for (let k = 0; k < 3; k++) A.ajoute(new THREE.BoxGeometry(4.8, .17, .5), A.mat({ color: 0xbdb5a6 }), 0, .085 + k * .17, -26 - k * .5);
-    A.ajoute(new THREE.BoxGeometry(4.8, .51, 3.5), A.mat({ color: 0xc9c1b2 }), 0, .255, -28.5);
-    A.ajoute(new THREE.BoxGeometry(40, 18, 2), A.mat({ color: 0xd8cdb8 }), 0, 9, -42);
+    /* sous l'horloge, le passage carré mène à la deuxième cour, plus petite (d'après la photo) :
+       face à nous, le verso du bâtiment à l'horloge ; en face, un autre bâtiment pareil, percé lui aussi d'un passage carré en son centre */
+    if (!copie) deuxiemeCour(A, L, scene);
 
     // les deux bâtiments de plain-pied, identiques, en pierre, grandes baies vitrées ; au bout du fond, une voûte de garage avec un bus de la gendarmerie
     const LONG = 32, HPP = 7, PROF = 12, VOUTES = [-14.4, -9.8, -5.2];   // trois voûtes au bout du fond
@@ -1499,12 +1553,14 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
 
     const PB = L.porteBar || [16, 9.12];
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6))
+      || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
+      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
       || (x >= PB[0] - .35 && x < PB[0] + .55 && Math.abs(z - PB[1]) < VEST_LB / 2 - .25)                         // son embrasure, de plain-pied
       || (x > 16.5 && x < VEST_X + VEST_VX - .35 && Math.abs(z - VEST_Z) < VEST_VZ - .3)                        // le vestibule
       || (Math.abs(x - VEST_X) < .4 && Math.abs(z - VEST_Z) < VEST_VZ + .7)                                    // ses deux autres portes
       || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
-    L.zone = [-10.4, 19.2, -17.6, 29.8];
+    L.zone = [-10.6, 19.2, C2.z1, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
@@ -1516,6 +1572,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.horsPNJ = (x, z) => x > 15.2 && z > 6.3 && z < 12.5;       // le chef de poste n'entre pas au bar
     // la caméra reste sous la voûte quand on est dans le passage
     L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
+      if (mp.z < -17.5) {      // sous l'horloge, ou dans la deuxième cour
+        if (mp.z > C2.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); pos.z = Math.min(pos.z, -15); }
+        else { pos.x = Math.max(-C2.x + .3, Math.min(C2.x - .3, pos.x)); pos.z = Math.max(C2.z1 + .3, Math.min(pos.z, C2.z0 + 4)); if (pos.z > C2.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); } }
+        return true; }
       if (mp.x > 16.3 && Math.abs(mp.z - VEST_Z) < VEST_VZ + .8) {      // dans le vestibule : la caméra reste dedans (ou dans l'embrasure)
         const xm = VEST_X + VEST_VX - .15; pos.y = Math.min(pos.y, 2.9); pos.z = Math.max(VEST_Z - VEST_VZ + .15, Math.min(VEST_Z + VEST_VZ - .15, pos.z));
         pos.x = Math.abs(pos.z - VEST_Z) < VEST_LB / 2 - .2 ? Math.max(14.6, Math.min(xm, pos.x)) : Math.max(16.25, Math.min(xm, pos.x)); return true; }
