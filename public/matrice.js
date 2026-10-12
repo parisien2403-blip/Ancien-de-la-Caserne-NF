@@ -4409,7 +4409,7 @@ function allerVers(x, z, envoyer) {
 function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
   if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
-  if (!estBttf(id)) couperMusiqueBttf(1500);
+  if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
@@ -4476,7 +4476,7 @@ function majAlmanach() {
 }
 // ---- la musique du voyage : elle part dès qu'on ramasse l'Almanach ; elle s'éteint en fondu ----
 let musBttf = null;
-function musiqueBttf(src) { couperMusiqueBttf(0); try { const a = new Audio(src); a.volume = .85; a.play().catch(() => {}); musBttf = a; } catch (e) {} }
+function musiqueBttf(src, boucle = false, fondu = 0) { couperMusiqueBttf(fondu); try { const a = new Audio(src); a.loop = boucle; a.volume = .85; a.play().catch(() => {}); musBttf = a; } catch (e) {} }
 function couperMusiqueBttf(ms = 2500) { const a = musBttf; musBttf = null; if (!a) return; if (!ms) { try { a.pause(); } catch (e) {} return; }
   const v0 = a.volume, t0 = performance.now(), f = () => { const k = 1 - (performance.now() - t0) / ms; if (k <= 0) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * k; requestAnimationFrame(f); }; f(); }
 // ---- les bulles de Doc, l'éclair blanc, le fondu : par-dessus la scène ----
@@ -4625,7 +4625,7 @@ function cineCour() {
       if (t > 10.3 && M.gens.has(DOC)) retirerAncien(DOC);
       if (t > 11 && moi) moi.g.visible = false;
       cam.position.lerp(new THREE.Vector3(-1.6, 2.4, 11), .05); cam.lookAt(1.6, 1.3, 5); }
-    else if (t < 14.8) { const u = t - 12.5, z = 4.5 - .5 * 7.2 * u * u, x = 2.8 - 2.2 * lisse(u / 2); if (!M.vroum) { M.vroum = 1; sonBruit(2.3, 500, .9); }
+    else if (t < 14.8) { const u = t - 12.5, z = 4.5 - .5 * 7.2 * u * u, x = 2.8 - 2.2 * lisse(u / 2); if (!M.vroum) { M.vroum = 1; sonBruit(2.3, 500, .9); musiqueBttf("sons/bttf/route.mp3", false, 900); }
       const dz = car.position.z - z; rouler(car, dz); poser(car, x, z, 0);
       if (u > .25) { M.dz = (M.dz || 0) + dz; while (M.dz > .22) { M.dz -= .22; for (const sg of [-1, 1]) traineeFeu(feu, x + sg * .9, z + 1.35 + M.dz); } }
       arcs(car, u > 1.1); car.position.y = 0;
@@ -4641,7 +4641,7 @@ function cineHV() {
   const car = M.L.delorean; poser(car, -24, 16, -Math.PI / 2); ouvrirPortes(car, 0); const feu = [];
   const moi0 = () => M.gens.get(M.moiNum);
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; poser(car, -6, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
-    if (!M.gens.has(DOC)) ajouterDoc(-7.2, 13.9); finCine(); couperMusiqueBttf(4000); };
+    if (!M.gens.has(DOC)) ajouterDoc(-7.2, 13.9); finCine(); musiqueBttf("sons/bttf/sandman.mp3", true, 3000); };
   M.passerBtn = boutonPasser(fin);
   eclairBlanc(1300); sonBruit(1.4, 300, .9);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera;
@@ -4663,6 +4663,7 @@ function cineRetour() {
   M.bulleDit = M.monte = M.vroum = M.vroum2 = 0; M.dz = M.dx = 0;
   const car = M.L.delorean, feu = M.feuHV || []; let fini = false;
   const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1300); changerLieu("grande", [1.5, 6], 0); setTimeout(() => M && eclairBlanc(1400), 400); };
+  musiqueBttf("sons/bttf/retour.mp3", false, 1200);
   M.passerBtn = boutonPasser(fin); bulle(`🧪 <b>Doc :</b> En route pour <b>2026</b> ! Accroche-toi, ${prenomMoi()} !`, 2600);
   M.cine = { t0: performance.now(), maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera;
     if (t < 3) { ouvrirPortes(car, t < 1.6 ? lisse(t / .8) : 1 - lisse((t - 1.6) / .9)); if (t > 1.2) { if (moi) moi.g.visible = false; if (M.gens.has(DOC)) retirerAncien(DOC); }
@@ -4971,4 +4972,5 @@ function connecter() {
     if (M.ouvert) { ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); M.reco = setTimeout(() => M && connecter(), 3000); }
   };
 }
+export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
