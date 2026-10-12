@@ -4497,7 +4497,7 @@ function reflets() { if (envReflets) return envReflets;
 let texBrosse = null;
 function brosse() { return texBrosse || (texBrosse = tex(toile(256, 256, (x) => { x.fillStyle = "#c9cdd2"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 900; i++) { const v = 185 + Math.random() * 60; x.fillStyle = `rgba(${v},${v},${v + 4},.45)`; x.fillRect(Math.random() * 256, Math.random() * 256, 30 + Math.random() * 90, 1); } }), 3, 3)); }
 function creerDelorean() {
-  const g = new THREE.Group(), inox = new THREE.MeshStandardMaterial({ map: brosse(), color: 0xe4e7ea, metalness: .9, roughness: .34, envMap: reflets(), envMapIntensity: 1.1 }), noir = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .6 });
+  const g = new THREE.Group(), inox = new THREE.MeshStandardMaterial({ map: brosse(), color: 0xbfc3c8, metalness: .9, roughness: .3, envMap: reflets(), envMapIntensity: .85 }), noir = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .6 });
   const vitre = new THREE.MeshStandardMaterial({ color: 0x11161c, metalness: .6, roughness: .12 }), neon = new THREE.MeshBasicMaterial({ color: 0x3fc8ff }), blanc = new THREE.MeshBasicMaterial({ color: 0xfff6dc });
   const add = (geo, m, x, y, z, p = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
   // la caisse : le profil en coin, extrudé sur la largeur
@@ -4518,7 +4518,16 @@ function creerDelorean() {
   add(new THREE.PlaneGeometry(.5, .25), new THREE.MeshBasicMaterial({ map: tex(plaqueT) }), 0, .52, 2.28);
   const quad = (pts, m) => { const b = new THREE.BufferGeometry(); b.setAttribute("position", new THREE.Float32BufferAttribute([...pts[0], ...pts[1], ...pts[2], ...pts[0], ...pts[2], ...pts[3]], 3)); b.computeVertexNormals();
     const o = new THREE.Mesh(b, m); m.side = THREE.DoubleSide; g.add(o); return o; };
-  quad([[-.8, .935, -.74], [.8, .935, -.74], [.8, 1.17, .02], [-.8, 1.17, .02]], vitre);                                   // le pare-brise
+  // le pare-brise : un joint noir, et la vitre teintée qui reflète le ciel (posés juste au-dessus de la tôle, qui s'effile vers le toit)
+  const quadUV = (pts, m) => { const b = new THREE.BufferGeometry(); b.setAttribute("position", new THREE.Float32BufferAttribute([...pts[0], ...pts[1], ...pts[2], ...pts[0], ...pts[2], ...pts[3]], 3));
+    b.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], 2)); b.computeVertexNormals(); const o = new THREE.Mesh(b, m); g.add(o); return o; };
+  const nY = .958, nZ = -.287, off = (p, d) => [p[0], p[1] + nY * d, p[2] + nZ * d];
+  const pb = (w0, w1, d) => [[-w0, .935, -.74], [w0, .935, -.74], [w1, 1.17, .02], [-w1, 1.17, .02]].map(p => off(p, d));
+  quadUV(pb(.84, .75, .072), new THREE.MeshBasicMaterial({ color: 0x0c0c0e, side: THREE.DoubleSide }));
+  const verre = toile(256, 128, (x) => { const gr = x.createLinearGradient(0, 128, 0, 0); gr.addColorStop(0, "#2a3644"); gr.addColorStop(.55, "#5d7488"); gr.addColorStop(1, "#a9bccb"); x.fillStyle = gr; x.fillRect(0, 0, 256, 128);
+    x.fillStyle = "rgba(255,255,255,.35)"; x.beginPath(); x.moveTo(40, 128); x.lineTo(90, 128); x.lineTo(150, 0); x.lineTo(110, 0); x.fill(); x.fillStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.moveTo(110, 128); x.lineTo(125, 128); x.lineTo(185, 0); x.lineTo(170, 0); x.fill();
+    x.fillStyle = "rgba(20,20,24,.55)"; x.fillRect(20, 90, 216, 38); });   // (le tableau de bord, en bas)
+  quadUV(pb(.77, .69, .082), new THREE.MeshStandardMaterial({ map: tex(verre), metalness: .3, roughness: .08, envMap: reflets(), side: THREE.DoubleSide }));
   for (let k = 0; k < 6; k++) add(new THREE.BoxGeometry(1.6, .02, .1), noir, 0, 1.13 - k * .036, .95 + k * .18).rotation.x = -.19;   // les persiennes de la lunette arrière
   // l'avant : la calandre noire « DMC », les doubles phares, le néon bleu dessous
   add(new THREE.BoxGeometry(.7, .14, .04), noir, 0, .55, -2.19);
@@ -4543,10 +4552,14 @@ function creerDelorean() {
     const pn = new THREE.Mesh(new THREE.CylinderGeometry(.33, .33, .24, 20), noir); pn.rotation.z = Math.PI / 2; r.add(pn);
     const j = new THREE.Mesh(new THREE.CircleGeometry(.22, 20), mJ); j.position.x = Math.sign(x) * .125; j.rotation.y = Math.sign(x) * Math.PI / 2; r.add(j); roues.push(r); }
   // les portes papillon : charnière en haut, elles s'ouvrent vers le ciel
-  const vitreP = toile(128, 64, (x) => { x.fillStyle = "#c5c9ce"; x.fillRect(0, 0, 128, 64); x.fillStyle = "#11161c"; x.beginPath(); x.moveTo(8, 4); x.lineTo(120, 4); x.lineTo(104, 30); x.lineTo(20, 30); x.fill(); x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(84, 40, 18, 3); });
-  const mP = new THREE.MeshStandardMaterial({ map: tex(vitreP), metalness: .4, roughness: .38 });
-  const portes = [-1, 1].map(sg => { const pv = new THREE.Group(); pv.position.set(sg * .62, 1.15, -.15); g.add(pv);
-    const p = new THREE.Mesh(new THREE.BoxGeometry(.03, .8, 1.3), [inox, inox, inox, inox, mP, mP]); p.position.set(sg * .3, -.34, 0); p.rotation.z = sg * .62; p.castShadow = true; pv.add(p);
+  const vitreP = toile(256, 160, (x) => { x.fillStyle = x.createPattern(brosse().image, "repeat"); x.fillRect(0, 0, 256, 160); x.fillStyle = "rgba(190,195,200,.35)"; x.fillRect(0, 0, 256, 160);
+    const gr = x.createLinearGradient(0, 0, 0, 66); gr.addColorStop(0, "#5d7488"); gr.addColorStop(1, "#141a22"); x.fillStyle = gr; x.beginPath(); x.moveTo(30, 6); x.lineTo(236, 6); x.lineTo(250, 66); x.lineTo(14, 66); x.fill();   // la vitre
+    x.fillStyle = "rgba(255,255,255,.25)"; x.beginPath(); x.moveTo(70, 66); x.lineTo(90, 66); x.lineTo(120, 6); x.lineTo(100, 6); x.fill();
+    x.fillStyle = "#151517"; x.fillRect(0, 108, 256, 9); x.fillStyle = "rgba(0,0,0,.3)"; x.fillRect(196, 84, 30, 4); x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 3; x.strokeRect(1, 1, 254, 158); });
+  const mP = new THREE.MeshStandardMaterial({ map: tex(vitreP), metalness: .6, roughness: .32, envMap: reflets(), envMapIntensity: .6, side: THREE.DoubleSide });
+  const portes = [-1, 1].map(sg => { const pv = new THREE.Group(); pv.position.set(sg * .83, 1.12, -.12); g.add(pv);
+    const inc = new THREE.Group(); inc.rotation.z = sg * .2; pv.add(inc);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(1.3, .76), mP); p.position.set(sg * .02, -.37, 0); p.rotation.y = sg * Math.PI / 2; p.castShadow = true; inc.add(p);
     return { pv, sg }; });
   g.userData = { roues, portes };
   return g;
