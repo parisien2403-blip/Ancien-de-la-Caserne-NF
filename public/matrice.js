@@ -2381,6 +2381,16 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       cymbale(.16, -.66, .86, -.32, 0); m3(new THREE.CylinderGeometry(.16, .025, .012, 28), cuivre, -.66, .83, -.32);   // le charleston
       cymbale(.23, -.56, 1.22, .06, .25); cymbale(.24, .58, 1.27, .02, -.25); cymbale(.26, .78, 1.0, -.12, -.15);      // les crashs, la ride
       m3(new THREE.CylinderGeometry(.17, .17, .07, 18), A.mat({ color: 0x141416, roughness: .7 }), 0, .55, -.64); pied(0, -.64, .52);   // le tabouret
+      // au sol, le long du bord de la scène : six projecteurs de couleur, braqués vers le haut sur le groupe et les chanteurs
+      L.feuxScene = []; { const boite = A.mat({ color: 0x0c0c0e, metalness: .5, roughness: .4 }), geoC = new THREE.ConeGeometry(1, 1, 18, 1, true); geoC.translate(0, -.5, 0);
+        for (let k = 0; k < 6; k++) { const fx = SX0 + .55 + k * (SX1 - SX0 - 1.1) / 5, fz = SZ1 - .18, pos = new THREE.Vector3(fx, SH + .12, fz);
+          const vise = new THREE.Vector3(sx + (fx - sx) * .55, SH + 1.7, Z0 + 1.3), dir = vise.clone().sub(pos), lg = dir.length(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.clone().normalize());
+          const can = new THREE.Mesh(new THREE.CylinderGeometry(.08, .1, .18, 12), boite); can.position.copy(pos); can.quaternion.copy(q); scene.add(can);
+          A.ajoute(new THREE.BoxGeometry(.2, .03, .12), boite, fx, SH + .015, fz, false);   // le pied
+          const verre = new THREE.Mesh(new THREE.CircleGeometry(.075, 14), new THREE.MeshBasicMaterial({ color: 0xffffff })); verre.position.copy(pos).addScaledVector(dir.clone().normalize(), .1); verre.lookAt(vise); scene.add(verre);
+          const cone = new THREE.Mesh(geoC, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .17, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+          cone.position.copy(pos); cone.quaternion.copy(q); cone.scale.set(lg * .24, lg, lg * .24); scene.add(cone);
+          L.feuxScene.push({ verre, cone, x: fx, k }); } }
       // les amplis du bassiste et du guitariste, contre le mur du fond
       const tolex = A.mat({ color: 0x121214, roughness: .85 }), grille = A.mat({ color: 0x2a2a2e, roughness: .95 }), liseré = A.mat({ color: 0xc9b37a, metalness: .6, roughness: .35 });
       for (const ax of [SX0 + .75, SX1 - .75]) { A.ajoute(new THREE.BoxGeometry(.72, .78, .38), tolex, ax, SH + .39, Z0 + .52);
@@ -3916,6 +3926,14 @@ function animerGroupe() {
       p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
         teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x, z }); if (!p) continue; }
     p.info.danse = place === "batterie" ? "batterie" : "guitare"; p.info.enMusique = !!M.djJoue; }
+  // les projecteurs du bord de scène changent de couleur en rythme ; ceux qui sont sur scène prennent la teinte du projecteur le plus proche
+  const S = M.L.scene, t = performance.now(), col = new THREE.Color(), blanc = new THREE.Color(0xffffff), PAL = [0xff2a3c, 0x2a6bff, 0x22e06a, 0xff2ad4, 0xffb020, 0x22d8ff];
+  for (const f of M.L.feuxScene || []) { const i = (f.k + Math.floor(t / 1900)) % PAL.length, j = (i + 1) % PAL.length, u = Math.min(1, (t % 1900) / 500);
+    f.col = (f.col || new THREE.Color()).setHex(PAL[i]).lerp(col.setHex(PAL[j]), u); f.verre.material.color.copy(f.col); f.cone.material.color.copy(f.col); }
+  for (const p of M.gens.values()) { if (!p.corps || !p.info.pnj) continue; const x = p.g.position.x, z = p.g.position.z, dessus = x > S.x0 && x < S.x1 && z > S.z0 && z < S.z1;
+    if (!dessus) { if (p.teinte) { p.corps.material.color.copy(blanc); p.teinte = false; } continue; }
+    let best = null, bd = 1e9; for (const f of M.L.feuxScene || []) { const d = Math.abs(f.x - x); if (d < bd) { bd = d; best = f; } }
+    if (best && best.col) { p.corps.material.color.copy(blanc).lerp(best.col, .3); p.teinte = true; } }
 }
 /* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
 const SMITH = -16;
