@@ -9,9 +9,9 @@
 </script>
 <meta name="theme-color" content="#f6eedf">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icons/favicon-48.png" sizes="48x48" type="image/png">
-<link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=2">
+<link rel="icon" href="/icons/favicon-48.png?v=3" sizes="48x48" type="image/png">
+<link rel="icon" href="/icons/icon-192.png?v=3" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Caserne NF">
@@ -820,6 +820,57 @@
   .borne-admin h3 small { font: 12px "Lato", sans-serif; color: var(--muted); }
   .borne-admin .progression { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 0 0 12px; }
   .borne-admin .progression div { height: 100%; width: 0; background: var(--terra); transition: width .2s; }
+
+  /* ===== Le thème « nuit de la Matrice » : bleu nuit, violet, rouge rosé des lumières de la fête (l'écran d'accueil garde ses couleurs de jour) ===== */
+  :root {
+    --cream: #12172e; --cream-2: #1a2042; --line: #343d6b;
+    --terra: #e0436a; --terra-dark: #ff8fab; --terra-soft: #3a2347;
+    --gold: #f2c14e; --navy: #eef0ff; --text: #d9dcf0; --muted: #959dc8; --card: #1c2244; --ink: #e6e8f7;
+  }
+  .splash { --cream: #f6eedf; --cream-2: #efe4d0; --line: #e3d4bb; --terra: #c4694a; --terra-dark: #a85538; --terra-soft: #f3dccf;
+    --gold: #e7b33a; --navy: #1f2a37; --text: #3a3631; --muted: #8a7f72; --card: #fffaf2; --ink: #2a2420; }
+  body { background: #070a18 radial-gradient(circle at 30% 20%, #1b2148, #070a18); }
+  .app { background: radial-gradient(120% 60% at 80% 100%, rgba(224,67,106,.16), transparent 60%), radial-gradient(90% 50% at 0% 0%, rgba(74,144,226,.12), transparent 60%), var(--cream); }
+  @media (min-width: 560px) { .app { box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px #262d55; } }
+  .btn { box-shadow: 0 6px 18px rgba(224,67,106,.35); }
+  .btn:hover { background: #c7335a; }
+  .btn.alt { background: transparent; color: var(--terra-dark); border-color: var(--terra); }
+  .btn.danger { background: transparent; color: #ff8a80; border-color: #7a3040; }
+  .field input, .field select, .search, textarea, .mx-dire input, .mx-lieux button, .mx-ambiance button, .bh-choix button, .bh-fleches button[data-bh-dep], .code-provisoire {
+    background: var(--cream-2); color: var(--text); }
+  .field input::placeholder, .search::placeholder, textarea::placeholder, .mx-dire input::placeholder { color: #6f77a3; }
+  .readonly { background: #232a52 !important; }
+  .card, .shortcut, .list-item { border-color: #2a3260; box-shadow: 0 2px 14px rgba(0,0,0,.25); }
+  .tabbar { background: #151a36; border-top-color: #2a3260; }
+  .tabbar button.on { color: var(--terra); }
+  .composer, .post .bar, .reglage { border-color: #2a3260; }
+  .composer input, .mini-composer input { background: var(--cream-2); color: var(--text); border-color: var(--line); }
+  .bubble { background: var(--card); color: var(--text); } .bubble::before { border-bottom-color: var(--card); }
+  .back { background: var(--card); color: var(--text); }
+  .bonhomme canvas { background: radial-gradient(circle at 50% 70%, #2c3466, #171c3a); }
+  .bh-choix button.on { background: var(--terra-soft); color: var(--terra-dark); }
+  .mx-voile { background: linear-gradient(180deg, #1b2250, #3a2350); color: #eef0ff; }
+  .mx-fil div { color: var(--text); }
+  .seg button { color: var(--text); }
+  .lp-card, .lp-card * { --text: #2a2622; }
+  .file { background: rgba(224,67,106,.08); }
+  .f-corps { background: var(--card); border-color: #2a3260; }
+  .att-motif { background: #3a2030; }
+  .switch span::after { background: #eef0ff; }
+  /* la porte de la caserne, avant d'entrer dans la Matrice */
+  .mx-porte { display: none; position: relative; overflow: hidden; min-height: calc(var(--app-h, 100dvh) - 260px); border-radius: 22px; padding: 26px 22px 120px; text-align: center;
+    background: radial-gradient(80% 45% at 50% 100%, rgba(224,67,106,.45), transparent 70%), radial-gradient(60% 40% at 50% 38%, rgba(246,212,101,.22), transparent 70%), linear-gradient(180deg, #0d1230, #1d2350 55%, #2a2050); color: #eef0ff; }
+  .mx-ferme > .mx-porte { display: block; }
+  .mx-ferme > :not(.mx-porte) { display: none !important; }
+  .mx-porte h2 { position: relative; margin: 4px 0 8px; color: #fff; font-size: 26px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+  .mx-porte p { position: relative; margin: 0 auto 22px; max-width: 320px; color: #c9cdf0; line-height: 1.45; }
+  .mx-porte-horloge { position: relative; width: 230px; height: auto; display: block; margin: 0 auto; filter: drop-shadow(0 0 26px rgba(246,212,101,.45)); }
+  .mx-porte-btn { position: relative; z-index: 2; font-size: 18px; padding: 16px 26px; animation: mxPorteBat 2.4s ease-in-out infinite; }
+  @keyframes mxPorteBat { 50% { box-shadow: 0 0 0 10px rgba(224,67,106,.18), 0 6px 22px rgba(224,67,106,.55); } }
+  .mx-porte-fenetres { position: absolute; inset: 0; opacity: .5;
+    background: repeating-linear-gradient(90deg, transparent 0 22px, rgba(10,12,30,.6) 22px 26px), repeating-linear-gradient(180deg, transparent 0 34px, rgba(10,12,30,.7) 34px 40px); }
+  .mx-porte-grille { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; opacity: .85;
+    background: repeating-linear-gradient(90deg, #0a0c1c 0 4px, transparent 4px 22px), linear-gradient(180deg, transparent 0 8px, #0a0c1c 8px 13px, transparent 13px 70px, #0a0c1c 70px 76px, transparent 76px); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="lib/qrcode.js"></script>
@@ -1110,7 +1161,16 @@
 
       <!-- ===== VAGUEMESTRE ===== -->
       <!-- ===== LA MATRICE : les cours de la caserne en 3D ===== -->
-      <div class="tab" data-tab="matrice" hidden>
+      <div class="tab" data-tab="matrice" id="tab-matrice-porte" hidden>
+        <!-- la porte de la caserne : on ne découvre la Matrice qu'en la passant -->
+        <div class="mx-porte" id="mxPorte">
+          <div class="mx-porte-fenetres" aria-hidden="true"></div>
+          <svg class="mx-porte-horloge" id="mxPorteHorloge" viewBox="0 0 240 250" aria-hidden="true"></svg>
+          <h2>La caserne, la nuit</h2>
+          <p>Les grilles sont closes… De l'autre côté, la cour d'honneur, la salle des fêtes, le bar et les anciens t'attendent.</p>
+          <button class="btn mx-porte-btn" id="mxEntrer" type="button">🚪 Entrer dans la caserne</button>
+          <div class="mx-porte-grille" aria-hidden="true"></div>
+        </div>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
           <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button>
           <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button>
@@ -1207,10 +1267,9 @@
       <button data-go="accueil"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg><span class="lbl">Accueil</span></button>
       <button data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
       <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
-      <button data-go="jeunes"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><span class="lbl">Salle<br> des jeunes</span></button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
       <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
-      <button data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Matrice</span></button>
+      <button data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">La<br> caserne</span></button>
       <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl">Vague<span class="cesure">-</span><br>mestre</span><span class="dot" id="vDot" hidden></span></button>
     </nav>
 
@@ -1704,6 +1763,8 @@
   }
   scene();
   document.querySelectorAll("[data-clock]").forEach(el => el.innerHTML = DEFS + clockSVG(60, 60, 52, false));
+  // (ses propres dégradés : ceux de l'écran d'accueil, caché, ne s'afficheraient pas ici)
+  $("mxPorteHorloge").innerHTML = (DEFS + clockSVG(120, 150, 72, true)).replace(/id="(\w+)"/g, 'id="porte-$1"').replace(/url\(#(\w+)\)/g, "url(#porte-$1)");
   setHands(); setInterval(setHands, 15000);
 
   /* ===== Connexion ===== */
@@ -1727,7 +1788,8 @@
     if (tab === "biblio") chargerBiblio();
     if (tab === "jeunes") chargerAnecdotes();
     if (tab === "vague") chargerBoite();
-    if (tab === "matrice") ouvrirMatrice(); else fermerMatrice();
+    // la caserne : d'abord la porte (« Entrer dans la caserne ») ; la Matrice ne s'ouvre qu'en la passant
+    if (tab === "matrice") { if (!mxOuverte) $("tab-matrice-porte").classList.add("mx-ferme"); } else fermerMatrice();
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
 
@@ -1943,6 +2005,7 @@
   const chargerMX = () => MX ? Promise.resolve(MX) : import("./matrice.js?v=" + VERSION).then(m => (MX = m));
   const urlTete = (numero, v) => `/api/avatar/${numero}/tete?t=${encodeURIComponent(moi.token)}&v=${v}`;
   function infoMatrice(texte, duree = 3500) { const el = $("mxInfo"); el.textContent = texte; el.hidden = false; clearTimeout(infoMatrice.t); infoMatrice.t = setTimeout(() => el.hidden = true, duree); }
+  $("mxEntrer").onclick = () => { $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
   async function ouvrirMatrice() {
     if (mxOuverte) return;
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
@@ -2583,6 +2646,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.36", "12 octobre 2026", ["Nouveau logo de l'appli : l'horloge octogonale de la caserne, avec un peu de sa façade", "Les pages de l'appli aux couleurs de la nuit de la Matrice : bleu nuit, violet et rouge rosé des lumières de la fête", "L'onglet Salle des jeunes est retiré", "La Matrice devient une surprise : l'onglet « La caserne » montre d'abord la porte, la nuit ; on la découvre en touchant « 🚪 Entrer dans la caserne »"]],
     ["3.35", "12 octobre 2026", ["Salle des fêtes : John Travolta, en costume trois pièces blanc et chemise noire au grand col, rejoint les Bee Gees dès qu'une de leurs chansons passe ; il danse seul, un peu devant eux, comme dans Saturday Night Fever : le doigt pointé vers le ciel puis vers le sol, la marche chaloupée, les coups de genou, les bras levés, la pose du film et un tour sur lui-même avec les frères", "Administrateur : bouton 🕺 John Travolta pour recadrer sa tête, changer ses vêtements, sa silhouette et son nom"]],
     ["3.34.2", "12 octobre 2026", ["Correction : après une mise à jour, le téléphone pouvait garder l'ancienne Matrice en mémoire (les nouveaux personnages, leurs tenues et leurs danses n'apparaissaient pas) ; elle est maintenant toujours rechargée"]],
     ["3.34.1", "12 octobre 2026", ["Salle des fêtes : les titres des musiques sont mieux reconnus (tirets, soulignés, apostrophes, majuscules, accents) pour faire venir les Bee Gees, Mr Hernandez et les danseurs Thriller ; plus de chansons des Bee Gees reconnues, et « Gibb » dans le nom suffit"]],
