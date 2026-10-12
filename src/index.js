@@ -42,7 +42,11 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "z-rue", "z-grande", "z-fetes", "z-etage"];   // (z- : la caserne de l'apocalypse)
+const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "z-rue", "z-grande", "z-fetes", "z-etage", "bttf-cour", "hv1955"];
+// l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
+const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10],
+  ["rue", -53, 1], ["rue", -32, 16], ["rue", -20, -2], ["rue", 1, -20], ["rue", 13, 4], ["rue", 31, -2], ["rue", 46, 1], ["rue", 58, -5], ["fetes", -2.8, 3], ["fetes", .2, 9], ["fetes", -2.8, 12]];
+const LIEUX_BTTF = ["bttf-cour", "hv1955"];   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
@@ -65,9 +69,10 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" },
   // Depeche Mode : sur scène dès qu'une de leurs chansons passe
   27: { nom: "Martin Gore", tenue: "gore", couleur: "#111113", bas: "#141416", pieds: "#0e0e0e" }, 28: { nom: "Dave Gahan", tenue: "gahan", couleur: "#1a1a1d", bas: "#121214", pieds: "#0e0e0e" },
-  29: { nom: "Andy Fletcher", tenue: "fletcher", couleur: "#141416", bas: "#141416", pieds: "#0e0e0e" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 29) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher"];
+  29: { nom: "Andy Fletcher", tenue: "fletcher", couleur: "#141416", bas: "#141416", pieds: "#0e0e0e" },
+  30: { nom: "Doc", tenue: "doc", couleur: "#f1efe6", bas: "#f1efe6", pieds: "#8a5a34" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 30) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
@@ -409,6 +414,7 @@ export class Compteur extends DurableObject {
       if (ancien && ancien !== m.lieu && ancien.startsWith("z-")) this.diffuser(ancien, { t: "z_chef", numero: this.chefDe(ancien) });
       if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c)); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
+      await this.almanachEntrer(ws, a, m.lieu);
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
@@ -441,6 +447,12 @@ export class Compteur extends DurableObject {
       if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse", "z_equipe"].includes(m.t)) return;
       const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
       for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "almanach_prendre") {
+      // le premier qui marche dessus le ramasse : il part seul pour 1955 ; l'Almanach n'est plus nulle part ailleurs
+      const al = await this.almanach(); if (al.pris || al.lieu !== a.lieu) return;
+      al.pris = Number(a.numero); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al); ws.send(JSON.stringify({ t: "almanach_ok" }));
+    } else if (m.t === "almanach_taille" && a.admin) {
+      const al = await this.almanach(); al.taille = Math.max(.1, Math.min(1.2, Number(m.v) || .3)); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "perso") {
       // à l'apocalypse, on joue l'un des héros de Resident Evil (ou soi-même) : les autres le voient avec sa tête et sa tenue
       const id = Number(m.id); a.perso = Number.isInteger(id) && id >= 21 && id <= 26 ? id : null; ws.serializeAttachment(a);
@@ -507,8 +519,21 @@ export class Compteur extends DurableObject {
   }
   async webSocketClose(ws) { this.quitter(ws); }
   async webSocketError(ws) { this.quitter(ws); }
+  // ---- l'Almanach des sports ----
+  async almanach() { let al = await this.ctx.storage.get("almanach"); if (!al) { al = this.nouvellePlace({ taille: .3 }); await this.ctx.storage.put("almanach", al); } return al; }
+  nouvellePlace(al) { const libres = ALMANACH_PLACES.filter(p => !(al && p[0] === al.lieu && p[1] === al.x && p[2] === al.z)), p = libres[Math.floor(Math.random() * libres.length)];
+    return { lieu: p[0], x: p[1] + (Math.random() - .5) * 1.2, z: p[2] + (Math.random() - .5) * 1.2, r: Math.random() * 6.28, taille: (al && al.taille) || .3, pris: null }; }
+  publicAlmanach(al) { return { lieu: al.lieu, x: al.x, z: al.z, r: al.r, taille: al.taille, pris: !!al.pris }; }
+  diffuserAlmanach(al) { const t = JSON.stringify({ t: "almanach", a: this.publicAlmanach(al) }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} } }
+  async reposerAlmanach() { const al = this.nouvellePlace(await this.almanach()); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al); }
+  async almanachEntrer(ws, a, lieu) {
+    let al = await this.almanach();
+    if (al.pris && al.pris === Number(a.numero) && !LIEUX_BTTF.includes(lieu)) { await this.reposerAlmanach(); return; }   // de retour de 1955 : il est reposé ailleurs
+    ws.send(JSON.stringify({ t: "almanach", a: this.publicAlmanach(al) }));
+  }
   quitter(ws) {
     const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
+    if (LIEUX_BTTF.includes(a.lieu)) this.almanach().then(al => { if (al.pris === Number(a.numero)) return this.reposerAlmanach(); }).catch(() => {});
     this.finirSlow(ws, a);
     const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
     this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
