@@ -902,8 +902,31 @@ function deuxiemeCour(A, L, scene) {
   A.ajoute(new THREE.PlaneGeometry(14, 11), new THREE.MeshBasicMaterial({ map: loin }), 0, 5.5, z1 - 22, false);
   const solL = A.ajoute(new THREE.PlaneGeometry(14, 10), A.mat({ map: tex(textures().paves, 6, 4) }), 0, .01, z1 - 17, false); solL.rotation.x = -Math.PI / 2;
   // les deux côtés de la cour : rez-de-chaussée blanc, étages de brique
-  for (const sg of [-1, 1]) { const m = A.mat({ map: tex(toileVerso(prof, 20, false)) });
-    A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x6b6b6b }), m, m, m], sg * (X + 3), 10, zc); }
+  // côté gauche : rez-de-chaussée blanc, étages de brique ; côté droit : un haut mur de pierre grise et noire, sans fenêtres
+  { const m = A.mat({ map: tex(toileVerso(prof, 20, false)) }); A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x6b6b6b }), m, m, m], -(X + 3), 10, zc); }
+  { graine = 91;
+    const pierreG = tex(toile(560, 800, (x, w, h) => { x.fillStyle = "#2a2a2c"; x.fillRect(0, 0, w, h);
+      for (let y = 0, r = 0; y < h; y += 34, r++) for (let X0 = -(r % 2) * 40; X0 < w; X0 += 80) { const v = alea();
+        x.fillStyle = v < .3 ? `hsl(220, 4%, ${14 + alea() * 8}%)` : `hsl(30, 3%, ${38 + alea() * 22}%)`; x.fillRect(X0 + 2, y + 2, 76, 30);
+        for (let k = 0; k < 14; k++) { x.fillStyle = `rgba(${alea() < .5 ? "0,0,0" : "255,255,255"},${.05 + alea() * .1})`; x.fillRect(X0 + 3 + alea() * 70, y + 3 + alea() * 26, 3, 3); } } }));
+    pierreG.repeat.set(2.5, 3); const m = A.mat({ map: pierreG, roughness: .95 }); A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x4a4a4c }), m, m, m], X + 3, 10, zc); }
+  /* entre les deux bâtiments, contre ce mur : l'ancien local électrique, une petite construction blanc crème à l'ancienne */
+  { const cr = A.mat({ color: 0xece3cc, roughness: .9 }), crF = A.mat({ color: 0xd9ceb4 }), lx = X - 1.3, lw = 2.6, ll = 4, lh = 3;
+    A.ajoute(new THREE.BoxGeometry(lw, lh, ll), cr, lx, lh / 2, zc);
+    A.ajoute(new THREE.BoxGeometry(lw + .3, .22, ll + .3), crF, lx, lh + .11, zc);                        // la corniche
+    A.ajoute(new THREE.BoxGeometry(lw + .1, .3, ll + .1), crF, lx, .15, zc);                                // le soubassement
+    A.ajoute(new THREE.BoxGeometry(lw - .4, .5, ll - .4), A.mat({ color: 0x8a5a3c, roughness: .8 }), lx, lh + .45, zc);   // le petit toit de tuiles
+    const face = lx - lw / 2 - .01;
+    // la porte de fer peinte en vert sombre, ses grilles d'aération, le panneau « danger de mort »
+    const porte = A.ajoute(new THREE.PlaneGeometry(1.1, 2.1), A.mat({ map: tex(toile(110, 210, (x, w, h) => { x.fillStyle = "#33463a"; x.fillRect(0, 0, w, h);
+      x.strokeStyle = "#22302a"; x.lineWidth = 3; x.strokeRect(6, 6, w - 12, h - 12); x.fillStyle = "#1c2420"; for (const y0 of [24, 160]) for (let y = y0; y < y0 + 30; y += 6) x.fillRect(16, y, w - 32, 3);
+      x.fillStyle = "#b9bcc2"; x.fillRect(w - 22, 100, 8, 16); })), roughness: .6 }), face, 1.05, zc, false); porte.rotation.y = -Math.PI / 2;
+    const dg = A.ajoute(new THREE.PlaneGeometry(.36, .28), new THREE.MeshBasicMaterial({ map: tex(toile(144, 112, (x, w, h) => { x.fillStyle = "#f2c230"; x.fillRect(0, 0, w, h);
+      x.fillStyle = "#111"; x.beginPath(); x.moveTo(w / 2, 10); x.lineTo(w / 2 + 26, 56); x.lineTo(w / 2 - 26, 56); x.closePath(); x.fill();
+      x.fillStyle = "#f2c230"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText("⚡", w / 2, 50); x.fillStyle = "#111"; x.font = "bold 15px Arial"; x.fillText("DANGER DE MORT", w / 2, 82); x.font = "11px Arial"; x.fillText("Local électrique", w / 2, 100); })) }), face - .005, 2.35, zc, false);
+    dg.rotation.y = -Math.PI / 2;
+    for (const dz of [-1.35, 1.35]) { const gr = A.ajoute(new THREE.PlaneGeometry(.5, .35), A.mat({ map: tex(toile(100, 70, (x, w, h) => { x.fillStyle = "#cfc6b0"; x.fillRect(0, 0, w, h); x.fillStyle = "#3a3a3a"; for (let y = 8; y < h - 6; y += 8) x.fillRect(8, y, w - 16, 4); })) }), face, 2.2, zc + dz, false); gr.rotation.y = -Math.PI / 2; }
+    const lampe = A.ajoute(new THREE.BoxGeometry(.14, .12, .22), A.mat({ color: 0x1a1a1a }), face - .07, 2.6, zc + .8, false); }
   /* dans le passage sous l'horloge, de part et d'autre : deux grands panneaux de liège, avec les informations punaisées (notes de service, fêtes, petites annonces) */
   const AFF = [
     [["NOTE DE SERVICE", "Le stationnement dans la", "cour d'honneur est réservé", "aux véhicules de service.", "", "Le Chef de corps"], "#fbf8ee", "#1d3f73"],
@@ -1646,7 +1669,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const PB = L.porteBar || [16, 9.12];
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6))
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
-      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5)                                           // la deuxième cour
+      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4))   // (le local électrique)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
       || (x >= PB[0] - .35 && x < PB[0] + .55 && Math.abs(z - PB[1]) < VEST_LB / 2 - .25)                         // son embrasure, de plain-pied
       || (x > 16.5 && x < VEST_X + VEST_VX - .35 && Math.abs(z - VEST_Z) < VEST_VZ - .3)                        // le vestibule
