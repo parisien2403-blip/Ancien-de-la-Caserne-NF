@@ -4487,14 +4487,35 @@ function boutonPasser(fn) { if (!M) return; const b = document.createElement("bu
 function finCine() { if (!M) return; M.cine = null; bulle(null); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } }
 
 // ---- la DeLorean (la machine à voyager dans le temps du premier film) : avant vers -z ----
+// un petit décor de reflets (ciel, horizon, sol) pour que l'inox de la DeLorean brille comme du métal
+let envReflets = null;
+function reflets() { if (envReflets) return envReflets;
+  const face = (haut, bas) => toile(128, 128, (x) => { const g = x.createLinearGradient(0, 0, 0, 128); g.addColorStop(0, haut); g.addColorStop(.48, "#dfe9f2"); g.addColorStop(.52, "#7a7a78"); g.addColorStop(1, bas); x.fillStyle = g; x.fillRect(0, 0, 128, 128); });
+  const c = toile(128, 128, x => { x.fillStyle = "#8fb8e0"; x.fillRect(0, 0, 128, 128); }), sol = toile(128, 128, x => { x.fillStyle = "#3a3a3a"; x.fillRect(0, 0, 128, 128); });
+  const f = face("#6f9fd0", "#2e2e2e"); envReflets = new THREE.CubeTexture([f, f, c, sol, f, f]); envReflets.needsUpdate = true; return envReflets; }
+// l'inox brossé : de fines rayures horizontales
+let texBrosse = null;
+function brosse() { return texBrosse || (texBrosse = tex(toile(256, 256, (x) => { x.fillStyle = "#c9cdd2"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 900; i++) { const v = 185 + Math.random() * 60; x.fillStyle = `rgba(${v},${v},${v + 4},.45)`; x.fillRect(Math.random() * 256, Math.random() * 256, 30 + Math.random() * 90, 1); } }), 3, 3)); }
 function creerDelorean() {
-  const g = new THREE.Group(), inox = new THREE.MeshStandardMaterial({ color: 0xd2d6db, metalness: .45, roughness: .38 }), noir = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .6 });
+  const g = new THREE.Group(), inox = new THREE.MeshStandardMaterial({ map: brosse(), color: 0xe4e7ea, metalness: .9, roughness: .34, envMap: reflets(), envMapIntensity: 1.1 }), noir = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .6 });
   const vitre = new THREE.MeshStandardMaterial({ color: 0x11161c, metalness: .6, roughness: .12 }), neon = new THREE.MeshBasicMaterial({ color: 0x3fc8ff }), blanc = new THREE.MeshBasicMaterial({ color: 0xfff6dc });
   const add = (geo, m, x, y, z, p = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
   // la caisse : le profil en coin, extrudé sur la largeur
   const s = new THREE.Shape(); [[2.12, .26], [2.18, .52], [2.1, .7], [.78, .92], [-.02, 1.16], [-.78, 1.16], [-1.95, .94], [-2.16, .88], [-2.18, .52], [-2.12, .26]].forEach(([a, b], i) => i ? s.lineTo(a, b) : s.moveTo(a, b));
-  const geo = new THREE.ExtrudeGeometry(s, { depth: 1.84, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 2 }); geo.translate(0, 0, -.92); geo.rotateY(Math.PI / 2);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 1.84, bevelEnabled: true, bevelThickness: .05, bevelSize: .05, bevelSegments: 3, curveSegments: 4 }); geo.translate(0, 0, -.92); geo.rotateY(Math.PI / 2);
+  { const P = geo.attributes.position; for (let i = 0; i < P.count; i++) { const y = P.getY(i); if (y > .7) P.setX(i, P.getX(i) * (1 - (y - .7) * .42)); } geo.computeVertexNormals(); }   // (le haut de la caisse s'effile, comme la vraie)
   add(geo, inox, 0, 0, 0);
+  // le bandeau de caoutchouc noir tout autour, les passages de roues, le bas de caisse
+  const caout = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, roughness: .75 });
+  for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.05, .07, 4.1), caout, sg * .965, .6, 0); add(new THREE.BoxGeometry(.05, .16, 2.4), caout, sg * .955, .31, 0); }
+  add(new THREE.BoxGeometry(1.96, .16, .1), caout, 0, .42, -2.22); add(new THREE.BoxGeometry(1.96, .2, .1), caout, 0, .42, 2.22);
+  for (const [x, z] of [[-1, -1.35], [1, -1.35], [-1, 1.35], [1, 1.35]]) { const a = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .06, 24, 1, true, 0, Math.PI), caout); a.rotation.set(0, 0, Math.PI / 2); a.rotation.order = "ZYX"; a.position.set(x * .96, .33, z); g.add(a);
+    const fond = new THREE.Mesh(new THREE.CircleGeometry(.41, 24, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x050505, side: THREE.DoubleSide })); fond.rotation.y = Math.sign(x) * Math.PI / 2; fond.position.set(x * .93, .33, z); g.add(fond); }
+  // les vitres latérales fixes (derrière les portes)
+  for (const sg of [-1, 1]) { const vg = new THREE.Mesh(new THREE.PlaneGeometry(.42, .2), vitre); vg.position.set(sg * .78, 1.03, .78); vg.rotation.set(0, sg * Math.PI / 2, 0); g.add(vg); }
+  // la plaque arrière : OUTATIME
+  const plaqueT = toile(256, 128, (x) => { x.fillStyle = "#f4f2ea"; x.fillRect(0, 0, 256, 128); x.strokeStyle = "#1a2a6a"; x.lineWidth = 6; x.strokeRect(4, 4, 248, 120); x.fillStyle = "#b81d24"; x.font = "bold italic 22px Georgia"; x.textAlign = "center"; x.fillText("California", 128, 34); x.fillStyle = "#1a2a6a"; x.font = "bold 50px Arial"; x.fillText("OUTATIME", 128, 96); });
+  add(new THREE.PlaneGeometry(.5, .25), new THREE.MeshBasicMaterial({ map: tex(plaqueT) }), 0, .52, 2.28);
   const quad = (pts, m) => { const b = new THREE.BufferGeometry(); b.setAttribute("position", new THREE.Float32BufferAttribute([...pts[0], ...pts[1], ...pts[2], ...pts[0], ...pts[2], ...pts[3]], 3)); b.computeVertexNormals();
     const o = new THREE.Mesh(b, m); m.side = THREE.DoubleSide; g.add(o); return o; };
   quad([[-.8, .935, -.74], [.8, .935, -.74], [.8, 1.17, .02], [-.8, 1.17, .02]], vitre);                                   // le pare-brise
@@ -4503,8 +4524,10 @@ function creerDelorean() {
   add(new THREE.BoxGeometry(.7, .14, .04), noir, 0, .55, -2.19);
   const dmc = toile(128, 32, (x) => { x.fillStyle = "#151515"; x.fillRect(0, 0, 128, 32); x.fillStyle = "#c9c9c9"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText("DMC", 64, 24); });
   add(new THREE.PlaneGeometry(.24, .06), new THREE.MeshBasicMaterial({ map: tex(dmc) }), 0, .55, -2.215).rotation.y = Math.PI;
-  for (const sg of [-1, 1]) for (const k of [0, 1]) add(new THREE.BoxGeometry(.16, .1, .03), blanc, sg * (.5 + k * .18), .56, -2.17);
-  for (const sg of [-1, 1]) add(new THREE.BoxGeometry(.2, .1, .03), new THREE.MeshBasicMaterial({ color: 0xc81818 }), sg * .65, .7, 2.2);
+  for (const sg of [-1, 1]) { add(new THREE.BoxGeometry(.4, .16, .03), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: .6, roughness: .3 }), sg * .59, .56, -2.19);
+    for (const k of [0, 1]) add(new THREE.BoxGeometry(.15, .11, .03), blanc, sg * (.5 + k * .18), .56, -2.205); add(new THREE.BoxGeometry(.2, .05, .03), new THREE.MeshBasicMaterial({ color: 0xffa020 }), sg * .59, .42, -2.24); }
+  const feuxAR = toile(128, 64, (x) => { x.fillStyle = "#b01515"; x.fillRect(0, 0, 128, 64); x.fillStyle = "#e8a020"; x.fillRect(0, 0, 30, 64); x.fillStyle = "#111"; for (let i = 0; i < 64; i += 9) x.fillRect(0, i, 128, 3); });
+  for (const sg of [-1, 1]) add(new THREE.PlaneGeometry(.62, .2), new THREE.MeshBasicMaterial({ map: tex(feuxAR) }), sg * .55, .72, 2.235);
   add(new THREE.BoxGeometry(1.9, .04, .05), neon, 0, .28, -2.12); for (const sg of [-1, 1]) add(new THREE.BoxGeometry(.04, .04, 3.6), neon, sg * .96, .27, 0);
   // l'arrière : Mr. Fusion, les bobines, les évents, les câbles
   add(new THREE.CylinderGeometry(.16, .18, .3, 16), new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: .4 }), 0, 1.06, 1.9);
@@ -4707,8 +4730,24 @@ function construireHillValley(A, T, L, scene) {
   const drap = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1, 12, 4), new THREE.MeshStandardMaterial({ map: tex(toileDrapeau()), side: THREE.DoubleSide, roughness: .8 })); drap.position.set(3.6, 9.3, -4.6); scene.add(drap); obst.push([2.6, -4.6, .35]);
   const drapP = drap.geometry.attributes.position, drap0 = drapP.array.slice();
   const feuillage = A.mat({ color: 0x3f6e2a, roughness: 1, flatShading: true }), feuillage2 = A.mat({ color: 0x557f33, roughness: 1, flatShading: true }), tronc = A.mat({ color: 0x5a4030, roughness: 1 });
-  const arbre = (x, z, k = 1) => { A.ajoute(new THREE.CylinderGeometry(.22 * k, .38 * k, 4 * k, 9), tronc, x, trottoirH + 2 * k, z);
-    for (let i = 0; i < 7; i++) { const a = i * 2.4, r = (i ? 1.6 : 0) * k; A.ajoute(new THREE.IcosahedronGeometry((1.9 + (i % 3) * .4) * k, 1), i % 2 ? feuillage : feuillage2, x + Math.cos(a) * r, trottoirH + (4.6 + (i % 3) * .7) * k, z + Math.sin(a) * r); }
+  const ecorce = A.mat({ map: tex(toile(64, 256, (x) => { x.fillStyle = "#5a4a3c"; x.fillRect(0, 0, 64, 256); for (let i = 0; i < 260; i++) { const v = Math.random(); x.fillStyle = v < .5 ? "rgba(30,22,16,.55)" : "rgba(140,125,105,.35)"; x.fillRect(Math.random() * 64, Math.random() * 256, 2 + Math.random() * 3, 10 + Math.random() * 40); } }), 2, 1), roughness: 1 });
+  // un bouquet de feuilles : des centaines de petites feuilles de plusieurs verts, sur fond transparent
+  const bouquet = (teintes) => toile(256, 256, (x) => { for (let i = 0; i < 1300; i++) { const a = Math.random() * 6.28, r = Math.pow(Math.random(), .45) * 118, px = 128 + Math.cos(a) * r, py = 128 + Math.sin(a) * r;
+      x.save(); x.translate(px, py); x.rotate(Math.random() * 6.28); x.fillStyle = teintes[Math.floor(Math.random() * teintes.length)]; x.globalAlpha = r > 95 ? .5 + Math.random() * .3 : .85 + Math.random() * .15;
+      x.beginPath(); x.ellipse(0, 0, 3 + Math.random() * 3, 7 + Math.random() * 4, 0, 0, 7); x.fill(); x.restore(); } });
+  const feuilles = [["#2f5a22", "#3e7029", "#4f8432", "#5f9640", "#2a4a1c", "#6fa84a"], ["#355e24", "#467a2c", "#5a8c38", "#7aa64e", "#2e4f1e"]].map(t => new THREE.MeshStandardMaterial({ map: tex(bouquet(t)), alphaTest: .45, side: THREE.DoubleSide, roughness: .9 }));
+  const geoB = new THREE.PlaneGeometry(1, 1);
+  const arbre = (x, z, k = 1) => { const y0 = trottoirH, h = 4.2 * k;
+    A.ajoute(new THREE.CylinderGeometry(.2 * k, .34 * k, h, 10), ecorce, x, y0 + h / 2, z);
+    const m = A.ajoute(new THREE.CylinderGeometry(.5 * k, .55 * k, .25, 10), ecorce, x, y0 + .12, z, false);   // (les racines)
+    // les branches maîtresses, qui partent en éventail
+    for (let i = 0; i < 6; i++) { const a = i * 1.05 + .3, l = (1.8 + (i % 2) * .6) * k, br = A.ajoute(new THREE.CylinderGeometry(.05 * k, .13 * k, l, 6), ecorce, x + Math.cos(a) * l * .35, y0 + h * .82 + l * .3, z + Math.sin(a) * l * .35);
+      br.rotation.set(Math.sin(a) * .9, 0, -Math.cos(a) * .9); }
+    // la couronne : des bouquets de feuilles orientés au hasard dans un ellipsoïde (plus denses au bord)
+    const N = Math.round(150 * k), cy = y0 + h + 1.4 * k;
+    for (let i = 0; i < N; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.28, r = Math.pow(Math.random(), .35), q = Math.sqrt(1 - u * u) * r;
+      const b = new THREE.Mesh(geoB, feuilles[i % 2]); b.position.set(x + Math.cos(a) * q * 2.9 * k, cy + u * r * 2.1 * k, z + Math.sin(a) * q * 2.9 * k);
+      b.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); b.scale.setScalar((.95 + Math.random() * .7) * k); const c = .82 + Math.random() * .3; b.material = feuilles[i % 2]; b.userData.c = c; b.castShadow = true; scene.add(b); }
     obst.push([x, z, .55 * k]); };
   arbre(-6.5, -4.5, 1.25); arbre(9, 5, .85); arbre(-10, 6.5, .8); arbre(10.5, -7.5, .9);
   // le panneau « Welcome to Hill Valley »
