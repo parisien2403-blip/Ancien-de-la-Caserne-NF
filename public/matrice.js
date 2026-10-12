@@ -1853,7 +1853,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.zone = [-10.6, 19.2, C2.z1, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
-    for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, 2.5], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
+    for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
       raccourci(L, scene, [.5, 2.4, 1.5], [sg * 8.62, 1.2, 13.75], { marche: [sg * 8.72, 13.75] }); }
     L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 29.1, vers: "rue", arrivee: [0, -11], yaw: Math.PI });
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
@@ -2411,7 +2411,23 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   }
 
   if (id === "cave") construireSousSol(A, L, scene);
-  if (id === "etage") construireEtage(A, L, scene);
+  if (id === "etage") {
+    /* l'étage est construit dans un repère retourné (miroir avant-arrière) : en montant, le couloir à traverser est à gauche, comme dans le vrai bâtiment.
+       Tout ce qui parle de positions passe par ce miroir (z du monde = 0,5 − z du plan) */
+    const grp = new THREE.Group(); grp.scale.z = -1; grp.position.z = .5; scene.add(grp);
+    const E = { portails: [] }; construireEtage(atelier(grp), E, grp);
+    const mz = z => .5 - z;
+    Object.assign(L, { sol: E.sol, solsPlus: E.solsPlus, interieur: true, sansPNJ: true, sansMusique: true, anim: E.anim, eclairer: E.eclairer, boite: [E.boite[0], E.boite[1], mz(E.boite[3]), mz(E.boite[2])],
+      zone: [E.zone[0], E.zone[1], mz(E.zone[3]), mz(E.zone[2])], depart: [E.depart[0], mz(E.depart[1])], cam: { pos: [E.cam.pos[0], E.cam.pos[1], mz(E.cam.pos[2])], vise: [E.cam.vise[0], E.cam.vise[1], mz(E.cam.vise[2])] } });
+    L.limites = (x, z) => E.limites(x, mz(z));
+    L.hauteur = (x, z, p) => E.hauteur(x, mz(z), p);
+    L.portails = E.portails.map(q => ({ ...q, dans: (x, z) => q.dans(x, mz(z)) }));
+    L.allerEtage = (moi, x, z, y) => { const pos = moi.g.position, z0 = pos.z; pos.z = mz(z0);
+      const ok = E.allerEtage(moi, x, mz(z), y); pos.z = z0;
+      if (ok) { if (moi.cible) moi.cible.z = mz(moi.cible.z); for (const v of moi.chemin || []) v.z = mz(v.z); M.repere.position.z = z; }
+      return ok; };
+    L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
+  }
 
   // nuages
   if (L.interieur) return L;

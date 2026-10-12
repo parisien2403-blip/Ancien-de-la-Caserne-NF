@@ -1955,7 +1955,7 @@
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
+        surLieu: id => { dessinerLieux(m, id); if (id === "etage") { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") $("mxFumee").hidden = $("mxLasers").hidden = !n; },
@@ -2021,7 +2021,7 @@
     $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} <button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button></li>`).join("");
     $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
     $("mxSon").hidden = !(c && mxLieu === "grande" && djVolume > 0); $("mxSon").textContent = djEcoute ? "🔇" : "🔊 La fête";
-    if (!c || !djEcoute || !djVolume) { djAudio.pause(); return; }
+    if (!c || !djEcoute || !djVolume || mxLieu === "etage") { djAudio.pause(); return; }   // (dans les étages, on n'entend pas la fête)
     djAudio.volume = Math.min(1, djVolume);
     const src = `/api/musiques/${c.id}/fichier?t=${encodeURIComponent(moi.token)}`;
     const cale = () => { const pos = (Date.now() - c.debut) / 1000; if (pos < 0) { setTimeout(djSynchro, -pos * 1000); return; }
@@ -2565,6 +2565,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.29.2", "12 octobre 2026", ["Les étages : les cages d'escalier sont retournées, le couloir à traverser est maintenant du bon côté (à gauche en montant), aux 6 étages", "Dans les étages, la musique de la fête est coupée pour de bon (et la musique écoutée dans l'onglet Salle des fêtes aussi)"]],
     ["3.29.1", "12 octobre 2026", ["Les étages : on entre dans le bon sens (la porte est derrière soi, du côté de la cour, et le couloir traverse ensuite le bâtiment d'une aile à l'autre) ; par la porte, on voit la cour d'honneur, et on ressort en marchant vers elle", "On n'entend plus la musique de la fête dans les étages", "Toucher son propre bonhomme ne fait plus rien (on vise le sol) ; un autre personnage ne réagit que si on touche son corps", "La caméra se tourne d'elle-même dans le sens de la marche (plus besoin de la tourner sans arrêt)"]],
     ["3.29", "12 octobre 2026", ["Les étages : 6 étages au lieu d'un ; l'escalier continue (escalier, palier, escalier) d'étage en étage dans les deux cages, et chaque étage a son long couloir à 12 portes. Plus on monte, moins les ampoules marchent : certaines sont grillées, d'autres clignotent. Toucher un endroit d'un autre étage y fait monter ou descendre par l'escalier"]],
     ["3.28.1", "12 octobre 2026", ["Le couloir de l'étage : les numéros des portes sont retirés"]],
