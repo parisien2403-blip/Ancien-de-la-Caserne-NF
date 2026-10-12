@@ -2955,10 +2955,10 @@ function apocalypse(scene, L, base) {
     b(.02, .5, 1.5, vitreN, .92, 1.3, 0); b(.02, .5, 1.5, vitreN, -1.32, 1.3, 0); b(2, .45, .02, vitreN, -.2, 1.32, .82); b(2, .45, .02, vitreN, -.2, 1.32, -.82);
     for (const [wx, wz] of [[1.35, .9], [-1.35, .9], [1.35, -.9], [-1.35, -.9]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .22, 14), cendre); r.rotation.x = Math.PI / 2; r.position.set(wx, .3, wz); g.add(r); }
     b(.5, .25, .9, rouille, 1.6, 1.0, .1).rotation.z = -.5;   // le capot arraché
-    if (brule) feu(x + Math.cos(a) * .9, 1.05, z - Math.sin(a) * .9, 1.1);
+    if (brule) feu(x + Math.cos(a) * .9, 1.05, z - Math.sin(a) * .9, 1.6);
     obstacles.push([x, z, 2.3]); };
   // un fût qui brûle
-  const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .9, z, .55); obstacles.push([x, z, .45]); };
+  const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .9, z, .85); obstacles.push([x, z, .45]); };
   // des débris (planches, gravats) et du sang séché, là où l'on marche
   const zone = L.zone || [-30, 30, -30, 30], libre = [];
   for (let i = 0; i < 4000 && libre.length < 160; i++) { const x = zone[0] + Math.random() * (zone[1] - zone[0]), z = zone[2] + Math.random() * (zone[3] - zone[2]); if (L.limites(x, z)) libre.push([x, z]); }
