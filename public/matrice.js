@@ -2710,7 +2710,15 @@ export async function ouvrir(ctx) {
   const T = textures();
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   const resMax = Math.min(devicePixelRatio, 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
-  rendu.setPixelRatio(res);
+  // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
+  // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
+  let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
+    logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
+  const budget = logiciel ? 4e5 : 1.1e6;
+  const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
+    rendu.setPixelRatio(Math.max(.5, Math.min(res, Math.sqrt(budget / (w * h))))); };
+  if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
+  appliquerRes();
   rendu.shadowMap.enabled = true; rendu.shadowMap.type = THREE.PCFSoftShadowMap;
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
@@ -2794,7 +2802,7 @@ export async function ouvrir(ctx) {
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
   });
   rendu.domElement.addEventListener("pointercancel", () => { glisse = null; });
-  M.redim = () => { if (!M) return; const w = ctx.conteneur.clientWidth, h = ctx.conteneur.clientHeight; if (!w || !h) return; rendu.setSize(w, h); M.camera.aspect = w / h; placerCamera(true); };
+  M.redim = () => { if (!M) return; const w = ctx.conteneur.clientWidth, h = ctx.conteneur.clientHeight; if (!w || !h) return; appliquerRes(); rendu.setSize(w, h); M.camera.aspect = w / h; placerCamera(true); };
   addEventListener("resize", M.redim);
   M.ro = new ResizeObserver(M.redim); M.ro.observe(ctx.conteneur);
   connecter();
@@ -2805,9 +2813,9 @@ export async function ouvrir(ctx) {
     const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
-      const r = moy > 28 ? Math.max(.75, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
+      const r = moy > 28 ? Math.max(.5, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
-      if (r !== res) { res = r; rendu.setPixelRatio(res); M.redim && M.redim(); } } }
+      if (r !== res) { res = r; M.redim && M.redim(); } } }
     preparerVoisin();
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
