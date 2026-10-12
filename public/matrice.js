@@ -1076,7 +1076,7 @@ function construireEtage(A, L, scene) {
   const porteT = (n) => tex(toile(120, 230, (x, w, h) => { x.fillStyle = "#e8dcc0"; x.fillRect(0, 0, w, h); x.fillStyle = "#6b4226"; x.fillRect(10, 14, w - 20, h - 14);
     x.strokeStyle = "#4c2c17"; x.lineWidth = 3; x.strokeRect(20, 26, w - 40, 80); x.strokeRect(20, 120, w - 40, 96);
     x.fillStyle = "#c9a227"; x.beginPath(); x.arc(w - 26, 128, 5, 0, 7); x.fill(); x.fillRect(w - 30, 140, 8, 3);
-    x.fillStyle = "#f4f1ea"; x.fillRect(w / 2 - 16, 34, 32, 22); x.fillStyle = "#222"; x.font = "bold 16px Arial"; x.textAlign = "center"; x.fillText(String(n), w / 2, 51); }));
+  }));
   const murCouloir = (zMur, sens) => {
     A.ajoute(new THREE.BoxGeometry(CX0 * 2, HP, .2), beige, 0, H + HP / 2, zMur - sens * .1, false);
     A.ajoute(new THREE.BoxGeometry(CX0 * 2, .12, .03), plinthe, 0, H + .06, zMur + sens * .015, false);
