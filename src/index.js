@@ -56,9 +56,11 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   14: { nom: "Le policier zombie", tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" }, 15: { nom: "Le chien zombie", tenue: "civil", couleur: "#555555", bas: null },
   17: { nom: "Nemesis", tenue: "nemesis", couleur: "#1a1a1c", bas: "#1a1a1c", pieds: "#111111" },
   16: { nom: "Robert Smith", tenue: "smith", couleur: "#141414", bas: "#141414", pieds: "#1a1a1a" },
-  11: { nom: "John Travolta", tenue: "travolta", couleur: "#f4f1ea", bas: "#f4f1ea", pieds: "#1a1a1a" } };
-const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis"];
+  11: { nom: "John Travolta", tenue: "travolta", couleur: "#f4f1ea", bas: "#f4f1ea", pieds: "#1a1a1a" },
+  18: { nom: "La batteuse", tenue: "batteuse", couleur: "#121214", bas: "#141416", pieds: "#1a1a1a" }, 19: { nom: "Le bassiste", tenue: "bassiste", couleur: "#2c2e31", bas: "#151517", pieds: "#1a1a1a" },
+  20: { nom: "Le guitariste", tenue: "guitariste", couleur: "#151517", bas: "#151517", pieds: "#0e0e0e" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(id) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;

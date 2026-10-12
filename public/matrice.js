@@ -20,6 +20,7 @@ export const LIEUX = {
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
   robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
+  batteuse: { nom: "Perfecto noir (la batteuse)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -58,7 +59,7 @@ export function dessinerBonhomme(o, tete) {
       x.beginPath(); x.moveTo(108, bas ? 262 : 330); x.lineTo(110, 398); x.stroke();                                 // la jambe d'appui
       x.beginPath(); x.moveTo(94, bas ? 262 : 330);
       if (o.pose === "slow") x.lineTo(92, 398); else { x.lineTo(62, 300); x.lineTo(70, 350); } x.stroke();            // le genou levé devant (Thriller)
-    } else if (o.pose === "assis" || o.pose === "boire") {
+    } else if (o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "")) {
       // assis sur un tabouret : les cuisses vers l'avant (raccourcies), les jambes qui pendent, les pieds sur le repose-pieds
       x.strokeStyle = bas || peau; x.lineWidth = bas ? 27 : 17; x.lineCap = "round"; x.lineJoin = "round";
       for (const [hx, kx, fx] of [[84, 66, 76], [116, 134, 124]]) { x.beginPath(); x.moveTo(hx, 262); x.lineTo(kx, 284); x.lineTo(fx, 348); x.stroke();
@@ -72,7 +73,7 @@ export function dessinerBonhomme(o, tete) {
     } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
-    const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire";
+    const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "");
     const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
     const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
@@ -110,6 +111,25 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#0e0e10"; x.fillRect(48, 238, 104, 18);
       if (!profil) { x.fillStyle = "#4a5050"; x.beginPath(); x.roundRect(100, 160, 32, 34, 6); x.fill(); x.strokeStyle = "#a01818"; x.lineWidth = 2.5; x.beginPath(); x.moveTo(126, 162); x.quadraticCurveTo(142, 150, 128, 140); x.stroke(); }
       x.fillStyle = "#d8c23a"; for (const [a, b2, r] of [[66, 172, -.3], [128, 150, .4], [80, 214, .2], [140, 204, -.5], [60, 300, .1]]) { x.save(); x.translate(a, b2); x.rotate(r); x.fillRect(-11, -3, 22, 6); x.restore(); } }
+    // le groupe de la scène : la batteuse (perfecto noir ouvert sur un t-shirt noir, fermetures éclair argentées),
+    // le bassiste (chemise noire délavée ouverte, boutons-pression, t-shirt noir), le guitariste (costume noir, chemise blanche, nœud papillon)
+    if (t === "batteuse" && o.pose !== "dos" && !profil) {
+      x.fillStyle = "#0a0a0b"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(116, 256); x.lineTo(84, 256); x.closePath(); x.fill();   // le t-shirt
+      x.fillStyle = "#1c1c20"; x.beginPath(); x.moveTo(84, 144); x.lineTo(62, 158); x.lineTo(80, 200); x.lineTo(90, 160); x.closePath(); x.moveTo(116, 144); x.lineTo(138, 158); x.lineTo(120, 200); x.lineTo(110, 160); x.closePath(); x.fill();   // les revers
+      x.strokeStyle = "#b9bcc2"; x.lineWidth = 1.6; x.beginPath(); x.moveTo(82, 170); x.lineTo(80, 256); x.moveTo(118, 170); x.lineTo(120, 256); x.moveTo(60, 200); x.lineTo(76, 226); x.stroke();   // les fermetures éclair
+      x.strokeStyle = "rgba(255,255,255,.16)"; x.lineWidth = 3; x.beginPath(); x.moveTo(66, 176); x.lineTo(70, 240); x.moveTo(132, 176); x.lineTo(128, 240); x.stroke(); }   // le reflet du cuir
+    if (t === "bassiste" && o.pose !== "dos" && !profil) {
+      x.fillStyle = "#0b0b0c"; x.beginPath(); x.moveTo(88, 146); x.lineTo(112, 146); x.lineTo(114, 260); x.lineTo(86, 260); x.closePath(); x.fill();   // le t-shirt
+      x.fillStyle = "rgba(255,255,255,.07)"; for (const [a, b2] of [[60, 180], [114, 182], [64, 230], [120, 226]]) x.fillRect(a, b2, 22, 30);   // le tissu délavé
+      x.fillStyle = "#26282b"; x.fillRect(62, 176, 22, 8); x.fillRect(116, 176, 22, 8);   // les rabats des poches
+      x.fillStyle = "#c9ccd0"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(84, 170 + k * 20, 2.2, 0, 7); x.fill(); } for (const px of [73, 127]) { x.beginPath(); x.arc(px, 180, 2, 0, 7); x.fill(); } }
+    if (t === "guitariste" && o.pose !== "dos" && !profil) {
+      x.fillStyle = "#f4f4f2"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(104, 236); x.lineTo(96, 236); x.closePath(); x.fill();   // la chemise blanche
+      x.fillStyle = "#0b0b0c"; x.beginPath(); x.moveTo(100, 152); x.lineTo(86, 145); x.lineTo(86, 161); x.closePath(); x.moveTo(100, 152); x.lineTo(114, 145); x.lineTo(114, 161); x.closePath(); x.fill();   // le nœud papillon
+      x.beginPath(); x.arc(100, 153, 3.5, 0, 7); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 150); x.lineTo(74, 196); x.lineTo(96, 236); x.moveTo(116, 150); x.lineTo(126, 196); x.lineTo(104, 236); x.stroke();   // les revers
+      x.fillStyle = "#2a2a2e"; for (let k = 0; k < 2; k++) { x.beginPath(); x.arc(100, 244 + k * 12, 2.6, 0, 7); x.fill(); }
+      x.fillStyle = "#7a3a2a"; x.fillRect(122, 214, 18, 3); x.fillRect(122, 222, 18, 3); }   // les liserés des poches
     // Robert Smith : une grande chemise noire froissée, ouverte, qui tombe sur les hanches ; un t-shirt noir dessous ; les colliers
     if (t === "smith" && o.pose !== "dos" && !profil) {
       x.fillStyle = "#101010"; x.beginPath(); x.moveTo(56, 236); x.lineTo(144, 236); x.lineTo(150, 296); x.lineTo(50, 296); x.closePath(); x.fill();   // le bas de la chemise, sur les hanches
@@ -184,6 +204,9 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "canne1" ? (sens > 0 ? [62, 36] : null) : o.pose === "canne2" ? (sens > 0 ? [36, 64] : [164, 64]) : o.pose === "canne3" ? (sens > 0 ? [-34, 112] : null)
         : o.pose === "canne4" ? (sens > 0 ? [24, 232] : [170, 46])
         : o.pose === "guitare1" || o.pose === "guitare2" ? (sens > 0 ? [36, 192] : (o.pose === "guitare1" ? [118, 232] : [124, 250]))   // la main gauche sur le manche, la droite qui gratte
+        // la batteuse : une baguette qui frappe la caisse claire pendant que l'autre remonte (batterie1, batterie2), les deux sur les cymbales (batterie3), au repos sur la caisse (batterie0)
+        : o.pose === "batterie1" ? (sens > 0 ? [72, 232] : [170, 112]) : o.pose === "batterie2" ? (sens > 0 ? [30, 112] : [128, 232])
+        : o.pose === "batterie3" ? (sens > 0 ? [4, 150] : [196, 150]) : o.pose === "batterie0" ? (sens > 0 ? [80, 238] : [120, 238])
         : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
@@ -220,7 +243,32 @@ export function dessinerBonhomme(o, tete) {
     };
     if (profil) { bras(104, -1); bras(96, 1); } else { bras(48, 1); bras(152, -1); }
     // la guitare de Robert Smith : le corps rouge sombre à la hanche, le manche vers le haut à gauche ; les mains par-dessus
-    if (o.pose === "guitare1" || o.pose === "guitare2") {
+    // les baguettes de la batteuse, dans le prolongement des avant-bras
+    if (/^batterie/.test(o.pose || "")) { x.strokeStyle = "#d8b47c"; x.lineWidth = 5; x.lineCap = "round";
+      for (const [i, cx0] of [[0, 48], [1, 152]]) { const h = mains[i]; if (!h) continue; const dx = h[0] - cx0, dy = h[1] - 158, n = Math.hypot(dx, dy) || 1, bas = o.pose !== "batterie3" && h[1] > 200;
+        const ux = bas ? (i ? -.7 : .7) : dx / n, uy = bas ? .25 : dy / n; x.beginPath(); x.moveTo(h[0] - ux * 6, h[1] - uy * 6); x.lineTo(h[0] + ux * 62, h[1] + uy * 62); x.stroke(); }
+      x.fillStyle = peau; for (const h of mains) if (h) { x.beginPath(); x.arc(h[0], h[1], 10, 0, 7); x.fill(); } }
+    // la guitare électrique du guitariste (Stratocaster sunburst, plaque blanche) et la basse noire du bassiste (manche plus long)
+    if ((o.pose === "guitare1" || o.pose === "guitare2") && (t === "guitariste" || t === "bassiste")) { const basse = t === "bassiste";
+      x.save(); x.translate(112, 238); x.rotate(.55);
+      const LM = basse ? 150 : 112;
+      x.fillStyle = "#c99a5a"; x.fillRect(-LM, -6, LM - 8, 12);                                   // le manche (érable)
+      if (basse) { x.fillStyle = "#3a2216"; x.fillRect(-LM, -5, LM - 8, 10); }                   // (la touche en palissandre)
+      x.fillStyle = "#c99a5a"; x.beginPath(); x.roundRect(-LM - 24, -11, 28, 22, 5); x.fill();    // la tête
+      x.fillStyle = "#e8e8e8"; for (let k = 0; k < (basse ? 4 : 6); k++) { x.beginPath(); x.arc(-LM - 20 + k * (basse ? 6 : 4), -12, 2.2, 0, 7); x.fill(); }   // les mécaniques
+      x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 1; for (let k = 1; k < 12; k++) { x.beginPath(); x.moveTo(-LM + k * (LM - 8) / 12, -6); x.lineTo(-LM + k * (LM - 8) / 12, 6); x.stroke(); }   // les frettes
+      if (basse) { x.fillStyle = "#0d0d0f"; x.beginPath(); x.ellipse(10, 0, 40, 31, 0, 0, 7); x.ellipse(-18, 0, 27, 23, 0, 0, 7); x.fill();
+        x.strokeStyle = "#5a5a5e"; x.lineWidth = 2; x.beginPath(); x.ellipse(10, 0, 40, 31, 0, 0, 7); x.stroke();
+        x.fillStyle = "#1c1c20"; x.beginPath(); x.ellipse(4, 6, 24, 16, .3, 0, 7); x.fill(); x.fillStyle = "#cfd2d6"; x.beginPath(); x.ellipse(30, 4, 9, 7, 0, 0, 7); x.fill(); }   // plaque noire, cache chromé
+      else { const g = x.createRadialGradient(8, 0, 4, 8, 0, 36); g.addColorStop(0, "#f0a83a"); g.addColorStop(.55, "#b5481a"); g.addColorStop(1, "#2a0e06");
+        x.fillStyle = g; x.beginPath(); x.ellipse(8, 0, 34, 28, 0, 0, 7); x.ellipse(-16, 0, 24, 21, 0, 0, 7); x.fill();
+        x.fillStyle = "#f4f2ec"; x.beginPath(); x.ellipse(6, 7, 20, 14, .25, 0, 7); x.fill();       // la plaque blanche
+        x.fillStyle = "#ffffff"; for (const px of [-8, 4, 16]) x.fillRect(px, -7, 5, 14);             // les trois micros
+        x.fillStyle = "#c8c8c8"; for (const [px, py] of [[24, 12], [30, 4], [20, 18]]) { x.beginPath(); x.arc(px, py, 2.6, 0, 7); x.fill(); } }   // les boutons
+      x.strokeStyle = "#e6e6e6"; x.lineWidth = .8; for (let k = -(basse ? 1.5 : 2); k <= (basse ? 1.5 : 2); k++) { x.beginPath(); x.moveTo(-LM, k * 2); x.lineTo(28, k * 2); x.stroke(); }   // les cordes
+      x.restore();
+      x.fillStyle = peau; for (const h of mains) if (h) { x.beginPath(); x.arc(h[0], h[1], 10, 0, 7); x.fill(); } }
+    else if (o.pose === "guitare1" || o.pose === "guitare2") {
       x.save(); x.translate(112, 238); x.rotate(.55);
       x.fillStyle = "#3a2414"; x.fillRect(-112, -6, 104, 12);                                  // le manche
       x.fillStyle = "#1a1a1a"; x.beginPath(); x.roundRect(-132, -10, 24, 20, 4); x.fill();      // la tête du manche
@@ -285,6 +333,13 @@ export function dessinerBonhomme(o, tete) {
         y2.drawImage(tete, 0, 0, w, h); y2.globalCompositeOperation = "source-in";
         const g = y2.createLinearGradient(0, 0, 0, h);
         if (t === "nemesis") { g.addColorStop(0, "#9a8ca0"); g.addColorStop(1, "#5e5064"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
+        else if (t === "batteuse" || t === "bassiste") {   // de dos : les boucles brunes de la batteuse, les cheveux longs et blonds du bassiste
+          if (t === "batteuse") { g.addColorStop(0, "#7a3e1c"); g.addColorStop(1, "#3e1c0c"); } else { g.addColorStop(0, "#d9c08e"); g.addColorStop(1, "#9c8256"); }
+          y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
+          if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
+          else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
+        else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
+          g.addColorStop(0, "#141416"); g.addColorStop(.48, "#141416"); g.addColorStop(.5, "#2b1d14"); g.addColorStop(1, "#1a110b"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         else if (t === "hernandez" || t === "beegees" || t === "travolta" || t === "smith") {   // de dos, les cheveux : noirs et bouclés pour Mr Hernandez, châtain foncé pour les Bee Gees, brun foncé gominé pour Travolta
           if (t === "beegees") { g.addColorStop(0, "#4a3020"); g.addColorStop(1, "#2a1a10"); }
           else if (t === "travolta") { g.addColorStop(0, "#2e1d12"); g.addColorStop(1, "#160d07"); }
@@ -309,7 +364,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92); }
     }
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);    // (les verres, le torchon : dans les mains, qui ont suivi la corpulence)
-    if (assis) {
+    if (assis && !/^batterie/.test(o.pose || "")) {
       // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
       const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
       x.save(); x.translate(gx, gy); x.rotate(a);
@@ -2304,7 +2359,33 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       A.ajoute(new THREE.BoxGeometry(SX1 - SX0, .03, SZ1 - SZ0), plancher, sx, SH - .015, sz, false);                          // le plancher de scène
       A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .02, .04, .05), bord, sx, SH - .02, SZ1 + .005, false);                     // le nez de scène
       for (let k = 0; k <= 8; k++) A.ajoute(new THREE.BoxGeometry(.012, SH - .1, .012), bord, SX0 + k * (SX1 - SX0) / 8, (SH - .1) / 2, SZ1 + .006, false);   // les joints des praticables
-      tables.push([SX0 - .1, SX1 + .1, SZ0 - .3, SZ1 + .15]); }
+      tables.push([SX0 - .1, SX1 + .1, SZ0 - .3, SZ1 + .15]);
+      // sur scène, on est à hauteur du plancher ; les places du groupe et des chanteurs
+      const hS = L.hauteur; L.hauteur = (x, z, p) => x > SX0 && x < SX1 && z > SZ0 && z < SZ1 ? SH : hS ? hS(x, z, p) : 0;
+      L.scene = { x0: SX0, x1: SX1, z0: SZ0, z1: SZ1, h: SH, centre: [sx, Z0 + 3.1], batterie: [sx, Z0 + .72], basse: [SX0 + 1.45, Z0 + 2.05], guitare: [SX1 - 1.4, Z0 + 2.05] };
+      // la batterie : grosse caisse, deux toms, caisse claire, tom basse, charleston, deux crashs et une ride, le tabouret
+      const kit = new THREE.Group(); kit.position.set(sx, SH, Z0 + 1.38); scene.add(kit);
+      const coque = A.mat({ color: 0x7a0d16, metalness: .35, roughness: .28 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .18 }), peauF = A.mat({ color: 0xf1ece0, roughness: .6 }), cuivre = A.mat({ color: 0xc9a440, metalness: .85, roughness: .3 });
+      const m3 = (geo, mat, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.castShadow = true; kit.add(o); return o; };
+      const pied = (x, z, h) => m3(new THREE.CylinderGeometry(.012, .012, h, 6), chrome, x, h / 2, z);
+      const futs = (r, h, x, y, z, rx = 0) => { m3(new THREE.CylinderGeometry(r, r, h, 24), coque, x, y, z, rx); m3(new THREE.CylinderGeometry(r * .97, r * .97, h + .006, 24), peauF, x, y, z, rx).scale.set(1, 1, 1);
+        for (const sg of [-1, 1]) { const c = m3(new THREE.TorusGeometry(r, .012, 6, 24), chrome, x, y, z, Math.PI / 2 + rx); c.translateZ(sg * h / 2); } };
+      m3(new THREE.CylinderGeometry(.3, .3, .42, 28), coque, 0, .31, 0, Math.PI / 2);                                       // la grosse caisse
+      m3(new THREE.CircleGeometry(.285, 28), A.mat({ color: 0x0d0d0f, roughness: .5 }), 0, .31, .212);                      // sa peau de devant, noire
+      m3(new THREE.RingGeometry(.2, .23, 28), A.mat({ color: 0xa8121e, roughness: .5 }), 0, .31, .214);
+      for (const sg of [-1, 1]) m3(new THREE.TorusGeometry(.3, .014, 6, 28), chrome, 0, .31, sg * .21);
+      futs(.13, .16, -.17, .72, -.04, -.35); futs(.14, .17, .17, .73, -.04, -.35);                                       // les deux toms
+      futs(.17, .1, -.43, .6, -.3); pied(-.43, -.3, .55);                                                                // la caisse claire
+      futs(.2, .3, .46, .38, -.28); for (const [a, b] of [[.6, -.2], [.34, -.18], [.47, -.42]]) pied(a, b, .38);         // le tom basse
+      const cymbale = (r, x, y, z, rz) => { m3(new THREE.CylinderGeometry(r * .15, r, .014, 28), cuivre, x, y, z, 0, rz); pied(x, z, y); };
+      cymbale(.16, -.66, .86, -.32, 0); m3(new THREE.CylinderGeometry(.16, .025, .012, 28), cuivre, -.66, .83, -.32);   // le charleston
+      cymbale(.23, -.56, 1.22, .06, .25); cymbale(.24, .58, 1.27, .02, -.25); cymbale(.26, .78, 1.0, -.12, -.15);      // les crashs, la ride
+      m3(new THREE.CylinderGeometry(.17, .17, .07, 18), A.mat({ color: 0x141416, roughness: .7 }), 0, .55, -.64); pied(0, -.64, .52);   // le tabouret
+      // les amplis du bassiste et du guitariste, contre le mur du fond
+      const tolex = A.mat({ color: 0x121214, roughness: .85 }), grille = A.mat({ color: 0x2a2a2e, roughness: .95 }), liseré = A.mat({ color: 0xc9b37a, metalness: .6, roughness: .35 });
+      for (const ax of [SX0 + .75, SX1 - .75]) { A.ajoute(new THREE.BoxGeometry(.72, .78, .38), tolex, ax, SH + .39, Z0 + .52);
+        A.ajoute(new THREE.BoxGeometry(.64, .56, .01), grille, ax, SH + .33, Z0 + .715, false); A.ajoute(new THREE.BoxGeometry(.66, .015, .012), liseré, ax, SH + .64, Z0 + .716, false);
+        A.ajoute(new THREE.BoxGeometry(.72, .18, .34), tolex, ax, SH + .87, Z0 + .52); for (let k = 0; k < 6; k++) A.ajoute(new THREE.CylinderGeometry(.012, .012, .02, 8), liseré, ax - .22 + k * .09, SH + .87, Z0 + .7, false).rotation.x = Math.PI / 2; } }
     // deux projecteurs au plafond, braqués sur la scène (lumière blanche chaude, faisceau visible)
     { const carter = A.mat({ color: 0x111113, roughness: .5, metalness: .4 }), geoF = new THREE.ConeGeometry(1, 1, 24, 1, true); geoF.translate(0, -.5, 0);
       for (const [px, cx] of [[-3.2, -1.9], [2.4, 1.1]]) {
@@ -2890,9 +2971,14 @@ export async function ouvrir(ctx) {
           const c = choreBeeGees();
           if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
           p.corps.scale.x = sx * c.tour; p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
+        else if (p.info.danse === "batterie" && p.poses.batterie1) {
+          // la batteuse : caisse claire main gauche, main droite, et un coup de cymbales toutes les quatre mesures ; au repos, les baguettes sur la caisse
+          const ph = t / 230, k = Math.floor(ph) % 16, pose = !p.info.enMusique ? "batterie0" : k === 15 || k === 7 ? "batterie3" : k % 2 ? "batterie2" : "batterie1";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = p.info.enMusique ? Math.sin(t / 460) * .04 : 0; p.corps.position.x = 0; p.corps.position.y = p.info.enMusique ? Math.abs(Math.sin(t / 230 * Math.PI)) * .02 : 0; p.dansait = true; }
         else if (p.info.danse === "guitare" && p.poses.guitare1) {
-          // Robert Smith joue : il gratte en rythme, se balance doucement, la tête penchée vers le micro
-          const ph = t / 300, pose = Math.floor(ph) % 2 ? "guitare2" : "guitare1";
+          // Robert Smith (et le bassiste, le guitariste du groupe) joue : il gratte en rythme, se balance doucement ; sans musique, il attend, l'instrument à la main
+          const ph = t / (p.info.musicien === "basse" ? 460 : 300), pose = p.info.musicien && !p.info.enMusique ? "guitare1" : Math.floor(ph) % 2 ? "guitare2" : "guitare1";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(t / 900) * .06; p.corps.position.x = Math.sin(t / 900) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
         else if (p.info.danse === "alive" && p.poses.canne1) {
@@ -2951,7 +3037,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith();
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith(); animerGroupe();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       if (p.info.mortT) { const f = Math.min(1, (performance.now() - p.info.mortT) / 650); p.corps.rotation.x = -f * Math.PI / 2 * .96; p.corps.rotation.z = 0; } }
@@ -3561,7 +3647,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
@@ -3780,15 +3866,15 @@ const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
-  if (air && !p) { const [x, z] = M.L.pisteCentre; M.trioPret = false;
+  if (air && !p) { const [x, z] = placeScene(0, -.7); M.trioPret = false;
     // le danseur au milieu, le zombie à sa gauche, la mariée à sa droite (vus depuis la salle)
     for (const [num, id, dx, def, tete] of [[DANSEUR, 4, 0, { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" }, "images/danseur-tete.png"],
         [ZOMBIE, 5, -1.7, { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52", pieds: "#2a2522" }, "images/zombie-tete.png"],
         [MARIEE, 6, 1.7, { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null, pieds: "#e8e4da" }, "images/mariee-tete.png"]]) {
       const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
       const q = ajouterAncien({ numero: num, nom: P.nom || def.nom, tenue: P.tenue || def.tenue, couleur: P.couleur || def.couleur, bas: P.bas || def.bas, pieds: P.pieds || def.pieds,
-        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete, pnj: true, danseur: true, x: x + dx, z: z + 3 });
-      if (q) { viser(q, x + dx, z - Math.abs(dx) * .3); q.info.danse = "thriller"; } }
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete, pnj: true, danseur: true, x: x + dx, z: z - Math.abs(dx) * .3 });
+      if (q) q.info.danse = "thriller"; }
   }
   else if (!air && p) { for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); M.trioPret = false; }
   else if (p) { const trio = [DANSEUR, ZOMBIE, MARIEE].map(n => M.gens.get(n)).filter(Boolean);
@@ -3796,7 +3882,7 @@ function animerDanseur() {
     // on attend que les trois soient arrivés à leur place, puis on part ensemble sur le premier temps de la chorégraphie
     if (!M.trioPret && trio.every(q => q.base) && choreThriller().k === 0) M.trioPret = true;
     if (M.trioPret) { const c = choreThriller();
-      for (const q of trio) if (q.base) { const nx = q.base[0] + c.ox, nz = q.base[1] + c.oz; if (M.L.limites(nx, nz)) { q.g.position.x = nx; q.g.position.z = nz; } }
+      for (const q of trio) if (q.base) { const nx = q.base[0] + c.ox, nz = q.base[1] + c.oz; if (okScene(nx, nz)) { q.g.position.x = nx; q.g.position.z = nz; } }
     } }
 }
 /* la chorégraphie du clip Thriller, sur 32 temps, pour les trois danseurs ensemble ;
@@ -3817,24 +3903,38 @@ function choreThriller() {
   else { pose = k % 2 ? "thriller2" : "thriller1"; oz = AV * (1 - (k - 28 + Math.min(1, v * 1.6)) / 4); rot = (k % 2 ? .05 : -.05) * coup; }
   return { k, pose, ox, oz, rot, sx, saut };
 }
+/* les chanteurs et les danseurs se produisent sur la scène, au fond de la salle (devant le groupe) */
+function placeScene(dx, dz) { const S = M.L.scene; if (S) return [S.centre[0] + dx, S.centre[1] + dz]; const [x, z] = M.L.pisteCentre; return [x + dx, z + dz + 3]; }
+function okScene(x, z) { const S = M.L.scene; return S ? x > S.x0 + .3 && x < S.x1 - .3 && z > S.z0 + .3 && z < S.z1 - .12 : M.L.limites(x, z); }
+/* --- le groupe de la scène (réglé par l'administrateur) : la batteuse au fond, au centre, derrière sa batterie ;
+   le bassiste à gauche, le guitariste à droite. Ils sont toujours là ; quand la musique passe, ils jouent --- */
+const GROUPE = [[-18, 18, "batterie", "La batteuse", "batteuse", "#121214", "#141416", "#1a1a1a"], [-19, 19, "basse", "Le bassiste", "bassiste", "#2c2e31", "#151517", "#1a1a1a"], [-20, 20, "guitare", "Le guitariste", "guitariste", "#151517", "#151517", "#0e0e0e"]];
+function animerGroupe() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
+  for (const [num, id, place, nom, tenue, couleur, bas, pieds] of GROUPE) { let p = M.gens.get(num);
+    if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, [x, z] = M.L.scene[place];
+      p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
+        teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x, z }); if (!p) continue; }
+    p.info.danse = place === "batterie" ? "batterie" : "guitare"; p.info.enMusique = !!M.djJoue; }
+}
 /* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
 const SMITH = -16;
 function animerSmith() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
-  const air = M.djJoue && /just like heaven|the cure|robert smith/.test(M.djTitre || ""), p = M.gens.get(SMITH), [x, z] = M.L.pisteCentre;
+  const air = M.djJoue && /just like heaven|the cure|robert smith/.test(M.djTitre || ""), p = M.gens.get(SMITH), [x, z] = placeScene(0, -.15);
   if (air && !p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(16)) || {};
     const q = ajouterAncien({ numero: SMITH, nom: P.nom || "Robert Smith", tenue: P.tenue || "smith", couleur: P.couleur || "#141414", bas: P.bas || "#141414", pieds: P.pieds || "#1a1a1a",
-      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 16) : "images/smith-tete.png", pnj: true, danseur: true, smith: true, x, z: z + 3 });
-    if (q) { viser(q, x, z); q.info.danse = "guitare"; }
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 16) : "images/smith-tete.png", pnj: true, danseur: true, smith: true, x, z });
+    if (q) q.info.danse = "guitare";
     // le micro sur pied, devant lui (côté salle)
     if (!M.micro) { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: .6, roughness: .4 }), H = tailleBonhomme();
       const pied = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, H * .66, 8), noir); pied.position.y = H * .33; g.add(pied);
       for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .42, 6), noir); b.rotation.z = Math.PI / 2 - .5; b.rotation.y = k * 2.09; b.position.y = .1; b.position.x = Math.cos(k * 2.09) * .16; b.position.z = -Math.sin(k * 2.09) * .16; g.add(b); }
       const perche = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .4, 6), noir); perche.rotation.x = -1.1; perche.position.set(0, H * .66 + .08, -.17); g.add(perche);
       const tete = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 8), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: .8, roughness: .3 })); tete.position.set(0, H * .66 + .16, -.34); g.add(tete);
-      g.position.set(x, 0, z + .75); M.scene.add(g); M.micro = g; } }
+      g.position.set(x, M.L.hauteur ? M.L.hauteur(x, z + .75) : 0, z + .75); M.scene.add(g); M.micro = g; } }
   else if (!air && p) { retirerAncien(SMITH); if (M.micro) { M.scene.remove(M.micro); M.micro = null; } }
-  else if (p) { p.info.danse = "guitare"; if (M.micro && !p.cible) M.micro.position.set(p.g.position.x, 0, p.g.position.z + .75); }
+  else if (p) { p.info.danse = "guitare"; if (M.micro && !p.cible) M.micro.position.set(p.g.position.x, p.g.position.y, p.g.position.z + .75); }
 }
 /* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
 const HERNANDEZ = -7, TEMPS_ALIVE = 460;
@@ -3847,16 +3947,16 @@ function normTitre(t) { return String(t).toLowerCase().normalize("NFD").replace(
 function animerBeeGees() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && AIR_BEEGEES.test(M.djTitre || ""), present = M.gens.get(-9);
-  if (air && !present) { const [x, z] = M.L.pisteCentre; M.beeGeesPrets = false;
+  if (air && !present) { const [x, z] = placeScene(0, -.45); M.beeGeesPrets = false;
     for (const [num, id, dx, nom, cle] of BEEGEES) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
       const q = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || "beegees", couleur: P.couleur || "#c9b27c", bas: P.bas || "#c9b27c", pieds: P.pieds || "#b89a5a",
-        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/beegees-${cle}-tete.png`, pnj: true, danseur: true, x: x + dx, z: z + 3 });
-      if (q) { viser(q, x + dx, z + (dx ? 0 : .35)); q.info.danse = "beegees"; } }
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/beegees-${cle}-tete.png`, pnj: true, danseur: true, x: x + dx, z: z + (dx ? 0 : .3) });
+      if (q) q.info.danse = "beegees"; }
     // et, un peu devant eux, tout seul : John Travolta
     { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(11)) || {};
       const q = ajouterAncien({ numero: TRAVOLTA, nom: P.nom || "John Travolta", tenue: P.tenue || "travolta", couleur: P.couleur || "#f4f1ea", bas: P.bas || "#f4f1ea", pieds: P.pieds || "#1a1a1a",
-        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 11) : "images/travolta-tete.png", pnj: true, danseur: true, x, z: z + 4 });
-      if (q) { viser(q, x, z + 1.7); q.info.danse = "travolta"; } }
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 11) : "images/travolta-tete.png", pnj: true, danseur: true, x, z: z + 1.25 });
+      if (q) q.info.danse = "travolta"; }
   }
   else if (!air && present) { for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); M.beeGeesPrets = false; }
   else if (present) { const freres = BEEGEES.map(([num]) => M.gens.get(num)).filter(Boolean);
@@ -3864,10 +3964,10 @@ function animerBeeGees() {
     // on part tous les trois ensemble, sur le premier temps
     if (!M.beeGeesPrets && freres.every(q => q.base) && choreBeeGees().k === 0) M.beeGeesPrets = true;
     if (M.beeGeesPrets) { const c = choreBeeGees();
-      for (const q of freres) { const nx = q.base[0] + c.ox; if (M.L.limites(nx, q.base[1])) q.g.position.x = nx; }
+      for (const q of freres) { const nx = q.base[0] + c.ox; if (okScene(nx, q.base[1])) q.g.position.x = nx; }
       const tv = M.gens.get(TRAVOLTA);
       if (tv) { tv.info.danse = "travolta"; if (!tv.cible && !tv.base) tv.base = [tv.g.position.x, tv.g.position.z];
-        if (tv.base) { const ct = choreTravolta(), nx = tv.base[0] + ct.ox; if (M.L.limites(nx, tv.base[1])) tv.g.position.x = nx; } }
+        if (tv.base) { const ct = choreTravolta(), nx = tv.base[0] + ct.ox; if (okScene(nx, tv.base[1])) tv.g.position.x = nx; } }
     } }
 }
 /* la chorégraphie disco des Bee Gees, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
@@ -3907,15 +4007,15 @@ function choreTravolta() {
 function animerHernandez() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && /born to be alive|hernandez/.test(M.djTitre || ""), p = M.gens.get(HERNANDEZ);
-  if (air && !p) { const [x, z] = M.L.pisteCentre, P = (M.ctx.pnjTrio && M.ctx.pnjTrio(7)) || {};
+  if (air && !p) { const [x, z] = placeScene(0, .25), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(7)) || {};
     const q = ajouterAncien({ numero: HERNANDEZ, nom: P.nom || "Mr Hernandez", tenue: P.tenue || "hernandez", couleur: P.couleur || "#161616", bas: P.bas || "#161616", pieds: P.pieds || "#f2f2f2",
-      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 7) : "images/hernandez-tete.png", pnj: true, danseur: true, hernandez: true, x, z: z + 3 });
-    if (q) { viser(q, x, z + .6); q.info.danse = "alive"; }
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 7) : "images/hernandez-tete.png", pnj: true, danseur: true, hernandez: true, x, z });
+    if (q) q.info.danse = "alive";
   }
   else if (!air && p) retirerAncien(HERNANDEZ);
   else if (p) { p.info.danse = "alive";
     if (!p.cible && !p.base) p.base = [p.g.position.x, p.g.position.z];
-    if (p.base) { const c = choreAlive(), nx = p.base[0] + c.ox; if (M.L.limites(nx, p.base[1])) p.g.position.x = nx;
+    if (p.base) { const c = choreAlive(), nx = p.base[0] + c.ox; if (okScene(nx, p.base[1])) p.g.position.x = nx;
     } }
 }
 /* la danse du clip Born to Be Alive, sur 16 temps (réglée sur l'horloge : tout le monde la voit au même moment)
@@ -4195,6 +4295,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
     else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
