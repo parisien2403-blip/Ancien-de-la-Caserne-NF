@@ -2295,26 +2295,16 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       for (const [zz, yy] of [[EZ - .9, 0], [EZ, 0]]) A.ajoute(new THREE.BoxGeometry(.09, 1.05, .09), A.mat({ color: 0x141414 }), x, yy + .52, zz, false);   // poteaux
       const pomme = new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 8), A.mat({ color: 0x141414, metalness: .4 })); pomme.position.set(x, 1.1, EZ - .9); scene.add(pomme); }
 
-    // au fond de la salle : des tables rectangulaires avec nappes blanches, et des chaises d'école
-    const nappe = A.mat({ color: 0xf7f5ef, roughness: .9 }), tube = A.mat({ color: 0x3c3f44, metalness: .6, roughness: .4 });
-    const contreplaque = A.mat({ color: 0xb9814a, roughness: .55 });
-    const chaise = (x, z, rot) => {
-      const c = new THREE.Group(); c.position.set(x, 0, z); c.rotation.y = rot; scene.add(c);
-      for (const [px, pz] of [[-.19, -.17], [.19, -.17], [-.19, .17], [.19, .17]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .45, 6), tube); p.position.set(px, .225, pz); c.add(p); }
-      for (const px of [-.19, .19]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .42, 6), tube); m.position.set(px, .66, .19); c.add(m); }
-      const as = new THREE.Mesh(new THREE.BoxGeometry(.42, .025, .4), contreplaque); as.position.y = .46; as.castShadow = true; c.add(as);
-      const dos = new THREE.Mesh(new THREE.BoxGeometry(.42, .2, .02), contreplaque); dos.position.set(0, .76, .2); dos.rotation.x = -.12; dos.castShadow = true; c.add(dos);
-    };
+    // au fond de la salle, à la place des tables et des chaises : une scène de concert, toute noire (même longueur, même largeur, à hauteur de table)
+    const nappe = A.mat({ color: 0xf7f5ef, roughness: .9 }), tube = A.mat({ color: 0x3c3f44, metalness: .6, roughness: .4 });   // (les nappes et les pieds : pour les tables du DJ)
     const tables = [];
-    for (const zt of [Z0 + 1.35, Z0 + 3.35]) for (const xt of [-2.7, 1.9]) {
-      const L3 = 3.6, P = .9;
-      A.ajoute(new THREE.BoxGeometry(L3, .04, P), nappe, xt, .76, zt);                                            // le plateau et la nappe
-      for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(L3 + .04, .32, .015), nappe, xt, .61, zt + sgn * (P / 2 + .008), false);   // la nappe qui retombe
-      for (const sgn of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.015, .32, P + .03), nappe, xt + sgn * (L3 / 2 + .008), .61, zt, false);
-      for (const [dx, dz] of [[-1.65, -.36], [1.65, -.36], [-1.65, .36], [1.65, .36]]) A.ajoute(new THREE.CylinderGeometry(.02, .02, .45, 6), tube, xt + dx, .225, zt + dz, false);
-      for (let k = 0; k < 4; k++) { const cx = xt - 1.35 + k * .9; chaise(cx, zt - .47, Math.PI); chaise(cx, zt + .47, 0); /* rangées sous la table, dossier vers l'extérieur */ }
-      tables.push([xt - L3 / 2 - .2, xt + L3 / 2 + .2, zt - 1, zt + 1]);
-    }
+    { const SX0 = -4.5, SX1 = 3.7, SZ0 = Z0 + .2, SZ1 = Z0 + 4.25, SH = .78, sx = (SX0 + SX1) / 2, sz = (SZ0 + SZ1) / 2;
+      const noirMat = A.mat({ color: 0x0b0b0c, roughness: .85 }), plancher = A.mat({ color: 0x141416, roughness: .55, metalness: .05 }), bord = A.mat({ color: 0x1e1e22, roughness: .4, metalness: .3 });
+      A.ajoute(new THREE.BoxGeometry(SX1 - SX0, SH - .03, SZ1 - SZ0), noirMat, sx, (SH - .03) / 2, sz);                       // le caisson
+      A.ajoute(new THREE.BoxGeometry(SX1 - SX0, .03, SZ1 - SZ0), plancher, sx, SH - .015, sz, false);                          // le plancher de scène
+      A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .02, .04, .05), bord, sx, SH - .02, SZ1 + .005, false);                     // le nez de scène
+      for (let k = 0; k <= 8; k++) A.ajoute(new THREE.BoxGeometry(.012, SH - .1, .012), bord, SX0 + k * (SX1 - SX0) / 8, (SH - .1) / 2, SZ1 + .006, false);   // les joints des praticables
+      tables.push([SX0 - .1, SX1 + .1, SZ0 - .3, SZ1 + .15]); }
 
     // la boule à facettes, au centre du plafond
     const facettes = toile(512, 256, (x, w, h) => { for (let i = 0; i < w; i += 16) for (let j = 0; j < h; j += 16) { const v = alea();
