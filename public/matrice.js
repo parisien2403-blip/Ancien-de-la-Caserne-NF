@@ -18,7 +18,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -76,6 +76,7 @@ export function dessinerBonhomme(o, tete) {
     if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
     const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
     const PY = o.pose === "slow" ? [404, 404] : profil ? [352, 404] : assis ? [352, 352] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
+    if (t === "thriller") { x.fillStyle = "#f4f4f2"; x.fillRect(PD[0] - 9, PY[0] - 14, 18, 9); x.fillRect(PD[1] - 9, PY[1] - 14, 18, 9); }   // les chaussettes blanches
     x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], PY[0], 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], PY[1], 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
     if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, PY[0] + 4, 40, 3); x.fillRect(PD[1] - 20, PY[1] + 4, 40, 3); }   // semelle des baskets
     const haut = t === "garde" ? "#1c2541" : c;
@@ -83,6 +84,11 @@ export function dessinerBonhomme(o, tete) {
     x.fillStyle = haut; x.beginPath();
     if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
+    // le blouson rouge façon Thriller : les bandes noires en V, la ceinture noire
+    if (t === "thriller" && !profil && o.pose !== "dos") { x.strokeStyle = "#141414"; x.lineWidth = 7; x.lineCap = "butt";
+      x.beginPath(); x.moveTo(64, 150); x.lineTo(98, 238); x.moveTo(136, 150); x.lineTo(102, 238); x.stroke();
+      x.lineWidth = 3.5; x.beginPath(); x.moveTo(76, 150); x.lineTo(100, 214); x.lineTo(124, 150); x.stroke();
+      x.fillStyle = "#141414"; x.fillRect(58, 248, 84, 10); x.fillStyle = "#9a0c22"; x.fillRect(84, 140, 32, 10); }
     // le barman : le grand tablier bleu, noué à la taille, qui descend sous les genoux (et ses bretelles)
     if (t === "barman" && !profil && o.pose !== "dos") { x.fillStyle = "#2f5276"; x.beginPath(); x.roundRect(72, 158, 56, 60, 6); x.fill();
       x.beginPath(); x.moveTo(60, 214); x.lineTo(140, 214); x.lineTo(146, 318); x.lineTo(54, 318); x.closePath(); x.fill();
@@ -115,6 +121,7 @@ export function dessinerBonhomme(o, tete) {
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
+      if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
       if (doigt) {
         // le poing fermé, le pouce sur le côté et l'index tendu, façon Travolta
         x.fillStyle = peau; x.beginPath(); x.roundRect(-11, 86, 22, 20, 7); x.fill();
@@ -164,8 +171,14 @@ export function dessinerBonhomme(o, tete) {
       x.restore(); x.shadowBlur = 0;
     } else {
       x.fillStyle = peau; x.beginPath(); x.ellipse(100, 72, 44, 54, 0, 0, 7); x.fill();
+      if (t === "thriller") {   // le danseur : une tête dessinée, cheveux noirs bouclés, les yeux, un sourire
+        x.fillStyle = "#1a1210"; for (let k = 0; k < 16; k++) { const a = Math.PI + k / 15 * Math.PI; x.beginPath(); x.arc(100 + Math.cos(a) * 42, 58 + Math.sin(a) * 40, 11, 0, 7); x.fill(); }
+        x.beginPath(); x.ellipse(100, 40, 44, 26, 0, Math.PI, 0); x.fill();
+        x.fillStyle = "#2a1a12"; for (const ex of [84, 116]) { x.beginPath(); x.ellipse(ex, 76, 4.5, 5.5, 0, 0, 7); x.fill(); }
+        x.strokeStyle = "#7a2a22"; x.lineWidth = 3; x.beginPath(); x.arc(100, 92, 12, .2, Math.PI - .2); x.stroke();
+      } else {
       x.fillStyle = "#5a3d2b"; x.beginPath(); x.ellipse(100, 40, 46, 30, 0, Math.PI, 0); x.fill();
-      x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92);
+      x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92); }
     }
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);    // (les verres, le torchon : dans les mains, qui ont suivi la corpulence)
     if (assis) {
@@ -1625,6 +1638,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const acajou = A.mat({ color: 0x5b2c16, roughness: .35 }), acajouC = A.mat({ color: 0x7a3d1f, roughness: .4 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .25 });
     A.ajoute(new THREE.BoxGeometry(.7, 1.05, bl), acajou, bx, .525, bc);                                         // le comptoir
     A.ajoute(new THREE.BoxGeometry(.95, .08, bl + .15), A.mat({ color: 0x3e1c0c, roughness: .2 }), bx - .08, 1.09, bc);   // le dessus verni
+    L.pisteCentre = [0, 6.5];   // le milieu de la piste (le danseur Thriller)
     L.posBar = { x: bx + .62, z0: bzA + .35, z1: bzB - .35, xVerre: bx - .22, yVerre: 1.13 };   // le barman va et vient derrière le comptoir
     A.ajoute(new THREE.BoxGeometry(.08, .12, bl), acajouC, bx - .4, .98, bc, false);                             // moulure sous le dessus
     A.ajoute(new THREE.BoxGeometry(.06, .16, bl), A.mat({ color: 0x2a1408 }), bx - .36, .08, bc, false);          // socle
@@ -2165,7 +2179,7 @@ export async function ouvrir(ctx) {
       }
     }
     if (M.L.anim) M.L.anim(t);
-    animerPNJ(); animerDJ(t); animerBarman(t);
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit, par la porte ouverte (plus fort en s'approchant)
@@ -2434,6 +2448,18 @@ function animerBarman(t) {
   const b = Math.floor(t / 23000);
   if (p.parole !== b) { p.parole = b; if (hasard(b * 7.7) < .25) dire(BARMAN, PHRASES_BAR[4 + Math.floor(hasard(b * 3.1) * (PHRASES_BAR.length - 4))]); }
 }
+/* --- le danseur Thriller (réglé par l'administrateur) : dès que passe un Thriller, il arrive au milieu de la piste et le danse ; il repart ensuite --- */
+const DANSEUR = -4;
+function animerDanseur() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
+  if (air && !p) { const P = (M.ctx.pnjDanseur && M.ctx.pnjDanseur()) || {}, [x, z] = M.L.pisteCentre;
+    const q = ajouterAncien({ numero: DANSEUR, nom: P.nom || "Le danseur Thriller", tenue: P.tenue || "thriller", couleur: P.couleur || "#c8102e", bas: P.bas || "#c8102e", pieds: P.pieds || "#111111",
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 4) : null, pnj: true, danseur: true, x, z: z + 3 });
+    if (q) { viser(q, x, z); q.info.danse = "thriller"; dire(DANSEUR, "It's close to midnight… 🧟"); } }
+  else if (!air && p) retirerAncien(DANSEUR);
+  else if (p) p.info.danse = "thriller";
+}
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
   const n = Math.floor(Date.now() / 9000);
@@ -2636,6 +2662,7 @@ function connecter() {
     }
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
+    else if (m.t === "pnj" && m.p && m.p.id === 4) { ctx.surPNJDanseur && ctx.surPNJDanseur(m.p); if (M.gens.has(DANSEUR)) retirerAncien(DANSEUR); }
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }

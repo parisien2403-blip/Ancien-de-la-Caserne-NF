@@ -46,9 +46,10 @@ const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave"];
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
-  3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" } };
-const idPNJ = id => [1, 2, 3].includes(id) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman"];
+  3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
+  4: { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e" } };
+const idPNJ = id => [1, 2, 3, 4].includes(id) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
