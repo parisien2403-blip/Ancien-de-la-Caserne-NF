@@ -2008,10 +2008,10 @@
             <button type="button" aria-label="Fermer" style="position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.55);color:#fff;font-size:20px">✕</button>`;
           d.onclick = () => d.remove(); (document.fullscreenElement || document.body).appendChild(d); },
         surFlechettes: () => { infoMatrice("🎯 Les fléchettes…", 1500);
-          import("./flechettes.js?v=" + VERSION).then(f => f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES }))
+          import("./flechettes.js?v=" + VERSION).then(f => { MX.jouer("flechettes"); f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES, surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Les fléchettes n'ont pas pu démarrer : " + e.message, 6000)); },
         surFlipper: () => { infoMatrice("🎰 Le flipper s'allume…", 2000);
-          import("./flipper.js?v=" + VERSION).then(f => f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }) }))
+          import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
@@ -3840,12 +3840,13 @@
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     consolePlace = [z.parentNode, z.nextSibling]; document.body.appendChild(z);
     z.classList.add("console"); z.scrollTop = 0; chargerBorne(); ajusterBorne();
+    MX && MX.jouer && MX.jouer("console");   // les autres voient qu'on joue
   }
   function fermerConsole() {
     const z = $("borneZone"); if (!z.classList.contains("console")) return;
     eteindre(); z.classList.remove("console");
     if (consolePlace) { consolePlace[0].insertBefore(z, consolePlace[1]); consolePlace = null; }
-    ajusterBorne();
+    ajusterBorne(); MX && MX.jouer && MX.jouer(null);
   }
   window.ouvrirConsole = ouvrirConsole; window.fermerConsole = fermerConsole;
   // le geste « retour » d'Android quitte le plein écran : on revient aussi à la salle des fêtes

@@ -3,7 +3,7 @@
    Score : les secteurs (1 à 20), double, triple, le 25 et le bull (50). À la fin, le score part au serveur pour le classement au mur. */
 const W = 400, H = 560, CX = 200, CY = 236, R = 186;
 
-export function ouvrirFlechettes({ envoyerScore, dessinerCible, secteurs }) {
+export function ouvrirFlechettes({ envoyerScore, dessinerCible, secteurs, surFerme }) {
   const fond = document.createElement("div");
   fond.style.cssText = "position:fixed;inset:0;z-index:2600;background:radial-gradient(circle at 50% 30%,#2b1a10,#0a0705 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none";
   fond.innerHTML = `<div style="display:flex;gap:14px;align-items:center;color:#f4ecd8;font:700 16px Arial;margin:6px 0">
@@ -69,7 +69,7 @@ export function ouvrirFlechettes({ envoyerScore, dessinerCible, secteurs }) {
     } catch (e) { $("flFinTop").textContent = "Le score n'a pas pu être enregistré : " + e.message; }
   }
   const rejouer = () => { score = 0; volee = 1; plantees = []; lancers = []; fini = false; pause = 0; majHaut(); $("flFin").style.display = "none"; };
-  const fermer = () => { cancelAnimationFrame(boucle); fond.remove(); };
+  const fermer = () => { cancelAnimationFrame(boucle); fond.remove(); surFerme && surFerme(); };
   $("flRejouer").onclick = rejouer; $("flFermer").onclick = fermer; $("flQuitter").onclick = fermer;
   return fermer;
 }

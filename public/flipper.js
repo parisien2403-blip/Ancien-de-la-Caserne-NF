@@ -3,7 +3,7 @@
    À la fin de la partie, le score part au serveur, qui tient le classement affiché au mur, au-dessus du flipper. */
 const W = 400, H = 720, R = 9, G = 1100, VMAX = 1700;
 
-export function ouvrirFlipper({ envoyerScore }) {
+export function ouvrirFlipper({ envoyerScore, surFerme }) {
   const fond = document.createElement("div");
   fond.style.cssText = "position:fixed;inset:0;z-index:2600;background:radial-gradient(circle at 50% 30%,#2b1a10,#0a0705 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none";
   fond.innerHTML = `<div style="display:flex;gap:14px;align-items:center;color:#f4ecd8;font:700 16px Arial;margin:6px 0">
@@ -110,7 +110,7 @@ export function ouvrirFlipper({ envoyerScore }) {
     } catch (e) { $("fpFinTop").textContent = "Le score n'a pas pu être enregistré : " + e.message; }
   }
   const rejouer = () => { billes = 3; score = 0; fini = false; couloirs.forEach(c => c.on = false); nouvelleBille(); majScore(); $("fpFin").style.display = "none"; };
-  const fermer = () => { cancelAnimationFrame(boucle); removeEventListener("keydown", kd); removeEventListener("keyup", ku); fond.remove(); };
+  const fermer = () => { cancelAnimationFrame(boucle); removeEventListener("keydown", kd); removeEventListener("keyup", ku); fond.remove(); surFerme && surFerme(); };
   $("fpRejouer").onclick = rejouer; $("fpFermer").onclick = fermer; $("fpQuitter").onclick = fermer;
   return fermer;
 }

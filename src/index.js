@@ -348,7 +348,7 @@ export class Compteur extends DurableObject {
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
   // le slow à deux : on libère les deux danseurs (départ, changement de lieu, « arrêter »)
   finirSlow(ws, a) {
     if (!a.slow) return; const autre = a.slow, lieu = a.lieu; a.slow = null; try { ws.serializeAttachment(a); } catch (e) {}
@@ -385,7 +385,7 @@ export class Compteur extends DurableObject {
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu)) {
       const ancien = a.lieu;
       this.finirSlow(ws, a);
-      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null }); ws.serializeAttachment(a);
+      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null, joue: null }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
       // les messages ne restent qu'une heure
       this.sql.exec("DELETE FROM matrice_dits WHERE cree < ?", new Date(Date.now() - DITS_DUREE).toISOString());
@@ -419,6 +419,10 @@ export class Compteur extends DurableObject {
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "joue") {
+      // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)
+      a.joue = ["console", "flipper", "flechettes"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
+      if (a.lieu) this.diffuser(a.lieu, { t: "joue", numero: a.numero, jeu: a.joue }, ws);
     } else if (m.t === "fumee" && a.lieu === "fetes") {
       // un nuage de fumée, au plus un toutes les 8 secondes
       const der = (await this.ctx.storage.get("fumee_fetes")) || 0; if (Date.now() - der < 8000) return;

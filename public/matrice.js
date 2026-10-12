@@ -1270,7 +1270,7 @@ function construireEtage(A, L, scene) {
     return true; };
   // on sort par la porte (au rez-de-chaussée seulement) : dans la cour d'honneur, devant la porte de l'aile
   const auRdc = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return !moi || !moi.etg || moi.etg.n === 0; };
-  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > 0 && Math.abs(x) < CX0 - .25 && Math.abs(z - 2.5) < .7, vers: "grande", arrivee: [sg * 7.9, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > 0 && Math.abs(x) < CX0 - .25 && Math.abs(z - 2.5) < .7, vers: "grande", arrivee: [sg * 6.8, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
   L.sansMusique = true;   // (on n'entend pas la fête d'ici)
   // la caméra reste dans la cage ou dans le couloir, à hauteur du bonhomme
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
@@ -2024,8 +2024,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       if (P) { const c = cols5[Math.floor(temps / 1700) % 5]; P.spot.color.setHex(c); P.vide.material.color.setHex(c).lerp(new THREE.Color(0xffe0b0), .55); }
       for (const s of L.silhouettes) animerSilhouette(s, temps); };
     // on n'entre dans la salle des fêtes que par sa porte ouverte
-    L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-4.4, 6], yaw: -Math.PI / 2 });
-    raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-4.4, 6], yaw: -Math.PI / 2 });
+    L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
+    raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
   }
 
@@ -2695,7 +2695,14 @@ export async function ouvrir(ctx) {
       else ctx.surAffiche && ctx.surAffiche(rc.affiche);
       return; }
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
-    if (rc) { if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); } return; }
+    if (rc) {
+      // la porte touchée : on marche jusqu'à son cercle lumineux ; on n'entre qu'une fois dessus
+      const w = rc.obj.getWorldPosition(new THREE.Vector3());
+      const pts = M.L.portails.filter(q => q.vers === rc.vers && !q.continu).map(q => [q, centrePortail(q)]).filter(([, c]) => c)
+        .sort((a, b) => Math.hypot(a[1][0] - w.x, a[1][1] - w.z) - Math.hypot(b[1][0] - w.x, b[1][1] - w.z));
+      if (pts.length) allerVers(pts[0][1][0], pts[0][1][1], true);
+      else if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); }
+      return; }
     // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
     if (M.L.interieur) {
       const sols = [M.L.sol, ...(M.L.solsPlus || [])];
@@ -2750,14 +2757,26 @@ export async function ouvrir(ctx) {
           p.pasT = (p.pasT || 0) + pas;
           if (p.corps && !p.info.danse && !Number.isInteger(p.info.assis)) p.corps.position.y = Math.abs(Math.sin(p.pasT * 3.4)) * .045 * Math.min(1, p.vit / 1.5);
           if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
-          if (p.moi) { const pt = M.L.portails.find(q => q.dans(p.g.position.x, p.g.position.z)); if (pt && !M.passage) { M.passage = true; if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
+          if (p.moi) { const px = p.g.position.x, pz = p.g.position.z;
+            const pt = M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true; if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
+      // il joue : 🎮 la console, 🕹️ le flipper, 🎯 les fléchettes, au-dessus de sa tête (elle flotte doucement)
+      if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
+        p.iconeJeu = p.info.joue || null;
+        if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
+            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
+          p.icone.position.y = H * hauteurDe(p) + .32; p.g.add(p.icone); } }
+      if (p.icone) p.icone.position.y = tailleBonhomme() * hauteurDe(p) + .32 + Math.sin(t / 400) * .05;
       // la danse : il se balance d'un côté à l'autre en levant les bras
       if (p.corps && p.poses && !p.differe) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
-        if (Number.isInteger(p.info.assis)) {
+        if (p.info.joue && !p.moi) {
+          // il joue : de dos, tourné vers la machine, il remue un peu (les mains sur les commandes)
+          if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 260) * .03; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (Number.isInteger(p.info.assis)) {
           // assis au bar : il boit une gorgée de temps en temps
           const ph = (t + p.info.numero * 1300) % 6000, pose = ph < 1300 ? "boire" : "assis";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
@@ -2830,6 +2849,7 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
+    animerCercles(t);
     animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
@@ -2999,6 +3019,61 @@ function ajouterAncien(info) {
   if (info.numero > 0 && !p.moi && [...M.gens.values()].filter(q => q.info.numero > 0 && !q.moi && !q.differe).length > MAX_VUS) { p.differe = true; g.visible = false; }
   else dessinerCorps(p);
   return p;
+}
+/* --- les cercles lumineux au sol, devant chaque porte : on entre (ou l'on sort) en marchant dessus --- */
+const RAYON_CERCLE = .62;
+// le centre du cercle d'une porte (calculé une fois) : la partie de sa zone d'entrée la plus proche de la porte elle-même,
+// puis poussé vers l'intérieur pour que tout le cercle soit sur le sol où l'on marche
+function centrePortail(pt) {
+  if (pt.centre) return pt.centre;
+  if (pt.essai && performance.now() - pt.essai < 3000) return null; pt.essai = performance.now();
+  const Z = M.L.zone || [-45, 45, -45, 45]; let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let x = Z[0]; x <= Z[1]; x += .3) for (let z = Z[2]; z <= Z[3]; z += .3) if (pt.dans(x, z)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+  if (x0 === Infinity) return null;
+  // les points de la zone où l'on peut marcher, regroupés en morceaux d'un seul tenant
+  const P = .08, ox = x0 - .35, oz = z0 - .35, nx = Math.ceil((x1 - x0 + .7) / P) + 1, nz = Math.ceil((z1 - z0 + .7) / P) + 1, ok = new Uint8Array(nx * nz);
+  for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) { const x = ox + i * P, z = oz + k * P; if (pt.dans(x, z) && M.L.limites(x, z)) ok[i * nz + k] = 1; }
+  const vu = new Uint8Array(nx * nz), morceaux = [];
+  for (let d = 0; d < ok.length; d++) if (ok[d] && !vu[d]) { const pile = [d], m = []; vu[d] = 1;
+    while (pile.length) { const e = pile.pop(), i = Math.floor(e / nz), k = e % nz; m.push([ox + i * P, oz + k * P]);
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + a, kk = k + b, f = ii * nz + kk; if (ii >= 0 && ii < nx && kk >= 0 && kk < nz && ok[f] && !vu[f]) { vu[f] = 1; pile.push(f); } } }
+    morceaux.push(m); }
+  if (!morceaux.length) return null;
+  const moy = m => [m.reduce((a, q) => a + q[0], 0) / m.length, m.reduce((a, q) => a + q[1], 0) / m.length];
+  const porte = (M.L.raccourcis || []).filter(r => r.vers === pt.vers).map(r => r.obj.getWorldPosition(new THREE.Vector3()));
+  const dist = c => porte.length ? Math.min(...porte.map(w => Math.hypot(w.x - c[0], w.z - c[1]))) : -morceaux.find(m => moy(m) === c)?.length || 0;
+  let best = null, bd = Infinity; for (const m of morceaux) { const c = moy(m), d = porte.length ? dist(c) : -m.length; if (d < bd) { bd = d; best = m; } }
+  let zc = moy(best); if (!M.L.limites(zc[0], zc[1])) zc = best.reduce((b, q) => Math.hypot(q[0] - zc[0], q[1] - zc[1]) < Math.hypot(b[0] - zc[0], b[1] - zc[1]) ? q : b);
+  // poussé vers l'intérieur, jusqu'à ce que tout le cercle tienne sur le sol
+  const tient = (cx, cz) => { for (let a = 0; a < 12; a++) { const t = a / 12 * Math.PI * 2; if (!M.L.limites(cx + Math.cos(t) * (RAYON_CERCLE - .05), cz + Math.sin(t) * (RAYON_CERCLE - .05))) return false; } return M.L.limites(cx, cz); };
+  let centre = tient(zc[0], zc[1]) ? zc : null;
+  for (let k = .1; !centre && k <= 1.6; k += .1) for (let a = 0; a < 16 && !centre; a++) { const t = a / 16 * Math.PI * 2, cx = zc[0] + Math.cos(t) * k, cz = zc[1] + Math.sin(t) * k; if (tient(cx, cz)) centre = [cx, cz]; }
+  pt.zc = zc; return (pt.centre = centre || zc);
+}
+function animerCercles(t) {
+  if (M.cerclesL !== M.L) {   // nouveau lieu : on (re)pose les cercles
+    for (const c of M.cercles || []) { M.scene.remove(c.g); }
+    M.cercles = []; M.cerclesL = M.L; M.cerclePret = false;
+    for (const pt of M.L.portails || []) if (!pt.continu) M.cercles.push({ pt, g: null });
+  }
+  const moi = M.moiNum && M.gens.get(M.moiNum);
+  // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
+  if (moi && !M.cerclePret && !M.cercles.some(c => c.pt.centre && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
+  for (const c of M.cercles) {
+    if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
+      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
+      const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .1, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
+      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .1, 48), new THREE.MeshBasicMaterial({ color: 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
+      disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
+      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .22, 48), new THREE.MeshBasicMaterial({ color: 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+      halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
+      g.position.set(ce[0], (M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
+    // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
+    c.g.visible = c.pt.dans(c.pt.zc[0], c.pt.zc[1]);
+    const b = .5 + .5 * Math.sin(t / 420);
+    c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
+    c.halo.scale.setScalar(1 + .08 * b);
+  }
 }
 /* avec beaucoup de monde dans le même lieu : seuls les MAX_VUS anciens les plus proches de soi sont dessinés (les autres sont bien là, mais pas affichés),
    pour que le téléphone reste fluide ; on refait le tri toutes les secondes */
@@ -3428,6 +3503,8 @@ export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
 // la fumée et les lasers du DJ (tous ceux qui sont dans la salle des fêtes les voient)
 export function fumee() { envoyerWS({ t: "fumee" }); }
+// on joue (console, flipper, fléchettes) ou l'on a fini (null) : les autres voient une petite icône au-dessus de soi
+export function jouer(jeu) { envoyerWS({ t: "joue", jeu: jeu || null }); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) moi.info.joue = jeu || null; }
 export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 // (administrateur) la luminosité de la salle des fêtes, de 0,15 à 1, pour tous ceux qui y sont
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau }); }
@@ -3474,6 +3551,7 @@ function connecter() {
         ctx.surInfo && ctx.surInfo("💞 Un slow… profitez-en !"); }
     }
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
+    else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
