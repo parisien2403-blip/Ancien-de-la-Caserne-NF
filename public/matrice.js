@@ -1123,6 +1123,12 @@ function construireEtage(A, L, scene) {
       ampoule(Math.max(1, k), xb(CXM, CX1), y + HP, 2.5, etatAmpoule(Math.max(1, k), 10 + (sg > 0 ? 1 : 0)));
       ampoule(Math.max(1, k + 1), xb(CX0, CX1), y + 1.7 + HP - .3, -2.2, etatAmpoule(Math.max(1, k + 1), 12 + (sg > 0 ? 1 : 0))); }
     A.ajoute(new THREE.BoxGeometry(cageW + .4, .2, Z1 - Z0 + .4), A.mat({ color: 0xece4d2 }), xb(CX0, CX1), HTOT + .1, cz, false);
+    // au dernier étage : la barrière en fer qui ferme la trémie (le long du palier, et le long de la cage)
+    { const yN = N * H;
+      const lisse = A.ajoute(new THREE.BoxGeometry(CX1 - CXM + .05, .05, .05), fer, xb(CXM - .02, CX1), yN + .95, 1.6, false);
+      for (let j = 0; j <= 6; j++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM + j * (CX1 - CXM) / 6), yN + .47, 1.6, false);
+      A.ajoute(new THREE.BoxGeometry(.05, .05, 3.05), fer, X(CXM), yN + .95, .1, false);
+      for (let j = 0; j <= 6; j++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM), yN + .47, 1.6 - j * .5, false); }
   }
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
   /* la lumière : un jeu de lampes qui suit l'étage où l'on est (les ampoules de cet étage et de la cage) ; plus on monte, moins ça éclaire */
@@ -1152,7 +1158,10 @@ function construireEtage(A, L, scene) {
     if (zo === "M") return e.m * H + 1.7;
     if (zo === "V1") return e.m * H + Math.max(0, Math.min(1.7, (1.6 - z) / 3 * 1.7));
     return e.m * H + 1.7 + Math.max(0, Math.min(1.7, (z + 1.4) / 3 * 1.7)); };
+  // au dernier étage, il n'y a plus d'escalier qui monte : la moitié extérieure du palier est fermée par une barrière
+  const auDernier = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return moi && moi.etg && moi.etg.n === N && moi.etg.zone === "P"; };
   L.limites = (x, z) => { const ax = Math.abs(x);
+    if (ax > CXM - .15 && z < 1.6 + .25 && auDernier()) return false;
     return (ax < CX0 + .1 && z > ZC0 + .3 && z < Z1 - .3)
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
@@ -2441,7 +2450,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         cour.visible = n === 0; for (const o of E.couloirs || []) o.visible = n > 0;   // au rez-de-chaussée, on ne voit pas les couloirs du dessus par la porte
         if (sg !== cote) { cote = sg; cour.position.set(sg * (11.2 - 8.6), 0, -2 - 13.75); } };
       placer();
-      const animE = L.anim; L.anim = (t) => { placer(); animE && animE(t); };
+      let nVu = -1; const animE = L.anim;
+      L.anim = (t) => { placer(); const moi = M && M.moiNum && M.gens.get(M.moiNum), n = moi && moi.etg ? moi.etg.n * 10 + (moi.etg.zone === "P" ? 1 : 0) : 0;
+        if (n !== nVu) { nVu = n; L.grille = null; E.grille = null; } animE && animE(t); };   // (les passages possibles changent selon l'étage)
       L.copieCour = cour; L.sortieCour = () => [cote * 7.9, 13.75]; }
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
@@ -2561,9 +2572,12 @@ export async function ouvrir(ctx) {
     const dt = Math.min(.05, (t - avant) / 1000); avant = t;
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
+      if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
-        else if (M.L.limites(p.g.position.x, p.g.position.z) && !M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15)) {
+        else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
+          // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
+          if (!M.L.limites(p.g.position.x, p.g.position.z) && p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; }
           // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
           p.cible = null; p.chemin = []; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
         else { p.g.position.addScaledVector(d.normalize(), Math.min(L, 3.4 * dt));
