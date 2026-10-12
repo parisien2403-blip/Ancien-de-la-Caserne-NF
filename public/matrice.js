@@ -1580,6 +1580,7 @@ function construireSousSol(A, L, scene, o = {}) {
     const laitonB = A.mat({ color: 0xc9a227, metalness: .75, roughness: .25 });
     const repose = A.ajoute(new THREE.CylinderGeometry(.025, .025, CLg, 10), laitonB, CC, .2, CZ - .38, false); repose.rotation.z = Math.PI / 2;
     obstacles.push([C1, C0 + .15, CZ - .5, CZ + .4]);
+    L.surComptoir = [C1 + .35, C1 + .85, C1 + 1.4, C1 + 1.9].map(x => [x, CZ - .12]); L.yComptoir = 1.11;   // (le monde apocalyptique y pose munitions et plantes)
     // deux tabourets devant le comptoir : on s'y assoit et on boit un verre (comme au bar de la salle des fêtes)
     L.tabourets = [];
     for (const tx of [C1 + .85, C1 + 1.65]) { const tz = CZ - .72; L.tabourets.push([tx, tz]);
@@ -2255,6 +2256,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       L.console = loc(...SL.console);
       for (const r of SL.raccourcis) if (!r.vers) L.raccourcis = [...(L.raccourcis || []), r.marche ? { ...r, marche: loc(...r.marche) } : r];
       L.tabouretsSousSol = SL.tabourets.map(t => loc(...t));
+      L.comptoirSousSol = (SL.surComptoir || []).map(t => loc(...t)); L.yComptoirSousSol = yb - 4 * HM + SL.yComptoir;
       const HSS = yb - 4 * HM;
       // la caméra : dans le couloir, le vestibule ou la grande pièce, elle reste dedans
       L.contraindreCam = (pos, moi) => { const mp = moi.g.position; if (mp.z < CZ0 - .1) return false;
@@ -3025,7 +3027,7 @@ function apocalypse(scene, L, base) {
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   for (const q of L.portails || []) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
   for (const q of L.raccourcis || []) if (q.vers) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
-  const ext = !L.interieur, feux = [], clignos = []; L.feuxSon = [];
+  const ext = !L.interieur, feux = [], clignos = []; L.feuxSon = []; L.feuxZ = [];   // (feuxZ : là où l'on brûle, [x, z, rayon])
   // le ciel bas, rouge de fumée ; le brouillard
   const ciel = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#070302"); g.addColorStop(.55, "#2a0e08"); g.addColorStop(.85, "#5a2010"); g.addColorStop(1, "#7a3014"); x.fillStyle = g; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 60; i++) { const rr = 20 + Math.random() * 70, gx = Math.random() * w, gy = h * .3 + Math.random() * h * .6, f = x.createRadialGradient(gx, gy, 2, gx, gy, rr); f.addColorStop(0, "rgba(20,10,8,.55)"); f.addColorStop(1, "rgba(20,10,8,0)"); x.fillStyle = f; x.fillRect(gx - rr, gy - rr, rr * 2, rr * 2); } }));
@@ -3050,7 +3052,7 @@ function apocalypse(scene, L, base) {
   const charbon = A.mat({ color: 0x1e1b19, roughness: 1 }), rouille = A.mat({ color: 0x5a2e1a, roughness: 1 }), cendre = A.mat({ color: 0x3a3634, roughness: 1 }), vitreN = A.mat({ color: 0x050505, roughness: .3 });
   const obstacles = [];
   // un feu : des flammes qui dansent, une lueur orange qui vacille, de la fumée qui monte
-  const feu = (x, y, z, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+  const feu = (x, y, z, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g); L.feuxZ.push([x, z, k === 1 ? .75 : .72 * k]);
     // un brasier : plusieurs nappes de flammes pixelisées, côte à côte, chacune avec son temps de retard
     const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false }));
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
@@ -3190,7 +3192,7 @@ const etageDe = p => p && p.etg ? p.etg.n : 0;
 function limZ() {
   if (M.limZ && M.limZ.L === M.L) return M.limZ;
   const L = M.L, base = baseLieu(M.lieu);
-  const f = base === "etage" ? (x, z) => Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : (x, z) => L.limites(x, z) && !(L.repos && L.repos(x, z));
+  const f = base === "etage" ? (x, z) => Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : (x, z) => L.limites(x, z) && !(L.repos && L.repos(x, z)) && !(L.feuxZ || []).some(([fx, fz, r]) => (x - fx) ** 2 + (z - fz) ** 2 < (r + .3) ** 2);   // (ni dans le feu)
   return (M.limZ = { L, limites: f, zone: base === "etage" ? [-ET.CX0 - 1, ET.CX0 + 1, -3, -.5] : L.zone });
 }
 const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
@@ -3334,7 +3336,7 @@ function objetsApo() {
   const pres = (x, z) => { for (let a = 0; a < 8; a++) { const t = a / 8 * Math.PI * 2; if (!L.limites(x + Math.cos(t) * .7, z + Math.sin(t) * .7)) return true; } return false; };   // contre un mur
   const poser = (type, n, filtre) => { let k = 0, mis = 0;
     while (mis < n && k < 4000) { k++; const x = Z[0] + hasard(graine * 97 + k * 3.1 + (type === "plante" ? 500 : 0)) * (Z[1] - Z[0]), z = Z[2] + hasard(graine * 53 + k * 7.7 + (type === "plante" ? 900 : 0)) * (Z[3] - Z[2]);
-      if (!L.limites(x, z) || !filtre(x, z) || (type === "plante" && !pres(x, z))) continue; if (M.objets.some(o => Math.hypot(o.x - x, o.z - z) < 3)) continue;
+      if (!L.limites(x, z) || !filtre(x, z) || (type === "plante" && !pres(x, z)) || (L.feuxZ || []).some(([fx, fz, r]) => Math.hypot(x - fx, z - fz) < r + .6)) continue; if (M.objets.some(o => Math.hypot(o.x - x, o.z - z) < 3)) continue;
       const etg = base === "etage" ? Math.floor(hasard(graine + k) * (ET.N + 1)) : 0;
       if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
       const y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
@@ -3344,11 +3346,20 @@ function objetsApo() {
   const nb = { grande: [5, 2], rue: [3, 1], fetes: [2, 1], etage: [5, 3] }[base] || [0, 0];
   const horsRepos = (x, z) => !(L.repos && L.repos(x, z));
   poser("balles", nb[0], horsRepos); poser("plante", nb[1], horsRepos);
-  if (L.repos) { poser("balles", 2, (x, z) => L.repos(x, z)); poser("plante", 2, (x, z) => L.repos(x, z)); }   // la salle de repos : de quoi se refaire
+  // la salle de repos : de quoi se refaire, posé sur le comptoir du bar (on le prend avec le bouton)
+  if (L.repos && L.comptoirSousSol) L.comptoirSousSol.forEach(([x, z], i) => { const type = i % 2 ? "plante" : "balles", y = L.yComptoirSousSol;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
+    if (type === "plante") { sp.scale.set(.42, .55, 1); sp.position.set(x, y + .27, z); } else { sp.scale.set(.46, .31, 1); sp.position.set(x, y + .16, z); }
+    M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: 0, sp, cache: 0, table: true }); });
 }
 let texObjets = null;
 function texObj(type) { texObjets = texObjets || { balles: new THREE.TextureLoader().load("images/apo/munitions.png"), plante: new THREE.TextureLoader().load("images/apo/plante.png") };
   for (const t of Object.values(texObjets)) t.colorSpace = THREE.SRGBColorSpace; return texObjets[type]; }
+function prendreObjet(o) {
+  if (o.type === "balles") { APO.balles = 9; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 9 balles."); }
+  else { const g = Math.min(2, 4 - APO.vies); APO.vies += g; ramasser(o); M.ctx.surInfo && M.ctx.surInfo(g > 1 ? "🌿 Deux vies de plus !" : "🌿 Une vie de plus !"); }
+  majHudApo();
+}
 function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
 // le compteur de balles et les vies, à l'écran
 function majHudApo() {
@@ -3384,11 +3395,15 @@ function animerApo(t, dt) {
     const d = Math.hypot(moi.g.position.x - z.x, moi.g.position.z - z.z);
     if (now > z.sonT && d < 15 && (baseLieu(M.lieu) !== "etage" || z.n === etageDe(moi))) { z.sonT = now + (z.chien ? 5000 : 6500) + Math.random() * 5000; sonPos(ZTYPES[z.ty].son, (1 - d / 15) * .9); }
   }
-  // les objets : ils réapparaissent ; on ramasse les munitions en passant dessus
+  // les objets : ils réapparaissent ; au sol, on les ramasse en passant dessus (sur le comptoir, il faut les prendre)
   for (const o of M.objets || []) { if (o.cache && now > o.cache) { o.cache = 0; o.sp.visible = true; }
-    if (o.cache || APO.zombieFin || o.type !== "balles" || APO.balles >= 9) continue;
+    if (o.cache || APO.zombieFin || o.table || (o.type === "balles" ? APO.balles >= 9 : APO.vies >= 4)) continue;
     if (baseLieu(M.lieu) === "etage" && o.n !== etageDe(moi)) continue;
-    if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) { APO.balles = 9; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 9 balles."); } }
+    if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) prendreObjet(o); }
+  // le feu brûle : une vie en moins, et l'on recule hors des flammes
+  if (!APO.zombieFin && now > (M.feuT || 0)) { const mp = moi.g.position, f = (M.L.feuxZ || []).find(([fx, fz, r]) => Math.hypot(mp.x - fx, mp.z - fz) < r);
+    if (f) { M.feuT = now + 1500; M.ctx.surInfo && M.ctx.surInfo("🔥 Tu brûles ! Une vie en moins."); const dx = mp.x - f[0], dz = mp.z - f[1], d = Math.hypot(dx, dz) || 1, nx = f[0] + dx / d * (f[2] + .3), nz = f[1] + dz / d * (f[2] + .3);
+      if (M.L.limites(nx, nz)) { mp.x = nx; mp.z = nz; } subirMorsure(f[0], f[1], 1); if (APO.zombieFin) return; } }
   // devenu zombie : quinze secondes, puis retour dans la vraie caserne, devant la déchetterie
   for (const [m, t0] of M.flaques || []) m.scale.setScalar(Math.min(1, .05 + (now - t0) / 2500));   // (la flaque s'étend doucement)
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
@@ -3915,12 +3930,13 @@ function chercherAction(t) {
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
-      if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
+      const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
+      if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
+      else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
-      else if (M.L.apo) { const o = (M.objets || []).find(q => q.type === "plante" && !q.cache && (baseLieu(M.lieu) !== "etage" || q.n === etageDe(moi)) && Math.hypot(q.x - x, q.z - z) < 1.3);
-        if (o && !APO.zombieFin) a = { type: "plante", id: o.id, label: "🌿 Prendre la plante" }; }
+      else if (M.L.apo) {}
       else { let best = null, bd = 1.9;
         for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
           const d = Math.hypot(p.g.position.x - x, p.g.position.z - z); if (d < bd) { bd = d; best = p; } }
@@ -3945,9 +3961,10 @@ export function agir() {
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
-  else if (a.type === "plante") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
-      if (APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
-      else { APO.vies++; ramasser(o); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🌿 Une vie de plus !"); } } }
+  else if (a.type === "prendre") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
+      if (o.type === "plante" && APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
+      else if (o.type === "balles" && APO.balles >= 9) M.ctx.surInfo && M.ctx.surInfo("🔫 Ton chargeur est déjà plein.");
+      else prendreObjet(o); } }
   M.actionT = 0;
 }
 export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: !!oui }); }

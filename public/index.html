@@ -1220,8 +1220,9 @@
             <ul>
               <li>🔫 <b>Tirer</b> : touche un zombie ou un chien (ou clique dessus sur PC). Il faut <b>2 balles</b> pour en abattre un.</li>
               <li>🚶 <b>Te déplacer</b> : touche le sol, comme dans la caserne.</li>
-              <li>📦 <b>Munitions</b> : ton arme a <b>9 balles</b>. Marche sur une boîte de munitions pour recharger à 9.</li>
-              <li>🌿 <b>Plantes</b> : près d'un mur ou sur une table, « Prendre la plante » te rend <b>une vie</b>.</li>
+              <li>📦 <b>Munitions</b> : ton arme a <b>9 balles</b>. Marche sur une boîte de munitions pour recharger à 9 (sur le comptoir du bar, touche « Prendre »).</li>
+              <li>🌿 <b>Plantes</b> : marche dessus (ou, sur le comptoir du bar, touche « Prendre ») : elle te rend <b>deux vies</b>.</li>
+              <li>🔥 <b>Le feu</b> : ne marche pas dans les flammes, elles te font perdre <b>une vie</b>. Les zombies, les chiens et Nemesis ne s'y aventurent pas.</li>
               <li>❤️ <b>Vies</b> : 4. Un zombie ou un chien t'en fait perdre <b>une</b> à chaque morsure ; à zéro, c'est fini… retour à la caserne.</li>
               <li>☠️ <b>Nemesis</b> : au bout de <b>6</b> zombies ou chiens abattus, il arrive. Immense, rapide, ses coups de poing font perdre <b>deux vies</b> ; il faut <b>5 balles</b> pour l'abattre.</li>
               <li>☕ <b>Salle de repos</b> : le vestibule et le bar, en bas de la salle des fêtes. Aucun zombie n'y entre.</li>
@@ -2732,6 +2733,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.43", "12 octobre 2026", ["Apocalypse : marcher dans le feu fait perdre une vie ; zombies, chiens et Nemesis contournent les flammes", "Munitions et plantes au sol : on les ramasse en marchant dessus ; sur le comptoir du bar, un bouton « Prendre »", "La plante rend deux vies"]],
     ["3.42", "12 octobre 2026", ["Apocalypse : après 6 zombies ou chiens abattus, Nemesis arrive — immense, plus rapide, il frappe à coups de poing (2 vies) et il faut 5 balles pour l'abattre", "Le joueur a maintenant 4 vies et un chargeur de 9 balles", "Dehors, un hélicoptère passe de temps en temps et balaie le sol de son projecteur à la recherche de survivants, avec le bruit de ses pales, faible au loin et fort quand il passe au-dessus de soi", "Musique du vestibule et du bar plus forte", "Réglage de Nemesis (tête, taille) pour l'administrateur"]],
     ["3.41", "12 octobre 2026", ["Le cercle du vestibule fait maintenant sortir dans la cour (et revenir), sans repartir aussitôt dans l'autre sens", "Escalier de la salle des fêtes : un cercle en haut et un en bas ; on s'y arrête, et l'on descend au vestibule ou remonte dans la salle tout seul", "Apocalypse : moins de zombies et de chiens, éparpillés loin de l'arrivée ; ils ne repèrent les joueurs que d'assez près"]],
     ["3.40", "12 octobre 2026", ["Caserne de l'apocalypse : avant d'entrer, un écran « Bienvenue en 1998 » explique les règles (solo ou coopération, tir, munitions, plantes, vies, salle de repos) ; on choisit d'entrer ou de rester", "Correction : en revenant de l'apocalypse (après la mort ou par la déchetterie), ses sons s'arrêtent tous"]],
