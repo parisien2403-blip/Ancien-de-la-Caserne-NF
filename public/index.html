@@ -2004,7 +2004,7 @@
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); if (id === "etage") { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
+        surLieu: id => { dessinerLieux(m, id); if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = id !== "fetes" || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") { $("mxFumee").hidden = !n; $("mxLasers").hidden = !n || !moi.admin; } },   // (les lasers : l'administrateur seul)
