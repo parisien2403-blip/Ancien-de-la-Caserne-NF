@@ -1938,7 +1938,8 @@
   ["fNom", "fPrenom", "fQual", "fParent", "fEtage"].forEach(id => $(id).addEventListener("input", renderCard));
   /* ===== La Matrice (module chargé à la demande : matrice.js, moteur 3D three.js) ===== */
   let MX = null, mxOuverte = false, monAvatar = null;
-  const chargerMX = () => MX ? Promise.resolve(MX) : import("./matrice.js").then(m => (MX = m));
+  // (le numéro de version dans l'adresse : après une mise à jour, le téléphone charge forcément la nouvelle Matrice, jamais l'ancienne gardée en mémoire)
+  const chargerMX = () => MX ? Promise.resolve(MX) : import("./matrice.js?v=" + VERSION).then(m => (MX = m));
   const urlTete = (numero, v) => `/api/avatar/${numero}/tete?t=${encodeURIComponent(moi.token)}&v=${v}`;
   function infoMatrice(texte, duree = 3500) { const el = $("mxInfo"); el.textContent = texte; el.hidden = false; clearTimeout(infoMatrice.t); infoMatrice.t = setTimeout(() => el.hidden = true, duree); }
   async function ouvrirMatrice() {
@@ -2579,6 +2580,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.34.2", "12 octobre 2026", ["Correction : après une mise à jour, le téléphone pouvait garder l'ancienne Matrice en mémoire (les nouveaux personnages, leurs tenues et leurs danses n'apparaissaient pas) ; elle est maintenant toujours rechargée"]],
     ["3.34.1", "12 octobre 2026", ["Salle des fêtes : les titres des musiques sont mieux reconnus (tirets, soulignés, apostrophes, majuscules, accents) pour faire venir les Bee Gees, Mr Hernandez et les danseurs Thriller ; plus de chansons des Bee Gees reconnues, et « Gibb » dans le nom suffit"]],
     ["3.34", "12 octobre 2026", ["Salle des fêtes : les Bee Gees ! Robin, Barry et Maurice arrivent au milieu de la piste dès que passe une de leurs chansons (Stayin' Alive, Night Fever, Tragedy, You Should Be Dancing…), en blouson et pantalon de satin doré, et dansent ensemble une chorégraphie disco : le doigt vers le ciel, les pas chassés en frappant dans les mains, les bras en l'air et un tour sur eux-mêmes", "Administrateur : boutons 🕺 Robin, 🕺 Barry et 🕺 Maurice pour recadrer leurs têtes, changer leurs vêtements, leur silhouette et leur nom"]],
     ["3.33", "12 octobre 2026", ["Salle des fêtes en boîte de nuit : à 15 %, la salle est presque dans le noir ; quatre lyres au plafond balaient la piste de faisceaux rouges, verts, bleus et roses, avec leurs taches de couleur au sol, et trois lumières colorées tournent au-dessus de la piste (elles battent quand la musique joue)", "Lasers : en plus des bleus, une seconde tête envoie des lasers verts, en face, à contretemps"]],
