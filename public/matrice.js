@@ -2990,7 +2990,7 @@ export async function ouvrir(ctx) {
           // Robert Smith (et le bassiste, le guitariste du groupe) joue : il gratte en rythme, se balance doucement ; sans musique, il attend, l'instrument à la main
           const ph = t / (p.info.musicien === "basse" ? 460 : 300), pose = p.info.musicien && !p.info.enMusique ? "guitare1" : Math.floor(ph) % 2 ? "guitare2" : "guitare1";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
-          p.corps.material.rotation = Math.sin(t / 900) * .06; p.corps.position.x = Math.sin(t / 900) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+          p.corps.material.rotation = Math.sin(t / 900) * .06; p.corps.position.x = Math.sin(t / 900) * .05; if (!p.cible) p.corps.position.y = p.info.musicien && p.info.enMusique ? Math.abs(Math.sin(t / (p.info.musicien === "basse" ? 460 : 300) * Math.PI)) * .025 : 0; p.dansait = true; }
         else if (p.info.danse === "alive" && p.poses.canne1) {
           // Mr Hernandez : la danse de Born to Be Alive (voir choreAlive)
           const c = choreAlive();
@@ -3925,7 +3925,11 @@ function animerGroupe() {
     if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, [x, z] = M.L.scene[place];
       p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
         teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/${tenue}-tete.png`, pnj: true, danseur: true, musicien: place, x, z }); if (!p) continue; }
-    p.info.danse = place === "batterie" ? "batterie" : "guitare"; p.info.enMusique = !!M.djJoue; }
+    p.info.danse = place === "batterie" ? "batterie" : "guitare"; p.info.enMusique = !!M.djJoue;
+    // le bassiste et le guitariste bougent un peu en jouant : quelques pas de côté, en avant, en arrière, autour de leur place (puis ils y reviennent quand la musique s'arrête)
+    if (place !== "batterie") { const [bx, bz] = M.L.scene[place], t2 = performance.now() / 1000, ph = place === "basse" ? 0 : 2.1, k = p.bouge = Math.max(0, Math.min(1, (p.bouge || 0) + (p.info.enMusique ? .01 : -.01)));
+      const nx = bx + k * (Math.sin(t2 * .55 + ph) * .38 + Math.sin(t2 * 1.3 + ph) * .1), nz = bz + k * Math.sin(t2 * .4 + ph * 1.7) * .28;
+      if (okScene(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; } } }
   // les projecteurs du bord de scène changent de couleur en rythme ; ceux qui sont sur scène prennent la teinte du projecteur le plus proche
   const S = M.L.scene, t = performance.now(), col = new THREE.Color(), blanc = new THREE.Color(0xffffff), PAL = [0xff2a3c, 0x2a6bff, 0x22e06a, 0xff2ad4, 0xffb020, 0x22d8ff];
   for (const f of M.L.feuxScene || []) { const i = (f.k + Math.floor(t / 1900)) % PAL.length, j = (i + 1) % PAL.length, u = Math.min(1, (t % 1900) / 500);
