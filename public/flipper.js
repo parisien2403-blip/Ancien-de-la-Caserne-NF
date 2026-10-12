@@ -18,6 +18,7 @@ export function ouvrirFlipper({ envoyerScore }) {
       <button id="fpFermer" type="button" style="font:700 16px Arial;padding:10px 18px;border-radius:999px;border:0;background:#4a3a2c;color:#f4ecd8;margin-left:8px">Revenir au bar</button></div></div>`;
   document.body.appendChild(fond);
   const $ = id => fond.querySelector("#" + id), cv = $("fpCanvas"), x = cv.getContext("2d");
+  const plateau = new Image(); plateau.src = "images/flipper-plateau.jpg";
 
   // --- la table : murs (segments), batteurs, bumpers, couloirs, cibles ---
   const murs = [];
@@ -82,9 +83,12 @@ export function ouvrirFlipper({ envoyerScore }) {
 
   // --- le dessin ---
   const dessiner = () => {
-    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#0d2a52"); g.addColorStop(.6, "#13396b"); g.addColorStop(1, "#0a1f3d"); x.fillStyle = g; x.fillRect(0, 0, W, H);
-    x.fillStyle = "rgba(255,210,80,.08)"; x.font = "900 64px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.fillText("VIKING", 186, 470);
-    x.strokeStyle = "#c9a227"; x.lineWidth = 4; x.lineCap = "round"; x.beginPath(); for (const [ax, ay, bx, by] of murs) { x.moveTo(ax, ay); x.lineTo(bx, by); } x.stroke();
+    x.shadowBlur = 0;
+    // le fond : la vraie peinture du plateau du Viking (assombrie pour bien voir la bille)
+    if (plateau.complete && plateau.naturalWidth) { x.drawImage(plateau, 18, 14, 364, 612, 0, 0, W, H); x.fillStyle = "rgba(10,6,20,.42)"; x.fillRect(0, 0, W, H); }
+    else { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#5a1a0a"); g.addColorStop(1, "#1a0805"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    x.textAlign = "center";
+    x.strokeStyle = "#ffd65a"; x.lineWidth = 5; x.lineCap = "round"; x.shadowColor = "#000"; x.shadowBlur = 6; x.beginPath(); for (const [ax, ay, bx, by] of murs) { x.moveTo(ax, ay); x.lineTo(bx, by); } x.stroke();
     for (const u of bumpers) { u.flash -= 1 / 60; x.fillStyle = u.flash > 0 ? "#fff6a8" : "#e33b2e"; x.beginPath(); x.arc(u.cx, u.cy, u.r, 0, 7); x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 3; x.stroke();
       x.fillStyle = "#fff"; x.font = "bold 13px Arial"; x.fillText("100", u.cx, u.cy + 5); }
     for (const c of cibles) { c.flash -= 1 / 60; x.fillStyle = c.flash > 0 ? "#7ef0ff" : "#2fb36b"; x.beginPath(); x.arc(c.cx, c.cy, 14, 0, 7); x.fill(); }
