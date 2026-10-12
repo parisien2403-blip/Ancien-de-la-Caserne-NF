@@ -838,6 +838,8 @@
   .acc-hero img { aspect-ratio: 4 / 3; object-position: 50% 45%; filter: none; }
   .tab[data-tab="vague"] .bubble { margin-top: 0; } .tab[data-tab="vague"] .bubble::before { display: none; }
   .f-scene { margin-right: 0; }
+  /* la pastille du profil (et le bouton de vue) : descendue sur le bord bas du bandeau, pour ne plus cacher « Caserne de la Nouvelle France » */
+  .topbar .me, .vue-btn { top: calc(100% - 14px); transform: none; z-index: 3; }
   /* la porte de la caserne, avant d'entrer dans la Matrice : le dessin de la façade, sa grille fermée */
   .mx-porte { display: none; position: relative; overflow: hidden; min-height: calc(var(--app-h, 100dvh) - 250px); border-radius: 18px; border: 1.5px solid #3a3430;
     background: #b5573c url("images/dessin-facade.jpg") 50% 100% / cover no-repeat; }
