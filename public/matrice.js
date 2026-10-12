@@ -1270,7 +1270,7 @@ function construireEtage(A, L, scene) {
     return true; };
   // on sort par la porte (au rez-de-chaussée seulement) : dans la cour d'honneur, devant la porte de l'aile
   const auRdc = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return !moi || !moi.etg || moi.etg.n === 0; };
-  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > 0 && Math.abs(x) < CX0 - .25 && Math.abs(z - 2.5) < .7, vers: "grande", arrivee: [sg * 6.8, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2 });
+  for (const sg of [-1, 1]) L.portails.push({ dans: (x, z) => auRdc() && sg * x > 0 && Math.abs(x) < CX0 - .25 && Math.abs(z - 2.5) < .7, vers: "grande", arrivee: [sg * 6.8, 13.75], yaw: sg < 0 ? -Math.PI / 2 : Math.PI / 2, indice: [sg * (CX0 - 1), 2.5] });
   L.sansMusique = true;   // (on n'entend pas la fête d'ici)
   // la caméra reste dans la cage ou dans le couloir, à hauteur du bonhomme
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
@@ -1969,7 +1969,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
     // du vestibule, vers la grande pièce au bar ou l'escalier : on continue dans la salle des fêtes (même géométrie, simple décalage — pas de coupure)
-    L.portails.push({ dans: (x, z) => x > PB[0] + .55 && Math.abs(z - VEST_Z) < VEST_VZ + 1, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z, FETE_HSS] });
+    L.portails.push({ dans: (x, z) => x > PB[0] + .55 && Math.abs(z - VEST_Z) < VEST_VZ + 1, vers: "fetes", continu: [-VEST_X, FETE_SZ - VEST_Z, FETE_HSS], seuil: [PB[0] - .7, PB[1]] });
     raccourci(L, scene, [.6, 2.3, VEST_LB], [PB[0], 1.15, PB[1]], { marche: [VEST_X, VEST_Z] });
     L.horsPNJ = (x, z) => x > 15.2 && z > 6.3 && z < 12.5;       // le chef de poste n'entre pas au bar
     // la caméra reste sous la voûte quand on est dans le passage
@@ -2524,7 +2524,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     raccourci(L, scene, [1, 3, 2.6], [X0 - .3, 1.5, Z0 + 2.5 * long / 5], { vers: "grande", arrivee: [8.8, 6.5], yaw: Math.PI / 2 });
     // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
     // par la porte « BAR » du vestibule, on sort dans la cour d'honneur, en marchant (même géométrie de part et d'autre : pas de coupure)
-    L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < VEST_LB / 2, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS] });
+    L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < VEST_LB / 2, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS], seuil: [-VEST_VX + .5, FETE_SZ] });
     L.horsPNJ = (x, z) => Math.abs(x) < EL + .5 && z > EZ - 1.5;          // le chef de poste ne descend pas l'escalier
     raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 2.4] });
     L.plafond = HT - .35;
@@ -2574,7 +2574,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       zone: [E.zone[0], E.zone[1], mz(E.zone[3]), mz(E.zone[2])], depart: [E.depart[0], mz(E.depart[1])], cam: { pos: [E.cam.pos[0], E.cam.pos[1], mz(E.cam.pos[2])], vise: [E.cam.vise[0], E.cam.vise[1], mz(E.cam.vise[2])] } });
     L.limites = (x, z) => E.limites(x, mz(z));
     L.hauteur = (x, z, p) => E.hauteur(x, mz(z), p);
-    L.portails = E.portails.map(q => ({ ...q, dans: (x, z) => q.dans(x, mz(z)) }));
+    L.portails = E.portails.map(q => ({ ...q, dans: (x, z) => q.dans(x, mz(z)), indice: q.indice && [q.indice[0], mz(q.indice[1])] }));
+    // les boutons « Monter au 1er », … « Redescendre au RDC » : on va jusqu'au couloir de l'étage voulu, par l'escalier de sa cage
+    L.monterA = (moi, f) => L.allerEtage(moi, (Math.sign(moi.g.position.x) || -1) * 12.2, mz(2.5), f * ET.H);   // (on s'arrête sur le palier de l'étage)
     L.allerEtage = (moi, x, z, y) => { const pos = moi.g.position, z0 = pos.z; pos.z = mz(z0);
       const ok = E.allerEtage(moi, x, mz(z), y); pos.z = z0;
       if (ok) { if (moi.cible) moi.cible.z = mz(moi.cible.z); for (const v of moi.chemin || []) v.z = mz(v.z); M.repere.position.z = z; }
@@ -2686,6 +2688,9 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
+    // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
+    if (M.cercles) { const vus = M.cercles.filter(c => c.g && c.g.visible); const h = ray.intersectObjects(vus.flatMap(c => [c.disque, c.anneau, c.halo]))[0];
+      if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)); allerVers(c.pt.centre[0], c.pt.centre[1], true); return; } }
     // le raccourci touché le plus près (une affiche posée sur un panneau passe avant le panneau)
     let rc = null, rd = Infinity; for (const q of M.L.raccourcis || []) { const h = ray.intersectObject(q.obj)[0]; if (h && h.distance - (q.affichePrio ? .3 : 0) < rd) { rd = h.distance - (q.affichePrio ? .3 : 0); rc = q; } }
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
@@ -2736,7 +2741,7 @@ export async function ouvrir(ctx) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
-        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
+        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
         else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
           // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
           if (!M.L.limites(p.g.position.x, p.g.position.z) && p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; }
@@ -2746,7 +2751,7 @@ export async function ouvrir(ctx) {
           /* une marche fluide : on accélère au départ, on ralentit en arrivant, et l'on tourne en douceur dans les virages au lieu de s'arrêter à chaque coin */
           const dn = d.clone().normalize(), fin = !(p.chemin && p.chemin.length);
           if (!p.dir) p.dir = dn.clone(); else { p.dir.lerp(dn, Math.min(1, dt * 9)); if (p.dir.lengthSq() < 1e-4) p.dir.copy(dn); p.dir.normalize(); }
-          const vmax = fin ? 3.3 * Math.max(.35, Math.min(1, L / .9)) : 3.3;
+          const vmax = (fin ? 3.3 * Math.max(.35, Math.min(1, L / .9)) : 3.3) * (p.rapide ? 1.55 : 1);   // (avec les boutons d'étage, on grimpe d'un bon pas)
           p.vit = (p.vit || 0) + (vmax - (p.vit || 0)) * Math.min(1, dt * 6);
           const pas = Math.min(L, p.vit * dt);
           let sens = L < .25 || p.dir.dot(dn) < .5 ? dn : p.dir;
@@ -2850,6 +2855,8 @@ export async function ouvrir(ctx) {
     if (M.L.anim) M.L.anim(t);
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
     animerCercles(t);
+    { const moi = M.moiNum && M.gens.get(M.moiNum), n = M.lieu === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
+      if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz)))); }
@@ -3026,6 +3033,7 @@ const RAYON_CERCLE = .62;
 // puis poussé vers l'intérieur pour que tout le cercle soit sur le sol où l'on marche
 function centrePortail(pt) {
   if (pt.centre) return pt.centre;
+  if (pt.seuil) { pt.zc = pt.seuil; return (pt.centre = pt.seuil); }   // (un passage ouvert : le cercle marque son seuil)
   if (pt.essai && performance.now() - pt.essai < 3000) return null; pt.essai = performance.now();
   const Z = M.L.zone || [-45, 45, -45, 45]; let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   for (let x = Z[0]; x <= Z[1]; x += .3) for (let z = Z[2]; z <= Z[3]; z += .3) if (pt.dans(x, z)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
@@ -3043,7 +3051,9 @@ function centrePortail(pt) {
   const porte = (M.L.raccourcis || []).filter(r => r.vers === pt.vers).map(r => r.obj.getWorldPosition(new THREE.Vector3()));
   const dist = c => porte.length ? Math.min(...porte.map(w => Math.hypot(w.x - c[0], w.z - c[1]))) : -morceaux.find(m => moy(m) === c)?.length || 0;
   let best = null, bd = Infinity; for (const m of morceaux) { const c = moy(m), d = porte.length ? dist(c) : -m.length; if (d < bd) { bd = d; best = m; } }
-  let zc = moy(best); if (!M.L.limites(zc[0], zc[1])) zc = best.reduce((b, q) => Math.hypot(q[0] - zc[0], q[1] - zc[1]) < Math.hypot(b[0] - zc[0], b[1] - zc[1]) ? q : b);
+  let zc = moy(best);
+  if (pt.indice) zc = best.reduce((b, q) => Math.hypot(q[0] - pt.indice[0], q[1] - pt.indice[1]) < Math.hypot(b[0] - pt.indice[0], b[1] - pt.indice[1]) ? q : b);   // (au plus près de la porte)
+  if (!M.L.limites(zc[0], zc[1])) zc = best.reduce((b, q) => Math.hypot(q[0] - zc[0], q[1] - zc[1]) < Math.hypot(b[0] - zc[0], b[1] - zc[1]) ? q : b);
   // poussé vers l'intérieur, jusqu'à ce que tout le cercle tienne sur le sol
   const tient = (cx, cz) => { for (let a = 0; a < 12; a++) { const t = a / 12 * Math.PI * 2; if (!M.L.limites(cx + Math.cos(t) * (RAYON_CERCLE - .05), cz + Math.sin(t) * (RAYON_CERCLE - .05))) return false; } return M.L.limites(cx, cz); };
   let centre = tient(zc[0], zc[1]) ? zc : null;
@@ -3054,11 +3064,11 @@ function animerCercles(t) {
   if (M.cerclesL !== M.L) {   // nouveau lieu : on (re)pose les cercles
     for (const c of M.cercles || []) { M.scene.remove(c.g); }
     M.cercles = []; M.cerclesL = M.L; M.cerclePret = false;
-    for (const pt of M.L.portails || []) if (!pt.continu) M.cercles.push({ pt, g: null });
+    for (const pt of M.L.portails || []) if (!pt.continu || pt.seuil) M.cercles.push({ pt, g: null });
   }
   const moi = M.moiNum && M.gens.get(M.moiNum);
   // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
-  if (moi && !M.cerclePret && !M.cercles.some(c => c.pt.centre && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
+  if (moi && !M.cerclePret && !M.cercles.some(c => c.pt.centre && !c.pt.continu && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
       const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
@@ -3069,7 +3079,7 @@ function animerCercles(t) {
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
-    c.g.visible = c.pt.dans(c.pt.zc[0], c.pt.zc[1]);
+    c.g.visible = c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1]);
     const b = .5 + .5 * Math.sin(t / 420);
     c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
     c.halo.scale.setScalar(1 + .08 * b);
@@ -3446,7 +3456,7 @@ function viser(p, x, z) {
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
 function allerVers(x, z, envoyer) {
-  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return;
+  const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; moi.rapide = false;
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   let px = x, pz = z;
   if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
@@ -3503,6 +3513,8 @@ export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
 // la fumée et les lasers du DJ (tous ceux qui sont dans la salle des fêtes les voient)
 export function fumee() { envoyerWS({ t: "fumee" }); }
+// dans les bâtiments : monter (ou redescendre) à l'étage f, tout seul, par l'escalier
+export function monterEtage(f) { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi && M.lieu === "etage" && M.L.monterA) { moi.info.danse = false; if (M.L.monterA(moi, f)) moi.rapide = true; } }
 // on joue (console, flipper, fléchettes) ou l'on a fini (null) : les autres voient une petite icône au-dessus de soi
 export function jouer(jeu) { envoyerWS({ t: "joue", jeu: jeu || null }); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) moi.info.joue = jeu || null; }
 export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }

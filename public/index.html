@@ -838,6 +838,12 @@
   .acc-hero img { aspect-ratio: 4 / 3; object-position: 50% 45%; filter: none; }
   .tab[data-tab="vague"] .bubble { margin-top: 0; } .tab[data-tab="vague"] .bubble::before { display: none; }
   .f-scene { margin-right: 0; }
+  /* dans les bâtiments : monter d'un étage (ou, au 6e, redescendre) d'un seul bouton */
+  .mx-etages { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 92%; }
+  .mx-etages[hidden] { display: none; }
+  .mx-etages button { border: 0; border-radius: 99px; padding: 10px 16px; background: var(--terra); color: #fff; font: 700 15px "Lato", sans-serif; box-shadow: 0 3px 0 #7a3522, 0 4px 12px rgba(0,0,0,.3); cursor: pointer; }
+  .mx-etages button.petit { padding: 8px 12px; font-size: 14px; background: #fbf7ef; color: var(--terra-dark); box-shadow: 0 2px 0 #c9b288; }
+  .mx-etages span { background: rgba(30,24,18,.7); color: #fff; border-radius: 99px; padding: 6px 10px; font: 700 13px "Lato", sans-serif; }
   /* la pastille du profil (et le bouton de vue) : descendue sur le bord bas du bandeau, pour ne plus cacher « Caserne de la Nouvelle France » */
   .topbar .me, .vue-btn { top: calc(100% - 14px); transform: none; z-index: 3; }
   /* la porte de la caserne, avant d'entrer dans la Matrice : le dessin de la façade, sa grille fermée */
@@ -1171,6 +1177,7 @@
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-action" id="mxAction" type="button" hidden></button>
+          <div class="mx-etages" id="mxEtages" hidden></div>
           <div class="mx-invite" id="mxInvite" hidden><div id="mxInviteTxt"></div><div class="mx-invite-btns"><button type="button" class="btn small" id="mxInviteOui">💞 Avec plaisir</button><button type="button" class="btn small alt" id="mxInviteNon">Non merci</button></div></div>
           <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
           <button class="mx-effet" id="mxLasers" type="button" title="Allumer les lasers" hidden>🔷 Lasers</button>
@@ -2013,6 +2020,11 @@
         surFlipper: () => { infoMatrice("🎰 Le flipper s'allume…", 2000);
           import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
+        surEtage: (n, N) => { const el = $("mxEtages"); if (n === null || n === undefined) { el.hidden = true; return; }
+          const nom = k => k === 0 ? "rez-de-chaussée" : k === 1 ? "1er" : k + "e", court = k => k === 0 ? "RDC" : k === 1 ? "1er" : k + "e";
+          el.innerHTML = n < N ? `<button type="button" data-etage="${n + 1}">⬆ Monter au ${nom(n + 1)}</button>`
+            : `<span>⬇ Redescendre au</span>` + Array.from({ length: N }, (_, i) => N - 1 - i).map(k => `<button type="button" class="petit" data-etage="${k}">${court(k)}</button>`).join("");
+          el.querySelectorAll("[data-etage]").forEach(b => b.onclick = () => MX && MX.monterEtage(+b.dataset.etage)); el.hidden = false; },
         surAction: a => { $("mxAction").hidden = !a; if (a) $("mxAction").textContent = a.label; },
         surInvitation: inv => { mxInvitation = inv; $("mxInviteTxt").textContent = `💞 ${inv.nom} t'invite à danser un slow.`; $("mxInvite").hidden = false;
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
