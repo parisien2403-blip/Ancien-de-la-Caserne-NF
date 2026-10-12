@@ -2887,7 +2887,7 @@ export async function ouvrir(ctx) {
 
 export function fermer() {
   if (!M) return;
-  if (sonApo) sonApo.pause();
+  if (sonApo) sonApo.pause(); if (sonFeu) sonFeu.pause();
   M.ouvert = false;
   try { M.ws && M.ws.close(1000, "Fermé"); } catch (e) {}
   clearTimeout(M.reco); clearInterval(M.minuteur);
@@ -2901,8 +2901,14 @@ export function fermer() {
    qui brûlent dans la rue, débris, sang séché, lumières qui grésillent. Les lieux s'appellent « z-rue », « z-grande », « z-fetes », « z-etage » :
    même géométrie que les vrais, mais on n'y croise que ceux qui sont passés de l'autre côté. */
 /* l'ambiance sonore dehors, à l'apocalypse (sirènes lointaines, vent, cris) : en boucle, tant qu'on est à l'extérieur */
-let sonApo = null;
+let sonApo = null, sonFeu = null;
 function ambianceApo() {
+  // le crépitement de l'essence qui brûle : plus fort en s'approchant d'une voiture en feu ou d'un brasier
+  const moi = M && M.moiNum && M.gens.get(M.moiNum), F = M && M.L && estApo(M.lieu) && M.L.feuxSon || [];
+  let vf = 0; if (moi && F.length) { const d = Math.min(...F.map(([x, z]) => Math.hypot(moi.g.position.x - x, moi.g.position.z - z))); vf = Math.max(0, 1 - d / 16) ** 1.5; }
+  if (vf > 0 && !sonFeu) { sonFeu = new Audio("sons/apo-feu.mp3"); sonFeu.loop = true; }
+  if (sonFeu) { sonFeu.volume = Math.min(1, vf);
+    if (vf > .01 && sonFeu.paused) { if (performance.now() - (sonFeu.essai || 0) > 2000) { sonFeu.essai = performance.now(); sonFeu.play().catch(() => {}); } } else if (vf <= .01 && !sonFeu.paused) sonFeu.pause(); }
   const dehors = M && M.L && estApo(M.lieu) && !M.L.interieur;
   if (dehors && !sonApo) { sonApo = new Audio("sons/apo-ville.mp3"); sonApo.loop = true; sonApo.volume = .7; }
   if (!sonApo) return;
@@ -2950,7 +2956,7 @@ function apocalypse(scene, L, base) {
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   for (const q of L.portails || []) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
   for (const q of L.raccourcis || []) if (q.vers) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
-  const ext = !L.interieur, feux = [], clignos = [];
+  const ext = !L.interieur, feux = [], clignos = []; L.feuxSon = [];
   // le ciel bas, rouge de fumée ; le brouillard
   const ciel = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#070302"); g.addColorStop(.55, "#2a0e08"); g.addColorStop(.85, "#5a2010"); g.addColorStop(1, "#7a3014"); x.fillStyle = g; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 60; i++) { const rr = 20 + Math.random() * 70, gx = Math.random() * w, gy = h * .3 + Math.random() * h * .6, f = x.createRadialGradient(gx, gy, 2, gx, gy, rr); f.addColorStop(0, "rgba(20,10,8,.55)"); f.addColorStop(1, "rgba(20,10,8,0)"); x.fillStyle = f; x.fillRect(gx - rr, gy - rr, rr * 2, rr * 2); } }));
@@ -2989,12 +2995,12 @@ function apocalypse(scene, L, base) {
     b(.02, .5, 1.5, vitreN, .92, 1.3, 0); b(.02, .5, 1.5, vitreN, -1.32, 1.3, 0); b(2, .45, .02, vitreN, -.2, 1.32, .82); b(2, .45, .02, vitreN, -.2, 1.32, -.82);
     for (const [wx, wz] of [[1.35, .9], [-1.35, .9], [1.35, -.9], [-1.35, -.9]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .22, 14), cendre); r.rotation.x = Math.PI / 2; r.position.set(wx, .3, wz); g.add(r); }
     b(.5, .25, .9, rouille, 1.6, 1.0, .1).rotation.z = -.5;   // le capot arraché
-    if (brule) feu(x + Math.cos(a) * .9, .6, z - Math.sin(a) * .9, 2);
+    if (brule) { feu(x + Math.cos(a) * .9, .6, z - Math.sin(a) * .9, 2); L.feuxSon.push([x, z]); }
     obstacles.push([x, z, 2.3]); };
   // un fût qui brûle
   const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .85, z, 1); obstacles.push([x, z, .45]); };
   // un grand brasier (des meubles, des gravats qui brûlent), plus haut qu'un homme
-  const brasier = (x, z, k = 2.6) => { feu(x, 0, z, k); for (let i = 0; i < 5; i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, .12, .2), charbon); o.position.set(x + (Math.random() - .5) * 1.4, .1 + i * .05, z + (Math.random() - .5) * 1.2); o.rotation.set(Math.random() * .4, Math.random() * 7, Math.random() * .4); scene.add(o); } obstacles.push([x, z, 1.1]); };
+  const brasier = (x, z, k = 2.6) => { feu(x, 0, z, k); L.feuxSon.push([x, z]); for (let i = 0; i < 5; i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, .12, .2), charbon); o.position.set(x + (Math.random() - .5) * 1.4, .1 + i * .05, z + (Math.random() - .5) * 1.2); o.rotation.set(Math.random() * .4, Math.random() * 7, Math.random() * .4); scene.add(o); } obstacles.push([x, z, 1.1]); };
   // des débris (planches, gravats) et du sang séché, là où l'on marche
   const zone = L.zone || [-30, 30, -30, 30], libre = [];
   for (let i = 0; i < 4000 && libre.length < 160; i++) { const x = zone[0] + Math.random() * (zone[1] - zone[0]), z = zone[2] + Math.random() * (zone[3] - zone[2]); if (L.limites(x, z)) libre.push([x, z]); }
