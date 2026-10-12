@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" },
+  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -40,7 +40,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", peau = "#e9c4a0", t = o.tenue || "civil";
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
+    const bas = t === "robe" || t === "mariee" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -83,13 +83,25 @@ export function dessinerBonhomme(o, tete) {
     const haut = t === "garde" ? "#1c2541" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
+    if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
+    else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     // le blouson rouge façon Thriller : les bandes noires en V, la ceinture noire
     if (t === "thriller" && !profil && o.pose !== "dos") { x.strokeStyle = "#141414"; x.lineWidth = 7; x.lineCap = "butt";
       x.beginPath(); x.moveTo(64, 150); x.lineTo(98, 238); x.moveTo(136, 150); x.lineTo(102, 238); x.stroke();
       x.lineWidth = 3.5; x.beginPath(); x.moveTo(76, 150); x.lineTo(100, 214); x.lineTo(124, 150); x.stroke();
       x.fillStyle = "#141414"; x.fillRect(58, 248, 84, 10); x.fillStyle = "#9a0c22"; x.fillRect(84, 140, 32, 10); }
+    // le zombie : costume gris déchiré, chemise sale, taches rouges, lambeaux
+    if (t === "zombie" && !profil) { x.fillStyle = "#c9c4b4"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 200); x.lineTo(114, 146); x.fill();
+      x.fillStyle = "#6b1e1e"; x.fillRect(96, 152, 8, 44);
+      x.fillStyle = "rgba(120,10,10,.75)"; for (const [a, b2, r] of [[80, 200, 9], [118, 176, 7], [94, 236, 11], [126, 228, 6]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); }
+      x.fillStyle = "#2a2a2c"; for (const [a, b2] of [[58, 250], [130, 240], [70, 205]]) { x.beginPath(); x.moveTo(a, b2); x.lineTo(a + 10, b2 + 14); x.lineTo(a + 4, b2 + 20); x.lineTo(a - 4, b2 + 8); x.closePath(); x.fill(); }
+      x.strokeStyle = "rgba(255,255,255,.18)"; x.lineWidth = 2; for (let k = 0; k < 6; k++) { x.beginPath(); x.moveTo(60 + k * 14, 262); x.lineTo(64 + k * 14, 272); x.stroke(); } }
+    // la mariée : dentelle, ceinture satin, bouquet ; la robe un peu salie (c'est une mariée zombie)
+    if (t === "mariee" && !profil) { x.strokeStyle = "rgba(200,190,170,.7)"; x.lineWidth = 1.5; for (let y = 160; y < 225; y += 9) { x.beginPath(); x.moveTo(70, y); for (let X = 70; X < 132; X += 6) x.lineTo(X + 3, y + (X % 12 ? 3 : -3)); x.stroke(); }
+      x.fillStyle = "#e9dfcf"; x.fillRect(62, 226, 76, 8);
+      x.strokeStyle = "rgba(160,150,130,.6)"; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(60 + k * 14, 250); x.lineTo(40 + k * 20, 340); x.stroke(); }
+      x.fillStyle = "rgba(110,20,20,.55)"; for (const [a, b2, r] of [[84, 290, 8], [128, 310, 6], [70, 330, 5]]) { x.beginPath(); x.arc(a, b2, r, 0, 7); x.fill(); } }
     // le barman : le grand tablier bleu, noué à la taille, qui descend sous les genoux (et ses bretelles)
     if (t === "barman" && !profil && o.pose !== "dos") { x.fillStyle = "#2f5276"; x.beginPath(); x.roundRect(72, 158, 56, 60, 6); x.fill();
       x.beginPath(); x.moveTo(60, 214); x.lineTo(140, 214); x.lineTo(146, 318); x.lineTo(54, 318); x.closePath(); x.fill();
@@ -123,6 +135,8 @@ export function dessinerBonhomme(o, tete) {
       if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
       if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
+      if (t === "zombie") { x.fillStyle = "#2a2a2c"; x.beginPath(); x.moveTo(-12, 70); x.lineTo(-4, 84); x.lineTo(4, 74); x.lineTo(12, 88); x.lineTo(12, 96); x.lineTo(-12, 96); x.fill(); x.fillStyle = "rgba(120,10,10,.7)"; x.beginPath(); x.arc(3, 40, 6, 0, 7); x.fill(); }
+      if (t === "mariee") { x.fillStyle = "rgba(255,255,255,.55)"; x.fillRect(-13, -8, 26, 30); }
       if (doigt) {
         // le poing fermé, le pouce sur le côté et l'index tendu, façon Travolta
         x.fillStyle = peau; x.beginPath(); x.roundRect(-11, 86, 22, 20, 7); x.fill();
@@ -2938,16 +2952,22 @@ function animerBarman(t) {
   if (p.parole !== b) { p.parole = b; if (hasard(b * 7.7) < .25) dire(BARMAN, PHRASES_BAR[4 + Math.floor(hasard(b * 3.1) * (PHRASES_BAR.length - 4))]); }
 }
 /* --- le danseur Thriller (réglé par l'administrateur) : dès que passe un Thriller, il arrive au milieu de la piste et le danse ; il repart ensuite --- */
-const DANSEUR = -4;
+const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
-  if (air && !p) { const P = (M.ctx.pnjDanseur && M.ctx.pnjDanseur()) || {}, [x, z] = M.L.pisteCentre;
-    const q = ajouterAncien({ numero: DANSEUR, nom: P.nom || "Le danseur Thriller", tenue: P.tenue || "thriller", couleur: P.couleur || "#c8102e", bas: P.bas || "#c8102e", pieds: P.pieds || "#111111",
-      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 4) : "images/danseur-tete.png", pnj: true, danseur: true, x, z: z + 3 });
-    if (q) { viser(q, x, z); q.info.danse = "thriller"; dire(DANSEUR, "It's close to midnight… 🧟"); } }
-  else if (!air && p) retirerAncien(DANSEUR);
-  else if (p) p.info.danse = "thriller";
+  if (air && !p) { const [x, z] = M.L.pisteCentre;
+    // le danseur au milieu, le zombie à sa gauche, la mariée à sa droite (vus depuis la salle)
+    for (const [num, id, dx, def, tete] of [[DANSEUR, 4, 0, { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" }, "images/danseur-tete.png"],
+        [ZOMBIE, 5, -1.7, { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52", pieds: "#2a2522" }, "images/zombie-tete.png"],
+        [MARIEE, 6, 1.7, { nom: "La mariée", tenue: "mariee", couleur: "#f4f1ea", bas: null, pieds: "#e8e4da" }, "images/mariee-tete.png"]]) {
+      const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+      const q = ajouterAncien({ numero: num, nom: P.nom || def.nom, tenue: P.tenue || def.tenue, couleur: P.couleur || def.couleur, bas: P.bas || def.bas, pieds: P.pieds || def.pieds,
+        reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete, pnj: true, danseur: true, x: x + dx, z: z + 3 });
+      if (q) { viser(q, x + dx, z - Math.abs(dx) * .3); q.info.danse = "thriller"; } }
+    dire(DANSEUR, "It's close to midnight… 🧟"); }
+  else if (!air && p) for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n);
+  else if (p) for (const n of [DANSEUR, ZOMBIE, MARIEE]) { const q = M.gens.get(n); if (q) q.info.danse = "thriller"; }
 }
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
@@ -3156,7 +3176,7 @@ function connecter() {
     }
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
-    else if (m.t === "pnj" && m.p && m.p.id === 4) { ctx.surPNJDanseur && ctx.surPNJDanseur(m.p); if (M.gens.has(DANSEUR)) retirerAncien(DANSEUR); }
+    else if (m.t === "pnj" && m.p && m.p.id >= 4 && m.p.id <= 6) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); }
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
