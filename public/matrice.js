@@ -984,7 +984,7 @@ function deuxiemeCour(A, L, scene) {
       x.fillStyle = ["#c8102e", "#1f4e8c", "#e2b11f", "#2e8a4a"][Math.floor(alea() * 4)]; x.beginPath(); x.arc(0, -ph / 2 + 8, 5, 0, 7); x.fill();   // la punaise
       x.restore(); X += pw + 14 + alea() * 18; }
   });
-  const panneauxLiege = [];
+  const panneauxLiege = []; let panneauGrand = null;
   for (const sg of [-1, 1]) { const g = new THREE.Group(); g.position.set(sg * (2.4 - .03), 1.75, -24); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
     const t = tex(panneau(sg > 0 ? 311 : 733)); panneauxLiege.push([sg, t.image]);
     const pl = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.5, .04), [A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ map: t, roughness: .9 }), A.mat({ color: 0x5a3a1e })]);
@@ -992,10 +992,16 @@ function deuxiemeCour(A, L, scene) {
     if (sg < 0) {   // sur ce panneau-là : l'affiche de la soirée de DJ Manu (format A4), punaisée
       const im = new Image(), ta = new THREE.Texture(im); ta.colorSpace = THREE.SRGBColorSpace; im.onload = () => { ta.needsUpdate = true; }; im.src = "images/affiche-dj-manu.jpg";
       const af = new THREE.Mesh(new THREE.PlaneGeometry(.38, .68), new THREE.MeshStandardMaterial({ map: ta, roughness: .85 })); af.position.set(1.7, 0, .046); af.rotation.z = .03; g.add(af);
+      // le panneau vu en grand : avec l'affiche de DJ Manu dessus, à sa place
+      im.addEventListener("load", () => { const c0 = t.image, c = document.createElement("canvas"); c.width = c0.width * 2; c.height = c0.height * 2; const x = c.getContext("2d");
+        x.drawImage(c0, 0, 0, c.width, c.height); x.save(); x.translate((1.7 + 2.2) / 4.4 * c.width, c.height / 2); x.rotate(-.03);
+        const pw = .38 / 4.4 * c.width, ph = .68 / 1.5 * c.height; x.fillStyle = "rgba(0,0,0,.3)"; x.fillRect(-pw / 2 + 5, -ph / 2 + 6, pw, ph); x.drawImage(im, -pw / 2, -ph / 2, pw, ph);
+        x.fillStyle = "#c8102e"; x.beginPath(); x.arc(0, -ph / 2 + 8, 7, 0, 7); x.fill(); x.restore();
+        const r = (L.raccourcis || []).find(q => q.panneau === -1); if (r) r.affiche = c.toDataURL("image/jpeg", .9); else panneauGrand = c.toDataURL("image/jpeg", .9); });
       const pu = new THREE.Mesh(new THREE.SphereGeometry(.014, 8, 6), A.mat({ color: 0xc8102e })); pu.position.set(1.7, .32, .05); g.add(pu); } }
   // on touche une affiche ou un panneau : il s'affiche en grand (l'affiche de DJ Manu d'abord, elle est posée sur le panneau)
-  raccourci(L, scene, [.25, .75, .45], [-2.3, 1.75, -25.7], { affiche: "images/affiche-dj-manu.jpg" });
-  for (const [sg, c] of panneauxLiege) raccourci(L, scene, [.25, 1.6, 4.5], [sg * 2.3, 1.75, -24], { affiche: c.toDataURL("image/jpeg", .9) });
+  raccourci(L, scene, [.3, .8, .5], [-2.3, 1.75, -25.7], { affiche: "images/affiche-dj-manu.jpg", affichePrio: true });
+  for (const [sg, c] of panneauxLiege) raccourci(L, scene, [.4, 1.7, 4.6], [sg * 2.28, 1.75, -24], { affiche: (sg < 0 && panneauGrand) || c.toDataURL("image/jpeg", .9), panneau: sg });
   const lp = new THREE.PointLight(0xfff2dc, 5, 8, 1.4); lp.position.set(0, 3.9, -24); scene.add(lp);
   // une petite lumière le soir, au-dessus de chaque passage
   for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
@@ -2340,11 +2346,12 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
-    const rc = (M.L.raccourcis || []).find(q => ray.intersectObject(q.obj)[0]);
+    // le raccourci touché le plus près (une affiche posée sur un panneau passe avant le panneau)
+    let rc = null, rd = Infinity; for (const q of M.L.raccourcis || []) { const h = ray.intersectObject(q.obj)[0]; if (h && h.distance - (q.affichePrio ? .3 : 0) < rd) { rd = h.distance - (q.affichePrio ? .3 : 0); rc = q; } }
     if (rc && rc.info) { ctx.surInfo && ctx.surInfo(rc.info); return; }
     if (rc && rc.affiche) {   // une affiche : de près, elle s'ouvre en grand ; de loin, on y va
       const moi = M.moiNum && M.gens.get(M.moiNum), w = rc.obj.getWorldPosition(new THREE.Vector3());
-      if (moi && Math.hypot(moi.g.position.x - w.x, moi.g.position.z - w.z) > 3.5) { const dx = moi.g.position.x - w.x, dz = moi.g.position.z - w.z, l = Math.hypot(dx, dz) || 1; allerVers(w.x + dx / l * 1.3, w.z + dz / l * 1.3, true); }
+      if (moi && Math.hypot(moi.g.position.x - w.x, moi.g.position.z - w.z) > 6) { const dx = moi.g.position.x - w.x, dz = moi.g.position.z - w.z, l = Math.hypot(dx, dz) || 1; allerVers(w.x + dx / l * 1.3, w.z + dz / l * 1.3, true); }
       else ctx.surAffiche && ctx.surAffiche(rc.affiche);
       return; }
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
