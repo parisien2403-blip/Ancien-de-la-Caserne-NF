@@ -76,7 +76,7 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   33: { nom: "Match", tenue: "skinhead", couleur: "#151517", bas: "#8a7a5a", pieds: "#1a1a1a" }, 34: { nom: "3-D", tenue: "troisd", couleur: "#e2e0d8", bas: "#3a3a3c", pieds: "#1a1a1a" },
   35: { nom: "Skinhead", tenue: "match", couleur: "#d9a520", bas: "#2a2a2e", pieds: "#1a1a1a" }, 36: { nom: "La dame à la robe à pois", tenue: "pois", couleur: "#e0455c", bas: null, pieds: "#f2f0ea" },
   37: { nom: "La dame à la jupe écossaise", tenue: "ecossaise", couleur: "#46543a", bas: null, pieds: "#c9932a" }, 38: { nom: "Le monsieur aux bretelles", tenue: "bretelles", couleur: "#f4f2ec", bas: "#6a5444", pieds: "#4a2414" },
-  39: { nom: "Le serveur", tenue: "serveur", couleur: "#f4f2ec", bas: "#151517", pieds: "#151515" }, 40: { nom: "La serveuse", tenue: "serveuse", couleur: "#c8202a", bas: null, pieds: "#c8102e" },
+  39: { nom: "Le serveur", tenue: "serveur", couleur: "#f4f2ec", bas: "#f2f2ee", pieds: "#f2f2ee" }, 40: { nom: "La serveuse", tenue: "serveuse", couleur: "#c8202a", bas: null, pieds: "#c8102e" },
   41: { nom: "Le monsieur au gilet", tenue: "gilet", couleur: "#f2f0ea", bas: "#2f3236", pieds: "#3a2414" }, 42: { nom: "Le garçon au blouson", tenue: "varsity", couleur: "#f2f2ee", bas: "#3c5a86", pieds: "#e8e8e8" },
   43: { nom: "Lou", tenue: "lou", couleur: "#ece4d2", bas: "#3a3a3c", pieds: "#1a1a1a" }, 44: { nom: "Goldie Wilson", tenue: "lou", couleur: "#e8e2d4", bas: "#3a3a3c", pieds: "#1a1a1a" },
   45: { nom: "Le pompiste", tenue: "pompiste", couleur: "#2f4a3a", bas: "#2f4a3a", pieds: "#1a1a1a" } };   // (le groupe de la scène de la salle des fêtes)

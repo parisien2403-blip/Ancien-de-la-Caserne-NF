@@ -198,7 +198,8 @@ export function dessinerBonhomme(o, tete) {
         x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(100, 160); x.lineTo(100, 262); x.stroke();
         if (jambesDroites) { x.strokeStyle = "rgba(40,25,15,.35)"; x.lineWidth = 1.2; for (let k = 266; k < 396; k += 9) { x.beginPath(); x.moveTo(72, k); x.lineTo(128, k); x.stroke(); } for (let k = 76; k < 128; k += 9) { x.beginPath(); x.moveTo(k, 262); x.lineTo(k, 396); x.stroke(); } } }
       if (t === "serveur" || t === "serveuse") { const raye = (x0, y0, w, h) => { x.save(); x.beginPath(); x.rect(x0, y0, w, h); x.clip(); x.fillStyle = "#f4f2ec"; x.fillRect(x0, y0, w, h); x.fillStyle = "#c8202a"; for (let k = x0; k < x0 + w; k += 8) x.fillRect(k, y0, 4, h); x.restore(); };
-        if (t === "serveur") { noeud("#c8202a"); raye(70, 176, 60, 160); x.fillStyle = "#c8202a"; x.fillRect(72, 168, 4, 12); x.fillRect(124, 168, 4, 12); }
+        if (t === "serveur") { raye(60, 148, 26, 112); raye(114, 148, 26, 112); x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(86, 148); x.lineTo(114, 148); x.lineTo(110, 200); x.lineTo(90, 200); x.closePath(); x.fill(); noeud("#d81818");   // le gilet rayé rouge et blanc sur la chemise blanche, le nœud papillon rouge
+          x.fillStyle = "#f4f2ec"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(92, 212 + k * 14, 2.4, 0, 7); x.fill(); } }
         else { x.save(); x.beginPath(); x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(158, 300); x.lineTo(42, 300); x.lineTo(62, 236); x.closePath(); x.clip(); raye(30, 146, 140, 160); x.restore();
           noeud("#c8202a"); x.fillStyle = "#f8f8f4"; x.beginPath(); x.moveTo(76, 240); x.lineTo(124, 240); x.lineTo(118, 290); x.lineTo(82, 290); x.closePath(); x.fill(); x.fillStyle = "#f8f8f4"; x.fillRect(62, 232, 76, 8); } }
       if (t === "lou") { x.fillStyle = "rgba(0,0,0,.1)"; x.beginPath(); x.moveTo(84, 146); x.lineTo(72, 156); x.lineTo(88, 176); x.closePath(); x.moveTo(116, 146); x.lineTo(128, 156); x.lineTo(112, 176); x.closePath(); x.fill();
@@ -4977,7 +4978,7 @@ function construireHillValley(A, T, L, scene) {
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
 const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [39, "serveur"], [40, "serveur"], [43, "lou"], [44, "lou"], [32, "bande"], [33, "bande"], [34, "bande"], [35, "bande"]];
 const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
-  36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
+  36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z)) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
@@ -5013,7 +5014,7 @@ function animerHV(now) {
 }
 function defautsHV(id, P) { const D = { 31: ["marty", "#5f86b8", "#4a76ad", "#e2ddd2"], 32: ["biff", "#c8201c", "#1d2433", "#1a1a1a"], 33: ["skinhead", "#151517", "#8a7a5a", "#1a1a1a"], 34: ["troisd", "#e2e0d8", "#3a3a3c", "#1a1a1a"], 35: ["match", "#d9a520", "#2a2a2e", "#1a1a1a"],
     43: ["lou", "#ece4d2", "#3a3a3c", "#1a1a1a"], 44: ["lou", "#e8e2d4", "#3a3a3c", "#1a1a1a"], 45: ["pompiste", "#2f4a3a", "#2f4a3a", "#1a1a1a"],
-    36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#151517", "#151515"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
+    36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
