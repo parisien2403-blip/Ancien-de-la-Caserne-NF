@@ -2708,7 +2708,8 @@ export async function ouvrir(ctx) {
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const T = textures();
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
-  rendu.setPixelRatio(Math.min(devicePixelRatio, matchMedia("(pointer: coarse)").matches ? 1.5 : 2));
+  const resMax = Math.min(devicePixelRatio, 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
+  rendu.setPixelRatio(res);
   rendu.shadowMap.enabled = true; rendu.shadowMap.type = THREE.PCFSoftShadowMap;
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
@@ -2800,7 +2801,12 @@ export async function ouvrir(ctx) {
   let avant = performance.now();
   rendu.setAnimationLoop(t => {
     if (!M || !M.scene) return;
-    const dt = Math.min(.05, (t - avant) / 1000); avant = t; M.dtCam = dt;
+    const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
+    // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
+    if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
+      const r = moy > 28 ? Math.max(.75, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
+      if (r < res) M.resBaisseT = t;
+      if (r !== res) { res = r; rendu.setPixelRatio(res); M.redim && M.redim(); } } }
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -3057,8 +3063,11 @@ function apocalypse(scene, L, base) {
     const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false }));
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
     const fu = []; for (let i = 0; i < 5; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
-    const lum = new THREE.PointLight(0xff6a24, 9 * k, 12 * k, 1.5); lum.userData.apo = true; lum.position.set(0, 1.2 * k, 0); g.add(lum);
-    feux.push({ fl, fu, lum, k }); return g; };
+    feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
+  // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
+  const lumsFeu = [0, 1, 2, 3].map(() => { const l = new THREE.PointLight(0xff6a24, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
+  L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
   const epave = (x, z, a, brule = true) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = a; scene.add(g);
     const b = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
@@ -3120,7 +3129,7 @@ function apocalypse(scene, L, base) {
       // l'hélico passe en ligne droite, haut dans le ciel ; le projecteur balaie autour de sa trajectoire
       const hx = cx + Math.cos(a0) * R * 1.4 * (u * 2 - 1), hz = cz + Math.sin(a0) * R * 1.4 * (u * 2 - 1), hy = 34;
       const sx = hx + Math.sin(now / 1300) * 6 - Math.cos(a0) * 4, sz = hz + Math.cos(now / 1700) * 6 - Math.sin(a0) * 4;
-      spot.position.set(hx, hy, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 2600 * f; spot.visible = actif;
+      spot.position.set(hx, hy, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 2600 * f;   // (toujours « visible » : l'allumer ou l'éteindre ferait tout recalculer)
       const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
       cone.scale.set(lg * .16, lg, lg * .16); cone.material.opacity = .09 * f; cone.visible = actif;
       tache.position.set(sx, .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
@@ -3139,7 +3148,11 @@ function apocalypse(scene, L, base) {
   L.anim = (t) => { animAvant && animAvant(t);
     for (const f of feux) { for (const [sp, ph, h] of f.fl) { sp.material.map = texFlammes[(Math.floor(t / 75) + ph) % 8]; const v = .9 + .1 * Math.sin(t / 130 + ph); sp.scale.set(1.25 * f.k * v, 2 * f.k * h * v, 1); }
       for (const [sp, d] of f.fu) { const u = ((t / 3200) + d) % 1; sp.position.set(Math.sin(u * 6 + d * 9) * .3 * f.k, .8 * f.k + u * 4.5 * f.k, 0); sp.scale.setScalar((.8 + u * 2.4) * f.k); sp.material.opacity = .55 * (1 - u); }
-      f.lum.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80) * Math.sin(t / 53)); }
+    }
+    if (!L.lumsT || t > L.lumsT) { L.lumsT = t + 400; const c = M && M.camera ? M.camera.position : { x: 0, z: 0 };
+      L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
+    lumsFeu.forEach((l, i) => { const f = L.feuxProches[i]; if (!f) { l.intensity = 0; return; }
+      l.position.set(f.x, f.y, f.z); l.distance = 12 * f.k; l.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1); };
 }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
@@ -3243,8 +3256,8 @@ function eclairDuCanon(p, dx, dz) {
   texEclair = texEclair || tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,255,220,1)"); g.addColorStop(.4, "rgba(255,200,60,.9)"); g.addColorStop(1, "rgba(255,120,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const H = tailleBonhomme() * hauteurDe(p), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texEclair, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sp.scale.set(.7, .7, 1); sp.position.set(p.g.position.x + dx * .55, p.g.position.y + H * .6, p.g.position.z + dz * .55); M.scene.add(sp);
-  const l = new THREE.PointLight(0xffc060, 8, 7, 1.5); l.position.copy(sp.position); M.scene.add(l);
-  setTimeout(() => { if (!M || !M.scene) return; M.scene.remove(sp); M.scene.remove(l); sp.material.dispose(); }, 70);
+  const l = M.L && M.L.eclair; if (l) { l.position.copy(sp.position); l.intensity = 8; }
+  setTimeout(() => { if (l) l.intensity = 0; if (!M || !M.scene) return; M.scene.remove(sp); sp.material.dispose(); }, 70);
 }
 // une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
 function subirMorsure(zx, zz, deg = 1) {
