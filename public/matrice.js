@@ -2640,6 +2640,11 @@ export async function ouvrir(ctx) {
           const pose = p.g.position.x <= partenaire.g.position.x ? "slowD" : "slow";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           const ph = t / 900; p.corps.material.rotation = Math.sin(ph) * .05; p.corps.position.x = Math.sin(ph) * .05; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.danse === "thriller" && p.info.danseur && M.trioPret) {
+          // les trois danseurs du clip : la même chorégraphie, au même temps (voir choreThriller)
+          const c = choreThriller();
+          if (p.corps.material.map !== p.poses[c.pose]) { p.corps.material.map = p.poses[c.pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; p.corps.position.y = c.saut; p.dansait = true; }
         else if (p.info.danse === "thriller") {
           /* Thriller : griffes à gauche (2 temps, la tête et les épaules penchées), griffes à droite (2 temps)… et tous les 8 temps, les bras levés devant, en avançant */
           const ph = t / 380 + p.info.numero * .7, k = Math.floor(ph) % 8, v = ph % 1;
@@ -2956,7 +2961,7 @@ const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
-  if (air && !p) { const [x, z] = M.L.pisteCentre;
+  if (air && !p) { const [x, z] = M.L.pisteCentre; M.trioPret = false;
     // le danseur au milieu, le zombie à sa gauche, la mariée à sa droite (vus depuis la salle)
     for (const [num, id, dx, def, tete] of [[DANSEUR, 4, 0, { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" }, "images/danseur-tete.png"],
         [ZOMBIE, 5, -1.7, { nom: "Le zombie", tenue: "zombie", couleur: "#5d6168", bas: "#4a4d52", pieds: "#2a2522" }, "images/zombie-tete.png"],
@@ -2966,8 +2971,32 @@ function animerDanseur() {
         reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete, pnj: true, danseur: true, x: x + dx, z: z + 3 });
       if (q) { viser(q, x + dx, z - Math.abs(dx) * .3); q.info.danse = "thriller"; } }
     dire(DANSEUR, "It's close to midnight… 🧟"); }
-  else if (!air && p) for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n);
-  else if (p) for (const n of [DANSEUR, ZOMBIE, MARIEE]) { const q = M.gens.get(n); if (q) q.info.danse = "thriller"; }
+  else if (!air && p) { for (const n of [DANSEUR, ZOMBIE, MARIEE]) retirerAncien(n); M.trioPret = false; }
+  else if (p) { const trio = [DANSEUR, ZOMBIE, MARIEE].map(n => M.gens.get(n)).filter(Boolean);
+    for (const q of trio) { q.info.danse = "thriller"; if (!q.cible && !q.base) q.base = [q.g.position.x, q.g.position.z]; }
+    // on attend que les trois soient arrivés à leur place, puis on part ensemble sur le premier temps de la chorégraphie
+    if (!M.trioPret && trio.every(q => q.base) && choreThriller().k === 0) M.trioPret = true;
+    if (M.trioPret) { const c = choreThriller();
+      for (const q of trio) if (q.base) { const nx = q.base[0] + c.ox, nz = q.base[1] + c.oz; if (M.L.limites(nx, nz)) { q.g.position.x = nx; q.g.position.z = nz; } }
+      if (c.k === 0 && M.trioCri !== Math.floor(Date.now() / (TEMPS_THRILLER * 32))) { M.trioCri = Math.floor(Date.now() / (TEMPS_THRILLER * 32)); dire(DANSEUR, ["It's close to midnight… 🧟", "'Cause this is thriller! 🎶", "Thriller night! 🌕"][M.trioCri % 3]); } } }
+}
+/* la chorégraphie du clip Thriller, sur 32 temps, pour les trois danseurs ensemble ;
+   réglée sur l'horloge (Date.now) : tout le monde voit les mêmes pas au même moment
+   1-8   la marche des zombies : on avance vers la salle en traînant les pieds, les griffes d'un côté puis de l'autre
+   9-16  les griffes : tournés à gauche (2 temps), à droite (2 temps), deux fois, la tête et les épaules qui cognent
+   17-24 le pas chassé : quatre pas sautés vers la gauche, puis quatre pour revenir
+   25-28 les bras au ciel, qui tremblent, en sautillant
+   29-32 on recule à sa place, en griffes */
+const TEMPS_THRILLER = 400;
+function choreThriller() {
+  const ph = Date.now() / TEMPS_THRILLER, k = Math.floor(ph) % 32, v = ph % 1, coup = Math.sin(Math.min(1, v * 2.5) * Math.PI / 2), AV = 1.6;
+  let pose, ox = 0, oz = AV, rot = 0, sx = 0, saut = 0;
+  if (k < 8) { pose = k % 2 ? "thriller2" : "thriller1"; oz = (k + Math.min(1, v * 1.6)) / 8 * AV; rot = (k % 2 ? .08 : -.08) * coup; saut = v < .25 ? .05 * (1 - v / .25) : 0; }
+  else if (k < 16) { const sg = Math.floor((k - 8) / 2) % 2 ? 1 : -1; pose = sg > 0 ? "profilD" : "profil"; rot = -sg * .1 * coup; sx = sg * .14 * coup; saut = v < .2 ? .04 * (1 - v / .2) : 0; }
+  else if (k < 24) { const g = k < 20, f = ((k - 16) % 4 + Math.min(1, v * 1.5)) / 4; pose = g ? "profil" : "profilD"; ox = g ? -.8 * f : -.8 * (1 - f); rot = g ? .06 : -.06; saut = Math.sin(Math.min(1, v * 1.5) * Math.PI) * .08; }
+  else if (k < 28) { pose = "thriller3"; rot = Math.sin(ph * Math.PI * 2) * .08; saut = Math.abs(Math.sin(ph * Math.PI)) * .08; }
+  else { pose = k % 2 ? "thriller2" : "thriller1"; oz = AV * (1 - (k - 28 + Math.min(1, v * 1.6)) / 4); rot = (k % 2 ? .05 : -.05) * coup; }
+  return { k, pose, ox, oz, rot, sx, saut };
 }
 function animerPNJ() {
   const p = M && M.gens.get(PNJ); if (!p) return;
