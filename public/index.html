@@ -2162,7 +2162,7 @@
       const src = dans ? (danseurInfo = await api("GET", "/api/pnj?id=4")) : bar ? (barInfo = await api("GET", "/api/pnj?id=3")) : dj ? (djInfo = await api("GET", "/api/pnj?id=2")) : pnj ? (pnjInfo = await api("GET", "/api/pnj")) : (monAvatar = monAvatar || await api("GET", "/api/moi/avatar"));
       Object.assign(bh, { tenue: src.tenue, couleur: src.couleur, bas: src.bas || null, pieds: src.pieds || null, tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0, ...(src.reglage || {}) } });
       if (pnj) $("bhNom").value = src.nom || (dans ? "Le danseur Thriller" : bar ? "Mr Miner" : dj ? "Manu" : "Le chef de poste");
-      const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v, idP) : dans ? null : bar ? "images/miner-tete.png" : dj ? "images/manu-tete.png" : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
+      const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v, idP) : dans ? "images/danseur-tete.png" : bar ? "images/miner-tete.png" : dj ? "images/manu-tete.png" : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
       if (url) { const i = new Image(); i.src = url; try { await i.decode(); bh.img = i; } catch (e) {} }
       $("bhTenues").innerHTML = Object.entries(m.TENUES).map(([id, t]) => `<button type="button" data-tenue="${id}">${esc(t.nom)}</button>`).join("");
       $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
@@ -2553,6 +2553,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.21.1", "12 octobre 2026", ["Le danseur Thriller a sa tête de zombie (d'après la photo de l'administrateur)"]],
     ["3.21", "12 octobre 2026", ["Nouveau personnage : le danseur Thriller (blouson rouge à bandes noires en V, pantalon rouge, chaussettes blanches, mocassins noirs) ; dès qu'un Thriller passe dans la salle des fêtes, il arrive au milieu de la piste et le danse, puis repart quand la musique change", "(Administrateur) bouton « 🧟 Le danseur Thriller » pour régler sa tête, ses vêtements, sa silhouette et son nom"]],
     ["3.20", "12 octobre 2026", ["Salle des fêtes, la nuit : les grandes fenêtres et les portes vitrées s'assombrissent ; par la porte ouverte, on voit la vraie cour d'honneur (pavés, bâtiments, fenêtres allumées), de jour comme de nuit"]],
     ["3.19.4", "11 octobre 2026", ["Manu, le DJ, et Mr Miner, le barman, restent tout droits derrière leurs platines et leur comptoir, même vus de très haut"]],

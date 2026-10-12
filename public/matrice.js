@@ -2455,7 +2455,7 @@ function animerDanseur() {
   const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
   if (air && !p) { const P = (M.ctx.pnjDanseur && M.ctx.pnjDanseur()) || {}, [x, z] = M.L.pisteCentre;
     const q = ajouterAncien({ numero: DANSEUR, nom: P.nom || "Le danseur Thriller", tenue: P.tenue || "thriller", couleur: P.couleur || "#c8102e", bas: P.bas || "#c8102e", pieds: P.pieds || "#111111",
-      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 4) : null, pnj: true, danseur: true, x, z: z + 3 });
+      reglage: P.reglage || null, initiales: "♪", teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 4) : "images/danseur-tete.png", pnj: true, danseur: true, x, z: z + 3 });
     if (q) { viser(q, x, z); q.info.danse = "thriller"; dire(DANSEUR, "It's close to midnight… 🧟"); } }
   else if (!air && p) retirerAncien(DANSEUR);
   else if (p) p.info.danse = "thriller";
