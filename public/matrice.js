@@ -1688,11 +1688,19 @@ function construireEtage(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(.03, 1.14, .76), A.mat({ color: 0x1a1a1a }), X(CX0 + .015), 1.6, 4.55, false);
       const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = sg * Math.PI / 2; af.scale.x = -1; scene.add(af);
       // tagué au feutre noir, en bas du mur du fond à côté de la cabine : « 1955 » (l'indice pour le téléphone)
-      const tag = toile(256, 128, (x, w, h) => { x.clearRect(0, 0, w, h); x.save(); x.translate(w / 2, h / 2 + 6); x.rotate(-.12); x.font = "italic 900 74px 'Arial Black', Impact, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
-        x.lineJoin = "round"; x.strokeStyle = "rgba(20,20,24,.85)"; x.lineWidth = 5; for (let k = 0; k < 3; k++) { x.save(); x.translate((k - 1) * .8, (k - 1) * .6); x.strokeText("1955", 0, 0); x.restore(); }
-        x.fillStyle = "rgba(14,14,18,.92)"; x.fillText("1955", 0, 0); x.strokeStyle = "rgba(14,14,18,.9)"; x.lineWidth = 2.5; x.lineCap = "round";
-        for (const [dx, l] of [[-62, 16], [-14, 10], [40, 22], [70, 8]]) { x.beginPath(); x.moveTo(dx, 26); x.lineTo(dx + 1, 26 + l); x.stroke(); }   // les coulures
-        x.beginPath(); x.moveTo(-90, 44); x.quadraticCurveTo(0, 56, 92, 36); x.stroke(); x.restore(); });   // le trait de soulignement
+      const tag = toile(256, 128, (x, w, h) => { x.clearRect(0, 0, w, h); let g = 11; const al = () => (g = (g * 9301 + 49297) % 233280) / 233280, j = v => v + (al() - .5) * 2.2;
+        const trait = (pts, lw = 2.2, c = "rgba(30,30,34,.78)") => { x.strokeStyle = c; x.lineWidth = lw; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); pts.forEach(([px, py], i) => i ? x.lineTo(j(px), j(py)) : x.moveTo(j(px), j(py))); x.stroke(); };
+        // griffonné à la main, petit, au milieu d'autres gribouillis (on ne le remarque pas tout de suite)
+        x.save(); x.translate(118, 70); x.rotate(-.22); x.scale(.62, .62);
+        trait([[-2, -24], [6, -32], [6, 26]]);                                                   // 1
+        trait([[42, -12], [38, -26], [28, -30], [20, -22], [22, -12], [34, -10], [42, -16], [40, 6], [30, 26]]);   // 9
+        trait([[78, -30], [60, -30], [58, -6], [70, -10], [80, -2], [78, 16], [66, 24], [56, 18]]);   // 5
+        trait([[112, -26], [96, -28], [92, -4], [104, -8], [114, 2], [110, 20], [98, 26], [90, 20]]);   // 5
+        x.restore();
+        trait([[24, 30], [34, 22], [44, 30], [34, 44], [24, 30]], 1.6, "rgba(40,40,46,.55)");   // un cœur à moitié effacé
+        trait([[196, 30], [208, 40], [222, 26], [232, 44]], 1.5, "rgba(40,40,46,.5)");   // des zigzags
+        trait([[20, 104], [70, 100], [120, 108]], 1.4, "rgba(40,40,46,.45)");
+        x.fillStyle = "rgba(40,40,46,.5)"; x.font = "italic 15px 'Comic Sans MS', cursive"; x.fillText("M + J", 186, 102); x.font = "italic 12px cursive"; x.fillText("tic tac", 30, 84); });
       const tg = new THREE.Mesh(new THREE.PlaneGeometry(.42, .21), new THREE.MeshStandardMaterial({ map: tex(tag), transparent: true, roughness: .9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
       tg.position.set(X(12.4), .36, ZE - .008); scene.add(tg); L.tag1955 = tg; }
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - Z0), beige, X(CX1 + .1), HTOT / 2, cz, false);   // le mur extérieur, plein
