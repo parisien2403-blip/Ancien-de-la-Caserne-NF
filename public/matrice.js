@@ -3564,8 +3564,11 @@ export async function ouvrir(ctx) {
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     GPU_MODESTE = /Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom); M_GPU = nom; } catch (e) {}
+  // un voyage précédent n'est pas arrivé au bout (gel, appli fermée de force) : on envoie le relevé à l'administrateur
+  try { const t = localStorage.getItem("caserne-trace"); if (t) { localStorage.removeItem("caserne-trace");
+      fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Un voyage s'est bloqué. Dernières étapes : " + JSON.parse(t).map(([e, ms]) => e + " (" + ms + " ms)").join(" → ") + " — carte graphique : " + (M_GPU || "?"), appareil: navigator.userAgent }) }).catch(() => {}); } } catch (e) {}
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
-  rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
+  rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
   const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
@@ -3870,7 +3873,9 @@ export async function ouvrir(ctx) {
     if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
+    if (M.trace1) trace("avant 1re image " + M.lieu);
     rendu.render(M.scene, M.camera);
+    if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
   return M;
@@ -4488,7 +4493,9 @@ function animerApo(t, dt) {
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
-let GPU_MODESTE = false, M_GPU = "";   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
+let GPU_MODESTE = false, M_GPU = "";
+// le carnet de bord d'un voyage (gardé dans le téléphone / l'ordinateur) : si l'appli gèle et qu'on la ferme de force, au retour on sait à quelle étape c'était, et l'administrateur reçoit le relevé
+function trace(etape) { try { const t = JSON.parse(localStorage.getItem("caserne-trace") || "[]"); t.push([etape, Math.round(performance.now())]); localStorage.setItem("caserne-trace", JSON.stringify(t.slice(-20))); } catch (e) {} }   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -5190,7 +5197,9 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.prets = {}; M.prepT = performance.now() + 1500;
   if (M.cine) finCine();
   M.hvInit = false; M.hvDoubles = false; M.chasse = false;
+  trace("construire " + id + (pret ? " (prêt)" : ""));
   const { scene, L, repere } = pret || construireScene(id);
+  trace("construit " + id); M.trace1 = true;
   libererScene(M.scene);   // (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
