@@ -5172,12 +5172,12 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (M.cadranEl) { M.cadranEl.remove(); M.cadranEl = null; }
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
-  const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
+  const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) libererScene(q.scene);
   M.prets = {}; M.prepT = performance.now() + 1500;
   if (M.cine) finCine();
   M.hvInit = false; M.hvDoubles = false; M.chasse = false;
   const { scene, L, repere } = pret || construireScene(id);
-  M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
+  libererScene(M.scene);   // (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null;
@@ -5476,6 +5476,7 @@ function cineCour() {
   const car = creerDelorean(); car.position.y = 0; M.scene.add(car); poser(car, 0, 30, 0); const feu = [];
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1600); M.arriveeHV = true; changerLieu("hv1955", [-22, 16], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin);
+  preparerLieu("hv1955");   // (Hill Valley se construit pendant que la DeLorean arrive : pas d'image figée au départ)
   sonBruit(2.5, 220, .5);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const tr = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera, PAUSE = 5.4;
     // une fois monté et les portes fermées : le compteur des circuits temporels ; la voiture ne démarre qu'après
@@ -6691,6 +6692,8 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
+function libererScene(sc) { if (!sc) return; const vues = new Set();
+  sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); t.dispose(); } } m.dispose(); } }); }
 function preparerLieu(id) { if (!M || !M.L || M.lieu === id) return; M.prets = M.prets || {}; if (M.prets[id]) return; const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu || M.prets[id]) return; const q = construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
     const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
