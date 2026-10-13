@@ -1378,10 +1378,10 @@ function troisiemeCour(A, L, scene) {
       for (let x0 = xa + .45; x0 < xb - .3; x0 += .62 + alea() * .25) { const r = .38 + alea() * .2, b = A.ajoute(boule, verts[Math.floor(alea() * 4)], sg * x0, HMU + r * .45, z1 + .3 + alea() * (PB - .75), true);
         b.scale.set(r * (1 + alea() * .25), r * (.8 + alea() * .3), r); b.rotation.y = alea() * 6; }
       // le trottoir, au pied du bac, tout du long ; sa bordure côté cour
-      const tw = C3.TW, ht = C3.HT, tro = A.mat({ color: 0xb4b1aa, roughness: .95 }), bord = A.mat({ color: 0x8e8b85, roughness: .9 });
-      A.ajoute(new THREE.BoxGeometry(lg, ht, tw), tro, xc, ht / 2, zf + tw / 2, false);
-      A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false);
-      for (let k = 1; k < lg / 1.2; k++) A.ajoute(new THREE.BoxGeometry(.02, .005, tw - .16), bord, sg * (xa + k * 1.2), ht + .002, zf + (tw - .16) / 2, false); } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+      const tw = C3.TW, ht = C3.HT, cote = A.mat({ color: 0x8e8b85, roughness: .9 }), bord = A.mat({ color: 0x9a9792, roughness: .9 });
+      const bitume = A.mat({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#3c3d40"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 40 + alea() * 40; x.fillStyle = `rgba(${v},${v},${v + 4},.55)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); } }), lg / 2, tw / 2), roughness: .95 });   // (le dessus : du bitume gris sombre)
+      A.ajoute(new THREE.BoxGeometry(lg, ht, tw), [cote, cote, bitume, cote, cote, cote], xc, ht / 2, zf + tw / 2, false);
+      A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false); } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   const solP = A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
