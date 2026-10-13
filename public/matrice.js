@@ -1241,7 +1241,7 @@ function toileVerso(largeur, hauteur, avecPassage) {
     x.fillStyle = "#e9e6df"; x.fillRect(0, h - rdc, w, rdc); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - rdc, w, 14); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, h - rdc + 14, w, 3);
     x.fillStyle = "#cfcac0"; x.fillRect(0, h - 24, w, 24);
     // quelques portes vitrées, les petites appliques noires, les boîtiers rouges
-    for (const d of [-7.5, 7.5, -15, 15]) { const X = cx + d * 40 - 36; if (X < 0 || X > w - 72) continue;
+    for (const d of [-15, 15]) { const X = cx + d * 40 - 36;   // (plus de porte de part et d'autre du passage) if (X < 0 || X > w - 72) continue;
       x.fillStyle = "#cfcac0"; x.fillRect(X - 6, h - 150, 84, 150); x.fillStyle = "#2b3138"; x.fillRect(X, h - 144, 72, 144); x.fillStyle = "#5c6670"; x.fillRect(X + 34, h - 144, 4, 144); }
     for (const d of [-4, 4]) { x.fillStyle = "#222"; x.fillRect(cx + d * 40 - 10, h - rdc + 40, 20, 8); x.fillStyle = "#c8202a"; x.fillRect(cx + d * 40 - 6, h - 120, 12, 16); }
     // le passage carré, au centre (4,8 m × 4,4 m), sous son linteau
@@ -1305,7 +1305,7 @@ function deuxiemeCour(A, L, scene) {
     for (const [dx, dz, hh] of [[.45, -.2, .45], [.5, .25, .35], [.48, .02, .3]]) A.ajoute(new THREE.BoxGeometry(.5, hh, .45), A.mat({ color: 0xb08d5a, roughness: 1 }), xm + dx, hh / 2 + (dz === .02 ? .45 : 0), zo + dz + 1.05);
     const li = new THREE.PointLight(0xffe2b0, 1.5, 4, 1.6); li.position.set(xm + 1.2, 2.3, zo); scene.add(li);
     // la case ouverte est un passage : de l'autre côté, la même caserne… à l'apocalypse (et l'on en ressort par là)
-    L.portails.push({ dans: (x, z) => x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true });
+    L.portails.push({ dans: (x, z) => x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true, secret: true });   // (pas de cercle visible : c'est la surprise ; il reste visible dans le monde de l'apocalypse)
     raccourci(L, scene, [.4, 2.2, 1.6], [xf, 1.1, zo], { vers: "z-grande", entreeApo: true }); }
   /* entre les deux bâtiments, contre ce mur : l'ancien local électrique, une petite construction blanc crème à l'ancienne */
   { const cr = A.mat({ color: 0xece3cc, roughness: .9 }), crF = A.mat({ color: 0xd9ceb4 }), lx = X - 1.3, lw = 2.6, ll = 4, lh = 3;
@@ -1324,7 +1324,7 @@ function deuxiemeCour(A, L, scene) {
     dg.rotation.y = -Math.PI / 2;
     for (const dz of [-1.35, 1.35]) { const gr = A.ajoute(new THREE.PlaneGeometry(.5, .35), A.mat({ map: tex(toile(100, 70, (x, w, h) => { x.fillStyle = "#cfc6b0"; x.fillRect(0, 0, w, h); x.fillStyle = "#3a3a3a"; for (let y = 8; y < h - 6; y += 8) x.fillRect(8, y, w - 16, 4); })) }), face, 2.2, zc + dz, false); gr.rotation.y = -Math.PI / 2; }
     const lampe = A.ajoute(new THREE.BoxGeometry(.14, .12, .22), A.mat({ color: 0x1a1a1a }), face - .07, 2.6, zc + .8, false); }
-  /* dans le passage sous l'horloge, de part et d'autre : deux grands panneaux de liège, avec les informations punaisées (notes de service, fêtes, petites annonces) */
+  /* sous la voûte du bâtiment d'en face (au fond de la deuxième cour), de part et d'autre : deux grands panneaux de liège, avec les informations punaisées (notes de service, fêtes, petites annonces) */
   const AFF = [
     [["NOTE DE SERVICE", "Le stationnement dans la", "cour d'honneur est réservé", "aux véhicules de service.", "", "Le Chef de corps"], "#fbf8ee", "#1d3f73"],
     [["BAL DU 14 JUILLET", "Salle des fêtes", "à partir de 21 h", "Orchestre et buvette", "Venez nombreux !"], "#fff3c4", "#b31b1b"],
@@ -1353,7 +1353,7 @@ function deuxiemeCour(A, L, scene) {
       x.restore(); X += pw + 14 + alea() * 18; }
   });
   const panneauxLiege = []; let panneauGrand = null;
-  for (const sg of [-1, 1]) { const g = new THREE.Group(); g.position.set(sg * (2.4 - .03), 1.75, -24); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+  for (const sg of [-1, 1]) { const g = new THREE.Group(); g.position.set(sg * (2.4 - .03), 1.75, C2.z1 - 6); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);   // (sous la voûte suivante, celle du bâtiment d'en face)
     const t = tex(panneau(sg > 0 ? 311 : 733)); panneauxLiege.push([sg, t.image]);
     const pl = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.5, .04), [A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ color: 0x5a3a1e }), A.mat({ map: t, roughness: .9 }), A.mat({ color: 0x5a3a1e })]);
     pl.position.z = .02; g.add(pl);
@@ -1368,9 +1368,26 @@ function deuxiemeCour(A, L, scene) {
         const r = (L.raccourcis || []).find(q => q.panneau === -1); if (r) r.affiche = c.toDataURL("image/jpeg", .9); else panneauGrand = c.toDataURL("image/jpeg", .9); });
       const pu = new THREE.Mesh(new THREE.SphereGeometry(.014, 8, 6), A.mat({ color: 0xc8102e })); pu.position.set(1.7, .32, .05); g.add(pu); } }
   // on touche une affiche ou un panneau : il s'affiche en grand (l'affiche de DJ Manu d'abord, elle est posée sur le panneau)
-  raccourci(L, scene, [.3, .8, .5], [-2.3, 1.75, -25.7], { affiche: "images/affiche-dj-manu.jpg", affichePrio: true });
-  for (const [sg, c] of panneauxLiege) raccourci(L, scene, [.4, 1.7, 4.6], [sg * 2.28, 1.75, -24], { affiche: (sg < 0 && panneauGrand) || c.toDataURL("image/jpeg", .9), panneau: sg });
+  raccourci(L, scene, [.3, .8, .5], [-2.3, 1.75, C2.z1 - 7.7], { affiche: "images/affiche-dj-manu.jpg", affichePrio: true });
+  for (const [sg, c] of panneauxLiege) raccourci(L, scene, [.4, 1.7, 4.6], [sg * 2.28, 1.75, C2.z1 - 6], { affiche: (sg < 0 && panneauGrand) || c.toDataURL("image/jpeg", .9), panneau: sg });
   const lp = new THREE.PointLight(0xfff2dc, 5, 8, 1.4); lp.position.set(0, 3.9, -24); scene.add(lp);
+  { const lp2 = new THREE.PointLight(0xfff2dc, 4, 8, 1.4); lp2.position.set(0, 3.9, C2.z1 - 6); scene.add(lp2); }
+  // à leur place, sous l'horloge : de chaque côté, une double porte vitrée en fer noir, aux vitres dépolies
+  { const fer = A.mat({ color: 0x141416, metalness: .55, roughness: .4 }), H = 2.7, W = 2.0, b = .07;
+    const depoli = tex(toile(128, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#d4d8d6"); g.addColorStop(1, "#b4bab8"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 2600; i++) { x.fillStyle = Math.random() < .5 ? "rgba(255,255,255,.18)" : "rgba(80,90,90,.12)"; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      const l = x.createLinearGradient(0, 0, w, h); l.addColorStop(0, "rgba(255,250,235,.25)"); l.addColorStop(.6, "rgba(255,250,235,0)"); x.fillStyle = l; x.fillRect(0, 0, w, h); }));
+    const mV = new THREE.MeshStandardMaterial({ map: depoli, roughness: .55, metalness: .1, emissive: 0x605a50, emissiveIntensity: .25 });
+    for (const sg of [-1, 1]) { const g = new THREE.Group(); g.position.set(sg * 2.37, 0, -24); g.rotation.y = sg > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+      const box = (w, h, d, x, y, z, m = fer) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+      box(W + .3, .12, .14, 0, H + .06, .02); for (const s2 of [-1, 1]) box(.15, H + .12, .14, s2 * (W / 2 + .075), (H + .12) / 2, .02);   // le dormant
+      box(W + .1, .45, .03, 0, H + .45, 0, mV); box(W + .3, .06, .1, 0, H + .7, .02); for (let k = 1; k < 4; k++) box(.04, .45, .06, -W / 2 + k * W / 4, H + .45, .02);   // l'imposte vitrée
+      for (const s2 of [-1, 1]) { const cx = s2 * W / 4;   // les deux vantaux : cadre de fer, petits bois, vitres dépolies, soubassement plein
+        box(W / 2 - .02, .5, .04, cx, .27, .03); box(W / 2 - .02, H - .55, .02, cx, .55 + (H - .55) / 2, .01, mV);
+        for (const xx of [cx - W / 4 + b / 2, cx + W / 4 - b / 2]) box(b, H, .06, xx, H / 2, .04); for (const yy of [.04, .52, H - .04]) box(W / 2, b, .06, cx, yy, .04);
+        box(.035, H - .6, .05, cx, .52 + (H - .6) / 2, .05); for (let k = 1; k < 3; k++) box(W / 2 - .08, .035, .05, cx, .52 + k * (H - .56) / 3, .05);
+        box(.035, .35, .07, cx - s2 * (W / 4 - .14), 1.15, .09, A.mat({ color: 0x9a9ca0, metalness: .8, roughness: .25 })); }
+      box(.02, H, .07, 0, H / 2, .05); } }
   // une petite lumière le soir, au-dessus de chaque passage
   for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
 }
@@ -2134,8 +2151,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       // façade extrudée (profil dans la longueur), percée de la voûte au bout du fond
       const us = VOUTES.map(VZ => cote < 0 ? -(VZ + 2) : VZ + 2);   // positions des voûtes dans le profil
       // à droite, la salle des fêtes s'arrête 6 m avant le bout : là, en retrait, l'ancien bar
-      const FIN = cote > 0 ? LONG / 2 - 6 : LONG / 2;
-      const f = new THREE.Shape(); f.moveTo(-LONG / 2, 0); f.lineTo(FIN, 0); f.lineTo(FIN, HPP); f.lineTo(-LONG / 2, HPP); f.closePath();
+      const FIN = cote > 0 ? LONG / 2 - 6 : LONG / 2, DEB = cote < 0 ? -LONG / 2 + 6 : -LONG / 2;   // (à gauche aussi, le même renfoncement au bout, mais sans porte)
+      const f = new THREE.Shape(); f.moveTo(DEB, 0); f.lineTo(FIN, 0); f.lineTo(FIN, HPP); f.lineTo(DEB, HPP); f.closePath();
       for (const u of us) { const v = new THREE.Path(); v.moveTo(u - 1.9, 0); v.lineTo(u - 1.9, 2.9); v.absellipse(u, 2.9, 1.9, 1.9, Math.PI, 0, true); v.lineTo(u + 1.9, 0); v.closePath(); f.holes.push(v); }
       const t = tex(piedToile(us.map(u => (u / LONG + .5) * 1600))); t.repeat.set(1 / LONG, 1 / HPP); t.offset.set(.5, 0);
       if (cote > 0 && !copie) {   // la nuit, on voit bouger les jeux de lumière de la fête à travers les baies vitrées
@@ -2181,10 +2198,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         A.ajoute(new THREE.BoxGeometry(xv - fx - 3.5, .3, FIN - ZC), A.mat({ color: 0xd9d0bd }), (xv + fx + 3.5) / 2, HPP - .15, (ZC + FIN) / 2 - 2, false);
       }
       if (!(copie === "fetes" && cote > 0)) {
-      A.ajoute(new THREE.BoxGeometry(PROF + .6, .45, (cote > 0 ? LONG - 6 : LONG) + .6), A.mat({ color: 0xd3c9b3 }), fx + cote * PROF / 2, HPP + .2, cote > 0 ? -5 : -2);   // corniche du toit
+      A.ajoute(new THREE.BoxGeometry(PROF + .6, .45, LONG - 6 + .6), A.mat({ color: 0xd3c9b3 }), fx + cote * PROF / 2, HPP + .2, -5);   // corniche du toit
       for (const VZ of VOUTES) A.ajoute(new THREE.BoxGeometry(.3, 4.8, 3.8), A.mat({ color: 0x3a3631 }), fx + cote * (PROF - .4), 2.4, VZ);   // fond des garages
       // les marches le long du bâtiment, arrêtées avant la voûte
-      for (let k = 0; k < 4; k++) { const larg = 2 - k * .45, lgM = cote > 0 ? 10.4 : 16.4; A.ajoute(new THREE.BoxGeometry(larg, .17, lgM), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, cote > 0 ? 2.7 : 5.7); }
+      for (let k = 0; k < 4; k++) { const larg = 2 - k * .45, lgM = 10.4; A.ajoute(new THREE.BoxGeometry(larg, .17, lgM), A.mat({ color: k % 2 ? 0xbdb7aa : 0xc9c3b6 }), fx - cote * larg / 2, .085 + k * .17, 2.7); }
       }
       if (cote > 0) {
         /* l'ancien bar, bien en retrait au bout du bâtiment (entre la salle des fêtes et la grande aile en brique) :
@@ -2234,6 +2251,20 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         const lueurBar = new THREE.PointLight(0xffc98a, 3, 4, 1.5); lueurBar.position.set(RX - .6, 1.6, PZ0 + PWm / 2); scene.add(lueurBar);
         L.porteBar = [RX, PZ0 + PWm / 2];
       }
+      if (cote < 0 && copie !== "fetes") {
+        /* à gauche, au bout du bâtiment : le même renfoncement que celui du bar, en face, mais fermé (sans porte) ; ses deux fenêtres */
+        const RX = fx - 3.5, RL = 4, RH = 6.2, RZ = 10;
+        const mur = toile(200, 310, (x, w, h) => { pierre(x, 0, 0, w, h, "#e2dac8"); x.fillStyle = "#d3c9b3"; x.fillRect(0, 0, w, 16); x.fillStyle = "rgba(60,45,30,.25)"; x.fillRect(0, 16, w, 3);
+          for (const cx of [24, 72]) { const FX = cx - 20, FY = h - 168, FW = 40, FH = 92;
+            x.fillStyle = "#efe9dc"; x.fillRect(FX - 6, FY - 6, FW + 12, FH + 12); x.fillStyle = "#d6cdbb"; x.fillRect(FX - 8, FY + FH + 4, FW + 16, 6);
+            const g = x.createLinearGradient(FX, FY, FX, FY + FH); g.addColorStop(0, "#9db1bf"); g.addColorStop(1, "#56697a"); x.fillStyle = g; x.fillRect(FX, FY, FW, FH);
+            x.fillStyle = "#f4f1ea"; x.fillRect(FX + FW / 2 - 2, FY, 4, FH); for (const f2 of [1 / 3, 2 / 3]) x.fillRect(FX, FY + FH * f2, FW, 2.5); }
+          x.fillStyle = "#2a2a2a"; x.fillRect(140, h - 200, 12, 8); });
+        const fa = A.ajoute(new THREE.PlaneGeometry(RL, RH), A.mat({ map: tex(mur) }), RX + .17, RH / 2, RZ, false); fa.rotation.y = Math.PI / 2;
+        A.ajoute(new THREE.BoxGeometry(RX - (fx - PROF), RH, RL), A.mat({ color: 0xddd4c2 }), (RX + fx - PROF) / 2, RH / 2, RZ);
+        A.ajoute(new THREE.BoxGeometry(.4, .35, RL), A.mat({ color: 0xd3c9b3 }), RX + .1, RH + .1, RZ);
+        const sl = A.ajoute(new THREE.PlaneGeometry(3.5, RL), A.mat({ map: tex(T.dalles, 2, 2) }), fx - 1.75, .014, RZ, false); sl.rotation.x = -Math.PI / 2;
+        const lt = new THREE.PointLight(0xffd59a, 8, 7, 1.6); lt.position.set(RX + .5, 3.6, RZ); lt.visible = false; scene.add(lt); L.nuitObjets.push(lt); }
       const al = A.ajoute(new THREE.PlaneGeometry(3, 34), A.mat({ map: tex(T.dalles, 1.5, 17) }), fx - cote * 3.5, .012, -2, false); al.rotation.x = -Math.PI / 2;
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
@@ -2376,6 +2407,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
 
     const PB = L.porteBar || [16, 9.12];
     L.limites = (x, z) => (Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6))
+      || (x > -15.6 && x <= -10.1 && z > 8.3 && z < 11.6)                                                         // le renfoncement de gauche (sans porte)
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
       || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
@@ -4176,7 +4208,7 @@ function animerCercles(t) {
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
-    c.g.visible = c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1]);
+    c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu));
     const b = .5 + .5 * Math.sin(t / 420);
     c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
     c.halo.scale.setScalar(1 + .08 * b);
