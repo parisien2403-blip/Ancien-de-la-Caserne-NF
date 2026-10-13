@@ -1525,7 +1525,7 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
       setTimeout(() => { fermer(); if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
-        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [-12.7, -4.8], Math.PI); }, 1900); }
+        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); }, 1900); }
     else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
 
 /* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur) ; dans chaque cage,
@@ -1535,7 +1535,7 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
    - palier de l'étage n (z de 1.6 à 3.5), à y = n × 3.4 ; volée 1 (moitié extérieure) de z = 1.6 à -1.4, monte de 1.7 ;
    - palier intermédiaire (z < -1.4) ; volée 2 (moitié intérieure) de z = -1.4 à 1.6, monte au palier de l'étage n + 1 ;
    - le couloir de l'étage n (1 à 6) : |x| < 11.2, z de 1.3 à 3.5, à y = n × 3.4 */
-const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3, N: 6, ZE: 6.0 };   // (ZE : au rez-de-chaussée, le palier de gauche agrandi jusque-là, pour la cabine)
+const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3, N: 6, ZE: 6.0 };   // (ZE : au rez-de-chaussée, le palier de la cage de droite agrandi jusque-là, pour la cabine)
 function construireEtage(A, L, scene) {
   const { H, HP, CX0, CXM, CX1, Z0, Z1, ZC0, N } = ET, HTOT = N * H + HP, MH = .17, MP = .3;
   const carreaux = toileCarreaux(), beige = A.mat({ color: 0xd8cbad, roughness: .95 }), plinthe = A.mat({ color: 0x6b4a2c }), gris = A.mat({ color: 0x8a8174 });
@@ -1570,8 +1570,8 @@ function construireEtage(A, L, scene) {
   const fer = A.mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 });
   for (const sg of [-1, 1]) { const X = v => sg * v, xb = (a, b) => (X(a) + X(b)) / 2, cageW = CX1 - CX0, cz = (Z0 + Z1) / 2;
     A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z0 - .1, false);
-    if (sg > 0) A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
-    else { const ZE = ET.ZE, ze = (Z1 + ZE) / 2;   // le palier de gauche, au rez-de-chaussée, agrandi : la cabine téléphonique contre le mur du fond, et l'affiche du film à côté
+    if (sg < 0) A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
+    else { const ZE = ET.ZE, ze = (Z1 + ZE) / 2;   // le palier de la cage de droite (celle de l'aile près de l'ancien bar), au rez-de-chaussée, agrandi : la cabine téléphonique contre le mur du fond, et l'affiche du film à côté
       A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT - H, .2), beige, xb(CX0, CX1), H + (HTOT - H) / 2, Z1 + .1, false);
       A.ajoute(new THREE.BoxGeometry(cageW + .4, H, .2), beige, xb(CX0, CX1), H / 2, ZE + .1, false);
       for (const xm of [CX1 + .1, CX0 - .1]) A.ajoute(new THREE.BoxGeometry(.2, H, ZE - Z1), beige, X(xm), H / 2, ze, false);
@@ -1580,10 +1580,10 @@ function construireEtage(A, L, scene) {
       for (const xm of [CX1, CX0]) A.ajoute(new THREE.BoxGeometry(.03, .12, ZE - Z1), plinthe, X(xm) - sg * .015 * (xm === CX1 ? 1 : -1), .06, ze, false);
       A.ajoute(new THREE.BoxGeometry(cageW, .12, .03), plinthe, xb(CX0, CX1), .06, ZE - .015, false);
       ampoule(1, xb(CX0, CX1), H - .25, ze, "ok");
-      const cab = cabineFrance(); cab.position.set(X(CX1 - .6), 0, ZE - .56); cab.rotation.y = -Math.PI / 2; cab.scale.z = -1; scene.add(cab); L.cabineTel = [X(CX1 - .6), ZE - .56]; L.telDest = "etage";   // (l'étage est construit en miroir : on retourne la cabine, pour que les écritures restent à l'endroit)
+      const cab = cabineFrance(); cab.position.set(X(CX1 - .6), 0, ZE - .56); cab.rotation.y = sg * Math.PI / 2; cab.scale.z = -1; scene.add(cab); L.cabineTel = [X(CX1 - .6), ZE - .56]; L.telDest = "etage";   // (l'étage est construit en miroir : on retourne la cabine, pour que les écritures restent à l'endroit)
       const tA = new THREE.TextureLoader().load("images/bttf/affiche.webp"); tA.colorSpace = THREE.SRGBColorSpace;
       A.ajoute(new THREE.BoxGeometry(.03, 1.14, .76), A.mat({ color: 0x1a1a1a }), X(CX0 + .015), 1.6, 4.55, false);
-      const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = -Math.PI / 2; af.scale.x = -1; scene.add(af); }
+      const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = sg * Math.PI / 2; af.scale.x = -1; scene.add(af); }
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - Z0), beige, X(CX1 + .1), HTOT / 2, cz, false);   // le mur extérieur, plein
     // le mur côté couloir : plein, sauf l'ouverture sur le couloir à chaque étage
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, ZC0 - Z0), beige, X(CX0 - .1), HTOT / 2, (Z0 + ZC0) / 2, false);
@@ -1655,7 +1655,7 @@ function construireEtage(A, L, scene) {
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
       || (ax > CX0 - .05 && ax < CXM - .15 && z > Z0 + .25 && z < Z1 - .3)
-      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < (x < 0 && auRdcP() ? ET.ZE - .25 : Z1 - .3) && !(x < 0 && ax > CX1 - 1.2 && z > ET.ZE - 1.2 && z < ET.ZE - .95)); };   // (la paroi vitrée de la cabine, côté escalier)
+      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < (x > 0 && auRdcP() ? ET.ZE - .25 : Z1 - .3) && !(x > 0 && ax > CX1 - 1.2 && z > ET.ZE - 1.2 && z < ET.ZE - .95)); };   // (la paroi vitrée de la cabine, côté escalier)
   /* toucher un endroit d'un autre étage : on y monte (ou descend) par l'escalier de la cage la plus proche */
   L.allerEtage = (moi, x, z, y) => { const e = moi.etg || { n: 0 }, ax = Math.abs(x), surPalier = ax < CX0 || z >= 1.6;
     const f = Math.max(0, Math.min(N, Math.round((y - (surPalier ? 0 : .85)) / H)));
@@ -1677,7 +1677,7 @@ function construireEtage(A, L, scene) {
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
     pos.y = Math.min(pos.y, py + 2.3);
     if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, py + .4); }
-    else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx < 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
+    else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx > 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
     return true; };
   L.interieur = true; L.sansPNJ = true; L.zone = [-CX1 - .5, CX1 + .5, Z0, ET.ZE];
   L.boite = [-CX1, CX1, Z0, ET.ZE];
