@@ -4744,18 +4744,6 @@ function cineRetour() {
 function toileBrique(base = "#8e4630", w = 256, h = 256) { return toile(w, h, (x) => { x.fillStyle = base; x.fillRect(0, 0, w, h);
   for (let y = 0; y < h; y += 8) for (let i = -1; i < w / 24 + 1; i++) { const v = (Math.sin(i * 12.9 + y * 7.1) * .5 + .5) * 26 - 13; x.fillStyle = `rgba(${v > 0 ? "255,220,200" : "40,10,0"},${Math.abs(v) / 120})`; x.fillRect(i * 24 + (y / 8 % 2) * 12, y, 23, 7); }
   x.fillStyle = "rgba(225,215,200,.35)"; for (let y = 7; y < h; y += 8) x.fillRect(0, y, w, 1); for (let y = 0; y < h; y += 8) for (let i = 0; i < w / 24 + 1; i++) x.fillRect(i * 24 + (y / 8 % 2) * 12 - 1, y, 1, 8); }); }
-// une façade dessinée (pour compléter la place) : enseigne, vitrines, auvent rayé, fenêtres à l'étage
-function toileBoutique({ larg, haut, mur = "#8e4630", brique = true, enseigne, couleurEnseigne = "#b81d24", texteEnseigne = "#fff", auvent, etages = 2 }) {
-  const W = Math.round(larg * 48), H = Math.round(haut * 48);
-  return toile(W, H, (x) => { if (brique) { const b = toileBrique(mur); x.fillStyle = x.createPattern(b, "repeat"); } else x.fillStyle = mur; x.fillRect(0, 0, W, H);
-    x.fillStyle = "#e9e1cf"; x.fillRect(0, 0, W, 22); x.fillRect(0, H * .44, W, 10);   // la corniche, le bandeau
-    const nf = Math.max(2, Math.round(larg / 2.6)); for (let e = 0; e < etages - 1; e++) for (let i = 0; i < nf; i++) { const fx = (i + .5) * W / nf - 26, fy = 40 + e * 110;
-      x.fillStyle = "#efe7d6"; x.fillRect(fx - 6, fy - 8, 64, 104); x.fillStyle = "#3a4a5a"; x.fillRect(fx, fy, 52, 88); x.fillStyle = "rgba(200,220,240,.35)"; x.fillRect(fx + 4, fy + 4, 20, 36); x.fillStyle = "#efe7d6"; x.fillRect(fx, fy + 42, 52, 4); x.fillRect(fx + 24, fy, 4, 88); }
-    const yv = H * .44 + 10; x.fillStyle = "#2c3a3e"; x.fillRect(16, yv + 54, W - 32, H - yv - 54);   // le rez-de-chaussée : vitrines
-    x.fillStyle = "rgba(170,200,215,.55)"; for (let i = 0; i < 3; i++) x.fillRect(28 + i * (W - 56) / 3, yv + 66, (W - 56) / 3 - 12, H - yv - 90);
-    x.fillStyle = "#5a3820"; x.fillRect(W / 2 - 24, H - 110, 48, 110);
-    if (enseigne) { x.fillStyle = couleurEnseigne; x.fillRect(20, yv + 2, W - 40, 46); x.fillStyle = texteEnseigne; x.font = `bold ${Math.min(36, (W - 60) / enseigne.length * 1.7)}px Georgia, serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(enseigne, W / 2, yv + 26); }
-    if (auvent) { for (let i = 0; i < W - 40; i += 24) { x.fillStyle = (i / 24) % 2 ? "#f4f0e6" : auvent; x.beginPath(); x.moveTo(20 + i, yv + 50); x.lineTo(44 + i, yv + 50); x.lineTo(48 + i, yv + 96); x.lineTo(16 + i, yv + 96); x.fill(); } } }); }
 function toileHorloge() { return toile(512, 512, (x) => { x.fillStyle = "#2a2622"; x.beginPath(); x.arc(256, 256, 250, 0, 7); x.fill(); x.fillStyle = "#f6f2e6"; x.beginPath(); x.arc(256, 256, 222, 0, 7); x.fill();
   x.strokeStyle = "#2a2622"; x.lineWidth = 6; x.beginPath(); x.arc(256, 256, 160, 0, 7); x.stroke(); x.fillStyle = "#1a1a1a"; x.font = "bold 46px Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle";
   ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; x.save(); x.translate(256 + Math.cos(a) * 192, 256 + Math.sin(a) * 192); x.rotate(a + Math.PI / 2); x.fillText(n, 0, 0); x.restore(); });
@@ -4816,6 +4804,384 @@ function voitureVraie(nom) {
   for (const sg of [-1, 1]) add(new THREE.BoxGeometry(.16, .12, .04), new THREE.MeshBasicMaterial({ color: 0xb01515 }), sg * .72, hc - .15, V.L * .45 + .06);
   return g;
 }
+/* ===================== Hill Valley : les immeubles en maquette (comme un décor de modélisme) =====================
+   Chaque immeuble est construit en vrai relief : murs percés (brique, carrelage, enduit, pierre), fenêtres en retrait avec leurs
+   châssis, appuis et linteaux, vitrines profondes avec la marchandise dedans, corniches à denticules, toits mansardés et lucarnes,
+   oriels, auvents rayés, enseignes en volume. Les petites pièces de même matière sont fusionnées (une seule géométrie par couleur). */
+const HPX = 80;   // pixels par mètre des murs peints
+let alHV = 1; const hv = () => (alHV = (alHV * 16807) % 2147483647) / 2147483647;
+const teinteHV = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return "#" + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, "0")).join(""); };
+const matsHV = new Map(); const matHV = (coul, r = .8, m = 0) => { const k = coul + r + m; if (!matsHV.has(k)) matsHV.set(k, new THREE.MeshStandardMaterial({ color: coul, roughness: r, metalness: m })); return matsHV.get(k); };
+function fusionHV(geos) { let n = 0; for (const g of geos) n += g.attributes.position.count; const P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2); let o = 0;
+  for (const g of geos) { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); if (g.attributes.uv) U.set(g.attributes.uv.array, o * 2); o += g.attributes.position.count; g.dispose(); }
+  const r = new THREE.BufferGeometry(); r.setAttribute("position", new THREE.BufferAttribute(P, 3)); r.setAttribute("normal", new THREE.BufferAttribute(N, 3)); r.setAttribute("uv", new THREE.BufferAttribute(U, 2)); return r; }
+// les vitres (quelques variantes partagées) : reflet du ciel, rideaux, store baissé, intérieur sombre
+const vitresHV = []; function vitreHV(i) { if (!vitresHV.length) for (let v = 0; v < 5; v++) { const c = toile(128, 256, (x, W, H) => { const g = x.createLinearGradient(0, 0, W * .5, H); g.addColorStop(0, "#a9c2d4"); g.addColorStop(.35, "#56708a"); g.addColorStop(1, "#1c2834"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    if (v === 1) { x.fillStyle = "#f2ead6"; x.fillRect(0, 0, 34, H); x.fillRect(W - 34, 0, 34, H); x.fillStyle = "rgba(0,0,0,.12)"; for (let k = 4; k < 34; k += 8) { x.fillRect(k, 0, 2, H); x.fillRect(W - k, 0, 2, H); } }
+    if (v === 2) { x.fillStyle = "#e6d6a8"; x.fillRect(0, 0, W, H * .42); x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(0, H * .42, W, 4); x.fillStyle = "#8a6a3a"; x.fillRect(W / 2 - 4, H * .42, 8, 8); }
+    if (v === 3) { x.fillStyle = "#c86a5a"; x.beginPath(); x.moveTo(0, 0); x.quadraticCurveTo(40, H * .5, 10, H); x.lineTo(0, H); x.fill(); x.beginPath(); x.moveTo(W, 0); x.quadraticCurveTo(W - 40, H * .5, W - 10, H); x.lineTo(W, H); x.fill(); }
+    if (v === 4) { x.fillStyle = "rgba(255,236,180,.5)"; x.fillRect(0, H * .5, W, H * .5); }
+    x.fillStyle = "rgba(255,255,255,.28)"; x.beginPath(); x.moveTo(10, H); x.lineTo(46, H); x.lineTo(W - 10, 0); x.lineTo(W - 46, 0); x.fill(); });
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; vitresHV.push(new THREE.MeshStandardMaterial({ map: t, roughness: .12, metalness: .35 })); } return vitresHV[i % vitresHV.length]; }
+function texHV(c) { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
+
+// ---- peindre une surface de mur ----
+function peindreMurHV(x, W, H, type, coul, o = {}) { x.fillStyle = coul; x.fillRect(0, 0, W, H); const k = HPX;
+  if (type === "brique") { const bh = .075 * k, bw = .23 * k; x.fillStyle = o.joint || "#d8cbb4"; x.fillRect(0, 0, W, H);
+    for (let y = H, r = 0; y > -bh; y -= bh, r++) for (let bx = -(r % 2) * bw / 2; bx < W; bx += bw) { const v = .82 + hv() * .34; x.fillStyle = teinteHV(coul, v); x.fillRect(bx + 1, y - bh + 1, bw - 1.6, bh - 1.6);
+      x.fillStyle = "rgba(255,255,255,.08)"; x.fillRect(bx + 1, y - bh + 1, bw - 1.6, 1.2); if (hv() < .05) { x.fillStyle = "rgba(30,15,5,.22)"; x.fillRect(bx + 1, y - bh + 1, bw - 1.6, bh - 1.6); } } }
+  else if (type === "carreau") { const c = (o.carreau || .15) * k; x.fillStyle = o.joint || "#9a9a96"; x.fillRect(0, 0, W, H); for (let y = H; y > -c; y -= c) for (let bx = 0; bx < W; bx += c) { x.fillStyle = teinteHV(coul, .95 + hv() * .08); x.fillRect(bx + 1, y - c + 1, c - 2, c - 2); x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(bx + 2, y - c + 2, c * .5, 1.5); } }
+  else if (type === "pierre") { const ah = .42 * k, al = 1.1 * k; x.fillStyle = teinteHV(coul, .72); x.fillRect(0, 0, W, H); for (let y = H, r = 0; y > -ah; y -= ah, r++) for (let bx = -(r % 2) * al / 2; bx < W; bx += al) { x.fillStyle = teinteHV(coul, .93 + hv() * .12); x.fillRect(bx + 1.5, y - ah + 1.5, al - 3, ah - 3); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(bx + 1.5, y - ah + 1.5, al - 3, 2); } }
+  else if (type === "bossage") { const ah = .36 * k; for (let y = H; y > -ah; y -= ah) { x.fillStyle = teinteHV(coul, .95 + hv() * .08); x.fillRect(0, y - ah + 3, W, ah - 3); x.fillStyle = "rgba(0,0,0,.22)"; x.fillRect(0, y - 3, W, 3); x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(0, y - ah + 3, W, 2); } }
+  else if (type === "planche") { const ph = .16 * k; for (let y = H; y > -ph; y -= ph) { x.fillStyle = teinteHV(coul, .95 + hv() * .08); x.fillRect(0, y - ph, W, ph - 2); x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(0, y - 2, W, 2); } }
+  else { for (let i = 0; i < W * H / 22; i++) { x.fillStyle = hv() < .5 ? "rgba(0,0,0,.045)" : "rgba(255,255,255,.06)"; x.fillRect(hv() * W, hv() * H, 2, 2); } }
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(255,255,255,.03)"); g.addColorStop(1, "rgba(40,25,10,.13)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+
+// ---- le chantier d'un immeuble ----
+function chantierHV(larg) { const g = new THREE.Group(), pieces = new Map(), murs = [], trous = [], tf = [new THREE.Matrix4()];
+  const B = { g, larg, murs, trous, X0: -larg / 2, X1: larg / 2 }; let cadre = 0, nCadres = 0; const pile = [0];
+  // une boîte de couleur (fusionnée à la fin avec ses semblables)
+  B.boite = (w, h, d, x, y, z, coul, o = {}) => { const g0 = o.geo || new THREE.BoxGeometry(w, h, d), geo = g0.index ? g0.toNonIndexed() : g0; const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(o.rx || 0, o.ry || 0, o.rz || 0)), new THREE.Vector3(1, 1, 1));
+    geo.applyMatrix4(tf[tf.length - 1].clone().multiply(m)); const mat = typeof coul === "string" ? matHV(coul, o.r ?? .8, o.m ?? 0) : coul; if (!pieces.has(mat)) pieces.set(mat, []); pieces.get(mat).push(geo); };
+  B.cyl = (r1, r2, h, x, y, z, coul, o = {}) => B.boite(0, 0, 0, x, y, z, coul, { ...o, geo: new THREE.CylinderGeometry(r1, r2, h, o.seg || 12) });
+  B.sphere = (r, x, y, z, coul, o = {}) => B.boite(0, 0, 0, x, y, z, coul, { ...o, geo: new THREE.SphereGeometry(r, 12, 8) });
+  B.objet = (mesh) => { mesh.applyMatrix4(tf[tf.length - 1]); mesh.castShadow = true; mesh.receiveShadow = true; g.add(mesh); return mesh; };
+  B.plan = (w, h, x, y, z, mat, o = {}) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); p.position.set(x, y, z); p.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); return B.objet(p); };
+  B.avec = (pos, ry, fn) => { pile.push(cadre = ++nCadres); tf.push(tf[tf.length - 1].clone().multiply(new THREE.Matrix4().compose(new THREE.Vector3(...pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(1, 1, 1)))); fn(); tf.pop(); pile.pop(); cadre = pile[pile.length - 1]; };
+  // un pan de mur : peint, percé des ouvertures qui le traversent ; o.saillie l'avance (avec ses tranches) ; o.contour : silhouette du haut [[x, h]…]
+  B.mur = (x0, x1, h0, h1, type, coul, o = {}) => { murs.push({ x0, x1, h0, h1, type, coul, z: o.saillie || 0, o, cadre, m: tf[tf.length - 1].clone() }); const s = o.saillie || 0;
+    if (s > .001) { const tc = teinteHV(coul, .85); B.boite(s, h1 - h0, s, x0 + s / 2 - s / 2, (h0 + h1) / 2, s / 2, tc); B.boite(s, h1 - h0, s, x1 - s / 2 + s / 2, (h0 + h1) / 2, s / 2, tc); } };
+  // une ouverture : découpée dans les murs de même plan, avec ses tableaux (les côtés en profondeur)
+  B.trou = (x0, x1, h0, h1, prof, o = {}) => { const z = o.z || 0; trous.push({ x0, x1, h0, h1, z, arc: o.arc || 0, cadre }); const c = o.tableau || "#d8cfc0";
+    B.boite(.03, h1 - h0, prof, x0 + .015, (h0 + h1) / 2, z - prof / 2, c); B.boite(.03, h1 - h0, prof, x1 - .015, (h0 + h1) / 2, z - prof / 2, c);
+    if (!o.arc) B.boite(x1 - x0, .03, prof, (x0 + x1) / 2, h1 - .015, z - prof / 2, teinteHV(c, .7)); else { const n = 10, R = (x1 - x0) / 2; for (let k = 0; k < n; k++) { const a = Math.PI * (k + .5) / n; B.boite(Math.PI * R / n + .02, .03, prof, (x0 + x1) / 2 + Math.cos(a) * R, h1 + Math.sin(a) * o.arc - .015, z - prof / 2, teinteHV(c, .7), { rz: Math.atan2(Math.cos(a) * o.arc, -Math.sin(a) * R) }); } }
+    B.boite(x1 - x0, .03, prof, (x0 + x1) / 2, h0 + .015, z - prof / 2, teinteHV(c, 1.05)); };
+  // une fenêtre à guillotine : en retrait, deux châssis, petits bois, appui et linteau en pierre (ou arc et clé)
+  B.fenetre = (cx, h0, w, h, o = {}) => { const prof = o.prof ?? .2, x0 = cx - w / 2, x1 = cx + w / 2, z = o.z || 0, cad = o.cadre || "#f2eee2", arc = o.arc ? w * .32 : 0;
+    B.trou(x0, x1, h0, h0 + h, prof, { z, arc, tableau: o.tableau });
+    const zf = z - prof + .05, ep = .06;
+    B.plan(w, h + arc, cx, h0 + (h + arc) / 2, zf - .03, vitreHV(o.vitre ?? Math.floor(hv() * 5)));
+    if (arc) { const fond = new THREE.Mesh(new THREE.CircleGeometry(1, 20, 0, Math.PI), vitreHV(0)); fond.scale.set(w / 2, arc, 1); fond.position.set(cx, h0 + h, zf - .029); B.objet(fond); }
+    B.boite(ep, h, .07, x0 + ep / 2, h0 + h / 2, zf, cad); B.boite(ep, h, .07, x1 - ep / 2, h0 + h / 2, zf, cad); B.boite(w, ep, .07, cx, h0 + h - ep / 2, zf, cad); B.boite(w, ep * 1.4, .07, cx, h0 + ep * .7, zf, cad);
+    B.boite(w, ep * 1.3, .09, cx, h0 + h / 2, zf + .01, cad);   // la traverse du milieu (les deux châssis)
+    const nc = o.carreaux ?? 2, nr = o.rangs ?? 1; for (let i = 1; i < nc; i++) B.boite(.03, h - ep * 2, .04, x0 + i * w / nc, h0 + h / 2, zf + .01, cad);
+    if (nr > 1) for (const m of [0, 1]) for (let i = 1; i < nr; i++) B.boite(w, .03, .04, cx, h0 + m * h / 2 + i * h / 2 / nr, zf + .01, cad);
+    if (arc) for (let k = 1; k < 4; k++) { const a = Math.PI * k / 4; B.boite(.03, Math.hypot(Math.cos(a) * w / 2, Math.sin(a) * arc), .04, cx + Math.cos(a) * w / 4, h0 + h + Math.sin(a) * arc / 2, zf + .01, cad, { rz: Math.atan2(Math.sin(a) * arc, Math.cos(a) * w / 2) - Math.PI / 2 }); }
+    const p = o.pierre || "#e6dcc6";
+    if (o.appui !== false) { B.boite(w + .22, .08, .2, cx, h0 - .04, z + .06, p); B.boite(w + .1, .05, .06, cx, h0 - .1, z + .02, teinteHV(p, .9)); }
+    if (arc) { const n = 9, R = w / 2 + .09; for (let k = 0; k < n; k++) { const a = Math.PI * (k + .5) / n; B.boite(.14, Math.PI * R / n + .01, .07, cx + Math.cos(a) * R, h0 + h + Math.sin(a) * (arc + .09), z + .035, k === 4 ? teinteHV(p, 1.05) : p, { rz: a }); } if (o.cle !== false) B.boite(.18, .26, .1, cx, h0 + h + arc + .08, z + .05, teinteHV(p, 1.04)); }
+    else if (o.linteau !== false) { B.boite(w + .28, .2, .07, cx, h0 + h + .1, z + .035, p); if (o.cle) B.boite(.2, .3, .1, cx, h0 + h + .12, z + .05, teinteHV(p, 1.05)); if (o.fronton) { const t = new THREE.Shape(); t.moveTo(-w / 2 - .2, 0); t.lineTo(w / 2 + .2, 0); t.lineTo(0, .38); t.closePath(); B.boite(0, 0, 0, cx, h0 + h + .2, z, p, { geo: new THREE.ExtrudeGeometry(t, { depth: .12, bevelEnabled: false }) }); } if (o.corniche) B.boite(w + .4, .07, .16, cx, h0 + h + .23, z + .08, p); }
+    if (o.volets) for (const s of [-1, 1]) { B.boite(w * .5, h, .04, cx + s * (w * .75 + .04), h0 + h / 2, z + .03, o.volets); for (let k = 1; k < 9; k++) B.boite(w * .42, .02, .02, cx + s * (w * .75 + .04), h0 + k * h / 9, z + .055, teinteHV(o.volets, .75)); }
+    if (o.jardiniere) { B.boite(w + .1, .22, .22, cx, h0 - .2, z + .14, o.jardiniere); for (let k = 0; k < 7; k++) B.sphere(.08, x0 + .05 + k * w / 6, h0 - .04, z + .16, ["#3a7a2a", "#e04a6a", "#4a8a3a", "#f2d040"][k % 4], { r: 1 }); } };
+  // une vitrine : retrait profond, soubassement à panneaux, glaces, imposte à petits carreaux, marchandise
+  B.vitrine = (x0, x1, h0, h1, o = {}) => { const prof = o.prof ?? .45, z = o.z || 0, cad = o.cadre || "#2c3a3e", sb = o.socle ?? .55, w = x1 - x0, imp = o.imposte === false ? 0 : (o.imposte || .5);
+    B.trou(x0, x1, h0, h1, prof, { z, tableau: o.tableau || cad });
+    const zf = z - prof + .1; const hb = h0 + sb, gh = h1 - hb - imp;
+    B.boite(w, sb, .12, (x0 + x1) / 2, h0 + sb / 2, zf, o.bas || cad); const np = Math.max(1, Math.round(w / 1.2)); for (let i = 0; i < np; i++) B.boite(w / np - .16, sb - .18, .03, x0 + (i + .5) * w / np, h0 + sb / 2, zf + .07, teinteHV(o.bas || cad, 1.2));
+    B.boite(w, .06, .2, (x0 + x1) / 2, hb, zf + .02, teinteHV(o.bas || cad, 1.1));
+    const c = toile(Math.round(w * 64), Math.round(gh * 64), (x, W, H) => decorVitrineHV(x, W, H, o.marchandise || "boites", o)); B.plan(w, gh, (x0 + x1) / 2, hb + gh / 2, zf - .05, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .15, metalness: .2 }));
+    B.boite(w, .06, .07, (x0 + x1) / 2, hb + gh, zf, cad); B.boite(.06, gh + imp, .07, x0 + .03, hb + (gh + imp) / 2, zf, cad); B.boite(.06, gh + imp, .07, x1 - .03, hb + (gh + imp) / 2, zf, cad); B.boite(w, .06, .07, (x0 + x1) / 2, h1 - .03, zf, cad);
+    const nm = o.montants ?? Math.max(1, Math.round(w / 1.6) - 1); for (let i = 1; i <= nm; i++) B.boite(.05, gh, .06, x0 + i * w / (nm + 1), hb + gh / 2, zf, cad);
+    if (imp) { B.plan(w, imp, (x0 + x1) / 2, h1 - imp / 2, zf - .03, vitreHV(o.vitreImposte ?? 0)); const n = Math.max(3, Math.round(w / .35)); for (let i = 1; i < n; i++) B.boite(.03, imp, .05, x0 + i * w / n, h1 - imp / 2, zf, cad); }
+    if (o.lettres) { const L = toile(512, 96, (x, W, H) => { x.fillStyle = o.couleurLettres || "#f6e2a0"; x.font = `${o.styleLettres || "italic bold"} 56px Georgia, serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(o.lettres, W / 2, H / 2); });
+      B.plan(Math.min(w * .8, 2.6), Math.min(w * .8, 2.6) * 96 / 512, (x0 + x1) / 2, hb + gh * .72, zf + .002, new THREE.MeshStandardMaterial({ map: texHV(L), transparent: true, alphaTest: .4 })); } };
+  // une porte : en retrait, panneaux, vitre, poignée, marche ; o.imposte : texte peint sur l'imposte
+  B.porte = (cx, w, h, o = {}) => { const prof = o.prof ?? .3, z = o.z || 0, x0 = cx - w / 2, x1 = cx + w / 2, imp = o.imposte ? .38 : 0;
+    B.trou(x0, x1, .02, h + imp, prof, { z, tableau: o.tableau || o.cadre || "#c8bca8" });
+    const c = toile(Math.round(w * 100), Math.round(h * 100), (x, W, H) => { x.fillStyle = o.coul || "#4a2c18"; x.fillRect(0, 0, W, H); const vv = (vx, vy, vw, vh) => { const g = x.createLinearGradient(vx, vy, vx + vw, vy + vh); g.addColorStop(0, "#a3b8c8"); g.addColorStop(.5, "#3c5064"); g.addColorStop(1, "#1d2834"); x.fillStyle = g; x.fillRect(vx, vy, vw, vh); x.fillStyle = "rgba(255,255,255,.2)"; x.beginPath(); x.moveTo(vx + vw * .2, vy + vh); x.lineTo(vx + vw * .45, vy + vh); x.lineTo(vx + vw * .9, vy); x.lineTo(vx + vw * .65, vy); x.fill(); };
+      const pan = (px, py, pw, ph) => { x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(px, py, pw, ph); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(px + 4, py + 4, pw - 8, ph - 8); x.fillStyle = o.coul || "#4a2c18"; x.fillRect(px + 7, py + 7, pw - 14, ph - 14); };
+      const vant = (vx, vw) => { vv(vx + 10, 12, vw - 20, H * .58); x.fillStyle = o.coul || "#4a2c18"; if (o.carreaux) { x.fillRect(vx + vw / 2 - 2, 12, 4, H * .58); x.fillRect(vx + 10, 12 + H * .29, vw - 20, 4); } pan(vx + 10, H * .64, vw - 20, H * .32); };
+      if (o.double) { vant(0, W / 2); vant(W / 2, W / 2); x.fillStyle = "rgba(0,0,0,.4)"; x.fillRect(W / 2 - 1, 0, 2, H); x.fillStyle = "#d8b040"; x.fillRect(W / 2 - 10, H * .55, 4, 22); x.fillRect(W / 2 + 6, H * .55, 4, 22); }
+      else { vant(0, W); x.fillStyle = "#d8b040"; x.beginPath(); x.arc(W - 14, H * .58, 5, 0, 7); x.fill(); }
+      if (o.texte) { x.fillStyle = "#f6e2a0"; x.font = `bold ${Math.round(W * .11)}px Georgia`; x.textAlign = "center"; x.fillText(o.texte, W / 2, 12 + H * .32); } });
+    B.plan(w, h, cx, h / 2 + .02, z - prof + .04, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .5 }));
+    if (imp) { const t = toile(Math.round(w * 100), Math.round(imp * 100), (x, W, H) => { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#5a7488"); g.addColorStop(1, "#1d2834"); x.fillStyle = g; x.fillRect(0, 0, W, H); x.fillStyle = "#f6e2a0"; x.font = `bold ${H * .5}px Georgia`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(o.imposte, W / 2, H / 2); });
+      B.plan(w, imp, cx, h + imp / 2, z - prof + .04, new THREE.MeshStandardMaterial({ map: texHV(t), roughness: .2 })); B.boite(w, .06, .06, cx, h + .03, z - prof + .07, o.cadre || "#3a2a1a"); }
+    B.boite(w + .3, .05, .4, cx, .025, z + .1, "#9a968e"); if (o.cadre) { B.boite(.08, h + imp, .06, x0 - .04, (h + imp) / 2, z + .03, o.cadre); B.boite(.08, h + imp, .06, x1 + .04, (h + imp) / 2, z + .03, o.cadre); B.boite(w + .16, .08, .06, cx, h + imp + .04, z + .03, o.cadre); } };
+  // une corniche moulurée : bandeau, denticules, larmier, consoles
+  B.corniche = (x0, x1, h, o = {}) => { const c = o.coul || "#e6dcc6", d = o.prof ?? .32, w = x1 - x0, cx = (x0 + x1) / 2, z = o.z || 0;
+    B.boite(w, o.frise ?? .34, .08, cx, h + (o.frise ?? .34) / 2, z + .04, c);
+    if (o.denticules !== false) for (let x = x0 + .08; x < x1 - .06; x += .16) B.boite(.08, .1, .1, x, h + (o.frise ?? .34) + .05, z + .1, c);
+    B.boite(w + .12, .1, d * .7, cx, h + (o.frise ?? .34) + .15, z + d * .35, teinteHV(c, 1.03)); B.boite(w + .2, .14, d, cx, h + (o.frise ?? .34) + .27, z + d / 2, c);
+    if (o.consoles) for (const x of o.consoles) { B.boite(.14, .42, .2, x, h + (o.frise ?? .34) - .1, z + .14, teinteHV(c, .97)); B.boite(.16, .1, .26, x, h + (o.frise ?? .34) + .08, z + .14, c); } };
+  B.bandeau = (x0, x1, h, o = {}) => { const c = o.coul || "#e6dcc6", e = o.haut ?? .22, d = o.prof ?? .12, z = o.z || 0; B.boite(x1 - x0, e, d, (x0 + x1) / 2, h + e / 2, z + d / 2, c); B.boite(x1 - x0 + .04, .05, d + .05, (x0 + x1) / 2, h + e, z + (d + .05) / 2, teinteHV(c, 1.05)); };
+  // un pilastre (avec base et chapiteau), une colonne
+  B.pilastre = (cx, h0, h1, w, coul, o = {}) => { const z = o.z || 0, d = o.prof ?? .12; B.boite(w, h1 - h0, d, cx, (h0 + h1) / 2, z + d / 2, coul); B.boite(w + .1, .18, d + .06, cx, h0 + .09, z + (d + .06) / 2, teinteHV(coul, .95)); B.boite(w + .14, .2, d + .08, cx, h1 - .1, z + (d + .08) / 2, teinteHV(coul, 1.05));
+    if (o.cannelures) for (let i = 1; i < 4; i++) B.boite(.02, h1 - h0 - .5, .02, cx - w / 2 + i * w / 4, (h0 + h1) / 2, z + d + .005, teinteHV(coul, .85)); };
+  // une enseigne en volume : panneau épais, liseré, lettres peintes (o.lignes : plusieurs lignes)
+  B.enseigne = (cx, h, w, hh, texte, o = {}) => { const z = o.z || 0, d = o.ep ?? .1; const c = toileEnseigneHV(w, hh, texte, o);
+    const m = new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .5, emissive: o.neon ? 0xffffff : 0, emissiveMap: o.neon ? texHV(c) : null, emissiveIntensity: o.neon ? .35 : 0 });
+    B.boite(w, hh, d, cx, h + hh / 2, z + d / 2, o.tranche || o.bord || "#2a2a2a"); B.plan(w, hh, cx, h + hh / 2, z + d + .002, m); };
+  B.drapeau = (x, h, w, hh, texte, o = {}) => { const c = toileEnseigneHV(w, hh, texte, o), m = new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .5, emissive: o.neon ? 0xffffff : 0, emissiveMap: o.neon ? texHV(c) : null, emissiveIntensity: o.neon ? .4 : 0 });
+    const zc = (o.ecart ?? .25) + w / 2; B.boite(.1, hh, w, x, h + hh / 2, zc, o.tranche || o.bord || "#2a2a2a"); B.plan(w, hh, x + .052, h + hh / 2, zc, m, { ry: Math.PI / 2 }); B.plan(w, hh, x - .052, h + hh / 2, zc, m, { ry: -Math.PI / 2 });
+    B.boite(.05, .05, w + (o.ecart ?? .25) + .1, x, h + hh + .08, (w + (o.ecart ?? .25)) / 2, "#2a2a2a", { m: .5 }); for (const k of [.25, .75]) B.cyl(.012, .012, .1, x, h + hh + .04, (o.ecart ?? .25) + k * w, "#2a2a2a"); };
+  // un auvent rayé en toile : pente, joues latérales, lambrequin festonné, armature
+  B.auvent = (x0, x1, h, prof, c1, c2 = "#f4f0e6", o = {}) => { const L = x1 - x0, ch = o.chute ?? .7, n = o.bandes || Math.round(L / .3), z = o.z || 0;
+    const t = toile(512, 128, (x, W, H) => { for (let k = 0; k < n; k++) { x.fillStyle = k % 2 ? c2 : c1; x.fillRect(k * W / n, 0, W / n + 1, H); } for (let i = 0; i < 900; i++) { x.fillStyle = "rgba(0,0,0,.05)"; x.fillRect(Math.random() * W, Math.random() * H, 2, 2); } x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(0, 0, W, 10); });
+    const mt = new THREE.MeshStandardMaterial({ map: texHV(t), roughness: .9, side: THREE.DoubleSide }); const lg = Math.hypot(prof, ch);
+    if (o.bombe) { const geo = new THREE.CylinderGeometry(prof, prof, L, 24, 1, true, 0, Math.PI / 2); const p = new THREE.Mesh(geo, mt); p.rotation.z = Math.PI / 2; p.rotation.x = 0; p.position.set((x0 + x1) / 2, h - prof * 0, z); p.rotation.set(0, 0, Math.PI / 2); p.scale.set(ch / prof, 1, 1); B.objet(p); }
+    else { const p = B.plan(L, lg, (x0 + x1) / 2, h - ch / 2, z + prof / 2, mt, { rx: -Math.atan2(prof, ch) + 0 }); p.rotation.x = -(Math.PI / 2 - Math.atan2(ch, prof)); }
+    const lam = toile(512, 64, (x, W, H) => { for (let k = 0; k < n; k++) { x.fillStyle = k % 2 ? c2 : c1; x.fillRect(k * W / n, 0, W / n + 1, H); } x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(0, 0, W, 4); if (o.festons !== false) { x.globalCompositeOperation = "destination-out"; x.fillStyle = "#000"; for (let k = 0; k < n; k++) { x.beginPath(); x.arc((k + .5) * W / n, H + W / n * .18, W / n / 2, 0, 7); x.fill(); } } });
+    if (o.lettres) { const lx = lam.getContext("2d"); lx.globalCompositeOperation = "source-over"; }
+    B.plan(L, .3, (x0 + x1) / 2, h - ch - .15, z + prof + .005, new THREE.MeshStandardMaterial({ map: texHV(lam), transparent: true, alphaTest: .5, side: THREE.DoubleSide }));
+    const joue = new THREE.Shape(); joue.moveTo(0, 0); joue.lineTo(prof, -ch); joue.lineTo(0, -ch); joue.closePath();
+    for (const sx of [x0, x1]) { const jm = new THREE.Mesh(new THREE.ShapeGeometry(joue), new THREE.MeshStandardMaterial({ color: c1, roughness: .9, side: THREE.DoubleSide })); jm.rotation.y = -Math.PI / 2; jm.position.set(sx, h, z); B.objet(jm); }
+    for (const sx of [x0 + .03, x1 - .03, ...(L > 4 ? [(x0 + x1) / 2] : [])]) B.cyl(.012, .012, lg, sx, h - ch / 2 - .02, z + prof / 2, "#2a2a2a", { rx: -Math.atan2(prof, ch), m: .5 }); };
+  // un parapet (acrotère) : muret, chaperon, et ses dés arrondis
+  B.parapet = (x0, x1, h, haut, coul, o = {}) => { B.boite(x1 - x0, haut, .25, (x0 + x1) / 2, h + haut / 2, -.12 + .02, coul); B.boite(x1 - x0 + .1, .08, .35, (x0 + x1) / 2, h + haut + .04, -.08, teinteHV(coul, 1.05));
+    for (const x of o.des || []) { B.boite(.4, haut + .3, .3, x, h + (haut + .3) / 2, -.05, coul); B.cyl(.2, .2, .3, x, h + haut + .3, -.05, teinteHV(coul, 1.04), { rx: Math.PI / 2, seg: 16 }); } };
+  // fini : les murs peints (percés), et les pièces fusionnées
+  B.finir = (o = {}) => { for (const M of murs) { const W = Math.round((M.x1 - M.x0) * HPX), H = Math.round((M.h1 - M.h0) * HPX);
+      const c = toile(W, H, (x) => { peindreMurHV(x, W, H, M.type, M.coul, M.o); if (M.o.peint) M.o.peint(x, W, H, (v) => (v - M.x0) * HPX, (v) => (M.h1 - v) * HPX);
+        x.globalCompositeOperation = "destination-out"; x.fillStyle = "#000"; for (const T of trous) { if (Math.abs(T.z - M.z) > .02 || T.cadre !== M.cadre) continue; const a = (T.x0 - M.x0) * HPX, b = (T.x1 - M.x0) * HPX, yh = (M.h1 - T.h1) * HPX, yb = (M.h1 - T.h0) * HPX; x.beginPath(); x.rect(a, yh, b - a, yb - yh); if (T.arc) x.ellipse((a + b) / 2, yh + 1, (b - a) / 2, T.arc * HPX, 0, Math.PI, 0); x.fill(); }
+        if (M.o.contour) { x.beginPath(); x.moveTo(0, H); for (const [a, b] of M.o.contour) x.lineTo((a - M.x0) * HPX, (M.h1 - b) * HPX); x.lineTo(W, H); x.closePath(); x.globalCompositeOperation = "destination-in"; x.fillStyle = "#000"; x.fill(); } });
+      const m = new THREE.MeshStandardMaterial({ map: texHV(c), transparent: false, alphaTest: .5, roughness: .9 }); tf.push(M.m); B.plan(M.x1 - M.x0, M.h1 - M.h0, (M.x0 + M.x1) / 2, (M.h0 + M.h1) / 2, M.z, m); tf.pop(); }
+    for (const [mat, geos] of pieces) { const me = new THREE.Mesh(fusionHV(geos), mat); me.castShadow = true; me.receiveShadow = true; g.add(me); } return g; };
+  return B; }
+function toileEnseigneHV(w, hh, texte, o) { const W = 512, H = Math.max(32, Math.round(512 * hh / w)); return toile(W, H, (x) => {
+  if (o.fond !== null) { x.fillStyle = o.fond || "#b81d24"; x.fillRect(0, 0, W, H); if (o.degrade) { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(255,255,255,.18)"); g.addColorStop(1, "rgba(0,0,0,.18)"); x.fillStyle = g; x.fillRect(0, 0, W, H); } }
+  if (o.bord) { x.strokeStyle = o.bord; x.lineWidth = Math.max(4, H * .06); x.strokeRect(x.lineWidth, x.lineWidth, W - 2 * x.lineWidth, H - 2 * x.lineWidth); }
+  const lignes = Array.isArray(texte) ? texte : texte.split("\n"); const styles = o.styles || [];
+  let fs = H / (lignes.length + .5) * (o.echelle || 1); const fonte = (i, f) => `${(styles[i] || {}).style ?? o.style ?? "bold"} ${f * ((styles[i] || {}).k || 1)}px ${(styles[i] || {}).police || o.police || "Georgia, serif"}`;
+  while (lignes.some((l, i) => { x.font = fonte(i, fs); return x.measureText(l).width > W * (o.marge || .86); }) && fs > 6) fs -= 1;
+  x.textAlign = "center"; x.textBaseline = "middle"; const tot = lignes.reduce((s, l, i) => s + fs * ((styles[i] || {}).k || 1) * 1.08, 0); let y = H / 2 - tot / 2;
+  lignes.forEach((l, i) => { const k = (styles[i] || {}).k || 1; y += fs * k * .54; x.font = fonte(i, fs); if (o.ombre) { x.fillStyle = o.ombre; x.fillText(l, W / 2 + 3, y + 3); } x.fillStyle = (styles[i] || {}).coul || o.coul || "#fff"; x.fillText(l, W / 2, y); if (o.contour) { x.strokeStyle = o.contour; x.lineWidth = 2; x.strokeText(l, W / 2, y); } y += fs * k * .54; }); }); }
+// ce qu'on voit dans les vitrines
+function decorVitrineHV(x, W, H, marc, o) { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#3a3226"); g.addColorStop(1, "#1a1612"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.fillStyle = "rgba(255,230,170,.18)"; for (let i = 0; i < W; i += 90) { x.beginPath(); x.arc(i + 40, 4, 30, 0, Math.PI); x.fill(); }
+  const coul = () => ["#c8402a", "#e9c84a", "#3a6ea8", "#f2efe6", "#2f7a5a", "#e07a30", "#8a4ab0"][Math.floor(hv() * 7)];
+  if (marc === "boites" || marc === "papeterie" || marc === "outils") for (let k = 0; k < 3; k++) { const yy = H * (.42 + k * .22); x.fillStyle = "#6a5034"; x.fillRect(0, yy, W, 5); for (let bx = 6; bx < W - 10; bx += 10 + hv() * 14) { x.fillStyle = coul(); const bh = 10 + hv() * (H * .14); const bw = marc === "papeterie" ? 6 + hv() * 6 : 10 + hv() * 10; x.fillRect(bx, yy - bh, bw, bh); x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(bx, yy - bh, 2, bh); } }
+  if (marc === "outils") { x.strokeStyle = "#9aa0a6"; x.lineWidth = 4; for (let bx = 20; bx < W - 20; bx += 40) { x.beginPath(); x.moveTo(bx, H * .08); x.lineTo(bx, H * .22); x.stroke(); } }
+  if (marc === "robes") for (let bx = 30; bx < W - 24; bx += 46) { const c = ["#d8607a", "#6aa0d0", "#f2e2a0", "#7a4aa0", "#e8e8e8"][Math.floor(hv() * 5)]; x.fillStyle = "#e8d8c8"; x.beginPath(); x.arc(bx, H * .22, 8, 0, 7); x.fill(); x.fillStyle = c; x.beginPath(); x.moveTo(bx - 10, H * .3); x.lineTo(bx + 10, H * .3); x.lineTo(bx + 24, H * .82); x.lineTo(bx - 24, H * .82); x.fill(); x.fillStyle = "#3a2a1a"; x.fillRect(bx - 1, H * .82, 2, H * .12); x.fillRect(bx - 12, H * .93, 24, 4); }
+  if (marc === "velos") for (let bx = 40; bx < W - 30; bx += 74) { x.strokeStyle = "#151515"; x.lineWidth = 4; for (const d of [-17, 17]) { x.beginPath(); x.arc(bx + d, H * .74, 15, 0, 7); x.stroke(); } x.strokeStyle = ["#b81d24", "#1d4f8a", "#2f7a5a"][Math.floor(hv() * 3)]; x.lineWidth = 4; x.beginPath(); x.moveTo(bx - 17, H * .74); x.lineTo(bx - 2, H * .56); x.lineTo(bx + 17, H * .74); x.lineTo(bx + 4, H * .52); x.moveTo(bx - 2, H * .56); x.lineTo(bx - 6, H * .5); x.stroke(); }
+  if (marc === "fleurs") { for (let bx = 8; bx < W - 6; bx += 12) { const hh = H * (.3 + hv() * .25); x.strokeStyle = "#3a6a2a"; x.lineWidth = 3; x.beginPath(); x.moveTo(bx, H * .9); x.lineTo(bx + (hv() - .5) * 8, H - hh); x.stroke(); x.fillStyle = ["#e04a6a", "#f2d040", "#f4f2ec", "#c84ad0", "#f07a30"][Math.floor(hv() * 5)]; x.beginPath(); x.arc(bx, H - hh, 7, 0, 7); x.fill(); } x.fillStyle = "#8a5a34"; for (let bx = 0; bx < W; bx += 50) x.fillRect(bx + 6, H * .82, 38, H * .18); }
+  if (marc === "comptoir") { x.fillStyle = "#e8e2d4"; x.fillRect(0, H * .3, W, H * .05); for (let bx = 20; bx < W; bx += 60) { x.fillStyle = "#f4c84a"; x.fillRect(bx, H * .12, 30, 14); } x.fillStyle = "#c8202a"; x.fillRect(0, H * .66, W, 10); x.fillStyle = "#ece6d8"; x.fillRect(0, H * .7, W, H * .3); x.fillStyle = "#9aa0a6"; x.fillRect(0, H * .7, W, 4); for (let bx = 26; bx < W - 14; bx += 34) { x.fillStyle = "#c8202a"; x.beginPath(); x.ellipse(bx, H * .62, 12, 6, 0, 0, 7); x.fill(); x.fillStyle = "#c0c4c8"; x.fillRect(bx - 2, H * .62, 4, H * .1); } }
+  if (marc === "auto") { x.fillStyle = "#3a3632"; x.fillRect(0, H * .88, W, H * .12); const c = o.voiture || "#9fd8c8"; x.fillStyle = c; x.beginPath(); x.ellipse(W * .45, H * .73, W * .32, H * .12, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(W * .26, H * .66); x.quadraticCurveTo(W * .42, H * .44, W * .6, H * .62); x.fill(); x.fillStyle = "#cfe0e8"; x.beginPath(); x.moveTo(W * .3, H * .65); x.quadraticCurveTo(W * .42, H * .5, W * .55, H * .63); x.fill(); x.fillStyle = "#e8e8e8"; x.fillRect(W * .12, H * .76, W * .66, 5); x.fillStyle = "#111"; for (const d of [-.2, .2]) { x.beginPath(); x.arc(W * (.45 + d), H * .85, H * .07, 0, 7); x.fill(); x.fillStyle = "#ddd"; x.beginPath(); x.arc(W * (.45 + d), H * .85, H * .03, 0, 7); x.fill(); x.fillStyle = "#111"; } }
+  if (marc === "bijoux") { x.fillStyle = "#1a2a4a"; x.fillRect(0, H * .55, W, H * .45); for (let bx = 20; bx < W - 10; bx += 26) { x.fillStyle = "#f2e8c8"; x.beginPath(); x.arc(bx, H * .62, 5, 0, 7); x.fill(); x.strokeStyle = "#e8d070"; x.lineWidth = 2; x.beginPath(); x.arc(bx, H * .75, 7, 0, 7); x.stroke(); } x.fillStyle = "#e8e2d4"; for (let bx = 40; bx < W; bx += 120) { x.beginPath(); x.moveTo(bx - 14, H * .55); x.lineTo(bx, H * .2); x.lineTo(bx + 14, H * .55); x.fill(); x.fillStyle = "#e8d070"; x.beginPath(); x.arc(bx, H * .33, 9, 0, 7); x.fill(); x.fillStyle = "#e8e2d4"; } }
+  if (marc === "banque") { x.fillStyle = "#4a3a28"; x.fillRect(0, H * .55, W, H * .45); x.fillStyle = "#c9a227"; for (let bx = 0; bx < W; bx += 30) x.fillRect(bx, H * .3, 3, H * .25); x.fillRect(0, H * .3, W, 4); }
+  if (marc === "barbier") { x.fillStyle = "#e8e8e0"; x.fillRect(0, H * .1, W, H * .3); x.fillStyle = "#9aa0a6"; x.fillRect(0, H * .4, W, 4); for (let bx = 30; bx < W - 20; bx += 70) { x.fillStyle = "#c8202a"; x.fillRect(bx - 14, H * .5, 28, H * .2); x.fillStyle = "#e8e8e8"; x.fillRect(bx - 16, H * .7, 32, 6); x.fillStyle = "#9aa0a6"; x.fillRect(bx - 3, H * .72, 6, H * .2); } }
+  if (marc === "affiches") { for (let bx = 10; bx < W - 40; bx += 60) { x.fillStyle = ["#f2d040", "#e8e2d4", "#c8402a"][Math.floor(hv() * 3)]; x.fillRect(bx, H * .2 + hv() * 20, 44, 56); x.fillStyle = "#1a1a1a"; x.fillRect(bx + 6, H * .2 + 30, 32, 4); } }
+  for (let k = 0; k < 3; k++) { x.fillStyle = "rgba(255,255,255,.13)"; const rx = W * (.1 + k * .32); x.beginPath(); x.moveTo(rx, H); x.lineTo(rx + W * .06, H); x.lineTo(rx + W * .2, 0); x.lineTo(rx + W * .14, 0); x.fill(); }
+  if (o.affiche) { x.fillStyle = o.affiche[1] || "#f2d040"; x.fillRect(W * .08, H * .3, W * .22, H * .3); x.fillStyle = "#1a1a1a"; x.font = `bold ${Math.round(H * .06)}px Arial`; x.textAlign = "center"; o.affiche[0].split("\n").forEach((l, i) => x.fillText(l, W * .19, H * (.4 + i * .08))); } }
+// ---- les éléments propres aux toits ----
+function ardoisesHV(W, H, coul) { return toile(W, H, (x) => { x.fillStyle = teinteHV(coul, .6); x.fillRect(0, 0, W, H); const rh = 14, rw = 18; for (let y = 0, r = 0; y < H; y += rh, r++) for (let bx = -(r % 2) * rw / 2; bx < W; bx += rw) { x.fillStyle = teinteHV(coul, .85 + hv() * .3); x.beginPath(); x.moveTo(bx + 1, y); x.lineTo(bx + rw - 1, y); x.lineTo(bx + rw - 1, y + rh + 2); x.quadraticCurveTo(bx + rw / 2, y + rh + 6, bx + 1, y + rh + 2); x.fill(); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(bx + 1, y, rw - 2, 2); } }); }
+function mansardeHV(B, x0, x1, h, haut, recul, coul, o = {}) { const L = x1 - x0, lg = Math.hypot(haut, recul), a = Math.atan2(recul, haut);
+  const t = texHV(ardoisesHV(Math.round(L * 60), Math.round(lg * 60), coul)); const m = new THREE.MeshStandardMaterial({ map: t, roughness: .7 });
+  const p = B.plan(L, lg, (x0 + x1) / 2, h + haut / 2, -recul / 2, m); p.rotation.x = -a;
+  for (const sx of [x0, x1]) { const s = new THREE.Shape(); s.moveTo(0, 0); s.lineTo(-(recul + 1.6), 0); s.lineTo(-(recul + 1.6), haut); s.lineTo(-recul, haut); s.closePath(); const j = new THREE.Mesh(new THREE.ShapeGeometry(s), new THREE.MeshStandardMaterial({ color: teinteHV(coul, .8), side: THREE.DoubleSide })); j.rotation.y = -Math.PI / 2; j.position.set(sx, h, 0); B.objet(j); }
+  const tr = o.garniture || "#ece4d0"; B.boite(L + .14, .14, .16, (x0 + x1) / 2, h + haut + .07, -recul + .02, tr); B.boite(L + .1, .25, recul + 1.6, (x0 + x1) / 2, h + haut + .02, -recul - .8 + .1, teinteHV(coul, .7));
+  for (const sx of [x0 + .04, x1 - .04]) { const ar = B.boite(.1, lg + .1, .1, sx, h + haut / 2, -recul / 2 + .03, tr, { rx: -a }); }
+  for (const cx of o.lucarnes || []) { const w = o.lw || 1.1, hh = o.lh || 1.5, zf = -recul * .18 - .05, y0 = h + .25;
+    B.mur(cx - w / 2, cx + w / 2, y0, y0 + hh, "enduit", tr, { saillie: zf }); B.boite(.1, hh, 1.2, cx - w / 2 + .05, y0 + hh / 2, zf - .6, tr); B.boite(.1, hh, 1.2, cx + w / 2 - .05, y0 + hh / 2, zf - .6, tr);
+    B.fenetre(cx, y0 + .2, w - .38, hh - .5, { z: zf, prof: .12, appui: false, linteau: false, cadre: "#f8f6ee", rangs: 2, vitre: 1, tableau: tr });
+    const g = new THREE.Shape(); g.moveTo(-w / 2 - .14, 0); g.lineTo(w / 2 + .14, 0); g.lineTo(0, .65); g.closePath(); B.boite(0, 0, 0, cx, y0 + hh, zf - 1.3, tr, { geo: new THREE.ExtrudeGeometry(g, { depth: 1.42, bevelEnabled: false }) });
+    for (const sg of [-1, 1]) { const tw = Math.hypot(w / 2 + .2, .7); B.boite(tw, .06, 1.45, cx + sg * (w / 4 + .03), y0 + hh + .36, zf - .57, teinteHV(coul, .95), { rz: sg * -Math.atan2(.65, w / 2 + .14) }); } } }
+function barbierPoleHV(B, x, y, z) { const pole = toile(64, 256, (c) => { c.fillStyle = "#f4f2ec"; c.fillRect(0, 0, 64, 256); for (let k = -6; k < 14; k++) { c.fillStyle = k % 2 ? "#c8202a" : "#1d4f8a"; c.beginPath(); c.moveTo(0, k * 28); c.lineTo(64, k * 28 + 40); c.lineTo(64, k * 28 + 54); c.lineTo(0, k * 28 + 14); c.fill(); } });
+  const pm = B.objet(new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .9, 18), new THREE.MeshStandardMaterial({ map: texHV(pole), roughness: .2 }))); pm.position.set(x, y, z); pm.userData.tourne = true;
+  B.objet(new THREE.Mesh(new THREE.CylinderGeometry(.095, .095, .9, 18, 1, true), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .18, roughness: .05 }))).position.set(x, y, z);
+  for (const [dy, r] of [[-.5, .12], [.5, .12]]) B.cyl(r, r, .1, x, y + dy, z, "#d8dce0", { m: .9, r: .2 }); B.sphere(.11, x, y + .62, z, "#d8dce0", { m: .9, r: .2 }); B.boite(.04, .04, z, x, y, z / 2, "#9aa0a6", { m: .8 }); return pm; }
+
+const BRQ = "#8a3a28", CREM = "#ece2cc";
+const IMMEUBLES_HV = {
+  // ---- au sud de la place ----
+  // Ask Mr. Foster — Travel Service : rez-de-chaussée carrelé blanc, étage en brique rouge, corniche à consoles
+  travel: { larg: 7.6, corps: 7.6, f: (B) => { const X0 = -3.8, X1 = 3.8;
+      B.mur(X0, X1, 0, 3.5, "carreau", "#f4f2ec", { saillie: .1, joint: "#a8a8a2" }); B.mur(X0, X1, 3.5, 7.6, "brique", BRQ);
+      B.porte(-2.75, 1.05, 2.45, { z: .1, coul: "#3a2a1a", cadre: "#2a2a2a", carreaux: true }); B.vitrine(-1.9, 3.5, .15, 2.75, { z: .1, cadre: "#2a2a2a", bas: "#f4f2ec", marchandise: "affiches", affiche: ["10 DAYS IN\nHAWAII", "#f2d040"], imposte: false, montants: 1 });
+      B.enseigne(.05, 2.85, 7.3, .85, ["Ask Mr. Foster", "TRAVEL SERVICE"], { z: .1, fond: "#f8f6f0", coul: "#151515", bord: "#151515", styles: [{ style: "italic bold", k: .75 }, { police: "Arial Black, Arial, sans-serif", style: "" }] });
+      B.bandeau(X0, X1, 3.72, { coul: CREM, z: 0 }); for (const cx of [-1.75, 1.75]) B.fenetre(cx, 4.4, .95, 2.05, { carreaux: 1, cle: true, vitre: 1 });
+      B.corniche(X0, X1, 7, { coul: CREM, consoles: [-3.6, -1.75, 0, 1.75, 3.6] });
+      B.drapeau(-3.55, 4.3, .75, .5, ["TIME TO", "TRAVEL"], { fond: "#f8f6f0", coul: "#1a1a1a", bord: "#9aa0a6", ecart: .2 }); } },
+  // J.D. Armstrong Realty : soubassement carrelé rose, oriel crème, toit mansardé en ardoise bleue avec deux lucarnes, auvent noir, enseigne jaune
+  realty: { larg: 10.3, corps: 9.4, f: (B) => { const X0 = -5.15, X1 = 5.15;
+      B.mur(X0, X1, 0, 3.3, "carreau", "#e8b2ac", { saillie: .1, joint: "#b88a84", carreau: .2 }); B.mur(X0, 1.7, 3.3, 7.1, "brique", "#7a2e20"); B.mur(1.7, X1, 3.3, 9.4, "brique", "#823424");
+      B.vitrine(-4.8, 1.6, .15, 2.85, { z: .1, cadre: "#1e1e1e", bas: "#e8b2ac", marchandise: "affiches", montants: 2, imposte: false, lettres: "Homes for sale" }); B.porte(3.3, 1.15, 2.5, { z: .1, coul: "#efe6d0", cadre: "#e6dcc6", texte: "OFFICE" });
+      B.auvent(-4.9, 1.75, 3.2, 1.05, "#1a1a1a", "#262626", { bandes: 2, festons: false, chute: .55 });
+      B.bandeau(X0, X1, 3.3, { coul: CREM, haut: .26, prof: .16 });
+      // l'oriel : trois pans vitrés en saillie, un socle à corbeaux et un chapeau
+      B.avec([-1.6, 0, 0], 0, () => { const w = 2.5, d = .62, ws = d * Math.SQRT2, wf = w - 2 * d, h0 = 4.05, hh = 2.1;
+        B.boite(w + .3, .3, d + .2, 0, h0 - .2, d / 2, CREM); B.boite(w, .2, d, 0, h0 - .44, d / 2 - .05, teinteHV(CREM, .9)); for (const s of [-.8, 0, .8]) B.boite(.16, .35, d * .8, s, h0 - .7, d * .4, teinteHV(CREM, .95));
+        B.boite(w + .3, .28, d + .25, 0, h0 + hh + .14, d / 2, CREM); B.boite(w + .4, .08, d + .35, 0, h0 + hh + .3, d / 2, teinteHV(CREM, 1.04));
+        B.avec([0, 0, d], 0, () => { B.mur(-wf / 2, wf / 2, h0, h0 + hh, "enduit", CREM, {}); B.fenetre(0, h0 + .2, wf - .24, hh - .4, { prof: .08, appui: false, linteau: false, cadre: "#f8f6ee", vitre: 1, carreaux: 1 }); });
+        for (const sg of [-1, 1]) B.avec([sg * (w / 2 - d / 2), 0, d / 2], sg * Math.PI / 4, () => { B.mur(-ws / 2, ws / 2, h0, h0 + hh, "enduit", CREM, {}); B.fenetre(0, h0 + .2, ws - .24, hh - .4, { prof: .06, appui: false, linteau: false, cadre: "#f8f6ee", vitre: 0 }); }); });
+      B.fenetre(.85, 4.3, .8, 1.8, { carreaux: 1, cle: true }); B.fenetre(3.4, 4.3, .9, 1.8, { carreaux: 1, cle: true, vitre: 2 }); B.fenetre(3.4, 6.9, .9, 1.6, { carreaux: 1, cle: true });
+      B.enseigne(3.4, 3.62, 1.5, .62, ["J.D. ARMSTRONG", "REALTY"], { fond: "#f2c830", coul: "#2a1a0a", bord: "#2a1a0a", ep: .08, styles: [{ k: .55 }, { police: "Arial Black, Arial", style: "", k: 1 }] });
+      B.corniche(X0, 1.75, 6.75, { coul: CREM, frise: .3 }); B.corniche(1.7, X1, 9.0, { coul: CREM, frise: .25 });
+      mansardeHV(B, X0, 1.7, 7.4, 2.2, .75, "#6a7a96", { lucarnes: [-3.3, -.9], lw: 1.15, lh: 1.45 }); } },
+  // Zales, bijoutier : rez-de-chaussée bleu, bandeau gris, enseigne verticale, parapet à dés
+  zales: { larg: 8.4, corps: 5.2, f: (B) => { const X0 = -4.2, X1 = 4.2;
+      B.mur(X0, X1, 0, 3.1, "enduit", "#7f9cc6", { saillie: .12 }); B.mur(X0, X1, 3.1, 5.2, "enduit", "#b4b8b8");
+      B.vitrine(-3.9, -.75, .15, 2.85, { z: .12, cadre: "#2a3a5a", bas: "#6a88b4", marchandise: "bijoux", montants: 1 }); B.porte(0, 1.1, 2.6, { z: .12, coul: "#2a3a5a", cadre: "#2a3a5a" }); B.vitrine(.75, 3.9, .15, 2.85, { z: .12, cadre: "#2a3a5a", bas: "#6a88b4", marchandise: "bijoux", montants: 1 });
+      B.enseigne(0, 3.25, 7.6, .55, "ENGAGEMENT SETS  •  DIAMOND SETS", { fond: "#3a4a4a", coul: "#e8eef0", bord: "#c8ccd0", police: "Arial, sans-serif" });
+      B.bandeau(X0, X1, 3.9, { coul: "#c8cccc", haut: .18 }); B.corniche(X0, X1, 4.6, { coul: "#c8cccc", frise: .22, denticules: false });
+      B.parapet(X0, X1, 5.25, .55, "#c4c8c8", { des: [X0 + .2, -1.4, 1.4, X1 - .2] });
+      B.drapeau(-.1, 4.1, .9, 2.6, ["Z", "A", "L", "E", "S"], { fond: "#4a4e52", coul: "#f4f2ec", bord: "#9aa0a6", police: "Arial Black, Arial", style: "", ecart: .3, neon: true }); } },
+  // le cinéma : façade art déco crème, tour à gradins et grande enseigne verticale TOWN, marquise lumineuse, caisse au milieu ; à gauche l'horloger
+  cinema: { larg: 17.6, corps: 9.5, zones: [[-8.8, -5.4, 5], [-5.4, 8.8, 9.5]], f: (B) => { const X0 = -8.8, X1 = 8.8, cx = 1.7;
+      B.mur(X0, -5.4, 0, 5, "brique", "#9a5a3c"); B.vitrine(-8.5, -6.9, .15, 2.8, { marchandise: "boites", cadre: "#2a2a2a", montants: 0 }); B.porte(-6.15, 1, 2.5, { coul: "#2a2a2a", cadre: "#2a2a2a" });
+      B.enseigne(-7.1, 2.95, 3.1, .5, "Louis  Watchmaker", { fond: "#f4f0e6", coul: "#1a1a1a", style: "italic bold", ep: .08 }); B.fenetre(-7.1, 3.75, 1.4, .9, { carreaux: 3, cle: true }); B.corniche(X0, -5.4, 4.65, { coul: CREM, frise: .2 });
+      B.mur(-5.4, X1, 0, 9.5, "enduit", "#ecdcb4", { contour: [[-5.4, 9.5], [X1, 9.5]] });
+      for (const x of [-5.1, -1.2, 4.6, 8.5]) B.pilastre(x, 3.9, 9.3, .5, "#d9c494", { cannelures: true });
+      for (const x of [-3.2, 6.6]) { B.fenetre(x, 4.6, 1.2, 2.8, { cadre: "#3a8a7a", carreaux: 3, rangs: 3, linteau: false, appui: false }); B.boite(1.5, .3, .15, x, 7.65, .07, "#3a8a7a"); B.boite(1.3, .12, .2, x, 4.5, .1, "#3a8a7a"); }
+      for (let i = 0; i < 4; i++) { B.boite(13.8 - i * .6, .14, .1 + i * .05, 1.7, 8.6 + i * .2, .05 + i * .03, ["#3a8a7a", "#c8202a", "#e8c050", "#3a8a7a"][i]); }
+      // la tour à gradins
+      for (let k = 0; k < 4; k++) B.boite(4.2 - k * .8, 1.1, .5 + k * .1, cx, 9.5 + k * 1.1 - .55, -.1 - k * .15 + .25, k % 2 ? "#e6d4a8" : "#ecdcb4");
+      for (let k = 0; k < 5; k++) B.boite(.16, 3.2, .1, cx - 1.2 + k * .6, 10.6, .17, "#3a8a7a");
+      // le hall : trois doubles portes au fond, la caisse vitrée au milieu, les vitrines d'affiches
+      B.trou(-1.8, 5.2, .02, 3.2, 1.6, { tableau: "#c8202a" }); const fond = toile(700, 320, (x, W, H) => { x.fillStyle = "#8a1a1a"; x.fillRect(0, 0, W, H); for (let i = 0; i < W; i += 14) { x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(i, 0, 6, H); } x.fillStyle = "#e8c050"; x.fillRect(0, H * .08, W, 6); });
+      B.plan(7, 3.18, cx, 1.61, -1.55, new THREE.MeshStandardMaterial({ map: texHV(fond), roughness: .7 }));
+      B.boite(7, .03, 1.6, cx, 3.18, -.8, "#e8d8a8"); for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) B.sphere(.06, -1.2 + i * 1.15, 3.12, -.3 - j * .8, "#fff4c0", { r: .2 });
+      for (const d of [-2.4, 2.4]) B.porte(cx + d, 1.4, 2.5, { z: -1.2, prof: .1, double: true, coul: "#c9a227", cadre: "#7a5a1a" });
+      B.avec([cx, 0, -.15], 0, () => { B.boite(1.6, .9, 1.1, 0, .45, 0, "#c8202a", { r: .4 }); B.boite(1.5, 1.2, 1, 0, 1.5, 0, "#d8eef0", { r: .05, m: .3 }); for (const s of [-.75, .75]) B.boite(.06, 1.2, .06, s, 1.5, .5, "#e8c050", { m: .6 }); B.boite(1.7, .2, 1.2, 0, 2.2, 0, "#e8c050", { m: .5, r: .3 });
+        B.cyl(.5, .5, .5, 0, 2.55, 0, "#c8202a", { seg: 20 }); B.enseigne(0, 2.35, .9, .35, "TICKETS", { fond: "#c8202a", coul: "#fff4c0", ep: .02, z: .5 }); });
+      for (const x of [-4.2, -3, 6.4, 7.6]) { B.boite(1, 1.5, .14, x, 1.7, .07, "#c9a227", { m: .5, r: .3 }); const p = toile(200, 300, (c, W, H) => { const col = ["#2a4a8a", "#8a2a2a", "#2a6a4a", "#5a2a6a"][Math.floor(hv() * 4)]; c.fillStyle = col; c.fillRect(0, 0, W, H); c.fillStyle = "#f6e2a0"; c.font = "bold 30px Georgia"; c.textAlign = "center"; c.fillText(["ATOMIC", "CATTLE", "COMING", "TONIGHT"][Math.floor(hv() * 4)], W / 2, 60); c.fillText(["KID", "QUEEN", "SOON", "8 PM"][Math.floor(hv() * 4)], W / 2, 96); c.fillStyle = "rgba(255,255,255,.25)"; c.beginPath(); c.arc(W / 2, 190, 55, 0, 7); c.fill(); });
+        B.plan(.86, 1.34, x, 1.7, .145, new THREE.MeshStandardMaterial({ map: texHV(p), roughness: .2 })); }
+      // la marquise : un caisson lumineux, lettres noires, ampoules, et la grande enseigne verticale au-dessus
+      const t = toile(1024, 200, (x, W, H) => { x.fillStyle = "#fbf6e8"; x.fillRect(0, 0, W, H); x.fillStyle = "#1a1a1a"; x.font = "bold 70px Arial Black, Arial"; x.textAlign = "center"; x.fillText("THE ATOMIC KID", W / 2, 88); x.font = "bold 46px Arial"; x.fillText("MICKEY ROONEY", W / 2, 150); });
+      const bulbes = toile(512, 64, (x, W, H) => { x.fillStyle = "#c8202a"; x.fillRect(0, 0, W, H); for (let i = 8; i < W; i += 20) { x.fillStyle = "#fff6c0"; x.beginPath(); x.arc(i, H / 2, 6, 0, 7); x.fill(); } });
+      const mT = new THREE.MeshStandardMaterial({ map: texHV(t), emissive: 0xffffff, emissiveMap: texHV(t), emissiveIntensity: .45 }), mB = new THREE.MeshStandardMaterial({ map: texHV(bulbes), emissive: 0xffffff, emissiveMap: texHV(bulbes), emissiveIntensity: .5 }), mD = matHV("#2a2a2a");
+      const mq = B.objet(new THREE.Mesh(new THREE.BoxGeometry(7.6, 1.2, 1.8), [mT, mT, mB, mD, mT, mD])); mq.position.set(cx, 3.95, .95);
+      B.boite(7.9, .2, 1.95, cx, 3.27, 1, "#c9a227", { m: .5, r: .3 }); B.boite(7.9, .2, 1.95, cx, 4.63, 1, "#c9a227", { m: .5, r: .3 });
+            B.drapeau(cx, 4.9, 1.1, 4.4, ["T", "O", "W", "N"], { fond: "#c8202a", coul: "#fff4b0", bord: "#fff4b0", police: "Arial Black, Arial", style: "", ecart: .45, neon: true, tranche: "#e8c050" });
+      B.corniche(-5.4, X1, 9.3, { coul: "#d9c494", frise: .2, denticules: false }); } },
+  // Hill Valley Stationers : enduit crème, piliers de brique fauve, grand auvent bombé rouge et blanc, panneau cintré en haut
+  stationers: { larg: 8.4, corps: 5, f: (B) => { const X0 = -4.2, X1 = 4.2;
+      B.mur(X0, X1, 0, 5, "enduit", "#ece4cc", { contour: [[X0, 5], [X1, 5]] });
+      for (const x of [X0 + .3, X1 - .3]) { B.boite(.6, 4.6, .3, x, 2.3, .15, "#c49a64"); } B.avec([0, 0, 0], 0, () => { for (const x of [X0 + .3, X1 - .3]) for (let y = .1; y < 4.6; y += .15) B.boite(.62, .02, .31, x, y, .151, "#a8805a"); });
+      B.vitrine(-3.7, 1.4, .1, 3.2, { cadre: "#ece4cc", bas: "#9a5a3c", socle: .75, marchandise: "papeterie", montants: 2, prof: .35 }); B.boite(5.2, .2, .45, -1.15, .85, .15, "#9a5a3c"); for (let k = 0; k < 18; k++) B.sphere(.09, -3.5 + k * .27, .98, .2, "#4a8a3a", { r: 1 });
+      B.porte(2.55, 1.1, 2.6, { coul: "#ece4cc", cadre: "#d8ccb0", carreaux: true });
+      B.corniche(X0, X1, 4.2, { coul: "#d8d0b8", frise: .25, denticules: false });
+      B.auvent(X0 + .55, X1 - .55, 3.75, 1.25, "#c8202a", "#f6f2ea", { bandes: 22, chute: .9 });
+      // le panneau cintré
+      const arc = new THREE.Shape(); arc.moveTo(-2.4, 0); arc.lineTo(2.4, 0); arc.lineTo(2.4, 1.05); arc.quadraticCurveTo(0, 1.75, -2.4, 1.05); arc.closePath();
+      B.boite(0, 0, 0, 0, 4.85, -.05, "#b81d24", { geo: new THREE.ExtrudeGeometry(arc, { depth: .14, bevelEnabled: false }) });
+      const ens = toile(512, 160, (x, W, H) => { x.fillStyle = "#f6f2e6"; x.beginPath(); x.moveTo(8, H); x.lineTo(W - 8, H); x.lineTo(W - 8, H * .4); x.quadraticCurveTo(W / 2, -H * .05, 8, H * .4); x.closePath(); x.fill(); x.fillStyle = "#b81d24"; x.font = "bold 46px Georgia"; x.textAlign = "center"; x.fillText("HILL VALLEY", W / 2, 80); x.fillStyle = "#3a3a3a"; x.font = "italic bold 44px 'Brush Script MT', cursive"; x.fillText("Stationers", W / 2, 135); });
+      B.plan(4.7, 4.7 * 160 / 512, 0, 4.85 + 4.7 * 160 / 512 / 2 + .04, .1, new THREE.MeshStandardMaterial({ map: texHV(ens), transparent: true, alphaTest: .5 })); B.boite(4.8, .12, .3, 0, 4.85, .05, "#d8d0b8"); } },
+  // le barbier : enduit gris clair, parapet à dés, piliers de brique, vitrines en bow-window, enseigne verticale bleue, l'enseigne tournante
+  barber: { larg: 6.9, corps: 5, f: (B) => { const X0 = -3.45, X1 = 3.45;
+      B.mur(X0, X1, 0, 5, "enduit", "#cfd2d0");
+      for (const x of [X0 + .3, X1 - .3]) B.boite(.6, 3.6, .25, x, 1.8, .125, "#c49a64"); for (const x of [X0 + .3, X1 - .3]) for (let y = .1; y < 3.6; y += .15) B.boite(.62, .02, .26, x, y, .126, "#a8805a");
+      B.porte(0, 1.15, 2.6, { coul: "#e8ecea", cadre: "#d8dcda", texte: "OPEN" });
+      for (const sg of [-1, 1]) B.avec([sg * 1.85, 0, 0], 0, () => { const w = 1.5, d = .55; B.boite(w + .2, .6, d + .1, 0, .3, d / 2, "#e8ecea"); B.boite(w + .3, .15, d + .25, 0, 2.95, d / 2, "#e8ecea");
+        const c = toile(256, 256, (x, W, H) => decorVitrineHV(x, W, H, "barbier", {})); B.plan(w * .6, 2.3, 0, 1.75, d, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .15, metalness: .2 }));
+        for (const s of [-1, 1]) { const p = B.plan(Math.hypot(w * .2, d), 2.3, s * w * .4, 1.75, d / 2, vitreHV(4)); p.rotation.y = s * (Math.PI / 2 - Math.atan2(d, w * .2)); }
+        for (const s of [-1, 1]) { B.boite(.05, 2.3, .05, s * w * .3, 1.75, d, "#f4f6f4"); B.boite(.05, 2.3, .05, s * w * .5, 1.75, 0, "#f4f6f4"); } });
+      B.enseigne(0, 3.05, 4.4, .45, "BARBER SHOP", { fond: "#2a3a6a", coul: "#f4f2ec", bord: "#c8202a", ep: .06 });
+      B.bandeau(X0, X1, 3.6, { coul: "#e4e6e4", haut: .25, prof: .2 }); B.corniche(X0, X1, 4.3, { coul: "#e4e6e4", frise: .2, denticules: false });
+      B.parapet(X0, X1, 5, .5, "#d8dad8", { des: [X0 + .3, 0, X1 - .3] });
+      B.drapeau(1.6, 3.9, .55, 1.6, ["B", "A", "R", "B", "E", "R"], { fond: "#2a4a9a", coul: "#fff", bord: "#c8202a", police: "Arial Black, Arial", style: "", ecart: .2, neon: true });
+      barbierPoleHV(B, -1.05, 1.9, .28); } },
+  // ---- à l'ouest de la place ----
+  // la banque : pierre de taille, soubassement à bossages, colonnes, fenêtres cintrées, grande porte et horloge
+  banque: { larg: 10, corps: 10.6, f: (B) => { const X0 = -5, X1 = 5;
+      B.mur(X0, X1, 0, 3.9, "bossage", "#d8d0bc", { saillie: .12 }); B.mur(X0, X1, 3.9, 10.6, "pierre", "#dcd4c0");
+      for (const x of [-3.6, 3.6]) B.fenetre(x, .8, 1.3, 2.1, { z: .12, arc: true, cadre: "#2a2a2a", carreaux: 2, pierre: "#ece6d6", prof: .32 });
+      B.porte(0, 1.9, 2.9, { z: .12, double: true, coul: "#3a2a18", cadre: "#c9a227", prof: .45 }); for (const s of [-1.45, 1.45]) { B.cyl(.18, .2, 3.2, s, 1.6, .47, "#ece6d6", { seg: 16 }); B.boite(.5, .2, .5, s, .1, .47, "#ece6d6"); B.boite(.5, .2, .5, s, 3.25, .47, "#ece6d6"); }
+      B.boite(3.6, .55, .7, 0, 3.6, .42, "#ece6d6"); B.enseigne(0, 3.4, 3.2, .42, "HILL VALLEY BANK", { fond: "#ece6d6", coul: "#2a2a2a", ep: .02, z: .78 });
+      B.bandeau(X0, X1, 3.9, { coul: "#ece6d6", haut: .3, prof: .22 });
+      for (const x of [-3.3, -1.1, 1.1, 3.3]) B.pilastre(x, 4.2, 9.6, .5, "#ece6d6", { cannelures: true });
+      for (const x of [-4.3, -2.2, 0, 2.2, 4.3]) { B.fenetre(x, 4.7, 1, 1.9, { cadre: "#2a2a2a", carreaux: 1, cle: true, pierre: "#ece6d6", corniche: true }); B.fenetre(x, 7.5, 1, 1.6, { cadre: "#2a2a2a", carreaux: 1, pierre: "#ece6d6" }); }
+      B.corniche(X0, X1, 9.7, { coul: "#ece6d6", consoles: [-4.8, -3.3, -1.1, 1.1, 3.3, 4.8] });
+      B.parapet(X0, X1, 10.6, .4, "#e2dccc", { des: [] });
+      const h = toile(256, 256, (x) => { x.fillStyle = "#f6f2e6"; x.beginPath(); x.arc(128, 128, 120, 0, 7); x.fill(); x.strokeStyle = "#2a2a2a"; x.lineWidth = 8; x.stroke(); x.fillStyle = "#2a2a2a"; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.fillRect(128 + Math.cos(a) * 100 - 4, 128 + Math.sin(a) * 100 - 4, 8, 8); } x.lineWidth = 6; x.beginPath(); x.moveTo(128, 128); x.lineTo(128 + 50, 128 - 30); x.moveTo(128, 128); x.lineTo(128 - 10, 40); x.stroke(); });
+      B.cyl(.5, .5, .15, 0, 11.4, -.05, "#2a2a2a", { rx: Math.PI / 2, seg: 24 }); B.plan(.9, .9, 0, 11.4, .03, new THREE.MeshStandardMaterial({ map: texHV(h), transparent: true, alphaTest: .5 }));
+      const fr = new THREE.Shape(); fr.moveTo(-1.6, 0); fr.lineTo(1.6, 0); fr.lineTo(0, 1.6); fr.closePath(); B.boite(0, 0, 0, 0, 10.7, -.3, "#e2dccc", { geo: new THREE.ExtrudeGeometry(fr, { depth: .3, bevelEnabled: false }) }); } },
+  // Lou's Cafe : l'immeuble crème et ses bandes bleues, les grandes baies, l'auvent bleu et blanc, l'enseigne lumineuse
+  loucafe: { larg: 9, corps: 7.4, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, X1, 0, 3.6, "carreau", "#f0ead8", { saillie: .1, carreau: .3, joint: "#c8c0a8" }); B.mur(X0, X1, 3.6, 7.4, "brique", "#a0583a");
+      B.vitrine(-4.2, -.75, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", marchandise: "comptoir", lettres: "Breakfast · Lunch", imposte: false, montants: 1 }); B.porte(0, 1.2, 2.6, { z: .1, coul: "#c9ccd0", cadre: "#1d4f8a", imposte: "LOU'S" }); B.vitrine(.75, 4.2, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", marchandise: "comptoir", lettres: "Sodas · Malts", imposte: false, montants: 1 });
+      B.auvent(-4.3, 4.3, 3.45, 1.15, "#1d4f8a", "#f4f0e6", { bandes: 24, chute: .6 });
+      B.enseigne(0, 3.75, 6.2, .8, "Lou's Cafe", { fond: "#1d4f8a", coul: "#fff", bord: "#f4f0e6", police: "'Brush Script MT', cursive", style: "italic bold", neon: true, degrade: true });
+      for (const x of [-2.6, 0, 2.6]) B.fenetre(x, 4.9, 1.3, 1.6, { carreaux: 3, cle: true, volets: "#1d4f8a" });
+      B.corniche(X0, X1, 6.9, { coul: CREM, frise: .25 }); B.drapeau(4.15, 4.8, .9, 1.4, ["SODA", "FOUN-", "TAIN"], { fond: "#c8202a", coul: "#fff", bord: "#fff", neon: true, police: "Arial Black, Arial", style: "" }); } },
+  // Ruth's Frock Shop : brique rose, deux auvents rouges, robes en vitrine, fenêtres à frontons
+  ruth: { larg: 9, corps: 8.4, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, X1, 0, 3.5, "enduit", "#e8d4d8", { saillie: .1 }); B.mur(X0, X1, 3.5, 8.4, "brique", "#a04a3a");
+      B.vitrine(-4.2, -.7, .12, 2.85, { z: .1, marchandise: "robes", cadre: "#5a1a2a", bas: "#c8a0a8", montants: 1 }); B.porte(0, 1.1, 2.6, { z: .1, coul: "#6a1a2a", cadre: "#5a1a2a" }); B.vitrine(.7, 4.2, .12, 2.85, { z: .1, marchandise: "robes", cadre: "#5a1a2a", bas: "#c8a0a8", montants: 1 });
+      B.auvent(-4.3, -.6, 3.2, 1, "#b81d24", "#f4f0e6", { bandes: 12, z: .1 }); B.auvent(.6, 4.3, 3.2, 1, "#b81d24", "#f4f0e6", { bandes: 12, z: .1 });
+      B.enseigne(0, 3.55, 7.6, .55, "Ruth's Frock Shop", { fond: "#f4f0e6", coul: "#9a1a2a", style: "italic bold", bord: "#9a1a2a" });
+      for (const x of [-3, -1, 1, 3]) B.fenetre(x, 4.6, .95, 2.2, { fronton: true, carreaux: 1, vitre: 1, jardiniere: x === -1 || x === 1 ? "#5a3a2a" : null });
+      B.corniche(X0, X1, 7.75, { coul: CREM, consoles: [-4.3, -2, 0, 2, 4.3] }); } },
+  // le fleuriste et le marchand de vélos (d'après la photo) : brique brune, chaînages, fronton et oculus
+  florist: { larg: 9, corps: 8.6, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, X1, 0, 8.6, "brique", "#8a5236", { contour: [[X0, 8.6], [-2.4, 8.6], [0, 9.6], [2.4, 8.6], [X1, 8.6]] });
+      for (const x of [X0 + .2, X1 - .2]) for (let h = .1, k = 0; h < 8.4; h += .5, k++) B.boite(k % 2 ? .5 : .32, .44, .06, x + (k % 2 ? (x < 0 ? .09 : -.09) : 0), h + .22, .03, teinteHV("#ddd0b4", .95 + (k % 3) * .03));
+      B.bandeau(X0, X1, 3.6, { coul: CREM }); for (const x of [-3, -1, 1, 3]) B.fenetre(x, 4.5, .95, 2.1, { fronton: true, carreaux: 1 });
+      B.corniche(X0, X1, 7.9, { coul: CREM, frise: .3 });
+      const fr = new THREE.Shape(); fr.moveTo(-2.4, 0); fr.lineTo(2.4, 0); fr.lineTo(0, 1.05); fr.closePath(); const fh = new THREE.Shape(); fh.moveTo(-2.1, .1); fh.lineTo(2.1, .1); fh.lineTo(0, .92); fh.closePath(); fr.holes.push(fh);
+      B.boite(0, 0, 0, 0, 8.6, 0, CREM, { geo: new THREE.ExtrudeGeometry(fr, { depth: .2, bevelEnabled: false }) }); B.cyl(.3, .3, .1, 0, 9, .02, CREM, { rx: Math.PI / 2, seg: 20 }); B.cyl(.22, .22, .1, 0, 9, .04, "#2b3a44", { rx: Math.PI / 2, seg: 20, r: .2 });
+      B.vitrine(-4.2, -1.1, .12, 2.85, { marchandise: "fleurs", cadre: "#3a5a2a", bas: "#5a3a2a", montants: 1 }); B.porte(-.25, 1.1, 2.6, { coul: "#5a2a18", cadre: "#3a2a1a" }); B.vitrine(.6, 4.2, .12, 2.85, { marchandise: "velos", cadre: "#2a2a2a", bas: "#5a3a2a", montants: 1 });
+      B.auvent(-4.3, -1, 2.95, 1, "#2f6a3a", "#e8e2c8", { bandes: 10, chute: .55 });
+      B.enseigne(-2.65, 3.02, 2.8, .5, "Florist", { fond: "#f2ece0", coul: "#2f6a3a", style: "italic bold", ep: .06 }); B.enseigne(2.4, 3.0, 3.6, .55, ["BIKE SHOP", "Schwinn"], { fond: "#f2ece0", coul: "#1a1a1a", ep: .06, styles: [{}, { style: "italic bold", coul: "#c8202a" }] }); } },
+  // la quincaillerie : bardage de bois peint, auvent rouge, outils en vitrine
+  hardware: { larg: 7, corps: 5.6, f: (B) => { const X0 = -3.5, X1 = 3.5;
+      B.mur(X0, X1, 0, 6.8, "planche", "#c8b48a", { contour: [[X0, 5.6], [-2.4, 5.6], [-2.4, 6.8], [2.4, 6.8], [2.4, 5.6], [X1, 5.6]] });
+      B.vitrine(-3.2, .7, .12, 2.85, { marchandise: "outils", cadre: "#2a4a2a", bas: "#2a4a2a", montants: 1 }); B.porte(1.95, 1.1, 2.6, { coul: "#2a4a2a", cadre: "#2a4a2a" });
+      B.auvent(-3.3, .8, 3.2, 1, "#c8102e", "#f4f0e6", { bandes: 10 });
+      B.enseigne(0, 5.3, 4.6, 1.2, ["HARDWARE", "PAINTS · TOOLS"], { fond: "#2a4a2a", coul: "#f4f0e6", bord: "#e8c050", styles: [{ police: "Arial Black, Arial", style: "" }, { k: .6 }] });
+      for (const x of [-1.6, 1.6]) B.fenetre(x, 3.7, .9, 1.4, { carreaux: 2, rangs: 2, volets: "#2a4a2a", linteau: false, cadre: "#f4f0e6" });
+      B.boite(4.9, .1, .2, 0, 6.85, .05, "#e8c050"); B.boite(7.1, .12, .25, 0, 3.45, .1, "#a8946a"); } },
+  // ---- à l'est de la place ----
+  // Statler Motors : la concession Studebaker, grand hall vitré, lettres en relief sur le toit
+  statler: { larg: 14, corps: 6.5, f: (B) => { const X0 = -7, X1 = 7;
+      B.mur(X0, X1, 0, 6.5, "enduit", "#e8ecea"); for (const h of [5.6, 5.9]) B.boite(14, .1, .08, 0, h, .04, "#3a9a8a");
+      B.vitrine(-6.6, 2.4, .1, 4.7, { marchandise: "auto", voiture: "#9fd8c8", cadre: "#c0c4c4", bas: "#3a9a8a", montants: 3, imposte: false, prof: .8, socle: .4 });
+      B.porte(3.7, 1.8, 2.8, { double: true, coul: "#c0c4c4", cadre: "#3a9a8a" }); B.vitrine(4.8, 6.6, .1, 4.7, { marchandise: "auto", voiture: "#e8c050", cadre: "#c0c4c4", bas: "#3a9a8a", montants: 1, imposte: false, prof: .8, socle: .4 });
+      B.enseigne(-2, 4.95, 8, .55, "SALES  ·  SERVICE  ·  PARTS", { fond: "#3a9a8a", coul: "#fff", ep: .06, police: "Arial, sans-serif" });
+      B.enseigne(3.7, 3.25, 2.4, .5, "STUDEBAKER", { fond: "#1d4f8a", coul: "#fff", style: "italic bold", ep: .06 });
+      // les lettres en relief sur le toit, avec leur armature
+      const lt = toile(1024, 160, (x, W, H) => { x.font = "bold 104px 'Arial Black', Arial"; while (x.measureText("STATLER MOTORS").width > W - 30) x.font = (parseInt(x.font) - 4) + "px 'Arial Black', Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 14; x.strokeStyle = "#7a0a0a"; x.strokeText("STATLER MOTORS", W / 2, H / 2 + 6); x.fillStyle = "#e0202a"; x.fillText("STATLER MOTORS", W / 2, H / 2 + 6); });
+      for (let k = 0; k < 4; k++) B.plan(11, 1.72, 0, 7.45, -.05 - k * .025, new THREE.MeshStandardMaterial({ map: texHV(lt), transparent: true, alphaTest: .5, color: k ? 0x7a1010 : 0xffffff, emissive: k ? 0 : 0xff2020, emissiveIntensity: k ? 0 : .15 }));
+      for (let x = -5, i = 0; x <= 5; x += 2.5, i++) { B.boite(.06, 1.6, .06, x, 7.3, -.3, "#5a5a5a", { m: .6 }); B.boite(.06, .06, .5, x, 6.6, -.3, "#5a5a5a", { m: .6 }); }
+      B.boite(14.1, .3, .4, 0, 6.5, .1, "#3a9a8a"); } },
+  // Western Auto (d'après la photo) : brique orangée, fenêtres en plein cintre sur deux niveaux, grande enseigne rouge, entrée en pierre
+  westernauto: { larg: 9, corps: 10, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, 2.7, 0, 10, "brique", "#b0603e"); B.mur(2.7, X1, 0, 10, "pierre", "#d8ccb0", { saillie: .15 });
+      for (const h of [4.3, 7.1]) for (const x of [-3.4, -1.7, 0, 1.7]) B.fenetre(x, h, .95, 1.9, { arc: true, carreaux: 1, rangs: 2 });
+      B.fenetre(3.6, 7.1, .9, 1.9, { z: .15, arc: true, carreaux: 1 }); B.fenetre(3.6, 4.3, .9, 1.9, { z: .15, cle: true, carreaux: 1 });
+      B.porte(3.6, 1.25, 2.6, { z: .15, coul: "#5a3820", cadre: "#c8bca0", imposte: "1954" });
+      B.vitrine(-4.2, 2.4, .12, 2.9, { marchandise: "outils", cadre: "#2a2a2a", bas: "#8a3a28", montants: 3 });
+      B.enseigne(-.9, 3.1, 6.8, .7, "Western Auto", { fond: "#c8202a", coul: "#fff", bord: "#f4f0e6", police: "Arial Black, Arial", style: "", degrade: true });
+      B.bandeau(X0, X1, 3.85, { coul: CREM }); B.corniche(X0, X1, 9.5, { coul: CREM, consoles: [-4.3, -2.55, -.85, .85, 2.55, 4.3] }); } },
+  // le garage Texaco : murs blancs, bandes vertes et rouges, portes de garage vitrées, l'étoile
+  texaco: { larg: 9, corps: 5.4, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, X1, 0, 6.5, "enduit", "#f6f4ee", { contour: [[X0, 5.4], [-1.8, 5.4], [-1.8, 6.5], [1.8, 6.5], [1.8, 5.4], [X1, 5.4]] });
+      for (const cx of [-2.5, 2.5]) { B.trou(cx - 1.6, cx + 1.6, .02, 3.6, .5, { tableau: "#d8d8d0" }); const c = toile(320, 360, (x, W, H) => { x.fillStyle = "#e8e8e2"; x.fillRect(0, 0, W, H); for (let r = 0; r < 4; r++) { x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(0, r * H / 4, W, 3); if (r === 0) for (let k = 0; k < 6; k++) { const g = x.createLinearGradient(0, 0, 0, H / 4); g.addColorStop(0, "#9ab0c0"); g.addColorStop(1, "#2a3a48"); x.fillStyle = g; x.fillRect(8 + k * W / 6, 14, W / 6 - 14, H / 4 - 26); } else for (let k = 0; k < 4; k++) { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(10 + k * W / 4, r * H / 4 + 12, W / 4 - 20, H / 4 - 24); } } });
+        B.plan(3.2, 3.58, cx, 1.81, -.45, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .5 })); }
+      B.boite(9.1, .22, .12, 0, 4.1, .06, "#2f7a5a"); B.boite(9.1, .1, .12, 0, 3.88, .06, "#c8202a"); B.boite(9.1, .16, .12, 0, 5.3, .06, "#2f7a5a");
+      B.enseigne(0, 4.4, 3.4, .7, "TEXACO", { fond: "#c8202a", coul: "#fff", police: "Arial Black, Arial", style: "" });
+      const et = toile(256, 256, (x) => { x.fillStyle = "#c8202a"; x.beginPath(); x.arc(128, 128, 124, 0, 7); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.arc(128, 128, 100, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 36 : 92; x.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f7a5a"; x.font = "bold 60px Arial"; x.textAlign = "center"; x.fillText("T", 128, 150); });
+      B.cyl(.55, .55, .1, 0, 5.85, .05, "#c8202a", { rx: Math.PI / 2, seg: 24 }); B.plan(1.1, 1.1, 0, 5.85, .105, new THREE.MeshStandardMaterial({ map: texHV(et), transparent: true, alphaTest: .5 }));
+      B.boite(.9, 3.6, .2, 0, 1.8, .1, "#e8e6de"); B.enseigne(0, 2.4, .8, .6, ["OIL", "LUBE"], { fond: "#2f7a5a", coul: "#fff", ep: .04, z: .2 }); } },
+  // la pharmacie : brique sombre, auvent jaune, fontaine à soda en vitrine, enseigne DRUGS au néon
+  drugs: { larg: 9, corps: 8.8, f: (B) => { const X0 = -4.5, X1 = 4.5;
+      B.mur(X0, X1, 0, 3.5, "carreau", "#2a2a2a", { saillie: .1, carreau: .3, joint: "#5a5a5a" }); B.mur(X0, X1, 3.5, 8.8, "brique", "#8a4a30");
+      B.vitrine(-4.2, -.7, .12, 2.9, { z: .1, marchandise: "boites", lettres: "Prescriptions", cadre: "#d8c890", bas: "#2a2a2a", montants: 1 }); B.porte(0, 1.1, 2.6, { z: .1, coul: "#d8c890", cadre: "#2a2a2a" }); B.vitrine(.7, 4.2, .12, 2.9, { z: .1, marchandise: "comptoir", lettres: "Soda Fountain", cadre: "#d8c890", bas: "#2a2a2a", montants: 1 });
+      B.auvent(-4.3, 4.3, 3.25, 1.05, "#e8b02a", "#f4f0e6", { bandes: 22, z: .1 });
+      B.enseigne(0, 3.55, 7.4, .6, "HILL VALLEY DRUGS", { fond: "#1a1a1a", coul: "#f2d040", bord: "#f2d040", neon: true });
+      for (const x of [-3, -1, 1, 3]) B.fenetre(x, 4.6, .95, 2.3, { arc: true, carreaux: 1, rangs: 2 });
+      B.corniche(X0, X1, 8.1, { coul: CREM, consoles: [-4.3, -2, 0, 2, 4.3] });
+      B.drapeau(-4.15, 4.6, 1, 2.2, ["D", "R", "U", "G", "S"], { fond: "#1a1a1a", coul: "#f2d040", bord: "#f2d040", neon: true, police: "Arial Black, Arial", style: "" }); } },
+  // le Blue Bird Motel : brique jaune, attique à urnes, auvents rayés vert d'eau, enseigne au néon
+  bluebird: { larg: 7, corps: 9.6, f: (B) => { const X0 = -3.5, X1 = 3.5;
+      B.mur(X0, X1, 0, 9.6, "brique", "#d0a050", { joint: "#efe2c4" });
+      for (const x of [-3.3, 3.3]) B.pilastre(x, 3.4, 9.2, .4, "#e6d6aa");
+      B.vitrine(-3.1, -.7, .12, 2.85, { marchandise: "comptoir", cadre: "#2a5a5a", bas: "#2a5a5a", montants: 1 }); B.porte(0, 1.05, 2.6, { coul: "#2a5a5a", cadre: "#2a5a5a", texte: "OFFICE" }); B.vitrine(.7, 3.1, .12, 2.85, { marchandise: "boites", cadre: "#2a5a5a", bas: "#2a5a5a", montants: 1 });
+      for (const [a, b] of [[-3.2, -.6], [.6, 3.2]]) B.auvent(a, b, 3.15, .95, "#5fb8a8", "#f2f0ea", { bandes: 9 });
+      B.bandeau(X0, X1, 3.35, { coul: "#e6d6aa" });
+      for (const h of [4.2, 6.9]) for (const x of [-2, 0, 2]) B.fenetre(x, h, .9, 1.8, { cadre: "#fbfaf6", pierre: "#f2ece0", cle: true, vitre: h > 6 ? 3 : 1 });
+      B.corniche(X0, X1, 9.1, { coul: "#9aa6ae", consoles: [-3.3, -1, 1, 3.3] });
+      B.parapet(X0, X1, 9.75, .5, "#9aa6ae", { des: [X0 + .3, X1 - .3] }); for (const x of [-1, 1]) { B.cyl(.13, .2, .35, x, 10.45, -.05, "#b8c2c8"); B.sphere(.16, x, 10.75, -.05, "#b8c2c8"); }
+      B.drapeau(3.2, 4.5, 1.3, 2.4, ["Blue", "Bird", "MOTEL"], { fond: "#1a2a5a", coul: "#7ad0f8", bord: "#f08ad0", police: "'Brush Script MT', cursive", style: "italic bold", neon: true, styles: [{}, {}, { police: "Arial Black, Arial", style: "", k: .7, coul: "#f08ad0" }] }); } },
+};
+// construit un immeuble à sa place : cx, cz le milieu de la façade au sol, r l'orientation (la façade regarde vers +z local)
+function immeubleHV(scene, nom, cx, cz, r) { const D = IMMEUBLES_HV[nom]; alHV = 7 + nom.length * 131 + nom.charCodeAt(0);
+  const B = chantierHV(D.larg); D.f(B); const g = B.finir(); g.position.set(cx, 0, cz); g.rotation.y = r; scene.add(g);
+  const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; for (const [a, b2, hc] of D.zones || [[-D.larg / 2, D.larg / 2, D.corps]]) { const w = b2 - a - .06, xm = (a + b2) / 2;
+    const c = new THREE.Mesh(new THREE.BoxGeometry(w, hc, 9 - R), [mc, mc, mt, mt, mc, mc]); c.position.set(xm, hc / 2, -R - (9 - R) / 2); c.castShadow = c.receiveShadow = true; g.add(c);
+    for (const s of [-1, 1]) { const j = new THREE.Mesh(new THREE.BoxGeometry(.06, hc, R), mc); j.position.set(xm + s * (w / 2), hc / 2, -R / 2); g.add(j); } const t = new THREE.Mesh(new THREE.BoxGeometry(w, .1, R), mt); t.position.set(xm, hc - .05, -R / 2); g.add(t); } 
+  g.traverse(o => { if (o.userData.tourne) g.userData.pole = o; }); return g; }
+
 function construireHillValley(A, T, L, scene) {
   L.hv = true; L.sansPNJ = true; L.taille = 1.85;
   L.suivi = { d: 8.5, h: 4.4, av: 5, vy: 2.4 }; L.fov = [60, 72]; L.boite = [-26.5, 26.5, -14.6, 22.6]; L.zone = [-27.5, 27.5, -15.5, 23.5];
@@ -4917,24 +5283,12 @@ function construireHillValley(A, T, L, scene) {
     for (const sx of [-2.8, 2.8]) A.ajoute(new THREE.DodecahedronGeometry(.55, 0), A.mat({ color: 0x4a4440, roughness: .8 }), sx, yE + 1.25, ZF + 2.9);   // les griffons de pierre
     const porte = toile(256, 320, (x) => { x.fillStyle = "#4a2c18"; x.fillRect(0, 0, 256, 320); x.strokeStyle = "#2a180c"; x.lineWidth = 8; x.strokeRect(10, 10, 112, 300); x.strokeRect(134, 10, 112, 300); x.fillStyle = "#c9a227"; x.fillRect(116, 150, 8, 30); x.fillRect(132, 150, 8, 30); });
     A.ajoute(new THREE.PlaneGeometry(2.6, 3.4), A.mat({ map: tex(porte) }), 0, yP + 1.85, ZF + .02, false); }
-  // ---- les boutiques autour de la place : les façades d'après les photos, et d'autres pour compléter ----
-  const ld = new THREE.TextureLoader(), texF = n => { const t = ld.load(`images/bttf/${n}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
-  const corps = A.mat({ color: 0x8e4630, roughness: .95 }), toitB = A.mat({ color: 0x5a5650, roughness: 1 });
-  // une maison : sa façade (plaquée, découpée en haut selon sa silhouette) et son volume derrière ; o : position du milieu de la façade, r : vers où elle regarde
-  const maison = (fac, larg, haut, cx, cz, r, prof = 9, hCorps = .78) => { const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = r; scene.add(g);
-    const m = fac instanceof THREE.Texture ? new THREE.MeshStandardMaterial({ map: fac, transparent: true, alphaTest: .5, roughness: .85 }) : new THREE.MeshStandardMaterial({ map: tex(fac), roughness: .85 });
-    const f = new THREE.Mesh(new THREE.PlaneGeometry(larg, haut), m); f.position.set(0, haut / 2, 0); f.castShadow = true; f.receiveShadow = true; g.add(f);
-    const c = new THREE.Mesh(new THREE.BoxGeometry(larg - .1, haut * hCorps, prof), [corps, corps, toitB, toitB, corps, corps]); c.position.set(0, haut * hCorps / 2, -prof / 2 - .03); c.castShadow = true; g.add(c); };
-  // au sud de la place (face au palais) : façades vers -z ; r = Math.PI
-  const S = 23.5, rS = Math.PI;
-  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const [fac, l, h, hc] of lst) { maison(fac, l, h, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r, 9, hc); x += l; } };
-  rangee([[texF("f-travel"), 8.1, 9], [texF("f-westernauto"), 8.8, 9.5], [texF("f-florist"), 9.4, 8.5], [texF("f-cinema"), 17.6, 11, .62], [texF("f-bluebird"), 7.7, 10], [texF("f-stationery"), 7.6, 6]], -32.05 + 0, S, rS, "x");
-  // à l'ouest (façades vers +x) et à l'est (vers -x)
-  const B = (enseigne, opts) => toileBoutique({ larg: 9, haut: 8, enseigne, ...opts });
-  rangee([[B("HILL VALLEY BANK", { mur: "#c9c1ae", brique: false, couleurEnseigne: "#2a2a2a", etages: 3 }), 10, 10.5], [B("LOU'S CAFE", { mur: "#d9cdb0", brique: false, couleurEnseigne: "#1d4f8a", auvent: "#1d4f8a" }), 9, 8],
-    [B("RUTH'S FROCK SHOP", { couleurEnseigne: "#f4f0e6", texteEnseigne: "#1a1a1a", auvent: "#b81d24" }), 9, 8], [B("HILL VALLEY REALTY", { mur: "#7a3a28", couleurEnseigne: "#e9c84a", texteEnseigne: "#2a1a0a" }), 9, 9], [B("BARBER", { mur: "#d8c8a8", brique: false, couleurEnseigne: "#f4f0e6", texteEnseigne: "#b81d24", auvent: "#2a5aa0" }), 7, 7]], -24, -27.5, Math.PI / 2, "z");
-  rangee([[B("STATLER MOTORS · STUDEBAKER", { mur: "#9ec9c4", brique: false, couleurEnseigne: "#dfe7e6", texteEnseigne: "#2a2a2a" }), 14, 8], [B("WESTERN AUTO STORES", { couleurEnseigne: "#b81d24", auvent: "#2f7a6a" }), 9, 9.5],
-    [B("TEXACO", { mur: "#f2f0ea", brique: false, couleurEnseigne: "#c8102e", etages: 1 }), 9, 6], [B("HILL VALLEY DRUGS", { mur: "#8a4a30", couleurEnseigne: "#2a2a2a", auvent: "#d9a32a" }), 9, 8.5], [B("HARDWARE", { mur: "#b9a07a", brique: false, couleurEnseigne: "#2a4a2a", auvent: "#c8102e" }), 7, 7]], -24, 27.5, -Math.PI / 2, "z");
+  // ---- les immeubles autour de la place, en relief façon maquette ----
+  L.polesHV = [];
+  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const nom of lst) { const l = IMMEUBLES_HV[nom].larg, g = immeubleHV(scene, nom, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r); if (g.userData.pole) L.polesHV.push(g.userData.pole); x += l; } };
+  rangee(["barber", "stationers", "cinema", "zales", "realty", "travel"], -32.05, 23.5, Math.PI, "x");   // au sud (face au palais)
+  rangee(["banque", "loucafe", "ruth", "florist", "hardware"], -24, -27.5, Math.PI / 2, "z");   // à l'ouest
+  rangee(["statler", "westernauto", "texaco", "drugs", "bluebird"], -24, 27.5, -Math.PI / 2, "z");   // à l'est
   // ---- la station Texaco (d'après la photo) : l'auvent vert et blanc, l'enseigne rouge, les pompes, la dépanneuse rouge ----
   { const gx = 22.2, gz = -1.0, g = new THREE.Group(); g.position.set(gx, 0, gz); scene.add(g);
     const blanc = A.mat({ color: 0xf2f2ec, roughness: .6 }), vert = A.mat({ color: 0x2f7a5a, roughness: .5 }), rouge = A.mat({ color: 0xc8102e, roughness: .45 }), chromeG = A.mat({ color: 0xdfe2e6, metalness: .9, roughness: .2 });
@@ -4968,7 +5322,7 @@ function construireHillValley(A, T, L, scene) {
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
   L.limites = (x, z) => Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
     && !(Math.abs(x - dl.position.x) < 2.3 && Math.abs(z - dl.position.z) < 1.1 && dl.visible);
-  L.portails = []; L.louCafe = [-23, -13];   // (devant Lou's Cafe : là où attendent les serveurs)
+  L.portails = []; L.louCafe = [-23, -9.5];   // (devant Lou's Cafe : là où attendent les serveurs)
   let tPrec = 0;
   L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
     for (const R of L.roulent) { const x = R.axe === "x" ? R.p : R.fixe, z = R.axe === "x" ? R.fixe : R.p, dx = R.axe === "x" ? R.sens : 0, dz = R.axe === "x" ? 0 : R.sens;
@@ -4987,6 +5341,7 @@ const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z)) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
+  for (const p of M.L.polesHV || []) p.rotation.y = now / 450;   // (l'enseigne du barbier tourne)
   const moi = M.gens.get(M.moiNum), mp = moi && moi.g.position;
   if (!M.hvInit) { M.hvInit = true; M.bandeT = 0;
     for (const [id, role] of HABITANTS) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
