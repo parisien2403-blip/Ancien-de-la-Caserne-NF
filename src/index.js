@@ -484,6 +484,11 @@ export class Compteur extends DurableObject {
       al.pris = Number(a.numero); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al); ws.send(JSON.stringify({ t: "almanach_ok" }));
     } else if (m.t === "affiche_taille" && a.admin) {   // l'affiche de 1996 au sol, devant les encombrants : sa taille (l'administrateur)
       const v = Math.max(.2, Math.min(2.5, Number(m.v) || .6)); await this.ctx.storage.put("affiche_taille", v); const t = JSON.stringify({ t: "affiche", taille: v }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "almanach_ici" && a.admin) {
+      // l'administrateur fait venir l'Almanach près de lui, dans le lieu où il se trouve (pas en 1955, ni à l'apocalypse)
+      if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^z-/.test(a.lieu)) return;
+      const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
+      const al = await this.almanach(); Object.assign(al, { lieu: a.lieu, x, z, r: Math.random() * 6.28, pris: null }); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "almanach_taille" && a.admin) {
       const al = await this.almanach(); al.taille = Math.max(.1, Math.min(1.2, Number(m.v) || .3)); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "perso") {

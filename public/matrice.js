@@ -5311,6 +5311,12 @@ const DOC = -30, ID_DOC = 30;
 let texAlm = null;
 const estBttf = id => id === "bttf-cour" || id === "hv1955";
 export function almanachTaille(v) { envoyerWS({ t: "almanach_taille", v: +v }); }
+// (l'administrateur) faire venir l'Almanach au sol, à un mètre de soi, à un endroit où l'on peut marcher
+export function almanachIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
+  if (estBttf(M.lieu) || estApo(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach ne peut pas venir ici (Hill Valley, la cour de la DeLorean ou l'apocalypse)."); return; }
+  const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
+  for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * 1.0, z = p.z + Math.cos(a) * 1.0; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
+  pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "almanach_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach des sports est posé au sol, juste à côté de toi."); }
 // l'Almanach posé au sol, l'air de rien
 function majAlmanach() {
   if (!M || !M.scene) return; const a = M.alm, ici = a && !a.pris && a.lieu === M.lieu && M.L && !M.L.apo;
