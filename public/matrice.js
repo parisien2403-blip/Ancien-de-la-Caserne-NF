@@ -1492,7 +1492,12 @@ function circulation(L, scene) {
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
-      let vit = v.v; if (dev && dev.g.position.x - v.g.position.x < dev.L / 2 + v.L / 2 + 4) vit = Math.min(vit, dev.v);   // pas de dépassement
+      // la vitesse voulue : on freine et on s'arrête devant quelqu'un sur la chaussée (≈ 1 m avant), et derrière le véhicule qui précède (pas de dépassement) ; on repart quand c'est libre
+      let cible = v.v; const nez = v.g.position.x + v.L / 2, demi = (v.bus ? 1.25 : .81) + .45;
+      if (M && M.gens) for (const p of M.gens.values()) { if (!p.g || !p.g.visible) continue; const q = p.g.position; if (Math.abs(q.z - .55) > demi) continue;
+        const d = q.x - nez; if (d > -.5 && d < 9) cible = Math.min(cible, Math.max(0, (d - 1.1) * 1.8)); }
+      if (dev) { const ecart = dev.g.position.x - dev.L / 2 - nez; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
+      v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); const vit = v.cur;
       v.g.position.x += vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
       if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); }); enRoute.splice(i, 1); } }
   };
@@ -6593,7 +6598,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
     B.boite(.03, .18, .03, -W2 / 2 + .05 + .44 * Math.cos(.75) - .03, 1.1, D2 / 2 + .44 * Math.sin(.75) + .03, "#e2e6ea", { m: .5 }); });
   for (const x of [-4.05, -3.75, -3.45]) O.push([x, Z0 + .95, .14]);
   // sur le mur, à côté de la cabine, écrit au rouge à lèvres : CALL ME, le numéro, KISS, et la trace d'un baiser
-  B.plan(.5, .42, X0 + .012, Y + 1.5, Z0 + 1.38, M_(T(300, 252, (x, w, h) => { x.clearRect(0, 0, w, h); const rouge = (a) => `rgba(196,18,40,${a})`;
+  B.plan(.5, .42, X0 + .012, Y + 1.75, Z0 + 1.38, M_(T(300, 252, (x, w, h) => { x.clearRect(0, 0, w, h); const rouge = (a) => `rgba(196,18,40,${a})`;
     const ecrire = (txt, px, py, taille, rot) => { x.save(); x.translate(px, py); x.rotate(rot); x.font = `italic bold ${taille}px 'Brush Script MT', 'Segoe Script', cursive`; x.textAlign = "center"; x.textBaseline = "middle";
       x.fillStyle = rouge(.9); x.fillText(txt, 0, 0); x.fillStyle = rouge(.35); x.fillText(txt, 1.5, 1); x.restore(); };
     ecrire("CALL ME", 140, 44, 50, -.06); ecrire("555-1990", 146, 108, 44, -.03); ecrire("KISS", 112, 172, 42, -.08);
@@ -6793,7 +6798,8 @@ function animerHV(now) {
     else if (!dedans && !M.cine && now > voyageFin && !musVoyage && (!musBttf || musBttf.paused || musBttf.ended) && now > (M.musHVT || 0)) { M.musHVT = now + 5000; musiqueBttf("sons/bttf/sandman.mp3", true); }   // (arrivé par la cabine, ou la musique s'est arrêtée : la ville reprend son air)
     reglageVolumeCafe(dedans);
     // vus du dehors (par la vitrine), il n'y a que Lou dans son café : les autres n'apparaissent qu'une fois entré (sinon on verrait leurs doubles en double)
-    { const vu = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)); for (const [id] of HABITANTS) { const p = id !== 43 && M.gens.get(-id); if (p) p.g.visible = vu; } }
+    { const vu = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)); for (const [id] of HABITANTS) { const p = id !== 43 && M.gens.get(-id); if (p) p.g.visible = vu; }
+      const gd = M.gens.get(-144); if (gd) gd.g.visible = !vu; }   // (et dedans, Goldie balaie le café : son double qui balaie le trottoir n'est plus visible par la vitrine)
     // Biff embête Marty au comptoir (comme dans le film)
     if (dedans && !M.balade && now > (M.biffT || 0) && M.gens.has(-32)) { M.biffT = now + 7000 + Math.random() * 4000; const k = M.biffK = ((M.biffK ?? -1) + 1) % 4;
       dire(-32, ["Hé, McFly ! T'as quelque chose à me dire, mauviette ?", "Mauviette !", "Qu'est-ce que tu regardes, mauviette ? Allez, dégage de mon tabouret !", "T'as fait mes devoirs, McFly ? Mauviette !"][k]);
