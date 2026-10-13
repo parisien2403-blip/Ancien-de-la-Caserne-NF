@@ -874,6 +874,7 @@
   /* dans les bâtiments : monter d'un étage (ou, au 6e, redescendre) d'un seul bouton */
   .mx-etages { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 92%; }
   .mx-etages[hidden] { display: none; }
+  .mx-action:not([hidden]) ~ .mx-etages { top: 66px; }   /* (une action proposée, « Composer un numéro » : les boutons d'étage passent juste en dessous) */
   .mx-etages button { border: 0; border-radius: 99px; padding: 10px 16px; background: var(--terra); color: #fff; font: 700 15px "Lato", sans-serif; box-shadow: 0 3px 0 #7a3522, 0 4px 12px rgba(0,0,0,.3); cursor: pointer; }
   .mx-etages button.petit { padding: 8px 12px; font-size: 14px; background: #fbf7ef; color: var(--terra-dark); box-shadow: 0 2px 0 #c9b288; }
   .mx-etages span { background: rgba(30,24,18,.7); color: #fff; border-radius: 99px; padding: 6px 10px; font: 700 13px "Lato", sans-serif; }

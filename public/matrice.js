@@ -1670,7 +1670,7 @@ function construireEtage(A, L, scene) {
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
       || (ax > CX0 - .05 && ax < CXM - .15 && z > Z0 + .25 && z < Z1 - .3)
-      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < (x > 0 && auRdcP() ? ET.ZE - .25 : Z1 - .3) && !(x > 0 && ax > CX1 - 1.2 && z > ET.ZE - 1.2 && z < ET.ZE - .95)); };   // (la paroi vitrée de la cabine, côté escalier)
+      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < (x > 0 && auRdcP() ? ET.ZE - .25 : Z1 - .3) && !(x > 0 && ax > CX1 - 1.2 && z > ET.ZE - 1.2 && z < ET.ZE - .95) && !(x > 0 && auRdcP() && ax > CX1 - .62 && z > ET.ZE - 1.1)); };   // (dans la cabine, on reste devant le téléphone)   // (la paroi vitrée de la cabine, côté escalier)
   /* toucher un endroit d'un autre étage : on y monte (ou descend) par l'escalier de la cage la plus proche */
   L.allerEtage = (moi, x, z, y) => { const e = moi.etg || { n: 0 }, ax = Math.abs(x), surPalier = ax < CX0 || z >= 1.6;
     const f = Math.max(0, Math.min(N, Math.round((y - (surPalier ? 0 : .85)) / H)));
