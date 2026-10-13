@@ -2362,8 +2362,8 @@ function construireMess(A, L, scene) {
   const dansWC = (x, z) => (WC.some(([a, b]) => x > a + .25 && x < b - .25 && z > WZ0 + .25 && z < CZ0 - .3) || portesWC.some(([a, b]) => x > a + .22 && x < b - .22 && z >= CZ0 - .4 && z <= CZ0 + .4)) || (dansCourette(x, z) && !(x > CX1 - .9 && (z > 15.4 && z < 21.2)) && !(x > -1.1 && x < 1.1 && z > CZ1 - .85));
   // les cercles de l'escalier : en haut, on descend d'un coup ; en bas, on remonte
   { const ex = (SX0 + SX1) / 2;
-    L.portails.push({ dans: (x, z) => !niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ1 + .3 && z < SZ1 + 1.6, seuil: [ex, SZ1 + .95], y: 0, vers: "mess", teleport: true, niveau: 1, yArrivee: YB, arrivee: [-5.5, SZ0 - .6], yaw: 0 });
-    L.portails.push({ dans: (x, z) => !!niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ0 - 1.6 && z < SZ0 - .3, seuil: [ex, SZ0 - .95], y: YB, vers: "mess", teleport: true, niveau: 0, yArrivee: 0, arrivee: [ex + .2, SZ1 + 2.1], yaw: Math.PI }); }
+    L.portails.push({ dans: (x, z) => !niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ1 + .3 && z < SZ1 + 1.6, seuil: [ex, SZ1 + .95], y: 0, vers: "mess", marche: [[ex, SZ1 + .05], [ex, SZ0 + .05], [ex, SZ0 - .5], [ex + 1.3, SZ0 - 1.4]] });   // (il descend les marches tout seul)
+    L.portails.push({ dans: (x, z) => !!niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ0 - 1.6 && z < SZ0 - .3, seuil: [ex, SZ0 - .95], y: YB, vers: "mess", marche: [[ex, SZ0 - .1], [ex, SZ1 + .05], [ex, SZ1 + 2.1]] }); }   // (il remonte tout seul)
   // la courette : des murs de brique tout autour, au-dessus du carrelage
   { const PXM = 40, brique = (w, h) => { const t = toile(Math.round(w * PXM), Math.round(h * PXM), (x, W, H) => briques(x, W, H)); return A.mat({ map: tex(t), roughness: .9 }); }, HB = YB + 15;
     const pan = (w, h, x, y, z, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(w, h), brique(w, h), x, y, z, false); o.rotation.y = ry; };
@@ -3648,6 +3648,8 @@ export async function ouvrir(ctx) {
               if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
                 M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw, true);
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
+              else if (pt.marche) {   // (l'escalier : on le voit monter ou descendre tout seul ; les cercles dorment pendant la marche)
+                const v = pt.marche.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v; M.marcheAuto = true; M.cerclePret = false; }
               else if (pt.teleport) {   // (un passage dans le même lieu : on se retrouve de l'autre côté de la porte, sans recharger)
                 p.cible = null; p.chemin = []; if (pt.niveau != null) p.nivMess = pt.niveau; p.g.position.set(pt.arrivee[0], pt.y != null && pt.niveau != null ? (pt.niveau ? pt.yArrivee : 0) : p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw + Math.PI; M.cerclePret = false; M.passage = false;
                 envoyerWS({ t: "aller", x: pt.arrivee[0], z: pt.arrivee[1] }); placerCamera(true); }
@@ -3801,6 +3803,7 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t);
+    { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
     if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
@@ -5110,7 +5113,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null;
-  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
+  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
