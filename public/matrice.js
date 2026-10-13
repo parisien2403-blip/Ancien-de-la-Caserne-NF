@@ -1561,8 +1561,9 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
-      setTimeout(() => { fermer(); if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
-        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); }, 1900); }
+      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(2600); vueFace(2600); } }, 700);   // (la musique du voyage, et les éclairs qui traversent la cabine)
+      setTimeout(() => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
+        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }, 3300); }
     else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
 
 /* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur) ; dans chaque cage,
@@ -3733,7 +3734,7 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
     chercherAction(t);
     if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
-    if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-7.2, 13.9);   // (Doc attend près de la DeLorean)
+    if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     rendu.render(M.scene, M.camera);
   });
@@ -4849,7 +4850,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
-    else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 2026 avec Doc" };
+    else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (!moi.cible) {
@@ -5043,6 +5044,27 @@ function couperMusiqueBttf(ms = 2500) { const a = musBttf; musBttf = null; if (!
 // ---- les bulles de Doc, l'éclair blanc, le fondu : par-dessus la scène ----
 function voile(css, duree) { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:8;pointer-events:none;" + css; M.ctx.conteneur.appendChild(d);
   if (duree) setTimeout(() => d.remove(), duree); return d; }
+// une caméra posée face au bonhomme, du côté où il y a de la place (hors de la cabine), le temps d'une petite cinématique
+function vueFace(ms) { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L.limites) return; const p = moi.g.position; let best = null, bs = -1;
+  for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; let n = 0; for (let r = .5; r <= 2.6; r += .3) { if (!M.L.limites(p.x + Math.cos(a) * r, p.z + Math.sin(a) * r)) break; n++; } if (n > bs) { bs = n; best = a; } }
+  const r = Math.max(1.2, Math.min(2.4, .5 + (bs - 1) * .3)), cine = { maj: () => { const q = moi.g.position; M.camera.position.set(q.x + Math.cos(best) * r, q.y + 1.6, q.z + Math.sin(best) * r); M.camera.lookAt(q.x, q.y + 1.15, q.z); } };
+  M.cine = cine; setTimeout(() => { if (M && M.cine === cine) { M.cine = null; placerCamera(true); } }, ms); }
+// le voyage par le téléphone : la musique (elle continue un moment de l'autre côté, puis s'éteint doucement)
+let musVoyage = null, voyageFin = 0;
+function musiqueVoyage() { try { if (musVoyage) musVoyage.pause(); couperMusiqueBttf(800); const a = new Audio("sons/bttf/voyage-telephone.mp3"); a.volume = .9; a.play().catch(() => {}); musVoyage = a; voyageFin = performance.now() + 22000;
+  setTimeout(() => { const t0 = performance.now(), f = () => { if (musVoyage !== a) return; const k = 1 - (performance.now() - t0) / 3000; if (k <= 0) { a.pause(); musVoyage = null; return; } a.volume = .9 * k; requestAnimationFrame(f); }; f(); }, 19000); } catch (e) {} }
+// les éclairs qui traversent la cabine téléphonique (comme la DeLorean) : des arcs bleutés qui crépitent autour du bonhomme, une lueur qui clignote
+function eclairsCabine(ms) { const moi = M && M.gens.get(M.moiNum); if (!moi) return; const scene = M.scene, c = moi.g.position.clone(), g = new THREE.Group(); scene.add(g);
+  const mats = [new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false }), new THREE.MeshBasicMaterial({ color: 0x7fd4ff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })];
+  const lum = new THREE.PointLight(0x9fdcff, 0, 9, 1.4); lum.position.set(c.x, c.y + 1.4, c.z); scene.add(lum); const t0 = performance.now(); let der = 0;
+  const arc = () => { const a0 = Math.random() * Math.PI * 2, a1 = a0 + (Math.random() - .5) * 2.4, r0 = .5 + Math.random() * .5, r1 = .3 + Math.random() * .6, y0 = 2.5 + Math.random() * .4, y1 = Math.random() * .6, n = 9, pts = [];
+    for (let i = 0; i <= n; i++) { const u = i / n, a = a0 + (a1 - a0) * u, r = r0 + (r1 - r0) * u + (i && i < n ? (Math.random() - .5) * .35 : 0); pts.push(new THREE.Vector3(c.x + Math.cos(a) * r, c.y + y0 + (y1 - y0) * u + (i && i < n ? (Math.random() - .5) * .2 : 0), c.z + Math.sin(a) * r)); }
+    const cb = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0); g.add(new THREE.Mesh(new THREE.TubeGeometry(cb, 30, .012, 4), mats[0]), new THREE.Mesh(new THREE.TubeGeometry(cb, 30, .045, 5), mats[1])); };
+  const f = (t) => { if (!M || M.scene !== scene) { scene.remove(g, lum); return; } const e = performance.now() - t0;
+    if (e > ms) { g.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(g, lum); return; }
+    if (performance.now() - der > 70) { der = performance.now(); g.traverse(o => o.geometry && o.geometry.dispose()); g.clear(); const k = 2 + Math.floor(Math.random() * 3 + e / ms * 4); for (let i = 0; i < k; i++) arc();
+      lum.intensity = Math.random() < .5 ? 0 : 6 + Math.random() * 10 * (e / ms + .3); if (Math.random() < .3) sonBruit(.08, 5000 + Math.random() * 3000, .12); }
+    requestAnimationFrame(f); }; requestAnimationFrame(f); }
 function eclairBlanc(ms = 1400) { const d = voile("background:radial-gradient(circle,#fff 0%,#dff4ff 45%,rgba(120,200,255,.85) 100%);opacity:1;transition:opacity " + ms + "ms ease-out", ms + 200); requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 0; })); }
 function bulle(texte, ms) { if (!M) return; if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
@@ -5274,7 +5296,7 @@ function cineHV() {
   const car = M.L.delorean; poser(car, -24, 16, -Math.PI / 2); ouvrirPortes(car, 0); const feu = [];
   const moi0 = () => M.gens.get(M.moiNum);
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; poser(car, -6, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
-    if (!M.gens.has(DOC)) ajouterDoc(-7.2, 13.9); finCine(); musiqueBttf("sons/bttf/sandman.mp3", true, 3000); };
+    if (!M.gens.has(DOC)) ajouterDoc(-8.7, 15.6); finCine(); musiqueBttf("sons/bttf/sandman.mp3", true, 3000); };
   M.passerBtn = boutonPasser(fin);
   eclairBlanc(1300); sonBruit(1.4, 300, .9);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera;
@@ -5284,7 +5306,7 @@ function cineHV() {
       arcs(car, t < .8); cam.position.lerp(new THREE.Vector3(-12, 2.2, 22), .1); cam.lookAt(x, .8, 16); }
     else if (t < 9) { arcs(car, false); ouvrirPortes(car, t < 7.5 ? lisse((t - 3) / 1.1) : 1 - lisse((t - 7.5) / 1));
       if (t > 4 && moi && !moi.g.visible) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
-      if (t > 4.2 && !M.gens.has(DOC)) ajouterDoc(-7.2, 13.9);
+      if (t > 4.2 && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);
       if (t > 4.6 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>5 novembre 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
       cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1.2, 15.2); }
     else fin();
@@ -5297,7 +5319,7 @@ function cineRetour() {
   const car = M.L.delorean, feu = M.feuHV || []; let fini = false;
   const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1300); changerLieu("grande", [1.5, 6], 0); setTimeout(() => M && eclairBlanc(1400), 400); };
   musiqueBttf("sons/bttf/retour.mp3", false, 1200);
-  M.passerBtn = boutonPasser(fin); bulle(`🧪 <b>Doc :</b> En route pour <b>2026</b> ! Accroche-toi, ${prenomMoi()} !`, 2600);
+  M.passerBtn = boutonPasser(fin); bulle(`🧪 <b>Doc :</b> En route pour <b>1990</b> ! Accroche-toi, ${prenomMoi()} !`, 2600);
   M.cine = { t0: performance.now(), maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera;
     if (t < 3) { ouvrirPortes(car, t < 1.6 ? lisse(t / .8) : 1 - lisse((t - 1.6) / .9)); if (t > 1.2) { if (moi) moi.g.visible = false; if (M.gens.has(DOC)) retirerAncien(DOC); }
       cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1, 16); }
@@ -6361,7 +6383,7 @@ function animerHV(now) {
   M.balade = false;   // (les habitants du café restent attablés ; leurs doubles se promènent dans la ville)
   if (LOU.jukeTex) LOU.jukeTex.offset.y = (now / 7000) % 1;   // (les colonnes du juke-box changent doucement de couleur)
   { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
-    if (dedans && !(musBttf && musBttf.cafe)) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
+    if (dedans && !(musBttf && musBttf.cafe) && now > voyageFin) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
     reglageVolumeCafe(dedans);
     // vus du dehors (par la vitrine), il n'y a que Lou dans son café : les autres n'apparaissent qu'une fois entré (sinon on verrait leurs doubles en double)
     { const vu = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)); for (const [id] of HABITANTS) { const p = id !== 43 && M.gens.get(-id); if (p) p.g.visible = vu; } }
