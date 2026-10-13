@@ -765,8 +765,10 @@ export class Compteur extends DurableObject {
     const m = this.sql.exec("SELECT numero, mdp_hash FROM membres WHERE token = ?", token).toArray()[0];
     if (!m || !m.mdp_hash || !(await verifier(String(x.ancien || ""), m.mdp_hash))) throw new Refus("Mot de passe actuel incorrect", 403);
     const mdp = String(x.nouveau || ""); if (mdp.length < 8) throw new Refus("Le nouveau mot de passe doit faire au moins 8 caractères");
-    this.sql.exec("UPDATE membres SET mdp_hash = ?, cree_admin = 0 WHERE numero = ?", await hacher(mdp), m.numero);
-    return { ok: true };
+    // nouveau jeton : toute autre session ouverte sur ce compte (celle de l'administrateur, par exemple) est fermée
+    const jeton = crypto.randomUUID();
+    this.sql.exec("UPDATE membres SET mdp_hash = ?, cree_admin = 0, token = ? WHERE numero = ?", await hacher(mdp), jeton, m.numero);
+    return { ok: true, token: jeton };
   }
   async decider(token, num, x) {
     await this.exigerAdmin(token);

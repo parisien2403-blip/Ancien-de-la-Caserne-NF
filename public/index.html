@@ -2838,6 +2838,9 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.83", "13 octobre 2026", ["Mise à jour automatique : l'appli vérifie chaque minute s'il y a une nouvelle version et se recharge toute seule (jamais pendant que tu écris)",
+      "Réglages : 🔑 Changer mon mot de passe",
+      "Administrateur : créer un compte directement (déjà validé), et l'ouvrir pour préparer la carte tant que son titulaire n'a pas choisi son mot de passe"]],
     ["3.82", "13 octobre 2026", ["Le mess : des tables à nappe blanche, quatre chaises rangées dessous ; à l'apocalypse, il est ouvert : tables renversées, sang dans la cuisine et au sous-sol, zombies aux deux niveaux",
       "Apocalypse : la cabine téléphonique condamnée (planches, sang, combiné arraché)",
       "Apocalypse, salle des fêtes : en descendant l'escalier du bar, ton équipier se fait attraper par trois zombies et se sacrifie",
@@ -3165,7 +3168,7 @@
   $("mcForm").onsubmit = async e => { e.preventDefault(); const err = $("mcErreur"), n1 = $("mcNouveau").value, n2 = $("mcConfirme").value; err.hidden = true;
     if (n1 !== n2) { err.textContent = "Les deux nouveaux mots de passe ne sont pas identiques"; err.hidden = false; return; }
     const b = $("mcForm").querySelector("button"); b.disabled = true;
-    try { await api("PUT", "/api/moi/mot-de-passe", { ancien: $("mcAncien").value, nouveau: n1 }); moi.cree_admin = false; ecrire("caserne-moi", moi); fermerConnexion();
+    try { const r = await api("PUT", "/api/moi/mot-de-passe", { ancien: $("mcAncien").value, nouveau: n1 }); moi.cree_admin = false; if (r.token) moi.token = r.token; ecrire("caserne-moi", moi); fermerConnexion();
       garde("C'est fait : ton nouveau mot de passe est enregistré. Utilise-le à ta prochaine connexion.", { titre: "🔑 Mot de passe changé", ok: "Parfait" }); }
     catch (x) { err.textContent = x.message; err.hidden = false; }
     b.disabled = false; };
@@ -3955,7 +3958,8 @@
     let r;
     try { r = await api("GET", "/api/statut"); }
     catch (e) {
-      if (/inconnu/.test(e.message)) { try { localStorage.removeItem("caserne-moi"); } catch (x) {} location.reload(); }
+      if (/inconnu/.test(e.message)) { const retour = lire("caserne-admin-retour", null);   // (l'administrateur était sur un compte dont le titulaire a changé le mot de passe : il revient sur le sien)
+        try { localStorage.removeItem("caserne-admin-retour"); if (retour) localStorage.setItem("caserne-moi", JSON.stringify(retour)); else localStorage.removeItem("caserne-moi"); } catch (x) {} location.reload(); }
       return;
     }
     const avant = moi.statut;
