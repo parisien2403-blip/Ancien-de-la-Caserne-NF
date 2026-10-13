@@ -151,7 +151,9 @@ export class Compteur extends DurableObject {
       // l'escalier (lettre A à Z) et l'étage où l'ancien a vécu ses meilleurs moments
       "bat TEXT", "etage INTEGER",
       // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
-      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT", "av_bas TEXT", "av_pieds TEXT"]) {
+      "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT", "av_bas TEXT", "av_pieds TEXT",
+      // compte créé par l'administrateur, dont le mot de passe n'a pas encore été changé par son titulaire
+      "cree_admin INTEGER DEFAULT 0"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -297,7 +299,7 @@ export class Compteur extends DurableObject {
   public(m) {
     return { numero: numero(m.numero), nom: m.nom, prenom: m.prenom, qualite: m.qualite, parent: m.parent, email: m.email,
       admin: !!m.admin, cree: m.cree, a_photo: m.a_photo !== undefined ? !!m.a_photo : !!m.photo,
-      statut: m.statut || "valide", motif: m.motif || null, bat: m.bat || null, etage: m.etage ?? null };
+      statut: m.statut || "valide", motif: m.motif || null, bat: m.bat || null, etage: m.etage ?? null, cree_admin: !!m.cree_admin };
   }
 
   // réservé aux anciens connectés (ou à l'administrateur avant son laissez-passer)
@@ -575,7 +577,7 @@ export class Compteur extends DurableObject {
 
   // tous: true → aussi les comptes en attente ou refusés (pour leur statut, leur photo)
   moi(token, { tous = false } = {}) {
-    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo, statut, motif, bat, etage FROM membres WHERE token = ?", token).toArray()[0];
+    const m = token && this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, admin, cree, photo IS NOT NULL AS a_photo, statut, motif, bat, etage, cree_admin FROM membres WHERE token = ?", token).toArray()[0];
     if (!m) {
       if (String(token).startsWith("adm-")) throw new Refus("Fais d'abord ton laissez-passer au poste de police", 403);
       throw new Refus("Laissez-passer inconnu", 401);
@@ -740,9 +742,31 @@ export class Compteur extends DurableObject {
     let email = `${slug(prenom)}.${slug(nom)}@${DOMAINE}`;
     if (this.sql.exec("SELECT 1 FROM membres WHERE email = ?", email).toArray().length) email = `${slug(prenom)}.${slug(nom)}.${numero(n)}@${DOMAINE}`;
     const quand = new Date().toISOString();
-    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, mdp_hash, statut, decide) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'valide', ?)`,
+    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, mdp_hash, statut, decide, cree_admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'valide', ?, 1)`,
       n, nom, prenom, qualite, parent, email, crypto.randomUUID(), quand, await hacher(mdp), quand);
     return { numero: numero(n), prenom, nom, qualite, email };
+  }
+  // les comptes créés par l'administrateur, tant que leur titulaire n'a pas choisi son propre mot de passe
+  async comptesCrees(token) {
+    await this.exigerAdmin(token);
+    return this.sql.exec("SELECT numero, nom, prenom, qualite, cree FROM membres WHERE cree_admin = 1 ORDER BY numero DESC").toArray().map(m => ({ ...m, numero: numero(m.numero) }));
+  }
+  // l'administrateur ouvre un de ces comptes (pour préparer la carte, essayer) ; seulement ceux-là
+  async sessionCompte(token, num) {
+    await this.exigerAdmin(token);
+    const m = this.sql.exec("SELECT * FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    if (!m) throw new Refus("Membre introuvable", 404);
+    if (!m.cree_admin) throw new Refus("Seulement les comptes que tu as créés, tant que leur titulaire n'a pas changé son mot de passe", 403);
+    return { token: m.token, moi: this.public(m) };
+  }
+  // changer son mot de passe (réglages)
+  async changerMotDePasse(token, x) {
+    const moi = this.moi(token); if (moi.admin) throw new Refus("Le mot de passe de l'administrateur se change dans Cloudflare");
+    const m = this.sql.exec("SELECT numero, mdp_hash FROM membres WHERE token = ?", token).toArray()[0];
+    if (!m || !m.mdp_hash || !(await verifier(String(x.ancien || ""), m.mdp_hash))) throw new Refus("Mot de passe actuel incorrect", 403);
+    const mdp = String(x.nouveau || ""); if (mdp.length < 8) throw new Refus("Le nouveau mot de passe doit faire au moins 8 caractères");
+    this.sql.exec("UPDATE membres SET mdp_hash = ?, cree_admin = 0 WHERE numero = ?", await hacher(mdp), m.numero);
+    return { ok: true };
   }
   async decider(token, num, x) {
     await this.exigerAdmin(token);
@@ -1116,6 +1140,9 @@ export default {
       else if (request.method === "DELETE" && /^\/api\/jeux\/\d+$/.test(url.pathname)) r = await registre.retirerJeu(token, url.pathname.split("/")[3]);
       else if (route === "GET /api/demandes") r = await registre.demandes(token);
       else if (route === "POST /api/comptes") r = await registre.creerCompte(token, await corps());
+      else if (route === "GET /api/comptes") r = await registre.comptesCrees(token);
+      else if (route === "PUT /api/moi/mot-de-passe") r = await registre.changerMotDePasse(token, await corps());
+      else if (request.method === "POST" && /^\/api\/comptes\/\d+\/session$/.test(url.pathname)) r = await registre.sessionCompte(token, url.pathname.split("/")[3]);
       else if (request.method === "POST" && /^\/api\/demandes\/\d+$/.test(url.pathname)) r = await registre.decider(token, url.pathname.split("/")[3], await corps());
       else if (route === "POST /api/moi/abandon") r = await registre.abandonner(token);
       else if (request.method === "POST" && /^\/api\/signalements\/\d+$/.test(url.pathname)) r = await registre.majSignalement(token, url.pathname.split("/")[3], await corps());

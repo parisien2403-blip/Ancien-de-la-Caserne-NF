@@ -1383,6 +1383,7 @@
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
     <button class="reglage" id="rEscalier"><span>🏢 Mon escalier et mon étage</span><span id="rEscEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
+    <button class="reglage" id="rMdp"><span>🔑 Changer mon mot de passe</span>›</button>
     <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
     <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
     <button class="reglage" id="rMaj"><span>🔄 Mise à jour de l'appli</span><span class="maj-pastille" id="rMajPastille" hidden>Nouvelle version !</span>›</button>
@@ -1492,6 +1493,18 @@
     <p class="erreur" id="pErreur" hidden></p>
     <button class="btn" style="width:100%">Envoyer à l'administrateur</button>
   </form>
+  <div class="sheet" id="mdpChange">
+    <div class="grab"></div>
+    <h2>🔑 Changer mon mot de passe</h2>
+    <p class="sub" id="mcSub">Choisis ton propre mot de passe : c'est lui qui te servira à chaque connexion.</p>
+    <form id="mcForm">
+      <label class="field">Mot de passe actuel<input id="mcAncien" type="password" autocomplete="current-password" required></label>
+      <label class="field">Nouveau mot de passe (8 caractères minimum)<input id="mcNouveau" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="field">Confirmer le nouveau mot de passe<input id="mcConfirme" type="password" autocomplete="new-password" minlength="8" required></label>
+      <p class="erreur" id="mcErreur" hidden></p>
+      <button class="btn" type="submit" style="width:100%">Enregistrer</button>
+    </form>
+  </div>
   <div class="sheet confid" id="confid">
     <div class="grab"></div>
     <h2>🛡️ Protection de tes données</h2>
@@ -2005,7 +2018,7 @@
   const garderCles = k => ecrire("caserne-cles-" + moi.email, k);
   let aRelier = false;   // le compte a des clés, mais pas cet appareil
   async function assurerCles() {
-    if (!enLigne || !moi || !moi.email || !estValide() || !window.crypto?.subtle) return false;
+    if (!enLigne || !moi || !moi.email || !estValide() || !window.crypto?.subtle || lire("caserne-admin-retour", null)) return false;   // (l'administrateur sur le compte d'un autre : les clés se créent sur l'appareil du titulaire)
     if (mesCles()) { aRelier = false; return true; }
     const srv = await api("GET", "/api/cles");
     if (srv.cle_pub) { aRelier = true; return false; }
@@ -2657,7 +2670,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "confid", "probleme", "pinForm", "nouveautes", "escalierForm", "bonhommeForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "mdpChange", "confid", "probleme", "pinForm", "nouveautes", "escalierForm", "bonhommeForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
@@ -2670,7 +2683,7 @@
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
     etatPoste(); entrer(moi && moi.numero ? "accueil" : "poste");
-    setTimeout(verifierCourrier, 800);
+    setTimeout(verifierCourrier, 800); rappelMdp();
   }
   // connexion d'un deuxième écran avec le code du verso
   async function connexionLiaison(prenom, nom, code) {
@@ -2755,7 +2768,7 @@
     const url = photoUrl(moi);
     $("rPhoto").style.backgroundImage = url ? `url(${url})` : "";
     $("rPhoto").textContent = url ? "" : ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase();
-    $("rNom").textContent = `${moi.prenom} ${moi.nom}`;
+    $("rNom").textContent = `${moi.prenom} ${moi.nom}`; $("rMdp").hidden = !!moi.admin;
     $("rMail").textContent = moi.email || "Laissez-passer à faire au poste de police";
     $("rCarte").hidden = !moi.numero;
     $("rNotif").checked = notifActives();
@@ -3144,6 +3157,31 @@
     location.reload();
   };
   $("rCarte").onclick = () => { fermerConnexion(); voirCarte(moi); };
+  // --- changer son mot de passe (et le message à ceux dont le compte a été ouvert par l'administrateur)
+  const ouvrirMdp = () => { fermerConnexion(); $("mcErreur").hidden = true; ["mcAncien", "mcNouveau", "mcConfirme"].forEach(i => $(i).value = "");
+    $("mcSub").textContent = moi && moi.cree_admin ? "Ton compte a été ouvert par l'administrateur : ton mot de passe actuel est celui qu'il t'a donné. Choisis maintenant le tien." : "Choisis ton propre mot de passe : c'est lui qui te servira à chaque connexion.";
+    $("mdpChange").classList.add("open"); $("sheetBg").classList.add("open"); };
+  $("rMdp").onclick = ouvrirMdp;
+  $("mcForm").onsubmit = async e => { e.preventDefault(); const err = $("mcErreur"), n1 = $("mcNouveau").value, n2 = $("mcConfirme").value; err.hidden = true;
+    if (n1 !== n2) { err.textContent = "Les deux nouveaux mots de passe ne sont pas identiques"; err.hidden = false; return; }
+    const b = $("mcForm").querySelector("button"); b.disabled = true;
+    try { await api("PUT", "/api/moi/mot-de-passe", { ancien: $("mcAncien").value, nouveau: n1 }); moi.cree_admin = false; ecrire("caserne-moi", moi); fermerConnexion();
+      garde("C'est fait : ton nouveau mot de passe est enregistré. Utilise-le à ta prochaine connexion.", { titre: "🔑 Mot de passe changé", ok: "Parfait" }); }
+    catch (x) { err.textContent = x.message; err.hidden = false; }
+    b.disabled = false; };
+  function rappelMdp() { if (!moi || !moi.cree_admin || moi.admin || lire("caserne-admin-retour", null)) return; try { if (sessionStorage.getItem("caserne-rappel-mdp")) return; sessionStorage.setItem("caserne-rappel-mdp", "1"); } catch (e) {}
+    const montrer = async () => { if (!$("carteVue").hidden) { setTimeout(montrer, 1000); return; } if (await garde("Ton compte a été ouvert pour toi par l'administrateur, avec un mot de passe qu'il t'a donné.\nPense à choisir le tien : touche la pastille de ta tête en haut de l'écran, puis « 🔑 Changer mon mot de passe ».", { titre: "🔑 Ton mot de passe", annuler: "Plus tard", ok: "Le changer maintenant" })) ouvrirMdp(); }; setTimeout(montrer, 2500); }   // (après le verso de la carte, s'il s'affiche)
+  // --- l'administrateur sur le compte d'un autre (un compte qu'il a créé) : le bandeau pour revenir au sien
+  async function ouvrirCompteDe(num) {
+    const r = await api("POST", `/api/comptes/${num}/session`);
+    if (!lire("caserne-admin-retour", null)) ecrire("caserne-admin-retour", moi);
+    moi = { ...r.moi, token: r.token }; ecrire("caserne-moi", moi); location.reload();
+  }
+  (() => { const retour = lire("caserne-admin-retour", null); if (!retour || !moi) return;
+    const b = document.createElement("div"); b.style.cssText = "position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9998;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 24px);padding:8px 12px;border-radius:14px;background:#7a1f1f;color:#fff;font:700 13px 'Lato',sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.35)";
+    b.innerHTML = `<span>👤 Tu es sur le compte de ${esc(moi.prenom)}</span><button type="button" style="border:0;border-radius:99px;padding:5px 12px;background:#fff;color:#7a1f1f;font:800 12px 'Lato'">↩︎ Revenir à mon compte</button>`;
+    b.querySelector("button").onclick = () => { try { localStorage.removeItem("caserne-admin-retour"); } catch (e) {} ecrire("caserne-moi", retour); location.reload(); };
+    document.body.appendChild(b); })();
   $("rPhotoFile").onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
     try { const data = await nouvellePhoto(f); $("rPhoto").style.backgroundImage = `url(${data})`; $("rPhoto").textContent = ""; }
@@ -3721,7 +3759,7 @@
         <label class="field">Qualité<select id="ccQual"><option value="fils du Garde">Fils du Garde</option><option value="fille du Garde">Fille du Garde</option><option value="Gendarme">Gendarme</option></select></label>
         <label class="field">Nom du Garde (facultatif)<input id="ccParent" autocomplete="off"></label>
         <label class="field">Mot de passe (8 caractères minimum)<input id="ccMdp" autocomplete="off" value="${motAuHasard()}"></label>
-        <button class="btn small" id="ccOk" type="button">Créer le compte</button><div id="ccRes"></div></div>`;
+        <button class="btn small" id="ccOk" type="button">Créer le compte</button><div id="ccRes"></div><div id="ccListe"></div></div>`;
     $("vListe").innerHTML = creer + (l.length ? l.map(m => {
       const u = m.a_photo ? `/api/photo/${m.numero}?v=${photoV}&t=${encodeURIComponent(moi.token)}` : null;
       return `<div class="card demande" data-num="${esc(m.numero)}">
@@ -3736,12 +3774,17 @@
           <button class="btn small danger" data-confirmer-refus="${esc(m.numero)}" style="margin-top:8px">Confirmer le refus</button></div>
       </div>`; }).join("")
       : `<div class="card empty"><b>Aucune demande en attente</b>Le poste de police est calme.</div>`);
+    api("GET", "/api/comptes").then(L => { if (!L.length || !$("ccListe")) return;
+      $("ccListe").innerHTML = `<div style="margin-top:14px;border-top:1px solid rgba(0,0,0,.1);padding-top:10px"><b style="color:var(--navy)">Les comptes que tu as créés</b><p class="s" style="font-size:12px;color:var(--muted);margin:2px 0 8px">Tant que la personne n'a pas changé son mot de passe, tu peux ouvrir son compte (pour faire sa carte, essayer).</p>`
+        + L.map(m => `<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1;min-width:0">${esc(m.prenom)} ${esc(m.nom)} <small style="color:var(--muted)">n° ${esc(m.numero)}</small></span><button class="btn small alt" type="button" data-ouvrir-compte="${esc(m.numero)}">👤 Ouvrir son compte</button></div>`).join("") + "</div>";
+      $("ccListe").querySelectorAll("[data-ouvrir-compte]").forEach(b => b.onclick = () => ouvrirCompteDe(b.dataset.ouvrirCompte).catch(x => alert(x.message))); }).catch(() => {});
     $("ccOk").onclick = async () => { const b = $("ccOk"), prenom = $("ccPrenom").value.trim(), nom = $("ccNom").value.trim(), motdepasse = $("ccMdp").value;
       b.disabled = true;
       try { const r = await api("POST", "/api/comptes", { prenom, nom, qualite: $("ccQual").value, parent: $("ccParent").value.trim(), motdepasse }); membres = [];
         const txt = `Caserne de la Nouvelle France\n${location.origin}\nPrénom : ${r.prenom}\nNom : ${r.nom}\nMot de passe : ${motdepasse}`;
         $("ccRes").innerHTML = `<div style="margin-top:12px;padding:12px;border-radius:12px;background:#eef6ee"><b>✅ Compte créé (laissez-passer n° ${esc(r.numero)})</b><pre style="white-space:pre-wrap;font:600 14px 'Lato',sans-serif;margin:8px 0">${esc(txt)}</pre>
-          <button class="btn small alt" type="button" id="ccCopier">📋 Copier pour l'envoyer</button></div>`;
+          <button class="btn small alt" type="button" id="ccCopier">📋 Copier pour l'envoyer</button> <button class="btn small" type="button" data-ouvrir-compte="${esc(r.numero)}">👤 Ouvrir son compte</button></div>`;
+        $("ccRes").querySelector("[data-ouvrir-compte]").onclick = () => ouvrirCompteDe(r.numero).catch(x => alert(x.message));
         $("ccCopier").onclick = async () => { try { await navigator.clipboard.writeText(txt); $("ccCopier").textContent = "✓ Copié"; } catch (e) { alert(txt); } };
         $("ccPrenom").value = $("ccNom").value = $("ccParent").value = ""; $("ccMdp").value = motAuHasard(); }
       catch (e) { $("ccRes").innerHTML = `<p style="color:#b00020;margin-top:8px">${esc(e.message)}</p>`; }
@@ -3999,7 +4042,7 @@
 
   // au démarrage : code de déverrouillage, puis où en est la demande
   if (moi && moi.email) verrouiller();
-  if (moi && moi.token && enLigne) verifierStatut(false).then(() => { if (moi && !estValide()) afficherAttente(); });
+  if (moi && moi.token && enLigne) verifierStatut(false).then(() => { if (moi && !estValide()) afficherAttente(); else rappelMdp(); });
   else if (moi && !estValide()) afficherAttente();
 
   /* ===== La borne de jeux (salle des fêtes) ===== */
