@@ -3714,7 +3714,15 @@
     let l;
     try { l = await api("GET", "/api/demandes"); } catch (e) { $("vListe").innerHTML = `<div class="card empty"><b>Demandes injoignables</b>${esc(e.message)}</div>`; return; }
     $("vValBtn").textContent = l.length ? `✅ Validations (${l.length})` : "✅ Validations";
-    $("vListe").innerHTML = l.length ? l.map(m => {
+    const motAuHasard = () => { const M = ["Caserne", "Gyrophare", "Lance", "Echelle", "Casque", "Sirene", "Pompier", "Garde"]; return M[Math.floor(Math.random() * M.length)] + "-" + (1000 + Math.floor(Math.random() * 9000)); };
+    const creer = `<div class="card" id="ccCarte"><b style="font-size:17px;color:var(--navy)">➕ Créer un compte</b>
+        <p class="s" style="font-size:13px;color:var(--muted);margin:4px 0 10px">Le compte est validé tout de suite : tu donnes ensuite le prénom, le nom et le mot de passe à la personne, elle se connecte directement.</p>
+        <div class="row2"><label class="field">Prénom<input id="ccPrenom" autocomplete="off"></label><label class="field">Nom<input id="ccNom" autocomplete="off"></label></div>
+        <label class="field">Qualité<select id="ccQual"><option value="fils du Garde">Fils du Garde</option><option value="fille du Garde">Fille du Garde</option><option value="Gendarme">Gendarme</option></select></label>
+        <label class="field">Nom du Garde (facultatif)<input id="ccParent" autocomplete="off"></label>
+        <label class="field">Mot de passe (8 caractères minimum)<input id="ccMdp" autocomplete="off" value="${motAuHasard()}"></label>
+        <button class="btn small" id="ccOk" type="button">Créer le compte</button><div id="ccRes"></div></div>`;
+    $("vListe").innerHTML = creer + (l.length ? l.map(m => {
       const u = m.a_photo ? `/api/photo/${m.numero}?v=${photoV}&t=${encodeURIComponent(moi.token)}` : null;
       return `<div class="card demande" data-num="${esc(m.numero)}">
         <div class="haut"><div class="ph" ${u ? `style="background-image:url('${u}')"` : ""}>${u ? "" : esc(initiales(m))}</div>
@@ -3727,7 +3735,17 @@
         <div class="refus" hidden><textarea placeholder="Message pour ${esc(m.prenom)} (facultatif) : pourquoi la demande est refusée…" maxlength="1000"></textarea>
           <button class="btn small danger" data-confirmer-refus="${esc(m.numero)}" style="margin-top:8px">Confirmer le refus</button></div>
       </div>`; }).join("")
-      : `<div class="card empty"><b>Aucune demande en attente</b>Le poste de police est calme.</div>`;
+      : `<div class="card empty"><b>Aucune demande en attente</b>Le poste de police est calme.</div>`);
+    $("ccOk").onclick = async () => { const b = $("ccOk"), prenom = $("ccPrenom").value.trim(), nom = $("ccNom").value.trim(), motdepasse = $("ccMdp").value;
+      b.disabled = true;
+      try { const r = await api("POST", "/api/comptes", { prenom, nom, qualite: $("ccQual").value, parent: $("ccParent").value.trim(), motdepasse }); membres = [];
+        const txt = `Caserne de la Nouvelle France\n${location.origin}\nPrénom : ${r.prenom}\nNom : ${r.nom}\nMot de passe : ${motdepasse}`;
+        $("ccRes").innerHTML = `<div style="margin-top:12px;padding:12px;border-radius:12px;background:#eef6ee"><b>✅ Compte créé (laissez-passer n° ${esc(r.numero)})</b><pre style="white-space:pre-wrap;font:600 14px 'Lato',sans-serif;margin:8px 0">${esc(txt)}</pre>
+          <button class="btn small alt" type="button" id="ccCopier">📋 Copier pour l'envoyer</button></div>`;
+        $("ccCopier").onclick = async () => { try { await navigator.clipboard.writeText(txt); $("ccCopier").textContent = "✓ Copié"; } catch (e) { alert(txt); } };
+        $("ccPrenom").value = $("ccNom").value = $("ccParent").value = ""; $("ccMdp").value = motAuHasard(); }
+      catch (e) { $("ccRes").innerHTML = `<p style="color:#b00020;margin-top:8px">${esc(e.message)}</p>`; }
+      b.disabled = false; };
     const decider = async (num, decision, motif) => { await api("POST", `/api/demandes/${num}`, { decision, motif }); membres = []; afficherDemandes(); };
     document.querySelectorAll("[data-valider]").forEach(b => b.onclick = () => decider(b.dataset.valider, "valider").catch(e => alert(e.message)));
     document.querySelectorAll("[data-refuser]").forEach(b => b.onclick = () => { const z = b.closest(".demande").querySelector(".refus"); z.hidden = !z.hidden; z.querySelector("textarea").focus(); });

@@ -724,6 +724,26 @@ export class Compteur extends DurableObject {
     return this.sql.exec("SELECT numero, nom, prenom, qualite, parent, email, cree, photo IS NOT NULL AS a_photo FROM membres WHERE statut = 'attente' AND mdp_hash IS NOT NULL ORDER BY numero")
       .toArray().map(m => ({ ...m, numero: numero(m.numero), a_photo: !!m.a_photo }));
   }
+  // l'administrateur crée lui-même un compte (déjà validé, avec le mot de passe qu'il choisit) : il n'a plus qu'à donner prénom, nom et mot de passe
+  async creerCompte(token, x) {
+    await this.exigerAdmin(token);
+    const nom = texte(x.nom, 40).toUpperCase(), prenom = texte(x.prenom, 40);
+    if (!slug(nom) || !slug(prenom)) throw new Refus("Nom et prénom obligatoires");
+    if (this.estNomAdmin(prenom, nom)) throw new Refus("Ce nom est celui de l'administrateur");
+    const mdp = String(x.motdepasse || "");
+    if (mdp.length < 8) throw new Refus("Le mot de passe doit faire au moins 8 caractères");
+    if (this.sql.exec("SELECT prenom, nom FROM membres").toArray().some(m => slug(m.prenom) === slug(prenom) && slug(m.nom) === slug(nom))) throw new Refus("Il existe déjà un compte à ce prénom et ce nom");
+    const qualite = QUALITES.includes(x.qualite) ? x.qualite : QUALITES[0];
+    const parent = qualite === "Gendarme" ? nom : texte(x.parent, 40).toUpperCase() || nom;
+    const n = ((await this.ctx.storage.get("dernier")) || 0) + 1;
+    await this.ctx.storage.put("dernier", n);
+    let email = `${slug(prenom)}.${slug(nom)}@${DOMAINE}`;
+    if (this.sql.exec("SELECT 1 FROM membres WHERE email = ?", email).toArray().length) email = `${slug(prenom)}.${slug(nom)}.${numero(n)}@${DOMAINE}`;
+    const quand = new Date().toISOString();
+    this.sql.exec(`INSERT INTO membres (numero, nom, prenom, qualite, parent, email, token, cree, mdp_hash, statut, decide) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'valide', ?)`,
+      n, nom, prenom, qualite, parent, email, crypto.randomUUID(), quand, await hacher(mdp), quand);
+    return { numero: numero(n), prenom, nom, qualite, email };
+  }
   async decider(token, num, x) {
     await this.exigerAdmin(token);
     const m = this.sql.exec("SELECT numero, statut FROM membres WHERE numero = ?", Number(num)).toArray()[0];
@@ -1095,6 +1115,7 @@ export default {
       else if (request.method === "PUT" && /^\/api\/jeux\/\d+\/jaquette$/.test(url.pathname)) r = await registre.jaquetteJeu(token, url.pathname.split("/")[3], await corps());
       else if (request.method === "DELETE" && /^\/api\/jeux\/\d+$/.test(url.pathname)) r = await registre.retirerJeu(token, url.pathname.split("/")[3]);
       else if (route === "GET /api/demandes") r = await registre.demandes(token);
+      else if (route === "POST /api/comptes") r = await registre.creerCompte(token, await corps());
       else if (request.method === "POST" && /^\/api\/demandes\/\d+$/.test(url.pathname)) r = await registre.decider(token, url.pathname.split("/")[3], await corps());
       else if (route === "POST /api/moi/abandon") r = await registre.abandonner(token);
       else if (request.method === "POST" && /^\/api\/signalements\/\d+$/.test(url.pathname)) r = await registre.majSignalement(token, url.pathname.split("/")[3], await corps());
