@@ -856,6 +856,7 @@
   .mx-apo-carte b { color: #ffcf9a; } .mx-apo-fin { color: #e8341f; font-weight: 700; }
   .mx-apo-btns { display: flex; gap: 8px; margin: 6px -16px -14px; padding: 10px 16px 14px; position: sticky; bottom: -14px; background: linear-gradient(rgba(11,6,5,.85), #0b0605 40%); } .mx-apo-btns .btn { flex: 1; padding: 12px; font-size: 16px; }
   .mx-apo-btns .btn.alt { color: #e9dccb; border-color: #6a4a3a; }
+  .mx-persos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; width: 100%; margin-top: 4px; } .mx-persos[hidden] { display: none; }
   .mx-alm { display: inline-flex; align-items: center; gap: 6px; } .mx-alm input { width: 90px; } .mx-alm[hidden] { display: none; }
   .mx-apo-choix { margin: 4px 0 8px; } .mx-apo-choix > b { display: block; margin: 8px 0 5px; font-size: 14px; } .mx-apo-choix small { font-weight: 400; color: #cbb59b; }
   .mx-apo-heros { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1190,7 +1191,8 @@
           </div>
         </div>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
-          <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button>
+          <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button><button class="btn small" id="mxPersosBtn" type="button" hidden>🎭 Les personnages ▾</button>
+          <div class="mx-persos" id="mxPersos" hidden>
           <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button>
           <button class="btn small alt" id="mxPNJDJ" type="button" hidden>🎧 Manu, le DJ</button>
           <button class="btn small alt" id="mxPNJBar" type="button" hidden>🍷 Mr Miner, le barman</button>
@@ -1243,7 +1245,7 @@
           <button class="btn small alt" id="mxPNJZB" type="button" hidden>🧟 L'homme à la chemise</button>
           <button class="btn small alt" id="mxPNJZC" type="button" hidden>🧟 Le policier zombie</button>
           <button class="btn small alt" id="mxPNJNemesis" type="button" hidden>☠️ Nemesis</button>
-          <button class="btn small alt" id="mxPNJZombies" type="button" hidden>🐕 Le chien zombie</button></div></div>
+          <button class="btn small alt" id="mxPNJZombies" type="button" hidden>🐕 Le chien zombie</button></div></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
           <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
@@ -2106,7 +2108,7 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAlmTaille").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAlmTaille").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2269,6 +2271,7 @@
   $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15, 0], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
+  $("mxPersosBtn").onclick = () => { const o = $("mxPersos").hidden; $("mxPersos").hidden = !o; $("mxPersosBtn").textContent = o ? "🎭 Les personnages ▴" : "🎭 Les personnages ▾"; };   // (la liste repliée : la Matrice tout de suite en dessous)
   $("djPasser").onclick = () => MX && MX.dj("passer");
   $("djPrecedent").onclick = () => MX && MX.dj("precedent");
   $("djStop").onclick = async () => { if (await garde("La musique s'arrêtera pour tout le monde dans la salle.", { titre: "Arrêter la musique ?", annuler: true, ok: "Arrêter" })) MX && MX.dj("stop"); };
