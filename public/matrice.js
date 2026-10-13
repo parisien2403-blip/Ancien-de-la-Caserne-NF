@@ -1625,10 +1625,8 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
-      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(16000); vueFace(16000); } }, 700);   // (les éclairs durent jusqu'au départ)   // (la musique du voyage, et les éclairs qui traversent la cabine)
-      const versId = dest === "etage" ? "hv1955" : "etage", t0v = performance.now(); let parti = false;
-      const partir = () => { if (parti || !M) return; parti = true; const reste = 3300 - (performance.now() - t0v); setTimeout(depart, Math.max(0, reste)); };
-      setTimeout(() => preparerLieu(versId).then(partir), 900); setTimeout(partir, 15000);   // (le lieu d'arrivée se prépare pendant les éclairs ; on part dès qu'il est prêt)
+      musiqueVoyage(); setTimeout(() => { fermer(); if (M) vueFace(3000); }, 700);   // (la musique du voyage ; plus d'éclairs : ils figeaient les PC modestes)
+      setTimeout(() => depart(), 3300);
       const depart = () => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
         if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }; }
     else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
