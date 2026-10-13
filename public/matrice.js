@@ -2151,7 +2151,32 @@ function construireMess(A, L, scene) {
   const obstBar = [B1 - .3, B0 + .1, BZ - 1.0, BZ + .4];
   // la grande pièce, par l'ouverture : même carrelage, murs crème sans lambris, deux suspensions
   const RX0 = X0, RX1 = -3, RZ0 = Z1 + .3, RZ1 = Z1 + 12.3, RW = RX1 - RX0, RL = RZ1 - RZ0, RCX = (RX0 + RX1) / 2, RCZ = (RZ0 + RZ1) / 2;
-  const solP = A.ajoute(new THREE.PlaneGeometry(RW, RL), A.mat({ map: tex(carreaux, RW / 1.6, RL / 1.6), roughness: .5 }), RCX, 0, RCZ, false); solP.rotation.x = -Math.PI / 2;
+  // l'escalier : à 2 m de l'entrée de la pièce, large, en carrelage ; on le descend face à l'entrée (dix marches) jusqu'à une seconde pièce, en dessous, de la même taille ;
+  // autour de la trémie, un muret de la couleur des murs (pas de rambarde)
+  const NM = 10, MR = .32, MG = .32, YB = -NM * MR, SX0 = RX0 + .2, SX1 = SX0 + 2.4, SZ0 = RZ0 + 2, SZ1 = SZ0 + NM * MG, HM = 1.0;
+  const carM = (w, l) => A.mat({ map: tex(carreaux, w / 1.6, l / 1.6), roughness: .5 });
+  const dalle = (x0, x1, z0, z1, y) => { if (x1 - x0 < .01 || z1 - z0 < .01) return; const o = A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), carM(x1 - x0, z1 - z0), (x0 + x1) / 2, y, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2;
+    A.ajoute(new THREE.BoxGeometry(x1 - x0, .3, z1 - z0), A.mat({ color: 0xece4d2, roughness: .9 }), (x0 + x1) / 2, y - .151, (z0 + z1) / 2, false); };
+  dalle(RX0, RX1, RZ0, SZ0, 0); dalle(RX0, RX1, SZ1, RZ1, 0); dalle(RX0, SX0, SZ0, SZ1, 0); dalle(SX1, RX1, SZ0, SZ1, 0);   // le sol de la pièce, percé de la trémie
+  { const o = A.ajoute(new THREE.PlaneGeometry(RW, RL), carM(RW, RL), RCX, YB, RCZ, false); o.rotation.x = -Math.PI / 2; }   // le sol de la pièce du dessous
+  for (let k = 0; k < NM - 1; k++) { const top = -(k + 1) * MR, zA = SZ1 - (k + 1) * MG, zB = SZ1 - k * MG, h = top - YB;
+    const mm = A.ajoute(new THREE.BoxGeometry(SX1 - SX0, h, zB - zA), carM(SX1 - SX0, MG), (SX0 + SX1) / 2, YB + h / 2, (zA + zB) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(SX1 - SX0, .04, .05), bois, (SX0 + SX1) / 2, top - .02, zA + .025, false); }   // (le nez de marche)
+  for (const xx of [SX0 - .08, SX1 + .08]) A.ajoute(new THREE.BoxGeometry(.16, HM - YB, SZ1 - SZ0 + .16), peinture, xx, (HM + YB) / 2, (SZ0 + SZ1) / 2 - .08, false);   // les murets des côtés (jusqu'en bas)
+  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, -YB - .3, .16), peinture, (SX0 + SX1) / 2, (YB - .3) / 2, SZ1 + .08, false);   // sous le haut de l'escalier, côté pièce du dessous
+  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, HM + .3, .16), peinture, (SX0 + SX1) / 2, (HM - .3) / 2, SZ0 - .08, false);   // le muret du bout, au-dessus du bas de l'escalier
+  for (const [xx, zz, w, l] of [[SX0 - .08, (SZ0 + SZ1) / 2 - .08, .22, SZ1 - SZ0 + .16], [SX1 + .08, (SZ0 + SZ1) / 2 - .08, .22, SZ1 - SZ0 + .16], [(SX0 + SX1) / 2, SZ0 - .08, SX1 - SX0 + .38, .22]])
+    A.ajoute(new THREE.BoxGeometry(w, .05, l), A.mat({ color: 0xd9ccb0, roughness: .8 }), xx, HM + .025, zz, false);   // la tablette sur le muret
+  mur("z", RX0 - .15, RZ0 - .3, RZ1 + .3, 1, YB, 0, true); mur("z", RX1 + .15, RZ0 - .3, RZ1 + .3, -1, YB, 0, true); mur("x", RZ0 - .15, RX0, RX1, 1, YB, 0, true); mur("x", RZ1 + .15, RX0, RX1, -1, YB, 0, true);
+  for (const z of [RZ0 + 3, RZ1 - 3]) { const x = RCX + 1;
+    A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, -.34, z, false);
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), globe); gl.position.set(x, -.58, z); scene.add(gl);
+    const l = new THREE.PointLight(0xfff0d8, 7, 13, 1.4); l.position.set(x, -.9, z); scene.add(l); lampes.push(l); }
+  const surEsc = (x, z) => x > SX0 && x < SX1 && z > SZ0 && z < SZ1;
+  let nivC = 0;   // le niveau (0 : en haut, 1 : en bas) de celui qui se déplace
+  const niv = p => (p ? p.nivMess : (M && M.moiNum && M.gens.get(M.moiNum) || {}).nivMess) || 0;
+  L.hauteur = (x, z, p) => { if (surEsc(x, z)) { const h = -(SZ1 - z) / (SZ1 - SZ0) * -YB; if (p) p.nivMess = h < YB / 2 ? 1 : 0; nivC = h < YB / 2 ? 1 : 0; return h; }
+    nivC = niv(p); return nivC ? YB : 0; };
   { const se = A.ajoute(new THREE.PlaneGeometry(PO[1] - PO[0], .7), A.mat({ map: tex(carreaux, (PO[1] - PO[0]) / 1.6, .7 / 1.6), roughness: .5 }), (PO[0] + PO[1]) / 2, .002, Z1 + .15, false); se.rotation.x = -Math.PI / 2; }   // le seuil
   A.ajoute(new THREE.BoxGeometry(RW + .6, .3, RL + .6), A.mat({ color: 0xece4d2, roughness: .9 }), RCX, HT + .15, RCZ, false);
   mur("z", RX0 - .15, RZ0 - .3, RZ1 + .3, 1, 0, HT, true); mur("z", RX1 + .15, RZ0 - .3, RZ1 + .3, -1, 0, HT, true); mur("x", RZ1 + .15, RX0, RX1, -1, 0, HT, true);
@@ -2159,15 +2184,15 @@ function construireMess(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globe); gl.position.set(x, HT - 1.28, z); scene.add(gl);
     const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampes.push(l); }
-  const dansPiece = (x, z) => x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3, dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
+  const dansPiece = (x, z) => x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (nivC ? SZ0 - .5 : SZ0 + .3))) && !(nivC && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
   const ambiant = new THREE.AmbientLight(0xfff1dc, .5); scene.add(ambiant);
   L.setLumiere = (niveau) => { const v = +niveau, k = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); L.lumiere = k;
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * k; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
   L.setNuit = (n) => { L.nuit = n; vj.material.color.setHex(n ? 0x1a2238 : 0xffffff); L.setLumiere(L.lumiere ?? 1); };
   L.setLumiere(1);
-  L.limites = (x, z) => (dansPiece(x, z) || dansPassage(x, z)) || ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]);
+  L.limites = (x, z) => (dansPiece(x, z) || (!nivC && dansPassage(x, z))) || !nivC && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]));
   L.contraindreCam = (pos, moi) => { const q = moi.g.position, [a0, a1, b0, b1] = q.z > Z1 ? [RX0, RX1, RZ0, RZ1] : [X0, X1, Z0, Z1];
-    pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, HT - .3); return true; };
+    pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, niv() && !surEsc(q.x, q.z) ? -.45 : HT - .3); return true; };
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, RZ1]; L.boite = [X0, X1, Z0, RZ1]; L.plafond = HT - .3;
   L.depart = [0, 10]; L.cam = { pos: [0, 2.4, Z1 - .5], vise: [0, 1.4, Z0] };
 }
