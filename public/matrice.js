@@ -1387,7 +1387,12 @@ function deuxiemeCour(A, L, scene) {
         for (const xx of [cx - W / 4 + b / 2, cx + W / 4 - b / 2]) box(b, H, .06, xx, H / 2, .04); for (const yy of [.04, .52, H - .04]) box(W / 2, b, .06, cx, yy, .04);
         box(.035, H - .6, .05, cx, .52 + (H - .6) / 2, .05); for (let k = 1; k < 3; k++) box(W / 2 - .08, .035, .05, cx, .52 + k * (H - .56) / 3, .05);
         box(.035, .35, .07, cx - s2 * (W / 4 - .14), 1.15, .09, A.mat({ color: 0x9a9ca0, metalness: .8, roughness: .25 })); }
-      box(.02, H, .07, 0, H / 2, .05); } }
+      box(.02, H, .07, 0, H / 2, .05);
+      // au-dessus, centrée : la petite plaque carrée bleu marine, « O » à gauche (en regardant vers le porche) et « P » à droite
+      const lettre = sg > 0 ? "O" : "P", pq = toile(128, 128, (x) => { x.fillStyle = "#e8e4da"; x.beginPath(); x.roundRect(0, 0, 128, 128, 18); x.fill(); x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(7, 7, 114, 114, 14); x.fill();
+        x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(lettre, 64, 70); });
+      box(.44, .44, .04, 0, H + 1.12, .03, A.mat({ color: 0xe8e4da }));
+      const plq = new THREE.Mesh(new THREE.PlaneGeometry(.42, .42), A.mat({ map: tex(pq), roughness: .4 })); plq.position.set(0, H + 1.12, .052); g.add(plq); } }
   // une petite lumière le soir, au-dessus de chaque passage
   for (const z of [z0 - .3, z1 + .3]) { const l = new THREE.PointLight(0xffd59a, 10, 9, 1.6); l.position.set(0, 4.8, z); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
 }
@@ -4752,7 +4757,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
   M.prets = {}; M.prepT = performance.now() + 1500;
   if (M.cine) finCine();
-  M.hvInit = false; M.chasse = false;
+  M.hvInit = false; M.hvDoubles = false; M.chasse = false;
   const { scene, L, repere } = pret || construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
@@ -6098,10 +6103,14 @@ function construireHillValley(A, T, L, scene) {
   // ---- les Chevrolet Bel Air 1957, garées le long des trottoirs : la rouge et la jaune à hard-top blanc, et le cabriolet noir de Biff et sa bande ----
   const garer = (o, x, z, r) => { const v = creerBelAir({ ...o, rendu: M && M.rendu }); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
     for (const k of [-1.8, 0, 1.8]) obst.push([x + Math.cos(r) * k, z - Math.sin(r) * k, 1.05]); return v; };
-  garer({}, -12, 19.85, 0); garer({ couleur: "#e3b21a" }, -23.95, 4, -Math.PI / 2);
-  { const x = 9.5, z = 19.85, r = 0; L.cabrio = garer({ couleur: "#141416", cabriolet: true }, x, z, r); L.cabrioPos = [x, z, r];
-    const siege = (lx, lz) => [x + Math.cos(r) * lx + Math.sin(r) * lz, z - Math.sin(r) * lx + Math.cos(r) * lz];
-    L.siegesBiff = { 32: siege(-.05, -.4), 33: siege(-.05, .4), 35: siege(-.98, -.4), 34: siege(-.98, .4) }; }   // Biff au volant, Match à côté, le Skinhead et 3-D derrière
+  garer({}, -12, 20.15, 0); garer({ couleur: "#e3b21a" }, -23.95, 4, -Math.PI / 2);
+  /* deux voitures qui tournent autour de la place, sans fin : le cabriolet noir de Biff (et sa bande) et une Bel Air bleue.
+     Le circuit : à l'extérieur, on descend à l'ouest, on longe le sud, on remonte à l'est ; demi-tour au nord ; à l'intérieur, on redescend, on longe le sud, on remonte ; demi-tour. */
+  { const P = [[-21, -11], [-21, 15], [-19.5, 17.9], [-16, 18.2], [16, 18.2], [19.5, 17.9], [21, 15], [21, -11], [20.4, -13.3], [19.3, -14], [18.2, -13.3], [17.6, -11],
+      [17.6, 10.5], [16.5, 12.6], [14, 13], [-14, 13], [-16.5, 12.6], [-17.6, 10.5], [-17.6, -11], [-18.2, -13.3], [-19.3, -14], [-20.4, -13.3]];
+    L.circuit = new THREE.CatmullRomCurve3(P.map(([x, z]) => new THREE.Vector3(x, 0, z)), true, "centripetal"); L.circuitL = L.circuit.getLength();
+    const v1 = creerBelAir({ couleur: "#141416", cabriolet: true, rendu: M && M.rendu }), v2 = creerBelAir({ couleur: "#3a6ea8", rendu: M && M.rendu }); scene.add(v1, v2);
+    L.voituresTour = [{ v: v1, s: 0, cur: 5, bande: true }, { v: v2, s: .5, cur: 5 }]; L.cabrio = v1; }
   // ---- la DeLorean de Doc, garée au bord du trottoir : on y remonte pour rentrer ----
   const dl = creerDelorean(); poser(dl, -6, 16, -Math.PI / 2); scene.add(dl); L.delorean = dl; L.posDelorean = [-6, 16];
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
@@ -6130,6 +6139,8 @@ function construireHillValley(A, T, L, scene) {
 }
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
+const DOUBLES_HV = [[32, "voiture"], [33, "voiture"], [34, "voiture"], [35, "voiture"], [31, "promene"], [47, "suit"], [46, "promene"], [37, "suit"], [36, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [44, "balaie"]];
+const SUIT_HV = { 47: 31, 37: 46 };   // (George marche avec Marty, la fille à la jupe écossaise avec Lorraine)
 const HABITANTS = [[31, "comptoir"], [36, "table"], [37, "table"], [38, "table"], [41, "table"], [42, "table"], [43, "lou"], [44, "lou"], [32, "cafebande"], [33, "cafebande"], [34, "cafebande"], [35, "cafebande"], [46, "lorraine"], [47, "george"]];   // (tout le monde chez Lou)
 const TETES_HV = { 46: "images/bttf/p-lorraine-tete.webp", 47: "images/bttf/p-george-tete.webp", 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
   36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
@@ -6138,7 +6149,7 @@ function animerHV(now) {
   if (M && M.volCafeEl && M.lieu !== "hv1955") reglageVolumeCafe(false);
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
   for (const p of M.L.polesHV || []) p.rotation.y = now / 450;   // (l'enseigne du barbier tourne)
-  M.balade = M.baladeForce ?? (now % 150000) > 110000;   // (toutes les 2 min 30, 40 s de balade : Lorraine, Marty et George sortent se promener ; le reste du temps, assis au café)
+  M.balade = false;   // (les habitants du café restent attablés ; leurs doubles se promènent dans la ville)
   if (LOU.jukeTex) LOU.jukeTex.offset.y = (now / 7000) % 1;   // (les colonnes du juke-box changent doucement de couleur)
   { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
     if (dedans && !(musBttf && musBttf.cafe)) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
@@ -6154,7 +6165,30 @@ function animerHV(now) {
       const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}), ...(role === "comptoir" || role === "table" || role === "lorraine" || role === "george" ? { assis: 1 } : {}), ...(id === 43 ? { essuie: true } : {}) });
       if (q && role === "auto") { q.info.auto = true; q.g.position.y = .2; if (q.g.children[0]) q.g.children[0].visible = false; }
       if (q) q.prochain = now + Math.random() * 4000; } }
+    // les doubles des habitants du café, dans la ville : la bande en voiture, Marty et George ensemble, Lorraine et la fille à la jupe écossaise ensemble, les autres qui se promènent, Goldie qui balaie le trottoir
+    if (!M.hvDoubles) { M.hvDoubles = true;
+    for (const [id, role] of DOUBLES_HV) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
+      const chef = role === "suit" && M.gens.get(-(SUIT_HV[id] + 100)), [x, z] = role === "balaie" && M.L.salleLou ? M.L.salleLou.vers(0, 1.3) : chef ? [chef.g.position.x + .8, chef.g.position.z + .3] : pointLibreHV();
+      const q = ajouterAncien({ numero: -(id + 100), nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}) });
+      if (q && role === "voiture") { q.info.auto = true; if (q.g.children[0]) q.g.children[0].visible = false; } if (q) q.prochain = now + Math.random() * 3000; } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
+  // les deux voitures qui font le tour de la place (elles s'arrêtent devant quelqu'un) ; Biff et sa bande dans le cabriolet
+  { const dt = Math.min(.1, (now - (M.tourT || now)) / 1000); M.tourT = now; const C = M.L.circuit;
+    for (const V of M.L.voituresTour || []) { const pt = C.getPointAt(V.s), tg = C.getTangentAt(V.s), r = Math.atan2(-tg.z, tg.x);
+      let bloque = false; for (const q of M.gens.values()) { if (q.info.auto || Number.isInteger(q.info.assis) || q.info.assis === 1) continue; const ax = q.g.position.x - pt.x, az = q.g.position.z - pt.z, av = ax * tg.x + az * tg.z, lat = Math.abs(ax * tg.z - az * tg.x); if (av > 0 && av < 5 && lat < 1.5) bloque = true; }
+      for (const W of M.L.voituresTour) if (W !== V) { const d = ((W.s - V.s) % 1 + 1) % 1 * M.L.circuitL; if (d < 7) bloque = true; }
+      V.cur += ((bloque ? 0 : 5.2) - V.cur) * Math.min(1, dt * 2.5); V.s = (V.s + V.cur * dt / M.L.circuitL) % 1;
+      V.v.position.set(pt.x, 0, pt.z); V.v.rotation.y = r;
+      if (V.bande) { const pl = { 32: [-.05, -.4], 33: [-.05, .4], 35: [-.98, -.4], 34: [-.98, .4] };
+        for (const id in pl) { const q = M.gens.get(-(+id + 100)); if (!q) continue; const [lx, lz] = pl[id]; q.cible = null; q.chemin = []; q.g.position.set(pt.x + Math.cos(r) * lx + Math.sin(r) * lz, .2, pt.z - Math.sin(r) * lx + Math.cos(r) * lz); }
+        const lo = M.gens.get(-146); if (lo && now > (M.dragueT || 0) && lo.g.position.distanceTo(V.v.position) < 7) { M.dragueT = now + 9000; const k = M.dragueK = ((M.dragueK ?? -1) + 1) % 5;
+          dire(-132, ["Hé, Lorraine ! Tu montes, poupée ?", "Allez, fais pas ta timide, je t'emmène faire un tour !", "Ouh là là, quelle allure ! Tu viens au bal avec moi ?", "Hé ! Je te parle, Lorraine !", "T'es toute seule ? Ça tombe bien, moi aussi !"][k]);
+          setTimeout(() => M && M.gens.has(-146) && dire(-146, ["Laisse-moi tranquille, Biff !", "Non merci !", "Va-t'en, Biff !", "Jamais de la vie !", "Tu ne comprends pas quand on te dit non ?"][k]), 1900); } } } }
+  // les doubles qui marchent
+  for (const [id, role] of DOUBLES_HV) { const p = M.gens.get(-(id + 100)); if (!p || role === "voiture") continue;
+    if (role === "balaie") { if (!p.cible && now > (p.prochain || 0) && M.L.salleLou) { const [a, b] = M.L.salleLou.vers(-3.6 + Math.random() * 7.2, 1.1 + Math.random() * .5); viser(p, a, b); p.prochain = now + 2500 + Math.random() * 3000; } continue; }
+    if (role === "suit") { const chef = M.gens.get(-(SUIT_HV[id] + 100)); if (chef && now > (p.prochain || 0)) { p.prochain = now + 600; const d = Math.hypot(chef.g.position.x - p.g.position.x, chef.g.position.z - p.g.position.z); if (d > 1.2) { viser(p, chef.g.position.x + .8, chef.g.position.z + .3); p.rapide = d > 3; } } continue; }
+    if (!p.cible && now > (p.prochain || 0)) { const [a, b] = pointLibreHV(); viser(p, a, b); p.prochain = now + (SUIT_HV[47] === id || SUIT_HV[37] === id ? 6000 : 2500) + Math.random() * 5000; } }
   for (const [id, role] of HABITANTS) { const p = M.gens.get(-id); if (!p) continue;
     if (role === "serveur" || (role === "lou" && id !== 43)) { if (!p.cible && now > (p.prochain || 0)) { const P2 = M.L.louPts; if (P2) { const [a, b] = P2[Math.floor(Math.random() * P2.length)]; viser(p, a + (Math.random() - .5) * .5, b + (Math.random() - .5) * .5); } p.prochain = now + 4000 + Math.random() * 7000; } continue; }
     if (role === "lou") { if (!p.cible && now > (p.prochain || 0)) { const SL = M.L.salleLou; if (SL) { const [a, b] = SL.vers(-2.95, -2.3 - Math.random() * 4.6); viser(p, a, b); } p.prochain = now + 5000 + Math.random() * 8000; } continue; }
@@ -6308,7 +6342,7 @@ function connecter() {
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
-    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); M.hvInit = false; } }
+    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); M.hvInit = false; M.hvDoubles = false; } }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
