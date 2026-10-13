@@ -6032,7 +6032,7 @@ function construireHillValley(A, T, L, scene) {
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
 const HABITANTS = [[31, "comptoir"], [36, "table"], [37, "table"], [38, "table"], [41, "table"], [42, "table"], [43, "lou"], [44, "lou"], [32, "cafebande"], [33, "cafebande"], [34, "cafebande"], [35, "cafebande"], [46, "lorraine"], [47, "george"]];   // (tout le monde chez Lou)
-const TETES_HV = { 46: "images/bttf/p-lorraine-tete.webp", 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
+const TETES_HV = { 46: "images/bttf/p-lorraine-tete.webp", 47: "images/bttf/p-george-tete.webp", 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
   36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z) && !(M.L.dansLou && M.L.dansLou(x, z))) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
