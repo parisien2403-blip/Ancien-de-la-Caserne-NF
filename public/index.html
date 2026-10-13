@@ -856,6 +856,12 @@
   .mx-apo-carte b { color: #ffcf9a; } .mx-apo-fin { color: #e8341f; font-weight: 700; }
   .mx-apo-btns { display: flex; gap: 8px; margin: 6px -16px -14px; padding: 10px 16px 14px; position: sticky; bottom: -14px; background: linear-gradient(rgba(11,6,5,.85), #0b0605 40%); } .mx-apo-btns .btn { flex: 1; padding: 12px; font-size: 16px; }
   .mx-apo-btns .btn.alt { color: #e9dccb; border-color: #6a4a3a; }
+  .presents b { color: var(--navy); font-size: 15px; } .presents small { color: var(--muted); font-weight: 600; }
+  .pres-liste { display: flex; flex-wrap: wrap; gap: 10px 12px; margin-top: 10px; }
+  .pres-liste .p { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; font: 600 12px "Lato", sans-serif; color: var(--ink, #1f2a37); text-align: center; }
+  .pres-liste .ph { position: relative; width: 46px; height: 46px; border-radius: 50%; background: #e8dccb center/cover; display: grid; place-items: center; font: 800 15px "Lato", sans-serif; color: #8a3b22; }
+  .pres-liste .ph::after { content: ""; position: absolute; right: 0; bottom: 1px; width: 11px; height: 11px; border-radius: 50%; background: #2fa84f; border: 2px solid #fff; }
+  .pres-liste span { max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mx-persos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; width: 100%; margin-top: 4px; } .mx-persos[hidden] { display: none; }
   .mx-alm { display: inline-flex; align-items: center; gap: 6px; } .mx-alm input { width: 90px; } .mx-alm[hidden] { display: none; }
   .mx-apo-choix { margin: 4px 0 8px; } .mx-apo-choix > b { display: block; margin: 8px 0 5px; font-size: 14px; } .mx-apo-choix small { font-weight: 400; color: #cbb59b; }
@@ -959,6 +965,7 @@
             <div id="fil"></div>
           </div>
           <div>
+            <div class="card presents" id="accPresents" hidden><b>🟢 En ce moment à la caserne <small id="accPresNb"></small></b><div class="pres-liste" id="accPresListe"></div></div>
             <details class="card mot" id="accMot">
               <summary><span class="kicker">Le mot de l'administrateur</span><span class="replier">Lire</span></summary>
               <p><b>Bienvenue à tous !</b></p>
@@ -2697,7 +2704,7 @@
     if (fiche && fiche.code) { delete fiche.code; ecrire("caserne-fiche", fiche); }
     $("lSecret").value = ""; $("mNouveau").value = ""; $("mConfirme").value = "";
     etatPoste(); entrer(moi && moi.numero ? "accueil" : "poste");
-    setTimeout(verifierCourrier, 800); rappelMdp();
+    setTimeout(verifierCourrier, 800); rappelMdp(); setTimeout(presence, 1200);
   }
   // connexion d'un deuxième écran avec le code du verso
   async function connexionLiaison(prenom, nom, code) {
@@ -2852,6 +2859,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.92", "13 octobre 2026", ["Accueil : 🟢 En ce moment à la caserne — les anciens qui ont l'appli ouverte, avec leur photo"]],
     ["3.91", "13 octobre 2026", ["Réglages : 📲 Partager l'appli — le lien, son QR code à faire scanner, et un bouton pour l'envoyer"]],
     ["3.90", "13 octobre 2026", ["Le mess : les cercles de l'escalier font descendre ou monter le bonhomme marche par marche, on le voit faire"]],
     ["3.89", "13 octobre 2026", ["Salle des fêtes : toucher le coin du DJ n'ouvre plus sa liste (sauf pour l'administrateur) ; les autres changent de titre avec ⏮ / ⏭ sur la table ; « Couper mon son » ne coupe que chez soi"]],
@@ -3189,6 +3197,13 @@
     $("mcSub").textContent = moi && moi.cree_admin ? "Ton compte a été ouvert par l'administrateur : ton mot de passe actuel est celui qu'il t'a donné. Choisis maintenant le tien." : "Choisis ton propre mot de passe : c'est lui qui te servira à chaque connexion.";
     $("mdpChange").classList.add("open"); $("sheetBg").classList.add("open"); };
   $("rMdp").onclick = ouvrirMdp;
+  // --- qui est connecté : chacun se signale toutes les minutes, l'accueil montre ceux qui sont là
+  async function presence() {
+    if (!moi || !moi.token || !enLigne || document.hidden || lire("caserne-admin-retour", null) || (typeof estValide === "function" && !estValide())) return;
+    let l; try { l = await api("POST", "/api/presence"); } catch (e) { return; }
+    $("accPresents").hidden = false; $("accPresNb").textContent = `· ${l.length}`;
+    $("accPresListe").innerHTML = l.map(m => { const u = photoUrl(m); return `<div class="p" title="${esc(m.prenom)} ${esc(m.nom)}"><div class="ph" ${u ? `style="background-image:url('${u}')"` : ""}>${u ? "" : esc(initiales(m))}</div><span>${m.moi ? "Toi" : esc(m.prenom)}</span></div>`; }).join(""); }
+  setTimeout(presence, 1500); setInterval(presence, 60e3); document.addEventListener("visibilitychange", () => { if (!document.hidden) presence(); });
   // --- partager l'appli : le lien et son QR code
   $("rPartage").onclick = () => { fermerConnexion(); const lien = location.origin + "/";
     const qr = qrcode(0, "M"); qr.addData(lien); qr.make(); $("pgQr").innerHTML = qr.createSvgTag({ cellSize: 7, margin: 2, scalable: false });

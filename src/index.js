@@ -153,7 +153,9 @@ export class Compteur extends DurableObject {
       // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
       "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT", "av_bas TEXT", "av_pieds TEXT",
       // compte créé par l'administrateur, dont le mot de passe n'a pas encore été changé par son titulaire
-      "cree_admin INTEGER DEFAULT 0"]) {
+      "cree_admin INTEGER DEFAULT 0",
+      // la dernière fois que l'appli du membre a donné signe de vie (pour « en ce moment à la caserne »)
+      "vu TEXT"]) {
       try { this.sql.exec(`ALTER TABLE membres ADD COLUMN ${col}`); } catch (e) { /* déjà là */ }
     }
   }
@@ -777,6 +779,14 @@ export class Compteur extends DurableObject {
     this.sql.exec("UPDATE membres SET mdp_hash = ?, cree_admin = 0, token = ? WHERE numero = ?", await hacher(mdp), jeton, m.numero);
     return { ok: true, token: jeton };
   }
+  // « en ce moment à la caserne » : on se signale (toutes les minutes, l'appli ouverte), et l'on reçoit qui est là (vu il y a moins de 3 minutes)
+  presence(token) {
+    const moi = this.moi(token), maintenant = Date.now();
+    this.sql.exec("UPDATE membres SET vu = ? WHERE token = ?", new Date(maintenant).toISOString(), token);
+    const seuil = new Date(maintenant - 3 * 60e3).toISOString();
+    return this.sql.exec("SELECT numero, nom, prenom, admin, photo IS NOT NULL AS a_photo FROM membres WHERE vu > ? AND (statut IS NULL OR statut = 'valide') ORDER BY prenom", seuil).toArray()
+      .map(m => ({ numero: numero(m.numero), nom: m.nom, prenom: m.prenom, admin: !!m.admin, a_photo: !!m.a_photo, moi: m.numero === Number(moi.numero) }));
+  }
   async decider(token, num, x) {
     await this.exigerAdmin(token);
     const m = this.sql.exec("SELECT numero, statut FROM membres WHERE numero = ?", Number(num)).toArray()[0];
@@ -1150,6 +1160,7 @@ export default {
       else if (route === "GET /api/demandes") r = await registre.demandes(token);
       else if (route === "POST /api/comptes") r = await registre.creerCompte(token, await corps());
       else if (route === "GET /api/comptes") r = await registre.comptesCrees(token);
+      else if (route === "POST /api/presence") r = await registre.presence(token);
       else if (route === "PUT /api/moi/mot-de-passe") r = await registre.changerMotDePasse(token, await corps());
       else if (request.method === "POST" && /^\/api\/comptes\/\d+\/session$/.test(url.pathname)) r = await registre.sessionCompte(token, url.pathname.split("/")[3]);
       else if (request.method === "POST" && /^\/api\/demandes\/\d+$/.test(url.pathname)) r = await registre.decider(token, url.pathname.split("/")[3], await corps());
