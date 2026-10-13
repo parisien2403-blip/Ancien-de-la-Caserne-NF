@@ -4143,7 +4143,7 @@ function animerEquipe(now) {
   const etage = baseLieu(M.lieu) === "etage", mp = moi.g.position;
   M.equipe.forEach((e, k) => { const num = EQUIPIER(k); let p = M.gens.get(num);
     if (!p) { if (e.mort) return; const [x, z] = placeAPortee(moi, k); p = ajouterAncien(infoEquipier(e.id, num, x, z, M.moiNum, k)); if (!p) return; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; }
-    if (e.mort || APO.zombieFin) return;
+    if (e.mort || APO.zombieFin || p.sacrifie) return;
     const d = Math.hypot(p.g.position.x - mp.x, p.g.position.z - mp.z);
     // perdu (un autre étage, trop loin) : il nous rejoint aussitôt
     if ((etage && (etageDe(p) !== etageDe(moi) || (p.etg && moi.etg && p.etg.zone !== "P" && moi.etg.zone === "P" && d > 3))) || d > 13) { const [x, z] = placeAPortee(moi, k); p.g.position.x = x; p.g.position.z = z; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; p.cible = null; p.chemin = []; }
@@ -4159,6 +4159,42 @@ function animerEquipe(now) {
   if (now > (M.eqEnvoiT || 0) && [...M.gens.values()].some(q => !q.moi && q.info.numero > 0)) { M.eqEnvoiT = now + 200;
     envoyerWS({ t: "z_equipe", l: M.equipe.map((e, k) => { const q = M.gens.get(EQUIPIER(k)); return [k, e.id, q ? +q.g.position.x.toFixed(2) : 0, q ? +q.g.position.z.toFixed(2) : 0, e.mort ? 1 : 0, q && q.tirT && now - q.tirT < 300 ? 1 : 0, q ? etageDe(q) : 0]; }) }); }
 }
+// la salle des fêtes, à l'apocalypse : au premier pas dans l'escalier qui descend au bar, l'équipier qui nous suit se fait attraper
+// par trois zombies, derrière nous (une fois par visite) ; il nous crie de partir… et il meurt. On continue seul, ou avec l'autre équipier.
+function sacrificeApo(now) {
+  const moi = moiApo(); if (!moi || M.cine || M.sacrificeL === M.L || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || !M.equipe) return;
+  const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (!(h < -.15 && h > -1.2)) return;
+  const k = M.equipe.findIndex((e, i) => !e.mort && M.gens.get(EQUIPIER(i))); if (k < 0) return;
+  M.sacrificeL = M.L; const e = M.equipe[k], p = M.gens.get(EQUIPIER(k)), nom = p.info.nom;
+  // lui, en haut des marches, derrière nous ; les trois zombies qui sortent de la salle
+  let vx = mp.x, vz = mp.z - 2.4; for (let r = 2.4; r < 5; r += .3) { if (M.L.limites(mp.x, mp.z - r) && Math.abs(M.L.hauteur(mp.x, mp.z - r, {})) < .05) { vz = mp.z - r; break; } }
+  p.sacrifie = true; p.cible = null; p.chemin = []; p.g.position.set(vx, 0, vz); moi.cible = null; moi.chemin = [];
+  const zs = [0, 1, 2].map(i => { const a = Math.PI + (i - 1) * 1.25, d = 2.2; let x = vx + Math.sin(a) * d, z = vz + Math.cos(a) * d; if (!M.L.limites(x, z)) { x = vx + (i - 1) * 1.2; z = vz - 1.6; }
+    const q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x, z }); q.cine = true; q.x0 = x; q.z0 = z; q.ang = a; return q; });
+  const t0 = now; let cri = false, mort = false, giclee = 0;
+  bulle(null); sonPos(ZTYPES[0].son, .9);
+  M.cine = { maj: (t) => { const u = (t - t0) / 1000, q = M.gens.get(EQUIPIER(k)); if (!q) return;
+    // la caméra : sur les marches, à côté de nous, tournée vers le haut de l'escalier
+    M.camera.position.set(mp.x + .7, mp.y + 1.75, mp.z + 1.1); M.camera.lookAt(vx, .95, vz);
+    zs.forEach((z, i) => { const f = Math.min(1, u / 1.4), cx = vx + Math.sin(z.ang) * .8, cz = vz + Math.cos(z.ang) * .8; z.x = z.tx = z.x0 + (cx - z.x0) * f; z.z = z.tz = z.z0 + (cz - z.z0) * f; if (u > 1.4) z.coupT = performance.now() - (i * 120 % 300); });
+    if (u > 1.4 && !mort) { q.flashT = performance.now() + 120; const dx = Math.sin(u * 23) * .05; q.g.position.x = vx + dx;
+      if (u > giclee) { giclee = u + .18; jetSang(vx + (Math.random() - .5) * .3, .75, vz - .15); sangAuSol(vx + (Math.random() - .5) * 1.4, vz + (Math.random() - .5) * 1.4, 0, .6 + Math.random() * .6); if (Math.random() < .5) sonBruit(.12, 900, .35); } }
+    if (u > 1.7 && !cri) { cri = true; dire(EQUIPIER(k), `${((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]} ! Va-t'en !!! C'est trop tard pour moi… Haaaaaa !`); }
+    if (u > 4.6 && !mort) { mort = true; e.vies = 0; e.mort = true; q.info.mortT = performance.now(); q.cible = null; q.chemin = []; flaqueMort(q); majHudApo(); M.ctx.surInfo && M.ctx.surInfo(`💀 ${nom} s'est sacrifié…`); }
+    if (u > 6.4) { finCine(); placerCamera(true);
+      // (pour celui qui mène les zombies : ils deviennent de vrais zombies, qui nous poursuivent ; pour les autres, ils s'en vont)
+      for (const z of zs) { if (estChefZ()) { z.cine = false; z.recalc = 0; } else retirerZ(z); } } } };
+  M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(EQUIPIER(k)); if (q && !e.mort) { e.vies = 0; e.mort = true; q.info.mortT = performance.now(); flaqueMort(q); majHudApo(); }
+    finCine(); placerCamera(true); for (const z of zs) { if (estChefZ()) z.cine = false; else retirerZ(z); } });
+}
+// une giclée de sang : des gouttes qui jaillissent et retombent
+function jetSang(x, y, z) { const g = new THREE.Group(), sc = M.scene; sc.add(g); const gouttes = [];
+  for (let i = 0; i < 18; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.02 + Math.random() * .03, 6, 4), new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0x8a0606 : 0xb01010 }));
+    m.position.set(x, y + Math.random() * .3, z); g.add(m); const a = Math.random() * 7, v = 1.2 + Math.random() * 2.4; gouttes.push([m, Math.cos(a) * v * .7, 1.5 + Math.random() * 2.5, Math.sin(a) * v * .7]); }
+  const t0 = performance.now(); let tp = t0;
+  const f = () => { const t = performance.now(), dt = Math.min(.05, (t - tp) / 1000); tp = t; if (!M || M.scene !== sc || t - t0 > 1400) { sc.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); return; }
+    for (const q of gouttes) { const [m] = q; if (m.position.y <= .02) continue; q[2] -= 9.8 * dt; m.position.x += q[1] * dt; m.position.y = Math.max(.02, m.position.y + q[2] * dt); m.position.z += q[3] * dt; if (m.position.y <= .02) m.scale.set(2.2, .2, 2.2); }
+    requestAnimationFrame(f); }; f(); }
 // un équipier mordu (ou frappé par Nemesis) : il recule, rougit ; à zéro, il tombe
 function blesserEquipier(k, deg, zx, zz) {
   const e = M.equipe && M.equipe[k], p = M.gens.get(EQUIPIER(k)); if (!e || e.mort || !p) return;
@@ -4181,7 +4217,7 @@ function recevoirEquipe(de, l) {
 function proies() {
   const out = [];
   for (const p of M.gens.values()) { if (p.info.numero <= 0 && !p.info.equipier) continue;
-    if (p.moi ? APO.zombieFin : p.info.mortT) continue;
+    if (p.moi ? APO.zombieFin : p.info.mortT) continue; if (p.sacrifie) continue;
     const x = p.g.position.x, z = p.g.position.z; if (M.L.repos && M.L.repos(x, z)) continue;
     if (baseLieu(M.lieu) === "etage" && !(p.etg && p.etg.zone === "P")) continue;
     out.push({ p, x, z, n: M.L.limitesNiv ? (p.nivMess || 0) : etageDe(p) }); }
@@ -4210,7 +4246,7 @@ function simulerZ(t, dt) {
   if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 12000; const zs = [...M.zomb.values()];
     if (zs.filter(z => !z.chien && !z.boss).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
-  for (const z of M.zomb.values()) { if (z.mortT) continue;
+  for (const z of M.zomb.values()) { if (z.mortT || z.cine) continue;
     let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
     M.zN = z.n; for (const q of ps) { if ((base === "etage" || base === "mess") && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
     if (cible) {
@@ -4228,7 +4264,7 @@ function simulerZ(t, dt) {
       else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(4).k || 1)) : 1) * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
         if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
   // ils ne se marchent pas dessus
-  const zs = [...M.zomb.values()].filter(z => !z.mortT);
+  const zs = [...M.zomb.values()].filter(z => !z.mortT && !z.cine);
   for (let i = 0; i < zs.length; i++) for (let j = i + 1; j < zs.length; j++) { const a = zs[i], b = zs[j]; if (a.n !== b.n) continue; M.zN = a.n;
     const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz); if (d > .55 || d < 1e-3) continue; const k = (.55 - d) / 2 / d;
     if (Lz.limites(a.x - dx * k, a.z - dz * k)) { a.x -= dx * k; a.z -= dz * k; } if (Lz.limites(b.x + dx * k, b.z + dz * k)) { b.x += dx * k; b.z += dz * k; } }
@@ -4242,7 +4278,7 @@ function recevoirEtatZ(l) {
   for (const [id, ty, x, z, n, hp] of l) { vus.add(id); let q = M.zomb.get(id);
     if (!q) { if (hp <= 0) continue; q = creerZ({ id, ty, x, z, n, hp }); }
     q.tx = x; q.tz = z; q.n = n; q.hp = hp; if (hp <= 0 && !q.mortT) q.mortT = performance.now(); }
-  for (const q of [...M.zomb.values()]) if (!vus.has(q.id)) retirerZ(q);
+  for (const q of [...M.zomb.values()]) if (!vus.has(q.id) && !q.cine) retirerZ(q);
 }
 // les munitions et les plantes : posées aux mêmes endroits pour tout le monde
 function objetsApo() {
@@ -4289,7 +4325,7 @@ function animerApo(t, dt) {
   const moi = moiApo(); if (!moi) return;
   objetsApo();
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now());
+  animerEquipe(performance.now()); sacrificeApo(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now();
