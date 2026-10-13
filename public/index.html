@@ -324,6 +324,11 @@
   .mx-scene:fullscreen .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
   .mx-dire-plein input { flex: 1; min-width: 0; border: 0; border-radius: 99px; padding: 12px 16px; font: 16px "Lato", sans-serif; background: rgba(255,255,255,.94); outline: none; }
   .mx-scene:fullscreen .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
+  @media (max-width: 760px) {   /* (plein écran sur téléphone : les danses sur une ligne qu'on fait défiler, le bouton Musique au-dessus à droite, la discussion à gauche) */
+    .mx-scene:fullscreen .mx-danses { left: 12px; right: 12px; max-width: none; bottom: 70px; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+    .mx-scene:fullscreen .mx-danses::-webkit-scrollbar { display: none; } .mx-scene:fullscreen .mx-danses .mx-danse { flex: 0 0 auto; }
+    .mx-scene:fullscreen .mx-musique.mx-musique { bottom: 118px; }
+    .mx-scene:fullscreen .mx-fil-plein { bottom: 118px; max-width: calc(100% - 170px); } }
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
   .mx-scene:fullscreen .mx-musique { bottom: 160px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
@@ -2879,6 +2884,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.17", "13 octobre 2026", ["Plein écran sur téléphone : les danses sur une seule ligne (on la fait défiler du doigt), le bouton 🎧 Musique bien visible au-dessus"]],
     ["4.16", "13 octobre 2026", ["Émile et Images : leur fiche de réglage n'affiche plus le maquillage de zombie, et explique bien leur rôle"]],
     ["4.15", "13 octobre 2026", ["Salle des fêtes : Émile et Images montent sur scène quand passe leur medley — le chanteur au micro au centre (débardeur à damier bleu), le batteur en chemise blanche, le guitariste en t-shirt noir imprimé qui chante aussi à son micro ; réglables par l'administrateur"]],
     ["4.14", "13 octobre 2026", ["Rue du Faubourg-Poissonnière : les voitures et le bus s'arrêtent devant quelqu'un sur la chaussée (et ceux de derrière font la queue), puis repartent", "Lou's Cafe : quand on est dedans, on ne voit plus le double de Goldie balayer le trottoir par la vitrine", "Lou's Cafe : le message au rouge à lèvres un peu plus haut sur le mur"]],
