@@ -1387,6 +1387,7 @@
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rMdp"><span>🔑 Changer mon mot de passe</span>›</button>
     <button class="reglage" id="rCode"><span>🔗 Changer mon code de liaison</span>›</button>
+    <button class="reglage" id="rPartage"><span>📲 Partager l'appli (lien et QR code)</span>›</button>
     <button class="reglage" id="rProbleme"><span>🛠️ Un problème ? Écrire à l'administrateur</span>›</button>
     <button class="reglage" id="rMaj"><span>🔄 Mise à jour de l'appli</span><span class="maj-pastille" id="rMajPastille" hidden>Nouvelle version !</span>›</button>
     <button class="reglage danger" id="rLogout"><span>🚪 Se déconnecter</span></button>
@@ -1495,6 +1496,14 @@
     <p class="erreur" id="pErreur" hidden></p>
     <button class="btn" style="width:100%">Envoyer à l'administrateur</button>
   </form>
+  <div class="sheet" id="partage">
+    <div class="grab"></div>
+    <h2>📲 Partager l'appli</h2>
+    <p class="sub">Fais scanner ce QR code, ou envoie le lien : on arrive sur la caserne, prêt à demander son laissez-passer.</p>
+    <div id="pgQr" style="display:grid;place-items:center;margin:8px auto 12px;padding:14px;background:#fff;border-radius:16px;width:max-content;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+    <div id="pgLien" style="text-align:center;font:700 15px 'Lato',sans-serif;color:var(--navy);word-break:break-all;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn" type="button" id="pgEnvoyer">📤 Envoyer le lien</button><button class="btn alt" type="button" id="pgCopier">📋 Copier le lien</button></div>
+  </div>
   <div class="sheet" id="mdpChange">
     <div class="grab"></div>
     <h2>🔑 Changer mon mot de passe</h2>
@@ -2675,7 +2684,7 @@
     $("sheet").classList.add("open"); $("sheetBg").classList.add("open");
     setTimeout(() => (f ? $("lSecret") : $("lPrenom")).focus(), 350);
   }
-  function fermerConnexion() { ["sheet", "reglages", "mdpChange", "confid", "probleme", "pinForm", "nouveautes", "escalierForm", "bonhommeForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
+  function fermerConnexion() { ["sheet", "reglages", "partage", "mdpChange", "confid", "probleme", "pinForm", "nouveautes", "escalierForm", "bonhommeForm"].forEach(id => $(id).classList.remove("open")); $("sheetBg").classList.remove("open"); }
   function entrer(tab = "poste") {
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
@@ -2843,6 +2852,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.91", "13 octobre 2026", ["Réglages : 📲 Partager l'appli — le lien, son QR code à faire scanner, et un bouton pour l'envoyer"]],
     ["3.90", "13 octobre 2026", ["Le mess : les cercles de l'escalier font descendre ou monter le bonhomme marche par marche, on le voit faire"]],
     ["3.89", "13 octobre 2026", ["Salle des fêtes : toucher le coin du DJ n'ouvre plus sa liste (sauf pour l'administrateur) ; les autres changent de titre avec ⏮ / ⏭ sur la table ; « Couper mon son » ne coupe que chez soi"]],
     ["3.88", "13 octobre 2026", ["Mon bonhomme : la tête passe derrière le corps ; le bout de cou resté sur la photo se cache sous les épaules"]],
@@ -3179,6 +3189,14 @@
     $("mcSub").textContent = moi && moi.cree_admin ? "Ton compte a été ouvert par l'administrateur : ton mot de passe actuel est celui qu'il t'a donné. Choisis maintenant le tien." : "Choisis ton propre mot de passe : c'est lui qui te servira à chaque connexion.";
     $("mdpChange").classList.add("open"); $("sheetBg").classList.add("open"); };
   $("rMdp").onclick = ouvrirMdp;
+  // --- partager l'appli : le lien et son QR code
+  $("rPartage").onclick = () => { fermerConnexion(); const lien = location.origin + "/";
+    const qr = qrcode(0, "M"); qr.addData(lien); qr.make(); $("pgQr").innerHTML = qr.createSvgTag({ cellSize: 7, margin: 2, scalable: false });
+    $("pgLien").textContent = lien; $("pgCopier").textContent = "📋 Copier le lien";
+    $("partage").classList.add("open"); $("sheetBg").classList.add("open"); };
+  $("pgCopier").onclick = async () => { try { await navigator.clipboard.writeText(location.origin + "/"); $("pgCopier").textContent = "✓ Copié"; } catch (e) { alert(location.origin + "/"); } };
+  $("pgEnvoyer").onclick = async () => { const d = { title: "Caserne de la Nouvelle France", text: "Viens retrouver les anciens de la caserne de la Nouvelle France !", url: location.origin + "/" };
+    if (navigator.share) { try { await navigator.share(d); } catch (e) {} } else $("pgCopier").click(); };
   $("mcForm").onsubmit = async e => { e.preventDefault(); const err = $("mcErreur"), n1 = $("mcNouveau").value, n2 = $("mcConfirme").value; err.hidden = true;
     if (n1 !== n2) { err.textContent = "Les deux nouveaux mots de passe ne sont pas identiques"; err.hidden = false; return; }
     const b = $("mcForm").querySelector("button"); b.disabled = true;
