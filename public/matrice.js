@@ -1567,6 +1567,7 @@ function cabineFrance() { const g = new THREE.Group(), alu = new THREE.MeshStand
   return g; }
 // composer un numéro : le cadran à l'écran (on tourne le disque chiffre par chiffre)
 function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
+  preparerLieu(dest === "etage" ? "hv1955" : "etage");   // (le lieu d'arrivée se construit pendant qu'on compose : pas d'image figée au moment du voyage)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
   const fond = noir ? "#0e0e10" : "#a4a6a8", trou = noir ? "#f4ecd4" : "#2a2a2c", txt = noir ? "#1a1a1a" : "#f2f2ee";
   d.innerHTML = `<div style="background:${noir ? "#151517" : "#8e9092"};border-radius:18px;padding:16px 18px;box-shadow:0 10px 40px #000;display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#fff">
@@ -5196,15 +5197,20 @@ function musiqueVoyage() { try { if (musVoyage) musVoyage.pause(); couperMusique
   setTimeout(() => { const t0 = performance.now(), f = () => { if (musVoyage !== a) return; const k = 1 - (performance.now() - t0) / 3000; if (k <= 0) { a.pause(); musVoyage = null; return; } a.volume = .9 * k; requestAnimationFrame(f); }; f(); }, 19000); } catch (e) {} }
 // les éclairs qui traversent la cabine téléphonique (comme la DeLorean) : des arcs bleutés qui crépitent autour du bonhomme, une lueur qui clignote
 function eclairsCabine(ms) { const moi = M && M.gens.get(M.moiNum); if (!moi) return; const scene = M.scene, c = moi.g.position.clone(), g = new THREE.Group(); scene.add(g);
-  const mats = [new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false }), new THREE.MeshBasicMaterial({ color: 0x7fd4ff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })];
+  // (léger : six arcs dont on déplace seulement les points, au lieu d'en refabriquer à chaque image)
+  const N = 10, arcs = [];
+  for (let i = 0; i < 6; i++) { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((N + 1) * 3), 3));
+    const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: i % 2 ? 0x9fdcff : 0xffffff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false })); l.frustumCulled = false; g.add(l); arcs.push(l); }
   const lum = new THREE.PointLight(0x9fdcff, 0, 9, 1.4); lum.position.set(c.x, c.y + 1.4, c.z); scene.add(lum); const t0 = performance.now(); let der = 0;
-  const arc = () => { const a0 = Math.random() * Math.PI * 2, a1 = a0 + (Math.random() - .5) * 2.4, r0 = .5 + Math.random() * .5, r1 = .3 + Math.random() * .6, y0 = 2.5 + Math.random() * .4, y1 = Math.random() * .6, n = 9, pts = [];
-    for (let i = 0; i <= n; i++) { const u = i / n, a = a0 + (a1 - a0) * u, r = r0 + (r1 - r0) * u + (i && i < n ? (Math.random() - .5) * .35 : 0); pts.push(new THREE.Vector3(c.x + Math.cos(a) * r, c.y + y0 + (y1 - y0) * u + (i && i < n ? (Math.random() - .5) * .2 : 0), c.z + Math.sin(a) * r)); }
-    const cb = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0); g.add(new THREE.Mesh(new THREE.TubeGeometry(cb, 30, .012, 4), mats[0]), new THREE.Mesh(new THREE.TubeGeometry(cb, 30, .045, 5), mats[1])); };
-  const f = (t) => { if (!M || M.scene !== scene) { scene.remove(g, lum); return; } const e = performance.now() - t0;
-    if (e > ms) { g.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(g, lum); return; }
-    if (performance.now() - der > 70) { der = performance.now(); g.traverse(o => o.geometry && o.geometry.dispose()); g.clear(); const k = 2 + Math.floor(Math.random() * 3 + e / ms * 4); for (let i = 0; i < k; i++) arc();
-      lum.intensity = Math.random() < .5 ? 0 : 6 + Math.random() * 10 * (e / ms + .3); if (Math.random() < .3) sonBruit(.08, 5000 + Math.random() * 3000, .12); }
+  const tracer = (l) => { const p = l.geometry.attributes.position.array, a0 = Math.random() * Math.PI * 2, a1 = a0 + (Math.random() - .5) * 2.4, r0 = .45 + Math.random() * .4, r1 = .3 + Math.random() * .5, y0 = 2.3 + Math.random() * .3, y1 = Math.random() * .5;
+    for (let i = 0; i <= N; i++) { const u = i / N, a = a0 + (a1 - a0) * u, j = i && i < N ? 1 : 0, r = r0 + (r1 - r0) * u + j * (Math.random() - .5) * .3;
+      p[i * 3] = c.x + Math.cos(a) * r; p[i * 3 + 1] = c.y + y0 + (y1 - y0) * u + j * (Math.random() - .5) * .18; p[i * 3 + 2] = c.z + Math.sin(a) * r; }
+    l.geometry.attributes.position.needsUpdate = true; };
+  const f = () => { if (!M || M.scene !== scene) { scene.remove(g, lum); return; } const e = performance.now() - t0;
+    if (e > ms) { g.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose(); }); scene.remove(g, lum); return; }
+    if (performance.now() - der > 90) { der = performance.now(); const k = 2 + Math.floor(Math.random() * 2 + e / ms * 3);
+      arcs.forEach((l, i) => { l.visible = i < k; if (l.visible) tracer(l); });
+      lum.intensity = Math.random() < .5 ? 0 : 5 + Math.random() * 8; if (Math.random() < .25) sonBruit(.08, 5000 + Math.random() * 3000, .12); }
     requestAnimationFrame(f); }; requestAnimationFrame(f); }
 function eclairBlanc(ms = 1400) { const d = voile("background:radial-gradient(circle,#fff 0%,#dff4ff 45%,rgba(120,200,255,.85) 100%);opacity:1;transition:opacity " + ms + "ms ease-out", ms + 200); requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 0; })); }
 function bulle(texte, ms) { if (!M) return; if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
@@ -6619,6 +6625,10 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
+function preparerLieu(id) { if (!M || !M.L || M.lieu === id) return; M.prets = M.prets || {}; if (M.prets[id]) return; const lieu = M.lieu;
+  setTimeout(() => { try { if (!M || M.lieu !== lieu || M.prets[id]) return; const q = construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
+    const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
+    if (M.rendu.compileAsync) M.rendu.compileAsync(q.scene, M.camera).catch(() => {}); } catch (e) {} }, 60); }
 function preparerVoisin() {
   const now = performance.now(); if (!M || !M.L || M.preparation || now < (M.prepT || 0)) return; M.prepT = now + 700;
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
