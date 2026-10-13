@@ -3138,6 +3138,9 @@ export async function ouvrir(ctx) {
           // il joue : de dos, tourné vers la machine, il remue un peu (les mains sur les commandes)
           if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(t / 260) * .03; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.essuie && !p.cible) {   // Lou essuie son comptoir d'un geste circulaire
+          const pose = Math.floor(t / 900) % 3 ? "essuyer" : "repos"; if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 260) * .04; p.corps.position.x = Math.sin(t / 260) * .05; p.dansait = true; }
         else if (p.info.balai) {   // Goldie passe le balai (il balaie en marchant doucement, et sur place)
           const pose = Math.floor(t / 420) % 2 ? "balai1" : "balai2";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
@@ -3928,7 +3931,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
     ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
@@ -4555,6 +4558,15 @@ function majAlmanach() {
 // ---- la musique du voyage : elle part dès qu'on ramasse l'Almanach ; elle s'éteint en fondu ----
 let musBttf = null;
 function musiqueBttf(src, boucle = false, fondu = 0) { couperMusiqueBttf(fondu); try { const a = new Audio(src); a.loop = boucle; a.volume = .85; a.play().catch(() => {}); musBttf = a; } catch (e) {} }
+// le juke-box de Lou's Cafe : trois chansons, l'une après l'autre, en boucle (seulement dans le café), et son réglage de volume
+const CAFE_MUS = ["sons/bttf/cafe-johnny.mp3", "sons/bttf/cafe-earth.mp3", "sons/bttf/cafe-rock.mp3"];
+let volCafe = (() => { try { const v = localStorage.getItem("volCafe"); return v == null ? .8 : +v; } catch (e) { return .8; } })();
+function jukeboxCafe(i) { couperMusiqueBttf(600); try { const a = new Audio(CAFE_MUS[i % CAFE_MUS.length]); a.volume = volCafe; a.cafe = true; a.onended = () => { if (musBttf === a) jukeboxCafe(i + 1); }; a.play().catch(() => {}); musBttf = a; if (M) M.cafeI = i % CAFE_MUS.length; } catch (e) {} }
+function reglageVolumeCafe(voir) { if (!M) return; if (!M.volCafeEl && voir) { const d = document.createElement("label"); d.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:rgba(20,20,24,.78);color:#fff;font:700 13px 'Lato',sans-serif";
+    d.innerHTML = '🎵 Juke-box <input type="range" min="0" max="1" step="0.05" style="width:110px;accent-color:#e8b02a">'; const r = d.querySelector("input"); r.value = volCafe;
+    r.oninput = () => { volCafe = +r.value; try { localStorage.setItem("volCafe", volCafe); } catch (e) {} if (musBttf && musBttf.cafe) musBttf.volume = volCafe; };
+    for (const ev of ["pointerdown", "touchstart", "mousedown"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); M.volCafeEl = d; }
+  if (M.volCafeEl) M.volCafeEl.style.display = voir ? "flex" : "none"; }
 function couperMusiqueBttf(ms = 2500) { const a = musBttf; musBttf = null; if (!a) return; if (!ms) { try { a.pause(); } catch (e) {} return; }
   const v0 = a.volume, t0 = performance.now(), f = () => { const k = 1 - (performance.now() - t0) / ms; if (k <= 0) { try { a.pause(); } catch (e) {} return; } a.volume = v0 * k; requestAnimationFrame(f); }; f(); }
 // ---- les bulles de Doc, l'éclair blanc, le fondu : par-dessus la scène ----
@@ -5852,6 +5864,7 @@ function construireHillValley(A, T, L, scene) {
     const [ex, ez] = SL.vers(0, 1.0), [ix, iz] = SL.vers(0, -1.0), [ax, az] = SL.vers(0, -1.9), [bx, bz] = SL.vers(0, 2.0);
     L.portails.push({ dans: (x, z) => Math.hypot(x - ex, z - ez) < .9, vers: "hv1955", teleport: true, arrivee: [ax, az], yaw: Math.atan2(ex - ax, ez - az), indice: [ex, ez] });
     L.portails.push({ dans: (x, z) => Math.hypot(x - ix, z - iz) < .9, vers: "hv1955", teleport: true, arrivee: [bx, bz], yaw: Math.atan2(ix - bx, iz - bz), indice: [ix, iz] }); }
+  if (SL) { const V = SL.vers; L.siegesCafe = { 31: V(-1.3, -4.41), 32: V(-.62, -4.05), 33: V(-.75, -4.95), 34: V(-.45, -3.45), 35: V(-.4, -5.5), 36: V(3.62, -1.07), 37: V(3.62, -2.63), 38: V(3.62, -3.37), 41: V(3.62, -4.93), 42: V(3.62, -5.67) }; }
   L.louCafe = SL ? SL.vers(-2.95, -4.2) : [-23, -9.5]; L.louPts = SL ? [[0, -2.4], [.6, -4.1], [-.2, -5.6], [2.3, -3.0], [2.3, -5.3], [.4, -7.5]].map(([a, b]) => SL.vers(a, b)) : null;   // (Lou derrière son comptoir ; les serveurs entre les tables)
   let tPrec = 0;
   L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
@@ -5865,25 +5878,34 @@ function construireHillValley(A, T, L, scene) {
 }
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
-const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [43, "lou"], [44, "lou"], [32, "auto"], [33, "auto"], [34, "auto"], [35, "auto"]];
+const HABITANTS = [[31, "comptoir"], [36, "table"], [37, "table"], [38, "table"], [41, "table"], [42, "table"], [43, "lou"], [44, "lou"], [32, "cafebande"], [33, "cafebande"], [34, "cafebande"], [35, "cafebande"]];   // (tout le monde chez Lou)
 const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
   36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z) && !(M.L.dansLou && M.L.dansLou(x, z))) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
+  if (M && M.volCafeEl && M.lieu !== "hv1955") reglageVolumeCafe(false);
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
   for (const p of M.L.polesHV || []) p.rotation.y = now / 450;   // (l'enseigne du barbier tourne)
   if (LOU.jukeTex) LOU.jukeTex.offset.y = (now / 7000) % 1;   // (les colonnes du juke-box changent doucement de couleur)
+  { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
+    if (dedans && !(musBttf && musBttf.cafe)) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
+    reglageVolumeCafe(dedans);
+    // Biff embête Marty au comptoir (comme dans le film)
+    if (dedans && now > (M.biffT || 0) && M.gens.has(-32)) { M.biffT = now + 7000 + Math.random() * 4000; const k = M.biffK = ((M.biffK ?? -1) + 1) % 4;
+      dire(-32, ["Hé, McFly ! T'as quelque chose à me dire, mauviette ?", "Mauviette !", "Qu'est-ce que tu regardes, mauviette ? Allez, dégage de mon tabouret !", "T'as fait mes devoirs, McFly ? Mauviette !"][k]);
+      if (k % 2 && M.gens.has(-33)) setTimeout(() => M && dire(-33, "Ha ha ha !"), 1600); } }
   const moi = M.gens.get(M.moiNum), mp = moi && moi.g.position;
   if (!M.hvInit) { M.hvInit = true; M.bandeT = 0;
     for (const [id, role] of HABITANTS) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
-      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? (M.L.louPts ? (id === 43 ? M.L.louCafe : M.L.louPts[3]) : [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)]) : role === "serveur" ? (M.L.louPts ? M.L.louPts[id === 39 ? 0 : 2] : [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)]): role === "auto" ? M.L.siegesBiff[id] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
-      const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}) });
+      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? (M.L.louPts ? (id === 43 ? M.L.louCafe : M.L.louPts[3]) : [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)]) : role === "serveur" ? (M.L.louPts ? M.L.louPts[id === 39 ? 0 : 2] : [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)]): M.L.siegesCafe && M.L.siegesCafe[id] ? M.L.siegesCafe[id] : role === "auto" ? M.L.siegesBiff[id] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
+      const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}), ...(role === "comptoir" || role === "table" ? { assis: 1 } : {}), ...(id === 43 ? { essuie: true } : {}) });
       if (q && role === "auto") { q.info.auto = true; q.g.position.y = .2; if (q.g.children[0]) q.g.children[0].visible = false; }
       if (q) q.prochain = now + Math.random() * 4000; } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
   for (const [id, role] of HABITANTS) { const p = M.gens.get(-id); if (!p) continue;
     if (role === "serveur" || (role === "lou" && id !== 43)) { if (!p.cible && now > (p.prochain || 0)) { const P2 = M.L.louPts; if (P2) { const [a, b] = P2[Math.floor(Math.random() * P2.length)]; viser(p, a + (Math.random() - .5) * .5, b + (Math.random() - .5) * .5); } p.prochain = now + 4000 + Math.random() * 7000; } continue; }
     if (role === "lou") { if (!p.cible && now > (p.prochain || 0)) { const SL = M.L.salleLou; if (SL) { const [a, b] = SL.vers(-2.95, -2.3 - Math.random() * 4.6); viser(p, a, b); } p.prochain = now + 5000 + Math.random() * 8000; } continue; }
+    if (role === "comptoir" || role === "table" || role === "cafebande") { const q = M.L.siegesCafe && M.L.siegesCafe[id]; if (q) { p.cible = null; p.chemin = []; p.g.position.set(q[0], role === "table" ? -.06 : .12, q[1]); } continue; }
     if (role === "auto") { const [sx, sz] = M.L.siegesBiff[id]; p.cible = null; p.chemin = []; p.g.position.set(sx, .2, sz);
       if (id === 32 && mp && now > (M.bandeT || 0) && Math.hypot(mp.x - sx, mp.z - sz) < 4.5) { M.bandeT = now + 14000; bulle(["😏 <b>Biff :</b> Hé, " + prenomMoi() + " ! Tu veux faire un tour ? Ha ! Même pas en rêve !", "😤 <b>Biff :</b> Bas les pattes de ma bagnole !", "😏 <b>Biff :</b> T'as vu la classe ? Ça te change de ton vélo, hein ?"][Math.floor(Math.random() * 3)], 3000); }
       continue; }
