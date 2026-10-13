@@ -4573,6 +4573,23 @@ function titreCine(texte, ms) { const d = voile("display:grid;place-items:center
 function boutonPasser(fn) { if (!M) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "Passer ⏭";
   b.style.cssText = "position:absolute;right:12px;bottom:14px;z-index:10;border:0;border-radius:99px;padding:8px 14px;background:rgba(20,20,24,.75);color:#fff;font:700 13px 'Lato',sans-serif;cursor:pointer";
   b.onclick = () => { b.remove(); fn(); }; M.ctx.conteneur.appendChild(b); return b; }
+// le tableau des circuits temporels (DESTINATION / PRESENT / LAST TIME DEPARTED), affiché dans la DeLorean avant le départ ; la destination se tape chiffre à chiffre
+function compteurTemps(ms) { const d = voile("display:grid;place-items:center;background:rgba(0,0,0,.55);opacity:0;transition:opacity .35s", ms);
+  const MOIS = ["JANV", "FEVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOUT", "SEPT", "OCT", "NOV", "DEC"], n = new Date(), z2 = v => String(v).padStart(2, "0");
+  const lignes = [["DESTINATION TIME", "#ff4a2a", ["JUIL", "14", "1955", "13", "00"], true], ["PRESENT TIME", "#4aff5a", [MOIS[n.getMonth()], z2(n.getDate()), String(n.getFullYear()), z2(n.getHours()), z2(n.getMinutes())], n.getHours() >= 12], ["LAST TIME DEPARTED", "#ffd02a", ["JUIL", "04", "1990", "20", "45"], true]];
+  const case_ = (lab, val, coul, larg) => `<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div style="background:#a8201a;color:#f4e8e0;font:800 clamp(7px,1.6vw,11px) Arial;padding:1px 8px;letter-spacing:.06em">${lab}</div>
+    <div style="position:relative;background:#0a0606;border:2px solid #2a2a2a;border-radius:3px;padding:2px 6px;min-width:${larg}em;text-align:center;font:italic 700 clamp(18px,5vw,40px)/1 'Courier New',monospace;letter-spacing:.06em">
+    <span style="position:absolute;inset:2px 6px;color:${coul};opacity:.13">${"8".repeat(val.length)}</span><span class="cv" data-v="${val}" style="position:relative;color:${coul};text-shadow:0 0 8px ${coul},0 0 2px #fff">${val}</span></div></div>`;
+  d.innerHTML = `<div style="background:linear-gradient(#77777a,#5c5c60);padding:10px 12px;border-radius:6px;box-shadow:0 0 0 3px #2a2a2c,0 10px 40px #000;display:flex;flex-direction:column;gap:10px;max-width:96%">` +
+    lignes.map(([titre, coul, v, pm], i) => `<div class="ln" style="background:repeating-linear-gradient(45deg,#8a8a8e 0 2px,#7c7c80 2px 4px);border:2px solid #4a4a4e;border-radius:4px;padding:6px 8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="display:flex;gap:clamp(4px,1.2vw,10px);align-items:flex-end">${case_("MONTH", v[0], coul, 2.6)}${case_("DAY", v[1], coul, 1.5)}${case_("YEAR", v[2], coul, 2.8)}
+      <div style="display:flex;flex-direction:column;gap:4px;font:800 9px Arial;color:#f4e8e0;align-items:center"><span style="background:#a8201a;padding:0 3px">AM</span><span style="width:7px;height:7px;border-radius:50%;background:${pm ? "#333" : coul};box-shadow:${pm ? "none" : "0 0 6px " + coul}"></span><span style="background:#a8201a;padding:0 3px">PM</span><span style="width:7px;height:7px;border-radius:50%;background:${pm ? coul : "#333"};box-shadow:${pm ? "0 0 6px " + coul : "none"}"></span></div>
+      ${case_("HOUR", v[3], coul, 1.5)}<span style="color:${coul};font:900 26px Arial;text-shadow:0 0 6px ${coul};padding-bottom:6px">:</span>${case_("MIN", v[4], coul, 1.5)}</div>
+      <div style="background:#141414;color:#e8e8e8;font:800 clamp(8px,1.8vw,13px) Arial;letter-spacing:.12em;padding:2px 10px">${titre}</div></div>`).join("") + `</div>`;
+  // la destination s'efface, puis se tape case par case, avec un bip à chaque touche
+  const cases = [...d.querySelectorAll(".ln")[0].querySelectorAll(".cv")]; cases.forEach(c => c.style.visibility = "hidden");
+  let k = 0; const taper = () => { if (!d.isConnected || k >= cases.length) return; const c = cases[k++]; c.style.visibility = "visible"; sonBruit(.07, 2600, .25); setTimeout(taper, 420); };
+  requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; })); setTimeout(taper, 700); setTimeout(() => { d.style.opacity = 0; }, ms - 400); return d; }
 function finCine() { if (!M) return; M.cine = null; bulle(null); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } }
 
 // ---- la DeLorean (la machine à voyager dans le temps du premier film) : avant vers -z ----
@@ -4689,12 +4706,15 @@ const prenomMoi = () => esc((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "Marty");
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 // 1. dans la cour d'honneur (rien qu'à soi) : la DeLorean arrive, Doc appelle, on monte, elle fonce, 88 miles à l'heure… disparue
 function cineCour() {
-  M.bulleDit = M.monte = M.vroum = M.vroum2 = 0; M.dz = M.dx = 0;
+  M.bulleDit = M.monte = M.vroum = M.vroum2 = M.compteur = 0; M.dz = M.dx = 0;
   const car = creerDelorean(); car.position.y = 0; M.scene.add(car); poser(car, 0, 30, 0); const feu = [];
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1600); M.arriveeHV = true; changerLieu("hv1955", [-22, 16], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin);
   sonBruit(2.5, 220, .5);
-  M.cine = { t0: performance.now(), feu, maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera;
+  M.cine = { t0: performance.now(), feu, maj: (now) => { const tr = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera, PAUSE = 5.4;
+    // une fois monté et les portes fermées : le compteur des circuits temporels ; la voiture ne démarre qu'après
+    if (tr > 12.45 && !M.compteur) { M.compteur = 1; compteurTemps(PAUSE * 1000); }
+    const t = tr < 12.45 ? tr : tr < 12.45 + PAUSE ? 12.45 : tr - PAUSE;
     let cx = 0, cz = 0;
     if (t < 5) { const u = lisse((t - .6) / 4.4), z = 30 - 25.5 * (1 - Math.pow(1 - Math.min(1, Math.max(0, (t - .6) / 4.4)), 2)), x = 2.8 * lisse((t - 2) / 2.6);
       rouler(car, Math.abs(z - car.position.z)); poser(car, x, z, 0); cx = x; cz = z;
@@ -4949,7 +4969,8 @@ function chantierHV(larg) { const g = new THREE.Group(), pieces = new Map(), mur
       const c = toile(W, H, (x) => { peindreMurHV(x, W, H, M.type, M.coul, M.o); if (M.o.peint) M.o.peint(x, W, H, (v) => (v - M.x0) * HPX, (v) => (M.h1 - v) * HPX);
         x.globalCompositeOperation = "destination-out"; x.fillStyle = "#000"; for (const T of trous) { if (Math.abs(T.z - M.z) > .02 || T.cadre !== M.cadre) continue; const a = (T.x0 - M.x0) * HPX, b = (T.x1 - M.x0) * HPX, yh = (M.h1 - T.h1) * HPX, yb = (M.h1 - T.h0) * HPX; x.beginPath(); x.rect(a, yh, b - a, yb - yh); if (T.arc) x.ellipse((a + b) / 2, yh + 1, (b - a) / 2, T.arc * HPX, 0, Math.PI, 0); x.fill(); }
         if (M.o.contour) { x.beginPath(); x.moveTo(0, H); for (const [a, b] of M.o.contour) x.lineTo((a - M.x0) * HPX, (M.h1 - b) * HPX); x.lineTo(W, H); x.closePath(); x.globalCompositeOperation = "destination-in"; x.fillStyle = "#000"; x.fill(); } });
-      const m = new THREE.MeshStandardMaterial({ map: texHV(c), transparent: false, alphaTest: .5, roughness: .9 }); tf.push(M.m); B.plan(M.x1 - M.x0, M.h1 - M.h0, (M.x0 + M.x1) / 2, (M.h0 + M.h1) / 2, M.z, m); tf.pop(); }
+      const tm = texHV(c); if (miroirHV) { tm.repeat.x = 1; tm.offset.x = 0; }   // (les murs ne sont pas retournés : leurs ouvertures doivent tomber en face des encadrements)
+      const m = new THREE.MeshStandardMaterial({ map: tm, transparent: false, alphaTest: .5, roughness: .9 }); tf.push(M.m); B.plan(M.x1 - M.x0, M.h1 - M.h0, (M.x0 + M.x1) / 2, (M.h0 + M.h1) / 2, M.z, m); tf.pop(); }
     for (const [mesh, m] of differes) { mesh.updateMatrix(); mesh.applyMatrix4(m); }
     for (const [mat, geos] of pieces) { const me = new THREE.Mesh(fusionHV(geos), mat); me.castShadow = true; me.receiveShadow = true; g.add(me); } return g; };
   return B; }
@@ -5239,7 +5260,7 @@ function immeubleHV(scene, nom, cx, cz, r) { const D = IMMEUBLES_HV[nom]; alHV =
   const B = chantierHV(D.larg); D.f(B); const g = B.finir(); g.position.set(cx, 0, cz); g.rotation.y = r; scene.add(g);
   const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; if (D.creux) { const I = D.interieur(); g.add(I.g); g.userData.obstInt = I.obst; g.userData.interieur = LOU;
     const haut = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, D.corps - LOU.H - .02, 9 + LOU.Z1), [mc, mc, mt, mt, mc, mc]); haut.position.set(0, (D.corps + LOU.H + .02) / 2, LOU.Z1 - (9 + LOU.Z1) / 2); haut.castShadow = true; g.add(haut);
-    const fond = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, LOU.H + .02, .2), mc); fond.position.set(0, LOU.H / 2, LOU.Z0 - .12); g.add(fond); }
+    const fond = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, LOU.H + .02, .1), mc); fond.position.set(0, LOU.H / 2, LOU.Z0 - .62); g.add(fond); }
   else for (const [a, b2, hc] of D.zones || [[-D.larg / 2, D.larg / 2, D.corps]]) { const w = b2 - a - .06, xm = (a + b2) / 2;
     const c = new THREE.Mesh(new THREE.BoxGeometry(w, hc, 9 - R), [mc, mc, mt, mt, mc, mc]); c.position.set(xm, hc / 2, -R - (9 - R) / 2); c.castShadow = c.receiveShadow = true; g.add(c);
     for (const s of [-1, 1]) { const j = new THREE.Mesh(new THREE.BoxGeometry(.06, hc, R), mc); j.position.set(xm + s * (w / 2), hc / 2, -R / 2); g.add(j); } const t = new THREE.Mesh(new THREE.BoxGeometry(w, .1, R), mt); t.position.set(xm, hc - .05, -R / 2); g.add(t); } 
@@ -5458,7 +5479,14 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
   B.avec([0, 0, Z0], 0, () => { murs(W);
     B.trou(-.6, 1.8, 1.25, 2.15, .3, { tableau: "#d8d0bc" }); B.plan(2.4, .9, .6, 1.7, -.29, M_(T(256, 96, (x, w, h) => { x.fillStyle = "#3a3a36"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h * .6, w, 5); for (let k = 0; k < 6; k++) { x.fillStyle = "#c9cdd2"; x.fillRect(20 + k * 40, h * .35, 22, h * .25); } })));
     B.boite(2.6, .06, .35, .6, 1.25, .1, CHROME, { m: .5, r: .2 }); for (let k = 0; k < 5; k++) { B.boite(.1, .14, .005, -.2 + k * .35, 2.0, .01, "#f8f4e8"); }
-    B.trou(2.6, 3.6, 0, 2.2, .1, {}); B.plan(1, 2.2, 3.1, 1.1, -.09, M_(T(128, 280, (x, w, h) => { x.fillStyle = "#c8c0a8"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h - 40, w, 40); x.fillStyle = "#1c2a34"; x.beginPath(); x.arc(w / 2, 70, 26, 0, 7); x.fill(); x.strokeStyle = "#c9cdd2"; x.lineWidth = 6; x.stroke(); })));
+    B.trou(2.45, 3.75, 0, 2.3, .56, { tableau: "#8a8e8a" }); B.boite(1.4, .08, .06, 3.1, 2.34, .02, CHROME, { m: .5 }); B.plan(.9, .2, 3.1, 2.55, .02, M_(T(256, 56, (x, w, h) => { x.fillStyle = "#1d4f8a"; x.fillRect(0, 0, w, h); x.fillStyle = "#f6f2e4"; x.font = "bold 34px Georgia"; x.textAlign = "center"; x.fillText("KITCHEN", w / 2, 40); })));   // l'ouverture de la cuisine, derrière le comptoir
+    B.plan(1.3, 2.3, 3.1, 1.15, -.55, M_(T(260, 460, (x, w, h) => { const g5 = x.createLinearGradient(0, 0, 0, h); g5.addColorStop(0, "#5a605c"); g5.addColorStop(1, "#8a928c"); x.fillStyle = g5; x.fillRect(0, 0, w, h); for (let i = 0; i < w; i += 20) for (let j = 0; j < h; j += 20) { x.strokeStyle = "rgba(30,30,30,.3)"; x.strokeRect(i, j, 20, 20); }
+      x.fillStyle = "#3a3a3a"; x.fillRect(0, h * .62, w, h * .38); x.fillStyle = "#1c1c1c"; for (let k = 0; k < 4; k++) { x.beginPath(); x.ellipse(30 + k * 62, h * .62 + 6, 22, 6, 0, 0, 7); x.fill(); } x.fillStyle = "#9aa0a6"; x.fillRect(0, h * .6, w, 10); for (let k = 0; k < 4; k++) { x.fillStyle = "#555"; x.fillRect(16 + k * 62, h * .72, 32, 40); x.fillStyle = "#c9cdd2"; x.fillRect(20 + k * 62, h * .76, 24, 4); }
+      x.fillStyle = "#b8bcc0"; x.beginPath(); x.moveTo(10, h * .22); x.lineTo(w - 10, h * .22); x.lineTo(w - 30, h * .34); x.lineTo(30, h * .34); x.fill();   // la hotte
+      for (const [px, py, r3, c3] of [[50, .55, 26, "#7a7a7e"], [120, .56, 20, "#2a2a2a"], [190, .55, 24, "#9a6a3a"]]) { x.fillStyle = c3; x.fillRect(px - r3, h * py - 30, r3 * 2, 30); x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(px - r3, h * py - 30, 6, 30); }
+      x.fillStyle = "#8a6a3a"; x.fillRect(10, h * .1, w - 20, 6); for (let k = 0; k < 9; k++) { x.fillStyle = ["#c9cdd2", "#f4f2ec", "#c8302a"][k % 3]; x.fillRect(20 + k * 26, h * .1 - 22, 16, 22); }
+      for (let k = 0; k < 5; k++) { x.strokeStyle = "#555"; x.lineWidth = 2; x.beginPath(); x.moveTo(40 + k * 45, h * .36); x.lineTo(40 + k * 45, h * .42); x.stroke(); x.fillStyle = "#8a8a8e"; x.beginPath(); x.arc(40 + k * 45, h * .45, 12, 0, 7); x.fill(); } })));
+    { const lc = new THREE.PointLight(0xffe0a0, 2, 2.4, 1.5); lc.position.set(3.1, 2.1, -.35); B.objet(lc); }
     B.plan(1.4, .9, -1.6, 2.4, .02, M_(T(320, 200, (x, w, h) => { x.fillStyle = "#1e2a22"; x.fillRect(0, 0, w, h); x.strokeStyle = "#8a6a3a"; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("MENU", w / 2, 40);
       x.font = "18px Georgia"; x.textAlign = "left"; [["Hamburger", "25¢"], ["Cheeseburger", "30¢"], ["Malted Milk", "20¢"], ["Coffee", "5¢"], ["Apple Pie", "15¢"], ["Tab ? Pepsi Free ?", "—"]].forEach(([a, b], i) => { x.fillText(a, 26, 72 + i * 21); x.fillText(b, w - 70, 72 + i * 21); }); })));
     const hor = M_(T(128, 128, (x) => { x.fillStyle = "#c8202a"; x.beginPath(); x.arc(64, 64, 63, 0, 7); x.fill(); x.fillStyle = "#fbf8f0"; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.font = "italic bold 15px Georgia"; x.textAlign = "center"; x.fillText("Coca-Cola", 64, 48); x.fillStyle = "#1a1a1a"; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 44 - 2, 64 + Math.sin(a) * 44 - 2, 4, 4); } x.lineWidth = 3; x.strokeStyle = "#1a1a1a"; x.beginPath(); x.moveTo(64, 64); x.lineTo(64 + 22, 64 - 10); x.moveTo(64, 64); x.lineTo(64 - 4, 64 - 34); x.stroke(); }), { tr: true });
@@ -5466,7 +5494,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
       x.fillStyle = "#c8201a"; x.font = "bold 34px Arial Black, Arial"; x.textAlign = "center"; x.fillText("OUR COFFEE", 180, 42); x.fillText("\u201cURNS\u201d HIGH PRAISE", w / 2, 180); x.font = "bold 70px Arial Black, Arial"; x.fillText("5", 72, 118); x.font = "bold 24px Arial"; x.fillText("\u00a2", 104, 80);
       x.fillStyle = "#f6f2e8"; x.beginPath(); x.ellipse(190, 120, 70, 16, 0, 0, 7); x.fill(); x.stroke(); x.beginPath(); x.moveTo(140, 82); x.lineTo(240, 82); x.lineTo(226, 122); x.quadraticCurveTo(190, 134, 154, 122); x.closePath(); x.fill(); x.stroke(); x.fillStyle = "#4a2010"; x.beginPath(); x.ellipse(190, 84, 50, 9, 0, 0, 7); x.fill();
       x.strokeStyle = "#3a2a1a"; x.beginPath(); x.arc(246, 98, 13, -1.4, 1.4); x.stroke(); x.strokeStyle = "#5a6ab8"; x.lineWidth = 3; for (const dx of [-8, 6]) { x.beginPath(); x.moveTo(186 + dx, 76); x.bezierCurveTo(176 + dx, 60, 200 + dx, 48, 188 + dx, 30); x.stroke(); } }), { tr: true }));
-    B.plan(.62, .62, 2.45, 2.0, .03, hor); B.boite(.18, .14, .1, -.9, 2.95, .05, "#c8202a"); B.cyl(.07, .07, .05, -.9, 2.95, .11, "#c8202a", { rx: Math.PI / 2 }); });   // (la sonnette d'alarme rouge)
+    B.plan(.62, .62, 2.1, 2.75, .03, hor); B.boite(.18, .14, .1, -.9, 2.95, .05, "#c8202a"); B.cyl(.07, .07, .05, -.9, 2.95, .11, "#c8202a", { rx: Math.PI / 2 }); });   // (la sonnette d'alarme rouge)
   // le mur de gauche (côté banquettes) : photos encadrées, la pancarte des glaces
   B.avec([X0, 0, (Z0 + Z1) / 2], Math.PI / 2, () => { murs(D);
     for (const [px, n] of [[-2.9, 0], [-.6, 1], [1.7, 2]]) { B.boite(.62, .5, .03, px, 2.2, .015, "#3a2a1a"); B.plan(.52, .4, px, 2.2, .032, M_(T(128, 100, (x, w, h) => { x.fillStyle = "#e8e0cc"; x.fillRect(0, 0, w, h); x.fillStyle = ["#4a6a8a", "#7a5a3a", "#3a5a3a"][n]; x.fillRect(10, 10, w - 20, h - 20); x.fillStyle = "rgba(255,255,255,.35)"; x.beginPath(); x.arc(w / 2, h / 2 + 4, 18, 0, 7); x.fill(); x.fillRect(w / 2 - 26, h - 34, 52, 20); }))); } });
@@ -5505,7 +5533,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
     B.objet(new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .4, 8), new THREE.MeshStandardMaterial({ color: 0x6a3a1a, transparent: true, opacity: .7 }))).position.set(3.44, Y + 1.3, z + .1); B.cyl(.02, .02, .03, 3.44, Y + 1.51, z + .1, CHROME, { m: .5 }); }
   B.boite(.18, .5, .2, 3.6, Y + 1.2, -6.1, "#5fb8a8", { r: .3 }); for (let k = 0; k < 3; k++) B.cyl(.05, .045, .2, 3.6 + (k - 1) * .0, Y + 1.05, -6.1 + (k - 1) * .12 + .0, CHROME, { m: .5, r: .1 });
   // ---- les tabourets : pied chromé, assise ronde en skaï bleu-gris cerclée de chrome ----
-  for (let k = 0; k < 7; k++) { const z = CZ1 - .25 - k * .82; B.cyl(.2, .24, .03, 1.3, Y + .015, z, CHROME, { m: .5, r: .2, seg: 18 }); B.cyl(.035, .045, .62, 1.3, Y + .33, z, CHROME, { m: .5, r: .2 }); B.cyl(.21, .21, .1, 1.3, Y + .68, z, VINYLE, { r: .35, seg: 20 }); B.cyl(.215, .215, .035, 1.3, Y + .64, z, CHROME, { m: .5, r: .15, seg: 20 }); B.sphere(.2, 1.3, Y + .72, z, VINYLE, { r: .35 }); O.push([1.3, z, .3]); }
+  for (let k = 0; k < 7; k++) { const z = CZ1 - .25 - k * .82; B.cyl(.2, .24, .03, 1.3, Y + .015, z, CHROME, { m: .5, r: .2, seg: 18 }); B.cyl(.035, .045, .62, 1.3, Y + .33, z, CHROME, { m: .5, r: .2 }); B.cyl(.21, .21, .1, 1.3, Y + .68, z, VINYLE, { r: .35, seg: 20 }); B.cyl(.215, .215, .035, 1.3, Y + .64, z, CHROME, { m: .5, r: .15, seg: 20 }); B.cyl(.195, .2, .025, 1.3, Y + .742, z, teinteHV(VINYLE, 1.08), { r: .3, seg: 20 }); O.push([1.3, z, .3]); }
   // ---- les banquettes capitonnées et leurs tables, le long du mur de gauche ----
   const capiton = T(256, 256, (x, w, h) => { x.fillStyle = CUIRV; x.fillRect(0, 0, w, h); for (let i = 0; i < 6; i++) { const g3 = x.createLinearGradient(i * w / 6, 0, (i + 1) * w / 6, 0); g3.addColorStop(0, "rgba(0,0,0,.35)"); g3.addColorStop(.45, "rgba(255,255,255,.22)"); g3.addColorStop(1, "rgba(0,0,0,.3)"); x.fillStyle = g3; x.fillRect(i * w / 6, 0, w / 6, h); } });
   const mCap = new THREE.MeshStandardMaterial({ map: capiton, roughness: .32, metalness: .05 });
@@ -5591,13 +5619,19 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
   B.cyl(.025, .025, 1.75, -3.9, Y + .88, -1.0, "#5a3420"); B.cyl(.22, .25, .03, -3.9, Y + .015, -1.0, "#5a3420"); for (let k = 0; k < 4; k++) { const a2 = k * Math.PI / 2; B.cyl(.012, .012, .2, -3.9 + Math.cos(a2) * .07, Y + 1.66, -1.0 + Math.sin(a2) * .07, "#5a3420", { rz: Math.cos(a2) * .7, rx: -Math.sin(a2) * .7 }); }
   B.cyl(.14, .14, .02, -3.82, Y + 1.72, -1.0, "#3a3a40"); B.cyl(.09, .1, .1, -3.82, Y + 1.78, -1.0, "#3a3a40"); O.push([-3.9, -1.0, .3]);
   // ---- la cabine téléphonique en bois, au fond, comme dans le film : porte pliante vitrée, téléphone à pièces, banquette, plafonnier, l'enseigne TELEPHONE ----
-  B.avec([-3.72, Y, Z0 + .47], 0, () => { const NOYER = "#6a3e22", NOYER2 = "#7e4c2a", W2 = .95, D2 = .9, H2 = 2.2;
-    B.boite(W2 + .04, .1, D2 + .04, 0, .05, 0, "#3a2414");   // le socle
+  const bois = (base, clair) => { const t = texHV(toile(128, 256, (x, w, h) => { x.fillStyle = base; x.fillRect(0, 0, w, h); for (let i = 0; i < 70; i++) { const xx = Math.random() * w; x.strokeStyle = `rgba(${clair ? "255,220,170" : "20,8,2"},${.06 + Math.random() * .14})`; x.lineWidth = .6 + Math.random() * 2;
+      x.beginPath(); x.moveTo(xx, 0); x.bezierCurveTo(xx + (Math.random() - .5) * 14, h * .3, xx + (Math.random() - .5) * 14, h * .7, xx + (Math.random() - .5) * 8, h); x.stroke(); }
+    for (let i = 0; i < 3; i++) { x.strokeStyle = "rgba(30,12,4,.25)"; x.lineWidth = 1.2; const cx = Math.random() * w, cy = Math.random() * h; for (let r = 3; r < 14; r += 3) { x.beginPath(); x.ellipse(cx, cy, r * .6, r * 2, 0, 0, 7); x.stroke(); } }
+    const g4 = x.createLinearGradient(0, 0, w, 0); g4.addColorStop(0, "rgba(0,0,0,.18)"); g4.addColorStop(.5, "rgba(255,230,190,.06)"); g4.addColorStop(1, "rgba(0,0,0,.18)"); x.fillStyle = g4; x.fillRect(0, 0, w, h); }));
+    return new THREE.MeshPhysicalMaterial({ map: t, roughness: .45, clearcoat: .7, clearcoatRoughness: .25 }); };
+  B.avec([-3.72, Y, Z0 + .47], Math.PI / 2, () => { const NOYER = bois("#5a3018"), NOYER2 = bois("#7a4422", true), W2 = .95, D2 = .9, H2 = 2.2;
+    B.boite(W2 + .04, .1, D2 + .04, 0, .05, 0, bois("#3a1e0e"));   // le socle
     for (const s2 of [-1, 1]) { B.boite(.05, H2, D2, s2 * (W2 / 2 - .025), H2 / 2 + .1, 0, NOYER, { r: .45 });
       for (const [yy, hh] of [[.55, .7], [1.45, .5]]) B.boite(.012, hh, D2 - .2, s2 * (W2 / 2 + .002), yy + .1, 0, NOYER2, { r: .4 });
       B.plan(D2 - .24, .38, s2 * (W2 / 2 + .01), 2.0, 0, verreM, { ry: s2 * Math.PI / 2 }); }
-    B.boite(W2, H2, .05, 0, H2 / 2 + .1, -D2 / 2 + .025, "#a87a50", { r: .5 });   // le fond, plus clair
-    B.boite(W2 + .12, .1, D2 + .12, 0, H2 + .15, 0, NOYER); B.boite(W2 + .18, .06, D2 + .18, 0, H2 + .22, 0, NOYER2); B.boite(W2 + .1, .05, D2 + .1, 0, H2 + .27, 0, "#3a2414");   // le toit et sa corniche
+    B.boite(W2, H2, .05, 0, H2 / 2 + .1, -D2 / 2 + .025, bois("#9a6a40", true));   // le fond, plus clair
+    for (const s2 of [-1, 1]) for (const yy of [.12, H2 + .08]) B.boite(.07, .07, D2 + .02, s2 * (W2 / 2 - .02), yy, 0, bois("#3a1e0e"));   // (les moulures)
+    B.boite(W2 + .12, .1, D2 + .12, 0, H2 + .15, 0, NOYER); B.boite(W2 + .18, .06, D2 + .18, 0, H2 + .22, 0, NOYER2); B.boite(W2 + .1, .05, D2 + .1, 0, H2 + .27, 0, bois("#3a1e0e"));   // le toit et sa corniche
     const ens = M_(T(256, 64, (x, w, h) => { x.fillStyle = "#1d3f7a"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f2e8c8"; x.lineWidth = 3; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("TELEPHONE", w / 2 + 14, h / 2 + 2);
       x.fillStyle = "#f6f2e4"; x.beginPath(); x.arc(26, h / 2, 17, 0, 7); x.fill(); x.fillStyle = "#1d3f7a"; x.font = "bold 13px Georgia"; x.fillText("BELL", 26, h / 2 + 1); }));
     ens.emissive = new THREE.Color(0xffffff); ens.emissiveMap = ens.map; ens.emissiveIntensity = .35; B.boite(.86, .22, .04, 0, H2 + .02, D2 / 2 + .02, "#2a2a2a"); B.plan(.84, .2, 0, H2 + .02, D2 / 2 + .041, ens);
@@ -5616,7 +5650,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
       B.plan(bw - .1, 1.25, bw / 2, 1.33, .023, verreM); B.plan(bw - .1, 1.25, bw / 2, 1.33, -.023, verreM, { ry: Math.PI }); B.boite(bw - .08, .025, .046, bw / 2, 1.33, 0, NOYER); B.boite(.025, 1.25, .046, bw / 2, 1.33, 0, NOYER); });
     battant([-W2 / 2 + .05, 0, D2 / 2], -.75); battant([-W2 / 2 + .05 + .44 * Math.cos(.75), 0, D2 / 2 + .44 * Math.sin(.75)], .75);
     B.boite(.03, .18, .03, -W2 / 2 + .05 + .44 * Math.cos(.75) - .03, 1.1, D2 / 2 + .44 * Math.sin(.75) + .03, "#e2e6ea", { m: .5 }); });
-  O.push([-3.72, Z0 + .47, .62], [-3.3, Z0 + 1.0, .3]);
+  for (const x of [-4.05, -3.75, -3.45]) O.push([x, Z0 + .95, .14]);   // (le côté fermé de la cabine ; on y entre par la porte, côté juke-box)
   const g = B.finir(); for (const [x, z] of [[-1.5, -3.6], [1.5, -5.4]]) { const l = new THREE.PointLight(0xfff0d8, 9, 9, 1.5); l.position.set(x, H - .4, z); g.add(l); }
   g.traverse(o => { if (o.isMesh) o.castShadow = false; }); miroirHV = false;
   g.scale.x = -1;   // (le comptoir à gauche en entrant, comme dans le film)
