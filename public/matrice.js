@@ -4588,8 +4588,8 @@ function compteurTemps(ms) { const d = voile("display:grid;place-items:center;ba
       <div style="background:#141414;color:#e8e8e8;font:800 clamp(8px,1.8vw,13px) Arial;letter-spacing:.12em;padding:2px 10px">${titre}</div></div>`).join("") + `</div>`;
   // la destination s'efface, puis se tape case par case, avec un bip à chaque touche
   const cases = [...d.querySelectorAll(".ln")[0].querySelectorAll(".cv")]; cases.forEach(c => c.style.visibility = "hidden");
-  let k = 0; const taper = () => { if (!d.isConnected || k >= cases.length) return; const c = cases[k++]; c.style.visibility = "visible"; sonBruit(.07, 2600, .25); setTimeout(taper, 420); };
-  requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; })); setTimeout(taper, 700); setTimeout(() => { d.style.opacity = 0; }, ms - 400); return d; }
+  let k = 0; const taper = () => { if (!d.isConnected || k >= cases.length) return; const c = cases[k++]; c.style.visibility = "visible"; sonBruit(.07, 2600, .25); setTimeout(taper, 230); };
+  requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; })); setTimeout(taper, 350); setTimeout(() => cases.forEach(c => c.style.visibility = "visible"), 2000); setTimeout(() => { d.style.opacity = 0; }, ms - 400); return d; }
 function finCine() { if (!M) return; M.cine = null; bulle(null); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } }
 
 // ---- la DeLorean (la machine à voyager dans le temps du premier film) : avant vers -z ----
