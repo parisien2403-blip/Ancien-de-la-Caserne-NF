@@ -428,7 +428,7 @@ export class Compteur extends DurableObject {
   async webSocketMessage(ws, brut) {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
-    const nb = v => Math.max(-60, Math.min(60, Number(v) || 0));
+    const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu)) {
       const ancien = a.lieu;
       this.finirSlow(ws, a);

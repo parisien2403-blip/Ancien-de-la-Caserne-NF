@@ -7175,7 +7175,8 @@ function connecter() {
   const ctx = M.ctx, url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/matrice?t=" + encodeURIComponent(ctx.token);
   const ws = new WebSocket(url); M.ws = ws; let ouverte = false;
   clearInterval(M.pingT); M.pingT = setInterval(() => { if (M && M.ws === ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);   // (la connexion reste éveillée)
-  ws.onopen = () => { ouverte = true; M.echecs = 0; if (M.recoInfo) { M.recoInfo = false; ctx.surInfo && ctx.surInfo("✅ Reconnecté !"); } changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? M.posEntree : null); };
+  ws.onopen = () => { ouverte = true; M.echecs = 0; if (M.recoInfo) { M.recoInfo = false; ctx.surInfo && ctx.surInfo("✅ Reconnecté !"); } const moiR = M.lieu && M.moiNum && M.gens.get(M.moiNum), ici = moiR && M.L && M.L.limites && M.L.limites(moiR.g.position.x, moiR.g.position.z) ? [moiR.g.position.x, moiR.g.position.z] : M.posEntree;
+    changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? ici : null, M.lieu && moiR ? M.yaw : undefined); };   // (après une coupure : on reprend là où l'on était, pas à l'entrée du lieu)
   ws.onmessage = ev => {
     if (!M) return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.t === "etat") {
