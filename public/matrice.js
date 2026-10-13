@@ -2153,6 +2153,9 @@ function construireMess(A, L, scene) {
   const RX0 = X0, RX1 = -3, RZ0 = Z1 + .3, RZ1 = Z1 + 12.3, RW = RX1 - RX0, RL = RZ1 - RZ0, RCX = (RX0 + RX1) / 2, RCZ = (RZ0 + RZ1) / 2;
   // l'escalier : à 2 m de l'entrée de la pièce, large, en carrelage ; on le descend face à l'entrée (dix marches) jusqu'à une seconde pièce, en dessous, de la même taille ;
   // autour de la trémie, un muret de la couleur des murs (pas de rambarde)
+  const faienceM = toile(256, 256, (x, w, h) => { x.fillStyle = "#cfcfca"; x.fillRect(0, 0, w, h); const n = 4, c = w / n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const g = x.createLinearGradient(i * c, j * c, (i + 1) * c, (j + 1) * c), v = 244 + ((i * 7 + j * 3) % 5) - 2;
+      g.addColorStop(0, `rgb(${v + 6},${v + 6},${v + 3})`); g.addColorStop(.5, `rgb(${v},${v},${v - 3})`); g.addColorStop(1, `rgb(${v - 8},${v - 8},${v - 11})`); x.fillStyle = g; x.fillRect(i * c + 2, j * c + 2, c - 4, c - 4); } });
   const NM = 10, MR = .32, MG = .32, YB = -NM * MR, SX0 = RX0 + .2, SX1 = SX0 + 2.4, SZ0 = RZ0 + 2, SZ1 = SZ0 + NM * MG, HM = 1.0;
   const carM = (w, l) => A.mat({ map: tex(carreaux, w / 1.6, l / 1.6), roughness: .5 });
   const dalle = (x0, x1, z0, z1, y) => { if (x1 - x0 < .01 || z1 - z0 < .01) return; const o = A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), carM(x1 - x0, z1 - z0), (x0 + x1) / 2, y, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2;
@@ -2162,12 +2165,20 @@ function construireMess(A, L, scene) {
   for (let k = 0; k < NM - 1; k++) { const top = -(k + 1) * MR, zA = SZ1 - (k + 1) * MG, zB = SZ1 - k * MG, h = top - YB;
     const mm = A.ajoute(new THREE.BoxGeometry(SX1 - SX0, h, zB - zA), carM(SX1 - SX0, MG), (SX0 + SX1) / 2, YB + h / 2, (zA + zB) / 2, false);
     A.ajoute(new THREE.BoxGeometry(SX1 - SX0, .04, .05), bois, (SX0 + SX1) / 2, top - .02, zA + .025, false); }   // (le nez de marche)
-  for (const xx of [SX0 - .08, SX1 + .08]) A.ajoute(new THREE.BoxGeometry(.16, HM - YB, SZ1 - SZ0 + .16), peinture, xx, (HM + YB) / 2, (SZ0 + SZ1) / 2 - .08, false);   // les murets des côtés (jusqu'en bas)
-  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, -YB - .3, .16), peinture, (SX0 + SX1) / 2, (YB - .3) / 2, SZ1 + .08, false);   // sous le haut de l'escalier, côté pièce du dessous
-  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, HM + .3, .16), peinture, (SX0 + SX1) / 2, (HM - .3) / 2, SZ0 - .08, false);   // le muret du bout, au-dessus du bas de l'escalier
+  const blancM = (w, h) => A.mat({ map: tex(faienceM, w / 1.2, h / 1.2), roughness: .18 });
+  for (const xx of [SX0 - .08, SX1 + .08]) A.ajoute(new THREE.BoxGeometry(.16, HM - YB, SZ1 - SZ0 + .16), blancM(SZ1 - SZ0, HM - YB), xx, (HM + YB) / 2, (SZ0 + SZ1) / 2 - .08, false);   // les murets des côtés (jusqu'en bas)
+  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, -YB - .3, .16), blancM(SX1 - SX0, -YB), (SX0 + SX1) / 2, (YB - .3) / 2, SZ1 + .08, false);   // sous le haut de l'escalier, côté pièce du dessous
+  A.ajoute(new THREE.BoxGeometry(SX1 - SX0 + .32, HM + .3, .16), blancM(SX1 - SX0, HM), (SX0 + SX1) / 2, (HM - .3) / 2, SZ0 - .08, false);   // le muret du bout, au-dessus du bas de l'escalier
   for (const [xx, zz, w, l] of [[SX0 - .08, (SZ0 + SZ1) / 2 - .08, .22, SZ1 - SZ0 + .16], [SX1 + .08, (SZ0 + SZ1) / 2 - .08, .22, SZ1 - SZ0 + .16], [(SX0 + SX1) / 2, SZ0 - .08, SX1 - SX0 + .38, .22]])
-    A.ajoute(new THREE.BoxGeometry(w, .05, l), A.mat({ color: 0xd9ccb0, roughness: .8 }), xx, HM + .025, zz, false);   // la tablette sur le muret
+    A.ajoute(new THREE.BoxGeometry(w, .05, l), A.mat({ color: 0xf2f1ec, roughness: .3 }), xx, HM + .025, zz, false);   // la tablette sur le muret
   mur("z", RX0 - .15, RZ0 - .3, RZ1 + .3, 1, YB, 0, true); mur("z", RX1 + .15, RZ0 - .3, RZ1 + .3, -1, YB, 0, true); mur("x", RZ0 - .15, RX0, RX1, 1, YB, 0, true); mur("x", RZ1 + .15, RX0, RX1, -1, YB, 0, true);
+  // les murs des deux pièces : du gros carrelage blanc (carreaux de 30 cm, joints gris clair)
+  const faience = faienceM;
+  const carreler = (axe, pos, sens, de, a, y0, y1) => { const w = a - de, hh = y1 - y0; if (w < .01 || hh < .01) return;
+    const o = A.ajoute(new THREE.PlaneGeometry(w, hh), A.mat({ map: tex(faience, w / 1.2, hh / 1.2), roughness: .18, metalness: .02 }), axe === "z" ? pos + sens * .006 : (de + a) / 2, y0 + hh / 2, axe === "z" ? (de + a) / 2 : pos + sens * .006, false);
+    o.rotation.y = axe === "z" ? (sens > 0 ? Math.PI / 2 : -Math.PI / 2) : (sens > 0 ? 0 : Math.PI); };
+  for (const [y0, y1] of [[0, HT], [YB, -.3]]) { carreler("z", RX0, 1, RZ0, RZ1, y0, y1); carreler("z", RX1, -1, RZ0, RZ1, y0, y1); carreler("x", RZ1, -1, RX0, RX1, y0, y1); }
+  carreler("x", RZ0, 1, RX0, PO[0], 0, HT); carreler("x", RZ0, 1, PO[1], RX1, 0, HT); carreler("x", RZ0, 1, PO[0], PO[1], 2.6, HT); carreler("x", RZ0, 1, RX0, RX1, YB, -.3);
   for (const z of [RZ0 + 3, RZ1 - 3]) { const x = RCX + 1;
     A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, -.34, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), globe); gl.position.set(x, -.58, z); scene.add(gl);
