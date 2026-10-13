@@ -3561,6 +3561,9 @@ export async function ouvrir(ctx) {
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const T = textures();
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
+  // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
+  rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
+  rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
   const resMax = Math.min(devicePixelRatio, 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
@@ -6111,7 +6114,7 @@ function envVille(rendu) { if (envsVille.has(rendu)) return envsVille.get(rendu)
   const dome = new THREE.Mesh(new THREE.SphereGeometry(50, 48, 24), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide })); sc.add(dome);
   const soleil = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(30, 27, 22) })); soleil.position.set(-20, 32, 22); sc.add(soleil);
   for (const [x, y, z, w, h] of [[0, 30, 0, 26, 8], [24, 12, -10, 10, 5]]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.2, 2.3), side: THREE.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); sc.add(p); }
-  const pm = new THREE.PMREMGenerator(rendu), env = pm.fromScene(sc, .01).texture; pm.dispose(); envsVille.set(rendu, env); return env; }
+  const pm = new THREE.PMREMGenerator(rendu), env = pm.fromScene(sc, .01).texture; pm.dispose(); env.garder = true; envsVille.set(rendu, env); return env; }
 /* ===================== la Chevrolet Bel Air 1957 (cabriolet, hard-top blanc), modelée en 3D d'après les cinq vues =====================
    Repère : l'avant vers +x, la largeur sur z, le sol à y = 0. Longueur 5,1 m, largeur 1,9 m. */
 function creerBelAir(o = {}) {
@@ -6691,13 +6694,13 @@ export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 function libererScene(sc) { if (!sc) return; const vues = new Set();
-  sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); t.dispose(); } } m.dispose(); } }); }
+  sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t) && !t.isRenderTargetTexture && !t.garder) { vues.add(t); t.dispose(); } } m.dispose(); } }); }   // (jamais les reflets préparés une fois pour toutes)
 function preparerLieu(id) { if (!M || !M.L || M.lieu === id) return; M.prets = M.prets || {}; if (M.prets[id]) return; const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu || M.prets[id]) return; const q = construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
     const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
     if (M.rendu.compileAsync) M.rendu.compileAsync(q.scene, M.camera).catch(() => {}); } catch (e) {} }, 60); }
 function preparerVoisin() {
-  const now = performance.now(); if (!M || !M.L || M.preparation || now < (M.prepT || 0)) return; M.prepT = now + 700;
+  const now = performance.now(); if (!M || !M.L || M.preparation || M.cine || now < (M.prepT || 0)) return; M.prepT = now + 700;   // (jamais pendant une cinématique)
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
   let best = null, bd = 14;
   for (const q of [...(M.L.portails || []), ...(M.L.raccourcis || [])]) { if (!q.vers || q.vers === M.lieu || M.prets[q.vers] || !LIEUX[baseLieu(q.vers)]) continue;
