@@ -1407,6 +1407,127 @@ function circulation(L, scene) {
       if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); }); enRoute.splice(i, 1); } }
   };
 }
+/* ===================== les cabines téléphoniques qui voyagent dans le temps =====================
+   - au rez-de-chaussée de l'immeuble (2026) : une cabine France Télécom, et son téléphone gris à pièces (TA086) ; on compose 1955 → Lou's Cafe ;
+   - chez Lou (1955) : la cabine en bois et son téléphone public noir à cadran ; on compose 1990 → retour à l'immeuble. */
+const texTel = (c, miroir) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (miroir) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; } return t; };
+function combineTel(g, x, y, z, noir) {   // le combiné noir, raccroché sur le côté gauche
+  const m = new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: .25, metalness: .1 }), h = new THREE.Group(); h.position.set(x, y, z); g.add(h);
+  const manche = new THREE.Mesh(new THREE.CapsuleGeometry(.018, .15, 4, 10), m); h.add(manche);
+  for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.034, .028, .045, 16), m); c.position.set(.012, s * .1, 0); c.rotation.z = Math.PI / 2; h.add(c); }
+  return h; }
+function cadranRotatif(g, x, y, z, r, peint, miroir) {   // un cadran à disque : la face peinte, le disque percé en relief, la butée
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xe8ecee, metalness: .95, roughness: .15 });
+  const fond = new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshStandardMaterial({ map: texTel(toile(256, 256, peint), miroir), roughness: .35 })); fond.position.set(x, y, z); g.add(fond);
+  const bord = new THREE.Mesh(new THREE.TorusGeometry(r, r * .06, 8, 40), chrome); bord.position.set(x, y, z + .004); g.add(bord);
+  const disque = new THREE.Mesh(new THREE.RingGeometry(r * .32, r * .92, 40), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .25, metalness: .6, roughness: .1 })); disque.position.set(x, y, z + .008); g.add(disque);
+  const butee = new THREE.Mesh(new THREE.BoxGeometry(r * .08, r * .3, .012), chrome); butee.position.set(x + r * .75, y - r * .55, z + .012); butee.rotation.z = .7; g.add(butee); }
+// le téléphone public français à pièces (gris, « TA086 ») : fentes et boutons orange, plaque des instructions, fenêtres des pièces, cadran, combiné noir, cordon armé
+function telephoneTA086() { const g = new THREE.Group(), gris = new THREE.MeshStandardMaterial({ color: 0x9a9c9e, roughness: .45, metalness: .35 });
+  const W = .22, H = .32, D = .11, face = toile(256, 372, (x, w, h) => { x.fillStyle = "#a4a6a8"; x.fillRect(0, 0, w, h);
+    x.fillStyle = "#6e7072"; x.fillRect(12, 12, w - 24, 72); x.fillStyle = "#86888a"; x.fillRect(16, 16, w - 32, 64);
+    for (let k = 0; k < 4; k++) { const cx = 96 + k * 38; x.fillStyle = "#d8dadc"; x.beginPath(); x.roundRect(cx - 11, 22, 22, 32, 8); x.fill(); x.fillStyle = "#2a2a2c"; x.fillRect(cx - 1.5, 26, 3, 24);
+      x.fillStyle = "#f07a20"; x.beginPath(); x.arc(cx, 66, 11, 0, 7); x.fill(); x.fillStyle = "#3a1a00"; x.font = "bold 11px Arial"; x.textAlign = "center"; x.fillText(["5F", "1F", "½F", "20c"][k], cx, 70); }
+    x.fillStyle = "#c8cacc"; x.beginPath(); x.arc(42, 38, 9, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; x.fillRect(30, 56, 24, 9);
+    x.fillStyle = "#8e9092"; x.fillRect(100, 96, w - 112, 182); x.fillStyle = "#e8eae8"; x.fillRect(106, 104, w - 124, 66); x.strokeStyle = "#555"; x.lineWidth = 1; for (let k = 1; k < 3; k++) { x.beginPath(); x.moveTo(106 + k * (w - 124) / 3, 104); x.lineTo(106 + k * (w - 124) / 3, 140); x.stroke(); }
+    x.fillStyle = "#222"; x.font = "bold 16px Arial"; x.fillText("☎", 124, 128); x.fillText("F", 168, 128); x.fillText("◉", 210, 128); x.fillStyle = "#666"; for (let k = 0; k < 4; k++) x.fillRect(110, 146 + k * 6, w - 132, 2);
+    for (let k = 0; k < 4; k++) { const g2 = x.createLinearGradient(0, 184, 0, 268); g2.addColorStop(0, "#5a5c5e"); g2.addColorStop(.5, "#d8dadc"); g2.addColorStop(1, "#4a4c4e"); x.fillStyle = "#6a6c6e"; x.fillRect(110 + k * 32, 180, 24, 92); x.fillStyle = g2; x.fillRect(114 + k * 32, 186, 16, 80); }
+    x.fillStyle = "#6e7072"; x.fillRect(12, 300, w - 24, 4); x.fillStyle = "#c8cacc"; x.fillRect(160, 318, 74, 38); x.fillStyle = "#6a6c6e"; x.fillRect(166, 324, 62, 8); });
+  const mF = new THREE.MeshStandardMaterial({ map: texTel(face), roughness: .45, metalness: .25 });
+  const corps = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), [gris, gris, gris, gris, mF, gris]); corps.position.set(0, H / 2, D / 2); corps.castShadow = true; g.add(corps);
+  cadranRotatif(g, -W / 2 + .052, .085, D + .006, .042, (x, w, h) => { const c = w / 2; x.fillStyle = "#c8cacc"; x.fillRect(0, 0, w, h); x.fillStyle = "#2a2a2c"; for (let k = 0; k < 10; k++) { const a = -Math.PI * .35 + k * .5; x.beginPath(); x.arc(c + Math.cos(a) * 84, c + Math.sin(a) * 84, 18, 0, 7); x.fill(); x.fillStyle = "#f2f2ee"; x.font = "bold 18px Arial"; x.textAlign = "center"; x.fillText(String((k + 1) % 10), c + Math.cos(a) * 84, c + Math.sin(a) * 84 + 6); x.fillStyle = "#2a2a2c"; } x.fillStyle = "#9a9c9e"; x.beginPath(); x.arc(c, c, 36, 0, 7); x.fill(); });
+  const support = new THREE.Mesh(new THREE.BoxGeometry(.03, .08, .05), gris); support.position.set(-W / 2 - .01, .24, .06); g.add(support);
+  combineTel(g, -W / 2 - .02, .2, .085);
+  const cordon = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-W / 2 - .02, .1, .085), new THREE.Vector3(-W / 2 - .07, -.05, .1), new THREE.Vector3(-W / 2 - .04, -.18, .09), new THREE.Vector3(-W / 2 + .02, -.08, .06), new THREE.Vector3(-W / 2 + .03, .02, .05)]), 24, .006, 6), new THREE.MeshStandardMaterial({ color: 0x8a8c8e, metalness: .8, roughness: .3 })); g.add(cordon);
+  return g; }
+// le téléphone public américain des années 50, noir à cadran : les trois fentes (25, 10, 5) dans le chapeau chromé, le cadran aux pétales verts, la carte « LOCAL CALL », la boîte à monnaie chromée
+function telephoneCrosley(miroir) { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x0c0c0e, roughness: .2, metalness: .3 }), chrome = new THREE.MeshStandardMaterial({ color: 0xe8ecee, metalness: .45, roughness: .18 });
+  const W = .2, D = .12;
+  const bas = new THREE.Mesh(new THREE.BoxGeometry(W + .06, .2, D + .02), noir); bas.position.set(0, .1, (D + .02) / 2); g.add(bas);
+  const porte = new THREE.Mesh(new THREE.BoxGeometry(.14, .14, .01), chrome); porte.position.set(.03, .1, D + .025); g.add(porte);
+  const trappe = new THREE.Mesh(new THREE.BoxGeometry(.05, .1, .02), chrome); trappe.position.set(-.085, .11, D + .025); g.add(trappe);
+  const corps = new THREE.Mesh(new THREE.BoxGeometry(W, .36, D), noir); corps.position.set(0, .38, D / 2); corps.castShadow = true; g.add(corps);
+  const carte = toile(200, 230, (x, w, h) => { x.fillStyle = "#f4ecd4"; x.fillRect(0, 0, w, h); x.fillStyle = "#1a1a1a"; x.textAlign = "center"; x.font = "bold 24px Arial"; x.fillText("LOCAL CALL", w / 2, 34); x.font = "bold 18px Arial"; x.fillText("10 ¢", w / 2, 60); x.fillRect(w / 2 - 22, 64, 44, 2);
+    x.font = "12px Arial"; x.textAlign = "left"; ["Remove Handset.", "Wait for dial-tone.", "Wait for party to answer.", "Drop in coin."].forEach((t2, i) => { x.fillStyle = "#c8201a"; x.fillText("•", 30, 86 + i * 16); x.fillStyle = "#333"; x.fillText(t2, 40, 86 + i * 16); });
+    x.textAlign = "center"; x.fillStyle = "#1a1a1a"; x.font = "15px Arial"; x.fillText("LONG DISTANCE", w / 2, 168); x.font = "10px Arial"; x.fillText("Deposit coins as requested by operator", w / 2, 184); x.fillStyle = "#c8201a"; x.font = "bold 18px Georgia"; x.fillText("C·R·O·S·L·E·Y", w / 2, 212); });
+  const cadreC = new THREE.Mesh(new THREE.BoxGeometry(.15, .15, .008), chrome); cadreC.position.set(0, .3, D + .004); g.add(cadreC);
+  const mC = new THREE.Mesh(new THREE.PlaneGeometry(.13, .13), new THREE.MeshStandardMaterial({ map: texTel(carte, miroir), roughness: .5 })); mC.position.set(0, .3, D + .009); g.add(mC);
+  for (const [vx, vy] of [[-.068, .368], [.068, .368], [-.068, .232], [.068, .232]]) { const v = new THREE.Mesh(new THREE.SphereGeometry(.006, 8, 6), chrome); v.position.set(vx, vy, D + .01); g.add(v); }
+  cadranRotatif(g, 0, .48, D + .005, .075, (x, w, h) => { const c = w / 2; x.fillStyle = "#0c0c0e"; x.fillRect(0, 0, w, h); const L = ["1", "ABC 2", "DEF 3", "GHI 4", "JKL 5", "MNO 6", "PRS 7", "TUV 8", "WXY 9", "OPER 0"];
+    for (let k = 0; k < 10; k++) { const a = -Math.PI * .3 - k * .52; x.fillStyle = "#8ab8a0"; x.beginPath(); x.arc(c + Math.cos(a) * 98, c + Math.sin(a) * 98, 26, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; x.font = "bold 12px Arial"; x.textAlign = "center"; x.fillText(L[k], c + Math.cos(a) * 104, c + Math.sin(a) * 104 + 4);
+      x.fillStyle = "#f4ecd4"; x.beginPath(); x.arc(c + Math.cos(a) * 66, c + Math.sin(a) * 66, 15, 0, 7); x.fill(); }
+    x.fillStyle = "#e8ecee"; x.beginPath(); x.arc(c, c, 34, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; x.font = "bold 22px Georgia"; x.textAlign = "center"; x.fillText("1957", c, c + 8); x.font = "9px Arial"; x.fillText("PUBLIC TELEPHONE", c, c - 16); }, miroir);
+  const rel = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .02, 16), chrome); rel.rotation.x = Math.PI / 2; rel.position.set(.085, .54, D + .006); g.add(rel);
+  // le chapeau chromé et ses trois fentes à monnaie
+  const ch = new THREE.Shape(); ch.moveTo(-W / 2, 0); ch.lineTo(W / 2, 0); ch.lineTo(W / 2 - .03, .07); ch.lineTo(-W / 2 + .03, .07); ch.closePath();
+  const chap = new THREE.Mesh(new THREE.ExtrudeGeometry(ch, { depth: D, bevelEnabled: false }), chrome); chap.position.set(0, .56, 0); g.add(chap);
+  for (let k = 0; k < 3; k++) { const fx = -.05 + k * .05, f = new THREE.Mesh(new THREE.CylinderGeometry(.019, .019, .012, 18), chrome); f.rotation.x = Math.PI / 2 - .35; f.position.set(fx, .6, D + .005); g.add(f);
+    const lab = new THREE.Mesh(new THREE.CircleGeometry(.015, 18), new THREE.MeshStandardMaterial({ map: texTel(toile(64, 64, (x) => { x.fillStyle = "#d8dcde"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#1a1a1a"; x.font = "bold 28px Arial"; x.textAlign = "center"; x.fillText(["25", "10", "5"][k], 32, 42); }), miroir) }));
+    lab.position.set(fx, .603, D + .013); lab.rotation.x = -.35; g.add(lab); }
+  const sup = new THREE.Mesh(new THREE.BoxGeometry(.03, .05, .04), chrome); sup.position.set(-W / 2 - .012, .5, .06); g.add(sup);
+  combineTel(g, -W / 2 - .035, .43, .07);
+  const pts = []; for (let i = 0; i <= 120; i++) { const u = i / 120, a = u * Math.PI * 2 * 14; pts.push(new THREE.Vector3(-W / 2 - .035 + Math.cos(a) * .012 + Math.sin(u * 3) * .01, .34 - u * .3, .07 + Math.sin(a) * .012)); }
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 400, .0035, 5), noir));
+  return g; }
+// la cabine France Télécom : montants en aluminium, grandes vitres, le bandeau « Téléphone », le toit, le plancher en tôle striée, le panneau bleu et son téléphone, la porte ouverte
+function cabineFrance() { const g = new THREE.Group(), alu = new THREE.MeshStandardMaterial({ color: 0xc8cac8, metalness: .55, roughness: .35 });
+  const verre = new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .16, roughness: .04, metalness: .3, depthWrite: false, side: THREE.DoubleSide });
+  const add = (geo, m, x, y, z, p = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; p.add(o); return o; };
+  const L = 1.05, H = 2.05, P = .06;
+  const strie = toile(256, 256, (x, w, h) => { x.fillStyle = "#9a9c9e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { x.save(); x.translate(i * 16 + 8, j * 16 + 8); x.rotate((i + j) % 2 ? .6 : -.6); x.fillStyle = "#c4c6c8"; x.fillRect(-6, -1.5, 12, 3); x.restore(); } });
+  const tS = texTel(strie); tS.wrapS = tS.wrapT = THREE.RepeatWrapping; tS.repeat.set(2, 2);
+  add(new THREE.BoxGeometry(L, .05, L), new THREE.MeshStandardMaterial({ map: tS, metalness: .6, roughness: .4 }), 0, .025, 0);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(new THREE.BoxGeometry(P, H + .3, P), alu, sx * (L / 2 - P / 2), (H + .3) / 2, sz * (L / 2 - P / 2));
+  // les côtés : soubassement, traverse, vitres (le devant reste ouvert : la porte)
+  const cote = (ry) => { const s = new THREE.Group(); s.rotation.y = ry; g.add(s);
+    for (const y of [.12, 1.15, H]) add(new THREE.BoxGeometry(L - P, .07, .04), alu, 0, y, -L / 2 + .02, s);
+    const v1 = add(new THREE.PlaneGeometry(L - P * 2, 1.0), verre, 0, .64, -L / 2 + .02, s); v1.castShadow = false; const v2 = add(new THREE.PlaneGeometry(L - P * 2, H - 1.2), verre, 0, (1.18 + H) / 2, -L / 2 + .02, s); v2.castShadow = false; };
+  cote(0); cote(Math.PI / 2); cote(-Math.PI / 2);
+  // le bandeau « Téléphone », sur les quatre faces, et le toit
+  const bande = toile(512, 80, (x, w, h) => { x.fillStyle = "#2e1c18"; x.fillRect(0, 0, w, h); x.fillStyle = "#f6f2ea"; x.font = "bold 50px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("Téléphone", w / 2, h / 2 + 3); });
+  const mB = new THREE.MeshStandardMaterial({ map: texTel(bande), roughness: .5 }), mN = new THREE.MeshStandardMaterial({ color: 0x2e1c18 });
+  add(new THREE.BoxGeometry(L - .02, .24, L - .02), [mB, mB, mN, mN, mB, mB], 0, H + .15, 0);
+  add(new THREE.BoxGeometry(L + .12, .07, L + .12), alu, 0, H + .32, 0); add(new THREE.BoxGeometry(L + .06, .04, L + .06), new THREE.MeshStandardMaterial({ color: 0xe8eae8, roughness: .6 }), 0, H + .375, 0);
+  const pl = add(new THREE.SphereGeometry(.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff2d0, emissiveIntensity: .8 }), 0, H + .02, 0); pl.rotation.x = Math.PI;
+  // le panneau bleu au fond, la tablette, et le téléphone dessus
+  add(new THREE.BoxGeometry(.42, 1.3, .03), new THREE.MeshStandardMaterial({ color: 0x1d4a8a, roughness: .45 }), 0, 1.05, -L / 2 + .07);
+  add(new THREE.BoxGeometry(.42, .03, .14), alu, 0, 1.0, -L / 2 + .14);
+  const tel = telephoneTA086(); tel.position.set(0, 1.1, -L / 2 + .085); g.add(tel);
+  const cadreA = add(new THREE.BoxGeometry(.4, .3, .02), alu, 0, 1.82, -L / 2 + .09); add(new THREE.PlaneGeometry(.36, .26), new THREE.MeshStandardMaterial({ map: texTel(toile(256, 180, (x, w, h) => { x.fillStyle = "#f2f2ee"; x.fillRect(0, 0, w, h); x.fillStyle = "#1d4a8a"; x.fillRect(0, 0, w, 30); x.fillStyle = "#fff"; x.font = "bold 18px Arial"; x.fillText("Mode d'emploi", 12, 22); x.fillStyle = "#333"; for (let k = 0; k < 8; k++) x.fillRect(14, 44 + k * 15, w - 28 - (k % 3) * 30, 4); })) }), 0, 1.82, -L / 2 + .101);
+  // la porte vitrée, grande ouverte
+  const porte = new THREE.Group(); porte.position.set(L / 2 - P / 2, 0, L / 2 - P / 2); porte.rotation.y = -1.9; g.add(porte);
+  for (const y of [.12, 1.15, H - .05]) add(new THREE.BoxGeometry(L - P * 1.5, .06, .035), alu, -(L - P) / 2, y, 0, porte);
+  add(new THREE.BoxGeometry(.05, H - .05, .04), alu, -(L - P * 1.5), (H - .05) / 2, 0, porte);
+  add(new THREE.PlaneGeometry(L - P * 2.5, H - .3), verre, -(L - P) / 2, (H + .1) / 2, 0, porte).castShadow = false;
+  add(new THREE.BoxGeometry(.03, .3, .04), new THREE.MeshStandardMaterial({ color: 0x8a8c8e, metalness: .8 }), -(L - P * 1.5) + .05, 1.0, .03, porte);
+  return g; }
+// composer un numéro : le cadran à l'écran (on tourne le disque chiffre par chiffre)
+function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
+  const fond = noir ? "#0e0e10" : "#a4a6a8", trou = noir ? "#f4ecd4" : "#2a2a2c", txt = noir ? "#1a1a1a" : "#f2f2ee";
+  d.innerHTML = `<div style="background:${noir ? "#151517" : "#8e9092"};border-radius:18px;padding:16px 18px;box-shadow:0 10px 40px #000;display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#fff">
+    <div style="opacity:.8">${noir ? "☎️ Téléphone public — Lou's Cafe, 1955" : "☎️ Cabine téléphonique"}</div>
+    <div class="ecran" style="min-width:200px;text-align:center;background:#0b120c;color:#7af08a;border-radius:8px;padding:8px 12px;font:700 30px 'Courier New',monospace;letter-spacing:.25em;min-height:38px">&nbsp;</div>
+    <div class="disque" style="position:relative;width:240px;height:240px;border-radius:50%;background:${fond};box-shadow:inset 0 0 0 6px #c8ccd0,0 4px 14px rgba(0,0,0,.6);transition:transform .45s ease-out"></div>
+    <div style="display:flex;gap:10px"><button class="eff" style="border:0;border-radius:99px;padding:8px 14px;background:#555;color:#fff;font:700 13px 'Lato'">Effacer</button><button class="rac" style="border:0;border-radius:99px;padding:8px 14px;background:#c8201a;color:#fff;font:700 13px 'Lato'">Raccrocher</button></div></div>`;
+  M.ctx.conteneur.appendChild(d); M.cadranEl = d; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
+  const disque = d.querySelector(".disque"), ecran = d.querySelector(".ecran"); let num = "", occupe = false;
+  const fermer = () => { d.remove(); if (M) M.cadranEl = null; };
+  const afficher = (t) => { ecran.textContent = t || " "; };
+  for (let k = 0; k < 10; k++) { const n = (k + 1) % 10, a = -Math.PI * .3 - k * .5 + (noir ? 0 : 0), b = document.createElement("button"); b.type = "button"; b.textContent = n;
+    b.style.cssText = `position:absolute;left:${120 + Math.cos(a) * 88 - 22}px;top:${120 + Math.sin(a) * 88 - 22}px;width:44px;height:44px;border-radius:50%;border:0;background:${trou};color:${txt};font:900 18px Arial;cursor:pointer;box-shadow:inset 0 2px 5px rgba(0,0,0,.5)`;
+    b.onclick = () => { if (occupe || num.length >= 4) return; num += n; afficher(num); const tours = n === 0 ? 10 : n; disque.style.transform = `rotate(${30 + tours * 26}deg)`;
+      for (let i = 0; i < tours; i++) setTimeout(() => sonBruit(.025, 3200, .18), 120 + i * 60);
+      if (num.length === 4) occupe = true; setTimeout(() => { disque.style.transform = ""; if (num.length === 4) appeler(); }, 520 + tours * 30); };
+    disque.appendChild(b); }
+  const centre = document.createElement("div"); centre.style.cssText = "position:absolute;left:84px;top:84px;width:72px;height:72px;border-radius:50%;background:#e8ecee;display:grid;place-items:center;color:#1a1a1a;font:900 14px Georgia"; centre.textContent = noir ? "1957" : "PTT"; disque.appendChild(centre);
+  d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
+  const appeler = () => { occupe = true;
+    if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
+      setTimeout(() => { fermer(); if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
+        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [-12.7, -4.8], Math.PI); }, 1900); }
+    else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
+
 /* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur) ; dans chaque cage,
    escalier, palier, escalier, et ainsi de suite sur 6 étages ; à chaque étage, un long couloir traverse tout le bâtiment,
    6 portes de chaque côté. Sol et marches en carrelage, murs beiges, ampoules nues : plus on monte, moins elles marchent.
@@ -1414,7 +1535,7 @@ function circulation(L, scene) {
    - palier de l'étage n (z de 1.6 à 3.5), à y = n × 3.4 ; volée 1 (moitié extérieure) de z = 1.6 à -1.4, monte de 1.7 ;
    - palier intermédiaire (z < -1.4) ; volée 2 (moitié intérieure) de z = -1.4 à 1.6, monte au palier de l'étage n + 1 ;
    - le couloir de l'étage n (1 à 6) : |x| < 11.2, z de 1.3 à 3.5, à y = n × 3.4 */
-const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3, N: 6 };
+const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3, N: 6, ZE: 6.0 };   // (ZE : au rez-de-chaussée, le palier de gauche agrandi jusque-là, pour la cabine)
 function construireEtage(A, L, scene) {
   const { H, HP, CX0, CXM, CX1, Z0, Z1, ZC0, N } = ET, HTOT = N * H + HP, MH = .17, MP = .3;
   const carreaux = toileCarreaux(), beige = A.mat({ color: 0xd8cbad, roughness: .95 }), plinthe = A.mat({ color: 0x6b4a2c }), gris = A.mat({ color: 0x8a8174 });
@@ -1449,7 +1570,20 @@ function construireEtage(A, L, scene) {
   const fer = A.mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 });
   for (const sg of [-1, 1]) { const X = v => sg * v, xb = (a, b) => (X(a) + X(b)) / 2, cageW = CX1 - CX0, cz = (Z0 + Z1) / 2;
     A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z0 - .1, false);
-    A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
+    if (sg > 0) A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
+    else { const ZE = ET.ZE, ze = (Z1 + ZE) / 2;   // le palier de gauche, au rez-de-chaussée, agrandi : la cabine téléphonique contre le mur du fond, et l'affiche du film à côté
+      A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT - H, .2), beige, xb(CX0, CX1), H + (HTOT - H) / 2, Z1 + .1, false);
+      A.ajoute(new THREE.BoxGeometry(cageW + .4, H, .2), beige, xb(CX0, CX1), H / 2, ZE + .1, false);
+      for (const xm of [CX1 + .1, CX0 - .1]) A.ajoute(new THREE.BoxGeometry(.2, H, ZE - Z1), beige, X(xm), H / 2, ze, false);
+      A.ajoute(new THREE.BoxGeometry(cageW + .4, .25, ZE - Z1 + .2), A.mat({ color: 0xece4d2 }), xb(CX0, CX1), H - .125, ze, false);
+      sol(cageW, ZE - Z1, xb(CX0, CX1), 0, ze);
+      for (const xm of [CX1, CX0]) A.ajoute(new THREE.BoxGeometry(.03, .12, ZE - Z1), plinthe, X(xm) - sg * .015 * (xm === CX1 ? 1 : -1), .06, ze, false);
+      A.ajoute(new THREE.BoxGeometry(cageW, .12, .03), plinthe, xb(CX0, CX1), .06, ZE - .015, false);
+      ampoule(1, xb(CX0, CX1), H - .25, ze, "ok");
+      const cab = cabineFrance(); cab.position.set(X(CX1 - .6), 0, ZE - .56); cab.rotation.y = -Math.PI / 2; cab.scale.z = -1; scene.add(cab); L.cabineTel = [X(CX1 - .6), ZE - .56]; L.telDest = "etage";   // (l'étage est construit en miroir : on retourne la cabine, pour que les écritures restent à l'endroit)
+      const tA = new THREE.TextureLoader().load("images/bttf/affiche.webp"); tA.colorSpace = THREE.SRGBColorSpace;
+      A.ajoute(new THREE.BoxGeometry(.03, 1.14, .76), A.mat({ color: 0x1a1a1a }), X(CX0 + .015), 1.6, 4.55, false);
+      const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = -Math.PI / 2; af.scale.x = -1; scene.add(af); }
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - Z0), beige, X(CX1 + .1), HTOT / 2, cz, false);   // le mur extérieur, plein
     // le mur côté couloir : plein, sauf l'ouverture sur le couloir à chaque étage
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, ZC0 - Z0), beige, X(CX0 - .1), HTOT / 2, (Z0 + ZC0) / 2, false);
@@ -1521,7 +1655,7 @@ function construireEtage(A, L, scene) {
       || (ax > CXM + .15 && ax < CX1 - .25 && z > Z0 + .25 && z < Z1 - .25)
       || (ax > CX0 - .05 && ax < CX1 - .25 && z > Z0 + .25 && z < -1.45)
       || (ax > CX0 - .05 && ax < CXM - .15 && z > Z0 + .25 && z < Z1 - .3)
-      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < Z1 - .3); };
+      || (ax > CX0 - .05 && ax < CX1 - .25 && z > 1.65 && z < (x < 0 && auRdcP() ? ET.ZE - .25 : Z1 - .3) && !(x < 0 && ax > CX1 - 1.2 && z > ET.ZE - 1.2 && z < ET.ZE - .95)); };   // (la paroi vitrée de la cabine, côté escalier)
   /* toucher un endroit d'un autre étage : on y monte (ou descend) par l'escalier de la cage la plus proche */
   L.allerEtage = (moi, x, z, y) => { const e = moi.etg || { n: 0 }, ax = Math.abs(x), surPalier = ax < CX0 || z >= 1.6;
     const f = Math.max(0, Math.min(N, Math.round((y - (surPalier ? 0 : .85)) / H)));
@@ -1543,10 +1677,10 @@ function construireEtage(A, L, scene) {
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
     pos.y = Math.min(pos.y, py + 2.3);
     if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, py + .4); }
-    else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min(Z1 - .15, pos.z)); }
+    else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx < 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
     return true; };
-  L.interieur = true; L.sansPNJ = true; L.zone = [-CX1 - .5, CX1 + .5, Z0, Z1];
-  L.boite = [-CX1, CX1, Z0, Z1];
+  L.interieur = true; L.sansPNJ = true; L.zone = [-CX1 - .5, CX1 + .5, Z0, ET.ZE];
+  L.boite = [-CX1, CX1, Z0, ET.ZE];
   L.depart = [-12, 2.5]; L.cam = { pos: [-10.5, 2, 2.5], vise: [-14, 1, 0] };
 }
 // un tableau des 3 meilleurs scores, accroché au mur du fond (face vers la salle) ; rend la fonction qui le met à jour
@@ -2903,6 +3037,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       zone: [E.zone[0], E.zone[1], mz(E.zone[3]), mz(E.zone[2])], depart: [E.depart[0], mz(E.depart[1])], cam: { pos: [E.cam.pos[0], E.cam.pos[1], mz(E.cam.pos[2])], vise: [E.cam.vise[0], E.cam.vise[1], mz(E.cam.vise[2])] } });
     L.limites = (x, z) => E.limites(x, mz(z));
     L.hauteur = (x, z, p) => E.hauteur(x, mz(z), p);
+    if (E.cabineTel) { L.cabineTel = [E.cabineTel[0], mz(E.cabineTel[1])]; L.telDest = E.telDest; }
     L.portails = E.portails.map(q => ({ ...q, dans: (x, z) => q.dans(x, mz(z)), indice: q.indice && [q.indice[0], mz(q.indice[1])] }));
     // les boutons « Monter au 1er », … « Redescendre au RDC » : on va jusqu'au couloir de l'étage voulu, par l'escalier de sa cage
     L.monterA = (moi, f) => L.allerEtage(moi, (Math.sign(moi.g.position.x) || -1) * 12.2, mz(2.5), f * ET.H);   // (on s'arrête sur le palier de l'étage)
@@ -4382,6 +4517,7 @@ function chercherAction(t) {
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 2026 avec Doc" };
+    else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
@@ -4416,6 +4552,7 @@ export function agir() {
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
   else if (a.type === "rentrer2026") cineRetour();
+  else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
@@ -4489,7 +4626,8 @@ function allerVers(x, z, envoyer) {
 function changerLieu(id, arrivee, yaw = 0) {
   if (!M) return;
   if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
-  if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
+  if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
+  if (M.cadranEl) { M.cadranEl.remove(); M.cadranEl = null; }
   for (const n of [...M.gens.keys()]) retirerAncien(n);
   // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) q.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
@@ -4562,7 +4700,7 @@ function musiqueBttf(src, boucle = false, fondu = 0) { couperMusiqueBttf(fondu);
 const CAFE_MUS = ["sons/bttf/cafe-johnny.mp3", "sons/bttf/cafe-earth.mp3", "sons/bttf/cafe-rock.mp3"];
 let volCafe = (() => { try { const v = localStorage.getItem("volCafe"); return v == null ? .8 : +v; } catch (e) { return .8; } })();
 function jukeboxCafe(i) { couperMusiqueBttf(600); try { const a = new Audio(CAFE_MUS[i % CAFE_MUS.length]); a.volume = volCafe; a.cafe = true; a.onended = () => { if (musBttf === a) jukeboxCafe(i + 1); }; a.play().catch(() => {}); musBttf = a; if (M) M.cafeI = i % CAFE_MUS.length; } catch (e) {} }
-function reglageVolumeCafe(voir) { if (!M) return; if (!M.volCafeEl && voir) { const d = document.createElement("label"); d.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:rgba(20,20,24,.78);color:#fff;font:700 13px 'Lato',sans-serif";
+function reglageVolumeCafe(voir) { if (!M) return; if (!M.volCafeEl && voir) { const d = document.createElement("label"); d.style.cssText = "position:absolute;left:12px;top:46px;z-index:9;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:rgba(20,20,24,.78);color:#fff;font:700 13px 'Lato',sans-serif";
     d.innerHTML = '🎵 Juke-box <input type="range" min="0" max="1" step="0.05" style="width:110px;accent-color:#e8b02a">'; const r = d.querySelector("input"); r.value = volCafe;
     r.oninput = () => { volCafe = +r.value; try { localStorage.setItem("volCafe", volCafe); } catch (e) {} if (musBttf && musBttf.cafe) musBttf.volume = volCafe; };
     for (const ev of ["pointerdown", "touchstart", "mousedown"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); M.volCafeEl = d; }
@@ -5696,13 +5834,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
       x.fillStyle = "#f6f2e4"; x.beginPath(); x.arc(26, h / 2, 17, 0, 7); x.fill(); x.fillStyle = "#1d3f7a"; x.font = "bold 13px Georgia"; x.fillText("BELL", 26, h / 2 + 1); }));
     ens.emissive = new THREE.Color(0xffffff); ens.emissiveMap = ens.map; ens.emissiveIntensity = .35; B.boite(.86, .22, .04, 0, H2 + .02, D2 / 2 + .02, "#2a2a2a"); B.plan(.84, .2, 0, H2 + .02, D2 / 2 + .041, ens);
     // dedans : le téléphone à pièces (trois fentes, cadran, retour de monnaie), le combiné sur son crochet et son cordon, le carton des tarifs, la petite banquette, l'annuaire, le plafonnier
-    B.avec([0, 1.42, -D2 / 2 + .11], 0, () => { B.boite(.22, .42, .1, 0, 0, 0, "#1a1a1a", { r: .3, m: .3 }); B.boite(.23, .06, .11, 0, .2, 0, "#e2e6ea", { m: .5 });
-      for (let k = 0; k < 3; k++) B.boite(.03, .012, .01, -.06 + k * .06, .2, .056, "#2a2a2a");
-      B.cyl(.07, .07, .015, 0, .04, .055, "#e2e6ea", { rx: Math.PI / 2, m: .5 }); B.plan(.12, .12, 0, .04, .064, M_(T(64, 64, (x) => { x.fillStyle = "#e2e6ea"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#f6f2ea"; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; for (let k = 0; k < 10; k++) { const a2 = -Math.PI / 3 + k * .5; x.beginPath(); x.arc(32 + Math.cos(a2) * 21, 32 + Math.sin(a2) * 21, 5, 0, 7); x.fill(); } }), { tr: true }));
-      B.boite(.07, .05, .04, 0, -.17, .06, "#e2e6ea", { m: .5 }); B.boite(.03, .14, .03, -.135, .05, .03, "#e2e6ea", { m: .5 });
-      const comb = B.objet(new THREE.Mesh(new THREE.CapsuleGeometry(.025, .16, 4, 8), matHV("#141414", .3))); comb.position.set(-.16, .02, .06); for (const dy of [-.1, .1]) B.sphere(.035, -.16, .02 + dy, .07, "#141414", { r: .3 });
-      B.boite(0, 0, 0, 0, 0, 0, "#141414", { geo: new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.16, -.1, .07), new THREE.Vector3(-.2, -.25, .1), new THREE.Vector3(-.1, -.3, .08), new THREE.Vector3(-.06, -.18, .05)]), 16, .007, 5) });
-      B.plan(.16, .1, .2, .2, -.04, M_(T(128, 80, (x, w, h) => { x.fillStyle = "#f2ead0"; x.fillRect(0, 0, w, h); x.fillStyle = "#1d3f7a"; x.font = "bold 12px Georgia"; x.fillText("LOCAL CALLS 5¢", 8, 20); x.fillStyle = "#333"; for (let k = 0; k < 4; k++) x.fillRect(8, 30 + k * 11, w - 16, 3); })), {}); });
+    { const tel = telephoneCrosley(false); B.objet(tel); tel.position.set(0, 1.0, -D2 / 2 + .06); tel.scale.x = -1; }   // (retourné, comme la salle : le combiné reste à gauche)   // le téléphone public noir à cadran
     B.boite(.4, .05, .3, .2, .55, -.2, NOYER2); B.boite(.04, .45, .04, .36, .32, -.06, NOYER); B.boite(.22, .05, .3, -.28, .95, -.27, NOYER2); B.boite(.18, .04, .24, -.28, 1.0, -.27, "#c8302a");   // la banquette, l'annuaire sur sa tablette
     const pl = B.objet(new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xfff6e0, emissive: 0xfff0c8, emissiveIntensity: .9 }))); pl.position.set(0, H2 + .08, 0); pl.rotation.x = Math.PI;
     // la porte pliante, à demi ouverte : deux battants vitrés en V, cadre de noyer, la poignée chromée
@@ -5865,6 +5997,7 @@ function construireHillValley(A, T, L, scene) {
     L.portails.push({ dans: (x, z) => Math.hypot(x - ex, z - ez) < .9, vers: "hv1955", teleport: true, arrivee: [ax, az], yaw: Math.atan2(ex - ax, ez - az), indice: [ex, ez] });
     L.portails.push({ dans: (x, z) => Math.hypot(x - ix, z - iz) < .9, vers: "hv1955", teleport: true, arrivee: [bx, bz], yaw: Math.atan2(ix - bx, iz - bz), indice: [ix, iz] }); }
   if (SL) { const V = SL.vers; L.siegesCafe = { 31: V(-1.3, -4.41), 32: V(-.62, -4.05), 33: V(-.75, -4.95), 34: V(-.45, -3.45), 35: V(-.4, -5.5), 36: V(3.62, -1.07), 37: V(3.62, -2.63), 38: V(3.62, -3.37), 41: V(3.62, -4.93), 42: V(3.62, -5.67) }; }
+  if (SL) { L.cabineTel = SL.vers(3.72, -8.33); L.telDest = "hv"; }
   L.louCafe = SL ? SL.vers(-2.95, -4.2) : [-23, -9.5]; L.louPts = SL ? [[0, -2.4], [.6, -4.1], [-.2, -5.6], [2.3, -3.0], [2.3, -5.3], [.4, -7.5]].map(([a, b]) => SL.vers(a, b)) : null;   // (Lou derrière son comptoir ; les serveurs entre les tables)
   let tPrec = 0;
   L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
