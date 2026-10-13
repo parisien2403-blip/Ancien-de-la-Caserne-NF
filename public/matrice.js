@@ -3219,6 +3219,12 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const texPlay = bouton("#2f9e5b", "play"), texStop = bouton("#c4394a", "stop");
     const btn = new THREE.Sprite(new THREE.SpriteMaterial({ map: texPlay, depthTest: false, transparent: true })); btn.renderOrder = 10;
     btn.position.set(-3.4, .5, dz - .46); btn.scale.set(.3, .3, 1); scene.add(btn); L.boutonDJ = btn;   // sur le devant de la nappe blanche, entre les deux tables
+    // de part et d'autre : ⏮ titre précédent et ⏭ titre suivant (tout le monde) ; le ▶ / ⏹ du milieu reste à l'administrateur
+    const fleche = (sens) => tex(toile(128, 128, (x) => { x.fillStyle = "rgba(0,0,0,.35)"; x.beginPath(); x.arc(64, 68, 50, 0, 7); x.fill();
+      x.fillStyle = "#3a3f6b"; x.beginPath(); x.arc(64, 62, 48, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#fff"; x.stroke(); x.fillStyle = "#fff";
+      x.save(); x.translate(64, 62); x.scale(sens, 1); for (const dx of [-14, 8]) { x.beginPath(); x.moveTo(dx - 4, -20); x.lineTo(dx + 18, 0); x.lineTo(dx - 4, 20); x.fill(); } x.fillRect(28, -20, 6, 40); x.restore(); }));
+    L.boutonsPiste = [[-1, "precedent", .62], [1, "passer", -.62]].map(([sens, action, dx]) => { const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: fleche(sens), depthTest: false, transparent: true })); b.renderOrder = 10;
+      b.position.set(-3.4 - sens * .62, .5, dz - .46); b.scale.set(.22, .22, 1); b.userData.action = action; scene.add(b); return b; });
     L.majBoutonDJ = (joue) => { btn.material.map = joue ? texStop : texPlay; btn.material.needsUpdate = true; };
 
     // lumière de la salle
@@ -3526,6 +3532,8 @@ export async function ouvrir(ctx) {
     const h = ray.intersectObjects(corps).find(q => !q.uv || (Math.abs(q.uv.x - .5) < .16 && q.uv.y > .08 && q.uv.y < .78));   // le corps seul, pas les marges
     if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { dire(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
+    for (const b of M.L.boutonsPiste || []) if (b.visible) { const q = b.position.clone().project(M.camera);   // ⏮ / ⏭ : changer de titre
+      if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(26, r.width * .026)) { envoyerWS({ t: "dj_" + b.userData.action }); b.scale.set(.18, .18, 1); setTimeout(() => b.scale.set(.22, .22, 1), 160); return; } }
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
@@ -3765,6 +3773,7 @@ export async function ouvrir(ctx) {
     if (Math.abs(vol - (M.volume ?? -1)) > .015) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
+    for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t);
     if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
@@ -3866,7 +3875,7 @@ function abimerCabine(g) { const Lc = 1.05, bois = [0x7a6648, 0x6a5638, 0x8a7656
 function apocalypse(scene, L, base) {
   texturesApo();
   L.apo = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;
-  if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; }
+  if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   L.portails = (L.portails || []).filter(q => !q.pasApo); L.messVitres = null;
   if (L.cabineObj) abimerCabine(L.cabineObj);
