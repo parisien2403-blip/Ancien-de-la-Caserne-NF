@@ -6154,6 +6154,8 @@ function animerHV(now) {
   { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
     if (dedans && !(musBttf && musBttf.cafe)) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
     reglageVolumeCafe(dedans);
+    // vus du dehors (par la vitrine), il n'y a que Lou dans son café : les autres n'apparaissent qu'une fois entré (sinon on verrait leurs doubles en double)
+    { const vu = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)); for (const [id] of HABITANTS) { const p = id !== 43 && M.gens.get(-id); if (p) p.g.visible = vu; } }
     // Biff embête Marty au comptoir (comme dans le film)
     if (dedans && !M.balade && now > (M.biffT || 0) && M.gens.has(-32)) { M.biffT = now + 7000 + Math.random() * 4000; const k = M.biffK = ((M.biffK ?? -1) + 1) % 4;
       dire(-32, ["Hé, McFly ! T'as quelque chose à me dire, mauviette ?", "Mauviette !", "Qu'est-ce que tu regardes, mauviette ? Allez, dégage de mon tabouret !", "T'as fait mes devoirs, McFly ? Mauviette !"][k]);
