@@ -42,7 +42,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "z-rue", "z-grande", "z-fetes", "z-etage", "bttf-cour", "hv1955"];
+const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "bttf-cour", "hv1955"];
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10],
   ["rue", -53, 1], ["rue", -32, 16], ["rue", -20, -2], ["rue", 1, -20], ["rue", 13, 4], ["rue", 31, -2], ["rue", 46, 1], ["rue", 58, -5], ["fetes", -2.8, 3], ["fetes", .2, 9], ["fetes", -2.8, 12]];
@@ -428,6 +428,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
+      if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || ((m.t === "dj_fini" || m.t === "dj_auto") && a.lieu === "grande"))) {
@@ -480,7 +481,8 @@ export class Compteur extends DurableObject {
     } else if (m.t === "lumiere" && a.admin) {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 0 %, éteinte, à 100 %), pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1));
-      await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau });
+      if (m.salle === "mess") { await this.ctx.storage.put("lumiere_mess", niveau); for (const l of ["mess", "grande"]) this.diffuser(l, { t: "lumiere", salle: "mess", niveau }); }   // (le mess : on voit sa lumière de la cour)
+      else { await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau }); }
     } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)
       a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < 20 ? m.i : null; ws.serializeAttachment(a);
