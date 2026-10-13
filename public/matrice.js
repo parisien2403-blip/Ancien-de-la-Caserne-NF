@@ -1604,7 +1604,6 @@ function ouvrirCadenas() { if (!M || M.cadranEl) return;
       else if (ent) changerLieu(ent.vers, ent.arrivee, ent.yaw, true); }, 1100); }; }
 export function afficheTaille(v) { envoyerWS({ t: "affiche_taille", v: +v }); }
 function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
-  preparerLieu(dest === "etage" ? "hv1955" : "etage");   // (le lieu d'arrivée se construit pendant qu'on compose : pas d'image figée au moment du voyage)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
   const fond = noir ? "#0e0e10" : "#a4a6a8", trou = noir ? "#f4ecd4" : "#2a2a2c", txt = noir ? "#1a1a1a" : "#f2f2ee";
   d.innerHTML = `<div style="background:${noir ? "#151517" : "#8e9092"};border-radius:18px;padding:16px 18px;box-shadow:0 10px 40px #000;display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#fff">
@@ -5476,7 +5475,6 @@ function cineCour() {
   const car = creerDelorean(); car.position.y = 0; M.scene.add(car); poser(car, 0, 30, 0); const feu = [];
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1600); M.arriveeHV = true; changerLieu("hv1955", [-22, 16], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin);
-  preparerLieu("hv1955");   // (Hill Valley se construit pendant que la DeLorean arrive : pas d'image figée au départ)
   sonBruit(2.5, 220, .5);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const tr = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera, PAUSE = 5.4;
     // une fois monté et les portes fermées : le compteur des circuits temporels ; la voiture ne démarre qu'après
