@@ -2270,6 +2270,15 @@
   }
   // le son est ouvert d'office ; le navigateur n'autorise la lecture qu'après un geste : au premier toucher dans la Matrice, la musique part
   document.addEventListener("pointerdown", () => { if (mxOuverte && djEcoute && djEtat.courant && djAudio.paused) djSynchro(); }, true);
+  // la musique coupée (réseau qui flanche, téléphone qui suspend le son) : on recharge le titre et on se recale au bon moment, tout seul
+  let djReprise = 0;
+  const djRelancer = () => { const c = djEtat.courant; if (!c || !djEcoute || !djVolume || mxLieu === "etage" || Date.now() < djReprise) return; djReprise = Date.now() + 4000;
+    const src = djAudio.src; djAudio.removeAttribute("src"); djAudio.load(); djAudio.src = src; djAudio.onloadedmetadata = () => djSynchro(); djAudio.load(); };
+  djAudio.onerror = () => setTimeout(djRelancer, 1500);
+  djAudio.onstalled = () => setTimeout(() => { if (djAudio.readyState < 3) djRelancer(); }, 6000);
+  setInterval(() => { const c = djEtat.courant; if (!c || !djEcoute || !mxOuverte || !(mxLieu === "fetes" || mxLieu === "grande") || document.hidden) return;
+    const pos = (Date.now() - c.debut) / 1000; if (pos < 0 || (c.duree && pos > c.duree)) return;
+    if (djAudio.paused && djAudio.src) djAudio.play().catch(() => {}); else if (!djAudio.paused && Math.abs(djAudio.currentTime - pos) > 4) djSynchro(); }, 5000);   // (la veille : la musique repart si elle s'est arrêtée)
   djAudio.ontimeupdate = () => { const d = djAudio.duration; $("djProgres").style.width = d ? (djAudio.currentTime / d * 100) + "%" : "0"; };
   djAudio.onended = () => { const c = djEtat.courant; if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } };
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
@@ -2859,6 +2868,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.94", "13 octobre 2026", ["Salle des fêtes : si la musique se coupe (réseau qui flanche, téléphone qui suspend le son), elle repart toute seule, calée au bon moment"]],
     ["3.93", "13 octobre 2026", ["Matrice : la connexion reste éveillée (signal toutes les 25 s) et se reconnecte toute seule après une coupure de réseau, aussitôt que le réseau revient",
       "Mise à jour automatique : plus de rechargement en pleine Matrice ou en pleine salle des fêtes (elle attend qu'on en sorte)"]],
     ["3.92", "13 octobre 2026", ["Accueil : 🟢 En ce moment à la caserne — les anciens qui ont l'appli ouverte, avec leur photo"]],
