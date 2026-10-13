@@ -2347,7 +2347,12 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const briqueSeule = A.mat({ map: tex(toileCote(true, false)) });
     for (const s of (copie === "fetes" ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
-      A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2); }
+      A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2);
+      // au-dessus de la porte : la petite plaque bleu marine, « S » (l'aile de droite, celle de la cabine téléphonique) ou « R »
+      const lettre = s > 0 ? "S" : "R", pq = toile(128, 128, (x) => { x.fillStyle = "#e8e4da"; x.beginPath(); x.roundRect(0, 0, 128, 128, 18); x.fill(); x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(7, 7, 114, 114, 14); x.fill();
+        x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(lettre, 64, 70); });
+      A.ajoute(new THREE.BoxGeometry(.04, .44, .44), A.mat({ color: 0xe8e4da }), s * (AX0 - .02), 3.5, 13.75);
+      const plq = A.ajoute(new THREE.PlaneGeometry(.42, .42), A.mat({ map: tex(pq), roughness: .4 }), s * (AX0 - .042), 3.5, 13.75, false); plq.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; }
     // la nuit : fenêtres allumées sur cette façade aussi
     for (let f = 0; f < 5; f++) for (const cx of CF) { (L.fenetres = L.fenetres || []).push([cx, HSOC + .55 + f * 3 + .875, ZF - .02, 1.4, 1.65, Math.PI]);
       if (alea() > .26) continue;
