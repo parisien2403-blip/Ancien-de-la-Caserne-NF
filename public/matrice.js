@@ -1334,7 +1334,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4) {
 }
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
-const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12 };   // (LM : la demi-largeur des marches, et du passage)
+const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12 };   // (LM : la demi-largeur des marches, et du passage)
 C3.hp = C3.NM * C3.HM;   // (le sol du porche, en haut des marches)
 function troisiemeCour(A, L, scene) {
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
@@ -1367,7 +1367,7 @@ function troisiemeCour(A, L, scene) {
       x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100); x.fillRect(X, Y + 46, 68, 3); x.fillStyle = "#d9d5cc"; x.fillRect(X - 10, Y + 104, 88, 8); } }
   const tF = tex(cF);
   // de chaque côté des marches, tout le long de l'immeuble : un muret blanc qui forme un bac, rempli de buissons
-  { const blanc = A.mat({ color: 0xeceae4, roughness: .85 }), terre = A.mat({ color: 0x3a2a1e, roughness: 1 }), HMU = .7, PB = 1.4, EP = .14;
+  { const blanc = A.mat({ color: 0xeceae4, roughness: .85 }), terre = A.mat({ color: 0x3a2a1e, roughness: 1 }), HMU = .7, PB = C3.PB, EP = .14;
     const verts = [0x2e5a2a, 0x3a6a30, 0x284e24, 0x46763a].map(c => A.mat({ color: c, roughness: .9 })), boule = new THREE.IcosahedronGeometry(1, 1);
     graine = 77;
     for (const sg of [-1, 1]) { const xa = LM, xb = X, lg = xb - xa, xc = sg * (xa + lg / 2), zf = z1 + PB;
@@ -1376,7 +1376,12 @@ function troisiemeCour(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(lg, .06, EP + .04), A.mat({ color: 0xd9d6ce }), xc, HMU + .03, zf - EP / 2, false);   // la couvertine
       A.ajoute(new THREE.BoxGeometry(lg - EP, .05, PB - EP), terre, xc, HMU - .12, z1 + (PB - EP) / 2, false);           // la terre
       for (let x0 = xa + .45; x0 < xb - .3; x0 += .62 + alea() * .25) { const r = .38 + alea() * .2, b = A.ajoute(boule, verts[Math.floor(alea() * 4)], sg * x0, HMU + r * .45, z1 + .3 + alea() * (PB - .75), true);
-        b.scale.set(r * (1 + alea() * .25), r * (.8 + alea() * .3), r); b.rotation.y = alea() * 6; } } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+        b.scale.set(r * (1 + alea() * .25), r * (.8 + alea() * .3), r); b.rotation.y = alea() * 6; }
+      // le trottoir, au pied du bac, tout du long ; sa bordure côté cour
+      const tw = C3.TW, ht = C3.HT, tro = A.mat({ color: 0xb4b1aa, roughness: .95 }), bord = A.mat({ color: 0x8e8b85, roughness: .9 });
+      A.ajoute(new THREE.BoxGeometry(lg, ht, tw), tro, xc, ht / 2, zf + tw / 2, false);
+      A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false);
+      for (let k = 1; k < lg / 1.2; k++) A.ajoute(new THREE.BoxGeometry(.02, .005, tw - .16), bord, sg * (xa + k * 1.2), ht + .002, zf + (tw - .16) / 2, false); } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   const solP = A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
@@ -1387,7 +1392,8 @@ function troisiemeCour(A, L, scene) {
   A.ajoute(new THREE.PlaneGeometry(16, 11), new THREE.MeshBasicMaterial({ map: loin }), 0, hp + 5.5, z1 - PP - 10, false);
   const solL = A.ajoute(new THREE.PlaneGeometry(14, 10), A.mat({ map: tex(textures().paves, 6, 4) }), 0, hp + .01, z1 - PP - 5, false); solL.rotation.x = -Math.PI / 2;
   // la hauteur du sol : les marches, puis le porche
-  L.hauteur = (x, z) => { if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM; return 0; };
+  L.hauteur = (x, z) => { if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
+    if (Math.abs(x) >= LM && z < z1 + C3.PB + C3.TW && z > z1 + C3.PB - .1) return C3.HT; return 0; };   // (les marches, le passage, les trottoirs)
 }
 function deuxiemeCour(A, L, scene) {
   const { z0, z1, x: X } = C2, prof = z0 - z1, zc = (z0 + z1) / 2;
@@ -2920,7 +2926,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
       || (Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                                // le passage du bâtiment d'en face
-      || (Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !(Math.abs(x) >= C3.LM && z < C3.z1 + C3.NM * C3.PM))   // la troisième cour (on ne monte que par les marches)
+      || (Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !(Math.abs(x) >= C3.LM && z < C3.z1 + C3.PB + .25))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
       || (Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP + .4)                                 // le passage, en haut des marches
       || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
