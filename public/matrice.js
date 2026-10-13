@@ -1625,9 +1625,12 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
-      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(2600); vueFace(2600); } }, 700);   // (la musique du voyage, et les éclairs qui traversent la cabine)
-      setTimeout(() => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
-        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }, 3300); }
+      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(16000); vueFace(16000); } }, 700);   // (les éclairs durent jusqu'au départ)   // (la musique du voyage, et les éclairs qui traversent la cabine)
+      const versId = dest === "etage" ? "hv1955" : "etage", t0v = performance.now(); let parti = false;
+      const partir = () => { if (parti || !M) return; parti = true; const reste = 3300 - (performance.now() - t0v); setTimeout(depart, Math.max(0, reste)); };
+      setTimeout(() => preparerLieu(versId).then(partir), 900); setTimeout(partir, 15000);   // (le lieu d'arrivée se prépare pendant les éclairs ; on part dès qu'il est prêt)
+      const depart = () => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
+        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }; }
     else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
 
 /* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur) ; dans chaque cage,
@@ -5478,6 +5481,7 @@ function cineCour() {
   const car = creerDelorean(); car.position.y = 0; M.scene.add(car); poser(car, 0, 30, 0); const feu = [];
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1600); M.arriveeHV = true; changerLieu("hv1955", [-22, 16], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin);
+  let pretHV = false; setTimeout(() => preparerLieu("hv1955").then(() => { pretHV = true; }), 2500);   // (Hill Valley se prépare pendant que la DeLorean arrive)
   sonBruit(2.5, 220, .5);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const tr = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera, PAUSE = 5.4;
     // une fois monté et les portes fermées : le compteur des circuits temporels ; la voiture ne démarre qu'après
@@ -5502,7 +5506,7 @@ function cineCour() {
       cam.position.lerp(new THREE.Vector3(-4, 1.5, 9.5), .06); cam.lookAt(x, .7, z - 2); }
     else { if (car.visible) { car.visible = false; eclairBlanc(1500); sonBruit(1.6, 260, 1); sonBruit(.25, 5000, .7); setTimeout(() => M && M.cine && logoCine(5600), 450); }
       cam.position.lerp(new THREE.Vector3(-1.2, 1.4, 9.5), .04); cam.lookAt(.7, .3, -8);
-      if (t > 20.6) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
+      if (t > 20.6 && (pretHV || t > 32)) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
     animerFeu(feu, now, 60000); } };
 }
 // 2. à Hill Valley : l'éclair, la DeLorean qui surgit et glisse jusqu'au trottoir, Doc et nous qui descendons
@@ -6695,10 +6699,11 @@ export const _etatMatrice = () => M;   // (pour les essais)
    pour qu'en la passant on y soit tout de suite, sans attendre */
 function libererScene(sc) { if (!sc) return; const vues = new Set();
   sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t) && !t.isRenderTargetTexture && !t.garder) { vues.add(t); t.dispose(); } } m.dispose(); } }); }   // (jamais les reflets préparés une fois pour toutes)
-function preparerLieu(id) { if (!M || !M.L || M.lieu === id) return; M.prets = M.prets || {}; if (M.prets[id]) return; const lieu = M.lieu;
-  setTimeout(() => { try { if (!M || M.lieu !== lieu || M.prets[id]) return; const q = construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
-    const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
-    if (M.rendu.compileAsync) M.rendu.compileAsync(q.scene, M.camera).catch(() => {}); } catch (e) {} }, 60); }
+// préparer un lieu avant d'y aller (pendant une cinématique) : on le construit, puis la carte graphique prépare ses « shaders » en tâche de fond
+// (sur PC, sous Windows, cette préparation peut prendre de longues secondes : faite au dernier moment, elle figeait l'image) ; renvoie une promesse
+function preparerLieu(id) { return new Promise(ok => { if (!M || !M.L || M.lieu === id) return ok(); M.prets = M.prets || {}; if (M.prets[id] && M.prets[id].compile) return M.prets[id].compile.then(ok, ok); const lieu = M.lieu;
+  setTimeout(() => { try { if (!M || M.lieu !== lieu) return ok(); const q = M.prets[id] || construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
+    q.compile = M.rendu.compileAsync ? M.rendu.compileAsync(q.scene, M.camera).catch(() => {}) : Promise.resolve(); q.compile.then(ok, ok); } catch (e) { ok(); } }, 30); }); }
 function preparerVoisin() {
   const now = performance.now(); if (!M || !M.L || M.preparation || M.cine || now < (M.prepT || 0)) return; M.prepT = now + 700;   // (jamais pendant une cinématique)
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
