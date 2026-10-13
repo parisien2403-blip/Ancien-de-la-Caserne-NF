@@ -1298,7 +1298,7 @@
             <div style="min-width:0;flex:1"><div class="kicker">🎧 Chez le DJ</div><b id="djTitre">Pas de musique pour l'instant</b><small id="djPar"></small>
               <div class="dj-barre"><div id="djProgres"></div></div></div></div>
           <div class="dj-actions"><button class="btn small" type="button" id="djEcouter">🔊 Écouter</button>
-            <button class="btn small alt" type="button" id="djPasser">⏭ Suivant</button><button class="btn small alt" type="button" id="djStop">⏹ Arrêter</button>
+            <button class="btn small alt" type="button" id="djPrecedent">⏮ Précédent</button><button class="btn small alt" type="button" id="djPasser">⏭ Suivant</button><button class="btn small alt" type="button" id="djStop">⏹ Arrêter</button>
             <button class="btn small alt" type="button" id="djVersFetes">➕ Ajouter une musique</button></div>
           <div class="dj-titre-liste" id="djFileTitre" hidden>À suivre</div><ol class="dj-file" id="djFile"></ol>
           <div class="dj-titre-liste">La discothèque des anciens <small id="djNb"></small></div>
@@ -2236,7 +2236,7 @@
   function djSynchro() {
     const c = djEtat.courant;
     $("djDisque").classList.toggle("tourne", !!(c && djEcoute));
-    $("djTitre").textContent = c ? c.titre : "Pas de musique pour l'instant";
+    $("djTitre").textContent = c ? c.titre : "Pas de musique pour l'instant"; $("djPrecedent").disabled = !(djEtat.histo && djEtat.histo.length);
     $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}${c.par === "la discothèque" ? "enchaînée automatiquement" : "choisie par " + c.par}` : "Choisis un titre dans la discothèque ci-dessous";
     $("djEcouter").textContent = djEcoute ? "🔇 Couper le son" : "🔊 Écouter";
     $("djFileTitre").hidden = !djEtat.file.length;
@@ -2270,6 +2270,7 @@
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djEcouter").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
   $("djPasser").onclick = () => MX && MX.dj("passer");
+  $("djPrecedent").onclick = () => MX && MX.dj("precedent");
   $("djStop").onclick = async () => { if (await garde("La musique s'arrêtera pour tout le monde dans la salle.", { titre: "Arrêter la musique ?", annuler: true, ok: "Arrêter" })) MX && MX.dj("stop"); };
   async function chargerDisco() {
     try { djDisco = await api("GET", "/api/musiques"); } catch (e) { djDisco = []; }
