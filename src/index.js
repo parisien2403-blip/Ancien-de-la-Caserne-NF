@@ -353,7 +353,9 @@ export class Compteur extends DurableObject {
 
   async changerAvatar(token, x) {
     const moi = this.moi(token);
-    const tenue = TENUES_MATRICE.includes(x.tenue) ? x.tenue : "civil";
+    const TENUES_MEMBRE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume"];   // (les tenues des personnages : l'administrateur seul ; on garde celle qu'il a déjà)
+    const avant = this.sql.exec("SELECT av_tenue FROM membres WHERE token = ?", token).toArray()[0];
+    const tenue = TENUES_MATRICE.includes(x.tenue) && (moi.admin || TENUES_MEMBRE.includes(x.tenue) || (avant && avant.av_tenue === x.tenue)) ? x.tenue : "civil";
     const couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#22324f";
     const borne = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
     const R = x.reglage || {}, reglage = JSON.stringify({ k: borne(R.k, .4, 2.5, 1), dx: borne(R.dx, -80, 80, 0), dy: borne(R.dy, -80, 80, 0), r: borne(R.r, -45, 45, 0), l: borne(R.l, .7, 1.6, 1), h: borne(R.h, .75, 1.3, 1) });
