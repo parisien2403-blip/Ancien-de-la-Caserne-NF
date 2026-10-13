@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
+  robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
@@ -45,7 +45,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
+    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -92,8 +92,20 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
+    else if (t === "robelongue") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
     else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
+    // les tenues du quotidien : jupe et chemisier, tailleur, chemisier et jean, salopette, robe longue
+    if (t === "jupe" || t === "tailleur") { x.fillStyle = t === "jupe" ? (o.bas || "#26324e") : assombrir(c, .82); x.beginPath(); x.moveTo(60, 234); x.lineTo(140, 234); x.lineTo(156, 336); x.lineTo(44, 336); x.closePath(); x.fill();
+      x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(60, 232, 80, 5);
+      if (!profil && o.pose !== "dos") { if (t === "jupe") { x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 166); x.lineTo(114, 146); x.lineTo(108, 146); x.lineTo(100, 158); x.lineTo(92, 146); x.fill(); for (const y of [176, 196, 216]) { x.beginPath(); x.arc(100, y, 2.2, 0, 7); x.fill(); } }
+        else { x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(100, 196); x.closePath(); x.fill(); x.fillStyle = assombrir(c, .7); x.beginPath(); x.moveTo(84, 146); x.lineTo(100, 200); x.lineTo(92, 206); x.lineTo(74, 156); x.closePath(); x.moveTo(116, 146); x.lineTo(100, 200); x.lineTo(108, 206); x.lineTo(126, 156); x.closePath(); x.fill();
+          x.fillStyle = "#d8c27a"; for (const y of [212, 226]) { x.beginPath(); x.arc(104, y, 2.6, 0, 7); x.fill(); } } } }
+    if (t === "chemisier" && !profil && o.pose !== "dos") { x.fillStyle = "rgba(255,255,255,.88)"; x.beginPath(); x.moveTo(82, 146); x.lineTo(100, 170); x.lineTo(96, 176); x.lineTo(78, 152); x.closePath(); x.moveTo(118, 146); x.lineTo(100, 170); x.lineTo(104, 176); x.lineTo(122, 152); x.closePath(); x.fill();
+      x.fillStyle = "rgba(0,0,0,.25)"; for (const y of [186, 206, 226, 246]) { x.beginPath(); x.arc(100, y, 2.2, 0, 7); x.fill(); } x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(99, 172, 2, 90); }
+    if (t === "salopette" && o.pose !== "dos") { const jean = o.bas || "#3d5a80"; x.fillStyle = jean; if (!profil) { x.beginPath(); x.roundRect(74, 188, 52, 76, 6); x.fill(); x.fillRect(74, 146, 9, 46); x.fillRect(117, 146, 9, 46);
+        x.fillStyle = "#d8c27a"; for (const X of [79, 121]) { x.beginPath(); x.arc(X, 192, 3.2, 0, 7); x.fill(); } x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = 1.5; x.setLineDash([3, 3]); x.strokeRect(86, 202, 28, 22); x.setLineDash([]); } else x.fillRect(74, 200, 54, 64); }
+    if (t === "robelongue" && !profil && o.pose !== "dos") { x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(62, 226, 76, 7); x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; for (let k = 0; k < 5; k++) { x.beginPath(); x.moveTo(70 + k * 15, 240); x.lineTo(56 + k * 22, 370); x.stroke(); } }
     // le blouson rouge façon Thriller : les bandes noires en V, la ceinture noire
     if (t === "thriller" && !profil && o.pose !== "dos") { x.strokeStyle = "#141414"; x.lineWidth = 7; x.lineCap = "butt";
       x.beginPath(); x.moveTo(64, 150); x.lineTo(98, 238); x.moveTo(136, 150); x.lineTo(102, 238); x.stroke();
