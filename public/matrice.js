@@ -3564,10 +3564,12 @@ export async function ouvrir(ctx) {
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const T = textures();
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
+  try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
+    GPU_MODESTE = /Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom); M_GPU = nom; } catch (e) {}
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
-  const resMax = Math.min(devicePixelRatio, 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
+  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
@@ -4488,6 +4490,7 @@ function animerApo(t, dt) {
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
+let GPU_MODESTE = false, M_GPU = "";   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -4522,6 +4525,11 @@ function construireScene(id) {
   if (estApo(id)) apocalypse(scene, L, baseLieu(id));
   const repere = new THREE.Mesh(new THREE.RingGeometry(.35, .5, 32), new THREE.MeshBasicMaterial({ color: 0xf6d465, transparent: true, opacity: 0 }));
   repere.rotation.x = -Math.PI / 2; repere.position.y = .04; scene.add(repere);
+  // les lampes (ampoules, lampadaires) n'ont jamais d'ombre portée : une ombre de lampe oblige à redessiner tout le décor six fois à chaque image (c'était le cas à Hill Valley)
+  // sur une carte graphique modeste (Intel intégrée…), l'ombre du soleil est un peu moins fine et les textures moins filtrées : le reste est identique
+  scene.traverse(o => { if ((o.isPointLight || o.isSpotLight) && o.castShadow) o.castShadow = false;
+    if (GPU_MODESTE) { if (o.isDirectionalLight && o.castShadow) o.shadow.mapSize.set(1024, 1024);
+      if (o.isMesh) for (const m of [].concat(o.material)) for (const k in m) { const t = m[k]; if (t && t.isTexture && t.anisotropy > 2) t.anisotropy = 2; } } });
   return { scene, L, repere };
 }
 
