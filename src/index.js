@@ -429,6 +429,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
+      if (m.lieu === "mess") for (const z of ["messcuisine", "messbas"]) { const n = await this.ctx.storage.get("lumiere_" + z); ws.send(JSON.stringify({ t: "lumiere", salle: z, niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || ((m.t === "dj_fini" || m.t === "dj_auto") && a.lieu === "grande"))) {
@@ -481,7 +482,8 @@ export class Compteur extends DurableObject {
     } else if (m.t === "lumiere" && a.admin) {
       // seul l'administrateur règle la luminosité de la salle des fêtes (de 0 %, éteinte, à 100 %), pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1));
-      if (m.salle === "mess") { await this.ctx.storage.put("lumiere_mess", niveau); for (const l of ["mess", "grande"]) this.diffuser(l, { t: "lumiere", salle: "mess", niveau }); }   // (le mess : on voit sa lumière de la cour)
+      if (m.salle === "messcuisine" || m.salle === "messbas") { await this.ctx.storage.put("lumiere_" + m.salle, niveau); this.diffuser("mess", { t: "lumiere", salle: m.salle, niveau }); }   // (la cuisine et le sous-sol du mess : chacun sa lumière)
+      else if (m.salle === "mess") { await this.ctx.storage.put("lumiere_mess", niveau); for (const l of ["mess", "grande"]) this.diffuser(l, { t: "lumiere", salle: "mess", niveau }); }   // (le mess : on voit sa lumière de la cour)
       else { await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau }); }
     } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)

@@ -2131,7 +2131,7 @@ function construireMess(A, L, scene) {
   A.ajoute(new THREE.BoxGeometry(.34, .08, PA[1] - PA[0] + .08), bois, XC, 2.35, (PA[0] + PA[1]) / 2, false);
   const dansCloison = (x, z) => cloisons.some(([axe, pos, de, a]) => axe === "z" ? Math.abs(x - pos) < .4 && z > de - .25 && z < a + .25 : Math.abs(z - pos) < .4 && x > de - .25 && x < a + .25);
   // les suspensions : globes opalins au bout d'une tige, en deux rangées ; leurs lampes
-  const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 }), lampes = [];
+  const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 }), lampes = [], globeCuis = globe.clone(), globeBas = globe.clone(), lampesCuis = [], lampesBas = [];
   for (const x of [-7.4, -2.6, 2.6]) for (let k = 0; k < 4; k++) { const z = Z0 + 3 + k * 6;
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globe); gl.position.set(x, HT - 1.28, z); scene.add(gl); }
@@ -2227,8 +2227,8 @@ function construireMess(A, L, scene) {
     poste(-5.1, RZ0 + .37, 0, 3.0, "plan", YB); }
   for (const z of [RZ0 + 3, RZ1 - 3]) { const x = RCX + 1;
     A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, -.34, z, false);
-    const gl = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), globe); gl.position.set(x, -.58, z); scene.add(gl);
-    const l = new THREE.PointLight(0xfff0d8, 7, 13, 1.4); l.position.set(x, -.9, z); scene.add(l); lampes.push(l); }
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), globeBas); gl.position.set(x, -.58, z); scene.add(gl);
+    const l = new THREE.PointLight(0xfff0d8, 7, 13, 1.4); l.position.set(x, -.9, z); scene.add(l); lampesBas.push(l); }
   const surEsc = (x, z) => x > SX0 && x < SX1 && z > SZ0 && z < SZ1;
   let nivC = 0;   // le niveau (0 : en haut, 1 : en bas) de celui qui se déplace
   const niv = p => (p ? p.nivMess : (M && M.moiNum && M.gens.get(M.moiNum) || {}).nivMess) || 0;
@@ -2239,16 +2239,61 @@ function construireMess(A, L, scene) {
   mur("z", RX0 - .15, RZ0 - .3, RZ1 + .3, 1, 0, HT, true); mur("z", RX1 + .15, RZ0 - .3, RZ1 + .3, -1, 0, HT, true); mur("x", RZ1 + .15, RX0, RX1, -1, 0, HT, true);
   for (const z of [RZ0 + 3.5, RZ1 - 3.5]) { const x = RCX;
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
-    const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globe); gl.position.set(x, HT - 1.28, z); scene.add(gl);
-    const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampes.push(l); }
+    const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globeCuis); gl.position.set(x, HT - 1.28, z); scene.add(gl);
+    const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampesCuis.push(l); }
   const dansPiece = (x, z) => !((nivC ? obsBas : obsCuis).some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (nivC ? SZ0 - .5 : SZ0 + .3))) && !(nivC && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
   // la courette, par l'ouverture d'en bas : la même largeur que la pièce, sans plafond ; le ciel, et un pan de mur en brique rouge de la caserne
   const CX0 = RX1 + .3, CX1 = RX1 + 5.3, CZ0 = 15.0, CZ1 = 22.0, CW = CX1 - CX0, CL = CZ1 - CZ0;
   { const o = A.ajoute(new THREE.PlaneGeometry(CW + .3, CL), carM(CW + .3, CL), (CX0 + CX1) / 2 - .15, YB, (CZ0 + CZ1) / 2, false); o.rotation.x = -Math.PI / 2; }
   { const o = A.ajoute(new THREE.PlaneGeometry(.32, OP[1] - OP[0]), carM(.32, OP[1] - OP[0]), RX1 + .15, YB + .002, (OP[0] + OP[1]) / 2, false); o.rotation.x = -Math.PI / 2; }   // le seuil
-  for (const [zz, sg] of [[CZ0, 1], [CZ1, -1]]) { A.ajoute(new THREE.BoxGeometry(CW + .3, -YB + 1.0, .3), A.mat({ map: tex(faienceM, CW / 1.2, 3.5), roughness: .25 }), (CX0 + CX1) / 2 - .15, (YB + 1) / 2, zz - sg * .15, false);
+  for (const [zz, sg] of [[CZ1, -1]]) { A.ajoute(new THREE.BoxGeometry(CW + .3, -YB + 1.0, .3), A.mat({ map: tex(faienceM, CW / 1.2, 3.5), roughness: .25 }), (CX0 + CX1) / 2 - .15, (YB + 1) / 2, zz - sg * .15, false);
     A.ajoute(new THREE.BoxGeometry(CW + .3, .08, .4), A.mat({ color: 0xd8d2c4, roughness: .7 }), (CX0 + CX1) / 2 - .15, 1.04, zz - sg * .15, false); }
-  carreler("x", CZ0, 1, CX0 - .3, CX1, YB, 1); carreler("x", CZ1, -1, CX0 - .3, CX1, YB, 1); carreler("z", RX1 + .3, 1, CZ0, OP[0], YB, 1); carreler("z", RX1 + .3, 1, OP[1], CZ1, YB, 1); carreler("z", RX1 + .3, 1, OP[0], OP[1], HO, 1);
+  // le mur de droite de la courette : deux portes marron ouvertes, sur deux toilettes à la turque (sol carrelé comme le sol, murs beige jauni)
+  const WC = [[-2.55, -1.05], [-.95, .55]], PW = .75, HP = 2.1, YP = YB + HP, WZ0 = CZ0 - 1.55, HWC = 2.7;
+  const portesWC = WC.map(([a, b]) => [(a + b) / 2 - PW / 2, (a + b) / 2 + PW / 2]);
+  { const fai = (w, h) => A.mat({ map: tex(faienceM, w / 1.2, h / 1.2), roughness: .25 }), bords = [CX0 - .3, ...portesWC.flat(), CX1], zc = CZ0 - .15;
+    for (let i = 0; i < bords.length; i += 2) { const a = bords[i], b = bords[i + 1]; A.ajoute(new THREE.BoxGeometry(b - a, -YB + 1, .3), fai(b - a, -YB + 1), (a + b) / 2, (YB + 1) / 2, zc, false); carreler("x", CZ0, 1, a, b, YB, 1); }
+    for (const [a, b] of portesWC) { const se = A.ajoute(new THREE.PlaneGeometry(b - a, .34), carM(b - a, .34), (a + b) / 2, YB + .002, zc, false); se.rotation.x = -Math.PI / 2; }   // les seuils
+    for (const [a, b] of portesWC) { A.ajoute(new THREE.BoxGeometry(b - a, 1 - YP, .3), fai(b - a, 1 - YP), (a + b) / 2, (YP + 1) / 2, zc, false); carreler("x", CZ0, 1, a, b, YP, 1); }
+    A.ajoute(new THREE.BoxGeometry(CW + .3, .08, .4), A.mat({ color: 0xd8d2c4, roughness: .7 }), (CX0 + CX1) / 2 - .15, 1.04, zc, false);
+    const jauni = A.mat({ color: 0xd8c690, roughness: .85 }), marron = A.mat({ color: 0x5a3420, roughness: .55 }), cadre = A.mat({ color: 0x3e2414, roughness: .6 }), email = A.mat({ color: 0xf2f0ea, roughness: .25 });
+    for (let i = 0; i < 2; i++) { const [a, b] = WC[i], [pa, pb] = portesWC[i], cx = (a + b) / 2, cz = (WZ0 + CZ0 - .3) / 2, w = b - a, d = CZ0 - .3 - WZ0;
+      { const o = A.ajoute(new THREE.PlaneGeometry(w, d), carM(w, d), cx, YB + .001, cz, false); o.rotation.x = -Math.PI / 2; }
+      A.ajoute(new THREE.BoxGeometry(w + .2, .1, d + .2), jauni, cx, YB + HWC + .05, cz, false);   // le plafond
+      A.ajoute(new THREE.BoxGeometry(w + .2, HWC, .1), jauni, cx, YB + HWC / 2, WZ0 - .05, false);   // le fond
+      for (const xx of [a - .05, b + .05]) A.ajoute(new THREE.BoxGeometry(.1, HWC, d), jauni, xx, YB + HWC / 2, cz, false);   // les côtés
+      A.ajoute(new THREE.BoxGeometry(w, HWC - HP, .02), jauni, cx, YP + (HWC - HP) / 2, CZ0 - .31, false);
+      for (const xx of [pa - .03, pb + .03]) A.ajoute(new THREE.BoxGeometry(.06, HP, .34), cadre, xx, YB + HP / 2, CZ0 - .15, false);   // le chambranle
+      A.ajoute(new THREE.BoxGeometry(PW + .12, .06, .34), cadre, cx, YP + .03, CZ0 - .15, false);
+      // la porte, ouverte vers la courette
+      const piv = new THREE.Group(); piv.position.set(pa, YB, CZ0 + .02); piv.rotation.y = -1.75; scene.add(piv);
+      const pt = new THREE.Mesh(new THREE.BoxGeometry(PW - .02, HP - .04, .04), marron); pt.position.set(PW / 2, HP / 2, 0); piv.add(pt);
+      for (const y of [.5, 1.5]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(PW - .2, .7, .015), cadre); pn.position.set(PW / 2, y, .025); piv.add(pn); }
+      const bq = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .1, 10), A.mat({ color: 0x9a8a5a, metalness: .6, roughness: .35 })); bq.rotation.x = Math.PI / 2; bq.position.set(PW - .08, 1.0, .05); piv.add(bq);
+      // la toilette à la turque : le receveur en faïence, les deux repose-pieds, l'évacuation ; la chasse d'eau en hauteur et sa chaîne
+      const tz = cz - .1;
+      A.ajoute(new THREE.BoxGeometry(.6, .05, .75), email, cx, YB + .025, tz, false);
+      for (const s2 of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.13, .03, .26), A.mat({ color: 0xe2ded4, roughness: .5 }), cx + s2 * .17, YB + .065, tz + .14, false);
+      { const tr = new THREE.Mesh(new THREE.CylinderGeometry(.09, .07, .01, 18), A.mat({ color: 0x1a1a1a, roughness: .6 })); tr.position.set(cx, YB + .052, tz - .12); scene.add(tr); }
+      A.ajoute(new THREE.BoxGeometry(.18, .02, .25), A.mat({ color: 0xc8c4b8, roughness: .3 }), cx, YB + .052, tz - .12, false);
+      A.ajoute(new THREE.BoxGeometry(.42, .26, .18), A.mat({ color: 0x2a2a2a, roughness: .5, metalness: .3 }), cx, YB + 2.15, WZ0 + .1, false);
+      A.ajoute(new THREE.CylinderGeometry(.02, .02, 2.0, 8), A.mat({ color: 0x8a8a8a, metalness: .6, roughness: .4 }), cx - .12, YB + 1.05, WZ0 + .06, false);
+      A.ajoute(new THREE.CylinderGeometry(.004, .004, .7, 4), A.mat({ color: 0x777777, metalness: .6 }), cx + .15, YB + 1.67, WZ0 + .2, false);
+      A.ajoute(new THREE.CylinderGeometry(.02, .02, .08, 8), A.mat({ color: 0x3a3a3a }), cx + .15, YB + 1.3, WZ0 + .2, false);
+      { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .1, 14), A.mat({ color: 0xf6f4ee, roughness: .8 })); rl.rotation.z = Math.PI / 2; rl.position.set(b - .08, YB + .9, cz); scene.add(rl); } } }
+  // quelques étagères en ferraille de chantier noire, contre les murs de la courette
+  { const fer = A.mat({ color: 0x18181a, metalness: .45, roughness: .55 }), ET = (x0, z0, ang, w) => { const g = new THREE.Group(); g.position.set(x0, YB, z0); g.rotation.y = ang; scene.add(g);
+      const bx = (sx, sy, sz, x, y, z, m = fer) => { const o = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); };
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(.035, 1.85, .035, sx * (w / 2 - .02), .925, sz * .2);
+      for (const y of [.12, .62, 1.12, 1.62]) { bx(w, .03, .03, 0, y, .2); bx(w, .03, .03, 0, y, -.2); bx(w - .02, .01, .4, 0, y + .02, 0, A.mat({ color: 0x2a2a2c, metalness: .3, roughness: .7 })); }
+      for (const sz of [-1, 1]) { const dg = new THREE.Mesh(new THREE.BoxGeometry(.015, Math.hypot(w, 1.5), .015), fer); dg.rotation.z = Math.atan2(w, 1.5); dg.position.set(0, .87, sz * .21); g.add(dg); }
+      const pots = [0x8a8f96, 0xc8a23a, 0xb03a2e, 0xe8e4da, 0x3a6ea8, 0x5a5f4a];
+      for (const y of [.12, .62, 1.12]) for (let k = 0; k < Math.floor(w / .35); k++) { if ((k * 7 + y * 10) % 3 === 0) continue; const x = -w / 2 + .2 + k * .35;
+        if ((k + y * 2) % 2 < 1) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.11, .1, .26, 14), A.mat({ color: pots[(k + Math.round(y * 4)) % pots.length], roughness: .5, metalness: .2 })); p.position.set(x, y + .16, 0); g.add(p); }
+        else bx(.3, .22, .34, x, y + .14, 0, A.mat({ color: 0xa8865a, roughness: .9 })); }   // pots de peinture, cartons
+      return g; };
+    ET(CX1 - .3, 16.6, Math.PI / 2, 1.8); ET(CX1 - .3, 20.0, Math.PI / 2, 1.8); ET(0, CZ1 - .3, Math.PI, 1.6); }
+  carreler("x", CZ1, -1, CX0 - .3, CX1, YB, 1); carreler("z", RX1 + .3, 1, CZ0, OP[0], YB, 1); carreler("z", RX1 + .3, 1, OP[1], CZ1, YB, 1); carreler("z", RX1 + .3, 1, OP[0], OP[1], HO, 1);
   A.ajoute(new THREE.BoxGeometry(.3, HT + .2, CL + .6), peinture, RX1 + .15, (HT + .2) / 2, (CZ0 + CZ1) / 2, false);
   { const PXM = 60, mw = Math.round(CL * PXM), mh = Math.round(15 * PXM);   // le pan de mur de la caserne : brique rouge, soubassement, fenêtres
     const t = toile(mw, mh, (x, w, h) => { briques(x, w, h); x.fillStyle = "#cfc6b4"; x.fillRect(0, h - 3.6 * PXM, w, 3.6 * PXM); x.fillStyle = "rgba(0,0,0,.08)"; for (let y = h - 3.6 * PXM; y < h; y += 18) x.fillRect(0, y, w, 1.5);
@@ -2259,12 +2304,23 @@ function construireMess(A, L, scene) {
     const d = new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex(ciel), side: THREE.BackSide, fog: false })); d.position.set((CX0 + CX1) / 2, 0, (CZ0 + CZ1) / 2); scene.add(d); L.cielMess = d; }
   const jourC = new THREE.PointLight(0xfff6e8, 30, 7.5, 1.2); jourC.position.set((CX0 + CX1) / 2 + 1, -.5, (CZ0 + CZ1) / 2); scene.add(jourC);
   const dansCourette = (x, z) => x > CX0 + .3 && x < CX1 - .3 && z > CZ0 + .3 && z < CZ1 - .3, dansOuv = (x, z) => x >= RX1 - .35 && x <= CX0 + .35 && z > OP[0] + .3 && z < OP[1] - .3;
+  const dansWC = (x, z) => (WC.some(([a, b]) => x > a + .25 && x < b - .25 && z > WZ0 + .25 && z < CZ0 - .3) || portesWC.some(([a, b]) => x > a + .22 && x < b - .22 && z >= CZ0 - .4 && z <= CZ0 + .4)) || (dansCourette(x, z) && !(x > CX1 - .9 && (z > 15.4 && z < 21.2)) && !(x > -1.1 && x < 1.1 && z > CZ1 - .85));
   const ambiant = new THREE.AmbientLight(0xfff1dc, .5); scene.add(ambiant);
-  L.setLumiere = (niveau) => { const v = +niveau, k = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); L.lumiere = k;
-    for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * k; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
+  // trois éclairages réglés chacun à part (administrateur) : la grande salle, la cuisine de l'étage, le sous-sol ; la lumière d'ambiance suit l'endroit où l'on est
+  const niveaux = { mess: 1, messcuisine: 1, messbas: 1 }, borne = v => { v = +v; return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); };
+  L.zoneLumiere = () => { const q = M && M.moiNum && M.gens.get(M.moiNum); if (!q) return "mess"; const p = q.g.position; return niv() || p.y < -.5 ? "messbas" : p.z > Z1 ? "messcuisine" : "mess"; };
+  let zoneAvant = null;
+  L.parImage = () => { const z = L.zoneLumiere(); if (z === zoneAvant) return; zoneAvant = z; ambiant.intensity = .06 + .44 * niveaux[z]; M.ctx.surLumiere && M.ctx.surLumiere(niveaux[z]); };
+  L.setLumiereZone = (zone, niveau) => { const k = borne(niveau); niveaux[zone] = k;
+    if (zone === "messcuisine") { for (const l of lampesCuis) l.intensity = 7 * k; globeCuis.emissiveIntensity = .9 * k + .03; }
+    else if (zone === "messbas") { for (const l of lampesBas) l.intensity = 7 * k; globeBas.emissiveIntensity = .9 * k + .03; }
+    else L.setLumiere(k);
+    zoneAvant = null; };
+  L.setLumiere = (niveau) => { const k = borne(niveau); L.lumiere = k; niveaux.mess = k;
+    for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * niveaux[L.zoneLumiere ? L.zoneLumiere() : "mess"]; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
   L.setNuit = (n) => { L.nuit = n; vj.material.color.setHex(n ? 0x1a2238 : 0xffffff); L.cielMess.material.color.setHex(n ? 0x101830 : 0xffffff); jourC.intensity = n ? 3 : 30; L.setLumiere(L.lumiere ?? 1); };
   L.setLumiere(1);
-  L.limites = (x, z) => (dansPiece(x, z) || (!nivC && dansPassage(x, z)) || (nivC && (dansCourette(x, z) || dansOuv(x, z)))) || !nivC && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]));
+  L.limites = (x, z) => (dansPiece(x, z) || (!nivC && dansPassage(x, z)) || (nivC && (dansWC(x, z) || dansOuv(x, z)))) || !nivC && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]));
   L.contraindreCam = (pos, moi) => { const q = moi.g.position, cour = niv() && q.x > RX1, [a0, a1, b0, b1] = cour ? [CX0, CX1, CZ0, CZ1] : q.z > Z1 ? [RX0, RX1, RZ0, RZ1] : [X0, X1, Z0, Z1];
     pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, cour ? 4 : niv() && !surEsc(q.x, q.z) ? -.45 : HT - .3); return true; };
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, RZ1]; L.boite = [X0, X1, Z0, RZ1]; L.plafond = HT - .3;
@@ -3643,7 +3699,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith(); animerGroupe(); animerHV(performance.now());
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -6415,7 +6471,7 @@ export function monterEtage(f) { const moi = M && M.moiNum && M.gens.get(M.moiNu
 export function jouer(jeu) { envoyerWS({ t: "joue", jeu: jeu || null }); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) moi.info.joue = jeu || null; }
 export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 // (administrateur) la luminosité de la salle des fêtes, de 0 (éteinte) à 1, pour tous ceux qui y sont
-export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? "mess" : "fetes" }); }
+export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
 export function effacerDit(id) { envoyerWS(id === "tout" ? { t: "effacer", tout: true } : { t: "effacer", id }); }
@@ -6444,8 +6500,9 @@ function connecter() {
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
     else if (m.t === "lumiere" && m.salle === "mess") { const k = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.lumiereMess = k;
-      if (M.L && baseLieu(M.lieu) === "mess") { M.L.setLumiere && M.L.setLumiere(k); ctx.surLumiere && ctx.surLumiere(k); }
+      if (M.L && baseLieu(M.lieu) === "mess") M.L.setLumiereZone ? M.L.setLumiereZone("mess", k) : M.L.setLumiere && M.L.setLumiere(k);
       if (M.L && M.L.messVitres) M.L.messVitres.opacity = k * (M.L.nuit ? .85 : .28); }
+    else if (m.t === "lumiere" && (m.salle === "messcuisine" || m.salle === "messbas")) { if (M.L && M.L.setLumiereZone) M.L.setLumiereZone(m.salle, m.niveau); }
     else if (m.t === "lumiere") { M.lumiere = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
