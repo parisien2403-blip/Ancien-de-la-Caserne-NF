@@ -22,7 +22,7 @@ export const TENUES = {
   robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, soie: { nom: "Chemisier et pantalon en soie" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
-  pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
+  pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
   rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
@@ -185,7 +185,7 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = "#8a8d92"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(88, 152); x.lineTo(90, 262); x.moveTo(112, 152); x.lineTo(110, 262); x.stroke();
       x.fillStyle = "#1c1c1f"; x.fillRect(80, 142, 40, 9); x.fillStyle = "#e9e9e9"; x.fillRect(58, 150, 4, 100); x.fillRect(138, 150, 4, 100); }
     // les habitants de Hill Valley, 1955
-    if (o.pose !== "dos" && !profil && /^(marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george)$/.test(t)) {
+    if (o.pose !== "dos" && !profil && /^(marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george|pompiste)$/.test(t)) {
       const cravate = (col) => { x.fillStyle = col; x.beginPath(); x.moveTo(96, 150); x.lineTo(104, 150); x.lineTo(106, 214); x.lineTo(100, 222); x.lineTo(94, 214); x.closePath(); x.fill(); };
       const noeud = (col) => { x.fillStyle = col; x.beginPath(); x.moveTo(100, 152); x.lineTo(87, 145); x.lineTo(87, 159); x.closePath(); x.moveTo(100, 152); x.lineTo(113, 145); x.lineTo(113, 159); x.closePath(); x.fill(); x.beginPath(); x.arc(100, 152, 3.5, 0, 7); x.fill(); };
       const tee = (y1 = 170) => { x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(110, y1); x.lineTo(90, y1); x.closePath(); x.fill(); };
@@ -240,6 +240,13 @@ export function dessinerBonhomme(o, tete) {
           x.fillStyle = "#f4f2ec"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(92, 212 + k * 14, 2.4, 0, 7); x.fill(); } }
         else { x.save(); x.beginPath(); x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(158, 300); x.lineTo(42, 300); x.lineTo(62, 236); x.closePath(); x.clip(); raye(30, 146, 140, 160); x.restore();
           noeud("#c8202a"); x.fillStyle = "#f8f8f4"; x.beginPath(); x.moveTo(76, 240); x.lineTo(124, 240); x.lineTo(118, 290); x.lineTo(82, 290); x.closePath(); x.fill(); x.fillStyle = "#f8f8f4"; x.fillRect(62, 232, 76, 8); } }
+      if (t === "pompiste") {   // la combinaison blanche du pompiste : col rayé noir et blanc, tee-shirt blanc, deux poches de poitrine, la patte boutonnée, des taches de cambouis
+        x.fillStyle = "#f8f8f4"; x.beginPath(); x.moveTo(90, 146); x.lineTo(110, 146); x.lineTo(104, 166); x.lineTo(96, 166); x.closePath(); x.fill();
+        const rayures = (pts) => { x.save(); x.beginPath(); x.moveTo(...pts[0]); for (const q of pts.slice(1)) x.lineTo(...q); x.closePath(); x.clip(); x.fillStyle = "#f4f4f0"; x.fillRect(60, 130, 80, 60); x.fillStyle = "#1a1a1a"; for (let k = 40; k < 160; k += 5) { x.beginPath(); x.moveTo(k, 130); x.lineTo(k + 2.5, 130); x.lineTo(k + 32.5, 190); x.lineTo(k + 30, 190); x.closePath(); x.fill(); } x.restore(); };
+        rayures([[84, 142], [96, 146], [96, 176], [72, 158]]); rayures([[116, 142], [104, 146], [104, 176], [128, 158]]);
+        x.strokeStyle = "rgba(0,0,0,.16)"; x.lineWidth = 1.6; x.strokeRect(68, 176, 22, 20); x.strokeRect(110, 176, 22, 20); x.beginPath(); x.moveTo(68, 182); x.lineTo(90, 182); x.moveTo(110, 182); x.lineTo(132, 182); x.moveTo(100, 166); x.lineTo(100, 262); x.stroke();
+        x.fillStyle = "#e2e2dc"; for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(103, 174 + k * 15, 2.2, 0, 7); x.fill(); }
+        x.fillStyle = "rgba(90,80,60,.14)"; for (const [a, b, r] of [[80, 230, 7], [118, 244, 5], [86, 300, 8], [116, 340, 6]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); } }
       if (t === "lou") { x.fillStyle = "rgba(0,0,0,.1)"; x.beginPath(); x.moveTo(84, 146); x.lineTo(72, 156); x.lineTo(88, 176); x.closePath(); x.moveTo(116, 146); x.lineTo(128, 156); x.lineTo(112, 176); x.closePath(); x.fill();
         x.fillStyle = "#f8f6f0"; x.fillRect(70, 196, 60, 120); x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 2; x.strokeRect(70, 196, 60, 120); x.fillStyle = "#cfc8b8"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(100, 160 + k * 12, 2, 0, 7); x.fill(); } }   // la chemise crème, le tablier blanc
       if (t === "gilet") { x.fillStyle = "#4a463e"; x.beginPath(); x.moveTo(64, 150); x.lineTo(90, 150); x.lineTo(100, 200); x.lineTo(110, 150); x.lineTo(136, 150); x.lineTo(140, 266); x.lineTo(60, 266); x.closePath(); x.fill();
@@ -532,9 +539,9 @@ export function dessinerBonhomme(o, tete) {
           y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
-        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
+        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george|pompiste)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
           const C = { lorraine: ["#6a3a20", "#3a1e10"], george: ["#4a3426", "#2a1c12"], marty: ["#6a4a2e", "#3e2a18"], biff: ["#b8925a", "#7a5a30"], match: ["#d0ae72", "#8a6a3a"], troisd: ["#2a2018", "#120c08"], skinhead: ["#a87850", "#6a4a2a"], pois: ["#5a3420", "#2a1a10"], ecossaise: ["#4a2a18", "#24140a"],
-            bretelles: ["#6e5a40", "#3e2e1e"], lou: ["#ece8dc", "#c9c4b4"], serveur: ["#f4f4f0", "#c9c9c2"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
+            bretelles: ["#6e5a40", "#3e2e1e"], lou: ["#ece8dc", "#c9c4b4"], serveur: ["#f4f4f0", "#c9c9c2"], pompiste: ["#f4f4f0", "#d2d2cc"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
           g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
@@ -1217,18 +1224,21 @@ function decorPassage(A, T, L, scene, FZ) {
     const p = new THREE.Mesh(new THREE.BoxGeometry(1.15, 2.4, .08), A.mat({ color: 0x8a6a45, roughness: .55 })); p.position.y = 1.34; g.add(p);
     const v = new THREE.Mesh(new THREE.PlaneGeometry(.75, .9), A.mat({ color: 0x9fb3c0, roughness: .2 })); v.position.set(0, 1.85, .05); g.add(v);
     const pg = new THREE.Mesh(new THREE.BoxGeometry(.05, .2, .06), A.mat({ color: 0xc9a227, metalness: .7 })); pg.position.set(.42, 1.2, .07); g.add(pg);
-    const pl = new THREE.Mesh(new THREE.PlaneGeometry(.9, .26), new THREE.MeshStandardMaterial({ map: tex(toile(270, 78, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8);
-      x.fillStyle = "#f4f1e6"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(titre, w / 2, 50); })) })); pl.position.set(0, 2.95, .05); g.add(pl);
+    if (titre) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(.9, .26), new THREE.MeshStandardMaterial({ map: tex(toile(270, 78, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8);
+      x.fillStyle = "#f4f1e6"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(titre, w / 2, 50); })) })); pl.position.set(0, 2.95, .05); g.add(pl); }
     return g; };
   porteMur(-1, FZ - 6.2, "POSTE DE POLICE");
   raccourci(L, scene, [.6, 2.5, 1.4], [-(PL - .2), 1.3, FZ - 6.2], { info: "🚓 Le poste de police : la porte est fermée pour l'instant… Envoie des photos de l'intérieur et je te l'ouvre !" });
   // sur le mur de droite (face à la cour), sous vitrine : l'affiche du garde républicain de 1887 (Jeanniot), grandeur nature, de la largeur d'une porte
   const imgA = new Image(), tA = new THREE.Texture(imgA); tA.colorSpace = THREE.SRGBColorSpace; imgA.onload = () => { tA.needsUpdate = true; }; imgA.src = "images/affiche-1887.jpg";
-  const vit = new THREE.Group(); vit.position.set(PL - .02, 1.38, FZ - 10.2); vit.rotation.y = -Math.PI / 2; scene.add(vit);
-  raccourci(L, scene, [.25, 2.4, 1.2], [PL - .1, 1.38, FZ - 10.2], { affiche: "images/affiche-1887.jpg" });   // on la touche : elle s'affiche en grand
-  const cadreV = new THREE.Mesh(new THREE.BoxGeometry(1.14, 2.36, .08), A.mat({ color: 0x3a2a1c, roughness: .4 })); cadreV.position.z = .04; vit.add(cadreV);
-  const aff = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.2), new THREE.MeshStandardMaterial({ map: tA, roughness: .9 })); aff.position.z = .085; vit.add(aff);
-  const verreV = new THREE.Mesh(new THREE.PlaneGeometry(1.04, 2.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV);
+  const garde1887 = (z) => { const vit = new THREE.Group(); vit.position.set(PL - .02, 1.38, z); vit.rotation.y = -Math.PI / 2; scene.add(vit);
+    raccourci(L, scene, [.25, 2.4, 1.2], [PL - .1, 1.38, z], { affiche: "images/affiche-1887.jpg" });   // on la touche : elle s'affiche en grand
+    const cadreV = new THREE.Mesh(new THREE.BoxGeometry(1.14, 2.36, .08), A.mat({ color: 0x3a2a1c, roughness: .4 })); cadreV.position.z = .04; vit.add(cadreV);
+    const aff = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.2), new THREE.MeshStandardMaterial({ map: tA, roughness: .9 })); aff.position.z = .085; vit.add(aff);
+    const verreV = new THREE.Mesh(new THREE.PlaneGeometry(1.04, 2.24), new THREE.MeshStandardMaterial({ color: 0xdfeaf0, transparent: true, opacity: .12, roughness: .05, metalness: .3 })); verreV.position.z = .1; vit.add(verreV); };
+  garde1887(FZ - 10.2);
+  // au milieu du mur blanc de droite, en face du poste de police : une porte identique ; à sa droite (côté rue), le même garde de 1887
+  porteMur(1, FZ - 6.2); garde1887(FZ - 4.5);
   // à droite, vers le fond : l'armoire rouge, la borne de la barrière et sa lisse blanche, posée en travers
   A.ajoute(new THREE.BoxGeometry(.3, 1.3, .5), A.mat({ color: 0xc8202a, roughness: .5 }), PL - .2, .79, FZ - 11.6);
   // la barrière, côté rue, levée (on passe librement)
@@ -4942,6 +4952,27 @@ function animerSmith() {
       const tete = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 8), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: .8, roughness: .3 })); tete.position.set(0, H * .66 + .16, -.34); g.add(tete);
       g.position.set(x, M.L.hauteur ? M.L.hauteur(x, z + .75) : 0, z + .75); M.scene.add(g); M.micro = g; } }
   else if (!air && p) { retirerAncien(SMITH); if (M.micro) { M.scene.remove(M.micro); M.micro = null; } }
+  // le spectacle laser de The Cure, sur tout le mur du fond derrière la scène : « THE CURE » en vert néon au centre, et des faisceaux verts qui s'entrecroisent en ovale autour, sans cesse en mouvement
+  const S = M.L.scene;
+  if (air && !M.projCure && S) { const W = 1536, H = 640, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+    const lettres = document.createElement("canvas"); lettres.width = W; lettres.height = H; { const y = lettres.getContext("2d"); y.font = "bold 170px Arial, Helvetica, sans-serif"; y.textAlign = "center"; y.textBaseline = "middle";
+      y.shadowColor = "#39ff14"; y.shadowBlur = 38; y.fillStyle = "#2ee83a"; y.fillText("THE CURE", W / 2, H / 2 + 8); y.fillText("THE CURE", W / 2, H / 2 + 8); y.shadowBlur = 0;
+      y.globalCompositeOperation = "source-atop"; for (let k = 0; k < 9000; k++) { y.fillStyle = Math.random() < .5 ? "rgba(200,255,190,.55)" : "rgba(0,90,10,.35)"; y.fillRect(Math.random() * W, H * .3 + Math.random() * H * .4, 2, 2); } }   // (les lettres pailletées, comme un laser)
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const LW = S.x1 - S.x0 + .9, LH = LW * H / W;
+    const me = new THREE.Mesh(new THREE.PlaneGeometry(LW, LH), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, toneMapped: false, opacity: 0 }));
+    me.position.set((S.x0 + S.x1) / 2, Math.max(S.h + LH / 2 + .15, 2.6), S.z0 + .02); me.renderOrder = 4; M.scene.add(me); M.projCure = me;
+    me.userData = { t0: performance.now(), der: 0, dessiner: (s2) => { x.clearRect(0, 0, W, H); x.globalCompositeOperation = "lighter"; const cx = W / 2, cy = H / 2, RX = W * .47, RY = H * .62;
+      const pt = (a) => [cx + Math.cos(a) * RX, cy + Math.sin(a) * RY], trait = (a, b, al) => { x.strokeStyle = `rgba(30,255,60,${al * .4})`; x.lineWidth = 7; x.beginPath(); x.moveTo(...a); x.lineTo(...b); x.stroke(); x.strokeStyle = `rgba(120,255,110,${al})`; x.lineWidth = 2.6; x.stroke(); };
+      // l'ovale : des cordes qui relient deux points du bord, en tournant doucement (elles se croisent et dessinent l'anneau)
+      for (let k = 0; k < 44; k++) { const a = k / 44 * Math.PI * 2 + s2 * .22, d = 1.15 + Math.sin(s2 * .7 + k * .9) * .25; trait(pt(a), pt(a + d), .9); }
+      // deux points de convergence (en haut à droite, en bas au milieu) d'où partent des éventails de faisceaux qui balaient
+      for (const [fx, fy, a0, sens] of [[.7, .3, 2.3, 1], [.72, .7, -2.3, -1]]) { const F = [W * fx, H * fy]; for (let k = 0; k < 12; k++) { const a = a0 + sens * (k - 6) * .07 + Math.sin(s2 * 1.1 + k) * .12; trait(F, [F[0] + Math.cos(a) * W, F[1] + Math.sin(a) * W], 1); } }
+      x.globalCompositeOperation = "source-over"; x.save(); x.globalAlpha = .82 + Math.sin(s2 * 6.3) * .1; x.drawImage(lettres, 0, 0); x.restore(); t.needsUpdate = true; } }; }
+  else if (!air && M.projCure) { const me = M.projCure; M.scene.remove(me); me.geometry.dispose(); me.material.map.dispose(); me.material.dispose(); M.projCure = null; }
+  if (M.projCure && S) { const me = M.projCure, now = performance.now(), t = (now - me.userData.t0) / 1000;
+    if (now - me.userData.der > 60) { me.userData.der = now; me.userData.dessiner(t); }   // (les faisceaux bougent : l'image est redessinée ~16 fois par seconde)
+    me.material.opacity = Math.min(1, t / 1.5); }
   else if (p) { p.info.danse = "guitare"; if (M.micro && !p.cible) M.micro.position.set(p.g.position.x, p.g.position.y, p.g.position.z + .75); }
 }
 /* --- Mr Hernandez (réglé par l'administrateur) : dès que passe Born to Be Alive, il arrive au milieu de la piste avec sa canne et danse comme dans le clip --- */
@@ -5200,14 +5231,14 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) libererScene(q.scene);
   M.prets = {}; M.prepT = performance.now() + 1500;
   if (M.cine) finCine();
-  M.hvInit = false; M.hvDoubles = false; M.chasse = false;
+  M.hvInit = false; M.hvDoubles = false; M.hvPompiste = false; M.chasse = false;
   trace("construire " + id + (pret ? " (prêt)" : ""));
   const { scene, L, repere } = pret || construireScene(id);
   trace("construit " + id); M.trace1 = true;
   libererScene(M.scene);   // (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
-  M.micro = null;
+  M.micro = null; M.projCure = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
@@ -5535,7 +5566,7 @@ function cineCour() {
   const car = creerDelorean(); car.position.y = 0; M.scene.add(car); poser(car, 0, 30, 0); const feu = [];
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; finCine(); voile("background:#fff;opacity:1", 1600); M.arriveeHV = true; changerLieu("hv1955", [-22, 16], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin);
-  let pretHV = false; setTimeout(() => preparerLieu("hv1955").then(() => { pretHV = true; }), 2500);   // (Hill Valley se prépare pendant que la DeLorean arrive)
+  // (Hill Valley n'est plus préparé pendant la course : sa construction figeait l'image ~2 s quand la DeLorean sortait du préau ; elle se fait sous le flash blanc final)
   sonBruit(2.5, 220, .5);
   M.cine = { t0: performance.now(), feu, maj: (now) => { const tr = (now - M.cine.t0) / 1000, moi = M.gens.get(M.moiNum), cam = M.camera, PAUSE = 5.4;
     // une fois monté et les portes fermées : le compteur des circuits temporels ; la voiture ne démarre qu'après
@@ -5560,7 +5591,7 @@ function cineCour() {
       cam.position.lerp(new THREE.Vector3(-4, 1.5, 9.5), .06); cam.lookAt(x, .7, z - 2); }
     else { if (car.visible) { car.visible = false; eclairBlanc(1500); sonBruit(1.6, 260, 1); sonBruit(.25, 5000, .7); setTimeout(() => M && M.cine && logoCine(5600), 450); }
       cam.position.lerp(new THREE.Vector3(-1.2, 1.4, 9.5), .04); cam.lookAt(.7, .3, -8);
-      if (t > 20.6 && (pretHV || t > 32)) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
+      if (t > 20.6) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
     animerFeu(feu, now, 60000); } };
 }
 // 2. à Hill Valley : l'éclair, la DeLorean qui surgit et glisse jusqu'au trottoir, Doc et nous qui descendons
@@ -6291,6 +6322,91 @@ function creerBelAir(o = {}) {
     m(new THREE.CylinderGeometry(.04, .04, .06, 12), or, x, RR, s * .9, Math.PI / 2, 0, 0); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; m(new THREE.BoxGeometry(.02, .12, .015), chrome, x + Math.cos(a) * .13, RR + Math.sin(a) * .13, s * .875, 0, 0, a + Math.PI / 2); } }
   return g; }
 
+/* ===================== le pick-up Ford F-1 (1948-1952), rouge, modelé en 3D d'après les six vues =====================
+   Même repère que la Bel Air : l'avant vers +x, la largeur sur z, le sol à y = 0. Longueur 4,8 m. Le logo TEXACO peint sur les portières. */
+function creerPickupFord(o = {}) {
+  const g = new THREE.Group(), ROUGE = o.couleur || "#c8141a", env = o.rendu ? envVille(o.rendu) : reflets();
+  const laque = { roughness: .45, metalness: 0, clearcoat: 1, clearcoatRoughness: .03, envMap: env, envMapIntensity: o.rendu ? .8 : .3, specularIntensity: .25 };
+  const peinture = new THREE.MeshPhysicalMaterial({ color: ROUGE, ...laque }), peintureD = peinture.clone(); peintureD.side = THREE.DoubleSide;
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xf6f7f8, metalness: 1, roughness: .06, envMap: env, envMapIntensity: o.rendu ? 1.1 : 1.6 });
+  const noir = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .75 }), creme = new THREE.MeshStandardMaterial({ color: 0xe8e0cc, roughness: .6 });
+  const vitre = new THREE.MeshPhysicalMaterial({ color: 0x24323a, roughness: .04, metalness: .2, envMap: env, envMapIntensity: 1.1, clearcoat: 1 });
+  const m = (geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { const me = new THREE.Mesh(geo, mat); me.position.set(x, y, z); me.rotation.set(rx, ry, rz); me.castShadow = true; me.receiveShadow = true; g.add(me); return me; };
+  const forme = (pts) => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); for (const q of pts.slice(1)) Array.isArray(q[0]) ? sh.quadraticCurveTo(q[0][0], q[0][1], q[1][0], q[1][1]) : sh.lineTo(...q); sh.closePath(); return sh; };
+  // un profil (vu de côté) extrudé sur la largeur, arêtes arrondies, centré en z0
+  const extru = (sh, prof, bev, mat = peinture, z0 = 0) => { const geo = new THREE.ExtrudeGeometry(sh, { depth: prof, bevelEnabled: bev > 0, bevelThickness: bev, bevelSize: bev, bevelSegments: 5, curveSegments: 24 }); geo.translate(0, 0, -prof / 2 + z0); const me = new THREE.Mesh(geo, mat); me.castShadow = true; me.receiveShadow = false; g.add(me); return me; };   // (pas d'ombre reçue sur les formes bombées : pas de damier sur la laque)
+  const RAV = 1.62, RAR = -1.38, RR = .38;
+  // ---- la cabine : bombée, toit arrondi, pare-brise droit, petite lunette arrière ----
+  extru(forme([[-.42, .62], [.98, .62], [.98, 1.12], [.84, 1.2], [.72, 1.72], [[.66, 1.84], [.5, 1.85]], [-.22, 1.85], [[-.38, 1.84], [-.4, 1.68]], [-.42, 1.2]]), 1.42, .1);
+  // les vitres : pare-brise, vitres de portière (avec le petit déflecteur), lunette arrière
+  m(new THREE.PlaneGeometry(1.24, .44), vitre, .805, 1.47, 0, 0, Math.PI / 2, -.23).rotation.order = "YXZ";
+  { const pb = g.children[g.children.length - 1]; pb.rotation.set(0, Math.PI / 2, 0); pb.rotateX(-.23); pb.position.set(.82, 1.47, 0); }
+  for (const s of [-1, 1]) { const fv = new THREE.ShapeGeometry(forme([[-.22, 1.3], [.6, 1.3], [.66, 1.68], [[.62, 1.76], [.5, 1.77]], [-.18, 1.77], [[-.27, 1.76], [-.27, 1.66]]]));
+    const v = new THREE.Mesh(fv, vitre); v.position.z = s * .823; if (s < 0) v.rotation.y = Math.PI, v.scale.x = -1; g.add(v);
+    m(new THREE.BoxGeometry(.025, .47, .012), chrome, .43, 1.53, s * .826); m(new THREE.BoxGeometry(.85, .02, .012), chrome, .19, 1.295, s * .826); }
+  m(new THREE.PlaneGeometry(.78, .26), vitre, -.515, 1.56, 0, 0, -Math.PI / 2, 0);
+  // les joints de portière, la poignée chromée, la serrure
+  for (const s of [-1, 1]) { for (const [x0, x1, y] of [[.95, .95, 0], [-.3, -.3, 0]]) m(new THREE.BoxGeometry(.012, .62, .006), noir, x0, .93, s * .827);
+    m(new THREE.BoxGeometry(.012, .012, .006), noir, .35, 1.24, s * .827); m(new THREE.CapsuleGeometry(.014, .1, 4, 8), chrome, -.18, 1.18, s * .835, 0, 0, Math.PI / 2); }
+  // ---- le logo TEXACO peint sur les portières : l'étoile rouge au T vert dans son cercle, le nom dessous ----
+  const logo = toile(256, 300, (x, W) => { const cx = W / 2, cy = 118, R = 104; x.fillStyle = "#f6f4ec"; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill(); x.lineWidth = 9; x.strokeStyle = "#141414"; x.beginPath(); x.arc(cx, cy, R - 6, 0, 7); x.stroke();
+    x.fillStyle = "#d4161e"; x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? R * .36 : R * .86; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); x.fill();
+    x.fillStyle = "#1f8a3a"; x.fillRect(cx - 34, cy - 30, 68, 16); x.fillRect(cx - 9, cy - 30, 18, 62); x.strokeStyle = "#f6f4ec"; x.lineWidth = 2; x.strokeRect(cx - 34, cy - 30, 68, 16);
+    x.font = "bold 50px 'Arial Black', Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 6; x.strokeStyle = "#f6f4ec"; x.strokeText("TEXACO", cx, 262); x.fillStyle = "#d4161e"; x.fillText("TEXACO", cx, 262); });
+  const tLogo = new THREE.CanvasTexture(logo); tLogo.colorSpace = THREE.SRGBColorSpace; tLogo.anisotropy = 4;
+  const mLogo = new THREE.MeshStandardMaterial({ map: tLogo, transparent: true, roughness: .4, polygonOffset: true, polygonOffsetFactor: -2 });
+  for (const s of [-1, 1]) m(new THREE.PlaneGeometry(.46, .54), mLogo, .33, .92, s * .829, 0, s > 0 ? 0 : Math.PI, 0).castShadow = false;
+  // ---- le capot : long et arrondi, qui plonge vers la calandre ; le jonc chromé au milieu, les ouïes chromées sur les côtés, « FORD » sur le nez ----
+  extru(forme([[.9, .78], [.9, 1.18], [[1.6, 1.2], [2.12, 1.12]], [[2.36, 1.07], [2.4, .9]], [2.42, .78]]), .88, .13);
+  m(new THREE.BoxGeometry(1.45, .025, .04), chrome, 1.62, 1.33, 0, 0, 0, -.06);
+  for (const s of [-1, 1]) { m(new THREE.BoxGeometry(.5, .05, .012), chrome, 1.95, 1.06, s * .583); for (let k = 0; k < 3; k++) m(new THREE.BoxGeometry(.32 - k * .05, .012, .008), noir, 1.93, 1.085 - k * .022, s * .59); }
+  { const lf = toile(256, 48, (x, W, H) => { x.fillStyle = "#f2f2ee"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("F O R D", W / 2, H / 2 + 2); }); const tf = new THREE.CanvasTexture(lf); tf.colorSpace = THREE.SRGBColorSpace;
+    m(new THREE.PlaneGeometry(.42, .08), new THREE.MeshStandardMaterial({ map: tf, transparent: true, metalness: .6, roughness: .2 }), 2.515, 1.0, 0, 0, Math.PI / 2, 0).rotateX(-.5); }
+  // ---- les ailes avant, rondes et détachées (les phares dedans), les ailes arrière, les marchepieds ----
+  const aile = (x0, x1, xc, r, haut, avant) => { const sh = new THREE.Shape(), d = Math.sqrt(r * r - (.55 - RR) ** 2), a = Math.atan2(.55 - RR, d); sh.moveTo(x0, .55);
+    if (avant) { sh.quadraticCurveTo(x0 + .08, haut - .04, x0 + .55, haut); sh.quadraticCurveTo(x1 - .3, haut + .02, x1 - .04, .82); sh.quadraticCurveTo(x1 + .04, .62, x1, .55); }
+    else { sh.quadraticCurveTo(x0, haut - .08, x0 + .5, haut); sh.quadraticCurveTo(x1 - .2, haut + .02, x1, .62); sh.lineTo(x1, .55); }
+    sh.lineTo(xc + d, .55); sh.absarc(xc, RR, r, a, Math.PI - a, false); sh.lineTo(x0, .55); return sh; };
+  for (const s of [-1, 1]) extru(aile(.8, 2.46, RAV, .47, 1.05, true), .2, .1, peinture, s * .79);
+  // (sous l'arche : la jupe intérieure, sombre)
+  for (const s of [-1, 1]) m(new THREE.CylinderGeometry(.5, .5, .3, 28, 1, true, 0, Math.PI), noir, RAV, RR, s * .66, Math.PI / 2, 0, Math.PI / 2).material = noir;
+  for (const s of [-1, 1]) extru(aile(RAR - .78, RAR + .76, RAR, .46, .97, false), .2, .08, peinture, s * .82);
+  for (const s of [-1, 1]) { m(new THREE.BoxGeometry(RAV - RAR - 1.25, .05, .26), peinture, (RAV + RAR) / 2 - .05, .5, s * .82); m(new THREE.BoxGeometry(RAV - RAR - 1.25, .14, .02), noir, (RAV + RAR) / 2 - .05, .44, s * .7); }
+  // ---- la benne : plancher en bois, ridelles, le hayon à « FORD » embouti, les rebords, les crochets de chaîne ----
+  const BX0 = -2.36, BX1 = -.52, BW = .72, BY0 = .66, BY1 = 1.24;
+  m(new THREE.BoxGeometry(BX1 - BX0, .05, BW * 2), new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: .8 }), (BX0 + BX1) / 2, BY0 + .02, 0);
+  for (let k = -3; k <= 3; k++) m(new THREE.BoxGeometry(BX1 - BX0, .012, .025), chrome, (BX0 + BX1) / 2, BY0 + .05, k * .2);
+  for (const s of [-1, 1]) { m(new THREE.BoxGeometry(BX1 - BX0, BY1 - BY0, .05), peinture, (BX0 + BX1) / 2, (BY0 + BY1) / 2, s * BW); m(new THREE.BoxGeometry(BX1 - BX0 + .02, .04, .1), peinture, (BX0 + BX1) / 2, BY1 + .01, s * (BW + .02)); }
+  m(new THREE.BoxGeometry(.05, BY1 - BY0, BW * 2), peinture, BX1, (BY0 + BY1) / 2, 0); m(new THREE.BoxGeometry(.1, .04, BW * 2 + .1), peinture, BX1, BY1 + .01, 0);
+  const hayon = toile(512, 160, (x, W, H) => { x.fillStyle = ROUGE; x.fillRect(0, 0, W, H); x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 4; x.strokeRect(14, 16, W / 2 - 22, H - 32); x.strokeRect(W / 2 + 8, 16, W / 2 - 22, H - 32);
+    x.font = "italic bold 54px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = "rgba(0,0,0,.25)"; x.fillText("Ford", W / 2 + 2, H / 2 + 3); x.fillStyle = "rgba(255,255,255,.18)"; x.fillText("Ford", W / 2, H / 2); });
+  const tH = new THREE.CanvasTexture(hayon); tH.colorSpace = THREE.SRGBColorSpace;
+  m(new THREE.BoxGeometry(.05, BY1 - BY0, BW * 2), [peinture, new THREE.MeshPhysicalMaterial({ map: tH, ...laque }), peinture, peinture, peinture, peinture], BX0, (BY0 + BY1) / 2, 0);
+  for (const s of [-1, 1]) { m(new THREE.CylinderGeometry(.01, .01, .3, 6), chrome, BX0 + .02, BY1 - .14, s * (BW - .03), .9, 0, 0); m(new THREE.BoxGeometry(.06, .08, .04), chrome, BX0 + .03, BY1 - .04, s * BW); }
+  m(new THREE.BoxGeometry(4.4, .16, 1.0), noir, -.05, .44, 0);   // (le châssis)
+  // ---- l'avant : la calandre à barres chromées, les phares ronds dans les ailes, les veilleuses, le pare-chocs ----
+  m(new THREE.BoxGeometry(.04, .42, .74), noir, 2.43, .7, 0);
+  for (let k = 0; k < 5; k++) m(new THREE.CapsuleGeometry(.018, .66, 4, 8), chrome, 2.465, .54 + k * .075, 0, Math.PI / 2, 0, 0);
+  m(new THREE.BoxGeometry(.03, .38, .03), chrome, 2.47, .69, 0);
+  for (const s of [-1, 1]) { m(new THREE.TorusGeometry(.105, .022, 10, 28), chrome, 2.43, .84, s * .7, 0, Math.PI / 2, 0);
+    const lent = toile(128, 128, (x) => { const gr = x.createRadialGradient(64, 54, 6, 64, 64, 64); gr.addColorStop(0, "#ffffff"); gr.addColorStop(.5, "#dfe6ea"); gr.addColorStop(1, "#8a9aa4"); x.fillStyle = gr; x.fillRect(0, 0, 128, 128); x.strokeStyle = "rgba(90,100,110,.45)"; x.lineWidth = 2; for (let i = 0; i < 128; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.stroke(); } });
+    const tl = new THREE.CanvasTexture(lent); tl.colorSpace = THREE.SRGBColorSpace; m(new THREE.SphereGeometry(.1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2.6), new THREE.MeshStandardMaterial({ map: tl, roughness: .1, emissive: 0xffffff, emissiveIntensity: .12 }), 2.4, .84, s * .7, 0, 0, -Math.PI / 2);
+    m(new THREE.CylinderGeometry(.035, .035, .03, 14), new THREE.MeshStandardMaterial({ color: 0xf2e8c8, emissive: 0xf2d890, emissiveIntensity: .25 }), 2.44, .62, s * .5, 0, 0, Math.PI / 2); }
+  m(new THREE.BoxGeometry(.1, .14, 1.96), chrome, 2.58, .43, 0); for (const s of [-1, 1]) m(new THREE.BoxGeometry(.18, .06, .06), noir, 2.48, .43, s * .5);
+  // ---- l'arrière : feux ronds sur leurs pattes, pare-chocs chromé, la plaque ----
+  for (const s of [-1, 1]) { m(new THREE.BoxGeometry(.04, .12, .04), noir, BX0 - .03, .9, s * .8); m(new THREE.CylinderGeometry(.055, .055, .05, 16), new THREE.MeshStandardMaterial({ color: 0xc8101a, emissive: 0x900008, emissiveIntensity: .45, roughness: .2 }), BX0 - .06, .98, s * .8, 0, 0, Math.PI / 2);
+    m(new THREE.TorusGeometry(.055, .01, 6, 16), chrome, BX0 - .085, .98, s * .8, 0, Math.PI / 2, 0); }
+  m(new THREE.BoxGeometry(.1, .12, 1.9), chrome, BX0 - .14, .45, 0); m(new THREE.BoxGeometry(.02, .14, .3), new THREE.MeshStandardMaterial({ color: 0xf2d040 }), BX0 - .03, .6, 0);
+  // ---- les rétroviseurs sur leurs bras, l'antenne ----
+  for (const s of [-1, 1]) { m(new THREE.CylinderGeometry(.008, .008, .3, 6), chrome, .86, 1.24, s * .92, s * .9, 0, 0); m(new THREE.CylinderGeometry(.06, .06, .02, 16), chrome, .86, 1.36, s * 1.04, 0, 0, Math.PI / 2); }
+  m(new THREE.CylinderGeometry(.005, .005, .7, 4), chrome, .9, 1.5, .72);
+  // ---- les roues : pneus à flancs blancs, jantes rouges, enjoliveurs chromés ----
+  const flancB = toile(256, 256, (x) => { x.fillStyle = "#151515"; x.fillRect(0, 0, 256, 256); x.fillStyle = "#f2f0e8"; x.beginPath(); x.arc(128, 128, 112, 0, 7); x.fill(); x.fillStyle = "#151515"; x.beginPath(); x.arc(128, 128, 84, 0, 7); x.fill(); x.fillStyle = ROUGE; x.beginPath(); x.arc(128, 128, 78, 0, 7); x.fill(); });
+  const tFl = new THREE.CanvasTexture(flancB); tFl.colorSpace = THREE.SRGBColorSpace; const mFl = new THREE.MeshStandardMaterial({ map: tFl, roughness: .65 }), mPn = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 });
+  for (const [x, s] of [[RAV, 1], [RAV, -1], [RAR, 1], [RAR, -1]]) { m(new THREE.CylinderGeometry(RR, RR, .24, 32), [mPn, mFl, mFl], x, RR, s * .8, Math.PI / 2, 0, 0);
+    const enj = m(new THREE.SphereGeometry(.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 3), chrome, x, RR, s * .87, s * Math.PI / 2, 0, 0); enj.scale.set(1, .45, 1); }
+  return g; }
+
 /* ===================== Lou's Cafe, 1955 : la salle, ouverte (on y entre par la porte) =====================
    Repère de la façade : la vitrine en z = 0 (la rue vers +z), la salle vers −z, x en travers (la porte en x = 0), le sol à y = 0,125. */
 const LOU = { X0: -4.42, X1: 4.42, Z0: -8.8, Z1: -.36, H: 3.5, Y: .125, jukeTex: null };
@@ -6475,7 +6591,16 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
       B.plan(bw - .1, 1.25, bw / 2, 1.33, .023, verreM); B.plan(bw - .1, 1.25, bw / 2, 1.33, -.023, verreM, { ry: Math.PI }); B.boite(bw - .08, .025, .046, bw / 2, 1.33, 0, NOYER); B.boite(.025, 1.25, .046, bw / 2, 1.33, 0, NOYER); });
     battant([-W2 / 2 + .05, 0, D2 / 2], -.75); battant([-W2 / 2 + .05 + .44 * Math.cos(.75), 0, D2 / 2 + .44 * Math.sin(.75)], .75);
     B.boite(.03, .18, .03, -W2 / 2 + .05 + .44 * Math.cos(.75) - .03, 1.1, D2 / 2 + .44 * Math.sin(.75) + .03, "#e2e6ea", { m: .5 }); });
-  for (const x of [-4.05, -3.75, -3.45]) O.push([x, Z0 + .95, .14]);   // (le côté fermé de la cabine ; on y entre par la porte, côté juke-box)
+  for (const x of [-4.05, -3.75, -3.45]) O.push([x, Z0 + .95, .14]);
+  // sur le mur, à côté de la cabine, écrit au rouge à lèvres : CALL ME, le numéro, KISS, et la trace d'un baiser
+  B.plan(.5, .42, X0 + .012, Y + 1.5, Z0 + 1.38, M_(T(300, 252, (x, w, h) => { x.clearRect(0, 0, w, h); const rouge = (a) => `rgba(196,18,40,${a})`;
+    const ecrire = (txt, px, py, taille, rot) => { x.save(); x.translate(px, py); x.rotate(rot); x.font = `italic bold ${taille}px 'Brush Script MT', 'Segoe Script', cursive`; x.textAlign = "center"; x.textBaseline = "middle";
+      x.fillStyle = rouge(.9); x.fillText(txt, 0, 0); x.fillStyle = rouge(.35); x.fillText(txt, 1.5, 1); x.restore(); };
+    ecrire("CALL ME", 140, 44, 50, -.06); ecrire("555-1990", 146, 108, 44, -.03); ecrire("KISS", 112, 172, 42, -.08);
+    x.save(); x.translate(222, 186); x.rotate(-.25); x.fillStyle = rouge(.75);   // la trace du baiser
+    x.beginPath(); x.moveTo(-34, 0); x.quadraticCurveTo(-18, -22, 0, -10); x.quadraticCurveTo(18, -22, 34, 0); x.quadraticCurveTo(0, -3, -34, 0); x.fill();
+    x.beginPath(); x.moveTo(-34, 3); x.quadraticCurveTo(0, 30, 34, 3); x.quadraticCurveTo(0, 8, -34, 3); x.fill();
+    x.strokeStyle = "rgba(120,0,20,.35)"; x.lineWidth = 1; for (let k = -26; k <= 26; k += 5) { x.beginPath(); x.moveTo(k, -12 + Math.abs(k) * .3); x.lineTo(k * .9, -3); x.moveTo(k, 16 - Math.abs(k) * .35); x.lineTo(k * .9, 6); x.stroke(); } x.restore(); }), { tr: true, r: .35 }), { ry: Math.PI / 2 });   // (le côté fermé de la cabine ; on y entre par la porte, côté juke-box)
   const g = B.finir(); for (const [x, z] of [[-1.5, -3.6], [1.5, -5.4]]) { const l = new THREE.PointLight(0xfff0d8, 9, 9, 1.5); l.position.set(x, H - .4, z); g.add(l); }
   g.traverse(o => { if (o.isMesh) o.castShadow = false; }); miroirHV = false;
   g.scale.x = -1;   // (le comptoir à gauche en entrant, comme dans le film)
@@ -6613,6 +6738,9 @@ function construireHillValley(A, T, L, scene) {
   const garer = (o, x, z, r) => { const v = creerBelAir({ ...o, rendu: M && M.rendu }); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
     for (const k of [-1.8, 0, 1.8]) obst.push([x + Math.cos(r) * k, z - Math.sin(r) * k, 1.05]); return v; };
   garer({}, -12, 20.15, 0); garer({ couleur: "#e3b21a" }, -23.95, 4, -Math.PI / 2);
+  // le pick-up Ford rouge de la station Texaco, garé en long sur le trottoir, devant la porte verte du garage
+  { const v = creerPickupFord({ rendu: M && M.rendu }), x = 26.15, z = .55, r = Math.PI / 2; v.position.set(x, trottoirH, z); v.rotation.y = r; scene.add(v); L.pickup = v;
+    for (const k of [-1.7, 0, 1.7]) obst.push([x + Math.cos(r) * k, z - Math.sin(r) * k, 1.0]); }
   /* deux voitures qui tournent autour de la place, sans fin : le cabriolet noir de Biff (et sa bande) et une Bel Air bleue.
      Le circuit : à l'extérieur, on descend à l'ouest, on longe le sud, on remonte à l'est ; demi-tour au nord ; à l'intérieur, on redescend, on longe le sud, on remonte ; demi-tour. */
   { const P = [[-21, -11], [-21, 15], [-19.5, 17.9], [-16, 18.2], [16, 18.2], [19.5, 17.9], [21, 15], [21, -11], [20.4, -13.3], [19.3, -14], [18.2, -13.3], [17.6, -11],
@@ -6652,7 +6780,7 @@ const DOUBLES_HV = [[32, "voiture"], [33, "voiture"], [34, "voiture"], [35, "voi
 const SUIT_HV = { 47: 31, 37: 46 };   // (George marche avec Marty, la fille à la jupe écossaise avec Lorraine)
 const HABITANTS = [[31, "comptoir"], [36, "table"], [37, "table"], [38, "table"], [41, "table"], [42, "table"], [43, "lou"], [44, "lou"], [32, "cafebande"], [33, "cafebande"], [34, "cafebande"], [35, "cafebande"], [46, "lorraine"], [47, "george"]];   // (tout le monde chez Lou)
 const TETES_HV = { 46: "images/bttf/p-lorraine-tete.webp", 47: "images/bttf/p-george-tete.webp", 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
-  36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
+  36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 45: "images/bttf/p-pompiste-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
 function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z) && !(M.L.dansLou && M.L.dansLou(x, z))) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (M && M.volCafeEl && M.lieu !== "hv1955") reglageVolumeCafe(false);
@@ -6683,6 +6811,11 @@ function animerHV(now) {
       const chef = role === "suit" && M.gens.get(-(SUIT_HV[id] + 100)), [x, z] = role === "balaie" && M.L.salleLou ? M.L.salleLou.vers(0, 1.3) : chef ? [chef.g.position.x + .8, chef.g.position.z + .3] : pointLibreHV();
       const q = ajouterAncien({ numero: -(id + 100), nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}) });
       if (q && role === "voiture") { q.info.auto = true; if (q.g.children[0]) q.g.children[0].visible = false; } if (q) q.prochain = now + Math.random() * 3000; } }
+  // le pompiste de la station Texaco : debout près des pompes, devant le pick-up ; il propose le plein quand on passe
+  if (!M.hvPompiste) { M.hvPompiste = true; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(45)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 45) : TETES_HV[45];
+    if (url) { const q = ajouterAncien({ numero: -45, nom: P.nom || "Le pompiste", tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role: "pompe", x: 24.7, z: 3.3, ...defautsHV(45, P) }); } }
+  { const pp = M.gens.get(-45); if (pp) { pp.cible = null; pp.chemin = []; pp.g.position.set(24.7, pp.g.position.y, 3.3);
+    if (mp && now > (M.pompeT || 0) && Math.hypot(mp.x - 24.7, mp.z - 3.3) < 3) { M.pompeT = now + 14000; const k = M.pompeK = ((M.pompeK ?? -1) + 1) % 4; dire(-45, ["Bonjour ! Le plein, monsieur ?", "Super ou ordinaire ? 19 cents et demi le gallon !", "Je vous vérifie l'huile et les pneus ?", "Belle journée, hein ? Repassez quand vous voulez !"][k]); } } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
   // les deux voitures qui font le tour de la place (elles s'arrêtent devant quelqu'un) ; Biff et sa bande dans le cabriolet
   { const dt = Math.min(.1, (now - (M.tourT || now)) / 1000); M.tourT = now; const C = M.L.circuit;
@@ -6751,7 +6884,7 @@ function animerHV(now) {
   else if (M.chasse && (d > 14 || prèsDoc)) { M.chasse = false; bande.forEach(q => { q.rapide = false; q.cible = null; q.chemin = []; }); }
 }
 function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2ec"], 47: ["george", "#b4aaa4", "#7a7c80", "#2a1a10"], 31: ["marty", "#5f86b8", "#4a76ad", "#e2ddd2"], 32: ["biff", "#c8201c", "#1d2433", "#1a1a1a"], 33: ["skinhead", "#151517", "#8a7a5a", "#1a1a1a"], 34: ["troisd", "#e2e0d8", "#3a3a3c", "#1a1a1a"], 35: ["match", "#d9a520", "#2a2a2e", "#1a1a1a"],
-    43: ["lou", "#ece4d2", "#3a3a3c", "#1a1a1a"], 44: ["lou", "#e8e2d4", "#3a3a3c", "#1a1a1a"], 45: ["pompiste", "#2f4a3a", "#2f4a3a", "#1a1a1a"],
+    43: ["lou", "#ece4d2", "#3a3a3c", "#1a1a1a"], 44: ["lou", "#e8e2d4", "#3a3a3c", "#1a1a1a"], 45: ["pompiste", "#f2f0ea", "#f0eee6", "#4a2c1a"],
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
@@ -6866,7 +6999,7 @@ function connecter() {
     else if (m.t === "affiche") { M.afficheTaille = m.taille; M.L && M.L.tailleAffiche && M.L.tailleAffiche(m.taille); ctx.surAfficheTaille && ctx.surAfficheTaille(m.taille); }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
-    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); M.hvInit = false; M.hvDoubles = false; } }
+    else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); retirerAncien(-45); M.hvInit = false; M.hvDoubles = false; M.hvPompiste = false; } }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
