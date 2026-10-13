@@ -3669,7 +3669,10 @@ export async function ouvrir(ctx) {
   connecter();
   M.minuteur = setInterval(majAmbiance, 60000);
   let avant = performance.now();
-  rendu.setAnimationLoop(t => {
+  // (une erreur dans une image ne doit jamais arrêter la boucle : three.js ne redemande l'image suivante qu'après celle-ci, une erreur figeait tout l'écran)
+  let erreurVue = 0;
+  rendu.setAnimationLoop(t => { try { image(t); } catch (e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } } });
+  function image(t) {
     if (!M || !M.scene) return;
     const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
@@ -3868,7 +3871,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     rendu.render(M.scene, M.camera);
-  });
+  }
   M.redim();
   return M;
 }
