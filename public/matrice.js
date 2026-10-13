@@ -5272,13 +5272,16 @@ function eclairsCabine(ms) { const moi = M && M.gens.get(M.moiNum); if (!moi) re
   const N = 10, arcs = [];
   for (let i = 0; i < 6; i++) { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((N + 1) * 3), 3));
     const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: i % 2 ? 0x9fdcff : 0xffffff, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false })); l.frustumCulled = false; g.add(l); arcs.push(l); }
-  const lum = new THREE.PointLight(0x9fdcff, 0, 9, 1.4); lum.position.set(c.x, c.y + 1.4, c.z); scene.add(lum); const t0 = performance.now(); let der = 0;
+  // (pas de lumière ajoutée : sur PC, une lumière de plus oblige la carte graphique à tout recalculer, et l'image se figeait ; la lueur bleutée est un voile qui clignote)
+  const lueur = voile("background:radial-gradient(circle at 50% 55%,rgba(160,220,255,.55),rgba(120,200,255,0) 60%);opacity:0;transition:none", 0); const t0 = performance.now(); let der = 0;
+  const lum = { set intensity(v) { if (lueur) lueur.style.opacity = Math.min(1, v / 12); } };
   const tracer = (l) => { const p = l.geometry.attributes.position.array, a0 = Math.random() * Math.PI * 2, a1 = a0 + (Math.random() - .5) * 2.4, r0 = .45 + Math.random() * .4, r1 = .3 + Math.random() * .5, y0 = 2.3 + Math.random() * .3, y1 = Math.random() * .5;
     for (let i = 0; i <= N; i++) { const u = i / N, a = a0 + (a1 - a0) * u, j = i && i < N ? 1 : 0, r = r0 + (r1 - r0) * u + j * (Math.random() - .5) * .3;
       p[i * 3] = c.x + Math.cos(a) * r; p[i * 3 + 1] = c.y + y0 + (y1 - y0) * u + j * (Math.random() - .5) * .18; p[i * 3 + 2] = c.z + Math.sin(a) * r; }
     l.geometry.attributes.position.needsUpdate = true; };
-  const f = () => { if (!M || M.scene !== scene) { scene.remove(g, lum); return; } const e = performance.now() - t0;
-    if (e > ms) { g.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose(); }); scene.remove(g, lum); return; }
+  const fin = () => { g.traverse(o => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose(); }); scene.remove(g); if (lueur) lueur.remove(); };
+  const f = () => { if (!M || M.scene !== scene) { fin(); return; } const e = performance.now() - t0;
+    if (e > ms) { fin(); return; }
     if (performance.now() - der > 90) { der = performance.now(); const k = 2 + Math.floor(Math.random() * 2 + e / ms * 3);
       arcs.forEach((l, i) => { l.visible = i < k; if (l.visible) tracer(l); });
       lum.intensity = Math.random() < .5 ? 0 : 5 + Math.random() * 8; if (Math.random() < .25) sonBruit(.08, 5000 + Math.random() * 3000, .12); }
