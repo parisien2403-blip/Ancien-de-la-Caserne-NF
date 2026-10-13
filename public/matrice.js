@@ -22,7 +22,7 @@ export const TENUES = {
   robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, soie: { nom: "Chemisier et pantalon en soie" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
-  pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
+  pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
   rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
@@ -184,6 +184,38 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#0a0a0b"; x.beginPath(); x.moveTo(88, 150); x.lineTo(112, 150); x.lineTo(110, 262); x.lineTo(90, 262); x.closePath(); x.fill();
       x.strokeStyle = "#8a8d92"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(88, 152); x.lineTo(90, 262); x.moveTo(112, 152); x.lineTo(110, 262); x.stroke();
       x.fillStyle = "#1c1c1f"; x.fillRect(80, 142, 40, 9); x.fillStyle = "#e9e9e9"; x.fillRect(58, 150, 4, 100); x.fillRect(138, 150, 4, 100); }
+    // les Village People : le cowboy, l'ouvrier, l'Indien, le soldat, le policier, le motard
+    if (o.pose !== "dos" && !profil && /^vp/.test(t)) {
+      const torse = (f) => { x.save(); x.beginPath(); x.moveTo(60, 146); x.lineTo(140, 146); x.lineTo(142, 264); x.lineTo(58, 264); x.closePath(); x.clip(); f(); x.restore(); };
+      const ceint = (col, boucle, y = 254) => { x.fillStyle = col; x.fillRect(58, y, 84, 11); x.fillStyle = boucle; x.fillRect(93, y + 1, 14, 9); };
+      if (t === "vpcowboy") { torse(() => { x.strokeStyle = "rgba(20,10,30,.55)"; x.lineWidth = 2; for (let k = 60; k < 142; k += 7) { x.beginPath(); x.moveTo(k, 146); x.lineTo(k, 264); x.stroke(); } for (let k = 150; k < 264; k += 7) { x.beginPath(); x.moveTo(58, k); x.lineTo(142, k); x.stroke(); }
+          x.fillStyle = "#16120e"; x.beginPath(); x.moveTo(58, 146); x.lineTo(86, 150); x.lineTo(84, 264); x.lineTo(58, 264); x.closePath(); x.moveTo(142, 146); x.lineTo(114, 150); x.lineTo(116, 264); x.lineTo(142, 264); x.closePath(); x.fill(); });   // la chemise à carreaux rouges, le gilet de cuir noir
+        x.fillStyle = "#c81e22"; x.beginPath(); x.moveTo(80, 142); x.lineTo(120, 142); x.lineTo(100, 182); x.closePath(); x.fill(); x.fillStyle = "rgba(255,255,255,.7)"; for (const [a, b] of [[92, 150], [104, 152], [98, 164], [100, 172]]) { x.beginPath(); x.arc(a, b, 1.8, 0, 7); x.fill(); }   // le bandana
+        ceint("#6a3a1a", "#cfd2d6");
+        if (jambesDroites) { x.fillStyle = "#4a2414"; x.fillRect(66, 270, 16, 124); x.fillRect(118, 270, 16, 124); x.fillStyle = "#e8dcc8"; x.fillRect(66, 330, 16, 8); x.fillRect(118, 330, 16, 8); } }   // les jambières de cuir
+      if (t === "vpouvrier") { torse(() => { x.strokeStyle = "rgba(40,70,110,.25)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 264); x.stroke(); x.strokeRect(68, 168, 22, 20); x.strokeRect(110, 168, 22, 20); });
+        x.fillStyle = "#d8b89a"; x.beginPath(); x.moveTo(90, 146); x.lineTo(110, 146); x.lineTo(100, 170); x.closePath(); x.fill(); x.fillStyle = "#e8eef4"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(100, 176 + k * 16, 2, 0, 7); x.fill(); }
+        ceint("#5a3a1e", "#b8bcc0", 252); x.fillStyle = "#3a5a3a"; x.fillRect(58, 263, 84, 6); x.fillStyle = "#8a8e94"; x.fillRect(70, 262, 6, 22); x.fillRect(124, 262, 7, 18); x.strokeStyle = "#c8ccd0"; x.lineWidth = 2; x.beginPath(); x.arc(84, 290, 8, 0, 7); x.stroke(); }   // la chemise en jean, la ceinture à outils
+      if (t === "vpindien") { const P2 = "#b07a54"; x.fillStyle = P2; x.fillRect(58, 146, 84, 120);   // torse nu, le plastron d'os, le collier
+        x.fillStyle = "#f2ead8"; for (let k = 0; k < 9; k++) { x.fillRect(74, 170 + k * 8, 20, 4); x.fillRect(106, 170 + k * 8, 20, 4); } x.fillStyle = "#8a2a1a"; x.fillRect(94, 166, 12, 78); x.fillStyle = "#e8e2d0"; for (let k = 0; k < 5; k++) x.fillRect(96, 170 + k * 14, 8, 6);
+        x.strokeStyle = "#c8202a"; x.lineWidth = 3; x.beginPath(); x.arc(100, 146, 22, .2, Math.PI - .2); x.stroke();
+        x.fillStyle = "#d8c4a0"; x.beginPath(); x.moveTo(76, 262); x.lineTo(124, 262); x.lineTo(118, 330); x.lineTo(82, 330); x.closePath(); x.fill(); x.fillStyle = "#b8202a"; x.fillRect(82, 300, 36, 5); x.fillStyle = "#6a3a1a"; x.fillRect(58, 256, 84, 8);
+        for (const sx of [-1, 1]) { const bx = 100 + sx * 24;   // les longues plumes de la coiffe qui descendent de chaque côté du cou, sur la poitrine
+          for (const [dx, lg] of [[-5, 96], [4, 84]]) { x.fillStyle = "#f4f2ec"; x.beginPath(); x.ellipse(bx + dx * sx, 140 + lg / 2, 6, lg / 2, sx * .06, 0, 7); x.fill();
+            x.fillStyle = "#c8202a"; x.beginPath(); x.ellipse(bx + dx * sx, 140 + lg - 12, 6, 12, sx * .06, 0, 7); x.fill(); x.strokeStyle = "rgba(120,110,100,.6)"; x.lineWidth = 1.2; x.beginPath(); x.moveTo(bx + dx * sx, 136); x.lineTo(bx + dx * sx + sx * 2, 140 + lg); x.stroke(); }
+          x.fillStyle = "#e8e2d0"; x.beginPath(); x.arc(bx, 142, 5, 0, 7); x.fill(); } }   // le pagne
+      if (t === "vpsoldat") { torse(() => { x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 1.6; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 264); x.stroke(); x.strokeRect(66, 172, 24, 22); x.strokeRect(110, 172, 24, 22); });
+        x.fillStyle = "#3e4630"; x.beginPath(); x.moveTo(86, 144); x.lineTo(100, 160); x.lineTo(114, 144); x.closePath(); x.fill(); ceint("#2a2c22", "#a8a890"); }   // la tenue kaki
+      if (t === "vpflic") { x.fillStyle = "#1a1a1a"; x.fillRect(70, 150, 3, 110);   // la chemise blanche, l'écusson, l'insigne, les galons, le ceinturon
+        x.fillStyle = "#1d3f8a"; x.beginPath(); x.ellipse(70, 168, 9, 11, 0, 0, 7); x.fill(); x.fillStyle = "#e0b030"; x.beginPath(); x.ellipse(70, 168, 5, 6, 0, 0, 7); x.fill();
+        x.fillStyle = "#cfa83a"; x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 5 : 10; x.lineTo(118 + Math.cos(a) * r, 186 + Math.sin(a) * r); } x.closePath(); x.fill();
+        x.strokeStyle = "rgba(0,0,0,.15)"; x.lineWidth = 1.4; x.strokeRect(106, 196, 24, 20); x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 252); x.stroke(); x.fillStyle = "#cfa83a"; x.beginPath(); x.arc(126, 150, 3, 0, 7); x.fill();
+        ceint("#141414", "#d8d8d4", 250); }
+      if (t === "vpmotard") { x.fillStyle = "#8a5a3a"; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(110, 252); x.lineTo(90, 252); x.closePath(); x.fill();   // le blouson ouvert sur le torse, les chaînes, le ceinturon clouté
+        x.fillStyle = "rgba(40,24,14,.5)"; for (let k = 0; k < 60; k++) x.fillRect(88 + (k * 37) % 24, 156 + (k * 53) % 90, 2, 2);
+        x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(64, 156, 8, 90); x.fillRect(128, 156, 8, 90);
+        x.strokeStyle = "#c8ccd2"; x.lineWidth = 3; for (const [a, b, c2, d] of [[66, 150, 100, 214], [134, 150, 100, 214], [100, 214, 100, 250]]) { x.setLineDash([5, 3]); x.beginPath(); x.moveTo(a, b); x.lineTo(c2, d); x.stroke(); } x.setLineDash([]);
+        x.beginPath(); x.arc(100, 214, 9, 0, 7); x.stroke(); ceint("#141414", "#c8ccd2", 252); x.fillStyle = "#c8ccd2"; for (let k = 0; k < 8; k++) { x.beginPath(); x.arc(62 + k * 10, 258, 1.8, 0, 7); x.fill(); } } }
     // Émile et Images : le débardeur à damier bleu, gris et noir sur manches en résille noire ; le t-shirt noir imprimé ; la chemise blanche ouverte
     if (o.pose !== "dos" && !profil && /^ei(chant|guitare|batterie)$/.test(t)) {
       if (t === "eichant") { x.save(); x.beginPath(); x.moveTo(64, 150); x.lineTo(136, 150); x.lineTo(140, 262); x.lineTo(60, 262); x.closePath(); x.clip();
@@ -387,6 +419,8 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312]
         // le DJ : les deux mains sur les platines (mix1), une main au casque (mix2), le poing levé (mix3)
         // Thriller : les deux bras pliés en griffes de zombie, d'un côté puis de l'autre
+        // YMCA : les bras font les lettres (vues de la salle)
+        : o.pose === "ymcaY" ? (sens > 0 ? [8, 30] : [192, 30]) : o.pose === "ymcaM" ? (sens > 0 ? [66, -6] : [134, -6]) : o.pose === "ymcaC" ? (sens > 0 ? [168, 236] : [206, 70]) : o.pose === "ymcaA" ? (sens > 0 ? [80, -62] : [120, -62])
         : o.pose === "thriller1" ? (sens > 0 ? [12, 176] : [70, 150]) : o.pose === "thriller2" ? (sens > 0 ? [130, 150] : [188, 176])
         : o.pose === "thriller3" ? (sens > 0 ? [22, 96] : [178, 96])
         // Mr Hernandez et sa canne : levée derrière la tête (canne1), tenue à deux mains au-dessus de la tête (canne2), pointée au loin (canne3), plantée au sol (canne4)
@@ -412,8 +446,8 @@ export function dessinerBonhomme(o, tete) {
       mains[sens > 0 ? 0 : 1] = cible || [cx - 96 * Math.sin(a), 158 + 96 * Math.cos(a)];
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
-      const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker";
-      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+      const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy";
+      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
@@ -551,9 +585,9 @@ export function dessinerBonhomme(o, tete) {
           y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           if (t === "batteuse") { y2.strokeStyle = "rgba(190,110,50,.5)"; y2.lineWidth = Math.max(1, w * .012); for (let k = 0; k < 70; k++) { y2.beginPath(); y2.arc((k * 37 % 100) / 100 * w, (k * 53 % 100) / 100 * h, w * .035, k, k + 3.5); y2.stroke(); } }
           else { y2.strokeStyle = "rgba(120,96,60,.45)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 34; k++) { const sx = (k + .5) / 34 * w; y2.beginPath(); y2.moveTo(sx, h * .03); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .5, sx + (k % 2 ? 1 : -1) * w * .02, h); y2.stroke(); } } }
-        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george|pompiste|eichant|eiguitare|eibatterie)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
+        else if (/^(rebecca|leon|barry|jill|wesker|chris|gore|gahan|fletcher|doc|marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george|pompiste|eichant|eiguitare|eibatterie|vpcowboy|vpouvrier|vpindien|vpsoldat|vpflic|vpmotard)$/.test(t)) {   // de dos, les cheveux des héros de Resident Evil (et de Depeche Mode)
           const C = { lorraine: ["#6a3a20", "#3a1e10"], george: ["#4a3426", "#2a1c12"], marty: ["#6a4a2e", "#3e2a18"], biff: ["#b8925a", "#7a5a30"], match: ["#d0ae72", "#8a6a3a"], troisd: ["#2a2018", "#120c08"], skinhead: ["#a87850", "#6a4a2a"], pois: ["#5a3420", "#2a1a10"], ecossaise: ["#4a2a18", "#24140a"],
-            bretelles: ["#6e5a40", "#3e2e1e"], lou: ["#ece8dc", "#c9c4b4"], serveur: ["#f4f4f0", "#c9c9c2"], pompiste: ["#f4f4f0", "#d2d2cc"], eichant: ["#4a2a1c", "#2a160c"], eibatterie: ["#1a1614", "#0a0806"], eiguitare: ["#a88a64", "#6e5638"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
+            bretelles: ["#6e5a40", "#3e2e1e"], lou: ["#ece8dc", "#c9c4b4"], serveur: ["#f4f4f0", "#c9c9c2"], pompiste: ["#f4f4f0", "#d2d2cc"], eichant: ["#4a2a1c", "#2a160c"], vpcowboy: ["#6e6a52", "#4a4634"], vpouvrier: ["#f4f4f0", "#c8c8c2"], vpindien: ["#f2f0ec", "#c8202a"], vpsoldat: ["#3e4a30", "#28301e"], vpflic: ["#1a1a1c", "#f2f2ee"], vpmotard: ["#1a1a1c", "#0a0a0c"], eibatterie: ["#1a1614", "#0a0806"], eiguitare: ["#a88a64", "#6e5638"], serveuse: ["#c8202a", "#8a1414"], gilet: ["#4a3a2a", "#2a2018"], varsity: ["#4a3020", "#24180c"], doc: ["#f4f4f0", "#c9c9c2"], gore: ["#e2d4a8", "#a8946a"], gahan: ["#241c16", "#0e0a08"], fletcher: ["#9a6a48", "#5e3e28"], rebecca: ["#4a3426", "#2a1c12"], leon: ["#4a3a2e", "#2a1e16"], barry: ["#4a3424", "#2a1c12"], jill: ["#5e3e26", "#38220f"], wesker: ["#d2b97c", "#9c8250"], chris: ["#6a4e34", "#3e2c1c"] }[t];
           g.addColorStop(0, C[0]); g.addColorStop(1, C[1]); y2.fillStyle = g; y2.fillRect(0, 0, w, h); y2.globalCompositeOperation = "source-atop";
           y2.strokeStyle = "rgba(255,255,255,.12)"; y2.lineWidth = Math.max(1, w * .01); for (let k = 0; k < 26; k++) { const sx = (k + .5) / 26 * w; y2.beginPath(); y2.moveTo(sx, h * .04); y2.quadraticCurveTo(sx + (k % 3 - 1) * w * .03, h * .45, sx + (k % 2 ? 1 : -1) * w * .02, h * .9); y2.stroke(); } }
         else if (t === "guitariste") {   // de dos : le chapeau noir sur des cheveux bruns
@@ -3866,6 +3900,11 @@ export async function ouvrir(ctx) {
           const ph = t / 280 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "genoux2" : "genoux1";
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = Math.abs(Math.sin(ph * Math.PI)) * .05; p.dansait = true; }
+        else if (p.info.danse === "ymca" && p.poses.ymcaY) {
+          // le YMCA, tous ensemble : Y, M, C, A (une lettre par temps), puis quatre temps de pas disco en se balançant
+          const c = choreYMCA(), pose = c.pose;
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = c.rot; p.corps.position.x += (c.sx - p.corps.position.x) * .3; if (!p.cible) p.corps.position.y = c.saut; p.dansait = true; }
         else if (p.info.danse === "disco") {
           // façon Saturday Night Fever : le doigt en l'air, puis vers le sol, en roulant des hanches
           const ph = t / 460 + p.info.numero * .7, pose = Math.floor(ph) % 2 ? "disco2" : "disco1";
@@ -3883,7 +3922,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -4651,7 +4690,7 @@ async function dessinerCorps(p) {
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
     assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
-    ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
+    ...(p.info.ymca ? { ymcaY: pose("ymcaY"), ymcaM: pose("ymcaM"), ymcaC: pose("ymcaC"), ymcaA: pose("ymcaA") } : {}), ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
@@ -4947,7 +4986,8 @@ function animerGroupe() {
     p.info.danse = place === "dmguitare" ? "guitare" : place; p.info.enMusique = true;
     if (place === "dmguitare") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .5) * .4, nz = p.base[1] + Math.sin(t2 * .37 + 1) * .25; if (okScene(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; } }
     if (place === "chant") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .3) * .35; if (okScene(nx, p.base[1])) p.g.position.x = nx; if (M.L.micDM) M.L.micDM.position.x = p.g.position.x; } }
-  if (dm || ei) { for (const [num] of GROUPE) if (M.gens.has(num)) retirerAncien(num); }
+  const vp = !!(M.djJoue && AIR_VP.test(M.djTitre || ""));   // (les Village People prennent toute la scène)
+  if (dm || ei || vp) { for (const [num] of GROUPE) if (M.gens.has(num)) retirerAncien(num); }
   else for (const [num, id, place, nom, tenue, couleur, bas, pieds] of GROUPE) { let p = M.gens.get(num);
     if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, [x, z] = M.L.scene[place];
       p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
@@ -5014,6 +5054,25 @@ const BEEGEES = [[-8, 8, -1.6, "Robin Gibb", "robin"], [-9, 9, 0, "Barry Gibb", 
 const AIR_BEEGEES = /bee ?gees?|gibb|stayin|night fever|tragedy|jive talkin|how deep is your love|more than a woman|you should be dancing|too much heaven|massachusetts|nights on broadway|you win again|to love somebody|i started a joke|how can you mend|lonely days|spicks and specks|love you inside out|fanny be tender|boogie child|still waters/;
 /* le titre d'une musique, rendu facile à reconnaître : minuscules, sans accents, tirets, soulignés ni apostrophes (« Bee_Gees - Stayin'_Alive.mp3 » → « bee gees stayin alive mp3 ») */
 function normTitre(t) { return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/['’`]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+/* --- les Village People (réglés par l'administrateur) : dès que passe l'un de leurs tubes, ils montent tous les six sur la scène et dansent le YMCA --- */
+const AIR_VP = /village people|ymca|y m c a|in the navy|macho man|go west|cant stop the music|san francisco you ve got me/;
+const VP = [[-57, 57, "Le cowboy", "vpcowboy", "cowboy", -3.0], [-58, 58, "L'ouvrier", "vpouvrier", "ouvrier", -1.8], [-59, 59, "L'Indien", "vpindien", "indien", -.6], [-60, 60, "Le soldat", "vpsoldat", "soldat", .6], [-61, 61, "Le policier", "vpflic", "flic", 1.8], [-62, 62, "Le motard", "vpmotard", "motard", 3.0]];
+const VP_DEF = { 57: ["#b8202a", "#3d5a80", "#5a3418"], 58: ["#9ec0e2", "#8fb0d8", "#6a4a2a"], 59: ["#b07a54", "#8a5a3a", "#6a4428"], 60: ["#56603e", "#4e5838", "#1a1a1a"], 61: ["#f4f4f2", "#d8ccb0", "#141414"], 62: ["#141416", "#121214", "#0e0e0e"] };
+function choreYMCA() { const T = performance.now() / 1000 * 2.1, k = Math.floor(T) % 8, f = T % 1;   // (à peu près le tempo de YMCA : 126 battements par minute)
+  if (k < 4) return { pose: ["ymcaY", "ymcaM", "ymcaC", "ymcaA"][k], rot: 0, sx: 0, saut: Math.sin(Math.min(1, f * 3) * Math.PI) * .05 };
+  const g = k % 2 === 0; return { pose: g ? "disco1" : "disco2", rot: (g ? -.08 : .08) * Math.sin(f * Math.PI), sx: (g ? -.12 : .12) * Math.sin(f * Math.PI), saut: Math.abs(Math.sin(f * Math.PI)) * .04 }; }
+function animerVillagePeople() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && AIR_VP.test(M.djTitre || "");
+  for (const [num, id, nom, tenue, img, dx] of VP) { let p = M.gens.get(num);
+    if (!air) { if (p) retirerAncien(num); continue; }
+    if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, D = VP_DEF[id], [x, z] = placeScene(dx, -.2);
+      p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || D[0], bas: P.bas || D[1], pieds: P.pieds || D[2], reglage: P.reglage || (id === 59 ? { k: 1.4, dx: 0, dy: 42, r: 0, l: 1, h: 1 } : null), initiales: "♪",
+        teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/vp/${img}-tete.png`, pnj: true, danseur: true, ymca: true, x, z }); if (!p) continue;
+      p.prepa = ["ymcaY", "ymcaM", "ymcaC", "ymcaA", "disco1", "disco2"]; }
+    if (p.prepa && p.prepa.length && p.poses) { const k = p.prepa.shift(); try { p.poses[k]; } catch (e) {} }   // (les poses de la danse sont dessinées d'avance, une par image : pas d'à-coup pendant le YMCA)
+    p.info.danse = "ymca"; }
+}
 function animerBeeGees() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
   const air = M.djJoue && AIR_BEEGEES.test(M.djTitre || ""), present = M.gens.get(-9);
@@ -7039,6 +7098,7 @@ function connecter() {
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); retirerAncien(-45); M.hvInit = false; M.hvDoubles = false; M.hvPompiste = false; } }
     else if (m.t === "pnj" && m.p && m.p.id === ID_DOC) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(DOC)) { const q = M.gens.get(DOC), pos = q.g.position.clone(); retirerAncien(DOC); const d = ajouterDoc(pos.x, pos.z); } }
+    else if (m.t === "pnj" && m.p && m.p.id >= 57 && m.p.id <= 62) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (les Village People : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 54 && m.p.id <= 56) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Émile et Images : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
