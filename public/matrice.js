@@ -1625,7 +1625,7 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
-      musiqueVoyage(); setTimeout(() => { fermer(); if (M) vueFace(3000); }, 700);   // (la musique du voyage ; plus d'éclairs : ils figeaient les PC modestes)
+      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(2600); vueFace(3000); } }, 700);   // (la musique du voyage, et les éclairs qui traversent la cabine jusqu'au départ)
       setTimeout(() => depart(), 3300);
       const depart = () => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
         if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }; }
@@ -6458,7 +6458,7 @@ function construireHillValley(A, T, L, scene) {
   const sol = A.ajoute(new THREE.PlaneGeometry(160, 160), A.mat({ map: tex(asph, 40, 40) }), 0, 0, 0, false); sol.rotation.x = -Math.PI / 2; L.sol = sol;
   const ligne = A.mat({ color: 0xf2efe2 }); for (let x = -26; x < 27; x += 4) { const l = A.ajoute(new THREE.PlaneGeometry(2, .14), ligne, x, .01, 16.3, false); l.rotation.x = -Math.PI / 2; }
   for (const sx of [-1, 1]) for (let z = -10; z < 12; z += 4) { const l = A.ajoute(new THREE.PlaneGeometry(.14, 2), ligne, sx * 20.3, .01, z, false); l.rotation.x = -Math.PI / 2; }
-  for (let i = 0; i < 7; i++) { const l = A.ajoute(new THREE.PlaneGeometry(.6, 4), ligne, -13 + i * 1.1, .01, 16.3, false); l.rotation.x = -Math.PI / 2; }   // le passage piéton
+  for (let i = 0; i < 9; i++) { const l = A.ajoute(new THREE.PlaneGeometry(3.2, .55), ligne, -9.7, .012, 12.3 + i * 1.03, false); l.rotation.x = -Math.PI / 2; }   // le passage piéton, d'un trottoir à l'autre
   // la place : le trottoir de pierre, la pelouse, les allées en gravier
   const pierre = A.mat({ color: 0xc9c3b4, roughness: .95 }), gazon = toile(128, 128, (x) => { x.fillStyle = "#4f8a34"; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < .5 ? "rgba(40,90,20,.5)" : "rgba(120,170,70,.4)"; x.fillRect(Math.random() * 128, Math.random() * 128, 1, 3); } });
   const plaque = (w, d, x, z, m, y = trottoirH) => { const o = A.ajoute(new THREE.BoxGeometry(w, y, d), m, x, y / 2, z, false); o.receiveShadow = true; return o; };
@@ -6629,6 +6629,7 @@ function animerHV(now) {
   if (LOU.jukeTex) LOU.jukeTex.offset.y = (now / 7000) % 1;   // (les colonnes du juke-box changent doucement de couleur)
   { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
     if (dedans && !(musBttf && musBttf.cafe) && now > voyageFin) jukeboxCafe(M.cafeI || 0); else if (!dedans && musBttf && musBttf.cafe) musiqueBttf("sons/bttf/sandman.mp3", true, 1500);
+    else if (!dedans && !M.cine && now > voyageFin && !musVoyage && (!musBttf || musBttf.paused || musBttf.ended) && now > (M.musHVT || 0)) { M.musHVT = now + 5000; musiqueBttf("sons/bttf/sandman.mp3", true); }   // (arrivé par la cabine, ou la musique s'est arrêtée : la ville reprend son air)
     reglageVolumeCafe(dedans);
     // vus du dehors (par la vitrine), il n'y a que Lou dans son café : les autres n'apparaissent qu'une fois entré (sinon on verrait leurs doubles en double)
     { const vu = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)); for (const [id] of HABITANTS) { const p = id !== 43 && M.gens.get(-id); if (p) p.g.visible = vu; } }
