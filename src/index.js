@@ -84,9 +84,12 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   // les héros de Resident Evil revenus en zombies (l'équipier tombé revient)
   48: { nom: "Rebecca zombie", tenue: "rebecca", couleur: "#55534f", bas: "#3d3f37", pieds: "#141414" }, 49: { nom: "Leon zombie", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111" },
   50: { nom: "Barry zombie", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 51: { nom: "Jill zombie", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
-  52: { nom: "Wesker zombie", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 53: { nom: "Chris zombie", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 53) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
+  52: { nom: "Wesker zombie", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 53: { nom: "Chris zombie", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" },
+  // Émile et Images, quand passe leur medley : le chanteur au micro, le batteur, le guitariste (qui chante aussi)
+  54: { nom: "Le chanteur (Émile et Images)", tenue: "eichant", couleur: "#141416", bas: "#1c1c20", pieds: "#141414" }, 55: { nom: "Le batteur (Émile et Images)", tenue: "eibatterie", couleur: "#f4f4f2", bas: "#2c3240", pieds: "#1a1a1a" },
+  56: { nom: "Le guitariste (Émile et Images)", tenue: "eiguitare", couleur: "#141416", bas: "#2a2c34", pieds: "#1a1a1a" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 56) ? id : 1;
+const TENUES_MATRICE = ["eichant", "eibatterie", "eiguitare", "garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
