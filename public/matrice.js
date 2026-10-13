@@ -5144,16 +5144,59 @@ const IMMEUBLES_HV = {
       B.enseigne(-.9, 3.1, 6.8, .7, "Western Auto", { fond: "#c8202a", coul: "#fff", bord: "#f4f0e6", police: "Arial Black, Arial", style: "", degrade: true });
       B.bandeau(X0, X1, 3.85, { coul: CREM }); B.corniche(X0, X1, 9.5, { coul: CREM, consoles: [-4.3, -2.55, -.85, .85, 2.55, 4.3] }); } },
   // le garage Texaco : murs blancs, bandes vertes et rouges, portes de garage vitrées, l'étoile
-  texaco: { larg: 9, corps: 5.4, f: (B) => { const X0 = -4.5, X1 = 4.5;
-      B.mur(X0, X1, 0, 6.5, "enduit", "#f6f4ee", { contour: [[X0, 5.4], [-1.8, 5.4], [-1.8, 6.5], [1.8, 6.5], [1.8, 5.4], [X1, 5.4]] });
-      for (const cx of [-2.5, 2.5]) { B.trou(cx - 1.6, cx + 1.6, .02, 3.6, .5, { tableau: "#d8d8d0" }); const c = toile(320, 360, (x, W, H) => { x.fillStyle = "#e8e8e2"; x.fillRect(0, 0, W, H); for (let r = 0; r < 4; r++) { x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(0, r * H / 4, W, 3); if (r === 0) for (let k = 0; k < 6; k++) { const g = x.createLinearGradient(0, 0, 0, H / 4); g.addColorStop(0, "#9ab0c0"); g.addColorStop(1, "#2a3a48"); x.fillStyle = g; x.fillRect(8 + k * W / 6, 14, W / 6 - 14, H / 4 - 26); } else for (let k = 0; k < 4; k++) { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(10 + k * W / 4, r * H / 4 + 12, W / 4 - 20, H / 4 - 24); } } });
-        B.plan(3.2, 3.58, cx, 1.81, -.45, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .5 })); }
-      B.boite(9.1, .22, .12, 0, 4.1, .06, "#2f7a5a"); B.boite(9.1, .1, .12, 0, 3.88, .06, "#c8202a"); B.boite(9.1, .16, .12, 0, 5.3, .06, "#2f7a5a");
-      B.enseigne(0, 4.4, 3.4, .7, "TEXACO", { fond: "#c8202a", coul: "#fff", police: "Arial Black, Arial", style: "" });
-      const et = toile(256, 256, (x) => { x.fillStyle = "#c8202a"; x.beginPath(); x.arc(128, 128, 124, 0, 7); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.arc(128, 128, 100, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 36 : 92; x.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f7a5a"; x.font = "bold 60px Arial"; x.textAlign = "center"; x.fillText("T", 128, 150); });
-      B.cyl(.55, .55, .1, 0, 5.85, .05, "#c8202a", { rx: Math.PI / 2, seg: 24 }); B.plan(1.1, 1.1, 0, 5.85, .105, new THREE.MeshStandardMaterial({ map: texHV(et), transparent: true, alphaTest: .5 }));
-      B.boite(.9, 3.6, .2, 0, 1.8, .1, "#e8e6de"); B.enseigne(0, 2.4, .8, .6, ["OIL", "LUBE"], { fond: "#2f7a5a", coul: "#fff", ep: .04, z: .2 }); } },
-  // la pharmacie : brique sombre, auvent jaune, fontaine à soda en vitrine, enseigne DRUGS au néon
+  // la station Texaco : brique vernissée blanche, soubassement vert, porche arrondi à bandes vertes et son enseigne, l'îlot des pompes, le grand panneau rond sur son mât
+  texaco: { larg: 9, corps: 6.8, obst: [[-.55, 3.25, .3], [3.75, 3.25, .3], [1.6, 2.2, 1.1], [.4, 2.2, .6], [2.8, 2.2, .6], [-3.6, 4.3, .35], [4.2, 3.5, .45]], f: (B) => { const X0 = -4.5, X1 = 4.5, BL = "#f2f2ea", VE = "#2f8a4a", GR = "#a8aaa6";
+      B.mur(X0, X1, .8, 6.8, "brique", BL, { joint: "#c8c8c0" }); B.mur(X0, X1, 0, .8, "enduit", VE);
+      B.boite(9.1, .3, .3, 0, 6.85, .05, GR); B.boite(9.1, .08, .1, 0, 6.65, .05, GR);
+      // l'étage : la longue fenêtre en bandeau, ses deux bandes grises
+      B.fenetre(-1.6, 4.55, 4, .95, { carreaux: 5, rangs: 1, appui: false, linteau: false, cadre: "#e8e8e2", vitre: 0, prof: .15 }); for (const h of [4.35, 5.65]) B.boite(5.4, .14, .18, -1.4, h + .07, .09, GR);
+      // le garage : la grande porte verte à panneaux, son linteau
+      B.trou(-4.2, -1.6, .02, 3.4, .45, { tableau: "#d8d8d0" }); const pg = toile(260, 340, (x, W, H) => { x.fillStyle = VE; x.fillRect(0, 0, W, H); for (let r = 0; r < 4; r++) { x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(0, r * H / 4, W, 3); for (let k = 0; k < 4; k++) { if (r === 0) { const g = x.createLinearGradient(0, 0, 0, H / 4); g.addColorStop(0, "#9ab0c0"); g.addColorStop(1, "#2a3a48"); x.fillStyle = g; } else x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(8 + k * W / 4, r * H / 4 + 12, W / 4 - 14, H / 4 - 22); } } });
+      B.plan(2.6, 3.38, -2.9, 1.71, -.42, new THREE.MeshStandardMaterial({ map: texHV(pg), roughness: .55 })); B.boite(2.9, .2, .14, -2.9, 3.5, .07, GR);
+      // sous le porche : la baie ouverte (atelier sombre) et le bureau vitré
+      B.trou(-1.1, 1.7, .02, 3.3, 1.6, { tableau: "#d0d0c8" }); B.plan(2.8, 3.3, .3, 1.65, -1.58, new THREE.MeshStandardMaterial({ color: 0x1c1e1c, roughness: .9 })); B.boite(2.8, .6, .1, .3, 3, -.1, VE);
+      B.vitrine(2.2, 4.2, .8, 3.1, { cadre: "#e8e8e2", bas: VE, socle: .01, marchandise: "boites", imposte: .45, montants: 1, prof: .25 });
+      B.enseigne(.3, 3.38, 1.3, .28, "NO SMOKING", { fond: "#f4f4f0", coul: "#c8202a", ep: .02, police: "Arial Black, Arial", style: "" });
+      const coca = toile(100, 200, (x, W, H) => { x.fillStyle = "#f4f0e6"; x.fillRect(0, 0, W, H); x.fillStyle = "#c8202a"; x.font = "italic bold 22px Georgia"; x.textAlign = "center"; x.fillText("Drink", W / 2, 30); x.fillText("Coca-Cola", W / 2, 56); x.fillStyle = "#4a2a1a"; x.beginPath(); x.ellipse(W / 2, 130, 14, 46, 0, 0, 7); x.fill(); });
+      B.plan(.45, .9, 1.95, 2.2, .01, new THREE.MeshStandardMaterial({ map: texHV(coca), roughness: .5 }));
+      // le porche : dalle aux angles arrondis, trois bandes vertes, les poteaux, l'acrotère et l'enseigne TEXACO
+      const forme = (m) => { const s = new THREE.Shape(), a = -1.4 - m, b = X1 + .02, p = 3.7 + m, r = 1.1 + m; s.moveTo(a, 0); s.lineTo(a, -(p - r)); s.quadraticCurveTo(a, -p, a + r, -p); s.lineTo(b - r, -p); s.quadraticCurveTo(b, -p, b, -(p - r)); s.lineTo(b, 0); s.closePath(); return s; };
+      B.boite(0, 0, 0, 0, 3.6, 0, "#f4f4ee", { geo: new THREE.ExtrudeGeometry(forme(0), { depth: .62, bevelEnabled: false }), rx: -Math.PI / 2 });
+      for (const [y, e] of [[3.62, .1], [3.83, .1], [4.04, .1]]) B.boite(0, 0, 0, 0, y, 0, VE, { geo: new THREE.ExtrudeGeometry(forme(.04), { depth: e, bevelEnabled: false }), rx: -Math.PI / 2 });
+      B.boite(5.7, .03, 3.6, 1.55, 3.585, 1.85, "#e8e8e2");   // (le plafond du porche)
+      for (const x of [-.55, 3.75]) { B.cyl(.12, .12, 3.6, x, 1.8, 3.25, "#f6f6f2", { seg: 16 }); B.cyl(.18, .18, .1, x, .05, 3.25, GR); }
+      const acro = new THREE.Shape(); acro.moveTo(0, 0); acro.lineTo(2.6, 0); acro.lineTo(2.6, .7); acro.quadraticCurveTo(2.6, .95, 2.35, .95); acro.lineTo(.6, .95); acro.quadraticCurveTo(.15, .95, 0, .4); acro.closePath();
+      B.avec([-1.3, 4.22, .25], Math.PI / 2, () => B.boite(0, 0, 0, 0, 0, 0, "#f6f6f2", { geo: new THREE.ExtrudeGeometry(acro, { depth: .14, bevelEnabled: false }), ry: Math.PI }));
+      B.boite(2.4, .7, .14, .05, 4.57, .25, "#f6f6f2");
+      B.avec([2.65, 4.22, 2.75], -.12, () => { const t = new THREE.Shape(); t.moveTo(-1.65, 0); t.lineTo(1.65, 0); t.lineTo(1.65, 1.05); t.quadraticCurveTo(1.65, 1.2, 1.5, 1.2); t.lineTo(-1.5, 1.2); t.quadraticCurveTo(-1.65, 1.2, -1.65, 1.05); t.closePath();
+        B.boite(0, 0, 0, 0, 0, -.1, "#f6f6f2", { geo: new THREE.ExtrudeGeometry(t, { depth: .2, bevelEnabled: false }) });
+        const lt = toile(512, 160, (x, W, H) => { x.font = "bold 118px 'Arial Black', Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 8; x.strokeStyle = "#7a0a0a"; x.strokeText("TEXACO", W / 2 + 4, H / 2 + 6); x.fillStyle = "#d81e28"; x.fillText("TEXACO", W / 2, H / 2 + 2); });
+        B.plan(3, .94, 0, .6, .105, new THREE.MeshStandardMaterial({ map: texHV(lt), transparent: true, alphaTest: .4, roughness: .4 })); });
+      // l'îlot et les deux distributeurs : le Fire Chief rouge, le Sky Chief argenté, leurs globes, leurs tuyaux
+      B.boite(3.2, .16, 1, 1.6, .08, 2.2, "#b8bab6"); B.boite(3.3, .04, 1.1, 1.6, .17, 2.2, "#9a9c98");
+      const globe = toile(128, 128, (x) => { x.fillStyle = "#fbfbf6"; x.beginPath(); x.arc(64, 64, 62, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); x.arc(64, 64, 44, 0, 7); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.arc(64, 64, 38, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 14 : 34; x.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f8a4a"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText("T", 64, 74); });
+      const mG = new THREE.MeshStandardMaterial({ map: texHV(globe), roughness: .3, emissive: 0xffffff, emissiveMap: texHV(globe), emissiveIntensity: .25 });
+      const pompe = (x, coul, nom, metal) => { B.boite(.62, 1.45, .48, x, .9, 2.2, coul, { r: metal ? .3 : .45, m: metal ? .7 : 0 }); B.boite(.68, .14, .54, x, .25, 2.2, "#1a1a1a"); B.boite(.66, .1, .52, x, 1.67, 2.2, "#1a1a1a");
+        const fa = toile(160, 360, (c, W, H) => { c.fillStyle = coul; c.fillRect(0, 0, W, H); c.fillStyle = "#f6f4ec"; c.beginPath(); c.arc(W / 2, 70, 52, 0, 7); c.fill(); c.strokeStyle = "#2a2a2a"; c.lineWidth = 4; c.stroke(); c.fillStyle = "#2a2a2a"; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; c.fillRect(W / 2 + Math.cos(a) * 42 - 2, 70 + Math.sin(a) * 42 - 2, 4, 4); } c.lineWidth = 3; c.beginPath(); c.moveTo(W / 2, 70); c.lineTo(W / 2 + 26, 50); c.stroke();
+          c.fillStyle = "#f6f4ec"; c.fillRect(22, 150, W - 44, 130); c.fillStyle = "#c8202a"; c.font = "bold 22px Georgia"; c.textAlign = "center"; c.fillText("TEXACO", W / 2, 180); c.font = "italic bold 26px Georgia"; c.fillText(nom, W / 2, 220); c.fillStyle = "#c8202a"; c.beginPath(); c.arc(W / 2, 255, 16, 0, 7); c.fill(); c.fillStyle = "#f6f4ec"; c.fillRect(40, 300, W - 80, 36); c.fillStyle = "#1a1a1a"; c.font = "bold 13px Arial"; c.fillText("CONTAINS LEAD", W / 2, 323); });
+        B.plan(.6, 1.35, x, .92, 2.442, new THREE.MeshStandardMaterial({ map: texHV(fa), roughness: metal ? .3 : .45, metalness: metal ? .5 : 0 }));
+        B.cyl(.05, .07, .14, x, 1.79, 2.2, "#2a2a2a"); const gl = B.objet(new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), matHV("#fbfbf6", .3))); gl.position.set(x, 2.06, 2.2); gl.scale.set(1, 1, .45); for (const s of [1, -1]) { const d = B.objet(new THREE.Mesh(new THREE.CircleGeometry(.2, 24), mG)); d.position.set(x, 2.06, 2.2 + s * .112); d.rotation.y = s > 0 ? 0 : Math.PI; }
+        B.boite(.1, .2, .12, x + .36, 1.2, 2.2, "#c9a227", { m: .6, r: .3 }); const tuyau = new THREE.CatmullRomCurve3([new THREE.Vector3(x + .31, 1.5, 2.25), new THREE.Vector3(x + .5, 1.2, 2.45), new THREE.Vector3(x + .45, .5, 2.55), new THREE.Vector3(x + .38, 1.1, 2.3)]);
+        B.boite(0, 0, 0, 0, 0, 0, "#141414", { geo: new THREE.TubeGeometry(tuyau, 20, .025, 6) }); };
+      pompe(.5, "#c8202a", "Fire Chief", false); pompe(2.75, "#b8bcc0", "Sky Chief", true);
+      // le présentoir de bidons d'huile
+      for (let r = 0; r < 3; r++) { B.boite(.6, .02, .3, 1.62, .35 + r * .3, 2.2, "#9aa0a6", { m: .6 }); for (let k = 0; k < 4; k++) B.cyl(.06, .06, .14, 1.4 + k * .15, .43 + r * .3, 2.2, "#f2f2ec"); } for (const x of [1.3, 1.94]) B.boite(.03, 1, .03, x, .65, 2.2, "#9aa0a6", { m: .6 });
+      // « Price War ! 19½¢ » sur son pneu, et « No parking » sur le poteau
+      B.cyl(.32, .32, .2, 4.2, .1, 3.5, "#141414", { seg: 20 }); B.cyl(.18, .18, .21, 4.2, .1, 3.5, "#b8bcc0", { m: .7, seg: 16 }); B.cyl(.025, .025, 1.3, 4.2, .8, 3.5, "#f2f2ec");
+      const prix = toile(160, 200, (c, W, H) => { c.fillStyle = "#f6f4ec"; c.fillRect(0, 0, W, H); c.fillStyle = "#c8202a"; c.font = "italic bold 30px Georgia"; c.textAlign = "center"; c.fillText("Price War!", W / 2, 36); c.fillStyle = "#1e3a2a"; c.fillRect(18, 50, W - 36, 136); c.fillStyle = "#f6f4ec"; c.font = "bold 62px Georgia"; c.fillText("19½", W / 2 - 6, 120); c.font = "bold 24px Georgia"; c.fillText("¢  GAL", W / 2, 170); });
+      B.boite(.62, .78, .04, 4.2, 1.75, 3.5, "#f6f4ec"); B.plan(.6, .75, 4.2, 1.75, 3.523, new THREE.MeshStandardMaterial({ map: texHV(prix), roughness: .5 }));
+      B.enseigne(-.55, 2, .28, .38, ["NO", "PARKING"], { fond: "#f6f4ec", coul: "#c8202a", ep: .01, z: 3.38 });
+      // le grand panneau rond sur son mât
+      B.cyl(.09, .11, 6.2, -3.6, 3.1, 4.3, "#e8e8e2", { seg: 12 }); B.boite(.5, .2, .5, -3.6, .1, 4.3, "#a8aaa6");
+      const disque = toile(256, 256, (x) => { x.fillStyle = "#fbfbf6"; x.beginPath(); x.arc(128, 128, 126, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; x.beginPath(); x.arc(128, 128, 120, 0, 7); x.fill(); x.fillStyle = "#fbfbf6"; x.beginPath(); x.arc(128, 128, 112, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 40 : 100; x.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f8a4a"; x.font = "bold 76px Arial Black, Arial"; x.textAlign = "center"; x.fillText("T", 128, 156); x.fillStyle = "#1a1a1a"; x.font = "bold 34px Arial Black, Arial"; x.fillText("TEXACO", 128, 52); });
+      const mD = new THREE.MeshStandardMaterial({ map: texHV(disque), roughness: .35, emissive: 0xffffff, emissiveMap: texHV(disque), emissiveIntensity: .2 });
+      B.cyl(1.05, 1.05, .2, -3.6, 6.9, 4.3, "#1a1a1a", { rx: Math.PI / 2, ry: 0, seg: 32 }); for (const s of [1, -1]) { const d = B.objet(new THREE.Mesh(new THREE.CircleGeometry(1, 40), mD)); d.position.set(-3.6, 6.9, 4.3 + s * .105); d.rotation.y = s > 0 ? 0 : Math.PI; }
+      B.boite(.12, .4, .12, -3.6, 5.85, 4.3, "#e8e8e2"); } },
   drugs: { larg: 9, corps: 8.8, f: (B) => { const X0 = -4.5, X1 = 4.5;
       B.mur(X0, X1, 0, 3.5, "carreau", "#2a2a2a", { saillie: .1, carreau: .3, joint: "#5a5a5a" }); B.mur(X0, X1, 3.5, 8.8, "brique", "#8a4a30");
       B.vitrine(-4.2, -.7, .12, 2.9, { z: .1, marchandise: "boites", lettres: "Prescriptions", cadre: "#d8c890", bas: "#2a2a2a", montants: 1 }); B.porte(0, 1.1, 2.6, { z: .1, coul: "#d8c890", cadre: "#2a2a2a" }); B.vitrine(.7, 4.2, .12, 2.9, { z: .1, marchandise: "comptoir", lettres: "Soda Fountain", cadre: "#d8c890", bas: "#2a2a2a", montants: 1 });
@@ -5285,21 +5328,14 @@ function construireHillValley(A, T, L, scene) {
     A.ajoute(new THREE.PlaneGeometry(2.6, 3.4), A.mat({ map: tex(porte) }), 0, yP + 1.85, ZF + .02, false); }
   // ---- les immeubles autour de la place, en relief façon maquette ----
   L.polesHV = [];
-  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const nom of lst) { const l = IMMEUBLES_HV[nom].larg, g = immeubleHV(scene, nom, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r); if (g.userData.pole) L.polesHV.push(g.userData.pole); x += l; } };
+  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const nom of lst) { const l = IMMEUBLES_HV[nom].larg, g = immeubleHV(scene, nom, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r); if (g.userData.pole) L.polesHV.push(g.userData.pole); for (const [ox, oz, orr] of IMMEUBLES_HV[nom].obst || []) obst.push([g.position.x + ox * Math.cos(r) + oz * Math.sin(r), g.position.z - ox * Math.sin(r) + oz * Math.cos(r), orr]); x += l; } };
   rangee(["barber", "stationers", "cinema", "zales", "realty", "travel"], -32.05, 23.5, Math.PI, "x");   // au sud (face au palais)
   rangee(["banque", "loucafe", "ruth", "florist", "hardware"], -24, -27.5, Math.PI / 2, "z");   // à l'ouest
   rangee(["statler", "westernauto", "texaco", "drugs", "bluebird"], -24, 27.5, -Math.PI / 2, "z");   // à l'est
-  // ---- la station Texaco (d'après la photo) : l'auvent vert et blanc, l'enseigne rouge, les pompes, la dépanneuse rouge ----
+  // ---- la dépanneuse rouge du garage Texaco ----
   { const gx = 22.2, gz = -1.0, g = new THREE.Group(); g.position.set(gx, 0, gz); scene.add(g);
-    const blanc = A.mat({ color: 0xf2f2ec, roughness: .6 }), vert = A.mat({ color: 0x2f7a5a, roughness: .5 }), rouge = A.mat({ color: 0xc8102e, roughness: .45 }), chromeG = A.mat({ color: 0xdfe2e6, metalness: .9, roughness: .2 });
+    const blanc = A.mat({ color: 0xf2f2ec, roughness: .6 }), rouge = A.mat({ color: 0xc8102e, roughness: .45 }), chromeG = A.mat({ color: 0xdfe2e6, metalness: .9, roughness: .2 });
     const b = (w, h, d, m, x, y, z, p = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
-    b(3.2, .5, 8, blanc, 0, 4.3, 0); b(3.3, .14, 8.1, vert, 0, 4.02, 0); b(3.3, .1, 8.1, vert, 0, 4.58, 0);
-    for (const z of [-3.2, 3.2]) b(.28, 4, .28, blanc, -.6, 2, z);
-    const ens = toile(512, 128, (x) => { x.fillStyle = "#c8102e"; x.fillRect(0, 0, 512, 128); x.fillStyle = "#fff"; x.font = "bold 72px Georgia, serif"; x.textAlign = "center"; x.fillText("TEXACO", 300, 92); x.beginPath(); x.arc(64, 64, 48, 0, 7); x.fill(); x.fillStyle = "#c8102e"; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.fill();
-      x.fillStyle = "#fff"; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 14 : 34; x.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } x.fill(); x.fillStyle = "#2f7a5a"; x.font = "bold 30px Arial"; x.fillText("T", 64, 75); });
-    const e = new THREE.Mesh(new THREE.PlaneGeometry(3.6, .9), new THREE.MeshStandardMaterial({ map: tex(ens), roughness: .5 })); e.position.set(-1.62, 4.9, 0); e.rotation.y = -Math.PI / 2; g.add(e);
-    for (const z of [-1.6, 1.6]) { b(.7, .2, .9, A.mat({ color: 0x9a9a94 }), -.3, .1, z); b(.5, 1.5, .6, rouge, -.3, .95, z); b(.02, .5, .42, blanc, -.56, 1.25, z);
-      const glo = new THREE.Mesh(new THREE.SphereGeometry(.22, 14, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff0d0, emissiveIntensity: .3 })); glo.position.set(-.3, 1.92, z); g.add(glo); }
     const dep = new THREE.Group(); dep.position.set(-.2, 0, -6.6); g.add(dep);
     b(1.9, .9, 4.6, rouge, 0, .85, 0, dep); b(1.8, .8, 1.5, rouge, 0, 1.6, -.6, dep); b(1.6, .5, .05, A.mat({ color: 0x223040, metalness: .5, roughness: .1 }), 0, 1.7, -1.36, dep);
     b(.2, 1.4, .2, A.mat({ color: 0x2a2a2a }), 0, 1.9, 1.5, dep).rotation.x = -.5;
@@ -5307,7 +5343,7 @@ function construireHillValley(A, T, L, scene) {
     for (const sg of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .35), new THREE.MeshStandardMaterial({ map: tex(tx) })); pl.position.set(sg * .96, 1.6, -.6); pl.rotation.y = sg * Math.PI / 2; dep.add(pl);
       for (const z of [-1.5, 1.5]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 16), A.mat({ color: 0x111111 })); r.rotation.z = Math.PI / 2; r.position.set(sg * .92, .42, z); dep.add(r); } }
     b(1.95, .14, .12, chromeG, 0, .5, -2.32, dep);
-    obst.push([gx - .3, gz - 1.6, .6], [gx - .3, gz + 1.6, .6], [gx - .6, gz - 3.2, .3], [gx - .6, gz + 3.2, .3], [gx - .2, gz - 6.6, 1.3], [gx - .2, gz - 5.6, 1.3], [gx - .2, gz - 7.8, 1.3]); }
+    obst.push([gx - .2, gz - 6.6, 1.3], [gx - .2, gz - 5.6, 1.3], [gx - .2, gz - 7.8, 1.3]); }
   // au loin, derrière le palais : des collines et des arbres
   for (let i = 0; i < 9; i++) A.ajoute(new THREE.SphereGeometry(14 + (i % 3) * 5, 12, 8), A.mat({ color: i % 2 ? 0x5e7a48 : 0x6e8a52, roughness: 1, flatShading: true }), -60 + i * 15, -4, -62 - (i % 2) * 8, false);
   // ---- les voitures des années 50, garées le long des trottoirs ----
