@@ -3513,7 +3513,7 @@ export async function ouvrir(ctx) {
       const pts = M.L.portails.filter(q => q.vers === rc.vers && !q.continu).map(q => [q, centrePortail(q)]).filter(([, c]) => c)
         .sort((a, b) => Math.hypot(a[1][0] - w.x, a[1][1] - w.z) - Math.hypot(b[1][0] - w.x, b[1][1] - w.z));
       if (pts.length) allerVers(pts[0][1][0], pts[0][1][1], true);
-      else if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw); }
+      else if (!M.passage) { M.passage = true; changerLieu(rc.vers, rc.arrivee, rc.yaw, true); }
       return; }
     // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
     if (M.L.interieur) {
@@ -3523,7 +3523,7 @@ export async function ouvrir(ctx) {
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
       if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
         if (o && M.L.dansCour && !M.L.dansCour(h.point)) o = null;
-        if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2); } return; } }   // on touche la cour : on sort
+        if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2, true); } return; } }   // on touche la cour : on sort
       if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         if ((sols.includes(h.object) || (n && n.y > .7)) && M.L.allerEtage) { const moi = M.gens.get(M.moiNum); if (moi && M.L.allerEtage(moi, h.point.x, h.point.z, h.point.y)) { envoyerWS({ t: "aller", x: h.point.x, z: h.point.z }); return; } }
         if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true);
@@ -3578,12 +3578,12 @@ export async function ouvrir(ctx) {
           if (p.moi) { const px = p.g.position.x, pz = p.g.position.z;
             const pt = M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true;
               if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
-                M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw);
+                M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw, true);
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
               else if (pt.teleport) {   // (un passage dans le même lieu : on se retrouve de l'autre côté de la porte, sans recharger)
-                p.cible = null; p.chemin = []; if (pt.niveau != null) p.nivMess = pt.niveau; p.g.position.set(pt.arrivee[0], pt.y != null && pt.niveau != null ? (pt.niveau ? pt.yArrivee : 0) : p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw; M.cerclePret = false; M.passage = false;
+                p.cible = null; p.chemin = []; if (pt.niveau != null) p.nivMess = pt.niveau; p.g.position.set(pt.arrivee[0], pt.y != null && pt.niveau != null ? (pt.niveau ? pt.yArrivee : 0) : p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw + Math.PI; M.cerclePret = false; M.passage = false;
                 envoyerWS({ t: "aller", x: pt.arrivee[0], z: pt.arrivee[1] }); placerCamera(true); }
-              else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
+              else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw, true); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // il joue : 🎮 la console, 🕹️ le flipper, 🎯 les fléchettes, au-dessus de sa tête (elle flotte doucement)
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
@@ -4956,7 +4956,7 @@ function allerVers(x, z, envoyer) {
   if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); }
   if (envoyer && moi.info.slow) envoyerWS({ t: "slow_fin" });
 }
-function changerLieu(id, arrivee, yaw = 0) {
+function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return;
   if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
@@ -4972,7 +4972,7 @@ function changerLieu(id, arrivee, yaw = 0) {
   if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null;
-  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = yaw; M.camE = M.camD = null;
+  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
