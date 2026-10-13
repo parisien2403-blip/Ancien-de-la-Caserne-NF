@@ -1338,8 +1338,9 @@ const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB
 C3.hp = C3.NM * C3.HM;   // (le sol du porche, en haut des marches)
 function troisiemeCour(A, L, scene) {
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
-  const pas2 = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, C2.z1 - 6, false); pas2.rotation.x = -Math.PI / 2;   // le sol du passage d'en face
-  const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2;
+  const SOL = o => ((L.solsPlus = L.solsPlus || []).push(o), o);   // (ce qu'on peut toucher du doigt pour y aller : les pavés, les marches, les trottoirs, la terrasse)
+  const pas2 = SOL(A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, C2.z1 - 6, false)); pas2.rotation.x = -Math.PI / 2;   // le sol du passage d'en face
+  const pav = SOL(A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false)); pav.rotation.x = -Math.PI / 2;
   // le verso du bâtiment d'en face, vu de cette cour (percé de son passage)
   const verso = A.ajoute(new THREE.PlaneGeometry(44, 24), A.mat({ map: tex(toileVerso(44, 24, true)), alphaTest: .5 }), 0, 12, z0 - .03, false); verso.rotation.y = Math.PI;
   // les hauts murs de pierre, de chaque côté
@@ -1351,7 +1352,7 @@ function troisiemeCour(A, L, scene) {
   // les sept longues marches de béton gris, sur toute la largeur devant le porche
   const beton = A.mat({ color: 0x9a9a98, roughness: .95 }), nez = A.mat({ color: 0x7e7e7c, roughness: .9 });
   for (let k = 0; k < NM; k++) { const h = (k + 1) * HM, d = (NM - k) * PM;
-    A.ajoute(new THREE.BoxGeometry(LM * 2, h, d), beton, 0, h / 2, z1 + d / 2);
+    SOL(A.ajoute(new THREE.BoxGeometry(LM * 2, h, d), beton, 0, h / 2, z1 + d / 2));
     A.ajoute(new THREE.BoxGeometry(LM * 2, .02, .05), nez, 0, h + .005, z1 + d - .03, false); }
   // le bâtiment du fond, le même ; son porche, plus haut (au niveau du haut des marches) et bien plus profond
   const HP = hp + 4.4, face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
@@ -1380,19 +1381,19 @@ function troisiemeCour(A, L, scene) {
       // le trottoir, au pied du bac, tout du long ; sa bordure côté cour
       const tw = C3.TW, ht = C3.HT, cote = A.mat({ color: 0x8e8b85, roughness: .9 }), bord = A.mat({ color: 0x9a9792, roughness: .9 });
       const bitume = A.mat({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#3c3d40"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 40 + alea() * 40; x.fillStyle = `rgba(${v},${v},${v + 4},.55)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); } }), lg / 2, tw / 2), roughness: .95 });   // (le dessus : du bitume gris sombre)
-      A.ajoute(new THREE.BoxGeometry(lg, ht, tw), [cote, cote, bitume, cote, cote, cote], xc, ht / 2, zf + tw / 2, false);
+      SOL(A.ajoute(new THREE.BoxGeometry(lg, ht, tw), [cote, cote, bitume, cote, cote, cote], xc, ht / 2, zf + tw / 2, false));
       A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false); } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
-  const solP = A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
+  const solP = SOL(A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false)); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
   // derrière le passage : sept marches plus raides, puis la terrasse (un toit plat en béton foncé, de la largeur de l'immeuble, 6 m de profondeur), entourée d'une barrière en fer noir
   const zT = z1 - PP, { NT, HT2, PT, LT, PTr } = C3, zt0 = zT - NT * PT, zt1 = zt0 - PTr, yT = hp + NT * HT2;
   const betonF = A.mat({ color: 0x5c5c5a, roughness: .95 }), betonC = A.mat({ color: 0x8a8a88, roughness: .95 });
   const dessus = A.mat({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#4a4a49"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2200; i++) { const v = 55 + alea() * 35; x.fillStyle = `rgba(${v},${v},${v},.5)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); }
     x.strokeStyle = "rgba(20,20,20,.35)"; x.lineWidth = 2; x.strokeRect(0, 0, 256, 256); }), LT / 2, PTr / 2), roughness: .95 });
-  for (let k = 0; k < NT; k++) { const h = hp + (k + 1) * HT2, d = (NT - k) * PT; A.ajoute(new THREE.BoxGeometry(LM * 2, h, d), betonC, 0, h / 2, zt0 + d / 2); }
+  for (let k = 0; k < NT; k++) { const h = hp + (k + 1) * HT2, d = (NT - k) * PT; SOL(A.ajoute(new THREE.BoxGeometry(LM * 2, h, d), betonC, 0, h / 2, zt0 + d / 2)); }
   for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(LT / 2 - LM, hp, NT * PT), betonF, sg * (LM + (LT / 2 - LM) / 2), hp / 2, zT - NT * PT / 2);   // (de part et d'autre des marches : le socle, au niveau du passage)
-  A.ajoute(new THREE.BoxGeometry(LT, yT, PTr), [betonF, betonF, dessus, betonF, betonF, betonF], 0, yT / 2, zt0 - PTr / 2);   // la terrasse
+  SOL(A.ajoute(new THREE.BoxGeometry(LT, yT, PTr), [betonF, betonF, dessus, betonF, betonF, betonF], 0, yT / 2, zt0 - PTr / 2));   // la terrasse
   // le sol tout autour, en contrebas
   const solB = A.ajoute(new THREE.PlaneGeometry(80, 40), A.mat({ map: tex(textures().paves, 40, 20) }), 0, .005, zt1 - 12, false); solB.rotation.x = -Math.PI / 2;
   // la barrière en fer noir : main courante, lisse basse, poteaux, barreaux ; ouverte en haut des marches
@@ -1411,7 +1412,7 @@ function troisiemeCour(A, L, scene) {
 }
 function deuxiemeCour(A, L, scene) {
   const { z0, z1, x: X } = C2, prof = z0 - z1, zc = (z0 + z1) / 2;
-  const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2;
+  const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(pav);
   const pasS = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, -24, false); pasS.rotation.x = -Math.PI / 2;   // le sol du passage
   // le verso du bâtiment à l'horloge (face à la deuxième cour), percé du passage
   const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI;
