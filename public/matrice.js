@@ -2121,13 +2121,13 @@ function construireMess(A, L, scene) {
   L.portails.push({ dans: (x, z) => Math.abs(x) < 1.1 && z > Z1 - .55, vers: "grande", arrivee: [-14.25, 11.0], yaw: Math.PI, indice: [0, Z1 - .3] });
   // les cloisons (elles s'arrêtent à 3 m, sous le plafond) : à gauche en entrant (côté cour), une petite pièce sans plafond dans l'angle, qui prend la première baie,
   // avec son passage vers la salle ; à droite, un seul pan de mur de la même longueur
-  const HC = 3.0, ZC = Z1 - pasF, XC = 2.2, PA = [3.5, 4.5], cloisons = [];
+  const HC = 3.0, ZC = Z1 - pasF, XC = 2.2, PA = [9.9, 10.9], cloisons = [];   // (PA : le passage, dans la cloison qui donne sur l'entrée)
   const cloison = (axe, pos, de, a) => { cloisons.push([axe, pos, de, a]); mur(axe, pos, de, a, 1, 0, HC); mur(axe, pos, de, a, -1, 0, HC); };
-  cloison("z", XC, ZC - .15, Z1); cloison("z", -XC, ZC - .15, Z1);
-  cloison("x", ZC, XC, PA[0]); cloison("x", ZC, PA[1], X1);
-  mur("x", ZC, PA[0], PA[1], 1, 2.35, HC, true);   // le linteau au-dessus du passage
-  for (const xx of PA) A.ajoute(new THREE.BoxGeometry(.08, 2.35, .34), bois, xx, 1.175, ZC, false);   // l'encadrement en bois
-  A.ajoute(new THREE.BoxGeometry(PA[1] - PA[0] + .08, .08, .34), bois, (PA[0] + PA[1]) / 2, 2.35, ZC, false);
+  cloison("z", XC, ZC - .15, PA[0]); cloison("z", XC, PA[1], Z1); cloison("z", -XC, ZC - .15, Z1);
+  cloison("x", ZC, XC, X1);
+  mur("z", XC, PA[0], PA[1], 1, 2.35, HC, true);   // le linteau au-dessus du passage
+  for (const zz of PA) A.ajoute(new THREE.BoxGeometry(.34, 2.35, .08), bois, XC, 1.175, zz, false);   // l'encadrement en bois
+  A.ajoute(new THREE.BoxGeometry(.34, .08, PA[1] - PA[0] + .08), bois, XC, 2.35, (PA[0] + PA[1]) / 2, false);
   const dansCloison = (x, z) => cloisons.some(([axe, pos, de, a]) => axe === "z" ? Math.abs(x - pos) < .4 && z > de - .25 && z < a + .25 : Math.abs(z - pos) < .4 && x > de - .25 && x < a + .25);
   // les suspensions : globes opalins au bout d'une tige, en deux rangées ; leurs lampes
   const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 }), lampes = [];
