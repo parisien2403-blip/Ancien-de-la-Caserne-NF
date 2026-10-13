@@ -2101,14 +2101,15 @@ function construireMess(A, L, scene) {
     const lm = new THREE.Mesh(new THREE.BoxGeometry(...(axe === "z" ? [.04, LAMB, L2] : [L2, LAMB, .04])), A.mat({ map: tex(lambris, L2 / 2.6, 1), roughness: .45 })); at(lm, LAMB / 2); scene.add(lm);
     for (const [hh2, y] of [[.07, LAMB + .03], [.14, .07]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(...(axe === "z" ? [.09, hh2, L2] : [L2, hh2, .09])), bois); at(b, y); scene.add(b); } };
   mur("z", X0 - .15, Z0, Z1, 1);
-  const PO = [X0 + .4, X0 + 2.0];   // l'ouverture (sans porte) dans le mur de l'entrée, dans l'angle de droite derrière le bar : elle mène à la grande pièce mur("x", Z0 - .15, X0, X1, 1);
+  const PO = [X0 + .4, X0 + 2.0];   // l'ouverture (sans porte) dans le mur de l'entrée, dans l'angle de droite derrière le bar : elle mène à la grande pièce
+  mur("x", Z0 - .15, X0, X1, 1);
   // côté cour (x = X1) : les grandes fenêtres à petits carreaux, en verre dépoli (elles laissent passer le jour)
   const vitreT = tex(toile(128, 320, (x, w, h) => { x.fillStyle = "#e8e2d2"; x.fillRect(0, 0, w, h); for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < .5 ? "rgba(255,255,255,.25)" : "rgba(150,140,120,.12)"; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
     x.fillStyle = "#f4f1ea"; for (let k = 0; k <= 3; k++) x.fillRect(k * (w - 6) / 3, 0, 6, h); for (let k = 0; k <= 6; k++) x.fillRect(0, k * (h - 6) / 6, w, 6); }));
   const vitre = new THREE.MeshStandardMaterial({ map: vitreT, emissive: 0xffffff, emissiveMap: vitreT, emissiveIntensity: .5, roughness: .6 });
   const NF = 7, pasF = long / NF;
   for (let i = 0; i < NF; i++) { const zc = Z0 + (i + .5) * pasF, fw = 1.9;
-    mur("z", X1 + .15, zc - pasF / 2, zc - fw / 2, -1); A.ajoute(new THREE.BoxGeometry(.3, HT - 5.0 + .4, fw), peinture, X1 + .15, 5.0 + (HT - 4.6) / 2 - .2, zc, false);
+    mur("z", X1 + .15, zc - pasF / 2, zc - fw / 2, -1); mur("z", X1 + .15, zc + fw / 2, zc + pasF / 2, -1); A.ajoute(new THREE.BoxGeometry(.3, HT - 5.0 + .4, fw), peinture, X1 + .15, 5.0 + (HT - 4.6) / 2 - .2, zc, false);
     A.ajoute(new THREE.BoxGeometry(.3, .55, fw), peinture, X1 + .15, .275, zc, false);
     const f = A.ajoute(new THREE.PlaneGeometry(fw, 4.45), vitre, X1 + .02, .55 + 4.45 / 2, zc, false); f.rotation.y = -Math.PI / 2;
     A.ajoute(new THREE.BoxGeometry(.12, .06, fw + .1), bois, X1 - .03, .58, zc, false); }
@@ -2122,9 +2123,13 @@ function construireMess(A, L, scene) {
   L.portails.push({ dans: (x, z) => Math.abs(x) < 1.1 && z > Z1 - .55, vers: "grande", arrivee: [-14.25, 11.0], yaw: Math.PI, indice: [0, Z1 - .3] });
   // les cloisons (elles s'arrêtent à 3 m, sous le plafond) : à gauche en entrant (côté cour), une petite pièce sans plafond dans l'angle, qui prend la première baie,
   // avec son passage vers la salle ; à droite, un seul pan de mur de la même longueur
-  const HC = 3.0, ZC = Z1 - pasF, XC = 2.2, PA = [9.9, 10.9], cloisons = [];   // (PA : le passage, dans la cloison qui donne sur l'entrée)
-  const cloison = (axe, pos, de, a) => { cloisons.push([axe, pos, de, a]); mur(axe, pos, de, a, 1, 0, HC); mur(axe, pos, de, a, -1, 0, HC); };
-  cloison("z", XC, ZC - .15, PA[0]); cloison("z", XC, PA[1], Z1); cloison("z", -XC, ZC - .15, Z1);
+  const HC = 3.0, ZC = Z1 - pasF, XC = 2.2, PA = [10.5, 11.5], LU = [8.9, 10.0], LY = [1.2, 2.2], cloisons = [];   // (PA : le passage, dans la cloison qui donne sur l'entrée ; LU : la lucarne, à sa gauche)
+  const cloison = (axe, pos, de, a, h0 = 0, h1 = HC) => { if (h0 === 0) cloisons.push([axe, pos, de, a]); for (const sg of [1, -1]) mur(axe, pos, de, a, sg, h0, h1, h0 > 0); };
+  cloison("z", XC, ZC - .15, LU[0]); cloison("z", XC, LU[1], PA[0]); cloison("z", XC, PA[1], Z1);
+  cloison("z", XC, LU[0], LU[1], 0, LY[0]); cloison("z", XC, LU[0], LU[1], LY[1], HC);   // la lucarne : une simple ouverture, sans vitre
+  A.ajoute(new THREE.BoxGeometry(.4, .05, LU[1] - LU[0] + .1), bois, XC, LY[0] + .025, (LU[0] + LU[1]) / 2, false);   // son appui en bois
+  for (const zz of LU) A.ajoute(new THREE.BoxGeometry(.34, LY[1] - LY[0], .06), bois, XC, (LY[0] + LY[1]) / 2, zz, false);
+  A.ajoute(new THREE.BoxGeometry(.34, .06, LU[1] - LU[0] + .06), bois, XC, LY[1], (LU[0] + LU[1]) / 2, false); cloison("z", -XC, ZC - .15, Z1);
   cloison("x", ZC, XC, X1);
   mur("z", XC, PA[0], PA[1], 1, 2.35, HC, true);   // le linteau au-dessus du passage
   for (const zz of PA) A.ajoute(new THREE.BoxGeometry(.34, 2.35, .08), bois, XC, 1.175, zz, false);   // l'encadrement en bois
@@ -2241,7 +2246,7 @@ function construireMess(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globeCuis); gl.position.set(x, HT - 1.28, z); scene.add(gl);
     const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampesCuis.push(l); }
-  const dansPiece = (x, z) => !((nivC ? obsBas : obsCuis).some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (nivC ? SZ0 - .5 : SZ0 + .3))) && !(nivC && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
+  const dansPiece = (x, z) => !((niv() ? obsBas : obsCuis).some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (niv() ? SZ0 - .5 : SZ0 + .3))) && !(niv() && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
   // la courette, par l'ouverture d'en bas : la même largeur que la pièce, sans plafond ; le ciel, et un pan de mur en brique rouge de la caserne
   const CX0 = RX1 + .3, CX1 = RX1 + 5.3, CZ0 = 15.0, CZ1 = 22.0, CW = CX1 - CX0, CL = CZ1 - CZ0;
   { const o = A.ajoute(new THREE.PlaneGeometry(CW + .3, CL), carM(CW + .3, CL), (CX0 + CX1) / 2 - .15, YB, (CZ0 + CZ1) / 2, false); o.rotation.x = -Math.PI / 2; }
@@ -2305,6 +2310,18 @@ function construireMess(A, L, scene) {
   const jourC = new THREE.PointLight(0xfff6e8, 30, 7.5, 1.2); jourC.position.set((CX0 + CX1) / 2 + 1, -.5, (CZ0 + CZ1) / 2); scene.add(jourC);
   const dansCourette = (x, z) => x > CX0 + .3 && x < CX1 - .3 && z > CZ0 + .3 && z < CZ1 - .3, dansOuv = (x, z) => x >= RX1 - .35 && x <= CX0 + .35 && z > OP[0] + .3 && z < OP[1] - .3;
   const dansWC = (x, z) => (WC.some(([a, b]) => x > a + .25 && x < b - .25 && z > WZ0 + .25 && z < CZ0 - .3) || portesWC.some(([a, b]) => x > a + .22 && x < b - .22 && z >= CZ0 - .4 && z <= CZ0 + .4)) || (dansCourette(x, z) && !(x > CX1 - .9 && (z > 15.4 && z < 21.2)) && !(x > -1.1 && x < 1.1 && z > CZ1 - .85));
+  // les cercles de l'escalier : en haut, on descend d'un coup ; en bas, on remonte
+  { const ex = (SX0 + SX1) / 2;
+    L.portails.push({ dans: (x, z) => !niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ1 + .3 && z < SZ1 + 1.6, seuil: [ex, SZ1 + .95], y: 0, vers: "mess", teleport: true, niveau: 1, yArrivee: YB, arrivee: [-5.5, SZ0 - .6], yaw: 0 });
+    L.portails.push({ dans: (x, z) => !!niv() && x > SX0 - .2 && x < SX1 + .2 && z > SZ0 - 1.6 && z < SZ0 - .3, seuil: [ex, SZ0 - .95], y: YB, vers: "mess", teleport: true, niveau: 0, yArrivee: 0, arrivee: [ex + .2, SZ1 + 2.1], yaw: Math.PI }); }
+  // la courette : des murs de brique tout autour, au-dessus du carrelage
+  { const PXM = 40, brique = (w, h) => { const t = toile(Math.round(w * PXM), Math.round(h * PXM), (x, W, H) => briques(x, W, H)); return A.mat({ map: tex(t), roughness: .9 }); }, HB = YB + 15;
+    const pan = (w, h, x, y, z, ry) => { const o = A.ajoute(new THREE.PlaneGeometry(w, h), brique(w, h), x, y, z, false); o.rotation.y = ry; };
+    pan(CW + .3, HB - 1, (CX0 + CX1) / 2 - .15, (HB + 1) / 2, CZ0 + .005, 0);
+    pan(CW + .3, HB - 1, (CX0 + CX1) / 2 - .15, (HB + 1) / 2, CZ1 - .005, Math.PI);
+    pan(CL, HB - 1, RX1 + .305, (HB + 1) / 2, (CZ0 + CZ1) / 2, Math.PI / 2);
+    for (const [zz, w, cx2] of [[CZ0 - .15, CW + .6, (CX0 + CX1) / 2 - .15], [CZ1 + .15, CW + .6, (CX0 + CX1) / 2 - .15]]) A.ajoute(new THREE.BoxGeometry(w, HB - 1, .3), A.mat({ color: 0x8e4630, roughness: .9 }), cx2, (HB + 1) / 2, zz, false);
+    A.ajoute(new THREE.BoxGeometry(.3, HB - HT - .2, CL + .6), A.mat({ color: 0x8e4630, roughness: .9 }), RX1 + .15, (HB + HT + .2) / 2, (CZ0 + CZ1) / 2, false); }
   const ambiant = new THREE.AmbientLight(0xfff1dc, .5); scene.add(ambiant);
   // trois éclairages réglés chacun à part (administrateur) : la grande salle, la cuisine de l'étage, le sous-sol ; la lumière d'ambiance suit l'endroit où l'on est
   const niveaux = { mess: 1, messcuisine: 1, messbas: 1 }, borne = v => { v = +v; return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); };
@@ -2320,7 +2337,7 @@ function construireMess(A, L, scene) {
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * niveaux[L.zoneLumiere ? L.zoneLumiere() : "mess"]; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
   L.setNuit = (n) => { L.nuit = n; vj.material.color.setHex(n ? 0x1a2238 : 0xffffff); L.cielMess.material.color.setHex(n ? 0x101830 : 0xffffff); jourC.intensity = n ? 3 : 30; L.setLumiere(L.lumiere ?? 1); };
   L.setLumiere(1);
-  L.limites = (x, z) => (dansPiece(x, z) || (!nivC && dansPassage(x, z)) || (nivC && (dansWC(x, z) || dansOuv(x, z)))) || !nivC && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]));
+  L.limites = (x, z) => (dansPiece(x, z) || (!niv() && dansPassage(x, z)) || (niv() && (dansWC(x, z) || dansOuv(x, z)))) || !niv() && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]));
   L.contraindreCam = (pos, moi) => { const q = moi.g.position, cour = niv() && q.x > RX1, [a0, a1, b0, b1] = cour ? [CX0, CX1, CZ0, CZ1] : q.z > Z1 ? [RX0, RX1, RZ0, RZ1] : [X0, X1, Z0, Z1];
     pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, cour ? 4 : niv() && !surEsc(q.x, q.z) ? -.45 : HT - .3); return true; };
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, RZ1]; L.boite = [X0, X1, Z0, RZ1]; L.plafond = HT - .3;
@@ -2520,7 +2537,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
             for (const yy of [.6, 1.7]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(PW / 2 - .2, yy === .6 ? .8 : 1.1, .02), brun2); pn.position.set(-s2 * PW / 4, yy + (yy === .6 ? 0 : .2), .07); piv.add(pn); }
             const pg = new THREE.Mesh(new THREE.BoxGeometry(.03, .22, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 })); pg.position.set(-s2 * (PW / 2 - .1), 1.15, .09); piv.add(pg); }
           const plq = A.ajoute(new THREE.PlaneGeometry(1.1, .3), A.mat({ map: tex(toile(256, 70, (x, w, h) => { x.fillStyle = "#e9e1cf"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(120,70,40,.75)"; x.font = "bold 40px Georgia"; x.textAlign = "center"; x.fillText("M E S S", w / 2, 50); })) }), XM, yP + PH + .5, ZM + .02, false);
-          L.portails.push({ dans: (x, z) => x < fx + .1 && x > RX + .2 && z < ZM + 2.6 && z > ZM + 1.6, vers: "mess", arrivee: [0, 10.4], yaw: 0, indice: [XM, ZM + 2.3], pasApo: true });
+          L.portails.push({ dans: (x, z) => x < fx + .1 && x > RX + .2 && z < ZM + 2.9 && z > ZM + 1.6, vers: "mess", arrivee: [0, 10.4], yaw: 0, indice: [XM, ZM + 2.3], seuil: [XM, ZM + 2.45], pasApo: true });   // (le cercle, au pied des marches)
           // la lumière du mess, vue de la cour : derrière chaque baie vitrée du bâtiment, une lueur (selon ce que l'administrateur a réglé)
           const lueur = new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0, depthWrite: false }); L.messVitres = lueur;
           for (let i = 0; i < 11; i++) { const X = 40 + i * 142, u = (X + 50) / 50 - 16, z = -u - 2; if (us.some(v => Math.abs(u - v) < 3) || z > 7.2 || z < -17.5) continue;
@@ -2655,8 +2672,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     for (const s of (copie === "fetes" ? [-1] : [-1, 1])) { const face = A.mat({ map: tex(toileAile(s < 0)) }), interieur = A.mat({ map: tex(toileCote(s > 0, true)) }), toitA = A.mat({ color: 0x6b6b6b });
       const mats = s > 0 ? [briqueSeule, interieur, toitA, toitA, briqueSeule, face] : [interieur, briqueSeule, toitA, toitA, briqueSeule, face];
       A.ajoute(new THREE.BoxGeometry(AW, AH, AZ1 - AZ0), mats, s * (AX0 + AW / 2), AH / 2, (AZ0 + AZ1) / 2);
-      // au-dessus de la porte : la petite plaque bleu marine, « S » (l'aile de droite, celle de la cabine téléphonique) ou « R »
-      const lettre = s > 0 ? "S" : "R", pq = toile(128, 128, (x) => { x.fillStyle = "#e8e4da"; x.beginPath(); x.roundRect(0, 0, 128, 128, 18); x.fill(); x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(7, 7, 114, 114, 14); x.fill();
+      // au-dessus de la porte : la petite plaque bleu marine, « R » (l'aile de droite, celle de la cabine téléphonique) ou « S »
+      const lettre = s > 0 ? "R" : "S", pq = toile(128, 128, (x) => { x.fillStyle = "#e8e4da"; x.beginPath(); x.roundRect(0, 0, 128, 128, 18); x.fill(); x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(7, 7, 114, 114, 14); x.fill();
         x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(lettre, 64, 70); });
       A.ajoute(new THREE.BoxGeometry(.04, .44, .44), A.mat({ color: 0xe8e4da }), s * (AX0 - .02), 3.5, 13.75);
       const plq = A.ajoute(new THREE.PlaneGeometry(.42, .42), A.mat({ map: tex(pq), roughness: .4 }), s * (AX0 - .042), 3.5, 13.75, false); plq.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; }
@@ -3564,7 +3581,7 @@ export async function ouvrir(ctx) {
                 M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw);
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
               else if (pt.teleport) {   // (un passage dans le même lieu : on se retrouve de l'autre côté de la porte, sans recharger)
-                p.cible = null; p.chemin = []; p.g.position.set(pt.arrivee[0], p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw; M.cerclePret = false; M.passage = false;
+                p.cible = null; p.chemin = []; if (pt.niveau != null) p.nivMess = pt.niveau; p.g.position.set(pt.arrivee[0], pt.y != null && pt.niveau != null ? (pt.niveau ? pt.yArrivee : 0) : p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw; M.cerclePret = false; M.passage = false;
                 envoyerWS({ t: "aller", x: pt.arrivee[0], z: pt.arrivee[1] }); placerCamera(true); }
               else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
@@ -4457,7 +4474,7 @@ function animerCercles(t) {
   }
   const moi = M.moiNum && M.gens.get(M.moiNum);
   // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
-  if (moi && !M.cerclePret && !M.cercles.some(c => !centrePortail(c.pt) || Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
+  if (moi && !M.cerclePret && !M.cercles.some(c => centrePortail(c.pt) && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
   // arrêté sur le cercle d'un passage ouvert (le vestibule) : on franchit la porte tout seul
   if (moi && M.cerclePret && !moi.cible && !M.passage) for (const c of M.cercles) { const q = c.pt;
     if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
@@ -4470,7 +4487,7 @@ function animerCercles(t) {
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
       const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .22, 48), new THREE.MeshBasicMaterial({ color: rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
-      g.position.set(ce[0], (M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
+      g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
     c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu));
     const b = .5 + .5 * Math.sin(t / 420);
