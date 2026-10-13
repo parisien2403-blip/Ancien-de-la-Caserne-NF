@@ -1361,10 +1361,22 @@ function troisiemeCour(A, L, scene) {
     x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
     x.fillStyle = "#e9e6df"; x.fillRect(cx - LM * P, h - hb, LM * 2 * P, hb); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .15) * P, h - hb - 10, (LM + .15) * 2 * P, 12);
     x.fillStyle = "#7e7a74"; x.fillRect(0, h - 10, w, 10);
-    for (const sg of [-1, 1]) for (const k of [0, 1]) { const X = cx + sg * (LM + 1.4 + k * 2.6) * P - 34, Y = h - 3.4 * P;
+    const pasF = 3.6 * P, nF = Math.floor(w / pasF), col = c => (c + .5) * pasF + (w - nF * pasF) / 2;   // (les mêmes colonnes que les fenêtres des étages)
+    for (const c of [3, 4, nF - 5, nF - 4]) { const X = col(c) - 34, Y = h - 4.3 * P;   // (au-dessus du muret des buissons)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
       x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100); x.fillRect(X, Y + 46, 68, 3); x.fillStyle = "#d9d5cc"; x.fillRect(X - 10, Y + 104, 88, 8); } }
-  const tF = tex(cF); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+  const tF = tex(cF);
+  // de chaque côté des marches, tout le long de l'immeuble : un muret blanc qui forme un bac, rempli de buissons
+  { const blanc = A.mat({ color: 0xeceae4, roughness: .85 }), terre = A.mat({ color: 0x3a2a1e, roughness: 1 }), HMU = .7, PB = 1.4, EP = .14;
+    const verts = [0x2e5a2a, 0x3a6a30, 0x284e24, 0x46763a].map(c => A.mat({ color: c, roughness: .9 })), boule = new THREE.IcosahedronGeometry(1, 1);
+    graine = 77;
+    for (const sg of [-1, 1]) { const xa = LM, xb = X, lg = xb - xa, xc = sg * (xa + lg / 2), zf = z1 + PB;
+      A.ajoute(new THREE.BoxGeometry(lg, HMU, EP), blanc, xc, HMU / 2, zf - EP / 2);                                   // le muret, devant
+      A.ajoute(new THREE.BoxGeometry(EP, HMU, PB), blanc, sg * (xa + EP / 2), HMU / 2, z1 + PB / 2);                      // le muret, contre les marches
+      A.ajoute(new THREE.BoxGeometry(lg, .06, EP + .04), A.mat({ color: 0xd9d6ce }), xc, HMU + .03, zf - EP / 2, false);   // la couvertine
+      A.ajoute(new THREE.BoxGeometry(lg - EP, .05, PB - EP), terre, xc, HMU - .12, z1 + (PB - EP) / 2, false);           // la terre
+      for (let x0 = xa + .45; x0 < xb - .3; x0 += .62 + alea() * .25) { const r = .38 + alea() * .2, b = A.ajoute(boule, verts[Math.floor(alea() * 4)], sg * x0, HMU + r * .45, z1 + .3 + alea() * (PB - .75), true);
+        b.scale.set(r * (1 + alea() * .25), r * (.8 + alea() * .3), r); b.rotation.y = alea() * 6; } } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   const solP = A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
