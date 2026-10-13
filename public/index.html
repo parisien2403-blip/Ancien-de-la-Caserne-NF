@@ -124,7 +124,7 @@
   .maj-pastille { margin-left: auto; margin-right: 8px; background: #b3261e; color: #fff; font: 700 11px "Lato", sans-serif; padding: 3px 8px; border-radius: 10px; }
   /* version de l'appli et nouveautés */
   .version { display: block; margin: 16px auto 0; border: 0; background: none; color: var(--muted); font: 12px "Lato", sans-serif; cursor: pointer; text-decoration: underline dotted; }
-  .splash .version-splash { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 11px "Lato", sans-serif; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.5); pointer-events: none; }
+  .splash .version-splash { margin-top: 10px; text-align: center; font: 12px "Lato", sans-serif; color: var(--muted, #8a7a6a); opacity: .85; pointer-events: none; }
   .nouveautes { max-height: 86vh; overflow-y: auto; }
   .nouveautes .ver { border-left: 3px solid var(--line); padding: 0 0 14px 14px; margin-left: 6px; }
   .nouveautes .ver:first-of-type { border-left-color: var(--terra); }
@@ -315,18 +315,18 @@
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
   .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 200px); }
   .mx-danses .mx-danse { padding: 7px 11px; font-size: 13px; }
-  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: 12px; right: auto; max-width: calc(100% - 200px); }   /* (à gauche : le bouton Musique reste seul à droite, sans chevauchement) */
+  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: auto; right: 12px; justify-content: flex-end; max-width: calc(100% - min(70%, 420px) - 36px); }   /* (à droite : la discussion s'écrit à gauche sans les cacher ; le bouton Musique passe au-dessus) */
   .mx-scene:fullscreen .mx-fil-plein { bottom: 168px; }
   .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
-  .mx-scene:fullscreen .mx-musique { bottom: 122px; }
+  .mx-scene:fullscreen .mx-musique { bottom: 160px; }
   .mx-scene:fullscreen .mx-fil-plein { bottom: 70px; }
   .mx-scene:fullscreen .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
   .mx-dire-plein input { flex: 1; min-width: 0; border: 0; border-radius: 99px; padding: 12px 16px; font: 16px "Lato", sans-serif; background: rgba(255,255,255,.94); outline: none; }
   .mx-scene:fullscreen .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
-  .mx-scene:fullscreen .mx-musique { bottom: 122px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
+  .mx-scene:fullscreen .mx-musique { bottom: 160px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
   .mx-musique.mx-son { left: auto; right: 12px; transform: none; background: rgba(31,42,55,.8); color: #fff; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
   .mx-musique { position: absolute; left: auto; right: 12px; bottom: 14px; transform: none; z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
@@ -916,9 +916,9 @@
         <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       </div>
       <button class="link" id="signup">Pas encore inscrit ? Demander un laissez-passer</button>
+      <div class="version-splash" id="versionSplash"></div>
       <div class="install" id="install" hidden></div>
     </div>
-    <div class="version-splash" id="versionSplash"></div>
 
   </section>
 
@@ -2873,6 +2873,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.10", "13 octobre 2026", ["Cabine téléphonique : éclairs et fumée, on disparaît, le combiné pend seul au bout de son cordon et se balance… puis on arrive dans la fumée (à l'aller comme au retour)", "Salle des fêtes : le cercle des petites marches mène directement dans la salle du bar (plus d'arrêt dans le vestibule)", "Les cercles de passage au sol sont plus petits", "En plein écran, les danses passent en bas à droite : la discussion ne les cache plus", "La version s'affiche sous « Pas encore inscrit ? »"]],
     ["4.09", "13 octobre 2026", ["Les éclairs traversent de nouveau la cabine téléphonique pendant le voyage", "Hill Valley : « Mr. Sandman » joue dans la ville même quand on arrive par la cabine"]],
     ["4.08", "13 octobre 2026", ["Hill Valley ne gèle plus sur PC Windows : l'enseigne STATLER MOTORS, écrite en Arial Black (police de Windows), tournait en boucle sans fin"]],
     ["4.07", "13 octobre 2026", ["Voyage vers Hill Valley réparé sur les PC à carte graphique Intel : les reflets des voitures sont préparés autrement, sans figer l'image"]],

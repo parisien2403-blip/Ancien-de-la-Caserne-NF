@@ -1492,7 +1492,7 @@ function circulation(L, scene) {
    - chez Lou (1955) : la cabine en bois et son téléphone public noir à cadran ; on compose 1990 → retour à l'immeuble. */
 const texTel = (c, miroir) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; if (miroir) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; } return t; };
 function combineTel(g, x, y, z, noir) {   // le combiné noir, raccroché sur le côté gauche
-  const m = new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: .25, metalness: .1 }), h = new THREE.Group(); h.position.set(x, y, z); g.add(h);
+  const m = new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: .25, metalness: .1 }), h = new THREE.Group(); h.position.set(x, y, z); g.add(h); h.userData.combine = true;
   const manche = new THREE.Mesh(new THREE.CapsuleGeometry(.018, .15, 4, 10), m); h.add(manche);
   for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.034, .028, .045, 16), m); c.position.set(.012, s * .1, 0); c.rotation.z = Math.PI / 2; h.add(c); }
   return h; }
@@ -1625,10 +1625,14 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
-      musiqueVoyage(); setTimeout(() => { fermer(); if (M) { eclairsCabine(2600); vueFace(3000); } }, 700);   // (la musique du voyage, et les éclairs qui traversent la cabine jusqu'au départ)
-      setTimeout(() => depart(), 3300);
-      const depart = () => { if (!M) return; eclairBlanc(1400); sonBruit(1.2, 400, .7);
-        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI); { let n = 0; const att = () => { if (!M || ++n > 60) return; if (M.gens.get(M.moiNum) && M.L) vueFace(3200); else setTimeout(att, 100); }; setTimeout(att, 100); } }; }
+      // la musique du voyage ; les éclairs traversent la cabine, la fumée monte ; un éclair blanc : on a disparu, le combiné pend seul au bout de son cordon ;
+      // puis l'autre cabine, dans la fumée : on est arrivé
+      musiqueVoyage(); setTimeout(() => { fermer(); if (!M) return; const moi = M.gens.get(M.moiNum); eclairsCabine(2600); vueFace(5600); if (moi) fumeeVoyage(moi.g.position, 4800); }, 700);
+      setTimeout(() => disparait(), 3300);
+      const disparait = () => { if (!M) return; eclairBlanc(900); sonBruit(1.2, 400, .7); const moi = M.gens.get(M.moiNum); if (moi) moi.g.visible = false; combinePend(3600); setTimeout(depart, 2500); };
+      const depart = () => { if (!M) return; const moi0 = M.gens.get(M.moiNum); if (moi0) moi0.g.visible = true; eclairBlanc(1400); sonBruit(.9, 500, .5);
+        if (dest === "etage") changerLieu("hv1955", [-35.7, -12.1], -Math.PI / 2); else changerLieu("etage", [12.7, -4.8], Math.PI);
+        { let n = 0; const att = () => { if (!M || ++n > 60) return; const moi = M.gens.get(M.moiNum); if (moi && M.L) { moi.g.visible = true; vueFace(3600); fumeeVoyage(moi.g.position, 3200); } else setTimeout(att, 100); }; setTimeout(att, 100); } }; }
     else { afficher("N° INCONNU"); M.ctx.surInfo && M.ctx.surInfo("📞 « Le numéro que vous avez demandé n'est pas attribué… »"); setTimeout(() => { num = ""; afficher(""); occupe = false; }, 1600); } }; }
 
 /* Les étages du bâtiment côté rue : on entre par une des deux portes marron des ailes (cour d'honneur) ; dans chaque cage,
@@ -3434,8 +3438,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // en bas des marches, la porte ouverte : on descend dans la petite salle du sous-sol
     // par la porte « BAR » du vestibule, on sort dans la cour d'honneur, en marchant (même géométrie de part et d'autre : pas de coupure)
     L.portails.push({ dans: (x, z) => x < -VEST_VX - .3 && Math.abs(z - FETE_SZ) < VEST_LB / 2, vers: "grande", continu: [VEST_X, VEST_Z - FETE_SZ, -FETE_HSS], seuil: [-VEST_VX + .5, FETE_SZ], traverse: [-VEST_VX - .8, FETE_SZ] });
-    // l'escalier entre la salle et le vestibule : un cercle en haut, un en bas ; on s'y arrête, et l'on descend (ou remonte) tout seul
-    L.portails.push({ dans: () => false, vers: "fetes", continu: true, seuil: [0, 11.0], traverse: [0, 19.8], escalier: true },
+    // l'escalier entre la salle et le sous-sol : un cercle en haut (il mène tout droit dans la salle du bar, en traversant le vestibule), un en bas ; on descend (ou remonte) tout seul
+    L.portails.push({ dans: () => false, vers: "fetes", continu: true, seuil: [0, 11.0], traverse: [0, 25.2], escalier: true },
       { dans: () => false, vers: "fetes", continu: true, seuil: [0, 18.9], traverse: [0, 10.2], escalier: true });
     L.horsPNJ = (x, z) => Math.abs(x) < EL + .5 && z > EZ - 1.5;          // le chef de poste ne descend pas l'escalier
     raccourci(L, scene, [1.9, 2.4, .4], [0, -.2, Z1 + .9], { marche: [0, Z1 + 2.4] });
@@ -4654,7 +4658,7 @@ function ajouterAncien(info) {
   return p;
 }
 /* --- les cercles lumineux au sol, devant chaque porte : on entre (ou l'on sort) en marchant dessus --- */
-const RAYON_CERCLE = .62;
+const RAYON_CERCLE = .42;
 // le centre du cercle d'une porte (calculé une fois) : la partie de sa zone d'entrée la plus proche de la porte elle-même,
 // puis poussé vers l'intérieur pour que tout le cercle soit sur le sol où l'on marche
 function centrePortail(pt) {
@@ -4702,10 +4706,10 @@ function animerCercles(t) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
       const rouge = estApo(c.pt.vers) !== estApo(M.lieu);   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge)
       const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
-      const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .1, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
-      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .1, 48), new THREE.MeshBasicMaterial({ color: rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
+      const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .07, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
+      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
-      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .22, 48), new THREE.MeshBasicMaterial({ color: rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
@@ -5305,6 +5309,35 @@ function eclairsCabine(ms) { const moi = M && M.gens.get(M.moiNum); if (!moi) re
       lum.intensity = Math.random() < .5 ? 0 : 5 + Math.random() * 8; if (Math.random() < .25) sonBruit(.08, 5000 + Math.random() * 3000, .12); }
     requestAnimationFrame(f); }; requestAnimationFrame(f); }
 function eclairBlanc(ms = 1400) { const d = voile("background:radial-gradient(circle,#fff 0%,#dff4ff 45%,rgba(120,200,255,.85) 100%);opacity:1;transition:opacity " + ms + "ms ease-out", ms + 200); requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 0; })); }
+// une bouffée de fumée grise qui monte et s'étale autour d'un point (de simples images, sans lumière : léger pour toutes les cartes graphiques)
+let texFumeeV = null;
+function fumeeVoyage(pos, ms = 3000, n = 28) { if (!M) return; const scene = M.scene, x = pos.x, y = pos.y, z = pos.z;
+  if (!texFumeeV) { texFumeeV = new THREE.CanvasTexture(toile(128, 128, (c) => { const g = c.createRadialGradient(64, 64, 0, 64, 64, 62); g.addColorStop(0, "rgba(240,240,240,.9)"); g.addColorStop(.45, "rgba(205,205,210,.5)"); g.addColorStop(1, "rgba(180,180,185,0)"); c.fillStyle = g; c.fillRect(0, 0, 128, 128); })); texFumeeV.colorSpace = THREE.SRGBColorSpace; texFumeeV.garder = true; }
+  const g = new THREE.Group(), ps = [], vie = 2400; scene.add(g);
+  for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeV, color: 0xe4e4e4, transparent: true, opacity: 0, depthWrite: false })); s.visible = false; g.add(s);
+    ps.push({ s, d: Math.random() * Math.max(200, ms - vie), a: Math.random() * 6.28, r: Math.random() * .45, h: .8 + Math.random() * 1.1, rot: (Math.random() - .5) * .03 }); }
+  const t0 = performance.now(), fin = () => { for (const p of ps) p.s.material.dispose(); scene.remove(g); };
+  const pas = () => { if (!M || M.scene !== scene) return fin(); const t = performance.now() - t0; let encore = false;
+    for (const p of ps) { const u = (t - p.d) / vie; if (u < 0) { encore = true; continue; } if (u > 1) { p.s.visible = false; continue; } encore = true; p.s.visible = true;
+      const r = p.r + u * .7; p.s.position.set(x + Math.cos(p.a) * r, y + .15 + u * p.h * 1.6, z + Math.sin(p.a) * r); const sc = .5 + u * 1.7; p.s.scale.set(sc, sc, 1);
+      p.s.material.opacity = Math.sin(Math.PI * Math.min(1, u * 1.4)) * .6 * (1 - u * .4); p.s.material.rotation += p.rot; }
+    if (encore) requestAnimationFrame(pas); else fin(); };
+  pas(); }
+// le combiné de la cabine, décroché : il pend seul au bout de son cordon en spirale et se balance (le combiné sur son crochet est caché le temps de la scène)
+function combinePend(ms) { if (!M || !M.L.cabineTel) return; const scene = M.scene, [cx, cz] = M.L.cabineTel, w = new THREE.Vector3(); let h = null, bd = 3;
+  scene.traverse(o => { if (o.userData.combine) { o.getWorldPosition(w); const d = Math.hypot(w.x - cx, w.z - cz); if (d < bd) { bd = d; h = o; } } });
+  if (!h) return; h.getWorldPosition(w); h.visible = false;
+  const piv = new THREE.Group(); piv.position.copy(w); scene.add(piv); const LG = .62, pts = [];
+  for (let i = 0; i <= 240; i++) { const u = i / 240, a = u * Math.PI * 2 * 22; pts.push(new THREE.Vector3(Math.cos(a) * .014, -u * LG, Math.sin(a) * .014)); }
+  const cordon = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 480, .0045, 5), new THREE.MeshStandardMaterial({ color: 0x111113, roughness: .5 })); piv.add(cordon);
+  const c = combineTel(piv, 0, -LG - .1, 0); c.userData.combine = false;
+  // la caméra se rapproche et regarde le combiné qui se balance
+  const vise = w.clone(); vise.y -= LG * .7; const cp = M.camera.position.clone(), pos = vise.clone().add(cp.clone().sub(vise).multiplyScalar(.75)); pos.y = Math.max(pos.y, vise.y + .35);
+  const cine = { maj: () => { M.camera.position.copy(pos); M.camera.lookAt(vise); } }; M.cine = cine;
+  const t0 = performance.now(), fin = () => { h.visible = true; scene.remove(piv); piv.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); if (M && M.cine === cine) M.cine = null; };
+  const pas = () => { if (!M || M.scene !== scene) return fin(); const t = (performance.now() - t0) / 1000; if (t * 1000 > ms) return fin(); const a = .55 * Math.exp(-t * .3);
+    piv.rotation.z = a * Math.sin(t * 4); piv.rotation.x = a * .35 * Math.sin(t * 2.9 + 1); c.rotation.y = Math.sin(t * 1.2) * .9; requestAnimationFrame(pas); };
+  pas(); }
 function bulle(texte, ms) { if (!M) return; if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
   d.innerHTML = texte; M.ctx.conteneur.appendChild(d); M.bulleEl = d; if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.remove(); M.bulleEl = null; } }, ms); }
