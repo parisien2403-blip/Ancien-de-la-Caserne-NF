@@ -42,7 +42,7 @@ export function dessinerBonhomme(o, tete) {
     // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
-    const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = t === "nemesis" ? "#8f7f93" : "#e9c4a0";   // (Nemesis : la peau grise violacée)
+    const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const bas = t === "robe" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
@@ -313,6 +313,11 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(60, 212, 80, 4); x.fillStyle = "rgba(255,255,255,.06)"; for (let k = 0; k < 4; k++) x.fillRect(70 + k * 18, 222, 3, 90); }
     // les bras : pendants, ou levés pour danser (o.pose = "haut") ; en disco, le bras droit pointe le doigt en l'air puis vers le sol
     const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
+    if (o.pose === "balai1" || o.pose === "balai2") {   // le balai : le manche de bois, la brosse de paille qui balaie le sol
+      const [ax, ay, bx2, by] = o.pose === "balai1" ? [96, 200, 114, 254] : [88, 202, 102, 256], dx = bx2 - ax, dy = by - ay, k0 = (150 - ay) / dy, k1 = (378 - ay) / dy;
+      const hx = ax + dx * k0, hy = 150, px = ax + dx * k1, py = 378; x.strokeStyle = "#8a5a2a"; x.lineWidth = 7; x.lineCap = "round"; x.beginPath(); x.moveTo(hx, hy); x.lineTo(px, py); x.stroke();
+      x.fillStyle = "#c82a20"; x.fillRect(px - 9, py - 6, 18, 8); x.fillStyle = "#d8b860"; x.beginPath(); x.moveTo(px - 10, py + 2); x.lineTo(px + 10, py + 2); x.lineTo(px + 22, 402); x.lineTo(px - 22, 402); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(120,80,20,.5)"; x.lineWidth = 1.5; for (let k = -18; k <= 18; k += 4) { x.beginPath(); x.moveTo(px + k * .45, py + 4); x.lineTo(px + k, 401); x.stroke(); } }
     const mains = [];
     const bras = (cx, sens) => {
       // la main sur la hanche, le coude sorti (Mr Hernandez, comme sur la photo)
@@ -343,6 +348,7 @@ export function dessinerBonhomme(o, tete) {
         : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
         // le barman : il pose un verre (servir), il range un verre sur l'étagère (ranger), il essuie un verre avec son torchon (essuyer)
         : o.pose === "servir" ? (sens > 0 ? [46, 252] : [182, 214]) : o.pose === "ranger" ? (sens > 0 ? [46, 252] : [168, 70]) : o.pose === "essuyer" ? (sens > 0 ? [92, 226] : [110, 222])
+        : o.pose === "balai1" ? (sens > 0 ? [96, 200] : [114, 254]) : o.pose === "balai2" ? (sens > 0 ? [88, 202] : [102, 256])   // le balai : les deux mains sur le manche
         : o.pose === "mix1" ? [sens > 0 ? 66 : 134, 246] : o.pose === "mix2" ? (sens > 0 ? [74, 116] : [134, 246]) : o.pose === "mix3" && sens > 0 ? [62, 248] : null;
       const a = cible ? Math.atan2(-(cible[0] - cx), cible[1] - 158) : disco ? disco[sens > 0 ? 0 : 1] : o.pose === "haut" ? sens * 2.55 : o.pose === "mi" ? sens * 1.1
         : o.pose === "mix3" ? -2.85 : o.pose === "madison1" ? (sens > 0 ? .55 : -.25) : o.pose === "madison3" ? (sens > 0 ? .25 : -.55) : 0;
@@ -3108,6 +3114,9 @@ export async function ouvrir(ctx) {
               if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
                 M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(pt.vers, pt.arrivee, pt.yaw);
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
+              else if (pt.teleport) {   // (un passage dans le même lieu : on se retrouve de l'autre côté de la porte, sans recharger)
+                p.cible = null; p.chemin = []; p.g.position.set(pt.arrivee[0], p.g.position.y, pt.arrivee[1]); if (pt.yaw != null) M.yaw = pt.yaw; M.cerclePret = false; M.passage = false;
+                envoyerWS({ t: "aller", x: pt.arrivee[0], z: pt.arrivee[1] }); placerCamera(true); }
               else if (pt.continu) changerLieuContinu(pt.vers, pt.continu); else changerLieu(pt.vers, pt.arrivee, pt.yaw); } } } }
       if (p.bulle && p.bulleFin && t > p.bulleFin) { p.g.remove(p.bulle); p.bulle = null; }
       // il joue : 🎮 la console, 🕹️ le flipper, 🎯 les fléchettes, au-dessus de sa tête (elle flotte doucement)
@@ -3129,6 +3138,10 @@ export async function ouvrir(ctx) {
           // il joue : de dos, tourné vers la machine, il remue un peu (les mains sur les commandes)
           if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = Math.sin(t / 260) * .03; p.corps.position.x = 0; if (!p.cible) p.corps.position.y = 0; p.dansait = true; }
+        else if (p.info.balai) {   // Goldie passe le balai (il balaie en marchant doucement, et sur place)
+          const pose = Math.floor(t / 420) % 2 ? "balai1" : "balai2";
+          if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = Math.sin(t / 420 * Math.PI) * .03; p.dansait = true; }
         else if (p.info.auto) {   // assis dans le cabriolet
           if (p.corps.material.map !== p.poses.assis) { p.corps.material.map = p.poses.assis; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
@@ -3915,7 +3928,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
     ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
@@ -5437,13 +5450,13 @@ function interieurLouHV() { const B = chantierHV(9), O = [], { X0, X1, Z0, Z1, H
   B.plan(W, D, 0, Y, (Z0 + Z1) / 2, new THREE.MeshStandardMaterial({ map: tS, roughness: .35, metalness: .05 }), { rx: -Math.PI / 2 }).receiveShadow = true;
   // ---- le plafond, ses moulures, et les murs : soubassement carrelé vert d'eau, enduit crème, un jonc chromé entre les deux ----
   B.plan(W, D, 0, H, (Z0 + Z1) / 2, matHV("#f6f2e8", .9), { rx: Math.PI / 2 });
-  const murs = (larg, peint) => { B.mur(-larg / 2, larg / 2, 0, 1.25, "carreau", "#b8d8d0", { carreau: .15, joint: "#e8eee8" }); B.mur(-larg / 2, larg / 2, 1.25, H, "enduit", "#f2ecd8", peint ? { peint } : {}); B.boite(larg, .05, .04, 0, 1.27, .02, CHROME, { m: .5, r: .2 }); B.boite(larg, .12, .06, 0, H - .06, .03, "#f6f2e8"); };
+  const murs = (larg, peint) => { B.mur(-larg / 2, larg / 2, 0, 1.25, "carreau", "#e4d6b8", { carreau: .15, joint: "#f4ecdc" }); B.mur(-larg / 2, larg / 2, 1.25, H, "enduit", "#efe2c6", peint ? { peint } : {}); B.boite(larg, .05, .04, 0, 1.27, .02, CHROME, { m: .5, r: .2 }); B.boite(larg, .12, .06, 0, H - .06, .03, "#f6f2e8"); };
   // le mur du fond : le passe-plat de la cuisine (avec sa roue à bons de commande), la porte battante à hublot, le menu, l'horloge Coca-Cola
   B.avec([0, 0, Z0], 0, () => { murs(W);
     B.trou(-.6, 1.8, 1.25, 2.15, .3, { tableau: "#d8d0bc" }); B.plan(2.4, .9, .6, 1.7, -.29, M_(T(256, 96, (x, w, h) => { x.fillStyle = "#3a3a36"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h * .6, w, 5); for (let k = 0; k < 6; k++) { x.fillStyle = "#c9cdd2"; x.fillRect(20 + k * 40, h * .35, 22, h * .25); } })));
     B.boite(2.6, .06, .35, .6, 1.25, .1, CHROME, { m: .5, r: .2 }); for (let k = 0; k < 5; k++) { B.boite(.1, .14, .005, -.2 + k * .35, 2.0, .01, "#f8f4e8"); }
     B.trou(2.6, 3.6, 0, 2.2, .1, {}); B.plan(1, 2.2, 3.1, 1.1, -.09, M_(T(128, 280, (x, w, h) => { x.fillStyle = "#c8c0a8"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h - 40, w, 40); x.fillStyle = "#1c2a34"; x.beginPath(); x.arc(w / 2, 70, 26, 0, 7); x.fill(); x.strokeStyle = "#c9cdd2"; x.lineWidth = 6; x.stroke(); })));
-    B.plan(1.6, 1.0, -2.6, 2.3, .02, M_(T(320, 200, (x, w, h) => { x.fillStyle = "#1e2a22"; x.fillRect(0, 0, w, h); x.strokeStyle = "#8a6a3a"; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("MENU", w / 2, 40);
+    B.plan(1.4, .9, -1.6, 2.4, .02, M_(T(320, 200, (x, w, h) => { x.fillStyle = "#1e2a22"; x.fillRect(0, 0, w, h); x.strokeStyle = "#8a6a3a"; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("MENU", w / 2, 40);
       x.font = "18px Georgia"; x.textAlign = "left"; [["Hamburger", "25¢"], ["Cheeseburger", "30¢"], ["Malted Milk", "20¢"], ["Coffee", "5¢"], ["Apple Pie", "15¢"], ["Tab ? Pepsi Free ?", "—"]].forEach(([a, b], i) => { x.fillText(a, 26, 72 + i * 21); x.fillText(b, w - 70, 72 + i * 21); }); })));
     const hor = M_(T(128, 128, (x) => { x.fillStyle = "#c8202a"; x.beginPath(); x.arc(64, 64, 63, 0, 7); x.fill(); x.fillStyle = "#fbf8f0"; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.font = "italic bold 15px Georgia"; x.textAlign = "center"; x.fillText("Coca-Cola", 64, 48); x.fillStyle = "#1a1a1a"; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 44 - 2, 64 + Math.sin(a) * 44 - 2, 4, 4); } x.lineWidth = 3; x.strokeStyle = "#1a1a1a"; x.beginPath(); x.moveTo(64, 64); x.lineTo(64 + 22, 64 - 10); x.moveTo(64, 64); x.lineTo(64 - 4, 64 - 34); x.stroke(); }), { tr: true });
     B.plan(.62, .62, 1.7, 2.85, .03, hor); B.boite(.18, .14, .1, -.9, 2.95, .05, "#c8202a"); B.cyl(.07, .07, .05, -.9, 2.95, .11, "#c8202a", { rx: Math.PI / 2 }); });   // (la sonnette d'alarme rouge)
@@ -5457,7 +5470,7 @@ function interieurLouHV() { const B = chantierHV(9), O = [], { X0, X1, Z0, Z1, H
     B.plan(.8, 1.0, -3.2, 2.2, .03, M_(T(160, 200, (x, w, h) => { x.fillStyle = "#fbe8ec"; x.fillRect(0, 0, w, h); x.fillStyle = "#c8202a"; x.font = "italic bold 26px Georgia"; x.textAlign = "center"; x.fillText("Ice", w / 2, 34); x.fillText("Cream", w / 2, 62);
       x.fillStyle = "#d8a050"; x.beginPath(); x.moveTo(w / 2 - 24, 110); x.lineTo(w / 2 + 24, 110); x.lineTo(w / 2, 190); x.fill(); x.fillStyle = "#f6c8d8"; x.beginPath(); x.arc(w / 2, 100, 30, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); x.arc(w / 2, 70, 7, 0, 7); x.fill(); }))); });
   // le mur de devant, vu de l'intérieur : les vitrines (avec leurs stores vénitiens à mi-hauteur) et la porte
-  B.avec([0, 0, Z1], Math.PI, () => { B.mur(-W / 2, W / 2, 0, H, "enduit", "#f2ecd8");
+  B.avec([0, 0, Z1], Math.PI, () => { B.mur(-W / 2, W / 2, 0, H, "enduit", "#efe2c6");
     B.trou(-4.2, -.75, .12, 3.0, .05, {}); B.trou(.75, 4.2, .12, 3.0, .05, {}); B.trou(-.62, .62, 0, 2.66, .05, {});
     const store = M_(T(256, 256, (x, w, h) => { x.clearRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { x.fillStyle = "#efe6cc"; x.fillRect(0, y, w, 11); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, y + 9, w, 2); } x.fillStyle = "#d8ccb0"; x.fillRect(w * .25, 0, 3, h); x.fillRect(w * .75, 0, 3, h); }), { tr: true, ds: true });
     for (const [a, b] of [[-4.2, -.75], [.75, 4.2]]) { const t = store.map.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); B.plan(b - a, 1.4, (a + b) / 2, 2.3, .03, M_(t, { tr: true, ds: true })); B.boite(b - a + .1, .1, .1, (a + b) / 2, 3.03, .05, "#efe6cc"); for (const c of [a + .4, b - .4]) B.cyl(.006, .006, 1.4, c, 2.3, .07, "#d8ccb0"); }
@@ -5500,13 +5513,69 @@ function interieurLouHV() { const B = chantierHV(9), O = [], { X0, X1, Z0, Z1, H
   // ---- les suspensions : des globes de verre opalin au bout d'une tige ----
   const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff2d8, emissiveIntensity: .8, roughness: .3 });
   for (const [x, z] of [[-3.5, -1.85], [-3.5, -4.15], [-3.5, -6.45], [1.3, -2.4], [1.3, -4.6], [1.3, -6.8], [-1.1, -6.6], [-.6, -3.2]]) { B.cyl(.008, .008, .7, x, H - .35, z, "#2a2a2a"); B.cyl(.06, .1, .06, x, H - .72, z, CHROME, { m: .5 }); const gl = B.objet(new THREE.Mesh(new THREE.SphereGeometry(.17, 16, 12), globe)); gl.position.set(x, H - .9, z); gl.castShadow = false; }
+  // ---- les détails : cafetières en verre sur leur chauffe-plat, grille-pain, gâteau sous cloche, présentoir à beignets, pailles, tasses, journal, sélecteurs de juke-box aux banquettes ----
+  const verreM = new THREE.MeshStandardMaterial({ color: 0xe8f2f6, transparent: true, opacity: .28, roughness: .04, metalness: .2, depthWrite: false, side: THREE.DoubleSide }), cafeM = new THREE.MeshStandardMaterial({ color: 0x2a140a, roughness: .2 });
+  const ventre = (k) => new THREE.LatheGeometry([[0, 0], [.06, 0], [.085, .03], [.095, .08], [.09, .13], [.07, .17], [.055, .19], [.055, .21]].map(([r, y]) => new THREE.Vector2(r * k, y * k)), 18);
+  const cafetiere = (x, y, z, plein) => { B.objet(new THREE.Mesh(ventre(1), verreM)).position.set(x, y, z); if (plein > 0) { const c = B.objet(new THREE.Mesh(ventre(.93), cafeM)); c.position.set(x, y + .006, z); c.scale.y = plein; }
+    B.cyl(.06, .058, .035, x, y + .205, z, "#1a1a1a"); B.boite(0, 0, 0, x + .085, y + .12, z, "#1a1a1a", { geo: new THREE.TorusGeometry(.045, .012, 6, 12, Math.PI), rz: -Math.PI / 2 }); B.boite(.03, .02, .02, x - .06, y + .2, z, "#1a1a1a"); };
+  // le chauffe-plat à trois plaques (sur le plan de travail du fond) et ses trois cafetières ; deux autres sur le comptoir
+  B.boite(.42, .1, 1.05, 3.6, Y + 1.0, -2.75, "#c9cdd2", { m: .5, r: .25 }); B.boite(.42, .5, .2, 3.78, Y + 1.25, -2.75, "#c9cdd2", { m: .5, r: .25 }); B.boite(.3, .06, .08, 3.6, Y + 1.47, -2.75, "#c8202a");
+  for (const [k, pl] of [[-1, .8], [0, .45], [1, 0]]) { B.cyl(.09, .09, .015, 3.55, Y + 1.055, -2.75 + k * .32, "#2a2a2a"); B.sphere(.012, 3.75, Y + 1.03, -2.75 + k * .32, k === 1 ? "#5a1a1a" : "#e8301a"); cafetiere(3.55, Y + 1.063, -2.75 + k * .32, pl); }
+  cafetiere(2.15, Y + 1.03, -3.9, .7); cafetiere(2.0, Y + 1.03, -6.0, .35);
+  // le grille-pain chromé, le gâteau sous sa cloche, le présentoir vitré de beignets, le distributeur de pailles
+  B.boite(.28, .18, .16, 3.6, Y + 1.04, -3.55, "#e2e6ea", { m: .5, r: .15 }); for (const dz of [-.04, .04]) B.boite(.2, .01, .025, 3.6, Y + 1.135, -3.55 + dz, "#2a2a2a"); B.boite(.02, .04, .02, 3.75, Y + 1.08, -3.55, "#2a2a2a");
+  B.cyl(.2, .22, .025, 3.6, Y + .98, -7.1, "#e2e6ea", { m: .5 }); B.cyl(.15, .15, .14, 3.6, Y + 1.06, -7.1, "#f6e8d8"); B.cyl(.152, .152, .03, 3.6, Y + 1.12, -7.1, "#e8a0b0"); for (let k = 0; k < 8; k++) { const a2 = k * Math.PI / 4; B.sphere(.018, 3.6 + Math.cos(a2) * .11, Y + 1.14, -7.1 + Math.sin(a2) * .11, "#c8202a"); }
+  B.objet(new THREE.Mesh(new THREE.SphereGeometry(.19, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), verreM)).position.set(3.6, Y + .99, -7.1); B.sphere(.025, 3.6, Y + 1.19, -7.1, "#e2e6ea", { m: .5 });
+  B.avec([2.1, Y + 1.03, -7.05], 0, () => { B.boite(.34, .02, .5, 0, .01, 0, "#e2e6ea", { m: .5 }); B.objet(new THREE.Mesh(new THREE.BoxGeometry(.34, .26, .5), verreM)).position.set(0, .14, 0); B.boite(.3, .01, .46, 0, .14, 0, "#e2e6ea", { m: .5 });
+    for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) for (const yy of [.03, .155]) B.boite(0, 0, 0, -.07 + i * .14, yy + .02, -.15 + k * .15, ["#c8803a", "#e8c8a8", "#5a2a14"][(i + k) % 3], { geo: new THREE.TorusGeometry(.04, .02, 6, 14), rx: Math.PI / 2 }); });
+  B.objet(new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .2, 12, 1, true), verreM)).position.set(2.25, Y + 1.13, -3.1); for (let k = 0; k < 9; k++) B.cyl(.003, .003, .24, 2.25 + (k % 3 - 1) * .015, Y + 1.15, -3.1 + (Math.floor(k / 3) - 1) * .015, k % 2 ? "#c8202a" : "#f6f2ea"); B.cyl(.045, .045, .02, 2.25, Y + 1.24, -3.1, "#e2e6ea", { m: .5 });
+  // devant quelques tabourets : la tasse sur sa soucoupe, la cuillère ; une part de tarte ; le journal
+  for (const [z, quoi] of [[-1.95, "tasse"], [-3.59, "tarte"], [-4.41, "tasse"], [-6.05, "shake"]]) { const xx = 1.95, yy = Y + 1.03;
+    if (quoi === "tasse") { B.cyl(.07, .06, .012, xx, yy + .006, z, "#f6f4ee"); B.cyl(.04, .032, .07, xx, yy + .045, z, "#f6f4ee"); B.cyl(.036, .036, .005, xx, yy + .078, z, "#3a1a0a"); B.boite(0, 0, 0, xx, yy + .05, z + .045, "#f6f4ee", { geo: new THREE.TorusGeometry(.018, .006, 6, 10) }); B.boite(.1, .004, .01, xx + .02, yy + .014, z - .05, "#e2e6ea", { m: .5, ry: .4 }); }
+    if (quoi === "tarte") { B.cyl(.09, .08, .012, xx, yy + .006, z, "#f6f4ee"); B.boite(0, 0, 0, xx, yy + .013, z, "#d8a050", { geo: new THREE.CylinderGeometry(.075, .075, .045, 10, 1, false, 0, Math.PI / 3) }); }
+    if (quoi === "shake") { B.cyl(.045, .03, .2, xx, yy + .1, z, "#e2e6ea", { m: .5 }); B.sphere(.045, xx, yy + .2, z, "#f6e2e8"); B.sphere(.015, xx, yy + .25, z, "#c8202a"); B.cyl(.004, .004, .14, xx + .015, yy + .26, z, "#f6f2ea", { rz: .2 }); } }
+  B.plan(.42, .3, 2.12, Y + 1.035, -5.0, M_(T(256, 180, (x, w, h) => { x.fillStyle = "#ece6d4"; x.fillRect(0, 0, w, h); x.fillStyle = "#1a1a1a"; x.font = "bold 22px Georgia"; x.textAlign = "center"; x.fillText("HILL VALLEY TELEGRAPH", w / 2, 26); x.fillRect(10, 32, w - 20, 2); x.font = "bold 14px Georgia"; x.fillText("SCIENTIST SEEKS RECORD", w / 2, 54);
+    x.fillStyle = "rgba(0,0,0,.45)"; for (let i = 0; i < 9; i++) x.fillRect(12 + (i % 3) * 80, 66 + Math.floor(i / 3) * 34, 70, 4); x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(170, 66, 72, 64); })), { rx: -Math.PI / 2, rz: .25 });
+  // sur les tables des banquettes : le sélecteur de juke-box au mur, le porte-serviettes, le menu debout
+  for (const zc of [-1.85, -4.15, -6.45]) { B.avec([-4.36, Y + 1.0, zc], 0, () => { B.boite(.1, .26, .34, 0, 0, 0, "#e2e6ea", { m: .5, r: .2 }); B.boite(.02, .14, .28, .055, .04, 0, "#f2e8c8"); B.boite(.04, .05, .34, .03, .14, 0, "#c8202a"); for (let k = 0; k < 10; k++) B.boite(.012, .012, .02, .07, -.09, -.14 + k * .031, k % 2 ? "#f2d040" : "#e2e6ea"); });
+    B.boite(.16, .1, .02, -3.2, Y + .84, zc + .15, "#f6f2e4"); B.boite(.16, .1, .02, -3.2, Y + .84, zc + .17, "#c8202a"); }
+  // le portemanteau près de la porte, son chapeau
+  B.cyl(.025, .025, 1.75, -3.9, Y + .88, -1.0, "#5a3420"); B.cyl(.22, .25, .03, -3.9, Y + .015, -1.0, "#5a3420"); for (let k = 0; k < 4; k++) { const a2 = k * Math.PI / 2; B.cyl(.012, .012, .2, -3.9 + Math.cos(a2) * .07, Y + 1.66, -1.0 + Math.sin(a2) * .07, "#5a3420", { rz: Math.cos(a2) * .7, rx: -Math.sin(a2) * .7 }); }
+  B.cyl(.14, .14, .02, -3.82, Y + 1.72, -1.0, "#3a3a40"); B.cyl(.09, .1, .1, -3.82, Y + 1.78, -1.0, "#3a3a40"); O.push([-3.9, -1.0, .3]);
+  // ---- la cabine téléphonique en bois, au fond, comme dans le film : porte pliante vitrée, téléphone à pièces, banquette, plafonnier, l'enseigne TELEPHONE ----
+  B.avec([-3.72, Y, Z0 + .47], 0, () => { const NOYER = "#6a3e22", NOYER2 = "#7e4c2a", W2 = .95, D2 = .9, H2 = 2.2;
+    B.boite(W2 + .04, .1, D2 + .04, 0, .05, 0, "#3a2414");   // le socle
+    for (const s2 of [-1, 1]) { B.boite(.05, H2, D2, s2 * (W2 / 2 - .025), H2 / 2 + .1, 0, NOYER, { r: .45 });
+      for (const [yy, hh] of [[.55, .7], [1.45, .5]]) B.boite(.012, hh, D2 - .2, s2 * (W2 / 2 + .002), yy + .1, 0, NOYER2, { r: .4 });
+      B.plan(D2 - .24, .38, s2 * (W2 / 2 + .01), 2.0, 0, verreM, { ry: s2 * Math.PI / 2 }); }
+    B.boite(W2, H2, .05, 0, H2 / 2 + .1, -D2 / 2 + .025, "#a87a50", { r: .5 });   // le fond, plus clair
+    B.boite(W2 + .12, .1, D2 + .12, 0, H2 + .15, 0, NOYER); B.boite(W2 + .18, .06, D2 + .18, 0, H2 + .22, 0, NOYER2); B.boite(W2 + .1, .05, D2 + .1, 0, H2 + .27, 0, "#3a2414");   // le toit et sa corniche
+    const ens = M_(T(256, 64, (x, w, h) => { x.fillStyle = "#1d3f7a"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f2e8c8"; x.lineWidth = 3; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("TELEPHONE", w / 2 + 14, h / 2 + 2);
+      x.fillStyle = "#f6f2e4"; x.beginPath(); x.arc(26, h / 2, 17, 0, 7); x.fill(); x.fillStyle = "#1d3f7a"; x.font = "bold 13px Georgia"; x.fillText("BELL", 26, h / 2 + 1); }));
+    ens.emissive = new THREE.Color(0xffffff); ens.emissiveMap = ens.map; ens.emissiveIntensity = .35; B.boite(.86, .22, .04, 0, H2 + .02, D2 / 2 + .02, "#2a2a2a"); B.plan(.84, .2, 0, H2 + .02, D2 / 2 + .041, ens);
+    // dedans : le téléphone à pièces (trois fentes, cadran, retour de monnaie), le combiné sur son crochet et son cordon, le carton des tarifs, la petite banquette, l'annuaire, le plafonnier
+    B.avec([0, 1.42, -D2 / 2 + .11], 0, () => { B.boite(.22, .42, .1, 0, 0, 0, "#1a1a1a", { r: .3, m: .3 }); B.boite(.23, .06, .11, 0, .2, 0, "#e2e6ea", { m: .5 });
+      for (let k = 0; k < 3; k++) B.boite(.03, .012, .01, -.06 + k * .06, .2, .056, "#2a2a2a");
+      B.cyl(.07, .07, .015, 0, .04, .055, "#e2e6ea", { rx: Math.PI / 2, m: .5 }); B.plan(.12, .12, 0, .04, .064, M_(T(64, 64, (x) => { x.fillStyle = "#e2e6ea"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#f6f2ea"; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; for (let k = 0; k < 10; k++) { const a2 = -Math.PI / 3 + k * .5; x.beginPath(); x.arc(32 + Math.cos(a2) * 21, 32 + Math.sin(a2) * 21, 5, 0, 7); x.fill(); } }), { tr: true }));
+      B.boite(.07, .05, .04, 0, -.17, .06, "#e2e6ea", { m: .5 }); B.boite(.03, .14, .03, -.135, .05, .03, "#e2e6ea", { m: .5 });
+      const comb = B.objet(new THREE.Mesh(new THREE.CapsuleGeometry(.025, .16, 4, 8), matHV("#141414", .3))); comb.position.set(-.16, .02, .06); for (const dy of [-.1, .1]) B.sphere(.035, -.16, .02 + dy, .07, "#141414", { r: .3 });
+      B.boite(0, 0, 0, 0, 0, 0, "#141414", { geo: new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.16, -.1, .07), new THREE.Vector3(-.2, -.25, .1), new THREE.Vector3(-.1, -.3, .08), new THREE.Vector3(-.06, -.18, .05)]), 16, .007, 5) });
+      B.plan(.16, .1, .2, .2, -.04, M_(T(128, 80, (x, w, h) => { x.fillStyle = "#f2ead0"; x.fillRect(0, 0, w, h); x.fillStyle = "#1d3f7a"; x.font = "bold 12px Georgia"; x.fillText("LOCAL CALLS 5¢", 8, 20); x.fillStyle = "#333"; for (let k = 0; k < 4; k++) x.fillRect(8, 30 + k * 11, w - 16, 3); })), {}); });
+    B.boite(.4, .05, .3, .2, .55, -.2, NOYER2); B.boite(.04, .45, .04, .36, .32, -.06, NOYER); B.boite(.22, .05, .3, -.28, .95, -.27, NOYER2); B.boite(.18, .04, .24, -.28, 1.0, -.27, "#c8302a");   // la banquette, l'annuaire sur sa tablette
+    const pl = B.objet(new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xfff6e0, emissive: 0xfff0c8, emissiveIntensity: .9 }))); pl.position.set(0, H2 + .08, 0); pl.rotation.x = Math.PI;
+    // la porte pliante, à demi ouverte : deux battants vitrés en V, cadre de noyer, la poignée chromée
+    const battant = (pos, ry) => B.avec(pos, ry, () => { const bw = .44; B.boite(bw, 1.95, .04, bw / 2, 1.08, 0, NOYER, { r: .4 }); B.boite(bw - .06, .45, .045, bw / 2, .42, 0, NOYER2, { r: .4 });
+      B.plan(bw - .1, 1.25, bw / 2, 1.33, .023, verreM); B.plan(bw - .1, 1.25, bw / 2, 1.33, -.023, verreM, { ry: Math.PI }); B.boite(bw - .08, .025, .046, bw / 2, 1.33, 0, NOYER); B.boite(.025, 1.25, .046, bw / 2, 1.33, 0, NOYER); });
+    battant([-W2 / 2 + .05, 0, D2 / 2], -.75); battant([-W2 / 2 + .05 + .44 * Math.cos(.75), 0, D2 / 2 + .44 * Math.sin(.75)], .75);
+    B.boite(.03, .18, .03, -W2 / 2 + .05 + .44 * Math.cos(.75) - .03, 1.1, D2 / 2 + .44 * Math.sin(.75) + .03, "#e2e6ea", { m: .5 }); });
+  O.push([-3.72, Z0 + .47, .62], [-3.3, Z0 + 1.0, .3]);
   const g = B.finir(); for (const [x, z] of [[-1.5, -3.6], [1.5, -5.4]]) { const l = new THREE.PointLight(0xfff0d8, 9, 9, 1.5); l.position.set(x, H - .4, z); g.add(l); }
   g.traverse(o => { if (o.isMesh) o.castShadow = false; });
   return { g, obst: O }; }
 
 function construireHillValley(A, T, L, scene) {
   L.hv = true; L.sansPNJ = true; L.taille = 1.85;
-  L.suivi = { d: 8.5, h: 4.4, av: 5, vy: 2.4 }; L.fov = [60, 72]; L.boite = [-26.5, 26.5, -14.6, 22.6]; L.zone = [-27.5, 27.5, -15.5, 23.5];
+  L.suivi = { d: 8.5, h: 4.4, av: 5, vy: 2.4 }; L.fov = [60, 72]; L.boite = [-26.5, 26.5, -14.6, 22.6]; L.zone = [-36.6, 27.5, -15.5, 23.5];
   L.depart = [-5.2, 13.9]; L.cam = { pos: [0, 6, 30], vise: [0, 3, 0] };
   const SQ = [15.5, 11.5], trottoirH = .12;
   // le sol : l'asphalte, les marquages
@@ -5642,12 +5711,17 @@ function construireHillValley(A, T, L, scene) {
   // ---- la DeLorean de Doc, garée au bord du trottoir : on y remonte pour rentrer ----
   const dl = creerDelorean(); poser(dl, -6, 16, -Math.PI / 2); scene.add(dl); L.delorean = dl; L.posDelorean = [-6, 16];
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
-  const SL = L.salleLou, dansLou = (x, z) => SL && ((x > SL.x0 + .25 && x < SL.x1 - .25 && z > SL.z0 + .25 && z < SL.z1 - .25) || (x >= SL.px0 && x <= SL.px1 && z > SL.pz0 && z < SL.pz1));
+  const SL = L.salleLou, dansLou = (x, z) => SL && x > SL.x0 + .25 && x < SL.x1 - .25 && z > SL.z0 + .25 && z < SL.z1 - .25;
   L.dansLou = (x, z) => SL && x > SL.x0 && x < SL.x1 && z > SL.z0 && z < SL.z1;
   L.contraindreCam = (pos, moi) => { const q = moi.g.position; if (!L.dansLou(q.x, q.z)) return false; pos.x = Math.max(SL.x0 + .35, Math.min(SL.x1 - .35, pos.x)); pos.z = Math.max(SL.z0 + .35, Math.min(SL.z1 - .35, pos.z)); pos.y = Math.min(pos.y, LOU.H - .3); return true; };
   L.limites = (x, z) => (Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 || dansLou(x, z)) && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
     && !(Math.abs(x - dl.position.x) < 2.3 && Math.abs(z - dl.position.z) < 1.1 && dl.visible);
-  L.portails = []; L.louCafe = SL ? SL.vers(2.95, -4.2) : [-23, -9.5]; L.louPts = SL ? [[0, -2.4], [-.6, -4.1], [.2, -5.6], [-2.3, -3.0], [-2.3, -5.3], [-.4, -7.5]].map(([a, b]) => SL.vers(a, b)) : null;   // (Lou derrière son comptoir ; les serveurs entre les tables)
+  L.portails = [];
+  if (SL) {   // entrer chez Lou, en sortir : un cercle devant la porte, dehors ; un autre juste derrière, dedans (comme à la caserne)
+    const [ex, ez] = SL.vers(0, 1.0), [ix, iz] = SL.vers(0, -1.0), [ax, az] = SL.vers(0, -1.9), [bx, bz] = SL.vers(0, 2.0);
+    L.portails.push({ dans: (x, z) => Math.hypot(x - ex, z - ez) < .9, vers: "hv1955", teleport: true, arrivee: [ax, az], yaw: Math.atan2(ex - ax, ez - az), indice: [ex, ez] });
+    L.portails.push({ dans: (x, z) => Math.hypot(x - ix, z - iz) < .9, vers: "hv1955", teleport: true, arrivee: [bx, bz], yaw: Math.atan2(ix - bx, iz - bz), indice: [ix, iz] }); }
+  L.louCafe = SL ? SL.vers(2.95, -4.2) : [-23, -9.5]; L.louPts = SL ? [[0, -2.4], [-.6, -4.1], [.2, -5.6], [-2.3, -3.0], [-2.3, -5.3], [-.4, -7.5]].map(([a, b]) => SL.vers(a, b)) : null;   // (Lou derrière son comptoir ; les serveurs entre les tables)
   let tPrec = 0;
   L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
     for (const R of L.roulent) { const x = R.axe === "x" ? R.p : R.fixe, z = R.axe === "x" ? R.fixe : R.p, dx = R.axe === "x" ? R.sens : 0, dz = R.axe === "x" ? 0 : R.sens;
@@ -5660,10 +5734,10 @@ function construireHillValley(A, T, L, scene) {
 }
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
-const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [39, "serveur"], [40, "serveur"], [43, "lou"], [44, "lou"], [32, "auto"], [33, "auto"], [34, "auto"], [35, "auto"]];
+const HABITANTS = [[31, "promene"], [36, "promene"], [37, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [43, "lou"], [44, "lou"], [32, "auto"], [33, "auto"], [34, "auto"], [35, "auto"]];
 const TETES_HV = { 31: "images/bttf/p-marty-tete.webp", 32: "images/bttf/p-biff-tete.webp", 33: "images/bttf/p-match-tete.webp", 34: "images/bttf/p-troisd-tete.webp", 35: "images/bttf/p-skinhead-tete.webp",
   36: "images/bttf/p-pois-tete.webp", 37: "images/bttf/p-ecossaise-tete.webp", 38: "images/bttf/p-bretelles-tete.webp", 39: "images/bttf/p-serveur-tete.webp", 40: "images/bttf/p-serveuse-tete.webp", 41: "images/bttf/p-gilet-tete.webp", 42: "images/bttf/p-varsity-tete.webp", 43: "images/bttf/p-lou-tete.webp", 44: "images/bttf/p-goldie-tete.webp" };
-function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z)) return [x, z]; } return [0, 10]; }
+function pointLibreHV() { const Z = M.L.zone; for (let k = 0; k < 40; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (M.L.limites(x, z) && !(M.L.dansLou && M.L.dansLou(x, z))) return [x, z]; } return [0, 10]; }
 function animerHV(now) {
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
   for (const p of M.L.polesHV || []) p.rotation.y = now / 450;   // (l'enseigne du barbier tourne)
@@ -5671,7 +5745,7 @@ function animerHV(now) {
   if (!M.hvInit) { M.hvInit = true; M.bandeT = 0;
     for (const [id, role] of HABITANTS) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
       const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? (M.L.louPts ? (id === 43 ? M.L.louCafe : M.L.louPts[3]) : [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)]) : role === "serveur" ? (M.L.louPts ? M.L.louPts[id === 39 ? 0 : 2] : [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)]): role === "auto" ? M.L.siegesBiff[id] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
-      const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P) });
+      const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P), ...(id === 44 ? { balai: true, peau: "#4a2e20" } : {}) });
       if (q && role === "auto") { q.info.auto = true; q.g.position.y = .2; if (q.g.children[0]) q.g.children[0].visible = false; }
       if (q) q.prochain = now + Math.random() * 4000; } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
