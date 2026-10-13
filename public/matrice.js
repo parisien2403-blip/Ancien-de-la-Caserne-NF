@@ -2179,6 +2179,45 @@ function construireMess(A, L, scene) {
     o.rotation.y = axe === "z" ? (sens > 0 ? Math.PI / 2 : -Math.PI / 2) : (sens > 0 ? 0 : Math.PI); };
   for (const [y0, y1] of [[0, HT], [YB, -.3]]) { carreler("z", RX0, 1, RZ0, RZ1, y0, y1); carreler("z", RX1, -1, RZ0, RZ1, y0, y1); carreler("x", RZ1, -1, RX0, RX1, y0, y1); }
   carreler("x", RZ0, 1, RX0, PO[0], 0, HT); carreler("x", RZ0, 1, PO[1], RX1, 0, HT); carreler("x", RZ0, 1, PO[0], PO[1], 2.6, HT); carreler("x", RZ0, 1, RX0, RX1, YB, -.3);
+  // la cuisine de restauration, tout en inox, contre les murs (on circule au milieu, jusqu'au haut de l'escalier)
+  const brosse = toile(256, 256, (x, w, h) => { x.fillStyle = "#c4c8cc"; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { const y = Math.random() * h; x.fillStyle = Math.random() < .5 ? "rgba(255,255,255,.22)" : "rgba(90,96,104,.16)"; x.fillRect(Math.random() * w - 60, y, 40 + Math.random() * 160, 1); } });
+  const inox = A.mat({ map: tex(brosse, 1, 1), color: 0xe4e7ea, metalness: .55, roughness: .32 }), inoxV = A.mat({ map: tex(brosse, 1, 1), color: 0xf2f4f6, metalness: .6, roughness: .2 });
+  const fonte = A.mat({ color: 0x1b1b1d, roughness: .55, metalness: .3 }), joint = A.mat({ color: 0x55595e, metalness: .4, roughness: .5 }), noirB = A.mat({ color: 0x101012, roughness: .4 });
+  const obsCuis = [];
+  const poste = (cx, cz, ang, w, kind) => { const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = ang; scene.add(g);
+    const b = (sx, sy, sz, x, y, z, m = inox) => { const o = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+    const cyl = (r1, r2, hh, x, y, z, m, rx = 0, rz = 0) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, hh, 14), m); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); g.add(o); return o; };
+    const D = .7, poignee = (x, y, l, vert) => { const o = cyl(.012, .012, l, x, y, D / 2 + .04, inoxV, vert ? 0 : 0, vert ? 0 : Math.PI / 2); for (const k of [-1, 1]) b(.015, .015, .04, x + (vert ? 0 : k * l / 2 * .9), y + (vert ? k * l / 2 * .9 : 0), D / 2 + .02, inoxV); return o; };
+    const pieds = () => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) cyl(.025, .025, .12, sx * (w / 2 - .06), .06, sz * (D / 2 - .08), inoxV); };
+    if (kind === "frigo") { b(w, 1.95, D, 0, .12 + .975, 0); pieds(); b(.01, 1.8, .01, 0, 1.08, D / 2 + .005, joint);
+      for (const s2 of [-1, 1]) { b(w / 2 - .03, 1.82, .02, s2 * w / 4, 1.08, D / 2 + .01, inoxV); poignee(s2 * .07, 1.25, .5, true); }
+      b(w, .08, D, 0, 2.11, 0, joint); const ec = b(.24, .06, .01, -w / 2 + .25, 2.11, D / 2 + .005, A.mat({ color: 0x1a2a20, emissive: 0x22ff66, emissiveIntensity: .4 })); }
+    else if (kind === "rayon") { for (const sx of [-1, 1]) for (const sz of [-1, 1]) cyl(.016, .016, 1.9, sx * (w / 2 - .03), .95, sz * (D / 2 - .05), inoxV);
+      for (const y of [.18, .62, 1.06, 1.5, 1.86]) b(w, .025, D - .04, 0, y, 0);
+      for (let k = 0; k < Math.floor(w / .32); k++) { const x = -w / 2 + .2 + k * .32; cyl(.12, .1, .2, x, 1.06 + .1, -.05, inoxV); cyl(.14, .14, .18, x, .62 + .1, .05, inoxV); b(.26, .05, .36, x, 1.5 + .04, 0, inoxV); } }
+    else { b(w, .82, D - .04, 0, .12 + .41, -.02); pieds(); b(w + .02, .04, D + .02, 0, .95, 0, inoxV); b(w + .02, .14, .03, 0, 1.03, -D / 2 + .01, inoxV);   // le corps, le plan, le dosseret
+      if (kind === "feux") { b(w - .02, .02, D - .1, 0, .975, .02, fonte);
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const x = -w / 3 + i * w / 3, z = -.14 + j * .3; const r = new THREE.Mesh(new THREE.TorusGeometry(.09, .012, 6, 18), fonte); r.rotation.x = Math.PI / 2; r.position.set(x, 1.0, z); g.add(r);
+          b(.24, .015, .02, x, 1.0, z, fonte); b(.02, .015, .24, x, 1.0, z, fonte); cyl(.035, .035, .02, x, .99, z, joint); }
+        for (let i = 0; i < 6; i++) cyl(.025, .025, .04, -w / 2 + .14 + i * (w - .28) / 5, .86, D / 2 + .01, noirB, Math.PI / 2);
+        b(w - .2, .5, .02, 0, .48, D / 2 - .01, inoxV); poignee(0, .78, w - .4, false); b(w * .5, .14, .01, 0, .52, D / 2 + .005, A.mat({ color: 0x18181a, roughness: .1, metalness: .4 }));
+        // la hotte au-dessus
+        b(w + .2, .5, D + .2, 0, 2.35, .05); b(w + .2, .05, D + .2, 0, 2.08, .05, joint); b(w + .1, .02, D + .1, 0, 2.1, .05, A.mat({ color: 0x8a8e94, metalness: .5, roughness: .6 })); b(.35, HT - 2.6, .35, 0, (HT + 2.6) / 2, -.1); }
+      else if (kind === "plonge") { for (const s2 of [-1, 1]) { b(w / 2 - .2, .02, D - .22, s2 * w / 4, .935, .02, A.mat({ color: 0x5c6066, metalness: .6, roughness: .3 })); }
+        cyl(.018, .018, .45, 0, 1.18, -.25, inoxV); const bec = cyl(.014, .014, .3, 0, 1.4, -.12, inoxV, Math.PI / 2); for (const s2 of [-1, 1]) cyl(.03, .03, .05, s2 * .1, 1.05, -.27, inoxV);
+        const dou = cyl(.015, .015, .9, .35, 1.5, -.28, inoxV); const tete = cyl(.05, .04, .12, .35, 1.0, -.15, inoxV);
+        for (const s2 of [-1, 1]) { b(w / 2 - .05, .7, .02, s2 * w / 4, .5, D / 2 - .01, inoxV); } }
+      else { const n = Math.max(1, Math.round(w / .6)); for (let k = 0; k < n; k++) { const x = -w / 2 + (k + .5) * w / n; b(w / n - .03, .66, .02, x, .5, D / 2 - .01, inoxV); poignee(x, .76, w / n - .2, false); }
+        // l'étagère murale au-dessus
+        b(w, .025, .35, 0, 1.55, -D / 2 + .17); b(w, .025, .35, 0, 1.95, -D / 2 + .17); for (const s2 of [-1, 1]) b(.02, .5, .35, s2 * w / 2, 1.75, -D / 2 + .17);
+        for (let k = 0; k < Math.floor(w / .3); k++) { const x = -w / 2 + .18 + k * .3; cyl(.11, .1, .14, x, 1.63, -D / 2 + .17, inoxV); cyl(.05, .045, .22, x + .02, 2.08, -D / 2 + .17, inoxV); }
+        if (w > 1.3) { b(.5, .02, .35, -w / 4, .975, .05, A.mat({ color: 0xe8e2d0, roughness: .6 })); for (let k = 0; k < 3; k++) cyl(.13 - k * .02, .12 - k * .02, .12, w / 4, 1.03 + k * .12, 0, inoxV); } } }
+    // l'emprise au sol, pour qu'on ne marche pas dedans
+    const c = Math.abs(Math.cos(ang)) > .5, hw = (c ? w : D) / 2, hd = (c ? D : w) / 2; obsCuis.push([cx - hw, cx + hw, cz - hd, cz + hd]); };
+  { const xR = RX1 - .37, F = -Math.PI / 2; let z = RZ0 + .9;
+    for (const [w, k] of [[1.4, "frigo"], [1.6, "plan"], [1.6, "feux"], [1.2, "plan"], [1.8, "plonge"], [1.6, "plan"], [1.3, "frigo"]]) { poste(xR, z + w / 2, F, w, k); z += w + .02; }
+    const zB = RZ1 - .37; let x = RX0 + .4;
+    for (const [w, k] of [[2.0, "plan"], [1.8, "plan"], [1.6, "rayon"]]) { poste(x + w / 2, zB, Math.PI, w, k); x += w + .02; } }
   for (const z of [RZ0 + 3, RZ1 - 3]) { const x = RCX + 1;
     A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, -.34, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), globe); gl.position.set(x, -.58, z); scene.add(gl);
@@ -2195,7 +2234,7 @@ function construireMess(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globe); gl.position.set(x, HT - 1.28, z); scene.add(gl);
     const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampes.push(l); }
-  const dansPiece = (x, z) => x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (nivC ? SZ0 - .5 : SZ0 + .3))) && !(nivC && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
+  const dansPiece = (x, z) => !(!nivC && obsCuis.some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (nivC ? SZ0 - .5 : SZ0 + .3))) && !(nivC && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
   const ambiant = new THREE.AmbientLight(0xfff1dc, .5); scene.add(ambiant);
   L.setLumiere = (niveau) => { const v = +niveau, k = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); L.lumiere = k;
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * k; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
