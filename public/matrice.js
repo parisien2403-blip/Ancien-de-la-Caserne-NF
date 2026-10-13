@@ -1321,14 +1321,16 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4) {
       x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100);
       x.strokeStyle = "#141414"; x.lineWidth = 2.5; x.strokeRect(X - 4, Y + 70, 76, 28); for (let k = X; k < X + 72; k += 6) { x.beginPath(); x.moveTo(k, Y + 70); x.lineTo(k, Y + 98); x.stroke(); } }
     // le rez-de-chaussée blanc, sa corniche
-    x.fillStyle = "#e9e6df"; x.fillRect(0, h - rdc, w, rdc); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - rdc, w, 14); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, h - rdc + 14, w, 3);
-    x.fillStyle = "#cfcac0"; x.fillRect(0, h - 24, w, 24);
+    // le rez-de-chaussée : la brique jusqu'en bas ; du blanc seulement au-dessus du passage, et un soubassement blanc de 60 cm au pied du mur
+    x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
+    x.fillStyle = "#e9e6df"; x.fillRect(0, h - 24, w, 24); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);
+    x.fillStyle = "#e9e6df"; x.fillRect(cx - (lp + .3) * 40, h - (hp + .9) * 40, (lp + .3) * 80, .9 * 40); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (lp + .4) * 40, h - (hp + .9) * 40 - 6, (lp + .4) * 80, 8);
     // quelques portes vitrées, les petites appliques noires, les boîtiers rouges
     for (const d of [-15, 15]) { const X = cx + d * 40 - 36;   // (plus de porte de part et d'autre du passage) if (X < 0 || X > w - 72) continue;
       x.fillStyle = "#cfcac0"; x.fillRect(X - 6, h - 150, 84, 150); x.fillStyle = "#2b3138"; x.fillRect(X, h - 144, 72, 144); x.fillStyle = "#5c6670"; x.fillRect(X + 34, h - 144, 4, 144); }
     for (const d of [-4, 4]) { x.fillStyle = "#222"; x.fillRect(cx + d * 40 - 10, h - rdc + 40, 20, 8); x.fillStyle = "#c8202a"; x.fillRect(cx + d * 40 - 6, h - 120, 12, 16); }
     // le passage carré, au centre (4,8 m × 4,4 m), sous son linteau
-    x.fillStyle = "#dedad2"; x.fillRect(cx - (lp + .2) * 40, h - (hp + .2) * 40, (lp + .2) * 80, 8);
+    x.fillStyle = "#d9d5cc"; x.fillRect(cx - (lp + .3) * 40, h - (hp + .08) * 40, (lp + .3) * 80, 6);
     if (avecPassage) x.clearRect(cx - 2.4 * 40, h - hp * 40, 4.8 * 40, hp * 40);
   });
 }
@@ -1357,11 +1359,11 @@ function troisiemeCour(A, L, scene) {
   // le bâtiment du fond, le même ; son porche, plus haut (au niveau du haut des marches) et bien plus profond
   const HP = hp + 4.4, face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
-  // la façade : de la brique jusqu'au sol ; le blanc seulement autour du passage, sur la largeur des marches, jusqu'un peu au-dessus ; deux fenêtres de chaque côté des marches
+  // la façade : de la brique jusqu'au sol ; du blanc au-dessus du passage et en soubassement (60 cm) ; deux fenêtres de chaque côté des marches
   const cF = toileVerso(44, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.width, h = cF.height, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
     x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
-    x.fillStyle = "#e9e6df"; x.fillRect(cx - LM * P, h - hb, LM * 2 * P, hb); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .15) * P, h - hb - 10, (LM + .15) * 2 * P, 12);
-    x.fillStyle = "#7e7a74"; x.fillRect(0, h - 10, w, 10);
+    x.fillStyle = "#e9e6df"; x.fillRect(0, h - 24, w, 24); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
+    x.fillStyle = "#e9e6df"; x.fillRect(cx - (LM + .3) * P, h - (HP + .9) * P, (LM + .3) * 2 * P, .9 * P); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .4) * P, h - (HP + .9) * P - 6, (LM + .4) * 2 * P, 8);   // (le blanc, au-dessus du passage)
     const pasF = 3.6 * P, nF = Math.floor(w / pasF), col = c => (c + .5) * pasF + (w - nF * pasF) / 2;   // (les mêmes colonnes que les fenêtres des étages)
     for (const c of [3, 4, nF - 5, nF - 4]) { const X = col(c) - 34, Y = h - 4.3 * P;   // (au-dessus du muret des buissons)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
