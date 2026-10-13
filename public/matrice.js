@@ -3814,6 +3814,7 @@ export async function ouvrir(ctx) {
 }
 
 export function fermer() {
+  if (M) clearInterval(M.pingT);
   if (!M) return;
   couperMusiqueBttf(0);
   couperSonsApo();
@@ -6655,10 +6656,13 @@ export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
 export function effacerDit(id) { envoyerWS(id === "tout" ? { t: "effacer", tout: true } : { t: "effacer", id }); }
 export function avatarChange() { /* le serveur prévient tout le monde lui-même */ }
+// le réseau revient, ou l'on revient sur l'appli : si la Matrice était coupée, on se reconnecte aussitôt
+for (const ev of ["online", "visibilitychange"]) (ev === "online" ? window : document).addEventListener(ev, () => { if (!M || !M.ouvert || document.hidden || !M.ws || M.ws.readyState <= 1) return; clearTimeout(M.reco); connecter(); });
 function connecter() {
   const ctx = M.ctx, url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/matrice?t=" + encodeURIComponent(ctx.token);
   const ws = new WebSocket(url); M.ws = ws; let ouverte = false;
-  ws.onopen = () => { ouverte = true; M.echecs = 0; changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? M.posEntree : null); };
+  clearInterval(M.pingT); M.pingT = setInterval(() => { if (M && M.ws === ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);   // (la connexion reste éveillée)
+  ws.onopen = () => { ouverte = true; M.echecs = 0; if (M.recoInfo) { M.recoInfo = false; ctx.surInfo && ctx.surInfo("✅ Reconnecté !"); } changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? M.posEntree : null); };
   ws.onmessage = ev => {
     if (!M) return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.t === "etat") {
@@ -6733,8 +6737,10 @@ function connecter() {
   ws.onclose = ev => {
     if (!M || ws !== M.ws) return;
     if (ev.code === 4003 || ev.code === 4000) { ctx.surErreur && ctx.surErreur(ev.reason || "Déconnecté de la Matrice"); return; }
-    if (!ouverte && (M.echecs = (M.echecs || 0) + 1) >= 2) { ctx.surErreur && ctx.surErreur("Impossible d'entrer dans la Matrice pour l'instant (connexion, ou exclusion par l'administrateur)."); return; }
-    if (M.ouvert) { ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); M.reco = setTimeout(() => M && connecter(), 3000); }
+    if (!ouverte && (M.echecs = (M.echecs || 0) + 1) >= 8) { ctx.surErreur && ctx.surErreur("Impossible d'entrer dans la Matrice pour l'instant (connexion, ou exclusion par l'administrateur)."); return; }
+    // coupure (réseau mobile, passage wifi / 4G…) : on se reconnecte tout seul, de plus en plus patiemment, et tout de suite quand le réseau revient
+    if (M.ouvert) { if (!M.recoInfo) { M.recoInfo = true; ctx.surInfo && ctx.surInfo("Connexion perdue… on se reconnecte."); }
+      clearTimeout(M.reco); M.reco = setTimeout(() => M && M.ws === ws && connecter(), Math.min(15000, 1500 * Math.max(1, M.echecs || 1))); }
   };
 }
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];

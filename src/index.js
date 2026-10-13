@@ -105,6 +105,8 @@ class Refus extends Error {
 export class Compteur extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
+    // la Matrice : le « ping » envoyé par chaque appli toutes les 25 s reçoit son « pong » sans réveiller le registre (la connexion ne s'endort pas sur les réseaux mobiles)
+    try { ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}')); } catch (e) {}
     this.sql = ctx.storage.sql;
     this.sql.exec(`CREATE TABLE IF NOT EXISTS membres (
       numero INTEGER PRIMARY KEY, nom TEXT, prenom TEXT, qualite TEXT, parent TEXT,

@@ -2859,6 +2859,8 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.93", "13 octobre 2026", ["Matrice : la connexion reste éveillée (signal toutes les 25 s) et se reconnecte toute seule après une coupure de réseau, aussitôt que le réseau revient",
+      "Mise à jour automatique : plus de rechargement en pleine Matrice ou en pleine salle des fêtes (elle attend qu'on en sorte)"]],
     ["3.92", "13 octobre 2026", ["Accueil : 🟢 En ce moment à la caserne — les anciens qui ont l'appli ouverte, avec leur photo"]],
     ["3.91", "13 octobre 2026", ["Réglages : 📲 Partager l'appli — le lien, son QR code à faire scanner, et un bouton pour l'envoyer"]],
     ["3.90", "13 octobre 2026", ["Le mess : les cercles de l'escalier font descendre ou monter le bonhomme marche par marche, on le voit faire"]],
@@ -3109,7 +3111,7 @@
     document.body.appendChild(b); const [maint, tard] = b.querySelectorAll("button");
     maint.onclick = () => mettreAJour();
     tard.onclick = () => { clearInterval(majMinuteur); b.remove(); majReportT = Date.now() + 10 * 60e3; };   // (on redemandera dans 10 minutes)
-    majMinuteur = setInterval(() => { if (enTrainDEcrire()) return; n--; const c = b.querySelector("b"); if (c) c.textContent = n; if (n <= 0) { clearInterval(majMinuteur); mettreAJour(); } }, 1000);
+    majMinuteur = setInterval(() => { if (enTrainDEcrire() || /^(matrice|fetes)$/.test(document.querySelector(".tab:not([hidden])")?.dataset.tab || "")) { const c = b.querySelector("span"); if (c) c.innerHTML = "🔄 Nouvelle version prête"; return; }   /* (pas de rechargement en pleine Matrice ni en pleine musique : le bandeau attend qu'on en sorte, ou « Maintenant ») */ n--; const c = b.querySelector("b"); if (c) c.textContent = n; if (n <= 0) { clearInterval(majMinuteur); mettreAJour(); } }, 1000);
   }
   async function verifierMajAuto() {
     if (!navigator.onLine) return;
