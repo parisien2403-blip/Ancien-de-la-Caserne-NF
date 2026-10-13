@@ -1334,6 +1334,7 @@
             <h3>🔒 Relie cet appareil pour lire ton courrier</h3>
             <p>Ton courrier est chiffré de bout en bout. Pour l'ouvrir sur cet écran, entre le <b>code de liaison</b>
               inscrit au dos de ton laissez-passer (ou scanne son QR code).</p>
+            <p style="font-size:13px;color:var(--muted)">📱 <b>Où le trouver ?</b> Sur l'appareil où tu t'es connecté la première fois (ton téléphone, souvent) : touche la pastille de ta tête en haut, puis <b>🪪 Voir mon laissez-passer</b>, et <b>touche la carte pour la retourner</b>. Le code est au dos, sous le QR code.</p>
             <div class="relier-ligne"><input id="rlCode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
               <button class="btn small" type="submit">Relier</button></div>
             <button class="link" type="button" id="rlScan" style="margin:10px 0 0">📷 Scanner le QR code</button>
@@ -2868,6 +2869,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.95", "13 octobre 2026", ["Vaguemestre : on explique où trouver son code de liaison pour relier un PC ou une tablette à son courrier chiffré"]],
     ["3.94", "13 octobre 2026", ["Salle des fêtes : si la musique se coupe (réseau qui flanche, téléphone qui suspend le son), elle repart toute seule, calée au bon moment"]],
     ["3.93", "13 octobre 2026", ["Matrice : la connexion reste éveillée (signal toutes les 25 s) et se reconnecte toute seule après une coupure de réseau, aussitôt que le réseau revient",
       "Mise à jour automatique : plus de rechargement en pleine Matrice ou en pleine salle des fêtes (elle attend qu'on en sorte)"]],
@@ -3889,7 +3891,7 @@
         await registre.envoyer({ a, chiffre: { ...c, cle: k.pub } });
       } else {
         if (enLigne && !await garde(k ? `${nomDe(a)} ne s'est pas encore connecté depuis l'arrivée du courrier chiffré.\nEnvoyer quand même SANS chiffrement ?`
-          : "Cet appareil n'est pas relié à ton courrier chiffré.\nEnvoyer quand même SANS chiffrement ?", { titre: "Courrier non chiffré", annuler: true, ok: "Envoyer quand même" })) { btn.disabled = false; return; }
+          : "Cet appareil n'est pas encore relié à ton courrier chiffré (le cadenas de ton courrier est sur ton premier appareil, souvent ton téléphone).\nPour le relier : en haut du Vaguemestre, entre le code de liaison qui est au dos de ton laissez-passer (sur ton téléphone : pastille de ta tête → Voir mon laissez-passer → touche la carte).\n\nEnvoyer quand même ce message SANS chiffrement ?", { titre: "Courrier non chiffré", annuler: true, ok: "Envoyer quand même" })) { btn.disabled = false; return; }
         await registre.envoyer({ a, sujet, texte });
       }
       $("vForm").reset(); vue = "envoyes"; await chargerBoite();
