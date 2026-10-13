@@ -5244,7 +5244,7 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
 /* ===================== Retour vers le futur =====================
    L'Almanach des sports traîne quelque part dans la caserne (un seul, placé par le serveur, jamais deux fois au même endroit).
    Qui marche dessus peut le ramasser : il quitte la Matrice des autres, la DeLorean de Doc vient le chercher dans une cour d'honneur
-   rien qu'à lui, fonce en laissant deux traînées de feu… et le dépose à Hill Valley, le 5 novembre 1955. */
+   rien qu'à lui, fonce en laissant deux traînées de feu… et le dépose à Hill Valley, le 14 juillet 1955. */
 const DOC = -30, ID_DOC = 30;
 let texAlm = null;
 const estBttf = id => id === "bttf-cour" || id === "hv1955";
@@ -5580,7 +5580,7 @@ function cineHV() {
     else if (t < 9) { arcs(car, false); ouvrirPortes(car, t < 7.5 ? lisse((t - 3) / 1.1) : 1 - lisse((t - 7.5) / 1));
       if (t > 4 && moi && !moi.g.visible) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
       if (t > 4.2 && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);
-      if (t > 4.6 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>5 novembre 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
+      if (t > 4.6 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>14 juillet 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
       cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1.2, 15.2); }
     else fin();
     animerFeu(feu, now, 7000); } };
