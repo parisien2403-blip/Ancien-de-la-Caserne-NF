@@ -2119,6 +2119,16 @@ function construireMess(A, L, scene) {
   for (const s2 of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(s2 * 1.0, 0, Z1); piv.rotation.y = s2 * 1.4; scene.add(piv);
     const bt = new THREE.Mesh(new THREE.BoxGeometry(.95, 2.7, .06), A.mat({ color: 0x5a3420, roughness: .55 })); bt.position.set(-s2 * .475, 1.35, -.03); piv.add(bt); }
   L.portails.push({ dans: (x, z) => Math.abs(x) < 1.1 && z > Z1 - .55, vers: "grande", arrivee: [-14.25, 11.0], yaw: Math.PI, indice: [0, Z1 - .3] });
+  // les cloisons (elles s'arrêtent à 3 m, sous le plafond) : à gauche en entrant (côté cour), une petite pièce sans plafond dans l'angle, qui prend la première baie,
+  // avec son passage vers la salle ; à droite, un seul pan de mur de la même longueur
+  const HC = 3.0, ZC = Z1 - pasF, XC = 2.2, PA = [3.5, 4.5], cloisons = [];
+  const cloison = (axe, pos, de, a) => { cloisons.push([axe, pos, de, a]); mur(axe, pos, de, a, 1, 0, HC); mur(axe, pos, de, a, -1, 0, HC); };
+  cloison("z", XC, ZC - .15, Z1); cloison("z", -XC, ZC - .15, Z1);
+  cloison("x", ZC, XC, PA[0]); cloison("x", ZC, PA[1], X1);
+  mur("x", ZC, PA[0], PA[1], 1, 2.35, HC, true);   // le linteau au-dessus du passage
+  for (const xx of PA) A.ajoute(new THREE.BoxGeometry(.08, 2.35, .34), bois, xx, 1.175, ZC, false);   // l'encadrement en bois
+  A.ajoute(new THREE.BoxGeometry(PA[1] - PA[0] + .08, .08, .34), bois, (PA[0] + PA[1]) / 2, 2.35, ZC, false);
+  const dansCloison = (x, z) => cloisons.some(([axe, pos, de, a]) => axe === "z" ? Math.abs(x - pos) < .4 && z > de - .25 && z < a + .25 : Math.abs(z - pos) < .4 && x > de - .25 && x < a + .25);
   // les suspensions : globes opalins au bout d'une tige, en deux rangées ; leurs lampes
   const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 }), lampes = [];
   for (const x of [-2.6, 2.6]) for (let k = 0; k < 4; k++) { const z = Z0 + 3 + k * 6;
@@ -2130,7 +2140,7 @@ function construireMess(A, L, scene) {
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * k; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
   L.setNuit = (n) => { L.nuit = n; vj.material.color.setHex(n ? 0x1a2238 : 0xffffff); L.setLumiere(L.lumiere ?? 1); };
   L.setLumiere(1);
-  L.limites = (x, z) => (x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1);
+  L.limites = (x, z) => ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z);
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, Z1 + .3]; L.boite = [X0, X1, Z0, Z1]; L.plafond = HT - .3;
   L.depart = [0, 10]; L.cam = { pos: [0, 2.4, Z1 - .5], vise: [0, 1.4, Z0] };
 }
