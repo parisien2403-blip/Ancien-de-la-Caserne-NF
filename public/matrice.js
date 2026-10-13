@@ -1356,7 +1356,15 @@ function troisiemeCour(A, L, scene) {
   // le bâtiment du fond, le même ; son porche, plus haut (au niveau du haut des marches) et bien plus profond
   const HP = hp + 4.4, face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
-  const tF = tex(toileVerso(44, 24, false, HP, LM)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+  // la façade : de la brique jusqu'au sol ; le blanc seulement autour du passage, sur la largeur des marches, jusqu'un peu au-dessus ; deux fenêtres de chaque côté des marches
+  const cF = toileVerso(44, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.width, h = cF.height, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
+    x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
+    x.fillStyle = "#e9e6df"; x.fillRect(cx - LM * P, h - hb, LM * 2 * P, hb); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .15) * P, h - hb - 10, (LM + .15) * 2 * P, 12);
+    x.fillStyle = "#7e7a74"; x.fillRect(0, h - 10, w, 10);
+    for (const sg of [-1, 1]) for (const k of [0, 1]) { const X = cx + sg * (LM + 1.4 + k * 2.6) * P - 34, Y = h - 3.4 * P;
+      x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
+      x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100); x.fillRect(X, Y + 46, 68, 3); x.fillStyle = "#d9d5cc"; x.fillRect(X - 10, Y + 104, 88, 8); } }
+  const tF = tex(cF); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   const solP = A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, LM, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
