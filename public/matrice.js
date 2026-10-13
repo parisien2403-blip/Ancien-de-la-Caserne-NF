@@ -6136,10 +6136,15 @@ function envVille(rendu) { if (envsVille.has(rendu)) return envsVille.get(rendu)
       x.fillStyle = "rgba(30,40,50,.55)"; for (let fy = H * .5 - bh + 8; fy < H * .5 - 14; fy += 22) for (let fx = bx + 8; fx < bx + bw - 12; fx += 20) x.fillRect(fx, fy, 9, 13); bx += bw; }
     x.fillStyle = "#b8b4ac"; x.fillRect(0, H * .5, W, H * .06); const sol = x.createLinearGradient(0, H * .56, 0, H); sol.addColorStop(0, "#5a5a58"); sol.addColorStop(1, "#2a2a2a"); x.fillStyle = sol; x.fillRect(0, H * .56, W, H * .44); });
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.mapping = THREE.EquirectangularReflectionMapping;
+  if (GPU_MODESTE) {   // (une Intel intégrée sous Windows se fige sur le rendu de la scène de reflets : on peint le soleil et les nuages lumineux dans l'image, que three préfiltre lui-même au premier affichage, comme pour la DeLorean)
+    const x = c.getContext("2d"), px = (u, v) => [W * u, H * v];
+    for (const [u, v, r] of [[.375, .21, 60], [.375, .21, 22]]) { const [cx, cy] = px(u, v), g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, "#fffef6"); g.addColorStop(1, "rgba(255,250,235,0)"); x.fillStyle = g; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); }
+    x.fillStyle = "rgba(255,255,255,.9)"; x.fillRect(0, 0, W, H * .06); t.needsUpdate = true; t.garder = true; envsVille.set(rendu, t); return t; }
+  trace("reflets ville");
   const dome = new THREE.Mesh(new THREE.SphereGeometry(50, 48, 24), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide })); sc.add(dome);
   const soleil = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(30, 27, 22) })); soleil.position.set(-20, 32, 22); sc.add(soleil);
   for (const [x, y, z, w, h] of [[0, 30, 0, 26, 8], [24, 12, -10, 10, 5]]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.2, 2.3), side: THREE.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); sc.add(p); }
-  const pm = new THREE.PMREMGenerator(rendu), env = pm.fromScene(sc, .01).texture; pm.dispose(); env.garder = true; envsVille.set(rendu, env); return env; }
+  const pm = new THREE.PMREMGenerator(rendu), env = pm.fromScene(sc, .01).texture; pm.dispose(); env.garder = true; envsVille.set(rendu, env); trace("reflets ville OK"); return env; }
 /* ===================== la Chevrolet Bel Air 1957 (cabriolet, hard-top blanc), modelée en 3D d'après les cinq vues =====================
    Repère : l'avant vers +x, la largeur sur z, le sol à y = 0. Longueur 5,1 m, largeur 1,9 m. */
 function creerBelAir(o = {}) {
