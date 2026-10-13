@@ -1321,7 +1321,7 @@ function deuxiemeCour(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(.1, HT2, 2.8), A.mat({ color: 0x9a9284 }), xm + .05, HT2 / 2, zo);
     const solI = A.ajoute(new THREE.PlaneGeometry(P, 2.8), A.mat({ color: 0x6f6a62 }), xm + P / 2, .015, zo, false); solI.rotation.x = -Math.PI / 2;
     A.ajoute(new THREE.BoxGeometry(P, .05, 2.8), A.mat({ color: 0x8a847a }), xm + P / 2, HT2 - .05, zo, false);
-    const bat = A.ajoute(new THREE.BoxGeometry(.05, 2.1, .8), A.mat({ color: 0x6b4226, roughness: .6 }), xf + .55, 1.07, zo + .8 + .55); bat.rotation.y = -1.2;   // le battant ouvert
+    const bat = A.ajoute(new THREE.BoxGeometry(.05, 2.1, .8), A.mat({ color: 0x6b4226, roughness: .6 }), xf + .55, 1.07, zo + .8 + .55); bat.rotation.y = -1.2; bat.visible = false; L.batEnc = bat;   // le battant ouvert (seulement à l'apocalypse : ici, la porte est fermée au cadenas)
     const bois = A.mat({ color: 0x7a4a26, roughness: .7 }), boisC = A.mat({ color: 0xa8743f, roughness: .7 });
     A.ajoute(new THREE.BoxGeometry(.6, 1.9, 1.0), bois, xm + .4, .95, zo + .7);                               // une vieille armoire
     A.ajoute(new THREE.BoxGeometry(.02, 1.7, .45), A.mat({ color: 0x5a361e }), xm + .71, .95, zo + .45, false);
@@ -1332,8 +1332,24 @@ function deuxiemeCour(A, L, scene) {
     for (const [dx, dz, hh] of [[.45, -.2, .45], [.5, .25, .35], [.48, .02, .3]]) A.ajoute(new THREE.BoxGeometry(.5, hh, .45), A.mat({ color: 0xb08d5a, roughness: 1 }), xm + dx, hh / 2 + (dz === .02 ? .45 : 0), zo + dz + 1.05);
     const li = new THREE.PointLight(0xffe2b0, 1.5, 4, 1.6); li.position.set(xm + 1.2, 2.3, zo); scene.add(li);
     // la case ouverte est un passage : de l'autre côté, la même caserne… à l'apocalypse (et l'on en ressort par là)
-    L.portails.push({ dans: (x, z) => x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true, secret: true });   // (pas de cercle visible : c'est la surprise ; il reste visible dans le monde de l'apocalypse)
-    raccourci(L, scene, [.4, 2.2, 1.6], [xf, 1.1, zo], { vers: "z-grande", entreeApo: true }); }
+    // la porte de la case est fermée par un cadenas à quatre chiffres (le code : l'année de l'affiche posée au sol, 1996) ; à l'apocalypse, elle reste ouverte
+    { const g = new THREE.Group(); g.position.set(xf + .03, 0, zo); scene.add(g); L.porteEnc = g;
+      const brun = A.mat({ color: 0x6b4226, roughness: .6 }), fer = A.mat({ color: 0x8a8d92, metalness: .7, roughness: .35 });
+      const p = new THREE.Mesh(new THREE.BoxGeometry(.06, 2.15, 1.6), brun); p.position.y = 1.075; p.castShadow = true; g.add(p);
+      for (const [y, dz] of [[.55, -.4], [.55, .4], [1.6, -.4], [1.6, .4]]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(.02, .85, .62), A.mat({ color: 0x5a361e })); pn.position.set(.04, y, dz); g.add(pn); }
+      const pl = new THREE.Mesh(new THREE.BoxGeometry(.03, .06, .3), fer); pl.position.set(.06, 1.05, 0); g.add(pl);   // le moraillon
+      const cad = new THREE.Group(); cad.position.set(.1, .96, 0); g.add(cad);
+      const corps = new THREE.Mesh(new THREE.BoxGeometry(.06, .12, .1), A.mat({ color: 0xc9a227, metalness: .75, roughness: .3 })); cad.add(corps);
+      const anse = new THREE.Mesh(new THREE.TorusGeometry(.035, .009, 6, 14, Math.PI), fer); anse.rotation.y = Math.PI / 2; anse.position.y = .06; cad.add(anse);
+      for (let k = 0; k < 4; k++) { const mol = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .022, 10), A.mat({ color: 0x2a2a2c, metalness: .5 })); mol.rotation.x = Math.PI / 2; mol.position.set(.035, -.02, -.033 + k * .022); cad.add(mol); }
+      L.cadenasEnc = [xf + .9, zo];
+      // l'affiche Micromania (Resident Evil, 1996), tombée au sol devant les encombrants ; sa taille se règle (administrateur)
+      const tA = new THREE.TextureLoader().load("images/apo/affiche-re-1996.webp"); tA.colorSpace = THREE.SRGBColorSpace;
+      const af = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), new THREE.MeshStandardMaterial({ map: tA, roughness: .85, polygonOffset: true, polygonOffsetFactor: -2 }));
+      af.rotation.set(-Math.PI / 2, 0, .35); af.position.set(xf + 1.6, .012, zo + 2.1); af.receiveShadow = true; scene.add(af); L.afficheApo = af;
+      L.tailleAffiche = (k) => { const v = Math.max(.2, Math.min(2.5, +k || .6)); af.scale.set(v, v, 1); }; L.tailleAffiche((M && M.afficheTaille) || .6); }
+    L.portails.push({ dans: (x, z) => (L.apo || L.cadenasOuvert) && x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true, secret: true });   // (pas de cercle visible : c'est la surprise ; il reste visible dans le monde de l'apocalypse)
+    raccourci(L, scene, [.4, 2.2, 1.6], [xf, 1.1, zo], { vers: "z-grande", entreeApo: true, siApo: true }); }
   /* entre les deux bâtiments, contre ce mur : l'ancien local électrique, une petite construction blanc crème à l'ancienne */
   { const cr = A.mat({ color: 0xece3cc, roughness: .9 }), crF = A.mat({ color: 0xd9ceb4 }), lx = X - 1.3, lw = 2.6, ll = 4, lh = 3;
     A.ajoute(new THREE.BoxGeometry(lw, lh, ll), cr, lx, lh / 2, zc);
@@ -1566,6 +1582,27 @@ function cabineFrance() { const g = new THREE.Group(), alu = new THREE.MeshStand
   add(new THREE.BoxGeometry(.03, .3, .04), new THREE.MeshStandardMaterial({ color: 0x8a8c8e, metalness: .8 }), -(L - P * 1.5) + .05, 1.0, .03, porte);
   return g; }
 // composer un numéro : le cadran à l'écran (on tourne le disque chiffre par chiffre)
+// le cadenas à code de la case des encombrants : quatre molettes de 0 à 9 ; le bon code (1996) ouvre la porte… et l'on entre dans l'apocalypse
+function ouvrirCadenas() { if (!M || M.cadranEl) return;
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.6)";
+  d.innerHTML = `<div style="background:linear-gradient(#d9b23a,#a8821c);border-radius:22px 22px 16px 16px;padding:18px 18px 16px;box-shadow:0 10px 40px #000,inset 0 2px 0 rgba(255,255,255,.4);display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#2a1e08;position:relative;margin-top:44px">
+    <div style="position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:110px;height:70px;border:14px solid #9a9da2;border-bottom:0;border-radius:60px 60px 0 0" class="anse"></div>
+    <div>🔒 Cadenas à code</div><div class="mol" style="display:flex;gap:8px"></div>
+    <div style="display:flex;gap:10px"><button class="ok" style="border:0;border-radius:99px;padding:8px 16px;background:#2a1e08;color:#f6d465;font:800 14px 'Lato'">Ouvrir</button><button class="fermer" style="border:0;border-radius:99px;padding:8px 14px;background:rgba(0,0,0,.25);color:#fff;font:700 13px 'Lato'">Laisser</button></div>
+    <div class="msg" style="min-height:18px;font-size:13px"></div></div>`;
+  M.ctx.conteneur.appendChild(d); M.cadranEl = d; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
+  const v = [0, 0, 0, 0], mol = d.querySelector(".mol"), fermer = () => { d.remove(); if (M) M.cadranEl = null; };
+  v.forEach((_, i) => { const c = document.createElement("div"); c.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px";
+    c.innerHTML = `<button style="border:0;background:none;font-size:20px;cursor:pointer">▲</button><div style="width:44px;height:56px;border-radius:8px;background:#1c1c1e;color:#f2f2ee;display:grid;place-items:center;font:900 30px 'Courier New',monospace;box-shadow:inset 0 3px 8px #000">0</div><button style="border:0;background:none;font-size:20px;cursor:pointer">▼</button>`;
+    const [h, , b] = c.children, aff = c.children[1], maj = s => { v[i] = (v[i] + s + 10) % 10; aff.textContent = v[i]; sonBruit(.02, 4000, .12); };
+    h.onclick = () => maj(1); b.onclick = () => maj(-1); mol.appendChild(c); });
+  d.querySelector(".fermer").onclick = fermer;
+  d.querySelector(".ok").onclick = () => { if (v.join("") !== "1996") { d.querySelector(".msg").textContent = "Clac… ça ne s'ouvre pas."; sonBruit(.05, 1500, .3); return; }
+    const anse = d.querySelector(".anse"); anse.style.transition = "transform .4s"; anse.style.transform = "translateX(-50%) translateY(-18px)"; d.querySelector(".msg").textContent = "Clic ! Le cadenas s'ouvre…"; sonBruit(.08, 3000, .35);
+    setTimeout(() => { fermer(); if (!M) return; M.L.cadenasOuvert = true; if (M.L.porteEnc) M.L.porteEnc.rotation.y = -1.25;
+      const ent = M.L.portails.find(q => q.entreeApo); if (ent && M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (!M) return; if (ok) changerLieu(ent.vers, ent.arrivee, ent.yaw, true); else { M.L.cadenasOuvert = false; if (M.L.porteEnc) M.L.porteEnc.rotation.y = 0; } });
+      else if (ent) changerLieu(ent.vers, ent.arrivee, ent.yaw, true); }, 1100); }; }
+export function afficheTaille(v) { envoyerWS({ t: "affiche_taille", v: +v }); }
 function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
   preparerLieu(dest === "etage" ? "hv1955" : "etage");   // (le lieu d'arrivée se construit pendant qu'on compose : pas d'image figée au moment du voyage)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
@@ -3575,6 +3612,7 @@ export async function ouvrir(ctx) {
       if (moi && Math.hypot(moi.g.position.x - w.x, moi.g.position.z - w.z) > 6) { const dx = moi.g.position.x - w.x, dz = moi.g.position.z - w.z, l = Math.hypot(dx, dz) || 1; allerVers(w.x + dx / l * 1.3, w.z + dz / l * 1.3, true); }
       else ctx.surAffiche && ctx.surAffiche(rc.affiche);
       return; }
+    if (rc && rc.siApo && !M.L.apo) { if (M.L.cadenasEnc) allerVers(M.L.cadenasEnc[0], M.L.cadenasEnc[1], true); return; }   // (la porte fermée : on va jusqu'au cadenas)
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
     if (rc) {
       // la porte touchée : on marche jusqu'à son cercle lumineux ; on n'entre qu'une fois dessus
@@ -3910,6 +3948,8 @@ function apocalypse(scene, L, base) {
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   L.portails = (L.portails || []).filter(q => !q.pasApo); L.messVitres = null;
   if (L.cabineObj) abimerCabine(L.cabineObj);
+  if (L.batEnc) L.batEnc.visible = true;
+  if (L.porteEnc) { L.porteEnc.visible = false; L.cadenasEnc = null; } if (L.afficheApo) L.afficheApo.visible = false;
   if (L.meublerMess) { L.meublerMess(true); L.apoMess && L.apoMess(); }   // (la cabine téléphonique : hors d'usage, planches clouées, sang)
   for (const q of L.portails || []) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
   for (const q of L.raccourcis || []) if (q.vers) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
@@ -4993,6 +5033,7 @@ function chercherAction(t) {
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
+    else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (!moi.cible) {
@@ -5029,6 +5070,7 @@ export function agir() {
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
+  else if (a.type === "cadenas") ouvrirCadenas();
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
@@ -6728,6 +6770,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id >= 21 && m.p.id <= 26) { ctx.surPNJTrio && ctx.surPNJTrio(m.p);   // un héros de Resident Evil retouché : ceux qui le jouent, et les équipiers, sont redessinés
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
+    else if (m.t === "affiche") { M.afficheTaille = m.taille; M.L && M.L.tailleAffiche && M.L.tailleAffiche(m.taille); ctx.surAfficheTaille && ctx.surAfficheTaille(m.taille); }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); M.hvInit = false; M.hvDoubles = false; } }

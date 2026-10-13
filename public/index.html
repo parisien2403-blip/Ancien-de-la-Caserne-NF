@@ -1232,6 +1232,7 @@
           <button class="btn small alt mx-hv" data-hv="goldie" type="button" hidden>☕ Goldie Wilson</button>
           <button class="btn small alt mx-hv" data-hv="lorraine" type="button" hidden>💐 Lorraine Baines</button>
           <button class="btn small alt mx-hv" data-hv="george" type="button" hidden>📓 George McFly</button>
+          <label class="btn small alt mx-alm" id="mxAffTaille" hidden>🧟 Affiche 1996 <input type="range" min="20" max="250" step="5" value="60"><span>60 cm</span></label>
           <label class="btn small alt mx-alm" id="mxAlmTaille" hidden>📕 Almanach <input type="range" min="10" max="120" step="1" value="30"><span>30 cm</span></label>
           <button class="btn small alt" id="mxPNJGore" type="button" hidden>🎸 Martin Gore</button>
           <button class="btn small alt" id="mxPNJGahan" type="button" hidden>🎤 Dave Gahan</button>
@@ -2125,7 +2126,7 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAlmTaille").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2162,6 +2163,7 @@
           for (const q of e.equipe || []) { const sp = document.createElement("span"); sp.className = "mx-apo-eq"; sp.textContent = q.mort ? `💀 ${q.nom}` : `🤝 ${q.nom} ` + "❤️".repeat(q.vies) + "🖤".repeat(Math.max(0, 4 - q.vies)); $("mxApo").appendChild(sp); }
           if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },
         surApoFlash: () => { const f = $("mxApoFlash"); f.classList.add("on"); setTimeout(() => f.classList.remove("on"), 120); if (navigator.vibrate) navigator.vibrate(120); },
+        surAfficheTaille: v => { const r = $("mxAffTaille").querySelector("input"); r.value = Math.round(v * 100); $("mxAffTaille").querySelector("span").textContent = r.value + " cm"; },
         surAlmanach: a => { if (!a) return; const r = $("mxAlmTaille").querySelector("input"); r.value = Math.round((a.taille || .3) * 100); $("mxAlmTaille").querySelector("span").textContent = r.value + " cm"; },
         surApoMort: on => { $("mxApoMort").hidden = !on; },
         surAvantApo: suite => { const el = $("mxApoIntro"); el.hidden = false; el.querySelector(".mx-apo-carte").scrollTop = 0; dessinerChoixApo();
@@ -2401,6 +2403,8 @@
   // (administrateur) la taille et la largeur des trois zombies et du chien de l'apocalypse
   $("mxPNJSmith").onclick = () => ouvrirBonhomme("smith");
   $("mxPNJNemesis").onclick = () => ouvrirBonhomme("nemesis");
+  { const r = $("mxAffTaille").querySelector("input"), sp = $("mxAffTaille").querySelector("span");   // la taille de l'affiche de 1996 (l'administrateur)
+    r.oninput = () => { sp.textContent = r.value + " cm"; }; r.onchange = () => MX && MX.afficheTaille && MX.afficheTaille(r.value / 100); }
   { const r = $("mxAlmTaille").querySelector("input"), sp = $("mxAlmTaille").querySelector("span");   // la taille de l'Almanach des sports (l'administrateur)
     r.oninput = () => { sp.textContent = r.value + " cm"; }; r.onchange = () => MX && MX.almanachTaille && MX.almanachTaille(r.value / 100); }
   document.querySelectorAll(".mx-hv").forEach(b => b.onclick = () => ouvrirBonhomme(b.dataset.hv));
@@ -2869,6 +2873,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.97", "13 octobre 2026", ["Apocalypse : la porte des encombrants est fermée par un cadenas à quatre chiffres ; un indice traîne au sol… trouve le code pour entrer"]],
     ["3.96", "13 octobre 2026", ["Voyage par le téléphone : des éclairs bien plus légers (plus d'image figée), et le lieu d'arrivée se prépare pendant qu'on compose le numéro"]],
     ["3.95", "13 octobre 2026", ["Vaguemestre : on explique où trouver son code de liaison pour relier un PC ou une tablette à son courrier chiffré"]],
     ["3.94", "13 octobre 2026", ["Salle des fêtes : si la musique se coupe (réseau qui flanche, téléphone qui suspend le son), elle repart toute seule, calée au bon moment"]],

@@ -479,6 +479,8 @@ export class Compteur extends DurableObject {
       // le premier qui marche dessus le ramasse : il part seul pour 1955 ; l'Almanach n'est plus nulle part ailleurs
       const al = await this.almanach(); if (al.pris || al.lieu !== a.lieu) return;
       al.pris = Number(a.numero); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al); ws.send(JSON.stringify({ t: "almanach_ok" }));
+    } else if (m.t === "affiche_taille" && a.admin) {   // l'affiche de 1996 au sol, devant les encombrants : sa taille (l'administrateur)
+      const v = Math.max(.2, Math.min(2.5, Number(m.v) || .6)); await this.ctx.storage.put("affiche_taille", v); const t = JSON.stringify({ t: "affiche", taille: v }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "almanach_taille" && a.admin) {
       const al = await this.almanach(); al.taille = Math.max(.1, Math.min(1.2, Number(m.v) || .3)); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "perso") {
@@ -560,6 +562,7 @@ export class Compteur extends DurableObject {
     let al = await this.almanach();
     if (al.pris && al.pris === Number(a.numero) && !LIEUX_BTTF.includes(lieu)) { await this.reposerAlmanach(); return; }   // de retour de 1955 : il est reposé ailleurs
     ws.send(JSON.stringify({ t: "almanach", a: this.publicAlmanach(al) }));
+    const ta = await this.ctx.storage.get("affiche_taille"); if (typeof ta === "number") ws.send(JSON.stringify({ t: "affiche", taille: ta }));
   }
   quitter(ws) {
     const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
