@@ -2240,7 +2240,7 @@
     $("djDisque").classList.toggle("tourne", !!(c && djEcoute));
     $("djTitre").textContent = c ? c.titre : "Pas de musique pour l'instant"; $("djPrecedent").disabled = !(djEtat.histo && djEtat.histo.length);
     $("djPar").textContent = c ? `${c.artiste ? c.artiste + " · " : ""}${c.par === "la discothèque" ? "enchaînée automatiquement" : "choisie par " + c.par}` : "Choisis un titre dans la discothèque ci-dessous";
-    $("djEcouter").textContent = djEcoute ? "🔇 Couper le son" : "🔊 Écouter";
+    $("djEcouter").textContent = djEcoute ? "🔇 Couper mon son" : "🔊 Écouter";
     $("djFileTitre").hidden = !djEtat.file.length;
     $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} ${moi.admin ? `<button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button>` : ""}</li>`).join("");
     $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
@@ -2843,6 +2843,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.89", "13 octobre 2026", ["Salle des fêtes : toucher le coin du DJ n'ouvre plus sa liste (sauf pour l'administrateur) ; les autres changent de titre avec ⏮ / ⏭ sur la table ; « Couper mon son » ne coupe que chez soi"]],
     ["3.88", "13 octobre 2026", ["Mon bonhomme : la tête passe derrière le corps ; le bout de cou resté sur la photo se cache sous les épaules"]],
     ["3.87", "13 octobre 2026", ["Mon bonhomme : six nouvelles tenues pour tous — jupe et chemisier, robe longue, tailleur, chemisier et jean, salopette, chemisier et pantalon en soie"]],
     ["3.86", "13 octobre 2026", ["Salle des fêtes : boutons ⏮ et ⏭ sur la table de Manu pour tout le monde (le ▶ / ⏹ reste à l'administrateur)",

@@ -3562,7 +3562,7 @@ export async function ouvrir(ctx) {
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(26, r.width * .026)) { envoyerWS({ t: "dj_" + b.userData.action }); b.scale.set(.18, .18, 1); setTimeout(() => b.scale.set(.22, .22, 1), 160); return; } }
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
-    if (M.L.zoneDJ) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }
+    if (M.L.zoneDJ && M.ctx.moiInfo && M.ctx.moiInfo().admin) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }   // (toucher le coin du DJ mène à sa liste : l'administrateur seul ; les autres ont ⏮ / ⏭ sur la table)
     // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
     if (M.cercles) { const vus = M.cercles.filter(c => c.g && c.g.visible); const h = ray.intersectObjects(vus.flatMap(c => [c.disque, c.anneau, c.halo]))[0];
       if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)), q = c.pt.traverse || c.pt.centre; allerVers(q[0], q[1], true); return; } }
