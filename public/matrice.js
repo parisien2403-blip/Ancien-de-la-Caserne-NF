@@ -4877,7 +4877,8 @@ function chantierHV(larg) { const g = new THREE.Group(), pieces = new Map(), mur
     const zf = z - prof + .1; const hb = h0 + sb, gh = h1 - hb - imp;
     B.boite(w, sb, .12, (x0 + x1) / 2, h0 + sb / 2, zf, o.bas || cad); const np = Math.max(1, Math.round(w / 1.2)); for (let i = 0; i < np; i++) B.boite(w / np - .16, sb - .18, .03, x0 + (i + .5) * w / np, h0 + sb / 2, zf + .07, teinteHV(o.bas || cad, 1.2));
     B.boite(w, .06, .2, (x0 + x1) / 2, hb, zf + .02, teinteHV(o.bas || cad, 1.1));
-    const c = toile(Math.round(w * 64), Math.round(gh * 64), (x, W, H) => decorVitrineHV(x, W, H, o.marchandise || "boites", o)); B.plan(w, gh, (x0 + x1) / 2, hb + gh / 2, zf - .05, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .15, metalness: .2 }));
+    if (o.claire) { const vc = B.plan(w, gh, (x0 + x1) / 2, hb + gh / 2, zf - .05, new THREE.MeshStandardMaterial({ color: 0xb8ccd8, transparent: true, opacity: .16, roughness: .05, metalness: .4, depthWrite: false, side: THREE.DoubleSide })); vc.castShadow = false; }
+    else { const c = toile(Math.round(w * 64), Math.round(gh * 64), (x, W, H) => decorVitrineHV(x, W, H, o.marchandise || "boites", o)); B.plan(w, gh, (x0 + x1) / 2, hb + gh / 2, zf - .05, new THREE.MeshStandardMaterial({ map: texHV(c), roughness: .15, metalness: .2 })); }
     B.boite(w, .06, .07, (x0 + x1) / 2, hb + gh, zf, cad); B.boite(.06, gh + imp, .07, x0 + .03, hb + (gh + imp) / 2, zf, cad); B.boite(.06, gh + imp, .07, x1 - .03, hb + (gh + imp) / 2, zf, cad); B.boite(w, .06, .07, (x0 + x1) / 2, h1 - .03, zf, cad);
     const nm = o.montants ?? Math.max(1, Math.round(w / 1.6) - 1); for (let i = 1; i <= nm; i++) B.boite(.05, gh, .06, x0 + i * w / (nm + 1), hb + gh / 2, zf, cad);
     if (imp) { B.plan(w, imp, (x0 + x1) / 2, h1 - imp / 2, zf - .03, vitreHV(o.vitreImposte ?? 0)); const n = Math.max(3, Math.round(w / .35)); for (let i = 1; i < n; i++) B.boite(.03, imp, .05, x0 + i * w / n, h1 - imp / 2, zf, cad); }
@@ -5085,9 +5086,11 @@ const IMMEUBLES_HV = {
       B.cyl(.5, .5, .15, 0, 11.4, -.05, "#2a2a2a", { rx: Math.PI / 2, seg: 24 }); B.plan(.9, .9, 0, 11.4, .03, new THREE.MeshStandardMaterial({ map: texHV(h), transparent: true, alphaTest: .5 }));
       const fr = new THREE.Shape(); fr.moveTo(-1.6, 0); fr.lineTo(1.6, 0); fr.lineTo(0, 1.6); fr.closePath(); B.boite(0, 0, 0, 0, 10.7, -.3, "#e2dccc", { geo: new THREE.ExtrudeGeometry(fr, { depth: .3, bevelEnabled: false }) }); } },
   // Lou's Cafe : l'immeuble crème et ses bandes bleues, les grandes baies, l'auvent bleu et blanc, l'enseigne lumineuse
-  loucafe: { larg: 9, corps: 7.4, f: (B) => { const X0 = -4.5, X1 = 4.5;
+  loucafe: { larg: 9, corps: 7.4, creux: true, interieur: () => interieurLouHV(), f: (B) => { const X0 = -4.5, X1 = 4.5;
       B.mur(X0, X1, 0, 3.6, "carreau", "#f0ead8", { saillie: .1, carreau: .3, joint: "#c8c0a8" }); B.mur(X0, X1, 3.6, 7.4, "brique", "#a0583a");
-      B.vitrine(-4.2, -.75, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", marchandise: "comptoir", lettres: "Breakfast · Lunch", imposte: false, montants: 1 }); B.porte(0, 1.2, 2.6, { z: .1, coul: "#c9ccd0", cadre: "#1d4f8a", imposte: "LOU'S" }); B.vitrine(.75, 4.2, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", marchandise: "comptoir", lettres: "Sodas · Malts", imposte: false, montants: 1 });
+      B.vitrine(-4.2, -.75, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Breakfast · Lunch", imposte: false, montants: 1, prof: .46 }); B.vitrine(.75, 4.2, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Sodas · Malts", imposte: false, montants: 1, prof: .46 });
+      B.trou(-.62, .62, 0, 2.66, .46, { z: .1, tableau: "#c9ccd0" }); for (const s of [-1, 1]) B.boite(.08, 2.7, .08, s * .66, 1.35, .14, "#1d4f8a"); B.boite(1.4, .08, .08, 0, 2.7, .14, "#1d4f8a");   // (la porte grande ouverte)
+      B.enseigne(0, 2.78, 1.2, .3, "LOU'S", { fond: "#1d4f8a", coul: "#f6e2a0", ep: .04, z: .1 });
       B.auvent(-4.3, 4.3, 3.45, 1.15, "#1d4f8a", "#f4f0e6", { bandes: 24, chute: .6 });
       B.enseigne(0, 3.75, 6.2, .8, "Lou's Cafe", { fond: "#1d4f8a", coul: "#fff", bord: "#f4f0e6", police: "'Brush Script MT', cursive", style: "italic bold", neon: true, degrade: true });
       for (const x of [-2.6, 0, 2.6]) B.fenetre(x, 4.9, 1.3, 1.6, { carreaux: 3, cle: true, volets: "#1d4f8a" });
@@ -5218,7 +5221,10 @@ const IMMEUBLES_HV = {
 // construit un immeuble à sa place : cx, cz le milieu de la façade au sol, r l'orientation (la façade regarde vers +z local)
 function immeubleHV(scene, nom, cx, cz, r) { const D = IMMEUBLES_HV[nom]; alHV = 7 + nom.length * 131 + nom.charCodeAt(0);
   const B = chantierHV(D.larg); D.f(B); const g = B.finir(); g.position.set(cx, 0, cz); g.rotation.y = r; scene.add(g);
-  const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; for (const [a, b2, hc] of D.zones || [[-D.larg / 2, D.larg / 2, D.corps]]) { const w = b2 - a - .06, xm = (a + b2) / 2;
+  const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; if (D.creux) { const I = D.interieur(); g.add(I.g); g.userData.obstInt = I.obst; g.userData.interieur = LOU;
+    const haut = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, D.corps - LOU.H - .02, 9 + LOU.Z1), [mc, mc, mt, mt, mc, mc]); haut.position.set(0, (D.corps + LOU.H + .02) / 2, LOU.Z1 - (9 + LOU.Z1) / 2); haut.castShadow = true; g.add(haut);
+    const fond = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, LOU.H + .02, .2), mc); fond.position.set(0, LOU.H / 2, LOU.Z0 - .12); g.add(fond); }
+  else for (const [a, b2, hc] of D.zones || [[-D.larg / 2, D.larg / 2, D.corps]]) { const w = b2 - a - .06, xm = (a + b2) / 2;
     const c = new THREE.Mesh(new THREE.BoxGeometry(w, hc, 9 - R), [mc, mc, mt, mt, mc, mc]); c.position.set(xm, hc / 2, -R - (9 - R) / 2); c.castShadow = c.receiveShadow = true; g.add(c);
     for (const s of [-1, 1]) { const j = new THREE.Mesh(new THREE.BoxGeometry(.06, hc, R), mc); j.position.set(xm + s * (w / 2), hc / 2, -R / 2); g.add(j); } const t = new THREE.Mesh(new THREE.BoxGeometry(w, .1, R), mt); t.position.set(xm, hc - .05, -R / 2); g.add(t); } 
   g.traverse(o => { if (o.userData.tourne) g.userData.pole = o; }); return g; }
@@ -5417,6 +5423,87 @@ function creerBelAir(o = {}) {
     m(new THREE.CylinderGeometry(.04, .04, .06, 12), or, x, RR, s * .9, Math.PI / 2, 0, 0); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; m(new THREE.BoxGeometry(.02, .12, .015), chrome, x + Math.cos(a) * .13, RR + Math.sin(a) * .13, s * .875, 0, 0, a + Math.PI / 2); } }
   return g; }
 
+/* ===================== Lou's Cafe, 1955 : la salle, ouverte (on y entre par la porte) =====================
+   Repère de la façade : la vitrine en z = 0 (la rue vers +z), la salle vers −z, x en travers (la porte en x = 0), le sol à y = 0,125. */
+const LOU = { X0: -4.42, X1: 4.42, Z0: -8.8, Z1: -.36, H: 3.5, Y: .125 };
+function interieurLouHV() { const B = chantierHV(9), O = [], { X0, X1, Z0, Z1, H, Y } = LOU, W = X1 - X0, D = Z1 - Z0;
+  const T = (w, h, f) => { const t = texHV(toile(w, h, f)); return t; }, M_ = (t, o = {}) => new THREE.MeshStandardMaterial({ map: t, roughness: o.r ?? .6, metalness: o.m ?? 0, transparent: !!o.tr, alphaTest: o.tr ? .4 : 0, side: o.ds ? THREE.DoubleSide : THREE.FrontSide });
+  const CHROME = "#e2e6ea", VINYLE = "#8ea6b6", CREME = "#f2ecda";
+  // ---- le sol : carrelage beige à losanges bruns (comme dans le film) ----
+  const sol = toile(512, 512, (x) => { x.fillStyle = "#e8dcc0"; x.fillRect(0, 0, 512, 512); const c = 64; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { x.fillStyle = (i + j) % 2 ? "#e2d4b4" : "#ece2c8"; x.fillRect(i * c + 1, j * c + 1, c - 2, c - 2); }
+    for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) if ((i + j) % 2 === 0) { x.fillStyle = "#9a5a34"; x.beginPath(); x.moveTo(i * c, j * c - 16); x.lineTo(i * c + 16, j * c); x.lineTo(i * c, j * c + 16); x.lineTo(i * c - 16, j * c); x.fill(); x.fillStyle = "#c8a070"; x.beginPath(); x.moveTo(i * c, j * c - 7); x.lineTo(i * c + 7, j * c); x.lineTo(i * c, j * c + 7); x.lineTo(i * c - 7, j * c); x.fill(); }
+    x.strokeStyle = "rgba(120,100,70,.35)"; x.lineWidth = 2; for (let i = 0; i <= 8; i++) { x.beginPath(); x.moveTo(i * c, 0); x.lineTo(i * c, 512); x.stroke(); x.beginPath(); x.moveTo(0, i * c); x.lineTo(512, i * c); x.stroke(); } });
+  const tS = texHV(sol); tS.wrapS = tS.wrapT = THREE.RepeatWrapping; tS.repeat.set(W / 2.4, D / 2.4);
+  B.plan(W, D, 0, Y, (Z0 + Z1) / 2, new THREE.MeshStandardMaterial({ map: tS, roughness: .35, metalness: .05 }), { rx: -Math.PI / 2 }).receiveShadow = true;
+  // ---- le plafond, ses moulures, et les murs : soubassement carrelé vert d'eau, enduit crème, un jonc chromé entre les deux ----
+  B.plan(W, D, 0, H, (Z0 + Z1) / 2, matHV("#f6f2e8", .9), { rx: Math.PI / 2 });
+  const murs = (larg, peint) => { B.mur(-larg / 2, larg / 2, 0, 1.25, "carreau", "#b8d8d0", { carreau: .15, joint: "#e8eee8" }); B.mur(-larg / 2, larg / 2, 1.25, H, "enduit", "#f2ecd8", peint ? { peint } : {}); B.boite(larg, .05, .04, 0, 1.27, .02, CHROME, { m: .5, r: .2 }); B.boite(larg, .12, .06, 0, H - .06, .03, "#f6f2e8"); };
+  // le mur du fond : le passe-plat de la cuisine (avec sa roue à bons de commande), la porte battante à hublot, le menu, l'horloge Coca-Cola
+  B.avec([0, 0, Z0], 0, () => { murs(W);
+    B.trou(-.6, 1.8, 1.25, 2.15, .3, { tableau: "#d8d0bc" }); B.plan(2.4, .9, .6, 1.7, -.29, M_(T(256, 96, (x, w, h) => { x.fillStyle = "#3a3a36"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h * .6, w, 5); for (let k = 0; k < 6; k++) { x.fillStyle = "#c9cdd2"; x.fillRect(20 + k * 40, h * .35, 22, h * .25); } })));
+    B.boite(2.6, .06, .35, .6, 1.25, .1, CHROME, { m: .5, r: .2 }); for (let k = 0; k < 5; k++) { B.boite(.1, .14, .005, -.2 + k * .35, 2.0, .01, "#f8f4e8"); }
+    B.trou(2.6, 3.6, 0, 2.2, .1, {}); B.plan(1, 2.2, 3.1, 1.1, -.09, M_(T(128, 280, (x, w, h) => { x.fillStyle = "#c8c0a8"; x.fillRect(0, 0, w, h); x.fillStyle = "#9aa0a6"; x.fillRect(0, h - 40, w, 40); x.fillStyle = "#1c2a34"; x.beginPath(); x.arc(w / 2, 70, 26, 0, 7); x.fill(); x.strokeStyle = "#c9cdd2"; x.lineWidth = 6; x.stroke(); })));
+    B.plan(1.6, 1.0, -2.6, 2.3, .02, M_(T(320, 200, (x, w, h) => { x.fillStyle = "#1e2a22"; x.fillRect(0, 0, w, h); x.strokeStyle = "#8a6a3a"; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); x.fillStyle = "#f6f2e4"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("MENU", w / 2, 40);
+      x.font = "18px Georgia"; x.textAlign = "left"; [["Hamburger", "25¢"], ["Cheeseburger", "30¢"], ["Malted Milk", "20¢"], ["Coffee", "5¢"], ["Apple Pie", "15¢"], ["Tab ? Pepsi Free ?", "—"]].forEach(([a, b], i) => { x.fillText(a, 26, 72 + i * 21); x.fillText(b, w - 70, 72 + i * 21); }); })));
+    const hor = M_(T(128, 128, (x) => { x.fillStyle = "#c8202a"; x.beginPath(); x.arc(64, 64, 63, 0, 7); x.fill(); x.fillStyle = "#fbf8f0"; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.font = "italic bold 15px Georgia"; x.textAlign = "center"; x.fillText("Coca-Cola", 64, 48); x.fillStyle = "#1a1a1a"; for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 44 - 2, 64 + Math.sin(a) * 44 - 2, 4, 4); } x.lineWidth = 3; x.strokeStyle = "#1a1a1a"; x.beginPath(); x.moveTo(64, 64); x.lineTo(64 + 22, 64 - 10); x.moveTo(64, 64); x.lineTo(64 - 4, 64 - 34); x.stroke(); }), { tr: true });
+    B.plan(.62, .62, 1.7, 2.85, .03, hor); B.boite(.18, .14, .1, -.9, 2.95, .05, "#c8202a"); B.cyl(.07, .07, .05, -.9, 2.95, .11, "#c8202a", { rx: Math.PI / 2 }); });   // (la sonnette d'alarme rouge)
+  // le mur de gauche (côté banquettes) : photos encadrées, la pancarte des glaces
+  B.avec([X0, 0, (Z0 + Z1) / 2], Math.PI / 2, () => { murs(D);
+    for (const [px, n] of [[-2.9, 0], [-.6, 1], [1.7, 2]]) { B.boite(.62, .5, .03, px, 2.2, .015, "#3a2a1a"); B.plan(.52, .4, px, 2.2, .032, M_(T(128, 100, (x, w, h) => { x.fillStyle = "#e8e0cc"; x.fillRect(0, 0, w, h); x.fillStyle = ["#4a6a8a", "#7a5a3a", "#3a5a3a"][n]; x.fillRect(10, 10, w - 20, h - 20); x.fillStyle = "rgba(255,255,255,.35)"; x.beginPath(); x.arc(w / 2, h / 2 + 4, 18, 0, 7); x.fill(); x.fillRect(w / 2 - 26, h - 34, 52, 20); }))); } });
+  // le mur de droite (derrière le comptoir) : le grand miroir, les étagères, la pancarte « Ice Cream »
+  B.avec([X1, 0, (Z0 + Z1) / 2], -Math.PI / 2, () => { murs(D);
+    B.plan(4.2, 1.0, .4, 2.15, .03, new THREE.MeshStandardMaterial({ color: 0xdfe8ee, metalness: .3, roughness: .12 })); B.boite(4.4, .06, .06, .4, 1.62, .04, CHROME, { m: .5, r: .2 }); B.boite(4.4, .06, .06, .4, 2.68, .04, CHROME, { m: .5, r: .2 });
+    for (const y of [1.75, 2.15]) { B.boite(4.0, .03, .2, .4, y, .1, "#f6f2e8"); for (let k = 0; k < 14; k++) B.cyl(.035, .03, .14, -1.4 + k * .27, y + .085, .1, ["#9ad0e0", "#f0e8d0", "#d8c050", "#c86a3a"][k % 4], { r: .1, m: .2 }); }
+    B.plan(.8, 1.0, -3.2, 2.2, .03, M_(T(160, 200, (x, w, h) => { x.fillStyle = "#fbe8ec"; x.fillRect(0, 0, w, h); x.fillStyle = "#c8202a"; x.font = "italic bold 26px Georgia"; x.textAlign = "center"; x.fillText("Ice", w / 2, 34); x.fillText("Cream", w / 2, 62);
+      x.fillStyle = "#d8a050"; x.beginPath(); x.moveTo(w / 2 - 24, 110); x.lineTo(w / 2 + 24, 110); x.lineTo(w / 2, 190); x.fill(); x.fillStyle = "#f6c8d8"; x.beginPath(); x.arc(w / 2, 100, 30, 0, 7); x.fill(); x.fillStyle = "#c8202a"; x.beginPath(); x.arc(w / 2, 70, 7, 0, 7); x.fill(); }))); });
+  // le mur de devant, vu de l'intérieur : les vitrines (avec leurs stores vénitiens à mi-hauteur) et la porte
+  B.avec([0, 0, Z1], Math.PI, () => { B.mur(-W / 2, W / 2, 0, H, "enduit", "#f2ecd8");
+    B.trou(-4.2, -.75, .12, 3.0, .05, {}); B.trou(.75, 4.2, .12, 3.0, .05, {}); B.trou(-.62, .62, 0, 2.66, .05, {});
+    const store = M_(T(256, 256, (x, w, h) => { x.clearRect(0, 0, w, h); for (let y = 0; y < h; y += 16) { x.fillStyle = "#efe6cc"; x.fillRect(0, y, w, 11); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, y + 9, w, 2); } x.fillStyle = "#d8ccb0"; x.fillRect(w * .25, 0, 3, h); x.fillRect(w * .75, 0, 3, h); }), { tr: true, ds: true });
+    for (const [a, b] of [[-4.2, -.75], [.75, 4.2]]) { const t = store.map.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); B.plan(b - a, 1.4, (a + b) / 2, 2.3, .03, M_(t, { tr: true, ds: true })); B.boite(b - a + .1, .1, .1, (a + b) / 2, 3.03, .05, "#efe6cc"); for (const c of [a + .4, b - .4]) B.cyl(.006, .006, 1.4, c, 2.3, .07, "#d8ccb0"); }
+    const af = M_(T(160, 200, (x, w, h) => { x.fillStyle = "#e8e2cc"; x.fillRect(0, 0, w, h); x.fillStyle = "#3a3a36"; x.textAlign = "center"; x.font = "bold 13px Georgia"; x.fillText("HILL VALLEY H.S.", w / 2, 26); x.font = "bold 30px Georgia"; x.fillText("DANCE", w / 2, 80); x.font = "bold 15px Georgia"; x.fillText("ENCHANTMENT", w / 2, 116); x.fillText("UNDER THE SEA", w / 2, 138); x.font = "12px Georgia"; x.fillText("Saturday Nov. 12 — 1955", w / 2, 172); }));
+    B.plan(.34, .42, -1.0, 1.55, .032, af); });   // (l'affiche du bal « Enchantment Under the Sea », près de la porte)
+  // la porte d'entrée, ouverte vers l'intérieur : cadre chromé, grande vitre, barre de poussée
+  B.avec([-.6, 0, Z1 - .02], -1.75, () => { B.boite(1.2, 2.55, .05, .6, Y + 1.28, 0, "#c9ccd0", { m: .6, r: .3 }); B.plan(1.0, 1.9, .6, Y + 1.45, .03, vitreHV(0)); B.plan(1.0, 1.9, .6, Y + 1.45, -.03, vitreHV(0), { ry: Math.PI });
+    for (const s of [-1, 1]) B.boite(.7, .04, .04, .62, Y + 1.0, s * .08, CHROME, { m: .5, r: .2 }); });
+  // ---- le comptoir : long, au bout arrondi, dessus blanc bordé de chrome, flanc bleu acier à bandes chromées ; derrière, le plan de travail ----
+  const CX0 = 1.75, CX1 = 2.45, CZ0 = -7.7, CZ1 = -1.7, RCm = (CX1 - CX0) / 2;
+  const plan = (m) => { const s = new THREE.Shape(); s.moveTo(CX0 - m, -CZ0 + m); s.lineTo(CX0 - m, -CZ1 - RCm); s.absarc((CX0 + CX1) / 2, -CZ1 - RCm, RCm + m, Math.PI, 0, true); s.lineTo(CX1 + m, -CZ0 + m); s.closePath(); return s; };
+  const extr = (m, y0, h, coul, o = {}) => { const g = new THREE.ExtrudeGeometry(plan(m), { depth: h, bevelEnabled: false, curveSegments: 24 }); g.rotateX(-Math.PI / 2); B.boite(0, 0, 0, 0, y0, 0, coul, { ...o, geo: g }); };
+  extr(0, Y, .95, "#9ab0c0", { r: .35, m: .3 }); extr(.012, Y + .25, .05, CHROME, { m: .5, r: .15 }); extr(.012, Y + .55, .05, CHROME, { m: .5, r: .15 }); extr(-.03, Y, .1, "#4a4a48");
+  extr(.12, Y + .95, .07, "#f8f6ee", { r: .25 }); extr(.13, Y + .96, .05, CHROME, { m: .5, r: .15 }); extr(.14, Y + .95, .02, CHROME, { m: .5, r: .15 });
+  B.boite(.6, .9, CZ1 - CZ0 + .4, 3.6, Y + .45, (CZ0 + CZ1) / 2 - .3, "#d8dcd8"); B.boite(.66, .05, CZ1 - CZ0 + .45, 3.6, Y + .92, (CZ0 + CZ1) / 2 - .3, "#f8f6ee");   // (le plan de travail le long du mur)
+  for (let k = 0; k < 4; k++) B.boite(.02, .7, .02, 3.29, Y + .45, CZ0 + .3 + k * 1.9, "#9aa0a6", { m: .7 });
+  // sur le comptoir : la caisse enregistreuse, la cloche à tartes, les distributeurs de serviettes, les sucriers, les bouteilles de sirop ; derrière, les percolateurs et le mixeur à milk-shakes
+  B.avec([2.1, Y + 1.02, -2.4], 0, () => { B.boite(.4, .22, .35, 0, .11, 0, "#d8c08a", { m: .25, r: .35 }); B.boite(.36, .2, .1, 0, .3, -.08, "#d8c08a", { m: .25, r: .35, rx: -.4 }); for (let k = 0; k < 6; k++) B.boite(.04, .02, .04, -.12 + (k % 3) * .12, .23, .05 + Math.floor(k / 3) * .07, "#f2efe6"); });
+  B.cyl(.22, .24, .04, 2.1, Y + 1.04, -5.4, "#f8f6ee"); B.objet(new THREE.Mesh(new THREE.SphereGeometry(.22, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .25, roughness: .05, metalness: .3 }))).position.set(2.1, Y + 1.06, -5.4);
+  B.cyl(.17, .17, .05, 2.1, Y + 1.09, -5.4, "#d8a050"); 
+  for (const z of [-3.3, -4.6, -6.4, -7.3]) { B.boite(.1, .1, .07, 1.95, Y + 1.07, z, CHROME, { m: .5, r: .15 }); B.cyl(.03, .035, .1, 2.05, Y + 1.07, z + .12, "#e8e4d8"); B.cyl(.012, .012, .03, 2.05, Y + 1.13, z + .12, CHROME, { m: .5 }); B.cyl(.025, .03, .16, 2.15, Y + 1.1, z - .1, "#c8302a"); }
+  for (const z of [-2.2, -2.7]) { B.cyl(.13, .12, .45, 3.6, Y + 1.17, z - 2, CHROME, { m: .5, r: .12, seg: 18 }); B.sphere(.05, 3.6, Y + 1.44, z - 2, "#2a2a2a"); }
+  B.boite(.18, .5, .2, 3.6, Y + 1.2, -6.1, "#5fb8a8", { r: .3 }); for (let k = 0; k < 3; k++) B.cyl(.05, .045, .2, 3.6 + (k - 1) * .0, Y + 1.05, -6.1 + (k - 1) * .12 + .0, CHROME, { m: .5, r: .1 });
+  // ---- les tabourets : pied chromé, assise ronde en skaï bleu-gris cerclée de chrome ----
+  for (let k = 0; k < 7; k++) { const z = CZ1 - .25 - k * .82; B.cyl(.2, .24, .03, 1.3, Y + .015, z, CHROME, { m: .5, r: .2, seg: 18 }); B.cyl(.035, .045, .62, 1.3, Y + .33, z, CHROME, { m: .5, r: .2 }); B.cyl(.21, .21, .1, 1.3, Y + .68, z, VINYLE, { r: .35, seg: 20 }); B.cyl(.215, .215, .035, 1.3, Y + .64, z, CHROME, { m: .5, r: .15, seg: 20 }); B.sphere(.2, 1.3, Y + .72, z, VINYLE, { r: .35 }); O.push([1.3, z, .3]); }
+  // ---- les banquettes capitonnées et leurs tables, le long du mur de gauche ----
+  const capiton = T(256, 256, (x, w, h) => { x.fillStyle = VINYLE; x.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const cx = 32 + i * 64, cy = 32 + j * 64; const g = x.createRadialGradient(cx - 8, cy - 8, 4, cx, cy, 40); g.addColorStop(0, "rgba(255,255,255,.35)"); g.addColorStop(1, "rgba(0,0,0,.2)"); x.fillStyle = g; x.fillRect(cx - 32, cy - 32, 64, 64); x.fillStyle = "#4a5a66"; x.beginPath(); x.arc(cx + 32, cy + 32, 4, 0, 7); x.fill(); } });
+  const mCap = new THREE.MeshStandardMaterial({ map: capiton, roughness: .32, metalness: .05 });
+  const banc = (zc, sens) => { const z = zc + sens * .78; B.boite(1.55, .42, .55, -3.62, Y + .21, z, "#6a7e8c", { r: .4 }); const c = B.objet(new THREE.Mesh(new THREE.BoxGeometry(1.5, .14, .55), mCap)); c.position.set(-3.62, Y + .48, z);
+    const d = B.objet(new THREE.Mesh(new THREE.BoxGeometry(1.5, .8, .18), mCap)); d.position.set(-3.62, Y + .95, z + sens * .3); d.rotation.x = sens * .08; B.boite(1.56, .06, .24, -3.62, Y + 1.38, z + sens * .3, CHROME, { m: .5, r: .2 }); O.push([-3.6, z, .55], [-3, z, .45]); };
+  for (const zc of [-1.85, -4.15, -6.45]) { banc(zc, -1); banc(zc, 1); B.boite(1.25, .05, .75, -3.55, Y + .76, zc, "#f6f4ee", { r: .25 }); B.boite(1.27, .03, .77, -3.55, Y + .735, zc, CHROME, { m: .5, r: .2 }); B.cyl(.05, .05, .7, -3.4, Y + .38, zc, CHROME, { m: .5, r: .2 }); B.cyl(.22, .25, .03, -3.4, Y + .02, zc, CHROME, { m: .5, r: .2 });
+    B.boite(.1, .12, .06, -3.95, Y + .84, zc, CHROME, { m: .5, r: .15 }); B.cyl(.03, .035, .1, -3.8, Y + .84, zc + .12, "#e8e4d8"); B.cyl(.025, .03, .16, -3.8, Y + .86, zc - .14, "#c8302a"); O.push([-3.45, zc, .45]); }
+  // une petite table ronde au milieu, et ses deux chaises chromées
+  B.cyl(.4, .4, .04, -1.1, Y + .76, -6.6, "#f6f4ee"); B.cyl(.41, .41, .02, -1.1, Y + .745, -6.6, CHROME, { m: .5 }); B.cyl(.04, .04, .72, -1.1, Y + .38, -6.6, CHROME, { m: .5 }); B.cyl(.25, .28, .03, -1.1, Y + .02, -6.6, CHROME, { m: .5 }); O.push([-1.1, -6.6, .6]);
+  for (const s of [-1, 1]) { const cx = -1.1 + s * .7; B.boite(.42, .07, .42, cx, Y + .47, -6.6, VINYLE, { r: .35 }); B.boite(.06, .45, .38, cx + s * .2, Y + .72, -6.6, VINYLE, { r: .35 }); for (const dz of [-.17, .17]) for (const dx of [-.17, .17]) B.cyl(.012, .012, .45, cx + dx, Y + .22, -6.6 + dz, CHROME, { m: .5 }); }
+  // le juke-box, dans le coin du fond
+  B.avec([-1.5, Y, Z0 + .45], 0, () => { B.boite(.9, 1.15, .6, 0, .58, 0, "#8a4a2a", { r: .3 }); B.cyl(.45, .45, .6, 0, 1.15, 0, "#8a4a2a", { rx: Math.PI / 2, seg: 24 }); B.boite(.7, .5, .02, 0, .9, .31, "#f2d070", { r: .2 });
+    for (const s of [-1, 1]) B.boite(.08, 1.4, .62, s * .44, .7, 0, "#e86a3a", { r: .2 }); B.cyl(.38, .38, .02, 0, 1.15, .31, "#5fb8e8", { rx: Math.PI / 2, seg: 24 }); B.boite(.6, .12, .02, 0, .3, .31, CHROME, { m: .5 }); });
+  O.push([-1.5, Z0 + .45, .6]);
+  // ---- les suspensions : des globes de verre opalin au bout d'une tige ----
+  const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff2d8, emissiveIntensity: .8, roughness: .3 });
+  for (const [x, z] of [[-3.5, -1.85], [-3.5, -4.15], [-3.5, -6.45], [1.3, -2.4], [1.3, -4.6], [1.3, -6.8], [-1.1, -6.6], [-.6, -3.2]]) { B.cyl(.008, .008, .7, x, H - .35, z, "#2a2a2a"); B.cyl(.06, .1, .06, x, H - .72, z, CHROME, { m: .5 }); const gl = B.objet(new THREE.Mesh(new THREE.SphereGeometry(.17, 16, 12), globe)); gl.position.set(x, H - .9, z); gl.castShadow = false; }
+  const g = B.finir(); for (const [x, z] of [[-1.5, -3.6], [1.5, -5.4]]) { const l = new THREE.PointLight(0xfff0d8, 9, 9, 1.5); l.position.set(x, H - .4, z); g.add(l); }
+  g.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  return { g, obst: O }; }
+
 function construireHillValley(A, T, L, scene) {
   L.hv = true; L.sansPNJ = true; L.taille = 1.85;
   L.suivi = { d: 8.5, h: 4.4, av: 5, vy: 2.4 }; L.fov = [60, 72]; L.boite = [-26.5, 26.5, -14.6, 22.6]; L.zone = [-27.5, 27.5, -15.5, 23.5];
@@ -5533,7 +5620,12 @@ function construireHillValley(A, T, L, scene) {
   immeubleHV(scene, "palais", 0, -19.6, 0);
   // ---- les immeubles autour de la place, en relief façon maquette ----
   L.polesHV = [];
-  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const nom of lst) { const l = IMMEUBLES_HV[nom].larg, g = immeubleHV(scene, nom, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r); if (g.userData.pole) L.polesHV.push(g.userData.pole); for (const [ox, oz, orr] of IMMEUBLES_HV[nom].obst || []) obst.push([g.position.x + ox * Math.cos(r) + oz * Math.sin(r), g.position.z - ox * Math.sin(r) + oz * Math.cos(r), orr]); x += l; } };
+  const rangee = (lst, x0, z, r, sens) => { let x = x0; for (const nom of lst) { const l = IMMEUBLES_HV[nom].larg, g = immeubleHV(scene, nom, sens === "x" ? x + l / 2 : z, sens === "x" ? z : x + l / 2, r); if (g.userData.pole) L.polesHV.push(g.userData.pole); const vers = (ox, oz) => [g.position.x + ox * Math.cos(r) + oz * Math.sin(r), g.position.z - ox * Math.sin(r) + oz * Math.cos(r)];
+      for (const [ox, oz, orr] of [...(IMMEUBLES_HV[nom].obst || []), ...(g.userData.obstInt || [])]) obst.push([...vers(ox, oz), orr]);
+      if (g.userData.interieur) { const I = g.userData.interieur, a = vers(I.X0, I.Z0), b = vers(I.X1, I.Z1), c = vers(-.55, I.Z1 + .1), d = vers(.55, .6);
+        L.salleLou = { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), z0: Math.min(a[1], b[1]), z1: Math.max(a[1], b[1]), px0: Math.min(c[0], d[0]), px1: Math.max(c[0], d[0]), pz0: Math.min(c[1], d[1]), pz1: Math.max(c[1], d[1]), vers };
+        for (let k = 0; k <= 12; k++) obst.push([...vers(2.1, -1.85 - k * .5), .42]); }
+      x += l; } };
   rangee(["barber", "stationers", "cinema", "zales", "realty", "travel"], -32.05, 23.5, Math.PI, "x");   // au sud (face au palais)
   rangee(["banque", "loucafe", "ruth", "florist", "hardware"], -24, -27.5, Math.PI / 2, "z");   // à l'ouest
   rangee(["statler", "westernauto", "texaco", "drugs", "bluebird"], -24, 27.5, -Math.PI / 2, "z");   // à l'est
@@ -5550,9 +5642,12 @@ function construireHillValley(A, T, L, scene) {
   // ---- la DeLorean de Doc, garée au bord du trottoir : on y remonte pour rentrer ----
   const dl = creerDelorean(); poser(dl, -6, 16, -Math.PI / 2); scene.add(dl); L.delorean = dl; L.posDelorean = [-6, 16];
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
-  L.limites = (x, z) => Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
+  const SL = L.salleLou, dansLou = (x, z) => SL && ((x > SL.x0 + .25 && x < SL.x1 - .25 && z > SL.z0 + .25 && z < SL.z1 - .25) || (x >= SL.px0 && x <= SL.px1 && z > SL.pz0 && z < SL.pz1));
+  L.dansLou = (x, z) => SL && x > SL.x0 && x < SL.x1 && z > SL.z0 && z < SL.z1;
+  L.contraindreCam = (pos, moi) => { const q = moi.g.position; if (!L.dansLou(q.x, q.z)) return false; pos.x = Math.max(SL.x0 + .35, Math.min(SL.x1 - .35, pos.x)); pos.z = Math.max(SL.z0 + .35, Math.min(SL.z1 - .35, pos.z)); pos.y = Math.min(pos.y, LOU.H - .3); return true; };
+  L.limites = (x, z) => (Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 || dansLou(x, z)) && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
     && !(Math.abs(x - dl.position.x) < 2.3 && Math.abs(z - dl.position.z) < 1.1 && dl.visible);
-  L.portails = []; L.louCafe = [-23, -9.5];   // (devant Lou's Cafe : là où attendent les serveurs)
+  L.portails = []; L.louCafe = SL ? SL.vers(2.95, -4.2) : [-23, -9.5]; L.louPts = SL ? [[0, -2.4], [-.6, -4.1], [.2, -5.6], [-2.3, -3.0], [-2.3, -5.3], [-.4, -7.5]].map(([a, b]) => SL.vers(a, b)) : null;   // (Lou derrière son comptoir ; les serveurs entre les tables)
   let tPrec = 0;
   L.anim = (t) => { const dt = Math.min(.1, (t - (tPrec || t)) / 1000); tPrec = t;
     for (const R of L.roulent) { const x = R.axe === "x" ? R.p : R.fixe, z = R.axe === "x" ? R.fixe : R.p, dx = R.axe === "x" ? R.sens : 0, dz = R.axe === "x" ? 0 : R.sens;
@@ -5575,14 +5670,14 @@ function animerHV(now) {
   const moi = M.gens.get(M.moiNum), mp = moi && moi.g.position;
   if (!M.hvInit) { M.hvInit = true; M.bandeT = 0;
     for (const [id, role] of HABITANTS) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : TETES_HV[id]; if (!url) continue;
-      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)] : role === "serveur" ? [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)] : role === "auto" ? M.L.siegesBiff[id] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
+      const k = HABITANTS.findIndex(h => h[0] === id), [x, z] = role === "lou" ? (M.L.louPts ? (id === 43 ? M.L.louCafe : M.L.louPts[3]) : [M.L.louCafe[0] + .9, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6)]) : role === "serveur" ? (M.L.louPts ? M.L.louPts[id === 39 ? 0 : 2] : [M.L.louCafe[0] + .2, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1)]): role === "auto" ? M.L.siegesBiff[id] : role === "bande" ? [12 + (k % 2) * 1.2, -8 + (k % 3)] : pointLibreHV();
       const q = ajouterAncien({ numero: -id, nom: P.nom || ("habitant" + id), tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, initiales: "", teteUrl: url, pnj: true, role, x, z, ...defautsHV(id, P) });
       if (q && role === "auto") { q.info.auto = true; q.g.position.y = .2; if (q.g.children[0]) q.g.children[0].visible = false; }
       if (q) q.prochain = now + Math.random() * 4000; } }
   const bande = HABITANTS.filter(h => h[1] === "bande").map(h => M.gens.get(-h[0])).filter(Boolean), chef = bande[0];
   for (const [id, role] of HABITANTS) { const p = M.gens.get(-id); if (!p) continue;
-    if (role === "serveur") { if (!p.cible && Math.random() < .002) viser(p, M.L.louCafe[0] + .2 + Math.random() * .6, M.L.louCafe[1] + (id === 39 ? -1.1 : 1.1) + (Math.random() - .5)); continue; }
-    if (role === "lou") { if (!p.cible && Math.random() < .003) viser(p, M.L.louCafe[0] + .7 + Math.random() * .8, M.L.louCafe[1] + (id === 43 ? -2.6 : 2.6) + (Math.random() - .5) * .8); continue; }
+    if (role === "serveur" || (role === "lou" && id !== 43)) { if (!p.cible && now > (p.prochain || 0)) { const P2 = M.L.louPts; if (P2) { const [a, b] = P2[Math.floor(Math.random() * P2.length)]; viser(p, a + (Math.random() - .5) * .5, b + (Math.random() - .5) * .5); } p.prochain = now + 4000 + Math.random() * 7000; } continue; }
+    if (role === "lou") { if (!p.cible && now > (p.prochain || 0)) { const SL = M.L.salleLou; if (SL) { const [a, b] = SL.vers(2.95, -2.3 - Math.random() * 4.6); viser(p, a, b); } p.prochain = now + 5000 + Math.random() * 8000; } continue; }
     if (role === "auto") { const [sx, sz] = M.L.siegesBiff[id]; p.cible = null; p.chemin = []; p.g.position.set(sx, .2, sz);
       if (id === 32 && mp && now > (M.bandeT || 0) && Math.hypot(mp.x - sx, mp.z - sz) < 4.5) { M.bandeT = now + 14000; bulle(["😏 <b>Biff :</b> Hé, " + prenomMoi() + " ! Tu veux faire un tour ? Ha ! Même pas en rêve !", "😤 <b>Biff :</b> Bas les pattes de ma bagnole !", "😏 <b>Biff :</b> T'as vu la classe ? Ça te change de ton vélo, hein ?"][Math.floor(Math.random() * 3)], 3000); }
       continue; }
