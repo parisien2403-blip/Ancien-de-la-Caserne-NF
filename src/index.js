@@ -79,9 +79,10 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   39: { nom: "Le serveur", tenue: "serveur", couleur: "#f4f2ec", bas: "#f2f2ee", pieds: "#f2f2ee" }, 40: { nom: "La serveuse", tenue: "serveuse", couleur: "#c8202a", bas: null, pieds: "#c8102e" },
   41: { nom: "Le monsieur au gilet", tenue: "gilet", couleur: "#f2f0ea", bas: "#2f3236", pieds: "#3a2414" }, 42: { nom: "Le garçon au blouson", tenue: "varsity", couleur: "#f2f2ee", bas: "#3c5a86", pieds: "#e8e8e8" },
   43: { nom: "Lou", tenue: "lou", couleur: "#ece4d2", bas: "#3a3a3c", pieds: "#1a1a1a" }, 44: { nom: "Goldie Wilson", tenue: "lou", couleur: "#e8e2d4", bas: "#3a3a3c", pieds: "#1a1a1a" },
-  45: { nom: "Le pompiste", tenue: "pompiste", couleur: "#2f4a3a", bas: "#2f4a3a", pieds: "#1a1a1a" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 45) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste"];
+  45: { nom: "Le pompiste", tenue: "pompiste", couleur: "#2f4a3a", bas: "#2f4a3a", pieds: "#1a1a1a" },
+  46: { nom: "Lorraine Baines", tenue: "lorraine", couleur: "#8a86c8", bas: null, pieds: "#f4f2ec" }, 47: { nom: "George McFly", tenue: "george", couleur: "#b4aaa4", bas: "#7a7c80", pieds: "#2a1a10" } };   // (le groupe de la scène de la salle des fêtes)
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 47) ? id : 1;
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;

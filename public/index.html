@@ -1220,6 +1220,8 @@
           <button class="btn small alt mx-hv" data-hv="varsity" type="button" hidden>🧥 Le garçon au blouson</button>
           <button class="btn small alt mx-hv" data-hv="lou" type="button" hidden>☕ Lou</button>
           <button class="btn small alt mx-hv" data-hv="goldie" type="button" hidden>☕ Goldie Wilson</button>
+          <button class="btn small alt mx-hv" data-hv="lorraine" type="button" hidden>💐 Lorraine Baines</button>
+          <button class="btn small alt mx-hv" data-hv="george" type="button" hidden>📓 George McFly</button>
           <label class="btn small alt mx-alm" id="mxAlmTaille" hidden>📕 Almanach <input type="range" min="10" max="120" step="1" value="30"><span>30 cm</span></label>
           <button class="btn small alt" id="mxPNJGore" type="button" hidden>🎸 Martin Gore</button>
           <button class="btn small alt" id="mxPNJGahan" type="button" hidden>🎤 Dave Gahan</button>
@@ -2083,7 +2085,7 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
       monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin); $("mxPNJDoc").hidden = $("mxAlmTaille").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
@@ -2168,6 +2170,7 @@
     serveuse: [40, "🍔 La serveuse (Hill Valley, 1955)", "La serveuse", "images/bttf/p-serveuse-tete.webp"],
     gilet: [41, "🎩 Le monsieur au gilet (Hill Valley, 1955)", "Le monsieur au gilet", "images/bttf/p-gilet-tete.webp"],
     lou: [43, "☕ Lou (Hill Valley, 1955)", "Lou", "images/bttf/p-lou-tete.webp"], goldie: [44, "☕ Goldie Wilson (Hill Valley, 1955)", "Goldie Wilson", "images/bttf/p-goldie-tete.webp"],
+    lorraine: [46, "💐 Lorraine Baines (Hill Valley, 1955)", "Lorraine Baines", "images/bttf/p-lorraine-tete.webp"], george: [47, "📓 George McFly (Hill Valley, 1955)", "George McFly", "images/bttf/p-george-tete.webp"],
     varsity: [42, "🧥 Le garçon au blouson (Hill Valley, 1955)", "Le garçon au blouson", "images/bttf/p-varsity-tete.webp"],
     gore: [27, "🎸 Martin Gore (Depeche Mode)", "Martin Gore", "images/dm/gore-tete.png"], gahan: [28, "🎤 Dave Gahan (Depeche Mode)", "Dave Gahan", "images/dm/gahan-tete.png"],
     fletcher: [29, "🎹 Andy Fletcher (Depeche Mode)", "Andy Fletcher", "images/dm/fletcher-tete.png"],
