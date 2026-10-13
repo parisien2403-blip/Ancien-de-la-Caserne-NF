@@ -2453,7 +2453,7 @@
       if (pnj) $("bhNom").value = src.nom || (dans ? tr[2] : bar ? "Mr Miner" : dj ? "Manu" : "Le chef de poste");
       const url = pnj ? (src.tete_v ? urlTetePNJ(src.tete_v, idP) : dans ? tr[3] : bar ? "images/miner-tete.png" : dj ? "images/manu-tete.png" : "images/pere-tete.png") : src.tete_v ? urlTete(moi.numero, src.tete_v) : null;
       if (url) { const i = new Image(); i.src = url; try { await i.decode(); bh.img = i; } catch (e) {} }
-      const TENUES_MEMBRE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "costume"];   // (les tenues des personnages : l'administrateur seul)
+      const TENUES_MEMBRE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie", "costume"];   // (les tenues des personnages : l'administrateur seul)
       $("bhTenues").innerHTML = Object.entries(m.TENUES).filter(([id]) => moi.admin || TENUES_MEMBRE.includes(id) || id === bh.tenue).map(([id, t]) => `<button type="button" data-tenue="${id}">${esc(t.nom)}</button>`).join("");
       $("bhCouleurs").innerHTML = m.COULEURS.map(c => `<button type="button" class="pastille" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`).join("");
       $("bhTenues").querySelectorAll("[data-tenue]").forEach(b => b.onclick = () => { bh.tenue = b.dataset.tenue; apercuBonhomme(); });
@@ -2843,6 +2843,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["3.87", "13 octobre 2026", ["Mon bonhomme : six nouvelles tenues pour tous — jupe et chemisier, robe longue, tailleur, chemisier et jean, salopette, chemisier et pantalon en soie"]],
     ["3.86", "13 octobre 2026", ["Salle des fêtes : boutons ⏮ et ⏭ sur la table de Manu pour tout le monde (le ▶ / ⏹ reste à l'administrateur)",
       "Mon bonhomme : les tenues des personnages sont réservées à l'administrateur ; chacun garde les tenues de base"]],
     ["3.85", "13 octobre 2026", ["La Matrice : la liste des personnages (administrateur) repliée derrière un bouton « 🎭 Les personnages »"]],

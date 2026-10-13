@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
+  robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, soie: { nom: "Chemisier et pantalon en soie" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
@@ -32,6 +32,7 @@ export const COULEURS = ["#22324f", "#8a3b22", "#2f6b3a", "#c9a227", "#6b3d7a", 
 /* ---------- outils de dessin ---------- */
 const toile = (w, h, dessin) => { const c = document.createElement("canvas"); c.width = w; c.height = h; dessin(c.getContext("2d"), w, h); return c; };
 let graine = 7; const alea = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
+const eclaircir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k + (k > 1 ? 18 : 0)))); return "#" + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => f(v).toString(16).padStart(2, "0")).join(""); };
 const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
 
 /* ---------- le bonhomme (dessiné en 2D, posé dans la 3D comme un panneau toujours tourné vers nous) ---------- */
@@ -44,7 +45,7 @@ export function dessinerBonhomme(o, tete) {
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
-    const basDefaut = t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
+    const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
@@ -101,6 +102,14 @@ export function dessinerBonhomme(o, tete) {
       if (!profil && o.pose !== "dos") { if (t === "jupe") { x.fillStyle = "rgba(255,255,255,.85)"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 166); x.lineTo(114, 146); x.lineTo(108, 146); x.lineTo(100, 158); x.lineTo(92, 146); x.fill(); for (const y of [176, 196, 216]) { x.beginPath(); x.arc(100, y, 2.2, 0, 7); x.fill(); } }
         else { x.fillStyle = "#f4f2ec"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(100, 196); x.closePath(); x.fill(); x.fillStyle = assombrir(c, .7); x.beginPath(); x.moveTo(84, 146); x.lineTo(100, 200); x.lineTo(92, 206); x.lineTo(74, 156); x.closePath(); x.moveTo(116, 146); x.lineTo(100, 200); x.lineTo(108, 206); x.lineTo(126, 156); x.closePath(); x.fill();
           x.fillStyle = "#d8c27a"; for (const y of [212, 226]) { x.beginPath(); x.arc(104, y, 2.6, 0, 7); x.fill(); } } } }
+    // le pantalon en soie, large et fluide (avec son reflet), et le chemisier à lavallière
+    if (t === "soie") { const sb = bas || "#1d1d1f";
+      if (!profil && !o.pose) { for (const [a0, a1, b0, b1] of [[58, 100, 52, 98], [100, 142, 102, 148]]) { const g = x.createLinearGradient(a0, 0, a1, 0); g.addColorStop(0, sb); g.addColorStop(.45, eclaircir(sb, 1.6)); g.addColorStop(1, sb);
+          x.fillStyle = g; x.beginPath(); x.moveTo(a0, 252); x.lineTo(a1, 252); x.lineTo(b1, 392); x.lineTo(b0, 392); x.closePath(); x.fill(); }
+        x.fillStyle = assombrir(sb, .7); x.fillRect(58, 250, 84, 8); }
+      if (!profil && o.pose !== "dos") { x.fillStyle = "rgba(255,255,255,.9)"; x.beginPath(); x.ellipse(92, 160, 9, 6, -.4, 0, 7); x.ellipse(108, 160, 9, 6, .4, 0, 7); x.fill();
+        x.beginPath(); x.moveTo(96, 162); x.lineTo(88, 196); x.lineTo(94, 196); x.lineTo(100, 166); x.lineTo(106, 196); x.lineTo(112, 196); x.lineTo(104, 162); x.fill();
+        x.fillStyle = "rgba(255,255,255,.14)"; x.beginPath(); x.moveTo(66, 150); x.quadraticCurveTo(80, 200, 70, 250); x.lineTo(78, 250); x.quadraticCurveTo(88, 200, 74, 150); x.fill(); } }
     if (t === "chemisier" && !profil && o.pose !== "dos") { x.fillStyle = "rgba(255,255,255,.88)"; x.beginPath(); x.moveTo(82, 146); x.lineTo(100, 170); x.lineTo(96, 176); x.lineTo(78, 152); x.closePath(); x.moveTo(118, 146); x.lineTo(100, 170); x.lineTo(104, 176); x.lineTo(122, 152); x.closePath(); x.fill();
       x.fillStyle = "rgba(0,0,0,.25)"; for (const y of [186, 206, 226, 246]) { x.beginPath(); x.arc(100, y, 2.2, 0, 7); x.fill(); } x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(99, 172, 2, 90); }
     if (t === "salopette" && o.pose !== "dos") { const jean = o.bas || "#3d5a80"; x.fillStyle = jean; if (!profil) { x.beginPath(); x.roundRect(74, 188, 52, 76, 6); x.fill(); x.fillRect(74, 146, 9, 46); x.fillRect(117, 146, 9, 46);

@@ -86,7 +86,7 @@ const PNJ_DEFAUT = { 1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c
   50: { nom: "Barry zombie", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 51: { nom: "Jill zombie", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
   52: { nom: "Wesker zombie", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 53: { nom: "Chris zombie", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" } };   // (le groupe de la scène de la salle des fêtes)
 const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 53) ? id : 1;
-const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
+const TENUES_MATRICE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const MORCEAU = 1024 * 1024, JEU_MAX = 32 * 1024 * 1024;
@@ -353,7 +353,7 @@ export class Compteur extends DurableObject {
 
   async changerAvatar(token, x) {
     const moi = this.moi(token);
-    const TENUES_MEMBRE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette"];   // (les tenues des personnages : l'administrateur seul ; on garde celle qu'il a déjà)
+    const TENUES_MEMBRE = ["garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie"];   // (les tenues des personnages : l'administrateur seul ; on garde celle qu'il a déjà)
     const avant = this.sql.exec("SELECT av_tenue FROM membres WHERE token = ?", token).toArray()[0];
     const tenue = TENUES_MATRICE.includes(x.tenue) && (moi.admin || TENUES_MEMBRE.includes(x.tenue) || (avant && avant.av_tenue === x.tenue)) ? x.tenue : "civil";
     const couleur = /^#[0-9a-f]{6}$/i.test(x.couleur || "") ? x.couleur : "#22324f";
