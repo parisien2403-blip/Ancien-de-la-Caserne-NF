@@ -2090,11 +2090,11 @@ function construireSousSol(A, L, scene, o = {}) {
 /* Le mess : le bâtiment de gauche de la cour d'honneur (en face de la salle des fêtes). Une grande salle vide, même sol et mêmes murs que la salle des fêtes
    (petits carreaux beiges, murs crème, lambris verni), ses grandes fenêtres dépolies côté cour, et ses suspensions au plafond : la lumière se règle (administrateur). */
 function construireMess(A, L, scene) {
-  const X0 = -6, X1 = 6, Z0 = -12, Z1 = 12, HT = 5.2, LAMB = 1.15, larg = X1 - X0, long = Z1 - Z0;
+  const X0 = -10, X1 = 6, CX = (X0 + X1) / 2, Z0 = -12, Z1 = 12, HT = 5.2, LAMB = 1.15, larg = X1 - X0, long = Z1 - Z0;
   const carreaux = toileCarreaux(), peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), bois = A.mat({ color: 0x5a3018, roughness: .5 }), lambris = toileLambris();
-  const sol = A.ajoute(new THREE.PlaneGeometry(larg, long), A.mat({ map: tex(carreaux, larg / 1.6, long / 1.6), roughness: .5 }), 0, 0, 0, false); sol.rotation.x = -Math.PI / 2; L.sol = sol;
-  A.ajoute(new THREE.BoxGeometry(larg + .6, .3, long + .6), A.mat({ color: 0xece4d2, roughness: .9 }), 0, HT + .15, 0, false);   // le plafond
-  for (let k = 1; k < 4; k++) A.ajoute(new THREE.BoxGeometry(larg, .35, .4), A.mat({ color: 0xe4dac6 }), 0, HT - .17, Z0 + k * long / 4, false);   // les poutres
+  const sol = A.ajoute(new THREE.PlaneGeometry(larg, long), A.mat({ map: tex(carreaux, larg / 1.6, long / 1.6), roughness: .5 }), CX, 0, 0, false); sol.rotation.x = -Math.PI / 2; L.sol = sol;
+  A.ajoute(new THREE.BoxGeometry(larg + .6, .3, long + .6), A.mat({ color: 0xece4d2, roughness: .9 }), CX, HT + .15, 0, false);   // le plafond
+  for (let k = 1; k < 4; k++) A.ajoute(new THREE.BoxGeometry(larg, .35, .4), A.mat({ color: 0xe4dac6 }), CX, HT - .17, Z0 + k * long / 4, false);   // les poutres
   const mur = (axe, pos, de, a, interieur, h0 = 0, h1 = HT, sansLambris) => { const L2 = a - de, mid = (de + a) / 2, ep = .3, hh = h1 - h0;
     A.ajoute(new THREE.BoxGeometry(...(axe === "z" ? [ep, hh, L2] : [L2, hh, ep])), peinture, ...(axe === "z" ? [pos, h0 + hh / 2, mid] : [mid, h0 + hh / 2, pos]), false);
     if (sansLambris || h0 > 0) return; const off = interieur * (ep / 2 + .02), at = (o, y) => axe === "z" ? o.position.set(pos + off, y, mid) : o.position.set(mid, y, pos + off);
@@ -2131,10 +2131,10 @@ function construireMess(A, L, scene) {
   const dansCloison = (x, z) => cloisons.some(([axe, pos, de, a]) => axe === "z" ? Math.abs(x - pos) < .4 && z > de - .25 && z < a + .25 : Math.abs(z - pos) < .4 && x > de - .25 && x < a + .25);
   // les suspensions : globes opalins au bout d'une tige, en deux rangées ; leurs lampes
   const globe = new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff0d0, emissiveIntensity: .9, roughness: .3 }), lampes = [];
-  for (const x of [-2.6, 2.6]) for (let k = 0; k < 4; k++) { const z = Z0 + 3 + k * 6;
+  for (const x of [-7.4, -2.6, 2.6]) for (let k = 0; k < 4; k++) { const z = Z0 + 3 + k * 6;
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globe); gl.position.set(x, HT - 1.28, z); scene.add(gl); }
-  for (const z of [Z0 + 4, 0, Z1 - 4]) for (const x of [-2.6, 2.6]) { const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampes.push(l); }
+  for (const z of [Z0 + 4, 0, Z1 - 4]) for (const x of [-7.4, -2.6, 2.6]) { const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampes.push(l); }
   const ambiant = new THREE.AmbientLight(0xfff1dc, .5); scene.add(ambiant);
   L.setLumiere = (niveau) => { const v = +niveau, k = Math.max(0, Math.min(1, Number.isFinite(v) ? v : 1)); L.lumiere = k;
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * k; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
