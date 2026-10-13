@@ -37,6 +37,7 @@ const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = 
 /* ---------- le bonhomme (dessiné en 2D, posé dans la 3D comme un panneau toujours tourné vers nous) ---------- */
 // o.large : marge de 60 px de chaque côté, pour que les bras levés de la danse ne soient pas coupés
 export function dessinerBonhomme(o, tete) {
+  if (o.zombifie) return zombifierCorps(dessinerBonhomme({ ...o, zombifie: false, peau: o.peau || "#a3a89e" }, tete), o.large);
   return toile(o.large ? 320 : 200, 420, (x) => {
     if (o.large) x.translate(60, 0);
     // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
@@ -3842,6 +3843,14 @@ function texturesApo() {
     for (let i = 0; i < 14; i++) { x.fillStyle = `rgba(${80 + r() * 30},6,6,${.5 + r() * .4})`; x.beginPath(); x.arc(30 + r() * 196, 30 + r() * 196, 3 + r() * 9, 0, 7); x.fill(); }
     x.strokeStyle = "rgba(70,6,6,.7)"; x.lineWidth = 6; x.lineCap = "round"; for (let i = 0; i < 3; i++) { const a = r() * 7; x.beginPath(); x.moveTo(128 + Math.cos(a) * 60, 128 + Math.sin(a) * 50); x.lineTo(128 + Math.cos(a) * (100 + r() * 24), 128 + Math.sin(a) * (90 + r() * 20)); x.stroke(); } })));
 }
+// un corps de héros, devenu zombie : sang sur les vêtements (seulement là où il y a du dessin), déchirures, traînées
+function zombifierCorps(c, large) { const x = c.getContext("2d"), dx = large ? 60 : 0; let g = 13; const al = () => (g = (g * 9301 + 49297) % 233280) / 233280;
+  x.save(); x.globalCompositeOperation = "source-atop"; x.translate(dx, 0);
+  for (let i = 0; i < 16; i++) { const px = 62 + al() * 76, py = 150 + al() * 240, r = 4 + al() * 11; x.fillStyle = `rgba(${95 + al() * 50},${6 + al() * 10},${6 + al() * 8},${.55 + al() * .35})`; x.beginPath(); x.ellipse(px, py, r, r * (.6 + al() * .8), al() * 3, 0, 7); x.fill();
+    if (al() < .5) { x.fillRect(px - 1.5, py, 3, 8 + al() * 22); } }   // (des coulures)
+  x.fillStyle = "rgba(110,8,8,.6)"; x.beginPath(); x.moveTo(86, 140); x.quadraticCurveTo(100, 175, 114, 140); x.lineTo(110, 200); x.lineTo(90, 196); x.fill();   // (le cou, le col)
+  x.fillStyle = "rgba(25,20,18,.55)"; for (let i = 0; i < 6; i++) { const px = 64 + al() * 72, py = 170 + al() * 200; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 8, py + 10); x.lineTo(px + 2, py + 16); x.lineTo(px - 5, py + 6); x.fill(); }   // (les déchirures)
+  x.restore(); return c; }
 // la cabine téléphonique, à l'apocalypse : des planches clouées en travers, les vitres sales et fêlées, du sang sur le panneau, le sol et les vitres, le combiné arraché
 function abimerCabine(g) { const Lc = 1.05, bois = [0x7a6648, 0x6a5638, 0x8a7656].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 })), clou = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: .6 });
   const planche = (x, y, z, w, rz, ry = 0, k = 0) => { const p = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .025), bois[k % 3]); p.position.set(x, y, z); p.rotation.set(0, ry, rz); p.castShadow = true; g.add(p);
@@ -4009,7 +4018,10 @@ const ZTYPES = [
   { tete: "images/apo/zombie2-tete.png", id: 13, son: "sons/zombie2.mp3", v: .9, def: { tenue: "zombie", couleur: "#d9cfbd", bas: "#8ea6be", pieds: "#5a5650" } },
   { tete: "images/apo/zombie3-tete.png", id: 14, son: "sons/zombie3.mp3", v: .85, def: { tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" } },
   { boss: true, tete: "images/apo/nemesis-tete.png", id: 17, son: "sons/zombie3.mp3", v: 1.75, hp: 5, taille: 1.45, def: { tenue: "nemesis", couleur: "#1a1a1c", bas: null, pieds: "#111111" } },
-  { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true } ];
+  { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true },
+  // les héros revenus d'entre les morts (types 5 à 10, dans l'ordre des héros 21 à 26) : l'équipier tombé revient en zombie ; trois balles au moins, et il ne revient pas une deuxième fois
+  ...[["rebecca", 21], ["leon", 22], ["barry", 23], ["jill", 24], ["wesker", 25], ["chris", 26]].map(([cle, h], i) => ({ revenant: h, tete: `images/re/z-${cle}-tete.png`, id: 48 + i, son: i % 2 ? "sons/zombie3.mp3" : "sons/zombie1.mp3", v: .95, hp: 3, zombifie: true, def: null })) ];
+const tyRevenant = h => 5 + (h - 21);
 const ZNOMBRE = { grande: [5, 2], rue: [4, 1], fetes: [3, 0], etage: [7, 0], mess: [7, 1] };   // [zombies, chiens]
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
@@ -4024,7 +4036,7 @@ function texChien() { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(15)) || {}, cle 
 function posesZ(ty) {
   M.zTexB = M.zTexB || {}; if (M.zTexB[ty]) return M.zTexB[ty];
   const T = ZTYPES[ty], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(T.id)) || {};
-  const info = { tenue: P.tenue || T.def.tenue, couleur: P.couleur || T.def.couleur, bas: P.bas || T.def.bas, pieds: P.pieds || T.def.pieds, reglage: P.reglage || null, initiales: "" };
+  const D = T.def || HEROS[T.revenant], info = { tenue: P.tenue || D.tenue, couleur: P.couleur || D.couleur, bas: P.tenue ? P.bas : D.bas, pieds: P.pieds || D.pieds, reglage: P.reglage || null, initiales: "", zombifie: !!T.zombifie };
   const url = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, T.id) : T.tete;
   return (M.zTexB[ty] = chargerTete(0, 0, url).then(tete => { const f = pose => tex(dessinerBonhomme({ ...info, large: true, pose }, tete));
     return { repos: f(undefined), a: f("thriller1"), b: f("thriller2"), c: f("thriller3"), poing: f("tir") }; }));
@@ -4058,9 +4070,10 @@ function creerZ(d) {
   if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = true; }); }
   const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   M.scene.add(g);
-  const z = { id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? (T.hp || 2), mortT: 0, boss: !!T.boss, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
+  const z = { revenant: T.revenant || 0, id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? (T.hp || 2), mortT: 0, boss: !!T.boss, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
   tailleZ(z); M.zomb.set(z.id, z);
   if (T.boss) { M.ctx.surInfo && M.ctx.surInfo("☠️ NEMESIS arrive…"); sonPos(T.son, 1); }
+  if (T.revenant) { M.ctx.surInfo && M.ctx.surInfo(`🧟 ${HEROS[T.revenant].court} est revenu… ce n'est plus votre équipier !`); sonPos(T.son, 1); }
   return z;
 }
 function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
@@ -4079,6 +4092,7 @@ function blesserZ(z, dx, dz) {   // (le chef) la balle compte
   const nx = z.x + dx * .4, nz = z.z + dz * .4; if (limZ().limites(nx, nz)) { z.x = nx; z.z = nz; }
   z.bloque = performance.now() + 350;
   if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), z.boss ? 2.4 : 1.6);
+    if (z.revenant) { M.revenants = (M.revenants || []).filter(r => r.h !== z.revenant); M.revenantsFinis = M.revenantsFinis || new Set(); M.revenantsFinis.add(z.revenant); M.ctx.surInfo && M.ctx.surInfo(`💀 ${HEROS[z.revenant].court} repose enfin en paix.`); }
     if (z.boss) M.zKills = 0;
     else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6 && ![...M.zomb.values()].some(q => q.boss && !q.mortT)) { M.zKills = 0; apparaitreZ(3); } } }   // (six zombies ou chiens abattus : Nemesis)
 }
@@ -4180,13 +4194,19 @@ function sacrificeApo(now) {
     if (u > 1.4 && !mort) { q.flashT = performance.now() + 120; const dx = Math.sin(u * 23) * .05; q.g.position.x = vx + dx;
       if (u > giclee) { giclee = u + .18; jetSang(vx + (Math.random() - .5) * .3, .75, vz - .15); sangAuSol(vx + (Math.random() - .5) * 1.4, vz + (Math.random() - .5) * 1.4, 0, .6 + Math.random() * .6); if (Math.random() < .5) sonBruit(.12, 900, .35); } }
     if (u > 1.7 && !cri) { cri = true; dire(EQUIPIER(k), `${((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]} ! Va-t'en !!! C'est trop tard pour moi… Haaaaaa !`); }
-    if (u > 4.6 && !mort) { mort = true; e.vies = 0; e.mort = true; q.info.mortT = performance.now(); q.cible = null; q.chemin = []; flaqueMort(q); majHudApo(); M.ctx.surInfo && M.ctx.surInfo(`💀 ${nom} s'est sacrifié…`); }
+    if (u > 4.6 && !mort) { mort = true; e.vies = 0; e.mort = true; revenantPlus(e.id); q.info.mortT = performance.now(); q.cible = null; q.chemin = []; flaqueMort(q); majHudApo(); M.ctx.surInfo && M.ctx.surInfo(`💀 ${nom} s'est sacrifié…`); }
     if (u > 6.4) { finCine(); placerCamera(true);
       // (pour celui qui mène les zombies : ils deviennent de vrais zombies, qui nous poursuivent ; pour les autres, ils s'en vont)
       for (const z of zs) { if (estChefZ()) { z.cine = false; z.recalc = 0; } else retirerZ(z); } } } };
-  M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(EQUIPIER(k)); if (q && !e.mort) { e.vies = 0; e.mort = true; q.info.mortT = performance.now(); flaqueMort(q); majHudApo(); }
+  M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(EQUIPIER(k)); if (q && !e.mort) { e.vies = 0; e.mort = true; revenantPlus(e.id); q.info.mortT = performance.now(); flaqueMort(q); majHudApo(); }
     finCine(); placerCamera(true); for (const z of zs) { if (estChefZ()) z.cine = false; else retirerZ(z); } });
 }
+// l'équipier tombé reviendra : un peu plus tard (au bout de 40 s, ou dès le lieu suivant), là où il y a des zombies
+function revenantPlus(h) { if (!HEROS[h] || (M.revenantsFinis && M.revenantsFinis.has(h))) return; M.revenants = M.revenants || [];
+  if (!M.revenants.some(r => r.h === h)) M.revenants.push({ h, t: performance.now() + 40000, L: M.L, sorti: false }); }
+function animerRevenants(now) { if (!M.revenants || !M.revenants.length || !estChefZ() || !M.zInit) return;
+  for (const r of M.revenants) { if (r.sorti && r.Lsorti === M.L) continue; if (r.sorti && [...M.zomb.values()].some(z => z.revenant === r.h && !z.mortT)) continue;
+    if (r.L !== M.L || now > r.t) { r.sorti = true; r.Lsorti = M.L; apparaitreZ(tyRevenant(r.h)); } } }
 // une giclée de sang : des gouttes qui jaillissent et retombent
 function jetSang(x, y, z) { const g = new THREE.Group(), sc = M.scene; sc.add(g); const gouttes = [];
   for (let i = 0; i < 18; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.02 + Math.random() * .03, 6, 4), new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0x8a0606 : 0xb01010 }));
@@ -4200,7 +4220,7 @@ function blesserEquipier(k, deg, zx, zz) {
   const e = M.equipe && M.equipe[k], p = M.gens.get(EQUIPIER(k)); if (!e || e.mort || !p) return;
   e.vies -= deg; p.flashT = performance.now() + 200;
   const dx = p.g.position.x - zx, dz = p.g.position.z - zz, d = Math.hypot(dx, dz) || 1; const nx = p.g.position.x + dx / d * .6, nz = p.g.position.z + dz / d * .6; if (M.L.limites(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; }
-  if (e.vies <= 0) { e.vies = 0; e.mort = true; p.info.mortT = performance.now(); p.cible = null; p.chemin = []; flaqueMort(p); M.ctx.surInfo && M.ctx.surInfo(`💀 ${p.info.nom} est tombé…`); }
+  if (e.vies <= 0) { e.vies = 0; e.mort = true; p.info.mortT = performance.now(); p.cible = null; p.chemin = []; flaqueMort(p); revenantPlus(e.id); M.ctx.surInfo && M.ctx.surInfo(`💀 ${p.info.nom} est tombé…`); }
   majHudApo();
 }
 // les équipiers des autres joueurs (on les voit bouger, tirer, tomber)
@@ -4244,7 +4264,7 @@ function simulerZ(t, dt) {
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
   for (const z of vivants) if (z.mortT && t - z.mortT > 8000) retirerZ(z);
   if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 12000; const zs = [...M.zomb.values()];
-    if (zs.filter(z => !z.chien && !z.boss).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
+    if (zs.filter(z => !z.chien && !z.boss && !z.revenant).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
   for (const z of M.zomb.values()) { if (z.mortT || z.cine) continue;
     let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
@@ -4325,7 +4345,7 @@ function animerApo(t, dt) {
   const moi = moiApo(); if (!moi) return;
   objetsApo();
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now()); sacrificeApo(performance.now());
+  animerEquipe(performance.now()); sacrificeApo(performance.now()); animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now();
@@ -5052,7 +5072,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.hvInit = false; M.hvDoubles = false; M.chasse = false;
   const { scene, L, repere } = pret || construireScene(id);
   M.scene && M.scene.traverse(o => { o.geometry && o.geometry.dispose(); });
-  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
