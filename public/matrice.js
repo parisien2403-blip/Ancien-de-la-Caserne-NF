@@ -5239,14 +5239,31 @@ function construireHillValley(A, T, L, scene) {
   // la place : le trottoir de pierre, la pelouse, les allées en gravier
   const pierre = A.mat({ color: 0xc9c3b4, roughness: .95 }), gazon = toile(128, 128, (x) => { x.fillStyle = "#4f8a34"; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < .5 ? "rgba(40,90,20,.5)" : "rgba(120,170,70,.4)"; x.fillRect(Math.random() * 128, Math.random() * 128, 1, 3); } });
   const plaque = (w, d, x, z, m, y = trottoirH) => { const o = A.ajoute(new THREE.BoxGeometry(w, y, d), m, x, y / 2, z, false); o.receiveShadow = true; return o; };
-  const solsPlus = [plaque(SQ[0] * 2, SQ[1] * 2, 0, 0, pierre), plaque(SQ[0] * 2, 4.4, 0, -13.7, pierre)];
-  const pelouse = A.ajoute(new THREE.PlaneGeometry(SQ[0] * 2 - 3, SQ[1] * 2 - 3), A.mat({ map: tex(gazon, 8, 6) }), 0, trottoirH + .005, 0, false); pelouse.rotation.x = -Math.PI / 2; solsPlus.push(pelouse);
+  // le trottoir de la place : dalles de béton, coins arrondis, bordure (peinte en rouge et blanc aux angles)
+  const rectRond = (x0, z0, x1, z1, r) => { const s = new THREE.Shape(); s.moveTo(x0 + r, -z0); s.lineTo(x1 - r, -z0); s.absarc(x1 - r, -z0 - r, r, Math.PI / 2, 0, true); s.lineTo(x1, -z1 + r); s.absarc(x1 - r, -z1 + r, r, 0, -Math.PI / 2, true); s.lineTo(x0 + r, -z1); s.absarc(x0 + r, -z1 + r, r, -Math.PI / 2, -Math.PI, true); s.lineTo(x0, -z0 - r); s.absarc(x0 + r, -z0 - r, r, Math.PI, Math.PI / 2, true); return s; };
+  const beton = toile(256, 256, (x) => { x.fillStyle = "#cfcac0"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2500; i++) { x.fillStyle = Math.random() < .5 ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.07)"; x.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
+    for (let i = 0; i < 6; i++) { x.fillStyle = "rgba(170,120,60,.06)"; x.beginPath(); x.ellipse(Math.random() * 256, Math.random() * 256, 10 + Math.random() * 30, 6 + Math.random() * 14, Math.random() * 3, 0, 7); x.fill(); }
+    x.fillStyle = "rgba(60,55,50,.45)"; x.fillRect(0, 0, 256, 2); x.fillRect(0, 0, 2, 256); });
+  const tB = tex(beton, 1, 1); const SX0 = -SQ[0], SX1 = SQ[0], SZ0 = -15.9, SZ1 = SQ[1], RC = 2.6;
+  const dalleG = new THREE.ExtrudeGeometry(rectRond(SX0, SZ0, SX1, SZ1, RC), { depth: trottoirH, bevelEnabled: false, curveSegments: 16 }); dalleG.rotateX(-Math.PI / 2);
+  { const uv = dalleG.attributes.uv, pos = dalleG.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 1.6, pos.getZ(i) / 1.6); }
+  const dalle = new THREE.Mesh(dalleG, A.mat({ map: tB, roughness: .95 })); dalle.receiveShadow = true; scene.add(dalle);
+  const bord = new THREE.Shape(rectRond(SX0, SZ0, SX1, SZ1, RC).getPoints(24)); bord.holes.push(new THREE.Path(rectRond(SX0 + .22, SZ0 + .22, SX1 - .22, SZ1 - .22, RC - .22).getPoints(24).reverse()));
+  const bordG = new THREE.ExtrudeGeometry(bord, { depth: trottoirH + .025, bevelEnabled: false }); bordG.rotateX(-Math.PI / 2); const bordM = new THREE.Mesh(bordG, A.mat({ color: 0xe2ddd2, roughness: .9 })); bordM.receiveShadow = true; scene.add(bordM);
+  for (const [cx, cz, a0] of [[SX1 - RC, SZ0 + RC, 0], [SX1 - RC, SZ1 - RC, -Math.PI / 2], [SX0 + RC, SZ1 - RC, Math.PI], [SX0 + RC, SZ0 + RC, Math.PI / 2]]) {
+    const ar = new THREE.Shape(); ar.absarc(0, 0, RC + .005, a0 - .15, a0 + Math.PI / 2 + .15, false); ar.absarc(0, 0, RC - .2, a0 + Math.PI / 2 + .15, a0 - .15, true);
+    const g = new THREE.ExtrudeGeometry(ar, { depth: .03, bevelEnabled: false, curveSegments: 20 }); g.rotateX(-Math.PI / 2); const m = new THREE.Mesh(g, A.mat({ color: 0xb8302a, roughness: .7 })); m.position.set(cx, trottoirH + .001, cz); scene.add(m); }
+  const solsPlus = [dalle];
+  const pelouse = A.ajoute(new THREE.PlaneGeometry(SQ[0] * 2 - 3.4, SQ[1] * 2 - 3.4), A.mat({ map: tex(gazon, 8, 6) }), 0, trottoirH + .005, 0, false); pelouse.rotation.x = -Math.PI / 2; solsPlus.push(pelouse);
   const gravier = A.mat({ color: 0xd8ccb0, roughness: 1 });
   const allee = (x0, z0, x1, z1, w = 2.2) => { const l = Math.hypot(x1 - x0, z1 - z0), o = A.ajoute(new THREE.PlaneGeometry(w, l), gravier, (x0 + x1) / 2, trottoirH + .01, (z0 + z1) / 2, false); o.rotation.set(-Math.PI / 2, 0, Math.atan2(x1 - x0, z1 - z0)); };
   allee(0, -10, 0, -2); allee(0, -2, -12.5, 9.5); allee(0, -2, 12.5, 9.5);
   const rond = A.ajoute(new THREE.CircleGeometry(3, 32), gravier, 0, trottoirH + .012, -3.2, false); rond.rotation.x = -Math.PI / 2;
   // les trottoirs devant les boutiques
-  solsPlus.push(plaque(56, 2.6, 0, 22.2, pierre), plaque(2.6, 40, -26.2, 4, pierre), plaque(2.6, 40, 26.2, 4, pierre)); L.solsPlus = solsPlus;
+  // les trottoirs devant les boutiques : mêmes dalles de béton, et leur bordure le long de la rue
+  const trot = (w, d, x, z) => plaque(w, d, x, z, A.mat({ map: tex(beton, w / 1.6, d / 1.6), roughness: .95 }));
+  solsPlus.push(trot(56, 2.6, 0, 22.2), trot(2.6, 40, -26.2, 4), trot(2.6, 40, 26.2, 4)); L.solsPlus = solsPlus;
+  { const mb = A.mat({ color: 0xe2ddd2, roughness: .9 }); A.ajoute(new THREE.BoxGeometry(50, trottoirH + .025, .22), mb, 0, (trottoirH + .025) / 2, 21.0, false); for (const sx of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.22, trottoirH + .025, 36.4), mb, sx * 25.0, (trottoirH + .025) / 2, 2.6, false); }
   L.hauteur = (x, z) => (Math.abs(x) < SQ[0] && z > -15.9 && z < SQ[1]) || z > 20.9 || Math.abs(x) > 24.9 ? trottoirH : 0;
   // le monument aux morts, son petit canon ; le mât et le drapeau ; le grand arbre
   const obst = [];
@@ -5290,9 +5307,31 @@ function construireHillValley(A, T, L, scene) {
     for (let i = 0; i < 2; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(1.7, .1, .04), vert); s.position.set(0, .66 + i * .14, .2); g.add(s); }
     for (const sx of [-.75, .75]) { const pd = new THREE.Mesh(new THREE.BoxGeometry(.06, .45, .45), fonte); pd.position.set(sx, .22, 0); g.add(pd); } obst.push([x, z, .8]); };
   banc(-5, 9.6, 0); banc(5, 9.6, 0); banc(-13.8, -2, Math.PI / 2); banc(13.8, -2, -Math.PI / 2); banc(-4, -9.8, Math.PI); banc(4, -9.8, Math.PI);
-  const reverbere = (x, z) => { A.ajoute(new THREE.CylinderGeometry(.07, .12, 4.2, 10), fonte, x, trottoirH + 2.1, z); A.ajoute(new THREE.SphereGeometry(.26, 14, 10), globe, x, trottoirH + 4.45, z);
-    for (const sg of [-1, 1]) { A.ajoute(new THREE.SphereGeometry(.18, 12, 8), globe, x + sg * .45, trottoirH + 4.05, z); A.ajoute(new THREE.BoxGeometry(.9, .05, .05), fonte, x, trottoirH + 3.9, z); } obst.push([x, z, .3]); };
-  for (const [x, z] of [[-14.8, 10.8], [14.8, 10.8], [-14.8, -10.8], [14.8, -10.8], [-5.5, -15], [5.5, -15], [-25.3, 2], [25.3, 2], [-12, 21.6], [12, 21.6]]) reverbere(x, z);
+  // les lampadaires de fonte vert sapin : socle évasé, fût cannelé, bagues, crosse et globe en gland, comme sur la photo de la place
+  const fonteV = A.mat({ color: 0x2c5a3e, metalness: .35, roughness: .45 }), globeL = new THREE.MeshStandardMaterial({ color: 0xfbf6e6, emissive: 0xfff0c8, emissiveIntensity: .45, roughness: .25, transparent: true, opacity: .93 });
+  const profil = [[.0, 0], [.34, 0], [.34, .12], [.27, .2], [.25, .55], [.17, .75], [.15, 1.0], [.12, 1.1], [.12, 1.16], [.1, 1.2], [.085, 1.25], [.085, 3.55], [.13, 3.6], [.13, 3.68], [.09, 3.74], [.11, 3.86], [.16, 3.95], [.16, 4.02], [0, 4.02]].map(([r, y]) => new THREE.Vector2(r, y));
+  const fut = new THREE.LatheGeometry(profil, 20), cannel = new THREE.CylinderGeometry(.095, .095, 2.2, 16, 1, true);
+  const gland = new THREE.LatheGeometry([[0, 0], [.17, .02], [.24, .14], [.26, .32], [.22, .5], [.12, .62], [.04, .66], [0, .67]].map(([r, y]) => new THREE.Vector2(r, y)), 22);
+  const reverbere = (x, z) => { const y = trottoirH; const f = new THREE.Mesh(fut, fonteV); f.position.set(x, y, z); f.castShadow = true; scene.add(f);
+    for (let k = 0; k < 8; k++) { const c = new THREE.Mesh(new THREE.BoxGeometry(.025, 2.2, .025), fonteV); const a = k * Math.PI / 4; c.position.set(x + Math.cos(a) * .088, y + 2.4, z + Math.sin(a) * .088); scene.add(c); }
+    const gl = new THREE.Mesh(gland, globeL); gl.position.set(x, y + 4.0, z); scene.add(gl); A.ajoute(new THREE.ConeGeometry(.07, .18, 10), fonteV, x, y + 4.75, z); A.ajoute(new THREE.SphereGeometry(.04, 8, 6), fonteV, x, y + 4.87, z); obst.push([x, z, .38]); };
+  for (const [x, z] of [[-14.6, 10.6], [14.6, 10.6], [-14.6, -14.9], [14.6, -14.9], [-14.8, -2], [14.8, -2], [-7, 10.9], [7, 10.9], [-5.5, -15.2], [5.5, -15.2], [-25.4, 2], [25.4, 12], [-25.4, -14], [25.4, -14], [-25.4, 16], [-18, 21.5], [-6, 21.5], [6, 21.5], [18, 21.5]]) reverbere(x, z);
+  // les bouches d'incendie jaunes au bord du trottoir
+  { const jaune = A.mat({ color: 0xe8b01c, roughness: .45, metalness: .2 }), corps = new THREE.LatheGeometry([[0, 0], [.17, 0], [.17, .06], [.13, .1], [.12, .1], [.12, .5], [.15, .52], [.15, .58], [.13, .6], [.13, .64], [.1, .72], [.05, .78], [.04, .84], [0, .86]].map(([r, y]) => new THREE.Vector2(r, y)), 18);
+    for (const [x, z] of [[-15, 21.3], [8.8, 21.3], [15, 21.3], [-25.3, -6], [-25.3, 9.5], [25.3, -12], [25.3, 15]]) { const g = new THREE.Group(); g.position.set(x, trottoirH, z); scene.add(g);
+      const c = new THREE.Mesh(corps, jaune); c.castShadow = true; g.add(c);
+      for (const a of [0, Math.PI]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.055, .065, .14, 10), jaune); b.rotation.z = Math.PI / 2; b.position.set(Math.cos(a) * .17, .42, Math.sin(a) * .17); b.rotation.y = a; g.add(b); const e = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .03, 6), jaune); e.rotation.z = Math.PI / 2; e.position.set(Math.cos(a) * .25, .42, 0); g.add(e); }
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, .16, 10), jaune); f.rotation.x = Math.PI / 2; f.position.set(0, .4, .17); g.add(f); obst.push([x, z, .35]); } }
+  // les massifs de buis taillés en boule et en haie, le long de la pelouse
+  { const feuil = toile(128, 128, (x) => { x.fillStyle = "#3d6e2c"; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 1600; i++) { const v = Math.random(); x.fillStyle = v < .4 ? "rgba(20,50,15,.55)" : v < .8 ? "rgba(90,150,60,.5)" : "rgba(150,200,90,.45)"; x.beginPath(); x.ellipse(Math.random() * 128, Math.random() * 128, 2.5, 1.4, Math.random() * 3, 0, 7); x.fill(); } });
+    const mF = [0x3a6a2a, 0x447a32, 0x35602a].map(c => new THREE.MeshStandardMaterial({ color: c, map: tex(feuil, 2, 2), roughness: 1 }));
+    const boule = (r) => { const g = new THREE.IcosahedronGeometry(r, 2), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const k = 1 + (Math.sin(p.getX(i) * 9.1 + p.getZ(i) * 5.3) * .5 + Math.sin(p.getY(i) * 11.7) * .5) * .06; p.setXYZ(i, p.getX(i) * k, Math.max(p.getY(i) * k, -r * .35), p.getZ(i) * k); } g.computeVertexNormals(); return g; };
+    const geos = [0, 1, 2].map(() => []);
+    const massif = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / .75)); for (let i = 0; i <= n; i++) { const t = i / n, r = .55 + Math.random() * .22, g = boule(r).toNonIndexed();
+        g.scale(1, .82 + Math.random() * .2, 1); g.translate(x0 + (x1 - x0) * t + (Math.random() - .5) * .15, trottoirH + r * .62, z0 + (z1 - z0) * t + (Math.random() - .5) * .15); geos[Math.floor(Math.random() * 3)].push(g); if (i % 2 === 0) obst.push([x0 + (x1 - x0) * t, z0 + (z1 - z0) * t, .8]); } };
+    for (const s of [-1, 1]) { massif(s * 2.2, -9.4, s * 6.5, -9.4); massif(s * 9.5, -9.4, s * 12.8, -9.4); massif(s * 13.2, -8.4, s * 13.2, -4.2); massif(s * 13.2, .2, s * 13.2, 5.6); massif(s * 2.4, 9.4, s * 3.4, 9.4); massif(s * 6.6, 9.4, s * 9.2, 9.4); }
+    for (const [x, z] of [[-4.6, -1.2], [4.6, -1.2], [-3.2, -6], [3.2, -6]]) massif(x, z, x, z);
+    for (let k = 0; k < 3; k++) if (geos[k].length) { const m = new THREE.Mesh(fusionHV(geos[k]), mF[k]); m.castShadow = true; m.receiveShadow = true; scene.add(m); } }
   // les poteaux télégraphiques et leurs fils, le long des boutiques
   const bois = A.mat({ color: 0x6a5038, roughness: 1 }), poteaux = [];
   for (const x of [-24, -12, 0, 12, 24]) { A.ajoute(new THREE.CylinderGeometry(.12, .16, 9, 8), bois, x, 4.5, 21.3); A.ajoute(new THREE.BoxGeometry(1.8, .12, .12), bois, x, 8.4, 21.3); poteaux.push([x, 21.3]); obst.push([x, 21.3, .3]); }
@@ -5332,27 +5371,9 @@ function construireHillValley(A, T, L, scene) {
   rangee(["barber", "stationers", "cinema", "zales", "realty", "travel"], -32.05, 23.5, Math.PI, "x");   // au sud (face au palais)
   rangee(["banque", "loucafe", "ruth", "florist", "hardware"], -24, -27.5, Math.PI / 2, "z");   // à l'ouest
   rangee(["statler", "westernauto", "texaco", "drugs", "bluebird"], -24, 27.5, -Math.PI / 2, "z");   // à l'est
-  // ---- la dépanneuse rouge du garage Texaco ----
-  { const gx = 22.2, gz = -1.0, g = new THREE.Group(); g.position.set(gx, 0, gz); scene.add(g);
-    const blanc = A.mat({ color: 0xf2f2ec, roughness: .6 }), rouge = A.mat({ color: 0xc8102e, roughness: .45 }), chromeG = A.mat({ color: 0xdfe2e6, metalness: .9, roughness: .2 });
-    const b = (w, h, d, m, x, y, z, p = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
-    const dep = new THREE.Group(); dep.position.set(-.2, 0, -6.6); g.add(dep);
-    b(1.9, .9, 4.6, rouge, 0, .85, 0, dep); b(1.8, .8, 1.5, rouge, 0, 1.6, -.6, dep); b(1.6, .5, .05, A.mat({ color: 0x223040, metalness: .5, roughness: .1 }), 0, 1.7, -1.36, dep);
-    b(.2, 1.4, .2, A.mat({ color: 0x2a2a2a }), 0, 1.9, 1.5, dep).rotation.x = -.5;
-    const tx = toile(256, 64, (x) => { x.fillStyle = "#c8102e"; x.fillRect(0, 0, 256, 64); x.fillStyle = "#fff"; x.font = "bold 34px Georgia"; x.textAlign = "center"; x.fillText("TEXACO", 128, 44); });
-    for (const sg of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .35), new THREE.MeshStandardMaterial({ map: tex(tx) })); pl.position.set(sg * .96, 1.6, -.6); pl.rotation.y = sg * Math.PI / 2; dep.add(pl);
-      for (const z of [-1.5, 1.5]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 16), A.mat({ color: 0x111111 })); r.rotation.z = Math.PI / 2; r.position.set(sg * .92, .42, z); dep.add(r); } }
-    b(1.95, .14, .12, chromeG, 0, .5, -2.32, dep);
-    obst.push([gx - .2, gz - 6.6, 1.3], [gx - .2, gz - 5.6, 1.3], [gx - .2, gz - 7.8, 1.3]); }
   // au loin, derrière le palais : des collines et des arbres
   for (let i = 0; i < 9; i++) A.ajoute(new THREE.SphereGeometry(14 + (i % 3) * 5, 12, 8), A.mat({ color: i % 2 ? 0x5e7a48 : 0x6e8a52, roughness: 1, flatShading: true }), -60 + i * 15, -4, -62 - (i % 2) * 8, false);
-  // ---- les voitures des années 50, garées le long des trottoirs ----
-  const voitures = [["belair", -21, 19.9, Math.PI / 2], ["fairlane", 8, 19.9, Math.PI / 2], ["green", 17, 19.9, -Math.PI / 2], ["chevy50", 23.6, 9.5, Math.PI], ["buick", 23.6, -12, 0], ["fairlane", -23.6, -6, 0], ["belair", -23.6, 9, Math.PI], ["chevy50", 1, 19.9, -Math.PI / 2]];
-  for (const [n, x, z, r] of voitures) { const v = voitureVraie(n); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
-    for (const k of [-1.8, 0, 1.8]) obst.push([x - Math.sin(r) * k, z - Math.cos(r) * k, 1.05]); }
-  // deux voitures qui roulent : l'une le long de la rue des boutiques, l'autre dans la rue de l'ouest ; elles s'arrêtent devant quelqu'un
-  L.roulent = [{ v: voitureVraie("buick"), axe: "x", de: -34, a: 34, fixe: 17.9, sens: 1, vit: 5.2, p: -10 }, { v: voitureVraie("belair"), axe: "z", de: 26, a: -18, fixe: -19.2, sens: -1, vit: 4.4, p: 4 }];
-  for (const R of L.roulent) { R.v.rotation.y = R.axe === "x" ? (R.sens > 0 ? -Math.PI / 2 : Math.PI / 2) : (R.sens > 0 ? Math.PI : 0); scene.add(R.v); }
+  L.roulent = [];   // (pas de voitures en ville : seule la DeLorean)
   // ---- la DeLorean de Doc, garée au bord du trottoir : on y remonte pour rentrer ----
   const dl = creerDelorean(); poser(dl, -6, 16, -Math.PI / 2); scene.add(dl); L.delorean = dl; L.posDelorean = [-6, 16];
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
