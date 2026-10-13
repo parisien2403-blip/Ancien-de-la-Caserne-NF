@@ -3048,8 +3048,32 @@
       mettreAJour();
     }
   };
-  // au démarrage, on regarde discrètement s'il y a du nouveau (pastille dans les réglages)
-  if (enLigne) versionEnLigne().then(v => { if (v !== VERSION) $("rMajPastille").hidden = false; }).catch(() => {});
+  // la mise à jour automatique : on regarde toutes les minutes (et en revenant sur l'appli) s'il y a une nouvelle version ;
+  // si l'appli est en arrière-plan, elle se met à jour sans rien dire ; sinon, un bandeau prévient et elle se recharge au bout de 15 s
+  // (on attend si quelqu'un est en train d'écrire : jamais de texte perdu)
+  let majVue = null, majMinuteur = null, majReportT = 0;
+  const enTrainDEcrire = () => { const el = document.activeElement; return !!(el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !/^(button|checkbox|radio|range|submit)$/i.test(el.type))) && (el.value || "").trim()); };
+  function bandeauMaj(v) {
+    let b = document.getElementById("majAuto"); if (b) return;
+    b = document.createElement("div"); b.id = "majAuto";
+    b.style.cssText = "position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;width:max-content;max-width:calc(100% - 32px);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:#1f2a44;color:#fff;font:600 14px 'Lato',sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35)";
+    let n = 15; b.innerHTML = `<span style="white-space:nowrap">🔄 Mise à jour dans <b>${n}</b> s</span><button type="button" style="border:0;border-radius:99px;padding:6px 12px;background:#c8102e;color:#fff;font:700 13px 'Lato'">Maintenant</button><button type="button" style="border:0;border-radius:99px;padding:6px 12px;background:#3a4560;color:#fff;font:700 13px 'Lato'">Plus tard</button>`;
+    document.body.appendChild(b); const [maint, tard] = b.querySelectorAll("button");
+    maint.onclick = () => mettreAJour();
+    tard.onclick = () => { clearInterval(majMinuteur); b.remove(); majReportT = Date.now() + 10 * 60e3; };   // (on redemandera dans 10 minutes)
+    majMinuteur = setInterval(() => { if (enTrainDEcrire()) return; n--; const c = b.querySelector("b"); if (c) c.textContent = n; if (n <= 0) { clearInterval(majMinuteur); mettreAJour(); } }, 1000);
+  }
+  async function verifierMajAuto() {
+    if (!navigator.onLine) return;
+    let v; try { v = await versionEnLigne(); } catch (e) { return; }
+    if (!v || v === VERSION) return;
+    majVue = v; $("rMajPastille").hidden = false;
+    if (document.hidden) return;   // (on mettra à jour en revenant sur l'appli)
+    if (Date.now() < majReportT) return;
+    bandeauMaj(v);
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) return; if (majVue && !enTrainDEcrire() && Date.now() >= majReportT) mettreAJour(); else verifierMajAuto(); });
+  if (enLigne) { verifierMajAuto(); setInterval(() => { if (!document.hidden) verifierMajAuto(); else if (!majVue) verifierMajAuto(); }, 60e3); }
 
   /* ===== L'œil : voir ou cacher ce qu'on tape dans les mots de passe et les codes ===== */
   const OEIL = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
