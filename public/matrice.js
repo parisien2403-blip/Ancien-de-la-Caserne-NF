@@ -1686,7 +1686,15 @@ function construireEtage(A, L, scene) {
       const cab = cabineFrance(); cab.position.set(X(CX1 - .6), 0, ZE - .56); cab.rotation.y = sg * Math.PI / 2; cab.scale.z = -1; scene.add(cab); L.cabineObj = cab; L.cabineTel = [X(CX1 - .6), ZE - .56]; L.telDest = "etage";   // (l'étage est construit en miroir : on retourne la cabine, pour que les écritures restent à l'endroit)
       const tA = new THREE.TextureLoader().load("images/bttf/affiche.webp"); tA.colorSpace = THREE.SRGBColorSpace;
       A.ajoute(new THREE.BoxGeometry(.03, 1.14, .76), A.mat({ color: 0x1a1a1a }), X(CX0 + .015), 1.6, 4.55, false);
-      const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = sg * Math.PI / 2; af.scale.x = -1; scene.add(af); }
+      const af = new THREE.Mesh(new THREE.PlaneGeometry(.7, 1.08), new THREE.MeshStandardMaterial({ map: tA, roughness: .55 })); af.position.set(X(CX0 + .032), 1.6, 4.55); af.rotation.y = sg * Math.PI / 2; af.scale.x = -1; scene.add(af);
+      // tagué au feutre noir, en bas du mur du fond à côté de la cabine : « 1955 » (l'indice pour le téléphone)
+      const tag = toile(256, 128, (x, w, h) => { x.clearRect(0, 0, w, h); x.save(); x.translate(w / 2, h / 2 + 6); x.rotate(-.12); x.font = "italic 900 74px 'Arial Black', Impact, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+        x.lineJoin = "round"; x.strokeStyle = "rgba(20,20,24,.85)"; x.lineWidth = 5; for (let k = 0; k < 3; k++) { x.save(); x.translate((k - 1) * .8, (k - 1) * .6); x.strokeText("1955", 0, 0); x.restore(); }
+        x.fillStyle = "rgba(14,14,18,.92)"; x.fillText("1955", 0, 0); x.strokeStyle = "rgba(14,14,18,.9)"; x.lineWidth = 2.5; x.lineCap = "round";
+        for (const [dx, l] of [[-62, 16], [-14, 10], [40, 22], [70, 8]]) { x.beginPath(); x.moveTo(dx, 26); x.lineTo(dx + 1, 26 + l); x.stroke(); }   // les coulures
+        x.beginPath(); x.moveTo(-90, 44); x.quadraticCurveTo(0, 56, 92, 36); x.stroke(); x.restore(); });   // le trait de soulignement
+      const tg = new THREE.Mesh(new THREE.PlaneGeometry(.42, .21), new THREE.MeshStandardMaterial({ map: tex(tag), transparent: true, roughness: .9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
+      tg.position.set(X(12.4), .36, ZE - .008); scene.add(tg); L.tag1955 = tg; }
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, Z1 - Z0), beige, X(CX1 + .1), HTOT / 2, cz, false);   // le mur extérieur, plein
     // le mur côté couloir : plein, sauf l'ouverture sur le couloir à chaque étage
     A.ajoute(new THREE.BoxGeometry(.2, HTOT, ZC0 - Z0), beige, X(CX0 - .1), HTOT / 2, (Z0 + ZC0) / 2, false);
@@ -5033,6 +5041,7 @@ function chercherAction(t) {
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
+    else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
@@ -5071,6 +5080,13 @@ export function agir() {
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "cadenas") ouvrirCadenas();
+  else if (a.type === "affiche1996") { if (M.cadranEl) return;   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
+    const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;grid-template-rows:100%;place-items:center;background:rgba(0,0,0,.75);padding:16px;box-sizing:border-box";
+    d.innerHTML = `<div style="position:relative;height:100%;min-height:0;display:flex;align-items:center;justify-content:center;overflow:visible"><img src="images/apo/affiche-re-1996.webp" alt="Affiche Micromania : Resident Evil, disponible le 1er août 1996" style="height:100%;max-width:100%;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px #000;transform:rotate(-1.5deg)">
+      <button type="button" aria-label="Lâcher l'affiche" style="position:absolute;top:-6px;right:-6px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1a1a1a;font:900 22px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)">✕</button></div>`;
+    M.ctx.conteneur.appendChild(d); M.cadranEl = d; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
+    if (M.L.afficheApo) M.L.afficheApo.visible = false;
+    d.querySelector("button").onclick = () => { d.remove(); if (M) { M.cadranEl = null; if (M.L.afficheApo && !M.L.apo) M.L.afficheApo.visible = true; } }; }
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
