@@ -2155,21 +2155,28 @@ function construireMess(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.03, .03, .58, 10), A.mat({ color: 0xc9cdd2, metalness: .8, roughness: .2 }), tx, .31, tz, false);
     A.ajoute(new THREE.CylinderGeometry(.21, .19, .08, 20), A.mat({ color: 0x3a2014, roughness: .45 }), tx, .62, tz, false); }
   const obstBar = [B1 - .3, B0 + .1, BZ - 1.0, BZ + .4];
-  // les tables du mess : de part et d'autre de la salle, nappe blanche, quatre chaises rangées dessous (en instances, pour rester léger)
+  // les tables du mess : de part et d'autre de la salle, nappe blanche, quatre chaises rangées dessous (en instances, pour rester léger) ;
+  // à l'apocalypse (L.meublerMess(true)) : des tables renversées sur le flanc, les chaises éparpillées, couchées
   const obsTables = [];
-  { const TW = 1.7, TD = .9, TH = .76, poses = [];
+  { const TW = 1.7, TD = .9, TH = .76, poses = [], meshes = [];
     for (const x of [-7.2, -2.6, 3.0]) for (let k = 0; k < 6; k++) { const z = -10.2 + k * 3.0; if (z + TD / 2 > ZC - 1.6) continue; poses.push([x, z]); obsTables.push([x - TW / 2 - .1, x + TW / 2 + .1, z - TD / 2 - .32, z + TD / 2 + .32]); }
     const nappe = new THREE.MeshStandardMaterial({ color: 0xf6f4ee, roughness: .85 }), bois = new THREE.MeshStandardMaterial({ color: 0x4a2c18, roughness: .5 }), noyer = new THREE.MeshStandardMaterial({ color: 0x5e3820, roughness: .45 });
-    const parts = [[new THREE.BoxGeometry(TW + .12, .025, TD + .12), nappe, 0, TH + .012, 0], [new THREE.BoxGeometry(TW + .12, .3, .01), nappe, 0, TH - .14, TD / 2 + .06], [new THREE.BoxGeometry(TW + .12, .3, .01), nappe, 0, TH - .14, -TD / 2 - .06],
+    const table = [[new THREE.BoxGeometry(TW + .12, .025, TD + .12), nappe, 0, TH + .012, 0], [new THREE.BoxGeometry(TW + .12, .3, .01), nappe, 0, TH - .14, TD / 2 + .06], [new THREE.BoxGeometry(TW + .12, .3, .01), nappe, 0, TH - .14, -TD / 2 - .06],
       [new THREE.BoxGeometry(.01, .3, TD + .12), nappe, TW / 2 + .06, TH - .14, 0], [new THREE.BoxGeometry(.01, .3, TD + .12), nappe, -TW / 2 - .06, TH - .14, 0]];
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) parts.push([new THREE.BoxGeometry(.06, TH - .02, .06), bois, sx * (TW / 2 - .1), (TH - .02) / 2, sz * (TD / 2 - .1)]);
-    // les chaises, à moitié glissées sous la table : deux de chaque côté
-    for (const cx of [-.42, .42]) for (const sz of [-1, 1]) { const cz = sz * (TD / 2 - .02);
-      parts.push([new THREE.BoxGeometry(.42, .04, .42), noyer, cx, .46, cz], [new THREE.BoxGeometry(.42, .5, .04), noyer, cx, .72, cz + sz * .2], [new THREE.BoxGeometry(.38, .05, .03), bois, cx, .9, cz + sz * .21]);
-      for (const lx of [-1, 1]) for (const lz of [-1, 1]) parts.push([new THREE.BoxGeometry(.035, .46, .035), bois, cx + lx * .18, .23, cz + lz * .18]); }
-    const mtx = new THREE.Matrix4(), loc = new THREE.Matrix4();
-    for (const [geo, mat, px, py, pz] of parts) { const im = new THREE.InstancedMesh(geo, mat, poses.length); loc.makeTranslation(px, py, pz);
-      poses.forEach(([x, z], i) => im.setMatrixAt(i, mtx.makeTranslation(x, 0, z).multiply(loc))); im.castShadow = true; im.receiveShadow = true; scene.add(im); } }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) table.push([new THREE.BoxGeometry(.06, TH - .02, .06), bois, sx * (TW / 2 - .1), (TH - .02) / 2, sz * (TD / 2 - .1)]);
+    const chaise = [[new THREE.BoxGeometry(.42, .04, .42), noyer, 0, .46, 0], [new THREE.BoxGeometry(.42, .5, .04), noyer, 0, .72, .2], [new THREE.BoxGeometry(.38, .05, .03), bois, 0, .9, .21]];
+    for (const lx of [-1, 1]) for (const lz of [-1, 1]) chaise.push([new THREE.BoxGeometry(.035, .46, .035), bois, lx * .18, .23, lz * .18]);
+    const poser = (parts, mats) => { const loc = new THREE.Matrix4(), m = new THREE.Matrix4(); for (const [geo, mat, px, py, pz] of parts) { const im = new THREE.InstancedMesh(geo, mat, mats.length); loc.makeTranslation(px, py, pz);
+      mats.forEach((M0, i) => im.setMatrixAt(i, m.copy(M0).multiply(loc))); im.castShadow = true; im.receiveShadow = true; scene.add(im); meshes.push(im); } };
+    const mk = (x, y, z, ry, rx = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, "YXZ")), new THREE.Vector3(1, 1, 1));
+    L.meublerMess = (apo) => { for (const im of meshes) scene.remove(im); meshes.length = 0; let g = 7; const al = () => (g = (g * 9301 + 49297) % 233280) / 233280;
+      const tM = [], cM = [];
+      poses.forEach(([x, z]) => { if (apo && al() < .55) tM.push(mk(x + (al() - .5) * .6, TD / 2 + .06, z + (al() - .5) * .6, (al() - .5) * .8, al() < .5 ? Math.PI / 2 : -Math.PI / 2)); else tM.push(mk(x, 0, z, apo ? (al() - .5) * .3 : 0));
+        for (const cx of [-.42, .42]) for (const sz of [-1, 1]) { if (!apo) { cM.push(mk(x + cx, 0, z + sz * (TD / 2 - .02), sz > 0 ? 0 : Math.PI)); continue; }
+          const a = al() * 6.28, r = .9 + al() * 1.2, cx2 = x + Math.cos(a) * r, cz2 = z + Math.sin(a) * r, couche = al() < .6;
+          cM.push(couche ? mk(cx2, .21, cz2, al() * 6.28, al() < .5 ? Math.PI / 2 : 0, al() < .5 ? 0 : Math.PI / 2) : mk(cx2, 0, cz2, al() * 6.28)); } });
+      poser(table, tM); poser(chaise, cM); };
+    L.meublerMess(false); }
   // la grande pièce, par l'ouverture : même carrelage, murs crème sans lambris, deux suspensions
   const RX0 = X0, RX1 = -3, RZ0 = Z1 + .3, RZ1 = Z1 + 12.3, RW = RX1 - RX0, RL = RZ1 - RZ0, RCX = (RX0 + RX1) / 2, RCZ = (RZ0 + RZ1) / 2;
   // l'escalier : à 2 m de l'entrée de la pièce, large, en carrelage ; on le descend face à l'entrée (dix marches) jusqu'à une seconde pièce, en dessous, de la même taille ;
@@ -2262,7 +2269,7 @@ function construireMess(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.01, .01, 1.0, 6), A.mat({ color: 0x2a2a2a }), x, HT - .5, z, false); A.ajoute(new THREE.CylinderGeometry(.08, .14, .08, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), x, HT - 1.02, z, false);
     const gl = new THREE.Mesh(new THREE.SphereGeometry(.24, 18, 12), globeCuis); gl.position.set(x, HT - 1.28, z); scene.add(gl);
     const l = new THREE.PointLight(0xfff0d8, 7, 15, 1.4); l.position.set(x, HT - 1.6, z); scene.add(l); lampesCuis.push(l); }
-  const dansPiece = (x, z) => !((niv() ? obsBas : obsCuis).some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (niv() ? SZ0 - .5 : SZ0 + .3))) && !(niv() && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
+  const dansPiece = (x, z, lv = niv()) => !((lv ? obsBas : obsCuis).some(([a0, a1, b0, b1]) => x > a0 - .28 && x < a1 + .28 && z > b0 - .28 && z < b1 + .28)) && x > RX0 + .3 && x < RX1 - .3 && z > RZ0 + .3 && z < RZ1 - .3 && !(x > SX0 - .45 && x < SX1 + .45 && z > SZ0 - .45 && z < SZ1 && !(x > SX0 + .25 && x < SX1 - .25 && z > (lv ? SZ0 - .5 : SZ0 + .3))) && !(lv && x > SX0 - .45 && x < SX1 + .45 && z >= SZ1 && z < SZ1 + .4), dansPassage = (x, z) => z >= Z1 - .35 && z <= RZ0 + .35 && x > PO[0] + .3 && x < PO[1] - .3;
   // la courette, par l'ouverture d'en bas : la même largeur que la pièce, sans plafond ; le ciel, et un pan de mur en brique rouge de la caserne
   const CX0 = RX1 + .3, CX1 = RX1 + 5.3, CZ0 = 15.0, CZ1 = 22.0, CW = CX1 - CX0, CL = CZ1 - CZ0;
   { const o = A.ajoute(new THREE.PlaneGeometry(CW + .3, CL), carM(CW + .3, CL), (CX0 + CX1) / 2 - .15, YB, (CZ0 + CZ1) / 2, false); o.rotation.x = -Math.PI / 2; }
@@ -2353,7 +2360,17 @@ function construireMess(A, L, scene) {
     for (const l of lampes) l.intensity = 7 * k; globe.emissiveIntensity = .9 * k + .03; ambiant.intensity = .06 + .44 * niveaux[L.zoneLumiere ? L.zoneLumiere() : "mess"]; vitre.emissiveIntensity = (L.nuit ? .05 : .5); vitre.color.setHex(L.nuit ? 0x3a4466 : 0xffffff); };
   L.setNuit = (n) => { L.nuit = n; vj.material.color.setHex(n ? 0x1a2238 : 0xffffff); L.cielMess.material.color.setHex(n ? 0x101830 : 0xffffff); jourC.intensity = n ? 3 : 30; L.setLumiere(L.lumiere ?? 1); };
   L.setLumiere(1);
-  L.limites = (x, z) => (dansPiece(x, z) || (!niv() && dansPassage(x, z)) || (niv() && (dansWC(x, z) || dansOuv(x, z)))) || !niv() && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]) && !obsTables.some(([a0, a1, b0, b1]) => x > a0 && x < a1 && z > b0 && z < b1));
+  L.limitesNiv = (x, z, lv) => (dansPiece(x, z, lv) || (!lv && dansPassage(x, z)) || (lv && (dansWC(x, z) || dansOuv(x, z)))) || !lv && ( ((x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .2) || (Math.abs(x) < 1.0 && z >= Z1 - .2 && z < Z1 + .1)) && !dansCloison(x, z) && !(x > obstBar[0] && x < obstBar[1] && z > obstBar[2] && z < obstBar[3]) && !obsTables.some(([a0, a1, b0, b1]) => x > a0 && x < a1 && z > b0 && z < b1));
+  L.limites = (x, z) => L.limitesNiv(x, z, niv());
+  L.yNiv = n => n ? YB : 0; L.surEscalier = surEsc;
+  // l'apocalypse, en bas (le décor commun ne pose ses débris qu'au niveau où l'on est) : sang et planches au sous-sol, dans la courette et les toilettes
+  L.apoMess = () => { const rouille = A.mat({ color: 0x5a3a22, roughness: 1 }), cendre = A.mat({ color: 0x2a2624, roughness: 1 }); let g = 31; const al = () => (g = (g * 9301 + 49297) % 233280) / 233280;
+    for (let k = 0, n = 0; k < 600 && n < 26; k++) { const x = RX0 + al() * (CX1 - RX0), z = RZ0 + al() * (RZ1 - RZ0); if (!L.limitesNiv(x, z, 1)) continue; n++;
+      if (n % 2) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1 + al(), 1.1 + al()), new THREE.MeshBasicMaterial({ map: texSang[n % texSang.length], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+        m.rotation.set(-Math.PI / 2, 0, al() * 7); m.position.set(x, YB + .015 + n * .0004, z); scene.add(m); }
+      else { const pl = al() < .6, o = new THREE.Mesh(pl ? new THREE.BoxGeometry(1 + al(), .05, .18) : new THREE.DodecahedronGeometry(.12 + al() * .16), pl ? rouille : cendre); o.position.set(x, YB + .06, z); o.rotation.set(pl ? 0 : al() * 3, al() * 7, pl ? (al() - .5) * .3 : al() * 3); scene.add(o); } }
+    for (const [x, z, ry] of [[RX0 + .05, 17, Math.PI / 2], [-6, RZ1 - .05, Math.PI], [CX1 - .05, 18, -Math.PI / 2], [RX1 - .05, 15, -Math.PI / 2]]) {   // du sang sur les murs
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.2), new THREE.MeshBasicMaterial({ map: texSang[(x * 7 | 0) & 3], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); m.position.set(x, YB + 1.1, z); m.rotation.y = ry; scene.add(m); } };   // (pour les zombies : chacun reste à son niveau)
   L.contraindreCam = (pos, moi) => { const q = moi.g.position, cour = niv() && q.x > RX1, [a0, a1, b0, b1] = cour ? [CX0, CX1, CZ0, CZ1] : q.z > Z1 ? [RX0, RX1, RZ0, RZ1] : [X0, X1, Z0, Z1];
     pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, cour ? 4 : niv() && !surEsc(q.x, q.z) ? -.45 : HT - .3); return true; };
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, RZ1]; L.boite = [X0, X1, Z0, RZ1]; L.plafond = HT - .3;
@@ -3843,7 +3860,8 @@ function apocalypse(scene, L, base) {
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; }
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   L.portails = (L.portails || []).filter(q => !q.pasApo); L.messVitres = null;
-  if (L.cabineObj) abimerCabine(L.cabineObj);   // (la cabine téléphonique : hors d'usage, planches clouées, sang)
+  if (L.cabineObj) abimerCabine(L.cabineObj);
+  if (L.meublerMess) { L.meublerMess(true); L.apoMess && L.apoMess(); }   // (la cabine téléphonique : hors d'usage, planches clouées, sang)
   for (const q of L.portails || []) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
   for (const q of L.raccourcis || []) if (q.vers) q.vers = q.entreeApo ? "grande" : "z-" + q.vers;
   const ext = !L.interieur, feux = [], clignos = []; L.feuxSon = []; L.feuxZ = [];   // (feuxZ : là où l'on brûle, [x, z, rayon])
@@ -3992,7 +4010,7 @@ const ZTYPES = [
   { tete: "images/apo/zombie3-tete.png", id: 14, son: "sons/zombie3.mp3", v: .85, def: { tenue: "zombie", couleur: "#a9bfdc", bas: "#3e3a33", pieds: "#1e1e1e" } },
   { boss: true, tete: "images/apo/nemesis-tete.png", id: 17, son: "sons/zombie3.mp3", v: 1.75, hp: 5, taille: 1.45, def: { tenue: "nemesis", couleur: "#1a1a1c", bas: null, pieds: "#111111" } },
   { img: "images/apo/chien.png", id: 15, son: "sons/apo-chien.mp3", ratio: 408 / 500, h: .44, v: 3.1, chien: true } ];
-const ZNOMBRE = { grande: [5, 2], rue: [4, 1], fetes: [3, 0], etage: [7, 0] };   // [zombies, chiens]
+const ZNOMBRE = { grande: [5, 2], rue: [4, 1], fetes: [3, 0], etage: [7, 0], mess: [7, 1] };   // [zombies, chiens]
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
 // l'image du chien : celle d'origine, ou celle que l'administrateur a choisie (rechargée quand il la change)
@@ -4030,10 +4048,10 @@ const etageDe = p => p && p.etg ? p.etg.n : 0;
 function limZ() {
   if (M.limZ && M.limZ.L === M.L) return M.limZ;
   const L = M.L, base = baseLieu(M.lieu);
-  const f = base === "etage" ? (x, z) => Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : (x, z) => L.limites(x, z) && !(L.repos && L.repos(x, z)) && !(L.feuxZ || []).some(([fx, fz, r]) => (x - fx) ** 2 + (z - fz) ** 2 < (r + .3) ** 2);   // (ni dans le feu)
+  const f = base === "etage" ? (x, z) => Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : L.limitesNiv ? (x, z) => L.limitesNiv(x, z, M.zN || 0) && !L.surEscalier(x, z) : (x, z) => L.limites(x, z) && !(L.repos && L.repos(x, z)) && !(L.feuxZ || []).some(([fx, fz, r]) => (x - fx) ** 2 + (z - fz) ** 2 < (r + .3) ** 2);   // (ni dans le feu)
   return (M.limZ = { L, limites: f, zone: base === "etage" ? [-ET.CX0 - 1, ET.CX0 + 1, -3, -.5] : L.zone });
 }
-const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
+const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : M.L.yNiv ? M.L.yNiv(z.n) : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
 function creerZ(d) {
   const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texChien() : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
@@ -4166,12 +4184,12 @@ function proies() {
     if (p.moi ? APO.zombieFin : p.info.mortT) continue;
     const x = p.g.position.x, z = p.g.position.z; if (M.L.repos && M.L.repos(x, z)) continue;
     if (baseLieu(M.lieu) === "etage" && !(p.etg && p.etg.zone === "P")) continue;
-    out.push({ p, x, z, n: etageDe(p) }); }
+    out.push({ p, x, z, n: M.L.limitesNiv ? (p.nivMess || 0) : etageDe(p) }); }
   return out;
 }
 function pointLibreZ(seed, loin) {
-  const Lz = limZ(), [a, b, c, d] = Lz.zone, ps = proies(), etage = baseLieu(M.lieu) === "etage";
-  for (let k = 0; k < 400; k++) { const x = a + Math.random() * (b - a), z = c + Math.random() * (d - c), n = etage ? Math.floor(Math.random() * (ET.N + 1)) : 0;
+  const Lz = limZ(), [a, b, c, d] = Lz.zone, ps = proies(), etage = baseLieu(M.lieu) === "etage" || !!M.L.limitesNiv;
+  for (let k = 0; k < 400; k++) { const x = a + Math.random() * (b - a), z = c + Math.random() * (d - c), n = M.L.limitesNiv ? (Math.random() < .6 ? 0 : 1) : etage ? Math.floor(Math.random() * (ET.N + 1)) : 0; M.zN = n;
     if (!Lz.limites(x, z)) continue;
     // loin des joueurs, et éparpillés : pas à moins de 5 m d'un autre zombie
     if (k < 300 && M.zomb && [...M.zomb.values()].some(o => o.n === n && Math.hypot(o.x - x, o.z - z) < 5)) continue;
@@ -4194,7 +4212,7 @@ function simulerZ(t, dt) {
   const ps = proies();
   for (const z of M.zomb.values()) { if (z.mortT) continue;
     let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
-    for (const q of ps) { if (base === "etage" && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
+    M.zN = z.n; for (const q of ps) { if ((base === "etage" || base === "mess") && q.n !== z.n) continue; const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
     if (cible) {
       if (bd < (z.boss ? 1.25 : z.chien ? .95 : .85)) { z.chemin = []; if (t > (z.mordT || 0)) { z.mordT = t + (z.chien ? 1300 : z.boss ? 1500 : 1700); z.coupT = performance.now();
           const deg = z.boss ? 2 : 1;   // (le poing de Nemesis : deux vies)
@@ -4211,7 +4229,7 @@ function simulerZ(t, dt) {
         if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
   // ils ne se marchent pas dessus
   const zs = [...M.zomb.values()].filter(z => !z.mortT);
-  for (let i = 0; i < zs.length; i++) for (let j = i + 1; j < zs.length; j++) { const a = zs[i], b = zs[j]; if (a.n !== b.n) continue;
+  for (let i = 0; i < zs.length; i++) for (let j = i + 1; j < zs.length; j++) { const a = zs[i], b = zs[j]; if (a.n !== b.n) continue; M.zN = a.n;
     const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz); if (d > .55 || d < 1e-3) continue; const k = (.55 - d) / 2 / d;
     if (Lz.limites(a.x - dx * k, a.z - dz * k)) { a.x -= dx * k; a.z -= dz * k; } if (Lz.limites(b.x + dx * k, b.z + dz * k)) { b.x += dx * k; b.z += dz * k; } }
   // l'état, pour les autres joueurs (cinq fois par seconde)
