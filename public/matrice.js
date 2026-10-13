@@ -1304,9 +1304,9 @@ function decorPassage(A, T, L, scene, FZ) {
    pavés, le verso du bâtiment à l'horloge (rez-de-chaussée blanc, étages en brique à bandeaux, balconnets noirs), l'autre bâtiment en face, pareil,
    et son passage carré qui laisse voir encore une cour plus loin ; de chaque côté, des murs bas blancs et des étages de brique */
 const C2 = { z0: -30, z1: -44, x: 11 };
-function toileVerso(largeur, hauteur, avecPassage) {
+function toileVerso(largeur, hauteur, avecPassage, hp = 4.4) {
   return toile(Math.round(largeur * 40), Math.round(hauteur * 40), (x, w, h) => {
-    const rdc = 5.4 * 40, cx = w / 2;
+    const rdc = Math.max(5.4, hp + 1) * 40, cx = w / 2;
     // les étages : la brique rouge, en bandeaux horizontaux
     x.fillStyle = "#9a4a38"; x.fillRect(0, 0, w, h - rdc);
     for (let y = 0; y < h - rdc; y += 12) { x.fillStyle = y % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
@@ -1328,9 +1328,46 @@ function toileVerso(largeur, hauteur, avecPassage) {
       x.fillStyle = "#cfcac0"; x.fillRect(X - 6, h - 150, 84, 150); x.fillStyle = "#2b3138"; x.fillRect(X, h - 144, 72, 144); x.fillStyle = "#5c6670"; x.fillRect(X + 34, h - 144, 4, 144); }
     for (const d of [-4, 4]) { x.fillStyle = "#222"; x.fillRect(cx + d * 40 - 10, h - rdc + 40, 20, 8); x.fillStyle = "#c8202a"; x.fillRect(cx + d * 40 - 6, h - 120, 12, 16); }
     // le passage carré, au centre (4,8 m × 4,4 m), sous son linteau
-    x.fillStyle = "#dedad2"; x.fillRect(cx - 2.6 * 40, h - 4.6 * 40, 5.2 * 40, 8);
-    if (avecPassage) x.clearRect(cx - 2.4 * 40, h - 4.4 * 40, 4.8 * 40, 4.4 * 40);
+    x.fillStyle = "#dedad2"; x.fillRect(cx - 2.6 * 40, h - (hp + .2) * 40, 5.2 * 40, 8);
+    if (avecPassage) x.clearRect(cx - 2.4 * 40, h - hp * 40, 4.8 * 40, hp * 40);
   });
+}
+/* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
+   et au fond le même bâtiment ; mais on monte à son porche par sept longues marches de béton gris, et ce porche est plus profond (20 m) */
+const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 6, PP: 20 };
+C3.hp = C3.NM * C3.HM;   // (le sol du porche, en haut des marches)
+function troisiemeCour(A, L, scene) {
+  const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
+  const pas2 = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, C2.z1 - 6, false); pas2.rotation.x = -Math.PI / 2;   // le sol du passage d'en face
+  const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2;
+  // le verso du bâtiment d'en face, vu de cette cour (percé de son passage)
+  const verso = A.ajoute(new THREE.PlaneGeometry(44, 24), A.mat({ map: tex(toileVerso(44, 24, true)), alphaTest: .5 }), 0, 12, z0 - .03, false); verso.rotation.y = Math.PI;
+  // les hauts murs de pierre, de chaque côté
+  for (const sg of [-1, 1]) { graine = sg > 0 ? 95 : 97;
+    const pierreG = tex(toile(560, 800, (x, w, h) => { x.fillStyle = "#2a2a2c"; x.fillRect(0, 0, w, h);
+      for (let y = 0, r = 0; y < h; y += 34, r++) for (let X0 = -(r % 2) * 40; X0 < w; X0 += 80) { const v = alea();
+        x.fillStyle = v < .3 ? `hsl(220, 4%, ${14 + alea() * 8}%)` : `hsl(30, 3%, ${38 + alea() * 22}%)`; x.fillRect(X0 + 2, y + 2, 76, 30); } }));
+    pierreG.repeat.set(2.5, 3); const m = A.mat({ map: pierreG, roughness: .95 }); A.ajoute(new THREE.BoxGeometry(6, 20, prof), [m, m, A.mat({ color: 0x4a4a4c }), m, m, m], sg * (X + 3), 10, zc); }
+  // les sept longues marches de béton gris, sur toute la largeur devant le porche
+  const beton = A.mat({ color: 0x9a9a98, roughness: .95 }), nez = A.mat({ color: 0x7e7e7c, roughness: .9 });
+  for (let k = 0; k < NM; k++) { const h = (k + 1) * HM, d = (NM - k) * PM;
+    A.ajoute(new THREE.BoxGeometry(LM * 2, h, d), beton, 0, h / 2, z1 + d / 2);
+    A.ajoute(new THREE.BoxGeometry(LM * 2, .02, .05), nez, 0, h + .005, z1 + d - .03, false); }
+  // le bâtiment du fond, le même ; son porche, plus haut (au niveau du haut des marches) et bien plus profond
+  const HP = hp + 4.4, face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
+  const tr = new THREE.Path(); tr.moveTo(-2.4, hp); tr.lineTo(-2.4, HP); tr.lineTo(2.4, HP); tr.lineTo(2.4, hp); tr.closePath(); face.holes.push(tr);
+  const tF = tex(toileVerso(44, 24, false, HP)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+  A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
+  const solP = A.ajoute(new THREE.PlaneGeometry(4.8, PP), A.mat({ map: tex(textures().paves, 2.4, PP / 2) }), 0, hp + .012, z1 - PP / 2, false); solP.rotation.x = -Math.PI / 2;
+  { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
+  // au bout de ce porche : encore une cour, au loin
+  const loin = tex(toile(512, 400, (x, w, h) => { x.fillStyle = "#e8dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#d9b8a8"; x.fillRect(0, 0, w, 110);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) { x.fillStyle = "#f4f1ea"; x.fillRect(16 + c * 70, 30 + r * 80, 46, 56); x.fillStyle = "#6c7d8c"; x.fillRect(20 + c * 70, 34 + r * 80, 38, 48); }
+    x.fillStyle = "#8b8780"; x.fillRect(0, h - 50, w, 50); }));
+  A.ajoute(new THREE.PlaneGeometry(14, 11), new THREE.MeshBasicMaterial({ map: loin }), 0, hp + 5.5, z1 - PP - 10, false);
+  const solL = A.ajoute(new THREE.PlaneGeometry(14, 10), A.mat({ map: tex(textures().paves, 6, 4) }), 0, hp + .01, z1 - PP - 5, false); solL.rotation.x = -Math.PI / 2;
+  // la hauteur du sol : les marches, puis le porche
+  L.hauteur = (x, z) => { if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM; return 0; };
 }
 function deuxiemeCour(A, L, scene) {
   const { z0, z1, x: X } = C2, prof = z0 - z1, zc = (z0 + z1) / 2;
@@ -1343,12 +1380,7 @@ function deuxiemeCour(A, L, scene) {
   const tr = new THREE.Path(); tr.moveTo(-2.4, 0); tr.lineTo(-2.4, 4.4); tr.lineTo(2.4, 4.4); tr.lineTo(2.4, 0); tr.closePath(); face.holes.push(tr);
   const tF = tex(toileVerso(44, 24, false)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12);
-  // au bout de ce passage-là : encore une cour, au loin
-  const loin = tex(toile(512, 400, (x, w, h) => { x.fillStyle = "#e8dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#d9b8a8"; x.fillRect(0, 0, w, 110);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) { x.fillStyle = "#f4f1ea"; x.fillRect(16 + c * 70, 30 + r * 80, 46, 56); x.fillStyle = "#6c7d8c"; x.fillRect(20 + c * 70, 34 + r * 80, 38, 48); }
-    x.fillStyle = "#8b8780"; x.fillRect(0, h - 50, w, 50); }));
-  A.ajoute(new THREE.PlaneGeometry(14, 11), new THREE.MeshBasicMaterial({ map: loin }), 0, 5.5, z1 - 22, false);
-  const solL = A.ajoute(new THREE.PlaneGeometry(14, 10), A.mat({ map: tex(textures().paves, 6, 4) }), 0, .01, z1 - 17, false); solL.rotation.x = -Math.PI / 2;
+  troisiemeCour(A, L, scene);
   // les deux côtés de la cour : rez-de-chaussée blanc, étages de brique
   // de chaque côté : un haut mur de pierre grise et noire, sans fenêtres
   for (const sg of [-1, 1]) { graine = sg > 0 ? 91 : 93;
@@ -2867,13 +2899,16 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (x > -15.6 && x <= -10.1 && z > 9.7 && z < 11.6)                                                         // le renfoncement de gauche, devant les marches du mess
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
+      || (Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                                // le passage du bâtiment d'en face
+      || (Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !(Math.abs(x) >= C3.LM && z < C3.z1 + C3.NM * C3.PM))   // la troisième cour (on ne monte que par les marches)
+      || (Math.abs(x) < 2.0 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP + .4)                                        // le grand porche
       || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
       || (x >= PB[0] - .35 && x < PB[0] + .55 && Math.abs(z - PB[1]) < VEST_LB / 2 - .25)                         // son embrasure, de plain-pied
       || (x > 16.5 && x < VEST_X + VEST_VX - .35 && Math.abs(z - VEST_Z) < VEST_VZ - .3)                        // le vestibule
       || (Math.abs(x - VEST_X) < .4 && Math.abs(z - VEST_Z) < VEST_VZ + .7)                                    // ses deux autres portes
       || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
-    L.zone = [-10.6, 19.2, C2.z1, 29.8];
+    L.zone = [-10.6, 19.2, C3.z1 - C3.PP, 29.8];
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
@@ -2888,7 +2923,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // la caméra reste sous la voûte quand on est dans le passage
     L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
       if (mp.z < -17.5) {      // sous l'horloge, ou dans la deuxième cour
-        if (mp.z > C2.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); pos.z = Math.min(pos.z, -15); }
+        if (mp.z < C3.z1 + .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, C3.hp + 4.1); pos.z = Math.min(pos.z, C3.z1 + 7); }   // (dans le grand porche)
+        else if (mp.z < C2.z1 + .3) { pos.x = Math.max(-C3.x + .3, Math.min(C3.x - .3, pos.x)); pos.z = Math.max(C3.z1 + .3, Math.min(pos.z, C3.z0 + 4)); if (pos.z > C3.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); } }   // (le passage d'en face, la troisième cour)
+        else if (mp.z > C2.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); pos.z = Math.min(pos.z, -15); }
         else { pos.x = Math.max(-C2.x + .3, Math.min(C2.x - .3, pos.x)); pos.z = Math.max(C2.z1 + .3, Math.min(pos.z, C2.z0 + 4)); if (pos.z > C2.z0 - .2) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 4.1); } }
         return true; }
       if (mp.x > 16.3 && Math.abs(mp.z - VEST_Z) < VEST_VZ + .8) {      // dans le vestibule : la caméra reste dedans (ou dans l'embrasure)
