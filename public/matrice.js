@@ -1336,7 +1336,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4) {
 }
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
-const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 7, HT2: .22, PT: .35, LT: 44, PTr: 20 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
+const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 7, HT2: .22, PT: .35, LT: 44, PTr: 12 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
 C3.hp = C3.NM * C3.HM;   // (le sol du porche, en haut des marches)
 function troisiemeCour(A, L, scene) {
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
