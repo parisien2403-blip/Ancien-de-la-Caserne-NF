@@ -39,7 +39,8 @@ const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = 
 // o.large : marge de 60 px de chaque côté, pour que les bras levés de la danse ne soient pas coupés
 export function dessinerBonhomme(o, tete) {
   if (o.zombifie) return zombifierCorps(dessinerBonhomme({ ...o, zombifie: false, peau: o.peau || "#a3a89e" }, tete), o.large);
-  return toile(o.large ? 320 : 200, 420, (x) => {
+  let calqueTete = null;
+  const cv = toile(o.large ? 320 : 200, 420, (x0) => { let x = x0;
     if (o.large) x.translate(60, 0);
     // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
@@ -512,6 +513,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#1a1a1a"; x.beginPath(); x.roundRect(134, 258, 16, 34, 4); x.fill();
     }
     x.translate(100, 0); x.scale(1 / LG, 1); x.translate(-100, 0);    // le cou et la tête : sans élargissement
+    if (tete && o.pose !== "dos") { calqueTete = document.createElement("canvas"); calqueTete.width = x0.canvas.width; calqueTete.height = x0.canvas.height; const xc = calqueTete.getContext("2d"); xc.setTransform(x0.getTransform()); x = xc; }
     x.fillStyle = peau; x.fillRect(88, 118, 24, 32);
     if (tete) {
       // la tête détourée, posée sur le cou (cadrée sur 112 px de large au plus, 124 de haut)
@@ -548,7 +550,7 @@ export function dessinerBonhomme(o, tete) {
         } else { g.addColorStop(0, "#d9b394"); g.addColorStop(.75, "#c99e7e"); g.addColorStop(1, "#a97d5f"); y2.fillStyle = g; y2.fillRect(0, 0, w, h); }
         x.drawImage(c2, -w / 2, -h);
       } else x.drawImage(tete, -w / 2, -h, w, h);
-      x.restore(); x.shadowBlur = 0;
+      x.restore(); x.shadowBlur = 0; x = x0;
     } else {
       x.fillStyle = peau; x.beginPath(); x.ellipse(100, 72, 44, 54, 0, 0, 7); x.fill();
       if (t === "thriller") {   // le danseur : une tête dessinée, cheveux noirs bouclés, les yeux, un sourire
@@ -584,6 +586,9 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "rgba(110,8,8,.7)"; for (const [a, b, r] of [[150, 200, 14], [190, 260, 10], [130, 300, 12], [175, 140, 9]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); }
       x.restore(); }
   });
+  // la tête photo est dessinée sur son propre calque, glissé SOUS le corps : le bout de cou resté sur la photo passe derrière les épaules
+  if (!calqueTete) return cv;
+  return toile(cv.width, cv.height, (y) => { y.drawImage(calqueTete, 0, 0); y.drawImage(cv, 0, 0); });
 }
 
 /* ---------- la tête détourée automatiquement, dans le téléphone (la photo ne part nulle part) ---------- */
