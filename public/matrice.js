@@ -1682,7 +1682,8 @@ C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 =
     if (dx && z > za - .15 && z < za + .4) return false;                                                              // le mur côté immeuble
     if (z > za && z < zt1 && ((x > c.x1 - .4 && x < c.x1 + .15 && Math.abs(z - c.zc5) > .55) || (x > c.x0 - .15 && x < c.x0 + .4))) return false;   // la façade, le mur du fond
     if (x > c.x0 && x < c.x1 && Math.abs(z - c.zp) < .2 && !(x > c.xd0 + .1 && x < c.xd1 - .1)) return false;        // la cloison des toilettes
-    if (x > c.xd1 + 1.0 - .15 && x < c.xd1 + 1.0 + .15 && z < c.zp) return false;                                    // entre les deux cabinets
+    if (x > c.xd1 + 1.0 - .15 && x < c.xd1 + 1.0 + .15 && z < c.zp) return false;
+    if (x > c.xs0 - .25 && x < c.xs0 + .15 && z > c.zw && z < zt1) return false;                                       // le muret de l'escalier                                    // entre les deux cabinets
     if (Math.abs(x) < C3.LT / 2 + .15 && z > zt1 - .15 && z < zt1 + .45 && !(x > C3.salle.OX0 + .15 && x < C3.salle.OX1 - .15)) return false;   // le mur de la salle, côté cabane
     if (z > zt1 && z < zt0 && Math.abs(x) > C3.LT / 2 - .45 && Math.abs(x) < C3.LT / 2 + .15) return false;              // ses deux côtés
     if (z > zt0 - .45 && z < zt0 + .1 && Math.abs(x) < C3.LT / 2 + .15) return false; }
@@ -2075,15 +2076,16 @@ function troisiemeCour(A, L, scene) {
   { const gap = zT - zt0, zb = zt1 - gap, L2 = zt0 - zb, mw = murT(L2);   // à gauche, derrière la terrasse : un mur de brique ferme le passage vers la ruelle
     const mu = A.ajoute(new THREE.BoxGeometry(.3, yT, L2), [mw, mw, A.mat({ color: 0xe9e6df }), betonF, mw, mw], -DB - .15, yT / 2, (zt0 + zb) / 2); }
   /* la terrasse est creuse : dessous, la grande salle (sol carrelé, murs crème), quatre marches plus bas que la cour ; on y entre par la cabane, derrière */
-  const FL = C3.FL, E = .3, creme = A.mat({ color: 0xece2c8, roughness: .9 }), creme2 = A.mat({ color: 0xe2d6b8, roughness: .9 }), gris = A.mat({ color: 0x8a8580 }), OX0 = LT / 2 - 3.0, OX1 = OX0 + 1.6;   // (OX : l'ouverture vers la cabane)
+  const FL = C3.FL, E = .3, creme = A.mat({ color: 0xece2c8, roughness: .9 }), creme2 = A.mat({ color: 0xe2d6b8, roughness: .9 }), gris = A.mat({ color: 0x8a8580 }), OX0 = LT / 2 - 2.05, OX1 = OX0 + 1.5;   // (OX : l'ouverture vers la cabane)
   C3.salle = { OX0, OX1 };
   { const mur = (w, h, d, mats, x, y, z) => A.ajoute(new THREE.BoxGeometry(w, h, d), mats, x, y, z);
     // le mur du fond (côté cabane), percé de l'ouverture à double battant (sans portes)
     const zb = zt1 + E / 2, wL = OX0 + LT / 2, wR = LT / 2 - OX1;
     mur(wL, yT, E, [gris, gris, gris, gris, creme, mZ], -LT / 2 + wL / 2, yT / 2, zb); mur(wR, yT, E, [gris, gris, gris, gris, creme, mZ], OX1 + wR / 2, yT / 2, zb);
-    mur(1.6, yT - 2.6 - FL, E, [gris, gris, gris, gris, creme, creme], (OX0 + OX1) / 2, (yT + 2.6 + FL) / 2, zb);   // au-dessus de l'ouverture
+    mur(OX1 - OX0, yT - 2.6 - FL, E, [gris, gris, gris, gris, creme, creme], (OX0 + OX1) / 2, (yT + 2.6 + FL) / 2, zb);   // au-dessus de l'ouverture
     mur(wL, -FL, E, creme, -LT / 2 + wL / 2, FL / 2, zb); mur(wR, -FL, E, creme, OX1 + wR / 2, FL / 2, zb);
     for (const sx of [OX0, OX1]) A.ajoute(new THREE.BoxGeometry(.12, 2.6, E + .06), A.mat({ color: 0x5a3a22, roughness: .6 }), sx, FL + 1.3, zb, false);   // le chambranle
+    { const se = SOL(A.ajoute(new THREE.PlaneGeometry(OX1 - OX0, E + .1), A.mat({ map: tex(toileCarreaux(), (OX1 - OX0) / 1.6, .25), roughness: .5 }), (OX0 + OX1) / 2, FL + .006, zb, false)); se.rotation.x = -Math.PI / 2; }   // le seuil
     // le mur côté fosse, les deux côtés
     mur(LT, yT - FL, E, [gris, gris, gris, gris, mZ, creme], 0, (yT + FL) / 2, zt0 - E / 2);
     mur(E, yT - FL, PTr - 2 * E, [mX, creme, gris, gris, gris, gris], LT / 2 - E / 2, (yT + FL) / 2, zt0 - PTr / 2);
@@ -2139,8 +2141,8 @@ function troisiemeCour(A, L, scene) {
     pv(-C3.LB / 2, LT / 2 - 3.4); pv(LT / 2, C3.LB / 2);   // (pas sous la cabane : elle a son carrelage, plus bas)
     // à droite, côté rue : une petite baraque en brique ferme ce passage, ouverte au centre ; son entrée est à l'angle de la terrasse
     const HB = yT + .34, LBq = 3.4, zc5 = (zt1 + za) / 2, OW = 1.6, OH = 2.4, xb5 = LT / 2 - LBq / 2, br = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), bl = A.mat({ color: 0xece8df, roughness: .8 });
-    /* la cabane est une pièce : sol carrelé, murs crème ; quatre marches descendent vers le palier ; à droite, la porte des toilettes (deux cabinets) ;
-       à gauche, l'ouverture sans portes vers la grande salle, sous la terrasse */
+    /* la cabane est une pièce de plain-pied : sol carrelé, murs crème ; en entrant, à droite, la porte des toilettes (deux cabinets) ;
+       à gauche, quatre marches descendent, et en bas l'ouverture double, sans portes, vers la grande salle sous la terrasse */
     { const FL = C3.FL, e = .25, x0c = LT / 2 - LBq, x1c = LT / 2, creme = A.mat({ color: 0xece2c8, roughness: .9 }), gr = A.mat({ color: 0x8a8580 }), carreau = toileCarreaux();
       const mur = (w, h, d, mats, x, y, z) => A.ajoute(new THREE.BoxGeometry(w, h, d), mats, x, y, z);
       // la façade (côté rue) et son ouverture
@@ -2149,23 +2151,25 @@ function troisiemeCour(A, L, scene) {
       mur(e, HB - FL, gap, [creme, br(gap, HB), gr, gr, gr, gr], x0c + e / 2, (HB + FL) / 2, zc5);                    // le mur du fond
       mur(LBq, HB - FL, e, [gr, gr, gr, gr, creme, br(LBq, HB)], xb5, (HB + FL) / 2, za + e / 2);                    // le mur côté immeuble
       mur(LBq, HB - yT, .2, br(LBq, HB - yT), xb5, (HB + yT) / 2, zt1 - .1);                                           // au-dessus du mur de la terrasse
-      const sl = SOL(A.ajoute(new THREE.PlaneGeometry(LBq - 2 * e, gap - e), A.mat({ map: tex(carreau, (LBq - 2 * e) / 1.6, (gap - e) / 1.6), roughness: .5 }), xb5, FL + .005, zc5 + e / 2, false)); sl.rotation.x = -Math.PI / 2;
+      const zw5 = zc5 + OW / 2, xs0 = LT / 2 - 2.2, xs1 = x1c - e, sol = (xa, xb, z0s, z1s, y) => { const o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, z1s - z0s), A.mat({ map: tex(carreau, (xb - xa) / 1.6, (z1s - z0s) / 1.6), roughness: .5 }), (xa + xb) / 2, y + .005, (z0s + z1s) / 2, false)); o.rotation.x = -Math.PI / 2; };
+      sol(x0c + e, x1c - e, za + e, zw5, 0); sol(x0c + e, xs0, zw5, zt1, 0); sol(xs0, xs1, zw5, zt1, FL);   // (de plain-pied ; la cage de l'escalier, en bas)
       const pl = A.ajoute(new THREE.PlaneGeometry(LBq - 2 * e, gap - e), creme, xb5, HB - .07, zc5 + e / 2, false); pl.rotation.x = Math.PI / 2;   // le plafond
-      // les quatre marches carrelées, depuis l'entrée (au niveau de la rue) jusqu'au palier
+      // à gauche en entrant : les quatre marches carrelées, qui descendent vers la terrasse ; un muret les borde côté pièce
       const zp = zc5 - OW / 2 - .1, mm = A.mat({ map: tex(carreau, 1, .3), roughness: .5 });
-      for (let k = 0; k < 3; k++) { const top = -(k + 1) * .17; SOL(mur(.3, top - FL, zt1 - zp, mm, x1c - e - (k + .5) * .3, (top + FL) / 2, (zp + zt1) / 2)); }
-      SOL(mur(.12, -FL, zt1 - zp, mm, x1c - e + .06, FL / 2, (zp + zt1) / 2));   // (le seuil)
-      C3.cab = { x0: x0c, x1: x1c, za, zt1, zc5, zp, xm: x1c - e - .9, xd0: x0c + .65, xd1: x0c + 1.45 };
+      for (let k = 0; k < 3; k++) { const top = -(k + 1) * .17; SOL(mur(xs1 - xs0, top - FL, .3, mm, (xs0 + xs1) / 2, (top + FL) / 2, zw5 + (k + .5) * .3)); }
+      mur(.1, 1.0 - FL, zt1 - zw5, creme, xs0 - .05, (1.0 + FL) / 2, (zw5 + zt1) / 2);   // le muret
+      A.ajoute(new THREE.BoxGeometry(.14, .05, zt1 - zw5), A.mat({ color: 0x6b4a2c, roughness: .5 }), xs0 - .05, 1.02, (zw5 + zt1) / 2, false);   // sa main courante
+      C3.cab = { x0: x0c, x1: x1c, za, zt1, zc5, zp, zw: zw5, xs0, xs1, xd0: x0c + .65, xd1: x0c + 1.45 };
       // la cloison des toilettes, sa porte ouverte ; dedans, deux cabinets
       const xd0 = x0c + .65, xd1 = x0c + 1.45, xe = x1c - e, wa = xd0 - x0c - e, wb = xe - xd1;
-      mur(wa, HB - .07 - FL, .1, creme, x0c + e + wa / 2, (HB - .07 + FL) / 2, zp); mur(wb, HB - .07 - FL, .1, creme, xd1 + wb / 2, (HB - .07 + FL) / 2, zp);
-      mur(xd1 - xd0, HB - .07 - FL - 2.1, .1, creme, (xd0 + xd1) / 2, FL + 2.1 + (HB - .07 - FL - 2.1) / 2, zp);
-      { const pv = A.mat({ color: 0x6b4a2c, roughness: .6 }), porte = mur(.04, 2.05, .78, pv, xd0 + .02, FL + 1.03, zp - .4, false); porte.rotation.y = .5; porte.position.x += .2; }   // la porte, ouverte
+      mur(wa, HB - .07, .1, creme, x0c + e + wa / 2, (HB - .07) / 2, zp); mur(wb, HB - .07, .1, creme, xd1 + wb / 2, (HB - .07) / 2, zp);
+      mur(xd1 - xd0, HB - .07 - 2.1, .1, creme, (xd0 + xd1) / 2, 2.1 + (HB - .07 - 2.1) / 2, zp);
+      { const pv = A.mat({ color: 0x6b4a2c, roughness: .6 }), porte = mur(.04, 2.05, .78, pv, xd0 + .02, 1.03, zp - .4, false); porte.rotation.y = .5; porte.position.x += .2; }   // la porte, ouverte
       const blanc = A.mat({ color: 0xf6f6f2, roughness: .25 }), zw = za + e + .32;
-      for (const xw of [xd1 + .55, xd1 + 1.45]) { const cu = A.ajoute(new THREE.CylinderGeometry(.19, .15, .4, 20), blanc, xw, FL + .2, zw + .12); cu.scale.z = 1.3;
-        A.ajoute(new THREE.BoxGeometry(.42, .38, .16), blanc, xw, FL + .62, za + e + .08);                                 // le réservoir
-        A.ajoute(new THREE.TorusGeometry(.17, .03, 8, 20), blanc, xw, FL + .41, zw + .12).rotation.x = Math.PI / 2; }    // l'abattant
-      mur(.05, 1.9, zp - za - e - .1, creme, xd1 + 1.0, FL + .95, (zp + za + e) / 2);                                    // la cloison entre les deux cabinets
+      for (const xw of [xd1 + .55, xd1 + 1.45]) { const cu = A.ajoute(new THREE.CylinderGeometry(.19, .15, .4, 20), blanc, xw, .2, zw + .12); cu.scale.z = 1.3;
+        A.ajoute(new THREE.BoxGeometry(.42, .38, .16), blanc, xw, .62, za + e + .08);                                 // le réservoir
+        A.ajoute(new THREE.TorusGeometry(.17, .03, 8, 20), blanc, xw, .41, zw + .12).rotation.x = Math.PI / 2; }    // l'abattant
+      mur(.05, 1.9, zp - za - e - .1, creme, xd1 + 1.0, .95, (zp + za + e) / 2);                                    // la cloison entre les deux cabinets
       const lu = new THREE.PointLight(0xfff0d8, 4, 7, 1.6); lu.position.set(xb5, HB - .5, zc5 + .5); scene.add(lu);
       A.ajoute(new THREE.CylinderGeometry(.14, .17, .08, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), xb5, HB - .12, zc5 + .5, false); }
     SOL(A.ajoute(new THREE.BoxGeometry(LBq, .06, gap), [bl, bl, A.mat({ map: tex(textures().betonClair, LBq, gap), roughness: .95 }), bl, bl, bl], xb5, HB - .03, zc5));   // le toit plat, en béton gris clair, comme un pont depuis la terrasse
@@ -2187,8 +2191,8 @@ function troisiemeCour(A, L, scene) {
   L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xB && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; if (z >= RU.zS[1] && x < RU.xR + .5) return RU.y(z);
       return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 6 * RU.rs ? Math.min(6, Math.floor(u / RU.rs) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
     if ((x > DB + .05 && z < zT) || (x > RU.xL && z < RU.zA + RU.cour)) return RU.y(z); if (z <= zt0 && z >= zt1 && x >= LT / 2 && x < LT / 2 + 2 * C3.ESC.W) return C3.hEsc(x, z, yT); if (C3.pont && C3.enHaut(p) && Math.abs(x - C3.pont.x) < .8 && z >= zt1 && z < zt1 + .6) return yT + (z < zt1 + .3 ? .34 : .17);   // les deux marches du pont
-    if (C3.pont && x > C3.pont.x0 && x < C3.pont.x1 + .05 && z < zt1 && z > C3.pont.za) { if (C3.enHaut(p)) return C3.pont.h; const c = C3.cab; if (x > c.x1 - .25) return 0;
-      if (z > c.zp && x > c.xm) return -Math.min(4, Math.floor((c.x1 - .25 - x) / .3) + 1) * .17; return C3.FL; }   // la cabane : son toit, ou dedans (les marches, le palier, les toilettes)
+    if (C3.pont && x > C3.pont.x0 && x < C3.pont.x1 + .05 && z < zt1 && z > C3.pont.za) { if (C3.enHaut(p)) return C3.pont.h; const c = C3.cab;
+      if (z > c.zw && x > c.xs0) return -Math.min(4, Math.floor((z - c.zw) / .3) + 1) * .17; return 0; }   // la cabane : son toit, ou dedans (les marches, le palier, les toilettes)
     if (z <= zt0 && z >= zt1 && Math.abs(x) < LT / 2 && !C3.enHaut(p)) return C3.FL;   // la grande salle, sous la terrasse
        // la baraque : sur son toit, ou dessous
     if (z <= zt0 && z >= zt1 && Math.abs(x) < LT / 2) return yT; if (z <= zt0) return 0; if (Math.abs(x) >= DB) return 0; if (z <= zT && z > zt0) { const u = DB - Math.abs(x), bas = Math.abs(x) >= LM || (p && p.g && p.g.position.y < -.5);   // (la fosse ; sous les marches raides, on reste en bas si l'on y est)
