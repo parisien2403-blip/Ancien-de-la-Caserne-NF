@@ -1402,10 +1402,24 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     const tf = tex(fac); tf.repeat.set(1 / W, 1 / H); tf.offset.set(.5, 0);
     A.ajoute(new THREE.ExtrudeGeometry(sh, { depth: prof, bevelEnabled: false }), [A.mat({ map: tf }), A.mat({ color: 0x8a4a36 })], AX, yb, zA - prof);
     const voute = A.mat({ color: 0x6a4a3a, roughness: .95 }); { const v = A.ajoute(new THREE.PlaneGeometry(AW, prof), A.mat({ map: tex(textures().paves, AW / 2, prof / 2) }), AX, yb + .01, zA - prof / 2, false); v.rotation.x = -Math.PI / 2; SOL(v); v.updateMatrixWorld(); }
-    // la grille noire au bout, et le jour derrière
+    // au bout de la voûte : le portail de fer (le recto de celui de l'entrée, sans les gravures) — deux battants à barreaux à pointe de lance,
+    // le bas en tôle pleine, et au-dessus l'imposte en demi-lune vitrée, quadrillée, avec son losange ; le jour derrière
     const jour = A.ajoute(new THREE.PlaneGeometry(AW, AH), new THREE.MeshBasicMaterial({ color: 0xf2efe6 }), AX, yb + AH / 2, zA - prof - .3, false);
-    { const fer = A.mat({ color: 0x101010, roughness: .5, metalness: .5 }); for (let k = 0; k <= 22; k++) { const bx = AX - AW / 2 + .1 + k * (AW - .2) / 22, dx = bx - AX, hh = AH - AW / 2 + Math.sqrt(Math.max(0, (AW / 2) ** 2 - dx * dx)) - .1; A.ajoute(new THREE.BoxGeometry(.03, hh, .03), fer, bx, yb + hh / 2, zA - prof + .2, false); }
-      for (const y of [1.0, 2.4, 3.3]) A.ajoute(new THREE.BoxGeometry(AW, .06, .05), fer, AX, yb + y, zA - prof + .2, false); A.ajoute(new THREE.BoxGeometry(AW, 1.4, .04), fer, AX, yb + .7, zA - prof + .22, false); }
+    { const fer = A.mat({ color: 0x1c1e20, roughness: .5, metalness: .55 }), tole = A.mat({ color: 0x3c4146, roughness: .6, metalness: .4 }), zg = zA - prof + .2, GH = AH - AW / 2, R = AW / 2;
+      const bx = (w, h, x, y, m = fer, d = .05, dz = 0) => A.ajoute(new THREE.BoxGeometry(w, h, d), m, AX + x, yb + y, zg + dz, false);
+      bx(.1, GH, -R + .05, GH / 2); bx(.1, GH, R - .05, GH / 2); bx(.1, GH, 0, GH / 2);   // les montants, le milieu
+      for (const y of [.08, 1.0, 1.12, 2.15, 2.27, GH - .05]) bx(AW, .07, 0, y);   // les traverses
+      bx(AW - .1, 2.2, 0, 1.15, tole, .02, -.03);   // (le fond plein du bas, sans jour)
+      for (const sg of [-1, 1]) { const c = sg * R / 2; bx(R - .2, .82, c, .54, tole, .02, -.01); bx(R - .2, .95, c, 1.64, tole, .02, -.01);   // la tôle pleine, en bas
+        for (const [w, h, y] of [[R - .5, .55, .54], [R - .5, .65, 1.64]]) { for (const yy of [y - h / 2, y + h / 2]) bx(w, .03, c, yy, fer, .03, .02); for (const xx of [c - w / 2, c + w / 2]) bx(.03, h, xx, y, fer, .03, .02); } }   // (les moulures des panneaux)
+      for (let k = 1; k < 18; k++) { const x = -R + k * AW / 18; if (Math.abs(x) < .08) continue; bx(.035, GH - .1, x, GH / 2 + .05, fer, .035, .015);   // les barreaux
+        const pt = A.ajoute(new THREE.ConeGeometry(.045, .22, 4), fer, AX + x, yb + GH + .1, zg + .015, false); pt.rotation.y = Math.PI / 4; }   // et leur pointe de lance
+      // l'imposte en demi-lune : la vitre claire, le quadrillage, le losange au centre, le cintre
+      const vit = A.ajoute(new THREE.CircleGeometry(R - .05, 40, 0, Math.PI), new THREE.MeshStandardMaterial({ color: 0xdfe7ec, roughness: .1, metalness: .2, emissive: 0x9aa6ae, emissiveIntensity: .25 }), AX, yb + GH, zg - .02, false);
+      for (let k = -4; k <= 4; k++) { const x = k * R / 5, hh = Math.sqrt(Math.max(0, (R - .05) ** 2 - x * x)); if (hh > .05) bx(.03, hh, x, GH + hh / 2, fer, .03); }
+      for (let k = 1; k <= 4; k++) { const y = k * R / 5, ww = 2 * Math.sqrt(Math.max(0, (R - .05) ** 2 - y * y)); bx(ww, .03, 0, GH + y, fer, .03); }
+      for (const [x1, y1, x2, y2] of [[-.9, .75, 0, 1.5], [0, 1.5, .9, .75], [.9, .75, 0, 0], [0, 0, -.9, .75]]) { const L2 = Math.hypot(x2 - x1, y2 - y1), r = bx(L2, .05, (x1 + x2) / 2, GH + .05 + (y1 + y2) / 2, fer, .04, .01); r.rotation.z = Math.atan2(y2 - y1, x2 - x1); }   // le losange
+      const ci = A.ajoute(new THREE.TorusGeometry(R - .03, .05, 6, 40, Math.PI), fer, AX, yb + GH, zg, false); }
     // l'horloge octogonale : cadran crème, chiffres romains, bordure rouge et dorée ; son petit balcon à balustres
     const cl = toile(256, 256, (x) => { const c = 128, oct = (r) => { x.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; x.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } x.closePath(); };
       x.fillStyle = "#f2ead2"; x.fillRect(0, 0, 256, 256); oct(124); x.fillStyle = "#c8a24a"; x.fill(); oct(116); x.fillStyle = "#b8282a"; x.fill(); oct(92); x.fillStyle = "#f4ecd8"; x.fill();
@@ -1419,9 +1433,28 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   }
   RU.xc = xB - RU.pc / 2; RU.zc = zA + RU.pc / 2;   // (le centre du pan coupé)
 }
+/* la barrière de travaux, devant le passage du bâtiment d'en face (deuxième cour) : la suite est en chantier ; seul l'administrateur passe */
+const estAdmin = () => !!(M && (M.passeTravaux || (M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin)));   // (passeTravaux : le temps de tracer le chemin d'un administrateur, vu sur l'écran d'un autre)
+function barriereTravaux(A, scene, z) {
+  const rb = toile(256, 64, (x, w, h) => { for (let i = -2; i < 12; i++) { x.fillStyle = i % 2 ? "#f4f2ec" : "#d8202a"; x.beginPath(); x.moveTo(i * 32, h); x.lineTo(i * 32 + 32, h); x.lineTo(i * 32 + 64, 0); x.lineTo(i * 32 + 32, 0); x.fill(); } });
+  const mRB = A.mat({ map: tex(rb), roughness: .6 }), pied = A.mat({ color: 0x2a2a2a, roughness: .8 }), metal = A.mat({ color: 0xc8ccd0, metalness: .6, roughness: .35 });
+  for (const xc of [-1.35, 1.35]) {   // deux barrières de chantier, côte à côte
+    for (const y of [.55, 1.0]) A.ajoute(new THREE.BoxGeometry(2.5, .22, .05), mRB, xc, y, z);
+    for (const dx of [-1.15, 1.15]) { A.ajoute(new THREE.BoxGeometry(.05, 1.15, .05), metal, xc + dx, .58, z); A.ajoute(new THREE.BoxGeometry(.12, .1, .7), pied, xc + dx, .05, z); } }
+  // la pancarte « EN TRAVAUX » au milieu, sur son poteau
+  const pc = toile(256, 200, (x, w, h) => { x.fillStyle = "#f6c20e"; x.fillRect(0, 0, w, h); x.strokeStyle = "#1a1a1a"; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10);
+    x.fillStyle = "#1a1a1a"; x.beginPath(); x.moveTo(w / 2, 22); x.lineTo(w / 2 + 44, 98); x.lineTo(w / 2 - 44, 98); x.closePath(); x.fill(); x.fillStyle = "#f6c20e"; x.font = "bold 54px Arial"; x.textAlign = "center"; x.fillText("!", w / 2, 92);
+    x.fillStyle = "#1a1a1a"; x.font = "bold 34px Arial, Helvetica, sans-serif"; x.fillText("EN TRAVAUX", w / 2, 160); x.font = "bold 18px Arial"; x.fillText("ACCÈS INTERDIT", w / 2, 186); });
+  A.ajoute(new THREE.BoxGeometry(.06, 1.9, .06), metal, 0, .95, z + .04);
+  A.ajoute(new THREE.PlaneGeometry(.9, .7), A.mat({ map: tex(pc), roughness: .5 }), 0, 1.75, z + .08, false);
+  const dos = A.ajoute(new THREE.PlaneGeometry(.9, .7), A.mat({ color: 0x9a9c9e }), 0, 1.75, z + .07, false); dos.rotation.y = Math.PI;
+  // deux plots orange
+  for (const xc of [-2.9, 2.9]) { A.ajoute(new THREE.ConeGeometry(.17, .55, 16), A.mat({ color: 0xff6a10 }), xc, .3, z + .3); A.ajoute(new THREE.CylinderGeometry(.11, .14, .08, 16), A.mat({ color: 0xf4f2ec }), xc, .34, z + .3, false); }
+}
 function troisiemeCour(A, L, scene) {
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
   const zF = z1 - PP - 2 * C3.NT * C3.PT - C3.PTr, DB = C3.LB / 2; C3.zFond = zF;   // (la façade du bâtiment du fond, au bout des ruelles ; la demi-largeur de l'immeuble)
+  barriereTravaux(A, scene, C2.z1 + 1.0);
   const SOL = o => ((L.solsPlus = L.solsPlus || []).push(o), o);   // (ce qu'on peut toucher du doigt pour y aller : les pavés, les marches, les trottoirs, la terrasse)
   const pas2 = SOL(A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, 2.4, 6) }), 0, .012, C2.z1 - 6, false)); pas2.rotation.x = -Math.PI / 2;   // le sol du passage d'en face
   const pav = SOL(A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, X, prof / 2) }), 0, .012, zc, false)); pav.rotation.x = -Math.PI / 2;
@@ -3085,15 +3118,15 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (x > -15.6 && x <= -10.1 && z > 9.7 && z < 11.6)                                                         // le renfoncement de gauche, devant les marches du mess
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
-      || (Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                                // le passage du bâtiment d'en face
-      || (Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !(Math.abs(x) >= C3.LM && Math.abs(x) < C3.LB / 2 + .3 && z < C3.z1 + C3.PB + .25))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
-      || (Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < C3.x - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : C3.zFond) + .3)   // les ruelles, de chaque côté de l'immeuble
-      || (x > C3.LB / 2 + .35 && x < RU.xR - .35 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
-      || (x > RU.xL + .4 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3)   // la place devant l'arcade (jusqu'au pan coupé)
-      || (Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
-      || (Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
-      || (Math.abs(x) < C3.LT / 2 - .35 && z <= C3.z1 - C3.PP - C3.NT * C3.PT + .05 && z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .35)   // la terrasse
-      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
+      || (estAdmin() && Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                  // le passage du bâtiment d'en face (en travaux : l'administrateur seul)
+      || (estAdmin() && Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !(Math.abs(x) >= C3.LM && Math.abs(x) < C3.LB / 2 + .3 && z < C3.z1 + C3.PB + .25))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
+      || (estAdmin() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < C3.x - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : C3.zFond) + .3)   // les ruelles, de chaque côté de l'immeuble
+      || (estAdmin() && x > C3.LB / 2 + .35 && x < RU.xR - .35 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
+      || (estAdmin() && x > RU.xL + .4 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3)   // la place devant l'arcade (jusqu'au pan coupé)
+      || (estAdmin() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
+      || (estAdmin() && Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
+      || (estAdmin() && Math.abs(x) < C3.LT / 2 - .35 && z <= C3.z1 - C3.PP - C3.NT * C3.PT + .05 && z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .35)   // la terrasse
+      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && (estAdmin() || !(Math.abs(x) < 3.2 && z < C2.z1 + 1.35)) && !(x > C2.x - 3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 2.4) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
       || (x >= PB[0] - .35 && x < PB[0] + .55 && Math.abs(z - PB[1]) < VEST_LB / 2 - .25)                         // son embrasure, de plain-pied
       || (x > 16.5 && x < VEST_X + VEST_VX - .35 && Math.abs(z - VEST_Z) < VEST_VZ - .3)                        // le vestibule
@@ -3818,7 +3851,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       placer();
       let nVu = -1; const animE = L.anim;
       L.anim = (t) => { placer(); const moi = M && M.moiNum && M.gens.get(M.moiNum), n = moi && moi.etg ? moi.etg.n * 10 + (moi.etg.zone === "P" ? 1 : 0) : 0;
-        if (n !== nVu) { nVu = n; L.grille = null; E.grille = null; } animE && animE(t); };   // (les passages possibles changent selon l'étage)
+        if (n !== nVu) { nVu = n; L.grille = L.grilleAdmin = null; E.grille = E.grilleAdmin = null; } animE && animE(t); };   // (les passages possibles changent selon l'étage)
       L.copieCour = cour; L.sortieCour = () => [cote * 7.9, 13.75]; }
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
@@ -5493,8 +5526,9 @@ function ligneLibre(L, x0, z0, x1, z1) {
 function itineraire(L, x0, z0, x1, z1) {
   if (ligneLibre(L, x0, z0, x1, z1) || !L.zone) return [[x1, z1]];
   const P = .35, [ax, bx, az, bz] = L.zone, nx = Math.ceil((bx - ax) / P) + 1, nz = Math.ceil((bz - az) / P) + 1;
-  if (!L.grille) { L.grille = new Uint8Array(nx * nz); for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) L.grille[j * nx + i] = L.limites(ax + i * P, az + j * P) ? 1 : 0; }
-  const G = L.grille, cx = i => ax + i * P, cz = j => az + j * P;
+  const cle = typeof estAdmin === "function" && estAdmin() ? "grilleAdmin" : "grille";   // (les chantiers : l'administrateur a sa propre carte des passages)
+  if (!L[cle]) { L[cle] = new Uint8Array(nx * nz); for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) L[cle][j * nx + i] = L.limites(ax + i * P, az + j * P) ? 1 : 0; }
+  const G = L[cle], cx = i => ax + i * P, cz = j => az + j * P;
   const proche = (x, z) => { let best = -1, bd = 1e9; const i0 = Math.round((x - ax) / P), j0 = Math.round((z - az) / P);
     for (let r = 0; r < 12 && best < 0; r++) for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) {
       if (i < 0 || j < 0 || i >= nx || j >= nz || !G[j * nx + i]) continue; const dd = Math.hypot(cx(i) - x, cz(j) - z); if (dd < bd) { bd = dd; best = j * nx + i; } }
@@ -5521,7 +5555,7 @@ function itineraire(L, x0, z0, x1, z1) {
 // le point libre le plus proche (pour ne pas se placer dans une table)
 function viserLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let k = 1; k <= 20; k++) for (let a = 0; a < 12; a++) { const tx = x + Math.cos(a / 12 * Math.PI * 2) * k * .15, tz = z + Math.sin(a / 12 * Math.PI * 2) * k * .15; if (M.L.limites(tx, tz)) return [tx, tz]; } return [x, z]; }
 function viser(p, x, z) {
-  const pts = itineraire(M.L, p.g.position.x, p.g.position.z, x, z);
+  M.passeTravaux = !!(p.info && p.info.admin && !p.pnj); const pts = itineraire(M.L, p.g.position.x, p.g.position.z, x, z); M.passeTravaux = false;
   if (!pts.length) { p.cible = null; p.chemin = []; return; }
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
