@@ -1137,7 +1137,7 @@ function lanternesMurales(scene, L) {
   pose(C3.LB / 2 + .03, -111, 1, 0, 3.0);
   for (const z of [-92, -104]) pose(RU.xB - .01, z, -1, 0, 4.0);
   pose(C3.LB / 2 - 1.05, RU.zA + RU.cour - .05, 0, -1, 2.7);
-  for (const x of [4, 17]) pose(x, RU.zA + .01, 0, 1, 3.0);
+  for (const x of RU.portesFond || [4, 17]) pose(x + 1.25, RU.zA + .01, 0, 1, 2.9);   // (à côté de chaque porte A, B, C, D)
   // la terrasse : de chaque côté de l'escalier de la ruelle ; la cabane, à côté de sa porte
   if (C3.escG) { const G = C3.escG; for (const z of [G.z0 - .7, G.z1 + .7]) pose(G.x0 - .16, z, -1, 0, 2.3); }
   if (C3.cab) pose(C3.cab.x1 + .01, C3.cab.zc5 - 1.35, 1, 0, 2.2);
@@ -2001,6 +2001,22 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     A.ajoute(new THREE.BoxGeometry(8, 23.5, lg), A.mat({ color: 0x8a4a36 }), xB + 4.01, 11.75 - drop, (C3.z0 + zb) / 2); }
   // au fond : le bâtiment de l'arcade, l'horloge octogonale au-dessus, la grille noire au bout de la voûte
   { const xa = -C3.x - 6, xb = xB - RU.pc, fz = A.ajoute(new THREE.PlaneGeometry(xb - xa, 24 + drop), A.mat({ map: tex(toileBriqueBandes(xb - xa, 24 + drop)), roughness: .9 }), (xa + xb) / 2, (24 - drop) / 2, zA, false); }   // (le mur du fond, jusqu'au pan coupé)
+  /* au rez-de-chaussée de ce mur du fond, de droite à gauche : les portes A, B, C et D, régulièrement réparties, et deux fenêtres entre chacune */
+  { const y0 = RU.y(zA), xD = -C3.x - 6 + RU.pc + .8, xA = xB - RU.pc - 1.6, n = 10, pierreC = A.mat({ color: 0xe6e0d4, roughness: .75 }), bois = A.mat({ color: 0x3e2a1c, roughness: .6 }), bois2 = A.mat({ color: 0x33221a, roughness: .6 });
+    const vitre = A.mat({ color: 0x2f3a46, roughness: .2, metalness: .3 }), portes = [];
+    for (let i = 0; i < n; i++) { const x = xA - i * (xA - xD) / (n - 1);
+      if (i % 3 === 0) { const L2 = "ABCD"[i / 3];   // une porte, fermée, son encadrement de pierre, sa plaque bleu marine
+        A.ajoute(new THREE.BoxGeometry(1.5, 2.6, .1), pierreC, x, y0 + 1.3, zA + .05, false); A.ajoute(new THREE.BoxGeometry(1.15, 2.3, .1), bois, x, y0 + 1.15, zA + .08, false);
+        for (const [yy, hh] of [[.65, .9], [1.7, .95]]) A.ajoute(new THREE.BoxGeometry(.85, hh, .03), bois2, x, y0 + yy, zA + .15, false);
+        A.ajoute(new THREE.BoxGeometry(.05, .2, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 }), x - .42, y0 + 1.1, zA + .17, false);
+        const pq = toile(128, 128, (c) => { c.fillStyle = "#e8e4da"; c.beginPath(); c.roundRect(0, 0, 128, 128, 18); c.fill(); c.fillStyle = "#14234a"; c.beginPath(); c.roundRect(7, 7, 114, 114, 14); c.fill();
+          c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(L2, 64, 70); });
+        A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), x, y0 + 3.0, zA + .11, false); portes.push(x); }
+      else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
+        A.ajoute(new THREE.BoxGeometry(1.3, 1.7, .08), pierreC, x, y0 + 2.0, zA + .04, false); A.ajoute(new THREE.BoxGeometry(1.06, 1.46, .06), vitre, x, y0 + 2.0, zA + .07, false);
+        A.ajoute(new THREE.BoxGeometry(.05, 1.46, .07), pierreC, x, y0 + 2.0, zA + .09, false); A.ajoute(new THREE.BoxGeometry(1.06, .05, .07), pierreC, x, y0 + 2.35, zA + .09, false);
+        A.ajoute(new THREE.BoxGeometry(1.45, .1, .22), pierreC, x, y0 + 1.1, zA + .11, false); } }
+    RU.portesFond = portes; }
   { const A0 = A; { const ga = new THREE.Group(), PC = RU.pc; ga.position.set(xB - PC / 2, 0, RU.zA + PC / 2); ga.rotation.y = -Math.PI / 4; scene.add(ga);   // (le pan coupé : l'angle de la rue, à 45°, c'est le porche)
     const zA = 0, AX = 0, A = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
     const W = PC * Math.SQRT2 + .3, H = 24, AW = 4.6, AH = 5.6, yb = -drop, prof = 8, RW = 5.4, RD = 1.5, yT = AH + 2.1, sh = new THREE.Shape();   // (RW, RD : le renfoncement au-dessus du bandeau, derrière l'horloge)
