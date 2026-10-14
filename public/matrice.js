@@ -1638,7 +1638,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
     briques(x, w, h, 0, h - rdc);
     // les fenêtres des étages : encadrement blanc, volets roulants ou rideaux, balconnet noir
     const pas = 3.6 * 40, n = Math.floor(w / pas), cols = [];
-    if (parCote) { const bord = 2.4 * 40, pass = (lp + 1.4) * 40; for (const sg of [-1, 1]) { const a = cx + sg * pass, b = sg < 0 ? bord : w - bord; for (let k = 0; k < parCote; k++) cols.push(a + (b - a) * (k + .5) / parCote); } }
+    if (parCote) { const bord = 2.4 * 40; for (let k = 0; k < parCote; k++) cols.push(bord + (w - 2 * bord) * (k + .5) / parCote); }   // (parCote : le nombre de colonnes sur toute la longueur, réparties)
     else for (let c = 0; c < n; c++) cols.push((c + .5) * pas + (w - n * pas) / 2);
     const pasEt = parCote ? Math.min(120, (h - rdc - 30) / 6) : 120;
     for (let et = 0; et < 6; et++) for (const xc of cols) { const X = xc - 34, Y = h - rdc - 24 - 106 - et * pasEt;
@@ -1667,7 +1667,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
 const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .19, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
-C3.hp = C3.NM * C3.HM; C3.PF = 2.4; C3.RUN = 3.9; C3.SW = 1.8;
+C3.hp = C3.NM * C3.HM; C3.PF = 4.9; C3.RUN = 7.84; C3.NSF = 28; C3.SW = 1.8;
 C3.ESC = { W: 1.2, run: 2.8, pal: 1.4, haut: 1.3, n: 10 };   // l'escalier contre la face de la terrasse côté rue, en U : première volée (côté rue) vers la gauche, palier, demi-tour, seconde volée contre le mur vers la droite, palier du haut, et la terrasse
 C3.hEsc = (x, z, yT) => { const E = C3.ESC, h = yT / 2 / E.n, p = E.run / E.n, z1 = E.z0 + E.run, inner = x < C3.LT / 2 + E.W;
   if (z >= z1) return z < z1 + E.pal ? yT / 2 : 0;
@@ -1701,18 +1701,24 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   /* entre la barrière du mur noir et celle d'en face : un contrebas d'un mètre (six marches) ; la barrière d'en face, la contre-allée et le bâtiment sont en bas */
   const DH = RU.DH, x0s = C3.x - .1, zE = zA + RU.cour; RU.x0s = x0s; RU.zS = [zT - 3, zT - 1.8];
   const planP = (xa, xb, za, zb, dy, map) => { const L2 = (zb - za) / Math.cos(ang), o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, L2), A.mat({ map: tex(map || textures().paves, (xb - xa) / 4, L2 / 4), roughness: .92 }), (xa + xb) / 2, RU.y((za + zb) / 2) - dy + .01, (za + zb) / 2, false)); o.rotation.x = -Math.PI / 2 - ang; return o; };
-  planP(DB, x0s, zA, zT, 0); planP(x0s, xR, zA, zE, 0); planP(x0s, xR + .4, zE, zT, DH);
+  planP(DB, x0s, zA, zT, 0); planP(x0s, xR, zA, zE, 0); planP(x0s, xR + .4, zE, RU.zS[1], DH); planP(x0s, xR + .4, RU.zS[1], zT, 0);   // (au bout, contre le mur noir : un bloc plein, à hauteur de taille)
   { const beton = A.mat({ map: tex(textures().betonClair, 4, 1), color: 0xcfcfcf, roughness: .95 }), L2 = (zT - zE) / Math.cos(ang), zm = (zT + zE) / 2;
     const m1 = A.ajoute(new THREE.BoxGeometry(.2, DH, L2), beton, x0s + .1, RU.y(zm) - DH / 2, zm, false); m1.rotation.x = -ang;   // le mur de soutènement, sous la barrière du mur noir
     A.ajoute(new THREE.BoxGeometry(xB - x0s, DH, .2), beton, (x0s + xB) / 2, RU.y(zE) - DH / 2, zE + .1, false);   // et au bout, côté place
     A.ajoute(new THREE.BoxGeometry(xB - x0s, DH + .05, .2), A.mat({ map: tex(textures().betonFonce, 3, 1), color: 0xbcbcbc, roughness: .95 }), (x0s + xB) / 2, -DH / 2, zT - .1, false);   // et à l'autre bout, sous le mur noir
     // les six marches (1,20 m de large), qui descendent du trottoir vers le contrebas
-    for (let k = 0; k < 5; k++) { const top = -(k + 1) * DH / 6, zc3 = (RU.zS[0] + RU.zS[1]) / 2; SOL(A.ajoute(new THREE.BoxGeometry(.3, DH + top, 1.2), beton, x0s + (k + .5) * .3, RU.y(zc3) - DH + (DH + top) / 2, zc3)); }
-    // à gauche des marches (en descendant) : la rampe noire, qui ferme la barrière jusqu'en bas
-    { const fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 }), zr = RU.zS[0] + .03, y0 = RU.y(zr), L2 = Math.hypot(1.8, DH), HR = 1.0;
-      const mc = A.ajoute(new THREE.BoxGeometry(L2, .05, .05), fer, x0s + .9, y0 - DH / 2 + HR, zr, false); mc.rotation.z = -Math.atan2(DH, 1.8);
-      for (let u = 0; u <= 1.8; u += .13) { const yb = y0 - DH * Math.min(1, Math.ceil(u / .3) / 6); A.ajoute(new THREE.BoxGeometry(.018, HR + (y0 - DH * u / 1.8) - yb, .018), fer, x0s + u, (yb + y0 - DH * u / 1.8 + HR) / 2, zr, false); }
-      A.ajoute(new THREE.BoxGeometry(.05, HR, .05), fer, x0s + 1.8, y0 - DH + HR / 2, zr, false); } }
+    // les six marches, sur toute la largeur du contrebas, jusqu'à la barrière d'en face (ouverte)
+    const zc3 = (RU.zS[0] + RU.zS[1]) / 2, rs = (xR - x0s) / 6; RU.rs = rs;
+    for (let k = 0; k < 5; k++) { const top = -(k + 1) * DH / 6; SOL(A.ajoute(new THREE.BoxGeometry(rs, DH + top, 1.2), beton, x0s + (k + .5) * rs, RU.y(zc3) - DH + (DH + top) / 2, zc3)); }
+    // à droite : le bloc plein (jusqu'au mur noir), son mur le long des marches et sur la contre-allée
+    { const L2 = (zT - RU.zS[1]) / Math.cos(ang), zm = (zT + RU.zS[1]) / 2;
+      A.ajoute(new THREE.BoxGeometry(xR + .4 - x0s, DH, .2), beton, (x0s + xR + .4) / 2, RU.y(RU.zS[1]) - DH / 2, RU.zS[1] + .1, false);
+      const m2 = A.ajoute(new THREE.BoxGeometry(.2, DH, L2), beton, xR + .5, RU.y(zm) - DH / 2, zm, false); m2.rotation.x = -ang; }
+    // à gauche : la rampe noire, qui descend jusqu'à la barrière d'en face
+    { const fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 }), zr = RU.zS[0] + .03, y0 = RU.y(zr), W2 = xR + .2 - x0s, L2 = Math.hypot(W2, DH), HR = 1.0;
+      const mc = A.ajoute(new THREE.BoxGeometry(L2, .05, .05), fer, x0s + W2 / 2, y0 - DH / 2 + HR, zr, false); mc.rotation.z = -Math.atan2(DH, W2);
+      for (let u = 0; u <= W2; u += .13) { const yb = y0 - DH * Math.min(1, Math.ceil(u / rs) / 6), yh = y0 - DH * u / W2 + HR; A.ajoute(new THREE.BoxGeometry(.018, yh - yb, .018), fer, x0s + u, (yb + yh) / 2, zr, false); }
+      A.ajoute(new THREE.BoxGeometry(.05, HR, .05), fer, x0s + W2, y0 - DH + HR / 2, zr, false); } }
   { const zc2 = RU.zA + RU.cour / 2, Lc = Math.hypot(RU.cour, drop * RU.cour / Lz), pl = SOL(A.ajoute(new THREE.PlaneGeometry(DB - RU.xL, Lc), A.mat({ map: tex(textures().paves, (DB - RU.xL) / 4, Lc / 4) }), (DB + RU.xL) / 2, RU.y(zc2) + .012, zc2, false)); pl.rotation.x = -Math.PI / 2 - ang; }   // (la place devant l'arcade, à gauche de la chaussée)
   planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
   trottoir(A, L, DB, DB + 1.4, zA + RU.cour, zT, ["x1"], { ang, y: z => RU.y(z) });   // à gauche, le long de l'immeuble : le trottoir, qui suit la pente
@@ -1759,8 +1765,8 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       for (const z of poteauBout) A.ajoute(new THREE.BoxGeometry(.06, 1.0, .06), fer, xm, RU.y(z) - dy + .55 + .5, z, false);
       const n = Math.floor((zb - za) / .14), im = new THREE.InstancedMesh(new THREE.BoxGeometry(.016, .9, .016), fer, n), mt = new THREE.Matrix4();
       for (let k = 0; k < n; k++) { const z = zb - .1 - k * .14; mt.makeTranslation(xm, RU.y(z) - dy + .55 + .55, z); im.setMatrixAt(k, mt); } scene.add(im); };
-    seg(xR + .2, zE, zT, DH, []); A.ajoute(new THREE.BoxGeometry(.4, .55, .4), pierre, xR + .2, RU.y(zE) - DH + .27, zE + .2);   // la barrière d'en face, en contrebas
-    seg(C3.x - .2, zE, RU.zS[0], 0, [RU.zS[0] - .05]); seg(C3.x - .2, RU.zS[1], zT, 0, [RU.zS[1] + .05]); }   // celle du mur noir, ouverte devant les marches
+    seg(xR + .2, zE, RU.zS[0], DH, [RU.zS[0] - .05]); seg(xR + .2, RU.zS[1], zT, 0, [RU.zS[1] + .05]);   // (ouverte au pied des marches ; le long du bloc, à son niveau) A.ajoute(new THREE.BoxGeometry(.4, .55, .4), pierre, xR + .2, RU.y(zE) - DH + .27, zE + .2);   // la barrière d'en face, en contrebas
+    seg(C3.x - .2, zE, RU.zS[0], 0, [RU.zS[0] - .05]); }   // celle du mur noir, ouverte devant les marches
   trottoir(A, L, C3.x - 1.6, C3.x - .4, zA + RU.cour, zT, ["x0"], { ang, y: z => RU.y(z) });   // (le trottoir du mur noir, prolongé le long de la nouvelle barrière)
   // à droite : le long bâtiment de brique, portes en arc au rez-de-chaussée
   { const PC = RU.pc, zb = zA + PC, lg = C3.z0 - zb, f = A.ajoute(new THREE.PlaneGeometry(lg, 22 + drop + RU.DH), A.mat({ map: tex(toileBriqueBandes(lg, 22 + drop + RU.DH, { arcs: true })), roughness: .9 }), xB, (22 - drop - RU.DH) / 2, (C3.z0 + zb) / 2, false); f.rotation.y = -Math.PI / 2;
@@ -1872,7 +1878,7 @@ function troisiemeCour(A, L, scene) {
   const zTr = z1 - PP;   // (le bout de l'immeuble : après, à droite, la rue en pente)
   for (const sg of [-1, 1]) { const zb = sg > 0 ? zTr : zF, r = SOL(A.ajoute(new THREE.PlaneGeometry(X - DB, z1 - zb), A.mat({ map: tex(textures().paves, (X - DB) / 2, (z1 - zb) / 2) }), sg * (DB + (X - DB) / 2), .012, (z1 + zb) / 2, false)); r.rotation.x = -Math.PI / 2; }   // (les ruelles, le long de l'immeuble)
   // le verso du bâtiment d'en face, vu de cette cour (percé de son passage)
-  const verso = A.ajoute(new THREE.PlaneGeometry(44, 24), A.mat({ map: tex(toileVerso(44, 24, true, 4.4, 2.4, false, 6)), alphaTest: .5 }), 0, 12, z0 - .03, false); verso.rotation.y = Math.PI;
+  const verso = A.ajoute(new THREE.PlaneGeometry(44, 24), A.mat({ map: tex(toileVerso(44, 24, true, 4.4, 2.4, false, 7)), alphaTest: .5 }), 0, 12, z0 - .03, false); verso.rotation.y = Math.PI;
   // les hauts murs de pierre, de chaque côté
   for (const sg of [-1, 1]) { graine = sg > 0 ? 95 : 97;
     const mm = murMitoyen(A, L), toit = A.mat({ color: 0x2a2622 }), faces = (w, d) => [mm(d), mm(d), toit, toit, mm(w), mm(w)]; if (sg < 0) { A.ajoute(new THREE.BoxGeometry(6, 20, z0 - zF + 12), faces(6, z0 - zF + 12), sg * (X + 3), 10, (z0 + zF - 12) / 2);
@@ -2006,14 +2012,14 @@ function troisiemeCour(A, L, scene) {
     for (const xp of [-9.5, -5.5, 5.5, 9.5]) { A.ajoute(new THREE.BoxGeometry(1.1, 2.1, .06), vert, xp, -PF + 1.05, zT - .02, false);
       const hb = A.ajoute(new THREE.CircleGeometry(.18, 20), A.mat({ color: 0x9fb2be, roughness: .15 }), xp, -PF + 1.5, zT - .06, false); hb.rotation.y = Math.PI;
       const pl = A.ajoute(new THREE.PlaneGeometry(.7, .18), A.mat({ map: plq }), xp, -PF + 2.25, zT - .06, false); pl.rotation.y = Math.PI;
-      const lp = new THREE.PointLight(0xfff0d0, 2.2, 5, 1.6); lp.position.set(xp, -.4, zm2); scene.add(lp); } }
+      const lp = new THREE.PointLight(0xfff0d0, 2.2, 5, 1.6); lp.position.set(xp, -PF + 2.6, zm2); scene.add(lp); } }
   for (const sg of [-1, 1]) {
     if (sg < 0) { const HR = 1.0, xr = -DB + .04;   // au fond, pas d'escalier : le mur, et en haut une barrière tout du long
       A.ajoute(new THREE.BoxGeometry(.05, .05, D), fer, xr, HR, zm2, false); A.ajoute(new THREE.BoxGeometry(.04, .04, D), fer, xr, .12, zm2, false);
       for (let z = zt0; z <= zT + .01; z += .13) A.ajoute(new THREE.BoxGeometry(.018, HR - .12, .018), fer, xr, .12 + (HR - .12) / 2, z, false); }
     else {
     // l'escalier, au milieu de la largeur de la fosse : il part du bord de la ruelle et descend vers le milieu de l'immeuble
-    const SW = C3.SW, NS = 14, hs = PF / NS, ps = C3.RUN / NS, ze = zm2, L2 = Math.hypot(C3.RUN, PF), angE = sg * Math.atan2(PF, C3.RUN);
+    const SW = C3.SW, NS = C3.NSF, hs = PF / NS, ps = C3.RUN / NS, ze = zm2, L2 = Math.hypot(C3.RUN, PF), angE = sg * Math.atan2(PF, C3.RUN);
     for (let k = 0; k < NS; k++) { const top = -(k + 1) * hs; SOL(A.ajoute(new THREE.BoxGeometry(ps, .14, SW), betonC, sg * (DB - (k + .5) * ps), top - .07, ze)); }
     { const sl = A.ajoute(new THREE.BoxGeometry(L2, .16, SW), betonC, sg * (DB - C3.RUN / 2), -PF / 2 - .2, ze, false); sl.rotation.z = angE;   // la paillasse
       const gl = A.ajoute(new THREE.BoxGeometry(L2, .04, .26), A.mat({ color: 0x9a9894, roughness: .7 }), sg * (DB - C3.RUN / 2), -PF / 2 + .02, ze - SW / 2 + .2, false); gl.rotation.z = angE; }   // la goulotte des vélos
@@ -2101,9 +2107,10 @@ function troisiemeCour(A, L, scene) {
     barreaux.forEach(([bx, bz], k) => { mt.makeTranslation(bx, yT + .1 + (HB - .1) / 2, bz); im.setMatrixAt(k, mt); }); im.castShadow = true; scene.add(im); }
   // la hauteur du sol : les marches, puis le porche
   rueEnPente(A, L, scene, SOL, zT, DB);
-  L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xR + .6 && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 1.5 ? Math.min(6, Math.floor(u / .3) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
+  L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xB && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; if (z >= RU.zS[1] && x < RU.xR + .5) return RU.y(z);
+      return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 6 * RU.rs ? Math.min(6, Math.floor(u / RU.rs) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
     if ((x > DB + .05 && z < zT) || (x > RU.xL && z < RU.zA + RU.cour)) return RU.y(z); if (z <= zt0 && z >= zt1 && x >= LT / 2 && x < LT / 2 + 2 * C3.ESC.W) return C3.hEsc(x, z, yT); if (z <= zt0 && z >= zt1 && Math.abs(x) < LT / 2) return yT; if (z <= zt0) return 0; if (Math.abs(x) >= DB) return 0; if (z <= zT && z > zt0) { const u = DB - Math.abs(x), bas = Math.abs(x) >= LM || (p && p.g && p.g.position.y < -.5);   // (la fosse ; sous les marches raides, on reste en bas si l'on y est)
-      if (bas && x > 0 && Math.abs(z - (zT + zt0) / 2) < C3.SW / 2 && u < C3.RUN) return -Math.min(14, Math.floor(u / (C3.RUN / 14)) + 1) * C3.PF / 14; if (bas) return -C3.PF; } if (z <= zT && Math.abs(x) < LM) return hp + Math.min(NT, Math.floor((zT - z) / PT) + 1) * HT2; if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
+      if (bas && x > 0 && Math.abs(z - (zT + zt0) / 2) < C3.SW / 2 && u < C3.RUN) return -Math.min(C3.NSF, Math.floor(u / (C3.RUN / C3.NSF)) + 1) * C3.PF / C3.NSF; if (bas) return -C3.PF; } if (z <= zT && Math.abs(x) < LM) return hp + Math.min(NT, Math.floor((zT - z) / PT) + 1) * HT2; if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
     return 0; };   // (les marches, le passage, les trottoirs)
 }
 function deuxiemeCour(A, L, scene) {
@@ -2111,11 +2118,11 @@ function deuxiemeCour(A, L, scene) {
   const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, (X) / 2, (prof / 2) / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(pav);
   const pasS = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, (2.4) / 2, (6) / 2) }), 0, .012, -24, false); pasS.rotation.x = -Math.PI / 2;   // le sol du passage
   // le verso du bâtiment à l'horloge (face à la deuxième cour), percé du passage
-  const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true, 4.4, 2.4, false, 6)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI;
+  const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true, 4.4, 2.4, false, 7)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI;
   // le bâtiment d'en face, pareil, et son passage
   const face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-2.4, 0); tr.lineTo(-2.4, 4.4); tr.lineTo(2.4, 4.4); tr.lineTo(2.4, 0); tr.closePath(); face.holes.push(tr);
-  const tF = tex(toileVerso(44, 24, false, 4.4, 2.4, false, 6)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+  const tF = tex(toileVerso(44, 24, false, 4.4, 2.4, false, 7)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12);
   toitParisien(A, scene, -22, 22, z1, z1 - 12, 24);
   troisiemeCour(A, L, scene);
@@ -3660,8 +3667,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (estAdmin() && Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                  // le passage du bâtiment d'en face (en travaux : l'administrateur seul)
       || (estAdmin() && Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !C3.dansBac(Math.abs(x), z) && !(C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
       || (estAdmin() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < C3.x - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : C3.zFond) + .3)   // les ruelles, de chaque côté de l'immeuble
-      || (estAdmin() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zT - .3 && z > RU.zA + RU.cour + .4)   // le contrebas, entre les deux barrières
-      || (estAdmin() && x > C3.x - .6 && x <= C3.x + .2 && z > RU.zS[0] + .2 && z < RU.zS[1] - .2)   // ses marches
+      || (estAdmin() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zS[0] - .2 && z > RU.zA + RU.cour + .4)
+      || (estAdmin() && x > C3.x - .6 && x < RU.xR + .8 && z > RU.zS[0] + .2 && z < RU.zS[1] - .2)   // les marches, jusqu'à l'ouverture
+      || (estAdmin() && x > RU.xR + .6 && x < RU.xB - .4 && z < RU.zT - .3 && z > RU.zA + RU.cour + .4)   // la contre-allée
+      || (estAdmin() && x > C3.x - .6 && x < RU.xR - .1 && z > RU.zS[1] + .2 && z < RU.zT - .3)   // le bloc, au bout   // le contrebas, entre les deux barrières
       || (estAdmin() && x > C3.LB / 2 + .35 && x < C3.x - .45 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
       || (estAdmin() && x > RU.xL + .4 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3)   // la place devant l'arcade (jusqu'au pan coupé)
       || (estAdmin() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
