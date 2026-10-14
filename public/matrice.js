@@ -2019,7 +2019,7 @@ function troisiemeCour(A, L, scene) {
         A.ajoute(new THREE.BoxGeometry(.04, HPo, .06), fer, xp - sg * .02, hp + HPo / 2, zc3 + sz * (LP / 4 - .03), false);
         A.ajoute(new THREE.BoxGeometry(.05, .3, .03), A.mat({ color: 0xb8bcc0, metalness: .8, roughness: .3 }), xp - sg * .05, hp + 1.05, zp + sz * .1, false); }   // les poignées
       A.ajoute(new THREE.BoxGeometry(.04, HPo, .05), fer, xp - sg * .02, hp + HPo / 2, zp, false); } }
-  const solP = SOL(A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().paves, (LM) / 2, (PP / 2) / 2) }), 0, hp + .012, z1 - PP / 2, false)); solP.rotation.x = -Math.PI / 2;
+  const solP = SOL(A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().betonFonce, LM * 2, PP), roughness: .95 }), 0, hp + .012, z1 - PP / 2, false)); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
   // derrière le passage : sept marches plus raides, puis la terrasse (un toit plat en béton foncé, de la largeur de l'immeuble, 6 m de profondeur), entourée d'une barrière en fer noir
   const zT = z1 - PP, { NT, HT2, PT, LT, PTr } = C3, zt0 = zT - NT * PT, zt1 = zt0 - PTr, yT = hp + NT * HT2;
