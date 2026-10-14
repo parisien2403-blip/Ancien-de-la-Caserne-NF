@@ -1701,6 +1701,17 @@ C3.dedans = (q) => { if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return
   return null; };
 C3.enBas = () => { const q = M && M.moiNum && M.gens && M.gens.get(M.moiNum); return !!(q && q.g && q.g.position.y < -1); };
 C3.dansPoub = (x, z) => !!C3.poub && C3.poub.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3);
+/* changer de niveau dans le chantier : un clic sur la terrasse depuis le sol (ou l'inverse) passe par l'escalier le plus court — les marches raides, ou celui de la ruelle de gauche —
+   au lieu de chercher un chemin sur le mauvais niveau (on se retrouvait dans la cabane et sous la terrasse) ; arrivé à l'escalier, on repart vers le point visé */
+C3.etage = (moi, x, y, z) => { if (!estAdmin() || !C3.dansChantier(x, z) || C3.enBas() || !moi) return false; const haut = C3.enHaut(moi), versHaut = y > 2; if (haut === versHaut) return false;
+  const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, G = C3.escG, E = [[[0, zT + .8], [0, zt0 - .8]]];
+  if (G) { const zm = (G.z0 + G.z1) / 2; E.push([[G.x0 - G.run - .6, zm], [G.x0 + .6, zm]]); }
+  const p0 = moi.g.position; let best = null;
+  for (const [bas, hautP] of E) { const [a, b] = versHaut ? [bas, hautP] : [hautP, bas];
+    M.passeTravaux = true; const pts = itineraire(M.L, p0.x, p0.z, a[0], a[1]); M.passeTravaux = false; if (!pts.length) continue;
+    let l = 0, q = [p0.x, p0.z]; for (const r of pts) { l += Math.hypot(r[0] - q[0], r[1] - q[1]); q = r; } l += Math.hypot(b[0] - a[0], b[1] - a[1]) + Math.hypot(x - b[0], z - b[1]);
+    if (!best || l < best.l) best = { l, pts: [...pts, b] }; }
+  if (!best) return false; const v = best.pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); moi.cible = v.shift(); moi.chemin = v; moi.suite = [x, z]; return true; };
 C3.dansChantier = (x, z) => z < C3.z0 - .4 && z > RU.zA + RU.cour + .3 && x > -C3.x - 6 && x < RU.xB;
 C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, za = zt1 - (zT - zt0), DB = C3.LB / 2, ax = Math.abs(x);
   if (C3.enHaut()) { const E = C3.ESC, P = C3.pont;   // en haut : la terrasse, le pont sur le toit de la cabane, le haut de l'escalier en U
@@ -4826,12 +4837,12 @@ export async function ouvrir(ctx) {
         if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2, true); } return; } }   // on touche la cour : on sort
       if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         if ((sols.includes(h.object) || (n && n.y > .7)) && M.L.allerEtage) { const moi = M.gens.get(M.moiNum); if (moi && M.L.allerEtage(moi, h.point.x, h.point.z, h.point.y)) { envoyerWS({ t: "aller", x: h.point.x, z: h.point.z }); return; } }
-        if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true);
+        if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true, h.point.y);
         else { const c = M.camera.position, dx = c.x - h.point.x, dz = c.z - h.point.z, l = Math.hypot(dx, dz) || 1; allerVers(h.point.x + dx / l * .5, h.point.z + dz / l * .5, true); }
         return; }
     }
     const s = ray.intersectObjects([M.L.sol, ...(M.L.solsPlus || [])])[0];   // (dehors)
-    if (s) allerVers(s.point.x, s.point.z, true);
+    if (s) allerVers(s.point.x, s.point.z, true, s.point.y);
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
   });
   rendu.domElement.addEventListener("pointercancel", () => { glisse = null; });
@@ -4857,12 +4868,13 @@ export async function ouvrir(ctx) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
-        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }
+        if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0;
+          if (p.suite) { const s2 = p.suite; p.suite = null; viser(p, s2[0], s2[1]); if (p.moi && p.cible) M.repere.material.opacity = 1; } } }   // (au bout de l'escalier : on repart vers le point visé, sur le nouveau niveau)
         else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
           // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
           if (!M.L.limites(p.g.position.x, p.g.position.z) && p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; }
           // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
-          p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
+          p.cible = null; p.chemin = []; p.suite = null; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }
         else {
           /* une marche fluide : on accélère au départ, on ralentit en arrivant, et l'on tourne en douceur dans les virages au lieu de s'arrêter à chaque coin */
           const dn = d.clone().normalize(), fin = !(p.chemin && p.chemin.length);
@@ -6407,14 +6419,16 @@ function itineraire(L, x0, z0, x1, z1) {
 // le point libre le plus proche (pour ne pas se placer dans une table)
 function viserLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let k = 1; k <= 20; k++) for (let a = 0; a < 12; a++) { const tx = x + Math.cos(a / 12 * Math.PI * 2) * k * .15, tz = z + Math.sin(a / 12 * Math.PI * 2) * k * .15; if (M.L.limites(tx, tz)) return [tx, tz]; } return [x, z]; }
 function viser(p, x, z) {
+  p.suite = null;
   M.passeTravaux = !!(p.info && p.info.admin && !p.pnj); const pts = itineraire(M.L, p.g.position.x, p.g.position.z, x, z); M.passeTravaux = false;
   if (!pts.length) { p.cible = null; p.chemin = []; return; }
   const v = pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); p.cible = v.shift(); p.chemin = v;
 }
-function allerVers(x, z, envoyer) {
+function allerVers(x, z, envoyer, y = null) {
   if (M && M.cine) return;
   if (M && M.lieu === "hv1955" && M.pousse) return;
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi || (M.L && M.L.apo && APO.zombieFin)) return; moi.rapide = false;
+  if (y != null && M.lieu === "grande" && C3.etage(moi, x, y, z)) { M.repere.position.set(x, y + .04, z); M.repere.material.opacity = 1; if (envoyer) envoyerWS({ t: "aller", x, z }); return; }   // (changer de niveau dans le chantier : par l'escalier)
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   let px = x, pz = z;
   if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
