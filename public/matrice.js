@@ -5829,17 +5829,17 @@ function construireScene(id) {
     graine = 5;
     const cielNuit = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#050b1c"); g.addColorStop(.7, "#14224a"); g.addColorStop(1, "#2a3a64"); x.fillStyle = g; x.fillRect(0, 0, w, h);
       for (let i = 0; i < 260; i++) { const a = alea(); x.fillStyle = `rgba(255,255,255,${.3 + a * .7})`; x.fillRect(alea() * w, alea() * h * .75, a > .92 ? 2 : 1, a > .92 ? 2 : 1); } }));
-    const lune = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(256, 256, (x) => { const g = x.createRadialGradient(128, 128, 40, 128, 128, 126); g.addColorStop(0, "rgba(255,250,225,.55)"); g.addColorStop(1, "rgba(255,250,225,0)");
+    const lune = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(256, 256, (x) => { const g = x.createRadialGradient(128, 128, 40, 128, 128, 126); g.addColorStop(0, "rgba(255,250,225,.8)"); g.addColorStop(.45, "rgba(235,240,255,.25)"); g.addColorStop(1, "rgba(255,250,225,0)");
       x.fillStyle = g; x.fillRect(0, 0, 256, 256); x.fillStyle = "#f6f1dc"; x.beginPath(); x.arc(128, 128, 46, 0, 7); x.fill();
       x.fillStyle = "rgba(170,165,140,.45)"; [[112, 112, 9], [140, 138, 12], [124, 150, 6], [146, 110, 5]].forEach(([a, b, rr]) => { x.beginPath(); x.arc(a, b, rr, 0, 7); x.fill(); }); })), fog: false, depthWrite: false }));
-    lune.position.set(23.5, 29, -22); lune.scale.set(8, 8, 1); lune.visible = false; scene.add(lune);
+    lune.position.set(23.5, 29, -22); lune.scale.set(10, 10, 1); lune.visible = false; scene.add(lune);
     const clair = new THREE.AmbientLight(0x9fb4ff, 0); scene.add(clair);
     L.setNuit = (n) => {
       L.nuit = n;
       scene.background = n ? cielNuit : cielJour; scene.fog.color.setHex(n ? 0x0c1530 : 0xcfe6f7);
-      hemi.intensity = n ? .32 : 1.1; hemi.color.setHex(n ? 0x6f86c8 : 0xdcefff);
-      soleil.intensity = n ? .55 : 2.3; soleil.color.setHex(n ? 0xaec2ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
-      clair.intensity = n ? .25 : 0; lune.visible = n; nuages.forEach(o => o.visible = !n);
+      hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
+      soleil.intensity = n ? 1.35 : 2.3; soleil.color.setHex(n ? 0xc6d4ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
+      clair.intensity = n ? .32 : 0; lune.visible = n; nuages.forEach(o => o.visible = !n);
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
       (L.nuitObjets || []).forEach(o => o.visible = n);
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
