@@ -1703,7 +1703,8 @@ C3.enBas = () => { const q = M && M.moiNum && M.gens && M.gens.get(M.moiNum); re
 C3.dansChantier = (x, z) => z < C3.z0 - .4 && z > RU.zA + RU.cour + .3 && x > -C3.x && x < RU.xB;
 C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, za = zt1 - (zT - zt0), DB = C3.LB / 2, ax = Math.abs(x);
   if (C3.enHaut()) { const E = C3.ESC, P = C3.pont;   // en haut : la terrasse, le pont sur le toit de la cabane, le haut de l'escalier en U
-    return (ax < C3.LT / 2 - .3 && z < zt0 - .3 && z > zt1 + .3) || (P && x > P.x0 + .3 && x < P.x1 - .3 && z > za + .3 && z < zt1 + .7)
+    return (ax < C3.LT / 2 - .3 && z < zt0 - .3 && z > zt1 + .3) || (ax < C3.LM - .3 && z >= zt0 - .5 && z < zT - .3) ||   // (et les marches raides, pour redescendre vers le porche)
+      (P && x > P.x0 + .3 && x < P.x1 - .3 && z > za + .3 && z < zt1 + .7)
       || (x > C3.LT / 2 - .5 && x < C3.LT / 2 + 2 * E.W - .2 && z > E.zA + .2 && z < E.z0 + E.run + E.pal - .2); }
   if (z < zT && z > zt0 && ax < DB + .2) { const zm = (zT + zt0) / 2, esc = x > 0 && DB - x < C3.RUN + .2 && Math.abs(z - zm) < C3.SW / 2 - .15;   // la fosse des lavoirs
     if (C3.enBas()) return ax < DB - .3 && z < zT - .3 && z > zt0 + .3 || esc;
