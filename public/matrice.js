@@ -2041,7 +2041,11 @@ function troisiemeCour(A, L, scene) {
       const pas = .13, n = Math.floor((zb - .1 - zt0) / pas), im = new THREE.InstancedMesh(new THREE.BoxGeometry(.018, 1, .018), fer, n), mt = new THREE.Matrix4();
       for (let k = 0; k < n; k++) { const z = zt0 + .05 + k * pas, y0 = dessusM(z), y1 = nez(z) + HR - .03; mt.compose(new THREE.Vector3(xb, (y0 + y1) / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, Math.max(.05, y1 - y0), 1)); im.setMatrixAt(k, mt); }
       im.castShadow = true; scene.add(im); } }
-  SOL(A.ajoute(new THREE.BoxGeometry(LT, yT, PTr), [betonF, betonF, dessus, betonF, betonF, betonF], 0, yT / 2, zt0 - PTr / 2));   // la terrasse
+  // la terrasse : ses murs en brique, tout le tour, avec le liseré de pierre blanche en bas et en haut
+  const murT = (w) => A.mat({ map: tex(toileF(Math.round(w * 40), Math.round(yT * 40), (x, W, H) => { murBrique(x, 0, 0, W, H, "rouge"); pierre(x, 0, H - 14, W, 14, "#e9e6df", 14, 70); pierre(x, 0, 0, W, 10, "#ece8df", 10, 70);
+    x.fillStyle = "rgba(40,25,18,.3)"; x.fillRect(0, 10, W, 2); x.fillRect(0, H - 16, W, 2); })), roughness: .9 });
+  const mX = murT(PTr), mZ = murT(LT);
+  SOL(A.ajoute(new THREE.BoxGeometry(LT, yT, PTr), [mX, mX, dessus, betonF, mZ, mZ], 0, yT / 2, zt0 - PTr / 2));   // la terrasse
   // contre la face de la terrasse côté rue : l'escalier en U, en béton gris clair — on monte vers la gauche (côté rue), palier, demi-tour, on remonte vers la droite contre le mur, et l'on entre sur la terrasse
   { const E = C3.ESC, W = E.W, tot = E.haut + E.run + E.pal; E.z0 = zt1 + (PTr - tot) / 2 + E.haut; const z1 = E.z0 + E.run; E.z3 = E.z0; E.zA = E.z0 - E.haut;
     const xi = LT / 2 + W / 2, xo = LT / 2 + W * 1.5, h = yT / 2 / E.n, p = E.run / E.n, bc = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .95 }), fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 });
