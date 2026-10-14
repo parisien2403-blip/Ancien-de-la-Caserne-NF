@@ -289,7 +289,8 @@
   .mx-lieux .nb { display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 10px; background: #2ea043; color: #fff; font-size: 12px; }
   .mx-scene { position: relative; height: min(62vh, 560px); min-height: 300px; border-radius: 18px; overflow: hidden; background: #8cc4ef; box-shadow: 0 10px 28px rgba(40,20,10,.25); touch-action: none; }
   .mx-scene canvas { display: block; width: 100%; height: 100%; }
-  .mx-scene:fullscreen { height: 100%; border-radius: 0; }
+  .mx-scene:fullscreen, .mx-scene.plein-css { height: 100%; border-radius: 0; }
+  .mx-scene.plein-css { position: fixed; inset: 0; z-index: 900; height: var(--app-h, 100dvh); }   /* (le plein écran sans la page « Pour quitter le plein écran… » du navigateur) */
   .mx-voile { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, #5fa8e6, #bfe0f7); color: #1f2a37; font: 700 16px "Lato", sans-serif; text-align: center; padding: 20px; z-index: 2; }
   .mx-voile[hidden], .mx-info[hidden] { display: none; }
   .mx-presents { position: absolute; left: 10px; top: 10px; right: 56px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; z-index: 1; }
@@ -315,23 +316,23 @@
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
   .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 200px); }
   .mx-danses .mx-danse { padding: 7px 11px; font-size: 13px; }
-  .mx-scene:fullscreen .mx-danses { bottom: 74px; left: auto; right: 12px; justify-content: flex-end; max-width: calc(100% - min(70%, 420px) - 36px); }   /* (à droite : la discussion s'écrit à gauche sans les cacher ; le bouton Musique passe au-dessus) */
-  .mx-scene:fullscreen .mx-fil-plein { bottom: 168px; }
+  .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { bottom: 74px; left: auto; right: 12px; justify-content: flex-end; max-width: calc(100% - min(70%, 420px) - 36px); }   /* (à droite : la discussion s'écrit à gauche sans les cacher ; le bouton Musique passe au-dessus) */
+  .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: 168px; }
   .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
-  .mx-scene:fullscreen .mx-musique { bottom: 160px; }
-  .mx-scene:fullscreen .mx-fil-plein { bottom: 70px; }
-  .mx-scene:fullscreen .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
+  .mx-scene:fullscreen .mx-musique, .mx-scene.plein-css .mx-musique { bottom: 160px; }
+  .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: 70px; }
+  .mx-scene:fullscreen .mx-dire-plein, .mx-scene.plein-css .mx-dire-plein { display: flex; position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); gap: 8px; z-index: 4; }
   .mx-dire-plein input { flex: 1; min-width: 0; border: 0; border-radius: 99px; padding: 12px 16px; font: 16px "Lato", sans-serif; background: rgba(255,255,255,.94); outline: none; }
-  .mx-scene:fullscreen .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
+  .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
   @media (max-width: 760px) {   /* (plein écran sur téléphone : les danses sur une ligne qu'on fait défiler, le bouton Musique au-dessus à droite, la discussion à gauche) */
-    .mx-scene:fullscreen .mx-danses { left: 12px; right: 12px; max-width: none; bottom: 70px; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
-    .mx-scene:fullscreen .mx-danses::-webkit-scrollbar { display: none; } .mx-scene:fullscreen .mx-danses .mx-danse { flex: 0 0 auto; }
-    .mx-scene:fullscreen .mx-musique.mx-musique { bottom: 118px; }
-    .mx-scene:fullscreen .mx-fil-plein { bottom: 118px; max-width: calc(100% - 170px); } }
+    .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { left: 12px; right: 12px; max-width: none; bottom: 70px; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+    .mx-scene:fullscreen .mx-danses::-webkit-scrollbar, .mx-scene.plein-css .mx-danses::-webkit-scrollbar { display: none; } .mx-scene:fullscreen .mx-danses .mx-danse, .mx-scene.plein-css .mx-danses .mx-danse { flex: 0 0 auto; }
+    .mx-scene:fullscreen .mx-musique.mx-musique, .mx-scene.plein-css .mx-musique.mx-musique { bottom: 118px; }
+    .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: 118px; max-width: calc(100% - 170px); } }
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
-  .mx-scene:fullscreen .mx-musique { bottom: 160px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
+  .mx-scene:fullscreen .mx-musique, .mx-scene.plein-css .mx-musique { bottom: 160px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
   .mx-musique.mx-son { left: auto; right: 12px; transform: none; background: rgba(31,42,55,.8); color: #fff; }
   .mx-boutons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 10px; } .mx-tete .mx-boutons .btn { margin-top: 0; }
   .mx-musique { position: absolute; left: auto; right: 12px; bottom: 14px; transform: none; z-index: 3; border: 0; border-radius: 99px; padding: 10px 18px;
@@ -2380,7 +2381,7 @@
     $("djEnvoi").hidden = true; chargerDisco();
   };
 
-  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; $("mxScene").classList.remove("plein-css"); document.body.style.overflow = ""; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   /* la discussion : sous la scène les derniers messages (une heure au plus), chacun peut retirer les siens, l'administrateur tous ;
      en plein écran, un message ne reste affiché qu'une minute */
   let mxFilListe = [];
@@ -2398,7 +2399,11 @@
   $("mxDirePlein").onsubmit = e => { e.preventDefault(); const t = $("mxTextePlein").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTextePlein").value = ""; };
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
-  $("mxPlein").onclick = () => { const s = $("mxScene"); if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
+  // le plein écran : sur un téléphone ou une tablette, on agrandit la Matrice à toute la fenêtre (sans le message du navigateur) ; sur un ordinateur, le vrai plein écran
+  const pleinCSS = matchMedia("(pointer: coarse)").matches;
+  $("mxPlein").onclick = () => { const s = $("mxScene");
+    if (pleinCSS) { const on = s.classList.toggle("plein-css"); document.body.style.overflow = on ? "hidden" : ""; if (on) scrollTo(0, 0); dispatchEvent(new Event("resize")); return; }
+    if (document.fullscreenElement === s) document.exitFullscreen(); else (s.requestFullscreen || s.webkitRequestFullscreen || (() => {})).call(s); };
   async function menuAncien(m, p) {
     if (!membres.length) { try { membres = await registre.membres(); } catch (e) {} }
     const fiche = membres.find(x => +x.numero === +p.numero);
@@ -2913,6 +2918,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.42", "14 octobre 2026", ["La cabane : de plain-pied ; à gauche, les marches descendent ; en bas, les toilettes en face et l'ouverture de la grande salle à droite", "Dans ces pièces, la caméra se rapproche et reste à l'intérieur ; dehors, dans le chantier, la vue est large et ne tremble plus", "Sur téléphone, le plein écran n'affiche plus le message du navigateur", "Chez Lou's : la cabine téléphonique n'a plus de porte, on voit le combiné pendre"]],
     ["4.41", "14 octobre 2026", ["La cabane derrière la terrasse devient une pièce : quatre marches carrelées, un palier, deux toilettes, et une ouverture vers la grande salle creusée sous la terrasse (sol carrelé, murs crème)", "Le chantier : on marche partout sans être bloqué (une règle des bacs à buissons gênait)"]],
     ["4.40", "14 octobre 2026", ["Derrière la terrasse : la baraque reculée (son entrée à l'angle de la terrasse), son toit en béton gris clair deux marches plus haut que la terrasse — deux marches et la barrière ouverte en font un pont ; on passe aussi dessous par l'ouverture"]],
     ["4.39", "14 octobre 2026", ["Le chantier (troisième cour, ruelles, terrasse, rue en pente) : l'administrateur peut marcher partout, sauf dans les murs", "Derrière la terrasse : une baraque en brique ouverte au centre côté rue, un mur de brique côté gauche", "À la reconnexion, la caméra apparaît directement là où l'on est (elle ne traverse plus la cour d'honneur)"]],

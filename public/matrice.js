@@ -1669,6 +1669,12 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .19, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
 C3.hp = C3.NM * C3.HM; C3.FL = -.68;   // (FL : le sol de la cabane et de la grande salle sous la terrasse, quatre marches plus bas)
 C3.enHaut = (p) => { const q = p && p.g ? p : (M && M.moiNum && M.gens && M.gens.get(M.moiNum)); return !!(q && q.g && q.g.position.y > 2); };
+C3.dedans = (q) => { if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return null; const x = q.g.position.x, z = q.g.position.z, c = C3.cab, v = C3.vest, zt0 = c.zt1 + C3.PTr;   // (dans la cabane, le vestibule, les toilettes, la grande salle : laquelle ?)
+  if (x > c.x0 && x < c.x1 + .1 && z > c.za && z < c.zt1) return [c.x0 + .35, c.x1 - .35, c.za + .4, c.zt1 + .8, 3.4];
+  if (x > v.xv - .05 && x < C3.LT / 2 && z >= c.zt1 && z < v.zd) return [v.xv + .2, v.xe - .2, c.zt1 - 1.6, v.zd - .2, C3.FL + 2.6];
+  if (x > v.xv - .05 && x < C3.LT / 2 && z >= v.zd && z < v.zf) return [v.xv + .2, v.xe - .2, v.zd - .6, v.zf - .25, C3.FL + 2.6];
+  if (Math.abs(x) < C3.LT / 2 && z >= c.zt1 && z < zt0) return [-C3.LT / 2 + .45, v.xv - .2, c.zt1 + .45, zt0 - .45, 3.4 - .5];
+  return null; };
 C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, za = zt1 - (zT - zt0), DB = C3.LB / 2, ax = Math.abs(x);
   if (z > C3.z0 - .4 || z < RU.zA + RU.cour + .3 || x < -C3.x + .45 || x > RU.xB - .45) return false;   // (entre la deuxième cour et la place de l'horloge, entre le mur noir de gauche et le bâtiment aux arcades)
   if (z < C3.z1 - .2 && z > zT + .2 && ax > C3.LM - .3 && ax < DB + .3) return false;                      // l'immeuble (on passe par son porche)
@@ -1893,6 +1899,7 @@ function barriereTravaux(A, scene, z) {
   for (const xc of [-2.9, 2.9]) { A.ajoute(new THREE.ConeGeometry(.17, .55, 16), A.mat({ color: 0xff6a10 }), xc, .3, z + .3); A.ajoute(new THREE.CylinderGeometry(.11, .14, .08, 16), A.mat({ color: 0xf4f2ec }), xc, .34, z + .3, false); }
 }
 function troisiemeCour(A, L, scene) {
+  L.c3 = true;
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
   const zF = z1 - PP - 2 * C3.NT * C3.PT - C3.PTr, DB = C3.LB / 2; C3.zFond = zF;   // (la façade du bâtiment du fond, au bout des ruelles ; la demi-largeur de l'immeuble)
   barriereTravaux(A, scene, C2.z1 + 1.0);
@@ -3799,6 +3806,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // la caméra reste sous la voûte quand on est dans le passage
     L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
       if (mp.z < -17.5) {      // sous l'horloge, ou dans la deuxième cour
+        { const b = C3.dedans(moi); if (b) { pos.x = Math.max(b[0], Math.min(b[1], pos.x)); pos.z = Math.max(b[2], Math.min(b[3], pos.z)); pos.y = Math.min(pos.y, b[4]); return true; } }   // (dans les pièces sous la terrasse : la caméra reste dedans)
+        if (mp.z < C3.z1 - C3.PP && mp.z > RU.zA + RU.cour && mp.y > -.3 && mp.y < 2) { pos.x = Math.max(-C3.x + .3, Math.min(RU.xB - .3, pos.x)); pos.z = Math.max(RU.zA + RU.cour + .3, Math.min(pos.z, C3.z1 - C3.PP + 6)); return true; }   // (tout le chantier, dehors : une vue large, comme ailleurs, sans à-coups)
         if ((mp.x > C3.LB / 2 + .2 && mp.z < RU.zT + .2) || (mp.x > RU.xL && mp.z < RU.zA + RU.cour)) { if (RU.lz(mp.x, mp.z) < .5) { const lx = Math.max(-1.9, Math.min(1.9, RU.lx(pos.x, pos.z))), lz = Math.max(-7.5, RU.lz(pos.x, pos.z)), cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2; pos.x = cx + (lx - lz) / Math.SQRT2; pos.z = cz + (lx + lz) / Math.SQRT2; pos.y = Math.min(pos.y, RU.y(RU.zA) + 5); } else pos.x = Math.max(mp.z < RU.zA + RU.cour ? RU.xL + .3 : C3.LB / 2 + .3, Math.min(RU.xB - .4, pos.x)); pos.z = Math.max(RU.zA - 6, Math.min(pos.z, C3.z1)); }   // (dans la rue en pente, sous l'arcade)
         else if (Math.abs(mp.x) > C3.LB / 2 + .2 && mp.z < C3.z1 + .3) { const sg = Math.sign(mp.x); pos.x = sg * Math.max(C3.LB / 2 + .3, Math.min(C3.x - .3, Math.abs(pos.x))); pos.z = Math.max(C3.zFond + .3, Math.min(pos.z, C3.z0 - .3)); }   // (dans une ruelle)
         else if (mp.z < C3.z1 - C3.PP - .3) { const zt0 = C3.z1 - C3.PP - C3.NT * C3.PT; pos.x = Math.max(-C3.LT / 2 + .3, Math.min(C3.LT / 2 - .3, pos.x)); pos.z = Math.max((C3.zFond ?? zt0 - C3.PTr - 6) + .3, Math.min(pos.z, C3.z1 - C3.PP + 4)); if (pos.z > C3.z1 - C3.PP - .2) { pos.x = Math.max(-C3.LM + .3, Math.min(C3.LM - .3, pos.x)); pos.y = Math.min(pos.y, C3.hp + 4.1); } }   // (les marches raides, la terrasse)
@@ -4840,7 +4849,9 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     if (M.L.pigeons) M.L.pigeons(t);
-    { const h = C3.enHaut(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }   // (sur un toit ou dessous : les passages changent)
+    { const h = C3.enHaut(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
+    if (M.L && M.L.c3) { const moi = M.moiNum && M.gens.get(M.moiNum), dd = !!C3.dedans(moi); if (dd !== M.dedansVu) { M.dedansVu = dd; M.L.suiviDehors = M.L.suiviDehors || M.L.suivi;
+        M.L.suivi = dd ? { d: 2.7, h: 1.9, av: 2.6, vy: 1.1 } : M.L.suiviDehors; M.camE = null; } }   // (dedans : la caméra se rapproche, juste derrière soi)   // (sur un toit ou dessous : les passages changent)
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
@@ -7611,7 +7622,7 @@ function interieurLouHV() { miroirHV = true; const B = chantierHV(9), O = [], { 
     // la porte pliante, à demi ouverte : deux battants vitrés en V, cadre de noyer, la poignée chromée
     const battant = (pos, ry) => B.avec(pos, ry, () => { const bw = .44; B.boite(bw, 1.95, .04, bw / 2, 1.08, 0, NOYER, { r: .4 }); B.boite(bw - .06, .45, .045, bw / 2, .42, 0, NOYER2, { r: .4 });
       B.plan(bw - .1, 1.25, bw / 2, 1.33, .023, verreM); B.plan(bw - .1, 1.25, bw / 2, 1.33, -.023, verreM, { ry: Math.PI }); B.boite(bw - .08, .025, .046, bw / 2, 1.33, 0, NOYER); B.boite(.025, 1.25, .046, bw / 2, 1.33, 0, NOYER); });
-    battant([-W2 / 2 + .05, 0, D2 / 2], -.75); battant([-W2 / 2 + .05 + .44 * Math.cos(.75), 0, D2 / 2 + .44 * Math.sin(.75)], .75);
+    void battant;   // (plus de porte : on voit le combiné pendre, de dehors)
     B.boite(.03, .18, .03, -W2 / 2 + .05 + .44 * Math.cos(.75) - .03, 1.1, D2 / 2 + .44 * Math.sin(.75) + .03, "#e2e6ea", { m: .5 }); });
   for (const x of [-4.05, -3.75, -3.45]) O.push([x, Z0 + .95, .14]);
   // sur le mur, à côté de la cabine, écrit au rouge à lèvres : CALL ME, le numéro, KISS, et la trace d'un baiser
