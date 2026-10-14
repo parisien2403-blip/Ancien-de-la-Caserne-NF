@@ -2204,8 +2204,11 @@ function troisiemeCour(A, L, scene) {
             x.fillStyle = "#1a1816"; x.beginPath(); x.ellipse(w * .6, h * .3, 62, 78, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(w * .25, h); x.quadraticCurveTo(w * .3, h * .5, w * .6, h * .48); x.quadraticCurveTo(w * .95, h * .5, w, h); x.fill();
             x.fillStyle = "#f4f2ea"; x.font = "bold 56px serif"; x.textAlign = "center"; ["精", "力", "善", "用"].forEach((k, i) => x.fillText(k, 70, 100 + i * 72)); }); tK.image = c; tK.needsUpdate = true; };
         imgK.src = "images/judo/kano.jpg";
-        A.ajoute(new THREE.BoxGeometry(.06, 1.38, 1.14), A.mat({ color: 0x1a1a1a, roughness: .5 }), X0 + .04, FL + 2.0, zc, false);   // le cadre noir
-        const ph = A.ajoute(new THREE.PlaneGeometry(1.0, 1.22), A.mat({ map: tK, roughness: .7 }), X0 + .08, FL + 2.0, zc, false); ph.rotation.y = Math.PI / 2; }
+        const yK = FL + 2.4, laque = A.mat({ color: 0x17120e, roughness: .35 });   // (au-dessus du capitonnage, centré sur le mur)
+        A.ajoute(new THREE.BoxGeometry(.02, 1.36, 1.14), A.mat({ color: 0xf1ece0, roughness: .9 }), X0 + .02, yK, zc, false);   // le passe-partout crème
+        A.ajoute(new THREE.BoxGeometry(.012, 1.134, .92), A.mat({ color: 0x3a3430 }), X0 + .034, yK, zc, false);                  // son filet sombre, autour de la photo
+        for (const s of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.06, 1.5, .07), laque, X0 + .03, yK, zc + s * .605, false); A.ajoute(new THREE.BoxGeometry(.06, .07, 1.28), laque, X0 + .03, yK + s * .715, zc, false); }   // le cadre, en bois laqué noir
+        const ph = A.ajoute(new THREE.PlaneGeometry(.9, 1.114), A.mat({ map: tK, roughness: .6 }), X0 + .042, yK, zc, false); ph.rotation.y = Math.PI / 2; }
       const hor = toile(128, 128, (x) => { x.fillStyle = "#fbfaf6"; x.beginPath(); x.arc(64, 64, 60, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#7a1e1e"; x.stroke(); x.fillStyle = "#222"; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 48 - 3, 64 + Math.sin(a) * 48 - 3, 6, 6); }
         x.strokeStyle = "#111"; x.lineWidth = 5; x.beginPath(); x.moveTo(64, 64); x.lineTo(64, 28); x.moveTo(64, 64); x.lineTo(90, 72); x.stroke(); });
       { const h2 = A.ajoute(new THREE.CircleGeometry(.25, 24), A.mat({ map: tex(hor) }), (OX0 + X0) / 2 + 4, FL + 2.8, Z0 + .02, false); }
