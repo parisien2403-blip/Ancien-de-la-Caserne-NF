@@ -1621,9 +1621,9 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     const ret = toileF(RD * 40 + 20, hR * 40, (x, w, h) => { murBrique(x, 0, 0, w, h, "rouge"); pierre(x, w - 20, 0, 20, h, "#ece7dc", 24, 20); for (let e = 0; e < 5; e++) { const Y = h - (e * 3 + 1.0) * 40 - 92; if (e) fenB(x, w / 2 - 22, Y, 30, 84, false); } });
     for (const sg of [-1, 1]) { const r = A.ajoute(new THREE.PlaneGeometry(RD + .5, hR), A.mat({ map: tex(ret), roughness: .9 }), AX + sg * (RW / 2 - .01), yb + yT + hR / 2, zA - RD / 2 + .25, false); r.rotation.y = -sg * Math.PI / 2; if (sg > 0) r.scale.x = -1; }
     // le pavillon de l'horloge, et son toit en pans coupés
-    const PW = 2.4, PH = 2.3, yP = yb + yT;   // (15 cm au-dessus et au-dessous du cadran)
+    const PW = 2.4, PH = 2.18, yP = yb + yT;   // (juste la place du cadran, une dizaine de centimètres autour)
     A.ajoute(new THREE.BoxGeometry(PW, PH, RD + .35), blancP, AX, yP + PH / 2, zA - RD / 2 + .17);
-    const tp = new THREE.Shape(); tp.moveTo(-PW / 2 - .18, 0); tp.lineTo(PW / 2 + .18, 0); tp.lineTo(PW / 2 + .18, .22); tp.lineTo(PW / 2 - .35, .8); tp.lineTo(-PW / 2 + .35, .8); tp.lineTo(-PW / 2 - .18, .22); tp.closePath();
+    const tp = new THREE.Shape(); tp.moveTo(-PW / 2 - .18, 0); tp.lineTo(PW / 2 + .18, 0); tp.lineTo(PW / 2 + .18, .12); tp.lineTo(PW / 2 - .3, .4); tp.lineTo(-PW / 2 + .3, .4); tp.lineTo(-PW / 2 - .18, .12); tp.closePath();
     A.ajoute(new THREE.ExtrudeGeometry(tp, { depth: RD + .6, bevelEnabled: false }), blancL, AX, yP + PH, zA - RD - .05);
     A.ajoute(new THREE.BoxGeometry(PW + .25, .14, RD + .55), blancL, AX, yP + PH - .07, zA - RD / 2 + .2);                     // la corniche
     // le cadran : octogone rouge, couronne dorée aux chiffres romains noirs, filet rouge, centre blanc, l'étoile dorée au pied des aiguilles
