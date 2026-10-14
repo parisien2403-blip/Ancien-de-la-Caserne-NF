@@ -1666,9 +1666,9 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 }
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
-const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .295, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
+const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .19, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
 C3.hp = C3.NM * C3.HM; C3.PF = 2.4; C3.RUN = 3.9; C3.SW = 1.8;
-C3.ESC = { W: 1.2, run: 3.92, pal: 1.4, haut: 1.3, n: 14 };   // l'escalier contre la face de la terrasse côté rue, en U : première volée (côté rue) vers la gauche, palier, demi-tour, seconde volée contre le mur vers la droite, palier du haut, et la terrasse
+C3.ESC = { W: 1.2, run: 2.8, pal: 1.4, haut: 1.3, n: 10 };   // l'escalier contre la face de la terrasse côté rue, en U : première volée (côté rue) vers la gauche, palier, demi-tour, seconde volée contre le mur vers la droite, palier du haut, et la terrasse
 C3.hEsc = (x, z, yT) => { const E = C3.ESC, h = yT / 2 / E.n, p = E.run / E.n, z1 = E.z0 + E.run, inner = x < C3.LT / 2 + E.W;
   if (z >= z1) return z < z1 + E.pal ? yT / 2 : 0;
   if (!inner) return z < E.z0 ? 0 : Math.min(E.n, Math.floor((z - E.z0) / p) + 1) * h;
@@ -2058,7 +2058,15 @@ function troisiemeCour(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(2 * W, .05, .05), fer, xm, yT / 2 + HR, z1 + E.pal - .04, false);   // au bout du palier
     seg(xm, z1, yT / 2, E.z0, yT); seg(xm, E.z0, yT, E.zA, yT);   // entre les deux volées, et le long du palier du haut
     for (let u = 0; u <= W; u += .13) A.ajoute(new THREE.BoxGeometry(.018, HR, .018), fer, LT / 2 + u, yT + HR / 2, E.zA + .04, false);
-    A.ajoute(new THREE.BoxGeometry(W, .05, .05), fer, xi, yT + HR, E.zA + .04, false); }
+    A.ajoute(new THREE.BoxGeometry(W, .05, .05), fer, xi, yT + HR, E.zA + .04, false);
+    // les murs de l'escalier, en brique : le côté rue (première volée et palier), le côté de la seconde volée, le palier du haut, les deux bouts
+    const tb = tex(tuileBrique("rouge", K_FAC), 1 / 9.2, 1 / 6.75), brique = A.mat({ map: tb, roughness: .9, side: THREE.DoubleSide });
+    const profil = (x, pts) => { const sh = new THREE.Shape(); pts.forEach(([z, y], i) => sh[i ? "lineTo" : "moveTo"](z, y)); sh.closePath(); const o = A.ajoute(new THREE.ShapeGeometry(sh), brique, x, 0, 0, false); o.rotation.y = -Math.PI / 2; return o; };
+    const marches = (za, sens, y0) => { const r = []; for (let k = 0; k < E.n; k++) { const zz = za + sens * k * p, y = y0 + (k + 1) * h; r.push([zz, y], [zz + sens * p, y]); } return r; };
+    profil(LT / 2 + 2 * W + .005, [[E.z0, 0], ...marches(E.z0, 1, 0), [z1 + E.pal, yT / 2], [z1 + E.pal, 0]]);   // côté rue
+    profil(LT / 2 + W + .005, [[z1, 0], [z1, yT / 2], ...marches(z1, -1, yT / 2), [E.zA, yT], [E.zA, 0]]);           // la seconde volée et le palier du haut
+    { const b1 = A.ajoute(new THREE.PlaneGeometry(2 * W, yT / 2), A.mat({ map: tex(tuileBrique("rouge", K_FAC), 2 * W / 9.2, yT / 2 / 6.75), roughness: .9 }), LT / 2 + W, yT / 4, z1 + E.pal + .005, false);
+      const b2 = A.ajoute(new THREE.PlaneGeometry(W, yT), A.mat({ map: tex(tuileBrique("rouge", K_FAC), W / 9.2, yT / 6.75), roughness: .9 }), xi, yT / 2, E.zA - .005, false); b2.rotation.y = Math.PI; } }
   // aux quatre coins de la terrasse : un grand pot rond et bas, comme une grosse coupole, rempli de fleurs
   { const potM = A.mat({ color: 0x8e8a82, roughness: .85 }), terreM = A.mat({ color: 0x3a2a1e, roughness: 1 }), feuille = A.mat({ color: 0x3e7a32, roughness: .9 });
     const fleurs = [0xd8203a, 0xf06aa0, 0xf6d23a, 0xf4f2ec, 0x8a4ac8, 0xf08a2a].map(c => A.mat({ color: c, roughness: .7 })), petite = new THREE.IcosahedronGeometry(1, 0); graine = 41;
