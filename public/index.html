@@ -1076,6 +1076,7 @@
           <div class="actions">
             <button class="btn" id="stampBtn">Faire tamponner</button>
             <button class="btn alt" id="dlBtn" disabled>Télécharger</button>
+            <button class="btn" id="corrBtn" type="button" hidden>✔ Valider les corrections</button>
           </div>
           <button class="btn" id="loginBtn" style="width:100%;margin-top:10px" hidden>Me connecter avec mon code</button>
         </div>
@@ -2656,6 +2657,22 @@
     afficherTamponne(fiche);
     $("bubble").innerHTML = `<b>C'est en règle, ${esc(me.prenom)}.</b> Laissez-passer n° ${NUM}. Ton code provisoire : <b>${esc(fiche.code)}</b>. Note-le bien et connecte-toi pour créer ton mot de passe.`;
   };
+  // le laissez-passer déjà tamponné : on corrige les champs, puis « Valider » enregistre la carte corrigée
+  $("corrBtn").onclick = async () => {
+    if (!moi || !moi.numero) return;
+    const nom = $("fNom").value.trim().toUpperCase(), prenom = $("fPrenom").value.trim(), qualite = $("fQual").value, parent = $("fParent").value.trim().toUpperCase();
+    if (!nom || !prenom) { $("bubble").innerHTML = "<b>Hé !</b> Nom et prénom d'abord."; return; }
+    $("corrBtn").disabled = true;
+    try {
+      const r = await api("PUT", "/api/moi/fiche", { nom, prenom, qualite, parent });
+      const avant = moi.prenom + " " + moi.nom;
+      Object.assign(moi, { nom: r.nom, prenom: r.prenom, qualite: r.qualite, parent: r.parent }); ecrire("caserne-moi", moi);
+      const m = membres.find(x => x.email === moi.email); if (m) Object.assign(m, { nom: r.nom, prenom: r.prenom, qualite: r.qualite, parent: r.parent });
+      afficherTamponne(moi);
+      $("bubble").innerHTML = `<b>C'est corrigé !</b> Ton laissez-passer n° ${esc(moi.numero)} est à jour.` + (avant !== moi.prenom + " " + moi.nom ? ` Pour te connecter, utilise désormais <b>${esc(moi.prenom)} ${esc(moi.nom)}</b>.` : "");
+    } catch (err) { $("bubble").innerHTML = `<b>Oups !</b> Correction non enregistrée : ${esc(err.message)}`; }
+    $("corrBtn").disabled = false;
+  };
   function afficherTamponne(f) {
     NUM = f.numero;
     $("fNom").value = f.nom; $("fPrenom").value = f.prenom; $("fQual").value = f.qualite;
@@ -2670,6 +2687,7 @@
     $("st2").classList.add("on"); $("st3").classList.add("on");
     $("dlBtn").disabled = false;
     $("stampBtn").disabled = true; $("stampBtn").textContent = "Tamponné ✓";
+    $("corrBtn").hidden = !(moi && moi.numero === f.numero && enLigne);
   }
   $("dlBtn").onclick = async () => {
     if (!window.html2canvas) { alert("Le téléchargement nécessite une connexion internet."); return; }
@@ -2895,6 +2913,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.34", "14 octobre 2026", ["Les pigeons de Paris : seuls ou par petits groupes, ils s'envolent quand on s'approche et se posent aux fenêtres et sur les corniches (pas la nuit)", "Les toits des immeubles en tuiles, avec cheminées, garde-corps et châssis vitrés", "Troisième cour : terrasse surélevée, reculée et raccourcie ; de chaque côté des marches, un creux avec sa descente (marches et pente pour les vélos) ; flancs à soubassement blanc et fenêtres de salle de bain", "Rue en pente : une seconde barrière avec son trottoir, et l'infirmerie (porte marron, croix rouge)", "Au poste : un bouton « Valider les corrections » pour corriger son laissez-passer"]],
     ["4.33", "14 octobre 2026", ["Cour d'honneur : le coin de droite en trottoir, mur plein ; les descentes d'eau jusqu'au sol avec leur dauphin en fonte", "Deuxième cour : le local électrique avancé et élargi (on passe derrière), les voûtes en brique avec soubassement blanc et trottoirs, les hauts murs en vieille maçonnerie parisienne", "Troisième cour : les bacs avancent en arrondi contre les marches, buissons ardents à baies rouges, trottoirs gris clair raccordés, ruelles élargies (une voiture passe), un cabanon de brique sur le toit du mur", "Rue en pente : l'horloge refaite d'après la photo — bandeau blanc, pavillon et son cadran octogonal doré, balcons à balustres, renfoncement et ses fenêtres"]],
     ["4.32", "14 octobre 2026", ["Les sols de la caserne en pavés de granit posés en éventail (d'après la photo)", "Les marches en béton gris clair, la terrasse en béton gris foncé", "Des trottoirs de bitume à bordure de granit le long des bâtiments et des murs (cour d'honneur, deuxième et troisième cour, rue en pente)", "Plus de trou dans le sol entre la terrasse et l'immeuble du fond"]],
     ["4.31", "14 octobre 2026", ["Les façades en vraie brique (rouge orangé et rouge mauve, d'après les photos) et en pierre blanche, avec leur patine, les coulures sous les fenêtres et les descentes d'eau en zinc", "Le toit mansardé de la cour d'honneur en ardoise"]],

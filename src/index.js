@@ -593,6 +593,17 @@ export class Compteur extends DurableObject {
     this.sql.exec("UPDATE membres SET bat = ?, etage = ? WHERE email = ?", bat, etage, moi.email);
     return { ok: true, bat, etage };
   }
+  // corriger son laissez-passer : nom, prénom, qualité, nom du Garde (le numéro et l'adresse de la caserne ne changent pas)
+  async corrigerFiche(token, x) {
+    const moi = this.moi(token, { tous: true });
+    let nom = texte(x.nom, 40).toUpperCase(), prenom = texte(x.prenom, 40);
+    if (!slug(nom) || !slug(prenom)) throw new Refus("Nom et prénom obligatoires");
+    if (moi.admin) { nom = moi.nom; prenom = moi.prenom; }   // (l'administrateur garde son nom : c'est lui qui ouvre sa connexion)
+    else if (this.estNomAdmin(prenom, nom)) throw new Refus("Ce nom est réservé à l'administrateur", 403);
+    const qualite = QUALITES.includes(x.qualite) ? x.qualite : moi.qualite, parent = qualite === "Gendarme" ? nom : texte(x.parent, 40).toUpperCase() || nom;
+    this.sql.exec("UPDATE membres SET nom = ?, prenom = ?, qualite = ?, parent = ? WHERE email = ?", nom, prenom, qualite, parent, moi.email);
+    return { ok: true, nom, prenom, qualite, parent };
+  }
   async changerPhoto(token, photo) {
     const moi = this.moi(token, { tous: true }), ok = photoValide(photo);
     if (!ok) throw new Refus("Photo invalide ou trop lourde");
@@ -1202,6 +1213,7 @@ export default {
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
       else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());
+      else if (route === "PUT /api/moi/fiche") r = await registre.corrigerFiche(token, await corps());
       else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
       else if (route === "GET /api/boite") r = await registre.boite(token);
       else if (route === "POST /api/messages") r = await registre.envoyer(token, await corps());
