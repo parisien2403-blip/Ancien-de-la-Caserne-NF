@@ -2085,7 +2085,7 @@ function troisiemeCour(A, L, scene) {
   { const gap = zT - zt0, zb = zt1 - gap, L2 = zt0 - zb, mw = murT(L2);   // à gauche, derrière la terrasse : un mur de brique ferme le passage vers la ruelle
     const mu = A.ajoute(new THREE.BoxGeometry(.3, yT, L2), [mw, mw, A.mat({ color: 0xe9e6df }), betonF, mw, mw], -DB - .15, yT / 2, (zt0 + zb) / 2); }
   /* la terrasse est creuse : dessous, la grande salle (sol carrelé, murs crème), quatre marches plus bas que la cour ; on y entre par la cabane, derrière */
-  const FL = C3.FL, E = .3, creme = A.mat({ color: 0xece2c8, roughness: .9 }), creme2 = A.mat({ color: 0xe2d6b8, roughness: .9 }), gris = A.mat({ color: 0x8a8580 }), OX0 = LT / 2 - 2.05, OX1 = OX0 + 1.5;   // (OX : l'ouverture vers la cabane)
+  const FL = C3.FL, E = .3, creme = A.mat({ color: 0xece2c8, roughness: .9 }), creme2 = A.mat({ color: 0xe2d6b8, roughness: .9 }), gris = A.mat({ color: 0x8a8580 }), OX0 = LT / 2 - 3.15, OX1 = LT / 2 - .25;   // (l'escalier de la cabane, sur toute sa largeur)   // (OX : l'ouverture vers la cabane)
   C3.salle = { OX0, OX1 };
   { const mur = (w, h, d, mats, x, y, z) => A.ajoute(new THREE.BoxGeometry(w, h, d), mats, x, y, z);
     // le mur du fond (côté cabane), percé de l'ouverture à double battant (sans portes)
@@ -2096,14 +2096,12 @@ function troisiemeCour(A, L, scene) {
     for (const sx of [OX0, OX1]) A.ajoute(new THREE.BoxGeometry(.12, 2.6, E + .06), A.mat({ color: 0x5a3a22, roughness: .6 }), sx, FL + 1.3, zb, false);   // le chambranle
     { const se = SOL(A.ajoute(new THREE.PlaneGeometry(OX1 - OX0, E + .1), A.mat({ map: tex(toileCarreaux(), (OX1 - OX0) / 1.6, .25), roughness: .5 }), (OX0 + OX1) / 2, FL + .006, zb, false)); se.rotation.x = -Math.PI / 2; }   // le seuil
     /* en bas des marches, sous la terrasse : un petit vestibule ; en face, la porte des toilettes (deux cabinets) ; à droite, l'ouverture double de la grande salle */
-    { const xv = OX0 - .2, xe = LT / 2 - E, zt = zt1 + E, zd = zt + 2.2, zf = zd + 2.6, hm = 2.9, dz0 = zt + .25, dz1 = zt + 1.85, xp0 = (xv + xe) / 2 - .4, xp1 = xp0 + .8;
+    { const xv = OX0, xe = LT / 2 - E, zt = zt1 + E, zd = zt + 2.2, zf = zt0 - E, hm = yT - .3 - FL, dz0 = zt + .25, dz1 = zt + 1.85, xp0 = (xv + xe) / 2 - .4, xp1 = xp0 + .8;
       const cl = (w, d, x, z, h = hm, y0 = FL) => A.ajoute(new THREE.BoxGeometry(w, h, d), creme, x, y0 + h / 2, z);
       cl(.15, dz0 - zt, xv, (zt + dz0) / 2); cl(.15, zf - dz1, xv, (dz1 + zf) / 2); cl(.15, dz1 - dz0, xv, (dz0 + dz1) / 2, hm - 2.5, FL + 2.5);   // le mur de droite, et l'ouverture double
       for (const zz of [dz0, dz1]) A.ajoute(new THREE.BoxGeometry(.22, 2.5, .1), A.mat({ color: 0x5a3a22, roughness: .6 }), xv, FL + 1.25, zz, false);
       cl(xp0 - xv, .12, (xv + xp0) / 2, zd); cl(xe - xp1, .12, (xp1 + xe) / 2, zd); cl(xp1 - xp0, .12, (xp0 + xp1) / 2, zd, hm - 2.1, FL + 2.1);   // le mur des toilettes, et sa porte
       { const pt = A.ajoute(new THREE.BoxGeometry(.78, 2.05, .04), A.mat({ color: 0x6b4a2c, roughness: .6 }), xp0 + .1, FL + 1.03, zd + .4, false); pt.rotation.y = -1.1; pt.position.x -= .25; }   // la porte, ouverte
-      cl(xe - xv, .12, (xv + xe) / 2, zf);   // le fond des toilettes
-      A.ajoute(new THREE.BoxGeometry(xe - xv, .1, zf - zt), creme, (xv + xe) / 2, FL + hm + .05, (zt + zf) / 2, false);   // leur plafond
       const blanc = A.mat({ color: 0xf6f6f2, roughness: .25 }), xm2 = (xv + xe) / 2;
       for (const xw of [xm2 - .55, xm2 + .55]) { const cu = A.ajoute(new THREE.CylinderGeometry(.19, .15, .4, 20), blanc, xw, FL + .2, zf - .45); cu.scale.z = 1.3;
         A.ajoute(new THREE.BoxGeometry(.42, .38, .16), blanc, xw, FL + .62, zf - .14); A.ajoute(new THREE.TorusGeometry(.17, .03, 8, 20), blanc, xw, FL + .41, zf - .45).rotation.x = Math.PI / 2; }
@@ -2117,9 +2115,48 @@ function troisiemeCour(A, L, scene) {
     // le dessus : la dalle de la terrasse (le plafond de la salle)
     SOL(A.ajoute(new THREE.BoxGeometry(LT, .3, PTr), [gris, gris, dessus, creme2, gris, gris], 0, yT - .15, zt0 - PTr / 2));
     // le sol de la salle, carrelé
-    const sl = SOL(A.ajoute(new THREE.PlaneGeometry(LT - 2 * E, PTr - 2 * E), A.mat({ map: tex(toileCarreaux(), (LT - 2 * E) / 1.6, (PTr - 2 * E) / 1.6), roughness: .5 }), 0, FL + .005, zt0 - PTr / 2, false)); sl.rotation.x = -Math.PI / 2;
-    for (const lx of [-8, 0, 8]) { const l = new THREE.PointLight(0xfff0d8, 6, 12, 1.5); l.position.set(lx, yT - .6, zt0 - PTr / 2); scene.add(l);
-      A.ajoute(new THREE.CylinderGeometry(.18, .22, .1, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), lx, yT - .35, zt0 - PTr / 2, false); } }
+    /* la grande salle, c'est la salle de judo (d'après les photos) : les tatamis (gris au centre, la bande rouge, le bord bleu-gris), le bas des murs
+       capitonné vert sombre, le haut crème avec ses grilles d'aération et ses fenêtres hautes, le faux plafond quadrillé et ses plafonniers ronds,
+       l'espalier au fond, l'horloge, le tableau des ceintures, des cadres */
+    { const X0 = -LT / 2 + E, X1 = OX0 - .08, Z0 = zt1 + E, Z1 = zt0 - E, W = X1 - X0, D = Z1 - Z0, xc = (X0 + X1) / 2, zc = (Z0 + Z1) / 2, H = yT - .3 - FL, P = 40;
+      const tat = toile(Math.round(W * P), Math.round(D * P), (x, w, h) => {
+        x.fillStyle = "#4a5f72"; x.fillRect(0, 0, w, h);                                                                 // le bord bleu-gris
+        const m = .7 * P, r = 1.6 * P; x.fillStyle = "#b02a2c"; x.fillRect(m, m, w - 2 * m, h - 2 * m);                  // la bande rouge
+        x.fillStyle = "#8d9692"; x.fillRect(m + r, m + r, w - 2 * (m + r), h - 2 * (m + r));                           // le centre gris
+        x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = m; X <= w - m; X += 2 * P) { x.beginPath(); x.moveTo(X, m); x.lineTo(X, h - m); x.stroke(); }
+        for (let Y = m; Y <= h - m; Y += P) { x.beginPath(); x.moveTo(m, Y); x.lineTo(w - m, Y); x.stroke(); }          // les jointures des tapis (1 m × 2 m)
+        grain(x, 14); });
+      const sl = SOL(A.ajoute(new THREE.PlaneGeometry(W, D), A.mat({ map: tex(tat), roughness: .85 }), xc, FL + .03, zc, false)); sl.rotation.x = -Math.PI / 2;
+      // le bas des murs, capitonné vert sombre (1,5 m), sa baguette ; le haut, crème
+      const vert = A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#1f3631"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(0,0,0,.35)"; for (let X = 0; X < w; X += 64) x.fillRect(X, 0, 3, h); grain(x, 10); }), 1, 1), roughness: .8 });
+      const cap = (L2, x, z, ry) => { const v = A.ajoute(new THREE.BoxGeometry(L2, 1.5, .06), vert, x, FL + .75, z, false); v.rotation.y = ry; v.material = v.material.clone(); v.material.map = v.material.map.clone(); v.material.map.repeat.set(L2 / 1.6, 1); v.material.map.needsUpdate = true;
+        const bg = A.ajoute(new THREE.BoxGeometry(L2, .05, .1), A.mat({ color: 0xd8d0bc }), x, FL + 1.52, z, false); bg.rotation.y = ry; };
+      cap(D, X0 + .03, zc, Math.PI / 2); cap(D, X1 - .03, zc, Math.PI / 2); cap(W, xc, Z1 - .03, 0);
+      cap(OX0 - X0 - .1, (X0 + OX0) / 2, Z0 + .03, 0);
+      // le faux plafond quadrillé, et ses plafonniers ronds
+      const fp = A.ajoute(new THREE.PlaneGeometry(W, D), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#e8e6df"; x.fillRect(0, 0, w, h); x.fillStyle = "#9a978e"; for (let k = 0; k <= 256; k += 64) { x.fillRect(k - 2, 0, 4, h); x.fillRect(0, k - 2, w, 4); } }), W / 2.4, D / 2.4), roughness: .9 }), xc, FL + H - .02, zc, false); fp.rotation.x = Math.PI / 2;
+      const lum = new THREE.MeshBasicMaterial({ color: 0xfff6e2 });
+      for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) { const lx = X0 + (i + .5) * W / 6, lz = Z0 + (j + .5) * D / 3; A.ajoute(new THREE.CylinderGeometry(.22, .22, .06, 18), lum, lx, FL + H - .05, lz, false); }
+      for (const lx of [X0 + W / 4, xc, X1 - W / 4]) { const l = new THREE.PointLight(0xfff2dc, 7, 14, 1.4); l.position.set(lx, FL + H - .6, zc); scene.add(l); }
+      // le haut des murs : grilles d'aération, fenêtres hautes (côté fosse), cadres, le tableau des ceintures, l'horloge
+      const grille = A.mat({ map: tex(toile(64, 64, (x) => { x.fillStyle = "#cfc8b6"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#6f6a60"; for (let y = 8; y < 60; y += 8) x.fillRect(6, y, 52, 3); })) });
+      for (let k = 0; k < 8; k++) { const g = A.ajoute(new THREE.PlaneGeometry(.45, .3), grille, X0 + (k + .5) * W / 8, FL + H - .35, Z1 - .04, false); g.rotation.y = Math.PI; }
+      const vitre = A.mat({ color: 0xa9c3d4, roughness: .15, emissive: 0x3a4a56 }), cadreF = A.mat({ color: 0xb08a5a, roughness: .6 });
+      for (const fx of [X0 + W * .2, X0 + W * .45, X0 + W * .7]) { A.ajoute(new THREE.BoxGeometry(1.5, 1.0, .06), cadreF, fx, FL + 2.45, Z1 - .02, false);
+        const v = A.ajoute(new THREE.PlaneGeometry(1.36, .86), vitre, fx, FL + 2.45, Z1 - .06, false); v.rotation.y = Math.PI;
+        A.ajoute(new THREE.BoxGeometry(.04, .86, .04), cadreF, fx, FL + 2.45, Z1 - .07, false); }
+      const ceint = toile(256, 160, (x, w, h) => { x.fillStyle = "#f4f2ea"; x.fillRect(0, 0, w, h); ["#ffffff", "#f2d21e", "#f08a1e", "#2e9a3a", "#2a5ab8", "#6a3a1e", "#111111"].forEach((c, i) => { x.fillStyle = c; x.fillRect(20, 14 + i * 20, 216, 12); x.strokeStyle = "#999"; x.strokeRect(20, 14 + i * 20, 216, 12); }); });
+      { const t = A.ajoute(new THREE.PlaneGeometry(.9, .56), A.mat({ map: tex(ceint) }), X0 + W * .85, FL + 2.3, Z1 - .04, false); t.rotation.y = Math.PI; }   // le tableau des ceintures
+      for (const [fx, fy] of [[X0 + 2, 2.4], [X0 + 4.5, 2.4]]) { A.ajoute(new THREE.BoxGeometry(.06, .8, .6), A.mat({ color: 0x2a2a2a }), X0 + .05, FL + fy, Z0 + fx, false);
+        const ph = A.ajoute(new THREE.PlaneGeometry(.5, .7), A.mat({ color: 0xb8b0a0 }), X0 + .09, FL + fy, Z0 + fx, false); ph.rotation.y = Math.PI / 2; }   // des cadres (photos de champions)
+      // au fond, l'espalier, et l'horloge ronde au-dessus de la porte
+      const bois = A.mat({ color: 0x6a5238, roughness: .6 });
+      for (let k = 0; k < 2; k++) A.ajoute(new THREE.BoxGeometry(.08, 2.6, .08), bois, X0 + .1, FL + 1.3, zc - .6 + k * 1.2, false);
+      for (let k = 0; k < 12; k++) A.ajoute(new THREE.CylinderGeometry(.02, .02, 1.2, 8), bois, X0 + .1, FL + .2 + k * .2, zc, false).rotation.x = Math.PI / 2;
+      const hor = toile(128, 128, (x) => { x.fillStyle = "#fbfaf6"; x.beginPath(); x.arc(64, 64, 60, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#7a1e1e"; x.stroke(); x.fillStyle = "#222"; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 48 - 3, 64 + Math.sin(a) * 48 - 3, 6, 6); }
+        x.strokeStyle = "#111"; x.lineWidth = 5; x.beginPath(); x.moveTo(64, 64); x.lineTo(64, 28); x.moveTo(64, 64); x.lineTo(90, 72); x.stroke(); });
+      { const h2 = A.ajoute(new THREE.CircleGeometry(.25, 24), A.mat({ map: tex(hor) }), (OX0 + X0) / 2 + 4, FL + 2.8, Z0 + .02, false); }
+      C3.dojo = { X0, X1, Z0, Z1 }; } }
   // contre la face de la terrasse côté rue : l'escalier en U, en béton gris clair — on monte vers la gauche (côté rue), palier, demi-tour, on remonte vers la droite contre le mur, et l'on entre sur la terrasse
   { const E = C3.ESC, W = E.W, tot = E.haut + E.run + E.pal; E.z0 = zt1 + (PTr - tot) / 2 + E.haut; const z1 = E.z0 + E.run; E.z3 = E.z0; E.zA = E.z0 - E.haut;
     const xi = LT / 2 + W / 2, xo = LT / 2 + W * 1.5, h = yT / 2 / E.n, p = E.run / E.n, bc = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .95 }), fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 });
@@ -2174,15 +2211,13 @@ function troisiemeCour(A, L, scene) {
       mur(e, HB - OH, OW, [br(OW, HB - OH), creme, gr, gr, gr, gr], x1c - e / 2, OH + (HB - OH) / 2, zc5);
       mur(e, HB - FL, gap, [creme, br(gap, HB), gr, gr, gr, gr], x0c + e / 2, (HB + FL) / 2, zc5);                    // le mur du fond
       mur(LBq, HB - FL, e, [gr, gr, gr, gr, creme, br(LBq, HB)], xb5, (HB + FL) / 2, za + e / 2);                    // le mur côté immeuble
-      mur(LBq, HB - yT, .2, br(LBq, HB - yT), xb5, (HB + yT) / 2, zt1 - .1);                                           // au-dessus du mur de la terrasse
-      const zw5 = zc5 + OW / 2, xs0 = LT / 2 - 2.2, xs1 = x1c - e, sol = (xa, xb, z0s, z1s, y) => { const o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, z1s - z0s), A.mat({ map: tex(carreau, (xb - xa) / 1.6, (z1s - z0s) / 1.6), roughness: .5 }), (xa + xb) / 2, y + .005, (z0s + z1s) / 2, false)); o.rotation.x = -Math.PI / 2; };
-      sol(x0c + e, x1c - e, za + e, zw5, 0); sol(x0c + e, xs0, zw5, zt1, 0); sol(xs0, xs1, zw5, zt1, FL);   // (de plain-pied ; la cage de l'escalier, en bas)
+      mur(LBq, HB - yT, .2, [gr, gr, gr, gr, br(LBq, HB - yT), creme], xb5, (HB + yT) / 2, zt1 - .1);                                           // au-dessus du mur de la terrasse
+      const zw5 = zc5 + OW / 2, xs0 = x0c + e, xs1 = x1c - e, sol = (xa, xb, z0s, z1s, y) => { const o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, z1s - z0s), A.mat({ map: tex(carreau, (xb - xa) / 1.6, (z1s - z0s) / 1.6), roughness: .5 }), (xa + xb) / 2, y + .005, (z0s + z1s) / 2, false)); o.rotation.x = -Math.PI / 2; };
+      sol(x0c + e, x1c - e, za + e, zw5, 0); sol(xs0, xs1, zw5, zt1, FL);   // (de plain-pied ; la cage de l'escalier, en bas)
       const pl = A.ajoute(new THREE.PlaneGeometry(LBq - 2 * e, gap - e), creme, xb5, HB - .07, zc5 + e / 2, false); pl.rotation.x = Math.PI / 2;   // le plafond
-      // à gauche en entrant : les quatre marches carrelées, qui descendent vers la terrasse ; un muret les borde côté pièce
+      // à gauche en entrant : les quatre marches carrelées, sur toute la largeur, qui descendent sous la terrasse
       const zp = zc5 - OW / 2 - .1, mm = A.mat({ map: tex(carreau, 1, .3), roughness: .5 });
       for (let k = 0; k < 3; k++) { const top = -(k + 1) * .17; SOL(mur(xs1 - xs0, top - FL, .3, mm, (xs0 + xs1) / 2, (top + FL) / 2, zw5 + (k + .5) * .3)); }
-      mur(.1, 1.0 - FL, zt1 - zw5, creme, xs0 - .05, (1.0 + FL) / 2, (zw5 + zt1) / 2);   // le muret
-      A.ajoute(new THREE.BoxGeometry(.14, .05, zt1 - zw5), A.mat({ color: 0x6b4a2c, roughness: .5 }), xs0 - .05, 1.02, (zw5 + zt1) / 2, false);   // sa main courante
       C3.cab = { x0: x0c, x1: x1c, za, zt1, zc5, zp, zw: zw5, xs0, xs1, xd0: x0c + .65, xd1: x0c + 1.45 };
       const lu = new THREE.PointLight(0xfff0d8, 4, 7, 1.6); lu.position.set(xb5, HB - .5, zc5 + .5); scene.add(lu);
       A.ajoute(new THREE.CylinderGeometry(.14, .17, .08, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), xb5, HB - .12, zc5 + .5, false); }
