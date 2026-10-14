@@ -1786,6 +1786,7 @@ C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 =
   if (z > C3.z1 && C3.dansBac(ax, z)) return false;   // (les bacs, devant l'immeuble)
   if (C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]) return false;
   if (C3.dansPoub(x, z)) return false;
+  if (x < -C3.LB / 2 + .1 && x > -C3.x - .5 && z > C3.z1 - .4 && z < C3.z1 + 1.4) return false;                 // le mur noir prolongé, entre la ruelle de gauche et la troisième cour
   if (x > -C3.LT / 2 - .55 && x < -C3.LT / 2 + .25 && z > za - .1 && z < zt1 + .1) return false;           // le mur qui ferme le passage derrière la terrasse, côté ruelle                                                                       // le local poubelle
   if (C3.cab && !C3.enHaut()) { const c = C3.cab, dx = x > c.x0 - .15 && x < c.x1 + .15;
     if (dx && z > za - .15 && z < za + .4) return false;                                                              // le mur côté immeuble
@@ -2140,7 +2141,8 @@ function troisiemeCour(A, L, scene) {
   const verso = A.ajoute(new THREE.PlaneGeometry(44, 24), A.mat({ map: tex(toileVerso(44, 24, true, 4.4, 2.4, false, 7)), alphaTest: .5 }), 0, 12, z0 - .03, false); verso.rotation.y = Math.PI;
   // les hauts murs de pierre, de chaque côté
   for (const sg of [-1, 1]) { graine = sg > 0 ? 95 : 97;
-    const mm = murMitoyen(A, L), toit = A.mat({ color: 0x2a2622 }), faces = (w, d) => [mm(d), mm(d), toit, toit, mm(w), mm(w)]; if (sg < 0) { A.ajoute(new THREE.BoxGeometry(6, 22, z0 - z1), faces(6, z0 - z1), sg * (X + 3), 9, (z0 + z1) / 2); A.ajoute(new THREE.BoxGeometry(6, 22, z1 - RU.zA), A.mat({ color: 0x8a4a36 }), sg * (X + 9), 9, (z1 + RU.zA) / 2); }   // (le mur noir, le long de la troisième cour ; plus loin, l'immeuble de brique, en retrait de 6 m)
+    const mm = murMitoyen(A, L), toit = A.mat({ color: 0x2a2622 }), faces = (w, d) => [mm(d), mm(d), toit, toit, mm(w), mm(w)]; if (sg < 0) { A.ajoute(new THREE.BoxGeometry(6, 22, z0 - z1), faces(6, z0 - z1), sg * (X + 3), 9, (z0 + z1) / 2); A.ajoute(new THREE.BoxGeometry(6, 22, z1 - RU.zA), A.mat({ color: 0x8a4a36 }), sg * (X + 9), 9, (z1 + RU.zA) / 2);
+        A.ajoute(new THREE.BoxGeometry(X - DB, 22, 1), faces(X - DB, 1), -(X + DB) / 2, 9, z1 + .5); }   // (le mur noir, prolongé jusqu'au flanc de brique de l'immeuble, au même nu : la ruelle de gauche ne donne plus sur la troisième cour)   // (le mur noir, le long de la troisième cour ; plus loin, l'immeuble de brique, en retrait de 6 m)
       if (sg < 0) { const zh = z1, lg = zh - RU.zA, HF = 22, f = A.ajoute(new THREE.PlaneGeometry(lg, HF), A.mat({ map: tex(toileBriqueBandes(lg, HF, { arcs: true })), roughness: .9 }), -X - 6 + .02, HF / 2, (zh + RU.zA) / 2, false); f.rotation.y = Math.PI / 2;   // le long de la ruelle et du passage : une façade d'immeuble en brique, au lieu du mur noir
         const sb = A.ajoute(new THREE.PlaneGeometry(zF - RU.zA, 1.5), A.mat({ color: 0xe4dccb, roughness: .9 }), -X - 6 + .02, -.75, (zF + RU.zA) / 2, false); sb.rotation.y = Math.PI / 2; }   // (son soubassement de pierre, là où le sol descend vers la place)   // (à gauche : le mur noir longe la ruelle jusqu'au mur du fond de la place ; la ruelle tourne derrière le bâtiment du fond)
     else A.ajoute(new THREE.BoxGeometry(RU.xB - X, 20, z0 - zTr), faces(RU.xB - X, z0 - zTr), (X + RU.xB) / 2, 10, (z0 + zTr) / 2);
