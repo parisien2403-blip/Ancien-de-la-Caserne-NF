@@ -2001,6 +2001,10 @@ function troisiemeCour(A, L, scene) {
       const pl = A.ajoute(new THREE.PlaneGeometry(.7, .18), A.mat({ map: plq }), xp, -PF + 2.25, zT - .06, false); pl.rotation.y = Math.PI;
       const lp = new THREE.PointLight(0xfff0d0, 2.2, 5, 1.6); lp.position.set(xp, -.4, zm2); scene.add(lp); } }
   for (const sg of [-1, 1]) {
+    if (sg < 0) { const HR = 1.0, xr = -DB + .04;   // au fond, pas d'escalier : le mur, et en haut une barrière tout du long
+      A.ajoute(new THREE.BoxGeometry(.05, .05, D), fer, xr, HR, zm2, false); A.ajoute(new THREE.BoxGeometry(.04, .04, D), fer, xr, .12, zm2, false);
+      for (let z = zt0; z <= zT + .01; z += .13) A.ajoute(new THREE.BoxGeometry(.018, HR - .12, .018), fer, xr, .12 + (HR - .12) / 2, z, false); }
+    else {
     // l'escalier, au milieu de la largeur de la fosse : il part du bord de la ruelle et descend vers le milieu de l'immeuble
     const SW = C3.SW, NS = 14, hs = PF / NS, ps = C3.RUN / NS, ze = zm2, L2 = Math.hypot(C3.RUN, PF), angE = sg * Math.atan2(PF, C3.RUN);
     for (let k = 0; k < NS; k++) { const top = -(k + 1) * hs; SOL(A.ajoute(new THREE.BoxGeometry(ps, .14, SW), betonC, sg * (DB - (k + .5) * ps), top - .07, ze)); }
@@ -2014,6 +2018,8 @@ function troisiemeCour(A, L, scene) {
       for (let z = lo; z <= hi + .01; z += .13) A.ajoute(new THREE.BoxGeometry(.018, HR - .12, .018), fer, xr, .12 + (HR - .12) / 2, z, false);
       const mc = A.ajoute(new THREE.BoxGeometry(L2, .05, .05), fer, sg * (DB - C3.RUN / 2), -PF / 2 + HR, zs, false); mc.rotation.z = angE;
       for (let u = 0; u <= C3.RUN; u += .13) { const y0 = -PF * u / C3.RUN; A.ajoute(new THREE.BoxGeometry(.018, HR, .018), fer, sg * (DB - u), y0 + HR / 2, zs, false); } }
+    }
+    const HR = 1.0;
     // à côté de la terrasse (raccourcie) : le sol pavé, et une rambarde au bord de la fosse
     { const w2 = DB - LT / 2, d2 = PTr, sp = SOL(A.ajoute(new THREE.PlaneGeometry(w2, d2), A.mat({ map: tex(textures().paves, w2 / 4, d2 / 4) }), sg * (LT / 2 + w2 / 2), .012, zt0 - d2 / 2, false)); sp.rotation.x = -Math.PI / 2;
       A.ajoute(new THREE.BoxGeometry(w2, .05, .05), fer, sg * (LT / 2 + w2 / 2), HR, zt0 - .05, false); for (let k = 0; k <= 3; k++) A.ajoute(new THREE.BoxGeometry(.04, HR, .04), fer, sg * (LT / 2 + k * w2 / 3), HR / 2, zt0 - .05, false); } }
@@ -2072,7 +2078,7 @@ function troisiemeCour(A, L, scene) {
   rueEnPente(A, L, scene, SOL, zT, DB);
   L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xR + .6 && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 1.5 ? Math.min(6, Math.floor(u / .3) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
     if ((x > DB + .05 && z < zT) || (x > RU.xL && z < RU.zA + RU.cour)) return RU.y(z); if (z < zt1) return z > zt1 - C3.ESC.W ? C3.hEsc(x, yT) : 0; if (z <= zt0 && Math.abs(x) < LT / 2) return yT; if (z <= zt0) return 0; if (Math.abs(x) >= DB) return 0; if (z <= zT && z > zt0) { const u = DB - Math.abs(x), bas = Math.abs(x) >= LM || (p && p.g && p.g.position.y < -.5);   // (la fosse ; sous les marches raides, on reste en bas si l'on y est)
-      if (bas && Math.abs(z - (zT + zt0) / 2) < C3.SW / 2 && u < C3.RUN) return -Math.min(14, Math.floor(u / (C3.RUN / 14)) + 1) * C3.PF / 14; if (bas) return -C3.PF; } if (z <= zT && Math.abs(x) < LM) return hp + Math.min(NT, Math.floor((zT - z) / PT) + 1) * HT2; if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
+      if (bas && x > 0 && Math.abs(z - (zT + zt0) / 2) < C3.SW / 2 && u < C3.RUN) return -Math.min(14, Math.floor(u / (C3.RUN / 14)) + 1) * C3.PF / 14; if (bas) return -C3.PF; } if (z <= zT && Math.abs(x) < LM) return hp + Math.min(NT, Math.floor((zT - z) / PT) + 1) * HT2; if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
     return 0; };   // (les marches, le passage, les trottoirs)
 }
 function deuxiemeCour(A, L, scene) {
@@ -3636,7 +3642,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (estAdmin() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
       || (estAdmin() && Math.abs(x) > C3.LT / 2 + .3 && Math.abs(x) < C3.x - .5 && z < C3.z1 - C3.PP - C3.NT * C3.PT - .2 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3)   // le long des côtés de la terrasse, raccourcie
       || (estAdmin() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT + .3)
-      || (estAdmin() && Math.abs(x) >= C3.LB / 2 - .5 && Math.abs(x) < C3.LB / 2 + .6 && Math.abs(z - (C3.z1 - C3.PP - C3.NT * C3.PT / 2)) < C3.SW / 2 - .25)   // (le haut de l'escalier de la fosse, depuis la ruelle)   // les creux de part et d'autre des marches raides, et leur descente
+      || (estAdmin() && x >= C3.LB / 2 - .5 && x < C3.LB / 2 + .6 && Math.abs(z - (C3.z1 - C3.PP - C3.NT * C3.PT / 2)) < C3.SW / 2 - .25)   // (le haut de l'escalier de la fosse, depuis la ruelle)   // les creux de part et d'autre des marches raides, et leur descente
       || (estAdmin() && Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
       || (estAdmin() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .25 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && !(z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - C3.ESC.W - .1 && x > C3.ESC.x0 - .2 && x < C3.ESC.x3 + .2))   // derrière la terrasse
       || (estAdmin() && x > C3.ESC.x0 - .3 && x < C3.ESC.x3 - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .1 && z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - C3.ESC.W + .3)   // l'escalier de derrière
