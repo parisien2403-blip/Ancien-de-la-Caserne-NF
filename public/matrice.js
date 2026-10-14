@@ -1882,7 +1882,7 @@ function troisiemeCour(A, L, scene) {
     trottoir(A, L, sg > 0 ? X - 1.2 : -X, sg > 0 ? X : -X + 1.2, (sg > 0 ? zTr : zF), z0 - 1.4, [sg > 0 ? "x0" : "x1"]);
     trottoir(A, L, sg > 0 ? DB : -DB - 1.2, sg > 0 ? DB + 1.2 : -DB, (sg > 0 ? zTr : zF), z1 + C3.PB + C3.TW, [sg > 0 ? "x1" : "x0", "z1"]); }   // (il rejoint celui du bac)
   // contre le haut mur de droite, au milieu : un bloc de béton de la largeur du trottoir, sur 4 m, fermé par des portes métalliques
-  for (const bz of [zc - 4.6, zc, zc + 4.6]) { const bx = X - .6, HB = 2.6, beton = A.mat({ map: tex(textures().betonClair, 1.2, 2.6), color: 0xd8d8d6, roughness: .95 }), acier = A.mat({ color: 0x6f767c, roughness: .45, metalness: .6 }), som = A.mat({ color: 0x2c3034, roughness: .6 });
+  for (const bz of [zc - 4.12, zc, zc + 4.12]) { const bx = X - .6, HB = 2.6, beton = A.mat({ map: tex(textures().betonClair, 1.2, 2.6), color: 0xd8d8d6, roughness: .95 }), acier = A.mat({ color: 0x6f767c, roughness: .45, metalness: .6 }), som = A.mat({ color: 0x2c3034, roughness: .6 });
     A.ajoute(new THREE.BoxGeometry(1.2, HB, 4), beton, bx, .12 + HB / 2, bz);
     A.ajoute(new THREE.BoxGeometry(1.32, .12, 4.12), beton, bx, .12 + HB + .06, bz);   // la dalle du dessus
     for (const dz of [-1, 1]) { const zp = bz + dz * .95;   // deux portes doubles
@@ -1893,7 +1893,7 @@ function troisiemeCour(A, L, scene) {
     const pq = toile(128, 112, (x, w, h) => { x.fillStyle = "#f2c230"; x.fillRect(0, 0, w, h); x.fillStyle = "#111"; x.beginPath(); x.moveTo(w / 2, 8); x.lineTo(w / 2 + 30, 60); x.lineTo(w / 2 - 30, 60); x.closePath(); x.fill();
       x.fillStyle = "#f2c230"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("⚡", w / 2, 54); x.fillStyle = "#111"; x.font = "bold 14px Arial"; x.fillText("DANGER", w / 2, 84); x.font = "11px Arial"; x.fillText("Local technique", w / 2, 102); });
     const pn = A.ajoute(new THREE.PlaneGeometry(.32, .28), A.mat({ map: tex(pq), roughness: .5 }), X - 1.25, .12 + 1.6, bz, false); pn.rotation.y = -Math.PI / 2;
-    C3.blocMur = [bx - .75, bx + .75, zc - 6.75, zc + 6.75]; }
+    C3.blocMur = [bx - .75, bx + .75, zc - 6.3, zc + 6.3]; }
   // les sept longues marches de béton gris, sur toute la largeur devant le porche
   const beton = A.mat({ map: tex(textures().betonClair, LM * 2, 2), roughness: .95 }), nez = A.mat({ map: tex(textures().betonClair, LM * 2, 1), color: 0xdcdcdc, roughness: .9 });
   for (let k = 0; k < NM; k++) { const h = (k + 1) * HM, d = (NM - k) * PM;
