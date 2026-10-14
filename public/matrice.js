@@ -2110,7 +2110,7 @@ function troisiemeCour(A, L, scene) {
   // le sol tout autour, en contrebas : entre la terrasse et l'immeuble du fond, des pavés
   { const gap = zT - zt0, za = zt1 - gap, sp = SOL(A.ajoute(new THREE.PlaneGeometry(C3.LB, gap), A.mat({ map: tex(textures().paves, C3.LB / 4, gap / 4) }), 0, .012, (zt1 + za) / 2, false)); sp.rotation.x = -Math.PI / 2;
     // à droite, côté rue : une petite baraque en brique ferme ce passage, ouverte au centre
-    const HB = 3, LBq = 2.4, zc5 = (zt1 + za) / 2, OW = 1.6, OH = 2.4, xb5 = DB - LBq / 2, br = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), bl = A.mat({ color: 0xece8df, roughness: .8 });
+    const HB = 3, LBq = 3.4, zc5 = (zt1 + za) / 2, OW = 1.6, OH = 2.4, xb5 = DB - LBq / 2, br = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), bl = A.mat({ color: 0xece8df, roughness: .8 });
     for (const [z0b, z1b] of [[za, zc5 - OW / 2], [zc5 + OW / 2, zt1]]) { const d = z1b - z0b; A.ajoute(new THREE.BoxGeometry(LBq, HB, d), [br(d, HB), br(d, HB), bl, bl, br(LBq, HB), br(LBq, HB)], xb5, HB / 2, (z0b + z1b) / 2); }
     A.ajoute(new THREE.BoxGeometry(LBq, HB - OH, OW), [br(OW, .6), br(OW, .6), bl, bl, br(LBq, .6), br(LBq, .6)], xb5, OH + (HB - OH) / 2, zc5);   // le linteau, au-dessus de l'ouverture
     A.ajoute(new THREE.BoxGeometry(LBq + .2, .14, gap + .2), bl, xb5, HB + .07, zc5);   // le toit plat, son rebord blanc
