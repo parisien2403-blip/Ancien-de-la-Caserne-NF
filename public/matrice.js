@@ -2065,7 +2065,7 @@ function troisiemeCour(A, L, scene) {
     }
     const HR = 1.0;
     // à côté de la terrasse (raccourcie) : le sol pavé, et une rambarde au bord de la fosse
-    { const w2 = DB - LT / 2, d2 = PTr, sp = SOL(A.ajoute(new THREE.PlaneGeometry(w2, d2), A.mat({ map: tex(textures().paves, w2 / 4, d2 / 4) }), sg * (LT / 2 + w2 / 2), .012, zt0 - d2 / 2, false)); sp.rotation.x = -Math.PI / 2;
+    { const w2 = DB - LT / 2, d2 = PTr, sp = SOL(A.ajoute(new THREE.PlaneGeometry(w2, d2), A.mat({ map: tex(sg > 0 ? textures().trottoir : textures().paves, w2 / 2, d2 / 2), roughness: .92 }), sg * (LT / 2 + w2 / 2), .012, zt0 - d2 / 2, false)); sp.rotation.x = -Math.PI / 2;
       A.ajoute(new THREE.BoxGeometry(w2, .05, .05), fer, sg * (LT / 2 + w2 / 2), HR, zt0 - .05, false); for (let k = 0; k <= 3; k++) A.ajoute(new THREE.BoxGeometry(.04, HR, .04), fer, sg * (LT / 2 + k * w2 / 3), HR / 2, zt0 - .05, false); } }
   // les marches raides : une barrière en fer noir de chaque côté, qui suit la pente et rejoint celle de la terrasse
   { const fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 }), HR = .9, pente = HT2 / PT, zb = zT + PT, zh = zt0 + PT;
@@ -2119,19 +2119,23 @@ function troisiemeCour(A, L, scene) {
        capitonné vert sombre, le haut crème avec ses grilles d'aération et ses fenêtres hautes, le faux plafond quadrillé et ses plafonniers ronds,
        l'espalier au fond, l'horloge, le tableau des ceintures, des cadres */
     { const X0 = -LT / 2 + E, X1 = OX0 - .08, Z0 = zt1 + E, Z1 = zt0 - E, W = X1 - X0, D = Z1 - Z0, xc = (X0 + X1) / 2, zc = (Z0 + Z1) / 2, H = yT - .3 - FL, P = 40;
-      const tat = toile(Math.round(W * P), Math.round(D * P), (x, w, h) => {
-        x.fillStyle = "#4a5f72"; x.fillRect(0, 0, w, h);                                                                 // le bord bleu-gris
-        const m = .7 * P, r = 1.6 * P; x.fillStyle = "#b02a2c"; x.fillRect(m, m, w - 2 * m, h - 2 * m);                  // la bande rouge
-        x.fillStyle = "#8d9692"; x.fillRect(m + r, m + r, w - 2 * (m + r), h - 2 * (m + r));                           // le centre gris
-        x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = m; X <= w - m; X += 2 * P) { x.beginPath(); x.moveTo(X, m); x.lineTo(X, h - m); x.stroke(); }
-        for (let Y = m; Y <= h - m; Y += P) { x.beginPath(); x.moveTo(m, Y); x.lineTo(w - m, Y); x.stroke(); }          // les jointures des tapis (1 m × 2 m)
+      const WT = W - 2.2, xtc = X0 + WT / 2;   // (côté entrée, 2,2 m de carrelage ; le tatami commence ensuite)
+      const tat = toile(Math.round(WT * P), Math.round(D * P), (x, w, h) => {
+        x.fillStyle = "#3e5f86"; x.fillRect(0, 0, w, h);                                                                 // la large bande bleue
+        const m = 1.4 * P, r = 1.2 * P, r2 = 1.6 * P; x.fillStyle = "#2f6e4a"; x.fillRect(m, m, w - 2 * m, h - 2 * m);    // le carré vert
+        x.fillStyle = "#b02a2c"; x.fillRect(m + r, m + r, w - 2 * (m + r), h - 2 * (m + r));                           // le carré rouge
+        x.fillStyle = "#3a7d55"; x.fillRect(m + r + r2, m + r + r2, w - 2 * (m + r + r2), h - 2 * (m + r + r2));      // le centre vert
+        x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = 0; X <= w; X += 2 * P) { x.beginPath(); x.moveTo(X, 0); x.lineTo(X, h); x.stroke(); }
+        for (let Y = 0; Y <= h; Y += P) { x.beginPath(); x.moveTo(0, Y); x.lineTo(w, Y); x.stroke(); }          // les jointures des tapis (1 m × 2 m)
         grain(x, 14); });
-      const sl = SOL(A.ajoute(new THREE.PlaneGeometry(W, D), A.mat({ map: tex(tat), roughness: .85 }), xc, FL + .03, zc, false)); sl.rotation.x = -Math.PI / 2;
+      const sl = SOL(A.ajoute(new THREE.PlaneGeometry(WT, D), A.mat({ map: tex(tat), roughness: .85 }), xtc, FL + .03, zc, false)); sl.rotation.x = -Math.PI / 2;
+      { const cr = SOL(A.ajoute(new THREE.PlaneGeometry(W - WT, D), A.mat({ map: tex(toileCarreaux(), (W - WT) / 1.6, D / 1.6), roughness: .5 }), X0 + WT + (W - WT) / 2, FL + .005, zc, false)); cr.rotation.x = -Math.PI / 2; }   // (le carrelage, côté entrée)
+      { const x0v = X1 - .1, x1v = LT / 2 - E, cv = SOL(A.ajoute(new THREE.PlaneGeometry(x1v - x0v, D), A.mat({ map: tex(toileCarreaux(), (x1v - x0v) / 1.6, D / 1.6), roughness: .5 }), (x0v + x1v) / 2, FL + .004, zc, false)); cv.rotation.x = -Math.PI / 2; }   // (et celui du vestibule, des toilettes)
       // le bas des murs, capitonné vert sombre (1,5 m), sa baguette ; le haut, crème
       const vert = A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#1f3631"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(0,0,0,.35)"; for (let X = 0; X < w; X += 64) x.fillRect(X, 0, 3, h); grain(x, 10); }), 1, 1), roughness: .8 });
       const cap = (L2, x, z, ry) => { const v = A.ajoute(new THREE.BoxGeometry(L2, 1.5, .06), vert, x, FL + .75, z, false); v.rotation.y = ry; v.material = v.material.clone(); v.material.map = v.material.map.clone(); v.material.map.repeat.set(L2 / 1.6, 1); v.material.map.needsUpdate = true;
         const bg = A.ajoute(new THREE.BoxGeometry(L2, .05, .1), A.mat({ color: 0xd8d0bc }), x, FL + 1.52, z, false); bg.rotation.y = ry; };
-      cap(D, X0 + .03, zc, Math.PI / 2); cap(D, X1 - .03, zc, Math.PI / 2); cap(W, xc, Z1 - .03, 0);
+      const V = C3.vest; cap(D, X0 + .03, zc, Math.PI / 2); cap(V.dz0 - Z0, X1 - .03, (Z0 + V.dz0) / 2, Math.PI / 2); cap(Z1 - V.dz1, X1 - .03, (V.dz1 + Z1) / 2, Math.PI / 2); cap(W, xc, Z1 - .03, 0);   // (l'ouverture vers les marches reste libre)
       cap(OX0 - X0 - .1, (X0 + OX0) / 2, Z0 + .03, 0);
       // le faux plafond quadrillé, et ses plafonniers ronds
       const fp = A.ajoute(new THREE.PlaneGeometry(W, D), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#e8e6df"; x.fillRect(0, 0, w, h); x.fillStyle = "#9a978e"; for (let k = 0; k <= 256; k += 64) { x.fillRect(k - 2, 0, 4, h); x.fillRect(0, k - 2, w, 4); } }), W / 2.4, D / 2.4), roughness: .9 }), xc, FL + H - .02, zc, false); fp.rotation.x = Math.PI / 2;
@@ -2145,6 +2149,13 @@ function troisiemeCour(A, L, scene) {
       for (const fx of [X0 + W * .2, X0 + W * .45, X0 + W * .7]) { A.ajoute(new THREE.BoxGeometry(1.5, 1.0, .06), cadreF, fx, FL + 2.45, Z1 - .02, false);
         const v = A.ajoute(new THREE.PlaneGeometry(1.36, .86), vitre, fx, FL + 2.45, Z1 - .06, false); v.rotation.y = Math.PI;
         A.ajoute(new THREE.BoxGeometry(.04, .86, .04), cadreF, fx, FL + 2.45, Z1 - .07, false); }
+      for (const fx of [X0 + W * .2, X0 + W * .45, X0 + W * .7]) { A.ajoute(new THREE.BoxGeometry(1.5, 1.0, .06), cadreF, fx, FL + 2.45, Z0 + .02, false);   // les mêmes fenêtres, sur le mur d'en face
+        const v = A.ajoute(new THREE.PlaneGeometry(1.36, .86), vitre, fx, FL + 2.45, Z0 + .06, false); A.ajoute(new THREE.BoxGeometry(.04, .86, .04), cadreF, fx, FL + 2.45, Z0 + .07, false); }
+      // entre la première fenêtre et le mur du fond, sur les deux murs : une porte fermée, 50 cm au-dessus du sol (on ne l'ouvre pas)
+      for (const [zz, ry] of [[Z1 - .04, Math.PI], [Z0 + .04, 0]]) { const xd = X0 + W * .2 / 2, g = new THREE.Group(); g.position.set(xd, FL + .5, zz); g.rotation.y = ry; scene.add(g);
+        const fr = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.15, .06), A.mat({ color: 0x5a3a22, roughness: .6 })); fr.position.y = 1.075; g.add(fr);
+        const pt = new THREE.Mesh(new THREE.BoxGeometry(.92, 2.0, .05), A.mat({ color: 0x8a6440, roughness: .55 })); pt.position.set(0, 1.0, .03); g.add(pt);
+        const pg = new THREE.Mesh(new THREE.BoxGeometry(.05, .2, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 })); pg.position.set(.36, 1.0, .07); g.add(pg); }
       const ceint = toile(256, 160, (x, w, h) => { x.fillStyle = "#f4f2ea"; x.fillRect(0, 0, w, h); ["#ffffff", "#f2d21e", "#f08a1e", "#2e9a3a", "#2a5ab8", "#6a3a1e", "#111111"].forEach((c, i) => { x.fillStyle = c; x.fillRect(20, 14 + i * 20, 216, 12); x.strokeStyle = "#999"; x.strokeRect(20, 14 + i * 20, 216, 12); }); });
       { const t = A.ajoute(new THREE.PlaneGeometry(.9, .56), A.mat({ map: tex(ceint) }), X0 + W * .85, FL + 2.3, Z1 - .04, false); t.rotation.y = Math.PI; }   // le tableau des ceintures
       for (const [fx, fy] of [[X0 + 2, 2.4], [X0 + 4.5, 2.4]]) { A.ajoute(new THREE.BoxGeometry(.06, .8, .6), A.mat({ color: 0x2a2a2a }), X0 + .05, FL + fy, Z0 + fx, false);
@@ -2199,7 +2210,7 @@ function troisiemeCour(A, L, scene) {
     toitParisien(A, scene, -C3.LB / 2, C3.LB / 2, zt1 - (zT - zt0), RU.zA + RU.cour, 24);
   // le sol tout autour, en contrebas : entre la terrasse et l'immeuble du fond, des pavés
   { const gap = zT - zt0, za = zt1 - gap, pv = (x0, x1) => { const o = SOL(A.ajoute(new THREE.PlaneGeometry(x1 - x0, gap), A.mat({ map: tex(textures().paves, (x1 - x0) / 4, gap / 4) }), (x0 + x1) / 2, .012, (zt1 + za) / 2, false)); o.rotation.x = -Math.PI / 2; };
-    pv(-C3.LB / 2, LT / 2 - 3.4); pv(LT / 2, C3.LB / 2);   // (pas sous la cabane : elle a son carrelage, plus bas)
+    pv(-C3.LB / 2, LT / 2 - 3.4);   // (pas sous la cabane : elle a son carrelage, plus bas)
     // à droite, côté rue : une petite baraque en brique ferme ce passage, ouverte au centre ; son entrée est à l'angle de la terrasse
     const HB = yT + .34, LBq = 3.4, zc5 = (zt1 + za) / 2, OW = 1.6, OH = 2.4, xb5 = LT / 2 - LBq / 2, br = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), bl = A.mat({ color: 0xece8df, roughness: .8 });
     /* la cabane est une pièce de plain-pied : sol carrelé, murs crème ; en entrant, à gauche, quatre marches descendent sous la terrasse :
@@ -2236,6 +2247,10 @@ function troisiemeCour(A, L, scene) {
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(.018, HB - .1, .018), fer, barreaux.length), mt = new THREE.Matrix4();
     barreaux.forEach(([bx, bz], k) => { mt.makeTranslation(bx, yT + .1 + (HB - .1) / 2, bz); im.setMatrixAt(k, mt); }); im.castShadow = true; scene.add(im); }
   // la hauteur du sol : les marches, puis le porche
+  // côté rue, derrière et le long de la terrasse : le prolongement du trottoir gris, au même niveau, sans marche (sauf sous l'escalier)
+  { const gap = zT - zt0, za = zt1 - gap, E = C3.ESC; trottoir(A, L, LT / 2, DB, za, zt1, []);
+    const tb = A.mat({ map: tex(textures().trottoir, (DB - LT / 2) / 2, 1), roughness: .92 });
+    for (const [z0s, z1s] of [[zt1, E.zA], [E.z0 + E.run + E.pal, zt0]]) if (z1s - z0s > .05) { const o = SOL(A.ajoute(new THREE.BoxGeometry(DB - LT / 2 - 2 * E.W, .12, z1s - z0s), tb, (LT / 2 + 2 * E.W + DB) / 2, .06, (z0s + z1s) / 2, false)); (L.trottoirs = L.trottoirs || []).push([LT / 2 + 2 * E.W, DB, z0s, z1s]); } }
   rueEnPente(A, L, scene, SOL, zT, DB);
   L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xB && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; if (z >= RU.zS[1] && x < RU.xR + .5) return RU.y(z);
       return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 6 * RU.rs ? Math.min(6, Math.floor(u / RU.rs) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
@@ -4884,6 +4899,7 @@ export async function ouvrir(ctx) {
     }
     if (M.L.anim) M.L.anim(t);
     if (M.L.pigeons) M.L.pigeons(t);
+    if (M.feuHV && M.feuHV.length && !M.cine) animerFeu(M.feuHV, performance.now(), 16000);   // (les traînées de feu de la DeLorean finissent de brûler, puis s'éteignent)
     { const h = C3.enHaut(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
     if (M.L && M.L.c3) { const moi = M.moiNum && M.gens.get(M.moiNum), dd = !!C3.dedans(moi); if (dd !== M.dedansVu) { M.dedansVu = dd; M.L.suiviDehors = M.L.suiviDehors || M.L.suivi;
         M.L.suivi = dd ? { d: 2.7, h: 1.9, av: 2.6, vy: 1.1 } : M.L.suiviDehors; M.camE = null; } }   // (dedans : la caméra se rapproche, juste derrière soi)   // (sur un toit ou dessous : les passages changent)
@@ -6662,27 +6678,38 @@ function cineCour() {
       if (t > 20.6) { voile("background:#fff;opacity:0;transition:opacity .7s", 1500).getBoundingClientRect(); setTimeout(fin, 700); M.cine.maj = () => {}; } }
     animerFeu(feu, now, 60000); } };
 }
-// 2. à Hill Valley : l'éclair, la DeLorean qui surgit et glisse jusqu'au trottoir, Doc et nous qui descendons
+// la foudre qui tombe du ciel : un trait bleu-blanc en zigzag (et ses branches), qui scintille
+function foudre(x, z, ms = 650) { if (!M) return; const m = new THREE.LineBasicMaterial({ color: 0xe6f6ff, transparent: true, opacity: 1, fog: false }), g = new THREE.Group(); M.scene.add(g);
+  const trait = (x0, y0, z0, y1, ec) => { const pts = []; let px = x0, pz = z0; for (let y = y0; y > y1; y -= .6 + Math.random() * .9) { pts.push(new THREE.Vector3(px, y, pz)); px += (Math.random() - .5) * ec; pz += (Math.random() - .5) * ec; } pts.push(new THREE.Vector3(x, y1, z)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m); l.frustumCulled = false; g.add(l); return pts; };
+  const tronc = trait(x + 3, 26, z - 2, .1, 2.2); for (let k = 0; k < 4; k++) { const p = tronc[2 + Math.floor(Math.random() * (tronc.length - 4))]; trait(p.x, p.y, p.z, p.y - 4 - Math.random() * 5, 1.6); }
+  const lum = new THREE.PointLight(0xbfe8ff, 60, 40, 1.4); lum.position.set(x, 3, z); g.add(lum);
+  const t0 = performance.now(), tic = () => { if (!M) return; const k = (performance.now() - t0) / ms; if (k >= 1) { M.scene.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); return; }
+    g.visible = Math.random() < .75; m.opacity = 1 - k * .6; lum.intensity = 60 * (1 - k); requestAnimationFrame(tic); }; tic(); }
+// 2. à Hill Valley : la rue est calme… la foudre tombe, trois éclairs, et la DeLorean surgit en glissant jusqu'au trottoir, deux traînées de feu derrière les roues ; Doc et nous descendons
 function cineHV() {
-  M.bulleDit = M.monte = M.vroum = M.vroum2 = 0; M.dz = M.dx = 0;
-  const car = M.L.delorean; poser(car, -24, 16, -Math.PI / 2); ouvrirPortes(car, 0); const feu = [];
+  M.bulleDit = M.monte = M.vroum = M.vroum2 = M.surgi = 0; M.dz = M.dx = 0;
+  const car = M.L.delorean, X0 = -26, X1 = -6, T0 = 1.6, TD = 3.4; poser(car, X0, 16, -Math.PI / 2); ouvrirPortes(car, 0); car.visible = false; const feu = [];
   const moi0 = () => M.gens.get(M.moiNum);
-  let fini = false; const fin = () => { if (fini || !M) return; fini = true; poser(car, -6, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
+  let fini = false; const fin = () => { if (fini || !M) return; fini = true; car.visible = true; poser(car, X1, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
     if (!M.gens.has(DOC)) ajouterDoc(-8.7, 15.6); finCine(); musiqueBttf("sons/bttf/sandman.mp3", true, 3000); };
   M.passerBtn = boutonPasser(fin);
-  eclairBlanc(1300); sonBruit(1.4, 300, .9);
-  M.cine = { t0: performance.now(), feu, maj: (now) => { const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera;
-    if (moi && t < 4) moi.g.visible = false;
-    if (t < 2.6) { const u = Math.min(1, t / 2.4), x = -24 + 18 * (1 - Math.pow(1 - u, 2.2)), dx = x - car.position.x; rouler(car, dx); poser(car, x, 16, -Math.PI / 2);
-      if (dx > .01) { M.dx = (M.dx || 0) + dx; while (M.dx > .25) { M.dx -= .25; for (const sg of [-1, 1]) traineeFeu(feu, x - 1.35, 16 + sg * .9); } }
-      arcs(car, t < .8); cam.position.lerp(new THREE.Vector3(-12, 2.2, 22), .1); cam.lookAt(x, .8, 16); }
-    else if (t < 9) { arcs(car, false); ouvrirPortes(car, t < 7.5 ? lisse((t - 3) / 1.1) : 1 - lisse((t - 7.5) / 1));
-      if (t > 4 && moi && !moi.g.visible) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
-      if (t > 4.2 && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);
-      if (t > 4.6 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>14 juillet 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
-      cam.position.lerp(new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(-6, 1.2, 15.2); }
+  M.cine = { t0: performance.now(), feu, im: 0, maj: (now) => { { const gap = now - (M.cine.prec || now); M.cine.t0 += M.cine.im < 6 ? gap : Math.max(0, gap - 250); } M.cine.prec = now; M.cine.im++;   // (les premières images, lentes — la carte graphique prépare le lieu — ne comptent pas : la DeLorean surgit quand on la voit)
+    const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera, D = t - T0;
+    if (moi && t < T0 + TD + 1.4) moi.g.visible = false;
+    if (t < T0) { cam.position.set(-1.5, 1.7, 18.6); cam.lookAt(-20, 1, 16); }   // (la rue, calme, un instant)
+    else if (D < TD) {
+      if (!M.surgi) { M.surgi = 1; foudre(X0, 16, 700); eclairBlanc(450); sonBruit(1.4, 300, .9); sonBruit(.25, 5000, .7); car.visible = true;
+        setTimeout(() => M && M.cine && eclairBlanc(260), 180); setTimeout(() => M && M.cine && eclairBlanc(260), 380); }   // (les trois éclairs)
+      const u = Math.min(1, D / TD), x = X0 + (X1 - X0) * (1 - Math.pow(1 - u, 2.4)), dx = x - car.position.x; rouler(car, dx); poser(car, x, 16, -Math.PI / 2);
+      if (dx > .005) { M.dx = (M.dx || 0) + dx; while (M.dx > .22) { M.dx -= .22; for (const sg of [-1, 1]) traineeFeu(feu, x - 1.35 - M.dx, 16 + sg * .9); } }
+      arcs(car, D < 1.1); cam.position.lerp(new THREE.Vector3(-1.5, 1.7, 18.6), .08); cam.lookAt(x - 3, .7, 16); }
+    else if (D < TD + 6.4) { const e = D - TD; arcs(car, false); ouvrirPortes(car, e < 4.9 ? lisse((e - .4) / 1.1) : 1 - lisse((e - 4.9) / 1));
+      if (e > 1.4 && moi && !moi.g.visible) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
+      if (e > 1.6 && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);
+      if (e > 2 && !M.bulleDit) { M.bulleDit = 1; bulle(`🧪 <b>Doc :</b> Bienvenue à <b>Hill Valley</b>, ${prenomMoi()} ! Nous sommes le <b>14 juillet 1955</b>.<br>Balade-toi… et reviens à la DeLorean quand tu voudras rentrer !`, 5200); }
+      cam.position.lerp(e < 1.4 ? new THREE.Vector3(-1.5, 2.2, 18.6) : new THREE.Vector3(-1.5, 2.5, 10.2), .05); cam.lookAt(e < 1.4 ? -14 : -6, e < 1.4 ? .4 : 1.2, e < 1.4 ? 16 : 15.2); }   // (d'abord les traînées de feu, puis nous)
     else fin();
-    animerFeu(feu, now, 7000); } };
+    animerFeu(feu, now, 16000); } };
   M.feuHV = feu;
 }
 // 3. rentrer en 2026 : on remonte, la DeLorean file le long de la rue… et l'on se retrouve dans la vraie cour d'honneur
