@@ -867,7 +867,7 @@ function atelier(scene) {
     }
     return grp;
   };
-  return { mat, ajoute, facadePercee, immeuble, plaque, flecheSol, haussmann };
+  return { mat, ajoute, facadePercee, immeuble, plaque, flecheSol, haussmann, scene };
 }
 
 /* les pavés de granit de la caserne (d'après la photo) : posés en éventail, en grands arcs de cercle ; 4 m par répétition, 256 px par mètre.
@@ -908,6 +908,29 @@ function toileBeton(l, gr) {
     p[i] += n; p[i + 1] += n; p[i + 2] += n; }
   x.putImageData(d, 0, 0); graine = g0; return c;
 }
+// le bitume des trottoirs (d'après la photo) : gris moyen, lisse, grain fin, quelques taches et reprises ; 2 m par répétition
+function toileTrottoir() {
+  const S = 512, c = toile(S, S, (x) => { x.fillStyle = "#6f6f6d"; x.fillRect(0, 0, S, S); }), x = c.getContext("2d"), g0 = graine; graine = 1913;
+  const rond = (cx, cy, rr, coul) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, rr); g.addColorStop(0, coul); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) x.fillRect(cx - rr + ox, cy - rr + oy, rr * 2, rr * 2); };
+  for (let i = 0; i < 30; i++) rond(alea() * S, alea() * S, 40 + alea() * 160, alea() < .55 ? "rgba(30,30,30,.1)" : "rgba(255,255,255,.07)");
+  for (let i = 0; i < 9; i++) rond(alea() * S, alea() * S, 6 + alea() * 16, "rgba(20,20,20,.22)");   // (des taches)
+  const d = x.getImageData(0, 0, S, S), p = d.data;
+  for (let i = 0; i < p.length; i += 4) { let n = (alea() - .5) * 18; const a = alea(); if (a < .02) n -= 26; else if (a < .035) n += 20; p[i] += n; p[i + 1] += n; p[i + 2] += n + 1; }
+  x.putImageData(d, 0, 0); graine = g0; return c;
+}
+// un trottoir le long d'un mur : bitume, 12 cm de haut, bordure de granit sur les côtés qui donnent sur la cour (bords : "x0", "x1", "z0", "z1") ;
+// pente : { ang, y(z) } pour une rue en pente (le trottoir suit la chaussée)
+function trottoir(A, L, x0, x1, z0, z1, bords = [], pente = null) {
+  const T = textures(), H = .12, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, yb = pente ? pente.y(cz) : 0;
+  const cote = A.mat({ map: tex(T.granit, 1, .2), roughness: .9 }), dessus = A.mat({ map: tex(T.trottoir, w / 2, d / 2), roughness: .92 }), granit = A.mat({ map: tex(T.granit, 1, .3), roughness: .8 });
+  const g = new THREE.Group(); g.position.set(cx, yb, cz); if (pente) g.rotation.x = -pente.ang; A.scene.add(g);
+  const box = (bw, bh, bd, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m); o.position.set(x, y, z); o.receiveShadow = true; g.add(o); return o; };
+  const t = box(w, H, pente ? d / Math.cos(pente.ang) : d, [cote, cote, dessus, cote, cote, cote], 0, H / 2, 0); (L.solsPlus = L.solsPlus || []).push(t);
+  const e = .15, dd = pente ? d / Math.cos(pente.ang) : d;
+  for (const b of bords) { if (b === "x0" || b === "x1") box(e, H + .006, dd, granit, (b === "x0" ? -1 : 1) * (w / 2 - e / 2), (H + .006) / 2, 0);
+    else box(w, H + .006, e, granit, 0, (H + .006) / 2, (b === "z0" ? -1 : 1) * (dd / 2 - e / 2)); }
+  (L.trottoirs = L.trottoirs || []).push([x0, x1, z0, z1]);
+}
 /* --- sols et ciel --- */
 let TEXTURES = null;
 function textures() {
@@ -915,7 +938,7 @@ function textures() {
   graine = 7;
   TEXTURES = {
     paves: toilePaves(),
-    betonClair: toileBeton(.71, 1), betonFonce: toileBeton(.36, 2),
+    betonClair: toileBeton(.71, 1), betonFonce: toileBeton(.36, 2), granit: toileBeton(.6, 3), trottoir: toileTrottoir(),
     bitume: toile(256, 256, (x, w, h) => { x.fillStyle = "#8f8a84"; x.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { x.fillStyle = `rgba(${alea() > .5 ? "255,255,255" : "0,0,0"},${alea() * .08})`; x.fillRect(alea() * w, alea() * h, 2, 2); } }),
     dalles: toile(256, 256, (x, w, h) => { x.fillStyle = "#c9c6bf"; x.fillRect(0, 0, w, h); x.strokeStyle = "#b3afa7"; x.lineWidth = 3; for (let i = 0; i <= w; i += 64) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, h); x.moveTo(0, i); x.lineTo(w, i); x.stroke(); } }),
     ciel: toile(16, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#3f8fd8"); g.addColorStop(.6, "#8cc4ef"); g.addColorStop(1, "#d6ecfa"); x.fillStyle = g; x.fillRect(0, 0, w, h); }),
@@ -1483,7 +1506,8 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   const bit = toile(256, 256, (x) => { x.fillStyle = "#5c5a58"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 70 + alea() * 50; x.fillStyle = `rgba(${v},${v - 4},${v - 8},.5)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); } });
   const ch = SOL(A.ajoute(new THREE.PlaneGeometry(xR - DB, Lp), A.mat({ map: tex(textures().paves, (xR - DB) / 4, Lp / 4) }), xc, -drop / 2 + .01, zc, false)); ch.rotation.x = -Math.PI / 2 - ang;
   { const zc2 = RU.zA + RU.cour / 2, Lc = Math.hypot(RU.cour, drop * RU.cour / Lz), pl = SOL(A.ajoute(new THREE.PlaneGeometry(DB - RU.xL, Lc), A.mat({ map: tex(textures().paves, (DB - RU.xL) / 4, Lc / 4) }), (DB + RU.xL) / 2, RU.y(zc2) + .012, zc2, false)); pl.rotation.x = -Math.PI / 2 - ang; }   // (la place devant l'arcade, à gauche de la chaussée)
-  const ca = A.ajoute(new THREE.PlaneGeometry(xB - xR, Lp), A.mat({ map: tex(textures().paves, (xB - xR) / 4, Lp / 4) }), (xR + xB) / 2, -drop / 2 + .01, zc, false); ca.rotation.x = -Math.PI / 2 - ang;
+  const ca = A.ajoute(new THREE.PlaneGeometry(xB - xR, Lp), A.mat({ map: tex(textures().trottoir, (xB - xR) / 2, Lp / 2), roughness: .92 }), (xR + xB) / 2, -drop / 2 + .01, zc, false); ca.rotation.x = -Math.PI / 2 - ang;
+  trottoir(A, L, DB, DB + 1.4, zA + RU.cour, zT, ["x1"], { ang, y: z => RU.y(z) });   // à gauche, le long de l'immeuble : le trottoir, qui suit la pente
   // à gauche : le flanc de l'immeuble, en brique sans fenêtre
   { const tb = tuileBrique("rouge", K_FAC);
     const mb = A.mat({ map: tex(tb, (C3.z1 - zT) / 9.2, 24 / 6.75), roughness: .9 });
@@ -1590,6 +1614,10 @@ function troisiemeCour(A, L, scene) {
     pierreG.repeat.set(2.5, 3); const m = A.mat({ map: pierreG, roughness: .95 }); if (sg < 0) { A.ajoute(new THREE.BoxGeometry(6, 20, z0 - zF + 12), [m, m, A.mat({ color: 0x4a4a4c }), m, m, m], sg * (X + 3), 10, (z0 + zF - 12) / 2);
       A.ajoute(new THREE.BoxGeometry(X - DB, 20, 12), [m, m, A.mat({ color: 0x4a4a4c }), m, m, m], sg * (DB + (X - DB) / 2), 10, zF - 6); }   // (à gauche : la ruelle se ferme contre le bâtiment du fond)
     else A.ajoute(new THREE.BoxGeometry(RU.xB - X, 20, z0 - zTr), [m, m, A.mat({ color: 0x4a4a4c }), m, m, m], (X + RU.xB) / 2, 10, (z0 + zTr) / 2); }   // (à droite : il s'arrête au bout de l'immeuble)   // (de chaque côté du bâtiment du fond : le mur ferme la ruelle)
+  // les trottoirs : le long du bâtiment qu'on vient de traverser, des hauts murs, et des flancs de l'immeuble dans les ruelles
+  for (const sg of [-1, 1]) { trottoir(A, L, sg > 0 ? 2.4 : -X, sg > 0 ? X : -2.4, z0 - 1.4, z0, ["z0", sg > 0 ? "x0" : "x1"]);
+    trottoir(A, L, sg > 0 ? X - 1.2 : -X, sg > 0 ? X : -X + 1.2, (sg > 0 ? zTr : zF), z0 - 1.4, [sg > 0 ? "x0" : "x1"]);
+    trottoir(A, L, sg > 0 ? DB : -DB - 1, sg > 0 ? DB + 1 : -DB, (sg > 0 ? zTr : zF), z1, [sg > 0 ? "x1" : "x0"]); }
   // les sept longues marches de béton gris, sur toute la largeur devant le porche
   const beton = A.mat({ map: tex(textures().betonClair, LM * 2, 2), roughness: .95 }), nez = A.mat({ map: tex(textures().betonClair, LM * 2, 1), color: 0xdcdcdc, roughness: .9 });
   for (let k = 0; k < NM; k++) { const h = (k + 1) * HM, d = (NM - k) * PM;
@@ -1691,7 +1719,8 @@ function troisiemeCour(A, L, scene) {
   { const gap = zT - zt0, face = new THREE.Shape(); face.moveTo(-C3.LB / 2, 0); face.lineTo(C3.LB / 2, 0); face.lineTo(C3.LB / 2, 24); face.lineTo(-C3.LB / 2, 24); face.closePath();
     const tB = tex(toileVerso(C3.LB, 24, false, 4.4, 2.4, true)); tB.repeat.set(1 / C3.LB, 1 / 24); tB.offset.set(.5, 0);
     A.ajoute(new THREE.ExtrudeGeometry(face, { depth: zt1 - gap - RU.zA - RU.cour, bevelEnabled: false }), [A.mat({ map: tB }), A.mat({ color: 0xd9d4ca })], 0, 0, RU.zA + RU.cour); }
-  // le sol tout autour, en contrebas
+  // le sol tout autour, en contrebas : entre la terrasse et l'immeuble du fond, des pavés
+  { const gap = zT - zt0, za = zt1 - gap, sp = A.ajoute(new THREE.PlaneGeometry(C3.LB, gap), A.mat({ map: tex(textures().paves, C3.LB / 4, gap / 4) }), 0, .012, (zt1 + za) / 2, false); sp.rotation.x = -Math.PI / 2; }
 
   // la barrière en fer noir : main courante, lisse basse, poteaux, barreaux ; ouverte en haut des marches
   { const fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 }), HB = 1.0, pas = .13, barreaux = [];
@@ -1720,6 +1749,11 @@ function deuxiemeCour(A, L, scene) {
   const tF = tex(toileVerso(44, 24, false)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12);
   troisiemeCour(A, L, scene);
+  // les trottoirs, le long des deux bâtiments, du mur de droite (et devant le local électrique) et devant la déchetterie
+  for (const sg of [-1, 1]) { const xa = sg > 0 ? 2.4 : -8.6, xb = sg > 0 ? X : -2.4, b = sg > 0 ? "x0" : "x1";
+    trottoir(A, L, xa, xb, z0 - 1.4, z0, ["z0", b]); trottoir(A, L, xa, xb, z1, z1 + 1.4, ["z1", b]); }
+  trottoir(A, L, X - 1.2, X, z1 + 1.4, zc - 2.2, ["x0", "z1"]); trottoir(A, L, X - 1.2, X, zc + 2.2, z0 - 1.4, ["x0", "z0"]); trottoir(A, L, X - 3.8, X - 2.6, zc - 2.2, zc + 2.2, ["x0", "z0", "z1"]);
+  trottoir(A, L, -8.6, -7.4, z1 + 1.4, z0 - 1.4, ["x1"]);
   // les deux côtés de la cour : rez-de-chaussée blanc, étages de brique
   // de chaque côté : un haut mur de pierre grise et noire, sans fenêtres
   for (const sg of [-1, 1]) { graine = sg > 0 ? 91 : 93;
@@ -1773,7 +1807,7 @@ function deuxiemeCour(A, L, scene) {
       // l'affiche Micromania (Resident Evil, 1996), tombée au sol devant les encombrants ; sa taille se règle (administrateur)
       const tA = new THREE.TextureLoader().load("images/apo/affiche-re-1996.webp"); tA.colorSpace = THREE.SRGBColorSpace;
       const af = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), new THREE.MeshStandardMaterial({ map: tA, roughness: .85, polygonOffset: true, polygonOffsetFactor: -2 }));
-      af.rotation.set(-Math.PI / 2, 0, .35); af.position.set(xf + 1.6, .012, zo + 2.1); af.receiveShadow = true; scene.add(af); L.afficheApo = af;
+      af.rotation.set(-Math.PI / 2, 0, .35); af.position.set(xf + 1.95, .012, zo + 2.1); af.receiveShadow = true; scene.add(af); L.afficheApo = af;
       L.tailleAffiche = (k) => { const v = Math.max(.2, Math.min(2.5, +k || .6)); af.scale.set(v, v, 1); }; L.tailleAffiche((M && M.afficheTaille) || .6); }
     L.portails.push({ dans: (x, z) => (L.apo || L.cadenasOuvert) && x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true, secret: true });   // (pas de cercle visible : c'est la surprise ; il reste visible dans le monde de l'apocalypse)
     raccourci(L, scene, [.4, 2.2, 1.6], [xf, 1.1, zo], { vers: "z-grande", entreeApo: true, siApo: true }); }
@@ -3093,7 +3127,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           for (let i = 0; i < 11; i++) { const X = 40 + i * 142, u = (X + 50) / 50 - 16, z = -u - 2; if (us.some(v => Math.abs(u - v) < 3) || z > 7.2 || z < -17.5) continue;
             const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), lueur); pl.rotation.y = Math.PI / 2; pl.position.set(fx + .035, 3.05, z); scene.add(pl); } }
       }
-      const al = A.ajoute(new THREE.PlaneGeometry(3, 34), A.mat({ map: tex(T.paves, (1.5) / 2, (17) / 2) }), fx - cote * 3.5, .012, -2, false); al.rotation.x = -Math.PI / 2;
+      // le long des marches : le trottoir de bitume, sa bordure de granit côté cour (et le caniveau au pied)
+      trottoir(A, L, cote > 0 ? 7.5 : -10.5, cote > 0 ? 10.5 : -7.5, -18, 15, [cote > 0 ? "x0" : "x1"]);
+      if (cote > 0) for (const sg of [-1, 1]) { trottoir(A, L, sg > 0 ? 2.4 : -7.5, sg > 0 ? 7.5 : -2.4, -18, -16.6, ["z1", sg > 0 ? "x0" : "x1"]);   // le long du bâtiment de l'horloge, de part et d'autre du passage
+        if (copie !== "fetes") trottoir(A, L, sg > 0 ? 2.4 : -8.2, sg > 0 ? 8.2 : -2.4, 14.1, 15.5, ["z0", sg > 0 ? "x0" : "x1"]); }   // le long de l'autre façade
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
       const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .4, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .4 }), fl = A.mat({ map: tex(flancBus), roughness: .4 });
@@ -3979,6 +4016,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
 
+  // sur les trottoirs, on marche 12 cm plus haut
+  if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; return tr.some(t => x > t[0] && x < t[1] && z > t[2] && z < t[3]) ? b + .12 : b; }; }
   // nuages
   if (L.interieur) return L;
   const nt = tex(T.nuage);
