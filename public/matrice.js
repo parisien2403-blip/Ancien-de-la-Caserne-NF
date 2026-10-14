@@ -1574,13 +1574,13 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   { const xa = RU.xL - 8, xb = xB - RU.pc, fz = A.ajoute(new THREE.PlaneGeometry(xb - xa, 24 + drop), A.mat({ map: tex(toileBriqueBandes(xb - xa, 24 + drop)), roughness: .9 }), (xa + xb) / 2, (24 - drop) / 2, zA, false); }   // (le mur du fond, jusqu'au pan coupé)
   { const A0 = A; { const ga = new THREE.Group(), PC = RU.pc; ga.position.set(xB - PC / 2, 0, RU.zA + PC / 2); ga.rotation.y = -Math.PI / 4; scene.add(ga);   // (le pan coupé : l'angle de la rue, à 45°, c'est le porche)
     const zA = 0, AX = 0, A = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
-    const W = PC * Math.SQRT2 + .3, H = 24, AW = 4.6, AH = 5.6, yb = -drop, prof = 8, sh = new THREE.Shape(); sh.moveTo(-W / 2, 0); sh.lineTo(W / 2, 0); sh.lineTo(W / 2, H); sh.lineTo(-W / 2, H); sh.closePath();
+    const W = PC * Math.SQRT2 + .3, H = 24, AW = 4.6, AH = 5.6, yb = -drop, prof = 8, RW = 5.4, RD = 1.5, yT = AH + 2.1, sh = new THREE.Shape();   // (RW, RD : le renfoncement au-dessus du bandeau, derrière l'horloge)
+    sh.moveTo(-W / 2, 0); sh.lineTo(W / 2, 0); sh.lineTo(W / 2, H); sh.lineTo(RW / 2, H); sh.lineTo(RW / 2, yT); sh.lineTo(-RW / 2, yT); sh.lineTo(-RW / 2, H); sh.lineTo(-W / 2, H); sh.closePath();
     const tr = new THREE.Path(); tr.moveTo(-AW / 2, 0); tr.lineTo(-AW / 2, AH - AW / 2); tr.absarc(0, AH - AW / 2, AW / 2, Math.PI, 0, true); tr.lineTo(AW / 2, 0); tr.closePath(); sh.holes.push(tr);
     const fac = toileBriqueBandes(W, H, { pas: 3.4 }); { const x = fac.getContext("2d"), P = 20, cx = fac.lw / 2, h = fac.lh;   // l'encadrement de l'arcade, la rangée de briques en arc
-      x.strokeStyle = "#b8644a"; x.lineWidth = 16; x.beginPath(); x.arc(cx, h - (AH - AW / 2) * P, (AW / 2 + .3) * P, Math.PI, 0); x.stroke();
-      x.strokeStyle = "rgba(60,30,20,.45)"; x.lineWidth = .8; for (let a = Math.PI; a <= 2 * Math.PI + .01; a += Math.PI / 28) { const r0 = (AW / 2 + .3) * P - 8, r1 = r0 + 16, yc = h - (AH - AW / 2) * P; x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, yc + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * r1, yc + Math.sin(a) * r1); x.stroke(); }   // (les briques posées en rayons)
-      murBrique(x, cx - (AW / 2 + .8) * P, h - (AH + 2.4) * P, (AW + 1.6) * P, 2.4 * P - 14, "rouge", P);
-      x.fillStyle = "#ece6d6"; x.fillRect(cx - (AW / 2 + .8) * P, h - (AH + 1.0) * P, (AW + 1.6) * P, 8); }
+      murBrique(x, 0, h - yT * P, fac.lw, (yT - 1.2) * P, "rouge", P);   // (autour de l'arcade, jusqu'au bandeau : la brique seule)
+      x.strokeStyle = "rgba(60,30,20,.3)"; x.lineWidth = .7; for (let a = Math.PI; a <= 2 * Math.PI + .01; a += Math.PI / 28) { const r0 = (AW / 2 + .3) * P - 8, r1 = r0 + 16, yc = h - (AH - AW / 2) * P; x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, yc + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * r1, yc + Math.sin(a) * r1); x.stroke(); }   // (les briques posées en rayons)
+    }
     const tf = tex(fac); tf.repeat.set(1 / W, 1 / H); tf.offset.set(.5, 0);
     A.ajoute(new THREE.ExtrudeGeometry(sh, { depth: prof, bevelEnabled: false }), [A.mat({ map: tf }), A.mat({ color: 0x8a4a36 })], AX, yb, zA - prof);
     const voute = A.mat({ color: 0x6a4a3a, roughness: .95 }); { const v = A.ajoute(new THREE.PlaneGeometry(AW, prof), A.mat({ map: tex(textures().paves, (AW / 2) / 2, (prof / 2) / 2) }), AX, yb + .01, zA - prof / 2, false); v.rotation.x = -Math.PI / 2; SOL(v); v.updateMatrixWorld(); }
@@ -1602,16 +1602,50 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       for (let k = 1; k <= 4; k++) { const y = k * R / 5, ww = 2 * Math.sqrt(Math.max(0, (R - .05) ** 2 - y * y)); bx(ww, .03, 0, GH + y, fer, .03); }
       for (const [x1, y1, x2, y2] of [[-.9, .75, 0, 1.5], [0, 1.5, .9, .75], [.9, .75, 0, 0], [0, 0, -.9, .75]]) { const L2 = Math.hypot(x2 - x1, y2 - y1), r = bx(L2, .05, (x1 + x2) / 2, GH + .05 + (y1 + y2) / 2, fer, .04, .01); r.rotation.z = Math.atan2(y2 - y1, x2 - x1); }   // le losange
       const ci = A.ajoute(new THREE.TorusGeometry(R - .03, .05, 6, 40, Math.PI), fer, AX, yb + GH, zg, false); }
-    // l'horloge octogonale : cadran crème, chiffres romains, bordure rouge et dorée ; son petit balcon à balustres
-    const cl = toile(256, 256, (x) => { const c = 128, oct = (r) => { x.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; x.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } x.closePath(); };
-      x.fillStyle = "#f2ead2"; x.fillRect(0, 0, 256, 256); oct(124); x.fillStyle = "#c8a24a"; x.fill(); oct(116); x.fillStyle = "#b8282a"; x.fill(); oct(92); x.fillStyle = "#f4ecd8"; x.fill();
-      x.fillStyle = "#c8a24a"; x.font = "bold 17px Georgia"; x.textAlign = "center"; x.textBaseline = "middle"; ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((t, i) => { const a = -Math.PI / 2 + i * Math.PI / 6; x.fillText(t, c + Math.cos(a) * 104, c + Math.sin(a) * 104); });
-      x.strokeStyle = "#1a1a1a"; x.lineCap = "round"; x.lineWidth = 7; x.beginPath(); x.moveTo(c, c); x.lineTo(c + 40, c - 30); x.stroke(); x.lineWidth = 4; x.beginPath(); x.moveTo(c, c); x.lineTo(c - 18, c + 62); x.stroke(); x.fillStyle = "#1a1a1a"; x.beginPath(); x.arc(c, c, 6, 0, 7); x.fill(); });
-    const yH = yb + AH + 3.2; A.ajoute(new THREE.BoxGeometry(2.6, 2.9, .3), A.mat({ color: 0xece6d6, roughness: .8 }), AX, yH, zA + .15);
-    A.ajoute(new THREE.PlaneGeometry(2.2, 2.2), A.mat({ map: tex(cl), roughness: .5 }), AX, yH, zA + .31, false);
-    A.ajoute(new THREE.BoxGeometry(2.8, .2, .4), A.mat({ color: 0xece6d6 }), AX, yH + 1.55, zA + .2);
-    const bal = A.mat({ color: 0xece6d6, roughness: .8 }); A.ajoute(new THREE.BoxGeometry(6.2, .18, .8), bal, AX, yb + AH + 1.5, zA + .4); A.ajoute(new THREE.BoxGeometry(6.2, .1, .3), bal, AX, yb + AH + 2.4, zA + .65);
-    for (let k = 0; k < 14; k++) { const bx = AX - 3 + k * 6 / 13; if (Math.abs(bx - AX) < 1.4) continue; A.ajoute(new THREE.CylinderGeometry(.06, .08, .8, 8), bal, bx, yb + AH + 1.98, zA + .65, false); } }
+    /* au-dessus de l'arcade (d'après la photo) : le large bandeau de pierre blanche ; dessus, le petit pavillon blanc de l'horloge octogonale
+       (toit en pans coupés), entre deux balcons à gros balustres ; derrière, le renfoncement dans l'angle des deux immeubles, et ses fenêtres */
+    const blancP = A.mat({ map: tex(toile(256, 256, (x) => pierre(x, 0, 0, 256, 256, "#ece7dc", 40, 110)), 1, 1), roughness: .8 }), blancL = A.mat({ color: 0xeee9df, roughness: .75 });
+    A.ajoute(new THREE.BoxGeometry(W + .2, 1.0, .45), blancP, AX, yb + yT - .5, zA + .2);                                        // le bandeau
+    for (const sg of [-1, 1]) { A.ajoute(new THREE.CylinderGeometry(.09, .11, .22, 12), A.mat({ color: 0xd8d8d4 }), AX + sg * 2.6, yb + yT - 1.1, zA + .3, false); }   // les projecteurs, dessous
+    // le fond du renfoncement et ses deux retours : brique, chaînes de pierre blanche, fenêtres à encadrement blanc
+    const hR = H - yT, fenB = (x, X, Y, w, h, porte) => { x.fillStyle = "rgba(40,24,18,.25)"; x.fillRect(X - 6, Y - 4, w + 14, h + 12); x.fillStyle = "#efeae0"; x.fillRect(X - 9, Y - 9, w + 18, h + 13);
+      const g = x.createLinearGradient(X, Y, X + w, Y + h); g.addColorStop(0, "#9fb2c0"); g.addColorStop(.6, "#5b6f80"); g.addColorStop(1, "#45566a"); x.fillStyle = g; x.fillRect(X, Y, w, h);
+      x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, w, 4); x.fillStyle = "#f6f3ec"; x.fillRect(X + w / 2 - 2, Y, 4, h); x.fillRect(X, Y + h * (porte ? .25 : .38), w, 3);
+      x.fillStyle = "#e4dfd4"; x.fillRect(X - 12, Y + h + 4, w + 24, 6); if (!porte) coulure(x, X - 8, Y + h + 10, w + 16, 30); };
+    const fond = toileF(RW * 40, hR * 40, (x, w, h) => { murBrique(x, 0, 0, w, h, "rouge");
+      for (const X of [0, w - 20]) pierre(x, X, 0, 20, h, "#ece7dc", 24, 20);                                                                   // les chaînes d'angle
+      pierre(x, w / 2 - 34, 0, 68, h, "#ece7dc", 24, 68);                                                                                         // la colonne blanche, au-dessus de l'horloge
+      for (let e = 0; e < 5; e++) { const Y = h - (e * 3 + 1.0) * 40 - 92; if (e > 0) fenB(x, w / 2 - 22, Y, 44, 84, false);                       // (au premier rang, c'est le pavillon qui est devant)
+        for (const sx of [-1, 1]) fenB(x, w / 2 + sx * 1.75 * 40 - 26, e ? Y : h - 98, 52, e ? 84 : 92, e === 0); } });
+    const fr = A.ajoute(new THREE.PlaneGeometry(RW, hR), A.mat({ map: tex(fond), roughness: .9 }), AX, yb + yT + hR / 2, zA - RD, false);
+    const ret = toileF(RD * 40 + 20, hR * 40, (x, w, h) => { murBrique(x, 0, 0, w, h, "rouge"); pierre(x, w - 20, 0, 20, h, "#ece7dc", 24, 20); for (let e = 0; e < 5; e++) { const Y = h - (e * 3 + 1.0) * 40 - 92; if (e) fenB(x, w / 2 - 22, Y, 30, 84, false); } });
+    for (const sg of [-1, 1]) { const r = A.ajoute(new THREE.PlaneGeometry(RD + .5, hR), A.mat({ map: tex(ret), roughness: .9 }), AX + sg * (RW / 2 - .01), yb + yT + hR / 2, zA - RD / 2 + .25, false); r.rotation.y = -sg * Math.PI / 2; if (sg > 0) r.scale.x = -1; }
+    // le pavillon de l'horloge, et son toit en pans coupés
+    const PW = 2.4, PH = 3.0, yP = yb + yT;
+    A.ajoute(new THREE.BoxGeometry(PW, PH, RD + .35), blancP, AX, yP + PH / 2, zA - RD / 2 + .17);
+    const tp = new THREE.Shape(); tp.moveTo(-PW / 2 - .18, 0); tp.lineTo(PW / 2 + .18, 0); tp.lineTo(PW / 2 + .18, .22); tp.lineTo(PW / 2 - .35, .8); tp.lineTo(-PW / 2 + .35, .8); tp.lineTo(-PW / 2 - .18, .22); tp.closePath();
+    A.ajoute(new THREE.ExtrudeGeometry(tp, { depth: RD + .6, bevelEnabled: false }), blancL, AX, yP + PH, zA - RD - .05);
+    A.ajoute(new THREE.BoxGeometry(PW + .25, .14, RD + .55), blancL, AX, yP + PH - .07, zA - RD / 2 + .2);                     // la corniche
+    // le cadran : octogone rouge, couronne dorée aux chiffres romains noirs, filet rouge, centre blanc, l'étoile dorée au pied des aiguilles
+    const cl = toile(512, 512, (x) => { const c = 256, oct = (r) => { x.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; x.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } x.closePath(); };
+      x.fillStyle = "#eee9df"; x.fillRect(0, 0, 512, 512); oct(250); x.fillStyle = "#c43a3a"; x.fill(); oct(238); x.fillStyle = "#f2d6cf"; x.fill(); oct(228); x.fillStyle = "#cfa24c"; x.fill();
+      const g = x.createRadialGradient(c, c, 120, c, c, 228); g.addColorStop(0, "rgba(255,240,190,.25)"); g.addColorStop(1, "rgba(120,80,20,.2)"); x.fillStyle = g; oct(228); x.fill();
+      oct(160); x.fillStyle = "#c43a3a"; x.fill(); oct(150); x.fillStyle = "#f7f3ec"; x.fill();
+      x.fillStyle = "#1a1612"; x.font = "bold 40px Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle";
+      ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((t, i) => { const a = -Math.PI / 2 + i * Math.PI / 6; x.save(); x.translate(c + Math.cos(a) * 192, c + Math.sin(a) * 192); x.rotate(a + Math.PI / 2); x.fillText(t, 0, 0); x.restore(); });
+      x.fillStyle = "#d8862a"; x.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? 14 : 34; x.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } x.closePath(); x.fill();   // l'étoile
+      x.fillStyle = "#151515"; x.lineCap = "round";
+      const aiguille = (a, l, e) => { x.save(); x.translate(c, c); x.rotate(a); x.beginPath(); x.moveTo(-e, 18); x.lineTo(-e * .5, -l * .7); x.lineTo(0, -l); x.lineTo(e * .5, -l * .7); x.lineTo(e, 18); x.closePath(); x.fill(); x.restore(); };
+      aiguille(Math.PI * .15, 110, 9); aiguille(Math.PI * .9, 140, 6); x.beginPath(); x.arc(c, c, 9, 0, 7); x.fill(); });
+    A.ajoute(new THREE.PlaneGeometry(2.05, 2.05), A.mat({ map: tex(cl), roughness: .45 }), AX, yP + PH / 2 - .05, zA + .355, false);
+    // les deux balcons, de part et d'autre : gros balustres blancs tournés, main courante, socle
+    const prof2 = [[0, 0], [.1, 0], [.1, .06], [.07, .1], [.06, .2], [.11, .42], [.11, .5], [.06, .66], [.05, .74], [.08, .78], [.08, .84], [0, .84]].map(([r, y]) => new THREE.Vector2(r, y)), balG = new THREE.LatheGeometry(prof2, 14);
+    for (const sg of [-1, 1]) { const xa = PW / 2 + .05, xb = RW / 2, xc = sg * (xa + xb) / 2, L2 = xb - xa, zb = zA + .2;
+      A.ajoute(new THREE.BoxGeometry(L2, .12, .34), blancL, AX + xc, yP + .06, zb);
+      A.ajoute(new THREE.BoxGeometry(L2 + .1, .14, .36), blancL, AX + xc, yP + 1.02, zb);
+      A.ajoute(new THREE.BoxGeometry(.26, 1.0, .3), blancL, AX + sg * (xb - .13), yP + .5, zb);
+      const n = 5; for (let k = 0; k < n; k++) { const bx = AX + sg * (xa + .2 + k * (L2 - .52) / (n - 1)); A.ajoute(balG, blancL, bx, yP + .12, zb); } }
+    }
   }
   RU.xc = xB - RU.pc / 2; RU.zc = zA + RU.pc / 2;   // (le centre du pan coupé)
 }
