@@ -1621,7 +1621,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     const ret = toileF(RD * 40 + 20, hR * 40, (x, w, h) => { murBrique(x, 0, 0, w, h, "rouge"); pierre(x, w - 20, 0, 20, h, "#ece7dc", 24, 20); for (let e = 0; e < 5; e++) { const Y = h - (e * 3 + 1.0) * 40 - 92; if (e) fenB(x, w / 2 - 22, Y, 30, 84, false); } });
     for (const sg of [-1, 1]) { const r = A.ajoute(new THREE.PlaneGeometry(RD + .5, hR), A.mat({ map: tex(ret), roughness: .9 }), AX + sg * (RW / 2 - .01), yb + yT + hR / 2, zA - RD / 2 + .25, false); r.rotation.y = -sg * Math.PI / 2; if (sg > 0) r.scale.x = -1; }
     // le pavillon de l'horloge, et son toit en pans coupés
-    const PW = 2.4, PH = 3.0, yP = yb + yT;
+    const PW = 2.4, PH = 2.3, yP = yb + yT;   // (15 cm au-dessus et au-dessous du cadran)
     A.ajoute(new THREE.BoxGeometry(PW, PH, RD + .35), blancP, AX, yP + PH / 2, zA - RD / 2 + .17);
     const tp = new THREE.Shape(); tp.moveTo(-PW / 2 - .18, 0); tp.lineTo(PW / 2 + .18, 0); tp.lineTo(PW / 2 + .18, .22); tp.lineTo(PW / 2 - .35, .8); tp.lineTo(-PW / 2 + .35, .8); tp.lineTo(-PW / 2 - .18, .22); tp.closePath();
     A.ajoute(new THREE.ExtrudeGeometry(tp, { depth: RD + .6, bevelEnabled: false }), blancL, AX, yP + PH, zA - RD - .05);
@@ -1637,7 +1637,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       x.fillStyle = "#151515"; x.lineCap = "round";
       const aiguille = (a, l, e) => { x.save(); x.translate(c, c); x.rotate(a); x.beginPath(); x.moveTo(-e, 18); x.lineTo(-e * .5, -l * .7); x.lineTo(0, -l); x.lineTo(e * .5, -l * .7); x.lineTo(e, 18); x.closePath(); x.fill(); x.restore(); };
       aiguille(Math.PI * .15, 110, 9); aiguille(Math.PI * .9, 140, 6); x.beginPath(); x.arc(c, c, 9, 0, 7); x.fill(); });
-    A.ajoute(new THREE.PlaneGeometry(2.05, 2.05), A.mat({ map: tex(cl), roughness: .45 }), AX, yP + PH / 2 - .05, zA + .355, false);
+    A.ajoute(new THREE.PlaneGeometry(2.05, 2.05), A.mat({ map: tex(cl), roughness: .45 }), AX, yP + PH / 2, zA + .355, false);
     // les deux balcons, de part et d'autre : gros balustres blancs tournés, main courante, socle
     const prof2 = [[0, 0], [.1, 0], [.1, .06], [.07, .1], [.06, .2], [.11, .42], [.11, .5], [.06, .66], [.05, .74], [.08, .78], [.08, .84], [0, .84]].map(([r, y]) => new THREE.Vector2(r, y)), balG = new THREE.LatheGeometry(prof2, 14);
     for (const sg of [-1, 1]) { const xa = PW / 2 + .05, xb = RW / 2, xc = sg * (xa + xb) / 2, L2 = xb - xa, zb = zA + .2;
