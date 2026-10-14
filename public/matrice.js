@@ -1125,10 +1125,10 @@ function lanternesMurales(scene, L) {
   // la cour d'honneur : de part et d'autre des portes R et S, et du passage sous l'horloge
   for (const sg of [-1, 1]) { for (const dz of [-1.05, 1.05]) pose(sg * 8.58, 13.75 + dz, -sg, 0, 2.6); pose(sg * 3.4, -17.97, 0, 1, 3.2); }
   // la deuxième cour : de part et d'autre des deux passages
-  for (const sg of [-1, 1]) { pose(sg * 3.6, C2.z0 - .04, 0, -1, 3.2); pose(sg * 3.6, C2.z1 + .01, 0, 1, 3.2); }
+  for (const sg of [-1, 1]) { pose(sg * 3.15, C2.z0 - .04, 0, -1, 3.2); pose(sg * 3.15, C2.z1 + .01, 0, 1, 3.2); }   // (pas sur les boîtiers rouges)
   // la troisième cour : le bâtiment d'en face, l'immeuble (devant et côté fosse), ses flancs dans les ruelles
   const zT = C3.z1 - C3.PP;
-  for (const sg of [-1, 1]) { pose(sg * 3.6, C3.z0 - .01, 0, -1, 3.2); pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
+  for (const sg of [-1, 1]) { pose(sg * 3.15, C3.z0 - .01, 0, -1, 3.2); pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
     for (const z of [-74.5, -81.5]) pose(sg * (C3.LB / 2 + .01), z, sg, 0, 2.7); }
   // la ruelle de gauche et son passage : la façade de brique (au-dessus des arcs), le flanc du bâtiment du fond
   for (const z of [-80, -94, -108, -122]) pose(-C3.x - 6 + .01, z, 1, 0, 4.0);
@@ -1758,7 +1758,7 @@ C3.enBas = () => { const q = M && M.moiNum && M.gens && M.gens.get(M.moiNum); re
 C3.dansPoub = (x, z) => (!!C3.poub && C3.poub.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3)) || (!!C3.phare && ((x - C3.phare.xw) + (z - C3.phare.zw) < C3.phare.R * Math.SQRT2 + .3 || Math.hypot(x - C3.phare.cx, z - C3.phare.cz) < C3.phare.R + .3));   // (et la demi-tour, dans l'angle de la place)
 /* changer de niveau dans le chantier : un clic sur la terrasse depuis le sol (ou l'inverse) passe par l'escalier le plus court — les marches raides, ou celui de la ruelle de gauche —
    au lieu de chercher un chemin sur le mauvais niveau (on se retrouvait dans la cabane et sous la terrasse) ; arrivé à l'escalier, on repart vers le point visé */
-C3.etage = (moi, x, y, z) => { if (!estAdmin() || !C3.dansChantier(x, z) || C3.enBas() || !moi) return false; const haut = C3.enHaut(moi), versHaut = y > 2; if (haut === versHaut) return false;
+C3.etage = (moi, x, y, z) => { if (!accesChantier() || !C3.dansChantier(x, z) || C3.enBas() || !moi) return false; const haut = C3.enHaut(moi), versHaut = y > 2; if (haut === versHaut) return false;
   const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, G = C3.escG, E = [[[0, zT + .8], [0, zt0 - .8]]];
   if (G) { const zm = (G.z0 + G.z1) / 2; E.push([[G.x0 - G.run - .6, zm], [G.x0 + .6, zm]]); }
   const p0 = moi.g.position; let best = null;
@@ -2093,6 +2093,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
 }
 /* la barrière de travaux, devant le passage du bâtiment d'en face (deuxième cour) : la suite est en chantier ; seul l'administrateur passe */
 const estAdmin = () => !!(M && (M.passeTravaux || (M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin)));   // (passeTravaux : le temps de tracer le chemin d'un administrateur, vu sur l'écran d'un autre)
+const accesChantier = () => true;   // le chantier (au-delà de la deuxième cour) est ouvert à tout le monde ; « estAdmin() » pour le réserver de nouveau à l'administrateur
 function barriereTravaux(A, scene, z) {
   const rb = toile(256, 64, (x, w, h) => { for (let i = -2; i < 12; i++) { x.fillStyle = i % 2 ? "#f4f2ec" : "#d8202a"; x.beginPath(); x.moveTo(i * 32, h); x.lineTo(i * 32 + 32, h); x.lineTo(i * 32 + 64, 0); x.lineTo(i * 32 + 32, 0); x.fill(); } });
   const mRB = A.mat({ map: tex(rb), roughness: .6 }), pied = A.mat({ color: 0x2a2a2a, roughness: .8 }), metal = A.mat({ color: 0xc8ccd0, metalness: .6, roughness: .35 });
@@ -2113,7 +2114,7 @@ function troisiemeCour(A, L, scene) {
   L.c3 = true;
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
   const zF = z1 - PP - 2 * C3.NT * C3.PT - C3.PTr, DB = C3.LB / 2; C3.zFond = zF;   // (la façade du bâtiment du fond, au bout des ruelles ; la demi-largeur de l'immeuble)
-  barriereTravaux(A, scene, C2.z1 + 1.0);
+  // (plus de barrière de travaux : le chantier est ouvert à tout le monde)
   const SOL = o => ((L.solsPlus = L.solsPlus || []).push(o), o);   // (ce qu'on peut toucher du doigt pour y aller : les pavés, les marches, les trottoirs, la terrasse)
   const pas2 = SOL(A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, (2.4) / 2, (6) / 2) }), 0, .012, C2.z1 - 6, false)); pas2.rotation.x = -Math.PI / 2;   // le sol du passage d'en face
   const pav = SOL(A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, (X) / 2, (prof / 2) / 2) }), 0, .012, zc, false)); pav.rotation.x = -Math.PI / 2;
@@ -4065,35 +4066,35 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (x > -15.6 && x <= -10.1 && z > 9.7 && z < 11.6)                                                         // le renfoncement de gauche, devant les marches du mess
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
-      || (estAdmin() && Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                  // le passage du bâtiment d'en face (en travaux : l'administrateur seul)
-      || (estAdmin() && C3.libre && C3.libre(x, z))   // (le chantier : l'administrateur va partout, sauf dans les murs)
-      || (estAdmin() && Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !C3.dansBac(Math.abs(x), z) && !(C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
-      || (estAdmin() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < (x < 0 && z < C3.z1 - .4 ? C3.x + 6 : C3.x) - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : RU.zA + RU.cour - .5) + .3 && !C3.dansPoub(x, z))   // les ruelles, de chaque côté de l'immeuble
-      || (estAdmin() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zS[0] - .2 && z > RU.zA + RU.cour + .4)
-      || (estAdmin() && x > C3.x - .6 && x < RU.xR + .8 && z > RU.zS[0] + .2 && z < RU.zS[1] - .2)   // les marches, jusqu'à l'ouverture
-      || (estAdmin() && x > RU.xR + .6 && x < RU.xB - .4 && z < RU.zT - .3 && z > RU.zA + RU.cour + .4)   // la contre-allée
-      || (estAdmin() && x > C3.x - .6 && x < RU.xR - .1 && z > RU.zS[1] + .2 && z < RU.zT - .3)   // le bloc, au bout   // le contrebas, entre les deux barrières
-      || (estAdmin() && x > C3.LB / 2 + .35 && x < C3.x - .45 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
-      || (estAdmin() && x > -C3.x - 6 + .45 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3 && !(x > -C3.LB / 2 - .3 && x < RU.xL && z > RU.zA + RU.cour - .3) && !C3.dansPoub(x, z))   // la place devant l'arcade (jusqu'au pan coupé)
-      || (estAdmin() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
-      || (estAdmin() && Math.abs(x) > C3.LT / 2 + .3 && Math.abs(x) < C3.x - .5 && z < C3.z1 - C3.PP - C3.NT * C3.PT - .2 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && !(x > 0 && x < C3.LT / 2 + 2 * C3.ESC.W + .15 && z > C3.ESC.zA && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal + .1) && !(C3.baraque && !C3.enHaut() && x > C3.baraque[0] && x < C3.baraque[1] - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .1 && !(z > C3.baraque[2] && z < C3.baraque[3])))   // le long des côtés de la terrasse, raccourcie
-      || (estAdmin() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT + .3)
-      || (estAdmin() && x >= C3.LB / 2 - .5 && x < C3.LB / 2 + .6 && Math.abs(z - (C3.z1 - C3.PP - C3.NT * C3.PT / 2)) < C3.SW / 2 - .25)   // (le haut de l'escalier de la fosse, depuis la ruelle)   // les creux de part et d'autre des marches raides, et leur descente
-      || (estAdmin() && Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
-      || (estAdmin() && x > -C3.LB / 2 + .3 && x < C3.LB / 2 + .6 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .25 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && (!C3.baraque || C3.enHaut() || x < C3.baraque[0]))   // derrière la terrasse (et à travers la baraque, par son ouverture)
-      || (estAdmin() && x > C3.LT / 2 + C3.ESC.W + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 - .5 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la première volée, côté rue
-      || (estAdmin() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + C3.ESC.W - .2 && z > C3.ESC.zA + .2 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la seconde, contre le mur, et le palier du haut
-      || (estAdmin() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 + C3.ESC.run + .1 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // le palier du demi-tour
-      || (estAdmin() && x > C3.LT / 2 - .5 && x < C3.LT / 2 + .4 && z > C3.ESC.zA + .2 && z < C3.ESC.z0 - .2)   // l'arrivée sur la terrasse
-      || (estAdmin() && Math.abs(x) < C3.LT / 2 - .35 && z <= C3.z1 - C3.PP - C3.NT * C3.PT + .05 && z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .35 && (C3.enHaut() || C3.libre(x, z)))   // la terrasse (et, dessous, la grande salle)
-      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && (estAdmin() || !(Math.abs(x) < 3.2 && z < C2.z1 + 1.35)) && !(x > C2.x - 4.5 && x < C2.x - 1.3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 3.3) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
+      || (accesChantier() && Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                  // le passage du bâtiment d'en face (en travaux : l'administrateur seul)
+      || (accesChantier() && C3.libre && C3.libre(x, z))   // (le chantier : l'administrateur va partout, sauf dans les murs)
+      || (accesChantier() && Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !C3.dansBac(Math.abs(x), z) && !(C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
+      || (accesChantier() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < (x < 0 && z < C3.z1 - .4 ? C3.x + 6 : C3.x) - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : RU.zA + RU.cour - .5) + .3 && !C3.dansPoub(x, z))   // les ruelles, de chaque côté de l'immeuble
+      || (accesChantier() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zS[0] - .2 && z > RU.zA + RU.cour + .4)
+      || (accesChantier() && x > C3.x - .6 && x < RU.xR + .8 && z > RU.zS[0] + .2 && z < RU.zS[1] - .2)   // les marches, jusqu'à l'ouverture
+      || (accesChantier() && x > RU.xR + .6 && x < RU.xB - .4 && z < RU.zT - .3 && z > RU.zA + RU.cour + .4)   // la contre-allée
+      || (accesChantier() && x > C3.x - .6 && x < RU.xR - .1 && z > RU.zS[1] + .2 && z < RU.zT - .3)   // le bloc, au bout   // le contrebas, entre les deux barrières
+      || (accesChantier() && x > C3.LB / 2 + .35 && x < C3.x - .45 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
+      || (accesChantier() && x > -C3.x - 6 + .45 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3 && !(x > -C3.LB / 2 - .3 && x < RU.xL && z > RU.zA + RU.cour - .3) && !C3.dansPoub(x, z))   // la place devant l'arcade (jusqu'au pan coupé)
+      || (accesChantier() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
+      || (accesChantier() && Math.abs(x) > C3.LT / 2 + .3 && Math.abs(x) < C3.x - .5 && z < C3.z1 - C3.PP - C3.NT * C3.PT - .2 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && !(x > 0 && x < C3.LT / 2 + 2 * C3.ESC.W + .15 && z > C3.ESC.zA && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal + .1) && !(C3.baraque && !C3.enHaut() && x > C3.baraque[0] && x < C3.baraque[1] - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .1 && !(z > C3.baraque[2] && z < C3.baraque[3])))   // le long des côtés de la terrasse, raccourcie
+      || (accesChantier() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT + .3)
+      || (accesChantier() && x >= C3.LB / 2 - .5 && x < C3.LB / 2 + .6 && Math.abs(z - (C3.z1 - C3.PP - C3.NT * C3.PT / 2)) < C3.SW / 2 - .25)   // (le haut de l'escalier de la fosse, depuis la ruelle)   // les creux de part et d'autre des marches raides, et leur descente
+      || (accesChantier() && Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
+      || (accesChantier() && x > -C3.LB / 2 + .3 && x < C3.LB / 2 + .6 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .25 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && (!C3.baraque || C3.enHaut() || x < C3.baraque[0]))   // derrière la terrasse (et à travers la baraque, par son ouverture)
+      || (accesChantier() && x > C3.LT / 2 + C3.ESC.W + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 - .5 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la première volée, côté rue
+      || (accesChantier() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + C3.ESC.W - .2 && z > C3.ESC.zA + .2 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la seconde, contre le mur, et le palier du haut
+      || (accesChantier() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 + C3.ESC.run + .1 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // le palier du demi-tour
+      || (accesChantier() && x > C3.LT / 2 - .5 && x < C3.LT / 2 + .4 && z > C3.ESC.zA + .2 && z < C3.ESC.z0 - .2)   // l'arrivée sur la terrasse
+      || (accesChantier() && Math.abs(x) < C3.LT / 2 - .35 && z <= C3.z1 - C3.PP - C3.NT * C3.PT + .05 && z > C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .35 && (C3.enHaut() || C3.libre(x, z)))   // la terrasse (et, dessous, la grande salle)
+      || (Math.abs(x) < C2.x - .5 && z <= C2.z0 - .4 && z > C2.z1 + .5 && (accesChantier() || !(Math.abs(x) < 3.2 && z < C2.z1 + 1.35)) && !(x > C2.x - 4.5 && x < C2.x - 1.3 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 3.3) && !(x < -C2.x + 2.8 && Math.abs(z - (C2.z0 + C2.z1) / 2) < 6.3))   // (le local électrique, la déchetterie)                                           // la deuxième cour
       || (x >= 10.2 && x < PB[0] - .35 && z > 8.3 && z < 11.4)                                                  // le renfoncement de l'ancien bar
       || (x >= PB[0] - .35 && x < PB[0] + .55 && Math.abs(z - PB[1]) < VEST_LB / 2 - .25)                         // son embrasure, de plain-pied
       || (x > 16.5 && x < VEST_X + VEST_VX - .35 && Math.abs(z - VEST_Z) < VEST_VZ - .3)                        // le vestibule
       || (Math.abs(x - VEST_X) < .4 && Math.abs(z - VEST_Z) < VEST_VZ + .7)                                    // ses deux autres portes
       || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
     L.zone = [-22, 31, -142, 29.8];
-    { const lim0 = L.limites; L.limites = (x, z) => estAdmin() && C3.dansChantier(x, z) ? C3.libre(x, z) : lim0(x, z); }   // (le chantier : une seule règle, selon le niveau où l'on est)
+    { const lim0 = L.limites; L.limites = (x, z) => accesChantier() && C3.dansChantier(x, z) ? C3.libre(x, z) : lim0(x, z); }   // (le chantier : une seule règle, selon le niveau où l'on est)
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
