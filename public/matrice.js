@@ -1131,7 +1131,7 @@ function lanternesMurales(scene, L) {
   for (const sg of [-1, 1]) { pose(sg * 3.15, C3.z0 - .01, 0, -1, 3.2); pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
     for (const z of [-74.5, -81.5]) pose(sg * (C3.LB / 2 + .01), z, sg, 0, 2.7); }
   // la ruelle de gauche et son passage : la façade de brique (au-dessus des arcs), le flanc du bâtiment du fond
-  pose(-C3.x + .01, -80, 1, 0, 3.2); for (const z of [-96, -110, -124]) pose(-C3.x - 6 + .01, z, 1, 0, 4.0);   // (sur le mur noir, puis sur la façade à arcades)
+  pose(-C3.x + .01, -78, 1, 0, 3.2); for (const z of [-92, -108, -124]) pose(-C3.x - 6 + .01, z, 1, 0, 4.0);   // (sur le mur noir, puis sur la façade à arcades)
   pose(-C3.LB / 2 - .03, -111, -1, 0, 3.0);
   // la rue en pente : le flanc du bâtiment du fond, le bâtiment aux arcades, l'infirmerie, le mur du fond de la place
   pose(C3.LB / 2 + .03, -111, 1, 0, 3.0);
@@ -1746,7 +1746,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
 const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .19, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
-C3.zMN = C3.z1 - 18;   // (le bout du mur noir épais, le long de la ruelle de gauche)
+C3.zMN = C3.z1 - C3.PP;   // (le bout du mur noir épais, le long de la ruelle de gauche : aligné sur la fin du muret blanc de l'immeuble)
 C3.hp = C3.NM * C3.HM; C3.FL = -.68;   // (FL : le sol de la cabane et de la grande salle sous la terrasse, quatre marches plus bas)
 C3.enHaut = (p) => { const q = p && p.g ? p : (M && M.moiNum && M.gens && M.gens.get(M.moiNum)); return !!(q && q.g && q.g.position.y > 2); };
 C3.dedans = (q) => { if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return null; const x = q.g.position.x, z = q.g.position.z, c = C3.cab, v = C3.vest, zt0 = c.zt1 + C3.PTr;   // (dans la cabane, le vestibule, les toilettes, la grande salle : laquelle ?)
