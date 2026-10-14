@@ -2018,6 +2018,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         A.ajoute(new THREE.BoxGeometry(.05, 1.46, .07), pierreC, x, y0 + 2.0, zA + .09, false); A.ajoute(new THREE.BoxGeometry(1.06, .05, .07), pierreC, x, y0 + 2.35, zA + .09, false);
         A.ajoute(new THREE.BoxGeometry(1.45, .1, .22), pierreC, x, y0 + 1.1, zA + .11, false); } }
     RU.portesFond = portes; }
+  trottoir(A, L, -C3.x - 6 + RU.pc * .72, xB - RU.pc - .1, zA, zA + 1.4, ["z1"], { ang, y: z => RU.y(z) });   // (au pied du mur du fond : un trottoir, de la porte A jusqu'à la tour E)
   { const A0 = A; { const ga = new THREE.Group(), PC = RU.pc; ga.position.set(xB - PC / 2, 0, RU.zA + PC / 2); ga.rotation.y = -Math.PI / 4; scene.add(ga);   // (le pan coupé : l'angle de la rue, à 45°, c'est le porche)
     const zA = 0, AX = 0, A = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
     const W = PC * Math.SQRT2 + .3, H = 24, AW = 4.6, AH = 5.6, yb = -drop, prof = 8, RW = 5.4, RD = 1.5, yT = AH + 2.1, sh = new THREE.Shape();   // (RW, RD : le renfoncement au-dessus du bandeau, derrière l'horloge)
