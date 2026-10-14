@@ -696,29 +696,107 @@ function decouper(img, bx, by, bw, bh, alpha) {
 let THREE = null;
 const tex = (c, rx = 1, ry = 1) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; };
 
-/* --- textures des façades --- */
-function briques(x, w, h, y0 = 0, ht = h, teinte = 12) {
-  x.fillStyle = "#cfd2cc"; x.fillRect(0, y0, w, ht);
-  for (let y = y0; y < y0 + ht; y += 9) for (let i = -1; i * 26 < w; i++) {
-    const dx = (Math.floor((y - y0) / 9) % 2) * 13, v = alea();
-    x.fillStyle = `hsl(${teinte - 2 + v * 6}, ${46 + v * 10}%, ${36 + v * 8}%)`; x.fillRect(i * 26 + dx + 1, y + 1, 24, 7);
-  }
+/* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
+   les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
+let K_FAC = 1;
+const toileF = (w, h, dessin) => { const k = K_FAC, c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); c.lw = w; c.lh = h; return c; };
+// les deux briques des photos : la rouge orangé (bâtiment de l'horloge, rue en pente) et la rouge un peu mauve, plus longue (l'autre façade de la cour d'honneur)
+const BRIQ = { rouge: { joint: "#c9bdac", h: [7, 18], s: [46, 62], l: [33, 45], lg: 9.2, ht: 2.7 }, mauve: { joint: "#cdc4bd", h: [352, 366], s: [26, 38], l: [41, 52], lg: 9.6, ht: 2.6 } };
+const tuilesB = {};
+function grain(x, a = 26) {   // un grain fin, pixel par pixel (sur toute la toile)
+  const c = x.canvas, d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const n = (alea() - .5) * a; p[i] += n; p[i + 1] += n; p[i + 2] += n; }
+  x.putImageData(d, 0, 0);
+}
+// un pan de brique de 40 briques × 100 rangs, qui se répète sans raccord visible ; d = pixels par unité de 1/40 m
+function tuileBrique(style = "rouge", d = 1) {
+  const cle = style + d; if (tuilesB[cle]) return tuilesB[cle];
+  const S = BRIQ[style], NC = 40, NR = 100, W = NC * S.lg, H = NR * S.ht, g0 = graine; graine = style === "rouge" ? 501 : 733;
+  const coul = []; for (let r = 0; r < NR; r++) for (let i = 0; i < NC; i++) { const v = alea(), u = alea(); let l = S.l[0] + v * (S.l[1] - S.l[0]);
+    if (u < .06) l -= 8; else if (u > .965) l += 6;   // (quelques briques plus cuites, quelques plus pâles)
+    coul.push(`hsl(${(S.h[0] + alea() * (S.h[1] - S.h[0])) % 360}, ${S.s[0] + alea() * (S.s[1] - S.s[0])}%, ${l}%)`); }
+  const c = toile(Math.max(1, Math.round(W * d)), Math.max(1, Math.round(H * d)), (x) => { x.scale(d, d);
+    x.fillStyle = S.joint; x.fillRect(0, 0, W, H);
+    const jb = .42, hb = S.ht - jb, lb = S.lg - jb;
+    for (let r = 0; r < NR; r++) { const y = r * S.ht, dx = (r % 2) * S.lg / 2;
+      for (let i = -1; i <= NC; i++) { const X = i * S.lg + dx, ii = ((i % NC) + NC) % NC;
+        x.fillStyle = coul[r * NC + ii]; x.fillRect(X + jb / 2, y + jb / 2, lb, hb);
+        x.fillStyle = "rgba(255,236,220,.09)"; x.fillRect(X + jb / 2, y + jb / 2, lb, hb * .22);       // l'arête du haut, au jour
+        x.fillStyle = "rgba(30,12,8,.13)"; x.fillRect(X + jb / 2, y + jb / 2 + hb * .74, lb, hb * .26); // le bas, à l'ombre
+        x.fillStyle = "rgba(40,28,22,.32)"; x.fillRect(X + jb / 2, y + S.ht - jb / 2, lb, jb * .55);     // le joint creux, sous la brique
+      } }
+    graine = 900 + d * 7; for (let k = 0; k < NC * NR * .6; k++) { x.fillStyle = alea() < .55 ? "rgba(40,18,10,.22)" : "rgba(235,205,180,.18)"; x.fillRect(alea() * W, alea() * H, .5, .4); }
+  });
+  graine = 900 + d * 13; grain(c.getContext("2d"), 18);
+  graine = g0; return (tuilesB[cle] = c);
+}
+// remplit un rectangle de brique ; ppm : les pixels par mètre du dessin (40 en général)
+function murBrique(x, X, Y, W, H, style = "rouge", ppm = 40) {
+  const k = x.getTransform().a, p = x.createPattern(tuileBrique(style, Math.max(.5, Math.round(ppm * k / 40 * 4) / 4)), "repeat");
+  p.setTransform(new DOMMatrix().scale(1 / k)); x.fillStyle = p; x.fillRect(X, Y, W, H);
+}
+function briques(x, w, h, y0 = 0, ht = h) { murBrique(x, 0, y0, w, ht, "rouge"); }
+// briques fines et longues, rouge un peu mauve (celles de l'autre façade de la cour d'honneur)
+function briquesFines(x, w, h) { murBrique(x, 0, 0, w, h, "mauve"); }
+// la pierre blanche : assises de 50 cm, blocs de longueur variable, joints fins, grain et légères nuances
+const pierre = (x, X, Y, W, H, c = "#e9e1d3", assise = 20, bloc = 52) => {
+  x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip(); x.fillStyle = c; x.fillRect(X, Y, W, H);
+  for (let y = Y + H, r = 0; y > Y - assise; y -= assise, r++) for (let i = X - (r % 2) * bloc / 2; i < X + W; i += bloc) { const v = alea();
+    x.fillStyle = v < .5 ? `rgba(120,100,70,${v * .1})` : `rgba(255,252,244,${(v - .5) * .16})`; x.fillRect(i, y - assise, bloc, assise);
+    x.fillStyle = "rgba(95,80,58,.28)"; x.fillRect(i, y - assise, .7, assise); x.fillRect(i, y - .8, bloc, .8);
+    x.fillStyle = "rgba(255,255,250,.4)"; x.fillRect(i + .7, y - assise, bloc, .6); }
+  x.restore();
+};
+// la patine d'un mur : grain, taches, coulures de pluie, le pied encrassé (seulement sur ce qui est déjà peint)
+function patine(x, w, h) {
+  const g0 = graine; graine = Math.round(w * 7 + h * 3) % 99991 + 1; x.save(); x.globalCompositeOperation = "source-atop";
+  for (let i = 0, n = w * h / 9000; i < n; i++) { const cx = alea() * w, cy = alea() * h, r = 30 + alea() * 140, g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, alea() < .6 ? "rgba(55,40,30,.07)" : "rgba(255,246,232,.06)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); }
+  for (let i = 0, n = w / 22; i < n; i++) { const cx = alea() * w, y0 = alea() * h * .7, lg = 60 + alea() * 260, l = 3 + alea() * 14, g = x.createLinearGradient(0, y0, 0, y0 + lg);
+    g.addColorStop(0, "rgba(45,38,32,.09)"); g.addColorStop(1, "rgba(45,38,32,0)"); x.fillStyle = g; x.fillRect(cx, y0, l, lg); }
+  { const g = x.createLinearGradient(0, h - 50, 0, h); g.addColorStop(0, "rgba(40,32,24,0)"); g.addColorStop(1, "rgba(40,32,24,.22)"); x.fillStyle = g; x.fillRect(0, h - 50, w, 50); }
+  x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = x.createPattern(tuileGrain(), "repeat"); x.fillRect(0, 0, x.canvas.width, x.canvas.height);   // (le grain, au pixel près)
+  x.restore(); graine = g0;
+}
+let tuileG = null;
+const tuileGrain = () => tuileG || (tuileG = toile(256, 256, (x) => { const g0 = graine; graine = 313; const d = x.createImageData(256, 256), p = d.data;
+  for (let i = 0; i < p.length; i += 4) { const v = alea(); p[i] = p[i + 1] = p[i + 2] = v < .5 ? 0 : 255; p[i + 3] = Math.abs(v - .5) * 34; } x.putImageData(d, 0, 0); graine = g0; }));
+// une coulure sous un appui de fenêtre
+const coulure = (x, X, Y, W, lg = 46) => { const g = x.createLinearGradient(0, Y, 0, Y + lg); g.addColorStop(0, "rgba(40,30,24,.2)"); g.addColorStop(1, "rgba(40,30,24,0)"); x.fillStyle = g;
+  x.beginPath(); x.moveTo(X, Y); x.lineTo(X + W, Y); x.lineTo(X + W * .8, Y + lg); x.lineTo(X + W * .2, Y + lg); x.closePath(); x.fill(); };
+// une descente d'eau en zinc, de Y0 à Y1 (colliers tous les 2 m, ombre portée à droite), et sa boîte à eau en haut
+function descente(x, X, Y0, Y1, d = 4.4) {
+  x.fillStyle = "rgba(30,22,18,.28)"; x.fillRect(X + d * .6, Y0, d * .9, Y1 - Y0);
+  const g = x.createLinearGradient(X - d / 2, 0, X + d / 2, 0); g.addColorStop(0, "#6f747a"); g.addColorStop(.35, "#c3c7cb"); g.addColorStop(.6, "#9ba0a5"); g.addColorStop(1, "#555a60");
+  x.fillStyle = g; x.fillRect(X - d / 2, Y0, d, Y1 - Y0); x.fillRect(X - d, Y0, d * 2, d * 1.6);
+  x.fillStyle = "rgba(25,25,28,.55)"; for (let y = Y0 + 40; y < Y1 - 10; y += 80) x.fillRect(X - d * .75, y, d * 1.5, 1.6);
+  x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(X - d * .15, Y0, d * .18, Y1 - Y0);
+}
+// le chéneau de zinc au bas du toit
+function cheneau(x, Y, w, e = 5) { x.fillStyle = "rgba(30,24,20,.3)"; x.fillRect(0, Y + e, w, e * .8);
+  const g = x.createLinearGradient(0, Y, 0, Y + e); g.addColorStop(0, "#c6c9cc"); g.addColorStop(1, "#6a6e73"); x.fillStyle = g; x.fillRect(0, Y, w, e); }
+// l'ardoise du toit mansardé (1 m par répétition) : rangs de 12 cm, ardoises de 22 cm, nuances bleu-gris
+let texArdoise = null;
+function toileArdoise() {
+  const g0 = graine; graine = 404;
+  const c = toile(256, 256, (x) => { x.fillStyle = "#23272f"; x.fillRect(0, 0, 256, 256); const hr = 256 / 8, lr = 256 / 4.5;
+    for (let r = 0; r < 8; r++) for (let i = -1; i < 5; i++) { const X = i * lr + (r % 2) * lr / 2, Y = r * hr, v = alea();
+      x.fillStyle = `hsl(${212 + v * 14}, ${9 + v * 9}%, ${33 + alea() * 13}%)`; x.fillRect(X + 1.5, Y, lr - 3, hr - 1.5);
+      x.fillStyle = "rgba(255,255,255,.07)"; x.fillRect(X + 1.5, Y, lr - 3, 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(X + 1.5, Y + hr - 4, lr - 3, 2.5); } });
+  grain(c.getContext("2d"), 16); graine = g0; return c;
 }
 function fenetre(x, X, Y, W, H, cadre = "#f1ece2", garde = false) {
+  x.fillStyle = "rgba(40,24,18,.22)"; x.fillRect(X - 3, Y - 3, W + 12, H + 13);                                  // l'ombre de l'encadrement sur le mur
   x.fillStyle = cadre; x.fillRect(X - 6, Y - 6, W + 12, H + 12);
   const g = x.createLinearGradient(X, Y, X + W, Y + H); g.addColorStop(0, "#c8d8e2"); g.addColorStop(.5, "#8ea6b6"); g.addColorStop(1, "#6f889a");
-  x.fillStyle = g; x.fillRect(X, Y, W, H); x.fillStyle = cadre; x.fillRect(X + W / 2 - 2, Y, 4, H); x.fillRect(X, Y + H * .38, W, 3);
+  x.fillStyle = g; x.fillRect(X, Y, W, H);
+  x.fillStyle = "rgba(255,255,255,.13)"; x.beginPath(); x.moveTo(X, Y + H * .2); x.lineTo(X + W * .45, Y); x.lineTo(X + W * .7, Y); x.lineTo(X, Y + H * .6); x.fill();   // le reflet du ciel
+  x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, W, 4); x.fillRect(X, Y, 3, H);                             // l'embrasure (la fenêtre est en retrait)
+  x.fillStyle = cadre; x.fillRect(X + W / 2 - 2, Y, 4, H); x.fillRect(X, Y + H * .38, W, 3);
+  x.fillStyle = "#ddd6c8"; x.fillRect(X - 9, Y + H + 5, W + 18, 4); coulure(x, X - 6, Y + H + 9, W + 12, 36);   // l'appui, et sa coulure
   if (garde) { x.strokeStyle = "#222"; x.lineWidth = 3; for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(X, Y + H - 4 - i * 9); x.lineTo(X + W, Y + H - 4 - i * 9); x.stroke(); } }
 }
-// briques fines et longues, rouge un peu mauve (celles de l'autre façade de la cour d'honneur) : 22 cm × 6,5 cm à 40 px/m
-function briquesFines(x, w, h) {
-  x.fillStyle = "#b9aaa6"; x.fillRect(0, 0, w, h);
-  for (let y = 0, r = 0; y < h; y += 3.2, r++) for (let X = -(r % 2) * 4.5; X < w; X += 9) { const v = alea();
-    x.fillStyle = `hsl(${2 + v * 8}, ${30 + v * 12}%, ${42 + v * 9}%)`; x.fillRect(X + .5, y + .5, 8.2, 2.4); }
-  x.fillStyle = "rgba(150,95,115,.07)"; x.fillRect(0, 0, w, h);
-}
 const zoneBriques = (x, X, Y, W, H) => { x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip(); briques(x, X + W, Y + H); x.restore(); };
-const pierre = (x, X, Y, W, H, c = "#e9e1d3") => { x.fillStyle = c; x.fillRect(X, Y, W, H); x.fillStyle = "rgba(120,100,70,.14)"; for (let i = X; i < X + W; i += 60) x.fillRect(i, Y, 2, H); for (let j = Y + 40; j < Y + H; j += 40) x.fillRect(X, j, W, 2); };
 
 /* --- briques de construction --- */
 function atelier(scene) {
@@ -1211,7 +1289,7 @@ function raccourci(L, scene, [w, h, d], [x, y, z], cible) {
 // la façade du bâtiment du fond de la cour d'honneur (brique, balcons, socle, porche, horloge) — vue aussi depuis le passage de la rue
 function toileFondCour() {
   const socle = 6.4;
-  return toile(1760, 1080, (x, w, h) => {      // 40 px par mètre
+  return toileF(1760, 1080, (x, w, h) => {      // 40 px par mètre
       const ps = socle * 40;
       briques(x, w, h, 0, h - ps, 10);
       pierre(x, 0, h - ps, w, ps, "#e8e0cf");
@@ -1238,6 +1316,8 @@ function toileFondCour() {
       x.fillStyle = "#fff"; x.beginPath(); x.arc(hx, hy, 25, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = "#222"; x.stroke();
       x.fillStyle = "#222"; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.fillRect(hx + Math.cos(a) * 19 - 1.5, hy + Math.sin(a) * 19 - 1.5, 3, 3); }
       x.lineWidth = 4; x.lineCap = "round"; x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx, hy - 16); x.moveTo(hx, hy); x.lineTo(hx + 12, hy + 4); x.stroke();
+      // le chéneau sous l'acrotère, et les descentes d'eau en zinc jusqu'au socle
+      cheneau(x, 14, w); for (const X of [7, 4 * pas, 10 * pas, w - 7]) descente(x, X, 14, h - ps + 4);
   });
 }
 // le décor du passage sous le porche (côté rue en FZ, côté cour en FZ - 14) ; servi dans la rue, et aussi dans la cour d'honneur pour qu'il se prolonge
@@ -1305,12 +1385,10 @@ function decorPassage(A, T, L, scene, FZ) {
    et son passage carré qui laisse voir encore une cour plus loin ; de chaque côté, des murs bas blancs et des étages de brique */
 const C2 = { z0: -30, z1: -44, x: 11 };
 function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorche = false) {
-  return toile(Math.round(largeur * 40), Math.round(hauteur * 40), (x, w, h) => {
+  return toileF(Math.round(largeur * 40), Math.round(hauteur * 40), (x, w, h) => {
     const rdc = Math.max(5.4, hp + 1) * 40, cx = w / 2;
-    // les étages : la brique rouge, en bandeaux horizontaux
-    x.fillStyle = "#9a4a38"; x.fillRect(0, 0, w, h - rdc);
-    for (let y = 0; y < h - rdc; y += 12) { x.fillStyle = y % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
-    for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(${alea() < .5 ? "60,20,10" : "200,120,90"},.08)`; x.fillRect(alea() * w, alea() * (h - rdc), 30 + alea() * 120, 8); }
+    // les étages : la brique rouge, fine, à joints clairs
+    briques(x, w, h, 0, h - rdc);
     // les fenêtres des étages : encadrement blanc, volets roulants ou rideaux, balconnet noir
     const pas = 3.6 * 40, n = Math.floor(w / pas);
     for (let et = 0; et < 6; et++) for (let c = 0; c < n; c++) { const X = (c + .5) * pas - 34 + (w - n * pas) / 2, Y = h - rdc - 34 - 110 - et * 3 * 40;
@@ -1319,11 +1397,12 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
       const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
       if (alea() < .35) { x.fillStyle = "#ecebe6"; x.fillRect(X, Y, 68, 40 + alea() * 50); x.fillStyle = "rgba(0,0,0,.08)"; for (let l = Y; l < Y + 90; l += 5) x.fillRect(X, l, 68, 1); }
       x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100);
+      x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, 68, 4); x.fillRect(X, Y, 3, 100); x.fillStyle = "#e2ddd2"; x.fillRect(X - 9, Y + 104, 86, 5); coulure(x, X - 6, Y + 109, 80, 38);
       x.strokeStyle = "#141414"; x.lineWidth = 2.5; x.strokeRect(X - 4, Y + 70, 76, 28); for (let k = X; k < X + 72; k += 6) { x.beginPath(); x.moveTo(k, Y + 70); x.lineTo(k, Y + 98); x.stroke(); } }
     // le rez-de-chaussée blanc, sa corniche
     // le rez-de-chaussée : la brique jusqu'en bas ; du blanc seulement au-dessus du passage, et un soubassement blanc de 60 cm au pied du mur
-    x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
-    x.fillStyle = "#e9e6df"; x.fillRect(0, h - 24, w, 24); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);
+    briques(x, w, h, h - rdc, rdc);
+    pierre(x, 0, h - 24, w, 24, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);
     if (!sansPorche) { x.fillStyle = "#e9e6df"; x.fillRect(cx - (lp + .3) * 40, h - (hp + .9) * 40, (lp + .3) * 80, .9 * 40); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (lp + .4) * 40, h - (hp + .9) * 40 - 6, (lp + .4) * 80, 8); }
     // quelques portes vitrées, les petites appliques noires, les boîtiers rouges
     for (const d of [-15, 15]) { const X = cx + d * 40 - 36;   // (plus de porte de part et d'autre du passage) if (X < 0 || X > w - 72) continue;
@@ -1331,6 +1410,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
     for (const d of [-4, 4]) { x.fillStyle = "#222"; x.fillRect(cx + d * 40 - 10, h - rdc + 40, 20, 8); x.fillStyle = "#c8202a"; x.fillRect(cx + d * 40 - 6, h - 120, 12, 16); }
     // le passage carré, au centre (4,8 m × 4,4 m), sous son linteau
     if (!sansPorche) { x.fillStyle = "#d9d5cc"; x.fillRect(cx - (lp + .3) * 40, h - (hp + .08) * 40, (lp + .3) * 80, 6); }
+    cheneau(x, 0, w); for (const X of [6, w - 6]) descente(x, X, 0, h - 24);   // le chéneau, les descentes d'eau aux deux bouts
     if (avecPassage) x.clearRect(cx - 2.4 * 40, h - hp * 40, 4.8 * 40, hp * 40);
   });
 }
@@ -1344,20 +1424,19 @@ const RU = { zA: -134, x0: 0, xR: 24, xB: 30, drop: 1.3, zT: -84, cour: 17, xL: 
 RU.lx = (x, z) => ((x - RU.xB + RU.pc / 2) + (z - RU.zA - RU.pc / 2)) / Math.SQRT2; RU.lz = (x, z) => (-(x - RU.xB + RU.pc / 2) + (z - RU.zA - RU.pc / 2)) / Math.SQRT2;   // (repère du porche : en travers, et vers la place)
 RU.y = z => z >= RU.zT ? 0 : -RU.drop * Math.min(1, (RU.zT - z) / (RU.zT - RU.zA)) - (z < RU.zA ? 0 : 0);
 function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeaux crème, fenêtres encadrées de pierre, portes en arc au rez-de-chaussée
-  return toile(Math.round(L * 20), Math.round(H * 20), (x, w, h) => { const P = 20;
-    x.fillStyle = "#9c5038"; x.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 4) { x.fillStyle = y % 8 ? "rgba(0,0,0,.12)" : "rgba(255,210,180,.06)"; x.fillRect(0, y, w, 1.5); }
-    for (let k = 0; k < 300; k++) { x.fillStyle = `rgba(${alea() < .5 ? "70,25,15" : "200,120,90"},.08)`; x.fillRect(alea() * w, alea() * h, 12, 4); }
-    x.fillStyle = "#e8e0cc"; x.fillRect(0, h - 1.2 * P, w, 1.2 * P);   // le soubassement clair
-    for (const ey of o.bandes || [4.4, 10.2, 16]) x.fillRect(0, h - ey * P, w, .45 * P);   // les bandeaux de pierre
+  return toileF(Math.round(L * 20), Math.round(H * 20), (x, w, h) => { const P = 20;
+    murBrique(x, 0, 0, w, h, "rouge", P);
+    pierre(x, 0, h - 1.2 * P, w, 1.2 * P, "#e8e0cc", 10, 30);   // le soubassement clair
+    for (const ey of o.bandes || [4.4, 10.2, 16]) { pierre(x, 0, h - ey * P, w, .45 * P, "#e8e0cc", 9, 30); x.fillStyle = "rgba(40,25,18,.3)"; x.fillRect(0, h - ey * P + .45 * P, w, 1.5); }   // les bandeaux de pierre, leur ombre
     const pas = (o.pas || 3.4) * P, n = Math.floor(w / pas);
     for (let c = 0; c < n; c++) { const cx = (c + .5) * pas + (w - n * pas) / 2;
       for (const ey of [6.0, 8.6, 11.8, 14.4, 17.6, 20.2]) { if (ey > h / P - 1.5) continue; const fy = h - (ey + 1.8) * P;
         x.fillStyle = "#ece6d6"; x.fillRect(cx - 18, fy - 4, 36, 2.1 * P); x.fillRect(cx - 21, fy + 1.9 * P, 42, 5);
         const g = x.createLinearGradient(0, fy, 0, fy + 1.8 * P); g.addColorStop(0, "#56626c"); g.addColorStop(1, "#2a323a"); x.fillStyle = g; x.fillRect(cx - 14, fy, 28, 1.8 * P);
-        x.fillStyle = "#ece6d6"; x.fillRect(cx - 1, fy, 2, 1.8 * P); x.fillRect(cx - 14, fy + .6 * P, 28, 1.5); }
+        x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(cx - 14, fy, 28, 2); x.fillStyle = "#ece6d6"; x.fillRect(cx - 1, fy, 2, 1.8 * P); x.fillRect(cx - 14, fy + .6 * P, 28, 1.5); coulure(x, cx - 18, fy + 1.9 * P + 5, 36, 18); }
       if (o.arcs) { const aw = 1.1 * P, ah = 2.6 * P, ay = h - 1.2 * P; x.fillStyle = "#ece6d6"; x.beginPath(); x.moveTo(cx - aw / 2 - 4, ay); x.lineTo(cx - aw / 2 - 4, ay - ah + aw / 2); x.arc(cx, ay - ah + aw / 2, aw / 2 + 4, Math.PI, 0); x.lineTo(cx + aw / 2 + 4, ay); x.fill();
-        x.fillStyle = "#4a2a1c"; x.beginPath(); x.moveTo(cx - aw / 2, ay); x.lineTo(cx - aw / 2, ay - ah + aw / 2); x.arc(cx, ay - ah + aw / 2, aw / 2, Math.PI, 0); x.lineTo(cx + aw / 2, ay); x.fill(); } } }); }
+        x.fillStyle = "#4a2a1c"; x.beginPath(); x.moveTo(cx - aw / 2, ay); x.lineTo(cx - aw / 2, ay - ah + aw / 2); x.arc(cx, ay - ah + aw / 2, aw / 2, Math.PI, 0); x.lineTo(cx + aw / 2, ay); x.fill(); } }
+    cheneau(x, 0, w, 3); for (let X = 3; X < w; X += 14 * P) descente(x, X, 0, h - 1.2 * P, 2.2); descente(x, w - 3, 0, h - 1.2 * P, 2.2); }); }
 function rueEnPente(A, L, scene, SOL, zT, DB) {
   RU.zT = zT; RU.x0 = DB; const { zA, xR, xB, drop } = RU, Lz = zT - zA, ang = Math.atan2(drop, Lz), Lp = Math.hypot(Lz, drop), xc = (DB + xR) / 2, zc = (zT + zA) / 2;
   graine = 61;
@@ -1367,8 +1446,8 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   { const zc2 = RU.zA + RU.cour / 2, Lc = Math.hypot(RU.cour, drop * RU.cour / Lz), pl = SOL(A.ajoute(new THREE.PlaneGeometry(DB - RU.xL, Lc), A.mat({ map: tex(textures().paves, (DB - RU.xL) / 2, Lc / 2) }), (DB + RU.xL) / 2, RU.y(zc2) + .012, zc2, false)); pl.rotation.x = -Math.PI / 2 - ang; }   // (la place devant l'arcade, à gauche de la chaussée)
   const ca = A.ajoute(new THREE.PlaneGeometry(xB - xR, Lp), A.mat({ map: tex(textures().paves, (xB - xR) / 2, Lp / 2) }), (xR + xB) / 2, -drop / 2 + .01, zc, false); ca.rotation.x = -Math.PI / 2 - ang;
   // à gauche : le flanc de l'immeuble, en brique sans fenêtre
-  { const tb = toile(256, 256, (x) => { x.fillStyle = "#9a4a38"; x.fillRect(0, 0, 256, 256); for (let y = 0; y < 256; y += 16) { x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(0, y, 256, 3); for (let k = (y / 16) % 2 ? 0 : 32; k < 256; k += 64) x.fillRect(k, y, 3, 16); } });
-    const mb = A.mat({ map: tex(tb, (C3.z1 - zT) / 1.6, 24 / 1.6), roughness: .9 });
+  { const tb = tuileBrique("rouge", K_FAC);
+    const mb = A.mat({ map: tex(tb, (C3.z1 - zT) / 9.2, 24 / 6.75), roughness: .9 });
     for (const sg of [-1, 1]) { const f = A.ajoute(new THREE.PlaneGeometry(C3.z1 - zT, 24), mb, sg * (DB + .01), 12, (C3.z1 + zT) / 2, false); f.rotation.y = sg * Math.PI / 2; } }
   // sous la terrasse, côté rue : le soubassement descend jusqu'à la chaussée en pente
   { const f = A.ajoute(new THREE.PlaneGeometry(zT - C3.zFond, drop + .02), A.mat({ color: 0x3a3a3a, roughness: .95 }), DB + .005, -drop / 2, (zT + C3.zFond) / 2, false); f.rotation.y = Math.PI / 2; }
@@ -1396,8 +1475,10 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     const zA = 0, AX = 0, A = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
     const W = PC * Math.SQRT2 + .3, H = 24, AW = 4.6, AH = 5.6, yb = -drop, prof = 8, sh = new THREE.Shape(); sh.moveTo(-W / 2, 0); sh.lineTo(W / 2, 0); sh.lineTo(W / 2, H); sh.lineTo(-W / 2, H); sh.closePath();
     const tr = new THREE.Path(); tr.moveTo(-AW / 2, 0); tr.lineTo(-AW / 2, AH - AW / 2); tr.absarc(0, AH - AW / 2, AW / 2, Math.PI, 0, true); tr.lineTo(AW / 2, 0); tr.closePath(); sh.holes.push(tr);
-    const fac = toileBriqueBandes(W, H, { pas: 3.4 }); { const x = fac.getContext("2d"), P = 20, cx = fac.width / 2, h = fac.height;   // l'encadrement de l'arcade, la rangée de briques en arc
-      x.strokeStyle = "#b8644a"; x.lineWidth = 16; x.beginPath(); x.arc(cx, h - (AH - AW / 2) * P, (AW / 2 + .3) * P, Math.PI, 0); x.stroke(); x.fillStyle = "#9c5038"; x.fillRect(cx - (AW / 2 + .8) * P, h - (AH + 2.4) * P, (AW + 1.6) * P, 2.4 * P - 14);
+    const fac = toileBriqueBandes(W, H, { pas: 3.4 }); { const x = fac.getContext("2d"), P = 20, cx = fac.lw / 2, h = fac.lh;   // l'encadrement de l'arcade, la rangée de briques en arc
+      x.strokeStyle = "#b8644a"; x.lineWidth = 16; x.beginPath(); x.arc(cx, h - (AH - AW / 2) * P, (AW / 2 + .3) * P, Math.PI, 0); x.stroke();
+      x.strokeStyle = "rgba(60,30,20,.45)"; x.lineWidth = .8; for (let a = Math.PI; a <= 2 * Math.PI + .01; a += Math.PI / 28) { const r0 = (AW / 2 + .3) * P - 8, r1 = r0 + 16, yc = h - (AH - AW / 2) * P; x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, yc + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * r1, yc + Math.sin(a) * r1); x.stroke(); }   // (les briques posées en rayons)
+      murBrique(x, cx - (AW / 2 + .8) * P, h - (AH + 2.4) * P, (AW + 1.6) * P, 2.4 * P - 14, "rouge", P);
       x.fillStyle = "#ece6d6"; x.fillRect(cx - (AW / 2 + .8) * P, h - (AH + 1.0) * P, (AW + 1.6) * P, 8); }
     const tf = tex(fac); tf.repeat.set(1 / W, 1 / H); tf.offset.set(.5, 0);
     A.ajoute(new THREE.ExtrudeGeometry(sh, { depth: prof, bevelEnabled: false }), [A.mat({ map: tf }), A.mat({ color: 0x8a4a36 })], AX, yb, zA - prof);
@@ -1495,14 +1576,16 @@ function troisiemeCour(A, L, scene) {
   const HP = hp + 4.4, face = new THREE.Shape(); const DL = C3.LB / 2; face.moveTo(-DL, 0); face.lineTo(DL, 0); face.lineTo(DL, 24); face.lineTo(-DL, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
   // la façade : de la brique jusqu'au sol ; du blanc au-dessus du passage et en soubassement (60 cm) ; deux fenêtres de chaque côté des marches
-  const cF = toileVerso(C3.LB, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.width, h = cF.height, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
-    x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
-    x.fillStyle = "#e9e6df"; x.fillRect(0, h - 24, w, 24); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
+  const cF = toileVerso(C3.LB, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.lw, h = cF.lh, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
+    briques(x, w, h, h - rdc, rdc);
+    pierre(x, 0, h - 24, w, 24, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
+    for (const X of [6, w - 6]) descente(x, X, h - rdc, h - 24);
     x.fillStyle = "#e9e6df"; x.fillRect(cx - (LM + .3) * P, h - (HP + .9) * P, (LM + .3) * 2 * P, .9 * P); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .4) * P, h - (HP + .9) * P - 6, (LM + .4) * 2 * P, 8);   // (le blanc, au-dessus du passage)
     const pasF = 3.6 * P, nF = Math.floor(w / pasF), col = c => (c + .5) * pasF + (w - nF * pasF) / 2;   // (les mêmes colonnes que les fenêtres des étages)
     for (let c = 0; c < nF; c++) { if (Math.abs(col(c) - cx) < LM * P + 40) continue; const X = col(c) - 34, Y = h - 4.3 * P;   // (toutes les colonnes de part et d'autre du passage, au-dessus du muret des buissons)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
-      x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100); x.fillRect(X, Y + 46, 68, 3); x.fillStyle = "#d9d5cc"; x.fillRect(X - 10, Y + 104, 88, 8); } }
+      x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, 68, 4); x.fillRect(X, Y, 3, 100);
+      x.fillStyle = "#f2efe8"; x.fillRect(X + 32, Y, 4, 100); x.fillRect(X, Y + 46, 68, 3); x.fillStyle = "#d9d5cc"; x.fillRect(X - 10, Y + 104, 88, 8); coulure(x, X - 6, Y + 112, 80, 30); } }
   const tF = tex(cF);
   // de chaque côté des marches, tout le long de l'immeuble : un muret blanc qui forme un bac, rempli de buissons
   { const blanc = A.mat({ color: 0xeceae4, roughness: .85 }), terre = A.mat({ color: 0x3a2a1e, roughness: 1 }), HMU = .7, PB = C3.PB, EP = .14;
@@ -1522,9 +1605,8 @@ function troisiemeCour(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false); } } tF.repeat.set(1 / C3.LB, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   // dans le passage : les murs en brique ; au milieu de chaque mur, une double porte vitrée en fer noir
-  { const tb = toile(256, 256, (x) => { x.fillStyle = "#9a4a38"; x.fillRect(0, 0, 256, 256); for (let y = 0; y < 256; y += 16) { x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(0, y, 256, 3);
-      for (let k = (y / 16) % 2 ? 0 : 32; k < 256; k += 64) x.fillRect(k, y, 3, 16); } for (let i = 0; i < 120; i++) { x.fillStyle = `rgba(${alea() < .5 ? "60,20,10" : "200,120,90"},.1)`; x.fillRect(alea() * 256, alea() * 256, 30, 12); } });
-    const HPa = hp + 4.4, brique = A.mat({ map: tex(tb, PP / 1.6, 4.4 / 1.6), roughness: .9 }), fer = A.mat({ color: 0x141414, roughness: .4, metalness: .6 }), verreP = A.mat({ color: 0x8aa4b2, roughness: .06, metalness: .4, transparent: true, opacity: .7 });
+  { const tb = tuileBrique("rouge", K_FAC);
+    const HPa = hp + 4.4, brique = A.mat({ map: tex(tb, PP / 9.2, 4.4 / 6.75), roughness: .9 }), fer = A.mat({ color: 0x141414, roughness: .4, metalness: .6 }), verreP = A.mat({ color: 0x8aa4b2, roughness: .06, metalness: .4, transparent: true, opacity: .7 });
     for (const sg of [-1, 1]) { const xm = sg * (LM - .015), m = A.ajoute(new THREE.PlaneGeometry(PP, 4.4), brique, xm, hp + 2.2, z1 - PP / 2, false); m.rotation.y = -sg * Math.PI / 2;
       const zp = z1 - PP / 2, LP = 1.7, HPo = 2.5, xp = sg * (LM - .03);
       const fond = A.ajoute(new THREE.PlaneGeometry(LP, HPo), A.mat({ color: 0x1c2228, roughness: .9 }), sg * (LM - .02), hp + HPo / 2, zp, false); fond.rotation.y = -sg * Math.PI / 2;   // (l'intérieur, sombre, derrière les vitres)
@@ -2721,7 +2803,7 @@ function construireMess(A, L, scene) {
   carreler("x", CZ1, -1, CX0 - .3, CX1, YB, 1); carreler("z", RX1 + .3, 1, CZ0, OP[0], YB, 1); carreler("z", RX1 + .3, 1, OP[1], CZ1, YB, 1); carreler("z", RX1 + .3, 1, OP[0], OP[1], HO, 1);
   A.ajoute(new THREE.BoxGeometry(.3, HT + .2, CL + .6), peinture, RX1 + .15, (HT + .2) / 2, (CZ0 + CZ1) / 2, false);
   { const PXM = 60, mw = Math.round(CL * PXM), mh = Math.round(15 * PXM);   // le pan de mur de la caserne : brique rouge, soubassement, fenêtres
-    const t = toile(mw, mh, (x, w, h) => { briques(x, w, h); x.fillStyle = "#cfc6b4"; x.fillRect(0, h - 3.6 * PXM, w, 3.6 * PXM); x.fillStyle = "rgba(0,0,0,.08)"; for (let y = h - 3.6 * PXM; y < h; y += 18) x.fillRect(0, y, w, 1.5);
+    const t = toile(mw, mh, (x, w, h) => { murBrique(x, 0, 0, w, h, "rouge", PXM); x.fillStyle = "#cfc6b4"; x.fillRect(0, h - 3.6 * PXM, w, 3.6 * PXM); x.fillStyle = "rgba(0,0,0,.08)"; for (let y = h - 3.6 * PXM; y < h; y += 18) x.fillRect(0, y, w, 1.5);
       for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) fenetre(x, w * (.15 + c * .28), h - (3.6 + 1.4 + r * 3.4 + 2.0) * PXM, 1.1 * PXM, 2.0 * PXM);
       x.fillStyle = "#e8e2d4"; x.fillRect(0, 0, w, 10); });
     const o = A.ajoute(new THREE.PlaneGeometry(CL + .6, 15), A.mat({ map: tex(t), roughness: .85 }), CX1 + .01, YB + 7.5, (CZ0 + CZ1) / 2, false); o.rotation.y = -Math.PI / 2; }
@@ -2999,11 +3081,10 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const ZF = 15.5, LF = 25, HSOC = 4.6, HB = 20.2, PF2 = 14, CF = []; for (let k = 0; k < 8; k++) CF.push(-LF / 2 + (k + .5) * LF / 8);
     graine = 15;
     const gX = X => (X + LF / 2) * 40, gY = Y => (HB - Y) * 40;
-    const face2 = toile(LF * 40, HB * 40, (x, w, h) => {
+    const face2 = toileF(LF * 40, HB * 40, (x, w, h) => {
       briquesFines(x, w, gY(HSOC));
       // le socle en pierre : assises régulières, joints rayonnants au-dessus des baies
-      x.fillStyle = "#e4dbcb"; x.fillRect(0, gY(HSOC), w, h - gY(HSOC));
-      x.fillStyle = "rgba(120,100,70,.2)"; for (let y = gY(HSOC) + 22; y < h; y += 24) { x.fillRect(0, y, w, 1.5); for (let X = (Math.round(y / 24) % 2) * 40; X < w; X += 80) x.fillRect(X, y - 24, 1.5, 24); }
+      pierre(x, 0, gY(HSOC), w, h - gY(HSOC), "#e4dbcb", 24, 80);
       x.fillStyle = "#d8cebc"; x.fillRect(0, gY(HSOC) - 4, w, 12); x.fillStyle = "rgba(60,45,30,.3)"; x.fillRect(0, gY(HSOC) + 8, w, 3);
       const baie = (cx, l, b, t, porte) => { const X = gX(cx - l / 2), Y = gY(t), W2 = l * 40, H2 = gY(b) - gY(t);
         x.strokeStyle = "rgba(110,90,60,.35)"; x.lineWidth = 1.5; for (let k = -3; k <= 3; k++) { x.beginPath(); x.moveTo(X + W2 / 2 + k * W2 / 7, Y); x.lineTo(X + W2 / 2 + k * W2 / 4.2, Y - 30); x.stroke(); }
@@ -3024,15 +3105,19 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       for (let f = 0; f < 5; f++) for (const cx of CF) {
         const b = HSOC + .55 + f * 3, X = gX(cx - .72), Y = gY(b + 1.75), W2 = 58, H2 = 70;
         x.fillStyle = "rgba(40,20,20,.3)"; x.fillRect(X - 7, Y - 4, W2 + 16, H2 + 14);
-        x.fillStyle = "#f1ece2"; x.fillRect(X - 10, Y - 10, W2 + 20, H2 + 16); x.fillStyle = "#e6e0d4"; x.fillRect(X - 14, Y + H2 + 4, W2 + 28, 6);
+        x.fillStyle = "#f1ece2"; x.fillRect(X - 10, Y - 10, W2 + 20, H2 + 16); x.fillStyle = "#e6e0d4"; x.fillRect(X - 14, Y + H2 + 4, W2 + 28, 6); coulure(x, X - 10, Y + H2 + 10, W2 + 20, 40);
+        x.strokeStyle = "rgba(150,135,110,.35)"; x.lineWidth = .8; x.strokeRect(X - 10, Y - 10, W2 + 20, H2 + 16);   // (l'arête de la pierre)
         const g = x.createLinearGradient(X, Y, X + W2, Y + H2); g.addColorStop(0, "#9fb6c6"); g.addColorStop(.6, "#62798b"); g.addColorStop(1, "#4b5d6d"); x.fillStyle = g; x.fillRect(X, Y, W2, H2);
         if (alea() < .3) { x.fillStyle = "rgba(250,248,242,.85)"; x.fillRect(X + 2, Y + 2, W2 - 4, H2 - 4); x.fillStyle = "rgba(0,0,0,.08)"; for (let l = X + 6; l < X + W2; l += 6) x.fillRect(l, Y + 2, 1, H2 - 4); }
+        x.fillStyle = "rgba(255,255,255,.12)"; x.beginPath(); x.moveTo(X, Y + H2 * .25); x.lineTo(X + W2 * .5, Y); x.lineTo(X + W2 * .75, Y); x.lineTo(X, Y + H2 * .65); x.fill();   // le reflet du ciel
+        x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, W2, 4); x.fillRect(X, Y, 3, H2);   // l'embrasure
         x.fillStyle = "#fbfaf6"; x.fillRect(X + W2 / 2 - 2, Y, 4, H2); x.fillRect(X, Y + H2 * .38, W2, 3); x.fillRect(X, Y, W2, 3); x.fillRect(X, Y + H2 - 3, W2, 3);
         x.strokeStyle = "#1b1b1b"; x.lineWidth = 2; x.beginPath(); x.moveTo(X, Y + H2 - 14); x.lineTo(X + W2, Y + H2 - 14); x.stroke(); for (let l = X; l <= X + W2; l += 7) { x.beginPath(); x.moveTo(l, Y + H2 - 14); x.lineTo(l, Y + H2 - 3); x.stroke(); }
         if (alea() < .12) { x.fillStyle = "#4f7a3c"; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(X + 10 + k * 13, Y + H2 - 18, 5, 0, 7); x.fill(); } }
       }
-      // la corniche blanche
-      x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 22); x.fillStyle = "rgba(60,40,30,.35)"; x.fillRect(0, 22, w, 4);
+      // la corniche blanche ; les descentes d'eau en zinc, aux deux bouts de la façade, jusqu'au socle
+      pierre(x, 0, 0, w, 22, "#f0ebe0", 22, 90); x.fillStyle = "rgba(60,40,30,.35)"; x.fillRect(0, 22, w, 4);
+      for (const X of [6, w - 6]) descente(x, X, 22, h - 8);
     });
     const f2 = A.facadePercee({ largeur: LF, hauteur: HB, profondeur: PF2, toileFacade: face2, passage: { largeur: 4.8, hauteur: 4.4 }, x: 0, z: ZF, couleurPassage: 0xd9cfbd });
     f2.rotation.y = Math.PI; f2.position.z = ZF + PF2; f2.castShadow = false;
@@ -3053,7 +3138,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     const vueNuit = A.ajoute(new THREE.PlaneGeometry(4.8, 4.4), new THREE.MeshBasicMaterial({ color: 0x1a2030, transparent: true, opacity: .7 }), 0, 2.2, ZF + PF2 - .1, false);
     vueNuit.rotation.y = Math.PI; vueNuit.visible = false; L.nuitObjets.push(vueNuit);
     // le toit mansardé d'ardoise : brisis presque vertical, terrasson, garde-corps au sommet
-    const ardoise = A.mat({ color: 0x3d4452, roughness: .6, metalness: .15 });
+    const ardoise = A.mat({ map: (() => { const t = tex(texArdoise || (texArdoise = toileArdoise())); t.rotation = Math.PI / 2; return t; })(), roughness: .55, metalness: .1 });
     const prf = new THREE.Shape(); prf.moveTo(0, 0); prf.lineTo(PF2, 0); prf.lineTo(PF2 - .9, 4.4); prf.lineTo(PF2 - 2.6, 6); prf.lineTo(2.6, 6); prf.lineTo(.9, 4.4); prf.closePath();
     const toit2 = new THREE.Mesh(new THREE.ExtrudeGeometry(prf, { depth: LF, bevelEnabled: false }), ardoise); toit2.rotation.y = -Math.PI / 2; toit2.position.set(LF / 2, HB, ZF); toit2.castShadow = true; scene.add(toit2);
     const blancL = A.mat({ color: 0xf2efe8 }), vitreL = A.mat({ color: 0x46566a, roughness: .2 });
@@ -3074,19 +3159,19 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // les deux hautes ailes en brique (comme deux grandes colonnes), qui avancent dans la cour : leur bande vitrée blanche,
     // et au pied, sur le mur tourné vers la cour, la porte rouge et sa fenêtre
     const AX0 = 8.6, AX1 = 16.5, AW = AX1 - AX0, AZ0 = 12, AZ1 = 26, AH = 26;
-    const toileAile = (visibleAGauche) => toile(Math.round(AW * 40), AH * 40, (x, w, h) => { briquesFines(x, w, h);
+    const toileAile = (visibleAGauche) => toileF(Math.round(AW * 40), AH * 40, (x, w, h) => { briquesFines(x, w, h);
       const v0 = visibleAGauche ? 0 : w - (12.5 - AX0) * 40, vw = (12.5 - AX0) * 40, sx = v0 + vw / 2 - 22;   // la partie qui donne sur la cour
       x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
-      x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
+      pierre(x, 0, h - 184, w, 184, "#e4dbcb", 24, 80);
       x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
       // sur la face tournée vers la cour : une seule fenêtre, centrée
       const fenX = v0 + vw / 2 - 34;
       x.fillStyle = "#efe9dd"; x.fillRect(fenX - 7, h - 133, 82, 101); const g = x.createLinearGradient(0, h - 126, 0, h - 38); g.addColorStop(0, "#56677a"); g.addColorStop(1, "#2c3642"); x.fillStyle = g; x.fillRect(fenX, h - 126, 68, 88);
       x.fillStyle = "#f4f1ea"; x.fillRect(fenX + 32, h - 126, 4, 88); x.fillRect(fenX, h - 72, 68, 3); x.fillStyle = "#2a2a2a"; x.fillRect(fenX + 28, h - 152, 12, 7); });
     // l'autre face de l'aile, tournée vers le porche : la porte rouge (seule la partie devant la façade se voit)
-    const toileCote = (visibleAGauche, avecPorte) => toile((AZ1 - AZ0) * 40, AH * 40, (x, w, h) => { briquesFines(x, w, h);
+    const toileCote = (visibleAGauche, avecPorte) => toileF((AZ1 - AZ0) * 40, AH * 40, (x, w, h) => { briquesFines(x, w, h);
       x.fillStyle = "#f0ebe0"; x.fillRect(0, 0, w, 14);
-      x.fillStyle = "#e4dbcb"; x.fillRect(0, h - 184, w, 184); x.fillStyle = "rgba(120,100,70,.2)"; for (let y = h - 162; y < h; y += 24) x.fillRect(0, y, w, 1.5);
+      pierre(x, 0, h - 184, w, 184, "#e4dbcb", 24, 80);
       x.fillStyle = "#d8cebc"; x.fillRect(0, h - 190, w, 10);
       if (!avecPorte) return;
       const vw = (ZF - AZ0) * 40, v0 = visibleAGauche ? 0 : w - vw, px = v0 + vw / 2 - 28;
@@ -3893,6 +3978,8 @@ export async function ouvrir(ctx) {
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     GPU_MODESTE = /Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom); M_GPU = nom; } catch (e) {}
+  // les façades de brique : deux fois plus fines sur une bonne carte, un peu plus sur un téléphone, telles quelles sur une carte modeste
+  K_FAC = window.CASERNE_KFAC || (GPU_MODESTE ? 1 : (/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) ? 1.25 : 2);
   // un voyage précédent n'est pas arrivé au bout (gel, appli fermée de force) : on envoie le relevé à l'administrateur
   try { const t = localStorage.getItem("caserne-trace"); if (t) { localStorage.removeItem("caserne-trace");
       fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Un voyage s'est bloqué. Dernières étapes : " + JSON.parse(t).map(([e, ms]) => e + " (" + ms + " ms)").join(" → ") + " — carte graphique : " + (M_GPU || "?"), appareil: navigator.userAgent }) }).catch(() => {}); } } catch (e) {}
