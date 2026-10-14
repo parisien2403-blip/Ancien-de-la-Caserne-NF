@@ -1757,7 +1757,8 @@ function deuxiemeCour(A, L, scene) {
   { const pl = toile(400, 24, (x, w, h) => { pierre(x, 0, 0, w, h, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, 0, w, 2); });
     for (const [za, zb] of [[-30, -18], [C3.z0, C2.z1]]) for (const sg of [-1, 1]) { const lg = zb - za, zm = (za + zb) / 2, HP = 4.4;
       const br = A.ajoute(new THREE.PlaneGeometry(lg, HP - .6), A.mat({ map: tex(tuileBrique("rouge", K_FAC), lg / 9.2, (HP - .6) / 6.75), roughness: .9 }), sg * 2.395, .6 + (HP - .6) / 2, zm, false); br.rotation.y = -sg * Math.PI / 2;
-      const pb = A.ajoute(new THREE.PlaneGeometry(lg, .6), A.mat({ map: tex(pl, lg / 10, 1), roughness: .85 }), sg * 2.395, .3, zm, false); pb.rotation.y = -sg * Math.PI / 2; } }
+      const pb = A.ajoute(new THREE.PlaneGeometry(lg, .6), A.mat({ map: tex(pl, lg / 10, 1), roughness: .85 }), sg * 2.395, .3, zm, false); pb.rotation.y = -sg * Math.PI / 2;
+      trottoir(A, L, sg > 0 ? 1.6 : -2.4, sg > 0 ? 2.4 : -1.6, za, zb, [sg > 0 ? "x0" : "x1"]); } }   // (et le long de chaque mur, un trottoir)
   // les trottoirs, le long des deux bâtiments, du mur de droite (et devant le local électrique) et devant la déchetterie
   for (const sg of [-1, 1]) { const xa = sg > 0 ? 2.4 : -8.6, xb = sg > 0 ? X : -2.4, b = sg > 0 ? "x0" : "x1";
     trottoir(A, L, xa, xb, z0 - 1.4, z0, ["z0", b]); trottoir(A, L, xa, xb, z1, z1 + 1.4, ["z1", b]); }
