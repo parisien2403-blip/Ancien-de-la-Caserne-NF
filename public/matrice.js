@@ -1336,7 +1336,7 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 }
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
-const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 7, HT2: .22, PT: .35, LT: 44, PTr: 12 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
+const C3 = { z0: -56, z1: -72, x: 11, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 7, HT2: .22, PT: .35, LT: 36.8, PTr: 12, LB: 36.8 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
 C3.hp = C3.NM * C3.HM;   // (le sol du porche, en haut des marches)
 function troisiemeCour(A, L, scene) {
   const { z0, z1, x: X, NM, HM, PM, LM, PP, hp } = C3, prof = z0 - z1, zc = (z0 + z1) / 2;
@@ -1373,10 +1373,10 @@ function troisiemeCour(A, L, scene) {
       for (let k = 0; k < n; k++) { const z = z1 + .1 + k * pas, y0 = dessusMarche(z), y1 = nez(z) + HR - .03; mt.compose(new THREE.Vector3(xb, (y0 + y1) / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, Math.max(.05, y1 - y0), 1)); im.setMatrixAt(k, mt); }
       im.castShadow = true; scene.add(im); } }
   // le bâtiment du fond, le même ; son porche, plus haut (au niveau du haut des marches) et bien plus profond
-  const HP = hp + 4.4, face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
+  const HP = hp + 4.4, face = new THREE.Shape(); const DL = C3.LB / 2; face.moveTo(-DL, 0); face.lineTo(DL, 0); face.lineTo(DL, 24); face.lineTo(-DL, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
   // la façade : de la brique jusqu'au sol ; du blanc au-dessus du passage et en soubassement (60 cm) ; deux fenêtres de chaque côté des marches
-  const cF = toileVerso(44, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.width, h = cF.height, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
+  const cF = toileVerso(C3.LB, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.width, h = cF.height, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
     x.fillStyle = "#9a4a38"; x.fillRect(0, h - rdc, w, rdc); for (let y = h - rdc; y < h; y += 12) { x.fillStyle = (y - (h - rdc)) % 24 ? "rgba(0,0,0,.18)" : "rgba(255,220,200,.08)"; x.fillRect(0, y, w, 3); }
     x.fillStyle = "#e9e6df"; x.fillRect(0, h - 24, w, 24); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
     x.fillStyle = "#e9e6df"; x.fillRect(cx - (LM + .3) * P, h - (HP + .9) * P, (LM + .3) * 2 * P, .9 * P); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .4) * P, h - (HP + .9) * P - 6, (LM + .4) * 2 * P, 8);   // (le blanc, au-dessus du passage)
@@ -1400,7 +1400,7 @@ function troisiemeCour(A, L, scene) {
       const tw = C3.TW, ht = C3.HT, cote = A.mat({ color: 0x8e8b85, roughness: .9 }), bord = A.mat({ color: 0x9a9792, roughness: .9 });
       const bitume = A.mat({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#3c3d40"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 40 + alea() * 40; x.fillStyle = `rgba(${v},${v},${v + 4},.55)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); } }), lg / 2, tw / 2), roughness: .95 });   // (le dessus : du bitume gris sombre)
       SOL(A.ajoute(new THREE.BoxGeometry(lg, ht, tw), [cote, cote, bitume, cote, cote, cote], xc, ht / 2, zf + tw / 2, false));
-      A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false); } } tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
+      A.ajoute(new THREE.BoxGeometry(lg, ht + .02, .16), bord, xc, (ht + .02) / 2, zf + tw - .08, false); } } tF.repeat.set(1 / C3.LB, 1 / 24); tF.offset.set(.5, 0);
   A.ajoute(new THREE.ExtrudeGeometry(face, { depth: PP, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - PP);
   // dans le passage : les murs en brique ; au milieu de chaque mur, une double porte vitrée en fer noir
   { const tb = toile(256, 256, (x) => { x.fillStyle = "#9a4a38"; x.fillRect(0, 0, 256, 256); for (let y = 0; y < 256; y += 16) { x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(0, y, 256, 3);
