@@ -2095,7 +2095,13 @@ function troisiemeCour(A, L, scene) {
     A.ajoute(new THREE.ExtrudeGeometry(face, { depth: zt1 - gap - RU.zA - RU.cour, bevelEnabled: false }), [A.mat({ map: tB }), A.mat({ color: 0xd9d4ca })], 0, 0, RU.zA + RU.cour); }
     toitParisien(A, scene, -C3.LB / 2, C3.LB / 2, zt1 - (zT - zt0), RU.zA + RU.cour, 24);
   // le sol tout autour, en contrebas : entre la terrasse et l'immeuble du fond, des pavés
-  { const gap = zT - zt0, za = zt1 - gap, sp = A.ajoute(new THREE.PlaneGeometry(C3.LB, gap), A.mat({ map: tex(textures().paves, C3.LB / 4, gap / 4) }), 0, .012, (zt1 + za) / 2, false); sp.rotation.x = -Math.PI / 2; }
+  { const gap = zT - zt0, za = zt1 - gap, sp = SOL(A.ajoute(new THREE.PlaneGeometry(C3.LB, gap), A.mat({ map: tex(textures().paves, C3.LB / 4, gap / 4) }), 0, .012, (zt1 + za) / 2, false)); sp.rotation.x = -Math.PI / 2;
+    // à droite, côté rue : une petite baraque en brique ferme ce passage, ouverte au centre
+    const HB = 3, LBq = 2.4, zc5 = (zt1 + za) / 2, OW = 1.6, OH = 2.4, xb5 = DB - LBq / 2, br = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), bl = A.mat({ color: 0xece8df, roughness: .8 });
+    for (const [z0b, z1b] of [[za, zc5 - OW / 2], [zc5 + OW / 2, zt1]]) { const d = z1b - z0b; A.ajoute(new THREE.BoxGeometry(LBq, HB, d), [br(d, HB), br(d, HB), bl, bl, br(LBq, HB), br(LBq, HB)], xb5, HB / 2, (z0b + z1b) / 2); }
+    A.ajoute(new THREE.BoxGeometry(LBq, HB - OH, OW), [br(OW, .6), br(OW, .6), bl, bl, br(LBq, .6), br(LBq, .6)], xb5, OH + (HB - OH) / 2, zc5);   // le linteau, au-dessus de l'ouverture
+    A.ajoute(new THREE.BoxGeometry(LBq + .2, .14, gap + .2), bl, xb5, HB + .07, zc5);   // le toit plat, son rebord blanc
+    C3.baraque = [DB - LBq - .3, DB + .3, zc5 - OW / 2 + .3, zc5 + OW / 2 - .3]; }
 
   // la barrière en fer noir : main courante, lisse basse, poteaux, barreaux ; ouverte en haut des marches
   { const fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 }), HB = 1.0, pas = .13, barreaux = [];
@@ -3676,11 +3682,11 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (estAdmin() && x > C3.LB / 2 + .35 && x < C3.x - .45 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
       || (estAdmin() && x > RU.xL + .4 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3)   // la place devant l'arcade (jusqu'au pan coupé)
       || (estAdmin() && Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= .3 && RU.lz(x, z) > -7.6)   // sous le porche en biais, jusqu'à la grille
-      || (estAdmin() && Math.abs(x) > C3.LT / 2 + .3 && Math.abs(x) < C3.x - .5 && z < C3.z1 - C3.PP - C3.NT * C3.PT - .2 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && !(x > 0 && x < C3.LT / 2 + 2 * C3.ESC.W + .15 && z > C3.ESC.zA && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal + .1))   // le long des côtés de la terrasse, raccourcie
+      || (estAdmin() && Math.abs(x) > C3.LT / 2 + .3 && Math.abs(x) < C3.x - .5 && z < C3.z1 - C3.PP - C3.NT * C3.PT - .2 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && !(x > 0 && x < C3.LT / 2 + 2 * C3.ESC.W + .15 && z > C3.ESC.zA && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal + .1) && !(C3.baraque && x > C3.baraque[0] && x < C3.baraque[1] - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr + .1 && !(z > C3.baraque[2] && z < C3.baraque[3])))   // le long des côtés de la terrasse, raccourcie
       || (estAdmin() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT + .3)
       || (estAdmin() && x >= C3.LB / 2 - .5 && x < C3.LB / 2 + .6 && Math.abs(z - (C3.z1 - C3.PP - C3.NT * C3.PT / 2)) < C3.SW / 2 - .25)   // (le haut de l'escalier de la fosse, depuis la ruelle)   // les creux de part et d'autre des marches raides, et leur descente
       || (estAdmin() && Math.abs(x) < C3.LM - .4 && z <= C3.z1 + .3 && z > C3.z1 - C3.PP - C3.NT * C3.PT - .1)               // le passage, en haut des marches, et les marches raides
-      || (estAdmin() && Math.abs(x) < C3.LB / 2 - .3 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .25 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3)   // derrière la terrasse
+      || (estAdmin() && x > -C3.LB / 2 + .3 && x < C3.LB / 2 + .6 && z < C3.z1 - C3.PP - C3.NT * C3.PT - C3.PTr - .25 && z > C3.z1 - C3.PP - 2 * C3.NT * C3.PT - C3.PTr + .3 && (!C3.baraque || x < C3.baraque[0] || (z > C3.baraque[2] && z < C3.baraque[3])))   // derrière la terrasse (et à travers la baraque, par son ouverture)
       || (estAdmin() && x > C3.LT / 2 + C3.ESC.W + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 - .5 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la première volée, côté rue
       || (estAdmin() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + C3.ESC.W - .2 && z > C3.ESC.zA + .2 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // la seconde, contre le mur, et le palier du haut
       || (estAdmin() && x > C3.LT / 2 + .2 && x < C3.LT / 2 + 2 * C3.ESC.W - .2 && z > C3.ESC.z0 + C3.ESC.run + .1 && z < C3.ESC.z0 + C3.ESC.run + C3.ESC.pal - .2)   // le palier du demi-tour
