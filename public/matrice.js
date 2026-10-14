@@ -1751,7 +1751,9 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       A.ajoute(new THREE.BoxGeometry(.05, HR, .05), fer, x0s + W2, y0 - DH + HR / 2, zr, false); } }
   { const zc2 = RU.zA + RU.cour / 2, Lc = Math.hypot(RU.cour, drop * RU.cour / Lz), pl = SOL(A.ajoute(new THREE.PlaneGeometry(DB - RU.xL, Lc), A.mat({ map: tex(textures().paves, (DB - RU.xL) / 4, Lc / 4) }), (DB + RU.xL) / 2, RU.y(zc2) + .012, zc2, false)); pl.rotation.x = -Math.PI / 2 - ang; }   // (la place devant l'arcade, à gauche de la chaussée)
   planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
-  trottoir(A, L, DB, DB + 1.4, zA + RU.cour, zT, ["x1"], { ang, y: z => RU.y(z) });   // à gauche, le long de l'immeuble : le trottoir, qui suit la pente
+  { const t0 = zT - C3.NT * C3.PT, ta = t0 - C3.PTr - (zT - t0), pe = { ang, y: z => RU.y(z) };   // (le long de la terrasse, à plat, dans la continuité du gris d'à côté)
+    trottoir(A, L, DB, DB + 1.4, zA + RU.cour, ta, ["x1"], pe); trottoir(A, L, DB, DB + 1.4, t0, zT, ["x1"], pe);
+    const L2 = (t0 - ta) / Math.cos(ang), o = SOL(A.ajoute(new THREE.PlaneGeometry(1.4, L2), A.mat({ map: tex(textures().trottoir, .7, L2 / 2), roughness: .92 }), DB + .7, RU.y((t0 + ta) / 2) + .014, (t0 + ta) / 2, false)); o.rotation.x = -Math.PI / 2 - ang; }   // à gauche, le long de l'immeuble : le trottoir, qui suit la pente
   // à gauche : le flanc de l'immeuble, en brique sans fenêtre
   { const tb = tuileBrique("rouge", K_FAC);
     const mb = A.mat({ map: tex(tb, (C3.z1 - zT) / 9.2, 24 / 6.75), roughness: .9 });
@@ -2090,13 +2092,13 @@ function troisiemeCour(A, L, scene) {
   { const mur = (w, h, d, mats, x, y, z) => A.ajoute(new THREE.BoxGeometry(w, h, d), mats, x, y, z);
     // le mur du fond (côté cabane), percé de l'ouverture à double battant (sans portes)
     const zb = zt1 + E / 2, wL = OX0 + LT / 2, wR = LT / 2 - OX1;
-    mur(wL, yT, E, [gris, gris, gris, gris, creme, mZ], -LT / 2 + wL / 2, yT / 2, zb); mur(wR, yT, E, [gris, gris, gris, gris, creme, mZ], OX1 + wR / 2, yT / 2, zb);
-    mur(OX1 - OX0, yT - 2.6 - FL, E, [gris, gris, gris, gris, creme, creme], (OX0 + OX1) / 2, (yT + 2.6 + FL) / 2, zb);   // au-dessus de l'ouverture
+    mur(wL, yT - .3, E, [gris, gris, gris, gris, creme, mZ], -LT / 2 + wL / 2, (yT - .3) / 2, zb); mur(wR, yT - .3, E, [gris, gris, gris, gris, creme, mZ], OX1 + wR / 2, (yT - .3) / 2, zb);
+    mur(OX1 - OX0, yT - .3 - 2.6 - FL, E, [gris, gris, gris, gris, creme, creme], (OX0 + OX1) / 2, (yT - .3 + 2.6 + FL) / 2, zb);   // au-dessus de l'ouverture
     mur(wL, -FL, E, creme, -LT / 2 + wL / 2, FL / 2, zb); mur(wR, -FL, E, creme, OX1 + wR / 2, FL / 2, zb);
     for (const sx of [OX0, OX1]) A.ajoute(new THREE.BoxGeometry(.12, 2.6, E + .06), A.mat({ color: 0x5a3a22, roughness: .6 }), sx, FL + 1.3, zb, false);   // le chambranle
     { const se = SOL(A.ajoute(new THREE.PlaneGeometry(OX1 - OX0, E + .1), A.mat({ map: tex(toileCarreaux(), (OX1 - OX0) / 1.6, .25), roughness: .5 }), (OX0 + OX1) / 2, FL + .006, zb, false)); se.rotation.x = -Math.PI / 2; }   // le seuil
     /* en bas des marches, sous la terrasse : un petit vestibule ; en face, la porte des toilettes (deux cabinets) ; à droite, l'ouverture double de la grande salle */
-    { const xv = OX0, xe = LT / 2 - E, zt = zt1 + E, zd = zt + 2.2, zf = zt0 - E, hm = yT - .3 - FL, dz0 = zt + .25, dz1 = zt + 1.85, xp0 = (xv + xe) / 2 - .4, xp1 = xp0 + .8;
+    { const xv = OX0, xe = LT / 2 - E, zt = zt1 + E, zd = zt + 6.2, zf = zt0 - E, hm = yT - .3 - FL, dz0 = zt + 3.25, dz1 = zt + 4.85, xp0 = (xv + xe) / 2 - .4, xp1 = xp0 + .8;
       const cl = (w, d, x, z, h = hm, y0 = FL) => A.ajoute(new THREE.BoxGeometry(w, h, d), creme, x, y0 + h / 2, z);
       cl(.15, dz0 - zt, xv, (zt + dz0) / 2); cl(.15, zf - dz1, xv, (dz1 + zf) / 2); cl(.15, dz1 - dz0, xv, (dz0 + dz1) / 2, hm - 2.5, FL + 2.5);   // le mur de droite, et l'ouverture double
       for (const zz of [dz0, dz1]) A.ajoute(new THREE.BoxGeometry(.22, 2.5, .1), A.mat({ color: 0x5a3a22, roughness: .6 }), xv, FL + 1.25, zz, false);
@@ -2106,33 +2108,33 @@ function troisiemeCour(A, L, scene) {
       for (const xw of [xm2 - .55, xm2 + .55]) { const cu = A.ajoute(new THREE.CylinderGeometry(.19, .15, .4, 20), blanc, xw, FL + .2, zf - .45); cu.scale.z = 1.3;
         A.ajoute(new THREE.BoxGeometry(.42, .38, .16), blanc, xw, FL + .62, zf - .14); A.ajoute(new THREE.TorusGeometry(.17, .03, 8, 20), blanc, xw, FL + .41, zf - .45).rotation.x = Math.PI / 2; }
       A.ajoute(new THREE.BoxGeometry(.05, 1.9, 1.4), creme, xm2, FL + .95, zf - .76);   // la cloison entre les deux cabinets
-      const lv = new THREE.PointLight(0xfff0d8, 3, 6, 1.6); lv.position.set(xm2, FL + 2.5, zt + 1.2); scene.add(lv);
+      const lv = new THREE.PointLight(0xfff0d8, 3, 6, 1.6); lv.position.set(xm2, FL + 2.5, zt + 3); scene.add(lv);
       C3.vest = { xv, xe, zt, zd, zf, dz0, dz1, xp0, xp1, xm2 }; }
     // le mur côté fosse, les deux côtés
-    mur(LT, yT - FL, E, [gris, gris, gris, gris, mZ, creme], 0, (yT + FL) / 2, zt0 - E / 2);
-    mur(E, yT - FL, PTr - 2 * E, [mX, creme, gris, gris, gris, gris], LT / 2 - E / 2, (yT + FL) / 2, zt0 - PTr / 2);
-    mur(E, yT - FL, PTr - 2 * E, [creme, mX, gris, gris, gris, gris], -LT / 2 + E / 2, (yT + FL) / 2, zt0 - PTr / 2);
+    mur(LT, yT - .3 - FL, E, [gris, gris, gris, gris, mZ, creme], 0, (yT - .3 + FL) / 2, zt0 - E / 2);
+    mur(E, yT - .3 - FL, PTr - 2 * E, [mX, creme, gris, gris, gris, gris], LT / 2 - E / 2, (yT - .3 + FL) / 2, zt0 - PTr / 2);
+    mur(E, yT - .3 - FL, PTr - 2 * E, [creme, mX, gris, gris, gris, gris], -LT / 2 + E / 2, (yT - .3 + FL) / 2, zt0 - PTr / 2);
     // le dessus : la dalle de la terrasse (le plafond de la salle)
-    SOL(A.ajoute(new THREE.BoxGeometry(LT, .3, PTr), [gris, gris, dessus, creme2, gris, gris], 0, yT - .15, zt0 - PTr / 2));
+    SOL(A.ajoute(new THREE.BoxGeometry(LT, .3, PTr), [mX, mX, dessus, creme2, mZ, mZ], 0, yT - .15, zt0 - PTr / 2));   // (les murs s'arrêtent dessous : plus de faces l'une sur l'autre, qui scintillaient)
     // le sol de la salle, carrelé
     /* la grande salle, c'est la salle de judo (d'après les photos) : les tatamis (gris au centre, la bande rouge, le bord bleu-gris), le bas des murs
        capitonné vert sombre, le haut crème avec ses grilles d'aération et ses fenêtres hautes, le faux plafond quadrillé et ses plafonniers ronds,
        l'espalier au fond, l'horloge, le tableau des ceintures, des cadres */
     { const X0 = -LT / 2 + E, X1 = OX0 - .08, Z0 = zt1 + E, Z1 = zt0 - E, W = X1 - X0, D = Z1 - Z0, xc = (X0 + X1) / 2, zc = (Z0 + Z1) / 2, H = yT - .3 - FL, P = 40;
-      const WT = W - 2.2, xtc = X0 + WT / 2;   // (côté entrée, 2,2 m de carrelage ; le tatami commence ensuite)
+      const WT = W - 6.2, xtc = X0 + WT / 2;   // (côté entrée, 6,2 m de carrelage ; le tatami commence ensuite)
       const tat = toile(Math.round(WT * P), Math.round(D * P), (x, w, h) => {
-        x.fillStyle = "#3e5f86"; x.fillRect(0, 0, w, h);                                                                 // la large bande bleue
-        const m = 1.4 * P, r = 1.2 * P, r2 = 1.6 * P; x.fillStyle = "#2f6e4a"; x.fillRect(m, m, w - 2 * m, h - 2 * m);    // le carré vert
-        x.fillStyle = "#b02a2c"; x.fillRect(m + r, m + r, w - 2 * (m + r), h - 2 * (m + r));                           // le carré rouge
-        x.fillStyle = "#3a7d55"; x.fillRect(m + r + r2, m + r + r2, w - 2 * (m + r + r2), h - 2 * (m + r + r2));      // le centre vert
+        const bb = 1.4 * P; x.fillStyle = "#3e5f86"; x.fillRect(w - bb, 0, bb, h);                                       // une seule bande bleue, en travers, côté entrée
+        const wv = w - bb, r = 1.2 * P, r2 = 1.6 * P; x.fillStyle = "#2f6e4a"; x.fillRect(0, 0, wv, h);                  // le carré vert
+        x.fillStyle = "#b02a2c"; x.fillRect(r, r, wv - 2 * r, h - 2 * r);                                               // le carré rouge
+        x.fillStyle = "#3a7d55"; x.fillRect(r + r2, r + r2, wv - 2 * (r + r2), h - 2 * (r + r2));                      // le centre vert
         x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = 0; X <= w; X += 2 * P) { x.beginPath(); x.moveTo(X, 0); x.lineTo(X, h); x.stroke(); }
         for (let Y = 0; Y <= h; Y += P) { x.beginPath(); x.moveTo(0, Y); x.lineTo(w, Y); x.stroke(); }          // les jointures des tapis (1 m × 2 m)
         grain(x, 14); });
       const sl = SOL(A.ajoute(new THREE.PlaneGeometry(WT, D), A.mat({ map: tex(tat), roughness: .85 }), xtc, FL + .03, zc, false)); sl.rotation.x = -Math.PI / 2;
       { const cr = SOL(A.ajoute(new THREE.PlaneGeometry(W - WT, D), A.mat({ map: tex(toileCarreaux(), (W - WT) / 1.6, D / 1.6), roughness: .5 }), X0 + WT + (W - WT) / 2, FL + .005, zc, false)); cr.rotation.x = -Math.PI / 2; }   // (le carrelage, côté entrée)
       { const x0v = X1 - .1, x1v = LT / 2 - E, cv = SOL(A.ajoute(new THREE.PlaneGeometry(x1v - x0v, D), A.mat({ map: tex(toileCarreaux(), (x1v - x0v) / 1.6, D / 1.6), roughness: .5 }), (x0v + x1v) / 2, FL + .004, zc, false)); cv.rotation.x = -Math.PI / 2; }   // (et celui du vestibule, des toilettes)
-      // le bas des murs, capitonné vert sombre (1,5 m), sa baguette ; le haut, crème
-      const vert = A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#1f3631"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(0,0,0,.35)"; for (let X = 0; X < w; X += 64) x.fillRect(X, 0, 3, h); grain(x, 10); }), 1, 1), roughness: .8 });
+      // le bas des murs, capitonné terracotta (1,5 m), sa baguette ; le haut, crème
+      const vert = A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#a9553a"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(60,20,10,.35)"; for (let X = 0; X < w; X += 64) x.fillRect(X, 0, 3, h); grain(x, 10); }), 1, 1), roughness: .8 });
       const cap = (L2, x, z, ry) => { const v = A.ajoute(new THREE.BoxGeometry(L2, 1.5, .06), vert, x, FL + .75, z, false); v.rotation.y = ry; v.material = v.material.clone(); v.material.map = v.material.map.clone(); v.material.map.repeat.set(L2 / 1.6, 1); v.material.map.needsUpdate = true;
         const bg = A.ajoute(new THREE.BoxGeometry(L2, .05, .1), A.mat({ color: 0xd8d0bc }), x, FL + 1.52, z, false); bg.rotation.y = ry; };
       const V = C3.vest; cap(D, X0 + .03, zc, Math.PI / 2); cap(V.dz0 - Z0, X1 - .03, (Z0 + V.dz0) / 2, Math.PI / 2); cap(Z1 - V.dz1, X1 - .03, (V.dz1 + Z1) / 2, Math.PI / 2); cap(W, xc, Z1 - .03, 0);   // (l'ouverture vers les marches reste libre)
@@ -2232,7 +2234,7 @@ function troisiemeCour(A, L, scene) {
       C3.cab = { x0: x0c, x1: x1c, za, zt1, zc5, zp, zw: zw5, xs0, xs1, xd0: x0c + .65, xd1: x0c + 1.45 };
       const lu = new THREE.PointLight(0xfff0d8, 4, 7, 1.6); lu.position.set(xb5, HB - .5, zc5 + .5); scene.add(lu);
       A.ajoute(new THREE.CylinderGeometry(.14, .17, .08, 16), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }), xb5, HB - .12, zc5 + .5, false); }
-    SOL(A.ajoute(new THREE.BoxGeometry(LBq, .06, gap), [bl, bl, A.mat({ map: tex(textures().betonClair, LBq, gap), roughness: .95 }), bl, bl, bl], xb5, HB - .03, zc5));   // le toit plat, en béton gris clair, comme un pont depuis la terrasse
+    SOL(A.ajoute(new THREE.BoxGeometry(LBq + .06, .08, gap + .06), [bl, bl, A.mat({ map: tex(textures().betonClair, LBq, gap), roughness: .95 }), bl, bl, bl], xb5, HB - .02, zc5));   // le toit plat, en béton gris clair, comme un pont depuis la terrasse
     for (let k = 0; k < 2; k++) SOL(A.ajoute(new THREE.BoxGeometry(1.6, (k + 1) * .17, .3), A.mat({ map: tex(textures().betonClair, 1.6, .3), roughness: .95 }), xb5, yT + (k + 1) * .085, zt1 + .45 - k * .3));   // les deux marches, sur la terrasse
     C3.baraque = [LT / 2 - LBq - .3, LT / 2 + .3, zc5 - OW / 2 + .3, zc5 + OW / 2 - .3]; C3.pont = { x: xb5, za, zt1, x0: LT / 2 - LBq, x1: LT / 2, h: HB }; }
 
@@ -2248,9 +2250,8 @@ function troisiemeCour(A, L, scene) {
     barreaux.forEach(([bx, bz], k) => { mt.makeTranslation(bx, yT + .1 + (HB - .1) / 2, bz); im.setMatrixAt(k, mt); }); im.castShadow = true; scene.add(im); }
   // la hauteur du sol : les marches, puis le porche
   // côté rue, derrière et le long de la terrasse : le prolongement du trottoir gris, au même niveau, sans marche (sauf sous l'escalier)
-  { const gap = zT - zt0, za = zt1 - gap, E = C3.ESC; trottoir(A, L, LT / 2, DB, za, zt1, []);
-    const tb = A.mat({ map: tex(textures().trottoir, (DB - LT / 2) / 2, 1), roughness: .92 });
-    for (const [z0s, z1s] of [[zt1, E.zA], [E.z0 + E.run + E.pal, zt0]]) if (z1s - z0s > .05) { const o = SOL(A.ajoute(new THREE.BoxGeometry(DB - LT / 2 - 2 * E.W, .12, z1s - z0s), tb, (LT / 2 + 2 * E.W + DB) / 2, .06, (z0s + z1s) / 2, false)); (L.trottoirs = L.trottoirs || []).push([LT / 2 + 2 * E.W, DB, z0s, z1s]); } }
+  { const gap = zT - zt0, za = zt1 - gap, E = C3.ESC, plat = (x0, x1, z0, z1) => { if (x1 - x0 < .05 || z1 - z0 < .05) return; const o = SOL(A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), A.mat({ map: tex(textures().trottoir, (x1 - x0) / 2, (z1 - z0) / 2), roughness: .92 }), (x0 + x1) / 2, .013, (z0 + z1) / 2, false)); o.rotation.x = -Math.PI / 2; };
+    plat(LT / 2, DB, za, zt1); plat(LT / 2 + 2 * E.W, DB, zt1, E.zA); plat(LT / 2 + 2 * E.W, DB, E.z0 + E.run + E.pal, zt0); }   // (le même gris que le trottoir, à plat, sans marche)
   rueEnPente(A, L, scene, SOL, zT, DB);
   L.hauteur = (x, z, p) => { if (x > RU.x0s && x < RU.xB && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; if (z >= RU.zS[1] && x < RU.xR + .5) return RU.y(z);
       return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 6 * RU.rs ? Math.min(6, Math.floor(u / RU.rs) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
@@ -2716,6 +2717,7 @@ function construireEtage(A, L, scene) {
     for (let k = 1; k <= N; k++) A.ajoute(new THREE.BoxGeometry(.2, H - HP, Z1 - ZC0), beige, X(CX0 - .1), k * H + HP + (H - HP) / 2, (ZC0 + Z1) / 2, false);
     for (let k = 0; k <= N; k++) { const y = k * H;
       sol(cageW, Z1 - 1.6, xb(CX0, CX1), y, (1.6 + Z1) / 2);                                        // le palier de l'étage
+      if (k === 0) sol(cageW, 1.6 - Z0, xb(CX0, CX1), 0, (Z0 + 1.6) / 2);                          // (au rez-de-chaussée : le sol, sous les volées et le palier intermédiaire)
       if (k === N) continue;
       for (let i = 0; i < 10; i++) { const t = (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CX1 - CXM, t + .25, MP), matMarche, xb(CXM, CX1), y + t / 2 - .125, 1.6 - (i + .5) * MP, false); }
       A.ajoute(new THREE.BoxGeometry(cageW, .25, -1.4 - Z0), gris, xb(CX0, CX1), y + 1.7 - .125, (Z0 - 1.4) / 2, false);
