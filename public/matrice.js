@@ -2154,17 +2154,17 @@ function troisiemeCour(A, L, scene) {
             const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xd, 3.0, zd - .11, false); pl.rotation.y = Math.PI; } } }   // (son bout, face à la ruelle : une façade de brique, et la porte H)   // (le long de la ruelle, devant la façade à arcades : le même mur noir, aussi épais, sur 18 m)   // (le mur noir, prolongé jusqu'au flanc de brique de l'immeuble, à la même hauteur que lui)   // (le mur noir, le long de la troisième cour ; plus loin, l'immeuble de brique, en retrait de 6 m)
       if (sg < 0) { const zh = z1, lg = zh - RU.zA, HF = 22, f = A.ajoute(new THREE.PlaneGeometry(lg, HF), A.mat({ map: tex(toileBriqueBandes(lg, HF, { arcs: true })), roughness: .9 }), -X - 6 + .02, HF / 2, (zh + RU.zA) / 2, false); f.rotation.y = Math.PI / 2;   // le long de la ruelle et du passage : une façade d'immeuble en brique, au lieu du mur noir
         const sb = A.ajoute(new THREE.PlaneGeometry(zF - RU.zA, 1.5), A.mat({ color: 0xe4dccb, roughness: .9 }), -X - 6 + .02, -.75, (zF + RU.zA) / 2, false); sb.rotation.y = Math.PI / 2;
-        /* les portes de la façade à arcades, sous leur arc (de grandes portes cintrées, fermées, et leur plaque bleu marine) : G */
-        const porteArc = (z, lettre) => { const xw = -X - 6, P = new THREE.Shape(), w = .62, hd = 3.25;
-          P.moveTo(-w, 0); P.lineTo(w, 0); P.lineTo(w, hd); P.absarc(0, hd, w, 0, Math.PI, false); P.lineTo(-w, 0);
-          const cad = new THREE.Shape(), w2 = w + .16; cad.moveTo(-w2, 0); cad.lineTo(w2, 0); cad.lineTo(w2, hd); cad.absarc(0, hd, w2, 0, Math.PI, false); cad.lineTo(-w2, 0);
-          const pose = (sh, mat, d, dx) => { const o = A.ajoute(new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: false }), mat, xw + dx, 0, z, false); o.rotation.y = Math.PI / 2; return o; };
-          pose(cad, A.mat({ color: 0xe6e0d4, roughness: .75 }), .06, 0); pose(P, A.mat({ color: 0x3e2a1c, roughness: .6 }), .1, 0);
-          for (const [yy, hh] of [[.75, 1.1], [2.15, 1.2]]) A.ajoute(new THREE.BoxGeometry(.03, hh, .9), A.mat({ color: 0x33221a, roughness: .6 }), xw + .115, yy, z, false);
-          A.ajoute(new THREE.BoxGeometry(.05, .22, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 }), xw + .14, 1.15, z + .45, false);
+        /* les portes de la façade à arcades : à la place d'un arc, une porte droite (fermée, encadrement de pierre, plaque bleu marine) ; l'arc est rebouché en brique */
+        const porteArc = (z, lettre) => { const xw = -X - 6;
+          { const bq = A.ajoute(new THREE.PlaneGeometry(1.75, 2.9), A.mat({ map: tex(tuileBrique("rouge", K_FAC), 1.75 / 9.2, 2.9 / 6.75), roughness: .9 }), xw + .03, 1.5 + 1.45, z, false); bq.rotation.y = Math.PI / 2; }
+          A.ajoute(new THREE.BoxGeometry(.1, 2.6, 1.5), A.mat({ color: 0xe6e0d4, roughness: .75 }), xw + .05, 1.3, z, false);
+          A.ajoute(new THREE.BoxGeometry(.1, 2.3, 1.15), A.mat({ color: 0x3e2a1c, roughness: .6 }), xw + .08, 1.15, z, false);
+          for (const [yy, hh] of [[.65, .9], [1.7, .95]]) A.ajoute(new THREE.BoxGeometry(.03, hh, .85), A.mat({ color: 0x33221a, roughness: .6 }), xw + .15, yy, z, false);
+          A.ajoute(new THREE.BoxGeometry(.05, .2, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 }), xw + .17, 1.1, z + .42, false);
           const pq = toile(128, 128, (c) => { c.fillStyle = "#e8e4da"; c.beginPath(); c.roundRect(0, 0, 128, 128, 18); c.fill(); c.fillStyle = "#14234a"; c.beginPath(); c.roundRect(7, 7, 114, 114, 14); c.fill();
             c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(lettre, 64, 70); });
-          const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xw + .07, hd + w + .55, z, false); pl.rotation.y = Math.PI / 2; };
+          const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xw + .06, 3.0, z, false); pl.rotation.y = Math.PI / 2; };
+        porteArc(-104.9, "F");
         porteArc(-94.7, "G"); }   // (son soubassement de pierre, là où le sol descend vers la place)   // (à gauche : le mur noir longe la ruelle jusqu'au mur du fond de la place ; la ruelle tourne derrière le bâtiment du fond)
     else A.ajoute(new THREE.BoxGeometry(RU.xB - X, 20, z0 - zTr), faces(RU.xB - X, z0 - zTr), (X + RU.xB) / 2, 10, (z0 + zTr) / 2);
       // sur le toit du mur, côté ruelle et vers la rue : un petit cabanon de brique rouge, sa porte, son toit plat
