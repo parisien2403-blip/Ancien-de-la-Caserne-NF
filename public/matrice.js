@@ -1667,7 +1667,20 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
 /* la troisième cour, derrière le bâtiment d'en face (son passage de z = -44 à -56), de z = -56 à -72 : les mêmes pavés, les mêmes hauts murs de pierre,
    et au fond le même bâtiment ; on monte à son passage, aussi large que les marches, par sept longues marches de béton gris */
 const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55, LM: 3, PP: 12, PB: 1.4, TW: 1.6, HT: .12, NT: 12, HT2: .19, PT: .38, LT: 24.6, PTr: 12, LB: 29.6 };   // (NT…PTr : les marches raides et la terrasse, derrière le passage)   // (LM : la demi-largeur des marches, et du passage)
-C3.hp = C3.NM * C3.HM; C3.PF = 4.9; C3.RUN = 7.84; C3.NSF = 28; C3.SW = 1.8;
+C3.hp = C3.NM * C3.HM;
+C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, za = zt1 - (zT - zt0), DB = C3.LB / 2, ax = Math.abs(x);
+  if (z > C3.z0 - .4 || z < RU.zA + RU.cour + .3 || x < -C3.x + .45 || x > RU.xB - .45) return false;   // (entre la deuxième cour et la place de l'horloge, entre le mur noir de gauche et le bâtiment aux arcades)
+  if (z < C3.z1 - .2 && z > zT + .2 && ax > C3.LM - .3 && ax < DB + .3) return false;                      // l'immeuble (on passe par son porche)
+  if (z < za + .2 && ax < DB + .3) return false;                                                             // le bâtiment du fond
+  if (x > C3.x - .45 && z > zT - .2) return false;                                                           // le haut mur de droite (la rue en pente commence au bout de l'immeuble)
+  if (z < za + .2 && x < -DB) return false;                                                                  // le mur au bout de la ruelle de gauche
+  if (x < -DB - .1 && x > -DB - .5 && z < zt0 + .1 && z > za) return false;                                  // le mur de brique, derrière la terrasse
+  if (C3.dansBac(ax, z)) return false;
+  if (C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]) return false;
+  if (C3.baraque && x > C3.baraque[0] && x < C3.baraque[1] - .3 && z < zt1 + .1 && z > za - .1 && !(z > C3.baraque[2] && z < C3.baraque[3])) return false;
+  if (x > C3.x - .45 && x < C3.x + .1 && z < RU.zT + .3 && !(z > RU.zS[0] + .2 && z < RU.zS[1] - .2)) return false;   // la barrière du mur noir (ouverte devant les six marches)
+  if (x > RU.xR - .1 && x < RU.xR + .5 && z < RU.zT && z > RU.zA + RU.cour && !(z > RU.zS[0] + .2 && z < RU.zS[1] - .2)) return false;   // la barrière d'en face
+  return true; }; C3.PF = 4.9; C3.RUN = 7.84; C3.NSF = 28; C3.SW = 1.8;
 C3.ESC = { W: 1.2, run: 2.8, pal: 1.4, haut: 1.3, n: 10 };   // l'escalier contre la face de la terrasse côté rue, en U : première volée (côté rue) vers la gauche, palier, demi-tour, seconde volée contre le mur vers la droite, palier du haut, et la terrasse
 C3.hEsc = (x, z, yT) => { const E = C3.ESC, h = yT / 2 / E.n, p = E.run / E.n, z1 = E.z0 + E.run, inner = x < C3.LT / 2 + E.W;
   if (z >= z1) return z < z1 + E.pal ? yT / 2 : 0;
@@ -3673,6 +3686,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (Math.abs(x) >= 8.15 && Math.abs(x) < 8.8 && Math.abs(z - 13.75) < .45)                                 // les portes des ailes (les étages)
       || (Math.abs(x) < 2.0 && z <= -17.4 && z > C2.z0 - .4)                                                     // le passage sous l'horloge
       || (estAdmin() && Math.abs(x) < 2.0 && z <= C2.z1 + .5 && z > C3.z0 - .4)                                  // le passage du bâtiment d'en face (en travaux : l'administrateur seul)
+      || (estAdmin() && C3.libre && C3.libre(x, z))   // (le chantier : l'administrateur va partout, sauf dans les murs)
       || (estAdmin() && Math.abs(x) < C3.x - .5 && z <= C3.z0 - .4 && z > C3.z1 + .3 && !C3.dansBac(Math.abs(x), z) && !(C3.blocMur && x > C3.blocMur[0] && z > C3.blocMur[2] && z < C3.blocMur[3]))   // la troisième cour, et ses trottoirs (pas dans les bacs à buissons)
       || (estAdmin() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < C3.x - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : C3.zFond) + .3)   // les ruelles, de chaque côté de l'immeuble
       || (estAdmin() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zS[0] - .2 && z > RU.zA + RU.cour + .4)
@@ -5472,6 +5486,7 @@ function placerCamera(net) {
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
   else if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
+  if (moi) { const q = moi.g.position, pr = M.camMoiPrec; if (pr && Math.hypot(q.x - pr[0], q.z - pr[1]) > 6) M.camVise = null; M.camMoiPrec = [q.x, q.z]; }   // (on réapparaît ailleurs — reconnexion, saut : la caméra y va d'un coup, sans traverser la cour)
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
   else { const k = 1 - Math.pow(.94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k); M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
