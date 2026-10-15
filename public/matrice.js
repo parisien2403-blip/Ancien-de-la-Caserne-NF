@@ -3107,6 +3107,18 @@ function sousSolStand(A, L, scene, SOL, zT, PF) {
       const tete = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .012, 20), A.mat({ color: coul, roughness: .6 })); tete.scale.set(1, 1, 1.1); r.add(tete);
       const manche = new THREE.Mesh(new THREE.BoxGeometry(.1, .022, .028), A.mat({ color: 0xc8a06a, roughness: .6 })); manche.position.set(.12, .002, 0); r.add(manche); }
     ad(new THREE.SphereGeometry(.02, 12, 8), A.mat({ color: 0xf8f8f4, roughness: .3 }), .15, TH + .036, -.2); }   // la balle
+  // aux murs de la salle de ping-pong : les couvertures de France Tennis de Table (Tian Jing, Tibor Klampar, le double mixte de 1990) et le poster de Jean-Philippe Gatien
+  { const pp = P.pingpong, ch = new THREE.TextureLoader(), pin = A.mat({ color: 0xc8102e, metalness: .3, roughness: .4 });
+    const poster = (img, w, h, x, z, ry, rz = 0) => { const t = ch.load("images/pingpong/" + img); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+      const g = new THREE.Group(); g.position.set(x, Y0 + 1.75, z); g.rotation.set(0, ry, rz); scene.add(g);
+      const fo = new THREE.Mesh(new THREE.PlaneGeometry(w + .04, h + .04), new THREE.MeshStandardMaterial({ color: 0xf4f2ea, roughness: .9 })); g.add(fo);   // (le papier, un peu plus grand)
+      const im = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: .7 })); im.position.z = .002; g.add(im);
+      for (const [px, py] of [[-w / 2, h / 2], [w / 2, h / 2], [-w / 2, -h / 2], [w / 2, -h / 2]]) { const pu = new THREE.Mesh(new THREE.SphereGeometry(.012, 8, 6), pin); pu.position.set(px, py, .006); g.add(pu); } };   // les punaises
+    poster("poster4.jpg", 1.7, 1.04, (pp.x0 + pp.x1) / 2, pp.z1 - ep / 2 - .01, Math.PI);   // Gatien, en grand, au fond
+    poster("poster1.jpg", .62, .79, pp.x1 - ep / 2 - .01, -81.6, -Math.PI / 2, .02);
+    poster("poster2.jpg", .62, .78, pp.x1 - ep / 2 - .01, -78.7, -Math.PI / 2, -.015);
+    poster("poster3.jpg", .62, .85, pp.x0 + ep / 2 + .01, -78.6, Math.PI / 2, .01);
+    poster("poster1.jpg", .62, .79, 9.6, ZS + ep / 2 + .01, 0, -.02); }
   // ---- le stand de tir ----
   { const bois = A.mat({ color: 0x8a5a32, roughness: .6 }), boisF = A.mat({ color: 0x6a4224, roughness: .6 }), acier = A.mat({ color: 0x1c1e22, roughness: .35, metalness: .7 });
     const zc = (P.tir.z0 + P.tir.z1) / 2, d = P.tir.z1 - P.tir.z0;
