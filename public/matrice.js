@@ -2443,7 +2443,7 @@ function troisiemeCour(A, L, scene) {
           c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(L2, 64, 70); });
         const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), sg * (LM - .035), hp + HPo + .5, zp, false); pl.rotation.y = -sg * Math.PI / 2; } } }
   const solP = SOL(A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().betonFonce, LM * 2, PP), roughness: .95 }), 0, hp + .012, z1 - PP / 2, false)); solP.rotation.x = -Math.PI / 2;
-  { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
+  { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); neonsPassage(scene, 0, HP, z1 - PP + .4, z1 - .4); }
   // derrière le passage : sept marches plus raides, puis la terrasse (un toit plat en béton foncé, de la largeur de l'immeuble, 6 m de profondeur), entourée d'une barrière en fer noir
   const zT = z1 - PP, { NT, HT2, PT, LT, PTr } = C3, zt0 = zT - NT * PT, zt1 = zt0 - PTr, yT = hp + NT * HT2;
   const betonF = A.mat({ map: tex(textures().betonFonce, 4, 2), roughness: .95 }), betonC = A.mat({ map: tex(textures().betonClair, LM * 2, 2), roughness: .95 });
@@ -2777,17 +2777,29 @@ function troisiemeCour(A, L, scene) {
       if (bas && x > 0 && Math.abs(z - (zT + zt0) / 2) < C3.SW / 2 && u < C3.RUN) return -Math.min(C3.NSF, Math.floor(u / (C3.RUN / C3.NSF)) + 1) * C3.PF / C3.NSF; if (bas) return -C3.PF; } if (z <= zT && Math.abs(x) < LM) return hp + Math.min(NT, Math.floor((zT - z) / PT) + 1) * HT2; if (z <= z1) return hp; if (Math.abs(x) < LM && z < z1 + NM * PM) return Math.min(NM, Math.floor((z1 + NM * PM - z) / PM) + 1) * HM;
     return 0; };   // (les marches, le passage, les trottoirs)
 }
+/* au plafond d'un passage couvert : des néons à l'ancienne (réglette en tôle blanche, tube nu), à la file ; gresille : l'un d'eux grésille, s'éteint par à-coups */
+function neonsPassage(scene, x, y, z0, z1, gresille = false) {
+  const tole = new THREE.MeshStandardMaterial({ color: 0xe6e5df, roughness: .5, metalness: .3 }), n = Math.max(1, Math.round((z1 - z0) / 3)), pas = (z1 - z0) / n;
+  for (let k = 0; k < n; k++) { const z = z0 + (k + .5) * pas, tube = new THREE.MeshBasicMaterial({ color: 0xeef6ff });
+    const r = new THREE.Mesh(new THREE.BoxGeometry(.13, .06, 1.32), tole); r.position.set(x, y - .03, z); scene.add(r);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, 1.2, 8), tube); t.rotation.x = Math.PI / 2; t.position.set(x, y - .085, z); scene.add(t);
+    for (const s of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.06, .05, .05), tole); b.position.set(x, y - .075, z + s * .62); scene.add(b); }   // (les douilles)
+    if (gresille && k === Math.floor(n / 2)) { const ph = Math.random() * 9000;
+      t.onBeforeRender = () => { const u = (performance.now() + ph) % 9000;   // la plupart du temps allumé ; de temps en temps, quelques secondes de grésillement
+        const on = u > 2600 || (Math.sin(u * .09) + Math.sin(u * .23) > .3 && u % 420 > 60);
+        tube.color.setHex(on ? 0xeef6ff : u % 300 < 150 ? 0x6b7078 : 0x9aa2ae); }; } } }
 function deuxiemeCour(A, L, scene) {
   const { z0, z1, x: X } = C2, prof = z0 - z1, zc = (z0 + z1) / 2;
   const pav = A.ajoute(new THREE.PlaneGeometry(X * 2, prof), A.mat({ map: tex(textures().paves, (X) / 2, (prof / 2) / 2) }), 0, .012, zc, false); pav.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(pav);
   const pasS = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, (2.4) / 2, (6) / 2) }), 0, .012, -24, false); pasS.rotation.x = -Math.PI / 2;   // le sol du passage
+  neonsPassage(scene, 0, 4.4, -29.6, -18.4, true);   // (sous le bâtiment de l'horloge : les néons, dont un qui grésille)
   // le verso du bâtiment à l'horloge (face à la deuxième cour), percé du passage
   const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true, 4.4, 2.4, false, 7)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI; allumerPlan(L, scene, verso);
   // le bâtiment d'en face, pareil, et son passage
   const face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-2.4, 0); tr.lineTo(-2.4, 4.4); tr.lineTo(2.4, 4.4); tr.lineTo(2.4, 0); tr.closePath(); face.holes.push(tr);
   const tF = tex(toileVerso(44, 24, false, 4.4, 2.4, false, 7)); tF.repeat.set(1 / 44, 1 / 24); tF.offset.set(.5, 0);
-  A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12); allumerBloc(L, scene, tF.image, 44, 24, 0, 0, z1 - 12, z1);
+  A.ajoute(new THREE.ExtrudeGeometry(face, { depth: 12, bevelEnabled: false }), [A.mat({ map: tF }), A.mat({ color: 0xd9d4ca })], 0, 0, z1 - 12); neonsPassage(scene, 0, 4.4, z1 - 11.6, z1 - .4); allumerBloc(L, scene, tF.image, 44, 24, 0, 0, z1 - 12, z1);
   toitParisien(A, scene, -22, 22, z1, z1 - 12, 24);
   // au-dessus des deux portes de ce bâtiment, côté deuxième cour : les plaques bleu marine, M à droite, N à gauche
   for (const [xp, lettre] of [[12.2, "M"], [-12.2, "N"]]) { const pq = toile(128, 128, (c) => { c.fillStyle = "#e8e4da"; c.beginPath(); c.roundRect(0, 0, 128, 128, 18); c.fill(); c.fillStyle = "#14234a"; c.beginPath(); c.roundRect(7, 7, 114, 114, 14); c.fill();
