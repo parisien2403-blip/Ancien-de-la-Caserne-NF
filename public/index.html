@@ -857,14 +857,14 @@
   .mx-apo-mort[hidden] { display: none; }
   .mx-apo-intro { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 10px; background: rgba(0,0,0,.72); animation: mxMort .6s ease-out both; }
   .mx-apo-intro[hidden] { display: none; }
-  .mx-apo-carte { position: relative; max-width: 460px; max-height: 100%; overflow: auto; padding: 16px 16px 14px; border-radius: 12px; background: linear-gradient(#1a0d09, #0b0605); border: 1.5px solid #7a1a12; color: #e9dccb; box-shadow: 0 0 30px rgba(160,20,10,.45); }
+  .mx-apo-carte { position: relative; width: min(760px, 100%); max-width: 760px; max-height: 100%; overflow: auto; padding: 16px 16px 14px; border-radius: 12px; background: linear-gradient(#1a0d09, #0b0605); border: 1.5px solid #7a1a12; color: #e9dccb; box-shadow: 0 0 30px rgba(160,20,10,.45); }
   .mx-apo-an { position: absolute; right: 14px; top: 8px; font: 900 34px "Courier Prime", monospace; color: rgba(200,30,20,.35); }
   .mx-apo-carte h2 { margin: 0 0 8px; color: #e8341f; font: 400 26px "Marcellus", serif; letter-spacing: .04em; }
   .mx-apo-carte p { margin: 0 0 8px; font-size: 14px; line-height: 1.45; } .mx-apo-chapo { font-style: italic; color: #cbb59b; }
   .mx-apo-carte ul { margin: 6px 0 10px; padding-left: 4px; list-style: none; font-size: 13.5px; line-height: 1.45; } .mx-apo-carte li { margin: 4px 0; }
   .mx-apo-carte b { color: #ffcf9a; } .mx-apo-fin { color: #e8341f; font-weight: 700; }
   .mx-apo-btns { display: flex; gap: 8px; margin: 6px -16px -14px; padding: 10px 16px 14px; position: sticky; bottom: -14px; background: linear-gradient(rgba(11,6,5,.85), #0b0605 40%); } .mx-apo-btns .btn { flex: 1; padding: 12px; font-size: 16px; }
-  .mx-apo-btns .btn.alt { color: #e9dccb; border-color: #6a4a3a; }
+  .mx-apo-btns .btn.alt { color: #e9dccb; border-color: #6a4a3a; background: #2a1610; }
   .presents b { color: var(--navy); font-size: 15px; } .presents small { color: var(--muted); font-weight: 600; }
   .pres-liste { display: flex; flex-wrap: wrap; gap: 10px 12px; margin-top: 10px; }
   .pres-liste .p { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; font: 600 12px "Lato", sans-serif; color: var(--ink, #1f2a37); text-align: center; }
@@ -873,10 +873,13 @@
   .pres-liste span { max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mx-persos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; width: 100%; margin-top: 4px; } .mx-persos[hidden] { display: none; }
   .mx-alm { display: inline-flex; align-items: center; gap: 6px; } .mx-alm input { width: 90px; } .mx-alm[hidden] { display: none; }
-  .mx-apo-choix { margin: 4px 0 8px; } .mx-apo-choix > b { display: block; margin: 8px 0 5px; font-size: 14px; } .mx-apo-choix small { font-weight: 400; color: #cbb59b; }
-  .mx-apo-heros { display: flex; flex-wrap: wrap; gap: 6px; }
-  .mx-apo-heros button { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 62px; padding: 5px 2px; border-radius: 10px; border: 1.5px solid #4a2a20; background: #1e100c; color: #e9dccb; font: 600 11px "Lato", sans-serif; cursor: pointer; }
-  .mx-apo-heros button img, .mx-apo-heros button span { width: 40px; height: 44px; object-fit: contain; font-size: 28px; line-height: 44px; }
+  .mx-apo-choix { margin: 4px 0 8px; } .mx-apo-choix > b { display: block; margin: 12px 0 7px; font-size: 16px; color: #ffcf9a; }
+  .mx-apo-but { margin: 10px 0; padding: 10px 12px; border-radius: 10px; background: rgba(120,20,10,.25); border: 1px solid #7a1a12; font-size: 14px; line-height: 1.45; }
+  .mx-apo-regles summary { cursor: pointer; font-weight: 700; color: #ffcf9a; font-size: 15px; padding: 6px 0; } .mx-apo-choix small { font-weight: 400; color: #cbb59b; }
+  .mx-apo-heros { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .mx-apo-heros button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 12px; border: 2px solid #4a2a20; background: #1e100c; color: #e9dccb; font: 700 14px "Lato", sans-serif; cursor: pointer; }
+  .mx-apo-heros button img, .mx-apo-heros button span { width: 80px; height: 88px; object-fit: contain; font-size: 56px; line-height: 88px; }
+  .mx-apo-heros button:disabled { opacity: .35; cursor: default; }
   .mx-apo-heros button.on { border-color: #e8341f; background: #4a140c; box-shadow: 0 0 8px rgba(232,52,31,.6); }
   .mx-apo-heros button:disabled { opacity: .3; cursor: default; }
   .mx-apo .mx-apo-eq { font-size: 12.5px; }
@@ -1299,22 +1302,26 @@
             <div class="mx-apo-an">1998</div>
             <h2>Bienvenue en 1998</h2>
             <p class="mx-apo-chapo">L'année de Resident Evil 2. Derrière cette porte, la caserne a basculé : la nuit ne finit plus, les rues brûlent et les morts se sont relevés.</p>
-            <p>Tu vas pouvoir y entrer <b>seul</b> ou <b>en coopération</b> avec les anciens qui y sont déjà : vous verrez les mêmes zombies et pourrez vous couvrir les uns les autres.</p>
+            <div class="mx-apo-choix"><b>🎭 Choisis ton personnage</b><div class="mx-apo-heros" id="mxApoPerso"></div>
+              <b>🤝 Tes équipiers <small>(jusqu'à deux : ils te suivent, tirent tout seuls et ont 4 vies chacun)</small></b><div class="mx-apo-heros" id="mxApoEquipe"></div></div>
+            <div class="mx-apo-but">🎯 <b>Ta mission</b> : trouver le <b>fumigène rouge</b> caché au sol quelque part dans la caserne (jamais au même endroit d'une partie à l'autre), puis monter sur la <b>terrasse de la grande cour</b> et marcher sur le <b>cercle rouge du H</b>. L'hélicoptère du S.T.A.R.S. vient chercher les survivants… et la caserne explose. Un bandeau en haut de l'écran te rappelle toujours quoi faire.</div>
+            <details class="mx-apo-regles"><summary>📜 Les règles</summary>
             <ul>
-              <li>🔫 <b>Tirer</b> : touche un zombie ou un chien (ou clique dessus sur PC). Il faut <b>2 balles</b> pour en abattre un.</li>
               <li>🚶 <b>Te déplacer</b> : touche le sol, comme dans la caserne.</li>
-              <li>📦 <b>Munitions</b> : ton arme a <b>9 balles</b>. Marche sur une boîte de munitions pour recharger à 9 (sur le comptoir du bar, touche « Prendre »).</li>
-              <li>🌿 <b>Plantes</b> : marche dessus (ou, sur le comptoir du bar, touche « Prendre ») : elle te rend <b>deux vies</b>.</li>
-              <li>🔥 <b>Le feu</b> : ne marche pas dans les flammes, elles te font perdre <b>une vie</b>. Les zombies, les chiens et Nemesis ne s'y aventurent pas.</li>
-              <li>❤️ <b>Vies</b> : 4. Un zombie ou un chien t'en fait perdre <b>une</b> à chaque morsure ; à zéro, c'est fini… retour à la caserne.</li>
-              <li>☠️ <b>Nemesis</b> : au bout de <b>6</b> zombies ou chiens abattus, il arrive. Immense, rapide, ses coups de poing font perdre <b>deux vies</b> ; il faut <b>5 balles</b> pour l'abattre.</li>
+              <li>🔫 <b>Tirer</b> : touche un zombie ou un chien (ou clique dessus sur PC). Il faut <b>2 balles</b> pour en abattre un.</li>
+              <li>📦 <b>Munitions</b> : ton arme a <b>9 balles</b>. Marche sur une boîte de munitions pour recharger (sur le comptoir du bar, touche « Prendre »).</li>
+              <li>🔥 <b>La mitraillette</b> : abats <b>14</b> zombies ou chiens (le compteur 💀 est à côté de tes balles) et elle est à toi : <b>munitions infinies</b>, et en gardant le doigt appuyé sur un zombie, elle tire <b>en rafale</b>.</li>
+              <li>🌿 <b>Plantes</b> : marche dessus (ou, au bar, touche « Prendre ») : elle te rend <b>deux vies</b>.</li>
+              <li>❤️ <b>Vies</b> : 4. Chaque morsure en coûte <b>une</b> ; à zéro, tu deviens zombie… et retour à la caserne.</li>
+              <li>🔥 <b>Le feu</b> : ne marche pas dans les flammes (voitures, fûts, brasiers) : une vie en moins.</li>
+              <li>🐕 Les <b>chiens</b> sont bien plus rapides que les zombies.</li>
+              <li>☠️ <b>Nemesis</b> : au bout de 6 zombies ou chiens abattus, il arrive. Ses coups de poing coûtent <b>deux vies</b> ; il faut <b>5 balles</b> pour l'abattre.</li>
+              <li>🧟 <b>Les revenants</b> : un héros tombé revient plus tard… en zombie. Abattu, il ne revient plus.</li>
+              <li>🕰️ Ouvre l'œil en passant sous l'<b>horloge jaune</b>, au coin de la rue en pente…</li>
               <li>☕ <b>Salle de repos</b> : le vestibule et le bar, en bas de la salle des fêtes. Aucun zombie n'y entre.</li>
-              <li>🧟 Les zombies te suivent sans relâche ; les <b>chiens</b>, eux, sont bien plus rapides.</li>
-              <li>🎭 Tu peux jouer <b>toi-même</b> ou l'un des héros (Rebecca, Leon, Barry, Jill, Wesker, Chris), et emmener <b>deux équipiers</b> : ils te suivent, tirent tout seuls sur les zombies et ont <b>4 vies</b> chacun.</li>
-            </ul>
-            <p class="mx-apo-fin">Il n'y a pas de fin : c'est une balade en mode survie. Pour revenir, repasse par le cercle rouge de la déchetterie.</p>
-            <div class="mx-apo-choix"><b>🎭 Ton personnage</b><div class="mx-apo-heros" id="mxApoPerso"></div>
-              <b>🤝 Tes équipiers <small>(jusqu'à deux : ils te suivent, tirent tout seuls et peuvent tomber)</small></b><div class="mx-apo-heros" id="mxApoEquipe"></div></div>
+              <li>👥 <b>À plusieurs</b> : ceux qui entrent en même temps jouent la même partie (mêmes zombies, même fumigène). Quand l'hélicoptère décolle, seuls ceux qui sont dans la grande cour montent à bord.</li>
+              <li>🚪 Pour revenir avant la fin : repasse par le cercle rouge de la déchetterie.</li>
+            </ul></details>
             <div class="mx-apo-btns"><button class="btn" type="button" id="mxApoOui">🧟 Entrer</button><button class="btn alt" type="button" id="mxApoNon">Rester à la caserne</button></div>
           </div></div>
           <div class="mx-apo-mort" id="mxApoMort" hidden><img src="images/apo/you-died.png" alt="You died"><small id="mxApoMortTxt"></small></div>
@@ -2198,7 +2205,7 @@
           import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
         surApo: e => { $("mxApo").hidden = !e; if (!e) return;
-          $("mxApoBalles").textContent = `🔫 ${e.balles} / 9`; $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, 4 - e.vies));
+          $("mxApoBalles").textContent = e.mitra ? "🔥 Mitraillette ∞" : `🔫 ${e.balles} / 9 · 💀 ${e.tues}/${e.tuesMitra}`; $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, 4 - e.vies));
           $("mxApo").querySelectorAll(".mx-apo-eq").forEach(x => x.remove());
           for (const q of e.equipe || []) { const sp = document.createElement("span"); sp.className = "mx-apo-eq"; sp.textContent = q.mort ? `💀 ${q.nom}` : `🤝 ${q.nom} ` + "❤️".repeat(q.vies) + "🖤".repeat(Math.max(0, 4 - q.vies)); $("mxApo").appendChild(sp); }
           if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },
