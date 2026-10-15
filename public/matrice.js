@@ -4429,16 +4429,23 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     // au bout du porche : la rue, à travers la grille (la Presse des Clubs, l'Artisan Boulanger)
     // le passage, vu de la cour : le même que celui qu'on traverse depuis la rue (prolongement de la cour)
     { const grp = new THREE.Group(); grp.position.z = ZF + 26; scene.add(grp); decorPassage(atelier(grp), T, L, grp, -12); }
-    const vueRue = A.ajoute(new THREE.PlaneGeometry(4.8, 4.4), new THREE.MeshBasicMaterial({ map: tex(toile(256, 284, (x, w, h) => {
-      x.fillStyle = "#e7dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#cfc6b4"; x.fillRect(0, 0, w, 60);
-      x.fillStyle = "#121212"; x.fillRect(0, 70, 130, 26); x.fillStyle = "#fff"; x.font = "bold 17px Impact, Arial"; x.textAlign = "center"; x.fillText("PRESSE DES CLUBS", 62, 90);
-      x.fillStyle = "#1b2537"; x.fillRect(134, 66, 122, 32); x.fillStyle = "#f0e2bf"; x.font = "italic bold 18px Georgia"; x.fillText("Artisan", 190, 88);
-      for (let i = 0; i < 30; i++) { x.fillStyle = `hsl(${alea() * 360}, 60%, 55%)`; x.fillRect(8 + (i % 6) * 20, 104 + Math.floor(i / 6) * 22, 17, 19); }
-      x.fillStyle = "#f0d9a6"; x.fillRect(140, 104, 110, 110); x.fillStyle = "#7d7a74"; x.fillRect(0, 222, w, h - 222);
-      x.fillStyle = "#151515"; for (let X = 4; X < w; X += 13) x.fillRect(X, 96, 3, 188); x.fillRect(0, 120, w, 4); x.fillRect(0, 260, w, 4); })) }), 0, 2.2, ZF + PF2 - .05, false);
-    vueRue.rotation.y = Math.PI;
-    const vueNuit = A.ajoute(new THREE.PlaneGeometry(4.8, 4.4), new THREE.MeshBasicMaterial({ color: 0x1a2030, transparent: true, opacity: .7 }), 0, 2.2, ZF + PF2 - .1, false);
-    vueNuit.rotation.y = Math.PI; vueNuit.visible = false; L.nuitObjets.push(vueNuit);
+    /* au bout du passage, la rue elle-même, en vrai (plus une image) : la petite cour dallée, la grille noire et son portillon, le trottoir, la chaussée,
+       et en face les immeubles (la Presse des Clubs, le Fournil) — décalés de 41,5 m comme le passage recopié */
+    { const DZ = ZF + 26 + 12, bit = A.mat({ map: tex(T.bitume, 8, 4), color: 0x75757a }), trot = A.mat({ map: tex(T.bitume, 6, 1), color: 0xa7a39c }), fer = A.mat({ color: 0x151515, roughness: .45, metalness: .55 });
+      const plan = (w, d, x, z, m, y) => { const o = A.ajoute(new THREE.PlaneGeometry(w, d), m, x, y, z, false); o.rotation.x = -Math.PI / 2; return o; };
+      plan(40, 4.5, 0, DZ - 9.75, A.mat({ map: tex(T.dalles, 20, 2.2), color: 0xb9b6b0 }), .012);   // la petite cour devant la façade
+      plan(40, 4.3, 0, DZ - 5.35, trot, .012); plan(40, 6.4, 0, DZ, bit, .01); plan(40, 3.6, 0, DZ + 5, trot, .012);
+      for (const zb of [-3.2, 3.2]) A.ajoute(new THREE.BoxGeometry(40, .12, .24), A.mat({ color: 0xa9a59d }), 0, .06, DZ + zb, false);
+      const barres = [], bar = (x1, x2, z, h, base) => { for (let x = x1; x <= x2; x += .13) barres.push([x, z, base, h]); for (const y of [base + .14, base + h - .3]) A.ajoute(new THREE.BoxGeometry(x2 - x1, .05, .04), fer, (x1 + x2) / 2, y, z, false); };
+      bar(-14, -2.6, DZ - 7.5, 2.3, .45); bar(2.6, 14, DZ - 7.5, 2.3, .45); bar(-2.6, .1, DZ - 7.5, 2.7, .12); bar(1.5, 2.6, DZ - 7.5, 2.7, .12);
+      for (const [x1, x2] of [[-14, -2.6], [2.6, 14]]) A.ajoute(new THREE.BoxGeometry(x2 - x1 + .5, .45, .5), A.mat({ color: 0xd2cbbd }), (x1 + x2) / 2, .225, DZ - 7.5);   // le muret
+      for (const sx of [-2.6, 2.6]) { for (let z = DZ - 12; z <= DZ - 7.5; z += .13) barres.push([sx, z, .12, 2.7]); }   // la cage d'entrée
+      const ib = new THREE.InstancedMesh(new THREE.CylinderGeometry(.017, .017, 1, 6), fer, barres.length), mm = new THREE.Matrix4(), q = new THREE.Quaternion();
+      barres.forEach(([bx, bz, base, h], k) => ib.setMatrixAt(k, mm.compose(new THREE.Vector3(bx, base + h / 2, bz), q, new THREE.Vector3(1, h, 1)))); scene.add(ib);
+      for (let x = -12.6; x < 13; x += 1.6) if (Math.abs(x) > 1.2) A.ajoute(new THREE.CylinderGeometry(.05, .065, .9, 10), A.mat({ color: 0x1b1b1b }), x, .45, DZ - 3.48);   // les potelets
+      L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || [];
+      for (const [x, lg, g, t] of [[-11, 14, 62, "#e8e0cd"], [3, 14, 63, "#efe9dc"], [17, 14, 64, "#ece4d2"], [-25, 14, 61, "#e2d7c0"]]) { const im = A.haussmann({ x, z: DZ + 6.8, largeur: lg, etages: 6, rot: Math.PI, teinte: t, graine: g });
+        L.nuitObjets.push(...im.userData.nuit); L.silhouettes.push(...im.userData.silhouettes); } }
     // le toit mansardé d'ardoise : brisis presque vertical, terrasson, garde-corps au sommet
     const ardoise = A.mat({ map: (() => { const t = tex(texArdoise || (texArdoise = toileArdoise())); t.rotation = Math.PI / 2; return t; })(), roughness: .55, metalness: .1 });
     const prf = new THREE.Shape(); prf.moveTo(0, 0); prf.lineTo(PF2, 0); prf.lineTo(PF2 - .9, 4.4); prf.lineTo(PF2 - 2.6, 6); prf.lineTo(2.6, 6); prf.lineTo(.9, 4.4); prf.closePath();
@@ -6624,9 +6631,11 @@ const EBOUEURS = [[-70, "eboueur1", "Saïd"], [-71, "eboueur2", "Julien"]], PHRA
 const GENDARME = -72;
 function animerGendarme() {
   if (!M || !M.L) return;
-  const ici = M.lieu === "rue" && !M.L.apo; let g = M.gens.get(GENDARME);
+  // (le même, à la même place, qu'on vienne de la rue ou de la cour d'honneur : dans la cour, le passage est recopié 41,5 m plus loin)
+  const pos = M.lieu === "rue" ? [-1.55, -13.4] : M.lieu === "grande" ? [-1.55, 28.1] : null, ici = pos && !M.L.apo; let g = M.gens.get(GENDARME);
   if (!ici) { if (g) retirerAncien(GENDARME); return; }
-  if (!g) { ajouterAncien({ numero: GENDARME, nom: "Gendarme", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: "images/gendarme-tete.png", pnj: true, salue: true, x: -1.55, z: -13.4 }); return; }
+  if (!g) { ajouterAncien({ numero: GENDARME, nom: "Gendarme", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: "images/gendarme-tete.png", pnj: true, salue: true, x: pos[0], z: pos[1] }); return; }
+  if (Math.abs(g.g.position.z - pos[1]) > .5) g.g.position.set(pos[0], 0, pos[1]);
   const vus = g.vus || (g.vus = new Map()), now = Date.now();
   for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
     if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); dire(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
