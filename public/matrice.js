@@ -1301,39 +1301,77 @@ function allumerBloc(L, scene, cv, W, H, x, y0, z0, z1, part) { const f = (z, nz
 
 // façade haussmannienne : pierre de taille, balcons filants au 2e et au 5e, boutiques en bas (40 px/m)
 // rdc(x, w, yr, hRdc) : dessine un rez-de-chaussée sur mesure (boutiques d'après les photos)
+/* une façade d'immeuble parisien, d'après les photos de la rue : pierre de taille crème, chambranles moulurés et corniches au-dessus des fenêtres,
+   pilastres en relief entre les travées, balconnets de fer forgé à volutes, balcon filant au 2e et au dernier étage, rideaux derrière les vitres ;
+   au rez-de-chaussée : portes bleues sous un arc, porte cochère, épicerie à l'auvent vert, café et son store (sauf si une boutique est donnée) */
+function balconFer(x, X, Y, W, H) {   // un garde-corps en fer forgé : lisses, barreaux, volutes et cercles
+  x.strokeStyle = "#1e1f22"; x.lineWidth = 2.2; x.strokeRect(X, Y, W, H); x.lineWidth = 1.3;
+  const n = Math.max(2, Math.round(W / 14)), p = W / n;
+  for (let k = 0; k < n; k++) { const cx = X + (k + .5) * p, cy = Y + H / 2;
+    x.beginPath(); x.moveTo(X + k * p, Y); x.lineTo(X + k * p, Y + H); x.stroke();
+    x.beginPath(); x.ellipse(cx, cy, p * .32, H * .3, 0, 0, 7); x.stroke();
+    x.beginPath(); x.arc(cx - p * .25, Y + H * .2, p * .18, Math.PI * .5, Math.PI * 1.8); x.arc(cx + p * .25, Y + H * .2, p * .18, Math.PI * 1.2, Math.PI * 2.5); x.stroke();
+    x.beginPath(); x.arc(cx, Y + H * .85, p * .15, Math.PI, 0); x.stroke(); }
+  x.lineWidth = 3; x.beginPath(); x.moveTo(X - 2, Y); x.lineTo(X + W + 2, Y); x.stroke(); }
 function toileHaussmann(largeur, etages, teinte, graineF, rdc = null) {
   graine = graineF;
-  const W = Math.round(largeur * 40), hEt = 3.1 * 40, hRdc = 4.2 * 40, H = hRdc + etages * hEt;
+  const W = Math.round(largeur * 40), hEt = 3.1 * 40, hRdc = 4.2 * 40, H = hRdc + etages * hEt, style = Math.floor(alea() * 3);   // (trois manières, comme les trois immeubles de la photo)
   return toile(W, H, (x, w, h) => {
     x.fillStyle = teinte; x.fillRect(0, 0, w, h);
-    // joints de la pierre de taille
-    x.fillStyle = "rgba(120,100,70,.12)"; for (let y = 0; y < h - hRdc; y += 20) x.fillRect(0, y, w, 1.5);
-    for (let y = 0; y < h - hRdc; y += 40) for (let X = (y / 40 % 2) * 30; X < w; X += 60) x.fillRect(X, y, 1.5, 20);
+    for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${alea() < .5 ? "120,100,70" : "255,250,235"},${alea() * .06})`; x.fillRect(alea() * w, alea() * h, 6 + alea() * 40, 4 + alea() * 30); }   // la patine de la pierre
+    x.fillStyle = "rgba(110,90,60,.16)"; for (let y = 0; y < h - hRdc; y += 16) x.fillRect(0, y, w, 1.2);
+    for (let y = 0; y < h - hRdc; y += 32) for (let X = (y / 32 % 2) * 26; X < w; X += 52) x.fillRect(X, y, 1.2, 16);
     const n = Math.max(3, Math.round(largeur / 3.4)), pas = w / n;
+    // les pilastres, entre les travées (léger relief)
+    for (let c = 0; c <= n; c++) { const X = c * pas - 7; x.fillStyle = "rgba(255,252,240,.22)"; x.fillRect(X, 0, 14, h - hRdc); x.fillStyle = "rgba(90,70,45,.18)"; x.fillRect(X + 12, 0, 3, h - hRdc); }
     for (let e = 0; e < etages; e++) {
-      const y = e * hEt, balconFilant = e === etages - 2 || e === 0;   // 2e (sous la corniche) et 5e
-      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(0, y + hEt - 8, w, 6);                        // bandeau
+      const y = e * hEt, filant = e === etages - 2 || e === 0;
+      x.fillStyle = "#efe8d6"; x.fillRect(0, y + hEt - 10, w, 8); x.fillStyle = "rgba(80,60,40,.28)"; x.fillRect(0, y + hEt - 2, w, 2);   // le bandeau mouluré, son ombre
       for (let c = 0; c < n; c++) {
         const X = c * pas + pas / 2 - 22, Y = y + 22;
-        x.fillStyle = "#f3eee3"; x.fillRect(X - 6, Y - 8, 56, 8);                                       // linteau sculpté
-        const g = x.createLinearGradient(X, Y, X, Y + 88); g.addColorStop(0, "#4d5d6c"); g.addColorStop(1, "#2c3640");
-        x.fillStyle = g; x.fillRect(X, Y, 44, 88);
-        x.fillStyle = "#e9e4d8"; x.fillRect(X + 20, Y, 4, 88); x.fillRect(X, Y + 30, 44, 3);
-        if (!balconFilant && alea() > .35) { x.strokeStyle = "#1d1d1d"; x.lineWidth = 2; x.strokeRect(X - 2, Y + 62, 48, 26); for (let k = 0; k < 8; k++) { x.beginPath(); x.moveTo(X + k * 6.5, Y + 62); x.lineTo(X + k * 6.5, Y + 88); x.stroke(); } }
+        // le chambranle mouluré, la corniche (en arc au 1er étage chez certains), les petites consoles
+        x.fillStyle = "rgba(255,252,242,.55)"; x.fillRect(X - 8, Y - 6, 60, 98); x.fillStyle = "rgba(90,70,45,.22)"; x.fillRect(X - 8, Y + 90, 60, 3);
+        if (e === etages - 1 && style !== 1) { x.fillStyle = "#f2ecdd"; x.beginPath(); x.ellipse(X + 22, Y - 4, 34, 12, 0, Math.PI, 0); x.fill(); x.fillStyle = "rgba(90,70,45,.25)"; x.fillRect(X - 12, Y - 5, 68, 2); }
+        else { x.fillStyle = "#f4eee0"; x.fillRect(X - 12, Y - 16, 68, 9); x.fillStyle = "rgba(90,70,45,.3)"; x.fillRect(X - 12, Y - 7, 68, 2); for (const s of [-10, 50]) { x.fillStyle = "#ece4d2"; x.fillRect(X + s, Y - 7, 4, 10); } }
+        // la fenêtre : la vitre sombre, le rideau, la menuiserie blanche (deux battants, l'imposte)
+        const g = x.createLinearGradient(X, Y, X + 44, Y + 88); g.addColorStop(0, "#56687a"); g.addColorStop(.6, "#33404c"); g.addColorStop(1, "#27313b"); x.fillStyle = g; x.fillRect(X, Y, 44, 88);
+        rideau(x, X, Y, 44, 88);
+        x.fillStyle = "#f6f4ee"; x.fillRect(X, Y, 44, 3); x.fillRect(X, Y, 3, 88); x.fillRect(X + 41, Y, 3, 88); x.fillRect(X + 20.5, Y + 16, 3, 72); x.fillRect(X, Y + 15, 44, 3); x.fillRect(X, Y + 50, 44, 2);
+        x.fillStyle = "rgba(255,255,255,.14)"; x.beginPath(); x.moveTo(X + 3, Y + 30); x.lineTo(X + 14, Y + 18); x.lineTo(X + 19, Y + 18); x.lineTo(X + 3, Y + 46); x.fill();   // le reflet
+        if (!filant) { balconFer(x, X - 3, Y + 62, 50, 24); }
+        if (!filant && e === etages - 3 && style === 0 && alea() < .5) { x.fillStyle = "#8a5a3a"; x.fillRect(X - 2, Y + 80, 48, 8); for (let k = 0; k < 6; k++) { x.fillStyle = ["#d23a4a", "#e85a6a", "#c81e3a"][k % 3]; x.beginPath(); x.arc(X + 4 + k * 8, Y + 76, 4.5, 0, 7); x.fill(); } x.fillStyle = "#3d6b35"; x.fillRect(X, Y + 79, 44, 3); }   // des géraniums
       }
-      if (balconFilant) { x.fillStyle = "#cfc8b8"; x.fillRect(0, y + hEt - 22, w, 8);
-        x.strokeStyle = "#1d1d1d"; x.lineWidth = 2; x.strokeRect(0, y + hEt - 50, w, 28);
-        for (let X = 0; X < w; X += 9) { x.beginPath(); x.moveTo(X, y + hEt - 50); x.lineTo(X, y + hEt - 22); x.stroke(); }
-        for (let X = 0; X < w; X += 36) { x.beginPath(); x.arc(X + 18, y + hEt - 36, 8, 0, 7); x.stroke(); } }
+      if (filant) { x.fillStyle = "#d9d0bc"; x.fillRect(0, y + hEt - 26, w, 10); x.fillStyle = "rgba(80,60,40,.35)"; x.fillRect(0, y + hEt - 16, w, 3);   // la dalle du balcon, ses consoles
+        for (let X = 10; X < w; X += 46) { x.fillStyle = "#d4cab4"; x.fillRect(X, y + hEt - 16, 8, 12); }
+        balconFer(x, 0, y + hEt - 56, w, 30); }
     }
-    // rez-de-chaussée : grandes boutiques, porte cochère
+    for (const X of [3, w - 3]) { x.fillStyle = "#d8d4cc"; x.fillRect(X - 2.5, 0, 5, h - 6); x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(X + 1.5, 0, 1, h - 6); }   // les descentes d'eau, aux deux bouts
+    // le rez-de-chaussée
     const yr = h - hRdc;
-    if (rdc) { rdc(x, w, yr, hRdc); x.textAlign = "start"; x.fillStyle = "#cfc6b4"; x.fillRect(0, yr - 10, w, 12); return; } x.fillStyle = "#e3dccb"; x.fillRect(0, yr, w, hRdc); x.fillStyle = "rgba(0,0,0,.08)"; for (let X = 0; X < w; X += 60) x.fillRect(X, yr, 2, hRdc);
-    const couleurs = ["#1f4d3a", "#7a1f2b", "#1f3a5f", "#3b2f2a"];
-    for (let c = 0; c < n; c += 2) { const X = c * pas + 10, L = Math.min(pas * 1.6, w - X - 10);
-      x.fillStyle = couleurs[Math.floor(alea() * 4)]; x.fillRect(X, yr + 26, L, hRdc - 26);
-      x.fillStyle = "#c9d8e0"; x.fillRect(X + 10, yr + 60, L - 20, hRdc - 70); x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(X + 12, yr + 62, (L - 20) / 3, hRdc - 74); }
-    x.fillStyle = "#cfc6b4"; x.fillRect(0, yr - 10, w, 12);                                                 // corniche du rez-de-chaussée
+    x.fillStyle = "#e6dcc8"; x.fillRect(0, yr, w, hRdc); x.fillStyle = "rgba(90,70,45,.18)"; for (let y = yr + 24; y < h; y += 24) x.fillRect(0, y, w, 2);   // les refends
+    x.fillStyle = "#efe8d6"; x.fillRect(0, yr - 14, w, 14); x.fillStyle = "rgba(80,60,40,.35)"; x.fillRect(0, yr, w, 3);
+    x.fillStyle = "rgba(70,70,74,.5)"; x.fillRect(0, h - 22, w, 22);   // le soubassement, plus sombre
+    if (rdc) { rdc(x, w, yr, hRdc); x.textAlign = "start"; return; }
+    let X = 14; const types = ["porte", "cochere", "epicerie", "cafe", "grille"];
+    while (X < w - 70) { const t = types[Math.floor(alea() * types.length)], lw = { porte: 64, cochere: 150, epicerie: 210, cafe: 190, grille: 74 }[t]; if (X + lw > w - 10) break;
+      const y0 = yr + 30, hh = h - y0 - 4;
+      if (t === "porte" || t === "cochere" || t === "grille") {   // sous un arc de pierre : la porte bleue, la porte cochère bleue, ou la porte vitrée à grille de fer
+        x.fillStyle = "#ede5d2"; x.beginPath(); x.moveTo(X - 8, h); x.lineTo(X - 8, y0 + 10); x.quadraticCurveTo(X + lw / 2, y0 - 16, X + lw + 8, y0 + 10); x.lineTo(X + lw + 8, h); x.fill();
+        x.fillStyle = t === "grille" ? "#2a2c2e" : "#1f4fa8"; x.beginPath(); x.moveTo(X, h); x.lineTo(X, y0 + 14); x.quadraticCurveTo(X + lw / 2, y0 - 4, X + lw, y0 + 14); x.lineTo(X + lw, h); x.fill();
+        if (t === "grille") { x.fillStyle = "#3b4650"; x.fillRect(X + 8, y0 + 20, lw - 16, hh - 26); x.strokeStyle = "#151515"; x.lineWidth = 2; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(X + lw / 2 + s * 15, y0 + hh / 2, 11, hh * .3, 0, 0, 7); x.stroke(); } }
+        else { x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 2; const nb = t === "cochere" ? 3 : 1; for (let k = 0; k < nb; k++) { const a = X + k * lw / nb + 6, b = lw / nb - 12; x.strokeRect(a, y0 + 24, b, hh * .42); x.strokeRect(a, y0 + 30 + hh * .45, b, hh * .42); }
+          if (t === "cochere") { x.fillStyle = "#3b6fd8"; x.fillRect(X + lw * .68, y0 + 30 + hh * .45, lw * .28, hh * .36); }   // (un panneau repeint plus clair)
+          x.fillStyle = "#d8c070"; x.fillRect(X + lw - 14, y0 + hh * .5, 4, 10); x.fillStyle = "#f2eee2"; x.font = "bold 9px Arial"; x.textAlign = "center"; x.fillText(String(141 + Math.floor(alea() * 8)), X + lw / 2, y0 + 8); } }
+      else if (t === "epicerie") {   // l'épicerie : enseigne blanche et bleue, auvent vert, l'étal
+        x.fillStyle = "#1e4f3a"; x.fillRect(X, y0 - 6, lw, hh + 6); x.fillStyle = "#f4f4f2"; x.fillRect(X + 4, y0, lw * .45, 34); x.fillStyle = "#2a3fa8"; x.fillRect(X + 4 + lw * .45, y0, lw * .55 - 8, 34);
+        x.fillStyle = "#1a1a2a"; x.font = "bold 15px Arial"; x.textAlign = "center"; x.fillText("Lyca", X + 4 + lw * .22, y0 + 20); x.fillStyle = "#fff"; x.font = "bold 13px Arial"; x.fillText("N R F", X + lw * .72, y0 + 14); x.font = "bold 8px Arial"; x.fillText("ALIMENTATION GÉNÉRALE", X + lw * .72, y0 + 27);
+        x.fillStyle = "#1f6a3a"; x.beginPath(); x.moveTo(X - 6, y0 + 40); x.lineTo(X + lw + 6, y0 + 40); x.lineTo(X + lw + 12, y0 + 58); x.lineTo(X - 12, y0 + 58); x.fill();
+        x.fillStyle = "#c9d6dc"; x.fillRect(X + 8, y0 + 62, lw - 16, hh - 68); for (let k = 0; k < 40; k++) { x.fillStyle = `hsl(${alea() * 360},60%,${45 + alea() * 25}%)`; x.fillRect(X + 12 + (k % 10) * (lw - 24) / 10, y0 + 70 + Math.floor(k / 10) * 16, (lw - 24) / 10 - 3, 12); } }
+      else {   // le café : son store beige, ses vitres sombres
+        x.fillStyle = "#18191b"; x.fillRect(X, y0 - 6, lw, hh + 6); x.fillStyle = "#1a1a1a"; x.fillRect(X, y0 - 6, lw, 18); x.fillStyle = "#efe9dc"; x.font = "bold 10px Georgia"; x.textAlign = "center"; x.fillText("BAR · BRASSERIE · PIZZA", X + lw / 2, y0 + 7);
+        x.fillStyle = "#e3d7b4"; x.beginPath(); x.moveTo(X - 4, y0 + 14); x.lineTo(X + lw + 4, y0 + 14); x.lineTo(X + lw + 10, y0 + 56); x.lineTo(X - 10, y0 + 56); x.fill(); x.fillStyle = "#6a5a3a"; x.font = "italic 10px Georgia"; x.fillText("Café · Bar · Grillades", X + lw / 2, y0 + 44);
+        x.fillStyle = "#2c3238"; x.fillRect(X + 6, y0 + 60, lw - 12, hh - 64); x.fillStyle = "rgba(255,220,160,.18)"; x.fillRect(X + 10, y0 + 64, lw - 20, hh - 72); }
+      X += lw + 26; }
   });
 }
 /* ---------- L'entrée de la caserne, 82 rue du Faubourg-Poissonnière (d'après les vues de la rue) ----------
@@ -1538,6 +1576,29 @@ function construireRue(A, T, L, scene) {
   const vitrine = (x, X, Y, w, h, interieur) => { x.fillStyle = "#1a1a1a"; x.fillRect(X - 3, Y - 3, w + 6, h + 6); const g = x.createLinearGradient(X, Y, X, Y + h); g.addColorStop(0, interieur[0]); g.addColorStop(1, interieur[1]); x.fillStyle = g; x.fillRect(X, Y, w, h);
     x.fillStyle = "rgba(255,255,255,.16)"; x.beginPath(); x.moveTo(X, Y); x.lineTo(X + w * .3, Y); x.lineTo(X + w * .12, Y + h); x.lineTo(X, Y + h); x.fill(); };
   const RDC = {
+    // pile en face du portail de la caserne : la boulangerie (devanture de bois sombre, enseigne noire aux lettres d'or), et à côté la porte cochère en chêne
+    tourPain: (x, w, yr, h) => { const C = 400, B = 270, X = C - B / 2, y0 = yr + 18, Y1 = yr + h;
+      x.fillStyle = "#3a1c18"; x.fillRect(X - 6, y0 - 4, B + 12, Y1 - y0 + 4);   // la devanture en bois
+      x.fillStyle = "#121010"; x.fillRect(X + 4, y0 + 4, B - 8, 40); x.strokeStyle = "#7a4a30"; x.lineWidth = 3; x.strokeRect(X + 4, y0 + 4, B - 8, 40);
+      x.fillStyle = "#e0b84a"; x.font = "bold 30px Georgia, serif"; x.textAlign = "center"; x.fillText("BOULANGERIE", C, y0 + 36);
+      x.font = "bold 9px Georgia"; for (const s of [-1, 1]) { x.fillText("TOUT AUTOUR", C + s * 108, y0 + 20); x.fillText("✦ DU PAIN ✦", C + s * 108, y0 + 34); }
+      for (const s of [-1, 1]) { const px = C + s * 112 - 14; x.fillStyle = "#111"; x.fillRect(px, y0 + 54, 28, 96); x.strokeStyle = "#c9a227"; x.lineWidth = 1.5; x.strokeRect(px + 2, y0 + 56, 24, 92);   // les panneaux peints
+        x.fillStyle = s < 0 ? "#c9a24a" : "#7aa0c8"; x.fillRect(px + 5, y0 + 70, 18, 52); x.fillStyle = "#e0b84a"; x.font = "bold 5px Arial"; x.fillText("FONDÉE EN 1859", px + 14, y0 + 140); }
+      for (const [a, b] of [[X + 40, C - 30], [C + 30, X + B - 40]]) { x.fillStyle = "#4a2a22"; x.fillRect(a - 3, y0 + 50, b - a + 6, Y1 - y0 - 82);   // les vitrines, les pains, les viennoiseries
+        const g = x.createLinearGradient(0, y0 + 54, 0, Y1 - 36); g.addColorStop(0, "#f2d9a6"); g.addColorStop(1, "#b98a52"); x.fillStyle = g; x.fillRect(a, y0 + 54, b - a, Y1 - y0 - 90);
+        for (let r = 0; r < 3; r++) for (let k = 0; k < 6; k++) { x.fillStyle = ["#c98a3e", "#a8652a", "#e0b06a", "#8a4e22"][(r + k) % 4]; x.beginPath(); x.ellipse(a + 10 + k * (b - a - 20) / 5, y0 + 74 + r * 22, 7, 4, 0, 0, 7); x.fill(); }
+        x.fillStyle = "rgba(255,255,255,.15)"; x.beginPath(); x.moveTo(a, y0 + 54); x.lineTo(a + 20, y0 + 54); x.lineTo(a, y0 + 100); x.fill(); }
+      x.fillStyle = "#2a1a14"; x.fillRect(C - 26, y0 + 50, 52, Y1 - y0 - 50); x.fillStyle = "#f4ecd8"; x.fillRect(C - 20, y0 + 56, 40, Y1 - y0 - 58);   // la porte ouverte, la boutique claire
+      x.fillStyle = "#3a1c18"; for (let k = 0; k < 4; k++) x.fillRect(X + 4 + k * (B - 8) / 4 + 6, Y1 - 28, (B - 8) / 4 - 12, 22);   // les soubassements à panneaux
+      // à droite : la porte cochère en chêne, sa grille de fonte ; à gauche : une vitrine blanche
+      const D = C + B / 2 + 24; x.fillStyle = "#ede5d2"; x.fillRect(D - 8, y0 - 8, 104, Y1 - y0 + 8); x.fillStyle = "#1c1a18"; x.fillRect(D, y0, 40, Y1 - y0); x.fillStyle = "#9a6a38"; x.fillRect(D + 42, y0, 48, Y1 - y0);
+      x.strokeStyle = "#6a4420"; x.lineWidth = 2; x.strokeRect(D + 46, y0 + 6, 40, 64); x.fillStyle = "#2a2018"; x.fillRect(D + 50, y0 + 12, 32, 52); x.strokeStyle = "#8a7a5a"; for (let k = 0; k < 5; k++) { x.beginPath(); x.ellipse(D + 66, y0 + 38, 10 - k * 1.5, 20 - k * 3, 0, 0, 7); x.stroke(); }
+      x.strokeRect(D + 46, y0 + 80, 40, Y1 - y0 - 90);
+      const G = X - 110; x.fillStyle = "#f4f2ec"; x.fillRect(G, y0, 96, Y1 - y0); x.fillStyle = "#1a1a1c"; x.fillRect(G + 10, y0 + 26, 76, Y1 - y0 - 32); },
+    presse: (x, w, yr, h) => { const P = 210, X = w - P - 40;
+      bandeau(x, X, yr + 8, P, 34, "#121212", "PRESSE DES CLUBS", "bold 25px Impact, 'Arial Black', sans-serif", "#ffffff");
+      vitrine(x, X + 10, yr + 50, P - 20, h - 52, ["#3a3a3a", "#202020"]);
+      for (let i = 0; i < 60; i++) { x.fillStyle = `hsl(${alea() * 360}, ${50 + alea() * 30}%, ${42 + alea() * 28}%)`; x.fillRect(X + 16 + (i % 12) * 15, yr + 96 + Math.floor(i / 12) * 14, 13, 12); } },
     // en face de la caserne : la Presse des Clubs et l'Artisan Boulanger Pâtissier « Le Fournil du Faubourg »
     boulangerie: (x, w, yr, h) => { x.fillStyle = "#e7dfcf"; x.fillRect(0, yr, w, h); const P = 210;
       bandeau(x, 0, yr + 8, P, 34, "#121212", "PRESSE DES CLUBS", "bold 25px Impact, 'Arial Black', sans-serif", "#ffffff");
@@ -1565,11 +1626,11 @@ function construireRue(A, T, L, scene) {
       x.fillStyle = "#f2c230"; x.beginPath(); x.arc(w - 40, yr + 50, 22, 0, 7); x.fill(); x.fillStyle = "#1a1a1a"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("M", w - 40, yr + 61); },
   };
   const im = (o) => { const g = A.haussmann(o); L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); return g; };
-  const teintes = ["#e8e0cd", "#ece4d2", "#e2d7c0", "#e9e1cf", "#efe9dc"];
+  const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"];   // (la pierre de Paris, crème et miel, comme sur les photos)
   // en face (côté sud, façades tournées vers la caserne)
   im({ x: -23, z: 6.8, largeur: 10, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 61 });
-  im({ x: -11, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[0], graine: 62 });
-  im({ x: 3, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 63, rdc: RDC.boulangerie });
+  im({ x: -11, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[0], graine: 62, rdc: RDC.presse });
+  im({ x: 3, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 63, rdc: RDC.tourPain });
   im({ x: 17, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 64, rdc: RDC.anjou });
   im({ x: 32, z: 6.8, largeur: 16, etages: 5, rot: Math.PI, teinte: teintes[3], graine: 65 });
   im({ x: 48, z: 6.8, largeur: 16, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 66 });
@@ -5627,7 +5688,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerEboueurs(); animerGendarme(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -6297,6 +6358,115 @@ function texNuages() {
 }
 /* le camion-benne vert de la Propreté de Paris (d'après les photos du modèle MAN) : cabine verte et calandre noire, trois essieux, la benne à nervures et ses deux bandes blanches,
    le logo « PP — Propreté de Paris », le compacteur à l'arrière et son bac gris, les deux gyrophares orange, le pot d'échappement vertical ; posé à (x, z), l'avant vers l'angle rot */
+/* les petites citadines des années 90, d'après les photos : la Renault Clio (1re génération) et la Peugeot 106 (phase 1), trois portes ;
+   la caisse est un profil extrudé sur la largeur (le capot plongeant, le pare-brise, le toit, le hayon), les boucliers gris, les vitres, les enjoliveurs */
+function citadine(scene, modele, couleur, x, z, rot) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  const clio = modele === "clio", L = clio ? 3.71 : 3.56, W = 1.62, H = 1.39;
+  const peint = new THREE.MeshStandardMaterial({ color: couleur, roughness: .32, metalness: .35 }), gris = new THREE.MeshStandardMaterial({ color: 0x5c6064, roughness: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: .7 });
+  const vitre = new THREE.MeshStandardMaterial({ color: 0x2b3640, roughness: .08, metalness: .6 }), pneu = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .9 }), jante = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: .35, metalness: .6 });
+  const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  // le bas de caisse (vu de côté, l'avant vers les x positifs), jusqu'à la ceinture de caisse
+  const k = clio ? 1 : .96, X = v => v * k, ext = (pts, w, m, dz = 0) => { const sh = new THREE.Shape(); pts.forEach(([u, v], i) => sh[i ? "lineTo" : "moveTo"](u, v)); sh.closePath();
+    const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 2, curveSegments: 4 }), m); o.position.z = -w / 2 + dz; o.castShadow = true; g.add(o); return o; };
+  ext([[X(-1.83), .3], [X(1.83), .3], [X(1.83), .68], [X(1.6), .77], [X(.86), .9], [X(.82), .93], [X(-1.76), .97], [X(-1.83), .9]], W - .06, peint);
+  // le vitrage (une pièce de verre teinté tout autour : pare-brise, vitres, lunette), puis le toit et les montants peints par-dessus
+  const vit = [[X(.8), .93], [X(.12), 1.31], [X(-1.08), 1.34], [X(-1.6), 1.26], [X(-1.74), .97]];
+  ext(vit, W - .2, vitre);
+  ext([[X(.16), 1.31], [X(-1.08), 1.34], [X(-1.6), 1.26], [X(-1.62), 1.31], [X(-1.08), 1.4], [X(.1), 1.37]], W - .14, peint);   // le toit
+  for (const sz of [-1, 1]) { const zz = sz * (W / 2 - .085);
+    const montant = (a, b, ep) => { const dx = b[0] - a[0], dy = b[1] - a[1], o = add(new THREE.BoxGeometry(Math.hypot(dx, dy), ep, .04), peint, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, zz); o.rotation.z = Math.atan2(dy, dx); };
+    montant([X(.8), .93], [X(.12), 1.32], .07);   // le montant de pare-brise
+    montant([X(-.62), .95], [X(-.66), 1.34], .09);   // le montant milieu (porte, custode)
+    montant([X(-1.6), 1.27], [X(-1.74), .97], clio ? .2 : .26);   // le montant arrière, large
+    add(new THREE.BoxGeometry(L - .5, .06, .02), noir, .05, .58, sz * (W / 2 + .01));   // le jonc de protection
+    add(new THREE.BoxGeometry(.14, .03, .02), noir, X(-.5), .86, sz * (W / 2 + .005));   // la poignée
+    add(new THREE.BoxGeometry(.12, .09, .1), noir, X(.68), 1.0, sz * (W / 2 + .05)); }   // le rétroviseur
+  // les boucliers gris (avant, arrière), la plaque, les phares, les feux
+  for (const sx of [1, -1]) { add(new THREE.BoxGeometry(.16, .3, W + .04), gris, sx * (L / 2 - .02), .45, 0); add(new THREE.BoxGeometry(.02, .11, .5), new THREE.MeshStandardMaterial({ color: 0xf2f2ee }), sx * (L / 2 + .065), .47, 0); }
+  for (const sz of [-1, 1]) { add(new THREE.BoxGeometry(.04, .13, .36), new THREE.MeshStandardMaterial({ color: 0xe8eef2, emissive: 0x222222, roughness: .1 }), L / 2 - .1, .72, sz * .5);
+    add(new THREE.BoxGeometry(.04, .18, .3), new THREE.MeshStandardMaterial({ color: 0x9a1418, roughness: .3 }), -L / 2 + .06, .86, sz * .58); }
+  add(new THREE.BoxGeometry(.03, .06, .5), noir, L / 2 - .08, .62, 0);   // la calandre
+  { const lo = new THREE.Mesh(new THREE.PlaneGeometry(.26, .06), new THREE.MeshBasicMaterial({ map: tex(toile(256, 60, (c) => { c.fillStyle = "#c8ccd0"; c.font = "bold 44px Arial"; c.textAlign = "center"; c.fillText(clio ? "RENAULT" : "PEUGEOT", 128, 46); })), transparent: true }));
+    lo.position.set(-L / 2 - .002, .92, clio ? 0 : -.35); lo.rotation.y = -Math.PI / 2; g.add(lo); }
+  // les roues : pneus, enjoliveurs, et le passage de roue sombre
+  for (const sx of [clio ? 1.2 : 1.15, clio ? -1.22 : -1.17]) for (const sz of [-1, 1]) {
+    const dsk = (r, m, dz) => { const o = add(new THREE.CircleGeometry(r, 28), m, sx, .29, sz * (W / 2 + dz)); if (sz < 0) o.rotation.y = Math.PI; return o; };
+    dsk(.36, noir, .006); dsk(.29, pneu, .012); dsk(.2, jante, .018);   // le passage de roue, le pneu, l'enjoliveur
+    for (let k = 0; k < (clio ? 8 : 5); k++) { const a = k / (clio ? 8 : 5) * Math.PI * 2, f = add(new THREE.BoxGeometry(.03, .13, .01), new THREE.MeshStandardMaterial({ color: 0x8a8e92 }), sx + Math.cos(a) * .1, .29 + Math.sin(a) * .1, sz * (W / 2 + .022)); f.rotation.z = a; } }
+  add(new THREE.CylinderGeometry(.004, .004, .7, 4), noir, .2, 1.62, -.62).rotation.z = .5;   // l'antenne
+  return g;
+}
+/* les deux bus, d'après les planches : le car de la Gendarmerie (bleu, toit blanc, gyrophares, « GENDARMERIE RÉPUBLICAINE », chevrons) et le bus RATP SC10 (blanc et vert, 106-A) ;
+   la caisse est une boîte aux angles arrondis, ses flancs, sa face et son dos sont peints (toile), les roues et les accessoires du toit en relief */
+function busCaserne(scene, modele, x, z, rot) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  const gn = modele === "gendarmerie", L = gn ? 10.6 : 11, W = 2.5, H = gn ? 3.05 : 2.95, Y0 = .35, P = 60;
+  const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  const bleu = "#1d4f8c", vertF = "#1f5a32", vert = "#3a9a4a";
+  // un flanc (droit : l'avant à droite de l'image ; gauche : l'avant à gauche)
+  const flanc = (droit) => toile(Math.round(L * P), Math.round((H - Y0) * P), (c, w, h) => { const X = u => droit ? u * P : w - u * P, Wd = du => du * P, Yy = v => h - (v - Y0) * P;
+    const rect = (u0, u1, v0, v1, col) => { c.fillStyle = col; c.fillRect(Math.min(X(u0), X(u1)), Yy(v1), Math.abs(X(u1) - X(u0)), Yy(v0) - Yy(v1)); };
+    const txt = (t, u, v, px, col, al = "center") => { c.fillStyle = col; c.font = `bold ${px}px Arial`; c.textAlign = al; c.fillText(t, X(u), Yy(v)); };
+    if (gn) {
+      rect(0, L, Y0, H, bleu); rect(0, L, H - .32, H, "#f4f4f2");   // la caisse bleue, le toit blanc qui descend un peu
+      rect(.3, L - .25, 1.62, H - .38, "#14161a");   // le bandeau vitré, noir
+      for (const [a0, a1, clair] of [[L - 1.25, L - .35, 1], [L - 3.55, L - 1.4, 1], [L - 6.0, L - 3.7, 0], [L - 6.8, L - 6.15, 1], [L - 9.3, L - 7.0, 0], [.55, 1.2, 1], [L - 7.6, L - 7.0, 0]])
+        rect(a0, a1, 1.75, H - .5, clair ? "#c9b48e" : "#22262c");   // les vitres (certaines claires, d'autres teintées)
+      rect(.2, L - .2, 1.18, 1.23, "#f2f2f2");   // le liseré blanc
+      txt("GENDARMERIE RÉPUBLICAINE", L / 2 + .9, 1.38, 27, "#f4f4f4"); txt("GENDARMERIE", L - 2.6, 1.27, 12, "#f4f4f4");
+      c.fillStyle = "#f4f4f4"; c.beginPath(); c.ellipse(X(1.05), Yy(1.5), 10, 16, 0, 0, 7); c.fill(); c.fillStyle = bleu; c.font = "bold 18px Arial"; c.textAlign = "center"; c.fillText("✺", X(1.05), Yy(1.43));   // la grenade
+      c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 2; for (const u of [1.1, 3.4, 6.2, 7.7]) { c.beginPath(); c.moveTo(X(u), Yy(1.1)); c.lineTo(X(u), Yy(Y0 + .1)); c.stroke(); }   // les trappes des soutes
+      rect(.25, 1.0, .5, .95, "#173f70"); for (let k = 0; k < 6; k++) rect(.3, .95, .55 + k * .07, .58 + k * .07, "#0e2a4c");   // la grille du moteur
+    } else {
+      rect(0, L, Y0, H, "#f2f2ee"); rect(0, L, Y0, .62, vertF); rect(0, L, .7, .82, vert); rect(0, L, H - .16, H - .12, vert);   // blanc, la jupe vert foncé, la bande verte
+      rect(.2, L - .3, 1.42, H - .42, "#f2f2ee");
+      const portes = droit ? [[L - 1.55, L - .45], [L - 6.2, L - 4.9]] : [];
+      const fenetres = droit ? [[.25, .9], [1.05, 2.3], [2.45, 3.7], [5.0, 6.1], [7.0, 8.2], [8.35, 9.4]] : [[.25, .9], [1.05, 2.3], [2.45, 3.7], [3.85, 5.1], [5.25, 6.5], [6.65, 7.9], [8.05, 9.3], [9.45, 10.4]];
+      for (const [a0, a1] of fenetres) { rect(a0 - .05, a1 + .05, 1.47, H - .43, "#b4642c"); rect(a0, a1, 1.52, H - .48, "#3b4650"); }   // les vitres, cerclées d'orange
+      for (const [a0, a1] of portes) { rect(a0, a1, Y0 + .1, H - .43, "#1d2a24"); rect(a0 + .05, (a0 + a1) / 2 - .03, Y0 + .15, H - .5, "#3b4650"); rect((a0 + a1) / 2 + .03, a1 - .05, Y0 + .15, H - .5, "#3b4650"); }
+      rect(5.1 - (droit ? 0 : 0), 7.6, .85, 1.38, "#f6f6f2"); rect(5.15, 7.55, .9, 1.33, "#c81e24"); txt("LINGE CLAIR PUR", 6.35, 1.2, 14, "#fff");   // la publicité
+      rect(4.6, 8.0, 1.42, 1.5, "#e8a02a"); txt("M. Joinville — Créteil-Préfecture", 6.3, 1.43, 9, "#3a1c08");
+      txt("106-A", L - 2.9, 2.35, 16, "#f0e8c0"); txt("6000", L - .9, 1.36, 13, "#222");
+      c.fillStyle = vert; c.beginPath(); c.arc(X(1.8), Yy(1.2), 9, 0, 7); c.lineWidth = 3; c.strokeStyle = vert; c.stroke(); txt("RATP", 2.3, 1.16, 10, vert, droit ? "left" : "right");
+      for (let k = 0; k < 8; k++) rect(.15, .65, .65 + k * .07, .68 + k * .07, "#555");   // la grille du moteur
+    } });
+  const face = toile(Math.round(W * P), Math.round((H - Y0) * P), (c, w, h) => { const Yy = v => h - (v - Y0) * P;
+    if (gn) { c.fillStyle = bleu; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, w, Yy(H - .45)); c.fillStyle = "#1e2c3a"; c.fillRect(10, Yy(H - .5), w - 20, Yy(1.25) - Yy(H - .5));   // le pare-brise
+        c.strokeStyle = "#111"; c.lineWidth = 3; c.beginPath(); c.moveTo(30, Yy(1.35)); c.lineTo(w / 2, Yy(1.8)); c.moveTo(w - 30, Yy(1.35)); c.lineTo(w / 2 + 6, Yy(1.8)); c.stroke();
+        for (let k = -1; k < 12; k++) { c.fillStyle = k % 2 ? "#fff" : "#c81e24"; c.beginPath(); const x0 = 10 + k * 13; c.moveTo(x0, Yy(.82)); c.lineTo(x0 + 13, Yy(.82)); c.lineTo(x0 + 26, Yy(1.15)); c.lineTo(x0 + 13, Yy(1.15)); c.fill(); }   // les chevrons
+        c.fillStyle = "#e9eef2"; c.fillRect(14, Yy(.72), 26, 10); c.fillRect(w - 40, Yy(.72), 26, 10); c.fillStyle = "#f4f4f4"; c.fillRect(w / 2 - 22, Yy(.62), 44, 10); }
+    else { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#16191c"; c.fillRect(0, 0, w, Yy(H - .35)); c.fillStyle = "#e9d27a"; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText("106-A  Joinville", w / 2, Yy(H - .15));
+        c.fillStyle = "#1e2c3a"; c.fillRect(6, Yy(H - .4), w - 12, Yy(1.2) - Yy(H - .4)); c.fillStyle = vertF; c.fillRect(0, Yy(.85), w, Yy(Y0) - Yy(.85)); c.fillStyle = vert; c.fillRect(0, Yy(1.0), w, 6);
+        c.fillStyle = "#222"; c.fillRect(w / 2 - 30, Yy(1.15), 60, 20); c.strokeStyle = "#c8c8c8"; c.lineWidth = 2; c.beginPath(); c.moveTo(w / 2, Yy(1.13)); c.lineTo(w / 2 + 7, Yy(1.0)); c.lineTo(w / 2, Yy(.88)); c.lineTo(w / 2 - 7, Yy(1.0)); c.closePath(); c.stroke();   // le losange Renault
+        c.fillStyle = "#e9eef2"; c.fillRect(10, Yy(.95), 22, 10); c.fillRect(w - 32, Yy(.95), 22, 10); c.fillStyle = "#f4f4f4"; c.fillRect(w / 2 - 22, Yy(.62), 44, 10); } });
+  const dos = toile(Math.round(W * P), Math.round((H - Y0) * P), (c, w, h) => { const Yy = v => h - (v - Y0) * P;
+    if (gn) { c.fillStyle = bleu; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, w, Yy(H - .5)); c.fillStyle = "#1a1d22"; c.fillRect(20, Yy(H - .6), w - 40, Yy(1.9) - Yy(H - .6));
+        c.fillStyle = "#f4f4f4"; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText("GENDARMERIE", w / 2 - 10, Yy(1.5)); c.fillText("RÉPUBLICAINE", w / 2 - 10, Yy(1.3)); c.fillStyle = "#c81e24"; c.fillRect(14, Yy(.8), 24, 10); c.fillRect(w - 38, Yy(.8), 24, 10); }
+    else { c.fillStyle = "#f2f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#16191c"; c.fillRect(w / 2 - 30, 4, 60, 16); c.fillStyle = "#e9d27a"; c.font = "bold 12px Arial"; c.textAlign = "center"; c.fillText("106-A", w / 2, 16);
+        c.fillStyle = "#2a323a"; c.fillRect(14, Yy(H - .5), w - 28, Yy(2.0) - Yy(H - .5)); c.fillStyle = "#c81e24"; c.fillRect(w / 2 - 34, Yy(1.55), 68, 26); c.fillStyle = vertF; c.fillRect(0, Yy(.85), w, Yy(Y0) - Yy(.85)); c.fillStyle = vert; c.fillRect(0, Yy(1.0), w, 6);
+        c.fillStyle = "#c81e24"; c.fillRect(10, Yy(.8), 20, 10); c.fillRect(w - 30, Yy(.8), 20, 10); } });
+  const m = cv => new THREE.MeshStandardMaterial({ map: tex(cv), roughness: .4, metalness: .1 }), toitM = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: .5 });
+  const caisse = add(new THREE.BoxGeometry(L, H - Y0, W), [m(face), m(dos), toitM, toitM, m(flanc(true)), m(flanc(false))], 0, (H + Y0) / 2, 0);
+  add(new THREE.BoxGeometry(L - .1, .16, W - .1), toitM, 0, H + .04, 0);   // le toit, un peu bombé
+  const noir = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .8 }), jante = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: .35, metalness: .6 });
+  for (const sx of [L / 2 - (gn ? 2.3 : 2.4), -L / 2 + (gn ? 3.0 : 2.9)]) for (const sz of [-1, 1]) {
+    const r = add(new THREE.CylinderGeometry(.5, .5, .3, 22), noir, sx, .5, sz * (W / 2 - .12)); r.rotation.x = Math.PI / 2;
+    const j = add(new THREE.CircleGeometry(.3, 20), jante, sx, .5, sz * (W / 2 + .035)); if (sz < 0) j.rotation.y = Math.PI; }
+  for (const sz of [-1, 1]) add(new THREE.BoxGeometry(.08, .32, .08), noir, L / 2 + .12, H - .7, sz * (W / 2 + .1));   // les rétroviseurs
+  if (gn) { const gyro = new THREE.MeshStandardMaterial({ color: 0x2a7cf0, emissive: 0x1a4ab0, roughness: .2 });
+    for (const [px, pz] of [[L / 2 - .3, W / 2 - .3], [L / 2 - .3, -W / 2 + .3], [-L / 2 + .4, W / 2 - .3], [-L / 2 + .4, -W / 2 + .3]]) add(new THREE.CylinderGeometry(.07, .08, .14, 10), gyro, px, H + .19, pz);   // les gyrophares
+    add(new THREE.BoxGeometry(2.6, .32, W - .3), toitM, -L / 2 + 1.8, H + .28, 0);   // le caisson du toit, à l'arrière
+    for (const dz of [-.5, 0, .5]) add(new THREE.CylinderGeometry(.12, .12, .05, 14), new THREE.MeshStandardMaterial({ color: 0x555a60 }), -L / 2 + 1.8, H + .46, dz);
+    add(new THREE.SphereGeometry(.22, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), toitM, 2.6, H + .12, 0);   // l'antenne en dôme
+    add(new THREE.BoxGeometry(.5, .03, .5), new THREE.MeshStandardMaterial({ color: 0x1e2a44, roughness: .2, metalness: .5 }), 1.6, H + .13, 0);   // le panneau solaire
+    add(new THREE.CylinderGeometry(.17, .17, .03, 16), new THREE.MeshStandardMaterial({ color: 0xe0b888 }), .7, H + .13, 0);
+    { const lt = new THREE.Mesh(new THREE.PlaneGeometry(4.6, .8), new THREE.MeshBasicMaterial({ map: tex(toile(460, 80, (c) => { c.fillStyle = "#151515"; c.font = "bold 66px Arial"; c.textAlign = "center"; c.fillText("I R C G N", 230, 66); })), transparent: true }));
+      lt.rotation.x = -Math.PI / 2; lt.rotation.z = Math.PI / 2; lt.position.set(-.6, H + .125, 0); g.add(lt); } }
+  else { for (const px of [-2.8, 2.6]) add(new THREE.BoxGeometry(1.2, .1, .7), new THREE.MeshStandardMaterial({ color: 0x8a9aa6, roughness: .2, metalness: .4 }), px, H + .14, 0);   // les trappes vitrées
+    add(new THREE.BoxGeometry(1.4, .3, 1.2), new THREE.MeshStandardMaterial({ color: 0xd8d8d4 }), .2, H + .25, 0); }   // la climatisation
+  return g;
+}
 function camionPoubelle(A, scene, x, y, z, rot) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; scene.add(g);
   const aj = (geo, mat, px, py, pz) => { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
@@ -6661,6 +6831,34 @@ function animerGendarme() {
   const vus = g.vus || (g.vus = new Map()), now = Date.now();
   for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
     if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); dire(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
+/* --- les gendarmes de ronde (le jour) : quatre, chacun de son côté (jamais ensemble), dans les cours, les ruelles, la rue en pente et la place ;
+       ni sur la terrasse, ni dans la fosse ; ils disent bonjour à ceux qu'ils croisent --- */
+const RONDES = [[-73, 2, "Gendarme Leclerc"], [-74, 3, "Gendarme Moreau"], [-75, 4, "Gendarme Fabre"], [-76, 5, "Gendarme Girard"]];
+const ZONES_RONDE = [[-10, 10, -16, 12], [-10, 10, -43, -31], [-19, 19, -71, -57], [15.5, 23, -116, -86], [-20, 23, -132, -118], [-25, -16, -116, -86]];   // (la cour d'honneur, la 2e, la 3e cour, la rue en pente, la place, la ruelle de gauche)
+function animerRondes() {
+  if (!M || !M.L) return;
+  const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit;
+  const moi = M.moiNum && M.gens.get(M.moiNum), now = Date.now();
+  for (const [num, k, nom] of RONDES) { let g = M.gens.get(num);
+    if (!ici) { if (g) retirerAncien(num); continue; }
+    if (!g) { const [x, z] = pointRonde(num, 0); ajouterAncien({ numero: num, nom, tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: `images/gendarme${k}-tete.png`, pnj: true, salue: true, x, z }); continue; }
+    // arrivé (ou bloqué) : une pause, puis un autre coin de la caserne, loin des autres gendarmes
+    if (!g.cible && (!g.repos || now > g.repos)) { if (!g.repos) { g.repos = now + 2500 + hasard(num + now / 1e5) * 5000; continue; } g.repos = 0;
+      g.etape = (g.etape || 0) + 1; const [x, z] = pointRonde(num, g.etape); viser(g, x, z); g.but = [x, z];
+      if (g.chemin && [g.cible, ...g.chemin].some(v => v && M.L.hauteur && M.L.hauteur(v.x, v.z) > 1.2)) { g.cible = null; g.chemin = []; } }   // (pas par la terrasse)
+    // s'il croise quelqu'un : le salut, et « Bonjour ! » (une fois par minute pour chacun)
+    const vus = g.vus || (g.vus = new Map());
+    for (const [n2, q] of M.gens) { if (n2 === num || !q.g || !q.g.visible || RONDES.some(r => r[0] === n2)) continue;
+      if (q.g.position.distanceTo(g.g.position) < 2.3 && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); g.info.salutT = performance.now(); dire(num, ["Bonjour !", "Bonjour !", "Bonjour, messieurs-dames !", "Bonne journée !"][Math.floor(hasard(now / 1000 + num) * 4)]); break; } } } }
+function pointRonde(num, n) {
+  const autres = RONDES.filter(r => r[0] !== num).map(r => M.gens.get(r[0])).filter(Boolean).flatMap(q => [[q.g.position.x, q.g.position.z], q.but].filter(Boolean));
+  for (let k = 0; k < 60; k++) { const Z = ZONES_RONDE[Math.floor(hasard(n * 7.7 + num * 3.1 + k * 1.3) * ZONES_RONDE.length)];
+    const x = Z[0] + hasard(n * 2.3 + num + k * 4.1) * (Z[1] - Z[0]), z = Z[2] + hasard(n * 5.9 + num * 1.7 + k * 2.9) * (Z[3] - Z[2]);
+    if (!M.L.limites(x, z)) continue; const h = M.L.hauteur ? M.L.hauteur(x, z) : 0; if (h > .6 || h < -1.6) continue;
+    if (C3.dansPoub && C3.dansPoub(x, z)) continue;
+    if (k < 50 && autres.some(([a, b]) => Math.hypot(a - x, b - z) < 14)) continue;   // (jamais l'un avec l'autre)
+    return [x, z]; }
+  return [0, 6 + (num % 4) * 2]; }
 function animerEboueurs() {
   if (!M || !M.L) return;
   const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
@@ -8986,4 +9184,3 @@ function connecter() {
 }
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
-
