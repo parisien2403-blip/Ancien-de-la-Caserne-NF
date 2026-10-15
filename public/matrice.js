@@ -7468,7 +7468,7 @@ function chercherAction(t) {
         if (best) a = { type: "slow", numero: best.info.numero, label: `💞 Danser un slow avec ${best.info.nom}` }; }
     }
   }
-  const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") + (a.id ?? "") : "";
+  const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") + (a.id ?? "") + (a.type === "hifi" ? a.label : "") : "";   // (la chaîne hi-fi : le bouton change, marche ou arrêt)
   if (cle !== M.actionCle) { M.actionCle = cle; M.action = a; M.ctx.surAction && M.ctx.surAction(a); }
 }
 function asseoir(p, i) {
