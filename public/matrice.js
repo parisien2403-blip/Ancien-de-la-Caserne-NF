@@ -2261,7 +2261,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   // (accrochées là où était le bonhomme sur les photos : sur le long mur de brique du local poubelle, et sur la barrière noire au bout du creux)
   { const zq = RU.zA + RU.cour - 4 + 2.2; corbeilleParis(A, scene, -C3.LB / 2 - 4 - .02, RU.y(zq) + .25, zq, -Math.PI / 2); }
   corbeilleParis(A, scene, C3.x - .2 + .55, RU.y(RU.zA + RU.cour) + .3, RU.zA + RU.cour + .15, Math.PI);
-  { const zc = RU.zA + RU.cour - 7.6, xc = -2.5; (L.jourObjets = L.jourObjets || []).push(camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
+  { const zc = RU.zA + RU.cour - 4 - 1.9, xc = -9.6; C3.camionPos = [xc, zc]; (L.jourObjets = L.jourObjets || []).push(camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
   // les toits des immeubles autour de la place, comme sur les photos : brisis de tuiles, terrasson de zinc, garde-corps, souches de cheminée
   { const xw = -C3.x - 6, xa = xB - RU.pc;
     toitParisien(A, scene, xw, xa, zA, zA - 8, 24);                                              // le mur du fond de la place
@@ -2414,7 +2414,14 @@ function troisiemeCour(A, L, scene) {
             c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(lettre, 64, 70); });
           const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xw + .06, 3.0, z, false); pl.rotation.y = Math.PI / 2; };
         porteArc(-108.4, "F");
-        porteArc(-94.7, "G"); }   // (son soubassement de pierre, là où le sol descend vers la place)   // (à gauche : le mur noir longe la ruelle jusqu'au mur du fond de la place ; la ruelle tourne derrière le bâtiment du fond)
+        porteArc(-94.7, "G");
+        // entre les portes H, G, F et la tour E : les fenêtres du rez-de-chaussée (encadrement blanc, vitre, meneau, appui)
+        { const xw = -X - 6, cadre = A.mat({ color: 0xe6e0d4, roughness: .75 }), vitre = A.mat({ color: 0x2f3a46, roughness: .2, metalness: .3 }), zb = RU.zA + RU.cour, zf = C3.zFond;
+          const sol = z => z <= zb ? RU.y(z) : z >= zf ? 0 : RU.y(zb) * (zf - z) / (zf - zb);
+          for (const z of [-89.4, -99.3, -103.6, -113.4, -118.6]) { const y = Math.max(0, sol(z)) + 2.0 + (z > -114.2 && z < -93 ? .45 : 0);
+            A.ajoute(new THREE.BoxGeometry(.08, 1.7, 1.3), cadre, xw + .04, y, z, false); A.ajoute(new THREE.BoxGeometry(.06, 1.46, 1.06), vitre, xw + .07, y, z, false);
+            A.ajoute(new THREE.BoxGeometry(.07, 1.46, .05), cadre, xw + .09, y, z, false); A.ajoute(new THREE.BoxGeometry(.07, .05, 1.06), cadre, xw + .09, y + .35, z, false);
+            A.ajoute(new THREE.BoxGeometry(.22, .1, 1.45), cadre, xw + .11, y - .9, z, false); } } }   // (son soubassement de pierre, là où le sol descend vers la place)   // (à gauche : le mur noir longe la ruelle jusqu'au mur du fond de la place ; la ruelle tourne derrière le bâtiment du fond)
     else A.ajoute(new THREE.BoxGeometry(RU.xB - X, 20, z0 - zTr), faces(RU.xB - X, z0 - zTr), (X + RU.xB) / 2, 10, (z0 + zTr) / 2);
       // sur le toit du mur, côté ruelle et vers la rue : un petit cabanon de brique rouge, sa porte, son toit plat
       const cb = { x: X + 2.4, z: zTr + 2.2, w: 3.2, d: 2.6, h: 2.5 }, br = tuileBrique("rouge", K_FAC), bm = (u, v) => A.mat({ map: tex(br, u / 9.2 * 40 / 40, v / 6.75), roughness: .9 });
@@ -4602,10 +4609,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
       for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
       for (const z of [.4, 2.7]) garer(5.0, z, 0);                // côté salle des fêtes, pareil (pas devant sa porte)
-      for (const x of [12.2, -12.2]) garer(x, C3.z0 - 1.4 - .6 - 1.9, -Math.PI / 2);   // face aux portes M et N (3e cour)
-      garer(9, -121.7, -Math.PI / 2); garer(-8.2, -123.3, -Math.PI / 2);   // face aux escaliers I et J (sur la place)
+      for (const x of [12.2, 9.9, 7.6, 5.3, -12.2, -9.9, -7.6, -5.3]) garer(x, C3.z0 - 1.4 - .6 - 1.9, -Math.PI / 2);   // face aux portes M et N (3e cour), côte à côte
       for (const x of (RU.portesFond || []).slice(1, 4)) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2);   // face aux portes B, C, D
-      { const P = RU.portesFond || []; if (P.length > 2) for (const x of [P[1] - 2.3, P[2] + 2.3, P[2] - 2.3]) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2); }   // et trois de plus, à côté, devant B et C
+      { const P = RU.portesFond || []; if (P.length > 2) for (const x of [P[1] - 2.3, P[2] + 2.3, P[2] - 2.3, P[1] + 2.25, P[1] + 4.5, P[1] + 6.75]) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2); }   // (et devant A)   // et trois de plus, à côté, devant B et C
       for (const z of [-108.4, -94.7]) garer(-24.4 + .35 + .6 + 1.9, z, Math.PI);   // devant F et G, face à la rampe
       const lim1 = L.limites; L.limites = (x, z) => lim1(x, z) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25); }
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
@@ -5515,12 +5521,16 @@ export async function ouvrir(ctx) {
           /* une marche fluide : on accélère au départ, on ralentit en arrivant, et l'on tourne en douceur dans les virages au lieu de s'arrêter à chaque coin */
           const dn = d.clone().normalize(), fin = !(p.chemin && p.chemin.length);
           if (!p.dir) p.dir = dn.clone(); else { p.dir.lerp(dn, Math.min(1, dt * 9)); if (p.dir.lengthSq() < 1e-4) p.dir.copy(dn); p.dir.normalize(); }
-          const vmax = (fin ? 3.3 * Math.max(.35, Math.min(1, L / .9)) : 3.3) * (p.rapide ? 1.55 : 1);   // (avec les boutons d'étage, on grimpe d'un bon pas)
+          const vmax = (fin ? 3.3 * Math.max(.35, Math.min(1, L / .9)) : 3.3) * (p.rapide ? 1.55 : 1) * (p.info.allure || 1);   // (allure : les gendarmes de ronde marchent au pas)   // (avec les boutons d'étage, on grimpe d'un bon pas)
           p.vit = (p.vit || 0) + (vmax - (p.vit || 0)) * Math.min(1, dt * 6);
           const pas = Math.min(L, p.vit * dt);
           let sens = L < .25 || p.dir.dot(dn) < .5 ? dn : p.dir;
           if (sens !== dn && !M.L.limites(p.g.position.x + sens.x * (pas + .1), p.g.position.z + sens.z * (pas + .1))) sens = dn;   // (dans un passage étroit : tout droit vers le point)
-          p.g.position.addScaledVector(sens, pas);
+          // tout le pas est vérifié, tous les 5 cm (un téléphone qui rame fait de grands pas : on sautait par-dessus un muret, une barrière, le coin d'une voiture)
+          const libreJusqua = (v) => { const ox = p.g.position.x, oz = p.g.position.z; if (!M.L.limites(ox, oz)) return pas; let ok = 0; for (let u = .05; u < pas + .05; u += .05) { const uu = Math.min(u, pas); if (!M.L.limites(ox + v.x * uu, oz + v.z * uu)) break; ok = uu; } return ok; };
+          let pasOk = libreJusqua(sens); if (pasOk < pas - 1e-6 && sens !== dn) { const p2 = libreJusqua(dn); if (p2 > pasOk) { sens = dn; pasOk = p2; } }
+          if (pasOk < pas - 1e-6 && pasOk < .01) { p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }   // (vraiment bloqué : on s'arrête)
+          p.g.position.addScaledVector(sens, pasOk);
           if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
           // le pas : un léger balancement du corps (pas pendant une danse)
           p.pasT = (p.pasT || 0) + pas;
@@ -6844,7 +6854,7 @@ function animerRondes() {
   const moi = M.moiNum && M.gens.get(M.moiNum), now = Date.now();
   for (const [num, k, nom] of RONDES) { let g = M.gens.get(num);
     if (!ici) { if (g) retirerAncien(num); continue; }
-    if (!g) { const [x, z] = pointRonde(num, 0); ajouterAncien({ numero: num, nom, tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: `images/gendarme${k}-tete.png`, pnj: true, salue: true, x, z }); continue; }
+    if (!g) { const [x, z] = pointRonde(num, 0); ajouterAncien({ numero: num, nom, tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: `images/gendarme${k}-tete.png`, pnj: true, salue: true, allure: .42, x, z }); continue; }
     // arrivé (ou bloqué) : une pause, puis un autre coin de la caserne, loin des autres gendarmes
     if (!g.cible && (!g.repos || now > g.repos)) { if (!g.repos) { g.repos = now + 2500 + hasard(num + now / 1e5) * 5000; continue; } g.repos = 0;
       g.etape = (g.etape || 0) + 1; const [x, z] = pointRonde(num, g.etape); viser(g, x, z); g.but = [x, z];
@@ -6872,7 +6882,7 @@ function animerEboueurs() {
     if (p.etape !== n) { p.etape = n; const [x, z] = pointEboueur(num, n); viser(p, x, z); }
     const b = Math.floor(Date.now() / 23000); if (p.parole !== b) { if (p.parole !== undefined && hasard(b * 5.1 + num) < .3) dire(num, PHRASES_EBO[Math.floor(hasard(b * 2.7 + num) * PHRASES_EBO.length)]); p.parole = b; } } }
 function pointEboueur(num, n) {   // autour du local poubelle, de la courette et de l'arrière du camion
-  const Cq = RU.courette, zc = RU.zA + RU.cour - 7.6;
+  const Cq = RU.courette, zc = C3.camionPos ? C3.camionPos[1] - 1.5 : RU.zA + RU.cour - 7.6;
   for (let k = 0; k < 30; k++) { const h = hasard(n * 4.3 + num * 1.7 + k), v = hasard(n * 2.9 + num * .9 + k * 3.1);
     const x = Cq.x0 - 2 + h * 16, z = zc - 3 + v * 5; if (M.L.limites(x, z)) return [x, z]; }
   return [Cq.x0 + 6, zc - 2.2]; }
