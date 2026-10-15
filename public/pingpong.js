@@ -55,10 +55,10 @@ export function ouvrirPingPong({ envoyerScore, surFerme }) {
   // un coup : de (x0, y0, z0), la balle rebondit en (xt, zt), en passant au-dessus du filet ; T, la durée du vol jusqu'au rebond
   const coup = (x0, y0, z0, xt, zt, T, par) => { for (let k = 0; k < 12; k++, T *= 1.08) { const vy = (G * T * T / 2 - y0) / T, vz = (zt - z0) / T, tn = (TL / 2 - z0) / vz, hn = y0 + vy * tn - G * tn * tn / 2;
       if (hn > NET + .06 || k === 11) { b = { x: x0, y: y0, z: z0, vx: (xt - x0) / T, vy, vz, rebonds: 0, par, cote: null }; return; } } };
-  const servir = () => { cpu.x = (Math.random() - .5) * .5; const n = moi; coup(cpu.x, .28, ZO, (Math.random() - .5) * Math.min(1.1, .5 + n * .04), .55 + Math.random() * .6, Math.max(.55, .95 - n * .02), "ordi"); toc(700); };
+  const servir = () => { cpu.x = (Math.random() - .5) * .5; const n = moi; coup(cpu.x, .28, ZO, (Math.random() - .5) * Math.min(1.1, .5 + n * .04), .55 + Math.random() * .6, Math.max(.38, .62 - n * .015), "ordi"); toc(700); };
   const point = (pourMoi, texte) => { if (!b) return; b = null; if (pourMoi) moi++; else ordi++; majHaut(); msg = { t: performance.now(), texte, bon: pourMoi };
-    if (ordi >= FIN) setTimeout(terminer, 1200); else service = performance.now() + 1400; };
-  service = performance.now() + 1200;
+    if (ordi >= FIN) setTimeout(terminer, 1200); else service = performance.now() + 900; };
+  service = performance.now() + 800;
 
   // la raquette suit le doigt (en x, à la hauteur de la frappe) ; on garde sa vitesse pour l'effet et la puissance
   const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; };
@@ -72,7 +72,7 @@ export function ouvrirPingPong({ envoyerScore, surFerme }) {
   const avancer = dt => {
     if (!b) return; const n = moi;
     // l'ordinateur se place sous la balle (il anticipe un peu), avec une vitesse limitée qui grandit à chaque point qu'on lui prend
-    { const vise = b.vz > 0 ? b.x + b.vx * Math.max(0, (ZO - b.z) / b.vz) : 0, vmax = 1.05 + n * .1; cpu.x += Math.max(-vmax * dt, Math.min(vmax * dt, vise - cpu.x)); }
+    { const vise = b.vz > 0 ? b.x + b.vx * Math.max(0, (ZO - b.z) / b.vz) : 0, vmax = 1.6 + n * .12; cpu.x += Math.max(-vmax * dt, Math.min(vmax * dt, vise - cpu.x)); }
     const z0 = b.z, y0 = b.y; b.vy -= G * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
     // le filet
     if ((z0 - TL / 2) * (b.z - TL / 2) <= 0 && b.y < NET && Math.abs(b.x) < TW / 2 + .15) return point(b.par === "ordi", "Filet !");
@@ -88,14 +88,14 @@ export function ouvrirPingPong({ envoyerScore, surFerme }) {
       const off = (b.x - raq.x) / DEMI;
       if (Math.abs(off) > 1) return;   // (raté : la balle file, le point viendra)
       const p = Math.max(0, Math.min(1, raq.vy / 2200)), xt = Math.max(-.95, Math.min(.95, off * .72 + raq.vx * .06));
-      coup(b.x, Math.max(.12, b.y), ZJ, xt, 1.85 + Math.random() * .6 + p * .15, Math.max(.42, .82 - p * .32 - n * .006), "moi"); toc(650); return; }
+      coup(b.x, Math.max(.12, b.y), ZJ, xt, 1.85 + Math.random() * .6 + p * .15, Math.max(.3, .58 - p * .22 - n * .005), "moi"); toc(650); return; }
     // la frappe de l'ordinateur (s'il est là) : de plus en plus vite, de plus en plus en coin ; il lui arrive de rater, de moins en moins
     if (b.vz > 0 && z0 < ZO && b.z >= ZO) {
       if (!b.rebonds) return point(false, "Dehors !");
       if (Math.abs(b.x - cpu.x) > DEMI * 1.15) return;
       const faute = Math.random() < Math.max(.04, .2 - n * .012), large = Math.min(1.25, .55 + n * .05);
       const xt = faute ? (Math.random() < .5 ? -1 : 1) * (TW / 2 + .1 + Math.random() * .2) : (Math.random() - .5) * large;
-      coup(b.x, Math.max(.12, b.y), ZO, xt, faute && Math.random() < .5 ? -.25 : .35 + Math.random() * .75, Math.max(.46, .92 - n * .022), "ordi"); toc(650); }
+      coup(b.x, Math.max(.12, b.y), ZO, xt, faute && Math.random() < .5 ? -.25 : .35 + Math.random() * .75, Math.max(.32, .62 - n * .015), "ordi"); toc(650); }
   };
 
   const balleSur = (px, py, pz) => { const [a, c, s] = ecran(px, py, pz), r = Math.max(2.6, .03 * s);
@@ -111,7 +111,7 @@ export function ouvrirPingPong({ envoyerScore, surFerme }) {
     raquette(cpu.x + .12, ZO, "#111", true);
     if (b && !derriere) balleSur(b.x, b.y, b.z);
     raquette(raq.x, ZJ, "#c8102e", false);
-    if (msg && t - msg.t < 1100) { x.fillStyle = msg.bon ? "#ffcf3a" : "#ff8a7a"; x.font = "900 34px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.strokeStyle = "rgba(0,0,0,.6)"; x.lineWidth = 4; x.strokeText(msg.texte, W / 2, 110); x.fillText(msg.texte, W / 2, 110); }
+    if (msg && t - msg.t < 850) { x.fillStyle = msg.bon ? "#ffcf3a" : "#ff8a7a"; x.font = "900 34px Impact, Arial Black, sans-serif"; x.textAlign = "center"; x.strokeStyle = "rgba(0,0,0,.6)"; x.lineWidth = 4; x.strokeText(msg.texte, W / 2, 110); x.fillText(msg.texte, W / 2, 110); }
     if (!b && !fini && service && t > service) { service = 0; servir(); }
   };
   let boucle = 0, avant = performance.now(); const tour = t => { const dt = Math.min(.05, (t - avant) / 1000); avant = t; if (!fini) for (let i = 0; i < 4; i++) avancer(dt / 4); dessiner(t); boucle = requestAnimationFrame(tour); };
