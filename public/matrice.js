@@ -3225,12 +3225,16 @@ function circulation(L, scene) {
     for (const s of [-1, 1]) { box(g, .03, .18, .3, phare, L2 / 2 + .01, .75, s * .9); box(g, .03, .2, .25, feu, -L2 / 2 - .01, .9, s * 1); }
     box(g, .14, .2, l2 + .04, noir, L2 / 2 + .05, .45, 0); box(g, .14, .2, l2 + .04, noir, -L2 / 2 - .05, .45, 0);
     return { g, r: ajouterRoues(g, [L2 / 2 - 2.2, -L2 / 2 + 2.6], l2 / 2 - .1), v: 6.5, L: L2, bus: true }; };
+  // le vrai bus RATP SC10 (d'après la planche), et les Clio et 106 des années 90 (d'après les photos), au milieu des autres voitures
+  const busVrai = () => ({ g: busCaserne(scene, "ratp", 0, 0, 0), r: [], v: 6.5, L: 11, bus: true });
+  const CIT = [["clio", 0x8e1b22], ["clio", 0xe9e6dd], ["clio", 0x2a4f8a], ["clio", 0x2d2f33], ["106", 0x2448a8], ["106", 0xc21d1d], ["106", 0x2e5a3c], ["106", 0xb8bcc0]];
+  const citadineVraie = () => { const [mo, co] = CIT[Math.floor(Math.random() * CIT.length)]; return { g: citadine(scene, mo, co, 0, 0, 0), r: [], v: 8.5 + Math.random() * 3, L: mo === "clio" ? 3.71 : 3.56 }; };
   const enRoute = []; let prochain = performance.now() + 2500 + Math.random() * 5000, avant = 0;
   const animAvant = L.anim;
   L.anim = (t) => { animAvant && animAvant(t);
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
     if (t > prochain && !L.apo) { const dernier = enRoute[enRoute.length - 1];
-      if (!dernier || dernier.g.position.x > -60 + dernier.L + 6) { const v = Math.random() < .17 ? bus() : voiture(); v.g.position.set(-72, 0, .55); scene.add(v.g); enRoute.push(v);
+      if (!dernier || dernier.g.position.x > -60 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .17 ? busVrai() : r0 < .55 ? citadineVraie() : voiture(); v.g.position.set(-72, 0, .55); scene.add(v.g); enRoute.push(v);
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
@@ -3241,7 +3245,7 @@ function circulation(L, scene) {
       if (dev) { const ecart = dev.g.position.x - dev.L / 2 - nez; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
       v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); const vit = v.cur;
       v.g.position.x += vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
-      if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); }); enRoute.splice(i, 1); } }
+      if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (m && m.map) m.map.dispose(); } }); enRoute.splice(i, 1); } }
   };
 }
 /* ===================== les cabines téléphoniques qui voyagent dans le temps =====================
@@ -4264,27 +4268,6 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       for (const vp of voutesPx) { x.strokeStyle = "#d6ccb6"; x.lineWidth = 16; x.beginPath(); x.moveTo(vp - R - 8, h); x.lineTo(vp - R - 8, ny); x.ellipse(vp, ny, R + 8, 1.9 * 40 + 8, 0, Math.PI, 0); x.lineTo(vp + R + 8, h); x.stroke(); }
     });
     const bleu = "#2c5bb0", bleuF = "#24498f";
-    // autocar standard bleu gendarmerie (sans gyrophare)
-    const avantBus = toile(512, 640, (x, w, h) => {
-      x.fillStyle = bleu; x.fillRect(0, 0, w, h);
-      x.fillStyle = "#1d2a3a"; x.fillRect(40, 22, w - 80, 52);                                     // girouette
-      x.fillStyle = "#f6c84a"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText("GENDARMERIE", w / 2, 60);
-      const g = x.createLinearGradient(0, 90, 0, 400); g.addColorStop(0, "#7c90a3"); g.addColorStop(1, "#1d2733");
-      x.fillStyle = g; x.beginPath(); x.roundRect(22, 90, w - 44, 310, 22); x.fill();                // grand pare-brise
-      x.fillStyle = "rgba(255,255,255,.16)"; x.beginPath(); x.moveTo(40, 100); x.lineTo(220, 100); x.lineTo(110, 390); x.lineTo(40, 390); x.fill();
-      x.fillStyle = "#fff"; x.fillRect(0, 430, w, 40); x.fillStyle = bleuF; x.font = "bold 30px Arial"; x.fillText("GENDARMERIE", w / 2, 462);
-      x.fillStyle = "#f4f1e6"; x.beginPath(); x.roundRect(30, 500, 110, 40, 10); x.roundRect(w - 140, 500, 110, 40, 10); x.fill();   // phares
-      x.fillStyle = "#1a1d22"; x.fillRect(0, 570, w, 70);
-      x.fillStyle = "#eee"; x.fillRect(w / 2 - 70, 584, 140, 36); x.fillStyle = "#1f3a8a"; x.fillRect(w / 2 - 70, 584, 16, 36);
-    });
-    const flancBus = toile(1280, 256, (x, w, h) => {
-      x.fillStyle = bleu; x.fillRect(0, 0, w, h);
-      x.fillStyle = "#2f3d4c"; x.fillRect(30, 26, w - 60, 100);                                       // vitrage continu
-      x.fillStyle = bleu; for (let i = 1; i < 9; i++) x.fillRect(30 + i * (w - 60) / 9 - 4, 26, 8, 100);
-      x.fillStyle = "#fff"; x.fillRect(0, 140, w, 40); x.fillStyle = bleuF; x.font = "bold 34px Arial"; x.fillText("GENDARMERIE", 420, 172);
-      x.fillStyle = "#24498f"; x.fillRect(260, 196, 760, 44);                                         // soutes à bagages
-      x.strokeStyle = "#1c3b78"; x.lineWidth = 3; for (let i = 0; i < 4; i++) x.strokeRect(264 + i * 190, 198, 184, 40);
-    });
     for (const cote of [-1, 1]) {
       const fx = cote * 12.5, debutCote = scene.children.length;   // (côté droit : marqué, pour la copie vue de la salle des fêtes)
       // façade extrudée (profil dans la longueur), percée de la voûte au bout du fond
@@ -4427,12 +4410,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       if (cote > 0) for (const sg of [-1, 1]) { trottoir(A, L, sg > 0 ? 2.4 : -7.5, sg > 0 ? 7.5 : -2.4, -18, -16.6, ["z1", sg > 0 ? "x0" : "x1"]);   // le long du bâtiment de l'horloge, de part et d'autre du passage
         if (copie !== "fetes") trottoir(A, L, sg > 0 ? 2.4 : -8.2, sg > 0 ? 8.2 : -2.4, 14.1, 15.5, ["z0", sg > 0 ? "x0" : "x1"]); }   // le long de l'autre façade
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
-      // un autocar bleu gendarmerie dans chaque voûte, l'avant vers la cour
-      const caisseMat = A.mat({ color: 0x2c5bb0, roughness: .4, metalness: .2 }), fa = A.mat({ map: tex(avantBus), roughness: .4 }), fl = A.mat({ map: tex(flancBus), roughness: .4 });
+      // un car de la Gendarmerie dans chaque voûte, l'avant vers la cour
       for (const VZ of (copie === "fetes" && cote > 0 ? [] : VOUTES)) {
-        const car = new THREE.Group(); car.position.set(fx + cote * 6.2, 0, VZ); car.rotation.y = cote < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(car);
-        const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.3, 11), [fl, fl, caisseMat, caisseMat, fa, caisseMat]); caisse.position.y = 1.95; caisse.castShadow = true; car.add(caisse);
-        for (const [rx, rz] of [[-1.15, 3.6], [1.15, 3.6], [-1.15, -3], [1.15, -3], [-1.15, -4.3], [1.15, -4.3]]) { const roue = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .35, 18), A.mat({ color: 0x151515 })); roue.rotation.z = Math.PI / 2; roue.position.set(rx, .5, rz); car.add(roue); }
+        busCaserne(scene, "gendarmerie", fx + cote * 6.2, VZ, cote < 0 ? 0 : Math.PI);   // (le car de la Gendarmerie, d'après la planche : l'avant vers la cour)
       }
       if (cote > 0) for (const o of scene.children.slice(debutCote)) o.userData.droite = true;
     }
