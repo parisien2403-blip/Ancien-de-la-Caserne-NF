@@ -2438,7 +2438,10 @@ function troisiemeCour(A, L, scene) {
         for (const yy of [hp + .06, hp + HPo - .05, hp + HPo * .45]) A.ajoute(new THREE.BoxGeometry(.04, .07, LP / 2 - .04), fer, xp - sg * .02, yy, zc3, false);
         A.ajoute(new THREE.BoxGeometry(.04, HPo, .06), fer, xp - sg * .02, hp + HPo / 2, zc3 + sz * (LP / 4 - .03), false);
         A.ajoute(new THREE.BoxGeometry(.05, .3, .03), A.mat({ color: 0xb8bcc0, metalness: .8, roughness: .3 }), xp - sg * .05, hp + 1.05, zp + sz * .1, false); }   // les poignées
-      A.ajoute(new THREE.BoxGeometry(.04, HPo, .05), fer, xp - sg * .02, hp + HPo / 2, zp, false); } }
+      A.ajoute(new THREE.BoxGeometry(.04, HPo, .05), fer, xp - sg * .02, hp + HPo / 2, zp, false);
+      { const L2 = sg < 0 ? "K" : "L", pq = toile(128, 128, (c) => { c.fillStyle = "#e8e4da"; c.beginPath(); c.roundRect(0, 0, 128, 128, 18); c.fill(); c.fillStyle = "#14234a"; c.beginPath(); c.roundRect(7, 7, 114, 114, 14); c.fill();   // au-dessus : sa plaque bleu marine, K à gauche, L à droite
+          c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(L2, 64, 70); });
+        const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), sg * (LM - .035), hp + HPo + .5, zp, false); pl.rotation.y = -sg * Math.PI / 2; } } }
   const solP = SOL(A.ajoute(new THREE.PlaneGeometry(LM * 2, PP), A.mat({ map: tex(textures().betonFonce, LM * 2, PP), roughness: .95 }), 0, hp + .012, z1 - PP / 2, false)); solP.rotation.x = -Math.PI / 2;
   { const l = new THREE.PointLight(0xfff2dc, 8, 14, 1.4); l.position.set(0, HP - .4, z1 - PP / 2); scene.add(l); }
   // derrière le passage : sept marches plus raides, puis la terrasse (un toit plat en béton foncé, de la largeur de l'immeuble, 6 m de profondeur), entourée d'une barrière en fer noir
