@@ -23,7 +23,7 @@ export const TENUES = {
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
-  eboueur: { nom: "Éboueur (Propreté de Paris)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -47,7 +47,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || "#2a2522";
+    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -103,6 +103,15 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#b9bdb6"; x.fillRect(60, 206, 80, 9); x.fillRect(60, 232, 80, 9);
       x.fillRect(70, 148, 8, 58); x.fillRect(122, 148, 8, 58);   // les bretelles réfléchissantes
       if (jambesDroites && bas) { x.fillStyle = "#e8e8e2"; x.fillRect(72, 352, 24, 7); x.fillRect(104, 352, 24, 7); x.fillRect(72, 370, 24, 5); x.fillRect(104, 370, 24, 5); } }
+    if (t === "judogi") {   // le kimono de judo : la veste croisée (le revers gauche sur le droit), le col épais, la ceinture noire nouée et ses deux pans
+      const dos2 = o.pose === "dos" || profil;
+      if (!dos2) { x.fillStyle = peau; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(100, 190); x.fill();   // le haut du torse, dans l'échancrure
+        x.strokeStyle = "#d8d4c8"; x.lineWidth = 9; x.lineCap = "butt"; x.beginPath(); x.moveTo(82, 146); x.lineTo(112, 236); x.moveTo(118, 146); x.lineTo(100, 196); x.stroke();   // les deux revers, épais
+        x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(86, 146); x.lineTo(116, 236); x.stroke(); }
+      x.fillStyle = "rgba(0,0,0,.08)"; for (const xx of [70, 130]) x.fillRect(xx, 150, 2, 100);   // les plis de la toile
+      x.fillStyle = o.ceinture || "#141414"; x.fillRect(58, 236, 84, 11);   // la ceinture
+      if (!dos2) { x.beginPath(); x.ellipse(100, 241, 9, 7, 0, 0, 7); x.fill();
+        x.save(); x.translate(96, 244); x.rotate(.18); x.fillRect(-4, 0, 9, 38); x.restore(); x.save(); x.translate(104, 244); x.rotate(-.12); x.fillRect(-4, 0, 9, 34); x.restore(); } }
     // les tenues du quotidien : jupe et chemisier, tailleur, chemisier et jean, salopette, robe longue
     if (t === "jupe" || t === "tailleur") { x.fillStyle = t === "jupe" ? (o.bas || "#26324e") : assombrir(c, .82); x.beginPath(); x.moveTo(60, 234); x.lineTo(140, 234); x.lineTo(156, 336); x.lineTo(44, 336); x.closePath(); x.fill();
       x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(60, 232, 80, 5);
@@ -5883,7 +5892,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -7071,6 +7080,26 @@ function pointRonde(num, n) {
     if (k < 50 && autres.some(([a, b]) => Math.hypot(a - x, b - z) < 14)) continue;   // (jamais l'un avec l'autre)
     return [x, z]; }
   return [0, 6 + (num % 4) * 2]; }
+/* --- le professeur de judo : il arpente les tatamis ; à qui y monte, il rappelle les règles --- */
+const PROF = -77, PHRASES_PROF = ["Pas de chaussures sur le tatami !", "On salue en montant sur le tatami !", "Rei ! On salue, s'il vous plaît.", "Les pieds propres sur le tapis !", "Allez, échauffement : trois tours de tapis !",
+  "On ne court pas sur le tatami !", "Tenez-vous droit, on salue le tapis.", "Hajime !", "Matte !", "Ceinture bien nouée, jeune homme !"];
+function animerProf() {
+  if (!M || !M.L) return;
+  const d = C3.dojo, ici = M.lieu === "grande" && !M.L.apo && d; let g = M.gens.get(PROF);
+  if (!ici) { if (g) retirerAncien(PROF); return; }
+  const ci = infoGendarme(68, "images/prof-judo-tete.png", "Le professeur de judo"); ci.info.tenue = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).tenue || "judogi"; ci.info.couleur = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).couleur || "#f4f2ec"; ci.info.bas = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).bas || "#f4f2ec"; ci.info.pieds = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).pieds || null; ci.cle = JSON.stringify(ci.info);
+  if (g && g.cleInfo !== ci.cle) { const q = g.g.position.clone(); retirerAncien(PROF); g = ajouterAncien({ ...ci.info, numero: PROF, pnj: true, allure: .3, x: q.x, z: q.z }); if (g) { g.cleInfo = ci.cle; g.g.position.y = C3.FL; } return; }
+  if (!g) { g = ajouterAncien({ ...ci.info, numero: PROF, pnj: true, allure: .3, x: (d.X0 + d.xb0) / 2, z: (d.Z0 + d.Z1) / 2 }); if (g) { g.cleInfo = ci.cle; g.g.position.y = C3.FL; } return; }
+  const now = Date.now();
+  // il marche d'un point à l'autre du tapis, s'arrête, observe, repart (tout droit : le tapis est dégagé)
+  if (!g.cible && (!g.repos || now > g.repos)) { if (!g.repos) { g.repos = now + 3000 + Math.random() * 6000; }
+    else { g.repos = 0; const x = d.X0 + 1.2 + Math.random() * (d.xb0 - d.X0 - 2.4), z = d.Z0 + 1.2 + Math.random() * (d.Z1 - d.Z0 - 2.4); g.cible = new THREE.Vector3(x, 0, z); g.chemin = []; } }
+  // quelqu'un monte sur le tatami : il lui rappelle les règles (une fois par minute pour chacun)
+  const vus = g.vus || (g.vus = new Map());
+  for (const [n2, q] of M.gens) { if (n2 === PROF || !q.g || !q.g.visible || q.info.pnj) continue; const p = q.g.position, sur = p.x > d.X0 && p.x < d.xb1 && p.z > d.Z0 && p.z < d.Z1 && Math.abs(p.y - C3.FL) < .6;
+    if (sur && !q.surTatami && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); dire(PROF, PHRASES_PROF[Math.floor(Math.random() * 3)]); }
+    q.surTatami = sur; }
+  if (!g.parle || now > g.parle) { if (g.parle && Math.random() < .35) dire(PROF, PHRASES_PROF[3 + Math.floor(Math.random() * (PHRASES_PROF.length - 3))]); g.parle = now + 25000 + Math.random() * 20000; } }
 function animerEboueurs() {
   if (!M || !M.L) return;
   const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
@@ -9383,7 +9412,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id >= 57 && m.p.id <= 62) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (les Village People : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 54 && m.p.id <= 56) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Émile et Images : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
-    else if (m.t === "pnj" && m.p && m.p.id >= 63 && m.p.id <= 67) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (les gendarmes : redessinés d'eux-mêmes)
+    else if (m.t === "pnj" && m.p && m.p.id >= 63 && m.p.id <= 68) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (les gendarmes : redessinés d'eux-mêmes)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }

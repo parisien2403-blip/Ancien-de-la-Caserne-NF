@@ -49,7 +49,7 @@ const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 
 const LIEUX_BTTF = ["bttf-cour", "hv1955"];   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
-const PNJ_DEFAUT = { 63: { nom: "Le gendarme du porche", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 64: { nom: "Gendarme Leclerc", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
+const PNJ_DEFAUT = { 68: { nom: "Le professeur de judo", tenue: "judogi", couleur: "#f4f2ec", bas: "#f4f2ec", pieds: null }, 63: { nom: "Le gendarme du porche", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 64: { nom: "Gendarme Leclerc", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   65: { nom: "Gendarme Moreau", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 66: { nom: "Gendarme Fabre", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 67: { nom: "Gendarme Girard", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
@@ -94,7 +94,7 @@ const PNJ_DEFAUT = { 63: { nom: "Le gendarme du porche", tenue: "garde", couleur
   57: { nom: "Le cowboy (Village People)", tenue: "vpcowboy", couleur: "#b8202a", bas: "#3d5a80", pieds: "#5a3418" }, 58: { nom: "L'ouvrier (Village People)", tenue: "vpouvrier", couleur: "#9ec0e2", bas: "#8fb0d8", pieds: "#6a4a2a" },
   59: { nom: "L'Indien (Village People)", tenue: "vpindien", couleur: "#b07a54", bas: "#8a5a3a", pieds: "#6a4428" }, 60: { nom: "Le soldat (Village People)", tenue: "vpsoldat", couleur: "#56603e", bas: "#4e5838", pieds: "#1a1a1a" },
   61: { nom: "Le policier (Village People)", tenue: "vpflic", couleur: "#f4f4f2", bas: "#d8ccb0", pieds: "#141414" }, 62: { nom: "Le motard (Village People)", tenue: "vpmotard", couleur: "#141416", bas: "#121214", pieds: "#0e0e0e" } };   // (le groupe de la scène de la salle des fêtes)
-const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 67) ? id : 1;
+const idPNJ = id => (Number.isInteger(id) && id >= 1 && id <= 68) ? id : 1;
 const TENUES_MATRICE = ["vpcowboy", "vpouvrier", "vpindien", "vpsoldat", "vpflic", "vpmotard", "eichant", "eibatterie", "eiguitare", "garde", "civil", "tshirt", "polo", "survet", "robe", "costume", "jupe", "robelongue", "tailleur", "chemisier", "salopette", "soie", "barman", "thriller", "zombie", "mariee", "hernandez", "beegees", "travolta", "smith", "nemesis", "batteuse", "bassiste", "guitariste", "rebecca", "leon", "barry", "jill", "wesker", "chris", "gore", "gahan", "fletcher", "doc", "marty", "biff", "match", "troisd", "skinhead", "pois", "ecossaise", "bretelles", "serveur", "serveuse", "gilet", "varsity", "lou", "pompiste", "lorraine", "george"];
 const hexa = (v, d) => /^#[0-9a-f]{6}$/i.test(v || "") ? v : d;
 const texte_ = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
