@@ -516,6 +516,11 @@ export class Compteur extends DurableObject {
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
       const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
       const al = await this.almanach(); Object.assign(al, { lieu: a.lieu, x, z, r: Math.random() * 6.28, pris: null }); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
+    } else if (m.t === "radio_ici" && a.admin) {
+      // l'administrateur fait venir la radio de Silent Hill près de lui, dans la vraie caserne (pas en 1955, ni à l'apocalypse, ni à Silent Hill)
+      if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
+      const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
+      const r = { lieu: a.lieu, x, z, r: Math.random() * 6.28 }; await this.ctx.storage.put("radio", r); const t = JSON.stringify({ t: "radio", r }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "almanach_taille" && a.admin) {
       const al = await this.almanach(); al.taille = Math.max(.1, Math.min(1.2, Number(m.v) || .3)); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "perso") {

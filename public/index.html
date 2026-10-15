@@ -1259,6 +1259,7 @@
           <button class="btn small alt mx-hv" data-hv="george" type="button" hidden>📓 George McFly</button>
           <label class="btn small alt mx-alm" id="mxAffTaille" hidden>🧟 Affiche 1996 <input type="range" min="20" max="250" step="5" value="60"><span>60 cm</span></label>
           <button class="btn small alt" id="mxAlmIci" type="button" hidden>📕 Faire venir l'Almanach près de moi</button>
+          <button class="btn small alt" id="mxRadioIci" type="button" hidden>📻 Faire venir la radio près de moi</button>
           <label class="btn small alt mx-alm" id="mxAlmTaille" hidden>📕 Almanach <input type="range" min="10" max="120" step="1" value="30"><span>30 cm</span></label>
           <button class="btn small alt" id="mxPNJGore" type="button" hidden>🎸 Martin Gore</button>
           <button class="btn small alt" id="mxPNJGahan" type="button" hidden>🎤 Dave Gahan</button>
@@ -2169,7 +2170,7 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxRadioIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2508,6 +2509,7 @@
   { const r = $("mxAffTaille").querySelector("input"), sp = $("mxAffTaille").querySelector("span");   // la taille de l'affiche de 1996 (l'administrateur)
     r.oninput = () => { sp.textContent = r.value + " cm"; }; r.onchange = () => MX && MX.afficheTaille && MX.afficheTaille(r.value / 100); }
   $("mxAlmIci").onclick = () => MX && MX.almanachIci && MX.almanachIci();
+  $("mxRadioIci").onclick = () => MX && MX.radioIci && MX.radioIci();
   { const r = $("mxAlmTaille").querySelector("input"), sp = $("mxAlmTaille").querySelector("span");   // la taille de l'Almanach des sports (l'administrateur)
     r.oninput = () => { sp.textContent = r.value + " cm"; }; r.onchange = () => MX && MX.almanachTaille && MX.almanachTaille(r.value / 100); }
   document.querySelectorAll(".mx-hv").forEach(b => b.onclick = () => ouvrirBonhomme(b.dataset.hv));
@@ -2993,6 +2995,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.81", "15 octobre 2026", ["Administrateur : bouton « 📻 Faire venir la radio près de moi », comme pour l'Almanach"]],
     ["4.80", "15 octobre 2026", ["Silent Hill : les têtes de James et d'Eddie redécoupées, avec tout le bas du visage et le menton"]],
     ["4.79", "15 octobre 2026", ["Silent Hill : « Promise (Reprise) » quand on explore la caserne ; « White Noiz » reste la musique du bar (l'une s'efface quand l'autre monte)", "Silent Hill : pas de monstres pour le moment"]],
     ["4.78", "15 octobre 2026", ["Silent Hill : la vraie radio qui grésille quand on la ramasse, puis la sirène, et le brouillard qui nous enveloppe jusqu'au blanc… on se réveille dans le bar, la musique en continu"]],

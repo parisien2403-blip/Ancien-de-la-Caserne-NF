@@ -8007,7 +8007,7 @@ function chercherAction(t) {
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
-    else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < .9) a = { type: "radio", label: "📻 Ramasser la radio" };
+    else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (M.L.radioSortie && estSH(M.lieu) && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSortie", label: "📻 Éteindre la radio (rentrer)" };
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
@@ -8202,6 +8202,12 @@ export function almanachIci() { const moi = M && M.gens.get(M.moiNum); if (!moi 
   const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
   for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * 1.0, z = p.z + Math.cos(a) * 1.0; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
   pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "almanach_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach des sports est posé au sol, juste à côté de toi."); }
+// (administrateur) la radio rouge de Silent Hill, posée juste à côté de soi
+export function radioIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
+  if (estBttf(M.lieu) || estApo(M.lieu) || estSH(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📻 La radio ne peut pas venir ici : seulement dans la vraie caserne."); return; }
+  const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
+  for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * .7, z = p.z + Math.cos(a) * .7; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
+  pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "radio_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📻 La radio rouge est posée au sol, juste à côté de toi."); }
 // l'Almanach posé au sol, l'air de rien
 function majAlmanach() {
   if (!M || !M.scene) return; const a = M.alm, ici = a && !a.pris && a.lieu === M.lieu && M.L && !M.L.apo;
