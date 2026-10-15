@@ -23,7 +23,7 @@ export const TENUES = {
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
-  rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  eboueur: { nom: "Éboueur (Propreté de Paris)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -97,6 +97,12 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "robelongue") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
     else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
+    if (t === "eboueur" && !profil) {   // l'éboueur de la Propreté de Paris : le gilet jaune fluo et ses bandes grises réfléchissantes, sur la tenue verte ; les bandes blanches du pantalon
+      x.fillStyle = "#d8ef2a"; x.beginPath(); x.roundRect(60, 148, 80, 112, 18); x.fill();
+      if (o.pose !== "dos") { x.fillStyle = c; x.fillRect(96, 150, 8, 108); x.fillStyle = "rgba(255,255,255,.75)"; x.beginPath(); x.arc(118, 170, 4, 0, 7); x.fill(); }   // la fermeture, le col vert ; le petit logo
+      x.fillStyle = "#b9bdb6"; x.fillRect(60, 206, 80, 9); x.fillRect(60, 232, 80, 9);
+      x.fillRect(70, 148, 8, 58); x.fillRect(122, 148, 8, 58);   // les bretelles réfléchissantes
+      if (jambesDroites && bas) { x.fillStyle = "#e8e8e2"; x.fillRect(72, 352, 24, 7); x.fillRect(104, 352, 24, 7); x.fillRect(72, 370, 24, 5); x.fillRect(104, 370, 24, 5); } }
     // les tenues du quotidien : jupe et chemisier, tailleur, chemisier et jean, salopette, robe longue
     if (t === "jupe" || t === "tailleur") { x.fillStyle = t === "jupe" ? (o.bas || "#26324e") : assombrir(c, .82); x.beginPath(); x.moveTo(60, 234); x.lineTo(140, 234); x.lineTo(156, 336); x.lineTo(44, 336); x.closePath(); x.fill();
       x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(60, 232, 80, 5);
@@ -1761,7 +1767,7 @@ C3.dedans = (q) => { if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return
   if (Math.abs(x) < C3.LT / 2 && z >= c.zt1 && z < zt0) return [-C3.LT / 2 + .45, v.xv - .2, c.zt1 + .45, zt0 - .45, 3.4 - .5];
   return null; };
 C3.enBas = () => { const q = M && M.moiNum && M.gens && M.gens.get(M.moiNum); return !!(q && q.g && q.g.position.y < -1); };
-C3.dansPoub = (x, z) => (!!C3.poub && C3.poub.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3)) || (!!C3.phare && ((x - C3.phare.xw) + (z - C3.phare.zw) < C3.phare.R * Math.SQRT2 + .3 || Math.hypot(x - C3.phare.cx, z - C3.phare.cz) < C3.phare.R + .3));   // (et la demi-tour, dans l'angle de la place)
+C3.dansPoub = (x, z) => (!!C3.camion && !(M && M.L && M.L.nuit) && x > C3.camion[0] && x < C3.camion[1] && z > C3.camion[2] && z < C3.camion[3]) || (!!C3.poub && C3.poub.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3)) || (!!C3.phare && ((x - C3.phare.xw) + (z - C3.phare.zw) < C3.phare.R * Math.SQRT2 + .3 || Math.hypot(x - C3.phare.cx, z - C3.phare.cz) < C3.phare.R + .3));   // (et la demi-tour, dans l'angle de la place)
 /* changer de niveau dans le chantier : un clic sur la terrasse depuis le sol (ou l'inverse) passe par l'escalier le plus court — les marches raides, ou celui de la ruelle de gauche —
    au lieu de chercher un chemin sur le mauvais niveau (on se retrouvait dans la cabane et sous la terrasse) ; arrivé à l'escalier, on repart vers le point visé */
 C3.niveau = y => y > 1.5 ? 1 : y < -1 ? -1 : 0;   // (le niveau : la terrasse en haut, le sol, la fosse des lavoirs en bas)
@@ -2077,7 +2083,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         A.ajoute(new THREE.BoxGeometry(.05, 1.46, .07), pierreC, x, y0 + 2.0, zA + .09, false); A.ajoute(new THREE.BoxGeometry(1.06, .05, .07), pierreC, x, y0 + 2.35, zA + .09, false);
         A.ajoute(new THREE.BoxGeometry(1.45, .1, .22), pierreC, x, y0 + 1.1, zA + .11, false); } }
     RU.portesFond = portes; }
-  { const zc = RU.zA + RU.cour - 7.6, xc = -2.5; camionPoubelle(A, scene, xc, RU.y(zc), zc, 0); (C3.poub = C3.poub || []).push([xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]); }   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
+  { const zc = RU.zA + RU.cour - 7.6, xc = -2.5; (L.jourObjets = L.jourObjets || []).push(camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
   // les toits des immeubles autour de la place, comme sur les photos : brisis de tuiles, terrasson de zinc, garde-corps, souches de cheminée
   { const xw = -C3.x - 6, xa = xB - RU.pc;
     toitParisien(A, scene, xw, xa, zA, zA - 8, 24);                                              // le mur du fond de la place
@@ -5317,7 +5323,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerEboueurs(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -6060,7 +6066,7 @@ function construireScene(id) {
       soleil.intensity = n ? 1.35 : 2.3; soleil.color.setHex(n ? 0xc6d4ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
       clair.intensity = n ? .32 : 0; lune.visible = n; nuages.forEach(o => o.visible = !n); if (dome) dome.visible = !n;
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
-      (L.nuitObjets || []).forEach(o => o.visible = n);
+      (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); L.grille = L.grilleAdmin = null;   // (le camion-benne : le jour seulement ; ses passages changent)
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
     };
   }
@@ -6302,6 +6308,22 @@ function ajouterPNJ() {
   ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x, z });
 }
+/* --- les deux éboueurs de la Propreté de Paris : le jour seulement, ils vont et viennent entre le local poubelle et le camion-benne --- */
+const EBOUEURS = [[-70, "eboueur1", "Saïd"], [-71, "eboueur2", "Julien"]], PHRASES_EBO = ["Bonjour !", "On passe le mardi et le vendredi !", "Attention au camion !", "Belle journée, hein ?", "Les bacs, c'est par ici !", "Encore une tournée…"];
+function animerEboueurs() {
+  if (!M || !M.L) return;
+  const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
+  for (const [num, img, nom] of EBOUEURS) { let p = M.gens.get(num);
+    if (!ici) { if (p) retirerAncien(num); continue; }
+    if (!p) { const [x, z] = pointEboueur(num, 0); p = ajouterAncien({ numero: num, nom, tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a", teteUrl: `images/${img}-tete.png`, pnj: true, x, z }); continue; }
+    const n = Math.floor(Date.now() / (7000 + (num & 3) * 900));
+    if (p.etape !== n) { p.etape = n; const [x, z] = pointEboueur(num, n); viser(p, x, z); }
+    const b = Math.floor(Date.now() / 23000); if (p.parole !== b) { if (p.parole !== undefined && hasard(b * 5.1 + num) < .3) dire(num, PHRASES_EBO[Math.floor(hasard(b * 2.7 + num) * PHRASES_EBO.length)]); p.parole = b; } } }
+function pointEboueur(num, n) {   // autour du local poubelle, de la courette et de l'arrière du camion
+  const Cq = RU.courette, zc = RU.zA + RU.cour - 7.6;
+  for (let k = 0; k < 30; k++) { const h = hasard(n * 4.3 + num * 1.7 + k), v = hasard(n * 2.9 + num * .9 + k * 3.1);
+    const x = Cq.x0 - 2 + h * 16, z = zc - 3 + v * 5; if (M.L.limites(x, z)) return [x, z]; }
+  return [Cq.x0 + 6, zc - 2.2]; }
 function pointPNJ(n) {
   const g = M.lieu === "fetes" ? 1000 : 0;
   for (let k = 0; k < 40; k++) { const x = -12 + hasard(g + n * 3.1 + k) * 24, z = -16 + hasard(g + n * 7.3 + k * 1.7) * 30; if (M.L.limites(x, z) && !(M.L.horsPNJ && M.L.horsPNJ(x, z))) return [x, z]; }
