@@ -4593,6 +4593,20 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (Math.abs(x) < 2.0 && z >= 14.8 && z < 29.4 && !(Math.abs(x) > 1.45 && z < 16.9) && !(x > 1.6 && z >= 16.9 && z < 18.3) && !(x > 1.3 && Math.abs(z - 26.3) < .3));
     L.zone = [-22, 31, -142, 29.8];
     { const lim0 = L.limites; L.limites = (x, z) => accesChantier() && C3.dansChantier(x, z) ? C3.libre(x, z) : lim0(x, z); }   // (le chantier : une seule règle, selon le niveau où l'on est)
+    /* les voitures garées (Clio et 106) : en long dans la cour d'honneur (côté mess, côté salle des fêtes : pas devant les baies vitrées, on peut marcher le long),
+       et face aux bâtiments devant les portes M et N, I et J, B, C et D, et devant F et G face à la rampe ; on ne passe pas à travers */
+    if (!copie) { const VO = L.voitures = [], CIT = [["clio", 0x8e1b22], ["106", 0x2448a8], ["clio", 0xe9e6dd], ["106", 0xc21d1d], ["clio", 0x2a4f8a], ["106", 0x2e5a3c], ["clio", 0x2d2f33], ["106", 0xb8bcc0]];
+      const haut = (x, z) => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
+      let n = 0; const garer = (x, z, rot) => { const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
+        for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
+        const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
+      for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
+      for (const z of [.4, 2.7]) garer(5.0, z, 0);                // côté salle des fêtes, pareil (pas devant sa porte)
+      for (const x of [12.2, -12.2]) garer(x, C3.z0 - 1.4 - .6 - 1.9, -Math.PI / 2);   // face aux portes M et N (3e cour)
+      garer(9, -121.7, -Math.PI / 2); garer(-8.2, -123.3, -Math.PI / 2);   // face aux escaliers I et J (sur la place)
+      for (const x of (RU.portesFond || []).slice(1, 4)) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2);   // face aux portes B, C, D
+      for (const z of [-108.4, -94.7]) garer(-24.4 + .35 + .6 + 1.9, z, Math.PI);   // devant F et G, face à la rampe
+      const lim1 = L.limites; L.limites = (x, z) => lim1(x, z) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25); }
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
