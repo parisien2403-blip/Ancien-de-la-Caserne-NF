@@ -2188,6 +2188,9 @@
         surTir: () => { infoMatrice("🔫 Le stand de tir…", 1500);
           import("./tir.js?v=" + VERSION).then(f => { MX.jouer("tir"); f.ouvrirTir({ envoyerScore: score => api("POST", "/api/flipper?jeu=tir", { score }), dessinerCible: MX.dessinerCibleTir, score: MX.scoreCibleTir, surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le stand de tir n'a pas pu démarrer : " + e.message, 6000)); },
+        surBabyFoot: () => { infoMatrice("⚽ Le baby-foot…", 1500);
+          import("./babyfoot.js?v=" + VERSION).then(f => { MX.jouer("babyfoot"); f.ouvrirBabyFoot({ envoyerScore: score => api("POST", "/api/flipper?jeu=babyfoot", { score }), surFerme: () => MX && MX.jouer(null) }); })
+            .catch(e => infoMatrice("Le baby-foot n'a pas pu démarrer : " + e.message, 6000)); },
         surPingPong: () => { infoMatrice("🏓 La table de ping-pong…", 1500);
           import("./pingpong.js?v=" + VERSION).then(f => { MX.jouer("pingpong"); f.ouvrirPingPong({ envoyerScore: score => api("POST", "/api/flipper?jeu=pingpong", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le ping-pong n'a pas pu démarrer : " + e.message, 6000)); },

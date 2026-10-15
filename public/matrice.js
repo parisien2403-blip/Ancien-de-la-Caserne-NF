@@ -4126,7 +4126,8 @@ function construireSousSol(A, L, scene, o = {}) {
       const jour = new THREE.PointLight(0xe8f0ff, 1.4, 4, 1.6); jour.position.set(GX - .6, yf, zf); scene.add(jour);
       L.nuitFenetre = n => { verre.material.map = n ? tN : tJ; verre.material.needsUpdate = true; jour.intensity = n ? .2 : 1.4; }; }
     // le baby-foot, vers le fond à gauche (vu de la porte d'en face, de l'autre côté du bar)
-    obstacles.push(babyFoot(A, 2.25, FM - 1.6));
+    obstacles.push(babyFoot(A, 2.25, FM - 1.6)); L.babyfoot = [2.25, FM - 1.6];
+    { const tab = tableauScores(A, "BABY-FOOT", 2.3, 1.95, FM - .02); L.majClassementBF = tab; tab((M && M.classementBF) || []); }   // (au mur, au-dessus du baby-foot : les 3 meilleurs)
     L.limites = (x, z) => (Math.abs(x) < VX - .35 && z > VZ0 + .3 && z < VZ1 - .3)
       || (Math.abs(x) < .4 && z >= VZ1 - .3 && z < VZ1 + .5)                                               // la porte de l'escalier
       || (Math.abs(z) < VEST_LB / 2 - .25 && x >= VX - .35 && x < VX + .75)                                               // la porte de la cour (BAR), de plain-pied
@@ -5061,7 +5062,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       L.sousSol = SL; L.nuitSousSol = SL.nuitFenetre;
       const loc = (x, z) => [-x, FETE_SZ - z];
       L.solsPlus.push(SL.sol, ...(SL.solsPlus || []));
-      L.console = loc(...SL.console);
+      L.console = loc(...SL.console); L.babyfoot = loc(...SL.babyfoot); L.majClassementBF = SL.majClassementBF;
       for (const r of SL.raccourcis) if (!r.vers) L.raccourcis = [...(L.raccourcis || []), r.marche ? { ...r, marche: loc(...r.marche) } : r];
       L.tabouretsSousSol = SL.tabourets.map(t => loc(...t));
       L.comptoirSousSol = (SL.surComptoir || []).map(t => loc(...t)); L.yComptoirSousSol = yb - 4 * HM + SL.yComptoir;
@@ -5754,7 +5755,7 @@ export async function ouvrir(ctx) {
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
         p.iconeJeu = p.info.joue || null;
         if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
-            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫", pingpong: "🏓" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
+            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫", pingpong: "🏓", babyfoot: "⚽" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
           p.icone.position.y = H * hauteurDe(p) + .32; p.g.add(p.icone); } }
       if (p.icone) p.icone.position.y = tailleBonhomme() * hauteurDe(p) + .32 + Math.sin(t / 400) * .05;
       // la danse : il se balance d'un côté à l'autre en levant les bras
@@ -7514,6 +7515,7 @@ function chercherAction(t) {
       const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
+      else if (M.L.babyfoot && Math.hypot(x - M.L.babyfoot[0], z - M.L.babyfoot[1]) < 1.5) a = { type: "babyfoot", label: "⚽ Jouer au baby-foot" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (C3.sousSol && M.lieu === "grande" && moi.g.position.y < -2 && C3.sousSol.auPoste(x, z)) a = { type: "tir", label: "🔫 Tirer" };
       else if (C3.sousSol && C3.sousSol.tablePP && M.lieu === "grande" && moi.g.position.y < -2 && Math.abs(x - C3.sousSol.tablePP[0]) < 1.5 && Math.abs(z - C3.sousSol.tablePP[1]) < 2.2) a = { type: "pingpong", label: "🏓 Jouer au ping-pong" };
@@ -7558,6 +7560,7 @@ export function agir() {
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
   else if (a.type === "tir") M.ctx.surTir && M.ctx.surTir();
   else if (a.type === "pingpong") M.ctx.surPingPong && M.ctx.surPingPong();
+  else if (a.type === "babyfoot") M.ctx.surBabyFoot && M.ctx.surBabyFoot();
   else if (a.type === "hifi") { envoyerWS({ t: "hifi", on: !M.hifiOn }); M.actionT = 0; }
   else if (a.type === "prendre") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
       if (o.type === "plante" && APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
@@ -9453,6 +9456,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper" && m.jeu === "babyfoot") { M.classementBF = m.top || []; M.L && M.L.majClassementBF && M.L.majClassementBF(M.classementBF); }
     else if (m.t === "flipper" && m.jeu === "pingpong") { M.classementPP = m.top || []; M.L && M.L.majClassementPP && M.L.majClassementPP(M.classementPP); }
     else if (m.t === "flipper" && m.jeu === "tir") { M.classementTir = m.top || []; M.L && M.L.majClassementTir && M.L.majClassementTir(M.classementTir); }
     else if (m.t === "flipper" && m.jeu === "flechettes") { M.classementFlechettes = m.top || []; M.L && M.L.majClassementFlechettes && M.L.majClassementFlechettes(M.classementFlechettes); }
