@@ -6432,8 +6432,23 @@ function placerCamera(net) {
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
   else if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
+  // jamais derrière un mur : si un mur, un bâtiment se met entre son bonhomme et la caméra, la caméra vient se placer devant (on voit toujours son bonhomme)
+  let devantMur = false;
+  if (moi && (M.L.interieur || M.L.suivi)) { const tete = new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.3, moi.g.position.z), dir = pos.clone().sub(tete), dist = dir.length();
+    if (dist > .6) { dir.divideScalar(dist); const now = performance.now();
+      if (!M.obstCam || M.obstCam.scene !== M.scene || now - M.obstCam.t > 3000) { const liste = [];   // (les obstacles : les grandes pièces opaques du décor, pas les bonshommes, les vitres, les barrières ni les petits objets)
+        M.scene.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || o.userData.perso || !o.geometry) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || m.transparent || m.visible === false) return;
+          if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 1.2) return; liste.push(o); });
+        M.obstCam = { scene: M.scene, t: now, liste, ray: new THREE.Raycaster(), n: 0, d: null }; }
+      const O = M.obstCam; if (O.n++ % 3 === 0) { O.ray.set(tete, dir); O.ray.far = dist + .3; const h = O.ray.intersectObjects(O.liste, false)[0]; O.d = h ? h.distance : null; }   // (une fois sur trois : léger pour le téléphone)
+      if (O.d != null && O.d < dist + .2) { const d2 = Math.max(.5, O.d - .35); pos.copy(tete).addScaledVector(dir, d2); devantMur = true;
+ } }
+    // la caméra a dû se rapprocher (un mur, une ruelle étroite) : plus elle est près, plus elle regarde son bonhomme — il reste toujours dans l'image
+    const hd = Math.hypot(pos.x - tete.x, pos.z - tete.z), voulu = Math.max(1, (M.camD || 4) * Math.cos(M.camE || .5)), k = Math.min(1, Math.max(0, 1 - hd / (.75 * voulu)));
+    if (k > 0) vise.lerp(new THREE.Vector3(tete.x, tete.y - .5, tete.z), k * .85); }
   if (moi) { const q = moi.g.position, pr = M.camMoiPrec; if (pr && Math.hypot(q.x - pr[0], q.z - pr[1]) > 6) M.camVise = null; M.camMoiPrec = [q.x, q.z]; }   // (on réapparaît ailleurs — reconnexion, saut : la caméra y va d'un coup, sans traverser la cour)
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
+  else if (devantMur && M.camera.position.distanceTo(vise) > pos.distanceTo(vise)) { M.camera.position.copy(pos); M.camVise.lerp(vise, .2); }   // (devant un mur : tout de suite, sans traverser le mur)
   else { const k = 1 - Math.pow(.94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k); M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
