@@ -439,6 +439,7 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "clavier1" ? (sens > 0 ? [66, 228] : [130, 234]) : o.pose === "clavier2" ? (sens > 0 ? [74, 234] : [138, 226])
         : o.pose === "batterie1" ? (sens > 0 ? [72, 232] : [170, 112]) : o.pose === "batterie2" ? (sens > 0 ? [30, 112] : [128, 232])
         : o.pose === "batterie3" ? (sens > 0 ? [4, 150] : [196, 150]) : o.pose === "batterie0" ? (sens > 0 ? [80, 238] : [120, 238])
+        : o.pose === "salut" && sens < 0 ? [126, 64]   // le salut militaire : la main droite au bord du képi
         : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
@@ -2816,15 +2817,21 @@ function fenetreDouche(A, scene, xw, yf, zf, zA0, zB0, depoli, cadre) {
     const cx = etat ? 98 : 88, cy = 146, pe = (a, b) => { const g = x.createRadialGradient(cx - 12, cy - 6, 6, cx, cy + 10, 62); g.addColorStop(0, a); g.addColorStop(1, b); return g; };
     x.fillStyle = pe("#f3d2b6", "#c99474"); x.beginPath(); x.ellipse(cx, cy + 128, 78, 40, 0, Math.PI, 0); x.fill(); x.fillRect(cx - 21, cy + 40, 42, 52);   // les épaules nues, le cou
     x.fillStyle = "rgba(120,70,50,.25)"; x.beginPath(); x.ellipse(cx, cy + 58, 20, 10, 0, 0, Math.PI); x.fill();   // l'ombre du menton sur le cou
+    if (imgD) { x.save(); if (etat) { x.translate(cx, cy); x.rotate(-.06); x.translate(-cx, -cy); } x.drawImage(imgD, cx - 50, cy - 50, 100, 125); x.restore(); }   // son visage, d'après la photo
+    else {
     x.fillStyle = "#3a2216"; x.beginPath(); x.ellipse(cx - 30, cy + 8, 14, 34, .2, 0, 7); x.ellipse(cx + 30, cy + 8, 14, 34, -.2, 0, 7); x.fill();   // les mèches mouillées, sous le bonnet
     x.fillStyle = pe("#f6dcc4", "#d19c7c"); x.beginPath(); x.moveTo(cx - 36, cy - 14); x.bezierCurveTo(cx - 40, cy + 30, cx - 22, cy + 56, cx, cy + 58); x.bezierCurveTo(cx + 22, cy + 56, cx + 40, cy + 30, cx + 36, cy - 14); x.bezierCurveTo(cx + 30, cy - 40, cx - 30, cy - 40, cx - 36, cy - 14); x.fill();   // le visage, en ovale
     x.fillStyle = "rgba(225,120,110,.28)"; for (const s2 of [-1, 1]) { x.beginPath(); x.ellipse(cx + s2 * 22, cy + 22, 10, 7, 0, 0, 7); x.fill(); }   // les joues rosies par l'eau chaude
     x.strokeStyle = "rgba(150,95,70,.55)"; x.lineWidth = 2; x.beginPath(); x.moveTo(cx + 2, cy + 2); x.quadraticCurveTo(cx + 6, cy + 20, cx - 1, cy + 26); x.stroke();   // l'arête du nez
     x.fillStyle = "rgba(140,85,60,.35)"; x.beginPath(); x.ellipse(cx - 2, cy + 27, 7, 3, 0, 0, 7); x.fill();
+    }
     x.fillStyle = "#f4a7cc"; x.beginPath(); x.ellipse(cx, cy - 30, 52, 34, 0, Math.PI, 0); x.fill(); x.fillRect(cx - 52, cy - 32, 104, 12);   // le bonnet de douche rose, à fronces
     x.strokeStyle = "rgba(170,70,110,.45)"; x.lineWidth = 2; for (let k = -4; k <= 4; k++) { x.beginPath(); x.moveTo(cx + k * 11, cy - 24); x.quadraticCurveTo(cx + k * 12, cy - 44, cx + k * 9, cy - 58); x.stroke(); }
     x.fillStyle = "#e07ca8"; for (let k = -5; k <= 5; k++) { x.beginPath(); x.arc(cx + k * 10, cy - 21, 5.5, 0, 7); x.fill(); }
     x.fillStyle = "rgba(255,255,255,.35)"; x.beginPath(); x.ellipse(cx - 18, cy - 46, 16, 7, -.4, 0, 7); x.fill();   // le reflet sur le plastique
+    if (imgD) { if (etat) { x.fillStyle = "rgba(200,40,40,.16)"; x.beginPath(); x.ellipse(cx, cy + 12, 46, 56, 0, 0, 7); x.fill(); x.font = "bold 34px Arial"; x.fillStyle = "#d02020"; x.fillText("💢", cx + 34, cy - 36); }   // fâchée : rouge de colère
+      else { x.fillStyle = "#3a5a8a"; x.font = "bold 22px Georgia"; x.fillText("♪", 140, 70); x.fillText("♫", 22, 96); } }
+    else {
     x.lineCap = "round";
     if (etat) {   // elle a entendu : les yeux grands ouverts, les sourcils froncés, la bouche ouverte qui crie
       for (const s2 of [-1, 1]) { const ex = cx + s2 * 14; x.fillStyle = "#fbf7f2"; x.beginPath(); x.ellipse(ex, cy + 4, 8, 5.5, 0, 0, 7); x.fill(); x.fillStyle = "#5a7a4a"; x.beginPath(); x.arc(ex - 2, cy + 4, 4, 0, 7); x.fill(); x.fillStyle = "#111"; x.beginPath(); x.arc(ex - 2, cy + 4, 2, 0, 7); x.fill();
@@ -2837,10 +2844,12 @@ function fenetreDouche(A, scene, xw, yf, zf, zA0, zB0, depoli, cadre) {
         x.lineWidth = 3; x.beginPath(); x.moveTo(ex - 9, cy - 9); x.quadraticCurveTo(ex, cy - 13, ex + 9, cy - 9); x.stroke(); }
       x.fillStyle = "#c86a6a"; x.beginPath(); x.ellipse(cx, cy + 39, 7, 4.5, 0, 0, 7); x.fill();   // la bouche, en « o » : elle chante
       x.fillStyle = "#3a5a8a"; x.font = "bold 22px Georgia"; x.fillText("♪", 140, 70); x.fillText("♫", 22, 96); }
+    }
     x.fillStyle = "rgba(220,235,245,.7)"; for (let k = 0; k < 14; k++) { x.beginPath(); x.ellipse(cx - 60 + (k * 37) % 120, cy + 80 + (k * 23) % 50, 2, 3, 0, 0, 7); x.fill(); }   // les gouttes sur les épaules
     for (let k = 0; k < 26; k++) { const g = x.createRadialGradient(0, 0, 0, 0, 0, 1); x.save(); x.translate((k * 53) % w, (k * 97) % h); x.scale(30 + (k % 5) * 10, 24 + (k % 3) * 10);
       g.addColorStop(0, "rgba(245,248,250,.38)"); g.addColorStop(1, "rgba(245,248,250,0)"); x.fillStyle = g; x.beginPath(); x.arc(0, 0, 1, 0, 7); x.fill(); x.restore(); } });   // la vapeur
-  const tCalme = tex(dame(0)), tFache = tex(dame(1));
+  let imgD = null, tCalme = tex(dame(0)), tFache = tex(dame(1));
+  { const im = new Image(); im.onload = () => { imgD = im; const a = tCalme, b = tFache; tCalme = tex(dame(0)); tFache = tex(dame(1)); if (fond.material.map === a || fond.material.map === b) fond.material.map = tCalme; a.dispose(); b.dispose(); }; im.src = "images/douche-tete.png"; }
   const fond = new THREE.Mesh(new THREE.PlaneGeometry(LW, HW), new THREE.MeshBasicMaterial({ map: tCalme })); fond.position.set(xw + dehors * .03, yf, zf);
   for (const [dy, dz, h, w] of [[HW / 2 + .04, 0, .08, LW + .16], [-HW / 2 - .04, 0, .08, LW + .16], [0, LW / 2 + .04, HW, .08], [0, -LW / 2 - .04, HW, .08]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(.07, h, w), cadre); c.position.set(xw + dehors * .035, yf + dy, zf + dz); scene.add(c); } fond.rotation.y = -Math.PI / 2; scene.add(fond);   // (l'encadrement, autour du trou ; puis le fond)
   // le battant, grand ouvert vers dehors (verre dépoli, cadre blanc)
@@ -2855,9 +2864,13 @@ function fenetreDouche(A, scene, xw, yf, zf, zA0, zB0, depoli, cadre) {
     x.strokeStyle = "#7a3a2a"; x.lineWidth = 3; x.beginPath(); x.arc(56, 90, 9, .15 * Math.PI, .85 * Math.PI); x.stroke(); });
   const ENF = [{ c: "#c0392b", b: "#2f4f7f", t: tete("#5a3a22", "#eccaa6", 4), h: ["#6a4630", "#3e2618"], p: "#eccaa6" }, { c: "#2f7d4a", b: "#5a4632", t: tete("#d9b56a", "#f1d2b4", 8), h: ["#e0c07a", "#a8884a"], p: "#f1d2b4" }, { c: "#2a5ab0", b: "#2a2a2a", t: tete("#2a1c12", "#d9ab82", 2), h: ["#2e2016", "#140c06"], p: "#d9ab82" }];
   const HK = 1.15, WK = HK * 200 / 420, yb = 1.5 - .057 * HK, gamins = ENF.map(e => { const o = { couleur: e.c, bas: e.b, pieds: "#e8e8e8", tenue: "civil" };
-    const tm = tex(dessinerBonhomme({ ...o, pose: "dos", mainsMur: true, cheveuxDos: e.h, peau: e.p }, e.t)), th = null, tg = tm;   // (de dos, face au mur, les mains à plat sur la brique)
+    const cv = dessinerBonhomme({ ...o, pose: "dos", mainsMur: true, cheveuxDos: e.h, peau: e.p }, e.t), cx2 = cv.getContext("2d");   // (du volume : le corps s'arrondit, ombré sur les bords, éclairé d'un côté)
+    cx2.globalCompositeOperation = "source-atop"; const gr = cx2.createLinearGradient(40, 0, 160, 0); gr.addColorStop(0, "rgba(0,0,0,.42)"); gr.addColorStop(.3, "rgba(255,255,255,.1)"); gr.addColorStop(.45, "rgba(255,255,255,.16)"); gr.addColorStop(.7, "rgba(0,0,0,.05)"); gr.addColorStop(1, "rgba(0,0,0,.45)");
+    cx2.fillStyle = gr; cx2.fillRect(0, 0, cv.width, cv.height); const gv = cx2.createLinearGradient(0, 150, 0, 420); gv.addColorStop(0, "rgba(0,0,0,0)"); gv.addColorStop(1, "rgba(0,0,0,.22)"); cx2.fillStyle = gv; cx2.fillRect(0, 150, cv.width, 270);
+    const tm = tex(cv), th = null, tg = tm;   // (de dos, face au mur, les mains à plat sur la brique)
     const geo = new THREE.PlaneGeometry(WK, HK); geo.translate(0, HK / 2, 0);
     const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tm, transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.rotation.y = -Math.PI / 2; m.visible = false; scene.add(m);
+    const om = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tm, color: 0x000000, transparent: true, opacity: .3, depthWrite: false })); om.position.set(.14, -.02, -.18); m.add(om);   // son ombre portée sur la brique
     return { m, tm, th, tg }; });
   const PHR = ["C'est qui, encore ?!", "Je suis sûre que c'est le fils du garde Bouquet !", "Ou alors c'est celui de Navarre !", "Je vous ai vus, petits chenapans !", "Je vais le dire à vos pères !", "Allez jouer ailleurs !"];
   let bulle = null, dit = -1;
@@ -5458,6 +5471,9 @@ export async function ouvrir(ctx) {
         if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
           if (p.corps.material.map !== p.poses.tir) { p.corps.material.map = p.poses.tir; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
+        else if (p.info.salutT && performance.now() - p.info.salutT < 2600 && p.poses.salut) {   // le gendarme salue
+          if (p.corps.material.map !== p.poses.salut) { p.corps.material.map = p.poses.salut; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
         else if (p.info.joue && !p.moi) {
           // il joue : de dos, tourné vers la machine, il remue un peu (les mains sur les commandes)
           if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
@@ -5585,7 +5601,7 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    animerPNJ(); animerEboueurs(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerEboueurs(); animerGendarme(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -6445,7 +6461,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), ...(p.info.salue ? { salut: pose("salut") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
     ...(p.info.ymca ? { ymcaY: pose("ymcaY"), ymcaM: pose("ymcaM"), ymcaC: pose("ymcaC"), ymcaA: pose("ymcaA") } : {}), ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
@@ -6592,6 +6608,16 @@ function ajouterPNJ() {
 }
 /* --- les deux éboueurs de la Propreté de Paris : le jour seulement, ils vont et viennent entre le local poubelle et le camion-benne --- */
 const EBOUEURS = [[-70, "eboueur1", "Saïd"], [-71, "eboueur2", "Julien"]], PHRASES_EBO = ["Bonjour !", "On passe le mardi et le vendredi !", "Attention au camion !", "Belle journée, hein ?", "Les bacs, c'est par ici !", "Encore une tournée…"];
+/* --- le gendarme de faction, sous le porche de l'entrée : il salue chaque personne qui passe, « Bonjour ! » le jour, « Bonsoir ! » le soir --- */
+const GENDARME = -72;
+function animerGendarme() {
+  if (!M || !M.L) return;
+  const ici = M.lieu === "rue" && !M.L.apo; let g = M.gens.get(GENDARME);
+  if (!ici) { if (g) retirerAncien(GENDARME); return; }
+  if (!g) { ajouterAncien({ numero: GENDARME, nom: "Gendarme", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: "images/gendarme-tete.png", pnj: true, salue: true, x: -1.55, z: -13.4 }); return; }
+  const vus = g.vus || (g.vus = new Map()), now = Date.now();
+  for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
+    if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); dire(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
 function animerEboueurs() {
   if (!M || !M.L) return;
   const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
