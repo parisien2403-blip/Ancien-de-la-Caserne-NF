@@ -1537,10 +1537,16 @@ function construireRue(A, T, L, scene) {
   im({ x: 43, z: -7.5, largeur: 18, etages: 6, rot: 0, teinte: teintes[0], graine: 69 });
   im({ x: -46, z: -7.5, largeur: 18, etages: 6, rot: 0, teinte: teintes[3], graine: 70, rdc: RDC.metro });
   // au bout de la rue, et le long de la rue La Fayette
-  im({ x: 66, z: 0, largeur: 24, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 71 });
-  im({ x: -66, z: 0, largeur: 24, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 72 });
-  for (const [z, l, g] of [[-22, 16, 73], [-40, 18, 74], [22, 16, 75], [40, 18, 76]]) { im({ x: -36, z, largeur: l, etages: 6, rot: Math.PI / 2, teinte: teintes[g % 5], graine: g }); }
-  for (const [z, l, g] of [[26, 16, 77], [44, 18, 78], [-40, 18, 79]]) im({ x: -28, z, largeur: l, etages: 6, rot: -Math.PI / 2, teinte: teintes[g % 5], graine: g });
+  // (rapprochés : ils ferment la rue, on ne peut plus partir à gauche ni à droite au bout)
+  im({ x: 54, z: 0, largeur: 30, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 71 });
+  im({ x: -55, z: 0, largeur: 30, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 72 });
+  // au pied de ces deux immeubles, un passage cochère sombre où la circulation entre et d'où elle ressort
+  for (const sg of [-1, 1]) { const xf = sg > 0 ? 53.97 : -54.97;
+    const tr = A.ajoute(new THREE.PlaneGeometry(5.2, 4.3), new THREE.MeshBasicMaterial({ color: 0x0c0c0e }), xf, 2.15, .55, false); tr.rotation.y = -sg * Math.PI / 2;
+    const li = A.ajoute(new THREE.BoxGeometry(.3, .5, 5.8), pierreM, xf - sg * .1, 4.5, .55, false); }
+  // la rue La Fayette est fermée juste après ses passages piétons
+  im({ x: -32.4, z: -7.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[3], graine: 73 });
+  im({ x: -32.5, z: 6.8, largeur: 9, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 75 });
   // le grand mur pignon du voisin, et son décor (un panneau miroir entre deux colonnes de demi-lunes)
   const pignon = new THREE.Mesh(new THREE.PlaneGeometry(12, 24), A.mat({ map: tex(toile(240, 480, (x, w, h) => { x.fillStyle = "#e5e3dd"; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 90; i++) { x.fillStyle = `rgba(110,105,95,${alea() * .07})`; x.fillRect(alea() * w, alea() * h, 3 + alea() * 30, 10 + alea() * 80); } })) }));
@@ -1593,7 +1599,7 @@ function construireRue(A, T, L, scene) {
 
   /* --- où l'on peut marcher, la caméra, les passages --- */
   // la grille noire (z = -7,5) ne s'ouvre qu'au portillon (x de 0,2 à 1,4)
-  L.limites = (x, z) => (x > -62 && x < 62 && z > -7.2 && z < 6.4) || (x > -35.5 && x < -28.5 && z > -24 && z < 24)
+  L.limites = (x, z) => (x > -54.4 && x < 53.4 && z > -7.2 && z < 6.4)
     || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15)
     // le passage sous le porche (sans traverser les plantes, l'armoire rouge ni la borne de la barrière)
     || (Math.abs(x) < 2.0 && z <= -12 && z > -25.7 && !(Math.abs(x) > 1.45 && z < -24.6) && !(x > 1.6 && z < -23.2 && z > -24.6) && !(x > 1.3 && Math.abs(z + 15.2) < .3));
@@ -1614,7 +1620,7 @@ function construireRue(A, T, L, scene) {
   // la circulation : de temps en temps une voiture des années 80-90, ou un bus parisien, descend la rue
   circulation(L, scene);
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
-  L.boite = [-63, 63, -11.8, 6.3]; L.zone = [-62, 62, -26, 24];
+  L.boite = [-55, 54, -11.8, 6.3]; L.zone = [-54.4, 53.4, -26, 6.4];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
 }
 
