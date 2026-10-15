@@ -6079,6 +6079,7 @@ function cineRadio() {
   if (!M) return; const moi = M.gens.get(M.moiNum); if (!moi) return; moi.cible = null; moi.chemin = [];
   if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; }
   const G = sonGresil(.02), t0 = performance.now(); let sirene = false, fini = false, noir = null;
+  M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.preload = "auto"; M.musReveil.load();   // (la musique du réveil, prête à partir)
   grainSH(true);
   const fin = () => { if (fini || !M) return; fini = true; finCine(); couperGresil(G); if (!noir) noir = voile("background:#000;opacity:1"); M.shReveil = true; changerLieu("sh-fetes", [0, 26.5], 0); setTimeout(() => noir && noir.remove(), 400); };
   M.passerBtn = boutonPasser(fin);
@@ -6097,6 +6098,7 @@ function cineReveil(essai = 0, noir = null) {
   if (!M) return; noir = noir || voile("background:#000;opacity:1;transition:opacity 3s");
   const moi = M.gens.get(M.moiNum); if (!moi) { if (essai < 60) setTimeout(() => cineReveil(essai + 1, noir), 100); else noir.remove(); return; }   // (notre bonhomme arrive avec la réponse du serveur)
   M.gresil = M.gresil || sonGresil(.045); grainSH(true);
+  { const a = M.musReveil || new Audio("sons/sh-reveil.mp3"); M.musReveil = a; a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); }   // (« White Noiz » : la musique du réveil, dans le bar)
   moi.info.mortT = performance.now() - 2000;   // (couché, tout de suite)
   const p = moi.g.position, t0 = performance.now(); requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 3200);
   let leve = false, dit = false;
@@ -8141,7 +8143,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.ctx.surLieu && M.ctx.surLieu(id);
   majAmbiance();
   M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio();
-  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
+  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
   if (id === "bttf-cour") cineCour();
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
