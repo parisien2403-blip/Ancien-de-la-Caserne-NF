@@ -1157,7 +1157,7 @@ function lanternesMurales(scene, L) {
   // la troisième cour : le bâtiment d'en face, l'immeuble (devant et côté fosse), ses flancs dans les ruelles
   const zT = C3.z1 - C3.PP;
   for (const sg of [-1, 1]) { pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
-    if (sg > 0) for (const z of [-74.5, -81.5]) pose(sg * (C3.LB / 2 + .01), z, sg, 0, 2.7); }   // (pas dans la ruelle de gauche)
+  }   // (plus de lampes sur le flanc de l'immeuble, côté rue en pente)
   // la ruelle de gauche et son passage : la façade de brique (au-dessus des arcs), le flanc du bâtiment du fond
   for (const z of [-108, -124]) pose(-C3.x - 6 + .01, z, 1, 0, 4.0);   // (sur le mur noir, puis sur la façade à arcades)
   pose(-C3.LB / 2 - .03, -111, -1, 0, 3.0);
@@ -1991,7 +1991,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       A.ajoute(new THREE.BoxGeometry(.05, 1.5, C3.z1 - zT), blancC, sg * (DB + .035), .75, zm, false);
       A.ajoute(new THREE.BoxGeometry(.07, .03, C3.z1 - zT), cadre, sg * (DB + .045), 1.5, zm, false);
       // au milieu, à la hauteur des fenêtres de la façade : six petites fenêtres de salle de bain, l'une au-dessus de l'autre (verre dépoli)
-      for (const y of [3.05, 8.8, 11.8, 14.8, 17.8, 20.8]) { const x = sg * (DB + .02);
+      for (const y of [3.05, 8.8, 11.8, 14.8, 17.8, 20.8]) { if (sg > 0 && y < 5) continue; const x = sg * (DB + .02);   // (côté rue en pente : pas de petite fenêtre en bas)
         A.ajoute(new THREE.BoxGeometry(.06, .82, .62), cadre, x, y, zm, false);
         const v = A.ajoute(new THREE.PlaneGeometry(.46, .66), depoli, sg * (DB + .055), y, zm, false); v.rotation.y = sg * Math.PI / 2;
         A.ajoute(new THREE.BoxGeometry(.03, .66, .03), cadre, sg * (DB + .06), y, zm, false);
