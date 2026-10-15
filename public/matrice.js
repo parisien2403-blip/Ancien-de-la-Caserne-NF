@@ -3116,7 +3116,9 @@ function sousSolStand(A, L, scene, SOL, zT, PF) {
     for (const [x, z, ry, coul] of [[-.35, -.75, .6, 0xc8102e], [.4, .7, 2.4, 0x111111]]) { const r = new THREE.Group(); r.position.set(x, TH + .022, z); r.rotation.y = ry; g.add(r);   // les raquettes, à plat
       const tete = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .012, 20), A.mat({ color: coul, roughness: .6 })); tete.scale.set(1, 1, 1.1); r.add(tete);
       const manche = new THREE.Mesh(new THREE.BoxGeometry(.1, .022, .028), A.mat({ color: 0xc8a06a, roughness: .6 })); manche.position.set(.12, .002, 0); r.add(manche); }
-    ad(new THREE.SphereGeometry(.02, 12, 8), A.mat({ color: 0xf8f8f4, roughness: .3 }), .15, TH + .036, -.2); }   // la balle
+    ad(new THREE.SphereGeometry(.02, 12, 8), A.mat({ color: 0xf8f8f4, roughness: .3 }), .15, TH + .036, -.2); S.tablePP = [8.1, -80.2]; }   // la balle
+  // le tableau des meilleurs pongistes, au fond, à côté du poster de Gatien
+  { const tab = tableauScores(A, "PING-PONG", 10.15, Y0 + 1.85, P.pingpong.z1 - ep / 2 - .02); L.majClassementPP = tab; tab((M && M.classementPP) || []); }
   // aux murs de la salle de ping-pong : les couvertures de France Tennis de Table (Tian Jing, Tibor Klampar, le double mixte de 1990) et le poster de Jean-Philippe Gatien
   { const pp = P.pingpong, ch = new THREE.TextureLoader(), pin = A.mat({ color: 0xc8102e, metalness: .3, roughness: .4 });
     const poster = (img, w, h, x, z, ry, rz = 0) => { const t = ch.load("images/pingpong/" + img); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
@@ -5751,7 +5753,7 @@ export async function ouvrir(ctx) {
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
         p.iconeJeu = p.info.joue || null;
         if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
-            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
+            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫", pingpong: "🏓" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
           p.icone.position.y = H * hauteurDe(p) + .32; p.g.add(p.icone); } }
       if (p.icone) p.icone.position.y = tailleBonhomme() * hauteurDe(p) + .32 + Math.sin(t / 400) * .05;
       // la danse : il se balance d'un côté à l'autre en levant les bras
@@ -7487,6 +7489,7 @@ function chercherAction(t) {
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (C3.sousSol && M.lieu === "grande" && moi.g.position.y < -2 && C3.sousSol.auPoste(x, z)) a = { type: "tir", label: "🔫 Tirer" };
+      else if (C3.sousSol && C3.sousSol.tablePP && M.lieu === "grande" && moi.g.position.y < -2 && Math.abs(x - C3.sousSol.tablePP[0]) < 1.5 && Math.abs(z - C3.sousSol.tablePP[1]) < 2.2) a = { type: "pingpong", label: "🏓 Jouer au ping-pong" };
       else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
@@ -7527,6 +7530,7 @@ export function agir() {
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
   else if (a.type === "tir") M.ctx.surTir && M.ctx.surTir();
+  else if (a.type === "pingpong") M.ctx.surPingPong && M.ctx.surPingPong();
   else if (a.type === "hifi") { envoyerWS({ t: "hifi", on: !M.hifiOn }); M.actionT = 0; }
   else if (a.type === "prendre") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
       if (o.type === "plante" && APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
@@ -9422,6 +9426,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper" && m.jeu === "pingpong") { M.classementPP = m.top || []; M.L && M.L.majClassementPP && M.L.majClassementPP(M.classementPP); }
     else if (m.t === "flipper" && m.jeu === "tir") { M.classementTir = m.top || []; M.L && M.L.majClassementTir && M.L.majClassementTir(M.classementTir); }
     else if (m.t === "flipper" && m.jeu === "flechettes") { M.classementFlechettes = m.top || []; M.L && M.L.majClassementFlechettes && M.L.majClassementFlechettes(M.classementFlechettes); }
     else if (m.t === "flipper") { M.classementFlipper = m.top || []; M.L && M.L.majClassement && M.L.majClassement(M.classementFlipper); }

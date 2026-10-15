@@ -451,7 +451,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("musique_vol"); ws.send(JSON.stringify({ t: "musique_vol", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
-      if (m.lieu === "grande") ws.send(JSON.stringify({ t: "flipper", jeu: "tir", top: this.classementFlipper("tir") }));
+      if (m.lieu === "grande") for (const jeu of ["tir", "pingpong"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess") for (const z of ["messcuisine", "messbas"]) { const n = await this.ctx.storage.get("lumiere_" + z); ws.send(JSON.stringify({ t: "lumiere", salle: z, niveau: typeof n === "number" ? n : 1 })); }
@@ -507,7 +507,7 @@ export class Compteur extends DurableObject {
       if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }, ws);
     } else if (m.t === "joue") {
       // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)
-      a.joue = ["console", "flipper", "flechettes", "tir"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
+      a.joue = ["console", "flipper", "flechettes", "tir", "pingpong"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
       if (a.lieu) this.diffuser(a.lieu, { t: "joue", numero: a.numero, jeu: a.joue }, ws);
     } else if (m.t === "fumee" && a.lieu === "fetes") {
       // un nuage de fumée, au plus un toutes les 8 secondes
@@ -644,10 +644,10 @@ export class Compteur extends DurableObject {
     return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores WHERE COALESCE(jeu, 'flipper') = ? GROUP BY numero ORDER BY score DESC LIMIT 3", jeu).toArray().map(r => ({ nom: r.nom, score: r.score }));
   }
   async scoreFlipper(token, x, jeu = "flipper") {
-    jeu = ["flechettes", "tir"].includes(jeu) ? jeu : "flipper";
-    const moi = this.moi(token), score = Math.max(0, Math.min(jeu === "flechettes" ? 540 : jeu === "tir" ? 50 : 99999999, Math.floor(Number(x && x.score) || 0)));
+    jeu = ["flechettes", "tir", "pingpong"].includes(jeu) ? jeu : "flipper";
+    const moi = this.moi(token), score = Math.max(0, Math.min(jeu === "flechettes" ? 540 : jeu === "tir" ? 50 : jeu === "pingpong" ? 99 : 99999999, Math.floor(Number(x && x.score) || 0)));
     if (score > 0) this.sql.exec("INSERT INTO flipper_scores (numero, nom, score, cree, jeu) VALUES (?, ?, ?, ?, ?)", Number(moi.numero), moi.prenom, score, new Date().toISOString(), jeu);
-    const top = this.classementFlipper(jeu); this.diffuser(jeu === "tir" ? "grande" : "fetes", { t: "flipper", jeu, top });   // (le stand de tir est au sous-sol de la grande cour)
+    const top = this.classementFlipper(jeu); this.diffuser(jeu === "tir" || jeu === "pingpong" ? "grande" : "fetes", { t: "flipper", jeu, top });   // (le stand de tir et le ping-pong sont au sous-sol de la grande cour)
     const record = this.sql.exec("SELECT MAX(score) AS s FROM flipper_scores WHERE numero = ? AND COALESCE(jeu, 'flipper') = ?", Number(moi.numero), jeu).toArray()[0];
     return { top, record: (record && record.s) || 0 };
   }
