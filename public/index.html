@@ -2211,7 +2211,7 @@
           import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
         surApo: e => { $("mxApo").hidden = !e; if (!e) return;
-          $("mxApoBalles").textContent = e.mitra ? "🔥 Mitraillette ∞" : `🔫 ${e.balles} / 9 · 💀 ${e.tues}/${e.tuesMitra}`; $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, 4 - e.vies));
+          $("mxApoBalles").textContent = e.sh ? (e.arme ? "🔫 ∞" : "✋ Sans arme") : e.mitra ? "🔥 Mitraillette ∞" : `🔫 ${e.balles} / 9 · 💀 ${e.tues}/${e.tuesMitra}`; $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, (e.max || 4) - e.vies));
           $("mxApo").querySelectorAll(".mx-apo-eq").forEach(x => x.remove());
           for (const q of e.equipe || []) { const sp = document.createElement("span"); sp.className = "mx-apo-eq"; sp.textContent = q.mort ? `💀 ${q.nom}` : `🤝 ${q.nom} ` + "❤️".repeat(q.vies) + "🖤".repeat(Math.max(0, 4 - q.vies)); $("mxApo").appendChild(sp); }
           if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },
@@ -2995,6 +2995,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["4.83", "15 octobre 2026", ["Silent Hill : le scénario complet — Maria au bar (« Nous nous reverrons très vite… »), Angela à la petite fenêtre des douches (fermée), Eddie dans la fosse et le monstre sans bras, James sous l'horloge jaune qui te donne son arme (munitions illimitées), Laura dans la cour d'honneur, Maria sur la terrasse puis au mess, Pyramid Head (impossible à tuer, on peut seulement le ralentir), Maria dans l'escalier R, les infirmières dans les couloirs des étages, Eddie au couteau au 6e (8 balles), sa clé qui ouvre le cadenas des encombrants pour sortir vivant", "Silent Hill : 5 vies ; à la dernière, le sang, l'écran rouge, et retour dans la caserne de 1990", "Silent Hill : un bandeau indique toujours où aller", "La radio ramassée : elle grésille à fond, la musique de la fête s'éteint vite, puis la sirène monte", "Un peu plus de cendres qui tombent"]],
     ["4.82", "15 octobre 2026", ["Silent Hill : plus de cendres qui tombent à l'intérieur (la salle de judo, le sous-sol, la cabane…)", "Silent Hill : l'image n'est plus mouchetée (le grain restait au maximum après l'arrivée) ; les cendres sont de petits flocons ronds et flous, plus de carrés blancs"]],
     ["4.81", "15 octobre 2026", ["Administrateur : bouton « 📻 Faire venir la radio près de moi », comme pour l'Almanach"]],
     ["4.80", "15 octobre 2026", ["Silent Hill : les têtes de James et d'Eddie redécoupées, avec tout le bas du visage et le menton"]],
