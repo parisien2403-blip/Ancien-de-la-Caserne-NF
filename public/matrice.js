@@ -2581,7 +2581,8 @@ function troisiemeCour(A, L, scene) {
   { const vert = A.mat({ color: 0x3c5a48, roughness: .5, metalness: .2 }), plq = tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8); x.fillStyle = "#f4f1e6"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText("LAVOIR", w / 2, 45); }));
     { const xp = C3.LM - .5;   // (plus de porte : l'entrée ouverte du sous-sol, le stand de tir et le ping-pong)
       const lp = new THREE.PointLight(0xfff0d0, 2.2, 6, 1.6); lp.position.set(xp, -PF + 2.6, zm2); scene.add(lp); } }
-  sousSolStand(A, L, scene, SOL, zT, PF);
+  { const avant = new Set(scene.children); sousSolStand(A, L, scene, SOL, zT, PF);   // (le sous-sol rangé dans un groupe : on ne le dessine que quand on en est près)
+    const gS = new THREE.Group(); gS.name = "sousSol"; for (const o of scene.children.filter(o => !avant.has(o) && !o.isLight)) gS.add(o); scene.add(gS); L.groupeSousSol = gS; }
   for (const sg of [-1, 1]) {
     if (sg < 0) { const HR = 1.0, xr = -DB + .04;   // au fond, pas d'escalier : le mur, et en haut une barrière tout du long
       A.ajoute(new THREE.BoxGeometry(.05, .05, D), fer, xr, HR, zm2, false); A.ajoute(new THREE.BoxGeometry(.04, .04, D), fer, xr, .12, zm2, false);
@@ -5705,7 +5706,7 @@ export async function ouvrir(ctx) {
       const r = moy > 34 ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
       if (r !== res) { res = r; M.redim && M.redim(); } } }
-    preparerVoisin();
+    preparerVoisin(); trierLumieres(t);
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -5964,6 +5965,18 @@ function ambianceApo() {
   if (dehors && !sonApo) { sonApo = new Audio("sons/apo-ville.mp3"); sonApo.loop = true; sonApo.volume = .7; }
   if (!sonApo) return;
   if (dehors && sonApo.paused) { if (performance.now() - (sonApo.essai || 0) > 2000) { sonApo.essai = performance.now(); sonApo.play().catch(() => {}); } } else if (!dehors && !sonApo.paused) sonApo.pause();
+}
+/* la grande cour a beaucoup de lampes (sous-sol, judo, douches, passages…) : chaque lampe allumée coûte sur chaque point de l'image, même loin.
+   On n'allume, pour le rendu, que les plus proches de la caméra — toujours le même nombre, pour ne pas recompiler les matières en marchant */
+const LAMPES_MAX = 8;
+function trierLumieres(t) {
+  if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
+  if (baseLieu(M.lieu) !== "grande") { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight) M.lampes.push(o); }); }
+  const c = M.camera.position, v = new THREE.Vector3();
+  const tri = M.lampes.filter(l => l.visible).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
+  tri.forEach(([l], i) => l.layers.set(i < LAMPES_MAX ? 0 : 31));
+  if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
 const baseLieu = id => id === "bttf-cour" ? "grande" : String(id || "").replace(/^z-/, ""), estApo = id => /^z-/.test(id || "");
 // une flamme (dégradé jaune → orange → rouge, en goutte), partagée par tous les feux
@@ -6571,6 +6584,20 @@ function texNuages() {
    la caisse est un profil extrudé sur la largeur (le capot plongeant, le pare-brise, le toit, le hayon), les boucliers gris, les vitres, les enjoliveurs */
 // les couleurs des années 90 (une par voiture, sans se répéter de suite)
 const COULEURS_90 = [0xc8102e, 0x6b1e2b, 0x1c2a4a, 0x2448a8, 0x1f4a32, 0x7fb3a6, 0xf2f2ee, 0x8f969c, 0x1a1a1c, 0xe8c22a, 0x2a8a9a, 0x5a3a7a, 0xcdbb94, 0xd8642a, 0x8fb8d8, 0x9a2a3a];
+/* un objet immobile fait de dizaines de pièces (une voiture, un bus) : on fond ensemble les pièces de même matière, pour bien moins d'appels de dessin */
+function fusionnerParMatiere(g) {
+  g.updateMatrixWorld(true); const inv = new THREE.Matrix4().copy(g.matrixWorld).invert(), parMat = new Map(), aRetirer = [];
+  g.traverse(o => { if (!o.isMesh || o === g || Array.isArray(o.material) || o.isInstancedMesh || o.isSkinnedMesh) return; const k = o.material; if (!parMat.has(k)) parMat.set(k, []); parMat.get(k).push(o); });
+  for (const [mat, liste] of parMat) { if (liste.length < 2) continue;
+    const gs = liste.map(o => { let q = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); q.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld)); return q; });
+    const uv = gs.every(q => q.attributes.uv), n = gs.reduce((a, q) => a + q.attributes.position.count, 0), pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uvs = uv ? new Float32Array(n * 2) : null; let o2 = 0;
+    for (const q of gs) { if (!q.attributes.normal) q.computeVertexNormals(); pos.set(q.attributes.position.array, o2 * 3); nor.set(q.attributes.normal.array, o2 * 3); if (uv) uvs.set(q.attributes.uv.array, o2 * 2); o2 += q.attributes.position.count; q.dispose(); }
+    const r = new THREE.BufferGeometry(); r.setAttribute("position", new THREE.BufferAttribute(pos, 3)); r.setAttribute("normal", new THREE.BufferAttribute(nor, 3)); if (uv) r.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); r.computeBoundingSphere();
+    const m = new THREE.Mesh(r, mat); m.castShadow = liste.some(o => o.castShadow); m.receiveShadow = liste.some(o => o.receiveShadow); g.add(m);
+    for (const o of liste) { aRetirer.push(o); o.geometry.dispose(); } }
+  for (const o of aRetirer) o.parent && o.parent.remove(o);
+  return g;
+}
 function citadine(scene, modele, couleur, x, z, rot) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
   const clio = modele === "clio", L = clio ? 3.71 : 3.56, W = 1.62, H = 1.39;
@@ -6612,7 +6639,7 @@ function citadine(scene, modele, couleur, x, z, rot) {
     dsk(.36, noir, .006); dsk(.29, pneu, .012); dsk(.2, jante, .018);   // le passage de roue, le pneu, l'enjoliveur
     for (let k = 0; k < (clio ? 8 : 5); k++) { const a = k / (clio ? 8 : 5) * Math.PI * 2, f = add(new THREE.BoxGeometry(.03, .13, .01), new THREE.MeshStandardMaterial({ color: 0x8a8e92 }), sx + Math.cos(a) * .1, .29 + Math.sin(a) * .1, sz * (W / 2 + .022)); f.rotation.z = a; } }
   add(new THREE.CylinderGeometry(.004, .004, .7, 4), noir, .2, 1.62, -.62).rotation.z = .5;   // l'antenne
-  return g;
+  return fusionnerParMatiere(g);
 }
 /* les deux bus, d'après les planches : le car de la Gendarmerie (bleu, toit blanc, gyrophares, « GENDARMERIE RÉPUBLICAINE », chevrons) et le bus RATP SC10 (blanc et vert, 106-A) ;
    la caisse est une boîte aux angles arrondis, ses flancs, sa face et son dos sont peints (toile), les roues et les accessoires du toit en relief */
@@ -6682,7 +6709,7 @@ function busCaserne(scene, modele, x, z, rot) {
       lt.rotation.x = -Math.PI / 2; lt.rotation.z = Math.PI / 2; lt.position.set(-.6, H + .125, 0); g.add(lt); } }
   else { for (const px of [-2.8, 2.6]) add(new THREE.BoxGeometry(1.2, .1, .7), new THREE.MeshStandardMaterial({ color: 0x8a9aa6, roughness: .2, metalness: .4 }), px, H + .14, 0);   // les trappes vitrées
     add(new THREE.BoxGeometry(1.4, .3, 1.2), new THREE.MeshStandardMaterial({ color: 0xd8d8d4 }), .2, H + .25, 0); }   // la climatisation
-  return g;
+  return fusionnerParMatiere(g);
 }
 function camionPoubelle(A, scene, x, y, z, rot) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; scene.add(g);
