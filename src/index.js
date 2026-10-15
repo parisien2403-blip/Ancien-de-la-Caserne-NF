@@ -460,7 +460,7 @@ export class Compteur extends DurableObject {
         else if (dj.file.length < 30) dj.file.push(f);
       } else if (m.t === "dj_fini") {
         if (!dj.courant || dj.courant.id !== Number(m.id) || Date.now() - dj.courant.debut < 5000) return;   // un seul passe au suivant
-        await this.suivantDJ(dj);
+        await this.suivantDJ(dj, true);   // (enchaîné tout de suite : chez chacun, le titre suivant est déjà chargé)
       } else if (m.t === "dj_passer") { await this.suivantDJ(dj); }
       else if (m.t === "dj_precedent") {   // revenir au titre d'avant (tout le monde) ; le titre en cours repasse en tête de la file
         const h = (dj.histo || []).pop(); if (!h) return;
@@ -734,19 +734,23 @@ export class Compteur extends DurableObject {
   }
   // ce qui passe chez le DJ (pour toute la salle des fêtes), et la file d'attente
   async etatDJ() { return (await this.ctx.storage.get("dj")) || { courant: null, file: [] }; }
-  async majDJ(dj) { await this.ctx.storage.put("dj", dj); for (const l of LIEUX_MATRICE) this.diffuser(l, { t: "dj", dj }); }
+  // le titre qui viendra après celui-ci (la file d'attente, sinon la discothèque) : chacun le charge à l'avance
+  prochainDJ(dj) { if (!dj.courant) return null; if (dj.file.length) return dj.file[0];
+    const m = this.sql.exec("SELECT id FROM musiques WHERE complet = 1 AND id > ? ORDER BY id LIMIT 1", dj.courant.id).toArray()[0] || this.sql.exec("SELECT id FROM musiques WHERE complet = 1 ORDER BY id LIMIT 1").toArray()[0];
+    return m ? this.ficheDJ(m.id, "la discothèque") : null; }
+  async majDJ(dj) { dj.prochain = this.prochainDJ(dj); await this.ctx.storage.put("dj", dj); for (const l of LIEUX_MATRICE) this.diffuser(l, { t: "dj", dj }); }
   ficheDJ(id, qui) {
     const m = this.sql.exec("SELECT id, titre, artiste, duree FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
     return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui } : null;
   }
   // le titre suivant : celui de la file d'attente ; si elle est vide, on enchaîne sur le titre suivant de la discothèque (et on reboucle)
-  async suivantDJ(dj) {
+  async suivantDJ(dj, direct = false) {
     if (dj.courant) { const { debut, ...h } = dj.courant; dj.histo = [...(dj.histo || []), h].slice(-20); }   // (pour revenir au titre d'avant)
     let f = dj.file.shift();
     if (!f) { const apres = dj.courant ? dj.courant.id : 0;
       const m = this.sql.exec("SELECT id FROM musiques WHERE complet = 1 AND id > ? ORDER BY id LIMIT 1", apres).toArray()[0] || this.sql.exec("SELECT id FROM musiques WHERE complet = 1 ORDER BY id LIMIT 1").toArray()[0];
       f = m ? this.ficheDJ(m.id, "la discothèque") : null; }
-    dj.courant = f ? { ...f, debut: Date.now() + 1500 } : null;
+    dj.courant = f ? { ...f, debut: Date.now() + (direct ? 0 : 1500) } : null;
   }
 
   async retirerJeu(token, id) {

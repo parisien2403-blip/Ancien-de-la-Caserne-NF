@@ -3227,7 +3227,7 @@ function circulation(L, scene) {
     return { g, r: ajouterRoues(g, [L2 / 2 - 2.2, -L2 / 2 + 2.6], l2 / 2 - .1), v: 6.5, L: L2, bus: true }; };
   // le vrai bus RATP SC10 (d'après la planche), et les Clio et 106 des années 90 (d'après les photos), au milieu des autres voitures
   const busVrai = () => ({ g: busCaserne(scene, "ratp", 0, 0, 0), r: [], v: 6.5, L: 11, bus: true });
-  const CIT = [["clio", 0x8e1b22], ["clio", 0xe9e6dd], ["clio", 0x2a4f8a], ["clio", 0x2d2f33], ["106", 0x2448a8], ["106", 0xc21d1d], ["106", 0x2e5a3c], ["106", 0xb8bcc0]];
+  const CIT = COULEURS_90.flatMap(c => [["clio", c], ["106", c]]);
   const citadineVraie = () => { const [mo, co] = CIT[Math.floor(Math.random() * CIT.length)]; return { g: citadine(scene, mo, co, 0, 0, 0), r: [], v: 8.5 + Math.random() * 3, L: mo === "clio" ? 3.71 : 3.56 }; };
   const enRoute = []; let prochain = performance.now() + 2500 + Math.random() * 5000, avant = 0;
   const animAvant = L.anim;
@@ -4595,7 +4595,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     { const lim0 = L.limites; L.limites = (x, z) => accesChantier() && C3.dansChantier(x, z) ? C3.libre(x, z) : lim0(x, z); }   // (le chantier : une seule règle, selon le niveau où l'on est)
     /* les voitures garées (Clio et 106) : en long dans la cour d'honneur (côté mess, côté salle des fêtes : pas devant les baies vitrées, on peut marcher le long),
        et face aux bâtiments devant les portes M et N, I et J, B, C et D, et devant F et G face à la rampe ; on ne passe pas à travers */
-    if (!copie) { const VO = L.voitures = [], CIT = [["clio", 0x8e1b22], ["106", 0x2448a8], ["clio", 0xe9e6dd], ["106", 0xc21d1d], ["clio", 0x2a4f8a], ["106", 0x2e5a3c], ["clio", 0x2d2f33], ["106", 0xb8bcc0]];
+    if (!copie) { const VO = L.voitures = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]);
       const haut = (x, z) => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
       let n = 0; const garer = (x, z, rot) => { const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
         for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
@@ -4605,6 +4605,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       for (const x of [12.2, -12.2]) garer(x, C3.z0 - 1.4 - .6 - 1.9, -Math.PI / 2);   // face aux portes M et N (3e cour)
       garer(9, -121.7, -Math.PI / 2); garer(-8.2, -123.3, -Math.PI / 2);   // face aux escaliers I et J (sur la place)
       for (const x of (RU.portesFond || []).slice(1, 4)) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2);   // face aux portes B, C, D
+      { const P = RU.portesFond || []; if (P.length > 2) for (const x of [P[1] - 2.3, P[2] + 2.3, P[2] - 2.3]) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2); }   // et trois de plus, à côté, devant B et C
       for (const z of [-108.4, -94.7]) garer(-24.4 + .35 + .6 + 1.9, z, Math.PI);   // devant F et G, face à la rampe
       const lim1 = L.limites; L.limites = (x, z) => lim1(x, z) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25); }
     /* le porche de cette façade : on marche sous la voûte, tout le passage, comme depuis la rue ;
@@ -6354,6 +6355,8 @@ function texNuages() {
    le logo « PP — Propreté de Paris », le compacteur à l'arrière et son bac gris, les deux gyrophares orange, le pot d'échappement vertical ; posé à (x, z), l'avant vers l'angle rot */
 /* les petites citadines des années 90, d'après les photos : la Renault Clio (1re génération) et la Peugeot 106 (phase 1), trois portes ;
    la caisse est un profil extrudé sur la largeur (le capot plongeant, le pare-brise, le toit, le hayon), les boucliers gris, les vitres, les enjoliveurs */
+// les couleurs des années 90 (une par voiture, sans se répéter de suite)
+const COULEURS_90 = [0xc8102e, 0x6b1e2b, 0x1c2a4a, 0x2448a8, 0x1f4a32, 0x7fb3a6, 0xf2f2ee, 0x8f969c, 0x1a1a1c, 0xe8c22a, 0x2a8a9a, 0x5a3a7a, 0xcdbb94, 0xd8642a, 0x8fb8d8, 0x9a2a3a];
 function citadine(scene, modele, couleur, x, z, rot) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
   const clio = modele === "clio", L = clio ? 3.71 : 3.56, W = 1.62, H = 1.39;
@@ -6361,20 +6364,26 @@ function citadine(scene, modele, couleur, x, z, rot) {
   const vitre = new THREE.MeshStandardMaterial({ color: 0x2b3640, roughness: .08, metalness: .6 }), pneu = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .9 }), jante = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: .35, metalness: .6 });
   const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
   // le bas de caisse (vu de côté, l'avant vers les x positifs), jusqu'à la ceinture de caisse
-  const k = clio ? 1 : .96, X = v => v * k, ext = (pts, w, m, dz = 0) => { const sh = new THREE.Shape(); pts.forEach(([u, v], i) => sh[i ? "lineTo" : "moveTo"](u, v)); sh.closePath();
-    const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 2, curveSegments: 4 }), m); o.position.z = -w / 2 + dz; o.castShadow = true; g.add(o); return o; };
-  ext([[X(-1.83), .3], [X(1.83), .3], [X(1.83), .68], [X(1.6), .77], [X(.86), .9], [X(.82), .93], [X(-1.76), .97], [X(-1.83), .9]], W - .06, peint);
-  // le vitrage (une pièce de verre teinté tout autour : pare-brise, vitres, lunette), puis le toit et les montants peints par-dessus
-  const vit = [[X(.8), .93], [X(.12), 1.31], [X(-1.08), 1.34], [X(-1.6), 1.26], [X(-1.74), .97]];
-  ext(vit, W - .2, vitre);
-  ext([[X(.16), 1.31], [X(-1.08), 1.34], [X(-1.6), 1.26], [X(-1.62), 1.31], [X(-1.08), 1.4], [X(.1), 1.37]], W - .14, peint);   // le toit
-  for (const sz of [-1, 1]) { const zz = sz * (W / 2 - .085);
+  // la caisse, en courbes (vue de côté, l'avant vers les x positifs) : le capot plongeant arrondi, le pare-brise, le toit bombé, le hayon
+  const k = clio ? 1 : .96, X = v => v * k;
+  const ext = (dessin, w, m, bev = .05) => { const sh = new THREE.Shape(); dessin(sh);
+    const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 4, curveSegments: 10 }), m); o.position.z = -w / 2; o.castShadow = true; g.add(o); return o; };
+  ext(sh => { sh.moveTo(X(-1.78), .3); sh.lineTo(X(1.7), .3); sh.quadraticCurveTo(X(1.86), .32, X(1.85), .52);   // le bas de caisse, le nez arrondi
+    sh.quadraticCurveTo(X(1.84), .72, X(1.62), .77); sh.quadraticCurveTo(X(1.2), .86, X(.82), .92);   // le capot qui plonge
+    sh.lineTo(X(-1.7), .97); sh.quadraticCurveTo(X(-1.84), .96, X(-1.84), .78); sh.lineTo(X(-1.82), .4); sh.quadraticCurveTo(X(-1.8), .3, X(-1.78), .3); }, W - .12, peint, .06);
+  ext(sh => { sh.moveTo(X(.8), .93); sh.quadraticCurveTo(X(.42), 1.2, X(.12), 1.31); sh.quadraticCurveTo(X(-.5), 1.37, X(-1.08), 1.34);   // le vitrage : pare-brise, vitres, lunette
+    sh.quadraticCurveTo(X(-1.5), 1.31, X(-1.62), 1.24); sh.lineTo(X(-1.74), .98); sh.closePath(); }, W - .44, vitre, .1);   // (plus étroit que la caisse : les vitres rentrent vers le toit)
+  ext(sh => { sh.moveTo(X(.16), 1.3); sh.quadraticCurveTo(X(-.5), 1.36, X(-1.08), 1.33); sh.quadraticCurveTo(X(-1.5), 1.3, X(-1.63), 1.23);   // le toit bombé
+    sh.lineTo(X(-1.64), 1.29); sh.quadraticCurveTo(X(-1.5), 1.37, X(-1.08), 1.4); sh.quadraticCurveTo(X(-.5), 1.43, X(.1), 1.37); sh.closePath(); }, W - .42, peint, .08);
+  for (const sz of [-1, 1]) { const zz = sz * (W / 2 - .2);
     const montant = (a, b, ep) => { const dx = b[0] - a[0], dy = b[1] - a[1], o = add(new THREE.BoxGeometry(Math.hypot(dx, dy), ep, .04), peint, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, zz); o.rotation.z = Math.atan2(dy, dx); };
     montant([X(.8), .93], [X(.12), 1.32], .07);   // le montant de pare-brise
     montant([X(-.62), .95], [X(-.66), 1.34], .09);   // le montant milieu (porte, custode)
     montant([X(-1.6), 1.27], [X(-1.74), .97], clio ? .2 : .26);   // le montant arrière, large
     add(new THREE.BoxGeometry(L - .5, .06, .02), noir, .05, .58, sz * (W / 2 + .01));   // le jonc de protection
     add(new THREE.BoxGeometry(.14, .03, .02), noir, X(-.5), .86, sz * (W / 2 + .005));   // la poignée
+    for (const xd of [X(.78), X(-.68)]) add(new THREE.BoxGeometry(.012, .6, .012), new THREE.MeshStandardMaterial({ color: 0x111111 }), xd, .64, sz * (W / 2 + .045));   // le jour de la porte
+    add(new THREE.BoxGeometry(.08, .04, .015), new THREE.MeshStandardMaterial({ color: 0xff9a2a, emissive: 0x552200 }), X(1.32), .72, sz * (W / 2 + .045));   // le clignotant d'aile
     add(new THREE.BoxGeometry(.12, .09, .1), noir, X(.68), 1.0, sz * (W / 2 + .05)); }   // le rétroviseur
   // les boucliers gris (avant, arrière), la plaque, les phares, les feux
   for (const sx of [1, -1]) { add(new THREE.BoxGeometry(.16, .3, W + .04), gris, sx * (L / 2 - .02), .45, 0); add(new THREE.BoxGeometry(.02, .11, .5), new THREE.MeshStandardMaterial({ color: 0xf2f2ee }), sx * (L / 2 + .065), .47, 0); }
