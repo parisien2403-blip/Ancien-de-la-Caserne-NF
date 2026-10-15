@@ -6015,6 +6015,8 @@ function silentHill(scene, L, base) {
   const setN = L.setNuit; L.setNuit = () => { if (setN) setN(false); L.nuit = false; appliquer(); }; appliquer();
   if (L.fete) { for (const p of L.fete.projos) { p.spot.visible = p.cone.visible = false; } for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = false; L.fete.boule.visible = false; }
   if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
+  // les faisceaux lumineux (projecteurs de la scène, lyres…) : éteints, et tenus éteints
+  const faisceaux = []; scene.traverse(o => { if (o.isMesh && o.material && !Array.isArray(o.material) && o.material.blending === THREE.AdditiveBlending) { faisceaux.push(o); o.visible = false; } });
   // les détritus (journaux, feuilles, canettes, cartons)
   texturesApo(); detritusApo(scene, L, base, (x, z) => base === "etage" ? 0 : (L.hauteur ? L.hauteur(x, z, {}) : 0));
   // la lampe torche : elle éclaire là où l'on regarde
@@ -6022,7 +6024,7 @@ function silentHill(scene, L, base) {
   // les cendres qui tombent, autour de nous
   const N = 1400, pos = new Float32Array(N * 3), V = 34, H = 16; for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * V; pos[i * 3 + 1] = Math.random() * H; pos[i * 3 + 2] = (Math.random() - .5) * V; }
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xe8e4dc, size: .07, transparent: true, opacity: .85, depthWrite: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
+  const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xf2efe8, size: .1, transparent: true, opacity: .95, depthWrite: false, fog: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
   // en bas du bar (sh-fetes), la radio posée sur le comptoir : on l'éteint pour rentrer
   if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length) { const [x, z] = L.comptoirSousSol[1], r = creerRadio(); r.position.set(x, L.yComptoirSousSol + .005, z); r.rotation.y = .6; scene.add(r); L.radioSortie = [x, z]; }
   const v = new THREE.Vector3(), animAvant = L.anim; let prec = performance.now();
@@ -6033,7 +6035,44 @@ function silentHill(scene, L, base) {
         if (a[k + 1] < cam.position.y - 4) a[k + 1] += H; let dx = a[k] - cam.position.x, dz = a[k + 2] - cam.position.z; if (dx > V / 2) a[k] -= V; else if (dx < -V / 2) a[k] += V; if (dz > V / 2) a[k + 2] -= V; else if (dz < -V / 2) a[k + 2] += V; }
       geo.attributes.position.needsUpdate = true; }
     // la radio de poche grésille, avec des craquements
-    if (M.gresil) { const k = .045 + (Math.random() < .02 ? .12 : 0) + Math.max(0, Math.sin(now / 2300)) * .02; M.gresil.g.gain.setTargetAtTime(k, actx.currentTime, .05); } };
+    peuplerSH(now); for (const o of faisceaux) o.visible = false;
+    if (L.fete) { for (const q of L.fete.projos) q.spot.visible = q.cone.visible = false; for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = L.fete.boule.visible = false; }   // (pas de fête à Silent Hill)
+    if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
+    if (M.gresil) { const k = .045 + (Math.random() < .02 ? .12 : 0) + Math.max(0, Math.sin(now / 2300)) * .02 + Math.max(0, 1 - (M.shProche ?? 99) / 14) * .3; M.gresil.g.gain.setTargetAtTime(k, actx.currentTime, .05); } };   // (un monstre approche : la radio s'affole)
+}
+// Silent Hill : les personnages (réglables par l'administrateur) et les monstres, chacun à sa place — en attendant le scénario
+const SH_PERSOS = [   // [id, numéro, lieu, x, z, allure, rayon où il va et vient]
+  [69, -601, "sh-grande", -3, 6, .55, 3], [70, -602, "sh-grande", 4, -37, .45, 2.5], [71, -603, "sh-grande", -8, -66, .45, 2], [72, -604, "sh-fetes", -1.2, 24.4, .4, 1.2], [73, -605, "sh-fetes", 0, 6, 1.3, 4.5]];
+const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Laura" };
+const SH_MONSTRES = [   // [image, hauteur, lieu, x, z, façon de bouger]
+  ["pyramid", 2.35, "sh-grande", 0, -78, "lent"], ["infirmiere", 1.78, "sh-grande", 0, -24, "saccade"], ["tuyau", 1.72, "sh-grande", -5, -40, "saccade"], ["bras", 2.1, "sh-grande", 9, -62, "balance"],
+  ["mannequin", 1.8, "sh-grande", -12, -92, "saccade"], ["capuche", 1.85, "sh-grande", 12, -110, "balance"], ["infirmiere", 1.78, "sh-fetes", 1.5, -1, "saccade"]];
+function placeLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let r = .5; r < 8; r += .5) for (let a = 0; a < 12; a++) { const xx = x + Math.cos(a / 12 * 6.283) * r, zz = z + Math.sin(a / 12 * 6.283) * r; if (M.L.limites(xx, zz)) return [xx, zz]; } return null; }
+const solSH = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
+function peuplerSH(now) {
+  if (!M || !M.L || !M.L.sh) return;
+  if (M.shPopL !== M.L) { M.shPopL = M.L; M.shMonstres = [];
+    for (const [img, h, lieu, x, z, genre] of SH_MONSTRES) { if (lieu !== M.lieu) continue; const pl = placeLibre(x, z); if (!pl) continue;
+      const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xd8d4cc, transparent: true, alphaTest: .45, side: THREE.DoubleSide })); mesh.scale.set(h * .45, h, 1);   // (visibles dans la pénombre, mais le brouillard les mange)
+      const t = new THREE.TextureLoader().load(`images/sh/m-${img}.webp`, tt => { mesh.scale.set(h * tt.image.width / tt.image.height, h, 1); }); t.colorSpace = THREE.SRGBColorSpace; mesh.material.map = t;
+      const g = new THREE.Group(); g.add(mesh); M.scene.add(g); M.shMonstres.push({ g, mesh, genre, x0: pl[0], z0: pl[1], x: pl[0], z: pl[1], ph: Math.random() * 7 }); } }
+  // les personnages : chacun va et vient autour de sa place (Laura court partout)
+  for (const [id, num, lieu, x, z, allure, rayon] of SH_PERSOS) { if (lieu !== M.lieu) continue;
+    const ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num);
+    if (p && p.cleInfo !== ci.cle) { retirerAncien(num); p = null; }   // (l'administrateur a changé sa tête, sa taille, sa tenue)
+    if (!p) { const pl = placeLibre(x, z); if (!pl) continue; p = ajouterAncien({ ...ci.info, numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) continue; p.cleInfo = ci.cle; p.info.allure = allure; p.maison = pl; p.prochainT = now + 2000 + Math.random() * 4000; }
+    if (now > p.prochainT && !p.cible) { p.prochainT = now + 5000 + Math.random() * 7000; const a = Math.random() * 6.283, r = Math.random() * rayon, xx = p.maison[0] + Math.cos(a) * r, zz = p.maison[1] + Math.sin(a) * r; if (M.L.limites(xx, zz)) p.cible = new THREE.Vector3(xx, 0, zz); } }
+  // les monstres rôdent sur place (les infirmières ont des saccades) ; la radio grésille plus fort quand on s'en approche
+  const cam = M.camera.position, moi = M.gens.get(M.moiNum); let proche = 99;
+  for (const m of M.shMonstres) { const u = now / 1000 + m.ph;
+    if (m.genre === "lent") { m.x = m.x0 + Math.sin(u * .12) * 4; m.z = m.z0 + Math.cos(u * .09) * 2; }
+    else if (m.genre === "saccade") { m.x = m.x0 + Math.sin(u * .3) * 1.2; m.z = m.z0 + Math.cos(u * .23) * 1.2; m.mesh.rotation.z = Math.sin(u * 13) > .85 ? Math.sin(u * 40) * .12 : 0; }
+    else m.mesh.rotation.z = Math.sin(u * .9) * .05;
+    if (!M.L.limites(m.x, m.z)) { m.x = m.x0; m.z = m.z0; }
+    m.g.position.set(m.x, solSH(m.x, m.z), m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z);
+    if (moi) proche = Math.min(proche, Math.hypot(moi.g.position.x - m.x, moi.g.position.z - m.z)); }
+  M.shProche = proche;
 }
 // on ramasse la radio : elle grésille de plus en plus fort, la sirène hurle, le noir… et l'on se réveille dans le bar
 function cineRadio() {
@@ -9899,7 +9938,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id >= 57 && m.p.id <= 62) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (les Village People : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 54 && m.p.id <= 56) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Émile et Images : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
-    else if (m.t === "pnj" && m.p && m.p.id >= 63 && m.p.id <= 68) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (les gendarmes : redessinés d'eux-mêmes)
+    else if (m.t === "pnj" && m.p && m.p.id >= 63 && m.p.id <= 73) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (les gendarmes, les personnages de Silent Hill : redessinés d'eux-mêmes)   // (les gendarmes : redessinés d'eux-mêmes)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
