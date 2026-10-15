@@ -5989,10 +5989,14 @@ function couperGresil(G) { if (!G) return; try { G.g.gain.setTargetAtTime(0, act
 // le grain de l'image (comme un vieux film), par-dessus la scène
 function grainSH(on) { if (!M) return;
   if (!on) { if (M.grainEl) { clearInterval(M.grainEl.minuteur); M.grainEl.remove(); M.grainEl = null; } return; }
-  if (M.grainEl) return; const c = document.createElement("canvas"); c.width = c.height = 160; const x = c.getContext("2d"), im = x.createImageData(160, 160);
+  if (M.grainEl) { M.grainEl.style.opacity = ".025"; return; }   // (de retour au grain léger, après la cinématique)
+  const c = document.createElement("canvas"); c.width = c.height = 160; const x = c.getContext("2d"), im = x.createImageData(160, 160);
   for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; } x.putImageData(im, 0, 0);
-  const d = document.createElement("div"); d.style.cssText = `position:absolute;inset:0;z-index:5;pointer-events:none;opacity:.06;mix-blend-mode:overlay;background-image:url(${c.toDataURL()});background-size:160px 160px`;
+  const d = document.createElement("div"); d.style.cssText = `position:absolute;inset:0;z-index:5;pointer-events:none;opacity:.025;mix-blend-mode:overlay;background-image:url(${c.toDataURL()});background-size:160px 160px`;
   M.ctx.conteneur.appendChild(d); d.minuteur = setInterval(() => { d.style.backgroundPosition = `${Math.random() * 160}px ${Math.random() * 160}px`; }, 70); M.grainEl = d; }
+// un flocon de cendre : rond et flou (et non un carré)
+let texFloconC = null;
+const texFlocon = () => texFloconC || (texFloconC = tex(toile(32, 32, x => { const g = x.createRadialGradient(16, 16, 1, 16, 16, 15); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.5, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); })));
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
 function silentHill(scene, L, base) {
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
@@ -6021,14 +6025,15 @@ function silentHill(scene, L, base) {
   // les cendres qui tombent, autour de nous
   const N = 1400, pos = new Float32Array(N * 3), V = 34, H = 16; for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * V; pos[i * 3 + 1] = Math.random() * H; pos[i * 3 + 2] = (Math.random() - .5) * V; }
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xf2efe8, size: .1, transparent: true, opacity: .95, depthWrite: false, fog: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
+  const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xeeebe4, size: .07, map: texFlocon(), alphaTest: .02, transparent: true, opacity: .8, depthWrite: false, fog: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
   // en bas du bar (sh-fetes), la radio posée sur le comptoir : on l'éteint pour rentrer
   if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length) { const [x, z] = L.comptoirSousSol[1], r = creerRadio(); r.position.set(x, L.yComptoirSousSol + .005, z); r.rotation.y = .6; scene.add(r); L.radioSortie = [x, z]; }
   const v = new THREE.Vector3(), animAvant = L.anim; let prec = performance.now();
   L.anim = (t) => { animAvant && animAvant(t); const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000); prec = now; if (!M || !M.camera) return;
     const cam = M.camera, moi = M.gens.get(M.moiNum);
     if (moi) { const p = moi.g.position; cam.getWorldDirection(v); lampe.position.set(p.x, p.y + 1.45, p.z); lampe.target.position.set(p.x + v.x * 6, p.y + .4 + v.y * 6, p.z + v.z * 6); }
-    if (ext) { const a = geo.attributes.position.array; for (let i = 0; i < N; i++) { const k = i * 3; a[k + 1] -= dt * (.35 + (i % 7) * .04); a[k] += Math.sin(now / 1800 + i) * dt * .15;
+    const abrite = !!(moi && L.c3 && C3.dedans(moi)); cendres.visible = ext && !abrite;   // (sous un toit — le judo, le sous-sol… — pas de cendres)
+    if (ext && !abrite) { const a = geo.attributes.position.array; for (let i = 0; i < N; i++) { const k = i * 3; a[k + 1] -= dt * (.35 + (i % 7) * .04); a[k] += Math.sin(now / 1800 + i) * dt * .15;
         if (a[k + 1] < cam.position.y - 4) a[k + 1] += H; let dx = a[k] - cam.position.x, dz = a[k + 2] - cam.position.z; if (dx > V / 2) a[k] -= V; else if (dx < -V / 2) a[k] += V; if (dz > V / 2) a[k + 2] -= V; else if (dz < -V / 2) a[k + 2] += V; }
       geo.attributes.position.needsUpdate = true; }
     // la radio de poche grésille, avec des craquements
@@ -6102,7 +6107,7 @@ function cineRadio() {
   const c0 = M.camera.position.clone(), p = moi.g.position;
   M.cine = { t0, maj: (now) => { if (fini) return; const u = (now - t0) / 1000;
     M.camera.position.copy(c0).add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), 0).multiplyScalar(Math.min(.12, u * .02))); M.camera.lookAt(p.x, p.y + 1.2, p.z);
-    if (M.grainEl) M.grainEl.style.opacity = String(Math.min(.5, .06 + u * .05));
+    if (M.grainEl) M.grainEl.style.opacity = String(Math.min(.35, .025 + u * .04));
     if (u > 5 && !sirene) { sirene = true; M.sireneA.currentTime = 0; M.sireneA.volume = 1; M.sireneA.play().catch(() => {}); }
     // le brouillard nous enveloppe : il se referme sur nous, de plus en plus épais, jusqu'au blanc
     if (u > 5) { const k = Math.min(1, (u - 5) / 6); sc.fog.color.setHex(0xd9d8d4); sc.fog.near = (1 - k) * 8; sc.fog.far = 2 + (1 - k) * 40; sc.background = sc.fog.color; radioA.volume = Math.max(0, .9 - k * .9); }
