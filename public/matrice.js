@@ -1764,21 +1764,29 @@ C3.enBas = () => { const q = M && M.moiNum && M.gens && M.gens.get(M.moiNum); re
 C3.dansPoub = (x, z) => (!!C3.poub && C3.poub.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3)) || (!!C3.phare && ((x - C3.phare.xw) + (z - C3.phare.zw) < C3.phare.R * Math.SQRT2 + .3 || Math.hypot(x - C3.phare.cx, z - C3.phare.cz) < C3.phare.R + .3));   // (et la demi-tour, dans l'angle de la place)
 /* changer de niveau dans le chantier : un clic sur la terrasse depuis le sol (ou l'inverse) passe par l'escalier le plus court — les marches raides, ou celui de la ruelle de gauche —
    au lieu de chercher un chemin sur le mauvais niveau (on se retrouvait dans la cabane et sous la terrasse) ; arrivé à l'escalier, on repart vers le point visé */
-C3.etage = (moi, x, y, z) => { if (!accesChantier() || !C3.dansChantier(x, z) || C3.enBas() || !moi) return false; const haut = C3.enHaut(moi), versHaut = y > 1.5; if (haut === versHaut) return false;
-  const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, G = C3.escG, E = [[[0, zT + .8], [0, zt0 - .8]]];
-  if (G) { const zm = (G.z0 + G.z1) / 2; E.push([[G.x0 - G.run - .6, zm], [G.x0 + .6, zm]]); }
-  { const U = C3.ESC, W = U.W, L2 = C3.LT / 2, z1 = U.z0 + U.run, zp = z1 + U.pal / 2;   // l'escalier en U, côté rue : la première volée, le palier, la seconde, le palier du haut
-    E.push([[L2 + 1.5 * W, U.z0 - .7], [L2 - .7, (U.zA + U.z0) / 2], [[L2 + 1.5 * W, zp], [L2 + .5 * W, zp], [L2 + .5 * W, (U.zA + U.z0) / 2]]]); }
-  const p0 = moi.g.position; let best = null;
+C3.niveau = y => y > 1.5 ? 1 : y < -1 ? -1 : 0;   // (le niveau : la terrasse en haut, le sol, la fosse des lavoirs en bas)
+C3.etage = (moi, x, y, z) => { if (!accesChantier() || !C3.dansChantier(x, z) || !moi) return false;
+  const nM = C3.niveau(moi.g.position.y), nC = C3.niveau(y); if (nM === nC) return false;
+  const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, G = C3.escG, DB = C3.LB / 2, zmF = (zT + zt0) / 2;
+  // chaque escalier : [le bout du bas, le bout du haut, (les points de passage, de bas en haut)] ; entre le sol et la terrasse, ou entre la fosse et le sol
+  let E, hautN; const but = [x, z], suite = [x, z, y];
+  if (Math.min(nM, nC) === -1 && Math.max(nM, nC) === 1) {   // (de la terrasse à la fosse, ou l'inverse : d'abord le sol, près de l'escalier de la fosse, puis la suite)
+    return C3.etage(moi, DB + .9, 0, zmF) && (moi.suite = [x, z, y], true); }
+  if (nM === -1 || nC === -1) { E = [[[DB - C3.RUN - .5, zmF], [DB + .7, zmF]]]; hautN = 0; }
+  else { E = [[[0, zT + .8], [0, zt0 - .8]]]; hautN = 1;
+    if (G) { const zm = (G.z0 + G.z1) / 2; E.push([[G.x0 - G.run - .6, zm], [G.x0 + .6, zm]]); }
+    { const U = C3.ESC, W = U.W, L2 = C3.LT / 2, z1 = U.z0 + U.run, zp = z1 + U.pal / 2;   // l'escalier en U, côté rue : la première volée, le palier, la seconde, le palier du haut
+      E.push([[L2 + 1.5 * W, U.z0 - .7], [L2 - .7, (U.zA + U.z0) / 2], [[L2 + 1.5 * W, zp], [L2 + .5 * W, zp], [L2 + .5 * W, (U.zA + U.z0) / 2]]]); } }
+  const versHaut = nC === hautN, p0 = moi.g.position; let best = null;
   const surSeg = (P, Q) => { const vx = Q[0] - P[0], vz = Q[1] - P[1], l2 = vx * vx + vz * vz || 1, t = ((p0.x - P[0]) * vx + (p0.z - P[1]) * vz) / l2; return t > -.05 && t < 1.05 && Math.hypot(P[0] + vx * t - p0.x, P[1] + vz * t - p0.z) < 1.3; };
-  for (const [bas, hautP, via = []] of E) { let [a, b] = versHaut ? [bas, hautP] : [hautP, bas], vv = versHaut ? via : [...via].reverse();
+  for (const [bs, ht, via = []] of E) { const [a, b] = versHaut ? [bs, ht] : [ht, bs], vv = versHaut ? via : [...via].reverse();
     { const R2 = [a, ...vv, b]; let k = -1; for (let i = 0; i < R2.length - 1; i++) if (surSeg(R2[i], R2[i + 1])) k = i;   // (déjà dans cet escalier : on continue dans le même sens, sans redescendre à son pied)
       if (k >= 0) { const reste = R2.slice(k + 1); const l = reste.reduce((s2, r, i) => s2 + Math.hypot(r[0] - (i ? reste[i - 1][0] : p0.x), r[1] - (i ? reste[i - 1][1] : p0.z)), 0);
         if (!best || l < best.l) best = { l, pts: reste }; continue; } }
     M.passeTravaux = true; const pts = itineraire(M.L, p0.x, p0.z, a[0], a[1]); M.passeTravaux = false; if (!pts.length) continue;
-    let l = 0, q = [p0.x, p0.z]; for (const r of [...pts, ...vv, b]) { l += Math.hypot(r[0] - q[0], r[1] - q[1]); q = r; } l += Math.hypot(x - b[0], z - b[1]);
+    let l = 0, q = [p0.x, p0.z]; for (const r of [...pts, ...vv, b]) { l += Math.hypot(r[0] - q[0], r[1] - q[1]); q = r; } l += Math.hypot(but[0] - b[0], but[1] - b[1]);
     if (!best || l < best.l) best = { l, pts: [...pts, ...vv, b] }; }
-  if (!best) return false; const v = best.pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); moi.cible = v.shift(); moi.chemin = v; moi.suite = [x, z]; return true; };
+  if (!best) return false; const v = best.pts.map(([a, b]) => new THREE.Vector3(a, 0, b)); moi.cible = v.shift(); moi.chemin = v; moi.suite = suite; return true; };
 C3.dansChantier = (x, z) => z < C3.z0 - .4 && z > RU.zA + RU.cour + .3 && x > -C3.x - 6 && x < RU.xB;
 C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, za = zt1 - (zT - zt0), DB = C3.LB / 2, ax = Math.abs(x);
   if (C3.enHaut()) { const E = C3.ESC, P = C3.pont;   // en haut : la terrasse, le pont sur le toit de la cabane, le haut de l'escalier en U
@@ -5115,7 +5123,7 @@ export async function ouvrir(ctx) {
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0;
-          if (p.suite) { const s2 = p.suite; p.suite = null; M.L.grille = M.L.grilleAdmin = null; M.hautVu = C3.enHaut() + 2 * C3.enBas(); viser(p, s2[0], s2[1]);   // (la carte des passages du nouveau niveau, tout de suite : sinon on cherchait le chemin sur l'ancienne, et l'on s'arrêtait au pied des marches)
+          if (p.suite) { const s2 = p.suite; p.suite = null; M.L.grille = M.L.grilleAdmin = null; M.hautVu = C3.enHaut() + 2 * C3.enBas(); if (!(p.moi && s2.length > 2 && C3.etage(p, s2[0], s2[2], s2[1]))) viser(p, s2[0], s2[1]);   // (la carte des passages du nouveau niveau, tout de suite : sinon on cherchait le chemin sur l'ancienne, et l'on s'arrêtait au pied des marches)
             if (p.moi && p.cible) M.repere.material.opacity = 1; } } }   // (au bout de l'escalier : on repart vers le point visé, sur le nouveau niveau)
         else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
           // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
@@ -8401,13 +8409,14 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
-function libererScene(sc) { if (!sc) return; const vues = new Set();
+function libererScene(sc) { if (!sc) return; if (sc.userData.compil) { sc.userData.compil.then(() => libererScene(sc)); return; }   // (pas pendant que la carte graphique la prépare : sa préparation plantait, et plus rien n'était préparé ensuite)
+  const vues = new Set();
   sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t) && !t.isRenderTargetTexture && !t.garder) { vues.add(t); t.dispose(); } } m.dispose(); } }); }   // (jamais les reflets préparés une fois pour toutes)
 // préparer un lieu avant d'y aller (pendant une cinématique) : on le construit, puis la carte graphique prépare ses « shaders » en tâche de fond
 // (sur PC, sous Windows, cette préparation peut prendre de longues secondes : faite au dernier moment, elle figeait l'image) ; renvoie une promesse
 function preparerLieu(id) { return new Promise(ok => { if (!M || !M.L || M.lieu === id) return ok(); M.prets = M.prets || {}; if (M.prets[id] && M.prets[id].compile) return M.prets[id].compile.then(ok, ok); const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return ok(); const q = M.prets[id] || construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
-    q.compile = M.rendu.compileAsync ? M.rendu.compileAsync(q.scene, M.camera).catch(() => {}) : Promise.resolve(); q.compile.then(ok, ok); } catch (e) { ok(); } }, 30); }); }
+    q.compile = M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(q.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 8000))]).then(() => { q.scene.userData.compil = null; }) : Promise.resolve(); q.scene.userData.compil = q.compile; q.compile.then(ok, ok); } catch (e) { ok(); } }, 30); }); }
 function preparerVoisin() {
   const now = performance.now(); if (!M || !M.L || M.preparation || M.cine || now < (M.prepT || 0)) return; M.prepT = now + 700;   // (jamais pendant une cinématique)
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
@@ -8423,7 +8432,7 @@ function preparerVoisin() {
       // les images (murs, sols, affiches…) sont envoyées à la carte graphique dès maintenant
       const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
       if (q.scene.background && q.scene.background.isTexture) try { M.rendu.initTexture(q.scene.background); } catch (e) {}
-      if (M.rendu.compileAsync) M.rendu.compileAsync(q.scene, M.camera).then(fin, fin); else fin();
+      if (M.rendu.compileAsync) { const c = Promise.race([M.rendu.compileAsync(q.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 8000))]).then(() => { q.scene.userData.compil = null; }); q.scene.userData.compil = c; c.then(fin, fin); } else fin();
     } catch (e) { if (M) M.preparation = false; } finally { if (M && !M.prets[best]) M.preparation = false; } }, 30);
 }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
@@ -8538,4 +8547,4 @@ function connecter() {
 }
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
-export const _aller = (...a) => allerVers(...a);
+
