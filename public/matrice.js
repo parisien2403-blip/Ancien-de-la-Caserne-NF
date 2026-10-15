@@ -6154,7 +6154,7 @@ function apocalypse(scene, L, base) {
         pl.position.set((hasard(k + i) - .5) * .08, -h / 2 + (i + .5) * h / n, .05); pl.rotation.z = (hasard(k * 2 + i) - .5) * .35; g.add(pl);
         for (const sx of [-1, 1]) { const c2 = new THREE.Mesh(new THREE.BoxGeometry(.03, .03, .02), clou); c2.position.set(sx * w * .52, pl.position.y, .08); g.add(c2); } }
       if (hasard(k * 9.1) < .5) { const cr = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(w, h), .16, .05), bois[k % 3]); cr.position.z = .09; cr.rotation.z = Math.atan2(h, w) * (k % 2 ? 1 : -1); g.add(cr); } } }   // fenêtres barricadées, parfois une planche en diagonale
-  // dehors : de temps en temps, un hélicoptère passe très haut, son projecteur balaie le sol à la recherche de survivants
+  // dehors : quand le fumigène est trouvé, l'hélicoptère du S.T.A.R.S. arrive et tourne au-dessus de la caserne, son projecteur balaie le sol
   if (ext) {
     const Zh = L.zone || [-30, 30, -30, 30], cx = (Zh[0] + Zh[1]) / 2, cz = (Zh[2] + Zh[3]) / 2, R = Math.max(Zh[1] - Zh[0], Zh[3] - Zh[2]) * .5;
     const spot = new THREE.SpotLight(0xe8f0ff, 0, 90, .16, .35, .4); spot.userData.apo = true; scene.add(spot, spot.target);
@@ -6162,25 +6162,26 @@ function apocalypse(scene, L, base) {
     const cone = new THREE.Mesh(geoC, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cone.userData.helico = true; scene.add(cone);
     const tache = new THREE.Mesh(new THREE.CircleGeometry(2.6, 32), new THREE.MeshBasicMaterial({ color: 0xeef3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); tache.rotation.x = -Math.PI / 2; scene.add(tache);
     const feuxH = [0xff2020, 0xffffff].map(c => { const m = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 6), new THREE.MeshBasicMaterial({ color: c, fog: false })); scene.add(m); return m; });
-    let debut = performance.now() + 6000 + Math.random() * 8000, a0 = 0;
+    // (plus de passage au hasard) : l'hélicoptère S.T.A.R.S. arrive quand le fumigène est trouvé ; il tourne au-dessus de la caserne (de la terrasse, dans la grande cour), son projecteur cherche les survivants
+    const modele = creerHelico(); modele.scale.setScalar(.85); modele.visible = false; scene.add(modele); let vis = 0, prec = performance.now();
     const animH = L.anim;
-    L.anim = (t) => { animH && animH(t); const now = performance.now(), D = 20500, u = (now - debut) / D;   // (la durée du bruit des pales)
-      if (u > 1) { debut = now + 25000 + Math.random() * 30000; a0 = Math.random() * 7; }
-      const actif = u >= 0 && u <= 1, f = actif ? Math.sin(u * Math.PI) : 0;
-      // l'hélico passe en ligne droite, haut dans le ciel ; le projecteur balaie autour de sa trajectoire
-      const hx = cx + Math.cos(a0) * R * 1.4 * (u * 2 - 1), hz = cz + Math.sin(a0) * R * 1.4 * (u * 2 - 1), hy = 34;
-      const sx = hx + Math.sin(now / 1300) * 6 - Math.cos(a0) * 4, sz = hz + Math.cos(now / 1700) * 6 - Math.sin(a0) * 4;
-      spot.position.set(hx, hy, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 2600 * f;   // (toujours « visible » : l'allumer ou l'éteindre ferait tout recalculer)
-      const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
+    L.anim = (t) => { animH && animH(t); const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000); prec = now;
+      const veut = !!(M && M.fumi && M.fumi.trouve && !M.evac); vis = Math.max(0, Math.min(1, vis + (veut ? dt / 3 : -dt / 2))); const actif = vis > 0, f = vis;
+      const ox = L.heliport ? L.heliport.x : cx, oz = L.heliport ? L.heliport.z : cz, a = now / 9000, rr = L.heliport ? 24 : R * .7;
+      const hx = ox + Math.cos(a) * rr, hz = oz + Math.sin(a) * rr, hy = 30 + (1 - vis) * 25;
+      modele.visible = actif; modele.position.set(hx, hy, hz); modele.rotation.set(0, -a - Math.PI, .18); modele.userData.rotor.rotation.y += dt * 26; modele.userData.rotorQ.rotation.z += dt * 40; modele.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+      const sx = ox + Math.sin(now / 1300) * 5, sz = oz + Math.cos(now / 1700) * 5;
+      spot.position.set(hx, hy - 1, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 2600 * f;   // (toujours « visible » : l'allumer ou l'éteindre ferait tout recalculer)
+      const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy - 1, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
       cone.scale.set(lg * .16, lg, lg * .16); cone.material.opacity = .09 * f; cone.visible = actif;
-      tache.position.set(sx, .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
-      feuxH.forEach((m, i) => { m.visible = actif; m.position.set(hx + (i ? .6 : -.6), hy + .3, hz); m.material.color.setHex(i ? 0xffffff : (Math.floor(now / 500) % 2 ? 0xff2020 : 0x300000)); });
-      if (actif && !L.helicoSon) { L.helicoSon = true; M && M.ctx && M.ctx.surInfo && M.ctx.surInfo("🚁 Un hélicoptère passe… il cherche des survivants."); try { const a = new Audio("sons/apo-helico.mp3"); a.volume = 0; sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); L.helicoA = a; } catch (e) {} }
+      tache.position.set(sx, (L.heliport ? L.heliport.y : 0) + .06, sz); tache.material.opacity = .32 * f; tache.visible = actif;
+      feuxH.forEach(m => { m.visible = false; });
+      if (actif && !L.helicoSon) { L.helicoSon = true; try { const au = new Audio("sons/apo-helico.mp3"); au.loop = true; au.volume = 0; sonsCourts.add(au); au.play().catch(() => {}); L.helicoA = au; } catch (e) {} }
       if (!actif) { L.helicoSon = false; if (L.helicoA) { try { L.helicoA.pause(); } catch (e) {} sonsCourts.delete(L.helicoA); L.helicoA = null; } }
-      // le bruit suit l'hélico : faible au loin, fort quand il passe au-dessus de nous, puis il s'éloigne
+      // le bruit suit l'hélico : plus fort quand il passe au-dessus de nous
       else if (L.helicoA && M && M.gens) { const moi = M.gens.get(M.moiNum), p = moi ? moi.g.position : { x: cx, z: cz };
-        const d = Math.hypot(hx - p.x, hz - p.z), proche = 1 / (1 + (d / 16) ** 2), entree = Math.min(1, u * 8, (1 - u) * 8);
-        L.helicoA.volume = Math.max(0, Math.min(1, (.18 + .82 * proche) * entree)); } };
+        const d = Math.hypot(hx - p.x, hz - p.z), proche = 1 / (1 + (d / 16) ** 2);
+        L.helicoA.volume = Math.max(0, Math.min(1, (.25 + .6 * proche) * f)); } };
   }
   // on ne traverse pas les épaves ni les fûts
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
@@ -6270,25 +6271,69 @@ function fumiApo(moi, now) {
   if (F.trouve && L.heliport && !APO.zombieFin) { const c = L.heliport, p = moi.g.position;
     if (Math.hypot(p.x - c.x, p.z - c.z) < 1.6 && Math.abs(p.y - c.y) < 1 && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
 }
+// le bandeau de l'objectif, toujours affiché en haut pendant la partie : où chercher, où aller
+function objectifApo() {
+  const F = M && M.fumi, L = M && M.L; let t = "";
+  if (L && L.apo && F && !M.evac && !APO.zombieFin) t = !F.trouve ? "🧨 Trouve le fumigène rouge, caché au sol quelque part dans la caserne"
+    : M.lieu === "z-grande" ? "🚁 Monte sur la terrasse (au fond, après le passage) et marche sur le cercle rouge du H"
+    : "🚁 Va dans la grande cour, puis sur la terrasse : marche sur le cercle rouge du H";
+  if (t === (M && M.objectifT)) return; if (M) M.objectifT = t;
+  if (!t) { if (M && M.objectifEl) { M.objectifEl.remove(); M.objectifEl = null; } return; }
+  if (!M.objectifEl) { const d = document.createElement("div"); d.style.cssText = "position:absolute;top:10px;left:calc(50% + 14px);transform:translateX(-50%);z-index:6;pointer-events:none;width:max-content;max-width:min(calc(100% - 220px),520px);text-align:center;padding:6px 12px;border-radius:12px;background:rgba(40,4,4,.82);border:1.5px solid #e03a2a;color:#fff;font:700 12px/1.3 'Lato',sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.5)"; M.ctx.conteneur.appendChild(d); M.objectifEl = d; }
+  M.objectifEl.textContent = t; }
 function surFumi(m) {
   const avant = M.fumi; M.fumi = m; if (!M.ctx.surInfo) return;
   if (m.trouve && !M.musEvac) { M.musEvac = new Audio("sons/apo-evacuation.mp3"); M.musEvac.preload = "auto"; M.musEvac.load(); }   // (prête à partir)
   if (m.trouve && !(avant && avant.trouve)) M.ctx.surInfo(Number(m.par) === Number(M.moiNum) ? "🧨 Tu as le fumigène ! Va vite sur la terrasse de la grande cour : au centre du H, le cercle rouge." : `🧨 ${esc(m.nom || "Quelqu'un")} a trouvé le fumigène ! Tous sur la terrasse de la grande cour, au cercle rouge !`);
   else if (!m.trouve && M.fumiAnnonce !== m.r) { M.fumiAnnonce = m.r; M.ctx.surInfo("🧨 Un fumigène est caché au sol, quelque part dans la caserne. Trouve-le pour appeler l'hélicoptère !"); }
 }
-// un hélicoptère militaire (kaki), le rotor qui tourne, la porte ouverte côté droit (+z)
-function creerHelico() { const g = new THREE.Group(), kaki = new THREE.MeshStandardMaterial({ color: 0x6b7a55, roughness: .55, metalness: .2, emissive: 0x2a3322, emissiveIntensity: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: .5 }), vitre = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: .1, metalness: .7 });
-  const corps = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), kaki); corps.scale.set(2.4, 1.15, 1.2); corps.position.y = 1.5; g.add(corps);
-  const verre = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), vitre); verre.scale.set(1, .8, .95); verre.position.set(1.55, 1.7, 0); g.add(verre);
-  const queue = new THREE.Mesh(new THREE.CylinderGeometry(.18, .34, 4.6, 10), kaki); queue.rotation.z = Math.PI / 2; queue.position.set(-4.1, 1.8, 0); g.add(queue);
-  const derive = new THREE.Mesh(new THREE.BoxGeometry(.8, 1.3, .1), kaki); derive.position.set(-6.2, 2.4, 0); derive.rotation.z = -.3; g.add(derive);
-  const rotorQ = new THREE.Group(); rotorQ.position.set(-6.3, 2.4, .14); g.add(rotorQ); for (const r of [0, Math.PI / 2]) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, .1, .02), noir); p.rotation.z = r; rotorQ.add(p); }
-  const mat = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .5, 8), noir); mat.position.y = 2.85; g.add(mat);
-  const rotor = new THREE.Group(); rotor.position.y = 3.1; g.add(rotor); for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(5.4, .05, .28), noir); p.position.x = 2.7; const bras = new THREE.Group(); bras.rotation.y = i * Math.PI / 2; bras.add(p); rotor.add(bras); }
-  for (const s of [-1, 1]) { const patin = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 3.6, 8), noir); patin.rotation.z = Math.PI / 2; patin.position.set(0, .06, s * .95); g.add(patin);
-    for (const dx of [-.8, .8]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .75, 6), noir); j.position.set(dx, .42, s * .82); j.rotation.x = s * .3; g.add(j); } }
-  const porte = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.1), new THREE.MeshBasicMaterial({ color: 0x050505 })); porte.position.set(.1, 1.45, 1.23); g.add(porte);
-  const feu = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, fog: false })); feu.position.set(-6.4, 3.1, 0); g.add(feu);
+// l'hélicoptère du S.T.A.R.S. (d'après la planche : AgustaWestland AW139 modifié, vert olive, « S.T.A.R.S. », « ST-01 ») ; le nez vers +x, la baie de troupes ouverte côté +z
+function creerHelico() {
+  const g = new THREE.Group(), M_ = (o) => new THREE.MeshStandardMaterial(o);
+  const vert = M_({ color: 0x55653f, roughness: .5, metalness: .25, emissive: 0x1e2616, emissiveIntensity: .9 }), vertF = M_({ color: 0x3e4b2e, roughness: .55, metalness: .2, emissive: 0x141a0e, emissiveIntensity: .9 });
+  const noir = M_({ color: 0x121212, roughness: .5 }), vitre = M_({ color: 0x1a2630, roughness: .08, metalness: .8, emissive: 0x050a10 }), gris = M_({ color: 0xc8c8c4, roughness: .4, metalness: .3, emissive: 0x222222 }), jaune = M_({ color: 0xe0b020, emissive: 0x403000 });
+  const ad = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); o.castShadow = true; par.add(o); return o; };
+  // la cabine (arrondie), le nez, le pare-brise
+  ad(new THREE.CapsuleGeometry(.95, 4.2, 8, 20), vert, 0, 1.55, 0, 0, 0, Math.PI / 2, 1, 1, 1.08);
+  ad(new THREE.SphereGeometry(1, 22, 14), vert, 2.95, 1.3, 0, 0, 0, -.12, 1.55, .72, .82);
+  ad(new THREE.SphereGeometry(1, 22, 14), vitre, 2.35, 1.95, 0, 0, 0, -.2, 1.15, .52, .86);
+  // le carénage des moteurs, les tuyères
+  ad(new THREE.CapsuleGeometry(.5, 2.2, 6, 14), vert, -.3, 2.62, 0, 0, 0, Math.PI / 2, 1, .9, 1.25);
+  for (const s of [-1, 1]) { ad(new THREE.CylinderGeometry(.2, .24, .45, 12), noir, -1.75, 2.7, s * .5, 0, 0, Math.PI / 2); ad(new THREE.SphereGeometry(.28, 10, 8), vertF, 1.2, 2.55, s * .55); }
+  // la poutre de queue, la dérive, le stabilisateur, le rotor de queue
+  ad(new THREE.CylinderGeometry(.28, .58, 5, 14), vert, -4.7, 1.9, 0, 0, 0, Math.PI / 2);
+  const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(1.1, 0); fin.lineTo(.35, 2.1); fin.lineTo(-.35, 2.1); fin.closePath();
+  ad(new THREE.ExtrudeGeometry(fin, { depth: .16, bevelEnabled: false }), vert, -7.7, 1.85, -.08, 0, Math.PI, 0);
+  ad(new THREE.BoxGeometry(.8, .06, 2.7), vert, -6.6, 2.05, 0); for (const s of [-1, 1]) ad(new THREE.BoxGeometry(.55, .45, .05), vert, -6.6, 2.1, s * 1.35);
+  const rotorQ = new THREE.Group(); rotorQ.position.set(-8.05, 3.25, -.22); g.add(rotorQ);
+  for (let i = 0; i < 4; i++) { const b = new THREE.Group(); b.rotation.z = i * Math.PI / 2; rotorQ.add(b); ad(new THREE.BoxGeometry(.7, .13, .03), gris, .38, 0, 0, 0, 0, 0, 1, 1, 1, b); ad(new THREE.BoxGeometry(.14, .13, .032), M_({ color: 0xb02020, emissive: 0x300000 }), .62, 0, 0, 0, 0, 0, 1, 1, 1, b); }
+  ad(new THREE.SphereGeometry(.1, 8, 6), noir, -8.05, 3.25, -.2);
+  // le rotor principal : cinq pales, bouts jaunes
+  ad(new THREE.CylinderGeometry(.13, .16, .5, 10), noir, .1, 3.15, 0); ad(new THREE.SphereGeometry(.26, 12, 8), noir, .1, 3.42, 0, 0, 0, 0, 1, .6, 1);
+  const rotor = new THREE.Group(); rotor.position.set(.1, 3.42, 0); g.add(rotor);
+  for (let i = 0; i < 5; i++) { const b = new THREE.Group(); b.rotation.y = i * Math.PI * 2 / 5; rotor.add(b); ad(new THREE.BoxGeometry(5.9, .05, .34), noir, 3.1, 0, 0, 0, 0, 0, 1, 1, 1, b); ad(new THREE.BoxGeometry(.35, .055, .345), jaune, 5.9, 0, 0, 0, 0, 0, 1, 1, 1, b); }
+  // les sponsons, les roues (trois trains), les points d'attache
+  for (const s of [-1, 1]) { ad(new THREE.CapsuleGeometry(.24, 1.3, 6, 10), vertF, -.5, .95, s * 1.15, 0, 0, Math.PI / 2);
+    ad(new THREE.CylinderGeometry(.3, .3, .2, 16), noir, -.6, .3, s * 1.32, Math.PI / 2); ad(new THREE.BoxGeometry(.08, .55, .08), noir, -.6, .62, s * 1.22); }
+  ad(new THREE.CylinderGeometry(.22, .22, .16, 14), noir, 2.6, .22, 0, Math.PI / 2); ad(new THREE.BoxGeometry(.07, .7, .07), noir, 2.6, .55, 0);
+  // les vitres de la cabine, des deux côtés ; la baie de troupes ouverte (côté +z), la porte coulissée vers l'arrière
+  const fen = new THREE.PlaneGeometry(.52, .48);
+  for (const s of [-1, 1]) for (const x of s > 0 ? [-2.0, 1.15] : [-2.0, -1.2, -.4, .4, 1.15]) ad(fen, vitre, x, 1.85, s * 1.035, 0, s > 0 ? 0 : Math.PI);
+  ad(new THREE.PlaneGeometry(1.7, 1.3), M_({ color: 0x0a0a0a, emissive: 0x0a0806 }), -.35, 1.55, 1.04);
+  ad(new THREE.BoxGeometry(1.6, 1.25, .05), vert, -2.05, 1.6, 1.1);
+  // les inscriptions (« S.T.A.R.S. », « ST-01 ») et l'écusson sur la dérive
+  const deco = (w, h, f) => new THREE.MeshStandardMaterial({ map: tex(toile(w, h, f)), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, roughness: .6, emissive: 0x222018, emissiveMap: null });
+  const stars = deco(512, 160, (x, w, h) => { x.fillStyle = "#e2d8a8"; x.font = "bold 96px Arial Black, Arial, sans-serif"; x.textAlign = "center"; x.fillText("S.T.A.R.S.", w / 2, 98); x.font = "bold 26px Arial"; x.fillText("R.P.D. · MOUNTAIN DIVISION", w / 2, 142); });
+  const st01 = deco(256, 96, (x, w, h) => { x.fillStyle = "#e2d8a8"; x.font = "bold 70px Arial Black, Arial, sans-serif"; x.textAlign = "center"; x.fillText("ST-01", w / 2, 72); });
+  const logo = deco(128, 128, (x) => { x.fillStyle = "#1b2a44"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.strokeStyle = "#d8cfa0"; x.lineWidth = 6; x.stroke();
+    x.fillStyle = "#e0b020"; x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 18 : 40; x.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } x.closePath(); x.fill(); });
+  for (const s of [-1, 1]) { const ry = s > 0 ? 0 : Math.PI;
+    ad(new THREE.PlaneGeometry(2.3, .72), stars, -3.4, 1.98, s * .55, 0, ry);   // sur la poutre de queue (son flanc)
+    ad(new THREE.PlaneGeometry(1.0, .38), st01, s > 0 ? .7 : .2, 1.12, s * 1.06, 0, ry);
+    ad(new THREE.PlaneGeometry(.55, .55), logo, -7.35, 2.95, s * .1, 0, ry); }
+  ad(new THREE.PlaneGeometry(1.6, .5), stars, -.3, 2.98, 0, -Math.PI / 2, 0, -Math.PI / 2);   // (sur le toit)
+  // le feu rouge qui clignote en haut de la dérive
+  const feu = ad(new THREE.SphereGeometry(.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, fog: false }), -7.95, 3.95, 0);
   g.userData = { rotor, rotorQ, feu }; return g; }
 // la fin de la partie : un carton noir, puis retour dans la vraie caserne
 function finPartieApo(titre, texte) {
@@ -6335,8 +6380,8 @@ function cineEvac(m) {
     else if (u < 10) { const k = lisse((u - 2.5) / 7.5); hel.position.lerpVectors(dep, H, k); hel.position.y = H.y + (dep.y - H.y) * Math.pow(1 - k, 1.6); hel.rotation.z = (1 - k) * .15; hel.rotation.y = (1 - k) * .6;
       placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1.2, hel.position.z, .05); }
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
-      if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x + .1 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
-      for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x + .1), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
+      if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x - .35 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
+      for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
       placer(H.x + 4, H.y + 2.6, H.z + 5.6, H.x, H.y + 1.3, H.z + 1, .05); }
     else if (u < 26) { for (const p of vivants) p.g.visible = false;
       const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
@@ -6722,10 +6767,10 @@ function majHudApo() {
 }
 // à chaque image : les zombies bougent, tombent, grognent ; on ramasse ; le compte à rebours du zombie
 function animerApo(t, dt) {
-  if (!M.L || !M.L.apo) { if (M.zomb && M.zomb.size) M.zomb.clear(); majHudApo(); return; }
+  if (!M.L || !M.L.apo) { if (M.zomb && M.zomb.size) M.zomb.clear(); majHudApo(); objectifApo(); return; }
   if (!M.zomb || M.zombL !== M.L) { M.zomb = new Map(); M.zombL = M.L; M.zInit = false; M.sangs = []; }
   const moi = moiApo(); if (!moi) return;
-  if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
+  objectifApo(); if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
   objetsApo(); fumiApo(moi, performance.now());
   if (estChefZ()) simulerZ(t, dt);
   animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); animerRevenants(performance.now());
