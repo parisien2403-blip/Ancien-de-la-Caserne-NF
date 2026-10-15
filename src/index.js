@@ -42,7 +42,7 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "bttf-cour", "hv1955"];
+const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955"];
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10],
   ["rue", -53, 1], ["rue", -32, 16], ["rue", -20, -2], ["rue", 1, -20], ["rue", 13, 4], ["rue", 31, -2], ["rue", 46, 1], ["rue", 58, -5], ["fetes", -2.8, 3], ["fetes", .2, 9], ["fetes", -2.8, 12]];
@@ -452,6 +452,7 @@ export class Compteur extends DurableObject {
         ws.send(JSON.stringify({ t: "z_fumi", ...f })); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
+      if (!/^(z|sh)-/.test(m.lieu) && !LIEUX_BTTF.includes(m.lieu)) ws.send(JSON.stringify({ t: "radio", r: await this.radio() }));   // (la radio de Silent Hill, posée quelque part)
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
@@ -499,6 +500,11 @@ export class Compteur extends DurableObject {
       if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse", "z_equipe"].includes(m.t)) return;
       const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
       for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "radio_prendre") {
+      // la radio rouge : le premier qui la ramasse part seul à Silent Hill ; elle réapparaît aussitôt ailleurs, pour les autres
+      const r = await this.radio(); if (r.lieu !== a.lieu) return;
+      const n = this.placeRadio(r); await this.ctx.storage.put("radio", n); const t = JSON.stringify({ t: "radio", r: n }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+      ws.send(JSON.stringify({ t: "radio_ok" }));
     } else if (m.t === "almanach_prendre") {
       // le premier qui marche dessus le ramasse : il part seul pour 1955 ; l'Almanach n'est plus nulle part ailleurs
       const al = await this.almanach(); if (al.pris || al.lieu !== a.lieu) return;
@@ -507,7 +513,7 @@ export class Compteur extends DurableObject {
       const v = Math.max(.2, Math.min(2.5, Number(m.v) || .6)); await this.ctx.storage.put("affiche_taille", v); const t = JSON.stringify({ t: "affiche", taille: v }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "almanach_ici" && a.admin) {
       // l'administrateur fait venir l'Almanach près de lui, dans le lieu où il se trouve (pas en 1955, ni à l'apocalypse)
-      if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^z-/.test(a.lieu)) return;
+      if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
       const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
       const al = await this.almanach(); Object.assign(al, { lieu: a.lieu, x, z, r: Math.random() * 6.28, pris: null }); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "almanach_taille" && a.admin) {
@@ -591,6 +597,10 @@ export class Compteur extends DurableObject {
   async webSocketClose(ws) { this.quitter(ws); }
   async webSocketError(ws) { this.quitter(ws); }
   // ---- l'Almanach des sports ----
+  // la radio de Silent Hill : comme l'Almanach, posée au sol à un endroit différent à chaque fois
+  async radio() { let r = await this.ctx.storage.get("radio"); if (!r) { r = this.placeRadio(null); await this.ctx.storage.put("radio", r); } return r; }
+  placeRadio(r) { const libres = ALMANACH_PLACES.filter(p => !(r && p[0] === r.lieu && Math.hypot(p[1] - r.x, p[2] - r.z) < 2)), p = libres[Math.floor(Math.random() * libres.length)];
+    return { lieu: p[0], x: p[1] + (Math.random() - .5) * 1.6, z: p[2] + (Math.random() - .5) * 1.6, r: Math.random() * 6.28 }; }
   async almanach() { let al = await this.ctx.storage.get("almanach"); if (!al) { al = this.nouvellePlace({ taille: .3 }); await this.ctx.storage.put("almanach", al); } return al; }
   nouvellePlace(al) { const libres = ALMANACH_PLACES.filter(p => !(al && p[0] === al.lieu && p[1] === al.x && p[2] === al.z)), p = libres[Math.floor(Math.random() * libres.length)];
     return { lieu: p[0], x: p[1] + (Math.random() - .5) * 1.2, z: p[2] + (Math.random() - .5) * 1.2, r: Math.random() * 6.28, taille: (al && al.taille) || .3, pris: null }; }
