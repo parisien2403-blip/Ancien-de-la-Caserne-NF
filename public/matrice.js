@@ -1137,10 +1137,10 @@ function lanternesMurales(scene, L) {
   // la cour d'honneur : de part et d'autre des portes R et S, et du passage sous l'horloge
   for (const sg of [-1, 1]) { for (const dz of [-1.05, 1.05]) pose(sg * 8.58, 13.75 + dz, -sg, 0, 2.6); pose(sg * 3.4, -17.97, 0, 1, 3.2); }
   // la deuxième cour : de part et d'autre des deux passages
-  for (const sg of [-1, 1]) { pose(sg * 3.15, C2.z0 - .04, 0, -1, 3.2); pose(sg * 3.15, C2.z1 + .01, 0, 1, 3.2); }   // (pas sur les boîtiers rouges)
+  for (const sg of [-1, 1]) pose(sg * 3.15, C2.z0 - .04, 0, -1, 3.2);   // (plus de lampes de part et d'autre du passage d'en face)   // (pas sur les boîtiers rouges)
   // la troisième cour : le bâtiment d'en face, l'immeuble (devant et côté fosse), ses flancs dans les ruelles
   const zT = C3.z1 - C3.PP;
-  for (const sg of [-1, 1]) { pose(sg * 3.15, C3.z0 - .01, 0, -1, 3.2); pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
+  for (const sg of [-1, 1]) { pose(sg * (C3.LM + 1.4), C3.z1 + .01, 0, 1, 3.2); pose(sg * (C3.LM + 1.0), zT - .01, 0, -1, C3.hp + 2.6);
     if (sg > 0) for (const z of [-74.5, -81.5]) pose(sg * (C3.LB / 2 + .01), z, sg, 0, 2.7); }   // (pas dans la ruelle de gauche)
   // la ruelle de gauche et son passage : la façade de brique (au-dessus des arcs), le flanc du bâtiment du fond
   for (const z of [-108, -124]) pose(-C3.x - 6 + .01, z, 1, 0, 4.0);   // (sur le mur noir, puis sur la façade à arcades)
@@ -2083,6 +2083,9 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         A.ajoute(new THREE.BoxGeometry(.05, 1.46, .07), pierreC, x, y0 + 2.0, zA + .09, false); A.ajoute(new THREE.BoxGeometry(1.06, .05, .07), pierreC, x, y0 + 2.35, zA + .09, false);
         A.ajoute(new THREE.BoxGeometry(1.45, .1, .22), pierreC, x, y0 + 1.1, zA + .11, false); } }
     RU.portesFond = portes; }
+  // les corbeilles de rue : contre le local poubelle, côté place ; et sur son poteau, au bout du muret du contrebas, côté contre-allée
+  corbeilleParis(A, scene, -14.8, RU.y(RU.zA + RU.cour - 4), RU.zA + RU.cour - 4 - .02, Math.PI);
+  corbeilleParis(A, scene, RU.xR + .9, RU.y(RU.zA + RU.cour - .8), RU.zA + RU.cour - .8, Math.PI, true);
   { const zc = RU.zA + RU.cour - 7.6, xc = -2.5; (L.jourObjets = L.jourObjets || []).push(camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
   // les toits des immeubles autour de la place, comme sur les photos : brisis de tuiles, terrasson de zinc, garde-corps, souches de cheminée
   { const xw = -C3.x - 6, xa = xB - RU.pc;
@@ -2681,6 +2684,11 @@ function deuxiemeCour(A, L, scene) {
       c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(lettre, 64, 70); });
     A.ajoute(new THREE.BoxGeometry(.48, .48, .04), A.mat({ color: 0xe8e4da }), xp, 4.25, z1 + .02, false);
     A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xp, 4.25, z1 + .045, false); }
+  // et côté troisième cour, sur l'autre façade du même bâtiment : M à gauche (en regardant le bâtiment), N à droite, près du bloc électrique
+  for (const [xp, lettre] of [[-15, "M"], [15, "N"]]) { const pq = toile(128, 128, (c) => { c.fillStyle = "#e8e4da"; c.beginPath(); c.roundRect(0, 0, 128, 128, 18); c.fill(); c.fillStyle = "#14234a"; c.beginPath(); c.roundRect(7, 7, 114, 114, 14); c.fill();
+      c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(lettre, 64, 70); });
+    A.ajoute(new THREE.BoxGeometry(.48, .48, .04), A.mat({ color: 0xe8e4da }), xp, 4.25, C3.z0 - .02, false);
+    const pl = A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), xp, 4.25, C3.z0 - .045, false); pl.rotation.y = Math.PI; }
   troisiemeCour(A, L, scene);
   // sous les deux voûtes (celle de l'horloge, celle d'en face) : les murs en brique, dans la continuité de la façade, et le soubassement blanc de 60 cm
   { const pl = toile(400, 24, (x, w, h) => { pierre(x, 0, 0, w, h, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, 0, w, 2); });
@@ -6035,6 +6043,26 @@ function camionPoubelle(A, scene, x, y, z, rot) {
     aj(new THREE.BoxGeometry(.75, 1.05, 1.2), bac, bx, .82, 0); aj(new THREE.CylinderGeometry(.6, .6, .78, 18, 1, false, 0, Math.PI).rotateZ(Math.PI / 2), bac, bx, 1.35, 0);
     for (let k = -2; k <= 2; k++) aj(new THREE.BoxGeometry(.02, .9, .04), A.mat({ color: 0x8a8e91 }), bx - .38, .8, k * .22);
     for (const s2 of [-1, 1]) aj(new THREE.CylinderGeometry(.07, .07, .06, 10).rotateX(Math.PI / 2), noir, bx, .1, s2 * .5); }
+  return g;
+}
+/* la corbeille de rue de la Ville de Paris (d'après la photo) : la cuve verte, évasée vers le haut, son couvercle à rabat et sa poignée, le sac transparent qui dépasse,
+   les papiers dedans, le logo « Ville de Paris » ; fixée au mur (ou sur son poteau vert), la face vers l'angle rot */
+function corbeilleParis(A, scene, x, y, z, rot, poteau = false) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; scene.add(g);
+  const vert = A.mat({ color: 0x3f9a4c, roughness: .55 }), vertF = A.mat({ color: 0x2f7d3b, roughness: .6 });
+  const aj = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  const yb = poteau ? .45 : .32;   // (le bas de la cuve)
+  { const sh = new THREE.Shape(); sh.moveTo(-.2, 0); sh.lineTo(.2, 0); sh.lineTo(.25, .62); sh.lineTo(-.25, .62); sh.closePath();   // la cuve, évasée
+    const c = new THREE.ExtrudeGeometry(sh, { depth: .38, bevelEnabled: true, bevelSize: .03, bevelThickness: .03, bevelSegments: 3 }); c.translate(0, 0, -.19); aj(c, vert, 0, yb, .21); }
+  { const t = toile(128, 128, (c) => { c.fillStyle = "#3f9a4c"; c.fillRect(0, 0, 128, 128); c.strokeStyle = "rgba(25,70,32,.7)"; c.lineWidth = 4; c.beginPath(); c.arc(64, 40, 16, 0, 7); c.stroke();
+      c.fillStyle = "rgba(25,70,32,.75)"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText("PARIS", 64, 84); c.strokeRect(70, 52, 48, 66); });
+    aj(new THREE.PlaneGeometry(.4, .4), A.mat({ map: tex(t), roughness: .6 }), 0, yb + .34, .45); }   // le logo, en relief, et le panneau
+  aj(new THREE.BoxGeometry(.56, .05, .48), vertF, 0, yb + .66, .2);   // le rebord
+  aj(new THREE.BoxGeometry(.6, .015, .5), A.mat({ color: 0xe8eef0, roughness: .2, transparent: true, opacity: .55 }), 0, yb + .63, .2);   // le sac, qui dépasse
+  for (const [dx, dz, w, c] of [[-.08, .2, .18, 0xe9dcc0], [.06, .26, .14, 0xf4f4f2], [.12, .14, .12, 0xc9a25a]]) aj(new THREE.BoxGeometry(w, .08, .1), A.mat({ color: c, roughness: .8 }), dx, yb + .7, dz).rotation.z = dx * 2;   // les papiers
+  { const cv = aj(new THREE.BoxGeometry(.56, .06, .3), vert, 0, yb + .78, .08); cv.rotation.x = -.35; aj(new THREE.BoxGeometry(.18, .05, .05), vertF, 0, yb + .82, .22); }   // le couvercle à rabat, relevé, et sa poignée
+  if (poteau) { aj(new THREE.CylinderGeometry(.045, .05, 1.3, 12), A.mat({ color: 0x1f5a2c, roughness: .4, metalness: .4 }), 0, .65, 0); aj(new THREE.BoxGeometry(.3, .4, .04), vertF, 0, yb + .4, .03); }
+  else aj(new THREE.BoxGeometry(.4, .5, .03), vertF, 0, yb + .35, .015);   // la platine, contre le mur
   return g;
 }
 function construireScene(id) {
