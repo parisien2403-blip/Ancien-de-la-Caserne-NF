@@ -425,6 +425,7 @@ export class Compteur extends DurableObject {
     return this.ctx.getWebSockets().map(ws => [ws, ws.deserializeAttachment()]).filter(([ws, a]) => a && a.lieu === lieu && ws !== sauf);
   }
   diffuser(lieu, msg, sauf) { const t = JSON.stringify(msg); for (const [ws] of this.presents(lieu, sauf)) { try { ws.send(t); } catch (e) {} } }
+  diffuserApo(msg) { const t = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) { const b = ws.deserializeAttachment(); if (b && b.lieu && b.lieu.startsWith("z-")) { try { ws.send(t); } catch (e) {} } } }
   comptes() { const c = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu) c[a.lieu] = (c[a.lieu] || 0) + 1; } return c; }
   diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
   async webSocketMessage(ws, brut) {
@@ -443,7 +444,11 @@ export class Compteur extends DurableObject {
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       // la caserne de l'apocalypse : l'un des joueurs présents fait vivre les zombies pour tout le monde (le « chef »)
       if (ancien && ancien !== m.lieu && ancien.startsWith("z-")) this.diffuser(ancien, { t: "z_chef", numero: this.chefDe(ancien) });
-      if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c)); }
+      if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c));
+        // le fumigène de l'évacuation : une nouvelle cachette à chaque partie (quand personne d'autre n'est déjà à l'apocalypse)
+        const autres = this.ctx.getWebSockets().some(w => { if (w === ws) return false; const b = w.deserializeAttachment(); return b && b.lieu && b.lieu.startsWith("z-"); });
+        let f = await this.ctx.storage.get("z_fumi"); if (!f || !autres) { f = { lieu: ["z-grande", "z-grande", "z-fetes", "z-etage"][Math.floor(Math.random() * 4)], r: Math.random(), trouve: false }; await this.ctx.storage.put("z_fumi", f); }
+        ws.send(JSON.stringify({ t: "z_fumi", ...f })); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
@@ -482,6 +487,11 @@ export class Compteur extends DurableObject {
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if ((m.t === "z_fumi_pris" || m.t === "z_fumi_fin") && a.lieu && a.lieu.startsWith("z-")) {
+      // le fumigène : le premier qui le trouve le ramasse (tous sont prévenus) ; puis, sur le cercle rouge de la terrasse, l'hélicoptère vient chercher les survivants
+      const f = await this.ctx.storage.get("z_fumi"); if (!f) return;
+      if (m.t === "z_fumi_pris") { if (f.trouve || f.lieu !== a.lieu) return; Object.assign(f, { trouve: true, par: Number(a.numero), nom: a.nom }); await this.ctx.storage.put("z_fumi", f); this.diffuserApo({ t: "z_fumi", ...f }); }
+      else { if (!f.trouve || a.lieu !== "z-grande") return; await this.ctx.storage.delete("z_fumi"); this.diffuserApo({ t: "z_evac", par: Number(a.numero), nom: a.nom }); }
     } else if (typeof m.t === "string" && m.t.startsWith("z_") && a.lieu && a.lieu.startsWith("z-")) {
       // la partie de zombies : l'état des zombies (du chef seulement), les tirs, les morsures, les objets ramassés… relayés aux autres joueurs du lieu
       if (m.t === "z_etat" && this.chefDe(a.lieu) !== Number(a.numero)) return;

@@ -1290,7 +1290,7 @@ function animerSilhouette(s, t) {
 /* le soir, sur une façade dessinée (ses fenêtres notées par noteFen) : quelques fenêtres allumées, et parfois quelqu'un qui passe derrière
    cadres : pour chaque face où la toile est posée, son centre o, la direction de la largeur ux, la normale n, la largeur W et la hauteur H */
 function allumerFacade(L, scene, fens, cadres, part = .3) {
-  if (!fens || !fens.length) return; L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || [];
+  if (!fens || !fens.length) return; L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || []; (L.facadesFen = L.facadesFen || []).push([fens, cadres]);   // (à l'apocalypse : des planches clouées sur une partie de ces fenêtres)
   const teintes = [0xffd58a, 0xffe2b0, 0xffc870, 0xf6e6c8].map(c => new THREE.Color(c));
   for (const c of cadres) { const P = [], C = [], I = [];
     for (const [fu, fv, fw, fh] of fens) { if (alea() > part) continue;
@@ -5972,7 +5972,7 @@ function ambianceApo() {
 const LAMPES_MAX = 8;
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
-  if (baseLieu(M.lieu) !== "grande") { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if (baseLieu(M.lieu) !== "grande" || estApo(M.lieu)) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
   if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight) M.lampes.push(o); }); }
   const c = M.camera.position, v = new THREE.Vector3();
   const tri = M.lampes.filter(l => l.visible).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
@@ -6093,14 +6093,14 @@ function apocalypse(scene, L, base) {
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
-  const epave = (x, z, a, brule = true) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = a; scene.add(g);
+  const epave = (x, z, a, brule = true, y = 0, obst = true) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = a; scene.add(g);
     const b = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
     b(4.2, .75, 1.8, charbon, 0, .62, 0); b(2.2, .62, 1.62, rouille, -.2, 1.3, 0);
     b(.02, .5, 1.5, vitreN, .92, 1.3, 0); b(.02, .5, 1.5, vitreN, -1.32, 1.3, 0); b(2, .45, .02, vitreN, -.2, 1.32, .82); b(2, .45, .02, vitreN, -.2, 1.32, -.82);
     for (const [wx, wz] of [[1.35, .9], [-1.35, .9], [1.35, -.9], [-1.35, -.9]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .22, 14), cendre); r.rotation.x = Math.PI / 2; r.position.set(wx, .3, wz); g.add(r); }
     b(.5, .25, .9, rouille, 1.6, 1.0, .1).rotation.z = -.5;   // le capot arraché
-    if (brule) { feu(x + Math.cos(a) * .9, .6, z - Math.sin(a) * .9, 2); L.feuxSon.push([x, z]); }
-    obstacles.push([x, z, 2.3]); };
+    if (brule) { feu(x + Math.cos(a) * .9, y + .6, z - Math.sin(a) * .9, 2); L.feuxSon.push([x, z]); }
+    if (obst) obstacles.push([x, z, 2.3]); };
   // un fût qui brûle
   const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .85, z, 1); obstacles.push([x, z, .45]); };
   // un grand brasier (des meubles, des gravats qui brûlent), plus haut qu'un homme
@@ -6122,6 +6122,23 @@ function apocalypse(scene, L, base) {
     o.position.set(x, (y0 ?? hauteurSol(x, z)) + .06, z); o.rotation.set(planche ? 0 : Math.random() * 3, Math.random() * 7, planche ? (Math.random() - .5) * .3 : Math.random() * 3); scene.add(o); });
   // le décor de chaque lieu
   if (base === "rue") { epave(-26, -1.2, .25); epave(-9, .8, -.5); epave(9, -.6, .35, false); epave(24, 1.2, -.2); epave(40, -1.5, .6); fut(-16, 4.2); fut(16, -5.2); fut(32, 4.6); fut(-36, 4.4); brasier(-20, 5.3); brasier(30, -5.6); }
+  if (base === "grande") {   // dans la troisième cour, une voiture garée sur deux brûle ; sur la terrasse, le H de l'hélicoptère
+    (L.voitures || []).filter(([a, b, c, d]) => (c + d) / 2 < -50).filter((v, i) => i % 2 === 0).forEach(([a, b, c, d]) => { const x = (a + b) / 2, z = (c + d) / 2; epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); });
+    heliportApo(scene, L); }
+  detritusApo(scene, L, base, hauteurSol);
+  // les fenêtres des façades dessinées (la troisième cour, la rue en pente, l'immeuble…) : des planches clouées sur une sur trois (trois dessins en tout : léger)
+  if (L.facadesFen && L.facadesFen.length) { const P = [], up = new THREE.Vector3(0, 1, 0); let k = 0;
+    for (const [fens, cadres] of L.facadesFen) for (const c of cadres) { const ux = new THREE.Vector3(c.ux[0], 0, c.ux[2]), n = new THREE.Vector3(c.n[0], 0, c.n[2]), qb = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(ux, up, n));
+      for (const [fu, fv, fw, fh] of fens) { if (hasard(++k * 4.3 + 11) > .33) continue;
+        const w = fw * c.W, h = fh * c.H, a = (fu + fw / 2 - .5) * c.W, b = (.5 - fv - fh / 2) * c.H, cx = c.o[0] + c.ux[0] * a + c.n[0] * .07, cy = c.o[1] + b, cz = c.o[2] + c.ux[2] * a + c.n[2] * .07;
+        const nb = Math.max(2, Math.min(5, Math.round(h / .35)));
+        for (let i = 0; i < nb; i++) P.push([cx, cy - h / 2 + (i + .5) * h / nb, cz, w * 1.2, Math.min(.2, h / nb * .75), (hasard(k * 7 + i) - .5) * .3, qb]);
+        if (hasard(k * 9.1) < .5) P.push([cx + c.n[0] * .04, cy, cz + c.n[2] * .04, Math.hypot(w, h), .16, Math.atan2(h, w) * (k % 2 ? 1 : -1), qb]); } }
+    const geo = new THREE.BoxGeometry(1, 1, .05), q = new THREE.Quaternion(), rz = new THREE.Quaternion(), Z = new THREE.Vector3(0, 0, 1), m4 = new THREE.Matrix4();
+    [0xa8845a, 0x93704a, 0xb8946a].forEach((coul, j) => { const L3 = P.filter((x, i) => i % 3 === j); if (!L3.length) return;
+      const im = new THREE.InstancedMesh(geo, A.mat({ color: coul, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .9 }), L3.length);
+      L3.forEach(([x, y, z, lg, ep, tilt, qb], i) => { q.copy(qb).multiply(rz.setFromAxisAngle(Z, tilt)); m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(lg, ep, 1)); im.setMatrixAt(i, m4); });
+      scene.add(im); }); }
   if (base === "grande") { epave(-4.5, 3, .7); epave(5.5, -9, -.4); fut(-8.5, -4); fut(8.6, 4); fut(0, -14); fut(-5, -24); fut(6, -40); fut(-8, 10); fut(3, 11); brasier(-1.5, -6); brasier(9.2, -2.5, 2.2); brasier(-9.3, 4, 2.2); }
   if (base === "fetes") { fut(3.2, 1.5); brasier(4.4, 9, 2); for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, .06, .8), rouille); t.position.set(-3 + Math.random() * 6, .05, 2 + Math.random() * 10); t.rotation.y = Math.random() * 3; scene.add(t); } }
   if (lumieres) { const bois = [0xa8845a, 0x93704a, 0xb8946a].map(c => A.mat({ color: c, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .9 })), clou = A.mat({ color: 0x222222 }), noir = new THREE.MeshBasicMaterial({ color: 0x050403 });
@@ -6179,6 +6196,165 @@ function apocalypse(scene, L, base) {
       l.position.set(f.x, f.y, f.z); l.distance = 12 * f.k; l.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1);
     L.lampesApo(t); };
+}
+/* ===================== l'évacuation (apocalypse) =====================
+   Un fumigène est caché au sol, quelque part dans la caserne (jamais au même endroit d'une partie à l'autre : le serveur tire la cachette).
+   Le premier qui le trouve le ramasse ; tout le monde est prévenu : sur la terrasse de la grande cour, au centre du H, un cercle rouge s'allume.
+   Un survivant s'y place : le fumigène éclate en une grosse fumée rouge, l'hélicoptère descend, les survivants montent à bord,
+   on voit la caserne du ciel… et elle explose. Fin de la partie. */
+const helipad = () => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr; return { x: 0, y: C3.hp + C3.NT * C3.HT2, z: (zt0 + zt1) / 2 }; };
+let texFumR = null, texLueurR = null, texJournal = null;
+const texFumeeRouge = () => texFumR || (texFumR = tex(toile(128, 128, x => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(235,40,30,.85)"); g.addColorStop(.5, "rgba(200,25,20,.45)"); g.addColorStop(1, "rgba(160,10,10,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
+const texLueurRouge = () => texLueurR || (texLueurR = tex(toile(128, 128, x => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,60,40,.9)"); g.addColorStop(1, "rgba(255,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
+// sur la terrasse : le grand H peint dans son cercle (usé), le cercle rouge et son faisceau (allumés quand le fumigène est trouvé)
+function heliportApo(scene, L) {
+  const H = helipad(), g = new THREE.Group(); g.position.set(H.x, H.y + .02, H.z); scene.add(g);
+  const t = tex(toile(512, 512, (x, w, h) => { x.strokeStyle = "rgba(236,232,220,.92)"; x.lineWidth = 26; x.beginPath(); x.arc(256, 256, 226, 0, 7); x.stroke();
+    x.fillStyle = "rgba(236,232,220,.92)"; x.fillRect(150, 120, 58, 272); x.fillRect(304, 120, 58, 272); x.fillRect(150, 228, 212, 56);
+    x.globalCompositeOperation = "destination-out"; for (let i = 0; i < 1400; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * .6})`; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 7, 2 + Math.random() * 4); } }));
+  const peint = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: .9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); peint.rotation.x = -Math.PI / 2; g.add(peint);
+  const rouge = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide });
+  const cercle = new THREE.Group(); cercle.visible = false; g.add(cercle);
+  const anneau = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 48), rouge(0xff1a1a, .9)); anneau.rotation.x = -Math.PI / 2; anneau.position.y = .03; cercle.add(anneau);
+  const disque = new THREE.Mesh(new THREE.CircleGeometry(1.25, 48), rouge(0x901010, .5)); disque.rotation.x = -Math.PI / 2; disque.position.y = .025; cercle.add(disque);
+  const geoF = new THREE.CylinderGeometry(.6, 1.4, 40, 24, 1, true); geoF.translate(0, 20, 0);
+  const faisceau = new THREE.Mesh(geoF, rouge(0xff2020, .1)); cercle.add(faisceau);
+  L.heliport = { ...H, cercle, anneau, disque, faisceau };
+}
+// des détritus au sol : journaux, feuilles, canettes, cartons (quatre dessins en tout : très léger)
+function detritusApo(scene, L, base, hSol) {
+  texJournal = texJournal || tex(toile(256, 180, (x, w, h) => { x.fillStyle = "#e4dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#1a1a1a"; x.font = "bold 30px Georgia"; x.fillText("LA GAZETTE", 14, 34); x.fillRect(10, 42, w - 20, 3);
+    x.font = "bold 22px Arial"; x.fillText("ÉVACUATION !", 14, 70); x.fillStyle = "#8a8578"; x.fillRect(14, 80, 100, 70);
+    x.fillStyle = "#6a665c"; for (let c = 0; c < 2; c++) for (let i = 0; i < 9; i++) x.fillRect(124 + c * 64, 82 + i * 9, 56, 3); for (let i = 0; i < 2; i++) x.fillRect(14, 158 + i * 9, w - 28, 3); }));
+  const zone = L.zone || [-30, 30, -30, 30], pts = [];
+  for (let i = 0; i < 3000 && pts.length < (base === "etage" ? 60 : 110); i++) { let x, z, y;
+    if (base === "etage") { const n = Math.floor(Math.random() * (ET.N + 1)); x = (Math.random() - .5) * 21; z = -1.15 - Math.random() * 1.5; y = n * ET.H; }
+    else { x = zone[0] + Math.random() * (zone[1] - zone[0]); z = zone[2] + Math.random() * (zone[3] - zone[2]); if (!L.limites(x, z) || (L.repos && L.repos(x, z))) continue; y = hSol(x, z); }
+    pts.push([x, y, z]); }
+  const d = new THREE.Object3D(), poser = (geo, mat, liste, fn) => { if (!liste.length) return; const im = new THREE.InstancedMesh(geo, mat, liste.length);
+    liste.forEach((p, i) => { d.scale.setScalar(1); fn(d, p); d.updateMatrix(); im.setMatrixAt(i, d.matrix); }); im.receiveShadow = true; scene.add(im); };
+  const q = k => pts.filter((p, i) => i % 4 === k);
+  poser(new THREE.PlaneGeometry(.46, .32), new THREE.MeshStandardMaterial({ map: texJournal, roughness: 1, side: THREE.DoubleSide }), q(0).concat(q(1)), (o, [x, y, z]) => { o.position.set(x, y + .015, z); o.rotation.set(-Math.PI / 2 + (Math.random() - .5) * .15, 0, Math.random() * 7); o.scale.setScalar(.8 + Math.random() * .5); });
+  poser(new THREE.PlaneGeometry(.21, .29), new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 1, side: THREE.DoubleSide }), q(2), (o, [x, y, z]) => { o.position.set(x, y + .012, z); o.rotation.set(-Math.PI / 2, 0, Math.random() * 7); });
+  poser(new THREE.CylinderGeometry(.033, .033, .12, 10), new THREE.MeshStandardMaterial({ color: 0x9a2a20, roughness: .4, metalness: .6 }), q(3).slice(0, 16), (o, [x, y, z]) => { o.position.set(x, y + .034, z); o.rotation.set(Math.PI / 2, 0, Math.random() * 7); });
+  poser(new THREE.BoxGeometry(.5, .32, .4), new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 }), q(3).slice(16), (o, [x, y, z]) => { o.position.set(x, y + .16, z); o.rotation.set(0, Math.random() * 7, (Math.random() - .5) * .3); o.scale.setScalar(.8 + Math.random() * .6); });
+}
+// les cachettes possibles du fumigène dans ce lieu (les mêmes chez tout le monde) ; le serveur a tiré laquelle
+function candidatsFumi() {
+  const L = M.L, base = baseLieu(M.lieu), Z = L.zone || [-20, 20, -20, 20], out = [];
+  for (let k = 1; k < 8000 && out.length < 40; k++) { const x = Z[0] + hasard(k * 5.3 + 777) * (Z[1] - Z[0]), z = Z[2] + hasard(k * 9.1 + 333) * (Z[3] - Z[2]);
+    if (!L.limites(x, z) || (L.repos && L.repos(x, z)) || (L.feuxZ || []).some(([fx, fz, r]) => Math.hypot(x - fx, z - fz) < r + 1)) continue;
+    if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
+    if (L.heliport && Math.hypot(x - L.heliport.x, z - L.heliport.z) < 14) continue;   // (pas sur la terrasse, ni juste à côté)
+    if (out.some(p => Math.hypot(p[0] - x, p[2] - z) < 6)) continue;
+    const etg = base === "etage" ? Math.floor(hasard(k * 2.7 + 99) * (ET.N + 1)) : 0, y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
+    out.push([x, y, z, etg]); }
+  return out; }
+// le fumigène, posé au sol : un tube rouge qui crache un filet de fumée rouge, une lueur rouge autour
+function objetFumi(x, y, z) { const g = new THREE.Group(); g.position.set(x, y, z); M.scene.add(g);
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .24, 12), new THREE.MeshStandardMaterial({ color: 0xc8102e, roughness: .5, emissive: 0x500000 })); c.rotation.z = Math.PI / 2; c.position.y = .05; g.add(c);
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(.047, .047, .05, 12), new THREE.MeshStandardMaterial({ color: 0x222222 })); b.rotation.z = Math.PI / 2; b.position.set(.13, .05, 0); g.add(b);
+  const lueur = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: texLueurRouge(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); lueur.rotation.x = -Math.PI / 2; lueur.position.y = .02; g.add(lueur);
+  const fu = []; for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 6]); }
+  g.userData.fu = fu; return g; }
+// à chaque image, dans la caserne de l'apocalypse : le fumigène (posé, ramassé), le cercle rouge de la terrasse
+function fumiApo(moi, now) {
+  const F = M.fumi, L = M.L; if (!F) return;
+  if (L.heliport) { const c = L.heliport, on = !!F.trouve; c.cercle.visible = on; if (on) { const k = .65 + .35 * Math.sin(now / 260); c.anneau.material.opacity = .9 * k; c.disque.material.opacity = .45 * k; c.faisceau.material.opacity = .1 * k; } }
+  if (!F.trouve && F.lieu === M.lieu) {
+    if (M.fumiL !== L) { M.fumiL = L; const C = candidatsFumi(); M.fumiPos = C.length ? C[Math.min(C.length - 1, Math.floor(F.r * C.length))] : null; M.fumiObj = M.fumiPos ? objetFumi(M.fumiPos[0], M.fumiPos[1], M.fumiPos[2]) : null; }
+    const o = M.fumiObj; if (o) { for (const [sp, d] of o.userData.fu) { const u = ((now / 2600) + d) % 1; sp.position.set(.18 + Math.sin(u * 5 + d * 9) * .12, .12 + u * 2.2, 0); sp.scale.setScalar(.25 + u * 1.5); sp.material.opacity = .7 * (1 - u); }
+      const P = M.fumiPos; if (!APO.zombieFin && Math.hypot(moi.g.position.x - P[0], moi.g.position.z - P[2]) < .9 && (baseLieu(M.lieu) !== "etage" || etageDe(moi) === P[3]) && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_pris" }); } } }
+  else if (M.fumiObj) { M.scene.remove(M.fumiObj); M.fumiObj = null; }
+  // le fumigène trouvé : un survivant sur le cercle rouge, et l'hélicoptère arrive
+  if (F.trouve && L.heliport && !APO.zombieFin) { const c = L.heliport, p = moi.g.position;
+    if (Math.hypot(p.x - c.x, p.z - c.z) < 1.6 && Math.abs(p.y - c.y) < 1 && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
+}
+function surFumi(m) {
+  const avant = M.fumi; M.fumi = m; if (!M.ctx.surInfo) return;
+  if (m.trouve && !M.musEvac) { M.musEvac = new Audio("sons/apo-evacuation.mp3"); M.musEvac.preload = "auto"; M.musEvac.load(); }   // (prête à partir)
+  if (m.trouve && !(avant && avant.trouve)) M.ctx.surInfo(Number(m.par) === Number(M.moiNum) ? "🧨 Tu as le fumigène ! Va vite sur la terrasse de la grande cour : au centre du H, le cercle rouge." : `🧨 ${esc(m.nom || "Quelqu'un")} a trouvé le fumigène ! Tous sur la terrasse de la grande cour, au cercle rouge !`);
+  else if (!m.trouve && M.fumiAnnonce !== m.r) { M.fumiAnnonce = m.r; M.ctx.surInfo("🧨 Un fumigène est caché au sol, quelque part dans la caserne. Trouve-le pour appeler l'hélicoptère !"); }
+}
+// un hélicoptère militaire (kaki), le rotor qui tourne, la porte ouverte côté droit (+z)
+function creerHelico() { const g = new THREE.Group(), kaki = new THREE.MeshStandardMaterial({ color: 0x6b7a55, roughness: .55, metalness: .2, emissive: 0x2a3322, emissiveIntensity: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: .5 }), vitre = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: .1, metalness: .7 });
+  const corps = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), kaki); corps.scale.set(2.4, 1.15, 1.2); corps.position.y = 1.5; g.add(corps);
+  const verre = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), vitre); verre.scale.set(1, .8, .95); verre.position.set(1.55, 1.7, 0); g.add(verre);
+  const queue = new THREE.Mesh(new THREE.CylinderGeometry(.18, .34, 4.6, 10), kaki); queue.rotation.z = Math.PI / 2; queue.position.set(-4.1, 1.8, 0); g.add(queue);
+  const derive = new THREE.Mesh(new THREE.BoxGeometry(.8, 1.3, .1), kaki); derive.position.set(-6.2, 2.4, 0); derive.rotation.z = -.3; g.add(derive);
+  const rotorQ = new THREE.Group(); rotorQ.position.set(-6.3, 2.4, .14); g.add(rotorQ); for (const r of [0, Math.PI / 2]) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, .1, .02), noir); p.rotation.z = r; rotorQ.add(p); }
+  const mat = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .5, 8), noir); mat.position.y = 2.85; g.add(mat);
+  const rotor = new THREE.Group(); rotor.position.y = 3.1; g.add(rotor); for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(5.4, .05, .28), noir); p.position.x = 2.7; const bras = new THREE.Group(); bras.rotation.y = i * Math.PI / 2; bras.add(p); rotor.add(bras); }
+  for (const s of [-1, 1]) { const patin = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 3.6, 8), noir); patin.rotation.z = Math.PI / 2; patin.position.set(0, .06, s * .95); g.add(patin);
+    for (const dx of [-.8, .8]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .75, 6), noir); j.position.set(dx, .42, s * .82); j.rotation.x = s * .3; g.add(j); } }
+  const porte = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.1), new THREE.MeshBasicMaterial({ color: 0x050505 })); porte.position.set(.1, 1.45, 1.23); g.add(porte);
+  const feu = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, fog: false })); feu.position.set(-6.4, 3.1, 0); g.add(feu);
+  g.userData = { rotor, rotorQ, feu }; return g; }
+// la fin de la partie : un carton noir, puis retour dans la vraie caserne
+function finPartieApo(titre, texte) {
+  const d = voile("background:#000;opacity:0;transition:opacity 1.2s;display:grid;place-items:center;text-align:center;color:#fff;font:700 18px 'Lato',sans-serif");
+  if (!d) return; d.innerHTML = `<div><div style="font:900 40px Impact,'Arial Black',sans-serif;letter-spacing:2px;color:#ffcf3a">${titre}</div><div style="margin-top:14px;line-height:1.5;padding:0 18px">${texte}</div><div style="margin-top:18px;font:900 26px Impact,'Arial Black',sans-serif;color:#ff5a4a">FIN DE LA PARTIE</div></div>`;
+  requestAnimationFrame(() => { d.style.opacity = "1"; });
+  setTimeout(() => { if (!M) return; d.remove(); M.evac = false; M.fumi = null; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); }, 6500); }
+function surEvac(m) {
+  if (!M || M.evac) return; M.fumi = null; if (M.fumiObj) { M.scene.remove(M.fumiObj); M.fumiObj = null; }
+  if (M.lieu !== "z-grande" || !M.L.heliport) { M.evac = true; M.ctx.surInfo && M.ctx.surInfo("🚁 L'hélicoptère a décollé de la terrasse… sans toi !"); setTimeout(() => finPartieApo("TROP TARD…", "L'hélicoptère est parti sans toi. La caserne n'a pas tenu."), 6000); return; }
+  cineEvac(m);
+}
+function cineEvac(m) {
+  const sc = M.scene, Hp = M.L.heliport, H = new THREE.Vector3(Hp.x, Hp.y, Hp.z); M.evac = true;
+  for (const z of (M.zomb || new Map()).values()) z.g.visible = false;
+  const moi = M.gens.get(M.moiNum);
+  const vivant = p => !p.info.mortT && (p.moi ? !APO.zombieFin : (!p.info.pnj || p.info.equipier)) && !(p.info.equipier && Number(p.info.proprio) === Number(M.moiNum) && (M.equipe || [])[p.info.slot] && M.equipe[p.info.slot].mort);
+  const vivants = [...M.gens.values()].filter(vivant), noms = vivants.map(p => esc(p.info.nom || "?"));
+  // ceux qui sont loin sont déjà là, dans la fumée, autour du H
+  vivants.forEach((p, i) => { const q = p.g.position; if (Math.hypot(q.x - H.x, q.z - H.z) > 9 || Math.abs(q.y - H.y) > 1) { const a = i * 2.1 + .6, r = 5 + (i % 3); q.set(H.x + Math.cos(a) * r, H.y, H.z + Math.sin(a) * r * .7); } p.cible = null; p.chemin = []; });
+  if (Hp.cercle) Hp.cercle.visible = false;
+  const hel = creerHelico(); sc.add(hel); const dep = new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35); hel.position.copy(dep);
+  const fum = []; for (let i = 0; i < 34; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, opacity: 0 })); sc.add(sp); fum.push({ sp, a: Math.random() * 7, v: .5 + Math.random(), d: Math.random() * 1.2 }); }
+  const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
+  const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
+  // la musique (« The Mansion Explodes ») : la cinématique est calée dessus — l'hélico se pose sur le silence (10 s), la caserne explose sur le grand coup (26 s)
+  const mus = M.musEvac || new Audio("sons/apo-evacuation.mp3"); M.musEvac = null; mus.currentTime = 0; mus.volume = 1; sonsCourts.add(mus); mus.play().catch(() => {});
+  sonBruit(1.4, 700, .7);   // (le fumigène éclate)
+  const brouillard = sc.fog ? [sc.fog.near, sc.fog.far] : null, cam = M.camera, vise = new THREE.Vector3(), t0 = performance.now();
+  let fini = false, monte = false, prec = t0, boum = 0;
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); try { helA.pause(); mus.pause(); } catch (e) {} sonsCourts.delete(helA); sonsCourts.delete(mus);
+    const moiVivant = moi && vivants.includes(moi);
+    finPartieApo(moiVivant ? "ÉVACUÉS !" : "LA CASERNE EST TOMBÉE", (moiVivant ? "Vous avez survécu à la fin du monde." : "Tu n'as pas survécu… mais d'autres sont partis.") + (noms.length ? `<br>À bord : ${noms.join(", ")}` : "")); };
+  M.passerBtn = boutonPasser(fin);
+  const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
+  cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
+  const c = M.cine = { t0, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
+    hel.userData.rotor.rotation.y += dt * 28; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+    // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
+    for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
+      f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
+    helA.volume = Math.max(0, Math.min(.45, u / 5)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);
+    if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
+    else if (u < 10) { const k = lisse((u - 2.5) / 7.5); hel.position.lerpVectors(dep, H, k); hel.position.y = H.y + (dep.y - H.y) * Math.pow(1 - k, 1.6); hel.rotation.z = (1 - k) * .15; hel.rotation.y = (1 - k) * .6;
+      placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1.2, hel.position.z, .05); }
+    else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
+      if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x + .1 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
+      for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x + .1), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
+      placer(H.x + 4, H.y + 2.6, H.z + 5.6, H.x, H.y + 1.3, H.z + 1, .05); }
+    else if (u < 26) { for (const p of vivants) p.g.visible = false;
+      const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
+      if (brouillard && sc.fog) { sc.fog.near = 60; sc.fog.far = 700; }
+      if (u < 17) placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1, hel.position.z, .06);
+      else placer(12, 115, -10, 0, 0, -50, .035); }   // la caserne, vue du ciel
+    else { placer(12, 115, -10, 0, 0, -50, .035);
+      // et elle explose : des boules de feu, l'une après l'autre, le flash, la secousse
+      while (boum < P.length && u > 26 + boum * .4) { const [x, z] = P[boum++]; voile("background:#fff6e0;opacity:.75", 160); sonBruit(2.6, 140 + Math.random() * 140, 1);
+        const g = new THREE.Group(); g.position.set(x, 0, z); sc.add(g); const fl = [];
+        for (let i = 0; i < 8; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[i % 8], transparent: true, depthWrite: false, fog: false })); sp.center.set(.5, .1); sp.position.set((Math.random() - .5) * 10, 0, (Math.random() - .5) * 10); g.add(sp); fl.push([sp, i, .7 + Math.random() * .6]); }
+        const fu = []; for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, fog: false })); g.add(sp); fu.push([sp, Math.random()]); }
+        explo.push({ g, fl, fu, t: now }); }
+      for (const e of explo) { const k = (now - e.t) / 1000;
+        for (const [sp, ph, h] of e.fl) { sp.material.map = texFlammes[(Math.floor(now / 70) + ph) % 8]; const s = Math.min(1, k / .8) * 16 * h; sp.scale.set(s * .8, s * 1.4, 1); }
+        for (const [sp, d] of e.fu) { sp.position.set(Math.sin(d * 9) * 6, 6 + k * 9 + d * 8, Math.cos(d * 9) * 6); sp.scale.setScalar(10 + k * 9); sp.material.opacity = Math.min(.8, k) * .8; } }
+      const sec = boum && u < 26 + P.length * .4 + 1 ? .6 : 0; cam.position.x += (Math.random() - .5) * sec; cam.position.y += (Math.random() - .5) * sec;
+      if (u > 31) fin(); } } };
 }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
    L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
@@ -6291,7 +6467,7 @@ function eclairDuCanon(p, dx, dz) {
 }
 // une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
 function subirMorsure(zx, zz, deg = 1) {
-  const moi = moiApo(); if (!moi || APO.zombieFin) return;
+  const moi = moiApo(); if (!moi || APO.zombieFin || M.cine || M.evac) return;   // (pendant une cinématique, on ne peut pas se défendre : pas de morsure)
   APO.vies -= deg; M.ctx.surApoFlash && M.ctx.surApoFlash();
   const dx = moi.g.position.x - zx, dz = moi.g.position.z - zz, d = Math.hypot(dx, dz) || 1;
   for (let k = .8 * deg; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
@@ -6373,6 +6549,39 @@ function sacrificeApo(now) {
       for (const z of zs) { if (estChefZ()) { z.cine = false; z.recalc = 0; } else retirerZ(z); } } } };
   M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(EQUIPIER(k)); if (q && !e.mort) { e.vies = 0; e.mort = true; revenantPlus(e.id); q.info.mortT = performance.now(); flaqueMort(q); majHudApo(); }
     finCine(); placerCamera(true); for (const z of zs) { if (estChefZ()) z.cine = false; else retirerZ(z); } });
+}
+/* sous l'horloge jaune (l'horloge octogonale, au coin de la rue en pente) : la première fois qu'on y passe pendant une partie,
+   un héros que personne ne joue accourt — « je crois que j'ai trouvé une sortie ! » — et deux zombies se jettent sur lui. Il meurt ;
+   plus tard, il reviendra en zombie (abattu, il ne revient plus, comme les autres revenants) */
+const PNJ_HORLOGE = -480;
+function horlogeApo(now) {
+  const moi = moiApo(); if (!moi || M.cine || M.horlogeFaite || M.lieu !== "z-grande" || APO.zombieFin || M.evac || typeof RU === "undefined" || RU.xB == null) return;
+  const T = [RU.xB - RU.pc / 2, RU.zA + RU.pc / 2], mp = moi.g.position; if (Math.hypot(mp.x - T[0], mp.z - T[1]) > 9) return;
+  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id), ...[...M.gens.values()].map(p => p.info.perso)].filter(Boolean).map(Number));
+  const libres = Object.keys(HEROS).map(Number).filter(h => !pris.has(h) && !(M.revenantsFinis && M.revenantsFinis.has(h)) && !(M.revenants || []).some(r => r.h === h)); if (!libres.length) { M.horlogeFaite = true; return; }
+  M.horlogeFaite = true; const h = libres[Math.floor(Math.random() * libres.length)];
+  // il arrive de l'arcade, vers nous ; il s'arrête à trois mètres
+  const dx = T[0] - mp.x, dz = T[1] - mp.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d; let ax = mp.x + ux * 3, az = mp.z + uz * 3;
+  if (!M.L.limites(ax, az)) { ax = mp.x + ux * 1.8; az = mp.z + uz * 1.8; }
+  const dep = [ax + ux * 4, az + uz * 4], p = ajouterAncien({ ...habillerHeros({ numero: PNJ_HORLOGE, nom: HEROS[h].nom, initiales: "" }, h), pnj: true, x: dep[0], z: dep[1] }); if (!p) return;
+  const nom = HEROS[h].court, prenom = (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "Hé";
+  moi.cible = null; moi.chemin = []; p.cible = new THREE.Vector3(ax, 0, az);
+  // les deux zombies, sortis de l'ombre de l'arcade, juste derrière lui
+  const zs = [-1, 1].map((s, i) => { const x = ax + ux * 3.2 - uz * s * 1.2, z = az + uz * 3.2 + ux * s * 1.2; const q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x, z }); q.cine = true; q.x0 = x; q.z0 = z; q.s = s; q.g.visible = false; return q; });
+  const t0 = now; let dit = false, cri = false, mort = false, giclee = 0;
+  bulle(null);
+  const finir = () => { finCine(); placerCamera(true); for (const z of zs) { z.g.visible = true; if (estChefZ()) { z.cine = false; z.recalc = 0; } else retirerZ(z); } setTimeout(() => { if (M && M.gens.get(PNJ_HORLOGE)) retirerAncien(PNJ_HORLOGE); }, 25000); };
+  const tuer = q => { if (mort) return; mort = true; q.info.mortT = performance.now(); q.cible = null; q.chemin = []; flaqueMort(q); revenantPlus(h); M.ctx.surInfo && M.ctx.surInfo(`💀 ${nom} n'a pas eu le temps de te montrer la sortie…`); };
+  M.cine = { maj: (t) => { const u = (t - t0) / 1000, q = M.gens.get(PNJ_HORLOGE); if (!q) return;
+    M.camera.position.set(mp.x - uz * 1.6 - ux * 1.2, mp.y + 1.8, mp.z + ux * 1.6 - uz * 1.2); M.camera.lookAt(ax + ux, .95 + mp.y, az + uz);
+    if (u > .5 && !dit) { dit = true; dire(PNJ_HORLOGE, `${prenom} ! Viens, vite ! Je crois que j'ai trouvé une sortie !`); }
+    zs.forEach(z => { if (u < 1.8) return; z.g.visible = true; const f = Math.min(1, (u - 1.8) / 1.1), cx = ax + ux * .6 - uz * z.s * .45, cz = az + uz * .6 + ux * z.s * .45; z.x = z.tx = z.x0 + (cx - z.x0) * f; z.z = z.tz = z.z0 + (cz - z.z0) * f; if (u > 2.9) z.coupT = performance.now() - (z.s > 0 ? 0 : 170); });
+    if (u > 2.9 && !mort) { q.flashT = performance.now() + 120; q.g.position.x = ax + Math.sin(u * 23) * .05;
+      if (u > giclee) { giclee = u + .17; jetSang(ax + (Math.random() - .5) * .3, mp.y + .8, az); sangAuSol(ax + (Math.random() - .5) * 1.4, az + (Math.random() - .5) * 1.4, mp.y, .6 + Math.random() * .6); if (Math.random() < .5) sonBruit(.12, 900, .35); } }
+    if (u > 3.2 && !cri) { cri = true; sonPos(ZTYPES[0].son, .9); dire(PNJ_HORLOGE, "Non ! NON !!! Aaaaaah… Cours !!!"); }
+    if (u > 6.2) tuer(q);
+    if (u > 8) finir(); } };
+  M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(PNJ_HORLOGE); if (q) tuer(q); finir(); });
 }
 // l'équipier tombé reviendra : un peu plus tard (au bout de 40 s, ou dès le lieu suivant), là où il y a des zombies
 function revenantPlus(h) { if (!HEROS[h] || (M.revenantsFinis && M.revenantsFinis.has(h))) return; M.revenants = M.revenants || [];
@@ -6516,9 +6725,10 @@ function animerApo(t, dt) {
   if (!M.L || !M.L.apo) { if (M.zomb && M.zomb.size) M.zomb.clear(); majHudApo(); return; }
   if (!M.zomb || M.zombL !== M.L) { M.zomb = new Map(); M.zombL = M.L; M.zInit = false; M.sangs = []; }
   const moi = moiApo(); if (!moi) return;
-  objetsApo();
+  if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
+  objetsApo(); fumiApo(moi, performance.now());
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now()); sacrificeApo(performance.now()); animerRevenants(performance.now());
+  animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now();
@@ -7634,7 +7844,8 @@ function allerVers(x, z, envoyer, y = null) {
 }
 function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return;
-  if (estApo(M.lieu) && !estApo(id)) couperSonsApo();
+  if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.evac = false; }
+  M.fumiObj = null; M.fumiL = null;
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
   if (M.cadranEl) { M.cadranEl.remove(); M.cadranEl = null; }
   for (const n of [...M.gens.keys()]) retirerAncien(n);
@@ -7647,7 +7858,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   const { scene, L, repere } = pret || construireScene(id);
   trace("construit " + id); M.trace1 = true;
   { const ancienne = M.scene; setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
@@ -9431,6 +9642,8 @@ function connecter() {
     else if (m.t === "z_mord") { if (m.numero === M.moiNum) { if (Number.isInteger(m.eq)) blesserEquipier(m.eq, m.d === 2 ? 2 : 1, +m.x || 0, +m.z || 0); else subirMorsure(+m.x || 0, +m.z || 0, m.d === 2 ? 2 : 1); } }
     else if (m.t === "z_equipe" && Array.isArray(m.l)) recevoirEquipe(m.de, m.l.slice(0, 2));
     else if (m.t === "z_zombi") { const p = M.gens.get(m.de); if (p) { p.info.mortT = m.on ? performance.now() : 0; if (m.on) flaqueMort(p); } }
+    else if (m.t === "z_fumi") surFumi(m);
+    else if (m.t === "z_evac") surEvac(m);
     else if (m.t === "z_ramasse") { const o = (M.objets || []).find(q => q.id === m.id); if (o) { o.cache = performance.now() + 45000; o.sp.visible = false; } }
     else if (m.t === "joue") { const p = M.gens.get(m.numero); if (p) p.info.joue = m.jeu || null; }
     else if (m.t === "danse") { const p = M.gens.get(m.numero); if (p) p.info.danse = styleDanse(m.on); }
