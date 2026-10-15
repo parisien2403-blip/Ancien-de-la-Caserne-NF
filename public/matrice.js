@@ -6033,6 +6033,7 @@ function silentHill(scene, L, base) {
       geo.attributes.position.needsUpdate = true; }
     // la radio de poche grésille, avec des craquements
     peuplerSH(now); for (const o of faisceaux) o.visible = false;
+    musiqueSH(dt);
     if (L.fete) { for (const q of L.fete.projos) q.spot.visible = q.cone.visible = false; for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = L.fete.boule.visible = false; }   // (pas de fête à Silent Hill)
     if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
     if (M.gresil) { const k = .045 + (Math.random() < .02 ? .12 : 0) + Math.max(0, Math.sin(now / 2300)) * .02 + Math.max(0, 1 - (M.shProche ?? 99) / 14) * .3; M.gresil.g.gain.setTargetAtTime(k, actx.currentTime, .05); } };   // (un monstre approche : la radio s'affole)
@@ -6041,9 +6042,10 @@ function silentHill(scene, L, base) {
 const SH_PERSOS = [   // [id, numéro, lieu, x, z, allure, rayon où il va et vient]
   [69, -601, "sh-grande", -3, 6, .55, 3], [70, -602, "sh-grande", 4, -37, .45, 2.5], [71, -603, "sh-grande", -8, -66, .45, 2], [72, -604, "sh-fetes", -1.2, 24.4, .4, 1.2], [73, -605, "sh-fetes", 0, 6, 1.3, 4.5]];
 const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Laura" };
-const SH_MONSTRES = [   // [image, hauteur, lieu, x, z, façon de bouger]
+const SH_MONSTRES_PRETS = [   // [image, hauteur, lieu, x, z, façon de bouger] — prêts, mais pas encore lâchés (en attendant le scénario)
   ["pyramid", 2.35, "sh-grande", 0, -78, "lent"], ["infirmiere", 1.78, "sh-grande", 0, -24, "saccade"], ["tuyau", 1.72, "sh-grande", -5, -40, "saccade"], ["bras", 2.1, "sh-grande", 9, -62, "balance"],
   ["mannequin", 1.8, "sh-grande", -12, -92, "saccade"], ["capuche", 1.85, "sh-grande", 12, -110, "balance"], ["infirmiere", 1.78, "sh-fetes", 1.5, -1, "saccade"]];
+const SH_MONSTRES = [];   // (pour le moment : pas de monstres)
 function placeLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let r = .5; r < 8; r += .5) for (let a = 0; a < 12; a++) { const xx = x + Math.cos(a / 12 * 6.283) * r, zz = z + Math.sin(a / 12 * 6.283) * r; if (M.L.limites(xx, zz)) return [xx, zz]; } return null; }
 const solSH = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
 function peuplerSH(now) {
@@ -6071,6 +6073,17 @@ function peuplerSH(now) {
     if (moi) proche = Math.min(proche, Math.hypot(moi.g.position.x - m.x, moi.g.position.z - m.z)); }
   M.shProche = proche;
 }
+// la musique de Silent Hill : au bar, « White Noiz » ; ailleurs, quand on explore, « Promise (Reprise) » — l'une s'efface quand l'autre monte
+const VOLUME_FIGE = (() => { try { const t = new Audio(); t.volume = .5; return t.volume !== .5; } catch (e) { return false; } })();   // (sur iPhone, le volume d'une page ne se règle pas)
+function musiqueSH(dt) {
+  if (!M || M.cine) return;   // (pendant le réveil, c'est lui qui mène)
+  if (!M.musReveil) { M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.volume = 0; }
+  const moi = M.gens.get(M.moiNum), auBar = M.lieu === "sh-fetes" && moi && moi.g.position.z > 17.6;
+  if (!M.musExplo) { M.musExplo = new Audio("sons/sh-explo.mp3"); M.musExplo.loop = true; M.musExplo.volume = 0; }
+  if (VOLUME_FIGE) { for (const [a, on] of [[M.musReveil, auBar], [M.musExplo, !auBar]]) { a.loop = true; if (on && a.paused && performance.now() > (a.essai || 0)) { a.essai = performance.now() + 2000; a.play().catch(() => {}); } else if (!on && !a.paused) a.pause(); } return; }   // (iPhone : pas de fondu possible, on bascule)
+  for (const [a, cible] of [[M.musReveil, auBar ? .85 : 0], [M.musExplo, auBar ? 0 : .8]]) {
+    a.loop = true; const v = a.volume + Math.max(-dt / 2.5, Math.min(dt / 2.5, cible - a.volume)); a.volume = Math.max(0, Math.min(1, v));
+    if (a.volume > .01 && a.paused && performance.now() > (a.essai || 0)) { a.essai = performance.now() + 2000; a.play().catch(() => {}); } else if (a.volume <= .01 && !a.paused) a.pause(); } }
 // on ramasse la radio : elle grésille de plus en plus fort, la sirène hurle, le noir… et l'on se réveille dans le bar
 function cineRadio() {
   if (!M) return; const moi = M.gens.get(M.moiNum); if (!moi) return; moi.cible = null; moi.chemin = [];
@@ -8147,7 +8160,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.ctx.surLieu && M.ctx.surLieu(id);
   majAmbiance();
   M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio();
-  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
+  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.musExplo) { try { M.musExplo.pause(); } catch (e) {} M.musExplo = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
   if (id === "bttf-cour") cineCour();
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
