@@ -362,6 +362,9 @@
 
   /* ---------- Le DJ de la salle des fêtes ---------- */
   .mx-dj[hidden] { display: none; }
+  .mx-dj.panneau { position: fixed; inset: 12px; z-index: 60; margin: 0; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,.6); border-radius: 18px; max-width: 640px; margin-inline: auto; }
+  .dj-fermer { display: none; position: sticky; top: 0; float: right; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); color: #fff; font-size: 20px; cursor: pointer; }
+  .mx-dj.panneau .dj-fermer { display: block; }
   .mx-dj { margin-top: 10px; background: linear-gradient(160deg, #2b2340, #3d2a4a); color: #f6eedf; border: 0; }
   .mx-dj .kicker { color: #f6d465; }
   .dj-tete { display: flex; gap: 12px; align-items: center; }
@@ -1322,6 +1325,7 @@
         </div>
         <!-- le DJ de la salle des fêtes : la musique est entendue par tous ceux qui sont dans la salle -->
         <div class="card mx-dj" id="mxDJ" hidden>
+          <button class="dj-fermer" id="djFermer" type="button" aria-label="Fermer">✕</button>
           <div class="dj-tete"><div class="dj-disque" id="djDisque"></div>
             <div style="min-width:0;flex:1"><div class="kicker">🎧 Chez le DJ</div><b id="djTitre">Pas de musique pour l'instant</b><small id="djPar"></small>
               <div class="dj-barre"><div id="djProgres"></div></div></div></div>
@@ -2159,7 +2163,7 @@
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller";
           $("mxSaut").classList.toggle("on", on === "saut"); $("mxSaut").textContent = on === "saut" ? "🛑 Stop" : "🙌 Saut"; },
         moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
-        surLieu: id => { dessinerLieux(m, id); document.querySelector(".mx-danses").style.display = /^z-/.test(id) ? "none" : "";   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = (id !== "fetes" && id !== "mess") || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
+        surLieu: id => { dessinerLieux(m, id); if (id !== "fetes" && typeof fermerDJ === "function" && $("mxDJ").classList.contains("panneau")) fermerDJ(); document.querySelector(".mx-danses").style.display = /^z-/.test(id) ? "none" : "";   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^z-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = (id !== "fetes" && id !== "mess") || !moi.admin; $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
         surNuit: (n, lieu) => { mxNuit = n; if (lieu === "fetes") { $("mxFumee").hidden = !n; $("mxLasers").hidden = !n || !moi.admin; } },   // (les lasers : l'administrateur seul)
@@ -2247,10 +2251,17 @@
     zWesker: [52, "🧟 Wesker zombie (revenant)", "Wesker zombie", "images/re/z-wesker-tete.png"], zChris: [53, "🧟 Chris zombie (revenant)", "Chris zombie", "images/re/z-chris-tete.png"],
     zombieC: [14, "🧟 Le policier zombie", "Le policier zombie", "images/apo/zombie3-tete.png"] };
   const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id !== 1 ? "&id=" + id : ""}`;
+  // le bouton « Musique » : la liste des musiques s'ouvre par-dessus la salle (même en plein écran) ; la croix referme et l'on revient dans la salle
+  const djPlace = { parent: null, suivant: null };
   function allerAuDJ() {
-    const ouvrir = () => { $("mxDJ").scrollIntoView({ behavior: "smooth", block: "start" }); $("mxDJ").classList.remove("eclat"); void $("mxDJ").offsetWidth; $("mxDJ").classList.add("eclat"); };
-    if (document.fullscreenElement) document.exitFullscreen().then(() => setTimeout(ouvrir, 300)).catch(ouvrir); else ouvrir();
+    const d = $("mxDJ"); if (d.classList.contains("panneau")) return fermerDJ();
+    djPlace.parent = d.parentNode; djPlace.suivant = d.nextSibling;
+    (document.fullscreenElement || document.querySelector(".mx-scene.plein-css") || document.body).appendChild(d);
+    d.classList.add("panneau"); d.hidden = false; d.scrollTop = 0;
   }
+  function fermerDJ() { const d = $("mxDJ"); d.classList.remove("panneau"); if (djPlace.parent) djPlace.parent.insertBefore(d, djPlace.suivant); }
+  $("djFermer").onclick = fermerDJ;
+  document.addEventListener("fullscreenchange", () => { if ($("mxDJ").classList.contains("panneau")) fermerDJ(); });
   $("mxMusique").onclick = allerAuDJ;
   // l'écran « Bienvenue en 1998 » : qui l'on joue (soi-même ou un héros de Resident Evil), et jusqu'à deux équipiers
   const apoChoix = (() => { try { const v = JSON.parse(localStorage.getItem("apoChoix") || "null"); if (v && Array.isArray(v.equipe)) return v; } catch (e) {} return { perso: null, equipe: [] }; })();

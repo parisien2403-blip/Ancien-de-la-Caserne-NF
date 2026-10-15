@@ -1893,8 +1893,9 @@ C3.hEsc = (x, z, yT) => { const E = C3.ESC, h = yT / 2 / E.n, p = E.run / E.n, z
 C3.dansBac = (ax, z) => { const u = ax - C3.LM - C3.BS, d = ax < C3.LM ? -1 : u <= 0 ? C3.PB + C3.TW : u < C3.BR ? C3.PB + C3.TW * Math.sqrt(1 - (u / C3.BR) ** 2) : C3.PB; return ax >= C3.LM && ax < C3.LB / 2 + .3 && z < C3.z1 + d + .25; };   // (les bacs à buissons, et leur avancée arrondie contre les marches)   // (le sol du porche, en haut des marches)
 /* la rue en pente, derrière la ruelle de droite (d'après la photo) : elle descend doucement jusqu'à l'arcade sous l'horloge octogonale ;
    à gauche, le flanc de brique de l'immeuble puis du bâtiment du fond ; à droite, un muret et sa barrière en fer noir, une contre-allée, et un long bâtiment de brique aux portes en arc */
-const RU = { DH: 1.02, zA: -134, x0: 0, xR: 24, xB: 30, drop: 1.3, zT: -84, cour: 17, xL: 2, pc: 5.6, y: z => 0 };   // (pc : le pan coupé de l'angle, où est le porche)   // (cour : la petite place devant l'arcade, où s'arrêtent l'immeuble de gauche et la barrière ; xL : son bord gauche)
+const RU = { LR: 8, DH: 1.02, zA: -134, x0: 0, xR: 24, xB: 30, drop: 1.3, zT: -84, cour: 17, xL: 2, pc: 5.6, y: z => 0 };   // (pc : le pan coupé de l'angle, où est le porche)   // (cour : la petite place devant l'arcade, où s'arrêtent l'immeuble de gauche et la barrière ; xL : son bord gauche)
 RU.lx = (x, z) => ((x - RU.xB + RU.pc / 2) + (z - RU.zA - RU.pc / 2)) / Math.SQRT2; RU.lz = (x, z) => (-(x - RU.xB + RU.pc / 2) + (z - RU.zA - RU.pc / 2)) / Math.SQRT2;   // (repère du porche : en travers, et vers la place)
+RU.yC = z => RU.y(z) - RU.DH * Math.min(1, Math.max(0, (z - RU.zA - RU.cour) / RU.LR));   // (la contre-allée : au bout, côté place, une pente douce la remonte au niveau de la place)
 RU.y = z => z >= RU.zT ? 0 : -RU.drop * Math.min(1, (RU.zT - z) / (RU.zT - RU.zA)) - (z < RU.zA ? 0 : 0);
 function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeaux crème, fenêtres encadrées de pierre, portes en arc au rez-de-chaussée
   return toileF(Math.round(L * 20), Math.round(H * 20), (x, w, h) => { const P = 20;
@@ -1921,7 +1922,12 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   planP(DB, x0s, zA, zT, 0); planP(x0s, xR, zA, zE, 0); planP(x0s, xR, zE, RU.zS[0], DT); planP(xR, xR + .4, zE, RU.zS[0], DH); planP(x0s, xR + .4, RU.zS[0], RU.zS[1], DH); planP(x0s, xR + .4, RU.zS[1], zT, 0);   // (au bout, contre le mur noir : un bloc plein, à hauteur de taille)
   { const beton = A.mat({ map: tex(textures().betonClair, 4, 1), color: 0xcfcfcf, roughness: .95 }), L2 = (zT - zE) / Math.cos(ang), zm = (zT + zE) / 2;
     const m1 = A.ajoute(new THREE.BoxGeometry(.2, DT, L2), beton, x0s + .1, RU.y(zm) - DT / 2, zm, false); m1.rotation.x = -ang;   // le mur de soutènement, sous la barrière du mur noir
-    A.ajoute(new THREE.BoxGeometry(xB - xR - .4, DH, .2), beton, (xR + .4 + xB) / 2, RU.y(zE) - DH / 2, zE + .1, false);   // et au bout, côté place (la contre-allée)
+    { const n = 16, P = [], U = [], I = [], x0 = xR + .4, x1 = xB, F = [];   // au bout, côté place : la pente douce qui remonte la contre-allée jusqu'à la place
+      for (let k = 0; k <= n; k++) { const z = zE + RU.LR * k / n, y = RU.yC(z) + .01; P.push(x0, y, z, x1, y, z); U.push(0, z / 2, (x1 - x0) / 2, z / 2); F.push(x0, y, z, x0, RU.y(z) - DH - .05, z); if (k) { const a = 2 * k - 2; I.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); g.computeVertexNormals();
+      SOL(A.ajoute(g, A.mat({ map: tex(textures().trottoir, 1, 1), roughness: .92, side: THREE.DoubleSide }), 0, 0, 0, false));
+      const J = []; for (let k = 0; k < n; k++) { const a = 2 * k; J.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } const f = new THREE.BufferGeometry(); f.setAttribute("position", new THREE.Float32BufferAttribute(F, 3)); f.setIndex(J); f.computeVertexNormals();
+      A.ajoute(f, A.mat({ map: tex(textures().betonClair, 1, 1), color: 0xcfcfcf, roughness: .95, side: THREE.DoubleSide }), 0, 0, 0, false); }   // (son flanc, côté contrebas)
     { const Lt = (RU.zS[0] - zE) / Math.cos(ang), zt = (RU.zS[0] + zE) / 2, d = DT - DH;   // le creux : sa paroi côté contre-allée, et celle du pied des marches
       const m3 = A.ajoute(new THREE.BoxGeometry(.2, d, Lt), beton, xR + .1, RU.y(zt) - DH - d / 2, zt, false); m3.rotation.x = -ang;
       A.ajoute(new THREE.BoxGeometry(xR - x0s, d, .2), beton, (x0s + xR) / 2, RU.y(RU.zS[0]) - DH - d / 2, RU.zS[0] - .1, false);
@@ -1986,7 +1992,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           f.setAttribute("position", new THREE.Float32BufferAttribute(Q, 3)); f.setIndex(J); f.computeVertexNormals(); A.ajoute(f, bord, 0, 0, 0, false); }
         for (let k = 0; k < 3; k++) { const z0 = zS - k * .3, top = sol(zS) + hS - (k + 1) * .17 + .17, bas = sol(z0 - .3) - .05; SOL(A.ajoute(new THREE.BoxGeometry(x1 - x0, top - bas, .3), bc, (x0 + x1) / 2, (top + bas) / 2, z0 - .15)); }   // les trois marches, côté F
         /* côté G : pas de marches, la pente puis le plat */ } } }   // (derrière le bâtiment du fond, à gauche : la ruelle remonte doucement vers la place)   // (la place devant l'arcade, à gauche de la chaussée)
-  planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
+  planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE + RU.LR, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
   { const t0 = zT - C3.NT * C3.PT, ta = t0 - C3.PTr - (zT - t0), pe = { ang, y: z => RU.y(z) };   // (le long de la terrasse, à plat, dans la continuité du gris d'à côté)
     trottoir(A, L, DB, DB + 1.4, zA + RU.cour, ta, ["x1"], pe); trottoir(A, L, DB, DB + 1.4, t0, zT, ["x1"], pe);
     C3.rampe = [C3.LT / 2, DB + 1.4, ta, t0]; }   // (derrière la terrasse jusqu'au bord de la rue : le sol suit la pente de la rue, sans marche ni rampe en travers — voir plus bas)
@@ -2151,7 +2157,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     A.ajoute(new THREE.BoxGeometry(8, 23.5, lg), A.mat({ color: 0x8a4a36 }), xB + 4.01, 11.75 - drop, (C3.z0 + zb) / 2);
     const pas = 5.1, n = Math.floor(lg / pas), z0c = zb + (lg - n * pas) / 2, PORTES = { 0: "Z", 2: "DD", 4: "Y", 6: "X" };   // (sous les colonnes des fenêtres des étages, espacées : une fenêtre entre deux portes)
     const pierreC = A.mat({ color: 0xe6e0d4, roughness: .75 }), bois = A.mat({ color: 0x3e2a1c, roughness: .6 }), bois2 = A.mat({ color: 0x33221a, roughness: .6 }), vitre = A.mat({ color: 0x2f3a46, roughness: .2, metalness: .3 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 });
-    for (let c = 0; c < n; c++) { const z = z0c + (c + .5) * pas; if (z > zT - 2.6) continue; const y0 = z < zA + RU.cour ? RU.y(z) : RU.y(Math.min(z, zT)) - RU.DH, g = new THREE.Group(); g.position.set(xB, y0, z); g.rotation.y = -Math.PI / 2; scene.add(g);
+    for (let c = 0; c < n; c++) { const z = z0c + (c + .5) * pas; if (z > zT - 2.6) continue; const y0 = z < zA + RU.cour ? RU.y(z) : RU.yC(Math.min(z, zT)), g = new THREE.Group(); g.position.set(xB, y0, z); g.rotation.y = -Math.PI / 2; scene.add(g);
       const b = (w, h, d, m, x, y, zz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, zz); g.add(o); return o; }, k = PORTES[c];
       if (k === "DD") {   // la double porte : grand encadrement de pierre, deux battants à panneaux, imposte vitrée
         b(2.6, 3.2, .1, pierreC, 0, 1.6, .05); b(2.2, 2.9, .1, bois, 0, 1.45, .08); b(2.2, .06, .06, pierreC, 0, 2.45, .14); b(2.1, .4, .03, vitre, 0, 2.68, .14); b(.04, 2.35, .05, bois2, 0, 1.18, .15);
@@ -2806,6 +2812,7 @@ function troisiemeCour(A, L, scene) {
       if (C3.cab && x < LT2 + .35 && Math.abs(z - C3.cab.zc5) < .8) return ys / 2;   // (la marche devant la porte de la cabane)
       return ys; }
     if (x > RU.x0s && x < RU.xB && z < zT && z > RU.zA + RU.cour) { const u = x - RU.x0s; if (z >= RU.zS[1] && x < RU.xR + .5) return RU.y(z); if (z <= RU.zS[0] && x < RU.xR) return RU.y(z) - RU.DT;
+      if (x >= RU.xR + .4 && z < RU.zS[0]) return RU.yC(z);   // (la contre-allée, et sa pente douce vers la place)
       return RU.y(z) - (z > RU.zS[0] && z < RU.zS[1] && u < 6 * RU.rs ? Math.min(6, Math.floor(u / RU.rs) + 1) * RU.DH / 6 : RU.DH); }   // (le contrebas, et ses six marches)
     if ((x > DB + .05 && z < zT) || (x > -C3.x - 6 && z < RU.zA + RU.cour)) return RU.y(z); if (x < -DB && C3.rampeG && z < C3.rampeG[1] && z >= C3.rampeG[0]) return C3.rampeG[2] * (C3.rampeG[1] - z) / (C3.rampeG[1] - C3.rampeG[0]); if (z <= zt0 && z >= zt1 && x >= LT / 2 && x < LT / 2 + 2 * C3.ESC.W) return C3.hEsc(x, z, yT); if (C3.enHaut(p) && (C3.ponts || [C3.pont]).some(Q => Q && Math.abs(x - Q.x) < .8) && z >= zt1 && z < zt1 + .6) return yT + (z < zt1 + .3 ? .34 : .17);   // les deux marches de chaque passerelle
     { const Q = (C3.ponts || []).find(Q => Q.sansCabane && x > Q.x0 && x < Q.x1 && z < zt1 && z > Q.za); if (Q && C3.enHaut(p)) return Q.h; }
@@ -4522,7 +4529,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       || (accesChantier() && Math.abs(x) > C3.LB / 2 + .35 && Math.abs(x) < (x < 0 && z < C3.zMN - .1 ? C3.x + 6 : C3.x) - .5 && z <= C3.z1 + .5 && z > (x > 0 ? RU.zT : RU.zA + RU.cour - .5) + .3 && !C3.dansPoub(x, z))   // les ruelles, de chaque côté de l'immeuble
       || (accesChantier() && x > C3.x + .1 && x < RU.xR - .3 && z < RU.zS[0] - .2 && z > RU.zA + RU.cour + .4)
       || (accesChantier() && x > C3.x - .6 && x < RU.xR + .8 && z > RU.zS[0] + .2 && z < RU.zS[1] - .2)   // les marches, jusqu'à l'ouverture
-      || (accesChantier() && x > RU.xR + .6 && x < RU.xB - .4 && z < RU.zT - .3 && z > RU.zA + RU.cour + .4)   // la contre-allée
+      || (accesChantier() && x > RU.xR + .6 && x < RU.xB - .4 && z < RU.zT - .3 && z > RU.zA + RU.cour - .6)   // la contre-allée (et sa pente douce, ouverte sur la place)
       || (accesChantier() && x > C3.x - .6 && x < RU.xR - .1 && z > RU.zS[1] + .2 && z < RU.zT - .3)   // le bloc, au bout   // le contrebas, entre les deux barrières
       || (accesChantier() && x > C3.LB / 2 + .35 && x < C3.x - .45 && z <= RU.zT + .5 && z > RU.zA - .2)   // la rue en pente
       || (accesChantier() && x > -C3.x - 6 + .45 && x < RU.xB - .4 && z <= RU.zA + RU.cour && z > RU.zA + .4 && RU.lz(x, z) > .3 && !(x > -C3.LB / 2 - .3 && x < RU.xL && z > RU.zA + RU.cour - .3) && !C3.dansPoub(x, z))   // la place devant l'arcade (jusqu'au pan coupé)
@@ -8824,14 +8831,16 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
 export const _etatMatrice = () => M;   // (pour les essais)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
-function libererScene(sc) { if (!sc) return; if (sc.userData.compil) { sc.userData.compil.then(() => libererScene(sc)); return; }   // (pas pendant que la carte graphique la prépare : sa préparation plantait, et plus rien n'était préparé ensuite)
+const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
+const compiler = (sc) => { const c = Promise.race([M.rendu.compileAsync(sc, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 8000))]).then(() => { sc.userData.compil = null; compilations.delete(c); }); compilations.add(c); sc.userData.compil = c; return c; };
+function libererScene(sc) { if (!sc) return; if (sc.userData.compil || compilations.size) { Promise.all([...compilations, sc.userData.compil]).then(() => libererScene(sc)); return; }   // (pas pendant que la carte graphique la prépare : sa préparation plantait, et plus rien n'était préparé ensuite)
   const vues = new Set();
   sc.traverse(o => { o.geometry && o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (!m || vues.has(m)) continue; vues.add(m); for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t) && !t.isRenderTargetTexture && !t.garder) { vues.add(t); t.dispose(); } } m.dispose(); } }); }   // (jamais les reflets préparés une fois pour toutes)
 // préparer un lieu avant d'y aller (pendant une cinématique) : on le construit, puis la carte graphique prépare ses « shaders » en tâche de fond
 // (sur PC, sous Windows, cette préparation peut prendre de longues secondes : faite au dernier moment, elle figeait l'image) ; renvoie une promesse
 function preparerLieu(id) { return new Promise(ok => { if (!M || !M.L || M.lieu === id) return ok(); M.prets = M.prets || {}; if (M.prets[id] && M.prets[id].compile) return M.prets[id].compile.then(ok, ok); const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return ok(); const q = M.prets[id] || construireScene(id); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[id] = q;
-    q.compile = M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(q.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 8000))]).then(() => { q.scene.userData.compil = null; }) : Promise.resolve(); q.scene.userData.compil = q.compile; q.compile.then(ok, ok); } catch (e) { ok(); } }, 30); }); }
+    q.compile = M.rendu.compileAsync ? compiler(q.scene) : Promise.resolve(); q.compile.then(ok, ok); } catch (e) { ok(); } }, 30); }); }
 function preparerVoisin() {
   const now = performance.now(); if (!M || !M.L || M.preparation || M.cine || now < (M.prepT || 0)) return; M.prepT = now + 700;   // (jamais pendant une cinématique)
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return; M.prets = M.prets || {};
@@ -8847,7 +8856,7 @@ function preparerVoisin() {
       // les images (murs, sols, affiches…) sont envoyées à la carte graphique dès maintenant
       const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
       if (q.scene.background && q.scene.background.isTexture) try { M.rendu.initTexture(q.scene.background); } catch (e) {}
-      if (M.rendu.compileAsync) { const c = Promise.race([M.rendu.compileAsync(q.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 8000))]).then(() => { q.scene.userData.compil = null; }); q.scene.userData.compil = c; c.then(fin, fin); } else fin();
+      if (M.rendu.compileAsync) { const c = compiler(q.scene); c.then(fin, fin); } else fin();
     } catch (e) { if (M) M.preparation = false; } finally { if (M && !M.prets[best]) M.preparation = false; } }, 30);
 }
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
