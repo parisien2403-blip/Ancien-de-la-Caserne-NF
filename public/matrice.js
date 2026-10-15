@@ -4420,9 +4420,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           const m = new THREE.MeshBasicMaterial({ color: cols[i % cols.length], transparent: true, opacity: .0, blending: THREE.AdditiveBlending, depthWrite: false });
           const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), m); pl.rotation.y = -Math.PI / 2; pl.position.set(fx - .04, 3.05, z); pl.visible = false; scene.add(pl);
           const fond = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), new THREE.MeshBasicMaterial({ color: 0x120c22, transparent: true, opacity: .75 })); fond.rotation.y = -Math.PI / 2; fond.position.set(fx - .03, 3.05, z); fond.visible = false; scene.add(fond);
-          L.baiesFete.push({ pl, fond, i }); pl.visible = fond.visible = true;   // (la fête bat son plein le jour comme le soir : on voit ses lumières par les baies)
+          L.baiesFete.push({ pl, fond, i }); L.nuitObjets.push(pl, fond);
           if (i === 8) {
-            // le jour comme la nuit, une des portes vitrées de la salle des fêtes reste ouverte : la lumière et la musique sortent dans la cour
+            // la nuit, une des portes vitrées de la salle des fêtes reste ouverte : la lumière et la musique sortent dans la cour
             fond.material = new THREE.MeshBasicMaterial({ color: 0x5a3a2a }); pl.material.opacity = 1;
             const battant = new THREE.Group(); battant.position.set(fx - .06, .65, z + .95); battant.rotation.y = 1.25; battant.visible = false; scene.add(battant);
             const cadre = A.mat({ color: 0xf2eee4 });
@@ -4430,8 +4430,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
             for (const [h, l, y, zz] of [[4.8, .1, 2.4, -.05], [4.8, .1, 2.4, -.9], [.1, .95, 4.75, -.475], [.1, .95, .05, -.475], [.08, .95, 1.6, -.475]]) {
               const b = new THREE.Mesh(new THREE.BoxGeometry(.06, h, l), cadre); b.position.set(0, y, zz); battant.add(b); }
             const verre = new THREE.Mesh(new THREE.BoxGeometry(.02, 4.7, .8), new THREE.MeshStandardMaterial({ color: 0xcfe0ea, transparent: true, opacity: .35, roughness: .1 })); verre.position.set(0, 2.4, -.475); battant.add(verre);
-            battant.visible = true;
-            const vide = new THREE.Mesh(new THREE.PlaneGeometry(.95, 4.8), new THREE.MeshBasicMaterial({ color: 0xffe0b0 })); vide.rotation.y = -Math.PI / 2; vide.position.set(fx - .05, 3.05, z + .475); scene.add(vide);
+            L.nuitObjets.push(battant);
+            const vide = new THREE.Mesh(new THREE.PlaneGeometry(.95, 4.8), new THREE.MeshBasicMaterial({ color: 0xffe0b0 })); vide.rotation.y = -Math.PI / 2; vide.position.set(fx - .05, 3.05, z + .475); vide.visible = false; scene.add(vide); L.nuitObjets.push(vide);
             // la lumière de la fête qui se répand sur les marches et les pavés
             const spot = new THREE.SpotLight(0xff3d7a, 0, 16, .75, .7, 1.2); spot.position.set(fx + .8, 3.6, z); spot.target.position.set(fx - 6, 0, z - .5); scene.add(spot); scene.add(spot.target);
             L.porteFete = { vide, spot, x: fx - .5, z }; }
@@ -4804,9 +4804,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         pt.position.set(src.x + dir.x * lg, .03, src.z + dir.z * lg); }
     };
     L.anim = (temps) => {
-      const P = L.porteFete; if (P) P.spot.intensity = (L.nuit ? 70 : 45) + 50 * Math.max(0, Math.sin(temps / 300));   // (la fête bat son plein le jour aussi)
+      const P = L.porteFete; if (P) P.spot.intensity = L.nuit ? 70 + 50 * Math.max(0, Math.sin(temps / 300)) : 0;   // (de jour, depuis la cour : rien)
       animDehors(temps);
-      if (!L.baiesFete) return;
+      if (!L.nuit || !L.baiesFete) return;
       for (const b of L.baiesFete) { const ph = temps / 420 + b.i * 1.3;
         b.pl.material.opacity = b.i === 8 ? .55 + .45 * Math.max(0, Math.sin(ph)) : .4 + .6 * Math.max(0, Math.sin(ph)) * (.6 + .4 * Math.sin(ph * 2.7));
         if (Math.floor(ph / Math.PI) % 3 === 0) b.pl.material.color.setHex(cols5[(b.i + Math.floor(temps / 1700)) % 5]); }
@@ -5834,10 +5834,10 @@ export async function ouvrir(ctx) {
         if (sur && !p.surTapis) p.salutT = performance.now(); p.surTapis = sur;
         if (p.salutT) { const k = (performance.now() - p.salutT) / 1600; if (k >= 1) p.salutT = 0; else { const a = Math.sin(Math.min(1, k * 1.25) * Math.PI) * .75; p.corps.rotation.x = a; p.corps.scale.y = (p.hBase || (p.hBase = p.corps.scale.y)) * (1 - a * .12); } }
         else if (p.hBase) { p.corps.scale.y = p.hBase; p.hBase = 0; } } }
-    // la musique de la fête : à fond dans la salle ; dehors, le jour comme la nuit, par la porte ouverte (plus fort en s'approchant)
+    // la musique de la fête : à fond dans la salle ; dehors, la nuit seulement, par la porte ouverte (plus fort en s'approchant) ; de jour, depuis la cour, on n'entend rien
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
-    if (P && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .38 * Math.max(0, 1 - d / 22) + .07 * Math.max(0, 1 - d / 50); if (vol < .004) vol = 0; }   // (au loin, elle s'éteint : à peine audible passé le porche de l'horloge, plus rien dans les cours d'après)
+    if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .38 * Math.max(0, 1 - d / 22) + .07 * Math.max(0, 1 - d / 50); if (vol < .004) vol = 0; }   // (au loin, elle s'éteint : à peine audible passé le porche de l'horloge, plus rien dans les cours d'après)
     if (Math.abs(vol - (M.volume ?? -1)) > Math.min(.015, Math.max(.003, vol * .2))) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
