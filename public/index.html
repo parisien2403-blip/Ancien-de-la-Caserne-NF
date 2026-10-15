@@ -2181,6 +2181,9 @@
         surFlechettes: () => { infoMatrice("🎯 Les fléchettes…", 1500);
           import("./flechettes.js?v=" + VERSION).then(f => { MX.jouer("flechettes"); f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES, surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Les fléchettes n'ont pas pu démarrer : " + e.message, 6000)); },
+        surTir: () => { infoMatrice("🔫 Le stand de tir…", 1500);
+          import("./tir.js?v=" + VERSION).then(f => { MX.jouer("tir"); f.ouvrirTir({ envoyerScore: score => api("POST", "/api/flipper?jeu=tir", { score }), dessinerCible: MX.dessinerCibleTir, score: MX.scoreCibleTir, surFerme: () => MX && MX.jouer(null) }); })
+            .catch(e => infoMatrice("Le stand de tir n'a pas pu démarrer : " + e.message, 6000)); },
         surFlipper: () => { infoMatrice("🎰 Le flipper s'allume…", 2000);
           import("./flipper.js?v=" + VERSION).then(f => { MX.jouer("flipper"); f.ouvrirFlipper({ envoyerScore: score => api("POST", "/api/flipper", { score }), surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },

@@ -1873,7 +1873,8 @@ const C3 = { BS: .6, BR: .9, z0: -56, z1: -72, x: 20.6, NM: 7, HM: .17, PM: .55,
 C3.zMN = C3.z1 - C3.PP;   // (le bout du mur noir épais, le long de la ruelle de gauche : aligné sur la fin du muret blanc de l'immeuble)
 C3.hp = C3.NM * C3.HM; C3.FL = -.68;   // (FL : le sol de la cabane et de la grande salle sous la terrasse, quatre marches plus bas)
 C3.enHaut = (p) => { const q = p && p.g ? p : (M && M.moiNum && M.gens && M.gens.get(M.moiNum)); return !!(q && q.g && q.g.position.y > 1.5); };   // (le palier de l'escalier en U, à mi-hauteur, compte déjà comme « en haut »)
-C3.dedans = (q) => { if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return null; const x = q.g.position.x, z = q.g.position.z, c = C3.cab, v = C3.vest, zt0 = c.zt1 + C3.PTr;   // (dans la cabane, le vestibule, les toilettes, la grande salle : laquelle ?)
+C3.dedans = (q) => { if (q && q.g && C3.sousSol && q.g.position.y < -2) { const r = C3.sousSol.piece(q.g.position.x, q.g.position.z); if (r) return [r.x0 + .3, r.x1 - .3, r.z0 + .3, r.z1 - .3, C3.sousSol.Y0 + 2.7]; }
+  if (!q || !C3.cab || !C3.vest || q.g.position.y > 2) return null; const x = q.g.position.x, z = q.g.position.z, c = C3.cab, v = C3.vest, zt0 = c.zt1 + C3.PTr;   // (dans la cabane, le vestibule, les toilettes, la grande salle : laquelle ?)
   if (x > c.x0 && x < c.x1 + .1 && z > c.za && z < c.zt1) return [c.x0 + .35, c.x1 - .35, c.za + .4, c.zt1 + .8, 3.4];
   if (x > v.xv - .05 && x < C3.LT / 2 && z >= c.zt1 && z < v.zd) return [v.xv + .2, v.xe - .2, c.zt1 - 1.6, v.zd - .2, C3.FL + 2.6];
   if (x > v.xv - .05 && x < C3.LT / 2 && z >= v.zd && z < v.zf) return [v.xv + .2, v.xe - .2, v.zd - .6, v.zf - .25, C3.FL + 2.6];
@@ -1914,6 +1915,7 @@ C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 =
     return (ax < C3.LT / 2 - .3 && z < zt0 - .3 && z > zt1 + .3) || (ax < C3.LM - .3 && z >= zt0 - .5 && z < zT + 1.2) ||   // (et les marches raides, pour redescendre vers le porche)
       (C3.ponts || [P]).some(Q => Q && x > Q.x0 + .3 && x < Q.x1 - .3 && z > za + .3 && z < zt1 + .7)
       || (x > C3.LT / 2 - .5 && x < C3.LT / 2 + 2 * E.W - .2 && z > E.zA + .2 && z < E.z0 + E.run + E.pal - .2); }
+  if (C3.sousSol && C3.enBas() && (C3.sousSol.libre(x, z) || (z >= zT && ax < DB + .5))) return C3.sousSol.libre(x, z);   // (le sous-sol : l'entrée, la salle de ping-pong, le stand de tir — et rien d'autre sous l'immeuble)
   if (z < zT && z > zt0 && ax < DB + .2) { const zm = (zT + zt0) / 2, esc = x > 0 && DB - x < C3.RUN + .2 && Math.abs(z - zm) < C3.SW / 2 - .15;   // la fosse des lavoirs
     if (C3.enBas()) return ax < DB - .3 && z < zT - .3 && z > zt0 + .3 || esc;
     if (ax < C3.LM - .3) return true;   // les marches raides, au-dessus
@@ -2548,7 +2550,11 @@ function troisiemeCour(A, L, scene) {
   // la fosse : le fond pavé, ses parois (sous l'immeuble, sous la terrasse, aux deux bouts)
   { const fondP = SOL(A.ajoute(new THREE.PlaneGeometry(DB * 2, D), A.mat({ map: tex(textures().trottoir, DB, D / 2), roughness: .92 }), 0, -PF + .01, zm2, false)); fondP.rotation.x = -Math.PI / 2;
     const paroi = A.mat({ map: tex(tuileBrique("rouge", K_FAC), DB * 2 / 9.2, PF / 6.75), roughness: .9 });   // (les parois de la fosse : en brique)
-    A.ajoute(new THREE.BoxGeometry(DB * 2, PF, .1), paroi, 0, -PF / 2 - .02, zT - .06, false);   // (devant le pied de l'immeuble, pas dans son plan : plus de scintillement)
+    { const pa = 1.85, pb = 3.15, HP2 = 2.35;   // (devant le pied de l'immeuble, pas dans son plan : plus de scintillement) ; percée de l'entrée du sous-sol
+      for (const [a, b] of [[-DB, pa], [pb, DB]]) A.ajoute(new THREE.BoxGeometry(b - a, PF, .1), paroi, (a + b) / 2, -PF / 2 - .02, zT - .06, false);
+      A.ajoute(new THREE.BoxGeometry(pb - pa, PF - HP2, .1), paroi, (pa + pb) / 2, -PF + HP2 + (PF - HP2) / 2 - .02, zT - .06, false);
+      A.ajoute(new THREE.BoxGeometry(pb - pa + .3, .14, .2), A.mat({ color: 0xe6e0d4, roughness: .75 }), (pa + pb) / 2, -PF + HP2 + .07, zT - .1, false);   // le linteau de pierre
+      for (const x of [pa, pb]) A.ajoute(new THREE.BoxGeometry(.12, HP2, .2), A.mat({ color: 0xe6e0d4, roughness: .75 }), x, -PF + HP2 / 2, zT - .1, false); }   // l'encadrement
     A.ajoute(new THREE.BoxGeometry(DB * 2, PF + C3.FL, .1), paroi, 0, (-PF + C3.FL) / 2, zt0 - .05, false);   // (s'arrête sous le mur de la terrasse, qui descend jusqu'au sol de la salle : plus de scintillement)
     { const xd = -C3.LT / 2 + 1.6, bois = A.mat({ color: 0x5a3820, roughness: .6 }), bois2 = A.mat({ color: 0x4a2c18, roughness: .6 }), bc = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .95 }), y0 = -PF + .34;   // au fond de la fosse, dans le mur de la terrasse : la porte de la salle du tatami, et ses deux marches
       for (let k = 0; k < 2; k++) SOL(A.ajoute(new THREE.BoxGeometry(1.6, (k + 1) * .17, .3), bc, xd, -PF + (k + 1) * .085, zt0 + .45 - k * .3));
@@ -2563,12 +2569,9 @@ function troisiemeCour(A, L, scene) {
     for (const sg of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.1, PF, D), paroi, sg * (DB + .05), -PF / 2, zm2, false); }
   // les lavoirs : sous l'immeuble, des portes vertes à hublot et leur plaque
   { const vert = A.mat({ color: 0x3c5a48, roughness: .5, metalness: .2 }), plq = tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#1d3f73"; x.fillRect(0, 0, w, h); x.strokeStyle = "#f4f1e6"; x.lineWidth = 3; x.strokeRect(4, 4, w - 8, h - 8); x.fillStyle = "#f4f1e6"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText("LAVOIR", w / 2, 45); }));
-    { const xp = C3.LM - .5;   // une seule porte, double, sous la lanterne du mur : ses deux battants verts à hublot, son encadrement, sa plaque
-      A.ajoute(new THREE.BoxGeometry(2.1, 2.45, .05), A.mat({ color: 0xe6e0d4, roughness: .75 }), xp, -PF + 1.22, zT - .13, false);
-      for (const s2 of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.88, 2.25, .06), vert, xp + s2 * .46, -PF + 1.12, zT - .16, false);
-        const hb = A.ajoute(new THREE.CircleGeometry(.15, 20), A.mat({ color: 0x9fb2be, roughness: .15 }), xp + s2 * .46, -PF + 1.6, zT - .2, false); hb.rotation.y = Math.PI;
-        A.ajoute(new THREE.BoxGeometry(.04, .22, .04), A.mat({ color: 0xc8ccd0, metalness: .8, roughness: .3 }), xp + s2 * .1, -PF + 1.05, zT - .21, false); }
+    { const xp = C3.LM - .5;   // (plus de porte : l'entrée ouverte du sous-sol, le stand de tir et le ping-pong)
       const lp = new THREE.PointLight(0xfff0d0, 2.2, 6, 1.6); lp.position.set(xp, -PF + 2.6, zm2); scene.add(lp); } }
+  sousSolStand(A, L, scene, SOL, zT, PF);
   for (const sg of [-1, 1]) {
     if (sg < 0) { const HR = 1.0, xr = -DB + .04;   // au fond, pas d'escalier : le mur, et en haut une barrière tout du long
       A.ajoute(new THREE.BoxGeometry(.05, .05, D), fer, xr, HR, zm2, false); A.ajoute(new THREE.BoxGeometry(.04, .04, D), fer, xr, .12, zm2, false);
@@ -2869,7 +2872,8 @@ function troisiemeCour(A, L, scene) {
     { const t4 = A.ajoute(new THREE.PlaneGeometry(1.1, .275), A.mat({ map: tex(pq), roughness: .4 }), xd + .05, yd + 2.42, zd, false); t4.rotation.y = Math.PI / 2; }
     (C3.poub = C3.poub || []).push([xd, xd + .15, zd - .65, zd + .65]); }
   rueEnPente(A, L, scene, SOL, zT, DB);
-  L.hauteur = (x, z, p) => { { const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return F.yT(z); }   // (le trottoir entre le muret et la façade : ses trois marches, sa pente jusqu'à la porte E)
+  L.hauteur = (x, z, p) => { { const S = C3.sousSol; if (S && x > -14.5 && x < 14.5 && z > S.zT - .02 && z < -72.2 && (!p || !p.g || p.g.position.y < -2)) return S.Y0; }   // (le sous-sol, de plain-pied avec la fosse)
+    { const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return F.yT(z); }   // (le trottoir entre le muret et la façade : ses trois marches, sa pente jusqu'à la porte E)
     { const G = C3.escG; if (G && z > G.z0 && z < G.z1 && x < G.x0 && x > G.x0 - G.run - .05) return Math.max(0, yT - (Math.floor((G.x0 - x) / G.t) + 1) * G.r); }   // (l'escalier de la terrasse, côté ruelle de gauche)
     if (C3.porteTatami != null && Math.abs(x - C3.porteTatami) < .8 && z > zt0 && z < zt0 + .6 && (!p || p.g.position.y < -2)) return -C3.PF + (z < zt0 + .3 ? .34 : .17);   // (les deux marches de la porte du tatami, au fond de la fosse)
     { const D = C3.douche; if (D && x > D.x0 && x < D.x1 && z > D.zF && z < D.zH) return z > D.zP ? -Math.min(12, Math.floor((D.zH - z) / .25) + 1) * .17 : -D.P; }   // (l'escalier des douches)
@@ -3014,6 +3018,124 @@ function escalierDouches(A, L, scene, SOL, D, za) {
     for (let z = D.zF + .05; z <= D.zH; z += 1.3) A.ajoute(new THREE.BoxGeometry(.05, HR, .05), fer, x, HR / 2, z, false);
     for (let z = D.zF + .12; z < D.zH; z += .13) A.ajoute(new THREE.BoxGeometry(.018, HR - .05, .018), fer, x, (HR - .05) / 2, z, false);
     (C3.poub = C3.poub || []).push([x - .05, x + .05, D.zF, D.zH]); }
+}
+/* la cible du stand de tir (d'après la cible réglementaire : la silhouette noire au chapeau qui braque son revolver, ses zones cotées 5, 4, 2, les deux pastilles en haut)
+   dessinée dans un rectangle w × h ; scoreCibleTir(u, v) donne les points d'un impact (u, v entre 0 et 1) */
+const CIBLE_TIR = { tete: [.5, .21, .085, .1], ovale: [.5, .66, .135, .24], demiLarg: v => v < .3 ? 0 : v < .34 ? .07 + (v - .3) * 4 : v < .44 ? .23 + (v - .34) * 1.7 : .4 };
+export function scoreCibleTir(u, v) { const C = CIBLE_TIR, dans = (e, f) => ((u - e[0]) / e[2]) ** 2 + ((v - e[1]) / e[3]) ** 2 <= f;
+  if (dans(C.tete, 1) || dans(C.ovale, 1)) return 5;
+  if (v >= .3 && v <= 1 && Math.abs(u - .5) <= C.demiLarg(v)) return Math.abs(u - .5) < .27 ? 4 : 2;
+  if (dans([.5, .14, .16, .035], 1) || (v > .07 && v < .14 && Math.abs(u - .5) < .1)) return 0;   // (le chapeau)
+  return 0; }
+export function dessinerCibleTir(x, w, h) {
+  const C = CIBLE_TIR, X = u => u * w, Y = v => v * h;
+  x.fillStyle = "#f6f5f0"; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#0c0c0c"; for (const u of [.14, .86]) { x.beginPath(); x.arc(X(u), Y(.12), Math.min(w, h) * .085, 0, 7); x.fill(); }   // les deux pastilles
+  x.beginPath(); x.moveTo(X(.5 - .07), Y(.3)); for (let v = .3; v <= 1.001; v += .01) x.lineTo(X(.5 - C.demiLarg(v)), Y(v)); for (let v = 1; v >= .3; v -= .01) x.lineTo(X(.5 + C.demiLarg(v)), Y(v)); x.closePath(); x.fill();   // le corps
+  x.beginPath(); x.ellipse(X(C.tete[0]), Y(C.tete[1]), X(C.tete[2]), Y(C.tete[3]), 0, 0, 7); x.fill();   // la tête
+  x.beginPath(); x.ellipse(X(.5), Y(.14), X(.16), Y(.03), 0, 0, 7); x.fill(); x.fillRect(X(.4), Y(.07), X(.2), Y(.07));   // le chapeau
+  x.fillRect(X(.44), Y(.36), X(.12), Y(.12)); x.beginPath(); x.ellipse(X(.5), Y(.42), X(.07), Y(.05), 0, 0, 7); x.fill();   // les mains jointes, le revolver braqué
+  x.strokeStyle = "#f6f5f0"; x.lineWidth = Math.max(1.5, w / 200);
+  x.beginPath(); x.ellipse(X(C.ovale[0]), Y(C.ovale[1]), X(C.ovale[2]), Y(C.ovale[3]), 0, 0, 7); x.stroke();   // la zone 5
+  x.beginPath(); x.ellipse(X(C.tete[0]), Y(C.tete[1]), X(C.tete[2]) * .82, Y(C.tete[3]) * .82, 0, 0, 7); x.stroke();
+  for (const s of [-1, 1]) { x.beginPath(); x.moveTo(X(.5 + s * .2), Y(.36)); x.quadraticCurveTo(X(.5 + s * .29), Y(.6), X(.5 + s * .27), Y(1)); x.stroke(); }   // la zone 4
+  x.strokeRect(X(.465), Y(.6), X(.07), Y(.11));   // le petit rectangle du centre
+  x.beginPath(); x.arc(X(.5), Y(.36), X(.045), 0, 7); x.stroke(); x.beginPath(); x.moveTo(X(.5), Y(.32)); x.lineTo(X(.5), Y(.4)); x.moveTo(X(.46), Y(.36)); x.lineTo(X(.54), Y(.36)); x.stroke();   // le revolver, vu de face
+  x.setLineDash([X(.012), X(.012)]); x.beginPath(); x.moveTo(X(.2), Y(.42)); x.lineTo(X(.17), Y(1)); x.moveTo(X(.8), Y(.42)); x.lineTo(X(.83), Y(1)); x.stroke(); x.setLineDash([]);
+  x.fillStyle = "#f6f5f0"; x.font = `bold ${Math.round(h * .035)}px Arial`; x.textAlign = "center"; x.textBaseline = "middle";
+  for (const [t, u, v] of [["5", .5, .19], ["5", .5, .8], ["4", .34, .55], ["4", .66, .55], ["4", .33, .88], ["4", .67, .88], ["2", .15, .7], ["2", .85, .7], ["0", .13, .97], ["0", .87, .97]]) x.fillText(t, X(u), Y(v));
+  x.fillStyle = "#222"; x.font = `${Math.round(h * .016)}px Arial`; x.textAlign = "left"; x.fillText("CIBLE C50 — FFTir", X(.62), Y(.985)); }
+/* le sous-sol, sous l'immeuble, de plain-pied avec la fosse des lavoirs (par l'entrée ouverte à la place de la porte verte) :
+   une petite pièce d'entrée ; à droite, par une porte ouverte, une grande salle avec la table de ping-pong ; à gauche, par une autre porte ouverte, le stand de tir,
+   tout en longueur : la tablette en travers de la pièce, trois postes et leurs carabines, au fond les trois cibles ; murs vert pastel, sol de béton, néons */
+function sousSolStand(A, L, scene, SOL, zT, PF) {
+  const Y0 = -PF, HS = 3.0, ZS = zT + .05, ep = .16;
+  const P = { entree: { x0: .6, x1: 5, z0: ZS, z1: -79.6 }, pingpong: { x0: 5, x1: 11.2, z0: ZS, z1: -76.5 }, tir: { x0: -14.2, x1: .6, z0: ZS, z1: -76.2 } };
+  const POSTES = [-82.2, -80.1, -78.0], XT = -1.45;   // les trois postes (au milieu de chaque couloir), la tablette
+  const portes = { entree: [1.85, 3.15], pp: [-82.55, -81.25], tir: [-81.55, -80.25] };
+  const S = C3.sousSol = { Y0, zT, pieces: P,
+    piece: (x, z) => Object.values(P).find(r => x > r.x0 && x < r.x1 && z > r.z0 - .1 && z < r.z1),
+    libre: (x, z) => { const e = P.entree, pp = P.pingpong, t = P.tir;
+      if (x > portes.entree[0] + .15 && x < portes.entree[1] - .15 && z > zT - .45 && z < ZS + .4) return true;   // l'entrée, depuis la fosse
+      if (x > e.x0 + .25 && x < e.x1 - .25 && z > ZS + .25 && z < e.z1 - .25) return true;
+      if (Math.abs(x - e.x1) < .45 && z > portes.pp[0] + .15 && z < portes.pp[1] - .15) return true;   // vers le ping-pong
+      if (x > pp.x0 + .25 && x < pp.x1 - .25 && z > ZS + .25 && z < pp.z1 - .25 && !(Math.abs(x - 8.1) < 1.15 && Math.abs(z + 80.2) < 1.75)) return true;   // (pas dans la table)
+      if (Math.abs(x - e.x0) < .45 && z > portes.tir[0] + .15 && z < portes.tir[1] - .15) return true;   // vers le stand de tir
+      if (x > XT + .45 && x < t.x1 - .25 && z > ZS + .25 && z < t.z1 - .25) return true;   // derrière la tablette (pas dans les couloirs de tir)
+      return false; },
+    auPoste: (x, z) => x > XT + .3 && x < XT + 1.6 && POSTES.some(pz => Math.abs(z - pz) < .85) };
+  const vert = A.mat({ color: 0xbcd8b2, roughness: .92 }), plinthe = A.mat({ color: 0x8fae88, roughness: .9 }), plafond = A.mat({ color: 0xeeeeea, roughness: 1, emissive: 0x3a3a38 });
+  const beton = (w, d) => A.mat({ map: tex(textures().betonClair, w / 2, d / 2), color: 0xbdbdb8, roughness: .95 });
+  // les murs : de x0,z0 à x1,z1 (droits), avec des portes ouvertes (sur la longueur) ; les deux faces vert pastel, une plinthe
+  const mur = (x0, z0, x1, z1, trous = []) => { const lx = x1 !== x0, a0 = lx ? x0 : z0, a1 = lx ? x1 : z1, seg = [];
+    let c = a0; for (const [a, b] of [...trous].sort((p, q) => p[0] - q[0])) { if (a > c) seg.push([c, a, 0, HS]); seg.push([a, b, 2.3, HS]); c = b; } if (c < a1) seg.push([c, a1, 0, HS]);
+    for (const [a, b, y0, y1] of seg) { const L2 = b - a, m = (a + b) / 2, h = y1 - y0;
+      A.ajoute(new THREE.BoxGeometry(lx ? L2 : ep, h, lx ? ep : L2), vert, lx ? m : x0, Y0 + y0 + h / 2, lx ? z0 : m);
+      if (!y0) A.ajoute(new THREE.BoxGeometry(lx ? L2 : ep + .03, .12, lx ? ep + .03 : L2), plinthe, lx ? m : x0, Y0 + .06, lx ? z0 : m, false); }
+    for (const [a, b] of trous) for (const c2 of [a, b]) A.ajoute(new THREE.BoxGeometry(lx ? .06 : ep + .04, 2.32, lx ? ep + .04 : .06), A.mat({ color: 0xf2f0ea }), lx ? c2 : x0, Y0 + 1.16, lx ? z0 : c2, false); };   // (le chambranle blanc)
+  const pce = Object.values(P);
+  mur(P.tir.x0, ZS, P.pingpong.x1, ZS, [portes.entree]);   // (la salle de ping-pong, plus petite : 6 m × 7,5 m)   // le mur côté fosse (vert dedans), percé de l'entrée
+  mur(P.entree.x0, P.entree.z1, P.entree.x1, P.entree.z1);   // le fond de l'entrée
+  mur(P.entree.x1, ZS, P.entree.x1, P.pingpong.z1, [portes.pp]);   // entre l'entrée et le ping-pong
+  mur(P.entree.x0, ZS, P.entree.x0, P.tir.z1, [portes.tir]);   // entre l'entrée et le stand de tir
+  mur(P.pingpong.x0, P.pingpong.z1, P.pingpong.x1, P.pingpong.z1); mur(P.pingpong.x1, ZS, P.pingpong.x1, P.pingpong.z1);
+  mur(P.tir.x0, P.tir.z1, P.entree.x0, P.tir.z1); mur(P.tir.x0, ZS, P.tir.x0, P.tir.z1);
+  for (const r of pce) { const w = r.x1 - r.x0, d = r.z1 - r.z0;
+    const f = SOL(A.ajoute(new THREE.PlaneGeometry(w, d), beton(w, d), (r.x0 + r.x1) / 2, Y0 + .01, (r.z0 + r.z1) / 2, false)); f.rotation.x = -Math.PI / 2;
+    const c = A.ajoute(new THREE.BoxGeometry(w + .2, .12, d + .2), plafond, (r.x0 + r.x1) / 2, Y0 + HS + .06, (r.z0 + r.z1) / 2); c.castShadow = true; }
+  { const s = SOL(A.ajoute(new THREE.PlaneGeometry(portes.entree[1] - portes.entree[0], ZS - zT + .3), beton(1.3, .4), (portes.entree[0] + portes.entree[1]) / 2, Y0 + .012, (zT + ZS) / 2, false)); s.rotation.x = -Math.PI / 2; }   // le seuil
+  // les néons au plafond, et leur lumière
+  neonsPassage(scene, 2.8, Y0 + HS, ZS + .6, P.entree.z1 - .6);
+  for (const x of [6.6, 9.6]) neonsPassage(scene, x, Y0 + HS, ZS + .8, P.pingpong.z1 - .8);
+  for (const x of [-12, -8.5, -5, -1.8]) neonsPassage(scene, x, Y0 + HS, ZS + .8, P.tir.z1 - .8, x === -8.5);   // (l'un d'eux grésille)
+  for (const [x, z, i, dist] of [[2.8, -81.8, 5, 6], [8.1, -80.2, 7, 9], [-7, -80.1, 9, 14]]) { const l = new THREE.PointLight(0xf4f8ff, i, dist, 1.4); l.position.set(x, Y0 + HS - .3, z); scene.add(l); }
+  // les plaques au-dessus des portes
+  const plaque = (texte, x, z, ry) => { const pq = toile(512, 112, (c, w, h) => { c.fillStyle = "#1d3f73"; c.beginPath(); c.roundRect(0, 0, w, h, 14); c.fill(); c.strokeStyle = "#f4f1e6"; c.lineWidth = 5; c.beginPath(); c.roundRect(10, 10, w - 20, h - 20, 9); c.stroke();
+      c.fillStyle = "#f4f1e6"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 46px Arial, Helvetica, sans-serif"; c.fillText(texte, w / 2, h / 2 + 2); });
+    const o = A.ajoute(new THREE.PlaneGeometry(1.1, .24), A.mat({ map: tex(pq), roughness: .4 }), x, Y0 + 2.6, z, false); o.rotation.y = ry; };
+  plaque("STAND DE TIR", P.entree.x0 + ep / 2 + .01, (portes.tir[0] + portes.tir[1]) / 2, Math.PI / 2);
+  plaque("PING-PONG", P.entree.x1 - ep / 2 - .01, (portes.pp[0] + portes.pp[1]) / 2, -Math.PI / 2);
+  // ---- la salle de ping-pong : la table (bleu-vert, lignes blanches, filet), deux raquettes et la balle posées dessus ----
+  { const g = new THREE.Group(); g.position.set(8.1, Y0, -80.2); scene.add(g); const ad = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+    const TL = 2.74, TW = 1.525, TH = .76, plat = A.mat({ color: 0x1d4a6e, roughness: .55 }), blanc = A.mat({ color: 0xf4f4f0 }), gris = A.mat({ color: 0x2a2c30, roughness: .5, metalness: .4 });
+    ad(new THREE.BoxGeometry(TW, .03, TL), plat, 0, TH, 0);
+    for (const [w, d, x, z] of [[.02, TL, -TW / 2 + .01, 0], [.02, TL, TW / 2 - .01, 0], [TW, .02, 0, -TL / 2 + .01], [TW, .02, 0, TL / 2 - .01], [.004, TL, 0, 0]]) ad(new THREE.BoxGeometry(w, .002, d), blanc, x, TH + .016, z);
+    ad(new THREE.BoxGeometry(TW + .3, .15, .01), A.mat({ color: 0x111111, transparent: true, opacity: .7 }), 0, TH + .09, 0); ad(new THREE.BoxGeometry(TW + .3, .015, .015), blanc, 0, TH + .16, 0);   // le filet
+    for (const s2 of [-1, 1]) ad(new THREE.CylinderGeometry(.012, .012, .16, 6), gris, s2 * (TW / 2 + .15), TH + .08, 0);
+    for (const [x, z] of [[-.6, -1.1], [.6, -1.1], [-.6, 1.1], [.6, 1.1]]) { ad(new THREE.BoxGeometry(.05, TH - .02, .05), gris, x, (TH - .02) / 2, z); ad(new THREE.CylinderGeometry(.05, .05, .04, 10), gris, x, .02, z); }
+    for (const [x, z, ry, coul] of [[-.35, -.75, .6, 0xc8102e], [.4, .7, 2.4, 0x111111]]) { const r = new THREE.Group(); r.position.set(x, TH + .022, z); r.rotation.y = ry; g.add(r);   // les raquettes, à plat
+      const tete = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .012, 20), A.mat({ color: coul, roughness: .6 })); tete.scale.set(1, 1, 1.1); r.add(tete);
+      const manche = new THREE.Mesh(new THREE.BoxGeometry(.1, .022, .028), A.mat({ color: 0xc8a06a, roughness: .6 })); manche.position.set(.12, .002, 0); r.add(manche); }
+    ad(new THREE.SphereGeometry(.02, 12, 8), A.mat({ color: 0xf8f8f4, roughness: .3 }), .15, TH + .036, -.2); }   // la balle
+  // ---- le stand de tir ----
+  { const bois = A.mat({ color: 0x8a5a32, roughness: .6 }), boisF = A.mat({ color: 0x6a4224, roughness: .6 }), acier = A.mat({ color: 0x1c1e22, roughness: .35, metalness: .7 });
+    const zc = (P.tir.z0 + P.tir.z1) / 2, d = P.tir.z1 - P.tir.z0;
+    A.ajoute(new THREE.BoxGeometry(.62, .06, d - .1), bois, XT, Y0 + 1.05, zc);   // la tablette, en travers de toute la pièce
+    A.ajoute(new THREE.BoxGeometry(.06, 1.02, d - .1), boisF, XT - .26, Y0 + .51, zc);   // son tablier
+    for (const z of [P.tir.z0 + .5, zc, P.tir.z1 - .5]) A.ajoute(new THREE.BoxGeometry(.5, 1.0, .06), boisF, XT, Y0 + .5, z);
+    for (const z of [(POSTES[0] + POSTES[1]) / 2, (POSTES[1] + POSTES[2]) / 2]) A.ajoute(new THREE.BoxGeometry(.9, 1.1, .05), A.mat({ color: 0x9cbf96, roughness: .9 }), XT + .1, Y0 + 1.6, z);   // les cloisons entre les postes
+    for (const [k, pz] of POSTES.entries()) {
+      // la carabine, posée sur la tablette, le canon vers les cibles
+      const c = new THREE.Group(); c.position.set(XT, Y0 + 1.09, pz); c.rotation.y = .05 * (k - 1); scene.add(c);
+      const cr = new THREE.Shape(); cr.moveTo(.42, -.02); cr.lineTo(.08, -.02); cr.lineTo(-.02, -.06); cr.lineTo(.02, .03); cr.lineTo(.42, .03); cr.closePath();   // la crosse
+      const crosse = new THREE.Mesh(new THREE.ExtrudeGeometry(cr, { depth: .045, bevelEnabled: true, bevelSize: .008, bevelThickness: .008, bevelSegments: 2 }), bois); crosse.rotation.x = Math.PI / 2; crosse.position.set(0, .03, -.022); c.add(crosse);
+      const canon = new THREE.Mesh(new THREE.CylinderGeometry(.012, .014, .72, 10), acier); canon.rotation.z = Math.PI / 2; canon.position.set(-.38, .03, 0); c.add(canon);
+      const boite = new THREE.Mesh(new THREE.BoxGeometry(.18, .05, .04), acier); boite.position.set(-.05, .035, 0); c.add(boite);
+      const lunette = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .22, 10), acier); lunette.rotation.z = Math.PI / 2; lunette.position.set(-.06, .085, 0); c.add(lunette);
+      const pontet = new THREE.Mesh(new THREE.TorusGeometry(.025, .005, 6, 12, Math.PI), acier); pontet.position.set(.05, -.005, 0); pontet.rotation.z = Math.PI; c.add(pontet);
+      // le numéro du poste, la boîte de plombs
+      const n = toile(64, 64, (x) => { x.fillStyle = "#f2e8c8"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#1d3f73"; x.font = "bold 44px Arial"; x.textAlign = "center"; x.fillText(String(k + 1), 32, 48); });
+      const pl = A.ajoute(new THREE.PlaneGeometry(.2, .2), A.mat({ map: tex(n) }), XT - .29, Y0 + .85, pz, false); pl.rotation.y = Math.PI / 2;
+      A.ajoute(new THREE.CylinderGeometry(.04, .04, .025, 14), A.mat({ color: 0xc9a227, metalness: .6, roughness: .3 }), XT + .18, Y0 + 1.095, pz + .3, false);
+      // au fond : le porte-cible, la cible, le pare-balles
+      const xc = P.tir.x0 + ep / 2 + .06, ct = tex(toile(300, 418, (x, w, h) => dessinerCibleTir(x, w, h)));
+      A.ajoute(new THREE.BoxGeometry(.06, 1.2, .9), A.mat({ color: 0x5a4632, roughness: .8 }), xc - .02, Y0 + 1.5, pz);
+      const cb = A.ajoute(new THREE.PlaneGeometry(.75, 1.04), A.mat({ map: ct, roughness: .9 }), xc + .015, Y0 + 1.5, pz, false); cb.rotation.y = Math.PI / 2;
+      A.ajoute(new THREE.BoxGeometry(.02, .02, .9), acier, xc + .3, Y0 + 2.6, pz, false);   // le rail du porte-cible
+      { const l = A.ajoute(new THREE.PlaneGeometry(P.tir.x1 - P.tir.x0 - 1.8, .05), A.mat({ color: 0xe8e2c8 }), (XT + P.tir.x0) / 2 - .4, Y0 + .015, pz + .95, false); l.rotation.x = -Math.PI / 2; } }   // les lignes des couloirs
+    A.ajoute(new THREE.BoxGeometry(.1, 2.6, d - .1), A.mat({ color: 0x3a3a38, roughness: 1 }), P.tir.x0 + ep / 2 + .02, Y0 + 1.3, zc, false);   // le pare-balles, au fond
+    // le tableau des meilleurs tireurs, contre le mur derrière les postes
+    const tab = tableauScores(A, "STAND DE TIR", -.3, Y0 + 2.05, P.tir.z1 - ep / 2 - .02); L.majClassementTir = tab; tab((M && M.classementTir) || []); }
 }
 /* au plafond d'un passage couvert : des néons à l'ancienne (réglette en tôle blanche, tube nu), à la file ; gresille : l'un d'eux grésille, s'éteint par à-coups */
 function neonsPassage(scene, x, y, z0, z1, gresille = false) {
@@ -5558,7 +5680,7 @@ export async function ouvrir(ctx) {
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
         p.iconeJeu = p.info.joue || null;
         if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
-            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
+            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
           p.icone.position.y = H * hauteurDe(p) + .32; p.g.add(p.icone); } }
       if (p.icone) p.icone.position.y = tailleBonhomme() * hauteurDe(p) + .32 + Math.sin(t / 400) * .05;
       // la danse : il se balance d'un côté à l'autre en levant les bras
@@ -7270,6 +7392,7 @@ function chercherAction(t) {
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
+      else if (C3.sousSol && M.lieu === "grande" && moi.g.position.y < -2 && C3.sousSol.auPoste(x, z)) a = { type: "tir", label: "🔫 Tirer" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
       else if (M.L.apo) {}
@@ -7308,6 +7431,7 @@ export function agir() {
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
+  else if (a.type === "tir") M.ctx.surTir && M.ctx.surTir();
   else if (a.type === "prendre") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
       if (o.type === "plante" && APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
       else if (o.type === "balles" && APO.balles >= 9) M.ctx.surInfo && M.ctx.surInfo("🔫 Ton chargeur est déjà plein.");
@@ -9187,6 +9311,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id >= 57 && m.p.id <= 62) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (les Village People : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 54 && m.p.id <= 56) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Émile et Images : redessinés aussitôt)
     else if (m.t === "pnj" && m.p && m.p.id >= 27 && m.p.id <= 29) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (Depeche Mode : redessinés aussitôt)
+    else if (m.t === "pnj" && m.p && m.p.id >= 63 && m.p.id <= 67) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (les gendarmes : redessinés d'eux-mêmes)
     else if (m.t === "pnj" && m.p && m.p.id >= 18 && m.p.id <= 20) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(-m.p.id); }   // (le groupe : redessiné aussitôt, à sa place)
     else if (m.t === "pnj" && m.p && m.p.id === 7) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(HERNANDEZ); }
     else if (m.t === "pnj" && m.p && m.p.id >= 8 && m.p.id <= 11) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); for (const [num] of BEEGEES) retirerAncien(num); retirerAncien(TRAVOLTA); }
@@ -9194,6 +9319,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 3) { ctx.surPNJBar && ctx.surPNJBar(m.p); if (M.gens.has(BARMAN)) { const pos = M.gens.get(BARMAN).g.position.clone(); retirerAncien(BARMAN); ajouterBarman(); const q = M.gens.get(BARMAN); if (q) q.g.position.copy(pos); } }
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper" && m.jeu === "tir") { M.classementTir = m.top || []; M.L && M.L.majClassementTir && M.L.majClassementTir(M.classementTir); }
     else if (m.t === "flipper" && m.jeu === "flechettes") { M.classementFlechettes = m.top || []; M.L && M.L.majClassementFlechettes && M.L.majClassementFlechettes(M.classementFlechettes); }
     else if (m.t === "flipper") { M.classementFlipper = m.top || []; M.L && M.L.majClassement && M.L.majClassement(M.classementFlipper); }
     else if (m.t === "info") ctx.surInfo && ctx.surInfo(m.texte);
