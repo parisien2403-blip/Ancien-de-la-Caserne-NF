@@ -1321,6 +1321,7 @@
           <button class="mx-effet" id="mxFumee" type="button" title="Envoyer de la fumée" hidden>💨 Fumée</button>
           <button class="mx-effet" id="mxLasers" type="button" title="Allumer les lasers" hidden>🔷 Lasers</button>
           <button class="mx-lumiere" id="mxLumiere" type="button" title="Baisser la lumière de la salle" hidden>💡 100 %</button>
+          <button class="mx-lumiere" id="mxHifi" type="button" title="Le volume de la chaîne hi-fi de la salle de judo" style="top:102px" hidden>📻 60 %</button>
           <button class="mx-lumiere" id="mxBruit" type="button" title="Le volume des conversations des invités" style="top:146px" hidden>🗣️ 50 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
@@ -2209,6 +2210,9 @@
           clearTimeout(mxInviteMinuteur); mxInviteMinuteur = setTimeout(() => { if (mxInvitation === inv) { MX && MX.repondreSlow(inv.de, false); $("mxInvite").hidden = true; mxInvitation = null; } }, 30000); },
         surLasers: on => { mxLasersOn = on; $("mxLasers").classList.toggle("on", on); $("mxLasers").textContent = on ? "🔷 Lasers ✓" : "🔷 Lasers"; },
         surLumiere: n => { mxLumiereNiv = n; $("mxLumiere").classList.toggle("basse", n < .99); $("mxLumiere").textContent = `${n < .01 ? "🌑" : "💡"} ${Math.round(n * 100)} %`; },
+        surHifi: e => { hifiEtat = e; hifiMaj(true); },
+        surHifiVol: n => { hifiNiv = n; $("mxHifi").textContent = `${n < .01 ? "🔇" : "📻"} ${Math.round(n * 100)} %`; hifiMaj(); },
+        surDojo: d => { hifiDans = d; $("mxHifi").hidden = !d || !moi.admin; hifiMaj(true); },
         surBruitFete: n => { bruitNiv = n; $("mxBruit").textContent = `${n < .01 ? "🔇" : "🗣️"} ${Math.round(n * 100)} %`; bruitMaj(); },
         surVolume: v => { bruitVol = v; bruitMaj(); const avant = djVolume; djVolume = v; djAudio.volume = Math.min(1, Math.max(0, v)); if (!avant !== !v) djSynchro(); },   /* (on s'éloigne : le son baisse, mais la musique continue, sans bruit ; on revient : elle remonte tout de suite, au bon moment de la piste) */
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
@@ -2355,6 +2359,14 @@
   function bruitMaj() { const v = (mxLieu === "fetes" || mxLieu === "grande") && mxOuverte ? bruitNiv * bruitVol : 0; bruitAudio.volume = Math.min(1, Math.max(0, v * .85));
     if (v > .003 && bruitAudio.paused) bruitAudio.play().catch(() => {}); else if (v <= .003 && !bruitAudio.paused) bruitAudio.pause(); }
   document.addEventListener("pointerdown", () => { if (mxOuverte && bruitAudio.paused) bruitMaj(); }, true);
+  // la chaîne hi-fi de la salle de judo : « Daniela » (Elmer Food Beat), en boucle, au même moment pour tous ; on ne l'entend que dans la salle
+  const hifiAudio = new Audio("sons/daniela.mp3"); hifiAudio.loop = true; hifiAudio.preload = "auto"; let hifiEtat = { on: false }, hifiNiv = .6, hifiDans = false;
+  function hifiMaj(caler) { const v = hifiEtat.on && hifiDans && mxOuverte ? hifiNiv : 0; hifiAudio.volume = Math.min(1, Math.max(0, v));
+    if (v > .003) { if (caler && hifiAudio.duration) { const pos = ((Date.now() - hifiEtat.debut) / 1000) % hifiAudio.duration; if (pos >= 0 && Math.abs(hifiAudio.currentTime - pos) > 1.5) try { hifiAudio.currentTime = pos; } catch (e) {} }
+      if (hifiAudio.paused) hifiAudio.play().catch(() => {}); } else if (!hifiAudio.paused) hifiAudio.pause(); }
+  hifiAudio.onloadedmetadata = () => hifiMaj(true);
+  document.addEventListener("pointerdown", () => { if (mxOuverte && hifiAudio.paused) hifiMaj(true); }, true);
+  $("mxHifi").onclick = () => { const N = [1, .8, .6, .4, .2, 0], i = N.findIndex(v => Math.abs(v - hifiNiv) < .03); MX && MX.hifiVol(N[(i + 1) % N.length]); };
   $("mxBruit").onclick = () => { const N = [1, .7, .5, .3, .15, 0], i = N.findIndex(v => Math.abs(v - bruitNiv) < .03); MX && MX.bruitFete(N[(i + 1) % N.length]); };
   $("mxLumiere").onclick = () => { const N = [1, .6, .35, .15, 0], i = N.findIndex(v => Math.abs(v - mxLumiereNiv) < .03); MX && MX.lumiereSalle(N[(i + 1) % N.length]); };
   $("mxSon").onclick = () => { djEcoute = !djEcoute; if (djEcoute) { djAudio.muted = false; djAudio.play().catch(() => {}); } djSynchro(); };
@@ -2418,7 +2430,7 @@
     $("djEnvoi").hidden = true; chargerDisco();
   };
 
-  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; bruitAudio.pause(); $("mxScene").classList.remove("plein-css"); document.body.style.overflow = ""; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
+  function fermerMatrice() { if (!mxOuverte) return; mxOuverte = false; bruitAudio.pause(); hifiAudio.pause(); $("mxScene").classList.remove("plein-css"); document.body.style.overflow = ""; window.fermerConsole && window.fermerConsole(); djAudio.pause(); $("mxDJ").hidden = true; if (MX) MX.fermer(); $("mxVoile").hidden = false; $("mxPresents").innerHTML = ""; }
   /* la discussion : sous la scène les derniers messages (une heure au plus), chacun peut retirer les siens, l'administrateur tous ;
      en plein écran, un message ne reste affiché qu'une minute */
   let mxFilListe = [];

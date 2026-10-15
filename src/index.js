@@ -447,6 +447,7 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
+      if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "grande") ws.send(JSON.stringify({ t: "flipper", jeu: "tir", top: this.classementFlipper("tir") }));
@@ -513,6 +514,10 @@ export class Compteur extends DurableObject {
       await this.ctx.storage.put("fumee_fetes", Date.now()); this.diffuser("fetes", { t: "fumee" });
     } else if (m.t === "lasers" && a.lieu === "fetes" && a.admin) {   // les lasers : l'administrateur seul
       await this.ctx.storage.put("lasers_fetes", !!m.on); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "lasers", on: !!m.on });   // on les voit aussi de la cour
+    } else if (m.t === "hifi" && a.lieu === "grande") {   // la chaîne hi-fi de la salle de judo : chacun peut la mettre en marche ou l'arrêter (pour tout le monde)
+      const e = m.on ? { on: true, debut: Date.now() + 600 } : { on: false }; await this.ctx.storage.put("hifi_judo", e); this.diffuser("grande", { t: "hifi", ...e });
+    } else if (m.t === "hifi_vol" && a.admin) {   // son volume : l'administrateur seul
+      const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .6)); await this.ctx.storage.put("hifi_vol", niveau); this.diffuser("grande", { t: "hifi_vol", niveau });
     } else if (m.t === "bruit_fete" && a.admin) {   // le brouhaha des invités dans la salle des fêtes : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("bruit_fetes", niveau); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "bruit_fete", niveau });

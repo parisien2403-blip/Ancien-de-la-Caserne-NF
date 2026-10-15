@@ -1915,6 +1915,7 @@ C3.libre = (x, z) => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 =
     return (ax < C3.LT / 2 - .3 && z < zt0 - .3 && z > zt1 + .3) || (ax < C3.LM - .3 && z >= zt0 - .5 && z < zT + 1.2) ||   // (et les marches raides, pour redescendre vers le porche)
       (C3.ponts || [P]).some(Q => Q && x > Q.x0 + .3 && x < Q.x1 - .3 && z > za + .3 && z < zt1 + .7)
       || (x > C3.LT / 2 - .5 && x < C3.LT / 2 + 2 * E.W - .2 && z > E.zA + .2 && z < E.z0 + E.run + E.pal - .2); }
+  if (C3.meubles && !C3.enHaut() && !C3.enBas() && C3.meubles.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25)) return false;   // (les meubles du coin de la salle de judo)
   if (C3.sousSol && C3.enBas() && (C3.sousSol.libre(x, z) || (z >= zT && ax < DB + .5))) return C3.sousSol.libre(x, z);   // (le sous-sol : l'entrée, la salle de ping-pong, le stand de tir — et rien d'autre sous l'immeuble)
   if (z < zT && z > zt0 && ax < DB + .2) { const zm = (zT + zt0) / 2, esc = x > 0 && DB - x < C3.RUN + .2 && Math.abs(z - zm) < C3.SW / 2 - .15;   // la fosse des lavoirs
     if (C3.enBas()) return ax < DB - .3 && z < zT - .3 && z > zt0 + .3 || esc;
@@ -2701,7 +2702,7 @@ function troisiemeCour(A, L, scene) {
       const hor = toile(128, 128, (x) => { x.fillStyle = "#fbfaf6"; x.beginPath(); x.arc(64, 64, 60, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#7a1e1e"; x.stroke(); x.fillStyle = "#222"; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.fillRect(64 + Math.cos(a) * 48 - 3, 64 + Math.sin(a) * 48 - 3, 6, 6); }
         x.strokeStyle = "#111"; x.lineWidth = 5; x.beginPath(); x.moveTo(64, 64); x.lineTo(64, 28); x.moveTo(64, 64); x.lineTo(90, 72); x.stroke(); });
       { const h2 = A.ajoute(new THREE.CircleGeometry(.25, 24), A.mat({ map: tex(hor) }), (OX0 + X0) / 2 + 4, FL + 2.8, Z0 + .02, false); }
-      C3.dojo = { X0, X1, Z0, Z1, xb0: X0 + WT - 1.4, xb1: X0 + WT }; } }
+      C3.dojo = { X0, X1, Z0, Z1, xb0: X0 + WT - 1.4, xb1: X0 + WT }; coinDojo(A, scene, X0 + WT, X1, Z0, Z1, FL); } }
   // contre la face de la terrasse côté rue : l'escalier en U, en béton gris clair — on monte vers la gauche (côté rue), palier, demi-tour, on remonte vers la droite contre le mur, et l'on entre sur la terrasse
   { const E = C3.ESC, W = E.W, tot = E.haut + E.run + E.pal; E.z0 = zt1 + (PTr - tot) / 2 + E.haut; const z1 = E.z0 + E.run; E.z3 = E.z0; E.zA = E.z0 - E.haut;
     const xi = LT / 2 + W / 2, xo = LT / 2 + W * 1.5, h = yT / 2 / E.n, p = E.run / E.n, bc = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .95 }), fer = A.mat({ color: 0x141414, roughness: .45, metalness: .6 });
@@ -3148,6 +3149,55 @@ function sousSolStand(A, L, scene, SOL, zT, PF) {
     A.ajoute(new THREE.BoxGeometry(.1, 2.6, d - .1), A.mat({ color: 0x3a3a38, roughness: 1 }), P.tir.x0 + ep / 2 + .02, Y0 + 1.3, zc, false);   // le pare-balles, au fond
     // le tableau des meilleurs tireurs, contre le mur derrière les postes
     const tab = tableauScores(A, "STAND DE TIR", -.3, Y0 + 2.05, P.tir.z1 - ep / 2 - .02); L.majClassementTir = tab; tab((M && M.classementTir) || []); }
+}
+/* dans la salle de judo, côté carrelage (hors tatamis) : le bureau, sa chaise, la vieille chaîne hi-fi (on la met en marche, on l'arrête), les enceintes ;
+   contre le mur, l'étagère et ses trois coupes ; et les bancs de bois, sans dossier, où l'on s'asseyait enfant pour se changer */
+const moiP0 = () => M && M.moiNum && M.gens.get(M.moiNum);
+function coinDojo(A, scene, x0, x1, z0, z1, FL) {
+  const M2 = C3.meubles = [], bois = A.mat({ color: 0x8a5a32, roughness: .6 }), boisF = A.mat({ color: 0x5e3a1e, roughness: .6 }), noir = A.mat({ color: 0x1a1a1c, roughness: .5 }), alu = A.mat({ color: 0xb8bcc0, roughness: .3, metalness: .7 });
+  const b = (w, h, d, m, x, y, z) => A.ajoute(new THREE.BoxGeometry(w, h, d), m, x, FL + y, z);
+  const face = (w, h, dessin, x, y, z) => { const o = A.ajoute(new THREE.PlaneGeometry(w, h), A.mat({ map: tex(toile(Math.round(w * 400), Math.round(h * 400), dessin)), roughness: .4 }), x, FL + y, z, false); return o; };
+  // le bureau en bois, contre le mur (z0), ses tiroirs ; la chaise
+  const xb = 6.3, zb = z0 + .42; C3.hifi = [xb, zb + .9];
+  b(1.5, .05, .75, bois, xb, .74, zb); for (const sx of [-1, 1]) b(.05, .72, .7, boisF, xb + sx * .7, .36, zb);
+  b(.45, .55, .7, boisF, xb + .45, .44, zb); for (const y of [.3, .55]) b(.36, .015, .01, alu, xb + .45, y, zb + .355);
+  M2.push([xb - .8, xb + .8, zb - .4, zb + .4]);
+  { const ch = new THREE.Group(); ch.position.set(xb - .15, FL, zb + .75); ch.rotation.y = .25; scene.add(ch); const cm = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; ch.add(o); };
+    cm(.44, .04, .42, bois, 0, .46, 0); cm(.44, .4, .03, bois, 0, .7, .2); for (const [x, z] of [[-.2, -.18], [.2, -.18], [-.2, .18], [.2, .18]]) cm(.035, .46, .035, boisF, x, .23, z); M2.push([xb - .4, xb + .1, zb + .5, zb + 1.0]); }
+  // la chaîne hi-fi des années 80 : l'ampli, le tuner, la double cassette, la platine et son couvercle fumé, posés en pile ; les deux enceintes de part et d'autre
+  const hx = xb - .2, hz = zb - .08, hy = .765;
+  const etage = (h, y, dessin) => { b(.44, h, .3, noir, hx, hy + y + h / 2, hz); face(.43, h - .01, dessin, hx, hy + y + h / 2, hz + .151); };
+  etage(.1, 0, (x, w, h) => { x.fillStyle = "#c8ccd0"; x.fillRect(0, 0, w, h); x.fillStyle = "#222"; x.beginPath(); x.arc(w * .82, h / 2, h * .32, 0, 7); x.fill(); x.fillStyle = "#888"; x.beginPath(); x.arc(w * .82, h / 2, h * .22, 0, 7); x.fill();   // l'ampli : son gros bouton de volume, ses vu-mètres
+    for (const k of [0, 1]) { x.fillStyle = "#1a1a1a"; x.fillRect(w * (.08 + k * .2), h * .2, w * .17, h * .55); x.fillStyle = "#f2c84a"; x.fillRect(w * (.09 + k * .2), h * .25, w * .15, h * .45); x.strokeStyle = "#c81e1e"; x.lineWidth = 2; x.beginPath(); x.moveTo(w * (.12 + k * .2), h * .7); x.lineTo(w * (.18 + k * .2), h * .3); x.stroke(); }
+    x.fillStyle = "#333"; x.font = `bold ${h * .16}px Arial`; x.fillText("TECHNICS  SU-V40", w * .5, h * .9); });
+  etage(.08, .1, (x, w, h) => { x.fillStyle = "#c8ccd0"; x.fillRect(0, 0, w, h); x.fillStyle = "#0e1a14"; x.fillRect(w * .08, h * .2, w * .55, h * .5); x.fillStyle = "#7ef0a0"; x.font = `bold ${h * .35}px Courier New`; x.fillText("FM 104.3", w * .12, h * .6);   // le tuner
+    for (let k = 0; k < 5; k++) { x.fillStyle = "#555"; x.fillRect(w * (.7 + k * .055), h * .35, w * .04, h * .3); } });
+  etage(.11, .18, (x, w, h) => { x.fillStyle = "#c8ccd0"; x.fillRect(0, 0, w, h); for (const k of [0, 1]) { x.fillStyle = "#222"; x.fillRect(w * (.05 + k * .45), h * .15, w * .4, h * .6); x.fillStyle = "#5a4a3a"; x.fillRect(w * (.12 + k * .45), h * .3, w * .26, h * .25);   // la double cassette
+      x.fillStyle = "#ddd"; for (const s of [0, 1]) { x.beginPath(); x.arc(w * (.18 + k * .45 + s * .14), h * .42, h * .06, 0, 7); x.fill(); } } });
+  b(.44, .09, .34, noir, hx, hy + .29 + .045, hz); b(.43, .01, .33, alu, hx, hy + .385, hz);   // la platine
+  { const dq = A.ajoute(new THREE.CylinderGeometry(.14, .14, .01, 24), noir, hx - .04, FL + hy + .395, hz, false); }
+  b(.44, .1, .34, A.mat({ color: 0x2a2018, transparent: true, opacity: .45, roughness: .1 }), hx, hy + .44, hz);   // son couvercle fumé
+  for (const sx of [-1, 1]) { const ex = hx + sx * .48, ez = hz;   // les enceintes
+    b(.26, .42, .24, A.mat({ color: 0x3a2618, roughness: .6 }), ex, hy + .21, ez); face(.24, .4, (x, w, h) => { x.fillStyle = "#1a1a1a"; x.fillRect(0, 0, w, h); x.fillStyle = "#2c2c2c"; for (let y = 0; y < h; y += 4) x.fillRect(0, y, w, 1);
+      x.fillStyle = "#c8ccd0"; x.font = `bold ${w * .1}px Arial`; x.fillText("JBL", w * .38, h * .95); }, ex, hy + .21, ez + .121); }
+  // l'étagère, au mur (z1), et ses trois coupes de judo
+  const xe = 7.9, ze = z1 - .16;
+  b(1.6, .04, .28, bois, xe, 1.62, ze); for (const sx of [-1, 1]) b(.04, .2, .2, boisF, xe + sx * .7, 1.52, ze + .03);
+  const or = A.mat({ color: 0xd4af37, metalness: .85, roughness: .25 }), arg = A.mat({ color: 0xcfd3d8, metalness: .85, roughness: .25 }), bronze = A.mat({ color: 0xb87333, metalness: .8, roughness: .3 });
+  for (const [k, m, hh] of [[0, arg, .32], [1, or, .4], [2, bronze, .28]]) { const x = xe - .5 + k * .5, y = FL + 1.64;
+    A.ajoute(new THREE.BoxGeometry(.12, .06, .12), A.mat({ color: 0x1a1a1a, roughness: .4 }), x, y + .03, ze);   // le socle
+    A.ajoute(new THREE.CylinderGeometry(.015, .03, hh * .35, 10), m, x, y + .06 + hh * .175, ze);
+    const cpe = A.ajoute(new THREE.CylinderGeometry(hh * .2, hh * .08, hh * .45, 18, 1, true), m, x, y + .06 + hh * .35 + hh * .225, ze); cpe.material.side = THREE.DoubleSide;
+    for (const s of [-1, 1]) { const an = A.ajoute(new THREE.TorusGeometry(hh * .08, .008, 6, 12), m, x + s * hh * .22, y + .06 + hh * .58, ze); an.rotation.y = 0; }
+    face(.08, .025, (c, w, h) => { c.fillStyle = "#d4af37"; c.fillRect(0, 0, w, h); c.fillStyle = "#222"; c.font = `bold ${h * .7}px Arial`; c.textAlign = "center"; c.fillText(["1987", "1989", "1991"][k], w / 2, h * .8); }, x, 1.67, ze + .061); }
+  // les bancs de bois, sans dossier, contre les murs
+  const banc = (xa, xb2, za, zb2) => { const lx = xb2 - xa > zb2 - za, L = lx ? xb2 - xa : zb2 - za, xc = (xa + xb2) / 2, zc = (za + zb2) / 2;
+    for (let k = 0; k < 3; k++) { const o = k * .11 - .11; b(lx ? L : .1, .035, lx ? .1 : L, bois, lx ? xc : xc + o, .44, lx ? zc + o : zc); }   // trois lattes
+    for (let t = .1; t <= L - .09; t += Math.max(.9, (L - .2) / Math.ceil((L - .2) / 1.4))) { const px = lx ? xa + t : xc, pz = lx ? zc : za + t; b(lx ? .06 : .3, .42, lx ? .3 : .06, boisF, px, .21, pz); }   // les pieds
+    M2.push([lx ? xa : xc - .18, lx ? xb2 : xc + .18, lx ? zc - .18 : za, lx ? zc + .18 : zb2]); };
+  banc(x1 - .38, x1 - .02, z1 - 4.1, z1 - .3);   // le long du mur de l'entrée, de part et d'autre de la porte
+  banc(x1 - .38, x1 - .02, z0 + .3, z0 + 2.9);
+  banc(x0 + .4, x0 + 3.5, z1 - .38, z1 - .02);   // le long du mur du fond, avant l'étagère
 }
 /* au plafond d'un passage couvert : des néons à l'ancienne (réglette en tôle blanche, tube nu), à la file ; gresille : l'un d'eux grésille, s'éteint par à-coups */
 function neonsPassage(scene, x, y, z0, z1, gresille = false) {
@@ -5846,6 +5896,9 @@ export async function ouvrir(ctx) {
         if (sur && !p.surTapis) p.salutT = performance.now(); p.surTapis = sur;
         if (p.salutT) { const k = (performance.now() - p.salutT) / 1600; if (k >= 1) p.salutT = 0; else { const a = Math.sin(Math.min(1, k * 1.25) * Math.PI) * .75; p.corps.rotation.x = a; p.corps.scale.y = (p.hBase || (p.hBase = p.corps.scale.y)) * (1 - a * .12); } }
         else if (p.hBase) { p.corps.scale.y = p.hBase; p.hBase = 0; } } }
+    // la chaîne hi-fi de la salle de judo : on ne l'entend que dans la salle
+    { const d = C3.dojo, q = moiP0(); const dans = !!(d && q && M.lieu === "grande" && q.g.position.x > d.X0 && q.g.position.x < d.X1 && q.g.position.z > d.Z0 && q.g.position.z < d.Z1 && Math.abs(q.g.position.y - C3.FL) < .8);
+      if (dans !== M.dansDojo) { M.dansDojo = dans; M.ctx.surDojo && M.ctx.surDojo(dans); } }
     // la musique de la fête : à fond dans la salle ; dehors, la nuit seulement, par la porte ouverte (plus fort en s'approchant) ; de jour, depuis la cour, on n'entend rien
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
@@ -7405,6 +7458,7 @@ function chercherAction(t) {
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
       else if (C3.sousSol && M.lieu === "grande" && moi.g.position.y < -2 && C3.sousSol.auPoste(x, z)) a = { type: "tir", label: "🔫 Tirer" };
+      else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
       else if (M.L.apo) {}
@@ -7444,6 +7498,7 @@ export function agir() {
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();
   else if (a.type === "tir") M.ctx.surTir && M.ctx.surTir();
+  else if (a.type === "hifi") { envoyerWS({ t: "hifi", on: !M.hifiOn }); M.actionT = 0; }
   else if (a.type === "prendre") { const o = (M.objets || []).find(q => q.id === a.id && !q.cache); if (o) {
       if (o.type === "plante" && APO.vies >= 4) M.ctx.surInfo && M.ctx.surInfo("🌿 Tu as déjà toutes tes vies : garde-la pour plus tard.");
       else if (o.type === "balles" && APO.balles >= 9) M.ctx.surInfo && M.ctx.surInfo("🔫 Ton chargeur est déjà plein.");
@@ -9247,6 +9302,7 @@ export function monterEtage(f) { const moi = M && M.moiNum && M.gens.get(M.moiNu
 export function jouer(jeu) { envoyerWS({ t: "joue", jeu: jeu || null }); const moi = M && M.moiNum && M.gens.get(M.moiNum); if (moi) moi.info.joue = jeu || null; }
 export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 // (administrateur) la luminosité de la salle des fêtes, de 0 (éteinte) à 1, pour tous ceux qui y sont
+export function hifiVol(niveau) { envoyerWS({ t: "hifi_vol", niveau }); }
 export function bruitFete(niveau) { envoyerWS({ t: "bruit_fete", niveau }); }
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
@@ -9280,6 +9336,8 @@ function connecter() {
     else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
+    else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
+    else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
     else if (m.t === "lumiere" && m.salle === "mess") { const k = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.lumiereMess = k;
       if (M.L && baseLieu(M.lieu) === "mess") M.L.setLumiereZone ? M.L.setLumiereZone("mess", k) : M.L.setLumiere && M.L.setLumiere(k);
