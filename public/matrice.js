@@ -6260,7 +6260,8 @@ function candidatsFumi() {
     if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
     if (L.heliport && Math.hypot(x - L.heliport.x, z - L.heliport.z) < 9) continue;   // (pas sur le H, ni juste à côté)
     if (out.some(p => Math.hypot(p[0] - x, p[2] - z) < 2.5)) continue;
-    const etg = base === "etage" ? Math.floor(hasard(k * 2.7 + 99) * (ET.N + 1)) : 0, y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
+    const etg = base === "etage" ? Math.floor(hasard(k * 2.7 + 99) * (ET.N + 1)) : 0, y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0);
+    if (base !== "etage" && Math.abs(y) > 1.2) continue;   // (au sol, là où l'on marche : ni dans la fosse, ni au sous-sol, ni sous la terre)
     out.push([x, y, z, etg]); }
   return out; }
 // le fumigène, posé au sol : un tube rouge qui crache un filet de fumée rouge, une lueur rouge autour
@@ -6268,7 +6269,7 @@ function objetFumi(x, y, z) { const g = new THREE.Group(); g.position.set(x, y, 
   const c = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .24, 12), new THREE.MeshStandardMaterial({ color: 0xc8102e, roughness: .5, emissive: 0x500000 })); c.rotation.z = Math.PI / 2; c.position.y = .05; g.add(c);
   const b = new THREE.Mesh(new THREE.CylinderGeometry(.047, .047, .05, 12), new THREE.MeshStandardMaterial({ color: 0x222222 })); b.rotation.z = Math.PI / 2; b.position.set(.13, .05, 0); g.add(b);
   const lueur = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: texLueurRouge(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); lueur.rotation.x = -Math.PI / 2; lueur.position.y = .02; g.add(lueur);
-  const fu = []; for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 6]); }
+  const fu = []; for (let i = 0; i < 12; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, fog: false })); g.add(sp); fu.push([sp, i / 12]); }   // (une colonne de fumée rouge, haute : on la voit de loin)
   g.userData.fu = fu; return g; }
 // à chaque image, dans la caserne de l'apocalypse : le fumigène (posé, ramassé), le cercle rouge de la terrasse
 function fumiApo(moi, now) {
@@ -6276,7 +6277,7 @@ function fumiApo(moi, now) {
   if (L.heliport) { const c = L.heliport, on = !!F.trouve; c.cercle.visible = on; if (on) { const k = .65 + .35 * Math.sin(now / 260); c.anneau.material.opacity = .9 * k; c.disque.material.opacity = .45 * k; c.faisceau.material.opacity = .1 * k; } }
   if (!F.trouve && F.lieu === M.lieu) {
     if (M.fumiL !== L) { M.fumiL = L; const C = candidatsFumi(); M.fumiPos = C.length ? C[Math.min(C.length - 1, Math.floor(F.r * C.length))] : null; M.fumiObj = M.fumiPos ? objetFumi(M.fumiPos[0], M.fumiPos[1], M.fumiPos[2]) : null; }
-    const o = M.fumiObj; if (o) { for (const [sp, d] of o.userData.fu) { const u = ((now / 2600) + d) % 1; sp.position.set(.18 + Math.sin(u * 5 + d * 9) * .12, .12 + u * 2.2, 0); sp.scale.setScalar(.25 + u * 1.5); sp.material.opacity = .7 * (1 - u); }
+    const o = M.fumiObj; if (o) { for (const [sp, d] of o.userData.fu) { const u = ((now / 4200) + d) % 1; sp.position.set(.18 + Math.sin(u * 5 + d * 9) * .3 * u, .12 + u * 7, 0); sp.scale.setScalar(.3 + u * 2.6); sp.material.opacity = .8 * (1 - u * .85); }
       const P = M.fumiPos; if (!APO.zombieFin && Math.hypot(moi.g.position.x - P[0], moi.g.position.z - P[2]) < .9 && (baseLieu(M.lieu) !== "etage" || etageDe(moi) === P[3]) && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_pris" }); } } }
   else if (M.fumiObj) { M.scene.remove(M.fumiObj); M.fumiObj = null; }
   // le fumigène trouvé : un survivant sur le cercle rouge, et l'hélicoptère arrive
@@ -6286,7 +6287,9 @@ function fumiApo(moi, now) {
 // le bandeau de l'objectif, toujours affiché en haut pendant la partie : où chercher, où aller
 function objectifApo() {
   const F = M && M.fumi, L = M && M.L; let t = "";
-  if (L && L.apo && F && !M.evac && !M.cine && !APO.zombieFin) t = !F.trouve ? "🧨 Trouve le fumigène rouge, caché au sol quelque part dans la caserne"
+  const NOMS = { "z-grande": "la grande cour", "z-fetes": "la salle des fêtes", "z-etage": "les couloirs des étages", "z-mess": "le mess", "z-rue": "la rue" };
+  const ici = F && !F.trouve && F.lieu === (M && M.lieu), moi = M && moiApo(), P = M && M.fumiPos, d = ici && moi && P && (baseLieu(M.lieu) !== "etage" || etageDe(moi) === P[3]) ? Math.hypot(moi.g.position.x - P[0], moi.g.position.z - P[2]) : 99, etg = ici && P && baseLieu(M.lieu) === "etage" ? ` (${P[3] === 0 ? "au rez-de-chaussée" : P[3] === 1 ? "au 1er étage" : "au " + P[3] + "e étage"})` : "";
+  if (L && L.apo && F && !M.evac && !M.cine && !APO.zombieFin) t = !F.trouve ? (ici ? `🧨 Le fumigène est ici, dans ${NOMS[F.lieu] || "ce lieu"}${etg} : cherche la fumée rouge !${d < 6 ? " 🔥 Tu brûles !" : d < 15 ? " Tu chauffes…" : ""}` : `🧨 Le fumigène rouge est caché dans ${NOMS[F.lieu] || "la caserne"}`)
     : M.lieu === "z-grande" ? "🚁 Monte sur la terrasse (au fond, après le passage) et marche sur le cercle rouge du H"
     : "🚁 Va dans la grande cour, puis sur la terrasse : marche sur le cercle rouge du H";
   if (t === (M && M.objectifT)) return; if (M) M.objectifT = t;
