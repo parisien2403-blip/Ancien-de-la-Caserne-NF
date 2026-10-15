@@ -7012,18 +7012,20 @@ function creerDelorean() {
 }
 function ouvrirPortes(car, f) { for (const { pv, sg } of car.userData.portes) pv.rotation.z = sg * f * 1.55; }
 // ---- les traînées de feu, derrière les roues ----
+let FEU_M = null;
 function traineeFeu(lst, x, z, y = 0) {
   if (!texFlammes) texFlammes = flammesPixel();
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, depthWrite: false, alphaTest: .05, fog: false }));
+  if (!FEU_M) FEU_M = { sp: texFlammes.map(t => new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, alphaTest: .05, fog: false })), geo: new THREE.PlaneGeometry(.34, .34), brule: new THREE.MeshBasicMaterial({ color: 0x140a04, transparent: true, opacity: .75, depthWrite: false }) };   // (partagés : rien à créer ni à compiler pendant la course)
+  const sp = new THREE.Sprite(FEU_M.sp[0]);
   sp.center.set(.5, .05); sp.position.set(x, y + .01, z); sp.scale.set(.55, .9, 1); M.scene.add(sp);
-  const brule = new THREE.Mesh(new THREE.PlaneGeometry(.34, .34), new THREE.MeshBasicMaterial({ color: 0x140a04, transparent: true, opacity: .75, depthWrite: false }));
+  const brule = new THREE.Mesh(FEU_M.geo, FEU_M.brule);
   brule.rotation.x = -Math.PI / 2; brule.position.set(x, y + .015, z); M.scene.add(brule);
   lst.push({ sp, brule, ph: Math.floor(Math.random() * 8), h: .7 + Math.random() * .6, t0: performance.now() });
 }
 function animerFeu(lst, now, vie = 9000) {
   for (let i = lst.length - 1; i >= 0; i--) { const f = lst[i], age = now - f.t0, k = Math.max(0, 1 - age / vie);
-    if (k <= 0) { M.scene.remove(f.sp); M.scene.remove(f.brule); f.sp.material.dispose(); lst.splice(i, 1); continue; }
-    f.sp.material.map = texFlammes[(Math.floor(now / 70) + f.ph) % 8]; const v = .85 + .15 * Math.sin(now / 90 + f.ph); f.sp.scale.set(.55 * v, (.5 + .9 * f.h) * v * Math.min(1, k * 1.6), 1); }
+    if (k <= 0) { M.scene.remove(f.sp); M.scene.remove(f.brule); lst.splice(i, 1); continue; }
+    f.sp.material = FEU_M.sp[(Math.floor(now / 70) + f.ph) % 8]; const v = .85 + .15 * Math.sin(now / 90 + f.ph); f.sp.scale.set(.55 * v, (.5 + .9 * f.h) * v * Math.min(1, k * 1.6), 1); }
 }
 // les éclairs bleus autour de la voiture, juste avant le saut dans le temps
 function arcs(car, on) { if (!car.userData.arcs) { const m = new THREE.LineBasicMaterial({ color: 0x9fe6ff }), L = [];
@@ -7089,6 +7091,8 @@ function cineHV() {
   const moi0 = () => M.gens.get(M.moiNum);
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; car.visible = true; poser(car, X1, 16, -Math.PI / 2); ouvrirPortes(car, 0); const moi = moi0(); if (moi) { moi.g.visible = true; moi.g.position.set(-5.2, .12, 13.9); }
     if (!M.gens.has(DOC)) ajouterDoc(-8.7, 15.6); finCine(); musiqueBttf("sons/bttf/sandman.mp3", true, 3000); };
+  { const L0 = []; if (!texFlammes) texFlammes = flammesPixel(); traineeFeu(L0, X0, 16, -50); arcs(car, true); car.visible = true;   // (tout ce qui apparaîtra — la voiture, ses arcs, le feu — est préparé pour la carte graphique avant le départ : plus d'à-coup à l'éclair)
+    try { M.rendu.compile(M.scene, M.camera); } catch (e) {} car.visible = false; arcs(car, false); for (const f of L0) { M.scene.remove(f.sp); M.scene.remove(f.brule); } }
   M.passerBtn = boutonPasser(fin);
   M.cine = { t0: performance.now(), feu, im: 0, maj: (now) => { { const gap = now - (M.cine.prec || now); M.cine.t0 += M.cine.im < 6 ? gap : Math.max(0, gap - 250); } M.cine.prec = now; M.cine.im++;   // (les premières images, lentes — la carte graphique prépare le lieu — ne comptent pas : la DeLorean surgit quand on la voit)
     const t = (now - M.cine.t0) / 1000, moi = moi0(), cam = M.camera, D = t - T0;
