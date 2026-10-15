@@ -1910,7 +1910,18 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       for (let z = za2 + .05; z <= zg2 - .02; z += 2.3) A.ajoute(new THREE.BoxGeometry(.05, 1.0, .05), ferM, xm, yz(z) + 1.05, z, false);
       A.ajoute(new THREE.BoxGeometry(.05, 1.0, .05), ferM, xm, yz(zg2 - .05) + 1.05, zg2 - .05, false);
       for (let z = za2 + .14; z < zg2 - .05; z += .14) A.ajoute(new THREE.BoxGeometry(.016, .88, .016), ferM, xm, yz(z) + 1.11, z, false);
-      C3.muretFG = [xm - .35, xm + .35, za2 - .1, zg2 + .1]; } }   // (derrière le bâtiment du fond, à gauche : la ruelle remonte doucement vers la place)   // (la place devant l'arcade, à gauche de la chaussée)
+      C3.muretFG = [xm - .35, xm + .35, za2 - .1, zg2 + .1];
+      // entre le muret et la façade : trois marches pour y monter, devant la porte G, puis un trottoir qui redescend en pente douce jusqu'à la porte E
+      { const x0 = -C3.x - 6, x1 = xm - .2, zH = zg2, zB = -128.5, hH = .51, yB = RU.y(zB) + .12, yT = z => z >= zH ? hH : yB + (hH - yB) * (z - zB) / (zH - zB), T = textures();
+        C3.trotFG = { x0, x1, zH, zB, hH, yB };
+        const dessus = A.mat({ map: tex(T.trottoir, 1, 1), roughness: .92 }), granit = A.mat({ map: tex(T.granit, 1, .3), roughness: .8 }), bc = A.mat({ map: tex(T.betonClair, 1, 1), roughness: .95 });
+        const g = new THREE.BufferGeometry(), P = [], I = []; const n = 24;   // le dessus, en pente
+        for (let k = 0; k <= n; k++) { const z = zH + (zB - zH) * k / n; P.push(x0, yT(z), z, x1, yT(z), z); if (k) { const a = 2 * k - 2; I.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } }
+        g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(P.map((v, i) => i % 3 === 0 ? v / 2 : i % 3 === 2 ? v / 2 : null).filter(v => v !== null), 2)); g.setIndex(I); g.computeVertexNormals();
+        SOL(A.ajoute(g, A.mat({ map: tex(T.trottoir, 1, 1), roughness: .92, side: THREE.DoubleSide }), 0, 0, 0, false));
+        { const f = new THREE.BufferGeometry(), Q = [], J = []; for (let k = 0; k <= n; k++) { const z = zH + (zB - zH) * k / n, yb = Math.min(z <= -117 ? RU.y(z) : yz(z), yT(z)) - .05; Q.push(x1, yb, z, x1, yT(z), z); if (k) { const a = 2 * k - 2; J.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }   // sa bordure de granit, côté ruelle (au-delà du muret)
+          f.setAttribute("position", new THREE.Float32BufferAttribute(Q, 3)); f.setIndex(J); f.computeVertexNormals(); A.ajoute(f, A.mat({ color: 0xa8a49c, roughness: .8, side: THREE.DoubleSide }), 0, 0, 0, false); }
+        for (let k = 0; k < 3; k++) { const top = (k + 1) * .17, zz = zH + .9 - (k + .5) * .3; SOL(A.ajoute(new THREE.BoxGeometry(x1 - x0, top + .05, .3), bc, (x0 + x1) / 2, top / 2 - .025, zz)); } } } }   // (derrière le bâtiment du fond, à gauche : la ruelle remonte doucement vers la place)   // (la place devant l'arcade, à gauche de la chaussée)
   planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
   { const t0 = zT - C3.NT * C3.PT, ta = t0 - C3.PTr - (zT - t0), pe = { ang, y: z => RU.y(z) };   // (le long de la terrasse, à plat, dans la continuité du gris d'à côté)
     trottoir(A, L, DB, DB + 1.4, zA + RU.cour, ta, ["x1"], pe); trottoir(A, L, DB, DB + 1.4, t0, zT, ["x1"], pe);
@@ -2625,7 +2636,8 @@ function troisiemeCour(A, L, scene) {
   { const gap = zT - zt0, za = zt1 - gap, E = C3.ESC, plat = (x0, x1, z0, z1) => { if (x1 - x0 < .05 || z1 - z0 < .05) return; const o = SOL(A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), A.mat({ map: tex(textures().trottoir, (x1 - x0) / 2, (z1 - z0) / 2), roughness: .92 }), (x0 + x1) / 2, .013, (z0 + z1) / 2, false)); o.rotation.x = -Math.PI / 2; };
     plat(LT / 2, DB, za, zt1); plat(LT / 2 + 2 * E.W, DB, zt1, E.zA); plat(LT / 2 + 2 * E.W, DB, E.z0 + E.run + E.pal, zt0); }   // (le même gris que le trottoir, à plat, sans marche)
   rueEnPente(A, L, scene, SOL, zT, DB);
-  L.hauteur = (x, z, p) => { { const G = C3.escG; if (G && z > G.z0 && z < G.z1 && x < G.x0 && x > G.x0 - G.run - .05) return Math.max(0, yT - (Math.floor((G.x0 - x) / G.t) + 1) * G.r); }   // (l'escalier de la terrasse, côté ruelle de gauche)
+  L.hauteur = (x, z, p) => { { const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zH + .9) return z >= F.zH ? Math.min(3, Math.floor((F.zH + .9 - z) / .3) + 1) * .17 : F.yB + (F.hH - F.yB) * (z - F.zB) / (F.zH - F.zB); }   // (le trottoir entre le muret et la façade : ses trois marches, sa pente jusqu'à la porte E)
+    { const G = C3.escG; if (G && z > G.z0 && z < G.z1 && x < G.x0 && x > G.x0 - G.run - .05) return Math.max(0, yT - (Math.floor((G.x0 - x) / G.t) + 1) * G.r); }   // (l'escalier de la terrasse, côté ruelle de gauche)
     if (C3.porteTatami != null && Math.abs(x - C3.porteTatami) < .8 && z > zt0 && z < zt0 + .6 && (!p || p.g.position.y < -2)) return -C3.PF + (z < zt0 + .3 ? .34 : .17);   // (les deux marches de la porte du tatami, au fond de la fosse)
     { const Cq = RU.courette; if (Cq && x > Cq.x0 && x < Cq.x1 && z > Cq.z0 && z < Cq.z1) { if (x < Cq.xm && z < Cq.z0 + .9) return RU.y(z) - (Math.floor((z - Cq.z0) / .3) + 1) * .17; if (x > Cq.x1 - Cq.R) return RU.y(z) - Cq.P * (Cq.x1 - x) / Cq.R; return RU.y(z) - Cq.P; } }   // (la courette du local poubelle, et ses trois marches)
     if (C3.rampe && x > C3.rampe[0] && x < C3.rampe[1] && z > C3.rampe[2] && z < C3.rampe[3]) return (x - C3.rampe[0]) / 1.4 * (RU.y(z) + .12);
@@ -4955,7 +4967,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   }
 
   // sur les trottoirs, on marche 12 cm plus haut
-  if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; return tr.some(t => x > t[0] && x < t[1] && z > t[2] && z < t[3]) || (C3.phareT && C3.phareT(x, z)) ? b + .12 : b; }; }
+  if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zH + .9) return b;   // (déjà compté)
+    return tr.some(t => x > t[0] && x < t[1] && z > t[2] && z < t[3]) || (C3.phareT && C3.phareT(x, z)) ? b + .12 : b; }; }
   if (id === "grande" && !copie) lanternesMurales(scene, L);   // (les lanternes murales : allumées la nuit)
   if (id === "grande") { const n = fusionStatique(scene, L, L.nFus || 0); trace("fusion " + n); }   // (avant les pigeons : eux bougent)
   if (id === "grande" && !copie) pigeons(L, scene);   // (après les trottoirs : ils marchent dessus)
