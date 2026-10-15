@@ -2963,11 +2963,17 @@ function fenetreDouche(A, scene, xw, yf, zf, zA0, zB0, depoli, cadre) {
   const za = zA0 + .7, zb = zB0 - .7, T = 46000, VIT = .38;   // (de gauche à droite, doucement ; puis on recommence)
   // la vapeur de la douche, qui sort par la fenêtre et monte le long du mur
   const tV = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(250,252,255,.75)"); g.addColorStop(.5, "rgba(245,248,252,.3)"); g.addColorStop(1, "rgba(245,248,252,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
-  const vap = []; for (let k = 0; k < 14; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tV, transparent: true, depthWrite: false, opacity: 0 })); scene.add(sp); vap.push({ sp, ph: k / 14, dz: (Math.random() - .5) * .3 }); }
-  fond.onBeforeRender = () => { const t = performance.now(), ok = !(M && M.L && (M.L.apo || M.L.nuit)), u = t % T, cyc = Math.floor(t / T);
+  const vap = []; for (let k = 0; k < 22; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tV, transparent: true, depthWrite: false, opacity: 0 })); scene.add(sp); vap.push({ sp, ph: k / 22, dz: (Math.random() - .5) * .3 }); }
+  // le soir : la lumière chaude de la salle de bain qui sort de la fenêtre (un halo sur le mur, une lampe), et la buée qu'elle éclaire
+  const tH = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 64); g.addColorStop(0, "rgba(255,226,160,.85)"); g.addColorStop(.35, "rgba(255,200,120,.35)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }));
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: tH, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); halo.position.set(xw + dehors * .05, yf, zf); halo.rotation.y = -Math.PI / 2; halo.visible = false; scene.add(halo);
+  const lampe = new THREE.PointLight(0xffd59a, 0, 6, 1.6); lampe.position.set(xw + dehors * .6, yf, zf); scene.add(lampe);
+  const lueur = new THREE.Mesh(new THREE.PlaneGeometry(LW, HW), new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false })); lueur.position.set(xw + dehors * .035, yf, zf); lueur.rotation.y = -Math.PI / 2; lueur.visible = false; scene.add(lueur);
+  fond.onBeforeRender = () => { const t = performance.now(), ok = !(M && M.L && M.L.apo), soir = !!(M && M.L && M.L.nuit), u = t % T, cyc = Math.floor(t / T);   // (les gamins passent le jour comme le soir)
+    halo.visible = lueur.visible = soir && ok; lampe.intensity = soir && ok ? 3.2 + Math.sin(t / 900) * .2 : 0;
     for (const v of vap) { const q = ((t / 5200) + v.ph) % 1, sz = .25 + q * 1.1; v.sp.visible = true;
       v.sp.position.set(xw + dehors * (.08 + q * .55), yf + .05 + q * 1.7 + Math.sin(q * 6 + v.ph * 9) * .05, zf + v.dz + Math.sin(q * 4 + v.ph * 20) * .18 * q); v.sp.scale.set(sz, sz, 1);
-      v.sp.material.opacity = Math.min(1, q * 6) * (1 - q) * .55; }
+      v.sp.material.opacity = Math.min(1, q * 6) * (1 - q) * (soir ? .75 : .55); v.sp.material.color.setHex(soir ? 0xffe2b8 : 0xffffff); }   // (le soir, la buée éclairée par la lampe de la salle de bain)
     let fache = false;
     gamins.forEach((g, k) => { const z = za + (u / 1000 - k * 2.6) * VIT; g.m.visible = ok && z > za && z < zb; if (!g.m.visible) return;
       const sous = Math.abs(z - zf) < .62, pas = Math.floor(t / 520 + k) % 2;
@@ -6834,12 +6840,17 @@ function ajouterPNJ() {
 const EBOUEURS = [[-70, "eboueur1", "Saïd"], [-71, "eboueur2", "Julien"]], PHRASES_EBO = ["Bonjour !", "On passe le mardi et le vendredi !", "Attention au camion !", "Belle journée, hein ?", "Les bacs, c'est par ici !", "Encore une tournée…"];
 /* --- le gendarme de faction, sous le porche de l'entrée : il salue chaque personne qui passe, « Bonjour ! » le jour, « Bonsoir ! » le soir --- */
 const GENDARME = -72;
+// un gendarme : tel que l'administrateur l'a réglé (sa tête, sa taille, sa tenue, son nom), sinon par défaut
+function infoGendarme(id, tete, nom = "Gendarme") { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+  const info = { nom: P.nom || nom, tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas || "#26324e", pieds: P.pieds || "#111", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete };
+  return { info, cle: JSON.stringify(info) }; }
 function animerGendarme() {
   if (!M || !M.L) return;
   // (le même, à la même place, qu'on vienne de la rue ou de la cour d'honneur : dans la cour, le passage est recopié 41,5 m plus loin)
   const pos = M.lieu === "rue" ? [-1.55, -13.4] : M.lieu === "grande" ? [-1.55, 28.1] : null, ici = pos && !M.L.apo; let g = M.gens.get(GENDARME);
   if (!ici) { if (g) retirerAncien(GENDARME); return; }
-  if (!g) { ajouterAncien({ numero: GENDARME, nom: "Gendarme", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: "images/gendarme-tete.png", pnj: true, salue: true, x: pos[0], z: pos[1] }); return; }
+  const cle = infoGendarme(63, "images/gendarme-tete.png"); if (g && g.cleInfo !== cle.cle) { retirerAncien(GENDARME); g = null; }   // (l'administrateur a changé sa tête, sa taille, sa tenue)
+  if (!g) { g = ajouterAncien({ ...cle.info, numero: GENDARME, pnj: true, salue: true, x: pos[0], z: pos[1] }); if (g) g.cleInfo = cle.cle; return; }
   if (Math.abs(g.g.position.z - pos[1]) > .5) g.g.position.set(pos[0], 0, pos[1]);
   const vus = g.vus || (g.vus = new Map()), now = Date.now();
   for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
@@ -6850,11 +6861,12 @@ const RONDES = [[-73, 2, "Gendarme Leclerc"], [-74, 3, "Gendarme Moreau"], [-75,
 const ZONES_RONDE = [[-10, 10, -16, 12], [-10, 10, -43, -31], [-19, 19, -71, -57], [15.5, 23, -116, -86], [-20, 23, -132, -118], [-25, -16, -116, -86]];   // (la cour d'honneur, la 2e, la 3e cour, la rue en pente, la place, la ruelle de gauche)
 function animerRondes() {
   if (!M || !M.L) return;
-  const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit;
+  const ici = M.lieu === "grande" && !M.L.apo;   // (le jour comme le soir)
   const moi = M.moiNum && M.gens.get(M.moiNum), now = Date.now();
   for (const [num, k, nom] of RONDES) { let g = M.gens.get(num);
     if (!ici) { if (g) retirerAncien(num); continue; }
-    if (!g) { const [x, z] = pointRonde(num, 0); ajouterAncien({ numero: num, nom, tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111", teteUrl: `images/gendarme${k}-tete.png`, pnj: true, salue: true, allure: .42, x, z }); continue; }
+    const ci = infoGendarme(62 + k, `images/gendarme${k}-tete.png`, nom); if (g && g.cleInfo !== ci.cle) { const q = g.g.position; retirerAncien(num); g = ajouterAncien({ ...ci.info, numero: num, pnj: true, salue: true, allure: .42, x: q.x, z: q.z }); if (g) g.cleInfo = ci.cle; continue; }
+    if (!g) { const [x, z] = pointRonde(num, 0); g = ajouterAncien({ ...ci.info, numero: num, pnj: true, salue: true, allure: .42, x, z }); if (g) g.cleInfo = ci.cle; continue; }
     // arrivé (ou bloqué) : une pause, puis un autre coin de la caserne, loin des autres gendarmes
     if (!g.cible && (!g.repos || now > g.repos)) { if (!g.repos) { g.repos = now + 2500 + hasard(num + now / 1e5) * 5000; continue; } g.repos = 0;
       g.etape = (g.etape || 0) + 1; const [x, z] = pointRonde(num, g.etape); viser(g, x, z); g.but = [x, z];
@@ -6862,7 +6874,7 @@ function animerRondes() {
     // s'il croise quelqu'un : le salut, et « Bonjour ! » (une fois par minute pour chacun)
     const vus = g.vus || (g.vus = new Map());
     for (const [n2, q] of M.gens) { if (n2 === num || !q.g || !q.g.visible || RONDES.some(r => r[0] === n2)) continue;
-      if (q.g.position.distanceTo(g.g.position) < 2.3 && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); g.info.salutT = performance.now(); dire(num, ["Bonjour !", "Bonjour !", "Bonjour, messieurs-dames !", "Bonne journée !"][Math.floor(hasard(now / 1000 + num) * 4)]); break; } } } }
+      if (q.g.position.distanceTo(g.g.position) < 2.3 && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); g.info.salutT = performance.now(); dire(num, (M.L.nuit ? ["Bonsoir !", "Bonsoir !", "Bonsoir, messieurs-dames !", "Bonne soirée !"] : ["Bonjour !", "Bonjour !", "Bonjour, messieurs-dames !", "Bonne journée !"])[Math.floor(hasard(now / 1000 + num) * 4)]); break; } } } }
 function pointRonde(num, n) {
   const autres = RONDES.filter(r => r[0] !== num).map(r => M.gens.get(r[0])).filter(Boolean).flatMap(q => [[q.g.position.x, q.g.position.z], q.but].filter(Boolean));
   for (let k = 0; k < 60; k++) { const Z = ZONES_RONDE[Math.floor(hasard(n * 7.7 + num * 3.1 + k * 1.3) * ZONES_RONDE.length)];
