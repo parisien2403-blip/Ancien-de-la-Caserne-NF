@@ -5980,15 +5980,12 @@ function majRadio() {
   if (!ici) { if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; } return; }
   if (!M.radioObj || M.radioObj.parent !== M.scene) { M.radioObj = creerRadio(); M.scene.add(M.radioObj); }
   M.radioObj.position.set(r.x, (M.L.hauteur ? M.L.hauteur(r.x, r.z, {}) : 0) + .005, r.z); M.radioObj.rotation.y = r.r; }
-// les sons, fabriqués : le grésillement (un souffle filtré, des craquements), la sirène (une plainte qui monte et redescend)
+// le grésillement de la radio de poche, fabriqué (un souffle filtré, des craquements)
 function sonGresil(vol = .06) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = actx.sampleRate * 2, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < .002 ? 3 : 1);
     const s = actx.createBufferSource(); s.buffer = b; s.loop = true; const f = actx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1700; f.Q.value = .7; const g = actx.createGain(); g.gain.value = vol;
     s.connect(f).connect(g).connect(actx.destination); s.start(); return { s, g, f }; } catch (e) { return null; } }
 function couperGresil(G) { if (!G) return; try { G.g.gain.setTargetAtTime(0, actx.currentTime, .1); setTimeout(() => { try { G.s.stop(); } catch (e) {} }, 600); } catch (e) {} }
-function sonSirene(duree = 7) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, g = actx.createGain(), f = actx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1500;
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.32, t + 1); g.gain.setValueAtTime(.32, t + duree - 1.5); g.gain.linearRampToValueAtTime(0, t + duree); g.connect(actx.destination); f.connect(g);
-    for (const det of [0, 7]) { const o = actx.createOscillator(); o.type = "sawtooth"; o.frequency.setValueAtTime(140 + det, t); o.frequency.linearRampToValueAtTime(640 + det, t + duree * .4); o.frequency.setValueAtTime(640 + det, t + duree * .55); o.frequency.linearRampToValueAtTime(160 + det, t + duree); o.connect(f); o.start(t); o.stop(t + duree + .1); } } catch (e) {} }
 // le grain de l'image (comme un vieux film), par-dessus la scène
 function grainSH(on) { if (!M) return;
   if (!on) { if (M.grainEl) { clearInterval(M.grainEl.minuteur); M.grainEl.remove(); M.grainEl = null; } return; }
@@ -6078,29 +6075,36 @@ function peuplerSH(now) {
 function cineRadio() {
   if (!M) return; const moi = M.gens.get(M.moiNum); if (!moi) return; moi.cible = null; moi.chemin = [];
   if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; }
-  const G = sonGresil(.02), t0 = performance.now(); let sirene = false, fini = false, noir = null;
-  M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.preload = "auto"; M.musReveil.load();   // (la musique du réveil, prête à partir)
+  const t0 = performance.now(); let sirene = false, fini = false, blanc = null;
+  // les sons (fournis) : le grésillement de la radio, puis la sirène ; la musique du réveil, prête à partir
+  const radioA = new Audio("sons/sh-radio.mp3"); radioA.volume = .9; radioA.play().catch(() => {});
+  M.sireneA = new Audio("sons/sh-sirene.mp3"); M.sireneA.preload = "auto"; M.sireneA.load();
+  M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.preload = "auto"; M.musReveil.load();
   grainSH(true);
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); couperGresil(G); if (!noir) noir = voile("background:#000;opacity:1"); M.shReveil = true; changerLieu("sh-fetes", [0, 26.5], 0); setTimeout(() => noir && noir.remove(), 400); };
+  const sc = M.scene; if (!sc.fog) sc.fog = new THREE.Fog(0xd9d8d4, 30, 200);
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); try { radioA.pause(); } catch (e) {} if (M.sireneA && M.sireneA.paused) M.sireneA.play().catch(() => {});
+    if (!blanc) blanc = voile("background:#d9d8d4;opacity:1"); M.shReveil = true; changerLieu("sh-fetes", [0, 26.5], 0); setTimeout(() => blanc && blanc.remove(), 400); };
   M.passerBtn = boutonPasser(fin);
   bulle("<i>…kkssshhhh… kssshh…</i>", 2600);
   const c0 = M.camera.position.clone(), p = moi.g.position;
   M.cine = { t0, maj: (now) => { if (fini) return; const u = (now - t0) / 1000;
-    M.camera.position.copy(c0).add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), 0).multiplyScalar(Math.min(.12, u * .03))); M.camera.lookAt(p.x, p.y + 1.2, p.z);
-    if (G) G.g.gain.setTargetAtTime(Math.min(.5, .02 + u * .08), actx.currentTime, .1);
-    if (M.grainEl) M.grainEl.style.opacity = String(Math.min(.6, .06 + u * .08));
-    if (u > 3 && !sirene) { sirene = true; sonSirene(7); }
-    if (u > 5.5 && !noir) { noir = voile("background:#000;opacity:0;transition:opacity 2.5s"); requestAnimationFrame(() => noir.style.opacity = "1"); }
-    if (u > 9.5) fin(); } };
+    M.camera.position.copy(c0).add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), 0).multiplyScalar(Math.min(.12, u * .02))); M.camera.lookAt(p.x, p.y + 1.2, p.z);
+    if (M.grainEl) M.grainEl.style.opacity = String(Math.min(.5, .06 + u * .05));
+    if (u > 5 && !sirene) { sirene = true; M.sireneA.currentTime = 0; M.sireneA.volume = 1; M.sireneA.play().catch(() => {}); }
+    // le brouillard nous enveloppe : il se referme sur nous, de plus en plus épais, jusqu'au blanc
+    if (u > 5) { const k = Math.min(1, (u - 5) / 6); sc.fog.color.setHex(0xd9d8d4); sc.fog.near = (1 - k) * 8; sc.fog.far = 2 + (1 - k) * 40; sc.background = sc.fog.color; radioA.volume = Math.max(0, .9 - k * .9); }
+    if (u > 9.5 && !blanc) { blanc = voile("background:#d9d8d4;opacity:0;transition:opacity 2.5s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
+    if (u > 12.5) fin(); } };
 }
-// le réveil : allongé par terre, dans le bar ; on se relève
+// le réveil : allongé par terre, dans le bar, le brouillard se dissipe ; la sirène s'éteint, la musique tourne en boucle ; on se relève
 function cineReveil(essai = 0, noir = null) {
-  if (!M) return; noir = noir || voile("background:#000;opacity:1;transition:opacity 3s");
+  if (!M) return; noir = noir || voile("background:#d9d8d4;opacity:1;transition:opacity 4s");
   const moi = M.gens.get(M.moiNum); if (!moi) { if (essai < 60) setTimeout(() => cineReveil(essai + 1, noir), 100); else noir.remove(); return; }   // (notre bonhomme arrive avec la réponse du serveur)
   M.gresil = M.gresil || sonGresil(.045); grainSH(true);
-  { const a = M.musReveil || new Audio("sons/sh-reveil.mp3"); M.musReveil = a; a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); }   // (« White Noiz » : la musique du réveil, dans le bar)
+  { const a = M.musReveil || new Audio("sons/sh-reveil.mp3"); M.musReveil = a; a.loop = true; a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); }   // (« White Noiz », en continu)
+  { const s = M.sireneA; if (s) { const v0 = s.volume || 1, t1 = performance.now(), baisse = () => { if (!M || M.sireneA !== s) return; const k = (performance.now() - t1) / 6000; if (k >= 1) { s.pause(); M.sireneA = null; return; } s.volume = v0 * (1 - k); requestAnimationFrame(baisse); }; baisse(); } }
   moi.info.mortT = performance.now() - 2000;   // (couché, tout de suite)
-  const p = moi.g.position, t0 = performance.now(); requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 3200);
+  const p = moi.g.position, t0 = performance.now(); requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 4200);
   let leve = false, dit = false;
   const fin = () => { if (!M) return; moi.info.mortT = 0; finCine(); placerCamera(true); M.ctx.surInfo && M.ctx.surInfo("📻 La radio grésille… Pour rentrer, éteins-la : elle est posée sur le comptoir du bar."); };
   M.passerBtn = boutonPasser(fin);
@@ -8143,7 +8147,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.ctx.surLieu && M.ctx.surLieu(id);
   majAmbiance();
   M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio();
-  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
+  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
   if (id === "bttf-cour") cineCour();
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
