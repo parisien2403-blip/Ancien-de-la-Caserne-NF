@@ -9333,6 +9333,7 @@ export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 // (administrateur) la luminosité de la salle des fêtes, de 0 (éteinte) à 1, pour tous ceux qui y sont
 export function hifiVol(niveau) { envoyerWS({ t: "hifi_vol", niveau }); }
 export function bruitFete(niveau) { envoyerWS({ t: "bruit_fete", niveau }); }
+export function musiqueVol(niveau) { envoyerWS({ t: "musique_vol", niveau }); }
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
@@ -9368,6 +9369,7 @@ function connecter() {
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
+    else if (m.t === "musique_vol") ctx.surMusVol && ctx.surMusVol(Number.isFinite(+m.niveau) ? +m.niveau : 1);
     else if (m.t === "lumiere" && m.salle === "mess") { const k = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.lumiereMess = k;
       if (M.L && baseLieu(M.lieu) === "mess") M.L.setLumiereZone ? M.L.setLumiereZone("mess", k) : M.L.setLumiere && M.L.setLumiere(k);
       if (M.L && M.L.messVitres) M.L.messVitres.opacity = k * (M.L.nuit ? .85 : .28); }
