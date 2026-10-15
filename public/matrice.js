@@ -6181,7 +6181,7 @@ function apocalypse(scene, L, base) {
       const veut = !!(M && M.fumi && M.fumi.trouve && !M.evac); vis = Math.max(0, Math.min(1, vis + (veut ? dt / 3 : -dt / 2))); const actif = vis > 0, f = vis;
       const ox = L.heliport ? L.heliport.x : cx, oz = L.heliport ? L.heliport.z : cz, a = now / 9000, rr = L.heliport ? 24 : R * .7;
       const hx = ox + Math.cos(a) * rr, hz = oz + Math.sin(a) * rr, hy = 30 + (1 - vis) * 25;
-      modele.visible = actif; modele.position.set(hx, hy, hz); modele.rotation.set(0, -a - Math.PI, .18); modele.userData.rotor.rotation.y += dt * 26; modele.userData.rotorQ.rotation.z += dt * 40; modele.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+      modele.visible = actif && !M.evac; modele.position.set(hx, hy, hz); L.helicoPos = actif ? [hx, hy, hz, -a - Math.PI] : null; modele.rotation.set(0, -a - Math.PI, .18); modele.userData.rotor.rotation.y += dt * 26; modele.userData.rotorQ.rotation.z += dt * 40; modele.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
       const sx = ox + Math.sin(now / 1300) * 5, sz = oz + Math.cos(now / 1700) * 5;
       spot.position.set(hx, hy - 1, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 0;   // (plus de vraie lumière : elle traversait les toits et les murs — la salle de judo sous la terrasse ; seuls le faisceau et la tache au sol, dessinés)
       const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy - 1, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
@@ -6255,11 +6255,11 @@ function detritusApo(scene, L, base, hSol) {
 // les cachettes possibles du fumigène dans ce lieu (les mêmes chez tout le monde) ; le serveur a tiré laquelle
 function candidatsFumi() {
   const L = M.L, base = baseLieu(M.lieu), Z = L.zone || [-20, 20, -20, 20], out = [];
-  for (let k = 1; k < 8000 && out.length < 40; k++) { const x = Z[0] + hasard(k * 5.3 + 777) * (Z[1] - Z[0]), z = Z[2] + hasard(k * 9.1 + 333) * (Z[3] - Z[2]);
+  for (let k = 1; k < 20000 && out.length < 250; k++) { /* (beaucoup de cachettes possibles, partout : le serveur en tire une au hasard à chaque partie) */ const x = Z[0] + hasard(k * 5.3 + 777) * (Z[1] - Z[0]), z = Z[2] + hasard(k * 9.1 + 333) * (Z[3] - Z[2]);
     if (!L.limites(x, z) || (L.repos && L.repos(x, z)) || (L.feuxZ || []).some(([fx, fz, r]) => Math.hypot(x - fx, z - fz) < r + 1)) continue;
     if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
-    if (L.heliport && Math.hypot(x - L.heliport.x, z - L.heliport.z) < 14) continue;   // (pas sur la terrasse, ni juste à côté)
-    if (out.some(p => Math.hypot(p[0] - x, p[2] - z) < 6)) continue;
+    if (L.heliport && Math.hypot(x - L.heliport.x, z - L.heliport.z) < 9) continue;   // (pas sur le H, ni juste à côté)
+    if (out.some(p => Math.hypot(p[0] - x, p[2] - z) < 2.5)) continue;
     const etg = base === "etage" ? Math.floor(hasard(k * 2.7 + 99) * (ET.N + 1)) : 0, y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
     out.push([x, y, z, etg]); }
   return out; }
@@ -6286,12 +6286,12 @@ function fumiApo(moi, now) {
 // le bandeau de l'objectif, toujours affiché en haut pendant la partie : où chercher, où aller
 function objectifApo() {
   const F = M && M.fumi, L = M && M.L; let t = "";
-  if (L && L.apo && F && !M.evac && !APO.zombieFin) t = !F.trouve ? "🧨 Trouve le fumigène rouge, caché au sol quelque part dans la caserne"
+  if (L && L.apo && F && !M.evac && !M.cine && !APO.zombieFin) t = !F.trouve ? "🧨 Trouve le fumigène rouge, caché au sol quelque part dans la caserne"
     : M.lieu === "z-grande" ? "🚁 Monte sur la terrasse (au fond, après le passage) et marche sur le cercle rouge du H"
     : "🚁 Va dans la grande cour, puis sur la terrasse : marche sur le cercle rouge du H";
   if (t === (M && M.objectifT)) return; if (M) M.objectifT = t;
   if (!t) { if (M && M.objectifEl) { M.objectifEl.remove(); M.objectifEl = null; } return; }
-  if (!M.objectifEl) { const d = document.createElement("div"); d.style.cssText = "position:absolute;top:10px;left:calc(50% + 14px);transform:translateX(-50%);z-index:6;pointer-events:none;width:max-content;max-width:min(calc(100% - 220px),520px);text-align:center;padding:6px 12px;border-radius:12px;background:rgba(40,4,4,.82);border:1.5px solid #e03a2a;color:#fff;font:700 12px/1.3 'Lato',sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.5)"; M.ctx.conteneur.appendChild(d); M.objectifEl = d; }
+  if (!M.objectifEl) { const d = document.createElement("div"); d.style.cssText = "position:absolute;bottom:74px;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;width:max-content;max-width:min(calc(100% - 40px),560px);text-align:center;padding:6px 12px;border-radius:12px;background:rgba(40,4,4,.82);border:1.5px solid #e03a2a;color:#fff;font:700 12px/1.3 'Lato',sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.5)"; M.ctx.conteneur.appendChild(d); M.objectifEl = d; }
   M.objectifEl.textContent = t; }
 function surFumi(m) {
   const avant = M.fumi; M.fumi = m; if (!M.ctx.surInfo) return;
@@ -6369,7 +6369,7 @@ function cineEvac(m) {
   vivants.forEach((p, i) => { const q = p.g.position, ax = H.x - .35 + ((i % 4) - 1.5) * 1.3, az = H.z + 5.6 + Math.floor(i / 4) * .9; p.chemin = [];
     if (Math.hypot(q.x - H.x, q.z - H.z) > 9 || Math.abs(q.y - H.y) > 1) { q.set(ax, H.y, az); p.cible = null; } else p.cible = new THREE.Vector3(ax, q.y, az); });
   if (Hp.cercle) Hp.cercle.visible = false;
-  const hel = creerHelico(); sc.add(hel); const dep = new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35); hel.position.copy(dep);
+  const hel = creerHelico(); sc.add(hel); const hp0 = M.L.helicoPos, dep = hp0 ? new THREE.Vector3(hp0[0], hp0[1], hp0[2]) : new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35), haut = new THREE.Vector3(H.x, H.y + 24, H.z), ry0 = hp0 ? hp0[3] : .6; hel.position.copy(dep); hel.rotation.y = ry0;
   const fum = []; for (let i = 0; i < 34; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, opacity: 0 })); sc.add(sp); fum.push({ sp, a: Math.random() * 7, v: .5 + Math.random(), d: Math.random() * 1.2 }); }
   const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
   const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
@@ -6391,8 +6391,10 @@ function cineEvac(m) {
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
     helA.volume = Math.max(0, Math.min(.45, u / 5)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);
     if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
-    else if (u < 10) { const k = lisse((u - 2.5) / 7.5); hel.position.lerpVectors(dep, H, k); hel.position.y = H.y + (dep.y - H.y) * Math.pow(1 - k, 1.6); hel.rotation.z = (1 - k) * .15; hel.rotation.y = (1 - k) * .6;
-      placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1.2, hel.position.z, .05); }
+    else if (u < 5.5) { const k = lisse((u - 2.5) / 3); hel.position.lerpVectors(dep, haut, k); hel.rotation.z = Math.sin(k * Math.PI) * .18; hel.rotation.y = ry0 * (1 - k);   // il vient se placer au-dessus du H…
+      placer(H.x + 11, H.y + 3, H.z - 9, hel.position.x, hel.position.y, hel.position.z, .06); }
+    else if (u < 10) { const k = lisse((u - 5.5) / 4.5); hel.position.set(H.x, H.y + 24 * (1 - k), H.z); hel.rotation.set(0, 0, 0);   // …et descend à la verticale ; la caméra le suit
+      placer(H.x + 11, H.y + 2.2 + 3 * (1 - k), H.z - 9, H.x, hel.position.y + 1.4, H.z, .08); }
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
       if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x - .35 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
       for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
@@ -6653,6 +6655,43 @@ function horlogeApo(now) {
     if (u > 8) finir(); } };
   M.passerBtn = boutonPasser(() => { if (!M || !M.cine) return; const q = M.gens.get(PNJ_HORLOGE); if (q) tuer(q); finir(); });
 }
+/* dehors, à l'apocalypse, de temps en temps (sans cinématique) : un gendarme surgit en courant, deux zombies à ses trousses ;
+   ils le rattrapent sous nos yeux — « Haaaaaaaaa ! » — et il tombe. Les deux zombies se joignent ensuite aux autres */
+let nGendApo = 0;
+function criHomme() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), v = actx.createOscillator(), vg = actx.createGain(), f = actx.createBiquadFilter(), g = actx.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(520, t); o.frequency.linearRampToValueAtTime(720, t + .25); o.frequency.linearRampToValueAtTime(380, t + 1.6);
+  v.frequency.value = 7; vg.gain.value = 18; v.connect(vg).connect(o.frequency); f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 1.2;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.35, t + .08); g.gain.setValueAtTime(.35, t + 1.2); g.gain.linearRampToValueAtTime(0, t + 1.7);
+  o.connect(f).connect(g).connect(actx.destination); o.start(t); v.start(t); o.stop(t + 1.75); v.stop(t + 1.75); } catch (e) {} }
+function gendarmesApo(now) {
+  const moi = moiApo(); if (!moi || M.cine || M.evac || APO.zombieFin || M.L.interieur || baseLieu(M.lieu) === "etage" || (M.L.repos && M.L.repos(moi.g.position.x, moi.g.position.z))) { if (M.gendA && M.gendA.etat === "court") M.gendA.t = 0; }
+  if (!M.gendT || M.gendL !== M.L) { M.gendL = M.L; M.gendT = now + 25000 + Math.random() * 20000; M.gendA = null; }
+  const A = M.gendA;
+  if (!A) { if (now < M.gendT || M.cine || M.evac || APO.zombieFin || M.L.interieur || baseLieu(M.lieu) === "etage") return;
+    M.gendT = now + 55000 + Math.random() * 45000;
+    // il traverse devant nous, à une dizaine de mètres, de gauche à droite (ou l'inverse)
+    const mp = moi.g.position, fx = -Math.sin(M.yaw || 0), fz = -Math.cos(M.yaw || 0), s = Math.random() < .5 ? 1 : -1;
+    for (let essai = 0; essai < 12; essai++) { const d = 8 + Math.random() * 5, cx = mp.x + fx * d, cz = mp.z + fz * d, ax = cx - fz * s * 5, az = cz + fx * s * 5, bx = cx + fz * s * 4, bz = cz - fx * s * 4;
+      if (!M.L.limites(ax, az) || !M.L.limites(bx, bz) || !M.L.limites(cx, cz) || (M.L.feuxZ || []).some(([x, z, r]) => Math.hypot(x - cx, z - cz) < r + 1)) continue;
+      const k = 1 + (nGendApo % 5), num = -(490 + (nGendApo++ % 8)), ci = infoGendarme(62 + k, `images/gendarme${k}-tete.png`, "Gendarme");
+      const p = ajouterAncien({ ...ci.info, numero: num, pnj: true, x: ax, z: az }); if (!p) return; p.info.allure = .85; p.cible = new THREE.Vector3(bx, 0, bz);
+      const zs = [-1, 1].map((e, i) => { const x = ax - (bx - ax) / 9 * (3 + i) + fx * e * .8, z = az - (bz - az) / 9 * (3 + i) + fz * e * .8; const q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x: M.L.limites(x, z) ? x : ax, z: M.L.limites(x, z) ? z : az }); q.cine = true; return q; });
+      M.gendA = { num, zs, etat: "court", t: now, bx, bz }; return; }
+    return; }
+  const p = M.gens.get(A.num); if (!p) { for (const z of A.zs) retirerZ(z); M.gendA = null; return; }
+  const gp = p.g.position, dt = Math.min(.05, (now - (A.prec || now)) / 1000); A.prec = now;
+  if (A.etat === "court") {
+    if (A.t === 0) { A.etat = "fini"; }   // (on est rentré, ou une cinématique commence : la scène s'arrête)
+    for (const z of A.zs) { const dx = gp.x - z.x, dz = gp.z - z.z, d = Math.hypot(dx, dz) || 1, v = 3.8; if (d > .7) { z.x = z.tx = z.x + dx / d * Math.min(d - .6, v * dt); z.z = z.tz = z.z + dz / d * Math.min(d - .6, v * dt); } }
+    const proche = A.zs.some(z => Math.hypot(gp.x - z.x, gp.z - z.z) < .9) || (Math.hypot(gp.x - A.bx, gp.z - A.bz) < .5 && A.zs.some(z => Math.hypot(gp.x - z.x, gp.z - z.z) < 2.2));
+    if (proche && now - A.t > 1200) { A.etat = "mord"; A.t = now; p.cible = null; p.chemin = []; criHomme(); dire(A.num, "Haaaaaaaaaaaa !!!"); } }
+  else if (A.etat === "mord") { const u = (now - A.t) / 1000;
+    A.zs.forEach((z, i) => { const a = i ? .9 : -.9; z.x = z.tx = gp.x + Math.sin(a) * .55; z.z = z.tz = gp.z + Math.cos(a) * .55; z.coupT = now - (i ? 0 : 170); });
+    p.flashT = now + 120; gp.x += Math.sin(u * 23) * .01;
+    if (now > (A.giclee || 0)) { A.giclee = now + 180; jetSang(gp.x, gp.y + .8, gp.z); sangAuSol(gp.x + (Math.random() - .5) * 1.2, gp.z + (Math.random() - .5) * 1.2, gp.y, .5 + Math.random() * .6); }
+    if (u > 2.6) { p.info.mortT = now; flaqueMort(p); A.etat = "fini"; } }
+  if (A.etat === "fini") { for (const z of A.zs) { if (estChefZ()) { z.cine = false; z.recalc = 0; } else retirerZ(z); } const num = A.num; M.gendA = null; setTimeout(() => { if (M && M.gens.get(num)) retirerAncien(num); }, 20000); }
+}
 // l'équipier tombé reviendra : un peu plus tard (au bout de 40 s, ou dès le lieu suivant), là où il y a des zombies
 function revenantPlus(h) { if (!HEROS[h] || (M.revenantsFinis && M.revenantsFinis.has(h))) return; M.revenants = M.revenants || [];
   if (!M.revenants.some(r => r.h === h)) M.revenants.push({ h, t: performance.now() + 40000, L: M.L, sorti: false }); }
@@ -6798,7 +6837,7 @@ function animerApo(t, dt) {
   objectifApo(); if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
   objetsApo(); fumiApo(moi, performance.now());
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); animerRevenants(performance.now());
+  animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); gendarmesApo(performance.now()); animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now();
@@ -7311,6 +7350,8 @@ function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) retu
   if (p.corps) { p.corps.geometry.dispose(); p.corps.material.dispose(); } }   // (la mémoire est rendue quand quelqu'un s'en va)
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
+  // pendant une cinématique : en sous-titre, fixe à l'écran (une bulle au-dessus de la tête sortait du cadre selon l'angle de la caméra)
+  if (M.cine) { bulle(`<b style="color:#b5573c">${esc(p.info.nom || "")}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }
   if (p.bulle) p.g.remove(p.bulle);
   const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H * hauteurDe(p) + .5; p.g.add(p.bulle);
   p.bulleFin = performance.now() + Math.min(6000, 2500 + texte.length * 40);

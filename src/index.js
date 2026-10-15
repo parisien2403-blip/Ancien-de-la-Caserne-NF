@@ -447,7 +447,8 @@ export class Compteur extends DurableObject {
       if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c));
         // le fumigène de l'évacuation : une nouvelle cachette à chaque partie (quand personne d'autre n'est déjà à l'apocalypse)
         const autres = this.ctx.getWebSockets().some(w => { if (w === ws) return false; const b = w.deserializeAttachment(); return b && b.lieu && b.lieu.startsWith("z-"); });
-        let f = await this.ctx.storage.get("z_fumi"); if (!f || !autres) { f = { lieu: ["z-grande", "z-grande", "z-fetes", "z-etage"][Math.floor(Math.random() * 4)], r: Math.random(), trouve: false }; await this.ctx.storage.put("z_fumi", f); }
+        // (n'importe où : la grande cour — la plus vaste —, la salle des fêtes, les étages, le mess, la rue ; une partie trop ancienne est oubliée)
+        let f = await this.ctx.storage.get("z_fumi"); if (!f || !autres || !f.cree || Date.now() - f.cree > 45 * 60000) { const L = ["z-grande", "z-grande", "z-grande", "z-fetes", "z-etage", "z-etage", "z-mess", "z-rue"]; f = { lieu: L[Math.floor(Math.random() * L.length)], r: Math.random(), trouve: false, cree: Date.now() }; await this.ctx.storage.put("z_fumi", f); }
         ws.send(JSON.stringify({ t: "z_fumi", ...f })); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
