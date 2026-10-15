@@ -6482,7 +6482,7 @@ function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
 // le zombie touché : il recule un peu, rougit, saigne
 function impactZ(z, dx, dz) { z.flashT = performance.now() + 160; z.recul = [dx, dz, performance.now()]; sangAuSol(z.x, z.z, yZ(z), z.chien ? .8 : 1); }
 function blesserZ(z, dx, dz) {   // (le chef) la balle compte
-  if (z.mortT) return; z.hp--;
+  if (z.mortT || z.cine) return; z.hp--;   // (les zombies d'une cinématique ne tombent pas)
   const nx = z.x + dx * .4, nz = z.z + dz * .4; if (limZ().limites(nx, nz)) { z.x = nx; z.z = nz; }
   z.bloque = performance.now() + 350;
   if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), z.boss ? 2.4 : 1.6);
@@ -6491,7 +6491,7 @@ function blesserZ(z, dx, dz) {   // (le chef) la balle compte
     else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6 && ![...M.zomb.values()].some(q => q.boss && !q.mortT)) { M.zKills = 0; apparaitreZ(3); } } }   // (six zombies ou chiens abattus : Nemesis)
 }
 function tirer(z) {
-  const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT) return;
+  const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   if (APO.balles <= 0) { sonVide(); M.ctx.surInfo && M.ctx.surInfo("🔫 Plus de munitions ! Trouve une boîte de balles."); return; }
   const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1;
   if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
@@ -6558,8 +6558,8 @@ function animerEquipe(now) {
     else if (d > 2.4 && now > e.suiviT) { e.suiviT = now + 550; const [x, z] = placeAPortee(moi, k); viser(p, x, z); p.rapide = d > 5; }
     else if (d < 1.5 && p.cible) { p.cible = null; p.chemin = []; }
     // il tire sur le zombie le plus proche (à moins de 10 m, au même étage), environ une balle par seconde
-    if (now > e.tirT && !(M.L.repos && M.L.repos(p.g.position.x, p.g.position.z))) { let best = null, bd = 10;
-      for (const z of M.zomb.values()) { if (z.mortT || (etage && z.n !== etageDe(p))) continue; const dz = Math.hypot(z.x - p.g.position.x, z.z - p.g.position.z); if (dz < bd) { bd = dz; best = z; } }
+    if (now > e.tirT && !M.cine && !(M.L.repos && M.L.repos(p.g.position.x, p.g.position.z))) { let best = null, bd = 10;   // (pendant une cinématique, on ne tire pas)
+      for (const z of M.zomb.values()) { if (z.mortT || z.cine || (etage && z.n !== etageDe(p))) continue; const dz = Math.hypot(z.x - p.g.position.x, z.z - p.g.position.z); if (dz < bd) { bd = dz; best = z; } }
       if (best) { e.tirT = now + 850 + Math.random() * 600; const dx = (best.x - p.g.position.x) / (bd || 1), dz = (best.z - p.g.position.z) / (bd || 1);
         p.tirT = now; if (p.cible && d < 4) { p.cible = null; p.chemin = []; } eclairDuCanon(p, dx, dz); sonTir(.7); impactZ(best, dx, dz);
         envoyerWS({ t: "z_tir", id: best.id, dx, dz, eq: k }); if (estChefZ()) blesserZ(best, dx, dz); } } });
@@ -6611,6 +6611,8 @@ function horlogeApo(now) {
   const dep = [ax + ux * 4, az + uz * 4], p = ajouterAncien({ ...habillerHeros({ numero: PNJ_HORLOGE, nom: HEROS[h].nom, initiales: "" }, h), pnj: true, x: dep[0], z: dep[1] }); if (!p) return;
   const nom = HEROS[h].court, prenom = (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "Hé";
   moi.cible = null; moi.chemin = []; p.cible = new THREE.Vector3(ax, 0, az);
+  // nos équipiers : sur le côté, pour ne pas cacher la scène (la caméra est de l'autre côté)
+  (M.equipe || []).forEach((e, k) => { const q = M.gens.get(EQUIPIER(k)); if (!q || e.mort) return; const r = 1.5 + k, x = mp.x + uz * r - ux * .5, z = mp.z - ux * r - uz * .5; if (M.L.limites(x, z)) { q.g.position.x = x; q.g.position.z = z; } q.cible = null; q.chemin = []; });
   // les deux zombies, sortis de l'ombre de l'arcade, juste derrière lui
   const zs = [-1, 1].map((s, i) => { const x = ax + ux * 3.2 - uz * s * 1.2, z = az + uz * 3.2 + ux * s * 1.2; const q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x, z }); q.cine = true; q.x0 = x; q.z0 = z; q.s = s; q.g.visible = false; return q; });
   const t0 = now; let dit = false, cri = false, mort = false, giclee = 0;
