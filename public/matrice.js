@@ -3616,7 +3616,7 @@ function ouvrirCadenas() { if (!M || M.cadranEl) return; if (M.relief) relief(fa
       const ent = M.L.portails.find(q => q.entreeApo); if (ent && M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (!M) return; if (ok) { M.apoIntro = true; changerLieu(ent.vers, ent.arrivee, ent.yaw, true); } else { M.L.cadenasOuvert = false; if (M.L.porteEnc) M.L.porteEnc.rotation.y = 0; } });
       else if (ent) changerLieu(ent.vers, ent.arrivee, ent.yaw, true); }, 1100); }; }
 export function afficheTaille(v) { envoyerWS({ t: "affiche_taille", v: +v }); }
-function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
+function composerNumero(dest) { if (!M || M.cadranEl) return; if (M.relief) relief(false); const noir = dest === "hv";
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
   const fond = noir ? "#0e0e10" : "#a4a6a8", trou = noir ? "#f4ecd4" : "#2a2a2c", txt = noir ? "#1a1a1a" : "#f2f2ee";
   d.innerHTML = `<div style="background:${noir ? "#151517" : "#8e9092"};border-radius:18px;padding:16px 18px;box-shadow:0 10px 40px #000;display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#fff">
@@ -3636,6 +3636,9 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
     disque.appendChild(b); }
   const centre = document.createElement("div"); centre.style.cssText = "position:absolute;left:84px;top:84px;width:72px;height:72px;border-radius:50%;background:#e8ecee;display:grid;place-items:center;color:#1a1a1a;font:900 14px Georgia"; centre.textContent = noir ? "1957" : "PTT"; disque.appendChild(centre);
   d.querySelector(".eff").onclick = () => { if (!occupe) { num = ""; afficher(""); } }; d.querySelector(".rac").onclick = fermer;
+  /* à la manette : la croix choisit le chiffre (entouré), A le compose, X efface, B raccroche */
+  const trous = [...disque.querySelectorAll("button")], selT = k => trous.forEach((b, i) => { b.style.outline = i === k ? "4px solid #f6d465" : "none"; }); selT(0);
+  M.cadranMan = { i: 0, d, sel: selT, n: trous.length, composer: () => trous[M.cadranMan.i].click(), eff: () => d.querySelector(".eff").click(), rac: () => d.querySelector(".rac").click() };
   const appeler = () => { occupe = true;
     if ((dest === "etage" && num === "1955") || (dest === "hv" && num === "1990")) { afficher("☎ DRRRING…"); sonBruit(.6, 2400, .25); setTimeout(() => sonBruit(.6, 2400, .25), 900);
       // la musique du voyage ; les éclairs traversent la cabine, la fumée monte ; un éclair blanc : on a disparu, le combiné pend seul au bout de son cordon ;
@@ -9532,6 +9535,11 @@ function manette() {
     if (appui(14) || (lx < -.6 && !MAN.cadX)) { C.i = (C.i + 3) % 4; C.sel(C.i); } if (appui(15) || (lx > .6 && !MAN.cadX)) { C.i = (C.i + 1) % 4; C.sel(C.i); } MAN.cadX = Math.abs(lx) > .6;
     if (appui(12) || (ly < -.6 && !MAN.cadY)) C.tourne(1); if (appui(13) || (ly > .6 && !MAN.cadY)) C.tourne(-1); MAN.cadY = Math.abs(ly) > .6;
     if (appui(0)) C.ok(); if (appui(1)) C.fermer(); fin(); return; }
+  if (M.cadranMan && M.cadranMan.d.isConnected) { const C = M.cadranMan, avant = appui(15) || appui(12) || (lx > .6 && !MAN.cadX), arriere = appui(14) || appui(13) || (lx < -.6 && !MAN.cadX); MAN.cadX = Math.abs(lx) > .6;
+    if (avant) { C.i = (C.i + 1) % C.n; C.sel(C.i); } if (arriere) { C.i = (C.i + C.n - 1) % C.n; C.sel(C.i); }
+    if (appui(0)) C.composer(); if (appui(2)) C.eff(); if (appui(1)) C.rac(); fin(); return; }
+  // l'affiche lue en grand (ou tout autre écran par-dessus le jeu) : A ou B la repose
+  if (M.cadranEl && M.cadranEl.isConnected && !M.cadenasMan?.d?.isConnected) { if (appui(0) || appui(1)) { const bx = M.cadranEl.querySelector("button[aria-label]") || M.cadranEl.querySelector("button"); bx && bx.click(); } fin(); return; }
   { const intro = document.getElementById("mxApoIntro"); if (intro && !intro.hidden) { if (appui(0)) document.getElementById("mxApoOui").click(); if (appui(1)) document.getElementById("mxApoNon").click(); fin(); return; } }
   if (appui(9)) relief(!M.relief);
   if (appui(8)) premiere(!M.premiere);
@@ -9581,7 +9589,7 @@ function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "
   if (!d) { d = M.mireEl = document.createElement("div"); d.style.cssText = "position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #9cff6a;border-radius:50%;box-shadow:0 0 8px #9cff6a;pointer-events:none;z-index:7"; M.ctx.conteneur.appendChild(d); }
   d.style.display = M.relief ? "none" : ""; d.style.left = ((m.x + 1) / 2 * 100) + "%"; d.style.top = ((1 - m.y) / 2 * 100) + "%"; }
 // le relief : chaque œil a sa moitié d'écran (côte à côte, comprimée : les lunettes l'étirent)
-export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
+export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; if (!on) action3D(); M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
 /* à la première personne, avec une arme : le pistolet en bas à droite, et son viseur laser — un rayon rouge, un point rouge là où l'on vise */
 const armeFP = () => M.premiere && !M.cine && M.L && ((M.L.apo && !M.L.sh && !APO.zombieFin) || (M.L.sh && M.shArme));
 /* la main qui tient le revolver, vue à la première personne : canon long en acier, barillet, chien, pontet, crosse noire ; la main serre la crosse, le pouce sur le côté, l'avant-bras qui part vers le bas de l'écran (le canon vers -z) */
@@ -9687,21 +9695,27 @@ export function premiere(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo
 export function reliefProfondeur(k) { if (M) M.reliefSep = .064 * k; }
 function rendreRelief(rendu) { const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
+  action3D(); const a3 = M.action3D; if (a3) { if (a3.parent !== M.scene) M.scene.add(a3); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); a3.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, -.55); }
   const s = rendu.getSize(new THREE.Vector2()), w = Math.floor(s.x / 2); rendu.setScissorTest(true);
   rendu.setScissor(0, 0, w, s.y); rendu.setViewport(0, 0, w, s.y); rendu.render(M.scene, st.cameraL);
   rendu.setScissor(w, 0, s.x - w, s.y); rendu.setViewport(w, 0, s.x - w, s.y); rendu.render(M.scene, st.cameraR);
   rendu.setScissorTest(false); rendu.setViewport(0, 0, s.x, s.y); }
 /* les sous-titres, en relief : un panneau qui flotte devant nous (en relief, l'écran est coupé en deux : le texte ordinaire ne se lirait que d'un œil) */
 function bulle3D(texte, ms) { if (!M) return; if (M.bulle3D) { M.bulle3D.parent && M.bulle3D.parent.remove(M.bulle3D); M.bulle3D.material.map.dispose(); M.bulle3D.material.dispose(); M.bulle3D = null; }
-  if (!texte || !M.relief) return; const div = document.createElement("div"); div.innerHTML = texte; const t = div.textContent.trim(); if (!t) return;
+  if (!texte || !M.relief) return; const sp = panneau3D(texte); if (!sp) return; M.scene.add(sp); M.bulle3D = sp;
+  if (ms) { const s2 = sp; setTimeout(() => { if (M && M.bulle3D === s2) bulle3D(null); }, ms); } }
+function panneau3D(texte, fond = "rgba(255,254,246,.95)") { const div = document.createElement("div"); div.innerHTML = texte; const t = div.textContent.trim(); if (!t) return null;
   const W = 1024, x0 = document.createElement("canvas").getContext("2d"); x0.font = "700 44px Lato, sans-serif"; const mots = t.split(/\s+/), lignes = []; let l = "";
   for (const m of mots) { const e = l ? l + " " + m : m; if (x0.measureText(e).width > W - 80 && l) { lignes.push(l); l = m; } else l = e; } if (l) lignes.push(l);
   const H = 40 + lignes.length * 56, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
-  x.fillStyle = "rgba(255,254,246,.95)"; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 28); x.fill(); x.lineWidth = 6; x.strokeStyle = "#111"; x.stroke();
+  x.fillStyle = fond; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 28); x.fill(); x.lineWidth = 6; x.strokeStyle = "#111"; x.stroke();
   x.font = "700 44px Lato, sans-serif"; x.fillStyle = "#1a1a1a"; x.textAlign = "center"; x.textBaseline = "middle"; lignes.forEach((q, i) => x.fillText(q, W / 2, 20 + 28 + i * 56));
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, depthWrite: false, transparent: true, fog: false }));
-  sp.scale.set(1.5, 1.5 * H / W, 1); sp.renderOrder = 999; M.scene.add(sp); M.bulle3D = sp;
-  if (ms) { const s2 = sp; setTimeout(() => { if (M && M.bulle3D === s2) bulle3D(null); }, ms); } }
+  sp.scale.set(1.5, 1.5 * H / W, 1); sp.renderOrder = 999; return sp; }
+/* en relief : ce qu'on peut faire là où l'on est (le bouton d'action est caché) — « 🎮 A : … », en bas, devant nous */
+function action3D() { const lab = M.relief && M.action && !M.cine && !M.cadranEl ? "🎮 A : " + M.action.label : null, A = M.action3D;
+  if (lab === (A && A.userData.lab)) return; if (A) { A.parent && A.parent.remove(A); A.material.map.dispose(); A.material.dispose(); M.action3D = null; }
+  if (!lab) return; const sp = panneau3D(lab, "rgba(246,212,101,.95)"); if (!sp) return; sp.scale.multiplyScalar(.7); sp.userData.lab = lab; M.scene.add(sp); M.action3D = sp; }
 function animerGroupe() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
   const dm = !!(M.djJoue && AIR_DM.test(M.djTitre || "")), ei = !dm && !!(M.djJoue && AIR_EI.test(M.djTitre || ""));
@@ -10001,7 +10015,7 @@ export function agir() {
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "cadenas") ouvrirCadenas();
-  else if (a.type === "affiche1996") { if (M.cadranEl) return;   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
+  else if (a.type === "affiche1996") { if (M.cadranEl) return; if (M.relief) relief(false);   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;grid-template-rows:100%;place-items:center;background:rgba(0,0,0,.75);padding:16px;box-sizing:border-box";
     d.innerHTML = `<div style="position:relative;height:100%;min-height:0;display:flex;align-items:center;justify-content:center;overflow:visible"><img src="images/apo/affiche-re-1996.webp" alt="Affiche Micromania : Resident Evil, disponible le 1er août 1996" style="height:100%;max-width:100%;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px #000;transform:rotate(-1.5deg)">
       <button type="button" aria-label="Lâcher l'affiche" style="position:absolute;top:-6px;right:-6px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1a1a1a;font:900 22px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)">✕</button></div>`;
