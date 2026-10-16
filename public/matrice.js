@@ -5823,8 +5823,8 @@ export async function ouvrir(ctx) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
-        if (p.info.gbDos && p.poses.dos) {   // (S.O.S. Fantômes : en ligne, face au monstre, on le voit de dos — l'arrière de la tête et le pack)
-          if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
+        if (p.info.gbDos && p.poses.dos) {   // (S.O.S. Fantômes : en ligne, face au monstre, on le voit de dos — l'arrière de la tête et le pack ; englué, couvert de slime)
+          const td = p.englue > 0 ? texEnglue(p.poses.dos) : p.poses.dos; if (p.corps.material.map !== td) { p.corps.material.map = td; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
         else if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
           const tp = p.tirVue && p.poses[p.tirVue] ? p.poses[p.tirVue] : p.poses.tir;   /* (le bras du côté de la cible ; droit devant si elle est devant ou derrière) */
@@ -6024,21 +6024,29 @@ export function fermer() {
    Puis le combat au mess contre Bouffe-tout, le piège, et retour dans la cour. Chacun est un panneau découpé, vu de face ou de dos selon où il regarde */
 const GB = [["egon", "Egon"], ["ray", "Ray"], ["venkman", "Venkman"], ["winston", "Winston"]], CHEF_GB = -491;
 const texGB = {};
+// (englué : la silhouette du personnage elle-même, recouverte d'une gangue de slime vert brillant, avec des coulures)
+function engluerToile(img) { const w = img.width, h = img.height, c = toile(w, h, (x) => { x.drawImage(img, 0, 0, w, h); x.globalCompositeOperation = "source-atop";
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "rgba(90,210,60,.55)"); g.addColorStop(1, "rgba(40,150,25,.7)"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let k = 0; k < 26; k++) { x.fillStyle = `rgba(${200 + Math.random() * 55},255,${180 + Math.random() * 60},${.18 + Math.random() * .25})`; x.beginPath(); x.ellipse(Math.random() * w, Math.random() * h, w * (.02 + Math.random() * .06), h * (.01 + Math.random() * .03), Math.random() * 3, 0, 7); x.fill(); }
+    x.fillStyle = "rgba(30,120,20,.55)"; for (let k = 0; k < 14; k++) { const cx = Math.random() * w; x.fillRect(cx, Math.random() * h * .8, w * .025, h * (.05 + Math.random() * .12)); } });
+  return c; }
+function texEnglue(t) { if (!t || !t.image || !t.image.width) return t; if (!t.userData.englue) { const e = new THREE.CanvasTexture(engluerToile(t.image)); e.colorSpace = THREE.SRGBColorSpace; t.userData.englue = e; } return t.userData.englue; }
 function texGBi(n) { if (!texGB[n]) { const t = texGB[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texGB[n]; }   // (envoyée tout de suite à la carte graphique : pas d'à-coup quand elle sert la première fois)
 function creerGB(cle, nom, x, z) { const H = tailleBonhomme() * 1.02, geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
   texGBi(cle + "-dos"); const tf = texGBi(cle + "-face");   // (bien éclairés, même la nuit)
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .42, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8 })); mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .42, alphaTest: .5, side: THREE.DoubleSide, roughness: .8 }));   // (opaques : une découpe nette, pas de demi-transparence) mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
   const g = new THREE.Group(); g.add(mesh);
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .45, H * .3), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   g.position.set(x, 0, z); M.scene.add(g);
   return { cle, nom, g, mesh, x, z, H, dir: [1, 0], cible: null, vit: 1.5, pas: 0 }; }
 function animerGB(dt) { const S = M.gbScene; if (!S) return; if (S.L !== M.L) { M.gbScene = null; return; } const cam = M.camera.position, moi = M.gens.get(M.moiNum);
   for (const p of S.persos) {
-    if (p.cible) { const dx = p.cible[0] - p.x, dz = p.cible[1] - p.z, d = Math.hypot(dx, dz); if (d < .05) p.cible = null; else { const k = Math.min(d, p.vit * dt); p.x += dx / d * k; p.z += dz / d * k; p.dir = [dx / d, dz / d]; p.pas += k; } }
+    if (p.cible) { const dx = p.cible[0] - p.x, dz = p.cible[1] - p.z, d = Math.hypot(dx, dz); if (d < .05) p.cible = p.chemin && p.chemin.length ? p.chemin.shift() : null; else { const k = Math.min(d, p.vit * dt); p.x += dx / d * k; p.z += dz / d * k; p.dir = [dx / d, dz / d]; p.pas += k; } }
     else { const v = p.regard || (moi && [moi.g.position.x, moi.g.position.z]); if (v) { const dx = v[0] - p.x, dz = v[1] - p.z, d = Math.hypot(dx, dz); if (d > .01) p.dir = [dx / d, dz / d]; } }
     p.g.position.set(p.x, 0, p.z);
     const cx = cam.x - p.x, cz = cam.z - p.z; p.mesh.rotation.y = Math.atan2(cx, cz);
-    const map = texGBi(p.cle + (p.dir[0] * cx + p.dir[1] * cz >= 0 ? "-face" : "-dos")); if (p.mesh.material.map !== map) { p.mesh.material.map = map; p.mesh.material.emissiveMap = map; }   /* (de face s'il regarde vers nous, de dos sinon) */
+    let map = texGBi(p.cle + (p.dir[0] * cx + p.dir[1] * cz >= 0 ? "-face" : "-dos")); if (p.englue > 0) { p.englue -= dt; map = texEnglue(map); }   // (englué : couvert de slime)
+    if (p.mesh.material.map !== map) { p.mesh.material.map = map; p.mesh.material.emissiveMap = map; }   /* (de face s'il regarde vers nous, de dos sinon) */
     const im = map.image; if (im && im.width) p.mesh.scale.set(p.H * im.width / im.height, p.H, 1);
     p.mesh.position.y = p.cible ? Math.abs(Math.sin(p.pas * 3.4)) * .05 : 0; p.mesh.rotation.z = p.choc > 0 ? Math.sin(p.choc * 18) * .25 * p.choc : p.cible ? Math.sin(p.pas * 3.4) * .035 : 0; if (p.choc > 0) p.choc -= dt;   // (un rocher l'a frôlé : il vacille)
     p.g.visible = p.visible !== false; } }
@@ -6205,11 +6213,12 @@ function sireneGB(on) { if (!M) return; let a = M.sirGB;
   if (on) { if (!a) { a = M.sirGB = new Audio("sons/gb-sirene.mp3"); } clearInterval(a.fondu); a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); return; }
   if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .05); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
 const posEcto = (E, lx, lz) => E.localToWorld(new THREE.Vector3(lx, 0, lz));
+function obstacleEcto(L) { if (L.gbObstacle) return; L.gbObstacle = true; const lim = L.limites; L.limites = (x, z) => lim(x, z) && !(Math.abs(x - GARE_GB[0]) < 1.4 && Math.abs(z - GARE_GB[1]) < 3.5); }   // (on ne passe pas au travers de l'Ecto-1 garée)
 function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbSirCoupee = false; M.gbChef = true; M.cineSeul = CHEF_GB;
   moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(), nom = prenomSH();
-  const [sx, sz] = GARE_GB, P0 = [sx, 30], P1 = [sx, sz + 9], P2 = [sx, sz], ROUTE = 8.5;   // (tout droit par le porche)
+  const [sx, sz] = GARE_GB, P0 = [0, 30], P1 = [0, sz + 10], P2 = [sx, sz], ROUTE = 8.5;   // (bien au milieu du porche, puis elle se range doucement)
   const bez = u => { const a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u; return [a * P0[0] + b * P1[0] + c * P2[0], a * P0[1] + b * P1[1] + c * P2[1], 2 * (1 - u) * (P1[0] - P0[0]) + 2 * u * (P2[0] - P1[0]), 2 * (1 - u) * (P1[1] - P0[1]) + 2 * u * (P2[1] - P1[1])]; };
-  E.visible = true; E.position.set(GARE_GB[0], 0, 30); E.rotation.y = Math.PI / 2; sireneGB(true); sonBruit(2.2, 260, .35);
+  E.visible = true; E.position.set(0, 0, 30); E.rotation.y = Math.PI / 2; sireneGB(true); sonBruit(2.2, 260, .35); musiqueGB(true, "gb-arrivee");   // (l'instrumental du film, jusqu'à l'entrée au mess)
   // ils se rangeront face à nous, entre la voiture et nous
   const ux = sx - 1.0 - mp.x, uz = sz - mp.z, ud = Math.hypot(ux, uz) || 1, dx = ux / ud, dz = uz / ud, px = -dz, pz = dx, rc = Math.min(2.3, ud * .6), cx = mp.x + dx * rc, cz = mp.z + dz * rc;
   if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
@@ -6219,7 +6228,9 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   const etapes = []; let t = ROUTE * 1000 + 900; const a = (f, apres = 0) => { etapes.push([t, f]); t += apres; };
   // les portières : les deux de devant, puis les deux de derrière (côté cour et côté voûte)
   const portes = [[1.0, -1.25], [1.0, 1.25], [-.3, -1.25], [-.3, 1.25]];
-  S.persos.forEach((p, k) => a(() => { const w = posEcto(E, portes[k][0], portes[k][1]); p.x = w.x; p.z = w.z; p.visible = true; sonBruit(.1, 1600, .25); p.cible = p.place; }, 650));
+  S.persos.forEach((p, k) => a(() => { const w = posEcto(E, portes[k][0], portes[k][1]); p.x = w.x; p.z = w.z; p.visible = true; sonBruit(.1, 1600, .25);
+    if (portes[k][1] > 0) { const c1 = posEcto(E, portes[k][0], 1.9), c2 = posEcto(E, 4.0, 1.9), c3 = posEcto(E, 4.0, -1.7); p.cible = [c1.x, c1.z]; p.chemin = [[c2.x, c2.z], [c3.x, c3.z], p.place]; }   // (côté droit : il fait le tour par l'avant, sans traverser la voiture)
+    else p.cible = p.place; }, 650));
   t += 2400;
   const ligne = (p, txt) => a(() => { M.gbParle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); for (const q of S.persos) q.regard = null; }, dureeLigne(txt) + 300);   // (ils restent tous de face)
   ligne(VE, "Bon. D'après le standard, il y aurait un gros truc vert qui fait peur à tout le voisinage. Gluant, affamé, et très mal élevé. Mon genre de client, quoi.");
@@ -6227,9 +6238,9 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   ligne(EG, "Les relevés du PKE sont hors norme. Et je rappelle une chose : il ne faut jamais croiser les effluves.");
   ligne(WI, "Du moment que c'est payé… Moi, je suis juste là pour le salaire.");
   // le chef de poste arrive, d'un bon pas
-  a(() => { const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x + 4, mp.z + 9);
+  a(() => { const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x - 7, mp.z + 7);
     chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: d0[0], z: d0[1] });
-    if (chef) { chef.rapide = true; const v = viserLibre((cx + mp.x) / 2 - px * 1.8, (cz + mp.z) / 2 - pz * 1.8); viser(chef, v[0], v[1]); } M.gbParle = chef; }, 3600);
+    if (chef) { chef.rapide = true; const v = viserLibre(mp.x - dx * 1.4 - px * 1.6, mp.z - dz * 1.4 - pz * 1.6); viser(chef, v[0], v[1]); } M.gbParle = chef; }, 3600);   // (à côté de nous, du côté opposé à la voiture)
   for (const txt of ["Ah ! Vous voilà enfin arrivés !", "Il faut attraper cette chose, et vite ! Elle est au mess : elle casse tout, et elle mange tout. Le buffet, les réserves… tout y passe !", "Et le Président de la République doit arriver d'une minute à l'autre… Alors faites vite, je vous en prie !"])
     a(() => { if (chef) { M.gbParle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
   ligne(VE, "Le Président ? Pas de panique. On lui gardera une part du buffet… s'il en reste.");
@@ -6242,7 +6253,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1); prec = now; gyroEcto(E, true, now);
     while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
     const u = Math.min(1, clk / 1000 / ROUTE), s = 1 - Math.pow(1 - u, 2.2), [ex, ez, tx, tz] = bez(s);   // (elle freine en arrivant)
-    if (u < 1) { E.position.set(ex, 0, ez); E.rotation.y = Math.atan2(-tz, tx); } else if (!M.gbSirCoupee) { M.gbSirCoupee = true; setTimeout(() => sireneGB(false), 2500); }
+    if (u < 1) { E.position.set(ex, 0, ez); E.rotation.y = Math.atan2(-tz, tx); } else if (!M.gbSirCoupee) { M.gbSirCoupee = true; obstacleEcto(M.L); setTimeout(() => sireneGB(false), 2500); }
     // la caméra : d'abord vers le porche, la voiture qui entre ; puis près de nous, sur la voiture qui s'arrête ; ensuite sur celui qui parle
     const q = M.gbParle, f = q && q.g ? q.g.position : null, cible = f ? new THREE.Vector3(f.x, 1.25, f.z) : u < 1 ? new THREE.Vector3(ex, 1.1, ez) : new THREE.Vector3(cx, 1.2, cz);
     vise = vise || cible.clone(); vise.lerp(cible, 1 - Math.exp(-Math.min(50, now - (M.gbPrec || now)) / 1000 * 1.6)); M.gbPrec = now;   // (la caméra glisse doucement vers celui qui parle : plus de saut)
@@ -6281,21 +6292,34 @@ function majRayon(r, A, B, now) { r.g.visible = true; const cam = M.camera.posit
       pos[i * 6] = p.x + s.x; pos[i * 6 + 1] = p.y + s.y; pos[i * 6 + 2] = p.z + s.z; pos[i * 6 + 3] = p.x - s.x; pos[i * 6 + 4] = p.y - s.y; pos[i * 6 + 5] = p.z - s.z; }
     b.m.geometry.attributes.position.needsUpdate = true; }
   r.bout.position.copy(A); r.bout.scale.setScalar(.35 + Math.random() * .2); r.impact.position.copy(B); r.impact.scale.setScalar(.8 + Math.random() * .6); }
-let texFlammeGB = null;
+let texFlammeGB = null, imagesFeu = null, texFumeeGB = null;
 const flammeTex = () => texFlammeGB || (texFlammeGB = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 112, 2, 32, 96, 70); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.25, "rgba(255,200,60,.95)"); g.addColorStop(.55, "rgba(255,110,20,.7)"); g.addColorStop(1, "rgba(200,30,0,0)");
   x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.bezierCurveTo(52, 40, 62, 80, 58, 104); x.bezierCurveTo(54, 124, 10, 124, 6, 104); x.bezierCurveTo(2, 80, 12, 40, 32, 2); x.fill(); })));
-// une flamme qui reste accrochée là où le faisceau a brûlé (un mur, une table), et danse quelques secondes
-function flammeGB(C, P, n) { C.flammes = C.flammes || []; if (C.flammes.length > 40) return;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flammeTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); sp.center.set(.5, .05);
-  sp.position.copy(P).addScaledVector(n, .06); sp.renderOrder = 6; M.scene.add(sp); C.flammes.push({ sp, t: 0, vie: 6 + Math.random() * 5, s: .35 + Math.random() * .35, ph: Math.random() * 9 }); }
-function animerFlammes(C, dt, now) { if (!C.flammes) return; for (let k = C.flammes.length - 1; k >= 0; k--) { const f = C.flammes[k]; f.t += dt;
-    const fin = Math.min(1, (f.vie - f.t) / 1.5), deb = Math.min(1, f.t / .4), k2 = Math.max(0, fin) * deb; if (f.t >= f.vie) { M.scene.remove(f.sp); C.flammes.splice(k, 1); continue; }
-    const fl = 1 + .25 * Math.sin(now / 70 + f.ph) + .15 * Math.sin(now / 37 + f.ph * 2); f.sp.scale.set(f.s * .6 * (2 - fl * .6) * k2, f.s * 1.3 * fl * k2, 1); f.sp.material.opacity = .85 * k2; f.sp.material.rotation = Math.sin(now / 160 + f.ph) * .12; } }
+// le vrai feu : huit images, faites de dizaines de langues lumineuses qui montent (blanc-jaune au pied, orange, puis rouge sombre au bout) ; elles défilent vite : ça danse
+function feuImages() { if (imagesFeu) return imagesFeu; imagesFeu = [];
+  for (let f = 0; f < 8; f++) imagesFeu.push(tex(toile(96, 192, (x) => { x.globalCompositeOperation = "lighter";
+    for (let k = 0; k < 110; k++) { const t = Math.pow(Math.random(), 1.4), y = 184 - t * 170, larg = (1 - t) * 26 + 4, cx = 48 + (Math.random() - .5) * larg * 1.3 + Math.sin(t * 7 + f * .8) * 9 * t, r = (1 - t) * 20 + 4 + Math.random() * 6;
+      const c = t < .2 ? "255,245,205" : t < .45 ? "255,185,60" : t < .75 ? "245,105,25" : "170,45,12", g = x.createRadialGradient(cx, y, 0, cx, y, r); g.addColorStop(0, `rgba(${c},${.32 * (1 - t * .5)})`); g.addColorStop(1, `rgba(${c},0)`);
+      x.fillStyle = g; x.beginPath(); x.ellipse(cx, y, r * .75, r * 1.25, 0, 0, 7); x.fill(); } }))); return imagesFeu; }
+const fumeeTex = () => texFumeeGB || (texFumeeGB = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, "rgba(60,58,56,.55)"); g.addColorStop(.6, "rgba(70,68,66,.25)"); g.addColorStop(1, "rgba(80,78,76,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); })));
+// une flamme qui reste accrochée là où le faisceau a brûlé (un mur, une table) : elle danse, fume, puis s'éteint
+function flammeGB(C, P, n) { C.flammes = C.flammes || []; if (C.flammes.length > 34) return; const im = feuImages();
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: im[0], blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); sp.center.set(.5, .04);
+  sp.position.copy(P).addScaledVector(n, .08); sp.renderOrder = 6; M.scene.add(sp); C.flammes.push({ sp, t: 0, vie: 7 + Math.random() * 6, s: .55 + Math.random() * .45, ph: Math.random() * 8, fumT: Math.random() }); }
+function animerFlammes(C, dt, now) { if (!C.flammes) return; const im = feuImages(); C.fumees = C.fumees || [];
+  for (let k = C.flammes.length - 1; k >= 0; k--) { const f = C.flammes[k]; f.t += dt;
+    const k2 = Math.max(0, Math.min(1, (f.vie - f.t) / 2)) * Math.min(1, f.t / .5); if (f.t >= f.vie) { M.scene.remove(f.sp); C.flammes.splice(k, 1); continue; }
+    f.sp.material.map = im[Math.floor(now / 65 + f.ph) % im.length]; const fl = 1 + .12 * Math.sin(now / 90 + f.ph * 3);
+    f.sp.scale.set(f.s * .8 * k2, f.s * 1.6 * fl * k2, 1); f.sp.material.opacity = k2;
+    f.fumT -= dt; if (f.fumT <= 0 && C.fumees.length < 50) { f.fumT = .35 + Math.random() * .3;   // (la fumée qui s'en échappe, monte et se dissipe)
+      const fs = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex(), transparent: true, depthWrite: false })); fs.position.copy(f.sp.position).add(new THREE.Vector3(0, f.s * 1.3, 0)); M.scene.add(fs); C.fumees.push({ sp: fs, t: 0, s: f.s * (.6 + Math.random() * .4) }); } }
+  for (let k = C.fumees.length - 1; k >= 0; k--) { const u = C.fumees[k]; u.t += dt; const a = u.t / 2.4; if (a >= 1) { M.scene.remove(u.sp); C.fumees.splice(k, 1); continue; }
+    u.sp.position.y += dt * .7; u.sp.position.x += dt * .12; u.sp.scale.setScalar(u.s * (.6 + a * 2)); u.sp.material.opacity = (1 - a) * .8; } }
 function brulerGB(C, h, dir, cle = "") { if (!h || !h.face) return; const n = h.face.normal.clone();
   if (h.instanceId != null && h.object.getMatrixAt) { const m4 = new THREE.Matrix4(); h.object.getMatrixAt(h.instanceId, m4); n.transformDirection(m4); }
   n.transformDirection(h.object.matrixWorld); if (n.dot(dir) > 0) n.negate();
   C.der = C.der || {}; if (C.der[cle] && C.der[cle].distanceTo(h.point) < .13) return; C.der[cle] = h.point.clone();   // (des traînées : les brûlures se suivent le long du faisceau qui balaie)
-  if (Math.random() < .2) flammeGB(C, h.point, n);
+  if (Math.random() < .14) flammeGB(C, h.point, n);
   const t = .28 + Math.random() * .2, o = new THREE.Mesh(new THREE.PlaneGeometry(t, t * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
   o.position.copy(h.point).addScaledVector(n, .01); o.lookAt(h.point.clone().add(n)); o.rotateZ(Math.random() * 6.28); o.renderOrder = 3; M.scene.add(o); C.brulures.push(o);
   if (C.brulures.length > 420) M.scene.remove(C.brulures.shift()); }
@@ -6304,9 +6328,12 @@ function hudGB(C) { if (!C.hud) { const d = document.createElement("div"); d.sty
     M.ctx.conteneur.appendChild(d); C.hud = d; }
   if (C.nom) C.hud.querySelector(".nom").textContent = C.nom; C.hud.querySelector(".pv").style.width = Math.max(0, C.pv / (C.pvMax || PV_GB) * 100) + "%"; C.hud.querySelector(".vies").textContent = "❤️".repeat(Math.max(0, C.vies)) + "🤍".repeat(Math.max(0, 4 - C.vies)); }
 // le thème de S.O.S. Fantômes : dès qu'on entre au mess, pendant qu'on regarde Bouffe-tout tout démolir, et tout le combat
-function musiqueGB(on) { if (!M) return; let a = M.musGB;
-  if (on) { if (!a) { a = M.musGB = new Audio("sons/gb-theme.mp3"); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); return; }
-  if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .04); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
+// les musiques : le thème du film (l'arrivée au mess), « Cleanin' Up the Town » (le combat, dès le « FEU ! ») ; l'une s'efface quand l'autre part
+function musiqueGB(on, fichier = "gb-theme") { if (!M) return; M.musGBs = M.musGBs || {};
+  const fondre = a => { if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .04); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); };
+  if (!on) { for (const a of Object.values(M.musGBs)) fondre(a); return; }
+  for (const [k, a] of Object.entries(M.musGBs)) if (k !== fichier) fondre(a);
+  let a = M.musGBs[fichier]; if (!a) { a = M.musGBs[fichier] = new Audio(`sons/${fichier}.mp3`); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); }
 function finCombatGB() { const C = M && M.gbCombat; musiqueGB(false); if (!C) return; if (C.hud) C.hud.remove(); if (C.piegeBtn) C.piegeBtn.remove(); for (const r of C.rayons.values()) M.scene.remove(r.g); M.gbCombat = null; M.gbVisee = null; }
 function combatGB() { const L = M.L, moi = M.gens.get(M.moiNum); if (!moi || L.gbMess || M.cine) return; const S = messGB(); if (!S) return; const B = MESS_GB;
   if (M.gbCombat) finCombatGB();
@@ -6334,17 +6361,16 @@ function fuiteGB(S) { const B = MESS_GB, x = B.X0 + 1 + Math.random() * (B.X1 - 
 function salirGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!C || C.fini || !S) return; C.vies--; S.rapide = true; S.attaqueEnCours = false;
   const d = voile("background:url(images/gb/slime.webp) center/120% no-repeat,radial-gradient(circle,rgba(70,170,40,.55),rgba(20,90,10,.75));opacity:1", 3200);   // (l'écran couvert de slime, qui s'égoutte peu à peu)
   let op = 1; const it = setInterval(() => { op -= .035; if (op <= 0 || !d.isConnected) { clearInterval(it); d.remove(); return; } d.style.opacity = String(Math.min(1, op * 1.4)); }, 80);
-  if (moi) slimeGB(S, moi.g.position.x, 0, moi.g.position.z - .2, 0, 1, 0, 1.3); sonBruit(.5, 300, .4);
-  bulle(C.vies > 0 ? `<b style="color:#b5573c">Ray</b> : Beurk ! Il t'a slimé ! Ça va, ${esc(prenomSH())} ?` : "<b>Bouffe-tout vous a eus…</b> On se relève, et on recommence !", 3800);
+  if (moi) { slimeGB(S, moi.g.position.x, 0, moi.g.position.z - .2, 0, 1, 0, 1.3); moi.englue = 15; M.gbVisee = null; } sonBruit(.5, 300, .4);   // (englué de la tête aux pieds : 15 secondes sans pouvoir tirer)
+  bulle(C.vies > 0 ? `<b style="color:#b5573c">Ray</b> : Beurk ! Il t'a englué, ${esc(prenomSH())} ! Tu ne peux plus bouger… tiens bon, ça va sécher !` : "<b>Bouffe-tout vous a eus…</b> On se relève, et on recommence !", 4200);
   if (C.vies <= 0) setTimeout(() => { if (M && M.gbCombat === C) { C.vies = 4; C.pv = PV_GB; hudGB(C); } }, 3500);
   hudGB(C); fuiteGB(S); }
 // il a slimé l'un des quatre : couvert de vert, il s'en plaint
+// il a englué l'un des quatre : couvert de slime de la tête aux pieds, il ne peut plus tirer pendant 15 secondes
 function salirPersoGB(p) { const C = M.gbCombat, S = M.L.gbMess; if (!C || C.fini || !S) return; S.attaqueEnCours = false;
-  if (!texSlime) { texSlime = new THREE.TextureLoader().load("images/gb/slime.webp"); texSlime.colorSpace = THREE.SRGBColorSpace; }
-  if (!p.slime) { p.slime = new THREE.Mesh(new THREE.PlaneGeometry(.8, .6), new THREE.MeshStandardMaterial({ map: texSlime, transparent: true, depthWrite: false, emissive: 0x2a8a18, emissiveIntensity: .4, roughness: .1 })); p.slime.position.set(0, p.H * .62, .03); p.mesh.add(p.slime); p.slime.scale.set(1 / (p.H * .42), 1 / p.H, 1); }
-  slimeGB(S, p.x, 0, p.z - .1, 0, 1, 0, 1.1); sonBruit(.5, 300, .4); p.choc = 1;
-  const r = { venkman: "Il m'a slimé !", ray: "Beurk ! J'en ai partout !", egon: "Fascinant… et répugnant.", winston: "Hé ! Pas sur la combinaison !" }[p.cle];
-  bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(r)}`, 3200); fuiteGB(S); }
+  p.englue = 15; p.rafale = 0; slimeGB(S, p.x, 0, p.z - .1, 0, 1, 0, 1.3); sonBruit(.5, 300, .4); p.choc = 1;
+  const r = { venkman: "Il m'a slimé ! Je ne peux plus bouger…", ray: "Beurk ! J'en ai partout, je suis collé !", egon: "Fascinant… et répugnant. Je suis englué.", winston: "Hé ! Pas sur la combinaison ! Je ne peux plus lever la lance !" }[p.cle];
+  bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(r)}`, 3600); fuiteGB(S); }
 function vaincuGB(C, S) { C.fini = true; S.fige = new THREE.Vector3(-.6, 1.9, -1.5); S.cible = null; M.gbVisee = null;
   bulle(`<b style="color:#b5573c">Ray</b> : Il est à bout ! On le tient ! ${esc(prenomSH())}, lance le piège, vite !`, 7000);
   const b = document.createElement("button"); b.type = "button"; b.textContent = "🪤 Piège à fantômes";
@@ -6355,7 +6381,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   animerFlammes(C, dt, now);
   if (C.intro > 0) { C.intro -= dt; if (C.intro <= 0 || (S.script && !S.script.length && C.intro < 8)) { C.intro = 0; S.script = null; C.ordre = 6.5; hudGB(C);
       bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Personne ne tire avant mon signal. Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6200); } return; }
-  if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { C.ordre = 0; if (M.cine) M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : Attention… FEU !`, 2600); sonBruit(.3, 900, .2); } return; }   // (personne ne tire tant qu'il n'a pas donné l'ordre)
+  if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { C.ordre = 0; if (M.cine) M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : Attention… FEU !`, 2600); sonBruit(.3, 900, .2); musiqueGB(true, "gb-combat"); } return; }   // (personne ne tire tant qu'il n'a pas donné l'ordre)
   const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); ray.camera = M.camera; const vus = new Set();
   const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position;
   const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
@@ -6367,6 +6393,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
       if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 28)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir, cle); } if (fuit) C.contact = 0; }
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
   // le nôtre : là où le doigt vise
+  if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .8 : .4) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
     tir("moi", A, hS.clone().sub(A).normalize(), 9, true); if (!C.sonT || now - C.sonT > 260) { C.sonT = now; sonBruit(.28, 2600, .07); } }
@@ -6375,6 +6402,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
     if (tient) { tir(p.cle, A, cible.clone().sub(A).normalize(), 0, false); continue; }
     if (C.fini) continue;
+    if (p.englue > 0) continue;   // (englué : il ne tire plus)
     if (!(p.rafale > 0) && p.tirT <= 0 && statique) { p.rafale = 1 + Math.random() * 1.2; p.ecart = new THREE.Vector3((Math.random() - .5) * 1.4, (Math.random() - .5) * .8, 0); }
     if (p.rafale > 0) { tir(p.cle, A, cible.clone().add(p.ecart).sub(A).normalize(), 1.2, false); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 2 + Math.random() * 4; } }
   for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
@@ -6425,7 +6453,7 @@ function cinePiegeGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(
 // dans la cour, une fois Bouffe-tout capturé : les quatre restent là, près de l'Ecto-1
 function garerGB() { const L = M.L, E = L.ecto1; if (!E) return; E.visible = !!M.gbGare; if (!M.gbGare || L.gbGareFait) return; L.gbGareFait = true;
   E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2;
-  { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !(Math.abs(x - GARE_GB[0]) < 1.35 && Math.abs(z - GARE_GB[1]) < 3.4); }   // (on ne passe pas au travers)
+  obstacleEcto(L);
   if (M.gbCapture) { if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
     const pl = [[-.5, .6], [-.6, 1.8], [-.5, 4.2], [-.7, 5.4]]; M.gbScene = { L, persos: GB.map(([c, n], k) => creerGB(c, n, pl[k][0], pl[k][1])) }; } }
 
@@ -6436,13 +6464,16 @@ const SP_Z = -14, SP_H = 24, PV_SP = 170, LIGNE_SP = -1.9;
 const texSP = {};
 function texSPi(n) { if (!texSP[n]) { const t = texSP[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texSP[n]; }
 // le ciel vert, en tourbillon, au-dessus de la cour (u : de 0 à 1, la bascule)
-function cielVertGB(u) { const sc = M.scene; let G = M.L.gbCiel;
-  if (!G) { const dome = new THREE.Mesh(new THREE.CircleGeometry(170, 56), new THREE.MeshBasicMaterial({ map: texSPi("ciel-vortex"), transparent: true, opacity: 0, fog: false, side: THREE.DoubleSide, depthWrite: false }));
-    dome.rotation.x = Math.PI / 2; dome.position.y = 62; sc.add(dome);
+function cielVertGB(u, dt = 0) { const sc = M.scene; let G = M.L.gbCiel;
+  if (!G) { const geo = new THREE.SphereGeometry(150, 72, 28, 0, Math.PI * 2, 0, Math.PI / 2), pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let k = 0; k < pos.count; k++) { const x = pos.getX(k), y = pos.getY(k), z = pos.getZ(k), el = Math.asin(Math.max(-1, Math.min(1, y / 150))) / (Math.PI / 2);   // (u : le tour de l'horizon ; v : du bas du ciel au zénith)
+      uv.setXY(k, (Math.atan2(z, x) / (Math.PI * 2) + 1) % 1, Math.min(1, el * 1.05)); }
+    const t = texSPi("ciel-dome"); t.wrapS = THREE.RepeatWrapping; t.repeat.x = 2;
+    const dome = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, transparent: true, opacity: 0, fog: false, depthWrite: false })); dome.position.y = -6; dome.renderOrder = -1; sc.add(dome);
     const hemi = sc.children.find(o => o.isHemisphereLight), sol = sc.children.find(o => o.isDirectionalLight), vert = new THREE.AmbientLight(0x6dff7a, 0); sc.add(vert);
-    G = M.L.gbCiel = { dome, vert, hemi, sol, hC: hemi && hemi.color.clone(), solI: sol ? sol.intensity : 0, fog0: sc.fog ? sc.fog.color.clone() : null, bg0: sc.background }; }
-  G.u = u; G.dome.material.opacity = u; G.vert.intensity = .45 * u;
-  if (u > .45) { const tb = texSPi("ciel-vert"); if (sc.background !== tb) sc.background = tb; } else if (G.bg0 && sc.background !== G.bg0) sc.background = G.bg0;
+    G = M.L.gbCiel = { dome, vert, hemi, sol, hC: hemi && hemi.color.clone(), solI: sol ? sol.intensity : 0, fog0: sc.fog ? sc.fog.color.clone() : null, bg0: sc.background, fond: new THREE.Color(0x0e3315) }; }
+  G.u = u; G.dome.material.opacity = Math.min(1, u * 1.2); G.dome.rotation.y += dt * .04; G.vert.intensity = .45 * u;   // (il tourne, lentement, comme un tourbillon)
+  if (u > .3) { if (sc.background !== G.fond) sc.background = G.fond; } else if (G.bg0 && sc.background !== G.bg0) sc.background = G.bg0;
   if (sc.fog && G.fog0) sc.fog.color.copy(G.fog0).lerp(new THREE.Color(0x1d5a24), u);
   if (G.hemi) G.hemi.color.copy(G.hC).lerp(new THREE.Color(0xa8ffb0), u * .7);
   if (G.sol) G.sol.intensity = G.solI * (1 - .55 * u); }
@@ -6454,8 +6485,22 @@ function trouFacadeGB() { const c = toile(512, 512, (x) => { x.translate(256, 25
     x.fillStyle = "#8e3b2a"; for (let k = 0; k < 60; k++) { const [a, b] = pts[k % pts.length], f = .95 + Math.random() * .18; x.fillRect(a * f - 8, b * f - 4, 16 + Math.random() * 10, 8); } });
   const o = new THREE.Mesh(new THREE.PlaneGeometry(17, 15), new THREE.MeshStandardMaterial({ map: tex(c), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -4 }));
   o.position.set(0, 15.5, -17.92); M.scene.add(o); return o; }
-function eclatsGB(F) { const brique = new THREE.MeshStandardMaterial({ color: 0x8e3b2a, roughness: .9 }), pierre = new THREE.MeshStandardMaterial({ color: 0xd8cfbc, roughness: .9 });
-  for (let k = 0; k < 46; k++) { const s = .35 + Math.random() * 1.1, o = new THREE.Mesh(new THREE.BoxGeometry(s, s * (.4 + Math.random() * .5), s * (.5 + Math.random() * .6)), Math.random() < .75 ? brique : pierre); o.castShadow = true;
+let matsGravat = null;
+function matGravat() { if (matsGravat) return matsGravat;
+  const brique = tex(toile(128, 128, (x) => { x.fillStyle = "#a89e8e"; x.fillRect(0, 0, 128, 128); for (let r = 0; r < 8; r++) for (let c = -1; c < 6; c++) { const o = (r % 2) * 13; x.fillStyle = `rgb(${120 + Math.random() * 45},${44 + Math.random() * 22},${30 + Math.random() * 14})`; x.fillRect(c * 26 + o + 1, r * 16 + 1, 24, 14); }
+    x.fillStyle = "rgba(0,0,0,.18)"; for (let k = 0; k < 260; k++) x.fillRect(Math.random() * 128, Math.random() * 128, 2, 2); }));
+  const pierre = tex(toile(128, 128, (x) => { x.fillStyle = "#cdc4b0"; x.fillRect(0, 0, 128, 128); for (let k = 0; k < 500; k++) { const v = Math.random() < .5 ? 90 : 245; x.fillStyle = `rgba(${v},${v - 4},${v - 10},.16)`; x.fillRect(Math.random() * 128, Math.random() * 128, 3, 3); }
+    x.strokeStyle = "rgba(60,50,40,.35)"; x.lineWidth = 1.5; for (let k = 0; k < 6; k++) { x.beginPath(); x.moveTo(Math.random() * 128, Math.random() * 128); x.lineTo(Math.random() * 128, Math.random() * 128); x.stroke(); } }));
+  return (matsGravat = [new THREE.MeshStandardMaterial({ map: brique, roughness: .95, flatShading: true }), new THREE.MeshStandardMaterial({ map: pierre, roughness: .95, flatShading: true })]); }
+function gravatGeo(s) { const g = new THREE.IcosahedronGeometry(1, 1), p = g.attributes.position, sx = .7 + Math.random() * .8, sy = .45 + Math.random() * .5, sz = .6 + Math.random() * .7, memo = {};
+  for (let i = 0; i < p.count; i++) { const cle = p.getX(i).toFixed(3) + "," + p.getY(i).toFixed(3) + "," + p.getZ(i).toFixed(3), f = memo[cle] || (memo[cle] = .62 + Math.random() * .6); p.setXYZ(i, p.getX(i) * f * sx * s, p.getY(i) * f * sy * s, p.getZ(i) * f * sz * s); }
+  g.computeVertexNormals(); return g; }   // (un bloc cassé : des faces brisées, irrégulières)
+function gravatGB(s) { const [brique, pierre] = matGravat(), r = Math.random(); let o;
+  if (r < .3) { o = new THREE.Mesh(new THREE.BoxGeometry(s * 1.4, s * .55, s * .45), brique); o.geometry.attributes.position.array.forEach((v, i, a) => { a[i] = v * (.88 + Math.random() * .24); }); o.geometry.computeVertexNormals(); }   // (un pan de mur, encore maçonné)
+  else o = new THREE.Mesh(gravatGeo(s * .55), r < .75 ? brique : pierre);
+  o.castShadow = true; o.receiveShadow = true; return o; }
+function eclatsGB(F) {
+  for (let k = 0; k < 52; k++) { const s = .35 + Math.random() * 1.1, o = gravatGB(s);
     o.position.set((Math.random() - .5) * 13, 9 + Math.random() * 13, -17.6); M.scene.add(o);
     F.eclats.push({ o, v: new THREE.Vector3((Math.random() - .5) * 7, Math.random() * 4, 3 + Math.random() * 7), w: new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6), s }); }
   for (let k = 0; k < 14; k++) poussiereGB(F, new THREE.Vector3((Math.random() - .5) * 14, 8 + Math.random() * 14, -16.5), 4 + Math.random() * 5);
@@ -6468,15 +6513,15 @@ function animerEclatsGB(F, dt) {
   for (let k = F.puffs.length - 1; k >= 0; k--) { const p = F.puffs[k]; p.t += dt; const u = p.t / p.vie; if (u >= 1) { M.scene.remove(p.sp); F.puffs.splice(k, 1); continue; }
     p.sp.scale.setScalar(p.s * (.4 + u * 1.2)); p.sp.material.opacity = .8 * (1 - u); p.sp.position.y += dt * .6; } }
 // le Bibendum : un grand panneau découpé, de face, de dos ou de profil selon où il va
-function creerSPGB() { const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0); for (const n of ["dos", "gauche", "droit"]) texSPi("staypuft-" + n);
+function creerSPGB() { const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);   // (toujours de face)
   const tf = texSPi("staypuft-face"), mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .5, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .7 }));
   mesh.scale.set(SP_H * .76, SP_H, 1); M.scene.add(mesh); return { mesh, x: 0, z: -17.4, vx: 0, vue: "face" }; }
 function majSPGB(B, now) { const cam = M.camera.position, m = B.mesh; m.position.set(B.x, Math.abs(Math.sin(now / 600)) * .25 * (B.marche ? 1 : 0), B.z); m.rotation.y = Math.atan2(cam.x - B.x, cam.z - B.z);
-  const vue = Math.abs(B.vx) > .9 ? (B.vx > 0 ? "droit" : "gauche") : "face"; if (vue !== B.vue) { B.vue = vue; const t = texSPi("staypuft-" + vue); m.material.map = t; m.material.emissiveMap = t; }
+  const vue = "face"; if (vue !== B.vue) { B.vue = vue; const t = texSPi("staypuft-" + vue); m.material.map = t; m.material.emissiveMap = t; }
   const im = m.material.map.image; if (im && im.width) m.scale.set(SP_H * im.width / im.height, SP_H, 1); m.rotation.z = B.marche ? Math.sin(now / 600) * .02 : 0; }
 function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbChef = true; M.cineSeul = CHEF_GB;
   const F = M.gbFinale = { L: M.L, eclats: [], puffs: [], secousse: 0, ciel: 0 };
-  E.visible = true; E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2;
+  E.visible = true; E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2; obstacleEcto(M.L);
   moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(); moi.info.gbDos = false;
   if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
   const pl = [[mp.x - 1.6, mp.z - 2.0], [mp.x - .5, mp.z - 2.4], [mp.x + .6, mp.z - 2.3], [mp.x + 1.5, mp.z - 1.6]];
@@ -6510,7 +6555,7 @@ function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!
   M.passerBtn = boutonPasser(() => { cielVertGB(1); F.cielT = 9; if (!F.trou) { F.trou = trouFacadeGB(); eclatsGB(F); } if (!F.sp) F.sp = creerSPGB(); F.sp.marche = false; finir(); });
   M.cine = { maj: now => { if (fini) return; const d = Math.min(50, Math.max(0, now - prec)); clk += d * (M.vite || 1); prec = now; const dt = d / 1000;
     while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
-    gyroEcto(E, true, now); if (F.cielT != null) { F.cielT += dt; cielVertGB(Math.min(1, F.cielT / 3)); }
+    gyroEcto(E, true, now); if (F.cielT != null) { F.cielT += dt; cielVertGB(Math.min(1, F.cielT / 3), dt); }
     if (F.sp) { if (F.sp.marche) F.sp.z = Math.min(SP_Z, F.sp.z + dt * .95); majSPGB(F.sp, now); }
     animerEclatsGB(F, dt); F.secousse = Math.max(0, F.secousse - dt * 1.6);
     // la caméra : sur le groupe ; puis le ciel ; puis la façade et le géant, en contre-plongée
@@ -6535,11 +6580,11 @@ function combatSPGB() { const F = M.gbFinale, moi = M.gens.get(M.moiNum); if (!F
   const vise = new THREE.Vector3(GARE_GB[0], 9, SP_Z);
   M.cine = { gb: false, fov: [66, 84], maj: now => { const cp = new THREE.Vector3(GARE_GB[0], 2.8, LIGNE_SP + 7); if (F.secousse > 0) cp.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, 0).multiplyScalar(.3 * F.secousse));
     M.camera.position.copy(cp); vise.set(F.sp ? F.sp.x * .5 + GARE_GB[0] * .5 : GARE_GB[0], 7.4, SP_Z); M.camera.lookAt(vise); } }; }
-function rocherGB(C, B, cibleP, verMoi, p) { const o = new THREE.Mesh(new THREE.DodecahedronGeometry(.45 + Math.random() * .25, 0), new THREE.MeshStandardMaterial({ color: Math.random() < .6 ? 0x8e3b2a : 0xcfc6b3, roughness: .9 })); o.castShadow = true;
+function rocherGB(C, B, cibleP, verMoi, p) { const o = gravatGB(.75 + Math.random() * .45);   // (un bloc de maçonnerie arraché à la façade)
   const dep = new THREE.Vector3(B.x + (Math.random() < .5 ? -1 : 1) * 7.5, 13, B.z + 1.5); o.position.copy(dep); M.scene.add(o);
   C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 2.1 + Math.random() * .5, moi: verMoi, p }); sonBruit(.3, 400, .3); }
 function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
-  gyroEcto(M.L.ecto1, true, now); cielVertGB(1); animerEclatsGB(F, dt); animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
+  gyroEcto(M.L.ecto1, true, now); cielVertGB(1, dt); animerEclatsGB(F, dt); animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
   if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now);
   if (C.boum) { animerBoumGB(C, dt, now); return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : FEU !`, 2200); sonBruit(.3, 900, .2); } return; }
@@ -6598,7 +6643,7 @@ function finGB() { musiqueGB(false); const d = voile("background:rgba(8,8,10,.92
   d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(80%,640px)"><div style="font:900 64px/1 Georgia,serif;color:#fff;letter-spacing:8px;text-align:center">FIN</div>';
   let u = 0; const it = setInterval(() => { u += .05; if (!d.isConnected) { clearInterval(it); return; } d.style.opacity = String(Math.min(1, u * 1.6, (7 - u * 1.4) / 1.4)); if (u * 1.4 > 7) clearInterval(it); }, 70);
   envoyerWS({ t: "plaque_fin" });
-  setTimeout(() => { if (!M) return; finCombatGB(); M.gbFinale = null; M.gbActe = 0; M.gbCapture = true; M.gbGare = true; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - .2], -Math.PI / 2); }, 6200); }
+  setTimeout(() => { if (!M) return; finCombatGB(); M.gbFinale = null; M.gbActe = 0; M.gbCapture = false; M.gbGare = false; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - .2], -Math.PI / 2); }, 6200); }
 /* ===================== Silent Hill =====================
    Une radio rouge traîne au sol, quelque part dans la caserne (jamais au même endroit). On la ramasse : elle grésille… une sirène… le noir.
    On se réveille allongé dans le bar du sous-sol : la même caserne, mais déserte, noyée dans un brouillard blanc, des cendres qui tombent,
