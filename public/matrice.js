@@ -3593,7 +3593,7 @@ function cabineFrance() { const g = new THREE.Group(), alu = new THREE.MeshStand
   return g; }
 // composer un numéro : le cadran à l'écran (on tourne le disque chiffre par chiffre)
 // le cadenas à code de la case des encombrants : quatre molettes de 0 à 9 ; le bon code (1996) ouvre la porte… et l'on entre dans l'apocalypse
-function ouvrirCadenas() { if (!M || M.cadranEl) return; if (M.relief) relief(false);   // (en relief, l'écran du cadenas ne se verrait pas : on revient à l'image normale)
+function ouvrirCadenas() { if (!M || M.cadranEl) return;
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.6)";
   d.innerHTML = `<div style="background:linear-gradient(#d9b23a,#a8821c);border-radius:22px 22px 16px 16px;padding:18px 18px 16px;box-shadow:0 10px 40px #000,inset 0 2px 0 rgba(255,255,255,.4);display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#2a1e08;position:relative;margin-top:44px">
     <div style="position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:110px;height:70px;border:14px solid #9a9da2;border-bottom:0;border-radius:60px 60px 0 0" class="anse"></div>
@@ -3616,7 +3616,7 @@ function ouvrirCadenas() { if (!M || M.cadranEl) return; if (M.relief) relief(fa
       const ent = M.L.portails.find(q => q.entreeApo); if (ent && M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (!M) return; if (ok) { M.apoIntro = true; changerLieu(ent.vers, ent.arrivee, ent.yaw, true); } else { M.L.cadenasOuvert = false; if (M.L.porteEnc) M.L.porteEnc.rotation.y = 0; } });
       else if (ent) changerLieu(ent.vers, ent.arrivee, ent.yaw, true); }, 1100); }; }
 export function afficheTaille(v) { envoyerWS({ t: "affiche_taille", v: +v }); }
-function composerNumero(dest) { if (!M || M.cadranEl) return; if (M.relief) relief(false); const noir = dest === "hv";
+function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest === "hv";
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.55)";
   const fond = noir ? "#0e0e10" : "#a4a6a8", trou = noir ? "#f4ecd4" : "#2a2a2c", txt = noir ? "#1a1a1a" : "#f2f2ee";
   d.innerHTML = `<div style="background:${noir ? "#151517" : "#8e9092"};border-radius:18px;padding:16px 18px;box-shadow:0 10px 40px #000;display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#fff">
@@ -9589,7 +9589,7 @@ function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "
   if (!d) { d = M.mireEl = document.createElement("div"); d.style.cssText = "position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #9cff6a;border-radius:50%;box-shadow:0 0 8px #9cff6a;pointer-events:none;z-index:7"; M.ctx.conteneur.appendChild(d); }
   d.style.display = M.relief ? "none" : ""; d.style.left = ((m.x + 1) / 2 * 100) + "%"; d.style.top = ((1 - m.y) / 2 * 100) + "%"; }
 // le relief : chaque œil a sa moitié d'écran (côte à côte, comprimée : les lunettes l'étirent)
-export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; if (!on) action3D(); M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
+export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; if (!on) { action3D(); ecranRelief(); } M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
 /* à la première personne, avec une arme : le pistolet en bas à droite, et son viseur laser — un rayon rouge, un point rouge là où l'on vise */
 const armeFP = () => M.premiere && !M.cine && M.L && ((M.L.apo && !M.L.sh && !APO.zombieFin) || (M.L.sh && M.shArme));
 /* la main qui tient le revolver, vue à la première personne : canon long en acier, barillet, chien, pontet, crosse noire ; la main serre la crosse, le pouce sur le côté, l'avant-bras qui part vers le bas de l'écran (le canon vers -z) */
@@ -9693,7 +9693,14 @@ export function premiere(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo
   M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
   bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }
 export function reliefProfondeur(k) { if (M) M.reliefSep = .064 * k; }
-function rendreRelief(rendu) { const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
+function ecranRelief() { const d = M.cadranEl, C = M.copieRelief;
+  if (C && (!M.relief || !d || C.src !== d || !d.isConnected)) { C.obs.disconnect(); C.el.remove(); if (C.src.isConnected) { C.src.classList.remove("relief-ok"); C.src.style.transform = ""; C.src.style.transformOrigin = ""; } M.copieRelief = null; }
+  if (!M.relief || !d || !d.isConnected || M.copieRelief) return;
+  d.classList.add("relief-ok"); d.style.transform = "scaleX(.5)"; d.style.transformOrigin = "0 50%";
+  const el = d.cloneNode(true); el.classList.add("relief-ok"); el.style.transform = "scaleX(.5)"; el.style.transformOrigin = "100% 50%"; el.style.pointerEvents = "none"; d.parentNode.appendChild(el);
+  const obs = new MutationObserver(() => { const n = d.cloneNode(true); n.className = el.className; n.style.cssText = el.style.cssText; el.innerHTML = n.innerHTML; }); obs.observe(d, { subtree: true, childList: true, characterData: true, attributes: true });
+  M.copieRelief = { src: d, el, obs }; }
+function rendreRelief(rendu) { ecranRelief(); const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
   action3D(); const a3 = M.action3D; if (a3) { if (a3.parent !== M.scene) M.scene.add(a3); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); a3.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, -.55); }
   const s = rendu.getSize(new THREE.Vector2()), w = Math.floor(s.x / 2); rendu.setScissorTest(true);
@@ -10015,7 +10022,7 @@ export function agir() {
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "cadenas") ouvrirCadenas();
-  else if (a.type === "affiche1996") { if (M.cadranEl) return; if (M.relief) relief(false);   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
+  else if (a.type === "affiche1996") { if (M.cadranEl) return;   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;grid-template-rows:100%;place-items:center;background:rgba(0,0,0,.75);padding:16px;box-sizing:border-box";
     d.innerHTML = `<div style="position:relative;height:100%;min-height:0;display:flex;align-items:center;justify-content:center;overflow:visible"><img src="images/apo/affiche-re-1996.webp" alt="Affiche Micromania : Resident Evil, disponible le 1er août 1996" style="height:100%;max-width:100%;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px #000;transform:rotate(-1.5deg)">
       <button type="button" aria-label="Lâcher l'affiche" style="position:absolute;top:-6px;right:-6px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1a1a1a;font:900 22px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)">✕</button></div>`;
