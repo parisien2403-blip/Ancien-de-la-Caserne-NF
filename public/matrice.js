@@ -6003,13 +6003,13 @@ export async function ouvrir(ctx) {
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
-    chercherAction(t);
+    chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
     if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (M.trace1) trace("avant 1re image " + M.lieu);
-    rendu.render(M.scene, M.camera);
+    if (M.relief) rendreRelief(rendu); else rendu.render(M.scene, M.camera);
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
@@ -6420,7 +6420,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
       bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Personne ne tire avant mon signal. Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6200); } return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { C.ordre = 0; if (M.cine) M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : Attention… FEU !`, 2600); sonBruit(.3, 900, .2); musiqueGB(true, "gb-combat"); } return; }   // (personne ne tire tant qu'il n'a pas donné l'ordre)
   const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); ray.camera = M.camera; const vus = new Set();
-  const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position;
+  const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position; M.gbCibleVue = cible;
   const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
     ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .6 : .28;
     let B2;
@@ -6657,7 +6657,7 @@ function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C 
   if (C.boum || C.ordre > 0) sonEffluves(0);
   if (C.boum) { animerBoumGB(C, dt, now); return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : FEU !`, 2200); sonBruit(.3, 900, .2); } return; }
-  const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); const vus = new Set();
+  const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); const vus = new Set(); M.gbCibleVue = new THREE.Vector3(B.x, SP_H * .5, B.z);
   // touché ? (une ellipse grosso modo à sa silhouette, dans son plan)
   const touche = (A, dir) => { if (Math.abs(dir.z) < .05) return null; const k = (B.z - A.z) / dir.z; if (k <= 0) return null; const P = A.clone().addScaledVector(dir, k); return ((P.x - B.x) / (SP_H * .3)) ** 2 + ((P.y - SP_H * .5) / (SP_H * .5)) ** 2 < 1 ? P : null; };
   const tir = (cle, A, dir, degats) => { let B2 = touche(A, dir);
@@ -9504,6 +9504,73 @@ function videoDJ(c) { let v = M.videoDJ;
   const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; }
   const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
     if (pos >= 0 && v.readyState >= 1) { if (Math.abs(v.currentTime - pos) > .4 && (!v.duration || pos < v.duration)) { try { v.currentTime = pos; } catch (e) {} } if (v.paused) v.play().catch(() => {}); } } }
+/* ===================== la manette (Bluetooth) et les lunettes 3D =====================
+   Une manette de jeu (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour tourner la vue,
+   A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
+   Le relief : deux images côte à côte, une par œil, pour les lunettes en mode 3D (XREAL…) ; les sous-titres flottent devant nous, en relief eux aussi. */
+const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false, t: 0 };
+function manette() {
+  const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
+  const g = navigator.getGamepads ? [...navigator.getGamepads()].find(q => q && q.connected) : null; if (!g || !M || !M.L) { mireGB(null); return; }
+  if (!MAN.vu) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, A pour agir, gâchette droite pour tirer, Start pour le relief 3D"); }
+  const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
+  const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
+  const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
+  const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
+  if (appui(9)) relief(!M.relief);
+  if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } }
+  // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
+  const gb = M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb;
+  if (gb) { const m = MAN.mire = MAN.mire || { x: 0, y: .1 }, sx = rx || lx, sy = ry || ly;
+    if (sx || sy) { m.x = Math.max(-.95, Math.min(.95, m.x + sx * dt * 1.3)); m.y = Math.max(-.95, Math.min(.95, m.y - sy * dt * 1.3)); }
+    else if (M.gbCibleVue) { const q = M.gbCibleVue.clone().project(M.camera); if (q.z < 1) { m.x += (q.x - m.x) * Math.min(1, dt * 2.5); m.y += (q.y - m.y) * Math.min(1, dt * 2.5); } }
+    if (tire) M.gbVisee = { id: "manette", x: m.x, y: m.y }; else if (M.gbVisee && M.gbVisee.id === "manette") M.gbVisee = null;
+    mireGB(m); fin(); return; }
+  mireGB(null); if (M.gbVisee && M.gbVisee.id === "manette") M.gbVisee = null;
+  if (M.cine) { fin(); return; }
+  if (appui(0) && M.action) agir();
+  if (appui(6) && M.lampeBtn) M.lampeBtn.click();
+  if (appui(3) && M.carteBtn) M.carteBtn.click();
+  if (appui(2) && M.L && !M.L.apo && !M.L.sh) danser(moi.info.danse ? false : true);
+  // la vue : tourner, monter / descendre
+  if (rx && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) - rx * dt * 2.4;
+  if (ry && M.camE != null) M.camE = Math.max(.04, Math.min(1.35, M.camE + ry * dt * 1.1));
+  // marcher : droit devant soi, par rapport à la caméra
+  if (lx || ly) { const f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
+    const d = new THREE.Vector3(f.x * -ly - f.z * lx, 0, f.z * -ly + f.x * lx).normalize();   // (devant : joystick vers le haut ; à droite : vers la droite)
+    if (now > MAN.allerT) { MAN.allerT = now + 200; const p = moi.g.position;
+      for (const lg of [1.7, 1.1, .6]) { const tx = p.x + d.x * lg, tz = p.z + d.z * lg; if (M.L.limites(tx, tz)) { allerVers(tx, tz, true, p.y); break; } } }
+    MAN.bouge = true; }
+  else if (MAN.bouge) { MAN.bouge = false; if (!M.marcheAuto) { moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z }); } }
+  // tirer : le zombie (ou le monstre) le plus proche, devant soi de préférence
+  if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
+    const choisir = l => { let best = null, bs = -1e9; for (const z of l) { const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz); if (dd > 14) continue; const sc = (dx * f.x + dz * f.z) / (dd || 1) * 6 - dd; if (sc > bs) { bs = sc; best = z; } } return best; };
+    if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
+    else if (M.L.sh && M.shMonstres) { const m = choisir(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) { tirerSH(m); MAN.tirT = now + 330; } } }
+  fin(); }
+function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "none"; return; }
+  if (!d) { d = M.mireEl = document.createElement("div"); d.style.cssText = "position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #9cff6a;border-radius:50%;box-shadow:0 0 8px #9cff6a;pointer-events:none;z-index:7"; M.ctx.conteneur.appendChild(d); }
+  d.style.display = M.relief ? "none" : ""; d.style.left = ((m.x + 1) / 2 * 100) + "%"; d.style.top = ((1 - m.y) / 2 * 100) + "%"; }
+// le relief : chaque œil a sa moitié d'écran (côte à côte, comprimée : les lunettes l'étirent)
+export function relief(on) { if (!M) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
+export function reliefProfondeur(k) { if (M) M.reliefSep = .064 * k; }
+function rendreRelief(rendu) { const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
+  const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
+  const s = rendu.getSize(new THREE.Vector2()), w = Math.floor(s.x / 2); rendu.setScissorTest(true);
+  rendu.setScissor(0, 0, w, s.y); rendu.setViewport(0, 0, w, s.y); rendu.render(M.scene, st.cameraL);
+  rendu.setScissor(w, 0, s.x - w, s.y); rendu.setViewport(w, 0, s.x - w, s.y); rendu.render(M.scene, st.cameraR);
+  rendu.setScissorTest(false); rendu.setViewport(0, 0, s.x, s.y); }
+/* les sous-titres, en relief : un panneau qui flotte devant nous (en relief, l'écran est coupé en deux : le texte ordinaire ne se lirait que d'un œil) */
+function bulle3D(texte, ms) { if (!M) return; if (M.bulle3D) { M.bulle3D.parent && M.bulle3D.parent.remove(M.bulle3D); M.bulle3D.material.map.dispose(); M.bulle3D.material.dispose(); M.bulle3D = null; }
+  if (!texte || !M.relief) return; const div = document.createElement("div"); div.innerHTML = texte; const t = div.textContent.trim(); if (!t) return;
+  const W = 1024, x0 = document.createElement("canvas").getContext("2d"); x0.font = "700 44px Lato, sans-serif"; const mots = t.split(/\s+/), lignes = []; let l = "";
+  for (const m of mots) { const e = l ? l + " " + m : m; if (x0.measureText(e).width > W - 80 && l) { lignes.push(l); l = m; } else l = e; } if (l) lignes.push(l);
+  const H = 40 + lignes.length * 56, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+  x.fillStyle = "rgba(255,254,246,.95)"; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 28); x.fill(); x.lineWidth = 6; x.strokeStyle = "#111"; x.stroke();
+  x.font = "700 44px Lato, sans-serif"; x.fillStyle = "#1a1a1a"; x.textAlign = "center"; x.textBaseline = "middle"; lignes.forEach((q, i) => x.fillText(q, W / 2, 20 + 28 + i * 56));
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, depthWrite: false, transparent: true, fog: false }));
+  sp.scale.set(1.5, 1.5 * H / W, 1); sp.renderOrder = 999; M.scene.add(sp); M.bulle3D = sp;
+  if (ms) { const s2 = sp; setTimeout(() => { if (M && M.bulle3D === s2) bulle3D(null); }, ms); } }
 function animerGroupe() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
   const dm = !!(M.djJoue && AIR_DM.test(M.djTitre || "")), ei = !dm && !!(M.djJoue && AIR_EI.test(M.djTitre || ""));
@@ -10053,7 +10120,7 @@ function combinePend(ms) { if (!M || !M.L.cabineTel) return; const scene = M.sce
   const pas = () => { if (!M || M.scene !== scene) return fin(); const t = (performance.now() - t0) / 1000; if (t * 1000 > ms) return fin(); const a = .55 * Math.exp(-t * .3);
     piv.rotation.z = a * Math.sin(t * 4); piv.rotation.x = a * .35 * Math.sin(t * 2.9 + 1); c.rotation.y = Math.sin(t * 1.2) * .9; requestAnimationFrame(pas); };
   pas(); }
-function bulle(texte, ms) { if (!M) return; if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
+function bulle(texte, ms) { if (!M) return; bulle3D(texte, ms); if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
   d.innerHTML = texte; M.ctx.conteneur.appendChild(d); M.bulleEl = d; if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.remove(); M.bulleEl = null; } }, ms); }
 // le logo « Retour vers le futur » qui surgit en grand, puis s'efface
