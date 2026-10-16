@@ -555,8 +555,8 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = peau; for (const h of mains) if (h) { x.beginPath(); x.arc(h[0], h[1], 10, 0, 7); x.fill(); } }
     // le couteau (Eddie, à Silent Hill) : la lame dans le prolongement du bras
     if (o.couteau && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
-      x.save(); x.translate(hx, hy); x.rotate(a); x.fillStyle = "#2a1a10"; x.beginPath(); x.roundRect(-6, -5, 20, 10, 3); x.fill();
-      x.fillStyle = "#d9dde2"; x.beginPath(); x.moveTo(12, -5); x.lineTo(58, -2); x.lineTo(66, 1); x.lineTo(12, 5); x.closePath(); x.fill(); x.fillStyle = "rgba(130,15,15,.75)"; x.fillRect(34, -3, 18, 6);
+      x.save(); x.translate(hx, hy); x.rotate(a + (o.pose === "tir" ? -.5 : 0)); x.fillStyle = "#2a1a10"; x.beginPath(); x.roundRect(-8, -7, 26, 14, 4); x.fill();
+      x.fillStyle = "#e4e8ec"; x.beginPath(); x.moveTo(16, -9); x.lineTo(78, -4); x.lineTo(92, 2); x.lineTo(16, 9); x.closePath(); x.fill(); x.strokeStyle = "#5a5e64"; x.lineWidth = 2; x.stroke(); x.fillStyle = "rgba(130,15,15,.8)"; x.fillRect(44, -4, 26, 9);
       x.restore(); x.fillStyle = peau; x.beginPath(); x.arc(hx, hy, 10, 0, 7); x.fill(); }
     // à l'apocalypse : le pistolet, dans la main droite (pointé vers le sol, ou devant soi quand on tire)
     if (o.arme && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
