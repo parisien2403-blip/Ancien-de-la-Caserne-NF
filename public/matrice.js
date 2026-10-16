@@ -9530,6 +9530,7 @@ function manette() {
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
+  if (moi.info.joue) { fin(); return; }   // (on joue à la console, au flipper… : la manette est à eux)
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
   if (M.cadenasMan && M.cadenasMan.d.isConnected) { const C = M.cadenasMan;
     if (appui(14) || (lx < -.6 && !MAN.cadX)) { C.i = (C.i + 3) % 4; C.sel(C.i); } if (appui(15) || (lx > .6 && !MAN.cadX)) { C.i = (C.i + 1) % 4; C.sel(C.i); } MAN.cadX = Math.abs(lx) > .6;
