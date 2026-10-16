@@ -5671,7 +5671,7 @@ export async function ouvrir(ctx) {
   rendu.domElement.addEventListener("pointerdown", e => { if (M && M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb) { viseGB(e); return; }   // (S.O.S. Fantômes : le doigt vise, la lance tire tant qu'il appuie)
     doigts.set(e.pointerId, [e.clientX, e.clientY]);
     if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), D: M && M.camD }; if (glisse) glisse.bouge = true; return; }
-    glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, E: M ? M.camE : null };
+    glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, E: M ? M.camE : null, fy: M ? M.fpYaw || 0 : 0, fp: M ? M.fpPitch || 0 : 0 };
     // la mitraillette : doigt appuyé sur un zombie, ça tire en rafale (on peut glisser le doigt d'un zombie à l'autre)
     if (M && M.mitra && M.L && M.L.apo && M.zomb && M.zomb.size && !M.cine) { const z = zombieSous(e.clientX, e.clientY); if (z) { arreterRafale(); rafale = { x: e.clientX, y: e.clientY, z, id: e.pointerId }; tirer(z); rafale.minuteur = setInterval(tirRafale, 105); } } });
   let rafale = null;
@@ -5690,6 +5690,7 @@ export async function ouvrir(ctx) {
     if (!glisse || glisse.id !== e.pointerId || !M) return;
     const dx = e.clientX - glisse.x, dy = e.clientY - glisse.y;
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) glisse.bouge = true;
+    if (glisse.bouge && M.premiere) { M.fpYaw = glisse.fy - dx * .006; M.fpPitch = Math.max(-1.3, Math.min(1.45, glisse.fp - dy * .004)); return; }
     if (glisse.bouge && M.L && (M.L.interieur || M.L.suivi)) { M.yaw = glisse.yaw - dx * .006; if (glisse.E != null) { M.camE = glisse.E + dy * .005; bornerCam(); } }
   });
   const leve = e => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
@@ -6005,7 +6006,7 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { if (M.premiere) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; }   /* (pendant une cinématique, on se revoit) */ M.cine.maj(performance.now()); M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (M.trace1) trace("avant 1re image " + M.lieu);
@@ -9026,6 +9027,11 @@ function construireScene(id) {
 function placerCamera(net) {
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
+  // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
+  if (M.premiere && moi) { moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
+    M.camera.position.set(p.x, yeux, p.z); M.camera.fov = portrait ? 84 : 72; M.camera.updateProjectionMatrix();
+    M.camera.lookAt(p.x - Math.sin(M.fpYaw || 0) * cy, yeux + Math.sin(M.fpPitch || 0), p.z - Math.cos(M.fpYaw || 0) * cy); M.camVise = null; laserFP(); return; }
+  laserFP(true);
   // la caméra suit doucement son bonhomme
   const sx = moi ? moi.g.position.x * .55 : 0, sz = moi ? Math.min(0, moi.g.position.z - (M.L.depart[1])) * .55 : 0;
   const k = portrait && !M.L.interieur ? 1 : 0;
@@ -9519,6 +9525,7 @@ function manette() {
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
   if (appui(9)) relief(!M.relief);
+  if (appui(8)) premiere(!M.premiere);
   if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
   // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
   const gb = M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb;
@@ -9538,8 +9545,9 @@ function manette() {
   if (appui(2) && M.L && !M.L.apo && !M.L.sh) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
     const i = D.indexOf(moi.info.danse), suiv = i + 1 < D.length ? D[i + 1] : false; danser(suiv); bulle(suiv ? N[suiv] + " <small>(X : danse suivante · B : stop)</small>" : "🛑 Fin de la danse", 1800); }
   // la vue : tourner, monter / descendre
-  if (rx && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) - rx * dt * 2.4;
-  if (ry && M.camE != null) M.camE = Math.max(.04, Math.min(1.35, M.camE + ry * dt * 1.1));
+  if (M.premiere) { M.fpYaw = (M.fpYaw || 0) - rx * dt * 2.4; M.fpPitch = Math.max(-1.3, Math.min(1.45, (M.fpPitch || 0) - ry * dt * 1.6)); }
+  else { if (rx && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) - rx * dt * 2.4;
+  if (ry && M.camE != null) M.camE = Math.max(.04, Math.min(1.35, M.camE + ry * dt * 1.1)); }
   // marcher : droit devant soi, par rapport à la caméra
   if (lx || ly) { const f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
     const d = new THREE.Vector3(f.x * -ly - f.z * lx, 0, f.z * -ly + f.x * lx).normalize();   // (devant : joystick vers le haut ; à droite : vers la droite)
@@ -9550,7 +9558,9 @@ function manette() {
   // tirer : le zombie (ou le monstre) le plus proche, devant soi de préférence
   if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
     const choisir = l => { let best = null, bs = -1e9; for (const z of l) { const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz); if (dd > 14) continue; const sc = (dx * f.x + dz * f.z) / (dd || 1) * 6 - dd; if (sc > bs) { bs = sc; best = z; } } return best; };
-    if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
+    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else sonTir(); MAN.tirT = now + (M.mitra ? 110 : 330); }
+    else if (M.premiere && M.L.sh && M.shMonstres) { const m = cibleFP(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) tirerSH(m); MAN.tirT = now + 330; }
+    else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
     else if (M.L.sh && M.shMonstres) { const m = choisir(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) { tirerSH(m); MAN.tirT = now + 330; } } }
   fin(); }
 function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "none"; return; }
@@ -9558,6 +9568,33 @@ function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "
   d.style.display = M.relief ? "none" : ""; d.style.left = ((m.x + 1) / 2 * 100) + "%"; d.style.top = ((1 - m.y) / 2 * 100) + "%"; }
 // le relief : chaque œil a sa moitié d'écran (côte à côte, comprimée : les lunettes l'étirent)
 export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
+/* à la première personne, avec une arme : le pistolet en bas à droite, et son viseur laser — un rayon rouge, un point rouge là où l'on vise */
+const armeFP = () => M.premiere && !M.cine && M.L && ((M.L.apo && !M.L.sh && !APO.zombieFin) || (M.L.sh && M.shArme));
+function laserFP(cacher) { let A = M.armeFP;
+  if (cacher || !armeFP()) { if (A) A.g.visible = A.ray.visible = A.pt.visible = false; return; }
+  if (!A) { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, roughness: .4, metalness: .6 }), gris = new THREE.MeshStandardMaterial({ color: 0x3a3a3e, roughness: .4, metalness: .7 });
+      const corps = new THREE.Mesh(new THREE.BoxGeometry(.035, .045, .2), noir); g.add(corps); const crosse = new THREE.Mesh(new THREE.BoxGeometry(.03, .1, .045), noir); crosse.position.set(0, -.06, .07); crosse.rotation.x = -.25; g.add(crosse);
+      const glis = new THREE.Mesh(new THREE.BoxGeometry(.037, .018, .19), gris); glis.position.y = .03; g.add(glis); const las = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .05), gris); las.position.set(0, -.035, -.06); g.add(las);
+      const rouge = new THREE.MeshBasicMaterial({ color: 0xff2020, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+      const geo = new THREE.CylinderGeometry(.0025, .0025, 1, 6, 1, true); geo.translate(0, .5, 0); geo.rotateX(Math.PI / 2); const ray = new THREE.Mesh(geo, rouge);
+      const pt = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, "rgba(255,240,240,1)"); gr.addColorStop(.25, "rgba(255,40,40,.9)"); gr.addColorStop(1, "rgba(255,0,0,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); })), transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false }));
+      A = M.armeFP = { g, ray, pt, rc: new THREE.Raycaster(), t: 0, hit: null }; }
+  const sc = M.scene; for (const o of [A.g, A.ray, A.pt]) { if (o.parent !== sc) sc.add(o); o.visible = true; }
+  const cam = M.camera; cam.updateMatrixWorld(); const f = cam.getWorldDirection(new THREE.Vector3()), r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
+  A.g.position.copy(cam.position).addScaledVector(f, .42).addScaledVector(r, .17).addScaledVector(u, -.15); A.g.quaternion.copy(cam.quaternion); A.g.rotateY(.06);
+  const now = performance.now(); if (now > A.t) { A.t = now + 90; A.rc.set(cam.position, f); A.rc.far = 40; A.rc.camera = cam;   // (ce que vise le centre de l'écran : un zombie, un monstre, un mur…)
+    const h = A.rc.intersectObjects(sc.children, true).find(q => { const o = q.object; if (o === A.ray || o === A.pt || !o.visible || o.isSprite) return false; for (let a = o; a; a = a.parent) if (a === A.g || !a.visible) return false; const m = Array.isArray(o.material) ? o.material[0] : o.material; return o.isMesh && m && !(m.transparent && (m.opacity ?? 1) < .5) && m.blending !== THREE.AdditiveBlending; });
+    A.hit = h ? h.point.clone() : cam.position.clone().addScaledVector(f, 40); }
+  const o0 = A.g.localToWorld(new THREE.Vector3(0, -.035, -.09)), d = A.hit.clone().sub(o0), L = d.length(); A.ray.position.copy(o0); A.ray.scale.set(1, 1, L); A.ray.lookAt(A.hit);
+  A.pt.position.copy(A.hit).addScaledVector(f, -.05); const s2 = Math.max(.05, Math.min(.5, A.hit.distanceTo(cam.position) * .012)); A.pt.scale.set(s2, s2, 1); }
+/* tirer à la première personne : sur ce que vise le laser (avec un peu d'aide : ce qui est presque dans le viseur) */
+function cibleFP(liste) { const cam = M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
+  for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
+  return best; }
+export function premiere(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; const moi = M.gens.get(M.moiNum);
+  if (on && !M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; }
+  M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
+  bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }
 export function reliefProfondeur(k) { if (M) M.reliefSep = .064 * k; }
 function rendreRelief(rendu) { const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
