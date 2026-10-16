@@ -490,6 +490,8 @@
     .tabbar button br, .tabbar .cesure { display: none; }
     .tabbar button.on { background: var(--terra-soft); }
     .tabbar .dot { position: static; margin-left: auto; }
+    .tabbar .badge-jouer { position: static; margin-left: auto; font-size: 11px; line-height: 20px; padding: 0 8px; }
+    .tabbar button.jouer:not(.on) { background: #fbe9d6; }
     .scroll { grid-column: 2; grid-row: 2; padding: 32px 48px 48px; }
     .scroll > .tab { max-width: 1040px; margin: 0 auto; }
     .hello { font-size: 36px; }
@@ -549,6 +551,21 @@
   .acc-hero { position: relative; border-radius: 18px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(60,30,15,.18); }
   .acc-hero img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: 50% 100%; filter: sepia(.25) contrast(1.02); }
   /* le texte sous la photo, pour laisser voir le navire et la plaque « Caserne de la Nouvelle France » en entier */
+  /* les petits personnages de la caserne, de part et d'autre de la plaque, qui font coucou (deux images qui alternent : la main s'agite) */
+  .acc-hero .calque { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .acc-hero .c1 { animation: coucouA .9s steps(1) infinite; } .acc-hero .c2 { animation: coucouB .9s steps(1) infinite; }
+  @keyframes coucouA { 0% { opacity: 1; } 50% { opacity: 0; } } @keyframes coucouB { 0% { opacity: 0; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .acc-hero .c1 { animation: none; } .acc-hero .c2 { display: none; } }
+  /* le grand bouton pour entrer dans la caserne en 3D */
+  .acc-jouer { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; margin-top: 12px; padding: 13px 16px; border-radius: 14px; border: 2px solid #f0c060; cursor: pointer;
+    background: linear-gradient(#cf5d3f, #9b3b26); color: #fff; font: 700 clamp(17px, 4.6vw, 21px) "Marcellus", serif; text-align: center; animation: appelJouer 2.4s ease-in-out infinite; }
+  .acc-jouer small { font: 500 13px/1.35 "Lato", sans-serif; opacity: .92; }
+  .acc-jouer:active { transform: scale(.98); }
+  @keyframes appelJouer { 0%, 100% { box-shadow: 0 0 0 0 rgba(240,192,96,.55); } 50% { box-shadow: 0 0 0 9px rgba(240,192,96,0); } }
+  /* l'onglet de la caserne en 3D, mis en avant */
+  .tabbar button.jouer { color: var(--terra); font-weight: 800; }
+  .tabbar button.jouer .ico { stroke: var(--terra); }
+  .tabbar .badge-jouer { position: absolute; top: 0; right: calc(50% - 26px); padding: 0 5px; border-radius: 6px; background: #e0a52a; color: #fff; font: 800 8.5px/14px "Lato", sans-serif; text-transform: uppercase; letter-spacing: .3px; }
   .acc-hero .voile { position: relative; padding: 14px 18px 16px; background: linear-gradient(#3a2a1e, #24180f); color: #f6eedf; }
   .acc-hero h1 { margin: 0; color: #fff; font-size: clamp(22px, 5.5vw, 34px); line-height: 1.15; }
   .acc-hero p { margin: 4px 0 0; font-size: 14px; opacity: .9; }
@@ -846,6 +863,7 @@
   .btn.alt, .btn.danger { box-shadow: none; }
   .tabbar { border-top: 1.5px solid #d3c5aa; }
   .acc-hero img { aspect-ratio: 4 / 3; object-position: 50% 45%; filter: none; }
+  @media (min-width: 960px) { .acc-hero img { aspect-ratio: 16 / 9; object-position: 50% 100%; } }   /* (sur ordinateur : moins haute, pour voir le bouton « Entrer dans la caserne en 3D » sans faire défiler) */
   .tab[data-tab="vague"] .bubble { margin-top: 0; } .tab[data-tab="vague"] .bubble::before { display: none; }
   .f-scene { margin-right: 0; }
   .mx-apo { position: absolute; left: 10px; top: 52px; z-index: 4; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
@@ -959,8 +977,10 @@
       <div class="tab" data-tab="accueil" hidden>
         <div class="acc-hero">
           <img src="images/dessin-porche.jpg" alt="Le porche de la Caserne de la Nouvelle France : le navire sculpté et, dessous, la plaque « Caserne de la Nouvelle France »">
+          <img class="calque c1" src="images/accueil-coucou1.webp" alt="" aria-hidden="true"><img class="calque c2" src="images/accueil-coucou2.webp" alt="" aria-hidden="true">
           <div class="meteo-pill" id="accMeteo" title="La météo à la caserne">…</div>
-          <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p></div>
+          <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p>
+            <button type="button" class="acc-jouer" data-go="matrice"><span>🎮 Entrer dans la caserne en 3D</span><small>Promène-toi dans la caserne, retrouve les anciens, danse à la salle des fêtes, joue… on t'y attend !</small></button></div>
         </div>
         <div class="acc-cols">
           <div>
@@ -1409,7 +1429,7 @@
       <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
       <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
-      <button data-go="matrice"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">La<br> caserne</span></button>
+      <button data-go="matrice" class="jouer"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Caserne<br> en 3D</span><span class="badge-jouer">Jouer</span></button>
       <button data-go="vague"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="lbl">Vague<span class="cesure">-</span><br>mestre</span><span class="dot" id="vDot" hidden></span></button>
     </nav>
 
@@ -3013,6 +3033,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["5.01", "16 octobre 2026", ["Page d'accueil : des petits musiciens et chanteurs de la caserne (Depeche Mode, les Bee Gees, les Village People) font coucou de part et d'autre de la plaque", "Page d'accueil : un grand bouton « 🎮 Entrer dans la caserne en 3D »", "L'onglet devient « Caserne en 3D », mis en avant avec son badge « Jouer »", "S.O.S. Fantômes : l'affiche du mess est là pour tout le monde"]],
     ["5.00", "16 octobre 2026", ["Apocalypse : le titre RESIDENT EVIL à l'arrivée, sur la caserne vue du ciel où errent les zombies, puis la vue plonge vers la déchetterie", "Apocalypse : beaucoup plus de zombies", "Apocalypse : plus d'aide pour trouver le fumigène ; l'hélicoptère passe de temps en temps au-dessus de la caserne sans nous voir, et un équipier dit qu'il faut trouver un fumigène", "Apocalypse : l'hélicoptère ne tourne plus sur lui-même avant de se poser", "Apocalypse : on lève le bras pour tirer (de dos, le bras tendu devant soi)"]],
     ["4.99", "16 octobre 2026", ["La nuit, les fenêtres allumées (et les silhouettes derrière) ne clignotent plus quand on bouge", "S.O.S. Fantômes : l'affiche du mess est entière, centrée sur le mur, au-dessus du lambris", "Bouffe-tout se laisse vaincre un peu plus vite", "S.O.S. Fantômes : le géant de guimauve explose pour de vrai (boule de feu, fumée, onde de choc, braises)", "Silent Hill : au réveil, la caméra suit enfin dans le bar du sous-sol (on n'est plus bloqué à l'entrée)", "Silent Hill : plus de dialogues de gendarmes pendant la radio et le titre"]],
     ["4.98", "16 octobre 2026", ["S.O.S. Fantômes : l'aventure commence devant l'affiche du film, au mess (dans la petite pièce à droite en entrant) : « 👻 As-tu peur des fantômes ? » — le grand titre, puis l'Ecto-1 arrive (le temps des essais : l'administrateur seul la voit ; la plaque ECTO-1 n'est plus là)", "Plus difficile : Bouffe-tout est plus résistant et plus dur à toucher, il attaque plus souvent ; le Bibendum est plus résistant et lance ses blocs plus vite", "Les Ghostbusters vus de dos : de vraies têtes (plus de trous)", "La discussion avant le géant sur « Midnight Atlas » ; la scène finale, drôle, sur la chanson du film : le chef de poste trépigne de rage", "Le Bibendum Chamallow rugit avec un vrai cri de monstre"]],

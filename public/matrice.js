@@ -458,7 +458,8 @@ export function dessinerBonhomme(o, tete) {
       const disco = DISCO[o.pose], doigt = disco && sens < 0;
       // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
       // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
-      const cible = o.tirDos && sens < 0 ? [150, 92]   /* (de dos, il tire devant lui : le bras droit levé, tendu vers l'avant) */
+      const cible = o.pose === "coucou1" && sens < 0 ? [196, 58] : o.pose === "coucou2" && sens < 0 ? [164, 40]   /* (il fait coucou : la main levée, qui s'agite) */
+        : o.tirDos && sens < 0 ? [150, 92]   /* (de dos, il tire devant lui : le bras droit levé, tendu vers l'avant) */
         : o.mainsMur ? (sens > 0 ? [18, 112] : [182, 112]) : accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228]
         : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312]
         // le DJ : les deux mains sur les platines (mix1), une main au casque (mix2), le poing levé (mix3)
@@ -8706,8 +8707,7 @@ function majPlaqueGB() {
 // (S.O.S. Fantômes) l'affiche du film, au mess, dans la petite pièce à droite en entrant, contre le mur : on s'en approche, « As-tu peur des fantômes ? »
 // (le temps des essais : l'administrateur seul la voit)
 const AFFICHE_GB = { x: 4.1, y: 2.08, z: 8.75, w: 1.0, h: 1.5 };   // (centrée sur le mur, entre le haut du lambris et le haut de la cloison : on la voit en entier)
-function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !== undefined) return; const admin = !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
-  if (!admin) { M.L.afficheGB = null; return; }
+function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !== undefined) return;   // (l'affiche est là pour tout le monde)
   const t = new THREE.TextureLoader().load("images/gb/affiche.webp"); t.colorSpace = THREE.SRGBColorSpace; const A = AFFICHE_GB, g = new THREE.Group();
   const cadre = new THREE.Mesh(new THREE.BoxGeometry(A.w + .08, A.h + .08, .03), new THREE.MeshStandardMaterial({ color: 0x1a1a1c, roughness: .4, metalness: .3 })); g.add(cadre);
   const af = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .25, roughness: .5 })); af.position.z = .017; g.add(af);
