@@ -7958,8 +7958,10 @@ function cineIntroApo(moi) {
   logo.style.cssText = "position:absolute;left:50%;top:42%;width:min(84%,620px);transform:translate(-50%,-50%) scale(1.6);opacity:0;z-index:9;pointer-events:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.85))";
   M.ctx.conteneur.appendChild(logo); const noir = voile("background:#000;opacity:1");
   const vise = new THREE.Vector3(cx, 0, cz), t0 = performance.now(); let fini = false, boum = false;
-  const A = new THREE.Vector3(cx + 24, 48, cz + 34), B = new THREE.Vector3(p.x + 14, 34, p.z + 22);   // (haut au-dessus de la cour, en biais, puis on glisse au-dessus des toits vers la déchetterie)
-  let C = null, Cv = null, v0 = null;
+  placerCamera(true); cam.updateMatrixWorld(); const C = cam.position.clone(), Cv = C.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6));   // (là où la caméra du jeu reprendra)
+  const A = new THREE.Vector3(cx + 24, 50, cz + 34), B = new THREE.Vector3(C.x, Math.max(48, C.y + 40), C.z);   /* (haut au-dessus de la cour, puis on glisse, au-dessus des toits, jusqu'à la verticale de la caméra du jeu,
+     et on descend tout droit : on ne traverse plus les bâtiments) */
+  let v0 = null;
   const fin = () => { if (fini || !M) return; fini = true; logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; }
     finCine(); placerCamera(true); M.survolT = performance.now() + 2500; M.survolN = 0; };
   M.passerBtn = boutonPasser(fin);
@@ -7970,9 +7972,8 @@ function cineIntroApo(moi) {
     const a = Math.max(0, Math.min(1, (u - .9) / .35)), b = Math.max(0, Math.min(1, (u - 6.2) / .9));
     logo.style.opacity = String(a * (1 - b)); logo.style.transform = `translate(-50%,-50%) scale(${(1.6 - .6 * lisse(a)) * (1 + .05 * Math.max(0, u - 1.25) / 5)})`;
     if (u > 1.2 && !boum) { boum = true; sonBruit(2.4, 110, 1); voile("background:#5a0000;opacity:.35", 160); }
-    if (u < 6.5) { const k = lisse(u / 6.5); cam.position.lerpVectors(A, B, k); vise.set(cx + (p.x - cx) * k * .6, 0, cz + (p.z - cz) * k * .6); }
-    else if (u < 11) { if (!C) { v0 = vise.clone(); placerCamera(true); C = cam.position.clone(); Cv = C.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6)); }   // (on arrive pile là où la caméra du jeu reprend)
-      const k = lisse((u - 6.5) / 4.5); cam.position.lerpVectors(B, C, k); vise.lerpVectors(v0, Cv, k); }
+    if (u < 6.5) { const k = lisse(u / 6.5); cam.position.lerpVectors(A, B, k); vise.set(cx + (p.x - cx) * k, p.y * k, cz + (p.z - cz) * k); }
+    else if (u < 11) { if (!v0) v0 = vise.clone(); const k = lisse((u - 6.5) / 4.5); cam.position.lerpVectors(B, C, k); vise.lerpVectors(v0, Cv, Math.min(1, k * 1.4)); }
     else { fin(); return; }
     cam.lookAt(vise); } };
 }
@@ -7987,25 +7988,36 @@ function survolApo(moi, now) {
   M.survolT = now + 150000 + Math.random() * 60000; cineSurvol(moi, PAROLES_SURVOL[Math.min(M.survolN || 0, PAROLES_SURVOL.length - 1)]); M.survolN = (M.survolN || 0) + 1;
 }
 function cineSurvol(moi, [cri, reponse]) {
-  const sc = M.scene, cam = M.camera, p = moi.g.position; placerCamera(true); cam.updateMatrixWorld(); const dir = cam.getWorldDirection(new THREE.Vector3()).setY(0).normalize(), camP = cam.position.clone();
-  const D = p.clone().addScaledVector(dir, -30).setY(p.y + 25), F = p.clone().addScaledVector(dir, 80).setY(p.y + 31), hel = creerHelico(); sc.add(hel);
-  { const geo = new THREE.ConeGeometry(1, 1, 24, 1, true); geo.translate(0, -.5, 0); const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: .13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
-    cone.scale.set(5, 30, 5); cone.rotation.z = .35; cone.position.y = .6; hel.add(cone); hel.userData.cone = cone; }   // (son projecteur fouille le sol, devant lui… mais pas là où nous sommes)
-  // (il arrive de derrière nous, passe au-dessus et s'éloigne devant)
-  hel.rotation.y = Math.atan2(-dir.z, dir.x);   // (le nez vers +x : tourné dans le sens du vol)
+  const sc = M.scene, cam = M.camera, p = moi.g.position; placerCamera(true); cam.updateMatrixWorld(); const camP = cam.position.clone(), Z = M.L.zone || [-30, 30, -60, 10];
+  /* on regarde vers le côté le plus ouvert (dans la cour, au fond près de la déchetterie, le mur bouchait tout le ciel) */
+  let dir = cam.getWorldDirection(new THREE.Vector3()).setY(0).normalize(), best = 0;
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, dx = Math.sin(a), dz = Math.cos(a); let r = 0; while (r < 45 && M.L.limites(p.x + dx * (r + .5), p.z + dz * (r + .5))) r += .5;   // (là où le sol est libre le plus loin : le ciel y est dégagé)
+    if (r > best + .5) { best = r; dir = new THREE.Vector3(dx, 0, dz); } }
+  const oeil = p.clone().setY(p.y + 1.55).addScaledVector(dir, -.3);   // (à hauteur des yeux : on lève la tête)
+  const D = p.clone().addScaledVector(dir, 90).setY(p.y + 26), F = p.clone().addScaledVector(dir, -45).setY(p.y + 24), hel = creerHelico(); sc.add(hel);
+  { const geo = new THREE.ConeGeometry(1, 1, 24, 1, true); geo.translate(0, -.5, 0); const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    cone.scale.set(4, 30, 4); cone.rotation.z = .35; cone.position.y = .6; hel.add(cone); hel.userData.cone = cone;
+    const tache = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), new THREE.MeshBasicMaterial({ color: 0xeef3ff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); tache.rotation.x = -Math.PI / 2; sc.add(tache); hel.userData.tache = tache; }   // (son projecteur fouille le sol, devant lui… mais pas là où nous sommes)
+  // (il arrive de face, son projecteur fouille la cour devant nous, puis il passe au-dessus de nos têtes… sans nous voir)
+  hel.rotation.y = Math.atan2(dir.z, -dir.x);   // (le nez vers +x : tourné dans le sens du vol, vers nous)
   const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
   const eq = (M.equipe || []).map((e, k) => !e.mort && M.gens.get(EQUIPIER(k))).find(Boolean), autre = eq ? eq.info.numero : M.moiNum;
-  const haut = p.clone().addScaledVector(dir, 14).setY(p.y + 40), vise = cam.position.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6)), t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0;
-  const fin = () => { if (fini || !M) return; fini = true; sc.remove(hel); try { helA.pause(); } catch (e) {} sonsCourts.delete(helA); finCine(); placerCamera(true); };
+  const haut = p.clone().addScaledVector(dir, 20).setY(p.y + 19), vise = cam.position.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6)), vise0 = vise.clone(), t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0;
+  const fin = () => { if (fini || !M) return; fini = true; moi.g.visible = true; sc.remove(hel); sc.remove(hel.userData.tache); try { helA.pause(); } catch (e) {} sonsCourts.delete(helA); finCine(); placerCamera(true); };
   M.passerBtn = boutonPasser(fin);
-  M.cine = { t0, gel: true, maj: (now) => { if (fini) return; const dt = Math.min(.05, Math.max(0, now - prec) / 1000); clk += dt * (M.vite || 1); prec = now; const u = clk; M.cine.u = u; const k = Math.min(1, u / 9);
-    hel.position.lerpVectors(D, F, Math.max(0, (u - 1) / 10)); hel.userData.cone.visible = hel.position.clone().sub(p).dot(dir) > 6;   // (le faisceau, une fois qu'il est passé devant : pas dans l'objectif) hel.rotation.z = .08; hel.userData.rotor.rotation.y += dt * 28; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+  M.cine = { t0, gel: true, maj: (now) => { if (fini) return; const dt = Math.min(.05, Math.max(0, now - prec) / 1000); clk += dt * (M.vite || 1); prec = now; const u = clk; M.cine.u = u; const k = Math.min(1, u / 11);
+    hel.position.lerpVectors(D, F, Math.max(0, (u - .5) / 10.5)); const cn = hel.userData.cone, ta = hel.userData.tache; cn.visible = ta.visible = hel.position.clone().sub(p).dot(dir) > 3;   /* (le faisceau, une fois qu'il est passé devant : pas dans l'objectif) */
+    cn.rotation.z = .35 + Math.sin(u * 1.1) * .3; cn.rotation.x = .3 + Math.sin(u * .7 + 1) * .35;   /* (le projecteur balaie le sol : il cherche des survivants… à côté de nous) */
+    cn.scale.y = 30; hel.updateMatrixWorld(true); const bout = cn.localToWorld(new THREE.Vector3(0, -1, 0)), o0 = cn.localToWorld(new THREE.Vector3(0, 0, 0)), dv = bout.clone().sub(o0), kk = dv.y < -.01 ? (p.y + .06 - o0.y) / dv.y : 1;
+    ta.position.copy(o0).addScaledVector(dv, kk); ta.position.y = p.y + .06; cn.scale.y = 30 * Math.max(.2, kk); hel.rotation.z = .08; hel.userData.rotor.rotation.y += dt * 28; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
     helA.volume = Math.max(0, Math.min(.8, 1 - Math.abs(k - .5) * 2.2)) * .9;
     // on lève les yeux : la caméra, près de soi, suit l'hélico qui passe, haut dans le ciel
-    cam.position.copy(camP); if (u > .8) vise.lerp(haut, .04); cam.lookAt(vise);   // (on lève les yeux vers le ciel, devant)
-    if (u > 2 && dit === 0) { dit = 1; dire(M.moiNum, cri); }
-    if (u > 6.2 && dit === 1) { dit = 2; dire(autre, reponse); }
-    if (u > 11.5) fin(); } };
+    const devant = hel.position.clone().sub(p).dot(dir);
+    moi.g.visible = u > 8;   // (à hauteur de ses yeux, on ne voit pas sa propre tête)
+    cam.position.lerp(u > 8 ? camP : oeil, u > 8 ? .07 : .12); if (u > 8) vise.lerp(vise0, .07); else if (u > .8) vise.lerp(devant > 12 ? hel.position.clone().lerp(haut, .5) : haut, .04); cam.lookAt(vise);   // (on lève les yeux vers le ciel, puis, quand l'équipier parle, on revient sur nous)
+    if (u > 3.2 && dit === 0) { dit = 1; dire(M.moiNum, cri); }
+    if (u > 8.2 && dit === 1) { dit = 2; dire(autre, reponse); }
+    if (u > 13.5) fin(); } };
 }
 // le bandeau de l'objectif, toujours affiché en haut pendant la partie : où chercher, où aller
 function objectifApo() {
@@ -8323,6 +8335,8 @@ function animerEquipe(now) {
 }
 // la salle des fêtes, à l'apocalypse : au premier pas dans l'escalier qui descend au bar, l'équipier qui nous suit se fait attraper
 // par trois zombies, derrière nous (une fois par visite) ; il nous crie de partir… et il meurt. On continue seul, ou avec l'autre équipier.
+// comment on nous appelle, à l'apocalypse : par le nom du héros qu'on joue (Wesker, Chris…), sinon par notre prénom
+const nomApo = () => M.perso && HEROS[M.perso] ? HEROS[M.perso].court : ((((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "Hé");
 function sacrificeApo(now) {
   const moi = moiApo(); if (!moi || M.cine || M.sacrificeL === M.L || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || !M.equipe) return;
   const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (!(h < -.15 && h > -1.2)) return;
@@ -8341,7 +8355,7 @@ function sacrificeApo(now) {
     zs.forEach((z, i) => { const f = Math.min(1, u / 1.4), cx = vx + Math.sin(z.ang) * .8, cz = vz + Math.cos(z.ang) * .8; z.x = z.tx = z.x0 + (cx - z.x0) * f; z.z = z.tz = z.z0 + (cz - z.z0) * f; if (u > 1.4) z.coupT = performance.now() - (i * 120 % 300); });
     if (u > 1.4 && !mort) { q.flashT = performance.now() + 120; const dx = Math.sin(u * 23) * .05; q.g.position.x = vx + dx;
       if (u > giclee) { giclee = u + .18; jetSang(vx + (Math.random() - .5) * .3, .75, vz - .15); sangAuSol(vx + (Math.random() - .5) * 1.4, vz + (Math.random() - .5) * 1.4, 0, .6 + Math.random() * .6); if (Math.random() < .5) sonBruit(.12, 900, .35); } }
-    if (u > 1.7 && !cri) { cri = true; dire(EQUIPIER(k), `${((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]} ! Va-t'en !!! C'est trop tard pour moi… Haaaaaa !`); }
+    if (u > 1.7 && !cri) { cri = true; dire(EQUIPIER(k), `${nomApo()} ! Va-t'en !!! C'est trop tard pour moi… Haaaaaa !`); }
     if (u > 4.6 && !mort) { mort = true; e.vies = 0; e.mort = true; revenantPlus(e.id); q.info.mortT = performance.now(); q.cible = null; q.chemin = []; flaqueMort(q); majHudApo(); M.ctx.surInfo && M.ctx.surInfo(`💀 ${nom} s'est sacrifié…`); }
     if (u > 6.4) { finCine(); placerCamera(true);
       // (pour celui qui mène les zombies : ils deviennent de vrais zombies, qui nous poursuivent ; pour les autres, ils s'en vont)
@@ -8363,7 +8377,7 @@ function horlogeApo(now) {
   const dx = T[0] - mp.x, dz = T[1] - mp.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d; let ax = mp.x + ux * 3, az = mp.z + uz * 3;
   if (!M.L.limites(ax, az)) { ax = mp.x + ux * 1.8; az = mp.z + uz * 1.8; }
   const dep = [ax + ux * 4, az + uz * 4], p = ajouterAncien({ ...habillerHeros({ numero: PNJ_HORLOGE, nom: HEROS[h].nom, initiales: "" }, h), pnj: true, x: dep[0], z: dep[1] }); if (!p) return;
-  const nom = HEROS[h].court, prenom = (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "Hé";
+  const nom = HEROS[h].court, prenom = nomApo();
   moi.cible = null; moi.chemin = []; p.cible = new THREE.Vector3(ax, 0, az);
   // nos équipiers : sur le côté, pour ne pas cacher la scène (la caméra est de l'autre côté)
   (M.equipe || []).forEach((e, k) => { const q = M.gens.get(EQUIPIER(k)); if (!q || e.mort) return; const r = 1.5 + k, x = mp.x + uz * r - ux * .5, z = mp.z - ux * r - uz * .5; if (M.L.limites(x, z)) { q.g.position.x = x; q.g.position.z = z; } q.cible = null; q.chemin = []; });
