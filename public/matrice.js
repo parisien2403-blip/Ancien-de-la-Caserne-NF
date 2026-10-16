@@ -9511,6 +9511,7 @@ function videoDJ(c) { let v = M.videoDJ;
 const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false, t: 0 };
 function manette() {
   const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
+  if (!M || !(M.ctx.moiInfo && M.ctx.moiInfo().admin)) return;   // (pour l'instant, l'administrateur seul : le temps des essais)
   const g = navigator.getGamepads ? [...navigator.getGamepads()].find(q => q && q.connected) : null; if (!g || !M || !M.L) { mireGB(null); return; }
   if (!MAN.vu) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, A pour agir, gâchette droite pour tirer, Start pour le relief 3D"); }
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
@@ -9552,7 +9553,7 @@ function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "
   if (!d) { d = M.mireEl = document.createElement("div"); d.style.cssText = "position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #9cff6a;border-radius:50%;box-shadow:0 0 8px #9cff6a;pointer-events:none;z-index:7"; M.ctx.conteneur.appendChild(d); }
   d.style.display = M.relief ? "none" : ""; d.style.left = ((m.x + 1) / 2 * 100) + "%"; d.style.top = ((1 - m.y) / 2 * 100) + "%"; }
 // le relief : chaque œil a sa moitié d'écran (côte à côte, comprimée : les lunettes l'étirent)
-export function relief(on) { if (!M) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
+export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
 export function reliefProfondeur(k) { if (M) M.reliefSep = .064 * k; }
 function rendreRelief(rendu) { const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
