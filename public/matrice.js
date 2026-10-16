@@ -6265,7 +6265,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
 /* ----- le combat, au mess (gb-mess) : les quatre et nous, en ligne, vus de dos ; on vise Bouffe-tout du doigt, la lance crache son faisceau -----
    immobile, il est facile à toucher ; touché, il repart aussitôt ; en mouvement, c'est bien plus dur. Un tir manqué brûle ce qu'il touche.
    Il peut foncer sur nous et nous couvrir de slime : quatre vies. Sa jauge vide : le piège à fantômes */
-const LIGNE_GB = 6.4, PV_GB = 170;
+const LIGNE_GB = 6.4, PV_GB = 125;
 let texLueur = null, texBrulure = null;
 const lueurGB = () => texLueur || (texLueur = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.25, "rgba(255,230,190,.85)"); g.addColorStop(.6, "rgba(255,140,60,.28)"); g.addColorStop(1, "rgba(255,80,40,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
 const brulureTex = () => texBrulure || (texBrulure = tex(toile(256, 256, (x) => {   // (une tache de brûlé irrégulière : le centre charbonneux, l'auréole brune, la suie qui fuse en étoile)
@@ -6414,7 +6414,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .6 : .28;
     let B2;
     if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); C.touche = true; if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
-      if (fuit) { C.contact += dt; if (C.contact > .18 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
+      if (fuit) { C.contact += dt; if (C.contact > .24 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
     else { const h = ray.intersectObjects(C.cibles, false)[0]; B2 = h ? h.point.clone() : A.clone().addScaledVector(dir, 25);
       if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 28)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir, cle); } if (fuit) C.contact = 0; }
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
@@ -6422,7 +6422,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .6 : .28) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
-    tir("moi", A, hS.clone().sub(A).normalize(), 7, true); }
+    tir("moi", A, hS.clone().sub(A).normalize(), 8.5, true); }
   // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
   for (const p of M.gbScene ? M.gbScene.persos : []) { p.tirT -= dt; const tient = C.fini && !S.capFin;
     const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
