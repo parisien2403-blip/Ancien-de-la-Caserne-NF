@@ -6323,6 +6323,8 @@ function musiqueRencontre(on) { if (!M) return;
     let a = M.musRencontre; if (!a) { a = M.musRencontre = new Audio("sons/sh-rencontre.mp3"); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); return; }
   const a = M.musRencontre; if (!a || a.paused) return; if (VOLUME_FIGE) { a.pause(); return; }
   clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .04); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
+// la sirène, qui prévient : il arrive
+function sirenePH(ms = 9000) { try { const a = new Audio("sons/sh-sirene.mp3"); a.volume = 1; a.play().catch(() => {}); sonsCourts.add(a); setTimeout(() => { if (VOLUME_FIGE) { a.pause(); return; } const t1 = performance.now(), b = () => { const k = (performance.now() - t1) / 2000; if (k >= 1) { a.pause(); return; } a.volume = 1 - k; requestAnimationFrame(b); }; b(); }, ms); return a; } catch (e) { return null; } }
 // le thème de Pyramid Head : dès qu'il apparaît, et tant qu'on est dans le mess avec lui
 function musiquePyramid(on) { if (!M) return; let a = M.musPyr;
   if (on) { if (!a) { a = M.musPyr = new Audio("sons/sh-pyramid.mp3"); a.loop = true; } clearInterval(a.fondu); a.volume = .9; if (a.paused) a.play().catch(() => {}); return; }
@@ -6354,7 +6356,7 @@ function lacherBetesSH() {
   if (base === "etage" && e >= 4) { for (let n = 1; n < ET.N; n++) for (let k = 0; k < 2; k++) {   /* (pas au rez-de-chaussée) */ const x = (Math.random() * 2 - 1) * (ET.CX0 - 1.5); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n); } return; }   // (les infirmières : seulement dans les couloirs des étages)
   if (e < 4) return;
   if (base === "mess" && e >= 9) return;   /* (le mess, après le réveil au sous-sol : vide) */
-  if (base === "mess") { for (let k = 0; k < 2; k++) { const q = pointSH(10); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } if (e >= 7 && e < 9) { const q = pointSH(11); if (q) creerBeteSH("pyramid", q[0], q[1], q[2]).portee = 60; } return; }
+  if (base === "mess") { for (let k = 0; k < 2; k++) { const q = pointSH(10); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } if (e >= 7 && e < 9) { const q = pointSH(11); if (q) { const ph = creerBeteSH("pyramid", q[0], q[1], q[2]); ph.portee = 60; ph.lentT = performance.now() + 4000; sirenePH(8000); } } return; }   /* (il est toujours là : la sirène prévient, et il met un moment à venir) */
   if (base === "fetes") { for (let k = 0; k < 2; k++) { const q = pointSH(8); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } return; }   /* (dans la salle, pas au bar) */
   const nb = { grande: 8, rue: e >= 10 ? 0 : 4 }[base] || 0;
   for (let k = 0; k < nb; k++) { const q = pointSH(12); if (q) creerBeteSH("capuche", q[0], q[1], q[2]); }   /* (dehors : seulement les monstres sans bras) */
@@ -6501,7 +6503,7 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
       pyr.surMort = () => setTimeout(() => M && jamesFin(pyr), 1800); };
     dialogueSH(SHN.angela, [[null, null, 1600], [SHN.angela, "TOI ! Je te reconnais… c'est toi !"], ["moi", "Angela ? Calme-toi… Qu'est-ce qui se passe ?"], [SHN.angela, "Tu sais où elle est ! Tu sais où est ma maman ! Tu l'as toujours su !"],
       ["moi", "Mais non… je ne comprends rien, je te jure."], [SHN.angela, "Menteur ! Ils mentent tous ! Le couteau… le feu… tout brûle, ici, tout le temps…"], [SHN.angela, "Pourquoi tu me regardes comme ça ?! ARRÊTE DE ME REGARDER !"],
-      geste(sortir), [null, null, 8500], geste(() => { M.shRegard = null; }), ["moi", "Non… pas lui… pas maintenant."], [null, null, 600]],
+      geste(() => sirenePH(10000)), ["moi", "Cette sirène… Non…", 3600], geste(sortir), [null, null, 8500], geste(() => { M.shRegard = null; }), ["moi", "Non… pas lui… pas maintenant."], [null, null, 600]],
       () => { sortir(); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); M.ctx.surInfo && M.ctx.surInfo("🔺 Il faut au moins 24 balles pour l'arrêter. Tiens bon !"); }, { musique: false }); return; }
   // le passage de lumière, plus haut dans la rue
   if (e >= 12 && !M.L.passage) { const g = new THREE.Group(), [x, z] = RUE_PASSAGE; g.position.set(x, 0, z); M.scene.add(g);
@@ -6705,12 +6707,11 @@ function histoireSH(now) {
       q = q || [mp.x, mp.z - 9, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; brumeSH({ x: q[0], y: q[2], z: q[1] }, 4000);
       const v = placeLibre(q[0] + (mp.x - q[0]) * .3, q[1] + (mp.z - q[1]) * .3) || [mp.x, mp.z - 3]; vic = creerBeteSH("bras", v[0], v[1], mp.y); vic.cine = true; pyr.cineCible = vic;
       M.shRegard = vic.g.position; };
-    const sir = new Audio("sons/sh-sirene.mp3"); sir.volume = 1;
     const debut = avecMaria ? [[null, null, 1600], [SHN.maria, "C'est ici que tout recommence…"], ["moi", "Qu'est-ce qu'il y a, ici ? Pourquoi tu m'as amené là ?"], [SHN.maria, "Écoute… Tu l'entends ?"]]
       : [[null, null, 1600], ["moi", "Il y a quelqu'un… ?"], ["moi", "La clé de James… Une issue, il disait. Tu parles."], ["moi", "Ce bruit… On dirait…"]];
     const finale = avecMaria ? [geste(() => { M.shRegard = null; }), [SHN.maria, `Il est là… Pardonne-moi, ${nom} !`, 2600], geste(() => evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 600, 1.7)), [null, null, 1500]]
       : [geste(() => { M.shRegard = null; }), ["moi", "Qu'est-ce que c'est que… ÇA ?!", 2400], [null, null, 600]];
-    dialogueSH(SHN.maria, [...debut, geste(() => { musiquePyramid(true); sir.play().catch(() => {}); setTimeout(() => { try { sir.pause(); } catch (e2) {} }, 9000); }), [null, null, 1400], geste(sortir), [null, null, 8200], ...finale],
+    dialogueSH(SHN.maria, [...debut, geste(() => sirenePH(10000)), [null, null, 4200], geste(() => { musiquePyramid(true); sortir(); }), [null, null, 8200], ...finale],   /* (la sirène d'abord, seule, pour prévenir ; puis il apparaît) */
       () => { sortir(); musiquePyramid(true); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); if (avecMaria) evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); M.ctx.surInfo && M.ctx.surInfo("🔺 Les balles ne le tuent pas… elles le ralentissent seulement."); }, { musique: false }); }
   if (lieu === "sh-etage" && e === 8 && etageDe(moi) === ET.N && !M.shEddieVu) { M.shEddieVu = true;
     const x = moi.g.position.x > 0 ? moi.g.position.x - 6 : moi.g.position.x + 6, p = poserPerso(SHN.eddie, x, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" }; apparaitreSH(p); noterCarteSH(SHN.eddie, 0, 0);
