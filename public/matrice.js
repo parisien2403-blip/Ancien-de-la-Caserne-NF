@@ -462,6 +462,7 @@ export function dessinerBonhomme(o, tete) {
         : o.pose === "batterie3" ? (sens > 0 ? [4, 150] : [196, 150]) : o.pose === "batterie0" ? (sens > 0 ? [80, 238] : [120, 238])
         : o.pose === "salut" && sens < 0 ? [126, 64]   // le salut militaire : la main droite au bord du képi
         : o.pose === "tir" && sens < 0 ? [214, 152]   // il tire : le bras droit tendu devant lui, à l'horizontale
+        : o.pose === "tirFace" && sens < 0 ? [112, 186]   // il tire droit devant (vers le fond, ou vers nous) : le bras tendu en raccourci, la main devant la poitrine
         : o.pose === "slow" ? (sens > 0 ? [36, 168] : [44, 158])   // le slow : les bras sur les épaules de l'autre
         : profil ? (sens > 0 ? [26, 190] : [34, 172])   // de profil : les deux bras tendus devant, griffes en avant
         : assis ? (sens > 0 ? [74, 268] : o.pose === "boire" ? [104, 152] : [130, 214])   // une main sur la cuisse, l'autre tient le verre (ou le porte à la bouche)
@@ -559,7 +560,10 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#e4e8ec"; x.beginPath(); x.moveTo(16, -9); x.lineTo(78, -4); x.lineTo(92, 2); x.lineTo(16, 9); x.closePath(); x.fill(); x.strokeStyle = "#5a5e64"; x.lineWidth = 2; x.stroke(); x.fillStyle = "rgba(130,15,15,.8)"; x.fillRect(44, -4, 26, 9);
       x.restore(); x.fillStyle = peau; x.beginPath(); x.arc(hx, hy, 10, 0, 7); x.fill(); }
     // à l'apocalypse : le pistolet, dans la main droite (pointé vers le sol, ou devant soi quand on tire)
-    if (o.arme && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
+    if (o.arme && mains[1] && !assis && o.pose === "tirFace") { const [hx, hy] = mains[1];   /* (le pistolet, braqué droit devant : on voit la culasse en raccourci et la bouche du canon) */
+      x.fillStyle = "#1b1b1d"; x.beginPath(); x.roundRect(hx - 15, hy - 28, 30, 28, 5); x.fill(); x.fillStyle = "#3a3a3e"; x.fillRect(hx - 11, hy - 25, 22, 5);
+      x.fillStyle = "#000"; x.beginPath(); x.arc(hx, hy - 14, 6, 0, 7); x.fill(); x.strokeStyle = "#55555a"; x.lineWidth = 2; x.stroke(); x.fillStyle = peau; x.beginPath(); x.arc(hx, hy + 2, 10, 0, 7); x.fill(); }
+    else if (o.arme && mains[1] && !assis) { const [hx, hy] = mains[1], a = Math.atan2(hy - 158, hx - (profil ? 104 : 152));
       x.save(); x.translate(hx, hy); x.rotate(a); x.fillStyle = "#1b1b1d";
       x.beginPath(); x.roundRect(-4, -6, 34, 11, 2); x.fill();                                // la culasse et le canon
       x.fillStyle = "#3a3a3e"; x.fillRect(2, -5, 26, 3);
@@ -5797,7 +5801,8 @@ export async function ouvrir(ctx) {
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
         if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
-          if (p.corps.material.map !== p.poses.tir) { p.corps.material.map = p.poses.tir; p.corps.material.needsUpdate = true; }
+          const tp = p.tirVue && p.poses[p.tirVue] ? p.poses[p.tirVue] : p.poses.tir;   /* (le bras du côté de la cible ; droit devant si elle est devant ou derrière) */
+          if (p.corps.material.map !== tp) { p.corps.material.map = tp; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
         else if (p.info.salutT && performance.now() - p.info.salutT < 2600 && p.poses.salut) {   // le gendarme salue
           if (p.corps.material.map !== p.poses.salut) { p.corps.material.map = p.poses.salut; p.corps.material.needsUpdate = true; }
@@ -7388,7 +7393,9 @@ function tirer(z) {
   impactZ(z, dx, dz); envoyerWS({ t: "z_tir", id: z.id, dx, dz });
   if (estChefZ()) blesserZ(z, dx, dz);
 }
-function eclairDuCanon(p, dx, dz) {
+function vueTir(p, dx, dz) { if (!M || !M.camera) return; const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), cote = dx * dr.x + dz * dr.z;
+  p.tirVue = Math.abs(cote) < .55 ? "tirFace" : cote > 0 ? "tir" : "tirG"; }
+function eclairDuCanon(p, dx, dz) { vueTir(p, dx, dz);
   texEclair = texEclair || tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,255,220,1)"); g.addColorStop(.4, "rgba(255,200,60,.9)"); g.addColorStop(1, "rgba(255,120,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const H = tailleBonhomme() * hauteurDe(p), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texEclair, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sp.scale.set(.7, .7, 1); sp.position.set(p.g.position.x + dx * .55, p.g.position.y + H * .6, p.g.position.z + dz * .55); M.scene.add(sp);
@@ -8098,7 +8105,7 @@ async function dessinerCorps(p) {
   /* chaque pose n'est dessinée que la première fois qu'elle sert (avec beaucoup de monde, le téléphone ne garde en mémoire que les poses vraiment utilisées) */
   const pose = n => () => tex(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: n }, tete));
   const fab = { repos: () => tex(c), mi: pose("mi"), haut: pose("haut"), disco1: pose("disco1"), disco2: pose("disco2"), genoux1: pose("genoux1"), genoux2: pose("genoux2"), madison1: pose("madison1"), madison2: pose("madison2"), madison3: pose("madison3"), madison4: pose("madison4"), madison5: pose("madison5"), dos: pose("dos"), thriller1: pose("thriller1"), thriller2: pose("thriller2"), thriller3: pose("thriller3"), profil: pose("profil"), profilD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "profil" }, tete)),
-    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), ...(p.info.salue ? { salut: pose("salut") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme || p.info.couteau ? { tir: pose("tir") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
+    assis: pose("assis"), boire: pose("boire"), ...(p.info.balai ? { balai1: pose("balai1"), balai2: pose("balai2") } : {}), ...(p.info.essuie ? { essuyer: pose("essuyer") } : {}), ...(p.info.salue ? { salut: pose("salut") } : {}), slow: pose("slow"), slowD: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "slow" }, tete)), ...(p.info.arme || p.info.couteau ? { tir: pose("tir"), tirG: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "tir" }, tete)), tirFace: pose("tirFace") } : {}), ...(p.info.smith || p.info.musicien === "basse" || p.info.musicien === "guitare" || p.info.musicien === "dmguitare" ? { guitare1: pose("guitare1"), guitare2: pose("guitare2") } : {}),
     ...(p.info.ymca ? { ymcaY: pose("ymcaY"), ymcaM: pose("ymcaM"), ymcaC: pose("ymcaC"), ymcaA: pose("ymcaA") } : {}), ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
