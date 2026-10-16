@@ -9540,8 +9540,8 @@ function manette() {
   if (lx || ly) { const f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
     const d = new THREE.Vector3(f.x * -ly - f.z * lx, 0, f.z * -ly + f.x * lx).normalize();   // (devant : joystick vers le haut ; à droite : vers la droite)
     if (now > MAN.allerT) { MAN.allerT = now + 200; const p = moi.g.position;
-      for (const lg of [1.7, 1.1, .6]) { const tx = p.x + d.x * lg, tz = p.z + d.z * lg; if (M.L.limites(tx, tz)) { allerVers(tx, tz, true, p.y); break; } } }
-    MAN.bouge = true; }
+      for (const lg of [1.7, 1.1, .6]) { const tx = p.x + d.x * lg, tz = p.z + d.z * lg; if (M.L.limites(tx, tz)) { allerVers(tx, tz, true, p.y); if (M.repere) M.repere.material.opacity = 0; break; } } }   /* (à la manette, pas de cercle jaune : il ne sert qu'au doigt) */
+    MAN.bouge = true; if (M.repere) M.repere.material.opacity = 0; }
   else if (MAN.bouge) { MAN.bouge = false; if (!M.marcheAuto) { moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z }); } }
   // tirer : le zombie (ou le monstre) le plus proche, devant soi de préférence
   if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
