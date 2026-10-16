@@ -8602,7 +8602,7 @@ function majPlaqueGB() {
   M.plaqueObj.position.set(q.x, (M.L.hauteur ? M.L.hauteur(q.x, q.z, {}) : 0) + .012, q.z); M.plaqueObj.rotation.y = q.r; }
 // (S.O.S. Fantômes) l'affiche du film, au mess, dans la petite pièce à droite en entrant, contre le mur : on s'en approche, « As-tu peur des fantômes ? »
 // (le temps des essais : l'administrateur seul la voit)
-const AFFICHE_GB = { x: 4.1, y: 1.75, z: 8.74, w: 1.05, h: 1.575 };
+const AFFICHE_GB = { x: 4.1, y: 2.08, z: 8.75, w: 1.0, h: 1.5 };   // (centrée sur le mur, entre le haut du lambris et le haut de la cloison : on la voit en entier)
 function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !== undefined) return; const admin = !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
   if (!admin) { M.L.afficheGB = null; return; }
   const t = new THREE.TextureLoader().load("images/gb/affiche.webp"); t.colorSpace = THREE.SRGBColorSpace; const A = AFFICHE_GB, g = new THREE.Group();
@@ -8831,7 +8831,11 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false;   // (la cour de l'Ecto-1 : sans les voitures garées)
+  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false;
+  // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
+  // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
+  { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
+      const si = sil.has(o); o.renderOrder = si ? 3 : 2; o.material.depthWrite = false; o.material.polygonOffset = true; o.material.polygonOffsetFactor = si ? -6 : -4; o.material.polygonOffsetUnits = si ? -12 : -8; } }   // (la cour de l'Ecto-1 : sans les voitures garées)
   if (id === "bttf-cour") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, bttf: true });
   if (id === "gb-cour" || id === "gb-mess") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, gb: true });   // (S.O.S. Fantômes : la cour et le mess rien qu'à soi)   // (la cour d'honneur rien qu'à soi, pour la DeLorean)
   if (L.interieur) { soleil.intensity = 0; soleil.castShadow = false; scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35); scene.fog = null; scene.background = new THREE.Color(0x2a2420); }
