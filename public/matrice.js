@@ -6018,11 +6018,29 @@ const CARTE_MUR = { de: [0, 26.5], dir: [0, 1] };
 const ROUTE_DETRUITE = [-20.6, -14.6, -83.4, -80.6];   /* [x0, x1, z0, z1] : la route effondrée, après la fenêtre des douches */   /* (d'où l'on cherche le mur du bar, et dans quelle direction) */
 // la carte de la caserne : en grand, comme l'affiche ramassée ; un rond rouge là où l'on a rencontré quelqu'un
 const CARTE_PX = (x, z) => [70 + (x + 24) * 20, 120 + (z + 140) * 20];
+/* les noms des lieux sur la carte : chacun n'apparaît qu'une fois qu'on y est allé — [clé, texte, x, z (où l'écrire), taille, vu si… (lieu, x, z, y) ] */
+const CARTE_NOMS = [
+  ["cour", "Cour d'honneur", 0, -2, 30, (l, x, z, y) => l === "sh-grande" && Math.hypot(x, z + 2) < 9 && Math.abs(y) < 1],
+  ["mess", "Mess", -14.5, 8.3, 26, l => l === "sh-mess"],
+  ["porche", "Porche", 0, 24, 24, (l, x, z) => l === "sh-grande" && Math.abs(x) < 3 && z > 18],
+  ["rue", "Rue du Faubourg-Poissonnière", 0, 30.6, 26, l => l === "sh-rue", true],
+  ["fetes", "Bar · Salle des fêtes", 13, 4.5, 22, l => l === "sh-fetes"],
+  ["S", "S", -8.4, 16, 22, (l, x, z) => l === "sh-etage" ? x < 0 : l === "sh-grande" && Math.hypot(x + 8.4, z - 13.8) < 3],
+  ["R", "R", 8.4, 16, 22, (l, x, z) => l === "sh-etage" ? x > 0 : l === "sh-grande" && Math.hypot(x - 8.4, z - 13.8) < 3],
+  ["terrasse", "Terrasse", 0, -98.5, 24, (l, x, z, y) => l === "sh-grande" && y > 2.5 && Math.hypot(x, z + 94.5) < 9],
+  ["horloge", "Horloge jaune", 22, -128, 22, (l, x, z) => l === "sh-grande" && Math.hypot(x - 27.2, z + 131.2) < 9],
+  ["encombrants", "Encombrants", -7.7, -41.5, 22, (l, x, z) => l === "sh-grande" && Math.hypot(x + 7.7, z + 38.5) < 5],
+  ["culdesac", "Cul-de-sac", -19, -70, 20, () => M.shCroix]];
+function lieuxVusSH() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L || !M.L.sh) return; M.shVus = M.shVus || new Set(); const p = moi.g.position;
+  for (const [k, , , , , vu] of CARTE_NOMS) if (!M.shVus.has(k) && vu(M.lieu, p.x, p.z, p.y)) M.shVus.add(k); }
 function ouvrirCarteSH() { if (!M || M.cadranEl) return;
   const W = document.createElement("div"); W.style.cssText = "position:absolute;inset:0;z-index:11;background:radial-gradient(ellipse at center,rgba(38,34,30,.82) 0%,rgba(0,0,0,.97) 75%)";
   /* (la carte est haute : on la fait défiler du doigt, de la rue jusqu'à l'horloge ; les mains, elles, ne bougent pas) */
-  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y";
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y";
   const box = document.createElement("div"); box.style.cssText = "position:relative;width:min(calc(100% - 24px),520px);margin:18px auto 30px;transform:rotate(-.6deg)";
+  // notre position, au moment où l'on ouvre la carte (dans un bâtiment : sa porte sur la carte) ; la direction où l'on regarde
+  const moi = M.gens.get(M.moiNum), dir = new THREE.Vector3(); M.camera.getWorldDirection(dir);
+  const ici = M.lieu === "sh-grande" && moi ? [moi.g.position.x, moi.g.position.z] : LIEU_CARTE[M.lieu] || null;
   const cv = document.createElement("canvas"); cv.width = 1290; cv.height = 3640; cv.style.cssText = "display:block;width:100%;height:auto;box-shadow:0 10px 40px rgba(0,0,0,.85)";
   const im = new Image(); im.onload = () => { if (!M) return; const x = cv.getContext("2d"); x.drawImage(im, 0, 0);
     // le papier vieilli : presque sans couleur, jauni, sali ; des plis, des taches
@@ -6030,13 +6048,31 @@ function ouvrirCarteSH() { if (!M || M.cadranEl) return;
     for (let k = 0; k < 26; k++) { const cx = Math.random() * 1290, cy = Math.random() * 3640, r = 60 + Math.random() * 220, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${k % 2 ? "90,70,40" : "255,250,235"},${.05 + Math.random() * .07})`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); }
     x.lineWidth = 3; for (let k = 0; k < 14; k++) { const y0 = Math.random() * 3640; x.strokeStyle = "rgba(70,60,50,.18)"; x.beginPath(); x.moveTo(0, y0); x.lineTo(1290, y0 + (Math.random() - .5) * 300); x.stroke(); }
     const vg = x.createRadialGradient(645, 1820, 600, 645, 1820, 2100); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(40,30,20,.45)"); x.fillStyle = vg; x.fillRect(0, 0, 1290, 3640);
+    // les noms des lieux déjà visités, imprimés sur la carte
+    x.textAlign = "center"; x.textBaseline = "middle"; for (const [k, t, lx, lz, sz, , it] of CARTE_NOMS) { if (!(M.shVus && M.shVus.has(k))) continue; const [px, py] = CARTE_PX(lx, lz);
+      x.font = `${it ? "italic " : ""}bold ${sz}px 'DejaVu Sans', Verdana, Arial, sans-serif`; x.lineWidth = 5; x.strokeStyle = "rgba(236,230,218,.95)"; x.strokeText(t, px, py); x.fillStyle = it ? "#2c3c62" : "#28262a"; x.fillText(t, px, py); }
+    x.textAlign = "start"; x.textBaseline = "alphabetic";
     // nos marques, au feutre rouge : un rond là où l'on a rencontré quelqu'un ; une croix sur la route effondrée
     if (M.shCroix) { const [px, py] = CARTE_PX((ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2); x.strokeStyle = "rgba(180,20,20,.9)"; x.lineWidth = 12; x.lineCap = "round"; x.beginPath(); x.moveTo(px - 42, py - 42); x.lineTo(px + 42, py + 42); x.moveTo(px + 42, py - 42); x.lineTo(px - 42, py + 42); x.stroke(); }
     for (const r of M.shCarte || []) { const [px, py] = CARTE_PX(r.x, r.z); x.strokeStyle = "rgba(180,20,20,.88)"; x.lineWidth = 9; x.beginPath(); x.ellipse(px, py, 46, 38, -.2, 0, 6.1); x.stroke();
-      x.font = "italic bold 36px 'Comic Sans MS', 'Segoe Print', cursive"; x.fillStyle = "rgba(160,15,15,.92)"; x.fillText(r.nom, px + 46, py - 30); } };
+      x.font = "italic bold 36px 'Comic Sans MS', 'Segoe Print', cursive"; x.fillStyle = "rgba(160,15,15,.92)"; x.fillText(r.nom, px + 46, py - 30); }
+    // nous : un triangle vert, la pointe dans le sens où l'on regarde
+    if (ici) { const [px, py] = CARTE_PX(ici[0], ici[1]), a = Math.atan2(dir.z, dir.x); x.save(); x.translate(px, py); x.rotate(a);
+      x.fillStyle = "#1fbf3a"; x.strokeStyle = "#0b3d14"; x.lineWidth = 6; x.lineJoin = "round"; x.beginPath(); x.moveTo(46, 0); x.lineTo(-26, -30); x.lineTo(-26, 30); x.closePath(); x.fill(); x.stroke(); x.restore();
+      requestAnimationFrame(() => { const r2 = cv.getBoundingClientRect(), k = r2.height / 3640; d.scrollTop = Math.max(0, py * k + 18 - d.clientHeight / 2); }); } };
   im.src = "images/sh/carte-caserne.webp";
   const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", "Ranger la carte"); b.textContent = "✕"; b.style.cssText = "position:absolute;top:10px;right:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1a1a1a;font:900 22px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)";
-  box.append(cv); d.append(box); W.append(d, b); d.addEventListener("click", e => { if (e.target === d) b.onclick(); });
+  /* le zoom : pincer à deux doigts, la molette (avec Ctrl, ou le pincement du pavé tactile), ou les boutons ＋ / − ; on garde au centre ce qu'on regardait */
+  let zoom = 1; const zoomer = (z, cx = d.clientWidth / 2, cy = d.clientHeight / 2) => { z = Math.max(1, Math.min(5, z)); if (z === zoom) return;
+    const fx = (d.scrollLeft + cx) / d.scrollWidth, fy = (d.scrollTop + cy) / d.scrollHeight; zoom = z;
+    box.style.width = `calc(min(calc(100% - 24px), 520px) * ${z})`; box.style.margin = z > 1 ? "18px 12px 30px" : "18px auto 30px";
+    d.scrollLeft = fx * d.scrollWidth - cx; d.scrollTop = fy * d.scrollHeight - cy; };
+  const zb = (t, dz, top) => { const e = document.createElement("button"); e.type = "button"; e.textContent = t; e.setAttribute("aria-label", dz > 1 ? "Zoomer" : "Dézoomer"); e.style.cssText = `position:absolute;top:${top}px;right:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:#1a1a1a;font:900 24px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)`; e.onclick = () => zoomer(zoom * dz); return e; };
+  let pince = null; d.addEventListener("touchstart", e => { if (e.touches.length === 2) { const [a, c] = e.touches; pince = { d0: Math.hypot(a.clientX - c.clientX, a.clientY - c.clientY), z0: zoom }; } }, { passive: true });
+  d.addEventListener("touchmove", e => { if (pince && e.touches.length === 2) { e.preventDefault(); const [a, c] = e.touches, r = d.getBoundingClientRect(); zoomer(pince.z0 * Math.hypot(a.clientX - c.clientX, a.clientY - c.clientY) / pince.d0, (a.clientX + c.clientX) / 2 - r.left, (a.clientY + c.clientY) / 2 - r.top); } }, { passive: false });
+  d.addEventListener("touchend", e => { if (e.touches.length < 2) pince = null; });
+  d.addEventListener("wheel", e => { if (!e.ctrlKey) return; e.preventDefault(); const r = d.getBoundingClientRect(); zoomer(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  box.append(cv); d.append(box); W.append(d, b, zb("＋", 1.5, 62), zb("−", 1 / 1.5, 112)); d.addEventListener("click", e => { if (e.target === d) b.onclick(); });
   M.ctx.conteneur.appendChild(W); M.cadranEl = W; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) W.addEventListener(ev, e => e.stopPropagation());
   sonBruit(.25, 3500, .12);   /* (le froissement du papier) */
   b.onclick = () => { W.remove(); if (M) M.cadranEl = null; }; }
@@ -6196,7 +6232,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -6453,7 +6489,7 @@ function peuplerSH(now) {
   if (!M || !M.L || !M.L.sh) return; if (M.shEtape == null) resetSH();
   const dt = Math.min(.05, (now - (M.shT || now)) / 1000); M.shT = now;
   if (M.shPopL !== M.L) { for (const m of M.shMonstres || []) if (!m.p) M.scene.remove(m.g); M.shPopL = M.L; M.shMonstres = []; M.shMariaMess = M.shMariaEntre = false; if (moiApo()) lacherBetesSH(); else M.shPopL = null; }
-  histoireSH(now); animerBetesSH(now, dt); pousserCartons();
+  histoireSH(now); animerBetesSH(now, dt); pousserCartons(); lieuxVusSH();
   if (M.lieu === "sh-grande" && !M.shCroix) { const q = moiApo(); if (q && Math.hypot(q.g.position.x - (ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, q.g.position.z - (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2) < 7 && Math.abs(q.g.position.y) < 1) M.shCroix = true; }   /* (la route effondrée, vue : une croix rouge sur la carte) */
 }
 // la musique de Silent Hill : au bar, « White Noiz » ; ailleurs, quand on explore, « Promise (Reprise) » — l'une s'efface quand l'autre monte
