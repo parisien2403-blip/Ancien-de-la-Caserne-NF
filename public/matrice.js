@@ -458,7 +458,7 @@ export function dessinerBonhomme(o, tete) {
       const disco = DISCO[o.pose], doigt = disco && sens < 0;
       // accroupi : chaque main va sur un genou (sur le genou opposé quand ils se croisent)
       // au Madison : on frappe dans les mains (madison2), ou les bras se balancent
-      const cible = o.pose === "coucou1" && sens < 0 ? [196, 58] : o.pose === "coucou2" && sens < 0 ? [164, 40]   /* (il fait coucou : la main levée, qui s'agite) */
+      const cible = o.pose === "coucou1" && sens < 0 ? [184, 70] : o.pose === "coucou2" && sens < 0 ? [152, 62]   /* (il fait coucou : la main levée, qui s'agite) */
         : o.tirDos && sens < 0 ? [150, 92]   /* (de dos, il tire devant lui : le bras droit levé, tendu vers l'avant) */
         : o.mainsMur ? (sens > 0 ? [18, 112] : [182, 112]) : accroupi ? [(sens > 0 ? GEN[0] : GEN[1])[0], (sens > 0 ? GEN[0] : GEN[1])[1] - DY - 4] : o.pose === "madison2" ? [sens > 0 ? 95 : 105, 228]
         : o.pose === "madison4" ? [sens > 0 ? 46 : 62, 312] : o.pose === "madison5" ? [sens > 0 ? 138 : 154, 312]
