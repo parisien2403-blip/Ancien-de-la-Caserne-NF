@@ -6492,8 +6492,8 @@ function cineRadio() {
     // le brouillard nous enveloppe : il se referme sur nous, de plus en plus épais, jusqu'au blanc
     if (u > 5) { const k = Math.min(1, (u - 5) / 6); sc.fog.color.setHex(0xd9d8d4); sc.fog.near = (1 - k) * 8; sc.fog.far = 2 + (1 - k) * 40; sc.background = sc.fog.color; radioA.volume = Math.max(.25, 1 - Math.max(0, u - 7) * .15); }
     // le titre « SILENT HILL » monte doucement dans le brouillard, reste un instant, puis le blanc l'efface
-    if (u > 7.5 && !titre) { titre = voile("background:linear-gradient(#36403f,#0b0c0d);opacity:0;transition:opacity 2.8s;display:grid;place-items:center");
-      titre.innerHTML = '<img src="images/sh/titre.webp" alt="Silent Hill" style="width:100%;height:100%;object-fit:contain;transform:scale(1);transition:transform 7s ease-out">'; requestAnimationFrame(() => requestAnimationFrame(() => { titre.style.opacity = "1"; titre.firstChild.style.transform = "scale(1.05)"; })); }
+    if (u > 7.5 && !titre) { titre = voile("opacity:0;transition:opacity 2.8s;display:grid;place-items:center");   /* (les lettres seules, dans le brouillard) */
+      titre.innerHTML = '<img src="images/sh/titre.webp" alt="Silent Hill" style="width:min(82%,820px);height:auto;filter:drop-shadow(0 0 6px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(0,0,0,.35));transform:scale(1);transition:transform 7s ease-out">'; requestAnimationFrame(() => requestAnimationFrame(() => { titre.style.opacity = "1"; titre.firstChild.style.transform = "scale(1.05)"; })); }
     if (u > 11.6 && !blanc) { blanc = voile("background:#d9d8d4;opacity:0;transition:opacity 2.4s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
     if (u > 14.4) fin(); } };
 }
