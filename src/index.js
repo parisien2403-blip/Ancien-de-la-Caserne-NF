@@ -500,7 +500,7 @@ export class Compteur extends DurableObject {
       if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse", "z_equipe"].includes(m.t)) return;
       const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
       for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
-    } else if (m.t === "radio_prendre") {
+    } else if (m.t === "radio_prendre" && a.admin) {   // (pour le moment : l'administrateur seul)
       // la radio rouge : le premier qui la ramasse part seul à Silent Hill ; elle réapparaît aussitôt ailleurs, pour les autres
       const r = await this.radio(); if (r.lieu !== a.lieu) return;
       const n = this.placeRadio(r); await this.ctx.storage.put("radio", n); const t = JSON.stringify({ t: "radio", r: n }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }

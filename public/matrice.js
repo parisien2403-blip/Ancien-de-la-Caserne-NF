@@ -6004,7 +6004,7 @@ function creerRadio() { const g = new THREE.Group(), m = o => new THREE.MeshStan
   const dr = new THREE.Mesh(new THREE.TorusGeometry(.06, .006, 6, 20, Math.PI * 1.4), m({ color: 0x5a3820, roughness: .8 })); dr.rotation.x = Math.PI / 2; dr.position.set(-.16, .01, 0); g.add(dr);
   g.userData.led = led; g.scale.setScalar(1.6); return g; }
 function majRadio() {
-  if (!M || !M.scene) return; const r = M.radio, ici = r && r.lieu === M.lieu && M.L && !M.L.apo;
+  if (!M || !M.scene) return; const r = M.radio, ici = r && r.lieu === M.lieu && M.L && !M.L.apo && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   /* (pour le moment, la radio n'apparaît que pour l'administrateur — il la fait venir près de lui depuis « Les personnages ») */
   if (!ici) { if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; } return; }
   if (!M.radioObj || M.radioObj.parent !== M.scene) { M.radioObj = creerRadio(); M.scene.add(M.radioObj); }
   M.radioObj.position.set(r.x, (M.L.hauteur ? M.L.hauteur(r.x, r.z, {}) : 0) + .005, r.z); M.radioObj.rotation.y = r.r; }
@@ -6596,7 +6596,12 @@ function escorteMaria(now, moi) { const E = M.shEscorte = M.shEscorte || { pv: 5
     if (pp.y > 1.5) { const g = viserLibre(0, C3.z1 - C3.PP + 2.2); if (!C3.etage(p, g[0], 0, g[1])) viser(p, porte[0], porte[1]); }   /* (de la terrasse : par l'escalier) */
     else { const R = [[6, -66], [-8, -48], [8, -30], [-6, -14], [7, 2], porte]; E.etape = E.etape || 0;   /* (elle prend le chemin le plus long : en zigzag, de cour en cour) */
       while (E.etape < R.length - 1 && Math.hypot(R[E.etape][0] - pp.x, R[E.etape][1] - pp.z) < 2.2) E.etape++;
-      const c = R[E.etape] === porte ? porte : viserLibre(R[E.etape][0], R[E.etape][1]); viser(p, c[0], c[1]); } } }
+      const c = R[E.etape] === porte ? porte : viserLibre(R[E.etape][0], R[E.etape][1]); viser(p, c[0], c[1]);
+      if (!p.cible) { if (E.etape < R.length - 1) E.etape++; else { p.cible = new THREE.Vector3(c[0], pp.y, c[1]); p.chemin = []; } } } }   /* (point inaccessible : le suivant ; la porte : tout droit) */
+  // bloquée (rien ne bouge depuis 4 s alors qu'elle devrait marcher) : on passe au point suivant
+  if (!E.cache && Math.hypot(mp.x - pp.x, mp.z - pp.z) <= 7) { if (!E.ref || Math.hypot(pp.x - E.ref[0], pp.z - E.ref[1]) > .4) E.ref = [pp.x, pp.z, now];
+    else if (now - E.ref[2] > 4000) { E.ref = [pp.x, pp.z, now]; E.etape = Math.min((E.etape || 0) + 1, 5); p.cible = null; p.chemin = []; p.suite = null;
+      if (E.etape >= 5 && (E.bloque = (E.bloque || 0) + 1) > 2) { const v = viserLibre(porte[0], porte[1] + 1.2); p.g.position.x = v[0]; p.g.position.z = v[1]; brumeSH(p.g.position.clone(), 3000); } } } }   /* (vraiment coincée : elle réapparaît dans le brouillard, devant le mess) */
 function blesserMaria(x, z) { const E = M.shEscorte, p = M.gens.get(SHN.maria); if (!E || !p || p.info.mortT || M.shMort) return; E.pv--; p.flashT = performance.now() + 200; sangAuSol(p.g.position.x, p.g.position.z, p.g.position.y, .8); sonBruit(.12, 900, .35);
   if (E.pv > 0) { dire(SHN.maria, E.pv > 2 ? "Aaah ! Aide-moi !" : "Je… je n'en peux plus…"); return; }
   // Maria est morte : elle tombe ; pour nous, c'est la fin
@@ -8034,6 +8039,12 @@ function placerCamera(net) {
   if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
+  // dehors, sous un toit (un passage couvert, un préau, une voûte) : la caméra reste dessous, même dézoomée (elle passait par-dessus le toit)
+  if (moi && !M.L.interieur) { const now = performance.now(); if (!M.toitT || now - M.toitT > 300 || M.toitL !== M.L) { M.toitT = now; M.toitL = M.L; M.toitY = null;
+      M.rayToit = M.rayToit || new THREE.Raycaster(); M.rayToit.camera = M.camera; M.rayToit.set(new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.8, moi.g.position.z), new THREE.Vector3(0, 1, 0)); M.rayToit.far = 6;
+      const h = M.rayToit.intersectObjects(M.scene.children, true).find(q => q.object.isMesh && !q.object.isSprite && q.object.visible && !(q.object.material && q.object.material.transparent) && !q.object.userData.perso && !(q.object.parent && q.object.parent.userData.perso));
+      if (h) M.toitY = h.point.y; }
+    if (M.toitY != null && pos.y > M.toitY - .35) pos.y = Math.max(moi.g.position.y + 1.3, M.toitY - .35); }
   else if (M.L.boite) { const [a, b, c2, d] = M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
   // jamais derrière un mur : si un mur, un bâtiment se met entre son bonhomme et la caméra, la caméra vient se placer devant (on voit toujours son bonhomme)
   let devantMur = false;
@@ -8053,6 +8064,7 @@ function placerCamera(net) {
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
   else if (devantMur && M.camera.position.distanceTo(vise) > pos.distanceTo(vise)) { M.camera.position.copy(pos); M.camVise.lerp(vise, .2); }   // (devant un mur : tout de suite, sans traverser le mur)
   else { const k = 1 - Math.pow(.94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k); M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
+  if (moi && !M.L.interieur && M.toitY != null && M.camera.position.y > M.toitY - .35) M.camera.position.y = Math.max(moi.g.position.y + 1.3, M.toitY - .35);   /* (sous un toit : jamais au-dessus, même pendant le glissement) */
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
 
