@@ -6346,7 +6346,7 @@ function pointSH(loin, essais = 400) {
   return null; }
 function lacherBetesSH() {
   const base = baseLieu(M.lieu), e = M.shEtape;
-  if (base === "etage" && e >= 4) { for (let n = 0; n < ET.N; n++) for (let k = 0; k < (n ? 2 : 1); k++) { const x = (Math.random() * 2 - 1) * (ET.CX0 - 1.5); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n); } return; }   // (les infirmières : seulement dans les couloirs des étages)
+  if (base === "etage" && e >= 4) { for (let n = 1; n < ET.N; n++) for (let k = 0; k < 2; k++) {   /* (pas au rez-de-chaussée) */ const x = (Math.random() * 2 - 1) * (ET.CX0 - 1.5); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n); } return; }   // (les infirmières : seulement dans les couloirs des étages)
   if (e < 4) return;
   if (base === "mess" && e >= 9) return;   /* (le mess, après le réveil au sous-sol : vide) */
   if (base === "mess") { for (let k = 0; k < 2; k++) { const q = pointSH(10); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } if (e >= 7 && e < 9) { const q = pointSH(11); if (q) creerBeteSH("pyramid", q[0], q[1], q[2]).portee = 60; } return; }
@@ -6685,12 +6685,12 @@ function histoireSH(now) {
     // 10. on repasse le porche : direction la rue
     // 8. en sortant du mess : on voit Maria s'engouffrer dans l'escalier R
     if (e === 7 && M.shDuMess && now > (M.shEntreeT || 0) + 1500) { M.shDuMess = false; const R = (M.L.portails || []).filter(pt => pt.vers === "sh-etage").map(pt => [pt, pt.seuil || centrePortail(pt)]).filter(([, c]) => c).sort((a, b) => b[1][0] - a[1][0])[0];   /* (la porte R : celle de droite, x > 0 ; la S est en face) */
-      if (R) { const c = R[1], sg = c[0] < 0 ? 1 : -1, p = apparaitreSH(poserPerso(SHN.maria, c[0] + 4.5 * sg, c[1])), t0 = performance.now(); noterCarteSH(SHN.maria, c[0], c[1]); if (p) { p.info.allure = 1.5; p.cible = new THREE.Vector3(c[0], 0, c[1]); }
+      if (R) { const c = R[1], sg = c[0] < 0 ? 1 : -1, p = apparaitreSH(poserPerso(SHN.maria, c[0] + .9 * sg, c[1])), t0 = performance.now(); noterCarteSH(SHN.maria, c[0], c[1]); if (p) { p.cible = null; p.chemin = []; }   /* (elle apparaît, immobile, dans le brouillard, juste devant l'entrée R ; puis elle s'y efface) */
         let fini = false; const finir = () => { if (fini) return; fini = true; finCine(); placerCamera(true); retirerAncien(SHN.maria); M.shEtape = 8; };
         M.passerBtn = boutonPasser(finir);
         let u = 0, prec = t0;   /* (le temps de la scène avance image par image : un téléphone qui rame à l'arrivée ne la saute pas) */
         M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now; const q = M.gens.get(SHN.maria); M.camera.position.set(c[0] + 6.8 * sg, 1.75, c[1] + .9); M.camera.lookAt(q ? q.g.position.x : c[0], 1.1, q ? q.g.position.z : c[1]);
-          if (u > 3 && q && !q.fond) { q.fond = true; evanouirSH(SHN.maria, null, 0); } if (u > 6) finir(); } }; } else M.shEtape = 8; }
+          if (u > 3.6 && q && !q.fond) { q.fond = true; evanouirSH(SHN.maria, null, 0); } if (u > 6.4) finir(); } }; } else M.shEtape = 8; }
     // 10. la clé ouvre le cadenas des encombrants
   }
   if (lieu === "sh-rue" && e >= 10 && now > (M.shEntreeT || 0) + 1200) rueFinale(now, moi);
@@ -6799,8 +6799,9 @@ function cineReveil(essai = 0, noir = null) {
   M.cine = { t0, maj: (now) => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now;
     if (!maria) { maria = poserPerso(SHN.maria, p.x + .75, p.z - 1.35, p.y); if (maria) { maria.cible = null; noterCarteSH(SHN.maria, 0, 0); } }
     const q = M.gens.get(SHN.maria), cible = u < 10 && q ? q.g.position : p;
-    const h = u < 10.5 ? .35 : .35 + Math.min(1, (u - 10.5) / 1.5) * 1.25; M.camera.position.set(p.x + .9, p.y + h, p.z + (u < 10 ? 2.1 : 1.4));
-    M.camera.lookAt(cible.x, p.y + (u < 10 ? (q && u > 2 ? 1.2 : .3) : u < 10.5 ? .2 : .9), cible.z - (u < 10 ? 0 : .5));
+    /* (allongé : la caméra en hauteur, de côté — on voit notre bonhomme par terre et Maria debout ; puis on suit Maria vers la porte ; puis on se relève) */
+    if (u < 10.5) { M.camera.position.set(p.x - .6, p.y + 1.9, p.z + 1.8); if (u < 6.6 || !q) M.camera.lookAt(q ? (p.x + q.g.position.x) / 2 : p.x, p.y + .55, q ? (p.z + q.g.position.z) / 2 : p.z); else M.camera.lookAt(q.g.position.x, p.y + .9, q.g.position.z); }
+    else { const h = .35 + Math.min(1, (u - 10.5) / 1.5) * 1.25; M.camera.position.set(p.x + .9, p.y + h, p.z + 1.4); M.camera.lookAt(p.x, p.y + .9, p.z - .5); }
     if (u > 3 && !dit && q) { dit = true; dire(SHN.maria, `Nous nous reverrons très vite, ${prenomSH()}…`); }
     if (u > 6.6 && !part && q) { part = true; q.info.allure = .45; q.cible = new THREE.Vector3(PORTE[0], q.g.position.y, PORTE[1]); q.chemin = [new THREE.Vector3(PORTE[0], q.g.position.y, PORTE[1] - 1.2)]; evanouirSH(SHN.maria, null, 1500); }
     if (u > 10.5 && !leve) { leve = true; moi.info.mortT = 0; }
