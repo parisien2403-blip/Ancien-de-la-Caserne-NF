@@ -453,6 +453,7 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
       if (!/^(z|sh)-/.test(m.lieu) && !LIEUX_BTTF.includes(m.lieu)) ws.send(JSON.stringify({ t: "radio", r: await this.radio() }));   // (la radio de Silent Hill, posée quelque part)
+      if (a.admin && !/^(z|sh)-/.test(m.lieu) && !LIEUX_BTTF.includes(m.lieu)) ws.send(JSON.stringify({ t: "plaqueGB", p: (await this.ctx.storage.get("plaque_gb")) || null }));   // (la plaque ECTO-1 : l'administrateur seul, le temps des essais)
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
@@ -516,6 +517,11 @@ export class Compteur extends DurableObject {
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
       const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
       const al = await this.almanach(); Object.assign(al, { lieu: a.lieu, x, z, r: Math.random() * 6.28, pris: null }); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
+    } else if (m.t === "plaque_ici" && a.admin) {
+      // l'administrateur pose la plaque ECTO-1 (S.O.S. Fantômes) au sol, près de lui, dans la vraie caserne ; lui seul la voit, le temps des essais
+      if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
+      const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
+      const pq = { lieu: a.lieu, x, z, r: Math.random() * 6.28 }; await this.ctx.storage.put("plaque_gb", pq); ws.send(JSON.stringify({ t: "plaqueGB", p: pq }));
     } else if (m.t === "radio_ici" && a.admin) {
       // l'administrateur fait venir la radio de Silent Hill près de lui, dans la vraie caserne (pas en 1955, ni à l'apocalypse, ni à Silent Hill)
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;

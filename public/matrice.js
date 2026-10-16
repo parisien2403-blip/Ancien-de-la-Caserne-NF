@@ -4663,9 +4663,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un car de la Gendarmerie dans chaque voûte, l'avant vers la cour
       for (const VZ of (copie === "fetes" && cote > 0 ? [] : VOUTES)) {
-        const bus = busCaserne(scene, "gendarmerie", fx + cote * 6.2, VZ, cote < 0 ? 0 : Math.PI);
-        if (cote < 0 && VZ === VOUTES[1] && bus) { plaqueBusGB(bus); L.plaqueGB = [fx + cote * 6.2 + 5.45, VZ];   // (S.O.S. Fantômes : la plaque ECTO-1 sur ce car ; l'Ecto-1, elle, n'entre dans la cour qu'avec la cinématique)
-          const e = creerEcto1(); e.visible = false; scene.add(e); L.ecto1 = e; }   // (le car de la Gendarmerie, d'après la planche : l'avant vers la cour)
+        busCaserne(scene, "gendarmerie", fx + cote * 6.2, VZ, cote < 0 ? 0 : Math.PI);
+        if (cote < 0 && VZ === VOUTES[1]) { const e = creerEcto1(); e.visible = false; scene.add(e); L.ecto1 = e; }   // (S.O.S. Fantômes : l'Ecto-1 n'entre dans la cour qu'avec la cinématique)   // (le car de la Gendarmerie, d'après la planche : l'avant vers la cour)
       }
       if (cote > 0) for (const o of scene.children.slice(debutCote)) o.userData.droite = true;
     }
@@ -8256,8 +8255,22 @@ function citadine(scene, modele, couleur, x, z, rot) {
    la caisse est une boîte aux angles arrondis, ses flancs, sa face et son dos sont peints (toile), les roues et les accessoires du toit en relief */
 // la plaque « ECTO-1 · NEW YORK » (S.O.S. Fantômes), à l'avant et à l'arrière d'un véhicule (l'avant vers +x)
 let texEcto = null;
-function plaqueBusGB(b) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
-  const pl = new THREE.Mesh(new THREE.PlaneGeometry(.66, .33), new THREE.MeshStandardMaterial({ map: texEcto, roughness: .45, metalness: .3, emissive: 0xffffff, emissiveMap: texEcto, emissiveIntensity: .15 })); pl.position.set(5.36, .66, 0); pl.rotation.y = Math.PI / 2; b.add(pl); b.userData.plaque = pl; }
+// (S.O.S. Fantômes) la plaque ECTO-1, posée au sol : l'administrateur seul la voit (le temps des essais) ; on la touche, et la cinématique commence
+function majPlaqueGB() {
+  if (!M || !M.scene) return; const q = M.plaqueGB, ici = q && q.lieu === M.lieu && M.L && !M.L.apo && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
+  if (!ici) { if (M.plaqueObj) { M.scene.remove(M.plaqueObj); M.plaqueObj = null; } return; }
+  if (!M.plaqueObj || M.plaqueObj.parent !== M.scene) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
+    const g = new THREE.Group(), pl = new THREE.Mesh(new THREE.PlaneGeometry(.66, .33), new THREE.MeshStandardMaterial({ map: texEcto, roughness: .4, metalness: .35, emissive: 0xffffff, emissiveMap: texEcto, emissiveIntensity: .2, polygonOffset: true, polygonOffsetFactor: -2 }));
+    pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; g.add(pl);
+    const dos = new THREE.Mesh(new THREE.BoxGeometry(.66, .01, .33), new THREE.MeshStandardMaterial({ color: 0x8a6a1e, metalness: .6, roughness: .4 })); dos.position.y = -.006; g.add(dos);
+    M.plaqueObj = g; M.scene.add(g); }
+  M.plaqueObj.position.set(q.x, (M.L.hauteur ? M.L.hauteur(q.x, q.z, {}) : 0) + .012, q.z); M.plaqueObj.rotation.y = q.r; }
+// (administrateur) poser la plaque ECTO-1 juste à côté de soi
+export function plaqueIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
+  if (estBttf(M.lieu) || estApo(M.lieu) || estSH(M.lieu) || /^gb-/.test(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("🚗 La plaque ne peut pas venir ici : seulement dans la vraie caserne."); return; }
+  const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
+  for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * .9, z = p.z + Math.cos(a) * .9; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
+  pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "plaque_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("🚗 La plaque ECTO-1 est posée au sol, juste à côté de toi (toi seul la vois). Approche-toi : « 🎬 Regarder la cinématique »."); }
 function plaqueEcto(g, L, y = .55) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
   const m = new THREE.MeshStandardMaterial({ map: texEcto, roughness: .45, metalness: .3, polygonOffset: true, polygonOffsetFactor: -2 });
   for (const s of [1, -1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(.52, .26), m); pl.position.set(s * (L / 2 + .015), y, 0); pl.rotation.y = s * Math.PI / 2; g.add(pl); }
@@ -9209,7 +9222,7 @@ function chercherAction(t) {
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
-    else if (M.L.plaqueGB && M.lieu === "grande" && Math.hypot(x - M.L.plaqueGB[0], z - M.L.plaqueGB[1]) < 2.4) a = { type: "gbCine", label: "🎬 Regarder la cinématique" };   // (la plaque ECTO-1 du car)
+    else if (M.plaqueObj && M.plaqueGB && Math.hypot(x - M.plaqueGB.x, z - M.plaqueGB.z) < 1.3) a = { type: "gbCine", label: "🎬 Regarder la cinématique" };   // (la plaque ECTO-1, posée au sol)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
@@ -9373,7 +9386,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
   majAmbiance();
-  M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio();
+  M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio(); M.plaqueObj = null; majPlaqueGB();
   if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.musExplo) { try { M.musExplo.pause(); } catch (e) {} M.musExplo = null; } if (M.musRencontre) { try { M.musRencontre.pause(); } catch (e) {} M.musRencontre = null; } if (M.musPyr) { try { M.musPyr.pause(); } catch (e) {} M.musPyr = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
   M.muetFete = 1; M.shEntreeT = performance.now(); M.shDuMess = lieuAvant === "sh-mess" && id === "sh-grande"; if (M.shCleObj && M.shCleObj.o.parent) M.shCleObj.o.parent.remove(M.shCleObj.o);   /* (la clé d'Eddie reste où elle est tombée) */
   majBoutonCarte();
@@ -11173,6 +11186,7 @@ function connecter() {
     else if (m.t === "affiche") { M.afficheTaille = m.taille; M.L && M.L.tailleAffiche && M.L.tailleAffiche(m.taille); ctx.surAfficheTaille && ctx.surAfficheTaille(m.taille); }
     else if (m.t === "almanach") { M.alm = m.a; majAlmanach(); ctx.surAlmanach && ctx.surAlmanach(m.a); }
     else if (m.t === "radio") { M.radio = m.r; majRadio(); }
+    else if (m.t === "plaqueGB") { M.plaqueGB = m.p; majPlaqueGB(); }
     else if (m.t === "radio_ok") cineRadio();
     else if (m.t === "almanach_ok") { M.alm = { ...(M.alm || {}), pris: true }; majAlmanach(); musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (m.t === "pnj" && m.p && m.p.id >= 31 && m.p.id <= 47) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.lieu === "hv1955") { for (const [id] of HABITANTS) retirerAncien(-id); for (const [id] of DOUBLES_HV) retirerAncien(-(id + 100)); retirerAncien(-45); M.hvInit = false; M.hvDoubles = false; M.hvPompiste = false; } }
