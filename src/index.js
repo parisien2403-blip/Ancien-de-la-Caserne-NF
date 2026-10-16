@@ -48,7 +48,7 @@ const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 
   ["rue", -53, 1], ["rue", -32, 16], ["rue", -20, -2], ["rue", 1, -20], ["rue", 13, 4], ["rue", 31, -2], ["rue", 46, 1], ["rue", 58, -5], ["fetes", -2.8, 3], ["fetes", .2, 9], ["fetes", -2.8, 12]];
 const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
-const MUSIQUE_MAX = 50 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
+const MUSIQUE_MAX = 50 * 1024 * 1024, VIDEO_MAX = 150 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const PNJ_DEFAUT = { 74: { nom: "Pyramid Head", tenue: "civil", couleur: "#555555", bas: null }, 75: { nom: "L'infirmière", tenue: "civil", couleur: "#555555", bas: null }, 76: { nom: "L'infirmière au tuyau", tenue: "civil", couleur: "#555555", bas: null }, 77: { nom: "Le monstre aux longs bras", tenue: "civil", couleur: "#555555", bas: null }, 78: { nom: "Le mannequin", tenue: "civil", couleur: "#555555", bas: null }, 79: { nom: "Le monstre sans bras", tenue: "civil", couleur: "#555555", bas: null }, 69: { nom: "James", tenue: "civil", couleur: "#56603c", bas: "#3a3f4a", pieds: "#2a2018" }, 70: { nom: "Eddie", tenue: "polo", couleur: "#2f5fa8", bas: "#3a3a40", pieds: "#2a2a2a" }, 71: { nom: "Angela", tenue: "civil", couleur: "#b8b2a4", bas: "#3a3530", pieds: "#1e1e1e" }, 72: { nom: "Maria", tenue: "maria", couleur: "#a3243a", bas: null, pieds: "#5a3c26" }, 73: { nom: "Laura", tenue: "salopette", couleur: "#4a6a9a", bas: "#4a6a9a", pieds: "#e8b0c0" }, 68: { nom: "Le professeur de judo", tenue: "judogi", couleur: "#f4f2ec", bas: "#f4f2ec", pieds: null }, 63: { nom: "Le gendarme du porche", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 64: { nom: "Gendarme Leclerc", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   65: { nom: "Gendarme Moreau", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 66: { nom: "Gendarme Fabre", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 67: { nom: "Gendarme Girard", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
@@ -734,14 +734,15 @@ export class Compteur extends DurableObject {
   /* ----- La discothèque du DJ : tous les anciens validés peuvent déposer ----- */
   musiques(token) {
     this.moi(token);
-    return this.sql.exec("SELECT id, titre, artiste, auteur, auteur_nom, taille, duree, cree FROM musiques WHERE complet = 1 ORDER BY id DESC").toArray();
+    return this.sql.exec("SELECT id, titre, artiste, auteur, auteur_nom, taille, duree, cree, type FROM musiques WHERE complet = 1 ORDER BY id DESC").toArray();
   }
   nouvelleMusique(token, x) {
     const moi = this.moi(token);
     const titre = texte(x.titre, 90), artiste = texte(x.artiste, 60), taille = Number(x.taille), type = String(x.type || "");
     if (!titre) throw new Refus("Donne un titre à la musique");
-    if (!/^audio\/(mpeg|mp3|mp4|x-m4a|aac|ogg|wav|x-wav|webm)$/.test(type)) throw new Refus("Seuls les fichiers audio sont acceptés (MP3, M4A, OGG…)");
-    if (!(taille > 0 && taille <= MUSIQUE_MAX)) throw new Refus("Fichier trop lourd (50 Mo maximum par musique)");
+    const video = /^video\/(mp4|webm|quicktime)$/.test(type);   // (un clip vidéo : il passe sur le grand écran de la scène)
+    if (!video && !/^audio\/(mpeg|mp3|mp4|x-m4a|aac|ogg|wav|x-wav|webm)$/.test(type)) throw new Refus("Seuls les fichiers audio (MP3, M4A, OGG…) et vidéo (MP4) sont acceptés");
+    if (!(taille > 0 && taille <= (video ? VIDEO_MAX : MUSIQUE_MAX))) throw new Refus(video ? "Vidéo trop lourde (150 Mo maximum)" : "Fichier trop lourd (50 Mo maximum par musique)");
     const total = this.sql.exec("SELECT COALESCE(SUM(taille), 0) AS t FROM musiques").one().t;
     if (total + taille > DISCO_MAX) throw new Refus("La discothèque est pleine : demande à l'administrateur de faire de la place");
     const morceaux = Math.ceil(taille / MORCEAU);
@@ -793,8 +794,8 @@ export class Compteur extends DurableObject {
     return m ? this.ficheDJ(m.id, "la discothèque") : null; }
   async majDJ(dj) { dj.prochain = this.prochainDJ(dj); await this.ctx.storage.put("dj", dj); for (const l of LIEUX_MATRICE) this.diffuser(l, { t: "dj", dj }); }
   ficheDJ(id, qui) {
-    const m = this.sql.exec("SELECT id, titre, artiste, duree FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
-    return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui } : null;
+    const m = this.sql.exec("SELECT id, titre, artiste, duree, type FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
+    return m ? { id: m.id, titre: m.titre, artiste: m.artiste, duree: m.duree, par: qui, ...(/^video\//.test(m.type || "") ? { video: true } : {}) } : null;
   }
   // le titre suivant : celui de la file d'attente ; si elle est vide, on enchaîne sur le titre suivant de la discothèque (et on reboucle)
   async suivantDJ(dj, direct = false) {

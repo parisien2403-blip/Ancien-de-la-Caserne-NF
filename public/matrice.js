@@ -5161,6 +5161,15 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       // sur scène, on est à hauteur du plancher ; les places du groupe et des chanteurs
       const hS = L.hauteur; L.hauteur = (x, z, p) => x > SX0 && x < SX1 && z > SZ0 && z < SZ1 ? SH : hS ? hS(x, z, p) : 0;
       L.scene = { x0: SX0, x1: SX1, z0: SZ0, z1: SZ1, h: SH, centre: [sx, Z0 + 3.1], batterie: [sx, Z0 + .72], basse: [SX0 + 1.45, Z0 + 2.05], guitare: [SX1 - 1.4, Z0 + 2.05] };
+      /* le grand écran de projection électrique, au fond de la scène : roulé dans son carter au plafond ; quand le DJ passe un clip vidéo, la toile descend et le film y passe */
+      { const EW = 6.2, EH = EW * 9 / 16, haut = HT - .22, g = new THREE.Group(); g.position.set(sx, haut, Z0 + .32); scene.add(g);
+        const carter = new THREE.Mesh(new THREE.BoxGeometry(EW + .5, .2, .22), A.mat({ color: 0xe9e9e6, roughness: .5, metalness: .2 })); carter.position.y = .08; g.add(carter);
+        for (const sg of [-1, 1]) { const f = new THREE.Mesh(new THREE.BoxGeometry(.06, .06, .08), A.mat({ color: 0x2a2a2c, roughness: .6 })); f.position.set(sg * (EW / 2 + .3), .08, 0); g.add(f); }
+        const geo = new THREE.PlaneGeometry(EW, EH); geo.translate(0, -EH / 2, 0);   // (la toile pend du carter : on la déroule en l'étirant vers le bas)
+        const cadre = new THREE.Mesh(new THREE.PlaneGeometry(EW + .16, 1), new THREE.MeshBasicMaterial({ color: 0x111113 })); cadre.geometry.translate(0, -.5, 0); cadre.position.z = .005; g.add(cadre);
+        const toile = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xf2f2ee, toneMapped: false })); toile.position.z = .012; g.add(toile);
+        const barre = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, EW + .2, 10), A.mat({ color: 0x1a1a1c, roughness: .5 })); barre.rotation.z = Math.PI / 2; barre.position.z = .02; g.add(barre);   // (la barre de lestage, au bas de la toile)
+        L.ecran = { g, toile, cadre, barre, EW, EH, k: 0 }; majEcran(L, 0); }
       // la batterie : grosse caisse, deux toms, caisse claire, tom basse, charleston, deux crashs et une ride, le tabouret
       const kit = new THREE.Group(); kit.position.set(sx, SH, Z0 + 1.38); scene.add(kit); L.kit = kit;
       const coque = A.mat({ color: 0x7a0d16, metalness: .35, roughness: .28 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .18 }), peauF = A.mat({ color: 0xf1ece0, roughness: .6 }), cuivre = A.mat({ color: 0xc9a440, metalness: .85, roughness: .3 });
@@ -5969,7 +5978,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -9481,6 +9490,20 @@ const DM = [[-27, 27, "dmguitare", "Martin Gore", "gore", "#111113", "#141416", 
 // le batteur derrière la batterie ; le guitariste à gauche, qui chante aussi (son propre micro)
 const AIR_EI = /emile (et |and |& )?images?|images emile|jusquau bout de la nuit|les demons de minuit/;
 const EI = [[-54, 54, "chant", "Le chanteur", "eichant", "chanteur", 0, 3.18], [-55, 55, "batterie", "Le batteur", "eibatterie", "batteur", null, null], [-56, 56, "dmguitare", "Le guitariste", "eiguitare", "guitariste", -2.2, 2.3]];
+/* le grand écran de la salle des fêtes : il descend (son moteur, quelques secondes) quand un clip vidéo passe, remonte après ; la vidéo, muette (le son passe par la musique du DJ), est calée sur le même moment pour tous */
+function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = Math.max(.001, k) * E.EH;
+  E.toile.scale.y = Math.max(.001, k); E.toile.visible = k > .002; E.cadre.scale.y = h + .08; E.cadre.visible = k > .002; E.barre.position.y = -h - .02; }
+function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
+  const c = M.djVideo, cible = c ? 1 : 0; if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
+  videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
+  if (v && E.k > .9 && v.readyState >= 2) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
+  else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
+function videoDJ(c) { let v = M.videoDJ;
+  if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
+  if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous"; }
+  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; }
+  const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
+    if (pos >= 0 && v.readyState >= 1) { if (Math.abs(v.currentTime - pos) > .4 && (!v.duration || pos < v.duration)) { try { v.currentTime = pos; } catch (e) {} } if (v.paused) v.play().catch(() => {}); } } }
 function animerGroupe() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
   const dm = !!(M.djJoue && AIR_DM.test(M.djTitre || "")), ei = !dm && !!(M.djJoue && AIR_EI.test(M.djTitre || ""));
@@ -9504,7 +9527,7 @@ function animerGroupe() {
     if (place === "dmguitare") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .5) * .4, nz = p.base[1] + Math.sin(t2 * .37 + 1) * .25; if (okScene(nx, nz)) { p.g.position.x = nx; p.g.position.z = nz; } }
     if (place === "chant") { const t2 = performance.now() / 1000, nx = p.base[0] + Math.sin(t2 * .3) * .35; if (okScene(nx, p.base[1])) p.g.position.x = nx; if (M.L.micDM) M.L.micDM.position.x = p.g.position.x; } }
   const vp = !!(M.djJoue && AIR_VP.test(M.djTitre || ""));   // (les Village People prennent toute la scène)
-  if (dm || ei || vp) { for (const [num] of GROUPE) if (M.gens.has(num)) retirerAncien(num); }
+  if (dm || ei || vp || M.djVideo) { for (const [num] of GROUPE) if (M.gens.has(num)) retirerAncien(num); }
   else for (const [num, id, place, nom, tenue, couleur, bas, pieds] of GROUPE) { let p = M.gens.get(num);
     if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, [x, z] = M.L.scene[place];
       p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue || tenue, couleur: P.couleur || couleur, bas: P.bas || bas, pieds: P.pieds || pieds, reglage: P.reglage || null, initiales: "♪",
@@ -11653,7 +11676,7 @@ function connecter() {
       if (M.L && M.L.messVitres) M.L.messVitres.opacity = k * (M.L.nuit ? .85 : .28); }
     else if (m.t === "lumiere" && (m.salle === "messcuisine" || m.salle === "messbas")) { if (M.L && M.L.setLumiereZone) M.L.setLumiereZone(m.salle, m.niveau); }
     else if (m.t === "lumiere") { M.lumiere = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
-    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djTitre = M.djJoue ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : ""; M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
+    else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djVideo = M.djJoue && m.dj.courant.video ? m.dj.courant : null; M.djTitre = M.djJoue && !M.djVideo ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : "";   /* (un clip vidéo : l'écran descend, les musiciens laissent la scène) */ M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
     else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
     else if (m.t === "slow_demande") ctx.surInvitation && ctx.surInvitation({ de: m.de, nom: m.nom });

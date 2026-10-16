@@ -1199,9 +1199,9 @@
           <div class="garland" id="garland"></div>
           <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
           <h3>Ce soir, c'est vous le DJ</h3>
-          <p>Déposez vos musiques : elles passent chez le DJ de la salle des fêtes, dans la Matrice</p>
+          <p>Déposez vos musiques et vos clips vidéo (MP4) : ils passent chez le DJ de la salle des fêtes, dans la Matrice — les vidéos sur le grand écran de la scène</p>
           <label class="file" style="margin-top:14px;justify-content:center"><svg class="ico" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Ajouter une musique<input type="file" accept="audio/*" id="djFichier" multiple></label>
+            Ajouter une musique ou un clip<input type="file" accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.m4v" id="djFichier" multiple></label>
           <p class="erreur" id="djErreur" hidden></p>
           <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
         </div>
@@ -2259,6 +2259,7 @@
         surMusVol: n => { djNiv = n; $("mxMusVol").textContent = `${n < .01 ? "🔇" : "🎶"} ${Math.round(n * 100)} %`; djAudio.volume = djV(); },
         surBruitFete: n => { bruitNiv = n; $("mxBruit").textContent = `${n < .01 ? "🔇" : "🗣️"} ${Math.round(n * 100)} %`; bruitMaj(); },
         surVolume: v => { bruitVol = v; bruitMaj(); const avant = djVolume; djVolume = v; djAudio.volume = djV(); if (!avant !== !v) djSynchro(); },   /* (on s'éloigne : le son baisse, mais la musique continue, sans bruit ; on revient : elle remonte tout de suite, au bon moment de la piste) */
+        urlMusique: id => djSrc(id),   // (le fichier d'un titre : le clip vidéo, pour le grand écran de la scène)
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },
@@ -2432,7 +2433,7 @@
     const q = $("djRecherche").value.trim().toLowerCase();
     const l = djDisco.filter(m => (m.titre + " " + (m.artiste || "") + " " + m.auteur_nom).toLowerCase().includes(q));
     $("djNb").textContent = `· ${djDisco.length} titre${djDisco.length > 1 ? "s" : ""}`;
-    $("djListe").innerHTML = l.length ? l.map(m => `<div class="dj-piste"><div><b>${esc(m.titre)}</b><small>${m.artiste ? esc(m.artiste) + " · " : ""}${m.duree ? djSecondes(m.duree) + " · " : ""}déposée par ${esc(m.auteur_nom)}</small></div>
+    $("djListe").innerHTML = l.length ? l.map(m => `<div class="dj-piste"><div><b>${/^video\//.test(m.type || "") ? "🎬 " : ""}${esc(m.titre)}</b><small>${m.artiste ? esc(m.artiste) + " · " : ""}${m.duree ? djSecondes(m.duree) + " · " : ""}déposée par ${esc(m.auteur_nom)}</small></div>
         <button type="button" data-dj-jouer="${m.id}">▶ Jouer</button><button type="button" class="alt" data-dj-file="${m.id}">+ File</button>
         ${moi.admin || +m.auteur === +moi.numero ? `<button type="button" class="retirer" data-dj-suppr="${m.id}" aria-label="Retirer de la discothèque">🗑</button>` : ""}</div>`).join("")
       : `<p style="opacity:.75;margin:6px 2px">${djDisco.length ? "Aucun titre ne correspond." : "La discothèque est vide : ajoute la première musique !"}</p>`;
@@ -2467,7 +2468,7 @@
       try {
         const nom = f.name.replace(/\.[^.]+$/, "").replace(/_/g, " ").trim(), parts = nom.split(/\s+-\s+/);
         const [artiste, titre] = parts.length > 1 ? [parts[0], parts.slice(1).join(" - ")] : ["", nom];
-        const type = f.type || (/\.mp3$/i.test(f.name) ? "audio/mpeg" : /\.m4a$/i.test(f.name) ? "audio/mp4" : /\.ogg$/i.test(f.name) ? "audio/ogg" : "");
+        const type = (f.type === "video/x-m4v" ? "video/mp4" : f.type) || (/\.mp3$/i.test(f.name) ? "audio/mpeg" : /\.m4a$/i.test(f.name) ? "audio/mp4" : /\.ogg$/i.test(f.name) ? "audio/ogg" : /\.(mp4|m4v)$/i.test(f.name) ? "video/mp4" : /\.mov$/i.test(f.name) ? "video/quicktime" : /\.webm$/i.test(f.name) ? "video/webm" : "");
         const j = await api("POST", "/api/musiques", { titre, artiste, taille: f.size, type, duree: await dureeAudio(f) });
         for (let n = 0; n < j.morceaux; n++) {
           const r = await fetch(`/api/musiques/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + moi.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() });
@@ -3033,6 +3034,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["5.03", "16 octobre 2026", ["Salle des fêtes : un grand écran de projection électrique au-dessus de la scène", "La discothèque accepte les clips vidéo (MP4, 150 Mo maximum) : quand un clip passe, l'écran descend du plafond, les musiciens quittent la scène et tout le monde voit la même vidéo au même moment ; l'écran remonte ensuite", "Les clips sont marqués 🎬 dans la discothèque"]],
     ["5.02", "16 octobre 2026", ["Silent Hill, au mess avec Maria : on entre de quelques pas dans la grande salle (la caméra n'est plus dans le mur, et Maria ne nous traverse plus en fuyant par la porte)", "Silent Hill : Pyramid Head apparaît dans la grande salle du mess, devant nous (plus dans l'escalier de la cuisine), et l'on voit bien la scène", "Silent Hill : après Eddie, on se réveille au milieu de la pièce du bas du mess (plus dans le mur de la cuisine)", "Silent Hill, dans la rue : on sort sur le trottoir, Angela est bien en vue (plus cachée derrière la grille)", "Silent Hill : Pyramid Head vaincu se dissout dans la brume avant l'arrivée de James, qui apparaît en vue", "Les tabourets du bar : en se levant, on descend côté salle (on ne reste plus coincé derrière, contre le comptoir)", "S.O.S. Fantômes : un petit filet de fumée sort du piège refermé (plus de gros nuage) ; les traces de brûlure sont plus petites", "S.O.S. Fantômes : le titre de la fin sur un fond blanc, bien lisible", "S.O.S. Fantômes : la jauge de Bouffe-tout descend plus vite"]],
     ["5.01", "16 octobre 2026", ["Page d'accueil : Depeche Mode d'un côté, les Bee Gees de l'autre, qui dépassent des bords du porche et font coucou", "Page d'accueil : un grand bouton « 🎮 Entrer dans la caserne en 3D »", "L'onglet devient « Caserne en 3D », mis en avant avec son badge « Jouer »", "S.O.S. Fantômes : l'affiche du mess est là pour tout le monde", "Apocalypse : la vue du ciel plonge à la verticale vers les joueurs (elle ne traverse plus les bâtiments)", "Apocalypse : quand l'hélicoptère passe, ses pales tournent et son projecteur fouille la cour à la recherche de survivants ; on revient sur les personnages quand l'équipier parle", "Apocalypse : le fumigène trouvé n'est plus oublié quand on change de lieu (le cercle rouge du H s'allume bien)", "Apocalypse : les équipiers nous appellent par le nom du héros qu'on joue (Wesker, Chris…), sinon par notre prénom"]],
     ["5.00", "16 octobre 2026", ["Apocalypse : le titre RESIDENT EVIL à l'arrivée, sur la caserne vue du ciel où errent les zombies, puis la vue plonge vers la déchetterie", "Apocalypse : beaucoup plus de zombies", "Apocalypse : plus d'aide pour trouver le fumigène ; l'hélicoptère passe de temps en temps au-dessus de la caserne sans nous voir, et un équipier dit qu'il faut trouver un fumigène", "Apocalypse : l'hélicoptère ne tourne plus sur lui-même avant de se poser", "Apocalypse : on lève le bras pour tirer (de dos, le bras tendu devant soi)"]],
