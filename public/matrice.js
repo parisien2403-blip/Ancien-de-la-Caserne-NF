@@ -7282,7 +7282,9 @@ function cineSireneBas() { if (!M || !M.L.sh) return; const moi = moiApo(); if (
     if (u > 7) fin(); } }; }
 function cineReveilBas(essai = 0, noir = null) { if (!M) return; noir = noir || voile("background:#d9d8d4;opacity:1;transition:opacity 4s");
   const moi = M.gens.get(M.moiNum); if (!moi) { if (essai < 60) setTimeout(() => cineReveilBas(essai + 1, noir), 100); else noir.remove(); return; }
-  moi.nivMess = 1; moi.info.mortT = performance.now() - 2000; const p = moi.g.position; requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 4200);
+  moi.nivMess = 1; moi.info.mortT = performance.now() - 2000; const p = moi.g.position;
+  /* (au milieu de la pièce du bas : la place était demandée à l'étage qu'on quittait, qui ne la connaît pas — on se réveillait dans le mur de la cuisine) */
+  if (M.L.pieceBas) { const [bx, bz] = placeLibre(...M.L.pieceBas) || M.L.pieceBas; p.x = bx; p.z = bz; if (M.L.yNiv) p.y = M.L.yNiv(1); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: bx, z: bz }); } requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 4200);
   { const s2 = M.sireneA; if (s2) { const t1 = performance.now(), baisse = () => { if (!M || M.sireneA !== s2) return; const k = (performance.now() - t1) / 5000; if (k >= 1) { s2.pause(); M.sireneA = null; return; } s2.volume = 1 - k; requestAnimationFrame(baisse); }; baisse(); } }
   let leve = false, fini = false, u = 0, prec = performance.now();
   const fin = () => { if (fini || !M) return; fini = true; moi.info.mortT = 0; finCine(); placerCamera(true); M.shEtape = 10; setTimeout(() => M && lauraBas(), 600); };
@@ -7292,8 +7294,15 @@ function cineReveilBas(essai = 0, noir = null) { if (!M) return; noir = noir || 
 /* la rue du Faubourg-Poissonnière : Angela, à la ramasse ; Pyramid Head la coupe en deux, puis vient pour nous (24 balles) ;
    il s'arrête net, James sort du brouillard ; plus haut dans la rue, un passage de lumière blanche… et Maria */
 const RUE_PASSAGE = [40, 0];
+/* une place à quelques pas, d'où l'on se voit : sans grille ni mur entre nous (on essaie d'abord du côté voulu) */
+function placeEnVue(mp, d, ax, az) { const a0 = Math.atan2(ax, az), vu = (x, z) => { const n = Math.ceil(Math.hypot(x - mp.x, z - mp.z) / .25); for (let i = 1; i <= n; i++) if (!M.L.limites(mp.x + (x - mp.x) * i / n, mp.z + (z - mp.z) * i / n)) return false; return true; };
+  for (const dd of [d, d * .75, d * .5]) for (let k = 0; k < 24; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12, x = mp.x + Math.sin(a) * dd, z = mp.z + Math.cos(a) * dd; if (vu(x, z)) return [x, z]; }
+  return [mp.x + ax * d, mp.z + az * d]; }
 function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = prenomSH();
-  if (e === 10) { M.shEtape = 11; const pa = apparaitreSH(poserPerso(SHN.angela, mp.x + 4.5, Math.max(-4, Math.min(4, mp.z + 6)), 0)); if (!pa) return; noterCarteSH(SHN.angela, 0, 29);
+  if (e === 10) { M.shEtape = 11;
+    /* (on est sorti par la petite porte de la grille : sur le trottoir, devant — de derrière la grille, on ne voyait rien de la scène) */
+    { const t = placeLibre(mp.x, mp.z + 6); if (t) { mp.x = t[0]; mp.z = t[1]; } moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: mp.x, z: mp.z }); }
+    const pa = apparaitreSH(poserPerso(SHN.angela, ...placeEnVue(mp, 5.5, .6, .8), 0));   /* (dans la rue, en vue : elle était souvent cachée derrière la grille) */ if (!pa) return; noterCarteSH(SHN.angela, 0, 29);
     let pyr = null, vic = null; const sortir = () => { if (pyr) return; const q = viserLibre(pa.g.position.x + 13, pa.g.position.z); pyr = creerBeteSH("pyramid", q[0], q[1], 0); pyr.cine = true; pyr.portee = 60; pyr.boss = true; pyr.imbattable = false; pyr.hp = 24; brumeSH({ x: q[0], y: 0, z: q[1] }, 4500); musiquePyramid(true);
       vic = { cle: "angela", p: null, g: pa.g, mesh: pa.corps, x: pa.g.position.x, z: pa.g.position.z, y: 0, n: 0, v: 0, hp: 1, ph: 0, W: pa.corps.scale.x, H: pa.corps.scale.y, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, statique: true }; M.shMonstres.push(vic); pyr.cineCible = vic; M.shRegard = pa.g.position;
       pyr.surMort = () => setTimeout(() => M && jamesFin(pyr), 1800); };
@@ -7314,11 +7323,12 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
       [SHN.maria, "Réelle… Qu'est-ce que ça change ? Je suis là. Elle, elle n'est plus là."], ["moi", "Adieu, Maria."], [SHN.maria, "…Tu reviendras. Ils reviennent toujours."], [null, null, 800]],
       () => { evanouirSH(SHN.maria, null, 400); passageFin(); }); } }
 function jamesFin(pyr) { const moi = moiApo(); if (!moi || !M.L.sh) return; const mp = moi.g.position, nom = prenomSH(); musiquePyramid(false);
-  const pj = apparaitreSH(poserPerso(SHN.james, mp.x - 3.5, mp.z + 1.5, 0)); noterCarteSH(SHN.james, 0, 29);
+  pyr.fondu = pyr.fondu || performance.now(); brumeSH({ x: pyr.x, y: 0, z: pyr.z }, 3500);   /* (vaincu, il se dissout dans la brume avant que James n'arrive : il bouchait toute la vue) */
+  const pj = apparaitreSH(poserPerso(SHN.james, ...placeEnVue(mp, 3.6, -.9, .4), 0)); noterCarteSH(SHN.james, 0, 29);
   dialogueSH(SHN.james, [[null, null, 1800], [SHN.james, `${nom} ! Tu es vivant…`], [SHN.james, "Je l'ai retrouvée. Mary. Elle m'attendait, là où on allait autrefois."],
     [SHN.james, "Elle m'a dit que tu étais la clé. Que grâce à toi, je pourrais enfin vivre… libéré du passé. Et de ce que j'ai fait."], ["moi", "Qu'est-ce que tu as fait, James ?"],
     [SHN.james, "Ça n'a plus d'importance. Toi, tu dois partir. Maintenant. Remonte la rue, ne te retourne pas."], ["moi", "Merci, James. Pour tout."], [SHN.james, "Va. Avant que le brouillard ne change d'avis."],
-    geste(() => { pyr.fondu = performance.now(); brumeSH({ x: pyr.x, y: 0, z: pyr.z }, 3500); evanouirSH(SHN.james, [mp.x - 8, mp.z], 1200, .8); }, true), [null, null, 2400]],
+    geste(() => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 1200, .8); }, true), [null, null, 2400]],
     () => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 0, .8); M.shEtape = 12; }); }
 // le passage : on y marche, la lumière nous prend… et l'on se réveille en 1990, dans le bar. Fin
 function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = RUE_PASSAGE; moi.cible = new THREE.Vector3(x, 0, z); moi.chemin = []; moi.info.allure = .6;
@@ -7502,10 +7512,19 @@ function histoireSH(now) {
     // 10. la clé ouvre le cadenas des encombrants
   }
   if (lieu === "sh-rue" && e >= 10 && now > (M.shEntreeT || 0) + 1200) rueFinale(now, moi);
-  if (lieu === "sh-mess" && e === 6 && now > (M.shEntreeT || 0) + 1200) { M.shEtape = 7; M.shPopL = M.L; const mp = moi.g.position, avecMaria = M.shChoix !== "james", mar = avecMaria ? apparaitreSH(poserPerso(SHN.maria, mp.x + .8, mp.z - 2)) : null; if (mar) noterCarteSH(SHN.maria, 0, 0);
+  if (lieu === "sh-mess" && e === 6 && now > (M.shEntreeT || 0) + 1200) { M.shEtape = 7; M.shPopL = M.L; const mp = moi.g.position, avecMaria = M.shChoix !== "james";
+    /* on entre dans la salle : quelques pas, vers là où elle est la plus dégagée (sur le seuil, la caméra était dans le mur, et Maria, en fuyant par la porte, nous passait dedans) */
+    const libre = (x0, z0, dx, dz, max) => { let r = 0; while (r < max && M.L.limites(x0 + dx * (r + .3), z0 + dz * (r + .3))) r += .3; return r; };
+    let dS = [0, -1], lgS = 0; for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2, dx = Math.sin(a), dz = Math.cos(a), r = libre(mp.x, mp.z, dx, dz, 16); if (r > lgS + .3) { lgS = r; dS = [dx, dz]; } }
+    { const pas = Math.min(2.8, Math.max(0, lgS - 1)); mp.x += dS[0] * pas; mp.z += dS[1] * pas; moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: mp.x, z: mp.z }); }
+    const mx = mp.x + dS[0] * 1.3 - dS[1] * .9, mz = mp.z + dS[1] * 1.3 + dS[0] * .9, mar = avecMaria ? apparaitreSH(poserPerso(SHN.maria, ...(placeLibre(mx, mz) || [mp.x + .8, mp.z]))) : null; if (mar) noterCarteSH(SHN.maria, 0, 0);
     /* Pyramid Head arrive du fond de la salle ; sur son chemin, un monstre : il le coupe en deux. Puis il vient pour nous */
-    let pyr = null, vic = null; const sortir = () => { if (pyr) return; let q = null, bd = 0; for (let k = 0; k < 400; k++) { const c = pointSH(0, 1); if (!c) continue; const d = Math.hypot(c[0] - mp.x, c[1] - mp.z); if (d > bd && d < 12) { bd = d; q = c; } }
-      q = q || [mp.x, mp.z - 9, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; brumeSH({ x: q[0], y: q[2], z: q[1] }, 4000);
+    let pyr = null, vic = null; const sortir = () => { if (pyr) return;
+      /* (au fond de la salle, devant nous, sans mur entre lui et nous : avant, il pouvait apparaître dans une autre pièce, invisible) */
+      let q = null; const lg = libre(mp.x, mp.z, dS[0], dS[1], 14);
+      for (const lat of [0, .8, -.8, 1.6, -1.6]) { for (let d = Math.min(10, lg - .5); d >= 4; d -= .5) { const x = mp.x + dS[0] * d - dS[1] * lat, z = mp.z + dS[1] * d + dS[0] * lat, ux = (x - mp.x) / Math.hypot(x - mp.x, z - mp.z), uz = (z - mp.z) / Math.hypot(x - mp.x, z - mp.z);
+          if (M.L.limites(x, z) && libre(mp.x, mp.z, ux, uz, d) >= d - .35) { q = [x, z, mp.y]; break; } } if (q) break; }
+      q = q || pointSH(0, 400) || [mp.x + dS[0] * 6, mp.z + dS[1] * 6, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; brumeSH({ x: q[0], y: q[2], z: q[1] }, 4000);
       const v = placeLibre(q[0] + (mp.x - q[0]) * .3, q[1] + (mp.z - q[1]) * .3) || [mp.x, mp.z - 3]; vic = creerBeteSH("bras", v[0], v[1], mp.y); vic.cine = true; pyr.cineCible = vic;
       M.shRegard = vic.g.position; };
     const debut = avecMaria ? [[null, null, 1600], [SHN.maria, "C'est ici que tout recommence…"], ["moi", "Qu'est-ce qu'il y a, ici ? Pourquoi tu m'as amené là ?"], [SHN.maria, "Écoute… Tu l'entends ?"]]
