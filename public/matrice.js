@@ -6181,7 +6181,7 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
     const v = l > .01 ? d.multiplyScalar(Math.min(vmax, l * 2.2) / l) : d; S.vit.lerp(v, Math.min(1, dt * 2.5));
     if (l < .3) { S.arrive = true; S.attente = (c.buffet ? 1.6 : c.table != null ? .5 : .4) * (S.combat ? 2 : 1);   // (au combat : il s'attarde un peu, c'est là qu'on peut le toucher)
       if (c.buffet) { const pres = S.buf.mets.filter(it => !it.mange && !it.v && Math.abs(it.p.x - S.pos.x) < 1.6).sort((a, b) => Math.abs(a.p.x - S.pos.x) - Math.abs(b.p.x - S.pos.x));
-        pres.slice(0, 2).forEach(it => { it.mange = true; it.u = 0; S.mange.push(it); }); pres.slice(2, 4).forEach(it => voleGB(S, it, 1.1)); S.miam = 1.2; slimeGB(S, S.pos.x + (Math.random() - .5) * .6, B.TOP + .01, B.BZ + .1, 0, 1, 0, .7); sonBruit(.4, 300, .3); }
+        pres.slice(0, 2).forEach(it => { it.mange = true; it.u = 0; S.mange.push(it); }); pres.slice(2, 4).forEach(it => voleGB(S, it, 1.1)); S.miam = 1.2; slimeGB(S, S.pos.x + (Math.random() - .5) * .6, B.TOP + .01, B.BZ + .1, 0, 1, 0, .7); sonBruit(.4, 300, .3); if (Math.random() < .6) criSlimer(.8); }
       if (c.table != null) saccagerGB(S, c.table);
       S.cible = c.apres ? (c.apres(), null) : null; } } }
   S.pos.addScaledVector(S.vit, dt); S.pos.x = Math.max(B.X0 + .5, Math.min(B.X1 - .5, S.pos.x)); S.pos.y = Math.max(.9, Math.min(4.2, S.pos.y));
@@ -6195,6 +6195,7 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
   if (S.miam > 0) vue = "dessous"; else if (h > .6) { const avance = (S.vit.x * vx + S.vit.z * vz) / (h * vl), cote = (S.vit.x * vz - S.vit.z * vx) / (h * vl); vue = avance > .55 ? "face" : cote > 0 ? "gauche" : "droit"; }
   if (vue !== S.vue) { S.vue = vue; S.sp.material.map = texSlimerI(vue); S.sp.material.needsUpdate = true; }
   const im = S.sp.material.map.image, H = 1.45; if (im && im.width) S.sp.scale.set(H * im.width / im.height, H, 1).multiplyScalar(1 - (S.capt || 0) * .96);
+  S.criT = (S.criT == null ? 3 : S.criT) - dt; if (S.criT <= 0 && !S.capFin) { S.criT = 3.5 + Math.random() * 5; criSlimer(.7); }   // (il glousse, de temps en temps)
   S.sp.position.set(S.pos.x, S.pos.y + Math.sin(now / 260) * .08, S.pos.z); S.lum.position.copy(S.sp.position); S.lum.intensity = S.capFin ? 0 : 2.6 + Math.sin(now / 90) * .5; }
 /* ----- l'arrivée de l'Ecto-1 : on touche la plaque du car, et la cinématique se joue dans la cour d'honneur « rien qu'à soi » (gb-cour) -----
    la voiture entre par le porche, gyrophares rouges et bleus, sirène, et s'arrête à côté de nous ; les quatre en descendent */
@@ -6334,6 +6335,23 @@ function musiqueGB(on, fichier = "gb-theme") { if (!M) return; M.musGBs = M.musG
   if (!on) { for (const a of Object.values(M.musGBs)) fondre(a); return; }
   for (const [k, a] of Object.entries(M.musGBs)) if (k !== fichier) fondre(a);
   let a = M.musGBs[fichier]; if (!a) { a = M.musGBs[fichier] = new Audio(`sons/${fichier}.mp3`); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); }
+// les cris des monstres, fabriqués à la volée : Bouffe-tout (un couinement gluant qui glousse, des gargouillis) ; le Bibendum (un rugissement grave et rocailleux)
+function criSlimer(force = 1) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } const t = actx.currentTime, d = .7 + Math.random() * .6;
+  const o = actx.createOscillator(), vib = actx.createOscillator(), vg = actx.createGain(), g = actx.createGain(), f = actx.createBiquadFilter(); o.type = "sawtooth"; vib.frequency.value = 22 + Math.random() * 10; vg.gain.value = 60;
+  const f0 = 260 + Math.random() * 120; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * (2.4 + Math.random()), t + d * .35); o.frequency.exponentialRampToValueAtTime(f0 * .8, t + d);
+  vib.connect(vg); vg.connect(o.frequency); f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 1.6; o.connect(f); f.connect(g); g.connect(actx.destination);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.13 * force, t + .05); g.gain.setValueAtTime(.13 * force, t + d * .7); g.gain.linearRampToValueAtTime(0, t + d); o.start(t); vib.start(t); o.stop(t + d + .05); vib.stop(t + d + .05);
+  // les gargouillis : du bruit grave, haché en bulles
+  const n = Math.floor(actx.sampleRate * d), b = actx.createBuffer(1, n, actx.sampleRate), dd = b.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * (Math.sin(i / actx.sampleRate * 2 * Math.PI * 18) > .2 ? 1 : .1);
+  const src = actx.createBufferSource(), lp = actx.createBiquadFilter(), g2 = actx.createGain(); src.buffer = b; lp.type = "lowpass"; lp.frequency.value = 420; g2.gain.value = .22 * force; src.connect(lp); lp.connect(g2); g2.connect(actx.destination); src.start(t); }
+function rugirSP(force = 1) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } const t = actx.currentTime, d = 1.6 + Math.random() * .9;
+  const ws = actx.createWaveShaper(), cv = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; cv[i] = Math.tanh(x * 4); } ws.curve = cv;   // (la saturation : la voix qui râpe)
+  const o1 = actx.createOscillator(), o2 = actx.createOscillator(), g = actx.createGain(), bp = actx.createBiquadFilter(); o1.type = "sawtooth"; o2.type = "square";
+  o1.frequency.setValueAtTime(62, t); o1.frequency.linearRampToValueAtTime(88, t + d * .3); o1.frequency.linearRampToValueAtTime(48, t + d); o2.frequency.setValueAtTime(93, t); o2.frequency.linearRampToValueAtTime(70, t + d);
+  bp.type = "bandpass"; bp.Q.value = 1.2; bp.frequency.setValueAtTime(320, t); bp.frequency.linearRampToValueAtTime(620, t + d * .3); bp.frequency.linearRampToValueAtTime(240, t + d);
+  o1.connect(ws); o2.connect(ws); ws.connect(bp); bp.connect(g); g.connect(actx.destination);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.22 * force, t + .25); g.gain.setValueAtTime(.22 * force, t + d * .6); g.gain.linearRampToValueAtTime(0, t + d); o1.start(t); o2.start(t); o1.stop(t + d + .05); o2.stop(t + d + .05);
+  sonBruit(d * .8, 140, .5 * force); }   // (et le grondement, dessous)
 // le bruit des faisceaux : un bourdonnement électrique qui vibre, et des crépitements ; plus fort à plusieurs, et quand ça touche le monstre
 function sonEffluves(n, touche) { if (!M) return; if (!n && !M.sonEff) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
   let S = M.sonEff;
@@ -6367,7 +6385,7 @@ function combatGB() { const L = M.L, moi = M.gens.get(M.moiNum); if (!moi || L.g
   const vise = new THREE.Vector3(0, 1.35, -4);
   M.cine = { gb: false, maj: () => { M.camera.position.set(0, 2.55, LIGNE_GB + 3.3); vise.lerp(C.intro > 0 && S ? S.pos : new THREE.Vector3(0, 1.35, -4), C.intro > 0 ? .04 : .03); M.camera.lookAt(vise); } }; }
 // Bouffe-tout touché : il file aussitôt ailleurs, vite
-function fuiteGB(S) { const B = MESS_GB, x = B.X0 + 1 + Math.random() * (B.X1 - B.X0 - 2), z = -10 + Math.random() * 12;
+function fuiteGB(S) { criSlimer(1.2); const B = MESS_GB, x = B.X0 + 1 + Math.random() * (B.X1 - B.X0 - 2), z = -10 + Math.random() * 12;
   S.cible = { x, y: 1.6 + Math.random() * 1.6, z }; S.attente = 0; S.arrive = false; S.rapide = true; S.fuiteT = 1.2; sonBruit(.25, 1200, .2); }
 // il nous fonce dessus : du slime partout, une vie en moins
 function salirGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!C || C.fini || !S) return; C.vies--; S.rapide = true; S.attaqueEnCours = false;
@@ -6426,7 +6444,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   // de temps en temps, il fonce sur nous
   if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 8 + Math.random() * 8; S.attaqueEnCours = true; S.rapide = true;   // (il fonce sur qui il veut : nous, ou l'un des quatre)
     const vis = [null, ...(M.gbScene ? M.gbScene.persos : [])][Math.floor(Math.random() * 5)], px = vis ? vis.x : moi.g.position.x, pz = vis ? vis.z : moi.g.position.z;
-    S.cible = { x: px + (Math.random() - .5) * .4, y: 1.35, z: pz - .5, apres: vis ? () => salirPersoGB(vis) : salirGB }; S.attente = 0; S.arrive = false; } }
+    S.cible = { x: px + (Math.random() - .5) * .4, y: 1.35, z: pz - .5, apres: vis ? () => salirPersoGB(vis) : salirGB }; S.attente = 0; S.arrive = false; criSlimer(1.3); } }
   if (S.attaqueEnCours && S.cible && !S.cible.apres) S.attaqueEnCours = false;   // (touché en route : il a filé ailleurs)
 }
 // le piège : lancé sous lui, il s'ouvre, un cône de lumière l'aspire, il se referme dans un nuage blanc ; puis retour dans la cour, à côté de l'Ecto-1
@@ -6567,7 +6585,7 @@ function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!
   a(() => { sonBruit(1.2, 85, 1); F.secousse = 1; if (chef) dire(CHEF_GB, "Qu'est-ce que c'est que ça ?!"); }, 1600);
   // la façade du fond éclate
   a(() => { F.vise = "facade"; F.trou = trouFacadeGB(); eclatsGB(F); sonBruit(2.4, 160, 1); sonBruit(1.2, 700, .7); F.secousse = 1.6; }, 2600);
-  a(() => { F.sp = creerSPGB(); F.sp.marche = true; F.vise = "sp"; }, 0);
+  a(() => { F.sp = creerSPGB(); F.sp.marche = true; F.vise = "sp"; rugirSP(1.3); }, 0);
   for (let k = 0; k < 4; k++) a(() => { sonBruit(1.2, 80, 1); F.secousse = 1.2; }, 1100);
   a(() => { F.sp.marche = false; F.parle = RA; bulle(`<b style="color:#b5573c">Ray</b> : Oh non… J'ai essayé de penser à la chose la plus inoffensive qui soit… un souvenir d'enfance… le Bibendum Chamallow !`, 6200); }, 6400);
   a(() => { F.parle = VE; bulle(`<b style="color:#b5573c">Venkman</b> : Bravo, Ray. Bon : tout le monde devant la voiture, en ligne ! Personne ne tire avant mon signal !`, 5000);
@@ -6598,7 +6616,7 @@ function combatSPGB() { const F = M.gbFinale, moi = M.gens.get(M.moiNum); if (!F
   Object.assign(moi.info, { tenue: "ghostbuster", couleur: "#c9b98f", bas: "#c9b98f", pieds: "#2a2522", gbDos: true }); dessinerCorps(moi);
   if (F.sp) { F.sp.z = SP_Z; F.sp.marche = false; }
   if (M.gbChef) { setTimeout(() => { if (M && M.gens.get(CHEF_GB)) retirerAncien(CHEF_GB); if (M) M.gbChef = false; }, 200); }
-  hudGB(C); musiqueGB(true);
+  hudGB(C); musiqueGB(true, "gb-geant");   // (la musique du combat contre le géant)
   const vise = new THREE.Vector3(GARE_GB[0], 9, SP_Z);
   M.cine = { gb: false, fov: [66, 84], maj: now => { if (C.camFin) { M.camera.position.copy(C.camFin.pos); M.camera.lookAt(C.camFin.vise); return; } const cp = new THREE.Vector3(GARE_GB[0], 2.8, LIGNE_SP + 7); if (F.secousse > 0) cp.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, 0).multiplyScalar(.3 * F.secousse));
     M.camera.position.copy(cp); vise.set(F.sp ? F.sp.x * .5 + GARE_GB[0] * .5 : GARE_GB[0], 7.4, SP_Z); M.camera.lookAt(vise); } }; }
@@ -6621,10 +6639,11 @@ function animerSPDeco(C, B, dt, now) { const m = B.mesh, sx = m.scale.x, sy = m.
     f.d.position.y -= f.v * dt; f.d.scale.y = 1 + f.t * .35; if (f.t > 5) f.d.material.opacity = 6 - f.t, f.d.material.transparent = true; } }
 function rocherGB(C, B, cibleP, verMoi, p) { const o = gravatGB(.75 + Math.random() * .45);   // (un bloc de maçonnerie arraché à la façade)
   const dep = new THREE.Vector3(B.x + (Math.random() < .5 ? -1 : 1) * 7.5, 13, B.z + 1.5); o.position.copy(dep); M.scene.add(o);
-  C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 2.1 + Math.random() * .5, moi: verMoi, p }); sonBruit(.3, 400, .3); }
+  C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 2.1 + Math.random() * .5, moi: verMoi, p }); sonBruit(.3, 400, .3); if (Math.random() < .55) rugirSP(.9); }
 function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
   gyroEcto(M.L.ecto1, true, now); cielVertGB(C.boum ? Math.max(0, 1 - C.boum.t / 4) : 1, dt); animerEclatsGB(F, dt);   // (après l'explosion, le ciel redevient normal) animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
   if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now); animerSPDeco(C, B, dt, now);
+  if (!C.boum) { C.rugT = (C.rugT == null ? 5 : C.rugT) - dt; if (C.rugT <= 0) { C.rugT = 6 + Math.random() * 6; rugirSP(); } }
   if (C.boum || C.ordre > 0) sonEffluves(0);
   if (C.boum) { animerBoumGB(C, dt, now); return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : FEU !`, 2200); sonBruit(.3, 900, .2); } return; }
@@ -6656,7 +6675,7 @@ function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C 
         if (C.vies <= 0) setTimeout(() => { if (M && M.gbCombat === C) { C.vies = 4; C.pv = PV_SP; hudGB(C); } }, 3200); }
       else if (c.p) { c.p.choc = 1; if (Math.random() < .5) bulle(`<b style="color:#b5573c">${esc(c.p.nom)}</b> : ${esc(["Ouh là !", "C'était moins une !", "Il vise bien, le bougre !"][Math.floor(Math.random() * 3)])}`, 2200); } } }
   hudGB(C);
-  if (!C.fini && C.pv <= 0) { C.pv = 0; C.fini = true; M.gbVisee = null; for (const r of C.rayons.values()) r.g.visible = false; C.boum = { t: 0, boules: [], gouttes: [], taches: [] }; sonBruit(3, 140, 1); sonBruit(1.5, 900, .8); F.secousse = 2; } }
+  if (!C.fini && C.pv <= 0) { C.pv = 0; C.fini = true; M.gbVisee = null; for (const r of C.rayons.values()) r.g.visible = false; C.boum = { t: 0, boules: [], gouttes: [], taches: [] }; rugirSP(1.5); sonBruit(3, 140, 1); sonBruit(1.5, 900, .8); F.secousse = 2; } }
 // il explose : une boule de feu, un éclair blanc… et il pleut de la guimauve, blanche et épaisse, sur toute la cour, les murs, la voiture et sur nous ;
 // puis on se retrouve tous, couverts de guimauve, devant l'Ecto-1 ; on se parle ; FIN
 let texGooSol = null;
@@ -6678,10 +6697,11 @@ function couvrirGoo(cible) {   // (un Ghostbuster : un calque collé sur son pan
   if (cible.mesh) { const im = cible.mesh.material.map && cible.mesh.material.map.image; if (!im || !im.width || cible.goo) return !!cible.goo; const t = new THREE.CanvasTexture(gooToile(im)); t.colorSpace = THREE.SRGBColorSpace;
     const o = new THREE.Mesh(cible.mesh.geometry, new THREE.MeshStandardMaterial({ map: t, alphaTest: .5, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .35, roughness: .45, side: THREE.DoubleSide })); o.position.z = .02; cible.mesh.add(o); cible.goo = o; return true; }
   const p = cible, c = p.corps, im = c && c.material.map && c.material.map.image; if (!im || !im.width) return false;
-  if (p.goo && p.goo.userData.src === c.material.map) return true; if (p.goo) p.g.remove(p.goo);
-  const t = new THREE.CanvasTexture(gooToile(im)); t.colorSpace = THREE.SRGBColorSpace; const o = c.isSprite ? new THREE.Sprite(new THREE.SpriteMaterial({ map: t, alphaTest: .5 })) : new THREE.Mesh(c.geometry, new THREE.MeshBasicMaterial({ map: t, alphaTest: .5 }));
-  o.userData.src = c.material.map; o.renderOrder = (c.renderOrder || 0) + 1; p.g.add(o); p.goo = o; return true; }
-function suivreGoo(p) { if (!p || !p.goo || !p.corps) return; const o = p.goo, c = p.corps; o.position.copy(c.position); o.scale.copy(c.scale); o.rotation.copy(c.rotation); if (o.isSprite) { o.center.copy(c.center); o.material.rotation = c.material.rotation || 0; } else o.position.z += .01; }
+  if (p.goo) return true;
+  const t = new THREE.CanvasTexture(gooToile(im)); t.colorSpace = THREE.SRGBColorSpace;   // (collé sur le corps lui-même, dessiné par-dessus : il suit ses mouvements)
+  const mat = { map: t, alphaTest: .5, transparent: true, depthWrite: false }, o = c.isSprite ? new THREE.Sprite(new THREE.SpriteMaterial(mat)) : new THREE.Mesh(c.geometry, new THREE.MeshBasicMaterial(mat));
+  if (!c.isSprite) o.position.z = .012; o.renderOrder = 12; c.add(o); p.goo = o; return true; }
+function suivreGoo() {}
 function animerBoumGB(C, dt, now) { const F = M.gbFinale, X = C.boum, B = F.sp, E = M.L.ecto1; X.t += dt; const t = X.t, moi = M.gens.get(M.moiNum);
   if (t < 1.4 && X.boules.length < 26 && Math.random() < .7) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flammeTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xffe0b0 }));
     sp.position.set(B.x + (Math.random() - .5) * 12, 3 + Math.random() * 20, B.z + 1); M.scene.add(sp); X.boules.push({ sp, t: 0, s: 6 + Math.random() * 8 }); }
