@@ -9519,7 +9519,7 @@ function manette() {
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
   if (appui(9)) relief(!M.relief);
-  if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } }
+  if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
   // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
   const gb = M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb;
   if (gb) { const m = MAN.mire = MAN.mire || { x: 0, y: .1 }, sx = rx || lx, sy = ry || ly;
@@ -9534,7 +9534,9 @@ function manette() {
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
-  if (appui(2) && M.L && !M.L.apo && !M.L.sh) danser(moi.info.danse ? false : true);
+  // X : les danses, l'une après l'autre (et on s'arrête) ; B arrête aussi
+  if (appui(2) && M.L && !M.L.apo && !M.L.sh) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
+    const i = D.indexOf(moi.info.danse), suiv = i + 1 < D.length ? D[i + 1] : false; danser(suiv); bulle(suiv ? N[suiv] + " <small>(X : danse suivante · B : stop)</small>" : "🛑 Fin de la danse", 1800); }
   // la vue : tourner, monter / descendre
   if (rx && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) - rx * dt * 2.4;
   if (ry && M.camE != null) M.camE = Math.max(.04, Math.min(1.35, M.camE + ry * dt * 1.1));
