@@ -5823,7 +5823,10 @@ export async function ouvrir(ctx) {
         const sx = tailleBonhomme() * .476 * 1.6 * hauteurDe(p);
         if (p.info.danse !== "madison") p.corps.scale.x = sx;
         const partenaire = p.info.slow && M.gens.get(p.info.slow);
-        if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
+        if (p.info.gbDos && p.poses.dos) {   // (S.O.S. Fantômes : en ligne, face au monstre, on le voit de dos — l'arrière de la tête et le pack)
+          if (p.corps.material.map !== p.poses.dos) { p.corps.material.map = p.poses.dos; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
+        else if (p.tirT && performance.now() - p.tirT < 380 && p.poses.tir) {
           const tp = p.tirVue && p.poses[p.tirVue] ? p.poses[p.tirVue] : p.poses.tir;   /* (le bras du côté de la cible ; droit devant si elle est devant ou derrière) */
           if (p.corps.material.map !== tp) { p.corps.material.map = tp; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
@@ -5958,10 +5961,11 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) cineArriveeGB();   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
+    if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
-    if (M.lieu === "grande" && M.L.ecto1) garerGB();
-    majTitreGB(performance.now()); animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
+    if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
+    animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
+    if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
     animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
@@ -5989,7 +5993,7 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t);
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (M.trace1) trace("avant 1re image " + M.lieu);
@@ -6020,9 +6024,10 @@ export function fermer() {
    Puis le combat au mess contre Bouffe-tout, le piège, et retour dans la cour. Chacun est un panneau découpé, vu de face ou de dos selon où il regarde */
 const GB = [["egon", "Egon"], ["ray", "Ray"], ["venkman", "Venkman"], ["winston", "Winston"]], CHEF_GB = -491;
 const texGB = {};
-function texGBi(n) { if (!texGB[n]) { texGB[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`); texGB[n].colorSpace = THREE.SRGBColorSpace; } return texGB[n]; }
+function texGBi(n) { if (!texGB[n]) { const t = texGB[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texGB[n]; }   // (envoyée tout de suite à la carte graphique : pas d'à-coup quand elle sert la première fois)
 function creerGB(cle, nom, x, z) { const H = tailleBonhomme() * 1.02, geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: texGBi(cle + "-face"), transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8 })); mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
+  texGBi(cle + "-dos"); const tf = texGBi(cle + "-face");   // (bien éclairés, même la nuit)
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .42, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8 })); mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
   const g = new THREE.Group(); g.add(mesh);
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .45, H * .3), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   g.position.set(x, 0, z); M.scene.add(g);
@@ -6033,21 +6038,18 @@ function animerGB(dt) { const S = M.gbScene; if (!S) return; if (S.L !== M.L) { 
     else { const v = p.regard || (moi && [moi.g.position.x, moi.g.position.z]); if (v) { const dx = v[0] - p.x, dz = v[1] - p.z, d = Math.hypot(dx, dz); if (d > .01) p.dir = [dx / d, dz / d]; } }
     p.g.position.set(p.x, 0, p.z);
     const cx = cam.x - p.x, cz = cam.z - p.z; p.mesh.rotation.y = Math.atan2(cx, cz);
-    const map = texGBi(p.cle + (p.dir[0] * cx + p.dir[1] * cz >= 0 ? "-face" : "-dos")); if (p.mesh.material.map !== map) { p.mesh.material.map = map; p.mesh.material.needsUpdate = true; }   /* (de face s'il regarde vers nous, de dos sinon) */
+    const map = texGBi(p.cle + (p.dir[0] * cx + p.dir[1] * cz >= 0 ? "-face" : "-dos")); if (p.mesh.material.map !== map) { p.mesh.material.map = map; p.mesh.material.emissiveMap = map; }   /* (de face s'il regarde vers nous, de dos sinon) */
     const im = map.image; if (im && im.width) p.mesh.scale.set(p.H * im.width / im.height, p.H, 1);
-    p.mesh.position.y = p.cible ? Math.abs(Math.sin(p.pas * 3.4)) * .05 : 0; p.mesh.rotation.z = p.cible ? Math.sin(p.pas * 3.4) * .035 : 0;
+    p.mesh.position.y = p.cible ? Math.abs(Math.sin(p.pas * 3.4)) * .05 : 0; p.mesh.rotation.z = p.choc > 0 ? Math.sin(p.choc * 18) * .25 * p.choc : p.cible ? Math.sin(p.pas * 3.4) * .035 : 0; if (p.choc > 0) p.choc -= dt;   // (un rocher l'a frôlé : il vacille)
     p.g.visible = p.visible !== false; } }
 const dureeLigne = t => Math.min(6500, 2400 + t.length * 52);
 // la fumée blanche, et le grand titre
 function titreGB() { if (!M || M.gbTitre) return; M.gbTitre = true; setTimeout(() => { if (M) M.gbTitre = false; }, 7000);
-  const d = voile("background:radial-gradient(circle,rgba(255,255,255,.97) 0%,rgba(242,242,242,.94) 60%,rgba(215,215,215,.9) 100%);opacity:0;display:grid;place-items:center", 6800);
-  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(88%,780px);opacity:0;transform:scale(.35)">';
-  M.gbTitreEl = { d, img: d.firstChild, t0: performance.now() };
+  if (!document.getElementById("styleGB")) { const st = document.createElement("style"); st.id = "styleGB";   // (en animations CSS : le téléphone les joue lui-même, bien fluides, même quand la 3D peine)
+    st.textContent = "@keyframes gbVoile{0%{opacity:0}16%{opacity:1}78%{opacity:1}100%{opacity:0}}@keyframes gbTitre{0%,12%{opacity:0;transform:scale(.35)}34%{opacity:1;transform:scale(1.05)}44%,100%{opacity:1;transform:scale(1)}}"; document.head.appendChild(st); }
+  const d = voile("background:radial-gradient(circle,rgba(255,255,255,.97) 0%,rgba(242,242,242,.94) 60%,rgba(215,215,215,.9) 100%);opacity:0;animation:gbVoile 6.6s ease-in-out forwards;will-change:opacity;display:grid;place-items:center", 6700);
+  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(88%,780px);opacity:0;animation:gbTitre 6.6s cubic-bezier(.2,.8,.3,1) forwards;will-change:transform,opacity">';
   if (M.L && M.L.ecto1) brumeSH(M.L.ecto1.position.clone().setY(0), 5200); sonBruit(1.4, 600, .22); }
-// (image par image, depuis la boucle : la fumée blanche monte, le titre surgit en grossissant, puis tout s'efface)
-function majTitreGB(now) { const T = M.gbTitreEl; if (!T) return; const u = (now - T.t0) / 6600; if (u >= 1 || !T.d.isConnected) { T.d.remove(); M.gbTitreEl = null; return; }
-  T.d.style.opacity = String(u < .16 ? u / .16 : u < .76 ? 1 : 1 - (u - .76) / .24);
-  const v = Math.max(0, Math.min(1, (u - .12) / .22)), e = 1 - Math.pow(1 - v, 3); T.img.style.opacity = String(v); T.img.style.transform = `scale(${(.35 + .65 * e + .06 * Math.sin(v * Math.PI)).toFixed(3)})`; }
 const MESS_GB = { X0: -10, X1: 6, Z0: -12, Z1: 12, BX0: -8.6, BX1: 4.6, BZ: -11.45, BD: .8, TOP: .9 };
 function matsGB() { if (MESS_GB.m) return MESS_GB.m; const S = (o) => new THREE.MeshStandardMaterial(o);
   return (MESS_GB.m = { porcelaine: S({ color: 0xfbfaf6, roughness: .25 }), argent: S({ color: 0xd8dadd, metalness: .9, roughness: .22 }), verre: S({ color: 0xdff2ff, transparent: true, opacity: .45, roughness: .05, metalness: .1 }),
@@ -6167,7 +6169,7 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
       else if (restes.length && r < .35) { const it = restes[Math.floor(Math.random() * restes.length)]; S.cible = { x: it.p.x, y: 1.5, z: B.BZ + .7, buffet: true }; }
       else if (libres.length && r < .8) { const i = libres[Math.floor(Math.random() * libres.length)]; S.cible = { x: L.tablesMess[i][0], y: 1.35, z: L.tablesMess[i][1], table: i }; }
       else { const murs = [[B.X0 + .7, 1.4 + Math.random() * 1.5, -9 + Math.random() * 15], [B.X1 - .7, 1.4 + Math.random() * 1.5, -9 + Math.random() * 15], [-8 + Math.random() * 12, 1.8 + Math.random(), B.Z0 + .7]]; const w = murs[Math.floor(Math.random() * 3)]; S.cible = { x: w[0], y: w[1], z: w[2] }; } } }
-  if (S.cible && !(S.attente > 0)) { const c = S.cible, d = new THREE.Vector3(c.x - S.pos.x, c.y - S.pos.y, c.z - S.pos.z), l = d.length(), vmax = S.rapide ? 4.2 : 3.0;
+  if (S.cible && !(S.attente > 0)) { const c = S.cible, d = new THREE.Vector3(c.x - S.pos.x, c.y - S.pos.y, c.z - S.pos.z), l = d.length(), vmax = (S.rapide ? 4.2 : 3.0) * (S.combat ? 1.35 : 1);
     const v = l > .01 ? d.multiplyScalar(Math.min(vmax, l * 2.2) / l) : d; S.vit.lerp(v, Math.min(1, dt * 2.5));
     if (l < .3) { S.arrive = true; S.attente = (c.buffet ? 1.6 : c.table != null ? .5 : .4) * (S.combat ? 2 : 1);   // (au combat : il s'attarde un peu, c'est là qu'on peut le toucher)
       if (c.buffet) { const pres = S.buf.mets.filter(it => !it.mange && !it.v && Math.abs(it.p.x - S.pos.x) < 1.6).sort((a, b) => Math.abs(a.p.x - S.pos.x) - Math.abs(b.p.x - S.pos.x));
@@ -6192,8 +6194,12 @@ const GARE_GB = [1.6, 3.0];   // (où l'Ecto-1 s'arrête : au milieu de la cour 
 function gyroEcto(e, on, now) { const G = e && e.userData.gyro; if (!G) return; const ph = Math.floor(now / 140) % 4, b = on && ph % 2 === 0, r = on && ph % 2 === 1;
   for (const m of G.bleus) { m.emissive.setHex(b ? 0x4a7aff : 0x0a1a50); m.emissiveIntensity = b ? 2.4 : 1; }
   for (const m of G.rouges) { m.emissive.setHex(r ? 0xff2a2a : 0x500000); m.emissiveIntensity = r ? 2.6 : 1; }
-  if (on && !G.lb) { G.lb = new THREE.PointLight(0x4a7aff, 0, 16, 1.5); G.lr = new THREE.PointLight(0xff2a2a, 0, 16, 1.5); G.lb.position.set(1.25, 2.2, 0); G.lr.position.set(-1.3, 2.5, 0); e.add(G.lb, G.lr); }
-  if (G.lb) { G.lb.intensity = b ? 10 : 0; G.lr.intensity = r ? 10 : 0; } }
+  // les faisceaux qui tournent sur le toit, rouge et bleu, et qui balaient toute la cour d'honneur
+  if (on && !G.tour) { G.tour = [[0x3a6aff, 0], [0xff2a2a, Math.PI]].map(([c, d]) => { const piv = new THREE.Group(); piv.position.set(0, 2.25, 0); e.add(piv);
+      const geo = new THREE.CylinderGeometry(.06, 1.6, 9, 20, 1, true); geo.translate(0, -4.5, 0);
+      const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); cone.rotation.z = Math.PI / 2 + .22; piv.add(cone);
+      const sp = new THREE.SpotLight(c, 0, 34, .42, .55, 1.1), cib = new THREE.Object3D(); cib.position.set(12, -2.25 - 2.7, 0); piv.add(sp, cib); sp.target = cib; return { piv, sp, d }; }); }
+  if (G.tour) for (const t of G.tour) { t.piv.visible = on; t.sp.intensity = on ? 90 : 0; t.piv.rotation.y = now / 1000 * 3.4 + t.d; } }
 // la sirène de l'Ecto-1 (le vrai son) : elle hurle pendant que la voiture entre, puis s'éteint en fondu
 function sireneGB(on) { if (!M) return; let a = M.sirGB;
   if (on) { if (!a) { a = M.sirGB = new Audio("sons/gb-sirene.mp3"); } clearInterval(a.fondu); a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); return; }
@@ -6215,7 +6221,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   const portes = [[1.0, -1.25], [1.0, 1.25], [-.3, -1.25], [-.3, 1.25]];
   S.persos.forEach((p, k) => a(() => { const w = posEcto(E, portes[k][0], portes[k][1]); p.x = w.x; p.z = w.z; p.visible = true; sonBruit(.1, 1600, .25); p.cible = p.place; }, 650));
   t += 2400;
-  const ligne = (p, txt) => a(() => { M.gbParle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); for (const q of S.persos) q.regard = q === p ? [mp.x, mp.z] : [p.x, p.z]; }, dureeLigne(txt) + 300);
+  const ligne = (p, txt) => a(() => { M.gbParle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); for (const q of S.persos) q.regard = null; }, dureeLigne(txt) + 300);   // (ils restent tous de face)
   ligne(VE, "Bon. D'après le standard, il y aurait un gros truc vert qui fait peur à tout le voisinage. Gluant, affamé, et très mal élevé. Mon genre de client, quoi.");
   ligne(RA, "Une apparition de classe 5, mobile, à forte manifestation ectoplasmique ! Ça, les gars, c'est du sérieux !");
   ligne(EG, "Les relevés du PKE sont hors norme. Et je rappelle une chose : il ne faut jamais croiser les effluves.");
@@ -6224,7 +6230,6 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   a(() => { const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x + 4, mp.z + 9);
     chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: d0[0], z: d0[1] });
     if (chef) { chef.rapide = true; const v = viserLibre((cx + mp.x) / 2 - px * 1.8, (cz + mp.z) / 2 - pz * 1.8); viser(chef, v[0], v[1]); } M.gbParle = chef; }, 3600);
-  a(() => { if (chef) for (const q of S.persos) q.regard = [chef.g.position.x, chef.g.position.z]; });
   for (const txt of ["Ah ! Vous voilà enfin arrivés !", "Il faut attraper cette chose, et vite ! Elle est au mess : elle casse tout, et elle mange tout. Le buffet, les réserves… tout y passe !", "Et le Président de la République doit arriver d'une minute à l'autre… Alors faites vite, je vous en prie !"])
     a(() => { if (chef) { M.gbParle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
   ligne(VE, "Le Président ? Pas de panique. On lui gardera une part du buffet… s'il en reste.");
@@ -6232,7 +6237,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
   a(() => { M.gbParle = null; titreGB(); }, 6600);
   let i = 0, fini = false, clk = 0, prec = performance.now(), vise = null;
   const finir = () => { if (fini) return; fini = true; M.gbParle = null; M.gbGare = true; M.cineSeul = null; sireneGB(false);
-    voile("background:#fff;opacity:0;transition:opacity .8s", 2600).getBoundingClientRect(); setTimeout(() => { if (!M) return; finCine(); M.gbChef = false; changerLieu("gb-mess", [0, LIGNE_GB], 0); }, 900); };
+    voile("background:#fff;opacity:0;transition:opacity .8s", 2600).getBoundingClientRect(); setTimeout(() => { if (!M) return; finCine(); M.gbChef = false; M.gbActe = 1; changerLieu("gb-mess", [0, LIGNE_GB], 0); }, 900); };
   M.passerBtn = boutonPasser(() => { titreGB(); M.cine.maj = () => {}; setTimeout(finir, 3200); });
   M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1); prec = now; gyroEcto(E, true, now);
     while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
@@ -6240,7 +6245,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
     if (u < 1) { E.position.set(ex, 0, ez); E.rotation.y = Math.atan2(-tz, tx); } else if (!M.gbSirCoupee) { M.gbSirCoupee = true; setTimeout(() => sireneGB(false), 2500); }
     // la caméra : d'abord vers le porche, la voiture qui entre ; puis près de nous, sur la voiture qui s'arrête ; ensuite sur celui qui parle
     const q = M.gbParle, f = q && q.g ? q.g.position : null, cible = f ? new THREE.Vector3(f.x, 1.25, f.z) : u < 1 ? new THREE.Vector3(ex, 1.1, ez) : new THREE.Vector3(cx, 1.2, cz);
-    vise = vise || cible.clone(); vise.lerp(cible, Math.min(1, .002 * Math.min(50, now - (M.gbPrec || now)) * 30)); M.gbPrec = now;
+    vise = vise || cible.clone(); vise.lerp(cible, 1 - Math.exp(-Math.min(50, now - (M.gbPrec || now)) / 1000 * 1.6)); M.gbPrec = now;   // (la caméra glisse doucement vers celui qui parle : plus de saut)
     const camLoin = new THREE.Vector3(-5, 2.3, -4.5), camPres = new THREE.Vector3(mp.x - dx * 1.9 + px * 1.3, mp.y + 1.85, mp.z - dz * 1.9 + pz * 1.3), k = lisse(Math.max(0, Math.min(1, (u - .45) / .5)));
     M.camera.position.copy(camLoin.lerp(camPres, k)); M.camera.position.y += Math.sin(Math.PI * k) * 3.2;   /* (elle passe par-dessus la voiture) */ M.camera.lookAt(vise); } }; }
 
@@ -6276,17 +6281,28 @@ function majRayon(r, A, B, now) { r.g.visible = true; const cam = M.camera.posit
       pos[i * 6] = p.x + s.x; pos[i * 6 + 1] = p.y + s.y; pos[i * 6 + 2] = p.z + s.z; pos[i * 6 + 3] = p.x - s.x; pos[i * 6 + 4] = p.y - s.y; pos[i * 6 + 5] = p.z - s.z; }
     b.m.geometry.attributes.position.needsUpdate = true; }
   r.bout.position.copy(A); r.bout.scale.setScalar(.35 + Math.random() * .2); r.impact.position.copy(B); r.impact.scale.setScalar(.8 + Math.random() * .6); }
-function brulerGB(C, h, dir) { if (!h || !h.face) return; const n = h.face.normal.clone();
+let texFlammeGB = null;
+const flammeTex = () => texFlammeGB || (texFlammeGB = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 112, 2, 32, 96, 70); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.25, "rgba(255,200,60,.95)"); g.addColorStop(.55, "rgba(255,110,20,.7)"); g.addColorStop(1, "rgba(200,30,0,0)");
+  x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.bezierCurveTo(52, 40, 62, 80, 58, 104); x.bezierCurveTo(54, 124, 10, 124, 6, 104); x.bezierCurveTo(2, 80, 12, 40, 32, 2); x.fill(); })));
+// une flamme qui reste accrochée là où le faisceau a brûlé (un mur, une table), et danse quelques secondes
+function flammeGB(C, P, n) { C.flammes = C.flammes || []; if (C.flammes.length > 40) return;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flammeTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); sp.center.set(.5, .05);
+  sp.position.copy(P).addScaledVector(n, .06); sp.renderOrder = 6; M.scene.add(sp); C.flammes.push({ sp, t: 0, vie: 6 + Math.random() * 5, s: .35 + Math.random() * .35, ph: Math.random() * 9 }); }
+function animerFlammes(C, dt, now) { if (!C.flammes) return; for (let k = C.flammes.length - 1; k >= 0; k--) { const f = C.flammes[k]; f.t += dt;
+    const fin = Math.min(1, (f.vie - f.t) / 1.5), deb = Math.min(1, f.t / .4), k2 = Math.max(0, fin) * deb; if (f.t >= f.vie) { M.scene.remove(f.sp); C.flammes.splice(k, 1); continue; }
+    const fl = 1 + .25 * Math.sin(now / 70 + f.ph) + .15 * Math.sin(now / 37 + f.ph * 2); f.sp.scale.set(f.s * .6 * (2 - fl * .6) * k2, f.s * 1.3 * fl * k2, 1); f.sp.material.opacity = .85 * k2; f.sp.material.rotation = Math.sin(now / 160 + f.ph) * .12; } }
+function brulerGB(C, h, dir, cle = "") { if (!h || !h.face) return; const n = h.face.normal.clone();
   if (h.instanceId != null && h.object.getMatrixAt) { const m4 = new THREE.Matrix4(); h.object.getMatrixAt(h.instanceId, m4); n.transformDirection(m4); }
   n.transformDirection(h.object.matrixWorld); if (n.dot(dir) > 0) n.negate();
-  for (const b of C.brulures) if (b.position.distanceTo(h.point) < .38) return;
-  const t = .5 + Math.random() * .45, o = new THREE.Mesh(new THREE.PlaneGeometry(t, t * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
+  C.der = C.der || {}; if (C.der[cle] && C.der[cle].distanceTo(h.point) < .13) return; C.der[cle] = h.point.clone();   // (des traînées : les brûlures se suivent le long du faisceau qui balaie)
+  if (Math.random() < .2) flammeGB(C, h.point, n);
+  const t = .28 + Math.random() * .2, o = new THREE.Mesh(new THREE.PlaneGeometry(t, t * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
   o.position.copy(h.point).addScaledVector(n, .01); o.lookAt(h.point.clone().add(n)); o.rotateZ(Math.random() * 6.28); o.renderOrder = 3; M.scene.add(o); C.brulures.push(o);
-  if (C.brulures.length > 220) M.scene.remove(C.brulures.shift()); }
+  if (C.brulures.length > 420) M.scene.remove(C.brulures.shift()); }
 function hudGB(C) { if (!C.hud) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:7;width:min(78%,560px);pointer-events:none;font:900 12px 'Lato',sans-serif;color:#eaffd8;text-shadow:0 1px 2px #000;text-align:center";
-    d.innerHTML = '<div>BOUFFE-TOUT</div><div style="margin-top:3px;height:14px;border:2px solid #0d2a06;border-radius:8px;background:rgba(0,0,0,.55);overflow:hidden"><div class="pv" style="height:100%;width:100%;background:linear-gradient(#a6ff5a,#3fa61a);transition:width .2s"></div></div><div class="vies" style="margin-top:5px;font-size:18px;letter-spacing:3px"></div>';
+    d.innerHTML = '<div class="nom">BOUFFE-TOUT</div><div style="margin-top:3px;height:14px;border:2px solid #0d2a06;border-radius:8px;background:rgba(0,0,0,.55);overflow:hidden"><div class="pv" style="height:100%;width:100%;background:linear-gradient(#a6ff5a,#3fa61a);transition:width .2s"></div></div><div class="vies" style="margin-top:5px;font-size:18px;letter-spacing:3px"></div>';
     M.ctx.conteneur.appendChild(d); C.hud = d; }
-  C.hud.querySelector(".pv").style.width = Math.max(0, C.pv / PV_GB * 100) + "%"; C.hud.querySelector(".vies").textContent = "❤️".repeat(Math.max(0, C.vies)) + "🤍".repeat(Math.max(0, 4 - C.vies)); }
+  if (C.nom) C.hud.querySelector(".nom").textContent = C.nom; C.hud.querySelector(".pv").style.width = Math.max(0, C.pv / (C.pvMax || PV_GB) * 100) + "%"; C.hud.querySelector(".vies").textContent = "❤️".repeat(Math.max(0, C.vies)) + "🤍".repeat(Math.max(0, 4 - C.vies)); }
 // le thème de S.O.S. Fantômes : dès qu'on entre au mess, pendant qu'on regarde Bouffe-tout tout démolir, et tout le combat
 function musiqueGB(on) { if (!M) return; let a = M.musGB;
   if (on) { if (!a) { a = M.musGB = new Audio("sons/gb-theme.mp3"); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); return; }
@@ -6301,7 +6317,7 @@ function combatGB() { const L = M.L, moi = M.gens.get(M.moiNum); if (!moi || L.g
   if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
   M.gbScene = { L, persos: GB.map(([c, n]) => { const p = creerGB(c, n, xs[c], LIGNE_GB); p.regard = [xs[c], -20]; p.tirT = 1 + Math.random() * 3; return p; }) };
   moi.g.position.set(0, 0, LIGNE_GB); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: 0, z: LIGNE_GB });
-  Object.assign(moi.info, { tenue: "ghostbuster", couleur: "#c9b98f", bas: "#c9b98f", pieds: "#2a2522" }); dessinerCorps(moi);   // (nous aussi, en combinaison, le pack sur le dos)
+  Object.assign(moi.info, { tenue: "ghostbuster", couleur: "#c9b98f", bas: "#c9b98f", pieds: "#2a2522", gbDos: true }); dessinerCorps(moi);   // (nous aussi, en combinaison, le pack sur le dos)
   // ce que les tirs peuvent brûler : la salle, les tables, les chaises, le buffet (pas les gens, ni Bouffe-tout, ni le slime)
   const exclus = new Set(); for (const p of M.gens.values()) p.g.traverse(o => exclus.add(o)); for (const p of M.gbScene.persos) p.g.traverse(o => exclus.add(o));
   M.scene.traverse(o => { if ((o.isMesh || o.isInstancedMesh) && !exclus.has(o) && !(o.material && o.material.transparent && o.material.depthWrite === false) && o.visible) C.cibles.push(o); });
@@ -6322,6 +6338,13 @@ function salirGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(M.mo
   bulle(C.vies > 0 ? `<b style="color:#b5573c">Ray</b> : Beurk ! Il t'a slimé ! Ça va, ${esc(prenomSH())} ?` : "<b>Bouffe-tout vous a eus…</b> On se relève, et on recommence !", 3800);
   if (C.vies <= 0) setTimeout(() => { if (M && M.gbCombat === C) { C.vies = 4; C.pv = PV_GB; hudGB(C); } }, 3500);
   hudGB(C); fuiteGB(S); }
+// il a slimé l'un des quatre : couvert de vert, il s'en plaint
+function salirPersoGB(p) { const C = M.gbCombat, S = M.L.gbMess; if (!C || C.fini || !S) return; S.attaqueEnCours = false;
+  if (!texSlime) { texSlime = new THREE.TextureLoader().load("images/gb/slime.webp"); texSlime.colorSpace = THREE.SRGBColorSpace; }
+  if (!p.slime) { p.slime = new THREE.Mesh(new THREE.PlaneGeometry(.8, .6), new THREE.MeshStandardMaterial({ map: texSlime, transparent: true, depthWrite: false, emissive: 0x2a8a18, emissiveIntensity: .4, roughness: .1 })); p.slime.position.set(0, p.H * .62, .03); p.mesh.add(p.slime); p.slime.scale.set(1 / (p.H * .42), 1 / p.H, 1); }
+  slimeGB(S, p.x, 0, p.z - .1, 0, 1, 0, 1.1); sonBruit(.5, 300, .4); p.choc = 1;
+  const r = { venkman: "Il m'a slimé !", ray: "Beurk ! J'en ai partout !", egon: "Fascinant… et répugnant.", winston: "Hé ! Pas sur la combinaison !" }[p.cle];
+  bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(r)}`, 3200); fuiteGB(S); }
 function vaincuGB(C, S) { C.fini = true; S.fige = new THREE.Vector3(-.6, 1.9, -1.5); S.cible = null; M.gbVisee = null;
   bulle(`<b style="color:#b5573c">Ray</b> : Il est à bout ! On le tient ! ${esc(prenomSH())}, lance le piège, vite !`, 7000);
   const b = document.createElement("button"); b.type = "button"; b.textContent = "🪤 Piège à fantômes";
@@ -6329,8 +6352,10 @@ function vaincuGB(C, S) { C.fini = true; S.fige = new THREE.Vector3(-.6, 1.9, -1
   for (const ev of ["pointerdown", "pointerup", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
   b.onclick = e => { e.stopPropagation(); b.remove(); C.piegeBtn = null; cinePiegeGB(); }; M.ctx.conteneur.appendChild(b); C.piegeBtn = b; }
 function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L !== M.L) { finCombatGB(); return; } const S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!S || !moi) return; C.t += dt;
-  if (C.intro > 0) { C.intro -= dt; if (C.intro <= 0 || (S.script && !S.script.length && C.intro < 8)) { C.intro = 0; S.script = null; if (M.cine) M.cine.gb = true; hudGB(C);
-      bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6000); } return; }
+  animerFlammes(C, dt, now);
+  if (C.intro > 0) { C.intro -= dt; if (C.intro <= 0 || (S.script && !S.script.length && C.intro < 8)) { C.intro = 0; S.script = null; C.ordre = 6.5; hudGB(C);
+      bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Personne ne tire avant mon signal. Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6200); } return; }
+  if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { C.ordre = 0; if (M.cine) M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : Attention… FEU !`, 2600); sonBruit(.3, 900, .2); } return; }   // (personne ne tire tant qu'il n'a pas donné l'ordre)
   const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); ray.camera = M.camera; const vus = new Set();
   const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position;
   const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
@@ -6339,7 +6364,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
       if (fuit) { C.contact += dt; if (C.contact > .3 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
     else { const h = ray.intersectObjects(C.cibles, false)[0]; B2 = h ? h.point.clone() : A.clone().addScaledVector(dir, 25);
-      if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 110)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir); } if (fuit) C.contact = 0; }
+      if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 28)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir, cle); } if (fuit) C.contact = 0; }
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
   // le nôtre : là où le doigt vise
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
@@ -6357,8 +6382,9 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   hudGB(C);
   if (!C.fini && C.pv <= 0) { C.pv = 0; vaincuGB(C, S); return; }
   // de temps en temps, il fonce sur nous
-  if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 12 + Math.random() * 10; S.attaqueEnCours = true; S.rapide = true;
-    S.cible = { x: moi.g.position.x + (Math.random() - .5) * .4, y: 1.35, z: moi.g.position.z - .5, apres: salirGB }; S.attente = 0; S.arrive = false; } }
+  if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 8 + Math.random() * 8; S.attaqueEnCours = true; S.rapide = true;   // (il fonce sur qui il veut : nous, ou l'un des quatre)
+    const vis = [null, ...(M.gbScene ? M.gbScene.persos : [])][Math.floor(Math.random() * 5)], px = vis ? vis.x : moi.g.position.x, pz = vis ? vis.z : moi.g.position.z;
+    S.cible = { x: px + (Math.random() - .5) * .4, y: 1.35, z: pz - .5, apres: vis ? () => salirPersoGB(vis) : salirGB }; S.attente = 0; S.arrive = false; } }
   if (S.attaqueEnCours && S.cible && !S.cible.apres) S.attaqueEnCours = false;   // (touché en route : il a filé ailleurs)
 }
 // le piège : lancé sous lui, il s'ouvre, un cône de lumière l'aspire, il se referme dans un nuage blanc ; puis retour dans la cour, à côté de l'Ecto-1
@@ -6377,7 +6403,7 @@ function cinePiegeGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(
   cone.position.set(arr.x, hC / 2 + .12, arr.z); cone.visible = false; M.scene.add(cone); const lum = new THREE.PointLight(0xdfeaff, 0, 9, 1.5); lum.position.set(arr.x, .5, arr.z); M.scene.add(lum);
   const f0 = S.fige.clone(); let clk = 0, prec = performance.now(), dits = 0, fini = false; sonBruit(.3, 900, .2);
   const fin = () => { if (fini) return; fini = true; voile("background:#fff;opacity:0;transition:opacity .9s", 2600).getBoundingClientRect();
-    setTimeout(() => { if (!M) return; finCine(); finCombatGB(); M.gbCapture = true; M.gbGare = true; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - 0.2], -Math.PI / 2); }, 1000); };
+    setTimeout(() => { if (!M) return; finCine(); finCombatGB(); M.gbCapture = true; M.gbGare = true; M.gbActe = 2; changerLieu("gb-cour", [GARE_GB[0] - 3.4, GARE_GB[1] - .2], -Math.PI / 2); }, 1000); };   // (la suite : retour dans la cour, toujours sans voitures)
   M.passerBtn = boutonPasser(fin);
   M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) / 1000 * (M.vite || 1); prec = now; const t = clk;
     // le lancer : une parabole, en tournoyant, puis il glisse et s'arrête sous lui
@@ -6403,6 +6429,176 @@ function garerGB() { const L = M.L, E = L.ecto1; if (!E) return; E.visible = !!M
   if (M.gbCapture) { if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
     const pl = [[-.5, .6], [-.6, 1.8], [-.5, 4.2], [-.7, 5.4]]; M.gbScene = { L, persos: GB.map(([c, n], k) => creerGB(c, n, pl[k][0], pl[k][1])) }; } }
 
+/* ----- la fin : retour dans la cour (sans les voitures garées) ; on se remercie, le chef de poste se lamente sur les dégâts… puis le ciel devient vert,
+   des pas de géant font trembler la cour, la façade du bâtiment du fond éclate, et le Bibendum Chamallow surgit, haut comme l'immeuble.
+   Tout le monde en ligne devant l'Ecto-1 : on tire à son signal ; lui nous lance des blocs de pierre. Sa jauge vide, il explose : de la guimauve partout. FIN ----- */
+const SP_Z = -14, SP_H = 24, PV_SP = 170, LIGNE_SP = -1.9;
+const texSP = {};
+function texSPi(n) { if (!texSP[n]) { const t = texSP[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texSP[n]; }
+// le ciel vert, en tourbillon, au-dessus de la cour (u : de 0 à 1, la bascule)
+function cielVertGB(u) { const sc = M.scene; let G = M.L.gbCiel;
+  if (!G) { const dome = new THREE.Mesh(new THREE.CircleGeometry(170, 56), new THREE.MeshBasicMaterial({ map: texSPi("ciel-vortex"), transparent: true, opacity: 0, fog: false, side: THREE.DoubleSide, depthWrite: false }));
+    dome.rotation.x = Math.PI / 2; dome.position.y = 62; sc.add(dome);
+    const hemi = sc.children.find(o => o.isHemisphereLight), sol = sc.children.find(o => o.isDirectionalLight), vert = new THREE.AmbientLight(0x6dff7a, 0); sc.add(vert);
+    G = M.L.gbCiel = { dome, vert, hemi, sol, hC: hemi && hemi.color.clone(), solI: sol ? sol.intensity : 0, fog0: sc.fog ? sc.fog.color.clone() : null, bg0: sc.background }; }
+  G.u = u; G.dome.material.opacity = u; G.vert.intensity = .45 * u;
+  if (u > .45) { const tb = texSPi("ciel-vert"); if (sc.background !== tb) sc.background = tb; } else if (G.bg0 && sc.background !== G.bg0) sc.background = G.bg0;
+  if (sc.fog && G.fog0) sc.fog.color.copy(G.fog0).lerp(new THREE.Color(0x1d5a24), u);
+  if (G.hemi) G.hemi.color.copy(G.hC).lerp(new THREE.Color(0xa8ffb0), u * .7);
+  if (G.sol) G.sol.intensity = G.solI * (1 - .55 * u); }
+// la façade éclatée : un grand trou aux bords déchiquetés, des blocs de brique qui volent, la poussière
+function trouFacadeGB() { const c = toile(512, 512, (x) => { x.translate(256, 256); const pts = []; for (let k = 0; k < 26; k++) { const a = k / 26 * Math.PI * 2, r = 170 + Math.random() * 70; pts.push([Math.cos(a) * r, Math.sin(a) * r * .9]); }
+    x.fillStyle = "#6e3022"; x.beginPath(); pts.forEach(([a, b], i) => x[i ? "lineTo" : "moveTo"](a * 1.08, b * 1.08)); x.closePath(); x.fill();   // (l'auréole de briques arrachées)
+    const g = x.createRadialGradient(0, 0, 10, 0, 0, 230); g.addColorStop(0, "#020101"); g.addColorStop(.7, "#140b08"); g.addColorStop(1, "#2a1610"); x.fillStyle = g;
+    x.beginPath(); pts.forEach(([a, b], i) => x[i ? "lineTo" : "moveTo"](a, b)); x.closePath(); x.fill();
+    x.fillStyle = "#8e3b2a"; for (let k = 0; k < 60; k++) { const [a, b] = pts[k % pts.length], f = .95 + Math.random() * .18; x.fillRect(a * f - 8, b * f - 4, 16 + Math.random() * 10, 8); } });
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(17, 15), new THREE.MeshStandardMaterial({ map: tex(c), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -4 }));
+  o.position.set(0, 15.5, -17.92); M.scene.add(o); return o; }
+function eclatsGB(F) { const brique = new THREE.MeshStandardMaterial({ color: 0x8e3b2a, roughness: .9 }), pierre = new THREE.MeshStandardMaterial({ color: 0xd8cfbc, roughness: .9 });
+  for (let k = 0; k < 46; k++) { const s = .35 + Math.random() * 1.1, o = new THREE.Mesh(new THREE.BoxGeometry(s, s * (.4 + Math.random() * .5), s * (.5 + Math.random() * .6)), Math.random() < .75 ? brique : pierre); o.castShadow = true;
+    o.position.set((Math.random() - .5) * 13, 9 + Math.random() * 13, -17.6); M.scene.add(o);
+    F.eclats.push({ o, v: new THREE.Vector3((Math.random() - .5) * 7, Math.random() * 4, 3 + Math.random() * 7), w: new THREE.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6), s }); }
+  for (let k = 0; k < 14; k++) poussiereGB(F, new THREE.Vector3((Math.random() - .5) * 14, 8 + Math.random() * 14, -16.5), 4 + Math.random() * 5);
+  for (const x of [-6, 0, 6]) brumeSH(new THREE.Vector3(x, 0, -14), 6000); }
+function poussiereGB(F, P, taille, couleur = 0x9a8f86) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurGB(), color: couleur, transparent: true, depthWrite: false, opacity: .8 })); sp.position.copy(P); sp.scale.setScalar(taille * .4); M.scene.add(sp);
+  F.puffs.push({ sp, t: 0, vie: 3 + Math.random() * 2, s: taille }); }
+function animerEclatsGB(F, dt) {
+  for (const e of F.eclats) { if (!e.v) continue; e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.w.x * dt; e.o.rotation.y += e.w.y * dt;
+    if (e.o.position.y < e.s * .25) { e.o.position.y = e.s * .25; if (e.v.y < -3) { e.v.y *= -.25; e.v.x *= .5; e.v.z *= .5; e.w.multiplyScalar(.5); } else e.v = null; } }
+  for (let k = F.puffs.length - 1; k >= 0; k--) { const p = F.puffs[k]; p.t += dt; const u = p.t / p.vie; if (u >= 1) { M.scene.remove(p.sp); F.puffs.splice(k, 1); continue; }
+    p.sp.scale.setScalar(p.s * (.4 + u * 1.2)); p.sp.material.opacity = .8 * (1 - u); p.sp.position.y += dt * .6; } }
+// le Bibendum : un grand panneau découpé, de face, de dos ou de profil selon où il va
+function creerSPGB() { const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0); for (const n of ["dos", "gauche", "droit"]) texSPi("staypuft-" + n);
+  const tf = texSPi("staypuft-face"), mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .5, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .7 }));
+  mesh.scale.set(SP_H * .76, SP_H, 1); M.scene.add(mesh); return { mesh, x: 0, z: -17.4, vx: 0, vue: "face" }; }
+function majSPGB(B, now) { const cam = M.camera.position, m = B.mesh; m.position.set(B.x, Math.abs(Math.sin(now / 600)) * .25 * (B.marche ? 1 : 0), B.z); m.rotation.y = Math.atan2(cam.x - B.x, cam.z - B.z);
+  const vue = Math.abs(B.vx) > .9 ? (B.vx > 0 ? "droit" : "gauche") : "face"; if (vue !== B.vue) { B.vue = vue; const t = texSPi("staypuft-" + vue); m.material.map = t; m.material.emissiveMap = t; }
+  const im = m.material.map.image; if (im && im.width) m.scale.set(SP_H * im.width / im.height, SP_H, 1); m.rotation.z = B.marche ? Math.sin(now / 600) * .02 : 0; }
+function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbChef = true; M.cineSeul = CHEF_GB;
+  const F = M.gbFinale = { L: M.L, eclats: [], puffs: [], secousse: 0, ciel: 0 };
+  E.visible = true; E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2;
+  moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(); moi.info.gbDos = false;
+  if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
+  const pl = [[mp.x - 1.6, mp.z - 2.0], [mp.x - .5, mp.z - 2.4], [mp.x + .6, mp.z - 2.3], [mp.x + 1.5, mp.z - 1.6]];
+  const S = M.gbScene = { L: M.L, persos: GB.map(([c, n], k) => creerGB(c, n, pl[k][0], pl[k][1])) }, [EG, RA, VE, WI] = S.persos; let chef = null;
+  const etapes = []; let t = 900; const a = (f, apres = 0) => { etapes.push([t, f]); t += apres; };
+  const ligne = (p, txt) => a(() => { F.parle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); }, dureeLigne(txt) + 300);
+  const chefDit = txt => a(() => { if (chef) { F.parle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
+  // le chef de poste revient, et l'on se remercie
+  a(() => { const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x - 6, mp.z + 6);
+    chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: d0[0], z: d0[1] });
+    if (chef) { chef.rapide = true; const v = viserLibre(mp.x - 2.4, mp.z - .4); viser(chef, v[0], v[1]); } });
+  ligne(RA, "On l'a eu ! Il est bien au chaud dans le piège.");
+  ligne(VE, "Une bonne chose de faite. On accepte les chèques, les espèces… et les remerciements, aussi.");
+  chefDit("Merci… Mais vous avez vu l'état du mess ?! C'est une catastrophe ! Tout est brûlé, du slime jusqu'au plafond… et le Président qui arrive !");
+  ligne(VE, "Disons que c'est… de la décoration contemporaine. Très tendance, à New York.");
+  ligne(WI, "Hé… c'est moi, ou le ciel devient vert ?");
+  // le ciel vire au vert ; des pas de géant ; tout le monde s'affole
+  a(() => { F.parle = null; F.vise = "ciel"; F.cielT = 0; sonBruit(3, 180, .3); }, 3600);
+  for (let k = 0; k < 4; k++) a(() => { sonBruit(1.2, 85, 1); sonBruit(.5, 300, .5); F.secousse = 1; for (const p of S.persos) { p.vit = 3.4; p.cible = viserLibre(p.x + (Math.random() - .5) * 2.4, p.z + (Math.random() - .5) * 2.4); } if (chef && k % 2) { const v = viserLibre(chef.g.position.x + (Math.random() - .5) * 3, chef.g.position.z + (Math.random() - .5) * 3); viser(chef, v[0], v[1]); } }, 1300);
+  a(() => bulle(`<b style="color:#b5573c">Egon</b> : Les relevés explosent ! Quelque chose d'énorme approche !`, 3000), 1300);
+  a(() => { sonBruit(1.2, 85, 1); F.secousse = 1; if (chef) dire(CHEF_GB, "Qu'est-ce que c'est que ça ?!"); }, 1600);
+  // la façade du fond éclate
+  a(() => { F.vise = "facade"; F.trou = trouFacadeGB(); eclatsGB(F); sonBruit(2.4, 160, 1); sonBruit(1.2, 700, .7); F.secousse = 1.6; }, 2600);
+  a(() => { F.sp = creerSPGB(); F.sp.marche = true; F.vise = "sp"; }, 0);
+  for (let k = 0; k < 4; k++) a(() => { sonBruit(1.2, 80, 1); F.secousse = 1.2; }, 1100);
+  a(() => { F.sp.marche = false; F.parle = RA; bulle(`<b style="color:#b5573c">Ray</b> : Oh non… J'ai essayé de penser à la chose la plus inoffensive qui soit… un souvenir d'enfance… le Bibendum Chamallow !`, 6200); }, 6400);
+  a(() => { F.parle = VE; bulle(`<b style="color:#b5573c">Venkman</b> : Bravo, Ray. Bon : tout le monde devant la voiture, en ligne ! Personne ne tire avant mon signal !`, 5000);
+    const xs = [GARE_GB[0] - 3.2, GARE_GB[0] - 1.6, GARE_GB[0] + 1.6, GARE_GB[0] + 3.2]; S.persos.forEach((p, k) => { p.vit = 2.6; p.cible = [xs[k], LIGNE_SP]; p.regard = [xs[k], -30]; }); }, 3800);
+  let i = 0, fini = false, clk = 0, prec = performance.now(); const vise = new THREE.Vector3(mp.x - .5, 1.2, mp.z - 2.2), camP = new THREE.Vector3(mp.x - 2.6, 1.9, mp.z + 1.6);
+  const finir = () => { if (fini) return; fini = true; M.cineSeul = null; combatSPGB(); };
+  M.passerBtn = boutonPasser(() => { cielVertGB(1); F.cielT = 9; if (!F.trou) { F.trou = trouFacadeGB(); eclatsGB(F); } if (!F.sp) F.sp = creerSPGB(); F.sp.marche = false; finir(); });
+  M.cine = { maj: now => { if (fini) return; const d = Math.min(50, Math.max(0, now - prec)); clk += d * (M.vite || 1); prec = now; const dt = d / 1000;
+    while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
+    gyroEcto(E, true, now); if (F.cielT != null) { F.cielT += dt; cielVertGB(Math.min(1, F.cielT / 3)); }
+    if (F.sp) { if (F.sp.marche) F.sp.z = Math.min(SP_Z, F.sp.z + dt * .95); majSPGB(F.sp, now); }
+    animerEclatsGB(F, dt); F.secousse = Math.max(0, F.secousse - dt * 1.6);
+    // la caméra : sur le groupe ; puis le ciel ; puis la façade et le géant, en contre-plongée
+    let cp, cv; const q = F.parle && F.parle.g ? F.parle.g.position : null;
+    if (F.vise === "sp" || F.vise === "facade") { cp = new THREE.Vector3(mp.x + 1.2, 1.4, mp.z + 3.2); cv = new THREE.Vector3(0, F.vise === "sp" ? 13 : 15, -16); }
+    else if (F.vise === "ciel") { cp = new THREE.Vector3(mp.x + .6, 1.6, mp.z + 2.6); cv = new THREE.Vector3(mp.x - 2, 22, mp.z - 12); }
+    else { cp = new THREE.Vector3(mp.x - 2.6, 1.9, mp.z + 1.6); cv = q ? new THREE.Vector3(q.x, 1.3, q.z) : new THREE.Vector3(mp.x - .3, 1.2, mp.z - 1.6); }   // (de côté : notre bonhomme ne cache plus le groupe)
+    const k = 1 - Math.exp(-dt * 1.4); camP.lerp(cp, k); vise.lerp(cv, k); M.camera.position.copy(camP);
+    if (F.secousse > 0) M.camera.position.add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(.35 * F.secousse));
+    M.camera.lookAt(vise); } }; }
+// le combat contre le Bibendum, devant l'Ecto-1
+function combatSPGB() { const F = M.gbFinale, moi = M.gens.get(M.moiNum); if (!F || !moi) return; finCine();
+  if (M.gbCombat) finCombatGB();
+  const C = M.gbCombat = { L: M.L, sp: true, nom: "BIBENDUM CHAMALLOW", pvMax: PV_SP, vies: 4, pv: PV_SP, rayons: new Map(), brulures: [], cailloux: [], t: 0, jet: 4, ordre: 3.2, fini: false };
+  const xs = [GARE_GB[0] - 3.2, GARE_GB[0] - 1.6, GARE_GB[0] + 1.6, GARE_GB[0] + 3.2];
+  M.gbScene.persos.forEach((p, k) => { p.x = xs[k]; p.z = LIGNE_SP; p.cible = null; p.regard = [xs[k], -30]; p.tirT = Math.random(); });
+  moi.g.position.set(GARE_GB[0], 0, LIGNE_SP); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: GARE_GB[0], z: LIGNE_SP });
+  Object.assign(moi.info, { tenue: "ghostbuster", couleur: "#c9b98f", bas: "#c9b98f", pieds: "#2a2522", gbDos: true }); dessinerCorps(moi);
+  if (F.sp) { F.sp.z = SP_Z; F.sp.marche = false; }
+  if (M.gbChef) { setTimeout(() => { if (M && M.gens.get(CHEF_GB)) retirerAncien(CHEF_GB); if (M) M.gbChef = false; }, 200); }
+  hudGB(C); musiqueGB(true);
+  const vise = new THREE.Vector3(GARE_GB[0], 9, SP_Z);
+  M.cine = { gb: false, fov: [66, 84], maj: now => { const cp = new THREE.Vector3(GARE_GB[0], 2.8, LIGNE_SP + 7); if (F.secousse > 0) cp.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, 0).multiplyScalar(.3 * F.secousse));
+    M.camera.position.copy(cp); vise.set(F.sp ? F.sp.x * .5 + GARE_GB[0] * .5 : GARE_GB[0], 7.4, SP_Z); M.camera.lookAt(vise); } }; }
+function rocherGB(C, B, cibleP, verMoi, p) { const o = new THREE.Mesh(new THREE.DodecahedronGeometry(.45 + Math.random() * .25, 0), new THREE.MeshStandardMaterial({ color: Math.random() < .6 ? 0x8e3b2a : 0xcfc6b3, roughness: .9 })); o.castShadow = true;
+  const dep = new THREE.Vector3(B.x + (Math.random() < .5 ? -1 : 1) * 7.5, 13, B.z + 1.5); o.position.copy(dep); M.scene.add(o);
+  C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 2.1 + Math.random() * .5, moi: verMoi, p }); sonBruit(.3, 400, .3); }
+function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
+  gyroEcto(M.L.ecto1, true, now); cielVertGB(1); animerEclatsGB(F, dt); animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
+  if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now);
+  if (C.boum) { animerBoumGB(C, dt, now); return; }
+  if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : FEU !`, 2200); sonBruit(.3, 900, .2); } return; }
+  const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); const vus = new Set();
+  // touché ? (une ellipse grosso modo à sa silhouette, dans son plan)
+  const touche = (A, dir) => { if (Math.abs(dir.z) < .05) return null; const k = (B.z - A.z) / dir.z; if (k <= 0) return null; const P = A.clone().addScaledVector(dir, k); return ((P.x - B.x) / (SP_H * .3)) ** 2 + ((P.y - SP_H * .5) / (SP_H * .5)) ** 2 < 1 ? P : null; };
+  const tir = (cle, A, dir, degats) => { let B2 = touche(A, dir);
+    if (B2) { C.pv -= degats * dt; } else { const k = dir.y < -.01 ? -A.y / dir.y : 40; B2 = A.clone().addScaledVector(dir, Math.min(40, k));
+      if (dir.y < -.01 && k < 40 && (!C.brT || !C.brT[cle] || now - C.brT[cle] > 30)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, { point: B2.clone(), face: { normal: new THREE.Vector3(0, 1, 0) }, object: { matrixWorld: new THREE.Matrix4() } }, dir, cle); } }   // (le pavé brûlé)
+    let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); return B2; };
+  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
+    ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = touche(ray.ray.origin, ray.ray.direction) || ray.ray.at(30, new THREE.Vector3());
+    const dir = P.clone().sub(A).normalize(); tir("moi", A, dir, 5);
+    // le faisceau détruit les blocs qu'il croise
+    for (const c of C.cailloux) if (!c.mort && ray.ray.distanceToPoint(c.o.position) < .9) { c.mort = true; poussiereGB(F, c.o.position.clone(), 2.5, 0xb8aea4); sonBruit(.25, 1400, .3); M.scene.remove(c.o); }
+    if (!C.sonT || now - C.sonT > 260) { C.sonT = now; sonBruit(.28, 2600, .07); } }
+  for (const p of M.gbScene ? M.gbScene.persos : []) { if (C.fini) break; p.tirT -= dt; if (!(p.rafale > 0) && p.tirT <= 0) { p.rafale = 1.5 + Math.random() * 2; p.ecart = new THREE.Vector3((Math.random() - .5) * 8, 4 + Math.random() * 14, 0); }
+    if (p.rafale > 0) { const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15); tir(p.cle, A, new THREE.Vector3(B.x + p.ecart.x, p.ecart.y, B.z).sub(A).normalize(), .9); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 1 + Math.random() * 2.5; } }
+  for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
+  // il lance des blocs de pierre sur nous cinq
+  if (!C.fini) { C.jet -= dt; if (C.jet <= 0) { C.jet = 2.6 + Math.random() * 2.2; const k = Math.floor(Math.random() * 5), p = k < 4 ? M.gbScene.persos[k] : null, cp = p ? new THREE.Vector3(p.x, 0, p.z) : moi.g.position.clone().setY(0);
+    rocherGB(C, B, cp.add(new THREE.Vector3((Math.random() - .5) * .8, 0, (Math.random() - .5) * .8)), !p, p); } }
+  for (let k = C.cailloux.length - 1; k >= 0; k--) { const c = C.cailloux[k]; if (c.mort) { C.cailloux.splice(k, 1); continue; } c.u += dt / c.dur; const u = Math.min(1, c.u);
+    c.o.position.lerpVectors(c.dep, c.arr, u); c.o.position.y = c.dep.y * (1 - u) + c.arr.y * u + Math.sin(Math.PI * u) * 7 + .4; c.o.rotation.x += dt * 5; c.o.rotation.z += dt * 3;
+    if (u >= 1) { C.cailloux.splice(k, 1); poussiereGB(F, c.arr.clone().setY(.4), 3); sonBruit(.5, 260, .6); F.secousse = .8;
+      if (c.moi && !C.fini) { C.vies--; const d = voile("background:radial-gradient(circle,rgba(0,0,0,0) 30%,rgba(160,20,10,.6));opacity:1", 900); setTimeout(() => d.remove(), 600);
+        bulle(C.vies > 0 ? `<b style="color:#b5573c">Winston</b> : Attention ! Ça va, ${esc(prenomSH())} ?` : "<b>Le Bibendum vous a écrasés…</b> On se relève, et on recommence !", 3000);
+        if (C.vies <= 0) setTimeout(() => { if (M && M.gbCombat === C) { C.vies = 4; C.pv = PV_SP; hudGB(C); } }, 3200); }
+      else if (c.p) { c.p.choc = 1; if (Math.random() < .5) bulle(`<b style="color:#b5573c">${esc(c.p.nom)}</b> : ${esc(["Ouh là !", "C'était moins une !", "Il vise bien, le bougre !"][Math.floor(Math.random() * 3)])}`, 2200); } } }
+  hudGB(C);
+  if (!C.fini && C.pv <= 0) { C.pv = 0; C.fini = true; M.gbVisee = null; for (const r of C.rayons.values()) r.g.visible = false; C.boum = { t: 0, boules: [], gouttes: [], taches: [] }; sonBruit(3, 140, 1); sonBruit(1.5, 900, .8); F.secousse = 2; } }
+// il explose : une boule de feu, un éclair blanc… et il pleut de la guimauve sur toute la cour ; puis FIN
+let texGuimauve = null;
+function animerBoumGB(C, dt, now) { const F = M.gbFinale, X = C.boum, B = F.sp; X.t += dt; const t = X.t;
+  if (t < 1.4 && X.boules.length < 26 && Math.random() < .7) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flammeTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xffe0b0 }));
+    sp.position.set(B.x + (Math.random() - .5) * 12, 3 + Math.random() * 20, B.z + 1); M.scene.add(sp); X.boules.push({ sp, t: 0, s: 6 + Math.random() * 8 }); }
+  for (let k = X.boules.length - 1; k >= 0; k--) { const b = X.boules[k]; b.t += dt; const u = b.t / 1.6; if (u >= 1) { M.scene.remove(b.sp); X.boules.splice(k, 1); continue; } b.sp.scale.set(b.s * (.4 + u), b.s * (.6 + u * 1.2), 1); b.sp.material.opacity = 1 - u; }
+  if (t > .5 && !X.eclair) { X.eclair = true; const d = voile("background:#fff;opacity:1", 1400); let o = 1; const it = setInterval(() => { o -= .08; if (o <= 0 || !d.isConnected) { clearInterval(it); d.remove(); return; } d.style.opacity = String(o); }, 70); B.mesh.visible = false; }
+  // la pluie de guimauve
+  if (!texGuimauve) { texGuimauve = new THREE.TextureLoader().load("images/gb/guimauve.webp"); texGuimauve.colorSpace = THREE.SRGBColorSpace; }
+  if (t > .7 && t < 5 && X.gouttes.length < 160) for (let k = 0; k < 4; k++) { const r = .14 + Math.random() * .32, o = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), new THREE.MeshStandardMaterial({ color: 0xfbf8f0, emissive: 0x555550, roughness: .6 }));
+    o.position.set((Math.random() - .5) * 26, 18 + Math.random() * 16, -16 + Math.random() * 30); M.scene.add(o); X.gouttes.push({ o, r, v: -2 - Math.random() * 4 }); }
+  const E = M.L.ecto1;
+  for (let k = X.gouttes.length - 1; k >= 0; k--) { const g = X.gouttes[k]; g.v -= 9.8 * dt; g.o.position.y += g.v * dt; const p = g.o.position;
+    const surVoiture = E && Math.abs(p.x - E.position.x) < 1 && Math.abs(p.z - E.position.z) < 3.1, sol = surVoiture ? 1.66 : 0;
+    if (p.y <= sol) { M.scene.remove(g.o); X.gouttes.splice(k, 1); const t2 = (.8 + Math.random() * 1.6) * (g.r / .3), o = new THREE.Mesh(new THREE.PlaneGeometry(t2, t2 * .72), new THREE.MeshStandardMaterial({ map: texGuimauve, transparent: true, depthWrite: false, roughness: .5, emissive: 0x3a3a38, polygonOffset: true, polygonOffsetFactor: -2 }));
+      o.rotation.x = -Math.PI / 2; o.rotation.z = Math.random() * 6.28; o.position.set(p.x, sol + .02 + Math.random() * .01, p.z); M.scene.add(o); X.taches.push(o); } }
+  // les cinq, couverts de guimauve
+  if (t > 2.4 && !X.couverts) { X.couverts = true; for (const p of M.gbScene.persos) { const o = new THREE.Mesh(new THREE.PlaneGeometry(.9, .7), new THREE.MeshStandardMaterial({ map: texGuimauve, transparent: true, depthWrite: false, emissive: 0x666660 })); o.position.set(0, p.H * .78, .04); o.scale.set(1 / (p.H * .42), 1 / p.H, 1); p.mesh.add(o); }
+    const d = voile("background:url(images/gb/guimauve.webp) center/130% no-repeat;opacity:.95", 3000); let op = .95; const it = setInterval(() => { op -= .03; if (op <= 0 || !d.isConnected) { clearInterval(it); d.remove(); return; } d.style.opacity = String(op); }, 80); }
+  const lignes = [[3.4, "Venkman", "…On l'a eu ?"], [6.6, "Ray", "On est couverts de guimauve !"], [9.6, "Winston", "C'est collant… mais on a gagné !"], [12.6, null, "Le Président arrive dans cinq minutes…"], [16.2, "Venkman", "Dites-lui que c'est un buffet de bienvenue."]];
+  for (const [tt, qui, txt] of lignes) if (t > tt && !X["l" + tt]) { X["l" + tt] = true; bulle(qui ? `<b style="color:#b5573c">${qui}</b> : ${esc(txt)}` : `<b style="color:#b5573c">Le chef de poste</b> (au loin) : ${esc(txt)}`, 3000); }
+  if (t > 20 && !X.fin) { X.fin = true; finGB(); } }
+// FIN : le logo, et le mot FIN ; la plaque disparaît du sol ; retour dans la vraie cour, à côté de l'Ecto-1
+function finGB() { musiqueGB(false); const d = voile("background:rgba(8,8,10,.92);opacity:0;display:grid;place-items:center;align-content:center;gap:18px", 7400);
+  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(80%,640px)"><div style="font:900 64px/1 Georgia,serif;color:#fff;letter-spacing:8px;text-align:center">FIN</div>';
+  let u = 0; const it = setInterval(() => { u += .05; if (!d.isConnected) { clearInterval(it); return; } d.style.opacity = String(Math.min(1, u * 1.6, (7 - u * 1.4) / 1.4)); if (u * 1.4 > 7) clearInterval(it); }, 70);
+  envoyerWS({ t: "plaque_fin" });
+  setTimeout(() => { if (!M) return; finCombatGB(); M.gbFinale = null; M.gbActe = 0; M.gbCapture = true; M.gbGare = true; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - .2], -Math.PI / 2); }, 6200); }
 /* ===================== Silent Hill =====================
    Une radio rouge traîne au sol, quelque part dans la caserne (jamais au même endroit). On la ramasse : elle grésille… une sirène… le noir.
    On se réveille allongé dans le bar du sous-sol : la même caserne, mais déserte, noyée dans un brouillard blanc, des cendres qui tombent,
@@ -6946,7 +7142,7 @@ function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = R
   const t0 = performance.now(); let blanc = null, fini = false; const mp = moi.g.position;
   M.cine = { maj: now => { const u = (now - t0) / 1000; M.camera.position.set(mp.x - 4.5, mp.y + 2, mp.z + 2.4); M.camera.lookAt(x, 1.8, z);
     if (u > 2.2 && !blanc) { blanc = voile("background:#fff;opacity:0;transition:opacity 2.6s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
-    if (u > 5.2 && !fini) { fini = true; moi.info.allure = 1; finCine(); const G = M.gresil; M.gresil = null; couperGresil(G); resetSH(); changerLieu("fetes", [0, 26.5], 0);
+    if (u > 5.2 && !fini) { fini = true; moi.info.allure = 1; finCine(); const G = M.gresil; M.gresil = null; couperGresil(G); resetSH(); envoyerWS({ t: "radio_fin" }); changerLieu("fetes", [0, 26.5], 0);   /* (l'histoire est finie : la radio disparaît du sol, comme la plaque ECTO-1) */
       setTimeout(() => { if (!M) return; blanc.style.transition = "opacity 3s"; blanc.style.opacity = "0"; setTimeout(() => blanc.remove(), 3100);
         const f = voile("display:grid;place-items:center;opacity:0;transition:opacity 2s;font:900 clamp(30px,8vw,60px)/1.2 'Marcellus',serif;color:#f4efe2;text-align:center;text-shadow:0 2px 14px #000", 8000);
         f.innerHTML = "FIN<br><span style='font-size:.4em;letter-spacing:.1em'>Tu es sorti de Silent Hill</span>"; requestAnimationFrame(() => f.style.opacity = "1"); setTimeout(() => f.style.opacity = "0", 6000); }, 600); } } }; }

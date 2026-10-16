@@ -517,6 +517,10 @@ export class Compteur extends DurableObject {
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
       const x = Number(m.x), z = Number(m.z); if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 500 || Math.abs(z) > 500) return;
       const al = await this.almanach(); Object.assign(al, { lieu: a.lieu, x, z, r: Math.random() * 6.28, pris: null }); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
+    } else if (m.t === "radio_fin" && a.admin) {   // (Silent Hill fini : la radio disparaît du sol ; l'administrateur peut la refaire venir)
+      const r = { lieu: null, x: 0, z: 0, r: 0 }; await this.ctx.storage.put("radio", r); const t = JSON.stringify({ t: "radio", r }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+    } else if (m.t === "plaque_fin" && a.admin) {   // (l'histoire est finie : la plaque disparaît du sol)
+      await this.ctx.storage.delete("plaque_gb"); ws.send(JSON.stringify({ t: "plaqueGB", p: null }));
     } else if (m.t === "plaque_ici" && a.admin) {
       // l'administrateur pose la plaque ECTO-1 (S.O.S. Fantômes) au sol, près de lui, dans la vraie caserne ; lui seul la voit, le temps des essais
       if (!a.lieu || LIEUX_BTTF.includes(a.lieu) || /^(z|sh)-/.test(a.lieu)) return;
