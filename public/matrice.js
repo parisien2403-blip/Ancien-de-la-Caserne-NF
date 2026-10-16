@@ -23,7 +23,7 @@ export const TENUES = {
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
-  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, ghostbuster: { nom: "Combinaison Ghostbusters (le pack à protons)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -194,6 +194,22 @@ export function dessinerBonhomme(o, tete) {
       x.strokeStyle = "#111"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 148); x.lineTo(78, 214); x.stroke();
       x.fillStyle = "#4a2e18"; x.fillRect(58, 244, 84, 11); x.fillStyle = "#6e4424"; for (const [a, w] of [[58, 18], [80, 14], [122, 20]]) x.fillRect(a, 252, w, 26); x.fillStyle = "#c9c9c9"; x.fillRect(84, 256, 3, 14); x.fillRect(128, 256, 3, 16);
       if (jambesDroites) { x.fillStyle = "#d8401c"; x.fillRect(72, 372, 24, 12); x.fillRect(104, 372, 24, 12); } }
+    // Ghostbuster : la combinaison beige, l'écusson « no ghost » à l'épaule, le badge, la ceinture noire et ses étuis ; de dos, le pack à protons
+    if (t === "ghostbuster" && !profil) {
+      if (o.pose !== "dos") { x.strokeStyle = "rgba(0,0,0,.22)"; x.lineWidth = 2; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 262); x.stroke();
+        for (const [a, b2, c2, d2] of [[70, 170, 82, 220], [128, 172, 120, 226], [66, 300, 76, 330], [130, 300, 122, 336]]) { x.beginPath(); x.moveTo(a, b2); x.lineTo(c2, d2); x.stroke(); }
+        x.strokeRect(76, 178, 18, 15); x.strokeRect(106, 182, 18, 15);   // les poches de poitrine
+        x.fillStyle = "#3a3a3c"; x.fillRect(80, 146, 7, 34); x.fillRect(113, 146, 7, 34);   // les sangles du pack
+        x.fillStyle = "#f2f2ee"; x.fillRect(106, 168, 18, 7); x.fillStyle = "#333"; x.fillRect(108, 170.5, 14, 2);   // le badge au nom
+        x.fillStyle = "#fff"; x.beginPath(); x.arc(136, 174, 8, 0, 7); x.fill(); x.strokeStyle = "#d01818"; x.lineWidth = 2.4; x.beginPath(); x.arc(136, 174, 7, 0, 7); x.moveTo(131, 169); x.lineTo(141, 179); x.stroke();   // l'écusson
+        x.fillStyle = "#1c1c1e"; x.fillRect(58, 244, 84, 10); x.fillStyle = "#2a2a2e"; for (const [a, w] of [[60, 14], [82, 12], [118, 18]]) x.fillRect(a, 252, w, 18); x.fillStyle = "#9aa0a6"; x.fillRect(97, 245, 6, 8); }
+      else { x.fillStyle = "#4a4d52"; x.fillRect(64, 150, 72, 8);   // le pack : le cadre, le boîtier, le cyclotron et ses lumières rouges, les câbles, l'évent
+        x.fillStyle = "#2a2c30"; x.beginPath(); x.roundRect(68, 156, 64, 106, 6); x.fill(); x.fillStyle = "#3a3d42"; x.fillRect(74, 164, 52, 30);
+        x.fillStyle = "#9aa0a6"; x.fillRect(84, 168, 32, 6); x.fillRect(90, 178, 20, 4);
+        x.fillStyle = "#151619"; x.beginPath(); x.arc(100, 236, 20, 0, 7); x.fill(); x.fillStyle = "#e0241c"; for (const [a, b2] of [[100, 222], [114, 236], [100, 250], [86, 236]]) { x.beginPath(); x.arc(a, b2, 4, 0, 7); x.fill(); }
+        x.lineWidth = 3; x.strokeStyle = "#e8c21e"; x.beginPath(); x.moveTo(78, 200); x.bezierCurveTo(70, 214, 72, 230, 80, 246); x.stroke();
+        x.strokeStyle = "#2a6ad8"; x.beginPath(); x.moveTo(122, 198); x.bezierCurveTo(130, 214, 128, 228, 120, 242); x.stroke(); x.strokeStyle = "#c81818"; x.beginPath(); x.moveTo(110, 200); x.lineTo(124, 214); x.stroke();
+        x.fillStyle = "#cfd3d6"; x.fillRect(130, 196, 7, 34); x.fillStyle = "#1c1c1e"; x.fillRect(58, 262, 84, 9); } }
     // Depeche Mode : Martin Gore (gilet de satin noir surpiqué, colliers, pantalon rayé), Dave Gahan (gilet pailleté au col profond, croix au cou),
     // Andy Fletcher (veste de survêtement noire à bandes blanches, zippée sur un t-shirt noir)
     if (t === "gore" && o.pose !== "dos" && !profil) {
@@ -4647,8 +4663,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const cn = A.ajoute(new THREE.PlaneGeometry(.22, 34), A.mat({ color: 0x4a4744 }), fx - cote * 5.1, .016, -2, false); cn.rotation.x = -Math.PI / 2;
       // un car de la Gendarmerie dans chaque voûte, l'avant vers la cour
       for (const VZ of (copie === "fetes" && cote > 0 ? [] : VOUTES)) {
-        if (cote < 0 && VZ === VOUTES[1]) { const e = creerEcto1(); e.position.set(fx + cote * 5.4, 0, VZ); scene.add(e); L.ecto1 = e; continue; }   // (dans une voûte, à la place d'un car : l'Ecto-1)
-        busCaserne(scene, "gendarmerie", fx + cote * 6.2, VZ, cote < 0 ? 0 : Math.PI);   // (le car de la Gendarmerie, d'après la planche : l'avant vers la cour)
+        const bus = busCaserne(scene, "gendarmerie", fx + cote * 6.2, VZ, cote < 0 ? 0 : Math.PI);
+        if (cote < 0 && VZ === VOUTES[1] && bus) { plaqueBusGB(bus); L.plaqueGB = [fx + cote * 6.2 + 5.45, VZ];   // (S.O.S. Fantômes : la plaque ECTO-1 sur ce car ; l'Ecto-1, elle, n'entre dans la cour qu'avec la cinématique)
+          const e = creerEcto1(); e.visible = false; scene.add(e); L.ecto1 = e; }   // (le car de la Gendarmerie, d'après la planche : l'avant vers la cour)
       }
       if (cote > 0) for (const o of scene.children.slice(debutCote)) o.userData.droite = true;
     }
@@ -4833,7 +4850,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
        et face aux bâtiments devant les portes M et N, I et J, B, C et D, et devant F et G face à la rampe ; on ne passe pas à travers */
     if (!copie) { const VO = L.voitures = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]);
       const haut = (x, z) => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
-      let n = 0; const garer = (x, z, rot) => { const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
+      let n = 0; const garer = (x, z, rot) => { if (sansVoituresGB) return; const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
         for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
         const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
       for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
@@ -5640,7 +5657,9 @@ export async function ouvrir(ctx) {
   // deux doigts : pincer pour rapprocher ou éloigner la caméra
   const doigts = new Map(); let pince = null;
   const bornerCam = () => { if (!M || M.camE == null) return; M.camE = Math.max(.04, Math.min(1.35, M.camE)); M.camD = Math.max(2.5, Math.min(M.L && M.L.interieur ? 8 : 24, M.camD)); };
-  rendu.domElement.addEventListener("pointerdown", e => { doigts.set(e.pointerId, [e.clientX, e.clientY]);
+  const viseGB = e => { const r = rendu.domElement.getBoundingClientRect(); M.gbVisee = { id: e.pointerId, x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }; };
+  rendu.domElement.addEventListener("pointerdown", e => { if (M && M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb) { viseGB(e); return; }   // (S.O.S. Fantômes : le doigt vise, la lance tire tant qu'il appuie)
+    doigts.set(e.pointerId, [e.clientX, e.clientY]);
     if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), D: M && M.camD }; if (glisse) glisse.bouge = true; return; }
     glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, E: M ? M.camE : null };
     // la mitraillette : doigt appuyé sur un zombie, ça tire en rafale (on peut glisser le doigt d'un zombie à l'autre)
@@ -5654,6 +5673,7 @@ export async function ouvrir(ctx) {
     if (!z) { const moi = moiApo(); if (moi) { let bd = 9; for (const q of M.zomb.values()) { if (q.mortT || q.cine || !q.g.visible) continue; const d = Math.hypot(q.x - moi.g.position.x, q.z - moi.g.position.z); if (d < bd) { bd = d; z = q; } } } }   // (le premier tombé : la rafale passe au plus proche)
     if (z) { rafale.z = z; tirer(z); } };
   rendu.domElement.addEventListener("pointermove", e => {
+    if (M && M.gbVisee && M.gbVisee.id === e.pointerId) { viseGB(e); return; }
     if (doigts.has(e.pointerId)) doigts.set(e.pointerId, [e.clientX, e.clientY]);
     if (rafale && rafale.id === e.pointerId) { rafale.x = e.clientX; rafale.y = e.clientY; if (glisse) glisse.bouge = true; return; }
     if (pince && doigts.size === 2 && M && pince.D) { const [a, b] = [...doigts.values()]; M.camD = pince.D * pince.d / Math.max(20, Math.hypot(a[0] - b[0], a[1] - b[1])); bornerCam(); return; }
@@ -5663,9 +5683,10 @@ export async function ouvrir(ctx) {
     if (glisse.bouge && M.L && (M.L.interieur || M.L.suivi)) { M.yaw = glisse.yaw - dx * .006; if (glisse.E != null) { M.camE = glisse.E + dy * .005; bornerCam(); } }
   });
   const leve = e => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
-  rendu.domElement.addEventListener("pointercancel", e => { arreterRafale(); leve(e); });
+  rendu.domElement.addEventListener("pointercancel", e => { if (M) M.gbVisee = null; arreterRafale(); leve(e); });
   rendu.domElement.addEventListener("wheel", e => { if (!M || M.camD == null) return; e.preventDefault(); M.camD *= 1 + Math.sign(e.deltaY) * .12; bornerCam(); }, { passive: false });
   rendu.domElement.addEventListener("pointerup", e => {
+    if (M && M.gbVisee && M.gbVisee.id === e.pointerId) { M.gbVisee = null; return; }
     if (rafale) { arreterRafale(); leve(e); glisse = null; return; }
     const multi = doigts.size > 1 || pince; leve(e); if (multi) { glisse = null; return; }
     const g = glisse; glisse = null;
@@ -5938,9 +5959,10 @@ export async function ouvrir(ctx) {
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
-    if (M.lieu === "grande" && M.L.ecto1 && !M.cine && !M.gbFait) { const q = M.gens.get(M.moiNum); if (q && Math.hypot(q.g.position.x - M.L.ecto1.position.x, q.g.position.z - M.L.ecto1.position.z) < 6.5 && Math.abs(q.g.position.y) < .5) cineGB(); }   // (on s'approche de l'Ecto-1 : les Ghostbusters en descendent)
-    animerGB(dt); if (M.L.gbMess) animerSlimer(Math.min(.05, dt), performance.now());
-    else if (M.lieu === "mess" && M.gbFait && M.L.tablesMess && !M.cine && M.gens.get(M.moiNum)) { if (M.gbMessVu) messGB(); else cineMessGB(); }   // (S.O.S. Fantômes : Slimer saccage le mess)
+    if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) cineArriveeGB();   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
+    if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
+    if (M.lieu === "grande" && M.L.ecto1) garerGB();
+    majTitreGB(performance.now()); animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
@@ -5993,9 +6015,10 @@ export function fermer() {
 }
 
 /* ===================== S.O.S. Fantômes =====================
-   Dans une voûte de la cour d'honneur, l'Ecto-1. On s'en approche : les quatre Ghostbusters en descendent (Egon, Ray, Venkman, Winston),
-   discutent ; le chef de poste arrive — une chose verte saccage le mess, et le Président de la République doit venir ; Ray nous demande
-   si l'on a vu leurs films… fumée blanche, et le grand titre. Chacun est un panneau découpé, vu de face ou de dos selon où il regarde */
+   Sur un car de la Gendarmerie, dans une voûte de la cour d'honneur, la plaque ECTO-1. On la touche : l'Ecto-1 entre dans la cour, gyrophares allumés,
+   et s'arrête à côté de nous ; les quatre Ghostbusters en descendent (Egon, Ray, Venkman, Winston), discutent ; le chef de poste arrive — une chose verte
+   saccage le mess, et le Président de la République doit venir ; Ray nous demande si l'on a vu leurs films… fumée blanche, le grand titre.
+   Puis le combat au mess contre Bouffe-tout, le piège, et retour dans la cour. Chacun est un panneau découpé, vu de face ou de dos selon où il regarde */
 const GB = [["egon", "Egon"], ["ray", "Ray"], ["venkman", "Venkman"], ["winston", "Winston"]], CHEF_GB = -491;
 const texGB = {};
 function texGBi(n) { if (!texGB[n]) { texGB[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`); texGB[n].colorSpace = THREE.SRGBColorSpace; } return texGB[n]; }
@@ -6018,54 +6041,14 @@ function animerGB(dt) { const S = M.gbScene; if (!S) return; if (S.L !== M.L) { 
 const dureeLigne = t => Math.min(6500, 2400 + t.length * 52);
 // la fumée blanche, et le grand titre
 function titreGB() { if (!M || M.gbTitre) return; M.gbTitre = true; setTimeout(() => { if (M) M.gbTitre = false; }, 7000);
-  const d = voile("background:radial-gradient(circle,rgba(255,255,255,.97) 0%,rgba(242,242,242,.94) 60%,rgba(215,215,215,.9) 100%);opacity:0;transition:opacity 1.2s;display:grid;place-items:center", 6600);
-  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(88%,780px);transform:scale(.35);opacity:0;transition:transform 1.7s cubic-bezier(.2,1.4,.4,1),opacity .9s">';
-  setTimeout(() => { d.style.opacity = "1"; setTimeout(() => { const i = d.firstChild; i.style.opacity = "1"; i.style.transform = "scale(1)"; }, 800); }, 60);
-  setTimeout(() => { d.style.transition = "opacity 1.5s"; d.style.opacity = "0"; }, 5000);
+  const d = voile("background:radial-gradient(circle,rgba(255,255,255,.97) 0%,rgba(242,242,242,.94) 60%,rgba(215,215,215,.9) 100%);opacity:0;display:grid;place-items:center", 6800);
+  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(88%,780px);opacity:0;transform:scale(.35)">';
+  M.gbTitreEl = { d, img: d.firstChild, t0: performance.now() };
   if (M.L && M.L.ecto1) brumeSH(M.L.ecto1.position.clone().setY(0), 5200); sonBruit(1.4, 600, .22); }
-function cineGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.gbFait = true; M.gbChef = true; M.cineSeul = CHEF_GB; moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
-  const ex = E.position.x, ez = E.position.z, mp = moi.g.position.clone(), nom = prenomSH();
-  // ils descendent par les portières et se rangent face à nous, entre la voiture et nous
-  const ux = mp.x - ex, uz = mp.z - ez, ud = Math.hypot(ux, uz) || 1, dx = ux / ud, dz = uz / ud, px = -dz, pz = dx, rc = Math.max(1.6, ud - 2.3), cx = ex + dx * rc, cz = ez + dz * rc;
-  const portes = [[ex + 1.1, ez - 1.15], [ex + 1.1, ez + 1.15], [ex - .2, ez - 1.15], [ex - .2, ez + 1.15]];
-  if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
-  const S = M.gbScene = { L: M.L, persos: GB.map(([c, n], k) => { const p = creerGB(c, n, portes[k][0], portes[k][1]); p.visible = false; const v = viserLibre(cx + px * (k - 1.5) * .95, cz + pz * (k - 1.5) * .95); p.place = v; return p; }) };
-  const [EG, RA, VE, WI] = S.persos; let chef = null;
-  const etapes = []; let t = 500; const a = (f, apres = 0) => { etapes.push([t, f]); t += apres; };
-  S.persos.forEach(p => a(() => { p.visible = true; sonBruit(.1, 1600, .25); p.cible = p.place; }, 650));   // (une portière qui claque, l'un après l'autre)
-  t += 2600;
-  const ligne = (p, txt) => a(() => { M.gbParle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); for (const q of S.persos) q.regard = q === p ? [mp.x, mp.z] : [p.x, p.z]; }, dureeLigne(txt) + 300);
-  ligne(VE, "Bon. D'après le standard, il y aurait un gros truc vert qui fait peur à tout le voisinage. Gluant, affamé, et très mal élevé. Mon genre de client, quoi.");
-  ligne(RA, "Une apparition de classe 5, mobile, à forte manifestation ectoplasmique ! Ça, les gars, c'est du sérieux !");
-  ligne(EG, "Les relevés du PKE sont hors norme. Et je rappelle une chose : il ne faut jamais croiser les effluves.");
-  ligne(WI, "Du moment que c'est payé… Moi, je suis juste là pour le salaire.");
-  // le chef de poste arrive, d'un bon pas
-  a(() => { if (M.gens.has(PNJ)) retirerAncien(PNJ); const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x + dx * 2 - px * 7, mp.z + dz * 2 - pz * 7);
-    chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: d0[0], z: d0[1] });
-    if (chef) { chef.rapide = true; const v = viserLibre((cx + mp.x) / 2 - px * 2.2, (cz + mp.z) / 2 - pz * 2.2); viser(chef, v[0], v[1]); } M.gbParle = chef; }, 3600);
-  a(() => { if (chef) for (const q of S.persos) q.regard = [chef.g.position.x, chef.g.position.z]; });
-  for (const txt of ["Ah ! Vous voilà enfin arrivés !", "Il faut attraper cette chose, et vite ! Elle est au mess : elle casse tout, et elle mange tout. Le buffet, les réserves… tout y passe !", "Et le Président de la République doit arriver d'une minute à l'autre… Alors faites vite, je vous en prie !"])
-    a(() => { if (chef) { M.gbParle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
-  ligne(VE, "Le Président ? Pas de panique. On lui gardera une part du buffet… s'il en reste.");
-  ligne(RA, `Et toi, ${nom}… tu as déjà vu nos films ?`);
-  a(() => { M.gbParle = null; titreGB(); }, 6400);
-  let i = 0, fini = false, clk = 0, prec = performance.now();
-  const finir = () => { if (fini) return; fini = true; M.gbParle = null;
-    for (const p of S.persos) { p.visible = true; if (p.cible) { p.x = p.cible[0]; p.z = p.cible[1]; p.cible = null; } p.regard = null; }
-    if (chef) { const c = chef, v = viserLibre(mp.x - px * 12, mp.z - pz * 12); viser(c, v[0], v[1]); setTimeout(() => { if (M && M.gens.get(CHEF_GB) === c) retirerAncien(CHEF_GB); if (M) M.gbChef = false; }, 9000); } else M.gbChef = false;
-    M.cineSeul = null; finCine(); placerCamera(true); };
-  M.passerBtn = boutonPasser(() => { titreGB(); finir(); });
-  M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)); prec = now; while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
-    // la caméra : de côté, un peu derrière nous ; elle se tourne vers celui qui parle (d'abord la voiture)
-    const q = M.gbParle, f = q ? (q.g ? q.g.position : null) : null, fx = f ? f.x : clk < 4000 ? ex : cx, fz = f ? f.z : clk < 4000 ? ez : cz;
-    M.gbVise = M.gbVise || new THREE.Vector3(fx, 1.2, fz); M.gbVise.lerp(new THREE.Vector3(fx, 1.25, fz), .06);
-    M.camera.position.set(mp.x + px * 1.3 + dx * 1.9, mp.y + 1.85, mp.z + pz * 1.3 + dz * 1.9); M.camera.lookAt(M.gbVise); } };
-  M.gbVise = null; }
-
-/* ----- le mess, saccagé par Slimer -----
-   Après l'arrivée des Ghostbusters, le mess est dressé pour la venue du Président : sur chaque table, quatre couverts et un petit bouquet ;
-   au fond, un grand buffet. Slimer y entre à travers le mur, dévore tout, fait voler la nourriture, renverse les tables, et laisse du slime
-   partout où il passe près d'un mur ou d'une table */
+// (image par image, depuis la boucle : la fumée blanche monte, le titre surgit en grossissant, puis tout s'efface)
+function majTitreGB(now) { const T = M.gbTitreEl; if (!T) return; const u = (now - T.t0) / 6600; if (u >= 1 || !T.d.isConnected) { T.d.remove(); M.gbTitreEl = null; return; }
+  T.d.style.opacity = String(u < .16 ? u / .16 : u < .76 ? 1 : 1 - (u - .76) / .24);
+  const v = Math.max(0, Math.min(1, (u - .12) / .22)), e = 1 - Math.pow(1 - v, 3); T.img.style.opacity = String(v); T.img.style.transform = `scale(${(.35 + .65 * e + .06 * Math.sin(v * Math.PI)).toFixed(3)})`; }
 const MESS_GB = { X0: -10, X1: 6, Z0: -12, Z1: 12, BX0: -8.6, BX1: 4.6, BZ: -11.45, BD: .8, TOP: .9 };
 function matsGB() { if (MESS_GB.m) return MESS_GB.m; const S = (o) => new THREE.MeshStandardMaterial(o);
   return (MESS_GB.m = { porcelaine: S({ color: 0xfbfaf6, roughness: .25 }), argent: S({ color: 0xd8dadd, metalness: .9, roughness: .22 }), verre: S({ color: 0xdff2ff, transparent: true, opacity: .45, roughness: .05, metalness: .1 }),
@@ -6177,8 +6160,9 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
   for (let k = S.mange.length - 1; k >= 0; k--) { const it = S.mange[k]; it.u += dt * 1.6; it.p.lerp(S.pos.clone().add(new THREE.Vector3(0, -.05, 0)), Math.min(1, dt * 6)); it.s = new THREE.Vector3(1, 1, 1).multiplyScalar(Math.max(.01, 1 - it.u));
     majPiece(it); if (it.u >= 1) { S.mange.splice(k, 1); if (it.o) M.scene.remove(it.o); } }
   for (const sl of S.slimes) if (sl.o.scale.x < 1) sl.o.scale.setScalar(Math.min(1, sl.o.scale.x + dt * 4));   // (la flaque s'étale)
-  // sa course
-  if (!S.cible || S.attente > 0) { S.attente -= dt;
+  // sa course (à bout de forces : il ne bouge plus, retenu par les faisceaux)
+  if (S.fige) { S.cible = null; S.vit.set(0, 0, 0); S.pos.lerp(S.fige, Math.min(1, dt * (S.capt ? 8 : 1.5))); }
+  else { if (!S.cible || S.attente > 0) { S.attente -= dt;
     if (!S.cible || S.attente <= 0 && S.arrive) { S.arrive = false; const r = Math.random(), libres = L.tablesMess.map((_, i) => i).filter(i => !S.tables.has(i)), restes = S.buf.mets.filter(it => !it.mange && !it.v);
       if (S.script && S.script.length) { const c = S.script.shift(); S.cible = c; }
       else if (restes.length && r < .35) { const it = restes[Math.floor(Math.random() * restes.length)]; S.cible = { x: it.p.x, y: 1.5, z: B.BZ + .7, buffet: true }; }
@@ -6186,11 +6170,11 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
       else { const murs = [[B.X0 + .7, 1.4 + Math.random() * 1.5, -9 + Math.random() * 15], [B.X1 - .7, 1.4 + Math.random() * 1.5, -9 + Math.random() * 15], [-8 + Math.random() * 12, 1.8 + Math.random(), B.Z0 + .7]]; const w = murs[Math.floor(Math.random() * 3)]; S.cible = { x: w[0], y: w[1], z: w[2] }; } } }
   if (S.cible && !(S.attente > 0)) { const c = S.cible, d = new THREE.Vector3(c.x - S.pos.x, c.y - S.pos.y, c.z - S.pos.z), l = d.length(), vmax = S.rapide ? 4.2 : 3.0;
     const v = l > .01 ? d.multiplyScalar(Math.min(vmax, l * 2.2) / l) : d; S.vit.lerp(v, Math.min(1, dt * 2.5));
-    if (l < .3) { S.arrive = true; S.attente = c.buffet ? 1.6 : c.table != null ? .5 : .4;
+    if (l < .3) { S.arrive = true; S.attente = (c.buffet ? 1.6 : c.table != null ? .5 : .4) * (S.combat ? 2 : 1);   // (au combat : il s'attarde un peu, c'est là qu'on peut le toucher)
       if (c.buffet) { const pres = S.buf.mets.filter(it => !it.mange && !it.v && Math.abs(it.p.x - S.pos.x) < 1.6).sort((a, b) => Math.abs(a.p.x - S.pos.x) - Math.abs(b.p.x - S.pos.x));
         pres.slice(0, 2).forEach(it => { it.mange = true; it.u = 0; S.mange.push(it); }); pres.slice(2, 4).forEach(it => voleGB(S, it, 1.1)); S.miam = 1.2; slimeGB(S, S.pos.x + (Math.random() - .5) * .6, B.TOP + .01, B.BZ + .1, 0, 1, 0, .7); sonBruit(.4, 300, .3); }
       if (c.table != null) saccagerGB(S, c.table);
-      S.cible = c.apres ? (c.apres(), null) : null; } }
+      S.cible = c.apres ? (c.apres(), null) : null; } } }
   S.pos.addScaledVector(S.vit, dt); S.pos.x = Math.max(B.X0 + .5, Math.min(B.X1 - .5, S.pos.x)); S.pos.y = Math.max(.9, Math.min(4.2, S.pos.y));
   // en passant : il saccage les tables qu'il frôle, et colle du slime aux murs qu'il longe
   L.tablesMess.forEach(([x, z], i) => { if (!S.tables.has(i) && S.pos.y < 2.1 && Math.hypot(S.pos.x - x, S.pos.z - z) < .9) saccagerGB(S, i); });
@@ -6201,25 +6185,225 @@ function animerSlimer(dt, now) { const L = M.L, S = L && L.gbMess; if (!S) retur
   S.miam = Math.max(0, (S.miam || 0) - dt); let vue = "face";
   if (S.miam > 0) vue = "dessous"; else if (h > .6) { const avance = (S.vit.x * vx + S.vit.z * vz) / (h * vl), cote = (S.vit.x * vz - S.vit.z * vx) / (h * vl); vue = avance > .55 ? "face" : cote > 0 ? "gauche" : "droit"; }
   if (vue !== S.vue) { S.vue = vue; S.sp.material.map = texSlimerI(vue); S.sp.material.needsUpdate = true; }
-  const im = S.sp.material.map.image, H = 1.45; if (im && im.width) S.sp.scale.set(H * im.width / im.height, H, 1);
-  S.sp.position.set(S.pos.x, S.pos.y + Math.sin(now / 260) * .08, S.pos.z); S.lum.position.copy(S.sp.position); S.lum.intensity = 2.6 + Math.sin(now / 90) * .5; }
-// la cinématique, la première fois qu'on entre dans le mess : la salle dressée, puis Slimer traverse le mur du fond
-function cineMessGB() { const S = messGB(), moi = M.gens.get(M.moiNum); if (!S || !moi || M.cine) return; M.gbMessVu = true; const B = MESS_GB, L = M.L;
-  S.script = [{ x: -1, y: 1.7, z: B.BZ + .7, buffet: true }, { x: 1.6, y: 1.6, z: B.BZ + .7, buffet: true }, { x: -4.4, y: 1.5, z: B.BZ + .7, buffet: true },
-    { x: -2.6, y: 1.3, z: -7.2, table: L.tablesMess.findIndex(([x, z]) => x === -2.6 && z === -7.2) }, { x: B.X0 + .7, y: 2.4, z: -5 }, { x: -7.2, y: 1.3, z: -1.2, table: L.tablesMess.findIndex(([x, z]) => x === -7.2 && z === -1.2) },
-    { x: -2.6, y: 1.3, z: 1.8, table: L.tablesMess.findIndex(([x, z]) => x === -2.6 && z === 1.8) }, { x: 3.0, y: 1.3, z: -1.2, table: L.tablesMess.findIndex(([x, z]) => x === 3.0 && z === -1.2) }, { x: B.X1 - .7, y: 2.2, z: 2 },
-    { x: .2, y: 1.9, z: 6.2 }];
-  S.pos.set(-1, 2.0, B.Z0 - .8); S.rapide = false;
-  const p0 = moi.g.position.clone(); let clk = 0, prec = performance.now(), fini = false; const DUREE = 30000, camPos = new THREE.Vector3(0, 2.6, 8.6), vise = new THREE.Vector3(-1, 1.6, -8);
-  const finir = () => { if (fini) return; fini = true; S.script = null; finCine(); placerCamera(true); bulle("<i>Il dévore tout… Il faut prévenir les Ghostbusters !</i>", 4200); };
-  bulle("<i>Le mess, dressé pour la venue du Président…</i>", 3600);
-  M.passerBtn = boutonPasser(finir);
-  M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)); prec = now; if (clk > DUREE || (!S.script.length && !S.cible && clk > 12000)) { finir(); return; }
-    if (clk < 3200) { camPos.set(0, 2.6, 8.6); vise.set(-1, 1.4, -8); S.cible = null; S.attente = 1; }   // (d'abord la salle, intacte)
-    else { if (S.attente > 0 && clk < 3400) S.attente = 0;
-      const want = S.pos.clone().add(new THREE.Vector3((p0.x - S.pos.x) * .15 + 1.6, .9, 3.4)); want.x = Math.max(B.X0 + .6, Math.min(B.X1 - .6, want.x)); want.z = Math.max(B.Z0 + 2.2, Math.min(9.5, want.z)); want.y = Math.min(4.4, want.y);
-      camPos.lerp(want, .035); vise.lerp(S.pos, .08); }
-    M.camera.position.copy(camPos); M.camera.lookAt(vise); } }; }
+  const im = S.sp.material.map.image, H = 1.45; if (im && im.width) S.sp.scale.set(H * im.width / im.height, H, 1).multiplyScalar(1 - (S.capt || 0) * .96);
+  S.sp.position.set(S.pos.x, S.pos.y + Math.sin(now / 260) * .08, S.pos.z); S.lum.position.copy(S.sp.position); S.lum.intensity = S.capFin ? 0 : 2.6 + Math.sin(now / 90) * .5; }
+/* ----- l'arrivée de l'Ecto-1 : on touche la plaque du car, et la cinématique se joue dans la cour d'honneur « rien qu'à soi » (gb-cour) -----
+   la voiture entre par le porche, gyrophares rouges et bleus, sirène, et s'arrête à côté de nous ; les quatre en descendent */
+const GARE_GB = [1.6, 3.0];   // (où l'Ecto-1 s'arrête : au milieu de la cour d'honneur, comme la DeLorean, l'avant vers le bâtiment de l'horloge)
+function gyroEcto(e, on, now) { const G = e && e.userData.gyro; if (!G) return; const ph = Math.floor(now / 140) % 4, b = on && ph % 2 === 0, r = on && ph % 2 === 1;
+  for (const m of G.bleus) { m.emissive.setHex(b ? 0x4a7aff : 0x0a1a50); m.emissiveIntensity = b ? 2.4 : 1; }
+  for (const m of G.rouges) { m.emissive.setHex(r ? 0xff2a2a : 0x500000); m.emissiveIntensity = r ? 2.6 : 1; }
+  if (on && !G.lb) { G.lb = new THREE.PointLight(0x4a7aff, 0, 16, 1.5); G.lr = new THREE.PointLight(0xff2a2a, 0, 16, 1.5); G.lb.position.set(1.25, 2.2, 0); G.lr.position.set(-1.3, 2.5, 0); e.add(G.lb, G.lr); }
+  if (G.lb) { G.lb.intensity = b ? 10 : 0; G.lr.intensity = r ? 10 : 0; } }
+// la sirène de l'Ecto-1 (le vrai son) : elle hurle pendant que la voiture entre, puis s'éteint en fondu
+function sireneGB(on) { if (!M) return; let a = M.sirGB;
+  if (on) { if (!a) { a = M.sirGB = new Audio("sons/gb-sirene.mp3"); } clearInterval(a.fondu); a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); return; }
+  if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .05); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
+const posEcto = (E, lx, lz) => E.localToWorld(new THREE.Vector3(lx, 0, lz));
+function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbSirCoupee = false; M.gbChef = true; M.cineSeul = CHEF_GB;
+  moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(), nom = prenomSH();
+  const [sx, sz] = GARE_GB, P0 = [sx, 30], P1 = [sx, sz + 9], P2 = [sx, sz], ROUTE = 8.5;   // (tout droit par le porche)
+  const bez = u => { const a = (1 - u) * (1 - u), b = 2 * u * (1 - u), c = u * u; return [a * P0[0] + b * P1[0] + c * P2[0], a * P0[1] + b * P1[1] + c * P2[1], 2 * (1 - u) * (P1[0] - P0[0]) + 2 * u * (P2[0] - P1[0]), 2 * (1 - u) * (P1[1] - P0[1]) + 2 * u * (P2[1] - P1[1])]; };
+  E.visible = true; E.position.set(GARE_GB[0], 0, 30); E.rotation.y = Math.PI / 2; sireneGB(true); sonBruit(2.2, 260, .35);
+  // ils se rangeront face à nous, entre la voiture et nous
+  const ux = sx - 1.0 - mp.x, uz = sz - mp.z, ud = Math.hypot(ux, uz) || 1, dx = ux / ud, dz = uz / ud, px = -dz, pz = dx, rc = Math.min(2.3, ud * .6), cx = mp.x + dx * rc, cz = mp.z + dz * rc;
+  if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
+  const S = M.gbScene = { L: M.L, persos: GB.map(([c, n]) => { const p = creerGB(c, n, sx, sz); p.visible = false; p.place = viserLibre(0, 0); return p; }) };
+  S.persos.forEach((p, k) => { p.place = viserLibre(cx + px * (k - 1.5) * .95, cz + pz * (k - 1.5) * .95); });
+  const [EG, RA, VE, WI] = S.persos; let chef = null;
+  const etapes = []; let t = ROUTE * 1000 + 900; const a = (f, apres = 0) => { etapes.push([t, f]); t += apres; };
+  // les portières : les deux de devant, puis les deux de derrière (côté cour et côté voûte)
+  const portes = [[1.0, -1.25], [1.0, 1.25], [-.3, -1.25], [-.3, 1.25]];
+  S.persos.forEach((p, k) => a(() => { const w = posEcto(E, portes[k][0], portes[k][1]); p.x = w.x; p.z = w.z; p.visible = true; sonBruit(.1, 1600, .25); p.cible = p.place; }, 650));
+  t += 2400;
+  const ligne = (p, txt) => a(() => { M.gbParle = p; bulle(`<b style="color:#b5573c">${esc(p.nom)}</b> : ${esc(txt)}`, dureeLigne(txt)); for (const q of S.persos) q.regard = q === p ? [mp.x, mp.z] : [p.x, p.z]; }, dureeLigne(txt) + 300);
+  ligne(VE, "Bon. D'après le standard, il y aurait un gros truc vert qui fait peur à tout le voisinage. Gluant, affamé, et très mal élevé. Mon genre de client, quoi.");
+  ligne(RA, "Une apparition de classe 5, mobile, à forte manifestation ectoplasmique ! Ça, les gars, c'est du sérieux !");
+  ligne(EG, "Les relevés du PKE sont hors norme. Et je rappelle une chose : il ne faut jamais croiser les effluves.");
+  ligne(WI, "Du moment que c'est payé… Moi, je suis juste là pour le salaire.");
+  // le chef de poste arrive, d'un bon pas
+  a(() => { const P = (M.ctx.pnj && M.ctx.pnj()) || {}, d0 = viserLibre(mp.x + 4, mp.z + 9);
+    chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: d0[0], z: d0[1] });
+    if (chef) { chef.rapide = true; const v = viserLibre((cx + mp.x) / 2 - px * 1.8, (cz + mp.z) / 2 - pz * 1.8); viser(chef, v[0], v[1]); } M.gbParle = chef; }, 3600);
+  a(() => { if (chef) for (const q of S.persos) q.regard = [chef.g.position.x, chef.g.position.z]; });
+  for (const txt of ["Ah ! Vous voilà enfin arrivés !", "Il faut attraper cette chose, et vite ! Elle est au mess : elle casse tout, et elle mange tout. Le buffet, les réserves… tout y passe !", "Et le Président de la République doit arriver d'une minute à l'autre… Alors faites vite, je vous en prie !"])
+    a(() => { if (chef) { M.gbParle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
+  ligne(VE, "Le Président ? Pas de panique. On lui gardera une part du buffet… s'il en reste.");
+  ligne(RA, `Et toi, ${nom}… tu as déjà vu nos films ?`);
+  a(() => { M.gbParle = null; titreGB(); }, 6600);
+  let i = 0, fini = false, clk = 0, prec = performance.now(), vise = null;
+  const finir = () => { if (fini) return; fini = true; M.gbParle = null; M.gbGare = true; M.cineSeul = null; sireneGB(false);
+    voile("background:#fff;opacity:0;transition:opacity .8s", 2600).getBoundingClientRect(); setTimeout(() => { if (!M) return; finCine(); M.gbChef = false; changerLieu("gb-mess", [0, LIGNE_GB], 0); }, 900); };
+  M.passerBtn = boutonPasser(() => { titreGB(); M.cine.maj = () => {}; setTimeout(finir, 3200); });
+  M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1); prec = now; gyroEcto(E, true, now);
+    while (i < etapes.length && clk >= etapes[i][0]) { etapes[i][1](); i++; } if (i >= etapes.length) { finir(); return; }
+    const u = Math.min(1, clk / 1000 / ROUTE), s = 1 - Math.pow(1 - u, 2.2), [ex, ez, tx, tz] = bez(s);   // (elle freine en arrivant)
+    if (u < 1) { E.position.set(ex, 0, ez); E.rotation.y = Math.atan2(-tz, tx); } else if (!M.gbSirCoupee) { M.gbSirCoupee = true; setTimeout(() => sireneGB(false), 2500); }
+    // la caméra : d'abord vers le porche, la voiture qui entre ; puis près de nous, sur la voiture qui s'arrête ; ensuite sur celui qui parle
+    const q = M.gbParle, f = q && q.g ? q.g.position : null, cible = f ? new THREE.Vector3(f.x, 1.25, f.z) : u < 1 ? new THREE.Vector3(ex, 1.1, ez) : new THREE.Vector3(cx, 1.2, cz);
+    vise = vise || cible.clone(); vise.lerp(cible, Math.min(1, .002 * Math.min(50, now - (M.gbPrec || now)) * 30)); M.gbPrec = now;
+    const camLoin = new THREE.Vector3(-5, 2.3, -4.5), camPres = new THREE.Vector3(mp.x - dx * 1.9 + px * 1.3, mp.y + 1.85, mp.z - dz * 1.9 + pz * 1.3), k = lisse(Math.max(0, Math.min(1, (u - .45) / .5)));
+    M.camera.position.copy(camLoin.lerp(camPres, k)); M.camera.position.y += Math.sin(Math.PI * k) * 3.2;   /* (elle passe par-dessus la voiture) */ M.camera.lookAt(vise); } }; }
+
+/* ----- le combat, au mess (gb-mess) : les quatre et nous, en ligne, vus de dos ; on vise Bouffe-tout du doigt, la lance crache son faisceau -----
+   immobile, il est facile à toucher ; touché, il repart aussitôt ; en mouvement, c'est bien plus dur. Un tir manqué brûle ce qu'il touche.
+   Il peut foncer sur nous et nous couvrir de slime : quatre vies. Sa jauge vide : le piège à fantômes */
+const LIGNE_GB = 6.4, PV_GB = 100;
+let texLueur = null, texBrulure = null;
+const lueurGB = () => texLueur || (texLueur = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.25, "rgba(255,230,190,.85)"); g.addColorStop(.6, "rgba(255,140,60,.28)"); g.addColorStop(1, "rgba(255,80,40,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
+const brulureTex = () => texBrulure || (texBrulure = tex(toile(256, 256, (x) => {   // (une tache de brûlé irrégulière : le centre charbonneux, l'auréole brune, la suie qui fuse en étoile)
+  for (let k = 0; k < 9; k++) { const a = k / 9 * 6.28 + Math.random(), r = 18 + Math.random() * 30, cx = 128 + Math.cos(a) * r * .8, cy = 128 + Math.sin(a) * r * .8, R = 46 + Math.random() * 40, g = x.createRadialGradient(cx, cy, 2, cx, cy, R);
+    g.addColorStop(0, "rgba(10,7,5,.85)"); g.addColorStop(.5, "rgba(42,24,12,.55)"); g.addColorStop(1, "rgba(70,42,20,0)"); x.fillStyle = g; x.fillRect(0, 0, 256, 256); }
+  const g = x.createRadialGradient(128, 128, 4, 128, 128, 60); g.addColorStop(0, "rgba(4,3,2,.98)"); g.addColorStop(1, "rgba(12,8,6,0)"); x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  x.strokeStyle = "rgba(14,10,8,.5)"; for (let k = 0; k < 26; k++) { const a = Math.random() * 6.28, l = 70 + Math.random() * 50; x.lineWidth = 1 + Math.random() * 3; x.beginPath(); x.moveTo(128, 128); x.lineTo(128 + Math.cos(a) * l, 128 + Math.sin(a) * l); x.stroke(); }
+  x.fillStyle = "rgba(255,120,30,.55)"; for (let k = 0; k < 40; k++) { const a = Math.random() * 6.28, r = 40 + Math.random() * 28; x.beginPath(); x.arc(128 + Math.cos(a) * r, 128 + Math.sin(a) * r, 1 + Math.random() * 2, 0, 7); x.fill(); } })));   // (quelques braises)
+// un faisceau : plusieurs rubans tordus (le cœur bleu-blanc, des éclairs bleus, orange, roses), toujours tournés vers la caméra
+const BRINS_GB = [[.10, 0xd8ecff, .012, 0, .02], [.05, 0x3f7cff, .07, 3.1, .05], [.055, 0xff8a1a, .13, 2.2, .06], [.045, 0xff3fa0, .11, 2.7, .06], [.035, 0xff5a1e, .18, 1.6, .1], [.03, 0x9ad0ff, .09, 4.2, .08]];
+function creerRayon() { const N = 30, g = new THREE.Group(), brins = BRINS_GB.map(([w, c, amp, fr, jit], k) => { const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(N * 6), 3));
+    const idx = []; for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } geo.setIndex(idx);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: k ? .85 : 1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); m.frustumCulled = false; m.renderOrder = 5; g.add(m);
+    return { m, w, amp, fr, jit, ph: k * 1.7 }; });
+  const sp = (s) => { const o = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurGB(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); o.scale.setScalar(s); o.renderOrder = 6; g.add(o); return o; };
+  const r = { g, brins, N, bout: sp(.5), impact: sp(1.1) }; M.scene.add(g); return r; }
+function majRayon(r, A, B, now) { r.g.visible = true; const cam = M.camera.position, d = new THREE.Vector3().subVectors(B, A), L2 = d.length(), dir = d.clone().normalize();
+  const e1 = new THREE.Vector3().crossVectors(dir, Math.abs(dir.y) < .9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).normalize(), e2 = new THREE.Vector3().crossVectors(dir, e1);
+  const p = new THREE.Vector3(), t = new THREE.Vector3(), v = new THREE.Vector3(), s = new THREE.Vector3(), pts = [];
+  for (const b of r.brins) { pts.length = 0;
+    for (let i = 0; i < r.N; i++) { const u = i / (r.N - 1), env = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.15)), .6), ang = u * L2 * b.fr + now / 1000 * (8 + b.fr * 3) + b.ph;
+      const jx = (Math.random() - .5) * b.jit * env, jy = (Math.random() - .5) * b.jit * env, amp = b.amp * env * (1 + .25 * Math.sin(now / 90 + b.ph));
+      pts.push(new THREE.Vector3().copy(A).addScaledVector(d, u).addScaledVector(e1, Math.cos(ang) * amp + jx).addScaledVector(e2, Math.sin(ang) * amp + jy)); }
+    const pos = b.m.geometry.attributes.position.array;
+    for (let i = 0; i < r.N; i++) { p.copy(pts[i]); t.subVectors(pts[Math.min(r.N - 1, i + 1)], pts[Math.max(0, i - 1)]).normalize(); v.subVectors(cam, p); s.crossVectors(t, v).normalize().multiplyScalar(b.w / 2 * (i === 0 ? .4 : 1));
+      pos[i * 6] = p.x + s.x; pos[i * 6 + 1] = p.y + s.y; pos[i * 6 + 2] = p.z + s.z; pos[i * 6 + 3] = p.x - s.x; pos[i * 6 + 4] = p.y - s.y; pos[i * 6 + 5] = p.z - s.z; }
+    b.m.geometry.attributes.position.needsUpdate = true; }
+  r.bout.position.copy(A); r.bout.scale.setScalar(.35 + Math.random() * .2); r.impact.position.copy(B); r.impact.scale.setScalar(.8 + Math.random() * .6); }
+function brulerGB(C, h, dir) { if (!h || !h.face) return; const n = h.face.normal.clone();
+  if (h.instanceId != null && h.object.getMatrixAt) { const m4 = new THREE.Matrix4(); h.object.getMatrixAt(h.instanceId, m4); n.transformDirection(m4); }
+  n.transformDirection(h.object.matrixWorld); if (n.dot(dir) > 0) n.negate();
+  for (const b of C.brulures) if (b.position.distanceTo(h.point) < .38) return;
+  const t = .5 + Math.random() * .45, o = new THREE.Mesh(new THREE.PlaneGeometry(t, t * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
+  o.position.copy(h.point).addScaledVector(n, .01); o.lookAt(h.point.clone().add(n)); o.rotateZ(Math.random() * 6.28); o.renderOrder = 3; M.scene.add(o); C.brulures.push(o);
+  if (C.brulures.length > 220) M.scene.remove(C.brulures.shift()); }
+function hudGB(C) { if (!C.hud) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:7;width:min(78%,560px);pointer-events:none;font:900 12px 'Lato',sans-serif;color:#eaffd8;text-shadow:0 1px 2px #000;text-align:center";
+    d.innerHTML = '<div>BOUFFE-TOUT</div><div style="margin-top:3px;height:14px;border:2px solid #0d2a06;border-radius:8px;background:rgba(0,0,0,.55);overflow:hidden"><div class="pv" style="height:100%;width:100%;background:linear-gradient(#a6ff5a,#3fa61a);transition:width .2s"></div></div><div class="vies" style="margin-top:5px;font-size:18px;letter-spacing:3px"></div>';
+    M.ctx.conteneur.appendChild(d); C.hud = d; }
+  C.hud.querySelector(".pv").style.width = Math.max(0, C.pv / PV_GB * 100) + "%"; C.hud.querySelector(".vies").textContent = "❤️".repeat(Math.max(0, C.vies)) + "🤍".repeat(Math.max(0, 4 - C.vies)); }
+// le thème de S.O.S. Fantômes : dès qu'on entre au mess, pendant qu'on regarde Bouffe-tout tout démolir, et tout le combat
+function musiqueGB(on) { if (!M) return; let a = M.musGB;
+  if (on) { if (!a) { a = M.musGB = new Audio("sons/gb-theme.mp3"); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); return; }
+  if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .04); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
+function finCombatGB() { const C = M && M.gbCombat; musiqueGB(false); if (!C) return; if (C.hud) C.hud.remove(); if (C.piegeBtn) C.piegeBtn.remove(); for (const r of C.rayons.values()) M.scene.remove(r.g); M.gbCombat = null; M.gbVisee = null; }
+function combatGB() { const L = M.L, moi = M.gens.get(M.moiNum); if (!moi || L.gbMess || M.cine) return; const S = messGB(); if (!S) return; const B = MESS_GB;
+  if (M.gbCombat) finCombatGB();
+  const C = M.gbCombat = { L, vies: 4, pv: PV_GB, rayons: new Map(), brulures: [], t: 0, attaque: 10, contact: 0, cibles: [], fini: false };
+  S.combat = true;
+  // la ligne : Egon, Ray, nous au milieu, Venkman, Winston — tournés vers le fond du mess
+  const xs = { egon: -2.4, ray: -1.2, venkman: 1.2, winston: 2.4 };
+  if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
+  M.gbScene = { L, persos: GB.map(([c, n]) => { const p = creerGB(c, n, xs[c], LIGNE_GB); p.regard = [xs[c], -20]; p.tirT = 1 + Math.random() * 3; return p; }) };
+  moi.g.position.set(0, 0, LIGNE_GB); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: 0, z: LIGNE_GB });
+  Object.assign(moi.info, { tenue: "ghostbuster", couleur: "#c9b98f", bas: "#c9b98f", pieds: "#2a2522" }); dessinerCorps(moi);   // (nous aussi, en combinaison, le pack sur le dos)
+  // ce que les tirs peuvent brûler : la salle, les tables, les chaises, le buffet (pas les gens, ni Bouffe-tout, ni le slime)
+  const exclus = new Set(); for (const p of M.gens.values()) p.g.traverse(o => exclus.add(o)); for (const p of M.gbScene.persos) p.g.traverse(o => exclus.add(o));
+  M.scene.traverse(o => { if ((o.isMesh || o.isInstancedMesh) && !exclus.has(o) && !(o.material && o.material.transparent && o.material.depthWrite === false) && o.visible) C.cibles.push(o); });
+  // d'abord, on le regarde tout démolir (la musique part) : le buffet, puis les tables ; ensuite seulement, on tire
+  const ti = (x, z) => { const i = L.tablesMess.findIndex(([a, b]) => Math.abs(a - x) < .05 && Math.abs(b - z) < .05); return { x, y: 1.3, z, table: i }; };
+  S.pos.set(-1, 2.0, B.Z0 - .8); S.script = [{ x: -1, y: 1.7, z: B.BZ + .7, buffet: true }, ti(-2.6, -7.2), { x: -5, y: 1.6, z: B.BZ + .7, buffet: true }, ti(-7.2, -4.2), ti(3.0, -1.2), { x: B.X1 - .7, y: 2.3, z: -3 }, ti(-2.6, 1.8)];
+  C.intro = 14; musiqueGB(true); bulle("<i>Le mess, dressé pour le Président… et Bouffe-tout qui s'en donne à cœur joie.</i>", 4500);
+  const vise = new THREE.Vector3(0, 1.35, -4);
+  M.cine = { gb: false, maj: () => { M.camera.position.set(0, 2.55, LIGNE_GB + 3.3); vise.lerp(C.intro > 0 && S ? S.pos : new THREE.Vector3(0, 1.35, -4), C.intro > 0 ? .04 : .03); M.camera.lookAt(vise); } }; }
+// Bouffe-tout touché : il file aussitôt ailleurs, vite
+function fuiteGB(S) { const B = MESS_GB, x = B.X0 + 1 + Math.random() * (B.X1 - B.X0 - 2), z = -10 + Math.random() * 12;
+  S.cible = { x, y: 1.6 + Math.random() * 1.6, z }; S.attente = 0; S.arrive = false; S.rapide = true; S.fuiteT = 1.2; sonBruit(.25, 1200, .2); }
+// il nous fonce dessus : du slime partout, une vie en moins
+function salirGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!C || C.fini || !S) return; C.vies--; S.rapide = true; S.attaqueEnCours = false;
+  const d = voile("background:url(images/gb/slime.webp) center/120% no-repeat,radial-gradient(circle,rgba(70,170,40,.55),rgba(20,90,10,.75));opacity:1", 3200);   // (l'écran couvert de slime, qui s'égoutte peu à peu)
+  let op = 1; const it = setInterval(() => { op -= .035; if (op <= 0 || !d.isConnected) { clearInterval(it); d.remove(); return; } d.style.opacity = String(Math.min(1, op * 1.4)); }, 80);
+  if (moi) slimeGB(S, moi.g.position.x, 0, moi.g.position.z - .2, 0, 1, 0, 1.3); sonBruit(.5, 300, .4);
+  bulle(C.vies > 0 ? `<b style="color:#b5573c">Ray</b> : Beurk ! Il t'a slimé ! Ça va, ${esc(prenomSH())} ?` : "<b>Bouffe-tout vous a eus…</b> On se relève, et on recommence !", 3800);
+  if (C.vies <= 0) setTimeout(() => { if (M && M.gbCombat === C) { C.vies = 4; C.pv = PV_GB; hudGB(C); } }, 3500);
+  hudGB(C); fuiteGB(S); }
+function vaincuGB(C, S) { C.fini = true; S.fige = new THREE.Vector3(-.6, 1.9, -1.5); S.cible = null; M.gbVisee = null;
+  bulle(`<b style="color:#b5573c">Ray</b> : Il est à bout ! On le tient ! ${esc(prenomSH())}, lance le piège, vite !`, 7000);
+  const b = document.createElement("button"); b.type = "button"; b.textContent = "🪤 Piège à fantômes";
+  b.style.cssText = "position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:9;border:2px solid #111;border-radius:14px;padding:12px 20px;background:#f4d03f;color:#111;font:900 17px 'Lato',sans-serif;box-shadow:3px 4px 0 rgba(0,0,0,.5);cursor:pointer";
+  for (const ev of ["pointerdown", "pointerup", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
+  b.onclick = e => { e.stopPropagation(); b.remove(); C.piegeBtn = null; cinePiegeGB(); }; M.ctx.conteneur.appendChild(b); C.piegeBtn = b; }
+function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L !== M.L) { finCombatGB(); return; } const S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!S || !moi) return; C.t += dt;
+  if (C.intro > 0) { C.intro -= dt; if (C.intro <= 0 || (S.script && !S.script.length && C.intro < 8)) { C.intro = 0; S.script = null; if (M.cine) M.cine.gb = true; hudGB(C);
+      bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6000); } return; }
+  const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); ray.camera = M.camera; const vus = new Set();
+  const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position;
+  const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
+    ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .8 : .4;
+    let B2;
+    if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
+      if (fuit) { C.contact += dt; if (C.contact > .3 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
+    else { const h = ray.intersectObjects(C.cibles, false)[0]; B2 = h ? h.point.clone() : A.clone().addScaledVector(dir, 25);
+      if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 110)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir); } if (fuit) C.contact = 0; }
+    let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
+  // le nôtre : là où le doigt vise
+  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
+    ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .8 : .4) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
+    tir("moi", A, hS.clone().sub(A).normalize(), 9, true); if (!C.sonT || now - C.sonT > 260) { C.sonT = now; sonBruit(.28, 2600, .07); } }
+  // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
+  for (const p of M.gbScene ? M.gbScene.persos : []) { p.tirT -= dt; const tient = C.fini && !S.capFin;
+    const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
+    if (tient) { tir(p.cle, A, cible.clone().sub(A).normalize(), 0, false); continue; }
+    if (C.fini) continue;
+    if (!(p.rafale > 0) && p.tirT <= 0 && statique) { p.rafale = 1 + Math.random() * 1.2; p.ecart = new THREE.Vector3((Math.random() - .5) * 1.4, (Math.random() - .5) * .8, 0); }
+    if (p.rafale > 0) { tir(p.cle, A, cible.clone().add(p.ecart).sub(A).normalize(), 1.2, false); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 2 + Math.random() * 4; } }
+  for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
+  if (S.fuiteT) { S.fuiteT -= dt; if (S.fuiteT <= 0) { S.fuiteT = 0; S.rapide = false; } }
+  hudGB(C);
+  if (!C.fini && C.pv <= 0) { C.pv = 0; vaincuGB(C, S); return; }
+  // de temps en temps, il fonce sur nous
+  if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 12 + Math.random() * 10; S.attaqueEnCours = true; S.rapide = true;
+    S.cible = { x: moi.g.position.x + (Math.random() - .5) * .4, y: 1.35, z: moi.g.position.z - .5, apres: salirGB }; S.attente = 0; S.arrive = false; } }
+  if (S.attaqueEnCours && S.cible && !S.cible.apres) S.attaqueEnCours = false;   // (touché en route : il a filé ailleurs)
+}
+// le piège : lancé sous lui, il s'ouvre, un cône de lumière l'aspire, il se referme dans un nuage blanc ; puis retour dans la cour, à côté de l'Ecto-1
+function creerPiege() { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x2a2a2c, roughness: .5, metalness: .4 }), alu = new THREE.MeshStandardMaterial({ color: 0xa8adb2, roughness: .3, metalness: .8 });
+  const rayures = tex(toile(128, 32, (x, w, h) => { x.fillStyle = "#f2c81e"; x.fillRect(0, 0, w, h); x.fillStyle = "#111"; for (let k = -2; k < 12; k++) { x.beginPath(); x.moveTo(k * 16, h); x.lineTo(k * 16 + 8, h); x.lineTo(k * 16 + 24, 0); x.lineTo(k * 16 + 16, 0); x.fill(); } }));
+  const corps = new THREE.Mesh(new THREE.BoxGeometry(.44, .12, .3), [new THREE.MeshStandardMaterial({ map: rayures }), new THREE.MeshStandardMaterial({ map: rayures }), noir, noir, new THREE.MeshStandardMaterial({ map: rayures }), new THREE.MeshStandardMaterial({ map: rayures })]);
+  corps.position.y = .06; g.add(corps);
+  for (const sx of [-1, 1]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .04, 10), alu); r.rotation.z = Math.PI / 2; r.position.set(sx * .2, .03, .12); g.add(r); }
+  const voy = new THREE.Mesh(new THREE.SphereGeometry(.025, 10, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff0000, emissiveIntensity: .3 })); voy.position.set(.15, .13, -.1); g.add(voy);
+  const volets = [-1, 1].map(s => { const piv = new THREE.Group(); piv.position.set(0, .125, s * .15); g.add(piv); const v = new THREE.Mesh(new THREE.BoxGeometry(.42, .025, .15), alu); v.position.z = -s * .075; piv.add(v); return { piv, s }; });
+  const cable = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.22, .05, 0), new THREE.Vector3(-.6, .01, .2), new THREE.Vector3(-1.1, .01, .1)]), 16, .012, 6), noir); g.add(cable);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return { g, volets, voy }; }
+function cinePiegeGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!C || !S || !moi) return;
+  const P = creerPiege(), dep = new THREE.Vector3(moi.g.position.x + .3, .9, moi.g.position.z - .3), arr = new THREE.Vector3(S.fige.x, 0, S.fige.z); M.scene.add(P.g); P.g.position.copy(dep);
+  const hC = S.fige.y + .4, cone = new THREE.Mesh(new THREE.CylinderGeometry(1.0, .2, hC, 40, 1, true), new THREE.MeshBasicMaterial({ map: tex(toile(8, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(.5, "rgba(220,235,255,.45)"); g.addColorStop(1, "rgba(255,255,255,.95)"); x.fillStyle = g; x.fillRect(0, 0, w, h); })), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  cone.position.set(arr.x, hC / 2 + .12, arr.z); cone.visible = false; M.scene.add(cone); const lum = new THREE.PointLight(0xdfeaff, 0, 9, 1.5); lum.position.set(arr.x, .5, arr.z); M.scene.add(lum);
+  const f0 = S.fige.clone(); let clk = 0, prec = performance.now(), dits = 0, fini = false; sonBruit(.3, 900, .2);
+  const fin = () => { if (fini) return; fini = true; voile("background:#fff;opacity:0;transition:opacity .9s", 2600).getBoundingClientRect();
+    setTimeout(() => { if (!M) return; finCine(); finCombatGB(); M.gbCapture = true; M.gbGare = true; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - 0.2], -Math.PI / 2); }, 1000); };
+  M.passerBtn = boutonPasser(fin);
+  M.cine = { maj: now => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) / 1000 * (M.vite || 1); prec = now; const t = clk;
+    // le lancer : une parabole, en tournoyant, puis il glisse et s'arrête sous lui
+    if (t < 1.1) { const u = t / 1.1; P.g.position.lerpVectors(dep, arr, u); P.g.position.y = dep.y * (1 - u) + 1.6 * Math.sin(Math.PI * u); P.g.rotation.y = u * 9; P.g.rotation.x = u * 4; }
+    else { P.g.position.copy(arr); P.g.rotation.set(0, P.g.rotation.y, 0); if (!dits) { dits = 1; sonBruit(.2, 600, .3); } }
+    // il s'ouvre, le cône de lumière, l'aspiration
+    const ouv = t < 1.4 ? 0 : t < 1.8 ? (t - 1.4) / .4 : t < 4.6 ? 1 : t < 5.0 ? 1 - (t - 4.6) / .4 : 0;
+    for (const v of P.volets) v.piv.rotation.x = v.s * ouv * 1.9;
+    cone.visible = t > 1.7 && t < 4.7; cone.material.opacity = .75 + Math.random() * .25; cone.scale.set(1 + Math.random() * .05, 1, 1 + Math.random() * .05); lum.intensity = cone.visible ? 14 + Math.random() * 6 : 0;
+    if (t > 1.9 && dits === 1) { dits = 2; sonBruit(2.6, 3200, .18); bulle(`<b style="color:#b5573c">Egon</b> : N'y regardez pas ! Ne regardez pas la lumière !`, 2800); }
+    if (t > 2.0 && t < 4.4) { const u = lisse((t - 2.0) / 2.4); S.capt = u; S.fige.set(arr.x + (f0.x - arr.x) * (1 - u), .15 + (f0.y - .15) * (1 - u), arr.z + (f0.z - arr.z) * (1 - u)); S.sp.material.rotation = u * 9; }
+    if (t > 4.4) { S.capFin = true; S.sp.visible = false; S.lum.intensity = 0; }
+    if (t > 5.0 && dits === 2) { dits = 3; sonBruit(.3, 500, .4); brumeSH(arr.clone(), 3200); P.voy.material.emissiveIntensity = 3;
+      bulle(`<b style="color:#b5573c">Venkman</b> : On l'a eu ! Le Président pourra passer à table… enfin, s'il reste quelque chose.`, 4600); }
+    if (dits >= 3) P.voy.material.emissiveIntensity = Math.floor(now / 300) % 2 ? 3 : .2;   // (le voyant rouge clignote : il est dedans)
+    if (t > 10) fin();
+    // la caméra : de côté, sur le piège et lui
+    const yv = t < 1.1 ? 1.2 : 1.0; M.camera.position.set(arr.x + 2.6, 2.1, arr.z + 3.6); M.camera.lookAt(arr.x, yv, arr.z); } }; }
+// dans la cour, une fois Bouffe-tout capturé : les quatre restent là, près de l'Ecto-1
+function garerGB() { const L = M.L, E = L.ecto1; if (!E) return; E.visible = !!M.gbGare; if (!M.gbGare || L.gbGareFait) return; L.gbGareFait = true;
+  E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2;
+  { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !(Math.abs(x - GARE_GB[0]) < 1.35 && Math.abs(z - GARE_GB[1]) < 3.4); }   // (on ne passe pas au travers)
+  if (M.gbCapture) { if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
+    const pl = [[-.5, .6], [-.6, 1.8], [-.5, 4.2], [-.7, 5.4]]; M.gbScene = { L, persos: GB.map(([c, n], k) => creerGB(c, n, pl[k][0], pl[k][1])) }; } }
+
 /* ===================== Silent Hill =====================
    Une radio rouge traîne au sol, quelque part dans la caserne (jamais au même endroit). On la ramasse : elle grésille… une sirène… le noir.
    On se réveille allongé dans le bar du sous-sol : la même caserne, mais déserte, noyée dans un brouillard blanc, des cendres qui tombent,
@@ -7089,7 +7273,7 @@ function trierLumieres(t) {
   tri.forEach(([l], i) => l.layers.set(i < LAMPES_MAX ? 0 : 31));
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
-const baseLieu = id => id === "bttf-cour" ? "grande" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
+const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
 // une flamme (dégradé jaune → orange → rouge, en goutte), partagée par tous les feux
 let texFlamme = null, texFumee = null, texSang = [];
 let texFlammes = null;
@@ -8072,6 +8256,8 @@ function citadine(scene, modele, couleur, x, z, rot) {
    la caisse est une boîte aux angles arrondis, ses flancs, sa face et son dos sont peints (toile), les roues et les accessoires du toit en relief */
 // la plaque « ECTO-1 · NEW YORK » (S.O.S. Fantômes), à l'avant et à l'arrière d'un véhicule (l'avant vers +x)
 let texEcto = null;
+function plaqueBusGB(b) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(.66, .33), new THREE.MeshStandardMaterial({ map: texEcto, roughness: .45, metalness: .3, emissive: 0xffffff, emissiveMap: texEcto, emissiveIntensity: .15 })); pl.position.set(5.36, .66, 0); pl.rotation.y = Math.PI / 2; b.add(pl); b.userData.plaque = pl; }
 function plaqueEcto(g, L, y = .55) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
   const m = new THREE.MeshStandardMaterial({ map: texEcto, roughness: .45, metalness: .3, polygonOffset: true, polygonOffsetFactor: -2 });
   for (const s of [1, -1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(.52, .26), m); pl.position.set(s * (L / 2 + .015), y, 0); pl.rotation.y = s * Math.PI / 2; g.add(pl); }
@@ -8099,49 +8285,22 @@ function creerEcto1() {
   const add = (geo, m, x, y, z, parent = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
   const B = (sx, sy, sz, m, x, y, z, parent) => add(new THREE.BoxGeometry(sx, sy, sz), m, x, y, z, parent);
   const Y0 = .34, YB = .98, YT = 1.56;   // bas de caisse, ceinture, toit
-  // les flancs de la caisse basse (texture) : blanc, la bande rouge qui court sous la ceinture et s'élargit vers l'arrière, le logo sur la portière avant, les joncs chromés
-  const flanc = droit => toile(Math.round(L * P), Math.round((YB - Y0) * P), (c, w, h) => { const X = u => droit ? (u + L / 2) * P : (L / 2 - u) * P, Yy = v => h - (v - Y0) * P;
-    c.fillStyle = "#f2f1ec"; c.fillRect(0, 0, w, h);
-    c.fillStyle = "#c41a1e"; c.beginPath(); c.moveTo(X(L / 2 - .3), Yy(.84)); c.lineTo(X(-1.2), Yy(.82)); c.lineTo(X(-L / 2), Yy(.62)); c.lineTo(X(-L / 2), Yy(.97)); c.lineTo(X(-1.2), Yy(.9)); c.lineTo(X(L / 2 - .3), Yy(.9)); c.closePath(); c.fill();   // la bande rouge, en flèche vers l'arrière
-    c.fillStyle = "#c9ccd0"; c.fillRect(0, Yy(.46), w, 3); c.fillRect(0, Yy(.92) - 1, w, 2);   // les joncs chromés
-    c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 2; for (const u of [1.62, .45, -.72]) { c.beginPath(); c.moveTo(X(u), Yy(.42)); c.lineTo(X(u), Yy(YB)); c.stroke(); }   // les portières
-    c.fillStyle = "#b8bbbf"; for (const u of [1.45, .28, -.9]) c.fillRect(X(u) - (droit ? 0 : 18), Yy(.78), 18, 4);   // les poignées
-    for (const u of [1.95, -2.0]) { c.fillStyle = "#0d0d0f"; c.beginPath(); c.arc(X(u), h + 4, 46, Math.PI, 0); c.fill(); }   // les passages de roues
-    const lg = logoNoGhost(); c.drawImage(lg, X(.95) - 34, Yy(.84), 68, 68); });
-  const fl = [mat({ map: tex(flanc(true)), roughness: .35 }), mat({ map: tex(flanc(false)), roughness: .35 })];
-  B(L - .5, YB - Y0, W, [blanc, blanc, blanc, blanc, fl[0], fl[1]], -.1, (Y0 + YB) / 2, 0);
-  // le capot, un peu plongeant ; l'avant arrondi par le pare-chocs
-  const capot = B(1.6, .06, W - .06, blanc, L / 2 - 1.0, YB + .02, 0); capot.rotation.z = -.04;
-  // l'habitacle et la longue partie arrière (le « corbillard ») : vitres latérales, montants blancs
-  const vit = droit => toile(Math.round(4.1 * P), Math.round((YT - YB) * P), (c, w, h) => { const X = u => droit ? (u + 2.6) * P : (1.5 - u) * P;
-    c.fillStyle = "#f2f1ec"; c.fillRect(0, 0, w, h);
-    c.fillStyle = "#1a2028"; for (const [a, b] of [[1.0, 1.42], [.05, .92], [-.95, -.02], [-2.45, -1.1]]) { c.beginPath(); c.roundRect(Math.min(X(a), X(b)), 6, Math.abs(X(b) - X(a)), h - 12, 10); c.fill(); }
-    c.fillStyle = "rgba(255,255,255,.12)"; c.fillRect(0, 8, w, 6);
-    c.fillStyle = "#c41a1e"; c.fillRect(0, h - 5, w, 5); });
-  const vm = [mat({ map: tex(vit(true)), roughness: .25, metalness: .1 }), mat({ map: tex(vit(false)), roughness: .25, metalness: .1 })];
-  B(4.1, YT - YB, W - .12, [blanc, blanc, blanc, blanc, vm[0], vm[1]], -.55, (YB + YT) / 2, 0);
-  B(4.3, .05, W - .1, blanc, -.55, YT + .02, 0);   // le toit
-  const pb = B(.06, .62, W - .2, vitre, 1.62, YB + .27, 0); pb.rotation.z = -.5;   // le pare-brise, incliné
-  B(.04, .5, 1.3, vitre, -2.62, YB + .3, 0);   // la vitre du hayon
-  // l'arrière : le hayon (logo, grille d'aération), les ailerons rouges, les feux-fusées
-  const hayon = toile(200, 100, c => { c.fillStyle = "#f2f1ec"; c.fillRect(0, 0, 200, 100); c.drawImage(logoNoGhost(), 62, 14, 74, 74); c.fillStyle = "#9a9da2"; for (let k = 0; k < 9; k++) c.fillRect(150, 18 + k * 7, 30, 3); c.strokeStyle = "rgba(0,0,0,.3)"; c.strokeRect(36, 4, 128, 92); });
-  { const h = add(new THREE.PlaneGeometry(1.5, .62), mat({ map: tex(hayon), roughness: .35 }), -L / 2 + .25 - .005, (Y0 + YB) / 2 + .02, 0); h.rotation.y = -Math.PI / 2; }
-  for (const s of [-1, 1]) { const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(1.55, 0); fin.quadraticCurveTo(.4, .08, -.32, .26); fin.lineTo(-.3, .18); fin.quadraticCurveTo(-.1, .06, 0, 0);   /* (l'aileron : effilé, la pointe qui file vers l'arrière, au-dessus du feu) */
-    const fg = new THREE.ExtrudeGeometry(fin, { depth: .07, bevelEnabled: true, bevelThickness: .015, bevelSize: .015, bevelSegments: 2 }); add(fg, rouge, -L / 2 + .3, YB - .04, s * (W / 2 - .05) - .035);
-    for (const dy of [.06, .14]) { const t = add(new THREE.CapsuleGeometry(.028, .1, 4, 10), mat({ color: 0xff2a20, emissive: 0x7a0000, roughness: .3 }), -L / 2 + .02, YB + dy, s * (W / 2 - .05)); t.rotation.z = Math.PI / 2; } }   // les deux feux-fusées, sous la pointe
-  // l'avant : la calandre chromée à motifs, les quatre phares, le pare-chocs et ses obus, l'emblème
-  const cal = toile(256, 80, c => { c.fillStyle = "#c9ccd1"; c.fillRect(0, 0, 256, 80); c.fillStyle = "#1a1b1d"; for (let i = 0; i < 24; i++) for (let j = 0; j < 4; j++) c.fillRect(6 + i * 10.4, 8 + j * 18, 7, 12); });
-  { const cg = add(new THREE.PlaneGeometry(1.15, .34), mat({ map: tex(cal), metalness: .7, roughness: .25 }), L / 2 - .2 + .012, .66, 0); cg.rotation.y = Math.PI / 2; }
-  B(.12, .3, W - .02, blanc, L / 2 - .25, .82, 0);
-  for (const s of [-1, 1]) for (const dz of [.62, .82]) { const r = add(new THREE.CylinderGeometry(.085, .085, .06, 18), chrome, L / 2 - .19, .82, s * dz); r.rotation.z = Math.PI / 2;
-    const v = add(new THREE.CylinderGeometry(.065, .065, .02, 18), mat({ color: 0xfffbe8, emissive: 0x666050, roughness: .1 }), L / 2 - .155, .82, s * dz); v.rotation.z = Math.PI / 2; }   // les doubles phares
-  B(.16, .14, W + .04, chrome, L / 2 - .12, .44, 0);   // le pare-chocs avant
-  for (const s of [-1, 1]) { const o = add(new THREE.SphereGeometry(.09, 14, 10), chrome, L / 2 - .02, .48, s * .55); o.scale.x = 1.4; }   // les obus
-  B(.16, .14, W + .04, chrome, -L / 2 + .12, .44, 0);   // le pare-chocs arrière
-  for (const s of [-1, 1]) { const o = add(new THREE.CylinderGeometry(.11, .11, .12, 16), chrome, -L / 2 + .02, .58, s * .7); o.rotation.z = Math.PI / 2; add(new THREE.CircleGeometry(.08, 14), mat({ color: 0xd01818, emissive: 0x400000 }), -L / 2 - .045, .58, s * .7).rotation.y = -Math.PI / 2; }   // les feux bas, dans le pare-chocs
-  { const e = add(new THREE.ConeGeometry(.05, .3, 4), chrome, L / 2 - .5, YB + .07, 0); e.rotation.z = -Math.PI / 2; e.scale.z = .3; }   // l'emblème du capot
+  // la caisse, habillée des vraies photos de la voiture (les deux flancs, l'avant, le pare-brise, l'arrière) : la bande et les ailerons rouges, le vrai logo,
+  // les portières, les vitres, les roues à flanc blanc ; dessous, un volume blanc pour qu'on ne voie pas au travers. Le toit et son attirail restent en relief
+  const photo = (n) => { const t = new THREE.TextureLoader().load(`images/gb/ecto/${n}.webp`); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    return mat({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .38, transparent: true, alphaTest: .45, roughness: .3, metalness: .05, side: THREE.DoubleSide }); };   // (un peu de lumière propre : la photo garde son éclat)
+  const HF = 1.64;   // (la hauteur des flancs sur la photo : du sol au toit)
+  B(L - .4, YB - Y0 + .05, W - .06, blanc, -.05, (Y0 + YB) / 2, 0);
+  B(4.3, YT - YB + .06, W - .2, mat({ color: 0x15191f, roughness: .2 }), -.75, (YB + YT) / 2 + .03, 0);
+  B(4.5, .06, W - .14, blanc, -.75, YT + .05, 0);   // le toit
+  const capot = B(1.55, .08, W - .08, blanc, L / 2 - .95, YB + .02, 0); capot.rotation.z = -.05;
+  for (const [n, s, ry] of [["flanc-d", 1, 0], ["flanc-g", -1, Math.PI]]) { const f = add(new THREE.PlaneGeometry(L, HF), photo(n), 0, HF / 2, s * (W / 2 + .015)); f.rotation.y = ry; f.castShadow = true; }
+  { const f = add(new THREE.PlaneGeometry(W + .08, .86), photo("avant"), L / 2 + .02, .15 + .43, 0); f.rotation.y = Math.PI / 2; }
+  { const f = add(new THREE.PlaneGeometry(W + .12, HF - .12), photo("arriere"), -L / 2 - .02, .12 + (HF - .12) / 2, 0); f.rotation.y = -Math.PI / 2; }
+  { const pb = add(new THREE.PlaneGeometry(W - .14, .78), photo("parebrise"), 1.62, YB + .3, 0);   // (incliné vers l'arrière, comme le vrai pare-brise)
+    pb.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), .95).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)); }
   // les roues : pneus à flanc blanc, enjoliveurs chromés
-  for (const ux of [1.95, -2.0]) for (const s of [-1, 1]) { const w = new THREE.Group(); w.position.set(ux, .38, s * (W / 2 - .06)); w.rotation.x = Math.PI / 2; g.add(w);
+  for (const ux of [1.95, -2.0]) for (const s of [-1, 1]) { const w = new THREE.Group(); w.position.set(ux, .38, s * (W / 2 - .16)); w.rotation.x = Math.PI / 2; g.add(w);
     add(new THREE.CylinderGeometry(.38, .38, .24, 24), noir, 0, 0, 0, w); add(new THREE.CylinderGeometry(.3, .3, .245, 24), mat({ color: 0xf4f4f0, roughness: .7 }), 0, 0, 0, w); add(new THREE.CylinderGeometry(.2, .2, .25, 18), chrome, 0, 0, 0, w);
     add(new THREE.ConeGeometry(.06, .06, 12), chrome, 0, s * .15, 0, w).rotation.x = s > 0 ? 0 : Math.PI; }
   // le rétroviseur, l'antenne fouet
@@ -8149,7 +8308,8 @@ function creerEcto1() {
   { const a = add(new THREE.CylinderGeometry(.006, .006, 1.5, 4), noir, -2.7, YB + .75, -W / 2 + .05); a.rotation.z = .55; }
   // --- le toit : tout l'attirail ---
   const R = new THREE.Group(); R.position.y = YT + .05; g.add(R);
-  const rampe = x => { B(.28, .14, W - .1, bleu, x, .1, 0, R); for (const s of [-1, 1]) add(new THREE.SphereGeometry(.09, 12, 8), bleu, x, .1, s * (W / 2 - .02), R); B(.2, .1, .3, mat({ color: 0xf2f2f2, emissive: 0x404040 }), x, .1, 0, R); B(.3, .03, W - .08, chrome, x, .02, 0, R); };
+  const gyro = { bleus: [], rouges: [] }; g.userData.gyro = gyro;   // (les gyrophares : allumés par gyroEcto, rouge et bleu en alternance)
+  const rampe = x => { const mb = bleu.clone(); gyro.bleus.push(mb); B(.28, .14, W - .1, mb, x, .1, 0, R); for (const s of [-1, 1]) add(new THREE.SphereGeometry(.09, 12, 8), mb, x, .1, s * (W / 2 - .02), R); B(.2, .1, .3, mat({ color: 0xf2f2f2, emissive: 0x404040 }), x, .1, 0, R); B(.3, .03, W - .08, chrome, x, .02, 0, R); };
   rampe(1.25); rampe(-1.9);   // les deux rampes bleues, avant et arrière
   // le rack (cadre noir) et les boîtiers
   for (const [x0, x1, z0, z1] of [[-1.55, .95, -.62, .62]]) { for (const z of [z0, z1]) B(x1 - x0, .04, .04, noir, (x0 + x1) / 2, .22, z, R); for (const x of [x0, x1]) B(.04, .04, z1 - z0, noir, x, .22, 0, R); for (const x of [x0, x1]) for (const z of [z0, z1]) B(.04, .22, .04, noir, x, .11, z, R); }
@@ -8159,17 +8319,14 @@ function creerEcto1() {
   for (const s of [-1, 1]) { const t = add(new THREE.CylinderGeometry(.11, .11, .55, 16), mat({ color: 0xe8c21e, roughness: .35, metalness: .3 }), -.5, .36, s * .5, R); t.rotation.z = Math.PI / 2; }   // les bonbonnes jaunes
   { const t = add(new THREE.CylinderGeometry(.12, .12, .75, 16), mat({ color: 0x8fbf6a, roughness: .4, metalness: .2 }), .3, .4, -.62, R); t.rotation.z = Math.PI / 2; }   // la bonbonne verte
   // la balise : un mât, la lanterne rouge, le dôme blanc au sommet
-  B(.04, .5, .04, chrome, -1.3, .45, 0, R); B(.16, .14, .16, mat({ color: 0xd01a1a, emissive: 0x500000 }), -1.3, .62, 0, R); add(new THREE.CylinderGeometry(.08, .08, .16, 14), mat({ color: 0xf6f6f2, emissive: 0x303030 }), -1.3, .8, 0, R); add(new THREE.SphereGeometry(.08, 12, 8, 0, 6.3, 0, 1.6), mat({ color: 0xf6f6f2 }), -1.3, .88, 0, R);
+  B(.04, .5, .04, chrome, -1.3, .45, 0, R); { const mr = mat({ color: 0xd01a1a, emissive: 0x500000 }); gyro.rouges.push(mr); B(.16, .14, .16, mr, -1.3, .62, 0, R); } add(new THREE.CylinderGeometry(.08, .08, .16, 14), mat({ color: 0xf6f6f2, emissive: 0x303030 }), -1.3, .8, 0, R); add(new THREE.SphereGeometry(.08, 12, 8, 0, 6.3, 0, 1.6), mat({ color: 0xf6f6f2 }), -1.3, .88, 0, R);
   // le tube rouge (comme un canon), la sirène chromée, le petit radar
   { const t = add(new THREE.CylinderGeometry(.035, .035, .55, 10), mat({ color: 0xc41a1e }), -.05, .62, .1, R); t.rotation.z = Math.PI / 2; B(.04, .2, .04, gris, -.25, .5, .1, R); }
   { const s = add(new THREE.CylinderGeometry(.1, .06, .2, 14), chrome, .95, .32, .45, R); s.rotation.z = -Math.PI / 2; }
   { const d = add(new THREE.SphereGeometry(.12, 12, 8, 0, 6.3, 0, 1.2), gris, .9, .3, -.45, R); d.rotation.z = -.6; }
   // l'échelle (côté gauche, à l'arrière), les tuyaux bleus (côté droit)
-  for (const s of [-.15, .15]) B(.03, 1.25, .03, chrome, -1.85 + s, .78, -(W / 2 + .05)); for (let k = 0; k < 5; k++) B(.3, .025, .025, chrome, -1.85, .3 + k * .24, -(W / 2 + .05));
-  for (const dz of [0, .07]) { const pts = [new THREE.Vector3(-1.2, YT + .3, W / 2 - .2 + dz), new THREE.Vector3(-1.35, YT + .1, W / 2 + .08 + dz), new THREE.Vector3(-1.5, YB, W / 2 + .1 + dz), new THREE.Vector3(-1.6, .55, W / 2 + .08 + dz)];
-    add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, .04, 8), mat({ color: 0x2a4a8a, roughness: .5 }), 0, 0, 0); }
-  // les plaques ECTO-1
-  plaqueEcto(g, L - .02, .42);
+  for (const s of [-.15, .15]) B(.03, .62, .03, chrome, -1.85 + s, YT + .25, W / 2 + .05);   // (le haut de l'échelle, au-dessus du toit ; le reste est sur la photo)
+  // (les tuyaux bleus : sur la photo du flanc)
   g.traverse(o => { if (o.isMesh) o.receiveShadow = true; });
   return g; }
 function busCaserne(scene, modele, x, z, rot) {
@@ -8304,6 +8461,7 @@ function corbeilleParis(A, scene, x, y, z, rot, poteau = false) {
   else aj(new THREE.BoxGeometry(.4, .5, .03), vertF, 0, yb + .35, .015);   // la platine, contre le mur
   return g;
 }
+let sansVoituresGB = false;
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -8311,8 +8469,9 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  const L = construireLieu(baseLieu(id), scene);
-  if (id === "bttf-cour") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, bttf: true });   // (la cour d'honneur rien qu'à soi, pour la DeLorean)
+  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false;   // (la cour de l'Ecto-1 : sans les voitures garées)
+  if (id === "bttf-cour") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, bttf: true });
+  if (id === "gb-cour" || id === "gb-mess") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, gb: true });   // (S.O.S. Fantômes : la cour et le mess rien qu'à soi)   // (la cour d'honneur rien qu'à soi, pour la DeLorean)
   if (L.interieur) { soleil.intensity = 0; soleil.castShadow = false; scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35); scene.fog = null; scene.background = new THREE.Color(0x2a2420); }
   else {
     const hemi = scene.children.find(o => o.isHemisphereLight), cielJour = scene.background, nuages = scene.children.filter(o => o.isSprite);
@@ -9050,6 +9209,7 @@ function chercherAction(t) {
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
+    else if (M.L.plaqueGB && M.lieu === "grande" && Math.hypot(x - M.L.plaqueGB[0], z - M.L.plaqueGB[1]) < 2.4) a = { type: "gbCine", label: "🎬 Regarder la cinématique" };   // (la plaque ECTO-1 du car)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
@@ -9093,6 +9253,7 @@ export function agir() {
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
+  else if (a.type === "gbCine") { voile("background:#fff;opacity:1;transition:opacity 1s", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
   else if (a.type === "cadenasSH") sortieCleSH();
@@ -9254,13 +9415,13 @@ const estBttf = id => id === "bttf-cour" || id === "hv1955";
 export function almanachTaille(v) { envoyerWS({ t: "almanach_taille", v: +v }); }
 // (l'administrateur) faire venir l'Almanach au sol, à un mètre de soi, à un endroit où l'on peut marcher
 export function almanachIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
-  if (estBttf(M.lieu) || estApo(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach ne peut pas venir ici (Hill Valley, la cour de la DeLorean ou l'apocalypse)."); return; }
+  if (estBttf(M.lieu) || estApo(M.lieu) || /^gb-/.test(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach ne peut pas venir ici (Hill Valley, la cour de la DeLorean ou l'apocalypse)."); return; }
   const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
   for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * 1.0, z = p.z + Math.cos(a) * 1.0; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
   pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "almanach_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📕 L'Almanach des sports est posé au sol, juste à côté de toi."); }
 // (administrateur) la radio rouge de Silent Hill, posée juste à côté de soi
 export function radioIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
-  if (estBttf(M.lieu) || estApo(M.lieu) || estSH(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📻 La radio ne peut pas venir ici : seulement dans la vraie caserne."); return; }
+  if (estBttf(M.lieu) || estApo(M.lieu) || estSH(M.lieu) || /^gb-/.test(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("📻 La radio ne peut pas venir ici : seulement dans la vraie caserne."); return; }
   const p = moi.g.position, a0 = moi.g.rotation.y || 0; let pt = null;
   for (let k = 0; k < 16 && !pt; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, x = p.x + Math.sin(a) * .7, z = p.z + Math.cos(a) * .7; if (!M.L.limites || M.L.limites(x, z)) pt = [x, z]; }
   pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "radio_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📻 La radio rouge est posée au sol, juste à côté de toi."); }
