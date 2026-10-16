@@ -9528,6 +9528,8 @@ function manette() {
     if (tire) M.gbVisee = { id: "manette", x: m.x, y: m.y }; else if (M.gbVisee && M.gbVisee.id === "manette") M.gbVisee = null;
     mireGB(m); fin(); return; }
   mireGB(null); if (M.gbVisee && M.gbVisee.id === "manette") M.gbVisee = null;
+  /* Bouffe-tout à bout : le bouton du piège (à l'écran) se lance avec A ; en relief, où les boutons sont cachés, on le dit */
+  const pg = M.gbCombat && M.gbCombat.piegeBtn; if (pg) { if (appui(0)) { pg.click(); fin(); return; } if (M.relief && !MAN.piegeDit) { MAN.piegeDit = true; bulle("🎮 Appuie sur A pour lancer le piège !", 5000); } } else MAN.piegeDit = false;
   if (M.cine) { fin(); return; }
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
