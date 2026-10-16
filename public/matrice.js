@@ -6267,7 +6267,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
 /* ----- le combat, au mess (gb-mess) : les quatre et nous, en ligne, vus de dos ; on vise Bouffe-tout du doigt, la lance crache son faisceau -----
    immobile, il est facile à toucher ; touché, il repart aussitôt ; en mouvement, c'est bien plus dur. Un tir manqué brûle ce qu'il touche.
    Il peut foncer sur nous et nous couvrir de slime : quatre vies. Sa jauge vide : le piège à fantômes */
-const LIGNE_GB = 6.4, PV_GB = 125;
+const LIGNE_GB = 6.4, PV_GB = 95;
 let texLueur = null, texBrulure = null;
 const lueurGB = () => texLueur || (texLueur = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.25, "rgba(255,230,190,.85)"); g.addColorStop(.6, "rgba(255,140,60,.28)"); g.addColorStop(1, "rgba(255,80,40,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
 const brulureTex = () => texBrulure || (texBrulure = tex(toile(256, 256, (x) => {   // (une tache de brûlé irrégulière : le centre charbonneux, l'auréole brune, la suie qui fuse en étoile)
@@ -6424,7 +6424,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .6 : .28) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
-    tir("moi", A, hS.clone().sub(A).normalize(), 8.5, true); }
+    tir("moi", A, hS.clone().sub(A).normalize(), 11, true); }
   // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
   for (const p of M.gbScene ? M.gbScene.persos : []) { p.tirT -= dt; const tient = C.fini && !S.capFin;
     const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
