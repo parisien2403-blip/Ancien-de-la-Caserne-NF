@@ -5963,6 +5963,7 @@ export async function ouvrir(ctx) {
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
+    if (M.lieu === "mess" && M.L.afficheGB === undefined) majAfficheGB();
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
@@ -5993,7 +5994,7 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t);
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55; M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { M.cine.maj(performance.now()); M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (M.trace1) trace("avant 1re image " + M.lieu);
@@ -6246,7 +6247,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
     a(() => { if (chef) { M.gbParle = chef; dire(CHEF_GB, txt); } }, dureeLigne(txt) + 300);
   ligne(VE, "Le Président ? Pas de panique. On lui gardera une part du buffet… s'il en reste.");
   ligne(RA, `Et toi, ${nom}… tu as déjà vu nos films ?`);
-  a(() => { M.gbParle = null; titreGB(); }, 6600);
+  a(() => { M.gbParle = null; if (M.L.ecto1) brumeSH(M.L.ecto1.position.clone().setY(0), 4000); }, 2600);   // (le titre a déjà été joué, devant l'affiche)
   let i = 0, fini = false, clk = 0, prec = performance.now(), vise = null;
   const finir = () => { if (fini) return; fini = true; M.gbParle = null; M.gbGare = true; M.cineSeul = null; sireneGB(false);
     voile("background:#fff;opacity:0;transition:opacity .8s", 2600).getBoundingClientRect(); setTimeout(() => { if (!M) return; finCine(); M.gbChef = false; M.gbActe = 1; changerLieu("gb-mess", [0, LIGNE_GB], 0); }, 900); };
@@ -6264,7 +6265,7 @@ function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (
 /* ----- le combat, au mess (gb-mess) : les quatre et nous, en ligne, vus de dos ; on vise Bouffe-tout du doigt, la lance crache son faisceau -----
    immobile, il est facile à toucher ; touché, il repart aussitôt ; en mouvement, c'est bien plus dur. Un tir manqué brûle ce qu'il touche.
    Il peut foncer sur nous et nous couvrir de slime : quatre vies. Sa jauge vide : le piège à fantômes */
-const LIGNE_GB = 6.4, PV_GB = 100;
+const LIGNE_GB = 6.4, PV_GB = 170;
 let texLueur = null, texBrulure = null;
 const lueurGB = () => texLueur || (texLueur = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.25, "rgba(255,230,190,.85)"); g.addColorStop(.6, "rgba(255,140,60,.28)"); g.addColorStop(1, "rgba(255,80,40,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
 const brulureTex = () => texBrulure || (texBrulure = tex(toile(256, 256, (x) => {   // (une tache de brûlé irrégulière : le centre charbonneux, l'auréole brune, la suie qui fuse en étoile)
@@ -6410,18 +6411,18 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); ray.camera = M.camera; const vus = new Set();
   const statique = (S.arrive && S.attente > 0) || S.vit.length() < .7, cible = S.sp.position;
   const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
-    ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .8 : .4;
+    ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .6 : .28;
     let B2;
     if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); C.touche = true; if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
-      if (fuit) { C.contact += dt; if (C.contact > .3 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
+      if (fuit) { C.contact += dt; if (C.contact > .18 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
     else { const h = ray.intersectObjects(C.cibles, false)[0]; B2 = h ? h.point.clone() : A.clone().addScaledVector(dir, 25);
       if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 28)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir, cle); } if (fuit) C.contact = 0; }
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
   // le nôtre : là où le doigt vise
   if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
-    ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .8 : .4) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
-    tir("moi", A, hS.clone().sub(A).normalize(), 9, true); }
+    ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .6 : .28) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
+    tir("moi", A, hS.clone().sub(A).normalize(), 7, true); }
   // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
   for (const p of M.gbScene ? M.gbScene.persos : []) { p.tirT -= dt; const tient = C.fini && !S.capFin;
     const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
@@ -6429,14 +6430,14 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     if (C.fini) continue;
     if (p.englue > 0) continue;   // (englué : il ne tire plus)
     if (!(p.rafale > 0) && p.tirT <= 0 && statique) { p.rafale = 1 + Math.random() * 1.2; p.ecart = new THREE.Vector3((Math.random() - .5) * 1.4, (Math.random() - .5) * .8, 0); }
-    if (p.rafale > 0) { tir(p.cle, A, cible.clone().add(p.ecart).sub(A).normalize(), 1.2, false); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 2 + Math.random() * 4; } }
+    if (p.rafale > 0) { tir(p.cle, A, cible.clone().add(p.ecart).sub(A).normalize(), .5, false); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 2 + Math.random() * 4; } }
   for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
   sonEffluves(vus.size, C.touche); C.touche = false;   // (le bruit d'électricité des faisceaux)
   if (S.fuiteT) { S.fuiteT -= dt; if (S.fuiteT <= 0) { S.fuiteT = 0; S.rapide = false; } }
   hudGB(C);
   if (!C.fini && C.pv <= 0) { C.pv = 0; vaincuGB(C, S); return; }
   // de temps en temps, il fonce sur nous
-  if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 8 + Math.random() * 8; S.attaqueEnCours = true; S.rapide = true;   // (il fonce sur qui il veut : nous, ou l'un des quatre)
+  if (!C.fini && !S.attaqueEnCours) { C.attaque -= dt; if (C.attaque <= 0) { C.attaque = 5 + Math.random() * 5; S.attaqueEnCours = true; S.rapide = true;   // (il fonce sur qui il veut : nous, ou l'un des quatre)
     const vis = [null, ...(M.gbScene ? M.gbScene.persos : [])][Math.floor(Math.random() * 5)], px = vis ? vis.x : moi.g.position.x, pz = vis ? vis.z : moi.g.position.z;
     S.cible = { x: px + (Math.random() - .5) * .4, y: 1.35, z: pz - .5, apres: vis ? () => salirPersoGB(vis) : salirGB }; S.attente = 0; S.arrive = false; criSlimer(1.3); } }
   if (S.attaqueEnCours && S.cible && !S.cible.apres) S.attaqueEnCours = false;   // (touché en route : il a filé ailleurs)
@@ -6491,7 +6492,7 @@ function garerGB() { const L = M.L, E = L.ecto1; if (!E) return; E.visible = !!M
 /* ----- la fin : retour dans la cour (sans les voitures garées) ; on se remercie, le chef de poste se lamente sur les dégâts… puis le ciel devient vert,
    des pas de géant font trembler la cour, la façade du bâtiment du fond éclate, et le Bibendum Chamallow surgit, haut comme l'immeuble.
    Tout le monde en ligne devant l'Ecto-1 : on tire à son signal ; lui nous lance des blocs de pierre. Sa jauge vide, il explose : de la guimauve partout. FIN ----- */
-const SP_Z = -14, SP_H = 24, PV_SP = 170, LIGNE_SP = -1.9;
+const SP_Z = -14, SP_H = 24, PV_SP = 290, LIGNE_SP = -1.9;
 const texSP = {};
 function texSPi(n) { if (!texSP[n]) { const t = texSP[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texSP[n]; }
 // le ciel vert, en tourbillon, au-dessus de la cour (u : de 0 à 1, la bascule)
@@ -6554,7 +6555,7 @@ function majSPGB(B, now) { const cam = M.camera.position, m = B.mesh; m.position
   const vue = "face"; if (vue !== B.vue) { B.vue = vue; const t = texSPi("staypuft-" + vue); m.material.map = t; m.material.emissiveMap = t; }
   const im = m.material.map.image; if (im && im.width) m.scale.set(SP_H * im.width / im.height, SP_H, 1); m.rotation.z = B.marche ? Math.sin(now / 600) * .02 : 0; }
 function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbChef = true; M.cineSeul = CHEF_GB;
-  const F = M.gbFinale = { L: M.L, eclats: [], puffs: [], secousse: 0, ciel: 0 };
+  const F = M.gbFinale = { L: M.L, eclats: [], puffs: [], secousse: 0, ciel: 0 }; musiqueGB(true, "gb-midnight");   // (la musique de la discussion, avant le géant)
   E.visible = true; E.position.set(GARE_GB[0], 0, GARE_GB[1]); E.rotation.y = Math.PI / 2; obstacleEcto(M.L);
   moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(); moi.info.gbDos = false;
   if (M.gbScene) for (const p of M.gbScene.persos) M.scene.remove(p.g);
@@ -6573,7 +6574,7 @@ function cineFinaleGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!
   ligne(VE, "Disons que c'est… de la décoration contemporaine. Très tendance, à New York.");
   ligne(WI, "Hé… c'est moi, ou le ciel devient vert ?");
   // le ciel vire au vert ; des pas de géant ; tout le monde s'affole
-  a(() => { F.parle = null; F.vise = "ciel"; F.cielT = 0; sonBruit(3, 180, .3); }, 3600);
+  a(() => { F.parle = null; F.vise = "ciel"; F.cielT = 0; sonBruit(3, 180, .3); musiqueGB(false); }, 3600);
   for (let k = 0; k < 4; k++) a(() => { sonBruit(1.2, 85, 1); sonBruit(.5, 300, .5); F.secousse = 1; for (const p of S.persos) { p.vit = 3.4; p.cible = viserLibre(p.x + (Math.random() - .5) * 2.4, p.z + (Math.random() - .5) * 2.4); } if (chef && k % 2) { const v = viserLibre(chef.g.position.x + (Math.random() - .5) * 3, chef.g.position.z + (Math.random() - .5) * 3); viser(chef, v[0], v[1]); } }, 1300);
   a(() => bulle(`<b style="color:#b5573c">Egon</b> : Les relevés explosent ! Quelque chose d'énorme approche !`, 3000), 1300);
   a(() => { sonBruit(1.2, 85, 1); F.secousse = 1; if (chef) dire(CHEF_GB, "Qu'est-ce que c'est que ça ?!"); }, 1600);
@@ -6633,7 +6634,7 @@ function animerSPDeco(C, B, dt, now) { const m = B.mesh, sx = m.scale.x, sy = m.
     f.d.position.y -= f.v * dt; f.d.scale.y = 1 + f.t * .35; if (f.t > 5) f.d.material.opacity = 6 - f.t, f.d.material.transparent = true; } }
 function rocherGB(C, B, cibleP, verMoi, p) { const o = gravatGB(.75 + Math.random() * .45);   // (un bloc de maçonnerie arraché à la façade)
   const dep = new THREE.Vector3(B.x + (Math.random() < .5 ? -1 : 1) * 7.5, 13, B.z + 1.5); o.position.copy(dep); M.scene.add(o);
-  C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 2.1 + Math.random() * .5, moi: verMoi, p }); sonBruit(.3, 400, .3); if (Math.random() < .55) rugirSP(.9); }
+  C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 1.6 + Math.random() * .4, moi: verMoi, p }); sonBruit(.3, 400, .3); if (Math.random() < .55) rugirSP(.9); }
 function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
   gyroEcto(M.L.ecto1, true, now); cielVertGB(C.boum ? Math.max(0, 1 - C.boum.t / 4) : 1, dt); animerEclatsGB(F, dt);   // (après l'explosion, le ciel redevient normal) animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
   if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now); animerSPDeco(C, B, dt, now);
@@ -6650,16 +6651,16 @@ function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C 
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); return B2; };
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = touche(ray.ray.origin, ray.ray.direction) || ray.ray.at(30, new THREE.Vector3());
-    const dir = P.clone().sub(A).normalize(); tir("moi", A, dir, 5);
+    const dir = P.clone().sub(A).normalize(); tir("moi", A, dir, 4);
     // le faisceau détruit les blocs qu'il croise
-    for (const c of C.cailloux) if (!c.mort && ray.ray.distanceToPoint(c.o.position) < .9) { c.mort = true; poussiereGB(F, c.o.position.clone(), 2.5, 0xb8aea4); sonBruit(.25, 1400, .3); M.scene.remove(c.o); }
+    for (const c of C.cailloux) if (!c.mort && ray.ray.distanceToPoint(c.o.position) < .6) { c.mort = true; poussiereGB(F, c.o.position.clone(), 2.5, 0xb8aea4); sonBruit(.25, 1400, .3); M.scene.remove(c.o); }
   }
   for (const p of M.gbScene ? M.gbScene.persos : []) { if (C.fini) break; p.tirT -= dt; if (!(p.rafale > 0) && p.tirT <= 0) { p.rafale = 1.5 + Math.random() * 2; p.ecart = new THREE.Vector3((Math.random() - .5) * 8, 4 + Math.random() * 14, 0); }
-    if (p.rafale > 0) { const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15); tir(p.cle, A, new THREE.Vector3(B.x + p.ecart.x, p.ecart.y, B.z).sub(A).normalize(), .9); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 1 + Math.random() * 2.5; } }
+    if (p.rafale > 0) { const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15); tir(p.cle, A, new THREE.Vector3(B.x + p.ecart.x, p.ecart.y, B.z).sub(A).normalize(), .45); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 1 + Math.random() * 2.5; } }
   for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
   sonEffluves(vus.size, C.touche); C.touche = false;
   // il lance des blocs de pierre sur nous cinq
-  if (!C.fini) { C.jet -= dt; if (C.jet <= 0) { C.jet = 2.6 + Math.random() * 2.2; const k = Math.floor(Math.random() * 5), p = k < 4 ? M.gbScene.persos[k] : null, cp = p ? new THREE.Vector3(p.x, 0, p.z) : moi.g.position.clone().setY(0);
+  if (!C.fini) { C.jet -= dt; if (C.jet <= 0) { C.jet = 1.6 + Math.random() * 1.4; const k = Math.floor(Math.random() * 5), p = k < 4 ? M.gbScene.persos[k] : null, cp = p ? new THREE.Vector3(p.x, 0, p.z) : moi.g.position.clone().setY(0);
     rocherGB(C, B, cp.add(new THREE.Vector3((Math.random() - .5) * .8, 0, (Math.random() - .5) * .8)), !p, p); } }
   for (let k = C.cailloux.length - 1; k >= 0; k--) { const c = C.cailloux[k]; if (c.mort) { C.cailloux.splice(k, 1); continue; } c.u += dt / c.dur; const u = Math.min(1, c.u);
     c.o.position.lerpVectors(c.dep, c.arr, u); c.o.position.y = c.dep.y * (1 - u) + c.arr.y * u + Math.sin(Math.PI * u) * 7 + .4; c.o.rotation.x += dt * 5; c.o.rotation.z += dt * 3;
@@ -6722,11 +6723,17 @@ function animerBoumGB(C, dt, now) { const F = M.gbFinale, X = C.boum, B = F.sp, 
     const P = (M.ctx.pnj && M.ctx.pnj()) || {}; if (!M.gens.has(CHEF_GB)) { M.gbChef = true; X.chef = ajouterAncien({ numero: CHEF_GB, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x: gx - 2.8, z: gz + .6 }); }
     C.camFin = { pos: new THREE.Vector3(gx + .2, 1.75, gz - 5.2), vise: new THREE.Vector3(gx + .1, 1.15, gz) }; M.cine.fov = null; }
   if (X.reunis) { for (const p of M.gbScene.persos) couvrirGoo(p); for (const q of [moi, X.chef]) if (q && couvrirGoo(q)) suivreGoo(q); }
-  const lignes = [[6.4, "Venkman", "…On l'a eu ?"], [9.6, "Ray", "On est couverts de guimauve ! De la tête aux pieds !"], [13.2, "Winston", "C'est collant… mais on a gagné !"], [16.6, "chef", "Le Président arrive dans cinq minutes… et regardez-moi cette cour !"], [21, "Venkman", "Dites-lui que c'est un buffet de bienvenue. Spécialité de la maison : la guimauve grillée."], [25.6, "Egon", "Je garde un échantillon. Pour la science."]];
+  if (t > 5.4 && !X.chanson) { X.chanson = true; musiqueGB(true, "gb-chanson"); }   // (la chanson du film, sur la dernière scène)
+  const lignes = [[6.4, "Venkman", "…On l'a eu ?"], [9.6, "Ray", "On est couverts de guimauve ! De la tête aux pieds !"], [12.8, "Winston", "J'adore ce boulot. Mais là, je veux une prime."],
+    [16, "chef", "Une PRIME ?! Le mess brûlé, du slime jusqu'au plafond, une façade éventrée… et maintenant de la GUIMAUVE partout !"], [21.6, "Venkman", "Voyez le bon côté : vous n'aurez plus jamais besoin d'acheter de sucre."],
+    [25.2, "chef", "Le Président arrive dans CINQ MINUTES ! Vous allez me nettoyer tout ça ! TOUT DE SUITE !"], [30, "Egon", "Techniquement, la guimauve est biodégradable. Dans quatre cents ans, environ."],
+    [33.6, "Ray", "Hé ! On a quand même sauvé la caserne !"], [36.8, "Venkman", "Exactement. On est venus, on a vu… et on vous envoie la facture."]];
   for (const [tt, qui, txt] of lignes) if (t > tt && !X["l" + tt]) { X["l" + tt] = true; if (qui === "chef") { if (M.gens.has(CHEF_GB)) dire(CHEF_GB, txt); } else bulle(`<b style="color:#b5573c">${qui}</b> : ${esc(txt)}`, 3400); }
-  if (t > 29.5 && !X.fin) { X.fin = true; finGB(); } }
+  // le chef de poste, furieux, saute sur place en tapant des pieds
+  const ch = M.gens.get(CHEF_GB); if (ch) { const rage = (t > 16 && t < 21.4) || (t > 25.2 && t < 29.8); ch.g.position.y = rage ? Math.abs(Math.sin(t * 9)) * .45 : 0; if (rage && Math.sin(t * 9) * Math.sin((t - dt) * 9) < 0) sonBruit(.12, 220, .25); }
+  if (t > 40.5 && !X.fin) { X.fin = true; finGB(); } }
 // FIN : le logo, et le mot FIN ; la plaque disparaît du sol ; retour dans la vraie cour, à côté de l'Ecto-1
-function finGB() { musiqueGB(false); const d = voile("background:rgba(8,8,10,.92);opacity:0;display:grid;place-items:center;align-content:center;gap:18px", 7400);
+function finGB() { const d = voile("background:rgba(8,8,10,.92);opacity:0;display:grid;place-items:center;align-content:center;gap:18px", 7400);
   d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(80%,640px)"><div style="font:900 64px/1 Georgia,serif;color:#fff;letter-spacing:8px;text-align:center">FIN</div>';
   let u = 0; const it = setInterval(() => { u += .05; if (!d.isConnected) { clearInterval(it); return; } d.style.opacity = String(Math.min(1, u * 1.6, (7 - u * 1.4) / 1.4)); if (u * 1.4 > 7) clearInterval(it); }, 70);
   envoyerWS({ t: "plaque_fin" });
@@ -8585,7 +8592,7 @@ function citadine(scene, modele, couleur, x, z, rot) {
 let texEcto = null;
 // (S.O.S. Fantômes) la plaque ECTO-1, posée au sol : l'administrateur seul la voit (le temps des essais) ; on la touche, et la cinématique commence
 function majPlaqueGB() {
-  if (!M || !M.scene) return; const q = M.plaqueGB, ici = q && q.lieu === M.lieu && M.L && !M.L.apo && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
+  if (!M || !M.scene) return; const q = null && M.plaqueGB, ici = q && q.lieu === M.lieu && M.L && !M.L.apo && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
   if (!ici) { if (M.plaqueObj) { M.scene.remove(M.plaqueObj); M.plaqueObj = null; } return; }
   if (!M.plaqueObj || M.plaqueObj.parent !== M.scene) { if (!texEcto) { texEcto = new THREE.TextureLoader().load("images/ecto1-plaque.webp"); texEcto.colorSpace = THREE.SRGBColorSpace; }
     const g = new THREE.Group(), pl = new THREE.Mesh(new THREE.PlaneGeometry(.66, .33), new THREE.MeshStandardMaterial({ map: texEcto, roughness: .4, metalness: .35, emissive: 0xffffff, emissiveMap: texEcto, emissiveIntensity: .2, polygonOffset: true, polygonOffsetFactor: -2 }));
@@ -8593,6 +8600,20 @@ function majPlaqueGB() {
     const dos = new THREE.Mesh(new THREE.BoxGeometry(.66, .01, .33), new THREE.MeshStandardMaterial({ color: 0x8a6a1e, metalness: .6, roughness: .4 })); dos.position.y = -.006; g.add(dos);
     M.plaqueObj = g; M.scene.add(g); }
   M.plaqueObj.position.set(q.x, (M.L.hauteur ? M.L.hauteur(q.x, q.z, {}) : 0) + .012, q.z); M.plaqueObj.rotation.y = q.r; }
+// (S.O.S. Fantômes) l'affiche du film, au mess, dans la petite pièce à droite en entrant, contre le mur : on s'en approche, « As-tu peur des fantômes ? »
+// (le temps des essais : l'administrateur seul la voit)
+const AFFICHE_GB = { x: 4.1, y: 1.75, z: 8.74, w: 1.05, h: 1.575 };
+function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !== undefined) return; const admin = !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);
+  if (!admin) { M.L.afficheGB = null; return; }
+  const t = new THREE.TextureLoader().load("images/gb/affiche.webp"); t.colorSpace = THREE.SRGBColorSpace; const A = AFFICHE_GB, g = new THREE.Group();
+  const cadre = new THREE.Mesh(new THREE.BoxGeometry(A.w + .08, A.h + .08, .03), new THREE.MeshStandardMaterial({ color: 0x1a1a1c, roughness: .4, metalness: .3 })); g.add(cadre);
+  const af = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .25, roughness: .5 })); af.position.z = .017; g.add(af);
+  g.position.set(A.x, A.y, A.z); M.scene.add(g); M.L.afficheGB = g; }
+// on touche « As-tu peur des fantômes ? » : le grand titre, puis l'Ecto-1 entre dans la cour d'honneur
+function cineAfficheGB() { if (!M || M.cine) return; const A = AFFICHE_GB; let fini = false;
+  const fin = () => { if (fini || !M) return; fini = true; voile("background:#fff;opacity:1", 1400); finCine(); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); };
+  M.passerBtn = boutonPasser(fin); titreGB(); musiqueGB(true, "gb-arrivee");
+  const t0 = performance.now(); M.cine = { maj: now => { const u = Math.min(1, (now - t0) / 4000); M.camera.position.set(A.x + 1.25 - u * .35, A.y + .35, A.z + 2.2 - u * .7); M.camera.lookAt(A.x, A.y, A.z);   /* (de côté : notre bonhomme ne cache pas l'affiche) */ if (now - t0 > 6600) fin(); } }; }
 // (administrateur) poser la plaque ECTO-1 juste à côté de soi
 export function plaqueIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || !M.L) return;
   if (estBttf(M.lieu) || estApo(M.lieu) || estSH(M.lieu) || /^gb-/.test(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("🚗 La plaque ne peut pas venir ici : seulement dans la vraie caserne."); return; }
@@ -9550,7 +9571,7 @@ function chercherAction(t) {
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
-    else if (M.plaqueObj && M.plaqueGB && Math.hypot(x - M.plaqueGB.x, z - M.plaqueGB.z) < 1.3) a = { type: "gbCine", label: "🎬 Regarder la cinématique" };   // (la plaque ECTO-1, posée au sol)
+    else if (M.L.afficheGB && Math.hypot(x - AFFICHE_GB.x, z - (AFFICHE_GB.z + .7)) < 1.25) a = { type: "gbAffiche", label: "👻 As-tu peur des fantômes ?" };   // (l'affiche du film, au mess)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
@@ -9594,6 +9615,7 @@ export function agir() {
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
+  else if (a.type === "gbAffiche") cineAfficheGB();
   else if (a.type === "gbCine") { voile("background:#fff;opacity:1;transition:opacity 1s", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
