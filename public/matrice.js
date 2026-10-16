@@ -6070,7 +6070,7 @@ function ouvrirCarteSH() { if (!M || M.cadranEl) return;
   /* le zoom : pincer à deux doigts, la molette (avec Ctrl, ou le pincement du pavé tactile), ou les boutons ＋ / − ; on garde au centre ce qu'on regardait */
   let zoom = 1; const zoomer = (z, cx = d.clientWidth / 2, cy = d.clientHeight / 2) => { z = Math.max(1, Math.min(5, z)); if (z === zoom) return;
     const fx = (d.scrollLeft + cx) / d.scrollWidth, fy = (d.scrollTop + cy) / d.scrollHeight; zoom = z;
-    box.style.width = `calc(min(calc(100% - 24px), 520px) * ${z})`; box.style.margin = z > 1 ? "18px 12px 30px" : "18px auto 30px";
+    box.style.width = `calc(min(calc(100% - 24px), 520px) * ${z})`; box.style.margin = box.offsetWidth + 24 > d.clientWidth ? "18px 12px 30px" : "18px auto 30px";   /* (centrée tant qu'elle tient dans l'écran ; plus large, on la fait glisser) */
     d.scrollLeft = fx * d.scrollWidth - cx; d.scrollTop = fy * d.scrollHeight - cy; };
   const zb = (t, dz, top) => { const e = document.createElement("button"); e.type = "button"; e.textContent = t; e.setAttribute("aria-label", dz > 1 ? "Zoomer" : "Dézoomer"); e.style.cssText = `position:absolute;top:${top}px;right:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:#1a1a1a;font:900 24px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)`; e.onclick = () => zoomer(zoom * dz); return e; };
   let pince = null; d.addEventListener("touchstart", e => { if (e.touches.length === 2) { const [a, c] = e.touches; pince = { d0: Math.hypot(a.clientX - c.clientX, a.clientY - c.clientY), z0: zoom }; } }, { passive: true });
