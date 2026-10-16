@@ -6006,9 +6006,10 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { if (M.premiere) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; }   /* (pendant une cinématique, on se revoit) */ M.cine.maj(performance.now()); M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; }   /* (pendant une cinématique, on se revoit) */ M.cine.maj(performance.now()); if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
+    if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
     if (M.relief) rendreRelief(rendu); else rendu.render(M.scene, M.camera);
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
@@ -6432,7 +6433,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); };
   // le nôtre : là où le doigt vise
   if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
-  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
+  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = boutCanonGB() || new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .6 : .28) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
     tir("moi", A, hS.clone().sub(A).normalize(), 11, true); }
   // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
@@ -6665,7 +6666,7 @@ function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C 
     if (B2) { C.pv -= degats * dt; C.touche = true; brulerSP(C, B, B2, cle, now); } else { const k = dir.y < -.01 ? -A.y / dir.y : 40; B2 = A.clone().addScaledVector(dir, Math.min(40, k));
       if (dir.y < -.01 && k < 40 && (!C.brT || !C.brT[cle] || now - C.brT[cle] > 30)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, { point: B2.clone(), face: { normal: new THREE.Vector3(0, 1, 0) }, object: { matrixWorld: new THREE.Matrix4() } }, dir, cle); } }   // (le pavé brûlé)
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); return B2; };
-  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
+  if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = boutCanonGB() || new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = touche(ray.ray.origin, ray.ray.direction) || ray.ray.at(30, new THREE.Vector3());
     const dir = P.clone().sub(A).normalize(); tir("moi", A, dir, 4);
     // le faisceau détruit les blocs qu'il croise
@@ -7174,7 +7175,7 @@ function lacherBetesSH() {
 function vivantSH(m) { return !m.mortT && m.g.visible; }
 function monstresSHVises(ray) { const vv = (M.shMonstres || []).filter(m => !m.mortT && !m.cine && m.g.visible && (m.p ? m.p.corps : m.mesh));
   const h = ray.intersectObjects(vv.map(m => m.p ? m.p.corps : m.mesh))[0]; return h ? vv.find(m => (m.p ? m.p.corps : m.mesh) === h.object) : null; }
-function tirerSH(m) {
+function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || M.cine || M.shMort || m.mortT) return;
   if (!M.shArme) { M.ctx.surInfo && M.ctx.surInfo("✋ Tu n'as pas d'arme… fuis !"); return; }
   const dx0 = m.x - moi.g.position.x, dz0 = m.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 22) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
@@ -8282,7 +8283,7 @@ const TUES_MITRA = 14;
 function monTue(z) { if (!z.tireurT || performance.now() - z.tireurT > 1500 || !M) return; z.tireurT = 0; M.tues = (M.tues || 0) + 1;
   if (M.tues >= TUES_MITRA && !M.mitra) { M.mitra = true; sonBruit(.5, 2400, .6); M.ctx.surInfo && M.ctx.surInfo(`🔥 ${TUES_MITRA} zombies abattus : la MITRAILLETTE est à toi ! Munitions infinies — garde le doigt appuyé sur un zombie pour tirer en rafale.`); }
   majHudApo(); }
-function tirer(z) {
+function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   z.tireurT = performance.now();
   if (M.mitra) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) return; const dx = dx0 / d, dz = dz0 / d;
@@ -9529,6 +9530,11 @@ function manette() {
   if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
   // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
   const gb = M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb;
+  if (gb && M.premiere) { const sx = rx || lx, sy = ry || ly;   // (à la première personne : on tourne la tête, on vise au centre ; sans toucher aux joysticks, la vue glisse doucement vers le monstre)
+    if (sx || sy) { M.fpYaw = (M.fpYaw || 0) - sx * dt * 1.8; M.fpPitch = Math.max(-1, Math.min(1.3, (M.fpPitch || 0) - sy * dt * 1.3)); }
+    else if (M.gbCibleVue) { const p0 = moi.g.position, c0 = M.gbCibleVue, yv = Math.atan2(-(c0.x - p0.x), -(c0.z - p0.z)), pv = Math.atan2(c0.y - 1.5, Math.hypot(c0.x - p0.x, c0.z - p0.z)); let dy = yv - (M.fpYaw || 0); dy = Math.atan2(Math.sin(dy), Math.cos(dy)); M.fpYaw += dy * Math.min(1, dt * 1.2); M.fpPitch += (pv - (M.fpPitch || 0)) * Math.min(1, dt * 1.2); }
+    if (tire) M.gbVisee = { id: "manette", x: 0, y: 0 }; else if (M.gbVisee && M.gbVisee.id === "manette") M.gbVisee = null;
+    mireGB(null); fin(); return; }
   if (gb) { const m = MAN.mire = MAN.mire || { x: 0, y: .1 }, sx = rx || lx, sy = ry || ly;
     if (sx || sy) { m.x = Math.max(-.95, Math.min(.95, m.x + sx * dt * 1.3)); m.y = Math.max(-.95, Math.min(.95, m.y - sy * dt * 1.3)); }
     else if (M.gbCibleVue) { const q = M.gbCibleVue.clone().project(M.camera); if (q.z < 1) { m.x += (q.x - m.x) * Math.min(1, dt * 2.5); m.y += (q.y - m.y) * Math.min(1, dt * 2.5); } }
@@ -9542,7 +9548,7 @@ function manette() {
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
   // X : les danses, l'une après l'autre (et on s'arrête) ; B arrête aussi
-  if (appui(2) && M.L && !M.L.apo && !M.L.sh) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
+  if (appui(2) && M.L && !M.L.apo && !M.L.sh && !M.L.gb) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
     const i = D.indexOf(moi.info.danse), suiv = i + 1 < D.length ? D[i + 1] : false; danser(suiv); bulle(suiv ? N[suiv] + " <small>(X : danse suivante · B : stop)</small>" : "🛑 Fin de la danse", 1800); }
   // la vue : tourner, monter / descendre
   if (M.premiere) { M.fpYaw = (M.fpYaw || 0) - rx * dt * 2.4; M.fpPitch = Math.max(-1.3, Math.min(1.45, (M.fpPitch || 0) - ry * dt * 1.6)); }
@@ -9558,7 +9564,7 @@ function manette() {
   // tirer : le zombie (ou le monstre) le plus proche, devant soi de préférence
   if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
     const choisir = l => { let best = null, bs = -1e9; for (const z of l) { const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz); if (dd > 14) continue; const sc = (dx * f.x + dz * f.z) / (dd || 1) * 6 - dd; if (sc > bs) { bs = sc; best = z; } } return best; };
-    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else sonTir(); MAN.tirT = now + (M.mitra ? 110 : 330); }
+    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else { sonTir(); if (M.armeFP) M.armeFP.kick = 1; } MAN.tirT = now + (M.mitra ? 110 : 330); }
     else if (M.premiere && M.L.sh && M.shMonstres) { const m = cibleFP(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) tirerSH(m); MAN.tirT = now + 330; }
     else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
     else if (M.L.sh && M.shMonstres) { const m = choisir(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) { tirerSH(m); MAN.tirT = now + 330; } } }
@@ -9570,22 +9576,97 @@ function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "
 export function relief(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; M.relief = !!on; M.ctx.surRelief && M.ctx.surRelief(M.relief); if (M.relief) bulle("👓 Relief 3D : mettez vos lunettes en mode 3D (côte à côte). Pour en sortir : ✕ en bas à gauche, ou Start sur la manette.", 7000); else bulle3D(null); }
 /* à la première personne, avec une arme : le pistolet en bas à droite, et son viseur laser — un rayon rouge, un point rouge là où l'on vise */
 const armeFP = () => M.premiere && !M.cine && M.L && ((M.L.apo && !M.L.sh && !APO.zombieFin) || (M.L.sh && M.shArme));
+/* la main qui tient le revolver, vue à la première personne : canon long en acier, barillet, chien, pontet, crosse noire ; la main serre la crosse, le pouce sur le côté, l'avant-bras qui part vers le bas de l'écran (le canon vers -z) */
+function modeleRevolverFP() { const g = new THREE.Group(), M_ = o => new THREE.MeshStandardMaterial(o);
+  const acier = M_({ color: 0xc4c8ce, metalness: .92, roughness: .28, emissive: 0x2a2c30, emissiveIntensity: .6 }), sombre = M_({ color: 0x55585e, metalness: .85, roughness: .35, emissive: 0x111214 }),
+    crosseM = M_({ color: 0x161617, roughness: .7, emissive: 0x050505 }), peau = M_({ color: 0xe2b48f, roughness: .75, emissive: 0x3a2418, emissiveIntensity: .45 }), manche = M_({ color: 0x1f2633, roughness: .9, emissive: 0x07090c });
+  const ad = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); par.add(o); return o; };
+  // le canon, sa bande de visée, le guidon ; la carcasse ; le barillet et ses alvéoles ; le chien ; le pontet et la détente
+  ad(new THREE.CylinderGeometry(.013, .013, .11, 16), acier, 0, .032, -.135, Math.PI / 2);
+  ad(new THREE.BoxGeometry(.016, .028, .11), acier, 0, .03, -.135); ad(new THREE.BoxGeometry(.012, .01, .11), acier, 0, .047, -.135); ad(new THREE.BoxGeometry(.005, .013, .014), sombre, 0, .056, -.18);   // (le canon court et son carénage, le guidon)
+  ad(new THREE.CylinderGeometry(.0075, .0075, .006, 12), M_({ color: 0x050505 }), 0, .032, -.191, Math.PI / 2);   // (la bouche du canon)
+  ad(new THREE.BoxGeometry(.012, .012, .02), sombre, 0, .062, -.005);   // (la hausse)
+  ad(new THREE.BoxGeometry(.03, .055, .085), acier, 0, .02, -.035);
+  const bar = ad(new THREE.CylinderGeometry(.027, .027, .045, 6), acier, 0, .024, -.045, Math.PI / 2); bar.rotation.y = Math.PI / 6;
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; ad(new THREE.BoxGeometry(.004, .004, .046), sombre, Math.cos(a) * .026, .024 + Math.sin(a) * .026, -.045); }   // (les cannelures)
+  ad(new THREE.BoxGeometry(.012, .03, .02), sombre, 0, .05, .012, -.5);   // (le chien)
+  const pont = ad(new THREE.TorusGeometry(.02, .004, 6, 16, Math.PI * 1.2), acier, 0, -.012, -.035, 0, Math.PI / 2, Math.PI * .9);
+  ad(new THREE.BoxGeometry(.004, .022, .006), sombre, 0, -.01, -.036, .3);
+  // la crosse, inclinée vers l'arrière
+  const cr = ad(new THREE.BoxGeometry(.03, .11, .045), crosseM, 0, -.045, .028, -.32); cr.geometry.translate(0, -.01, 0);
+  // la main : la paume autour de la crosse, quatre doigts repliés devant, le pouce le long du côté, l'index sur la détente
+  const main = new THREE.Group(); main.position.set(.004, -.05, .03); main.rotation.x = -.32; g.add(main);
+  ad(new THREE.CapsuleGeometry(.03, .06, 6, 12), peau, .018, -.005, .012, 0, 0, 0, main);   // (la paume, côté droit de la crosse)
+  for (let k = 0; k < 3; k++) { const y = .022 - k * .027; ad(new THREE.CapsuleGeometry(.0105, .034, 4, 8), peau, -.004, y - .01, -.03, 0, Math.PI / 2, Math.PI / 2, main);   // (les doigts, enroulés autour de l'avant de la crosse)
+    ad(new THREE.SphereGeometry(.011, 8, 6), peau, -.022, y - .01, -.018, 0, 0, 0, main); }
+  ad(new THREE.CapsuleGeometry(.0095, .03, 4, 8), peau, .002, .045, -.06, Math.PI / 2 - .25, 0, 0, main);   // (l'index, tendu vers la détente)
+  ad(new THREE.CapsuleGeometry(.011, .045, 4, 8), peau, .022, .055, -.03, Math.PI / 2 - .1, 0, -.2, main);   // (le pouce, le long du côté, vers l'avant)
+  // le poignet et l'avant-bras, qui partent vers le bas et l'arrière (jusqu'au bord de l'écran)
+  ad(new THREE.CylinderGeometry(.028, .032, .09, 12), peau, .02, -.07, .06, 2.1, 0, 0, main);
+  ad(new THREE.CylinderGeometry(.04, .048, .32, 12), manche, .025, -.17, .21, 2.1, 0, 0, main);   // (la manche)
+  g.traverse(o => { if (o.isMesh) { o.renderOrder = 20; o.frustumCulled = false; } }); return g; }
+/* le lance-protons (S.O.S. Fantômes), vu à la première personne : le boîtier « Particle Accelerator », le canon noir annelé, l'émetteur au bout,
+   la poignée avant (main gauche) et la poignée arrière (main droite), les fils rouge, vert et bleu ; gants noirs, manches de combinaison kaki */
+function modeleProtonFP() { const g = new THREE.Group(), M_ = o => new THREE.MeshStandardMaterial(o);
+  const boite = M_({ color: 0x3b3d3b, metalness: .55, roughness: .5, emissive: 0x141514, emissiveIntensity: .8 }), noir = M_({ color: 0x141416, roughness: .6, emissive: 0x060606 }), metal = M_({ color: 0x9a9ea4, metalness: .85, roughness: .3, emissive: 0x202224 });
+  const rouge = M_({ color: 0xb01818, roughness: .5, emissive: 0x400606 }), gant = M_({ color: 0x1d1e20, roughness: .85, emissive: 0x08080a }), kaki = M_({ color: 0x5a5c3a, roughness: .9, emissive: 0x1a1b10 });
+  const ad = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); par.add(o); return o; };
+  ad(new THREE.BoxGeometry(.075, .085, .17), boite, 0, 0, 0);                                   // le boîtier
+  ad(new THREE.BoxGeometry(.002, .022, .07), rouge, .039, .018, -.01); ad(new THREE.BoxGeometry(.05, .002, .03), rouge, 0, .044, .03);   // les étiquettes rouges
+  for (const x of [-.022, 0, .022]) { ad(new THREE.CylinderGeometry(.006, .006, .01, 10), metal, x, .044, .07); ad(new THREE.CylinderGeometry(.0025, .0025, .025, 6), metal, x, .056, .066, -.4); }   // les interrupteurs
+  ad(new THREE.CylinderGeometry(.012, .012, .02, 12), noir, -.02, .05, -.05); ad(new THREE.CylinderGeometry(.016, .016, .015, 14), metal, -.045, -.01, .02, 0, 0, Math.PI / 2);   // le bouton, la molette
+  ad(new THREE.CylinderGeometry(.024, .026, .2, 16), noir, 0, .01, -.18, Math.PI / 2);         // le canon noir…
+  for (let k = 0; k < 7; k++) ad(new THREE.TorusGeometry(.026, .004, 6, 16), noir, 0, .01, -.1 - k * .026);   // …et ses anneaux
+  ad(new THREE.CylinderGeometry(.017, .02, .045, 14), metal, 0, .01, -.3, Math.PI / 2);        // l'émetteur
+  ad(new THREE.CylinderGeometry(.006, .006, .03, 8), metal, 0, .036, -.3); ad(new THREE.SphereGeometry(.008, 8, 6), metal, 0, .052, -.3);
+  const poigAv = ad(new THREE.BoxGeometry(.026, .075, .03), noir, 0, -.06, -.13, .25);          // la poignée avant
+  ad(new THREE.BoxGeometry(.03, .11, .04), noir, 0, -.095, .07, -.35);                         // la poignée arrière
+  const fil = (c, pts) => ad(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(([a, b, d]) => new THREE.Vector3(a, b, d))), 24, .004, 6), M_({ color: c, roughness: .5, emissive: c, emissiveIntensity: .15 }), 0, 0, 0);
+  fil(0xc02020, [[.03, -.02, -.06], [.05, -.07, 0], [.03, -.13, .08], [.01, -.16, .14]]); fil(0x20a040, [[.036, 0, -.03], [.06, -.06, .03], [.035, -.14, .1], [.015, -.17, .15]]); fil(0x2050c0, [[.033, .01, -.08], [.055, -.05, -.02], [.04, -.12, .07], [.02, -.165, .145]]);
+  // main droite (poignée arrière) et main gauche (poignée avant) : gants, et les manches kaki qui partent vers le bas de l'écran
+  const md = new THREE.Group(); md.position.set(0, -.095, .07); md.rotation.x = -.35; g.add(md);
+  ad(new THREE.CapsuleGeometry(.03, .06, 6, 12), gant, .02, 0, .01, 0, 0, 0, md); for (let k = 0; k < 3; k++) ad(new THREE.CapsuleGeometry(.011, .034, 4, 8), gant, -.004, .02 - k * .026, -.03, 0, Math.PI / 2, Math.PI / 2, md);
+  ad(new THREE.CapsuleGeometry(.011, .04, 4, 8), gant, .022, .055, -.02, Math.PI / 2 - .2, 0, -.2, md);
+  ad(new THREE.CylinderGeometry(.03, .034, .1, 12), gant, .02, -.07, .06, 2.1, 0, 0, md); ad(new THREE.CylinderGeometry(.045, .052, .34, 12), kaki, .03, -.17, .22, 2.1, 0, 0, md);
+  const mg = new THREE.Group(); mg.position.set(0, -.06, -.13); mg.rotation.x = .25; g.add(mg);
+  ad(new THREE.CapsuleGeometry(.029, .055, 6, 12), gant, -.022, 0, .005, 0, 0, 0, mg); for (let k = 0; k < 3; k++) ad(new THREE.CapsuleGeometry(.0105, .032, 4, 8), gant, .004, .02 - k * .025, -.025, 0, Math.PI / 2, Math.PI / 2, mg);
+  ad(new THREE.CylinderGeometry(.03, .034, .1, 12), gant, -.03, -.07, .05, 2.2, 0, .5, mg); ad(new THREE.CylinderGeometry(.045, .052, .36, 12), kaki, -.1, -.17, .17, 2.2, 0, .55, mg);
+  // l'éclair au bout du canon : un halo bleu-blanc qui crépite quand le faisceau part
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.3, "rgba(150,190,255,.9)"); gr.addColorStop(.6, "rgba(255,220,90,.5)"); gr.addColorStop(1, "rgba(80,120,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); })), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  halo.position.set(0, .01, -.33); halo.visible = false; g.add(halo); g.userData.halo = halo;
+  g.traverse(o => { if (o.isMesh) { o.renderOrder = 20; o.frustumCulled = false; } }); return g; }
+/* pendant les combats de S.O.S. Fantômes, à la première personne : la caméra à nos yeux, le lance-protons en main, on vise au centre de l'écran */
+function protonFP() { const actif = M.premiere && M.gbCombat && !M.gbCombat.fini && M.cine, moi = M.gens.get(M.moiNum); let P = M.armeGB;
+  if (!actif || !moi) { if (P) P.visible = false; return false; }
+  if (!P) P = M.armeGB = modeleProtonFP(); if (P.parent !== M.scene) M.scene.add(P); P.visible = true; moi.g.visible = false;
+  if (M.gbFPC !== M.gbCombat && M.gbCibleVue) { M.gbFPC = M.gbCombat; const p0 = moi.g.position, c0 = M.gbCibleVue; M.fpYaw = Math.atan2(-(c0.x - p0.x), -(c0.z - p0.z)); M.fpPitch = Math.atan2(c0.y - 1.5, Math.hypot(c0.x - p0.x, c0.z - p0.z)); }   // (on commence face au monstre)
+  const p = moi.g.position, cam = M.camera, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
+  const rx0 = Math.sin(M.fpYaw || 0) * 1.3, rz0 = Math.cos(M.fpYaw || 0) * 1.3;   /* (un pas en arrière de la ligne : les autres Ghostbusters et leurs faisceaux, de chaque côté, entrent dans l'image) */
+  cam.position.set(p.x + rx0, yeux, p.z + rz0); cam.fov = cam.aspect < 1 ? 84 : 76; cam.updateProjectionMatrix(); cam.lookAt(p.x + rx0 - Math.sin(M.fpYaw || 0) * cy, yeux + Math.sin(M.fpPitch || 0), p.z + rz0 - Math.cos(M.fpYaw || 0) * cy); cam.updateMatrixWorld();
+  const f = cam.getWorldDirection(new THREE.Vector3()), r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1), tire = !!M.gbVisee, now = performance.now();
+  P.position.copy(cam.position).addScaledVector(f, .44).addScaledVector(r, .12).addScaledVector(u, -.16 + (tire ? Math.sin(now / 23) * .002 : 0)); P.quaternion.copy(cam.quaternion); P.rotateY(.32); P.rotateZ(.12);
+  const h = P.userData.halo; h.visible = tire; if (tire) { const s2 = .09 + Math.random() * .07; h.scale.set(s2, s2, 1); h.material.rotation = Math.random() * 6; }
+  return true; }
+function boutCanonGB() { return M.armeGB && M.armeGB.visible ? M.armeGB.localToWorld(new THREE.Vector3(0, .01, -.33)) : null; }
 function laserFP(cacher) { let A = M.armeFP;
   if (cacher || !armeFP()) { if (A) A.g.visible = A.ray.visible = A.pt.visible = false; return; }
-  if (!A) { const g = new THREE.Group(), noir = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, roughness: .4, metalness: .6 }), gris = new THREE.MeshStandardMaterial({ color: 0x3a3a3e, roughness: .4, metalness: .7 });
-      const corps = new THREE.Mesh(new THREE.BoxGeometry(.035, .045, .2), noir); g.add(corps); const crosse = new THREE.Mesh(new THREE.BoxGeometry(.03, .1, .045), noir); crosse.position.set(0, -.06, .07); crosse.rotation.x = -.25; g.add(crosse);
-      const glis = new THREE.Mesh(new THREE.BoxGeometry(.037, .018, .19), gris); glis.position.y = .03; g.add(glis); const las = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .05), gris); las.position.set(0, -.035, -.06); g.add(las);
+  if (!A) { const g = modeleRevolverFP();
       const rouge = new THREE.MeshBasicMaterial({ color: 0xff2020, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
       const geo = new THREE.CylinderGeometry(.0025, .0025, 1, 6, 1, true); geo.translate(0, .5, 0); geo.rotateX(Math.PI / 2); const ray = new THREE.Mesh(geo, rouge);
       const pt = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, "rgba(255,240,240,1)"); gr.addColorStop(.25, "rgba(255,40,40,.9)"); gr.addColorStop(1, "rgba(255,0,0,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); })), transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false }));
-      A = M.armeFP = { g, ray, pt, rc: new THREE.Raycaster(), t: 0, hit: null }; }
+      const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 30); gr.addColorStop(0, "rgba(255,255,220,1)"); gr.addColorStop(.3, "rgba(255,190,60,.9)"); gr.addColorStop(1, "rgba(255,90,0,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); })), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      flash.position.set(0, .032, -.22); flash.scale.setScalar(.12); flash.visible = false; g.add(flash);
+      A = M.armeFP = { g, ray, pt, flash, rc: new THREE.Raycaster(), t: 0, hit: null, kick: 0, kt: performance.now() }; }
   const sc = M.scene; for (const o of [A.g, A.ray, A.pt]) { if (o.parent !== sc) sc.add(o); o.visible = true; }
   const cam = M.camera; cam.updateMatrixWorld(); const f = cam.getWorldDirection(new THREE.Vector3()), r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
-  A.g.position.copy(cam.position).addScaledVector(f, .42).addScaledVector(r, .17).addScaledVector(u, -.15); A.g.quaternion.copy(cam.quaternion); A.g.rotateY(.06);
+  const now0 = performance.now(), dk = Math.min(.1, (now0 - A.kt) / 1000); A.kt = now0; A.kick = Math.max(0, A.kick - dk * 6);   // (le recul : il remonte, puis revient)
+  const bal = MAN.bouge ? Math.sin(now0 / 140) * .006 : 0;   // (en marchant, la main se balance un peu)
+  A.g.position.copy(cam.position).addScaledVector(f, .4 - A.kick * .05).addScaledVector(r, .15).addScaledVector(u, -.14 + bal + A.kick * .015); A.g.quaternion.copy(cam.quaternion); A.g.rotateY(.07); A.g.rotateX(A.kick * .35);
+  A.flash.visible = A.kick > .7; A.flash.material.rotation = Math.random() * 6;
   const now = performance.now(); if (now > A.t) { A.t = now + 90; A.rc.set(cam.position, f); A.rc.far = 40; A.rc.camera = cam;   // (ce que vise le centre de l'écran : un zombie, un monstre, un mur…)
     const h = A.rc.intersectObjects(sc.children, true).find(q => { const o = q.object; if (o === A.ray || o === A.pt || !o.visible || o.isSprite) return false; for (let a = o; a; a = a.parent) if (a === A.g || !a.visible) return false; const m = Array.isArray(o.material) ? o.material[0] : o.material; return o.isMesh && m && !(m.transparent && (m.opacity ?? 1) < .5) && m.blending !== THREE.AdditiveBlending; });
     A.hit = h ? h.point.clone() : cam.position.clone().addScaledVector(f, 40); }
-  const o0 = A.g.localToWorld(new THREE.Vector3(0, -.035, -.09)), d = A.hit.clone().sub(o0), L = d.length(); A.ray.position.copy(o0); A.ray.scale.set(1, 1, L); A.ray.lookAt(A.hit);
+  const o0 = A.g.localToWorld(new THREE.Vector3(0, .012, -.18)), d = A.hit.clone().sub(o0), L = d.length(); A.ray.position.copy(o0); A.ray.scale.set(1, 1, L); A.ray.lookAt(A.hit);
   A.pt.position.copy(A.hit).addScaledVector(f, -.05); const s2 = Math.max(.05, Math.min(.5, A.hit.distanceTo(cam.position) * .012)); A.pt.scale.set(s2, s2, 1); }
 /* tirer à la première personne : sur ce que vise le laser (avec un peu d'aide : ce qui est presque dans le viseur) */
 function cibleFP(liste) { const cam = M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
