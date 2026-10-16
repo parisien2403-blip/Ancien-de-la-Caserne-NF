@@ -4621,7 +4621,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           const yP = .68, PW = 1.9, PH = 2.7;
           A.ajoute(new THREE.BoxGeometry(PW + .36, PH + .2, .12), A.mat({ color: 0xe9e1cf }), XM, yP + (PH + .2) / 2, ZM + .03);   // l'encadrement de pierre
           const fondP = new THREE.MeshBasicMaterial({ color: 0x2a2018 }); const fP = A.ajoute(new THREE.PlaneGeometry(PW, PH), fondP, XM, yP + PH / 2, ZM + .095, false); L.messEmbrasure = fondP;
-          for (const s2 of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(XM + s2 * PW / 2, yP, ZM + .1); piv.rotation.y = s2 * 1.35; scene.add(piv);   // les battants ouverts vers l'intérieur de la cour
+          L.messBattants = [];
+          for (const s2 of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(XM + s2 * PW / 2, yP, ZM + .1); piv.rotation.y = s2 * 1.35; piv.userData.ouvert = s2 * 1.35; scene.add(piv); L.messBattants.push(piv);   // les battants ouverts vers l'intérieur de la cour
             const bt = new THREE.Mesh(new THREE.BoxGeometry(PW / 2, PH, .06), brun); bt.position.set(-s2 * PW / 4, PH / 2, .03); bt.castShadow = true; piv.add(bt);
             for (const yy of [.6, 1.7]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(PW / 2 - .2, yy === .6 ? .8 : 1.1, .02), brun2); pn.position.set(-s2 * PW / 4, yy + (yy === .6 ? 0 : .2), .07); piv.add(pn); }
             const pg = new THREE.Mesh(new THREE.BoxGeometry(.03, .22, .05), A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 })); pg.position.set(-s2 * (PW / 2 - .1), 1.15, .09); piv.add(pg); }
@@ -5710,7 +5711,7 @@ export async function ouvrir(ctx) {
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
       if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
         if (o && M.L.dansCour && !M.L.dansCour(h.point)) o = null;
-        if (o) { if (!M.passage) { M.passage = true; changerLieu("grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2, true); } return; } }   // on touche la cour : on sort
+        if (o) { if (!M.passage) { M.passage = true; changerLieu(estSH(M.lieu) ? "sh-grande" : estApo(M.lieu) ? "z-grande" : "grande", M.L.sortieCour(), M.L.sortieCour()[0] < 0 ? Math.PI / 2 : -Math.PI / 2, true); } return; } }   // on touche la cour : on sort
       if (h) { const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : null;
         if ((sols.includes(h.object) || (n && n.y > .7)) && M.L.allerEtage) { const moi = M.gens.get(M.moiNum); if (moi && M.L.allerEtage(moi, h.point.x, h.point.z, h.point.y)) { envoyerWS({ t: "aller", x: h.point.x, z: h.point.z }); return; } }
         if (sols.includes(h.object) || (n && n.y > .7)) allerVers(h.point.x, h.point.z, true, h.point.y);
@@ -6082,7 +6083,11 @@ function ouvrirCarteSH() { if (!M || M.cadranEl) return;
   sonBruit(.25, 3500, .12);   /* (le froissement du papier) */
   b.onclick = () => { W.remove(); if (M) M.cadranEl = null; }; }
 // l'onglet « Carte » : une fois la carte ramassée, à Silent Hill
-function majBoutonCarte() { if (!M || !M.ctx) return; majBoutonLampe(); const voir = !!(M.shCarteOK && estSH(M.lieu));
+function majBoutonCle() { if (!M || !M.ctx) return; const voir = !!(M.shCleMess && !M.shMessOuvert && estSH(M.lieu));
+  if (!voir) { if (M.cleEl) { M.cleEl.remove(); M.cleEl = null; } return; } if (M.cleEl) return;
+  const d = document.createElement("div"); d.title = "Clé du mess"; d.style.cssText = "position:absolute;left:10px;top:212px;z-index:7;display:flex;align-items:center;gap:6px;border:1.5px solid #8a6a4a;border-radius:10px;padding:4px 10px 4px 4px;background:rgba(30,22,14,.85);color:#efe6d4;font:800 12px 'Lato',sans-serif;pointer-events:none";
+  d.innerHTML = `<img src="${dessinCle().toDataURL()}" alt="" style="width:30px;height:34px;object-fit:contain">Clé du mess`; M.ctx.conteneur.appendChild(d); M.cleEl = d; }
+function majBoutonCarte() { if (!M || !M.ctx) return; majBoutonLampe(); majBoutonCle(); const voir = !!(M.shCarteOK && estSH(M.lieu));
   if (!voir) { if (M.carteBtn) { M.carteBtn.remove(); M.carteBtn = null; } return; }
   if (M.carteBtn) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "🗺️ Carte";
   b.style.cssText = "position:absolute;left:10px;top:128px;z-index:7;border:1.5px solid #8c1a10;border-radius:10px;padding:7px 12px;background:rgba(30,6,4,.82);color:#fff;font:800 13px 'Lato',sans-serif;cursor:pointer";
@@ -6257,7 +6262,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -6293,7 +6298,10 @@ function dialogueSH(num, lignes, fin, opt = {}) {
   const finir = () => { if (fini) return; M.shRegard = null; fini = true; if (opt.musique !== false) musiqueRencontre(false); for (const l of lignes.slice(i + 1)) if (typeof l === "function" && l.toujours) l(); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } finCine(); placerCamera(true); fin && fin(); };
   M.passerBtn = boutonPasser(finir);
   M.shRegard = null;
-  M.cine = { maj: t => { if (fini) return; clk += Math.min(50, Math.max(0, t - prec)); prec = t; const now = clk; const p = M.gens.get(num) || p0, a = moi.g.position, b = M.shRegard || (p ? p.g.position : a);   /* (M.shRegard : la caméra se tourne vers ce qui surgit) */
+  let parle = num;   /* (la caméra se tourne vers celui qui parle) */
+  /* (personne d'autre que nous : la caméra regarde devant nous, dans le sens où l'on regardait) */
+  const devant = (() => { const v = new THREE.Vector3(); M.camera.getWorldDirection(v); v.y = 0; if (v.lengthSq() < 1e-4) v.set(0, 0, -1); v.normalize(); const m = moi.g.position; return new THREE.Vector3(m.x + v.x * 4, m.y, m.z + v.z * 4); })();
+  M.cine = { maj: t => { if (fini) return; clk += Math.min(50, Math.max(0, t - prec)); prec = t; const now = clk; const pp = M.gens.get(parle), p = pp && !pp.part ? pp : M.gens.get(num) || p0, a = moi.g.position, b = M.shRegard || (p ? p.g.position : devant);   /* (M.shRegard : la caméra se tourne vers ce qui surgit) */
     let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
     /* (par-dessus notre épaule, tournée vers lui : de côté, un mur ou un muret se mettait souvent entre la caméra et nous) */
     if (!cote) { const c = M.camera.position; cote = ((c.x - a.x) * -dz + (c.z - a.z) * dx) >= 0 ? 1 : -1; }
@@ -6302,7 +6310,7 @@ function dialogueSH(num, lignes, fin, opt = {}) {
     else { const rr = M.L.interieur ? 1.5 : 2.1, lat = baseLieu(M.lieu) === "etage" ? .3 : M.L.interieur ? .95 : 1.25; M.camera.position.set(a.x - dx * rr - dz * lat * cote, a.y + 1.75, a.z - dz * rr + dx * lat * cote); M.camera.lookAt(b.x * .75 + a.x * .25 + dz * .35 * cote, a.y + 1.05, b.z * .75 + a.z * .25 - dx * .35 * cote); }
     if (now < tProchain) return; i++; if (i >= lignes.length) { finir(); return; }
     const l = lignes[i]; if (typeof l === "function") { l(); tProchain = now; return; }
-    const [qui, texte, ms] = l; if (texte) dire(qui === "moi" ? M.moiNum : qui, texte); tProchain = now + (ms || Math.min(5600, 1900 + texte.length * 52)); } };
+    const [qui, texte, ms] = l; if (qui != null && qui !== "moi" && M.gens.has(qui)) parle = qui; if (texte) dire(qui === "moi" ? M.moiNum : qui, texte); tProchain = now + (ms || Math.min(5600, 1900 + texte.length * 52)); } };
 }
 // la musique des rencontres (« The Day Of Night ») : elle remplace celle de l'exploration le temps de la conversation
 function musiqueRencontre(on) { if (!M) return;
@@ -6530,7 +6538,10 @@ function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess") re
     () => { evanouirSH(SHN.laura, [mp.x - 4, mp.z + 3], 0, 1.4); M.shEtape = 10; }); }
 /* sur la terrasse, James surgit du brouillard : « ne la suis pas, ce n'est qu'une illusion ». Maria insiste. Il faut choisir */
 function jamesTerrasse(H) { const moi = moiApo(); if (!moi || !M.L.sh) return; const mp = moi.g.position, nom = prenomSH();
-  const pj = apparaitreSH(poserPerso(SHN.james, mp.x - 2.6, mp.z + 2.4, H.y)); if (pj) noterCarteSH(SHN.james, H.x, H.z);
+  /* (il arrive par la terrasse : un point de la terrasse, à 3 m de nous, loin de l'escalier) */
+  let q = null, bz = 1e9; for (let k = 0; k < 48; k++) { const a = k / 48 * 6.283, r = 2.6 + (k % 3) * .6, x = mp.x + Math.cos(a) * r, z = mp.z + Math.sin(a) * r;
+    if (!M.L.limites(x, z) || Math.abs(M.L.hauteur(x, z, { g: { position: { y: H.y } } }) - H.y) > .1) continue; if (z < bz) { bz = z; q = [x, z]; } }
+  q = q || [mp.x - 2.6, mp.z - 1]; const pj = apparaitreSH(poserPerso(SHN.james, q[0], q[1], H.y)); if (pj) noterCarteSH(SHN.james, H.x, H.z);
   dialogueSH(SHN.james, [[null, null, 1600], [SHN.james, `${nom} ! Ne la suis pas !`], [SHN.james, "Ce n'est qu'une illusion. Elle a le visage de Mary… mais ce n'est pas elle. Elle te mènera droit à lui."],
     [SHN.maria, "James… tu es jaloux ? Tu as toujours été jaloux."], [SHN.maria, `Viens avec moi, ${nom}. Lui, il ne sait que fuir. Moi, je sais où il faut aller.`], [SHN.james, "Réfléchis bien. Après, il sera trop tard."], [null, null, 500]],
     () => choixSH("Que fais-tu ?", [["🌹 Suivre Maria", () => suivreMaria(H)], ["🕯️ Rester avec James", () => resterJames(H)]])); }
@@ -6546,7 +6557,7 @@ function suivreMaria(H) { M.shChoix = "maria";
     () => { evanouirSH(SHN.james, [H.x - 6, H.z + 4], 0, .9); M.shEtape = 6; M.shEscorte = { pv: 5, ditT: 0, etape: 0 }; }); }
 function resterJames(H) { M.shChoix = "james";
   dialogueSH(SHN.maria, [[SHN.maria, "…Alors c'est lui que tu choisis."], [SHN.maria, "Tu me fais de la peine. Encore une fois."], geste(() => evanouirSH(SHN.maria, [H.x + 6, H.z + 4], 400, .55)), [null, null, 2600],
-    [SHN.james, "Tu as fait le bon choix."], [SHN.james, "Tiens. J'ai trouvé ça sur le corps d'un garde. Elle ouvre le mess. Il y a peut-être une issue, par là-bas."], geste(() => { M.shCleMess = true; montrerCleMess(); }, true),
+    [SHN.james, "Tu as fait le bon choix."], [SHN.james, "Tiens. J'ai trouvé ça sur le corps d'un garde. Elle ouvre le mess. Il y a peut-être une issue, par là-bas."], geste(() => { M.shCleMess = true; montrerCleMess(); majBoutonCarte(); }, true),
     ["moi", "Merci, James. Et toi ?"], [SHN.james, `Moi… je dois retrouver ma femme. Bon courage, ${prenomSH()}.`], geste(() => evanouirSH(SHN.james, [H.x - 6, H.z + 4], 600, .9)), [null, null, 2400]],
     () => { M.shCleMess = true; evanouirSH(SHN.maria, [H.x + 6, H.z + 4], 0, .55); evanouirSH(SHN.james, [H.x - 6, H.z + 4], 0, .9); M.shEtape = 6; M.shMariaMess = true; }); }
 // la clé du mess, montrée en grand à l'écran
@@ -6572,7 +6583,7 @@ function escorteMaria(now, moi) { const E = M.shEscorte = M.shEscorte || { pv: 5
     if (Math.abs(pp.y - mp.y) < 1.5 && M.L.limites(cx, cz) && (!p.cible || Math.hypot(p.cible.x - cx, p.cible.z - cz) > .6)) { p.info.allure = 1.25; p.cible = new THREE.Vector3(cx, pp.y, cz); p.chemin = []; p.suite = null; }
     dire2(`${prenomSH()} ! Derrière toi… protège-moi !`, 7000); E.cache = true; return; }
   if (E.cache) { E.cache = false; p.cible = null; p.chemin = []; }
-  if (Math.hypot(porte[0] - pp.x, porte[1] - pp.z) < 1.6) { M.shMariaMess = true; M.shEscorte = null; dire(SHN.maria, "C'est ici… Entre. N'aie pas peur."); evanouirSH(SHN.maria, [porte[0], porte[1]], 1200, .6); return; }
+  if (Math.hypot(porte[0] - pp.x, porte[1] - pp.z) < 1.6) { M.shMariaMess = true; M.shEscorte = null; M.shMessOuvert = true; sonBruit(.4, 900, .3); dire(SHN.maria, "C'est ici… Entre. N'aie pas peur."); evanouirSH(SHN.maria, [porte[0], porte[1]], 1200, .6); return; }
   if (Math.hypot(mp.x - pp.x, mp.z - pp.z) > 7 || Math.abs(mp.y - pp.y) > 2.5) { if (p.cible && !p.suite && Math.abs(pp.y) < 1) { p.cible = null; p.chemin = []; } dire2("Ne me laisse pas seule… viens.", 8000); return; }   /* (elle nous attend) */
   if (!p.cible) { p.info.allure = .55;
     if (pp.y > 1.5) { const g = viserLibre(0, C3.z1 - C3.PP + 2.2); if (!C3.etage(p, g[0], 0, g[1])) viser(p, porte[0], porte[1]); }   /* (de la terrasse : par l'escalier) */
@@ -6665,9 +6676,10 @@ function histoireSH(now) {
         [SHN.maria, "Ne me regarde pas comme ça. Je ne suis pas elle. Ou peut-être que si… ça dépend de toi."], [SHN.maria, "La petite t'a envoyé ? Laura ne ment jamais. Elle ne dit juste pas tout."],
         ["moi", "Je… je ne comprends rien."], [SHN.maria, "Ça ne fait rien. Suis-moi. Je veux t'emmener quelque part… il y a quelque chose que tu dois voir."], [null, null, 600]],
         () => { M.shTerrasse = true; setTimeout(() => M && jamesTerrasse(H), 300); }, H.y); }
-    // le mess : fermé à clé, avant (on y entre en suivant Maria, ou avec la clé de James)
-    if (e < 6 || (e === 6 && M.shChoix === "maria" && !M.shMariaMess)) { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"); if (q && !q.verrou) { const d0 = q.dans; q.verrou = true; q.dans = (x, z) => (M.shEtape > 6 || (M.shEtape === 6 && (M.shCleMess || M.shMariaMess))) && d0(x, z); }
-      const c = q && (q.seuil || centrePortail(q)); if (c && Math.hypot(moi.g.position.x - c[0], moi.g.position.z - c[1]) < 1.8 && now > (M.shVerrouT || 0)) { M.shVerrouT = now + 5000; M.ctx.surInfo && M.ctx.surInfo("🔒 La porte du mess est fermée à clé."); } }
+    // le mess : la porte fermée à clé ; on l'ouvre avec la clé de James (ou Maria l'ouvre, si on la suit)
+    { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"); if (q && !q.verrou) { const d0 = q.dans; q.verrou = true; q.dans = (x, z) => !!M.shMessOuvert && d0(x, z); }
+      for (const b of M.L.messBattants || []) { const cible = M.shMessOuvert ? b.userData.ouvert : 0; if (!b.userData.vu) { b.userData.vu = true; b.rotation.y = cible; } b.rotation.y += (cible - b.rotation.y) * Math.min(1, .04); }   /* (à l'arrivée : déjà fermée ; avec la clé, elle s'ouvre doucement) */
+      const c = q && (q.seuil || centrePortail(q)); if (c && !M.shMessOuvert && !M.shCleMess && Math.hypot(moi.g.position.x - c[0], moi.g.position.z - c[1]) < 1.2 && now > (M.shVerrouT || 0)) { M.shVerrouT = now + 5000; M.ctx.surInfo && M.ctx.surInfo("🔒 La porte du mess est fermée à clé."); } }
     // 6. elle nous mène jusqu'au mess, à pied ; un monstre approche : elle se cache derrière nous — il faut la défendre
     if (e === 6 && !M.shMariaMess && M.shChoix === "maria") escorteMaria(now, moi);
     // 10. on repasse le porche : direction la rue
@@ -8680,6 +8692,7 @@ function chercherAction(t) {
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
+    else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
     else if (M.L.cadenasEnc && estSH(M.lieu) && M.shCle && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.4) a = { type: "cadenasSH", label: "🔑 Ouvrir le cadenas avec la clé" };
     else if (M.L.lampeComptoir && estSH(M.lieu) && !M.shLampe && Math.hypot(x - M.L.lampeComptoir[0], z - M.L.lampeComptoir[1]) < 1.5) a = { type: "lampeSH", label: "🔦 Prendre la lampe" };
     else if (M.L.carteMur && estSH(M.lieu) && !M.shCarteOK && Math.hypot(x - M.L.carteMur[0], z - M.L.carteMur[1]) < 1.7) a = { type: "carteSH", label: "🗺️ Prendre la carte" };
@@ -8723,6 +8736,8 @@ export function agir() {
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
   else if (a.type === "cadenasSH") sortieCleSH();
+  else if (a.type === "cleMess") { M.shMessOuvert = true; sonBruit(.15, 3000, .35); setTimeout(() => sonBruit(.5, 700, .35), 250); majBoutonCarte(); M.ctx.surInfo && M.ctx.surInfo("🗝️ La clé tourne dans la serrure… la porte du mess s'ouvre.");
+    setTimeout(() => { if (!M || M.lieu !== "sh-grande") return; const q = M.L.portails.find(pt => pt.vers === "sh-mess"); if (q && !M.passage) { M.passage = true; changerLieu(q.vers, q.arrivee, q.yaw, true); } }, 1600); }
   else if (a.type === "lampeSH") { M.shLampe = true; M.shLampeOn = true; sonBruit(.05, 5000, .3); majBoutonCarte(); }
   else if (a.type === "carteSH") { M.shCarteOK = true; majBoutonCarte(); ouvrirCarteSH(); }
   else if (a.type === "rentrer2026") cineRetour();
