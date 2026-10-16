@@ -6334,7 +6334,19 @@ function musiqueGB(on, fichier = "gb-theme") { if (!M) return; M.musGBs = M.musG
   if (!on) { for (const a of Object.values(M.musGBs)) fondre(a); return; }
   for (const [k, a] of Object.entries(M.musGBs)) if (k !== fichier) fondre(a);
   let a = M.musGBs[fichier]; if (!a) { a = M.musGBs[fichier] = new Audio(`sons/${fichier}.mp3`); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .8; a.play().catch(() => {}); }
-function finCombatGB() { const C = M && M.gbCombat; musiqueGB(false); if (!C) return; if (C.hud) C.hud.remove(); if (C.piegeBtn) C.piegeBtn.remove(); for (const r of C.rayons.values()) M.scene.remove(r.g); M.gbCombat = null; M.gbVisee = null; }
+// le bruit des faisceaux : un bourdonnement électrique qui vibre, et des crépitements ; plus fort à plusieurs, et quand ça touche le monstre
+function sonEffluves(n, touche) { if (!M) return; if (!n && !M.sonEff) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  let S = M.sonEff;
+  if (!S) { const o1 = actx.createOscillator(), o2 = actx.createOscillator(), lfo = actx.createOscillator(), lg = actx.createGain(); o1.type = "sawtooth"; o1.frequency.value = 92; o2.type = "square"; o2.frequency.value = 184.7; lfo.frequency.value = 13; lg.gain.value = 18; lfo.connect(lg); lg.connect(o1.frequency);
+    const nb = actx.sampleRate * 2, b = actx.createBuffer(1, nb, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < nb; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < .02 ? 1 : .22);   // (des étincelles : des pics de bruit)
+    const src = actx.createBufferSource(); src.buffer = b; src.loop = true; const hp = actx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1700;
+    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 900; bp.Q.value = .8; const gB = actx.createGain(), gC = actx.createGain(), g = actx.createGain(); gB.gain.value = .5; gC.gain.value = .5; g.gain.value = 0;
+    o1.connect(bp); o2.connect(bp); bp.connect(gB); src.connect(hp); hp.connect(gC); gB.connect(g); gC.connect(g); g.connect(actx.destination); o1.start(); o2.start(); lfo.start(); src.start();
+    S = M.sonEff = { g, gC, hp, o1 }; }
+  const t = actx.currentTime, vol = n > 0 ? Math.min(.24, .08 + n * .03) * (touche ? 1.25 : 1) : 0;
+  S.g.gain.setTargetAtTime(vol, t, n > 0 ? .05 : .12);
+  if (n > 0) { S.gC.gain.setTargetAtTime((touche ? .9 : .4) + Math.random() * .6, t, .015); S.hp.frequency.setTargetAtTime(1400 + Math.random() * 1600, t, .02); S.o1.frequency.setTargetAtTime(touche ? 78 : 92, t, .1); } }   // (le crépitement change sans arrêt)
+function finCombatGB() { const C = M && M.gbCombat; musiqueGB(false); sonEffluves(0); if (!C) return; if (C.hud) C.hud.remove(); if (C.piegeBtn) C.piegeBtn.remove(); for (const r of C.rayons.values()) M.scene.remove(r.g); M.gbCombat = null; M.gbVisee = null; }
 function combatGB() { const L = M.L, moi = M.gens.get(M.moiNum); if (!moi || L.gbMess || M.cine) return; const S = messGB(); if (!S) return; const B = MESS_GB;
   if (M.gbCombat) finCombatGB();
   const C = M.gbCombat = { L, vies: 4, pv: PV_GB, rayons: new Map(), brulures: [], t: 0, attaque: 10, contact: 0, cibles: [], fini: false };
@@ -6379,6 +6391,7 @@ function vaincuGB(C, S) { C.fini = true; S.fige = new THREE.Vector3(-.6, 1.9, -1
   b.onclick = e => { e.stopPropagation(); b.remove(); C.piegeBtn = null; cinePiegeGB(); }; M.ctx.conteneur.appendChild(b); C.piegeBtn = b; }
 function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L !== M.L) { finCombatGB(); return; } const S = M.L.gbMess, moi = M.gens.get(M.moiNum); if (!S || !moi) return; C.t += dt;
   animerFlammes(C, dt, now);
+  if (C.intro > 0 || C.ordre > 0) sonEffluves(0);
   if (C.intro > 0) { C.intro -= dt; if (C.intro <= 0 || (S.script && !S.script.length && C.intro < 8)) { C.intro = 0; S.script = null; C.ordre = 6.5; hudGB(C);
       bulle(`<b style="color:#b5573c">Venkman</b> : Bon, ça suffit. Tout le monde en position… Personne ne tire avant mon signal. Visez quand il s'arrête pour manger. Et on ne croise pas les effluves !`, 6200); } return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { C.ordre = 0; if (M.cine) M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : Attention… FEU !`, 2600); sonBruit(.3, 900, .2); musiqueGB(true, "gb-combat"); } return; }   // (personne ne tire tant qu'il n'a pas donné l'ordre)
@@ -6387,7 +6400,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   const tir = (cle, A, dir, degats, fuit) => { // un faisceau de A dans la direction dir : il touche Bouffe-tout, ou il brûle ce qu'il rencontre
     ray.set(A, dir); ray.far = 40; const dS = ray.ray.distanceToPoint(cible), devant = cible.clone().sub(A).dot(dir) > 0, R = statique ? .8 : .4;
     let B2;
-    if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
+    if (devant && dS < R && !S.capFin) { B2 = cible.clone().add(new THREE.Vector3((Math.random() - .5) * .2, (Math.random() - .5) * .2, 0)); C.touche = true; if (!C.fini) C.pv -= degats * dt * (statique ? 1 : .7);
       if (fuit) { C.contact += dt; if (C.contact > .3 && !S.fuiteT) { C.contact = 0; fuiteGB(S); } } }
     else { const h = ray.intersectObjects(C.cibles, false)[0]; B2 = h ? h.point.clone() : A.clone().addScaledVector(dir, 25);
       if (h && (!C.brT || C.brT[cle] === undefined || now - C.brT[cle] > 28)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, h, dir, cle); } if (fuit) C.contact = 0; }
@@ -6396,7 +6409,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
   if (moi.englue > 0) { moi.englue -= dt; M.gbVisee = null; if (moi.englue <= 0) bulle("Le slime a séché : tu peux tirer de nouveau !", 2400); }
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
     ray.setFromCamera(new THREE.Vector2(M.gbVisee.x, M.gbVisee.y), M.camera); const P = ray.ray.at(30, new THREE.Vector3()), hS = ray.ray.distanceToPoint(cible) < (statique ? .8 : .4) ? cible.clone() : (ray.intersectObjects(C.cibles, false)[0] || { point: P }).point;
-    tir("moi", A, hS.clone().sub(A).normalize(), 9, true); if (!C.sonT || now - C.sonT > 260) { C.sonT = now; sonBruit(.28, 2600, .07); } }
+    tir("moi", A, hS.clone().sub(A).normalize(), 9, true); }
   // les quatre : des rafales sur lui quand il s'arrête (ils le tiennent tous quand il est à bout)
   for (const p of M.gbScene ? M.gbScene.persos : []) { p.tirT -= dt; const tient = C.fini && !S.capFin;
     const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15);
@@ -6406,6 +6419,7 @@ function animerCombatGB(dt, now) { const C = M.gbCombat; if (!C) return; if (C.L
     if (!(p.rafale > 0) && p.tirT <= 0 && statique) { p.rafale = 1 + Math.random() * 1.2; p.ecart = new THREE.Vector3((Math.random() - .5) * 1.4, (Math.random() - .5) * .8, 0); }
     if (p.rafale > 0) { tir(p.cle, A, cible.clone().add(p.ecart).sub(A).normalize(), 1.2, false); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 2 + Math.random() * 4; } }
   for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
+  sonEffluves(vus.size, C.touche); C.touche = false;   // (le bruit d'électricité des faisceaux)
   if (S.fuiteT) { S.fuiteT -= dt; if (S.fuiteT <= 0) { S.fuiteT = 0; S.rapide = false; } }
   hudGB(C);
   if (!C.fini && C.pv <= 0) { C.pv = 0; vaincuGB(C, S); return; }
@@ -6586,13 +6600,14 @@ function rocherGB(C, B, cibleP, verMoi, p) { const o = gravatGB(.75 + Math.rando
 function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
   gyroEcto(M.L.ecto1, true, now); cielVertGB(1, dt); animerEclatsGB(F, dt); animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
   if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now);
+  if (C.boum || C.ordre > 0) sonEffluves(0);
   if (C.boum) { animerBoumGB(C, dt, now); return; }
   if (C.ordre > 0) { C.ordre -= dt; if (C.ordre <= 0) { M.cine.gb = true; bulle(`<b style="color:#b5573c">Venkman</b> : FEU !`, 2200); sonBruit(.3, 900, .2); } return; }
   const ray = M.gbRay || (M.gbRay = new THREE.Raycaster()); const vus = new Set();
   // touché ? (une ellipse grosso modo à sa silhouette, dans son plan)
   const touche = (A, dir) => { if (Math.abs(dir.z) < .05) return null; const k = (B.z - A.z) / dir.z; if (k <= 0) return null; const P = A.clone().addScaledVector(dir, k); return ((P.x - B.x) / (SP_H * .3)) ** 2 + ((P.y - SP_H * .5) / (SP_H * .5)) ** 2 < 1 ? P : null; };
   const tir = (cle, A, dir, degats) => { let B2 = touche(A, dir);
-    if (B2) { C.pv -= degats * dt; } else { const k = dir.y < -.01 ? -A.y / dir.y : 40; B2 = A.clone().addScaledVector(dir, Math.min(40, k));
+    if (B2) { C.pv -= degats * dt; C.touche = true; } else { const k = dir.y < -.01 ? -A.y / dir.y : 40; B2 = A.clone().addScaledVector(dir, Math.min(40, k));
       if (dir.y < -.01 && k < 40 && (!C.brT || !C.brT[cle] || now - C.brT[cle] > 30)) { C.brT = C.brT || {}; C.brT[cle] = now; brulerGB(C, { point: B2.clone(), face: { normal: new THREE.Vector3(0, 1, 0) }, object: { matrixWorld: new THREE.Matrix4() } }, dir, cle); } }   // (le pavé brûlé)
     let r = C.rayons.get(cle); if (!r) { r = creerRayon(); C.rayons.set(cle, r); } majRayon(r, A, B2, now); vus.add(cle); return B2; };
   if (M.gbVisee && !C.fini) { const H = tailleBonhomme(), A = new THREE.Vector3(moi.g.position.x + .3, H * .48, moi.g.position.z - .15);
@@ -6600,10 +6615,11 @@ function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C 
     const dir = P.clone().sub(A).normalize(); tir("moi", A, dir, 5);
     // le faisceau détruit les blocs qu'il croise
     for (const c of C.cailloux) if (!c.mort && ray.ray.distanceToPoint(c.o.position) < .9) { c.mort = true; poussiereGB(F, c.o.position.clone(), 2.5, 0xb8aea4); sonBruit(.25, 1400, .3); M.scene.remove(c.o); }
-    if (!C.sonT || now - C.sonT > 260) { C.sonT = now; sonBruit(.28, 2600, .07); } }
+  }
   for (const p of M.gbScene ? M.gbScene.persos : []) { if (C.fini) break; p.tirT -= dt; if (!(p.rafale > 0) && p.tirT <= 0) { p.rafale = 1.5 + Math.random() * 2; p.ecart = new THREE.Vector3((Math.random() - .5) * 8, 4 + Math.random() * 14, 0); }
     if (p.rafale > 0) { const A = new THREE.Vector3(p.x + .22, p.H * .48, p.z - .15); tir(p.cle, A, new THREE.Vector3(B.x + p.ecart.x, p.ecart.y, B.z).sub(A).normalize(), .9); p.rafale -= dt; if (p.rafale <= 0) p.tirT = 1 + Math.random() * 2.5; } }
   for (const [k, r] of C.rayons) if (!vus.has(k)) r.g.visible = false;
+  sonEffluves(vus.size, C.touche); C.touche = false;
   // il lance des blocs de pierre sur nous cinq
   if (!C.fini) { C.jet -= dt; if (C.jet <= 0) { C.jet = 2.6 + Math.random() * 2.2; const k = Math.floor(Math.random() * 5), p = k < 4 ? M.gbScene.persos[k] : null, cp = p ? new THREE.Vector3(p.x, 0, p.z) : moi.g.position.clone().setY(0);
     rocherGB(C, B, cp.add(new THREE.Vector3((Math.random() - .5) * .8, 0, (Math.random() - .5) * .8)), !p, p); } }
