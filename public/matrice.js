@@ -3593,7 +3593,7 @@ function cabineFrance() { const g = new THREE.Group(), alu = new THREE.MeshStand
   return g; }
 // composer un numéro : le cadran à l'écran (on tourne le disque chiffre par chiffre)
 // le cadenas à code de la case des encombrants : quatre molettes de 0 à 9 ; le bon code (1996) ouvre la porte… et l'on entre dans l'apocalypse
-function ouvrirCadenas() { if (!M || M.cadranEl) return;
+function ouvrirCadenas() { if (!M || M.cadranEl) return; if (M.relief) relief(false);   // (en relief, l'écran du cadenas ne se verrait pas : on revient à l'image normale)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;place-items:center;background:rgba(0,0,0,.6)";
   d.innerHTML = `<div style="background:linear-gradient(#d9b23a,#a8821c);border-radius:22px 22px 16px 16px;padding:18px 18px 16px;box-shadow:0 10px 40px #000,inset 0 2px 0 rgba(255,255,255,.4);display:flex;flex-direction:column;align-items:center;gap:12px;font:700 14px 'Lato',sans-serif;color:#2a1e08;position:relative;margin-top:44px">
     <div style="position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:110px;height:70px;border:14px solid #9a9da2;border-bottom:0;border-radius:60px 60px 0 0" class="anse"></div>
@@ -3607,6 +3607,9 @@ function ouvrirCadenas() { if (!M || M.cadranEl) return;
     const [h, , b] = c.children, aff = c.children[1], maj = s => { v[i] = (v[i] + s + 10) % 10; aff.textContent = v[i]; sonBruit(.02, 4000, .12); };
     h.onclick = () => maj(1); b.onclick = () => maj(-1); mol.appendChild(c); });
   d.querySelector(".fermer").onclick = fermer;
+  /* à la manette : croix gauche / droite choisit la molette, haut / bas la tourne, A ouvre, B laisse */
+  const sel = k => [...mol.children].forEach((c, i) => { c.children[1].style.outline = i === k ? "3px solid #f6d465" : "none"; }); sel(0);
+  M.cadenasMan = { i: 0, sel, tourne: s2 => mol.children[M.cadenasMan.i].children[s2 > 0 ? 0 : 2].click(), ok: () => d.querySelector(".ok").click(), fermer: () => d.querySelector(".fermer").click(), d };
   d.querySelector(".ok").onclick = () => { if (v.join("") !== "1996") { d.querySelector(".msg").textContent = "Clac… ça ne s'ouvre pas."; sonBruit(.05, 1500, .3); return; }
     const anse = d.querySelector(".anse"); anse.style.transition = "transform .4s"; anse.style.transform = "translateX(-50%) translateY(-18px)"; d.querySelector(".msg").textContent = "Clic ! Le cadenas s'ouvre…"; sonBruit(.08, 3000, .35);
     setTimeout(() => { fermer(); if (!M) return; M.L.cadenasOuvert = true; if (M.L.porteEnc) M.L.porteEnc.rotation.y = -1.25;
@@ -9525,6 +9528,11 @@ function manette() {
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
+  if (M.cadenasMan && M.cadenasMan.d.isConnected) { const C = M.cadenasMan;
+    if (appui(14) || (lx < -.6 && !MAN.cadX)) { C.i = (C.i + 3) % 4; C.sel(C.i); } if (appui(15) || (lx > .6 && !MAN.cadX)) { C.i = (C.i + 1) % 4; C.sel(C.i); } MAN.cadX = Math.abs(lx) > .6;
+    if (appui(12) || (ly < -.6 && !MAN.cadY)) C.tourne(1); if (appui(13) || (ly > .6 && !MAN.cadY)) C.tourne(-1); MAN.cadY = Math.abs(ly) > .6;
+    if (appui(0)) C.ok(); if (appui(1)) C.fermer(); fin(); return; }
+  { const intro = document.getElementById("mxApoIntro"); if (intro && !intro.hidden) { if (appui(0)) document.getElementById("mxApoOui").click(); if (appui(1)) document.getElementById("mxApoNon").click(); fin(); return; } }
   if (appui(9)) relief(!M.relief);
   if (appui(8)) premiere(!M.premiere);
   if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
