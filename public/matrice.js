@@ -23,7 +23,7 @@ export const TENUES = {
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
-  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -47,7 +47,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
+    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "maria" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -112,6 +112,18 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = o.ceinture || "#141414"; x.fillRect(58, 236, 84, 11);   // la ceinture
       if (!dos2) { x.beginPath(); x.ellipse(100, 241, 9, 7, 0, 0, 7); x.fill();
         x.save(); x.translate(96, 244); x.rotate(.18); x.fillRect(-4, 0, 9, 38); x.restore(); x.save(); x.translate(104, 244); x.rotate(-.12); x.fillRect(-4, 0, 9, 34); x.restore(); } }
+    // Maria (Silent Hill) : la veste de cuir rouge, courte, ceinturée et ouverte sur une robe fourreau gris anthracite ; collants sombres, bottes hautes marron
+    if (t === "maria") { const dos2 = o.pose === "dos" || profil, cuir = assombrir(c, .72);
+      if (!dos2) { x.fillStyle = "#2c2b30"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(112, 250); x.lineTo(88, 250); x.closePath(); x.fill();   // la robe, entre les pans ouverts
+        x.fillStyle = peau; x.beginPath(); x.moveTo(88, 146); x.lineTo(112, 146); x.lineTo(100, 170); x.closePath(); x.fill();   // le décolleté
+        x.fillStyle = "#151517"; x.fillRect(90, 146, 20, 4);   // le ras-de-cou
+        x.fillStyle = cuir; x.beginPath(); x.moveTo(84, 146); x.lineTo(96, 196); x.lineTo(88, 200); x.lineTo(72, 154); x.closePath(); x.moveTo(116, 146); x.lineTo(104, 196); x.lineTo(112, 200); x.lineTo(128, 154); x.closePath(); x.fill(); }   // les revers
+      x.fillStyle = "rgba(255,255,255,.1)"; x.fillRect(66, 160, 6, 70); x.fillRect(128, 160, 4, 70);   // le reflet du cuir
+      x.fillStyle = cuir; x.fillRect(58, 222, 84, 11); x.strokeStyle = "#b9b2a6"; x.lineWidth = 2.5; for (const rx of [82, 118]) { x.beginPath(); x.arc(rx, 227.5, 5.5, 0, 7); x.stroke(); }   // la ceinture et ses deux anneaux
+      x.fillStyle = "#2c2b30"; x.beginPath(); x.moveTo(62, 252); x.lineTo(138, 252); x.lineTo(136, 334); x.lineTo(64, 334); x.closePath(); x.fill();   // la robe fourreau, sous la veste
+      x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(62, 252, 76, 4);
+      if (jambesDroites) { x.fillStyle = "rgba(38,30,36,.72)"; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill();   // les collants
+        x.fillStyle = "#6a4930"; x.beginPath(); x.roundRect(78, 348, 20, 56, 6); x.roundRect(102, 348, 20, 56, 6); x.fill(); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(82, 352, 3, 46); x.fillRect(106, 352, 3, 46); } }   // les bottes
     // les tenues du quotidien : jupe et chemisier, tailleur, chemisier et jean, salopette, robe longue
     if (t === "jupe" || t === "tailleur") { x.fillStyle = t === "jupe" ? (o.bas || "#26324e") : assombrir(c, .82); x.beginPath(); x.moveTo(60, 234); x.lineTo(140, 234); x.lineTo(156, 336); x.lineTo(44, 336); x.closePath(); x.fill();
       x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(60, 232, 80, 5);
@@ -3716,16 +3728,16 @@ function construireEtage(A, L, scene) {
   const ambiant = new THREE.AmbientLight(0xfff0d8, .28); scene.add(ambiant);
   const pool = []; for (let i = 0; i < 12; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 7, 1.6); scene.add(l); pool.push(l); }
   let etageVu = -1, actives = [];
-  const eclairer = (n) => { etageVu = n; const f = Math.max(1, n), apo = M && estApo(M.lieu), kA = apo ? .35 : 1;
+  const eclairer = (n) => { etageVu = n; const f = Math.max(1, n), sh = M && estSH(M.lieu), apo = M && (estApo(M.lieu) || sh), kA = sh ? .16 : apo ? .35 : 1;   /* (Silent Hill : presque le noir, quelques ampoules faibles, d'autres qui clignotent) */
     ambiant.intensity = Math.max(.05, .3 - (f - 1) * .045) * kA;
     const proches = bulbes.filter(b => b.k === f || (n === 0 && b.k === 1 && b.y < H + 1)).sort((a, b) => Math.abs(a.y - n * H - 2) - Math.abs(b.y - n * H - 2)).slice(0, pool.length);
     actives = [];
-    pool.forEach((l, i) => { const b = proches[i]; if (!b || b.etat === "mort" || (apo && hasard(b.x * 3 + b.k) < .45)) { l.intensity = 0; return; }
-      l.position.set(b.x, b.y, b.z); l.userData.base = 2.2 * (1 - (b.k - 1) * .12) * kA; l.intensity = l.userData.base; actives.push([l, apo && b.etat !== "clignote" ? { ...b, etat: "clignote" } : b]); }); };
+    pool.forEach((l, i) => { const b = proches[i]; if (!b || b.etat === "mort" || (apo && hasard(b.x * 3 + b.k) < (sh ? .55 : .45))) { l.intensity = 0; if (b) b.b.material.color && b.b.material.color.setHex(0x4a4640); return; }
+      l.position.set(b.x, b.y, b.z); l.userData.base = 2.2 * (1 - (b.k - 1) * .12) * kA; l.intensity = l.userData.base; actives.push([l, apo && b.etat !== "clignote" && !(sh && hasard(b.x * 7 + b.k * 3) < .4) ? { ...b, etat: "clignote" } : b]); }); };
   L.eclairer = eclairer;
   L.anim = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum), n = moi && moi.etg ? moi.etg.n : 0;
     if (n !== etageVu) eclairer(n);
-    for (const [l, b] of actives) if (b.etat === "clignote") { const on = Math.sin(t / 97 + b.x) + Math.sin(t / 41 + b.z * 3) > -.4 && hasard(Math.floor(t / 120) + b.x) > .25;
+    for (const [l, b] of actives) if (b.etat === "clignote") { const on = Math.sin(t / 97 + b.x) + Math.sin(t / 41 + b.z * 3) > (M && estSH(M.lieu) ? .3 : -.4) && hasard(Math.floor(t / 120) + b.x) > .25;
       l.intensity = on ? l.userData.base : 0; b.b.material.color.setHex(on ? 0xfff1c8 : 0x4a4640); } };
   /* la hauteur du sol, et l'étage où se trouve chacun (on le suit en passant d'un palier à une volée) */
   const zoneDe = (x, z) => { const ax = Math.abs(x); return ax < CX0 || z >= 1.6 ? "P" : z <= -1.4 ? "M" : ax >= CXM ? "V1" : "V2"; };
@@ -5906,6 +5918,7 @@ export async function ouvrir(ctx) {
     { const h = C3.enHaut() + 2 * C3.enBas(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
     if (M.L && M.L.c3) { const moi = M.moiNum && M.gens.get(M.moiNum), dd = !!C3.dedans(moi); if (dd !== M.dedansVu) { M.dedansVu = dd; M.L.suiviDehors = M.L.suiviDehors || M.L.suivi;
         M.L.suivi = dd ? { d: 2.7, h: 1.9, av: 2.6, vy: 1.1 } : M.L.suiviDehors; M.camE = null; } }   // (dedans : la caméra se rapproche, juste derrière soi)   // (sur un toit ou dessous : les passages changent)
+    if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
@@ -6001,6 +6014,73 @@ function grainSH(on) { if (!M) return;
 // un flocon de cendre : rond et flou (et non un carré)
 let texFloconC = null;
 const texFlocon = () => texFloconC || (texFloconC = tex(toile(32, 32, x => { const g = x.createRadialGradient(16, 16, 1, 16, 16, 15); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.5, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); })));
+const CARTE_MUR = { de: [0, 26.5], dir: [0, 1] };
+const ROUTE_DETRUITE = [-20.6, -14.6, -83.4, -80.6];   /* [x0, x1, z0, z1] : la route effondrée, après la fenêtre des douches */   /* (d'où l'on cherche le mur du bar, et dans quelle direction) */
+// la carte de la caserne : en grand, comme l'affiche ramassée ; un rond rouge là où l'on a rencontré quelqu'un
+const CARTE_PX = (x, z) => [70 + (x + 24) * 20, 120 + (z + 140) * 20];
+function ouvrirCarteSH() { if (!M || M.cadranEl) return;
+  const W = document.createElement("div"); W.style.cssText = "position:absolute;inset:0;z-index:11;background:radial-gradient(ellipse at center,rgba(38,34,30,.82) 0%,rgba(0,0,0,.97) 75%)";
+  /* (la carte est haute : on la fait défiler du doigt, de la rue jusqu'à l'horloge ; les mains, elles, ne bougent pas) */
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y";
+  const box = document.createElement("div"); box.style.cssText = "position:relative;width:min(calc(100% - 24px),520px);margin:18px auto 30px;transform:rotate(-.6deg)";
+  const cv = document.createElement("canvas"); cv.width = 1290; cv.height = 3640; cv.style.cssText = "display:block;width:100%;height:auto;box-shadow:0 10px 40px rgba(0,0,0,.85)";
+  const im = new Image(); im.onload = () => { if (!M) return; const x = cv.getContext("2d"); x.drawImage(im, 0, 0);
+    // le papier vieilli : presque sans couleur, jauni, sali ; des plis, des taches
+    const D = x.getImageData(0, 0, 1290, 3640), p = D.data; for (let i = 0; i < p.length; i += 4) { const g = p[i] * .3 + p[i + 1] * .59 + p[i + 2] * .11, n = (Math.random() - .5) * 18; p[i] = g * .86 + p[i] * .14 + 8 + n; p[i + 1] = g * .86 + p[i + 1] * .14 + 4 + n; p[i + 2] = g * .86 + p[i + 2] * .14 - 6 + n; } x.putImageData(D, 0, 0);
+    for (let k = 0; k < 26; k++) { const cx = Math.random() * 1290, cy = Math.random() * 3640, r = 60 + Math.random() * 220, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${k % 2 ? "90,70,40" : "255,250,235"},${.05 + Math.random() * .07})`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); }
+    x.lineWidth = 3; for (let k = 0; k < 14; k++) { const y0 = Math.random() * 3640; x.strokeStyle = "rgba(70,60,50,.18)"; x.beginPath(); x.moveTo(0, y0); x.lineTo(1290, y0 + (Math.random() - .5) * 300); x.stroke(); }
+    const vg = x.createRadialGradient(645, 1820, 600, 645, 1820, 2100); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(40,30,20,.45)"); x.fillStyle = vg; x.fillRect(0, 0, 1290, 3640);
+    // nos marques, au feutre rouge : un rond là où l'on a rencontré quelqu'un ; une croix sur la route effondrée
+    if (M.shCroix) { const [px, py] = CARTE_PX((ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2); x.strokeStyle = "rgba(180,20,20,.9)"; x.lineWidth = 12; x.lineCap = "round"; x.beginPath(); x.moveTo(px - 42, py - 42); x.lineTo(px + 42, py + 42); x.moveTo(px + 42, py - 42); x.lineTo(px - 42, py + 42); x.stroke(); }
+    for (const r of M.shCarte || []) { const [px, py] = CARTE_PX(r.x, r.z); x.strokeStyle = "rgba(180,20,20,.88)"; x.lineWidth = 9; x.beginPath(); x.ellipse(px, py, 46, 38, -.2, 0, 6.1); x.stroke();
+      x.font = "italic bold 36px 'Comic Sans MS', 'Segoe Print', cursive"; x.fillStyle = "rgba(160,15,15,.92)"; x.fillText(r.nom, px + 46, py - 30); } };
+  im.src = "images/sh/carte-caserne.webp";
+  const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", "Ranger la carte"); b.textContent = "✕"; b.style.cssText = "position:absolute;top:10px;right:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1a1a1a;font:900 22px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.5)";
+  box.append(cv); d.append(box); W.append(d, b); d.addEventListener("click", e => { if (e.target === d) b.onclick(); });
+  M.ctx.conteneur.appendChild(W); M.cadranEl = W; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) W.addEventListener(ev, e => e.stopPropagation());
+  sonBruit(.25, 3500, .12);   /* (le froissement du papier) */
+  b.onclick = () => { W.remove(); if (M) M.cadranEl = null; }; }
+// l'onglet « Carte » : une fois la carte ramassée, à Silent Hill
+function majBoutonCarte() { if (!M || !M.ctx) return; majBoutonLampe(); const voir = !!(M.shCarteOK && estSH(M.lieu));
+  if (!voir) { if (M.carteBtn) { M.carteBtn.remove(); M.carteBtn = null; } return; }
+  if (M.carteBtn) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "🗺️ Carte";
+  b.style.cssText = "position:absolute;left:10px;top:128px;z-index:7;border:1.5px solid #8c1a10;border-radius:10px;padding:7px 12px;background:rgba(30,6,4,.82);color:#fff;font:800 13px 'Lato',sans-serif;cursor:pointer";
+  b.onclick = e => { e.stopPropagation(); ouvrirCarteSH(); }; M.ctx.conteneur.appendChild(b); M.carteBtn = b; }
+// une traînée de sang (dessinée) : une longue trace tirée au sol, épaisse d'un côté, qui s'effiloche ; des gouttes, des marques de doigts
+let texTraineesC = null;
+function texTrainees() { return texTraineesC || (texTraineesC = tex(toile(1024, 300, (x, w, h) => {
+  const coul = a => `rgba(${70 + Math.random() * 30 | 0},${4 + Math.random() * 8 | 0},${4 + Math.random() * 6 | 0},${a})`;
+  for (let p = 0; p < 26; p++) { const y0 = 150 + (Math.random() - .5) * 90; x.strokeStyle = coul(.06 + Math.random() * .1); x.lineCap = "round"; x.lineWidth = 6 + Math.random() * 30;
+    x.beginPath(); x.moveTo(40 + Math.random() * 60, y0); let yy = y0; for (let i = 1; i <= 12; i++) { yy += (Math.random() - .5) * 10; x.lineTo(40 + i * (w - 140) / 12 * (.75 + Math.random() * .3), yy); } x.stroke(); }
+  x.globalCompositeOperation = "destination-out"; for (let k = 0; k < 180; k++) { const px = 300 + Math.random() * (w - 300), g = x.createRadialGradient(px, 150 + (Math.random() - .5) * 120, 0, px, 150, 30); g.addColorStop(0, `rgba(0,0,0,${Math.min(1, (px - 300) / (w - 300)) * .5})`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(px - 30, 0, 60, h); }   // (elle s'efface vers la fin)
+  x.globalCompositeOperation = "source-over";
+  x.fillStyle = coul(.75); x.beginPath(); x.ellipse(70, 150, 60, 48, 0, 0, 7); x.fill();   // la flaque, au départ
+  for (let k = 0; k < 40; k++) { x.fillStyle = coul(.5 + Math.random() * .4); x.beginPath(); x.arc(Math.random() * w, 150 + (Math.random() - .5) * 220, 1 + Math.random() * 5, 0, 7); x.fill(); }   // les gouttes
+  for (const [fx, fy] of [[160, 108], [300, 190]]) for (let d = 0; d < 4; d++) { x.strokeStyle = coul(.55); x.lineWidth = 7; x.beginPath(); x.moveTo(fx, fy + d * 11); x.lineTo(fx + 70 + d * 6, fy + d * 13); x.stroke(); } }))); }   // des doigts qui ont glissé
+// la lampe « Silent Light », vue de face (d'après la photo) : le boîtier vert arrondi, la grosse lentille en haut, l'inscription, l'interrupteur
+const texLampeC = {};
+function texLampe(on) { return texLampeC[on] || (texLampeC[on] = tex(toile(150, 360, (x, w, h) => {
+  const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "#2c4222"); g.addColorStop(.3, "#4d6e3c"); g.addColorStop(.7, "#45663a"); g.addColorStop(1, "#263a1e");
+  x.fillStyle = g; x.beginPath(); x.roundRect(4, 4, w - 8, h - 8, 40); x.fill(); x.strokeStyle = "rgba(0,0,0,.4)"; x.lineWidth = 4; x.stroke();
+  for (let k = 0; k < 160; k++) { x.fillStyle = `rgba(${Math.random() < .5 ? "0,0,0" : "255,255,255"},.05)`; x.fillRect(Math.random() * w, Math.random() * h, 3, 3); }   // (la peinture usée)
+  x.fillStyle = "#33502a"; x.beginPath(); x.arc(75, 78, 62, 0, 7); x.fill(); x.strokeStyle = "rgba(0,0,0,.45)"; x.lineWidth = 5; x.stroke();   // la collerette
+  const v = x.createRadialGradient(65, 66, 4, 75, 78, 50); if (on) { v.addColorStop(0, "#ffffff"); v.addColorStop(.6, "#fffbe6"); v.addColorStop(1, "#f2e6b8"); } else { v.addColorStop(0, "#c9c9c2"); v.addColorStop(.7, "#8e8e88"); v.addColorStop(1, "#5e5e58"); }
+  x.fillStyle = v; x.beginPath(); x.arc(75, 78, 48, 0, 7); x.fill();
+  x.fillStyle = "#e8e8e0"; x.font = "bold 21px Arial"; x.textAlign = "center"; x.fillText("SILENT LIGHT", 75, 222);
+  x.fillStyle = "#cfcfca"; x.beginPath(); x.roundRect(64, 262, 22, 46, 10); x.fill(); x.fillStyle = "#7a7a76"; x.beginPath(); x.roundRect(68, on ? 266 : 286, 14, 18, 6); x.fill(); }))); }
+// la lampe accrochée à la poitrine : on la voit de face, éteinte ou allumée
+function majLampePoitrine() { const moi = M && M.gens.get(M.moiNum); if (!moi) return; const voir = !!(M.shLampe && M.L && M.L.sh);
+  if (!voir) { if (M.lampeSp && M.lampeSp.parent) M.lampeSp.parent.remove(M.lampeSp); return; }
+  if (!M.lampeSp) { M.lampeSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLampe(false), transparent: true, depthWrite: false })); M.lampeSp.renderOrder = 3; }
+  const sp = M.lampeSp; if (sp.parent !== moi.g) moi.g.add(sp); sp.material.map = texLampe(!!M.shLampeOn);
+  const H = tailleBonhomme() * hauteurDe(moi), c = M.camera.position, gp = moi.g.position, dx = c.x - gp.x, dz = c.z - gp.z, d = Math.hypot(dx, dz) || 1, dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0);
+  sp.scale.set(H * .075, H * .18, 1); sp.position.set(dx / d * .07 - dr.x * H * .06, H * .64, dz / d * .07 - dr.z * H * .06); }
+// le bouton de la lampe : allumer, éteindre
+function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe && estSH(M.lieu));
+  if (!voir) { if (M.lampeBtn) { M.lampeBtn.remove(); M.lampeBtn = null; } return; }
+  let b = M.lampeBtn; if (!b) { b = document.createElement("button"); b.type = "button"; b.style.cssText = "position:absolute;left:10px;top:170px;z-index:7;border:1.5px solid #3d5a2e;border-radius:10px;padding:7px 12px;color:#fff;font:800 13px 'Lato',sans-serif;cursor:pointer";
+    b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
+  b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
 function silentHill(scene, L, base) {
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
@@ -6012,7 +6092,7 @@ function silentHill(scene, L, base) {
   // la lumière : grise, sans soleil ; les lampes sont mortes
   const appliquer = () => { scene.background = new THREE.Color(gris); scene.fog = new THREE.Fog(gris, ext ? 1.5 : 1, ext ? 24 : 15);
     scene.traverse(o => { if (!o.isLight || o.userData.sh) return;
-      if (o.isHemisphereLight) { o.color.setHex(0xc4c3be); o.groundColor.setHex(0x4a4743); o.intensity = ext ? .95 : .4; }
+      if (o.isHemisphereLight) { o.color.setHex(0xc4c3be); o.groundColor.setHex(0x4a4743); o.intensity = ext ? .95 : base === "etage" ? .12 : .4; }
       else if (o.isDirectionalLight) { o.intensity = ext ? .35 : 0; o.color.setHex(0xd8d8d4); o.castShadow = false; }
       else if (o.isAmbientLight) o.intensity = ext ? .15 : .08;
       else if (o.isPointLight || o.isSpotLight) o.intensity = 0; });
@@ -6025,23 +6105,79 @@ function silentHill(scene, L, base) {
   // les détritus (journaux, feuilles, canettes, cartons)
   texturesApo(); detritusApo(scene, L, base, (x, z) => base === "etage" ? 0 : (L.hauteur ? L.hauteur(x, z, {}) : 0));
   // la lampe torche : elle éclaire là où l'on regarde
-  const lampe = new THREE.SpotLight(0xfff0d8, ext ? 14 : 26, 16, .4, .55, 1.3); lampe.userData.sh = true; scene.add(lampe, lampe.target);
+  /* la lampe de poche « Silent Light » : seulement une fois ramassée (sur le comptoir du bar), et allumée ; un vrai faisceau, avec ses ombres */
+  const lampe = new THREE.SpotLight(0xfff2dc, ext ? 22 : 34, 20, .42, .6, 1.4); lampe.userData.sh = true; lampe.visible = false; scene.add(lampe, lampe.target);
+  if (!GPU_MODESTE) { lampe.castShadow = true; lampe.shadow.mapSize.set(512, 512); lampe.shadow.bias = -.002; lampe.shadow.camera.near = .2; }
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlocon(), color: 0xfff4dc, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: .9 })); halo.scale.set(.3, .3, 1); halo.renderOrder = 4; halo.visible = false; scene.add(halo);
   // les cendres qui tombent, autour de nous
   const N = 2000, pos = new Float32Array(N * 3), V = 34, H = 16; for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * V; pos[i * 3 + 1] = Math.random() * H; pos[i * 3 + 2] = (Math.random() - .5) * V; }
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xeeebe4, size: .07, map: texFlocon(), alphaTest: .02, transparent: true, opacity: .8, depthWrite: false, fog: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
   // en bas du bar (sh-fetes), la radio posée sur le comptoir : on l'éteint pour rentrer
   if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length) { const [x, z] = L.comptoirSousSol[1], r = creerRadio(); r.position.set(x, L.yComptoirSousSol + .005, z); r.rotation.y = .6; scene.add(r); L.radioSortie = [x, z]; }
+  // la ruelle des douches, juste après la petite fenêtre : la route s'est effondrée — un trou noir, sans fond, des plaques de bitume brisées. Un cul-de-sac
+  if (base === "grande") { const [xa, xb, za, zb] = ROUTE_DETRUITE, lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(x > xa - .3 && x < xb + .3 && z > za - .3 && z < zb + .3);
+    const trou = toile(256, 128, x => { x.fillStyle = "#000"; x.beginPath(); x.moveTo(0, 22); for (let i = 0; i <= 16; i++) x.lineTo(i * 16, 10 + Math.random() * 22); for (let i = 16; i >= 0; i--) x.lineTo(i * 16, 96 + Math.random() * 22); x.closePath(); x.fill(); });
+    const pit = new THREE.Mesh(new THREE.PlaneGeometry(xb - xa + 1.2, zb - za + 1.6), new THREE.MeshBasicMaterial({ map: tex(trou), transparent: true, depthWrite: false, fog: false })); pit.rotation.x = -Math.PI / 2; pit.rotation.z = Math.PI / 2; pit.position.set((xa + xb) / 2, .03, (za + zb) / 2); pit.renderOrder = 1; scene.add(pit);
+    const bit = new THREE.MeshStandardMaterial({ color: 0x3c3b3a, roughness: 1 }), terre = new THREE.MeshStandardMaterial({ color: 0x4a3c30, roughness: 1 });
+    for (let k = 0; k < 12; k++) { const bord = k % 2 ? za - .1 : zb + .1, x = xa + .3 + Math.random() * (xb - xa - .6), sl = new THREE.Mesh(new THREE.BoxGeometry(.9 + Math.random() * .9, .14, .6 + Math.random() * .6), k % 3 ? bit : terre);
+      sl.position.set(x, -.12 - Math.random() * .25, bord + (k % 2 ? .45 : -.45)); sl.rotation.set((k % 2 ? 1 : -1) * (.35 + Math.random() * .5), Math.random() * .6 - .3, Math.random() * .3 - .15); scene.add(sl); }
+    for (let k = 0; k < 30; k++) { const r = new THREE.Mesh(new THREE.BoxGeometry(.1 + Math.random() * .25, .08 + Math.random() * .15, .1 + Math.random() * .25), k % 3 ? bit : terre); const cote = k % 2 ? za - .5 - Math.random() * 1.2 : zb + .5 + Math.random() * 1.2;
+      r.position.set(xa + Math.random() * (xb - xa), .05, cote); r.rotation.set(Math.random(), Math.random() * 3, Math.random()); scene.add(r); }
+    // une barrière de chantier renversée, au bord
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.2, .18, .05), new THREE.MeshStandardMaterial({ color: 0xc8c2b4, roughness: .8 })); bar.position.set((xa + xb) / 2 - .4, .2, zb + .7); bar.rotation.set(0, .25, 1.2); scene.add(bar); }
+  // sur le comptoir du bar : la lampe de poche verte « Silent Light »
+  if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length > 3) { const [x, z] = L.comptoirSousSol[3], vert = new THREE.MeshStandardMaterial({ color: 0x3e5a30, roughness: .75 }), face = new THREE.MeshStandardMaterial({ map: texLampe(false), roughness: .6 });
+    const g = new THREE.Group(), corps = new THREE.Mesh(new THREE.BoxGeometry(.15, .36, .06), [vert, vert, vert, vert, face, vert]); corps.position.y = .18; corps.rotation.x = -.12; corps.castShadow = true; g.add(corps);   // debout, à peine penchée en arrière
+    g.position.set(x, L.yComptoirSousSol + .002, z + .05); g.rotation.y = -.25; scene.add(g); L.lampeObj = g; L.lampeComptoir = [x, z]; }
+  // des traînées de sang, comme si l'on avait traîné quelqu'un : dans les couloirs des étages, sur les paliers ; dehors, quelques-unes
+  { const tr = texTrainees(), mat = new THREE.MeshStandardMaterial({ map: tr, transparent: true, depthWrite: false, roughness: .35, polygonOffset: true, polygonOffsetFactor: -3 });
+    const poser = (x, y, z, rot, l) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(l, l * .3), mat); m.rotation.set(-Math.PI / 2, 0, rot); m.position.set(x, y + .014, z); m.renderOrder = 1; scene.add(m); };
+    if (base === "etage") { for (let n = 0; n <= ET.N; n++) for (let k = 0; k < 2; k++) poser((Math.random() * 2 - 1) * (ET.CX0 - 2.5), n * ET.H, -1.9 + (Math.random() - .5) * .5, (Math.random() - .5) * .3 + (k ? Math.PI : 0), 2.4 + Math.random() * 1.6);
+      for (let n = 1; n <= ET.N; n += 2) poser((n % 4 === 1 ? 1 : -1) * 12.4, n * ET.H, -2.2, Math.PI / 2 + (Math.random() - .5) * .5, 1.6); }
+    else if (ext) for (let k = 0; k < 7; k++) { const q = (L.zone || [-20, 20, -100, 20]), x = q[0] + Math.random() * (q[1] - q[0]), z = q[2] + Math.random() * (q[3] - q[2]); if (!L.limites(x, z)) { k--; continue; } const y = L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0; if (Math.abs(y) > .5) continue; poser(x, y, z, Math.random() * 7, 2 + Math.random() * 2); } }
+  // les couloirs R et S : un escalier sur deux s'est effondré — pour monter, il faut traverser le couloir jusqu'à l'autre cage
+  if (base === "etage") { const { H, CX0, CXM, CX1, N } = ET, ouvert = (sg, n) => sg > 0 ? n % 2 === 0 : n % 2 === 1, lim0 = L.limites;
+    const etg = () => { const q = M && M.gens.get(M.moiNum); return q && q.etg; };
+    L.limites = (x, z) => { if (!lim0(x, z)) return false; const e = etg(); if (!e || e.zone !== "P") return true; const ax = Math.abs(x), sg = Math.sign(x) || 1, zl = .5 - z;
+      if (zl < 1.85 && ax > CX0 - .1) { if (ax > CXM - .15 && e.n < N && !ouvert(sg, e.n)) return false; if (ax < CXM + .15 && e.n > 0 && !ouvert(sg, e.n - 1)) return false; }
+      return true; };
+    const ae = L.allerEtage; L.allerEtage = (moi, x, z, y) => { const e = moi.etg || { n: 0 }, f = Math.max(0, Math.min(N, Math.round(y / H))); if (f === e.n) return ae(moi, x, z, y);
+      const sg = Math.sign(moi.g.position.x) || 1, pas = f > e.n ? 1 : -1; let g = e.n; while (g !== f && ouvert(sg, pas > 0 ? g : g - 1)) g += pas;
+      if (g === e.n) { M.ctx.surInfo && M.ctx.surInfo("🚧 L'escalier s'est effondré…"); return true; }
+      return ae(moi, g === f ? x : sg * 9.5, g === f ? z : -1.9, g * H); };
+    // les volées effondrées : des planches clouées en travers, des gravats
+    const bois = new THREE.MeshStandardMaterial({ color: 0xa88458, roughness: 1 }), grav = new THREE.MeshStandardMaterial({ color: 0x9a9286, roughness: 1 });
+    for (let n = 0; n < N; n++) for (const sg of [-1, 1]) { if (ouvert(sg, n)) continue;
+      for (const [xc, y0] of [[sg * (CXM + CX1 - .25) / 2, n * H], [sg * (CX0 + CXM) / 2, (n + 1) * H]]) { if (y0 > N * H + .1) continue;
+        for (const [hy, rz] of [[.55, .35], [1.05, -.3], [1.45, .12]]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(1.75, .18, .05), bois); pl.castShadow = true; pl.position.set(xc, y0 + hy, .5 - 1.75); pl.rotation.z = rz; scene.add(pl); }
+        for (let k = 0; k < 8; k++) { const r = new THREE.Mesh(new THREE.BoxGeometry(.12 + Math.random() * .2, .08 + Math.random() * .14, .12 + Math.random() * .2), grav); r.position.set(xc + (Math.random() - .5) * 1.2, y0 + .05, .5 - 1.75 + (Math.random() - .5) * .5); r.rotation.set(Math.random(), Math.random() * 3, Math.random()); scene.add(r); } } } }
+  // au mur du bar (sh-fetes) : la carte de la caserne, punaisée ; on la prend
+  if (base === "fetes" && L.comptoirSousSol) { const yb = L.hauteur ? L.hauteur(0, 26.5, { g: { position: { y: -1.5 } } }) : -1.5; scene.updateMatrixWorld(true);
+    const rc = new THREE.Raycaster(new THREE.Vector3(CARTE_MUR.de[0], yb + 1.5, CARTE_MUR.de[1]), new THREE.Vector3(CARTE_MUR.dir[0], 0, CARTE_MUR.dir[1]), 0, 8);
+    const murs = []; scene.traverse(o => { if (o.isMesh && !o.isSprite && o.visible && !(o.material && (Array.isArray(o.material) || o.material.transparent))) murs.push(o); });
+    const h = rc.intersectObjects(murs, false).find(q => q.face);
+    if (h) { const n = h.face.normal.clone().transformDirection(h.object.matrixWorld); n.y = 0; n.normalize();
+      const tc = new THREE.TextureLoader().load("images/sh/carte-caserne.webp"); tc.colorSpace = THREE.SRGBColorSpace;
+      const c = new THREE.Mesh(new THREE.PlaneGeometry(.6, .6 * 3640 / 1290), new THREE.MeshStandardMaterial({ map: tc, roughness: .9, polygonOffset: true, polygonOffsetFactor: -2 }));
+      c.position.copy(h.point).addScaledVector(n, .02); c.position.y = yb + 1.4; c.lookAt(c.position.clone().add(n)); scene.add(c);
+      const pun = new THREE.Mesh(new THREE.SphereGeometry(.018, 8, 6), new THREE.MeshStandardMaterial({ color: 0xb01818 })); pun.position.set(0, .6 * 3640 / 1290 / 2 - .04, .01); c.add(pun);
+      L.carteObj = c; L.carteMur = [h.point.x + n.x * .9, h.point.z + n.z * .9]; } }
   const v = new THREE.Vector3(), animAvant = L.anim; let prec = performance.now();
-  L.anim = (t) => { animAvant && animAvant(t); const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000); prec = now; if (!M || !M.camera) return;
+  L.anim = (t) => { animAvant && animAvant(t); if (L.lampeObj) L.lampeObj.visible = !(M && M.shLampe); if (L.carteObj) L.carteObj.visible = !(M && M.shCarteOK); const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000); prec = now; if (!M || !M.camera) return;
     const cam = M.camera, moi = M.gens.get(M.moiNum);
-    if (moi) { const p = moi.g.position; cam.getWorldDirection(v); lampe.position.set(p.x, p.y + 1.45, p.z); lampe.target.position.set(p.x + v.x * 6, p.y + .4 + v.y * 6, p.z + v.z * 6); }
+    const allumee = !!(M.shLampe && M.shLampeOn); lampe.visible = halo.visible = allumee && !!moi; majLampePoitrine();
+    if (moi && allumee) { const p = moi.g.position; cam.getWorldDirection(v); const dx = v.x, dz = v.z, dl = Math.hypot(dx, dz) || 1; const Hc = tailleBonhomme() * hauteurDe(moi) * .6; lampe.position.set(p.x + dx / dl * .3, p.y + Hc, p.z + dz / dl * .3); lampe.target.position.set(p.x + v.x * 7, p.y + .5 + v.y * 7, p.z + v.z * 7);
+      if (M.lampeSp) { halo.position.copy(M.lampeSp.position).add(moi.g.position); halo.position.y += tailleBonhomme() * hauteurDe(moi) * .051; } halo.material.opacity = .75 + Math.random() * .05; }
     const abrite = !!(moi && L.c3 && C3.dedans(moi)); cendres.visible = ext && !abrite;   // (sous un toit — le judo, le sous-sol… — pas de cendres)
     if (ext && !abrite) { const a = geo.attributes.position.array; for (let i = 0; i < N; i++) { const k = i * 3; a[k + 1] -= dt * (.35 + (i % 7) * .04); a[k] += Math.sin(now / 1800 + i) * dt * .15;
         if (a[k + 1] < cam.position.y - 4) a[k + 1] += H; let dx = a[k] - cam.position.x, dz = a[k + 2] - cam.position.z; if (dx > V / 2) a[k] -= V; else if (dx < -V / 2) a[k] += V; if (dz > V / 2) a[k + 2] -= V; else if (dz < -V / 2) a[k + 2] += V; }
       geo.attributes.position.needsUpdate = true; }
     // la radio de poche grésille, avec des craquements
     peuplerSH(now); for (const o of faisceaux) o.visible = false;
+    /* quelqu'un arrive ou s'en va : le brouillard se referme un instant sur toute la scène */
+    if (scene.fog) { const reste = (M.shBrumeT || 0) - now, D = M.shBrumeD || 4000; let b = 0; if (reste > 0) b = Math.min(1, (D - reste) / 700) * Math.min(1, reste / 1800);
+      if (b > 0 || L.brumeB) { scene.fog.near = (ext ? 1.5 : 1) * (1 - b * .85); scene.fog.far = (ext ? 24 : 15) * (1 - b * .6); L.brumeB = b > 0; } }
     musiqueSH(dt);
     if (L.fete) { for (const q of L.fete.projos) q.spot.visible = q.cone.visible = false; for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = L.fete.boule.visible = false; }   // (pas de fête à Silent Hill)
     if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
@@ -6057,25 +6193,43 @@ const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Laur
 const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73 };
 const SH_VIES = 5, SH_EDDIE_PV = 8;
 // les monstres : [image, hauteur, vitesse, points de vie]
-const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 2.35, 1.45, 999] };
-function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; }
+const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 3.2, 1.35, 999] };
+const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
+const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
+function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
+  if (id === 72 && (!ci.info.tenue || ci.info.tenue === "tailleur")) Object.assign(ci.info, { tenue: "maria", couleur: "#a3243a", pieds: "#5a3c26" });   /* (Maria : sa veste de cuir rouge) */
   const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;
   p.cleInfo = ci.cle; p.info.allure = .5; if (y != null) p.g.position.y = y; return p; }
-// un personnage s'éloigne dans le brouillard, puis s'efface
-function evanouirSH(num, vers, apres = 1800, allure = 1.1) { const p = M && M.gens.get(num); if (!p) return; p.info.allure = allure;
+/* un brouillard épais qui monte d'un coup, là où quelqu'un arrive ou s'en va : de gros nuages autour de lui, et toute la scène qui se bouche un instant */
+let texBrumeC = null;
+const texBrume = () => texBrumeC || (texBrumeC = tex(toile(128, 128, x => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(235,233,228,.95)"); g.addColorStop(.5, "rgba(225,223,218,.55)"); g.addColorStop(1, "rgba(220,218,212,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
+function brumeSH(pos, ms = 4200) { if (!M || !M.scene) return; const sc = M.scene, t0 = performance.now(), nuages = [];
+  for (let k = 0; k < 30; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texBrume(), transparent: true, depthWrite: false, opacity: 0, color: 0xdcdad4 })); const a = Math.random() * 6.283, r = Math.random() * 2.4;
+    sp.position.set(pos.x + Math.cos(a) * r, (pos.y || 0) + .2 + Math.random() * 2.3, pos.z + Math.sin(a) * r); const s0 = 2.4 + Math.random() * 2.6; sp.scale.set(s0, s0, 1); sc.add(sp); nuages.push([sp, s0, (Math.random() - .5) * .5, (Math.random() - .5) * .5]); }
+  M.shBrumeT = t0 + ms; M.shBrumeD = ms;
+  const pas = () => { if (!M || M.scene !== sc) return; const u = (performance.now() - t0) / ms; if (u >= 1) { for (const [sp] of nuages) { sc.remove(sp); sp.material.dispose(); } return; }
+    const op = Math.min(1, u / .18) * Math.min(1, (1 - u) / .35); for (const [sp, s0, vx, vz] of nuages) { sp.material.opacity = op * .9; sp.scale.setScalar(s0 * (1 + u * .6)); sp.position.x += vx * .016; sp.position.z += vz * .016; sp.position.y += .004; }
+    requestAnimationFrame(pas); }; pas(); }
+// la silhouette d'un personnage : de rien à tout (ou l'inverse), image par image (son corps, dessiné un peu plus tard, suit)
+function fonduSH(p, de, a, ms, fin) { const t0 = performance.now(), pas = () => { if (!M || !M.gens.has(p.info.numero) || M.gens.get(p.info.numero) !== p) return; const k = Math.min(1, (performance.now() - t0) / ms), op = de + (a - de) * k;
+    p.g.traverse(o => { if (o.material && !Array.isArray(o.material)) { o.material.transparent = true; o.material.opacity = op; } }); if (k < 1) requestAnimationFrame(pas); else fin && fin(); }; pas(); }
+// un personnage repart : il s'éloigne, le brouillard l'enveloppe, il s'efface
+function evanouirSH(num, vers, apres = 1800, allure = 1.1) { const p = M && M.gens.get(num); if (!p || p.part) return; p.part = true; p.info.allure = allure;
   if (vers) { const v = placeLibre(vers[0], vers[1]); if (v) p.cible = new THREE.Vector3(v[0], p.g.position.y, v[1]); }
-  const t0 = performance.now() + apres, pas = () => { if (!M) return; const q = M.gens.get(num); if (q !== p) return; const k = (performance.now() - t0) / 1200;
-    if (k >= 1) { retirerAncien(num); return; } if (k > 0) p.g.traverse(o => { if (o.material && !Array.isArray(o.material)) { o.material.transparent = true; o.material.opacity = 1 - k; } }); requestAnimationFrame(pas); }; pas(); }
+  setTimeout(() => { if (!M || M.gens.get(num) !== p) return; brumeSH(p.g.position.clone(), 4200); setTimeout(() => fonduSH(p, 1, 0, 1300, () => retirerAncien(num)), 700); }, apres); }
+// un personnage arrive : le brouillard s'épaissit là où il est, il en sort
+function apparaitreSH(p) { if (!p) return p; brumeSH(p.g.position.clone(), 4600); fonduSH(p, 0, 0, 10); setTimeout(() => M && fonduSH(p, 0, 1, 1400), 650); return p; }
 /* une conversation : des répliques [qui, texte] (qui : "moi" ou le numéro du personnage), [null, null, ms] pour une pause, ou une fonction (un geste) ;
    la caméra cadre les deux, de côté ; « Passer » saute à la fin (fin() fait toujours ce qui compte) */
 function dialogueSH(num, lignes, fin) {
   const moi = moiApo(); if (!moi || M.cine) return; moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
-  const p0 = M.gens.get(num); if (p0) { p0.cible = null; p0.chemin = []; }
+  const p0 = M.gens.get(num);
   let i = -1, tProchain = 500, fini = false, cote = 0, clk = 0, prec = performance.now();   /* (clk : le temps de la scène, image par image — un téléphone qui rame ne saute pas de réplique) */
-  const finir = () => { if (fini) return; M.shRegard = null; fini = true; for (const l of lignes.slice(i + 1)) if (typeof l === "function" && l.toujours) l(); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } finCine(); placerCamera(true); fin && fin(); };
+  musiqueRencontre(true);
+  const finir = () => { if (fini) return; M.shRegard = null; fini = true; musiqueRencontre(false); for (const l of lignes.slice(i + 1)) if (typeof l === "function" && l.toujours) l(); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } finCine(); placerCamera(true); fin && fin(); };
   M.passerBtn = boutonPasser(finir);
   M.shRegard = null;
   M.cine = { maj: t => { if (fini) return; clk += Math.min(50, Math.max(0, t - prec)); prec = t; const now = clk; const p = M.gens.get(num) || p0, a = moi.g.position, b = M.shRegard || (p ? p.g.position : a);   /* (M.shRegard : la caméra se tourne vers ce qui surgit) */
@@ -6087,14 +6241,27 @@ function dialogueSH(num, lignes, fin) {
     const l = lignes[i]; if (typeof l === "function") { l(); tProchain = now; return; }
     const [qui, texte, ms] = l; if (texte) dire(qui === "moi" ? M.moiNum : qui, texte); tProchain = now + (ms || Math.min(5600, 1900 + texte.length * 52)); } };
 }
+// la musique des rencontres (« The Day Of Night ») : elle remplace celle de l'exploration le temps de la conversation
+function musiqueRencontre(on) { if (!M) return;
+  if (on) { for (const a of [M.musExplo, M.musReveil]) if (a) { try { a.pause(); } catch (e) {} a.volume = 0; }
+    let a = M.musRencontre; if (!a) { a = M.musRencontre = new Audio("sons/sh-rencontre.mp3"); a.loop = true; } clearInterval(a.fondu); if (a.paused) a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); return; }
+  const a = M.musRencontre; if (!a || a.paused) return; if (VOLUME_FIGE) { a.pause(); return; }
+  clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .04); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
 const geste = (f, toujours = false) => { f.toujours = toujours; return f; };
 /* --- les monstres --- */
 function creerBeteSH(cle, x, z, y, n = 0) {
-  const [img, h, v, pv] = SH_BETES[cle], geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xd8d4cc, transparent: true, alphaTest: .45, side: THREE.DoubleSide })); mesh.scale.set(h * .45, h, 1);
-  const t = new THREE.TextureLoader().load(`images/sh/m-${img}.webp`, tt => { mesh.scale.set(h * tt.image.width / tt.image.height, h, 1); m.W = mesh.scale.x; }); t.colorSpace = THREE.SRGBColorSpace; mesh.material.map = t;
+  const R = regBete(cle), [img, h0, v0, pv] = SH_BETES[cle], h = h0 * (R.h || 1), v = v0 * (R.k || 1), lg = R.l || 1, geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xd8d4cc, transparent: true, alphaTest: .45, side: THREE.DoubleSide })); mesh.scale.set(h * .45 * lg, h, 1);
+  const t = new THREE.TextureLoader().load(`images/sh/m-${img}.webp`, tt => { mesh.scale.set(h * lg * tt.image.width / tt.image.height, h, 1); m.W = mesh.scale.x; if (m.lame) m.lame.position.x = m.W * .36; }); t.colorSpace = THREE.SRGBColorSpace; mesh.material.map = t;
   const g = new THREE.Group(); g.add(mesh); M.scene.add(g);
   const m = { cle, g, mesh, x, z, y, n, v, hp: pv, ph: Math.random() * 7, W: h * .45, H: h, mortT: 0, coupT: 0, lentT: 0, flashT: 0, imbattable: cle === "pyramid" };
+  if (cle === "pyramid") {   /* son grand couteau, traîné au sol ; il le lève, et l'abat */
+    const c = toile(96, 512, x => { const gr = x.createLinearGradient(0, 0, 96, 0); gr.addColorStop(0, "#262422"); gr.addColorStop(.5, "#5a5550"); gr.addColorStop(1, "#1e1c1a"); x.fillStyle = gr;
+      x.beginPath(); x.moveTo(14, 70); x.lineTo(82, 70); x.lineTo(86, 470); x.lineTo(48, 508); x.lineTo(10, 470); x.closePath(); x.fill();
+      x.fillStyle = "rgba(70,18,8,.6)"; for (let k = 0; k < 40; k++) { x.beginPath(); x.arc(14 + Math.random() * 68, 90 + Math.random() * 380, 3 + Math.random() * 9, 0, 7); x.fill(); }
+      x.fillStyle = "#2a1c14"; x.fillRect(34, 0, 28, 74); x.fillStyle = "#1a1210"; x.fillRect(18, 62, 60, 12); });
+    const piv = new THREE.Group(); piv.position.set(h * .2, h * .47, .06); g.add(piv); m.lame = piv;
+    const bl = new THREE.Mesh(new THREE.PlaneGeometry(h * .15, h * .52), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, alphaTest: .3, side: THREE.DoubleSide, color: 0x6e6a64 })); bl.position.y = -h * .25; piv.add(bl); piv.rotation.z = .55; }   /* (la pointe frôle le sol, sans le traverser) */
   M.shMonstres.push(m); return m; }
 function pointSH(loin, essais = 400) {
   const L = M.L, Z = L.zone || [-20, 20, -130, 20], [ex, ez] = M.posEntree || [0, 0];
@@ -6105,9 +6272,12 @@ function pointSH(loin, essais = 400) {
 function lacherBetesSH() {
   const base = baseLieu(M.lieu), e = M.shEtape;
   if (base === "etage" && e >= 4) { for (let n = 0; n < ET.N; n++) for (let k = 0; k < (n ? 2 : 1); k++) { const x = (Math.random() * 2 - 1) * (ET.CX0 - 1.5); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n); } return; }   // (les infirmières : seulement dans les couloirs des étages)
-  if (base === "mess") { if (e >= 7) { const q = pointSH(11); if (q) creerBeteSH("pyramid", q[0], q[1], q[2]).portee = 60; } return; }
-  const nb = e >= 4 ? { grande: 8, rue: 4, fetes: 3 }[base] || 0 : 0, sortes = ["capuche", "mannequin", "bras"];
-  for (let k = 0; k < nb; k++) { const q = pointSH(12); if (q) creerBeteSH(sortes[k % 3], q[0], q[1], q[2]); } }
+  if (e < 4) return;
+  if (base === "mess") { for (let k = 0; k < 2; k++) { const q = pointSH(10); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } if (e >= 7) { const q = pointSH(11); if (q) creerBeteSH("pyramid", q[0], q[1], q[2]).portee = 60; } return; }
+  if (base === "fetes") { for (let k = 0; k < 2; k++) { const q = pointSH(8); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } return; }   /* (dans la salle, pas au bar) */
+  const nb = { grande: 8, rue: 4 }[base] || 0;
+  for (let k = 0; k < nb; k++) { const q = pointSH(12); if (q) creerBeteSH("capuche", q[0], q[1], q[2]); }   /* (dehors : seulement les monstres sans bras) */
+  if (base === "grande" && C3.dojo) for (let k = 0; k < 2; k++) { const d = C3.dojo, x = d.X0 + 1.5 + Math.random() * (d.X1 - d.X0 - 3), z = d.Z0 + 1.5 + Math.random() * (d.Z1 - d.Z0 - 3); creerBeteSH("bras", x, z, C3.FL); } }   /* (et le gros, dans la salle de judo) */
 function vivantSH(m) { return !m.mortT && m.g.visible; }
 function monstresSHVises(ray) { const vv = (M.shMonstres || []).filter(m => !m.mortT && !m.cine && m.g.visible && (m.p ? m.p.corps : m.mesh));
   const h = ray.intersectObjects(vv.map(m => m.p ? m.p.corps : m.mesh))[0]; return h ? vv.find(m => (m.p ? m.p.corps : m.mesh) === h.object) : null; }
@@ -6120,10 +6290,18 @@ function tirerSH(m) {
   if (m.imbattable) { m.lentT = performance.now() + 1800; return; }   // (Pyramid Head : on ne le tue pas, on le ralentit)
   m.hp--; const nx = m.x + dx * .35, nz = m.z + dz * .35; if (limBeteSH(m, nx, nz)) { m.x = nx; m.z = nz; }
   if (m.hp <= 0) { m.mortT = performance.now(); sangAuSol(m.x, m.z, m.y, 1.6); if (m.p) { m.p.info.mortT = performance.now(); flaqueMort(m.p); } if (m.surMort) m.surMort(m); } }
+/* un pas de monstre : tout droit si c'est libre (le pas, et un peu plus loin devant) ; sinon il contourne, toujours du même côté tant qu'il est gêné ; jamais à travers un meuble ou un mur */
+function avancerBete(m, ux, uz, pas) {
+  if (!limBeteSH(m, m.x, m.z)) { if (baseLieu(M.lieu) !== "etage") { const pl = placeLibre(m.x, m.z); if (pl) { m.x = pl[0]; m.z = pl[1]; } } return; }   /* (pris dans un obstacle : on le remet à côté) */
+  const essai = a => { const c = Math.cos(a), s2 = Math.sin(a), vx = ux * c - uz * s2, vz = ux * s2 + uz * c, nx = m.x + vx * pas, nz = m.z + vz * pas;
+    return limBeteSH(m, nx, nz) && limBeteSH(m, m.x + vx * .45, m.z + vz * .45) ? [nx, nz] : null; };
+  const sens = m.contour || (Math.random() < .5 ? 1 : -1);
+  for (const a of [0, .5, -.5, 1, -1, 1.5, -1.5, 2.1, -2.1]) { const r = essai(a * sens); if (r) { m.x = r[0]; m.z = r[1]; m.contour = a ? sens : 0; return; } }
+  m.contour = -sens; }
 const limBeteSH = (m, x, z) => baseLieu(M.lieu) === "etage" ? Math.abs(x) < ET.CX0 + .5 && z > -2.75 && z < -1.05 : M.L.limites(x, z);
-function subirSH(x, z) {
+function subirSH(x, z, deg = 1) {
   const moi = moiApo(); if (!moi || M.cine || M.shMort || performance.now() < (M.shDegT || 0)) return; M.shDegT = performance.now() + 1100;
-  M.shVies--; M.ctx.surApoFlash && M.ctx.surApoFlash(); sonBruit(.12, 900, .4);
+  M.shVies = Math.max(0, M.shVies - deg); M.ctx.surApoFlash && M.ctx.surApoFlash(); sonBruit(.12, 900, .4);
   const dx = moi.g.position.x - x, dz = moi.g.position.z - z, d = Math.hypot(dx, dz) || 1;
   for (let k = .9; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
   moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
@@ -6146,86 +6324,116 @@ function animerBetesSH(now, dt) {
     if (moi && memeEtage) { dx = moi.g.position.x - m.x; dz = moi.g.position.z - m.z; d = Math.hypot(dx, dz) || 1; if (Math.abs(moi.g.position.y - m.y) > 2.2 && !etg) d = 99; }
     if (!M.cine && !m.cine && !M.shMort && d < (m.portee || 14)) {
       const v = m.v * (now < m.lentT ? .2 : 1) * (m.cle === "infirmiere" || m.cle === "tuyau" ? (Math.sin(u * 5) > .2 ? 1.25 : .25) : 1);
-      if (d > .8) { const nx = m.x + dx / d * v * dt, nz = m.z + dz / d * v * dt; if (limBeteSH(m, nx, nz) || !limBeteSH(m, m.x, m.z)) { m.x = nx; m.z = nz; } else if (limBeteSH(m, nx, m.z)) m.x = nx; else if (limBeteSH(m, m.x, nz)) m.z = nz; }
-      else if (now > m.coupT) { m.coupT = now + 1300; subirSH(m.x, m.z); } }
+      if (m.lame) { const voisin = M.shMonstres.some(o => o !== m && !o.mortT && !o.p && Math.hypot(o.x - m.x, o.z - m.z) < 2.2); if (!m.frappeT && (d < 2.4 || voisin) && now > m.coupT) m.frappeT = now;
+        if (m.frappeT) { const k = now - m.frappeT; if (k > 780 && !m.frappe) { m.frappe = true; if (d < 2.9) { subirSH(m.x, m.z, 2); sonBruit(.2, 600, .7); }
+            for (const o of M.shMonstres) if (o !== m && !o.mortT && !o.p && Math.hypot(o.x - m.x, o.z - m.z) < 2.8) { o.mortT = now; o.flashT = now + 300; sangAuSol(o.x, o.z, o.y, 1.8); jetSang(o.x, o.y + 1, o.z); sonBruit(.25, 500, .6); } }   /* (un monstre qui passe trop près : un coup de son grand couteau, il tombe) */
+          if (k > 1600) { m.frappeT = 0; m.frappe = false; m.coupT = now + 600; } } }
+      if (m.lame && m.frappeT) {}
+      else if (d > (m.lame ? 1.4 : .8)) { avancerBete(m, dx / d, dz / d, v * dt); }
+      else if (!m.lame && now > m.coupT) { m.coupT = now + 1300; subirSH(m.x, m.z); } }
     else if (!m.p && !m.cine) { const ox = Math.sin(u * .4) * .25 * dt, oz = Math.cos(u * .33) * .25 * dt; if (limBeteSH(m, m.x + ox, m.z + oz)) { m.x += ox; m.z += oz; } }
     if (m.couteau) { const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); m.couteau.position.set(dr.x * .34, .95 + Math.sin(now / 160) * .04, dr.z * .34); m.couteau.material.rotation = -.5 + (now < m.coupT - 1000 ? 1.2 : 0); }
     if (m.p) { m.p.g.position.x = m.x; m.p.g.position.z = m.z; m.y = m.p.g.position.y; if (m.p.corps && m.p.corps.material) m.p.corps.material.color.setRGB(1, now < m.flashT ? .35 : 1, now < m.flashT ? .35 : 1); }
     else { if (!etg) { const y = M.L.hauteur ? M.L.hauteur(m.x, m.z, { g: { position: { y: m.y } } }) : 0; m.y = y; }
       m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z);
       m.mesh.rotation.z = m.cle === "infirmiere" || m.cle === "tuyau" ? (Math.sin(u * 13) > .85 ? Math.sin(u * 40) * .12 : 0) : Math.sin(u * 1.1) * .06;
-      m.mesh.material.color.setHex(now < m.flashT ? 0xff5a4a : 0xd8d4cc); }
+      m.mesh.material.color.setHex(now < m.flashT ? 0xff5a4a : 0xd8d4cc);
+      if (m.lame) { const k = m.frappeT ? now - m.frappeT : -1, a = k < 0 ? .55 + Math.sin(now / 700) * .04 : k < 700 ? .55 + (2.6 - .55) * (k / 700) : k < 900 ? 2.6 - 3.2 * ((k - 700) / 200) : -.6 + 1.15 * Math.min(1, (k - 900) / 700); m.lame.rotation.z = a; } }
     if (memeEtage) proche = Math.min(proche, d); }
   M.shProche = proche; }
+// les cartons au sol : poussés par qui passe dessus (nous, les autres, les monstres) ; jamais dans un mur
+function pousserCartons() { const C = M.L && M.L.cartons; if (!C) return; const qui = [];
+  for (const p of M.gens.values()) qui.push([p.g.position.x, p.g.position.y, p.g.position.z, .38]);
+  for (const m of M.shMonstres || []) if (!m.mortT && !m.p && m.g.visible) qui.push([m.x, m.y, m.z, m.cle === "pyramid" ? .6 : .42]);
+  let bouge = false;
+  for (const c of C.c) for (const [x, y, z, r] of qui) { const dx = c.x - x, dz = c.z - z, d = Math.hypot(dx, dz), R = r + .24 * c.s; if (d >= R || Math.abs(c.y - y) > 1) continue;
+    const ux = d > 1e-3 ? dx / d : 1, uz = d > 1e-3 ? dz / d : 0, nx = x + ux * R, nz = z + uz * R;
+    if (M.L.limites(nx, nz)) { c.x = nx; c.z = nz; c.ry += (ux * .7 - uz * .4) * (R - d) * 2; bouge = true; } }
+  if (bouge) C.maj(); }
 /* --- l'histoire --- */
+// on approche d'un endroit : le brouillard s'épaissit, le personnage en sort, vient vers nous, et la conversation commence ; il est noté sur la carte
+const LIEU_CARTE = { "sh-fetes": [13.5, 6.5], "sh-mess": [-14.25, 10.45], "sh-etage": [8.4, 13.8], "sh-rue": [0, 29] };
+function noterCarteSH(num, x, z) { const c = LIEU_CARTE[M.lieu] || [x, z]; M.shCarte = (M.shCarte || []).filter(q => q.num !== num || Math.hypot(q.x - c[0], q.z - c[1]) > 3); M.shCarte.push({ num, nom: SH_NOMS[SH_IDN[num]], x: c[0], z: c[1] }); }
+function rencontreSH(num, centre, rayon, loin, lignes, fin, y = null, cond = null) {
+  const moi = moiApo(); if (!moi || M.cine) return false; const mp = moi.g.position;
+  if (Math.hypot(mp.x - centre[0], mp.z - centre[1]) > rayon || (y != null && Math.abs(mp.y - y) > 1.6) || (cond && !cond(mp))) return false;
+  // il sort du brouillard, de l'autre côté de l'endroit (pas dans notre dos)
+  let dx = centre[0] - mp.x, dz = centre[1] - mp.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+  const dep = Array.isArray(loin) ? loin : [centre[0] + dx * loin, centre[1] + dz * loin];
+  const p = apparaitreSH(poserPerso(num, dep[0], dep[1], y)); if (!p) return false;
+  const ex = p.g.position.x - mp.x, ez = p.g.position.z - mp.z, de = Math.hypot(ex, ez) || 1, arr = placeLibre(mp.x + ex / de * 2.2, mp.z + ez / de * 2.2);
+  if (arr && de > 2.4) { p.info.allure = .5; p.cible = new THREE.Vector3(arr[0], p.g.position.y, arr[1]); }
+  noterCarteSH(num, centre[0], centre[1]);
+  dialogueSH(num, [[null, null, de > 2.4 ? Math.min(5200, 1400 + (de - 2.2) / (3.3 * .5) * 1000) : 1800], ...lignes], fin); return true; }
 function poserPerso(num, x, z, y) { const p = persoSH(num, x, z, y); if (p && y != null && Math.abs(p.g.position.y - y) > .5) p.g.position.y = y; return p; }
 function presSH(num, r, dyMax = 1.6) { const moi = moiApo(), p = M.gens.get(num); if (!moi || !p || M.cine || M.shMort) return false;
   return Math.hypot(moi.g.position.x - p.g.position.x, moi.g.position.z - p.g.position.z) < r && Math.abs(moi.g.position.y - p.g.position.y) < dyMax; }
-function mariaBar() { if (!M || M.lieu !== "sh-fetes" || M.shEtape !== 0) return; const moi = moiApo(); if (!moi) return;
-  const p = poserPerso(SHN.maria, moi.g.position.x + 1.3, moi.g.position.z - 2.2); if (!p) return; const nom = prenomSH();
-  dialogueSH(SHN.maria, [[null, null, 1600], [SHN.maria, `Nous nous reverrons très vite, ${nom}…`, 3600], geste(() => evanouirSH(SHN.maria, [0, 16.5], 2600, .6)), [null, null, 3200]],
-    () => { M.shEtape = 1; evanouirSH(SHN.maria, [0, 16.5], 0, .6); }); }
 function histoireSH(now) {
   const e = M.shEtape, lieu = M.lieu, moi = moiApo(); if (!moi || M.shMort || M.cine) return; const nom = prenomSH();
   if (lieu === "sh-grande") {
     // 1. Angela, devant la petite fenêtre (fermée) de la salle de bain
-    if (e === 1) { poserPerso(SHN.angela, -15.7, -77.4);
-      if (presSH(SHN.angela, 5.5)) dialogueSH(SHN.angela, [[SHN.angela, "Qui… qui êtes-vous ?"], ["moi", `Je m'appelle ${nom}. Où est-ce qu'on est, ici ?`], [SHN.angela, "Vous n'avez pas vu ma maman ?"], ["moi", "Pardon ? Je… je ne comprends pas."], [SHN.angela, "J'ai perdu ma maman. Il faut que je la retrouve…"],
-        geste(() => evanouirSH(SHN.angela, [-16, -58], 1500, 1.5)), [null, null, 2600]], () => { M.shEtape = 2; evanouirSH(SHN.angela, [-16, -58], 0, 1.5); }); }
-    // 2. Eddie, dans la fosse, à côté de la porte du sous-sol (le stand de tir, le ping-pong)
-    if (e === 2) { poserPerso(SHN.eddie, 4.3, -85.6, -C3.PF);
-      if (presSH(SHN.eddie, 5)) { let bete = null; const sortir = () => { if (bete) return; const mp = moi.g.position; let q = null; for (let r = 6; r > 2 && !q; r -= .5) for (let a = 0; a < 12 && !q; a++) { const x = mp.x + Math.cos(a / 12 * 6.283) * r, z = mp.z + Math.sin(a / 12 * 6.283) * r; if (M.L.limites(x, z) && Math.abs(M.L.hauteur(x, z, moi) - mp.y) < .3) q = [x, z]; }
-          q = q || [mp.x + 3, mp.z]; bete = creerBeteSH("capuche", q[0], q[1], mp.y); bete.cine = true; bete.v = 1.05; sonBruit(.5, 300, .5); M.shRegard = bete.g.position; };
-        dialogueSH(SHN.eddie, [[SHN.eddie, "Bonjour… ou bonsoir, je ne sais plus. Ça fait trop longtemps, maintenant."], ["moi", "Ça va ?"], [SHN.eddie, "Maintenant oui. Je n'ai plus peur. Et toi… tu as peur ?"], ["moi", "Mais de quoi je dois avoir peur ?"], [SHN.eddie, "De lui.", 2200],
-          geste(sortir), [null, null, 1800], geste(() => { M.shRegard = null; }), [SHN.eddie, "Hé hé… salut !", 1500], geste(() => evanouirSH(SHN.eddie, [12.5, -86.3], 1600, 1.6)), [null, null, 2400]],
-          () => { sortir(); bete.cine = false; M.shEtape = 3; evanouirSH(SHN.eddie, [12.5, -86.3], 0, 1.6); M.ctx.surInfo && M.ctx.surInfo("😱 Fuis ! Tu n'as pas d'arme…"); }); } }
-    // 3. James, sous l'horloge jaune : il cherche sa femme ; il nous donne son arme
-    if (e === 3 && typeof RU !== "undefined" && RU.xB != null) { const T = [RU.xB - RU.pc / 2, RU.zA + RU.pc / 2]; poserPerso(SHN.james, T[0] - 1.5, T[1] + 2.5);
-      if (presSH(SHN.james, 6)) dialogueSH(SHN.james, [[SHN.james, "Toi aussi, tu es perdu ici ? Je m'appelle James. James Sunderland."], ["moi", `Moi, c'est ${nom}.`], [SHN.james, "Je cherche ma femme, Mary. Elle m'a écrit une lettre… Elle m'attend quelque part, dans cette ville."],
-        ["moi", "Comment on sort d'ici ? Et ces monstres… c'est quoi ?"], [SHN.james, "Je n'en sais pas plus que toi. Mais tiens, prends ça. Il ne s'enraye jamais, il ne se vide jamais."], geste(() => { M.shArme = true; sonBruit(.3, 2400, .4); majHudApo(); }, true),
-        [SHN.james, `Fais attention à toi, ${nom}.`], geste(() => evanouirSH(SHN.james, [T[0] + 4, T[1] - 4], 1200, .9)), [null, null, 2000]],
-        () => { M.shArme = true; M.shEtape = 4; M.shPopL = null; evanouirSH(SHN.james, [T[0] + 4, T[1] - 4], 0, .9); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🔫 James t'a donné son arme : munitions illimitées. Touche un monstre pour tirer."); }); }
-    // 4. Laura, dans la cour d'honneur : elle court, elle se moque
-    if (e === 4) { const p = poserPerso(SHN.laura, 0, -2); if (p && !p.cible && !M.cine && Math.random() < .02) { p.info.allure = 1.3; const a = Math.random() * 6.283, v = placeLibre(Math.cos(a) * 4, -2 + Math.sin(a) * 4); if (v) p.cible = new THREE.Vector3(v[0], 0, v[1]); }
-      if (presSH(SHN.laura, 4.5)) dialogueSH(SHN.laura, [[SHN.laura, "Hé ! T'es qui, toi ? T'as une drôle de tête ! Hihihi !"], ["moi", `Je m'appelle ${nom}. Tu es toute seule ? C'est dangereux, ici… je vais t'aider.`], [SHN.laura, "M'aider ? Toi ? T'es même pas capable de m'attraper ! Nananère !"],
-        ["moi", "Attends… je ne plaisante pas."], [SHN.laura, "Pfff… bon. Va voir mon amie. Elle, elle peut t'aider. Elle est sur la terrasse ! Salut, gros nul !"], geste(() => evanouirSH(SHN.laura, [8, 8], 1200, 1.7)), [null, null, 2000]],
-        () => { M.shEtape = 5; evanouirSH(SHN.laura, [8, 8], 0, 1.7); }); }
+    if (e === 1) rencontreSH(SHN.angela, [-15.7, -77.4], 7, [-17.6, -79.6], [[SHN.angela, "Qui… qui êtes-vous ?"], ["moi", `Je m'appelle ${nom}. Où est-ce qu'on est, ici ? Tout est… gris.`], [SHN.angela, "Vous n'êtes pas d'ici, vous. Personne n'est d'ici."], [SHN.angela, "Vous n'avez pas vu ma maman ?"], ["moi", "Pardon ? Je… je ne comprends pas."],
+        [SHN.angela, "Elle était là, avant. Avec papa et mon frère. Et puis il y a eu le brouillard…"], ["moi", "Il n'y a personne d'autre ? Reste avec moi, c'est dangereux."], [SHN.angela, "Non. Je ne dois pas vous suivre. Vous n'êtes pas… comme eux."], [SHN.angela, "J'ai perdu ma maman. Il faut que je la retrouve…"],
+        geste(() => evanouirSH(SHN.angela, [-17.6, -80.2], 600, 1.5)), [null, null, 3200]], () => { M.shEtape = 2; evanouirSH(SHN.angela, [-17.6, -80.2], 0, 1.5); });
+    // 2. Eddie, au fond du lavoir (la fosse) : on le rencontre une fois en bas, passé la porte du sous-sol — il sort du brouillard, du fond
+    if (e === 2) { const FOND = [-11.5, -86.3];
+      let bete = null; const sortir = () => { if (bete) return; bete = creerBeteSH("capuche", FOND[0], FOND[1], -C3.PF); bete.cine = true; bete.v = 1.05; brumeSH({ x: FOND[0], y: -C3.PF, z: FOND[1] }, 4600); sonBruit(.5, 300, .5); M.shRegard = bete.g.position; };
+      rencontreSH(SHN.eddie, [1.5, -86.3], 9, FOND, [[SHN.eddie, "Bonjour… ou bonsoir, je ne sais plus. Ça fait trop longtemps, maintenant."], ["moi", "Ça va ?"], [SHN.eddie, "Tu as faim ? Moi, j'ai toujours faim. Il y avait une pizzeria, avant, en face… Elle a disparu, comme le reste."],
+          ["moi", "Tu es là depuis combien de temps ?"], [SHN.eddie, "Des jours. Des semaines. La radio grésille, la sirène hurle… et je me réveille toujours ici, en bas."], [SHN.eddie, "Avant, j'avais peur de tout. Ils se moquaient de moi, tu sais. Le gros Eddie…"],
+          [SHN.eddie, "Maintenant oui, ça va. Je n'ai plus peur. Et toi… tu as peur ?"], ["moi", "Mais de quoi je dois avoir peur ?"], [SHN.eddie, "De lui.", 2200],
+          geste(sortir), [null, null, 3200], geste(() => { M.shRegard = null; }), [SHN.eddie, "Hé hé… salut !", 1500], geste(() => evanouirSH(SHN.eddie, [12.5, -86.3], 900, 1.6)), [null, null, 2600]],
+        () => { sortir(); bete.cine = false; M.shEtape = 3; evanouirSH(SHN.eddie, [12.5, -86.3], 0, 1.6); }, -C3.PF, mp => mp.x < 4.5 && mp.z < -84.2); }
+    // 3. James sort de sous le préau de l'horloge jaune : il cherche sa femme ; il nous donne son arme
+    if (e === 3 && typeof RU !== "undefined" && RU.xB != null) { const T = [RU.xB - RU.pc / 2, RU.zA + RU.pc / 2];
+      rencontreSH(SHN.james, T, 9, 3.5, [[SHN.james, "Toi aussi, tu es perdu ici ? Je m'appelle James. James Sunderland."], ["moi", `Moi, c'est ${nom}. Je me suis réveillé dans le bar… je ne sais même pas comment.`],
+        [SHN.james, "Je cherche ma femme, Mary. Elle m'a écrit une lettre… Elle dit qu'elle m'attend, dans notre « endroit spécial »."], [SHN.james, "Le problème… c'est que Mary est morte. Il y a trois ans. Et pourtant, c'est bien son écriture."],
+        ["moi", "Comment on sort d'ici ? Et ces monstres… c'est quoi ?"], [SHN.james, "Je n'en sais pas plus que toi. Les routes s'arrêtent net, comme si la ville avait été coupée du monde."],
+        [SHN.james, "Mais tiens, prends ça. Il ne s'enraye jamais, il ne se vide jamais. Ne me demande pas pourquoi."], geste(() => { M.shArme = true; sonBruit(.3, 2400, .4); majHudApo(); }, true),
+        ["moi", "Et toi ? Tu vas t'en sortir, sans arme ?"], [SHN.james, `Je n'ai plus grand-chose à perdre. Fais attention à toi, ${nom}. Et si tu croises une femme qui lui ressemble… ne la crois pas.`], geste(() => evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 800, .9)), [null, null, 2800]],
+        () => { M.shArme = true; M.shEtape = 4; M.shPopL = null; evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 0, .9); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🔫 L'arme de James : munitions illimitées. Touche un monstre pour tirer."); }); }
+    // 4. Laura, dans la cour d'honneur : elle se moque
+    if (e === 4) rencontreSH(SHN.laura, [0, -2], 8, 5, [[SHN.laura, "Hé ! T'es qui, toi ? T'as une drôle de tête ! Hihihi !"], ["moi", `Je m'appelle ${nom}. Tu es toute seule ? C'est dangereux, ici…`], [SHN.laura, "Dangereux ? Pfff. Y a rien de dangereux. Y a juste des gens qui crient et qui courent. Comme toi !"],
+        ["moi", "Il y a des monstres, partout. Je vais t'aider."], [SHN.laura, "M'aider ? Toi ? T'es même pas capable de m'attraper ! Nananère !"], [SHN.laura, "J'ai huit ans, et je suis plus maligne que toi. Et que James. Il est trop bête, James."],
+        ["moi", "Tu connais James ? Attends… je ne plaisante pas."], [SHN.laura, "Pfff… bon. Va voir mon amie. Elle, elle peut t'aider. Elle est sur la terrasse, tout en haut ! Salut, gros nul !"], geste(() => evanouirSH(SHN.laura, [8, 6], 600, 1.7)), [null, null, 2800]],
+        () => { M.shEtape = 5; evanouirSH(SHN.laura, [8, 6], 0, 1.7); });
     // 5. Maria, sur la terrasse : elle savait qu'on reviendrait pour elle ; elle veut qu'on la suive
-    if (e === 5) { const H = helipad(); poserPerso(SHN.maria, H.x + 1.2, H.z + 1.5, H.y);
-      if (presSH(SHN.maria, 4.5)) dialogueSH(SHN.maria, [[SHN.maria, `Je savais que tu reviendrais pour moi, ${nom}.`], ["moi", "Pour toi ? On s'est croisés au bar… on se connaît ?"], [SHN.maria, "Tu m'as toujours fait attendre. Les fleurs ont fané sur la table, et il a neigé en plein été…"],
-        [SHN.maria, "Ne me regarde pas comme ça. Je ne suis pas elle. Ou peut-être que si… ça dépend de toi."], ["moi", "Je… je ne comprends rien."], [SHN.maria, "Ça ne fait rien. Suis-moi. Je t'emmène au mess."], geste(() => evanouirSH(SHN.maria, [H.x, H.z + 6], 1000, .8)), [null, null, 1800]],
-        () => { M.shEtape = 6; evanouirSH(SHN.maria, [H.x, H.z + 6], 0, .8); }); }
-    // 6. elle nous attend devant la porte du mess, et entre
-    if (e === 6) { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q));
-      if (c) { if (!M.gens.get(SHN.maria) && !M.shMariaMess) { M.shMariaMess = true; poserPerso(SHN.maria, c[0], c[1] + 1.4); }
-        if (presSH(SHN.maria, 4) && !M.shMariaEntre) { M.shMariaEntre = true; dire(SHN.maria, "Viens… c'est ici."); evanouirSH(SHN.maria, [c[0], c[1]], 900, .8); } } }
+    if (e === 5) { const H = helipad();
+      rencontreSH(SHN.maria, [H.x, H.z], 7, 4, [[SHN.maria, `Je savais que tu reviendrais pour moi, ${nom}.`], ["moi", "Pour toi ? On s'est croisés au bar… on se connaît ?"], [SHN.maria, "Tu m'as toujours fait attendre. Les fleurs ont fané sur la table, et il a neigé en plein été…"],
+        [SHN.maria, "Tu te souviens du parc, au bord du lac ? Tu disais que l'eau était trop froide pour s'y baigner. Tu avais raison."], ["moi", "Il n'y a pas de lac, ici. Il n'y a que la caserne."],
+        [SHN.maria, "Ne me regarde pas comme ça. Je ne suis pas elle. Ou peut-être que si… ça dépend de toi."], [SHN.maria, "La petite t'a envoyé ? Laura ne ment jamais. Elle ne dit juste pas tout."],
+        ["moi", "Je… je ne comprends rien."], [SHN.maria, "Ça ne fait rien. Suis-moi. Je t'emmène au mess. Il y a quelque chose que tu dois voir."], geste(() => evanouirSH(SHN.maria, [H.x, H.z + 6], 700, .8)), [null, null, 2800]],
+        () => { M.shEtape = 6; evanouirSH(SHN.maria, [H.x, H.z + 6], 0, .8); }, H.y); }
+    // 6. elle nous attend devant la porte du mess ; elle sort du brouillard, nous fait signe, et entre
+    if (e === 6 && !M.shMariaMess) { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q));
+      if (c && rencontreSH(SHN.maria, c, 8, [c[0] + .3, c[1] + .4], [[SHN.maria, "Viens… c'est ici. N'aie pas peur."], [SHN.maria, "Entre. Il faisait chaud, dedans, avant. Avant…"], geste(() => evanouirSH(SHN.maria, [c[0], c[1]], 300, .8)), [null, null, 2400]], () => evanouirSH(SHN.maria, [c[0], c[1]], 0, .8))) M.shMariaMess = true; }
     // 8. en sortant du mess : on voit Maria s'engouffrer dans l'escalier R
     if (e === 7 && M.shDuMess && now > (M.shEntreeT || 0) + 1500) { M.shDuMess = false; const R = (M.L.portails || []).filter(pt => pt.vers === "sh-etage").map(pt => [pt, pt.seuil || centrePortail(pt)]).filter(([, c]) => c).sort((a, b) => b[1][0] - a[1][0])[0];   /* (la porte R : celle de droite, x > 0 ; la S est en face) */
-      if (R) { const c = R[1], sg = c[0] < 0 ? 1 : -1, p = poserPerso(SHN.maria, c[0] + 4.5 * sg, c[1]), t0 = performance.now(); if (p) { p.info.allure = 1.5; p.cible = new THREE.Vector3(c[0], 0, c[1]); }
-        let fini = false; const finir = () => { if (fini) return; fini = true; finCine(); placerCamera(true); retirerAncien(SHN.maria); M.shEtape = 8; M.ctx.surInfo && M.ctx.surInfo("🏢 Maria s'est engouffrée dans l'escalier R… Monte jusqu'au 6e étage."); };
+      if (R) { const c = R[1], sg = c[0] < 0 ? 1 : -1, p = apparaitreSH(poserPerso(SHN.maria, c[0] + 4.5 * sg, c[1])), t0 = performance.now(); noterCarteSH(SHN.maria, c[0], c[1]); if (p) { p.info.allure = 1.5; p.cible = new THREE.Vector3(c[0], 0, c[1]); }
+        let fini = false; const finir = () => { if (fini) return; fini = true; finCine(); placerCamera(true); retirerAncien(SHN.maria); M.shEtape = 8; };
         M.passerBtn = boutonPasser(finir);
         let u = 0, prec = t0;   /* (le temps de la scène avance image par image : un téléphone qui rame à l'arrivée ne la saute pas) */
         M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now; const q = M.gens.get(SHN.maria); M.camera.position.set(c[0] + 6.8 * sg, 1.75, c[1] + .9); M.camera.lookAt(q ? q.g.position.x : c[0], 1.1, q ? q.g.position.z : c[1]);
-          if (u > 3 && q && !q.fond) { q.fond = true; evanouirSH(SHN.maria, null, 0); } if (u > 4.8) finir(); } }; } else M.shEtape = 8; }
+          if (u > 3 && q && !q.fond) { q.fond = true; evanouirSH(SHN.maria, null, 0); } if (u > 6) finir(); } }; } else M.shEtape = 8; }
     // 10. la clé ouvre le cadenas des encombrants
   }
-  if (lieu === "sh-mess" && e === 6 && now > (M.shEntreeT || 0) + 1200) { M.shEtape = 7; M.shPopL = M.L; const mp = moi.g.position, mar = poserPerso(SHN.maria, mp.x + .8, mp.z - 2);
+  if (lieu === "sh-mess" && e === 6 && now > (M.shEntreeT || 0) + 1200) { M.shEtape = 7; M.shPopL = M.L; const mp = moi.g.position, mar = apparaitreSH(poserPerso(SHN.maria, mp.x + .8, mp.z - 2)); noterCarteSH(SHN.maria, 0, 0);
     let pyr = null; const sortir = () => { if (pyr) return; let q = null; for (let k = 0; k < 300 && !q; k++) { const a = Math.random() * 6.283, r = 6 + Math.random() * 2.5, x = mp.x + Math.sin(a) * r, z = mp.z + Math.cos(a) * r; if (M.L.limites(x, z)) q = [x, z, solSH(x, z)]; }
-      q = q || pointSH(6) || [mp.x, mp.z - 7, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; M.shRegard = pyr.g.position; };
+      q = q || pointSH(6) || [mp.x, mp.z - 7, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; M.shRegard = pyr.g.position; brumeSH({ x: q[0], y: q[2], z: q[1] }, 4000); };
     const sir = new Audio("sons/sh-sirene.mp3"); sir.volume = 1;
-    dialogueSH(SHN.maria, [[SHN.maria, "C'est ici que tout recommence…"], geste(() => { sir.play().catch(() => {}); setTimeout(() => { try { sir.pause(); } catch (e2) {} }, 9000); }), [null, null, 1500], geste(sortir), [null, null, 1200],
+    dialogueSH(SHN.maria, [[null, null, 1600], [SHN.maria, "C'est ici que tout recommence…"], ["moi", "Qu'est-ce qu'il y a, ici ? Pourquoi tu m'as amené là ?"], [SHN.maria, "Écoute… Tu l'entends ?"], geste(() => { sir.play().catch(() => {}); setTimeout(() => { try { sir.pause(); } catch (e2) {} }, 9000); }), [null, null, 1500], geste(sortir), [null, null, 1200],
       geste(() => { M.shRegard = null; }), [SHN.maria, `Il est là… Pardonne-moi, ${nom} !`, 2600], geste(() => evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 600, 1.7)), [null, null, 1500]],
-      () => { sortir(); pyr.cine = false; evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); M.ctx.surInfo && M.ctx.surInfo("🔺 On ne peut pas le tuer… seulement le ralentir. Sors du mess !"); }); }
+      () => { sortir(); pyr.cine = false; evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); M.ctx.surInfo && M.ctx.surInfo("🔺 Les balles ne le tuent pas… elles le ralentissent seulement."); }); }
   if (lieu === "sh-etage" && e === 8 && etageDe(moi) === ET.N && !M.shEddieVu) { M.shEddieVu = true;
-    const x = moi.g.position.x > 0 ? moi.g.position.x - 6 : moi.g.position.x + 6, p = poserPerso(SHN.eddie, x, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" };
+    const x = moi.g.position.x > 0 ? moi.g.position.x - 6 : moi.g.position.x + 6, p = poserPerso(SHN.eddie, x, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" }; apparaitreSH(p); noterCarteSH(SHN.eddie, 0, 0);
     const m = { cle: "eddie", p, g: p.g, mesh: null, x: p.g.position.x, z: p.g.position.z, y: p.g.position.y, n: ET.N, v: 1.9, hp: SH_EDDIE_PV, ph: 0, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, portee: 40 };
     { const c = toile(64, 160, x => { x.fillStyle = "#d9dde2"; x.beginPath(); x.moveTo(26, 4); x.lineTo(40, 4); x.lineTo(40, 100); x.lineTo(26, 100); x.quadraticCurveTo(18, 40, 26, 4); x.fill(); x.fillStyle = "rgba(120,10,10,.75)"; x.fillRect(27, 60, 12, 30); x.fillStyle = "#2a1a10"; x.fillRect(24, 100, 18, 56); });
       m.couteau = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, depthWrite: false })); m.couteau.scale.set(.16, .4, 1); p.g.add(m.couteau); }   /* (son couteau, dans la main) */
     m.surMort = () => { if (m.couteau) m.couteau.visible = false; dire(SHN.eddie, "Aaah… J'avais… plus peur…"); poserCleSH(m.x, m.y, m.z); M.shEtape = 9; }; M.shMonstres.push(m);
-    dialogueSH(SHN.eddie, [[SHN.eddie, `Tiens, tiens… ${nom}. Tu as peur, maintenant ?`], [SHN.eddie, "Ils se moquaient tous de moi. Toi aussi, tu te moques de moi ? Je vais te faire taire… pour toujours."], [null, null, 600]],
-      () => { m.cine = false; M.ctx.surInfo && M.ctx.surInfo("🔪 Eddie a un couteau ! Tire-lui dessus (il en faut 8)."); }); }
+    dialogueSH(SHN.eddie, [[null, null, 1600], [SHN.eddie, `Tiens, tiens… ${nom}. Tu as peur, maintenant ?`], ["moi", "Eddie ? Qu'est-ce que tu fais avec ce couteau ?"], [SHN.eddie, "Ils se moquaient tous de moi. Le gros Eddie, le lâche…"],
+      [SHN.eddie, "Toi aussi, tu te moques de moi. Je le vois dans tes yeux."], ["moi", "Non ! Pose ça, Eddie…"], [SHN.eddie, "Je vais te faire taire… pour toujours."], [null, null, 600]],
+      () => { m.cine = false; }); }
   if (M.shCleObj && M.shCleObj.lieu === lieu && M.shEtape === 9) { const c = M.shCleObj; c.o.rotation.y += .04; c.o.position.y = c.y + .35 + Math.sin(now / 300) * .06;
-    if (Math.hypot(moi.g.position.x - c.x, moi.g.position.z - c.z) < 1 && Math.abs(moi.g.position.y - c.y) < 1.5) { M.scene.remove(c.o); M.shCleObj = null; M.shCle = true; M.shEtape = 10; sonBruit(.25, 3000, .35); M.ctx.surInfo && M.ctx.surInfo("🔑 Tu as la clé ! Elle ouvre le cadenas de la case des encombrants."); } }
+    if (Math.hypot(moi.g.position.x - c.x, moi.g.position.z - c.z) < 1 && Math.abs(moi.g.position.y - c.y) < 1.5) { M.scene.remove(c.o); M.shCleObj = null; M.shCle = true; M.shEtape = 10; sonBruit(.25, 3000, .35); M.ctx.surInfo && M.ctx.surInfo("🔑 Tu as ramassé une petite clé."); } }
   if (M.shCleObj && M.shCleObj.lieu === lieu && !M.shCleObj.o.parent) M.scene.add(M.shCleObj.o);
 }
 function poserCleSH(x, y, z) { const g = new THREE.Group(), or = new THREE.MeshStandardMaterial({ color: 0xd4a22a, metalness: .85, roughness: .3, emissive: 0x3a2800 });
@@ -6240,19 +6448,13 @@ function sortieCleSH() { if (!M || M.cine) return; const moi = moiApo(); if (!mo
   const [cx, cz] = M.L.cadenasEnc, t0 = performance.now(); M.cine = { maj: now => { const u = (now - t0) / 1000; M.camera.position.set(cx + 2.2, moi.g.position.y + 1.7, cz + 1.6); M.camera.lookAt(cx - .9, moi.g.position.y + 1.1, cz); } };
   setTimeout(() => { if (!M) return; finCine(); const G = M.gresil; M.gresil = null; couperGresil(G); resetSH(); changerLieu("grande", [cx + .6, cz], -Math.PI / 2);
     setTimeout(() => { b.style.transition = "opacity 2.5s"; b.style.opacity = "0"; setTimeout(() => b.remove(), 2600); }, 400); M.ctx.surInfo && M.ctx.surInfo("🏆 Tu es sorti vivant de Silent Hill ! Te revoilà en 1990."); }, 3300); }
-function texteObjectifSH() { const e = M.shEtape, l = M.lieu;
-  if (M.cine || M.shMort) return "";
-  return e === 0 ? "" : e === 1 ? "🌫️ Explore la caserne… quelqu'un attend près de la petite fenêtre des douches (ruelle de gauche)"
-    : e === 2 ? "🌫️ On entend une voix dans la fosse, près de la porte du sous-sol (stand de tir, ping-pong)"
-    : e === 3 ? "🕰️ Un homme t'attend sous l'horloge jaune" : e === 4 ? "👧 Un rire d'enfant résonne dans la cour d'honneur"
-    : e === 5 ? "🌫️ L'amie de Laura t'attend sur la terrasse" : e === 6 ? (l === "sh-grande" ? "🌫️ Suis Maria jusqu'au mess" : "🌫️ Va au mess, dans la grande cour")
-    : e === 7 ? (l === "sh-mess" ? "🔺 Il ne meurt pas… Sors du mess !" : "🌫️ Retourne dans la grande cour") : e === 8 ? (l === "sh-etage" ? "🏢 Monte jusqu'au 6e étage" : "🏢 Maria est entrée dans l'escalier R (cour d'honneur) : suis-la")
-    : e === 9 ? "🔑 Ramasse la clé laissée par Eddie" : "🔒 Ouvre le cadenas de la case des encombrants avec la clé"; }
+function texteObjectifSH() { return ""; }   /* (pas d'indice écrit : ça casserait le charme) */
 function peuplerSH(now) {
   if (!M || !M.L || !M.L.sh) return; if (M.shEtape == null) resetSH();
   const dt = Math.min(.05, (now - (M.shT || now)) / 1000); M.shT = now;
   if (M.shPopL !== M.L) { for (const m of M.shMonstres || []) if (!m.p) M.scene.remove(m.g); M.shPopL = M.L; M.shMonstres = []; M.shMariaMess = M.shMariaEntre = false; if (moiApo()) lacherBetesSH(); else M.shPopL = null; }
-  histoireSH(now); animerBetesSH(now, dt);
+  histoireSH(now); animerBetesSH(now, dt); pousserCartons();
+  if (M.lieu === "sh-grande" && !M.shCroix) { const q = moiApo(); if (q && Math.hypot(q.g.position.x - (ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, q.g.position.z - (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2) < 7 && Math.abs(q.g.position.y) < 1) M.shCroix = true; }   /* (la route effondrée, vue : une croix rouge sur la carte) */
 }
 // la musique de Silent Hill : au bar, « White Noiz » ; ailleurs, quand on explore, « Promise (Reprise) » — l'une s'efface quand l'autre monte
 const VOLUME_FIGE = (() => { try { const t = new Audio(); t.volume = .5; return t.volume !== .5; } catch (e) { return false; } })();   // (sur iPhone, le volume d'une page ne se règle pas)
@@ -6301,14 +6503,21 @@ function cineReveil(essai = 0, noir = null) {
   { const s = M.sireneA; if (s) { const v0 = s.volume || 1, t1 = performance.now(), baisse = () => { if (!M || M.sireneA !== s) return; const k = (performance.now() - t1) / 6000; if (k >= 1) { s.pause(); M.sireneA = null; return; } s.volume = v0 * (1 - k); requestAnimationFrame(baisse); }; baisse(); } }
   moi.info.mortT = performance.now() - 2000;   // (couché, tout de suite)
   const p = moi.g.position, t0 = performance.now(); requestAnimationFrame(() => { noir.style.opacity = "0"; }); setTimeout(() => noir.remove(), 4200);
-  let leve = false, dit = false;
-  const fin = () => { if (!M) return; moi.info.mortT = 0; finCine(); placerCamera(true); M.ctx.surInfo && M.ctx.surInfo("📻 La radio grésille… Pour rentrer, éteins-la : elle est posée sur le comptoir du bar."); setTimeout(mariaBar, 700); };
+  /* Maria, debout près de nous, nous regarde ; elle parle ; elle sort par la porte du bar, et le brouillard l'avale. Alors seulement, on se relève */
+  const PORTE = [0, 23.1]; let maria = null, dit = false, part = false, leve = false, ou = false, fini = false, u = 0, prec = t0;
+  const fin = () => { if (fini || !M) return; fini = true; moi.info.mortT = 0; if (M.gens.get(SHN.maria)) retirerAncien(SHN.maria); if (!M.shEtape) M.shEtape = 1; finCine(); placerCamera(true);
+    M.ctx.surInfo && M.ctx.surInfo("📻 La radio grésille… Pour rentrer, éteins-la : elle est posée sur le comptoir du bar."); };
   M.passerBtn = boutonPasser(fin);
-  M.cine = { t0, maj: (now) => { const u = (now - t0) / 1000;
-    const h = u < 4 ? .35 : .35 + Math.min(1, (u - 4) / 1.5) * 1.25; M.camera.position.set(p.x + .9, p.y + h, p.z + 1.3); M.camera.lookAt(p.x, p.y + (u < 4 ? .2 : .9), p.z - .5);
-    if (u > 2 && !dit) { dit = true; bulle("<i>… Où… où suis-je ?</i>", 2500); }
-    if (u > 4 && !leve) { leve = true; moi.info.mortT = 0; }
-    if (u > 6.5) fin(); } };
+  M.cine = { t0, maj: (now) => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now;
+    if (!maria) { maria = poserPerso(SHN.maria, p.x + .75, p.z - 1.35, p.y); if (maria) { maria.cible = null; noterCarteSH(SHN.maria, 0, 0); } }
+    const q = M.gens.get(SHN.maria), cible = u < 10 && q ? q.g.position : p;
+    const h = u < 10.5 ? .35 : .35 + Math.min(1, (u - 10.5) / 1.5) * 1.25; M.camera.position.set(p.x + .9, p.y + h, p.z + (u < 10 ? 2.1 : 1.4));
+    M.camera.lookAt(cible.x, p.y + (u < 10 ? (q && u > 2 ? 1.2 : .3) : u < 10.5 ? .2 : .9), cible.z - (u < 10 ? 0 : .5));
+    if (u > 3 && !dit && q) { dit = true; dire(SHN.maria, `Nous nous reverrons très vite, ${prenomSH()}…`); }
+    if (u > 6.6 && !part && q) { part = true; q.info.allure = .45; q.cible = new THREE.Vector3(PORTE[0], q.g.position.y, PORTE[1]); q.chemin = [new THREE.Vector3(PORTE[0], q.g.position.y, PORTE[1] - 1.2)]; evanouirSH(SHN.maria, null, 1500); }
+    if (u > 10.5 && !leve) { leve = true; moi.info.mortT = 0; }
+    if (u > 12.2 && !ou) { ou = true; bulle("<i>… Où… où suis-je ?</i>", 2500); }
+    if (u > 14.8) fin(); } };
 }
 // on éteint la radio, au comptoir : retour dans la vraie caserne, au même bar
 function sortirSH() { const G = M.gresil; M.gresil = null; couperGresil(G); bulle(null); const n = voile("background:#000;opacity:0;transition:opacity 1s"); requestAnimationFrame(() => n.style.opacity = "1");
@@ -6600,12 +6809,15 @@ function detritusApo(scene, L, base, hSol) {
     else { x = zone[0] + Math.random() * (zone[1] - zone[0]); z = zone[2] + Math.random() * (zone[3] - zone[2]); if (!L.limites(x, z) || (L.repos && L.repos(x, z))) continue; y = hSol(x, z); }
     pts.push([x, y, z]); }
   const d = new THREE.Object3D(), poser = (geo, mat, liste, fn) => { if (!liste.length) return; const im = new THREE.InstancedMesh(geo, mat, liste.length);
-    liste.forEach((p, i) => { d.scale.setScalar(1); fn(d, p); d.updateMatrix(); im.setMatrixAt(i, d.matrix); }); im.receiveShadow = true; scene.add(im); };
+    liste.forEach((p, i) => { d.scale.setScalar(1); fn(d, p); d.updateMatrix(); im.setMatrixAt(i, d.matrix); }); im.receiveShadow = true; scene.add(im); return im; };
   const q = k => pts.filter((p, i) => i % 4 === k);
   poser(new THREE.PlaneGeometry(.46, .32), new THREE.MeshStandardMaterial({ map: texJournal, roughness: 1, side: THREE.DoubleSide }), q(0).concat(q(1)), (o, [x, y, z]) => { o.position.set(x, y + .015, z); o.rotation.set(-Math.PI / 2 + (Math.random() - .5) * .15, 0, Math.random() * 7); o.scale.setScalar(.8 + Math.random() * .5); });
   poser(new THREE.PlaneGeometry(.21, .29), new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 1, side: THREE.DoubleSide }), q(2), (o, [x, y, z]) => { o.position.set(x, y + .012, z); o.rotation.set(-Math.PI / 2, 0, Math.random() * 7); });
   poser(new THREE.CylinderGeometry(.033, .033, .12, 10), new THREE.MeshStandardMaterial({ color: 0x9a2a20, roughness: .4, metalness: .6 }), q(3).slice(0, 16), (o, [x, y, z]) => { o.position.set(x, y + .034, z); o.rotation.set(Math.PI / 2, 0, Math.random() * 7); });
-  poser(new THREE.BoxGeometry(.5, .32, .4), new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 }), q(3).slice(16), (o, [x, y, z]) => { o.position.set(x, y + .16, z); o.rotation.set(0, Math.random() * 7, (Math.random() - .5) * .3); o.scale.setScalar(.8 + Math.random() * .6); });
+  // les cartons : on garde leur place — on les pousse en passant (soi, les monstres)
+  const cartons = q(3).slice(16).map(([x, y, z]) => ({ x, y, z, ry: Math.random() * 7, rz: (Math.random() - .5) * .3, s: .8 + Math.random() * .6 }));
+  const imC = poser(new THREE.BoxGeometry(.5, .32, .4), new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 }), cartons, (o, c) => { o.position.set(c.x, c.y + .16 * c.s, c.z); o.rotation.set(0, c.ry, c.rz); o.scale.setScalar(c.s); });
+  if (imC) { imC.castShadow = true; L.cartons = { im: imC, c: cartons, maj: () => { cartons.forEach((c, k) => { d.position.set(c.x, c.y + .16 * c.s, c.z); d.rotation.set(0, c.ry, c.rz); d.scale.setScalar(c.s); d.updateMatrix(); imC.setMatrixAt(k, d.matrix); }); imC.instanceMatrix.needsUpdate = true; } }; }
 }
 // les cachettes possibles du fumigène dans ce lieu (les mêmes chez tout le monde) ; le serveur a tiré laquelle
 function candidatsFumi() {
@@ -8193,6 +8405,8 @@ function chercherAction(t) {
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (M.L.cadenasEnc && estSH(M.lieu) && M.shCle && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.4) a = { type: "cadenasSH", label: "🔑 Ouvrir le cadenas avec la clé" };
+    else if (M.L.lampeComptoir && estSH(M.lieu) && !M.shLampe && Math.hypot(x - M.L.lampeComptoir[0], z - M.L.lampeComptoir[1]) < 1.5) a = { type: "lampeSH", label: "🔦 Prendre la lampe" };
+    else if (M.L.carteMur && estSH(M.lieu) && !M.shCarteOK && Math.hypot(x - M.L.carteMur[0], z - M.L.carteMur[1]) < 1.7) a = { type: "carteSH", label: "🗺️ Prendre la carte" };
     else if (M.L.radioSortie && estSH(M.lieu) && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSortie", label: "📻 Éteindre la radio (rentrer)" };
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
@@ -8233,6 +8447,8 @@ export function agir() {
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
   else if (a.type === "cadenasSH") sortieCleSH();
+  else if (a.type === "lampeSH") { M.shLampe = true; M.shLampeOn = true; sonBruit(.05, 5000, .3); majBoutonCarte(); }
+  else if (a.type === "carteSH") { M.shCarteOK = true; majBoutonCarte(); ouvrirCarteSH(); }
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "cadenas") ouvrirCadenas();
@@ -8346,8 +8562,9 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.ctx.surLieu && M.ctx.surLieu(id);
   majAmbiance();
   M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio();
-  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.musExplo) { try { M.musExplo.pause(); } catch (e) {} M.musExplo = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
+  if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.musExplo) { try { M.musExplo.pause(); } catch (e) {} M.musExplo = null; } if (M.musRencontre) { try { M.musRencontre.pause(); } catch (e) {} M.musRencontre = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
   M.muetFete = 1; M.shEntreeT = performance.now(); M.shDuMess = lieuAvant === "sh-mess" && id === "sh-grande"; if (M.shCleObj && M.shCleObj.o.parent) M.shCleObj.o.parent.remove(M.shCleObj.o);   /* (la clé d'Eddie reste où elle est tombée) */
+  majBoutonCarte();
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
   if (id === "bttf-cour") cineCour();
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
