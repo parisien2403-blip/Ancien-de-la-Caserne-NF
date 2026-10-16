@@ -6471,14 +6471,14 @@ function musiqueSH(dt) {
 function cineRadio() {
   if (!M) return; const moi = M.gens.get(M.moiNum); if (!moi) return; moi.cible = null; moi.chemin = [];
   if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; }
-  const t0 = performance.now(); let sirene = false, fini = false, blanc = null;
+  const t0 = performance.now(); let sirene = false, fini = false, blanc = null, titre = null;
   // les sons (fournis) : le grésillement de la radio, puis la sirène ; la musique du réveil, prête à partir
   resetSH(); const radioA = new Audio("sons/sh-radio.mp3"); radioA.volume = 1; radioA.play().catch(() => {});
   M.sireneA = new Audio("sons/sh-sirene.mp3"); M.sireneA.preload = "auto"; M.sireneA.load();
   M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.preload = "auto"; M.musReveil.load();
   grainSH(true);
   const sc = M.scene; if (!sc.fog) sc.fog = new THREE.Fog(0xd9d8d4, 30, 200);
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); try { radioA.pause(); } catch (e) {} if (M.sireneA && M.sireneA.paused) M.sireneA.play().catch(() => {});
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); if (titre) { const t2 = titre; setTimeout(() => t2.remove(), 350); } try { radioA.pause(); } catch (e) {} if (M.sireneA && M.sireneA.paused) M.sireneA.play().catch(() => {});
     if (!blanc) blanc = voile("background:#d9d8d4;opacity:1"); M.shReveil = true; changerLieu("sh-fetes", [0, 26.5], 0); setTimeout(() => blanc && blanc.remove(), 400); };
   M.passerBtn = boutonPasser(fin);
   bulle("<i>…kkssshhhh… kssshh…</i>", 2600);
@@ -6491,8 +6491,11 @@ function cineRadio() {
     if (sirene && !VOLUME_FIGE) M.sireneA.volume = Math.min(1, Math.max(0, (u - 4) / 4.5));   /* (la sirène monte) */
     // le brouillard nous enveloppe : il se referme sur nous, de plus en plus épais, jusqu'au blanc
     if (u > 5) { const k = Math.min(1, (u - 5) / 6); sc.fog.color.setHex(0xd9d8d4); sc.fog.near = (1 - k) * 8; sc.fog.far = 2 + (1 - k) * 40; sc.background = sc.fog.color; radioA.volume = Math.max(.25, 1 - Math.max(0, u - 7) * .15); }
-    if (u > 9.5 && !blanc) { blanc = voile("background:#d9d8d4;opacity:0;transition:opacity 2.5s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
-    if (u > 12.5) fin(); } };
+    // le titre « SILENT HILL » monte doucement dans le brouillard, reste un instant, puis le blanc l'efface
+    if (u > 7.5 && !titre) { titre = voile("background:linear-gradient(#36403f,#0b0c0d);opacity:0;transition:opacity 2.8s;display:grid;place-items:center");
+      titre.innerHTML = '<img src="images/sh/titre.webp" alt="Silent Hill" style="width:100%;height:100%;object-fit:contain;transform:scale(1);transition:transform 7s ease-out">'; requestAnimationFrame(() => requestAnimationFrame(() => { titre.style.opacity = "1"; titre.firstChild.style.transform = "scale(1.05)"; })); }
+    if (u > 11.6 && !blanc) { blanc = voile("background:#d9d8d4;opacity:0;transition:opacity 2.4s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
+    if (u > 14.4) fin(); } };
 }
 // le réveil : allongé par terre, dans le bar, le brouillard se dissipe ; la sirène s'éteint, la musique tourne en boucle ; on se relève
 function cineReveil(essai = 0, noir = null) {
