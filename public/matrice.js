@@ -6344,14 +6344,8 @@ function criSlimer(force = 1) { try { actx = actx || new (window.AudioContext ||
   // les gargouillis : du bruit grave, haché en bulles
   const n = Math.floor(actx.sampleRate * d), b = actx.createBuffer(1, n, actx.sampleRate), dd = b.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * (Math.sin(i / actx.sampleRate * 2 * Math.PI * 18) > .2 ? 1 : .1);
   const src = actx.createBufferSource(), lp = actx.createBiquadFilter(), g2 = actx.createGain(); src.buffer = b; lp.type = "lowpass"; lp.frequency.value = 420; g2.gain.value = .22 * force; src.connect(lp); lp.connect(g2); g2.connect(actx.destination); src.start(t); }
-function rugirSP(force = 1) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; } const t = actx.currentTime, d = 1.6 + Math.random() * .9;
-  const ws = actx.createWaveShaper(), cv = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; cv[i] = Math.tanh(x * 4); } ws.curve = cv;   // (la saturation : la voix qui râpe)
-  const o1 = actx.createOscillator(), o2 = actx.createOscillator(), g = actx.createGain(), bp = actx.createBiquadFilter(); o1.type = "sawtooth"; o2.type = "square";
-  o1.frequency.setValueAtTime(62, t); o1.frequency.linearRampToValueAtTime(88, t + d * .3); o1.frequency.linearRampToValueAtTime(48, t + d); o2.frequency.setValueAtTime(93, t); o2.frequency.linearRampToValueAtTime(70, t + d);
-  bp.type = "bandpass"; bp.Q.value = 1.2; bp.frequency.setValueAtTime(320, t); bp.frequency.linearRampToValueAtTime(620, t + d * .3); bp.frequency.linearRampToValueAtTime(240, t + d);
-  o1.connect(ws); o2.connect(ws); ws.connect(bp); bp.connect(g); g.connect(actx.destination);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.22 * force, t + .25); g.gain.setValueAtTime(.22 * force, t + d * .6); g.gain.linearRampToValueAtTime(0, t + d); o1.start(t); o2.start(t); o1.stop(t + d + .05); o2.stop(t + d + .05);
-  sonBruit(d * .8, 140, .5 * force); }   // (et le grondement, dessous)
+function rugirSP(force = 1) { if (!M) return; const a = new Audio("sons/gb-rugissement.mp3"); a.volume = Math.min(1, .75 * force); a.playbackRate = .92 + Math.random() * .16; a.play().catch(() => {});   // (le vrai rugissement, un peu plus grave ou plus aigu à chaque fois)
+  sonBruit(1.4, 140, .35 * force); }   // (et le grondement, dessous)
 // le bruit des faisceaux : un bourdonnement électrique qui vibre, et des crépitements ; plus fort à plusieurs, et quand ça touche le monstre
 function sonEffluves(n, touche) { if (!M) return; if (!n && !M.sonEff) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
   let S = M.sonEff;
