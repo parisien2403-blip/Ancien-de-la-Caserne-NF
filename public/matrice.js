@@ -6324,7 +6324,7 @@ function brulerGB(C, h, dir, cle = "") { if (!h || !h.face) return; const n = h.
   n.transformDirection(h.object.matrixWorld); if (n.dot(dir) > 0) n.negate();
   C.der = C.der || {}; if (C.der[cle] && C.der[cle].distanceTo(h.point) < .13) return; C.der[cle] = h.point.clone();   // (des traînées : les brûlures se suivent le long du faisceau qui balaie)
   if (Math.random() < .14) flammeGB(C, h.point, n);
-  const t = .28 + Math.random() * .2, o = new THREE.Mesh(new THREE.PlaneGeometry(t, t * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
+  const t = .28 + Math.random() * .2, o = new THREE.Mesh(new THREE.PlaneGeometry(t * .5, t * .5 * (.7 + Math.random() * .5)), new THREE.MeshStandardMaterial({ map: brulureTex(), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 }));
   o.position.copy(h.point).addScaledVector(n, .01); o.lookAt(h.point.clone().add(n)); o.rotateZ(Math.random() * 6.28); o.renderOrder = 3; M.scene.add(o); C.brulures.push(o);
   if (C.brulures.length > 420) M.scene.remove(C.brulures.shift()); }
 function hudGB(C) { if (!C.hud) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:7;width:min(78%,560px);pointer-events:none;font:900 12px 'Lato',sans-serif;color:#eaffd8;text-shadow:0 1px 2px #000;text-align:center";
@@ -6478,9 +6478,13 @@ function cinePiegeGB() { const C = M.gbCombat, S = M.L.gbMess, moi = M.gens.get(
     if (t > 1.9 && dits === 1) { dits = 2; sonBruit(2.6, 3200, .18); bulle(`<b style="color:#b5573c">Egon</b> : N'y regardez pas ! Ne regardez pas la lumière !`, 2800); }
     if (t > 2.0 && t < 4.4) { const u = lisse((t - 2.0) / 2.4); S.capt = u; S.fige.set(arr.x + (f0.x - arr.x) * (1 - u), .15 + (f0.y - .15) * (1 - u), arr.z + (f0.z - arr.z) * (1 - u)); S.sp.material.rotation = u * 9; }
     if (t > 4.4) { S.capFin = true; S.sp.visible = false; S.lum.intensity = 0; }
-    if (t > 5.0 && dits === 2) { dits = 3; sonBruit(.3, 500, .4); brumeSH(arr.clone(), 3200); P.voy.material.emissiveIntensity = 3;
+    if (t > 5.0 && dits === 2) { dits = 3; sonBruit(.3, 500, .4); P.voy.material.emissiveIntensity = 3;
       bulle(`<b style="color:#b5573c">Venkman</b> : On l'a eu ! Le Président pourra passer à table… enfin, s'il reste quelque chose.`, 4600); }
     if (dits >= 3) P.voy.material.emissiveIntensity = Math.floor(now / 300) % 2 ? 3 : .2;   // (le voyant rouge clignote : il est dedans)
+    /* un petit filet de fumée sort du piège refermé : il monte en ondulant et se dissipe */
+    if (dits >= 3 && t > (P.filetT || 0)) { P.filetT = t + .1; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeTex(), transparent: true, depthWrite: false, opacity: 0 })); sp.position.set(arr.x, .2, arr.z); M.scene.add(sp); (P.filet = P.filet || []).push({ sp, t0: t, ph: Math.random() * 6 }); }
+    for (const f of P.filet || []) { const a = (t - f.t0) / 2.6; if (a >= 1) { f.sp.visible = false; continue; } f.sp.position.set(arr.x + Math.sin(a * 5 + f.ph * .3) * .06 * a * 3, .2 + a * 1.5, arr.z + Math.cos(a * 4) * .03);
+      f.sp.scale.setScalar(.08 + a * .32); f.sp.material.opacity = Math.min(1, a * 6) * (1 - a) * .7; }
     if (t > 10) fin();
     // la caméra : de côté, sur le piège et lui
     const yv = t < 1.1 ? 1.2 : 1.0; M.camera.position.set(arr.x + 2.6, 2.1, arr.z + 3.6); M.camera.lookAt(arr.x, yv, arr.z); } }; }
@@ -6778,7 +6782,7 @@ function animerBoumGB(C, dt, now) { const F = M.gbFinale, X = C.boum, B = F.sp, 
   if (t > 40.5 && !X.fin) { X.fin = true; finGB(); } }
 // FIN : le logo, et le mot FIN ; la plaque disparaît du sol ; retour dans la vraie cour, à côté de l'Ecto-1
 function finGB() { const d = voile("background:rgba(8,8,10,.92);opacity:0;display:grid;place-items:center;align-content:center;gap:18px", 7400);
-  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(80%,640px)"><div style="font:900 64px/1 Georgia,serif;color:#fff;letter-spacing:8px;text-align:center">FIN</div>';
+  d.innerHTML = '<img src="images/gb/titre.webp" alt="Ghostbusters" style="width:min(80%,640px);background:#fff;padding:14px 22px;border-radius:18px;box-shadow:0 6px 30px rgba(0,0,0,.6)"><div style="font:900 64px/1 Georgia,serif;color:#fff;letter-spacing:8px;text-align:center">FIN</div>';
   let u = 0; const it = setInterval(() => { u += .05; if (!d.isConnected) { clearInterval(it); return; } d.style.opacity = String(Math.min(1, u * 1.6, (7 - u * 1.4) / 1.4)); if (u * 1.4 > 7) clearInterval(it); }, 70);
   envoyerWS({ t: "plaque_fin" });
   setTimeout(() => { if (!M) return; finCombatGB(); M.gbFinale = null; M.gbActe = 0; M.gbCapture = false; M.gbGare = false; changerLieu("grande", [GARE_GB[0] - 3.4, GARE_GB[1] - .2], -Math.PI / 2); }, 6200); }
@@ -9743,6 +9747,15 @@ function chercherAction(t) {
   const cle = a ? a.type + (a.i ?? "") + (a.numero ?? "") + (a.id ?? "") + (a.type === "hifi" ? a.label : "") : "";   // (la chaîne hi-fi : le bouton change, marche ou arrêt)
   if (cle !== M.actionCle) { M.actionCle = cle; M.action = a; M.ctx.surAction && M.ctx.surAction(a); }
 }
+/* se lever d'un tabouret : on descend du côté de la salle, là où il y a de la place pour marcher (pas dans le petit espace entre le tabouret et le comptoir, où l'on restait coincé) */
+function descendreTabouret(moi) { const p = moi.g.position, L = M.L;
+  let cx = 0, cz = 0, n = 0; for (let x = -5; x <= 5; x += .5) for (let z = -5; z <= 5; z += .5) if (x * x + z * z < 25 && L.limites(p.x + x, p.z + z)) { cx += x; cz += z; n++; }   // (vers où la salle s'ouvre, autour du tabouret)
+  const cl = Math.hypot(cx, cz) || 1; cx /= cl; cz /= cl; let best = null, bs = -9;
+  for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2, dx = Math.cos(a), dz = Math.sin(a);
+    for (const d of [.5, .65, .8]) { const x = p.x + dx * d, z = p.z + dz * d; if (!L.limites(x, z)) continue;
+      let r = 0; while (r < 1.2 && L.limites(x + dx * (r + .2), z + dz * (r + .2))) r += .2;   // (de la place devant soi, dans ce sens-là)
+      const sc = (dx * cx + dz * cz) + (r >= 1.2 ? 1 : 0); if (sc > bs) { bs = sc; best = [x, z]; } break; } }
+  if (!best) best = viserLibre(p.x, p.z); p.x = best[0]; p.z = best[1]; }
 function asseoir(p, i) {
   const tb = M.L.tabourets && M.L.tabourets[i]; if (!tb) return;
   p.info.assis = i; p.cible = null; p.chemin = []; p.info.danse = false; p.g.position.set(tb[0], 0, tb[1]);
@@ -9751,8 +9764,7 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "asseoir") { if (moi.info.danse) danser(false); const [x, z] = M.L.tabourets[a.i]; envoyerWS({ t: "aller", x, z }); asseoir(moi, a.i); envoyerWS({ t: "assis", i: a.i }); }
   else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null });
-    // on se lève à côté du tabouret, là où l'on peut marcher (jamais coincé contre le comptoir ou les tabourets)
-    const [fx, fz] = viserLibre(moi.g.position.x, moi.g.position.z); moi.g.position.x = fx; moi.g.position.z = fz; moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: fx, z: fz }); }
+    descendreTabouret(moi); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z }); }
   else if (a.type === "slow") { envoyerWS({ t: "slow_demande", a: a.numero }); M.ctx.surInfo && M.ctx.surInfo("💞 Invitation envoyée… on attend sa réponse."); }
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
@@ -9849,7 +9861,7 @@ function allerVers(x, z, envoyer, y = null) {
   viser(moi, px, pz); M.repere.position.set(px, .04 + (M.L.hauteur ? M.L.hauteur(px, pz) : 0), pz); M.repere.material.opacity = 1;
   if (envoyer) envoyerWS({ t: "aller", x: px, z: pz });
   if (envoyer && moi.info.danse) danser(false);
-  if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); }
+  if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); descendreTabouret(moi); viser(moi, px, pz); }   // (on descend d'abord du tabouret, côté salle, puis on y va)
   if (envoyer && moi.info.slow) envoyerWS({ t: "slow_fin" });
 }
 function changerLieu(id, arrivee, yaw = 0, face = false) {
