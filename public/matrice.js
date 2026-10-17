@@ -4906,13 +4906,16 @@ function construireAppart(A, L, scene) {
     const fermer = () => { if (cadre) cadre.style.display = "none"; clearInterval(suivi);
       suivi = setInterval(() => { try { const e = cadre.f.contentWindow.ecranTarot; if (e) { cx.drawImage(e, 0, 0, 640, 480); ecranT.needsUpdate = true; } } catch (err) {} }, 1500); };   // (la partie continue de s'afficher sur le moniteur)
     addEventListener("message", e => { if (e.data && e.data.t === "tarot-fermer") fermer(); });
-    L.objetsClic = (L.objetsClic || []).concat([{ obj: mo, action: ouvrir }, { obj: tr, action: ouvrir }, { obj: kb, action: ouvrir }]); }
+    L.objetsClic = (L.objetsClic || []).concat([{ obj: mo, action: ouvrir }, { obj: tr, action: ouvrir }, { obj: kb, action: ouvrir }]);
+    // au-dessus du moniteur, une étiquette : on touche l'ordinateur pour jouer
+    const et = tex(toile(512, 96, (x, w, h) => { x.fillStyle = "rgba(0,0,128,.85)"; x.beginPath(); x.roundRect(4, 4, w - 8, h - 8, 18); x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 3; x.stroke(); x.fillStyle = "#fff"; x.font = "bold 40px Arial"; x.textAlign = "center"; x.fillText("🃏 Toucher pour jouer", w / 2, 62); }));
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: et, transparent: true, depthWrite: false })); sp.scale.set(.6, .1125, 1); sp.position.set(-.12, BH + .62, .3); g.add(sp); }
   /* le premier salon : la table de ferme (d'après la photo) — en bois foncé laqué, le plateau épais, les deux pieds en os de mouton et leur traverse chevillée ;
      le bout contre le mur de la porte ; six chaises à dossier à barrettes, l'assise en paille tressée : trois dos au buffet, trois dos à l'entrée */
   { const TL = 2.0, TD = .82, TH = .76, xt = -XC - E / 2 - .01 - TL / 2, zt = 6.75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
-    const fil = tex(toile(512, 256, (x, w, h) => { x.fillStyle = "#3a1c0e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 120; i++) { x.strokeStyle = hasard(i * 2.1) > .5 ? `rgba(110,56,28,${.2 + .3 * hasard(i)})` : `rgba(18,8,3,${.25 + .3 * hasard(i * 3)})`; x.lineWidth = .8 + 3 * hasard(i * 5.3); x.beginPath(); const y0 = h * hasard(i * 1.3); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 5 * Math.sin(xx * .013 + i) + 3 * Math.sin(xx * .05 + i * 2)); x.stroke(); }
+    const fil = tex(toile(512, 256, (x, w, h) => { x.fillStyle = "#6a3a1c"; x.fillRect(0, 0, w, h); for (let i = 0; i < 120; i++) { x.strokeStyle = hasard(i * 2.1) > .5 ? `rgba(150,88,46,${.2 + .3 * hasard(i)})` : `rgba(18,8,3,${.25 + .3 * hasard(i * 3)})`; x.lineWidth = .8 + 3 * hasard(i * 5.3); x.beginPath(); const y0 = h * hasard(i * 1.3); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 5 * Math.sin(xx * .013 + i) + 3 * Math.sin(xx * .05 + i * 2)); x.stroke(); }
         for (let i = 0; i < 5; i++) { const cx = w * hasard(i * 9.1), cy = h * hasard(i * 7.7); x.strokeStyle = "rgba(20,8,2,.45)"; for (let r = 2; r < 14; r += 3) { x.beginPath(); x.ellipse(cx, cy, r * 2.2, r * .7, 0, 0, 7); x.stroke(); } } }), 1, 1);   // (le fil du bois, quelques nœuds)
-    const laque = A.mat({ map: fil, roughness: .18, metalness: .05 }), laqueF = A.mat({ color: 0x2c140a, roughness: .25 });
+    const laque = A.mat({ map: fil, roughness: .18, metalness: .05 }), laqueF = A.mat({ color: 0x4e2a14, roughness: .25 });
     const b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
     b(TL, .065, TD, laque, 0, TH - .0325, 0);   // le plateau, épais
     for (const sx of [-1, 1]) { const px = sx * (TL / 2 - .32);
