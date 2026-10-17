@@ -4368,9 +4368,6 @@ function construireAppart(A, L, scene) {
     const cuv = new THREE.Mesh(new THREE.CylinderGeometry(.2, .17, .08, 20), faience); cuv.scale.set(1.25, 1, 1); cuv.position.set(.28, .41, 0); g.add(cuv);
     const ab = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .025, 20), A.mat({ color: 0xffffff, roughness: .3 })); ab.scale.set(1.25, 1, 1); ab.position.set(.28, .46, 0); g.add(ab);
     const chasse = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.2, 6), chrome); chasse.position.set(.04, 1.0, -.25); g.add(chasse); }
-  // le renfoncement des manteaux : une patère, trois manteaux
-  { const x = 1.9 - E - .04; A.ajoute(new THREE.BoxGeometry(.03, .08, .9), bois, x, H4 + 1.75, (ZM1 + ZC[2]) / 2, false);
-    [[0x2c3a52, -.28], [0x6a4a2c, 0], [0x7a2a2a, .28]].forEach(([c, dz]) => { const m = A.ajoute(new THREE.BoxGeometry(.22, .95, .36), A.mat({ color: c, roughness: .9 }), x - .14, H4 + 1.2, (ZM1 + ZC[2]) / 2 + dz, false); m.rotation.x = (Math.random() - .5) * .06; }); }
   // le placard : des étagères
   for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
   A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
