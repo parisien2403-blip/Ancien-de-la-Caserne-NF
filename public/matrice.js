@@ -4880,7 +4880,7 @@ function construireSantaCarla(A, L, scene) {
   const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
       sp.position.set(p.x + (Math.random() - .5) * .5, p.y + (Math.random() - .5) * .6, p.z + (Math.random() - .5) * .5); sp.scale.setScalar(taille); scene.add(sp); parts.push({ sp, v: new THREE.Vector3((Math.random() - .5) * .8, vy * (.5 + Math.random()), (Math.random() - .5) * .8), t0: performance.now(), d: duree, taille }); } };
-  let file = [], courant = null, hud = null, vies = 100, morsures = 0, biere = null, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
+  let adosIntro = [], choixT = 0, file = [], courant = null, hud = null, vies = 100, morsures = 0, biere = null, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
   const moiP = () => { const m = M && M.gens.get(M.moiNum); return m ? m.g.position : null; };
   const majHud = () => { if (!hud) return; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}, nom = (P.nom || (ADOS[(M.lbPerso || 81) - 81] || {}).court || "").split(" ")[0];
     hud.querySelector(".v").innerHTML = `${esc(nom)} <span style="display:inline-block;width:130px;height:13px;border:2px solid #fff;border-radius:8px;background:rgba(60,0,0,.8);overflow:hidden;vertical-align:-2px"><i style="display:block;height:100%;width:${Math.max(0, vies)}%;background:${vies > 40 ? "linear-gradient(90deg,#2aa84a,#7ae86a)" : "linear-gradient(90deg,#c81e1e,#ff6a3a)"};transition:width .3s"></i></span> 🔫∞`; hud.querySelector(".n").textContent = "🧛 " + (file.length + (courant && courant.etat !== "mort" ? 1 : 0)); };
@@ -5063,7 +5063,7 @@ function construireSantaCarla(A, L, scene) {
       const im = document.createElement("div"); im.style.cssText = "width:100%;aspect-ratio:200/420;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px;overflow:hidden"; b.appendChild(im);
       { const info = habillerLB({ numero: 0 }, 81 + k); chargerTete(0, null, info.teteUrl).then(t => { const cv = dessinerBonhomme(info, t); cv.style.cssText = "width:100%;height:100%;object-fit:contain"; im.appendChild(cv); }); }
       b.appendChild(document.createTextNode(a.nom));
-      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 1; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; adosIntro.forEach(q => retirerAncien(q.info.numero)); adosIntro.length = 0; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 1; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
@@ -5071,7 +5071,8 @@ function construireSantaCarla(A, L, scene) {
       hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
     { const mo = M.gens.get(M.moiNum); if (mo && ado.k == null) mo.g.visible = false; }   // (tant qu'on n'a pas choisi son ado, on n'est personne)
     majAdo(); vieComps(now, p); pieuAuto(now, p); boireBiere(now, p); voirSang(now, p);
-    if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
+    if (phase === "intro" && !adosIntro.length) [81, 82, 83].forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, q = ajouterAncien({ ...habillerLB({ numero: -(880 + i), nom: P.nom || ADOS[i].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: (i - 1) * 1.7, z: .3 - Math.abs(i - 1) * .5 }); if (q) adosIntro.push(q); });   // (les trois ados, devant l'arche : la caméra du survol arrive sur eux)
+    if (phase === "intro" && !M.cine && !M.lbIntro) { if (!choixT) choixT = now + 1800; if (now > choixT) { phase = "choix"; choisirAdo(); } }
     if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus que David… Il va venir lui-même. Il est furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
     for (const v of vamps) { const g = v.g, dt = 1 / 60;
@@ -10377,22 +10378,30 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess"))) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
 function cineAfficheLB() { if (!M || M.cine) return; let parti = false;
-  if (!document.getElementById("styleLB")) { const st = document.createElement("style"); st.id = "styleLB";
-    st.textContent = "@keyframes lbVoile{0%{opacity:0}9%{opacity:1}82%{opacity:1}100%{opacity:0}}@keyframes lbTitre{0%,14%{opacity:0;transform:scale(1.12);filter:blur(6px)}38%{opacity:1;transform:scale(1);filter:blur(0)}66%{opacity:1;transform:scale(.97)}78%,100%{opacity:0;transform:scale(.95)}}"; document.head.appendChild(st); }
-  const d = voile("background:#000;opacity:0;animation:lbVoile 7.4s ease-in-out forwards;display:grid;place-items:center", 7500);
-  d.innerHTML = '<img src="images/santacarla/titre.webp" alt="The Lost Boys" style="width:min(86%,820px);opacity:0;animation:lbTitre 7.4s ease-out forwards">';
+  if (!document.getElementById("styleLB2")) { const st = document.createElement("style"); st.id = "styleLB2";
+    st.textContent = "@keyframes lbNoir{from{opacity:0}to{opacity:1}}@keyframes lbTitre2{0%{opacity:0;transform:scale(1.1);filter:blur(6px)}30%{opacity:1;transform:scale(1);filter:blur(0)}72%{opacity:1;transform:scale(.98);filter:blur(0)}100%{opacity:0;transform:scale(.96);filter:blur(2px)}}"; document.head.appendChild(st); }
+  // l'écran devient noir (et le reste jusqu'à ce que Santa Carla soit prête : le chargement ne se voit pas) ; le titre paraît, puis s'efface en douceur sur le noir
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:8;pointer-events:none;background:#000;opacity:0;animation:lbNoir .9s ease-out forwards;display:grid;place-items:center;transition:opacity 1.6s ease-in-out";
+  d.innerHTML = '<img src="images/santacarla/titre.webp" alt="The Lost Boys" style="width:min(86%,820px);opacity:0;animation:lbTitre2 5s ease-in-out .7s forwards;will-change:opacity,transform">';
+  M.ctx.conteneur.appendChild(d); M.lbNoir = d;
   musiqueLB("intro");
   const partir = () => { if (parti || !M) return; parti = true; M.lbIntro = true; changerLieu("santacarla"); };
-  M.passerBtn = boutonPasser(() => { d.remove(); partir(); if (M && M.cine) { finCine(); } });
-  M.cine = { maj: () => {} }; setTimeout(() => { if (M && M.cine && !parti) { finCine(); partir(); } }, 5200); }
+  M.passerBtn = boutonPasser(() => { partir(); });
+  M.cine = { maj: () => {} }; setTimeout(() => { if (M && M.cine && !parti) { finCine(); partir(); } }, 6000); }
 // à Santa Carla : la baie vue d'en haut, comme un oiseau — de l'océan vers la jetée, en tournant ; on se pose devant l'arche, puis on choisit son personnage
-function cineSurvolSC() { if (!M) return; const t0 = performance.now(), D = 30000; let fini = false;   /* (on prend son temps : la baie, la jetée, puis on descend vers les ados) */
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); };
-  const P = [[40, 24, 86], [30, 26, 70], [8, 30, 58], [-30, 32, 50], [-46, 24, 20], [-38, 16, -2], [-16, 10, 12], [-4, 5, 11], [0, 3.2, 9]], C = [[0, 0, 0], [0, 0, -6], [-6, 2, -10], [-10, 4, -12], [-12, 6, -20], [6, 6, -18], [4, 4, -10], [0, 3, -7], [0, 2.4, -6]];
-  const curve = (T, u) => { const n = T.length - 1, f = Math.min(n - 1e-6, u * n), i = Math.floor(f), k = f - i, s = k * k * (3 - 2 * k); return T[i].map((v, j) => v + (T[i + 1][j] - v) * s); };
-  M.passerBtn = boutonPasser(fin);
-  M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, p = curve(P, e), c = curve(C, e);
-    M.camera.position.set(p[0], p[1], p[2]); M.camera.lookAt(c[0], c[1], c[2]); if (u >= 1) fin(); }, fov: [55, 70] }; }
+function cineSurvolSC() { if (!M) return; const D = 30000; let fini = false, t0 = performance.now() + 1600;   /* (1,6 s dans le noir : le temps que tout soit chargé et dessiné une première fois ; puis 30 s de vol, d'un seul trait) */
+  const noir = M.lbNoir; M.lbNoir = null; if (noir) { const img = noir.querySelector("img"); if (img) img.remove(); }
+  const fin = () => { if (fini || !M) return; fini = true; if (noir) noir.remove(); finCine(); };
+  const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+  // une seule courbe douce pour la caméra, une autre pour le regard ; parcourues à vitesse régulière, en accélérant au départ et en ralentissant à l'arrivée
+  const CP = new THREE.CatmullRomCurve3([[40, 24, 86], [24, 27, 68], [0, 30, 56], [-28, 30, 46], [-44, 23, 22], [-36, 15, 2], [-18, 9, 10], [-5, 4.6, 10], [0, 3.2, 9]].map(V), false, "centripetal");
+  const CC = new THREE.CatmullRomCurve3([[0, 0, 0], [0, 0, -5], [-6, 2, -10], [-10, 4, -13], [-10, 6, -19], [4, 6, -17], [3, 4, -9], [0, 2.6, -5], [0, 2, -3]].map(V), false, "centripetal");
+  const lisse = u => u * u * u * (u * (u * 6 - 15) + 10);   // (départ et arrivée tout en douceur)
+  M.passerBtn = boutonPasser(fin); let leve = false;
+  M.cine = { maj: now => { const u = Math.max(0, Math.min(1, (now - t0) / D)), e = lisse(u);
+      M.camera.position.copy(CP.getPointAt(e)); M.camera.lookAt(CC.getPointAt(e));
+      if (!leve && now > t0 - 200 && noir) { leve = true; noir.style.animation = "none"; noir.style.opacity = "1"; requestAnimationFrame(() => requestAnimationFrame(() => { noir.style.opacity = "0"; })); setTimeout(() => noir.remove(), 2000); }   // (le noir se lève doucement sur la baie)
+      if (u >= 1) fin(); }, fov: [55, 70] }; }
 // on touche « As-tu peur des fantômes ? » : le grand titre, puis l'Ecto-1 entre dans la cour d'honneur
 function cineAfficheGB() { if (!M || M.cine) return; const A = AFFICHE_GB; let fini = false;
   const fin = () => { if (fini || !M) return; fini = true; voile("background:#fff;opacity:1", 1400); finCine(); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); };
