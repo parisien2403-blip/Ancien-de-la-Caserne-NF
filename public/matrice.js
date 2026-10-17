@@ -7791,7 +7791,8 @@ function apocalypse(scene, L, base) {
   // plus de fête ni de fenêtres allumées : la boule, les projecteurs, les lyres sont éteints ; les fenêtres sont noires
   const eteindre = () => { (L.nuitObjets || []).forEach(o => { if (!o.isLight) o.visible = false; });
     if (L.fete) { for (const p of L.fete.projos) { p.spot.visible = p.cone.visible = false; p.verre.material.color.setHex(0x222222); } for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = false; L.fete.boule.visible = false; }
-    if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; } };
+    if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
+    for (const f of L.feuxScene || []) { f.cone.visible = false; f.verre.material.color.setHex(0x222222); } L.feuxScene = null; };   // (les projecteurs de la scène : éteints, comme le reste)
   /* trop de lumières rendent tout lent (la salle des fêtes en a plus de trente) : les lampes de la pièce sont « éteintes »,
      et six lumières seulement, toujours là, prennent la place des lampes allumées les plus proches de nous */
   const sources = [], pool = [0, 1, 2, 3, 4, 5].map(() => { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.apo = true; scene.add(l); return l; });
@@ -7813,7 +7814,7 @@ function apocalypse(scene, L, base) {
     // un brasier : plusieurs nappes de flammes pixelisées, côte à côte, chacune avec son temps de retard
     const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false }));
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
-    const fu = []; for (let i = 0; i < 5; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
+    const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
   const lumsFeu = [0, 1, 2, 3].map(() => { const l = new THREE.PointLight(0xff6a24, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
@@ -7827,11 +7828,11 @@ function apocalypse(scene, L, base) {
     for (const [wx, wz] of [[1.35, .9], [-1.35, .9], [1.35, -.9], [-1.35, -.9]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .22, 14), cendre); r.rotation.x = Math.PI / 2; r.position.set(wx, .3, wz); g.add(r); }
     b(.5, .25, .9, rouille, 1.6, 1.0, .1).rotation.z = -.5;   // le capot arraché
     if (brule) { feu(x + Math.cos(a) * .9, y + .6, z - Math.sin(a) * .9, 2); L.feuxSon.push([x, z]); }
-    if (obst) obstacles.push([x, z, 2.3]); };
+    if (obst) obstacles.push([x, z, 2.3]); fusionnerParMatiere(g); };
   // un fût qui brûle
   const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .85, z, 1); obstacles.push([x, z, .45]); };
   // un grand brasier (des meubles, des gravats qui brûlent), plus haut qu'un homme
-  const brasier = (x, z, k = 2.6) => { feu(x, 0, z, k); L.feuxSon.push([x, z]); for (let i = 0; i < 5; i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, .12, .2), charbon); o.position.set(x + (Math.random() - .5) * 1.4, .1 + i * .05, z + (Math.random() - .5) * 1.2); o.rotation.set(Math.random() * .4, Math.random() * 7, Math.random() * .4); scene.add(o); } obstacles.push([x, z, 1.1]); };
+  const brasier = (x, z, k = 2.6) => { feu(x, 0, z, k); L.feuxSon.push([x, z]); for (let i = 0; i < 5; i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(1.2, .12, .2), charbon); o.position.set(x + (Math.random() - .5) * 1.4, .1 + i * .05, z + (Math.random() - .5) * 1.2); o.rotation.set(Math.random() * .4, Math.random() * 7, Math.random() * .4); deb.add(o); } obstacles.push([x, z, 1.1]); };
   // des débris (planches, gravats) et du sang séché, là où l'on marche
   const zone = L.zone || [-30, 30, -30, 30], libre = [];
   for (let i = 0; i < 4000 && libre.length < 160; i++) { const x = zone[0] + Math.random() * (zone[1] - zone[0]), z = zone[2] + Math.random() * (zone[3] - zone[2]); if (L.limites(x, z)) libre.push([x, z]); }
@@ -7842,11 +7843,13 @@ function apocalypse(scene, L, base) {
   if (base === "etage") { libre.length = 0;   // les couloirs : sur chaque étage
     for (let n = 0; n <= ET.N; n++) for (let i = 0; i < 9; i++) { const x = (hasard(n * 17 + i) - .5) * 21, z = -1.15 - hasard(n * 5 + i * 3) * 1.5; libre.push([x, z, n * ET.H]); } }
   const hauteurSol0 = hauteurSol;
-  libre.slice(0, base === "etage" ? 70 : 40).forEach(([x, z], i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + Math.random() * 1.4, 1.2 + Math.random() * 1.4), new THREE.MeshBasicMaterial({ map: texSang[i % 4], transparent: true, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x, (libre[i][2] ?? hauteurSol0(x, z)) + .02 + i * .0004, z); m.renderOrder = 1; scene.add(m); });
+  /* (les débris, le sang, les gravats : des centaines de petits objets immobiles ; on les fond par matière à la fin — bien moins d'appels de dessin) */
+  const deb = new THREE.Group(); scene.add(deb); const matsSang = texSang.map(t => new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }));
+  libre.slice(0, base === "etage" ? 70 : 40).forEach(([x, z], i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + Math.random() * 1.4, 1.2 + Math.random() * 1.4), matsSang[i % 4]);
+    m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x, (libre[i][2] ?? hauteurSol0(x, z)) + .02 + i * .0004, z); deb.add(m); });
   (base === "etage" ? libre.filter((q, i) => i % 2) : libre.slice(60, 120)).forEach(([x, z, y0]) => { const planche = Math.random() < .5;
     const o = new THREE.Mesh(planche ? new THREE.BoxGeometry(1 + Math.random(), .05, .18) : new THREE.DodecahedronGeometry(.12 + Math.random() * .16), planche ? rouille : cendre);
-    o.position.set(x, (y0 ?? hauteurSol(x, z)) + .06, z); o.rotation.set(planche ? 0 : Math.random() * 3, Math.random() * 7, planche ? (Math.random() - .5) * .3 : Math.random() * 3); scene.add(o); });
+    o.position.set(x, (y0 ?? hauteurSol(x, z)) + .06, z); o.rotation.set(planche ? 0 : Math.random() * 3, Math.random() * 7, planche ? (Math.random() - .5) * .3 : Math.random() * 3); deb.add(o); });
   // le décor de chaque lieu
   if (base === "rue") { epave(-26, -1.2, .25); epave(-9, .8, -.5); epave(9, -.6, .35, false); epave(24, 1.2, -.2); epave(40, -1.5, .6); fut(-16, 4.2); fut(16, -5.2); fut(32, 4.6); fut(-36, 4.4); brasier(-20, 5.3); brasier(30, -5.6); }
   if (base === "grande") {   // dans la troisième cour, une voiture garée sur deux brûle ; sur la terrasse, le H de l'hélicoptère
@@ -7867,20 +7870,23 @@ function apocalypse(scene, L, base) {
       L3.forEach(([x, y, z, lg, ep, tilt, qb], i) => { q.copy(qb).multiply(rz.setFromAxisAngle(Z, tilt)); m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(lg, ep, 1)); im.setMatrixAt(i, m4); });
       scene.add(im); }); }
   if (base === "grande") { epave(-4.5, 3, .7); epave(5.5, -9, -.4); fut(-8.5, -4); fut(8.6, 4); fut(0, -14); fut(-5, -24); fut(6, -40); fut(-8, 10); fut(3, 11); brasier(-1.5, -6); brasier(9.2, -2.5, 2.2); brasier(-9.3, 4, 2.2); }
-  if (base === "fetes") { fut(3.2, 1.5); brasier(4.4, 9, 2); for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, .06, .8), rouille); t.position.set(-3 + Math.random() * 6, .05, 2 + Math.random() * 10); t.rotation.y = Math.random() * 3; scene.add(t); } }
+  if (base === "fetes") { fut(3.2, 1.5); brasier(4.4, 9, 2); for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, .06, .8), rouille); t.position.set(-3 + Math.random() * 6, .05, 2 + Math.random() * 10); t.rotation.y = Math.random() * 3; deb.add(t); } }
+  fusionnerParMatiere(deb); deb.children.forEach(o => { if (o.material.transparent) o.renderOrder = 1; });
   if (lumieres) { const bois = [0xa8845a, 0x93704a, 0xb8946a].map(c => A.mat({ color: c, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .9 })), clou = A.mat({ color: 0x222222 }), noir = new THREE.MeshBasicMaterial({ color: 0x050403 });
     const fen = (L.fenetres || []).map(([x, y, z, w, h, ry]) => ({ x, y, z, w, h, ry }));
     scene.traverse(o => { if (o.isMesh && lumieres.includes(o.material) && o.geometry.parameters && o.geometry.parameters.width) fen.push({ o, w: o.geometry.parameters.width, h: o.geometry.parameters.height }); });
     scene.updateMatrixWorld(true);
+    const barr = new THREE.Group(); scene.add(barr);   // (toutes les fenêtres dans un seul groupe : fondues à la fin en quelques morceaux, une par matière)
     let k = 0; for (const F of fen) { if (hasard(++k * 3.7) > (F.o ? .3 : .35)) continue;
-      const g = new THREE.Group(); scene.add(g); const w = F.w, h = F.h;
+      const g = new THREE.Group(); barr.add(g); const w = F.w, h = F.h;
       if (F.o) F.o.matrixWorld.decompose(g.position, g.quaternion, g.scale); else { g.position.set(F.x, F.y, F.z); g.rotation.y = F.ry; }
       const fond = new THREE.Mesh(new THREE.PlaneGeometry(w, h), noir); fond.position.z = .01; g.add(fond);
       const n = Math.max(3, Math.round(h / .32));
       for (let i = 0; i < n; i++) { const pl = new THREE.Mesh(new THREE.BoxGeometry(w * 1.25, Math.min(.22, h / n * .75), .05), bois[i % 3]);
         pl.position.set((hasard(k + i) - .5) * .08, -h / 2 + (i + .5) * h / n, .05); pl.rotation.z = (hasard(k * 2 + i) - .5) * .35; g.add(pl);
         for (const sx of [-1, 1]) { const c2 = new THREE.Mesh(new THREE.BoxGeometry(.03, .03, .02), clou); c2.position.set(sx * w * .52, pl.position.y, .08); g.add(c2); } }
-      if (hasard(k * 9.1) < .5) { const cr = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(w, h), .16, .05), bois[k % 3]); cr.position.z = .09; cr.rotation.z = Math.atan2(h, w) * (k % 2 ? 1 : -1); g.add(cr); } } }   // fenêtres barricadées, parfois une planche en diagonale
+      if (hasard(k * 9.1) < .5) { const cr = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(w, h), .16, .05), bois[k % 3]); cr.position.z = .09; cr.rotation.z = Math.atan2(h, w) * (k % 2 ? 1 : -1); g.add(cr); } }
+    fusionnerParMatiere(barr); }   // fenêtres barricadées, parfois une planche en diagonale
   // dehors : quand le fumigène est trouvé, l'hélicoptère du S.T.A.R.S. arrive et tourne au-dessus de la caserne, son projecteur balaie le sol
   if (ext) {
     const Zh = L.zone || [-30, 30, -30, 30], cx = (Zh[0] + Zh[1]) / 2, cz = (Zh[2] + Zh[3]) / 2, R = Math.max(Zh[1] - Zh[0], Zh[3] - Zh[2]) * .5;
@@ -7915,8 +7921,11 @@ function apocalypse(scene, L, base) {
   // tout bouge : les flammes dansent, la fumée monte, les lumières vacillent ou grésillent
   const animAvant = L.anim;
   L.anim = (t) => { animAvant && animAvant(t);
+    const cam = M && M.camera ? M.camera.position : null, haut = ext ? 4.5 : 2;
     for (const f of feux) { for (const [sp, ph, h] of f.fl) { sp.material.map = texFlammes[(Math.floor(t / 75) + ph) % 8]; const v = .9 + .1 * Math.sin(t / 130 + ph); sp.scale.set(1.25 * f.k * v, 2 * f.k * h * v, 1); }
-      for (const [sp, d] of f.fu) { const u = ((t / 3200) + d) % 1; sp.position.set(Math.sin(u * 6 + d * 9) * .3 * f.k, .8 * f.k + u * 4.5 * f.k, 0); sp.scale.setScalar((.8 + u * 2.4) * f.k); sp.material.opacity = .55 * (1 - u); }
+      /* (la fumée : de grands voiles transparents ; tout près du feu, ils couvriraient tout l'écran, plusieurs fois l'un sur l'autre — ça fait ramer : ils s'effacent quand on s'approche) */
+      const pres = cam ? Math.max(0, Math.min(1, (Math.hypot(cam.x - f.x, cam.z - f.z) - 1.5 * f.k) / (2.5 * f.k))) : 1;
+      for (const [sp, d] of f.fu) { const u = ((t / 3200) + d) % 1; sp.visible = pres > .02; if (!sp.visible) continue; sp.position.set(Math.sin(u * 6 + d * 9) * .3 * f.k, .8 * f.k + u * haut * f.k, 0); sp.scale.setScalar((.8 + u * (ext ? 2.4 : 1.6)) * f.k); sp.material.opacity = .55 * (1 - u) * pres; }
     }
     if (!L.lumsT || t > L.lumsT) { L.lumsT = t + 400; const c = M && M.camera ? M.camera.position : { x: 0, z: 0 };
       L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
@@ -9521,7 +9530,7 @@ const EI = [[-54, 54, "chant", "Le chanteur", "eichant", "chanteur", 0, 3.18], [
 function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = Math.max(.001, k) * E.EH;
   E.toile.scale.y = Math.max(.001, k); E.toile.visible = k > .002; E.cadre.scale.y = h + .08; E.cadre.visible = k > .002; E.barre.position.y = -h - .02; }
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
-  const c = M.djVideo, cible = c ? 1 : 0; if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
+  const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   // (à l'apocalypse, plus de courant : pas de clip) if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
   if (v && E.k > .9 && v.readyState >= 2) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
