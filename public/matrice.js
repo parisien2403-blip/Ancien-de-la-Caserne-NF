@@ -4437,10 +4437,10 @@ function construireAppart(A, L, scene) {
   const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
   const niveau = z => z > ZM1 ? H4 : 0;
   const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), blanc = A.mat({ color: 0xf2efe6, roughness: .5 }), bois = A.mat({ color: 0x6a4024, roughness: .55 });
-  /* le carrelage de la cuisine (d'après la photo) : un damier de grands carreaux, gris clair et gris foncé, posés droit */
-  const damier = toile(256, 256, (x, w) => { const c = w / 2; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const fonce = (i + j) % 2; x.fillStyle = fonce ? "#8c8886" : "#cdc9c6"; x.fillRect(i * c, j * c, c, c);
-      for (let k = 0; k < 220; k++) { x.fillStyle = `rgba(${fonce ? "40,40,44" : "150,148,144"},${.06 + .08 * hasard(k * 3.1 + i * 7 + j * 13)})`; x.fillRect(i * c + c * hasard(k * 1.3 + i), j * c + c * hasard(k * 2.7 + j), 2, 2); } }
-    x.strokeStyle = "#7a7674"; x.lineWidth = 2; for (let k = 0; k <= 2; k++) { x.beginPath(); x.moveTo(k * c, 0); x.lineTo(k * c, w); x.moveTo(0, k * c); x.lineTo(w, k * c); x.stroke(); } });
+  /* le carrelage de la cuisine : un damier de grands carreaux de terre cuite, clairs et foncés, posés droit */
+  const damier = toile(256, 256, (x, w) => { const c = w / 2; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const fonce = (i + j) % 2; x.fillStyle = fonce ? "#9c4a2a" : "#c27a50"; x.fillRect(i * c, j * c, c, c);
+      for (let k = 0; k < 220; k++) { x.fillStyle = `rgba(${fonce ? "70,26,10" : "120,60,30"},${.06 + .08 * hasard(k * 3.1 + i * 7 + j * 13)})`; x.fillRect(i * c + c * hasard(k * 1.3 + i), j * c + c * hasard(k * 2.7 + j), 2, 2); } }
+    x.strokeStyle = "#6a3a24"; x.lineWidth = 2; for (let k = 0; k <= 2; k++) { x.beginPath(); x.moveTo(k * c, 0); x.lineTo(k * c, w); x.moveTo(0, k * c); x.lineTo(w, k * c); x.stroke(); } });
   const matSol = { damier: (w, d) => A.mat({ map: tex(damier, w / .4, d / .4), roughness: .35 }), carreaux: (w, d) => A.mat({ map: tex(T.carreaux, w / 1.6, d / 1.6), roughness: .45 }), fonce: (w, d) => A.mat({ map: tex(T.fonce, w / 2.2, d / 2.2), roughness: .2, metalness: .05 }), clair: (w, d) => A.mat({ map: tex(T.clair, w / 2.2, d / 2.2), roughness: .5 }) };
   const sols = [];
   const sol = (x0, x1, z0, z1, y, genre) => { const w = x1 - x0, d = z1 - z0, o = A.ajoute(new THREE.PlaneGeometry(w, d), matSol[genre](w, d), (x0 + x1) / 2, y + .002, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; sols.push(o); return o; };
