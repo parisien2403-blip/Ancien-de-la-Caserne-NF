@@ -4305,10 +4305,17 @@ function construireAppart(A, L, scene) {
     for (const [y, h] of [[.55, .75], [1.5, .8]]) for (const sz of [-1, 1]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(w - .22, h, .01), A.mat({ color: 0xe4dccb, roughness: .5 })); pn.position.set(w / 2, y, sz * .025); g.add(pn); }
     const poignee = new THREE.Mesh(new THREE.BoxGeometry(.025, .025, .14), laiton); poignee.position.set(w - .1, 1.0, 0); g.add(poignee); return g; };
   // (à gauche du couloir, le battant part vers −x dans la pièce ; à droite, vers +x)
-  ouverte(-XC, 0, P.ch1 - .42, .84, Math.PI); ouverte(-XC, 0, P.ch2 - .42, .84, Math.PI);
-  ouverte(XC, 0, P.ch3 - .42, .84, 0); ouverte(XC, 0, P.sdb + .4, .79, 0);
-  ouverte(-XC, H4, P.wc - .37, .74, Math.PI); ouverte(-XC, H4, P.salon - .45, .88, Math.PI); ouverte(-XC, H4, P.salon2 + .45, .88, Math.PI);
-  ouverte(-.4, 0, Z_FOND, .79, Math.PI / 2);   // le placard
+  /* l'encadrement d'une porte : l'habillage de l'épaisseur du mur (deux montants, la traverse du haut) et les chambranles moulurés des deux côtés, en bois peint blanc.
+     axe "z" : la porte est dans un mur le long de z (x = xm) ; "x" : dans un mur le long de x (z = xm). ep : l'épaisseur du mur */
+  const encadrement = (axe, xm, c, w, y, ep = .2, h = 2.1) => { const b = (dx, dy, dz, px, py, pz) => axe === "z" ? A.ajoute(new THREE.BoxGeometry(dx, dy, dz), blanc, px, py, pz, false) : A.ajoute(new THREE.BoxGeometry(dz, dy, dx), blanc, pz, py, px, false);
+    for (const s2 of [-1, 1]) b(ep + .01, h, .03, xm, y + h / 2, c + s2 * (w / 2 - .015)); b(ep + .01, .03, w, xm, y + h - .015, c);
+    for (const f of [-1, 1]) { const xf = xm + f * (ep / 2 + .009); for (const s2 of [-1, 1]) b(.018, h + .07, .075, xf, y + (h + .07) / 2, c + s2 * (w / 2 + .03)); b(.018, .075, w + .135, xf, y + h + .035, c); } };
+  /* une porte de pièce, grande ouverte dans la pièce : son encadrement, et le battant sur ses gonds, au bord du chambranle côté pièce (cote : −1 à gauche du couloir, +1 à droite ; gond : à quel bout de l'ouverture) */
+  const porteDe = (cote, c, w, y, gond = -1) => { encadrement("z", cote * XC, c, w, y); ouverte(cote * (XC + .1), y, c + gond * (w / 2 - .03), w - .06, cote < 0 ? Math.PI : 0); };
+  porteDe(-1, P.ch1, .85, 0); porteDe(-1, P.ch2, .85, 0); porteDe(1, P.ch3, .85, 0); porteDe(1, P.sdb, .8, 0, 1);
+  porteDe(-1, P.wc, .75, H4); porteDe(-1, P.salon, .9, H4); porteDe(-1, P.salon2, .9, H4, 1);
+  encadrement("x", Z_FOND, 0, .8, 0); ouverte(-.37, 0, Z_FOND - .1, .74, Math.PI / 2);   // le placard
+  encadrement("z", XC - .05, P.entree, .9, H4, .1);   // la porte d'entrée (fermée)
   { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : bois foncé, fermée, son judas, sa serrure, son verrou
     const pe = A.mat({ color: 0x4a2c18, roughness: .5 });
     const bb = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
