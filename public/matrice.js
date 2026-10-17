@@ -4494,10 +4494,11 @@ function construireSantaCarla(A, L, scene) {
     return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: tex(c), toneMapped: false })); };
   const STANDS = [[-38, "HOT DOGS", "#ff5a3a"], [-30, "ARCADE", "#3ad8ff"], [-22, "COMICS", "#ffd23a"], [-14, "TATTOO", "#ff3ab8"], [14, "SKEE BALL", "#5aff6a"], [22, "PIZZA", "#ff8a2a"], [30, "BUMPER CARS", "#c06aff"], [38, "CANDY", "#ff6a9a"]];
   for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -8); scene.add(g);
-    const murs = A.mat({ color: 0xd8c8a8, roughness: .8 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
+    const murs = A.mat({ color: 0x2aa49a, roughness: .7 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
     const b = (dx, dy, dz, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); g.add(o); return o; };
     b(5, 3, 3, murs, 0, 1.5, -1.5); b(4.2, 1.6, .05, A.mat({ color: 0x1a1410, emissive: new THREE.Color(c).multiplyScalar(.25) }), 0, 1.5, .02);   // (la cabane, son comptoir éclairé)
     b(5.4, .1, 1.4, A.mat({ map: rayure, roughness: .7 }), 0, 2.6, .55).rotation.x = .25;   // (le store à rayures)
+    b(5.1, .16, 3.1, A.mat({ color: 0xe8c832, roughness: .5 }), 0, 3.05, -1.5);   // (le liseré jaune du toit)
     b(4.6, .9, .25, A.mat({ color: 0x6a4a30 }), 0, .45, .2); const n = neon(txt, c); n.position.set(0, 3.5, .02); g.add(n); }
   // l'arche d'entrée « SANTA CARLA », bordée d'ampoules
   { const g = new THREE.Group(); g.position.set(0, 0, -8.6); scene.add(g); const rouge = A.mat({ color: 0xa82a24, roughness: .6 });
@@ -4520,16 +4521,32 @@ function construireSantaCarla(A, L, scene) {
     scene.add(im);   // (les poteaux blancs, sous la voie)
     const im2 = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .08, .08), A.mat({ color: 0xe8e4da }), n), q = new THREE.Quaternion();
     for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); voie.getTangentAt(i / n, tg); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(tg.x, tg.z)); mt.compose(new THREE.Vector3(p.x, p.y * .5, p.z), q, new THREE.Vector3(1, 1, 1)); im2.setMatrixAt(i, mt); }
-    scene.add(im2); }
+    scene.add(im2);
+    // le treillis en croix entre les poteaux (le « Giant Dipper » de la vraie jetée)
+    const im3 = new THREE.InstancedMesh(new THREE.BoxGeometry(.07, 1, .07), A.mat({ color: 0xe8e4da, roughness: .7 }), n * 4), a2 = new THREE.Vector3(), b2 = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0); let k3 = 0;
+    for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); const p2 = voie.getPointAt(((i + 1) % n) / n), t1 = voie.getTangentAt(i / n), nx = -t1.z, nz = t1.x, ln = Math.hypot(nx, nz) || 1;
+      for (const s of [-1, 1]) { const ox = nx / ln * .7 * s, oz = nz / ln * .7 * s, h = Math.min(p.y, p2.y) * .92;
+        for (const [ya, yb] of [[0, h], [h, 0]]) { a2.set(p.x + ox, ya, p.z + oz); b2.set(p2.x + ox, yb, p2.z + oz); const d = b2.clone().sub(a2), L2 = d.length(); q.setFromUnitVectors(up, d.normalize());
+          mt.compose(a2.clone().add(b2).multiplyScalar(.5), q, new THREE.Vector3(1, L2, 1)); im3.setMatrixAt(k3++, mt); } } }
+    im3.count = k3; scene.add(im3);
+    const gare = new THREE.Group(); gare.position.set(-12, 0, -16); scene.add(gare); const tq = A.mat({ color: 0x2aa49a, roughness: .7 }), jn = A.mat({ color: 0xe8c832 });
+    const bx = (dx, dy, dz, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); gare.add(o); };
+    bx(7, 3.6, 4, tq, 0, 1.8, 0); bx(7.4, .25, 4.4, jn, 0, 3.7, 0); bx(7.6, .4, 4.6, A.mat({ color: 0x1e3a3a }), 0, 4.1, 0); const ng = neon("GIANT DIPPER", "#ffd23a", 5.4); ng.position.set(0, 2.6, 2.02); gare.add(ng);
+    let haut = 0, ph = new THREE.Vector3(); for (let i = 0; i < 64; i++) { voie.getPointAt(i / 64, p); if (p.y > haut) { haut = p.y; ph.copy(p); } }
+    for (const [dx, c] of [[-.8, "#c8102e"], [.8, "#2a62d0"]]) { const mat2 = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 4, 6), A.mat({ color: 0xd8dce2 })); mat2.position.set(ph.x + dx, ph.y + 2, ph.z); scene.add(mat2);
+      const dr = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .75), A.mat({ map: tex(toile(64, 40, (x) => { x.fillStyle = "#f4f0e4"; x.fillRect(0, 0, 64, 40); x.fillStyle = c; for (let i = 0; i < 40; i += 8) x.fillRect(0, i, 64, 4); })), side: THREE.DoubleSide })); dr.position.set(ph.x + dx + .62, ph.y + 3.6, ph.z); scene.add(dr); (L.drapeaux = L.drapeaux || []).push(dr); } }
   const wagons = []; for (let k = 0; k < 4; k++) { const w = new THREE.Group(), c = new THREE.Mesh(new THREE.BoxGeometry(.9, .55, 1.4), A.mat({ color: k % 2 ? 0xd8b020 : 0xc82a24, roughness: .4 })); c.position.y = .45; w.add(c); scene.add(w); wagons.push(w); }
   // ---------- la grande roue, au fond à droite : elle tourne lentement, ses nacelles et ses ampoules ----------
   const roue = new THREE.Group(); roue.position.set(14, 12, -26); scene.add(roue); const RR = 10, nac = [];
-  const metal = A.mat({ color: 0xd8dce2, metalness: .5, roughness: .4 });
+  const metal = A.mat({ color: 0x2a62d0, metalness: .4, roughness: .4 });
   for (const dz of [-.6, .6]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RR, .1, 6, 64), metal); t.position.z = dz; roue.add(t); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = new THREE.Mesh(new THREE.BoxGeometry(.08, RR, .08), metal); r.position.set(Math.cos(a) * RR / 2, Math.sin(a) * RR / 2, 0); r.rotation.z = a - Math.PI / 2; roue.add(r);
     for (let j = 0; j < 4; j++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.09, 6, 4), nuitMat([0xff4a4a, 0xffffff, 0x4ad8ff, 0xffd23a][(i + j) % 4])); bb.position.set(Math.cos(a) * RR * (j + 1) / 4, Math.sin(a) * RR * (j + 1) / 4, .7); roue.add(bb); bulbes.push(bb); } }
-  for (let i = 0; i < 12; i++) { const n = new THREE.Group(), cab = new THREE.Mesh(new THREE.CylinderGeometry(.6, .7, .9, 10, 1, true), A.mat({ color: [0xc82a24, 0x2a6ac8, 0xd8b020, 0x2a9a4a][i % 4], side: THREE.DoubleSide })); cab.position.y = -.8; n.add(cab);
-    const toit = new THREE.Mesh(new THREE.ConeGeometry(.75, .4, 10), A.mat({ color: 0xe8e4da })); toit.position.y = -.15; n.add(toit); scene.add(n); nac.push(n); }
+  for (let i = 0; i < 12; i++) { const n = new THREE.Group(), coul = [0xe8c020, 0xe0408a, 0xd83a24, 0xf0802a][i % 4], cab = new THREE.Mesh(new THREE.CylinderGeometry(.7, .55, .7, 12, 1, true), A.mat({ color: coul, side: THREE.DoubleSide, roughness: .4 })); cab.position.y = -.9; n.add(cab);
+    const fond = new THREE.Mesh(new THREE.CircleGeometry(.55, 12), A.mat({ color: coul })); fond.rotation.x = -Math.PI / 2; fond.position.y = -1.25; n.add(fond);
+    const anse = new THREE.Mesh(new THREE.TorusGeometry(.7, .04, 6, 16, Math.PI), A.mat({ color: 0xd8dce2, metalness: .6 })); anse.position.y = -.55; n.add(anse); scene.add(n); nac.push(n); }   // (les nacelles ouvertes, jaunes, roses, rouges, orange)
+  { const moyeu = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, .3, 24), A.mat({ color: 0x2a62d0 })); moyeu.rotation.x = Math.PI / 2; moyeu.position.z = .75; roue.add(moyeu);
+    const pl = new THREE.Mesh(new THREE.CircleGeometry(.85, 24), new THREE.MeshBasicMaterial({ map: tex(toile(128, 128, (x) => { x.fillStyle = "#f4f0e4"; x.beginPath(); x.arc(64, 64, 62, 0, 7); x.fill(); x.fillStyle = "#2a62d0"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText("SANTA", 64, 58); x.fillText("CARLA", 64, 84); })), toneMapped: false })); pl.position.z = .91; roue.add(pl); }
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(.18, .25, 13.5, 8), metal); j.position.set(14 + sx * 3.4, 6, -26 + sz * .9); j.rotation.z = -sx * .26; scene.add(j); }
   // ---------- le manège de chevaux de bois, à droite de l'arche ----------
   const manege = new THREE.Group(); manege.position.set(32, 0, -20); scene.add(manege); const chevaux = [];
@@ -4544,6 +4561,40 @@ function construireSantaCarla(A, L, scene) {
       const m = A.mat({ color: robe[i % 4], roughness: .4 }), bx = (dx, dy, dz, px, py, pz, rz = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); o.rotation.z = rz; c.add(o); };
       bx(.35, .45, 1.1, 0, 0, 0); bx(.25, .55, .3, 0, .4, .55, 0); bx(.22, .25, .45, 0, .62, .75); for (const [dx, dz] of [[-.1, -.4], [.1, -.4], [-.1, .4], [.1, .4]]) bx(.08, .6, .1, dx, -.45, dz);
       const tige = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 4, 8), A.mat({ color: 0xd8b020, metalness: .7 })); tige.position.y = .6; c.add(tige); chevaux.push(c); } }
+  // ---------- les palmiers, le long de la jetée et sur la plage ----------
+  const palmier = (x, z, h = 9, pen = .6) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = hasard(x * 3 + z) * 6.28; scene.add(g);
+    const c = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(pen * .3, h * .4, 0), new THREE.Vector3(pen, h, 0)]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(c, 16, .2, 8), A.mat({ color: 0x5a4632, roughness: 1 })));
+    const fm = A.mat({ color: 0x1e4a24, roughness: .8, side: THREE.DoubleSide });
+    for (let i = 0; i < 9; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.7, 3.6, 1, 6), fm), pa = f.geometry.attributes.position; for (let k = 0; k < pa.count; k++) { const y = pa.getY(k) + 1.8; pa.setZ(k, -y * y * .09); pa.setX(k, pa.getX(k) * (1 - y / 4.2)); }
+      f.geometry.translate(0, 1.8, 0); f.rotation.set(-1.15, i / 9 * Math.PI * 2, 0, "YXZ"); f.position.set(pen, h, 0); g.add(f); } };
+  for (const [x, z] of [[-44, -12], [-36, -11], [6, -12], [44, -12], [40, 12], [-40, 14], [-30, 20], [8, 15], [-48, -30], [-4, -36], [2, -38], [26, -36], [36, -34], [46, -30], [-20, -42], [20, -44]]) palmier(x, z, 8 + hasard(x) * 4);   // (et derrière, en silhouette sur le couchant)
+  // la pancarte « Welcome to Santa Carla », peinte, sur ses deux piliers de brique et leurs vases ; au dos, le graffiti du film
+  { const g = new THREE.Group(); g.position.set(-11, 0, 15); g.rotation.y = .55; scene.add(g);
+    const face = tex(toile(1024, 440, (x, w, h) => { const ci = x.createLinearGradient(0, 0, 0, h * .5); ci.addColorStop(0, "#7ab4e0"); ci.addColorStop(1, "#d8ecf4"); x.fillStyle = ci; x.fillRect(0, 0, w, h);
+        x.fillStyle = "#8aa0b4"; x.beginPath(); x.moveTo(0, 210); for (let i = 0; i <= 10; i++) x.lineTo(i * w / 10, 190 - Math.sin(i * 1.3) * 26); x.lineTo(w, h); x.lineTo(0, h); x.fill();   // (les collines au loin)
+        x.fillStyle = "#4a8a4a"; x.beginPath(); x.moveTo(0, 250); x.quadraticCurveTo(300, 200, 620, 260); x.lineTo(620, h); x.lineTo(0, h); x.fill();
+        x.fillStyle = "#2a62b8"; x.beginPath(); x.moveTo(560, 270); x.quadraticCurveTo(800, 240, w, 250); x.lineTo(w, h); x.lineTo(520, h); x.fill(); x.fillStyle = "#e8d8a0"; x.beginPath(); x.moveTo(520, 300); x.quadraticCurveTo(640, 280, 720, 330); x.quadraticCurveTo(640, 380, 560, h); x.lineTo(500, h); x.fill();
+        x.strokeStyle = "rgba(255,255,255,.7)"; x.lineWidth = 3; for (let i = 0; i < 9; i++) { x.beginPath(); x.moveTo(740 + i * 30, 300 + i * 9); x.lineTo(780 + i * 30, 296 + i * 9); x.stroke(); }
+        for (const [bx2, by] of [[860, 280], [920, 300], [960, 270]]) { x.fillStyle = "#fff"; x.beginPath(); x.moveTo(bx2, by); x.lineTo(bx2 + 10, by - 24); x.lineTo(bx2 + 12, by); x.fill(); }
+        x.fillStyle = "#f2ead8"; x.fillRect(150, 230, 40, 30); x.fillStyle = "#8a2a24"; x.beginPath(); x.moveTo(146, 232); x.lineTo(170, 214); x.lineTo(194, 232); x.fill();   // (une petite église)
+        x.fillStyle = "#2a5a2a"; for (const [tx, ty] of [[80, 250], [260, 236], [420, 262], [480, 300]]) { x.beginPath(); x.arc(tx, ty, 22, 0, 7); x.fill(); }
+        x.save(); x.translate(60, 120); x.rotate(-.12); x.fillStyle = "#1a1a1a"; x.font = "italic bold 54px 'Brush Script MT', 'Segoe Script', cursive"; x.fillText("Welcome to", 0, 0); x.restore();
+        const gr = x.createLinearGradient(0, 70, 0, 200); gr.addColorStop(0, "#ffd23a"); gr.addColorStop(1, "#f06a10"); x.font = "900 128px 'Arial Black', Impact, sans-serif"; x.lineJoin = "round";
+        x.lineWidth = 16; x.strokeStyle = "#5a1a0a"; x.strokeText("SANTA CARLA", 230, 190); x.fillStyle = gr; x.fillText("SANTA CARLA", 230, 190);
+        x.strokeStyle = "#5a3a2a"; x.lineWidth = 14; x.strokeRect(7, 7, w - 14, h - 14); }));
+    const dos = tex(toile(1024, 440, (x, w, h) => { x.fillStyle = "#6a6258"; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { x.fillStyle = "rgba(0,0,0,.06)"; x.fillRect(0, i * 11, w, 2); }
+        x.save(); x.translate(90, 260); x.rotate(-.06); x.fillStyle = "#c80a10"; x.font = "bold 70px 'Marker Felt', 'Comic Sans MS', sans-serif"; x.fillText("MURDER CAPITAL", 0, 0); x.fillText("OF THE WORLD", 60, 90); x.restore();
+        x.fillStyle = "rgba(200,10,16,.6)"; for (let i = 0; i < 14; i++) x.fillRect(110 + i * 55, 270 + (i % 3) * 20, 4, 30 + (i % 4) * 14); }));   // (les coulures de peinture)
+    const W2 = 7, H2 = 3;
+    const panneau = new THREE.Mesh(new THREE.BoxGeometry(W2, H2, .2), [A.mat({ color: 0x5a3a2a }), A.mat({ color: 0x5a3a2a }), A.mat({ color: 0x5a3a2a }), A.mat({ color: 0x5a3a2a }), A.mat({ map: face, roughness: .6, emissive: 0xffffff, emissiveMap: face, emissiveIntensity: .25 }), A.mat({ map: dos, roughness: .8 })]);
+    panneau.position.y = 3.2; g.add(panneau);
+    const brique = A.mat({ map: tex(toile(128, 128, (x) => { x.fillStyle = "#8a3a2a"; x.fillRect(0, 0, 128, 128); x.fillStyle = "#c8b8a0"; for (let r = 0; r < 8; r++) { x.fillRect(0, r * 16, 128, 2); for (let c = 0; c < 4; c++) x.fillRect(c * 32 + (r % 2) * 16, r * 16, 2, 16); } }), 1, 3), roughness: .9 });
+    const vase = new THREE.LatheGeometry([[0, 0], [.26, 0], [.18, .1], [.3, .35], [.32, .55], [.2, .68], [.12, .7], [.16, .8], [0, .85]].map(([r, y]) => new THREE.Vector2(r, y)), 14);
+    for (const sx of [-1, 1]) { const pil = new THREE.Mesh(new THREE.BoxGeometry(.7, 4.9, .7), brique); pil.position.set(sx * (W2 / 2 + .2), 2.45, -.1); g.add(pil);
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(.85, .15, .85), A.mat({ color: 0xc8c0b0 })); ch.position.set(sx * (W2 / 2 + .2), 4.97, -.1); g.add(ch);
+      const v = new THREE.Mesh(vase, A.mat({ color: 0xb8b0a0, roughness: .7 })); v.position.set(sx * (W2 / 2 + .2), 5.04, -.1); g.add(v); }
+    for (const sx of [-1, 1]) { const l = new THREE.SpotLight(0xffe8c0, 25, 9, .7, .5, 1.2); l.position.set(sx * 2, .4, 2.5); l.target.position.set(0, 3.2, 0); g.add(l, l.target); } }
   // ---------- au loin : les falaises, le pont de chemin de fer, et le phare ----------
   const roc = A.mat({ color: 0x1a1c24, roughness: 1 });
   for (const [x, z, s] of [[-70, 10, 14], [-62, 30, 18], [-78, -10, 16], [70, 0, 12], [80, 24, 16]]) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), roc); m.position.set(x, s * .3, z); m.scale.y = .9; scene.add(m); }
@@ -4557,13 +4608,18 @@ function construireSantaCarla(A, L, scene) {
   L.hauteur = () => 0;
   L.depart = [0, 1.5]; L.cam = { pos: [0, 6, 14], vise: [0, 2.5, -6] }; L.suivi = { d: 6, h: 3, av: 3, vy: 1.6 };
   L.sansPNJ = true; L.sansMusique = true; L.toujoursNuit = true; L.santaCarla = true;
+  // le ciel du crépuscule (d'après la photo) : rouge et orange à l'horizon, les nuages sombres au-dessus, la nuit qui tombe en haut
+  L.cielPerso = tex(toile(1024, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#0a0c1c"); g.addColorStop(.35, "#2a1e30"); g.addColorStop(.58, "#8a2a1c"); g.addColorStop(.72, "#e8602a"); g.addColorStop(.82, "#f8a040"); g.addColorStop(1, "#3a1a18"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) { const y = h * (.2 + hasard(i * 1.7) * .45), x0 = hasard(i * 2.9) * w, lg = 120 + hasard(i * 4.1) * 380, ep = 6 + hasard(i * 5.3) * 22; x.fillStyle = `rgba(${y > h * .5 ? "60,20,24" : "18,14,28"},${.35 + hasard(i) * .4})`; x.beginPath(); x.ellipse(x0, y, lg / 2, ep / 2, (hasard(i * 7) - .5) * .1, 0, 7); x.fill(); }
+    for (let i = 0; i < 120; i++) { x.fillStyle = `rgba(255,255,255,${.3 + hasard(i * 9) * .6})`; x.fillRect(hasard(i * 3.3) * w, hasard(i * 5.7) * h * .3, 1.5, 1.5); } }));
+  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x3a1c22;
   // ---------- l'animation des manèges ----------
   let tr = 0; const avant = L.anim;
   L.anim = (t) => { avant && avant(t); const s = t / 1000;
     roue.rotation.z = s * .12; nac.forEach((n, i) => { const a = i / 12 * Math.PI * 2 + s * .12; n.position.set(14 + Math.cos(a) * RR, 12 + Math.sin(a) * RR, -26); });
     manege.rotation.y = s * .35; chevaux.forEach((c, i) => { c.position.y = 1.4 + Math.sin(s * 2.2 + i * 1.3) * .3; });
     tr = (s * .045) % 1; wagons.forEach((w, k) => { const u = (tr + 1 - k * .008) % 1, p = voie.getPointAt(u), tg = voie.getTangentAt(u); w.position.copy(p); w.lookAt(p.x + tg.x, p.y + tg.y, p.z + tg.z); });
-    if (L.phare) L.phare.rotation.y = s * .6; merT.offset.x = s * .004; ecume.position.z = 45 + Math.sin(s * .6) * 1.5; ecume.material.opacity = .25 + Math.sin(s * .6) * .1;
+    if (L.phare) L.phare.rotation.y = s * .6; (L.drapeaux || []).forEach((d, i) => { d.rotation.y = Math.sin(s * 3 + i) * .35; }); merT.offset.x = s * .004; ecume.position.z = 45 + Math.sin(s * .6) * 1.5; ecume.material.opacity = .25 + Math.sin(s * .6) * .1;
     const cl = Math.floor(s * 3); bulbes.forEach((b, i) => { b.visible = (i + cl) % 7 !== 0; });   // (les ampoules qui clignotent)
     combat(t); };
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
@@ -10134,7 +10190,7 @@ function construireScene(id) {
     L.setNuit = (n) => {
       if (L.toujoursNuit) n = true;   /* (Santa Carla : toujours la nuit) */
       L.nuit = n;
-      scene.background = n ? cielNuit : cielJour; scene.fog.color.setHex(n ? 0x0c1530 : 0xcfe6f7);
+      scene.background = L.cielPerso || (n ? cielNuit : cielJour); scene.fog.color.setHex(L.brumePerso || (n ? 0x0c1530 : 0xcfe6f7));   /* (Santa Carla : son ciel de crépuscule) */
       hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
       soleil.intensity = n ? 1.35 : 2.3; soleil.color.setHex(n ? 0xc6d4ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
       clair.intensity = n ? .32 : 0; lune.visible = n; nuages.forEach(o => o.visible = !n); if (dome) dome.visible = !n;
