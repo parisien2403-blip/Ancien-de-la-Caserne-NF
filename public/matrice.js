@@ -4254,7 +4254,7 @@ function construireAppart(A, L, scene) {
     for (const t of tr) { const a0 = t.c - t.w / 2, a1 = t.c + t.w / 2, y0 = yS + t.y0, y1 = Math.min(HT, y0 + t.h);
       pose(u, a0, -.1, HT); pose(a0, a1, -.1, y0); pose(a0, a1, y1, HT); u = a1; }
     pose(u, a, -.1, HT); };
-  const piece = (x0, x1, z0, z1, genre, trous = {}, matMur) => { const y = niveau((z0 + z1) / 2); if (genre) sol(x0, x1, z0, z1, y, genre);
+  const piece = (x0, x1, z0, z1, genre, trous = {}, matMur) => { const y = trous.y != null ? trous.y : niveau((z0 + z1) / 2);   // (trous.y : le niveau de référence des trous, pour le couloir qui a deux niveaux) if (genre) sol(x0, x1, z0, z1, y, genre);
     murTroue("z", x0 + E / 2, z0, z1, trous.x0, y, matMur); murTroue("z", x1 - E / 2, z0, z1, trous.x1, y, matMur);
     murTroue("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, y, matMur); murTroue("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, y, matMur);
     // la plinthe, tout autour (sauf dans les trous qui descendent jusqu'au sol)
@@ -4274,7 +4274,7 @@ function construireAppart(A, L, scene) {
   piece(-XC, XC, Z_FOND, Z_BOUT, null, {
     x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .75), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }, { ...porte(P.salon2, .9), y0: H4 }],
     x1: [porte(P.ch3), porte(P.sdb, .8), { c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: H4, h: 2.25 }, { c: P.cuisine, w: 1.6, y0: H4, h: 2.2 }, { ...porte(P.entree, .9), y0: H4 }],
-    z0: [porte(0, .8)] });
+    z0: [porte(0, .8)], y: 0 });
   sol(-XC, XC, Z_FOND, ZM0, 0, "carreaux"); sol(-XC, XC, ZM1, Z_BOUT, H4, "carreaux");
   { const marche = A.mat({ color: 0x7a4a26, roughness: .4 }), nez = A.mat({ color: 0x5e3619, roughness: .4 });
     for (let k = 0; k < 4; k++) { const z1 = ZM1 - k * (ZM1 - ZM0) / 4, z0 = z1 - (ZM1 - ZM0) / 4, y = H4 - k * H4 / 4;   // (marche k : son dessus à y, sa contremarche en z0)
