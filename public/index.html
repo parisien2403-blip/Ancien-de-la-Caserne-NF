@@ -2402,7 +2402,7 @@
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
-    $("mxLieux").innerHTML = [...Object.entries(m.LIEUX), ...(appartOuvert() ? [["appart", { icone: "🔵", nom: "Escalier Z" }]] : []), ...(moi && moi.admin ? [["santacarla", { icone: "🧛", nom: "Santa Carla" }]] : [])].map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
+    $("mxLieux").innerHTML = [...Object.entries(m.LIEUX), ...(appartOuvert() ? [["appart", { icone: "🔵", nom: "Escalier Z" }]] : [])].map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
     $("mxLieux").querySelectorAll("[data-lieu]").forEach(b => b.onclick = () => m.allerAuLieu(b.dataset.lieu));
   }
   /* ----- Le DJ : la même musique, au même moment, pour tous ceux de la salle des fêtes ----- */

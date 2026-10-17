@@ -23,7 +23,9 @@ export const TENUES = {
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
-  eboueur: { nom: "Éboueur (Propreté de Paris)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, ghostbuster: { nom: "Combinaison Ghostbusters (le pack à protons)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  eboueur: { nom: "Éboueur (Propreté de Paris)" },
+  lbsam: { nom: "Chemise hawaïenne et veste beige (Sam, Génération perdue)" }, lbedgar: { nom: "T-shirt camouflage (Edgar Frog)" }, lbalan: { nom: "Débardeur « Airborne » (Alan Frog)" },
+  lbdavid: { nom: "Long manteau noir (David)" }, lbpaul: { nom: "Veste en jean à médaillons (Paul)" }, lbmarko: { nom: "Veste en patchwork (Marko)" }, lbdwayne: { nom: "Veste de cuir sur torse nu (Dwayne)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, ghostbuster: { nom: "Combinaison Ghostbusters (le pack à protons)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -91,7 +93,7 @@ export function dessinerBonhomme(o, tete) {
     const haut = t === "garde" ? "#1c2541" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "nemesis") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
+    if (t === "nemesis" || t === "lbdavid") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
@@ -290,6 +292,41 @@ export function dessinerBonhomme(o, tete) {
       if (t === "eibatterie") { x.fillStyle = "#d9a07e"; x.beginPath(); x.moveTo(92, 146); x.lineTo(108, 146); x.lineTo(100, 172); x.closePath(); x.fill();
         x.fillStyle = "#ffffff"; x.beginPath(); x.moveTo(90, 144); x.lineTo(80, 150); x.lineTo(98, 176); x.lineTo(92, 150); x.closePath(); x.moveTo(110, 144); x.lineTo(120, 150); x.lineTo(102, 176); x.lineTo(108, 150); x.closePath(); x.fill();
         x.strokeStyle = "rgba(0,0,0,.14)"; x.lineWidth = 1.4; x.beginPath(); x.moveTo(100, 176); x.lineTo(100, 262); x.stroke(); x.fillStyle = "#d8d8d4"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(103, 188 + k * 16, 2, 0, 7); x.fill(); } } }
+    // Génération perdue : les trois ados (Sam, Edgar et Alan Frog) et la bande de David
+    if (/^lb/.test(t) && !profil) { const dos = o.pose === "dos";
+      const torse = (f) => { x.save(); x.beginPath(); x.roundRect(58, 145, 84, 120, 22); x.clip(); f(); x.restore(); };
+      if (t === "lbsam") { if (!dos) { x.save(); x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(118, 262); x.lineTo(82, 262); x.closePath(); x.clip();   // la chemise hawaïenne, entre les pans de la veste
+          x.fillStyle = "#f0e8d2"; x.fillRect(80, 140, 40, 130); for (let k = 0; k < 22; k++) { const px = 82 + (k * 37) % 36, py = 150 + (k * 53) % 110; x.fillStyle = ["#2a7a3a", "#c8302a", "#3a8ac8", "#e8a020", "#2a6a2a"][k % 5]; x.beginPath(); x.ellipse(px, py, k % 5 === 1 ? 4 : 6, k % 5 === 1 ? 4 : 3, k, 0, 7); x.fill(); }
+          x.fillStyle = "rgba(60,40,20,.5)"; x.font = "bold 6px Georgia"; x.fillText("Colorado", 86, 236); x.restore();
+          x.fillStyle = "#f4ead0"; x.beginPath(); x.moveTo(88, 144); x.lineTo(100, 156); x.lineTo(92, 166); x.closePath(); x.moveTo(112, 144); x.lineTo(100, 156); x.lineTo(108, 166); x.closePath(); x.fill();   // le col de la chemise
+          x.fillStyle = eclaircir(c, 1.06); x.beginPath(); x.moveTo(78, 144); x.lineTo(88, 144); x.lineTo(84, 196); x.lineTo(74, 170); x.closePath(); x.moveTo(122, 144); x.lineTo(112, 144); x.lineTo(116, 196); x.lineTo(126, 170); x.closePath(); x.fill();   // les revers de la veste
+          x.strokeStyle = "rgba(90,70,30,.35)"; x.lineWidth = 1.6; x.beginPath(); x.moveTo(84, 150); x.lineTo(82, 262); x.moveTo(116, 150); x.lineTo(118, 262); x.stroke(); }
+        x.strokeStyle = "rgba(90,70,30,.2)"; x.lineWidth = 2; x.beginPath(); x.moveTo(66, 200); x.lineTo(74, 250); x.moveTo(134, 200); x.lineTo(126, 250); x.stroke(); }   // les plis de la toile
+      if (t === "lbedgar") torse(() => { for (let k = 0; k < 34; k++) { x.fillStyle = ["#3a4628", "#8a8a5a", "#2a2618", "#6a7a4a"][k % 4]; x.beginPath(); x.ellipse(58 + (k * 41) % 86, 146 + (k * 67) % 120, 6 + (k % 3) * 4, 3 + (k % 4) * 2, k * .7, 0, 7); x.fill(); }
+        if (!dos) { x.fillStyle = assombrir(c, .75); x.beginPath(); x.arc(100, 146, 13, 0, Math.PI); x.fill(); } });   // le camouflage, l'encolure
+      if (t === "lbalan") { x.fillStyle = peau; x.beginPath(); x.moveTo(58, 146); x.lineTo(76, 146); x.quadraticCurveTo(72, 170, 58, 182); x.closePath(); x.moveTo(142, 146); x.lineTo(124, 146); x.quadraticCurveTo(128, 170, 142, 182); x.closePath(); x.fill();   // les épaules nues (le débardeur)
+        x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(58, 146, 84, 3);
+        if (!dos) { x.fillStyle = peau; x.beginPath(); x.arc(100, 146, 12, 0, Math.PI); x.fill(); x.fillStyle = "#2a2a2c"; x.font = "bold 11px Arial"; x.textAlign = "center"; x.fillText("AIRBORNE", 100, 196);
+          x.strokeStyle = "#2a2a2c"; x.lineWidth = 2.5; x.beginPath(); x.arc(100, 222, 13, 0, 7); x.stroke(); x.beginPath(); x.moveTo(87, 222); x.lineTo(113, 222); x.moveTo(100, 209); x.lineTo(100, 235); x.stroke();
+          x.strokeStyle = "#c8ccd4"; x.lineWidth = 1.4; x.beginPath(); x.moveTo(90, 146); x.quadraticCurveTo(100, 186, 110, 146); x.stroke(); x.fillStyle = "#d8dce2"; x.fillRect(96, 176, 8, 11); } }   // la chaînette, la plaque militaire
+      if (t === "lbdavid" && !dos) { x.fillStyle = "#0b0b0c"; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(112, 262); x.lineTo(88, 262); x.closePath(); x.fill();   // le t-shirt noir, entre les pans du manteau
+        x.fillStyle = "#1f1f22"; x.beginPath(); x.moveTo(80, 140); x.lineTo(66, 150); x.lineTo(84, 214); x.lineTo(90, 160); x.closePath(); x.moveTo(120, 140); x.lineTo(134, 150); x.lineTo(116, 214); x.lineTo(110, 160); x.closePath(); x.fill();   // le grand col relevé, les revers
+        x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; x.beginPath(); x.moveTo(84, 214); x.lineTo(80, 390); x.moveTo(116, 214); x.lineTo(120, 390); x.stroke(); x.fillStyle = "#8a8e96"; x.fillRect(88, 246, 24, 4); }   // les bords du manteau, la boucle
+      if (t === "lbpaul") { if (!dos) { x.fillStyle = "#111"; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(114, 262); x.lineTo(86, 262); x.closePath(); x.fill(); x.strokeStyle = "rgba(255,255,255,.14)"; x.lineWidth = 1; for (let k = 0; k < 14; k++) { x.beginPath(); x.moveTo(84, 146 + k * 9); x.lineTo(116, 152 + k * 9); x.moveTo(116, 146 + k * 9); x.lineTo(84, 152 + k * 9); x.stroke(); }   // le maillot en résille noire
+          for (let k = 0; k < 7; k++) for (const cx of [78, 122]) { x.fillStyle = "#e4e6ea"; x.beginPath(); x.arc(cx, 160 + k * 15, 5.5, 0, 7); x.fill(); x.fillStyle = "#9a9ea6"; x.beginPath(); x.arc(cx, 160 + k * 15, 2.5, 0, 7); x.fill(); }   // les médaillons d'argent, le long des pans
+          x.strokeStyle = "#c8ccd4"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(126, 160); x.quadraticCurveTo(140, 220, 130, 262); x.stroke(); }
+        x.fillStyle = "rgba(255,255,255,.08)"; x.fillRect(62, 160, 10, 90); x.fillRect(128, 160, 10, 90); }   // le jean délavé
+      if (t === "lbmarko") { torse(() => { const P = ["#c8302a", "#e8a020", "#2a5ac8", "#6a2a8a", "#2a8a5a", "#d8c8a0", "#8a4a2a"]; for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) { x.fillStyle = P[(i * 3 + j * 5) % 7]; x.fillRect(58 + i * 14, 145 + j * 18, 14, 18); }
+          x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 1; x.setLineDash([2, 2]); for (let i = 1; i < 6; i++) { x.beginPath(); x.moveTo(58 + i * 14, 145); x.lineTo(58 + i * 14, 265); x.stroke(); } x.setLineDash([]); });   // la veste rapiécée, cousue main
+        if (!dos) { x.fillStyle = "#ecebe6"; x.beginPath(); x.moveTo(88, 146); x.lineTo(112, 146); x.lineTo(110, 262); x.lineTo(90, 262); x.closePath(); x.fill();   // le débardeur blanc
+          x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(124, 204, 8, 0, 7); x.fill(); x.fillRect(120, 209, 8, 5); x.fillStyle = "#111"; x.beginPath(); x.arc(121, 203, 2, 0, 7); x.arc(127, 203, 2, 0, 7); x.fill(); }   // la tête de mort
+        x.strokeStyle = "#c8a030"; x.lineWidth = 1.5; for (let k = 0; k < 10; k++) { x.beginPath(); x.moveTo(58 + k * 2, 150 + k * 3); x.lineTo(52 + k * 2, 166 + k * 3); x.moveTo(142 - k * 2, 150 + k * 3); x.lineTo(148 - k * 2, 166 + k * 3); x.stroke(); } }   // les franges aux épaules
+      if (t === "lbdwayne" && !dos) { x.fillStyle = peau; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(112, 262); x.lineTo(88, 262); x.closePath(); x.fill();   // le torse nu sous la veste de cuir
+        x.strokeStyle = "rgba(150,90,60,.35)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(100, 190); x.lineTo(100, 250); x.moveTo(88, 186); x.quadraticCurveTo(96, 194, 100, 188); x.moveTo(112, 186); x.quadraticCurveTo(104, 194, 100, 188); x.stroke();
+        for (const [r, col] of [[16, "#6a4a2a"], [24, "#3a3026"], [32, "#8a6a3a"]]) { x.strokeStyle = col; x.lineWidth = 1.8; x.beginPath(); x.arc(100, 146, r, .45, Math.PI - .45); x.stroke(); }   // les colliers
+        x.fillStyle = "#ece4c8"; for (let k = 0; k < 7; k++) { const a = .6 + k * .32; x.beginPath(); x.moveTo(100 + Math.cos(a) * 32, 146 + Math.sin(a) * 32); x.lineTo(100 + Math.cos(a) * 38, 146 + Math.sin(a) * 40); x.lineTo(102 + Math.cos(a) * 32, 146 + Math.sin(a) * 32); x.fill(); }   // les dents et les os
+        x.fillStyle = "#d8d0c0"; x.fillRect(98, 176, 4, 16); x.fillRect(94, 181, 12, 3);   // la croix
+        x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 3; x.beginPath(); x.moveTo(68, 160); x.lineTo(72, 250); x.moveTo(132, 160); x.lineTo(128, 250); x.stroke(); } }
     // les habitants de Hill Valley, 1955
     if (o.pose !== "dos" && !profil && /^(marty|biff|match|troisd|skinhead|pois|ecossaise|bretelles|serveur|serveuse|gilet|varsity|lou|lorraine|george|pompiste)$/.test(t)) {
       const cravate = (col) => { x.fillStyle = col; x.beginPath(); x.moveTo(96, 150); x.lineTo(104, 150); x.lineTo(106, 214); x.lineTo(100, 222); x.lineTo(94, 214); x.closePath(); x.fill(); };
@@ -512,14 +549,19 @@ export function dessinerBonhomme(o, tete) {
       mains[sens > 0 ? 0 : 1] = cible || [cx - 96 * Math.sin(a), 158 + 96 * Math.cos(a)];
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
-      const court = t === "rpd" || t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy";
-      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+      const court = t === "rpd" || t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy" || t === "lbedgar";
+      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien" || t === "lbalan") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
       else { x.fillStyle = haut; x.beginPath(); x.roundRect(-12, -8, 24, 104, 12); x.fill(); }
       if (t === "match") { x.strokeStyle = "rgba(20,20,20,.55)"; x.lineWidth = 2; for (let k = 8; k < 96; k += 12) { x.beginPath(); x.moveTo(-12, k); x.lineTo(12, k); x.stroke(); } x.beginPath(); x.moveTo(-4, -8); x.lineTo(-4, 96); x.moveTo(5, -8); x.lineTo(5, 96); x.stroke(); }
       if (t === "marty") { x.fillStyle = "#e9dcc8"; x.fillRect(-12, 74, 24, 14); x.fillStyle = "rgba(190,60,40,.5)"; for (let k = 0; k < 6; k++) x.fillRect(-10 + (k % 3) * 8, 76 + Math.floor(k / 3) * 6, 3, 3); x.fillStyle = "rgba(30,50,90,.35)"; x.fillRect(-12, 20, 24, 30); }   // le blouson en jean, les poignets retroussés
+      if (t === "lbsam") { x.fillStyle = "rgba(255,255,255,.28)"; x.fillRect(-12, 68, 24, 12); x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(-12, 80, 24, 3); }   // les manches retroussées
+      if (t === "lbedgar") { for (let k = 0; k < 5; k++) { x.fillStyle = ["#3a4628", "#8a8a5a", "#2a2618", "#6a7a4a"][k % 4]; x.beginPath(); x.ellipse(-6 + (k * 7) % 14, -2 + k * 7, 6, 3, k, 0, 7); x.fill(); } x.fillStyle = assombrir(c, .8); x.fillRect(-14, 28, 28, 7); }   // la manche roulée
+      if (t === "lbmarko") { const P = ["#c8302a", "#e8a020", "#2a5ac8", "#6a2a8a", "#2a8a5a"]; for (let k = 0; k < 5; k++) { x.fillStyle = P[(k + (sens > 0 ? 0 : 2)) % 5]; x.fillRect(-12, -6 + k * 18, 24, 17); } }
+      if (t === "lbpaul") { x.fillStyle = "#d8dce2"; x.fillRect(-12, 76, 24, 4); x.fillRect(-12, 83, 24, 3); }   // les bracelets
+      if (t === "lbdwayne") { x.fillStyle = "rgba(255,255,255,.1)"; x.fillRect(-6, 0, 4, 80); }
       if (t === "varsity") { x.fillStyle = "#c8202a"; x.fillRect(-12, 78, 24, 10); x.fillStyle = "#f4f4f0"; x.fillRect(-12, 81, 24, 2); }
       if (t === "gilet") { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(-12, 50, 24, 8); }
       if (t === "survet" || t === "fletcher") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
@@ -540,7 +582,7 @@ export function dessinerBonhomme(o, tete) {
         x.beginPath(); x.roundRect(4, 98, 6, 30, 3); x.fill();
         x.beginPath(); x.ellipse(-12, 96, 4, 8, -.5, 0, 7); x.fill();
         x.strokeStyle = "rgba(120,70,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-8, 99); x.lineTo(3, 99); x.moveTo(-8, 103); x.lineTo(3, 103); x.stroke();
-      } else { x.fillStyle = peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();
+      } else { x.fillStyle = t === "lbdavid" ? "#141416" : peau; x.beginPath(); x.arc(0, 96, 11, 0, 7); x.fill();   /* (David : les gants noirs) */
         // les griffes du zombie : quatre doigts crochus
         if (/^thriller|^profil$/.test(o.pose || "")) { x.strokeStyle = peau; x.lineWidth = 4.5; x.lineCap = "round";
           for (let f = -1.5; f <= 1.5; f++) { x.beginPath(); x.moveTo(f * 5.5, 102); x.quadraticCurveTo(f * 7.5, 116, f * 4 + 3, 120); x.stroke(); } } }
@@ -4443,40 +4485,15 @@ function enfiladeChene(g) {
 }
 /* ===================== Santa Carla (Génération perdue, 1987) : la jetée de nuit, ses manèges, la plage, l'océan ;
    et les quatre vampires de la bande de David, qu'il faut affronter comme dans le film : l'eau bénite pour les affaiblir, le pieu quand ils sont à terre ===================== */
-function toileVampire(k) {   // les quatre vampires, dessinés (pas les acteurs) : 0 David, 1 Paul, 2 Marko, 3 Dwayne
-  return toile(256, 512, (x, w, h) => {
-    const V = [{ chev: "#f2ecd8", veste: "#2a2420", style: "crete" }, { chev: "#e8d48a", veste: "#3a3430", style: "long" }, { chev: "#c8a868", veste: "#5a3a5a", style: "boucles" }, { chev: "#1a1410", veste: "#2e2a26", style: "noirs" }][k];
-    const peau = "#e4ddd2", ombre = "#b8b0a4";
-    // le long manteau qui s'ouvre comme des ailes, les bras écartés
-    x.fillStyle = V.veste; x.beginPath(); x.moveTo(128, 150); x.quadraticCurveTo(40, 160, 6, 250); x.lineTo(40, 270); x.quadraticCurveTo(70, 230, 92, 225); x.lineTo(80, 420); x.lineTo(176, 420); x.lineTo(164, 225); x.quadraticCurveTo(186, 230, 216, 270); x.lineTo(250, 250); x.quadraticCurveTo(216, 160, 128, 150); x.fill();
-    x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; for (const [a, b, c, d] of [[110, 170, 100, 410], [146, 170, 156, 410], [60, 190, 20, 250], [196, 190, 236, 250]]) { x.beginPath(); x.moveTo(a, b); x.lineTo(c, d); x.stroke(); }
-    if (k === 2) { for (let i = 0; i < 9; i++) { x.fillStyle = ["#7a3a6a", "#3a5a7a", "#8a6a2a", "#4a6a3a"][i % 4]; x.fillRect(90 + (i % 3) * 26, 180 + Math.floor(i / 3) * 50, 24, 46); } }   // (la veste rapiécée)
-    if (k === 3) { x.fillStyle = peau; x.beginPath(); x.moveTo(112, 168); x.lineTo(144, 168); x.lineTo(138, 300); x.lineTo(118, 300); x.fill(); x.fillStyle = "#c8a050"; x.fillRect(118, 180, 20, 3); }   // (le torse nu sous le gilet, un collier)
-    else { x.fillStyle = k === 2 ? "#ece8e0" : "#141414"; x.beginPath(); x.moveTo(114, 166); x.lineTo(142, 166); x.lineTo(136, 230); x.lineTo(120, 230); x.fill(); }
-    if (k === 1) { x.strokeStyle = "rgba(255,255,255,.18)"; x.lineWidth = 1; for (let i = 0; i < 8; i++) { x.beginPath(); x.moveTo(114 + i * 4, 166); x.lineTo(118 + i * 3, 230); x.stroke(); }   // (Paul : le maillot en résille, les médaillons d'argent le long de la veste en jean)
-      x.fillStyle = "#3a4a6a"; x.globalAlpha = .55; x.fillRect(84, 160, 26, 250); x.fillRect(146, 160, 26, 250); x.globalAlpha = 1; for (let i = 0; i < 9; i++) for (const cx of [100, 156]) { x.fillStyle = "#d8dce2"; x.beginPath(); x.arc(cx, 178 + i * 24, 8, 0, 7); x.fill(); x.fillStyle = "#8a8e96"; x.beginPath(); x.arc(cx, 178 + i * 24, 4, 0, 7); x.fill(); } }
-    if (k === 2) { x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(160, 330, 13, 0, 7); x.fill(); x.fillRect(153, 338, 14, 8); x.fillStyle = "#111"; x.beginPath(); x.arc(155, 328, 3, 0, 7); x.arc(165, 328, 3, 0, 7); x.fill();   // (Marko : la veste en patchwork, la tête de mort, les franges)
-      for (let i = 0; i < 12; i++) { x.fillStyle = ["#c8302a", "#e8a020", "#2a6ac8", "#6a2a8a"][i % 4]; x.fillRect(82 + (i % 2) * 70 + (i % 3) * 6, 175 + i * 18, 18, 14); } x.strokeStyle = "#c8a030"; x.lineWidth = 2; for (let i = 0; i < 14; i++) { x.beginPath(); x.moveTo(60 + i * 3, 196 + i * 4); x.lineTo(52 + i * 3, 214 + i * 4); x.stroke(); } }
-    if (k === 3) { x.strokeStyle = "#8a6a3a"; x.lineWidth = 2; for (const r of [26, 36, 46]) { x.beginPath(); x.arc(128, 150, r, .5, Math.PI - .5); x.stroke(); } x.fillStyle = "#ece4c8"; for (let i = 0; i < 9; i++) { const a = .6 + i * .22; x.beginPath(); x.moveTo(128 + Math.cos(a) * 46, 150 + Math.sin(a) * 46); x.lineTo(128 + Math.cos(a) * 54, 150 + Math.sin(a) * 58); x.lineTo(131 + Math.cos(a) * 46, 150 + Math.sin(a) * 46); x.fill(); } x.fillStyle = "#e8e0d0"; x.fillRect(126, 186, 4, 18); }   // (Dwayne : les colliers de dents et d'os, la croix)
-    // les mains griffues au bout des manches, le jean, les bottes
-    for (const sx of [1, -1]) { const hx = sx > 0 ? 12 : 244; x.fillStyle = k === 0 ? "#141414" : peau; x.beginPath(); x.arc(hx, 256, 11, 0, 7); x.fill(); x.strokeStyle = "#ece6dc"; x.lineWidth = 2; for (let f = -2; f <= 2; f++) { x.beginPath(); x.moveTo(hx + f * 4, 264); x.lineTo(hx + f * 5, 278); x.stroke(); } }
-    x.fillStyle = "#23262e"; x.fillRect(94, 400, 30, 82); x.fillRect(132, 400, 30, 82); x.fillStyle = "#0e0e0e"; x.fillRect(90, 474, 38, 22); x.fillRect(128, 474, 38, 22);
-    // la tête : pâle, les yeux jaunes, les crocs
-    x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 34, 44, 0, 0, 7); x.fill(); x.fillStyle = peau; x.fillRect(116, 140, 24, 16);
-    x.fillStyle = ombre; x.beginPath(); x.ellipse(110, 116, 8, 14, 0, 0, 7); x.ellipse(146, 116, 8, 14, 0, 0, 7); x.fill();
-    x.fillStyle = "#3a0a0a"; x.beginPath(); x.ellipse(114, 98, 11, 6, -.2, 0, 7); x.ellipse(142, 98, 11, 6, .2, 0, 7); x.fill();
-    x.fillStyle = "#ffd23a"; x.beginPath(); x.ellipse(114, 98, 7, 4, -.2, 0, 7); x.ellipse(142, 98, 7, 4, .2, 0, 7); x.fill(); x.fillStyle = "#200"; x.fillRect(113, 96, 2, 5); x.fillRect(141, 96, 2, 5);
-    x.strokeStyle = "#2a1a10"; x.lineWidth = 3; x.beginPath(); x.moveTo(100, 86); x.lineTo(122, 92); x.moveTo(156, 86); x.lineTo(134, 92); x.stroke();
-    x.fillStyle = "#4a0c10"; x.beginPath(); x.ellipse(128, 128, 13, 7, 0, 0, 7); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.moveTo(118, 124); x.lineTo(122, 136); x.lineTo(125, 124); x.moveTo(131, 124); x.lineTo(134, 136); x.lineTo(138, 124); x.fill();
-    // les cheveux
-    x.fillStyle = V.chev;
-    if (V.style === "crete") { x.beginPath(); x.moveTo(92, 92); for (let i = 0; i <= 10; i++) { const a = Math.PI + i * Math.PI / 10; x.lineTo(128 + Math.cos(a) * (i % 2 ? 50 : 36), 86 + Math.sin(a) * (i % 2 ? 56 : 40)); } x.lineTo(164, 92); x.lineTo(160, 120); x.lineTo(150, 84); x.lineTo(106, 84); x.lineTo(96, 120); x.fill(); x.fillRect(94, 120, 10, 40); x.fillRect(152, 120, 10, 40); }   // (la crête blond platine, la nuque longue)
-    else if (V.style === "long" || V.style === "noirs") { x.beginPath(); x.ellipse(128, 76, 40, 28, 0, Math.PI, 0); x.fill(); x.beginPath(); x.moveTo(88, 76); x.quadraticCurveTo(78, 150, 84, 210); x.lineTo(100, 200); x.quadraticCurveTo(96, 130, 102, 88); x.moveTo(168, 76); x.quadraticCurveTo(178, 150, 172, 210); x.lineTo(156, 200); x.quadraticCurveTo(160, 130, 154, 88); x.fill(); }
-    else { for (let i = 0; i < 16; i++) { const a = Math.PI * .9 + i * Math.PI * 1.2 / 15; x.beginPath(); x.arc(128 + Math.cos(a) * 38, 84 + Math.sin(a) * 36, 13, 0, 7); x.fill(); } }   // (les boucles)
-    x.fillStyle = "rgba(0,0,0,.15)"; x.beginPath(); x.ellipse(128, 70, 30, 10, 0, 0, 7); x.fill();
-  });
-}
+/* les personnages de Génération perdue (81 à 87) : leur tenue par défaut, et leur tête découpée ; l'inventaire de l'administrateur a le dernier mot */
+const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lbedgar", "#5a6a3a", "#4a4a3a", "#f2f2f2", "edgar"], 83: ["lbalan", "#8e8e8a", "#4a6a9a", "#f2f2f2", "alan"],
+  84: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david"], 85: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul"], 86: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko"], 87: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne"] };
+function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+  return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || null, tete_v: null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${D[4]}-tete.webp`, lbPerso: id }; }
 function construireSantaCarla(A, L, scene) {
+  L.lb = true;
+  L.portails = L.portails || []; L.portails.push({ dans: (x, z) => Math.hypot(x + 6, z - 11) < .9, vers: "mess", arrivee: [4.1, 10.6], yaw: Math.PI, indice: [-6, 11] });   // (le cercle du retour : sur la plage, près de la pancarte ; on revient devant l'affiche, au mess)
   const nuitMat = (c, e = 1) => new THREE.MeshBasicMaterial({ color: c, toneMapped: false, fog: true }), bulbes = [];
   // ---------- le sol : la jetée en planches, la plage, l'océan ----------
   const planches = tex(toile(512, 512, (x, w, h) => { for (let i = 0; i < 16; i++) { const v = hasard(i * 3.1); x.fillStyle = `hsl(28, ${22 + v * 10}%, ${26 + v * 8}%)`; x.fillRect(0, i * 32, w, 31); x.fillStyle = "rgba(0,0,0,.45)"; x.fillRect(0, i * 32 + 30, w, 2);
@@ -4498,7 +4515,7 @@ function construireSantaCarla(A, L, scene) {
   const neon = (txt, coul, w = 3.2) => { const c = toile(512, 128, (x, W, H) => { x.fillStyle = "#0a0a10"; x.fillRect(0, 0, W, H); x.font = "bold 64px 'Arial Black', Arial"; x.textAlign = "center"; x.shadowColor = coul; x.shadowBlur = 18; x.fillStyle = coul; x.fillText(txt, W / 2, 86); x.shadowBlur = 0; x.fillStyle = "#fff"; x.globalAlpha = .55; x.fillText(txt, W / 2, 86); });
     return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: tex(c), toneMapped: false })); };
   const STANDS = [[-38, "HOT DOGS", "#ff5a3a"], [-30, "ARCADE", "#3ad8ff"], [-22, "COMICS", "#ffd23a"], [-14, "TATTOO", "#ff3ab8"], [14, "SKEE BALL", "#5aff6a"], [22, "PIZZA", "#ff8a2a"], [30, "BUMPER CARS", "#c06aff"], [38, "CANDY", "#ff6a9a"]];
-  for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -8); scene.add(g);
+  for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -38.4); scene.add(g);
     const PAL = [[0x2aa49a, 0xe8c832], [0xf08a2a, 0x6ac83a], [0xd83a2a, 0xe8c832], [0x7a4ac8, 0x2ad8c8], [0x2a62b8, 0xf0a02a], [0xe8c832, 0xd83a2a]], [cm, ct] = PAL[Math.abs(Math.round(x / 8)) % PAL.length];
     const murs = A.mat({ color: cm, roughness: .7 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
     const b = (dx, dy, dz, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); g.add(o); return o; };
@@ -4611,15 +4628,21 @@ function construireSantaCarla(A, L, scene) {
     const f = new THREE.Mesh(new THREE.SphereGeometry(.8, 10, 8), nuitMat(0xfff2c0)); f.position.y = 22.6; ph.add(f); const fais = new THREE.Mesh(new THREE.ConeGeometry(3, 40, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false }));
     fais.rotation.z = Math.PI / 2; fais.position.set(-20, 22.6, 0); const pivot = new THREE.Group(); pivot.position.y = 0; pivot.add(fais); ph.add(pivot); L.phare = pivot; }
   // ---------- les limites : la jetée et la plage (pas l'eau, pas les stands, pas l'arche) ----------
-  L.limites = (x, z) => x > -45 && x < 45 && z > -6.4 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5);   // (la rambarde : deux passages vers la plage)
-  L.hauteur = () => 0;
+  { const tb = new THREE.TextureLoader().load("images/santacarla/beton.webp"); tb.colorSpace = THREE.SRGBColorSpace; tb.wrapS = tb.wrapT = THREE.MirroredRepeatWrapping; tb.repeat.set(96 / 5, 40 / 2.5); tb.anisotropy = 8;
+    const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; }   // (la grande place, en béton, derrière la jetée en planches)
+  L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
+    && !(x > -44.5 && x < -8.4 && z > -36.4 && z < -13.6)   // (le Giant Dipper et sa gare)
+    && !(x > 8.2 && x < 19.8 && z > -28 && z < -24)   // (les pieds de la grande roue)
+    && !(x > -14.5 && x < 12.5 && z > -25.2 && z < -16.8)   // (le bateau pirate, qui balaie tout ça)
+    && Math.hypot(x - 32, z + 20) > 7   // (le manège)
+    && !(Math.abs(Math.abs(x) - 4.5) < .5 && Math.abs(z + 8.6) < .5)   // (les piliers de l'arche)
+    && !(Math.abs(z + 6.95) < .5 && [-40, -13.3, 13.3, 40].some(px => Math.abs(x - px) < .5));   // (les poteaux du télésiège)   // (la rambarde : deux passages vers la plage)
+  L.hauteur = (x, z, p) => p && p.vol != null ? p.vol : 0;   // (les vampires volent)
   L.depart = [0, 1.5]; L.cam = { pos: [0, 6, 14], vise: [0, 2.5, -6] }; L.suivi = { d: 6, h: 3, av: 3, vy: 1.6 };
   L.sansPNJ = true; L.sansMusique = true; L.toujoursNuit = true; L.santaCarla = true;
-  // le ciel du crépuscule (d'après la photo) : rouge et orange à l'horizon, les nuages sombres au-dessus, la nuit qui tombe en haut
-  L.cielPerso = tex(toile(1024, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#0a0c1c"); g.addColorStop(.35, "#2a1e30"); g.addColorStop(.58, "#8a2a1c"); g.addColorStop(.72, "#e8602a"); g.addColorStop(.82, "#f8a040"); g.addColorStop(1, "#3a1a18"); x.fillStyle = g; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 70; i++) { const y = h * (.2 + hasard(i * 1.7) * .45), x0 = hasard(i * 2.9) * w, lg = 120 + hasard(i * 4.1) * 380, ep = 6 + hasard(i * 5.3) * 22; x.fillStyle = `rgba(${y > h * .5 ? "60,20,24" : "18,14,28"},${.35 + hasard(i) * .4})`; x.beginPath(); x.ellipse(x0, y, lg / 2, ep / 2, (hasard(i * 7) - .5) * .1, 0, 7); x.fill(); }
-    for (let i = 0; i < 120; i++) { x.fillStyle = `rgba(255,255,255,${.3 + hasard(i * 9) * .6})`; x.fillRect(hasard(i * 3.3) * w, hasard(i * 5.7) * h * .3, 1.5, 1.5); } }));
-  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x3a1c22;
+  // le ciel du couchant : la photo envoyée (le bleu, le rose, l'orange au-dessus de la mer, les vrais nuages), tout autour de la place
+  L.cielPerso = new THREE.TextureLoader().load("images/santacarla/ciel.webp"); L.cielPerso.colorSpace = THREE.SRGBColorSpace;   // (le vrai ciel du couchant, d'après la photo : l'orange au-dessus de la mer, le bleu et le rose, les vrais nuages)
+  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x7a4458;
   // ---------- l'animation des manèges ----------
   let tr = 0; const avant = L.anim;
   L.anim = (t) => { avant && avant(t); const s = t / 1000;
@@ -4635,6 +4658,12 @@ function construireSantaCarla(A, L, scene) {
   const cyl = (g, r1, r2, h, m, x, y, z, seg = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg), m); o.position.set(x, y, z); g.add(o); return o; };
   const tube = (g, a, b, r, m) => { const d = b.clone().sub(a), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), m); o.position.copy(a).add(b).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o; };
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  // la lumière du couchant (comme sur les photos) : le ciel chaud, la lueur basse à l'ouest ; et les lampadaires de la grande place
+  scene.add(new THREE.HemisphereLight(0xffc8a0, 0x30242c, .85)); { const so = new THREE.DirectionalLight(0xffa868, 1.1); so.position.set(-80, 22, 30); scene.add(so); }
+  for (const [x, z] of [[0, -12], [22, -12], [38, -12], [38, -30], [24, -33], [0, -31], [-4, -12]]) { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const fv = A.mat({ color: 0x1a2e24, metalness: .5, roughness: .4 });
+    cyl(g, .08, .12, 4.4, fv, 0, 2.2, 0, 8);
+    for (const sx of [-.45, .45]) { const gl = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 8), new THREE.MeshBasicMaterial({ color: 0xfff0c8, toneMapped: false })); gl.position.set(sx, 4.62, 0); g.add(gl); tube(g, V3(0, 4.1, 0), V3(sx, 4.4, 0), .035, fv); }
+    if ((x + z) % 2 === 0) { const l = new THREE.PointLight(0xffd8a0, 16, 18, 1.5); l.position.set(0, 4.3, 0); g.add(l); } }
   // ---------- le télésiège « Sky Glider » : les poteaux rayés de couleurs, les câbles, les nacelles qui glissent au-dessus de la jetée ----------
   const raye = tex(toile(64, 512, (x, w, h) => { const C = ["#d83a2a", "#2a9a5a", "#2aa49a", "#f0a02a", "#e8c832"]; let y = 0, i = 0; while (y < h) { const lg = 40 + hasard(i) * 90; x.fillStyle = C[i % 5]; x.fillRect(0, y, w, lg); y += lg; i++; } }), 1, 1);
   const SG = { x0: -40, x1: 40, za: -6.3, zr: -7.6, h: 9.6 }, cabines = [];
@@ -4643,18 +4672,19 @@ function construireSantaCarla(A, L, scene) {
     for (let k = 0; k < 18; k++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat(0xffe8a0)); bb.position.set(.25, .8 + k * .5, 0); g.add(bb); bulbes.push(bb); } }   // (la rangée d'ampoules le long du poteau)
   for (const z of [SG.za, SG.zr]) { const pts2 = []; for (let i = 0; i <= 60; i++) { const x = SG.x0 + i / 60 * (SG.x1 - SG.x0), f = ((x - SG.x0) % 26.67) / 26.67; pts2.push(V3(x, SG.h + .25 - Math.sin(f * Math.PI) * .5, z)); }
     scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 120, .025, 5), A.mat({ color: 0x1a1a1e, metalness: .7 }))); }
-  for (let i = 0; i < 14; i++) { const g = new THREE.Group(); scene.add(g); const coul = [0x2a9a6a, 0x2aa49a, 0x3a7ac8][i % 3];
-    cyl(g, .025, .025, 1.3, A.mat({ color: 0x2a2a2e, metalness: .6 }), 0, -.65, 0, 6); const toit = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, 1.1, 14, 1, false, 0, Math.PI), A.mat({ color: coul, side: THREE.DoubleSide })); toit.rotation.z = Math.PI / 2; toit.position.y = -1.3; g.add(toit);
-    bxg(g, 1.1, .1, .5, A.mat({ color: coul }), 0, -2.05, 0); bxg(g, 1.1, .45, .06, A.mat({ color: coul }), 0, -1.85, -.25); bxg(g, 1.1, .05, .3, A.mat({ color: 0x2a2a2e }), 0, -2.5, .25);
-    for (const sx of [-.55, .55]) tube(g, V3(sx, -1.3, 0), V3(sx, -2.05, 0), .02, A.mat({ color: 0x2a2a2e })); cabines.push(g); }
+  for (let i = 0; i < 14; i++) { const g = new THREE.Group(); scene.add(g); const vert = A.mat({ color: 0x1f6a5a, roughness: .35, metalness: .3 }), noir = A.mat({ color: 0x1a1a1e, metalness: .6 });
+    cyl(g, .025, .025, 1.1, noir, 0, -.55, 0, 6); const toit = new THREE.Mesh(new THREE.SphereGeometry(.62, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), vert); toit.scale.y = .45; toit.position.y = -1.15; g.add(toit);
+    cyl(g, .64, .64, .08, vert, 0, -1.17, 0, 18); const bq = new THREE.Mesh(new THREE.CylinderGeometry(.64, .5, .55, 18, 1, true), A.mat({ color: 0x1f6a5a, roughness: .35, metalness: .3, side: THREE.DoubleSide })); bq.position.y = -2.25; g.add(bq);
+    cyl(g, .5, .5, .04, vert, 0, -2.52, 0, 18); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; tube(g, V3(Math.cos(a) * .6, -1.2, Math.sin(a) * .6), V3(Math.cos(a) * .62, -2, Math.sin(a) * .62), .015, A.mat({ color: 0xc8ccd2, metalness: .7 })); }
+    const num = new THREE.Mesh(new THREE.PlaneGeometry(.34, .2), new THREE.MeshBasicMaterial({ map: tex(toile(64, 40, (x) => { x.fillStyle = "#1f6a5a"; x.fillRect(0, 0, 64, 40); x.fillStyle = "#f2efe6"; x.font = "italic bold 26px Arial"; x.textAlign = "center"; x.fillText(String(20 + i), 32, 30); })) }));
+    num.position.set(0, -2.25, .65); g.add(num); cabines.push(g); }
   // ---------- le bateau pirate : le grand portique blanc, le bateau qui se balance, l'enseigne en ampoules ----------
   const pirate = { pivot: V3(-1, 12, -21) }; { const g = new THREE.Group(); scene.add(g); const blanc2 = A.mat({ color: 0xe8e4da, roughness: .5, metalness: .2 });
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) tube(g, V3(-1 + sx * 6.5, 0, -21 + sz * 3.4), V3(-1, 12, -21 + sz * 1.6), .2, blanc2);
     for (const sz of [-1, 1]) for (let k = 1; k < 4; k++) { const f = k / 4, y = 12 * f; tube(g, V3(-1 - 6.5 * (1 - f), y, -21 + sz * (3.4 - 1.8 * f)), V3(-1 + 6.5 * (1 - f), y, -21 + sz * (3.4 - 1.8 * f)), .07, blanc2); }
     tube(g, V3(-1, 12, -23.2), V3(-1, 12, -18.8), .3, blanc2);   // (l'axe)
-    const lettres = tex(toile(1024, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.font = "900 150px 'Arial Black', Impact"; x.textAlign = "center"; x.lineJoin = "round"; x.lineWidth = 26; x.strokeStyle = "#c81e1e"; x.strokeText("PIRATE SHIP", w / 2, 190); x.fillStyle = "#f2efe6"; x.fillText("PIRATE SHIP", w / 2, 190);
-        x.fillStyle = "#ffe8a0"; for (let i = 0; i < 900; i++) { const px = hasard(i * 1.3) * w, py = hasard(i * 2.1) * h, d = x.getImageData(px | 0, py | 0, 1, 1).data; if (d[3] > 200 && d[0] > 200 && d[1] > 200) { x.beginPath(); x.arc(px, py, 4, 0, 7); x.fill(); } } }));
-    const ens = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 1.9), new THREE.MeshBasicMaterial({ map: lettres, transparent: true, toneMapped: false, side: THREE.DoubleSide })); ens.position.set(-1, 9.6, -16.8); ens.rotation.x = -.15; g.add(ens);
+    const lettres = new THREE.TextureLoader().load("images/santacarla/pirate-enseigne.webp"); lettres.colorSpace = THREE.SRGBColorSpace;   // (la vraie enseigne en ampoules, d'après la photo)
+    const ens = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 5.7), new THREE.MeshBasicMaterial({ map: lettres, transparent: true, alphaTest: .35, toneMapped: false, side: THREE.DoubleSide, color: 0xe8e0d8 })); ens.position.set(-1.6, 8.7, -18.6); g.add(ens);
     const bras = new THREE.Group(); bras.position.copy(pirate.pivot); scene.add(bras); pirate.bras = bras;
     for (const sz of [-.9, .9]) tube(bras, V3(0, 0, sz), V3(0, -9, sz), .14, blanc2);
     const coque = new THREE.Shape(); coque.moveTo(-4.2, 1.2); coque.quadraticCurveTo(-3.6, -1, 0, -1.3); coque.quadraticCurveTo(3.6, -1, 4.2, 1.2); coque.lineTo(-4.2, 1.2);
@@ -4669,32 +4699,25 @@ function construireSantaCarla(A, L, scene) {
         for (let i = 0; i < 9; i++) { const X = 30 + i * 110; x.fillStyle = "#3a2a24"; x.fillRect(X, 60, 80, 120); x.fillStyle = "#ffcf7a"; x.globalAlpha = .55; x.fillRect(X + 6, 66, 32, 108); x.fillRect(X + 42, 66, 32, 108); x.globalAlpha = 1; x.fillStyle = "#ece4d2"; x.fillRect(X + 38, 60, 4, 120); x.fillRect(X, 118, 80, 4); }
         x.fillStyle = "#3a2420"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("THE COLONNADE · 1907", w / 2, 230);
         for (let i = 0; i < 8; i++) { const X = 64 + i * 122; x.fillStyle = "#2a1a14"; x.beginPath(); x.moveTo(X - 52, h); x.lineTo(X - 52, 330); x.arc(X, 330, 52, Math.PI, 0); x.lineTo(X + 52, h); x.fill(); x.fillStyle = "rgba(255,200,120,.35)"; x.beginPath(); x.arc(X, 380, 26, 0, 7); x.fill(); } }));
+    { const te = new THREE.TextureLoader().load("images/santacarla/colonnade-etage.webp"); te.colorSpace = THREE.SRGBColorSpace; te.wrapS = THREE.RepeatWrapping; te.repeat.set(4, 1);
+      const et = new THREE.Mesh(new THREE.PlaneGeometry(20, 3.9), A.mat({ map: te, roughness: .8, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: .22 })); et.rotation.y = -Math.PI / 2; et.position.set(-.06, 7.1, 0); g.add(et); }   // (l'étage, d'après la photo)
     bxg(g, 6, 9, 20, crem, 3, 4.5, 0); const f = new THREE.Mesh(new THREE.PlaneGeometry(20, 9), A.mat({ map: fac, roughness: .8, emissive: 0xffffff, emissiveMap: fac, emissiveIntensity: .12 })); f.rotation.y = -Math.PI / 2; f.position.set(-.02, 4.5, 0); g.add(f);
     for (let i = 0; i <= 8; i++) { const z = -10 + i * 2.38 + .1; cyl(g, .22, .26, 4.2, rougeC, -.5, 2.1, z); cyl(g, .32, .32, .18, crem, -.5, 4.25, z); }   // (les colonnes rouges, devant les arcades)
     bxg(g, 1.2, .3, 20.4, vertC, -.4, 4.45, 0); bxg(g, 6.4, .5, 20.4, vertC, 3, 9.2, 0); bxg(g, 6.2, .9, 1.4, crem, 3, 9.9, 0);
     for (const z of [-7, 0, 7]) { cyl(g, .03, .03, 3, A.mat({ color: 0xd8dce2 }), 1.5, 11, z, 6); const dr = new THREE.Mesh(new THREE.PlaneGeometry(1.1, .7), A.mat({ color: [0xc81e1e, 0xe8c832, 0x2a62d0][(z / 7 + 1) | 0], side: THREE.DoubleSide })); dr.position.set(1.5, 12.1, z + .56); g.add(dr); (L.drapeaux = L.drapeaux || []).push(dr); }
     for (let i = 0; i < 40; i++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat(0xffe8a0)); bb.position.set(-.55, 4.7, -10 + i * .5); g.add(bb); bulbes.push(bb); }
     const l = new THREE.PointLight(0xffc880, 14, 14, 1.6); l.position.set(-2, 3.5, 0); g.add(l); }
-  // ---------- les montagnes russes en acier (la structure verte, la voie orange), derrière le manège ----------
-  { const vert = A.mat({ color: 0x2a9a8a, roughness: .5, metalness: .3 }), g = new THREE.Group(); g.position.set(50, 0, -24); scene.add(g);
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { const x = -9 + i * 6, z = -6 + j * 6, h = 8 + (i === 1 ? 6 : 0) + (j === 1 ? 2 : 0); cyl(g, .16, .16, h, vert, x, h / 2, z, 8);
-      if (i < 3) for (const y of [h * .5, h]) tube(g, V3(x, y, z), V3(x + 6, y, z), .1, vert); if (j < 2) for (const y of [h * .5, h]) tube(g, V3(x, y, z), V3(x, y, z + 6), .1, vert); if (i < 3) tube(g, V3(x, 0, z), V3(x + 6, h * .5, z), .07, vert); }
-    const pts3 = []; for (let i = 0; i < 80; i++) { const t = i / 80 * Math.PI * 2; pts3.push(V3(Math.cos(t) * 9, 7 + Math.sin(t * 3) * 3.5 + Math.max(0, Math.sin(t)) * 6, Math.sin(t * 2) * 5.5)); }
-    const v2 = new THREE.CatmullRomCurve3(pts3, true); g.add(new THREE.Mesh(new THREE.TubeGeometry(v2, 300, .16, 6, true), A.mat({ color: 0xf08a2a, roughness: .4 })));
-    { const n = 160, im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, .06, .1), A.mat({ color: 0xf08a2a }), n), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), tg = new THREE.Vector3();
-      for (let i = 0; i < n; i++) { v2.getPointAt(i / n, p); v2.getTangentAt(i / n, tg); q.setFromAxisAngle(V3(0, 1, 0), Math.atan2(tg.x, tg.z)); mt.compose(p, q, V3(1, 1, 1)); im.setMatrixAt(i, mt); } g.add(im); }
-    const train = []; for (let k = 0; k < 3; k++) { const w = new THREE.Mesh(new THREE.BoxGeometry(.8, .5, 1.2), A.mat({ color: k % 2 ? 0x2a62d0 : 0xf08a2a })); g.add(w); train.push(w); }
-    L.ouragan = { v: v2, train }; }
+  // ---------- les montagnes russes en acier (le Hurricane, sur son restaurant) : la vraie, d'après la photo détourée, dressée à l'angle de la place ----------
+  { const t = new THREE.TextureLoader().load("images/santacarla/ouragan.webp"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(27, 27.4), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .32 }));
+    m.position.set(52, 13.7 - .3, -31); m.rotation.y = Math.atan2(-52, 21); scene.add(m); }
   // ---------- les boutiques colorées (façon « World Grill ») et la façade de l'arcade aux triangles rouges percés de ronds ----------
-  { const grill = new THREE.Group(); grill.position.set(-26, 0, 9.5); grill.rotation.y = Math.PI; scene.add(grill);
-    const oran = A.mat({ color: 0xf08a2a, roughness: .7 }), vertG = A.mat({ color: 0x6ac83a, roughness: .6 }), bleuG = A.mat({ color: 0x2a62b8 });
-    bxg(grill, 6, 3, 3.5, oran, 0, 1.5, -1.75); bxg(grill, 6.4, .25, 3.9, vertG, 0, 3.1, -1.75); const toitG = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.4, 4), A.mat({ color: 0x2a2a30 })); toitG.rotation.y = Math.PI / 4; toitG.scale.set(1.2, 1, .7); toitG.position.set(0, 3.9, -1.75); grill.add(toitG);
-    for (let i = 0; i < 4; i++) bxg(grill, 1, 1.2, .06, bleuG, -2.1 + i * 1.4, 1.6, .02); bxg(grill, 6, .4, .08, bleuG, 0, .35, .03);
-    const med = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#f4ead2"; x.beginPath(); x.arc(128, 128, 126, 0, 7); x.fill(); x.strokeStyle = "#c83a2a"; x.lineWidth = 10; x.stroke();
-        x.fillStyle = "#2a8ac8"; x.beginPath(); x.arc(128, 150, 70, 0, Math.PI); x.fill(); x.fillStyle = "#2a6a2a"; x.fillRect(118, 90, 6, 60); x.beginPath(); x.ellipse(121, 90, 30, 10, -.4, 0, 7); x.ellipse(121, 90, 30, 10, .4, 0, 7); x.fill();
-        x.fillStyle = "#c83a2a"; x.font = "italic bold 46px Georgia"; x.textAlign = "center"; x.fillText("World Grill", 128, 70); })), toneMapped: false })); med.position.set(1.8, 4.2, .2); grill.add(med);
-    for (let i = 0; i < 16; i++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat([0xff4a4a, 0xffd23a, 0x4ad8ff, 0x7aff6a][i % 4])); bb.position.set(-3 + i * .4, 3.3, .25); grill.add(bb); bulbes.push(bb); }
-    const lG = new THREE.PointLight(0xffa860, 8, 9, 1.6); lG.position.set(0, 2.6, 1.6); grill.add(lG); OBST.push([-29.3, -22.7, 9.1, 13.5]); }
+  { const g = new THREE.Group(); g.position.set(-44.2, 0, 0); g.rotation.y = Math.PI / 2; scene.add(g);   // (le vrai World Grill, d'après la photo détourée : au bout de la jetée, face à elle)
+    const t = new THREE.TextureLoader().load("images/santacarla/grill.webp"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; const W = 9.4, H = W * 659 / 561;
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .45, roughness: .8, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .3 })); f.position.set(0, H / 2, 0); g.add(f);
+    bxg(g, W * .9, 5.1, 5, A.mat({ color: 0xd8823a, roughness: .85 }), -.3, 2.55, -2.6);   // (le volume de la boutique, derrière la façade)
+    const toitG = new THREE.Mesh(new THREE.ConeGeometry(4.6, 2.2, 4), A.mat({ color: 0x2a2a30, roughness: .9 })); toitG.rotation.y = Math.PI / 4; toitG.scale.set(1.25, 1, .75); toitG.position.set(-.3, 6.2, -2.6); g.add(toitG);
+    const lG = new THREE.PointLight(0xffb070, 10, 12, 1.6); lG.position.set(0, 3, 3); g.add(lG); OBST.push([-45, -43.6, -4.9, 4.9]); }
   { const tri = new THREE.Shape(); tri.moveTo(-1.1, 0); tri.lineTo(1.1, 0); tri.lineTo(0, 3.6); tri.closePath(); for (const [y, r] of [[.8, .28], [1.7, .22], [2.5, .15]]) { const h = new THREE.Path(); h.absarc(0, y, r, 0, Math.PI * 2, false); tri.holes.push(h); }
     const triG = new THREE.ExtrudeGeometry(tri, { depth: .12, bevelEnabled: false }), rougeT = A.mat({ color: 0xd8302a, roughness: .5 }), creme = A.mat({ color: 0xf2e6c8 });
     for (const xs of [-30, 30]) for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(triG, k % 2 ? creme : rougeT); m.position.set(xs - 1.6 + k * 1.6, 3.15, -7.95); m.rotation.x = -.1; scene.add(m); } }   // (sur l'arcade et les autos tamponneuses)
@@ -4813,12 +4836,8 @@ function construireSantaCarla(A, L, scene) {
       if (C.mp3) { const p = moiP(); if (!C.audio) { C.audio = new Audio(C.mp3); C.audio.loop = true; C.audio.volume = 0; const garde = setInterval(() => { if (!M || M.L !== L) { C.audio.pause(); clearInterval(garde); } }, 600); }
         if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); C.audio.volume = v * .9; if (v > 0 && C.audio.paused) C.audio.play().catch(() => {}); } } }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
-  // les vraies têtes (celles de l'inventaire de l'administrateur, sinon les photos découpées) posées sur les corps dessinés
-  const NOM_TETE = { 81: "sam", 82: "edgar", 83: "alan", 84: "david", 85: "paul", 86: "marko", 87: "dwayne" };
-  const poserTete = (cv, id, larg, bas, vamp, fin) => { const P = M && M.ctx.pnjTrio && M.ctx.pnjTrio(id), im = new Image();
-    im.onload = () => { const x = cv.getContext("2d"), h = larg * im.height / im.width; if (vamp) x.filter = "saturate(.6) brightness(1.06) contrast(1.06)"; x.drawImage(im, 128 - larg / 2, bas - h, larg, h); x.filter = "none"; fin && fin(); };
-    im.src = P && P.tete_v && M.ctx.urlTetePNJ ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${NOM_TETE[id]}-tete.webp`; };
-  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = [], texV = [0, 1, 2, 3].map(k => { const cv = toileVampire(k), t = tex(cv); poserTete(cv, 84 + k, 124, 164, true, () => { t.needsUpdate = true; }); return t; });
+  // les personnages : ceux de l'inventaire de l'administrateur (tête, tenue, couleurs, taille), sinon les photos découpées et les tenues du film
+  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = []; M.lbPerso = null;
   const fumeeT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(230,230,230,.8)"); g.addColorStop(1, "rgba(230,230,230,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
@@ -4829,10 +4848,11 @@ function construireSantaCarla(A, L, scene) {
   const message = (html, bouton) => { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:9;background:rgba(10,4,6,.86);color:#fff;border:2px solid #b81c22;border-radius:14px;padding:18px 22px;max-width:86%;text-align:center;font:600 17px Georgia,serif;box-shadow:0 0 30px rgba(184,28,34,.5)";
     d.innerHTML = html; if (bouton) { const b = document.createElement("button"); b.textContent = bouton[0]; b.style.cssText = "margin-top:14px;font:700 16px system-ui;padding:10px 18px;border-radius:10px;border:0;background:#b81c22;color:#fff;cursor:pointer"; b.onclick = e => { e.stopPropagation(); d.remove(); bouton[1](); }; d.appendChild(b); }
     else setTimeout(() => d.remove(), 4200); for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); return d; };
-  const creerVampire = (k) => { const g = new THREE.Group(); scene.add(g); const mat = new THREE.MeshBasicMaterial({ map: texV[k], transparent: true, alphaTest: .4, side: THREE.DoubleSide, fog: true }), corps = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 2.5), mat); corps.position.y = 1.25; g.add(corps);
-    const v = { k, nom: NOMS[k], g, corps, mat, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "tourne", a: Math.random() * 6.28, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
-    const p = moiP() || new THREE.Vector3(); g.position.set(p.x + Math.cos(v.a) * 30, 14, p.z + Math.sin(v.a) * 30); vamps.push(v); return v; };
-  const demarrer = () => { for (const v of vamps) scene.remove(v.g); vamps.length = 0; vies = 5; fini = false; phase = "vague1"; [1, 2, 3].forEach(creerVampire); majHud();
+  const creerVampire = (k) => { const a = Math.random() * 6.28, p0 = moiP() || V3(0, 0, 0), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {};
+    const p = ajouterAncien({ ...habillerLB({ numero: -(860 + k), nom: P.nom || NOMS[k], initiales: "" }, 84 + k), pnj: true, x: p0.x + Math.cos(a) * 30, z: p0.z + Math.sin(a) * 30 }); if (!p) return null;
+    p.vol = 14; const v = { k, nom: P.nom || NOMS[k], p, g: p.g, y: 14, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "tourne", a, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
+    vamps.push(v); return v; };
+  const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 5; fini = false; phase = "vague1"; [1, 2, 3].forEach(creerVampire); majHud();
     message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David arrive sur la jetée !</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
     const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
@@ -4843,7 +4863,7 @@ function construireSantaCarla(A, L, scene) {
     for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
     try { sonBruit(.35, 2400, .25); } catch (e) {}
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
-      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; v.corps.rotation.set(0, 0, 0); message(`${v.nom} est à terre ! Vite, le pieu !`); }
+      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; message(`${v.nom} est à terre ! Vite, le pieu !`); }
       else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
   const pieu = (v) => { v.etat = "brule"; v.tEtat = performance.now() + 1800; const p = v.g.position.clone(); try { sonBruit(.25, 300, .8); setTimeout(() => sonBruit(1.4, 700, .6), 200); } catch (e) {}
     const st = new THREE.Mesh(new THREE.ConeGeometry(.06, .9, 6), A.mat({ color: 0x8a5a2a })); st.position.set(p.x, .6, p.z); st.rotation.z = Math.PI / 2; scene.add(st); setTimeout(() => scene.remove(st), 1800);
@@ -4852,37 +4872,6 @@ function construireSantaCarla(A, L, scene) {
     if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
   // ================= les trois ados : on joue Sam, Edgar ou Alan Frog ; dans la main, le pistolet à eau bénite =================
   const ADOS = [{ nom: "Sam Emerson", court: "Sam", dit: "Ma mère ne m'a pas élevé pour finir en casse-croûte !" }, { nom: "Edgar Frog", court: "Edgar", dit: "Vérité, justice, et l'american way. Vampires, c'est fini." }, { nom: "Alan Frog", court: "Alan", dit: "Remplis les pistolets d'eau bénite, on y va !" }];
-  const toileAdo = (k, dos) => toile(256, 512, (x, w, h) => { const peau = "#efc4a0", peauO = "#d8a07a";
-    // les jambes (le jean), les baskets
-    x.fillStyle = k === 1 ? "#4a4a3a" : "#4a6a9a"; x.beginPath(); x.moveTo(90, 318); x.lineTo(166, 318); x.lineTo(164, 486); x.lineTo(134, 486); x.lineTo(128, 360); x.lineTo(122, 486); x.lineTo(92, 486); x.fill(); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(100, 340, 8, 140); x.fillRect(148, 340, 8, 140);
-    x.fillStyle = "#f2f2ee"; x.beginPath(); x.ellipse(106, 494, 22, 12, 0, 0, 7); x.ellipse(150, 494, 22, 12, 0, 0, 7); x.fill(); x.fillStyle = "#c83030"; x.fillRect(90, 496, 32, 4); x.fillRect(134, 496, 32, 4);
-    // le haut, selon le personnage
-    const torse = (c) => { x.fillStyle = c; x.beginPath(); x.moveTo(82, 166); x.quadraticCurveTo(128, 152, 174, 166); x.lineTo(170, 326); x.lineTo(86, 326); x.fill(); };
-    const bras = (manche, long) => { for (const bx of [64, 172]) { x.fillStyle = peau; x.beginPath(); x.ellipse(bx + 10, 250, 12, 72, 0, 0, 7); x.fill(); x.beginPath(); x.arc(bx + 10, 326, 12, 0, 7); x.fill(); if (manche) { x.fillStyle = manche; x.beginPath(); x.ellipse(bx + 10, long ? 240 : 196, 15, long ? 80 : 32, 0, 0, 7); x.fill(); } } };
-    if (k === 0) {   // Sam : la chemise hawaïenne, la veste beige ouverte, les manches retroussées
-      bras("#ecd8a0", true); torse("#f0e8d0"); if (!dos) { for (let i = 0; i < 26; i++) { const fx = 104 + hasard(i * 3) * 48, fy = 174 + hasard(i * 5) * 140; x.fillStyle = ["#2a7a3a", "#c8302a", "#3a8ac8", "#e8a020"][i % 4]; x.beginPath(); x.ellipse(fx, fy, 6, 3.5, hasard(i) * 3, 0, 7); x.fill(); } }
-      x.fillStyle = "#ecd8a0"; if (dos) torse("#e4cf96"); else { x.beginPath(); x.moveTo(82, 166); x.lineTo(108, 160); x.lineTo(104, 326); x.lineTo(86, 326); x.fill(); x.beginPath(); x.moveTo(174, 166); x.lineTo(148, 160); x.lineTo(152, 326); x.lineTo(170, 326); x.fill(); x.strokeStyle = "rgba(120,90,40,.4)"; x.lineWidth = 2; x.beginPath(); x.moveTo(108, 160); x.lineTo(104, 326); x.moveTo(148, 160); x.lineTo(152, 326); x.stroke(); } }
-    else if (k === 1) {   // Edgar : le tee-shirt camouflage, les manches roulées
-      bras("#5a6a3a", false); torse("#5a6a3a"); for (let i = 0; i < 40; i++) { x.fillStyle = ["#3a4628", "#8a8a5a", "#2a2a1a", "#6a7a4a"][i % 4]; x.beginPath(); x.ellipse(84 + hasard(i * 2.3) * 88, 164 + hasard(i * 3.7) * 160, 7 + hasard(i) * 8, 4 + hasard(i * 9) * 5, hasard(i * 4) * 3, 0, 7); x.fill(); }
-      for (const bx of [74, 182]) { x.fillStyle = "#4a5a2a"; x.fillRect(bx - 15, 222, 30, 8); } }
-    else {   // Alan : le débardeur gris « AIRBORNE », la plaque militaire
-      bras(null); torse("#8e8e8a"); x.fillStyle = "#8e8e8a"; for (const bx of [86, 170]) { x.beginPath(); x.ellipse(bx, 172, 10, 16, 0, 0, 7); x.fill(); }
-      if (!dos) { x.fillStyle = "#2a2a2a"; x.font = "bold 15px Arial"; x.textAlign = "center"; x.fillText("AIRBORNE", 128, 236); x.beginPath(); x.arc(128, 262, 14, 0, 7); x.lineWidth = 3; x.strokeStyle = "#2a2a2a"; x.stroke(); x.beginPath(); x.moveTo(114, 262); x.lineTo(142, 262); x.stroke();
-        x.strokeStyle = "#c8ccd4"; x.lineWidth = 2; x.beginPath(); x.moveTo(110, 156); x.quadraticCurveTo(128, 200, 146, 156); x.stroke(); x.fillStyle = "#d8dce2"; x.fillRect(122, 194, 12, 16); } }
-    // le cou, la tête
-    x.fillStyle = peauO; x.fillRect(114, 132, 28, 30); x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 31, 38, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(96, 108, 6, 10, 0, 0, 7); x.ellipse(160, 108, 6, 10, 0, 0, 7); x.fill();
-    if (!dos) { x.fillStyle = "#fff"; x.beginPath(); x.ellipse(116, 104, 7, 4.5, 0, 0, 7); x.ellipse(140, 104, 7, 4.5, 0, 0, 7); x.fill(); x.fillStyle = k === 0 ? "#3a6a9a" : "#4a3a2a"; x.beginPath(); x.arc(116, 104, 3.5, 0, 7); x.arc(140, 104, 3.5, 0, 7); x.fill();
-      x.strokeStyle = k === 0 ? "#a8884a" : "#3a2a1a"; x.lineWidth = 3; x.beginPath(); x.moveTo(106, k === 1 ? 96 : 94); x.lineTo(124, k === 1 ? 98 : 94); x.moveTo(150, k === 1 ? 96 : 94); x.lineTo(132, k === 1 ? 98 : 94); x.stroke();   // (Edgar fronce les sourcils)
-      x.strokeStyle = peauO; x.lineWidth = 2; x.beginPath(); x.moveTo(128, 106); x.lineTo(124, 120); x.lineTo(130, 121); x.stroke(); x.strokeStyle = "#a85a4a"; x.lineWidth = 3; x.beginPath(); x.moveTo(118, 130); x.quadraticCurveTo(128, k === 0 ? 136 : 131, 138, 130); x.stroke(); }
-    // les cheveux
-    if (k === 0) { x.fillStyle = "#c8a058"; x.beginPath(); x.moveTo(96, 100); x.quadraticCurveTo(84, 40, 128, 34); x.quadraticCurveTo(176, 36, 162, 100); x.quadraticCurveTo(156, 70, 128, 70); x.quadraticCurveTo(100, 70, 96, 100); x.fill();   // (la banane blonde)
-      x.fillStyle = "#e8cc88"; x.beginPath(); x.ellipse(126, 48, 28, 12, -.1, 0, 7); x.fill(); if (dos) { x.fillStyle = "#c8a058"; x.beginPath(); x.ellipse(128, 100, 32, 36, 0, 0, 7); x.fill(); } }
-    else if (k === 1) { x.fillStyle = "#5a3a22"; x.beginPath(); x.ellipse(128, 80, 36, 24, 0, Math.PI, 0); x.fill(); x.beginPath(); x.moveTo(92, 82); x.quadraticCurveTo(84, 130, 94, 160); x.lineTo(104, 150); x.lineTo(100, 90); x.moveTo(164, 82); x.quadraticCurveTo(172, 130, 162, 160); x.lineTo(152, 150); x.lineTo(156, 90); x.fill();   // (la nuque longue)
-      if (dos) { x.beginPath(); x.ellipse(128, 110, 34, 46, 0, 0, 7); x.fill(); }
-      x.fillStyle = "#d8241e"; x.beginPath(); x.moveTo(94, 80); x.quadraticCurveTo(128, 70, 162, 80); x.lineTo(162, 92); x.quadraticCurveTo(128, 82, 94, 92); x.fill();   // (le bandana rouge, ses deux pans qui pendent)
-      x.beginPath(); x.moveTo(158, 84); x.quadraticCurveTo(190, 120, 182, 180); x.lineTo(170, 176); x.quadraticCurveTo(176, 128, 152, 92); x.fill(); x.beginPath(); x.moveTo(160, 86); x.quadraticCurveTo(204, 110, 206, 160); x.lineTo(196, 158); x.quadraticCurveTo(190, 118, 156, 94); x.fill(); }
-    else { x.fillStyle = "#24160e"; x.beginPath(); x.moveTo(94, 104); x.quadraticCurveTo(88, 56, 128, 58); x.quadraticCurveTo(170, 56, 162, 104); x.quadraticCurveTo(154, 74, 112, 80); x.quadraticCurveTo(100, 86, 94, 104); x.fill(); if (dos) { x.beginPath(); x.ellipse(128, 100, 33, 38, 0, 0, 7); x.fill(); } } });
-  const texAdo = [0, 1, 2].map(k => { const cv = toileAdo(k, false), t = tex(cv); poserTete(cv, 81 + k, 112, 164, false, () => { t.needsUpdate = true; }); return [t, tex(toileAdo(k, true))]; });
   // le pistolet à eau : le corps en plastique transparent, l'eau bénite dedans, la croix sur le réservoir, la buse orange
   const pistoletEau = () => { const g = new THREE.Group(), M_ = o => new THREE.MeshStandardMaterial(o), ad = (geo, m, x, y, z, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
     const plast = M_({ color: 0x3aa8ff, transparent: true, opacity: .72, roughness: .15, metalness: .1, emissive: 0x0a3050, emissiveIntensity: .8 }), orange = M_({ color: 0xff7a1a, roughness: .4, emissive: 0x401800 }), eau = M_({ color: 0xc8eeff, transparent: true, opacity: .55, emissive: 0x4a8aaa, emissiveIntensity: .7 });
@@ -4891,31 +4880,29 @@ function construireSantaCarla(A, L, scene) {
     ad(new THREE.BoxGeometry(.003, .028, .006), M_({ color: 0xffd23a, emissive: 0x806010 }), .031, .075, -.06); ad(new THREE.BoxGeometry(.003, .006, .02), M_({ color: 0xffd23a, emissive: 0x806010 }), .031, .08, -.06);   // (la croix)
     ad(new THREE.CylinderGeometry(.009, .012, .05, 10), orange, 0, .025, -.165, Math.PI / 2); ad(new THREE.BoxGeometry(.01, .03, .012), orange, 0, -.02, -.035); ad(new THREE.BoxGeometry(.012, .02, .02), orange, 0, .08, -.01);
     return g; };
-  const ado = { k: null, pan: null, pist: pistoletEau(), kick: 0, kt: performance.now(), prec: null, cap: 0, dos: false, vise: null };
-  ado.pan = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.76), new THREE.MeshBasicMaterial({ map: texAdo[0][0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, fog: true })); ado.pan.visible = false; scene.add(ado.pan); ado.pist.visible = false; scene.add(ado.pist);
-  const cacherAvatar = (moi, cacher) => moi.g.traverse(o => { if (o !== moi.g) o.layers.set(cacher ? 1 : 0); });
+  const ado = { k: null, pist: pistoletEau(), kick: 0, kt: performance.now(), vise: null }; ado.pist.visible = false; scene.add(ado.pist);
   const buse = () => ado.pist.visible ? ado.pist.localToWorld(V3(0, .025, -.2)) : M.camera.position.clone().add(V3(0, -.4, 0));
-  const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi) { ado.pan.visible = ado.pist.visible = false; return; }
-    const cam = M.camera, now = performance.now(), dk = Math.min(.1, (now - ado.kt) / 1000); ado.kt = now; ado.kick = Math.max(0, ado.kick - dk * 6); const pos = moi.g.position;
-    cacherAvatar(moi, true); ado.pist.visible = true; ado.pist.scale.setScalar(M.premiere ? .55 : 1.7);
-    if (M.premiere) { ado.pan.visible = false; cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0), u = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 1);
+  const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi) { ado.pist.visible = false; return; }
+    const cam = M.camera, now = performance.now(), dk = Math.min(.1, (now - ado.kt) / 1000); ado.kt = now; ado.kick = Math.max(0, ado.kick - dk * 6);
+    ado.pist.visible = true; ado.pist.scale.setScalar(M.premiere ? .55 : 1.5); cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
+    if (M.premiere) { const u = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 1);
       ado.pist.position.copy(cam.position).addScaledVector(f, .36 - ado.kick * .03).addScaledVector(r, .15).addScaledVector(u, -.12 + ado.kick * .01); ado.pist.quaternion.copy(cam.quaternion); ado.pist.rotateY(.08); ado.pist.rotateX(ado.kick * .3); return; }
-    // à la troisième personne : le panneau de l'ado, de face ou de dos selon où il marche ; il sautille en marchant
-    const bouge = ado.prec && Math.hypot(pos.x - ado.prec.x, pos.z - ado.prec.z) > .004; if (bouge) { ado.cap = Math.atan2(pos.x - ado.prec.x, pos.z - ado.prec.z); ado.dos = (pos.x - ado.prec.x) * (pos.x - cam.position.x) + (pos.z - ado.prec.z) * (pos.z - cam.position.z) > 0; } ado.prec = pos.clone();
-    if (ado.vise && now - ado.vise.t < 1200) { ado.cap = Math.atan2(ado.vise.pt.x - pos.x, ado.vise.pt.z - pos.z); ado.dos = (ado.vise.pt.x - pos.x) * (pos.x - cam.position.x) + (ado.vise.pt.z - pos.z) * (pos.z - cam.position.z) > 0; }
-    ado.pan.visible = true; ado.pan.material.map = texAdo[ado.k][ado.dos ? 1 : 0]; ado.pan.position.set(pos.x, .88 + (bouge ? Math.abs(Math.sin(now / 110)) * .05 : 0), pos.z); ado.pan.rotation.y = Math.atan2(cam.position.x - pos.x, cam.position.z - pos.z);
-    // le pistolet, au bout du bras, tourné vers où il va (ou vers le vampire qu'il arrose)
-    const cx = Math.sin(ado.cap), cz = Math.cos(ado.cap); ado.pist.position.set(pos.x + cx * .3 - cz * .3, 1.02, pos.z + cz * .3 + cx * .3); ado.pist.rotation.set(0, ado.cap + Math.PI, 0); ado.pist.rotateX(ado.kick * .3); };
+    // à la troisième personne : dans la main de l'ado, tourné vers où l'on regarde (ou vers le vampire qu'il arrose)
+    const pos = moi.g.position, H = (moi.info.reglage && moi.info.reglage.t) || 1; r.y = 0; r.normalize();
+    let dx = f.x, dz = f.z; if (ado.vise && now - ado.vise.t < 1200) { dx = ado.vise.pt.x - pos.x; dz = ado.vise.pt.z - pos.z; }
+    ado.pist.position.set(pos.x + r.x * .34 * H, pos.y + .82 * H, pos.z + r.z * .34 * H); ado.pist.rotation.set(0, Math.atan2(-dx, -dz), 0); ado.pist.rotateX(ado.kick * .3); };
   const choisirAdo = () => { const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle,rgba(40,6,10,.82),rgba(0,0,0,.94));color:#fff;font:600 16px Georgia,serif;padding:12px;box-sizing:border-box";
     d.innerHTML = `<div style="font:900 clamp(20px,5vw,30px) Georgia;color:#ff4a3a;text-shadow:0 0 14px #b81c22;letter-spacing:2px">THE LOST BOYS</div><div style="opacity:.85;text-align:center">Qui veux-tu jouer ? Ton arme : le pistolet à eau bénite.</div><div class="c" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"></div>`;
     ADOS.forEach((a, k) => { const b = document.createElement("button"); b.style.cssText = "background:linear-gradient(#2a1418,#120a0c);border:2px solid #b81c22;border-radius:12px;color:#fff;padding:8px 8px 10px;cursor:pointer;width:clamp(90px,26vw,150px);font:700 15px Georgia";
-      const im = toileAdo(k, false); poserTete(im, 81 + k, 112, 164, false); im.style.cssText = "width:100%;height:auto;display:block;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px"; b.appendChild(im); b.appendChild(document.createTextNode(a.nom));
-      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; demarrer(); setTimeout(() => M && M.L === L && message(`<div style="font-size:15px;font-style:italic">« ${a.dit} »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.85">— ${a.court}</div>`), 4600); }; d.querySelector(".c").appendChild(b); });
+      const im = document.createElement("div"); im.style.cssText = "width:100%;aspect-ratio:200/420;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px;overflow:hidden"; b.appendChild(im);
+      { const info = habillerLB({ numero: 0 }, 81 + k); chargerTete(0, null, info.teteUrl).then(t => { const cv = dessinerBonhomme(info, t); cv.style.cssText = "width:100%;height:100%;object-fit:contain"; im.appendChild(cv); }); }
+      b.appendChild(document.createTextNode(a.nom));
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } demarrer(); setTimeout(() => M && M.L === L && message(`<div style="font-size:15px;font-style:italic">« ${a.dit} »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.85">— ${a.court}</div>`), 4600); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
     if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
-      hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); const mo = M && M.gens.get(M.moiNum); if (mo) cacherAvatar(mo, false); } }, 600); }
+      hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
     majAdo();
     if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
     if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { creerVampire(0); majHud(); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
@@ -4929,23 +4916,23 @@ function construireSantaCarla(A, L, scene) {
         if (d < 1.1) { mordu(v); v.etat = "remonte"; v.tEtat = now + 1800; } else if (now > v.tEtat) { v.etat = "remonte"; v.tEtat = now + 1500; } }
       else if (v.etat === "remonte") { g.position.y += (7 - g.position.y) * .05; const dx = g.position.x - p.x, dz = g.position.z - p.z, d = Math.hypot(dx, dz) || 1; g.position.x += dx / d * .08; g.position.z += dz / d * .08;
         if (now > v.tEtat) { v.etat = "tourne"; v.a = Math.atan2(g.position.z - p.z, g.position.x - p.x); v.tEtat = now + 3000 + Math.random() * 4000; } }
-      else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; v.corps.rotation.z = Math.min(Math.PI / 2, v.corps.rotation.z + .05); v.corps.position.y = .45;
+      else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté) */
         if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
-        if (now > v.tEtat) { v.pv = 1; v.corps.rotation.z = 0; v.corps.position.y = 1.25; v.etat = "remonte"; v.tEtat = now + 1500; message(`${v.nom} s'est relevé !`); } }
-      else if (v.etat === "brule") { v.mat.color.setRGB(1, .5, .2); v.mat.opacity = Math.max(0, (v.tEtat - now) / 1800); v.mat.transparent = true; v.mat.alphaTest = 0; if (Math.random() < .5) particule(feuT, g.position.clone().add(new THREE.Vector3(0, .5, 0)), 1, 2, 900, .9);
-        if (now > v.tEtat) { v.etat = "mort"; scene.remove(g); majHud(); } }
+        if (now > v.tEtat) { v.pv = 1; g.rotation.z = 0; v.etat = "remonte"; v.tEtat = now + 1500; message(`${v.nom} s'est relevé !`); } }
+      else if (v.etat === "brule") { g.scale.setScalar(Math.max(.02, (v.tEtat - now) / 1800));   /* (il se consume) */ if (Math.random() < .5) particule(feuT, g.position.clone().add(new THREE.Vector3(0, .5, 0)), 1, 2, 900, .9);
+        if (now > v.tEtat) { v.etat = "mort"; retirerAncien(v.p.info.numero); majHud(); } }
       // le panneau face à nous ; incliné quand il pique ; à terre, couché
-      if (v.etat !== "mort") { const c = M.camera.position; g.rotation.y = Math.atan2(c.x - g.position.x, c.z - g.position.z); if (v.etat !== "terre" && v.etat !== "brule") v.corps.rotation.x = v.etat === "pique" ? .5 : 0; } }
+      if (v.etat !== "mort") v.p.vol = Math.max(0, g.position.y); }   // (l'altitude du vol : le moteur la remet à chaque image)
     // les particules (fumée, flammes, gouttes d'eau bénite)
     for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i], u = (now - q.t0) / q.d; if (u < 0) continue;
       if (u >= 1) { scene.remove(q.sp); parts.splice(i, 1); continue; }
       if (q.goutte) q.sp.position.lerpVectors(q.de, q.a, u).add(new THREE.Vector3(0, Math.sin(u * Math.PI) * .25, 0));
       else { q.sp.position.addScaledVector(q.v, 1 / 60); q.sp.material.opacity = 1 - u; q.sp.scale.setScalar(q.taille * (1 + u)); } } };
   // toucher un vampire : l'eau bénite (ou le pieu, s'il est à terre)
-  L.toucher = (ray) => { const vis = vamps.filter(v => v.etat !== "mort" && v.etat !== "brule"); const h = ray.intersectObjects(vis.map(v => v.corps))[0]; if (!h) {
+  L.toucher = (ray) => { const vis = vamps.filter(v => v.etat !== "mort" && v.etat !== "brule"); const h = ray.intersectObjects(vis.map(v => v.g), true)[0]; if (!h) {
       { let best = null, bd = .02; for (const v of vis) { const q = v.g.position.clone().add(new THREE.Vector3(0, 1.2, 0)), dir = q.sub(ray.ray.origin).normalize(), d = 1 - dir.dot(ray.ray.direction); if (d < bd) { bd = d; best = v; } } if (best) { blesser(best); return true; } }   // (un peu à côté : on vise le plus proche du doigt)
       return false; }
-    blesser(vis.find(v => v.corps === h.object), h.point); return true; };
+    const v = vis.find(v => { for (let q = h.object; q; q = q.parent) if (q === v.g) return true; return false; }); if (!v) return false; blesser(v, h.point); return true; };
 }
 /* là où poser une fenêtre par-dessus le monde : l'élément en plein écran s'il y en a un (sinon elle resterait cachée derrière), sinon la page */
 const hoteFS = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
@@ -10620,7 +10607,8 @@ function ajouterAncien(info) {
   if (!M || !M.scene) return;
   if (M.L && M.L.apo && info.numero > 0 && (!M.L.sh || (info.numero === M.moiNum && M.shArme))) info.arme = true;   // (à l'apocalypse, chacun a son pistolet ; à Silent Hill, nous seulement, une fois l'arme de James en poche)
   // à l'apocalypse, on peut jouer l'un des héros de Resident Evil : sa tête, sa tenue (hors de l'apocalypse, on redevient soi-même)
-  if (info.vrai && !(M.L && M.L.apo)) info = info.vrai;
+  if (info.vrai && !(M.L && (M.L.apo || M.L.lb))) info = info.vrai;
+  if (M.L && M.L.lb && info.numero === M.moiNum && M.lbPerso && !info.vrai) info = { ...habillerLB(info, M.lbPerso), vrai: info };   // (à Santa Carla : on joue Sam, Edgar ou Alan Frog)
   { const hid = info.numero > 0 ? (info.numero === M.moiNum ? M.perso : info.perso) : null;
     if (M.L && M.L.apo && !M.L.sh && hid && HEROS[hid] && !info.vrai) info = { ...habillerHeros(info, hid), vrai: info }; }
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
