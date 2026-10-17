@@ -4320,68 +4320,84 @@ const cielNuit = () => toileCielNuit || (toileCielNuit = toile(256, 512, (x, w, 
    Les ferrures en fer noir : entrées de serrure ouvragées, boutons, poignées de tiroir. (g : son groupe ; l'avant vers +z, posé au sol) */
 let texChene = null;
 function buffetChene(g) {
-  const chene = texChene || (texChene = toile(256, 512, (x, w, h) => { graine = 71; x.fillStyle = "#a06c3c"; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 90; i++) { const xx = alea() * w, l = 30 + alea() * 200, y = alea() * h; x.strokeStyle = `rgba(${alea() < .5 ? "60,34,16" : "170,120,70"},${.15 + alea() * .25})`; x.lineWidth = .6 + alea() * 1.6; x.beginPath(); x.moveTo(xx, y); x.bezierCurveTo(xx + (alea() - .5) * 8, y + l * .3, xx + (alea() - .5) * 8, y + l * .7, xx + (alea() - .5) * 6, y + l); x.stroke(); }   // (le fil du chêne)
-    for (let i = 0; i < 26; i++) { x.fillStyle = `rgba(200,150,90,${.06 + alea() * .08})`; x.fillRect(alea() * w, alea() * h, 2 + alea() * 4, 10 + alea() * 40); } }));   // (les maillures, plus claires)
-  const bois = new THREE.MeshStandardMaterial({ map: tex(chene, 1, 1), roughness: .55, color: 0xffe4c4, emissive: 0x3a2008, emissiveIntensity: .35 }), moul = new THREE.MeshStandardMaterial({ map: tex(chene, 1, 1), roughness: .45, color: 0xb88a5c, emissive: 0x2a1404, emissiveIntensity: .3 }),
-    fond = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: .8 }), fer = new THREE.MeshStandardMaterial({ color: 0x1c1816, roughness: .45, metalness: .5 }),
-    verre = new THREE.MeshStandardMaterial({ color: 0x2a2e30, roughness: .05, metalness: .2, transparent: true, opacity: .35, depthWrite: false }), plomb = new THREE.MeshStandardMaterial({ color: 0xb0b2b0, roughness: .3, metalness: .6 });
+  // le bois : le vrai chêne du buffet, pris sur la photo (sa teinte, son fil) ; les moulures plus foncées ; les ferrures en fer noir
+  const ch = texChene || (texChene = (() => { const t = new THREE.TextureLoader().load("images/appart/chene.webp"); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })());
+  const bois = new THREE.MeshStandardMaterial({ map: ch, roughness: .5, emissive: 0x24140a, emissiveIntensity: .3 }), moul = new THREE.MeshStandardMaterial({ map: ch, color: 0x8c6a52, roughness: .42 }),
+    creux = new THREE.MeshStandardMaterial({ map: ch, color: 0x6a5446, roughness: .7 }), fer = new THREE.MeshStandardMaterial({ color: 0x1a1614, roughness: .4, metalness: .55 }),
+    verre = new THREE.MeshStandardMaterial({ color: 0xd4dee2, roughness: .03, metalness: .1, transparent: true, opacity: .16, depthWrite: false }), plomb = new THREE.MeshStandardMaterial({ color: 0x9a9c98, roughness: .3, metalness: .6 }),
+    vaisselle = new THREE.MeshStandardMaterial({ color: 0xf2efe6, roughness: .25 }), cristal = new THREE.MeshStandardMaterial({ color: 0xe8f0f2, roughness: .05, transparent: true, opacity: .45 });
   const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
   const ext = (sh, d, m, x, y, z, bev = .004) => { const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 14 }), m); o.position.set(x, y, z); g.add(o); return o; };
-  // le « chapeau de gendarme » : un rectangle dont le haut s'arrondit en pointe douce, avec deux petites oreilles aux épaules
-  const arche = (w, h, cap, sh = new THREE.Shape(), dx = 0, dy = 0) => { const P2 = (a, b) => [a + dx, b + dy];
+  // le « chapeau de gendarme » : le haut s'arrondit en pointe douce, deux petites oreilles aux épaules
+  const arche = (w, h, cap, sh = new THREE.Shape(), dy = 0) => { const P2 = (a, b) => [a, b + dy];
     sh.moveTo(...P2(-w / 2, 0)); sh.lineTo(...P2(w / 2, 0)); sh.lineTo(...P2(w / 2, h - cap));
-    sh.quadraticCurveTo(...P2(w / 2 - .02, h - cap + .015), ...P2(w / 2 - .035, h - cap + .005));   // (l'oreille)
+    sh.quadraticCurveTo(...P2(w / 2 - .02, h - cap + .015), ...P2(w / 2 - .035, h - cap + .005));
     sh.bezierCurveTo(...P2(w * .28, h - cap * .95), ...P2(w * .16, h), ...P2(0, h)); sh.bezierCurveTo(...P2(-w * .16, h), ...P2(-w * .28, h - cap * .95), ...P2(-w / 2 + .035, h - cap + .005));
     sh.quadraticCurveTo(...P2(-w / 2 + .02, h - cap + .015), ...P2(-w / 2, h - cap)); sh.closePath(); return sh; };
-  const anneau = (w, h, cap, e) => { const sh = arche(w, h, cap); sh.holes.push(arche(w - 2 * e, h - 2 * e, cap * .92, new THREE.Path(), 0, e)); return sh; };
-  // une entrée de serrure ouvragée (une plaque découpée en volutes) et son bouton
-  const ferrure = (x, y, haut = .16) => { const sh = new THREE.Shape(); sh.moveTo(0, haut / 2); sh.bezierCurveTo(.022, haut * .35, -.012, haut * .15, .014, 0); sh.bezierCurveTo(-.012, -haut * .15, .022, -haut * .35, 0, -haut / 2);
-    sh.bezierCurveTo(-.022, -haut * .35, .012, -haut * .15, -.014, 0); sh.bezierCurveTo(.012, haut * .15, -.022, haut * .35, 0, haut / 2); ext(sh, .003, fer, x, y, .03, .001);
-    const b = new THREE.Mesh(new THREE.SphereGeometry(.012, 10, 8), fer); b.position.set(x, y - .01, .045); g.add(b); };
-  // une porte : son bâti, l'anneau mouluré (plus foncé), le panneau bombé ; ou bien vitrée (le verre, les croisillons, l'étagère derrière)
-  const porte = (x0, x1, y0, y1, o = {}) => { const w = x1 - x0 - .008, h = y1 - y0 - .008, cx = (x0 + x1) / 2, cap = Math.min(.16, h * .22), m = .045;
-    box(w, h, .022, bois, cx, (y0 + y1) / 2, .011);
-    ext(anneau(w - 2 * m, h - 2 * m, cap, .03), .012, moul, cx, y0 + .004 + m, .02);
-    if (o.vitre) { const v = new THREE.Mesh(new THREE.ShapeGeometry(arche(w - 2 * m - .06, h - 2 * m - .06, cap * .92), 12), verre); v.position.set(cx, y0 + .004 + m + .03, .03); g.add(v);
-      box(.008, h - 2 * m - .12, .006, plomb, cx, (y0 + y1) / 2 - .02, .034); for (const f of [.3, .62]) box(w - 2 * m - .06, .008, .006, plomb, cx, y0 + f * h, .034); }
-    else ext(arche(w - 2 * m - .07, h - 2 * m - .07, cap * .85), .012, bois, cx, y0 + .004 + m + .035, .02, .006);
-    if (o.ferrure) ferrure(o.ferrure > 0 ? x1 - .045 : x0 + .045, (y0 + y1) / 2 + .03); };
-  const W = 2.5, D = .48;
-  // (les hauteurs, du sol : socle, portes du bas, tablette, milieu, corniche intermédiaire, haut, corniche)
-  const Y = { socle: .08, bas: .7, tab: .76, mil: 1.68, mol: 1.73, haut: 2.36, top: 2.45 };
-  box(W, Y.top - .03, D - .02, bois, 0, (Y.top - .03) / 2, -D / 2);   // le corps
-  box(W + .04, Y.socle, D + .02, moul, 0, Y.socle / 2, -D / 2 + .01);   // le socle
-  for (const [y, h, av] of [[Y.bas + .03, .06, .05], [Y.mil + .025, .05, .035], [Y.top - .02, .05, .06], [Y.top + .015, .03, .08]]) box(W + av * 1.4, h, D + av, moul, 0, y, -D / 2 + av / 2);   // les tablettes, les moulures, la corniche
-  for (const sx of [-1, 1]) box(.035, Y.top - Y.socle, .03, bois, sx * (W / 2 - .0175), (Y.top + Y.socle) / 2, .012);   // (les montants)
+  const anneau = (w, h, cap, e) => { const sh = arche(w, h, cap); sh.holes.push(arche(w - 2 * e, h - 2 * e, cap * .92, new THREE.Path(), e)); return sh; };
+  // l'entrée de serrure en volutes (une longue plaque en S), son bouton ; une charnière
+  const ferrure = (x, y, haut = .17) => { const sh = new THREE.Shape(); sh.moveTo(0, haut / 2); sh.bezierCurveTo(.024, haut * .35, -.014, haut * .15, .015, 0); sh.bezierCurveTo(-.014, -haut * .15, .024, -haut * .35, 0, -haut / 2);
+    sh.bezierCurveTo(-.024, -haut * .35, .014, -haut * .15, -.015, 0); sh.bezierCurveTo(.014, haut * .15, -.024, haut * .35, 0, haut / 2); ext(sh, .003, fer, x, y, .031, .001);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.012, 10, 8), fer); b.position.set(x, y + .01, .046); g.add(b); };
+  const charniere = (x, y) => { box(.014, .09, .006, fer, x, y, .028); box(.02, .012, .008, fer, x, y + .05, .028); box(.02, .012, .008, fer, x, y - .05, .028); };
+  // une porte : son bâti, l'anneau mouluré foncé, le panneau bombé ; vitrée : le verre, les plombs en croix
+  const porte = (x0, x1, y0, y1, o = {}) => { const w = x1 - x0 - .008, h = y1 - y0 - .008, cx = (x0 + x1) / 2, cap = Math.min(.17, h * .22), m = .045;
+    if (o.vitre) { const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(w / 2, h); sh.lineTo(-w / 2, h); sh.closePath(); sh.holes.push(arche(w - 2 * m - .05, h - 2 * m - .05, cap * .92, new THREE.Path(), m + .025));
+      ext(sh, .02, bois, cx, y0 + .004, 0, .002);   // (le bâti, ajouré)
+      const v = new THREE.Mesh(new THREE.ShapeGeometry(arche(w - 2 * m - .05, h - 2 * m - .05, cap * .92), 12), verre); v.position.set(cx, y0 + .004 + m + .025, .012); g.add(v);
+      box(.007, h - 2 * m - .1, .005, plomb, cx + (w > .4 ? 0 : 0), (y0 + y1) / 2 - .03, .016); for (const f of [.33, .66]) box(w - 2 * m - .05, .007, .005, plomb, cx, y0 + f * h, .016); }
+    else { box(w, h, .022, bois, cx, (y0 + y1) / 2, .011); ext(arche(w - 2 * m - .07, h - 2 * m - .07, cap * .85), .014, bois, cx, y0 + .004 + m + .035, .02, .007); }
+    ext(anneau(w - 2 * m, h - 2 * m, cap, .03), .012, moul, cx, y0 + .004 + m, .021);
+    if (o.ferrure) ferrure(o.ferrure > 0 ? x1 - .045 : x0 + .045, (y0 + y1) / 2 + .04);
+    if (o.ferrure) { const xh = o.ferrure > 0 ? x0 + .012 : x1 - .012; charniere(xh, y0 + .14); charniere(xh, y1 - .14); } };
+  const W = 2.5, D = .5, Y = { socle: .08, bas: .68, tab: .76, mil: 1.7, mol: 1.75, haut: 2.37, top: 2.45 };
+  // le bâti, creux : le fond, les côtés, les tablettes ; derrière les portes pleines, une cloison (on ne voit pas dedans)
+  box(W - .02, Y.top - Y.socle, .02, creux, 0, (Y.top + Y.socle) / 2, -D + .01);
+  for (const sx of [-1, 1]) box(.04, Y.top - Y.socle, D, bois, sx * (W / 2 - .02), (Y.top + Y.socle) / 2, -D / 2);
+  box(W - .08, Y.haut - Y.mol, .02, creux, 0, (Y.haut + Y.mol) / 2, -.035); box(W - .08, Y.bas - Y.socle, .02, creux, 0, (Y.bas + Y.socle) / 2, -.035);
+  box(.86, Y.mil - Y.tab, .02, creux, .87, (Y.mil + Y.tab) / 2, -.035);   // (derrière la grande porte de droite)
+  box(W + .03, Y.socle, D + .02, moul, 0, Y.socle / 2, -D / 2 + .01);   // le socle
+  box(W + .06, Y.tab - Y.bas, D + .05, bois, 0, (Y.bas + Y.tab) / 2, -D / 2 + .025); box(W + .08, .02, D + .07, moul, 0, Y.tab - .01, -D / 2 + .035);   // la tablette, qui avance
+  box(W + .04, Y.mol - Y.mil, D + .04, bois, 0, (Y.mil + Y.mol) / 2, -D / 2 + .02); box(W + .06, .015, D + .05, moul, 0, Y.mol - .008, -D / 2 + .025);
+  box(W + .1, Y.top - Y.haut, D + .08, bois, 0, (Y.haut + Y.top) / 2, -D / 2 + .04); box(W + .14, .035, D + .1, moul, 0, Y.top + .017, -D / 2 + .05); box(W + .12, .02, D + .09, moul, 0, Y.haut + .01, -D / 2 + .045);   // la corniche
+  for (const x of [-1.21, -.6, 0, .6, 1.21]) box(.03, Y.haut - Y.mol, .022, bois, x, (Y.haut + Y.mol) / 2, .011);   // (les montants entre les portes du haut)
+  for (const x of [-1.21, -.25, .54, 1.21]) box(.035, Y.mil - Y.tab, .022, bois, x, (Y.mil + Y.tab) / 2, .011);
+  for (const x of [-1.21, -.685, -.17, .47, 1.21]) box(.03, Y.bas - Y.socle, .022, bois, x, (Y.bas + Y.socle) / 2, .011);
   // en haut : quatre portes
-  const xs = [-1.2, -.6, 0, .6, 1.2]; for (let i = 0; i < 4; i++) porte(xs[i] + .01, xs[i + 1] - .01, Y.mol + .01, Y.haut - .03, { ferrure: i % 2 ? -1 : 1 });
-  // au milieu : la vitrine (une grande porte vitrée, une étroite), la niche et l'abattant, la grande porte de droite
-  box(.86, Y.mil - Y.tab - .02, .02, fond, -.75, (Y.tab + Y.mil) / 2, -D + .03);   // (le fond de la vitrine, sombre)
-  for (const y of [Y.tab + .3, Y.tab + .6]) box(.84, .02, D - .08, bois, -.75, y, -D / 2 - .02);   // (ses étagères)
-  porte(-1.18, -.52, Y.tab + .01, Y.mil - .01, { vitre: true, ferrure: 1 }); porte(-.52, -.25, Y.tab + .01, Y.mil - .01, { vitre: true });
-  const nx0 = -.23, nx1 = .5, nyA = Y.tab + .55;   // la niche ouverte, au-dessus de l'abattant
-  box(nx1 - nx0, Y.mil - nyA - .01, .02, moul, (nx0 + nx1) / 2, (nyA + Y.mil) / 2, -D + .03); box(nx1 - nx0, .02, D - .06, bois, (nx0 + nx1) / 2, nyA + .01, -D / 2 + .01);
-  { const sh = new THREE.Shape(), lw = nx1 - nx0, n = 5; sh.moveTo(-lw / 2, 0); sh.lineTo(-lw / 2, .1); sh.lineTo(lw / 2, .1); sh.lineTo(lw / 2, 0);   // le lambrequin chantourné
-    for (let i = n; i > 0; i--) { const xa = -lw / 2 + i * lw / n, xb = xa - lw / n; sh.quadraticCurveTo((xa + xb) / 2, .07, xb, 0); } ext(sh, .02, bois, (nx0 + nx1) / 2, Y.mil - .12, .0); }
-  { const ab0 = Y.tab + .03, ab1 = nyA - .01, aw = nx1 - nx0 - .02, ah = ab1 - ab0, cx = (nx0 + nx1) / 2;   // l'abattant : un cartouche mouluré, aux coins rentrants
-    box(aw, ah, .024, bois, cx, (ab0 + ab1) / 2, .012);
-    const cart = (w, h, r) => { const sh = new THREE.Shape(); sh.moveTo(-w / 2 + r, 0); sh.lineTo(w / 2 - r, 0); sh.quadraticCurveTo(w / 2 - r, r, w / 2, r); sh.lineTo(w / 2, h - r); sh.quadraticCurveTo(w / 2 - r, h - r, w / 2 - r, h);
-      sh.quadraticCurveTo(0, h + .03, -w / 2 + r, h); sh.quadraticCurveTo(-w / 2 + r, h - r, -w / 2, h - r); sh.lineTo(-w / 2, r); sh.quadraticCurveTo(-w / 2 + r, r, -w / 2 + r, 0); return sh; };
-    const c1 = cart(aw - .1, ah - .12, .06); c1.holes.push(cart(aw - .16, ah - .18, .05)); c1.holes[0].getPoints && 0; const anc = c1;
-    const hole = cart(aw - .16, ah - .18, .05), hp = new THREE.Path(); hp.setFromPoints(hole.getPoints(12).map(p => new THREE.Vector2(p.x, p.y + .03))); anc.holes = [hp];
-    ext(anc, .012, moul, cx, ab0 + .05, .022); ext(cart(aw - .2, ah - .22, .045), .01, bois, cx, ab0 + .08, .022, .006);
-    ferrure(cx, ab1 - .05, .07); }
-  porte(.52, 1.18, Y.tab + .01, Y.mil - .01, { ferrure: -1 });
+  const xs = [-1.195, -.6, 0, .6, 1.195]; for (let i = 0; i < 4; i++) porte(xs[i] + .016, xs[i + 1] - .016, Y.mol + .01, Y.haut - .01, { ferrure: i % 2 ? -1 : 1 });
+  // au milieu, à gauche : la vitrine (une grande porte vitrée, une étroite), ses étagères, la vaisselle et les verres derrière
+  for (const x of [-.25]) box(.03, Y.mil - Y.tab, D - .03, bois, x, (Y.tab + Y.mil) / 2, -D / 2);
+  for (const y of [Y.tab + .32, Y.tab + .63]) box(.92, .02, D - .06, bois, -.72, y, -D / 2 - .01);
+  { let k = 0; for (const y of [Y.tab + .01, Y.tab + .33, Y.tab + .64]) for (let x = -1.12; x < -.32; x += .085) { k++;
+      if (k % 3 === 0) { const a = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .012, 20), vaisselle); a.rotation.x = Math.PI / 2 - .2; a.position.set(x, y + .1, -D + .06); g.add(a); }   // (une assiette, debout contre le fond)
+      else { const v = new THREE.Mesh(new THREE.CylinderGeometry(.028, .02, .11, 12), cristal); v.position.set(x, y + .066, -D / 2 + .02 * (k % 2)); g.add(v); } } }   // (les verres)
+  porte(-1.19, -.555, Y.tab + .01, Y.mil - .01, { vitre: true, ferrure: 1 }); porte(-.555, -.27, Y.tab + .01, Y.mil - .01, { vitre: true });
+  // au centre : en haut la niche ouverte (bien en retrait, son lambrequin chantourné) ; en dessous le coffre et son abattant mouluré
+  const nx0 = -.235, nx1 = .525, nyA = Y.tab + .52, ncx = (nx0 + nx1) / 2, nw = nx1 - nx0;
+  box(.03, Y.mil - Y.tab, D - .03, bois, .54, (Y.tab + Y.mil) / 2, -D / 2);
+  box(nw, .025, D - .03, bois, ncx, nyA, -D / 2);   // (le plancher de la niche, le dessus du coffre)
+  { const sh = new THREE.Shape(); sh.moveTo(-nw / 2, 0); sh.lineTo(-nw / 2, .1); sh.lineTo(nw / 2, .1); sh.lineTo(nw / 2, 0); const n = 6;   // le lambrequin chantourné, en haut de la niche
+    for (let i = n; i > 0; i--) { const xa = -nw / 2 + i * nw / n, xb = xa - nw / n; sh.quadraticCurveTo(xa - nw / n * .25, .065, (xa + xb) / 2, .05); sh.quadraticCurveTo(xb + nw / n * .25, .065, xb, 0); } ext(sh, .02, bois, ncx, Y.mil - .11, -.01, .003); }
+  { const ab0 = Y.tab + .015, ab1 = nyA - .012, aw = nw - .02, ah = ab1 - ab0;   // l'abattant du coffre : un cartouche mouluré aux coins rentrants, la ferrure en haut
+    box(aw, ah, .024, bois, ncx, (ab0 + ab1) / 2, .012);
+    const cart = (w, h, r, sh = new THREE.Shape(), dy = 0) => { const P = (a, b) => [a, b + dy]; sh.moveTo(...P(-w / 2 + r, 0)); sh.lineTo(...P(w / 2 - r, 0)); sh.quadraticCurveTo(...P(w / 2 - r, r), ...P(w / 2, r)); sh.lineTo(...P(w / 2, h - r)); sh.quadraticCurveTo(...P(w / 2 - r, h - r), ...P(w / 2 - r, h));
+      sh.quadraticCurveTo(...P(0, h + .035), ...P(-w / 2 + r, h)); sh.quadraticCurveTo(...P(-w / 2 + r, h - r), ...P(-w / 2, h - r)); sh.lineTo(...P(-w / 2, r)); sh.quadraticCurveTo(...P(-w / 2 + r, r), ...P(-w / 2 + r, 0)); return sh; };
+    const c1 = cart(aw - .08, ah - .12, .06); c1.holes.push(cart(aw - .15, ah - .19, .05, new THREE.Path(), .035)); ext(c1, .014, moul, ncx, ab0 + .05, .022);
+    ext(cart(aw - .2, ah - .24, .045), .012, bois, ncx, ab0 + .085, .022, .006);
+    const pl = new THREE.Shape(); pl.moveTo(-.07, 0); pl.bezierCurveTo(-.05, .02, -.02, -.01, 0, .012); pl.bezierCurveTo(.02, -.01, .05, .02, .07, 0); pl.bezierCurveTo(.05, -.02, .02, .01, 0, -.012); pl.bezierCurveTo(-.02, .01, -.05, -.02, -.07, 0);
+    ext(pl, .003, fer, ncx, ab1 - .035, .03, .001); }
+  // au milieu, à droite : la grande porte
+  porte(.555, 1.19, Y.tab + .01, Y.mil - .01, { ferrure: -1 });
   // en bas : deux portes, trois tiroirs, une porte
-  porte(-1.18, -.68, Y.socle + .01, Y.bas, { ferrure: 1 }); porte(-.68, -.18, Y.socle + .01, Y.bas, { ferrure: -1 });
-  for (let i = 0; i < 3; i++) { const t0 = Y.socle + .01 + i * (Y.bas - Y.socle) / 3, t1 = t0 + (Y.bas - Y.socle) / 3 - .01, cx = .15;   // un tiroir : sa façade moulurée, sa poignée en fer
-    box(.62, t1 - t0, .024, bois, cx, (t0 + t1) / 2, .012);
-    const sh = new THREE.Shape(), w2 = .5, h2 = t1 - t0 - .06; sh.moveTo(-w2 / 2 + .03, 0); sh.lineTo(w2 / 2 - .03, 0); sh.quadraticCurveTo(w2 / 2, 0, w2 / 2, .03); sh.lineTo(w2 / 2, h2 - .03); sh.quadraticCurveTo(w2 / 2, h2, w2 / 2 - .03, h2); sh.lineTo(-w2 / 2 + .03, h2); sh.quadraticCurveTo(-w2 / 2, h2, -w2 / 2, h2 - .03); sh.lineTo(-w2 / 2, .03); sh.quadraticCurveTo(-w2 / 2, 0, -w2 / 2 + .03, 0);
-    ext(sh, .01, moul, cx, t0 + .03, .022);
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(.14, .025, .004), fer); pl.position.set(cx, (t0 + t1) / 2 + .02, .036); g.add(pl);
-    const anse = new THREE.Mesh(new THREE.TorusGeometry(.045, .006, 6, 14, Math.PI), fer); anse.rotation.z = Math.PI; anse.position.set(cx, (t0 + t1) / 2 + .015, .042); g.add(anse); }
-  porte(.48, 1.18, Y.socle + .01, Y.bas, { ferrure: -1 });
+  porte(-1.19, -.7, Y.socle + .01, Y.bas - .005, { ferrure: 1 }); porte(-.67, -.185, Y.socle + .01, Y.bas - .005, { ferrure: -1 });
+  for (let i = 0; i < 3; i++) { const hT = (Y.bas - Y.socle - .02) / 3, t0 = Y.socle + .01 + i * hT, t1 = t0 + hT - .008, cx = .15;   // un tiroir : sa façade moulurée, sa poignée tombante en fer
+    box(.6, t1 - t0, .024, bois, cx, (t0 + t1) / 2, .012);
+    const sh = new THREE.Shape(), w2 = .5, h2 = t1 - t0 - .06; sh.moveTo(-w2 / 2 + .035, 0); sh.lineTo(w2 / 2 - .035, 0); sh.quadraticCurveTo(w2 / 2, 0, w2 / 2, .035); sh.lineTo(w2 / 2, h2 - .035); sh.quadraticCurveTo(w2 / 2, h2, w2 / 2 - .035, h2); sh.lineTo(-w2 / 2 + .035, h2); sh.quadraticCurveTo(-w2 / 2, h2, -w2 / 2, h2 - .035); sh.lineTo(-w2 / 2, .035); sh.quadraticCurveTo(-w2 / 2, 0, -w2 / 2 + .035, 0);
+    const hp = new THREE.Path(); hp.moveTo(-w2 / 2 + .05, .02); hp.lineTo(w2 / 2 - .05, .02); hp.lineTo(w2 / 2 - .05, h2 - .02); hp.lineTo(-w2 / 2 + .05, h2 - .02); hp.closePath(); sh.holes.push(hp);
+    ext(sh, .012, moul, cx, t0 + .03, .022);
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(.15, .028, .004), fer); pl.position.set(cx, (t0 + t1) / 2 + .015, .038); g.add(pl);
+    const anse = new THREE.Mesh(new THREE.TorusGeometry(.045, .006, 6, 14, Math.PI), fer); anse.rotation.z = Math.PI; anse.position.set(cx, (t0 + t1) / 2 + .012, .044); g.add(anse); }
+  porte(.485, 1.19, Y.socle + .01, Y.bas - .005, { ferrure: -1 });
   fusionnerParMatiere(g); return g;
 }
 function construireAppart(A, L, scene) {
@@ -4440,7 +4456,8 @@ function construireAppart(A, L, scene) {
   piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
   piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [porte(P.cuisine, .85)], x1: [fen(P.cuisine, 1.6, .8, 1.55)] });
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
-  piece(XS, -XC, ZC[3], ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
+  const SZ0 = ZC[3] + 1.5;   // (le premier salon : son mur du fond, 1,50 m plus près de l'entrée)
+  piece(XS, -XC, SZ0, ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.8, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
   /* le papier peint du second salon (d'après la photo : rayures beige et taupe, le grain de la toile) ; un morceau fait 1,06 m de large (4 rayures) sur 1,45 m de haut */
   const papier = papierPeint("images/appart/tapisserie-salon2.webp", 1.06, 1.45);
@@ -4538,7 +4555,7 @@ function construireAppart(A, L, scene) {
     return g; };
   fenetre("z", XG + .05, -1.9, FW, FY, FH, 1); fenetre("z", XG + .05, -6.1, FW, FY, FH, 1); fenetre("z", XD - .05, -1.9, FW, FY, FH, -1);
   fenetre("z", XB - .05, (ZD + ZC[1]) / 2, .5, 1.75, .45, -1, 1, true); fenetre("z", XW + .05, (WZ[0] + WZ[1]) / 2, .45, H4 + 1.75, .45, 1, 1, true);
-  fenetre("z", XD - .05, P.cuisine, 1.6, H4 + .8, 1.55, -1); fenetre("z", XS + .05, 6.0, 1.9, H4 + .5, 2.1, 1);
+  fenetre("z", XD - .05, P.cuisine, 1.6, H4 + .8, 1.55, -1); fenetre("z", XS + .05, 6.8, 1.9, H4 + .5, 2.1, 1);
   // le bow-window du second salon : trois pans (un demi-hexagone) qui avancent dehors, une allège sous chaque fenêtre
   { const xw = XS, pr = .8, a = BAY - 1.3, b = BAY + 1.3, ya = H4;
     const pts = [[xw, a], [xw - pr, BAY - .65], [xw - pr, BAY + .65], [xw, b]];
@@ -4628,29 +4645,29 @@ function construireAppart(A, L, scene) {
     const carre = tex(toile(256, 256, (x, w) => { x.fillStyle = "#c9c5bb"; x.fillRect(0, 0, w, w); for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const gd = x.createLinearGradient(i * 128, j * 128, i * 128 + 128, j * 128 + 128); gd.addColorStop(0, "#fbfaf6"); gd.addColorStop(1, "#ecebe5"); x.fillStyle = gd; x.fillRect(i * 128 + 3, j * 128 + 3, 122, 122); } }), 1 / .3, .6 / .3);
     b(1.0, .6, .012, A.mat({ map: carre, roughness: .12 }), 0, yH + .3, -.296); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
-  { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, ZC[3] + E + .5); scene.add(g); buffetChene(g); }
+  { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
   // le placard : des étagères
   for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
   A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
   // ---------- la lumière : douce partout, quelques plafonniers ----------
   scene.add(new THREE.AmbientLight(0xfff1dc, .3));   // (un appartement plutôt sombre, comme à l'époque)
-  /* au plafond, partout : une petite ampoule à filament, en verre ambré, au bout de son fil (douille et culot en métal) ; elle éclaire peu, jaune orangé */
+  /* au plafond, partout : une petite ampoule à filament, en verre ambré, directement dans sa douille vissée au plafond ; elle éclaire peu, jaune orangé */
   const fil = A.mat({ color: 0x141414 }), douille = A.mat({ color: 0x8a8a86, metalness: .8, roughness: .35 }), verre = new THREE.MeshStandardMaterial({ color: 0xf0a040, emissive: 0xff9a30, emissiveIntensity: .55, transparent: true, opacity: .55, roughness: .1, depthWrite: false });
   const filament = new THREE.MeshBasicMaterial({ color: 0xffd27a });
-  const ampoule = (x, z) => { const y = HT - .55, g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+  const ampoule = (x, z) => { const y = HT - .07, g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
     const m = (geo, mt, py, sx = 1, sy = 1) => { const o = new THREE.Mesh(geo, mt); o.position.y = py; o.scale.set(sx, sy, sx); g.add(o); return o; };
-    m(new THREE.CylinderGeometry(.004, .004, .52, 4), fil, .3); m(new THREE.CylinderGeometry(.018, .02, .05, 12), douille, .03);   // (le fil, la douille)
+    m(new THREE.CylinderGeometry(.03, .03, .01, 14), douille, .065); m(new THREE.CylinderGeometry(.018, .02, .05, 12), douille, .035);   // (la douille, vissée au plafond)
     m(new THREE.CylinderGeometry(.014, .012, .025, 12), douille, -.005);   // (le culot à vis)
     m(new THREE.SphereGeometry(.03, 16, 12), verre, -.055, 1, 1.15); m(new THREE.CylinderGeometry(.014, .022, .03, 12), verre, -.025);   // (la poire de verre ambré)
     for (const a of [0, 2.1, 4.2]) { const f = m(new THREE.BoxGeometry(.002, .036, .002), filament, -.05); f.position.x = Math.cos(a) * .008; f.position.z = Math.sin(a) * .008; f.rotation.z = Math.cos(a) * .12; } };
-  for (const [x, z] of [[0, -3.85], [0, 6], [-3.25, -1.9], [-3.25, -6.1], [3.25, -1.9], [3.9, -5.6], [3.25, P.cuisine], [-3.5, 2.1], [-4, 6], [-4, 12.15]]) ampoule(x, z);
-  for (const [x, z, i] of [[0, -3.85, 1.6], [0, 6, 1.6], [-4, 12.15, 2.4], [-4, 6, 2.4], [-3.25, -3.85, 2.2], [3.25, -2.5, 2.2]]) { const l = new THREE.PointLight(0xffa450, i, 8, 1.5); l.position.set(x, HT - .62, z); scene.add(l); }
+  for (const [x, z] of [[0, -3.85], [0, 6], [-3.25, -1.9], [-3.25, -6.1], [3.25, -1.9], [3.9, -5.6], [3.25, P.cuisine], [-3.5, 2.1], [-4, 6.8], [-4, 12.15]]) ampoule(x, z);
+  for (const [x, z, i] of [[0, -3.85, 1.6], [0, 6, 1.6], [-4, 12.15, 2.4], [-4, 6.8, 2.4], [-3.25, -3.85, 2.2], [3.25, -2.5, 2.2]]) { const l = new THREE.PointLight(0xffa450, i, 8, 1.5); l.position.set(x, HT - .2, z); scene.add(l); }
   // ---------- où l'on marche ----------
   const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .2, c + .2] : [.3, XC + .5, c - .2, c + .2];   // (le passage d'une porte, à gauche ou à droite du couloir)
   const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
     [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z2 + .25, ZC[0] - .25], [XC + .25, XD - .25, ZD + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZD - .25],
     [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
-    [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, ZC[3] + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
+    [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, SZ0 + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
     S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), S(P.cuisine, 1), [.3, XC + .1, P.entree - .2, P.entree + .2]];
   L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
   L.hauteur = (x, z) => z >= ZM1 ? H4 : z <= ZM0 ? 0 : Math.abs(x) < XC ? H4 * Math.ceil((z - ZM0) / ((ZM1 - ZM0) / 4)) / 4 : 0;   // (marche par marche)
