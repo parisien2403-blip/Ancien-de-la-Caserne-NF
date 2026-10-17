@@ -4936,6 +4936,88 @@ function construireAppart(A, L, scene) {
       for (const [y, z2] of [[.12, D / 2 - .02], [.2, -D / 2 + .02]]) b(W - .05, .022, .022, boisCh, 0, y, z2, c); for (const sx of [-1, 1]) b(.022, .022, D - .05, boisCh, sx * (W / 2 - .02), .16, 0, c);   // (les barreaux du bas)
       return c; };
     for (const dx of [-.62, 0, .62]) { chaise(dx, -TD / 2 - .2, 0); chaise(dx, TD / 2 + .2, Math.PI); } }
+  /* le second salon, dans le coin entre la fenêtre et le renfoncement aux étagères : la desserte en acajou sur roulettes (d'après la photo), et dessus la télé des années 80
+     (la caisse argentée, l'écran bombé, le panneau des boutons à droite). On passe devant : elle joue les vidéos que l'administrateur a mises dans sa bibliothèque,
+     une par chaîne ; on la touche : la télécommande (chaîne suivante, précédente, le son ; et pour l'administrateur, la bibliothèque) */
+  { const g = new THREE.Group(); g.position.set(XS + E / 2 + .3, H4, ZC[6] + E / 2 + .62); g.rotation.y = 1.2; scene.add(g);
+    const acajou = A.mat({ color: 0x5a2414, roughness: .2 }), laitonT = A.mat({ color: 0xc8a050, metalness: .7, roughness: .3 }), b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
+    const W = .8, D = .45, H = .64;
+    for (const y of [H - .0125, .17]) { b(W, .025, D, acajou, 0, y, 0); b(W + .004, .008, D + .004, laitonT, 0, y - .009, 0); }   // (les deux plateaux, leur jonc de laiton)
+    const tour = new THREE.LatheGeometry([[.0, 0], [.016, 0], [.018, .03], [.012, .06], [.016, .14], [.02, .2], [.013, .26], [.011, .4], [.016, .44], [.012, .5], [.0, .5]].map(([r, y]) => new THREE.Vector2(r, y)), 14);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const p = new THREE.Mesh(tour, acajou); p.scale.y = (H - .1) / .5; p.position.set(sx * (W / 2 - .03), .08, sz * (D / 2 - .03)); g.add(p);
+      const r = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 8), laitonT); r.position.set(sx * (W / 2 - .03), .03, sz * (D / 2 - .03)); g.add(r); b(.012, .05, .03, laitonT, sx * (W / 2 - .03), .065, sz * (D / 2 - .03)); }   // (les pieds tournés, les roulettes)
+    // la télé : la caisse argentée, la façade noire autour de l'écran, le tube qui s'amincit derrière
+    const tv = new THREE.Group(); tv.position.y = H; g.add(tv);
+    const argent = A.mat({ color: 0x9a9690, metalness: .45, roughness: .35 }), noirT = A.mat({ color: 0x1a1a1c, roughness: .5 }), grisT = A.mat({ color: 0x5a5856, roughness: .4 });
+    const TW = .7, TH = .54, TD = .26; b(TW, TH, TD, argent, 0, TH / 2 + .01, -TD / 2 + .13, tv); b(TW, .012, TD - .02, grisT, 0, .006, -TD / 2 + .13, tv);
+    const cul = new THREE.BoxGeometry(TW - .06, TH - .06, .24), cp = cul.attributes.position; for (let i = 0; i < cp.count; i++) if (cp.getZ(i) < 0) { cp.setX(i, cp.getX(i) * .6); cp.setY(i, cp.getY(i) * .65); }
+    cul.computeVertexNormals(); const tc = new THREE.Mesh(cul, argent); tc.position.set(0, TH / 2 + .02, -.23); tv.add(tc);
+    b(.53, .44, .01, noirT, -.07, TH / 2 + .01, .135, tv);   // (la façade noire de l'écran)
+    const ecranC = document.createElement("canvas"); ecranC.width = 320; ecranC.height = 240; const ex = ecranC.getContext("2d"); const ecranT = new THREE.CanvasTexture(ecranC); ecranT.colorSpace = THREE.SRGBColorSpace;
+    const eg = new THREE.PlaneGeometry(.46, .345, 16, 12), ep = eg.attributes.position; for (let i = 0; i < ep.count; i++) ep.setZ(i, .02 * (1 - Math.pow(ep.getX(i) / .23, 2)) * (1 - Math.pow(ep.getY(i) / .1725, 2)));
+    const ecran = new THREE.Mesh(eg, new THREE.MeshBasicMaterial({ map: ecranT, toneMapped: false })); ecran.position.set(-.07, TH / 2 + .01, .141); tv.add(ecran);
+    // le panneau de droite : la plaque de la marque, les touches des chaînes, le bouton marche, la grille du haut-parleur
+    b(.12, .44, .012, grisT, .27, TH / 2 + .01, .136, tv); b(.09, .02, .004, A.mat({ color: 0xd8d4c8, metalness: .5, roughness: .3 }), .27, TH - .05, .143, tv);
+    for (let i = 0; i < 8; i++) b(.032, .014, .01, A.mat({ color: 0x2a2a2c, roughness: .4 }), .27 + (i % 2 ? .022 : -.022), TH - .12 - Math.floor(i / 2) * .026, .145, tv);
+    for (let i = 0; i < 9; i++) b(.08, .004, .004, noirT, .27, .1 + i * .014, .144, tv);
+    const marche = b(.03, .02, .012, A.mat({ color: 0xc8c4bc, roughness: .4 }), .27, .24, .146, tv); const voyant = b(.008, .008, .004, A.mat({ color: 0xff2a1a, emissive: 0xff1000, emissiveIntensity: .9 }), .3, .24, .148, tv);
+    const antenne = (a) => { const t = new THREE.Mesh(new THREE.CylinderGeometry(.003, .004, .45, 6), A.mat({ color: 0xd8d8d8, metalness: .8, roughness: .2 })); t.position.set(Math.sin(a) * .16, TH + .2, -.2); t.rotation.z = -a; tv.add(t); };
+    antenne(.5); antenne(-.45); b(.1, .03, .07, noirT, 0, TH + .025, -.2, tv);   // (l'antenne en V, posée dessus)
+    const lueur = new THREE.PointLight(0x9ab8ff, 0, 3, 2); lueur.position.set(0, TH / 2, .6); tv.add(lueur);
+    // la lecture : une vidéo par chaîne (la bibliothèque de l'administrateur) ; la neige quand il n'y a rien
+    const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous";
+    let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false;
+    const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
+    const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
+    const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; video.src = src(liste[ch]); video.currentTime = 0; jouer(); osd = performance.now(); majPanneau(); };
+    const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
+    video.onended = () => zapper(1);
+    const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
+    const finition = () => { ex.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) ex.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
+      const v = ex.createRadialGradient(160, 120, 80, 160, 120, 210); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)"); ex.fillStyle = v; ex.fillRect(0, 0, 320, 240);
+      if (performance.now() - osd < 3000) { ex.font = "bold 26px 'Courier New', monospace"; ex.fillStyle = "#3aff5a"; ex.shadowColor = "#000"; ex.shadowBlur = 4; ex.fillText(liste && liste.length ? `CH ${ch + 1}` : "PAS DE CHAÎNE", 16, 36); if (liste && liste[ch]) { ex.font = "bold 14px Arial"; ex.fillText(liste[ch].titre.slice(0, 32), 16, 222); } ex.shadowBlur = 0; } };
+    const eteindre = () => { ex.fillStyle = "#1c1f22"; ex.fillRect(0, 0, 320, 240); const r = ex.createRadialGradient(110, 80, 10, 160, 120, 200); r.addColorStop(0, "rgba(255,255,255,.12)"); r.addColorStop(1, "rgba(0,0,0,0)"); ex.fillStyle = r; ex.fillRect(0, 0, 320, 240); ecranT.needsUpdate = true; };
+    eteindre();
+    // allumée quand on est dans le second salon ; le son baisse quand on s'éloigne
+    const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, dans = p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7];
+      if (dans !== allumee) { allumee = dans; voyant.visible = dans;
+        if (dans) { if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); osd = performance.now(); }
+        else { video.pause(); eteindre(); lueur.intensity = 0; } }
+      if (!allumee || t - dernier < 40) return; dernier = t;
+      const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
+      if (liste && liste.length && video.readyState >= 2) { ex.drawImage(video, 0, 0, 320, 240); lueur.intensity = .5; } else { neige(); lueur.intensity = .25; }
+      finition(); ecranT.needsUpdate = true; };
+    const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
+    // la télécommande, et la bibliothèque (l'administrateur seul)
+    let panneau = null;
+    const bouton = (txt, f, titre) => { const b2 = document.createElement("button"); b2.textContent = txt; if (titre) b2.title = titre; b2.style.cssText = "font:600 15px system-ui;padding:9px 13px;border-radius:10px;border:1px solid #555;background:#2a2c30;color:#fff;cursor:pointer"; b2.onclick = e => { e.stopPropagation(); f(); }; return b2; };
+    const majPanneau = () => { if (!panneau) return; const t = panneau.querySelector(".tt"); t.textContent = liste && liste.length ? `📺 CH ${ch + 1} / ${liste.length} — ${liste[ch].titre}` : "📺 Aucune vidéo dans la bibliothèque"; panneau.querySelector(".son").textContent = son ? "🔊" : "🔇"; };
+    const telecommande = () => { if (!panneau) { panneau = document.createElement("div"); panneau.style.cssText = "position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:8000;background:rgba(20,22,26,.92);color:#fff;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;align-items:center;font:14px system-ui;box-shadow:0 6px 24px rgba(0,0,0,.5);max-width:calc(100vw - 24px)";
+        const tt = document.createElement("div"); tt.className = "tt"; tt.style.cssText = "max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"; const l = document.createElement("div"); l.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
+        const bs = bouton("🔊", () => { son = !son; video.muted = !son; majPanneau(); }, "Le son"); bs.className = "son";
+        l.append(bouton("◀ CH−", () => zapper(-1)), bouton("CH+ ▶", () => zapper(1)), bs);
+        if (M.ctx.moiInfo && M.ctx.moiInfo().admin) l.append(bouton("📼 Bibliothèque", bibliotheque));
+        l.append(bouton("✕", () => { panneau.style.display = "none"; })); panneau.append(tt, l); document.body.appendChild(panneau); }
+      panneau.style.display = "flex"; if (!liste) charger().then(majPanneau); majPanneau(); };
+    let biblio = null;
+    const bibliotheque = async () => { if (!biblio) { biblio = document.createElement("div"); biblio.style.cssText = "position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"; document.body.appendChild(biblio); biblio.onclick = e => { if (e.target === biblio) biblio.style.display = "none"; }; }
+      biblio.style.display = "flex"; await charger();
+      const boite = document.createElement("div"); boite.style.cssText = "background:#f4f1ea;color:#222;border-radius:14px;padding:16px;width:min(480px,calc(100vw - 24px));max-height:80vh;overflow:auto;font:14px system-ui";
+      boite.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">📼 La bibliothèque de la télé</b><button class="fx" style="border:0;background:none;font-size:20px;cursor:pointer">✕</button></div>
+        <div style="opacity:.7;margin:4px 0 12px">Une vidéo par chaîne, dans l'ordre. Vous seul pouvez en ajouter ou en retirer (MP4, 300 Mo maximum).</div><div class="li"></div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px"><input class="ti" placeholder="Titre (sinon le nom du fichier)" style="padding:8px;border-radius:8px;border:1px solid #bbb;font:inherit">
+        <input class="fi" type="file" accept="video/mp4,video/webm,video/quicktime"><div class="pr" style="height:8px;background:#ddd;border-radius:4px;overflow:hidden;display:none"><div style="height:100%;width:0;background:#c0562a"></div></div><div class="er" style="color:#a00"></div></div>`;
+      biblio.replaceChildren(boite); boite.querySelector(".fx").onclick = () => { biblio.style.display = "none"; };
+      const li = boite.querySelector(".li"); if (!liste.length) li.textContent = "Aucune vidéo pour l'instant.";
+      liste.forEach((v, i) => { const r = document.createElement("div"); r.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #ddd"; r.innerHTML = `<b style="width:44px">CH ${i + 1}</b><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><small style="opacity:.6">${(v.taille / 1048576).toFixed(0)} Mo</small>`; r.querySelector("span").textContent = v.titre;
+        r.append(bouton("🗑", async () => { if (!confirm(`Retirer « ${v.titre} » ?`)) return; await fetch(`/api/tele/${v.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + M.ctx.token } }); if (ch >= liste.length - 1) ch = 0; await charger(); if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); } else video.removeAttribute("src"); bibliotheque(); }, "Retirer")); li.appendChild(r); });
+      boite.querySelector(".fi").onchange = async e => { const f = e.target.files[0]; if (!f) return; const er = boite.querySelector(".er"), pr = boite.querySelector(".pr"), barre = pr.firstChild; er.textContent = ""; pr.style.display = "block";
+        try { const titre = boite.querySelector(".ti").value.trim() || f.name.replace(/\.[^.]+$/, "");
+          const r = await fetch("/api/tele", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ titre, taille: f.size, type: f.type || "video/mp4" }) }), j = await r.json(); if (!r.ok) throw new Error(j.erreur || "Refusé");
+          for (let n = 0; n < j.morceaux; n++) { const rr = await fetch(`/api/tele/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + M.ctx.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() }); if (!rr.ok) throw new Error((await rr.json().catch(() => ({}))).erreur || "Envoi interrompu"); barre.style.width = ((n + 1) / j.morceaux * 100) + "%"; }
+          await charger(); ch = liste.length - 1; if (allumee) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } majPanneau(); bibliotheque(); }
+        catch (err) { er.textContent = err.message; } }; };
+    L.objetsClic = (L.objetsClic || []).concat([{ obj: tv, action: telecommande }]); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
   { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
   // le placard : des étagères

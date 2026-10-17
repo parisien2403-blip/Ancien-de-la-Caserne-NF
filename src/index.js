@@ -48,6 +48,7 @@ const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 
 const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, VIDEO_MAX = 150 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
+const TELE_VIDEO_MAX = 300 * 1024 * 1024, TELE_MAX = 3 * 1024 * 1024 * 1024;   // (la télé du salon de l'appartement)
 const PNJ_DEFAUT = { 74: { nom: "Pyramid Head", tenue: "civil", couleur: "#555555", bas: null }, 75: { nom: "L'infirmière", tenue: "civil", couleur: "#555555", bas: null }, 76: { nom: "L'infirmière au tuyau", tenue: "civil", couleur: "#555555", bas: null }, 77: { nom: "Le monstre aux longs bras", tenue: "civil", couleur: "#555555", bas: null }, 78: { nom: "Le mannequin", tenue: "civil", couleur: "#555555", bas: null }, 79: { nom: "Le monstre sans bras", tenue: "civil", couleur: "#555555", bas: null }, 69: { nom: "James", tenue: "civil", couleur: "#56603c", bas: "#3a3f4a", pieds: "#2a2018" }, 70: { nom: "Eddie", tenue: "polo", couleur: "#2f5fa8", bas: "#3a3a40", pieds: "#2a2a2a" }, 71: { nom: "Angela", tenue: "civil", couleur: "#b8b2a4", bas: "#3a3530", pieds: "#1e1e1e" }, 72: { nom: "Maria", tenue: "maria", couleur: "#a3243a", bas: null, pieds: "#5a3c26" }, 73: { nom: "Laura", tenue: "salopette", couleur: "#4a6a9a", bas: "#4a6a9a", pieds: "#e8b0c0" }, 68: { nom: "Le professeur de judo", tenue: "judogi", couleur: "#f4f2ec", bas: "#f4f2ec", pieds: null }, 63: { nom: "Le gendarme du porche", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 64: { nom: "Gendarme Leclerc", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   65: { nom: "Gendarme Moreau", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 66: { nom: "Gendarme Fabre", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 67: { nom: "Gendarme Girard", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
@@ -137,6 +138,9 @@ export class Compteur extends DurableObject {
     try { this.sql.exec("ALTER TABLE flipper_scores ADD COLUMN jeu TEXT DEFAULT 'flipper'"); } catch (e) { /* déjà là */ }   // flipper, flechettes
     this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, artiste TEXT, auteur INTEGER, auteur_nom TEXT, type TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, duree REAL, cree TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS musiques_morceaux (m INTEGER, n INTEGER, data BLOB, PRIMARY KEY (m, n))`);
+    // la télé du salon (l'appartement de l'escalier Z) : les vidéos que l'administrateur y met, une par chaîne, en morceaux de 1 Mo
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS tele (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TEXT, type TEXT, taille INTEGER, morceaux INTEGER, complet INTEGER DEFAULT 0, cree TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS tele_morceaux (v INTEGER, n INTEGER, data BLOB, PRIMARY KEY (v, n))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS jeux_morceaux (jeu INTEGER, n INTEGER, data BLOB, PRIMARY KEY (jeu, n))`);
     // l'image collée sur la cartouche (jaquette réduite, en JPEG)
     try { this.sql.exec(`ALTER TABLE jeux ADD COLUMN jaquette TEXT`); } catch (e) { /* déjà là */ }
@@ -785,6 +789,49 @@ export class Compteur extends DurableObject {
     await this.majDJ(dj);
     return { ok: true };
   }
+  /* ----- La télé du salon : l'administrateur seul y met ses vidéos ; chaque vidéo est une chaîne ----- */
+  teleListe(token) {
+    this.moi(token);
+    return this.sql.exec("SELECT id, titre, type, taille, cree FROM tele WHERE complet = 1 ORDER BY id").toArray();
+  }
+  async nouvelleTele(token, x) {
+    if (!(await this.estAdmin(token))) throw new Refus("Réservé à l'administrateur", 403);
+    const titre = texte(x.titre, 90) || "Sans titre", taille = Number(x.taille), type = String(x.type || "");
+    if (!/^video\/(mp4|webm|quicktime)$/.test(type)) throw new Refus("Seules les vidéos (MP4) sont acceptées");
+    if (!(taille > 0 && taille <= TELE_VIDEO_MAX)) throw new Refus("Vidéo trop lourde (300 Mo maximum)");
+    const total = this.sql.exec("SELECT COALESCE(SUM(taille), 0) AS t FROM tele").one().t;
+    if (total + taille > TELE_MAX) throw new Refus("La bibliothèque de la télé est pleine (3 Go) : retire une vidéo");
+    const morceaux = Math.ceil(taille / MORCEAU);
+    this.sql.exec("INSERT INTO tele (titre, type, taille, morceaux, cree) VALUES (?, ?, ?, ?, ?)", titre, type, taille, morceaux, new Date().toISOString());
+    return { id: this.sql.exec("SELECT last_insert_rowid() AS id").one().id, morceaux, taille_morceau: MORCEAU };
+  }
+  async morceauTele(token, id, n, data) {
+    if (!(await this.estAdmin(token))) throw new Refus("Réservé à l'administrateur", 403);
+    const v = this.sql.exec("SELECT * FROM tele WHERE id = ?", Number(id)).toArray()[0];
+    if (!v) throw new Refus("Vidéo introuvable", 404);
+    n = Number(n);
+    if (!(n >= 0 && n < v.morceaux) || data.byteLength > MORCEAU) throw new Refus("Morceau invalide");
+    this.sql.exec("INSERT OR REPLACE INTO tele_morceaux (v, n, data) VALUES (?, ?, ?)", v.id, n, data);
+    const recus = this.sql.exec("SELECT COUNT(*) AS c FROM tele_morceaux WHERE v = ?", v.id).one().c;
+    if (recus === v.morceaux) this.sql.exec("UPDATE tele SET complet = 1 WHERE id = ?", v.id);
+    return { ok: true, complet: recus === v.morceaux };
+  }
+  infoTele(token, id) {
+    this.moi(token);
+    return this.sql.exec("SELECT taille, morceaux, type FROM tele WHERE id = ? AND complet = 1", Number(id)).toArray()[0] || null;
+  }
+  morceauDeTele(token, id, n) {
+    this.moi(token);
+    const m = this.sql.exec("SELECT data FROM tele_morceaux WHERE v = ? AND n = ?", Number(id), Number(n)).toArray()[0];
+    if (!m) throw new Refus("Morceau manquant", 404);
+    return m.data;
+  }
+  async retirerTele(token, id) {
+    if (!(await this.estAdmin(token))) throw new Refus("Réservé à l'administrateur", 403);
+    this.sql.exec("DELETE FROM tele_morceaux WHERE v = ?", Number(id));
+    this.sql.exec("DELETE FROM tele WHERE id = ?", Number(id));
+    return { ok: true };
+  }
   // ce qui passe chez le DJ (pour toute la salle des fêtes), et la file d'attente
   async etatDJ() { return (await this.ctx.storage.get("dj")) || { courant: null, file: [] }; }
   // le titre qui viendra après celui-ci (la file d'attente, sinon la discothèque) : chacun le charge à l'avance
@@ -1210,6 +1257,42 @@ export default {
       })());
       return new Response(readable, { status: partiel ? 206 : 200, headers: entetes });
     }
+    // une vidéo de la télé du salon (lecture avec « Range », pour avancer dans la vidéo)
+    const mTel = url.pathname.match(/^\/api\/tele\/(\d+)\/fichier$/);
+    if ((request.method === "GET" || request.method === "HEAD") && mTel) {
+      const t = url.searchParams.get("t") || "", id = mTel[1];
+      let info;
+      try { info = await registre.infoTele(t, id); } catch (e) { return new Response("Connexion requise", { status: 401 }); }
+      if (!info) return new Response("Introuvable", { status: 404 });
+      let debut = 0, fin = info.taille - 1, partiel = false;
+      const rg = (request.headers.get("Range") || "").match(/^bytes=(\d*)-(\d*)$/);
+      if (rg && (rg[1] || rg[2])) {
+        partiel = true;
+        if (rg[1]) { debut = Number(rg[1]); if (rg[2]) fin = Math.min(fin, Number(rg[2])); } else { debut = Math.max(0, info.taille - Number(rg[2])); }
+        if (debut > fin) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${info.taille}` } });
+      }
+      const L = fin - debut + 1;
+      const entetes = { "Content-Type": info.type, "Accept-Ranges": "bytes", "Content-Length": String(L), "Cache-Control": "private, max-age=86400" };
+      if (partiel) entetes["Content-Range"] = `bytes ${debut}-${fin}/${info.taille}`;
+      if (request.method === "HEAD") return new Response(null, { status: partiel ? 206 : 200, headers: entetes });
+      const { readable, writable } = new FixedLengthStream(L);
+      ctx.waitUntil((async () => {
+        const w = writable.getWriter();
+        try {
+          for (let n = Math.floor(debut / MORCEAU); n * MORCEAU <= fin; n++) {
+            const b = new Uint8Array(await registre.morceauDeTele(t, id, n)), d0 = n * MORCEAU;
+            await w.write(b.subarray(Math.max(0, debut - d0), Math.min(b.byteLength, fin - d0 + 1)));
+          }
+          await w.close();
+        } catch (e) { await w.abort(e).catch(() => {}); }
+      })());
+      return new Response(readable, { status: partiel ? 206 : 200, headers: entetes });
+    }
+    if (request.method === "PUT" && /^\/api\/tele\/\d+\/morceau\/\d+$/.test(url.pathname)) {
+      const [, , , id, , n] = url.pathname.split("/");
+      try { return Response.json(await registre.morceauTele(token, id, n, await request.arrayBuffer())); }
+      catch (e) { return Response.json({ erreur: e.message }, { status: e.status || 400 }); }
+    }
     if (request.method === "PUT" && /^\/api\/musiques\/\d+\/morceau\/\d+$/.test(url.pathname)) {
       const [, , , id, , n] = url.pathname.split("/");
       try { return Response.json(await registre.morceauMusique(token, id, n, await request.arrayBuffer())); }
@@ -1237,6 +1320,9 @@ export default {
       else if (route === "GET /api/statut") r = await registre.statut(token);
       else if (route === "GET /api/jeux") r = await registre.jeux(token);
       else if (route === "GET /api/musiques") r = await registre.musiques(token);
+      else if (route === "GET /api/tele") r = await registre.teleListe(token);
+      else if (route === "POST /api/tele") r = await registre.nouvelleTele(token, await corps());
+      else if (request.method === "DELETE" && /^\/api\/tele\/\d+$/.test(url.pathname)) r = await registre.retirerTele(token, url.pathname.split("/")[3]);
       else if (route === "POST /api/musiques") r = await registre.nouvelleMusique(token, await corps());
       else if (request.method === "DELETE" && /^\/api\/musiques\/\d+$/.test(url.pathname)) r = await registre.retirerMusique(token, url.pathname.split("/")[3]);
       else if (route === "POST /api/jeux") r = await registre.nouveauJeu(token, await corps());
