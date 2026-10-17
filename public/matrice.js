@@ -4526,14 +4526,14 @@ function construireSantaCarla(A, L, scene) {
       for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,.18)"; x.beginPath(); const y = i * 32 + 4 + hasard(i * 7 + k) * 24; x.moveTo(0, y); x.lineTo(w, y + (hasard(k) - .5) * 4); x.stroke(); } x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect((hasard(i) * w) | 0, i * 32, 2, 30); } }), 6, 1.2);
   const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: planches, roughness: .8 }), 0, .02, 0, false); jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
   const sable = (() => { const ld = new THREE.TextureLoader(), t = ld.load("images/santacarla/sable.webp"), n = ld.load("images/santacarla/sable-n.webp"); t.colorSpace = THREE.SRGBColorSpace;   // (le vrai sable : le grain fin, les rides du vent, le relief)
-    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(140 / 5, 40 / 5); q.anisotropy = 8; }
-    return A.ajoute(new THREE.PlaneGeometry(140, 40), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 26, false); })(); sable.rotation.x = -Math.PI / 2;
+    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(600 / 5, 320 / 5); q.anisotropy = 8; }
+    return A.ajoute(new THREE.PlaneGeometry(600, 320), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 166, false); })();   /* (la plage s'étend loin derrière la scène, jusqu'à l'horizon) */ sable.rotation.x = -Math.PI / 2;
   const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
   const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   // (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) mer.rotation.x = -Math.PI / 2;
   const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
-  reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, -.25, 120); scene.add(reflet);   // (le reflet de la lune sur l'eau)
+  reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, -.25, 120); reflet.visible = false; scene.add(reflet);   // (le reflet de la lune sur l'eau)
   // l'écume des vagues, qui va et vient sur le sable
-  const ecume = new THREE.Mesh(new THREE.PlaneGeometry(140, 2.2), new THREE.MeshBasicMaterial({ color: 0xc8d8e8, transparent: true, opacity: .35, depthWrite: false })); ecume.rotation.x = -Math.PI / 2; ecume.position.set(0, .03, 45); scene.add(ecume);
+  const ecume = new THREE.Mesh(new THREE.PlaneGeometry(140, 2.2), new THREE.MeshBasicMaterial({ color: 0xc8d8e8, transparent: true, opacity: .35, depthWrite: false })); ecume.rotation.x = -Math.PI / 2; ecume.position.set(0, .03, 45); scene.add(ecume); ecume.visible = false;   /* (plus de mer devant la plage : le sable continue) */
   // les pilotis et la rambarde de la jetée, côté plage
   const bois = A.mat({ color: 0x4a3626, roughness: .9 }), blancM = A.mat({ color: 0xe8e4da, roughness: .6 });
   for (let x = -46; x <= 46; x += 2.4) { if (Math.abs(Math.abs(x) - 20) < 1.4) continue; A.ajoute(new THREE.BoxGeometry(.12, 1.05, .12), blancM, x, .55, 6.2); }
@@ -4658,7 +4658,7 @@ function construireSantaCarla(A, L, scene) {
   // ---------- les limites : la jetée et la plage (pas l'eau, pas les stands, pas l'arche) ----------
   { const tb = new THREE.TextureLoader().load("images/santacarla/beton.webp"); tb.colorSpace = THREE.SRGBColorSpace; tb.wrapS = tb.wrapT = THREE.MirroredRepeatWrapping; tb.repeat.set(96 / 5, 40 / 2.5); tb.anisotropy = 8;
     const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; L.solsPlus = [pl, sable]; }   // (la grande place, en béton, derrière la jetée en planches)
-  L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
+  L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 90 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
     && !(x > -15.6 && x < -8.4 && z > -18.2 && z < -13.8)   // (la gare du Giant Dipper : on passe sous le grand huit)
     && !(x > 8.2 && x < 19.8 && z > -28 && z < -24)   // (les pieds de la grande roue)
     && ![[-7.5, -24.4], [-7.5, -17.6], [5.5, -24.4], [5.5, -17.6]].some(([a, b]) => Math.hypot(x - a, z - b) < .6)   // (les pieds du bateau pirate : on passe dessous)
