@@ -4525,8 +4525,9 @@ function construireSantaCarla(A, L, scene) {
   const planches = tex(toile(512, 512, (x, w, h) => { for (let i = 0; i < 16; i++) { const v = hasard(i * 3.1); x.fillStyle = `hsl(28, ${22 + v * 10}%, ${26 + v * 8}%)`; x.fillRect(0, i * 32, w, 31); x.fillStyle = "rgba(0,0,0,.45)"; x.fillRect(0, i * 32 + 30, w, 2);
       for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,.18)"; x.beginPath(); const y = i * 32 + 4 + hasard(i * 7 + k) * 24; x.moveTo(0, y); x.lineTo(w, y + (hasard(k) - .5) * 4); x.stroke(); } x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect((hasard(i) * w) | 0, i * 32, 2, 30); } }), 6, 1.2);
   const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: planches, roughness: .8 }), 0, .02, 0, false); jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
-  const sable = A.ajoute(new THREE.PlaneGeometry(140, 40), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#8a7656"; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { const g = x.createRadialGradient(hasard(i * 9) * w, hasard(i * 7) * h, 2, hasard(i * 9) * w, hasard(i * 7) * h, 40 + hasard(i) * 60); g.addColorStop(0, `rgba(${hasard(i * 3) > .5 ? "60,48,30" : "170,150,110"},.25)`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); }
-    for (let i = 0; i < 5000; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "50,40,25" : "210,195,160"},.3)`; x.fillRect(hasard(i * 1.7) * w, hasard(i * 2.3) * h, 2, 2); } }), 12, 4), roughness: 1, color: 0xc8a878 }), 0, 0, 26, false); sable.rotation.x = -Math.PI / 2;
+  const sable = (() => { const ld = new THREE.TextureLoader(), t = ld.load("images/santacarla/sable.webp"), n = ld.load("images/santacarla/sable-n.webp"); t.colorSpace = THREE.SRGBColorSpace;   // (le vrai sable : le grain fin, les rides du vent, le relief)
+    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(140 / 5, 40 / 5); q.anisotropy = 8; }
+    return A.ajoute(new THREE.PlaneGeometry(140, 40), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 26, false); })(); sable.rotation.x = -Math.PI / 2;
   const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
   const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   // (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) mer.rotation.x = -Math.PI / 2;
   const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
@@ -4959,9 +4960,33 @@ function construireSantaCarla(A, L, scene) {
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; majBarre(v); particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
       if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; message(`<div style="font-size:19px">${esc(v.nom)} est à terre !</div><div style="font:600 14px system-ui;margin-top:6px">Touche-le, ou le bouton 🗡️ <b>Planter le pieu</b> :<br>ton ado court lui planter le pieu dans le cœur.</div>`); const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
       else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
-  const pieu = (v) => { if (v.etat !== "terre") return; ado.pieuVers = null; v.etat = "brule"; v.tEtat = performance.now() + 1800; parle(v.p.info.numero, REPL_V[84 + v.k].mort); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 900); const p = v.g.position.clone(); try { sonBruit(.25, 300, .8); setTimeout(() => sonBruit(1.4, 700, .6), 200); } catch (e) {}
-    const st = new THREE.Mesh(new THREE.ConeGeometry(.06, .9, 6), A.mat({ color: 0x8a5a2a })); st.position.set(p.x, .6, p.z); st.rotation.z = Math.PI / 2; scene.add(st); setTimeout(() => scene.remove(st), 1800);
-    particule(feuT, p.clone().add(new THREE.Vector3(0, .5, 0)), 26, 2.2, 1600, 1.3); const lum = new THREE.PointLight(0xff7a20, 30, 10, 1.6); lum.position.set(p.x, 1.2, p.z); scene.add(lum); setTimeout(() => scene.remove(lum), 1700); };
+  // le pieu : on l'enfonce dans le cœur ; le sang gicle, puis le vampire explose et brûle
+  const sangT2 = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 1, 32, 32, 30); g.addColorStop(0, "rgba(150,0,6,1)"); g.addColorStop(.55, "rgba(110,0,4,.9)"); g.addColorStop(1, "rgba(80,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const flammeT = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 56); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.25, "rgba(255,200,60,.95)"); g.addColorStop(.55, "rgba(255,90,10,.75)"); g.addColorStop(1, "rgba(160,20,0,0)");
+    x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.bezierCurveTo(54, 40, 62, 80, 50, 110); x.quadraticCurveTo(32, 128, 14, 110); x.bezierCurveTo(2, 80, 10, 40, 32, 2); x.fill(); }));
+  const fumeeN = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(40,34,30,.85)"); g.addColorStop(1, "rgba(20,18,16,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const eclat = (T, pos, vel, d, t0, taille, opt = {}) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: opt.add ? THREE.AdditiveBlending : THREE.NormalBlending, toneMapped: !opt.add }));
+    sp.position.copy(pos); sp.scale.setScalar(taille); sp.visible = false; scene.add(sp); parts.push({ sp, v: vel, t0, d, taille, g: opt.g || 0, grandit: opt.grandit ?? 1, flamme: opt.flamme, sol: opt.sol }); };
+  const pieu = (v) => { if (v.etat !== "terre") return; ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
+    const p = v.g.position.clone(), c = p.clone().add(V3(0, .45, 0));
+    // le pieu, enfoncé d'un coup dans la poitrine
+    const st = new THREE.Mesh(new THREE.ConeGeometry(.05, 1, 7), A.mat({ color: 0x8a5a2a, roughness: .9 })); st.position.copy(c).add(V3(0, .9, 0)); st.rotation.x = Math.PI; scene.add(st);
+    const t0 = now; const enf = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 160); st.position.y = c.y + .9 - u * .6; if (u >= 1) clearInterval(enf); }, 16); setTimeout(() => scene.remove(st), 900);
+    try { sonBruit(.18, 260, .9); } catch (e) {}
+    // 1. le sang qui gicle : un jet vers le haut, qui retombe et tache le sol
+    for (let i = 0; i < 70; i++) { const a = Math.random() * 6.28, h = 3 + Math.random() * 4, r = .6 + Math.random() * 2.4; eclat(sangT2, c, V3(Math.cos(a) * r, h, Math.sin(a) * r), 2600 + Math.random() * 1200, t0 + 120 + Math.random() * 200, .16 + Math.random() * .22, { g: 11, grandit: 0, sol: true }); }
+    voile("background:radial-gradient(circle,rgba(140,0,0,0) 40%,rgba(140,0,0,.5) 100%);transition:opacity .6s", 500);
+    // 2. l'explosion : l'éclair, la boule de feu, la fumée noire
+    setTimeout(() => { if (!M || M.L !== L) return; try { sonBruit(1.6, 420, .95); } catch (e) {} const t1 = performance.now();
+      const lum = new THREE.PointLight(0xffa040, 120, 22, 1.4); const fin2 = t1 + 4200; lum.position.copy(c).add(V3(0, .8, 0)); scene.add(lum);
+      const fl = setInterval(() => { const u = (performance.now() - t1) / 4200; if (u >= 1 || !M) { scene.remove(lum); clearInterval(fl); return; } lum.intensity = (u < .08 ? 120 : 32 * (1 - u)) * (.75 + Math.random() * .5); }, 50);   // (la lueur vacille avec le feu)
+      voile("background:rgba(255,200,120,.55);transition:opacity .4s", 160);
+      for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, e = Math.random() * 1.4, sp = 2 + Math.random() * 5; eclat(feuT, c, V3(Math.cos(a) * Math.cos(e) * sp, Math.sin(e) * sp + 1, Math.sin(a) * Math.cos(e) * sp), 700 + Math.random() * 500, t1 + Math.random() * 80, .8 + Math.random() * .9, { add: true, grandit: 2.2 }); }
+      for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28; eclat(fumeeN, c.clone().add(V3(0, .5, 0)), V3(Math.cos(a) * 1.2, 2 + Math.random() * 2, Math.sin(a) * 1.2), 2400 + Math.random() * 1200, t1 + 200 + Math.random() * 400, 1.2 + Math.random(), { grandit: 2.5 }); }
+      for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, r = 2 + Math.random() * 6; eclat(feuT, c, V3(Math.cos(a) * r, 3 + Math.random() * 5, Math.sin(a) * r), 900 + Math.random() * 600, t1, .09, { add: true, g: 9, grandit: 0 }); }   // (les braises)
+      // 3. le feu : des flammes qui dansent sur ce qui reste de lui, quelques secondes
+      for (let i = 0; i < 60; i++) eclat(flammeT, p.clone().add(V3((Math.random() - .5) * 1.4, .4 + Math.random() * .3, (Math.random() - .5) * 1.4)), V3((Math.random() - .5) * .4, 1.2 + Math.random() * 1.2, (Math.random() - .5) * .4), 1000 + Math.random() * 600, t1 + 250 + i * 55, 1 + Math.random() * .8, { add: true, flamme: true, grandit: .5 });
+      for (let i = 0; i < 16; i++) eclat(fumeeN, p.clone().add(V3((Math.random() - .5), 1.6, (Math.random() - .5))), V3((Math.random() - .5) * .6, 1.6, (Math.random() - .5) * .6), 2600, t1 + 800 + i * 180, 1.2, { grandit: 2 }); }, 650); };   // (le feu brûle trois ou quatre secondes, sa fumée monte)
   const mordu = (v) => { vies -= 20; morsures++; majHud(); if (morsures >= 2 && !biere && vies > 0) poserBiere(); parle(M.moiNum, REPL[M.lbPerso].mordu); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
     if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
   // ================= les trois ados : on joue Sam, Edgar ou Alan Frog ; dans la main, le pistolet à eau bénite =================
@@ -5092,7 +5117,7 @@ function construireSantaCarla(A, L, scene) {
       else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté) */
         if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
         if (now > v.tEtat) { v.pv = 1; majBarre(v); g.rotation.z = 0; v.etat = "remonte"; v.tEtat = now + 1500; message(`${v.nom} s'est relevé !`); } }
-      else if (v.etat === "brule") { g.scale.setScalar(Math.max(.02, (v.tEtat - now) / 1800));   /* (il se consume) */ if (Math.random() < .5) particule(feuT, g.position.clone().add(new THREE.Vector3(0, .5, 0)), 1, 2, 900, .9);
+      else if (v.etat === "brule") { const u2 = 1 - (v.tEtat - now) / 4600; g.visible = u2 < .15; if (v.barre) v.barre.sp.visible = false;   /* (il explose : il disparaît dans la boule de feu) */
         if (now > v.tEtat) { v.etat = "mort"; retirerAncien(v.p.info.numero); majHud(); } }
       // le panneau face à nous ; incliné quand il pique ; à terre, couché
       if (v.etat !== "mort") v.p.vol = Math.max(0, g.position.y); }   // (l'altitude du vol : le moteur la remet à chaque image)
@@ -5100,7 +5125,10 @@ function construireSantaCarla(A, L, scene) {
     for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i], u = (now - q.t0) / q.d; if (u < 0) continue;
       if (u >= 1) { scene.remove(q.sp); parts.splice(i, 1); continue; }
       if (q.goutte) q.sp.position.lerpVectors(q.de, q.a, u).add(new THREE.Vector3(0, Math.sin(u * Math.PI) * .25, 0));
-      else { q.sp.position.addScaledVector(q.v, 1 / 60); q.sp.material.opacity = 1 - u; q.sp.scale.setScalar(q.taille * (1 + u)); } } };
+      else { q.sp.visible = true; const dt3 = Math.min(.05, (now - (q.tp || now)) / 1000); q.tp = now; if (q.g) q.v.y -= q.g * dt3; q.sp.position.addScaledVector(q.v, q.g || q.flamme || q.grandit !== 1 ? dt3 : 1 / 60);
+        if (q.sol && q.sp.position.y < .05) { q.sp.position.y = .05; q.v.set(0, 0, 0); q.g = 0; }   // (la goutte de sang tombe et reste au sol)
+        q.sp.material.opacity = q.sol ? Math.min(1, (1 - u) * 3) : q.flamme ? Math.sin(u * Math.PI) : 1 - u; q.sp.scale.setScalar(q.taille * (1 + u * (q.grandit ?? 1)));
+        if (q.flamme) { q.sp.scale.y = q.taille * (1.6 + Math.sin(now / 60 + q.t0) * .3) * (1 - u * .5); q.sp.material.rotation = Math.sin(now / 90 + q.t0) * .15; } } } };
   // toucher un vampire : l'eau bénite (ou le pieu, s'il est à terre)
   L.toucher = (ray) => { const vis = vamps.filter(v => v.etat !== "mort" && v.etat !== "brule"); const h = ray.intersectObjects(vis.map(v => v.g), true)[0]; if (!h) {
       { let best = null, bd = .02; for (const v of vis) { const q = v.g.position.clone().add(new THREE.Vector3(0, 1.2, 0)), dir = q.sub(ray.ray.origin).normalize(), d = 1 - dir.dot(ray.ray.direction); if (d < bd) { bd = d; best = v; } } if (best) { blesser(best); return true; } }   // (un peu à côté : on vise le plus proche du doigt)
