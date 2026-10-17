@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tarot</title>
+<style>
+  :root { --gris: #c0c0c0; --clair: #ffffff; --ombre: #808080; --noir: #000000; --bleu: #000080; --tapis: #0a6b2e; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #008080; font: 12px "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Arial, sans-serif; user-select: none; -webkit-user-select: none; }
+  .bosse { background: var(--gris); border: 2px solid; border-color: var(--clair) var(--noir) var(--noir) var(--clair); box-shadow: inset -1px -1px var(--ombre), inset 1px 1px #dfdfdf; }
+  .creux { border: 2px solid; border-color: var(--ombre) var(--clair) var(--clair) var(--ombre); box-shadow: inset 1px 1px var(--noir); }
+  button.b95 { font: inherit; min-width: 75px; height: 23px; padding: 0 10px; background: var(--gris); border: 2px solid; border-color: var(--clair) var(--noir) var(--noir) var(--clair); box-shadow: inset -1px -1px var(--ombre), inset 1px 1px #dfdfdf; cursor: pointer; color: #000; }
+  button.b95:active { border-color: var(--noir) var(--clair) var(--clair) var(--noir); box-shadow: inset 1px 1px var(--ombre); }
+  button.b95:disabled { color: var(--ombre); text-shadow: 1px 1px #fff; cursor: default; }
+  /* le bureau */
+  #bureau { position: absolute; inset: 0 0 28px 0; }
+  .icone { position: absolute; width: 76px; text-align: center; color: #fff; cursor: pointer; }
+  .icone .img { font-size: 30px; line-height: 36px; filter: drop-shadow(1px 1px 0 #000); }
+  .icone span { display: inline-block; padding: 1px 2px; margin-top: 2px; }
+  .icone.sel span { background: var(--bleu); outline: 1px dotted #ff0; }
+  /* la barre des tâches */
+  #taches { position: absolute; left: 0; right: 0; bottom: 0; height: 28px; display: flex; align-items: center; gap: 4px; padding: 2px; background: var(--gris); border-top: 2px solid var(--clair); }
+  #demarrer { min-width: 0; height: 22px; font-weight: bold; display: flex; align-items: center; gap: 4px; padding: 0 5px; }
+  #demarrer i { font-style: normal; font-size: 14px; }
+  #tacheTarot { height: 22px; min-width: 120px; max-width: 160px; text-align: left; display: flex; align-items: center; gap: 4px; }
+  #tacheTarot.actif { border-color: var(--noir) var(--clair) var(--clair) var(--noir); box-shadow: inset 1px 1px var(--ombre); background: #dcdcdc; font-weight: bold; }
+  #horloge { margin-left: auto; padding: 0 10px; height: 22px; line-height: 18px; }
+  #menuDem { position: absolute; left: 2px; bottom: 28px; width: 190px; display: none; z-index: 50; }
+  #menuDem .bande { position: absolute; left: 0; top: 0; bottom: 0; width: 22px; background: linear-gradient(#000080, #1084d0); color: #c0c0c0; writing-mode: vertical-rl; transform: rotate(180deg); font-weight: bold; font-size: 15px; padding: 6px 0; }
+  #menuDem .bande b { color: #fff; }
+  #menuDem div.it { padding: 7px 8px 7px 30px; cursor: pointer; }
+  #menuDem div.it:hover { background: var(--bleu); color: #fff; }
+  /* la fenêtre */
+  #fen { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(980px, calc(100% - 8px)); height: min(700px, calc(100% - 36px)); display: flex; flex-direction: column; padding: 2px; }
+  #fen.plein { left: 0; top: 0; transform: none; width: 100%; height: calc(100% - 28px); }
+  .titre { height: 20px; display: flex; align-items: center; gap: 4px; padding: 0 2px 0 4px; background: linear-gradient(90deg, #000080, #1084d0); color: #fff; font-weight: bold; flex: none; }
+  .titre .bt { margin-left: auto; display: flex; gap: 2px; }
+  .titre .bt button { min-width: 0; width: 16px; height: 14px; padding: 0; font: bold 10px/9px Arial; }
+  .titre .bt button + button + button { margin-left: 2px; }
+  #menus { display: flex; flex: none; padding: 1px 0; position: relative; }
+  #menus > div { padding: 2px 7px; cursor: pointer; position: relative; }
+  #menus > div:hover, #menus > div.ouvert { background: var(--bleu); color: #fff; }
+  #menus .deroule { display: none; position: absolute; left: 0; top: 100%; min-width: 170px; z-index: 40; color: #000; }
+  #menus > div.ouvert .deroule { display: block; }
+  #menus .deroule div { padding: 4px 20px; }
+  #menus .deroule div:hover { background: var(--bleu); color: #fff; }
+  #menus .deroule hr { border: 0; border-top: 1px solid var(--ombre); border-bottom: 1px solid #fff; margin: 3px 2px; }
+  #tapis { flex: 1; position: relative; background: radial-gradient(ellipse at 50% 45%, #13883f 0%, var(--tapis) 70%, #064d20 100%); overflow: hidden; margin: 0 0 2px; }
+  #statut { display: flex; gap: 2px; flex: none; }
+  #statut > div { padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #statut > div:first-child { flex: 1; }
+  /* les joueurs */
+  .joueur { position: absolute; color: #fff; text-align: center; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+  .joueur .nom { display: inline-block; padding: 1px 6px; border-radius: 2px; }
+  .joueur.tour .nom { background: #ffff00; color: #000; text-shadow: none; }
+  .joueur .contrat { display: block; font-weight: normal; font-size: 11px; color: #ffe680; min-height: 14px; }
+  .dos { position: absolute; width: var(--cw); height: calc(var(--cw) * 1.5); border-radius: 4px; border: 1px solid #000; background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 2px, transparent 2px 6px), repeating-linear-gradient(-45deg, rgba(255,255,255,.18) 0 2px, transparent 2px 6px), #1a3fb0; box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 4px #1a3fb0; }
+  /* les cartes */
+  .carte { position: absolute; width: var(--cw); height: calc(var(--cw) * 1.5); border-radius: 5px; background: #fff; border: 1px solid #222; box-shadow: 1px 1px 2px rgba(0,0,0,.45); cursor: default; transition: transform .12s, top .12s; overflow: hidden; }
+  .carte .coin { position: absolute; left: 3px; top: 2px; font: bold calc(var(--cw) * .2)/1 Arial, sans-serif; text-align: center; }
+  .carte .coin.bas { left: auto; top: auto; right: 3px; bottom: 2px; transform: rotate(180deg); }
+  .carte .coin small { display: block; font-size: calc(var(--cw) * .2); }
+  .carte .milieu { position: absolute; inset: 22% 14%; display: flex; align-items: center; justify-content: center; font: calc(var(--cw) * .48)/1 Arial, sans-serif; }
+  .carte.rouge { color: #d00; }
+  .carte.noire { color: #000; }
+  .carte .fig { position: absolute; inset: 20% 16%; border: 1px solid currentColor; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; font: bold calc(var(--cw) * .32)/1 Georgia, serif; background: linear-gradient(#fff8e0, #f3e2b0); }
+  .carte .fig small { font-size: calc(var(--cw) * .26); }
+  .carte.atout { background: linear-gradient(160deg, #fffdf2, #f1e8c8); color: #1c1c6c; }
+  .carte.atout .vign { position: absolute; inset: 20% 14%; border: 1px solid #1c1c6c; border-radius: 3px; background: radial-gradient(circle at 50% 40%, #ffe9a0 0, #e8b84a 45%, #b5641e 100%); display: flex; align-items: center; justify-content: center; font: bold calc(var(--cw) * .38)/1 Georgia, serif; color: #2a1408; text-shadow: 0 1px 0 #fff3c0; }
+  .carte.excuse .vign { background: radial-gradient(circle, #fff 0, #ffd6e8 50%, #c04a8a 100%); font-size: calc(var(--cw) * .42); }
+  .main .carte.jouable { cursor: pointer; }
+  .main .carte.jouable:hover { transform: translateY(-8px); }
+  .main .carte.grise { filter: brightness(.62); }
+  .main .carte.choisie { transform: translateY(-14px); box-shadow: 0 0 0 2px #ff0, 1px 1px 3px #000; }
+  .pli .carte { transition: none; }
+  /* les fenêtres de dialogue */
+  .dialogue { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; max-width: calc(100% - 16px); z-index: 30; padding: 2px; }
+  .dialogue .corps { padding: 12px 12px 10px; }
+  .dialogue .ligne { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .dialogue table { border-collapse: collapse; width: 100%; background: #fff; }
+  .dialogue td, .dialogue th { border: 1px solid #a0a0a0; padding: 2px 6px; text-align: right; }
+  .dialogue th { background: var(--gris); }
+  .dialogue td:first-child, .dialogue th:first-child { text-align: left; }
+  .bulle { position: absolute; background: #ffffe1; color: #000; border: 1px solid #000; padding: 2px 6px; font-size: 12px; white-space: nowrap; text-shadow: none; font-weight: normal; z-index: 20; }
+  #boot { position: absolute; inset: 0; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+  #boot .logo { font: bold 34px Arial; letter-spacing: 1px; }
+  #boot .logo b { font-size: 46px; color: #fff; }
+  #boot .drap { display: grid; grid-template-columns: 26px 26px; gap: 3px; transform: skewX(-8deg); margin-bottom: 12px; }
+  #boot .drap i { width: 26px; height: 22px; display: block; }
+  #boot .barre { width: 220px; height: 8px; margin-top: 30px; background: linear-gradient(90deg, #000 0, #2a6af0 20%, #000 40%) 0 0 / 200% 100%; animation: defile 1s linear infinite; }
+  @keyframes defile { to { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+<div id="boot"><div class="drap"><i style="background:#f02a12"></i><i style="background:#2aa82a"></i><i style="background:#1e5ef0"></i><i style="background:#f0c812"></i></div><div class="logo">Microsoft<sup>®</sup> Windows <b>95</b></div><div class="barre"></div></div>
+<div id="bureau">
+  <div class="icone" style="left:8px;top:8px"><div class="img">🖥️</div><span>Poste de travail</span></div>
+  <div class="icone" style="left:8px;top:84px"><div class="img">🗑️</div><span>Corbeille</span></div>
+  <div class="icone" id="icTarot" style="left:8px;top:160px"><div class="img">🃏</div><span>Tarot</span></div>
+  <div id="fen" class="bosse">
+    <div class="titre"><span>🃏</span><span>Tarot</span><div class="bt"><button class="b95" id="btMin">_</button><button class="b95" id="btMax">□</button><button class="b95" id="btFerm">✕</button></div></div>
+    <div id="menus">
+      <div id="mPartie"><u>P</u>artie<div class="deroule bosse"><div data-a="donne">Nouvelle donne</div><div data-a="partie">Nouvelle partie</div><hr><div data-a="scores">Scores…</div><hr><div data-a="quitter">Quitter</div></div></div>
+      <div id="mAide"><u>A</u>ide<div class="deroule bosse"><div data-a="regles">Règles du jeu</div><hr><div data-a="apropos">À propos de Tarot…</div></div></div>
+    </div>
+    <div id="tapis" class="creux"></div>
+    <div id="statut"><div class="creux" id="st1">Prêt</div><div class="creux" id="st2">Donne 1</div></div>
+  </div>
+</div>
+<div id="taches">
+  <button class="b95" id="demarrer"><i>🪟</i>Démarrer</button>
+  <button class="b95 actif" id="tacheTarot">🃏 Tarot</button>
+  <div class="creux" id="horloge">--:--</div>
+</div>
+<div id="menuDem" class="bosse"><div class="bande"><b>Windows</b>95</div><div class="it" data-a="tarot">🃏 Tarot</div><div class="it" data-a="donne">🔄 Nouvelle donne</div><div class="it" data-a="quitter">⏻ Arrêter…</div></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+// ---------- le bureau de Windows 95 ----------
+setTimeout(() => { $("boot").remove(); nouvellePartie(); }, 1800);
+const heure = () => { const d = new Date(); $("horloge").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }; heure(); setInterval(heure, 10000);
+const fenetre = v => { $("fen").style.display = v ? "flex" : "none"; $("tacheTarot").style.display = v ? "" : "none"; if (v) placer(); };
+$("btFerm").onclick = () => fenetre(false); $("btMin").onclick = () => { $("fen").style.display = "none"; $("tacheTarot").classList.remove("actif"); };
+$("btMax").onclick = () => { $("fen").classList.toggle("plein"); placer(); };
+$("tacheTarot").onclick = () => { const vis = $("fen").style.display !== "none"; $("fen").style.display = vis ? "none" : "flex"; $("tacheTarot").classList.toggle("actif", !vis); if (!vis) placer(); };
+let clicIcone = 0; $("icTarot").onclick = () => { document.querySelectorAll(".icone").forEach(i => i.classList.remove("sel")); $("icTarot").classList.add("sel"); const t = Date.now(); if (t - clicIcone < 450 || matchMedia("(pointer: coarse)").matches) { fenetre(true); $("tacheTarot").classList.add("actif"); } clicIcone = t; };
+$("demarrer").onclick = e => { e.stopPropagation(); const m = $("menuDem"); m.style.display = m.style.display === "block" ? "none" : "block"; };
+document.addEventListener("click", e => { $("menuDem").style.display = "none"; if (!e.target.closest("#menus")) document.querySelectorAll("#menus > div").forEach(d => d.classList.remove("ouvert")); });
+document.querySelectorAll("#menus > div").forEach(d => d.onclick = e => { e.stopPropagation(); const o = d.classList.contains("ouvert"); document.querySelectorAll("#menus > div").forEach(x => x.classList.remove("ouvert")); if (!o) d.classList.add("ouvert"); });
+document.querySelectorAll("[data-a]").forEach(el => el.onclick = e => { e.stopPropagation(); document.querySelectorAll("#menus > div").forEach(x => x.classList.remove("ouvert")); $("menuDem").style.display = "none"; action(el.dataset.a); });
+function action(a) {
+  if (a === "tarot") { fenetre(true); $("tacheTarot").classList.add("actif"); }
+  else if (a === "donne") { fenetre(true); nouvelleDonne(); }
+  else if (a === "partie") nouvellePartie();
+  else if (a === "scores") tableauScores();
+  else if (a === "quitter") { try { parent.postMessage({ t: "tarot-fermer" }, "*"); } catch (e) {} }
+  else if (a === "regles") dialogue("Règles du jeu", `<div style="max-width:420px;line-height:1.45">Vous jouez au Sud contre trois adversaires. Chacun reçoit 18 cartes, 6 vont au chien.<br><br>
+    <b>Enchères</b> : Petite, Garde, Garde sans le chien, Garde contre le chien. Le preneur joue seul contre les trois autres.<br><br>
+    <b>Jeu</b> : il faut fournir la couleur demandée ; sinon couper avec un atout (et monter sur l'atout le plus fort si possible) ; sinon défausser. L'Excuse se joue à tout moment et revient à son camp.<br><br>
+    <b>Contrat</b> : le preneur doit faire 56 points sans bout, 51 avec un, 41 avec deux, 36 avec les trois bouts (le Petit, le 21 et l'Excuse).</div>`, [["OK"]]);
+  else if (a === "apropos") dialogue("À propos de Tarot", `<div style="display:flex;gap:12px;align-items:center"><div style="font-size:34px">🃏</div><div><b>Tarot pour Windows 95</b><br>Version 1.0<br><br>Copyright © 1995<br>Caserne de la Nouvelle France</div></div>`, [["OK"]]);
+}
+// ---------- les cartes ----------
+const COUL = ["P", "C", "K", "T"], SYM = { P: "♠", C: "♥", K: "♦", T: "♣" }, NOMC = { P: "pique", C: "cœur", K: "carreau", T: "trèfle" };
+const FIG = { 11: "V", 12: "C", 13: "D", 14: "R" }, NOMS = ["Vous", "Robert", "Ginette", "Marcel"], PLACE = ["sud", "est", "nord", "ouest"];
+const CONTRATS = ["Passe", "Petite", "Garde", "Garde sans", "Garde contre"], MULT = [0, 1, 2, 4, 6];
+const jeu = () => { const j = []; for (const c of COUL) for (let v = 1; v <= 14; v++) j.push({ c, v }); for (let v = 1; v <= 21; v++) j.push({ c: "A", v }); j.push({ c: "E", v: 0 }); return j; };
+const bout = k => k.c === "E" || (k.c === "A" && (k.v === 1 || k.v === 21));
+const pts = k => bout(k) ? 4.5 : k.c === "A" ? .5 : k.v === 14 ? 4.5 : k.v === 13 ? 3.5 : k.v === 12 ? 2.5 : k.v === 11 ? 1.5 : .5;
+const ordreTri = { A: 0, P: 1, C: 2, T: 3, K: 4, E: 5 };
+const trier = m => m.sort((a, b) => ordreTri[a.c] - ordreTri[b.c] || a.v - b.v);
+const nomCarte = k => k.c === "E" ? "l'Excuse" : k.c === "A" ? (k.v === 1 ? "le Petit" : `le ${k.v} d'atout`) : `${{ 1: "l'as", 11: "le valet", 12: "le cavalier", 13: "la dame", 14: "le roi" }[k.v] || "le " + k.v} de ${NOMC[k.c]}`;
+// ---------- l'état ----------
+let S = null, scores = [0, 0, 0, 0], historique = [], donneur = 3, numDonne = 0, attente = null;
+function nouvellePartie() { scores = [0, 0, 0, 0]; historique = []; numDonne = 0; donneur = Math.floor(Math.random() * 4); nouvelleDonne(); }
+function nouvelleDonne() {
+  clearTimeout(attente); fermerDialogues(); numDonne++; donneur = (donneur + 1) % 4;
+  let d; do { d = jeu(); for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; } } while (petitSec(d));
+  S = { mains: [0, 1, 2, 3].map(p => trier(d.slice(p * 18, p * 18 + 18))), chien: d.slice(72), enchere: 0, preneur: -1, annonces: ["", "", "", ""], phase: "encheres", tour: (donneur + 1) % 4, parle: 0,
+    pli: [], premier: -1, plis: [[], []], nPli: 0, choix: new Set(), dernierPli: null };
+  $("st2").textContent = `Donne ${numDonne} — donneur : ${NOMS[donneur]}`; statut("Les enchères commencent.");
+  placer(); attente = setTimeout(encheres, 600);
+}
+function petitSec(d) { for (let p = 0; p < 4; p++) { const m = d.slice(p * 18, p * 18 + 18), at = m.filter(k => k.c === "A"); if (at.length === 1 && at[0].v === 1 && !m.some(k => k.c === "E")) return true; } return false; }
+const statut = t => { $("st1").textContent = t; };
+// ---------- les enchères ----------
+function force(m) { let f = 0; const at = m.filter(k => k.c === "A"); f += at.length * 1.2 + at.filter(k => k.v >= 16).length * .8;
+  for (const k of m) { if (bout(k)) f += k.c === "A" && k.v === 1 ? (at.length >= 6 ? 4 : 1.5) : 4; if (k.c !== "A" && k.c !== "E") f += k.v === 14 ? 2.5 : k.v === 13 ? 1.2 : k.v === 12 ? .6 : 0; }
+  for (const c of COUL) { const n = m.filter(k => k.c === c).length; if (n === 0) f += 2; else if (n === 1) f += 1; else if (n >= 6) f += n - 5; }
+  return f; }
+function encheres() {
+  if (S.parle === 4) { if (S.preneur < 0) { dialogue("Tarot", "Tout le monde a passé. On redonne.", [["OK", nouvelleDonne]]); return; } return apresEncheres(); }
+  const p = S.tour; placer();
+  if (p === 0) {
+    const bts = [["Passe", () => annonce(0, 0)]]; for (let c = 1; c <= 4; c++) if (c > S.enchere) bts.push([CONTRATS[c], () => annonce(0, c)]);
+    dialogue("Enchères", `<div>Votre annonce ?${S.enchere ? `<br><small>(${NOMS[S.preneur]} a annoncé : ${CONTRATS[S.enchere]})</small>` : ""}</div>`, bts, true);
+  } else { const f = force(S.mains[p]); let c = f >= 40 ? 4 : f >= 33 ? 3 : f >= 25 ? 2 : f >= 19 ? 1 : 0; if (c <= S.enchere) c = 0; attente = setTimeout(() => annonce(p, c), 700); }
+}
+function annonce(p, c) { S.annonces[p] = CONTRATS[c]; if (c > 0) { S.enchere = c; S.preneur = p; } statut(`${NOMS[p]} : ${CONTRATS[c]}`); S.parle++; S.tour = (S.tour + 1) % 4; placer(); attente = setTimeout(encheres, 350); }
+function apresEncheres() {
+  S.annonces = S.annonces.map((a, i) => i === S.preneur ? CONTRATS[S.enchere] : ""); const t = S.preneur;
+  statut(`${NOMS[t]} ${t === 0 ? "prenez" : "prend"} une ${CONTRATS[S.enchere]}.`);
+  if (S.enchere >= 3) { (S.enchere === 3 ? S.plis[0] : S.plis[1]).push(...S.chien); S.chien = []; return commencerJeu(); }
+  // le chien est montré à tous, puis le preneur fait son écart
+  S.phase = "chien"; placer();
+  attente = setTimeout(() => { S.mains[t].push(...S.chien); trier(S.mains[t]); S.chien = [];
+    if (t === 0) { S.phase = "ecart"; S.choix = new Set(); statut("Choisissez 6 cartes à écarter (ni roi, ni bout ; pas d'atout sauf si obligé)."); placer(); }
+    else { const ec = ecartIA(S.mains[t]); S.plis[0].push(...ec); S.mains[t] = S.mains[t].filter(k => !ec.includes(k)); commencerJeu(); } }, 2200);
+}
+const ecartable = (m, k) => { if (k.c === "E" || (k.c !== "A" && k.v === 14) || bout(k)) return false; if (k.c === "A") return m.filter(x => x.c !== "A" && x.c !== "E" && x.v !== 14).length < 6; return true; };
+function ecartIA(m) { const n = c => m.filter(k => k.c === c).length;
+  const cand = m.filter(k => ecartable(m, k) && k.c !== "A").sort((a, b) => n(a.c) - n(b.c) || pts(b) - pts(a)); const ec = cand.slice(0, 6);
+  if (ec.length < 6) ec.push(...m.filter(k => k.c === "A" && !bout(k)).sort((a, b) => a.v - b.v).slice(0, 6 - ec.length)); return ec; }
+function validerEcart() { const ec = S.mains[0].filter((k, i) => S.choix.has(i)); S.plis[0].push(...ec); S.mains[0] = S.mains[0].filter((k, i) => !S.choix.has(i)); S.choix = new Set(); commencerJeu(); }
+// ---------- le jeu de la carte ----------
+function commencerJeu() { S.phase = "jeu"; S.tour = (donneur + 1) % 4; S.premier = S.tour; S.pli = []; placer(); attente = setTimeout(jouerTour, 600); }
+const camp = p => p === S.preneur ? 0 : 1;
+function demandee(pli) { const k = pli.find(x => x.k.c !== "E"); return k ? k.k.c : null; }
+function gagnant(pli) { let best = null; const d = demandee(pli); for (const x of pli) { const k = x.k; if (k.c === "E") continue;
+    if (!best) { best = x; continue; } const b = best.k; if (k.c === "A" && (b.c !== "A" || k.v > b.v)) best = x; else if (k.c === d && b.c === d && k.v > b.v) best = x; } return best || pli[0]; }
+function legales(m, pli) {
+  const d = demandee(pli); if (!d) return m.slice();
+  const ex = m.filter(k => k.c === "E"), maxA = Math.max(0, ...pli.filter(x => x.k.c === "A").map(x => x.k.v)), at = m.filter(k => k.c === "A"), monte = at.filter(k => k.v > maxA);
+  if (d !== "A") { const s = m.filter(k => k.c === d); if (s.length) return s.concat(ex); }
+  if (at.length) return (monte.length ? monte : at).concat(ex);
+  return m.slice();
+}
+function jouerTour() {
+  if (S.phase !== "jeu") return; placer();
+  const p = S.tour; if (p === 0) { statut(S.pli.length ? "À vous de jouer." : "À vous d'entamer."); return; }
+  attente = setTimeout(() => poser(p, choixIA(p)), 650);
+}
+function choixIA(p) {
+  const m = S.mains[p], L = legales(m, S.pli), moi = camp(p), dernier = S.pli.length === 3;
+  const bas = arr => arr.slice().sort((a, b) => (bout(a) - bout(b)) || pts(a) - pts(b) || (a.c === "A") - (b.c === "A") || a.v - b.v)[0];
+  const hors = L.filter(k => k.c !== "E");
+  if (L.length === 1) return L[0];
+  if (S.nPli >= 16 && L.some(k => k.c === "E")) return L.find(k => k.c === "E");
+  if (!S.pli.length) {   // l'entame
+    const rois = hors.filter(k => k.c !== "A" && k.v === 14); if (rois.length && (moi === 0 || Math.random() < .5)) return rois[0];
+    const at = hors.filter(k => k.c === "A"); if (moi === 0 && at.length >= 7) { const sans = at.filter(k => k.v !== 1); if (sans.length) return sans.sort((a, b) => b.v - a.v)[0]; }
+    const coul = COUL.map(c => hors.filter(k => k.c === c)).filter(a => a.length).sort((a, b) => b.length - a.length);
+    if (coul.length) return coul[0].sort((a, b) => a.v - b.v)[0]; return bas(hors.length ? hors : L);
+  }
+  const g = gagnant(S.pli), ami = camp(g.p) === moi && !(moi === 0);   // (le preneur n'a pas de partenaire)
+  const gagne = hors.filter(k => { const t = S.pli.concat([{ p, k }]); return gagnant(t).p === p; });
+  const valeurPli = S.pli.reduce((s, x) => s + pts(x.k), 0);
+  if (ami && (dernier || (g.k.c === "A" && g.k.v >= 16) || (g.k.c !== "A" && g.k.v === 14 && !S.pli.some(x => x.k.c === "A")))) {   // le partenaire tient le pli : on charge
+    const charge = hors.filter(k => !bout(k)).sort((a, b) => pts(b) - pts(a) || (a.c === "A") - (b.c === "A")); return charge[0] || bas(L); }
+  if (gagne.length) { const g2 = gagne.sort((a, b) => (a.c === "A") - (b.c === "A") || a.v - b.v);
+    const sur = dernier ? g2[0] : (g2.find(k => k.c === "A" && k.v >= 18) || g2.find(k => k.c !== "A" && k.v >= 13) || g2[0]);
+    if (sur.c === "A" && sur.v === 1 && !dernier) { const autre = g2.find(k => k !== sur); if (autre) return autre; }
+    if (dernier || valeurPli >= 2 || sur.c !== "A" || sur.v < 21) return sur; }
+  return bas(L);
+}
+function poser(p, k) {
+  const m = S.mains[p]; m.splice(m.indexOf(k), 1); S.pli.push({ p, k }); statut(`${NOMS[p]} ${p === 0 ? "jouez" : "joue"} ${nomCarte(k)}.`);
+  S.tour = (p + 1) % 4; placer();
+  if (S.pli.length < 4) { attente = setTimeout(jouerTour, 250); return; }
+  attente = setTimeout(ramasser, 1300);
+}
+function ramasser() {
+  const g = gagnant(S.pli), c = camp(g.p);
+  for (const x of S.pli) (x.k.c === "E" ? S.plis[camp(x.p)] : S.plis[c]).push(x.k);   // (l'Excuse revient toujours à son camp)
+  S.dernierPli = S.pli.map(x => ({ ...x })); S.pli = []; S.nPli++; S.tour = g.p; S.premier = g.p;
+  statut(`${NOMS[g.p]} ${g.p === 0 ? "remportez" : "remporte"} le pli.`);
+  if (S.nPli === 18) { placer(); attente = setTimeout(finDonne, 800); return; }
+  attente = setTimeout(jouerTour, 500);
+}
+function finDonne() {
+  S.phase = "fin"; const att = S.plis[0], p = att.reduce((s, k) => s + pts(k), 0), nb = att.filter(bout).length, besoin = [56, 51, 41, 36][nb];
+  const ecart = p - besoin, reussi = ecart >= 0, val = (25 + Math.abs(Math.round(ecart))) * MULT[S.enchere] * (reussi ? 1 : -1);
+  const gains = [0, 1, 2, 3].map(q => q === S.preneur ? val * 3 : -val); gains.forEach((g, i) => scores[i] += g);
+  historique.push({ n: numDonne, preneur: S.preneur, contrat: CONTRATS[S.enchere], gains });
+  placer();
+  dialogue("Fin de la donne", `<div style="line-height:1.5"><b>${NOMS[S.preneur]}</b> — ${CONTRATS[S.enchere]}<br>Bouts : ${nb} — il fallait ${besoin} points.<br>
+    Points du preneur : <b>${p}</b> — contrat <b style="color:${reussi ? "#060" : "#a00"}">${reussi ? "réussi" : "chuté"}</b> de ${Math.abs(ecart)}.<br><br>${tableHTML(gains)}</div>`,
+    [["Nouvelle donne", nouvelleDonne], ["Scores…", tableauScores]]);
+}
+const tableHTML = gains => `<table><tr><th>Joueur</th>${gains ? "<th>Donne</th>" : ""}<th>Total</th></tr>${NOMS.map((n, i) => `<tr><td>${n}</td>${gains ? `<td>${gains[i] > 0 ? "+" : ""}${gains[i]}</td>` : ""}<td><b>${scores[i]}</b></td></tr>`).join("")}</table>`;
+function tableauScores() { dialogue("Scores", historique.length ? `<table><tr><th>Donne</th>${NOMS.map(n => `<th>${n}</th>`).join("")}</tr>${historique.map(h => `<tr><td>${h.n}. ${NOMS[h.preneur]} (${h.contrat})</td>${h.gains.map(g => `<td>${g}</td>`).join("")}</tr>`).join("")}<tr><th>Total</th>${scores.map(s => `<th>${s}</th>`).join("")}</tr></table>` : "Aucune donne terminée.", [["OK"]]); }
+// ---------- les fenêtres de dialogue ----------
+function fermerDialogues() { document.querySelectorAll(".dialogue").forEach(d => d.remove()); }
+function dialogue(titre, html, boutons, sansFermer) {
+  fermerDialogues(); const d = document.createElement("div"); d.className = "dialogue bosse";
+  d.innerHTML = `<div class="titre"><span>${titre}</span>${sansFermer ? "" : `<div class="bt"><button class="b95">✕</button></div>`}</div><div class="corps">${html}<div class="ligne"></div></div>`;
+  const ligne = d.querySelector(".ligne"); for (const [t, f] of boutons) { const b = document.createElement("button"); b.className = "b95"; b.textContent = t; b.onclick = () => { d.remove(); f && f(); }; ligne.appendChild(b); }
+  const x = d.querySelector(".titre button"); if (x) x.onclick = () => d.remove();
+  $("tapis").appendChild(d);
+}
+// ---------- l'affichage ----------
+function carteEl(k) { const e = document.createElement("div");
+  if (k.c === "A" || k.c === "E") { e.className = "carte atout" + (k.c === "E" ? " excuse" : ""); const t = k.c === "E" ? "★" : k.v; e.innerHTML = `<div class="coin">${t}</div><div class="vign">${k.c === "E" ? "🃏" : k.v}</div><div class="coin bas">${t}</div>`; return e; }
+  const s = SYM[k.c], r = FIG[k.v] || (k.v === 1 ? "1" : k.v); e.className = "carte " + (k.c === "C" || k.c === "K" ? "rouge" : "noire");
+  e.innerHTML = `<div class="coin">${r}<small>${s}</small></div>${FIG[k.v] ? `<div class="fig">${FIG[k.v]}<small>${s}</small></div>` : `<div class="milieu">${s}</div>`}<div class="coin bas">${r}<small>${s}</small></div>`; return e; }
+function placer() {
+  const T = $("tapis"); if (!S || !T.clientWidth) return; const W = T.clientWidth, H = T.clientHeight;
+  [...T.children].forEach(c => { if (!c.classList.contains("dialogue")) c.remove(); });
+  const n0 = S.mains[0].length || 1, cw = Math.max(34, Math.min(70, H * .16, W < 600 ? (W - 30) / (1 + (Math.ceil(n0 / 2) - 1) * .5) : (W - 30) / (1 + (n0 - 1) * .42))); T.style.setProperty("--cw", cw + "px"); const ch = cw * 1.5;
+  // les adversaires : leurs dos de cartes, leur nom, leur annonce
+  for (const p of [1, 2, 3]) { const n = S.mains[p].length, j = document.createElement("div"); j.className = "joueur" + (S.tour === p && (S.phase === "jeu" || S.phase === "encheres") ? " tour" : "");
+    j.innerHTML = `<span class="nom">${NOMS[p]}</span><span class="contrat">${S.annonces[p] || ""}</span>`; T.appendChild(j);
+    const pas = Math.min(cw * .22, (p === 2 ? W * .5 : H * .45) / Math.max(1, n)), lg = cw * .7;
+    for (let i = 0; i < n; i++) { const d = document.createElement("div"); d.className = "dos"; d.style.setProperty("--cw", lg + "px");
+      if (p === 2) { d.style.left = (W / 2 - (n * pas + lg) / 2 + i * pas) + "px"; d.style.top = "6px"; }
+      else { d.style.top = (H * .42 - (n * pas + lg * 1.5) / 2 + i * pas) + "px"; d.style.left = p === 1 ? (W - lg - 8) + "px" : "8px"; }
+      T.appendChild(d); }
+    if (p === 2) { j.style.left = "50%"; j.style.transform = "translateX(-50%)"; j.style.top = (lg * 1.5 + 10) + "px"; }
+    else { j.style.top = (H * .42 + (n * pas + lg * 1.5) / 2 + 6) + "px"; if (p === 1) j.style.right = "6px"; else j.style.left = "6px"; } }
+  const js = document.createElement("div"); js.className = "joueur" + (S.tour === 0 && (S.phase === "jeu" || S.phase === "encheres") ? " tour" : ""); js.innerHTML = `<span class="nom">Vous</span><span class="contrat">${S.annonces[0] || ""}</span>`;
+  js.style.left = "50%"; js.style.transform = "translateX(-50%)"; js.style.bottom = (ch + 22 + (S.mains[0].length && (W - 20 - cw) / Math.max(1, S.mains[0].length - 1) < cw * .45 ? ch * .55 : 0)) + "px"; T.appendChild(js);
+  // le centre : le chien montré, ou le pli en cours
+  const cx = W / 2, cy = H * .44;
+  if (S.phase === "chien" || (S.phase === "encheres" && S.chien.length)) S.chien.forEach((k, i) => { const e = S.phase === "chien" ? carteEl(k) : document.createElement("div"); if (S.phase !== "chien") { e.className = "dos"; } e.style.left = (cx - 3 * cw * .62 + i * cw * .62 - cw * .2) + "px"; e.style.top = (cy - ch / 2) + "px"; T.appendChild(e); });
+  const pos = { 0: [0, .5], 1: [.75, 0], 2: [0, -.5], 3: [-.75, 0] };
+  for (const x of S.pli) { const e = carteEl(x.k); e.classList.add("pli"); e.style.left = (cx - cw / 2 + pos[x.p][0] * cw * 1.25) + "px"; e.style.top = (cy - ch / 2 + pos[x.p][1] * ch * .85) + "px"; T.appendChild(e); }
+  // votre main
+  const m = S.mains[0], L = S.phase === "jeu" && S.tour === 0 && attenteJoueur() ? legales(m, S.pli) : [];
+  const rangs = (W - 20 - cw) / Math.max(1, m.length - 1) < cw * .45 ? 2 : 1, parRang = Math.ceil(m.length / rangs);   // (sur un écran étroit : la main sur deux rangs)
+  const pas = Math.min(cw * 1.05, (W - 20 - cw) / Math.max(1, parRang - 1));
+  const main = document.createElement("div"); main.className = "main"; T.appendChild(main);
+  m.forEach((k, i) => { const e = carteEl(k), r = Math.floor(i / parRang), j = i % parRang, n = Math.min(parRang, m.length - r * parRang), x0 = W / 2 - ((n - 1) * pas + cw) / 2;
+    e.style.left = (x0 + j * pas) + "px"; e.style.top = (H - ch - 10 - (rangs - 1 - r) * ch * .55) + "px";
+    if (S.phase === "ecart") { if (ecartable(m, k)) e.classList.add("jouable"); else e.classList.add("grise"); if (S.choix.has(i)) e.classList.add("choisie");
+      e.onclick = () => { if (!ecartable(m, k)) return; if (S.choix.has(i)) S.choix.delete(i); else if (S.choix.size < 6) S.choix.add(i); placer(); }; }
+    else if (L.length) { if (L.includes(k)) { e.classList.add("jouable"); e.onclick = () => { if (S.tour === 0 && S.phase === "jeu") poser(0, k); }; } else e.classList.add("grise"); }
+    main.appendChild(e); });
+  if (S.phase === "ecart") { const b = document.createElement("button"); b.className = "b95"; b.textContent = `Écart fait (${S.choix.size}/6)`; b.disabled = S.choix.size !== 6; b.style.position = "absolute"; b.style.left = "50%"; b.style.transform = "translateX(-50%)"; b.style.top = (cy - 12) + "px"; b.onclick = validerEcart; T.appendChild(b); }
+  // le dernier pli, en petit, en haut à gauche
+  if (S.dernierPli && S.phase === "jeu") { const t = document.createElement("div"); t.className = "bulle"; t.style.left = "6px"; t.style.top = "6px"; t.textContent = "Dernier pli : " + S.dernierPli.map(x => (x.k.c === "A" ? x.k.v + "ᴬ" : x.k.c === "E" ? "★" : (FIG[x.k.v] || x.k.v) + SYM[x.k.c])).join("  "); T.appendChild(t); }
+}
+const attenteJoueur = () => S.pli.length < 4;
+addEventListener("resize", () => placer());
+// ---------- l'image de l'écran (recopiée sur le moniteur, dans la chambre) : le bureau et la fenêtre, dessinés d'après ce qui est affiché ----------
+const ecranTarot = document.createElement("canvas"); ecranTarot.width = 640; ecranTarot.height = 480; window.ecranTarot = ecranTarot;
+function dessinerEcran() {
+  if (!innerWidth || !innerHeight || !$("taches").getBoundingClientRect().width) return;   // (la fenêtre du jeu est cachée : on garde la dernière image)
+  const x = ecranTarot.getContext("2d"), W = 640, H = 480, vw = innerWidth, vh = innerHeight, kx = W / vw, ky = H / vh;
+  const rr = (r, f) => [r.left * kx, r.top * ky, r.width * kx, r.height * ky];
+  x.fillStyle = "#008080"; x.fillRect(0, 0, W, H);
+  if ($("boot")) { x.fillStyle = "#000"; x.fillRect(0, 0, W, H); [["#f02a12", 0, 0], ["#2aa82a", 1, 0], ["#1e5ef0", 0, 1], ["#f0c812", 1, 1]].forEach(([c, i, j]) => { x.fillStyle = c; x.fillRect(250 + i * 30, 170 + j * 26, 27, 23); }); x.fillStyle = "#fff"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("Windows 95", 320, 270); x.textAlign = "left"; return; }
+  for (const ic of document.querySelectorAll(".icone")) { const [a, b, c] = rr(ic.getBoundingClientRect()); x.font = "22px sans-serif"; x.fillText(ic.querySelector(".img").textContent, a + c / 2 - 11, b + 24); x.fillStyle = "#fff"; x.font = "9px Arial"; x.textAlign = "center"; x.fillText(ic.querySelector("span").textContent, a + c / 2, b + 40); x.textAlign = "left"; }
+  const bosse = (a, b, c, d) => { x.fillStyle = "#c0c0c0"; x.fillRect(a, b, c, d); x.fillStyle = "#fff"; x.fillRect(a, b, c, 1); x.fillRect(a, b, 1, d); x.fillStyle = "#000"; x.fillRect(a, b + d - 1, c, 1); x.fillRect(a + c - 1, b, 1, d); };
+  const fen = $("fen"); if (fen.style.display !== "none") { const [a, b, c, d] = rr(fen.getBoundingClientRect()); bosse(a, b, c, d);
+    const t = fen.querySelector(".titre").getBoundingClientRect(), [ta, tb, tc, td] = rr(t), gd = x.createLinearGradient(ta, 0, ta + tc, 0); gd.addColorStop(0, "#000080"); gd.addColorStop(1, "#1084d0"); x.fillStyle = gd; x.fillRect(ta, tb, tc, td); x.fillStyle = "#fff"; x.font = `bold ${Math.max(8, td * .7)}px Arial`; x.fillText("Tarot", ta + 6, tb + td * .78);
+    const [ma, mb, mc, md] = rr($("tapis").getBoundingClientRect()), gt = x.createRadialGradient(ma + mc / 2, mb + md * .45, 10, ma + mc / 2, mb + md / 2, mc * .7); gt.addColorStop(0, "#13883f"); gt.addColorStop(1, "#064d20"); x.fillStyle = gt; x.fillRect(ma, mb, mc, md);
+    x.fillStyle = "#000"; x.font = "9px Arial"; const [sa, sb, , sd] = rr($("st1").getBoundingClientRect()); x.fillText($("st1").textContent, sa + 4, sb + sd * .75);
+    for (const e of $("tapis").querySelectorAll(".dos, .carte, .joueur .nom, .dialogue, button.b95, .bulle")) { const r = e.getBoundingClientRect(); if (!r.width) continue; const [a2, b2, c2, d2] = rr(r);
+      if (e.classList.contains("dos")) { x.fillStyle = "#1a3fb0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#fff"; x.lineWidth = 1; x.strokeRect(a2 + 1.5, b2 + 1.5, c2 - 3, d2 - 3); }
+      else if (e.classList.contains("carte")) { const at = e.classList.contains("atout"); x.fillStyle = at ? "#f6efd6" : "#fff"; if (e.classList.contains("grise")) x.fillStyle = "#a0a0a0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#222"; x.strokeRect(a2 + .5, b2 + .5, c2 - 1, d2 - 1);
+        if (at) { x.fillStyle = "#d89a3a"; x.fillRect(a2 + c2 * .15, b2 + d2 * .22, c2 * .7, d2 * .56); }
+        x.fillStyle = e.classList.contains("rouge") ? "#d00" : at ? "#1c1c6c" : "#000"; x.font = `bold ${Math.max(7, c2 * .24)}px Arial`; x.fillText(e.querySelector(".coin").textContent, a2 + 2, b2 + c2 * .26); }
+      else if (e.classList.contains("nom")) { const tour = e.parentElement.classList.contains("tour"); if (tour) { x.fillStyle = "#ff0"; x.fillRect(a2, b2, c2, d2); } x.fillStyle = tour ? "#000" : "#fff"; x.font = `bold ${Math.max(7, d2 * .75)}px Arial`; x.fillText(e.textContent, a2 + 2, b2 + d2 * .8); }
+      else if (e.classList.contains("dialogue")) { bosse(a2, b2, c2, d2); const tt = e.querySelector(".titre"), [p1, p2, p3, p4] = rr(tt.getBoundingClientRect()); x.fillStyle = "#000080"; x.fillRect(p1, p2, p3, p4); x.fillStyle = "#fff"; x.font = `bold ${Math.max(7, p4 * .7)}px Arial`; x.fillText(tt.textContent.replace("✕", ""), p1 + 4, p2 + p4 * .78);
+        x.fillStyle = "#000"; x.font = "8px Arial"; const lignes = e.querySelector(".corps").innerText.split("\n").filter(l => l.trim()).slice(0, 8); lignes.forEach((l, i) => x.fillText(l.slice(0, 60), a2 + 6, p2 + p4 + 12 + i * 10)); }
+      else if (e.classList.contains("bulle")) { x.fillStyle = "#ffffe1"; x.fillRect(a2, b2, c2, d2); }
+      else { bosse(a2, b2, c2, d2); x.fillStyle = "#000"; x.font = "8px Arial"; x.fillText(e.textContent.slice(0, 18), a2 + 4, b2 + d2 * .7); } } }
+  bosse(0, H - 22, W, 22); bosse(3, H - 19, 62, 16); x.fillStyle = "#000"; x.font = "bold 10px Arial"; x.fillText("Démarrer", 14, H - 7); bosse(W - 50, H - 19, 46, 16); x.font = "10px Arial"; x.fillText($("horloge").textContent, W - 42, H - 7);
+}
+setInterval(dessinerEcran, 400);
+
+</script>
+</body>
+</html>

@@ -1892,7 +1892,7 @@ function decorPassage(A, T, L, scene, FZ) {
    pavés, le verso du bâtiment à l'horloge (rez-de-chaussée blanc, étages en brique à bandeaux, balconnets noirs), l'autre bâtiment en face, pareil,
    et son passage carré qui laisse voir encore une cour plus loin ; de chaque côté, des murs bas blancs et des étages de brique */
 const C2 = { z0: -30, z1: -44, x: 11 };
-function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorche = false, parCote = 0, sansPremier = false) {   // parCote : tant de colonnes de fenêtres de chaque côté du passage, réparties (pas collées aux bouts), sur six étages
+function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorche = false, parCote = 0, sansPremier = false, nEt = 6) {   /* (nEt : le nombre d'étages de fenêtres) */   // parCote : tant de colonnes de fenêtres de chaque côté du passage, réparties (pas collées aux bouts), sur six étages
   return toileF(Math.round(largeur * 40), Math.round(hauteur * 40), (x, w, h) => {
     const rdc = Math.max(5.4, hp + 1) * 40, cx = w / 2;
     // les étages : la brique rouge, fine, à joints clairs
@@ -1901,8 +1901,8 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
     const pas = 3.6 * 40, n = Math.floor(w / pas), cols = [];
     if (parCote) { const bord = 2.4 * 40; for (let k = 0; k < parCote; k++) cols.push(bord + (w - 2 * bord) * (k + .5) / parCote); }   // (parCote : le nombre de colonnes sur toute la longueur, réparties)
     else for (let c = 0; c < n; c++) cols.push((c + .5) * pas + (w - n * pas) / 2);
-    const pasEt = parCote ? Math.min(120, (h - rdc - 30) / 6) : 120;
-    for (let et = 0; et < 6; et++) for (const xc of cols) { const X = xc - 34, Y = h - rdc - 24 - 106 - et * pasEt;
+    const pasEt = parCote ? Math.min(nEt < 6 ? 150 : 120, (h - rdc - 30) / nEt) : 120;
+    for (let et = 0; et < nEt; et++) for (const xc of cols) { const X = xc - 34, Y = h - rdc - 24 - 106 - et * pasEt;
       if (Y < 10 || (sansPremier && et === 0)) continue;   // (sansPremier : pas de fenêtres au premier étage — la porte du pont)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112);
       const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
@@ -2540,12 +2540,12 @@ function troisiemeCour(A, L, scene) {
   const HP = hp + 4.4, face = new THREE.Shape(); const DL = C3.LB / 2; face.moveTo(-DL, 0); face.lineTo(DL, 0); face.lineTo(DL, 24); face.lineTo(-DL, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
   // la façade : de la brique jusqu'au sol ; du blanc au-dessus du passage et en soubassement (60 cm) ; deux fenêtres de chaque côté des marches
-  const cF = toileVerso(C3.LB, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.lw, h = cF.lh, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
+  const cF = toileVerso(C3.LB, 24, false, HP, LM, false, 4, false, 5);   /* (quatre colonnes de cinq fenêtres, réparties dans la largeur qu'on voit entre les murs de la cour) */ { const x = cF.getContext("2d"), w = cF.lw, h = cF.lh, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
     briques(x, w, h, h - rdc, rdc);
     pierre(x, 0, h - 24, w, 24, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
     for (const X of [6, w - 6]) descente(x, X, h - rdc, h);
     x.fillStyle = "#e9e6df"; x.fillRect(cx - (LM + .3) * P, h - (HP + .9) * P, (LM + .3) * 2 * P, .9 * P); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .4) * P, h - (HP + .9) * P - 6, (LM + .4) * 2 * P, 8);   // (le blanc, au-dessus du passage)
-    const pasF = 3.6 * P, nF = Math.floor(w / pasF), col = c => (c + .5) * pasF + (w - nF * pasF) / 2;   // (les mêmes colonnes que les fenêtres des étages)
+    const nF = 4, col = c => 2.4 * P + (w - 4.8 * P) * (c + .5) / nF;   // (les mêmes colonnes que les fenêtres des étages)
     for (let c = 0; c < nF; c++) { if (Math.abs(col(c) - cx) < LM * P + 40) continue; const X = col(c) - 34, Y = h - 4.3 * P;   // (toutes les colonnes de part et d'autre du passage, au-dessus du muret des buissons)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
       x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, 68, 4); x.fillRect(X, Y, 3, 100);
@@ -4470,7 +4470,7 @@ function construireAppart(A, L, scene) {
   piece(-XC, XC, Z_FOND, Z_BOUT, null, {
     x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .75), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }, { ...porte(P.salon2, .9), y0: H4 }],
     x1: [porte(P.ch3), porte(P.sdb, .8), { c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: H4, h: 2.25 }, { ...porte(P.cuisine, .85), y0: H4 }, { ...porte(P.entree, .9), y0: H4 }],
-    z0: [porte(0, .8)], y: 0 });
+    z0: [porte(0, .8)], y: 0 }, papierPeint("images/appart/tapisserie-couloir.webp", .5, .5, .08));   /* (le papier peint du couloir : marron clair et gris, à bandes) */
   sol(-XC, XC, Z_FOND, ZM0, 0, "carreaux"); sol(-XC, XC, ZM1, Z_BOUT, H4, "carreaux");
   { const marche = matSol.fonce(XC * 2, .35), nez = A.mat({ color: 0x2a140a, roughness: .25 });   // (en bois vernis, comme le parquet des chambres)
     for (let k = 0; k < 4; k++) { const z1 = ZM1 - k * (ZM1 - ZM0) / 4, z0 = z1 - (ZM1 - ZM0) / 4, y = H4 - k * H4 / 4;   // (marche k : son dessus à y, sa contremarche en z0)
@@ -4549,10 +4549,11 @@ function construireAppart(A, L, scene) {
   encadrement("x", Z_FOND, 0, .8, 0); ouverte(-.37, 0, Z_FOND - .1, .74, Math.PI / 2);   // le placard
   encadrement("z", XC, P.cuisine, .85, H4);   // l'entrée de la cuisine : une ouverture de porte simple, sans battant
   encadrement("z", XC - .05, P.entree, .9, H4, .1);   // la porte d'entrée (fermée)
-  { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : peinte en blanc, fermée, son judas, sa serrure, son verrou
+  { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : fermée, tapissée côté couloir, son judas, sa serrure, son verrou
     const pe = A.mat({ color: 0xf2eee4, roughness: .45 });   // (peinte en blanc)
     const bb = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
-    bb(.05, 2.08, .88, pe, 0, 1.04, 0); for (const [y, h] of [[.55, .8], [1.5, .85]]) bb(.02, h, .66, A.mat({ color: 0xe6e0d2, roughness: .5 }), -.03, y, 0);
+    bb(.05, 2.08, .88, pe, 0, 1.04, 0);
+    { const pp = new THREE.Mesh(new THREE.PlaneGeometry(.88, 2.08), papierPeint("images/appart/tapisserie-couloir.webp", .5, .5, .08)(.88, 2.08, 0, 0)); pp.rotation.y = -Math.PI / 2; pp.position.set(-.027, 1.04, 0); g.add(pp); }   // (tapissée côté couloir, comme les murs)
     bb(.03, .03, .03, laiton, -.04, 1.55, 0); bb(.03, .22, .06, laiton, -.04, 1.0, -.34); bb(.12, .025, .025, laiton, -.08, 1.0, -.34).rotation.y = Math.PI / 2; bb(.03, .08, .1, laiton, -.04, 1.3, -.34); }
   // ---------- les fenêtres : à l'ancienne, deux battants à petits bois ; dehors, le ciel et les façades d'en face ----------
   const vitre = new THREE.MeshStandardMaterial({ color: 0xdfeaf2, transparent: true, opacity: .18, roughness: .05, metalness: .1, depthWrite: false }), depoli = A.mat({ color: 0xe8eef0, roughness: .3, emissive: 0xc8d4dc, emissiveIntensity: .5 });
@@ -4817,6 +4818,124 @@ function construireAppart(A, L, scene) {
     const carte = (v0, v1, h) => { const gg = new THREE.PlaneGeometry(W, h), uv = gg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * (v1 - v0)); return new THREE.Mesh(gg, peau); };
     const haut = carte(V, 1, hH); haut.geometry.translate(0, hH / 2, 0); haut.rotation.x = -.22; chien.add(haut);
     const bas = carte(0, V, hB); bas.geometry.translate(0, -hB / 2, 0); bas.rotation.x = -Math.PI / 2; chien.add(bas); }
+  /* la chambre 2 : dans le coin à droite de la fenêtre, le lit deux places (d'après la photo) — la tête de lit et le pied en panneaux d'acajou ronceux foncé verni,
+     la tête de lit en partie sous la fenêtre ; le couvre-lit à bouquets de roses, comme le papier peint de la cuisine, qui retombe sur les côtés et recouvre le traversin */
+  { const W = 1.48, L = 2.0, g = new THREE.Group(); g.position.set(XG + E / 2 + .2, 0, Z2 + E / 2 + .05 + W / 2); g.rotation.y = Math.PI / 2; scene.add(g);   /* (la tête sous la fenêtre, devant le radiateur ; le lit vers la porte) */
+    const veine = tex(toile(256, 512, (x, w, h) => { x.fillStyle = "#4a2012"; x.fillRect(0, 0, w, h); for (let i = 0; i < 90; i++) { const px = w * hasard(i * 1.7), lw = 1 + 6 * hasard(i * 2.9); x.fillStyle = hasard(i * 3.3) > .5 ? `rgba(110,48,24,${.25 + .3 * hasard(i)})` : `rgba(30,10,4,${.2 + .3 * hasard(i * 5)})`; x.beginPath(); x.moveTo(px, 0); for (let y = 0; y <= h; y += 32) x.lineTo(px + 4 * Math.sin(y * .02 + i), y); x.lineTo(px + lw + 4 * Math.sin(h * .02 + i), h); for (let y = h; y >= 0; y -= 32) x.lineTo(px + lw + 4 * Math.sin(y * .02 + i), y); x.fill(); } }), 1, 1);
+    const acajou = A.mat({ map: veine, roughness: .22, metalness: .05 }), chant = A.mat({ color: 0x3a1a0e, roughness: .3 });
+    const b = (dx, dy, dz, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
+    b(W + .06, .95, .03, acajou, 0, .475, .015); b(W + .06, .02, .035, chant, 0, .95, .015);   // la tête de lit, son chant
+    b(W + .06, .6, .03, acajou, 0, .3, L - .015); b(W + .06, .02, .035, chant, 0, .6, L - .015);   // le pied de lit
+    for (const sx of [-1, 1]) { b(.025, .18, L - .06, acajou, sx * (W / 2 + .018), .3, L / 2); for (const z of [.06, L - .06]) b(.06, .1, .06, chant, sx * (W / 2 - .02), .05, z); }   // les côtés, les pieds
+    // le matelas sous le couvre-lit
+    b(W - .02, .2, L - .07, A.mat({ color: 0x5ab8c8, roughness: .9 }), 0, .4, L / 2);
+    // le couvre-lit : du tissu crème à bouquets de roses, piqué ; il couvre le dessus, retombe des deux côtés, gonfle sur le traversin
+    const fleurs = new THREE.TextureLoader().load("images/appart/tapisserie-cuisine.webp"); fleurs.colorSpace = THREE.SRGBColorSpace; fleurs.wrapS = fleurs.wrapT = THREE.RepeatWrapping; fleurs.anisotropy = 8;
+    const tissu = (rx, ry) => { const t = fleurs.clone(); t.repeat.set(rx, ry); t.needsUpdate = true; return A.mat({ map: t, roughness: .95, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .08 }); };
+    const yd = .51, lc = L - .1;
+    const dessus = new THREE.PlaneGeometry(W + .09, lc, 30, 40), pd = dessus.attributes.position;
+    for (let i = 0; i < pd.count; i++) { const x = pd.getX(i), y = pd.getY(i), t = (y + lc / 2) / lc; let z = .006 * Math.sin(x * 21) * Math.sin(y * 17);   // (les plis du tissu)
+      const tv = Math.max(0, 1 - Math.abs(t - .9) / .09); z += .13 * Math.sin(tv * Math.PI / 2) * (1 - Math.pow(Math.abs(x) / (W / 2 + .02), 6)); pd.setZ(i, z); }   // (le traversin, dessous, à la tête)
+    dessus.computeVertexNormals(); const ds = new THREE.Mesh(dessus, tissu((W + .09) / .5, lc / .5)); ds.rotation.x = -Math.PI / 2; ds.position.set(0, yd, lc / 2 + .04); g.add(ds);
+    for (const sx of [-1, 1]) { const hh = .36, pan = new THREE.PlaneGeometry(lc, hh, 40, 6), pp = pan.attributes.position;
+      for (let i = 0; i < pp.count; i++) { const u = pp.getX(i), v = (hh / 2 - pp.getY(i)) / hh; pp.setZ(i, .008 * (1 + Math.sin(u * 9)) * v + .02 * v * v); }
+      pan.computeVertexNormals(); const o = new THREE.Mesh(pan, tissu(lc / .5, hh / .5)); o.rotation.y = sx * Math.PI / 2; o.position.set(sx * (W / 2 + .045), yd - hh / 2 + .005, lc / 2 + .04); g.add(o); }
+    // un pli du couvre-lit roulé contre le pied de lit (rentré dedans)
+    const rl = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, W + .02, 12), tissu(3, .3)); rl.rotation.z = Math.PI / 2; rl.position.set(0, yd + .01, L - .06); g.add(rl); }
+  /* la chambre 2, dans le coin de droite (au fond, côté porte) : un bureau simple, noir, sa chaise de bureau, et l'ordinateur de 1997 (d'après la photo) —
+     le moniteur cathodique beige sur son pied orientable, la tour aux deux lecteurs de CD et au lecteur de disquettes, le clavier, la souris ;
+     on touche l'ordinateur : Windows 95 démarre, avec son Tarot, et l'écran du moniteur montre la partie en cours */
+  { const g = new THREE.Group(), BW = 1.25, BD = .68, BH = .74; g.position.set(-XC - E / 2 - .02 - BW / 2, 0, Z2 + E / 2 + .01); scene.add(g);
+    const noirB = A.mat({ color: 0x1c1b1d, roughness: .35 }), beige = A.mat({ color: 0xe9e5d8, roughness: .42 }), beigeF = A.mat({ color: 0xd8d3c4, roughness: .5 }), grisF = A.mat({ color: 0x4a4a4c, roughness: .6 }), noir = A.mat({ color: 0x151515, roughness: .6 });
+    const b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
+    // le bureau : le plateau, les deux joues, le panneau de fond
+    b(BW, .03, BD, noirB, 0, BH - .015, BD / 2); for (const sx of [-1, 1]) b(.025, BH - .03, BD - .02, noirB, sx * (BW / 2 - .0125), (BH - .03) / 2, BD / 2); b(BW - .05, .4, .018, noirB, 0, BH - .25, .06);
+    // la tour, à droite : les deux lecteurs de CD-ROM, le lecteur de disquettes, le bouton, les voyants
+    const tr = new THREE.Group(); tr.position.set(BW / 2 - .17, BH, .28); g.add(tr);
+    b(.19, .44, .43, beige, 0, .22, 0, tr); b(.18, .25, .006, beigeF, 0, .31, .217, tr);
+    for (const [y, lg] of [[.4, 1], [.335, 1]]) { b(.16, .045, .008, beige, 0, y, .222, tr); b(.11, .006, .004, grisF, -.01, y - .006, .227, tr); b(.012, .008, .006, grisF, .06, y - .01, .227, tr); b(.008, .004, .004, A.mat({ color: 0x3aff6a, emissive: 0x20c040, emissiveIntensity: .5 }), .06, y + .01, .227, tr); }
+    b(.14, .04, .008, beige, 0, .25, .222, tr); b(.09, .006, .004, noir, 0, .255, .227, tr); b(.016, .01, .005, beigeF, .05, .24, .227, tr);   // (les disquettes)
+    const btn = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .01, 18), beigeF); btn.rotation.x = Math.PI / 2; btn.position.set(0, .17, .222); tr.add(btn);
+    b(.006, .006, .004, A.mat({ color: 0x3aff6a, emissive: 0x20d040, emissiveIntensity: .8 }), -.03, .17, .222, tr); b(.006, .006, .004, A.mat({ color: 0xffa21a, emissive: 0xff8000, emissiveIntensity: .4 }), .03, .17, .222, tr);
+    for (let i = 0; i < 6; i++) b(.12, .004, .004, beigeF, 0, .04 + i * .012, .222, tr);   // (les ouïes du bas)
+    // le moniteur : la face, l'écran bombé, le menton (les boutons), la caisse du tube qui s'amincit derrière, le pied orientable
+    const mo = new THREE.Group(); mo.position.set(-.12, BH, .3); g.add(mo);
+    const pied = new THREE.Mesh(new THREE.CylinderGeometry(.13, .14, .02, 28), beige); pied.scale.z = .8; pied.position.y = .01; mo.add(pied); b(.09, .06, .09, beigeF, 0, .05, 0, mo);
+    b(.4, .37, .05, beige, 0, .275, .12, mo);
+    const tube = new THREE.BoxGeometry(.36, .32, .3), tp = tube.attributes.position; for (let i = 0; i < tp.count; i++) if (tp.getZ(i) < 0) { tp.setX(i, tp.getX(i) * .55); tp.setY(i, tp.getY(i) * .6 + .02); }
+    tube.computeVertexNormals(); const tu = new THREE.Mesh(tube, beige); tu.position.set(0, .27, -.055); mo.add(tu);
+    b(.33, .26, .01, A.mat({ color: 0xcfc9b8, roughness: .5 }), 0, .295, .146, mo);   // (le cadre en creux autour de l'écran)
+    const can = document.createElement("canvas"); can.width = 640; can.height = 480; const cx = can.getContext("2d");
+    // l'écran au repos : le bureau de Windows 95 (le nuage bleu, le logo, les icônes)
+    { const gd = cx.createLinearGradient(0, 0, 0, 480); gd.addColorStop(0, "#3a6ec8"); gd.addColorStop(1, "#8ab4e8"); cx.fillStyle = "#008080"; cx.fillRect(0, 0, 640, 480);
+      [["#f02a12", 0, 0], ["#2aa82a", 1, 0], ["#1e5ef0", 0, 1], ["#f0c812", 1, 1]].forEach(([c, i, j]) => { cx.fillStyle = c; cx.fillRect(270 + i * 50, 150 + j * 42, 46, 38); });
+      cx.fillStyle = "#fff"; cx.font = "bold 40px Arial"; cx.textAlign = "center"; cx.fillText("Windows 95", 320, 290); cx.textAlign = "left";
+      ["Poste de travail", "Corbeille", "Tarot"].forEach((t, i) => { cx.fillStyle = "#c0c0c0"; cx.fillRect(22, 14 + i * 64, 28, 26); cx.fillStyle = "#fff"; cx.font = "10px Arial"; cx.fillText(t, 8, 54 + i * 64); });
+      cx.fillStyle = "#c0c0c0"; cx.fillRect(0, 458, 640, 22); cx.fillStyle = "#fff"; cx.fillRect(0, 458, 640, 1); cx.fillStyle = "#000"; cx.font = "bold 11px Arial"; cx.fillText("Démarrer", 14, 474); }
+    const ecranT = new THREE.CanvasTexture(can); ecranT.colorSpace = THREE.SRGBColorSpace;
+    const ecrGeo = new THREE.PlaneGeometry(.29, .218, 16, 12), ep = ecrGeo.attributes.position; for (let i = 0; i < ep.count; i++) ep.setZ(i, .012 * (1 - Math.pow(ep.getX(i) / .145, 2)) * (1 - Math.pow(ep.getY(i) / .109, 2)));
+    const ecr = new THREE.Mesh(ecrGeo, new THREE.MeshBasicMaterial({ map: ecranT, color: 0xe8e8e8, toneMapped: false })); ecr.position.set(0, .298, .151); mo.add(ecr);
+    b(.4, .055, .05, beige, 0, .062, .12, mo).position.y = .095; const pw = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .01, 16), beigeF); pw.rotation.x = Math.PI / 2; pw.position.set(.15, .1, .147); mo.add(pw);
+    b(.005, .005, .004, A.mat({ color: 0x3aff6a, emissive: 0x20d040, emissiveIntensity: .8 }), .125, .1, .147, mo); for (let i = 0; i < 4; i++) b(.018, .008, .006, beigeF, -.04 + i * .025, .1, .147, mo);
+    const lueur = new THREE.PointLight(0x9ac0ff, .5, 1.6, 2); lueur.position.set(-.12, BH + .3, .65); g.add(lueur);
+    // le clavier (les touches dessinées sur le dessus, en relief léger) et la souris, son fil
+    const touches = tex(toile(512, 180, (x, w, h) => { x.fillStyle = "#cfcabb"; x.fillRect(0, 0, w, h); const t = (a, b2, c, d) => { x.fillStyle = "#f2efe4"; x.fillRect(a, b2, c, d); x.fillStyle = "#b9b3a2"; x.fillRect(a, b2 + d - 3, c, 3); x.fillRect(a + c - 2, b2, 2, d); };
+      for (let i = 0; i < 13; i++) t(6 + i * 24 + (i > 0 ? 8 : 0) + Math.floor(i / 4) * 6, 6, 21, 20);
+      for (let r = 0; r < 5; r++) { let xx = 6 + [0, 0, 8, 12, 18][r]; const n = [14, 14, 13, 12, 11][r]; for (let i = 0; i < n; i++) { const lw = r === 4 && i === 3 ? 120 : 21; t(xx, 34 + r * 27, lw, 24); xx += lw + 3; } }
+      for (let r = 0; r < 5; r++) for (let i = 0; i < 4; i++) t(420 + i * 22, 34 + r * 27, 19, 24); }), 1, 1);
+    const kb = new THREE.Group(); kb.position.set(-.1, BH, .54); kb.rotation.x = .05; g.add(kb); b(.46, .025, .17, beige, 0, .0125, 0, kb);
+    const dessus = new THREE.Mesh(new THREE.PlaneGeometry(.44, .15), A.mat({ map: touches, roughness: .5 })); dessus.rotation.x = -Math.PI / 2; dessus.position.y = .0262; kb.add(dessus);
+    const souris = new THREE.Mesh(new THREE.SphereGeometry(.04, 18, 12), beige); souris.scale.set(.75, .45, 1.2); souris.position.set(.27, BH + .015, .55); g.add(souris);
+    const fil = (pts) => { const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 24, .003, 5), A.mat({ color: 0xe0dccd, roughness: .6 })); g.add(t); };
+    fil([[.27, BH + .01, .5], [.3, BH + .004, .42], [.36, BH + .004, .3], [.38, BH + .1, .1]]); fil([[-.1, BH + .01, .45], [-.05, BH + .004, .35], [.1, BH + .004, .15], [.3, BH + .1, .08]]);
+    // la chaise de bureau : le piétement à cinq branches et ses roulettes, le vérin, l'assise et le dossier en tissu gris
+    const ch = new THREE.Group(); ch.position.set(-.08, 0, BD + .3); ch.rotation.y = Math.PI + .25; g.add(ch); const tissu = A.mat({ color: 0x3a3e46, roughness: .95 });
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5, br = new THREE.Mesh(new THREE.BoxGeometry(.03, .025, .3), noir); br.position.set(Math.sin(a) * .15, .07, Math.cos(a) * .15); br.rotation.y = a; ch.add(br);
+      const ro = new THREE.Mesh(new THREE.SphereGeometry(.025, 10, 8), noir); ro.position.set(Math.sin(a) * .29, .03, Math.cos(a) * .29); ch.add(ro); }
+    const ve = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .34, 12), grisF); ve.position.y = .25; ch.add(ve);
+    const as = new THREE.Mesh(new THREE.BoxGeometry(.46, .08, .44), tissu); as.position.y = .45; ch.add(as); b(.42, .02, .4, noir, 0, .405, 0, ch);
+    b(.04, .3, .03, noir, 0, .55, -.22, ch); const dos = new THREE.Mesh(new THREE.BoxGeometry(.42, .42, .07), tissu); dos.position.set(0, .82, -.24); dos.rotation.x = -.08; ch.add(dos);
+    // toucher l'ordinateur : il s'allume (Windows 95, le Tarot) ; l'écran du moniteur suit la partie
+    let cadre = null, suivi = null;
+    const ouvrir = () => { if (!cadre) { cadre = document.createElement("div"); cadre.style.cssText = "position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column";
+        const barre = document.createElement("div"); barre.style.cssText = "position:absolute;right:6px;top:6px;z-index:2"; const x = document.createElement("button"); x.textContent = "✕"; x.title = "Éteindre l'écran (la partie reste en cours)"; x.style.cssText = "width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer"; x.onclick = fermer; barre.appendChild(x);
+        const f = document.createElement("iframe"); f.src = "tarot95.html"; f.title = "Windows 95 — Tarot"; f.style.cssText = "flex:1;border:0;width:100%;height:100%"; cadre.append(f, barre); document.body.appendChild(cadre); cadre.f = f; }
+      cadre.style.display = "flex"; clearInterval(suivi);
+      suivi = setInterval(() => { try { const e = cadre.f.contentWindow.ecranTarot; if (e) { cx.drawImage(e, 0, 0, 640, 480); ecranT.needsUpdate = true; } } catch (err) {} }, 300); };
+    const fermer = () => { if (cadre) cadre.style.display = "none"; clearInterval(suivi);
+      suivi = setInterval(() => { try { const e = cadre.f.contentWindow.ecranTarot; if (e) { cx.drawImage(e, 0, 0, 640, 480); ecranT.needsUpdate = true; } } catch (err) {} }, 1500); };   // (la partie continue de s'afficher sur le moniteur)
+    addEventListener("message", e => { if (e.data && e.data.t === "tarot-fermer") fermer(); });
+    L.objetsClic = (L.objetsClic || []).concat([{ obj: mo, action: ouvrir }, { obj: tr, action: ouvrir }, { obj: kb, action: ouvrir }]); }
+  /* le premier salon : la table de ferme (d'après la photo) — en bois foncé laqué, le plateau épais, les deux pieds en os de mouton et leur traverse chevillée ;
+     le bout contre le mur de la porte ; six chaises à dossier à barrettes, l'assise en paille tressée : trois dos au buffet, trois dos à l'entrée */
+  { const TL = 2.0, TD = .82, TH = .76, xt = -XC - E / 2 - .01 - TL / 2, zt = 6.75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
+    const fil = tex(toile(512, 256, (x, w, h) => { x.fillStyle = "#3a1c0e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 120; i++) { x.strokeStyle = hasard(i * 2.1) > .5 ? `rgba(110,56,28,${.2 + .3 * hasard(i)})` : `rgba(18,8,3,${.25 + .3 * hasard(i * 3)})`; x.lineWidth = .8 + 3 * hasard(i * 5.3); x.beginPath(); const y0 = h * hasard(i * 1.3); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 5 * Math.sin(xx * .013 + i) + 3 * Math.sin(xx * .05 + i * 2)); x.stroke(); }
+        for (let i = 0; i < 5; i++) { const cx = w * hasard(i * 9.1), cy = h * hasard(i * 7.7); x.strokeStyle = "rgba(20,8,2,.45)"; for (let r = 2; r < 14; r += 3) { x.beginPath(); x.ellipse(cx, cy, r * 2.2, r * .7, 0, 0, 7); x.stroke(); } } }), 1, 1);   // (le fil du bois, quelques nœuds)
+    const laque = A.mat({ map: fil, roughness: .18, metalness: .05 }), laqueF = A.mat({ color: 0x2c140a, roughness: .25 });
+    const b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
+    b(TL, .065, TD, laque, 0, TH - .0325, 0);   // le plateau, épais
+    for (const sx of [-1, 1]) { const px = sx * (TL / 2 - .32);
+      b(.09, .1, TD - .12, laqueF, px, TH - .115, 0);   // (la traverse sous le plateau)
+      b(.11, TH - .26, .11, laque, px, (TH - .165 + .1) / 2, 0);   // (le pied)
+      const piedB = b(.1, .09, TD - .1, laqueF, px, .045, 0); for (const sz of [-1, 1]) b(.1, .02, .1, laqueF, px, .01, sz * (TD / 2 - .1));   // (le patin, ses sabots)
+      for (const sz of [-1, 1]) { const j = b(.05, .2, .05, laqueF, px, .19, sz * .1); j.rotation.x = sz * .5; } }   // (les jambes de force)
+    b(TL - .64, .07, .05, laque, 0, .28, 0); for (const sx of [-1, 1]) b(.03, .1, .03, laqueF, sx * (TL / 2 - .2), .28, 0);   // la traverse du bas, ses clavettes
+    // les chaises : deux montants arrière qui montent en dossier, trois barrettes cintrées, l'assise en paille tressée (quatre triangles de brins vers le centre)
+    const paille = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#b8924a"; x.fillRect(0, 0, w, h);
+      const tri = (pts, ang) => { x.save(); x.beginPath(); x.moveTo(...pts[0]); x.lineTo(...pts[1]); x.lineTo(...pts[2]); x.closePath(); x.clip(); x.translate(w / 2, h / 2); x.rotate(ang);
+        for (let i = -140; i < 140; i += 7) { const gd = x.createLinearGradient(i, 0, i + 7, 0); gd.addColorStop(0, "#7a5a24"); gd.addColorStop(.4, "#e2c47a"); gd.addColorStop(1, "#8a6a2c"); x.fillStyle = gd; x.fillRect(i, -140, 6, 280); } x.restore(); };
+      tri([[0, 0], [w, 0], [w / 2, h / 2]], 0); tri([[w, 0], [w, h], [w / 2, h / 2]], Math.PI / 2); tri([[0, h], [w, h], [w / 2, h / 2]], 0); tri([[0, 0], [0, h], [w / 2, h / 2]], Math.PI / 2);
+      x.strokeStyle = "rgba(60,40,10,.6)"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, 0); x.lineTo(w, h); x.moveTo(w, 0); x.lineTo(0, h); x.stroke(); }), 1, 1);
+    const assise = A.mat({ map: paille, roughness: .85 }), boisCh = A.mat({ color: 0x7a5230, roughness: .4 });
+    const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(xt + x, H4, zt + z); c.rotation.y = ry; scene.add(c); const W = .44, D = .42, hs = .46;
+      for (const sx of [-1, 1]) { b(.035, hs, .035, boisCh, sx * (W / 2 - .02), hs / 2, D / 2 - .02, c); const m = b(.04, 1.08, .04, boisCh, sx * (W / 2 - .02), .54, -D / 2 + .02, c); m.rotation.x = -.06; }   // (les pieds avant ; les montants arrière, un peu inclinés)
+      for (const [y, h] of [[.66, .07], [.82, .08], [.97, .085]]) { const geo = new THREE.BoxGeometry(W - .04, h, .022, 8, 1, 1), pa = geo.attributes.position; for (let i = 0; i < pa.count; i++) pa.setZ(i, pa.getZ(i) - .03 * (1 - Math.pow(pa.getX(i) / (W / 2), 2)));
+        geo.computeVertexNormals(); const s2 = new THREE.Mesh(geo, boisCh); s2.position.set(0, y, -D / 2 + .02 - (y - .5) * .06 + .015); c.add(s2); }   // (les barrettes cintrées)
+      for (const z2 of [D / 2 - .02, -D / 2 + .02]) b(W - .04, .03, .03, boisCh, 0, hs - .015, z2, c); for (const sx of [-1, 1]) b(.03, .03, D - .04, boisCh, sx * (W / 2 - .02), hs - .015, 0, c);   // (le cadre de l'assise)
+      const pl = new THREE.Mesh(new THREE.BoxGeometry(W - .05, .03, D - .05), [boisCh, boisCh, assise, boisCh, boisCh, boisCh]); pl.position.y = hs + .005; c.add(pl);   // (la paille)
+      for (const [y, z2] of [[.12, D / 2 - .02], [.2, -D / 2 + .02]]) b(W - .05, .022, .022, boisCh, 0, y, z2, c); for (const sx of [-1, 1]) b(.022, .022, D - .05, boisCh, sx * (W / 2 - .02), .16, 0, c);   // (les barreaux du bas)
+      return c; };
+    for (const dx of [-.62, 0, .62]) { chaise(dx, -TD / 2 - .2, 0); chaise(dx, TD / 2 + .2, Math.PI); } }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
   { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
   // le placard : des étagères
@@ -6398,6 +6517,8 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ && M.ctx.moiInfo && M.ctx.moiInfo().admin) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }   // (toucher le coin du DJ mène à sa liste : l'administrateur seul ; les autres ont ⏮ / ⏭ sur la table)
+    // un objet qu'on touche pour s'en servir (l'ordinateur de la chambre…)
+    for (const q of M.L.objetsClic || []) if (ray.intersectObject(q.obj, true)[0]) { q.action(); return; }
     // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
     if (M.cercles) { const vus = M.cercles.filter(c => c.g && c.g.visible); const h = ray.intersectObjects(vus.flatMap(c => [c.disque, c.anneau, c.halo]))[0];
       if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)), q = c.pt.traverse || c.pt.centre; allerVers(q[0], q[1], true); return; } }
