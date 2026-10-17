@@ -4237,6 +4237,73 @@ function texturesAppart() {
   const ciel = toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#8fb6dc"); g.addColorStop(1, "#dde9f2"); x.fillStyle = g; x.fillRect(0, 0, w, h); });
   return (texAppart = { carreaux, fonce: parquet(18, 15, true), clair: parquet(30, 36, false), ciel, facade: toileBriqueBandes(30, 24) });
 }
+/* la vue des fenêtres côté rue, depuis le cinquième étage : la rue en bas (chaussée, trottoirs), et en face une rangée de vieux immeubles parisiens —
+   pierre de taille un peu noircie, balcons filants en fer forgé au deuxième et au cinquième, corniches —, coiffés de toits mansardés en zinc, avec leurs lucarnes et leurs cheminées */
+let texParis = null;
+function toileImmeuble(w, n, teinte, k) {   // la façade d'un immeuble : w mètres de large, n étages au-dessus du rez-de-chaussée (20 px par mètre)
+  const P = 24, HE = 3.1, HR = 4.2, W = Math.round(w * P), H = Math.round((HR + n * HE + .6) * P);
+  return toile(W, H, (x) => { graine = 31 + k * 7; const pierre = `hsl(${38 + teinte * 6}, ${22 + teinte * 8}%, ${74 - teinte * 6}%)`;
+    x.fillStyle = pierre; x.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += .5 * P) { x.fillStyle = "rgba(90,80,64,.18)"; x.fillRect(0, y, W, 1); for (let xx = (y / (.5 * P)) % 2 ? 0 : .6 * P; xx < W; xx += 1.2 * P) x.fillRect(xx, y, 1, .5 * P); }   // (les joints des pierres)
+    for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${60 + alea() * 30},${55 + alea() * 25},${45 + alea() * 20},${.04 + alea() * .07})`; x.fillRect(alea() * W, alea() * H, 2 + alea() * 30, 2 + alea() * 20); }   // (la patine, les taches)
+    const nf = Math.max(2, Math.round(w / 3)), pas = W / nf, yE = j => H - (HR + j * HE) * P;   // (le bas de l'étage j : 0 = le premier étage)
+    // le rez-de-chaussée : des boutiques (devantures sombres, bandeau)
+    x.fillStyle = `hsl(${30 + teinte * 10}, 20%, ${52 - teinte * 4}%)`; x.fillRect(0, H - HR * P, W, HR * P);
+    for (let c = 0; c < nf; c++) { const cx = (c + .5) * pas; x.fillStyle = ["#2a3a32", "#4a2420", "#1e2a3c", "#3a3026"][(c + k) % 4]; x.fillRect(cx - pas * .4, H - HR * P + .5 * P, pas * .8, .7 * P);
+      x.fillStyle = "#1a1c1e"; x.fillRect(cx - pas * .36, H - HR * P + 1.3 * P, pas * .72, (HR - 1.3) * P); x.fillStyle = "rgba(200,210,215,.18)"; x.fillRect(cx - pas * .33, H - HR * P + 1.4 * P, pas * .3, (HR - 1.6) * P); }
+    for (let j = 0; j < n; j++) { const y0 = yE(j);
+      x.fillStyle = "rgba(255,250,236,.55)"; x.fillRect(0, y0 - .14 * P, W, .14 * P); x.fillStyle = "rgba(40,32,24,.35)"; x.fillRect(0, y0, W, 2);   // (le bandeau, son ombre)
+      for (let c = 0; c < nf; c++) { const cx = (c + .5) * pas, fw = 1.15 * P, fh = (j === n - 1 ? 1.7 : 2.15) * P, fy = y0 - .25 * P - fh;
+        x.fillStyle = "rgba(255,248,232,.65)"; x.fillRect(cx - fw / 2 - .18 * P, fy - .3 * P, fw + .36 * P, fh + .3 * P);   // (l'encadrement mouluré, la clef au-dessus)
+        x.fillStyle = "rgba(60,50,40,.25)"; x.fillRect(cx - fw / 2 - .18 * P, fy - .3 * P, fw + .36 * P, 2);
+        x.fillStyle = "#2a3036"; x.fillRect(cx - fw / 2, fy, fw, fh);   // (la vitre, sombre)
+        if (alea() < .55) { x.fillStyle = `rgba(240,236,224,${.55 + alea() * .3})`; x.fillRect(cx - fw / 2 + 3, fy + 3, fw / 2 - 5, fh - 6); x.fillRect(cx + 2, fy + 3, fw / 2 - 5, fh - 6); }   // (les voilages)
+        x.fillStyle = "#f2eee4"; x.fillRect(cx - 1, fy, 2, fh); x.fillRect(cx - fw / 2, fy + fh * .36, fw, 2); x.fillRect(cx - fw / 2, fy + fh * .68, fw, 2);   // (les petits bois)
+        if (j !== 1 && j !== n - 2) { x.strokeStyle = "#1a1a1a"; x.lineWidth = 1.5; const gy = fy + fh - .9 * P; x.strokeRect(cx - fw / 2, gy, fw, .9 * P); for (let t = 1; t < 8; t++) { x.beginPath(); x.moveTo(cx - fw / 2 + t * fw / 8, gy); x.lineTo(cx - fw / 2 + t * fw / 8, gy + .9 * P); x.stroke(); } } }   // (les garde-corps des fenêtres)
+      if (j === 1 || j === n - 2) { const by = y0 - .25 * P - .95 * P; x.fillStyle = "rgba(240,234,220,.9)"; x.fillRect(0, y0 - .3 * P, W, .12 * P);   // le balcon filant, en fer forgé
+        x.strokeStyle = "#151515"; x.lineWidth = 1.6; x.strokeRect(0, by, W, .9 * P); for (let t = 0; t < W; t += .22 * P) { x.beginPath(); x.moveTo(t, by); x.lineTo(t, by + .9 * P); x.stroke(); x.beginPath(); x.arc(t + .11 * P, by + .45 * P, .09 * P, 0, 7); x.stroke(); } } }
+    x.fillStyle = "rgba(255,250,236,.7)"; x.fillRect(0, 0, W, .35 * P); x.fillStyle = "rgba(40,32,24,.4)"; x.fillRect(0, .35 * P, W, 3);   // (la corniche, en haut)
+    for (let i = 0; i < 14; i++) { const sx = alea() * W, g = x.createLinearGradient(0, 0, 0, H * .5); g.addColorStop(0, "rgba(50,44,36,.28)"); g.addColorStop(1, "rgba(50,44,36,0)"); x.fillStyle = g; x.fillRect(sx, .4 * P, 3 + alea() * 10, H * (.2 + alea() * .3)); }   // (les coulures noires, sous la corniche)
+  }); }
+function vueSurRue(A, scene, xFen, yApp) {
+  const Y0 = yApp - 15.2, XR = xFen - 14, ZA = -26, ZB = 34;   // (la rue, 15 m plus bas ; les façades d'en face, 14 m plus loin)
+  // la chaussée, les trottoirs, la bordure
+  const chaussee = A.ajoute(new THREE.PlaneGeometry(14, ZB - ZA), A.mat({ color: 0x4a4a4c, roughness: .95 }), xFen - 7, Y0, (ZA + ZB) / 2, false); chaussee.rotation.x = -Math.PI / 2;
+  for (const [xc, w] of [[xFen - 1.4, 2.8], [XR + 1.6, 3.2]]) { const t = A.ajoute(new THREE.BoxGeometry(w, .15, ZB - ZA), A.mat({ color: 0x9a9690, roughness: .9 }), xc, Y0 + .075, (ZA + ZB) / 2, false); }
+  for (let z = ZA + 3; z < ZB; z += 7) { const m = A.ajoute(new THREE.BoxGeometry(.12, .02, 3), A.mat({ color: 0xe8e6e0 }), xFen - 7, Y0 + .01, z, false); }   // (la ligne blanche)
+  for (let z = ZA + 4; z < ZB; z += 9) {   // (les réverbères, les platanes du trottoir d'en face)
+    A.ajoute(new THREE.CylinderGeometry(.06, .09, 4.5, 8), A.mat({ color: 0x1e2a24, roughness: .5, metalness: .4 }), XR + 2.6, Y0 + 2.25, z, false);
+    A.ajoute(new THREE.BoxGeometry(.35, .5, .35), A.mat({ color: 0x1e2a24, roughness: .5, metalness: .4, emissive: 0x3a3424 }), XR + 2.6, Y0 + 4.7, z, false);
+    A.ajoute(new THREE.CylinderGeometry(.14, .2, 5.5, 8), A.mat({ color: 0x6a5e4c, roughness: 1 }), XR + 2.8, Y0 + 2.75, z + 4.5, false);
+    A.ajoute(new THREE.IcosahedronGeometry(2.3, 1), A.mat({ color: 0x5a7a3a, roughness: 1, flatShading: true }), XR + 2.8, Y0 + 6.6, z + 4.5, false); }
+  // les immeubles d'en face, côte à côte (largeur, étages, teinte)
+  const imms = [[13, 6, .2], [15, 5, .5], [12, 6, .8], [16, 6, .1], [14, 5, .6], [12, 6, .35]];
+  const zinc = A.mat({ color: 0x7c8590, roughness: .55, metalness: .35 }), zincF = A.mat({ color: 0x5e6670, roughness: .5, metalness: .4 }), brique = A.mat({ color: 0x9a4e34, roughness: .9 }), pot = A.mat({ color: 0xb06a42, roughness: .8 });
+  const lucVitre = A.mat({ color: 0x2a3036, roughness: .2 }), lucBlanc = A.mat({ color: 0xf0ece2, roughness: .6 });
+  let z = ZA; imms.forEach(([w, n, t], k) => {
+    const H = 4.2 + n * 3.1 + .6, c = toileImmeuble(w, n, t, k), m = A.mat({ map: tex(c), roughness: .9, emissive: 0xffffff, emissiveIntensity: .25, emissiveMap: tex(c) });
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(w, H), m); f.position.set(XR, Y0 + H / 2, z + w / 2); f.rotation.y = Math.PI / 2; scene.add(f);
+    A.ajoute(new THREE.BoxGeometry(.5, .25, w), A.mat({ color: 0xece4d2, roughness: .8 }), XR + .2, Y0 + H - .1, z + w / 2, false);   // (la corniche, en relief)
+    // le toit mansardé : le brisis presque vertical, couvert de zinc, avec ses lucarnes ; le terrasson au-dessus, plus plat
+    const yT = Y0 + H, hb = 3.2, rec = 1.0, g = new THREE.Group(); g.position.set(XR, yT, z + w / 2); scene.add(g);
+    const brisis = new THREE.Mesh(new THREE.BoxGeometry(.12, Math.hypot(hb, rec), w - .1), zinc); brisis.position.set(-rec / 2, hb / 2, 0); brisis.rotation.z = -Math.atan2(rec, hb); g.add(brisis);
+    for (let zz = -w / 2 + .5; zz < w / 2; zz += .5) { const jt = new THREE.Mesh(new THREE.BoxGeometry(.03, Math.hypot(hb, rec), .03), zincF); jt.position.set(-rec / 2 + .07, hb / 2, zz); jt.rotation.z = brisis.rotation.z; g.add(jt); }   // (les tasseaux du zinc)
+    const terr = new THREE.Mesh(new THREE.BoxGeometry(5, .12, w - .1), zinc); terr.position.set(-rec - 2.4, hb + .55, 0); terr.rotation.z = -.22; g.add(terr);
+    const nf = Math.max(2, Math.round(w / 3)), pas = w / nf;
+    for (let i = 0; i < nf; i++) { const zc = -w / 2 + (i + .5) * pas, l = new THREE.Group(); l.position.set(-rec * .45 + .25, hb * .3, zc); g.add(l);   // une lucarne : sa joue, sa fenêtre, son fronton cintré ou triangulaire
+      const b = (dx, dy, dz, mt, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), mt); o.position.set(px, py, pz); l.add(o); return o; };
+      b(.9, 1.7, 1.15, lucBlanc, -.3, .85, 0); b(.02, 1.25, .78, lucVitre, .16, .82, 0); b(.03, 1.25, .04, lucBlanc, .17, .82, 0); b(.03, .04, .78, lucBlanc, .17, .95, 0);
+      if ((i + k) % 2) { const fr = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, .95, 16, 1, false, 0, Math.PI), zinc); fr.rotation.z = Math.PI / 2; fr.rotation.y = Math.PI / 2; fr.position.set(-.3, 1.7, 0); fr.scale.set(1, 1, .6); l.add(fr); }
+      else { const fr = new THREE.Mesh(new THREE.ConeGeometry(.75, .6, 4, 1), zinc); fr.rotation.y = Math.PI / 4; fr.scale.set(.7, 1, 1); fr.position.set(-.3, 2.0, 0); l.add(fr); } }
+    // les cheminées : des souches de brique, leurs pots en terre cuite
+    for (const zc of [-w / 2 + .6, w / 2 - .6, ...(w > 13 ? [0] : [])]) { A.ajoute(new THREE.BoxGeometry(1.0, 2.4, .7), brique, XR - rec - 1.6, yT + hb + 1.3, z + w / 2 + zc, false);
+      for (let p = 0; p < 3; p++) A.ajoute(new THREE.CylinderGeometry(.09, .11, .45, 8), pot, XR - rec - 1.95 + p * .35, yT + hb + 2.7, z + w / 2 + zc, false); }
+    A.ajoute(new THREE.BoxGeometry(.1, H + 4, .25), A.mat({ color: 0xc8bca4, roughness: .9 }), XR + .05, Y0 + (H + 4) / 2, z, false);   // (le mur mitoyen, entre deux immeubles)
+    z += w; });
+  // le ciel, loin derrière les toits
+  const ciel = toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#7fa8d4"); g.addColorStop(.7, "#c6dbec"); g.addColorStop(1, "#e4edf3"); x.fillStyle = g; x.fillRect(0, 0, w, h); });
+  const cl = new THREE.Mesh(new THREE.PlaneGeometry(160, 70), new THREE.MeshBasicMaterial({ map: tex(ciel), fog: false })); cl.position.set(XR - 40, Y0 + 30, 4); cl.rotation.y = Math.PI / 2; scene.add(cl);
+}
 function construireAppart(A, L, scene) {
   const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
   const niveau = z => z > ZM1 ? H4 : 0;
@@ -4274,10 +4341,10 @@ function construireAppart(A, L, scene) {
   // le couloir : un seul rectangle ; ses deux sols (en bas, en haut), les marches entre les deux
   piece(-XC, XC, Z_FOND, Z_BOUT, null, {
     x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .75), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }, { ...porte(P.salon2, .9), y0: H4 }],
-    x1: [porte(P.ch3), porte(P.sdb, .8), { c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: H4, h: 2.25 }, { c: P.cuisine, w: 1.6, y0: H4, h: 2.2 }, { ...porte(P.entree, .9), y0: H4 }],
+    x1: [porte(P.ch3), porte(P.sdb, .8), { c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: H4, h: 2.25 }, { ...porte(P.cuisine, .85), y0: H4 }, { ...porte(P.entree, .9), y0: H4 }],
     z0: [porte(0, .8)], y: 0 });
   sol(-XC, XC, Z_FOND, ZM0, 0, "carreaux"); sol(-XC, XC, ZM1, Z_BOUT, H4, "carreaux");
-  { const marche = A.mat({ color: 0x7a4a26, roughness: .4 }), nez = A.mat({ color: 0x5e3619, roughness: .4 });
+  { const marche = matSol.fonce(XC * 2, .35), nez = A.mat({ color: 0x2a140a, roughness: .25 });   // (en bois vernis, comme le parquet des chambres)
     for (let k = 0; k < 4; k++) { const z1 = ZM1 - k * (ZM1 - ZM0) / 4, z0 = z1 - (ZM1 - ZM0) / 4, y = H4 - k * H4 / 4;   // (marche k : son dessus à y, sa contremarche en z0)
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, y, z1 - z0), marche, 0, y / 2, (z0 + z1) / 2, false);
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
@@ -4289,7 +4356,7 @@ function construireAppart(A, L, scene) {
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
   // en haut : le renfoncement des manteaux, la cuisine ; les toilettes, les deux salons (côte à côte, leurs portes voisines)
   piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
-  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [{ c: P.cuisine, w: 1.6, y0: 0, h: 2.2 }], x1: [fen(P.cuisine, 1.6, .8, 1.55)] });
+  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [porte(P.cuisine, .85)], x1: [fen(P.cuisine, 1.6, .8, 1.55)] });
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
   piece(XS, -XC, ZC[3], ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
@@ -4322,6 +4389,7 @@ function construireAppart(A, L, scene) {
   porteDe(-1, P.ch1, .85, 0); porteDe(-1, P.ch2, .85, 0); porteDe(1, P.ch3, .85, 0); porteDe(1, P.sdb, .8, 0, 1);
   porteDe(-1, P.wc, .75, H4); porteDe(-1, P.salon, .9, H4); porteDe(-1, P.salon2, .9, H4, 1, true);
   encadrement("x", Z_FOND, 0, .8, 0); ouverte(-.37, 0, Z_FOND - .1, .74, Math.PI / 2);   // le placard
+  encadrement("z", XC, P.cuisine, .85, H4);   // l'entrée de la cuisine : une ouverture de porte simple, sans battant
   encadrement("z", XC - .05, P.entree, .9, H4, .1);   // la porte d'entrée (fermée)
   { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : peinte en blanc, fermée, son judas, sa serrure, son verrou
     const pe = A.mat({ color: 0xf2eee4, roughness: .45 });   // (peinte en blanc)
@@ -4371,11 +4439,13 @@ function construireAppart(A, L, scene) {
       const li = new THREE.Mesh(new THREE.BoxGeometry(.12, HT - ya - 2.45, lg), peinture); li.position.set(mx, (ya + 2.45 + HT) / 2, mz); li.rotation.y = ang; scene.add(li);   // le linteau
       const f = fenetre("x", 0, 0, lg - .04, 0, 1.95, 1, 3, false, false); f.position.set(mx, ya + .5, mz); f.rotation.y = Math.atan2(-(z1 - z0), x1 - x0) + Math.PI; radiateur(f, lg - .2, .42); }   // (tournée vers la pièce ; un radiateur sous chaque pan)
     for (const [x, z] of pts) { const mt = new THREE.Mesh(new THREE.BoxGeometry(.14, HT - ya, .14), peinture); mt.position.set(x, (ya + HT) / 2, z); scene.add(mt); } }   // (les montants d'angle)
-  // dehors : le ciel, et les façades de brique d'en face (la cour d'un côté, la rue de l'autre), à quelques mètres
+  // dehors, côté cour (la cuisine, la troisième chambre, la salle de bain) : le ciel et la façade de brique d'en face, la cour en bas
   { const facade = A.mat({ map: tex(T.facade), roughness: .9, emissive: 0xffffff, emissiveIntensity: .35, emissiveMap: tex(T.facade) }), ciel = new THREE.MeshBasicMaterial({ map: tex(T.ciel), fog: false });
-    for (const [x, ry] of [[-17, Math.PI / 2], [15, -Math.PI / 2]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(36, 24), facade); f.position.set(x, 12 - 4, 2.5); f.rotation.y = ry; scene.add(f);
-      const c = new THREE.Mesh(new THREE.PlaneGeometry(40, 30), ciel); c.position.set(x * 1.6, 25, 2.5); c.rotation.y = ry; scene.add(c); }
-    const bas = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), A.mat({ color: 0x8a8278, roughness: 1 })); bas.rotation.x = -Math.PI / 2; bas.position.set(0, -4, 0); scene.add(bas); }   // (la cour, en bas)
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(36, 24), facade); f.position.set(15, 8, 2.5); f.rotation.y = -Math.PI / 2; scene.add(f);
+    const c = new THREE.Mesh(new THREE.PlaneGeometry(40, 30), ciel); c.position.set(24, 25, 2.5); c.rotation.y = -Math.PI / 2; scene.add(c);
+    const bas = new THREE.Mesh(new THREE.PlaneGeometry(30, 40), A.mat({ color: 0x8a8278, roughness: 1 })); bas.rotation.x = -Math.PI / 2; bas.position.set(15, -4, 0); scene.add(bas); }
+  // dehors, côté rue (les salons, les chambres 1 et 2, les toilettes) : on est au cinquième étage ; en face, de vieux immeubles parisiens et leurs toits mansardés
+  vueSurRue(A, scene, XS - .9, H4);
   // ---------- quelques équipements, pour commencer ----------
   const faience = A.mat({ color: 0xf6f4ee, roughness: .25 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .2 });
   const lavabo = (x, y, z, ry) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
@@ -4404,22 +4474,36 @@ function construireAppart(A, L, scene) {
     const pied = new THREE.Mesh(new THREE.CylinderGeometry(.15, .12, .38, 16), faience); pied.position.set(.24, .19, 0); g.add(pied);
     const cuv = new THREE.Mesh(new THREE.CylinderGeometry(.2, .17, .08, 20), faience); cuv.scale.set(1.25, 1, 1); cuv.position.set(.28, .41, 0); g.add(cuv);
     const ab = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .025, 20), A.mat({ color: 0xffffff, roughness: .3 })); ab.scale.set(1.25, 1, 1); ab.position.set(.28, .46, 0); g.add(ab); }
+  // la cuisine : dans le coin, contre le mur du fond (côté fenêtre), l'évier en grès blanc sur son meuble carré à deux portes
+  { const g = new THREE.Group(); g.position.set(XD - E - .5, H4, ZC[3] + E + .3); scene.add(g);   // (l'avant du meuble vers +z)
+    const meuble = A.mat({ color: 0xf2efe8, roughness: .5 }), gres = A.mat({ color: 0xfbfaf6, roughness: .2 }), b = (dx, dy, dz, mt, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), mt); o.position.set(x, y, z); g.add(o); return o; };
+    b(.98, .82, .58, meuble, 0, .43, -.01); b(.98, .04, .6, A.mat({ color: 0x2a2a2a, roughness: .8 }), 0, .02, -.02);   // le caisson, le socle
+    for (const sx of [-1, 1]) { b(.46, .74, .02, meuble, sx * .245, .45, .29); b(.38, .62, .01, A.mat({ color: 0xe6e2d8, roughness: .5 }), sx * .245, .45, .302); b(.02, .1, .03, chrome, sx * .04, .62, .31); }   // les deux portes, leurs boutons
+    b(1.0, .2, .6, gres, 0, .94, 0);   // l'évier en grès, sa cuve creusée, la bonde
+    b(.62, .02, .42, A.mat({ color: 0xdedbd2, roughness: .25 }), -.12, 1.035, .02); b(.08, .005, .08, chrome, -.12, 1.04, .02);
+    for (let i = 0; i < 6; i++) b(.02, .012, .4, A.mat({ color: 0xe8e5dc, roughness: .3 }), .3 + i * .03 - .07, 1.046, .02);   // (les rainures de l'égouttoir)
+    b(.06, .06, .05, chrome, -.12, 1.22, -.27); const bec = b(.025, .025, .2, chrome, -.12, 1.25, -.17); b(.025, .06, .025, chrome, -.12, 1.22, -.07);   // le robinet, au mur
+    for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .04, 10), chrome); m.rotation.x = Math.PI / 2; m.position.set(-.12 + sx * .12, 1.24, -.27); g.add(m); }
+    b(1.0, .45, .01, A.mat({ color: 0xffffff, roughness: .15 }), 0, 1.27, -.295); }   // (la crédence en faïence blanche)
   // le placard : des étagères
   for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
   A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
   // ---------- la lumière : douce partout, quelques plafonniers ----------
-  scene.add(new THREE.AmbientLight(0xfff1dc, .55));
+  scene.add(new THREE.AmbientLight(0xfff1dc, .3));   // (un appartement plutôt sombre, comme à l'époque)
   const globe = A.mat({ color: 0xfff4dc, emissive: 0xffe7b8, emissiveIntensity: 1 });
-  for (const [x, z, y0] of [[0, -3.85, 0], [0, 6, H4], [-3.25, -1.9, 0], [-3.25, -6.1, 0], [3.25, -1.9, 0], [3.9, -5.6, 0], [3.25, P.cuisine, H4], [-3.5, 2.1, H4], [-4, 6, H4], [-4, 12.15, H4]]) {
+  // (dans le couloir : une simple ampoule nue, au bout de son fil, dans sa douille)
+  for (const z of [-3.85, 6]) { A.ajoute(new THREE.CylinderGeometry(.005, .005, .5, 4), A.mat({ color: 0x1a1a1a }), 0, HT - .25, z, false); A.ajoute(new THREE.CylinderGeometry(.022, .026, .07, 10), A.mat({ color: 0x2a2622, roughness: .6 }), 0, HT - .53, z, false);
+    A.ajoute(new THREE.SphereGeometry(.04, 12, 10), A.mat({ color: 0xfff2d0, emissive: 0xffd890, emissiveIntensity: 1.6 }), 0, HT - .6, z, false); }
+  for (const [x, z, y0] of [[-3.25, -1.9, 0], [-3.25, -6.1, 0], [3.25, -1.9, 0], [3.9, -5.6, 0], [3.25, P.cuisine, H4], [-3.5, 2.1, H4], [-4, 6, H4], [-4, 12.15, H4]]) {
     A.ajoute(new THREE.SphereGeometry(.13, 14, 10), globe, x, HT - .3, z, false); A.ajoute(new THREE.CylinderGeometry(.006, .006, .25, 4), A.mat({ color: 0x222222 }), x, HT - .12, z, false); }
-  for (const [x, z, y0, i] of [[0, -3.85, 0, 5], [0, 6, H4, 5], [-4, 12.15, H4, 7], [-4, 6, H4, 7], [-3.25, -3.85, 0, 6], [3.25, -2.5, 0, 6]]) { const l = new THREE.PointLight(0xffe2b8, i, 9, 1.4); l.position.set(x, HT - .45, z); scene.add(l); }
+  for (const [x, z, y0, i] of [[0, -3.85, 0, 2.6], [0, 6, H4, 2.6], [-4, 12.15, H4, 4], [-4, 6, H4, 4], [-3.25, -3.85, 0, 3.5], [3.25, -2.5, 0, 3.5]]) { const l = new THREE.PointLight(0xffd9a0, i, 8, 1.5); l.position.set(x, HT - .45, z); scene.add(l); }
   // ---------- où l'on marche ----------
   const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .2, c + .2] : [.3, XC + .5, c - .2, c + .2];   // (le passage d'une porte, à gauche ou à droite du couloir)
   const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
     [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z2 + .25, ZC[0] - .25], [XC + .25, XD - .25, ZD + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZD - .25],
     [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
     [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, ZC[3] + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
-    S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), [.3, XC + .5, P.cuisine - .6, P.cuisine + .6], [.3, XC + .1, P.entree - .2, P.entree + .2]];
+    S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), S(P.cuisine, 1), [.3, XC + .1, P.entree - .2, P.entree + .2]];
   L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
   L.hauteur = (x, z) => z >= ZM1 ? H4 : z <= ZM0 ? 0 : Math.abs(x) < XC ? H4 * Math.ceil((z - ZM0) / ((ZM1 - ZM0) / 4)) / 4 : 0;   // (marche par marche)
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
