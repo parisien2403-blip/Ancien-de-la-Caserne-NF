@@ -4478,7 +4478,7 @@ function construireAppart(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
   piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] });                       // la première chambre
-  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181, 0, 0xc4bcb0));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
+  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
   piece(XC, XD, ZD, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.9, FW, FY, FH)] });                        // la troisième chambre
   piece(XC, XB, ZC[1], ZD, "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZD + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
