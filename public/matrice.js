@@ -4316,10 +4316,10 @@ function construireAppart(A, L, scene) {
   porteDe(-1, P.wc, .75, H4); porteDe(-1, P.salon, .9, H4); porteDe(-1, P.salon2, .9, H4, 1);
   encadrement("x", Z_FOND, 0, .8, 0); ouverte(-.37, 0, Z_FOND - .1, .74, Math.PI / 2);   // le placard
   encadrement("z", XC - .05, P.entree, .9, H4, .1);   // la porte d'entrée (fermée)
-  { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : bois foncé, fermée, son judas, sa serrure, son verrou
-    const pe = A.mat({ color: 0x4a2c18, roughness: .5 });
+  { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : peinte en blanc, fermée, son judas, sa serrure, son verrou
+    const pe = A.mat({ color: 0xf2eee4, roughness: .45 });   // (peinte en blanc)
     const bb = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
-    bb(.05, 2.08, .88, pe, 0, 1.04, 0); for (const [y, h] of [[.55, .8], [1.5, .85]]) bb(.02, h, .66, A.mat({ color: 0x3c2212, roughness: .5 }), -.03, y, 0);
+    bb(.05, 2.08, .88, pe, 0, 1.04, 0); for (const [y, h] of [[.55, .8], [1.5, .85]]) bb(.02, h, .66, A.mat({ color: 0xe6e0d2, roughness: .5 }), -.03, y, 0);
     bb(.03, .03, .03, laiton, -.04, 1.55, 0); bb(.03, .22, .06, laiton, -.04, 1.0, -.34); bb(.12, .025, .025, laiton, -.08, 1.0, -.34).rotation.y = Math.PI / 2; bb(.03, .08, .1, laiton, -.04, 1.3, -.34); }
   // ---------- les fenêtres : à l'ancienne, deux battants à petits bois ; dehors, le ciel et les façades d'en face ----------
   const vitre = new THREE.MeshStandardMaterial({ color: 0xdfeaf2, transparent: true, opacity: .18, roughness: .05, metalness: .1, depthWrite: false }), depoli = A.mat({ color: 0xe8eef0, roughness: .3, emissive: 0xc8d4dc, emissiveIntensity: .5 });
