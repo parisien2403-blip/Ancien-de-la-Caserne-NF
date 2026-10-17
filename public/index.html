@@ -302,6 +302,7 @@
   /* le relief pour lunettes 3D (côte à côte) : plein écran, rien d'autre que l'image (les sous-titres flottent dans la scène) ; la petite barre pour en sortir, en bas à gauche */
   .mx-3d { right: 56px; font-size: 19px; }
   .mx-1p { right: 102px; font-size: 19px; } .mx-1p.on { background: #c4694a; }
+  .mx-ciel { right: 148px; font-size: 18px; }
   .mx-relief-barre { display: none; }
   .mx-scene.relief > :not(canvas):not(.mx-relief-barre):not(.relief-ok) { display: none !important; }   /* (sauf les écrans par-dessus le jeu — l'affiche, le cadenas, le téléphone —, doublés pour chaque œil) */
   .mx-scene.relief .mx-relief-barre { display: flex; gap: 8px; position: absolute; left: 10px; bottom: 10px; z-index: 9; opacity: .55; }
@@ -1328,6 +1329,7 @@
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-3d" id="mx3D" type="button" title="Relief 3D (lunettes XREAL…)" aria-label="Relief 3D pour lunettes" hidden>👓</button>
           <button class="mx-plein mx-1p" id="mx1P" type="button" title="Vue à la première personne" aria-label="Vue à la première personne" hidden>👁</button>
+          <button class="mx-plein mx-ciel" id="mxCiel" type="button" title="Le ciel : automatique, jour, nuit" aria-label="Le ciel : automatique, jour ou nuit" hidden>🕒</button>
           <div class="mx-relief-barre" id="mxReliefBarre"><button type="button" id="mxReliefProf">Relief : normal</button><button type="button" id="mxReliefSortir">✕ Quitter la 3D</button></div>
           <button class="mx-plein mx-tourner" id="mxTourner" type="button" title="Se retourner" aria-label="Se retourner" hidden>↻</button>
           <button class="mx-action" id="mxAction" type="button" hidden></button>
@@ -2207,7 +2209,7 @@
       await m.ouvrir({
         conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; }, pnjDJ: () => djInfo, surPNJDJ: p => { djInfo = p; }, pnjBar: () => barInfo, surPNJBar: p => { barInfo = p; }, pnjTrio: id => trioInfo[id], surPNJTrio: p => { trioInfo[p.id] = p; },
         surToucherDJ: allerAuDJ,
-        surAmbiance: mode => document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)),
+        surAmbiance: mode => { document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)); window.mxCielMode = mode; $("mxCiel").textContent = { auto: "🕒", jour: "☀️", nuit: "🌙" }[mode] || "🕒"; },
         surDanse: on => { jeDanse = on;
           $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
           $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco";
@@ -2541,7 +2543,9 @@
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
   let mxPleinVoulu = false, mxProf = 1;
-  setInterval(() => { $("mx3D").hidden = $("mx1P").hidden = !(moi && moi.admin); }, 2000);
+  setInterval(() => { $("mx3D").hidden = $("mx1P").hidden = $("mxCiel").hidden = !(moi && moi.admin); }, 2000);
+  // le ciel, directement sur l'écran (l'administrateur) : un appui passe d'automatique à jour, puis à nuit
+  $("mxCiel").onclick = () => { if (!MX) return; const s2 = { auto: "jour", jour: "nuit", nuit: "auto" }[window.mxCielMode || "auto"] || "auto"; MX.ambiance(s2); };
   let mx1P = false; $("mx1P").onclick = () => MX && MX.premiere(!mx1P);   // (le relief : l'administrateur seul, le temps des essais)
   $("mx3D").onclick = () => { mxPleinVoulu = !!document.fullscreenElement; MX && MX.relief(true); };
   $("mxReliefSortir").onclick = () => MX && MX.relief(false);

@@ -4456,8 +4456,8 @@ function construireAppart(A, L, scene) {
       for (const t of (tr || []).filter(t => t.y0 < .05).sort((p, q) => p.c - q.c)) { fin(u, t.c - t.w / 2); u = t.c + t.w / 2; } fin(u, a); };
     plinthe("z", x0 + E / 2, z0, z1, trous.x0, 1); plinthe("z", x1 - E / 2, z0, z1, trous.x1, -1); plinthe("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, 1); plinthe("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, -1); };
   const porte = (c, w = .85) => ({ c, w, y0: 0, h: 2.1, porte: true }), fen = (c, w, y0, h) => ({ c, w, y0, h });
-  const papierPeint = (f, lx, ly) => { const tp = new THREE.TextureLoader().load(f); tp.colorSpace = THREE.SRGBColorSpace; tp.wrapS = tp.wrapT = THREE.RepeatWrapping; tp.anisotropy = 8;   // (un papier peint : son image, la taille réelle d'un raccord, en mètres)
-    return (lg, hh, u0, y0) => { const t = tp.clone(); t.repeat.set(lg / lx, hh / ly); t.offset.set(u0 / lx, y0 / ly); t.needsUpdate = true; return A.mat({ map: t, roughness: .85, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }); }; };   // (un léger éclat : ses vraies couleurs, même dans la pénombre)
+  const papierPeint = (f, lx, ly, eclat = .16, teinte = 0xffffff) => { const tp = new THREE.TextureLoader().load(f); tp.colorSpace = THREE.SRGBColorSpace; tp.wrapS = tp.wrapT = THREE.RepeatWrapping; tp.anisotropy = 8;   // (un papier peint : son image, la taille réelle d'un raccord, en mètres)
+    return (lg, hh, u0, y0) => { const t = tp.clone(); t.repeat.set(lg / lx, hh / ly); t.offset.set(u0 / lx, y0 / ly); t.needsUpdate = true; return A.mat({ map: t, color: teinte, roughness: .85, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: eclat }); }; };   // (un léger éclat : ses vraies couleurs, même dans la pénombre)
   // ---------- le plan (les portes : sur la grille des chemins, tous les 35 cm) ----------
   const XC = 1;                          // le couloir : 2 m de large, de x = −1 à x = 1
   const Z_FOND = -6.3, Z_BOUT = 10.6;      // le placard au fond (en bas) ; le mur du bout (en haut)
@@ -4478,7 +4478,7 @@ function construireAppart(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
   piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] });                       // la première chambre
-  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
+  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181, 0, 0xc4bcb0));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
   piece(XC, XD, ZD, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.9, FW, FY, FH)] });                        // la troisième chambre
   piece(XC, XB, ZC[1], ZD, "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZD + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
@@ -4674,6 +4674,24 @@ function construireAppart(A, L, scene) {
     // la crédence : du carrelage blanc, 15 × 15 cm, joints gris clair
     const carre = tex(toile(256, 256, (x, w) => { x.fillStyle = "#c9c5bb"; x.fillRect(0, 0, w, w); for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const gd = x.createLinearGradient(i * 128, j * 128, i * 128 + 128, j * 128 + 128); gd.addColorStop(0, "#fbfaf6"); gd.addColorStop(1, "#ecebe5"); x.fillStyle = gd; x.fillRect(i * 128 + 3, j * 128 + 3, 122, 122); } }), 1 / .3, .6 / .3);
     b(1.0, .6, .012, A.mat({ map: carre, roughness: .12 }), 0, yH + .3, -.296); }
+  /* le renfoncement de l'entrée : une barre de penderie, et les manteaux et blousons accrochés dessus, sur leurs cintres (rien que des vêtements sombres) */
+  { const xr = (XC + 1.9) / 2, yr = H4 + 1.82, z0 = ZM1 + E, z1 = ZC[2] - E, g = new THREE.Group(); scene.add(g);
+    const barre = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, z1 - z0, 12), chrome); barre.rotation.x = Math.PI / 2; barre.position.set(xr, yr, (z0 + z1) / 2); g.add(barre);
+    for (const z of [z0 + .02, z1 - .02]) { const s2 = new THREE.Mesh(new THREE.BoxGeometry(.06, .08, .02), chrome); s2.position.set(xr, yr + .01, z); g.add(s2); }   // (les supports)
+    const cintreM = A.mat({ color: 0x8a5a32, roughness: .45 }), crochet = chrome;
+    // la silhouette d'un vêtement (vue de face) : le col, les épaules, les manches qui tombent, le corps jusqu'à l'ourlet ; épaissie et arrondie
+    const silhouette = (L, ep) => { const sh = new THREE.Shape(); const pts = [[-.06, -.02], [-.22, -.07], [-.27, -.16], [-.29, -.6], [-.21, -.62], [-.2, -.32], [-.235, -L], [.235, -L], [.2, -.32], [.21, -.62], [.29, -.6], [.27, -.16], [.22, -.07], [.06, -.02]];
+      sh.moveTo(...pts[0]); for (let i = 1; i < pts.length; i++) { const [x, y] = pts[i], [px, py] = pts[i - 1]; sh.quadraticCurveTo(px + (x - px) * .5 + (i % 2 ? .006 : -.006), py + (y - py) * .5, x, y); } sh.closePath();
+      const geo = new THREE.ExtrudeGeometry(sh, { depth: ep, bevelEnabled: true, bevelThickness: .035, bevelSize: .025, bevelSegments: 4, curveSegments: 6 }); geo.translate(0, 0, -ep / 2); return geo; };
+    const habits = [[1.08, .07, 0x2e3036, .85, "manteau"], [.68, .09, 0x3a2c22, .45, "blouson"], [1.12, .06, 0x2a3650, .9, "manteau"], [.7, .08, 0x3a3e44, .8, "blouson"], [1.05, .07, 0x2e4032, .9, "manteau"], [.66, .09, 0x26262a, .4, "blouson"], [1.1, .06, 0x4a2a2a, .88, "manteau"]];   // (sombres, mais qu'on distingue : noir, cuir brun, marine, anthracite, vert, bordeaux)
+    habits.forEach(([L, ep, c, rough, genre], i) => { const z = z0 + .1 + i * (z1 - z0 - .2) / (habits.length - 1), h = new THREE.Group(); h.position.set(xr, yr - .02, z); h.rotation.y = (hasard(i * 3.3) - .5) * .25; g.add(h);
+      const tissu = A.mat({ color: c, roughness: rough, emissive: c, emissiveIntensity: .35 }), v = new THREE.Mesh(silhouette(L, ep), tissu); v.position.y = -.05; h.add(v);
+      const col = new THREE.Mesh(new THREE.TorusGeometry(.07, .022, 8, 16, Math.PI), A.mat({ color: new THREE.Color(c).multiplyScalar(.7), roughness: rough })); col.rotation.x = Math.PI / 2; col.position.set(0, -.07, 0); h.add(col);   // (le col)
+      for (let b = 0; b < (genre === "manteau" ? 4 : 0); b++) { const bt = new THREE.Mesh(new THREE.SphereGeometry(.012, 8, 6), A.mat({ color: 0x0a0a0a, roughness: .4 })); bt.position.set(.0, -.2 - b * .18, ep / 2 + .036); h.add(bt); }   // (les boutons)
+      if (genre === "blouson") { const ceint = new THREE.Mesh(new THREE.BoxGeometry(.48, .06, ep + .06), tissu); ceint.position.y = -.05 - L + .03; h.add(ceint); const zip = new THREE.Mesh(new THREE.BoxGeometry(.008, L - .12, .004), A.mat({ color: 0x8a8a86, metalness: .7, roughness: .3 })); zip.position.set(0, -.05 - L / 2, ep / 2 + .037); h.add(zip); }
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(.42, .022, .025), cintreM); bar.position.y = -.035; h.add(bar);   // le cintre, son crochet
+      const cr = new THREE.Mesh(new THREE.TorusGeometry(.025, .004, 6, 12, Math.PI * 1.4), crochet); cr.position.y = .005; cr.rotation.y = Math.PI / 2; h.add(cr); });
+  }
   // la cuisine : contre le mur du fond, l'enfilade de chêne (portes fermées, rien dessus)
   { const g = new THREE.Group(); g.position.set((XC + XD) / 2 + .2, H4, ZC[4] - E - .5); g.rotation.y = Math.PI; scene.add(g); enfiladeChene(g); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
