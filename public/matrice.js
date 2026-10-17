@@ -4524,7 +4524,9 @@ function construireSantaCarla(A, L, scene) {
   // ---------- le sol : la jetée en planches, la plage, l'océan ----------
   const planches = tex(toile(512, 512, (x, w, h) => { for (let i = 0; i < 16; i++) { const v = hasard(i * 3.1); x.fillStyle = `hsl(28, ${22 + v * 10}%, ${26 + v * 8}%)`; x.fillRect(0, i * 32, w, 31); x.fillStyle = "rgba(0,0,0,.45)"; x.fillRect(0, i * 32 + 30, w, 2);
       for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,.18)"; x.beginPath(); const y = i * 32 + 4 + hasard(i * 7 + k) * 24; x.moveTo(0, y); x.lineTo(w, y + (hasard(k) - .5) * 4); x.stroke(); } x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect((hasard(i) * w) | 0, i * 32, 2, 30); } }), 6, 1.2);
-  const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: planches, roughness: .8 }), 0, .02, 0, false); jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
+  const pl2 = (() => { const ld = new THREE.TextureLoader(), t = ld.load("images/santacarla/planches.webp"), n = ld.load("images/santacarla/planches-n.webp"); t.colorSpace = THREE.SRGBColorSpace;   // (les vraies planches : le bois grisé par le sel, les fibres, les nœuds, les clous, les joints)
+    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(96 / 3.2, 12 / 3.2); q.anisotropy = 8; } return { t, n }; })();
+  const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: pl2.t, normalMap: pl2.n, normalScale: new THREE.Vector2(1, 1), roughness: .85 }), 0, .02, 0, false); jetee.receiveShadow = true; jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
   const sable = (() => { const ld = new THREE.TextureLoader(), t = ld.load("images/santacarla/sable.webp"), n = ld.load("images/santacarla/sable-n.webp"); t.colorSpace = THREE.SRGBColorSpace;   // (le vrai sable : le grain fin, les rides du vent, le relief)
     for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(600 / 5, 320 / 5); q.anisotropy = 8; }
     return A.ajoute(new THREE.PlaneGeometry(600, 320), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 166, false); })();   /* (la plage s'étend loin derrière la scène, jusqu'à l'horizon) */ sable.rotation.x = -Math.PI / 2;
@@ -4539,12 +4541,17 @@ function construireSantaCarla(A, L, scene) {
   for (let x = -46; x <= 46; x += 2.4) { if (Math.abs(Math.abs(x) - 20) < 1.4) continue; A.ajoute(new THREE.BoxGeometry(.12, 1.05, .12), blancM, x, .55, 6.2); }
   for (const [a, b] of [[-48, -21.4], [-18.6, 18.6], [21.4, 48]]) { A.ajoute(new THREE.BoxGeometry(b - a, .1, .14), blancM, (a + b) / 2, 1.08, 6.2); A.ajoute(new THREE.BoxGeometry(b - a, .08, .1), blancM, (a + b) / 2, .6, 6.2); }   // (la rambarde, ouverte vers la plage)
   // ---------- les stands, le long de la jetée (côté ville), leurs enseignes au néon ----------
+  // les textures réelles : le bardage de bois peint et écaillé (il prend la couleur du matériau), l'écorce et les palmes des palmiers
+  const TX = (() => { const ld = new THREE.TextureLoader(), T = (f, srgb = true, rw = THREE.RepeatWrapping) => { const t = ld.load("images/santacarla/" + f); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = rw; t.anisotropy = 8; return t; };
+    const ec = T("ecorce.webp"); ec.center.set(.5, .5); ec.rotation = Math.PI / 2; ec.repeat.set(2.5, 1);
+    return { bard: T("bardage.webp"), bardN: T("bardage-n.webp", false), ecorce: ec, palme: T("palme.webp", true, THREE.ClampToEdgeWrapping) }; })();
+  const peint = (c, r = .75) => A.mat({ color: c, map: TX.bard, normalMap: TX.bardN, normalScale: new THREE.Vector2(.8, .8), roughness: r });
   const neon = (txt, coul, w = 3.2) => { const c = toile(512, 128, (x, W, H) => { x.fillStyle = "#0a0a10"; x.fillRect(0, 0, W, H); x.font = "bold 64px 'Arial Black', Arial"; x.textAlign = "center"; x.shadowColor = coul; x.shadowBlur = 18; x.fillStyle = coul; x.fillText(txt, W / 2, 86); x.shadowBlur = 0; x.fillStyle = "#fff"; x.globalAlpha = .55; x.fillText(txt, W / 2, 86); });
     return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: tex(c), toneMapped: false })); };
   const STANDS = [[-38, "HOT DOGS", "#ff5a3a"], [-30, "ARCADE", "#3ad8ff"], [-22, "COMICS", "#ffd23a"], [-14, "TATTOO", "#ff3ab8"], [14, "SKEE BALL", "#5aff6a"], [22, "PIZZA", "#ff8a2a"], [30, "BUMPER CARS", "#c06aff"], [38, "CANDY", "#ff6a9a"]];
   for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -38.4); scene.add(g);
     const PAL = [[0x2aa49a, 0xe8c832], [0xf08a2a, 0x6ac83a], [0xd83a2a, 0xe8c832], [0x7a4ac8, 0x2ad8c8], [0x2a62b8, 0xf0a02a], [0xe8c832, 0xd83a2a]], [cm, ct] = PAL[Math.abs(Math.round(x / 8)) % PAL.length];
-    const murs = A.mat({ color: cm, roughness: .7 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
+    const murs = peint(cm, .7), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
     const b = (dx, dy, dz, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); g.add(o); return o; };
     b(5, 3, 3, murs, 0, 1.5, -1.5); b(4.2, 1.6, .05, A.mat({ color: 0x1a1410, emissive: new THREE.Color(c).multiplyScalar(.25) }), 0, 1.5, .02);   // (la cabane, son comptoir éclairé)
     b(5.4, .1, 1.4, A.mat({ map: rayure, roughness: .7 }), 0, 2.6, .55).rotation.x = .25;   // (le store à rayures)
@@ -4581,7 +4588,7 @@ function construireSantaCarla(A, L, scene) {
         for (const [ya, yb] of [[0, h], [h, 0]]) { a2.set(p.x + ox, ya, p.z + oz); b2.set(p2.x + ox, yb, p2.z + oz); const d = b2.clone().sub(a2), L2 = d.length(); q.setFromUnitVectors(up, d.normalize());
           mt.compose(a2.clone().add(b2).multiplyScalar(.5), q, new THREE.Vector3(1, L2, 1)); im3.setMatrixAt(k3++, mt); } } }
     im3.count = k3; scene.add(im3);
-    const gare = new THREE.Group(); gare.position.set(-12, 0, -16); scene.add(gare); const tq = A.mat({ color: 0x2aa49a, roughness: .7 }), jn = A.mat({ color: 0xe8c832 });
+    const gare = new THREE.Group(); gare.position.set(-12, 0, -16); scene.add(gare); const tq = peint(0x2aa49a, .7), jn = peint(0xe8c832);
     const bx = (dx, dy, dz, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); gare.add(o); };
     bx(7, 3.6, 4, tq, 0, 1.8, 0); bx(7.4, .25, 4.4, jn, 0, 3.7, 0); bx(7.6, .4, 4.6, A.mat({ color: 0x1e3a3a }), 0, 4.1, 0); const ng = neon("GIANT DIPPER", "#ffd23a", 5.4); ng.position.set(0, 2.6, 2.02); gare.add(ng);
     let haut = 0, ph = new THREE.Vector3(); for (let i = 0; i < 64; i++) { voie.getPointAt(i / 64, p); if (p.y > haut) { haut = p.y; ph.copy(p); } }
@@ -4616,10 +4623,10 @@ function construireSantaCarla(A, L, scene) {
   // ---------- les palmiers, le long de la jetée et sur la plage ----------
   const palmier = (x, z, h = 9, pen = .6) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = hasard(x * 3 + z) * 6.28; scene.add(g);
     const c = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(pen * .3, h * .4, 0), new THREE.Vector3(pen, h, 0)]);
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(c, 16, .2, 8), A.mat({ color: 0x5a4632, roughness: 1 })));
-    const fm = A.mat({ color: 0x1e4a24, roughness: .8, side: THREE.DoubleSide });
-    for (let i = 0; i < 9; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.7, 3.6, 1, 6), fm), pa = f.geometry.attributes.position; for (let k = 0; k < pa.count; k++) { const y = pa.getY(k) + 1.8; pa.setZ(k, -y * y * .09); pa.setX(k, pa.getX(k) * (1 - y / 4.2)); }
-      f.geometry.translate(0, 1.8, 0); f.rotation.set(-1.15, i / 9 * Math.PI * 2, 0, "YXZ"); f.position.set(pen, h, 0); g.add(f); } };
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(c, 16, .2, 8), A.mat({ map: TX.ecorce, roughness: 1 })));
+    const fm = A.mat({ map: TX.palme, alphaTest: .4, transparent: false, roughness: .8, side: THREE.DoubleSide, color: 0xb8c8a8 });
+    for (let i = 0; i < 11; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 3.6, 1, 6), fm), pa = f.geometry.attributes.position; for (let k = 0; k < pa.count; k++) { const y = pa.getY(k) + 1.8; pa.setZ(k, -y * y * .09); pa.setX(k, pa.getX(k) * (1 - y / 4.2)); }
+      f.geometry.translate(0, 1.8, 0); f.rotation.set(-1.15 + (i % 2) * .25, i / 11 * Math.PI * 2, 0, "YXZ"); f.position.set(pen, h, 0); g.add(f); } };
   for (const [x, z] of [[-44, -12], [-36, -11], [6, -12], [44, -12], [40, 12], [-40, 14], [-30, 20], [8, 15], [-48, -30], [-4, -36], [2, -38], [26, -36], [36, -34], [46, -30], [-20, -42], [20, -44]]) palmier(x, z, 8 + hasard(x) * 4);   // (et derrière, en silhouette sur le couchant)
   // la pancarte « Welcome to Santa Carla », peinte, sur ses deux piliers de brique et leurs vases ; au dos, le graffiti du film
   { const g = new THREE.Group(); g.position.set(-11, 0, 15); g.rotation.y = .55; scene.add(g);
@@ -4649,7 +4656,12 @@ function construireSantaCarla(A, L, scene) {
     for (const sx of [-1, 1]) { const l = new THREE.SpotLight(0xffe8c0, 25, 9, .7, .5, 1.2); l.position.set(sx * 2, .4, 2.5); l.target.position.set(0, 3.2, 0); g.add(l, l.target); } }
   // ---------- au loin : les falaises, le pont de chemin de fer, et le phare ----------
   const roc = A.mat({ color: 0x1a1c24, roughness: 1 });
-  for (const [x, z, s] of [[-70, 10, 14], [-62, 30, 18], [-78, -10, 16], [70, 0, 12], [80, 24, 16]]) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), roc); m.position.set(x, s * .3, z); m.scale.y = .9; scene.add(m); }
+  // (les falaises : des blocs de grès arrondis, creusés par la mer — la forme bosselée, les strates, la couleur qui varie)
+  const rocT = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#6a5a4a"; x.fillRect(0, 0, w, h); for (let i = 0; i < 60; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "40,32,26" : "150,130,104"},${.12 + hasard(i * 3) * .18})`; x.fillRect(0, hasard(i * 7) * h, w, 2 + hasard(i * 5) * 9); }
+    for (let i = 0; i < 2500; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "20,16,12" : "190,170,140"},.25)`; x.fillRect(hasard(i * 1.3) * w, hasard(i * 2.1) * h, 2, 2); } }), 3, 3);
+  for (const [x, z, sz] of [[-70, 10, 14], [-62, 30, 18], [-78, -10, 16], [70, 0, 12], [80, 24, 16]]) { const geo = new THREE.IcosahedronGeometry(sz, 4), pa = geo.attributes.position, v = new THREE.Vector3();
+    for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i); const n = v.clone().normalize(), b = Math.sin(n.x * 4.1 + x) * Math.cos(n.y * 3.3) * .14 + Math.sin(n.z * 7.3 + n.x * 5.1) * .07 + Math.sin(n.y * 13 + n.z * 11) * .03; v.multiplyScalar(1 + b); if (v.y < 0) v.y *= .2; pa.setXYZ(i, v.x, v.y, v.z); }
+    geo.computeVertexNormals(); const m = new THREE.Mesh(geo, A.mat({ map: rocT, roughness: .95, color: 0xb8a898 })); m.position.set(x, sz * .05, z); m.scale.set(1.2, .75, 1); m.rotation.y = hasard(x) * 6; scene.add(m); }
   { const pont = new THREE.Group(); pont.position.set(-58, 0, -40); scene.add(pont); for (let i = 0; i < 14; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(.4, 18, .4), bois); p.position.set(i * 3, 9, 0); pont.add(p); const c = new THREE.Mesh(new THREE.BoxGeometry(.2, 6, .2), bois); c.position.set(i * 3 + 1.5, 9, 0); c.rotation.z = .45; pont.add(c); }
     const tab = new THREE.Mesh(new THREE.BoxGeometry(42, .6, 3), bois); tab.position.set(19.5, 18.2, 0); pont.add(tab); }   // (le pont de chemin de fer, où David met Michael à l'épreuve)
   { const ph = new THREE.Group(); ph.position.set(74, 0, 22); scene.add(ph); const t = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 12, 12), A.mat({ color: 0xe8e4da })); t.position.y = 16; ph.add(t);
@@ -4722,7 +4734,7 @@ function construireSantaCarla(A, L, scene) {
     cyl(bras, .06, .08, 3.2, A.mat({ color: 0x4a2a14 }), 0, -7.6, 0); const voile2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.4), A.mat({ color: 0x1a1a1a, side: THREE.DoubleSide })); voile2.position.set(0, -6.6, 0); bras.add(voile2);
     const crane = new THREE.Mesh(new THREE.PlaneGeometry(.7, .7), new THREE.MeshBasicMaterial({ map: tex(toile(64, 64, (x) => { x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(32, 26, 16, 0, 7); x.fill(); x.fillRect(24, 34, 16, 10); x.fillStyle = "#1a1a1a"; x.beginPath(); x.arc(26, 26, 4, 0, 7); x.arc(38, 26, 4, 0, 7); x.fill(); x.strokeStyle = "#f2efe6"; x.lineWidth = 5; x.beginPath(); x.moveTo(12, 46); x.lineTo(52, 60); x.moveTo(52, 46); x.lineTo(12, 60); x.stroke(); })), transparent: true, side: THREE.DoubleSide })); crane.position.set(0, -6.6, .02); bras.add(crane); }
   // ---------- la Colonnade (1907), au bout de la jetée : ses arcades aux colonnes rouges, son étage, sa corniche verte, ses drapeaux ----------
-  { const g = new THREE.Group(); g.position.set(46, 0, 0); scene.add(g); const crem = A.mat({ color: 0xece4d2, roughness: .8 }), rougeC = A.mat({ color: 0x8a2a24, roughness: .5 }), vertC = A.mat({ color: 0x2a8a7a });
+  { const g = new THREE.Group(); g.position.set(46, 0, 0); scene.add(g); const crem = peint(0xece4d2, .8), rougeC = A.mat({ color: 0x8a2a24, roughness: .5 }), vertC = A.mat({ color: 0x2a8a7a });
     const fac = tex(toile(1024, 512, (x, w, h) => { x.fillStyle = "#ece4d2"; x.fillRect(0, 0, w, h); x.fillStyle = "#2a8a7a"; x.fillRect(0, 0, w, 24); x.fillStyle = "#8a2a24"; x.fillRect(0, 24, w, 10); x.fillRect(0, 236, w, 14);
         for (let i = 0; i < 9; i++) { const X = 30 + i * 110; x.fillStyle = "#3a2a24"; x.fillRect(X, 60, 80, 120); x.fillStyle = "#ffcf7a"; x.globalAlpha = .55; x.fillRect(X + 6, 66, 32, 108); x.fillRect(X + 42, 66, 32, 108); x.globalAlpha = 1; x.fillStyle = "#ece4d2"; x.fillRect(X + 38, 60, 4, 120); x.fillRect(X, 118, 80, 4); }
         x.fillStyle = "#3a2420"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("THE COLONNADE · 1907", w / 2, 230);
@@ -4874,6 +4886,28 @@ function construireSantaCarla(A, L, scene) {
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
         if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); { const cible = M.lbMus || performance.now() < (M.lbSilence || 0) ? 0 : 1, dt4 = Math.min(.1, (now0lb() - (C.vt || now0lb())) / 1000); C.vt = now0lb(); V.volume = Math.max(0, Math.min(1, V.volume + Math.sign(cible - V.volume) * Math.min(Math.abs(cible - V.volume), dt4 / (cible ? 1.5 : 1.2)))); }   /* (le concert s'efface et revient en douceur) */ if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
+  // ================= l'atmosphère : le halo des ampoules et des globes, la brume qui traîne au ras du sable, le grain et le cadre de cinéma =================
+  { const halo = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.12, "rgba(255,255,255,.75)"); g.addColorStop(.4, "rgba(255,255,255,.18)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+    // (chaque petite lumière — ampoule, globe — reçoit son halo : regroupés par objet parent, pour qu'ils tournent avec la grande roue ou le manège)
+    const groupes = new Map(); scene.updateMatrixWorld(true);
+    scene.traverse(o => { if (!o.isMesh || !o.geometry || o.geometry.type !== "SphereGeometry") return; const m = o.material; if (!m || !m.isMeshBasicMaterial || m.toneMapped !== false) return;
+      const r = o.geometry.parameters.radius; if (r > .3) return; const k = o.parent.uuid + (r > .15 ? "g" : "b"); if (!groupes.has(k)) groupes.set(k, { parent: o.parent, gros: r > .15, pos: [], col: [] }); const q = groupes.get(k); q.pos.push(o.position.x, o.position.y, o.position.z); q.col.push(m.color.r, m.color.g, m.color.b); });
+    for (const q of groupes.values()) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(q.pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(q.col, 3));
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: q.gros ? 1.9 : .62, map: halo, vertexColors: true, transparent: true, opacity: q.gros ? .55 : .7, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); pts.renderOrder = 3; q.parent.add(pts); }
+    // la brume du soir, au ras du sol : de grands voiles qui dérivent lentement
+    const brumeT = tex(toile(128, 64, (x) => { const g = x.createRadialGradient(64, 32, 2, 64, 32, 62); g.addColorStop(0, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 128, 128); x.restore(); }));
+    const voiles = []; for (let i = 0; i < 26; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: brumeT, color: 0xc8b0c8, transparent: true, opacity: .07 + hasard(i) * .06, depthWrite: false }));
+      const x0 = -60 + hasard(i * 3.3) * 120, z0 = -30 + hasard(i * 5.1) * 90; sp.position.set(x0, .6 + hasard(i) * .8, z0); sp.scale.set(14 + hasard(i * 7) * 10, 3 + hasard(i * 9) * 2, 1); scene.add(sp); voiles.push({ sp, x0, v: .3 + hasard(i * 2) * .5 }); }
+    // le cadre de cinéma : pendant les cinématiques, deux bandes noires ; toujours, un léger vignetage et le grain de la pellicule
+    const cadre = document.createElement("div"); cadre.style.cssText = "position:absolute;inset:0;z-index:6;pointer-events:none";
+    cadre.innerHTML = '<div class="h" style="position:absolute;left:0;right:0;top:0;height:0;background:#000;transition:height .9s ease"></div><div class="b" style="position:absolute;left:0;right:0;bottom:0;height:0;background:#000;transition:height .9s ease"></div>'
+      + '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%)"></div><canvas class="g" width="256" height="256" style="position:absolute;inset:0;width:100%;height:100%;opacity:.07;mix-blend-mode:overlay"></canvas>';
+    let posé = false, cine = false; const grain = cadre.querySelector(".g"), gx = grain.getContext("2d"), img = gx.createImageData(256, 256);
+    const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000;
+      if (!posé && M && M.ctx.conteneur) { posé = true; M.ctx.conteneur.appendChild(cadre); const garde = setInterval(() => { if (!M || M.L !== L) { cadre.remove(); clearInterval(garde); } }, 600); }
+      const c = !!(M && M.cine); if (c !== cine) { cine = c; cadre.querySelector(".h").style.height = cadre.querySelector(".b").style.height = c ? "11%" : "0"; }
+      if (Math.floor(s * 24) % 2 === 0) { for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; } gx.putImageData(img, 0, 0); }   // (le grain qui frémit)
+      for (const q of voiles) q.sp.position.x = q.x0 + ((s * q.v) % 40) - 20; }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
   // les personnages : ceux de l'inventaire de l'administrateur (tête, tenue, couleurs, taille), sinon les photos découpées et les tenues du film
   const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = []; M.lbPerso = null;
@@ -5025,7 +5059,7 @@ function construireSantaCarla(A, L, scene) {
         let dx = o.x - s0.x, dz = o.z - s0.z, l = Math.hypot(dx, dz); if (l < .3) { dx = 0; dz = 1; l = 1; } dx /= l; dz /= l;
         const H = tailleBonhomme() * hauteurDe(q), tgt = V3(s0.x + dx * 3 - dz * 1.1, s0.y + H * .82, s0.z + dz * 3 + dx * 1.1);
         const dt2 = Math.min(.25, (now - (S.tp || now)) / 1000); S.tp = now; if (!S.pret || S.n !== i) { if (!S.pret) cam.position.copy(tgt); S.pret = true; S.n = i; S.k = now; }
-        cam.position.lerp(tgt, now - S.k < 900 ? 1 - Math.exp(-5 * dt2) : 1 - Math.exp(-8 * dt2)); cam.lookAt(s0.x, s0.y + H * .74, s0.z); }, fov: [42, 58] };   // (la caméra glisse d'un personnage à l'autre, en temps réel)
+        cam.position.lerp(tgt, now - S.k < 900 ? 1 - Math.exp(-5 * dt2) : 1 - Math.exp(-8 * dt2)); cam.position.x += Math.sin(now / 900) * .015; cam.position.y += Math.sin(now / 1300) * .012; cam.lookAt(s0.x, s0.y + H * .74, s0.z); }, fov: [42, 58] };   // (la caméra respire, tenue à la main)   // (la caméra glisse d'un personnage à l'autre, en temps réel)
     M.passerBtn = boutonPasser(finir); M.cine = S; };
   const REPL = {
     81: { intro: "Ces types de la jetée… ce sont des vampires. Je le sais, j'ai vu mon frère flotter devant ma fenêtre !", go: "Ma mère ne m'a pas élevé pour finir en casse-croûte !",
@@ -10430,7 +10464,7 @@ function cineSurvolSC() { if (!M) return; const D = 30000; let fini = false, t0 
   const lisse = u => u * u * u * (u * (u * 6 - 15) + 10);   // (départ et arrivée tout en douceur)
   M.passerBtn = boutonPasser(fin); let leve = false;
   M.cine = { maj: now => { const u = Math.max(0, Math.min(1, (now - t0) / D)), e = lisse(u);
-      M.camera.position.copy(CP.getPointAt(e)); M.camera.lookAt(CC.getPointAt(e));
+      M.camera.position.copy(CP.getPointAt(e)); M.camera.lookAt(CC.getPointAt(e)); M.camera.rotateZ(Math.sin(e * Math.PI * 2) * .05 * (1 - e));   // (l'inclinaison dans les virages)
       if (!leve && now > t0 - 200 && noir) { leve = true; noir.style.animation = "none"; noir.style.opacity = "1"; requestAnimationFrame(() => requestAnimationFrame(() => { noir.style.opacity = "0"; })); setTimeout(() => noir.remove(), 2000); }   // (le noir se lève doucement sur la baie)
       if (u >= 1) fin(); }, fov: [55, 70] }; }
 // on touche « As-tu peur des fantômes ? » : le grand titre, puis l'Ecto-1 entre dans la cour d'honneur
