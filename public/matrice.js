@@ -4669,7 +4669,7 @@ function construireSantaCarla(A, L, scene) {
   L.sansPNJ = true; L.sansMusique = true; L.toujoursNuit = true; L.santaCarla = true;
   // le ciel du couchant : la photo envoyée (le bleu, le rose, l'orange au-dessus de la mer, les vrais nuages), tout autour de la place
   L.cielPerso = new THREE.TextureLoader().load("images/santacarla/ciel.webp"); L.cielPerso.colorSpace = THREE.SRGBColorSpace;   // (le vrai ciel du couchant, d'après la photo : l'orange au-dessus de la mer, le bleu et le rose, les vrais nuages)
-  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x7a4458;
+  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x4a3446;
   // ---------- l'animation des manèges ----------
   let tr = 0; const avant = L.anim;
   L.anim = (t) => { avant && avant(t); const s = t / 1000;
@@ -4829,7 +4829,7 @@ function construireSantaCarla(A, L, scene) {
     const sax = new THREE.Object3D(); sax.position.set(0, 2.4, 1.5); g.add(sax);   // (là où se tient Tim Cappello, éclairé par la poursuite)
     // l'écran géant, derrière le groupe : la vidéo du concert
     const ecranV = document.createElement("video"); ecranV.src = "videos/i-still-believe.mp4"; ecranV.loop = true; ecranV.playsInline = true; ecranV.muted = true; ecranV.preload = "auto"; ecranV.setAttribute("playsinline", "");
-    const tV = new THREE.VideoTexture(ecranV); tV.colorSpace = THREE.SRGBColorSpace;
+    CONCERT_LB.v = ecranV; const tV = new THREE.VideoTexture(ecranV); tV.colorSpace = THREE.SRGBColorSpace;
     bxg(g, 11.6, 6.9, .25, A.mat({ color: 0x0a0a0c, roughness: .6 }), 0, 4.95, 5.85); const ecran = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2), new THREE.MeshBasicMaterial({ map: tV, toneMapped: false })); ecran.rotation.y = Math.PI; ecran.position.set(0, 4.95, 5.7); g.add(ecran);
     const ombreM = (dessin) => new THREE.Mesh(new THREE.PlaneGeometry(.9, 1.8), new THREE.MeshBasicMaterial({ map: tex(toile(128, 256, dessin)), transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     const silh = (x) => { x.fillStyle = "#16121a"; x.beginPath(); x.arc(64, 40, 22, 0, 7); x.fill(); x.beginPath(); x.moveTo(26, 80); x.quadraticCurveTo(64, 62, 102, 80); x.lineTo(96, 250); x.lineTo(32, 250); x.fill(); x.fillStyle = "#6a5a7a"; x.fillRect(30, 60, 70, 4); };
@@ -7588,7 +7588,7 @@ export async function ouvrir(ctx) {
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
     if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .38 * Math.max(0, 1 - d / 22) + .07 * Math.max(0, 1 - d / 50); if (vol < .004) vol = 0; }   // (au loin, elle s'éteint : à peine audible passé le porche de l'horloge, plus rien dans les cours d'après)
-    vol *= M.muetFete ?? 1;   /* (la radio de Silent Hill : la fête s'efface) */
+    vol *= M.muetFete ?? 1;   /* (la radio de Silent Hill : la fête s'efface) */ if (M.lbMus) vol = 0;   /* (Génération perdue : une seule musique à la fois) */
     if (Math.abs(vol - (M.volume ?? -1)) > Math.min(.015, Math.max(.003, vol * .2))) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
@@ -10368,8 +10368,10 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
 const MUSIQUES_LB = { intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
+const CONCERT_LB = { v: null };   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
-  if (ancienne) { const a = ancienne.a, v0 = a.volume, t0 = performance.now(); const f = setInterval(() => { const u = (performance.now() - t0) / 2500; if (u >= 1) { a.pause(); clearInterval(f); } else a.volume = v0 * (1 - u); }, 60); }   // (l'ancienne s'efface en 2,5 s)
+  if (ancienne) { try { ancienne.a.pause(); } catch (e) {} }   // (jamais deux musiques à la fois : l'ancienne s'arrête net)
+  if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} if (CONCERT_LB.v) CONCERT_LB.v.volume = 0; }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
   M.lbMus = null; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
   const a = new Audio(src); a.loop = cle !== "intro"; a.volume = .85; a.play().catch(() => {}); M.lbMus = { cle, a };
   let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess"))) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
@@ -10384,9 +10386,9 @@ function cineAfficheLB() { if (!M || M.cine) return; let parti = false;
   M.passerBtn = boutonPasser(() => { d.remove(); partir(); if (M && M.cine) { finCine(); } });
   M.cine = { maj: () => {} }; setTimeout(() => { if (M && M.cine && !parti) { finCine(); partir(); } }, 5200); }
 // à Santa Carla : la baie vue d'en haut, comme un oiseau — de l'océan vers la jetée, en tournant ; on se pose devant l'arche, puis on choisit son personnage
-function cineSurvolSC() { if (!M) return; const t0 = performance.now(), D = 13000; let fini = false;
+function cineSurvolSC() { if (!M) return; const t0 = performance.now(), D = 30000; let fini = false;   /* (on prend son temps : la baie, la jetée, puis on descend vers les ados) */
   const fin = () => { if (fini || !M) return; fini = true; finCine(); };
-  const P = [[60, 46, 120], [10, 38, 70], [-40, 26, 30], [-34, 16, -2], [-8, 9, 14], [0, 3.2, 9]], C = [[0, 0, 0], [-10, 4, -10], [-12, 6, -20], [8, 6, -18], [0, 4, -8], [0, 2.4, -6]];
+  const P = [[40, 24, 86], [30, 26, 70], [8, 30, 58], [-30, 32, 50], [-46, 24, 20], [-38, 16, -2], [-16, 10, 12], [-4, 5, 11], [0, 3.2, 9]], C = [[0, 0, 0], [0, 0, -6], [-6, 2, -10], [-10, 4, -12], [-12, 6, -20], [6, 6, -18], [4, 4, -10], [0, 3, -7], [0, 2.4, -6]];
   const curve = (T, u) => { const n = T.length - 1, f = Math.min(n - 1e-6, u * n), i = Math.floor(f), k = f - i, s = k * k * (3 - 2 * k); return T[i].map((v, j) => v + (T[i + 1][j] - v) * s); };
   M.passerBtn = boutonPasser(fin);
   M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, p = curve(P, e), c = curve(C, e);
