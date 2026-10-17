@@ -1899,7 +1899,8 @@ function toileVerso(largeur, hauteur, avecPassage, hp = 4.4, lp = 2.4, sansPorch
     briques(x, w, h, 0, h - rdc);
     // les fenêtres des étages : encadrement blanc, rideaux, balconnet noir
     const pas = 3.6 * 40, n = Math.floor(w / pas), cols = [];
-    if (parCote) { const bord = 2.4 * 40; for (let k = 0; k < parCote; k++) cols.push(bord + (w - 2 * bord) * (k + .5) / parCote); }   // (parCote : le nombre de colonnes sur toute la longueur, réparties)
+    if (Array.isArray(parCote)) for (const m of parCote) cols.push(w / 2 + m * 40);   // (ou bien la place de chaque colonne, en mètres depuis le milieu)
+    else if (parCote) { const bord = 2.4 * 40; for (let k = 0; k < parCote; k++) cols.push(bord + (w - 2 * bord) * (k + .5) / parCote); }   // (parCote : le nombre de colonnes sur toute la longueur, réparties)
     else for (let c = 0; c < n; c++) cols.push((c + .5) * pas + (w - n * pas) / 2);
     const pasEt = parCote ? Math.min(nEt < 6 ? 150 : 120, (h - rdc - 30) / nEt) : 120;
     for (let et = 0; et < nEt; et++) for (const xc of cols) { const X = xc - 34, Y = h - rdc - 24 - 106 - et * pasEt;
@@ -2540,12 +2541,12 @@ function troisiemeCour(A, L, scene) {
   const HP = hp + 4.4, face = new THREE.Shape(); const DL = C3.LB / 2; face.moveTo(-DL, 0); face.lineTo(DL, 0); face.lineTo(DL, 24); face.lineTo(-DL, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-LM, hp); tr.lineTo(-LM, HP); tr.lineTo(LM, HP); tr.lineTo(LM, hp); tr.closePath(); face.holes.push(tr);
   // la façade : de la brique jusqu'au sol ; du blanc au-dessus du passage et en soubassement (60 cm) ; deux fenêtres de chaque côté des marches
-  const cF = toileVerso(C3.LB, 24, false, HP, LM, false, 4, false, 5);   /* (quatre colonnes de cinq fenêtres, réparties dans la largeur qu'on voit entre les murs de la cour) */ { const x = cF.getContext("2d"), w = cF.lw, h = cF.lh, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
+  const cF = toileVerso(C3.LB, 24, false, HP, LM); { const x = cF.getContext("2d"), w = cF.lw, h = cF.lh, P = 40, cx = w / 2, rdc = (HP + 1) * P, hb = (HP + .5) * P;
     briques(x, w, h, h - rdc, rdc);
     pierre(x, 0, h - 24, w, 24, "#e9e6df", 24, 70); x.fillStyle = "#d9d5cc"; x.fillRect(0, h - 26, w, 4);   // (le soubassement blanc de 60 cm)
     for (const X of [6, w - 6]) descente(x, X, h - rdc, h);
     x.fillStyle = "#e9e6df"; x.fillRect(cx - (LM + .3) * P, h - (HP + .9) * P, (LM + .3) * 2 * P, .9 * P); x.fillStyle = "#d9d5cc"; x.fillRect(cx - (LM + .4) * P, h - (HP + .9) * P - 6, (LM + .4) * 2 * P, 8);   // (le blanc, au-dessus du passage)
-    const nF = 4, col = c => 2.4 * P + (w - 4.8 * P) * (c + .5) / nF;   // (les mêmes colonnes que les fenêtres des étages)
+    const pasF = 3.6 * P, nF = Math.floor(w / pasF), col = c => (c + .5) * pasF + (w - nF * pasF) / 2;   // (les mêmes colonnes que les fenêtres des étages)
     for (let c = 0; c < nF; c++) { if (Math.abs(col(c) - cx) < LM * P + 40) continue; const X = col(c) - 34, Y = h - 4.3 * P;   // (toutes les colonnes de part et d'autre du passage, au-dessus du muret des buissons)
       x.fillStyle = "#f2efe8"; x.fillRect(X - 6, Y - 6, 80, 112); const g = x.createLinearGradient(0, Y, 0, Y + 100); g.addColorStop(0, "#5d6f80"); g.addColorStop(1, "#2f3b47"); x.fillStyle = g; x.fillRect(X, Y, 68, 100);
       x.fillStyle = "rgba(20,14,10,.3)"; x.fillRect(X, Y, 68, 4); x.fillRect(X, Y, 3, 100);
@@ -3285,7 +3286,7 @@ function deuxiemeCour(A, L, scene) {
   const pasS = A.ajoute(new THREE.PlaneGeometry(4.8, 12), A.mat({ map: tex(textures().paves, (2.4) / 2, (6) / 2) }), 0, .012, -24, false); pasS.rotation.x = -Math.PI / 2;   // le sol du passage
   neonsPassage(scene, 0, 4.4, -29.6, -18.4, true);   // (sous le bâtiment de l'horloge : les néons, dont un qui grésille)
   // le verso du bâtiment à l'horloge (face à la deuxième cour), percé du passage
-  const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true, 4.4, 2.4, false, 7)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI; allumerPlan(L, scene, verso);
+  const verso = A.ajoute(new THREE.PlaneGeometry(44, 27), A.mat({ map: tex(toileVerso(44, 27, true, 4.4, 2.4, false, [-8.25, -2.75, 2.75, 8.25], false, 5)), alphaTest: .5 }), 0, 13.5, z0 - .03, false); verso.rotation.y = Math.PI; allumerPlan(L, scene, verso);   /* (le bâtiment OP, côté deuxième cour : quatre colonnes de cinq fenêtres, réparties dans la largeur de la cour) */
   // le bâtiment d'en face, pareil, et son passage
   const face = new THREE.Shape(); face.moveTo(-22, 0); face.lineTo(22, 0); face.lineTo(22, 24); face.lineTo(-22, 24); face.closePath();
   const tr = new THREE.Path(); tr.moveTo(-2.4, 0); tr.lineTo(-2.4, 4.4); tr.lineTo(2.4, 4.4); tr.lineTo(2.4, 0); tr.closePath(); face.holes.push(tr);
