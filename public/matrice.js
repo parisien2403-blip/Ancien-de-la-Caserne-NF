@@ -4254,7 +4254,8 @@ function construireAppart(A, L, scene) {
     for (const t of tr) { const a0 = t.c - t.w / 2, a1 = t.c + t.w / 2, y0 = yS + t.y0, y1 = Math.min(HT, y0 + t.h);
       pose(u, a0, -.1, HT); pose(a0, a1, -.1, y0); pose(a0, a1, y1, HT); u = a1; }
     pose(u, a, -.1, HT); };
-  const piece = (x0, x1, z0, z1, genre, trous = {}, matMur) => { const y = trous.y != null ? trous.y : niveau((z0 + z1) / 2);   // (trous.y : le niveau de référence des trous, pour le couloir qui a deux niveaux) if (genre) sol(x0, x1, z0, z1, y, genre);
+  /* (trous.y : le niveau de référence des trous, pour le couloir qui a deux niveaux) */
+  const piece = (x0, x1, z0, z1, genre, trous = {}, matMur) => { const y = trous.y != null ? trous.y : niveau((z0 + z1) / 2); if (genre) sol(x0, x1, z0, z1, y, genre);
     murTroue("z", x0 + E / 2, z0, z1, trous.x0, y, matMur); murTroue("z", x1 - E / 2, z0, z1, trous.x1, y, matMur);
     murTroue("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, y, matMur); murTroue("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, y, matMur);
     // la plinthe, tout autour (sauf dans les trous qui descendent jusqu'au sol)
@@ -4311,9 +4312,15 @@ function construireAppart(A, L, scene) {
     for (const s2 of [-1, 1]) b(ep + .01, h, .03, xm, y + h / 2, c + s2 * (w / 2 - .015)); b(ep + .01, .03, w, xm, y + h - .015, c);
     for (const f of [-1, 1]) { const xf = xm + f * (ep / 2 + .009); for (const s2 of [-1, 1]) b(.018, h + .07, .075, xf, y + (h + .07) / 2, c + s2 * (w / 2 + .03)); b(.018, .075, w + .135, xf, y + h + .035, c); } };
   /* une porte de pièce, grande ouverte dans la pièce : son encadrement, et le battant sur ses gonds, au bord du chambranle côté pièce (cote : −1 à gauche du couloir, +1 à droite ; gond : à quel bout de l'ouverture) */
-  const porteDe = (cote, c, w, y, gond = -1) => { encadrement("z", cote * XC, c, w, y); ouverte(cote * (XC + .1), y, c + gond * (w / 2 - .03), w - .06, cote < 0 ? Math.PI : 0); };
+  const porteDe = (cote, c, w, y, gond = -1, degondee = false) => { encadrement("z", cote * XC, c, w, y);
+    const xg = cote * (XC + .1), zg = c + gond * (w / 2 - .03);
+    if (!degondee) { ouverte(xg, y, zg, w - .06, cote < 0 ? Math.PI : 0); return; }
+    // dégondée : le battant est retiré, il ne reste que les gonds sur le montant (la plaque vissée, le pivot)
+    const fer = A.mat({ color: 0x3a3632, metalness: .6, roughness: .45 });
+    for (const h of [.25, 1.05, 1.85]) { A.ajoute(new THREE.BoxGeometry(.045, .09, .008), fer, xg - cote * .03, y + h, zg - gond * .004, false);   // (la plaque, vissée sur le montant)
+      A.ajoute(new THREE.CylinderGeometry(.012, .012, .1, 10), fer, xg - cote * .008, y + h + .005, zg - gond * .02, false); } };   // (le pivot, côté pièce)
   porteDe(-1, P.ch1, .85, 0); porteDe(-1, P.ch2, .85, 0); porteDe(1, P.ch3, .85, 0); porteDe(1, P.sdb, .8, 0, 1);
-  porteDe(-1, P.wc, .75, H4); porteDe(-1, P.salon, .9, H4); porteDe(-1, P.salon2, .9, H4, 1);
+  porteDe(-1, P.wc, .75, H4); porteDe(-1, P.salon, .9, H4); porteDe(-1, P.salon2, .9, H4, 1, true);
   encadrement("x", Z_FOND, 0, .8, 0); ouverte(-.37, 0, Z_FOND - .1, .74, Math.PI / 2);   // le placard
   encadrement("z", XC - .05, P.entree, .9, H4, .1);   // la porte d'entrée (fermée)
   { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : peinte en blanc, fermée, son judas, sa serrure, son verrou
@@ -4360,9 +4367,9 @@ function construireAppart(A, L, scene) {
     const plancher = new THREE.Mesh(new THREE.ShapeGeometry(sh), matSol.fonce(1, 1)); plancher.rotation.x = -Math.PI / 2; plancher.position.y = ya + .002; scene.add(plancher);
     const pl2 = plancher.clone(); pl2.position.y = ya + 2.55; pl2.material = peinture; scene.add(pl2);   // (son plafond)
     for (let k = 0; k < 3; k++) { const [x0, z0] = pts[k], [x1, z1] = pts[k + 1], lg = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
-      const al = new THREE.Mesh(new THREE.BoxGeometry(.12, .75, lg), peinture); al.position.set(mx, ya + .375, mz); al.rotation.y = ang; scene.add(al);   // l'allège
+      const al = new THREE.Mesh(new THREE.BoxGeometry(.06, .5, lg), blanc); al.position.set(mx, ya + .25, mz); al.rotation.y = ang; scene.add(al);   // l'allège
       const li = new THREE.Mesh(new THREE.BoxGeometry(.12, HT - ya - 2.45, lg), peinture); li.position.set(mx, (ya + 2.45 + HT) / 2, mz); li.rotation.y = ang; scene.add(li);   // le linteau
-      const f = fenetre("x", 0, 0, lg - .04, 0, 1.7, 1, 3, false, false); f.position.set(mx, ya + .75, mz); f.rotation.y = Math.atan2(-(z1 - z0), x1 - x0) + Math.PI; radiateur(f, lg - .2, .5); }   // (tournée vers la pièce ; un radiateur sous chaque pan)
+      const f = fenetre("x", 0, 0, lg - .04, 0, 1.95, 1, 3, false, false); f.position.set(mx, ya + .5, mz); f.rotation.y = Math.atan2(-(z1 - z0), x1 - x0) + Math.PI; radiateur(f, lg - .2, .42); }   // (tournée vers la pièce ; un radiateur sous chaque pan)
     for (const [x, z] of pts) { const mt = new THREE.Mesh(new THREE.BoxGeometry(.14, HT - ya, .14), peinture); mt.position.set(x, (ya + HT) / 2, z); scene.add(mt); } }   // (les montants d'angle)
   // dehors : le ciel, et les façades de brique d'en face (la cour d'un côté, la rue de l'autre), à quelques mètres
   { const facade = A.mat({ map: tex(T.facade), roughness: .9, emissive: 0xffffff, emissiveIntensity: .35, emissiveMap: tex(T.facade) }), ciel = new THREE.MeshBasicMaterial({ map: tex(T.ciel), fog: false });
