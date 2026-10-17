@@ -4694,6 +4694,24 @@ function construireAppart(A, L, scene) {
   }
   // la cuisine : contre le mur du fond, l'enfilade de chêne (portes fermées, rien dessus)
   { const g = new THREE.Group(); g.position.set((XC + XD) / 2 + .2, H4, ZC[4] - E - .5); g.rotation.y = Math.PI; scene.add(g); enfiladeChene(g); }
+  /* le chien (découpé dans sa photo), couché sur sa couverture orange rouille, dans le coin de la cuisine entre l'enfilade et le mur de la fenêtre :
+     une carte pliée — le haut (la tête, le corps) debout, un peu penché en arrière ; le bas (les pattes de devant) à plat sur la couverture */
+  { const g = new THREE.Group(), xc = XD - E - .48, zc = ZC[4] - E - .42; g.position.set(xc, H4, zc); scene.add(g);
+    // la couverture : une laine orange rouille, un peu froissée, un coin replié
+    const laine = tex(toile(256, 256, (x, w) => { x.fillStyle = "#b9652e"; x.fillRect(0, 0, w, w); for (let i = 0; i < 2600; i++) { const v = hasard(i * 1.7), u = hasard(i * 2.9); x.fillStyle = v > .5 ? "rgba(90,40,10,.14)" : "rgba(220,140,80,.12)"; x.fillRect(u * w, hasard(i * 4.1) * w, 2, 1 + 3 * v); }
+      x.strokeStyle = "rgba(60,20,6,.35)"; x.lineWidth = 3; x.strokeRect(6, 6, w - 12, w - 12); }), 1, 1);
+    const geo = new THREE.PlaneGeometry(.92, .78, 24, 20), pa = geo.attributes.position;
+    for (let i = 0; i < pa.count; i++) { const px = pa.getX(i), py = pa.getY(i); pa.setZ(i, .012 * Math.sin(px * 19 + py * 7) + .008 * Math.sin(py * 23 - px * 5) + .026); }
+    geo.computeVertexNormals(); const couv = new THREE.Mesh(geo, A.mat({ map: laine, roughness: .95, side: THREE.DoubleSide })); couv.rotation.x = -Math.PI / 2; couv.rotation.z = .12; g.add(couv);
+    const coin = new THREE.Mesh(new THREE.BoxGeometry(.3, .02, .22), A.mat({ map: laine, roughness: .95 })); coin.position.set(.32, .04, -.26); coin.rotation.y = .5; g.add(coin);   // (le coin replié)
+    const ombre = new THREE.Mesh(new THREE.CircleGeometry(.3, 24), new THREE.MeshBasicMaterial({ color: 0x1a0a04, transparent: true, opacity: .35, depthWrite: false })); ombre.rotation.x = -Math.PI / 2; ombre.scale.set(1, .6, 1); ombre.position.set(0, .05, .02); g.add(ombre);
+    // le chien, tourné vers la porte de la cuisine
+    const tc = new THREE.TextureLoader().load("images/appart/chien.webp"); tc.colorSpace = THREE.SRGBColorSpace; tc.anisotropy = 8;
+    const peau = A.mat({ map: tc, alphaTest: .45, transparent: false, side: THREE.DoubleSide, roughness: .9, emissive: 0xffffff, emissiveMap: tc, emissiveIntensity: .22 });
+    const W = .74, V = .39, hH = W * 488 / 401 * (1 - V), hB = W * 488 / 401 * V * 1.4, chien = new THREE.Group(); chien.position.set(.02, .052, -.08); chien.rotation.y = -Math.PI / 2 - .35; g.add(chien);
+    const carte = (v0, v1, h) => { const gg = new THREE.PlaneGeometry(W, h), uv = gg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, v0 + uv.getY(i) * (v1 - v0)); return new THREE.Mesh(gg, peau); };
+    const haut = carte(V, 1, hH); haut.geometry.translate(0, hH / 2, 0); haut.rotation.x = -.22; chien.add(haut);
+    const bas = carte(0, V, hB); bas.geometry.translate(0, -hB / 2, 0); bas.rotation.x = -Math.PI / 2; chien.add(bas); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
   { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
   // le placard : des étagères
