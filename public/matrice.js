@@ -4515,7 +4515,7 @@ function enfiladeChene(g) {
 const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lbedgar", "#5a6a3a", "#4a4a3a", "#f2f2f2", "edgar"], 83: ["lbalan", "#8e8e8a", "#4a6a9a", "#f2f2f2", "alan"],
   88: ["lbtim", "#d89a68", "#141416", "#1a1a1a", "tim"], 84: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david"], 85: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul"], 86: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko"], 87: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne"] };
 function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
-  return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true }, tete_v: null,
+  return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true, ...(id >= 81 && id <= 83 ? { k: 1.3, dy: 6 } : {}) }, tete_v: null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${D[4]}-tete.webp`, lbPerso: id, ...(id === 88 ? { peau: "#c98a5c" } : {}) }; }   // (Tim Cappello : la peau bronzée)
 function construireSantaCarla(A, L, scene) {
   L.lb = true;
