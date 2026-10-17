@@ -115,9 +115,9 @@
 <div id="bureau">
   <div class="icone" style="left:8px;top:8px"><div class="img">🖥️</div><span>Poste de travail</span></div>
   <div class="icone" style="left:8px;top:84px"><div class="img">🗑️</div><span>Corbeille</span></div>
-  <div class="icone" id="icTarot" style="left:8px;top:160px"><div class="img">🃏</div><span>Tarot</span></div>
-  <div class="icone" id="icSol" style="left:8px;top:236px"><div class="img">🂡</div><span>Solitaire</span></div>
-  <div class="icone" id="icDem" style="left:8px;top:312px"><div class="img">💣</div><span>Démineur</span></div>
+  <div class="icone" id="icTarot" style="display:none"><div class="img">🃏</div><span>Tarot</span></div>
+  <div class="icone" id="icSol" style="left:8px;top:160px"><div class="img">🂡</div><span>Solitaire</span></div>
+  <div class="icone" id="icDem" style="left:8px;top:236px"><div class="img">💣</div><span>Démineur</span></div>
   <div id="fenSol" class="bosse fen95" style="display:none">
     <div class="titre"><span>🂡</span><span>Solitaire</span><div class="bt"><button class="b95" data-f="min">_</button><button class="b95" data-f="max">□</button><button class="b95" data-f="ferm">✕</button></div></div>
     <div class="menus"><div><u>P</u>artie<div class="deroule bosse"><div data-s="nouv">Nouvelle partie</div><hr><div data-s="t1">Tirer une carte</div><div data-s="t3">Tirer trois cartes</div><hr><div data-s="quit">Quitter</div></div></div><div><u>A</u>ide<div class="deroule bosse"><div data-s="aide">Comment jouer</div></div></div></div>
@@ -146,12 +146,12 @@
   <button class="b95 tache" id="tacheDem" style="display:none">💣 Démineur</button>
   <div class="creux" id="horloge">--:--</div>
 </div>
-<div id="menuDem" class="bosse"><div class="bande"><b>Windows</b>95</div><div class="it" data-a="tarot">🃏 Tarot</div><div class="it" data-a="solitaire">🂡 Solitaire</div><div class="it" data-a="demineur">💣 Démineur</div><div class="it" data-a="donne">🔄 Nouvelle donne</div><div class="it" data-a="quitter">⏻ Arrêter…</div></div>
+<div id="menuDem" class="bosse"><div class="bande"><b>Windows</b>95</div><div class="it" data-a="solitaire">🂡 Solitaire</div><div class="it" data-a="demineur">💣 Démineur</div><div class="it" data-a="quitter">⏻ Arrêter…</div></div>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 // ---------- le bureau de Windows 95 ----------
-setTimeout(() => { $("boot").remove(); fenetre(false); }, 1800);   // (au démarrage : le bureau, ses trois jeux)
+setTimeout(() => { $("boot").remove(); fenetre(false); }, 1800);   // (au démarrage : le bureau, ses jeux — le Solitaire et le Démineur)
 const heure = () => { const d = new Date(); $("horloge").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }; heure(); setInterval(heure, 10000);
 const fenetre = v => { $("fen").style.display = v ? "flex" : "none"; $("tacheTarot").style.display = v ? "" : "none"; if (v) placer(); };
 $("btFerm").onclick = () => fenetre(false); $("btMin").onclick = () => { $("fen").style.display = "none"; $("tacheTarot").classList.remove("actif"); };
@@ -490,7 +490,7 @@ function dessinerEcran() {
   const rr = r => [r.left * kx, r.top * ky, r.width * kx, r.height * ky];
   x.fillStyle = "#008080"; x.fillRect(0, 0, W, H); x.textAlign = "left";
   if ($("boot")) { x.fillStyle = "#000"; x.fillRect(0, 0, W, H); [["#f02a12", 0, 0], ["#2aa82a", 1, 0], ["#1e5ef0", 0, 1], ["#f0c812", 1, 1]].forEach(([c, i, j]) => { x.fillStyle = c; x.fillRect(250 + i * 30, 170 + j * 26, 27, 23); }); x.fillStyle = "#fff"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("Windows 95", 320, 270); x.textAlign = "left"; return; }
-  for (const ic of document.querySelectorAll(".icone")) { const [a, b, c] = rr(ic.getBoundingClientRect()); x.font = "22px sans-serif"; x.fillStyle = "#fff"; x.fillText(ic.querySelector(".img").textContent, a + c / 2 - 11, b + 24); x.font = "9px Arial"; x.textAlign = "center"; x.fillText(ic.querySelector("span").textContent, a + c / 2, b + 40); x.textAlign = "left"; }
+  for (const ic of document.querySelectorAll(".icone")) { if (!ic.getBoundingClientRect().width) continue; const [a, b, c] = rr(ic.getBoundingClientRect()); x.font = "22px sans-serif"; x.fillStyle = "#fff"; x.fillText(ic.querySelector(".img").textContent, a + c / 2 - 11, b + 24); x.font = "9px Arial"; x.textAlign = "center"; x.fillText(ic.querySelector("span").textContent, a + c / 2, b + 40); x.textAlign = "left"; }
   const bosse = (a, b, c, d, f = "#c0c0c0") => { x.fillStyle = f; x.fillRect(a, b, c, d); x.fillStyle = "#fff"; x.fillRect(a, b, c, 1); x.fillRect(a, b, 1, d); x.fillStyle = "#000"; x.fillRect(a, b + d - 1, c, 1); x.fillRect(a + c - 1, b, 1, d); };
   const texte = (t, a, b, taille, coul = "#000", gras = false) => { x.fillStyle = coul; x.font = `${gras ? "bold " : ""}${Math.max(6, taille)}px Arial`; x.fillText(t, a, b); };
   const fens = [...document.querySelectorAll("#fen, .fen95")].filter(f => f.style.display !== "none" && f.getBoundingClientRect().width).sort((a, b) => (+a.style.zIndex || 0) - (+b.style.zIndex || 0));

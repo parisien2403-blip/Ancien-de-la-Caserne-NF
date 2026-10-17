@@ -4847,7 +4847,7 @@ function construireAppart(A, L, scene) {
     const rl = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, W + .02, 12), tissu(3, .3)); rl.rotation.z = Math.PI / 2; rl.position.set(0, yd + .01, L - .06); g.add(rl); }
   /* la chambre 2, dans le coin de droite (au fond, côté porte) : un bureau simple, noir, sa chaise de bureau, et l'ordinateur de 1997 (d'après la photo) —
      le moniteur cathodique beige sur son pied orientable, la tour aux deux lecteurs de CD et au lecteur de disquettes, le clavier, la souris ;
-     on touche l'ordinateur : Windows 95 démarre, avec son Tarot, et l'écran du moniteur montre la partie en cours */
+     on touche l'ordinateur : Windows 95 démarre, avec son Solitaire et son Démineur, et l'écran du moniteur montre la partie en cours */
   { const g = new THREE.Group(), BW = 1.25, BD = .68, BH = .74; g.position.set(-XC - E / 2 - .02 - BW / 2, 0, Z2 + E / 2 + .01); scene.add(g);
     const noirB = A.mat({ color: 0x1c1b1d, roughness: .35 }), beige = A.mat({ color: 0xe9e5d8, roughness: .42 }), beigeF = A.mat({ color: 0xd8d3c4, roughness: .5 }), grisF = A.mat({ color: 0x4a4a4c, roughness: .6 }), noir = A.mat({ color: 0x151515, roughness: .6 });
     const b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
