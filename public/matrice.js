@@ -4528,7 +4528,7 @@ function construireSantaCarla(A, L, scene) {
   const sable = A.ajoute(new THREE.PlaneGeometry(140, 40), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#8a7656"; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { const g = x.createRadialGradient(hasard(i * 9) * w, hasard(i * 7) * h, 2, hasard(i * 9) * w, hasard(i * 7) * h, 40 + hasard(i) * 60); g.addColorStop(0, `rgba(${hasard(i * 3) > .5 ? "60,48,30" : "170,150,110"},.25)`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); }
     for (let i = 0; i < 5000; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "50,40,25" : "210,195,160"},.3)`; x.fillRect(hasard(i * 1.7) * w, hasard(i * 2.3) * h, 2, 2); } }), 12, 4), roughness: 1, color: 0xc8a878 }), 0, 0, 26, false); sable.rotation.x = -Math.PI / 2;
   const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
-  const mer = A.ajoute(new THREE.PlaneGeometry(400, 200), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 146, false); mer.rotation.x = -Math.PI / 2;
+  const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   // (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) mer.rotation.x = -Math.PI / 2;
   const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
   reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, -.25, 120); scene.add(reflet);   // (le reflet de la lune sur l'eau)
   // l'écume des vagues, qui va et vient sur le sable
@@ -4565,9 +4565,10 @@ function construireSantaCarla(A, L, scene) {
   const pts = []; for (let i = 0; i < 64; i++) { const t = i / 64 * Math.PI * 2; pts.push(new THREE.Vector3(-26 + Math.cos(t) * 16 + Math.cos(t * 3) * 2.5, 4 + Math.max(0, Math.sin(t * 2 + .6)) * 10 + Math.sin(t * 5) * 2, -26 + Math.sin(t) * 9)); }
   const voie = new THREE.CatmullRomCurve3(pts, true);
   scene.add(new THREE.Mesh(new THREE.TubeGeometry(voie, 400, .22, 6, true), A.mat({ color: 0x8a1a18, roughness: .5 })));
+  const POTEAUX = [];   // (les pieds du grand huit, pour ne pas passer au travers)
   { const n = 180, im = new THREE.InstancedMesh(new THREE.BoxGeometry(.16, 1, .16), A.mat({ color: 0xe8e4da, roughness: .7 }), n * 2), mt = new THREE.Matrix4(), p = new THREE.Vector3(), tg = new THREE.Vector3();
     for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); voie.getTangentAt(i / n, tg); const nx = -tg.z, nz = tg.x, ln = Math.hypot(nx, nz) || 1;
-      for (const s of [-1, 1]) { const x = p.x + nx / ln * .7 * s, z = p.z + nz / ln * .7 * s; mt.compose(new THREE.Vector3(x, p.y / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, p.y, 1)); im.setMatrixAt(i * 2 + (s > 0 ? 1 : 0), mt); } }
+      for (const s of [-1, 1]) { const x = p.x + nx / ln * .7 * s, z = p.z + nz / ln * .7 * s; mt.compose(new THREE.Vector3(x, p.y / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, p.y, 1)); im.setMatrixAt(i * 2 + (s > 0 ? 1 : 0), mt); if (i % 2 === 0) POTEAUX.push([x, z]); } }
     scene.add(im);   // (les poteaux blancs, sous la voie)
     const im2 = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .08, .08), A.mat({ color: 0xe8e4da }), n), q = new THREE.Quaternion();
     for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); voie.getTangentAt(i / n, tg); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(tg.x, tg.z)); mt.compose(new THREE.Vector3(p.x, p.y * .5, p.z), q, new THREE.Vector3(1, 1, 1)); im2.setMatrixAt(i, mt); }
@@ -4655,7 +4656,7 @@ function construireSantaCarla(A, L, scene) {
     fais.rotation.z = Math.PI / 2; fais.position.set(-20, 22.6, 0); const pivot = new THREE.Group(); pivot.position.y = 0; pivot.add(fais); ph.add(pivot); L.phare = pivot; }
   // ---------- les limites : la jetée et la plage (pas l'eau, pas les stands, pas l'arche) ----------
   { const tb = new THREE.TextureLoader().load("images/santacarla/beton.webp"); tb.colorSpace = THREE.SRGBColorSpace; tb.wrapS = tb.wrapT = THREE.MirroredRepeatWrapping; tb.repeat.set(96 / 5, 40 / 2.5); tb.anisotropy = 8;
-    const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; }   // (la grande place, en béton, derrière la jetée en planches)
+    const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; L.solsPlus = [pl, sable]; }   // (la grande place, en béton, derrière la jetée en planches)
   L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
     && !(x > -15.6 && x < -8.4 && z > -18.2 && z < -13.8)   // (la gare du Giant Dipper : on passe sous le grand huit)
     && !(x > 8.2 && x < 19.8 && z > -28 && z < -24)   // (les pieds de la grande roue)
@@ -4774,7 +4775,16 @@ function construireSantaCarla(A, L, scene) {
   // ---------- quelques lumières de couleur (les néons qui éclairent la jetée) ----------
   for (const [x, z, c] of [[-30, -6, 0x3ad8ff], [14, -6, 0x5aff6a], [-14, -6, 0xff3ab8], [0, -12, 0xff3a3a]]) { const l = new THREE.PointLight(c, 6, 10, 1.6); l.position.set(x, 3, z); scene.add(l); }
   // les obstacles s'ajoutent aux limites de la jetée
-  { const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !OBST.some(([a, b, c, d]) => x > a - .12 && x < b + .12 && z > c - .12 && z < d + .12); }
+  { const RONDS = [];   // (x, z, rayon)
+    for (let x = -42; x <= 42; x += 12) for (const z of [5.4, -5.4]) RONDS.push([x, z, .3]);   // (les lampadaires de la jetée)
+    for (const [x, z] of [[0, -12], [22, -12], [38, -12], [38, -30], [24, -33], [0, -31], [-4, -12]]) RONDS.push([x, z, .3]);   // (ceux de la place)
+    for (const [x, z] of [[-44, -12], [-36, -11], [6, -12], [44, -12], [40, 12], [-40, 14], [-30, 20], [8, 15]]) RONDS.push([x, z, .45]);   // (les palmiers)
+    for (const x of [-22, -2, 2, 22]) RONDS.push([x, -5.9, .4]);   // (les poubelles)
+    const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !OBST.some(([a, b, c, d]) => x > a - .12 && x < b + .12 && z > c - .12 && z < d + .12)
+      && !RONDS.some(([a, b, r]) => Math.hypot(x - a, z - b) < r + .2)
+      && !(CONCERT.foule || []).some(q => Math.hypot(x - q.m.position.x, z - q.m.position.z) < .5)   // (les gens du concert)
+      && !(x > -45 && x < -6 && z > -38 && z < -13 && POTEAUX.some(([a, b]) => Math.hypot(x - a, z - b) < .32))
+      && !(L.vamps || []).some(v => (v.etat === "parle" || v.etat === "terre") && Math.hypot(x - v.g.position.x, z - v.g.position.z) < .55); }
   // l'animation des nouveaux manèges
   { const av = L.anim; let rire = 0; L.anim = (t) => { av && av(t); const s = t / 1000;
       cabines.forEach((c, i) => { const u = ((s * .012) + i / cabines.length) % 1, L2 = SG.x1 - SG.x0, aller = u < .5, x = aller ? SG.x0 + u * 2 * L2 : SG.x1 - (u - .5) * 2 * L2, f = ((x - SG.x0) % 26.67) / 26.67; c.position.set(x, SG.h + .25 - Math.sin(f * Math.PI) * .5, aller ? SG.za : SG.zr); });
@@ -4862,7 +4872,7 @@ function construireSantaCarla(A, L, scene) {
       // la vidéo de l'écran géant : sa musique, plus forte quand on s'approche de la scène (sans le son tant que le téléphone ne l'autorise pas)
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
-        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); V.volume = v * .95; if (V.muted && v > 0 && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
+        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); V.volume = M.lbMus ? 0 : 1; if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
   // les personnages : ceux de l'inventaire de l'administrateur (tête, tenue, couleurs, taille), sinon les photos découpées et les tenues du film
   const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = []; M.lbPerso = null;
@@ -4896,11 +4906,10 @@ function construireSantaCarla(A, L, scene) {
       parle(M.moiNum, "Glou glou… Aaah ! Ça fait du bien !"); voile("background:radial-gradient(circle,rgba(255,200,60,0) 40%,rgba(255,200,60,.45) 100%);transition:opacity .8s", 700); } };
   // ---------- la fin : David vaincu, « Good Times », les ados se parlent ; la caméra part d'eux et monte vers le ciel, où paraît le titre, et « FIN » ; retour au mess, devant l'affiche ----------
   const finale = () => { if (fini) return; fini = true; phase = "fin"; musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
-    const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];
-    const L2 = [[600, M.moiNum, "On l'a eu… On a eu David !"], [3400, c0 && c0.num, REPL[c0 ? c0.id : 82].fete], [6400, c1 && c1.num, `${nomDe(moi)}, t'as été génial. Vraiment.`],
-      [9400, M.moiNum, "Tu crois qu'il en reste d'autres, à Santa Carla ?"], [12400, c0 && c0.num, "Il y en a toujours d'autres… Mais pas ce soir."], [15200, c1 && c1.num, "Allez, on rentre. Il va bientôt faire jour."]];
-    for (const [ms, n, txt] of L2) setTimeout(() => { if (M && M.L === L && n != null) parle(n, txt); }, ms);
-    setTimeout(() => { if (M && M.L === L) envolee(); }, 18200); };
+    const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];   // (le prénom)
+    const n0 = c0 && c0.num, n1 = c1 && c1.num;
+    setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu David !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
+      [M.moiNum, "Tu crois qu'il en reste d'autres, à Santa Carla ?"], [n0, "Il y en a toujours d'autres… Mais pas ce soir."], [n1, "Allez, on rentre. Il va bientôt faire jour."]], () => { if (M && M.L === L) envolee(); }); }, 1500); };
   const envolee = () => { const gens = [M.gens.get(M.moiNum), ...comps.map(c => c.p)].filter(Boolean); if (!gens.length) return;
     const ctr = V3(0, 0, 0); gens.forEach(q => ctr.add(q.g.position)); ctr.multiplyScalar(1 / gens.length);
     const cam = M.camera, dep = cam.position.clone(), t0 = performance.now(), D = 12000; let fini2 = false, titre = null;
@@ -4931,16 +4940,15 @@ function construireSantaCarla(A, L, scene) {
   const APRES = ["Un de moins. Il en reste encore… Ouvrez l'œil.", "Ils vont venir nous chercher. Restons ensemble.", "Le concert continue… On n'a pas beaucoup de temps.", "Je les sens… Ils nous observent, quelque part au-dessus de la jetée."];
   const prochain = () => { if (!M || M.L !== L || fini) return; const k = file.shift(); if (k == null) { finale(); return; }
     if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
-  const dialogueAvant = (v) => { const nums = { V: v.p.info.numero, M: M.moiNum, 0: comps[0] && comps[0].num, 1: comps[1] && comps[1].num }, L2 = AVANT[v.k]; let t = 0;
-    if (v.k === 0) message(`<div style="font-size:20px">David…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Le combat final.</div>`);
-    for (const [qui, txt] of L2) { const n = nums[qui]; setTimeout(() => { if (M && M.L === L && v.etat === "parle" && n != null) parle(n, txt); }, t); t += 1200 + txt.length * 55; }
-    setTimeout(() => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1"; } }, t + 600); };
-  const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; musiqueLB("combat"); file = ORDRE.slice(); majHud();
+  const dialogueAvant = (v) => { const nums = { V: v.p.info.numero, M: M.moiNum, 0: comps[0] && comps[0].num, 1: comps[1] && comps[1].num };
+    dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
+      if (v.k === 0) message(`<div style="font-size:20px">David</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Le combat final.</div>`); } }); };
+  const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
     message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David rôde sur la jetée. Ils vont venir un par un…</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`);
     setTimeout(prochain, 6000); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
     const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
-    if (v.etat === "terre") { if (d > 3.2) { message("Approche-toi pour lui planter le pieu !"); return; } pieu(v); return; }
+    if (v.etat === "terre") { courirPieu(v); return; }   // (un vampire à terre : on le touche, on court à lui, et on lui plante le pieu)
     if (v.etat === "mort" || v.etat === "brule") return; if (v.etat === "approche" || v.etat === "parle") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
     // le jet d'eau bénite : des gouttes du pistolet au vampire
     const but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0)); ado.vise = { pt: but, t: now }; ado.kick = 1; majAdo(); const dep = buse(but);
@@ -4949,9 +4957,9 @@ function construireSantaCarla(A, L, scene) {
     for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
     try { sonBruit(.35, 2400, .25); } catch (e) {}
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; majBarre(v); particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
-      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; message(`${v.nom} est à terre ! Vite, le pieu !`); const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
+      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; message(`<div style="font-size:19px">${esc(v.nom)} est à terre !</div><div style="font:600 14px system-ui;margin-top:6px">Touche-le, ou le bouton 🗡️ <b>Planter le pieu</b> :<br>ton ado court lui planter le pieu dans le cœur.</div>`); const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
       else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
-  const pieu = (v) => { v.etat = "brule"; v.tEtat = performance.now() + 1800; parle(v.p.info.numero, REPL_V[84 + v.k].mort); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 900); const p = v.g.position.clone(); try { sonBruit(.25, 300, .8); setTimeout(() => sonBruit(1.4, 700, .6), 200); } catch (e) {}
+  const pieu = (v) => { if (v.etat !== "terre") return; ado.pieuVers = null; v.etat = "brule"; v.tEtat = performance.now() + 1800; parle(v.p.info.numero, REPL_V[84 + v.k].mort); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 900); const p = v.g.position.clone(); try { sonBruit(.25, 300, .8); setTimeout(() => sonBruit(1.4, 700, .6), 200); } catch (e) {}
     const st = new THREE.Mesh(new THREE.ConeGeometry(.06, .9, 6), A.mat({ color: 0x8a5a2a })); st.position.set(p.x, .6, p.z); st.rotation.z = Math.PI / 2; scene.add(st); setTimeout(() => scene.remove(st), 1800);
     particule(feuT, p.clone().add(new THREE.Vector3(0, .5, 0)), 26, 2.2, 1600, 1.3); const lum = new THREE.PointLight(0xff7a20, 30, 10, 1.6); lum.position.set(p.x, 1.2, p.z); scene.add(lum); setTimeout(() => scene.remove(lum), 1700); };
   const mordu = (v) => { vies -= 20; morsures++; majHud(); if (morsures >= 2 && !biere && vies > 0) poserBiere(); parle(M.moiNum, REPL[M.lbPerso].mordu); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
@@ -4976,7 +4984,23 @@ function construireSantaCarla(A, L, scene) {
     ado.pist.visible = false; };   // (en vue normale : le bonhomme lève le bras, le pistolet dessiné dans sa main)
   // ---------- les dialogues : chacun parle (une bulle au-dessus de sa tête) ----------
   const hasardDe = a => a[Math.floor(Math.random() * a.length)];
-  const parle = (num, texte) => { if (M && M.L === L && texte && M.gens.has(num)) dire(num, texte); };
+  let parleLibre = 0;
+  const parle = (num, texte, force) => { const now = performance.now(); if (!M || M.L !== L || !texte || !M.gens.has(num) || M.cine || (!force && now < parleLibre)) return; parleLibre = now + 1800 + texte.length * 45; dire(num, texte); };
+  const nomDe = (num) => { if (num === M.moiNum) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}; return P.nom || ADOS[M.lbPerso - 81].nom; } const q = M.gens.get(num); return (q && q.info.nom) || ""; };
+  /* une scène de dialogue, en cinématique : la caméra cadre celui qui parle (de trois quarts, depuis ceux à qui il parle), son nom et sa phrase en sous-titre, une réplique après l'autre */
+  const dialogue = (lignes, fin) => { const cam = M.camera; let i = -1, tFin = 0, fait = false; const qui = [...new Set(lignes.map(l => l[0]).filter(n => n != null))], vamp = qui.find(n => n <= -860 && n >= -869);
+    const grp = qui.map(n => M.gens.get(n)).filter(Boolean), ctr = grp.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, grp.length)), front = V3(cam.position.x - ctr.x, 0, cam.position.z - ctr.z); if (front.lengthSq() < .01) front.set(0, 0, 1); front.normalize();
+    const finir = () => { if (fait) return; fait = true; if (M && M.cine === S) { bulle(null); finCine(); } fin && fin(); };
+    const S = { maj: now => { if (!M || M.L !== L) return finir();
+        if (now > tFin) { do { i++; } while (i < lignes.length && !M.gens.has(lignes[i][0])); if (i >= lignes.length) return finir();
+          const [n, t] = lignes[i], d = 1400 + t.length * 60; tFin = now + d; bulle(`<b style="color:#ff5a4a">${esc(nomDe(n))}</b> : ${esc(t)}`, d + 300); }
+        const n0 = lignes[i][0], q = M.gens.get(n0); if (!q) return; const s0 = q.g.position, vq = vamp != null && M.gens.get(vamp), ados = grp.filter(g2 => g2 !== vq);
+        const o = !vq ? s0.clone().add(front) : n0 === vamp ? ados.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, ados.length)) : vq.g.position;   // (sans vampire : face au groupe ; avec lui : on filme chacun depuis l'autre camp)
+        let dx = o.x - s0.x, dz = o.z - s0.z, l = Math.hypot(dx, dz); if (l < .3) { dx = 0; dz = 1; l = 1; } dx /= l; dz /= l;
+        const H = tailleBonhomme() * hauteurDe(q), tgt = V3(s0.x + dx * 3 - dz * 1.1, s0.y + H * .82, s0.z + dz * 3 + dx * 1.1);
+        const dt2 = Math.min(.25, (now - (S.tp || now)) / 1000); S.tp = now; if (!S.pret || S.n !== i) { if (!S.pret) cam.position.copy(tgt); S.pret = true; S.n = i; S.k = now; }
+        cam.position.lerp(tgt, now - S.k < 900 ? 1 - Math.exp(-5 * dt2) : 1 - Math.exp(-8 * dt2)); cam.lookAt(s0.x, s0.y + H * .74, s0.z); }, fov: [42, 58] };   // (la caméra glisse d'un personnage à l'autre, en temps réel)
+    M.passerBtn = boutonPasser(finir); M.cine = S; };
   const REPL = {
     81: { intro: "Ces types de la jetée… ce sont des vampires. Je le sais, j'ai vu mon frère flotter devant ma fenêtre !", go: "Ma mère ne m'a pas élevé pour finir en casse-croûte !",
       tir: ["Ça marche ! Ça marche vraiment !", "Prends ça, sale vampire !", "Retourne dans ta crypte !"], pieu: ["Beurk… c'est dégoûtant !", "Un de moins !"], mordu: "Aïe ! Il m'a mordu !",
@@ -4996,11 +5020,10 @@ function construireSantaCarla(A, L, scene) {
   const presentation = () => { const p0 = moiP() || V3(0, 0, 1.5), moi = M.lbPerso; comps.length = 0; phase = "briefing";
     [81, 82, 83].filter(id => id !== moi).forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, num = -(850 + i);
       const p = ajouterAncien({ ...habillerLB({ numero: num, nom: P.nom || ADOS[id - 81].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: p0.x + (i ? 1.6 : -1.6), z: p0.z - .8 }); if (p) comps.push({ id, num, p, i, tirT: 0, parleT: 0 }); });
-    const c = comps, l = [[0, () => c[0] && parle(c[0].num, REPL[c[0].id].intro)], [4200, () => c[1] && parle(c[1].num, REPL[c[1].id].intro)], [8000, () => parle(M.moiNum, REPL[moi].go)],
-      [11800, () => c[0] && parle(c[0].num, "Tout ce monde au concert, sur la plage… C'est un vrai buffet pour eux.")],
-      [15600, () => c[1] && parle(c[1].num, "Faut faire vite : buter ces enfoirés avant la fin du concert. Sinon, ça va être un vrai bain de sang !")],
-      [20000, () => parle(M.moiNum, "Alors on y va. Maintenant.")], [22600, () => c[0] && parle(c[0].num, "Ils sont là, quelque part… Ils vont venir à nous. Un par un.")], [23600, () => { if (M && M.L === L && phase === "briefing") demarrer(); }]];
-    for (const [ms, f] of l) setTimeout(() => { if (M && M.L === L) f(); }, ms); };
+    const c = comps, n0 = c[0] && c[0].num, n1 = c[1] && c[1].num;
+    setTimeout(() => { if (M && M.L === L) dialogue([[n0, REPL[c[0] ? c[0].id : 82].intro], [n1, REPL[c[1] ? c[1].id : 83].intro], [M.moiNum, REPL[moi].go],
+      [n0, "Tout ce monde au concert, sur la plage… C'est un vrai buffet pour eux."], [n1, "Faut faire vite : buter ces enfoirés avant la fin du concert. Sinon, ça va être un vrai bain de sang !"],
+      [M.moiNum, "Alors on y va. Maintenant."], [n0, "Ils sont là, quelque part… Ils vont venir à nous. Un par un."]], () => { if (M && M.L === L && phase === "briefing") demarrer(); }); }, 900); };
   const SANG = [[-12, -3.8, 1.3], [8.5, -10, 1], [24, -13.5, 1.2], [-3, -31, 1.1], [30.5, -33.5, .9], [-31, 2.5, 1.2], [16.5, 3.8, 1], [37, -1.5, 1.1], [-7, 13.5, 1.3], [12, 22.5, 1]];
   const texSang = (k) => tex(toile(256, 256, (x) => { const R = (n) => hasard(k * 13.7 + n);
       for (let i = 0; i < 5; i++) { const cx = 128 + (R(i) - .5) * 70, cy = 128 + (R(i + 9) - .5) * 70, r = 30 + R(i + 3) * 34, g = x.createRadialGradient(cx, cy, 2, cx, cy, r);   // (la flaque, en plusieurs nappes)
@@ -5016,6 +5039,17 @@ function construireSantaCarla(A, L, scene) {
   const REPL_SANG = ["Du sang… Ils ont déjà commencé.", "C'est encore frais. Ils ne sont pas loin…", "Ils ont déjà attaqué quelqu'un ici. On n'a plus beaucoup de temps.", "Regarde ça… Avant la fin du concert, il y en aura partout.", "Ces enfoirés se servent déjà. Faut les buter, vite !"];
   let sangT = 0;
   const voirSang = (now, p) => { if (!comps.length || now < sangT) return; for (const q of sang) if (!q.vu && Math.hypot(p.x - q.x, p.z - q.z) < 3) { q.vu = true; sangT = now + 6000; const c = hasardDe(comps); parle(c.num, hasardDe(REPL_SANG)); break; } };
+  // le pieu : le bouton apparaît dès qu'un vampire est à terre ; on y court, on le plante en arrivant ; une flèche rouge au-dessus de lui
+  let btnPieu = null, fleche = null;
+  const courirPieu = (q) => { const p = moiP(); if (!p) return; const d = Math.hypot(q.g.position.x - p.x, q.g.position.z - p.z); if (d <= 2.6) { pieu(q); return; }
+    ado.pieuVers = q; const ux = (p.x - q.g.position.x) / d, uz = (p.z - q.g.position.z) / d; allerVers(q.g.position.x + ux * 1.3, q.g.position.z + uz * 1.3, true); };
+  const pieuAuto = (now, p) => { const v = vamps.find(q => q.etat === "terre"); if (!btnPieu) { btnPieu = document.createElement("button"); btnPieu.type = "button"; btnPieu.textContent = "🗡️ Planter le pieu";
+      btnPieu.style.cssText = "position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:8;border:2px solid #fff;border-radius:99px;padding:12px 22px;background:#b81c22;color:#fff;font:800 17px system-ui;box-shadow:0 0 18px rgba(255,40,40,.8);cursor:pointer;display:none";
+      for (const ev of ["pointerdown", "pointerup"]) btnPieu.addEventListener(ev, e => e.stopPropagation()); btnPieu.onclick = e => { e.stopPropagation(); const q = vamps.find(x => x.etat === "terre"); if (q) courirPieu(q); };
+      M.ctx.conteneur.appendChild(btnPieu); const garde = setInterval(() => { if (!M || M.L !== L) { btnPieu.remove(); clearInterval(garde); } }, 600);
+      fleche = new THREE.Mesh(new THREE.ConeGeometry(.22, .5, 12), new THREE.MeshBasicMaterial({ color: 0xff2a2a, toneMapped: false })); fleche.rotation.x = Math.PI; scene.add(fleche); }
+    btnPieu.style.display = v && !M.cine ? "" : "none"; fleche.visible = !!v; if (v) fleche.position.set(v.g.position.x, 1.5 + Math.abs(Math.sin(now / 200)) * .3, v.g.position.z);
+    const c = ado.pieuVers; if (c && c.etat === "terre" && Math.hypot(c.g.position.x - p.x, c.g.position.z - p.z) < 2.7) pieu(c); };
   const vieComps = (now, p) => { for (const c of comps) { const g = c.p.g, ox = c.i ? 1.8 : -1.8, d = Math.hypot(g.position.x - p.x - ox, g.position.z - p.z - 1);
       if (d > 3.2 && !c.p.cible) c.p.cible = V3(p.x + ox, 0, p.z + 1);   // (ils nous suivent)
       if (phase === "vague1" || phase === "david") { const vis = vamps.filter(v => v.etat === "tourne" || v.etat === "pique" || v.etat === "remonte");
@@ -5029,13 +5063,14 @@ function construireSantaCarla(A, L, scene) {
       const im = document.createElement("div"); im.style.cssText = "width:100%;aspect-ratio:200/420;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px;overflow:hidden"; b.appendChild(im);
       { const info = habillerLB({ numero: 0 }, 81 + k); chargerTete(0, null, info.teteUrl).then(t => { const cv = dessinerBonhomme(info, t); cv.style.cssText = "width:100%;height:100%;object-fit:contain"; im.appendChild(cv); }); }
       b.appendChild(document.createTextNode(a.nom));
-      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; musiqueLB("combat"); const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 1; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
     if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
       hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
-    majAdo(); vieComps(now, p); boireBiere(now, p); voirSang(now, p);
+    { const mo = M.gens.get(M.moiNum); if (mo && ado.k == null) mo.g.visible = false; }   // (tant qu'on n'a pas choisi son ado, on n'est personne)
+    majAdo(); vieComps(now, p); pieuAuto(now, p); boireBiere(now, p); voirSang(now, p);
     if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
     if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus que David… Il va venir lui-même. Il est furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
