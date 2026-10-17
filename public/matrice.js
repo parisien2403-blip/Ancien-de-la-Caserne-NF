@@ -2308,7 +2308,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
         if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur et ses invités voient seuls ; il mène à l'appartement (une carte à part)
           const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart)); PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
-          L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: Math.PI, bleu: true, pasApo: true }); } }
+          L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: 0, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
   // au fond : le bâtiment de l'arcade, l'horloge octogonale au-dessus, la grille noire au bout de la voûte
@@ -6927,7 +6927,11 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now()); if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now());
+      if (M.premiere && M.cine && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum), cp = M.camera.position;   /* (à la première personne : si la caméra est restée à la place des yeux, on cache le bonhomme — sinon on verrait l'intérieur de sa tête) */
+        if (mo) { const dans = Math.hypot(cp.x - mo.g.position.x, cp.z - mo.g.position.z) < .5 && Math.abs(cp.y - mo.g.position.y - 1.4) < 1;
+          if (dans && mo.g.visible) { mo.g.visible = false; M.cacheFP = true; } else if (!dans && M.cacheFP) { mo.g.visible = true; M.cacheFP = false; } } }
+      if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else { M.cacheFP = false; placerCamera(false); }
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
@@ -11075,7 +11079,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
-  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
+  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
