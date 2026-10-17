@@ -4833,12 +4833,24 @@ function construireSantaCarla(A, L, scene) {
     const sp2 = new THREE.SpotLight(0xfff0d8, 60, 18, .35, .5, 1.4); sp2.position.set(0, 8, -3); sp2.target = sax; g.add(sp2);
     const fumeeC = tex(toile(64, 64, (x) => { const gr = x.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
     for (let i = 0; i < 10; i++) { const fm = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeC, transparent: true, opacity: .16, depthWrite: false, color: 0xc8b8e0 })); fm.position.set(-6 + i * 1.3, 1.9 + hasard(i) * .6, 2 + hasard(i * 3) * 3); fm.scale.setScalar(2.6); g.add(fm); }
-    // la foule, sur le sable, qui danse face à la scène
+    // la foule devant la scène : une vingtaine de baigneurs et de baigneuses, en maillot de bain et en short, de dos, qui sautent au rythme (les bras en l'air quand ils décollent)
+    const baigneur = (i, haut) => toile(128, 256, (x) => { const PEAU = ["#f0c8a0", "#d8a070", "#a86a40", "#8a5030", "#f4d4b4", "#e0b088"], peau = PEAU[i % 6], femme = i % 2 === 1;
+      const CH = ["#2a1a10", "#e8c870", "#7a4a20", "#1a1a1a", "#c87a3a", "#f0e0b0"], ch = CH[(i * 5) % 6], MA = ["#ff3ab8", "#3ad8ff", "#ffd23a", "#7aff5a", "#ff6a2a", "#8a5aff", "#ff2a4a", "#2a6aff"], ma = MA[(i * 3) % 8];
+      x.fillStyle = peau; x.beginPath(); x.roundRect(46, 150, 15, 96, 7); x.roundRect(67, 150, 15, 96, 7); x.fill();   // (les jambes)
+      x.beginPath(); x.moveTo(femme ? 44 : 38, 66); x.quadraticCurveTo(64, 58, femme ? 84 : 90, 66); x.lineTo(femme ? 80 : 84, 150); x.lineTo(femme ? 48 : 44, 150); x.closePath(); x.fill();   // (le dos nu)
+      for (const [sx, bx] of [[-1, femme ? 40 : 34], [1, femme ? 88 : 94]]) { x.save(); x.translate(bx, 70); x.rotate(haut ? sx * 2.7 : sx * .12); x.beginPath(); x.roundRect(-6, 0, 12, 62, 6); x.fill(); x.beginPath(); x.arc(0, 64, 7, 0, 7); x.fill(); x.restore(); }   // (les bras, levés quand il saute)
+      x.strokeStyle = "rgba(120,70,40,.35)"; x.lineWidth = 2; x.beginPath(); x.moveTo(64, 74); x.lineTo(64, 140); x.stroke();   // (la colonne)
+      if (femme) { x.fillStyle = ma; x.fillRect(44, 92, 40, 7); x.strokeStyle = ma; x.lineWidth = 3; x.beginPath(); x.moveTo(52, 92); x.lineTo(58, 60); x.moveTo(76, 92); x.lineTo(70, 60); x.stroke();   // (le haut du bikini, ses bretelles)
+        x.beginPath(); x.moveTo(46, 140); x.lineTo(82, 140); x.lineTo(78, 162); x.quadraticCurveTo(64, 170, 50, 162); x.closePath(); x.fill(); }   // (le bas)
+      else { x.fillStyle = ma; x.beginPath(); x.roundRect(42, 136, 44, 52, 4); x.fill(); x.fillStyle = "rgba(255,255,255,.35)"; for (let k = 0; k < 4; k++) x.fillRect(42, 146 + k * 10, 44, 3); x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(63, 160, 2, 28); }   // (le short de bain à rayures)
+      x.fillStyle = peau; x.fillRect(58, 44, 12, 18); x.beginPath(); x.arc(64, 34, 15, 0, 7); x.fill();   // (la nuque, la tête de dos)
+      x.fillStyle = ch; x.beginPath(); x.arc(64, 30, 16, Math.PI * .95, Math.PI * 2.05); x.fill(); if (femme) { x.beginPath(); x.moveTo(48, 30); x.quadraticCurveTo(46, 74, 54, 96); x.lineTo(74, 96); x.quadraticCurveTo(82, 74, 80, 30); x.fill(); } else x.fillRect(49, 28, 30, 12);   // (les cheveux : longs pour elles)
+      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(52, 72, 4, 60); });
     const foule = [];
-    for (let i = 0; i < 46; i++) { const fx = CONCERT.x - 9 + hasard(i * 1.7) * 18, fz = CONCERT.z - 4.5 - hasard(i * 2.9) * 9, coul = ["#1a1420", "#221a2a", "#2a1a1e", "#14182a"][i % 4], cheveux = i % 3 === 0;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(.8, 1.75), new THREE.MeshBasicMaterial({ map: tex(toile(64, 140, (x) => { x.fillStyle = coul; x.beginPath(); x.arc(32, 18, cheveux ? 15 : 12, 0, 7); x.fill(); if (cheveux) x.fillRect(17, 18, 30, 26); x.beginPath(); x.moveTo(12, 40); x.quadraticCurveTo(32, 30, 52, 40); x.lineTo(48, 92); x.lineTo(44, 140); x.lineTo(34, 140); x.lineTo(32, 100); x.lineTo(30, 140); x.lineTo(20, 140); x.lineTo(16, 92); x.fill();
-          if (i % 4 === 1) { x.fillRect(48, 6, 7, 40); x.fillRect(9, 6, 7, 40); } x.fillStyle = "rgba(255,90,200,.25)"; x.fillRect(12, 40, 3, 50); })), transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
-      m.position.set(fx, .88, fz); m.rotation.y = (hasard(i) - .5) * .4; scene.add(m); foule.push({ m, ph: hasard(i * 5) * 6, v: 4 + hasard(i * 7) * 3 }); }
+    for (let i = 0; i < 20; i++) { const fx = CONCERT.x - 8 + (i % 7) * 2.6 + (hasard(i * 1.7) - .5) * 1.2, fz = CONCERT.z - 2.2 - Math.floor(i / 7) * 1.9 - hasard(i * 2.9) * .8;
+      const tx = [tex(baigneur(i, false)), tex(baigneur(i, true))], mat = new THREE.MeshStandardMaterial({ map: tx[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8, emissive: 0xffffff, emissiveMap: tx[0], emissiveIntensity: .25 });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(.86, 1.72), mat); m.position.set(fx, .86, fz); m.rotation.y = Math.PI + (hasard(i) - .5) * .3; scene.add(m); foule.push({ m, mat, tx, ph: hasard(i * 5) * 6, v: 1.8 + hasard(i * 7) * .5 }); }
+    OBST.push([CONCERT.x - 9, CONCERT.x + 9, CONCERT.z - 7.4, CONCERT.z - 1.6]);   // (on ne traverse pas la foule)
     OBST.push([CONCERT.x - 9.3, CONCERT.x + 9.3, CONCERT.z - .3, CONCERT.z + 6.6]);
     Object.assign(CONCERT, { sax, ecranV, faisceaux, foule, ls }); }
   { const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000, C = CONCERT;
@@ -4847,7 +4859,7 @@ function construireSantaCarla(A, L, scene) {
       { const q = M.gens.get(-870); if (q) { q.vol = 1.45 + Math.abs(Math.sin(s * 2.2 * Math.PI)) * .06; q.g.position.x = C.x + Math.sin(s * 1.1 * Math.PI) * .25; } }
       C.faisceaux.forEach((q, i) => { q.f.rotation.z = Math.sin(s * .7 + q.ph) * .5; q.f.rotation.x = -.35 + Math.cos(s * .5 + q.ph) * .3; });
       C.ls.forEach((l, i) => { l.intensity = 22 + Math.sin(s * 4.4 + i * 2) * 10; });
-      C.foule.forEach(q => { q.m.position.y = .88 + Math.max(0, Math.sin(s * q.v * .55 + q.ph)) * .12; });
+      C.foule.forEach(q => { const h = Math.max(0, Math.sin(s * q.v * Math.PI + q.ph)); q.m.position.y = .86 + h * .45; const tm = q.tx[h > .35 ? 1 : 0]; if (q.mat.map !== tm) { q.mat.map = q.mat.emissiveMap = tm; q.mat.needsUpdate = true; } });   // (ils sautent, les bras en l'air)
       // la vidéo de l'écran géant : sa musique, plus forte quand on s'approche de la scène (sans le son tant que le téléphone ne l'autorise pas)
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
@@ -4969,9 +4981,26 @@ function construireSantaCarla(A, L, scene) {
   const presentation = () => { const p0 = moiP() || V3(0, 0, 1.5), moi = M.lbPerso; comps.length = 0; phase = "briefing";
     [81, 82, 83].filter(id => id !== moi).forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, num = -(850 + i);
       const p = ajouterAncien({ ...habillerLB({ numero: num, nom: P.nom || ADOS[id - 81].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: p0.x + (i ? 1.6 : -1.6), z: p0.z - .8 }); if (p) comps.push({ id, num, p, i, tirT: 0, parleT: 0 }); });
-    const c = comps, l = [[0, () => c[0] && parle(c[0].num, REPL[c[0].id].intro)], [4200, () => c[1] && parle(c[1].num, REPL[c[1].id].intro)], [8400, () => parle(M.moiNum, REPL[moi].go)],
-      [11500, () => c[0] && parle(c[0].num, "Les voilà ! Ils arrivent du ciel !")], [12500, () => { if (M && M.L === L && phase === "briefing") demarrer(); }]];
+    const c = comps, l = [[0, () => c[0] && parle(c[0].num, REPL[c[0].id].intro)], [4200, () => c[1] && parle(c[1].num, REPL[c[1].id].intro)], [8000, () => parle(M.moiNum, REPL[moi].go)],
+      [11800, () => c[0] && parle(c[0].num, "Tout ce monde au concert, sur la plage… C'est un vrai buffet pour eux.")],
+      [15600, () => c[1] && parle(c[1].num, "Faut faire vite : buter ces enfoirés avant la fin du concert. Sinon, ça va être un vrai bain de sang !")],
+      [20000, () => parle(M.moiNum, "Alors on y va. Maintenant.")], [22600, () => c[0] && parle(c[0].num, "Les voilà ! Ils arrivent du ciel !")], [23600, () => { if (M && M.L === L && phase === "briefing") demarrer(); }]];
     for (const [ms, f] of l) setTimeout(() => { if (M && M.L === L) f(); }, ms); };
+  const SANG = [[-12, -3.8, 1.3], [8.5, -10, 1], [24, -13.5, 1.2], [-3, -31, 1.1], [30.5, -33.5, .9], [-31, 2.5, 1.2], [16.5, 3.8, 1], [37, -1.5, 1.1], [-7, 13.5, 1.3], [12, 22.5, 1]];
+  const texSang = (k) => tex(toile(256, 256, (x) => { const R = (n) => hasard(k * 13.7 + n);
+      for (let i = 0; i < 5; i++) { const cx = 128 + (R(i) - .5) * 70, cy = 128 + (R(i + 9) - .5) * 70, r = 30 + R(i + 3) * 34, g = x.createRadialGradient(cx, cy, 2, cx, cy, r);   // (la flaque, en plusieurs nappes)
+        g.addColorStop(0, "rgba(70,0,4,.95)"); g.addColorStop(.6, "rgba(110,6,10,.9)"); g.addColorStop(.92, "rgba(140,10,14,.75)"); g.addColorStop(1, "rgba(140,10,14,0)"); x.fillStyle = g; x.beginPath();
+        for (let a = 0; a < 6.3; a += .3) { const rr = r * (.75 + R(i * 7 + a) * .3); x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } x.fill(); }
+      for (let i = 0; i < 46; i++) { const a = R(i + 40) * 6.28, d = 70 + R(i + 90) * 50, rr = 1.5 + R(i + 140) * 5; x.fillStyle = `rgba(${100 + R(i) * 40 | 0},4,8,${.7 + R(i + 3) * .3})`; x.beginPath(); x.ellipse(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, rr * 1.6, rr, a, 0, 7); x.fill(); }   // (les éclaboussures)
+      x.strokeStyle = "rgba(90,0,6,.85)"; x.lineCap = "round"; for (let i = 0; i < 4; i++) { const a = R(i + 200) * 6.28; x.lineWidth = 3 + R(i + 210) * 4; x.beginPath(); x.moveTo(128 + Math.cos(a) * 40, 128 + Math.sin(a) * 40); x.lineTo(128 + Math.cos(a) * (100 + R(i) * 25), 128 + Math.sin(a) * (100 + R(i) * 25)); x.stroke(); }   // (les traînées)
+      x.fillStyle = "rgba(255,200,200,.18)"; x.beginPath(); x.ellipse(112, 112, 16, 7, -.6, 0, 7); x.fill(); }));   // (le reflet, c'est encore frais)
+  const sang = SANG.map(([x, z, t], k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(2.6 * t, 2.6 * t), new THREE.MeshStandardMaterial({ map: texSang(k), transparent: true, depthWrite: false, roughness: .15, metalness: .2, polygonOffset: true, polygonOffsetFactor: -4 }));
+    m.rotation.set(-Math.PI / 2, 0, hasard(k) * 6.28); m.position.set(x, .035, z); scene.add(m);
+    for (let i = 0; i < 7; i++) { const g2 = new THREE.Mesh(new THREE.CircleGeometry(.05 + hasard(k * 3 + i) * .06, 8), new THREE.MeshBasicMaterial({ color: 0x6a0408, transparent: true, opacity: .9, depthWrite: false })); g2.rotation.x = -Math.PI / 2; const a = hasard(k + 30) * 6.28; g2.position.set(x + Math.cos(a) * (1.6 + i * .55), .036, z + Math.sin(a) * (1.6 + i * .55)); scene.add(g2); }   // (les gouttes qui s'éloignent)
+    return { x, z, vu: false }; });
+  const REPL_SANG = ["Du sang… Ils ont déjà commencé.", "C'est encore frais. Ils ne sont pas loin…", "Ils ont déjà attaqué quelqu'un ici. On n'a plus beaucoup de temps.", "Regarde ça… Avant la fin du concert, il y en aura partout.", "Ces enfoirés se servent déjà. Faut les buter, vite !"];
+  let sangT = 0;
+  const voirSang = (now, p) => { if (!comps.length || now < sangT) return; for (const q of sang) if (!q.vu && Math.hypot(p.x - q.x, p.z - q.z) < 3) { q.vu = true; sangT = now + 6000; const c = hasardDe(comps); parle(c.num, hasardDe(REPL_SANG)); break; } };
   const vieComps = (now, p) => { for (const c of comps) { const g = c.p.g, ox = c.i ? 1.8 : -1.8, d = Math.hypot(g.position.x - p.x - ox, g.position.z - p.z - 1);
       if (d > 3.2 && !c.p.cible) c.p.cible = V3(p.x + ox, 0, p.z + 1);   // (ils nous suivent)
       if (phase === "vague1" || phase === "david") { const vis = vamps.filter(v => v.etat === "tourne" || v.etat === "pique" || v.etat === "remonte");
@@ -4991,7 +5020,7 @@ function construireSantaCarla(A, L, scene) {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
     if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
       hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
-    majAdo(); vieComps(now, p); boireBiere(now, p);
+    majAdo(); vieComps(now, p); boireBiere(now, p); voirSang(now, p);
     if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
     if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { musiqueLB("david"); const dv = creerVampire(0); majHud(); if (dv) setTimeout(() => parle(dv.p.info.numero, REPL_V[84].arrive), 2500); const c = comps[1] || comps[0]; if (c) setTimeout(() => parle(c.num, "C'est David ! Le chef ! Celui-là, il est coriace…"), 5200); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
     if (phase === "david" && vamps.length && vamps.every(v => v.etat === "mort") && !fini) finale();
