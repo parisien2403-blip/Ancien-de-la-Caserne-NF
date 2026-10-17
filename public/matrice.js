@@ -259,6 +259,19 @@ export function dessinerBonhomme(o, tete) {
         x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(64, 156, 8, 90); x.fillRect(128, 156, 8, 90);
         x.strokeStyle = "#c8ccd2"; x.lineWidth = 3; for (const [a, b, c2, d] of [[66, 150, 100, 214], [134, 150, 100, 214], [100, 214, 100, 250]]) { x.setLineDash([5, 3]); x.beginPath(); x.moveTo(a, b); x.lineTo(c2, d); x.stroke(); } x.setLineDash([]);
         x.beginPath(); x.arc(100, 214, 9, 0, 7); x.stroke(); ceint("#141414", "#c8ccd2", 252); x.fillStyle = "#c8ccd2"; for (let k = 0; k < 8; k++) { x.beginPath(); x.arc(62 + k * 10, 258, 1.8, 0, 7); x.fill(); } } }
+    /* le policier du R.P.D. (Resident Evil) : chemise grise à manches courtes, pattes d'épaule, poches à rabat, cravate noire, insigne doré, plaque nominative, ceinturon noir avec l'étui, la radio, les menottes */
+    if (t === "rpd" && o.pose !== "dos" && !profil) {
+      x.strokeStyle = "rgba(40,44,50,.35)"; x.lineWidth = 1.6; x.beginPath(); x.moveTo(100, 150); x.lineTo(100, 252); x.stroke();   // la patte de boutonnage
+      for (const px of [66, 108]) { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(px, 176, 26, 26); x.strokeStyle = "rgba(40,44,50,.45)"; x.lineWidth = 1.4; x.strokeRect(px, 176, 26, 26); x.fillStyle = assombrir(c, .86); x.fillRect(px - 1, 172, 28, 9); x.strokeRect(px - 1, 172, 28, 9); }   // les poches à rabat
+      x.fillStyle = assombrir(c, .78); x.fillRect(60, 148, 20, 6); x.fillRect(120, 148, 20, 6);   // les pattes d'épaule
+      x.fillStyle = "#e4e4e0"; x.beginPath(); x.moveTo(84, 142); x.lineTo(100, 156); x.lineTo(116, 142); x.lineTo(108, 140); x.lineTo(100, 148); x.lineTo(92, 140); x.closePath(); x.fill();   // le col
+      x.fillStyle = "#111214"; x.beginPath(); x.moveTo(96, 150); x.lineTo(104, 150); x.lineTo(103, 156); x.lineTo(107, 224); x.lineTo(100, 234); x.lineTo(93, 224); x.lineTo(97, 156); x.closePath(); x.fill();   // la cravate
+      x.fillStyle = "#c9a227"; x.beginPath(); x.moveTo(121, 158); x.lineTo(133, 158); x.lineTo(136, 166); x.lineTo(127, 175); x.lineTo(118, 166); x.closePath(); x.fill(); x.fillStyle = "#1d3a6a"; x.beginPath(); x.arc(127, 165, 3.5, 0, 7); x.fill();   // l'insigne
+      x.fillStyle = "#d8dadc"; x.fillRect(70, 166, 18, 4);   // la plaque nominative
+      x.fillStyle = "#121214"; x.fillRect(58, 250, 84, 11); x.fillStyle = "#b8bcc0"; x.fillRect(94, 251, 12, 9);   // le ceinturon
+      x.fillStyle = "#18181a"; x.beginPath(); x.roundRect(128, 256, 15, 34, 3); x.fill(); x.fillStyle = "#2a2a2e"; x.fillRect(130, 258, 11, 10);   // l'étui
+      x.fillStyle = "#1e1e20"; x.fillRect(60, 254, 10, 18); x.fillStyle = "#4a4a4e"; x.fillRect(63, 250, 3, 6);   // la radio
+      x.strokeStyle = "#9a9ea2"; x.lineWidth = 2; x.beginPath(); x.arc(80, 266, 4.5, 0, 7); x.arc(90, 266, 4.5, 0, 7); x.stroke(); }   // les menottes
     // Émile et Images : le débardeur à damier bleu, gris et noir sur manches en résille noire ; le t-shirt noir imprimé ; la chemise blanche ouverte
     if (o.pose !== "dos" && !profil && /^ei(chant|guitare|batterie)$/.test(t)) {
       if (t === "eichant") { x.save(); x.beginPath(); x.moveTo(64, 150); x.lineTo(136, 150); x.lineTo(140, 262); x.lineTo(60, 262); x.closePath(); x.clip();
@@ -493,7 +506,7 @@ export function dessinerBonhomme(o, tete) {
       mains[sens > 0 ? 0 : 1] = cible || [cx - 96 * Math.sin(a), 158 + 96 * Math.cos(a)];
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
-      const court = t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy";
+      const court = t === "rpd" || t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy";
       if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
@@ -504,6 +517,7 @@ export function dessinerBonhomme(o, tete) {
       if (t === "varsity") { x.fillStyle = "#c8202a"; x.fillRect(-12, 78, 24, 10); x.fillStyle = "#f4f4f0"; x.fillRect(-12, 81, 24, 2); }
       if (t === "gilet") { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(-12, 50, 24, 8); }
       if (t === "survet" || t === "fletcher") { x.fillStyle = "#fff"; x.fillRect(sens < 0 ? -6 : 2, -6, 4, 92); }
+      if (t === "rpd") { x.fillStyle = "#1d3a6a"; x.beginPath(); x.ellipse(0, 14, 9, 11, 0, 0, 7); x.fill(); x.strokeStyle = "#c9a227"; x.lineWidth = 1.6; x.stroke(); x.fillStyle = "#c9a227"; x.beginPath(); x.arc(0, 14, 3, 0, 7); x.fill(); }   // l'écusson du R.P.D. sur chaque manche
       if (t === "leon") { x.fillStyle = "#9aa2aa"; x.fillRect(-12, 52, 24, 34); x.fillStyle = "#1a1a1c"; x.fillRect(-12, 34, 24, 16); if (sens < 0) { x.fillStyle = "#c9a227"; x.beginPath(); x.arc(0, 14, 7, 0, 7); x.fill(); x.fillStyle = "#1d3a6a"; x.beginPath(); x.arc(0, 14, 4, 0, 7); x.fill(); } }   // coudières grises, l'écusson du R.P.D.
       if (t === "chris" && sens < 0) { x.fillStyle = "#3a3a2e"; x.beginPath(); x.arc(0, 12, 7, 0, 7); x.fill(); x.fillStyle = "#d8c23a"; x.beginPath(); x.arc(0, 12, 4, 0, 7); x.fill(); }   // l'écusson S.T.A.R.S.
       if ((t === "barry" || t === "chris" || t === "wesker") && !profil) { x.fillStyle = "#1c1c1e"; x.beginPath(); x.arc(0, 96, 11.5, 0, 7); x.fill(); }   // les mitaines
