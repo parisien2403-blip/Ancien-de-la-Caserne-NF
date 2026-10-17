@@ -4291,7 +4291,7 @@ function construireAppart(A, L, scene) {
   piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
   piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [{ c: P.cuisine, w: 1.6, y0: 0, h: 2.2 }], x1: [fen(P.cuisine, 1.6, .8, 1.55)] });
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
-  piece(XS, -XC, ZC[3], ZC[5], "clair", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
+  piece(XS, -XC, ZC[3], ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
   /* le papier peint du second salon (d'après la photo : rayures beige et taupe, le grain de la toile) ; un morceau fait 1,06 m de large (4 rayures) sur 1,45 m de haut */
   const tapis = new THREE.TextureLoader().load("images/appart/tapisserie-salon2.webp"); tapis.colorSpace = THREE.SRGBColorSpace; tapis.wrapS = tapis.wrapT = THREE.RepeatWrapping; tapis.anisotropy = 8;
