@@ -4431,6 +4431,8 @@ function enfiladeChene(g) {
   box(W, .02, .022, bois, 0, yT, .011);
   fusionnerParMatiere(g); return g;
 }
+/* là où poser une fenêtre par-dessus le monde : l'élément en plein écran s'il y en a un (sinon elle resterait cachée derrière), sinon la page */
+const hoteFS = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
 function construireAppart(A, L, scene) {
   const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
   const niveau = z => z > ZM1 ? H4 : 0;
@@ -4901,7 +4903,7 @@ function construireAppart(A, L, scene) {
     const ouvrir = () => { if (!cadre) { cadre = document.createElement("div"); cadre.style.cssText = "position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column";
         const barre = document.createElement("div"); barre.style.cssText = "position:absolute;right:6px;top:6px;z-index:2"; const x = document.createElement("button"); x.textContent = "✕"; x.title = "Éteindre l'écran (la partie reste en cours)"; x.style.cssText = "width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer"; x.onclick = fermer; barre.appendChild(x);
         const f = document.createElement("iframe"); f.src = "tarot95.html"; f.title = "Windows 95 — Tarot"; f.style.cssText = "flex:1;border:0;width:100%;height:100%"; cadre.append(f, barre); document.body.appendChild(cadre); cadre.f = f; }
-      cadre.style.display = "flex"; clearInterval(suivi);
+      hoteFS().appendChild(cadre); cadre.style.display = "flex"; clearInterval(suivi);
       suivi = setInterval(() => { try { const e = cadre.f.contentWindow.ecranTarot; if (e) { cx.drawImage(e, 0, 0, 640, 480); ecranT.needsUpdate = true; } } catch (err) {} }, 300); };
     const fermer = () => { if (cadre) cadre.style.display = "none"; clearInterval(suivi);
       suivi = setInterval(() => { try { const e = cadre.f.contentWindow.ecranTarot; if (e) { cx.drawImage(e, 0, 0, 640, 480); ecranT.needsUpdate = true; } } catch (err) {} }, 1500); };   // (la partie continue de s'afficher sur le moniteur)
@@ -5002,10 +5004,10 @@ function construireAppart(A, L, scene) {
         l.append(bouton("◀ CH−", () => zapper(-1)), bouton("CH+ ▶", () => zapper(1)), bs);
         if (M.ctx.moiInfo && M.ctx.moiInfo().admin) l.append(bouton("📼 Bibliothèque", bibliotheque));
         l.append(bouton("✕", () => { panneau.style.display = "none"; })); panneau.append(tt, l); document.body.appendChild(panneau); }
-      panneau.style.display = "flex"; if (!liste) charger().then(majPanneau); majPanneau(); };
+      hoteFS().appendChild(panneau); panneau.style.display = "flex"; if (!liste) charger().then(majPanneau); majPanneau(); };
     let biblio = null;
     const bibliotheque = async () => { if (!biblio) { biblio = document.createElement("div"); biblio.style.cssText = "position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"; document.body.appendChild(biblio); biblio.onclick = e => { if (e.target === biblio) biblio.style.display = "none"; }; }
-      biblio.style.display = "flex"; await charger();
+      hoteFS().appendChild(biblio); biblio.style.display = "flex"; await charger();
       const boite = document.createElement("div"); boite.style.cssText = "background:#f4f1ea;color:#222;border-radius:14px;padding:16px;width:min(480px,calc(100vw - 24px));max-height:80vh;overflow:auto;font:14px system-ui";
       boite.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">📼 La bibliothèque de la télé</b><button class="fx" style="border:0;background:none;font-size:20px;cursor:pointer">✕</button></div>
         <div style="opacity:.7;margin:4px 0 12px">Une vidéo par chaîne, dans l'ordre. Vous seul pouvez en ajouter ou en retirer (MP4, 300 Mo maximum).</div><div class="li"></div>
