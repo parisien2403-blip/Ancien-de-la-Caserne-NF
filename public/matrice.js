@@ -4452,9 +4452,14 @@ function toileVampire(k) {   // les quatre vampires, dessinés (pas les acteurs)
     x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; for (const [a, b, c, d] of [[110, 170, 100, 410], [146, 170, 156, 410], [60, 190, 20, 250], [196, 190, 236, 250]]) { x.beginPath(); x.moveTo(a, b); x.lineTo(c, d); x.stroke(); }
     if (k === 2) { for (let i = 0; i < 9; i++) { x.fillStyle = ["#7a3a6a", "#3a5a7a", "#8a6a2a", "#4a6a3a"][i % 4]; x.fillRect(90 + (i % 3) * 26, 180 + Math.floor(i / 3) * 50, 24, 46); } }   // (la veste rapiécée)
     if (k === 3) { x.fillStyle = peau; x.beginPath(); x.moveTo(112, 168); x.lineTo(144, 168); x.lineTo(138, 300); x.lineTo(118, 300); x.fill(); x.fillStyle = "#c8a050"; x.fillRect(118, 180, 20, 3); }   // (le torse nu sous le gilet, un collier)
-    else { x.fillStyle = k === 0 ? "#141414" : "#e8e4dc"; x.beginPath(); x.moveTo(114, 166); x.lineTo(142, 166); x.lineTo(136, 230); x.lineTo(120, 230); x.fill(); }
+    else { x.fillStyle = k === 2 ? "#ece8e0" : "#141414"; x.beginPath(); x.moveTo(114, 166); x.lineTo(142, 166); x.lineTo(136, 230); x.lineTo(120, 230); x.fill(); }
+    if (k === 1) { x.strokeStyle = "rgba(255,255,255,.18)"; x.lineWidth = 1; for (let i = 0; i < 8; i++) { x.beginPath(); x.moveTo(114 + i * 4, 166); x.lineTo(118 + i * 3, 230); x.stroke(); }   // (Paul : le maillot en résille, les médaillons d'argent le long de la veste en jean)
+      x.fillStyle = "#3a4a6a"; x.globalAlpha = .55; x.fillRect(84, 160, 26, 250); x.fillRect(146, 160, 26, 250); x.globalAlpha = 1; for (let i = 0; i < 9; i++) for (const cx of [100, 156]) { x.fillStyle = "#d8dce2"; x.beginPath(); x.arc(cx, 178 + i * 24, 8, 0, 7); x.fill(); x.fillStyle = "#8a8e96"; x.beginPath(); x.arc(cx, 178 + i * 24, 4, 0, 7); x.fill(); } }
+    if (k === 2) { x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(160, 330, 13, 0, 7); x.fill(); x.fillRect(153, 338, 14, 8); x.fillStyle = "#111"; x.beginPath(); x.arc(155, 328, 3, 0, 7); x.arc(165, 328, 3, 0, 7); x.fill();   // (Marko : la veste en patchwork, la tête de mort, les franges)
+      for (let i = 0; i < 12; i++) { x.fillStyle = ["#c8302a", "#e8a020", "#2a6ac8", "#6a2a8a"][i % 4]; x.fillRect(82 + (i % 2) * 70 + (i % 3) * 6, 175 + i * 18, 18, 14); } x.strokeStyle = "#c8a030"; x.lineWidth = 2; for (let i = 0; i < 14; i++) { x.beginPath(); x.moveTo(60 + i * 3, 196 + i * 4); x.lineTo(52 + i * 3, 214 + i * 4); x.stroke(); } }
+    if (k === 3) { x.strokeStyle = "#8a6a3a"; x.lineWidth = 2; for (const r of [26, 36, 46]) { x.beginPath(); x.arc(128, 150, r, .5, Math.PI - .5); x.stroke(); } x.fillStyle = "#ece4c8"; for (let i = 0; i < 9; i++) { const a = .6 + i * .22; x.beginPath(); x.moveTo(128 + Math.cos(a) * 46, 150 + Math.sin(a) * 46); x.lineTo(128 + Math.cos(a) * 54, 150 + Math.sin(a) * 58); x.lineTo(131 + Math.cos(a) * 46, 150 + Math.sin(a) * 46); x.fill(); } x.fillStyle = "#e8e0d0"; x.fillRect(126, 186, 4, 18); }   // (Dwayne : les colliers de dents et d'os, la croix)
     // les mains griffues au bout des manches, le jean, les bottes
-    for (const sx of [1, -1]) { const hx = sx > 0 ? 12 : 244; x.fillStyle = peau; x.beginPath(); x.arc(hx, 256, 11, 0, 7); x.fill(); x.strokeStyle = "#ece6dc"; x.lineWidth = 2; for (let f = -2; f <= 2; f++) { x.beginPath(); x.moveTo(hx + f * 4, 264); x.lineTo(hx + f * 5, 278); x.stroke(); } }
+    for (const sx of [1, -1]) { const hx = sx > 0 ? 12 : 244; x.fillStyle = k === 0 ? "#141414" : peau; x.beginPath(); x.arc(hx, 256, 11, 0, 7); x.fill(); x.strokeStyle = "#ece6dc"; x.lineWidth = 2; for (let f = -2; f <= 2; f++) { x.beginPath(); x.moveTo(hx + f * 4, 264); x.lineTo(hx + f * 5, 278); x.stroke(); } }
     x.fillStyle = "#23262e"; x.fillRect(94, 400, 30, 82); x.fillRect(132, 400, 30, 82); x.fillStyle = "#0e0e0e"; x.fillRect(90, 474, 38, 22); x.fillRect(128, 474, 38, 22);
     // la tête : pâle, les yeux jaunes, les crocs
     x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 34, 44, 0, 0, 7); x.fill(); x.fillStyle = peau; x.fillRect(116, 140, 24, 16);
@@ -4494,11 +4499,13 @@ function construireSantaCarla(A, L, scene) {
     return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: tex(c), toneMapped: false })); };
   const STANDS = [[-38, "HOT DOGS", "#ff5a3a"], [-30, "ARCADE", "#3ad8ff"], [-22, "COMICS", "#ffd23a"], [-14, "TATTOO", "#ff3ab8"], [14, "SKEE BALL", "#5aff6a"], [22, "PIZZA", "#ff8a2a"], [30, "BUMPER CARS", "#c06aff"], [38, "CANDY", "#ff6a9a"]];
   for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -8); scene.add(g);
-    const murs = A.mat({ color: 0x2aa49a, roughness: .7 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
+    const PAL = [[0x2aa49a, 0xe8c832], [0xf08a2a, 0x6ac83a], [0xd83a2a, 0xe8c832], [0x7a4ac8, 0x2ad8c8], [0x2a62b8, 0xf0a02a], [0xe8c832, 0xd83a2a]], [cm, ct] = PAL[Math.abs(Math.round(x / 8)) % PAL.length];
+    const murs = A.mat({ color: cm, roughness: .7 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
     const b = (dx, dy, dz, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); g.add(o); return o; };
     b(5, 3, 3, murs, 0, 1.5, -1.5); b(4.2, 1.6, .05, A.mat({ color: 0x1a1410, emissive: new THREE.Color(c).multiplyScalar(.25) }), 0, 1.5, .02);   // (la cabane, son comptoir éclairé)
     b(5.4, .1, 1.4, A.mat({ map: rayure, roughness: .7 }), 0, 2.6, .55).rotation.x = .25;   // (le store à rayures)
-    b(5.1, .16, 3.1, A.mat({ color: 0xe8c832, roughness: .5 }), 0, 3.05, -1.5);   // (le liseré jaune du toit)
+    b(5.1, .16, 3.1, A.mat({ color: ct, roughness: .5 }), 0, 3.05, -1.5);   // (le liseré de couleur du toit)
+    for (let i = 0; i < 14; i++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.055, 6, 4), nuitMat([0xff4a4a, 0xffd23a, 0x4ad8ff, 0x7aff6a][i % 4])); bb.position.set(-2.6 + i * .4, 2.42, 1.25); g.add(bb); bulbes.push(bb); }   // (les ampoules au bord du store)
     b(4.6, .9, .25, A.mat({ color: 0x6a4a30 }), 0, .45, .2); const n = neon(txt, c); n.position.set(0, 3.5, .02); g.add(n); }
   // l'arche d'entrée « SANTA CARLA », bordée d'ampoules
   { const g = new THREE.Group(); g.position.set(0, 0, -8.6); scene.add(g); const rouge = A.mat({ color: 0xa82a24, roughness: .6 });
@@ -4508,7 +4515,7 @@ function construireSantaCarla(A, L, scene) {
     const n2 = neon("BOARDWALK", "#3ad8ff", 5); n2.position.set(0, 4.6, .2); g.add(n2); }
   // les guirlandes d'ampoules entre les lampadaires, au-dessus de la jetée
   const lampadaire = (x, z) => { A.ajoute(new THREE.CylinderGeometry(.07, .1, 4.4, 8), A.mat({ color: 0x1e1e22, metalness: .6 }), x, 2.2, z); const l = new THREE.Mesh(new THREE.SphereGeometry(.22, 12, 8), nuitMat(0xffe0a0)); l.position.set(x, 4.5, z); scene.add(l); };
-  for (let x = -42; x <= 42; x += 12) { lampadaire(x, 5.4); lampadaire(x, -5.4); }
+  for (let x = -42; x <= 42; x += 12) for (const z of [5.4, -5.4]) A.ajoute(new THREE.CylinderGeometry(.07, .11, 4.4, 8), A.mat({ color: 0x1a2e24, metalness: .5 }), x, 2.2, z);   // (les fûts : les globes sont posés plus bas)
   for (let x = -42; x < 42; x += 12) for (const z of [5.4, -5.4]) for (let i = 1; i < 12; i++) { const t = i / 12, a = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat([0xff4a4a, 0xffd23a, 0x4ad8ff, 0x7aff6a][i % 4])); a.position.set(x + t * 12, 4.3 - Math.sin(t * Math.PI) * .7, z); scene.add(a); bulbes.push(a); }
   for (let x = -36; x <= 36; x += 24) { const l = new THREE.PointLight(0xffc880, 9, 16, 1.6); l.position.set(x, 4.2, 0); scene.add(l); }
   // ---------- les montagnes russes (le grand huit en bois blanc, ses wagons rouges), à gauche ----------
@@ -4622,8 +4629,217 @@ function construireSantaCarla(A, L, scene) {
     if (L.phare) L.phare.rotation.y = s * .6; (L.drapeaux || []).forEach((d, i) => { d.rotation.y = Math.sin(s * 3 + i) * .35; }); merT.offset.x = s * .004; ecume.position.z = 45 + Math.sin(s * .6) * 1.5; ecume.material.opacity = .25 + Math.sin(s * .6) * .1;
     const cl = Math.floor(s * 3); bulbes.forEach((b, i) => { b.visible = (i + cl) % 7 !== 0; });   // (les ampoules qui clignotent)
     combat(t); };
+  // ================= les détails de la vraie jetée (d'après les photos) =================
+  const OBST = [];   // (les petits obstacles posés sur la jetée : bancs, tables, panneau, vitrine)
+  const bxg = (g, dx, dy, dz, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); g.add(o); return o; };
+  const cyl = (g, r1, r2, h, m, x, y, z, seg = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg), m); o.position.set(x, y, z); g.add(o); return o; };
+  const tube = (g, a, b, r, m) => { const d = b.clone().sub(a), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), m); o.position.copy(a).add(b).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o; };
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  // ---------- le télésiège « Sky Glider » : les poteaux rayés de couleurs, les câbles, les nacelles qui glissent au-dessus de la jetée ----------
+  const raye = tex(toile(64, 512, (x, w, h) => { const C = ["#d83a2a", "#2a9a5a", "#2aa49a", "#f0a02a", "#e8c832"]; let y = 0, i = 0; while (y < h) { const lg = 40 + hasard(i) * 90; x.fillStyle = C[i % 5]; x.fillRect(0, y, w, lg); y += lg; i++; } }), 1, 1);
+  const SG = { x0: -40, x1: 40, za: -6.3, zr: -7.6, h: 9.6 }, cabines = [];
+  for (const px of [-40, -13.3, 13.3, 40]) { const g = new THREE.Group(); g.position.set(px, 0, -6.95); scene.add(g); cyl(g, .22, .28, SG.h + .8, A.mat({ map: raye, roughness: .5 }), 0, (SG.h + .8) / 2, 0); cyl(g, .5, .6, .3, A.mat({ color: 0xf0a02a }), 0, .15, 0);
+    bxg(g, .25, .25, 1.9, A.mat({ color: 0xd83a2a }), 0, SG.h + .5, 0); for (const dz of [SG.za + 6.95, SG.zr + 6.95]) { const r = cyl(g, .28, .28, .1, A.mat({ color: 0x2a2a2e, metalness: .6 }), 0, SG.h + .3, dz, 16); r.rotation.z = Math.PI / 2; }
+    for (let k = 0; k < 18; k++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat(0xffe8a0)); bb.position.set(.25, .8 + k * .5, 0); g.add(bb); bulbes.push(bb); } }   // (la rangée d'ampoules le long du poteau)
+  for (const z of [SG.za, SG.zr]) { const pts2 = []; for (let i = 0; i <= 60; i++) { const x = SG.x0 + i / 60 * (SG.x1 - SG.x0), f = ((x - SG.x0) % 26.67) / 26.67; pts2.push(V3(x, SG.h + .25 - Math.sin(f * Math.PI) * .5, z)); }
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 120, .025, 5), A.mat({ color: 0x1a1a1e, metalness: .7 }))); }
+  for (let i = 0; i < 14; i++) { const g = new THREE.Group(); scene.add(g); const coul = [0x2a9a6a, 0x2aa49a, 0x3a7ac8][i % 3];
+    cyl(g, .025, .025, 1.3, A.mat({ color: 0x2a2a2e, metalness: .6 }), 0, -.65, 0, 6); const toit = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, 1.1, 14, 1, false, 0, Math.PI), A.mat({ color: coul, side: THREE.DoubleSide })); toit.rotation.z = Math.PI / 2; toit.position.y = -1.3; g.add(toit);
+    bxg(g, 1.1, .1, .5, A.mat({ color: coul }), 0, -2.05, 0); bxg(g, 1.1, .45, .06, A.mat({ color: coul }), 0, -1.85, -.25); bxg(g, 1.1, .05, .3, A.mat({ color: 0x2a2a2e }), 0, -2.5, .25);
+    for (const sx of [-.55, .55]) tube(g, V3(sx, -1.3, 0), V3(sx, -2.05, 0), .02, A.mat({ color: 0x2a2a2e })); cabines.push(g); }
+  // ---------- le bateau pirate : le grand portique blanc, le bateau qui se balance, l'enseigne en ampoules ----------
+  const pirate = { pivot: V3(-1, 12, -21) }; { const g = new THREE.Group(); scene.add(g); const blanc2 = A.mat({ color: 0xe8e4da, roughness: .5, metalness: .2 });
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) tube(g, V3(-1 + sx * 6.5, 0, -21 + sz * 3.4), V3(-1, 12, -21 + sz * 1.6), .2, blanc2);
+    for (const sz of [-1, 1]) for (let k = 1; k < 4; k++) { const f = k / 4, y = 12 * f; tube(g, V3(-1 - 6.5 * (1 - f), y, -21 + sz * (3.4 - 1.8 * f)), V3(-1 + 6.5 * (1 - f), y, -21 + sz * (3.4 - 1.8 * f)), .07, blanc2); }
+    tube(g, V3(-1, 12, -23.2), V3(-1, 12, -18.8), .3, blanc2);   // (l'axe)
+    const lettres = tex(toile(1024, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.font = "900 150px 'Arial Black', Impact"; x.textAlign = "center"; x.lineJoin = "round"; x.lineWidth = 26; x.strokeStyle = "#c81e1e"; x.strokeText("PIRATE SHIP", w / 2, 190); x.fillStyle = "#f2efe6"; x.fillText("PIRATE SHIP", w / 2, 190);
+        x.fillStyle = "#ffe8a0"; for (let i = 0; i < 900; i++) { const px = hasard(i * 1.3) * w, py = hasard(i * 2.1) * h, d = x.getImageData(px | 0, py | 0, 1, 1).data; if (d[3] > 200 && d[0] > 200 && d[1] > 200) { x.beginPath(); x.arc(px, py, 4, 0, 7); x.fill(); } } }));
+    const ens = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 1.9), new THREE.MeshBasicMaterial({ map: lettres, transparent: true, toneMapped: false, side: THREE.DoubleSide })); ens.position.set(-1, 9.6, -16.8); ens.rotation.x = -.15; g.add(ens);
+    const bras = new THREE.Group(); bras.position.copy(pirate.pivot); scene.add(bras); pirate.bras = bras;
+    for (const sz of [-.9, .9]) tube(bras, V3(0, 0, sz), V3(0, -9, sz), .14, blanc2);
+    const coque = new THREE.Shape(); coque.moveTo(-4.2, 1.2); coque.quadraticCurveTo(-3.6, -1, 0, -1.3); coque.quadraticCurveTo(3.6, -1, 4.2, 1.2); coque.lineTo(-4.2, 1.2);
+    const ship = new THREE.Mesh(new THREE.ExtrudeGeometry(coque, { depth: 2.4, bevelEnabled: false }), A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#6a3a1e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(0, i * 8, w, 1); } x.fillStyle = "#c81e1e"; x.fillRect(0, 10, w, 6); x.fillStyle = "#e8c832"; x.fillRect(0, 18, w, 2); }), 2, 1), roughness: .6 }));
+    ship.position.set(0, -10.3, -1.2); bras.add(ship);
+    for (let k = -3; k <= 3; k++) bxg(bras, .35, .3, 2.2, A.mat({ color: 0x4a2a14 }), k * 1.05, -9.4, 0);   // (les bancs)
+    cyl(bras, .06, .08, 3.2, A.mat({ color: 0x4a2a14 }), 0, -7.6, 0); const voile2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.4), A.mat({ color: 0x1a1a1a, side: THREE.DoubleSide })); voile2.position.set(0, -6.6, 0); bras.add(voile2);
+    const crane = new THREE.Mesh(new THREE.PlaneGeometry(.7, .7), new THREE.MeshBasicMaterial({ map: tex(toile(64, 64, (x) => { x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(32, 26, 16, 0, 7); x.fill(); x.fillRect(24, 34, 16, 10); x.fillStyle = "#1a1a1a"; x.beginPath(); x.arc(26, 26, 4, 0, 7); x.arc(38, 26, 4, 0, 7); x.fill(); x.strokeStyle = "#f2efe6"; x.lineWidth = 5; x.beginPath(); x.moveTo(12, 46); x.lineTo(52, 60); x.moveTo(52, 46); x.lineTo(12, 60); x.stroke(); })), transparent: true, side: THREE.DoubleSide })); crane.position.set(0, -6.6, .02); bras.add(crane); }
+  // ---------- la Colonnade (1907), au bout de la jetée : ses arcades aux colonnes rouges, son étage, sa corniche verte, ses drapeaux ----------
+  { const g = new THREE.Group(); g.position.set(46, 0, 0); scene.add(g); const crem = A.mat({ color: 0xece4d2, roughness: .8 }), rougeC = A.mat({ color: 0x8a2a24, roughness: .5 }), vertC = A.mat({ color: 0x2a8a7a });
+    const fac = tex(toile(1024, 512, (x, w, h) => { x.fillStyle = "#ece4d2"; x.fillRect(0, 0, w, h); x.fillStyle = "#2a8a7a"; x.fillRect(0, 0, w, 24); x.fillStyle = "#8a2a24"; x.fillRect(0, 24, w, 10); x.fillRect(0, 236, w, 14);
+        for (let i = 0; i < 9; i++) { const X = 30 + i * 110; x.fillStyle = "#3a2a24"; x.fillRect(X, 60, 80, 120); x.fillStyle = "#ffcf7a"; x.globalAlpha = .55; x.fillRect(X + 6, 66, 32, 108); x.fillRect(X + 42, 66, 32, 108); x.globalAlpha = 1; x.fillStyle = "#ece4d2"; x.fillRect(X + 38, 60, 4, 120); x.fillRect(X, 118, 80, 4); }
+        x.fillStyle = "#3a2420"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("THE COLONNADE · 1907", w / 2, 230);
+        for (let i = 0; i < 8; i++) { const X = 64 + i * 122; x.fillStyle = "#2a1a14"; x.beginPath(); x.moveTo(X - 52, h); x.lineTo(X - 52, 330); x.arc(X, 330, 52, Math.PI, 0); x.lineTo(X + 52, h); x.fill(); x.fillStyle = "rgba(255,200,120,.35)"; x.beginPath(); x.arc(X, 380, 26, 0, 7); x.fill(); } }));
+    bxg(g, 6, 9, 20, crem, 3, 4.5, 0); const f = new THREE.Mesh(new THREE.PlaneGeometry(20, 9), A.mat({ map: fac, roughness: .8, emissive: 0xffffff, emissiveMap: fac, emissiveIntensity: .12 })); f.rotation.y = -Math.PI / 2; f.position.set(-.02, 4.5, 0); g.add(f);
+    for (let i = 0; i <= 8; i++) { const z = -10 + i * 2.38 + .1; cyl(g, .22, .26, 4.2, rougeC, -.5, 2.1, z); cyl(g, .32, .32, .18, crem, -.5, 4.25, z); }   // (les colonnes rouges, devant les arcades)
+    bxg(g, 1.2, .3, 20.4, vertC, -.4, 4.45, 0); bxg(g, 6.4, .5, 20.4, vertC, 3, 9.2, 0); bxg(g, 6.2, .9, 1.4, crem, 3, 9.9, 0);
+    for (const z of [-7, 0, 7]) { cyl(g, .03, .03, 3, A.mat({ color: 0xd8dce2 }), 1.5, 11, z, 6); const dr = new THREE.Mesh(new THREE.PlaneGeometry(1.1, .7), A.mat({ color: [0xc81e1e, 0xe8c832, 0x2a62d0][(z / 7 + 1) | 0], side: THREE.DoubleSide })); dr.position.set(1.5, 12.1, z + .56); g.add(dr); (L.drapeaux = L.drapeaux || []).push(dr); }
+    for (let i = 0; i < 40; i++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat(0xffe8a0)); bb.position.set(-.55, 4.7, -10 + i * .5); g.add(bb); bulbes.push(bb); }
+    const l = new THREE.PointLight(0xffc880, 14, 14, 1.6); l.position.set(-2, 3.5, 0); g.add(l); }
+  // ---------- les montagnes russes en acier (la structure verte, la voie orange), derrière le manège ----------
+  { const vert = A.mat({ color: 0x2a9a8a, roughness: .5, metalness: .3 }), g = new THREE.Group(); g.position.set(50, 0, -24); scene.add(g);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { const x = -9 + i * 6, z = -6 + j * 6, h = 8 + (i === 1 ? 6 : 0) + (j === 1 ? 2 : 0); cyl(g, .16, .16, h, vert, x, h / 2, z, 8);
+      if (i < 3) for (const y of [h * .5, h]) tube(g, V3(x, y, z), V3(x + 6, y, z), .1, vert); if (j < 2) for (const y of [h * .5, h]) tube(g, V3(x, y, z), V3(x, y, z + 6), .1, vert); if (i < 3) tube(g, V3(x, 0, z), V3(x + 6, h * .5, z), .07, vert); }
+    const pts3 = []; for (let i = 0; i < 80; i++) { const t = i / 80 * Math.PI * 2; pts3.push(V3(Math.cos(t) * 9, 7 + Math.sin(t * 3) * 3.5 + Math.max(0, Math.sin(t)) * 6, Math.sin(t * 2) * 5.5)); }
+    const v2 = new THREE.CatmullRomCurve3(pts3, true); g.add(new THREE.Mesh(new THREE.TubeGeometry(v2, 300, .16, 6, true), A.mat({ color: 0xf08a2a, roughness: .4 })));
+    { const n = 160, im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, .06, .1), A.mat({ color: 0xf08a2a }), n), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), tg = new THREE.Vector3();
+      for (let i = 0; i < n; i++) { v2.getPointAt(i / n, p); v2.getTangentAt(i / n, tg); q.setFromAxisAngle(V3(0, 1, 0), Math.atan2(tg.x, tg.z)); mt.compose(p, q, V3(1, 1, 1)); im.setMatrixAt(i, mt); } g.add(im); }
+    const train = []; for (let k = 0; k < 3; k++) { const w = new THREE.Mesh(new THREE.BoxGeometry(.8, .5, 1.2), A.mat({ color: k % 2 ? 0x2a62d0 : 0xf08a2a })); g.add(w); train.push(w); }
+    L.ouragan = { v: v2, train }; }
+  // ---------- les boutiques colorées (façon « World Grill ») et la façade de l'arcade aux triangles rouges percés de ronds ----------
+  { const grill = new THREE.Group(); grill.position.set(-26, 0, 9.5); grill.rotation.y = Math.PI; scene.add(grill);
+    const oran = A.mat({ color: 0xf08a2a, roughness: .7 }), vertG = A.mat({ color: 0x6ac83a, roughness: .6 }), bleuG = A.mat({ color: 0x2a62b8 });
+    bxg(grill, 6, 3, 3.5, oran, 0, 1.5, -1.75); bxg(grill, 6.4, .25, 3.9, vertG, 0, 3.1, -1.75); const toitG = new THREE.Mesh(new THREE.ConeGeometry(3.6, 1.4, 4), A.mat({ color: 0x2a2a30 })); toitG.rotation.y = Math.PI / 4; toitG.scale.set(1.2, 1, .7); toitG.position.set(0, 3.9, -1.75); grill.add(toitG);
+    for (let i = 0; i < 4; i++) bxg(grill, 1, 1.2, .06, bleuG, -2.1 + i * 1.4, 1.6, .02); bxg(grill, 6, .4, .08, bleuG, 0, .35, .03);
+    const med = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshBasicMaterial({ map: tex(toile(256, 256, (x) => { x.fillStyle = "#f4ead2"; x.beginPath(); x.arc(128, 128, 126, 0, 7); x.fill(); x.strokeStyle = "#c83a2a"; x.lineWidth = 10; x.stroke();
+        x.fillStyle = "#2a8ac8"; x.beginPath(); x.arc(128, 150, 70, 0, Math.PI); x.fill(); x.fillStyle = "#2a6a2a"; x.fillRect(118, 90, 6, 60); x.beginPath(); x.ellipse(121, 90, 30, 10, -.4, 0, 7); x.ellipse(121, 90, 30, 10, .4, 0, 7); x.fill();
+        x.fillStyle = "#c83a2a"; x.font = "italic bold 46px Georgia"; x.textAlign = "center"; x.fillText("World Grill", 128, 70); })), toneMapped: false })); med.position.set(1.8, 4.2, .2); grill.add(med);
+    for (let i = 0; i < 16; i++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat([0xff4a4a, 0xffd23a, 0x4ad8ff, 0x7aff6a][i % 4])); bb.position.set(-3 + i * .4, 3.3, .25); grill.add(bb); bulbes.push(bb); }
+    const lG = new THREE.PointLight(0xffa860, 8, 9, 1.6); lG.position.set(0, 2.6, 1.6); grill.add(lG); OBST.push([-29.3, -22.7, 9.1, 13.5]); }
+  { const tri = new THREE.Shape(); tri.moveTo(-1.1, 0); tri.lineTo(1.1, 0); tri.lineTo(0, 3.6); tri.closePath(); for (const [y, r] of [[.8, .28], [1.7, .22], [2.5, .15]]) { const h = new THREE.Path(); h.absarc(0, y, r, 0, Math.PI * 2, false); tri.holes.push(h); }
+    const triG = new THREE.ExtrudeGeometry(tri, { depth: .12, bevelEnabled: false }), rougeT = A.mat({ color: 0xd8302a, roughness: .5 }), creme = A.mat({ color: 0xf2e6c8 });
+    for (const xs of [-30, 30]) for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(triG, k % 2 ? creme : rougeT); m.position.set(xs - 1.6 + k * 1.6, 3.15, -7.95); m.rotation.x = -.1; scene.add(m); } }   // (sur l'arcade et les autos tamponneuses)
+  // ---------- le panneau « Lookit What I Caught! », où l'on passe la tête ----------
+  { const g = new THREE.Group(); g.position.set(8, 0, 4.7); scene.add(g);
+    const peint = tex(toile(768, 768, (x, w, h) => { const ci = x.createLinearGradient(0, 0, 0, 380); ci.addColorStop(0, "#5a8ac8"); ci.addColorStop(1, "#9ac0e0"); x.fillStyle = ci; x.fillRect(0, 0, w, h);
+        x.fillStyle = "#8a2a5a"; x.beginPath(); x.moveTo(0, 360); x.lineTo(140, 330); x.lineTo(260, 350); x.lineTo(380, 320); x.lineTo(420, 370); x.lineTo(0, 380); x.fill(); x.fillStyle = "#2ab0a8"; x.fillRect(0, 370, w, 90); x.fillStyle = "#f4f0e4"; for (let i = 0; i < 20; i++) x.fillRect(i * 40, 456, 30, 6);
+        x.fillStyle = "#b8864a"; x.fillRect(0, 460, w, h - 460); x.fillStyle = "#5aa83a"; x.beginPath(); x.moveTo(0, 560); x.quadraticCurveTo(200, 640, 300, h); x.lineTo(0, h); x.fill();
+        // la sirène (cheveux blonds, queue verte) que le pêcheur emporte
+        x.fillStyle = "#f0a020"; x.beginPath(); x.ellipse(250, 260, 80, 130, -.2, 0, 7); x.fill();   // (les cheveux)
+        x.fillStyle = "#f08a3a"; x.beginPath(); x.ellipse(300, 330, 60, 40, -.4, 0, 7); x.fill(); x.fillStyle = "#e83a8a"; x.beginPath(); x.arc(285, 330, 16, 0, 7); x.arc(320, 320, 16, 0, 7); x.fill();
+        x.fillStyle = "#4ab83a"; x.beginPath(); x.moveTo(330, 350); x.quadraticCurveTo(520, 340, 560, 470); x.quadraticCurveTo(600, 560, 640, 610); x.lineTo(560, 600); x.quadraticCurveTo(520, 520, 470, 430); x.quadraticCurveTo(400, 400, 340, 400); x.fill();
+        x.strokeStyle = "rgba(0,60,0,.4)"; x.lineWidth = 2; for (let i = 0; i < 30; i++) { x.beginPath(); x.arc(380 + (i % 6) * 26, 380 + Math.floor(i / 6) * 22, 10, 0, Math.PI); x.stroke(); }
+        // le pêcheur : chemise blanche, short rouge, la canne, le panier
+        x.fillStyle = "#f4f2ea"; x.beginPath(); x.moveTo(440, 190); x.lineTo(560, 190); x.lineTo(580, 390); x.lineTo(430, 390); x.fill(); x.fillStyle = "#d83a2a"; x.fillRect(440, 390, 130, 70); x.fillStyle = "#f08a3a"; x.fillRect(450, 460, 40, 150); x.fillRect(520, 460, 40, 150);
+        x.strokeStyle = "#6a3a1e"; x.lineWidth = 8; x.beginPath(); x.moveTo(300, 200); x.lineTo(470, 560); x.stroke(); x.fillStyle = "#b8743a"; x.beginPath(); x.ellipse(620, 300, 50, 60, .2, 0, 7); x.fill();
+        // le petit panneau en bois et la phrase
+        x.fillStyle = "#c8a070"; x.fillRect(40, 520, 250, 140); x.strokeStyle = "#6a4a2a"; x.lineWidth = 6; x.strokeRect(40, 520, 250, 140); x.fillStyle = "#4a2a14"; x.font = "bold 34px Georgia"; x.fillText("at the", 110, 562); x.font = "bold 40px Georgia"; x.fillText("Santa Carla", 52, 610); x.font = "28px Georgia"; x.fillText("Boardwalk", 100, 645);
+        x.fillStyle = "#f4ead8"; x.strokeStyle = "#3a2a1a"; x.lineWidth = 6; x.font = "bold 58px 'Cooper Black', Georgia"; x.strokeText("\"Lookit What I", 300, 690); x.fillText("\"Lookit What I", 300, 690); x.strokeText("Caught!\"", 430, 750); x.fillText("Caught!\"", 430, 750);
+        // les deux trous, pour passer la tête
+        x.globalCompositeOperation = "destination-out"; x.beginPath(); x.ellipse(235, 180, 46, 58, 0, 0, 7); x.ellipse(500, 140, 50, 62, 0, 0, 7); x.fill(); x.globalCompositeOperation = "source-over"; }));
+    const pan = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), A.mat({ map: peint, alphaTest: .5, side: THREE.DoubleSide, roughness: .6, emissive: 0xffffff, emissiveMap: peint, emissiveIntensity: .15 })); pan.position.y = 1.45; pan.rotation.y = Math.PI; g.add(pan);
+    for (const sx of [-1.15, 1.15]) cyl(g, .04, .04, 2.6, A.mat({ color: 0xd8dce2, metalness: .8, roughness: .2 }), sx, 1.3, 0, 8);
+    OBST.push([6.7, 9.3, 4.4, 5.0]); }
+  // ---------- Laffing Sal, dans sa vitrine : elle rit quand on s'approche ----------
+  const sal = { pos: V3(-9, 0, -6.7) }; { const g = new THREE.Group(); g.position.copy(sal.pos); scene.add(g);
+    const dessine = (bouche) => toile(256, 384, (x, w, h) => { x.fillStyle = "#1a5a5a"; x.beginPath(); x.moveTo(20, h); x.quadraticCurveTo(30, 250, 128, 240); x.quadraticCurveTo(226, 250, 236, h); x.fill();   // (la veste de velours vert)
+        x.fillStyle = "#f4f2ea"; for (let i = 0; i < 14; i++) { x.beginPath(); x.arc(70 + (i % 7) * 20, 252 + Math.floor(i / 7) * 22, 14, 0, 7); x.fill(); }   // (la dentelle)
+        x.strokeStyle = "#c8a030"; x.lineWidth = 9; x.beginPath(); x.arc(128, 236, 58, .3, Math.PI - .3); x.stroke();   // (le collier doré)
+        x.fillStyle = "#e8c070"; x.fillRect(110, 190, 36, 50); x.beginPath(); x.ellipse(128, 140, 66, 76, 0, 0, 7); x.fill();   // (le visage)
+        x.fillStyle = "#7a3a2a"; x.beginPath(); x.ellipse(128, 86, 74, 40, 0, Math.PI, 0); x.fill(); for (let i = 0; i < 12; i++) { x.fillRect(58 + i * 6, 80, 5, 36 + (i % 3) * 8); x.fillRect(168 + (i % 6) * 6, 90, 5, 90 + (i % 3) * 12); x.fillRect(62 - (i % 4) * 4, 100, 5, 80); }   // (les cheveux)
+        x.fillStyle = "#d8b860"; x.beginPath(); x.ellipse(128, 60, 70, 16, 0, 0, 7); x.fill(); x.fillStyle = "#3a2a1a"; x.fillRect(70, 56, 116, 8);   // (le chapeau de paille)
+        x.fillStyle = "#5a8ac8"; x.beginPath(); x.ellipse(102, 130, 9, 6, 0, 0, 7); x.ellipse(154, 130, 9, 6, 0, 0, 7); x.fill(); x.strokeStyle = "#3a2a1a"; x.lineWidth = 3; x.beginPath(); x.arc(102, 118, 14, Math.PI * 1.1, Math.PI * 1.9); x.arc(154, 118, 14, Math.PI * 1.1, Math.PI * 1.9); x.stroke();
+        x.fillStyle = "#3a2a1a"; for (let i = 0; i < 14; i++) { x.beginPath(); x.arc(84 + hasard(i) * 88, 140 + hasard(i * 3) * 30, 2.5, 0, 7); x.fill(); }   // (les taches de rousseur)
+        x.fillStyle = "#e8987a"; x.beginPath(); x.ellipse(128, 156, 12, 10, 0, 0, 7); x.fill();
+        x.fillStyle = "#8a1a1a"; x.beginPath(); x.ellipse(128, 190, 34, bouche ? 24 : 10, 0, 0, 7); x.fill(); x.fillStyle = "#1a0a14"; x.beginPath(); x.ellipse(128, 194, 26, bouche ? 16 : 4, 0, 0, 7); x.fill();
+        if (bouche) { x.fillStyle = "#f4f2ea"; x.fillRect(108, 172, 16, 10); x.fillRect(132, 172, 16, 10); } });   // (les dents, et le trou au milieu)
+    const tOuv = tex(dessine(true)), tFer = tex(dessine(false)), mat2 = new THREE.MeshBasicMaterial({ map: tFer, transparent: true, toneMapped: false }), fig = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.65), mat2); fig.position.set(0, 1.85, .05); g.add(fig);
+    const bois2 = A.mat({ color: 0x6a3a1e, roughness: .5 }); bxg(g, 1.6, 1, .9, bois2, 0, .5, -.1); bxg(g, 1.6, .2, .9, bois2, 0, 2.9, -.1); for (const sx of [-.78, .78]) bxg(g, .06, 1.9, .9, bois2, sx, 1.95, -.1);
+    const vitre2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.85), new THREE.MeshBasicMaterial({ color: 0xc8e0ff, transparent: true, opacity: .12, depthWrite: false })); vitre2.position.set(0, 1.95, .34); g.add(vitre2);
+    const fond2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.85), new THREE.MeshBasicMaterial({ color: 0x8a6ac8, toneMapped: false })); fond2.position.set(0, 1.95, -.5); g.add(fond2);
+    const pan2 = neon("LAFFING SAL", "#ffd23a", 1.6); pan2.position.set(0, 3.25, .35); g.add(pan2); const l2 = new THREE.PointLight(0xd8a8ff, 4, 4, 1.6); l2.position.set(0, 2.4, .9); g.add(l2);
+    Object.assign(sal, { tOuv, tFer, mat: mat2, fig, rit: 0 }); OBST.push([-9.9, -8.1, -7.2, -6.2]); }
+  // ---------- les bancs face à la mer, les tables à parasols rayés, les poubelles ----------
+  for (const x of [-34, -18, -6, 18, 34]) { const g = new THREE.Group(); g.position.set(x, 0, 5.3); scene.add(g); const fer = A.mat({ color: 0x1e3a2a, metalness: .5 }), latte = A.mat({ color: 0x8a5a32, roughness: .7 });
+    for (let k = 0; k < 4; k++) bxg(g, 2, .05, .1, latte, 0, .48, -.18 + k * .12); for (let k = 0; k < 3; k++) bxg(g, 2, .1, .04, latte, 0, .65 + k * .14, .22); for (const sx of [-.9, .9]) { bxg(g, .06, .48, .5, fer, sx, .24, 0); bxg(g, .06, .5, .06, fer, sx, .72, .22); } OBST.push([x - 1.1, x + 1.1, 4.95, 5.6]); }
+  for (const x of [-26, -10, 10, 26]) { const g = new THREE.Group(); g.position.set(x, 0, -4.6); scene.add(g); const bois3 = A.mat({ color: 0x7a5232, roughness: .7 });
+    bxg(g, 1.6, .06, .8, bois3, 0, .74, 0); for (const sz of [-.55, .55]) bxg(g, 1.6, .05, .3, bois3, 0, .45, sz); bxg(g, .1, .74, .1, bois3, 0, .37, 0); cyl(g, .025, .025, 2.4, A.mat({ color: 0xd8dce2 }), 0, 1.2, 0, 6);
+    const par = new THREE.Mesh(new THREE.ConeGeometry(1.3, .5, 12, 1, true), A.mat({ map: tex(toile(256, 32, (q, w, h) => { const C = ["#d83a2a", "#f0a02a", "#2a9a5a", "#e8c832"]; for (let i = 0; i < 12; i++) { q.fillStyle = C[(i + (x > 0 ? 1 : 0)) % 4]; q.fillRect(i * w / 12, 0, w / 12, h); } })), side: THREE.DoubleSide })); par.position.y = 2.35; g.add(par); OBST.push([x - .9, x + .9, -5.3, -3.9]); }
+  for (const x of [-22, -2, 2, 22]) { const g = new THREE.Group(); g.position.set(x, 0, -5.9); scene.add(g); cyl(g, .28, .25, .95, A.mat({ color: x < 0 ? 0x1a3a8a : 0x1a1a1e }), 0, .48, 0); cyl(g, .3, .3, .06, A.mat({ color: 0x2a2a2e }), 0, .98, 0); }
+  // les lampadaires à l'ancienne : le fût vert sombre, deux globes de verre sur leurs bras
+  for (let x = -42; x <= 42; x += 12) for (const z of [5.4, -5.4]) { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const fv = A.mat({ color: 0x1a2e24, metalness: .5, roughness: .4 });
+    for (const sx of [-.45, .45]) { tube(g, V3(0, 4.1, 0), V3(sx, 4.4, 0), .035, fv); const gl = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 8), nuitMat(0xfff0c8)); gl.position.set(sx, 4.62, 0); g.add(gl); } }
+  // ---------- quelques lumières de couleur (les néons qui éclairent la jetée) ----------
+  for (const [x, z, c] of [[-30, -6, 0x3ad8ff], [14, -6, 0x5aff6a], [-14, -6, 0xff3ab8], [0, -12, 0xff3a3a]]) { const l = new THREE.PointLight(c, 6, 10, 1.6); l.position.set(x, 3, z); scene.add(l); }
+  // les obstacles s'ajoutent aux limites de la jetée
+  { const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !OBST.some(([a, b, c, d]) => x > a - .12 && x < b + .12 && z > c - .12 && z < d + .12); }
+  // l'animation des nouveaux manèges
+  { const av = L.anim; let rire = 0; L.anim = (t) => { av && av(t); const s = t / 1000;
+      cabines.forEach((c, i) => { const u = ((s * .012) + i / cabines.length) % 1, L2 = SG.x1 - SG.x0, aller = u < .5, x = aller ? SG.x0 + u * 2 * L2 : SG.x1 - (u - .5) * 2 * L2, f = ((x - SG.x0) % 26.67) / 26.67; c.position.set(x, SG.h + .25 - Math.sin(f * Math.PI) * .5, aller ? SG.za : SG.zr); });
+      if (pirate.bras) pirate.bras.rotation.z = Math.sin(s * 2 * Math.PI / 7) * 1.05;
+      if (L.ouragan) { const { v, train } = L.ouragan; train.forEach((w, k) => { const u = ((s * .07) + 1 - k * .012) % 1, p = v.getPointAt(u), tg = v.getTangentAt(u); w.position.copy(p).add(V3(0, .35, 0)); w.lookAt(w.position.x + tg.x, w.position.y + tg.y, w.position.z + tg.z); }); }
+      // Laffing Sal : elle rit (la bouche qui s'ouvre, le corps qui se balance) quand on passe devant
+      const p = moiP(); if (p && sal.mat) { const pres = Math.hypot(p.x - sal.pos.x, p.z - sal.pos.z) < 5; if (pres && !sal.rit) { sal.rit = s; rireSal(); } if (!pres && sal.rit && s - sal.rit > 6) sal.rit = 0;
+        const riant = sal.rit && s - sal.rit < 5; sal.mat.map = riant && Math.floor(s * 7) % 2 ? sal.tOuv : sal.tFer; sal.fig.rotation.z = riant ? Math.sin(s * 9) * .06 : 0; sal.fig.position.y = 1.85 + (riant ? Math.abs(Math.sin(s * 9)) * .04 : 0); } }; }
+  // le rire de Sal, fabriqué : une suite de « ha ! » qui descendent
+  const rireSal = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t0 = actx.currentTime;
+      for (let i = 0; i < 9; i++) { const o = actx.createOscillator(), gn = actx.createGain(), f = actx.createBiquadFilter(); o.type = "sawtooth"; f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 3;
+        const d = t0 + i * .19; o.frequency.setValueAtTime(330 - i * 12, d); o.frequency.linearRampToValueAtTime(250 - i * 12, d + .14); gn.gain.setValueAtTime(0, d); gn.gain.linearRampToValueAtTime(.18, d + .02); gn.gain.linearRampToValueAtTime(0, d + .15);
+        o.connect(f); f.connect(gn); gn.connect(actx.destination); o.start(d); o.stop(d + .16); } } catch (e) {} };
+  // ================= le concert sur la plage, comme dans le film : le saxophoniste torse nu, la scène, les projecteurs, la foule =================
+  const CONCERT = { x: 6, z: 30, mp3: "" };   // (la musique : le fichier qu'on me donnera — vide, la scène reste muette)
+  { const g = new THREE.Group(); g.position.set(CONCERT.x, 0, CONCERT.z); scene.add(g); const noir = A.mat({ color: 0x111114, roughness: .8 }), alu = A.mat({ color: 0xb8bcc4, metalness: .8, roughness: .3 });
+    bxg(g, 14, 1.4, 6.5, noir, 0, .7, 3); bxg(g, 14, .08, 6.5, A.mat({ color: 0x2a2a30, roughness: .5 }), 0, 1.44, 3);   // (le plateau)
+    const jupe = tex(toile(512, 64, (x, w, h) => { x.fillStyle = "#0a0a0c"; x.fillRect(0, 0, w, h); x.strokeStyle = "rgba(255,255,255,.06)"; for (let i = 0; i < 64; i++) { x.beginPath(); x.moveTo(i * 8, 0); x.lineTo(i * 8, h); x.stroke(); } }), 4, 1);
+    const jp = new THREE.Mesh(new THREE.PlaneGeometry(14, 1.4), A.mat({ map: jupe })); jp.rotation.y = Math.PI; jp.position.set(0, .7, -.26); g.add(jp);
+    // les tours en treillis d'aluminium, la poutre du haut
+    const treillis = tex(toile(64, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.strokeStyle = "#c8ccd4"; x.lineWidth = 5; x.strokeRect(3, 0, w - 6, h); x.lineWidth = 3; for (let y = 0; y < h; y += 32) { x.beginPath(); x.moveTo(3, y); x.lineTo(w - 3, y + 32); x.moveTo(w - 3, y); x.lineTo(3, y + 32); x.stroke(); } }), 1, 3);
+    const tmat = new THREE.MeshStandardMaterial({ map: treillis, transparent: true, alphaTest: .4, side: THREE.DoubleSide, metalness: .6, roughness: .4 });
+    for (const sx of [-6.6, 6.6]) for (const sz of [.4, 6]) bxg(g, .4, 8.5, .4, tmat, sx, 4.25, sz);
+    for (const sz of [.4, 6]) { const b2 = bxg(g, 13.6, .4, .4, tmat, 0, 8.5, sz); } for (const sx of [-6.6, 6.6]) bxg(g, .4, .4, 5.6, tmat, sx, 8.5, 3.2);
+    // le rideau noir du fond, le nom du groupe en lettres de lumière
+    bxg(g, 13, 7, .1, A.mat({ color: 0x08080a, roughness: 1 }), 0, 4.9, 6.1);
+    const nomG = new THREE.Mesh(new THREE.PlaneGeometry(8, 1.4), new THREE.MeshBasicMaterial({ map: tex(toile(1024, 180, (x, w, h) => { x.font = "italic 900 110px 'Arial Black', Impact"; x.textAlign = "center"; x.shadowColor = "#ff3ab8"; x.shadowBlur = 30; x.fillStyle = "#ff8ad8"; x.fillText("I STILL BELIEVE", w / 2, 128); x.shadowBlur = 0; x.fillStyle = "#fff"; x.globalAlpha = .6; x.fillText("I STILL BELIEVE", w / 2, 128); })), transparent: true, toneMapped: false }));
+    nomG.rotation.y = Math.PI; nomG.position.set(0, 7.2, 6); g.add(nomG);
+    // les enceintes empilées, de chaque côté
+    const hp = tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#151517"; x.fillRect(0, 0, w, h); x.strokeStyle = "#333"; x.lineWidth = 4; x.strokeRect(2, 2, w - 4, h - 4); for (const [cx, cy, r] of [[64, 76, 36], [64, 24, 12]]) { const gr = x.createRadialGradient(cx, cy, 2, cx, cy, r); gr.addColorStop(0, "#555"); gr.addColorStop(.3, "#1a1a1a"); gr.addColorStop(.9, "#2a2a2a"); gr.addColorStop(1, "#000"); x.fillStyle = gr; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); } }));
+    const hpm = [noir, noir, noir, noir, noir, A.mat({ map: hp, roughness: .7 })];
+    for (const sx of [-8.4, 8.4]) for (let k = 0; k < 4; k++) { const e = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.3, 1.2), hpm); e.position.set(sx, .65 + k * 1.32, 1.2); e.rotation.y = Math.PI; g.add(e); }
+    // la batterie, le clavier, les amplis, les micros
+    const kit = new THREE.Group(); kit.position.set(-3, 1.45, 4.2); g.add(kit); const fut = A.mat({ color: 0xa81c2a, metalness: .4, roughness: .3 }), peauT = A.mat({ color: 0xece8de });
+    const gc = cyl(kit, .5, .5, .55, fut, 0, .55, 0, 20); gc.rotation.x = Math.PI / 2; cyl(kit, .3, .3, .3, fut, -.7, .7, -.3); cyl(kit, .26, .26, .28, fut, .45, 1, -.2); cyl(kit, .27, .27, .25, fut, -.35, 1.05, -.2); cyl(kit, .3, .3, .5, fut, .9, .45, -.1);
+    for (const [cx, cy, cz] of [[-1.1, 1.5, -.1], [1.2, 1.6, 0], [-.9, 1.2, -.6]]) { cyl(kit, .012, .012, cy, alu, cx, cy / 2, cz, 6); const cb = cyl(kit, .38, .3, .02, A.mat({ color: 0xd8b040, metalness: .9, roughness: .25 }), cx, cy, cz, 20); cb.rotation.x = .2; }
+    const clav = new THREE.Group(); clav.position.set(3.4, 1.45, 3.6); g.add(clav); for (const sx of [-.6, .6]) tube(clav, V3(sx - .3, 0, 0), V3(sx + .3, .9, 0), .02, alu); bxg(clav, 1.5, .1, .45, noir, 0, .95, 0);
+    bxg(clav, 1.4, .02, .18, A.mat({ color: 0xf4f2ea }), 0, 1.01, -.1);
+    for (const sx of [-1.6, 4.8]) { bxg(g, 1, .8, .5, A.mat({ color: 0x1a1a1a }), sx, 1.85, 5.2); bxg(g, .9, .6, .02, A.mat({ color: 0x3a3a3a }), sx, 1.85, 4.94); }
+    tube(g, V3(0, 1.45, 1.2), V3(0, 3.1, 1.2), .015, alu); cyl(g, .25, .25, .02, alu, 0, 1.46, 1.2, 12);   // (le pied du micro, au bord de la scène)
+    // les musiciens : le saxophoniste, torse nu et huilé, sa queue de cheval, ses chaînes, le sax doré ; derrière lui le batteur et le clavier, dans l'ombre
+    const dessinSax = (haut) => toile(256, 512, (x, w, h) => { const peau = "#d89a68", luis = "rgba(255,240,210,.55)";
+      x.fillStyle = "#b8864a"; x.beginPath(); x.ellipse(128, 82, 40, 38, 0, Math.PI, 0); x.fill(); x.beginPath(); x.moveTo(150, 90); x.quadraticCurveTo(190, 130, 170, 210); x.lineTo(160, 200); x.quadraticCurveTo(170, 140, 140, 100); x.fill();   // (la queue de cheval)
+      x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 32, 40, 0, 0, 7); x.fill(); x.fillRect(110, 136, 36, 26);
+      x.beginPath(); x.moveTo(60, 168); x.quadraticCurveTo(128, 150, 196, 168); x.lineTo(186, 260); x.quadraticCurveTo(170, 330, 160, 360); x.lineTo(96, 360); x.quadraticCurveTo(86, 330, 70, 260); x.fill();   // (le torse)
+      x.strokeStyle = "rgba(120,60,30,.55)"; x.lineWidth = 3; x.beginPath(); x.moveTo(128, 180); x.lineTo(128, 350); x.moveTo(84, 230); x.quadraticCurveTo(108, 248, 126, 236); x.moveTo(172, 230); x.quadraticCurveTo(148, 248, 130, 236); for (let i = 0; i < 3; i++) { x.moveTo(104, 270 + i * 26); x.lineTo(152, 270 + i * 26); } x.stroke();   // (les pectoraux, les abdos)
+      x.fillStyle = luis; for (const [a, b, c, d] of [[96, 200, 14, 22], [156, 200, 14, 22], [116, 290, 8, 12], [140, 290, 8, 12], [72, 200, 8, 30]]) { x.beginPath(); x.ellipse(a, b, c, d, .3, 0, 7); x.fill(); }   // (l'huile qui brille)
+      for (const [sx, bx] of [[1, 44], [-1, 212]]) { x.fillStyle = peau; x.beginPath(); x.ellipse(bx, 210, 24, 50, sx * .3, 0, 7); x.fill(); }   // (les gros bras)
+      x.strokeStyle = "#c8ccd4"; x.lineWidth = 4; x.beginPath(); x.arc(128, 150, 34, .3, Math.PI - .3); x.stroke(); x.beginPath(); x.arc(128, 160, 44, .4, Math.PI - .4); x.stroke(); for (const bx of [36, 220]) { x.beginPath(); x.ellipse(bx, 262, 16, 5, 0, 0, 7); x.stroke(); }   // (les chaînes, les bracelets)
+      x.fillStyle = "#121214"; x.beginPath(); x.moveTo(94, 352); x.lineTo(162, 352); x.lineTo(170, 500); x.lineTo(136, 500); x.lineTo(128, 400); x.lineTo(120, 500); x.lineTo(86, 500); x.fill(); x.fillStyle = "rgba(255,255,255,.15)"; x.fillRect(100, 360, 6, 130); x.fillRect(150, 360, 6, 130);   // (le pantalon de cuir)
+      x.fillStyle = "#3a2a1a"; x.beginPath(); x.ellipse(116, 98, 6, 3, 0, 0, 7); x.ellipse(140, 98, 6, 3, 0, 0, 7); x.fill(); x.fillStyle = "#6a3a2a"; x.beginPath(); x.ellipse(128, 126, 6, 4, 0, 0, 7); x.fill();
+      // le saxophone doré, tenu haut, le pavillon vers le ciel quand il pousse la note
+      x.save(); x.translate(128, 128); x.rotate(haut ? -.55 : -.15); const or = x.createLinearGradient(-20, 0, 20, 0); or.addColorStop(0, "#8a6a1a"); or.addColorStop(.5, "#ffe48a"); or.addColorStop(1, "#a8801a"); x.fillStyle = or;
+      x.fillRect(-6, 0, 12, 18); x.beginPath(); x.moveTo(-10, 18); x.lineTo(10, 18); x.lineTo(16, 170); x.quadraticCurveTo(10, 200, -20, 196); x.lineTo(-30, 170); x.lineTo(-8, 160); x.fill(); x.beginPath(); x.ellipse(-30, 150, 26, 14, -.6, 0, 7); x.fill();
+      x.fillStyle = "#5a4010"; for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(4, 50 + i * 20, 4, 0, 7); x.fill(); } x.restore();
+      for (const [hx, hy] of [[124, 210], [132, 262]]) { x.fillStyle = peau; x.beginPath(); x.arc(hx + (haut ? -18 : 0), hy - (haut ? 14 : 0), 12, 0, 7); x.fill(); } });
+    const tS = [tex(dessinSax(false)), tex(dessinSax(true))], mSax = new THREE.MeshBasicMaterial({ map: tS[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, toneMapped: false, color: 0xe8d8d0 });
+    const sax = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 2.1), mSax); sax.position.set(0, 2.5, 1.5); sax.rotation.y = Math.PI; g.add(sax);
+    const ombreM = (dessin) => new THREE.Mesh(new THREE.PlaneGeometry(.9, 1.8), new THREE.MeshBasicMaterial({ map: tex(toile(128, 256, dessin)), transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+    const silh = (x) => { x.fillStyle = "#16121a"; x.beginPath(); x.arc(64, 40, 22, 0, 7); x.fill(); x.beginPath(); x.moveTo(26, 80); x.quadraticCurveTo(64, 62, 102, 80); x.lineTo(96, 250); x.lineTo(32, 250); x.fill(); x.fillStyle = "#6a5a7a"; x.fillRect(30, 60, 70, 4); };
+    const bat = ombreM(silh); bat.position.set(-3, 2.1, 4.75); bat.rotation.y = Math.PI; g.add(bat); const kb = ombreM(silh); kb.position.set(3.4, 2.35, 4.05); kb.rotation.y = Math.PI; g.add(kb);
+    // les projecteurs sur la poutre, leurs faisceaux de couleur qui balaient ; la fumée de la scène
+    const faisceaux = [];
+    for (let i = 0; i < 6; i++) { const c = [0xff3ab8, 0x3a8aff, 0xffd23a, 0x8a3aff, 0x3affd8, 0xff5a3a][i], px = -5.5 + i * 2.2; cyl(g, .16, .2, .4, A.mat({ color: 0x1a1a1a, metalness: .5 }), px, 8.05, .4, 10);
+      const geo = new THREE.ConeGeometry(1.4, 9, 20, 1, true); geo.translate(0, -4.5, 0); const f = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+      f.position.set(px, 7.9, .4); g.add(f); faisceaux.push({ f, ph: i * 1.3 }); }
+    const ls = [0xff3ab8, 0x3a8aff].map((c, i) => { const l = new THREE.PointLight(c, 30, 16, 1.6); l.position.set(i ? 3 : -3, 5, -1); g.add(l); return l; });
+    const sp2 = new THREE.SpotLight(0xfff0d8, 60, 18, .35, .5, 1.4); sp2.position.set(0, 8, -3); sp2.target = sax; g.add(sp2);
+    const fumeeC = tex(toile(64, 64, (x) => { const gr = x.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
+    for (let i = 0; i < 10; i++) { const fm = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeC, transparent: true, opacity: .16, depthWrite: false, color: 0xc8b8e0 })); fm.position.set(-6 + i * 1.3, 1.9 + hasard(i) * .6, 2 + hasard(i * 3) * 3); fm.scale.setScalar(2.6); g.add(fm); }
+    // la foule, sur le sable, qui danse face à la scène
+    const foule = [];
+    for (let i = 0; i < 46; i++) { const fx = CONCERT.x - 9 + hasard(i * 1.7) * 18, fz = CONCERT.z - 4.5 - hasard(i * 2.9) * 9, coul = ["#1a1420", "#221a2a", "#2a1a1e", "#14182a"][i % 4], cheveux = i % 3 === 0;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(.8, 1.75), new THREE.MeshBasicMaterial({ map: tex(toile(64, 140, (x) => { x.fillStyle = coul; x.beginPath(); x.arc(32, 18, cheveux ? 15 : 12, 0, 7); x.fill(); if (cheveux) x.fillRect(17, 18, 30, 26); x.beginPath(); x.moveTo(12, 40); x.quadraticCurveTo(32, 30, 52, 40); x.lineTo(48, 92); x.lineTo(44, 140); x.lineTo(34, 140); x.lineTo(32, 100); x.lineTo(30, 140); x.lineTo(20, 140); x.lineTo(16, 92); x.fill();
+          if (i % 4 === 1) { x.fillRect(48, 6, 7, 40); x.fillRect(9, 6, 7, 40); } x.fillStyle = "rgba(255,90,200,.25)"; x.fillRect(12, 40, 3, 50); })), transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+      m.position.set(fx, .88, fz); m.rotation.y = (hasard(i) - .5) * .4; scene.add(m); foule.push({ m, ph: hasard(i * 5) * 6, v: 4 + hasard(i * 7) * 3 }); }
+    OBST.push([CONCERT.x - 9.3, CONCERT.x + 9.3, CONCERT.z - .3, CONCERT.z + 6.6]);
+    Object.assign(CONCERT, { sax, tS, mSax, faisceaux, foule, ls }); }
+  { const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000, C = CONCERT;
+      const temps = Math.floor(s * 2.2); C.mSax.map = C.tS[(temps % 8) < 4 ? 0 : 1]; C.sax.rotation.z = Math.sin(s * 2.2 * Math.PI) * .05; C.sax.position.y = 2.5 + Math.abs(Math.sin(s * 2.2 * Math.PI)) * .05;   // (il se balance au rythme, et lève le sax pour la note longue)
+      C.faisceaux.forEach((q, i) => { q.f.rotation.z = Math.sin(s * .7 + q.ph) * .5; q.f.rotation.x = -.35 + Math.cos(s * .5 + q.ph) * .3; });
+      C.ls.forEach((l, i) => { l.intensity = 22 + Math.sin(s * 4.4 + i * 2) * 10; });
+      C.foule.forEach(q => { q.m.position.y = .88 + Math.max(0, Math.sin(s * q.v * .55 + q.ph)) * .12; });
+      // la musique du concert : plus fort quand on s'approche de la scène
+      if (C.mp3) { const p = moiP(); if (!C.audio) { C.audio = new Audio(C.mp3); C.audio.loop = true; C.audio.volume = 0; const garde = setInterval(() => { if (!M || M.L !== L) { C.audio.pause(); clearInterval(garde); } }, 600); }
+        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); C.audio.volume = v * .9; if (v > 0 && C.audio.paused) C.audio.play().catch(() => {}); } } }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
-  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = [], texV = [0, 1, 2, 3].map(k => tex(toileVampire(k)));
+  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = [], texV = [0, 1, 2, 3].map(k => tex(toileVampire(k)));
   const fumeeT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(230,230,230,.8)"); g.addColorStop(1, "rgba(230,230,230,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
@@ -4644,7 +4860,7 @@ function construireSantaCarla(A, L, scene) {
     if (v.etat === "terre") { if (d > 3.2) { message("Approche-toi pour lui planter le pieu !"); return; } pieu(v); return; }
     if (v.etat === "mort" || v.etat === "brule") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
     // le jet d'eau bénite : des gouttes du pistolet au vampire
-    const dep = M.camera.position.clone().add(new THREE.Vector3(0, -.4, 0)), but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0));
+    const but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0)); ado.vise = { pt: but, t: now }; ado.kick = 1; majAdo(); const dep = buse();
     for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
     try { sonBruit(.35, 2400, .25); } catch (e) {}
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
@@ -4655,11 +4871,74 @@ function construireSantaCarla(A, L, scene) {
     particule(feuT, p.clone().add(new THREE.Vector3(0, .5, 0)), 26, 2.2, 1600, 1.3); const lum = new THREE.PointLight(0xff7a20, 30, 10, 1.6); lum.position.set(p.x, 1.2, p.z); scene.add(lum); setTimeout(() => scene.remove(lum), 1700); };
   const mordu = (v) => { vies--; majHud(); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
     if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
+  // ================= les trois ados : on joue Sam, Edgar ou Alan Frog ; dans la main, le pistolet à eau bénite =================
+  const ADOS = [{ nom: "Sam Emerson", court: "Sam", dit: "Ma mère ne m'a pas élevé pour finir en casse-croûte !" }, { nom: "Edgar Frog", court: "Edgar", dit: "Vérité, justice, et l'american way. Vampires, c'est fini." }, { nom: "Alan Frog", court: "Alan", dit: "Remplis les pistolets d'eau bénite, on y va !" }];
+  const toileAdo = (k, dos) => toile(256, 512, (x, w, h) => { const peau = "#efc4a0", peauO = "#d8a07a";
+    // les jambes (le jean), les baskets
+    x.fillStyle = k === 1 ? "#4a4a3a" : "#4a6a9a"; x.beginPath(); x.moveTo(90, 318); x.lineTo(166, 318); x.lineTo(164, 486); x.lineTo(134, 486); x.lineTo(128, 360); x.lineTo(122, 486); x.lineTo(92, 486); x.fill(); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(100, 340, 8, 140); x.fillRect(148, 340, 8, 140);
+    x.fillStyle = "#f2f2ee"; x.beginPath(); x.ellipse(106, 494, 22, 12, 0, 0, 7); x.ellipse(150, 494, 22, 12, 0, 0, 7); x.fill(); x.fillStyle = "#c83030"; x.fillRect(90, 496, 32, 4); x.fillRect(134, 496, 32, 4);
+    // le haut, selon le personnage
+    const torse = (c) => { x.fillStyle = c; x.beginPath(); x.moveTo(82, 166); x.quadraticCurveTo(128, 152, 174, 166); x.lineTo(170, 326); x.lineTo(86, 326); x.fill(); };
+    const bras = (manche, long) => { for (const bx of [64, 172]) { x.fillStyle = peau; x.beginPath(); x.ellipse(bx + 10, 250, 12, 72, 0, 0, 7); x.fill(); x.beginPath(); x.arc(bx + 10, 326, 12, 0, 7); x.fill(); if (manche) { x.fillStyle = manche; x.beginPath(); x.ellipse(bx + 10, long ? 240 : 196, 15, long ? 80 : 32, 0, 0, 7); x.fill(); } } };
+    if (k === 0) {   // Sam : la chemise hawaïenne, la veste beige ouverte, les manches retroussées
+      bras("#ecd8a0", true); torse("#f0e8d0"); if (!dos) { for (let i = 0; i < 26; i++) { const fx = 104 + hasard(i * 3) * 48, fy = 174 + hasard(i * 5) * 140; x.fillStyle = ["#2a7a3a", "#c8302a", "#3a8ac8", "#e8a020"][i % 4]; x.beginPath(); x.ellipse(fx, fy, 6, 3.5, hasard(i) * 3, 0, 7); x.fill(); } }
+      x.fillStyle = "#ecd8a0"; if (dos) torse("#e4cf96"); else { x.beginPath(); x.moveTo(82, 166); x.lineTo(108, 160); x.lineTo(104, 326); x.lineTo(86, 326); x.fill(); x.beginPath(); x.moveTo(174, 166); x.lineTo(148, 160); x.lineTo(152, 326); x.lineTo(170, 326); x.fill(); x.strokeStyle = "rgba(120,90,40,.4)"; x.lineWidth = 2; x.beginPath(); x.moveTo(108, 160); x.lineTo(104, 326); x.moveTo(148, 160); x.lineTo(152, 326); x.stroke(); } }
+    else if (k === 1) {   // Edgar : le tee-shirt camouflage, les manches roulées
+      bras("#5a6a3a", false); torse("#5a6a3a"); for (let i = 0; i < 40; i++) { x.fillStyle = ["#3a4628", "#8a8a5a", "#2a2a1a", "#6a7a4a"][i % 4]; x.beginPath(); x.ellipse(84 + hasard(i * 2.3) * 88, 164 + hasard(i * 3.7) * 160, 7 + hasard(i) * 8, 4 + hasard(i * 9) * 5, hasard(i * 4) * 3, 0, 7); x.fill(); }
+      for (const bx of [74, 182]) { x.fillStyle = "#4a5a2a"; x.fillRect(bx - 15, 222, 30, 8); } }
+    else {   // Alan : le débardeur gris « AIRBORNE », la plaque militaire
+      bras(null); torse("#8e8e8a"); x.fillStyle = "#8e8e8a"; for (const bx of [86, 170]) { x.beginPath(); x.ellipse(bx, 172, 10, 16, 0, 0, 7); x.fill(); }
+      if (!dos) { x.fillStyle = "#2a2a2a"; x.font = "bold 15px Arial"; x.textAlign = "center"; x.fillText("AIRBORNE", 128, 236); x.beginPath(); x.arc(128, 262, 14, 0, 7); x.lineWidth = 3; x.strokeStyle = "#2a2a2a"; x.stroke(); x.beginPath(); x.moveTo(114, 262); x.lineTo(142, 262); x.stroke();
+        x.strokeStyle = "#c8ccd4"; x.lineWidth = 2; x.beginPath(); x.moveTo(110, 156); x.quadraticCurveTo(128, 200, 146, 156); x.stroke(); x.fillStyle = "#d8dce2"; x.fillRect(122, 194, 12, 16); } }
+    // le cou, la tête
+    x.fillStyle = peauO; x.fillRect(114, 132, 28, 30); x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 31, 38, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(96, 108, 6, 10, 0, 0, 7); x.ellipse(160, 108, 6, 10, 0, 0, 7); x.fill();
+    if (!dos) { x.fillStyle = "#fff"; x.beginPath(); x.ellipse(116, 104, 7, 4.5, 0, 0, 7); x.ellipse(140, 104, 7, 4.5, 0, 0, 7); x.fill(); x.fillStyle = k === 0 ? "#3a6a9a" : "#4a3a2a"; x.beginPath(); x.arc(116, 104, 3.5, 0, 7); x.arc(140, 104, 3.5, 0, 7); x.fill();
+      x.strokeStyle = k === 0 ? "#a8884a" : "#3a2a1a"; x.lineWidth = 3; x.beginPath(); x.moveTo(106, k === 1 ? 96 : 94); x.lineTo(124, k === 1 ? 98 : 94); x.moveTo(150, k === 1 ? 96 : 94); x.lineTo(132, k === 1 ? 98 : 94); x.stroke();   // (Edgar fronce les sourcils)
+      x.strokeStyle = peauO; x.lineWidth = 2; x.beginPath(); x.moveTo(128, 106); x.lineTo(124, 120); x.lineTo(130, 121); x.stroke(); x.strokeStyle = "#a85a4a"; x.lineWidth = 3; x.beginPath(); x.moveTo(118, 130); x.quadraticCurveTo(128, k === 0 ? 136 : 131, 138, 130); x.stroke(); }
+    // les cheveux
+    if (k === 0) { x.fillStyle = "#c8a058"; x.beginPath(); x.moveTo(96, 100); x.quadraticCurveTo(84, 40, 128, 34); x.quadraticCurveTo(176, 36, 162, 100); x.quadraticCurveTo(156, 70, 128, 70); x.quadraticCurveTo(100, 70, 96, 100); x.fill();   // (la banane blonde)
+      x.fillStyle = "#e8cc88"; x.beginPath(); x.ellipse(126, 48, 28, 12, -.1, 0, 7); x.fill(); if (dos) { x.fillStyle = "#c8a058"; x.beginPath(); x.ellipse(128, 100, 32, 36, 0, 0, 7); x.fill(); } }
+    else if (k === 1) { x.fillStyle = "#5a3a22"; x.beginPath(); x.ellipse(128, 80, 36, 24, 0, Math.PI, 0); x.fill(); x.beginPath(); x.moveTo(92, 82); x.quadraticCurveTo(84, 130, 94, 160); x.lineTo(104, 150); x.lineTo(100, 90); x.moveTo(164, 82); x.quadraticCurveTo(172, 130, 162, 160); x.lineTo(152, 150); x.lineTo(156, 90); x.fill();   // (la nuque longue)
+      if (dos) { x.beginPath(); x.ellipse(128, 110, 34, 46, 0, 0, 7); x.fill(); }
+      x.fillStyle = "#d8241e"; x.beginPath(); x.moveTo(94, 80); x.quadraticCurveTo(128, 70, 162, 80); x.lineTo(162, 92); x.quadraticCurveTo(128, 82, 94, 92); x.fill();   // (le bandana rouge, ses deux pans qui pendent)
+      x.beginPath(); x.moveTo(158, 84); x.quadraticCurveTo(190, 120, 182, 180); x.lineTo(170, 176); x.quadraticCurveTo(176, 128, 152, 92); x.fill(); x.beginPath(); x.moveTo(160, 86); x.quadraticCurveTo(204, 110, 206, 160); x.lineTo(196, 158); x.quadraticCurveTo(190, 118, 156, 94); x.fill(); }
+    else { x.fillStyle = "#24160e"; x.beginPath(); x.moveTo(94, 104); x.quadraticCurveTo(88, 56, 128, 58); x.quadraticCurveTo(170, 56, 162, 104); x.quadraticCurveTo(154, 74, 112, 80); x.quadraticCurveTo(100, 86, 94, 104); x.fill(); if (dos) { x.beginPath(); x.ellipse(128, 100, 33, 38, 0, 0, 7); x.fill(); } } });
+  const texAdo = [0, 1, 2].map(k => [tex(toileAdo(k, false)), tex(toileAdo(k, true))]);
+  // le pistolet à eau : le corps en plastique transparent, l'eau bénite dedans, la croix sur le réservoir, la buse orange
+  const pistoletEau = () => { const g = new THREE.Group(), M_ = o => new THREE.MeshStandardMaterial(o), ad = (geo, m, x, y, z, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
+    const plast = M_({ color: 0x3aa8ff, transparent: true, opacity: .72, roughness: .15, metalness: .1, emissive: 0x0a3050, emissiveIntensity: .8 }), orange = M_({ color: 0xff7a1a, roughness: .4, emissive: 0x401800 }), eau = M_({ color: 0xc8eeff, transparent: true, opacity: .55, emissive: 0x4a8aaa, emissiveIntensity: .7 });
+    ad(new THREE.BoxGeometry(.045, .055, .17), plast, 0, .02, -.06); ad(new THREE.BoxGeometry(.04, .1, .045), plast, 0, -.045, .01, -.3); ad(new THREE.BoxGeometry(.034, .035, .14), eau, 0, .02, -.06);
+    ad(new THREE.CylinderGeometry(.03, .03, .1, 14), plast, 0, .075, -.06, Math.PI / 2); ad(new THREE.CylinderGeometry(.025, .025, .09, 14), eau, 0, .072, -.06, Math.PI / 2);
+    ad(new THREE.BoxGeometry(.003, .028, .006), M_({ color: 0xffd23a, emissive: 0x806010 }), .031, .075, -.06); ad(new THREE.BoxGeometry(.003, .006, .02), M_({ color: 0xffd23a, emissive: 0x806010 }), .031, .08, -.06);   // (la croix)
+    ad(new THREE.CylinderGeometry(.009, .012, .05, 10), orange, 0, .025, -.165, Math.PI / 2); ad(new THREE.BoxGeometry(.01, .03, .012), orange, 0, -.02, -.035); ad(new THREE.BoxGeometry(.012, .02, .02), orange, 0, .08, -.01);
+    return g; };
+  const ado = { k: null, pan: null, pist: pistoletEau(), kick: 0, kt: performance.now(), prec: null, cap: 0, dos: false, vise: null };
+  ado.pan = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.76), new THREE.MeshBasicMaterial({ map: texAdo[0][0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, fog: true })); ado.pan.visible = false; scene.add(ado.pan); ado.pist.visible = false; scene.add(ado.pist);
+  const cacherAvatar = (moi, cacher) => moi.g.traverse(o => { if (o !== moi.g) o.layers.set(cacher ? 1 : 0); });
+  const buse = () => ado.pist.visible ? ado.pist.localToWorld(V3(0, .025, -.2)) : M.camera.position.clone().add(V3(0, -.4, 0));
+  const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi) { ado.pan.visible = ado.pist.visible = false; return; }
+    const cam = M.camera, now = performance.now(), dk = Math.min(.1, (now - ado.kt) / 1000); ado.kt = now; ado.kick = Math.max(0, ado.kick - dk * 6); const pos = moi.g.position;
+    cacherAvatar(moi, true); ado.pist.visible = true; ado.pist.scale.setScalar(M.premiere ? .55 : 1.7);
+    if (M.premiere) { ado.pan.visible = false; cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0), u = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 1);
+      ado.pist.position.copy(cam.position).addScaledVector(f, .36 - ado.kick * .03).addScaledVector(r, .15).addScaledVector(u, -.12 + ado.kick * .01); ado.pist.quaternion.copy(cam.quaternion); ado.pist.rotateY(.08); ado.pist.rotateX(ado.kick * .3); return; }
+    // à la troisième personne : le panneau de l'ado, de face ou de dos selon où il marche ; il sautille en marchant
+    const bouge = ado.prec && Math.hypot(pos.x - ado.prec.x, pos.z - ado.prec.z) > .004; if (bouge) { ado.cap = Math.atan2(pos.x - ado.prec.x, pos.z - ado.prec.z); ado.dos = (pos.x - ado.prec.x) * (pos.x - cam.position.x) + (pos.z - ado.prec.z) * (pos.z - cam.position.z) > 0; } ado.prec = pos.clone();
+    if (ado.vise && now - ado.vise.t < 1200) { ado.cap = Math.atan2(ado.vise.pt.x - pos.x, ado.vise.pt.z - pos.z); ado.dos = (ado.vise.pt.x - pos.x) * (pos.x - cam.position.x) + (ado.vise.pt.z - pos.z) * (pos.z - cam.position.z) > 0; }
+    ado.pan.visible = true; ado.pan.material.map = texAdo[ado.k][ado.dos ? 1 : 0]; ado.pan.position.set(pos.x, .88 + (bouge ? Math.abs(Math.sin(now / 110)) * .05 : 0), pos.z); ado.pan.rotation.y = Math.atan2(cam.position.x - pos.x, cam.position.z - pos.z);
+    // le pistolet, au bout du bras, tourné vers où il va (ou vers le vampire qu'il arrose)
+    const cx = Math.sin(ado.cap), cz = Math.cos(ado.cap); ado.pist.position.set(pos.x + cx * .3 - cz * .3, 1.02, pos.z + cz * .3 + cx * .3); ado.pist.rotation.set(0, ado.cap + Math.PI, 0); ado.pist.rotateX(ado.kick * .3); };
+  const choisirAdo = () => { const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle,rgba(40,6,10,.82),rgba(0,0,0,.94));color:#fff;font:600 16px Georgia,serif;padding:12px;box-sizing:border-box";
+    d.innerHTML = `<div style="font:900 clamp(20px,5vw,30px) Georgia;color:#ff4a3a;text-shadow:0 0 14px #b81c22;letter-spacing:2px">THE LOST BOYS</div><div style="opacity:.85;text-align:center">Qui veux-tu jouer ? Ton arme : le pistolet à eau bénite.</div><div class="c" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"></div>`;
+    ADOS.forEach((a, k) => { const b = document.createElement("button"); b.style.cssText = "background:linear-gradient(#2a1418,#120a0c);border:2px solid #b81c22;border-radius:12px;color:#fff;padding:8px 8px 10px;cursor:pointer;width:clamp(90px,26vw,150px);font:700 15px Georgia";
+      const im = toileAdo(k, false); im.style.cssText = "width:100%;height:auto;display:block;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px"; b.appendChild(im); b.appendChild(document.createTextNode(a.nom));
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; demarrer(); setTimeout(() => M && M.L === L && message(`<div style="font-size:15px;font-style:italic">« ${a.dit} »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.85">— ${a.court}</div>`), 4600); }; d.querySelector(".c").appendChild(b); });
+    for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
     if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
-      hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
-    if (phase === "intro" && now - t0 > 2500) demarrer();
+      hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); const mo = M && M.gens.get(M.moiNum); if (mo) cacherAvatar(mo, false); } }, 600); }
+    majAdo();
+    if (phase === "intro" && now - t0 > 2500) { phase = "choix"; choisirAdo(); }
     if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { creerVampire(0); majHud(); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
     if (phase === "david" && vamps.length && vamps.every(v => v.etat === "mort") && !fini) { fini = true; phase = "fin"; message(`<div style="font-size:22px">Santa Carla est sauvée !</div><div style="margin-top:10px;font-style:italic;font-size:15px">« Il y a une chose que je n'ai jamais pu supporter à Santa Carla : tous ces fichus vampires. »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.8">— Grand-père</div>`, ["Rejouer", demarrer]); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
