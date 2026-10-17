@@ -6927,7 +6927,7 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; }   /* (pendant une cinématique, on se revoit) */ M.cine.maj(performance.now()); if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
+    if (M.cine) { if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now()); if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else placerCamera(false);
     if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
