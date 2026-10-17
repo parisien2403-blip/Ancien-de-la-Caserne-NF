@@ -6821,7 +6821,7 @@ function creerRadio() { const g = new THREE.Group(), m = o => new THREE.MeshStan
   const dr = new THREE.Mesh(new THREE.TorusGeometry(.06, .006, 6, 20, Math.PI * 1.4), m({ color: 0x5a3820, roughness: .8 })); dr.rotation.x = Math.PI / 2; dr.position.set(-.16, .01, 0); g.add(dr);
   g.userData.led = led; g.scale.setScalar(1.6); return g; }
 function majRadio() {
-  if (!M || !M.scene) return; const r = M.radio, ici = r && r.lieu === M.lieu && M.L && !M.L.apo && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   /* (pour le moment, la radio n'apparaît que pour l'administrateur — il la fait venir près de lui depuis « Les personnages ») */
+  if (!M || !M.scene) return; const r = M.radio, ici = r && r.lieu === M.lieu && M.L && !M.L.apo;   /* (la radio est là pour tout le monde) */
   if (!ici) { if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; } return; }
   if (!M.radioObj || M.radioObj.parent !== M.scene) { M.radioObj = creerRadio(); M.scene.add(M.radioObj); }
   M.radioObj.position.set(r.x, (M.L.hauteur ? M.L.hauteur(r.x, r.z, {}) : 0) + .005, r.z); M.radioObj.rotation.y = r.r; }
