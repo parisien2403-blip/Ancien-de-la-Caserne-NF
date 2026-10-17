@@ -42,11 +42,11 @@ const TABLES = { photo: "photos", anecdote: "anecdotes", publication: "publicati
 const ESCALIERS = "ABCDEFGHIJKLMNOPRSXYZ";
 const batValide = v => { const l = String(v || "").trim().toUpperCase(); return l.length === 1 && ESCALIERS.includes(l) ? l : null; };
 const etageValide = v => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 7 ? n : null; };
-const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart"];
+const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue", "z-grande", "z-fetes", "z-etage", "z-mess", "sh-rue", "sh-grande", "sh-fetes", "sh-etage", "sh-mess", "bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla"];
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
-const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
+const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, VIDEO_MAX = 150 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
 const TELE_VIDEO_MAX = 300 * 1024 * 1024, TELE_MAX = 3 * 1024 * 1024 * 1024;   // (la télé du salon de l'appartement)
@@ -436,7 +436,7 @@ export class Compteur extends DurableObject {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
     const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
-    if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "appart" || a.admin || APPART_INVITES.includes(Number(a.numero)))) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
+    if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "appart" || a.admin || APPART_INVITES.includes(Number(a.numero))) && (m.lieu !== "santacarla" || a.admin)) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
       const ancien = a.lieu;
       this.finirSlow(ws, a);
       Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null, joue: null }); ws.serializeAttachment(a);

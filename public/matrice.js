@@ -4441,6 +4441,198 @@ function enfiladeChene(g) {
   box(W, .02, .022, bois, 0, yT, .011);
   fusionnerParMatiere(g); return g;
 }
+/* ===================== Santa Carla (Génération perdue, 1987) : la jetée de nuit, ses manèges, la plage, l'océan ;
+   et les quatre vampires de la bande de David, qu'il faut affronter comme dans le film : l'eau bénite pour les affaiblir, le pieu quand ils sont à terre ===================== */
+function toileVampire(k) {   // les quatre vampires, dessinés (pas les acteurs) : 0 David, 1 Paul, 2 Marko, 3 Dwayne
+  return toile(256, 512, (x, w, h) => {
+    const V = [{ chev: "#f2ecd8", veste: "#2a2420", style: "crete" }, { chev: "#e8d48a", veste: "#3a3430", style: "long" }, { chev: "#c8a868", veste: "#5a3a5a", style: "boucles" }, { chev: "#1a1410", veste: "#2e2a26", style: "noirs" }][k];
+    const peau = "#e4ddd2", ombre = "#b8b0a4";
+    // le long manteau qui s'ouvre comme des ailes, les bras écartés
+    x.fillStyle = V.veste; x.beginPath(); x.moveTo(128, 150); x.quadraticCurveTo(40, 160, 6, 250); x.lineTo(40, 270); x.quadraticCurveTo(70, 230, 92, 225); x.lineTo(80, 420); x.lineTo(176, 420); x.lineTo(164, 225); x.quadraticCurveTo(186, 230, 216, 270); x.lineTo(250, 250); x.quadraticCurveTo(216, 160, 128, 150); x.fill();
+    x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; for (const [a, b, c, d] of [[110, 170, 100, 410], [146, 170, 156, 410], [60, 190, 20, 250], [196, 190, 236, 250]]) { x.beginPath(); x.moveTo(a, b); x.lineTo(c, d); x.stroke(); }
+    if (k === 2) { for (let i = 0; i < 9; i++) { x.fillStyle = ["#7a3a6a", "#3a5a7a", "#8a6a2a", "#4a6a3a"][i % 4]; x.fillRect(90 + (i % 3) * 26, 180 + Math.floor(i / 3) * 50, 24, 46); } }   // (la veste rapiécée)
+    if (k === 3) { x.fillStyle = peau; x.beginPath(); x.moveTo(112, 168); x.lineTo(144, 168); x.lineTo(138, 300); x.lineTo(118, 300); x.fill(); x.fillStyle = "#c8a050"; x.fillRect(118, 180, 20, 3); }   // (le torse nu sous le gilet, un collier)
+    else { x.fillStyle = k === 0 ? "#141414" : "#e8e4dc"; x.beginPath(); x.moveTo(114, 166); x.lineTo(142, 166); x.lineTo(136, 230); x.lineTo(120, 230); x.fill(); }
+    // les mains griffues au bout des manches, le jean, les bottes
+    for (const sx of [1, -1]) { const hx = sx > 0 ? 12 : 244; x.fillStyle = peau; x.beginPath(); x.arc(hx, 256, 11, 0, 7); x.fill(); x.strokeStyle = "#ece6dc"; x.lineWidth = 2; for (let f = -2; f <= 2; f++) { x.beginPath(); x.moveTo(hx + f * 4, 264); x.lineTo(hx + f * 5, 278); x.stroke(); } }
+    x.fillStyle = "#23262e"; x.fillRect(94, 400, 30, 82); x.fillRect(132, 400, 30, 82); x.fillStyle = "#0e0e0e"; x.fillRect(90, 474, 38, 22); x.fillRect(128, 474, 38, 22);
+    // la tête : pâle, les yeux jaunes, les crocs
+    x.fillStyle = peau; x.beginPath(); x.ellipse(128, 104, 34, 44, 0, 0, 7); x.fill(); x.fillStyle = peau; x.fillRect(116, 140, 24, 16);
+    x.fillStyle = ombre; x.beginPath(); x.ellipse(110, 116, 8, 14, 0, 0, 7); x.ellipse(146, 116, 8, 14, 0, 0, 7); x.fill();
+    x.fillStyle = "#3a0a0a"; x.beginPath(); x.ellipse(114, 98, 11, 6, -.2, 0, 7); x.ellipse(142, 98, 11, 6, .2, 0, 7); x.fill();
+    x.fillStyle = "#ffd23a"; x.beginPath(); x.ellipse(114, 98, 7, 4, -.2, 0, 7); x.ellipse(142, 98, 7, 4, .2, 0, 7); x.fill(); x.fillStyle = "#200"; x.fillRect(113, 96, 2, 5); x.fillRect(141, 96, 2, 5);
+    x.strokeStyle = "#2a1a10"; x.lineWidth = 3; x.beginPath(); x.moveTo(100, 86); x.lineTo(122, 92); x.moveTo(156, 86); x.lineTo(134, 92); x.stroke();
+    x.fillStyle = "#4a0c10"; x.beginPath(); x.ellipse(128, 128, 13, 7, 0, 0, 7); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.moveTo(118, 124); x.lineTo(122, 136); x.lineTo(125, 124); x.moveTo(131, 124); x.lineTo(134, 136); x.lineTo(138, 124); x.fill();
+    // les cheveux
+    x.fillStyle = V.chev;
+    if (V.style === "crete") { x.beginPath(); x.moveTo(92, 92); for (let i = 0; i <= 10; i++) { const a = Math.PI + i * Math.PI / 10; x.lineTo(128 + Math.cos(a) * (i % 2 ? 50 : 36), 86 + Math.sin(a) * (i % 2 ? 56 : 40)); } x.lineTo(164, 92); x.lineTo(160, 120); x.lineTo(150, 84); x.lineTo(106, 84); x.lineTo(96, 120); x.fill(); x.fillRect(94, 120, 10, 40); x.fillRect(152, 120, 10, 40); }   // (la crête blond platine, la nuque longue)
+    else if (V.style === "long" || V.style === "noirs") { x.beginPath(); x.ellipse(128, 76, 40, 28, 0, Math.PI, 0); x.fill(); x.beginPath(); x.moveTo(88, 76); x.quadraticCurveTo(78, 150, 84, 210); x.lineTo(100, 200); x.quadraticCurveTo(96, 130, 102, 88); x.moveTo(168, 76); x.quadraticCurveTo(178, 150, 172, 210); x.lineTo(156, 200); x.quadraticCurveTo(160, 130, 154, 88); x.fill(); }
+    else { for (let i = 0; i < 16; i++) { const a = Math.PI * .9 + i * Math.PI * 1.2 / 15; x.beginPath(); x.arc(128 + Math.cos(a) * 38, 84 + Math.sin(a) * 36, 13, 0, 7); x.fill(); } }   // (les boucles)
+    x.fillStyle = "rgba(0,0,0,.15)"; x.beginPath(); x.ellipse(128, 70, 30, 10, 0, 0, 7); x.fill();
+  });
+}
+function construireSantaCarla(A, L, scene) {
+  const nuitMat = (c, e = 1) => new THREE.MeshBasicMaterial({ color: c, toneMapped: false, fog: true }), bulbes = [];
+  // ---------- le sol : la jetée en planches, la plage, l'océan ----------
+  const planches = tex(toile(512, 512, (x, w, h) => { for (let i = 0; i < 16; i++) { const v = hasard(i * 3.1); x.fillStyle = `hsl(28, ${22 + v * 10}%, ${26 + v * 8}%)`; x.fillRect(0, i * 32, w, 31); x.fillStyle = "rgba(0,0,0,.45)"; x.fillRect(0, i * 32 + 30, w, 2);
+      for (let k = 0; k < 6; k++) { x.strokeStyle = "rgba(0,0,0,.18)"; x.beginPath(); const y = i * 32 + 4 + hasard(i * 7 + k) * 24; x.moveTo(0, y); x.lineTo(w, y + (hasard(k) - .5) * 4); x.stroke(); } x.fillStyle = "rgba(0,0,0,.5)"; x.fillRect((hasard(i) * w) | 0, i * 32, 2, 30); } }), 6, 1.2);
+  const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: planches, roughness: .8 }), 0, .02, 0, false); jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
+  const sable = A.ajoute(new THREE.PlaneGeometry(140, 40), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#8a7656"; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { const g = x.createRadialGradient(hasard(i * 9) * w, hasard(i * 7) * h, 2, hasard(i * 9) * w, hasard(i * 7) * h, 40 + hasard(i) * 60); g.addColorStop(0, `rgba(${hasard(i * 3) > .5 ? "60,48,30" : "170,150,110"},.25)`); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); }
+    for (let i = 0; i < 5000; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "50,40,25" : "210,195,160"},.3)`; x.fillRect(hasard(i * 1.7) * w, hasard(i * 2.3) * h, 2, 2); } }), 12, 4), roughness: 1, color: 0xc8a878 }), 0, 0, 26, false); sable.rotation.x = -Math.PI / 2;
+  const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
+  const mer = A.ajoute(new THREE.PlaneGeometry(400, 200), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 146, false); mer.rotation.x = -Math.PI / 2;
+  const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
+  reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, -.25, 120); scene.add(reflet);   // (le reflet de la lune sur l'eau)
+  // l'écume des vagues, qui va et vient sur le sable
+  const ecume = new THREE.Mesh(new THREE.PlaneGeometry(140, 2.2), new THREE.MeshBasicMaterial({ color: 0xc8d8e8, transparent: true, opacity: .35, depthWrite: false })); ecume.rotation.x = -Math.PI / 2; ecume.position.set(0, .03, 45); scene.add(ecume);
+  // les pilotis et la rambarde de la jetée, côté plage
+  const bois = A.mat({ color: 0x4a3626, roughness: .9 }), blancM = A.mat({ color: 0xe8e4da, roughness: .6 });
+  for (let x = -46; x <= 46; x += 2.4) { if (Math.abs(Math.abs(x) - 20) < 1.4) continue; A.ajoute(new THREE.BoxGeometry(.12, 1.05, .12), blancM, x, .55, 6.2); }
+  for (const [a, b] of [[-48, -21.4], [-18.6, 18.6], [21.4, 48]]) { A.ajoute(new THREE.BoxGeometry(b - a, .1, .14), blancM, (a + b) / 2, 1.08, 6.2); A.ajoute(new THREE.BoxGeometry(b - a, .08, .1), blancM, (a + b) / 2, .6, 6.2); }   // (la rambarde, ouverte vers la plage)
+  // ---------- les stands, le long de la jetée (côté ville), leurs enseignes au néon ----------
+  const neon = (txt, coul, w = 3.2) => { const c = toile(512, 128, (x, W, H) => { x.fillStyle = "#0a0a10"; x.fillRect(0, 0, W, H); x.font = "bold 64px 'Arial Black', Arial"; x.textAlign = "center"; x.shadowColor = coul; x.shadowBlur = 18; x.fillStyle = coul; x.fillText(txt, W / 2, 86); x.shadowBlur = 0; x.fillStyle = "#fff"; x.globalAlpha = .55; x.fillText(txt, W / 2, 86); });
+    return new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: tex(c), toneMapped: false })); };
+  const STANDS = [[-38, "HOT DOGS", "#ff5a3a"], [-30, "ARCADE", "#3ad8ff"], [-22, "COMICS", "#ffd23a"], [-14, "TATTOO", "#ff3ab8"], [14, "SKEE BALL", "#5aff6a"], [22, "PIZZA", "#ff8a2a"], [30, "BUMPER CARS", "#c06aff"], [38, "CANDY", "#ff6a9a"]];
+  for (const [x, txt, c] of STANDS) { const g = new THREE.Group(); g.position.set(x, 0, -8); scene.add(g);
+    const murs = A.mat({ color: 0xd8c8a8, roughness: .8 }), rayure = tex(toile(128, 32, (q, w, h) => { for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? "#e8e2d6" : c; q.fillRect(i * 16, 0, 16, h); } }), 4, 1);
+    const b = (dx, dy, dz, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); g.add(o); return o; };
+    b(5, 3, 3, murs, 0, 1.5, -1.5); b(4.2, 1.6, .05, A.mat({ color: 0x1a1410, emissive: new THREE.Color(c).multiplyScalar(.25) }), 0, 1.5, .02);   // (la cabane, son comptoir éclairé)
+    b(5.4, .1, 1.4, A.mat({ map: rayure, roughness: .7 }), 0, 2.6, .55).rotation.x = .25;   // (le store à rayures)
+    b(4.6, .9, .25, A.mat({ color: 0x6a4a30 }), 0, .45, .2); const n = neon(txt, c); n.position.set(0, 3.5, .02); g.add(n); }
+  // l'arche d'entrée « SANTA CARLA », bordée d'ampoules
+  { const g = new THREE.Group(); g.position.set(0, 0, -8.6); scene.add(g); const rouge = A.mat({ color: 0xa82a24, roughness: .6 });
+    for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(.5, 6, .5), rouge); p.position.set(sx * 4.5, 3, 0); g.add(p); }
+    const n = neon("SANTA CARLA", "#ff3a3a", 8.6); n.position.set(0, 6.4, .3); g.add(n); const c2 = new THREE.Mesh(new THREE.BoxGeometry(9.4, 2.4, .3), rouge); c2.position.set(0, 6.4, 0); g.add(c2);
+    for (let i = 0; i < 26; i++) { const a = new THREE.Mesh(new THREE.SphereGeometry(.07, 6, 4), nuitMat(0xffe8a0)); a.position.set(-4.5 + i * .36, 7.68, .2); g.add(a); bulbes.push(a); }
+    const n2 = neon("BOARDWALK", "#3ad8ff", 5); n2.position.set(0, 4.6, .2); g.add(n2); }
+  // les guirlandes d'ampoules entre les lampadaires, au-dessus de la jetée
+  const lampadaire = (x, z) => { A.ajoute(new THREE.CylinderGeometry(.07, .1, 4.4, 8), A.mat({ color: 0x1e1e22, metalness: .6 }), x, 2.2, z); const l = new THREE.Mesh(new THREE.SphereGeometry(.22, 12, 8), nuitMat(0xffe0a0)); l.position.set(x, 4.5, z); scene.add(l); };
+  for (let x = -42; x <= 42; x += 12) { lampadaire(x, 5.4); lampadaire(x, -5.4); }
+  for (let x = -42; x < 42; x += 12) for (const z of [5.4, -5.4]) for (let i = 1; i < 12; i++) { const t = i / 12, a = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 4), nuitMat([0xff4a4a, 0xffd23a, 0x4ad8ff, 0x7aff6a][i % 4])); a.position.set(x + t * 12, 4.3 - Math.sin(t * Math.PI) * .7, z); scene.add(a); bulbes.push(a); }
+  for (let x = -36; x <= 36; x += 24) { const l = new THREE.PointLight(0xffc880, 9, 16, 1.6); l.position.set(x, 4.2, 0); scene.add(l); }
+  // ---------- les montagnes russes (le grand huit en bois blanc, ses wagons rouges), à gauche ----------
+  const pts = []; for (let i = 0; i < 64; i++) { const t = i / 64 * Math.PI * 2; pts.push(new THREE.Vector3(-26 + Math.cos(t) * 16 + Math.cos(t * 3) * 2.5, 4 + Math.max(0, Math.sin(t * 2 + .6)) * 10 + Math.sin(t * 5) * 2, -26 + Math.sin(t) * 9)); }
+  const voie = new THREE.CatmullRomCurve3(pts, true);
+  scene.add(new THREE.Mesh(new THREE.TubeGeometry(voie, 400, .22, 6, true), A.mat({ color: 0x8a1a18, roughness: .5 })));
+  { const n = 180, im = new THREE.InstancedMesh(new THREE.BoxGeometry(.16, 1, .16), A.mat({ color: 0xe8e4da, roughness: .7 }), n * 2), mt = new THREE.Matrix4(), p = new THREE.Vector3(), tg = new THREE.Vector3();
+    for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); voie.getTangentAt(i / n, tg); const nx = -tg.z, nz = tg.x, ln = Math.hypot(nx, nz) || 1;
+      for (const s of [-1, 1]) { const x = p.x + nx / ln * .7 * s, z = p.z + nz / ln * .7 * s; mt.compose(new THREE.Vector3(x, p.y / 2, z), new THREE.Quaternion(), new THREE.Vector3(1, p.y, 1)); im.setMatrixAt(i * 2 + (s > 0 ? 1 : 0), mt); } }
+    scene.add(im);   // (les poteaux blancs, sous la voie)
+    const im2 = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, .08, .08), A.mat({ color: 0xe8e4da }), n), q = new THREE.Quaternion();
+    for (let i = 0; i < n; i++) { voie.getPointAt(i / n, p); voie.getTangentAt(i / n, tg); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(tg.x, tg.z)); mt.compose(new THREE.Vector3(p.x, p.y * .5, p.z), q, new THREE.Vector3(1, 1, 1)); im2.setMatrixAt(i, mt); }
+    scene.add(im2); }
+  const wagons = []; for (let k = 0; k < 4; k++) { const w = new THREE.Group(), c = new THREE.Mesh(new THREE.BoxGeometry(.9, .55, 1.4), A.mat({ color: k % 2 ? 0xd8b020 : 0xc82a24, roughness: .4 })); c.position.y = .45; w.add(c); scene.add(w); wagons.push(w); }
+  // ---------- la grande roue, au fond à droite : elle tourne lentement, ses nacelles et ses ampoules ----------
+  const roue = new THREE.Group(); roue.position.set(14, 12, -26); scene.add(roue); const RR = 10, nac = [];
+  const metal = A.mat({ color: 0xd8dce2, metalness: .5, roughness: .4 });
+  for (const dz of [-.6, .6]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RR, .1, 6, 64), metal); t.position.z = dz; roue.add(t); }
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = new THREE.Mesh(new THREE.BoxGeometry(.08, RR, .08), metal); r.position.set(Math.cos(a) * RR / 2, Math.sin(a) * RR / 2, 0); r.rotation.z = a - Math.PI / 2; roue.add(r);
+    for (let j = 0; j < 4; j++) { const bb = new THREE.Mesh(new THREE.SphereGeometry(.09, 6, 4), nuitMat([0xff4a4a, 0xffffff, 0x4ad8ff, 0xffd23a][(i + j) % 4])); bb.position.set(Math.cos(a) * RR * (j + 1) / 4, Math.sin(a) * RR * (j + 1) / 4, .7); roue.add(bb); bulbes.push(bb); } }
+  for (let i = 0; i < 12; i++) { const n = new THREE.Group(), cab = new THREE.Mesh(new THREE.CylinderGeometry(.6, .7, .9, 10, 1, true), A.mat({ color: [0xc82a24, 0x2a6ac8, 0xd8b020, 0x2a9a4a][i % 4], side: THREE.DoubleSide })); cab.position.y = -.8; n.add(cab);
+    const toit = new THREE.Mesh(new THREE.ConeGeometry(.75, .4, 10), A.mat({ color: 0xe8e4da })); toit.position.y = -.15; n.add(toit); scene.add(n); nac.push(n); }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const j = new THREE.Mesh(new THREE.CylinderGeometry(.18, .25, 13.5, 8), metal); j.position.set(14 + sx * 3.4, 6, -26 + sz * .9); j.rotation.z = -sx * .26; scene.add(j); }
+  // ---------- le manège de chevaux de bois, à droite de l'arche ----------
+  const manege = new THREE.Group(); manege.position.set(32, 0, -20); scene.add(manege); const chevaux = [];
+  { const socle = new THREE.Mesh(new THREE.CylinderGeometry(6, 6.2, .5, 32), A.mat({ color: 0x8a1a24, roughness: .5 })); socle.position.y = .25; manege.add(socle);
+    const mat = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, 5, 12), A.mat({ color: 0xd8b020, metalness: .5 })); mat.position.y = 2.75; manege.add(mat);
+    const rayT = tex(toile(512, 64, (x, w, h) => { for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? "#f2ece0" : "#c82a24"; x.fillRect(i * 32, 0, 32, h); } }), 1, 1);
+    const toit = new THREE.Mesh(new THREE.ConeGeometry(6.6, 2.2, 32, 1), A.mat({ map: rayT, roughness: .6 })); toit.position.y = 6.3; manege.add(toit);
+    const frise = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, .6, 32, 1, true), A.mat({ color: 0xd8b020, side: THREE.DoubleSide })); frise.position.y = 4.9; manege.add(frise);
+    for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2, bb = new THREE.Mesh(new THREE.SphereGeometry(.08, 6, 4), nuitMat(0xffe8a0)); bb.position.set(Math.cos(a) * 6.62, 4.9, Math.sin(a) * 6.62); manege.add(bb); bulbes.push(bb); }
+    const robe = [0xf2ece0, 0x3a2418, 0xe8d8b0, 0x6a4a30];
+    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, c = new THREE.Group(); c.position.set(Math.cos(a) * 4.4, 1.4, Math.sin(a) * 4.4); c.rotation.y = -a; manege.add(c);
+      const m = A.mat({ color: robe[i % 4], roughness: .4 }), bx = (dx, dy, dz, px, py, pz, rz = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(px, py, pz); o.rotation.z = rz; c.add(o); };
+      bx(.35, .45, 1.1, 0, 0, 0); bx(.25, .55, .3, 0, .4, .55, 0); bx(.22, .25, .45, 0, .62, .75); for (const [dx, dz] of [[-.1, -.4], [.1, -.4], [-.1, .4], [.1, .4]]) bx(.08, .6, .1, dx, -.45, dz);
+      const tige = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 4, 8), A.mat({ color: 0xd8b020, metalness: .7 })); tige.position.y = .6; c.add(tige); chevaux.push(c); } }
+  // ---------- au loin : les falaises, le pont de chemin de fer, et le phare ----------
+  const roc = A.mat({ color: 0x1a1c24, roughness: 1 });
+  for (const [x, z, s] of [[-70, 10, 14], [-62, 30, 18], [-78, -10, 16], [70, 0, 12], [80, 24, 16]]) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), roc); m.position.set(x, s * .3, z); m.scale.y = .9; scene.add(m); }
+  { const pont = new THREE.Group(); pont.position.set(-58, 0, -40); scene.add(pont); for (let i = 0; i < 14; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(.4, 18, .4), bois); p.position.set(i * 3, 9, 0); pont.add(p); const c = new THREE.Mesh(new THREE.BoxGeometry(.2, 6, .2), bois); c.position.set(i * 3 + 1.5, 9, 0); c.rotation.z = .45; pont.add(c); }
+    const tab = new THREE.Mesh(new THREE.BoxGeometry(42, .6, 3), bois); tab.position.set(19.5, 18.2, 0); pont.add(tab); }   // (le pont de chemin de fer, où David met Michael à l'épreuve)
+  { const ph = new THREE.Group(); ph.position.set(74, 0, 22); scene.add(ph); const t = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 12, 12), A.mat({ color: 0xe8e4da })); t.position.y = 16; ph.add(t);
+    const f = new THREE.Mesh(new THREE.SphereGeometry(.8, 10, 8), nuitMat(0xfff2c0)); f.position.y = 22.6; ph.add(f); const fais = new THREE.Mesh(new THREE.ConeGeometry(3, 40, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false }));
+    fais.rotation.z = Math.PI / 2; fais.position.set(-20, 22.6, 0); const pivot = new THREE.Group(); pivot.position.y = 0; pivot.add(fais); ph.add(pivot); L.phare = pivot; }
+  // ---------- les limites : la jetée et la plage (pas l'eau, pas les stands, pas l'arche) ----------
+  L.limites = (x, z) => x > -45 && x < 45 && z > -6.4 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5);   // (la rambarde : deux passages vers la plage)
+  L.hauteur = () => 0;
+  L.depart = [0, 1.5]; L.cam = { pos: [0, 6, 14], vise: [0, 2.5, -6] }; L.suivi = { d: 6, h: 3, av: 3, vy: 1.6 };
+  L.sansPNJ = true; L.sansMusique = true; L.toujoursNuit = true; L.santaCarla = true;
+  // ---------- l'animation des manèges ----------
+  let tr = 0; const avant = L.anim;
+  L.anim = (t) => { avant && avant(t); const s = t / 1000;
+    roue.rotation.z = s * .12; nac.forEach((n, i) => { const a = i / 12 * Math.PI * 2 + s * .12; n.position.set(14 + Math.cos(a) * RR, 12 + Math.sin(a) * RR, -26); });
+    manege.rotation.y = s * .35; chevaux.forEach((c, i) => { c.position.y = 1.4 + Math.sin(s * 2.2 + i * 1.3) * .3; });
+    tr = (s * .045) % 1; wagons.forEach((w, k) => { const u = (tr + 1 - k * .008) % 1, p = voie.getPointAt(u), tg = voie.getTangentAt(u); w.position.copy(p); w.lookAt(p.x + tg.x, p.y + tg.y, p.z + tg.z); });
+    if (L.phare) L.phare.rotation.y = s * .6; merT.offset.x = s * .004; ecume.position.z = 45 + Math.sin(s * .6) * 1.5; ecume.material.opacity = .25 + Math.sin(s * .6) * .1;
+    const cl = Math.floor(s * 3); bulbes.forEach((b, i) => { b.visible = (i + cl) % 7 !== 0; });   // (les ampoules qui clignotent)
+    combat(t); };
+  // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
+  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = [], texV = [0, 1, 2, 3].map(k => tex(toileVampire(k)));
+  const fumeeT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(230,230,230,.8)"); g.addColorStop(1, "rgba(230,230,230,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
+      sp.position.set(p.x + (Math.random() - .5) * .5, p.y + (Math.random() - .5) * .6, p.z + (Math.random() - .5) * .5); sp.scale.setScalar(taille); scene.add(sp); parts.push({ sp, v: new THREE.Vector3((Math.random() - .5) * .8, vy * (.5 + Math.random()), (Math.random() - .5) * .8), t0: performance.now(), d: duree, taille }); } };
+  let hud = null, vies = 5, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
+  const moiP = () => { const m = M && M.gens.get(M.moiNum); return m ? m.g.position : null; };
+  const majHud = () => { if (!hud) return; hud.querySelector(".v").textContent = "❤️".repeat(Math.max(0, vies)) + "🖤".repeat(Math.max(0, 5 - vies)); hud.querySelector(".n").textContent = "🧛 " + vamps.filter(v => v.etat !== "mort").length; };
+  const message = (html, bouton) => { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:9;background:rgba(10,4,6,.86);color:#fff;border:2px solid #b81c22;border-radius:14px;padding:18px 22px;max-width:86%;text-align:center;font:600 17px Georgia,serif;box-shadow:0 0 30px rgba(184,28,34,.5)";
+    d.innerHTML = html; if (bouton) { const b = document.createElement("button"); b.textContent = bouton[0]; b.style.cssText = "margin-top:14px;font:700 16px system-ui;padding:10px 18px;border-radius:10px;border:0;background:#b81c22;color:#fff;cursor:pointer"; b.onclick = e => { e.stopPropagation(); d.remove(); bouton[1](); }; d.appendChild(b); }
+    else setTimeout(() => d.remove(), 4200); for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); return d; };
+  const creerVampire = (k) => { const g = new THREE.Group(); scene.add(g); const mat = new THREE.MeshBasicMaterial({ map: texV[k], transparent: true, alphaTest: .4, side: THREE.DoubleSide, fog: true }), corps = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 2.5), mat); corps.position.y = 1.25; g.add(corps);
+    const v = { k, nom: NOMS[k], g, corps, mat, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "tourne", a: Math.random() * 6.28, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
+    const p = moiP() || new THREE.Vector3(); g.position.set(p.x + Math.cos(v.a) * 30, 14, p.z + Math.sin(v.a) * 30); vamps.push(v); return v; };
+  const demarrer = () => { for (const v of vamps) scene.remove(v.g); vamps.length = 0; vies = 5; fini = false; phase = "vague1"; [1, 2, 3].forEach(creerVampire); majHud();
+    message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David arrive sur la jetée !</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`); };
+  const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
+    const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
+    if (v.etat === "terre") { if (d > 3.2) { message("Approche-toi pour lui planter le pieu !"); return; } pieu(v); return; }
+    if (v.etat === "mort" || v.etat === "brule") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
+    // le jet d'eau bénite : des gouttes du pistolet au vampire
+    const dep = M.camera.position.clone().add(new THREE.Vector3(0, -.4, 0)), but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0));
+    for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
+    try { sonBruit(.35, 2400, .25); } catch (e) {}
+    setTimeout(() => { if (v.etat === "mort") return; v.pv--; particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
+      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; v.corps.rotation.set(0, 0, 0); message(`${v.nom} est à terre ! Vite, le pieu !`); }
+      else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
+  const pieu = (v) => { v.etat = "brule"; v.tEtat = performance.now() + 1800; const p = v.g.position.clone(); try { sonBruit(.25, 300, .8); setTimeout(() => sonBruit(1.4, 700, .6), 200); } catch (e) {}
+    const st = new THREE.Mesh(new THREE.ConeGeometry(.06, .9, 6), A.mat({ color: 0x8a5a2a })); st.position.set(p.x, .6, p.z); st.rotation.z = Math.PI / 2; scene.add(st); setTimeout(() => scene.remove(st), 1800);
+    particule(feuT, p.clone().add(new THREE.Vector3(0, .5, 0)), 26, 2.2, 1600, 1.3); const lum = new THREE.PointLight(0xff7a20, 30, 10, 1.6); lum.position.set(p.x, 1.2, p.z); scene.add(lum); setTimeout(() => scene.remove(lum), 1700); };
+  const mordu = (v) => { vies--; majHud(); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
+    if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
+  const combat = (t) => {
+    const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
+    if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
+      hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
+    if (phase === "intro" && now - t0 > 2500) demarrer();
+    if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { creerVampire(0); majHud(); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
+    if (phase === "david" && vamps.length && vamps.every(v => v.etat === "mort") && !fini) { fini = true; phase = "fin"; message(`<div style="font-size:22px">Santa Carla est sauvée !</div><div style="margin-top:10px;font-style:italic;font-size:15px">« Il y a une chose que je n'ai jamais pu supporter à Santa Carla : tous ces fichus vampires. »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.8">— Grand-père</div>`, ["Rejouer", demarrer]); }
+    // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
+    for (const v of vamps) { const g = v.g, dt = 1 / 60;
+      if (v.etat === "tourne") { v.a += dt * .6 * v.vit; const cx = p.x + Math.cos(v.a) * v.r, cz = p.z + Math.sin(v.a) * v.r, cy = v.h + Math.sin(now / 500 + v.k) * .5; g.position.x += (cx - g.position.x) * .04; g.position.z += (cz - g.position.z) * .04; g.position.y += (cy - g.position.y) * .04;
+        if (now > v.tEtat) { v.etat = "pique"; v.tEtat = now + 3500; } }
+      else if (v.etat === "pique") { const dx = p.x - g.position.x, dz = p.z - g.position.z, dy = (p.y + .2) - g.position.y, d = Math.hypot(dx, dz, dy), sp = 7.5 * v.vit * dt;
+        g.position.x += dx / d * sp; g.position.z += dz / d * sp; g.position.y += dy / d * sp;
+        if (d < 1.1) { mordu(v); v.etat = "remonte"; v.tEtat = now + 1800; } else if (now > v.tEtat) { v.etat = "remonte"; v.tEtat = now + 1500; } }
+      else if (v.etat === "remonte") { g.position.y += (7 - g.position.y) * .05; const dx = g.position.x - p.x, dz = g.position.z - p.z, d = Math.hypot(dx, dz) || 1; g.position.x += dx / d * .08; g.position.z += dz / d * .08;
+        if (now > v.tEtat) { v.etat = "tourne"; v.a = Math.atan2(g.position.z - p.z, g.position.x - p.x); v.tEtat = now + 3000 + Math.random() * 4000; } }
+      else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; v.corps.rotation.z = Math.min(Math.PI / 2, v.corps.rotation.z + .05); v.corps.position.y = .45;
+        if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
+        if (now > v.tEtat) { v.pv = 1; v.corps.rotation.z = 0; v.corps.position.y = 1.25; v.etat = "remonte"; v.tEtat = now + 1500; message(`${v.nom} s'est relevé !`); } }
+      else if (v.etat === "brule") { v.mat.color.setRGB(1, .5, .2); v.mat.opacity = Math.max(0, (v.tEtat - now) / 1800); v.mat.transparent = true; v.mat.alphaTest = 0; if (Math.random() < .5) particule(feuT, g.position.clone().add(new THREE.Vector3(0, .5, 0)), 1, 2, 900, .9);
+        if (now > v.tEtat) { v.etat = "mort"; scene.remove(g); majHud(); } }
+      // le panneau face à nous ; incliné quand il pique ; à terre, couché
+      if (v.etat !== "mort") { const c = M.camera.position; g.rotation.y = Math.atan2(c.x - g.position.x, c.z - g.position.z); if (v.etat !== "terre" && v.etat !== "brule") v.corps.rotation.x = v.etat === "pique" ? .5 : 0; } }
+    // les particules (fumée, flammes, gouttes d'eau bénite)
+    for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i], u = (now - q.t0) / q.d; if (u < 0) continue;
+      if (u >= 1) { scene.remove(q.sp); parts.splice(i, 1); continue; }
+      if (q.goutte) q.sp.position.lerpVectors(q.de, q.a, u).add(new THREE.Vector3(0, Math.sin(u * Math.PI) * .25, 0));
+      else { q.sp.position.addScaledVector(q.v, 1 / 60); q.sp.material.opacity = 1 - u; q.sp.scale.setScalar(q.taille * (1 + u)); } } };
+  // toucher un vampire : l'eau bénite (ou le pieu, s'il est à terre)
+  L.toucher = (ray) => { const vis = vamps.filter(v => v.etat !== "mort" && v.etat !== "brule"); const h = ray.intersectObjects(vis.map(v => v.corps))[0]; if (!h) {
+      { let best = null, bd = .02; for (const v of vis) { const q = v.g.position.clone().add(new THREE.Vector3(0, 1.2, 0)), dir = q.sub(ray.ray.origin).normalize(), d = 1 - dir.dot(ray.ray.direction); if (d < bd) { bd = d; best = v; } } if (best) { blesser(best); return true; } }   // (un peu à côté : on vise le plus proche du doigt)
+      return false; }
+    blesser(vis.find(v => v.corps === h.object), h.point); return true; };
+}
 /* là où poser une fenêtre par-dessus le monde : l'élément en plein écran s'il y en a un (sinon elle resterait cachée derrière), sinon la page */
 const hoteFS = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
 function construireAppart(A, L, scene) {
@@ -6466,6 +6658,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "hv1955") construireHillValley(A, T, L, scene);
   if (id === "mess") construireMess(A, L, scene);
   if (id === "appart") construireAppart(A, L, scene);
+  if (id === "santacarla") construireSantaCarla(A, L, scene);
   if (id === "etage") {
     /* l'étage est construit dans un repère retourné (miroir avant-arrière) : en montant, le couloir à traverser est à gauche, comme dans le vrai bâtiment.
        Tout ce qui parle de positions passe par ce miroir (z du monde = 0,5 − z du plan) */
@@ -6640,6 +6833,8 @@ export async function ouvrir(ctx) {
     if (M.L.boutonDJ && M.L.boutonDJ.visible) { const q = M.L.boutonDJ.position.clone().project(M.camera);
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(30, r.width * .03)) { ctx.surBoutonDJ && ctx.surBoutonDJ(); return; } }
     if (M.L.zoneDJ && M.ctx.moiInfo && M.ctx.moiInfo().admin) { const t = ray.intersectObjects(M.L.zoneDJ, true)[0]; if (t) { ctx.surToucherDJ && ctx.surToucherDJ(); return; } }   // (toucher le coin du DJ mène à sa liste : l'administrateur seul ; les autres ont ⏮ / ⏭ sur la table)
+    // ce que le lieu veut qu'on touche (les vampires de Santa Carla…)
+    if (M.L.toucher && M.L.toucher(ray)) return;
     // un objet qu'on touche pour s'en servir (l'ordinateur de la chambre…)
     for (const q of M.L.objetsClic || []) if (ray.intersectObject(q.obj, true)[0]) { q.action(); return; }
     // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
@@ -9937,6 +10132,7 @@ function construireScene(id) {
     let dome = null; if (!estApo(id) && !estSH(id)) { dome = new THREE.Mesh(new THREE.SphereGeometry(200, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ map: texNuages(), transparent: true, depthWrite: false, fog: false, side: THREE.BackSide }));
       dome.frustumCulled = false; dome.renderOrder = -1; dome.matrixAutoUpdate = false; dome.onBeforeRender = (r, s2, cam) => { dome.matrixWorld.makeTranslation(cam.position.x, cam.position.y - 2, cam.position.z); }; scene.add(dome); }   // (les nuages suivent la caméra : toujours au loin)
     L.setNuit = (n) => {
+      if (L.toujoursNuit) n = true;   /* (Santa Carla : toujours la nuit) */
       L.nuit = n;
       scene.background = n ? cielNuit : cielJour; scene.fog.color.setHex(n ? 0x0c1530 : 0xcfe6f7);
       hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
