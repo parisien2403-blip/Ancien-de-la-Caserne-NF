@@ -4340,6 +4340,8 @@ function construireAppart(A, L, scene) {
       for (const t of (tr || []).filter(t => t.y0 < .05).sort((p, q) => p.c - q.c)) { fin(u, t.c - t.w / 2); u = t.c + t.w / 2; } fin(u, a); };
     plinthe("z", x0 + E / 2, z0, z1, trous.x0, 1); plinthe("z", x1 - E / 2, z0, z1, trous.x1, -1); plinthe("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, 1); plinthe("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, -1); };
   const porte = (c, w = .85) => ({ c, w, y0: 0, h: 2.1, porte: true }), fen = (c, w, y0, h) => ({ c, w, y0, h });
+  const papierPeint = (f, lx, ly) => { const tp = new THREE.TextureLoader().load(f); tp.colorSpace = THREE.SRGBColorSpace; tp.wrapS = tp.wrapT = THREE.RepeatWrapping; tp.anisotropy = 8;   // (un papier peint : son image, la taille réelle d'un raccord, en mètres)
+    return (lg, hh, u0, y0) => { const t = tp.clone(); t.repeat.set(lg / lx, hh / ly); t.offset.set(u0 / lx, y0 / ly); t.needsUpdate = true; return A.mat({ map: t, roughness: .85, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .16 }); }; };   // (un léger éclat : ses vraies couleurs, même dans la pénombre)
   // ---------- le plan (les portes : sur la grille des chemins, tous les 35 cm) ----------
   const XC = 1;                          // le couloir : 2 m de large, de x = −1 à x = 1
   const Z_FOND = -6.3, Z_BOUT = 10.6;      // le placard au fond (en bas) ; le mur du bout (en haut)
@@ -4360,7 +4362,7 @@ function construireAppart(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
   piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] });                       // la première chambre
-  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] });                  // la deuxième chambre
+  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
   piece(XC, XD, ZD, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.9, FW, FY, FH)] });                        // la troisième chambre
   piece(XC, XB, ZC[1], ZD, "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZD + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
@@ -4371,8 +4373,7 @@ function construireAppart(A, L, scene) {
   piece(XS, -XC, ZC[3], ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
   /* le papier peint du second salon (d'après la photo : rayures beige et taupe, le grain de la toile) ; un morceau fait 1,06 m de large (4 rayures) sur 1,45 m de haut */
-  const tapis = new THREE.TextureLoader().load("images/appart/tapisserie-salon2.webp"); tapis.colorSpace = THREE.SRGBColorSpace; tapis.wrapS = tapis.wrapT = THREE.RepeatWrapping; tapis.anisotropy = 8;
-  const papier = (lg, hh, u0, y0) => { const t = tapis.clone(); t.repeat.set(lg / 1.06, hh / 1.45); t.offset.set(u0 / 1.06, y0 / 1.45); t.needsUpdate = true; return A.mat({ map: t, roughness: .85 }); };
+  const papier = papierPeint("images/appart/tapisserie-salon2.webp", 1.06, 1.45);
   piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] }, papier);  // le second salon, à côté
   // le plafond
   A.ajoute(new THREE.BoxGeometry(16, .2, 28), A.mat({ color: 0xf1ece0, roughness: .95 }), -.8, HT + .1, 2.5, false);
