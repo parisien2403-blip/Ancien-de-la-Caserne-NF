@@ -4873,7 +4873,7 @@ function construireSantaCarla(A, L, scene) {
       // la vidéo de l'écran géant : sa musique, plus forte quand on s'approche de la scène (sans le son tant que le téléphone ne l'autorise pas)
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
-        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); V.volume = M.lbMus ? 0 : 1; if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
+        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); { const cible = M.lbMus || performance.now() < (M.lbSilence || 0) ? 0 : 1, dt4 = Math.min(.1, (now0lb() - (C.vt || now0lb())) / 1000); C.vt = now0lb(); V.volume = Math.max(0, Math.min(1, V.volume + Math.sign(cible - V.volume) * Math.min(Math.abs(cible - V.volume), dt4 / (cible ? 1.5 : 1.2)))); }   /* (le concert s'efface et revient en douceur) */ if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
   // les personnages : ceux de l'inventaire de l'administrateur (tête, tenue, couleurs, taille), sinon les photos découpées et les tenues du film
   const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = []; M.lbPerso = null;
@@ -4901,7 +4901,7 @@ function construireSantaCarla(A, L, scene) {
     const et = new THREE.Mesh(new THREE.CylinderGeometry(.092, .092, .14, 14, 1, true), new THREE.MeshBasicMaterial({ map: tex(toile(128, 48, (q) => { q.fillStyle = "#f2e8c8"; q.fillRect(0, 0, 128, 48); q.fillStyle = "#c81e1e"; q.font = "bold 20px Georgia"; q.textAlign = "center"; q.fillText("BEER", 64, 32); })) })); et.position.y = .5; g.add(et);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeT, color: 0xffd060, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(1.3); halo.position.y = .6; g.add(halo);
     const l = new THREE.PointLight(0xffc060, 6, 5, 1.6); l.position.y = 1; g.add(l); biere = { g };
-    const c = comps[0]; if (c) parle(c.num, "Une bière ! Là-bas ! Va la boire, ça va te requinquer !"); else message("🍺 Une bière est apparue : va la boire pour reprendre des forces !"); };
+    const c = comps[0]; if (c) parle(c.num, "Une bière ! Là-bas ! Va la boire, ça va te requinquer !");  };
   const boireBiere = (now, p) => { if (!biere) return; biere.g.rotation.y = now / 600; biere.g.position.y = Math.abs(Math.sin(now / 400)) * .12;
     if (Math.hypot(p.x - biere.g.position.x, p.z - biere.g.position.z) < 1.1) { scene.remove(biere.g); biere = null; vies = Math.min(100, vies + 40); majHud(); try { sonBruit(.5, 600, .25); } catch (e) {}
       parle(M.moiNum, "Glou glou… Aaah ! Ça fait du bien !"); voile("background:radial-gradient(circle,rgba(255,200,60,0) 40%,rgba(255,200,60,.45) 100%);transition:opacity .8s", 700); } };
@@ -4941,16 +4941,17 @@ function construireSantaCarla(A, L, scene) {
   const APRES = ["Un de moins. Il en reste encore… Ouvrez l'œil.", "Ils vont venir nous chercher. Restons ensemble.", "Le concert continue… On n'a pas beaucoup de temps.", "Je les sens… Ils nous observent, quelque part au-dessus de la jetée."];
   const prochain = () => { if (!M || M.L !== L || fini) return; const k = file.shift(); if (k == null) { finale(); return; }
     if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
+  const bandeauCombat = () => { if (!document.getElementById("styleCombatLB")) { const st = document.createElement("style"); st.id = "styleCombatLB"; st.textContent = "@keyframes lbCombat{0%{opacity:0;transform:scale(1.8);letter-spacing:.6em}18%{opacity:1;transform:scale(1);letter-spacing:.18em}75%{opacity:1}100%{opacity:0;transform:scale(.96)}}"; document.head.appendChild(st); }
+    const d = voile("display:grid;place-items:center", 2000); d.innerHTML = '<div style="font:900 clamp(40px,11vw,96px) Georgia,serif;color:#e01818;letter-spacing:.18em;text-shadow:0 0 6px #000,0 0 26px rgba(255,0,0,.8);animation:lbCombat 2s ease-out forwards">COMBAT</div>'; try { sonBruit(.5, 300, .5); } catch (e) {} };
   const dialogueAvant = (v) => { const nums = { V: v.p.info.numero, M: M.moiNum, 0: comps[0] && comps[0].num, 1: comps[1] && comps[1].num };
     dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
-      if (v.k === 0) message(`<div style="font-size:20px">David</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Le combat final.</div>`); } }); };
+      bandeauCombat(); } }); };
   const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
-    message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David rôde sur la jetée. Ils vont venir un par un…</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`);
     setTimeout(prochain, 6000); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
     const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
     if (v.etat === "terre") { courirPieu(v); return; }   // (un vampire à terre : on le touche, on court à lui, et on lui plante le pieu)
-    if (v.etat === "mort" || v.etat === "brule") return; if (v.etat === "approche" || v.etat === "parle") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
+    if (v.etat === "mort" || v.etat === "brule") return; if (v.etat === "approche" || v.etat === "parle") return; if (d > 16) return;
     // le jet d'eau bénite : des gouttes du pistolet au vampire
     const but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0)); ado.vise = { pt: but, t: now }; ado.kick = 1; majAdo(); const dep = buse(but);
     { const moi = M.gens.get(M.moiNum), dx = but.x - p.x, dz = but.z - p.z, l = Math.hypot(dx, dz) || 1; if (moi) { moi.tirT = now; vueTir(moi, dx / l, dz / l); } }   // (le bras se lève, pointé sur lui)
@@ -4958,7 +4959,7 @@ function construireSantaCarla(A, L, scene) {
     for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
     try { sonBruit(.35, 2400, .25); } catch (e) {}
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; majBarre(v); particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
-      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; message(`<div style="font-size:19px">${esc(v.nom)} est à terre !</div><div style="font:600 14px system-ui;margin-top:6px">Touche-le, ou le bouton 🗡️ <b>Planter le pieu</b> :<br>ton ado court lui planter le pieu dans le cœur.</div>`); const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
+      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000;  const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
       else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
   // le pieu : on l'enfonce dans le cœur ; le sang gicle, puis le vampire explose et brûle
   const sangT2 = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 1, 32, 32, 30); g.addColorStop(0, "rgba(150,0,6,1)"); g.addColorStop(.55, "rgba(110,0,4,.9)"); g.addColorStop(1, "rgba(80,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
@@ -5088,7 +5089,7 @@ function construireSantaCarla(A, L, scene) {
       const im = document.createElement("div"); im.style.cssText = "width:100%;aspect-ratio:200/420;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px;overflow:hidden"; b.appendChild(im);
       { const info = habillerLB({ numero: 0 }, 81 + k); chargerTete(0, null, info.teteUrl).then(t => { const cv = dessinerBonhomme(info, t); cv.style.cssText = "width:100%;height:100%;object-fit:contain"; im.appendChild(cv); }); }
       b.appendChild(document.createTextNode(a.nom));
-      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; adosIntro.forEach(q => retirerAncien(q.info.numero)); adosIntro.length = 0; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 1; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; adosIntro.forEach(q => retirerAncien(q.info.numero)); adosIntro.length = 0; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 0; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
@@ -5116,11 +5117,11 @@ function construireSantaCarla(A, L, scene) {
         if (now > v.tEtat) { v.etat = "tourne"; v.a = Math.atan2(g.position.z - p.z, g.position.x - p.x); v.tEtat = now + 3000 + Math.random() * 4000; } }
       else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté) */
         if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
-        if (now > v.tEtat) { v.pv = 1; majBarre(v); g.rotation.z = 0; v.etat = "remonte"; v.tEtat = now + 1500; message(`${v.nom} s'est relevé !`); } }
+        if (now > v.tEtat) { v.pv = 1; majBarre(v); g.rotation.z = 0; v.etat = "remonte"; v.tEtat = now + 1500; } }
       else if (v.etat === "brule") { const u2 = 1 - (v.tEtat - now) / 4600; g.visible = u2 < .15; if (v.barre) v.barre.sp.visible = false;   /* (il explose : il disparaît dans la boule de feu) */
         if (now > v.tEtat) { v.etat = "mort"; retirerAncien(v.p.info.numero); majHud(); } }
       // le panneau face à nous ; incliné quand il pique ; à terre, couché
-      if (v.etat !== "mort") v.p.vol = Math.max(0, g.position.y); }   // (l'altitude du vol : le moteur la remet à chaque image)
+      if (v.etat !== "mort") v.p.vol = Math.max(0, g.position.y); if (v.barre) v.barre.sp.visible = !M.cine && ["tourne", "pique", "remonte", "terre"].includes(v.etat); }   // (sa barre de vie : seulement pendant le combat)   // (l'altitude du vol : le moteur la remet à chaque image)
     // les particules (fumée, flammes, gouttes d'eau bénite)
     for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i], u = (now - q.t0) / q.d; if (u < 0) continue;
       if (u >= 1) { scene.remove(q.sp); parts.splice(i, 1); continue; }
@@ -10397,12 +10398,14 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
 const MUSIQUES_LB = { intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
-const CONCERT_LB = { v: null };   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
+const CONCERT_LB = { v: null }, now0lb = () => performance.now();   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
-  if (ancienne) { try { ancienne.a.pause(); } catch (e) {} }   // (jamais deux musiques à la fois : l'ancienne s'arrête net)
-  if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} if (CONCERT_LB.v) CONCERT_LB.v.volume = 0; }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
-  M.lbMus = null; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
-  const a = new Audio(src); a.loop = cle !== "intro"; a.volume = .85; a.play().catch(() => {}); M.lbMus = { cle, a };
+  const fondu = (a, de, vers, ms, fin) => { const t0 = performance.now(); clearInterval(a.fondu); a.fondu = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, de + (vers - de) * u)); if (u >= 1) { clearInterval(a.fondu); fin && fin(); } }, 40); };
+  // (jamais deux musiques à la fois, mais sans coupure sèche : l'ancienne s'efface en 1,2 s, puis la nouvelle monte en 1,5 s)
+  const attente = ancienne && !ancienne.a.paused ? 1200 : 0; if (ancienne) fondu(ancienne.a, ancienne.a.volume, 0, 1200, () => ancienne.a.pause());
+  if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
+  M.lbMus = null; M.lbSilence = performance.now() + attente; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
+  const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
   let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess"))) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
 function cineAfficheLB() { if (!M || M.cine) return; let parti = false;
