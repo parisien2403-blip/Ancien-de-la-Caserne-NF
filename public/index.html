@@ -1266,6 +1266,7 @@
           <button class="btn small alt mx-hv" data-hv="lbPaul" type="button" hidden>🧛 Paul</button>
           <button class="btn small alt mx-hv" data-hv="lbMarko" type="button" hidden>🧛 Marko</button>
           <button class="btn small alt mx-hv" data-hv="lbDwayne" type="button" hidden>🧛 Dwayne</button>
+          <button class="btn small alt mx-hv" data-hv="lbTim" type="button" hidden>🎷 Tim Cappello</button>
           <button class="btn small alt mx-hv" data-hv="shJames" type="button" hidden>📻 James</button>
           <button class="btn small alt mx-hv" data-hv="shEddie" type="button" hidden>📻 Eddie</button>
           <button class="btn small alt mx-hv" data-hv="shAngela" type="button" hidden>📻 Angela</button>
@@ -1526,6 +1527,7 @@
           <div class="bh-titre">Placer ma tête <small>(fais-la glisser du doigt sur le bonhomme)</small></div>
           <label class="bh-curseur">Taille<input type="range" id="bhTaille" min="40" max="250" value="100"></label>
           <label class="bh-curseur">Pencher<input type="range" id="bhPencher" min="-45" max="45" value="0"></label>
+          <label class="bh-curseur" style="gap:8px">Tête devant le corps <small>(sinon derrière : le cou passe sous le col)</small><input type="checkbox" id="bhDevant" style="width:auto;flex:none"></label>
           <div class="bh-fleches"><button type="button" data-bh-dep="0,-3" aria-label="Monter">▲</button><button type="button" data-bh-dep="-3,0" aria-label="À gauche">◀</button>
             <button type="button" data-bh-dep="3,0" aria-label="À droite">▶</button><button type="button" data-bh-dep="0,3" aria-label="Descendre">▼</button>
             <button type="button" class="link" id="bhRecentrer" style="margin:0 0 0 6px">Recentrer</button></div>
@@ -2212,7 +2214,7 @@
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
-      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
+      const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
       monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJMonstresSH").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxRadioIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
@@ -2310,7 +2312,7 @@
     prof: [68, "🥋 Le professeur de judo", "Le professeur de judo", "images/prof-judo-tete.png"],
     maman: [80, "☕ Maman (l'appartement de l'escalier Z)", "Maman", "images/appart/maman-tete.webp"],
     lbSam: [81, "🔫 Sam Emerson (Génération perdue)", "Sam Emerson", "images/santacarla/sam-tete.webp"], lbEdgar: [82, "🔫 Edgar Frog (Génération perdue)", "Edgar Frog", "images/santacarla/edgar-tete.webp"], lbAlan: [83, "🔫 Alan Frog (Génération perdue)", "Alan Frog", "images/santacarla/alan-tete.webp"],
-    lbDavid: [84, "🧛 David (Génération perdue)", "David", "images/santacarla/david-tete.webp"], lbPaul: [85, "🧛 Paul (Génération perdue)", "Paul", "images/santacarla/paul-tete.webp"], lbMarko: [86, "🧛 Marko (Génération perdue)", "Marko", "images/santacarla/marko-tete.webp"], lbDwayne: [87, "🧛 Dwayne (Génération perdue)", "Dwayne", "images/santacarla/dwayne-tete.webp"],
+    lbDavid: [84, "🧛 David (Génération perdue)", "David", "images/santacarla/david-tete.webp"], lbPaul: [85, "🧛 Paul (Génération perdue)", "Paul", "images/santacarla/paul-tete.webp"], lbMarko: [86, "🧛 Marko (Génération perdue)", "Marko", "images/santacarla/marko-tete.webp"], lbDwayne: [87, "🧛 Dwayne (Génération perdue)", "Dwayne", "images/santacarla/dwayne-tete.webp"], lbTim: [88, "🎷 Tim Cappello (le concert, Génération perdue)", "Tim Cappello", "images/santacarla/tim-tete.webp"],
     shJames: [69, "📻 James (Silent Hill)", "James", "images/sh/james-tete.webp"], shEddie: [70, "📻 Eddie (Silent Hill)", "Eddie", "images/sh/eddie-tete.webp"], shAngela: [71, "📻 Angela (Silent Hill)", "Angela", "images/sh/angela-tete.webp"],
     shMaria: [72, "📻 Maria (Silent Hill)", "Maria", "images/sh/maria-tete.webp"], shLaura: [73, "📻 Laura (Silent Hill)", "Laura", "images/sh/laura-tete.webp"],
     gend0: [63, "👮 Le gendarme du porche", "Le gendarme du porche", "images/gendarme-tete.png"], gend1: [64, "👮 Gendarme de ronde (Leclerc)", "Gendarme Leclerc", "images/gendarme2-tete.png"],
@@ -2659,12 +2661,13 @@
   document.querySelectorAll("[data-ambiance]").forEach(b => b.onclick = () => MX && MX.ambiance(b.dataset.ambiance));
   // ----- la fenêtre « Mon bonhomme » -----
   const bh = { tenue: "civil", couleur: "#22324f", tete: undefined, img: null, reglage: { k: 1, dx: 0, dy: 0, r: 0 } };
-  const majCurseurs = () => { $("bhLarge").value = Math.round((bh.reglage.l || 1) * 100); $("bhHaut").value = Math.round((bh.reglage.h || 1) * 100); $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhCadrage").hidden = !bh.img; };
+  const majCurseurs = () => { $("bhLarge").value = Math.round((bh.reglage.l || 1) * 100); $("bhHaut").value = Math.round((bh.reglage.h || 1) * 100); $("bhTaille").value = Math.round(bh.reglage.k * 100); $("bhPencher").value = bh.reglage.r; $("bhDevant").checked = !!bh.reglage.devant; $("bhCadrage").hidden = !bh.img; };
   $("bhLarge").oninput = () => { bh.reglage.l = $("bhLarge").value / 100; apercuBonhomme(); };
   $("bhHaut").oninput = () => { bh.reglage.h = $("bhHaut").value / 100; apercuBonhomme(); };
   $("bhSilhouetteNormale").onclick = () => { bh.reglage.l = 1; bh.reglage.h = 1; majCurseurs(); apercuBonhomme(); };
   $("bhTaille").oninput = () => { bh.reglage.k = $("bhTaille").value / 100; apercuBonhomme(); };
   $("bhPencher").oninput = () => { bh.reglage.r = +$("bhPencher").value; apercuBonhomme(); };
+  $("bhDevant").onchange = () => { if ($("bhDevant").checked) bh.reglage.devant = true; else delete bh.reglage.devant; apercuBonhomme(); };
   document.querySelectorAll("[data-bh-dep]").forEach(b => b.onclick = () => { const [dx, dy] = b.dataset.bhDep.split(",").map(Number); bh.reglage.dx = Math.max(-80, Math.min(80, bh.reglage.dx + dx)); bh.reglage.dy = Math.max(-80, Math.min(80, bh.reglage.dy + dy)); apercuBonhomme(); });
   $("bhRecentrer").onclick = () => { bh.reglage = { ...bh.reglage, k: 1, dx: 0, dy: 0, r: 0 }; majCurseurs(); apercuBonhomme(); };
   // faire glisser la tête du doigt sur l'aperçu (et pincer à deux doigts pour la taille)

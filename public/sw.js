@@ -16,7 +16,7 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname === "/version.json") return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/videos/") || url.pathname === "/version.json") return;   // (les vidéos : lues par morceaux, jamais mises en cache)
 
   if (e.request.mode === "navigate") {
     // seule la page d'accueil est gardée pour l'ouverture hors ligne (pas la page de la borne)
