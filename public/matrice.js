@@ -4319,7 +4319,8 @@ const cielNuit = () => toileCielNuit || (toileCielNuit = toile(256, 512, (x, w, 
    la niche ouverte (son lambrequin chantourné), l'abattant mouluré, et une grande porte ; en bas, deux portes, trois tiroirs, une porte.
    Les ferrures en fer noir : entrées de serrure ouvragées, boutons, poignées de tiroir. (g : son groupe ; l'avant vers +z, posé au sol) */
 let texChene = null;
-function buffetChene(g) {
+/* l'atelier du chêne (le bois du buffet, ses moulures, ses portes à chapeau de gendarme, ses ferrures) : partagé par les meubles de l'appartement */
+function outilsChene(g) {
   // le bois : le vrai chêne du buffet, pris sur la photo (sa teinte, son fil) ; les moulures plus foncées ; les ferrures en fer noir
   const ch = texChene || (texChene = (() => { const t = new THREE.TextureLoader().load("images/appart/chene.webp"); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })());
   const bois = new THREE.MeshStandardMaterial({ map: ch, roughness: .5, emissive: 0x24140a, emissiveIntensity: .3 }), moul = new THREE.MeshStandardMaterial({ map: ch, color: 0x8c6a52, roughness: .42 }),
@@ -4350,6 +4351,10 @@ function buffetChene(g) {
     ext(anneau(w - 2 * m, h - 2 * m, cap, .03), .012, moul, cx, y0 + .004 + m, .021);
     if (o.ferrure) ferrure(o.ferrure > 0 ? x1 - .045 : x0 + .045, (y0 + y1) / 2 + .04);
     if (o.ferrure) { const xh = o.ferrure > 0 ? x0 + .012 : x1 - .012; charniere(xh, y0 + .14); charniere(xh, y1 - .14); } };
+  return { box, ext, arche, anneau, ferrure, charniere, porte, bois, moul, creux, fer, verre, plomb, vaisselle, cristal };
+}
+function buffetChene(g) {
+  const { box, ext, arche, anneau, ferrure, charniere, porte, bois, moul, creux, fer, verre, plomb, vaisselle, cristal } = outilsChene(g);
   const W = 2.5, D = .5, Y = { socle: .08, bas: .68, tab: .76, mil: 1.7, mol: 1.75, haut: 2.37, top: 2.45 };
   // le bâti, creux : le fond, les côtés, les tablettes ; derrière les portes pleines, une cloison (on ne voit pas dedans)
   box(W - .02, Y.top - Y.socle, .02, creux, 0, (Y.top + Y.socle) / 2, -D + .01);
@@ -4398,6 +4403,31 @@ function buffetChene(g) {
     const pl = new THREE.Mesh(new THREE.BoxGeometry(.15, .028, .004), fer); pl.position.set(cx, (t0 + t1) / 2 + .015, .038); g.add(pl);
     const anse = new THREE.Mesh(new THREE.TorusGeometry(.045, .006, 6, 14, Math.PI), fer); anse.rotation.z = Math.PI; anse.position.set(cx, (t0 + t1) / 2 + .012, .044); g.add(anse); }
   porte(.485, 1.19, Y.socle + .01, Y.bas - .005, { ferrure: -1 });
+  fusionnerParMatiere(g); return g;
+}
+/* l'enfilade de la cuisine (d'après la photo) : dans le même chêne foncé verni que le buffet du salon, 1,80 m ; un plateau mouluré qui déborde,
+   quatre tiroirs (cartouches à pans coupés, poignées tombantes), quatre portes fermées à chapeau de gendarme, les pieds en boule */
+function enfiladeChene(g) {
+  const { box, ext, porte, bois, moul, creux, fer } = outilsChene(g);
+  const W = 1.8, D = .48, yP = .12, yT = .62, yH = .86;   // (le dessous du meuble, le haut des portes, le plateau)
+  box(W, yH - yP, .02, creux, 0, (yP + yH) / 2, -D + .01); for (const sx of [-1, 1]) box(.035, yH - yP, D, bois, sx * (W / 2 - .0175), (yP + yH) / 2, -D / 2);
+  box(W, .03, D, bois, 0, yP + .015, -D / 2); box(W - .04, yT - yP, .02, creux, 0, (yP + yT) / 2, -.035);
+  box(W + .05, .035, D + .05, bois, 0, yH + .0175, -D / 2 + .02); box(W + .07, .015, D + .07, moul, 0, yH + .005, -D / 2 + .03);   // le plateau, sa moulure
+  box(W + .03, .04, D + .02, moul, 0, yP + .02, -D / 2 + .01);   // (la plinthe du bas)
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const p = new THREE.Mesh(new THREE.SphereGeometry(.06, 14, 10), bois); p.scale.set(1, 1.1, 1); p.position.set(sx * (W / 2 - .07), .065, sz < 0 ? -D + .07 : -.05); g.add(p); }   // les pieds en boule
+  const n = 4, lw = W / n;
+  for (let i = 0; i < n; i++) { const x0 = -W / 2 + i * lw, cx = x0 + lw / 2;
+    // le tiroir : un cartouche à pans coupés, sa poignée
+    box(lw - .02, yH - yT - .02, .022, bois, cx, (yT + yH) / 2, .011);
+    const sh = new THREE.Shape(), w2 = lw - .12, h2 = yH - yT - .08, c = .03; sh.moveTo(-w2 / 2 + c, 0); sh.lineTo(w2 / 2 - c, 0); sh.lineTo(w2 / 2, c); sh.lineTo(w2 / 2, h2 - c); sh.lineTo(w2 / 2 - c, h2); sh.lineTo(-w2 / 2 + c, h2); sh.lineTo(-w2 / 2, h2 - c); sh.lineTo(-w2 / 2, c); sh.closePath();
+    const hp = new THREE.Path(), w3 = w2 - .03, h3 = h2 - .03; hp.moveTo(-w3 / 2 + c, .015); hp.lineTo(w3 / 2 - c, .015); hp.lineTo(w3 / 2, .015 + c); hp.lineTo(w3 / 2, .015 + h3 - c); hp.lineTo(w3 / 2 - c, .015 + h3); hp.lineTo(-w3 / 2 + c, .015 + h3); hp.lineTo(-w3 / 2, .015 + h3 - c); hp.lineTo(-w3 / 2, .015 + c); hp.closePath(); sh.holes.push(hp);
+    ext(sh, .01, moul, cx, yT + .04, .022);
+    for (const sx of [-1, 1]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .02, 8), fer); r.rotation.x = Math.PI / 2; r.position.set(cx + sx * .05, (yT + yH) / 2 + .015, .04); g.add(r); }
+    const anse = new THREE.Mesh(new THREE.TorusGeometry(.05, .005, 6, 14, Math.PI), fer); anse.rotation.z = Math.PI; anse.position.set(cx, (yT + yH) / 2 + .015, .05); g.add(anse);
+    // la porte, fermée
+    porte(x0 + .012, x0 + lw - .012, yP + .035, yT - .01, { ferrure: i % 2 ? -1 : 1 }); }
+  for (let i = 0; i <= n; i++) box(.02, yH - yP - .03, .022, bois, -W / 2 + i * lw, (yP + yH) / 2, .011);   // (les montants)
+  box(W, .02, .022, bois, 0, yT, .011);
   fusionnerParMatiere(g); return g;
 }
 function construireAppart(A, L, scene) {
@@ -4644,6 +4674,8 @@ function construireAppart(A, L, scene) {
     // la crédence : du carrelage blanc, 15 × 15 cm, joints gris clair
     const carre = tex(toile(256, 256, (x, w) => { x.fillStyle = "#c9c5bb"; x.fillRect(0, 0, w, w); for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const gd = x.createLinearGradient(i * 128, j * 128, i * 128 + 128, j * 128 + 128); gd.addColorStop(0, "#fbfaf6"); gd.addColorStop(1, "#ecebe5"); x.fillStyle = gd; x.fillRect(i * 128 + 3, j * 128 + 3, 122, 122); } }), 1 / .3, .6 / .3);
     b(1.0, .6, .012, A.mat({ map: carre, roughness: .12 }), 0, yH + .3, -.296); }
+  // la cuisine : contre le mur du fond, l'enfilade de chêne (portes fermées, rien dessus)
+  { const g = new THREE.Group(); g.position.set((XC + XD) / 2 + .2, H4, ZC[4] - E - .5); g.rotation.y = Math.PI; scene.add(g); enfiladeChene(g); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
   { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
   // le placard : des étagères
