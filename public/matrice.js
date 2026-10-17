@@ -9703,7 +9703,7 @@ function ecranRelief() { const d = M.cadranEl, C = M.copieRelief;
   M.copieRelief = { src: d, el, obs }; }
 function rendreRelief(rendu) { ecranRelief(); const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
-  action3D(); const a3 = M.action3D; if (a3) { if (a3.parent !== M.scene) M.scene.add(a3); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); a3.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, -.55); }
+  action3D(); const a3 = M.action3D; if (a3) { if (a3.parent !== M.scene) M.scene.add(a3); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); a3.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, -.3); }
   const s = rendu.getSize(new THREE.Vector2()), w = Math.floor(s.x / 2); rendu.setScissorTest(true);
   rendu.setScissor(0, 0, w, s.y); rendu.setViewport(0, 0, w, s.y); rendu.render(M.scene, st.cameraL);
   rendu.setScissor(w, 0, s.x - w, s.y); rendu.setViewport(w, 0, s.x - w, s.y); rendu.render(M.scene, st.cameraR);
@@ -9713,17 +9713,17 @@ function bulle3D(texte, ms) { if (!M) return; if (M.bulle3D) { M.bulle3D.parent 
   if (!texte || !M.relief) return; const sp = panneau3D(texte); if (!sp) return; M.scene.add(sp); M.bulle3D = sp;
   if (ms) { const s2 = sp; setTimeout(() => { if (M && M.bulle3D === s2) bulle3D(null); }, ms); } }
 function panneau3D(texte, fond = "rgba(255,254,246,.95)") { const div = document.createElement("div"); div.innerHTML = texte; const t = div.textContent.trim(); if (!t) return null;
-  const W = 1024, x0 = document.createElement("canvas").getContext("2d"); x0.font = "700 44px Lato, sans-serif"; const mots = t.split(/\s+/), lignes = []; let l = "";
+  const W = 1024, x0 = document.createElement("canvas").getContext("2d"); x0.font = "800 54px Lato, sans-serif"; const mots = t.split(/\s+/), lignes = []; let l = "";
   for (const m of mots) { const e = l ? l + " " + m : m; if (x0.measureText(e).width > W - 80 && l) { lignes.push(l); l = m; } else l = e; } if (l) lignes.push(l);
-  const H = 40 + lignes.length * 56, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+  const H = 44 + lignes.length * 66, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
   x.fillStyle = fond; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 28); x.fill(); x.lineWidth = 6; x.strokeStyle = "#111"; x.stroke();
-  x.font = "700 44px Lato, sans-serif"; x.fillStyle = "#1a1a1a"; x.textAlign = "center"; x.textBaseline = "middle"; lignes.forEach((q, i) => x.fillText(q, W / 2, 20 + 28 + i * 56));
+  x.font = "800 54px Lato, sans-serif"; x.fillStyle = "#1a1a1a"; x.textAlign = "center"; x.textBaseline = "middle"; lignes.forEach((q, i) => x.fillText(q, W / 2, 22 + 33 + i * 66));
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, depthWrite: false, transparent: true, fog: false }));
-  sp.scale.set(1.5, 1.5 * H / W, 1); sp.renderOrder = 999; return sp; }
+  sp.scale.set(1.9, 1.9 * H / W, 1); sp.renderOrder = 999; return sp; }
 /* en relief : ce qu'on peut faire là où l'on est (le bouton d'action est caché) — « 🎮 A : … », en bas, devant nous */
 function action3D() { const lab = M.relief && M.action && !M.cine && !M.cadranEl ? "🎮 A : " + M.action.label : null, A = M.action3D;
   if (lab === (A && A.userData.lab)) return; if (A) { A.parent && A.parent.remove(A); A.material.map.dispose(); A.material.dispose(); M.action3D = null; }
-  if (!lab) return; const sp = panneau3D(lab, "rgba(246,212,101,.95)"); if (!sp) return; sp.scale.multiplyScalar(.7); sp.userData.lab = lab; M.scene.add(sp); M.action3D = sp; }
+  if (!lab) return; const sp = panneau3D(lab, "rgba(246,212,101,.95)"); if (!sp) return; sp.scale.multiplyScalar(1.15); sp.userData.lab = lab; M.scene.add(sp); M.action3D = sp; }
 function animerGroupe() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.scene) return;
   const dm = !!(M.djJoue && AIR_DM.test(M.djTitre || "")), ei = !dm && !!(M.djJoue && AIR_EI.test(M.djTitre || ""));
