@@ -4247,16 +4247,16 @@ function construireAppart(A, L, scene) {
   /* une pièce : son sol, et ses quatre murs (posés à l'intérieur de son rectangle, 10 cm d'épaisseur : deux pièces voisines font un mur de 20 cm)
      trous : { x0: [...], x1: [...], z0: [...], z1: [...] } — chaque trou { c (le milieu, le long du mur), w, y0 (au-dessus du sol de la pièce), h } */
   const E = .1;
-  const murTroue = (axe, pos, de, a, trous, yS) => {   // axe "z" : un mur le long de z, à x = pos ; "x" : le long de x, à z = pos
+  const murTroue = (axe, pos, de, a, trous, yS, matMur) => {   // axe "z" : un mur le long de z, à x = pos ; "x" : le long de x, à z = pos ; matMur : un papier peint (selon la taille du pan)
     const pose = (u0, u1, y0, y1) => { if (u1 - u0 < .005 || y1 - y0 < .005) return; const L2 = u1 - u0, m = (u0 + u1) / 2, hh = y1 - y0;
-      A.ajoute(new THREE.BoxGeometry(...(axe === "z" ? [E, hh, L2] : [L2, hh, E])), peinture, ...(axe === "z" ? [pos, y0 + hh / 2, m] : [m, y0 + hh / 2, pos]), false); };
+      A.ajoute(new THREE.BoxGeometry(...(axe === "z" ? [E, hh, L2] : [L2, hh, E])), matMur ? matMur(L2, hh, u0, y0) : peinture, ...(axe === "z" ? [pos, y0 + hh / 2, m] : [m, y0 + hh / 2, pos]), false); };
     const tr = (trous || []).slice().sort((p, q) => p.c - q.c); let u = de;
     for (const t of tr) { const a0 = t.c - t.w / 2, a1 = t.c + t.w / 2, y0 = yS + t.y0, y1 = Math.min(HT, y0 + t.h);
       pose(u, a0, -.1, HT); pose(a0, a1, -.1, y0); pose(a0, a1, y1, HT); u = a1; }
     pose(u, a, -.1, HT); };
-  const piece = (x0, x1, z0, z1, genre, trous = {}) => { const y = niveau((z0 + z1) / 2); if (genre) sol(x0, x1, z0, z1, y, genre);
-    murTroue("z", x0 + E / 2, z0, z1, trous.x0, y); murTroue("z", x1 - E / 2, z0, z1, trous.x1, y);
-    murTroue("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, y); murTroue("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, y);
+  const piece = (x0, x1, z0, z1, genre, trous = {}, matMur) => { const y = niveau((z0 + z1) / 2); if (genre) sol(x0, x1, z0, z1, y, genre);
+    murTroue("z", x0 + E / 2, z0, z1, trous.x0, y, matMur); murTroue("z", x1 - E / 2, z0, z1, trous.x1, y, matMur);
+    murTroue("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, y, matMur); murTroue("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, y, matMur);
     // la plinthe, tout autour (sauf dans les trous qui descendent jusqu'au sol)
     const pl = A.mat({ color: 0xd8ccb0, roughness: .6 }), plinthe = (axe, pos, de, a, tr, s) => { let u = de; const fin = (u0, u1) => { if (u1 - u0 > .02) A.ajoute(new THREE.BoxGeometry(...(axe === "z" ? [.02, .1, u1 - u0] : [u1 - u0, .1, .02])), pl, ...(axe === "z" ? [pos + s * .06, y + .05, (u0 + u1) / 2] : [(u0 + u1) / 2, y + .05, pos + s * .06]), false); };
       for (const t of (tr || []).filter(t => t.y0 < .05).sort((p, q) => p.c - q.c)) { fin(u, t.c - t.w / 2); u = t.c + t.w / 2; } fin(u, a); };
@@ -4292,7 +4292,10 @@ function construireAppart(A, L, scene) {
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
   piece(XS, -XC, ZC[3], ZC[5], "clair", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
-  piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] });  // le second salon, à côté
+  /* le papier peint du second salon (d'après la photo : rayures beige et taupe, le grain de la toile) ; un morceau fait 1,06 m de large (4 rayures) sur 1,45 m de haut */
+  const tapis = new THREE.TextureLoader().load("images/appart/tapisserie-salon2.webp"); tapis.colorSpace = THREE.SRGBColorSpace; tapis.wrapS = tapis.wrapT = THREE.RepeatWrapping; tapis.anisotropy = 8;
+  const papier = (lg, hh, u0, y0) => { const t = tapis.clone(); t.repeat.set(lg / 1.06, hh / 1.45); t.offset.set(u0 / 1.06, y0 / 1.45); t.needsUpdate = true; return A.mat({ map: t, roughness: .85 }); };
+  piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] }, papier);  // le second salon, à côté
   // le plafond
   A.ajoute(new THREE.BoxGeometry(16, .2, 28), A.mat({ color: 0xf1ece0, roughness: .95 }), -.8, HT + .1, 2.5, false);
   // ---------- les portes (ouvertes, battant contre le mur de la pièce) et la porte d'entrée (fermée) ----------
