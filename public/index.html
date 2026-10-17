@@ -2251,8 +2251,8 @@
         surAfficheTaille: v => { const r = $("mxAffTaille").querySelector("input"); r.value = Math.round(v * 100); $("mxAffTaille").querySelector("span").textContent = r.value + " cm"; },
         surAlmanach: a => { if (!a) return; const r = $("mxAlmTaille").querySelector("input"); r.value = Math.round((a.taille || .3) * 100); $("mxAlmTaille").querySelector("span").textContent = r.value + " cm"; },
         surApoMort: on => { $("mxApoMort").hidden = !on; },
-        surAvantApo: suite => { const r3d = !!window.mxReliefOn; MX && MX.relief && MX.relief(false); const remettre = () => { if (r3d) setTimeout(() => MX && MX.relief(true), 700); };   /* (en relief : on revient à l'image normale le temps du choix, puis le relief reprend tout seul) */
-          const el = $("mxApoIntro"); el.hidden = false; el.querySelector(".mx-apo-carte").scrollTop = 0; dessinerChoixApo();
+        surAvantApo: suite => { const remettre = () => apoRelief(false);
+          const el = $("mxApoIntro"); el.hidden = false; apoRelief(true);   /* (en relief : l'écran du choix, une fois pour chaque œil) */ el.querySelector(".mx-apo-carte").scrollTop = 0; dessinerChoixApo();
           $("mxApoOui").onclick = () => { el.hidden = true; MX && MX.choisirApo && MX.choisirApo(apoChoix.perso, apoChoix.equipe); suite(true); remettre(); }; $("mxApoNon").onclick = () => { el.hidden = true; suite(false); remettre(); }; },
         surEtage: (n, N) => { const el = $("mxEtages"); if (n === null || n === undefined) { el.hidden = true; return; }
           const nom = k => k === 0 ? "rez-de-chaussée" : k === 1 ? "1er" : k + "e", court = k => k === 0 ? "RDC" : k === 1 ? "1er" : k + "e";
@@ -2344,6 +2344,33 @@
   $("mxMusique").onclick = allerAuDJ;
   // l'écran « Bienvenue en 1998 » : qui l'on joue (soi-même ou un héros de Resident Evil), et jusqu'à deux équipiers
   const apoChoix = (() => { try { const v = JSON.parse(localStorage.getItem("apoChoix") || "null"); if (v && Array.isArray(v.equipe)) return v; } catch (e) {} return { perso: null, equipe: [] }; })();
+  /* la manette de jeu : parmi les appareils vus comme des manettes (les lunettes XREAL, par exemple, en sont un), la vraie — deux joysticks, disposition standard —, celle dont on s'est servi en dernier */
+  window.choisirManette = () => { const l = navigator.getGamepads ? [...navigator.getGamepads()].filter(q => q && q.connected) : []; if (!l.length) return null;
+    const vraies = l.filter(q => q.axes.length >= 4 && q.buttons.length >= 12 && !/xreal|nreal|glass|lunette|air ?2|beam/i.test(q.id)), c = vraies.length ? vraies : l, std = c.filter(q => q.mapping === "standard");
+    return (std.length ? std : c).sort((a, b) => b.timestamp - a.timestamp)[0]; };
+  /* le choix des héros en relief : l'écran comprimé dans la moitié gauche, sa copie dans la droite (chaque œil le sien), tenue à jour */
+  let apoCopie = null;
+  function apoRelief(on) { const el = $("mxApoIntro");
+    if (apoCopie) { apoCopie.obs.disconnect(); apoCopie.c.remove(); apoCopie = null; el.classList.remove("relief-ok"); el.style.transform = el.style.transformOrigin = ""; }
+    if (!on || !window.mxReliefOn) return;
+    el.classList.add("relief-ok"); el.style.transform = "scaleX(.5)"; el.style.transformOrigin = "0 50%";
+    const c = el.cloneNode(true); c.removeAttribute("id"); c.querySelectorAll("[id]").forEach(x => x.removeAttribute("id")); c.style.transform = "scaleX(.5)"; c.style.transformOrigin = "100% 50%"; c.style.pointerEvents = "none"; el.parentNode.appendChild(c);
+    const obs = new MutationObserver(() => { c.innerHTML = el.innerHTML; c.querySelectorAll("[id]").forEach(x => x.removeAttribute("id")); c.hidden = el.hidden; const a = el.querySelector(".mx-apo-carte"), b = c.querySelector(".mx-apo-carte"); if (a && b) b.scrollTop = a.scrollTop; });
+    obs.observe(el, { subtree: true, childList: true, attributes: true, characterData: true }); apoCopie = { c, obs }; }
+  /* à la manette : croix gauche / droite = son héros, haut / bas = l'équipier visé (entouré), X = le prendre ou le laisser (A commence, B renonce : dans la Matrice) */
+  (() => { const prec = []; let vise = 0;
+    const tour = () => { requestAnimationFrame(tour); const el = $("mxApoIntro"); if (!el || el.hidden || !MX || !MX.HEROS) return;
+      const g = (window.choisirManette ? window.choisirManette() : null); if (!g) return;
+      const bt = i => !!(g.buttons[i] && g.buttons[i].pressed), ap = i => { const v = bt(i), r = v && !prec[i]; prec[i] = v; return r; };
+      const ids = Object.keys(MX.HEROS).map(Number), persos = [null, ...ids];
+      let k = persos.indexOf(apoChoix.perso), chg = false;
+      if (ap(15)) { k = (k + 1) % persos.length; chg = true; } if (ap(14)) { k = (k + persos.length - 1) % persos.length; chg = true; }
+      if (chg) { apoChoix.perso = persos[k]; apoChoix.equipe = apoChoix.equipe.filter(i => i !== apoChoix.perso); }
+      if (ap(13)) { vise = (vise + 1) % ids.length; chg = true; } if (ap(12)) { vise = (vise + ids.length - 1) % ids.length; chg = true; }
+      if (ap(2)) { const i = ids[vise]; if (i !== apoChoix.perso) { if (apoChoix.equipe.includes(i)) apoChoix.equipe = apoChoix.equipe.filter(x => x !== i); else { apoChoix.equipe.push(i); if (apoChoix.equipe.length > 2) apoChoix.equipe.shift(); } } chg = true; }
+      if (chg) { try { localStorage.setItem("apoChoix", JSON.stringify(apoChoix)); } catch (e) {} dessinerChoixApo();
+        $("mxApoEquipe").querySelectorAll("[data-e]").forEach(b => b.style.outline = +b.dataset.e === ids[vise] ? "3px solid #f6d465" : ""); } };
+    requestAnimationFrame(tour); })();
   function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => { const P = trioInfo[id]; return P && P.tete_v ? urlTetePNJ(P.tete_v, id) : `images/re/${H[id].cle}-tete.png`; }, prenom = id => H[id].court;
     $("mxApoPerso").innerHTML = `<button type="button" data-p="" class="${apoChoix.perso ? "" : "on"}"><span>🙂</span>Moi</button>` + Object.keys(H).map(id => `<button type="button" data-p="${id}" class="${+id === apoChoix.perso ? "on" : ""}"><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");
     $("mxApoEquipe").innerHTML = Object.keys(H).map(id => `<button type="button" data-e="${id}" class="${apoChoix.equipe.includes(+id) ? "on" : ""}" ${+id === apoChoix.perso ? "disabled" : ""}><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");
@@ -3056,7 +3083,8 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
-    ["5.07", "17 octobre 2026", ["L'Almanach des sports et la radio de Silent Hill ne sont plus posés que dans les cours de la caserne (plus dans les bâtiments ni dans la rue)", "La radio de Silent Hill est là pour tout le monde : chacun peut la ramasser et partir à Silent Hill", "(Administrateur, en essai) En relief, après le choix des héros de Resident Evil, le relief reprend tout seul"]],
+    ["5.08", "17 octobre 2026", ["(Administrateur, en essai) La manette : le jeu écoute la vraie manette (les lunettes XREAL branchées étaient prises pour une manette : on tirait sans arrêt et on ne pouvait plus bouger)", "(Administrateur, en essai) Le choix des héros de Resident Evil reste en relief et se fait à la manette ; en relief, « 🎮 B : passer la scène » pendant les cinématiques"]],
+    ["5.07", "17 octobre 2026", ["L'Almanach des sports et la radio de Silent Hill ne sont plus posés que dans les cours de la caserne (plus dans les bâtiments ni dans la rue)", "La radio de Silent Hill est là pour tout le monde : chacun peut la ramasser et partir à Silent Hill", "(Administrateur, en essai) Le choix des héros de Resident Evil reste en relief (une image par œil) et se fait à la manette : croix gauche / droite son héros, haut / bas l'équipier, X le prendre, A commencer"]],
     ["5.06", "17 octobre 2026", ["Les dernières corrections de la manette et du relief (panneau d'action en grand, affiche, cadenas, téléphone, console) arrivent bien sur tous les téléphones"]],
     ["5.05", "17 octobre 2026", ["S.O.S. Fantômes : plus de boutons de danse (ça ne servait à rien pendant l'aventure)", "(Administrateur, en essai) La console de jeux se joue à la vraie manette (boutons à leur place d'origine, croix ou joystick, Select / Start) ; en relief, l'écran du jeu passe une fois pour chaque œil, et Select + Start tenus une seconde rangent la console", "(Administrateur, en essai) En relief, l'action possible s'affiche dans la scène (« 🎮 A : … ») ; l'affiche de Resident Evil, le cadenas et le téléphone de la cabine restent en relief (une image par œil) et marchent à la manette (croix : chiffre, A : composer, X : effacer, B : raccrocher)", "(Administrateur, en essai) Le cadenas de la déchetterie et le choix des héros marchent à la manette (croix : molettes, A : ouvrir / commencer, B : laisser)", "(Administrateur, en essai) À la première personne : un revolver tenu en main (Resident Evil, Silent Hill) avec son viseur laser, son recul et l'éclair du tir ; dans S.O.S. Fantômes, le lance-protons en main, le faisceau qui part du canon, les coéquipiers de chaque côté"]],
     ["5.04", "16 octobre 2026", ["(Administrateur, en essai) Caserne en 3D : on peut jouer à la manette Bluetooth (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour la vue, A agir, B passer / se relever, gâchette droite tirer (zombies, monstres, faisceau de S.O.S. Fantômes avec sa mire), gâchette gauche la lampe, Y la carte, X danser, Start le relief", "(Administrateur, en essai) La vue à la première personne : bouton 👁, ou Select sur la manette ; on regarde autour de soi (jusqu'au ciel) avec le joystick droit ou en glissant le doigt ; avec une arme, un pistolet en main et son viseur laser", "(Administrateur, en essai) Le relief 3D pour lunettes (XREAL…) : bouton 👓, l'image coupée en deux (une par œil, côte à côte) ; les sous-titres flottent dans la scène ; réglage de la profondeur"]],
@@ -4577,7 +4605,7 @@
   (() => { const prec = new Map();
     const jouer = () => { requestAnimationFrame(jouer);
       if (!$("borneZone").classList.contains("console") && !jeuEnCours) return;
-      const g = navigator.getGamepads ? [...navigator.getGamepads()].find(q => q && q.connected) : null; if (!g) return;
+      const g = (window.choisirManette ? window.choisirManette() : null); if (!g) return;
       const b = i => !!(g.buttons[i] && (g.buttons[i].pressed || g.buttons[i].value > .4)), ax = i => g.axes[i] || 0, stick = manetteCourante && manetteCourante.stick, etat = new Map();
       const mettre = (n, v) => etat.set(n, (etat.get(n) || 0) || v);
       mettre(0, b(0)); mettre(8, b(1)); mettre(1, b(2)); mettre(9, b(3)); mettre(10, b(4)); mettre(11, b(5)); mettre(12, b(6)); mettre(13, b(7)); mettre(2, b(8)); mettre(3, b(9));
@@ -4603,7 +4631,7 @@
         document.body.appendChild(ov); if (ov.requestFullscreen) ov.requestFullscreen().catch(() => {}); }
       // chaque image : comprimée de moitié en largeur (les lunettes l'étirent), à la bonne hauteur
       const H = ov.clientHeight, a = cv.width / cv.height; ov.querySelectorAll("video").forEach(v => { v.style.width = Math.min(ov.clientWidth / 2, H * a / 2) + "px"; v.style.height = Math.min(H, ov.clientWidth / a) + "px"; });
-      const g = navigator.getGamepads ? [...navigator.getGamepads()].find(q => q && q.connected) : null;
+      const g = (window.choisirManette ? window.choisirManette() : null);
       if (g && g.buttons[8] && g.buttons[9] && g.buttons[8].pressed && g.buttons[9].pressed) { if (!sortieT) sortieT = performance.now(); else if (performance.now() - sortieT > 1000) { sortieT = 0; fermer(); fermerConsole(); } } else sortieT = 0; };
     requestAnimationFrame(tour); })();
   // le geste « retour » d'Android quitte le plein écran : on revient aussi à la salle des fêtes

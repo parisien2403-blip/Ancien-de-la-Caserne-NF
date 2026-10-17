@@ -9525,7 +9525,7 @@ const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false,
 function manette() {
   const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
   if (!M || !(M.ctx.moiInfo && M.ctx.moiInfo().admin)) return;   // (pour l'instant, l'administrateur seul : le temps des essais)
-  const g = navigator.getGamepads ? [...navigator.getGamepads()].find(q => q && q.connected) : null; if (!g || !M || !M.L) { mireGB(null); return; }
+  const g = (window.choisirManette ? window.choisirManette() : null); if (!g || !M || !M.L) { mireGB(null); return; }
   if (!MAN.vu) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, A pour agir, gâchette droite pour tirer, Start pour le relief 3D"); }
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
@@ -9721,7 +9721,7 @@ function panneau3D(texte, fond = "rgba(255,254,246,.95)") { const div = document
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, depthWrite: false, transparent: true, fog: false }));
   sp.scale.set(1.9, 1.9 * H / W, 1); sp.renderOrder = 999; return sp; }
 /* en relief : ce qu'on peut faire là où l'on est (le bouton d'action est caché) — « 🎮 A : … », en bas, devant nous */
-function action3D() { const lab = M.relief && M.action && !M.cine && !M.cadranEl ? "🎮 A : " + M.action.label : null, A = M.action3D;
+function action3D() { const lab = !M.relief || M.cadranEl ? null : M.cine ? (M.passerBtn && !(M.gbCombat && !M.gbCombat.fini) ? "🎮 B : passer la scène" : null) : M.action ? "🎮 A : " + M.action.label : null, A = M.action3D;
   if (lab === (A && A.userData.lab)) return; if (A) { A.parent && A.parent.remove(A); A.material.map.dispose(); A.material.dispose(); M.action3D = null; }
   if (!lab) return; const sp = panneau3D(lab, "rgba(246,212,101,.95)"); if (!sp) return; sp.scale.multiplyScalar(1.15); sp.userData.lab = lab; M.scene.add(sp); M.action3D = sp; }
 function animerGroupe() {
