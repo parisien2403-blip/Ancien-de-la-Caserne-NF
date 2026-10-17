@@ -9211,7 +9211,7 @@ function centrePortail(pt) {
 }
 function animerCercles(t) {
   if (M.cerclesL !== M.L) {   // nouveau lieu : on (re)pose les cercles
-    for (const c of M.cercles || []) { M.scene.remove(c.g); }
+    for (const c of M.cercles || []) { if (c.g && c.g.parent) c.g.parent.remove(c.g); }   // (de la scène où ils étaient : elle est peut-être gardée pour y revenir)
     M.cercles = []; M.cerclesL = M.L; M.cerclePret = false;
     for (const pt of M.L.portails || []) if (!pt.continu || pt.seuil) M.cercles.push({ pt, g: null });
   }
@@ -10122,10 +10122,16 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   trace("construire " + id + (pret ? " (prêt)" : ""));
   const { scene, L, repere } = pret || construireScene(id);
   trace("construit " + id); M.trace1 = true;
-  { const ancienne = M.scene; setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
+  /* le lieu qu'on quitte : dans la vraie caserne, on le garde tout prêt (on y revient souvent, et on arrive près de sa porte : le reconstruire tout de suite figeait l'image
+     quelques secondes en entrant) ; ailleurs, il est libéré un peu plus tard */
+  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(lieuAvant) && !ancL.apo && !ancL.sh && !ancL.gb;
+    if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
+      ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
+    else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
   if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
+  if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null;   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
