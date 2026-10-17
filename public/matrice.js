@@ -4264,10 +4264,12 @@ function construireAppart(A, L, scene) {
   const porte = (c, w = .85) => ({ c, w, y0: 0, h: 2.1, porte: true }), fen = (c, w, y0, h) => ({ c, w, y0, h });
   // ---------- le plan (les portes : sur la grille des chemins, tous les 35 cm) ----------
   const XC = 1;                          // le couloir : 2 m de large, de x = −1 à x = 1
-  const Z_FOND = -9, Z_BOUT = 10.6;      // le placard au fond (en bas) ; le mur du bout (en haut)
+  const Z_FOND = -6.3, Z_BOUT = 10.6;      // le placard au fond (en bas) ; le mur du bout (en haut)
   const XG = -5.5, XD = 5.5, XS = -7;    // le fond des chambres (gauche, droite), le fond des salons
-  const P = { ch1: -2.45, ch2: -6.65, ch3: -2.45, sdb: -5.6, wc: 2.1, cuisine: 5.25, entree: 8.4, salon: 8.4, salon2: 9.8 };
-  const ZC = [-4.55, -6.65, 2.8, 3.15, 7.35, 9, 9.3, 15], XB = 6.8, XW = -6, WZ = [1.5, 2.7];   // (la salle de bain et les toilettes : en longueur, profondes)   // (les limites des pièces, le long du couloir)
+  const FW = 1.8, FY = .6, FH = 2;      // (les fenêtres des chambres : grandes, basses)
+  const P = { ch1: -2.1, ch2: -5.6, ch3: -2.1, sdb: -5.6, wc: 2.1, cuisine: 5.25, entree: 8.4, salon: 8.4, salon2: 9.8 };
+  const ZD = -4.55, Z2 = -8.4;   // (à droite, la troisième chambre descend jusqu'à ZD ; la deuxième chambre dépasse le bout du couloir, le placard est entre elle et la salle de bain)
+  const ZC = [-3.85, -6.65, 2.8, 3.15, 7.35, 9, 9.3, 15], XB = 6.8, XW = -6, WZ = [1.5, 2.7];   // (la salle de bain et les toilettes : en longueur, profondes)   // (les limites des pièces, le long du couloir)
   // le couloir : un seul rectangle ; ses deux sols (en bas, en haut), les marches entre les deux
   piece(-XC, XC, Z_FOND, Z_BOUT, null, {
     x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .75), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }, { ...porte(P.salon2, .9), y0: H4 }],
@@ -4279,16 +4281,16 @@ function construireAppart(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, y, z1 - z0), marche, 0, y / 2, (z0 + z1) / 2, false);
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
-  piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-2.3, 1.4, .85, 1.6)] });                       // la première chambre
-  piece(XG, -XC, Z_FOND, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.8, 1.4, .85, 1.6)] });                  // la deuxième chambre
-  piece(XC, XD, ZC[0], 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-2.3, 1.4, .85, 1.6)] });                        // la troisième chambre
-  piece(XC, XB, ZC[1], ZC[0], "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZC[0] + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
+  piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] });                       // la première chambre
+  piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] });                  // la deuxième chambre
+  piece(XC, XD, ZD, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.9, FW, FY, FH)] });                        // la troisième chambre
+  piece(XC, XB, ZC[1], ZD, "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZD + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
   // en haut : le renfoncement des manteaux, la cuisine ; les toilettes, les deux salons (côte à côte, leurs portes voisines)
   piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
-  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [{ c: P.cuisine, w: 1.6, y0: 0, h: 2.2 }], x1: [fen(P.cuisine, 1.3, .95, 1.3)] });
+  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [{ c: P.cuisine, w: 1.6, y0: 0, h: 2.2 }], x1: [fen(P.cuisine, 1.6, .8, 1.55)] });
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
-  piece(XS, -XC, ZC[3], ZC[5], "clair", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.7, .35, 2.35)] });            // le salon, face à la porte d'entrée
+  piece(XS, -XC, ZC[3], ZC[5], "clair", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
   const BAY = 12.15;
   piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] });  // le second salon, à côté
   // le plafond
@@ -4311,18 +4313,36 @@ function construireAppart(A, L, scene) {
     bb(.03, .03, .03, laiton, -.04, 1.55, 0); bb(.03, .22, .06, laiton, -.04, 1.0, -.34); bb(.12, .025, .025, laiton, -.08, 1.0, -.34).rotation.y = Math.PI / 2; bb(.03, .08, .1, laiton, -.04, 1.3, -.34); }
   // ---------- les fenêtres : à l'ancienne, deux battants à petits bois ; dehors, le ciel et les façades d'en face ----------
   const vitre = new THREE.MeshStandardMaterial({ color: 0xdfeaf2, transparent: true, opacity: .18, roughness: .05, metalness: .1, depthWrite: false }), depoli = A.mat({ color: 0xe8eef0, roughness: .3, emissive: 0xc8d4dc, emissiveIntensity: .5 });
-  const fenetre = (axe, pos, c, w, y0, h, s, carreaux = 3, opaque = false) => { const g = new THREE.Group(); scene.add(g);   // s : de quel côté est la pièce (+1 / −1)
+  /* une fenêtre à l'ancienne : le dormant, et deux battants qui ont chacun leur cadre (le double contour en bois blanc), trois carreaux chacun ;
+     au milieu, la crémone et sa poignée qu'on tourne pour ouvrir. Sous chaque fenêtre (pas les lucarnes), un petit radiateur en fonte, blanc jauni, de sa largeur */
+  const fonte = A.mat({ color: 0xe8dcb4, roughness: .55, metalness: .15 }), cadre = A.mat({ color: 0xf4f1e8, roughness: .45 });
+  const radiateur = (g, w, h) => { const r = new THREE.Group(); r.position.set(0, -h - .08, .13); g.add(r); const n = Math.max(6, Math.round((w - .1) / .065));
+    for (let i = 0; i < n; i++) { const x = -w / 2 + .05 + (i + .5) * (w - .1) / n;
+      for (const z of [-.035, .035]) { const c = new THREE.Mesh(new THREE.BoxGeometry(.045, h - .06, .03), fonte); c.position.set(x, h / 2 + .02, z); r.add(c); } }   // (les éléments : deux colonnes chacun)
+    for (const y of [.03, h - .02]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, w - .08, 10), fonte); t.rotation.z = Math.PI / 2; t.position.set(0, y, 0); r.add(t); }   // (les collecteurs, en haut et en bas)
+    for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(.05, .1, .12), fonte); p.position.set(sx * (w / 2 - .12), -.03, 0); r.add(p); }   // (les pieds)
+    const robinet = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .12, 8), A.mat({ color: 0xb08a3a, metalness: .7, roughness: .35 })); robinet.position.set(w / 2 - .02, h - .02, 0); robinet.rotation.z = Math.PI / 2; r.add(robinet);
+    fusionnerParMatiere(r); };
+  const fenetre = (axe, pos, c, w, y0, h, s, carreaux = 3, opaque = false, radia = !opaque) => { const g = new THREE.Group(); scene.add(g);   // s : de quel côté est la pièce (+1 / −1)
     if (axe === "z") { g.position.set(pos, y0, c); g.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2; } else { g.position.set(c, y0, pos); g.rotation.y = s > 0 ? Math.PI : 0; }
     const bb = (ww, hh, dd, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(ww, hh, dd), m); o.position.set(x, y, z); g.add(o); return o; };
-    bb(w, .06, .14, blanc, 0, .03, 0); bb(w, .06, .14, blanc, 0, h - .03, 0); bb(.06, h, .14, blanc, -w / 2 + .03, h / 2, 0); bb(.06, h, .14, blanc, w / 2 - .03, h / 2, 0);   // le dormant
-    bb(w + .12, .05, .22, blanc, 0, -.02, .06);   // l'appui
-    const verre = new THREE.Mesh(new THREE.PlaneGeometry(w - .08, h - .08), opaque ? depoli : vitre); verre.position.set(0, h / 2, 0); g.add(verre);
-    if (!opaque) { bb(.05, h - .08, .06, blanc, 0, h / 2, 0);   // le montant entre les deux battants, la crémone
-      for (let k = 1; k < carreaux; k++) bb(w - .08, .025, .04, blanc, 0, k * h / carreaux, 0);
-      bb(.025, .5, .03, laiton, .04, h / 2, .03); } return g; };
-  fenetre("z", XG + .05, -2.3, 1.4, .85, 1.6, 1); fenetre("z", XG + .05, -6.8, 1.4, .85, 1.6, 1); fenetre("z", XD - .05, -2.3, 1.4, .85, 1.6, -1);
-  fenetre("z", XB - .05, (ZC[0] + ZC[1]) / 2, .5, 1.75, .45, -1, 1, true); fenetre("z", XW + .05, (WZ[0] + WZ[1]) / 2, .45, H4 + 1.75, .45, 1, 1, true);
-  fenetre("z", XD - .05, P.cuisine, 1.3, H4 + .95, 1.3, -1); fenetre("z", XS + .05, 6.0, 1.7, H4 + .35, 2.35, 1, 4);
+    bb(w, .07, .14, blanc, 0, .035, 0); bb(w, .07, .14, blanc, 0, h - .035, 0); bb(.07, h, .14, blanc, -w / 2 + .035, h / 2, 0); bb(.07, h, .14, blanc, w / 2 - .035, h / 2, 0);   // le dormant
+    bb(w + .14, .05, .24, blanc, 0, -.02, .07);   // l'appui
+    if (opaque) { const v = new THREE.Mesh(new THREE.PlaneGeometry(w - .1, h - .1), depoli); v.position.set(0, h / 2, 0); g.add(v); return g; }
+    const bw = (w - .14) / 2, bh = h - .14, e = .055;   // (un battant)
+    for (const sx of [-1, 1]) { const cx = sx * bw / 2;
+      bb(bw, e, .07, cadre, cx, .07 + e / 2, .03); bb(bw, e, .07, cadre, cx, .07 + bh - e / 2, .03); bb(e, bh, .07, cadre, cx - bw / 2 + e / 2, .07 + bh / 2, .03); bb(e, bh, .07, cadre, cx + bw / 2 - e / 2, .07 + bh / 2, .03);   // son cadre
+      bb(bw - .02, .035, .02, cadre, cx, .07 + e + .02, .07);   // (le jet d'eau, en bas)
+      const verre = new THREE.Mesh(new THREE.PlaneGeometry(bw - 2 * e, bh - 2 * e), vitre); verre.position.set(cx, .07 + bh / 2, .03); g.add(verre);
+      for (let k = 1; k < carreaux; k++) bb(bw - 2 * e, .022, .035, cadre, cx, .07 + e + k * (bh - 2 * e) / carreaux, .03); }   // les petits bois
+    bb(.03, bh, .09, cadre, 0, .07 + bh / 2, .05);   // le battement, au milieu
+    bb(.018, bh - .1, .018, laiton, .03, .07 + bh / 2, .1);   // la tringle de la crémone
+    bb(.06, .1, .03, laiton, .03, .07 + bh * .5, .11); const po = bb(.03, .16, .03, laiton, .03, .07 + bh * .5 - .07, .14); po.rotation.z = .12;   // son boîtier, la poignée qu'on tourne
+    if (radia) radiateur(g, w - .06, Math.min(.5, y0 - (axe === "z" && y0 > H4 ? H4 : 0) - .15));
+    return g; };
+  fenetre("z", XG + .05, -1.9, FW, FY, FH, 1); fenetre("z", XG + .05, -6.1, FW, FY, FH, 1); fenetre("z", XD - .05, -1.9, FW, FY, FH, -1);
+  fenetre("z", XB - .05, (ZD + ZC[1]) / 2, .5, 1.75, .45, -1, 1, true); fenetre("z", XW + .05, (WZ[0] + WZ[1]) / 2, .45, H4 + 1.75, .45, 1, 1, true);
+  fenetre("z", XD - .05, P.cuisine, 1.6, H4 + .8, 1.55, -1); fenetre("z", XS + .05, 6.0, 1.9, H4 + .5, 2.1, 1);
   // le bow-window du second salon : trois pans (un demi-hexagone) qui avancent dehors, une allège sous chaque fenêtre
   { const xw = XS, pr = .8, a = BAY - 1.3, b = BAY + 1.3, ya = H4;
     const pts = [[xw, a], [xw - pr, BAY - .65], [xw - pr, BAY + .65], [xw, b]];
@@ -4332,7 +4352,7 @@ function construireAppart(A, L, scene) {
     for (let k = 0; k < 3; k++) { const [x0, z0] = pts[k], [x1, z1] = pts[k + 1], lg = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
       const al = new THREE.Mesh(new THREE.BoxGeometry(.12, .75, lg), peinture); al.position.set(mx, ya + .375, mz); al.rotation.y = ang; scene.add(al);   // l'allège
       const li = new THREE.Mesh(new THREE.BoxGeometry(.12, HT - ya - 2.45, lg), peinture); li.position.set(mx, (ya + 2.45 + HT) / 2, mz); li.rotation.y = ang; scene.add(li);   // le linteau
-      const f = fenetre("x", 0, 0, lg - .04, 0, 1.7, 1, 4); f.position.set(mx, ya + .75, mz); f.rotation.y = Math.atan2(-(z1 - z0), x1 - x0); }
+      const f = fenetre("x", 0, 0, lg - .04, 0, 1.7, 1, 3, false, false); f.position.set(mx, ya + .75, mz); f.rotation.y = Math.atan2(-(z1 - z0), x1 - x0) + Math.PI; radiateur(f, lg - .2, .5); }   // (tournée vers la pièce ; un radiateur sous chaque pan)
     for (const [x, z] of pts) { const mt = new THREE.Mesh(new THREE.BoxGeometry(.14, HT - ya, .14), peinture); mt.position.set(x, (ya + HT) / 2, z); scene.add(mt); } }   // (les montants d'angle)
   // dehors : le ciel, et les façades de brique d'en face (la cour d'un côté, la rue de l'autre), à quelques mètres
   { const facade = A.mat({ map: tex(T.facade), roughness: .9, emissive: 0xffffff, emissiveIntensity: .35, emissiveMap: tex(T.facade) }), ciel = new THREE.MeshBasicMaterial({ map: tex(T.ciel), fog: false });
@@ -4346,10 +4366,10 @@ function construireAppart(A, L, scene) {
     const cuve = new THREE.Mesh(new THREE.BoxGeometry(.42, .02, .3), A.mat({ color: 0xdedbd2, roughness: .2 })); cuve.position.set(0, .885, .22); g.add(cuve);
     const pied = new THREE.Mesh(new THREE.CylinderGeometry(.08, .1, .72, 14), faience); pied.position.set(0, .36, .16); g.add(pied);
     const rob = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .18, 8), chrome); rob.position.set(0, .95, .05); rob.rotation.x = .5; g.add(rob);
-    const miroir = new THREE.Mesh(new THREE.PlaneGeometry(.5, .6), A.mat({ color: 0xc8d2d8, metalness: .9, roughness: .05 })); miroir.position.set(0, 1.45, .012); g.add(miroir); return g; };
+    const miroir = new THREE.Mesh(new THREE.PlaneGeometry(.5, .6), A.mat({ color: 0xd6e0e6, metalness: .2, roughness: .15, emissive: 0x8a969c, emissiveIntensity: .35 })); miroir.position.set(0, 1.45, .012); g.add(miroir); return g; };
   // la salle de bain : le lavabo en entrant, la douche au fond (un rebord pour se tenir debout, le rideau sur sa tringle)
-  lavabo(XC + .8, 0, ZC[1] + E, 0);
-  { const x0 = XB - 1.1, x1 = XB - E, z0 = ZC[1] + E, z1 = ZC[0] - E, re = A.mat({ color: 0xf2f0ea, roughness: .3 });
+  lavabo(XC + 1.7, 0, ZC[1] + E, 0);
+  { const x0 = XB - 1.1, x1 = XB - E, z0 = ZC[1] + E, z1 = ZD - E, re = A.mat({ color: 0xf2f0ea, roughness: .3 });
     A.ajoute(new THREE.BoxGeometry(.08, .18, z1 - z0), re, x0, .09, (z0 + z1) / 2, false);
     const bac = A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), A.mat({ color: 0xe8e6de, roughness: .35 }), (x0 + x1) / 2, .03, (z0 + z1) / 2, false); bac.rotation.x = -Math.PI / 2;
     for (const [w, h, x] of [[.9, 1.6, x1 - .02]]) { const fa = A.ajoute(new THREE.BoxGeometry(.02, h, z1 - z0), A.mat({ color: 0xffffff, roughness: .2 }), x, h / 2 + .1, (z0 + z1) / 2, false); }   // (la faïence du fond)
@@ -4373,13 +4393,13 @@ function construireAppart(A, L, scene) {
   // ---------- la lumière : douce partout, quelques plafonniers ----------
   scene.add(new THREE.AmbientLight(0xfff1dc, .55));
   const globe = A.mat({ color: 0xfff4dc, emissive: 0xffe7b8, emissiveIntensity: 1 });
-  for (const [x, z, y0] of [[0, -4.5, 0], [0, 6, H4], [-3.25, -2.3, 0], [-3.25, -6.8, 0], [3.25, -2.3, 0], [3.9, -5.6, 0], [3.25, P.cuisine, H4], [-3.5, 2.1, H4], [-4, 6, H4], [-4, 12.15, H4]]) {
+  for (const [x, z, y0] of [[0, -3.85, 0], [0, 6, H4], [-3.25, -1.9, 0], [-3.25, -6.1, 0], [3.25, -1.9, 0], [3.9, -5.6, 0], [3.25, P.cuisine, H4], [-3.5, 2.1, H4], [-4, 6, H4], [-4, 12.15, H4]]) {
     A.ajoute(new THREE.SphereGeometry(.13, 14, 10), globe, x, HT - .3, z, false); A.ajoute(new THREE.CylinderGeometry(.006, .006, .25, 4), A.mat({ color: 0x222222 }), x, HT - .12, z, false); }
-  for (const [x, z, y0, i] of [[0, -4.5, 0, 5], [0, 6, H4, 5], [-4, 12.15, H4, 7], [-4, 6, H4, 7], [-3.25, -4.5, 0, 6], [3.25, -3, 0, 6]]) { const l = new THREE.PointLight(0xffe2b8, i, 9, 1.4); l.position.set(x, HT - .45, z); scene.add(l); }
+  for (const [x, z, y0, i] of [[0, -3.85, 0, 5], [0, 6, H4, 5], [-4, 12.15, H4, 7], [-4, 6, H4, 7], [-3.25, -3.85, 0, 6], [3.25, -2.5, 0, 6]]) { const l = new THREE.PointLight(0xffe2b8, i, 9, 1.4); l.position.set(x, HT - .45, z); scene.add(l); }
   // ---------- où l'on marche ----------
   const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .2, c + .2] : [.3, XC + .5, c - .2, c + .2];   // (le passage d'une porte, à gauche ou à droite du couloir)
   const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
-    [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z_FOND + .25, ZC[0] - .25], [XC + .25, XD - .25, ZC[0] + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZC[0] - .25],
+    [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z2 + .25, ZC[0] - .25], [XC + .25, XD - .25, ZD + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZD - .25],
     [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
     [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, ZC[3] + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
     S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), [.3, XC + .5, P.cuisine - .6, P.cuisine + .6], [.3, XC + .1, P.entree - .2, P.entree + .2]];
@@ -4389,7 +4409,7 @@ function construireAppart(A, L, scene) {
   // la sortie : le cercle dans l'embrasure de la porte d'entrée ; on ressort devant la porte Z, dans la troisième cour
   L.portails.push({ dans: (x, z) => x > .3 && Math.abs(z - P.entree) < .5, seuil: [XC + .02, P.entree], y: H4, vers: "grande", arrivee: PORTE_Z.arrivee, yaw: PORTE_Z.yaw });
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.appart = true;
-  L.zone = [-7.7, 7.35, -11.2, 15.4]; L.boite = [XS + .1, XB - .1, Z_FOND - 1.7, ZC[7] - .1]; L.plafond = HT - .25;
+  L.zone = [-7.7, 7.35, -11.2, 15.4]; L.boite = [XS + .1, XB - .1, Z2 + .1, ZC[7] - .1]; L.plafond = HT - .25;
   L.depart = [0, 7.7]; L.cam = { pos: [0, 2.4, 10], vise: [0, 1.2, 0] };
 }
 function construireMess(A, L, scene) {
