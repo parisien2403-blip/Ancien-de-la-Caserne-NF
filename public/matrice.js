@@ -19,7 +19,7 @@ export const LIEUX = {
 };
 export const TENUES = {
   garde: { nom: "Gendarme" }, civil: { nom: "Jean et blouson" }, tshirt: { nom: "T-shirt et jean" }, polo: { nom: "Polo et jean" }, survet: { nom: "Survêtement 80" },
-  robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, soie: { nom: "Chemisier et pantalon en soie" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
+  robe: { nom: "Robe" }, jupe: { nom: "Jupe et chemisier" }, robelongue: { nom: "Robe longue" }, peignoir: { nom: "Robe de chambre" }, tailleur: { nom: "Tailleur" }, chemisier: { nom: "Chemisier et jean" }, soie: { nom: "Chemisier et pantalon en soie" }, salopette: { nom: "Salopette" }, costume: { nom: "Costume" }, barman: { nom: "Chemise et tablier" }, thriller: { nom: "Blouson Thriller" }, zombie: { nom: "Costume déchiré" }, mariee: { nom: "Robe de mariée" }, hernandez: { nom: "Gilet blanc et canne" }, beegees: { nom: "Satin doré (Bee Gees)" }, travolta: { nom: "Costume blanc (Travolta)" }, nemesis: { nom: "Manteau de Nemesis" }, smith: { nom: "Chemise noire (Robert Smith)" },
   batteuse: { nom: "Perfecto noir (la batteuse)" },
   doc: { nom: "Combinaison blanche (Doc)" }, marty: { nom: "Doudoune rouge (Marty)" }, biff: { nom: "Chemise rouge (Biff)" }, match: { nom: "Chemise écossaise jaune (Match)" }, troisd: { nom: "Chemise claire (3-D)" }, skinhead: { nom: "Blouson noir (Skinhead)" },
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
@@ -47,7 +47,7 @@ export function dessinerBonhomme(o, tete) {
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
-    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "maria" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
+    const bas = t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "maria" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -94,7 +94,7 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
-    else if (t === "robelongue") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
+    else if (t === "robelongue" || t === "peignoir") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
     else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     if (t === "eboueur" && !profil) {   // l'éboueur de la Propreté de Paris : le gilet jaune fluo et ses bandes grises réfléchissantes, sur la tenue verte ; les bandes blanches du pantalon
@@ -142,6 +142,11 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "rgba(0,0,0,.25)"; for (const y of [186, 206, 226, 246]) { x.beginPath(); x.arc(100, y, 2.2, 0, 7); x.fill(); } x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(99, 172, 2, 90); }
     if (t === "salopette" && o.pose !== "dos") { const jean = o.bas || "#3d5a80"; x.fillStyle = jean; if (!profil) { x.beginPath(); x.roundRect(74, 188, 52, 76, 6); x.fill(); x.fillRect(74, 146, 9, 46); x.fillRect(117, 146, 9, 46);
         x.fillStyle = "#d8c27a"; for (const X of [79, 121]) { x.beginPath(); x.arc(X, 192, 3.2, 0, 7); x.fill(); } x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = 1.5; x.setLineDash([3, 3]); x.strokeRect(86, 202, 28, 22); x.setLineDash([]); } else x.fillRect(74, 200, 54, 64); }
+    if (t === "peignoir" && !profil && o.pose !== "dos") {   // la robe de chambre : le grand col châle sombre en V, la chemise de nuit rose pâle dessous, la ceinture nouée, les plis
+      x.fillStyle = "#f2d6dc"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(100, 200); x.fill();
+      x.strokeStyle = "#2a2a30"; x.lineWidth = 7; x.beginPath(); x.moveTo(80, 146); x.lineTo(100, 210); x.lineTo(104, 372); x.moveTo(120, 146); x.lineTo(100, 210); x.stroke();
+      x.fillStyle = assombrir(c, .8); x.fillRect(62, 226, 76, 8); x.beginPath(); x.moveTo(98, 230); x.lineTo(88, 262); x.lineTo(94, 264); x.lineTo(102, 234); x.moveTo(102, 230); x.lineTo(112, 260); x.lineTo(106, 262); x.lineTo(98, 234); x.fill();
+      x.strokeStyle = "rgba(0,0,0,.12)"; x.lineWidth = 2; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(72 + k * 18, 244); x.lineTo(56 + k * 28, 370); x.stroke(); } }
     if (t === "robelongue" && !profil && o.pose !== "dos") { x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(62, 226, 76, 7); x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 2; for (let k = 0; k < 5; k++) { x.beginPath(); x.moveTo(70 + k * 15, 240); x.lineTo(56 + k * 22, 370); x.stroke(); } }
     // le blouson rouge façon Thriller : les bandes noires en V, la ceinture noire
     if (t === "thriller" && !profil && o.pose !== "dos") { x.strokeStyle = "#141414"; x.lineWidth = 7; x.lineCap = "butt";
@@ -693,9 +698,13 @@ export function dessinerBonhomme(o, tete) {
       // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
       const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
       x.save(); x.translate(gx, gy); x.rotate(a);
+      if ((o.tenue || "") === "peignoir") {   // (en robe de chambre : la tasse de café en porcelaine blanche, son liseré doré, l'anse)
+        x.fillStyle = "#f6f4ee"; x.beginPath(); x.moveTo(-11, -18); x.lineTo(11, -18); x.lineTo(8, 2); x.lineTo(-8, 2); x.closePath(); x.fill(); x.strokeStyle = "#c8a24a"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-11, -17); x.lineTo(11, -17); x.stroke();
+        x.strokeStyle = "#f6f4ee"; x.lineWidth = 3; x.beginPath(); x.arc(12, -9, 5, -1.4, 1.4); x.stroke(); x.fillStyle = "#5a3a22"; x.fillRect(-9, -18, 18, 3); x.restore(); }
+      else {
       x.fillStyle = "rgba(230,240,245,.55)"; x.beginPath(); x.roundRect(-9, -26, 18, 30, 3); x.fill();
       x.fillStyle = "#e3a92c"; x.fillRect(-7.5, -18, 15, 20); x.fillStyle = "#fbf6e8"; x.fillRect(-8, -24, 16, 7);
-      x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = 1.5; x.strokeRect(-9, -26, 18, 30); x.restore();
+      x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = 1.5; x.strokeRect(-9, -26, 18, 30); x.restore(); }
     }
     // le verre du barman (servir, ranger) ; le torchon à rayures rouges (essuyer)
     if (o.pose === "servir" || o.pose === "ranger" || o.pose === "essuyer") {
@@ -4760,6 +4769,24 @@ function construireAppart(A, L, scene) {
     const bandeau = new THREE.Mesh(new THREE.CylinderGeometry(R - .07, R - .07, .08, 48, 1, true), A.mat({ color: 0x9a6634, roughness: .35, side: THREE.DoubleSide })); bandeau.position.y = H - .07; g.add(bandeau);
     const tour = new THREE.LatheGeometry([[0, 0], [.024, 0], [.026, .02], [.02, .05], [.028, .1], [.02, .16], [.017, .3], [.024, .36], [.03, .42], [.022, .48], [.018, .56], [.026, .6], [.03, .64], [.03, .67], [0, .67]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, p = new THREE.Mesh(tour, boisP); p.position.set(Math.sin(a) * (R - .14), 0, Math.cos(a) * (R - .14)); g.add(p); }   // (les pieds tournés)
+    // le petit-déjeuner (d'après la photo) : la boîte en fer blanche aux médaillons, la boîte de chicorée bleue, le bol jaune, le mug blanc, le verre, la brique de lait, la corbeille de pain, la boîte de biscottes
+    { const yT = H, m = (c, r = .4, o = {}) => A.mat({ color: c, roughness: r, ...o }), pose = (geo, mt, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, yT + y, z); o.rotation.y = ry; g.add(o); return o; };
+      const etiq = (w, h, dessin) => A.mat({ map: tex(toile(w, h, dessin), 1, 1), roughness: .4 });
+      const fer = etiq(256, 128, (x, w, h) => { x.fillStyle = "#f2efe6"; x.fillRect(0, 0, w, h); for (let i = 0; i < 3; i++) { const cx = 45 + i * 83; x.fillStyle = "#c9b48a"; x.beginPath(); x.arc(cx, 64, 32, 0, 7); x.fill(); x.fillStyle = ["#7a9a5a", "#c45a3a", "#5a7ac4"][i]; x.beginPath(); x.arc(cx, 64, 26, 0, 7); x.fill(); x.fillStyle = "#f4e2c8"; x.beginPath(); x.arc(cx, 58, 10, 0, 7); x.fill(); } });
+      pose(new THREE.BoxGeometry(.24, .11, .14), [fer, fer, m(0xf2efe6), m(0xf2efe6), fer, fer], .02, .055, -.18, .1);   // (la boîte en fer)
+      const chic = etiq(256, 128, (x, w, h) => { x.fillStyle = "#2a6fb8"; x.fillRect(0, 0, w, h); x.fillStyle = "#f4f4f4"; x.fillRect(0, 34, w, 60); x.fillStyle = "#1a3a7a"; x.font = "italic bold 34px Georgia"; x.fillText("Chicorée", 50, 76); });
+      pose(new THREE.CylinderGeometry(.045, .045, .15, 24), [chic, m(0xc8c8c8, .3, { metalness: .5 }), m(0x2a6fb8)], .2, .075, -.22);   // (la boîte de chicorée)
+      const bol = new THREE.Mesh(new THREE.SphereGeometry(.08, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), m(0xe8b830, .3, { side: THREE.DoubleSide })); bol.position.set(.28, yT + .08, .02); g.add(bol);   // (le bol jaune)
+      const mug = pose(new THREE.CylinderGeometry(.045, .042, .1, 20), m(0xf6f4ee, .25), .3, .05, .26); const anse = new THREE.Mesh(new THREE.TorusGeometry(.028, .007, 8, 14), m(0xf6f4ee, .25)); anse.position.set(.35, yT + .05, .26); g.add(anse);
+      pose(new THREE.CylinderGeometry(.033, .03, .12, 16), A.mat({ color: 0xdfeaf0, roughness: .05, transparent: true, opacity: .45 }), -.12, .06, -.32);   // (le verre)
+      const lait = etiq(128, 256, (x, w, h) => { x.fillStyle = "#f4f6f8"; x.fillRect(0, 0, w, h); x.fillStyle = "#2a8ad8"; x.fillRect(0, 120, w, 136); x.fillStyle = "#fff"; x.font = "bold 30px Arial"; x.fillText("LAIT", 30, 180); });
+      pose(new THREE.BoxGeometry(.07, .2, .07), lait, .05, .1, .32, .3); pose(new THREE.ConeGeometry(.05, .04, 4), m(0xf4f6f8), .05, .22, .32, .3 + Math.PI / 4);   // (la brique de lait)
+      const corb = new THREE.Mesh(new THREE.CylinderGeometry(.13, .1, .07, 20, 1, true), m(0x9a6a34, .9, { side: THREE.DoubleSide })); corb.scale.z = .7; corb.position.set(-.2, yT + .035, .28); g.add(corb);
+      for (let k = 0; k < 3; k++) pose(new THREE.CapsuleGeometry(.025, .12, 4, 8), m(0xd8a050, .7), -.2 + (k - 1) * .05, .06, .28, Math.PI / 2 + k * .3).rotation.z = Math.PI / 2;   // (la corbeille de pain)
+      const bisc = etiq(256, 96, (x, w, h) => { x.fillStyle = "#e8d84a"; x.fillRect(0, 0, w, h); x.fillStyle = "#3a8a3a"; x.fillRect(0, 0, w, 22); x.fillStyle = "#c83a2a"; x.font = "bold 30px Arial"; x.fillText("BISCOTTES", 30, 70); });
+      pose(new THREE.BoxGeometry(.2, .06, .1), bisc, -.05, .03, -.02, -.2);   // (la boîte de biscottes)
+      const sous = pose(new THREE.CylinderGeometry(.07, .06, .01, 24), m(0xf6f4ee, .25), -.38, .005, -.05);   // (la soucoupe de maman, devant sa chaise)
+      for (let k = 0; k < 6; k++) pose(new THREE.BoxGeometry(.006, .003, .006), m(0xc89050), .1 + hasard(k) * .2, .002, .1 + hasard(k * 3) * .1); }
     // la chaise bistrot : l'assise ronde, quatre pieds écartés, l'anneau de renfort, le dossier courbé (les deux montants, la traverse cintrée, trois barreaux)
     const boisC = A.mat({ color: 0x8a6440, roughness: .55 }), boisAs = A.mat({ color: 0x96704a, roughness: .45 });
     const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(x, H4, z); c.rotation.y = ry; scene.add(c); const hs = .46;
@@ -4771,7 +4798,8 @@ function construireAppart(A, L, scene) {
       for (const [y, r] of [[hs + .36, .017], [hs + .395, .017], [hs + .14, .012]]) tige([[-.152, y, -.17 - (y - hs) * .17], [0, y, -.225 - (y - hs) * .17], [.152, y, -.17 - (y - hs) * .17]], r);   // (la traverse cintrée du haut, en bandeau ; celle du bas)
       for (const sx of [-.055, 0, .055]) tige([[sx * 1.15, hs + .14, -.215 - .024], [sx, hs + .36, -.225 - .061]], .009);   // (les barreaux)
       return c; };
-    for (const t of [Math.PI + .2, -Math.PI / 2 - .1, Math.PI / 3]) chaise(xt + Math.sin(t) * (R + .2), zt + Math.cos(t) * (R + .2), t + Math.PI); }
+    for (const t of [Math.PI + .2, -Math.PI / 2 - .1, Math.PI / 3]) chaise(xt + Math.sin(t) * (R + .2), zt + Math.cos(t) * (R + .2), t + Math.PI);
+    { const t = -Math.PI / 2 - .1; L.maman = { x: xt + Math.sin(t) * (R + .2), z: zt + Math.cos(t) * (R + .2) }; } }   // (la chaise de maman, côté porte)
   /* le voilage de la fenêtre de la cuisine : blanc, transparent, à motifs (des rayures fines et des petites fleurs), froncé sur sa tringle */
   { const voile = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "rgba(255,255,255,.42)"; x.fillRect(0, 0, w, h);
         x.fillStyle = "rgba(255,255,255,.55)"; for (let i = 0; i < 16; i++) x.fillRect(i * 16, 0, 2, h);   // (les rayures)
@@ -5062,7 +5090,12 @@ function construireAppart(A, L, scene) {
     [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
     [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, SZ0 + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
     S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), S(P.cuisine, 1), [.3, XC + .1, P.entree - .2, P.entree + .2]];
-  L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
+  /* les meubles, où l'on ne passe pas (avec une marge pour le corps) : la cuisine, les salons, la chambre 2 */
+  const MEUBLES = [[4.4, 5.45, 3.2, 3.88], [3.13, 4.4, 3.2, 3.86], [1.05, 1.73, 3.72, 4.36], [2.59, 3.71, 4.64, 5.76], [2.75, 3.25, 4.2, 4.7], [3.56, 4.06, 5.33, 5.83],
+    [2.5, 4.4, 6.76, 7.3], [1.49, 2.46, 6.57, 7.3], [4.5, 5.45, 6.4, 7.3],
+    [-5.3, -2.7, 4.7, 5.35], [-3.15, -1.0, 5.85, 7.65], [-7.1, -6.05, 9.8, 10.95],
+    [-5.3, -3.2, -8.4, -6.8], [-2.35, -1.0, -8.4, -7.62], [-2.05, -1.5, -7.62, -7.1]], MARGE = .14;
+  L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !MEUBLES.some(([a, b, c, d]) => x > a - MARGE && x < b + MARGE && z > c - MARGE && z < d + MARGE);
   L.hauteur = (x, z) => z >= ZM1 ? H4 : z <= ZM0 ? 0 : Math.abs(x) < XC ? H4 * Math.ceil((z - ZM0) / ((ZM1 - ZM0) / 4)) / 4 : 0;   // (marche par marche)
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
   // la sortie : le cercle dans l'embrasure de la porte d'entrée ; on ressort devant la porte Z, dans la troisième cour
@@ -6599,7 +6632,7 @@ export async function ouvrir(ctx) {
     // (toucher son propre bonhomme ne fait plus rien : on vise le sol où l'on veut aller ; les danses sont dans les boutons)
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps).find(q => !q.uv || (Math.abs(q.uv.x - .5) < .16 && q.uv.y > .08 && q.uv.y < .78));   // le corps seul, pas les marges
-    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { dire(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { dire(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.maman) { dire(MAMAN, PHRASES_MAMAN[Math.floor(Math.random() * PHRASES_MAMAN.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     for (const b of M.L.boutonsPiste || []) if (b.visible) { const q = b.position.clone().project(M.camera);   // ⏮ / ⏭ : changer de titre
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(26, r.width * .026)) { envoyerWS({ t: "dj_" + b.userData.action }); b.scale.set(.18, .18, 1); setTimeout(() => b.scale.set(.22, .22, 1), 160); return; } }
@@ -6866,7 +6899,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -10249,6 +10282,25 @@ function animerProf() {
     if (sur && !q.surTatami && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); dire(PROF, PHRASES_PROF[Math.floor(Math.random() * 3)]); }
     q.surTatami = sur; }
   if (!g.parle || now > g.parle) { if (g.parle && Math.random() < .35) dire(PROF, PHRASES_PROF[3 + Math.floor(Math.random() * (PHRASES_PROF.length - 3))]); g.parle = now + 25000 + Math.random() * 20000; } }
+/* --- Maman, dans l'appartement de l'escalier Z : en robe de chambre, elle boit son café à la table ronde de la cuisine ;
+       de temps en temps elle se lève, fait un tour dans l'appartement (sans traverser ni murs ni meubles), puis revient s'asseoir --- */
+const MAMAN = -80, PHRASES_MAMAN = ["Tu veux un café ?", "Bonjour mon grand !", "Tu as bien dormi ?", "Il reste du pain dans la corbeille.", "Fais attention, c'est chaud !", "Range ta chambre, s'il te plaît.", "Tu as mangé ?", "Ferme la porte, il y a un courant d'air !"];
+const POINTS_MAMAN = [[0, 4.2], [0, 9.5], [0, -3], [-3.4, 8.4], [-4.2, 12.2], [-3, -2], [-3.4, -5.4], [3, -2.2], [2.3, 6.2], [4.6, 4.6], [0, 1.8]];
+function animerMaman() {
+  if (!M || !M.L) return; const T = M.L.maman, ici = M.lieu === "appart" && T; let g = M.gens.get(MAMAN);
+  if (!ici) { if (g) retirerAncien(MAMAN); return; }
+  const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(80)) || {};
+  const info = { nom: P.nom || "Maman", tenue: P.tenue || "peignoir", couleur: P.couleur || "#d23c6c", bas: P.bas || null, pieds: P.pieds || "#1c1c1e", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 80) : "images/appart/maman-tete.webp" }, cle = JSON.stringify(info);
+  const now = Date.now(), assise = () => { g.etat = "table"; g.info.assis = 0; g.g.position.x = T.x; g.g.position.z = T.z; g.cible = null; g.chemin = []; g.fin = now + 35000 + Math.random() * 45000; };
+  if (g && g.cleInfo !== cle) { retirerAncien(MAMAN); g = null; }   // (l'administrateur a changé sa tête, sa taille, sa tenue)
+  if (!g) { g = ajouterAncien({ ...info, numero: MAMAN, pnj: true, maman: true, allure: .3, x: T.x, z: T.z }); if (g) { g.cleInfo = cle; assise(); } return; }
+  if (g.etat === "table") { if (Math.hypot(g.g.position.x - T.x, g.g.position.z - T.z) > .05) { g.g.position.x = T.x; g.g.position.z = T.z; }
+    if (now > g.fin) { delete g.info.assis; g.etat = "promene"; g.etapes = 1 + Math.floor(Math.random() * 3); g.repos = now + 800; } return; }
+  if (g.cible) return;
+  if (g.etat === "promene") { if (now < g.repos) return;
+    if (g.etapes-- > 0) { const libres = POINTS_MAMAN.filter(([x, z]) => M.L.limites(x, z)), [x, z] = libres[Math.floor(Math.random() * libres.length)] || [0, 4]; viser(g, x, z); g.repos = now + 3500 + Math.random() * 6000; }
+    else { g.etat = "retour"; viser(g, T.x, T.z); } return; }
+  if (g.etat === "retour") { if (Math.hypot(g.g.position.x - T.x, g.g.position.z - T.z) < .5) assise(); else { viser(g, T.x, T.z); if (!g.cible) assise(); } } }
 function animerEboueurs() {
   if (!M || !M.L) return;
   const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
@@ -10579,7 +10631,7 @@ function laserFP(cacher) { let A = M.armeFP;
 function cibleFP(liste) { const cam = M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
   for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
   return best; }
-export function premiere(on) { if (!M || (on && !(M.ctx.moiInfo && M.ctx.moiInfo().admin))) return; const moi = M.gens.get(M.moiNum);
+export function premiere(on) { if (!M) return;   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
   if (on && !M.premiere) { const f = M.camera.getWorldDirection(new THREE.Vector3()); M.fpYaw = Math.atan2(-f.x, -f.z); M.fpPitch = 0; }
   M.premiere = !!on; if (!on && moi) { moi.g.visible = true; placerCamera(true); } M.ctx.surPremiere && M.ctx.surPremiere(M.premiere);
   bulle(on ? "👁 Vue à la première personne <small>(joystick droit ou glisser le doigt : regarder autour de soi)</small>" : "🎥 Vue normale", 2200); }
