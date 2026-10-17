@@ -4444,7 +4444,37 @@ function construireAppart(A, L, scene) {
   const BAY = 12.15;
   /* le papier peint du second salon (d'après la photo : rayures beige et taupe, le grain de la toile) ; un morceau fait 1,06 m de large (4 rayures) sur 1,45 m de haut */
   const papier = papierPeint("images/appart/tapisserie-salon2.webp", 1.06, 1.45);
-  piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] }, papier);  // le second salon, à côté
+  const NX = XS + .3 + .45, NW = .9, NH = 2.1, NP = .3;   // (le renfoncement du second salon : à 30 cm du mur de gauche, large comme une porte)
+  piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }], z0: [{ c: NX, w: NW, y0: 0, h: NH }] }, papier);  // le second salon, à côté
+  { const zf = ZC[6] + E - NP, z1 = ZC[6] + E, y = H4, pp = (w, h, x, yy, z, ry, rx = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), papier(w, h, 0, yy - y)); o.position.set(x, yy, z); o.rotation.set(rx, ry, 0); scene.add(o); return o; };
+    pp(NW, NH, NX, y + NH / 2, zf, 0);   // le fond, tapissé
+    pp(NP, NH, NX - NW / 2, y + NH / 2, (zf + z1) / 2, Math.PI / 2); pp(NP, NH, NX + NW / 2, y + NH / 2, (zf + z1) / 2, -Math.PI / 2);   // les côtés
+    const haut = new THREE.Mesh(new THREE.PlaneGeometry(NW, NP), peinture); haut.rotation.x = Math.PI / 2; haut.position.set(NX, y + NH, (zf + z1) / 2); scene.add(haut);
+    const bas = new THREE.Mesh(new THREE.PlaneGeometry(NW, NP), matSol.fonce(NW, NP)); bas.rotation.x = -Math.PI / 2; bas.position.set(NX, y + .002, (zf + z1) / 2); scene.add(bas);
+    const etag = matSol.fonce(NW, NP); for (const h of [.5, 1.0, 1.42, 1.84]) A.ajoute(new THREE.BoxGeometry(NW - .004, .03, NP - .01), etag, NX, y + h, (zf + z1) / 2, false);   // les étagères, en bois verni
+    // sur les deux du haut, les cassettes vidéo (les tranches noires, rouges, jaunes, bleues, avec leur étiquette) ; au milieu, un cadre photo
+    { const vg = new THREE.Group(); scene.add(vg); const coul = [0x141414, 0x141414, 0x1c1c1c, 0x7a1414, 0xc8a020, 0x1e3a6a, 0xe8e4da, 0x2a2a2a], mats = coul.map(c => A.mat({ color: c, roughness: .5 })), etiq = A.mat({ color: 0xf2eee0, roughness: .6 });
+      let k = 0; for (const h of [1.42, 1.84]) { let x = NX - NW / 2 + .02; while (x < NX + NW / 2 - .045) { const e = .028 + (hasard(++k) < .2 ? .008 : 0), m = mats[Math.floor(hasard(k * 3.1) * mats.length)];
+          const c = new THREE.Mesh(new THREE.BoxGeometry(e, .19, .11), m); c.position.set(x + e / 2, y + h + .015 + .095, zf + .07); vg.add(c);
+          const l = new THREE.Mesh(new THREE.BoxGeometry(e * .7, .11, .002), hasard(k * 7.7) < .5 ? etiq : mats[(k + 3) % mats.length]); l.position.set(x + e / 2, y + h + .015 + .1, zf + .126); vg.add(l); x += e + .002; } }
+      fusionnerParMatiere(vg);
+      const cad = new THREE.Group(); cad.position.set(NX - .2, y + 1.015, zf + .1); cad.rotation.x = -.12; scene.add(cad);
+      const bc = new THREE.Mesh(new THREE.BoxGeometry(.2, .25, .02), A.mat({ color: 0x5a3a1e, roughness: .5 })); bc.position.y = .125; cad.add(bc);
+      const ph = new THREE.Mesh(new THREE.PlaneGeometry(.15, .2), A.mat({ color: 0xc8b8a0, roughness: .8 })); ph.position.set(0, .125, .011); cad.add(ph); }
+    // l'encadrement : une large moulure blanche, bordée d'un filet doré
+    const or = A.mat({ color: 0xd4af37, metalness: .6, roughness: .3, emissive: 0x4a3608, emissiveIntensity: .4 }), zc = z1 + .012;
+    for (const sx of [-1, 1]) { A.ajoute(new THREE.BoxGeometry(.1, NH + .1, .02), blanc, NX + sx * (NW / 2 + .05), y + (NH + .1) / 2, zc, false); for (const d of [.003, .097]) A.ajoute(new THREE.BoxGeometry(.012, NH + .1, .026), or, NX + sx * (NW / 2 + d), y + (NH + .1) / 2, zc, false); }
+    A.ajoute(new THREE.BoxGeometry(NW + .2, .1, .02), blanc, NX, y + NH + .05, zc, false); for (const d of [.003, .097]) A.ajoute(new THREE.BoxGeometry(NW + .2 - 2 * (.1 - d) + .012, .012, .026), or, NX, y + NH + d, zc, false);
+    /* les tuyaux du chauffage, peints en blanc (comme sur la photo) : ils partent du bas du radiateur du bow-window, côté droit,
+       longent le bas du mur jusqu'à l'angle, puis remontent dans le coin jusqu'au plafond (l'aller et le retour, côte à côte) */
+    { const tuy = A.mat({ color: 0xf0ede4, roughness: .35 }), tube = (p1, p2, r = .014) => { const v = new THREE.Vector3().subVectors(p2, p1), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, v.length(), 10), tuy);
+        o.position.copy(p1).addScaledVector(v, .5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v.normalize()); scene.add(o); const c = new THREE.Mesh(new THREE.SphereGeometry(r * 1.15, 10, 8), tuy); c.position.copy(p2); scene.add(c); };
+      for (const [k, d] of [[0, .05], [1, .1]]) { const V = (x, yy, z) => new THREE.Vector3(x, yy, z), xm = XS + E + d, zc = ZC[6] + E + d, yb = y + .06 + k * .05;
+        tube(V(XS - .45, y + .12, BAY - .95 - k * .05), V(xm, yb, BAY - 1.3 - d * .5)); tube(V(xm, yb, BAY - 1.3 - d * .5), V(xm, yb, zc)); tube(V(xm, yb, zc), V(xm, HT - .06, zc)); tube(V(xm, HT - .06, zc), V(xm + .25, HT - .02, zc)); } }
+    // en haut des murs, tout autour du salon : une fine baguette dorée
+    const yb = HT - .07, L1 = -XC - E - (XS + E), L2 = ZC[7] - E - (ZC[6] + E);
+    A.ajoute(new THREE.BoxGeometry(L1, .018, .015), or, (XS - XC) / 2, yb, ZC[6] + E + .008, false); A.ajoute(new THREE.BoxGeometry(L1, .018, .015), or, (XS - XC) / 2, yb, ZC[7] - E - .008, false);
+    A.ajoute(new THREE.BoxGeometry(.015, .018, L2), or, XS + E + .008, yb, (ZC[6] + ZC[7]) / 2, false); A.ajoute(new THREE.BoxGeometry(.015, .018, L2), or, -XC - E - .008, yb, (ZC[6] + ZC[7]) / 2, false); }
   // le plafond
   A.ajoute(new THREE.BoxGeometry(16, .2, 28), A.mat({ color: 0xf1ece0, roughness: .95 }), -.8, HT + .1, 2.5, false);
   // ---------- les portes (ouvertes, battant contre le mur de la pièce) et la porte d'entrée (fermée) ----------
