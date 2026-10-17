@@ -4700,39 +4700,13 @@ function construireSantaCarla(A, L, scene) {
     for (const xs of [-30, 30]) for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(triG, k % 2 ? creme : rougeT); m.position.set(xs - 1.6 + k * 1.6, 3.15, -7.95); m.rotation.x = -.1; scene.add(m); } }   // (sur l'arcade et les autos tamponneuses)
   // ---------- le panneau « Lookit What I Caught! », où l'on passe la tête ----------
   { const g = new THREE.Group(); g.position.set(8, 0, 4.7); scene.add(g);
-    const peint = tex(toile(768, 768, (x, w, h) => { const ci = x.createLinearGradient(0, 0, 0, 380); ci.addColorStop(0, "#5a8ac8"); ci.addColorStop(1, "#9ac0e0"); x.fillStyle = ci; x.fillRect(0, 0, w, h);
-        x.fillStyle = "#8a2a5a"; x.beginPath(); x.moveTo(0, 360); x.lineTo(140, 330); x.lineTo(260, 350); x.lineTo(380, 320); x.lineTo(420, 370); x.lineTo(0, 380); x.fill(); x.fillStyle = "#2ab0a8"; x.fillRect(0, 370, w, 90); x.fillStyle = "#f4f0e4"; for (let i = 0; i < 20; i++) x.fillRect(i * 40, 456, 30, 6);
-        x.fillStyle = "#b8864a"; x.fillRect(0, 460, w, h - 460); x.fillStyle = "#5aa83a"; x.beginPath(); x.moveTo(0, 560); x.quadraticCurveTo(200, 640, 300, h); x.lineTo(0, h); x.fill();
-        // la sirène (cheveux blonds, queue verte) que le pêcheur emporte
-        x.fillStyle = "#f0a020"; x.beginPath(); x.ellipse(250, 260, 80, 130, -.2, 0, 7); x.fill();   // (les cheveux)
-        x.fillStyle = "#f08a3a"; x.beginPath(); x.ellipse(300, 330, 60, 40, -.4, 0, 7); x.fill(); x.fillStyle = "#e83a8a"; x.beginPath(); x.arc(285, 330, 16, 0, 7); x.arc(320, 320, 16, 0, 7); x.fill();
-        x.fillStyle = "#4ab83a"; x.beginPath(); x.moveTo(330, 350); x.quadraticCurveTo(520, 340, 560, 470); x.quadraticCurveTo(600, 560, 640, 610); x.lineTo(560, 600); x.quadraticCurveTo(520, 520, 470, 430); x.quadraticCurveTo(400, 400, 340, 400); x.fill();
-        x.strokeStyle = "rgba(0,60,0,.4)"; x.lineWidth = 2; for (let i = 0; i < 30; i++) { x.beginPath(); x.arc(380 + (i % 6) * 26, 380 + Math.floor(i / 6) * 22, 10, 0, Math.PI); x.stroke(); }
-        // le pêcheur : chemise blanche, short rouge, la canne, le panier
-        x.fillStyle = "#f4f2ea"; x.beginPath(); x.moveTo(440, 190); x.lineTo(560, 190); x.lineTo(580, 390); x.lineTo(430, 390); x.fill(); x.fillStyle = "#d83a2a"; x.fillRect(440, 390, 130, 70); x.fillStyle = "#f08a3a"; x.fillRect(450, 460, 40, 150); x.fillRect(520, 460, 40, 150);
-        x.strokeStyle = "#6a3a1e"; x.lineWidth = 8; x.beginPath(); x.moveTo(300, 200); x.lineTo(470, 560); x.stroke(); x.fillStyle = "#b8743a"; x.beginPath(); x.ellipse(620, 300, 50, 60, .2, 0, 7); x.fill();
-        // le petit panneau en bois et la phrase
-        x.fillStyle = "#c8a070"; x.fillRect(40, 520, 250, 140); x.strokeStyle = "#6a4a2a"; x.lineWidth = 6; x.strokeRect(40, 520, 250, 140); x.fillStyle = "#4a2a14"; x.font = "bold 34px Georgia"; x.fillText("at the", 110, 562); x.font = "bold 40px Georgia"; x.fillText("Santa Carla", 52, 610); x.font = "28px Georgia"; x.fillText("Boardwalk", 100, 645);
-        x.fillStyle = "#f4ead8"; x.strokeStyle = "#3a2a1a"; x.lineWidth = 6; x.font = "bold 58px 'Cooper Black', Georgia"; x.strokeText("\"Lookit What I", 300, 690); x.fillText("\"Lookit What I", 300, 690); x.strokeText("Caught!\"", 430, 750); x.fillText("Caught!\"", 430, 750);
-        // les deux trous, pour passer la tête
-        x.globalCompositeOperation = "destination-out"; x.beginPath(); x.ellipse(235, 180, 46, 58, 0, 0, 7); x.ellipse(500, 140, 50, 62, 0, 0, 7); x.fill(); x.globalCompositeOperation = "source-over"; }));
-    const pan = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), A.mat({ map: peint, alphaTest: .5, side: THREE.DoubleSide, roughness: .6, emissive: 0xffffff, emissiveMap: peint, emissiveIntensity: .15 })); pan.position.y = 1.45; pan.rotation.y = Math.PI; g.add(pan);
-    for (const sx of [-1.15, 1.15]) cyl(g, .04, .04, 2.6, A.mat({ color: 0xd8dce2, metalness: .8, roughness: .2 }), sx, 1.3, 0, 8);
+    const peint = new THREE.TextureLoader().load("images/santacarla/sirene.webp"); peint.colorSpace = THREE.SRGBColorSpace;   // (le vrai panneau, d'après la photo ; les deux trous pour passer la tête)
+    const pan = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 2.12), A.mat({ map: peint, alphaTest: .5, side: THREE.DoubleSide, roughness: .6, emissive: 0xffffff, emissiveMap: peint, emissiveIntensity: .2 })); pan.position.y = 1.2; pan.rotation.y = Math.PI; g.add(pan);
+    for (const sx of [-.92, .92]) cyl(g, .04, .04, 2.3, A.mat({ color: 0xd8dce2, metalness: .8, roughness: .2 }), sx, 1.15, 0, 8);
     OBST.push([6.7, 9.3, 4.4, 5.0]); }
   // ---------- Laffing Sal, dans sa vitrine : elle rit quand on s'approche ----------
   const sal = { pos: V3(-9, 0, -6.7) }; { const g = new THREE.Group(); g.position.copy(sal.pos); scene.add(g);
-    const dessine = (bouche) => toile(256, 384, (x, w, h) => { x.fillStyle = "#1a5a5a"; x.beginPath(); x.moveTo(20, h); x.quadraticCurveTo(30, 250, 128, 240); x.quadraticCurveTo(226, 250, 236, h); x.fill();   // (la veste de velours vert)
-        x.fillStyle = "#f4f2ea"; for (let i = 0; i < 14; i++) { x.beginPath(); x.arc(70 + (i % 7) * 20, 252 + Math.floor(i / 7) * 22, 14, 0, 7); x.fill(); }   // (la dentelle)
-        x.strokeStyle = "#c8a030"; x.lineWidth = 9; x.beginPath(); x.arc(128, 236, 58, .3, Math.PI - .3); x.stroke();   // (le collier doré)
-        x.fillStyle = "#e8c070"; x.fillRect(110, 190, 36, 50); x.beginPath(); x.ellipse(128, 140, 66, 76, 0, 0, 7); x.fill();   // (le visage)
-        x.fillStyle = "#7a3a2a"; x.beginPath(); x.ellipse(128, 86, 74, 40, 0, Math.PI, 0); x.fill(); for (let i = 0; i < 12; i++) { x.fillRect(58 + i * 6, 80, 5, 36 + (i % 3) * 8); x.fillRect(168 + (i % 6) * 6, 90, 5, 90 + (i % 3) * 12); x.fillRect(62 - (i % 4) * 4, 100, 5, 80); }   // (les cheveux)
-        x.fillStyle = "#d8b860"; x.beginPath(); x.ellipse(128, 60, 70, 16, 0, 0, 7); x.fill(); x.fillStyle = "#3a2a1a"; x.fillRect(70, 56, 116, 8);   // (le chapeau de paille)
-        x.fillStyle = "#5a8ac8"; x.beginPath(); x.ellipse(102, 130, 9, 6, 0, 0, 7); x.ellipse(154, 130, 9, 6, 0, 0, 7); x.fill(); x.strokeStyle = "#3a2a1a"; x.lineWidth = 3; x.beginPath(); x.arc(102, 118, 14, Math.PI * 1.1, Math.PI * 1.9); x.arc(154, 118, 14, Math.PI * 1.1, Math.PI * 1.9); x.stroke();
-        x.fillStyle = "#3a2a1a"; for (let i = 0; i < 14; i++) { x.beginPath(); x.arc(84 + hasard(i) * 88, 140 + hasard(i * 3) * 30, 2.5, 0, 7); x.fill(); }   // (les taches de rousseur)
-        x.fillStyle = "#e8987a"; x.beginPath(); x.ellipse(128, 156, 12, 10, 0, 0, 7); x.fill();
-        x.fillStyle = "#8a1a1a"; x.beginPath(); x.ellipse(128, 190, 34, bouche ? 24 : 10, 0, 0, 7); x.fill(); x.fillStyle = "#1a0a14"; x.beginPath(); x.ellipse(128, 194, 26, bouche ? 16 : 4, 0, 0, 7); x.fill();
-        if (bouche) { x.fillStyle = "#f4f2ea"; x.fillRect(108, 172, 16, 10); x.fillRect(132, 172, 16, 10); } });   // (les dents, et le trou au milieu)
-    const tOuv = tex(dessine(true)), tFer = tex(dessine(false)), mat2 = new THREE.MeshBasicMaterial({ map: tFer, transparent: true, toneMapped: false }), fig = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.65), mat2); fig.position.set(0, 1.85, .05); g.add(fig);
+    const tFer = new THREE.TextureLoader().load("images/santacarla/sal.webp"); tFer.colorSpace = THREE.SRGBColorSpace; const tOuv = tFer, mat2 = new THREE.MeshBasicMaterial({ map: tFer, toneMapped: false, color: 0xe8e0e8 }), fig = new THREE.Mesh(new THREE.PlaneGeometry(1.48, 1.46), mat2); fig.position.set(0, 2.0, .05); g.add(fig);   // (la vraie Sal, d'après la photo)
     const bois2 = A.mat({ color: 0x6a3a1e, roughness: .5 }); bxg(g, 1.6, 1, .9, bois2, 0, .5, -.1); bxg(g, 1.6, .2, .9, bois2, 0, 2.9, -.1); for (const sx of [-.78, .78]) bxg(g, .06, 1.9, .9, bois2, sx, 1.95, -.1);
     const vitre2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.85), new THREE.MeshBasicMaterial({ color: 0xc8e0ff, transparent: true, opacity: .12, depthWrite: false })); vitre2.position.set(0, 1.95, .34); g.add(vitre2);
     const fond2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.85), new THREE.MeshBasicMaterial({ color: 0x8a6ac8, toneMapped: false })); fond2.position.set(0, 1.95, -.5); g.add(fond2);
@@ -4759,7 +4733,7 @@ function construireSantaCarla(A, L, scene) {
       if (L.ouragan) { const { v, train } = L.ouragan; train.forEach((w, k) => { const u = ((s * .07) + 1 - k * .012) % 1, p = v.getPointAt(u), tg = v.getTangentAt(u); w.position.copy(p).add(V3(0, .35, 0)); w.lookAt(w.position.x + tg.x, w.position.y + tg.y, w.position.z + tg.z); }); }
       // Laffing Sal : elle rit (la bouche qui s'ouvre, le corps qui se balance) quand on passe devant
       const p = moiP(); if (p && sal.mat) { const pres = Math.hypot(p.x - sal.pos.x, p.z - sal.pos.z) < 5; if (pres && !sal.rit) { sal.rit = s; rireSal(); } if (!pres && sal.rit && s - sal.rit > 6) sal.rit = 0;
-        const riant = sal.rit && s - sal.rit < 5; sal.mat.map = riant && Math.floor(s * 7) % 2 ? sal.tOuv : sal.tFer; sal.fig.rotation.z = riant ? Math.sin(s * 9) * .06 : 0; sal.fig.position.y = 1.85 + (riant ? Math.abs(Math.sin(s * 9)) * .04 : 0); } }; }
+        const riant = sal.rit && s - sal.rit < 5; sal.mat.map = riant && Math.floor(s * 7) % 2 ? sal.tOuv : sal.tFer; sal.fig.rotation.z = riant ? Math.sin(s * 9) * .015 : 0; sal.fig.position.y = 2.0 + (riant ? Math.abs(Math.sin(s * 9)) * .04 : 0); } }; }
   // le rire de Sal, fabriqué : une suite de « ha ! » qui descendent
   const rireSal = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t0 = actx.currentTime;
       for (let i = 0; i < 9; i++) { const o = actx.createOscillator(), gn = actx.createGain(), f = actx.createBiquadFilter(); o.type = "sawtooth"; f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 3;
@@ -4839,7 +4813,12 @@ function construireSantaCarla(A, L, scene) {
       if (C.mp3) { const p = moiP(); if (!C.audio) { C.audio = new Audio(C.mp3); C.audio.loop = true; C.audio.volume = 0; const garde = setInterval(() => { if (!M || M.L !== L) { C.audio.pause(); clearInterval(garde); } }, 600); }
         if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); C.audio.volume = v * .9; if (v > 0 && C.audio.paused) C.audio.play().catch(() => {}); } } }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
-  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = [], texV = [0, 1, 2, 3].map(k => tex(toileVampire(k)));
+  // les vraies têtes (celles de l'inventaire de l'administrateur, sinon les photos découpées) posées sur les corps dessinés
+  const NOM_TETE = { 81: "sam", 82: "edgar", 83: "alan", 84: "david", 85: "paul", 86: "marko", 87: "dwayne" };
+  const poserTete = (cv, id, larg, bas, vamp, fin) => { const P = M && M.ctx.pnjTrio && M.ctx.pnjTrio(id), im = new Image();
+    im.onload = () => { const x = cv.getContext("2d"), h = larg * im.height / im.width; if (vamp) x.filter = "saturate(.6) brightness(1.06) contrast(1.06)"; x.drawImage(im, 128 - larg / 2, bas - h, larg, h); x.filter = "none"; fin && fin(); };
+    im.src = P && P.tete_v && M.ctx.urlTetePNJ ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${NOM_TETE[id]}-tete.webp`; };
+  const NOMS = ["David", "Paul", "Marko", "Dwayne"], vamps = L.vamps = [], texV = [0, 1, 2, 3].map(k => { const cv = toileVampire(k), t = tex(cv); poserTete(cv, 84 + k, 124, 164, true, () => { t.needsUpdate = true; }); return t; });
   const fumeeT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(230,230,230,.8)"); g.addColorStop(1, "rgba(230,230,230,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
@@ -4903,7 +4882,7 @@ function construireSantaCarla(A, L, scene) {
       x.fillStyle = "#d8241e"; x.beginPath(); x.moveTo(94, 80); x.quadraticCurveTo(128, 70, 162, 80); x.lineTo(162, 92); x.quadraticCurveTo(128, 82, 94, 92); x.fill();   // (le bandana rouge, ses deux pans qui pendent)
       x.beginPath(); x.moveTo(158, 84); x.quadraticCurveTo(190, 120, 182, 180); x.lineTo(170, 176); x.quadraticCurveTo(176, 128, 152, 92); x.fill(); x.beginPath(); x.moveTo(160, 86); x.quadraticCurveTo(204, 110, 206, 160); x.lineTo(196, 158); x.quadraticCurveTo(190, 118, 156, 94); x.fill(); }
     else { x.fillStyle = "#24160e"; x.beginPath(); x.moveTo(94, 104); x.quadraticCurveTo(88, 56, 128, 58); x.quadraticCurveTo(170, 56, 162, 104); x.quadraticCurveTo(154, 74, 112, 80); x.quadraticCurveTo(100, 86, 94, 104); x.fill(); if (dos) { x.beginPath(); x.ellipse(128, 100, 33, 38, 0, 0, 7); x.fill(); } } });
-  const texAdo = [0, 1, 2].map(k => [tex(toileAdo(k, false)), tex(toileAdo(k, true))]);
+  const texAdo = [0, 1, 2].map(k => { const cv = toileAdo(k, false), t = tex(cv); poserTete(cv, 81 + k, 112, 164, false, () => { t.needsUpdate = true; }); return [t, tex(toileAdo(k, true))]; });
   // le pistolet à eau : le corps en plastique transparent, l'eau bénite dedans, la croix sur le réservoir, la buse orange
   const pistoletEau = () => { const g = new THREE.Group(), M_ = o => new THREE.MeshStandardMaterial(o), ad = (geo, m, x, y, z, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
     const plast = M_({ color: 0x3aa8ff, transparent: true, opacity: .72, roughness: .15, metalness: .1, emissive: 0x0a3050, emissiveIntensity: .8 }), orange = M_({ color: 0xff7a1a, roughness: .4, emissive: 0x401800 }), eau = M_({ color: 0xc8eeff, transparent: true, opacity: .55, emissive: 0x4a8aaa, emissiveIntensity: .7 });
@@ -4930,7 +4909,7 @@ function construireSantaCarla(A, L, scene) {
   const choisirAdo = () => { const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle,rgba(40,6,10,.82),rgba(0,0,0,.94));color:#fff;font:600 16px Georgia,serif;padding:12px;box-sizing:border-box";
     d.innerHTML = `<div style="font:900 clamp(20px,5vw,30px) Georgia;color:#ff4a3a;text-shadow:0 0 14px #b81c22;letter-spacing:2px">THE LOST BOYS</div><div style="opacity:.85;text-align:center">Qui veux-tu jouer ? Ton arme : le pistolet à eau bénite.</div><div class="c" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"></div>`;
     ADOS.forEach((a, k) => { const b = document.createElement("button"); b.style.cssText = "background:linear-gradient(#2a1418,#120a0c);border:2px solid #b81c22;border-radius:12px;color:#fff;padding:8px 8px 10px;cursor:pointer;width:clamp(90px,26vw,150px);font:700 15px Georgia";
-      const im = toileAdo(k, false); im.style.cssText = "width:100%;height:auto;display:block;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px"; b.appendChild(im); b.appendChild(document.createTextNode(a.nom));
+      const im = toileAdo(k, false); poserTete(im, 81 + k, 112, 164, false); im.style.cssText = "width:100%;height:auto;display:block;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px"; b.appendChild(im); b.appendChild(document.createTextNode(a.nom));
       b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; demarrer(); setTimeout(() => M && M.L === L && message(`<div style="font-size:15px;font-style:italic">« ${a.dit} »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.85">— ${a.court}</div>`), 4600); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
@@ -4938,7 +4917,7 @@ function construireSantaCarla(A, L, scene) {
     if (!hud) { hud = document.createElement("div"); hud.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;background:rgba(10,4,6,.7);color:#fff;border-radius:12px;padding:6px 12px;font:700 16px system-ui;display:flex;gap:14px;pointer-events:none";
       hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); const mo = M && M.gens.get(M.moiNum); if (mo) cacherAvatar(mo, false); } }, 600); }
     majAdo();
-    if (phase === "intro" && now - t0 > 2500) { phase = "choix"; choisirAdo(); }
+    if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
     if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { creerVampire(0); majHud(); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
     if (phase === "david" && vamps.length && vamps.every(v => v.etat === "mort") && !fini) { fini = true; phase = "fin"; message(`<div style="font-size:22px">Santa Carla est sauvée !</div><div style="margin-top:10px;font-style:italic;font-size:15px">« Il y a une chose que je n'ai jamais pu supporter à Santa Carla : tous ces fichus vampires. »</div><div style="font:500 13px system-ui;margin-top:6px;opacity:.8">— Grand-père</div>`, ["Rejouer", demarrer]); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
@@ -10223,7 +10202,29 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   const t = new THREE.TextureLoader().load("images/gb/affiche.webp"); t.colorSpace = THREE.SRGBColorSpace; const A = AFFICHE_GB, g = new THREE.Group();
   const cadre = new THREE.Mesh(new THREE.BoxGeometry(A.w + .08, A.h + .08, .03), new THREE.MeshStandardMaterial({ color: 0x1a1a1c, roughness: .4, metalness: .3 })); g.add(cadre);
   const af = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .25, roughness: .5 })); af.position.z = .017; g.add(af);
-  g.position.set(A.x, A.y, A.z); M.scene.add(g); M.L.afficheGB = g; }
+  g.position.set(A.x, A.y, A.z); M.scene.add(g); M.L.afficheGB = g;
+  // l'affiche de Génération perdue (The Lost Boys), en face, sur le mur du fond de la petite pièce : mêmes dimensions
+  const tL = new THREE.TextureLoader().load("images/santacarla/affiche.webp"); tL.colorSpace = THREE.SRGBColorSpace; const gL = new THREE.Group();
+  gL.add(new THREE.Mesh(cadre.geometry, cadre.material)); const afL = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .25, roughness: .5 })); afL.position.z = .017; gL.add(afL);
+  gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
+// on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
+function cineAfficheLB() { if (!M || M.cine) return; let parti = false;
+  if (!document.getElementById("styleLB")) { const st = document.createElement("style"); st.id = "styleLB";
+    st.textContent = "@keyframes lbVoile{0%{opacity:0}9%{opacity:1}82%{opacity:1}100%{opacity:0}}@keyframes lbTitre{0%,14%{opacity:0;transform:scale(1.12);filter:blur(6px)}38%{opacity:1;transform:scale(1);filter:blur(0)}66%{opacity:1;transform:scale(.97)}78%,100%{opacity:0;transform:scale(.95)}}"; document.head.appendChild(st); }
+  const d = voile("background:#000;opacity:0;animation:lbVoile 7.4s ease-in-out forwards;display:grid;place-items:center", 7500);
+  d.innerHTML = '<img src="images/santacarla/titre.webp" alt="The Lost Boys" style="width:min(86%,820px);opacity:0;animation:lbTitre 7.4s ease-out forwards">';
+  sonBruit(2.2, 220, .3);
+  const partir = () => { if (parti || !M) return; parti = true; M.lbIntro = true; changerLieu("santacarla"); };
+  M.passerBtn = boutonPasser(() => { d.remove(); partir(); if (M && M.cine) { finCine(); } });
+  M.cine = { maj: () => {} }; setTimeout(() => { if (M && M.cine && !parti) { finCine(); partir(); } }, 5200); }
+// à Santa Carla : la baie vue d'en haut, comme un oiseau — de l'océan vers la jetée, en tournant ; on se pose devant l'arche, puis on choisit son personnage
+function cineSurvolSC() { if (!M) return; const t0 = performance.now(), D = 13000; let fini = false;
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); };
+  const P = [[60, 46, 120], [10, 38, 70], [-40, 26, 30], [-34, 16, -2], [-8, 9, 14], [0, 3.2, 9]], C = [[0, 0, 0], [-10, 4, -10], [-12, 6, -20], [8, 6, -18], [0, 4, -8], [0, 2.4, -6]];
+  const curve = (T, u) => { const n = T.length - 1, f = Math.min(n - 1e-6, u * n), i = Math.floor(f), k = f - i, s = k * k * (3 - 2 * k); return T[i].map((v, j) => v + (T[i + 1][j] - v) * s); };
+  M.passerBtn = boutonPasser(fin);
+  M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, p = curve(P, e), c = curve(C, e);
+    M.camera.position.set(p[0], p[1], p[2]); M.camera.lookAt(c[0], c[1], c[2]); if (u >= 1) fin(); }, fov: [55, 70] }; }
 // on touche « As-tu peur des fantômes ? » : le grand titre, puis l'Ecto-1 entre dans la cour d'honneur
 function cineAfficheGB() { if (!M || M.cine) return; const A = AFFICHE_GB; let fini = false;
   const fin = () => { if (fini || !M) return; fini = true; voile("background:#fff;opacity:1", 1400); finCine(); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); };
@@ -11438,6 +11439,7 @@ function chercherAction(t) {
     else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.L.afficheGB && Math.hypot(x - AFFICHE_GB.x, z - (AFFICHE_GB.z + .7)) < 1.25) a = { type: "gbAffiche", label: "👻 As-tu peur des fantômes ?" };   // (l'affiche du film, au mess)
+    else if (M.L.afficheLB && M.ctx.moiInfo && M.ctx.moiInfo().admin && Math.hypot(x - AFFICHE_GB.x, z - (M.L.afficheLB.position.z - .7)) < 1.25) a = { type: "lbAffiche", label: "🧛 Croyez-vous aux vampires ?" };   // (l'affiche de Génération perdue, en face : l'administrateur seul, pour l'instant)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
     else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
@@ -11490,6 +11492,7 @@ export function agir() {
   else if (a.type === "finslow") envoyerWS({ t: "slow_fin" });
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
   else if (a.type === "gbAffiche") cineAfficheGB();
+  else if (a.type === "lbAffiche") cineAfficheLB();
   else if (a.type === "gbCine") { voile("background:#fff;opacity:1;transition:opacity 1s", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
@@ -11623,6 +11626,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
   if (estSH(id) && M.shReveilBas) { M.shReveilBas = false; cineReveilBas(); }
   if (id === "bttf-cour") cineCour();
+  if (id === "santacarla" && M.lbIntro) { M.lbIntro = false; cineSurvolSC(); }
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
