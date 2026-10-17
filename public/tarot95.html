@@ -23,8 +23,8 @@
   #taches { position: absolute; left: 0; right: 0; bottom: 0; height: 28px; display: flex; align-items: center; gap: 4px; padding: 2px; background: var(--gris); border-top: 2px solid var(--clair); }
   #demarrer { min-width: 0; height: 22px; font-weight: bold; display: flex; align-items: center; gap: 4px; padding: 0 5px; }
   #demarrer i { font-style: normal; font-size: 14px; }
-  #tacheTarot { height: 22px; min-width: 120px; max-width: 160px; text-align: left; display: flex; align-items: center; gap: 4px; }
-  #tacheTarot.actif { border-color: var(--noir) var(--clair) var(--clair) var(--noir); box-shadow: inset 1px 1px var(--ombre); background: #dcdcdc; font-weight: bold; }
+  #tacheTarot, .tache { height: 22px; min-width: 120px; max-width: 160px; text-align: left; display: flex; align-items: center; gap: 4px; }
+  #tacheTarot.actif, .tache.actif { border-color: var(--noir) var(--clair) var(--clair) var(--noir); box-shadow: inset 1px 1px var(--ombre); background: #dcdcdc; font-weight: bold; }
   #horloge { margin-left: auto; padding: 0 10px; height: 22px; line-height: 18px; }
   #menuDem { position: absolute; left: 2px; bottom: 28px; width: 190px; display: none; z-index: 50; }
   #menuDem .bande { position: absolute; left: 0; top: 0; bottom: 0; width: 22px; background: linear-gradient(#000080, #1084d0); color: #c0c0c0; writing-mode: vertical-rl; transform: rotate(180deg); font-weight: bold; font-size: 15px; padding: 6px 0; }
@@ -34,22 +34,39 @@
   /* la fenêtre */
   #fen { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(980px, calc(100% - 8px)); height: min(700px, calc(100% - 36px)); display: flex; flex-direction: column; padding: 2px; }
   #fen.plein { left: 0; top: 0; transform: none; width: 100%; height: calc(100% - 28px); }
+  /* les autres fenêtres : le Solitaire, le Démineur */
+  .fen95 { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; padding: 2px; }
+  #fenSol { width: min(820px, calc(100% - 8px)); height: min(620px, calc(100% - 36px)); }
+  .fen95.plein { left: 0; top: 0; transform: none; width: 100% !important; height: calc(100% - 28px) !important; }
+  .place { position: absolute; width: var(--cw); height: calc(var(--cw) * 1.5); border: 2px solid rgba(0,0,0,.35); border-radius: 5px; background: rgba(0,0,0,.08); }
+  .place.pioche::after { content: "⟳"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.5); font-size: calc(var(--cw) * .6); }
+  #tapisSol .carte, #tapisSol .dos, #tapisSol .place { cursor: pointer; transition: none; }
+  #tapisSol .carte.choisie { filter: invert(1) hue-rotate(180deg); }
+  #corpsDem { position: relative; padding: 6px; background: var(--gris); display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+  .panneauDem { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; }
+  .lcd { background: #000; color: #f00; font: bold 22px/26px "Courier New", monospace; padding: 0 4px; letter-spacing: 1px; min-width: 52px; text-align: center; text-shadow: 0 0 3px #f00; }
+  .sourire { min-width: 0 !important; width: 34px; height: 34px !important; font-size: 20px; padding: 0 !important; line-height: 1; }
+  #grilleDem { display: grid; touch-action: manipulation; }
+  .case { width: var(--cs); height: var(--cs); box-sizing: border-box; font: bold calc(var(--cs) * .62)/var(--cs) Arial, sans-serif; text-align: center; cursor: default; overflow: hidden; }
+  .case.cc { background: var(--gris); border: 2px solid; border-color: #fff #808080 #808080 #fff; font-size: calc(var(--cs) * .55); line-height: calc(var(--cs) - 4px); }
+  .case.cr { background: var(--gris); border-left: 1px solid #808080; border-top: 1px solid #808080; }
+  .case.boum { background: #f00; }
   .titre { height: 20px; display: flex; align-items: center; gap: 4px; padding: 0 2px 0 4px; background: linear-gradient(90deg, #000080, #1084d0); color: #fff; font-weight: bold; flex: none; }
   .titre .bt { margin-left: auto; display: flex; gap: 2px; }
   .titre .bt button { min-width: 0; width: 16px; height: 14px; padding: 0; font: bold 10px/9px Arial; }
   .titre .bt button + button + button { margin-left: 2px; }
-  #menus { display: flex; flex: none; padding: 1px 0; position: relative; }
-  #menus > div { padding: 2px 7px; cursor: pointer; position: relative; }
-  #menus > div:hover, #menus > div.ouvert { background: var(--bleu); color: #fff; }
-  #menus .deroule { display: none; position: absolute; left: 0; top: 100%; min-width: 170px; z-index: 40; color: #000; }
-  #menus > div.ouvert .deroule { display: block; }
-  #menus .deroule div { padding: 4px 20px; }
-  #menus .deroule div:hover { background: var(--bleu); color: #fff; }
-  #menus .deroule hr { border: 0; border-top: 1px solid var(--ombre); border-bottom: 1px solid #fff; margin: 3px 2px; }
-  #tapis { flex: 1; position: relative; background: radial-gradient(ellipse at 50% 45%, #13883f 0%, var(--tapis) 70%, #064d20 100%); overflow: hidden; margin: 0 0 2px; }
-  #statut { display: flex; gap: 2px; flex: none; }
-  #statut > div { padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #statut > div:first-child { flex: 1; }
+  .menus { display: flex; flex: none; padding: 1px 0; position: relative; }
+  .menus > div { padding: 2px 7px; cursor: pointer; position: relative; }
+  .menus > div:hover, .menus > div.ouvert { background: var(--bleu); color: #fff; }
+  .menus .deroule { display: none; position: absolute; left: 0; top: 100%; min-width: 170px; z-index: 40; color: #000; }
+  .menus > div.ouvert .deroule { display: block; }
+  .menus .deroule div { padding: 4px 20px; }
+  .menus .deroule div:hover { background: var(--bleu); color: #fff; }
+  .menus .deroule hr { border: 0; border-top: 1px solid var(--ombre); border-bottom: 1px solid #fff; margin: 3px 2px; }
+  #tapis, .tapis { flex: 1; position: relative; background: radial-gradient(ellipse at 50% 45%, #13883f 0%, var(--tapis) 70%, #064d20 100%); overflow: hidden; margin: 0 0 2px; }
+  .statut { display: flex; gap: 2px; flex: none; }
+  .statut > div { padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .statut > div:first-child { flex: 1; }
   /* les joueurs */
   .joueur { position: absolute; color: #fff; text-align: center; font-weight: bold; text-shadow: 1px 1px 0 #000; }
   .joueur .nom { display: inline-block; padding: 1px 6px; border-radius: 2px; }
@@ -99,39 +116,56 @@
   <div class="icone" style="left:8px;top:8px"><div class="img">🖥️</div><span>Poste de travail</span></div>
   <div class="icone" style="left:8px;top:84px"><div class="img">🗑️</div><span>Corbeille</span></div>
   <div class="icone" id="icTarot" style="left:8px;top:160px"><div class="img">🃏</div><span>Tarot</span></div>
+  <div class="icone" id="icSol" style="left:8px;top:236px"><div class="img">🂡</div><span>Solitaire</span></div>
+  <div class="icone" id="icDem" style="left:8px;top:312px"><div class="img">💣</div><span>Démineur</span></div>
+  <div id="fenSol" class="bosse fen95" style="display:none">
+    <div class="titre"><span>🂡</span><span>Solitaire</span><div class="bt"><button class="b95" data-f="min">_</button><button class="b95" data-f="max">□</button><button class="b95" data-f="ferm">✕</button></div></div>
+    <div class="menus"><div><u>P</u>artie<div class="deroule bosse"><div data-s="nouv">Nouvelle partie</div><hr><div data-s="t1">Tirer une carte</div><div data-s="t3">Tirer trois cartes</div><hr><div data-s="quit">Quitter</div></div></div><div><u>A</u>ide<div class="deroule bosse"><div data-s="aide">Comment jouer</div></div></div></div>
+    <div id="tapisSol" class="creux tapis"></div>
+    <div class="statut"><div class="creux" id="solSt">Touchez le talon pour tirer une carte.</div><div class="creux" id="solSc">Score : 0   Temps : 0</div></div>
+  </div>
+  <div id="fenDem" class="bosse fen95" style="display:none">
+    <div class="titre"><span>💣</span><span>Démineur</span><div class="bt"><button class="b95" data-f="min">_</button><button class="b95" data-f="ferm" style="margin-left:2px">✕</button></div></div>
+    <div class="menus"><div><u>P</u>artie<div class="deroule bosse"><div data-d="nouv">Nouvelle partie</div><hr><div data-d="d">Débutant</div><div data-d="i">Intermédiaire</div><div data-d="e">Expert</div><hr><div data-d="temps">Meilleurs temps…</div><hr><div data-d="quit">Quitter</div></div></div><div><u>A</u>ide<div class="deroule bosse"><div data-d="aide">Comment jouer</div></div></div></div>
+    <div id="corpsDem"><div class="creux panneauDem"><div class="lcd" id="demMines">010</div><button class="b95 sourire" id="demSourire">🙂</button><div class="lcd" id="demTemps">000</div></div><div class="creux" id="grilleDem"></div></div>
+  </div>
   <div id="fen" class="bosse">
     <div class="titre"><span>🃏</span><span>Tarot</span><div class="bt"><button class="b95" id="btMin">_</button><button class="b95" id="btMax">□</button><button class="b95" id="btFerm">✕</button></div></div>
-    <div id="menus">
+    <div id="menus" class="menus">
       <div id="mPartie"><u>P</u>artie<div class="deroule bosse"><div data-a="donne">Nouvelle donne</div><div data-a="partie">Nouvelle partie</div><hr><div data-a="scores">Scores…</div><hr><div data-a="quitter">Quitter</div></div></div>
       <div id="mAide"><u>A</u>ide<div class="deroule bosse"><div data-a="regles">Règles du jeu</div><hr><div data-a="apropos">À propos de Tarot…</div></div></div>
     </div>
     <div id="tapis" class="creux"></div>
-    <div id="statut"><div class="creux" id="st1">Prêt</div><div class="creux" id="st2">Donne 1</div></div>
+    <div id="statut" class="statut"><div class="creux" id="st1">Prêt</div><div class="creux" id="st2">Donne 1</div></div>
   </div>
 </div>
 <div id="taches">
   <button class="b95" id="demarrer"><i>🪟</i>Démarrer</button>
   <button class="b95 actif" id="tacheTarot">🃏 Tarot</button>
+  <button class="b95 tache" id="tacheSol" style="display:none">🂡 Solitaire</button>
+  <button class="b95 tache" id="tacheDem" style="display:none">💣 Démineur</button>
   <div class="creux" id="horloge">--:--</div>
 </div>
-<div id="menuDem" class="bosse"><div class="bande"><b>Windows</b>95</div><div class="it" data-a="tarot">🃏 Tarot</div><div class="it" data-a="donne">🔄 Nouvelle donne</div><div class="it" data-a="quitter">⏻ Arrêter…</div></div>
+<div id="menuDem" class="bosse"><div class="bande"><b>Windows</b>95</div><div class="it" data-a="tarot">🃏 Tarot</div><div class="it" data-a="solitaire">🂡 Solitaire</div><div class="it" data-a="demineur">💣 Démineur</div><div class="it" data-a="donne">🔄 Nouvelle donne</div><div class="it" data-a="quitter">⏻ Arrêter…</div></div>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 // ---------- le bureau de Windows 95 ----------
-setTimeout(() => { $("boot").remove(); nouvellePartie(); }, 1800);
+setTimeout(() => { $("boot").remove(); fenetre(false); }, 1800);   // (au démarrage : le bureau, ses trois jeux)
 const heure = () => { const d = new Date(); $("horloge").textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }; heure(); setInterval(heure, 10000);
 const fenetre = v => { $("fen").style.display = v ? "flex" : "none"; $("tacheTarot").style.display = v ? "" : "none"; if (v) placer(); };
 $("btFerm").onclick = () => fenetre(false); $("btMin").onclick = () => { $("fen").style.display = "none"; $("tacheTarot").classList.remove("actif"); };
 $("btMax").onclick = () => { $("fen").classList.toggle("plein"); placer(); };
 $("tacheTarot").onclick = () => { const vis = $("fen").style.display !== "none"; $("fen").style.display = vis ? "none" : "flex"; $("tacheTarot").classList.toggle("actif", !vis); if (!vis) placer(); };
-let clicIcone = 0; $("icTarot").onclick = () => { document.querySelectorAll(".icone").forEach(i => i.classList.remove("sel")); $("icTarot").classList.add("sel"); const t = Date.now(); if (t - clicIcone < 450 || matchMedia("(pointer: coarse)").matches) { fenetre(true); $("tacheTarot").classList.add("actif"); } clicIcone = t; };
+$("icTarot").onclick = () => { document.querySelectorAll(".icone").forEach(i => i.classList.remove("sel")); $("icTarot").classList.add("sel"); action("tarot"); };
 $("demarrer").onclick = e => { e.stopPropagation(); const m = $("menuDem"); m.style.display = m.style.display === "block" ? "none" : "block"; };
-document.addEventListener("click", e => { $("menuDem").style.display = "none"; if (!e.target.closest("#menus")) document.querySelectorAll("#menus > div").forEach(d => d.classList.remove("ouvert")); });
-document.querySelectorAll("#menus > div").forEach(d => d.onclick = e => { e.stopPropagation(); const o = d.classList.contains("ouvert"); document.querySelectorAll("#menus > div").forEach(x => x.classList.remove("ouvert")); if (!o) d.classList.add("ouvert"); });
-document.querySelectorAll("[data-a]").forEach(el => el.onclick = e => { e.stopPropagation(); document.querySelectorAll("#menus > div").forEach(x => x.classList.remove("ouvert")); $("menuDem").style.display = "none"; action(el.dataset.a); });
+document.addEventListener("click", e => { $("menuDem").style.display = "none"; if (!e.target.closest(".menus")) document.querySelectorAll(".menus > div").forEach(d => d.classList.remove("ouvert")); });
+document.querySelectorAll(".menus > div").forEach(d => d.onclick = e => { e.stopPropagation(); const o = d.classList.contains("ouvert"); document.querySelectorAll(".menus > div").forEach(x => x.classList.remove("ouvert")); if (!o) d.classList.add("ouvert"); });
+document.querySelectorAll("[data-a]").forEach(el => el.onclick = e => { e.stopPropagation(); document.querySelectorAll(".menus > div").forEach(x => x.classList.remove("ouvert")); $("menuDem").style.display = "none"; action(el.dataset.a); });
 function action(a) {
-  if (a === "tarot") { fenetre(true); $("tacheTarot").classList.add("actif"); }
+  if (a === "tarot") { fenetre(true); $("tacheTarot").classList.add("actif"); devant($("fen")); if (!S) nouvellePartie(); }
+  else if (a === "solitaire") ouvrirFen("fenSol");
+  else if (a === "demineur") ouvrirFen("fenDem");
   else if (a === "donne") { fenetre(true); nouvelleDonne(); }
   else if (a === "partie") nouvellePartie();
   else if (a === "scores") tableauScores();
@@ -262,13 +296,13 @@ function finDonne() {
 const tableHTML = gains => `<table><tr><th>Joueur</th>${gains ? "<th>Donne</th>" : ""}<th>Total</th></tr>${NOMS.map((n, i) => `<tr><td>${n}</td>${gains ? `<td>${gains[i] > 0 ? "+" : ""}${gains[i]}</td>` : ""}<td><b>${scores[i]}</b></td></tr>`).join("")}</table>`;
 function tableauScores() { dialogue("Scores", historique.length ? `<table><tr><th>Donne</th>${NOMS.map(n => `<th>${n}</th>`).join("")}</tr>${historique.map(h => `<tr><td>${h.n}. ${NOMS[h.preneur]} (${h.contrat})</td>${h.gains.map(g => `<td>${g}</td>`).join("")}</tr>`).join("")}<tr><th>Total</th>${scores.map(s => `<th>${s}</th>`).join("")}</tr></table>` : "Aucune donne terminée.", [["OK"]]); }
 // ---------- les fenêtres de dialogue ----------
-function fermerDialogues() { document.querySelectorAll(".dialogue").forEach(d => d.remove()); }
-function dialogue(titre, html, boutons, sansFermer) {
-  fermerDialogues(); const d = document.createElement("div"); d.className = "dialogue bosse";
+function fermerDialogues(hote = $("tapis")) { hote.querySelectorAll(".dialogue").forEach(d => d.remove()); }
+function dialogue(titre, html, boutons, sansFermer, hote = $("tapis")) {
+  fermerDialogues(hote); const d = document.createElement("div"); d.className = "dialogue bosse";
   d.innerHTML = `<div class="titre"><span>${titre}</span>${sansFermer ? "" : `<div class="bt"><button class="b95">✕</button></div>`}</div><div class="corps">${html}<div class="ligne"></div></div>`;
   const ligne = d.querySelector(".ligne"); for (const [t, f] of boutons) { const b = document.createElement("button"); b.className = "b95"; b.textContent = t; b.onclick = () => { d.remove(); f && f(); }; ligne.appendChild(b); }
   const x = d.querySelector(".titre button"); if (x) x.onclick = () => d.remove();
-  $("tapis").appendChild(d);
+  hote.appendChild(d);
 }
 // ---------- l'affichage ----------
 function carteEl(k) { const e = document.createElement("div");
@@ -312,32 +346,178 @@ function placer() {
   if (S.dernierPli && S.phase === "jeu") { const t = document.createElement("div"); t.className = "bulle"; t.style.left = "6px"; t.style.top = "6px"; t.textContent = "Dernier pli : " + S.dernierPli.map(x => (x.k.c === "A" ? x.k.v + "ᴬ" : x.k.c === "E" ? "★" : (FIG[x.k.v] || x.k.v) + SYM[x.k.c])).join("  "); T.appendChild(t); }
 }
 const attenteJoueur = () => S.pli.length < 4;
-addEventListener("resize", () => placer());
+addEventListener("resize", () => { placer(); solPlacer(); });
+
+// ---------- les fenêtres du Solitaire et du Démineur : ouvrir, réduire, agrandir, fermer, passer devant ----------
+let zHaut = 10; const devant = f => { f.style.zIndex = ++zHaut; };
+for (const f of document.querySelectorAll("#fen, .fen95")) f.addEventListener("pointerdown", () => devant(f));
+const tacheDe = { fenSol: "tacheSol", fenDem: "tacheDem" };
+function ouvrirFen(id) { const f = $(id); f.style.display = "flex"; devant(f); $(tacheDe[id]).style.display = ""; $(tacheDe[id]).classList.add("actif");
+  if (id === "fenSol") { if (!SO) solNouvelle(); else solPlacer(); } else if (id === "fenDem") { if (!DM) demNouvelle("d"); } }
+for (const id of ["fenSol", "fenDem"]) { const f = $(id);
+  f.querySelector('[data-f="ferm"]').onclick = () => { f.style.display = "none"; $(tacheDe[id]).style.display = "none"; };
+  f.querySelector('[data-f="min"]').onclick = () => { f.style.display = "none"; $(tacheDe[id]).classList.remove("actif"); };
+  const mx = f.querySelector('[data-f="max"]'); if (mx) mx.onclick = () => { f.classList.toggle("plein"); solPlacer(); };
+  $(tacheDe[id]).onclick = () => { const vis = f.style.display !== "none" && +f.style.zIndex === zHaut; if (vis) { f.style.display = "none"; $(tacheDe[id]).classList.remove("actif"); } else { f.style.display = "flex"; devant(f); $(tacheDe[id]).classList.add("actif"); if (id === "fenSol") solPlacer(); } };
+  f.querySelectorAll(".menus > div").forEach(d => d.onclick = e => { e.stopPropagation(); const o = d.classList.contains("ouvert"); document.querySelectorAll(".menus > div").forEach(x => x.classList.remove("ouvert")); if (!o) d.classList.add("ouvert"); }); }
+$("icSol").onclick = () => { document.querySelectorAll(".icone").forEach(i => i.classList.remove("sel")); $("icSol").classList.add("sel"); ouvrirFen("fenSol"); };
+$("icDem").onclick = () => { document.querySelectorAll(".icone").forEach(i => i.classList.remove("sel")); $("icDem").classList.add("sel"); ouvrirFen("fenDem"); };
+const fermerMenus = () => document.querySelectorAll(".menus > div").forEach(x => x.classList.remove("ouvert"));
+
+// ================= le Solitaire (Klondike) : on touche une carte pour la prendre, puis là où on la pose ; deux touches sur une carte l'envoient sur les as =================
+let SO = null, tirage = 1;
+const FIGS = { 1: "A", 11: "V", 12: "D", 13: "R" }, rougeS = k => k.c === "C" || k.c === "K";
+function melanger(d) { for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; } return d; }
+function solNouvelle() { const d = []; for (const c of COUL) for (let v = 1; v <= 13; v++) d.push({ c, v, up: false }); melanger(d);
+  SO = { pioche: [], defausse: [], fond: [[], [], [], []], tab: [[], [], [], [], [], [], []], sel: null, score: 0, t0: 0, fini: false }; let k = 0;
+  for (let i = 0; i < 7; i++) for (let j = 0; j <= i; j++) { const c = d[k++]; c.up = j === i; SO.tab[i].push(c); }
+  SO.pioche = d.slice(k); fermerDialogues($("tapisSol")); $("solSt").textContent = "Touchez le talon pour tirer " + (tirage === 1 ? "une carte." : "trois cartes."); solPlacer(); }
+function solCarte(k) { const e = document.createElement("div"); const s2 = SYM[k.c], r = FIGS[k.v] || k.v; e.className = "carte " + (rougeS(k) ? "rouge" : "noire");
+  e.innerHTML = `<div class="coin">${r}<small>${s2}</small></div>${k.v > 10 ? `<div class="fig">${r}<small>${s2}</small></div>` : `<div class="milieu">${s2}</div>`}<div class="coin bas">${r}<small>${s2}</small></div>`; return e; }
+function solPlacer() {
+  const T = $("tapisSol"); if (!SO || !T.clientWidth) return; const W = T.clientWidth, H = T.clientHeight;
+  [...T.children].forEach(c => { if (!c.classList.contains("dialogue") && c.tagName !== "CANVAS") c.remove(); });
+  const cw = Math.max(30, Math.min(84, (W - 16) / 7.6, (H - 16) / 4.4)), ch = cw * 1.5, gap = (W - 7 * cw) / 8, X = i => gap + i * (cw + gap), y0 = 8, yT = y0 + ch + Math.max(10, ch * .16);
+  T.style.setProperty("--cw", cw + "px");
+  const pose = (e, x, y, ref) => { e.style.left = x + "px"; e.style.top = y + "px"; e.onclick = ev => { ev.stopPropagation(); solClic(ref); }; T.appendChild(e); return e; };
+  const place = (x, y, ref, cl = "") => pose(Object.assign(document.createElement("div"), { className: "place " + cl }), x, y, ref);
+  const estSel = (z, i, j) => SO.sel && SO.sel.z === z && (z === "defausse" || SO.sel.i === i) && (z !== "tab" || j >= SO.sel.j);
+  // le talon, la défausse (les trois dernières en éventail quand on tire par trois), les quatre piles des as
+  if (SO.pioche.length) { const d = document.createElement("div"); d.className = "dos"; pose(d, X(0), y0, { z: "pioche" }); } else place(X(0), y0, { z: "pioche" }, "pioche");
+  const vis = SO.defausse.slice(tirage === 3 ? -3 : -1); if (!SO.defausse.length) place(X(1), y0, { z: "defausse" });
+  vis.forEach((k, n) => { const e = solCarte(k); if (n === vis.length - 1 && estSel("defausse")) e.classList.add("choisie"); pose(e, X(1) + n * cw * .22, y0, { z: "defausse" }); });
+  for (let i = 0; i < 4; i++) { const f = SO.fond[i]; if (!f.length) place(X(3 + i), y0, { z: "fond", i }); else { const e = solCarte(f[f.length - 1]); if (estSel("fond", i)) e.classList.add("choisie"); pose(e, X(3 + i), y0, { z: "fond", i }); } }
+  // les sept colonnes (les cartes cachées serrées, les visibles plus espacées ; on tasse si la colonne est trop longue)
+  for (let i = 0; i < 7; i++) { const col = SO.tab[i]; if (!col.length) { place(X(i), yT, { z: "tab", i, j: 0 }); continue; }
+    let pb = ch * .12, pv = ch * .26; const tot = col.reduce((t, k, j) => t + (j === col.length - 1 ? 0 : k.up ? pv : pb), 0), dispo = H - yT - ch - 6; if (tot > dispo) { const f = dispo / tot; pb *= f; pv *= f; }
+    let y = yT; col.forEach((k, j) => { const e = k.up ? solCarte(k) : Object.assign(document.createElement("div"), { className: "dos" }); if (k.up && estSel("tab", i, j)) e.classList.add("choisie"); pose(e, X(i), y, { z: "tab", i, j }); y += k.up ? pv : pb; }); }
+  T.onclick = () => { if (SO.sel) { SO.sel = null; solPlacer(); } };
+  solStatut();
+}
+const solStatut = () => { $("solSc").textContent = `Score : ${SO.score}   Temps : ${SO.t0 ? Math.floor(((SO.fini || Date.now()) - SO.t0) / 1000) : 0}`; };
+setInterval(() => { if (SO && SO.t0 && !SO.fini && $("fenSol").style.display !== "none") solStatut(); }, 1000);
+const accepteFond = (k, f) => f.length ? f[f.length - 1].c === k.c && f[f.length - 1].v === k.v - 1 : k.v === 1;
+const accepteTab = (k, col) => col.length ? col[col.length - 1].up && rougeS(col[col.length - 1]) !== rougeS(k) && col[col.length - 1].v === k.v + 1 : k.v === 13;
+function solCartesDe(sel) { return sel.z === "defausse" ? SO.defausse.slice(-1) : sel.z === "fond" ? SO.fond[sel.i].slice(-1) : SO.tab[sel.i].slice(sel.j); }
+function solOter(sel, n) { const src = sel.z === "defausse" ? SO.defausse : sel.z === "fond" ? SO.fond[sel.i] : SO.tab[sel.i]; src.splice(src.length - n, n);
+  if (sel.z === "tab" && src.length && !src[src.length - 1].up) { src[src.length - 1].up = true; SO.score += 5; } }   // (la carte cachée dessous se retourne)
+function solDeplacer(sel, dest) { const cs = solCartesDe(sel); if (!cs.length) return false;
+  if (dest.z === "fond") { if (cs.length !== 1 || !accepteFond(cs[0], SO.fond[dest.i]) || (sel.z === "fond" && sel.i === dest.i)) return false; solOter(sel, 1); SO.fond[dest.i].push(cs[0]); if (sel.z !== "fond") SO.score += 10; }
+  else if (dest.z === "tab") { if ((sel.z === "tab" && sel.i === dest.i) || !accepteTab(cs[0], SO.tab[dest.i])) return false; solOter(sel, cs.length); SO.tab[dest.i].push(...cs); SO.score += sel.z === "defausse" ? 5 : sel.z === "fond" ? -15 : 0; if (SO.score < 0) SO.score = 0; }
+  else return false;
+  return true; }
+function solAuxAs(sel) { const cs = solCartesDe(sel); if (cs.length !== 1) return false; for (let i = 0; i < 4; i++) if (solDeplacer(sel, { z: "fond", i })) return true; return false; }
+function solClic(ref) {
+  if (SO.fini) return; if (!SO.t0) SO.t0 = Date.now(); fermerMenus();
+  if (ref.z === "pioche") { SO.sel = null;
+    if (SO.pioche.length) for (let n = 0; n < tirage && SO.pioche.length; n++) { const k = SO.pioche.pop(); k.up = true; SO.defausse.push(k); }
+    else if (SO.defausse.length) { SO.pioche = SO.defausse.reverse().map(k => (k.up = false, k)); SO.defausse = []; if (tirage === 1) SO.score = Math.max(0, SO.score - 100); }
+    return solPlacer(); }
+  if (SO.sel) { const s2 = SO.sel, meme = s2.z === ref.z && (ref.z === "defausse" || s2.i === ref.i) && (ref.z !== "tab" || s2.j === ref.j);
+    if (meme) { solAuxAs(s2); SO.sel = null; solPlacer(); return solGagne(); }   // (deux touches sur la même carte : aux as)
+    if ((ref.z === "fond" || ref.z === "tab") && solDeplacer(s2, ref)) { SO.sel = null; solPlacer(); return solGagne(); } }
+  SO.sel = null;
+  if (ref.z === "defausse" && SO.defausse.length) SO.sel = { z: "defausse" };
+  else if (ref.z === "fond" && SO.fond[ref.i].length) SO.sel = { z: "fond", i: ref.i };
+  else if (ref.z === "tab" && SO.tab[ref.i].length) { const k = SO.tab[ref.i][ref.j]; if (k && k.up) SO.sel = { z: "tab", i: ref.i, j: ref.j }; }
+  solPlacer();
+}
+function solGagne() { if (!SO.fond.every(f => f.length === 13)) return; SO.fini = Date.now(); solStatut(); $("solSt").textContent = "Gagné !"; cascade(); }
+// la fin : les cartes qui rebondissent en laissant leur trace
+function cascade() { const T = $("tapisSol"), W = T.clientWidth, H = T.clientHeight, cv = document.createElement("canvas"); cv.width = W; cv.height = H; cv.style.cssText = "position:absolute;inset:0;z-index:5"; T.appendChild(cv);
+  const x = cv.getContext("2d"), cw = parseFloat(T.style.getPropertyValue("--cw")) || 60, ch = cw * 1.5, gap = (W - 7 * cw) / 8, file = [];
+  for (let v = 13; v >= 1; v--) for (let i = 0; i < 4; i++) file.push({ k: SO.fond[i][v - 1], x: gap + (3 + i) * (cw + gap), y: 8 });
+  let cur = null, fin = false; const dessine = (k, px, py) => { x.fillStyle = "#fff"; x.strokeStyle = "#222"; x.fillRect(px, py, cw, ch); x.strokeRect(px + .5, py + .5, cw - 1, ch - 1); x.fillStyle = rougeS(k) ? "#d00" : "#000"; x.font = `bold ${cw * .24}px Arial`; x.fillText((FIGS[k.v] || k.v) + SYM[k.c], px + 4, py + cw * .28); x.font = `${cw * .5}px Arial`; x.fillText(SYM[k.c], px + cw * .3, py + ch * .62); };
+  const pas = () => { if (fin) return; if (!cur) { cur = file.shift(); if (!cur) { arreter(); return; } cur.vx = (Math.random() < .5 ? -1 : 1) * (2 + Math.random() * 4); cur.vy = -Math.random() * 6; }
+    cur.vy += .5; cur.x += cur.vx; cur.y += cur.vy; if (cur.y + ch > H) { cur.y = H - ch; cur.vy *= -.78; } dessine(cur.k, cur.x, cur.y);
+    if (cur.x < -cw || cur.x > W) cur = null; requestAnimationFrame(pas); };
+  const arreter = () => { if (fin) return; fin = true; cv.remove(); dialogue("Solitaire", "<b>Bravo, vous avez gagné !</b><br>Score : " + SO.score, [["Nouvelle partie", solNouvelle], ["OK"]], false, $("tapisSol")); };
+  cv.onclick = e => { e.stopPropagation(); arreter(); }; pas(); }
+document.querySelectorAll("[data-s]").forEach(el => el.onclick = e => { e.stopPropagation(); fermerMenus(); const a = el.dataset.s;
+  if (a === "nouv") solNouvelle(); else if (a === "t1" || a === "t3") { tirage = a === "t1" ? 1 : 3; solNouvelle(); }
+  else if (a === "quit") $("fenSol").querySelector('[data-f="ferm"]').click();
+  else if (a === "aide") dialogue("Comment jouer", `<div style="max-width:380px;line-height:1.45">Rangez toutes les cartes sur les quatre piles en haut à droite, de l'As au Roi, par couleur.<br><br>Dans les colonnes, on pose une carte sur une carte de couleur opposée et d'une valeur au-dessus (un 6 rouge sur un 7 noir) ; une colonne vide ne reçoit qu'un Roi.<br><br><b>Touchez une carte</b> pour la prendre (avec celles posées dessus), puis <b>touchez l'endroit</b> où la poser. <b>Touchez-la deux fois</b> pour l'envoyer sur les As. Touchez le talon pour tirer.</div>`, [["OK"]], false, $("tapisSol")); });
+
+// ================= le Démineur : touchez une case pour la découvrir ; clic droit (ou appui long) pour planter un drapeau ; touchez un chiffre dont les drapeaux sont posés pour découvrir autour =================
+let DM = null; const NIVEAUX = { d: [9, 9, 10, "Débutant"], i: [16, 16, 40, "Intermédiaire"], e: [30, 16, 99, "Expert"] }, COULN = ["", "#0000ff", "#008000", "#ff0000", "#000080", "#800000", "#008080", "#000000", "#808080"];
+function demNouvelle(niv = DM ? DM.niv : "d") { const [C, L, N] = NIVEAUX[niv]; clearInterval(DM && DM.chrono);
+  DM = { niv, C, L, N, mine: new Uint8Array(C * L), vu: new Uint8Array(C * L), drap: new Uint8Array(C * L), premier: true, fini: false, t0: 0, chrono: null, boum: -1 };
+  const cs = Math.max(12, Math.min(28, Math.floor((innerWidth - 40) / C), Math.floor((innerHeight - 28 - 120) / L))), g = $("grilleDem");
+  g.style.setProperty("--cs", cs + "px"); g.style.gridTemplateColumns = `repeat(${C}, ${cs}px)`; g.replaceChildren();
+  for (let i = 0; i < C * L; i++) { const c = document.createElement("div"); c.className = "case cc"; c.dataset.i = i; g.appendChild(c); }
+  fermerDialogues($("corpsDem")); $("demSourire").textContent = "🙂"; demAfficher(); }
+const voisins = (DMx, i) => { const r = [], x = i % DMx.C, y = Math.floor(i / DMx.C); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const a = x + dx, b = y + dy; if (a >= 0 && b >= 0 && a < DMx.C && b < DMx.L) r.push(b * DMx.C + a); } return r; };
+const autour = i => voisins(DM, i).reduce((n, j) => n + DM.mine[j], 0);
+function demAfficher() { const g = $("grilleDem").children, lcd = n => (n < 0 ? "-" + String(-n).padStart(2, "0") : String(n).padStart(3, "0")).slice(-3);
+  let drapeaux = 0; for (let i = 0; i < g.length; i++) { const c = g[i]; drapeaux += DM.drap[i];
+    if (DM.vu[i]) { c.className = "case cr" + (i === DM.boum ? " boum" : ""); if (DM.mine[i]) c.textContent = "💣"; else { const n = autour(i); c.textContent = n || ""; c.style.color = COULN[n]; } }
+    else { c.className = "case cc"; c.textContent = DM.drap[i] ? (DM.fini && !DM.mine[i] && DM.boum >= 0 ? "❌" : "🚩") : (DM.fini && DM.boum >= 0 && DM.mine[i] ? "💣" : ""); } }
+  $("demMines").textContent = lcd(DM.N - drapeaux); $("demTemps").textContent = lcd(DM.t0 ? Math.min(999, Math.floor(((DM.fini || Date.now()) - DM.t0) / 1000)) : 0); }
+function demDecouvrir(i) {
+  if (DM.fini || DM.drap[i]) return;
+  if (DM.premier) { DM.premier = false; const interdit = new Set([i, ...voisins(DM, i)]); let n = 0; while (n < DM.N) { const j = Math.floor(Math.random() * DM.C * DM.L); if (!DM.mine[j] && !interdit.has(j)) { DM.mine[j] = 1; n++; } }
+    DM.t0 = Date.now(); DM.chrono = setInterval(demAfficher, 1000); }   // (la première case n'est jamais une mine)
+  if (DM.vu[i]) { const v = voisins(DM, i); if (autour(i) && v.reduce((n, j) => n + DM.drap[j], 0) === autour(i)) for (const j of v) if (!DM.vu[j] && !DM.drap[j]) { demOuvrir(j); if (DM.fini) break; } }   // (sur un chiffre : on découvre autour)
+  else demOuvrir(i);
+  if (!DM.fini && DM.vu.reduce((a, b) => a + b, 0) === DM.C * DM.L - DM.N) demGagne();
+  demAfficher(); }
+function demOuvrir(i) { if (DM.mine[i]) { DM.boum = i; DM.vu[i] = 1; DM.fini = Date.now(); clearInterval(DM.chrono); $("demSourire").textContent = "😵"; return; }
+  const pile = [i]; while (pile.length) { const j = pile.pop(); if (DM.vu[j] || DM.drap[j]) continue; DM.vu[j] = 1; if (!autour(j)) for (const k of voisins(DM, j)) if (!DM.vu[k]) pile.push(k); } }
+function demGagne() { DM.fini = Date.now(); clearInterval(DM.chrono); $("demSourire").textContent = "😎"; for (let i = 0; i < DM.mine.length; i++) if (DM.mine[i]) DM.drap[i] = 1;
+  const t = Math.floor((DM.fini - DM.t0) / 1000); let rec = {}; try { rec = JSON.parse(localStorage.getItem("demineur95") || "{}"); } catch (e) {}
+  if (!rec[DM.niv] || t < rec[DM.niv]) { rec[DM.niv] = t; try { localStorage.setItem("demineur95", JSON.stringify(rec)); } catch (e) {} }
+  dialogue("Démineur", `<b>Gagné en ${t} secondes !</b>${rec[DM.niv] === t ? "<br>C'est votre meilleur temps." : ""}`, [["Nouvelle partie", () => demNouvelle()], ["OK"]], false, $("corpsDem")); }
+function demDrapeau(i) { if (DM.fini || DM.vu[i]) return; DM.drap[i] ^= 1; demAfficher(); }
+{ const g = $("grilleDem"); let appui = null;
+  g.addEventListener("contextmenu", e => e.preventDefault());
+  g.addEventListener("pointerdown", e => { const c = e.target.closest(".case"); if (!c || DM.fini) return; const i = +c.dataset.i;
+    if (e.button === 2) { demDrapeau(i); appui = null; return; }
+    $("demSourire").textContent = "😮"; appui = { i, long: false, t: setTimeout(() => { if (appui) { appui.long = true; demDrapeau(i); $("demSourire").textContent = "🙂"; } }, 450) }; });
+  const lacher = e => { if (!appui) return; clearTimeout(appui.t); const a = appui; appui = null; if (!DM.fini) $("demSourire").textContent = "🙂"; if (!a.long && e.type === "pointerup") { const c = e.target.closest && e.target.closest(".case"); if (c && +c.dataset.i === a.i) demDecouvrir(a.i); } if (DM.fini && DM.boum < 0) $("demSourire").textContent = "😎"; };
+  g.addEventListener("pointerup", lacher); g.addEventListener("pointercancel", lacher); g.addEventListener("pointerleave", lacher); }
+$("demSourire").onclick = () => demNouvelle();
+document.querySelectorAll("[data-d]").forEach(el => el.onclick = e => { e.stopPropagation(); fermerMenus(); const a = el.dataset.d;
+  if (a === "nouv") demNouvelle(); else if (NIVEAUX[a]) demNouvelle(a);
+  else if (a === "quit") $("fenDem").querySelector('[data-f="ferm"]').click();
+  else if (a === "temps") { let rec = {}; try { rec = JSON.parse(localStorage.getItem("demineur95") || "{}"); } catch (e2) {} dialogue("Meilleurs temps", Object.entries(NIVEAUX).map(([k, n]) => `${n[3]} : <b>${rec[k] != null ? rec[k] + " secondes" : "—"}</b>`).join("<br>"), [["OK"]], false, $("corpsDem")); }
+  else if (a === "aide") dialogue("Comment jouer", `<div style="max-width:320px;line-height:1.45">Découvrez toutes les cases sans mines.<br>Un chiffre dit combien de mines touchent la case.<br><br><b>Toucher</b> : découvrir.<br><b>Clic droit</b> ou <b>appui long</b> : planter un drapeau.<br><b>Toucher un chiffre</b> dont les drapeaux sont posés : découvrir autour.<br>Le smiley : nouvelle partie.</div>`, [["OK"]], false, $("corpsDem")); });
+
 // ---------- l'image de l'écran (recopiée sur le moniteur, dans la chambre) : le bureau et la fenêtre, dessinés d'après ce qui est affiché ----------
 const ecranTarot = document.createElement("canvas"); ecranTarot.width = 640; ecranTarot.height = 480; window.ecranTarot = ecranTarot;
 function dessinerEcran() {
   if (!innerWidth || !innerHeight || !$("taches").getBoundingClientRect().width) return;   // (la fenêtre du jeu est cachée : on garde la dernière image)
-  const x = ecranTarot.getContext("2d"), W = 640, H = 480, vw = innerWidth, vh = innerHeight, kx = W / vw, ky = H / vh;
-  const rr = (r, f) => [r.left * kx, r.top * ky, r.width * kx, r.height * ky];
-  x.fillStyle = "#008080"; x.fillRect(0, 0, W, H);
+  const x = ecranTarot.getContext("2d"), W = 640, H = 480, kx = W / innerWidth, ky = H / innerHeight;
+  const rr = r => [r.left * kx, r.top * ky, r.width * kx, r.height * ky];
+  x.fillStyle = "#008080"; x.fillRect(0, 0, W, H); x.textAlign = "left";
   if ($("boot")) { x.fillStyle = "#000"; x.fillRect(0, 0, W, H); [["#f02a12", 0, 0], ["#2aa82a", 1, 0], ["#1e5ef0", 0, 1], ["#f0c812", 1, 1]].forEach(([c, i, j]) => { x.fillStyle = c; x.fillRect(250 + i * 30, 170 + j * 26, 27, 23); }); x.fillStyle = "#fff"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("Windows 95", 320, 270); x.textAlign = "left"; return; }
-  for (const ic of document.querySelectorAll(".icone")) { const [a, b, c] = rr(ic.getBoundingClientRect()); x.font = "22px sans-serif"; x.fillText(ic.querySelector(".img").textContent, a + c / 2 - 11, b + 24); x.fillStyle = "#fff"; x.font = "9px Arial"; x.textAlign = "center"; x.fillText(ic.querySelector("span").textContent, a + c / 2, b + 40); x.textAlign = "left"; }
-  const bosse = (a, b, c, d) => { x.fillStyle = "#c0c0c0"; x.fillRect(a, b, c, d); x.fillStyle = "#fff"; x.fillRect(a, b, c, 1); x.fillRect(a, b, 1, d); x.fillStyle = "#000"; x.fillRect(a, b + d - 1, c, 1); x.fillRect(a + c - 1, b, 1, d); };
-  const fen = $("fen"); if (fen.style.display !== "none") { const [a, b, c, d] = rr(fen.getBoundingClientRect()); bosse(a, b, c, d);
-    const t = fen.querySelector(".titre").getBoundingClientRect(), [ta, tb, tc, td] = rr(t), gd = x.createLinearGradient(ta, 0, ta + tc, 0); gd.addColorStop(0, "#000080"); gd.addColorStop(1, "#1084d0"); x.fillStyle = gd; x.fillRect(ta, tb, tc, td); x.fillStyle = "#fff"; x.font = `bold ${Math.max(8, td * .7)}px Arial`; x.fillText("Tarot", ta + 6, tb + td * .78);
-    const [ma, mb, mc, md] = rr($("tapis").getBoundingClientRect()), gt = x.createRadialGradient(ma + mc / 2, mb + md * .45, 10, ma + mc / 2, mb + md / 2, mc * .7); gt.addColorStop(0, "#13883f"); gt.addColorStop(1, "#064d20"); x.fillStyle = gt; x.fillRect(ma, mb, mc, md);
-    x.fillStyle = "#000"; x.font = "9px Arial"; const [sa, sb, , sd] = rr($("st1").getBoundingClientRect()); x.fillText($("st1").textContent, sa + 4, sb + sd * .75);
-    for (const e of $("tapis").querySelectorAll(".dos, .carte, .joueur .nom, .dialogue, button.b95, .bulle")) { const r = e.getBoundingClientRect(); if (!r.width) continue; const [a2, b2, c2, d2] = rr(r);
-      if (e.classList.contains("dos")) { x.fillStyle = "#1a3fb0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#fff"; x.lineWidth = 1; x.strokeRect(a2 + 1.5, b2 + 1.5, c2 - 3, d2 - 3); }
-      else if (e.classList.contains("carte")) { const at = e.classList.contains("atout"); x.fillStyle = at ? "#f6efd6" : "#fff"; if (e.classList.contains("grise")) x.fillStyle = "#a0a0a0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#222"; x.strokeRect(a2 + .5, b2 + .5, c2 - 1, d2 - 1);
+  for (const ic of document.querySelectorAll(".icone")) { const [a, b, c] = rr(ic.getBoundingClientRect()); x.font = "22px sans-serif"; x.fillStyle = "#fff"; x.fillText(ic.querySelector(".img").textContent, a + c / 2 - 11, b + 24); x.font = "9px Arial"; x.textAlign = "center"; x.fillText(ic.querySelector("span").textContent, a + c / 2, b + 40); x.textAlign = "left"; }
+  const bosse = (a, b, c, d, f = "#c0c0c0") => { x.fillStyle = f; x.fillRect(a, b, c, d); x.fillStyle = "#fff"; x.fillRect(a, b, c, 1); x.fillRect(a, b, 1, d); x.fillStyle = "#000"; x.fillRect(a, b + d - 1, c, 1); x.fillRect(a + c - 1, b, 1, d); };
+  const texte = (t, a, b, taille, coul = "#000", gras = false) => { x.fillStyle = coul; x.font = `${gras ? "bold " : ""}${Math.max(6, taille)}px Arial`; x.fillText(t, a, b); };
+  const fens = [...document.querySelectorAll("#fen, .fen95")].filter(f => f.style.display !== "none" && f.getBoundingClientRect().width).sort((a, b) => (+a.style.zIndex || 0) - (+b.style.zIndex || 0));
+  for (const fen of fens) { const [a, b, c, d] = rr(fen.getBoundingClientRect()); bosse(a, b, c, d);
+    const tt = fen.querySelector(".titre"), [ta, tb, tc, td] = rr(tt.getBoundingClientRect()), gd = x.createLinearGradient(ta, 0, ta + tc, 0); gd.addColorStop(0, "#000080"); gd.addColorStop(1, "#1084d0"); x.fillStyle = gd; x.fillRect(ta, tb, tc, td);
+    texte([...tt.querySelectorAll(":scope > span")].map(e => e.textContent).join(" "), ta + 4, tb + td * .78, td * .7, "#fff", true);
+    const tp = fen.querySelector(".tapis"); if (tp) { const [ma, mb, mc, md] = rr(tp.getBoundingClientRect()), gt = x.createRadialGradient(ma + mc / 2, mb + md * .45, 10, ma + mc / 2, mb + md / 2, mc * .7); gt.addColorStop(0, "#13883f"); gt.addColorStop(1, "#064d20"); x.fillStyle = gt; x.fillRect(ma, mb, mc, md); }
+    for (const st of fen.querySelectorAll(".statut > div")) { const [sa, sb, , sd] = rr(st.getBoundingClientRect()); texte(st.textContent, sa + 4, sb + sd * .75, 9); }
+    for (const e of fen.querySelectorAll(".place, .dos, .carte, .joueur .nom, .dialogue, .tapis > button.b95, .bulle, .lcd, .sourire, #grilleDem, .case")) { const r = e.getBoundingClientRect(); if (!r.width) continue; const [a2, b2, c2, d2] = rr(r);
+      if (e.classList.contains("place")) { x.strokeStyle = "rgba(0,0,0,.4)"; x.lineWidth = 1.5; x.strokeRect(a2 + 1, b2 + 1, c2 - 2, d2 - 2); }
+      else if (e.classList.contains("dos")) { x.fillStyle = "#1a3fb0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#fff"; x.lineWidth = 1; x.strokeRect(a2 + 1.5, b2 + 1.5, c2 - 3, d2 - 3); }
+      else if (e.classList.contains("carte")) { const at = e.classList.contains("atout"), ch = e.classList.contains("choisie"); x.fillStyle = ch ? "#1a1a1a" : at ? "#f6efd6" : "#fff"; if (e.classList.contains("grise")) x.fillStyle = "#a0a0a0"; x.fillRect(a2, b2, c2, d2); x.strokeStyle = "#222"; x.strokeRect(a2 + .5, b2 + .5, c2 - 1, d2 - 1);
         if (at) { x.fillStyle = "#d89a3a"; x.fillRect(a2 + c2 * .15, b2 + d2 * .22, c2 * .7, d2 * .56); }
-        x.fillStyle = e.classList.contains("rouge") ? "#d00" : at ? "#1c1c6c" : "#000"; x.font = `bold ${Math.max(7, c2 * .24)}px Arial`; x.fillText(e.querySelector(".coin").textContent, a2 + 2, b2 + c2 * .26); }
-      else if (e.classList.contains("nom")) { const tour = e.parentElement.classList.contains("tour"); if (tour) { x.fillStyle = "#ff0"; x.fillRect(a2, b2, c2, d2); } x.fillStyle = tour ? "#000" : "#fff"; x.font = `bold ${Math.max(7, d2 * .75)}px Arial`; x.fillText(e.textContent, a2 + 2, b2 + d2 * .8); }
-      else if (e.classList.contains("dialogue")) { bosse(a2, b2, c2, d2); const tt = e.querySelector(".titre"), [p1, p2, p3, p4] = rr(tt.getBoundingClientRect()); x.fillStyle = "#000080"; x.fillRect(p1, p2, p3, p4); x.fillStyle = "#fff"; x.font = `bold ${Math.max(7, p4 * .7)}px Arial`; x.fillText(tt.textContent.replace("✕", ""), p1 + 4, p2 + p4 * .78);
-        x.fillStyle = "#000"; x.font = "8px Arial"; const lignes = e.querySelector(".corps").innerText.split("\n").filter(l => l.trim()).slice(0, 8); lignes.forEach((l, i) => x.fillText(l.slice(0, 60), a2 + 6, p2 + p4 + 12 + i * 10)); }
+        texte(e.querySelector(".coin").textContent, a2 + 2, b2 + c2 * .26, c2 * .24, e.classList.contains("rouge") ? "#d00" : at ? "#1c1c6c" : ch ? "#fff" : "#000", true); }
+      else if (e.classList.contains("nom")) { const tour = e.parentElement.classList.contains("tour"); if (tour) { x.fillStyle = "#ff0"; x.fillRect(a2, b2, c2, d2); } texte(e.textContent, a2 + 2, b2 + d2 * .8, d2 * .75, tour ? "#000" : "#fff", true); }
+      else if (e.classList.contains("dialogue")) { bosse(a2, b2, c2, d2); const t2 = e.querySelector(".titre"), [p1, p2, p3, p4] = rr(t2.getBoundingClientRect()); x.fillStyle = "#000080"; x.fillRect(p1, p2, p3, p4); texte(t2.textContent.replace("✕", ""), p1 + 4, p2 + p4 * .78, p4 * .7, "#fff", true);
+        e.querySelector(".corps").innerText.split("\n").filter(l => l.trim()).slice(0, 8).forEach((l, i) => texte(l.slice(0, 60), a2 + 6, p2 + p4 + 12 + i * 10, 8)); }
       else if (e.classList.contains("bulle")) { x.fillStyle = "#ffffe1"; x.fillRect(a2, b2, c2, d2); }
-      else { bosse(a2, b2, c2, d2); x.fillStyle = "#000"; x.font = "8px Arial"; x.fillText(e.textContent.slice(0, 18), a2 + 4, b2 + d2 * .7); } } }
-  bosse(0, H - 22, W, 22); bosse(3, H - 19, 62, 16); x.fillStyle = "#000"; x.font = "bold 10px Arial"; x.fillText("Démarrer", 14, H - 7); bosse(W - 50, H - 19, 46, 16); x.font = "10px Arial"; x.fillText($("horloge").textContent, W - 42, H - 7);
+      else if (e.classList.contains("lcd")) { x.fillStyle = "#000"; x.fillRect(a2, b2, c2, d2); texte(e.textContent, a2 + 2, b2 + d2 * .8, d2 * .85, "#f00", true); }
+      else if (e.classList.contains("sourire")) { bosse(a2, b2, c2, d2); x.fillStyle = "#ff0"; x.beginPath(); x.arc(a2 + c2 / 2, b2 + d2 / 2, Math.min(c2, d2) * .32, 0, 7); x.fill(); x.strokeStyle = "#000"; x.stroke(); }
+      else if (e.id === "grilleDem") { x.fillStyle = "#808080"; x.fillRect(a2, b2, c2, d2); }
+      else if (e.classList.contains("case")) { if (e.classList.contains("cc")) bosse(a2, b2, c2, d2); else { x.fillStyle = e.classList.contains("boum") ? "#f00" : "#c0c0c0"; x.fillRect(a2 + .5, b2 + .5, c2 - .5, d2 - .5); }
+        const t3 = e.textContent; if (t3) { if (t3 === "🚩") { x.fillStyle = "#f00"; x.fillRect(a2 + c2 * .35, b2 + d2 * .2, c2 * .35, d2 * .3); } else if (t3 === "💣" || t3 === "❌") { x.fillStyle = "#000"; x.beginPath(); x.arc(a2 + c2 / 2, b2 + d2 / 2, c2 * .28, 0, 7); x.fill(); } else texte(t3, a2 + c2 * .3, b2 + d2 * .8, d2 * .8, e.style.color || "#000", true); } }
+      else { bosse(a2, b2, c2, d2); texte(e.textContent.slice(0, 18), a2 + 4, b2 + d2 * .7, 8); } } }
+  bosse(0, H - 22, W, 22); bosse(3, H - 19, 62, 16); texte("Démarrer", 14, H - 7, 10, "#000", true);
+  let tx = 70; for (const t of document.querySelectorAll("#tacheTarot, .tache")) { if (t.style.display === "none") continue; bosse(tx, H - 19, 80, 16, t.classList.contains("actif") ? "#dcdcdc" : "#c0c0c0"); texte(t.textContent.slice(0, 14), tx + 4, H - 7, 9); tx += 84; }
+  bosse(W - 50, H - 19, 46, 16); texte($("horloge").textContent, W - 42, H - 7, 10);
 }
 setInterval(dessinerEcran, 400);
 

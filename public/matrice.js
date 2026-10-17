@@ -4945,15 +4945,15 @@ function construireAppart(A, L, scene) {
   /* le second salon, dans le coin entre la fenêtre et le renfoncement aux étagères : la desserte en acajou sur roulettes (d'après la photo), et dessus la télé des années 80
      (la caisse argentée, l'écran bombé, le panneau des boutons à droite). On passe devant : elle joue les vidéos que l'administrateur a mises dans sa bibliothèque,
      une par chaîne ; on la touche : la télécommande (chaîne suivante, précédente, le son ; et pour l'administrateur, la bibliothèque) */
-  { const g = new THREE.Group(); g.position.set(XS + E / 2 + .3, H4, ZC[6] + E / 2 + .62); g.rotation.y = 1.2; scene.add(g);
+  { const g = new THREE.Group(); g.position.set(XS + E / 2 + .42, H4, ZC[6] + E / 2 + .98); g.rotation.y = 1.2; scene.add(g);
     const acajou = A.mat({ color: 0x5a2414, roughness: .2 }), laitonT = A.mat({ color: 0xc8a050, metalness: .7, roughness: .3 }), b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
-    const W = .8, D = .45, H = .64;
+    const W = 1.05, D = .6, H = .64;
     for (const y of [H - .0125, .17]) { b(W, .025, D, acajou, 0, y, 0); b(W + .004, .008, D + .004, laitonT, 0, y - .009, 0); }   // (les deux plateaux, leur jonc de laiton)
     const tour = new THREE.LatheGeometry([[.0, 0], [.016, 0], [.018, .03], [.012, .06], [.016, .14], [.02, .2], [.013, .26], [.011, .4], [.016, .44], [.012, .5], [.0, .5]].map(([r, y]) => new THREE.Vector2(r, y)), 14);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const p = new THREE.Mesh(tour, acajou); p.scale.y = (H - .1) / .5; p.position.set(sx * (W / 2 - .03), .08, sz * (D / 2 - .03)); g.add(p);
       const r = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 8), laitonT); r.position.set(sx * (W / 2 - .03), .03, sz * (D / 2 - .03)); g.add(r); b(.012, .05, .03, laitonT, sx * (W / 2 - .03), .065, sz * (D / 2 - .03)); }   // (les pieds tournés, les roulettes)
     // la télé : la caisse argentée, la façade noire autour de l'écran, le tube qui s'amincit derrière
-    const tv = new THREE.Group(); tv.position.y = H; g.add(tv);
+    const tv = new THREE.Group(); tv.position.y = H; tv.scale.setScalar(1.45); g.add(tv);   /* (une grande télé : 1 m de large) */
     const argent = A.mat({ color: 0x9a9690, metalness: .45, roughness: .35 }), noirT = A.mat({ color: 0x1a1a1c, roughness: .5 }), grisT = A.mat({ color: 0x5a5856, roughness: .4 });
     const TW = .7, TH = .54, TD = .26; b(TW, TH, TD, argent, 0, TH / 2 + .01, -TD / 2 + .13, tv); b(TW, .012, TD - .02, grisT, 0, .006, -TD / 2 + .13, tv);
     const cul = new THREE.BoxGeometry(TW - .06, TH - .06, .24), cp = cul.attributes.position; for (let i = 0; i < cp.count; i++) if (cp.getZ(i) < 0) { cp.setX(i, cp.getX(i) * .6); cp.setY(i, cp.getY(i) * .65); }
