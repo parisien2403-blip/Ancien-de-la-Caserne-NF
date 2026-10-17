@@ -4437,7 +4437,11 @@ function construireAppart(A, L, scene) {
   const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
   const niveau = z => z > ZM1 ? H4 : 0;
   const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), blanc = A.mat({ color: 0xf2efe6, roughness: .5 }), bois = A.mat({ color: 0x6a4024, roughness: .55 });
-  const matSol = { carreaux: (w, d) => A.mat({ map: tex(T.carreaux, w / 1.6, d / 1.6), roughness: .45 }), fonce: (w, d) => A.mat({ map: tex(T.fonce, w / 2.2, d / 2.2), roughness: .2, metalness: .05 }), clair: (w, d) => A.mat({ map: tex(T.clair, w / 2.2, d / 2.2), roughness: .5 }) };
+  /* le carrelage de la cuisine (d'après la photo) : un damier de grands carreaux, gris clair et gris foncé, posés droit */
+  const damier = toile(256, 256, (x, w) => { const c = w / 2; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const fonce = (i + j) % 2; x.fillStyle = fonce ? "#8c8886" : "#cdc9c6"; x.fillRect(i * c, j * c, c, c);
+      for (let k = 0; k < 220; k++) { x.fillStyle = `rgba(${fonce ? "40,40,44" : "150,148,144"},${.06 + .08 * hasard(k * 3.1 + i * 7 + j * 13)})`; x.fillRect(i * c + c * hasard(k * 1.3 + i), j * c + c * hasard(k * 2.7 + j), 2, 2); } }
+    x.strokeStyle = "#7a7674"; x.lineWidth = 2; for (let k = 0; k <= 2; k++) { x.beginPath(); x.moveTo(k * c, 0); x.lineTo(k * c, w); x.moveTo(0, k * c); x.lineTo(w, k * c); x.stroke(); } });
+  const matSol = { damier: (w, d) => A.mat({ map: tex(damier, w / .4, d / .4), roughness: .35 }), carreaux: (w, d) => A.mat({ map: tex(T.carreaux, w / 1.6, d / 1.6), roughness: .45 }), fonce: (w, d) => A.mat({ map: tex(T.fonce, w / 2.2, d / 2.2), roughness: .2, metalness: .05 }), clair: (w, d) => A.mat({ map: tex(T.clair, w / 2.2, d / 2.2), roughness: .5 }) };
   const sols = [];
   const sol = (x0, x1, z0, z1, y, genre) => { const w = x1 - x0, d = z1 - z0, o = A.ajoute(new THREE.PlaneGeometry(w, d), matSol[genre](w, d), (x0 + x1) / 2, y + .002, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; sols.push(o); return o; };
   /* une pièce : son sol, et ses quatre murs (posés à l'intérieur de son rectangle, 10 cm d'épaisseur : deux pièces voisines font un mur de 20 cm)
@@ -4487,7 +4491,7 @@ function construireAppart(A, L, scene) {
   piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
   // en haut : le renfoncement des manteaux, la cuisine ; les toilettes, les deux salons (côte à côte, leurs portes voisines)
   piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
-  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [porte(P.cuisine, .85)], x1: [fen(P.cuisine, 1.6, .8, 1.55)] }, papierPeint("images/appart/tapisserie-cuisine.webp", .5, .5));   /* (le papier peint à bouquets de roses) */
+  piece(XC, XD, ZC[3], ZC[4], "damier", { x0: [porte(P.cuisine, .85)], x1: [fen(P.cuisine, 1.6, .8, 1.55)] }, papierPeint("images/appart/tapisserie-cuisine.webp", .45, .45));   /* (le papier peint de la cuisine, d'après la photo : les cafetières sur leur console, l'assiette, le rouleau et la fourchette, les bouquets) */
   piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
   const SZ0 = ZC[3] + 1.5;   // (le premier salon : son mur du fond, 1,50 m plus près de l'entrée)
   piece(XS, -XC, SZ0, ZC[5], "fonce", { x1: [porte(P.salon, .9)], x0: [fen(6.8, 1.9, .5, 2.1)] });            // le salon, face à la porte d'entrée
@@ -4746,19 +4750,16 @@ function construireAppart(A, L, scene) {
       for (const [c, e, dx] of [[0x3aff6a, 0x20d040, -.05], [0xffa21a, 0x000000, 0], [0xff3a1a, 0x000000, .05]]) bx(g, .014, .014, .006, A.mat({ color: c, emissive: e, emissiveIntensity: .7, roughness: .4 }), -W / 2 + .17 + dx, H - .16, .008);
       for (let i = 0; i < 6; i++) bx(g, .006, .008, .3, grisF, W / 2 + .002, .1 + i * .02, -D / 2); }   // (la grille d'aération, sur le côté)
   }
-  /* la table de cuisine en formica (d'après la photo) : le plateau crème veiné, le chant noir, son tiroir, les pieds de métal noir fuselés ;
-     trois chaises bistrot en bois courbé, sans coussin */
-  { const xt = 3.15, zt = 5.2, W = 1.2, D = .78, H = .75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
-    const formica = A.mat({ map: tex(toile(512, 340, (x, w, h) => { x.fillStyle = "#ece6d4"; x.fillRect(0, 0, w, h); for (let i = 0; i < 70; i++) { x.strokeStyle = `rgba(${150 + 40 * hasard(i)},${140 + 30 * hasard(i * 2)},${110 + 30 * hasard(i * 3)},${.12 + .14 * hasard(i * 5)})`; x.lineWidth = .6 + 2 * hasard(i * 7);
-        x.beginPath(); let px = w * hasard(i * 1.1), py = h * hasard(i * 1.9); x.moveTo(px, py); for (let k = 0; k < 6; k++) { px += 40 * (hasard(i * 13 + k) - .2); py += 18 * (hasard(i * 17 + k) - .5); x.lineTo(px, py); } x.stroke(); }
-        for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(160,150,120,${.08 * hasard(i * 3.3)})`; x.fillRect(w * hasard(i * 1.3), h * hasard(i * 2.3), 3, 2); } }), 1, 1), roughness: .25 });
-    const chant = A.mat({ color: 0x1c1c1e, roughness: .35, metalness: .4 }), metal = A.mat({ color: 0x232426, roughness: .4, metalness: .5 }), blancT = A.mat({ color: 0xece8dc, roughness: .5 }), grisC = A.mat({ color: 0xc9cac6, roughness: .45 }), noir = A.mat({ color: 0x1e1f20, roughness: .7 });
-    const b = (dx, dy, dz, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); g.add(o); return o; };
-    b(W, .025, D, formica, 0, H - .0125, 0); b(W + .008, .032, D + .008, chant, 0, H - .016, 0); b(W - .002, .026, D - .002, formica, 0, H - .012, 0);   // (le plateau, son chant noir)
-    b(W - .1, .1, D - .1, blancT, 0, H - .08, 0);   // (la ceinture)
-    b(.5, .075, .01, A.mat({ color: 0xf2efe6, roughness: .45 }), 0, H - .08, D / 2 - .045); b(.08, .022, .02, chrome, 0, H - .085, D / 2 - .03); b(.06, .008, .02, grisC, 0, H - .098, D / 2 - .028);   // (le tiroir, sa poignée de métal)
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.017, .011, H - .13, 12), metal); p.position.set(sx * (W / 2 - .07), (H - .13) / 2 + .006, sz * (D / 2 - .07)); p.rotation.z = sx * .025; p.rotation.x = -sz * .025; g.add(p);
-      const em = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .012, 12), noir); em.position.set(sx * (W / 2 - .07) + sx * .008, .006, sz * (D / 2 - .07) + sz * .008); g.add(em); }   // (les pieds fuselés, leurs embouts)
+  /* la table de cuisine (d'après la photo) : ronde, le plateau en bois clair verni, le bandeau dessous, quatre pieds tournés en bois plus foncé ;
+     trois chaises bistrot en bois courbé, sans coussin, autour */
+  { const xt = 3.15, zt = 5.2, R = .56, H = .75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
+    const plateau = A.mat({ map: tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#a8743e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.strokeStyle = hasard(i * 2.3) > .5 ? `rgba(196,140,80,${.2 + .25 * hasard(i)})` : `rgba(110,62,26,${.15 + .25 * hasard(i * 7)})`; x.lineWidth = .7 + 2.5 * hasard(i * 3.1);
+        x.beginPath(); const y0 = h * hasard(i * 1.7); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 6 * Math.sin(xx * .012 + i) + 2 * Math.sin(xx * .07 + i * 3)); x.stroke(); } }), 1, 1), roughness: .22 });
+    const boisP = A.mat({ color: 0x7a4422, roughness: .3 }), chantT = A.mat({ color: 0x8a5a2e, roughness: .3 });
+    const dessus = new THREE.Mesh(new THREE.CylinderGeometry(R, R, .03, 64), [chantT, plateau, chantT]); dessus.position.y = H - .015; g.add(dessus);
+    const bandeau = new THREE.Mesh(new THREE.CylinderGeometry(R - .07, R - .07, .08, 48, 1, true), A.mat({ color: 0x9a6634, roughness: .35, side: THREE.DoubleSide })); bandeau.position.y = H - .07; g.add(bandeau);
+    const tour = new THREE.LatheGeometry([[0, 0], [.024, 0], [.026, .02], [.02, .05], [.028, .1], [.02, .16], [.017, .3], [.024, .36], [.03, .42], [.022, .48], [.018, .56], [.026, .6], [.03, .64], [.03, .67], [0, .67]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, p = new THREE.Mesh(tour, boisP); p.position.set(Math.sin(a) * (R - .14), 0, Math.cos(a) * (R - .14)); g.add(p); }   // (les pieds tournés)
     // la chaise bistrot : l'assise ronde, quatre pieds écartés, l'anneau de renfort, le dossier courbé (les deux montants, la traverse cintrée, trois barreaux)
     const boisC = A.mat({ color: 0x8a6440, roughness: .55 }), boisAs = A.mat({ color: 0x96704a, roughness: .45 });
     const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(x, H4, z); c.rotation.y = ry; scene.add(c); const hs = .46;
@@ -4770,7 +4771,7 @@ function construireAppart(A, L, scene) {
       for (const [y, r] of [[hs + .36, .017], [hs + .395, .017], [hs + .14, .012]]) tige([[-.152, y, -.17 - (y - hs) * .17], [0, y, -.225 - (y - hs) * .17], [.152, y, -.17 - (y - hs) * .17]], r);   // (la traverse cintrée du haut, en bandeau ; celle du bas)
       for (const sx of [-.055, 0, .055]) tige([[sx * 1.15, hs + .14, -.215 - .024], [sx, hs + .36, -.225 - .061]], .009);   // (les barreaux)
       return c; };
-    chaise(xt, zt - D / 2 - .3, 0); chaise(xt + .15, zt + D / 2 + .3, Math.PI - .1); chaise(xt + W / 2 + .32, zt + .05, -Math.PI / 2 + .08); }
+    for (const t of [Math.PI + .2, -Math.PI / 2 - .1, Math.PI / 3]) chaise(xt + Math.sin(t) * (R + .2), zt + Math.cos(t) * (R + .2), t + Math.PI); }
   /* le voilage de la fenêtre de la cuisine : blanc, transparent, à motifs (des rayures fines et des petites fleurs), froncé sur sa tringle */
   { const voile = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "rgba(255,255,255,.42)"; x.fillRect(0, 0, w, h);
         x.fillStyle = "rgba(255,255,255,.55)"; for (let i = 0; i < 16; i++) x.fillRect(i * 16, 0, 2, h);   // (les rayures)
