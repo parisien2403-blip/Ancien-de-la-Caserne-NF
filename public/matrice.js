@@ -4366,8 +4366,7 @@ function construireAppart(A, L, scene) {
     const g = new THREE.Group(); g.position.set(xf + .5, H4, (WZ[0] + WZ[1]) / 2); scene.add(g);
     const pied = new THREE.Mesh(new THREE.CylinderGeometry(.15, .12, .38, 16), faience); pied.position.set(.24, .19, 0); g.add(pied);
     const cuv = new THREE.Mesh(new THREE.CylinderGeometry(.2, .17, .08, 20), faience); cuv.scale.set(1.25, 1, 1); cuv.position.set(.28, .41, 0); g.add(cuv);
-    const ab = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .025, 20), A.mat({ color: 0xffffff, roughness: .3 })); ab.scale.set(1.25, 1, 1); ab.position.set(.28, .46, 0); g.add(ab);
-    const chasse = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.2, 6), chrome); chasse.position.set(.04, 1.0, -.25); g.add(chasse); }
+    const ab = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .025, 20), A.mat({ color: 0xffffff, roughness: .3 })); ab.scale.set(1.25, 1, 1); ab.position.set(.28, .46, 0); g.add(ab); }
   // le placard : des étagères
   for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
   A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
