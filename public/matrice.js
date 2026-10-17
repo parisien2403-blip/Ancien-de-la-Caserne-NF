@@ -4760,7 +4760,7 @@ function construireSantaCarla(A, L, scene) {
     const lG = new THREE.PointLight(0xffb070, 10, 12, 1.6); lG.position.set(0, 3, 3); g.add(lG); OBST.push([-45, -43.6, -4.9, 4.9]); }
   { const tri = new THREE.Shape(); tri.moveTo(-1.1, 0); tri.lineTo(1.1, 0); tri.lineTo(0, 3.6); tri.closePath(); for (const [y, r] of [[.8, .28], [1.7, .22], [2.5, .15]]) { const h = new THREE.Path(); h.absarc(0, y, r, 0, Math.PI * 2, false); tri.holes.push(h); }
     const triG = new THREE.ExtrudeGeometry(tri, { depth: .12, bevelEnabled: false }), rougeT = A.mat({ color: 0xd8302a, roughness: .5 }), creme = A.mat({ color: 0xf2e6c8 });
-    for (const xs of [-30, 30]) for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(triG, k % 2 ? creme : rougeT); m.position.set(xs - 1.6 + k * 1.6, 3.15, -7.95); m.rotation.x = -.1; scene.add(m); } }   // (sur l'arcade et les autos tamponneuses)
+    for (const xs of [-30, 30]) for (let k = 0; k < 3; k++) { const m = new THREE.Mesh(triG, k % 2 ? creme : rougeT); m.position.set(xs - 1.6 + k * 1.6, 3.2, -38.32); m.rotation.x = 0; scene.add(m); } }   // (sur l'arcade et les autos tamponneuses)
   // ---------- le panneau « Lookit What I Caught! », où l'on passe la tête ----------
   { const g = new THREE.Group(); g.position.set(8, 0, 4.7); scene.add(g);
     const peint = new THREE.TextureLoader().load("images/santacarla/sirene.webp"); peint.colorSpace = THREE.SRGBColorSpace;   // (le vrai panneau, d'après la photo ; les deux trous pour passer la tête)
