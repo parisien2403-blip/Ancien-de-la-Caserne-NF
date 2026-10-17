@@ -2197,6 +2197,8 @@
   const urlTete = (numero, v) => `/api/avatar/${numero}/tete?t=${encodeURIComponent(moi.token)}&v=${v}`;
   function infoMatrice(texte, duree = 3500) { const el = $("mxInfo"); el.textContent = texte; el.hidden = false; clearTimeout(infoMatrice.t); infoMatrice.t = setTimeout(() => el.hidden = true, duree); }
   $("mxEntrer").onclick = () => { $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
+  // l'appartement de l'escalier Z : l'administrateur, et les badges qu'il y invite (la même liste dans src/index.js)
+  const APPART_INVITES = [2, 3, 4], appartOuvert = () => !!(moi && (moi.admin || APPART_INVITES.includes(Number(moi.numero))));
   async function ouvrirMatrice() {
     if (mxOuverte) return;
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
@@ -2217,7 +2219,7 @@
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller";
           $("mxSaut").classList.toggle("on", on === "saut"); $("mxSaut").textContent = on === "saut" ? "🛑 Stop" : "🙌 Saut"; },
-        moiInfo: () => ({ nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
+        moiInfo: () => ({ appart: appartOuvert(), nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
         surLieu: id => { dessinerLieux(m, id); if (id !== "fetes" && typeof fermerDJ === "function" && $("mxDJ").classList.contains("panneau")) fermerDJ(); document.querySelector(".mx-danses").style.display = /^(z|sh|gb)-/.test(id) ? "none" : "";   /* (pas de danses à l'apocalypse, à Silent Hill ni chez les Ghostbusters) */   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^(z|sh)-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = (id !== "fetes" && id !== "mess") || !moi.admin; $("mxBruit").hidden = id !== "fetes" || !moi.admin; $("mxMusVol").hidden = id !== "fetes" || !moi.admin; bruitMaj(); $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
@@ -2389,7 +2391,7 @@
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
-    $("mxLieux").innerHTML = [...Object.entries(m.LIEUX), ...(moi && moi.admin ? [["appart", { icone: "🔵", nom: "Escalier Z" }]] : [])].map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
+    $("mxLieux").innerHTML = [...Object.entries(m.LIEUX), ...(appartOuvert() ? [["appart", { icone: "🔵", nom: "Escalier Z" }]] : [])].map(([id, l]) => `<button type="button" data-lieu="${id}" class="${id === mxLieu ? "on" : ""}">${l.icone} ${esc(l.nom)}${mxComptes[id] ? `<span class="nb">${mxComptes[id]}</span>` : ""}</button>`).join("");
     $("mxLieux").querySelectorAll("[data-lieu]").forEach(b => b.onclick = () => m.allerAuLieu(b.dataset.lieu));
   }
   /* ----- Le DJ : la même musique, au même moment, pour tous ceux de la salle des fêtes ----- */

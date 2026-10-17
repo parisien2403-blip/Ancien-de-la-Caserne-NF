@@ -2295,8 +2295,8 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         const pq = toile(128, 128, (x) => { x.fillStyle = "#e8e4da"; x.beginPath(); x.roundRect(0, 0, 128, 128, 18); x.fill(); x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(7, 7, 114, 114, 14); x.fill();
           x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(k, 64, 70); });
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
-        if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur seul voit ; il mène à l'appartement (une carte à part)
-          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
+        if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur et ses invités voient seuls ; il mène à l'appartement (une carte à part)
+          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart)); PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
           L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: Math.PI, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
