@@ -2297,7 +2297,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
         if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur seul voit ; il mène à l'appartement (une carte à part)
           const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
-          L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 5.6], yaw: Math.PI, bleu: true, pasApo: true }); } }
+          L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: Math.PI, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
   // au fond : le bâtiment de l'arcade, l'horloge octogonale au-dessus, la grille noire au bout de la voûte
@@ -4262,35 +4262,37 @@ function construireAppart(A, L, scene) {
       for (const t of (tr || []).filter(t => t.y0 < .05).sort((p, q) => p.c - q.c)) { fin(u, t.c - t.w / 2); u = t.c + t.w / 2; } fin(u, a); };
     plinthe("z", x0 + E / 2, z0, z1, trous.x0, 1); plinthe("z", x1 - E / 2, z0, z1, trous.x1, -1); plinthe("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, 1); plinthe("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, -1); };
   const porte = (c, w = .85) => ({ c, w, y0: 0, h: 2.1, porte: true }), fen = (c, w, y0, h) => ({ c, w, y0, h });
-  // ---------- le plan ----------
-  const XC = .6;                       // le couloir : 1,20 m de large, de x = −0,6 à x = 0,6
-  const Z_FOND = -7, Z_BOUT = 7.35;    // le placard au fond (en bas), le second salon au bout (en haut)
-  const P = { ch1: -2.8, ch2: -4.2, ch3: -2.8, sdb: -4.2, wc: 1.4, cuisine: 3.5, entree: 6.3, salon: 6.3 };   // (le milieu des portes : sur la grille des chemins, tous les 35 cm)
+  // ---------- le plan (les portes : sur la grille des chemins, tous les 35 cm) ----------
+  const XC = 1;                          // le couloir : 2 m de large, de x = −1 à x = 1
+  const Z_FOND = -9, Z_BOUT = 10.6;      // le placard au fond (en bas) ; le mur du bout (en haut)
+  const XG = -5.5, XD = 5.5, XS = -7;    // le fond des chambres (gauche, droite), le fond des salons
+  const P = { ch1: -2.45, ch2: -6.65, ch3: -2.45, sdb: -5.6, wc: 2.1, cuisine: 5.25, entree: 8.4, salon: 8.4, salon2: 9.8 };
+  const ZC = [-4.55, -6.65, 2.8, 3.15, 7.35, 9, 9.3, 15], XB = 6.8, XW = -6, WZ = [1.5, 2.7];   // (la salle de bain et les toilettes : en longueur, profondes)   // (les limites des pièces, le long du couloir)
   // le couloir : un seul rectangle ; ses deux sols (en bas, en haut), les marches entre les deux
   piece(-XC, XC, Z_FOND, Z_BOUT, null, {
-    x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .7), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }],
-    x1: [porte(P.ch3), porte(P.sdb), { c: (ZM1 + 2.1) / 2, w: 2.1 - ZM1 - .02, y0: H4, h: 2.25 }, { c: P.cuisine, w: 1.4, y0: H4, h: 2.2 }, { ...porte(P.entree, .9), y0: H4 }],
-    z0: [porte(0, .8)], z1: [{ ...porte(0, .9), y0: H4 }] });
+    x0: [porte(P.ch1), porte(P.ch2), { ...porte(P.wc, .75), y0: H4 }, { ...porte(P.salon, .9), y0: H4 }, { ...porte(P.salon2, .9), y0: H4 }],
+    x1: [porte(P.ch3), porte(P.sdb, .8), { c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: H4, h: 2.25 }, { c: P.cuisine, w: 1.6, y0: H4, h: 2.2 }, { ...porte(P.entree, .9), y0: H4 }],
+    z0: [porte(0, .8)] });
   sol(-XC, XC, Z_FOND, ZM0, 0, "carreaux"); sol(-XC, XC, ZM1, Z_BOUT, H4, "carreaux");
   { const marche = A.mat({ color: 0x7a4a26, roughness: .4 }), nez = A.mat({ color: 0x5e3619, roughness: .4 });
-    for (let k = 0; k < 4; k++) { const z1 = ZM1 - k * (ZM1 - ZM0) / 4, z0 = z1 - (ZM1 - ZM0) / 4, y = H4 - k * H4 / 4;   // (marche k : son dessus à y, sa contremarche en z1)
+    for (let k = 0; k < 4; k++) { const z1 = ZM1 - k * (ZM1 - ZM0) / 4, z0 = z1 - (ZM1 - ZM0) / 4, y = H4 - k * H4 / 4;   // (marche k : son dessus à y, sa contremarche en z0)
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, y, z1 - z0), marche, 0, y / 2, (z0 + z1) / 2, false);
-      A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); }   }
+      A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
-  piece(-4.2, -XC, -3.5, 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.75, 1.3, .85, 1.6)] });                      // la première chambre
-  piece(-4.2, -XC, Z_FOND, -3.5, "fonce", { x1: [porte(P.ch2)], x0: [fen(-5.25, 1.3, .85, 1.6)] });                 // la deuxième chambre
-  piece(XC, 4.2, -3.5, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.75, 1.3, .85, 1.6)] });                       // la troisième chambre
-  piece(XC, 4.2, -5.25, -3.5, "carreaux", { x0: [porte(P.sdb, .75)], x1: [fen(-4.375, .5, 1.75, .45)] });             // la salle de bain (la lucarne au-dessus de la douche)
-  piece(-XC, XC, -8.5, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                                      // le placard, profond
-  // en haut : le renfoncement des manteaux, la cuisine ; les toilettes, les deux salons
-  piece(XC, 1.3, ZM1, 2.1, "carreaux", { x0: [{ c: (ZM1 + 2.1) / 2, w: 2.1 - ZM1 - .02, y0: 0, h: 2.25 }] });
-  piece(XC, 4.2, 2.45, 5.6, "carreaux", { x0: [{ c: P.cuisine, w: 1.4, y0: 0, h: 2.2 }], x1: [fen(4.0, 1.2, .95, 1.3)] });
-  piece(-3.2, -XC, ZM1, 2.1, "carreaux", { x1: [porte(P.wc, .7)], x0: [fen((ZM1 + 2.1) / 2, .45, 1.75, .45)] });    // les toilettes (une lucarne au fond)
-  piece(-5.2, -XC, 2.45, 7.0, "clair", { x1: [porte(P.salon, .9)], x0: [fen(4.6, 1.5, .35, 2.35)] });              // le salon, face à la porte d'entrée
-  const BAY = 9.45;
-  piece(-5.2, 1.6, Z_BOUT, 11.55, "fonce", { z0: [porte(0, .9)], x0: [{ c: BAY, w: 2.4, y0: 0, h: 2.45 }] });         // le second salon, au bout du couloir
+  piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-2.3, 1.4, .85, 1.6)] });                       // la première chambre
+  piece(XG, -XC, Z_FOND, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.8, 1.4, .85, 1.6)] });                  // la deuxième chambre
+  piece(XC, XD, ZC[0], 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-2.3, 1.4, .85, 1.6)] });                        // la troisième chambre
+  piece(XC, XB, ZC[1], ZC[0], "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZC[0] + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
+  piece(-.8, .8, Z_FOND - 1.8, Z_FOND, "fonce", { z1: [porte(0, .8)] });                                            // le placard, profond
+  // en haut : le renfoncement des manteaux, la cuisine ; les toilettes, les deux salons (côte à côte, leurs portes voisines)
+  piece(XC, 1.9, ZM1, ZC[2], "carreaux", { x0: [{ c: (ZM1 + ZC[2]) / 2, w: ZC[2] - ZM1 - .02, y0: 0, h: 2.25 }] });
+  piece(XC, XD, ZC[3], ZC[4], "carreaux", { x0: [{ c: P.cuisine, w: 1.6, y0: 0, h: 2.2 }], x1: [fen(P.cuisine, 1.3, .95, 1.3)] });
+  piece(XW, -XC, WZ[0], WZ[1], "carreaux", { x1: [porte(P.wc, .75)], x0: [fen((WZ[0] + WZ[1]) / 2, .45, 1.75, .45)] }); // les toilettes (une lucarne au fond)
+  piece(XS, -XC, ZC[3], ZC[5], "clair", { x1: [porte(P.salon, .9)], x0: [fen(6.0, 1.7, .35, 2.35)] });            // le salon, face à la porte d'entrée
+  const BAY = 12.15;
+  piece(XS, -XC, ZC[6], ZC[7], "fonce", { x1: [porte(P.salon2, .9)], x0: [{ c: BAY, w: 2.6, y0: 0, h: 2.45 }] });  // le second salon, à côté
   // le plafond
-  A.ajoute(new THREE.BoxGeometry(12, .2, 21), A.mat({ color: 0xf1ece0, roughness: .95 }), -1.5, HT + .1, 1.5, false);
+  A.ajoute(new THREE.BoxGeometry(16, .2, 28), A.mat({ color: 0xf1ece0, roughness: .95 }), -.8, HT + .1, 2.5, false);
   // ---------- les portes (ouvertes, battant contre le mur de la pièce) et la porte d'entrée (fermée) ----------
   const battant = A.mat({ color: 0xefe9dc, roughness: .45 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 });
   const ouverte = (xg, y, zg, w, rot) => { const g = new THREE.Group(); g.position.set(xg, y, zg); g.rotation.y = rot; scene.add(g);   // (pivot sur les gonds ; le battant part en +x local, grand ouvert dans la pièce)
@@ -4299,10 +4301,9 @@ function construireAppart(A, L, scene) {
     const poignee = new THREE.Mesh(new THREE.BoxGeometry(.025, .025, .14), laiton); poignee.position.set(w - .1, 1.0, 0); g.add(poignee); return g; };
   // (à gauche du couloir, le battant part vers −x dans la pièce ; à droite, vers +x)
   ouverte(-XC, 0, P.ch1 - .42, .84, Math.PI); ouverte(-XC, 0, P.ch2 - .42, .84, Math.PI);
-  ouverte(XC, 0, P.ch3 - .42, .84, 0); ouverte(XC, 0, P.sdb + .37, .74, 0);
-  ouverte(-XC, H4, P.wc - .35, .69, Math.PI); ouverte(-XC, H4, P.salon + .45, .88, Math.PI);
+  ouverte(XC, 0, P.ch3 - .42, .84, 0); ouverte(XC, 0, P.sdb + .4, .79, 0);
+  ouverte(-XC, H4, P.wc - .37, .74, Math.PI); ouverte(-XC, H4, P.salon - .45, .88, Math.PI); ouverte(-XC, H4, P.salon2 + .45, .88, Math.PI);
   ouverte(-.4, 0, Z_FOND, .79, Math.PI / 2);   // le placard
-  ouverte(-.45, H4, Z_BOUT, .89, -Math.PI / 2);   // le second salon
   { const g = new THREE.Group(); g.position.set(XC + .06, H4, P.entree); scene.add(g);   // la porte d'entrée : bois foncé, fermée, son judas, sa serrure, son verrou
     const pe = A.mat({ color: 0x4a2c18, roughness: .5 });
     const bb = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
@@ -4319,12 +4320,12 @@ function construireAppart(A, L, scene) {
     if (!opaque) { bb(.05, h - .08, .06, blanc, 0, h / 2, 0);   // le montant entre les deux battants, la crémone
       for (let k = 1; k < carreaux; k++) bb(w - .08, .025, .04, blanc, 0, k * h / carreaux, 0);
       bb(.025, .5, .03, laiton, .04, h / 2, .03); } return g; };
-  fenetre("z", -4.2 + .05, -1.75, 1.3, .85, 1.6, 1); fenetre("z", -4.2 + .05, -5.25, 1.3, .85, 1.6, 1); fenetre("z", 4.2 - .05, -1.75, 1.3, .85, 1.6, -1);
-  fenetre("z", 4.2 - .05, -4.375, .5, 1.75, .45, -1, 1, true); fenetre("z", -3.2 + .05, (ZM1 + 2.1) / 2, .45, H4 + 1.75, .45, 1, 1, true);
-  fenetre("z", 4.2 - .05, 4.0, 1.2, H4 + .95, 1.3, -1); fenetre("z", -5.2 + .05, 4.6, 1.5, H4 + .35, 2.35, 1, 4);
+  fenetre("z", XG + .05, -2.3, 1.4, .85, 1.6, 1); fenetre("z", XG + .05, -6.8, 1.4, .85, 1.6, 1); fenetre("z", XD - .05, -2.3, 1.4, .85, 1.6, -1);
+  fenetre("z", XB - .05, (ZC[0] + ZC[1]) / 2, .5, 1.75, .45, -1, 1, true); fenetre("z", XW + .05, (WZ[0] + WZ[1]) / 2, .45, H4 + 1.75, .45, 1, 1, true);
+  fenetre("z", XD - .05, P.cuisine, 1.3, H4 + .95, 1.3, -1); fenetre("z", XS + .05, 6.0, 1.7, H4 + .35, 2.35, 1, 4);
   // le bow-window du second salon : trois pans (un demi-hexagone) qui avancent dehors, une allège sous chaque fenêtre
-  { const xw = -5.2, pr = .7, a = BAY - 1.2, b = BAY + 1.2, ya = H4;
-    const pts = [[xw, a], [xw - pr, BAY - .6], [xw - pr, BAY + .6], [xw, b]];
+  { const xw = XS, pr = .8, a = BAY - 1.3, b = BAY + 1.3, ya = H4;
+    const pts = [[xw, a], [xw - pr, BAY - .65], [xw - pr, BAY + .65], [xw, b]];
     const sh = new THREE.Shape(); sh.moveTo(xw, -a); for (const [x, z] of pts.slice(1)) sh.lineTo(x, -z); sh.closePath();   // (la forme est dans le plan (x, −z) : couchée, elle tombe en (x, z))
     const plancher = new THREE.Mesh(new THREE.ShapeGeometry(sh), matSol.fonce(1, 1)); plancher.rotation.x = -Math.PI / 2; plancher.position.y = ya + .002; scene.add(plancher);
     const pl2 = plancher.clone(); pl2.position.y = ya + 2.55; pl2.material = peinture; scene.add(pl2);   // (son plafond)
@@ -4335,8 +4336,8 @@ function construireAppart(A, L, scene) {
     for (const [x, z] of pts) { const mt = new THREE.Mesh(new THREE.BoxGeometry(.14, HT - ya, .14), peinture); mt.position.set(x, (ya + HT) / 2, z); scene.add(mt); } }   // (les montants d'angle)
   // dehors : le ciel, et les façades de brique d'en face (la cour d'un côté, la rue de l'autre), à quelques mètres
   { const facade = A.mat({ map: tex(T.facade), roughness: .9, emissive: 0xffffff, emissiveIntensity: .35, emissiveMap: tex(T.facade) }), ciel = new THREE.MeshBasicMaterial({ map: tex(T.ciel), fog: false });
-    for (const [x, ry] of [[-14, Math.PI / 2], [12, -Math.PI / 2]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(30, 24), facade); f.position.set(x, 12 - 4, 1.5); f.rotation.y = ry; scene.add(f);
-      const c = new THREE.Mesh(new THREE.PlaneGeometry(40, 30), ciel); c.position.set(x * 1.6, 25, 1.5); c.rotation.y = ry; scene.add(c); }
+    for (const [x, ry] of [[-17, Math.PI / 2], [15, -Math.PI / 2]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(36, 24), facade); f.position.set(x, 12 - 4, 2.5); f.rotation.y = ry; scene.add(f);
+      const c = new THREE.Mesh(new THREE.PlaneGeometry(40, 30), ciel); c.position.set(x * 1.6, 25, 2.5); c.rotation.y = ry; scene.add(c); }
     const bas = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), A.mat({ color: 0x8a8278, roughness: 1 })); bas.rotation.x = -Math.PI / 2; bas.position.set(0, -4, 0); scene.add(bas); }   // (la cour, en bas)
   // ---------- quelques équipements, pour commencer ----------
   const faience = A.mat({ color: 0xf6f4ee, roughness: .25 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .2 });
@@ -4347,54 +4348,53 @@ function construireAppart(A, L, scene) {
     const rob = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .18, 8), chrome); rob.position.set(0, .95, .05); rob.rotation.x = .5; g.add(rob);
     const miroir = new THREE.Mesh(new THREE.PlaneGeometry(.5, .6), A.mat({ color: 0xc8d2d8, metalness: .9, roughness: .05 })); miroir.position.set(0, 1.45, .012); g.add(miroir); return g; };
   // la salle de bain : le lavabo en entrant, la douche au fond (un rebord pour se tenir debout, le rideau sur sa tringle)
-  lavabo(1.35, 0, -5.25 + E, 0);
-  { const x0 = 3.15, x1 = 4.2 - E, z0 = -5.25 + E, z1 = -3.5 - E, re = A.mat({ color: 0xf2f0ea, roughness: .3 });
+  lavabo(XC + .8, 0, ZC[1] + E, 0);
+  { const x0 = XB - 1.1, x1 = XB - E, z0 = ZC[1] + E, z1 = ZC[0] - E, re = A.mat({ color: 0xf2f0ea, roughness: .3 });
     A.ajoute(new THREE.BoxGeometry(.08, .18, z1 - z0), re, x0, .09, (z0 + z1) / 2, false);
     const bac = A.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), A.mat({ color: 0xe8e6de, roughness: .35 }), (x0 + x1) / 2, .03, (z0 + z1) / 2, false); bac.rotation.x = -Math.PI / 2;
     for (const [w, h, x] of [[.9, 1.6, x1 - .02]]) { const fa = A.ajoute(new THREE.BoxGeometry(.02, h, z1 - z0), A.mat({ color: 0xffffff, roughness: .2 }), x, h / 2 + .1, (z0 + z1) / 2, false); }   // (la faïence du fond)
     A.ajoute(new THREE.CylinderGeometry(.012, .012, z1 - z0, 8), chrome, x0 - .02, 2.05, (z0 + z1) / 2, false).rotation.x = Math.PI / 2;   // la tringle
-    const rideau = new THREE.Mesh(new THREE.PlaneGeometry(.75, 1.8, 8, 1), A.mat({ color: 0x9cc4d8, roughness: .8, side: THREE.DoubleSide })); rideau.position.set(x0 - .02, 1.12, z1 - .4); rideau.rotation.y = Math.PI / 2;
+    const rideau = new THREE.Mesh(new THREE.PlaneGeometry(.75, 1.8, 8, 1), A.mat({ color: 0x9cc4d8, roughness: .8, side: THREE.DoubleSide })); rideau.position.set(x0 - .02, 1.12, z1 - .45); rideau.rotation.y = Math.PI / 2;
     const p = rideau.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) * 18) * .035); rideau.geometry.computeVertexNormals(); scene.add(rideau);   // (plissé, tiré à moitié)
     A.ajoute(new THREE.CylinderGeometry(.02, .02, .3, 8), chrome, x1 - .06, 1.95, (z0 + z1) / 2, false);
     A.ajoute(new THREE.CylinderGeometry(.06, .04, .05, 12), chrome, x1 - .1, 2.1, (z0 + z1) / 2, false).rotation.z = Math.PI / 2; }
   // les toilettes : le lavabo à droite en entrant, au fond la cuvette et, derrière, le coffrage (on pouvait presque monter dessus)
-  lavabo(-1.55, H4, ZM1 + E, 0);
-  { const xf = -3.2 + E, coff = A.mat({ color: 0xe6d9bd, roughness: .9 });
-    A.ajoute(new THREE.BoxGeometry(.5, 1.05, 2.1 - ZM1 - 2 * E), coff, xf + .25, H4 + .525, (ZM1 + 2.1) / 2, false);
-    A.ajoute(new THREE.BoxGeometry(.52, .03, 2.1 - ZM1 - 2 * E), A.mat({ color: 0xd8ccb0, roughness: .6 }), xf + .26, H4 + 1.065, (ZM1 + 2.1) / 2, false);
-    const g = new THREE.Group(); g.position.set(xf + .5, H4, (ZM1 + 2.1) / 2); scene.add(g);
+  lavabo(-1.9, H4, WZ[0] + E, 0);
+  { const xf = XW + E, coff = A.mat({ color: 0xe6d9bd, roughness: .9 });
+    A.ajoute(new THREE.BoxGeometry(.5, 1.05, WZ[1] - WZ[0] - 2 * E), coff, xf + .25, H4 + .525, (WZ[0] + WZ[1]) / 2, false);
+    A.ajoute(new THREE.BoxGeometry(.52, .03, WZ[1] - WZ[0] - 2 * E), A.mat({ color: 0xd8ccb0, roughness: .6 }), xf + .26, H4 + 1.065, (WZ[0] + WZ[1]) / 2, false);
+    const g = new THREE.Group(); g.position.set(xf + .5, H4, (WZ[0] + WZ[1]) / 2); scene.add(g);
     const pied = new THREE.Mesh(new THREE.CylinderGeometry(.15, .12, .38, 16), faience); pied.position.set(.24, .19, 0); g.add(pied);
     const cuv = new THREE.Mesh(new THREE.CylinderGeometry(.2, .17, .08, 20), faience); cuv.scale.set(1.25, 1, 1); cuv.position.set(.28, .41, 0); g.add(cuv);
     const ab = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .025, 20), A.mat({ color: 0xffffff, roughness: .3 })); ab.scale.set(1.25, 1, 1); ab.position.set(.28, .46, 0); g.add(ab);
     const chasse = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.2, 6), chrome); chasse.position.set(.04, 1.0, -.25); g.add(chasse); }
   // le renfoncement des manteaux : une patère, trois manteaux
-  { const x = 1.3 - E - .04; A.ajoute(new THREE.BoxGeometry(.03, .08, .9), bois, x, H4 + 1.75, (ZM1 + 2.1) / 2, false);
-    [[0x2c3a52, -.28], [0x6a4a2c, 0], [0x7a2a2a, .28]].forEach(([c, dz]) => { const m = A.ajoute(new THREE.BoxGeometry(.22, .95, .36), A.mat({ color: c, roughness: .9 }), x - .14, H4 + 1.2, (ZM1 + 2.1) / 2 + dz, false); m.rotation.x = (Math.random() - .5) * .06; }); }
+  { const x = 1.9 - E - .04; A.ajoute(new THREE.BoxGeometry(.03, .08, .9), bois, x, H4 + 1.75, (ZM1 + ZC[2]) / 2, false);
+    [[0x2c3a52, -.28], [0x6a4a2c, 0], [0x7a2a2a, .28]].forEach(([c, dz]) => { const m = A.ajoute(new THREE.BoxGeometry(.22, .95, .36), A.mat({ color: c, roughness: .9 }), x - .14, H4 + 1.2, (ZM1 + ZC[2]) / 2 + dz, false); m.rotation.x = (Math.random() - .5) * .06; }); }
   // le placard : des étagères
-  for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .5), bois, 0, y, -8.5 + E + .25, false);
-  A.ajoute(new THREE.CylinderGeometry(.015, .015, XC * 2 - .2, 8), chrome, 0, 1.9, -7.6, false).rotation.z = Math.PI / 2;
+  for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
+  A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
   // ---------- la lumière : douce partout, quelques plafonniers ----------
   scene.add(new THREE.AmbientLight(0xfff1dc, .55));
   const globe = A.mat({ color: 0xfff4dc, emissive: 0xffe7b8, emissiveIntensity: 1 });
-  for (const [x, z, y0] of [[0, -3.5, 0], [0, 4.2, H4], [-2.4, -1.75, 0], [-2.4, -5.25, 0], [2.4, -1.75, 0], [2.4, -4.4, 0], [2.4, 4, H4], [-2.9, 4.7, H4], [-1.8, 9.45, H4]]) {
+  for (const [x, z, y0] of [[0, -4.5, 0], [0, 6, H4], [-3.25, -2.3, 0], [-3.25, -6.8, 0], [3.25, -2.3, 0], [3.9, -5.6, 0], [3.25, P.cuisine, H4], [-3.5, 2.1, H4], [-4, 6, H4], [-4, 12.15, H4]]) {
     A.ajoute(new THREE.SphereGeometry(.13, 14, 10), globe, x, HT - .3, z, false); A.ajoute(new THREE.CylinderGeometry(.006, .006, .25, 4), A.mat({ color: 0x222222 }), x, HT - .12, z, false); }
-  for (const [x, z, y0, i] of [[0, -3.2, 0, 4], [0, 4.6, H4, 4], [-2.6, 9.2, H4, 6], [-2.6, -3.5, 0, 6], [2.6, 1.0, H4, 5]]) { const l = new THREE.PointLight(0xffe2b8, i, 9, 1.4); l.position.set(x, HT - .45, z); scene.add(l); }
+  for (const [x, z, y0, i] of [[0, -4.5, 0, 5], [0, 6, H4, 5], [-4, 12.15, H4, 7], [-4, 6, H4, 7], [-3.25, -4.5, 0, 6], [3.25, -3, 0, 6]]) { const l = new THREE.PointLight(0xffe2b8, i, 9, 1.4); l.position.set(x, HT - .45, z); scene.add(l); }
   // ---------- où l'on marche ----------
-  const R = [[-.2, .2, -6.85, 7.2],   // le couloir (on marche au milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
-    [-3.95, -.85, -3.25, -.25], [-3.95, -.85, -6.75, -3.75], [.85, 3.95, -3.25, -.25], [.85, 3.0, -5.0, -3.75], [3.2, 3.95, -5.0, -3.75],
-    [-.25, .25, -8.25, -7.2],
-    [.85, 3.95, 2.7, 5.35], [-2.6, -.85, 1.3, 1.85], [-4.95, -.85, 2.7, 6.75], [-4.95, 1.35, 7.6, 11.3],
-    // (les passages : les portes, l'ouverture de la cuisine, le seuil de la porte d'entrée)
-    [-1.1, -.15, P.ch1 - .2, P.ch1 + .2], [-1.1, -.15, P.ch2 - .2, P.ch2 + .2], [.15, 1.1, P.ch3 - .2, P.ch3 + .2], [.15, 1.1, P.sdb - .2, P.sdb + .2],
-    [-.2, .2, -7.35, -6.7], [-1.1, -.15, P.wc - .2, P.wc + .2], [-1.1, -.15, P.salon - .2, P.salon + .2], [.15, 1.1, P.cuisine - .55, P.cuisine + .55], [.15, .8, P.entree - .2, P.entree + .2], [-.2, .2, 7.0, 7.8]];
+  const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .2, c + .2] : [.3, XC + .5, c - .2, c + .2];   // (le passage d'une porte, à gauche ou à droite du couloir)
+  const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
+    [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z_FOND + .25, ZC[0] - .25], [XC + .25, XD - .25, ZC[0] + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZC[0] - .25],
+    [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
+    [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, ZC[3] + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
+    S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), [.3, XC + .5, P.cuisine - .6, P.cuisine + .6], [.3, XC + .1, P.entree - .2, P.entree + .2]];
   L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d);
   L.hauteur = (x, z) => z >= ZM1 ? H4 : z <= ZM0 ? 0 : Math.abs(x) < XC ? H4 * Math.ceil((z - ZM0) / ((ZM1 - ZM0) / 4)) / 4 : 0;   // (marche par marche)
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
   // la sortie : le cercle dans l'embrasure de la porte d'entrée ; on ressort devant la porte Z, dans la troisième cour
-  L.portails.push({ dans: (x, z) => x > .15 && Math.abs(z - P.entree) < .5, seuil: [.62, P.entree], y: H4, vers: "grande", arrivee: PORTE_Z.arrivee, yaw: PORTE_Z.yaw });
+  L.portails.push({ dans: (x, z) => x > .3 && Math.abs(z - P.entree) < .5, seuil: [XC + .02, P.entree], y: H4, vers: "grande", arrivee: PORTE_Z.arrivee, yaw: PORTE_Z.yaw });
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.appart = true;
-  L.zone = [-6.3, 4.55, -8.4, 11.9]; L.boite = [-5.1, 4.1, -8.4, 11.45]; L.plafond = HT - .25;
-  L.depart = [0, 5.6]; L.cam = { pos: [0, 2.4, 8], vise: [0, 1.2, 0] };
+  L.zone = [-7.7, 7.35, -11.2, 15.4]; L.boite = [XS + .1, XB - .1, Z_FOND - 1.7, ZC[7] - .1]; L.plafond = HT - .25;
+  L.depart = [0, 7.7]; L.cam = { pos: [0, 2.4, 10], vise: [0, 1.2, 0] };
 }
 function construireMess(A, L, scene) {
   const X0 = -10, X1 = 6, CX = (X0 + X1) / 2, Z0 = -12, Z1 = 12, HT = 5.2, LAMB = 1.15, larg = X1 - X0, long = Z1 - Z0;
