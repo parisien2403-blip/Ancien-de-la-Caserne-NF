@@ -4657,10 +4657,10 @@ function construireSantaCarla(A, L, scene) {
   { const tb = new THREE.TextureLoader().load("images/santacarla/beton.webp"); tb.colorSpace = THREE.SRGBColorSpace; tb.wrapS = tb.wrapT = THREE.MirroredRepeatWrapping; tb.repeat.set(96 / 5, 40 / 2.5); tb.anisotropy = 8;
     const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; }   // (la grande place, en béton, derrière la jetée en planches)
   L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 43 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
-    && !(x > -44.5 && x < -8.4 && z > -36.4 && z < -13.6)   // (le Giant Dipper et sa gare)
+    && !(x > -15.6 && x < -8.4 && z > -18.2 && z < -13.8)   // (la gare du Giant Dipper : on passe sous le grand huit)
     && !(x > 8.2 && x < 19.8 && z > -28 && z < -24)   // (les pieds de la grande roue)
-    && !(x > -14.5 && x < 12.5 && z > -25.2 && z < -16.8)   // (le bateau pirate, qui balaie tout ça)
-    && Math.hypot(x - 32, z + 20) > 7   // (le manège)
+    && ![[-7.5, -24.4], [-7.5, -17.6], [5.5, -24.4], [5.5, -17.6]].some(([a, b]) => Math.hypot(x - a, z - b) < .6)   // (les pieds du bateau pirate : on passe dessous)
+    && Math.hypot(x - 32, z + 20) > 6.3   // (le manège)
     && !(Math.abs(Math.abs(x) - 4.5) < .5 && Math.abs(z + 8.6) < .5)   // (les piliers de l'arche)
     && !(Math.abs(z + 6.95) < .5 && [-40, -13.3, 13.3, 40].some(px => Math.abs(x - px) < .5));   // (les poteaux du télésiège)   // (la rambarde : deux passages vers la plage)
   L.hauteur = (x, z, p) => p && p.vol != null ? p.vol : 0;   // (les vampires volent)
@@ -4850,7 +4850,6 @@ function construireSantaCarla(A, L, scene) {
     for (let i = 0; i < 20; i++) { const fx = CONCERT.x - 8 + (i % 7) * 2.6 + (hasard(i * 1.7) - .5) * 1.2, fz = CONCERT.z - 2.2 - Math.floor(i / 7) * 1.9 - hasard(i * 2.9) * .8;
       const tx = [tex(baigneur(i, false)), tex(baigneur(i, true))], mat = new THREE.MeshStandardMaterial({ map: tx[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8, emissive: 0xffffff, emissiveMap: tx[0], emissiveIntensity: .25 });
       const m = new THREE.Mesh(new THREE.PlaneGeometry(.86, 1.72), mat); m.position.set(fx, .86, fz); m.rotation.y = Math.PI + (hasard(i) - .5) * .3; scene.add(m); foule.push({ m, mat, tx, ph: hasard(i * 5) * 6, v: 1.8 + hasard(i * 7) * .5 }); }
-    OBST.push([CONCERT.x - 9, CONCERT.x + 9, CONCERT.z - 7.4, CONCERT.z - 1.6]);   // (on ne traverse pas la foule)
     OBST.push([CONCERT.x - 9.3, CONCERT.x + 9.3, CONCERT.z - .3, CONCERT.z + 6.6]);
     Object.assign(CONCERT, { sax, ecranV, faisceaux, foule, ls }); }
   { const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000, C = CONCERT;
@@ -4871,10 +4870,10 @@ function construireSantaCarla(A, L, scene) {
   const feuT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(.4, "rgba(255,140,30,.8)"); g.addColorStop(1, "rgba(200,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
       sp.position.set(p.x + (Math.random() - .5) * .5, p.y + (Math.random() - .5) * .6, p.z + (Math.random() - .5) * .5); sp.scale.setScalar(taille); scene.add(sp); parts.push({ sp, v: new THREE.Vector3((Math.random() - .5) * .8, vy * (.5 + Math.random()), (Math.random() - .5) * .8), t0: performance.now(), d: duree, taille }); } };
-  let hud = null, vies = 100, morsures = 0, biere = null, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
+  let file = [], courant = null, hud = null, vies = 100, morsures = 0, biere = null, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
   const moiP = () => { const m = M && M.gens.get(M.moiNum); return m ? m.g.position : null; };
   const majHud = () => { if (!hud) return; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}, nom = (P.nom || (ADOS[(M.lbPerso || 81) - 81] || {}).court || "").split(" ")[0];
-    hud.querySelector(".v").innerHTML = `${esc(nom)} <span style="display:inline-block;width:130px;height:13px;border:2px solid #fff;border-radius:8px;background:rgba(60,0,0,.8);overflow:hidden;vertical-align:-2px"><i style="display:block;height:100%;width:${Math.max(0, vies)}%;background:${vies > 40 ? "linear-gradient(90deg,#2aa84a,#7ae86a)" : "linear-gradient(90deg,#c81e1e,#ff6a3a)"};transition:width .3s"></i></span> 🔫∞`; hud.querySelector(".n").textContent = "🧛 " + vamps.filter(v => v.etat !== "mort").length; };
+    hud.querySelector(".v").innerHTML = `${esc(nom)} <span style="display:inline-block;width:130px;height:13px;border:2px solid #fff;border-radius:8px;background:rgba(60,0,0,.8);overflow:hidden;vertical-align:-2px"><i style="display:block;height:100%;width:${Math.max(0, vies)}%;background:${vies > 40 ? "linear-gradient(90deg,#2aa84a,#7ae86a)" : "linear-gradient(90deg,#c81e1e,#ff6a3a)"};transition:width .3s"></i></span> 🔫∞`; hud.querySelector(".n").textContent = "🧛 " + (file.length + (courant && courant.etat !== "mort" ? 1 : 0)); };
   const message = (html, bouton) => { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:9;background:rgba(10,4,6,.86);color:#fff;border:2px solid #b81c22;border-radius:14px;padding:18px 22px;max-width:86%;text-align:center;font:600 17px Georgia,serif;box-shadow:0 0 30px rgba(184,28,34,.5)";
     d.innerHTML = html; if (bouton) { const b = document.createElement("button"); b.textContent = bouton[0]; b.style.cssText = "margin-top:14px;font:700 16px system-ui;padding:10px 18px;border-radius:10px;border:0;background:#b81c22;color:#fff;cursor:pointer"; b.onclick = e => { e.stopPropagation(); d.remove(); bouton[1](); }; d.appendChild(b); }
     else setTimeout(() => d.remove(), 4200); for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); return d; };
@@ -4919,14 +4918,30 @@ function construireSantaCarla(A, L, scene) {
   L.etatLB = () => ({ vies, morsures, biere: !!biere, phase }); L.finLB = () => finale(); L.mordreLB = () => mordu({});   // (pour les essais)
   const creerVampire = (k) => { const a = Math.random() * 6.28, p0 = moiP() || V3(0, 0, 0), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {};
     const p = ajouterAncien({ ...habillerLB({ numero: -(860 + k), nom: P.nom || NOMS[k], initiales: "" }, 84 + k), pnj: true, x: p0.x + Math.cos(a) * 30, z: p0.z + Math.sin(a) * 30 }); if (!p) return null;
-    p.vol = 14; const barre = barreVie(); p.g.add(barre.sp); const v = { k, barre, nom: P.nom || NOMS[k], p, g: p.g, y: 14, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "tourne", a, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
+    p.vol = 14; const barre = barreVie(); p.g.add(barre.sp); const v = { k, barre, nom: P.nom || NOMS[k], p, g: p.g, y: 14, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "approche", a, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
     majBarre(v); vamps.push(v); return v; };
-  const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "vague1"; musiqueLB("combat"); [1, 2, 3].forEach((k, i) => { const v = creerVampire(k); if (v) setTimeout(() => { if (v.etat !== "mort") parle(v.p.info.numero, REPL_V[84 + k].arrive); }, 3500 + i * 2600); }); majHud();
-    message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David arrive sur la jetée !</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`); };
+  // les vampires viennent un par un : Paul, Marko, Dwayne, puis David ; entre deux, on cherche — mais c'est surtout eux qui nous trouvent
+  const ORDRE = [1, 2, 3, 0];
+  const AVANT = {   // (le dialogue avant chaque combat : « V » le vampire, « M » nous, 0 et 1 les deux autres ados)
+    1: [["V", "Hé hé ! Regardez-moi ça… des gamins avec des pistolets à eau !"], [0, "Rigole tant que tu peux, Paul. C'est de l'eau bénite."], ["V", "Wouhou ! Ce soir, on fait la fête !"], ["M", "La fête est finie."]],
+    2: [["V", "Vous avez eu Paul ? Ha ha ha… Il était pénible, de toute façon."], ["M", "T'es le prochain, Marko."], [1, "Regarde ses yeux… Il a déjà mangé ce soir."], ["V", "Viens me chercher, petit !"]],
+    3: [["V", "Grrr…"], [1, "Dwayne. Celui-là ne parle pas… mais il est rapide. Attention !"], ["V", "Vous allez payer pour mes frères."], ["M", "Qu'il vienne !"]],
+    0: [["V", "Alors c'est vous… Vous m'avez pris mes frères."], ["M", "C'étaient pas tes frères. C'étaient des monstres."], ["V", "Tu ne comprends pas. On ne vieillit jamais… On ne meurt jamais."],
+      [0, "Ce soir, si. Tu meurs, David."], ["V", "Ha… Mon père n'aimera pas ça."], [1, "Le concert va bientôt finir. C'est maintenant ou jamais !"], ["V", "Alors venez… Montrez-moi ce que vous valez."]] };
+  const APRES = ["Un de moins. Il en reste encore… Ouvrez l'œil.", "Ils vont venir nous chercher. Restons ensemble.", "Le concert continue… On n'a pas beaucoup de temps.", "Je les sens… Ils nous observent, quelque part au-dessus de la jetée."];
+  const prochain = () => { if (!M || M.L !== L || fini) return; const k = file.shift(); if (k == null) { finale(); return; }
+    if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
+  const dialogueAvant = (v) => { const nums = { V: v.p.info.numero, M: M.moiNum, 0: comps[0] && comps[0].num, 1: comps[1] && comps[1].num }, L2 = AVANT[v.k]; let t = 0;
+    if (v.k === 0) message(`<div style="font-size:20px">David…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Le combat final.</div>`);
+    for (const [qui, txt] of L2) { const n = nums[qui]; setTimeout(() => { if (M && M.L === L && v.etat === "parle" && n != null) parle(n, txt); }, t); t += 1200 + txt.length * 55; }
+    setTimeout(() => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1"; } }, t + 600); };
+  const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; musiqueLB("combat"); file = ORDRE.slice(); majHud();
+    message(`<div style="font-size:14px;opacity:.8;font-style:italic">Sleep all day. Party all night. Never grow old. Never die.<br>It's fun to be a vampire.</div><div style="margin-top:10px">La bande de David rôde sur la jetée. Ils vont venir un par un…</div><div style="font:500 13px system-ui;margin-top:8px;opacity:.85">Touche un vampire pour l'asperger d'eau bénite.<br>Quand il tombe à terre, approche-toi et touche-le : le pieu !</div>`);
+    setTimeout(prochain, 6000); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
     const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
     if (v.etat === "terre") { if (d > 3.2) { message("Approche-toi pour lui planter le pieu !"); return; } pieu(v); return; }
-    if (v.etat === "mort" || v.etat === "brule") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
+    if (v.etat === "mort" || v.etat === "brule") return; if (v.etat === "approche" || v.etat === "parle") return; if (d > 16) { message("Trop loin pour l'eau bénite !"); return; }
     // le jet d'eau bénite : des gouttes du pistolet au vampire
     const but = pt || v.g.position.clone().add(new THREE.Vector3(0, 1.4, 0)); ado.vise = { pt: but, t: now }; ado.kick = 1; majAdo(); const dep = buse(but);
     { const moi = M.gens.get(M.moiNum), dx = but.x - p.x, dz = but.z - p.z, l = Math.hypot(dx, dz) || 1; if (moi) { moi.tirT = now; vueTir(moi, dx / l, dz / l); } }   // (le bras se lève, pointé sur lui)
@@ -4984,7 +4999,7 @@ function construireSantaCarla(A, L, scene) {
     const c = comps, l = [[0, () => c[0] && parle(c[0].num, REPL[c[0].id].intro)], [4200, () => c[1] && parle(c[1].num, REPL[c[1].id].intro)], [8000, () => parle(M.moiNum, REPL[moi].go)],
       [11800, () => c[0] && parle(c[0].num, "Tout ce monde au concert, sur la plage… C'est un vrai buffet pour eux.")],
       [15600, () => c[1] && parle(c[1].num, "Faut faire vite : buter ces enfoirés avant la fin du concert. Sinon, ça va être un vrai bain de sang !")],
-      [20000, () => parle(M.moiNum, "Alors on y va. Maintenant.")], [22600, () => c[0] && parle(c[0].num, "Les voilà ! Ils arrivent du ciel !")], [23600, () => { if (M && M.L === L && phase === "briefing") demarrer(); }]];
+      [20000, () => parle(M.moiNum, "Alors on y va. Maintenant.")], [22600, () => c[0] && parle(c[0].num, "Ils sont là, quelque part… Ils vont venir à nous. Un par un.")], [23600, () => { if (M && M.L === L && phase === "briefing") demarrer(); }]];
     for (const [ms, f] of l) setTimeout(() => { if (M && M.L === L) f(); }, ms); };
   const SANG = [[-12, -3.8, 1.3], [8.5, -10, 1], [24, -13.5, 1.2], [-3, -31, 1.1], [30.5, -33.5, .9], [-31, 2.5, 1.2], [16.5, 3.8, 1], [37, -1.5, 1.1], [-7, 13.5, 1.3], [12, 22.5, 1]];
   const texSang = (k) => tex(toile(256, 256, (x) => { const R = (n) => hasard(k * 13.7 + n);
@@ -5022,11 +5037,16 @@ function construireSantaCarla(A, L, scene) {
       hud.innerHTML = '<span class="v"></span><span class="n"></span>'; M.ctx.conteneur.appendChild(hud); const garde = setInterval(() => { if (!M || M.L !== L) { hud.remove(); clearInterval(garde); } }, 600); }
     majAdo(); vieComps(now, p); boireBiere(now, p); voirSang(now, p);
     if (phase === "intro" && now - t0 > 2500 && !M.cine && !M.lbIntro) { phase = "choix"; choisirAdo(); }
-    if (phase === "vague1" && vamps.every(v => v.etat === "mort")) { phase = "david"; setTimeout(() => { if (M && M.L === L && phase === "david") { musiqueLB("david"); const dv = creerVampire(0); majHud(); if (dv) setTimeout(() => parle(dv.p.info.numero, REPL_V[84].arrive), 2500); const c = comps[1] || comps[0]; if (c) setTimeout(() => parle(c.num, "C'est David ! Le chef ! Celui-là, il est coriace…"), 5200); message(`<div style="font-size:20px">David arrive…</div><div style="font:500 14px system-ui;margin-top:6px">Le chef de la bande. Plus coriace que les autres.</div>`); } }, 2500); }
-    if (phase === "david" && vamps.length && vamps.every(v => v.etat === "mort") && !fini) finale();
+    if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus que David… Il va venir lui-même. Il est furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
     for (const v of vamps) { const g = v.g, dt = 1 / 60;
-      if (v.etat === "tourne") { v.a += dt * .6 * v.vit; const cx = p.x + Math.cos(v.a) * v.r, cz = p.z + Math.sin(v.a) * v.r, cy = v.h + Math.sin(now / 500 + v.k) * .5; g.position.x += (cx - g.position.x) * .04; g.position.z += (cz - g.position.z) * .04; g.position.y += (cy - g.position.y) * .04;
+      if (v.etat === "approche") { if (!v.pose) { const cam = M.camera.getWorldDirection(V3(0, 0, 0)); cam.y = 0; if (cam.lengthSq() < 1e-4) cam.set(0, 0, -1); cam.normalize(); v.pose = [cam.x, cam.z]; }   // (il fond sur nous du ciel, et se pose à cinq pas, devant nous : face à l'écran)
+        const bx = p.x + v.pose[0] * 6 - v.pose[1] * 1.3, bz = p.z + v.pose[1] * 6 + v.pose[0] * 1.3;   // (un peu de côté : on le voit, et nous aussi)
+        const k2 = 1 - Math.exp(-1.4 * Math.min(.1, (now - (v.tp || now)) / 1000)); v.tp = now;   // (en temps réel : il arrive en trois ou quatre secondes, quel que soit le téléphone)
+        g.position.x += (bx - g.position.x) * k2; g.position.z += (bz - g.position.z) * k2; g.position.y += (0 - g.position.y) * k2;
+        if (Math.hypot(g.position.x - bx, g.position.z - bz) < .6 && g.position.y < .3) { g.position.y = 0; v.etat = "parle"; dialogueAvant(v); } }
+      else if (v.etat === "parle") { g.position.y = 0; }
+      else if (v.etat === "tourne") { v.a += dt * .6 * v.vit; const cx = p.x + Math.cos(v.a) * v.r, cz = p.z + Math.sin(v.a) * v.r, cy = v.h + Math.sin(now / 500 + v.k) * .5; g.position.x += (cx - g.position.x) * .04; g.position.z += (cz - g.position.z) * .04; g.position.y += (cy - g.position.y) * .04;
         if (now > v.tEtat) { v.etat = "pique"; v.tEtat = now + 3500; } }
       else if (v.etat === "pique") { const dx = p.x - g.position.x, dz = p.z - g.position.z, dy = (p.y + .2) - g.position.y, d = Math.hypot(dx, dz, dy), sp = 7.5 * v.vit * dt;
         g.position.x += dx / d * sp; g.position.z += dz / d * sp; g.position.y += dy / d * sp;
