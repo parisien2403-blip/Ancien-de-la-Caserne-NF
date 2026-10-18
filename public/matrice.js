@@ -99,7 +99,7 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
     else if (t === "robelongue" || (t === "peignoir" && !peignoirAssis)) { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
-    else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
+    else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); if (o.dents) for (let i = 1; i < 10; i++) x.lineTo(160 - i * 12, 335 + (i % 2 ? 16 : 0)); x.lineTo(40, 335); }   // (dents : le bas en dents de scie, la robe de Lisa) else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     if (t === "eboueur" && !profil) {   // l'éboueur de la Propreté de Paris : le gilet jaune fluo et ses bandes grises réfléchissantes, sur la tenue verte ; les bandes blanches du pantalon
       x.fillStyle = "#d8ef2a"; x.beginPath(); x.roundRect(60, 148, 80, 112, 18); x.fill();
@@ -4806,12 +4806,12 @@ function construireSpringfield(A, L, scene, id) {
   // ---------- les habitants : des bonshommes comme ceux de la caserne (le corps dessiné, la tenue, la peau jaune) avec leurs vraies têtes ;
   //            ils vont et viennent, s'arrêtent quand on approche, et nous parlent ----------
   const HAB = [], hab = (cle, nom, num, x, z, o) => HAB.push({ cle, nom, num, x, z, route: o.route || null, i: 0, attente: 0, allure: o.allure || .55, repliques: o.repliques || [], tParle: 0,
-    info: { tenue: o.tenue, couleur: o.couleur, bas: o.bas || null, pieds: o.pieds, peau: o.peau || "#ffd521", hLibre: o.h, margeHaut: o.margeHaut || 0, reglage: { k: o.k || 1 } } });
+    info: { tenue: o.tenue, couleur: o.couleur, dents: !!o.dents, bas: o.bas || null, pieds: o.pieds, peau: o.peau || "#ffd521", hLibre: o.h, margeHaut: o.margeHaut || 0, reglage: { k: o.k || 1 } } });
   if (id === "spr-rue") {
     hab("homer", "Homer", -960, 3, -9.5, { tenue: "polo", couleur: "#ffffff", bas: "#6f9bd8", pieds: "#5a5a5a", h: 1.05, k: 1.15, margeHaut: 30, route: [[3, -9.5], [-2.5, -8.2], [-1.5, -11.6], [6.2, -7.4]],
       repliques: ["D'oh !", "Mmmm… des donuts…", "Woo-hoo !", "Marge ! Y a encore de la bière au frigo ?", "Pourquoi tu… petit !", "Je suis pas gros, je suis… musclé du ventre."] });
     hab("bart", "Bart", -961, -30, -5.2, { tenue: "tshirt", couleur: "#f2582a", bas: "#3a7ad8", pieds: "#3a7ad8", h: .62, k: 1.55, margeHaut: 80, allure: 1.4, route: [[-30, -5.2], [40, -5.2]], repliques: ["Ay caramba !", "Mange mon short !", "Cowabunga !", "C'est pas moi, j'ai rien fait !"] });
-    hab("lisa", "Lisa", -962, -3.2, -10.6, { tenue: "robe", couleur: "#f06a3a", pieds: "#d8202a", h: .58, k: 1.6, margeHaut: 80, repliques: ["Tu veux que je te joue un air de saxophone ?", "Si tu as besoin de moi, je suis à la bibliothèque.", "Bart ! Arrête de courir sur le trottoir !"] });
+    hab("lisa", "Lisa", -962, -3.2, -10.6, { tenue: "robe", couleur: "#f06a3a", pieds: "#d8202a", dents: true, h: .58, k: 1.6, margeHaut: 80, repliques: ["Tu veux que je te joue un air de saxophone ?", "Si tu as besoin de moi, je suis à la bibliothèque.", "Bart ! Arrête de courir sur le trottoir !"] });
   }
   if (id === "spr-maison") {
     hab("marge", "Marge", -963, -1.6, -1.6, { tenue: "robelongue", couleur: "#c2e08a", pieds: "#d8202a", h: 1.0, k: 1.95, margeHaut: 130, allure: .45, route: [[-1.6, -1.6], [-4.2, -1.4], [1.8, .6]], repliques: ["Hmmmmm…", "Homer, tu as encore laissé traîner tes chaussettes !", "Les enfants, le dîner est bientôt prêt.", "Tu restes manger avec nous ?"] });
