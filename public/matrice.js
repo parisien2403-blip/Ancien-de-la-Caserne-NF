@@ -10690,7 +10690,7 @@ function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
       + ".vf-tete b{font:900 clamp(22px,4vw,36px) 'Inter','Arial Black',sans-serif;letter-spacing:.06em}.vf-tete span{font:700 13px 'Lato',sans-serif;opacity:.85}"
       + ".vf-x{margin-left:auto;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:#14215a;font:900 20px sans-serif;cursor:pointer;flex:none}"
       + ".vf-grille{width:min(100%,980px);display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:14px}"
-      + ".vf-k{position:relative;background:#11183a;border:2px solid #2a3a7a;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.6)}"
+      + ".vf-k{position:relative;transition:transform .15s;background:#11183a;border:2px solid #2a3a7a;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.6)}"
       + ".vf-k img{width:100%;aspect-ratio:600/850;object-fit:cover;border-radius:4px;display:block;background:#000}"
       + ".vf-k h3{margin:0;font:800 15px 'Lato',sans-serif;line-height:1.15;color:#fff}.vf-k small{color:#c8d0e8;font-weight:700}"
       + ".vf-k .vf-l{border:0;border-radius:8px;padding:9px 6px;font:900 14px 'Lato',sans-serif;cursor:pointer;background:#ffd23a;color:#14215a}"
@@ -10713,7 +10713,8 @@ function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
       k.querySelector("img").alt = "Jaquette : " + f.titre;
       if (!loue) k.querySelector(".vf-l").onclick = () => { fermer(); louerFilm(f); };
       gr.appendChild(k); } };
-  M.vfMenu = { d, maj, fermer }; maj(); }
+  const sel = () => { const V = M && M.vfMenu; if (!V || !V.selVu) return; [...d.querySelectorAll(".vf-k")].forEach((k, j) => { const on = j === V.i; k.style.outline = on ? "4px solid #ffd23a" : "none"; k.style.transform = on ? "scale(1.04)" : "none"; if (on) k.scrollIntoView({ block: "nearest", behavior: "smooth" }); }); };
+  M.vfMenu = { d, maj: () => { maj(); sel(); }, fermer, sel, i: 0, selVu: false }; maj(); }
 const echapper = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 // la cassette entre dans le magnétoscope : « ▶ PLAY », les lignes qui défilent… puis le film commence
 function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOccupe(f.lieu)) { refusUnivers(f.lieu); return; }
@@ -11550,6 +11551,13 @@ function manette() {
     if (appui(14) || (lx < -.6 && !MAN.cadX)) { C.i = (C.i + 3) % 4; C.sel(C.i); } if (appui(15) || (lx > .6 && !MAN.cadX)) { C.i = (C.i + 1) % 4; C.sel(C.i); } MAN.cadX = Math.abs(lx) > .6;
     if (appui(12) || (ly < -.6 && !MAN.cadY)) C.tourne(1); if (appui(13) || (ly > .6 && !MAN.cadY)) C.tourne(-1); MAN.cadY = Math.abs(ly) > .6;
     if (appui(0)) C.ok(); if (appui(1)) C.fermer(); fin(); return; }
+  // le menu du Video Futur : la croix (ou le joystick) passe d'un film à l'autre, A loue, B ferme
+  if (M.vfMenu && M.vfMenu.d.isConnected) { const V = M.vfMenu, ks = [...V.d.querySelectorAll(".vf-k")], n = ks.length; if (!n) { fin(); return; }
+    const parLigne = Math.max(1, ks.filter(k => k.offsetTop === ks[0].offsetTop).length);
+    let i = V.i || 0; const dx = appui(15) || (lx > .6 && !MAN.cadX) ? 1 : appui(14) || (lx < -.6 && !MAN.cadX) ? -1 : 0, dy = appui(13) || (ly > .6 && !MAN.cadY) ? 1 : appui(12) || (ly < -.6 && !MAN.cadY) ? -1 : 0; MAN.cadX = Math.abs(lx) > .6; MAN.cadY = Math.abs(ly) > .6;
+    if (dx) i = (i + dx + n) % n; if (dy) i = Math.max(0, Math.min(n - 1, i + dy * parLigne));
+    if (i !== V.i || !V.selVu) { V.i = i; V.selVu = true; V.sel(); }
+    if (appui(0)) { const bt2 = ks[i].querySelector(".vf-l"); if (bt2 && !bt2.disabled) bt2.click(); } if (appui(1)) V.fermer(); fin(); return; }
   if (M.cadranMan && M.cadranMan.d.isConnected) { const C = M.cadranMan, avant = appui(15) || appui(12) || (lx > .6 && !MAN.cadX), arriere = appui(14) || appui(13) || (lx < -.6 && !MAN.cadX); MAN.cadX = Math.abs(lx) > .6;
     if (avant) { C.i = (C.i + 1) % C.n; C.sel(C.i); } if (arriere) { C.i = (C.i + C.n - 1) % C.n; C.sel(C.i); }
     if (appui(0)) C.composer(); if (appui(2)) C.eff(); if (appui(1)) C.rac(); fin(); return; }
