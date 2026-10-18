@@ -8965,7 +8965,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -9349,6 +9349,8 @@ const LIEU_CARTE = { "sh-fetes": [15.3, 9.6], "sh-mess": [-14.25, 10.45], "sh-et
 function noterCarteSH(num, x, z) { const c = LIEU_CARTE[M.lieu] || [x, z]; M.shCarte = (M.shCarte || []).filter(q => q.num !== num || Math.hypot(q.x - c[0], q.z - c[1]) > 3); M.shCarte.push({ num, nom: SH_NOMS[SH_IDN[num]], x: c[0], z: c[1] }); }
 function rencontreSH(num, centre, rayon, loin, lignes, fin, y = null, cond = null) {
   const moi = moiApo(); if (!moi || M.cine) return false; const mp = moi.g.position;
+  /* (une rencontre ne se joue qu'une fois : si elle a été coupée avant la fin, on passe simplement à la suite, sans la rejouer) */
+  M.shScenes = M.shScenes || new Set(); const cle = num + ":" + M.shEtape; if (M.shScenes.has(cle)) { fin && fin(); return false; }
   if (Math.hypot(mp.x - centre[0], mp.z - centre[1]) > rayon || (y != null && Math.abs(mp.y - y) > 1.6) || (cond && !cond(mp))) return false;
   // il sort du brouillard, de l'autre côté de l'endroit (pas dans notre dos)
   let dx = centre[0] - mp.x, dz = centre[1] - mp.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
@@ -9356,7 +9358,7 @@ function rencontreSH(num, centre, rayon, loin, lignes, fin, y = null, cond = nul
   const p = apparaitreSH(poserPerso(num, dep[0], dep[1], y)); if (!p) return false;
   const ex = p.g.position.x - mp.x, ez = p.g.position.z - mp.z, de = Math.hypot(ex, ez) || 1, arr = placeLibre(mp.x + ex / de * 2.2, mp.z + ez / de * 2.2);
   if (arr && de > 2.4) { p.info.allure = .5; p.cible = new THREE.Vector3(arr[0], p.g.position.y, arr[1]); }
-  noterCarteSH(num, centre[0], centre[1]);
+  noterCarteSH(num, centre[0], centre[1]); M.shScenes.add(cle);
   dialogueSH(num, [[null, null, de > 2.4 ? Math.min(5200, 1400 + (de - 2.2) / (3.3 * .5) * 1000) : 1800], ...lignes], fin); return true; }
 function poserPerso(num, x, z, y) { const p = persoSH(num, x, z, y); if (p && y != null && M.L.yNiv && y < -.5) p.nivMess = 1; if (p && y != null && Math.abs(p.g.position.y - y) > .5) p.g.position.y = y; return p; }
 function presSH(num, r, dyMax = 1.6) { const moi = moiApo(), p = M.gens.get(num); if (!moi || !p || M.cine || M.shMort) return false;
