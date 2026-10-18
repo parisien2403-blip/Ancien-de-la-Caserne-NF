@@ -8764,7 +8764,7 @@ function majBoutonCle() { if (!M || !M.ctx) return; const voir = !!(M.shCleMess 
   if (!voir) { if (M.cleEl) { M.cleEl.remove(); M.cleEl = null; } return; } if (M.cleEl) return;
   const d = document.createElement("div"); d.title = "Clé du mess"; d.style.cssText = "position:absolute;left:10px;top:212px;z-index:7;display:flex;align-items:center;gap:6px;border:1.5px solid #8a6a4a;border-radius:10px;padding:4px 10px 4px 4px;background:rgba(30,22,14,.85);color:#efe6d4;font:800 12px 'Lato',sans-serif;pointer-events:none";
   d.innerHTML = `<img src="${dessinCle().toDataURL()}" alt="" style="width:30px;height:34px;object-fit:contain">Clé du mess`; M.ctx.conteneur.appendChild(d); M.cleEl = d; }
-function majBoutonCarte() { if (!M || !M.ctx) return; majBoutonLampe(); majBoutonCle(); const voir = !!(M.shCarteOK && estSH(M.lieu));
+function majBoutonCarte() { if (!M || !M.ctx) return; if (!estSH(M.lieu)) rappelBarSH(false); majBoutonLampe(); majBoutonCle(); const voir = !!(M.shCarteOK && estSH(M.lieu));
   if (!voir) { if (M.carteBtn) { M.carteBtn.remove(); M.carteBtn = null; } return; }
   if (M.carteBtn) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "🗺️ Carte";
   b.style.cssText = "position:absolute;left:10px;top:128px;z-index:7;border:1.5px solid #8c1a10;border-radius:10px;padding:7px 12px;background:rgba(30,6,4,.82);color:#fff;font:800 13px 'Lato',sans-serif;cursor:pointer";
@@ -8799,6 +8799,13 @@ function majLampePoitrine() { const moi = M && M.gens.get(M.moiNum); if (!moi) r
   const H = tailleBonhomme() * hauteurDe(moi), c = M.camera.position, gp = moi.g.position, dx = c.x - gp.x, dz = c.z - gp.z, d = Math.hypot(dx, dz) || 1, dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0);
   sp.scale.set(H * .075, H * .18, 1); sp.position.set(dx / d * .07 - dr.x * H * .06, H * .64, dz / d * .07 - dr.z * H * .06); }
 // le bouton de la lampe : allumer, éteindre
+// l'onglet de rappel, dans le bar de Silent Hill : prendre la lampe et la carte avant d'en sortir
+function rappelBarSH(auBar) { if (!M || !M.ctx) return; const manque = [!M.shLampe && "🔦 la lampe (sur le comptoir)", !M.shCarteOK && "🗺️ la carte (au mur)"].filter(Boolean), voir = !!(auBar && manque.length && !M.cine && estSH(M.lieu));
+  if (M.shDansBar && !auBar && manque.length && M.lieu === "sh-fetes" && M.ctx.surInfo) M.ctx.surInfo("⚠️ Reviens au bar : prends " + manque.join(" et ") + " avant de partir.");
+  M.shDansBar = !!auBar;
+  if (!voir) { if (M.rappelEl) { M.rappelEl.remove(); M.rappelEl = null; } return; }
+  let d = M.rappelEl; if (!d) { d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:7;max-width:80%;text-align:center;background:rgba(20,24,18,.86);border:1.5px solid #8a6a2e;border-radius:10px;padding:7px 14px;color:#fff;font:800 13px 'Lato',sans-serif;pointer-events:none"; M.ctx.conteneur.appendChild(d); M.rappelEl = d; }
+  const t = "Avant de quitter le bar, prends " + manque.join(" et "); if (d.textContent !== t) d.textContent = t; }
 function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe && estSH(M.lieu));
   if (!voir) { if (M.lampeBtn) { M.lampeBtn.remove(); M.lampeBtn = null; } return; }
   let b = M.lampeBtn; if (!b) { b = document.createElement("button"); b.type = "button"; b.style.cssText = "position:absolute;left:10px;top:170px;z-index:7;border:1.5px solid #3d5a2e;border-radius:10px;padding:7px 12px;color:#fff;font:800 13px 'Lato',sans-serif;cursor:pointer";
@@ -9449,6 +9456,7 @@ function musiqueSH(dt) {
   musiquePyramid(false);
   if (!M.musReveil) { M.musReveil = new Audio("sons/sh-reveil.mp3"); M.musReveil.volume = 0; }
   const moi = M.gens.get(M.moiNum), auBar = M.lieu === "sh-fetes" && moi && moi.g.position.z > 17.6;
+  rappelBarSH(auBar);
   if (!M.musExplo) { M.musExplo = new Audio("sons/sh-explo.mp3"); M.musExplo.loop = true; M.musExplo.volume = 0; }
   if (VOLUME_FIGE) { for (const [a, on] of [[M.musReveil, auBar], [M.musExplo, !auBar]]) { a.loop = true; if (on && a.paused && performance.now() > (a.essai || 0)) { a.essai = performance.now() + 2000; a.play().catch(() => {}); } else if (!on && !a.paused) a.pause(); } return; }   // (iPhone : pas de fondu possible, on bascule)
   for (const [a, cible] of [[M.musReveil, auBar ? .85 : 0], [M.musExplo, auBar ? 0 : .8]]) {
