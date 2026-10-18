@@ -11381,7 +11381,9 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
 /* assis sur un tabouret du bar : tourné vers le comptoir (le côté où l'on ne peut pas avancer), les cuisses à l'horizontale, les jambes pendantes ; de temps en temps, il boit une gorgée */
 function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.rotation.y;
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (M.L.limites && !M.L.limites(tb[0] + dx * .5, tb[1] + dz * .5)) { A.cap = Math.atan2(dx, dz); break; } }
-  A.sc.rotation.y = A.cap; const T = (n, a, v) => tourne3D(A, n, a, v), k = A.sc.scale.x * A.h;
+  A.sc.rotation.y = A.cap; const T = (n, a, v) => tourne3D(A, n, a, v), k = A.sc.scale.y * A.h;
+  if (!A.rep) { A.rep = {}; for (const n of ["LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg", "LeftArm", "RightArm", "LeftForeArm", "RightForeArm", "Head"]) { const b = os3D(A, n); if (b) A.rep[n] = b.quaternion.clone(); } }
+  for (const n in A.rep) os3D(A, n).quaternion.copy(A.rep[n]);   // (on repart chaque fois de la pose de départ : sinon un os que l'animation ne remet pas en place tourne sur lui-même)
   T("LeftUpLeg", "x", 1.5); T("RightUpLeg", "x", 1.5); T("LeftLeg", "x", -1.45); T("RightLeg", "x", -1.45); T("LeftUpLeg", "y", -.06); T("RightUpLeg", "y", .06);
   const ph = (performance.now() + p.info.numero * 1300) % 6000, g = ph < 1300 ? Math.sin(ph / 1300 * Math.PI) : 0;   // (la gorgée : le bras droit monte le verre aux lèvres)
   T("RightArm", "x", -.5 - g * .5); T("RightForeArm", "x", -.9 - g * 1.2); T("LeftArm", "x", -.35); T("LeftForeArm", "x", -.6); T("Head", "x", -g * .2);
