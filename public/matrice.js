@@ -11164,7 +11164,7 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.add(new THREE.Mesh(cadre.geometry, cadre.material)); const afL = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .25, roughness: .5 })); afL.position.z = .017; gL.add(afL);
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
-const MUSIQUES_LB = { intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
+const MUSIQUES_LB = { spr: "sons/spr-menu.mp3", intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
 const CONCERT_LB = { v: null }, now0lb = () => performance.now();   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
   const fondu = (a, de, vers, ms, fin) => { const t0 = performance.now(); clearInterval(a.fondu); a.fondu = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, de + (vers - de) * u)); if (u >= 1) { clearInterval(a.fondu); fin && fin(); } }, 40); };
@@ -11173,7 +11173,8 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
   M.lbMus = null; M.lbSilence = performance.now() + attente; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
   const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
-  let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || (M.lieu !== "mess" && M.lieu !== "rue")) && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
+  const ici = l => cle === "spr" ? /^spr-/.test(l || "") : l === "santacarla";   // (Springfield : sa musique tant qu'on y est)
+  let arrive = false; const garde = setInterval(() => { if (M && ici(M.lieu)) arrive = true; if (!M || (!ici(M.lieu) && (arrive || (M.lieu !== "mess" && M.lieu !== "rue")) && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
 /* le Video Futur de la rue : on loue la cassette d'un film… et l'on part dans son monde.
    Une cassette par film : si quelqu'un est déjà dedans, elle est « LOUÉE » (et l'on voit par qui) ; Resident Evil se joue à plusieurs, il y a toujours un exemplaire */
@@ -12787,6 +12788,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (estSH(id) && M.shReveilBas) { M.shReveilBas = false; cineReveilBas(); }
   if (id === "bttf-cour") cineCour();
   if (id === "santacarla" && M.lbIntro) { M.lbIntro = false; cineSurvolSC(); }
+  if (/^spr-/.test(id)) musiqueLB("spr"); else if (M.lbMus && M.lbMus.cle === "spr") musiqueLB(null);   /* (Springfield : sa musique en continu, de la rue au salon et au Kwik-E-Mart ; elle s'efface en partant) */
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
