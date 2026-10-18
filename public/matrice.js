@@ -5386,7 +5386,7 @@ function construireSantaCarla(A, L, scene) {
   const buse = (but) => { if (ado.pist.visible) return ado.pist.localToWorld(V3(0, .025, -.2)); const p = moiP(); if (!p) return M.camera.position.clone(); const d = V3(but.x - p.x, 0, but.z - p.z).normalize(); return V3(p.x + d.x * .55, p.y + 1.15, p.z + d.z * .55); };   // (la main de l'ado)
   const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi || (mi && mi.joue)) { ado.pist.visible = false; return; }
     const cam = M.camera, now = performance.now(), dk = Math.min(.1, (now - ado.kt) / 1000); ado.kt = now; ado.kick = Math.max(0, ado.kick - dk * 6);
-    ado.pist.visible = !!M.premiere; ado.pist.scale.setScalar(.55); cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
+    ado.pist.visible = !!M.premiere && !M.cine; ado.pist.scale.setScalar(.55); cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
     if (M.premiere) { const u = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 1);
       ado.pist.position.copy(cam.position).addScaledVector(f, .36 - ado.kick * .03).addScaledVector(r, .15).addScaledVector(u, -.12 + ado.kick * .01); ado.pist.quaternion.copy(cam.quaternion); ado.pist.rotateY(.08); ado.pist.rotateX(ado.kick * .3); return; }
     ado.pist.visible = false; };   // (en vue normale : le bonhomme lève le bras, le pistolet dessiné dans sa main)
@@ -8043,7 +8043,7 @@ export async function ouvrir(ctx) {
     for (const b of M.L.boutonsPiste || []) b.visible = !!moiP && moiP.g.position.z < 15.2;
     chercherAction(t); manette();
     { const mo = M.marcheAuto && M.gens.get(M.moiNum); if (mo && !mo.cible) { M.marcheAuto = false; M.passage = false; M.cerclePret = false; envoyerWS({ t: "aller", x: mo.g.position.x, z: mo.g.position.z }); } }   // (fin de la marche dans l'escalier)
-    if (M.cine) { if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now());
+    if (M.cine) { if (!(M.gbCombat && !M.gbCombat.fini)) laserFP(true);   /* (pendant une cinématique, l'arme de la première personne disparaît : elle restait collée à la tête) */ if (M.cineVu !== M.cine) { M.cineVu = M.cine; if (M.premiere && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum); if (mo) mo.g.visible = true; } }   /* (au début d'une cinématique, on se revoit ; ensuite elle décide : dans la DeLorean, on disparaît) */ M.cine.maj(performance.now());
       if (M.premiere && M.cine && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum), cp = M.camera.position;   /* (à la première personne : si la caméra est restée à la place des yeux, on cache le bonhomme — sinon on verrait l'intérieur de sa tête) */
         if (mo) { const dans = Math.hypot(cp.x - mo.g.position.x, cp.z - mo.g.position.z) < .5 && Math.abs(cp.y - mo.g.position.y - 1.4) < 1;
           if (dans && mo.g.visible) { mo.g.visible = false; M.cacheFP = true; } else if (!dans && M.cacheFP) { mo.g.visible = true; M.cacheFP = false; } } }
