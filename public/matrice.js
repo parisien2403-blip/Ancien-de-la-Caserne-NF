@@ -5143,6 +5143,10 @@ function construireSantaCarla(A, L, scene) {
     0: [["V", "Alors c'est vous… Vous avez tué Paul, Marko et Dwayne."], ["M", "C'étaient pas des frères. C'étaient des monstres."], ["V", "Tu ne comprends rien. Cette baie était à nous bien avant ta naissance… et elle le sera encore longtemps après."],
       ["F", "Ta gueule, sale parasite. Ce soir, tu crèves."], ["V", "Tuez-moi si vous voulez. Santa Carla appartiendra toujours à ceux de mon espèce."], ["V", "Nous sommes au-dessus de vous. Pour nous, les hommes ne sont que du bétail."],
       ["A", "Le concert va bientôt finir. C'est maintenant ou jamais !"], ["V", "Alors venez… Montrez-moi ce que vous valez."]] };
+  const ENTRE = {   // (entre deux combats : les ados reprennent leur souffle et se parlent)
+    0: [["M", "On l'a eu… Il a vraiment explosé !"], ["F", "Un de moins. Mais ces enfoirés sont quatre, et ils savent qu'on est là maintenant."], ["A", "Le concert continue… On a encore un peu de temps."], ["F", "Rechargez l'eau bénite. Le prochain arrive, je le sens."]],
+    1: [["A", "Deux… Il en reste deux."], ["M", "J'ai les mains qui tremblent."], ["F", "C'est normal. Moi aussi, la première fois. Respire, et vise le cœur."], ["A", "Regardez là-haut… quelque chose bouge au-dessus de la grande roue."]],
+    2: [["F", "Trois de ces saloperies en cendres. Plus qu'un."], ["M", "Le chef. Il va venir lui-même, et il sera furieux."], ["A", "Restons ensemble. Quoi qu'il arrive."], ["F", "Ce soir, il crève. Pour Santa Carla."]] };
   const APRES = ["Un de moins. Il en reste encore… Ouvrez l'œil.", "Ils vont venir nous chercher. Restons ensemble.", "Le concert continue… On n'a pas beaucoup de temps.", "Je les sens… Ils nous observent, quelque part au-dessus de la jetée."];
   const prochain = () => { if (!M || M.L !== L || fini) return; const k = file.shift(); if (k == null) { finale(); return; }
     if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
@@ -5242,6 +5246,10 @@ function construireSantaCarla(A, L, scene) {
   /* une scène de dialogue, en cinématique : la caméra cadre celui qui parle (de trois quarts, depuis ceux à qui il parle), son nom et sa phrase en sous-titre, une réplique après l'autre */
   const dialogue = (lignes, fin) => { const cam = M.camera; let i = -1, tFin = 0, fait = false; const qui = [...new Set(lignes.map(l => l[0]).filter(n => n != null))], vamp = qui.find(n => n <= -860 && n >= -869);
     const grp = qui.map(n => M.gens.get(n)).filter(Boolean), ctr = grp.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, grp.length)), front = V3(cam.position.x - ctr.x, 0, cam.position.z - ctr.z); if (front.lengthSq() < .01) front.set(0, 0, 1); front.normalize();
+    { const vq0 = vamp != null && M.gens.get(vamp), ad = grp.filter(g2 => g2 !== vq0); if (ad.length > 1) { const c2 = ad.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / ad.length);
+        const f = vq0 ? V3(vq0.g.position.x - c2.x, 0, vq0.g.position.z - c2.z) : front.clone(); if (f.lengthSq() < .01) f.copy(front); f.normalize(); const r = V3(-f.z, 0, f.x);
+        ad.sort((a, b) => (a.g.position.x - c2.x) * r.x + (a.g.position.z - c2.z) * r.z - ((b.g.position.x - c2.x) * r.x + (b.g.position.z - c2.z) * r.z));
+        ad.forEach((q, i) => { const k2 = (i - (ad.length - 1) / 2) * 1.5, x = c2.x + r.x * k2, z = c2.z + r.z * k2; if (!L.limites || L.limites(x, z)) { q.g.position.x = x; q.g.position.z = z; } q.cible = null; q.chemin = []; }); } }   // (les ados côte à côte, face à celui à qui ils parlent : personne ne cache personne)
     const finir = () => { if (fait) return; fait = true; if (M && M.cine === S) { bulle(null); finCine(); } fin && fin(); };
     const S = { maj: now => { if (!M || M.L !== L) return finir();
         if (now > tFin) { do { i++; } while (i < lignes.length && !M.gens.has(lignes[i][0])); if (i >= lignes.length) return finir();
@@ -5302,7 +5310,7 @@ function construireSantaCarla(A, L, scene) {
       fleche = new THREE.Mesh(new THREE.ConeGeometry(.22, .5, 12), new THREE.MeshBasicMaterial({ color: 0xff2a2a, toneMapped: false })); fleche.rotation.x = Math.PI; scene.add(fleche); }
     btnPieu.style.display = v && !M.cine ? "" : "none"; fleche.visible = !!v; if (v) fleche.position.set(v.g.position.x, 1.5 + Math.abs(Math.sin(now / 200)) * .3, v.g.position.z);
     const c = ado.pieuVers; if (c && c.etat === "terre" && Math.hypot(c.g.position.x - p.x, c.g.position.z - p.z) < 2.7) pieu(c); };
-  const vieComps = (now, p) => { for (const c of comps) { const g = c.p.g, ox = c.i ? 1.8 : -1.8, d = Math.hypot(g.position.x - p.x - ox, g.position.z - p.z - 1);
+  const vieComps = (now, p) => { for (const q of [M.gens.get(M.moiNum), ...comps.map(c => c.p)]) if (q && q.cible && q.bulle) { q.g.remove(q.bulle); q.bulle = null; }   /* (on se tait en marchant) */ for (const c of comps) { const g = c.p.g, ox = c.i ? 1.8 : -1.8, d = Math.hypot(g.position.x - p.x - ox, g.position.z - p.z - 1);
       if (d > 3.2 && !c.p.cible) c.p.cible = V3(p.x + ox, 0, p.z + 1);   // (ils nous suivent)
       if (phase === "vague1" || phase === "david") { const vis = vamps.filter(v => v.etat === "tourne" || v.etat === "pique" || v.etat === "remonte");
         if (now > c.tirT && vis.length) { c.tirT = now + 2600 + Math.random() * 3000; const v = hasardDe(vis), dx = v.g.position.x - g.position.x, dz = v.g.position.z - g.position.z, l2 = Math.hypot(dx, dz) || 1;
@@ -5325,7 +5333,8 @@ function construireSantaCarla(A, L, scene) {
     majAdo(); vieComps(now, p); pieuAuto(now, p); boireBiere(now, p); voirSang(now, p);
     if (phase === "intro" && !adosIntro.length) [81, 82, 83].forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, q = ajouterAncien({ ...habillerLB({ numero: -(880 + i), nom: P.nom || ADOS[i].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: (i - 1) * 1.7, z: .3 - Math.abs(i - 1) * .5 }); if (q) adosIntro.push(q); });   // (les trois ados, devant l'arche : la caméra du survol arrive sur eux)
     if (phase === "intro" && !M.cine && !M.lbIntro) { if (!choixT) choixT = now + 1800; if (now > choixT) { phase = "choix"; choisirAdo(); } }
-    if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus qu'un… Le chef. Il va venir lui-même, et il sera furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
+    if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const etape = 3 - file.length; setTimeout(() => { if (!M || M.L !== L || fini) return; const fr = comps.find(c => c.id !== 81), au = comps.find(c => c !== fr), F = fr ? fr.num : M.moiNum, A = au ? au.num : F;
+        dialogue((ENTRE[etape] || ENTRE[0]).map(([q, t]) => [q === "M" ? M.moiNum : q === "F" ? F : A, t]), () => { if (M && M.L === L && !fini) setTimeout(prochain, 7000 + Math.random() * 5000); }); }, 2600); } else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
     for (const v of vamps) { const g = v.g, dt = 1 / 60;
       if (v.etat === "approche") { if (!v.pose) { const cam = M.camera.getWorldDirection(V3(0, 0, 0)); cam.y = 0; if (cam.lengthSq() < 1e-4) cam.set(0, 0, -1); cam.normalize(); v.pose = [cam.x, cam.z]; }   // (il fond sur nous du ciel, et se pose à cinq pas, devant nous : face à l'écran)
