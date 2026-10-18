@@ -1239,7 +1239,7 @@
           </div>
         </div>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
-          <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button><button class="btn small" id="mxPersosBtn" type="button" hidden>🎭 Les personnages ▾</button>
+          <div class="mx-boutons"><button class="btn small alt" id="mxBonhomme" type="button">🧍 Mon bonhomme</button><button class="btn small alt" id="mxPerso3D" type="button" hidden>🕺 Mon personnage 3D</button><button class="btn small" id="mxPersosBtn" type="button" hidden>🎭 Les personnages ▾</button>
           <div class="mx-persos" id="mxPersos" hidden>
           <button class="btn small alt" id="mxPNJ" type="button" hidden>👮 Chef de poste</button>
           <button class="btn small alt" id="mxPNJDJ" type="button" hidden>🎧 Manu, le DJ</button>
@@ -2221,7 +2221,7 @@
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
-      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJMonstresSH").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxRadioIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
+      monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPerso3D").hidden = !m.AVATARS_3D[Number(moi.numero)]; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJZombies").hidden = $("mxPNJMonstresSH").hidden = $("mxPNJNemesis").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin);   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxRadioIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = $("mxPNJRebecca").hidden = $("mxPNJLeon").hidden = $("mxPNJBarryB").hidden = $("mxPNJJill").hidden = $("mxPNJWesker").hidden = $("mxPNJChris").hidden = $("mxPNJZA").hidden = $("mxPNJZB").hidden = $("mxPNJZC").hidden = !moi.admin; $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
       dessinerLieux(m, null, {});
       await m.ouvrir({
@@ -2235,7 +2235,7 @@
           $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
           $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller";
           $("mxSaut").classList.toggle("on", on === "saut"); $("mxSaut").textContent = on === "saut" ? "🛑 Stop" : "🙌 Saut"; },
-        moiInfo: () => ({ appart: appartOuvert(), nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage }),
+        moiInfo: () => ({ appart: appartOuvert(), nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage, av3: monAvatar.av3 || null }),
         surLieu: id => { dessinerLieux(m, id); if (id !== "fetes" && typeof fermerDJ === "function" && $("mxDJ").classList.contains("panneau")) fermerDJ(); document.querySelector(".mx-danses").style.display = /^(z|sh|gb)-/.test(id) || id === "santacarla" ? "none" : "";   /* (pas de danses à l'apocalypse, à Silent Hill ni chez les Ghostbusters) */   /* (à l'apocalypse, on ne danse pas) */ if (id === "etage" || /^(z|sh)-/.test(id)) { djAudio.pause(); if (playing !== -1) { audio.pause(); playing = -1; } } $("mxVoile").hidden = true; $("mxDJ").hidden = id !== "fetes"; $("mxMusique").hidden = id !== "fetes"; $("mxTourner").hidden = false; $("mxLumiere").hidden = (id !== "fetes" && id !== "mess") || !moi.admin; $("mxBruit").hidden = id !== "fetes" || !moi.admin; $("mxMusVol").hidden = id !== "fetes" || !moi.admin; bruitMaj(); $("mxFumee").hidden = $("mxLasers").hidden = id !== "fetes";
           if (id === "fetes") infoMatrice("🎧 La musique : touche le coin du DJ, ou le bouton « Musique »", 5000); if (id === "fetes") chargerDisco(); djSynchro(); },
         surBoutonDJ: boutonDJ,
@@ -2589,6 +2589,26 @@
     if (i >= 0) boutons[i].f();
   }
   $("mxBonhomme").onclick = () => ouvrirBonhomme();
+  /* ===== Mon personnage 3D : la tenue (parmi celles préparées), les couleurs du haut, du bas, des chaussures ===== */
+  async function ouvrirPerso3D() { const m = await chargerMX(), liste = m.AVATARS_3D[Number(moi.numero)]; if (!liste) return;
+    const A = (monAvatar && monAvatar.av3) || {}, C = { ...(A.c || {}) }; let t = A.t || liste[0].id; const d = document.createElement("div");
+    d.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(10,8,6,.72);display:grid;place-items:center;padding:14px;box-sizing:border-box";
+    const ligne = (k, nom) => `<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><b style="width:110px">${nom}</b><input type="color" data-c="${k}" value="${C[k] || "#888888"}" style="width:56px;height:36px;border:0;background:none"><label style="font-size:13px"><input type="checkbox" data-o="${k}" ${C[k] ? "" : "checked"}> couleur d'origine</label></div>`;
+    d.innerHTML = `<div style="background:#fbf7ef;color:#222;border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:18px 18px 14px;box-sizing:border-box;font:15px 'Lato',sans-serif">
+      <h3 style="margin:0 0 6px">🕺 Mon personnage 3D</h3><p style="margin:0 0 12px;color:#666;font-size:13px">Ta tenue et ses couleurs : tout le monde les voit dans la caserne.</p>
+      <b>La tenue</b><div class="p3t" style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px"></div>
+      <b>Les couleurs</b>${ligne("haut", "👕 Le haut")}${ligne("bas", "👖 Le bas")}${ligne("pieds", "👟 Chaussures")}
+      <p class="p3e" style="color:#b81c22;margin:0 0 8px" hidden></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn small alt p3x">Annuler</button><button type="button" class="btn small p3ok">Enregistrer</button></div></div>`;
+    document.body.appendChild(d);
+    const majT = () => { d.querySelector(".p3t").innerHTML = liste.map(x => `<button type="button" class="btn small ${x.id === t ? "" : "alt"}" data-t="${x.id}">${esc(x.nom)}</button>`).join(""); d.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { t = b.dataset.t; majT(); }); };
+    d.querySelector(".p3x").onclick = () => d.remove();
+    d.querySelector(".p3ok").onclick = async () => { const couleurs = {}; for (const k of ["haut", "bas", "pieds"]) couleurs[k] = d.querySelector(`[data-o="${k}"]`).checked ? null : d.querySelector(`[data-c="${k}"]`).value;
+      try { const r = await api("PUT", "/api/moi/av3", { t, couleurs }); monAvatar = { ...monAvatar, av3: r }; d.remove(); garde("Ton personnage 3D a sa nouvelle tenue : tout le monde la voit déjà dans la caserne.", { titre: "🕺 C'est enregistré" }); }
+      catch (err) { const e2 = d.querySelector(".p3e"); e2.textContent = err.message; e2.hidden = false; } };
+    d.querySelectorAll("[data-c]").forEach(i => i.oninput = () => { d.querySelector(`[data-o="${i.dataset.c}"]`).checked = false; });
+    majT(); }
+  $("mxPerso3D").onclick = () => ouvrirPerso3D();
   $("mxPNJ").onclick = () => ouvrirBonhomme("pnj");
   $("mxPNJDJ").onclick = () => ouvrirBonhomme("dj");
   $("mxPNJBar").onclick = () => ouvrirBonhomme("bar");

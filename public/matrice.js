@@ -11338,15 +11338,33 @@ async function dessinerCorps(p) {
 }
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
-const AVATARS_3D = { 1: "avatars/0001.glb" };
+/* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb" }] };
 const av3Cache = {}; let gltfMod = null;
-function chargerAvatar3D(n) { if (!av3Cache[n]) av3Cache[n] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(AVATARS_3D[n]);
+function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
-    sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } }); const hb = bb.max.y - bb.min.y; return { sc, mix, act, h: hb > .5 && hb < 5 ? hb : 1.744 }; })()   /* (la boîte d’un modèle compressé est fausse : sa vraie taille, 1,74 m) */.catch(e => { console.warn("avatar 3D", e); return null; });
-  return av3Cache[n]; }
-const av3OK = p => !!(AVATARS_3D[p.info.numero] && !p.info.vrai && !p.info.pnj && M.L && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu));
-function poserAvatar3D(p) { if (!av3OK(p) || p.av3) return; chargerAvatar3D(p.info.numero).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return;
-    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); A.sc.scale.setScalar(tailleBonhomme() * hauteurDe(p) / A.h * 1.02); p.av3 = A; A.cur = null; A.px = A.pz = null; }); }
+    // la tenue : on peut changer la couleur du haut, du bas, des chaussures (selon la hauteur sur le corps, au repos)
+    const U = { uHaut: { value: new THREE.Vector4(1, 1, 1, 0) }, uBas: { value: new THREE.Vector4(1, 1, 1, 0) }, uPieds: { value: new THREE.Vector4(1, 1, 1, 0) }, uB0: { value: new THREE.Vector3() }, uB1: { value: new THREE.Vector3() }, uSeuil: { value: new THREE.Vector2(.075, .58) } };
+    let tenue = null; sc.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.frustumCulled = false; o.geometry.computeBoundingBox();
+      if (!tenue || o.name === "outfit" || (tenue.name !== "outfit" && o.geometry.boundingBox.min.y < tenue.geometry.boundingBox.min.y)) tenue = o; });   // (la tenue : celle qui descend jusqu'aux pieds, les chaussures — la compression efface son nom)
+    if (tenue) { const o = tenue; U.uB0.value.copy(o.geometry.boundingBox.min); U.uB1.value.copy(o.geometry.boundingBox.max);
+      o.material.onBeforeCompile = sh => { Object.assign(sh.uniforms, U);
+        sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vP3;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvP3 = position;");
+        sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vP3; uniform vec4 uHaut, uBas, uPieds; uniform vec3 uB0, uB1; uniform vec2 uSeuil;")
+          .replace("#include <map_fragment>", `#include <map_fragment>
+          { float H = uB1.y - uB0.y, h = (vP3.y - uB0.y) / H; vec4 zc = h < uSeuil.x ? uPieds : (h < uSeuil.y ? uBas : uHaut);
+            if (zc.a > .5) { float l = dot(diffuseColor.rgb, vec3(.299, .587, .114)); diffuseColor.rgb = zc.rgb * clamp(.35 + l * 1.1, 0.0, 1.25); }
+          }`); };
+      o.material.needsUpdate = true; }
+    const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
+  return av3Cache[f]; }
+const tenueAv3 = info => { const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
+const av3OK = p => !!(tenueAv3(p.info) && !p.info.vrai && !p.info.pnj && M.L && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu));
+function lookAv3(A, info) { const a = info.av3 || {}, C = a.c || {}, U = A.U, hx = (v, u) => { if (v) { const c = new THREE.Color(v); c.convertSRGBToLinear(); u.value.set(c.r, c.g, c.b, 1); } else u.value.w = 0; };
+  hx(C.haut, U.uHaut); hx(C.bas, U.uBas); hx(C.pieds, U.uPieds); }
+function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); return; }
+  chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
+    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); A.sc.scale.setScalar(tailleBonhomme() * hauteurDe(p) / A.h * 1.02); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   const use = av3OK(p) && !Number.isInteger(p.info.assis) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;

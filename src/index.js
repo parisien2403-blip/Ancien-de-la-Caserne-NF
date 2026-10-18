@@ -168,6 +168,8 @@ export class Compteur extends DurableObject {
       "bat TEXT", "etage INTEGER",
       // le bonhomme de la Matrice : tenue, couleur, tête détourée (PNG), version (pour le cache)
       "av_tenue TEXT", "av_couleur TEXT", "av_tete TEXT", "av_v INTEGER DEFAULT 0", "av_reglage TEXT", "av_bas TEXT", "av_pieds TEXT",
+      // le personnage en vrai 3D : la tenue choisie, ses couleurs, l'écusson (une image) et sa place
+      "av3 TEXT",
       // compte créé par l'administrateur, dont le mot de passe n'a pas encore été changé par son titulaire
       "cree_admin INTEGER DEFAULT 0",
       // la dernière fois que l'appli du membre a donné signe de vie (pour « en ce moment à la caserne »)
@@ -391,18 +393,27 @@ export class Compteur extends DurableObject {
     for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { Object.assign(a, { tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage }); ws.serializeAttachment(a); if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }); } }
     return { ok: true, tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage };
   }
-  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage, fait: p.fait }; }
+  // le personnage 3D : la tenue (parmi celles préparées pour ce membre), trois couleurs, l'écusson (PNG) sur la poitrine ou le dos
+  async changerAv3(token, x) { const moi = this.moi(token);
+    const hx = v => /^#[0-9a-f]{6}$/i.test(v || "") ? v : null, C = x.couleurs || {};
+    const a = { t: typeof x.t === "string" && /^[a-z0-9-]{1,30}$/.test(x.t) ? x.t : null, c: { haut: hx(C.haut), bas: hx(C.bas), pieds: hx(C.pieds) } };
+    this.sql.exec("UPDATE membres SET av3 = ? WHERE email = ?", JSON.stringify(a), moi.email);
+    const p = this.personneMatrice(moi.numero);
+    for (const ws of this.ctx.getWebSockets()) { const b = ws.deserializeAttachment(); if (b && b.numero === p.numero) { b.av3 = p.av3; ws.serializeAttachment(b); if (b.lieu) this.diffuser(b.lieu, { t: "avatar", p: this.publicMatrice(b) }); } }
+    return p.av3; }
+  monAvatar(token) { const moi = this.moi(token); const p = this.personneMatrice(moi.numero); return { tenue: p.tenue, couleur: p.couleur, bas: p.bas, pieds: p.pieds, tete_v: p.tete_v, reglage: p.reglage, fait: p.fait, av3: p.av3 }; }
   teteAvatar(token, num) {
     this.moi(token);
     const m = this.sql.exec("SELECT av_tete FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return m && m.av_tete;
   }
   personneMatrice(num) {
-    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v, av_reglage, av_bas, av_pieds FROM membres WHERE numero = ?", Number(num)).toArray()[0];
+    const m = this.sql.exec("SELECT numero, prenom, nom, admin, av_tenue, av_couleur, av_tete IS NOT NULL AS a_tete, av_v, av_reglage, av_bas, av_pieds, av3 FROM membres WHERE numero = ?", Number(num)).toArray()[0];
     return { numero: m.numero, nom: m.prenom, initiales: ((m.prenom[0] || "") + (m.nom[0] || "")).toUpperCase(), admin: !!m.admin,
-      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })() };
+      tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })(),
+      av3: (() => { try { return JSON.parse(m.av3) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller", "saut"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, perso: a.perso || null, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { av3: a.av3 || null, joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller", "saut"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, perso: a.perso || null, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
   // le slow à deux : on libère les deux danseurs (départ, changement de lieu, « arrêter »)
   finirSlow(ws, a) {
     if (!a.slow) return; const autre = a.slow, lieu = a.lieu; a.slow = null; try { ws.serializeAttachment(a); } catch (e) {}
@@ -1381,6 +1392,7 @@ export default {
       else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps(), Number(url.searchParams.get("id")) || 1);
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
       else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
+      else if (route === "PUT /api/moi/av3") r = await registre.changerAv3(token, await corps());
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());
       else if (route === "PUT /api/moi/fiche") r = await registre.corrigerFiche(token, await corps());
       else if (route === "PUT /api/moi/photo") r = await registre.changerPhoto(token, (await corps()).photo);
