@@ -42,7 +42,8 @@ const assombrir = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = 
 export function dessinerBonhomme(o, tete) {
   if (o.zombifie) return zombifierCorps(dessinerBonhomme({ ...o, zombifie: false, peau: o.peau || "#a3a89e" }, tete), o.large);
   let calqueTete = null;
-  const cv = toile(o.large ? 320 : 200, 420, (x0) => { let x = x0;
+  const cv = toile(o.large ? 320 : 200, 420 + (o.margeHaut || 0), (x0) => { let x = x0;
+    if (o.margeHaut) x.translate(0, o.margeHaut);   // (de la place au-dessus pour une grande tête : la choucroute de Marge)
     if (o.large) x.translate(60, 0);
     // la corpulence (réglage « l ») : le corps s'élargit autour de son axe ; la tête, elle, garde ses proportions
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
@@ -4566,63 +4567,6 @@ function sprToon(racine, sauf = new Set()) {
     const gp = o.geometry.parameters || {}, t = o.geometry.type, mats = [].concat(o.material);
     if (!/^(Box|Sphere|Cylinder|Cone)Geometry$/.test(t) || gp.openEnded || mats.some(m => m.transparent || m.side === THREE.BackSide) || mats.every(m => m.visible === false)) continue;
     const c = new THREE.Mesh(o.geometry, sprTrait); c.userData.trait = true; c.castShadow = false; c.receiveShadow = false; o.add(c); } }
-/* les habitants de Springfield, en volumes simples comme dans le dessin animé : la peau jaune, les grands yeux ronds ; ils marchent (bras et jambes), font coucou */
-const SPR_JAUNE = 0xffd521;
-function sprPerso(A, type) {
-  const g = new THREE.Group(), M3 = c => A.mat({ color: c, roughness: .6 }), mesh = (geo, c, x, y, z, par = g) => { const o = new THREE.Mesh(geo, typeof c === "number" ? M3(c) : c); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
-  const peau = type === "apu" ? 0xa8693a : SPR_JAUNE, P = {};
-  const D = { homer: { haut: 0xffffff, bas: 0x6a8fd8, pieds: 0x555555, h: 1.0, ventre: .34, tete: .2 }, marge: { haut: 0xc2e08a, bas: 0xc2e08a, pieds: 0xd8202a, h: .98, ventre: .2, tete: .17 },
-    bart: { haut: 0xf2582a, bas: 0x3a7ad8, pieds: 0x3a7ad8, h: .62, ventre: .2, tete: .17 }, lisa: { haut: 0xf06a20, bas: 0xf06a20, pieds: 0xd8202a, h: .58, ventre: .18, tete: .15 },
-    ned: { haut: 0x4f9a4a, bas: 0x8a8a8a, pieds: 0x4a3a2a, h: 1.0, ventre: .24, tete: .17 }, apu: { haut: 0x1f8a5a, bas: 0xf6f0a8, pieds: 0x1a1a1a, h: .98, ventre: .25, tete: .17 },
-    maggie: { haut: 0x9fd2f4, bas: 0x9fd2f4, pieds: 0x9fd2f4, h: .28, ventre: .13, tete: .13 } }[type];
-  const k = D.h, jambe = .42 * k, buste = .5 * k;
-  // les jambes et les bras pivotent à la hanche et à l'épaule
-  for (const s of [-1, 1]) { const pj = new THREE.Group(); pj.position.set(s * .1 * Math.max(.6, k), jambe + .06, 0); g.add(pj);
-    const robe = type === "marge" || type === "lisa"; mesh(new THREE.CylinderGeometry(.065 * Math.max(.7, k), .06 * Math.max(.7, k), jambe, 10), robe || type === "bart" ? peau : D.bas, 0, -jambe / 2, 0, pj);
-    if (type === "bart") mesh(new THREE.CylinderGeometry(.08, .08, jambe * .45, 10), D.bas, 0, -jambe * .2, 0, pj);
-    mesh(new THREE.BoxGeometry(.13 * Math.max(.7, k), .07, .24 * Math.max(.7, k)), D.pieds, 0, -jambe - .02, .05, pj); P[s < 0 ? "jg" : "jd"] = pj; }
-  const corps = new THREE.Group(); corps.position.y = jambe + .06; g.add(corps); P.corps = corps;
-  if (type === "marge") { mesh(new THREE.CylinderGeometry(.15, .27, buste + jambe, 18), D.haut, 0, (buste - jambe) / 2 + .02, 0, corps); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; mesh(new THREE.SphereGeometry(.028, 8, 6), 0xd8202a, Math.sin(a) * .13, buste + .05, Math.cos(a) * .13, corps); } }
-  else if (type === "lisa") { const r = mesh(new THREE.ConeGeometry(.24, buste + .1, 12), D.haut, 0, buste / 2 - .05, 0, corps); void r; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; mesh(new THREE.SphereGeometry(.02, 6, 5), 0xffffff, Math.sin(a) * .08, buste + .02, Math.cos(a) * .08, corps); } }
-  else { const v = mesh(new THREE.SphereGeometry(D.ventre, 16, 12), D.haut, 0, buste * .45, .02, corps); v.scale.set(1, (buste * .62) / D.ventre, .95);
-    mesh(new THREE.CylinderGeometry(D.ventre * .75, D.ventre * .9, buste * .3, 14), type === "homer" || type === "ned" || type === "apu" ? D.bas : D.haut, 0, buste * .08, 0, corps);
-    if (type === "ned") mesh(new THREE.CylinderGeometry(.09, .1, .06, 12), 0xf0a0b0, 0, buste * .95, .02, corps);
-    if (type === "apu") { mesh(new THREE.BoxGeometry(.16, buste * .8, .03), 0x1a1a1a, 0, buste * .5, D.ventre * .92, corps); mesh(new THREE.BoxGeometry(.07, .04, .01), 0xf6f0a8, -.05, buste * .66, D.ventre * .97, corps); }
-    if (type === "homer") { const col = mesh(new THREE.CylinderGeometry(.13, .19, .08, 14, 1, true), 0xffffff, 0, buste * .98, 0, corps); col.material.side = THREE.DoubleSide; } }
-  for (const s of [-1, 1]) { const pb = new THREE.Group(); pb.position.set(s * (D.ventre * .95 + .04), buste * .82, 0); corps.add(pb);
-    const manche = type === "marge" || type === "lisa" ? peau : D.haut; mesh(new THREE.CylinderGeometry(.06 * Math.max(.7, k), .055, buste * .35, 10), manche, 0, -buste * .17, 0, pb);
-    mesh(new THREE.CylinderGeometry(.05 * Math.max(.7, k), .045, buste * .45, 10), peau, 0, -buste * .55, 0, pb); mesh(new THREE.SphereGeometry(.055 * Math.max(.7, k), 10, 8), peau, 0, -buste * .8, 0, pb); P[s < 0 ? "bg" : "bd"] = pb; }
-  // la tête : le crâne, les grands yeux, le nez, la bouche ; puis les cheveux de chacun
-  const tete = new THREE.Group(); tete.position.y = buste + .02; corps.add(tete); P.tete = tete; const R = D.tete;
-  if (type === "homer") { mesh(new THREE.CylinderGeometry(R, R * 1.02, R * 1.8, 18), peau, 0, R * 1.0, 0, tete); mesh(new THREE.SphereGeometry(R, 18, 12), peau, 0, R * 1.9, 0, tete);
-    const m = mesh(new THREE.SphereGeometry(R * .82, 16, 12), 0xb8a07a, 0, R * .45, R * .38, tete); m.scale.set(1.08, .78, 1.0);   // (la barbe de trois jours, autour de la bouche)
-    mesh(new THREE.BoxGeometry(R * .9, R * .05, R * .05), 0x5a2a1a, 0, R * .3, R * 1.18, tete);   // (la bouche)
-    for (const s of [-1, 1]) { const c = mesh(new THREE.TorusGeometry(R * .32, .009, 6, 16, Math.PI), 0x1a1a1a, s * .025, R * 2.75, -.02, tete); c.rotation.z = Math.PI / 2 + s * .3; c.rotation.y = Math.PI / 2; }
-    for (const s of [-1, 1]) { const m2 = mesh(new THREE.TorusGeometry(R * .22, .01, 6, 14, Math.PI * 1.5), 0x1a1a1a, s * R * 1.0, R * 1.35, -R * .3, tete); m2.rotation.y = Math.PI / 2; mesh(new THREE.SphereGeometry(R * .18, 8, 6), peau, s * R * 1.0, R * 1.0, -R * .1, tete); } }   // (les cheveux en M au-dessus des oreilles, les oreilles)
-  else if (type === "bart") { mesh(new THREE.CylinderGeometry(R * .95, R * .92, R * 2.1, 18), peau, 0, R * 1.2, 0, tete); mesh(new THREE.SphereGeometry(R * .93, 16, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), peau, 0, R * .15, 0, tete); }
-  else { mesh(new THREE.SphereGeometry(R, 18, 14), peau, 0, R * 1.05, 0, tete).scale.y = type === "lisa" ? 1.1 : 1.15; }
-  const yeuxY = type === "homer" ? R * 1.55 : type === "bart" ? R * 1.45 : R * 1.2, yeuxZ = R * .82;
-  for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(R * .44, 16, 12), 0xffffff, s * R * .4, yeuxY, yeuxZ, tete); mesh(new THREE.SphereGeometry(R * .1, 8, 6), 0x111111, s * R * .36, yeuxY, yeuxZ + R * .42, tete); }
-  { const n = mesh(new THREE.CylinderGeometry(R * .17, R * .19, R * .55, 10), peau, 0, yeuxY - R * .38, R * 1.05, tete); n.rotation.x = Math.PI / 2 + (type === "homer" ? .35 : 0); }   // (le nez, en saucisse)
-  if (type === "bart" || type === "lisa" || type === "marge") mesh(new THREE.BoxGeometry(R * .6, R * .045, R * .05), 0x5a2a1a, 0, yeuxY - R * .78, R * .92, tete);   // (le sourire)
-  if (type === "marge") { const ch = new THREE.LatheGeometry([0, .3, .55, .75, .9, 1].map((t, i) => new THREE.Vector2(R * (i === 0 ? 1.0 : 1.0 + Math.sin(t * Math.PI) * .32), R * (1.2 + t * 6.2))).concat([new THREE.Vector2(R * .8, R * 7.7), new THREE.Vector2(R * .4, R * 8.0), new THREE.Vector2(0, R * 8.05)]), 22);
-    mesh(ch, 0x2c5ed8, 0, 0, -R * .1, tete); mesh(new THREE.SphereGeometry(R * 1.02, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0x2c5ed8, 0, R * 1.2, -R * .1, tete); }
-  if (type === "bart") for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2; mesh(new THREE.ConeGeometry(R * .26, R * .6, 4), peau, Math.sin(a) * R * .72, R * 2.5, Math.cos(a) * R * .72, tete); }
-  if (type === "lisa") for (let i = 0; i < 9; i++) { const a = Math.PI * (.08 + i / 8 * .84); const c = mesh(new THREE.ConeGeometry(R * .26, R * .85, 5), peau, Math.cos(a) * R * 1.05, R * 1.1 + Math.sin(a) * R * 1.05, -.04, tete); c.rotation.z = a - Math.PI / 2; }
-  if (type === "ned") { const c = mesh(new THREE.SphereGeometry(R * 1.02, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.2), 0x6a3a1a, 0, R * 1.12, -.01, tete); void c; mesh(new THREE.BoxGeometry(R * .9, R * .14, R * .2), 0x6a3a1a, 0, yeuxY - R * .58, R * .92, tete);
-    for (const s of [-1, 1]) mesh(new THREE.TorusGeometry(R * .38, .008, 6, 18), 0x222222, s * R * .36, yeuxY, yeuxZ + R * .2, tete); }
-  if (type === "apu") { mesh(new THREE.SphereGeometry(R * 1.04, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2.4), 0x2a2a34, 0, R * 1.12, -.01, tete); const b = mesh(new THREE.SphereGeometry(R * .55, 12, 8), 0x2a2a34, 0, R * 2.05, R * .45, tete); b.scale.set(1.6, .7, 1); }
-  if (type === "maggie") { for (let i = 0; i < 7; i++) { const a = Math.PI * (.15 + i / 6 * .7); const c = mesh(new THREE.ConeGeometry(R * .2, R * .55, 5), peau, Math.cos(a) * R * .95, R * 1.15 + Math.sin(a) * R * .95, -.03, tete); c.rotation.z = a - Math.PI / 2; }
-    mesh(new THREE.SphereGeometry(R * .2, 8, 6), 0x2c6ed8, R * .5, R * 2.0, 0, tete); mesh(new THREE.SphereGeometry(R * .22, 10, 8), 0xd8202a, 0, yeuxY - R * .75, R * 1.0, tete); }
-  if (type === "lisa") { const sx = new THREE.Group(); sx.position.set(.05, -buste * .35, .1); P.bd.add(sx); mesh(new THREE.CylinderGeometry(.03, .05, .4, 10), 0xe0b030, 0, 0, 0, sx); P.saxo = sx; }
-  g.traverse(o => { if (o.isMesh) o.material = o.material; }); sprToon(g);
-  return { g, P, type, ph: hasard(type.length * 13) * 6 };
-}
-/* le pas : les jambes et les bras qui se balancent ; « salut » : la main droite qui s'agite */
-function sprAnimer(p, t, vitesse, salut = false) { const P = p.P, a = Math.sin(t * 8 + p.ph) * Math.min(1, vitesse) * .6;
-  if (P.jg) { P.jg.rotation.x = a; P.jd.rotation.x = -a; } if (P.bg) P.bg.rotation.x = -a * .8;
-  if (P.bd) { if (salut) { P.bd.rotation.x = 0; P.bd.rotation.z = 2.5 + Math.sin(t * 9) * .35; } else { P.bd.rotation.z = 0; P.bd.rotation.x = a * .8; } }
-  if (P.corps) P.corps.position.y = (P.corps.userData.y0 ??= P.corps.position.y) + Math.abs(Math.sin(t * 8 + p.ph)) * .03 * Math.min(1, vitesse); }
 function sprVoiture(A, x, z, rot, couleur, o = {}) {   // une voiture ronde des années 80 : la caisse, l'habitacle, les vitres, les roues
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; A.scene.add(g); const m = A.mat({ color: couleur, roughness: .45 });
   const caisse = new THREE.Mesh(new THREE.BoxGeometry(1.8, .62, 4.4), m); caisse.position.y = .62; caisse.castShadow = true; g.add(caisse);
@@ -4859,24 +4803,23 @@ function construireSpringfield(A, L, scene, id) {
     L.depart = [-7.4, 0]; L.cam = { pos: [-8.2, 2.4, -3.5], vise: [2, 1, 1.5] };
   }
 
-  // ---------- les habitants : ils vont et viennent, s'arrêtent et se tournent vers nous quand on approche, et nous parlent ----------
-  const HAB = [], hab = (type, nom, x, z, o = {}) => { const p = sprPerso(A, type); p.g.scale.setScalar(type === "maggie" ? 1.2 : type === "bart" || type === "lisa" ? 1.18 : 1.22); p.g.position.set(x, o.y || 0, z); p.g.rotation.y = o.cap || 0; scene.add(p.g);
-    Object.assign(p, { nom, route: o.route || null, i: 0, attente: 0, vit: o.vit || 1.1, repliques: o.repliques || [], salue: !!o.salue, skate: !!o.skate, cap0: o.cap || 0, tParle: 0, saxo: !!o.saxo }); HAB.push(p); return p; };
+  // ---------- les habitants : des bonshommes comme ceux de la caserne (le corps dessiné, la tenue, la peau jaune) avec leurs vraies têtes ;
+  //            ils vont et viennent, s'arrêtent quand on approche, et nous parlent ----------
+  const HAB = [], hab = (cle, nom, num, x, z, o) => HAB.push({ cle, nom, num, x, z, route: o.route || null, i: 0, attente: 0, allure: o.allure || .55, repliques: o.repliques || [], tParle: 0,
+    info: { tenue: o.tenue, couleur: o.couleur, bas: o.bas || null, pieds: o.pieds, peau: o.peau || "#ffd521", hLibre: o.h, margeHaut: o.margeHaut || 0, reglage: { k: o.k || 1 } } });
   if (id === "spr-rue") {
-    hab("homer", "Homer", 3, -9.5, { route: [[3, -9.5], [-2.5, -8.2], [-1.5, -11.6], [6.2, -7.4]], vit: .9, repliques: ["D'oh !", "Mmmm… des donuts…", "Woo-hoo !", "Marge ! Y a encore de la bière au frigo ?", "Pourquoi tu… petit !", "Je suis pas gros, je suis… musclé du ventre."] });
-    const bart = hab("bart", "Bart", -30, -5.2, { route: [[-30, -5.2], [40, -5.2]], vit: 4.2, skate: true, repliques: ["Ay caramba !", "Mange mon short !", "Cowabunga !", "C'est pas moi, j'ai rien fait !"] });
-    { const sk = new THREE.Group(); const pl = new THREE.Mesh(new THREE.BoxGeometry(.24, .04, .75), A.mat({ color: 0xd8202a })); pl.position.y = .1; sk.add(pl);
-      for (const z of [-.25, .25]) for (const x of [-.09, .09]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .04, 10), A.mat({ color: 0xf0f0e0 })); r.rotation.z = Math.PI / 2; r.position.set(x, .04, z); sk.add(r); }
-      sprToon(sk); bart.g.add(sk); for (const c of bart.g.children) if (c !== sk) c.position.y += .12; }
-    hab("lisa", "Lisa", -3.2, -10.6, { cap: .6, saxo: true, repliques: ["Tu veux que je te joue un air de saxophone ?", "Si tu as besoin de moi, je suis à la bibliothèque.", "Bart ! Arrête de faire du skate sur le trottoir !"] });
-    hab("ned", "Ned Flanders", -20, -10.4, { route: [[-20, -10.4], [-24, -10.8], [-22, -8.6]], vit: .8, salue: true, repliques: ["Salut, salut, voisinou !", "Okilidokili !", "Une belle journée, que le Seigneur soit loué !", "Homer, tu veux un petit sandwich ?"] });
+    hab("homer", "Homer", -960, 3, -9.5, { tenue: "polo", couleur: "#ffffff", bas: "#6f9bd8", pieds: "#5a5a5a", h: 1.05, k: 1.15, margeHaut: 30, route: [[3, -9.5], [-2.5, -8.2], [-1.5, -11.6], [6.2, -7.4]],
+      repliques: ["D'oh !", "Mmmm… des donuts…", "Woo-hoo !", "Marge ! Y a encore de la bière au frigo ?", "Pourquoi tu… petit !", "Je suis pas gros, je suis… musclé du ventre."] });
+    hab("bart", "Bart", -961, -30, -5.2, { tenue: "tshirt", couleur: "#f2582a", bas: "#3a7ad8", pieds: "#3a7ad8", h: .62, k: 1.55, margeHaut: 80, allure: 1.4, route: [[-30, -5.2], [40, -5.2]], repliques: ["Ay caramba !", "Mange mon short !", "Cowabunga !", "C'est pas moi, j'ai rien fait !"] });
+    hab("lisa", "Lisa", -962, -3.2, -10.6, { tenue: "robe", couleur: "#f06a3a", pieds: "#d8202a", h: .58, k: 1.6, margeHaut: 80, repliques: ["Tu veux que je te joue un air de saxophone ?", "Si tu as besoin de moi, je suis à la bibliothèque.", "Bart ! Arrête de courir sur le trottoir !"] });
   }
   if (id === "spr-maison") {
-    hab("marge", "Marge", -1.6, -1.6, { route: [[-1.6, -1.6], [-4.2, -1.4], [1.8, .6]], vit: .7, repliques: ["Hmmmmm…", "Homer, tu as encore laissé traîner tes chaussettes !", "Les enfants, le dîner est bientôt prêt.", "Tu restes manger avec nous ?"] });
-    hab("maggie", "Maggie", .6, -2.3, { cap: .4, repliques: ["*suçote sa tétine*", "*suçote, suçote*"] });
+    hab("marge", "Marge", -963, -1.6, -1.6, { tenue: "robelongue", couleur: "#c2e08a", pieds: "#d8202a", h: 1.0, k: 1.95, margeHaut: 130, allure: .45, route: [[-1.6, -1.6], [-4.2, -1.4], [1.8, .6]], repliques: ["Hmmmmm…", "Homer, tu as encore laissé traîner tes chaussettes !", "Les enfants, le dîner est bientôt prêt.", "Tu restes manger avec nous ?"] });
+    hab("maggie", "Maggie", -964, .6, -2.3, { tenue: "survet", couleur: "#9fd2f4", bas: "#9fd2f4", pieds: "#9fd2f4", h: .36, k: 1.8, margeHaut: 90, repliques: ["*suçote sa tétine*", "*suçote, suçote*"] });
   }
   if (id === "spr-kwik") {
-    A.ajoute(new THREE.BoxGeometry(3, .3, 1), A.mat({ color: 0x6a5a4a }), -5.6, .15, 5.4, false); hab("apu", "Apu", -5.6, 5.4, { y: .3, cap: Math.PI, repliques: ["Merci, revenez quand vous voulez !", "Le Squishee est à seulement deux dollars, mon ami !", "Le hot-dog a été grillé ce matin… enfin, cette semaine.", "Bienvenue au Kwik-E-Mart !"] });
+    A.ajoute(new THREE.BoxGeometry(3, .3, 1), A.mat({ color: 0x6a5a4a }), -5.6, .15, 5.4, false);
+    hab("apu", "Apu", -965, -5.6, 5.3, { tenue: "civil", couleur: "#1f8a5a", bas: "#f6f0a8", pieds: "#1a1a1a", peau: "#c07a3a", h: 1.0, k: 1.1, repliques: ["Merci, revenez quand vous voulez !", "Le Squishee est à seulement deux dollars, mon ami !", "Le hot-dog a été grillé ce matin… enfin, cette semaine.", "Bienvenue au Kwik-E-Mart !"] });
   }
   L.habitants = HAB;
   // ---------- la circulation : des voitures qui roulent sur Evergreen Terrace, et s'arrêtent si l'on est devant elles ----------
@@ -4899,19 +4842,12 @@ function construireSpringfield(A, L, scene, id) {
     const moi = M && M.moiNum && M.gens.get(M.moiNum), mp = moi && moi.g.position;
     for (const c of VOIT) { const devant = mp && Math.abs(mp.z - c.z) < 1.6 && (mp.x - c.g.position.x) * c.dir > 0 && (mp.x - c.g.position.x) * c.dir < 6;
       c.v += ((devant ? 0 : 7) - c.v) * Math.min(1, dt * 2.5); c.g.position.x += c.v * c.dir * dt; if (c.g.position.x > 64) c.g.position.x = -60; if (c.g.position.x < -60) c.g.position.x = 64; }
-    for (const p of HAB) { const pos = p.g.position, d = mp ? Math.hypot(mp.x - pos.x, mp.z - pos.z) : 99; let vit = 0;
-      if (d < 3.2 && !p.skate) {   // (on approche : il s'arrête, se tourne vers nous, et nous parle)
-        const cap = Math.atan2(mp.x - pos.x, mp.z - pos.z); let dc = cap - p.g.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); p.g.rotation.y += dc * Math.min(1, dt * 5);
-        if (s > p.tParle && p.repliques.length) { p.tParle = s + 12; bulle(`<b style="color:#d8902a">${p.nom}</b> : ${p.repliques[Math.floor(Math.random() * p.repliques.length)]}`, 3800); } }
-      else if (p.route) { if (p.attente > 0) p.attente -= dt; else { const [tx, tz] = p.route[p.i], dx = tx - pos.x, dz = tz - pos.z, l = Math.hypot(dx, dz);
-          if (l < .15) { p.i = (p.i + 1) % p.route.length; p.attente = p.skate ? .4 : 1.5 + Math.random() * 3; }
-          else { const pas = Math.min(l, p.vit * dt); pos.x += dx / l * pas; pos.z += dz / l * pas; vit = p.vit; let dc = Math.atan2(dx, dz) - p.g.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); p.g.rotation.y += dc * Math.min(1, dt * 6); } }
-        if (p.skate && d < 2.5 && s > p.tParle) { p.tParle = s + 10; bulle(`<b style="color:#d8902a">${p.nom}</b> : ${p.repliques[Math.floor(Math.random() * p.repliques.length)]}`, 3000); } }
-      else { let dc = p.cap0 - p.g.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); p.g.rotation.y += dc * Math.min(1, dt * 2); }
-      if (p.skate) { sprAnimer(p, s, 0); p.P.jg.rotation.x = .25; p.P.jd.rotation.x = -.2; p.P.bg.rotation.z = -.5; p.P.bd.rotation.z = .5; p.g.rotation.z = Math.sin(s * 3) * .04; }
-      else sprAnimer(p, s, vit, p.salue && d < 6);
-      if (p.saxo && p.P.bd) { p.P.bd.rotation.x = -1.1; p.P.bd.rotation.z = .3; p.P.tete.rotation.x = Math.sin(s * 3) * .06; }
-      if (!vit && !p.skate) p.P.tete.rotation.y = Math.sin(s * .7 + p.ph) * .15; } };
+    for (const h of HAB) { let p = M && M.gens.get(h.num);
+      if (!p) { if (!M || M.lieu !== id) continue; p = ajouterAncien({ numero: h.num, nom: h.nom, initiales: "", teteUrl: `images/springfield/${h.cle}-tete.webp`, pnj: true, x: h.x, z: h.z, ...h.info }); if (!p) continue; if (h.num === -965) p.g.position.y = .3; }
+      const pos = p.g.position, d = mp ? Math.hypot(mp.x - pos.x, mp.z - pos.z) : 99;
+      if (d < 3.2) { p.cible = null; p.chemin = [];   // (on approche : il s'arrête et nous parle)
+        if (s > h.tParle && h.repliques.length) { h.tParle = s + 12; bulle(`<b style="color:#d8902a">${h.nom}</b> : ${h.repliques[Math.floor(Math.random() * h.repliques.length)]}`, 3800); } }
+      else if (h.route && !p.cible) { if (h.attente > 0) h.attente -= dt; else { h.i = (h.i + 1) % h.route.length; const [tx, tz] = h.route[h.i]; p.info.allure = h.allure; p.cible = new THREE.Vector3(tx, pos.y, tz); p.chemin = []; h.attente = 1.5 + Math.random() * 3; } } } };
 }
 
 function construireSantaCarla(A, L, scene) {
@@ -11668,7 +11604,7 @@ function majAmbiance() {
 export function ambiance(mode) { envoyerWS({ t: "ambiance", mode }); }
 
 /* --- les bonshommes dans la scène --- */
-const hauteurDe = p => Math.max(.75, Math.min(1.3, (p.info.reglage && p.info.reglage.h) || 1));   // le réglage « h » : plus grand, plus petit
+const hauteurDe = p => p.info.hLibre || Math.max(.75, Math.min(1.3, (p.info.reglage && p.info.reglage.h) || 1));   // (hLibre : les enfants de Springfield, Maggie)   // le réglage « h » : plus grand, plus petit
 const tailleBonhomme = () => M && M.L ? M.L.taille || (M.L.interieur ? 1.8 : 2.4) : 2.4;
 const sprite = (c, l, h) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, depthWrite: false })); s.scale.set(l, h, 1); return s; };
 const etiquette = (texte, moi, admin) => toile(512, 96, (x) => { x.font = "bold 44px Arial"; const t = (admin ? "★ " : "") + texte, w = x.measureText(t).width + 50;
@@ -11711,7 +11647,7 @@ async function dessinerCorps(p) {
     const mat = new THREE.MeshBasicMaterial({ map: p.poses.repos, transparent: true, alphaTest: .4, side: THREE.DoubleSide });
     p.corps = new THREE.Mesh(geo, mat); p.corps.droit = true; p.corps.userData.perso = true; p.corps.rotation.order = "YXZ";
     Object.defineProperty(mat, "rotation", { get: () => p.corps.rotation.z, set: v => { p.corps.rotation.z = v; } });   // (le balancement de la danse)
-    p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.g.add(p.corps); }
+    p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p) * (420 + (p.info.margeHaut || 0)) / 420, 1); p.g.add(p.corps); }
 }
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
