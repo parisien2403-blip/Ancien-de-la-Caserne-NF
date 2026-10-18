@@ -8962,7 +8962,7 @@ const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Laur
 const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73 };
 const SH_VIES = 5, SH_EDDIE_PV = 8;
 // les monstres : [image, hauteur, vitesse, points de vie]
-const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid", 3.2, 1.35, 999] };
+const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
 function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
@@ -9032,7 +9032,7 @@ const geste = (f, toujours = false) => { f.toujours = toujours; return f; };
 function creerBeteSH(cle, x, z, y, n = 0) {
   const R = regBete(cle), [img, h0, v0, pv] = SH_BETES[cle], h = h0 * (R.h || 1), v = v0 * (R.k || 1), lg = R.l || 1, geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xd8d4cc, transparent: true, alphaTest: .45, side: THREE.DoubleSide })); mesh.scale.set(h * .45 * lg, h, 1);
-  const t = new THREE.TextureLoader().load(`images/sh/m-${img}.webp`, tt => { mesh.scale.set(h * lg * tt.image.width / tt.image.height, h, 1); m.W = mesh.scale.x; if (m.lame) m.lame.position.x = m.W * .36; }); t.colorSpace = THREE.SRGBColorSpace; mesh.material.map = t;
+  const t = new THREE.TextureLoader().load(`images/sh/m-${img}.webp`, tt => { mesh.scale.set(h * lg * tt.image.width / tt.image.height, h, 1); m.W = mesh.scale.x; if (m.placerBras) m.placerBras(m.W); }); t.colorSpace = THREE.SRGBColorSpace; mesh.material.map = t;
   const g = new THREE.Group(); g.add(mesh); M.scene.add(g);
   const m = { cle, g, mesh, x, z, y, n, v, hp: pv, ph: Math.random() * 7, W: h * .45, H: h, mortT: 0, coupT: 0, lentT: 0, flashT: 0, imbattable: cle === "pyramid" };
   if (cle === "pyramid") {   /* son grand couteau, traîné au sol ; il le lève, et l'abat */
@@ -9040,8 +9040,16 @@ function creerBeteSH(cle, x, z, y, n = 0) {
       x.beginPath(); x.moveTo(14, 70); x.lineTo(82, 70); x.lineTo(86, 470); x.lineTo(48, 508); x.lineTo(10, 470); x.closePath(); x.fill();
       x.fillStyle = "rgba(70,18,8,.6)"; for (let k = 0; k < 40; k++) { x.beginPath(); x.arc(14 + Math.random() * 68, 90 + Math.random() * 380, 3 + Math.random() * 9, 0, 7); x.fill(); }
       x.fillStyle = "#2a1c14"; x.fillRect(34, 0, 28, 74); x.fillStyle = "#1a1210"; x.fillRect(18, 62, 60, 12); });
-    const piv = new THREE.Group(); piv.position.set(h * .2, h * .47, .06); g.add(piv); m.lame = piv;
-    const bl = new THREE.Mesh(new THREE.PlaneGeometry(h * .15, h * .52), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, alphaTest: .3, side: THREE.DoubleSide, color: 0x6e6a64 })); bl.position.y = -h * .25; piv.add(bl); piv.rotation.z = .55; }   /* (la pointe frôle le sol, sans le traverser) */
+    /* son bras droit, découpé de l'image : il tourne à l'épaule ; l'épée est dans sa main (et non plus collée au ventre) */
+    const piv = new THREE.Group(); g.add(piv); m.lame = piv;
+    const tB = new THREE.TextureLoader().load("images/sh/m-pyramid-bras.webp"); tB.colorSpace = THREE.SRGBColorSpace;
+    const bras = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tB, color: 0xd8d4cc, transparent: true, alphaTest: .45, side: THREE.DoubleSide })); piv.add(bras); m.bras = bras;
+    const main = new THREE.Group(); piv.add(main); main.rotation.z = .45;   /* (la lame part vers l'arrière, la pointe vers le sol) */
+    const bl = new THREE.Mesh(new THREE.PlaneGeometry(h * .15, h * .52), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, alphaTest: .3, side: THREE.DoubleSide, color: 0x6e6a64 })); bl.position.set(0, -h * .24, -.01); main.add(bl);
+    /* (repères pris sur l'image de 216 × 512 : l'épaule en (163, 140), le bras découpé en (148, 120)–(216, 340), la main en (205, 305)) */
+    m.placerBras = W => { const X = px => px / 216 * W, Y = py => py / 512 * h;
+      piv.position.set(X(163) - W / 2, h - Y(140), .05); bras.scale.set(X(68), Y(220), 1); bras.position.set(X(182 - 163), -Y(230 - 140), 0); main.position.set(X(205 - 163), -Y(305 - 140), .01); };
+    m.placerBras(h * lg * 216 / 512); }
   M.shMonstres.push(m); return m; }
 function pointSH(loin, essais = 400) {
   const L = M.L, Z = L.zone || [-20, 20, -130, 20], [ex, ez] = M.posEntree || [0, 0];
@@ -9116,8 +9124,8 @@ function animerBetesSH(now, dt) {
     if (m.p) { if (!M.gens.has(m.p.info.numero)) continue; m.g = m.p.g; }
     else m.g.visible = memeEtage;
     if (m.statique && !m.mortT) continue;   /* (une personne, que Pyramid Head vise : elle reste un bonhomme) */
-    if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); m.mesh.material.transparent = true; m.mesh.material.opacity = f; m.lame.children[0].material.transparent = true; m.lame.children[0].material.opacity = f; if (!f) m.g.visible = false; }
-    if (m.fige) { if (m.lame) m.lame.rotation.z = -(m.sens || 1) * .5; continue; }   /* (Pyramid Head, arrêté net) */
+    if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); m.mesh.material.transparent = true; m.mesh.material.opacity = f; m.lame.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = f; } }); if (!f) m.g.visible = false; }
+    if (m.fige) { if (m.lame) { m.lame.rotation.z = .3; m.g.scale.x = -(m.sens || 1); } continue; }   /* (Pyramid Head, arrêté net) */
     if (m.mortT && m.coupe) { const u = (now - m.mortT) / 1000, [bas, haut] = m.moities, H = m.mesh.scale.y, fd = now - m.mortT > 6000 ? Math.max(0, 1 - (now - m.mortT - 6000) / 1500) : 1;
       /* (le bas reste debout un instant, puis s'écroule sur le côté ; le haut est projeté, tourne, et retombe couché) */
       const e2 = t => t * t * (3 - 2 * t); bas.rotation.z = -m.coupeSens * Math.PI / 2 * .95 * e2(Math.max(0, Math.min(1, (u - .45) / .5)));
@@ -9143,16 +9151,16 @@ function animerBetesSH(now, dt) {
     else { if (!etg) { const y = M.L.hauteur ? M.L.hauteur(m.x, m.z, { g: { position: { y: m.y } } }) : 0; m.y = y; }
       m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z);
       m.mesh.rotation.z = m.cle === "infirmiere" || m.cle === "tuyau" ? (Math.sin(u * 13) > .85 ? Math.sin(u * 40) * .12 : 0) : Math.sin(u * 1.1) * .06;
-      m.mesh.material.color.setHex(now < m.flashT ? 0xff5a4a : 0xd8d4cc);
+      m.mesh.material.color.setHex(now < m.flashT ? 0xff5a4a : 0xd8d4cc); if (m.bras) m.bras.material.color.copy(m.mesh.material.color);
       if (m.lame) {   /* le sens de sa marche, vu de la caméra : l'épée traîne derrière lui, bras en arrière ; il frappe en la ramenant par-dessus, de l'arrière vers l'avant */
         const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), vx = m.x - (m.lx ?? m.x), vz = m.z - (m.lz ?? m.z); m.lx = m.x; m.lz = m.z;
         const vs = vx * dr.x + vz * dr.z; if (Math.abs(vs) > .002) m.sens = vs > 0 ? 1 : -1; if (m.frappeT && m.cibleCote) m.sens = m.cibleCote; const sg = m.sens || 1;
-        const TR = .5, AV = .95, k = m.frappeT ? now - m.frappeT : -1, e = t => t * t * (3 - 2 * t);
+        const TR = .12, AV = .95, k = m.frappeT ? now - m.frappeT : -1, e = t => t * t * (3 - 2 * t);
         const th = k < 0 ? TR + Math.sin(now / 520) * .03   /* (traînée, la pointe au sol, derrière lui) */
           : k < 380 ? TR + .35 * e(k / 380)   /* (il arme : le bras part encore en arrière) */
           : k < 820 ? TR + .35 + (2 * Math.PI - AV - TR - .35) * e((k - 380) / 440)   /* (le grand demi-cercle, de l'arrière, par-dessus la tête, jusque devant) */
           : k < 1500 ? -AV + (TR + AV) * e((k - 820) / 680) : TR;   /* (et l'épée repasse dessous, derrière lui) */
-        m.lame.rotation.z = -sg * th; const px = Math.abs(m.lame.position.x), avant = k < 380 ? 0 : k < 820 ? e((k - 380) / 440) : k < 1500 ? 1 - e((k - 820) / 680) : 0; m.lame.position.x = -sg * px * (1 - 2 * avant); } }   /* (la main : derrière lui, puis devant au moment du coup) */
+        m.lame.rotation.z = th; m.g.scale.x = -sg; } }   /* (l'image est retournée pour que son bras soit toujours du côté d'où il vient : le bras tourne à l'épaule, l'épée suit la main) */
     if (memeEtage) proche = Math.min(proche, d); }
   M.shProche = proche; }
 // les cartons au sol : poussés par qui passe dessus (nous, les autres, les monstres) ; jamais dans un mur
