@@ -81,7 +81,8 @@ export function dessinerBonhomme(o, tete) {
       x.beginPath(); x.moveTo(hx, bas ? 262 : 330); x.lineTo(g ? 54 : 146, 292); x.lineTo(g ? 70 : 130, 348); x.stroke();
       x.fillStyle = bas || peau; x.beginPath(); if (bas) x.roundRect(g ? 104 : 72, 250, 24, 150, 10); else x.roundRect(g ? 104 : 80, 330, 16, 70, 7); x.fill();
     } else if (bas) { x.fillStyle = bas; x.beginPath(); x.roundRect(72, 250, 24, 150, 10); x.roundRect(104, 250, 24, 150, 10); x.fill();
-      if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); } }
+      if (t === "survet") { x.fillStyle = "#fff"; x.fillRect(78, 252, 4, 144); x.fillRect(118, 252, 4, 144); }
+      if (o.short) { x.clearRect(70, 306, 60, 96); x.fillStyle = peau; x.beginPath(); x.roundRect(78, 300, 16, 98, 7); x.roundRect(106, 300, 16, 98, 7); x.fill(); } }   // (le short de Bart : les jambes nues dessous)
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
     const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "");
     const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
@@ -98,6 +99,9 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
+    else if (t === "robelongue" && o.nu) {   // la robe de Marge : longue, sans bretelles (les épaules et les bras nus)
+      x.fillStyle = peau; x.beginPath(); x.roundRect(60, 142, 80, 50, 16); x.fill(); x.fillStyle = haut; x.beginPath();
+      x.moveTo(66, 184); x.lineTo(134, 184); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); x.lineTo(66, 184); }
     else if (t === "robelongue" || (t === "peignoir" && !peignoirAssis)) { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
     else if (t === "robe" && o.dents) {   // la robe de Lisa : sans bretelles (les épaules et les bras nus), le bas en dents de scie
       x.fillStyle = peau; x.beginPath(); x.roundRect(60, 142, 80, 50, 16); x.fill(); x.fillStyle = haut; x.beginPath();
@@ -568,7 +572,7 @@ export function dessinerBonhomme(o, tete) {
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "rpd" || t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy" || t === "lbedgar";
-      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien" || t === "lbalan" || t === "lbtim" || o.dents) { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien" || t === "lbalan" || t === "lbtim" || o.dents || o.nu) { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
@@ -4809,15 +4813,15 @@ function construireSpringfield(A, L, scene, id) {
   // ---------- les habitants : des bonshommes comme ceux de la caserne (le corps dessiné, la tenue, la peau jaune) avec leurs vraies têtes ;
   //            ils vont et viennent, s'arrêtent quand on approche, et nous parlent ----------
   const HAB = [], hab = (cle, nom, num, x, z, o) => HAB.push({ cle, nom, num, x, z, route: o.route || null, i: 0, attente: 0, allure: o.allure || .55, repliques: o.repliques || [], tParle: 0,
-    info: { tenue: o.tenue, couleur: o.couleur, dents: !!o.dents, bas: o.bas || null, pieds: o.pieds, peau: o.peau || "#ffd521", hLibre: o.h, margeHaut: o.margeHaut || 0, reglage: { k: o.k || 1 } } });
+    info: { tenue: o.tenue, couleur: o.couleur, dents: !!o.dents, nu: !!o.nu, short: !!o.short, bas: o.bas || null, pieds: o.pieds, peau: o.peau || "#ffd521", hLibre: o.h, margeHaut: o.margeHaut || 0, reglage: { k: o.k || 1 } } });
   if (id === "spr-rue") {
     hab("homer", "Homer", -960, 3, -9.5, { tenue: "polo", couleur: "#ffffff", bas: "#6f9bd8", pieds: "#5a5a5a", h: 1.05, k: 1.15, margeHaut: 30, route: [[3, -9.5], [-2.5, -8.2], [-1.5, -11.6], [6.2, -7.4]],
       repliques: ["D'oh !", "Mmmm… des donuts…", "Woo-hoo !", "Marge ! Y a encore de la bière au frigo ?", "Pourquoi tu… petit !", "Je suis pas gros, je suis… musclé du ventre."] });
-    hab("bart", "Bart", -961, -30, -5.2, { tenue: "tshirt", couleur: "#f2582a", bas: "#3a7ad8", pieds: "#3a7ad8", h: .62, k: 1.55, margeHaut: 80, allure: 1.4, route: [[-30, -5.2], [40, -5.2]], repliques: ["Ay caramba !", "Mange mon short !", "Cowabunga !", "C'est pas moi, j'ai rien fait !"] });
+    hab("bart", "Bart", -961, -30, -5.2, { short: true, tenue: "tshirt", couleur: "#f2582a", bas: "#3a7ad8", pieds: "#3a7ad8", h: .62, k: 1.55, margeHaut: 80, allure: 1.4, route: [[-30, -5.2], [40, -5.2]], repliques: ["Ay caramba !", "Mange mon short !", "Cowabunga !", "C'est pas moi, j'ai rien fait !"] });
     hab("lisa", "Lisa", -962, -3.2, -10.6, { tenue: "robe", couleur: "#f06a3a", pieds: "#d8202a", dents: true, h: .58, k: 1.6, margeHaut: 80, repliques: ["Tu veux que je te joue un air de saxophone ?", "Si tu as besoin de moi, je suis à la bibliothèque.", "Bart ! Arrête de courir sur le trottoir !"] });
   }
   if (id === "spr-maison") {
-    hab("marge", "Marge", -963, -1.6, -1.6, { tenue: "robelongue", couleur: "#c2e08a", pieds: "#d8202a", h: 1.0, k: 1.95, margeHaut: 130, allure: .45, route: [[-1.6, -1.6], [-4.2, -1.4], [1.8, .6]], repliques: ["Hmmmmm…", "Homer, tu as encore laissé traîner tes chaussettes !", "Les enfants, le dîner est bientôt prêt.", "Tu restes manger avec nous ?"] });
+    hab("marge", "Marge", -963, -1.6, -1.6, { tenue: "robelongue", couleur: "#c2e08a", pieds: "#d8202a", nu: true, h: 1.0, k: 1.95, margeHaut: 130, allure: .45, route: [[-1.6, -1.6], [-4.2, -1.4], [1.8, .6]], repliques: ["Hmmmmm…", "Homer, tu as encore laissé traîner tes chaussettes !", "Les enfants, le dîner est bientôt prêt.", "Tu restes manger avec nous ?"] });
     hab("maggie", "Maggie", -964, .6, -2.3, { tenue: "survet", couleur: "#9fd2f4", bas: "#9fd2f4", pieds: "#9fd2f4", h: .36, k: 1.8, margeHaut: 90, repliques: ["*suçote sa tétine*", "*suçote, suçote*"] });
   }
   if (id === "spr-kwik") {
