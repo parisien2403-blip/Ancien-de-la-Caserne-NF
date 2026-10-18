@@ -8017,6 +8017,7 @@ export async function ouvrir(ctx) {
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
     animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt);
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -11324,6 +11325,7 @@ async function dessinerCorps(p) {
     ...(p.info.ymca ? { ymcaY: pose("ymcaY"), ymcaM: pose("ymcaM"), ymcaC: pose("ymcaC"), ymcaA: pose("ymcaA") } : {}), ...(p.info.musicien === "chant" ? { chant1: pose("chant1"), chant2: pose("chant2") } : {}), ...(p.info.musicien === "clavier" ? { clavier1: pose("clavier1"), clavier2: pose("clavier2") } : {}), ...(p.info.musicien === "batterie" ? { batterie0: pose("batterie0"), batterie1: pose("batterie1"), batterie2: pose("batterie2"), batterie3: pose("batterie3") } : {}), ...(p.info.hernandez ? { canne1: pose("canne1"), canne2: pose("canne2"), canne3: pose("canne3"), canne3D: () => miroir(dessinerBonhomme({ ...p.info, moi: p.moi, large: true, pose: "canne3" }, tete)), canne4: pose("canne4") } : {}), ...(p.info.dj ? { mix1: pose("mix1"), mix2: pose("mix2"), mix3: pose("mix3") } : {}), ...(p.info.barman ? { servir: pose("servir"), ranger: pose("ranger"), essuyer: pose("essuyer") } : {}) };
   const cache = {}; p.posesCache = cache; p.poses = {};
   for (const [k, f] of Object.entries(fab)) Object.defineProperty(p.poses, k, { enumerable: true, get: () => cache[k] || (cache[k] = f()) });
+  poserAvatar3D(p);
   if (p.corps) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; }
   else { const H = tailleBonhomme(); // les bonshommes passent après le décor transparent (bouteilles, verres) : jamais un objet de derrière dessiné par-dessus eux
     /* chaque bonhomme est un panneau qui reste (presque) droit : il se tourne vers la caméra, mais ne se penche en arrière que de 17° au plus,
@@ -11334,6 +11336,48 @@ async function dessinerCorps(p) {
     Object.defineProperty(mat, "rotation", { get: () => p.corps.rotation.z, set: v => { p.corps.rotation.z = v; } });   // (le balancement de la danse)
     p.corps.renderOrder = 2; p.corps.scale.set(H * .476 * 1.6 * hauteurDe(p), H * hauteurDe(p), 1); p.g.add(p.corps); }
 }
+/* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
+   dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
+const AVATARS_3D = { 1: "avatars/0001.glb" };
+const av3Cache = {}; let gltfMod = null;
+function chargerAvatar3D(n) { if (!av3Cache[n]) av3Cache[n] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(AVATARS_3D[n]);
+    const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
+    sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } }); const hb = bb.max.y - bb.min.y; return { sc, mix, act, h: hb > .5 && hb < 5 ? hb : 1.744 }; })()   /* (la boîte d’un modèle compressé est fausse : sa vraie taille, 1,74 m) */.catch(e => { console.warn("avatar 3D", e); return null; });
+  return av3Cache[n]; }
+const av3OK = p => !!(AVATARS_3D[p.info.numero] && !p.info.vrai && !p.info.pnj && M.L && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu));
+function poserAvatar3D(p) { if (!av3OK(p) || p.av3) return; chargerAvatar3D(p.info.numero).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return;
+    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); A.sc.scale.setScalar(tailleBonhomme() * hauteurDe(p) / A.h * 1.02); p.av3 = A; A.cur = null; A.px = A.pz = null; }); }
+function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
+  const use = av3OK(p) && !Number.isInteger(p.info.assis) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
+  A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
+  const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
+  A.v = (A.v || 0) * .8 + v * .2;
+  if (v > .05) { let d = Math.atan2(dx, dz) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 10); }   // (il se tourne dans le sens de sa marche)
+  const n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : "idle";
+  if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
+  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
+  A.sc.position.set(0, 0, 0); if (p.info.danse && A.cur === "idle") danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+/* les danses, sur le vrai squelette : par-dessus la pose de repos, chaque os tourne autour des axes du personnage (droite, haut, devant) */
+let AX = null, _q, _qp, _qs, _ax;   /* (créés au premier pas de danse : le moteur 3D se charge après ce fichier) */
+function os3D(A, n) { if (!A.os) { A.os = {}; A.sc.traverse(o => { if (o.isBone && !A.os[o.name]) A.os[o.name] = o; }); } return A.os[n]; }
+function tourne3D(A, n, axe, ang) { const b = os3D(A, n); if (!b || !ang) return; if (!AX) { AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) }; _q = new THREE.Quaternion(); _qp = new THREE.Quaternion(); _qs = new THREE.Quaternion(); _ax = new THREE.Vector3(); } A.sc.getWorldQuaternion(_qs); _ax.copy(AX[axe]).applyQuaternion(_qs); b.parent.getWorldQuaternion(_qp);
+  _q.setFromAxisAngle(_ax, ang); const inv = _qp.clone().invert(); b.quaternion.premultiply(inv.multiply(_q).multiply(_qp)); b.updateMatrixWorld(true); }
+function danser3D(A, d, t) { const b = t * Math.PI * 2 * 1.05, s = Math.sin(b), c = Math.cos(b), s2 = Math.sin(b / 2), bond = Math.abs(Math.sin(b));
+  const T = (n, a, v) => tourne3D(A, n, a, v);
+  if (d === "disco") { A.sc.position.y = bond * .025; T("Hips", "z", s * .08); T("Spine1", "z", -s * .1);
+    const haut = s2 > 0; T("RightArm", "z", haut ? -2.6 : -.5); T("RightArm", "x", haut ? 0 : -.6); T("RightArm", "y", haut ? 0 : .5);   // (le doigt en l'air, puis vers le sol, de l'autre côté)
+    T("LeftArm", "z", .55); T("LeftForeArm", "y", -1.2); T("Head", "z", haut ? -.15 : .15); T("RightUpLeg", "x", -.15 - bond * .1); }
+  else if (d === "charleston") { T("LeftUpLeg", "x", s * .6); T("RightUpLeg", "x", -s * .6); T("LeftLeg", "x", Math.max(0, s) * .7); T("RightLeg", "x", Math.max(0, -s) * .7);
+    T("LeftUpLeg", "y", c * .4); T("RightUpLeg", "y", c * .4); T("LeftArm", "x", -s * .9); T("RightArm", "x", s * .9); T("LeftArm", "z", .5); T("RightArm", "z", -.5); A.sc.position.y = bond * .03; }
+  else if (d === "madison") { A.sc.position.x = Math.sin(b / 2) * .18; T("Hips", "z", Math.sin(b / 2) * .1); T("LeftArm", "z", .3); T("RightArm", "z", -.3);
+    T("LeftForeArm", "y", -.9 - Math.max(0, s) * .5); T("RightForeArm", "y", .9 + Math.max(0, s) * .5); T("LeftUpLeg", "z", Math.max(0, Math.sin(b / 2)) * .35); T("RightUpLeg", "z", -Math.max(0, -Math.sin(b / 2)) * .35); T("Head", "x", -bond * .1); }
+  else if (d === "thriller") { T("LeftArm", "x", -1.35); T("RightArm", "x", -1.35); T("LeftArm", "z", .25); T("RightArm", "z", -.25); T("LeftHand", "x", .7); T("RightHand", "x", .7);   // (les bras tendus, les mains en griffes)
+    T("Spine1", "y", s * .35); T("Spine2", "z", c * .12); T("Head", "z", -s * .25); T("Hips", "y", -s * .15); A.sc.position.x = Math.sin(b / 2) * .15; T("LeftUpLeg", "x", -Math.max(0, s) * .3); T("RightUpLeg", "x", -Math.max(0, -s) * .3); }
+  else if (d === "saut") { const h = Math.max(0, Math.sin(b)); A.sc.position.y = h * .32; T("LeftArm", "z", 2.4 + h * .3); T("RightArm", "z", -2.4 - h * .3);   // (les bras en l'air, on saute en rythme)
+    T("LeftUpLeg", "x", -(1 - h) * .5); T("RightUpLeg", "x", -(1 - h) * .5); T("LeftLeg", "x", (1 - h) * .9); T("RightLeg", "x", (1 - h) * .9); }
+  else { A.sc.position.y = bond * .02; T("Hips", "z", s * .12); T("Spine1", "z", -s * .1); T("Head", "z", s * .08); T("LeftArm", "z", .45 + bond * .2); T("RightArm", "z", -.45 - bond * .2);   // (la balance : on se dandine, les bras qui suivent)
+    T("LeftForeArm", "y", -.8); T("RightForeArm", "y", .8); T("LeftUpLeg", "x", -Math.max(0, s) * .25); T("RightUpLeg", "x", -Math.max(0, -s) * .25); T("LeftLeg", "x", Math.max(0, s) * .4); T("RightLeg", "x", Math.max(0, -s) * .4); } }
+
 function ajouterAncien(info) {
   if (!M || !M.scene) return;
   if (M.L && M.L.apo && info.numero > 0 && (!M.L.sh || (info.numero === M.moiNum && M.shArme))) info.arme = true;   // (à l'apocalypse, chacun a son pistolet ; à Silent Hill, nous seulement, une fois l'arme de James en poche)
@@ -11798,7 +11842,7 @@ function manette() {
   if (lx || ly) { const f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
     const d = new THREE.Vector3(f.x * -ly - f.z * lx, 0, f.z * -ly + f.x * lx).normalize();   // (devant : joystick vers le haut ; à droite : vers la droite)
     if (now > MAN.allerT) { MAN.allerT = now + 200; const p = moi.g.position;
-      for (const lg of [1.7, 1.1, .6]) { const tx = p.x + d.x * lg, tz = p.z + d.z * lg; if (M.L.limites(tx, tz)) { allerVers(tx, tz, true, p.y); if (M.repere) M.repere.material.opacity = 0; break; } } }   /* (à la manette, pas de cercle jaune : il ne sert qu'au doigt) */
+      for (const lg of [1.7, 1.1, .6]) { const tx = p.x + d.x * lg, tz = p.z + d.z * lg; if (M.L.limites(tx, tz)) { allerVers(tx, tz, true, p.y); if (M.repere) M.repere.material.opacity = 0; break; } } moi.rapide = bt(5) || bt(10); }   /* (gâchette haute droite, ou le joystick enfoncé : on court) */   /* (à la manette, pas de cercle jaune : il ne sert qu'au doigt) */
     MAN.bouge = true; if (M.repere) M.repere.material.opacity = 0; }
   else if (MAN.bouge) { MAN.bouge = false; if (!M.marcheAuto) { moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z }); } }
   // tirer : le zombie (ou le monstre) le plus proche, devant soi de préférence
