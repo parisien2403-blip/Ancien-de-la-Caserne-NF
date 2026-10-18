@@ -4528,12 +4528,31 @@ function construireSantaCarla(A, L, scene) {
     for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(96 / 3.2, 12 / 3.2); q.anisotropy = 8; } return { t, n }; })();
   const jetee = A.ajoute(new THREE.PlaneGeometry(96, 12), A.mat({ map: pl2.t, normalMap: pl2.n, normalScale: new THREE.Vector2(1, 1), roughness: .85 }), 0, .02, 0, false); jetee.receiveShadow = true; jetee.rotation.x = -Math.PI / 2; L.sol = jetee;
   const sable = (() => { const ld = new THREE.TextureLoader(), t = ld.load("images/santacarla/sable.webp"), n = ld.load("images/santacarla/sable-n.webp"); t.colorSpace = THREE.SRGBColorSpace;   // (le vrai sable : le grain fin, les rides du vent, le relief)
-    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(600 / 5, 320 / 5); q.anisotropy = 8; }
-    return A.ajoute(new THREE.PlaneGeometry(600, 320), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 166, false); })();   /* (la plage s'étend loin derrière la scène, jusqu'à l'horizon) */ sable.rotation.x = -Math.PI / 2;
+    for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(600 / 5, 66 / 5); q.anisotropy = 8; }
+    return A.ajoute(new THREE.PlaneGeometry(600, 66), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 38, false); })();   /* (la plage, derrière la scène, jusqu'au bord de l'eau) */ sable.rotation.x = -Math.PI / 2;
   const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
   const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   // (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) mer.rotation.x = -Math.PI / 2;
   const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
-  reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, -.25, 120); reflet.visible = false; scene.add(reflet);   // (le reflet de la lune sur l'eau)
+  reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, .55, 150); reflet.material.blending = THREE.AdditiveBlending; reflet.material.depthWrite = false; scene.add(reflet);   // (la traînée de lune sur les vagues)
+  // la mer : de vraies vagues — la houle qui roule vers la plage (plusieurs trains de vagues calculés à chaque image), l'écume sur les crêtes, le ciel qui s'y reflète
+  const vagues = { t: { value: 0 } };
+  { const geo = new THREE.PlaneGeometry(420, 240, 210, 120), mat = new THREE.MeshStandardMaterial({ color: 0x0c1a2c, roughness: .18, metalness: .6, envMapIntensity: 1 });
+    mat.onBeforeCompile = (sh) => { sh.uniforms.uT = vagues.t;
+      const ondes = `uniform float uT; varying float vH;
+        vec3 houle(vec2 p) { float h = 0.0; vec2 d = vec2(0.0);
+          vec4 W[5]; W[0] = vec4(0.0, -1.0, .07, .55); W[1] = vec4(.35, -.94, .11, .32); W[2] = vec4(-.5, -.86, .19, .18); W[3] = vec4(.8, -.6, .31, .09); W[4] = vec4(-.2, -.98, .47, .06);
+          for (int i = 0; i < 5; i++) { vec2 dir = normalize(W[i].xy); float k = W[i].z * 6.2831, a = W[i].w, ph = k * dot(dir, p) - uT * sqrt(9.8 * k);
+            h += a * sin(ph); d += a * k * cos(ph) * dir; }
+          return vec3(h, d); }`;
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\n" + ondes)
+        .replace("#include <beginnormal_vertex>", "vec3 hv = houle(vec2(position.x, -position.y)); float bord = smoothstep(0.0, 18.0, position.y + 120.0); vec3 objectNormal = normalize(vec3(-hv.y * bord, hv.z * bord, 1.0));")
+        .replace("#include <begin_vertex>", "vec3 transformed = vec3(position); transformed.z += hv.x * bord; vH = hv.x * bord;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vH;")
+        .replace("#include <dithering_fragment>", "#include <dithering_fragment>\n gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(.62, .68, .78) * (.4 + .6 * gl_FragColor.g * 3.0), smoothstep(.45, .8, vH) * .55);"); };   // (l'écume blanche sur les crêtes)
+    const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.set(0, -.05, 70 + 120); m.receiveShadow = false; scene.add(m); L.merVagues = mat; }
+  // l'écume qui monte et redescend sur le sable, au bord de l'eau
+  const ecumeT = tex(toile(512, 64, (x, w, h) => { for (let i = 0; i < 1400; i++) { x.fillStyle = `rgba(235,242,250,${.15 + hasard(i) * .6})`; const px = hasard(i * 2.3) * w, py = h * .5 + (hasard(i * 3.1) - .5) * h * (.2 + hasard(i * 1.7) * .8); x.beginPath(); x.ellipse(px, py, 2 + hasard(i * 5) * 10, 1 + hasard(i * 7) * 2.5, 0, 0, 7); x.fill(); } }), 8, 1);
+  const ecumes = [0, 1, 2].map(i => { const m = new THREE.Mesh(new THREE.PlaneGeometry(420, 2.4 + i), new THREE.MeshBasicMaterial({ map: ecumeT, transparent: true, opacity: .7, depthWrite: false, color: 0xb8c4d8 })); m.rotation.x = -Math.PI / 2; m.position.set(0, .04 + i * .01, 70 + i * 2.5); scene.add(m); return m; });   // (le reflet de la lune sur l'eau)
   // l'écume des vagues, qui va et vient sur le sable
   const ecume = new THREE.Mesh(new THREE.PlaneGeometry(140, 2.2), new THREE.MeshBasicMaterial({ color: 0xc8d8e8, transparent: true, opacity: .35, depthWrite: false })); ecume.rotation.x = -Math.PI / 2; ecume.position.set(0, .03, 45); scene.add(ecume); ecume.visible = false;   /* (plus de mer devant la plage : le sable continue) */
   // les pilotis et la rambarde de la jetée, côté plage
@@ -4670,7 +4689,7 @@ function construireSantaCarla(A, L, scene) {
   // ---------- les limites : la jetée et la plage (pas l'eau, pas les stands, pas l'arche) ----------
   { const tb = new THREE.TextureLoader().load("images/santacarla/beton.webp"); tb.colorSpace = THREE.SRGBColorSpace; tb.wrapS = tb.wrapT = THREE.MirroredRepeatWrapping; tb.repeat.set(96 / 5, 40 / 2.5); tb.anisotropy = 8;
     const pl = A.ajoute(new THREE.PlaneGeometry(96, 40), A.mat({ map: tb, roughness: .9 }), 0, .015, -26, false); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true; L.solsPlus = [pl, sable]; }   // (la grande place, en béton, derrière la jetée en planches)
-  L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 90 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
+  L.limites = (x, z) => x > -45 && x < 45 && z > -37.6 && z < 66 && !(z > 5.9 && z < 6.5 && Math.abs(Math.abs(x) - 20) > 1.5)
     && !(x > -15.6 && x < -8.4 && z > -18.2 && z < -13.8)   // (la gare du Giant Dipper : on passe sous le grand huit)
     && !(x > 8.2 && x < 19.8 && z > -28 && z < -24)   // (les pieds de la grande roue)
     && ![[-7.5, -24.4], [-7.5, -17.6], [5.5, -24.4], [5.5, -17.6]].some(([a, b]) => Math.hypot(x - a, z - b) < .6)   // (les pieds du bateau pirate : on passe dessous)
@@ -4681,15 +4700,15 @@ function construireSantaCarla(A, L, scene) {
   L.depart = [0, 1.5]; L.cam = { pos: [0, 6, 14], vise: [0, 2.5, -6] }; L.suivi = { d: 6, h: 3, av: 3, vy: 1.6 };
   L.sansPNJ = true; L.sansMusique = true; L.toujoursNuit = true; L.santaCarla = true;
   // le ciel du couchant : la photo envoyée (le bleu, le rose, l'orange au-dessus de la mer, les vrais nuages), tout autour de la place
-  L.cielPerso = new THREE.TextureLoader().load("images/santacarla/ciel.webp"); L.cielPerso.colorSpace = THREE.SRGBColorSpace;   // (le vrai ciel du couchant, d'après la photo : l'orange au-dessus de la mer, le bleu et le rose, les vrais nuages)
-  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x4a3446;
+  L.cielPerso = new THREE.TextureLoader().load("images/santacarla/ciel-nuit.webp"); L.cielAube = new THREE.TextureLoader().load("images/santacarla/ciel.webp"); L.cielAube.colorSpace = THREE.SRGBColorSpace; L.cielPerso.colorSpace = THREE.SRGBColorSpace;   // (le vrai ciel du couchant, d'après la photo : l'orange au-dessus de la mer, le bleu et le rose, les vrais nuages)
+  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; L.cielAube.mapping = THREE.EquirectangularReflectionMapping; L.brumePerso = 0x0a0e1c;
   // ---------- l'animation des manèges ----------
   let tr = 0; const avant = L.anim;
   L.anim = (t) => { avant && avant(t); const s = t / 1000;
     roue.rotation.z = s * .12; nac.forEach((n, i) => { const a = i / 12 * Math.PI * 2 + s * .12; n.position.set(14 + Math.cos(a) * RR, 12 + Math.sin(a) * RR, -26); });
     manege.rotation.y = s * .35; chevaux.forEach((c, i) => { c.position.y = 1.4 + Math.sin(s * 2.2 + i * 1.3) * .3; });
     tr = (s * .045) % 1; wagons.forEach((w, k) => { const u = (tr + 1 - k * .008) % 1, p = voie.getPointAt(u), tg = voie.getTangentAt(u); w.position.copy(p); w.lookAt(p.x + tg.x, p.y + tg.y, p.z + tg.z); });
-    if (L.phare) L.phare.rotation.y = s * .6; (L.drapeaux || []).forEach((d, i) => { d.rotation.y = Math.sin(s * 3 + i) * .35; }); merT.offset.x = s * .004; ecume.position.z = 45 + Math.sin(s * .6) * 1.5; ecume.material.opacity = .25 + Math.sin(s * .6) * .1;
+    if (L.phare) L.phare.rotation.y = s * .6; (L.drapeaux || []).forEach((d, i) => { d.rotation.y = Math.sin(s * 3 + i) * .35; }); merT.offset.x = s * .004; vagues.t.value = s; ecumes.forEach((e, i) => { const u = (s * .14 + i / 3) % 1; e.position.z = 72 - u * 5; e.material.opacity = Math.sin(u * Math.PI) * .75; });
     const cl = Math.floor(s * 3); bulbes.forEach((b, i) => { b.visible = (i + cl) % 7 !== 0; });   // (les ampoules qui clignotent)
     combat(t); };
   // ================= les détails de la vraie jetée (d'après les photos) =================
@@ -4699,7 +4718,15 @@ function construireSantaCarla(A, L, scene) {
   const tube = (g, a, b, r, m) => { const d = b.clone().sub(a), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), m); o.position.copy(a).add(b).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o; };
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
   // la lumière du couchant (comme sur les photos) : le ciel chaud, la lueur basse à l'ouest ; et les lampadaires de la grande place
-  scene.add(new THREE.HemisphereLight(0xffc8a0, 0x30242c, .85)); { const so = new THREE.DirectionalLight(0xffa868, 1.1); so.position.set(-80, 22, 30); scene.add(so); }
+  // la nuit : la lumière bleutée de la lune ; à la fin, une fois David tué, le ciel orangé revient peu à peu (crescendo)
+  const hemi = new THREE.HemisphereLight(0x5a6898, 0x14141c, .55), lune = new THREE.DirectionalLight(0x8a9ac8, .55); lune.position.set(30, 40, 120); scene.add(hemi, lune);
+  { const geo = new THREE.SphereGeometry(280, 48, 24), aube = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: L.cielAube, side: THREE.BackSide, transparent: true, opacity: 0, depthWrite: false, fog: false, toneMapped: true }));
+    aube.renderOrder = -10; aube.visible = false; scene.add(aube); L.aube = { k: 0, t0: 0, D: 30000, mesh: aube };
+    const C = (h) => new THREE.Color(h), N = { hc: C(0x5a6898), hg: C(0x14141c), hi: .55, lc: C(0x8a9ac8), li: .55, f: C(0x0a0e1c) }, J = { hc: C(0xffc8a0), hg: C(0x30242c), hi: .85, lc: C(0xffa868), li: 1.1, f: C(0x4a3446) };
+    const av = L.anim; L.anim = (t) => { av && av(t); const A2 = L.aube; if (A2.t0) A2.k = Math.min(1, (performance.now() - A2.t0) / A2.D); const k = A2.k * A2.k * (3 - 2 * A2.k);
+      aube.visible = k > 0; aube.material.opacity = k; if (M && M.camera) aube.position.copy(M.camera.position);
+      hemi.color.copy(N.hc).lerp(J.hc, k); hemi.groundColor.copy(N.hg).lerp(J.hg, k); hemi.intensity = N.hi + (J.hi - N.hi) * k; lune.color.copy(N.lc).lerp(J.lc, k); lune.intensity = N.li + (J.li - N.li) * k;
+      lune.position.set(30 - 110 * k, 40 - 18 * k, 120 - 90 * k); if (scene.fog) scene.fog.color.copy(N.f).lerp(J.f, k); if (L.merVagues) { const em = k > .5 ? L.cielAube : L.cielPerso; if (L.merVagues.envMap !== em) { L.merVagues.envMap = em; L.merVagues.needsUpdate = true; } } }; }
   for (const [x, z] of [[0, -12], [22, -12], [38, -12], [38, -30], [24, -33], [0, -31], [-4, -12]]) { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const fv = A.mat({ color: 0x1a2e24, metalness: .5, roughness: .4 });
     cyl(g, .08, .12, 4.4, fv, 0, 2.2, 0, 8);
     for (const sx of [-.45, .45]) { const gl = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 8), new THREE.MeshBasicMaterial({ color: 0xfff0c8, toneMapped: false })); gl.position.set(sx, 4.62, 0); g.add(gl); tube(g, V3(0, 4.1, 0), V3(sx, 4.4, 0), .035, fv); }
@@ -4969,11 +4996,41 @@ function construireSantaCarla(A, L, scene) {
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
         if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); { const cible = M.lbMus || performance.now() < (M.lbSilence || 0) ? 0 : 1, dt4 = Math.min(.1, (now0lb() - (C.vt || now0lb())) / 1000); C.vt = now0lb(); V.volume = Math.max(0, Math.min(1, V.volume + Math.sign(cible - V.volume) * Math.min(Math.abs(cible - V.volume), dt4 / (cible ? 1.5 : 1.2)))); }   /* (le concert s'efface et revient en douceur) */ if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
+  // ================= les bidons enflammés autour du concert, comme dans le film : le métal rouillé, les vraies flammes qui dansent, les braises, la lueur sur le sable et la foule =================
+  { const rouille = tex(toile(128, 256, (x, w, h) => { x.fillStyle = "#4a2e1e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "140,70,30" : "30,20,16"},${.2 + hasard(i * 3) * .4})`; x.beginPath(); x.ellipse(hasard(i * 1.3) * w, hasard(i * 2.1) * h, 2 + hasard(i * 5) * 9, 1 + hasard(i * 7) * 5, 0, 0, 7); x.fill(); }
+        x.fillStyle = "rgba(20,14,10,.8)"; for (const y of [.18, .5, .82]) x.fillRect(0, y * h - 4, w, 8); x.fillStyle = "rgba(200,120,60,.35)"; for (const y of [.18, .5, .82]) x.fillRect(0, y * h - 5, w, 2); x.fillStyle = "rgba(10,6,4,.9)"; for (let i = 0; i < 30; i++) x.fillRect(hasard(i * 9) * w, 0, 2, 3 + hasard(i) * 20); }));   // (la rouille, les cerclages, les coulures noires)
+    const metal = A.mat({ map: rouille, roughness: .85, metalness: .5 }), interieur = new THREE.MeshBasicMaterial({ color: 0xff7a20, toneMapped: false });
+    // la flamme : dessinée à chaque image (un bruit qui monte, plus étroit en haut ; le cœur blanc-jaune, l'orange, le rouge sombre sur les bords)
+    const flammeU = { t: { value: 0 } }, flammeM = new THREE.ShaderMaterial({ uniforms: { uT: flammeU.t, uS: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+      fragmentShader: `uniform float uT; uniform float uS; varying vec2 vUv;
+        float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+        float fbm(vec2 p) { float v = 0.0, a = .5; for (int i = 0; i < 5; i++) { v += a * n(p); p *= 2.03; a *= .5; } return v; }
+        void main() { vec2 uv = vUv; float t = uT * 1.6 + uS * 10.0;
+          float x = uv.x - .5; x += (fbm(vec2(uv.y * 3.0 - t * .6, uS)) - .5) * .22 * uv.y;
+          float d = fbm(vec2(x * 3.5, uv.y * 2.4 - t * 1.6)), forme = 1.0 - smoothstep(0.0, .42 * (1.0 - uv.y * .78) + .02, abs(x)),
+            f = forme * smoothstep(1.0, .15, uv.y + (d - .5) * .7) * smoothstep(0.0, .06, uv.y), i = clamp(f * (.7 + d * .9), 0.0, 1.0);
+          vec3 c = mix(vec3(.45, .05, 0.0), vec3(1.0, .42, .05), smoothstep(.15, .55, i)); c = mix(c, vec3(1.0, .86, .45), smoothstep(.55, .85, i)); c = mix(c, vec3(1.0, .98, .9), smoothstep(.85, 1.0, i));
+          gl_FragColor = vec4(c * i * 1.4, i); }` });
+    const B = [[-7, 23], [19, 23], [-5, 15], [17, 15], [6, 11.5]], fl = [], braises = [], lums = [];
+    B.forEach(([x, z], i) => { const g = new THREE.Group(); g.position.set(CONCERT.x + x - 6, 0, z); scene.add(g);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .9, 18, 1, true), metal); b.position.y = .45; g.add(b); const fond = new THREE.Mesh(new THREE.CircleGeometry(.29, 18), interieur); fond.rotation.x = -Math.PI / 2; fond.position.y = .78; g.add(fond);
+      const bord = new THREE.Mesh(new THREE.TorusGeometry(.3, .025, 6, 20), A.mat({ color: 0x2a1a12, metalness: .6, roughness: .6 })); bord.rotation.x = Math.PI / 2; bord.position.y = .9; g.add(bord);
+      for (let k = 0; k < 2; k++) { const m = flammeM.clone(); m.uniforms.uT = flammeU.t; m.uniforms.uS = { value: i * 1.7 + k * .9 }; const q = new THREE.Mesh(new THREE.PlaneGeometry(.95 - k * .2, 1.6 - k * .3), m); q.position.y = .9 + (1.6 - k * .3) / 2 - .08; q.renderOrder = 4; g.add(q); fl.push({ q, k }); }
+      for (let k = 0; k < 10; k++) { const e = new THREE.Mesh(new THREE.SphereGeometry(.018, 4, 3), new THREE.MeshBasicMaterial({ color: 0xffa040, toneMapped: false, transparent: true })); g.add(e); braises.push({ e, ph: hasard(i * 10 + k) * 3, vx: (hasard(k * 3 + i) - .5) * .4, vz: (hasard(k * 5 + i) - .5) * .4 }); }
+      OBST.push([g.position.x - .4, g.position.x + .4, z - .4, z + .4]); });
+    // la lueur des flammes : trois lumières qui vacillent (pas une par bidon : le téléphone ne suivrait pas)
+    for (const [a, b2] of [[0, 2], [1, 3], [4, 4]]) { const l = new THREE.PointLight(0xff8a30, 10, 11, 1.5), pa = B[a], pb = B[b2]; l.position.set(CONCERT.x - 6 + (pa[0] + pb[0]) / 2, 1.8, (pa[1] + pb[1]) / 2); scene.add(l); lums.push(l); }
+    const av = L.anim; L.anim = (t) => { av && av(t); const s2 = t / 1000; flammeU.t.value = s2;
+      if (M && M.camera) for (const { q } of fl) { const w = q.parent.position, c = M.camera.position; q.rotation.y = Math.atan2(c.x - w.x, c.z - w.z); }   // (la flamme toujours tournée vers nous)
+      lums.forEach((l, i) => { l.intensity = 9 + Math.sin(s2 * 11 + i) * 1.6 + Math.sin(s2 * 23.7 + i * 2) * 1.2 + Math.sin(s2 * 5.3 + i) * 1.4; });
+      for (const b of braises) { const u = ((s2 * .45 + b.ph) % 1.6) / 1.6; b.e.position.set(b.vx * u * 2 + Math.sin(s2 * 3 + b.ph) * .08, 1.1 + u * 2.8, b.vz * u * 2); b.e.material.opacity = 1 - u; } }; }
   // ================= l'atmosphère : le halo des ampoules et des globes, la brume qui traîne au ras du sable, le grain et le cadre de cinéma =================
   { const halo = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.12, "rgba(255,255,255,.75)"); g.addColorStop(.4, "rgba(255,255,255,.18)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
     // (chaque petite lumière — ampoule, globe — reçoit son halo : regroupés par objet parent, pour qu'ils tournent avec la grande roue ou le manège)
     const groupes = new Map(); scene.updateMatrixWorld(true);
-    scene.traverse(o => { if (!o.isMesh || !o.geometry || o.geometry.type !== "SphereGeometry") return; const m = o.material; if (!m || !m.isMeshBasicMaterial || m.toneMapped !== false) return;
+    scene.traverse(o => { if (!o.isMesh || !o.geometry || o.geometry.type !== "SphereGeometry" || o.material.transparent) return; const m = o.material; if (!m || !m.isMeshBasicMaterial || m.toneMapped !== false) return;
       const r = o.geometry.parameters.radius; if (r > .3) return; const k = o.parent.uuid + (r > .15 ? "g" : "b"); if (!groupes.has(k)) groupes.set(k, { parent: o.parent, gros: r > .15, pos: [], col: [] }); const q = groupes.get(k); q.pos.push(o.position.x, o.position.y, o.position.z); q.col.push(m.color.r, m.color.g, m.color.b); });
     for (const q of groupes.values()) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(q.pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(q.col, 3));
       const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: q.gros ? 1.9 : .62, map: halo, vertexColors: true, transparent: true, opacity: q.gros ? .55 : .7, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); pts.renderOrder = 3; q.parent.add(pts); }
@@ -5023,7 +5080,7 @@ function construireSantaCarla(A, L, scene) {
     if (Math.hypot(p.x - biere.g.position.x, p.z - biere.g.position.z) < 1.1) { scene.remove(biere.g); biere = null; vies = Math.min(100, vies + 40); majHud(); try { sonBruit(.5, 600, .25); } catch (e) {}
       parle(M.moiNum, "Glou glou… Aaah ! Ça fait du bien !"); voile("background:radial-gradient(circle,rgba(255,200,60,0) 40%,rgba(255,200,60,.45) 100%);transition:opacity .8s", 700); } };
   // ---------- la fin : David vaincu, « Good Times », les ados se parlent ; la caméra part d'eux et monte vers le ciel, où paraît le titre, et « FIN » ; retour au mess, devant l'affiche ----------
-  const finale = () => { if (fini) return; fini = true; phase = "fin"; musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
+  const finale = () => { if (fini) return; fini = true; phase = "fin"; if (L.aube) L.aube.t0 = performance.now();   /* (le jour qui revient : le ciel orangé, crescendo) */ musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
     const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];   // (le prénom)
     const n0 = c0 && c0.num, n1 = c1 && c1.num;
     setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu leur chef !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
