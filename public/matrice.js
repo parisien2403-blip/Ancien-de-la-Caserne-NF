@@ -99,7 +99,10 @@ export function dessinerBonhomme(o, tete) {
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
     else if (t === "robelongue" || (t === "peignoir" && !peignoirAssis)) { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 232); x.lineTo(158, 374); x.lineTo(42, 374); x.lineTo(62, 232); }   // la robe longue
-    else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); if (o.dents) for (let i = 1; i < 10; i++) x.lineTo(160 - i * 12, 335 + (i % 2 ? 16 : 0)); x.lineTo(40, 335); }   // (dents : le bas en dents de scie, la robe de Lisa) else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
+    else if (t === "robe" && o.dents) {   // la robe de Lisa : sans bretelles (les épaules et les bras nus), le bas en dents de scie
+      x.fillStyle = peau; x.beginPath(); x.roundRect(60, 142, 80, 50, 16); x.fill(); x.fillStyle = haut; x.beginPath();
+      x.moveTo(66, 184); x.lineTo(134, 184); x.lineTo(160, 335); for (let i = 1; i < 10; i++) x.lineTo(160 - i * 12, 335 + (i % 2 ? 16 : 0)); x.lineTo(40, 335); x.lineTo(66, 184); }
+    else if (t === "robe") { x.moveTo(62, 150); x.lineTo(138, 150); x.lineTo(160, 335); x.lineTo(40, 335); } else if (profil) x.roundRect(74, 145, 54, 120, 20); else x.roundRect(58, 145, 84, 120, 22);
     x.fill();
     if (t === "eboueur" && !profil) {   // l'éboueur de la Propreté de Paris : le gilet jaune fluo et ses bandes grises réfléchissantes, sur la tenue verte ; les bandes blanches du pantalon
       x.fillStyle = "#d8ef2a"; x.beginPath(); x.roundRect(60, 148, 80, 112, 18); x.fill();
@@ -565,7 +568,7 @@ export function dessinerBonhomme(o, tete) {
       x.save(); x.translate(cx, 158); x.rotate(a);
       if (cible) x.scale(1, Math.hypot(cible[0] - cx, cible[1] - 158) / 96);   // le bras s'allonge ou se raccourcit juste assez pour que la main arrive au bon endroit
       const court = t === "rpd" || t === "tshirt" || t === "polo" || t === "barry" || t === "chris" || t === "wesker" || t === "vpouvrier" || t === "vpflic" || t === "vpcowboy" || t === "lbedgar";
-      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien" || t === "lbalan" || t === "lbtim") { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
+      if (t === "jill" || t === "gore" || t === "gahan" || t === "pois" || t === "vpindien" || t === "lbalan" || t === "lbtim" || o.dents) { x.fillStyle = peau; x.beginPath(); x.roundRect(-11, -8, 22, 104, 11); x.fill(); if (t === "jill") { x.fillStyle = "#1a1a1c"; x.fillRect(-11, 78, 22, 12); }   // Jill : les bras nus, la mitaine noire (Martin Gore, Dave Gahan : bras nus aussi)
         if (t === "gahan" && sens < 0) { x.strokeStyle = "rgba(40,60,70,.75)"; x.lineWidth = 2.2; x.beginPath(); x.moveTo(-6, 10); x.lineTo(6, 10); x.moveTo(0, 2); x.lineTo(0, 24); x.moveTo(-5, 40); x.quadraticCurveTo(0, 30, 5, 40); x.quadraticCurveTo(0, 52, -5, 40); x.moveTo(-4, 48); x.lineTo(4, 56); x.stroke(); }   // ses tatouages
         if (t === "gore") { x.strokeStyle = "#cfd2d6"; x.lineWidth = 2; x.beginPath(); x.arc(0, 86, 9, 0, Math.PI); x.stroke(); } }
       else if (court) { x.fillStyle = peau; x.beginPath(); x.roundRect(-10, 24, 20, 72, 10); x.fill(); x.fillStyle = haut; x.beginPath(); x.roundRect(-14, -10, 28, 44, 12); x.fill(); }
