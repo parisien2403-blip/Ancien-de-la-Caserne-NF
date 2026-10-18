@@ -1148,6 +1148,22 @@ export class Compteur extends DurableObject {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // les vidéos du site (l'écran géant du concert…) : servies par morceaux (« Range »), sinon l'iPhone n'affiche pas l'image
+    if (url.pathname.startsWith("/videos/") && (request.method === "GET" || request.method === "HEAD")) {
+      const r = await env.ASSETS.fetch(new Request(url.toString()));
+      if (!r.ok) return r;
+      const tout = await r.arrayBuffer(), taille = tout.byteLength;
+      let debut = 0, fin = taille - 1, partiel = false;
+      const rg = (request.headers.get("Range") || "").match(/^bytes=(\d*)-(\d*)$/);
+      if (rg && (rg[1] || rg[2])) {
+        partiel = true;
+        if (rg[1]) { debut = Number(rg[1]); if (rg[2]) fin = Math.min(fin, Number(rg[2])); } else { debut = Math.max(0, taille - Number(rg[2])); }
+        if (debut > fin) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${taille}` } });
+      }
+      const entetes = { "Content-Type": r.headers.get("Content-Type") || "video/mp4", "Accept-Ranges": "bytes", "Content-Length": String(fin - debut + 1), "Cache-Control": "public, max-age=86400" };
+      if (partiel) entetes["Content-Range"] = `bytes ${debut}-${fin}/${taille}`;
+      return new Response(request.method === "HEAD" ? null : tout.slice(debut, fin + 1), { status: partiel ? 206 : 200, headers: entetes });
+    }
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     const registre = env.COMPTEUR.get(env.COMPTEUR.idFromName("caserne"));
