@@ -4870,7 +4870,8 @@ function construireSantaCarla(A, L, scene) {
     const sax = new THREE.Object3D(); sax.position.set(0, 2.4, 1.5); g.add(sax);   // (là où se tient Tim Cappello, éclairé par la poursuite)
     // l'écran géant, derrière le groupe : la vidéo du concert
     const ecranV = document.createElement("video"); ecranV.src = "videos/i-still-believe.mp4"; ecranV.loop = true; ecranV.playsInline = true; ecranV.muted = true; ecranV.preload = "auto"; ecranV.setAttribute("playsinline", "");
-    CONCERT_LB.v = ecranV; const tV = new THREE.VideoTexture(ecranV); tV.colorSpace = THREE.SRGBColorSpace;
+    const sonC = new Audio("sons/lb-i-still-believe.mp3"); sonC.loop = true; sonC.preload = "auto"; sonC.volume = 0; CONCERT.son = sonC;
+    CONCERT_LB.v = sonC; const tV = new THREE.VideoTexture(ecranV); tV.colorSpace = THREE.SRGBColorSpace;
     bxg(g, 11.6, 6.9, .25, A.mat({ color: 0x0a0a0c, roughness: .6 }), 0, 4.95, 5.85); const ecran = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2), new THREE.MeshBasicMaterial({ map: tV, toneMapped: false })); ecran.rotation.y = Math.PI; ecran.position.set(0, 4.95, 5.7); g.add(ecran);
     const ombreM = (dessin) => new THREE.Mesh(new THREE.PlaneGeometry(.9, 1.8), new THREE.MeshBasicMaterial({ map: tex(toile(128, 256, dessin)), transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     const silh = (x) => { x.fillStyle = "#16121a"; x.beginPath(); x.arc(64, 40, 22, 0, 7); x.fill(); x.beginPath(); x.moveTo(26, 80); x.quadraticCurveTo(64, 62, 102, 80); x.lineTo(96, 250); x.lineTo(32, 250); x.fill(); x.fillStyle = "#6a5a7a"; x.fillRect(30, 60, 70, 4); };
@@ -4994,9 +4995,9 @@ function construireSantaCarla(A, L, scene) {
       C.ls.forEach((l, i) => { l.intensity = 22 + Math.sin(s * 4.4 + i * 2) * 10; });
       if (C.majFoule) C.majFoule(t, M.camera.position);   // (la foule danse)
       // la vidéo de l'écran géant : sa musique, plus forte quand on s'approche de la scène (sans le son tant que le téléphone ne l'autorise pas)
-      { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
+      { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); if (C.son) C.son.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
-        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); { const cible = M.lbMus || performance.now() < (M.lbSilence || 0) ? 0 : 1, dt4 = Math.min(.1, (now0lb() - (C.vt || now0lb())) / 1000); C.vt = now0lb(); V.volume = Math.max(0, Math.min(1, V.volume + Math.sign(cible - V.volume) * Math.min(Math.abs(cible - V.volume), dt4 / (cible ? 1.5 : 1.2)))); }   /* (le concert s'efface et revient en douceur) */ if (V.muted && !M.lbMus && !C.sonEssai) { C.sonEssai = true; V.muted = false; V.play().catch(() => { V.muted = true; setTimeout(() => { C.sonEssai = false; }, 3000); }); } } } }; }
+        if (p) { const d = Math.hypot(p.x - C.x, p.z - C.z), v = Math.max(0, Math.min(1, 1 - (d - 6) / 34)); { const cible = M.lbMus || performance.now() < (M.lbSilence || 0) ? 0 : 1, dt4 = Math.min(.1, (now0lb() - (C.vt || now0lb())) / 1000); C.vt = now0lb(); V.volume = Math.max(0, Math.min(1, V.volume + Math.sign(cible - V.volume) * Math.min(Math.abs(cible - V.volume), dt4 / (cible ? 1.5 : 1.2)))); }   /* (le concert s'efface et revient en douceur) */ { const A2 = C.son; if (A2) { A2.volume = V.volume; if (A2.paused && V.volume > 0 && !C.sonEssai) { C.sonEssai = true; A2.play().catch(() => {}).finally(() => setTimeout(() => { C.sonEssai = false; }, 1500)); } } V.muted = true; } } } }; }
   // ================= les bidons enflammés autour du concert, comme dans le film : le métal rouillé, les vraies flammes qui dansent, les braises, la lueur sur le sable et la foule =================
   { const rouille = tex(toile(128, 256, (x, w, h) => { x.fillStyle = "#4a2e1e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(${hasard(i) > .5 ? "140,70,30" : "30,20,16"},${.2 + hasard(i * 3) * .4})`; x.beginPath(); x.ellipse(hasard(i * 1.3) * w, hasard(i * 2.1) * h, 2 + hasard(i * 5) * 9, 1 + hasard(i * 7) * 5, 0, 0, 7); x.fill(); }
         x.fillStyle = "rgba(20,14,10,.8)"; for (const y of [.18, .5, .82]) x.fillRect(0, y * h - 4, w, 8); x.fillStyle = "rgba(200,120,60,.35)"; for (const y of [.18, .5, .82]) x.fillRect(0, y * h - 5, w, 2); x.fillStyle = "rgba(10,6,4,.9)"; for (let i = 0; i < 30; i++) x.fillRect(hasard(i * 9) * w, 0, 2, 3 + hasard(i) * 20); }));   // (la rouille, les cerclages, les coulures noires)
@@ -5235,7 +5236,8 @@ function construireSantaCarla(A, L, scene) {
   // ---------- les dialogues : chacun parle (une bulle au-dessus de sa tête) ----------
   const hasardDe = a => a[Math.floor(Math.random() * a.length)];
   let parleLibre = 0;
-  const parle = (num, texte, force) => { const now = performance.now(); if (!M || M.L !== L || !texte || !M.gens.has(num) || M.cine || (!force && now < parleLibre)) return; parleLibre = now + 1800 + texte.length * 45; dire(num, texte); };
+  const parle = (num, texte, force) => { const now = performance.now(); if (!M || M.L !== L || !texte || !M.gens.has(num) || M.cine || (!force && now < parleLibre)) return;
+    if (!force && (M.gens.get(num).cible || (M.gens.get(M.moiNum) || {}).cible)) return;   /* (personne ne parle en marchant) */ parleLibre = now + 1800 + texte.length * 45; dire(num, texte); };
   const nomDe = (num) => { if (num === M.moiNum) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}; return P.nom || ADOS[M.lbPerso - 81].nom; } const q = M.gens.get(num); return (q && q.info.nom) || ""; };
   /* une scène de dialogue, en cinématique : la caméra cadre celui qui parle (de trois quarts, depuis ceux à qui il parle), son nom et sa phrase en sous-titre, une réplique après l'autre */
   const dialogue = (lignes, fin) => { const cam = M.camera; let i = -1, tFin = 0, fait = false; const qui = [...new Set(lignes.map(l => l[0]).filter(n => n != null))], vamp = qui.find(n => n <= -860 && n >= -869);
@@ -5313,7 +5315,7 @@ function construireSantaCarla(A, L, scene) {
       const im = document.createElement("div"); im.style.cssText = "width:100%;aspect-ratio:200/420;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a4a7a,#1a1424);border-radius:8px;margin-bottom:6px;overflow:hidden"; b.appendChild(im);
       { const info = habillerLB({ numero: 0 }, 81 + k); chargerTete(0, null, info.teteUrl).then(t => { const cv = dessinerBonhomme(info, t); cv.style.cssText = "width:100%;height:100%;object-fit:contain"; im.appendChild(cv); }); }
       b.appendChild(document.createTextNode(a.nom));
-      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; adosIntro.forEach(q => retirerAncien(q.info.numero)); adosIntro.length = 0; musiqueLB(null); if (CONCERT.ecranV) { CONCERT.ecranV.muted = false; CONCERT.ecranV.volume = 0; CONCERT.ecranV.play().catch(() => {}); }   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
+      b.onclick = e => { e.stopPropagation(); d.remove(); ado.k = k; M.lbPerso = 81 + k; adosIntro.forEach(q => retirerAncien(q.info.numero)); adosIntro.length = 0; musiqueLB(null); if (CONCERT.son) { CONCERT.son.volume = 0; CONCERT.son.play().catch(() => {}); }   /* (lancé au toucher : le téléphone l'autorise) */   /* (« Cry Little Sister » s'efface ; la musique de la plage, à fond) */ const mo = M.gens.get(M.moiNum); if (mo) { const q = mo.g.position.clone(); ajouterAncien({ ...(mo.info.vrai || mo.info), x: q.x, z: q.z }); } presentation(); }; d.querySelector(".c").appendChild(b); });
     for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); };
   const combat = (t) => {
     const now = performance.now(), p = moiP(); if (!p || !M || M.L !== L) return;
@@ -10652,8 +10654,8 @@ function cineSurvolSC() { if (!M) return; const D = 30000; let fini = false, t0 
   const fin = () => { if (fini || !M) return; fini = true; if (noir) noir.remove(); finCine(); };
   const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
   // une seule courbe douce pour la caméra, une autre pour le regard ; parcourues à vitesse régulière, en accélérant au départ et en ralentissant à l'arrivée
-  const CP = new THREE.CatmullRomCurve3([[40, 24, 86], [24, 27, 68], [0, 30, 56], [-28, 30, 46], [-44, 23, 22], [-36, 15, 2], [-18, 9, 10], [-5, 4.6, 10], [0, 3.2, 9]].map(V), false, "centripetal");
-  const CC = new THREE.CatmullRomCurve3([[0, 0, 0], [0, 0, -5], [-6, 2, -10], [-10, 4, -13], [-10, 6, -19], [4, 6, -17], [3, 4, -9], [0, 2.6, -5], [0, 2, -3]].map(V), false, "centripetal");
+  const CP = new THREE.CatmullRomCurve3([[40, 24, 86], [24, 27, 68], [0, 30, 56], [-28, 30, 46], [-44, 23, 22], [-36, 15, 2], [-18, 9, 12], [-5, 4.6, 13], [0, 2.8, 12.5]].map(V), false, "centripetal");
+  const CC = new THREE.CatmullRomCurve3([[0, 0, 0], [0, 0, -5], [-6, 2, -10], [-10, 4, -13], [-10, 6, -19], [4, 6, -17], [3, 4.5, -9], [0, 3.6, -6], [0, 3.4, -5]].map(V), false, "centripetal");
   const lisse = u => u * u * u * (u * (u * 6 - 15) + 10);   // (départ et arrivée tout en douceur)
   M.passerBtn = boutonPasser(fin); let leve = false;
   M.cine = { maj: now => { const u = Math.max(0, Math.min(1, (now - t0) / D)), e = lisse(u);
