@@ -4846,7 +4846,9 @@ function construireSpringfield(A, L, scene, id) {
     for (const c of VOIT) { const devant = mp && Math.abs(mp.z - c.z) < 1.6 && (mp.x - c.g.position.x) * c.dir > 0 && (mp.x - c.g.position.x) * c.dir < 6;
       c.v += ((devant ? 0 : 7) - c.v) * Math.min(1, dt * 2.5); c.g.position.x += c.v * c.dir * dt; if (c.g.position.x > 64) c.g.position.x = -60; if (c.g.position.x < -60) c.g.position.x = 64; }
     for (const h of HAB) { let p = M && M.gens.get(h.num);
-      if (!p) { if (!M || M.lieu !== id) continue; p = ajouterAncien({ numero: h.num, nom: h.nom, initiales: "", teteUrl: `images/springfield/${h.cle}-tete.webp`, pnj: true, x: h.x, z: h.z, ...h.info }); if (!p) continue; if (h.num === -965) p.g.position.y = .3; }
+      if (!p) { if (!M || M.lieu !== id) continue; const idP = 95 + ["homer", "marge", "bart", "lisa", "maggie", "apu"].indexOf(h.cle), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(idP)) || {};   // (réglé dans la bibliothèque des personnages)
+        p = ajouterAncien({ numero: h.num, initiales: "", pnj: true, x: h.x, z: h.z, ...h.info, nom: P.nom || h.nom, tenue: P.tenue || h.info.tenue, couleur: P.couleur || h.info.couleur, bas: P.bas || h.info.bas, pieds: P.pieds || h.info.pieds,
+          reglage: { ...h.info.reglage, ...(P.reglage || {}) }, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, idP) : `images/springfield/${h.cle}-tete.webp` }); if (!p) continue; if (h.num === -965) p.g.position.y = .3; }
       const pos = p.g.position, d = mp ? Math.hypot(mp.x - pos.x, mp.z - pos.z) : 99;
       if (d < 3.2) { p.cible = null; p.chemin = [];   // (on approche : il s'arrête et nous parle)
         if (s > h.tParle && h.repliques.length) { h.tParle = s + 12; bulle(`<b style="color:#d8902a">${h.nom}</b> : ${h.repliques[Math.floor(Math.random() * h.repliques.length)]}`, 3800); } }
@@ -11177,7 +11179,7 @@ const FILMS_VF = [
   { cle: "lb", lieu: "santacarla", titre: "Génération perdue", annee: 1987 },
   { cle: "re", lieu: "z-grande", titre: "Resident Evil", annee: 1996, plusieurs: true },
   { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 },
-  { cle: "spr", lieu: "spr-rue", titre: "Les Simpson", annee: 1989 }];
+  { cle: "spr", lieu: "spr-rue", titre: "Les Simpson", annee: 1989, admin: true }];   // (admin : la jaquette n'est proposée qu'à l'administrateur)
 const ENTREE_APO = { arrivee: [-6.4, -38.5], yaw: -Math.PI / 2 };   // (comme si l'on passait la porte des encombrants de la grande cour)
 const louesVF = f => Object.entries((M && M.qui) || {}).filter(([l]) => f.plusieurs ? estApo(l) : universDe(l) === universDe(f.lieu)).flatMap(([, n]) => n);
 function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
@@ -11203,7 +11205,7 @@ function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
   const fermer = () => { d.remove(); if (M && M.vfMenu && M.vfMenu.d === d) M.vfMenu = null; };
   d.querySelector(".vf-x").onclick = fermer;
   const maj = () => { const gr = d.querySelector(".vf-grille"); gr.innerHTML = "";
-    for (const f of FILMS_VF) { const qui = louesVF(f), loue = !f.plusieurs && qui.length > 0, k = document.createElement("div"); k.className = "vf-k" + (loue ? " loue" : "");
+    for (const f of FILMS_VF) { if (f.admin && !(M.ctx.moiInfo && M.ctx.moiInfo().admin)) continue; const qui = louesVF(f), loue = !f.plusieurs && qui.length > 0, k = document.createElement("div"); k.className = "vf-k" + (loue ? " loue" : "");
       k.innerHTML = `<img src="images/videofutur/jaquette-${f.cle}.webp" alt=""><h3>${f.titre} <small>(${f.annee})</small></h3>`
         + (loue ? `<div class="vf-tampon">LOUÉ</div><div class="vf-qui">🔒 Loué par ${qui.map(echapper).join(", ")}</div>` : f.plusieurs && qui.length ? `<div class="vf-qui re">🧟 Déjà dedans : ${qui.map(echapper).join(", ")}</div>` : f.plusieurs ? `<div class="vf-qui re">Plusieurs exemplaires : on peut y aller à plusieurs</div>` : "")
         + `<button type="button" class="vf-l"${loue ? " disabled" : ""}>${loue ? "Indisponible" : "📼 Louer"}</button>`;
