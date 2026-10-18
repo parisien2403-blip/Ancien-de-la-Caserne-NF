@@ -11387,8 +11387,9 @@ function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.
   T("LeftUpLeg", "x", 1.5); T("RightUpLeg", "x", 1.5); T("LeftLeg", "x", -1.45); T("RightLeg", "x", -1.45); T("LeftUpLeg", "y", -.06); T("RightUpLeg", "y", .06);
   const ph = (performance.now() + p.info.numero * 1300) % 6000, g = ph < 1300 ? Math.sin(ph / 1300 * Math.PI) : 0;   // (la gorgée : le bras droit monte le verre aux lèvres)
   T("RightArm", "x", -.5 - g * .5); T("RightForeArm", "x", -.9 - g * 1.2); T("LeftArm", "x", -.35); T("LeftForeArm", "x", -.6); T("Head", "x", -g * .2);
-  A.sc.position.set(-Math.sin(A.cap) * .06 * k, 0, -Math.cos(A.cap) * .06 * k);
-  const h = os3D(A, "Hips"); if (h) { A.sc.updateMatrixWorld(true); const v = h.getWorldPosition(new THREE.Vector3()); p.g.worldToLocal(v); A.sc.position.y = .66 + .055 * k - v.y; } }
+  // (le bassin posé sur l'assise : le haut des cuisses au-dessus du centre du tabouret, un peu en arrière ; les cuisses vers le comptoir)
+  const h = os3D(A, "Hips"); if (h) { A.sc.position.set(0, 0, 0); A.sc.updateMatrixWorld(true); const v = h.getWorldPosition(new THREE.Vector3()); p.g.worldToLocal(v);
+    A.sc.position.set(-Math.sin(A.cap) * .04 * k - v.x, .66 + .05 * k - v.y, -Math.cos(A.cap) * .04 * k - v.z); } }
 /* les danses, sur le vrai squelette : par-dessus la pose de repos, chaque os tourne autour des axes du personnage (droite, haut, devant) */
 let AX = null, _q, _qp, _qs, _ax;   /* (créés au premier pas de danse : le moteur 3D se charge après ce fichier) */
 function os3D(A, n) { if (!A.os) { A.os = {}; A.sc.traverse(o => { if (o.isBone && !A.os[o.name]) A.os[o.name] = o; }); } return A.os[n]; }
