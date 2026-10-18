@@ -452,13 +452,13 @@ export class Compteur extends DurableObject {
       ws.send(JSON.stringify({ t: "etat", lieu: m.lieu, moi: a.numero, gens: this.presents(m.lieu, ws).map(([, b]) => this.publicMatrice(b)), dits }));
       this.diffuser(m.lieu, { t: "arrive", p: this.publicMatrice(a) }, ws);
       // la caserne de l'apocalypse : l'un des joueurs présents fait vivre les zombies pour tout le monde (le « chef »)
-      if (ancien && ancien !== m.lieu && ancien.startsWith("z-")) this.diffuser(ancien, { t: "z_chef", numero: this.chefDe(ancien) });
+      if (ancien && ancien !== m.lieu && ancien.startsWith("z-")) { this.diffuser(ancien, { t: "z_chef", numero: this.chefDe(ancien) }); if (!m.lieu.startsWith("z-")) await this.videApo(); }
       if (m.lieu.startsWith("z-")) { const c = { t: "z_chef", numero: this.chefDe(m.lieu) }; this.diffuser(m.lieu, c); ws.send(JSON.stringify(c));
         // le fumigène de l'évacuation : une nouvelle cachette à chaque partie (quand personne d'autre n'est déjà à l'apocalypse)
         const autres = this.ctx.getWebSockets().some(w => { if (w === ws) return false; const b = w.deserializeAttachment(); return b && b.lieu && b.lieu.startsWith("z-"); });
         // (n'importe où : la grande cour — la plus vaste —, la salle des fêtes, les étages, le mess, la rue ; une partie trop ancienne est oubliée)
         const dejaLa = !!(ancien && ancien.startsWith("z-"));   // (on passe d'un lieu de l'apocalypse à un autre : la même partie continue — seul, on retrouvait un fumigène tout neuf, et le cercle du H ne s'allumait plus)
-        let f = await this.ctx.storage.get("z_fumi"); if (!f || (!autres && !dejaLa) || !f.cree || Date.now() - f.cree > 45 * 60000) { const L = ["z-grande", "z-grande", "z-grande", "z-fetes", "z-etage", "z-etage", "z-mess", "z-rue"]; f = { lieu: L[Math.floor(Math.random() * L.length)], r: Math.random(), trouve: false, cree: Date.now() }; await this.ctx.storage.put("z_fumi", f); }
+        let f = await this.ctx.storage.get("z_fumi"); if (!f || (!autres && !dejaLa && !(f.vide && Date.now() - f.vide < 120000)) || !f.cree || Date.now() - f.cree > 45 * 60000) { const L = ["z-grande", "z-grande", "z-grande", "z-fetes", "z-etage", "z-etage", "z-mess", "z-rue"]; f = { lieu: L[Math.floor(Math.random() * L.length)], r: Math.random(), trouve: false, cree: Date.now() }; await this.ctx.storage.put("z_fumi", f); } else if (f.vide) { f.vide = null; await this.ctx.storage.put("z_fumi", f); }
         ws.send(JSON.stringify({ t: "z_fumi", ...f })); }
       ws.send(JSON.stringify({ t: "dj", dj: await this.etatDJ() }));   // la nuit, on entend la fête depuis la cour
       await this.almanachEntrer(ws, a, m.lieu);
@@ -644,9 +644,13 @@ export class Compteur extends DurableObject {
     this.finirSlow(ws, a);
     const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
     this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
-    if (lieu.startsWith("z-")) this.diffuser(lieu, { t: "z_chef", numero: this.chefDe(lieu) }, ws);
+    if (lieu.startsWith("z-")) { this.diffuser(lieu, { t: "z_chef", numero: this.chefDe(lieu) }, ws); this.videApo().catch(() => {}); }
   }
-  chefDe(lieu) { const n = this.presents(lieu).map(([, b]) => Number(b.numero)).filter(Number.isFinite); return n.length ? Math.min(...n) : null; }
+  // (le chef des zombies d'un lieu le reste tant qu'il est là : un nouvel arrivant ne lui prend pas la main — avant, ses zombies vides effaçaient ceux de tout le monde)
+  chefDe(lieu) { const n = this.presents(lieu).map(([, b]) => Number(b.numero)).filter(Number.isFinite); this.chefsZ = this.chefsZ || {};
+    if (!n.length) { delete this.chefsZ[lieu]; return null; } if (!n.includes(this.chefsZ[lieu])) this.chefsZ[lieu] = Math.min(...n); return this.chefsZ[lieu]; }
+  // (le dernier joueur quitte l'apocalypse : on note l'heure ; s'il revient vite — une connexion qui saute —, la cachette du fumigène ne change pas)
+  async videApo() { if (this.ctx.getWebSockets().some(w => { const b = w.deserializeAttachment(); return b && b.lieu && b.lieu.startsWith("z-"); })) return; const f = await this.ctx.storage.get("z_fumi"); if (f) { f.vide = Date.now(); await this.ctx.storage.put("z_fumi", f); } }
 
   async changerEscalier(token, x) {
     const moi = this.moi(token, { tous: true }), bat = batValide(x.bat), etage = bat ? etageValide(x.etage) : null;
