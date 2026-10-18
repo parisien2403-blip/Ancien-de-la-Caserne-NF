@@ -5013,17 +5013,32 @@ function construireSantaCarla(A, L, scene) {
             f = forme * smoothstep(1.0, .15, uv.y + (d - .5) * .7) * smoothstep(0.0, .06, uv.y), i = clamp(f * (.7 + d * .9), 0.0, 1.0);
           vec3 c = mix(vec3(.45, .05, 0.0), vec3(1.0, .42, .05), smoothstep(.15, .55, i)); c = mix(c, vec3(1.0, .86, .45), smoothstep(.55, .85, i)); c = mix(c, vec3(1.0, .98, .9), smoothstep(.85, 1.0, i));
           gl_FragColor = vec4(c * i * 1.4, i); }` });
-    const B = [[-7, 23], [19, 23], [-5, 15], [17, 15], [6, 11.5]], fl = [], braises = [], lums = [];
+    const B = [[-7, 23], [19, 23], [-5, 15], [17, 15], [6, 11.5]], fl = [], braises = [], lums = [], foyers = [];
+    // le feu : des centaines de petites flammes qui naissent au fond du bidon, montent en tourbillonnant, rétrécissent et passent du blanc-jaune à l'orange, au rouge, puis à la fumée
+    const NF = 70, feuPts = [], feuG = new THREE.BufferGeometry(), fpos = new Float32Array(B.length * NF * 3), fcol = new Float32Array(B.length * NF * 4), ftai = new Float32Array(B.length * NF);
+    feuG.setAttribute("position", new THREE.BufferAttribute(fpos, 3)); feuG.setAttribute("couleur", new THREE.BufferAttribute(fcol, 4)); feuG.setAttribute("taille", new THREE.BufferAttribute(ftai, 1));
+    const pointT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 34, 0, 32, 34, 30); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.35, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.beginPath(); x.ellipse(32, 36, 22, 28, 0, 0, 7); x.fill(); }));
+    const feuMat = new THREE.ShaderMaterial({ uniforms: { uMap: { value: pointT }, uEch: { value: 600 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: "attribute vec4 couleur; attribute float taille; uniform float uEch; varying vec4 vC; void main() { vC = couleur; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = taille * uEch / -mv.z; gl_Position = projectionMatrix * mv; }",
+      fragmentShader: "uniform sampler2D uMap; varying vec4 vC; void main() { vec4 t = texture2D(uMap, gl_PointCoord); gl_FragColor = vec4(vC.rgb * t.a * vC.a, t.a * vC.a); }" });
+    const feu = new THREE.Points(feuG, feuMat); feu.frustumCulled = false; feu.renderOrder = 4; scene.add(feu);
+    for (let i = 0; i < B.length * NF; i++) feuPts.push({ b: Math.floor(i / NF), age: Math.random(), vie: .7 + Math.random() * .6, ax: (Math.random() - .5) * .38, az: (Math.random() - .5) * .38, ph: Math.random() * 6 });
     B.forEach(([x, z], i) => { const g = new THREE.Group(); g.position.set(CONCERT.x + x - 6, 0, z); scene.add(g);
       const b = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .9, 18, 1, true), metal); b.position.y = .45; g.add(b); const fond = new THREE.Mesh(new THREE.CircleGeometry(.29, 18), interieur); fond.rotation.x = -Math.PI / 2; fond.position.y = .78; g.add(fond);
       const bord = new THREE.Mesh(new THREE.TorusGeometry(.3, .025, 6, 20), A.mat({ color: 0x2a1a12, metalness: .6, roughness: .6 })); bord.rotation.x = Math.PI / 2; bord.position.y = .9; g.add(bord);
-      for (let k = 0; k < 2; k++) { const m = flammeM.clone(); m.uniforms.uT = flammeU.t; m.uniforms.uS = { value: i * 1.7 + k * .9 }; const q = new THREE.Mesh(new THREE.PlaneGeometry(.95 - k * .2, 1.6 - k * .3), m); q.position.y = .9 + (1.6 - k * .3) / 2 - .08; q.renderOrder = 4; g.add(q); fl.push({ q, k }); }
+      foyers.push(g);
       for (let k = 0; k < 10; k++) { const e = new THREE.Mesh(new THREE.SphereGeometry(.018, 4, 3), new THREE.MeshBasicMaterial({ color: 0xffa040, toneMapped: false, transparent: true })); g.add(e); braises.push({ e, ph: hasard(i * 10 + k) * 3, vx: (hasard(k * 3 + i) - .5) * .4, vz: (hasard(k * 5 + i) - .5) * .4 }); }
       OBST.push([g.position.x - .4, g.position.x + .4, z - .4, z + .4]); });
     // la lueur des flammes : trois lumières qui vacillent (pas une par bidon : le téléphone ne suivrait pas)
     for (const [a, b2] of [[0, 2], [1, 3], [4, 4]]) { const l = new THREE.PointLight(0xff8a30, 10, 11, 1.5), pa = B[a], pb = B[b2]; l.position.set(CONCERT.x - 6 + (pa[0] + pb[0]) / 2, 1.8, (pa[1] + pb[1]) / 2); scene.add(l); lums.push(l); }
     const av = L.anim; L.anim = (t) => { av && av(t); const s2 = t / 1000; flammeU.t.value = s2;
-      if (M && M.camera) for (const { q } of fl) { const w = q.parent.position, c = M.camera.position; q.rotation.y = Math.atan2(c.x - w.x, c.z - w.z); }   // (la flamme toujours tournée vers nous)
+      { const dt5 = Math.min(.05, (t - (feu.tp || t)) / 1000); feu.tp = t; if (M && M.rendu) feuMat.uniforms.uEch.value = M.rendu.domElement.height * .9;
+        feuPts.forEach((q, i) => { q.age += dt5 / q.vie; if (q.age >= 1) { q.age -= 1; q.ax = (Math.random() - .5) * .38; q.az = (Math.random() - .5) * .38; q.vie = .7 + Math.random() * .6; }
+          const u = q.age, g = foyers[q.b].position, tour = s2 * 2.2 + q.ph, r = (1 - u) * .9, y = .85 + u * u * 1.5 + u * .35;
+          fpos[i * 3] = g.x + q.ax * r + Math.sin(tour + u * 6) * .08 * u; fpos[i * 3 + 1] = y; fpos[i * 3 + 2] = g.z + q.az * r + Math.cos(tour * 1.3 + u * 5) * .08 * u;
+          const c = u < .18 ? [1, .95, .75] : u < .45 ? [1, .62 - (u - .18) * .8, .18] : u < .75 ? [.95 - (u - .45), .3 - (u - .45) * .5, .06] : [.25, .16, .12];
+          fcol.set([c[0], c[1], c[2], u < .08 ? u / .08 : u > .75 ? (1 - u) * 1.2 : 1], i * 4); ftai[i] = (u < .75 ? .55 * (1 - u * .7) : .5 + (u - .75) * 1.6) * (.8 + Math.sin(q.ph) * .2); });
+        feuG.attributes.position.needsUpdate = feuG.attributes.couleur.needsUpdate = feuG.attributes.taille.needsUpdate = true; }
       lums.forEach((l, i) => { l.intensity = 9 + Math.sin(s2 * 11 + i) * 1.6 + Math.sin(s2 * 23.7 + i * 2) * 1.2 + Math.sin(s2 * 5.3 + i) * 1.4; });
       for (const b of braises) { const u = ((s2 * .45 + b.ph) % 1.6) / 1.6; b.e.position.set(b.vx * u * 2 + Math.sin(s2 * 3 + b.ph) * .08, 1.1 + u * 2.8, b.vz * u * 2); b.e.material.opacity = 1 - u; } }; }
   // ================= l'atmosphère : le halo des ampoules et des globes, la brume qui traîne au ras du sable, le grain et le cadre de cinéma =================
@@ -5041,12 +5056,12 @@ function construireSantaCarla(A, L, scene) {
     // le cadre de cinéma : pendant les cinématiques, deux bandes noires ; toujours, un léger vignetage et le grain de la pellicule
     const cadre = document.createElement("div"); cadre.style.cssText = "position:absolute;inset:0;z-index:6;pointer-events:none";
     cadre.innerHTML = '<div class="h" style="position:absolute;left:0;right:0;top:0;height:0;background:#000;transition:height .9s ease"></div><div class="b" style="position:absolute;left:0;right:0;bottom:0;height:0;background:#000;transition:height .9s ease"></div>'
-      + '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%)"></div><canvas class="g" width="256" height="256" style="position:absolute;inset:0;width:100%;height:100%;opacity:.07;mix-blend-mode:overlay"></canvas>';
+      + '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%)"></div><canvas class="g" width="4" height="4" style="display:none"></canvas>';
     let posé = false, cine = false; const grain = cadre.querySelector(".g"), gx = grain.getContext("2d"), img = gx.createImageData(256, 256);
     const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000;
       if (!posé && M && M.ctx.conteneur) { posé = true; M.ctx.conteneur.appendChild(cadre); const garde = setInterval(() => { if (!M || M.L !== L) { cadre.remove(); clearInterval(garde); } }, 600); }
       const c = !!(M && M.cine); if (c !== cine) { cine = c; cadre.querySelector(".h").style.height = cadre.querySelector(".b").style.height = c ? "11%" : "0"; }
-      if (Math.floor(s * 24) % 2 === 0) { for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; } gx.putImageData(img, 0, 0); }   // (le grain qui frémit)
+      if (false) { for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; } gx.putImageData(img, 0, 0); }   // (le grain qui frémit)
       for (const q of voiles) q.sp.position.x = q.x0 + ((s * q.v) % 40) - 20; }; }
   // ================= le combat : quatre vampires, l'eau bénite, le pieu =================
   // les personnages : ceux de l'inventaire de l'administrateur (tête, tenue, couleurs, taille), sinon les photos découpées et les tenues du film
@@ -5068,16 +5083,17 @@ function construireSantaCarla(A, L, scene) {
     
     x.fillStyle = "rgba(40,0,0,.85)"; x.fillRect(8, 20, 144, 14); x.fillStyle = u > .5 ? "#d81e2a" : "#ff8a2a"; x.fillRect(10, 22, 140 * u, 10); x.strokeStyle = "#fff"; x.lineWidth = 2; x.strokeRect(8, 20, 144, 14); t.needsUpdate = true; };
   // la bière : elle apparaît non loin quand on a été mordu plus d'une fois ; on va la boire pour reprendre des forces
+  const lumBiere = new THREE.PointLight(0xffc060, 0, 5, 1.6); lumBiere.position.set(0, -50, 0); scene.add(lumBiere);
   const poserBiere = () => { const p = moiP(); if (!p) return; let x = p.x + 4, z = p.z;
     for (let k = 0; k < 24; k++) { const a = Math.random() * 6.28, r = 4 + Math.random() * 4, x2 = p.x + Math.cos(a) * r, z2 = p.z + Math.sin(a) * r; if (!L.limites || L.limites(x2, z2)) { x = x2; z = z2; break; } }
     const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const verre = A.mat({ color: 0x6a3a10, roughness: .2, metalness: .1, transparent: true, opacity: .9, emissive: 0x3a1a04 });
     cyl(g, .09, .09, .32, verre, 0, .5, 0, 14); cyl(g, .04, .09, .1, verre, 0, .71, 0, 14); cyl(g, .035, .035, .1, verre, 0, .8, 0, 12); cyl(g, .04, .04, .03, A.mat({ color: 0xd8b030, metalness: .7 }), 0, .86, 0, 12);
     const et = new THREE.Mesh(new THREE.CylinderGeometry(.092, .092, .14, 14, 1, true), new THREE.MeshBasicMaterial({ map: tex(toile(128, 48, (q) => { q.fillStyle = "#f2e8c8"; q.fillRect(0, 0, 128, 48); q.fillStyle = "#c81e1e"; q.font = "bold 20px Georgia"; q.textAlign = "center"; q.fillText("BEER", 64, 32); })) })); et.position.y = .5; g.add(et);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeT, color: 0xffd060, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(1.3); halo.position.y = .6; g.add(halo);
-    const l = new THREE.PointLight(0xffc060, 6, 5, 1.6); l.position.y = 1; g.add(l); biere = { g };
+    biere = { g }; lumBiere.intensity = 6; lumBiere.position.set(x, 1, z);
     const c = comps[0]; if (c) parle(c.num, "Une bière ! Là-bas ! Va la boire, ça va te requinquer !");  };
   const boireBiere = (now, p) => { if (!biere) return; biere.g.rotation.y = now / 600; biere.g.position.y = Math.abs(Math.sin(now / 400)) * .12;
-    if (Math.hypot(p.x - biere.g.position.x, p.z - biere.g.position.z) < 1.1) { scene.remove(biere.g); biere = null; vies = Math.min(100, vies + 40); majHud(); try { sonBruit(.5, 600, .25); } catch (e) {}
+    if (Math.hypot(p.x - biere.g.position.x, p.z - biere.g.position.z) < 1.1) { scene.remove(biere.g); biere = null; lumBiere.intensity = 0; vies = Math.min(100, vies + 40); majHud(); try { sonBruit(.5, 600, .25); } catch (e) {}
       parle(M.moiNum, "Glou glou… Aaah ! Ça fait du bien !"); voile("background:radial-gradient(circle,rgba(255,200,60,0) 40%,rgba(255,200,60,.45) 100%);transition:opacity .8s", 700); } };
   // ---------- la fin : David vaincu, « Good Times », les ados se parlent ; la caméra part d'eux et monte vers le ciel, où paraît le titre, et « FIN » ; retour au mess, devant l'affiche ----------
   const finale = () => { if (fini) return; fini = true; phase = "fin"; if (L.aube) L.aube.t0 = performance.now();   /* (le jour qui revient : le ciel orangé, crescendo) */ musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
@@ -5095,9 +5111,10 @@ function construireSantaCarla(A, L, scene) {
     const lisse = u => u * u * u * (u * (u * 6 - 15) + 10);
     const fin = () => { if (fini2 || !M) return; fini2 = true; const v = document.createElement("div"); v.style.cssText = "position:absolute;inset:0;z-index:20;pointer-events:none;background:#000;opacity:0;transition:opacity 1.6s ease"; M.ctx.conteneur.appendChild(v); requestAnimationFrame(() => { v.style.opacity = 1; });
       // le noir : la musique continue cinq secondes, puis s'éteint doucement ; dans le noir, on rentre en 1990, dans la cour d'honneur ; le noir se lève, la musique de la fête reprend sa place
-      setTimeout(() => { if (titre) titre.remove(); if (M) { M.passerBtn && M.passerBtn.remove(); M.passerBtn = null; } }, 1700);
+      if (titre) { titre.style.zIndex = 21; titre.style.background = "none"; } setTimeout(() => { if (M) { M.passerBtn && M.passerBtn.remove(); M.passerBtn = null; } }, 1700);   // (le titre reste, sur le noir)
       setTimeout(() => { const a = M && M.lbMus && M.lbMus.a; if (!a) return; const v0 = a.volume, t1 = performance.now(); const f = setInterval(() => { const u = Math.min(1, (performance.now() - t1) / 3500); a.volume = v0 * (1 - u) * (1 - u); if (u >= 1) { clearInterval(f); a.pause(); } }, 40); }, 1600 + 5000);
-      setTimeout(() => { if (!M) return; if (M.lbMus) { try { M.lbMus.a.pause(); } catch (e) {} M.lbMus = null; } finCine(); changerLieu("grande");
+      setTimeout(() => { if (titre) { titre.style.transition = "opacity 2.5s"; titre.style.opacity = 0; } }, 1600 + 5000 + 600);   // (il s'efface avec la musique)
+      setTimeout(() => { if (titre) titre.remove(); if (!M) return; if (M.lbMus) { try { M.lbMus.a.pause(); } catch (e) {} M.lbMus = null; } finCine(); changerLieu("grande");
         setTimeout(() => { v.style.transition = "opacity 2.2s ease"; v.style.opacity = 0; setTimeout(() => v.remove(), 2400); }, 1200); }, 1600 + 5000 + 3700); };
     M.passerBtn = boutonPasser(fin);
     M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = lisse(u);
@@ -5107,6 +5124,10 @@ function construireSantaCarla(A, L, scene) {
           M.ctx.conteneur.appendChild(titre); requestAnimationFrame(() => { titre.style.opacity = 1; }); }
         if (now - t0 > D + 6000) fin(); }, fov: [55, 70] }; };
   L.etatLB = () => ({ vies, morsures, biere: !!biere, phase }); L.finLB = () => finale(); L.mordreLB = () => mordu({});   // (pour les essais)
+  // (le vampire abattu tombe là où l'on peut marcher : s'il était au-dessus de l'eau, d'un manège ou d'un stand, il glisse jusqu'à l'endroit praticable le plus proche)
+  const poserAuSol = (v) => { const g = v.g, x0 = g.position.x, z0 = g.position.z; if (!L.limites || L.limites(x0, z0)) return;
+    const p = moiP(); for (let r = .5; r < 40; r += .5) for (let a = 0; a < 6.28; a += .4) { const x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r; if (L.limites(x, z)) { g.position.x = x; g.position.z = z; return; } }
+    if (p) { g.position.x = p.x + 2; g.position.z = p.z; } };
   const creerVampire = (k) => { const a = Math.random() * 6.28, p0 = moiP() || V3(0, 0, 0), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {};
     const p = ajouterAncien({ ...habillerLB({ numero: -(860 + k), nom: P.nom || NOMS[k], initiales: "" }, 84 + k), pnj: true, x: p0.x + Math.cos(a) * 30, z: p0.z + Math.sin(a) * 30 }); if (!p) return null;
     p.vol = 14; const barre = barreVie(); p.g.add(barre.sp); const v = { k, barre, nom: P.nom || NOMS[k], p, g: p.g, y: 14, pv: k === 0 ? 6 : 3, pvMax: k === 0 ? 6 : 3, etat: "approche", a, r: 7 + Math.random() * 4, h: 3 + Math.random() * 3, tEtat: performance.now() + 3000 + Math.random() * 4000, vit: k === 0 ? 1.15 : 1 };
@@ -5125,9 +5146,26 @@ function construireSantaCarla(A, L, scene) {
     if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
   const bandeauCombat = () => { if (!document.getElementById("styleCombatLB")) { const st = document.createElement("style"); st.id = "styleCombatLB"; st.textContent = "@keyframes lbCombat{0%{opacity:0;transform:scale(1.8);letter-spacing:.6em}18%{opacity:1;transform:scale(1);letter-spacing:.18em}75%{opacity:1}100%{opacity:0;transform:scale(.96)}}"; document.head.appendChild(st); }
     const d = voile("display:grid;place-items:center", 2000); d.innerHTML = '<div style="font:900 clamp(40px,11vw,96px) Georgia,serif;color:#e01818;letter-spacing:.18em;text-shadow:0 0 6px #000,0 0 26px rgba(255,0,0,.8);animation:lbCombat 2s ease-out forwards">COMBAT</div>'; try { sonBruit(.5, 300, .5); } catch (e) {} };
+  // le visage se transforme : le visage humain se fond dans le visage de vampire (les yeux, les crocs), un grondement, une lueur ; puis il lance son défi
+  const DEFI = { 1: "Wouhou ! Venez, les gamins… je vous attends !", 2: "Allez, venez jouer… si vous l'osez !", 3: "Grrraaah… Venez !", 0: "Venez… Je vous attends." };
+  const transformer = (v, fin) => { const p = v.p, k = v.k, nom = ["david", "paul", "marko", "dwayne"][k], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {}, url = `images/santacarla/${nom}-vamp.webp`;
+    const cam = M.camera, s0 = p.g.position, H = tailleBonhomme() * hauteurDe(p), q = moiP() || V3(s0.x, 0, s0.z + 3); let dx = q.x - s0.x, dz = q.z - s0.z, l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    let fait = false; const finir = () => { if (fait) return; fait = true; if (M && M.cine === C) { bulle(null); finCine(); } fin && fin(); };
+    const t0 = performance.now(); let ov = null, change = false, dit = false;
+    chargerTete(0, null, url).then(img => { if (!img || !M || !p.corps) return; const tx = tex(dessinerBonhomme({ ...p.info, large: true }, img));
+      ov = new THREE.Mesh(p.corps.geometry, new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); ov.position.z = .002; ov.renderOrder = 3; p.corps.add(ov); });
+    const C = { maj: now => { const u = (now - t0) / 1000;
+        // la caméra s'approche lentement de son visage
+        const z = Math.min(1, u / 2.4), dd = 2.6 - z * 1.1; cam.position.set(s0.x + dx * dd, s0.y + H * .86, s0.z + dz * dd); cam.lookAt(s0.x, s0.y + H * .8, s0.z);
+        if (u > .9 && u < 1.0) cam.position.x += (Math.random() - .5) * .04;
+        if (ov) { const a = Math.min(1, Math.max(0, (u - 1) / 1.4)); ov.material.opacity = a * a * (3 - 2 * a); }   // (le visage change, en fondu)
+        if (u > 1 && !change) { change = true; try { sonBruit(1.3, 160, .55); } catch (e) {} voile("background:radial-gradient(circle,rgba(255,180,60,.0) 30%,rgba(120,0,0,.45) 100%);transition:opacity 1.2s", 900); }
+        if (u > 2.6 && !dit) { dit = true; p.info.teteUrl = url; p.info.tete_v = null; dessinerCorps(p).then(() => { if (ov && ov.parent) ov.parent.remove(ov); }); bulle(`<b style="color:#ff5a4a">${esc(nomDe(p.info.numero))}</b> : ${esc(DEFI[k])}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
+        if (u > 5) finir(); }, fov: [42, 58] };
+    M.passerBtn = boutonPasser(() => { if (!dit) { p.info.teteUrl = url; p.info.tete_v = null; dessinerCorps(p); if (ov && ov.parent) ov.parent.remove(ov); } finir(); }); M.cine = C; };
   const dialogueAvant = (v) => { const frere = comps.find(c => c.id !== 81), autre = comps.find(c => c !== frere), nums = { V: v.p.info.numero, M: M.moiNum, F: frere ? frere.num : M.moiNum, A: autre ? autre.num : (frere ? frere.num : M.moiNum) };
-    dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
-      bandeauCombat(); } }); };
+    dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (!M || M.L !== L || v.etat !== "parle") return; transformer(v, () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
+      bandeauCombat(); v.p.info.brasHaut = true; } }); }); };
   const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
     setTimeout(prochain, 6000); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
@@ -5141,13 +5179,14 @@ function construireSantaCarla(A, L, scene) {
     for (let i = 0; i < 12; i++) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: .85 })); scene.add(gt); parts.push({ sp: gt, de: dep.clone(), a: but.clone(), t0: now + i * 18, d: 260, goutte: true }); }
     try { sonBruit(.35, 2400, .25); } catch (e) {}
     setTimeout(() => { if (v.etat === "mort") return; v.pv--; majBarre(v); particule(fumeeT, v.g.position.clone().add(new THREE.Vector3(0, 1.5, 0)), 8, 1.2, 1100, .9); try { sonBruit(.6, 900, .35); } catch (e) {}
-      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000;  const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
+      if (v.pv <= 0) { v.etat = "terre"; v.tEtat = performance.now() + 9000; poserAuSol(v);  const c = comps[0]; if (c) parle(c.num, hasardDe(REPL[c.id].encourage.concat(["Le pieu ! Vite, avant qu'il se relève !"]))); }
       else { v.etat = "remonte"; v.tEtat = performance.now() + 1600; } }, 260); };
   // le pieu : on l'enfonce dans le cœur ; le sang gicle, puis le vampire explose et brûle
   const sangT2 = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 1, 32, 32, 30); g.addColorStop(0, "rgba(150,0,6,1)"); g.addColorStop(.55, "rgba(110,0,4,.9)"); g.addColorStop(1, "rgba(80,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const flammeT = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 56); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.25, "rgba(255,200,60,.95)"); g.addColorStop(.55, "rgba(255,90,10,.75)"); g.addColorStop(1, "rgba(160,20,0,0)");
     x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.bezierCurveTo(54, 40, 62, 80, 50, 110); x.quadraticCurveTo(32, 128, 14, 110); x.bezierCurveTo(2, 80, 10, 40, 32, 2); x.fill(); }));
   const fumeeN = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(40,34,30,.85)"); g.addColorStop(1, "rgba(20,18,16,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+  const lumBoom = new THREE.PointLight(0xffa040, 0, 22, 1.4); lumBoom.position.set(0, -50, 0); scene.add(lumBoom);   // (préparée d'avance, éteinte)
   const eclat = (T, pos, vel, d, t0, taille, opt = {}) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: opt.add ? THREE.AdditiveBlending : THREE.NormalBlending, toneMapped: !opt.add }));
     sp.position.copy(pos); sp.scale.setScalar(taille); sp.visible = false; scene.add(sp); parts.push({ sp, v: vel, t0, d, taille, g: opt.g || 0, grandit: opt.grandit ?? 1, flamme: opt.flamme, sol: opt.sol }); };
   const pieu = (v) => { if (v.etat !== "terre") return; ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
@@ -5161,8 +5200,8 @@ function construireSantaCarla(A, L, scene) {
     voile("background:radial-gradient(circle,rgba(140,0,0,0) 40%,rgba(140,0,0,.5) 100%);transition:opacity .6s", 500);
     // 2. l'explosion : l'éclair, la boule de feu, la fumée noire
     setTimeout(() => { if (!M || M.L !== L) return; try { sonBruit(1.6, 420, .95); } catch (e) {} const t1 = performance.now();
-      const lum = new THREE.PointLight(0xffa040, 120, 22, 1.4); const fin2 = t1 + 4200; lum.position.copy(c).add(V3(0, .8, 0)); scene.add(lum);
-      const fl = setInterval(() => { const u = (performance.now() - t1) / 4200; if (u >= 1 || !M) { scene.remove(lum); clearInterval(fl); return; } lum.intensity = (u < .08 ? 120 : 32 * (1 - u)) * (.75 + Math.random() * .5); }, 50);   // (la lueur vacille avec le feu)
+      const lum = lumBoom; lum.intensity = 120; const fin2 = t1 + 4200; lum.position.copy(c).add(V3(0, .8, 0));
+      const fl = setInterval(() => { const u = (performance.now() - t1) / 4200; if (u >= 1 || !M) { lum.intensity = 0; clearInterval(fl); return; } lum.intensity = (u < .08 ? 120 : 32 * (1 - u)) * (.75 + Math.random() * .5); }, 50);   // (la lueur vacille avec le feu)
       voile("background:rgba(255,200,120,.55);transition:opacity .4s", 160);
       for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, e = Math.random() * 1.4, sp = 2 + Math.random() * 5; eclat(feuT, c, V3(Math.cos(a) * Math.cos(e) * sp, Math.sin(e) * sp + 1, Math.sin(a) * Math.cos(e) * sp), 700 + Math.random() * 500, t1 + Math.random() * 80, .8 + Math.random() * .9, { add: true, grandit: 2.2 }); }
       for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28; eclat(fumeeN, c.clone().add(V3(0, .5, 0)), V3(Math.cos(a) * 1.2, 2 + Math.random() * 2, Math.sin(a) * 1.2), 2400 + Math.random() * 1200, t1 + 200 + Math.random() * 400, 1.2 + Math.random(), { grandit: 2.5 }); }
@@ -5201,7 +5240,7 @@ function construireSantaCarla(A, L, scene) {
     const finir = () => { if (fait) return; fait = true; if (M && M.cine === S) { bulle(null); finCine(); } fin && fin(); };
     const S = { maj: now => { if (!M || M.L !== L) return finir();
         if (now > tFin) { do { i++; } while (i < lignes.length && !M.gens.has(lignes[i][0])); if (i >= lignes.length) return finir();
-          const [n, t] = lignes[i], d = 1400 + t.length * 60; tFin = now + d; bulle(`<b style="color:#ff5a4a">${esc(nomDe(n))}</b> : ${esc(t)}`, d + 300); }
+          const [n, t] = lignes[i], d = 1400 + t.length * 60; tFin = now + d; bulle(`<b style="color:#ff5a4a">${esc(nomDe(n))}</b> : ${esc(t)}`, d + 300); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
         const n0 = lignes[i][0], q = M.gens.get(n0); if (!q) return; const s0 = q.g.position, vq = vamp != null && M.gens.get(vamp), ados = grp.filter(g2 => g2 !== vq);
         const o = !vq ? s0.clone().add(front) : n0 === vamp ? ados.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, ados.length)) : vq.g.position;   // (sans vampire : face au groupe ; avec lui : on filme chacun depuis l'autre camp)
         let dx = o.x - s0.x, dz = o.z - s0.z, l = Math.hypot(dx, dz); if (l < .3) { dx = 0; dz = 1; l = 1; } dx /= l; dz /= l;
@@ -5297,7 +5336,7 @@ function construireSantaCarla(A, L, scene) {
         if (d < 1.1) { mordu(v); v.etat = "remonte"; v.tEtat = now + 1800; } else if (now > v.tEtat) { v.etat = "remonte"; v.tEtat = now + 1500; } }
       else if (v.etat === "remonte") { g.position.y += (7 - g.position.y) * .05; const dx = g.position.x - p.x, dz = g.position.z - p.z, d = Math.hypot(dx, dz) || 1; g.position.x += dx / d * .08; g.position.z += dz / d * .08;
         if (now > v.tEtat) { v.etat = "tourne"; v.a = Math.atan2(g.position.z - p.z, g.position.x - p.x); v.tEtat = now + 3000 + Math.random() * 4000; } }
-      else if (v.etat === "terre") { g.position.y += (0 - g.position.y) * .1; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté) */
+      else if (v.etat === "terre") { const k3 = Math.min(1, g.rotation.z / (Math.PI / 2)); g.position.y += (.44 * k3 - g.position.y) * .14; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté, posé sur le sol) */
         if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
         if (now > v.tEtat) { v.pv = 1; majBarre(v); g.rotation.z = 0; v.etat = "remonte"; v.tEtat = now + 1500; } }
       else if (v.etat === "brule") { const u2 = 1 - (v.tEtat - now) / 4600; g.visible = u2 < .15; if (v.barre) v.barre.sp.visible = false;   /* (il explose : il disparaît dans la boule de feu) */
@@ -7643,6 +7682,9 @@ export async function ouvrir(ctx) {
           const tp = p.tirVue && p.poses[p.tirVue] ? p.poses[p.tirVue] : p.poses.tir;   /* (le bras du côté de la cible ; droit devant si elle est devant ou derrière) */
           if (p.corps.material.map !== tp) { p.corps.material.map = tp; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
+        else if (p.info.brasHaut && p.poses.haut) {   // (les vampires, au combat : les bras levés, qui se balancent un peu)
+          if (p.corps.material.map !== p.poses.haut) { p.corps.material.map = p.poses.haut; p.corps.material.needsUpdate = true; }
+          p.corps.material.rotation = Math.sin(t / 380 + p.info.numero) * .06; p.corps.position.x = 0; p.dansait = true; }
         else if (p.info.salutT && performance.now() - p.info.salutT < 2600 && p.poses.salut) {   // le gendarme salue
           if (p.corps.material.map !== p.poses.salut) { p.corps.material.map = p.poses.salut; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.dansait = true; }
