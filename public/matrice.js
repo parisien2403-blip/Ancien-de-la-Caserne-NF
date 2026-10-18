@@ -25,7 +25,7 @@ export const TENUES = {
   pois: { nom: "Robe à pois (1955)" }, lorraine: { nom: "Gilet lavande et jupe fleurie (Lorraine, 1955)" }, george: { nom: "Blouson gris zippé (George McFly, 1955)" }, ecossaise: { nom: "Jupe écossaise (1955)" }, bretelles: { nom: "Bretelles et nœud papillon (1955)" }, serveur: { nom: "Tablier rayé (serveur)" }, pompiste: { nom: "Combinaison de pompiste (1955)" }, serveuse: { nom: "Robe rayée (serveuse)" }, gilet: { nom: "Gilet et cravate (1955)" }, varsity: { nom: "Blouson universitaire (1955)" }, lou: { nom: "Chemise et tablier (Lou's Cafe)" }, gore: { nom: "Gilet de satin noir (Martin Gore)" }, eichant: { nom: "Débardeur à damier bleu (Émile et Images)" }, vpcowboy: { nom: "Cowboy (Village People)" }, vpouvrier: { nom: "Ouvrier (Village People)" }, vpindien: { nom: "Indien (Village People)" }, vpsoldat: { nom: "Soldat (Village People)" }, vpflic: { nom: "Policier (Village People)" }, vpmotard: { nom: "Motard (Village People)" }, eibatterie: { nom: "Chemise blanche (Émile et Images)" }, eiguitare: { nom: "T-shirt noir imprimé (Émile et Images)" }, gahan: { nom: "Gilet pailleté noir (Dave Gahan)" }, fletcher: { nom: "Veste de survêtement noire (Andy Fletcher)" },
   eboueur: { nom: "Éboueur (Propreté de Paris)" },
   lbsam: { nom: "Chemise hawaïenne et veste beige (Sam, Génération perdue)" }, lbedgar: { nom: "T-shirt camouflage (Edgar Frog)" }, lbalan: { nom: "Débardeur « Airborne » (Alan Frog)" },
-  lbdavid: { nom: "Long manteau noir (David)" }, lbpaul: { nom: "Veste en jean à médaillons (Paul)" }, lbmarko: { nom: "Veste en patchwork (Marko)" }, lbdwayne: { nom: "Veste de cuir sur torse nu (Dwayne)" }, lbtim: { nom: "Torse nu huilé, chaînes et saxophone (Tim Cappello)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, ghostbuster: { nom: "Combinaison Ghostbusters (le pack à protons)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
+  lbmichael: { nom: "Blouson de cuir et t-shirt blanc (Michael)" }, lbdavid: { nom: "Long manteau noir (David)" }, lbpaul: { nom: "Veste en jean à médaillons (Paul)" }, lbmarko: { nom: "Veste en patchwork (Marko)" }, lbdwayne: { nom: "Veste de cuir sur torse nu (Dwayne)" }, lbtim: { nom: "Torse nu huilé, chaînes et saxophone (Tim Cappello)" }, judogi: { nom: "Kimono de judo (ceinture noire)" }, maria: { nom: "Veste en cuir rouge et robe grise (Maria, Silent Hill)" }, ghostbuster: { nom: "Combinaison Ghostbusters (le pack à protons)" }, rebecca: { nom: "Gilet blanc (Rebecca, RE)" }, leon: { nom: "Uniforme du R.P.D. (Leon, RE2)" }, barry: { nom: "Gilet rouge (Barry, RE)" }, jill: { nom: "Bustier bleu (Jill, RE3)" }, wesker: { nom: "Tenue S.T.A.R.S. noire (Wesker)" }, chris: { nom: "Gilet vert S.T.A.R.S. (Chris, RE)" }, bassiste: { nom: "Chemise de jean noire (le bassiste)" }, guitariste: { nom: "Costume noir et nœud papillon (le guitariste)" },
 };
 export const PANTALONS = ["#3d5a80", "#6f8fb5", "#26324e", "#1d1d1f", "#6b6b6b", "#c8b48a", "#5b5f3a", "#e8e4da"];
 export const CHAUSSURES = ["#2a2522", "#5a3a22", "#8a5a34", "#f2f2f2", "#6b6b6b", "#6b1e2b", "#1f3a5f"];
@@ -321,6 +321,9 @@ export function dessinerBonhomme(o, tete) {
         if (!dos) { x.fillStyle = "#ecebe6"; x.beginPath(); x.moveTo(88, 146); x.lineTo(112, 146); x.lineTo(110, 262); x.lineTo(90, 262); x.closePath(); x.fill();   // le débardeur blanc
           x.fillStyle = "#f2efe6"; x.beginPath(); x.arc(124, 204, 8, 0, 7); x.fill(); x.fillRect(120, 209, 8, 5); x.fillStyle = "#111"; x.beginPath(); x.arc(121, 203, 2, 0, 7); x.arc(127, 203, 2, 0, 7); x.fill(); }   // la tête de mort
         x.strokeStyle = "#c8a030"; x.lineWidth = 1.5; for (let k = 0; k < 10; k++) { x.beginPath(); x.moveTo(58 + k * 2, 150 + k * 3); x.lineTo(52 + k * 2, 166 + k * 3); x.moveTo(142 - k * 2, 150 + k * 3); x.lineTo(148 - k * 2, 166 + k * 3); x.stroke(); } }   // les franges aux épaules
+      if (t === "lbmichael" && !dos) { x.fillStyle = "#ecebe6"; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(113, 262); x.lineTo(87, 262); x.closePath(); x.fill();   // le t-shirt blanc, sous le blouson de cuir ouvert
+        x.fillStyle = "rgba(0,0,0,.08)"; x.beginPath(); x.moveTo(90, 150); x.quadraticCurveTo(100, 160, 110, 150); x.lineTo(110, 154); x.quadraticCurveTo(100, 164, 90, 154); x.fill();   // (l'encolure)
+        x.strokeStyle = "rgba(255,255,255,.16)"; x.lineWidth = 3; for (const [a, b, c2, d] of [[64, 160, 60, 250], [136, 160, 140, 250], [78, 150, 80, 240]]) { x.beginPath(); x.moveTo(a, b); x.lineTo(c2, d); x.stroke(); } }   // (les reflets du cuir)
       if (t === "lbdwayne" && !dos) { x.fillStyle = peau; x.beginPath(); x.moveTo(84, 146); x.lineTo(116, 146); x.lineTo(112, 262); x.lineTo(88, 262); x.closePath(); x.fill();   // le torse nu sous la veste de cuir
         x.strokeStyle = "rgba(150,90,60,.35)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(100, 190); x.lineTo(100, 250); x.moveTo(88, 186); x.quadraticCurveTo(96, 194, 100, 188); x.moveTo(112, 186); x.quadraticCurveTo(104, 194, 100, 188); x.stroke();
         for (const [r, col] of [[16, "#6a4a2a"], [24, "#3a3026"], [32, "#8a6a3a"]]) { x.strokeStyle = col; x.lineWidth = 1.8; x.beginPath(); x.arc(100, 146, r, .45, Math.PI - .45); x.stroke(); }   // les colliers
@@ -572,7 +575,7 @@ export function dessinerBonhomme(o, tete) {
       if (t === "lbedgar") { for (let k = 0; k < 5; k++) { x.fillStyle = ["#3a4628", "#8a8a5a", "#2a2618", "#6a7a4a"][k % 4]; x.beginPath(); x.ellipse(-6 + (k * 7) % 14, -2 + k * 7, 6, 3, k, 0, 7); x.fill(); } x.fillStyle = assombrir(c, .8); x.fillRect(-14, 28, 28, 7); }   // la manche roulée
       if (t === "lbmarko") { const P = ["#c8302a", "#e8a020", "#2a5ac8", "#6a2a8a", "#2a8a5a"]; for (let k = 0; k < 5; k++) { x.fillStyle = P[(k + (sens > 0 ? 0 : 2)) % 5]; x.fillRect(-12, -6 + k * 18, 24, 17); } }
       if (t === "lbpaul") { x.fillStyle = "#d8dce2"; x.fillRect(-12, 76, 24, 4); x.fillRect(-12, 83, 24, 3); }   // les bracelets
-      if (t === "lbdwayne") { x.fillStyle = "rgba(255,255,255,.1)"; x.fillRect(-6, 0, 4, 80); }
+      if (t === "lbdwayne" || t === "lbmichael") { x.fillStyle = "rgba(255,255,255,.1)"; x.fillRect(-6, 0, 4, 80); }
       if (t === "lbtim") { x.fillStyle = "rgba(255,240,210,.35)"; x.beginPath(); x.ellipse(-3, 20, 4, 18, 0, 0, 7); x.fill(); x.strokeStyle = "#c8ccd4"; x.lineWidth = 2.5; for (const yy of [74, 80, 86]) { x.beginPath(); x.ellipse(0, yy, 12, 3, 0, 0, 7); x.stroke(); } }   // (les bras huilés, les bracelets de chaînes)
       if (t === "varsity") { x.fillStyle = "#c8202a"; x.fillRect(-12, 78, 24, 10); x.fillStyle = "#f4f4f0"; x.fillRect(-12, 81, 24, 2); }
       if (t === "gilet") { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(-12, 50, 24, 8); }
@@ -4532,6 +4535,7 @@ function enfiladeChene(g) {
 /* les personnages de Génération perdue (81 à 87) : leur tenue par défaut, et leur tête découpée ; l'inventaire de l'administrateur a le dernier mot */
 const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lbedgar", "#5a6a3a", "#4a4a3a", "#f2f2f2", "edgar"], 83: ["lbalan", "#8e8e8a", "#4a6a9a", "#f2f2f2", "alan"],
   89: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david-vamp"], 90: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul-vamp"], 91: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko-vamp"], 92: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne-vamp"],
+  93: ["lbmichael", "#151312", "#8aa2bc", "#b8b2a6", "michael"], 94: ["lbmichael", "#151312", "#8aa2bc", "#b8b2a6", "michael-vamp"],
   88: ["lbtim", "#d89a68", "#141416", "#1a1a1a", "tim"], 84: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david"], 85: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul"], 86: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko"], 87: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne"] };
 function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true, ...(id >= 81 && id <= 83 ? { k: 1.3, dy: 6 } : {}) }, tete_v: null,
@@ -5091,8 +5095,9 @@ function construireSantaCarla(A, L, scene) {
   const parts = []; const particule = (T, p, n, vy, duree, taille) => { for (let i = 0; i < n; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T, transparent: true, depthWrite: false, blending: T === feuT ? THREE.AdditiveBlending : THREE.NormalBlending }));
       sp.position.set(p.x + (Math.random() - .5) * .5, p.y + (Math.random() - .5) * .6, p.z + (Math.random() - .5) * .5); sp.scale.setScalar(taille); scene.add(sp); parts.push({ sp, v: new THREE.Vector3((Math.random() - .5) * .8, vy * (.5 + Math.random()), (Math.random() - .5) * .8), t0: performance.now(), d: duree, taille }); } };
   let adosIntro = [], choixT = 0, file = [], courant = null, hud = null, vies = 100, morsures = 0, biere = null, phase = "intro", t0 = performance.now(), dernierTir = 0, fini = false;
+  let mi = null; const MICH = -875, GAMIN = -885;   // (la fin avec Michael : son état ; Michael, et notre ado laissé de côté quand on joue Michael)
   const moiP = () => { const m = M && M.gens.get(M.moiNum); return m ? m.g.position : null; };
-  const majHud = () => { if (!hud) return; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}, nom = (P.nom || (ADOS[(M.lbPerso || 81) - 81] || {}).court || "").split(" ")[0];
+  const majHud = () => { if (!hud) return; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}, nom = mi && mi.joue ? "Michael" : (P.nom || (ADOS[(M.lbPerso || 81) - 81] || {}).court || "").split(" ")[0];
     hud.querySelector(".v").innerHTML = `${esc(nom)} <span style="display:inline-block;width:130px;height:13px;border:2px solid #fff;border-radius:8px;background:rgba(60,0,0,.8);overflow:hidden;vertical-align:-2px"><i style="display:block;height:100%;width:${Math.max(0, vies)}%;background:${vies > 40 ? "linear-gradient(90deg,#2aa84a,#7ae86a)" : "linear-gradient(90deg,#c81e1e,#ff6a3a)"};transition:width .3s"></i></span> 🔫∞`; hud.querySelector(".n").textContent = "🧛 " + (file.length + (courant && courant.etat !== "mort" ? 1 : 0)); };
   const message = (html, bouton) => { if (!M) return; const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:9;background:rgba(10,4,6,.86);color:#fff;border:2px solid #b81c22;border-radius:14px;padding:18px 22px;max-width:86%;text-align:center;font:600 17px Georgia,serif;box-shadow:0 0 30px rgba(184,28,34,.5)";
     d.innerHTML = html; if (bouton) { const b = document.createElement("button"); b.textContent = bouton[0]; b.style.cssText = "margin-top:14px;font:700 16px system-ui;padding:10px 18px;border-radius:10px;border:0;background:#b81c22;color:#fff;cursor:pointer"; b.onclick = e => { e.stopPropagation(); d.remove(); bouton[1](); }; d.appendChild(b); }
@@ -5117,7 +5122,7 @@ function construireSantaCarla(A, L, scene) {
     if (Math.hypot(p.x - biere.g.position.x, p.z - biere.g.position.z) < 1.1) { scene.remove(biere.g); biere = null; lumBiere.intensity = 0; vies = Math.min(100, vies + 40); majHud(); try { sonBruit(.5, 600, .25); } catch (e) {}
       parle(M.moiNum, "Glou glou… Aaah ! Ça fait du bien !"); voile("background:radial-gradient(circle,rgba(255,200,60,0) 40%,rgba(255,200,60,.45) 100%);transition:opacity .8s", 700); } };
   // ---------- la fin : David vaincu, « Good Times », les ados se parlent ; la caméra part d'eux et monte vers le ciel, où paraît le titre, et « FIN » ; retour au mess, devant l'affiche ----------
-  const finale = () => { if (fini) return; fini = true; phase = "fin"; if (L.aube) L.aube.t0 = performance.now();   /* (le jour qui revient : le ciel orangé, crescendo) */ musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
+  const finale = () => { if (fini) return; fini = true; phase = "fin"; if (L.aube && !L.aube.t0) L.aube.t0 = performance.now();   /* (le jour qui revient : le ciel orangé, crescendo) */ musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
     const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];   // (le prénom)
     const n0 = c0 && c0.num, n1 = c1 && c1.num;
     setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu leur chef !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
@@ -5173,7 +5178,7 @@ function construireSantaCarla(A, L, scene) {
     const d = voile("display:grid;place-items:center", 2000); d.innerHTML = '<div style="font:900 clamp(40px,11vw,96px) Georgia,serif;color:#e01818;letter-spacing:.18em;text-shadow:0 0 6px #000,0 0 26px rgba(255,0,0,.8);animation:lbCombat 2s ease-out forwards">COMBAT</div>'; try { sonBruit(.5, 300, .5); } catch (e) {} };
   // le visage se transforme : le visage humain se fond dans le visage de vampire (les yeux, les crocs), un grondement, une lueur ; puis il lance son défi
   const DEFI = { 1: "Wouhou ! Venez, les gamins… je vous attends !", 2: "Allez, venez jouer… si vous l'osez !", 3: "Grrraaah… Venez !", 0: "Venez… Je vous attends." };
-  const transformer = (v, fin) => { const p = v.p, k = v.k, vamp = habillerLB({ numero: p.info.numero, nom: p.info.nom, initiales: "" }, 89 + k), url = vamp.teteUrl;   // (le personnage « … vampire » de l'inventaire : sa tête, sa tenue, sa taille)
+  const transformer = (v, fin, o = {}) => { const p = v.p, k = v.k, vamp = habillerLB({ numero: p.info.numero, nom: p.info.nom, initiales: "" }, o.id ?? 89 + k), url = vamp.teteUrl;   // (le personnage « … vampire » de l'inventaire : sa tête, sa tenue, sa taille)
     const cam = M.camera, s0 = p.g.position, H = tailleBonhomme() * hauteurDe(p), q = moiP() || V3(s0.x, 0, s0.z + 3); let dx = q.x - s0.x, dz = q.z - s0.z, l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     let fait = false; const finir = () => { if (fait) return; fait = true; if (M && M.cine === C) { bulle(null); finCine(); } fin && fin(); };
     const devenir = () => { const nom = p.info.nom; Object.assign(p.info, vamp, { nom }); if (p.corps) { const H2 = tailleBonhomme(); p.corps.scale.set(H2 * .476 * 1.6 * hauteurDe(p), H2 * hauteurDe(p), 1); } };
@@ -5187,16 +5192,17 @@ function construireSantaCarla(A, L, scene) {
         if (u > 2.4 && u < 2.75) { cam.position.x += (Math.random() - .5) * .05; cam.position.y += (Math.random() - .5) * .03; }   // (le tremblement, au moment où il se transforme)
         if (ov) { const a = Math.min(1, Math.max(0, (u - 2.4) / 1.5)); ov.material.opacity = a * a * (3 - 2 * a); }   // (le visage change, en fondu)
         if (u > 2.4 && !change) { change = true; try { sonBruit(1.3, 160, .55); } catch (e) {} voile("background:radial-gradient(circle,rgba(255,180,60,.0) 30%,rgba(120,0,0,.45) 100%);transition:opacity 1.2s", 900); }
-        if (u > 4.1 && !dit) { dit = true; devenir(); dessinerCorps(p).then(() => { if (ov && ov.parent) ov.parent.remove(ov); }); bulle(`<b style="color:#ff5a4a">${esc(nomDe(p.info.numero))}</b> : ${esc(DEFI[k])}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
+        if (u > 4.1 && !dit) { dit = true; devenir(); dessinerCorps(p).then(() => { if (ov && ov.parent) ov.parent.remove(ov); }); bulle(`<b style="color:#ff5a4a">${esc(nomDe(p.info.numero))}</b> : ${esc(o.defi ?? DEFI[k])}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
         if (u > 6.6) finir(); }, fov: [40, 56] };
     M.passerBtn = boutonPasser(() => { if (!dit) { dit = true; devenir(); dessinerCorps(p); if (ov && ov.parent) ov.parent.remove(ov); } finir(); }); M.cine = C; };
   const dialogueAvant = (v) => { const frere = comps.find(c => c.id !== 81), autre = comps.find(c => c !== frere), nums = { V: v.p.info.numero, M: M.moiNum, F: frere ? frere.num : M.moiNum, A: autre ? autre.num : (frere ? frere.num : M.moiNum) };
     dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (!M || M.L !== L || v.etat !== "parle") return; transformer(v, () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
       bandeauCombat(); v.p.info.brasHaut = true; } }); }); };
-  const demarrer = () => { musiqueLB(null); for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
+  const demarrer = () => { musiqueLB(null); finMichael(); for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
     setTimeout(prochain, 6000); };
   const blesser = (v, pt) => { const now = performance.now(); if (now - dernierTir < 320) return; dernierTir = now;
     const p = moiP(); if (!p) return; const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z);
+    if (mi && mi.joue) { if (v.k === 0 && ["sol", "charge", "recul"].includes(v.etat) && d < 20) lancerPieu(v); return; }   /* (Michael ne tire pas d'eau bénite : il lance des pieux) */
     if (v.etat === "terre") { courirPieu(v); return; }   // (un vampire à terre : on le touche, on court à lui, et on lui plante le pieu)
     if (v.etat === "mort" || v.etat === "brule") return; if (v.etat === "approche" || v.etat === "parle") return; if (d > 16) return;
     // le jet d'eau bénite : des gouttes du pistolet au vampire
@@ -5227,7 +5233,81 @@ function construireSantaCarla(A, L, scene) {
     const ficelle = new THREE.MeshStandardMaterial({ color: 0x9a8660, roughness: 1 }); for (let k = 0; k < 6; k++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.052 * lg, .008 * lg, 5, 14), ficelle); r.rotation.x = Math.PI / 2 + (k % 2 ? .12 : -.12); r.position.y = (.74 + k * .028) * lg; g.add(r); }
     g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g; };
   L.modelePieu = modelePieu;
-  const pieu = (v) => { if (v.etat !== "terre") return; ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
+  // ================= la fin, avec Michael =================
+  const lesAdos = () => { const fr = comps.find(c => c.id !== 81), au = comps.find(c => c !== fr), sam = M.lbPerso === 81 ? M.moiNum : (comps.find(c => c.id === 81) || {}).num;
+    return { F: fr ? fr.num : M.moiNum, A: au ? au.num : (fr ? fr.num : M.moiNum), S: sam ?? M.moiNum }; };
+  const habiller = (q, id, nom) => { const vi = habillerLB({ numero: q.info.numero, nom: nom ?? q.info.nom, initiales: "" }, id); Object.assign(q.info, vi); if (q.corps) { const H2 = tailleBonhomme(); q.corps.scale.set(H2 * .476 * 1.6 * hauteurDe(q), H2 * hauteurDe(q), 1); } return dessinerCorps(q); };
+  // 1. on s'approche de David à terre, le pieu à la main… il se relève : l'eau bénite ne lui fait rien
+  const releveDavid = (v) => { if (mi) return; mi = { etape: 1 }; ado.pieuVers = null; v.etat = "parle"; v.g.rotation.z = 0; v.g.position.y = 0; v.p.vol = 0; v.pv = v.pvMax; majBarre(v);
+    try { sonBruit(1.3, 140, .6); } catch (e) {} voile("background:radial-gradient(circle,rgba(120,0,0,0) 30%,rgba(120,0,0,.5) 100%);transition:opacity 1s", 800);
+    const { F, A } = lesAdos(), D = v.p.info.numero;
+    setTimeout(() => { if (!M || M.L !== L) return; dialogue([[A, "Il… il se relève !"], [F, "C'est pas possible… L'eau bénite lui fait plus rien !"], [D, "Ha ha ha ha… Vous croyiez vraiment m'avoir avec vos pistolets à eau ?"],
+      [M.moiNum, "Il est trop puissant… On n'y arrivera jamais."], [D, "Regardez-vous… Trois gamins trempés, qui tremblent comme des feuilles. Vous me faites pitié."], [F, "C'est foutu… On est foutus, les gars."],
+      [D, "Je vais prendre mon temps avec vous. Alors… je commence par lequel ?"]], () => arriveeMichael(v)); }, 900); };
+  // 2. Michael arrive — Sam est fou de joie ; David redevient lui-même pour lui parler ; Michael demande qu'on le lui laisse
+  const arriveeMichael = (v) => { if (!M || M.L !== L) return; const p = moiP(); if (!p) return; let sx = p.x - 11, sz = p.z;
+    for (let k = 0; k < 32; k++) { const a = k / 32 * 6.283, x = p.x + Math.cos(a) * 11, z = p.z + Math.sin(a) * 11; if ((!L.limites || L.limites(x, z)) && Math.hypot(x - v.g.position.x, z - v.g.position.z) > 6) { sx = x; sz = z; break; } }
+    const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(93)) || {}, mp = ajouterAncien({ ...habillerLB({ numero: MICH, nom: P.nom || "Michael", initiales: "" }, 93), pnj: true, x: sx, z: sz }); if (!mp) return;
+    mi.etape = 2; mp.info.allure = 1.1; const bx = p.x + (sx - p.x) / 11 * 2.4, bz = p.z + (sz - p.z) / 11 * 2.4; mp.cible = V3(bx, 0, bz); mp.chemin = [];
+    const t0 = performance.now(); let fait = false; const suite = () => { if (fait || !M) return; fait = true; if (M.cine === C) finCine(); mp.g.position.set(bx, 0, bz); mp.cible = null; habiller(v.p, 84);   /* (David reprend son visage d'homme pour lui parler) */
+      const { S } = lesAdos(), D = v.p.info.numero;
+      dialogue([[S, "Michael ?! MICHAEL !"], [S, "T'es venu… T'es vraiment venu !"], [MICH, "Évidemment, petit frère. Je n'allais pas te laisser tout seul avec lui."], [D, "Michael… Je savais que tu viendrais."],
+        [D, "Tu es l'un des nôtres. Tu as bu le sang. On ne lutte pas contre ce qu'on est."], [MICH, "Je ne serai jamais comme toi, David. Jamais."], [D, "Regarde-toi… Tu as faim. Je le vois dans tes yeux."],
+        [MICH, "Sam. Recule, et emmène les autres. Laisse-le-moi."], [S, "Mais Michael… il est trop fort !"], [MICH, "Fais-moi confiance. Celui-là, il est pour moi."], [D, "Comme tu voudras… frère."]],
+        () => transformer({ p: mp, k: "m" }, () => transformer(v, () => duel(v, mp), { id: 89, defi: "Viens, Michael… Montre-moi ce que tu es devenu." }), { id: 94, defi: "C'est fini, David." })); };
+    M.passerBtn = boutonPasser(suite);
+    const C = { maj: now => { const u = (now - t0) / 1000, q = mp.g.position; M.camera.position.set(p.x - (sx - p.x) / 11 * 2.5, 1.7, p.z - (sz - p.z) / 11 * 2.5); M.camera.lookAt(q.x, 1.4, q.z);
+        if (u > 1 && !C.dit) { C.dit = true; bulle(`<b style="color:#ff5a4a">${esc(nomDe(lesAdos().S))}</b> : Attendez… quelqu'un arrive !`, 2200); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
+        if (u > 5 || Math.hypot(q.x - bx, q.z - bz) < .5) suite(); }, fov: [45, 60] }; M.cine = C; };
+  // 3. le duel : on joue Michael (vampire) ; notre ado reste à l'écart ; Michael lance des pieux, David charge
+  const duel = (v, mp) => { if (!M || M.L !== L) return; const moi = M.gens.get(M.moiNum); if (!moi) return;
+    const voileN = voile("background:#000;opacity:0;transition:opacity .35s", 1200); requestAnimationFrame(() => { voileN.style.opacity = "1"; });
+    setTimeout(() => { if (!M || M.L !== L) return; const q = moi.g.position.clone(), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {};
+      mi.gamin = ajouterAncien({ ...habillerLB({ numero: GAMIN, nom: P.nom || ADOS[M.lbPerso - 81].nom, initiales: "" }, M.lbPerso), pnj: true, arme: true, armeEau: true, x: q.x, z: q.z });
+      mi.vrai = { ...moi.info }; mi.joue = true; mi.etape = 3; moi.g.position.copy(mp.g.position); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z });
+      retirerAncien(MICH); moi.info.armeEau = false; moi.info.arme = false; habiller(moi, 94, "Michael");
+      for (const c of comps) { c.p.cible = null; }   /* (Sam et les autres restent en retrait) */
+      vies = 100; morsures = 0; majHud(); phase = "michael"; v.p.info.brasHaut = true; v.etat = "recul"; v.pv = v.pvMax = 8; majBarre(v); v.tEtat = performance.now() + 1500;
+      voileN.style.opacity = "0"; bandeauCombat(); setTimeout(() => M && M.L === L && bulle("🗡️ Tu es Michael : touche David (ou la gâchette) pour lui lancer des pieux. Attention à ses charges !", 4500), 2200); }, 450); };
+  // un pieu lancé : il file de la main de Michael jusqu'au cœur de David
+  const lancerPieu = (v) => { const p = moiP(), moi = M.gens.get(M.moiNum); if (!p || !moi) return; const now = performance.now();
+    const de = V3(p.x, 1.25, p.z), a = v.g.position.clone().add(V3(0, 1.2, 0)), dir = a.clone().sub(de).normalize(); moi.tirT = now; vueTir(moi, dir.x, dir.z);
+    const pk = modelePieu(.75); pk.quaternion.setFromUnitVectors(V3(0, -1, 0), dir); pk.position.copy(de); scene.add(pk); try { sonBruit(.25, 1800, .3); } catch (e) {}
+    const t0 = now, D = Math.max(160, de.distanceTo(a) * 32); const vol = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / D); if (!M || M.L !== L) { clearInterval(vol); scene.remove(pk); return; }
+      pk.position.lerpVectors(de, a, u); pk.position.y += Math.sin(u * Math.PI) * .25; if (u < 1) return; clearInterval(vol); scene.remove(pk);
+      if (!["sol", "charge", "recul"].includes(v.etat)) return; if (v.g.position.distanceTo(V3(a.x, 0, a.z)) > 2.2) return;   /* (il a esquivé) */
+      v.pv--; majBarre(v); for (let i = 0; i < 14; i++) { const an = Math.random() * 6.28; eclat(sangT2, a, V3(Math.cos(an) * 1.5, 1.5 + Math.random() * 2, Math.sin(an) * 1.5), 900, performance.now(), .12, { g: 9, grandit: 0, sol: true }); }
+      try { sonBruit(.5, 500, .5); } catch (e) {} if (Math.random() < .6) parle(v.p.info.numero, hasardDe(REPL_V[84].touche), true);
+      if (v.pv <= 0) finDavid(v); else { v.etat = "recul"; v.tEtat = performance.now() + 900; } }, 16); };
+  // une charge de David : Michael perd des forces
+  const chargeMichael = (v) => { if (fini) return; vies -= 20; majHud(); try { sonBruit(.7, 300, .6); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.8) 100%);transition:opacity .8s", 800);
+    const p = moiP(); if (p) { const dx = p.x - v.g.position.x, dz = p.z - v.g.position.z, d = Math.hypot(dx, dz) || 1, nx = p.x + dx / d * 1.6, nz = p.z + dz / d * 1.6; if (!L.limites || L.limites(nx, nz)) { p.x = nx; p.z = nz; } }
+    if (Math.random() < .5) parle(M.moiNum, hasardDe(["Argh !", "C'est tout ce que tu as, David ?", "Je ne lâcherai pas !"]), true);
+    if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Michael est à terre…</div><div style="margin-top:8px">David a gagné. Santa Carla est à lui.</div>`, ["Rejouer", demarrer]); } };
+  // 4. David vaincu : le pieu dans le cœur, il redevient un homme… puis il explose
+  const finDavid = (v) => { mi.etape = 4; v.etat = "terre"; v.tEtat = performance.now() + 60000; poserAuSol(v); if (v.barre) v.barre.sp.visible = false;
+    const P0 = v.g.position.clone(), t0 = performance.now(); let humain = false, boum = false, fait = false; const st = modelePieu(1); st.position.set(P0.x, .9, P0.z); scene.add(st);
+    const C = { maj: now => { const u = (now - t0) / 1000, k = Math.min(1, u / 2.5); M.camera.position.set(P0.x + 1.9 - k * .6, 1.1 - k * .3, P0.z + 1.6 - k * .5); M.camera.lookAt(P0.x, .45, P0.z); st.position.y = Math.max(.42, .9 - u * 2);
+        if (u > .4 && !C.d1) { C.d1 = true; bulle(`<b style="color:#ff5a4a">${esc(nomDe(v.p.info.numero))}</b> : Michael… Aaargh…`, 2000); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
+        if (u > 2 && !humain) { humain = true; habiller(v.p, 84); voile("background:rgba(255,255,255,.5);transition:opacity .9s", 300); bulle(`<b style="color:#ff5a4a">${esc(nomDe(v.p.info.numero))}</b> : …Merci.`, 1800); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }   /* (il redevient humain, un instant) */
+        if (u > 4 && !boum) { boum = true; scene.remove(st); pieu(v); }
+        if (u > 8.5 && !fait) { fait = true; finCine(); } }, fov: [42, 56] };
+    M.cine = C; M.passerBtn = boutonPasser(() => { if (!boum) { boum = true; scene.remove(st); if (!humain) habiller(v.p, 84); pieu(v); } fait = true; finCine(); }); };
+  // 5. les ados et Michael : le soleil se lève, Sam s'inquiète… mais Michael redevient lui-même : c'est terminé
+  const epilogueMichael = () => { if (!M || M.L !== L || mi.etape >= 5) return; mi.etape = 5; if (L.aube && !L.aube.t0) L.aube.t0 = performance.now(); musiqueLB(null);
+    const { S, F, A } = lesAdos(), Sv = S === M.moiNum ? GAMIN : S, moi = M.gens.get(M.moiNum);
+    dialogue([[Sv, "Michael ! Tu l'as eu ! Tu l'as vraiment eu !"], [F === M.moiNum ? GAMIN : F, "Il a explosé comme les autres… C'est fini. C'est vraiment fini."], [M.moiNum, "Il ne fera plus jamais de mal à personne."],
+      [A === M.moiNum ? GAMIN : A, "Regardez le ciel… Il devient orange."], [Sv, "Le soleil se lève, Michael ! Il faut que tu partes, vite ! Tu vas brûler !"]], () => {
+      if (!M || M.L !== L || !moi) return; habiller(moi, 93, "Michael"); voile("background:rgba(255,230,180,.6);transition:opacity 1.2s", 500); try { sonBruit(.8, 900, .3); } catch (e) {}
+      setTimeout(() => { if (!M || M.L !== L) return; dialogue([[M.moiNum, "Non, Sam… Regarde-moi. C'est terminé. Je suis redevenu moi."], [Sv, "Michael… T'es redevenu normal !"], [M.moiNum, "Grâce à toi, petit frère. Grâce à vous trois."]], () => {
+        // (dans un fondu : on redevient son ado ; Michael reste avec nous)
+        const vn = voile("background:#000;opacity:0;transition:opacity .5s", 1500); requestAnimationFrame(() => { vn.style.opacity = "1"; });
+        setTimeout(() => { if (!M || M.L !== L) return; const pm = moi.g.position.clone(); finMichael(true); ajouterAncien({ ...habillerLB({ numero: MICH, nom: "Michael", initiales: "" }, 93), pnj: true, x: pm.x, z: pm.z }); vn.style.opacity = "0"; finale(); }, 600); }); }, 900); }); };
+  // (rendre son ado au joueur, retirer Michael et le double)
+  const finMichael = (garder) => { if (!mi) return; const moi = M && M.gens.get(M.moiNum);
+    if (mi.joue && moi) { const g0 = M.gens.get(GAMIN); if (g0) moi.g.position.copy(g0.g.position); Object.assign(moi.info, mi.vrai); dessinerCorps(moi); }
+    retirerAncien(GAMIN); retirerAncien(MICH); mi = garder ? { etape: 9 } : null; };
+  const pieu = (v) => { if (v.etat !== "terre") return; if (v.k === 0 && !mi) { releveDavid(v); return; }   /* (David : on s'approche avec le pieu… et il se relève) */ ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
     const p = v.g.position.clone(), c = p.clone().add(V3(0, .45, 0));
     // le pieu, enfoncé d'un coup dans la poitrine
     const st = modelePieu(1); st.position.copy(c).add(V3(0, .5, 0)); scene.add(st);
@@ -5248,7 +5328,7 @@ function construireSantaCarla(A, L, scene) {
       for (let i = 0; i < 60; i++) eclat(flammeT, p.clone().add(V3((Math.random() - .5) * 1.4, .4 + Math.random() * .3, (Math.random() - .5) * 1.4)), V3((Math.random() - .5) * .4, 1.2 + Math.random() * 1.2, (Math.random() - .5) * .4), 1000 + Math.random() * 600, t1 + 250 + i * 55, 1 + Math.random() * .8, { add: true, flamme: true, grandit: .5 });
       for (let i = 0; i < 16; i++) eclat(fumeeN, p.clone().add(V3((Math.random() - .5), 1.6, (Math.random() - .5))), V3((Math.random() - .5) * .6, 1.6, (Math.random() - .5) * .6), 2600, t1 + 800 + i * 180, 1.2, { grandit: 2 }); }, 650); };   // (le feu brûle trois ou quatre secondes, sa fumée monte)
   const mordu = (v) => { if (fini) return; vies -= 20; morsures++; majHud(); if (morsures >= 2 && !biere && vies > 0) poserBiere(); parle(M.moiNum, REPL[M.lbPerso].mordu); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
-    if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
+    if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(mi && mi.joue ? `<div style="font-size:22px">Michael est à terre…</div><div style="margin-top:8px">David a gagné. Santa Carla est à lui.</div>` : `<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
   // ================= les trois ados : on joue Sam, Edgar ou Alan Frog ; dans la main, le pistolet à eau bénite =================
   const ADOS = [{ nom: "Sam Emerson", court: "Sam", dit: "Ma mère ne m'a pas élevé pour finir en casse-croûte !" }, { nom: "Edgar Frog", court: "Edgar", dit: "Vérité, justice, et l'american way. Vampires, c'est fini." }, { nom: "Alan Frog", court: "Alan", dit: "Remplis les pistolets d'eau bénite, on y va !" }];
   // le pistolet à eau : le corps en plastique transparent, l'eau bénite dedans, la croix sur le réservoir, la buse orange
@@ -5261,7 +5341,7 @@ function construireSantaCarla(A, L, scene) {
     return g; };
   const ado = { k: null, pist: pistoletEau(), kick: 0, kt: performance.now(), vise: null }; ado.pist.visible = false; scene.add(ado.pist);
   const buse = (but) => { if (ado.pist.visible) return ado.pist.localToWorld(V3(0, .025, -.2)); const p = moiP(); if (!p) return M.camera.position.clone(); const d = V3(but.x - p.x, 0, but.z - p.z).normalize(); return V3(p.x + d.x * .55, p.y + 1.15, p.z + d.z * .55); };   // (la main de l'ado)
-  const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi) { ado.pist.visible = false; return; }
+  const majAdo = () => { const moi = M.gens.get(M.moiNum); if (ado.k == null || !moi || (mi && mi.joue)) { ado.pist.visible = false; return; }
     const cam = M.camera, now = performance.now(), dk = Math.min(.1, (now - ado.kt) / 1000); ado.kt = now; ado.kick = Math.max(0, ado.kick - dk * 6);
     ado.pist.visible = !!M.premiere; ado.pist.scale.setScalar(.55); cam.updateMatrixWorld(); const f = cam.getWorldDirection(V3(0, 0, 0)), r = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
     if (M.premiere) { const u = V3(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 1);
@@ -5272,7 +5352,7 @@ function construireSantaCarla(A, L, scene) {
   let parleLibre = 0;
   const parle = (num, texte, force) => { const now = performance.now(); if (!M || M.L !== L || !texte || !M.gens.has(num) || M.cine || (!force && now < parleLibre)) return;
     if (!force && (M.gens.get(num).cible || (M.gens.get(M.moiNum) || {}).cible)) return;   /* (personne ne parle en marchant) */ parleLibre = now + 1800 + texte.length * 45; dire(num, texte); };
-  const nomDe = (num) => { if (num === M.moiNum) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}; return P.nom || ADOS[M.lbPerso - 81].nom; } const q = M.gens.get(num); return (q && q.info.nom) || ""; };
+  const nomDe = (num) => { if (num === M.moiNum && mi && mi.joue) return "Michael"; if (num === M.moiNum) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}; return P.nom || ADOS[M.lbPerso - 81].nom; } const q = M.gens.get(num); return (q && q.info.nom) || ""; };
   /* une scène de dialogue, en cinématique : la caméra cadre celui qui parle (de trois quarts, depuis ceux à qui il parle), son nom et sa phrase en sous-titre, une réplique après l'autre */
   const dialogue = (lignes, fin) => { const cam = M.camera; let i = -1, tFin = 0, fait = false; const qui = [...new Set(lignes.map(l => l[0]).filter(n => n != null))], vamp = qui.find(n => n <= -860 && n >= -869);
     const grp = qui.map(n => M.gens.get(n)).filter(Boolean), ctr = grp.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, grp.length)), front = V3(cam.position.x - ctr.x, 0, cam.position.z - ctr.z); if (front.lengthSq() < .01) front.set(0, 0, 1); front.normalize();
@@ -5341,7 +5421,7 @@ function construireSantaCarla(A, L, scene) {
     btnPieu.style.display = v && !M.cine ? "" : "none"; fleche.visible = !!v; if (v) { fleche.position.set(v.g.position.x, .95 + Math.abs(Math.sin(now / 260)) * .25, v.g.position.z); fleche.rotation.y = now / 700; }
     const c = ado.pieuVers; if (c && c.etat === "terre" && Math.hypot(c.g.position.x - p.x, c.g.position.z - p.z) < 2.7) pieu(c); };
   const vieComps = (now, p) => { for (const q of [M.gens.get(M.moiNum), ...comps.map(c => c.p)]) if (q && q.cible && q.bulle) { q.g.remove(q.bulle); q.bulle = null; }   /* (on se tait en marchant) */ for (const c of comps) { const g = c.p.g, ox = c.i ? 1.8 : -1.8, d = Math.hypot(g.position.x - p.x - ox, g.position.z - p.z - 1);
-      if (d > 3.2 && !c.p.cible) c.p.cible = V3(p.x + ox, 0, p.z + 1);   // (ils nous suivent)
+      if (d > 3.2 && !c.p.cible && phase !== "michael") c.p.cible = V3(p.x + ox, 0, p.z + 1);   // (ils nous suivent ; pendant le duel de Michael, ils restent en retrait)
       if (phase === "vague1" || phase === "david") { const vis = vamps.filter(v => v.etat === "tourne" || v.etat === "pique" || v.etat === "remonte");
         if (now > c.tirT && vis.length) { c.tirT = now + 2600 + Math.random() * 3000; const v = hasardDe(vis), dx = v.g.position.x - g.position.x, dz = v.g.position.z - g.position.z, l2 = Math.hypot(dx, dz) || 1;
           if (l2 < 16) { c.p.tirT = now; vueTir(c.p, dx / l2, dz / l2); const de = V3(g.position.x + dx / l2 * .5, 1.15, g.position.z + dz / l2 * .5), but = v.g.position.clone().add(V3(0, 1.3, 0));
@@ -5364,9 +5444,16 @@ function construireSantaCarla(A, L, scene) {
     if (phase === "intro" && !adosIntro.length) [81, 82, 83].forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, q = ajouterAncien({ ...habillerLB({ numero: -(880 + i), nom: P.nom || ADOS[i].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: (i - 1) * 1.7, z: .3 - Math.abs(i - 1) * .5 }); if (q) adosIntro.push(q); });   // (les trois ados, devant l'arche : la caméra du survol arrive sur eux)
     if (phase === "intro" && !M.cine && !M.lbIntro) { if (!choixT) choixT = now + 1800; if (now > choixT) { phase = "choix"; choisirAdo(); } }
     if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const etape = 3 - file.length; setTimeout(() => { if (!M || M.L !== L || fini) return; const fr = comps.find(c => c.id !== 81), au = comps.find(c => c !== fr), F = fr ? fr.num : M.moiNum, A = au ? au.num : F;
-        dialogue((ENTRE[etape] || ENTRE[0]).map(([q, t]) => [q === "M" ? M.moiNum : q === "F" ? F : A, t]), () => { if (M && M.L === L && !fini) setTimeout(prochain, 7000 + Math.random() * 5000); }); }, 2600); } else finale(); }
+        dialogue((ENTRE[etape] || ENTRE[0]).map(([q, t]) => [q === "M" ? M.moiNum : q === "F" ? F : A, t]), () => { if (M && M.L === L && !fini) setTimeout(prochain, 7000 + Math.random() * 5000); }); }, 2600); } else if (mi) epilogueMichael(); else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
     for (const v of vamps) { const g = v.g, dt = 1 / 60;
+      // (la fin : David au sol, face à Michael — il tourne autour de lui, charge, recule ; personne ne vole)
+      if (v.etat === "sol" || v.etat === "charge" || v.etat === "recul") { const dx = p.x - g.position.x, dz = p.z - g.position.z, d = Math.hypot(dx, dz) || 1, dt2 = Math.min(.05, (now - (v.tp || now)) / 1000); v.tp = now; g.position.y = 0;
+        const bouger = (vx, vz) => { const nx = g.position.x + vx, nz = g.position.z + vz; if (!L.limites || L.limites(nx, nz)) { g.position.x = nx; g.position.z = nz; } else if (L.limites(nx, g.position.z)) g.position.x = nx; else if (L.limites(g.position.x, nz)) g.position.z = nz; };
+        if (v.etat === "sol") { v.a = (v.a ?? Math.atan2(-dz, -dx)) + dt2 * .7; const cx = p.x + Math.cos(v.a) * 6, cz = p.z + Math.sin(v.a) * 6; bouger((cx - g.position.x) * Math.min(1, dt2 * 2.5), (cz - g.position.z) * Math.min(1, dt2 * 2.5)); if (now > v.tEtat) { v.etat = "charge"; v.tEtat = now + 2600; parle(v.p.info.numero, hasardDe(["Viens là, Michael !", "Tu es à moi !", "Ha ! Trop lent !"]), true); } }
+        else if (v.etat === "charge") { bouger(dx / d * 8.5 * dt2, dz / d * 8.5 * dt2); if (d < 1.15) { chargeMichael(v); v.etat = "recul"; v.tEtat = now + 1400; } else if (now > v.tEtat) { v.etat = "recul"; v.tEtat = now + 900; } }
+        else { bouger(-dx / d * 5 * dt2, -dz / d * 5 * dt2); if (now > v.tEtat) { v.etat = "sol"; v.a = Math.atan2(-dz, -dx); v.tEtat = now + 1800 + Math.random() * 2200; } }
+        v.p.vol = 0; if (v.barre) v.barre.sp.visible = !M.cine; continue; }
       if (v.etat === "approche") { if (!v.pose) { const cam = M.camera.getWorldDirection(V3(0, 0, 0)); cam.y = 0; if (cam.lengthSq() < 1e-4) cam.set(0, 0, -1); cam.normalize(); v.pose = [cam.x, cam.z]; }   // (il fond sur nous du ciel, et se pose à cinq pas, devant nous : face à l'écran)
         const bx = p.x + v.pose[0] * 6 - v.pose[1] * 1.3, bz = p.z + v.pose[1] * 6 + v.pose[0] * 1.3;   // (un peu de côté : on le voit, et nous aussi)
         const k2 = 1 - Math.exp(-1.4 * Math.min(.1, (now - (v.tp || now)) / 1000)); v.tp = now;   // (en temps réel : il arrive en trois ou quatre secondes, quel que soit le téléphone)
