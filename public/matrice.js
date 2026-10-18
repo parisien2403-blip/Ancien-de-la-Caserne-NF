@@ -1753,10 +1753,9 @@ function construireRue(A, T, L, scene) {
         if (k === 1) { vitrine(x, X, yr + 70, Q, h - 70, ["#2a2a2a", "#111"]); x.fillStyle = "#b9a37a"; x.fillRect(X + Q / 2 - 1, yr + 70, 2, h - 70); continue; }
         vitrine(x, X, yr + 70, Q, h - 72, ["#f0d9a6", "#b98a52"]);
         for (let r = 0; r < 3; r++) for (let c = 0; c < 7; c++) { x.fillStyle = ["#c98a3e", "#a8652a", "#e0b06a", "#8a4e22"][Math.floor(alea() * 4)]; x.beginPath(); x.ellipse(X + 10 + c * (Q - 16) / 6, yr + 92 + r * 22, 6, 4, 0, 0, 7); x.fill(); } } },
-    anjou: (x, w, yr, h) => { x.fillStyle = "#e3dccb"; x.fillRect(0, yr, w, h);
-      bandeau(x, 20, yr + 10, w * .55, 34, "#3a2a24", "L'ANJOU", "bold 24px Georgia, serif", "#e8c870");
-      vitrine(x, 24, yr + 52, w * .55 - 8, h - 54, ["#d9b17a", "#6b4a2c"]);
-      vitrine(x, w * .65, yr + 30, w * .3, h - 32, ["#9db0bd", "#4f5f6b"]); },
+    // (à la place de L'Anjou : le Video Futur, posé devant en relief ; ici, seulement la vitrine voisine)
+    videoFutur: (x, w, yr, h) => { x.fillStyle = "#e3dccb"; x.fillRect(0, yr, w, h);
+      vitrine(x, w * .73, yr + 30, w * .23, h - 32, ["#9db0bd", "#4f5f6b"]); },
     yoji: (x, w, yr, h) => { x.fillStyle = "#e2dbcc"; x.fillRect(0, yr, w, h);
       bandeau(x, 10, yr + 10, w - 20, 34, "#d9b65a", "TRAITEUR ASIATIQUE   YOJI", "bold 22px 'Arial Black', Arial", "#3a2a10");
       x.fillStyle = "#151515"; x.fillRect(10, yr + 46, w - 20, h - 46); vitrine(x, 22, yr + 56, w - 44, h - 60, ["#f3dcb4", "#8a6440"]);
@@ -1771,7 +1770,26 @@ function construireRue(A, T, L, scene) {
   im({ x: -23, z: 6.8, largeur: 10, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 61 });
   im({ x: -11, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[0], graine: 62, rdc: RDC.presse });
   im({ x: 3, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 63, rdc: RDC.tourPain });
-  im({ x: 17, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 64, rdc: RDC.anjou });
+  im({ x: 17, z: 6.8, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 64, rdc: RDC.videoFutur });
+  // le Video Futur (la boutique et son distributeur automatique, 7j/7 24h/24) : la devanture peinte d'après les photos, le bandeau bleu en relief, le logo rond en drapeau
+  { const g = new THREE.Group(); g.position.set(17, 0, 6.8); g.rotation.y = Math.PI; scene.add(g);
+    const charge = (f) => { const t = new THREE.TextureLoader().load(f); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+    const tF = charge("images/videofutur/facade.webp"), tB = charge("images/videofutur/bandeau.webp");
+    const fa = new THREE.Mesh(new THREE.PlaneGeometry(9, 4.11), new THREE.MeshStandardMaterial({ map: tF, roughness: .6, emissive: 0xffffff, emissiveMap: tF, emissiveIntensity: .12 })); fa.position.set(-2.1, 2.055, .03); g.add(fa);
+    const bleu = A.mat({ color: 0x1d3a8a, roughness: .5 });
+    const ba = new THREE.Mesh(new THREE.BoxGeometry(9.1, 1.06, .22), [bleu, bleu, bleu, bleu, new THREE.MeshStandardMaterial({ map: tB, roughness: .35, emissive: 0xffffff, emissiveMap: tB, emissiveIntensity: .35 }), bleu]); ba.position.set(-2.1, 3.47, .14); g.add(ba);
+    // le distributeur : un auvent d'inox au-dessus de l'alcôve
+    const inox = A.mat({ color: 0xc8ccd0, roughness: .3, metalness: .6 });
+    const au = new THREE.Mesh(new THREE.BoxGeometry(4.2, .08, .45), inox); au.position.set(-4.33, 2.9, .25); g.add(au);
+    // le logo rond, en drapeau sur sa potence
+    const tL = charge("images/videofutur/logo.webp"), po = new THREE.Mesh(new THREE.BoxGeometry(.06, .06, .9), A.mat({ color: 0x2a2e33, metalness: .5 })); po.position.set(-6.75, 3.25, .45); g.add(po);
+    const disque = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .08, 32), [A.mat({ color: 0xf2f2f0 }), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .35 }), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .35 })]);
+    disque.rotation.z = Math.PI / 2; disque.position.set(-6.75, 2.75, .8); g.add(disque);
+    // la nuit : le bandeau éclaire le trottoir
+    const l = new THREE.PointLight(0x7aa8ff, 30, 9, 1.6); l.position.set(-2.1, 3, 1.6); l.visible = false; g.add(l); L.nuitObjets.push(l);
+    // dans les deux cadres de droite : les affiches de deux films à louer
+    for (const [cle, px, w] of [["bttf", .8, .82], ["lb", 1.875, .74]]) { const t = charge(`images/videofutur/jaquette-${cle}.webp`), af = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 850 / 600), new THREE.MeshStandardMaterial({ map: t, roughness: .4, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .2 })); af.position.set(px, 1.98, .045); g.add(af); }
+    L.videoFutur = { x: 19.1, z: 6.8 }; }
   im({ x: 32, z: 6.8, largeur: 16, etages: 5, rot: Math.PI, teinte: teintes[3], graine: 65 });
   im({ x: 48, z: 6.8, largeur: 16, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 66 });
   im({ x: -46, z: 6.8, largeur: 18, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 67, rdc: RDC.yoji });
@@ -3435,7 +3453,7 @@ function deuxiemeCour(A, L, scene) {
       const p = new THREE.Mesh(new THREE.BoxGeometry(.06, 2.15, 1.6), brun); p.position.y = 1.075; p.castShadow = true; g.add(p);
       for (const [y, dz] of [[.55, -.4], [.55, .4], [1.6, -.4], [1.6, .4]]) { const pn = new THREE.Mesh(new THREE.BoxGeometry(.02, .85, .62), A.mat({ color: 0x5a361e })); pn.position.set(.04, y, dz); g.add(pn); }
       const pl = new THREE.Mesh(new THREE.BoxGeometry(.03, .06, .3), fer); pl.position.set(.06, 1.05, 0); g.add(pl);   // le moraillon
-      const cad = new THREE.Group(); cad.position.set(.1, .96, 0); g.add(cad);
+      const cad = new THREE.Group(); cad.position.set(.1, .96, 0); g.add(cad); cad.visible = false; L.cadenasObj = cad;   /* (dans la vraie caserne, plus de cadenas : on part à Resident Evil par le Video Futur ; Silent Hill le remet, pour sa clé) */
       const corps = new THREE.Mesh(new THREE.BoxGeometry(.06, .12, .1), A.mat({ color: 0xc9a227, metalness: .75, roughness: .3 })); cad.add(corps);
       const anse = new THREE.Mesh(new THREE.TorusGeometry(.035, .009, 6, 14, Math.PI), fer); anse.rotation.y = Math.PI / 2; anse.position.y = .06; cad.add(anse);
       for (let k = 0; k < 4; k++) { const mol = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .022, 10), A.mat({ color: 0x2a2a2c, metalness: .5 })); mol.rotation.x = Math.PI / 2; mol.position.set(.035, -.02, -.033 + k * .022); cad.add(mol); }
@@ -3443,7 +3461,7 @@ function deuxiemeCour(A, L, scene) {
       // l'affiche Micromania (Resident Evil, 1996), tombée au sol devant les encombrants ; sa taille se règle (administrateur)
       const tA = new THREE.TextureLoader().load("images/apo/affiche-re-1996.webp"); tA.colorSpace = THREE.SRGBColorSpace;
       const af = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), new THREE.MeshStandardMaterial({ map: tA, roughness: .85, polygonOffset: true, polygonOffsetFactor: -2 }));
-      af.rotation.set(-Math.PI / 2, 0, .35); af.position.set(xf + 1.95, .012, zo + 2.1); af.receiveShadow = true; scene.add(af); L.afficheApo = af;
+      af.rotation.set(-Math.PI / 2, 0, .35); af.position.set(xf + 1.95, .012, zo + 2.1); af.receiveShadow = true; scene.add(af); L.afficheApo = af; af.visible = false;   /* (le fascicule Micromania : retiré, on loue Resident Evil au Video Futur) */
       L.tailleAffiche = (k) => { const v = Math.max(.2, Math.min(2.5, +k || .6)); af.scale.set(v, v, 1); }; L.tailleAffiche((M && M.afficheTaille) || .6); }
     L.portails.push({ dans: (x, z) => (L.apo || L.cadenasOuvert) && x < xf + 1.4 && Math.abs(z - zo) < .9, vers: "z-grande", arrivee: [xf + 2.2, zo], yaw: -Math.PI / 2, indice: [xf + 1, zo], entreeApo: true, secret: true });   // (pas de cercle visible : c'est la surprise ; il reste visible dans le monde de l'apocalypse)
     raccourci(L, scene, [.4, 2.2, 1.6], [xf, 1.1, zo], { vers: "z-grande", entreeApo: true, siApo: true }); }
@@ -7586,7 +7604,7 @@ export async function ouvrir(ctx) {
       if (moi && Math.hypot(moi.g.position.x - w.x, moi.g.position.z - w.z) > 6) { const dx = moi.g.position.x - w.x, dz = moi.g.position.z - w.z, l = Math.hypot(dx, dz) || 1; allerVers(w.x + dx / l * 1.3, w.z + dz / l * 1.3, true); }
       else ctx.surAffiche && ctx.surAffiche(rc.affiche);
       return; }
-    if (rc && rc.siApo && !M.L.apo) { if (M.L.cadenasEnc) allerVers(M.L.cadenasEnc[0], M.L.cadenasEnc[1], true); return; }   // (la porte fermée : on va jusqu'au cadenas)
+    if (rc && rc.siApo && !M.L.apo) return;   // (la porte fermée : on va jusqu'au cadenas)
     if (rc && rc.marche) { allerVers(rc.marche[0], rc.marche[1], true); return; }
     if (rc) {
       // la porte touchée : on marche jusqu'à son cercle lumineux ; on n'entre qu'une fois dessus
@@ -7832,7 +7850,7 @@ export async function ouvrir(ctx) {
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
-    if (M.lieu === "mess" && M.L.afficheGB === undefined) majAfficheGB();
+    /* (les affiches des films, au mess : retirées — on part dans les films par le Video Futur) */
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
@@ -8676,7 +8694,7 @@ function creerRadio() { const g = new THREE.Group(), m = o => new THREE.MeshStan
   const dr = new THREE.Mesh(new THREE.TorusGeometry(.06, .006, 6, 20, Math.PI * 1.4), m({ color: 0x5a3820, roughness: .8 })); dr.rotation.x = Math.PI / 2; dr.position.set(-.16, .01, 0); g.add(dr);
   g.userData.led = led; g.scale.setScalar(1.6); return g; }
 function majRadio() {
-  if (!M || !M.scene) return; const r = M.radio, ici = r && r.lieu === M.lieu && M.L && !M.L.apo;   /* (la radio est là pour tout le monde) */
+  if (!M || !M.scene) return; const r = M.radio, ici = false && r && r.lieu === M.lieu && M.L && !M.L.apo;   /* (la radio : retirée, on loue Silent Hill au Video Futur) */   /* (la radio est là pour tout le monde) */
   if (!ici) { if (M.radioObj) { M.scene.remove(M.radioObj); M.radioObj = null; } return; }
   if (!M.radioObj || M.radioObj.parent !== M.scene) { M.radioObj = creerRadio(); M.scene.add(M.radioObj); }
   M.radioObj.position.set(r.x, (M.L.hauteur ? M.L.hauteur(r.x, r.z, {}) : 0) + .005, r.z); M.radioObj.rotation.y = r.r; }
@@ -8815,6 +8833,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
 function silentHill(scene, L, base) {
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
+  if (L.cadenasObj) L.cadenasObj.visible = true;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
   L.raccourcis = (L.raccourcis || []).filter(q => !q.vers || (!q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers)))); for (const q of L.raccourcis) if (q.vers) q.vers = "sh-" + baseLieu(q.vers);
   L.messVitres = null; if (L.afficheApo) L.afficheApo.visible = false;
@@ -10654,6 +10673,67 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
   let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess") && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
+/* le Video Futur de la rue : on loue la cassette d'un film… et l'on part dans son monde.
+   Une cassette par film : si quelqu'un est déjà dedans, elle est « LOUÉE » (et l'on voit par qui) ; Resident Evil se joue à plusieurs, il y a toujours un exemplaire */
+const FILMS_VF = [
+  { cle: "gb", lieu: "gb-cour", titre: "S.O.S. Fantômes", annee: 1984 },
+  { cle: "bttf", lieu: "bttf-cour", titre: "Retour vers le futur", annee: 1985 },
+  { cle: "lb", lieu: "santacarla", titre: "Génération perdue", annee: 1987 },
+  { cle: "re", lieu: "z-grande", titre: "Resident Evil", annee: 1996, plusieurs: true },
+  { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 }];
+const ENTREE_APO = { arrivee: [-6.4, -38.5], yaw: -Math.PI / 2 };   // (comme si l'on passait la porte des encombrants de la grande cour)
+const louesVF = f => Object.entries((M && M.qui) || {}).filter(([l]) => f.plusieurs ? estApo(l) : universDe(l) === universDe(f.lieu)).flatMap(([, n]) => n);
+function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
+  if (!document.getElementById("styleVF")) { const st = document.createElement("style"); st.id = "styleVF";
+    st.textContent = ".vf-menu{position:absolute;inset:0;z-index:12;background:rgba(6,10,26,.88);display:flex;flex-direction:column;align-items:center;padding:14px 12px;box-sizing:border-box;overflow:auto;font-family:'Lato',sans-serif;color:#fff}"
+      + ".vf-tete{width:min(100%,980px);display:flex;align-items:center;gap:12px;background:linear-gradient(#2a4aa8,#162e78);border:3px solid #f2f2f0;border-radius:10px;padding:8px 14px;box-sizing:border-box;box-shadow:0 8px 30px #000}"
+      + ".vf-tete b{font:900 clamp(22px,4vw,36px) 'Inter','Arial Black',sans-serif;letter-spacing:.06em}.vf-tete span{font:700 13px 'Lato',sans-serif;opacity:.85}"
+      + ".vf-x{margin-left:auto;width:42px;height:42px;border-radius:50%;border:0;background:#fff;color:#14215a;font:900 20px sans-serif;cursor:pointer;flex:none}"
+      + ".vf-grille{width:min(100%,980px);display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:14px}"
+      + ".vf-k{position:relative;background:#11183a;border:2px solid #2a3a7a;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.6)}"
+      + ".vf-k img{width:100%;aspect-ratio:600/850;object-fit:cover;border-radius:4px;display:block;background:#000}"
+      + ".vf-k h3{margin:0;font:800 15px 'Lato',sans-serif;line-height:1.15;color:#fff}.vf-k small{color:#c8d0e8;font-weight:700}"
+      + ".vf-k .vf-l{border:0;border-radius:8px;padding:9px 6px;font:900 14px 'Lato',sans-serif;cursor:pointer;background:#ffd23a;color:#14215a}"
+      + ".vf-k.loue img{filter:grayscale(.85) brightness(.55)}.vf-k.loue .vf-l{background:#3a3f55;color:#aab;cursor:not-allowed}"
+      + ".vf-tampon{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%) rotate(-16deg);border:5px double #e11d1d;color:#ff2a2a;font:900 clamp(30px,5vw,42px) 'Inter','Arial Black',sans-serif;letter-spacing:.08em;padding:2px 12px;border-radius:6px;background:rgba(40,0,0,.25);text-shadow:0 0 6px rgba(0,0,0,.6);pointer-events:none}"
+      + ".vf-qui{font:800 12.5px 'Lato',sans-serif;color:#ff8a8a}.vf-qui.re{color:#9fd49a}"
+      + "@keyframes vfBande{0%{transform:translateY(-30vh)}100%{transform:translateY(130vh)}}@keyframes vfClign{50%{opacity:0}}";
+    document.head.appendChild(st); }
+  const d = document.createElement("div"); d.className = "vf-menu";
+  d.innerHTML = `<div class="vf-tete"><div><b>VIDEO FUTUR</b><br><span>📼 Louer un film · 7j/7 24h/24</span></div><button type="button" class="vf-x" aria-label="Fermer">✕</button></div><div class="vf-grille"></div>`;
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.conteneur.appendChild(d);
+  const fermer = () => { d.remove(); if (M && M.vfMenu && M.vfMenu.d === d) M.vfMenu = null; };
+  d.querySelector(".vf-x").onclick = fermer;
+  const maj = () => { const gr = d.querySelector(".vf-grille"); gr.innerHTML = "";
+    for (const f of FILMS_VF) { const qui = louesVF(f), loue = !f.plusieurs && qui.length > 0, k = document.createElement("div"); k.className = "vf-k" + (loue ? " loue" : "");
+      k.innerHTML = `<img src="images/videofutur/jaquette-${f.cle}.webp" alt=""><h3>${f.titre} <small>(${f.annee})</small></h3>`
+        + (loue ? `<div class="vf-tampon">LOUÉ</div><div class="vf-qui">🔒 Loué par ${qui.map(echapper).join(", ")}</div>` : f.plusieurs && qui.length ? `<div class="vf-qui re">🧟 Déjà dedans : ${qui.map(echapper).join(", ")}</div>` : f.plusieurs ? `<div class="vf-qui re">Plusieurs exemplaires : on peut y aller à plusieurs</div>` : "")
+        + `<button type="button" class="vf-l"${loue ? " disabled" : ""}>${loue ? "Indisponible" : "📼 Louer"}</button>`;
+      k.querySelector("img").alt = "Jaquette : " + f.titre;
+      if (!loue) k.querySelector(".vf-l").onclick = () => { fermer(); louerFilm(f); };
+      gr.appendChild(k); } };
+  M.vfMenu = { d, maj, fermer }; maj(); }
+const echapper = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+// la cassette entre dans le magnétoscope : « ▶ PLAY », les lignes qui défilent… puis le film commence
+function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOccupe(f.lieu)) { refusUnivers(f.lieu); return; }
+  const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
+  sonBruit(.25, 900, .25);
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;pointer-events:none;background:#000;overflow:hidden;opacity:0;transition:opacity .5s";
+  d.innerHTML = `<div style="position:absolute;left:6%;top:7%;color:#fff;font:700 clamp(22px,4vw,40px) 'Courier New',monospace;letter-spacing:.1em;text-shadow:0 0 6px #fff;animation:vfClign 1s steps(1) infinite">▶ PLAY</div>`
+    + `<div style="position:absolute;right:6%;top:7%;color:#fff;font:700 clamp(16px,3vw,28px) 'Courier New',monospace;opacity:.85">SP  0:00:00</div>`
+    + `<div style="position:absolute;left:0;right:0;height:16vh;background:linear-gradient(transparent,rgba(255,255,255,.25),rgba(160,160,255,.12),transparent);animation:vfBande 1.3s linear infinite"></div>`
+    + `<div style="position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 2px,rgba(255,255,255,.04) 2px 4px)"></div>`
+    + `<div style="position:absolute;left:0;right:0;bottom:12%;text-align:center;color:#ffd23a;font:900 clamp(20px,4vw,34px) 'Lato',sans-serif;text-shadow:0 2px 10px #000">${echapper(f.titre)}</div>`;
+  M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
+  M.cine = { maj: () => {} };
+  setTimeout(() => { if (!M) { d.remove(); return; } finCine(); setTimeout(() => { d.style.opacity = "0"; setTimeout(() => d.remove(), 600); }, f.cle === "lb" ? 900 : 300);
+    if (f.cle === "lb") cineAfficheLB();
+    else if (f.cle === "gb") { titreGB(); musiqueGB(true, "gb-arrivee"); voile("background:#fff;opacity:1", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
+    else if (f.cle === "bttf") { musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
+    else if (f.cle === "sh") cineRadio();
+    else if (f.cle === "re") { const go = () => { M.apoIntro = true; changerLieu("z-grande", ENTREE_APO.arrivee, ENTREE_APO.yaw, true); };
+      if (M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (M && ok) go(); }); else go(); } }, 2600); }
 function cineAfficheLB() { if (!M || M.cine) return; if (universOccupe("santacarla")) { refusUnivers("santacarla"); return; } let parti = false;
   if (!document.getElementById("styleLB2")) { const st = document.createElement("style"); st.id = "styleLB2";
     st.textContent = "@keyframes lbNoir{from{opacity:0}to{opacity:1}}@keyframes lbTitre2{0%{opacity:0;transform:scale(1.1);filter:blur(6px)}30%{opacity:1;transform:scale(1);filter:blur(0)}72%{opacity:1;transform:scale(.98);filter:blur(0)}100%{opacity:0;transform:scale(.96);filter:blur(2px)}}"; document.head.appendChild(st); }
@@ -11891,9 +11971,9 @@ function chercherAction(t) {
     else if (M.cine) a = null;
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
-    else if (M.L.cadenasEnc && !M.L.apo && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.3) a = { type: "cadenas", label: "🔒 Le cadenas" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.L.afficheGB && Math.hypot(x - AFFICHE_GB.x, z - (AFFICHE_GB.z + .7)) < 1.25) a = { type: "gbAffiche", label: "👻 As-tu peur des fantômes ?" };   // (l'affiche du film, au mess)
+    else if (M.L.videoFutur && M.lieu === "rue" && Math.abs(x - M.L.videoFutur.x) < 4.6 && z < M.L.videoFutur.z && z > M.L.videoFutur.z - 3) a = { type: "videoFutur", label: "📼 Louer un film" };   // (le Video Futur, en face de la caserne)
     else if (M.L.afficheLB && Math.hypot(x - AFFICHE_GB.x, z - (M.L.afficheLB.position.z - .7)) < 1.25) a = { type: "lbAffiche", label: "🧛 Croyez-vous aux vampires ?" };   // (l'affiche de Génération perdue, en face : ouverte à tous, une personne à la fois)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
@@ -11948,6 +12028,7 @@ export function agir() {
   else if (a.type === "almanach") envoyerWS({ t: "almanach_prendre" });
   else if (a.type === "gbAffiche") cineAfficheGB();
   else if (a.type === "lbAffiche") cineAfficheLB();
+  else if (a.type === "videoFutur") menuVideoFutur();
   else if (a.type === "gbCine") { voile("background:#fff;opacity:1;transition:opacity 1s", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
@@ -12051,6 +12132,7 @@ function refusUnivers(id) { if (M && M.cine) finCine(); bulle(`🔒 Quelqu'un es
 function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return; const lieuAvant = M.lieu;
   if (universOccupe(id)) { refusUnivers(id); return; }
+  if (M.vfMenu) M.vfMenu.fermer();
   if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.evac = false; }
   M.fumiObj = null; M.fumiL = null;
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
@@ -12135,7 +12217,7 @@ export function radioIci() { const moi = M && M.gens.get(M.moiNum); if (!moi || 
   pt = pt || [p.x + .6, p.z]; envoyerWS({ t: "radio_ici", x: +pt[0].toFixed(2), z: +pt[1].toFixed(2) }); M.ctx.surInfo && M.ctx.surInfo("📻 La radio rouge est posée au sol, juste à côté de toi."); }
 // l'Almanach posé au sol, l'air de rien
 function majAlmanach() {
-  if (!M || !M.scene) return; const a = M.alm, ici = a && !a.pris && a.lieu === M.lieu && M.L && !M.L.apo;
+  if (!M || !M.scene) return; const a = M.alm, ici = false && a && !a.pris && a.lieu === M.lieu && M.L && !M.L.apo;   /* (l'almanach : retiré, on loue Retour vers le futur au Video Futur) */
   if (M.almMesh && M.almMesh.parent !== M.scene) M.almMesh = null;
   if (!ici) { if (M.almMesh) M.almMesh.visible = false; return; }
   if (!M.almMesh) { texAlm = texAlm || (() => { const t = new THREE.TextureLoader().load("images/bttf/almanach.jpg"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })();
@@ -13833,7 +13915,7 @@ function connecter() {
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
-    else if (m.t === "comptes") { M.comptes = m.lieux; ctx.surComptes && ctx.surComptes(m.lieux); }
+    else if (m.t === "comptes") { M.comptes = m.lieux; M.qui = m.qui || {}; ctx.surComptes && ctx.surComptes(m.lieux); if (M.vfMenu) M.vfMenu.maj(); }
     else if (m.t === "occupe") { const u = universDe(m.lieu); if (universDe(M.lieu) === u) { if (M.cine) finCine(); M.comptes = { ...(M.comptes || {}), [m.lieu]: 1 }; changerLieu(u === "lb" ? "mess" : "grande"); } bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[u]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }

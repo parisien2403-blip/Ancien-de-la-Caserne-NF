@@ -432,7 +432,9 @@ export class Compteur extends DurableObject {
   diffuser(lieu, msg, sauf) { const t = JSON.stringify(msg); for (const [ws] of this.presents(lieu, sauf)) { try { ws.send(t); } catch (e) {} } }
   diffuserApo(msg) { const t = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) { const b = ws.deserializeAttachment(); if (b && b.lieu && b.lieu.startsWith("z-")) { try { ws.send(t); } catch (e) {} } } }
   comptes() { const c = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu) c[a.lieu] = (c[a.lieu] || 0) + 1; } return c; }
-  diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
+  // (et, pour le Video Futur : qui se trouve dans les univers des films — qui a « loué » la cassette)
+  qui() { const q = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu && (universDe(a.lieu) || a.lieu.startsWith("z-"))) (q[a.lieu] = q[a.lieu] || []).push(String(a.nom || "") || "Quelqu'un"); } return q; }
+  diffuserComptes() { const t = JSON.stringify({ t: "comptes", lieux: this.comptes(), qui: this.qui() }); for (const ws of this.ctx.getWebSockets()) { try { ws.send(t); } catch (e) {} } }
   async webSocketMessage(ws, brut) {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
