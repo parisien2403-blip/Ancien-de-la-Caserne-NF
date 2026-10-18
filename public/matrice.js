@@ -11366,7 +11366,7 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
   chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
     A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); A.sc.scale.setScalar(tailleBonhomme() * hauteurDe(p) / A.h * 1.02); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
-  const use = av3OK(p) && !Number.isInteger(p.info.assis) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
+  const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
   A.v = (A.v || 0) * .8 + v * .2;
@@ -11374,7 +11374,16 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   const n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : "idle";
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
   if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
-  A.sc.position.set(0, 0, 0); if (p.info.danse && A.cur === "idle") danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+  A.sc.position.set(0, 0, 0); if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle") danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+/* assis sur un tabouret du bar : tourné vers le comptoir (le côté où l'on ne peut pas avancer), les cuisses à l'horizontale, les jambes pendantes ; de temps en temps, il boit une gorgée */
+function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.rotation.y;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (M.L.limites && !M.L.limites(tb[0] + dx * .5, tb[1] + dz * .5)) { A.cap = Math.atan2(dx, dz); break; } }
+  A.sc.rotation.y = A.cap; const T = (n, a, v) => tourne3D(A, n, a, v), k = A.sc.scale.x * A.h;
+  T("LeftUpLeg", "x", 1.5); T("RightUpLeg", "x", 1.5); T("LeftLeg", "x", -1.45); T("RightLeg", "x", -1.45); T("LeftUpLeg", "y", -.06); T("RightUpLeg", "y", .06);
+  const ph = (performance.now() + p.info.numero * 1300) % 6000, g = ph < 1300 ? Math.sin(ph / 1300 * Math.PI) : 0;   // (la gorgée : le bras droit monte le verre aux lèvres)
+  T("RightArm", "x", -.5 - g * .5); T("RightForeArm", "x", -.9 - g * 1.2); T("LeftArm", "x", -.35); T("LeftForeArm", "x", -.6); T("Head", "x", -g * .2);
+  A.sc.position.set(-Math.sin(A.cap) * .06 * k, 0, -Math.cos(A.cap) * .06 * k);
+  const h = os3D(A, "Hips"); if (h) { A.sc.updateMatrixWorld(true); const v = h.getWorldPosition(new THREE.Vector3()); p.g.worldToLocal(v); A.sc.position.y = .66 + .055 * k - v.y; } }
 /* les danses, sur le vrai squelette : par-dessus la pose de repos, chaque os tourne autour des axes du personnage (droite, haut, devant) */
 let AX = null, _q, _qp, _qs, _ax;   /* (créés au premier pas de danse : le moteur 3D se charge après ce fichier) */
 function os3D(A, n) { if (!A.os) { A.os = {}; A.sc.traverse(o => { if (o.isBone && !A.os[o.name]) A.os[o.name] = o; }); } return A.os[n]; }
