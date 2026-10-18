@@ -4028,7 +4028,7 @@
   let carteVue = null;   // { m, verso, recto } : la carte affichée, pour la retourner d'un toucher
   function voirCarte(m, verso = false) {
     const k = moi && m.email === moi.email ? mesCles() : null;
-    carteVue = { m, verso: !!(verso && k), recto: !!k };
+    carteVue = { m, verso: !!(verso && k), recto: !!k, aMoi: !!(moi && m.email && m.email === moi.email) };
     if (verso && k) {
       $("cvScaler").innerHTML = versoHTML(m, k.code);
       $("cvInfo").innerHTML = `<div class="who"><b>Verso de ta carte</b><small>Touche la carte pour la retourner</small></div>
@@ -4051,7 +4051,7 @@
     else { ph.style.backgroundImage = ""; ph.innerHTML = `<svg viewBox="0 0 100 100" style="width:60%;opacity:.45"><circle cx="50" cy="36" r="20" fill="#7a746a"/><path d="M12 100c4-24 20-36 38-36s34 12 38 36z" fill="#7a746a"/></svg>`; }
     $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
     const peutEcrire = moi && moi.email && m.email !== moi.email;
-    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${k ? "Touche la carte pour voir le verso" : esc(m.email)}</small></div>
+    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${k || carteVue.aMoi ? "Touche la carte pour voir le verso" : esc(m.email)}</small></div>
       <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
       ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
     $("cvPlein").onclick = pleinEcran;
@@ -4101,10 +4101,20 @@
     await face().animate([{ transform: "perspective(1800px) rotateY(-90deg)" }, { transform: "perspective(1800px) rotateY(0)" }], { ...anim, easing: "ease-out" }).finished;
     enRotation = false;
   }
-  $("cvStage").onclick = () => {
+  $("cvStage").onclick = async () => {
     if (carteVue && carteVue.recto) { retournerCarte(); return; }
+    // sa propre carte, mais le verso n'est pas sur cet appareil (fait sur un autre téléphone, ou l'appli installée à côté de Safari) : on le retrouve avec le code de liaison
+    if (carteVue && carteVue.aMoi) { try { if (await assurerCles()) { carteVue.recto = true; retournerCarte(); return; } } catch (e) {} retrouverVerso(); return; }
     if (!$("carteVue").classList.contains("plein")) pleinEcran(); else quitterPleinEcran();
   };
+  function retrouverVerso() { const m = carteVue.m;
+    $("cvInfo").innerHTML = `<div class="who" style="flex:1 1 100%"><b>🔗 Ton verso est resté sur l'appareil où tu as fait ta carte</b><small>Tape ton code de liaison (au verso de ta carte, sur cet autre appareil) : le verso apparaîtra aussi ici.</small>
+        <form id="cvRelier" style="display:flex;gap:8px;margin-top:8px"><input id="cvCode" autocomplete="off" autocapitalize="characters" placeholder="Code de liaison" style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid #bbb;font:700 16px 'Courier Prime',monospace"><button class="btn small" type="submit">OK</button></form>
+        <small id="cvErr" style="color:#b81c22" hidden></small></div>`;
+    $("cvRelier").onsubmit = async e => { e.preventDefault(); e.stopPropagation();
+      try { await relierAvecCode($("cvCode").value); voirCarte(m, true); }
+      catch (err) { $("cvErr").textContent = err.message + ". Si tu ne l'as plus, demande à l'administrateur."; $("cvErr").hidden = false; } };
+    for (const ev of ["click", "pointerdown"]) $("cvInfo").addEventListener(ev, e => e.stopPropagation()); $("cvCode").focus(); }
   $("carteVue").onclick = e => { if (e.target === $("carteVue") && !quitterPleinEcran()) $("carteVue").hidden = true; };
 
   /* ===== Le Vaguemestre ===== */
