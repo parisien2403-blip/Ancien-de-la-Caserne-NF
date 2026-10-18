@@ -8978,7 +8978,7 @@ function majLampePoitrine() { const moi = M && M.gens.get(M.moiNum); if (!moi) r
   if (!M.lampeSp) { M.lampeSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLampe(false), transparent: true, depthWrite: false })); M.lampeSp.renderOrder = 3; }
   const sp = M.lampeSp; if (sp.parent !== moi.g) moi.g.add(sp); sp.material.map = texLampe(!!M.shLampeOn);
   const H = tailleBonhomme() * hauteurDe(moi), c = M.camera.position, gp = moi.g.position, dx = c.x - gp.x, dz = c.z - gp.z, d = Math.hypot(dx, dz) || 1, dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0);
-  sp.scale.set(H * .075, H * .18, 1); sp.position.set(dx / d * .07 - dr.x * H * .06, H * .64, dz / d * .07 - dr.z * H * .06); }
+  sp.scale.set(H * .04, H * .096, 1); sp.position.set(dx / d * .07 - dr.x * H * .055, H * .6, dz / d * .07 - dr.z * H * .055); }   /* (à la taille du bonhomme : accrochée à la poche de poitrine) */
 // le bouton de la lampe : allumer, éteindre
 // l'onglet de rappel, dans le bar de Silent Hill : prendre la lampe et la carte avant d'en sortir
 function rappelBarSH(auBar) { if (!M || !M.ctx) return; const manque = [!M.shLampe && "🔦 la lampe (sur le comptoir)", !M.shCarteOK && "🗺️ la carte (au mur)"].filter(Boolean), voir = !!(auBar && manque.length && !M.cine && estSH(M.lieu));
