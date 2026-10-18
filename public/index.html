@@ -4110,10 +4110,18 @@
   function retrouverVerso() { const m = carteVue.m;
     $("cvInfo").innerHTML = `<div class="who" style="flex:1 1 100%"><b>🔗 Ton verso est resté sur l'appareil où tu as fait ta carte</b><small>Tape ton code de liaison (au verso de ta carte, sur cet autre appareil) : le verso apparaîtra aussi ici.</small>
         <form id="cvRelier" style="display:flex;gap:8px;margin-top:8px"><input id="cvCode" autocomplete="off" autocapitalize="characters" placeholder="Code de liaison" style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid #bbb;font:700 16px 'Courier Prime',monospace"><button class="btn small" type="submit">OK</button></form>
-        <small id="cvErr" style="color:#b81c22" hidden></small></div>`;
+        <small id="cvErr" style="color:#b81c22" hidden></small>
+        <button type="button" id="cvNouveau" style="margin-top:10px;background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:600 13px 'Lato',sans-serif;cursor:pointer;text-align:left">Je n'ai jamais eu ce code / je l'ai perdu : en créer un nouveau</button></div>`;
     $("cvRelier").onsubmit = async e => { e.preventDefault(); e.stopPropagation();
       try { await relierAvecCode($("cvCode").value); voirCarte(m, true); }
       catch (err) { $("cvErr").textContent = err.message + ". Si tu ne l'as plus, demande à l'administrateur."; $("cvErr").hidden = false; } };
+    let sur = false; $("cvNouveau").onclick = async e => { e.stopPropagation(); const b = $("cvNouveau");
+      if (!sur) { sur = true; b.textContent = "⚠️ Sûr ? Ton nouveau code remplacera l'ancien, et les lettres chiffrées déjà reçues ne pourront plus s'ouvrir. Touche encore pour confirmer."; return; }
+      b.disabled = true; b.textContent = "Création du nouveau code…";
+      try { const code = CR.nouveauCode(), pr = await CR.paire();
+        await api("POST", "/api/cles", { cle_pub: pr.pub, cle_privee: await CR.verrouiller(pr.prive, code), preuve: await CR.preuve(code), renouveler: true });
+        garderCles({ prive: pr.prive, pub: pr.pub, code }); aRelier = false; membres = []; voirCarte(m, true); }
+      catch (err) { $("cvErr").textContent = err.message; $("cvErr").hidden = false; b.disabled = false; } };
     for (const ev of ["click", "pointerdown"]) $("cvInfo").addEventListener(ev, e => e.stopPropagation()); $("cvCode").focus(); }
   $("carteVue").onclick = e => { if (e.target === $("carteVue") && !quitterPleinEcran()) $("carteVue").hidden = true; };
 

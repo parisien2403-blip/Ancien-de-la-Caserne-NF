@@ -982,7 +982,7 @@ export class Compteur extends DurableObject {
   async enregistrerCles(token, x) {
     const moi = this.moi(token);
     const m = this.sql.exec("SELECT cle_pub FROM membres WHERE email = ?", moi.email).toArray()[0];
-    if (m.cle_pub) throw new Refus("Les clés de ce compte existent déjà");
+    if (m.cle_pub && !x.renouveler) throw new Refus("Les clés de ce compte existent déjà");   // (renouveler : le membre a perdu son code ; son ancien courrier chiffré ne se lira plus)
     const ok = typeof x.cle_pub === "string" && x.cle_pub.length < 2000 && x.cle_privee && typeof x.cle_privee.ct === "string"
       && typeof x.preuve === "string" && /^[0-9a-f]{64}$/.test(x.preuve);
     if (!ok) throw new Refus("Clés invalides");
