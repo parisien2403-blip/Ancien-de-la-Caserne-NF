@@ -8965,7 +8965,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -9251,7 +9251,8 @@ function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = R
         f.innerHTML = "FIN<br><span style='font-size:.4em;letter-spacing:.1em'>Tu es sorti de Silent Hill</span>"; requestAnimationFrame(() => f.style.opacity = "1"); setTimeout(() => f.style.opacity = "0", 6000); }, 600); } } }; }
 // au sous-sol du mess : Laura ; elle pense pouvoir nous aider à partir — par le porche : « si c'est une entrée, c'est aussi une sortie, non ? »
 function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess") return; const mp = moi.g.position, nom = prenomSH();
-  const pl = apparaitreSH(poserPerso(SHN.laura, mp.x + 2.2, mp.z - 1.8, mp.y)); if (!pl) return; pl.nivMess = 1; noterCarteSH(SHN.laura, -14.25, 10.45);
+  if (M.cine) { setTimeout(() => M && M.shEtape === 10 && !M.shLauraBas && lauraBas(), 800); return; }   /* (une autre scène est en cours : Laura attend qu'elle finisse, au lieu d'être sautée) */
+  const pl = apparaitreSH(poserPerso(SHN.laura, mp.x + 2.2, mp.z - 1.8, mp.y)); if (!pl) return; pl.nivMess = 1; noterCarteSH(SHN.laura, -14.25, 10.45); M.shLauraBas = true;
   dialogueSH(SHN.laura, [[null, null, 1600], [SHN.laura, "T'es encore vivant, toi ? Bravo, gros nul !"], ["moi", "Laura… Qu'est-ce que tu fais ici ?"], [SHN.laura, "Je me cache. Ici, il vient jamais. Alors… t'as vu Maria ?"],
     ["moi", "Oui. Elle est bizarre… Elle dit des choses qui n'ont aucun sens. On dirait qu'elle me connaît."], [SHN.laura, "Elle dit ça à tout le monde. Même à James. Surtout à James."],
     [SHN.laura, "Moi, je crois que je peux t'aider à partir d'ici."], ["moi", "Comment ?"], [SHN.laura, "Le grand portail, là-bas, celui qui donne sur la rue. T'es entré par là, non ?"],
@@ -9424,6 +9425,8 @@ function histoireSH(now) {
     // 10. la clé ouvre le cadenas des encombrants
   }
   if (lieu === "sh-rue" && e >= 10 && now > (M.shEntreeT || 0) + 1200) rueFinale(now, moi);
+  // (filet de sécurité) réveillé au sous-sol du mess, mais Laura n'est pas venue : elle vient
+  if (lieu === "sh-mess" && e === 10 && !M.shLauraBas && now > (M.shEntreeT || 0) + 2500) lauraBas();
   if (lieu === "sh-mess" && e === 6 && now > (M.shEntreeT || 0) + 1200) { M.shEtape = 7; M.shPopL = M.L; const mp = moi.g.position, avecMaria = M.shChoix !== "james";
     /* on entre dans la salle : quelques pas, vers là où elle est la plus dégagée (sur le seuil, la caméra était dans le mur, et Maria, en fuyant par la porte, nous passait dedans) */
     const libre = (x0, z0, dx, dz, max) => { let r = 0; while (r < max && M.L.limites(x0 + dx * (r + .3), z0 + dz * (r + .3))) r += .3; return r; };
