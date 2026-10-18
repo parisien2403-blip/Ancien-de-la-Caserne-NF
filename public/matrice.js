@@ -9578,7 +9578,7 @@ function histoireSH(now) {
     if (e === 6 && !M.shMariaMess && M.shChoix === "maria") escorteMaria(now, moi);
     // 10. on repasse le porche : direction la rue
     // 8. en sortant du mess : on voit Maria s'engouffrer dans l'escalier R
-    if (e === 7 && M.shDuMess && now > (M.shEntreeT || 0) + 1500) { M.shDuMess = false; const R = M.shChoix === "james" ? null :  (M.L.portails || []).filter(pt => pt.vers === "sh-etage").map(pt => [pt, pt.seuil || centrePortail(pt)]).filter(([, c]) => c).sort((a, b) => b[1][0] - a[1][0])[0];   /* (la porte R : celle de droite, x > 0 ; la S est en face) */
+    if (e === 7 && M.shDuMess && now > (M.shEntreeT || 0) + 1500) { M.shDuMess = false; const R =  (M.L.portails || []).filter(pt => pt.vers === "sh-etage").map(pt => [pt, pt.seuil || centrePortail(pt)]).filter(([, c]) => c).sort((a, b) => b[1][0] - a[1][0])[0];   /* (la porte R : celle de droite, x > 0 ; la S est en face) */
       if (R) { const c = R[1], sg = c[0] < 0 ? 1 : -1, p = apparaitreSH(poserPerso(SHN.maria, c[0] + .9 * sg, c[1])), t0 = performance.now(); noterCarteSH(SHN.maria, c[0], c[1]); if (p) { p.cible = null; p.chemin = []; }   /* (elle apparaît, immobile, dans le brouillard, juste devant l'entrée R ; puis elle s'y efface) */
         let fini = false; const finir = () => { if (fini) return; fini = true; finCine(); placerCamera(true); retirerAncien(SHN.maria); M.shEtape = 8; };
         M.passerBtn = boutonPasser(finir);
