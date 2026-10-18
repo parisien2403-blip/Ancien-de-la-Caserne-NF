@@ -5125,9 +5125,13 @@ function construireSantaCarla(A, L, scene) {
   const finale = () => { if (fini) return; fini = true; phase = "fin"; if (L.aube && !L.aube.t0) L.aube.t0 = performance.now();   /* (le jour qui revient : le ciel orangé, crescendo) */ musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
     const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];   // (le prénom)
     const n0 = c0 && c0.num, n1 = c1 && c1.num;
-    setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu leur chef !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
+    const avecMi = M.gens.has(MICH);   /* (Michael est là : il fête la victoire avec eux) */
+    setTimeout(() => { if (M && M.L === L) dialogue(avecMi ? [[M.moiNum, "On l'a fait… Santa Carla est libre !"], [MICH, "Vous avez été incroyables, tous les trois. Sans vous, je serais devenu comme eux."], [n0, REPL[c0 ? c0.id : 82].fete],
+      [MICH, "Merci, les gars. Vraiment. Je vous dois la vie… et mon âme avec."], [n1, `${nomDe(moi)}, t'as été génial. Et toi aussi, Michael !`], [M.moiNum, "Tu crois qu'il en reste d'autres, à Santa Carla ?"],
+      [n0, "Il y en a toujours d'autres… Mais pas ce soir."], [MICH, "Allez, on rentre à la maison. Maman doit être morte d'inquiétude."]]
+      : [[M.moiNum, "On l'a eu… On a eu leur chef !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
       [M.moiNum, "Tu crois qu'il en reste d'autres, à Santa Carla ?"], [n0, "Il y en a toujours d'autres… Mais pas ce soir."], [n1, "Allez, on rentre. Il va bientôt faire jour."]], () => { if (M && M.L === L) envolee(); }); }, 1500); };
-  const envolee = () => { const gens = [M.gens.get(M.moiNum), ...comps.map(c => c.p)].filter(Boolean); if (!gens.length) return;
+  const envolee = () => { const gens = [M.gens.get(M.moiNum), ...comps.map(c => c.p), M.gens.get(MICH)].filter(Boolean); if (!gens.length) return;
     musiqueLB("envol");
     const ctr = V3(0, 0, 0); gens.forEach(q => ctr.add(q.g.position)); ctr.multiplyScalar(1 / gens.length);
     const cam = M.camera, t0 = performance.now(), D = 24000; let fini2 = false, titre = null;
@@ -5151,7 +5155,10 @@ function construireSantaCarla(A, L, scene) {
         if (now - t0 > D + 6000) fin(); }, fov: [55, 70] }; };
   L.etatLB = () => ({ vies, morsures, biere: !!biere, phase }); L.finLB = () => finale(); L.mordreLB = () => mordu({});   // (pour les essais)
   // (le vampire abattu tombe là où l'on peut marcher : s'il était au-dessus de l'eau, d'un manège ou d'un stand, il glisse jusqu'à l'endroit praticable le plus proche)
-  const poserAuSol = (v) => { const g = v.g, x0 = g.position.x, z0 = g.position.z; if (!L.limites || L.limites(x0, z0)) return;
+  // (au-dessus de là où l'on peut marcher, près des ados : un point trop loin ou hors de portée est ramené vers nous, sur le ponton)
+  const pres = (x, z, p, rmax = 9) => { let dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz) || 1; if (d > rmax) { dx *= rmax / d; dz *= rmax / d; d = rmax; }
+    for (let k = 1; k >= .2; k -= .1) { const cx = p.x + dx * k, cz = p.z + dz * k; if (!L.limites || L.limites(cx, cz)) return [cx, cz]; } return [p.x, p.z]; };
+  const poserAuSol = (v) => { const g = v.g, p0 = moiP(); if (p0) { const [x, z] = pres(g.position.x, g.position.z, p0, 5); g.position.x = x; g.position.z = z; return; } const x0 = g.position.x, z0 = g.position.z; if (!L.limites || L.limites(x0, z0)) return;
     const p = moiP(); for (let r = .5; r < 40; r += .5) for (let a = 0; a < 6.28; a += .4) { const x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r; if (L.limites(x, z)) { g.position.x = x; g.position.z = z; return; } }
     if (p) { g.position.x = p.x + 2; g.position.z = p.z; } };
   const creerVampire = (k) => { const a = Math.random() * 6.28, p0 = moiP() || V3(0, 0, 0), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {};
@@ -5180,6 +5187,7 @@ function construireSantaCarla(A, L, scene) {
   const DEFI = { 1: "Wouhou ! Venez, les gamins… je vous attends !", 2: "Allez, venez jouer… si vous l'osez !", 3: "Grrraaah… Venez !", 0: "Venez… Je vous attends." };
   const transformer = (v, fin, o = {}) => { const p = v.p, k = v.k, vamp = habillerLB({ numero: p.info.numero, nom: p.info.nom, initiales: "" }, o.id ?? 89 + k), url = vamp.teteUrl;   // (le personnage « … vampire » de l'inventaire : sa tête, sa tenue, sa taille)
     const cam = M.camera, s0 = p.g.position, H = tailleBonhomme() * hauteurDe(p), q = moiP() || V3(s0.x, 0, s0.z + 3); let dx = q.x - s0.x, dz = q.z - s0.z, l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    { const v1 = choisirVue(s0, H, dx, dz, 4.2, 0, [p.g], .7), v2 = choisirVue(s0, H, ...tourner(dx, dz, v1.r), 2, 0, [p.g], .85); [dx, dz] = tourner(dx, dz, v1.r + (Math.abs(v2.r) > .01 ? v2.r * .5 : 0)); }   /* (le plan sur lui : dégagé, de loin comme de près — personne devant lui) */
     let fait = false; const finir = () => { if (fait) return; fait = true; if (M && M.cine === C) { bulle(null); finCine(); } fin && fin(); };
     const devenir = () => { const nom = p.info.nom; Object.assign(p.info, vamp, { nom }); if (p.corps) { const H2 = tailleBonhomme(); p.corps.scale.set(H2 * .476 * 1.6 * hauteurDe(p), H2 * hauteurDe(p), 1); } };
     const t0 = performance.now(); let ov = null, change = false, dit = false;
@@ -5248,7 +5256,11 @@ function construireSantaCarla(A, L, scene) {
   const arriveeMichael = (v) => { if (!M || M.L !== L) return; const p = moiP(); if (!p) return; let sx = p.x - 11, sz = p.z;
     for (let k = 0; k < 32; k++) { const a = k / 32 * 6.283, x = p.x + Math.cos(a) * 11, z = p.z + Math.sin(a) * 11; if ((!L.limites || L.limites(x, z)) && Math.hypot(x - v.g.position.x, z - v.g.position.z) > 6) { sx = x; sz = z; break; } }
     const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(93)) || {}, mp = ajouterAncien({ ...habillerLB({ numero: MICH, nom: P.nom || "Michael", initiales: "" }, 93), pnj: true, x: sx, z: sz }); if (!mp) return;
-    mi.etape = 2; mp.info.allure = 1.1; const bx = p.x + (sx - p.x) / 11 * 2.4, bz = p.z + (sz - p.z) / 11 * 2.4; mp.cible = V3(bx, 0, bz); mp.chemin = [];
+    mi.etape = 2; mp.info.allure = 1.1;
+    /* (il s'arrête à côté du groupe, du côté où il arrive, face à David : jamais derrière un ado) */
+    let fx = v.g.position.x - p.x, fz = v.g.position.z - p.z; { const l2 = Math.hypot(fx, fz) || 1; fx /= l2; fz /= l2; } const sd = ((sx - p.x) * -fz + (sz - p.z) * fx) >= 0 ? 1 : -1;
+    let bx = p.x - fz * sd * 2.6, bz = p.z + fx * sd * 2.6; if (L.limites && !L.limites(bx, bz)) { bx = p.x + fz * sd * 2.6; bz = p.z - fx * sd * 2.6; } mp.cible = V3(bx, 0, bz); mp.chemin = [];
+    const Hm = tailleBonhomme() * hauteurDe(mp), vm = choisirVue(V3(bx, 0, bz), Hm, sx - bx, sz - bz, 5, 0, [mp.g], .7), [cx0, cz0] = tourner((sx - bx) / (Math.hypot(sx - bx, sz - bz) || 1), (sz - bz) / (Math.hypot(sx - bx, sz - bz) || 1), vm.r);
     const t0 = performance.now(); let fait = false; const suite = () => { if (fait || !M) return; fait = true; if (M.cine === C) finCine(); mp.g.position.set(bx, 0, bz); mp.cible = null; habiller(v.p, 84);   /* (David reprend son visage d'homme pour lui parler) */
       const { S } = lesAdos(), D = v.p.info.numero;
       dialogue([[S, "Michael ?! MICHAEL !"], [S, "T'es venu… T'es vraiment venu !"], [MICH, "Évidemment, petit frère. Je n'allais pas te laisser tout seul avec lui."], [D, "Michael… Je savais que tu viendrais."],
@@ -5256,7 +5268,7 @@ function construireSantaCarla(A, L, scene) {
         [MICH, "Sam. Recule, et emmène les autres. Laisse-le-moi."], [S, "Mais Michael… il est trop fort !"], [MICH, "Fais-moi confiance. Celui-là, il est pour moi."], [D, "Comme tu voudras… frère."]],
         () => transformer({ p: mp, k: "m" }, () => transformer(v, () => duel(v, mp), { id: 89, defi: "Viens, Michael… Montre-moi ce que tu es devenu." }), { id: 94, defi: "C'est fini, David." })); };
     M.passerBtn = boutonPasser(suite);
-    const C = { maj: now => { const u = (now - t0) / 1000, q = mp.g.position; M.camera.position.set(p.x - (sx - p.x) / 11 * 2.5, 1.7, p.z - (sz - p.z) / 11 * 2.5); M.camera.lookAt(q.x, 1.4, q.z);
+    const C = { maj: now => { const u = (now - t0) / 1000, q = mp.g.position; M.camera.position.set(bx + cx0 * vm.dd * .9 - cz0 * 1.2, 1.6, bz + cz0 * vm.dd * .9 + cx0 * 1.2); M.camera.lookAt(q.x, 1.35, q.z);   /* (on le voit arriver, de face, sans personne devant) */
         if (u > 1 && !C.dit) { C.dit = true; bulle(`<b style="color:#ff5a4a">${esc(nomDe(lesAdos().S))}</b> : Attendez… quelqu'un arrive !`, 2200); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
         if (u > 5 || Math.hypot(q.x - bx, q.z - bz) < .5) suite(); }, fov: [45, 60] }; M.cine = C; };
   // 3. le duel : on joue Michael (vampire) ; notre ado reste à l'écart ; Michael lance des pieux, David charge
@@ -5285,14 +5297,18 @@ function construireSantaCarla(A, L, scene) {
     if (Math.random() < .5) parle(M.moiNum, hasardDe(["Argh !", "C'est tout ce que tu as, David ?", "Je ne lâcherai pas !"]), true);
     if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(`<div style="font-size:22px">Michael est à terre…</div><div style="margin-top:8px">David a gagné. Santa Carla est à lui.</div>`, ["Rejouer", demarrer]); } };
   // 4. David vaincu : le pieu dans le cœur, il redevient un homme… puis il explose
-  const finDavid = (v) => { mi.etape = 4; v.etat = "terre"; v.tEtat = performance.now() + 60000; poserAuSol(v); if (v.barre) v.barre.sp.visible = false;
-    const P0 = v.g.position.clone(), t0 = performance.now(); let humain = false, boum = false, fait = false; const st = modelePieu(1); st.position.set(P0.x, .9, P0.z); scene.add(st);
-    const C = { maj: now => { const u = (now - t0) / 1000, k = Math.min(1, u / 2.5); M.camera.position.set(P0.x + 1.9 - k * .6, 1.1 - k * .3, P0.z + 1.6 - k * .5); M.camera.lookAt(P0.x, .45, P0.z); st.position.y = Math.max(.42, .9 - u * 2);
-        if (u > .4 && !C.d1) { C.d1 = true; bulle(`<b style="color:#ff5a4a">${esc(nomDe(v.p.info.numero))}</b> : Michael… Aaargh…`, 2000); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
-        if (u > 2 && !humain) { humain = true; habiller(v.p, 84); voile("background:rgba(255,255,255,.5);transition:opacity .9s", 300); bulle(`<b style="color:#ff5a4a">${esc(nomDe(v.p.info.numero))}</b> : …Merci.`, 1800); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }   /* (il redevient humain, un instant) */
-        if (u > 4 && !boum) { boum = true; scene.remove(st); pieu(v); }
-        if (u > 8.5 && !fait) { fait = true; finCine(); } }, fov: [42, 56] };
-    M.cine = C; M.passerBtn = boutonPasser(() => { if (!boum) { boum = true; scene.remove(st); if (!humain) habiller(v.p, 84); pieu(v); } fait = true; finCine(); }); };
+  const finDavid = (v) => { mi.etape = 4; v.etat = "debout"; v.g.rotation.z = 0; v.g.position.y = 0; v.p.vol = 0; v.p.info.brasHaut = false; if (v.barre) v.barre.sp.visible = false;   /* (il reste debout, le pieu dans le cœur) */
+    const P0 = v.g.position.clone(), t0 = performance.now(), mp0 = moiP() || V3(P0.x + 3, 0, P0.z); let humain = false, boum = false, fait = false;
+    let dx = mp0.x - P0.x, dz = mp0.z - P0.z; { const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; } const H = tailleBonhomme() * hauteurDe(v.p);
+    const st = modelePieu(.42); st.quaternion.setFromUnitVectors(V3(0, -1, 0), V3(-dx, 0, -dz)); st.position.set(P0.x + dx * .04, H * .6, P0.z + dz * .04); scene.add(st);   /* (un pieu à sa taille, au cœur) */   /* (planté dans la poitrine, le manche vers Michael) */
+    const vu = choisirVue(P0, H, dx, dz, 2.4, .7, [v.g], .75), [cx, cz] = tourner(dx, dz, vu.r); const dire2 = t => { bulle(`<b style="color:#ff5a4a">${esc(nomDe(v.p.info.numero))}</b> : ${esc(t)}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } };
+    const C = { maj: now => { const u = (now - t0) / 1000, k = Math.min(1, u / 3), dd = vu.dd * (1 - k * .3); M.camera.position.set(P0.x + cx * dd - cz * .7, H * (.8 - k * .08), P0.z + cz * dd + cx * .7); M.camera.lookAt(P0.x, H * .7, P0.z);
+        if (u > .4 && !C.d1) { C.d1 = true; dire2("Michael… Tu aurais pu vivre pour toujours… avec nous…"); }
+        if (u > 3.2 && !humain) { humain = true; habiller(v.p, 84); voile("background:rgba(255,255,255,.5);transition:opacity .9s", 300); }   /* (il redevient humain, un instant) */
+        if (u > 3.8 && !C.d2) { C.d2 = true; dire2("…Dis à Star… que je suis désolé."); }
+        if (u > 6.6 && !boum) { boum = true; scene.remove(st); v.etat = "terre"; pieu(v, true); }
+        if (u > 10.5 && !fait) { fait = true; finCine(); } }, fov: [42, 56] };
+    M.cine = C; M.passerBtn = boutonPasser(() => { if (!boum) { boum = true; scene.remove(st); if (!humain) habiller(v.p, 84); v.etat = "terre"; pieu(v, true); } fait = true; finCine(); }); };
   // 5. les ados et Michael : le soleil se lève, Sam s'inquiète… mais Michael redevient lui-même : c'est terminé
   const epilogueMichael = () => { if (!M || M.L !== L || mi.etape >= 5) return; mi.etape = 5; if (L.aube && !L.aube.t0) L.aube.t0 = performance.now(); musiqueLB(null);
     const { S, F, A } = lesAdos(), Sv = S === M.moiNum ? GAMIN : S, moi = M.gens.get(M.moiNum);
@@ -5307,10 +5323,36 @@ function construireSantaCarla(A, L, scene) {
   const finMichael = (garder) => { if (!mi) return; const moi = M && M.gens.get(M.moiNum);
     if (mi.joue && moi) { const g0 = M.gens.get(GAMIN); if (g0) moi.g.position.copy(g0.g.position); Object.assign(moi.info, mi.vrai); dessinerCorps(moi); }
     retirerAncien(GAMIN); retirerAncien(MICH); mi = garder ? { etape: 9 } : null; };
-  const pieu = (v) => { if (v.etat !== "terre") return; if (v.k === 0 && !mi) { releveDavid(v); return; }   /* (David : on s'approche avec le pieu… et il se relève) */ ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
-    const p = v.g.position.clone(), c = p.clone().add(V3(0, .45, 0));
-    // le pieu, enfoncé d'un coup dans la poitrine
-    const st = modelePieu(1); st.position.copy(c).add(V3(0, .5, 0)); scene.add(st);
+  // le vrai feu : des nappes de flammes vivantes (le même feu que dans les bidons), qui jaillissent puis retombent ; elles font toujours face à la caméra
+  const feuReelM = (seed) => new THREE.ShaderMaterial({ uniforms: { uT: { value: 0 }, uS: { value: seed }, uA: { value: 1 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `uniform float uT; uniform float uS; uniform float uA; varying vec2 vUv;
+      float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      float fbm(vec2 p) { float v = 0.0, a = .5; for (int i = 0; i < 5; i++) { v += a * n(p); p *= 2.03; a *= .5; } return v; }
+      void main() { vec2 uv = vUv; float t = uT * 1.6 + uS * 10.0; float x = uv.x - .5; x += (fbm(vec2(uv.y * 3.0 - t * .6, uS)) - .5) * .26 * uv.y;
+        float d = fbm(vec2(x * 3.5, uv.y * 2.4 - t * 1.8)), forme = 1.0 - smoothstep(0.0, .44 * (1.0 - uv.y * .75) + .02, abs(x)),
+          f = forme * smoothstep(1.0, .12, uv.y + (d - .5) * .75) * smoothstep(0.0, .06, uv.y), i = clamp(f * (.7 + d * .9), 0.0, 1.0);
+        vec3 c = mix(vec3(.45, .05, 0.0), vec3(1.0, .42, .05), smoothstep(.15, .55, i)); c = mix(c, vec3(1.0, .86, .45), smoothstep(.55, .85, i)); c = mix(c, vec3(1.0, .98, .9), smoothstep(.85, 1.0, i));
+        gl_FragColor = vec4(c * i * 1.5 * uA, i * uA); }` });
+  const feuReel = (pos, duree = 4200) => { const t0 = performance.now(), nappes = [];
+    for (let i = 0; i < 9; i++) { const m = feuReelM(Math.random() * 10), w = .7 + Math.random() * .8, h = 1.4 + Math.random() * 1.4, pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); pl.geometry.translate(0, h / 2, 0);
+      pl.position.set(pos.x + (Math.random() - .5) * 1.1, Math.max(0, pos.y - .3), pos.z + (Math.random() - .5) * 1.1); pl.renderOrder = 5; scene.add(pl); nappes.push({ pl, m, d0: Math.random() * 300, k: .8 + Math.random() * .5 }); }
+    const it = setInterval(() => { const now = performance.now(), u = (now - t0) / duree; if (u >= 1 || !M || M.L !== L) { clearInterval(it); for (const q of nappes) { scene.remove(q.pl); q.pl.geometry.dispose(); q.m.dispose(); } return; }
+      for (const q of nappes) { const v2 = Math.max(0, (now - t0 - q.d0) / duree); q.m.uniforms.uT.value = (now - t0) / 1000; q.m.uniforms.uA.value = Math.min(1, v2 * 8) * (1 - Math.pow(u, 2.2));
+        const sc = q.k * (u < .12 ? .4 + u / .12 * .9 : 1.3 - u * .55); q.pl.scale.set(sc, sc, sc); q.pl.quaternion.copy(M.camera.quaternion); } }, 16); };
+  // le vrai sang : des flaques qui restent au sol, là où il est mort (des éclaboussures sombres, luisantes)
+  const texFlaque = () => tex(toile(256, 256, (x) => { const r0 = 60 + Math.random() * 30; x.fillStyle = "rgba(70,0,4,.92)";
+      x.beginPath(); for (let a = 0; a <= 6.3; a += .25) { const r = r0 * (.75 + Math.random() * .5); x.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r); } x.fill();
+      for (let k = 0; k < 26; k++) { const a = Math.random() * 6.28, d = r0 + Math.random() * 60, rr = 3 + Math.random() * 11; x.fillStyle = `rgba(${80 + Math.random() * 40},0,6,.9)`; x.beginPath(); x.arc(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, rr, 0, 7); x.fill(); }
+      const g = x.createRadialGradient(110, 110, 4, 128, 128, r0); g.addColorStop(0, "rgba(255,90,90,.35)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 256, 256); }));
+  const flaqueSang = (x0, z0, taille = 1.6) => { for (let k = 0; k < 3; k++) { const s2 = taille * (k ? .45 + Math.random() * .35 : 1), m = new THREE.MeshStandardMaterial({ map: texFlaque(), transparent: true, depthWrite: false, roughness: .15, metalness: .1, polygonOffset: true, polygonOffsetFactor: -3 });
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(s2, s2), m); f.rotation.set(-Math.PI / 2, 0, Math.random() * 6.28); const a = Math.random() * 6.28, d = k ? .6 + Math.random() * .9 : 0;
+      f.position.set(x0 + Math.cos(a) * d, (L.hauteur ? L.hauteur(x0, z0, {}) : 0) + .015 + k * .002, z0 + Math.sin(a) * d); f.renderOrder = 1; scene.add(f); } };
+  const pieu = (v, debout = false) => { if (v.etat !== "terre") return; if (v.k === 0 && !mi) { releveDavid(v); return; }   /* (David : on s'approche avec le pieu… et il se relève) */ ado.pieuVers = null; v.etat = "brule"; const now = performance.now(); v.tEtat = now + 4600; parle(v.p.info.numero, REPL_V[84 + v.k].mort, true); setTimeout(() => parle(M.moiNum, hasardDe(REPL[M.lbPerso].pieu)), 2600);
+    const p = v.g.position.clone(), c = p.clone().add(V3(0, debout ? tailleBonhomme() * hauteurDe(v.p) * .6 : .45, 0));
+    // le pieu, enfoncé d'un coup dans la poitrine (debout, il y est déjà)
+    const st = modelePieu(.55); st.position.copy(c).add(V3(0, .5, 0)); st.visible = !debout; scene.add(st);
     const t0 = now; const enf = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 160); st.position.y = c.y + .5 - u * .65; if (u >= 1) clearInterval(enf); }, 16); setTimeout(() => scene.remove(st), 900);
     try { sonBruit(.18, 260, .9); } catch (e) {}
     // 1. le sang qui gicle : un jet vers le haut, qui retombe et tache le sol
@@ -5324,8 +5366,9 @@ function construireSantaCarla(A, L, scene) {
       for (let i = 0; i < 40; i++) { const a = Math.random() * 6.28, e = Math.random() * 1.4, sp = 2 + Math.random() * 5; eclat(feuT, c, V3(Math.cos(a) * Math.cos(e) * sp, Math.sin(e) * sp + 1, Math.sin(a) * Math.cos(e) * sp), 700 + Math.random() * 500, t1 + Math.random() * 80, .8 + Math.random() * .9, { add: true, grandit: 2.2 }); }
       for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28; eclat(fumeeN, c.clone().add(V3(0, .5, 0)), V3(Math.cos(a) * 1.2, 2 + Math.random() * 2, Math.sin(a) * 1.2), 2400 + Math.random() * 1200, t1 + 200 + Math.random() * 400, 1.2 + Math.random(), { grandit: 2.5 }); }
       for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, r = 2 + Math.random() * 6; eclat(feuT, c, V3(Math.cos(a) * r, 3 + Math.random() * 5, Math.sin(a) * r), 900 + Math.random() * 600, t1, .09, { add: true, g: 9, grandit: 0 }); }   // (les braises)
-      // 3. le feu : des flammes qui dansent sur ce qui reste de lui, quelques secondes
-      for (let i = 0; i < 60; i++) eclat(flammeT, p.clone().add(V3((Math.random() - .5) * 1.4, .4 + Math.random() * .3, (Math.random() - .5) * 1.4)), V3((Math.random() - .5) * .4, 1.2 + Math.random() * 1.2, (Math.random() - .5) * .4), 1000 + Math.random() * 600, t1 + 250 + i * 55, 1 + Math.random() * .8, { add: true, flamme: true, grandit: .5 });
+      // 3. le feu : de vraies flammes sur ce qui reste de lui ; et le sang qui reste au sol
+      feuReel(p.clone().add(V3(0, .1, 0)), 4600); flaqueSang(p.x, p.z, 1.8);
+      if (false) for (let i = 0; i < 60; i++) eclat(flammeT, p.clone().add(V3((Math.random() - .5) * 1.4, .4 + Math.random() * .3, (Math.random() - .5) * 1.4)), V3((Math.random() - .5) * .4, 1.2 + Math.random() * 1.2, (Math.random() - .5) * .4), 1000 + Math.random() * 600, t1 + 250 + i * 55, 1 + Math.random() * .8, { add: true, flamme: true, grandit: .5 });
       for (let i = 0; i < 16; i++) eclat(fumeeN, p.clone().add(V3((Math.random() - .5), 1.6, (Math.random() - .5))), V3((Math.random() - .5) * .6, 1.6, (Math.random() - .5) * .6), 2600, t1 + 800 + i * 180, 1.2, { grandit: 2 }); }, 650); };   // (le feu brûle trois ou quatre secondes, sa fumée monte)
   const mordu = (v) => { if (fini) return; vies -= 20; morsures++; majHud(); if (morsures >= 2 && !biere && vies > 0) poserBiere(); parle(M.moiNum, REPL[M.lbPerso].mordu); try { sonBruit(.5, 500, .7); } catch (e) {} voile("background:radial-gradient(circle,rgba(160,0,0,0) 30%,rgba(160,0,0,.85) 100%);transition:opacity .9s", 900);
     if (vies <= 0 && !fini) { fini = true; phase = "fin"; voile("background:rgba(120,0,0,.55)", 2500); message(mi && mi.joue ? `<div style="font-size:22px">Michael est à terre…</div><div style="margin-top:8px">David a gagné. Santa Carla est à lui.</div>` : `<div style="font-size:22px">Tu as été mordu…</div><div style="margin-top:8px">Tu deviens l'un d'eux. Bienvenue dans la bande !</div>`, ["Rejouer", demarrer]); } };
@@ -5353,6 +5396,19 @@ function construireSantaCarla(A, L, scene) {
   const parle = (num, texte, force) => { const now = performance.now(); if (!M || M.L !== L || !texte || !M.gens.has(num) || M.cine || (!force && now < parleLibre)) return;
     if (!force && (M.gens.get(num).cible || (M.gens.get(M.moiNum) || {}).cible)) return;   /* (personne ne parle en marchant) */ parleLibre = now + 1800 + texte.length * 45; dire(num, texte); };
   const nomDe = (num) => { if (num === M.moiNum && mi && mi.joue) return "Michael"; if (num === M.moiNum) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(M.lbPerso)) || {}; return P.nom || ADOS[M.lbPerso - 81].nom; } const q = M.gens.get(num); return (q && q.info.nom) || ""; };
+  /* la caméra des cinématiques cherche une vue dégagée : rien (décor, personnage) entre elle et celui qu'elle filme ; sinon elle tourne autour de lui, ou s'approche */
+  const rcLB = new THREE.Raycaster();
+  const vueLibre = (de, vers, ignore) => { const d = vers.clone().sub(de), L0 = d.length(); if (L0 < .05) return true; rcLB.set(de, d.normalize()); rcLB.far = L0; rcLB.camera = M.camera;
+    return !rcLB.intersectObjects(scene.children, true).some(h => { const o = h.object; if (o.isSprite || o.isPoints || o.isLine) return false; for (let a = o; a; a = a.parent) { if (!a.visible) return false; if (ignore && ignore.includes(a)) return false; }
+      const m = o.material; if (m && !Array.isArray(m) && ((m.transparent && m.opacity < .4) || m.blending === THREE.AdditiveBlending)) return false; return true; }); };
+  const choisirVue = (s0, H, dx, dz, dist, lat, ignore, haut = .82) => { const yeux = V3(s0.x, s0.y + H * .76, s0.z);
+    for (const dd of [dist, dist * .75, dist * .55]) for (const r of [0, .3, -.3, .6, -.6, .9, -.9, 1.25, -1.25, 1.6, -1.6, 2.1, -2.1]) { const c = Math.cos(r), sn = Math.sin(r), ex = dx * c - dz * sn, ez = dx * sn + dz * c;
+      const pc = V3(s0.x + ex * dd - ez * lat, s0.y + H * haut, s0.z + ez * dd + ex * lat); if (!(!L.limites || L.limites(pc.x, pc.z) || dd < 1.4)) continue;
+      /* (trois lignes de vue : le visage, et de part et d'autre — personne ne doit mordre sur lui à l'image) */
+      const px = -(pc.z - yeux.z), pz = pc.x - yeux.x, pl = Math.hypot(px, pz) || 1, cote = k => V3(yeux.x + px / pl * k, yeux.y, yeux.z + pz / pl * k);
+      if (vueLibre(yeux, pc, ignore) && vueLibre(cote(.45), pc, ignore) && vueLibre(cote(-.45), pc, ignore) && vueLibre(V3(s0.x, s0.y + H * .35, s0.z), pc, ignore)) return { r, dd }; }
+    return { r: 0, dd: Math.min(1.3, dist) }; };
+  const tourner = (dx, dz, r) => [dx * Math.cos(r) - dz * Math.sin(r), dx * Math.sin(r) + dz * Math.cos(r)];
   /* une scène de dialogue, en cinématique : la caméra cadre celui qui parle (de trois quarts, depuis ceux à qui il parle), son nom et sa phrase en sous-titre, une réplique après l'autre */
   const dialogue = (lignes, fin) => { const cam = M.camera; let i = -1, tFin = 0, fait = false; const qui = [...new Set(lignes.map(l => l[0]).filter(n => n != null))], vamp = qui.find(n => n <= -860 && n >= -869);
     const grp = qui.map(n => M.gens.get(n)).filter(Boolean), ctr = grp.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, grp.length)), front = V3(cam.position.x - ctr.x, 0, cam.position.z - ctr.z); if (front.lengthSq() < .01) front.set(0, 0, 1); front.normalize();
@@ -5367,7 +5423,8 @@ function construireSantaCarla(A, L, scene) {
         const n0 = lignes[i][0], q = M.gens.get(n0); if (!q) return; const s0 = q.g.position, vq = vamp != null && M.gens.get(vamp), ados = grp.filter(g2 => g2 !== vq);
         const o = !vq ? s0.clone().add(front) : n0 === vamp ? ados.reduce((a, b) => a.add(b.g.position), V3(0, 0, 0)).multiplyScalar(1 / Math.max(1, ados.length)) : vq.g.position;   // (sans vampire : face au groupe ; avec lui : on filme chacun depuis l'autre camp)
         let dx = o.x - s0.x, dz = o.z - s0.z, l = Math.hypot(dx, dz); if (l < .3) { dx = 0; dz = 1; l = 1; } dx /= l; dz /= l;
-        const H = tailleBonhomme() * hauteurDe(q), tgt = V3(s0.x + dx * 3 - dz * 1.1, s0.y + H * .82, s0.z + dz * 3 + dx * 1.1);
+        const H = tailleBonhomme() * hauteurDe(q); if (S.vn !== i) { S.vn = i; S.vue = choisirVue(s0, H, dx, dz, 3, 1.1, [q.g]); }   /* (une vue dégagée, choisie à chaque réplique) */
+        { const [ex, ez] = tourner(dx, dz, S.vue.r); dx = ex; dz = ez; } const dd0 = S.vue.dd, tgt = V3(s0.x + dx * dd0 - dz * 1.1, s0.y + H * .82, s0.z + dz * dd0 + dx * 1.1);
         const dt2 = Math.min(.25, (now - (S.tp || now)) / 1000); S.tp = now; if (!S.pret || S.n !== i) { if (!S.pret) cam.position.copy(tgt); S.pret = true; S.n = i; S.k = now; }
         cam.position.lerp(tgt, now - S.k < 900 ? 1 - Math.exp(-5 * dt2) : 1 - Math.exp(-8 * dt2)); cam.position.x += Math.sin(now / 900) * .015; cam.position.y += Math.sin(now / 1300) * .012; cam.lookAt(s0.x, s0.y + H * .74, s0.z); }, fov: [42, 58] };   // (la caméra respire, tenue à la main)   // (la caméra glisse d'un personnage à l'autre, en temps réel)
     M.passerBtn = boutonPasser(finir); M.cine = S; };
@@ -5455,17 +5512,17 @@ function construireSantaCarla(A, L, scene) {
         else { bouger(-dx / d * 5 * dt2, -dz / d * 5 * dt2); if (now > v.tEtat) { v.etat = "sol"; v.a = Math.atan2(-dz, -dx); v.tEtat = now + 1800 + Math.random() * 2200; } }
         v.p.vol = 0; if (v.barre) v.barre.sp.visible = !M.cine; continue; }
       if (v.etat === "approche") { if (!v.pose) { const cam = M.camera.getWorldDirection(V3(0, 0, 0)); cam.y = 0; if (cam.lengthSq() < 1e-4) cam.set(0, 0, -1); cam.normalize(); v.pose = [cam.x, cam.z]; }   // (il fond sur nous du ciel, et se pose à cinq pas, devant nous : face à l'écran)
-        const bx = p.x + v.pose[0] * 6 - v.pose[1] * 1.3, bz = p.z + v.pose[1] * 6 + v.pose[0] * 1.3;   // (un peu de côté : on le voit, et nous aussi)
+        const [bx, bz] = pres(p.x + v.pose[0] * 6 - v.pose[1] * 1.3, p.z + v.pose[1] * 6 + v.pose[0] * 1.3, p, 6.5);   // (un peu de côté : on le voit, et nous aussi ; toujours sur le ponton)
         const k2 = 1 - Math.exp(-1.4 * Math.min(.1, (now - (v.tp || now)) / 1000)); v.tp = now;   // (en temps réel : il arrive en trois ou quatre secondes, quel que soit le téléphone)
         g.position.x += (bx - g.position.x) * k2; g.position.z += (bz - g.position.z) * k2; g.position.y += (0 - g.position.y) * k2;
         if (Math.hypot(g.position.x - bx, g.position.z - bz) < .6 && g.position.y < .3) { g.position.y = 0; v.etat = "parle"; dialogueAvant(v); } }
       else if (v.etat === "parle") { g.position.y = 0; }
-      else if (v.etat === "tourne") { v.a += dt * .6 * v.vit; const cx = p.x + Math.cos(v.a) * v.r, cz = p.z + Math.sin(v.a) * v.r, cy = v.h + Math.sin(now / 500 + v.k) * .5; g.position.x += (cx - g.position.x) * .04; g.position.z += (cz - g.position.z) * .04; g.position.y += (cy - g.position.y) * .04;
+      else if (v.etat === "tourne") { v.a += dt * .6 * v.vit; const [cx, cz] = pres(p.x + Math.cos(v.a) * Math.min(v.r, 8), p.z + Math.sin(v.a) * Math.min(v.r, 8), p, 8), cy = v.h + Math.sin(now / 500 + v.k) * .5; g.position.x += (cx - g.position.x) * .04; g.position.z += (cz - g.position.z) * .04; g.position.y += (cy - g.position.y) * .04;
         if (now > v.tEtat) { v.etat = "pique"; v.tEtat = now + 3500; } }
       else if (v.etat === "pique") { const dx = p.x - g.position.x, dz = p.z - g.position.z, dy = (p.y + .2) - g.position.y, d = Math.hypot(dx, dz, dy), sp = 7.5 * v.vit * dt;
         g.position.x += dx / d * sp; g.position.z += dz / d * sp; g.position.y += dy / d * sp;
         if (d < 1.1) { mordu(v); v.etat = "remonte"; v.tEtat = now + 1800; } else if (now > v.tEtat) { v.etat = "remonte"; v.tEtat = now + 1500; } }
-      else if (v.etat === "remonte") { g.position.y += (7 - g.position.y) * .05; const dx = g.position.x - p.x, dz = g.position.z - p.z, d = Math.hypot(dx, dz) || 1; g.position.x += dx / d * .08; g.position.z += dz / d * .08;
+      else if (v.etat === "remonte") { g.position.y += (7 - g.position.y) * .05; const dx = g.position.x - p.x, dz = g.position.z - p.z, d = Math.hypot(dx, dz) || 1; if (d < 7.5) { const [nx, nz] = pres(g.position.x + dx / d * .08, g.position.z + dz / d * .08, p, 7.5); g.position.x = nx; g.position.z = nz; } else { const [nx, nz] = pres(g.position.x, g.position.z, p, 7.5); g.position.x += (nx - g.position.x) * .05; g.position.z += (nz - g.position.z) * .05; }
         if (now > v.tEtat) { v.etat = "tourne"; v.a = Math.atan2(g.position.z - p.z, g.position.x - p.x); v.tEtat = now + 3000 + Math.random() * 4000; } }
       else if (v.etat === "terre") { const k3 = Math.min(1, g.rotation.z / (Math.PI / 2)); g.position.y += (.44 * k3 - g.position.y) * .14; g.rotation.z = Math.min(Math.PI / 2, g.rotation.z + .05);   /* (il tombe, couché sur le côté, posé sur le sol) */
         if (Math.random() < .03) particule(fumeeT, g.position.clone().add(new THREE.Vector3(0, .4, 0)), 1, .6, 900, .6);
