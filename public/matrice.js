@@ -11360,11 +11360,14 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
   return av3Cache[f]; }
 const tenueAv3 = info => { const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && !p.info.vrai && !p.info.pnj && M.L && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu));
+// (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
+function corpsAv3(p, A) { const a = p.info.av3 || {}, k = tailleBonhomme() * hauteurDe(p) / A.h * 1.02, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
+  const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.set(k * t * l, k * t, k * t * l); }
 function lookAv3(A, info) { const a = info.av3 || {}, C = a.c || {}, U = A.U, hx = (v, u) => { if (v) { const c = new THREE.Color(v); c.convertSRGBToLinear(); u.value.set(c.r, c.g, c.b, 1); } else u.value.w = 0; };
   hx(C.haut, U.uHaut); hx(C.bas, U.uBas); hx(C.pieds, U.uPieds); }
-function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); return; }
+function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); corpsAv3(p, p.av3); return; }
   chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
-    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); A.sc.scale.setScalar(tailleBonhomme() * hauteurDe(p) / A.h * 1.02); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); }); }
+    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A); }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;

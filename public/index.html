@@ -2595,8 +2595,9 @@
     d.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(10,8,6,.72);display:grid;place-items:center;padding:14px;box-sizing:border-box";
     const ligne = (k, nom) => `<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><b style="width:110px">${nom}</b><input type="color" data-c="${k}" value="${C[k] || "#888888"}" style="width:56px;height:36px;border:0;background:none"><label style="font-size:13px"><input type="checkbox" data-o="${k}" ${C[k] ? "" : "checked"}> couleur d'origine</label></div>`;
     d.innerHTML = `<div style="background:#fbf7ef;color:#222;border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:18px 18px 14px;box-sizing:border-box;font:15px 'Lato',sans-serif">
-      <h3 style="margin:0 0 6px">🕺 Mon personnage 3D</h3><p style="margin:0 0 12px;color:#666;font-size:13px">Ta tenue et ses couleurs : tout le monde les voit dans la caserne.</p>
+      <h3 style="margin:0 0 6px">🕺 Mon personnage 3D</h3><p style="margin:0 0 12px;color:#666;font-size:13px">Ta tenue, ta taille, ton poids et tes couleurs : tout le monde les voit dans la caserne.</p>
       <b>La tenue</b><div class="p3t" style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px"></div>
+      <b>La silhouette</b><div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 12px"><label style="display:flex;align-items:center;gap:6px">📏 Taille <input type="number" class="p3h" min="140" max="210" step="1" placeholder="175" value="${A.taille || ""}" style="width:70px;padding:6px;border:1px solid #ccc;border-radius:8px"> cm</label><label style="display:flex;align-items:center;gap:6px">⚖️ Poids <input type="number" class="p3p" min="40" max="160" step="1" placeholder="75" value="${A.poids || ""}" style="width:70px;padding:6px;border:1px solid #ccc;border-radius:8px"> kg</label></div>
       <b>Les couleurs</b>${ligne("haut", "👕 Le haut")}${ligne("bas", "👖 Le bas")}${ligne("pieds", "👟 Chaussures")}
       <p class="p3e" style="color:#b81c22;margin:0 0 8px" hidden></p>
       <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn small alt p3x">Annuler</button><button type="button" class="btn small p3ok">Enregistrer</button></div></div>`;
@@ -2604,7 +2605,9 @@
     const majT = () => { d.querySelector(".p3t").innerHTML = liste.map(x => `<button type="button" class="btn small ${x.id === t ? "" : "alt"}" data-t="${x.id}">${esc(x.nom)}</button>`).join(""); d.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { t = b.dataset.t; majT(); }); };
     d.querySelector(".p3x").onclick = () => d.remove();
     d.querySelector(".p3ok").onclick = async () => { const couleurs = {}; for (const k of ["haut", "bas", "pieds"]) couleurs[k] = d.querySelector(`[data-o="${k}"]`).checked ? null : d.querySelector(`[data-c="${k}"]`).value;
-      try { const r = await api("PUT", "/api/moi/av3", { t, couleurs }); monAvatar = { ...monAvatar, av3: r }; d.remove(); garde("Ton personnage 3D a sa nouvelle tenue : tout le monde la voit déjà dans la caserne.", { titre: "🕺 C'est enregistré" }); }
+      try { const nb = (sel, a, z, nom) => { const v = d.querySelector(sel).value.trim(); if (!v) return null; const n = Math.round(Number(v)); if (!(n >= a && n <= z)) throw new Error(`${nom} : entre ${a} et ${z}.`); return n; };
+        const taille = nb(".p3h", 140, 210, "La taille (en cm)"), poids = nb(".p3p", 40, 160, "Le poids (en kg)");
+        const r = await api("PUT", "/api/moi/av3", { t, couleurs, taille, poids }); monAvatar = { ...monAvatar, av3: r }; d.remove(); garde("Ton personnage 3D a sa nouvelle tenue : tout le monde la voit déjà dans la caserne.", { titre: "🕺 C'est enregistré" }); }
       catch (err) { const e2 = d.querySelector(".p3e"); e2.textContent = err.message; e2.hidden = false; } };
     d.querySelectorAll("[data-c]").forEach(i => i.oninput = () => { d.querySelector(`[data-o="${i.dataset.c}"]`).checked = false; });
     majT(); }
