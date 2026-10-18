@@ -4540,6 +4540,253 @@ const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lb
 function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true, ...(id >= 81 && id <= 83 ? { k: 1.3, dy: 6 } : {}) }, tete_v: null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${D[4]}-tete.webp`, lbPerso: id, ...(id === 88 ? { peau: "#c98a5c" } : {}) }; }   // (Tim Cappello : la peau bronzée)
+/* =====================================================================================
+   Springfield (Les Simpson) : Evergreen Terrace, la maison des Simpson et son salon, le Kwik-E-Mart et sa boutique.
+   Couleurs franches, formes simples, comme le dessin animé ; on y arrive par la jaquette du Video Futur.
+   ===================================================================================== */
+const SPR_TOILE = (w, h, f) => tex(toile(w, h, f));
+function sprArbre(A, x, z, s = 1, ombre = true) {   // un arbre de dessin animé : un tronc, trois grosses boules de feuillage
+  A.ajoute(new THREE.CylinderGeometry(.22 * s, .3 * s, 2.4 * s, 8), A.mat({ color: 0x7a4a26 }), x, 1.2 * s, z, ombre);
+  const vert = A.mat({ color: [0x3f9a35, 0x4aa83c, 0x379030][Math.floor(hasard(x * 3 + z) * 3)] });
+  for (const [dx, dy, dz, r] of [[0, 3.2, 0, 1.5], [.9, 2.7, .3, 1.05], [-.8, 2.8, -.4, 1.1]]) A.ajoute(new THREE.SphereGeometry(r * s, 14, 10), vert, x + dx * s, dy * s, z + dz * s, ombre);
+}
+function sprVoiture(A, x, z, rot, couleur, o = {}) {   // une voiture ronde des années 80 : la caisse, l'habitacle, les vitres, les roues
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; A.scene.add(g); const m = A.mat({ color: couleur, roughness: .45 });
+  const caisse = new THREE.Mesh(new THREE.BoxGeometry(1.8, .62, 4.4), m); caisse.position.y = .62; caisse.castShadow = true; g.add(caisse);
+  const hab = new THREE.Mesh(new THREE.BoxGeometry(1.62, .55, 2.1), m); hab.position.set(0, 1.2, -.15); hab.castShadow = true; g.add(hab);
+  const vitre = new THREE.Mesh(new THREE.BoxGeometry(1.66, .4, 1.9), A.mat({ color: 0x9fd0e8, roughness: .1, metalness: .3 })); vitre.position.set(0, 1.22, -.15); g.add(vitre);
+  for (const [a, b] of [[-.85, 1.35], [.85, 1.35], [-.85, -1.35], [.85, -1.35]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .26, 14), A.mat({ color: 0x1c1c1c })); r.rotation.z = Math.PI / 2; r.position.set(a, .34, b); g.add(r); }
+  for (const s of [-1, 1]) { const ph = new THREE.Mesh(new THREE.BoxGeometry(.36, .16, .04), A.mat({ color: 0xfff6c8, emissive: 0x554422 })); ph.position.set(s * .58, .7, 2.21); g.add(ph); }
+  if (o.decapotable) { hab.visible = vitre.visible = false; }
+  return g;
+}
+function sprMaison(A, o) {   // une maison de banlieue : deux niveaux, façade peinte (fenêtres, porte), toit en pavillon
+  const { x, z, w = 10, d = 8, h = 5.6, face = 1, mur = "#e9b46a", toit = 0xc4502c, cadre = "#b8302a", porte = "#7a4a2a" } = o;
+  const f = toile(w * 40, h * 40, (c, W, H) => { c.fillStyle = mur; c.fillRect(0, 0, W, H); c.fillStyle = "rgba(0,0,0,.06)"; for (let i = 0; i < H; i += 8) c.fillRect(0, i, W, 2);   // (le bardage)
+    const fen = (cx, cy, fw, fh) => { c.fillStyle = cadre; c.fillRect(cx - fw / 2 - 5, cy - fh / 2 - 5, fw + 10, fh + 10); c.fillStyle = "#bfe3f2"; c.fillRect(cx - fw / 2, cy - fh / 2, fw, fh);
+      c.fillStyle = "rgba(255,255,255,.55)"; c.fillRect(cx - fw / 2 + 4, cy - fh / 2 + 4, fw * .3, fh * .3); c.fillStyle = cadre; c.fillRect(cx - 2, cy - fh / 2, 4, fh); c.fillRect(cx - fw / 2, cy - 2, fw, 4); };
+    const n = Math.max(2, Math.round(w / 3.2)); for (let i = 0; i < n; i++) fen((i + .5) * W / n, H * .27, 52, 48);
+    for (let i = 0; i < n; i++) { if (Math.abs((i + .5) / n - .5) < .5 / n + .01) continue; fen((i + .5) * W / n, H * .72, 60, 56); }
+    c.fillStyle = porte; c.fillRect(W / 2 - 22, H - 88, 44, 88); c.fillStyle = "#e8c050"; c.beginPath(); c.arc(W / 2 + 13, H - 44, 3.5, 0, 7); c.fill(); });
+  const plat = A.mat({ color: new THREE.Color(mur) }), fa = A.mat({ map: tex(f) }), mats = [plat, plat, plat, plat, face > 0 ? fa : plat, face > 0 ? plat : fa];
+  A.ajoute(new THREE.BoxGeometry(w, h, d), mats, x, h / 2, z);
+  const t = A.ajoute(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4), A.mat({ color: toit, roughness: .7 }), x, h + 1.3, z); t.rotation.y = Math.PI / 4; t.scale.set(w + 1.2, 2.6, d + 1.2);
+  // le petit auvent au-dessus de la porte, la marche
+  A.ajoute(new THREE.BoxGeometry(2.2, .14, 1.1), A.mat({ color: toit }), x, 2.55, z + face * (d / 2 + .5));
+  A.ajoute(new THREE.BoxGeometry(2, .18, 1), A.mat({ color: 0xcfc6b4 }), x, .09, z + face * (d / 2 + .5), false);
+  return [x - w / 2 - .2, x + w / 2 + .2, z - d / 2 - .2, z + d / 2 + .2];
+}
+function construireSpringfield(A, L, scene, id) {
+  L.spr = true; L.sansPNJ = true; L.sansMusique = true; L.toujoursJour = true;
+  L.portails = L.portails || [];
+  const OBST = [];
+  const plan = (w, h, m, x, y, z, rx = -Math.PI / 2) => { const o = A.ajoute(new THREE.PlaneGeometry(w, h), m, x, y, z, false); o.rotation.x = rx; o.receiveShadow = true; return o; };
+  const lumiereInt = (pts) => { scene.add(new THREE.AmbientLight(0xfff4e6, .75)); for (const [x, y, z, i] of pts) { const p = new THREE.PointLight(0xfff0d8, i, 14, 1.4); p.position.set(x, y, z); scene.add(p); } };
+
+  if (id === "spr-rue") {
+    L.taille = 1.85;
+    // ---------- le sol : la rue Evergreen Terrace, les trottoirs, les pelouses, les allées, le parking violet du Kwik-E-Mart ----------
+    const X0 = -60, Z0 = -40, K = 8, W = 160, H = 80, px = x => (x - X0) * K, pz = z => (z - Z0) * K;
+    const sol = toile(W * K, H * K, (c) => {
+      c.fillStyle = "#74c043"; c.fillRect(0, 0, W * K, H * K);
+      for (let i = 0; i < W * K; i += 24) { c.fillStyle = i % 48 ? "rgba(255,255,255,.035)" : "rgba(0,0,0,.035)"; c.fillRect(i, 0, 12, H * K); }   // (la pelouse tondue en bandes)
+      const r = (x0, x1, z0, z1, col) => { c.fillStyle = col; c.fillRect(px(x0), pz(z0), (x1 - x0) * K, (z1 - z0) * K); };
+      r(X0, 62, -6, 6, "#d6d0c4"); r(X0, 62, -4.2, 4.2, "#8a8794"); r(60, 72, Z0, Z0 + H, "#d6d0c4"); r(61.8, 70.2, Z0, Z0 + H, "#8a8794");
+      c.fillStyle = "#f4f0e2"; for (let x = X0; x < 61; x += 4) c.fillRect(px(x), pz(-.1), 2 * K, .2 * K); for (let z = Z0; z < 40; z += 4) c.fillRect(px(65.9), pz(z), .2 * K, 2 * K);
+      c.fillStyle = "rgba(0,0,0,.18)"; for (let x = X0; x < 62; x += 1.5) { c.fillRect(px(x), pz(-6), 1, 1.8 * K); c.fillRect(px(x), pz(4.2), 1, 1.8 * K); }   // (les joints des dalles du trottoir)
+      r(5.6, 10.6, -13.5, -6, "#c4bcae"); r(-.8, .8, -12.6, -6, "#e2d3b0");   // (l'allée du garage, le chemin jusqu'à la porte)
+      for (const hx of [-22, 22, -44, 44]) { r(hx + 2.5, hx + 5.5, -12.6, -6, "#c4bcae"); r(hx - .6, hx + .6, -12.6, -6, "#e2d3b0"); r(hx + 2.5, hx + 5.5, 6, 12.6, "#c4bcae"); r(hx - .6, hx + .6, 6, 12.6, "#e2d3b0"); }
+      r(0 + 2.5, 0 + 5.5, 6, 12.6, "#c4bcae"); r(-.6, .6, 6, 12.6, "#e2d3b0");
+      r(72, 85, -15, 15, "#6c5a92"); c.fillStyle = "#f2f0ea"; for (let z = -13; z <= 13; z += 3.2) { c.fillRect(px(74), pz(z), 7 * K, .16 * K); }   // (le parking violet et ses places)
+      r(84.5, 86, -15, 15, "#d6d0c4"); r(72, 86, -16.5, -15, "#d6d0c4"); r(72, 86, 15, 16.5, "#d6d0c4");
+    });
+    const solM = plan(W, H, A.mat({ map: tex(sol), roughness: .95 }), X0 + W / 2, 0, Z0 + H / 2); L.sol = solM;
+    const herbe = plan(900, 900, A.mat({ color: 0x6cb63e, roughness: 1 }), 20, -.02, 0); L.solsPlus = [herbe];   // (au-delà : la campagne, à perte de vue)
+    // ---------- la maison des Simpson (742 Evergreen Terrace) ----------
+    { const HX = 0, HZ = -17, w = 12, d = 8, h = 5.8, mur = "#f0a74e";
+      const f = toile(w * 40, h * 40, (c, Wd, Ht) => { c.fillStyle = mur; c.fillRect(0, 0, Wd, Ht); c.fillStyle = "rgba(0,0,0,.05)"; for (let i = 0; i < Ht; i += 8) c.fillRect(0, i, Wd, 2);
+        const fen = (cx, cy, fw, fh) => { c.fillStyle = "#c7372c"; c.fillRect(cx - fw / 2 - 6, cy - fh / 2 - 6, fw + 12, fh + 12); c.fillStyle = "#bfe3f2"; c.fillRect(cx - fw / 2, cy - fh / 2, fw, fh); c.fillStyle = "rgba(255,255,255,.6)"; c.fillRect(cx - fw / 2 + 4, cy - fh / 2 + 4, fw * .3, fh * .3); c.fillStyle = "#c7372c"; c.fillRect(cx - 2, cy - fh / 2, 4, fh); };
+        for (const cx of [.12, .3, .7, .88]) fen(cx * Wd, Ht * .26, 58, 50);
+        c.fillStyle = "#8c4a28"; c.fillRect(Wd / 2 - 24, Ht - 92, 48, 92); c.fillStyle = "#a35a32"; c.fillRect(Wd / 2 - 18, Ht - 86, 36, 34); c.fillRect(Wd / 2 - 18, Ht - 46, 36, 36); c.fillStyle = "#e8c050"; c.beginPath(); c.arc(Wd / 2 + 14, Ht - 46, 4, 0, 7); c.fill(); });
+      const plat = A.mat({ color: new THREE.Color(mur) }), fa = A.mat({ map: tex(f) });
+      A.ajoute(new THREE.BoxGeometry(w, h, d), [plat, plat, plat, plat, fa, plat], HX, h / 2, HZ); OBST.push([HX - w / 2, HX + w / 2, HZ - d / 2, HZ + d / 2 + .2]);
+      const t = A.ajoute(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4), A.mat({ color: 0xc9442a, roughness: .7 }), HX, h + 1.4, HZ); t.rotation.y = Math.PI / 4; t.scale.set(w + 1.4, 2.8, d + 1.4);
+      // les deux fenêtres en rotonde du rez-de-chaussée, sous leurs petits dômes bordeaux
+      const vitres = tex(toile(256, 128, (c) => { c.fillStyle = "#c7372c"; c.fillRect(0, 0, 256, 128); c.fillStyle = "#bfe3f2"; for (let i = 0; i < 4; i++) c.fillRect(8 + i * 62, 10, 52, 108); c.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < 4; i++) c.fillRect(14 + i * 62, 16, 14, 40); }));
+      for (const s of [-1, 1]) { const bx = HX + s * 3.5;
+        const b = A.ajoute(new THREE.CylinderGeometry(1.15, 1.15, 1.9, 20, 1, true, -Math.PI / 2, Math.PI), [A.mat({ map: vitres, side: THREE.DoubleSide })], bx, 1.55, HZ + d / 2);
+        A.ajoute(new THREE.CylinderGeometry(1.2, 1.2, .5, 20, 1, false, -Math.PI / 2, Math.PI), A.mat({ color: new THREE.Color(mur) }), bx, .35, HZ + d / 2);
+        A.ajoute(new THREE.SphereGeometry(1.25, 20, 10, -Math.PI / 2, Math.PI, 0, Math.PI / 2), A.mat({ color: 0x8e2a1e, roughness: .6 }), bx, 2.5, HZ + d / 2);
+        for (const k of [-1, 1]) A.ajoute(new THREE.SphereGeometry(.55, 12, 8), A.mat({ color: 0x3f9a35 }), bx + k * 1.15, .45, HZ + d / 2 + 1.3); }
+      A.ajoute(new THREE.BoxGeometry(2.4, .14, 1.3), A.mat({ color: 0xc9442a }), HX, 2.7, HZ + d / 2 + .6); A.ajoute(new THREE.BoxGeometry(2.2, .2, 1.1), A.mat({ color: 0xcfc6b4 }), HX, .1, HZ + d / 2 + .55, false);
+      // le garage, à droite, sa porte orange à lames ; la cheminée de brique à gauche ; l'antenne de télé
+      const gw = 5, gd = 7, gh = 3.3, gx = HX + w / 2 + gw / 2, gz = HZ + .5;
+      const pg = tex(toile(200, 132, (c) => { c.fillStyle = mur; c.fillRect(0, 0, 200, 132); c.fillStyle = "#e08a2e"; c.fillRect(22, 26, 156, 106); c.fillStyle = "rgba(0,0,0,.18)"; for (let y = 40; y < 132; y += 18) c.fillRect(22, y, 156, 3); }));
+      const gm = A.mat({ color: new THREE.Color(mur) }); A.ajoute(new THREE.BoxGeometry(gw, gh, gd), [gm, gm, gm, gm, A.mat({ map: pg }), gm], gx, gh / 2, gz); OBST.push([gx - gw / 2, gx + gw / 2, gz - gd / 2, gz + gd / 2]);
+      const tg = A.ajoute(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4), A.mat({ color: 0xc9442a, roughness: .7 }), gx, gh + .8, gz); tg.rotation.y = Math.PI / 4; tg.scale.set(gw + .8, 1.6, gd + .8);
+      A.ajoute(new THREE.BoxGeometry(1, 3.4, 1), A.mat({ color: 0xa8432e }), HX - w / 2 + .4, h + 1.6, HZ - 1);
+      for (const [a, b, ln] of [[0, 0, 1.6]]) { const p = A.ajoute(new THREE.CylinderGeometry(.03, .03, ln, 6), A.mat({ color: 0x777777 }), HX + 2 + a, h + 3.2, HZ + b); p.castShadow = false; }
+      for (const r of [-.4, .4]) { const a = A.ajoute(new THREE.CylinderGeometry(.02, .02, 1.2, 5), A.mat({ color: 0x777777 }), HX + 2, h + 4, HZ); a.rotation.x = Math.PI / 2; a.rotation.z = r; }
+      // la porte d'entrée : on entre dans le salon
+      L.portails.push({ dans: (x, z) => Math.abs(x - HX) < .9 && Math.abs(z - (HZ + d / 2 + .7)) < .55, vers: "spr-maison", arrivee: [4.4, 2.6], yaw: Math.PI / 2, indice: [HX, HZ + d / 2 + .9] });
+      // la voiture rose de Homer dans l'allée
+      sprVoiture(A, 8.1, -9.6, 0, 0xf29db5); OBST.push([7.1, 9.1, -11.9, -7.3]);
+      // la clôture de bois du jardin de derrière
+      const bois = A.mat({ color: 0xc89a5a });
+      for (const [a, b, c2, dd] of [[-9, 13, -23.5, -23.3], [-9.2, -9, -23.5, -13], [13, 13.2, -23.5, -13]]) { A.ajoute(new THREE.BoxGeometry(b - a, 1.3, dd - c2), bois, (a + b) / 2, .65, (c2 + dd) / 2); OBST.push([a, b, c2, dd]); }
+      sprArbre(A, -6.5, -21, 1.25); OBST.push([-7, -6, -21.5, -20.5]);
+      // la cabane dans l'arbre de Bart
+      { sprArbre(A, 10, -21.5, 1.6); OBST.push([9.4, 10.6, -22.1, -20.9]); A.ajoute(new THREE.BoxGeometry(2, 1.4, 1.8), A.mat({ color: 0xb07a3c }), 10, 3.6, -21.5); const tc = A.ajoute(new THREE.ConeGeometry(1.5, .9, 4), A.mat({ color: 0x8a5a2a }), 10, 4.75, -21.5); tc.rotation.y = Math.PI / 4; }
+    }
+    // ---------- les voisins : Flanders à gauche, et le reste de la rue ----------
+    const voisins = [
+      { x: -22, z: -16, face: 1, mur: "#d9cfa8", toit: 0x6f5a3e, cadre: "#5a7a3a", porte: "#5a7a3a" },   // (les Flanders)
+      { x: 22, z: -16, face: 1, mur: "#e7a8c2", toit: 0xb8462e, cadre: "#ffffff" }, { x: -44, z: -16, face: 1, mur: "#b9a6e0", toit: 0x5a5a6a, cadre: "#ffffff" }, { x: 44, z: -16, face: 1, mur: "#9fd0e8", toit: 0x8a3a2a, cadre: "#ffffff" },
+      { x: 0, z: 16, face: -1, mur: "#9fc9ea", toit: 0x4f6f8a, cadre: "#ffffff" }, { x: -22, z: 16, face: -1, mur: "#f2d27a", toit: 0xb8462e, cadre: "#a83a2a" }, { x: 22, z: 16, face: -1, mur: "#c9e0a0", toit: 0x7a5a3a, cadre: "#ffffff" },
+      { x: -44, z: 16, face: -1, mur: "#f0b8a0", toit: 0x6a4a3a, cadre: "#ffffff" }, { x: 44, z: 16, face: -1, mur: "#c8b0e0", toit: 0xb8462e, cadre: "#ffffff" }];
+    for (const v of voisins) { OBST.push(sprMaison(A, { ...v, w: 10, d: 8, h: 5.4 })); const gx = v.x + 4, gz = v.z + v.face * 2.5; sprArbre(A, v.x - 6.5, v.z - v.face * 1, 1.05); OBST.push([v.x - 7, v.x - 6, v.z - v.face - .5, v.z - v.face + .5]); void gx; void gz; }
+    sprVoiture(A, -18.2, -9.8, 0, 0x3a7a5a); OBST.push([-19.2, -17.2, -12.1, -7.5]);   // (la voiture verte de Ned)
+    sprVoiture(A, 25.8, 9.6, Math.PI, 0x4a6ac8); OBST.push([24.8, 26.8, 7.4, 11.8]);
+    // les boîtes aux lettres au bord du trottoir, le panneau vert « Evergreen Terrace » au coin
+    for (const v of [...voisins, { x: 0, z: -16, face: 1 }]) { const bz = v.face > 0 ? -6.4 : 6.4, bx = v.x - 1.6;
+      A.ajoute(new THREE.CylinderGeometry(.04, .04, 1.1, 6), A.mat({ color: 0x6a4a2a }), bx, .55, bz); A.ajoute(new THREE.BoxGeometry(.3, .28, .5), A.mat({ color: v.x === 0 && v.face > 0 ? 0x3a5aa8 : 0x5a5a5a }), bx, 1.2, bz); }
+    { A.ajoute(new THREE.CylinderGeometry(.06, .06, 3.2, 8), A.mat({ color: 0x6a6a6a }), 59.4, 1.6, -6.6);
+      const pan = tex(toile(512, 96, (c) => { c.fillStyle = "#1f7a3a"; c.fillRect(0, 0, 512, 96); c.strokeStyle = "#fff"; c.lineWidth = 5; c.strokeRect(6, 6, 500, 84); c.fillStyle = "#fff"; c.font = "bold 50px Arial"; c.textAlign = "center"; c.fillText("Evergreen Terrace", 256, 66); }));
+      for (const s of [1, -1]) { const p = A.ajoute(new THREE.PlaneGeometry(2.2, .42), A.mat({ map: pan }), 59.4, 3.05, -6.6 + s * .03, false); if (s < 0) p.rotation.y = Math.PI; } }
+    // ---------- le Kwik-E-Mart ----------
+    { const KX = 91, KZ = 0, kw = 12, kd = 20, kh = 4.6;   // (kw : la profondeur le long de x ; la façade regarde la rue, vers −x)
+      const fac = toile(kd * 40, kh * 40, (c, Wd, Ht) => { c.fillStyle = "#f0ac36"; c.fillRect(0, 0, Wd, Ht);
+        c.fillStyle = "#b8643a"; c.fillRect(0, Ht - 34, Wd, 34); c.fillStyle = "rgba(0,0,0,.2)"; for (let y = Ht - 34; y < Ht; y += 8) c.fillRect(0, y, Wd, 2); for (let i = 0; i < Wd; i += 20) c.fillRect(i + ((i / 20) % 2) * 10, Ht - 34, 2, 34);
+        c.fillStyle = "#e0952a"; c.fillRect(0, 0, Wd, 18);
+        const vit = (x0, w2) => { c.fillStyle = "#5a4a3a"; c.fillRect(x0 - 5, 48, w2 + 10, Ht - 48 - 34 + 4); c.fillStyle = "#a9cfe0"; c.fillRect(x0, 53, w2, Ht - 53 - 34); c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(x0 + 6, 58, w2 * .25, 40); };
+        vit(Wd / 2 - 60, 120); c.fillStyle = "#5a4a3a"; c.fillRect(Wd / 2 - 2, 48, 4, Ht - 82);   // (les portes vitrées au milieu)
+        vit(110, 200); vit(Wd - 310, 200);
+        // les affiches dans les vitrines
+        for (const [x1, t1, col] of [[150, "SQUISHEE", "#2a6ad8"], [Wd - 260, "BUZZ COLA", "#d8282a"], [Wd - 180, "DUFF", "#c8102e"]]) { c.fillStyle = "#fff"; c.fillRect(x1, 70, 70, 44); c.fillStyle = col; c.font = "bold 13px Arial"; c.textAlign = "center"; c.fillText(t1, x1 + 35, 97); } });
+      const orange = A.mat({ color: 0xf0ac36 }), toitM = A.mat({ color: 0x9a948a });
+      A.ajoute(new THREE.BoxGeometry(kw, kh, kd), [orange, A.mat({ map: tex(fac) }), toitM, orange, orange, orange], KX, kh / 2, KZ); OBST.push([KX - kw / 2, KX + kw / 2, KZ - kd / 2, KZ + kd / 2]);
+      // la grande enseigne sur le toit : crème, bordée de vert, KWIK-E-MART en rouge (le E en vert)
+      const ens = tex(toile(1024, 200, (c) => { c.fillStyle = "#17803a"; c.fillRect(0, 0, 1024, 200); c.fillStyle = "#f6edd0"; c.fillRect(14, 14, 996, 172); c.font = "bold 128px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.lineWidth = 8; c.strokeStyle = "#1a5a2a"; const parts = [["KWIK-", "#d8202a"], ["E", "#17803a"], ["-MART", "#d8202a"]]; let tot = 0; for (const [s] of parts) tot += c.measureText(s).width; let xx = 512 - tot / 2;
+        c.textAlign = "left"; for (const [s, col] of parts) { c.strokeText(s, xx, 104); c.fillStyle = col; c.fillText(s, xx, 104); xx += c.measureText(s).width; } }));
+      const en = A.ajoute(new THREE.BoxGeometry(.3, 2.8, 14), [A.mat({ color: 0x17803a }), A.mat({ map: ens }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a })], KX - kw / 2 + .4, kh + 1.5, KZ);
+      void en;
+      // la marquise au-dessus de la façade
+      A.ajoute(new THREE.BoxGeometry(1.4, .25, kd), A.mat({ color: 0xe0952a }), KX - kw / 2 - .6, kh - .3, KZ);
+      // le panneau sur son mât, au coin du parking
+      { A.ajoute(new THREE.CylinderGeometry(.14, .14, 7, 10), A.mat({ color: 0x8a8a8a }), 73, 3.5, -14.2);
+        const pm = tex(toile(160, 320, (c) => { c.fillStyle = "#17803a"; c.fillRect(0, 0, 160, 320); c.fillStyle = "#f6edd0"; c.fillRect(10, 10, 140, 300); c.fillStyle = "#d8202a"; c.font = "bold 62px 'Arial Black', Arial"; c.textAlign = "center";
+          c.fillText("KWIK", 80, 84); c.fillStyle = "#17803a"; c.fillText("E", 80, 168); c.fillStyle = "#d8202a"; c.fillText("MART", 80, 252); }));
+        A.ajoute(new THREE.BoxGeometry(.3, 3.6, 1.8), [A.mat({ map: pm }), A.mat({ map: pm }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a }), A.mat({ color: 0x17803a })], 73, 8.4, -14.2); OBST.push([72.7, 73.3, -14.5, -13.9]); }
+      // le distributeur de Buzz Cola, devant, à gauche des portes
+      { const dm = tex(toile(96, 192, (c) => { c.fillStyle = "#1f4fb0"; c.fillRect(0, 0, 96, 192); c.fillStyle = "#fff"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("BUZZ", 48, 40); c.fillText("COLA", 48, 64); c.fillStyle = "#d8202a"; for (let i = 0; i < 4; i++) c.fillRect(14 + i * 18, 92, 12, 40); c.fillStyle = "#222"; c.fillRect(30, 150, 36, 18); }));
+        A.ajoute(new THREE.BoxGeometry(.8, 1.9, 1.1), [A.mat({ color: 0x1f4fb0 }), A.mat({ map: dm }), A.mat({ color: 0x1f4fb0 }), A.mat({ color: 0x1f4fb0 }), A.mat({ color: 0x1f4fb0 }), A.mat({ color: 0x1f4fb0 })], KX - kw / 2 - .5, .95, KZ - 6.5); OBST.push([KX - kw / 2 - .95, KX - kw / 2, KZ - 7.1, KZ - 5.9]); }
+      // le camion de livraison Duff, garé sur le parking
+      { const g = new THREE.Group(); g.position.set(78.5, 0, 10); g.rotation.y = 0; scene.add(g);
+        const cote = tex(toile(512, 200, (c) => { c.fillStyle = "#b0182a"; c.fillRect(0, 0, 512, 200); c.fillStyle = "#fff"; c.font = "italic bold 120px Georgia, serif"; c.textAlign = "center"; c.fillText("Duff", 256, 140); c.lineWidth = 6; c.strokeStyle = "#fff"; c.strokeRect(14, 14, 484, 172); }));
+        const rouge = A.mat({ color: 0xb0182a }), caisse = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.7, 5.4), [A.mat({ map: cote }), A.mat({ map: cote }), rouge, rouge, rouge, rouge]); caisse.position.set(0, 1.85, -.8); caisse.castShadow = true; g.add(caisse);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.9, 1.8), A.mat({ color: 0xe8e4dc })); cab.position.set(0, 1.45, 2.8); cab.castShadow = true; g.add(cab);
+        const pb = new THREE.Mesh(new THREE.BoxGeometry(2.2, .8, .05), A.mat({ color: 0x9fd0e8, roughness: .1 })); pb.position.set(0, 1.85, 3.71); g.add(pb);
+        for (const [a, b] of [[-1.05, 2.6], [1.05, 2.6], [-1.05, -2.2], [1.05, -2.2]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.48, .48, .34, 14), A.mat({ color: 0x1c1c1c })); r.rotation.z = Math.PI / 2; r.position.set(a, .48, b); g.add(r); }
+        OBST.push([77.2, 79.8, 6.4, 13.8]); }
+      for (const [z, c] of [[-8.2, 0x8a5ac8], [4.6, 0xe8e0c8]]) { sprVoiture(A, 79, z, -Math.PI / 2, c); OBST.push([76.6, 81.4, z - 1.1, z + 1.1]); }
+      // on entre par les portes vitrées
+      L.portails.push({ dans: (x, z) => Math.abs(x - (KX - kw / 2 - .5)) < .6 && Math.abs(z - KZ) < 1.2, vers: "spr-kwik", arrivee: [-7.4, 0], yaw: -Math.PI / 2, indice: [KX - kw / 2 - .8, KZ] });
+    }
+    // ---------- au loin : les arbres, les collines, et la centrale nucléaire de M. Burns (ses deux tours, leur vapeur) ----------
+    for (let i = 0; i < 70; i++) { const a = hasard(i * 7.3), b = hasard(i * 3.1); let x, z; if (i % 3 === 0) { x = -58 + a * 156; z = -33 - b * 8; } else if (i % 3 === 1) { x = -58 + a * 120; z = 28 + b * 9; } else { x = -64 - b * 8; z = -30 + a * 60; } sprArbre(A, x, z, .9 + hasard(i) * .6, false); }
+    for (let i = 0; i < 9; i++) { const c = A.ajoute(new THREE.SphereGeometry(40 + hasard(i) * 25, 20, 10), A.mat({ color: 0x5fae3a }), -200 + i * 55, -26, -150 - hasard(i * 2) * 40, false); c.scale.y = .45; }
+    { const prof = []; for (let i = 0; i <= 12; i++) { const t = i / 12, y = t * 26; prof.push(new THREE.Vector2(9 - 5.2 * Math.sin(t * Math.PI * .85) + t * 1.5, y)); }
+      const tm = A.mat({ color: 0xa8aca8, side: THREE.DoubleSide });
+      for (const tx of [-62, -38]) { A.ajoute(new THREE.LatheGeometry(prof, 28), tm, tx, 0, -118, false);
+        for (let k = 0; k < 4; k++) { const v = A.ajoute(new THREE.SphereGeometry(6 + k * 1.5, 14, 10), A.mat({ color: 0xf4f4f0, transparent: true, opacity: .75 - k * .12 }), tx + k * 2.5, 29 + k * 5, -118 - k, false); v.castShadow = false; } }
+      A.ajoute(new THREE.BoxGeometry(30, 9, 14), A.mat({ color: 0x8a8f8a }), -50, 4.5, -98, false); }
+    // le cercle du retour : sur le trottoir, devant chez les Simpson ; on revient dans la rue de la caserne, devant le Video Futur
+    L.portails.push({ dans: (x, z) => Math.hypot(x + 6, z + 5) < .8, vers: "rue", arrivee: [19.1, 5.2], yaw: Math.PI, indice: [-6, -5] });
+    L.limites = (x, z) => x > -58 && x < 96 && z > -31 && z < 31 && !(x > 72 && z > 15 && false) && !OBST.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25);
+    L.depart = [2, -4.8]; L.cam = { pos: [6, 6, 8], vise: [0, 3, -16] }; L.suivi = { d: 6, h: 3, av: 3, vy: 1.6 };
+  }
+
+  if (id === "spr-maison") {
+    // ---------- le salon des Simpson : murs rose-violet, moquette verte, le canapé, le tableau du voilier, la télé ----------
+    const X0 = -6, X1 = 6, Z0 = -4.5, Z1 = 4.5, HT = 2.8; L.interieur = true; L.boite = [X0, X1, Z0, Z1]; L.zone = [X0, X1, Z0, Z1]; L.plafond = HT - .2;
+    const moq = tex(toile(256, 256, (c) => { c.fillStyle = "#3f9a86"; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { c.fillStyle = hasard(i) > .5 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.06)"; c.fillRect(hasard(i * 3) * 256, hasard(i * 7) * 256, 2, 2); } }), 4, 3);
+    L.sol = plan(X1 - X0, Z1 - Z0, A.mat({ map: moq }), 0, 0, 0);
+    const papier = tex(toile(256, 256, (c) => { c.fillStyle = "#c79ac4"; c.fillRect(0, 0, 256, 256); c.fillStyle = "rgba(255,255,255,.12)"; for (let x = 0; x < 256; x += 32) c.fillRect(x, 0, 6, 256); }), 6, 1.4);
+    const mur = A.mat({ map: papier, side: THREE.BackSide }), plafond = A.mat({ color: 0xf2e8d8, side: THREE.BackSide });
+    A.ajoute(new THREE.BoxGeometry(X1 - X0, HT, Z1 - Z0), [mur, mur, plafond, A.mat({ color: 0x3f9a86, side: THREE.BackSide, visible: false }), mur, mur], 0, HT / 2, 0, false);
+    { const pl = A.mat({ color: 0xe8dcc8, side: THREE.BackSide }), rien = A.mat({ visible: false }); A.ajoute(new THREE.BoxGeometry(X1 - X0 - .02, .12, Z1 - Z0 - .02), [pl, pl, rien, rien, pl, pl], 0, .06, 0, false); }   // (les plinthes)
+    // le canapé, contre le mur du fond
+    const can = A.mat({ color: 0xb06a38, roughness: .8 });
+    A.ajoute(new THREE.BoxGeometry(2.8, .45, .95), can, 0, .32, Z0 + .6); A.ajoute(new THREE.BoxGeometry(2.8, .65, .3), can, 0, .75, Z0 + .2); for (const s of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.3, .6, .95), can, s * 1.45, .45, Z0 + .6);
+    for (const s of [-.68, .68]) A.ajoute(new THREE.BoxGeometry(1.3, .12, .8), A.mat({ color: 0xc27a44 }), s, .6, Z0 + .66);
+    // le tableau du voilier au-dessus du canapé
+    const voilier = tex(toile(256, 180, (c) => { c.fillStyle = "#c79a3a"; c.fillRect(0, 0, 256, 180); c.fillStyle = "#8fd0f0"; c.fillRect(14, 14, 228, 152); c.fillStyle = "#2a6aa8"; c.fillRect(14, 110, 228, 56);
+      c.fillStyle = "#fff"; c.beginPath(); c.moveTo(126, 40); c.lineTo(126, 104); c.lineTo(84, 104); c.closePath(); c.fill(); c.beginPath(); c.moveTo(132, 52); c.lineTo(132, 104); c.lineTo(164, 104); c.closePath(); c.fill(); c.fillStyle = "#8a4a2a"; c.fillRect(92, 104, 80, 12); }));
+    plan(1.3, .9, A.mat({ map: voilier }), 0, 1.75, Z0 + .02, 0);
+    // la lampe et la petite table, la plante verte
+    A.ajoute(new THREE.BoxGeometry(.6, .55, .6), A.mat({ color: 0x8a5a3a }), 2.1, .28, Z0 + .5); A.ajoute(new THREE.CylinderGeometry(.03, .03, .8, 8), A.mat({ color: 0xcfcfcf }), 2.1, .95, Z0 + .5);
+    A.ajoute(new THREE.CylinderGeometry(.18, .32, .36, 16, 1, true), A.mat({ color: 0xf4e0a8, emissive: 0x5a4a20, side: THREE.DoubleSide }), 2.1, 1.45, Z0 + .5);
+    A.ajoute(new THREE.CylinderGeometry(.22, .18, .4, 12), A.mat({ color: 0xc86a3a }), -2.3, .2, Z0 + .45); for (let i = 0; i < 6; i++) { const f = A.ajoute(new THREE.SphereGeometry(.22, 8, 6), A.mat({ color: 0x3a8a3a }), -2.3 + Math.sin(i) * .18, .55 + i * .12, Z0 + .45 + Math.cos(i * 1.7) * .15); f.scale.y = 1.6; }
+    // la télé, face au canapé, sur son petit meuble, avec ses oreilles de lapin
+    A.ajoute(new THREE.BoxGeometry(1.4, .5, .55), A.mat({ color: 0x7a5236 }), 0, .25, Z0 + 3.4);
+    const ecran = tex(toile(160, 120, (c) => { const g = c.createLinearGradient(0, 0, 0, 120); g.addColorStop(0, "#5aa0e8"); g.addColorStop(1, "#bfe0ff"); c.fillStyle = g; c.fillRect(0, 0, 160, 120); c.fillStyle = "#fff"; c.globalAlpha = .7; c.beginPath(); c.arc(40, 40, 18, 0, 7); c.arc(62, 36, 22, 0, 7); c.arc(110, 60, 20, 0, 7); c.fill(); }));
+    const tv = A.ajoute(new THREE.BoxGeometry(1.0, .78, .62), [A.mat({ color: 0x6a6a6a }), A.mat({ color: 0x6a6a6a }), A.mat({ color: 0x5a5a5a }), A.mat({ color: 0x5a5a5a }), A.mat({ color: 0x6a6a6a }), A.mat({ map: ecran, emissive: 0x334466 })], 0, .9, Z0 + 3.4); void tv;
+    for (const r of [-.5, .5]) { const a = A.ajoute(new THREE.CylinderGeometry(.012, .012, .7, 5), A.mat({ color: 0x9a9a9a }), Math.sin(r) * .3, 1.55, Z0 + 3.4); a.rotation.z = r; }
+    // l'escalier qui monte, à gauche ; la porte d'entrée, à droite ; l'arche vers la cuisine jaune
+    for (let i = 0; i < 9; i++) A.ajoute(new THREE.BoxGeometry(1.1, .2 + i * .27, .3), A.mat({ color: 0xa87a52 }), X0 + .6, (.2 + i * .27) / 2, Z1 - .4 - i * .3);
+    const porte = tex(toile(128, 256, (c) => { c.fillStyle = "#8c4a28"; c.fillRect(0, 0, 128, 256); c.fillStyle = "#a35a32"; c.fillRect(16, 16, 96, 96); c.fillRect(16, 136, 96, 104); c.fillStyle = "#e8c050"; c.beginPath(); c.arc(104, 132, 6, 0, 7); c.fill(); }));
+    const pe = plan(1.0, 2.1, A.mat({ map: porte }), X1 - .02, 1.05, 2.6, 0); pe.rotation.y = -Math.PI / 2;
+    const cuis = tex(toile(256, 256, (c) => { c.fillStyle = "#f4d86a"; c.fillRect(0, 0, 256, 256); c.fillStyle = "#e0e0e0"; for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) c.fillRect(i * 32, 192 + j * 16, 32, 16); c.fillStyle = "#6ab0e0"; c.fillRect(150, 40, 80, 70); c.fillStyle = "#fff"; c.fillRect(186, 40, 6, 70); c.fillStyle = "#d8d8d0"; c.fillRect(20, 120, 110, 70); }));
+    const ar = plan(1.8, 2.3, A.mat({ map: cuis }), X0 + .02, 1.15, -1.4, 0); ar.rotation.y = Math.PI / 2;
+    for (const s of [-1, 1]) { const m = A.ajoute(new THREE.BoxGeometry(.12, 2.4, .12), A.mat({ color: 0xe8dcc8 }), X0 + .06, 1.2, -1.4 + s * .95); void m; } A.ajoute(new THREE.BoxGeometry(.12, .14, 2.02), A.mat({ color: 0xe8dcc8 }), X0 + .06, 2.37, -1.4);
+    lumiereInt([[0, 2.5, 0, 9], [2.1, 1.5, Z0 + .8, 3]]);
+    L.portails.push({ dans: (x, z) => x > X1 - .9 && Math.abs(z - 2.6) < .6, vers: "spr-rue", arrivee: [0, -11.6], yaw: Math.PI, indice: [X1 - .5, 2.6] });
+    const OB = [[-1.6, 1.6, Z0, Z0 + 1.1], [-.75, .75, Z0 + 3.05, Z0 + 3.75], [1.75, 2.45, Z0, Z0 + .85], [-2.6, -2, Z0, Z0 + .8], [X0, X0 + 1.2, Z1 - 3, Z1]];
+    L.limites = (x, z) => x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .3 && !OB.some(([a, b, c, d]) => x > a - .15 && x < b + .15 && z > c - .15 && z < d + .15);
+    L.depart = [4.4, 2.6]; L.cam = { pos: [4, 2.2, 3.6], vise: [0, 1, -2] };
+  }
+
+  if (id === "spr-kwik") {
+    // ---------- dans le Kwik-E-Mart : le carrelage violet, les rayons de toutes les couleurs, les frigos, le comptoir et la machine à Squishee ----------
+    const X0 = -9, X1 = 9, Z0 = -6, Z1 = 6, HT = 3.2; L.interieur = true; L.boite = [X0, X1, Z0, Z1]; L.zone = [X0, X1, Z0, Z1]; L.plafond = HT - .2;
+    const car = tex(toile(128, 128, (c) => { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { c.fillStyle = (i + j) % 2 ? "#8a76b8" : "#a896d0"; c.fillRect(i * 32, j * 32, 32, 32); } c.strokeStyle = "rgba(0,0,0,.15)"; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(i * 32, 0); c.lineTo(i * 32, 128); c.moveTo(0, i * 32); c.lineTo(128, i * 32); c.stroke(); } }), 9 / 1, 6 / 1);
+    L.sol = plan(X1 - X0, Z1 - Z0, A.mat({ map: car, roughness: .5 }), 0, 0, 0);
+    const murT = tex(toile(256, 256, (c) => { c.fillStyle = "#e4e8ec"; c.fillRect(0, 0, 256, 256); c.fillStyle = "#f0ac36"; c.fillRect(0, 0, 256, 34); c.fillStyle = "#17803a"; c.fillRect(0, 34, 256, 8); }), 6, 1);
+    const mur = A.mat({ map: murT, side: THREE.BackSide });
+    A.ajoute(new THREE.BoxGeometry(X1 - X0, HT, Z1 - Z0), [mur, mur, A.mat({ color: 0xf4f4f2, side: THREE.BackSide }), A.mat({ visible: false }), mur, mur], 0, HT / 2, 0, false);
+    for (const x of [-5, 0, 5]) for (const z of [-3, 1]) A.ajoute(new THREE.BoxGeometry(1.4, .06, .4), A.mat({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: .9 }), x, HT - .05, z, false);   // (les néons)
+    // les rayons : des boîtes et des paquets de toutes les couleurs
+    const rayon = tex(toile(512, 256, (c) => { c.fillStyle = "#e8e4dc"; c.fillRect(0, 0, 512, 256); for (let r = 0; r < 4; r++) { c.fillStyle = "#b8b4ac"; c.fillRect(0, r * 64 + 56, 512, 8);
+        for (let x = 4; x < 508;) { const w = 14 + hasard(r * 100 + x) * 22, h = 26 + hasard(x * 3 + r) * 26, col = ["#d8202a", "#f0c020", "#2a6ad8", "#17a03a", "#f07a1a", "#a02ad8", "#ffffff", "#e84a8a"][Math.floor(hasard(x + r * 7) * 8)];
+          c.fillStyle = col; c.fillRect(x, r * 64 + 56 - h, w - 2, h); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(x + 2, r * 64 + 60 - h, (w - 6) * .4, 6); x += w; } } }));
+    const OB = [];
+    for (const z of [-3.2, 0, 3.2]) { const r = A.ajoute(new THREE.BoxGeometry(7, 1.7, .8), [A.mat({ color: 0xd0ccc4 }), A.mat({ color: 0xd0ccc4 }), A.mat({ color: 0xd0ccc4 }), A.mat({ color: 0xd0ccc4 }), A.mat({ map: rayon }), A.mat({ map: rayon })], 1.5, .85, z); void r; OB.push([-2, 5, z - .4, z + .4]); }
+    // les frigos vitrés, contre le mur du fond (bières, sodas)
+    const frigo = tex(toile(512, 256, (c) => { c.fillStyle = "#5a5f66"; c.fillRect(0, 0, 512, 256); for (let p = 0; p < 4; p++) { c.fillStyle = "#cfe8f2"; c.fillRect(p * 128 + 8, 10, 112, 236);
+        for (let r = 0; r < 5; r++) for (let i = 0; i < 7; i++) { c.fillStyle = [r % 2 ? "#c8102e" : "#2a6ad8", "#d8a02a", "#17a03a"][(i + r + p) % 3]; c.fillRect(p * 128 + 14 + i * 15, 20 + r * 46, 10, 34); }
+        c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(p * 128 + 14, 14, 20, 228); c.fillStyle = "#3a3f46"; c.fillRect(p * 128 + 106, 100, 6, 50); } }));
+    const fg = A.ajoute(new THREE.BoxGeometry(.9, 2.4, 9), [A.mat({ color: 0x5a5f66 }), A.mat({ map: frigo, emissive: 0x223038 }), A.mat({ color: 0x5a5f66 }), A.mat({ color: 0x5a5f66 }), A.mat({ color: 0x5a5f66 }), A.mat({ color: 0x5a5f66 })], X1 - .45, 1.2, 0); void fg; OB.push([X1 - .9, X1, -4.5, 4.5]);
+    // le comptoir près de l'entrée : la caisse, les hot-dogs qui tournent, la machine à Squishee contre le mur
+    A.ajoute(new THREE.BoxGeometry(3, 1.05, 1.1), A.mat({ color: 0xc9a46a }), -5.6, .52, 4.4); A.ajoute(new THREE.BoxGeometry(3.1, .08, 1.2), A.mat({ color: 0x6a4a2a }), -5.6, 1.08, 4.4); OB.push([-7.1, -4.1, 3.85, 6]);
+    A.ajoute(new THREE.BoxGeometry(.5, .3, .4), A.mat({ color: 0x2a2a2a }), -6.4, 1.27, 4.3); A.ajoute(new THREE.BoxGeometry(.4, .14, .3), A.mat({ color: 0x9adf9a, emissive: 0x2a5a2a }), -6.4, 1.47, 4.2);
+    for (let i = 0; i < 5; i++) { const h = A.ajoute(new THREE.CylinderGeometry(.035, .035, .5, 8), A.mat({ color: 0xb8502a }), -5.1, 1.2, 4.15 + i * .09); h.rotation.z = Math.PI / 2; }
+    const sq = tex(toile(128, 256, (c) => { c.fillStyle = "#e8e8e8"; c.fillRect(0, 0, 128, 256); c.fillStyle = "#2a6ad8"; c.fillRect(0, 0, 128, 46); c.fillStyle = "#fff"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText("SQUISHEE", 64, 32);
+      c.fillStyle = "#d8202a"; c.fillRect(12, 60, 48, 110); c.fillStyle = "#2a8ad8"; c.fillRect(68, 60, 48, 110); c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(16, 64, 10, 100); c.fillRect(72, 64, 10, 100); c.fillStyle = "#555"; c.fillRect(28, 186, 16, 20); c.fillRect(84, 186, 16, 20); }));
+    A.ajoute(new THREE.BoxGeometry(1.1, 2, .7), [A.mat({ color: 0xe8e8e8 }), A.mat({ color: 0xe8e8e8 }), A.mat({ color: 0xe8e8e8 }), A.mat({ color: 0xe8e8e8 }), A.mat({ color: 0xe8e8e8 }), A.mat({ map: sq })], -2.6, 1, Z1 - .35).rotation.y = Math.PI; OB.push([-3.2, -2, Z1 - .75, Z1]);
+    // le présentoir à magazines, près de la vitrine
+    const mag = tex(toile(256, 128, (c) => { c.fillStyle = "#8a6a4a"; c.fillRect(0, 0, 256, 128); for (let r = 0; r < 2; r++) for (let i = 0; i < 6; i++) { c.fillStyle = ["#d8202a", "#2a6ad8", "#f0c020", "#17a03a", "#e84a8a", "#fff"][(i + r * 2) % 6]; c.fillRect(6 + i * 42, 6 + r * 62, 36, 54); } }));
+    A.ajoute(new THREE.BoxGeometry(.4, 1.3, 2), [A.mat({ map: mag }), A.mat({ map: mag }), A.mat({ color: 0x8a6a4a }), A.mat({ color: 0x8a6a4a }), A.mat({ color: 0x8a6a4a }), A.mat({ color: 0x8a6a4a })], -7.6, .65, -4.2); OB.push([-7.9, -7.3, -5.3, -3.1]);
+    // la porte vitrée (on ressort par là)
+    const pv = tex(toile(128, 256, (c) => { c.fillStyle = "#5a4a3a"; c.fillRect(0, 0, 128, 256); c.fillStyle = "#a9cfe0"; c.fillRect(8, 8, 52, 240); c.fillRect(68, 8, 52, 240); c.fillStyle = "rgba(255,255,255,.5)"; c.fillRect(14, 14, 12, 120); c.fillRect(74, 14, 12, 120); }));
+    const pp = plan(2, 2.4, A.mat({ map: pv, emissive: 0x334455 }), X0 + .02, 1.2, 0, 0); pp.rotation.y = Math.PI / 2;
+    lumiereInt([[-4, 2.9, 0, 10], [4, 2.9, 0, 10]]);
+    L.portails.push({ dans: (x, z) => x < X0 + .9 && Math.abs(z) < 1, vers: "spr-rue", arrivee: [83.6, 0], yaw: Math.PI / 2, indice: [X0 + .5, 0] });
+    L.limites = (x, z) => x > X0 + .3 && x < X1 - .3 && z > Z0 + .3 && z < Z1 - .3 && !OB.some(([a, b, c, d]) => x > a - .2 && x < b + .2 && z > c - .2 && z < d + .2);
+    L.depart = [-7.4, 0]; L.cam = { pos: [-8.2, 2.4, -3.5], vise: [2, 1, 1.5] };
+  }
+}
+
 function construireSantaCarla(A, L, scene) {
   L.lb = true;
   L.portails = L.portails || []; L.portails.push({ dans: (x, z) => Math.hypot(x + 6, z - 11) < .9, vers: "rue", arrivee: [19.1, 5.2], yaw: Math.PI, indice: [-6, 11] });   // (le cercle du retour : sur la plage, près de la pancarte ; on revient dans la rue, devant le Video Futur)
@@ -7577,6 +7824,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "mess") construireMess(A, L, scene);
   if (id === "appart") construireAppart(A, L, scene);
   if (id === "santacarla") construireSantaCarla(A, L, scene);
+  if (/^spr-/.test(id)) construireSpringfield(A, L, scene, id);
   if (id === "etage") {
     /* l'étage est construit dans un repère retourné (miroir avant-arrière) : en montant, le couloir à traverser est à gauche, comme dans le vrai bâtiment.
        Tout ce qui parle de positions passe par ce miroir (z du monde = 0,5 − z du plan) */
@@ -10862,7 +11110,8 @@ const FILMS_VF = [
   { cle: "bttf", lieu: "bttf-cour", titre: "Retour vers le futur", annee: 1985 },
   { cle: "lb", lieu: "santacarla", titre: "Génération perdue", annee: 1987 },
   { cle: "re", lieu: "z-grande", titre: "Resident Evil", annee: 1996, plusieurs: true },
-  { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 }];
+  { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 },
+  { cle: "spr", lieu: "spr-rue", titre: "Les Simpson", annee: 1989 }];
 const ENTREE_APO = { arrivee: [-6.4, -38.5], yaw: -Math.PI / 2 };   // (comme si l'on passait la porte des encombrants de la grande cour)
 const louesVF = f => Object.entries((M && M.qui) || {}).filter(([l]) => f.plusieurs ? estApo(l) : universDe(l) === universDe(f.lieu)).flatMap(([, n]) => n);
 function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
@@ -10917,6 +11166,7 @@ function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOcc
     else if (f.cle === "gb") { titreGB(); musiqueGB(true, "gb-arrivee"); voile("background:#fff;opacity:1", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
     else if (f.cle === "bttf") { musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (f.cle === "sh") cineRadio();
+    else if (f.cle === "spr") changerLieu("spr-rue", [2, -4.8], 0);
     else if (f.cle === "re") { const go = () => { M.apoIntro = true; changerLieu("z-grande", ENTREE_APO.arrivee, ENTREE_APO.yaw, true); };
       if (M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (M && ok) go(); }); else go(); } }, 2600); }
 function cineAfficheLB() { if (!M || M.cine) return; if (universOccupe("santacarla")) { refusUnivers("santacarla"); return; } let parti = false;
@@ -11187,7 +11437,7 @@ function construireScene(id) {
     let dome = null; if (!estApo(id) && !estSH(id)) { dome = new THREE.Mesh(new THREE.SphereGeometry(200, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ map: texNuages(), transparent: true, depthWrite: false, fog: false, side: THREE.BackSide }));
       dome.frustumCulled = false; dome.renderOrder = -1; dome.matrixAutoUpdate = false; dome.onBeforeRender = (r, s2, cam) => { dome.matrixWorld.makeTranslation(cam.position.x, cam.position.y - 2, cam.position.z); }; scene.add(dome); }   // (les nuages suivent la caméra : toujours au loin)
     L.setNuit = (n) => {
-      if (L.toujoursNuit) n = true;   /* (Santa Carla : toujours la nuit) */
+      if (L.toujoursNuit) n = true; if (L.toujoursJour) n = false;   /* (Springfield : toujours le grand ciel bleu) */   /* (Santa Carla : toujours la nuit) */
       L.nuit = n;
       scene.background = L.cielPerso || (n ? cielNuit : cielJour); scene.fog.color.setHex(L.brumePerso || (n ? 0x0c1530 : 0xcfe6f7));   /* (Santa Carla : son ciel de crépuscule) */
       hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
@@ -12415,7 +12665,7 @@ function allerVers(x, z, envoyer, y = null) {
   if (envoyer && moi.info.slow) envoyerWS({ t: "slow_fin" });
 }
 /* les univers (Santa Carla, Silent Hill, S.O.S. Fantômes, Retour vers le futur) : une seule personne à la fois ; l'apocalypse de Resident Evil, elle, se joue à plusieurs */
-const universDe = id => id === "santacarla" ? "lb" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;
+const universDe = id => id === "santacarla" ? "lb" : /^spr-/.test(id || "") ? "spr" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;
 const NOM_UNIVERS = { lb: "Santa Carla", sh: "Silent Hill", gb: "S.O.S. Fantômes", bttf: "Hill Valley" };
 function universOccupe(id) { const u = universDe(id); if (!u || !M || universDe(M.lieu) === u) return false; return Object.entries(M.comptes || {}).some(([l, n]) => n > 0 && universDe(l) === u); }
 function refusUnivers(id) { if (M && M.cine && M.cine.nettoyer) { try { M.cine.nettoyer(); } catch (e) {} } if (M && M.lbNoir) { M.lbNoir.remove(); M.lbNoir = null; } if (M && M.cine) finCine(); bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[universDe(id)]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
