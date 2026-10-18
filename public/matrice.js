@@ -4856,23 +4856,106 @@ function construireSantaCarla(A, L, scene) {
     const sp2 = new THREE.SpotLight(0xfff0d8, 60, 18, .35, .5, 1.4); sp2.position.set(0, 8, -3); sp2.target = sax; g.add(sp2);
     const fumeeC = tex(toile(64, 64, (x) => { const gr = x.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
     for (let i = 0; i < 10; i++) { const fm = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumeeC, transparent: true, opacity: .16, depthWrite: false, color: 0xc8b8e0 })); fm.position.set(-6 + i * 1.3, 1.9 + hasard(i) * .6, 2 + hasard(i * 3) * 3); fm.scale.setScalar(2.6); g.add(fm); }
-    // la foule devant la scène : une vingtaine de baigneurs et de baigneuses, en maillot de bain et en short, de dos, qui sautent au rythme (les bras en l'air quand ils décollent)
-    const baigneur = (i, haut) => toile(128, 256, (x) => { const PEAU = ["#f0c8a0", "#d8a070", "#a86a40", "#8a5030", "#f4d4b4", "#e0b088"], peau = PEAU[i % 6], femme = i % 2 === 1;
-      const CH = ["#2a1a10", "#e8c870", "#7a4a20", "#1a1a1a", "#c87a3a", "#f0e0b0"], ch = CH[(i * 5) % 6], MA = ["#ff3ab8", "#3ad8ff", "#ffd23a", "#7aff5a", "#ff6a2a", "#8a5aff", "#ff2a4a", "#2a6aff"], ma = MA[(i * 3) % 8];
-      x.fillStyle = peau; x.beginPath(); x.roundRect(46, 150, 15, 96, 7); x.roundRect(67, 150, 15, 96, 7); x.fill();   // (les jambes)
-      x.beginPath(); x.moveTo(femme ? 44 : 38, 66); x.quadraticCurveTo(64, 58, femme ? 84 : 90, 66); x.lineTo(femme ? 80 : 84, 150); x.lineTo(femme ? 48 : 44, 150); x.closePath(); x.fill();   // (le dos nu)
-      for (const [sx, bx] of [[-1, femme ? 40 : 34], [1, femme ? 88 : 94]]) { x.save(); x.translate(bx, 70); x.rotate(haut ? sx * 2.7 : sx * .12); x.beginPath(); x.roundRect(-6, 0, 12, 62, 6); x.fill(); x.beginPath(); x.arc(0, 64, 7, 0, 7); x.fill(); x.restore(); }   // (les bras, levés quand il saute)
-      x.strokeStyle = "rgba(120,70,40,.35)"; x.lineWidth = 2; x.beginPath(); x.moveTo(64, 74); x.lineTo(64, 140); x.stroke();   // (la colonne)
-      if (femme) { x.fillStyle = ma; x.fillRect(44, 92, 40, 7); x.strokeStyle = ma; x.lineWidth = 3; x.beginPath(); x.moveTo(52, 92); x.lineTo(58, 60); x.moveTo(76, 92); x.lineTo(70, 60); x.stroke();   // (le haut du bikini, ses bretelles)
-        x.beginPath(); x.moveTo(46, 140); x.lineTo(82, 140); x.lineTo(78, 162); x.quadraticCurveTo(64, 170, 50, 162); x.closePath(); x.fill(); }   // (le bas)
-      else { x.fillStyle = ma; x.beginPath(); x.roundRect(42, 136, 44, 52, 4); x.fill(); x.fillStyle = "rgba(255,255,255,.35)"; for (let k = 0; k < 4; k++) x.fillRect(42, 146 + k * 10, 44, 3); x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(63, 160, 2, 28); }   // (le short de bain à rayures)
-      x.fillStyle = peau; x.fillRect(58, 44, 12, 18); x.beginPath(); x.arc(64, 34, 15, 0, 7); x.fill();   // (la nuque, la tête de dos)
-      x.fillStyle = ch; x.beginPath(); x.arc(64, 30, 16, Math.PI * .95, Math.PI * 2.05); x.fill(); if (femme) { x.beginPath(); x.moveTo(48, 30); x.quadraticCurveTo(46, 74, 54, 96); x.lineTo(74, 96); x.quadraticCurveTo(82, 74, 80, 30); x.fill(); } else x.fillRect(49, 28, 30, 12);   // (les cheveux : longs pour elles)
-      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(52, 72, 4, 60); });
-    const foule = [];
-    for (let i = 0; i < 20; i++) { const fx = CONCERT.x - 8 + (i % 7) * 2.6 + (hasard(i * 1.7) - .5) * 1.2, fz = CONCERT.z - 2.2 - Math.floor(i / 7) * 1.9 - hasard(i * 2.9) * .8;
-      const tx = [tex(baigneur(i, false)), tex(baigneur(i, true))], mat = new THREE.MeshStandardMaterial({ map: tx[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .8, emissive: 0xffffff, emissiveMap: tx[0], emissiveIntensity: .25 });
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(.86, 1.72), mat); m.position.set(fx, .86, fz); m.rotation.y = Math.PI + (hasard(i) - .5) * .3; scene.add(m); foule.push({ m, mat, tx, ph: hasard(i * 5) * 6, v: 1.8 + hasard(i * 7) * .5 }); }
+    // la foule devant la scène : une centaine de spectateurs, tous différents (peau, cheveux, maillots, shorts, t-shirts des années 80), vus de dos ;
+    // chacun a sa façon de vivre le concert — il saute, se balance, lève les bras, le poing — au rythme de la musique, éclairé par les projecteurs
+    const NP = 32, FR = 4, atlas = document.createElement("canvas"); atlas.width = 2048; atlas.height = 2048; const ax = atlas.getContext("2d");
+    const PEAUX = ["#f2cfae", "#e8b896", "#d69a72", "#b87850", "#8e5636", "#6a3c22", "#f6dcc4", "#c88a60"];
+    const CHEV = ["#1a120c", "#3a2414", "#6a4022", "#a8743a", "#d8b060", "#ecd8a0", "#8a2a1a", "#2a2a2a"];
+    const VIF = ["#ff2a8a", "#2ad8ff", "#ffd21a", "#5aff4a", "#ff6a1a", "#9a4aff", "#ff2a3a", "#1a6aff", "#ffffff", "#1a1a1a"];
+    const gens = []; for (let k = 0; k < NP; k++) { const r = n => hasard(k * 17.3 + n * 3.7), f = k % 2 === 1;
+      gens.push({ f, peau: PEAUX[Math.floor(r(1) * 8)], chev: CHEV[Math.floor(r(2) * 8)], coif: f ? ["long", "queue", "boucles", "long", "boucles", "court"][Math.floor(r(3) * 6)] : ["court", "mulet", "casquette", "boucles", "court", "long"][Math.floor(r(3) * 6)],
+        haut: f ? ["bikini", "bikini", "debardeur", "tshirt", "bikini"][Math.floor(r(4) * 5)] : ["nu", "nu", "tshirt", "debardeur", "chemise", "nu"][Math.floor(r(4) * 6)], cHaut: VIF[Math.floor(r(5) * 10)],
+        bas: f ? ["bikini", "jean", "bikini", "short"][Math.floor(r(6) * 4)] : ["short", "short", "jean", "short"][Math.floor(r(6) * 4)], cBas: VIF[Math.floor(r(7) * 10)], rayures: r(8) > .5,
+        pieds: r(9) > .55 ? "basket" : "nu", large: f ? .92 + r(10) * .12 : 1 + r(10) * .16, cheveuxLg: r(11) }); }
+    const ombrer = (x, x0, x1, c, k = .32) => { const g = x.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, `rgba(0,0,0,${k})`); g.addColorStop(.35, "rgba(0,0,0,0)"); g.addColorStop(.7, "rgba(0,0,0,0)"); g.addColorStop(1, `rgba(0,0,0,${k * 1.1})`); return g; };
+    const bras = (x, P, sx, sy, a1, a2, vet) => { const L1 = 33, L2 = 31, ex = sx + Math.sin(a1) * L1 * Math.sign(sx), ey = sy + Math.cos(a1) * L1, hx = ex + Math.sin(a2) * L2 * Math.sign(sx), hy = ey + Math.cos(a2) * L2;
+      x.lineCap = "round"; x.lineJoin = "round";
+      for (const [w, c] of [[11.5, "rgba(0,0,0,.35)"], [10, P.peau]]) { x.strokeStyle = c; x.lineWidth = w; x.beginPath(); x.moveTo(sx, sy); x.lineTo(ex, ey); x.stroke(); x.lineWidth = w - 2; x.beginPath(); x.moveTo(ex, ey); x.lineTo(hx, hy); x.stroke(); }
+      x.strokeStyle = "rgba(255,240,220,.22)"; x.lineWidth = 2.5; x.beginPath(); x.moveTo(sx - Math.sign(sx) * 2, sy + 2); x.lineTo(ex - Math.sign(sx) * 2, ey); x.stroke();   // (le reflet de la peau)
+      if (vet) { x.strokeStyle = vet; x.lineWidth = 12.5; x.beginPath(); x.moveTo(sx, sy); x.lineTo(sx + (ex - sx) * .42, sy + (ey - sy) * .42); x.stroke(); }   // (la manche)
+      x.fillStyle = P.peau; x.beginPath(); x.arc(hx, hy, 5.2, 0, 7); x.fill(); x.fillStyle = "rgba(0,0,0,.22)"; x.beginPath(); x.arc(hx + 1, hy + 1.5, 3.2, 0, 7); x.fill(); };
+    const perso = (x, P, pose) => { const saut = pose === 3, sw = 26 * P.large * (P.f ? .86 : 1), ww = 17 * P.large * (P.f ? .86 : 1), hw = 20 * P.large * (P.f ? 1.12 : 1), dos = P.haut === "nu" || P.haut === "bikini";
+      // les jambes (pliées pendant le saut), les pieds
+      const genou = saut ? -66 : -50, pied = saut ? -26 : 0;
+      for (const s of [-1, 1]) { const hx = s * hw * .5, kx = s * (hw * .5 + (saut ? 4 : 1)), fx = s * (hw * .48 + (saut ? 2 : 0));
+        x.lineCap = "round"; x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 15; x.beginPath(); x.moveTo(hx, -100); x.lineTo(kx, genou); x.lineTo(fx, pied - 6); x.stroke();
+        x.strokeStyle = P.peau; x.lineWidth = 13; x.beginPath(); x.moveTo(hx, -100); x.lineTo(kx, genou); x.stroke(); x.lineWidth = 10; x.beginPath(); x.moveTo(kx, genou); x.lineTo(fx, pied - 6); x.stroke();
+        x.fillStyle = "rgba(0,0,0,.18)"; x.beginPath(); x.ellipse(kx, genou + 14, 4, 9, 0, 0, 7); x.fill();   // (le creux du mollet)
+        if (P.pieds === "basket") { x.fillStyle = "#f2f2ee"; x.beginPath(); x.roundRect(fx - 7, pied - 14, 14, 15, 4); x.fill(); x.fillStyle = "#c81e1e"; x.fillRect(fx - 7, pied - 9, 14, 2); x.fillStyle = "#9a9a96"; x.fillRect(fx - 7, pied - 1, 14, 2); }
+        else { x.fillStyle = P.peau; x.beginPath(); x.ellipse(fx, pied - 3, 5, 4, 0, 0, 7); x.fill(); } }
+      // le bas : le short de bain (rayé ou non), le bas de bikini, le short en jean effrangé
+      if (P.bas === "bikini") { x.fillStyle = P.cBas; x.beginPath(); x.moveTo(-hw, -106); x.lineTo(hw, -106); x.quadraticCurveTo(hw * .7, -90, 2, -86); x.lineTo(-2, -86); x.quadraticCurveTo(-hw * .7, -90, -hw, -106); x.fill(); }
+      else { const bas = P.bas === "jean" ? "#4a6a9a" : P.cBas, lg = P.bas === "jean" ? -82 : -70; x.fillStyle = bas; x.beginPath(); x.moveTo(-hw - 1, -108); x.lineTo(hw + 1, -108); x.lineTo(hw + 3, lg); x.lineTo(2, lg + 2); x.lineTo(1, -92); x.lineTo(-1, -92); x.lineTo(-2, lg + 2); x.lineTo(-hw - 3, lg); x.fill();
+        if (P.rayures && P.bas === "short") { x.fillStyle = "rgba(255,255,255,.45)"; x.fillRect(-hw - 2, -100, 3, 30); x.fillRect(hw - 1, -100, 3, 30); }
+        if (P.bas === "jean") { x.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < 14; i++) x.fillRect(-hw - 2 + i * (hw * 2 + 4) / 14, lg - 1, 1.5, 4); x.fillStyle = "rgba(20,30,60,.45)"; x.fillRect(-hw + 4, -100, 10, 8); x.fillRect(hw - 14, -100, 10, 8); }   // (l'effrangé, les poches)
+        x.fillStyle = ombrer(x, -hw, hw); x.fillRect(-hw - 3, -108, hw * 2 + 6, 40); x.fillStyle = "rgba(0,0,0,.3)"; x.fillRect(-hw - 1, -108, hw * 2 + 2, 3); }
+      // le dos : la peau, l'ombre de la colonne, les omoplates ; ou le haut (t-shirt, débardeur, chemise)
+      const torse = () => { x.beginPath(); x.moveTo(-sw, -184); x.quadraticCurveTo(-sw - 2, -150, -ww, -122); x.quadraticCurveTo(-hw - 1, -112, -hw, -104); x.lineTo(hw, -104); x.quadraticCurveTo(hw + 1, -112, ww, -122); x.quadraticCurveTo(sw + 2, -150, sw, -184); x.quadraticCurveTo(0, -192, -sw, -184); };
+      x.fillStyle = P.peau; torse(); x.fill(); x.fillStyle = ombrer(x, -sw, sw); torse(); x.fill();
+      x.strokeStyle = "rgba(90,50,30,.32)"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, -184); x.quadraticCurveTo(1, -145, 0, -108); x.stroke();   // (la colonne)
+      x.fillStyle = "rgba(0,0,0,.12)"; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 11, -162, 8, 12, s * .25, 0, 7); x.fill(); }   // (les omoplates)
+      x.fillStyle = "rgba(255,240,220,.14)"; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 13, -172, 7, 5, 0, 0, 7); x.fill(); }   // (la peau qui luit)
+      if (P.haut === "bikini") { x.fillStyle = P.cHaut; x.fillRect(-sw + 2, -164, sw * 2 - 4, 6); x.beginPath(); x.ellipse(0, -161, 5, 4, 0, 0, 7); x.fill(); x.strokeStyle = P.cHaut; x.lineWidth = 2; for (const s of [-1, 1]) { x.beginPath(); x.moveTo(s * 2, -161); x.lineTo(s * 5, -150); x.stroke(); x.beginPath(); x.moveTo(s * (sw - 8), -164); x.lineTo(s * 6, -192); x.stroke(); } }
+      else if (P.haut !== "nu") { const c = P.haut === "chemise" ? "#2a8a7a" : P.cHaut; x.save(); torse(); x.clip(); x.fillStyle = c;
+        if (P.haut === "debardeur") { x.beginPath(); x.moveTo(-sw + 9, -186); x.lineTo(-sw + 15, -186); x.quadraticCurveTo(0, -170, sw - 15, -186); x.lineTo(sw - 9, -186); x.quadraticCurveTo(sw, -150, sw + 2, -100); x.lineTo(-sw - 2, -100); x.quadraticCurveTo(-sw, -150, -sw + 9, -186); x.fill(); }
+        else x.fillRect(-sw - 3, -196, sw * 2 + 6, 98);
+        if (P.haut === "chemise") { for (let i = 0; i < 30; i++) { x.fillStyle = ["#f4e6c8", "#e8602a", "#f2c83a"][i % 3]; x.beginPath(); x.ellipse(-sw + hasard(i * 3.3) * sw * 2, -190 + hasard(i * 7.1) * 90, 4, 2.5, i, 0, 7); x.fill(); } }
+        if (P.haut === "tshirt" && P.cheveuxLg > .5) { x.fillStyle = c === "#ffffff" ? "#1a1a1a" : "#ffffff"; x.font = "bold 10px Arial"; x.textAlign = "center"; x.fillText(["SANTA CARLA", "ROCK ON", "1987", "SURF"][Math.floor(P.cheveuxLg * 4)], 0, -152); }   // (le t-shirt imprimé)
+        x.fillStyle = ombrer(x, -sw, sw, null, .38); x.fillRect(-sw - 3, -196, sw * 2 + 6, 98); x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 1.5; for (const [a, b, c2, d] of [[-14, -150, -6, -112], [12, -146, 6, -116], [-4, -176, 3, -160]]) { x.beginPath(); x.moveTo(a, b); x.lineTo(c2, d); x.stroke(); } x.restore(); }   // (les plis)
+      // la nuque, la tête de dos, les oreilles, les cheveux
+      x.fillStyle = P.peau; x.fillRect(-6, -200, 12, 16); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(-6, -192, 12, 3);
+      x.fillStyle = P.peau; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 13, -211, 3, 5, 0, 0, 7); x.fill(); } x.beginPath(); x.ellipse(0, -213, 13, 15, 0, 0, 7); x.fill();
+      const ch = P.chev, gl = (x0, y0, x1, y1) => { const g = x.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, ch); g.addColorStop(.5, ch); g.addColorStop(1, "rgba(0,0,0,.85)"); return g; };
+      x.fillStyle = ch;
+      if (P.coif === "long") { x.beginPath(); x.ellipse(0, -216, 15, 15, 0, Math.PI, 0); x.lineTo(16, -180 + P.cheveuxLg * 18); for (let i = 0; i <= 8; i++) x.lineTo(16 - i * 4, -176 + P.cheveuxLg * 18 + (i % 2) * 5); x.lineTo(-16, -204); x.fill(); }
+      else if (P.coif === "queue") { x.beginPath(); x.ellipse(0, -214, 14, 15, 0, Math.PI * 1.02, Math.PI * 1.98 + Math.PI); x.fill(); x.beginPath(); x.moveTo(-4, -206); x.quadraticCurveTo(-8, -188, -2, -172); x.lineTo(3, -172); x.quadraticCurveTo(7, -190, 4, -206); x.fill(); x.fillStyle = P.cHaut; x.fillRect(-4, -208, 8, 3); }
+      else if (P.coif === "boucles") { for (let i = 0; i < 26; i++) { const a = Math.PI * .8 + i / 25 * Math.PI * 1.4, r = 16 + (i % 3) * 3; x.beginPath(); x.arc(Math.cos(a) * r * .95, -214 + Math.sin(a) * r * .9 + (Math.sin(a) > 0 ? 6 : 0), 6.5, 0, 7); x.fill(); } x.beginPath(); x.ellipse(0, -213, 17, 17, 0, 0, 7); x.fill(); }
+      else if (P.coif === "mulet") { x.beginPath(); x.ellipse(0, -216, 14, 13, 0, Math.PI, 0); x.lineTo(13, -196); x.quadraticCurveTo(10, -178, 0, -176); x.quadraticCurveTo(-10, -178, -13, -196); x.fill(); }
+      else { x.beginPath(); x.ellipse(0, -215, 14, 14, 0, Math.PI * .93, Math.PI * 2.07); x.fill(); }
+      x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 1; for (let i = 0; i < 7; i++) { x.beginPath(); x.moveTo(-9 + i * 3, -226); x.quadraticCurveTo(-10 + i * 3.3, -212, -9 + i * 3, -200); x.stroke(); }   // (les mèches)
+      x.fillStyle = gl(0, -228, 0, -190); x.globalAlpha = .35; x.beginPath(); x.ellipse(0, -212, 16, 16, 0, 0, 7); x.fill(); x.globalAlpha = 1;
+      if (P.coif === "casquette") { x.fillStyle = P.cHaut; x.beginPath(); x.ellipse(0, -219, 15, 11, 0, Math.PI, 0); x.fill(); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(-5, -212, 10, 3); }
+      // les bras, selon le mouvement : 0 balancés, 1 les deux en l'air, 2 le poing levé, 3 le saut (les bras au ciel)
+      const A = [[[.28, .45], [.3, .5]], [[2.75, 2.95], [2.75, 2.95]], [[3.0, 3.1], [.18, .6]], [[2.5, 2.7], [2.5, 2.7]]][pose], man = P.haut === "tshirt" || P.haut === "chemise" ? (P.haut === "chemise" ? "#2a8a7a" : P.cHaut) : null;
+      for (const [i, s] of [[0, -1], [1, 1]]) bras(x, P, s * (sw - 4), -180, A[i][0], A[i][1], man); };
+    gens.forEach((P, k) => { for (let f = 0; f < FR; f++) { const idx = k * FR + f, cx = (idx % 16) * 128, cy = Math.floor(idx / 16) * 256; ax.save(); ax.beginPath(); ax.rect(cx, cy, 128, 256); ax.clip(); ax.translate(cx + 64, cy + 250); const sc = .98 + hasard(k * 5.5) * .06; ax.scale(sc, sc);
+      perso(ax, P, f);
+      ax.globalCompositeOperation = "source-atop"; const g = ax.createLinearGradient(0, -240, 0, 0); g.addColorStop(0, "rgba(255,225,240,.2)"); g.addColorStop(.5, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,10,.32)"); ax.fillStyle = g; ax.fillRect(-64, -250, 128, 256); ax.restore(); } });   // (éclairés d'en haut par les projecteurs)
+    const tAt = new THREE.CanvasTexture(atlas); tAt.colorSpace = THREE.SRGBColorSpace; tAt.anisotropy = 4;
+    // leur place : serrés devant la scène, plus clairsemés vers l'arrière ; jamais l'un dans l'autre
+    const foule = [], N = 104; let essai = 0;
+    while (foule.length < N && essai < 6000) { essai++; const d = Math.pow(hasard(essai * 1.31), .8) * 15, lx = (hasard(essai * 2.77) - .5) * (16 + d * .9), x0 = CONCERT.x + lx, z0 = CONCERT.z - 1.9 - d;
+      if (foule.some(q => Math.hypot(q.x - x0, q.z - z0) < .62)) continue; const k = foule.length % NP, tp = hasard(essai * 4.4);
+      foule.push({ x: x0, z: z0, k, s: .9 + hasard(essai * 6.6) * .2, type: tp < .38 ? "saut" : tp < .66 ? "balance" : tp < .84 ? "bras" : "poing", ph: (hasard(essai * 8.8) - .5) * .35, m: { position: new THREE.Vector3(x0, 0, z0) }, lum: 0 }); }
+    const gF = new THREE.BufferGeometry(), nF = foule.length, pF = new Float32Array(nF * 12), uF = new Float32Array(nF * 8), cF = new Float32Array(nF * 12), iF = [];
+    for (let i = 0; i < nF; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+    gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setAttribute("color", new THREE.BufferAttribute(cF, 3)); gF.setIndex(iF);
+    const mFoule = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tAt, vertexColors: true, alphaTest: .5, side: THREE.DoubleSide })); mFoule.frustumCulled = false; scene.add(mFoule);
+    // leurs ombres au sol (elles rétrécissent quand ils sautent)
+    const ombreT = tex(toile(64, 32, (x) => { const g = x.createRadialGradient(32, 16, 1, 32, 16, 30); g.addColorStop(0, "rgba(0,0,0,.55)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 64, 64); x.restore(); }));
+    const gO = new THREE.BufferGeometry(), pO = new Float32Array(nF * 12), uO = new Float32Array(nF * 8); for (let i = 0; i < nF; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
+    gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF);
+    const mOmbres = new THREE.Mesh(gO, new THREE.MeshBasicMaterial({ map: ombreT, transparent: true, depthWrite: false })); mOmbres.frustumCulled = false; scene.add(mOmbres);
+    // à chaque image : le rythme (environ 118 battements par minute), chacun selon sa façon de danser ; tourné vers nous (on le voit de dos : il regarde la scène) ; la couleur des projecteurs qui balaie la foule
+    const BPM = 118, eps = .5 / 2048;
+    CONCERT.majFoule = (t, cam) => { const s = t / 1000, beat = s * BPM / 60;
+      for (let i = 0; i < nF; i++) { const q = foule[i], f0 = beat + q.ph, fr = f0 - Math.floor(f0); let y = 0, tilt = 0, pose = 0;
+        if (q.type === "saut") { const h = Math.sin(Math.PI * fr); y = Math.max(0, h) * .38 * q.s; pose = h > .25 ? 3 : 1; }
+        else if (q.type === "balance") { tilt = Math.sin(Math.PI * f0) * .07; y = Math.abs(Math.sin(Math.PI * f0)) * .05; pose = Math.floor(f0 / 8) % 3 === 2 ? 1 : 0; }
+        else if (q.type === "bras") { tilt = Math.sin(Math.PI * f0 * .5) * .06; y = Math.abs(Math.sin(Math.PI * f0)) * .07; pose = 1; }
+        else { pose = fr < .5 ? 2 : 0; y = Math.abs(Math.sin(Math.PI * f0)) * .06; tilt = Math.sin(Math.PI * f0 * .5) * .03; }
+        let dx = cam.x - q.x, dz = cam.z - q.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; const rx = dz, rz = -dx;   // (tourné vers la caméra)
+        const H = 1.78 * q.s, W = H / 2, ct = Math.cos(tilt), st = Math.sin(tilt), o = i * 12;
+        const coin = (j, u, v) => { const lx = u * ct - v * st, ly = u * st + v * ct; pF[o + j * 3] = q.x + rx * lx; pF[o + j * 3 + 1] = y + ly; pF[o + j * 3 + 2] = q.z + rz * lx; };
+        coin(0, -W / 2, 0); coin(1, W / 2, 0); coin(2, W / 2, H); coin(3, -W / 2, H);
+        const idx = q.k * FR + pose, u0 = (idx % 16) / 16 + eps, u1 = (idx % 16 + 1) / 16 - eps, v1 = 1 - Math.floor(idx / 16) / 8 - eps, v0 = 1 - (Math.floor(idx / 16) + 1) / 8 + eps;
+        uF.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
+        // la lumière : les couleurs des projecteurs qui passent sur la foule, plus fortes près de la scène ; de temps en temps un flash blanc
+        const pr = Math.max(0, 1 - (CONCERT.z - q.z) / 20), a = s * .9 + q.x * .25, flash = Math.max(0, Math.sin(s * 9.3) - .985) * 30;
+        const r = .42 + pr * .35 + Math.max(0, Math.sin(a)) * .45 * pr + flash, g = .36 + pr * .25 + Math.max(0, Math.sin(a + 2.1)) * .3 * pr + flash, b = .48 + pr * .35 + Math.max(0, Math.sin(a + 4.2)) * .5 * pr + flash;
+        for (let j = 0; j < 4; j++) cF.set([Math.min(1.4, r), Math.min(1.4, g), Math.min(1.4, b)], o + j * 3);
+        const so = .5 * (1 - y), oo = i * 12; pO.set([q.x - so, .04, q.z - so * .6, q.x + so, .04, q.z - so * .6, q.x + so, .04, q.z + so * .6, q.x - so, .04, q.z + so * .6], oo); }
+      gF.attributes.position.needsUpdate = gF.attributes.uv.needsUpdate = gF.attributes.color.needsUpdate = gO.attributes.position.needsUpdate = true; };
     OBST.push([CONCERT.x - 9.3, CONCERT.x + 9.3, CONCERT.z - .3, CONCERT.z + 6.6]);
     Object.assign(CONCERT, { sax, ecranV, faisceaux, foule, ls }); }
   { const av = L.anim; L.anim = (t) => { av && av(t); const s = t / 1000, C = CONCERT;
@@ -4881,7 +4964,7 @@ function construireSantaCarla(A, L, scene) {
       { const q = M.gens.get(-870); if (q) { q.vol = 1.45 + Math.abs(Math.sin(s * 2.2 * Math.PI)) * .06; q.g.position.x = C.x + Math.sin(s * 1.1 * Math.PI) * .25; } }
       C.faisceaux.forEach((q, i) => { q.f.rotation.z = Math.sin(s * .7 + q.ph) * .5; q.f.rotation.x = -.35 + Math.cos(s * .5 + q.ph) * .3; });
       C.ls.forEach((l, i) => { l.intensity = 22 + Math.sin(s * 4.4 + i * 2) * 10; });
-      C.foule.forEach(q => { const h = Math.max(0, Math.sin(s * q.v * Math.PI + q.ph)); q.m.position.y = .86 + h * .45; const tm = q.tx[h > .35 ? 1 : 0]; if (q.mat.map !== tm) { q.mat.map = q.mat.emissiveMap = tm; q.mat.needsUpdate = true; } });   // (ils sautent, les bras en l'air)
+      if (C.majFoule) C.majFoule(t, M.camera.position);   // (la foule danse)
       // la vidéo de l'écran géant : sa musique, plus forte quand on s'approche de la scène (sans le son tant que le téléphone ne l'autorise pas)
       { const V = C.ecranV, p = moiP(); if (!C.garde) C.garde = setInterval(() => { if (!M || M.L !== L) { V.pause(); clearInterval(C.garde); } }, 600);
         if (V.paused && !C.essai) { C.essai = true; V.play().catch(() => {}).finally(() => { setTimeout(() => { C.essai = false; }, 2000); }); }
