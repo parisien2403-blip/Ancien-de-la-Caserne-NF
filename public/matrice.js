@@ -4513,6 +4513,7 @@ function enfiladeChene(g) {
    et les quatre vampires de la bande de David, qu'il faut affronter comme dans le film : l'eau bénite pour les affaiblir, le pieu quand ils sont à terre ===================== */
 /* les personnages de Génération perdue (81 à 87) : leur tenue par défaut, et leur tête découpée ; l'inventaire de l'administrateur a le dernier mot */
 const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lbedgar", "#5a6a3a", "#4a4a3a", "#f2f2f2", "edgar"], 83: ["lbalan", "#8e8e8a", "#4a6a9a", "#f2f2f2", "alan"],
+  89: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david-vamp"], 90: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul-vamp"], 91: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko-vamp"], 92: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne-vamp"],
   88: ["lbtim", "#d89a68", "#141416", "#1a1a1a", "tim"], 84: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david"], 85: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul"], 86: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko"], 87: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne"] };
 function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true, ...(id >= 81 && id <= 83 ? { k: 1.3, dy: 6 } : {}) }, tete_v: null,
@@ -5148,21 +5149,23 @@ function construireSantaCarla(A, L, scene) {
     const d = voile("display:grid;place-items:center", 2000); d.innerHTML = '<div style="font:900 clamp(40px,11vw,96px) Georgia,serif;color:#e01818;letter-spacing:.18em;text-shadow:0 0 6px #000,0 0 26px rgba(255,0,0,.8);animation:lbCombat 2s ease-out forwards">COMBAT</div>'; try { sonBruit(.5, 300, .5); } catch (e) {} };
   // le visage se transforme : le visage humain se fond dans le visage de vampire (les yeux, les crocs), un grondement, une lueur ; puis il lance son défi
   const DEFI = { 1: "Wouhou ! Venez, les gamins… je vous attends !", 2: "Allez, venez jouer… si vous l'osez !", 3: "Grrraaah… Venez !", 0: "Venez… Je vous attends." };
-  const transformer = (v, fin) => { const p = v.p, k = v.k, nom = ["david", "paul", "marko", "dwayne"][k], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {}, url = `images/santacarla/${nom}-vamp.webp`;
+  const transformer = (v, fin) => { const p = v.p, k = v.k, vamp = habillerLB({ numero: p.info.numero, nom: p.info.nom, initiales: "" }, 89 + k), url = vamp.teteUrl;   // (le personnage « … vampire » de l'inventaire : sa tête, sa tenue, sa taille)
     const cam = M.camera, s0 = p.g.position, H = tailleBonhomme() * hauteurDe(p), q = moiP() || V3(s0.x, 0, s0.z + 3); let dx = q.x - s0.x, dz = q.z - s0.z, l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     let fait = false; const finir = () => { if (fait) return; fait = true; if (M && M.cine === C) { bulle(null); finCine(); } fin && fin(); };
+    const devenir = () => { const nom = p.info.nom; Object.assign(p.info, vamp, { nom }); if (p.corps) { const H2 = tailleBonhomme(); p.corps.scale.set(H2 * .476 * 1.6 * hauteurDe(p), H2 * hauteurDe(p), 1); } };
     const t0 = performance.now(); let ov = null, change = false, dit = false;
-    chargerTete(0, null, url).then(img => { if (!img || !M || !p.corps) return; const tx = tex(dessinerBonhomme({ ...p.info, large: true }, img));
+    chargerTete(0, null, url).then(img => { if (!img || !M || !p.corps) return; const tx = tex(dessinerBonhomme({ ...p.info, ...vamp, nom: p.info.nom, large: true }, img));
       ov = new THREE.Mesh(p.corps.geometry, new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); ov.position.z = .002; ov.renderOrder = 3; p.corps.add(ov); });
     const C = { maj: now => { const u = (now - t0) / 1000;
-        // la caméra s'approche lentement de son visage
-        const z = Math.min(1, u / 2.4), dd = 2.6 - z * 1.1; cam.position.set(s0.x + dx * dd, s0.y + H * .86, s0.z + dz * dd); cam.lookAt(s0.x, s0.y + H * .8, s0.z);
-        if (u > .9 && u < 1.0) cam.position.x += (Math.random() - .5) * .04;
-        if (ov) { const a = Math.min(1, Math.max(0, (u - 1) / 1.4)); ov.material.opacity = a * a * (3 - 2 * a); }   // (le visage change, en fondu)
-        if (u > 1 && !change) { change = true; try { sonBruit(1.3, 160, .55); } catch (e) {} voile("background:radial-gradient(circle,rgba(255,180,60,.0) 30%,rgba(120,0,0,.45) 100%);transition:opacity 1.2s", 900); }
-        if (u > 2.6 && !dit) { dit = true; p.info.teteUrl = url; p.info.tete_v = null; dessinerCorps(p).then(() => { if (ov && ov.parent) ov.parent.remove(ov); }); bulle(`<b style="color:#ff5a4a">${esc(nomDe(p.info.numero))}</b> : ${esc(DEFI[k])}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
-        if (u > 5) finir(); }, fov: [42, 58] };
-    M.passerBtn = boutonPasser(() => { if (!dit) { p.info.teteUrl = url; p.info.tete_v = null; dessinerCorps(p); if (ov && ov.parent) ov.parent.remove(ov); } finir(); }); M.cine = C; };
+        // le plan sur lui : d'abord en pied, la caméra tourne doucement autour de lui et s'approche jusqu'au gros plan sur son visage, le temps de la transformation
+        const z = Math.min(1, u / 3.2), e = z * z * (3 - 2 * z), dd = 4.2 - e * 2.2, tour = (1 - e) * .5, hx = dx * Math.cos(tour) - dz * Math.sin(tour), hz = dx * Math.sin(tour) + dz * Math.cos(tour);
+        cam.position.set(s0.x + hx * dd, s0.y + H * (.6 + e * .25), s0.z + hz * dd); cam.lookAt(s0.x, s0.y + H * (.52 + e * .26), s0.z);
+        if (u > 2.4 && u < 2.75) { cam.position.x += (Math.random() - .5) * .05; cam.position.y += (Math.random() - .5) * .03; }   // (le tremblement, au moment où il se transforme)
+        if (ov) { const a = Math.min(1, Math.max(0, (u - 2.4) / 1.5)); ov.material.opacity = a * a * (3 - 2 * a); }   // (le visage change, en fondu)
+        if (u > 2.4 && !change) { change = true; try { sonBruit(1.3, 160, .55); } catch (e) {} voile("background:radial-gradient(circle,rgba(255,180,60,.0) 30%,rgba(120,0,0,.45) 100%);transition:opacity 1.2s", 900); }
+        if (u > 4.1 && !dit) { dit = true; devenir(); dessinerCorps(p).then(() => { if (ov && ov.parent) ov.parent.remove(ov); }); bulle(`<b style="color:#ff5a4a">${esc(nomDe(p.info.numero))}</b> : ${esc(DEFI[k])}`, 2600); if (M.bulleEl) { M.bulleEl.style.top = "auto"; M.bulleEl.style.bottom = "13%"; } }
+        if (u > 6.6) finir(); }, fov: [40, 56] };
+    M.passerBtn = boutonPasser(() => { if (!dit) { dit = true; devenir(); dessinerCorps(p); if (ov && ov.parent) ov.parent.remove(ov); } finir(); }); M.cine = C; };
   const dialogueAvant = (v) => { const frere = comps.find(c => c.id !== 81), autre = comps.find(c => c !== frere), nums = { V: v.p.info.numero, M: M.moiNum, F: frere ? frere.num : M.moiNum, A: autre ? autre.num : (frere ? frere.num : M.moiNum) };
     dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (!M || M.L !== L || v.etat !== "parle") return; transformer(v, () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
       bandeauCombat(); v.p.info.brasHaut = true; } }); }); };
