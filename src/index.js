@@ -46,6 +46,7 @@ const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue
 // l'Almanach des sports : les endroits où il peut traîner (jamais deux fois de suite au même)
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
+const universDe = id => id === "santacarla" ? "lb" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;   // (les univers : une personne à la fois)
 const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, VIDEO_MAX = 150 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
@@ -436,6 +437,8 @@ export class Compteur extends DurableObject {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
     const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
+    // les univers : une seule personne à la fois (l'apocalypse de Resident Evil se joue à plusieurs) ; quelqu'un y est déjà : on refuse
+    if (m.t === "entrer" && universDe(m.lieu) && universDe(a.lieu) !== universDe(m.lieu) && this.ctx.getWebSockets().some(w => { const b = w.deserializeAttachment(); return w !== ws && b && b.numero !== a.numero && universDe(b.lieu) === universDe(m.lieu); })) { ws.send(JSON.stringify({ t: "occupe", lieu: m.lieu })); return; }
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "appart" || a.admin || APPART_INVITES.includes(Number(a.numero))) && (m.lieu !== "santacarla" || a.admin)) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
       const ancien = a.lieu;
       this.finirSlow(ws, a);

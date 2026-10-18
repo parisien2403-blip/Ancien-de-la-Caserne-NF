@@ -5008,7 +5008,7 @@ function construireSantaCarla(A, L, scene) {
   const barreVie = () => { const cv = document.createElement("canvas"); cv.width = 160; cv.height = 40; const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(1.7, .42, 1); sp.position.y = 2.6; sp.renderOrder = 5; return { cv, t, sp }; };
   const majBarre = (v) => { const { cv, t } = v.barre, x = cv.getContext("2d"), u = Math.max(0, v.pv) / v.pvMax; x.clearRect(0, 0, 160, 40);
-    x.font = "bold 15px Arial"; x.textAlign = "center"; x.fillStyle = "#fff"; x.strokeStyle = "#000"; x.lineWidth = 3; x.strokeText(v.nom, 80, 14); x.fillText(v.nom, 80, 14);
+    
     x.fillStyle = "rgba(40,0,0,.85)"; x.fillRect(8, 20, 144, 14); x.fillStyle = u > .5 ? "#d81e2a" : "#ff8a2a"; x.fillRect(10, 22, 140 * u, 10); x.strokeStyle = "#fff"; x.lineWidth = 2; x.strokeRect(8, 20, 144, 14); t.needsUpdate = true; };
   // la bière : elle apparaît non loin quand on a été mordu plus d'une fois ; on va la boire pour reprendre des forces
   const poserBiere = () => { const p = moiP(); if (!p) return; let x = p.x + 4, z = p.z;
@@ -5026,22 +5026,29 @@ function construireSantaCarla(A, L, scene) {
   const finale = () => { if (fini) return; fini = true; phase = "fin"; musiqueLB("fin"); if (hud) hud.style.display = "none"; if (biere) { scene.remove(biere.g); biere = null; }
     const moi = M.lbPerso, c0 = comps[0], c1 = comps[1], nomDe = id => (((M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}).nom || ADOS[id - 81].nom).split(" ")[0];   // (le prénom)
     const n0 = c0 && c0.num, n1 = c1 && c1.num;
-    setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu David !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
+    setTimeout(() => { if (M && M.L === L) dialogue([[M.moiNum, "On l'a eu… On a eu leur chef !"], [n0, REPL[c0 ? c0.id : 82].fete], [n1, `${nomDe(moi)}, t'as été génial. Vraiment.`],
       [M.moiNum, "Tu crois qu'il en reste d'autres, à Santa Carla ?"], [n0, "Il y en a toujours d'autres… Mais pas ce soir."], [n1, "Allez, on rentre. Il va bientôt faire jour."]], () => { if (M && M.L === L) envolee(); }); }, 1500); };
   const envolee = () => { const gens = [M.gens.get(M.moiNum), ...comps.map(c => c.p)].filter(Boolean); if (!gens.length) return;
+    musiqueLB("envol");
     const ctr = V3(0, 0, 0); gens.forEach(q => ctr.add(q.g.position)); ctr.multiplyScalar(1 / gens.length);
-    const cam = M.camera, dep = cam.position.clone(), t0 = performance.now(), D = 12000; let fini2 = false, titre = null;
-    // (devant les ados, à hauteur de visage ; puis on s'élève, on recule, le regard monte vers le ciel)
-    const P0 = V3(ctr.x, 1.7, ctr.z + 4.2), P1 = V3(ctr.x, 34, ctr.z + 26), V0 = V3(ctr.x, 1.4, ctr.z), V1 = V3(ctr.x, 70, ctr.z - 60);
-    const fin = () => { if (fini2 || !M) return; fini2 = true; const v = voile("background:#000;opacity:0;transition:opacity 1.4s", 4200); requestAnimationFrame(() => { v.style.opacity = 1; });
-      setTimeout(() => { if (titre) titre.remove(); if (!M) return; finCine(); musiqueLB(null); changerLieu("mess", [AFFICHE_GB.x, 11.05], Math.PI); }, 1600); };
+    const cam = M.camera, t0 = performance.now(), D = 24000; let fini2 = false, titre = null;
+    // (devant les ados, à hauteur de visage ; puis on s'élève en tournant au-dessus de la jetée, la grande roue, le concert ; on finit très haut, la baie entière sous nous)
+    const CP = new THREE.CatmullRomCurve3([V3(ctr.x, 1.7, ctr.z + 4.2), V3(ctr.x + 3, 5, ctr.z + 9), V3(ctr.x + 14, 14, ctr.z + 14), V3(26, 22, 20), V3(34, 28, 46), V3(30, 32, 70), V3(22, 34, 86)], false, "centripetal");
+    const CC = new THREE.CatmullRomCurve3([V3(ctr.x, 1.4, ctr.z), V3(ctr.x, 1.6, ctr.z), V3(ctr.x - 2, 2, ctr.z - 4), V3(4, 4, -8), V3(2, 3, -8), V3(0, 2, -6), V3(0, 1, -4)], false, "centripetal");
+    const lisse = u => u * u * u * (u * (u * 6 - 15) + 10);
+    const fin = () => { if (fini2 || !M) return; fini2 = true; const v = document.createElement("div"); v.style.cssText = "position:absolute;inset:0;z-index:20;pointer-events:none;background:#000;opacity:0;transition:opacity 1.6s ease"; M.ctx.conteneur.appendChild(v); requestAnimationFrame(() => { v.style.opacity = 1; });
+      // le noir : la musique continue cinq secondes, puis s'éteint doucement ; dans le noir, on rentre en 1990, dans la cour d'honneur ; le noir se lève, la musique de la fête reprend sa place
+      setTimeout(() => { if (titre) titre.remove(); if (M) { M.passerBtn && M.passerBtn.remove(); M.passerBtn = null; } }, 1700);
+      setTimeout(() => { const a = M && M.lbMus && M.lbMus.a; if (!a) return; const v0 = a.volume, t1 = performance.now(); const f = setInterval(() => { const u = Math.min(1, (performance.now() - t1) / 3500); a.volume = v0 * (1 - u) * (1 - u); if (u >= 1) { clearInterval(f); a.pause(); } }, 40); }, 1600 + 5000);
+      setTimeout(() => { if (!M) return; if (M.lbMus) { try { M.lbMus.a.pause(); } catch (e) {} M.lbMus = null; } finCine(); changerLieu("grande");
+        setTimeout(() => { v.style.transition = "opacity 2.2s ease"; v.style.opacity = 0; setTimeout(() => v.remove(), 2400); }, 1200); }, 1600 + 5000 + 3700); };
     M.passerBtn = boutonPasser(fin);
-    M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-        cam.position.lerpVectors(P0, P1, e); cam.lookAt(V3(0, 0, 0).lerpVectors(V0, V1, Math.min(1, e * 1.15)));
-        if (u > .5 && !titre) { titre = document.createElement("div"); titre.style.cssText = "position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;pointer-events:none;opacity:0;transition:opacity 2.4s;background:radial-gradient(ellipse at center,rgba(0,0,0,.55) 0%,rgba(0,0,0,.25) 45%,rgba(0,0,0,0) 75%)";
+    M.cine = { maj: now => { const u = Math.min(1, (now - t0) / D), e = lisse(u);
+        cam.position.copy(CP.getPointAt(e)); cam.lookAt(CC.getPointAt(e)); cam.rotateZ(Math.sin(e * Math.PI) * .06 * (1 - e));
+        if (u > .62 && !titre) { titre = document.createElement("div"); titre.style.cssText = "position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%;pointer-events:none;opacity:0;transition:opacity 3s;background:radial-gradient(ellipse at center,rgba(0,0,0,.5) 0%,rgba(0,0,0,.2) 45%,rgba(0,0,0,0) 75%)";
           titre.innerHTML = '<img src="images/santacarla/titre.webp" alt="The Lost Boys" style="width:72%;max-width:760px;filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 14px rgba(0,0,0,.9))"><img src="images/santacarla/fin.webp" alt="Fin" style="width:20%;max-width:200px;filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 12px rgba(0,0,0,.9))">';
           M.ctx.conteneur.appendChild(titre); requestAnimationFrame(() => { titre.style.opacity = 1; }); }
-        if (now - t0 > D + 5500) fin(); }, fov: [55, 70] }; };
+        if (now - t0 > D + 6000) fin(); }, fov: [55, 70] }; };
   L.etatLB = () => ({ vies, morsures, biere: !!biere, phase }); L.finLB = () => finale(); L.mordreLB = () => mordu({});   // (pour les essais)
   const creerVampire = (k) => { const a = Math.random() * 6.28, p0 = moiP() || V3(0, 0, 0), P = (M.ctx.pnjTrio && M.ctx.pnjTrio(84 + k)) || {};
     const p = ajouterAncien({ ...habillerLB({ numero: -(860 + k), nom: P.nom || NOMS[k], initiales: "" }, 84 + k), pnj: true, x: p0.x + Math.cos(a) * 30, z: p0.z + Math.sin(a) * 30 }); if (!p) return null;
@@ -5049,18 +5056,19 @@ function construireSantaCarla(A, L, scene) {
     majBarre(v); vamps.push(v); return v; };
   // les vampires viennent un par un : Paul, Marko, Dwayne, puis David ; entre deux, on cherche — mais c'est surtout eux qui nous trouvent
   const ORDRE = [1, 2, 3, 0];
-  const AVANT = {   // (le dialogue avant chaque combat : « V » le vampire, « M » nous, 0 et 1 les deux autres ados)
-    1: [["V", "Hé hé ! Regardez-moi ça… des gamins avec des pistolets à eau !"], [0, "Rigole tant que tu peux, Paul. C'est de l'eau bénite."], ["V", "Wouhou ! Ce soir, on fait la fête !"], ["M", "La fête est finie."]],
-    2: [["V", "Vous avez eu Paul ? Ha ha ha… Il était pénible, de toute façon."], ["M", "T'es le prochain, Marko."], [1, "Regarde ses yeux… Il a déjà mangé ce soir."], ["V", "Viens me chercher, petit !"]],
-    3: [["V", "Grrr…"], [1, "Dwayne. Celui-là ne parle pas… mais il est rapide. Attention !"], ["V", "Vous allez payer pour mes frères."], ["M", "Qu'il vienne !"]],
-    0: [["V", "Alors c'est vous… Vous m'avez pris mes frères."], ["M", "C'étaient pas tes frères. C'étaient des monstres."], ["V", "Tu ne comprends pas. On ne vieillit jamais… On ne meurt jamais."],
-      [0, "Ce soir, si. Tu meurs, David."], ["V", "Ha… Mon père n'aimera pas ça."], [1, "Le concert va bientôt finir. C'est maintenant ou jamais !"], ["V", "Alors venez… Montrez-moi ce que vous valez."]] };
+  const AVANT = {   // (le dialogue avant chaque combat : « V » le vampire, « M » nous, « F » l'un des frères Frog (grossiers quand il s'agit des vampires), « A » un autre ado ; les ados ne connaissent pas leurs noms)
+    1: [["V", "Hé hé ! Regardez-moi ça… des gamins avec des pistolets à eau !"], ["F", "Rigole, sale suceur de sang. C'est de l'eau bénite, connard."], ["V", "Wouhou ! Ce soir, on fait la fête !"], ["M", "La fête est finie."]],
+    2: [["V", "Vous avez tué Paul… Ha ha ha… Il était pénible, de toute façon."], ["M", "T'es le prochain."], ["F", "Regarde ses yeux, à cette ordure… Il a déjà bouffé quelqu'un ce soir."], ["V", "Viens me chercher, petit !"]],
+    3: [["V", "Grrr…"], ["F", "Celui-là ne cause pas… Un vrai chien enragé. Attention, il est rapide !"], ["V", "Paul… Marko… Vous allez payer pour mes frères."], ["M", "Qu'il vienne !"]],
+    0: [["V", "Alors c'est vous… Vous avez tué Paul, Marko et Dwayne."], ["M", "C'étaient pas des frères. C'étaient des monstres."], ["V", "Tu ne comprends rien. Cette baie était à nous bien avant ta naissance… et elle le sera encore longtemps après."],
+      ["F", "Ta gueule, sale parasite. Ce soir, tu crèves."], ["V", "Tuez-moi si vous voulez. Santa Carla appartiendra toujours à ceux de mon espèce."], ["V", "Nous sommes au-dessus de vous. Pour nous, les hommes ne sont que du bétail."],
+      ["A", "Le concert va bientôt finir. C'est maintenant ou jamais !"], ["V", "Alors venez… Montrez-moi ce que vous valez."]] };
   const APRES = ["Un de moins. Il en reste encore… Ouvrez l'œil.", "Ils vont venir nous chercher. Restons ensemble.", "Le concert continue… On n'a pas beaucoup de temps.", "Je les sens… Ils nous observent, quelque part au-dessus de la jetée."];
   const prochain = () => { if (!M || M.L !== L || fini) return; const k = file.shift(); if (k == null) { finale(); return; }
     if (k === 0) { phase = "david"; musiqueLB("david"); } courant = creerVampire(k); majHud(); };
   const bandeauCombat = () => { if (!document.getElementById("styleCombatLB")) { const st = document.createElement("style"); st.id = "styleCombatLB"; st.textContent = "@keyframes lbCombat{0%{opacity:0;transform:scale(1.8);letter-spacing:.6em}18%{opacity:1;transform:scale(1);letter-spacing:.18em}75%{opacity:1}100%{opacity:0;transform:scale(.96)}}"; document.head.appendChild(st); }
     const d = voile("display:grid;place-items:center", 2000); d.innerHTML = '<div style="font:900 clamp(40px,11vw,96px) Georgia,serif;color:#e01818;letter-spacing:.18em;text-shadow:0 0 6px #000,0 0 26px rgba(255,0,0,.8);animation:lbCombat 2s ease-out forwards">COMBAT</div>'; try { sonBruit(.5, 300, .5); } catch (e) {} };
-  const dialogueAvant = (v) => { const nums = { V: v.p.info.numero, M: M.moiNum, 0: comps[0] && comps[0].num, 1: comps[1] && comps[1].num };
+  const dialogueAvant = (v) => { const frere = comps.find(c => c.id !== 81), autre = comps.find(c => c !== frere), nums = { V: v.p.info.numero, M: M.moiNum, F: frere ? frere.num : M.moiNum, A: autre ? autre.num : (frere ? frere.num : M.moiNum) };
     dialogue(AVANT[v.k].map(([qui, txt]) => [nums[qui], txt]), () => { if (M && M.L === L && v.etat === "parle") { v.etat = "remonte"; v.tEtat = performance.now() + 1500; phase = v.k === 0 ? "david" : "vague1";
       bandeauCombat(); } }); };
   const demarrer = () => { for (const v of vamps) retirerAncien(v.p.info.numero); vamps.length = 0; vies = 100; morsures = 0; if (biere) { scene.remove(biere.g); biere = null; } fini = false; phase = "chasse"; file = ORDRE.slice(); majHud();
@@ -5149,10 +5157,10 @@ function construireSantaCarla(A, L, scene) {
       tir: ["Ça marche ! Ça marche vraiment !", "Prends ça, sale vampire !", "Retourne dans ta crypte !"], pieu: ["Beurk… c'est dégoûtant !", "Un de moins !"], mordu: "Aïe ! Il m'a mordu !",
       encourage: ["Attention, derrière toi !", "Il revient ! Il pique sur nous !", "Vise-le quand il descend !"], fete: "On a réussi ! Santa Carla est à nous !" },
     82: { intro: "Edgar Frog. Mon frère et moi, on chasse les vampires. Ça fait des années qu'on les traque, ici.", go: "Vérité, justice, et l'American way. Vampires : c'est fini.",
-      tir: ["Mange de l'eau bénite, suceur de sang !", "Dans le mille !", "Ça, c'est pour Santa Carla !"], pieu: ["Un pieu en plein cœur. Le seul moyen.", "Et de un !"], mordu: "Il m'a eu… mais pas pour longtemps !",
-      encourage: ["Le pieu, vite, avant qu'il se relève !", "Ils sont là-haut ! Regarde en l'air !", "Ne leur tourne jamais le dos !"], fete: "Les Frog Brothers ont encore frappé." },
+      tir: ["Mange de l'eau bénite, sale suceur de sang !", "Crève, enfoiré !", "Bouffe ça, ordure !"], pieu: ["Un pieu en plein cœur, sale vermine. Le seul moyen.", "Retourne en enfer, enfoiré !"], mordu: "Il m'a eu… mais pas pour longtemps !",
+      encourage: ["Le pieu, vite, avant que cette ordure se relève !", "Ces saloperies sont là-haut ! Regarde en l'air !", "Ne tourne jamais le dos à ces enfoirés !"], fete: "Les Frog Brothers ont encore frappé." },
     83: { intro: "On a l'eau bénite et les pieux. Il faut juste qu'ils viennent assez près.", go: "Remplis les pistolets d'eau bénite. On y va !",
-      tir: ["Touché !", "Ça fume, regarde-moi ça !", "Et vlan !"], pieu: ["Bien joué ! Il crame !", "Il est cuit !"], mordu: "Ouille ! Ça pique !",
+      tir: ["Dans ta gueule, suceur de sang !", "Ça fume, regarde-moi cette ordure !", "Et vlan, enfoiré !"], pieu: ["Crame, saloperie !", "Il est cuit, le parasite !"], mordu: "Ouille ! Ça pique !",
       encourage: ["Encore un effort !", "Ils tournent autour de nous… prêts ?", "L'eau bénite, ça les ralentit !"], fete: "Génial ! On est des chasseurs de vampires !" } };
   const REPL_V = { 84: { arrive: "Tu ne vieilliras jamais. Tu ne mourras jamais… Mais il faudra te nourrir.", touche: ["Aaargh !", "Tu vas le regretter, gamin !"], mort: "Nooon !" },
     85: { arrive: "Hé ! On fait la fête ce soir ! Wouhou !", touche: ["Ça brûle ! Ça brûle !", "Aïe, aïe, aïe !"], mort: "Aaaah !" },
@@ -5216,7 +5224,7 @@ function construireSantaCarla(A, L, scene) {
     majAdo(); vieComps(now, p); pieuAuto(now, p); boireBiere(now, p); voirSang(now, p);
     if (phase === "intro" && !adosIntro.length) [81, 82, 83].forEach((id, i) => { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {}, q = ajouterAncien({ ...habillerLB({ numero: -(880 + i), nom: P.nom || ADOS[i].nom, initiales: "" }, id), pnj: true, arme: true, armeEau: true, x: (i - 1) * 1.7, z: .3 - Math.abs(i - 1) * .5 }); if (q) adosIntro.push(q); });   // (les trois ados, devant l'arche : la caméra du survol arrive sur eux)
     if (phase === "intro" && !M.cine && !M.lbIntro) { if (!choixT) choixT = now + 1800; if (now > choixT) { phase = "choix"; choisirAdo(); } }
-    if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus que David… Il va venir lui-même. Il est furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
+    if (courant && courant.etat === "mort" && !fini) { courant = null; if (file.length) { phase = "chasse"; const c = hasardDe(comps.length ? comps : [{ num: M.moiNum }]); setTimeout(() => parle(c.num, file[0] === 0 ? "Plus qu'un… Le chef. Il va venir lui-même, et il sera furieux." : hasardDe(APRES)), 2200); setTimeout(prochain, 12000 + Math.random() * 8000); } else finale(); }
     // les vampires : ils tournent autour de nous en volant, piquent pour mordre, remontent ; à terre, ils se relèvent si on tarde
     for (const v of vamps) { const g = v.g, dt = 1 / 60;
       if (v.etat === "approche") { if (!v.pose) { const cam = M.camera.getWorldDirection(V3(0, 0, 0)); cam.y = 0; if (cam.lengthSq() < 1e-4) cam.set(0, 0, -1); cam.normalize(); v.pose = [cam.x, cam.z]; }   // (il fond sur nous du ciel, et se pose à cinq pas, devant nous : face à l'écran)
@@ -10514,7 +10522,7 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.add(new THREE.Mesh(cadre.geometry, cadre.material)); const afL = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .25, roughness: .5 })); afL.position.z = .017; gL.add(afL);
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
-const MUSIQUES_LB = { intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
+const MUSIQUES_LB = { intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
 const CONCERT_LB = { v: null }, now0lb = () => performance.now();   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
   const fondu = (a, de, vers, ms, fin) => { const t0 = performance.now(); clearInterval(a.fondu); a.fondu = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, de + (vers - de) * u)); if (u >= 1) { clearInterval(a.fondu); fin && fin(); } }, 40); };
@@ -10523,9 +10531,9 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
   M.lbMus = null; M.lbSilence = performance.now() + attente; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
   const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
-  let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess"))) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
+  let arrive = false; const garde = setInterval(() => { if (M && M.lieu === "santacarla") arrive = true; if (!M || (M.lieu !== "santacarla" && (arrive || M.lieu !== "mess") && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
-function cineAfficheLB() { if (!M || M.cine) return; let parti = false;
+function cineAfficheLB() { if (!M || M.cine) return; if (universOccupe("santacarla")) { refusUnivers("santacarla"); return; } let parti = false;
   if (!document.getElementById("styleLB2")) { const st = document.createElement("style"); st.id = "styleLB2";
     st.textContent = "@keyframes lbNoir{from{opacity:0}to{opacity:1}}@keyframes lbTitre2{0%{opacity:0;transform:scale(1.1);filter:blur(6px)}30%{opacity:1;transform:scale(1);filter:blur(0)}72%{opacity:1;transform:scale(.98);filter:blur(0)}100%{opacity:0;transform:scale(.96);filter:blur(2px)}}"; document.head.appendChild(st); }
   // l'écran devient noir (et le reste jusqu'à ce que Santa Carla soit prête : le chargement ne se voit pas) ; le titre paraît, puis s'efface en douceur sur le noir
@@ -10551,7 +10559,7 @@ function cineSurvolSC() { if (!M) return; const D = 30000; let fini = false, t0 
       if (!leve && now > t0 - 200 && noir) { leve = true; noir.style.animation = "none"; noir.style.opacity = "1"; requestAnimationFrame(() => requestAnimationFrame(() => { noir.style.opacity = "0"; })); setTimeout(() => noir.remove(), 2000); }   // (le noir se lève doucement sur la baie)
       if (u >= 1) fin(); }, fov: [55, 70] }; }
 // on touche « As-tu peur des fantômes ? » : le grand titre, puis l'Ecto-1 entre dans la cour d'honneur
-function cineAfficheGB() { if (!M || M.cine) return; const A = AFFICHE_GB; let fini = false;
+function cineAfficheGB() { if (!M || M.cine) return; if (universOccupe("gb-cour")) { refusUnivers("gb-cour"); return; } const A = AFFICHE_GB; let fini = false;
   const fin = () => { if (fini || !M) return; fini = true; voile("background:#fff;opacity:1", 1400); finCine(); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); };
   M.passerBtn = boutonPasser(fin); titreGB(); musiqueGB(true, "gb-arrivee");
   const t0 = performance.now(); M.cine = { maj: now => { const u = Math.min(1, (now - t0) / 4000); M.camera.position.set(A.x + 1.25 - u * .35, A.y + .35, A.z + 2.2 - u * .7); M.camera.lookAt(A.x, A.y, A.z);   /* (de côté : notre bonhomme ne cache pas l'affiche) */ if (now - t0 > 6600) fin(); } }; }
@@ -11914,8 +11922,14 @@ function allerVers(x, z, envoyer, y = null) {
   if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); descendreTabouret(moi); viser(moi, px, pz); }   // (on descend d'abord du tabouret, côté salle, puis on y va)
   if (envoyer && moi.info.slow) envoyerWS({ t: "slow_fin" });
 }
+/* les univers (Santa Carla, Silent Hill, S.O.S. Fantômes, Retour vers le futur) : une seule personne à la fois ; l'apocalypse de Resident Evil, elle, se joue à plusieurs */
+const universDe = id => id === "santacarla" ? "lb" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;
+const NOM_UNIVERS = { lb: "Santa Carla", sh: "Silent Hill", gb: "S.O.S. Fantômes", bttf: "Hill Valley" };
+function universOccupe(id) { const u = universDe(id); if (!u || !M || universDe(M.lieu) === u) return false; return Object.entries(M.comptes || {}).some(([l, n]) => n > 0 && universDe(l) === u); }
+function refusUnivers(id) { if (M && M.cine) finCine(); bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[universDe(id)]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
 function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return; const lieuAvant = M.lieu;
+  if (universOccupe(id)) { refusUnivers(id); return; }
   if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.evac = false; }
   M.fumiObj = null; M.fumiL = null;
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
@@ -13698,7 +13712,8 @@ function connecter() {
     else if (m.t === "dit") { dire(m.numero, m.texte); M.fil.push(m); if (M.fil.length > 20) M.fil.shift(); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "efface") { M.fil = m.tout ? [] : M.fil.filter(d => d.id !== m.id); ctx.surFil && ctx.surFil(M.fil); }
     else if (m.t === "avatar") { const p = M.gens.get(m.p.numero); if (p) { const pos = p.g.position.clone(), q = ajouterAncien({ ...p.info, ...m.p }); if (q) q.g.position.copy(pos); } }
-    else if (m.t === "comptes") ctx.surComptes && ctx.surComptes(m.lieux);
+    else if (m.t === "comptes") { M.comptes = m.lieux; ctx.surComptes && ctx.surComptes(m.lieux); }
+    else if (m.t === "occupe") { const u = universDe(m.lieu); if (universDe(M.lieu) === u) { if (M.cine) finCine(); M.comptes = { ...(M.comptes || {}), [m.lieu]: 1 }; changerLieu(u === "lb" ? "mess" : "grande"); } bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[u]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
     else if (m.t === "fumee") { M.L && M.L.fumee && M.L.fumee(); }
     else if (m.t === "lasers") { M.lasers = !!m.on; M.L && M.L.setLasers && M.L.setLasers(M.lasers); ctx.surLasers && ctx.surLasers(M.lasers); }
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
