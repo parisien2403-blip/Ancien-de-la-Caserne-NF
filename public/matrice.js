@@ -11163,7 +11163,7 @@ function animerApo(t, dt) {
   objectifApo(); if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
   objetsApo(); fumiApo(moi, performance.now()); introApo(moi); survolApo(moi, performance.now());
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now()); horlogeApo(performance.now()); gendarmesApo(performance.now()); animerRevenants(performance.now());
+  animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now(); choisirZ3(now);
