@@ -3941,6 +3941,10 @@ function construireEtage(A, L, scene) {
   // la caméra reste dans la cage ou dans le couloir, à hauteur du bonhomme
   L.contraindreCam = (pos, moi) => { const mx = moi.g.position.x, ax = Math.abs(mx), s = Math.sign(mx) || 1, py = moi.g.position.y;
     pos.y = Math.min(pos.y, py + 2.3);
+    // (dans la cage d'escalier : une vue en coupe — tout ce qui est au-dessus de la tête est masqué, la volée du dessus ne cache plus son bonhomme)
+    if (ax > CX0 - .4) pos.y = Math.max(pos.y, py + 1.2);   // (jamais sous le plancher de l'étage où l'on arrive)
+    if (M.dernPy != null && Math.abs(py - M.dernPy) > .4) M.camVise = null; M.dernPy = py;   // (on change d'étage : la caméra y saute d'un coup, sans traverser la dalle)
+    if (M.rendu) { if (ax > CX0 - .4) { const pl = M.coupe || (M.coupe = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)); pl.constant = py + 2.0; M.rendu.clippingPlanes = [pl]; } else if (M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = []; }
     if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, py + .4); }
     else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx > 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
     return true; };
@@ -11959,7 +11963,7 @@ function placerCamera(net) {
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
   // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
-  if (M.premiere && moi) { moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
+  if (M.premiere && moi) { if (M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = []; moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
     M.camera.position.set(p.x, yeux, p.z); M.camera.fov = portrait ? 84 : 72; M.camera.updateProjectionMatrix();
     M.camera.lookAt(p.x - Math.sin(M.fpYaw || 0) * cy, yeux + Math.sin(M.fpPitch || 0), p.z - Math.cos(M.fpYaw || 0) * cy); M.camVise = null; laserFP(); return; }
   laserFP(true);
@@ -11987,7 +11991,8 @@ function placerCamera(net) {
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   { const avant = pos.clone(); if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) { const h = moi.g.position, ax = avant.x - h.x, az = avant.z - h.z, la = Math.hypot(ax, az);
     // (ramenée de force dans un passage, la caméra passait devant son bonhomme — un bond en face : elle reste derrière lui, tout près, au-dessus de sa tête)
-    if (la > .3 && (pos.x - h.x) * ax + (pos.z - h.z) * az < .25 * la * la) { pos.x = h.x + ax / la * .35; pos.z = h.z + az / la * .35; M.L.contraindreCam(pos, moi); } } }
+    if (la > .3 && (pos.x - h.x) * ax + (pos.z - h.z) * az < 0) { const y0 = pos.y;   // (seulement si elle passait devant : on la place derrière, le plus loin possible)
+      for (const r of [2.4, 1.8, 1.3, .9, .5]) { pos.set(h.x + ax / la * r, y0, h.z + az / la * r); M.L.contraindreCam(pos, moi); if ((pos.x - h.x) * ax + (pos.z - h.z) * az > .4 * r * la) break; } } } }
   // dehors, sous un toit (un passage couvert, un préau, une voûte) : la caméra reste dessous, même dézoomée (elle passait par-dessus le toit)
   if (moi && !M.L.interieur) { const now = performance.now(); if (!M.toitT || now - M.toitT > 300 || M.toitL !== M.L) { M.toitT = now; M.toitL = M.L; M.toitY = null;
       M.rayToit = M.rayToit || new THREE.Raycaster(); M.rayToit.camera = M.camera; M.rayToit.set(new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.8, moi.g.position.z), new THREE.Vector3(0, 1, 0)); M.rayToit.far = 6;
@@ -13273,6 +13278,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
+  if (M.rendu && M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = [];   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
