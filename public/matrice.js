@@ -10730,7 +10730,7 @@ const ZTYPES = [
   // les héros revenus d'entre les morts (types 5 à 10, dans l'ordre des héros 21 à 26) : l'équipier tombé revient en zombie ; trois balles au moins, et il ne revient pas une deuxième fois
   ...[["rebecca", 21], ["leon", 22], ["barry", 23], ["jill", 24], ["wesker", 25], ["chris", 26]].map(([cle, h], i) => ({ revenant: h, tete: `images/re/z-${cle}-tete.png`, id: 48 + i, son: i % 2 ? "sons/zombie3.mp3" : "sons/zombie1.mp3", v: .95, hp: 3, zombifie: true, def: null })) ];
 const tyRevenant = h => 5 + (h - 21);
-const ZNOMBRE = { grande: [12, 3], rue: [10, 2], fetes: [7, 1], etage: [13, 0], mess: [12, 1] };   // [zombies, chiens]
+const ZNOMBRE = { grande: [12, 0], rue: [10, 0], fetes: [7, 0], etage: [13, 0], mess: [12, 0] };   // [zombies, chiens] (plus de chiens, ni de Nemesis)
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
 // l'image du chien : celle d'origine, ou celle que l'administrateur a choisie (rechargée quand il la change)
@@ -10825,7 +10825,7 @@ function blesserZ(z, dx, dz) {   // (le chef) la balle compte
   if (z.hp <= 0) { z.hp = 0; z.mortT = performance.now(); sangAuSol(z.x, z.z, yZ(z), z.boss ? 2.4 : 1.6); monTue(z);
     if (z.revenant) { M.revenants = (M.revenants || []).filter(r => r.h !== z.revenant); M.revenantsFinis = M.revenantsFinis || new Set(); M.revenantsFinis.add(z.revenant); M.ctx.surInfo && M.ctx.surInfo(`💀 ${HEROS[z.revenant].court} repose enfin en paix.`); }
     if (z.boss) M.zKills = 0;
-    else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6 && ![...M.zomb.values()].some(q => q.boss && !q.mortT)) { M.zKills = 0; apparaitreZ(3); } } }   // (six zombies ou chiens abattus : Nemesis)
+    else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6) M.zKills = 0; } }   // (six zombies ou chiens abattus : Nemesis)
 }
 /* la mitraillette : au bout de 14 zombies ou chiens abattus (par soi), elle est à nous — munitions infinies ; doigt appuyé sur un zombie, elle tire en rafale */
 const TUES_MITRA = 14;
@@ -10885,8 +10885,8 @@ function habillerHeros(info, id) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/re/${D.cle}-tete.png`, heros: id }; }
 // (à l'entrée de l'apocalypse) qui l'on joue, et les équipiers qu'on emmène
 export function choisirApo(perso, equipe) {
-  if (!M) return; M.perso = HEROS[perso] ? +perso : null; envoyerWS({ t: "perso", id: M.perso });
-  M.equipe = (equipe || []).filter(id => HEROS[id] && +id !== M.perso).slice(0, 2).map(id => ({ id: +id, vies: 4, mort: false, tirT: 0, suiviT: 0 }));
+  if (!M) return; M.perso = +perso === 23 ? 23 : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker ou Barry ; l'autre fait toujours équipe avec nous)
+  void equipe; M.equipe = [{ id: M.perso === 23 ? 25 : 23, vies: 4, mort: false, tirT: 0, suiviT: 0 }];
 }
 const EQUIPIER = k => -(300 + k), FANTOME = (de, k) => -(5000 + de * 4 + k);
 function infoEquipier(id, numero, x, z, proprio, k) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
@@ -11163,7 +11163,7 @@ function animerApo(t, dt) {
   objectifApo(); if (M.evac) { for (const z of M.zomb.values()) z.g.visible = false; return; }   // (l'évacuation : plus de zombies, la cinématique mène)
   objetsApo(); fumiApo(moi, performance.now()); introApo(moi); survolApo(moi, performance.now());
   if (estChefZ()) simulerZ(t, dt);
-  animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); gendarmesApo(performance.now()); animerRevenants(performance.now());
+  animerEquipe(performance.now()); horlogeApo(performance.now()); gendarmesApo(performance.now()); animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
   const cam = M.camera.position, now = performance.now(); choisirZ3(now);
