@@ -1324,13 +1324,13 @@
           <button class="btn small alt mx-hv" data-hv="vpFlic" type="button" hidden>👮 Le policier (Village People)</button>
           <button class="btn small alt mx-hv" data-hv="vpMotard" type="button" hidden>🏍️ Le motard (Village People)</button>
           <button class="btn small alt" id="mxPNJRebecca" type="button" hidden>❤️ Claire</button>
-          <button class="btn small alt" id="mxPNJLeon" type="button" hidden>👮 Leon</button>
+          <button class="btn small alt" id="mxPNJLeon" type="button" hidden>🪖 Hunk</button>
           <button class="btn small alt" id="mxPNJBarryB" type="button" hidden>🔫 Barry</button>
           <button class="btn small alt" id="mxPNJJill" type="button" hidden>🔫 Jill</button>
           <button class="btn small alt" id="mxPNJWesker" type="button" hidden>🕶️ Wesker</button>
           <button class="btn small alt" id="mxPNJChris" type="button" hidden>🔫 Chris</button>
           <button class="btn small alt mx-hv" data-hv="zRebecca" type="button" hidden>🧟 Claire zombie</button>
-          <button class="btn small alt mx-hv" data-hv="zLeon" type="button" hidden>🧟 Leon zombie</button>
+          <button class="btn small alt mx-hv" data-hv="zLeon" type="button" hidden>🧟 Hunk zombie</button>
           <button class="btn small alt mx-hv" data-hv="zBarry" type="button" hidden>🧟 Barry zombie</button>
           <button class="btn small alt mx-hv" data-hv="zJill" type="button" hidden>🧟 Jill zombie</button>
           <button class="btn small alt mx-hv" data-hv="zWesker" type="button" hidden>🧟 Wesker zombie</button>
@@ -2354,11 +2354,11 @@
     vpFlic: [61, "👮 Le policier (Village People)", "Le policier", "images/vp/flic-tete.png"], vpMotard: [62, "🏍️ Le motard (Village People)", "Le motard", "images/vp/motard-tete.png"],
     gore: [27, "🎸 Martin Gore (Depeche Mode)", "Martin Gore", "images/dm/gore-tete.png"], gahan: [28, "🎤 Dave Gahan (Depeche Mode)", "Dave Gahan", "images/dm/gahan-tete.png"],
     fletcher: [29, "🎹 Andy Fletcher (Depeche Mode)", "Andy Fletcher", "images/dm/fletcher-tete.png"],
-    rebecca: [21, "❤️ Claire Redfield (Resident Evil)", "Claire Redfield", "images/re/claire-tete.png"], leon: [22, "👮 Leon S. Kennedy (Resident Evil 2)", "Leon S. Kennedy", "images/re/leon-tete.png"],
+    rebecca: [21, "❤️ Claire Redfield (Resident Evil)", "Claire Redfield", "images/re/claire-tete.png"], leon: [22, "🪖 Hunk (Resident Evil)", "Hunk", "images/re/hunk-tete.png"],
     barryB: [23, "🔫 Barry Burton (Resident Evil)", "Barry Burton", "images/re/barry-tete.png"], jill: [24, "🔫 Jill Valentine (Resident Evil 3)", "Jill Valentine", "images/re/jill-tete.png"],
     wesker: [25, "🕶️ Albert Wesker (Resident Evil)", "Albert Wesker", "images/re/wesker-tete.png"], chris: [26, "🔫 Chris Redfield (Resident Evil)", "Chris Redfield", "images/re/chris-tete.png"],
     zombieA: [12, "🧟 Le cadavre au bonnet", "Le cadavre au bonnet", "images/apo/zombie1-tete.png"], zombieB: [13, "🧟 L'homme à la chemise", "L'homme à la chemise", "images/apo/zombie2-tete.png"],
-    zRebecca: [48, "🧟 Claire zombie (revenante)", "Claire zombie", "images/re/z-claire-tete.png"], zLeon: [49, "🧟 Leon zombie (revenant)", "Leon zombie", "images/re/z-leon-tete.png"],
+    zRebecca: [48, "🧟 Claire zombie (revenante)", "Claire zombie", "images/re/z-claire-tete.png"], zLeon: [49, "🧟 Hunk zombie (revenant)", "Hunk zombie", "images/re/z-hunk-tete.png"],
     zBarry: [50, "🧟 Barry zombie (revenant)", "Barry zombie", "images/re/z-barry-tete.png"], zJill: [51, "🧟 Jill zombie (revenante)", "Jill zombie", "images/re/z-jill-tete.png"],
     zWesker: [52, "🧟 Wesker zombie (revenant)", "Wesker zombie", "images/re/z-wesker-tete.png"], zChris: [53, "🧟 Chris zombie (revenant)", "Chris zombie", "images/re/z-chris-tete.png"],
     zombieC: [14, "🧟 Le policier zombie", "Le policier zombie", "images/apo/zombie3-tete.png"] };
@@ -2376,7 +2376,7 @@
   document.addEventListener("fullscreenchange", () => { if ($("mxDJ").classList.contains("panneau")) fermerDJ(); });
   $("mxMusique").onclick = allerAuDJ;
   // l'écran « Bienvenue en 1998 » : qui l'on joue (soi-même ou un héros de Resident Evil), et jusqu'à deux équipiers
-  const APO_JOUABLES = [25, 23, 26, 21];   /* (Wesker, Barry, Chris, Claire) */
+  const APO_JOUABLES = [25, 23, 26, 21, 22];   /* (Wesker, Barry, Chris, Claire, Hunk) */
   const apoChoix = (() => { try { const v = JSON.parse(localStorage.getItem("apoChoix") || "null"); if (v && Array.isArray(v.equipe)) return v; } catch (e) {} return { perso: null, equipe: [] }; })();
   /* la manette de jeu : parmi les appareils vus comme des manettes (les lunettes XREAL, par exemple, en sont un), la vraie — deux joysticks, disposition standard —, celle dont on s'est servi en dernier */
   window.choisirManette = () => { const l = navigator.getGamepads ? [...navigator.getGamepads()].filter(q => q && q.connected) : []; if (!l.length) return null;
@@ -2406,7 +2406,7 @@
         $("mxApoEquipe").querySelectorAll("[data-e]").forEach(b => b.style.outline = +b.dataset.e === ids[vise] ? "3px solid #f6d465" : ""); } };
     requestAnimationFrame(tour); })();
   function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => `images/re/${H[id].cle}-tete.png`, prenom = id => H[id].court;
-    if (!APO_JOUABLES.includes(apoChoix.perso)) apoChoix.perso = 25;   /* (Wesker, Barry, Chris ou Claire ; un équipier parmi les trois autres, toujours) */
+    if (!APO_JOUABLES.includes(apoChoix.perso)) apoChoix.perso = 25;   /* (Wesker, Barry, Chris, Claire ou Hunk ; un équipier parmi les autres, toujours) */
     if (!(apoChoix.equipe.length === 1 && APO_JOUABLES.includes(apoChoix.equipe[0]) && apoChoix.equipe[0] !== apoChoix.perso)) apoChoix.equipe = [MX.APO_PAIRE[apoChoix.perso]];
     $("mxApoPerso").innerHTML = APO_JOUABLES.map(id => `<button type="button" data-p="${id}" class="${id === apoChoix.perso ? "on" : ""}"><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");
     $("mxApoEquipe").innerHTML = APO_JOUABLES.filter(id => id !== apoChoix.perso).map(id => `<button type="button" data-e="${id}" class="${id === apoChoix.equipe[0] ? "on" : ""}"><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");

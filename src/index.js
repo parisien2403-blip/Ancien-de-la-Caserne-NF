@@ -71,7 +71,7 @@ const PNJ_DEFAUT = { 95: { nom: "Homer", tenue: "polo", couleur: "#ffffff", bas:
   18: { nom: "La batteuse", tenue: "batteuse", couleur: "#121214", bas: "#141416", pieds: "#1a1a1a" }, 19: { nom: "Le bassiste", tenue: "bassiste", couleur: "#2c2e31", bas: "#151517", pieds: "#1a1a1a" },
   20: { nom: "Le guitariste", tenue: "guitariste", couleur: "#151517", bas: "#151517", pieds: "#0e0e0e" },
   // les héros de Resident Evil (l'apocalypse) : on peut jouer l'un d'eux, ou en prendre deux comme équipiers
-  21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111" },
+  21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a" }, 22: { nom: "Hunk", tenue: "leon", couleur: "#1c1d20", bas: "#18191b", pieds: "#0e0e0e" },
   23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" },
   // Depeche Mode : sur scène dès qu'une de leurs chansons passe

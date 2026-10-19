@@ -2262,7 +2262,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   // à l'angle de l'immeuble du fond (côté ruelle de gauche) : le local poubelle de la caserne, bas, en brique, qui épouse l'angle (d'après la photo)
   { const zb = zA + RU.cour, P = 4.0, Lx = 4, Lz = 4, y0 = -1.6, top = RU.y(zb) + 2.0, H = top - y0, x0 = -DB - P;
     const brk = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), dalle = A.mat({ map: tex(textures().betonClair, 2, 2), color: 0xc4c4c0, roughness: .9 }), noir = A.mat({ color: 0x141210, roughness: 1 });
-    const blocs = [[x0, -DB + Lx, zb - P, zb], [x0, -DB, zb, zb + Lz]]; C3.poub = [...blocs, [-DB + Lx + 2.3, -DB + Lx + 17, zb - P, zb - P + .4]];
+    const blocs = [[x0, -DB + Lx, zb - P, zb], [x0, -DB, zb, zb + Lz]]; C3.poub = [...blocs, [-DB + Lx + 2.3, -DB + Lx + 17, zb - P, zb - P + .4]]; C3.localPoub = { x0, zb, P, Lz };
     for (const [xa, xb, za, zc] of blocs) { const w = xb - xa, d = zc - za, cx = (xa + xb) / 2, cz = (za + zc) / 2;
       A.ajoute(new THREE.BoxGeometry(w, H, d), [brk(d, H), brk(d, H), dalle, dalle, brk(w, H), brk(w, H)], cx, y0 + H / 2, cz);
       const hb = -.35 - y0; A.ajoute(new THREE.BoxGeometry(w + .06, hb, d + .06), A.mat({ map: tex(textures().granit, Math.max(w, d) / 2, .5), color: 0xb0a698, roughness: .85 }), cx, y0 + hb / 2, cz);   // le soubassement de granit
@@ -10603,6 +10603,22 @@ function surFumi(m) {
 }
 // l'hélicoptère du S.T.A.R.S. (d'après la planche : AgustaWestland AW139 modifié, vert olive, « S.T.A.R.S. », « ST-01 ») ; le nez vers +x, la baie de troupes ouverte côté +z
 /* l'hélicoptère et l'héliport en vraie 3D (des modèles) : chargés une fois ; en attendant, l'ancien dessin reste visible */
+/* le décor de la caserne : des blocs de climatisation (sur quelques balcons de la cour d'honneur, sous quelques fenêtres des façades),
+   et de grands conteneurs à ordures contre le local poubelle, dans la ruelle */
+function decorCaserne(scene, L, base) { if (base !== "grande" && base !== "rue") return;
+  const poser = (f, x, y, z, ry, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
+    chargerGLB(f).then(sc => { if (!sc) return; const m = sc.clone(); m.scale.setScalar(k); m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(m); }); return g; };
+  const clim = (x, y, z, ry) => poser("avatars/deco-clim.glb?v=1", x, y, z, ry);
+  if (base === "grande") {   // (sur les balcons du bâtiment du fond, contre le mur, à côté de la porte-fenêtre)
+    for (const [r, c, d] of [[0, 3, 1], [1, 9, -1], [2, 1, 1], [2, 11, -1], [3, 5, 1], [4, 13, -1], [5, 7, 1], [6, 3, -1]]) clim(-22 + (c + .5) * 44 / 14 + d * .66, 27 - (34 + r * 112 + 80) / 40 + .08, -17.7, 0); }
+  { let k = 0, n = 0;   // (sous quelques fenêtres des étages, sur leurs équerres)
+    for (const [fens, cadres] of L.facadesFen || []) for (const c of cadres) for (const [fu, fv, fw, fh] of fens || []) { k++;
+      const yb = c.o[1] + (.5 - fv - fh) * c.H; if (yb - (c.o[1] - c.H / 2) < 3.5 || fw * c.W < .7 || hasard(k * 5.3 + 2) > .1 || n >= 9) continue;
+      const a = (fu + fw / 2 - .5) * c.W, x = c.o[0] + c.ux[0] * a + c.n[0] * .3, z = c.o[2] + c.ux[2] * a + c.n[2] * .3, ry = Math.atan2(c.n[0], c.n[2]), y = yb - .85;
+      const g = clim(x, y, z, ry); n++;
+      for (const s of [-.3, .3]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .56), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: .6, metalness: .5 })); e.position.set(s, -.02, 0); g.add(e); } } }
+  if (base === "grande" && C3.localPoub) { const { x0, zb } = C3.localPoub;   // (contre le mur de la ruelle du local poubelle, en évitant la corbeille)
+    for (const z of [zb - 3.3, zb - .1, zb + 1.35, zb + 2.8]) { poser("avatars/deco-poubelle.glb?v=1", x0 - .56, RU.y(z), z, -Math.PI / 2 + (hasard(z) - .5) * .12); C3.poub.push([x0 - 1.1, x0, z - .65, z + .65]); } } }
 const glb3D = {}; function chargerGLB(f) { return glb3D[f] || (glb3D[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return (await new gltfMod.GLTFLoader().loadAsync(f)).scene; })().catch(e => { console.warn(f, e); return null; })); }
 function creerHelico() { const g = creerHelicoDessin(), U = g.userData;
   chargerGLB("avatars/re-helico.glb?v=1").then(sc => { if (!sc) return; const garder = new Set([U.rotor, U.rotorQ, U.feu]);
@@ -10982,16 +10998,16 @@ function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.p
   const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: texSang[1], transparent: true, depthWrite: false }));
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
 /* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
-export const HEROS = { 21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a", cle: "claire", court: "Claire" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111", cle: "leon", court: "Leon" },
+export const HEROS = { 21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a", cle: "claire", court: "Claire" }, 22: { nom: "Hunk", tenue: "leon", couleur: "#1c1d20", bas: "#18191b", pieds: "#0e0e0e", cle: "hunk", court: "Hunk" },
   23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22", cle: "barry", court: "Barry" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515", cle: "jill", court: "Jill" },
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f", cle: "wesker", court: "Wesker" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616", cle: "chris", court: "Chris" } };
 function habillerHeros(info, id) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D.tenue, couleur: P.couleur || D.couleur, bas: P.tenue ? P.bas : D.bas, pieds: P.pieds || D.pieds, reglage: P.reglage || null, tete_v: null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/re/${D.cle}-tete.png`, heros: id }; }
 // (à l'entrée de l'apocalypse) qui l'on joue, et les équipiers qu'on emmène
-export const APO_PAIRE = { 25: 23, 23: 25, 26: 21, 21: 26 };   // (les héros jouables, et l'équipier qu'ils emmènent si l'on n'en choisit pas)
+export const APO_PAIRE = { 25: 23, 23: 25, 26: 21, 21: 26, 22: 25 };   // (les héros jouables, et l'équipier qu'ils emmènent si l'on n'en choisit pas)
 export function choisirApo(perso, equipe) {
-  if (!M) return; M.perso = APO_PAIRE[+perso] ? +perso : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker, Barry, Chris ou Claire ; un équipier, choisi parmi les trois autres, fait toujours équipe avec nous)
+  if (!M) return; M.perso = APO_PAIRE[+perso] ? +perso : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker, Barry, Chris, Claire ou Hunk ; un équipier, choisi parmi les trois autres, fait toujours équipe avec nous)
   const e = +((equipe || [])[0]); M.equipe = [{ id: APO_PAIRE[e] && e !== M.perso ? e : APO_PAIRE[M.perso], vies: 4, mort: false, tirT: 0, suiviT: 0 }];
 }
 const EQUIPIER = k => -(300 + k), FANTOME = (de, k) => -(5000 + de * 4 + k);
@@ -11753,7 +11769,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false;
+  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false; decorCaserne(scene, L, baseLieu(id));
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
@@ -11946,7 +11962,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=1", 25: "avatars/re-wesker.glb?v=1", 26: "avatars/re-chris.glb?v=1", 21: "avatars/re-claire.glb?v=1" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=1", 25: "avatars/re-wesker.glb?v=1", 26: "avatars/re-chris.glb?v=1", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=1" };
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
