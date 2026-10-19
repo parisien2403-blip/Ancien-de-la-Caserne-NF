@@ -11953,7 +11953,9 @@ function placerCamera(net) {
   const yaw = !M.L.interieur && !M.L.suivi ? M.yawDehors || 0 : 0;
   if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
-  if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
+  { const avant = pos.clone(); if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) { const h = moi.g.position, ax = avant.x - h.x, az = avant.z - h.z, la = Math.hypot(ax, az);
+    // (ramenée de force dans un passage, la caméra passait devant son bonhomme — un bond en face : elle reste derrière lui, tout près, au-dessus de sa tête)
+    if (la > .3 && (pos.x - h.x) * ax + (pos.z - h.z) * az < .25 * la * la) { pos.x = h.x + ax / la * .35; pos.z = h.z + az / la * .35; M.L.contraindreCam(pos, moi); } } }
   // dehors, sous un toit (un passage couvert, un préau, une voûte) : la caméra reste dessous, même dézoomée (elle passait par-dessus le toit)
   if (moi && !M.L.interieur) { const now = performance.now(); if (!M.toitT || now - M.toitT > 300 || M.toitL !== M.L) { M.toitT = now; M.toitL = M.L; M.toitY = null;
       M.rayToit = M.rayToit || new THREE.Raycaster(); M.rayToit.camera = M.camera; M.rayToit.set(new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.8, moi.g.position.z), new THREE.Vector3(0, 1, 0)); M.rayToit.far = 6;
@@ -11971,7 +11973,7 @@ function placerCamera(net) {
           if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 1.2) return; liste.push(o); });
         M.obstCam = { scene: M.scene, t: now, liste, ray: new THREE.Raycaster(), n: 0, d: null }; }
       const O = M.obstCam; if (O.n++ % 3 === 0) { O.ray.set(tete, dir); O.ray.far = dist + .3; const h = O.ray.intersectObjects(O.liste, false)[0]; O.d = h ? h.distance : null; }   // (une fois sur trois : léger pour le téléphone)
-      if (O.d != null && O.d < dist + .2) { const d2 = Math.max(.5, O.d - .35); pos.copy(tete).addScaledVector(dir, d2); devantMur = true;
+      if (O.d != null && O.d < dist + .2) { const d2 = Math.max(.5, O.d - .35); pos.copy(tete).addScaledVector(dir, d2); if (d2 < 1.6) { pos.y += (1.6 - d2) * 1.1; if (M.L.plafond) pos.y = Math.min(pos.y, M.L.plafond); } devantMur = true;   // (le mur tout près : la caméra monte au-dessus de la tête, au lieu de se coller dans le dos du bonhomme)
  } }
     // la caméra a dû se rapprocher (un mur, une ruelle étroite) : plus elle est près, plus elle regarde son bonhomme — il reste toujours dans l'image
     const hd = Math.hypot(pos.x - tete.x, pos.z - tete.z), voulu = Math.max(1, (M.camD || 4) * Math.cos(M.camE || .5)), k = Math.min(1, Math.max(0, 1 - hd / (.75 * voulu)));
@@ -12568,11 +12570,23 @@ function videoDJ(c) { let v = M.videoDJ;
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
    Le relief : deux images côte à côte, une par œil, pour les lunettes en mode 3D (XREAL…) ; les sous-titres flottent devant nous, en relief eux aussi. */
 const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false, t: 0 };
+/* le clavier, sur ordinateur : il fait comme une manette — Z Q S D (ou W A S D, ou les flèches) pour marcher, Maj pour courir, Espace pour tirer */
+const CLAV = {}; let clavierPret = false;
+function ecouterClavier() { if (clavierPret) return; clavierPret = true;
+  const saisie = e => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "") || (e.target && e.target.isContentEditable);
+  addEventListener("keydown", e => { if (!M || saisie(e) || e.ctrlKey || e.metaKey || e.altKey) return; CLAV[e.code] = true; if (/^(Space|Arrow)/.test(e.code)) e.preventDefault(); });
+  addEventListener("keyup", e => { CLAV[e.code] = false; }); addEventListener("blur", () => { for (const k in CLAV) CLAV[k] = false; }); }
+function padClavier() { ecouterClavier(); const k = c => !!CLAV[c];
+  const ly = (k("KeyS") || k("ArrowDown") ? 1 : 0) - (k("KeyW") || k("KeyZ") || k("ArrowUp") ? 1 : 0), lx = (k("KeyD") || k("ArrowRight") ? 1 : 0) - (k("KeyA") || k("KeyQ") || k("ArrowLeft") ? 1 : 0);
+  const tir = k("Space"), cours = k("ShiftLeft") || k("ShiftRight");
+  if (!lx && !ly && !tir && !MAN.bouge) return null;
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); if (tir) buttons[7] = { pressed: true, value: 1 }; if (cours) buttons[5] = { pressed: true, value: 1 };
+  return { clavier: true, axes: [lx, ly, 0, 0], buttons }; }
 function manette() {
   const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
   if (!M) return;   // (pour tout le monde)
-  const g = (window.choisirManette ? window.choisirManette() : null); if (!g || !M || !M.L) { mireGB(null); return; }
-  if (!MAN.vu) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, joystick droit pour la vue, A pour agir, B pour passer, gâchette droite pour tirer, Y la carte, Select la vue à la première personne, Start le relief 3D. Dans les menus : la croix pour choisir, A pour valider, B pour fermer.", 9000); }
+  const g = (window.choisirManette ? window.choisirManette() : null) || padClavier(); if (!g || !M || !M.L) { mireGB(null); return; }
+  if (!MAN.vu && !g.clavier) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, joystick droit pour la vue, A pour agir, B pour passer, gâchette droite pour tirer, Y la carte, Select la vue à la première personne, Start le relief 3D. Dans les menus : la croix pour choisir, A pour valider, B pour fermer.", 9000); }
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
