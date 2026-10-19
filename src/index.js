@@ -398,6 +398,7 @@ export class Compteur extends DurableObject {
   }
   // le personnage 3D : la tenue (parmi celles préparées pour ce membre), trois couleurs, l'écusson (PNG) sur la poitrine ou le dos
   async changerAv3(token, x) { const moi = this.moi(token);
+    if (![1, 2].includes(Number(moi.numero))) throw new Error("Pas de personnage 3D pour ce laissez-passer.");   // (seuls les laissez-passer 0001 et 0002 ont un personnage 3D)
     const hx = v => /^#[0-9a-f]{6}$/i.test(v || "") ? v : null, C = x.couleurs || {};
     const nb = (v, a, z) => Number.isInteger(v) && v >= a && v <= z ? v : null;
     const a = { t: typeof x.t === "string" && /^[a-z0-9-]{1,30}$/.test(x.t) ? x.t : null, c: { haut: hx(C.haut), bas: hx(C.bas), pieds: hx(C.pieds) }, taille: nb(x.taille, 140, 210), poids: nb(x.poids, 40, 160) };
