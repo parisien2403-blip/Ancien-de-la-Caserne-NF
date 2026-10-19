@@ -10775,7 +10775,7 @@ const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : M.L.yNiv ? M.L.yNiv(
 function creerZ(d) {
   const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texChien() : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
-  if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = true; }); }
+  if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = !M.zomb.get(d.id).z3; }); }
   const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   M.scene.add(g);
   const z = { revenant: T.revenant || 0, id: d.id, ty: d.ty, x: d.x, z: d.z, n: d.n || 0, tx: d.x, tz: d.z, hp: d.hp ?? (T.hp || 2), mortT: 0, boss: !!T.boss, g, mesh, om, chien: !!T.chien, sonT: performance.now() + 2000 + Math.random() * 6000, ph: Math.random() * 9 };
@@ -10787,6 +10787,29 @@ function creerZ(d) {
 function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
   if (T.chien) { const im = z.mesh.material.map && z.mesh.material.map.image; z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * (im && im.width ? im.width / im.height : T.ratio) * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
   else { z.H = tailleBonhomme() * (R.h || 1) * (T.taille || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
+/* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
+let zombie3D = null, skelMod = null;
+const Z3_MAX = 10, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
+function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
+    const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
+function poserZ3(z, g) { const sc = skelMod.clone(g.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
+  const pivot = new THREE.Group(); pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
+  sc.scale.setScalar(z.H * 1.02 / Z3_H * (g.scene.scale.x ? 1 : 1)); act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
+  z.z3 = { pivot, sc, mix, act, cur: "walk" }; z.mesh.visible = false; }
+function retirerZ3(z) { if (!z.z3) return; z.g.remove(z.z3.pivot); z.z3 = null; if (z.mesh.material.map) z.mesh.visible = true; }
+function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
+  if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); Z.pivot.rotation.x = -f * Math.PI / 2 * .95; Z.mix.timeScale = 0;   // (il tombe en arrière)
+    if (now - z.mortT > 6500) { const o = Math.max(0, 1 - (now - z.mortT - 6500) / 1500); Z.sc.traverse(m => { if (m.isMesh) { m.material.transparent = true; m.material.opacity = o; } }); } return; }
+  const moi = moiApo(); let cap = Z.cap ?? 0; if (marche && Math.hypot(vx, vz) > 1e-4) cap = Math.atan2(vx, vz); else if (moi) cap = Math.atan2(moi.g.position.x - z.x, moi.g.position.z - z.z);
+  let d = cap - (Z.cap ?? cap); d = Math.atan2(Math.sin(d), Math.cos(d)); Z.cap = (Z.cap ?? cap) + d * Math.min(1, dt * 6); Z.pivot.rotation.y = Z.cap;
+  const n = marche ? "walk" : "idle"; if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); Z.act[n].crossFadeFrom(Z.act[Z.cur], .3, false); Z.cur = n; }
+  Z.mix.timeScale = (ZTYPES[z.ty].v || .85) * 1.1; Z.mix.update(dt);
+  const touche = now < (z.flashT || 0); if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
+/* qui est en 3D : les zombies ordinaires les plus proches de la caméra (pas le chien, ni Nemesis, ni les équipiers revenus) */
+function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 500; const g = zombie3D; chargerZombie3D();
+  zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
+    const cand = [...M.zomb.values()].filter(z => !z.chien && !z.boss && !z.revenant).sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z));
+    cand.forEach((z, i) => { const veut = i < Z3_MAX && Math.hypot(z.x - cam.x, z.z - cam.z) < 45; if (veut && !z.z3) poserZ3(z, G); else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
 function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
@@ -10829,7 +10852,7 @@ function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
 function vueTir(p, dx, dz) { if (!M || !M.camera) return; const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), cote = dx * dr.x + dz * dr.z;
   const av = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 2), loin = -(dx * av.x + dz * av.z);   // (> 0 : il tire vers le fond, dos à nous)
   p.tirVue = Math.abs(cote) < .55 ? (loin > 0 ? "tirDos" : "tirFace") : cote > 0 ? "tir" : "tirG"; }
-function eclairDuCanon(p, dx, dz) { vueTir(p, dx, dz);
+function eclairDuCanon(p, dx, dz) { p.visee = Math.atan2(dx, dz); p.viseeT = performance.now(); vueTir(p, dx, dz);   /* (visee : le personnage 3D tend le bras dans cette direction) */
   texEclair = texEclair || tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,255,220,1)"); g.addColorStop(.4, "rgba(255,200,60,.9)"); g.addColorStop(1, "rgba(255,120,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
   const H = tailleBonhomme() * hauteurDe(p), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texEclair, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sp.scale.set(.7, .7, 1); sp.position.set(p.g.position.x + dx * .55, p.g.position.y + H * .6, p.g.position.z + dz * .55); M.scene.add(sp);
@@ -11143,7 +11166,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now()); sacrificeApo(performance.now()); horlogeApo(performance.now()); gendarmesApo(performance.now()); animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now();
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now);
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -11154,6 +11177,8 @@ function animerApo(t, dt) {
     if (z.chien && Math.hypot(vx, vz) > 1e-4) { const droite = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); z.flip = (vx * droite.x + vz * droite.z) > 0 ? -1 : 1; }
     z.mesh.scale.set(z.W * (z.flip || 1), z.H, 1);
     z.mesh.material.color.setRGB(1, now < (z.flashT || 0) ? .35 : 1, now < (z.flashT || 0) ? .35 : 1);
+    if (z.z3) { const marche3 = Math.hypot(vx, vz) > 1e-4; animerZ3(z, now, dt, marche3, vx, vz); z.mesh.visible = false; if (z.mortT) continue;
+      const d3 = Math.hypot(moi.g.position.x - z.x, moi.g.position.z - z.z); if (now > z.sonT && d3 < 15 && (baseLieu(M.lieu) !== "etage" || z.n === etageDe(moi))) { z.sonT = now + 6500 + Math.random() * 5000; sonPos(ZTYPES[z.ty].son, (1 - d3 / 15) * .9); } continue; }
     if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 550); z.mesh.rotation.x = -f * Math.PI / 2 * .97; z.mesh.rotation.z = 0; z.mesh.position.y = z.chien ? 0 : .05 * f;
       z.mesh.material.opacity = now - z.mortT > 6500 ? Math.max(0, 1 - (now - z.mortT - 6500) / 1500) : 1; continue; }
     const marche = Math.hypot(vx, vz) > 1e-4;
@@ -11829,7 +11854,27 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
   if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
-  A.sc.position.set(0, 0, 0); if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+  A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
+  if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+/* le pistolet (le Samurai Edge de Resident Evil 0) dans la main droite : bras le long du corps quand on marche ; quand on tire, il se tourne vers la cible et tend les deux bras, l'arme pointée */
+let pistolet3D = null, _v1, _v2, _v3, _qa, _qb;
+function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant); if (!b || !c) return; b.parent.updateMatrixWorld(true); b.updateMatrixWorld(true);
+  b.getWorldPosition(_v1); c.getWorldPosition(_v2); _v2.sub(_v1).normalize(); _qa.setFromUnitVectors(_v2, _v3.copy(dir).normalize()); b.parent.getWorldQuaternion(_qb);
+  b.quaternion.premultiply(_qb.clone().invert().multiply(_qa).multiply(_qb)); b.updateMatrixWorld(true); }
+function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); }
+  if (!pistolet3D) { pistolet3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-pistolet.glb?v=1"); return g.scene; })().catch(() => null); }
+  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolet3D.then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
+  if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;   /* (dans le repère du personnage : à sa taille) */
+  const vise = p.viseeT && performance.now() - p.viseeT < 1600;
+  if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend les bras)
+    const f = new THREE.Vector3(Math.sin(p.visee), -.08, Math.cos(p.visee)), dr = new THREE.Vector3(-f.z, 0, f.x);
+    viser3D(A, "RightArm", "RightForeArm", f.clone().addScaledVector(dr, -.12)); viser3D(A, "RightForeArm", "RightHand", f);
+    viser3D(A, "LeftArm", "LeftForeArm", f.clone().addScaledVector(dr, .55).add(new THREE.Vector3(0, -.25, 0))); viser3D(A, "LeftForeArm", "LeftHand", f.clone().addScaledVector(dr, -.75)); }
+  const h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (!h || !fa) return; A.sc.updateMatrixWorld(true);
+  h.getWorldPosition(_v1); fa.getWorldPosition(_v2); const dir = _v1.clone().sub(_v2).normalize();   // (l'arme dans le prolongement de l'avant-bras)
+  if (!vise) dir.lerp(new THREE.Vector3(Math.sin(A.sc.rotation.y), 0, Math.cos(A.sc.rotation.y)), .55).normalize();   // (bras baissé : le canon vers l'avant et le bas)
+  A.sc.worldToLocal(_v1.addScaledVector(dir, .04)); A.arme.position.copy(_v1); A.sc.getWorldQuaternion(_qb); const xa = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), ya = dir.clone().cross(xa);   // (l'arme droite, le dessus vers le haut)
+  A.arme.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, dir)).premultiply(_qb.invert()); }
 /* assis sur un tabouret du bar : tourné vers le comptoir (le côté où l'on ne peut pas avancer), les cuisses à l'horizontale, les jambes pendantes ; de temps en temps, il boit une gorgée */
 function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.rotation.y;
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (M.L.limites && !M.L.limites(tb[0] + dx * .5, tb[1] + dz * .5)) { A.cap = Math.atan2(dx, dz); break; } }
