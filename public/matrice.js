@@ -3783,9 +3783,10 @@ function composerNumero(dest) { if (!M || M.cadranEl) return; const noir = dest 
    - palier de l'étage n (z de 1.6 à 3.5), à y = n × 3.4 ; volée 1 (moitié extérieure) de z = 1.6 à -1.4, monte de 1.7 ;
    - palier intermédiaire (z < -1.4) ; volée 2 (moitié intérieure) de z = -1.4 à 1.6, monte au palier de l'étage n + 1 ;
    - le couloir de l'étage n (1 à 6) : |x| < 11.2, z de 1.3 à 3.5, à y = n × 3.4 */
+let COUPE_CAGE = null; const coupeCage = () => COUPE_CAGE || (COUPE_CAGE = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6));   // (la vue en coupe de la cage d'escalier : ne coupe que les volées et les paliers, jamais les murs)
 const ET = { H: 3.4, HP: 2.7, CX0: 11.2, CXM: 12.8, CX1: 14.4, Z0: -3, Z1: 3.5, ZC0: 1.3, N: 6, ZE: 6.0 };   // (ZE : au rez-de-chaussée, le palier de la cage de droite agrandi jusque-là, pour la cabine)
 function construireEtage(A, L, scene) {
-  const { H, HP, CX0, CXM, CX1, Z0, Z1, ZC0, N } = ET, HTOT = N * H + HP, MH = .17, MP = .3;
+  const { H, HP, CX0, CXM, CX1, Z0, Z1, ZC0, N } = ET, HTOT = N * H + HP, MH = .17, MP = .3, PENTE = Math.atan2(1.7, 3);
   const carreaux = toileCarreaux(), beige = A.mat({ color: 0xd8cbad, roughness: .95 }), plinthe = A.mat({ color: 0x6b4a2c }), gris = A.mat({ color: 0x8a8174 });
   const matSol = (w, d) => A.mat({ map: tex(carreaux, w / 1.6, d / 1.6), roughness: .5 });
   const sols = [];
@@ -3863,10 +3864,13 @@ function construireEtage(A, L, scene) {
       sol(cageW, Z1 - 1.6, xb(CX0, CX1), y, (1.6 + Z1) / 2);                                        // le palier de l'étage
       if (k === 0) sol(cageW, 1.6 - Z0, xb(CX0, CX1), 0, (Z0 + 1.6) / 2);                          // (au rez-de-chaussée : le sol, sous les volées et le palier intermédiaire)
       if (k === N) continue;
-      for (let i = 0; i < 10; i++) { const t = (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CX1 - CXM, t + .25, MP), matMarche, xb(CXM, CX1), y + t / 2 - .125, 1.6 - (i + .5) * MP, false); }
+      for (let i = 0; i < 10; i++) { const t = (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CX1 - CXM, MH + .3, MP), matMarche, xb(CXM, CX1), y + t - (MH + .3) / 2, 1.6 - (i + .5) * MP, false); }
+      // (sous chaque volée, une paillasse en pente, comme un vrai escalier : on passe dessous sans se baisser)
+      for (const [w, xc, zc, yc, s2] of [[CX1 - CXM, xb(CXM, CX1), .1 - .1 * Math.sin(PENTE), y + .55 - .1 * Math.cos(PENTE), 1], [CXM - CX0, xb(CX0, CXM), .1 + .1 * Math.sin(PENTE), y + 2.25 - .1 * Math.cos(PENTE), -1]]) {
+        const p = A.ajoute(new THREE.BoxGeometry(w, .2, Math.hypot(3, 1.7)), cote, xc, yc, zc, false); p.rotation.x = s2 * PENTE; }
       A.ajoute(new THREE.BoxGeometry(cageW, .25, -1.4 - Z0), gris, xb(CX0, CX1), y + 1.7 - .125, (Z0 - 1.4) / 2, false);
       sol(cageW, -1.4 - Z0, xb(CX0, CX1), y + 1.7, (Z0 - 1.4) / 2, .02);                          // le palier intermédiaire
-      for (let i = 0; i < 10; i++) { const t = 1.7 + (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CXM - CX0, (i + 1) * MH + .25, MP), matMarche, xb(CX0, CXM), y + t - ((i + 1) * MH + .25) / 2, -1.4 + (i + .5) * MP, false); }
+      for (let i = 0; i < 10; i++) { const t = 1.7 + (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CXM - CX0, MH + .3, MP), matMarche, xb(CX0, CXM), y + t - (MH + .3) / 2, -1.4 + (i + .5) * MP, false); }
       // les rampes en fer, des deux volées, au milieu
       for (const [z0, y0, sens] of [[1.6, 0, -1], [-1.4, 1.7, 1]]) {
         const r = A.ajoute(new THREE.BoxGeometry(.05, .05, 3.45), fer, X(CXM), y + y0 + .85 + .95, z0 + sens * 1.5, false); r.rotation.x = sens * -Math.atan2(1.7, 3);
@@ -3882,6 +3886,11 @@ function construireEtage(A, L, scene) {
       for (let j = 0; j <= 6; j++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM), yN + .47, 1.6 - j * .5, false); }
   }
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
+  // la vue en coupe : seulement les marches, les paillasses, les paliers et les rampes de la cage (des copies de leurs matières), pas les murs ni le plafond
+  { const coupables = new Set([mm, cote, gris, fer]), copies = new Map();
+    scene.traverse(o => { if (!o.isMesh || Math.abs(o.position.x) < CX0 - .05 || Math.abs(o.position.x) > CX1 + .05) return;
+      const un = m => { if (!coupables.has(m) && !(sols.includes(o) && m === o.material)) return m; if (!copies.has(m)) { const c = m.clone(); c.clippingPlanes = [coupeCage()]; copies.set(m, c); } return copies.get(m); };
+      o.material = Array.isArray(o.material) ? o.material.map(un) : un(o.material); }); }
   /* la lumière : un jeu de lampes qui suit l'étage où l'on est (les ampoules de cet étage et de la cage) ; plus on monte, moins ça éclaire */
   const ambiant = new THREE.AmbientLight(0xfff0d8, .28); scene.add(ambiant);
   const pool = []; for (let i = 0; i < 12; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 7, 1.6); scene.add(l); pool.push(l); }
@@ -3944,7 +3953,7 @@ function construireEtage(A, L, scene) {
     // (dans la cage d'escalier : une vue en coupe — tout ce qui est au-dessus de la tête est masqué, la volée du dessus ne cache plus son bonhomme)
     if (ax > CX0 - .4) pos.y = Math.max(pos.y, py + 1.2);   // (jamais sous le plancher de l'étage où l'on arrive)
     if (M.dernPy != null && Math.abs(py - M.dernPy) > .4) M.camVise = null; M.dernPy = py;   // (on change d'étage : la caméra y saute d'un coup, sans traverser la dalle)
-    if (M.rendu) { if (ax > CX0 - .4) { const pl = M.coupe || (M.coupe = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)); pl.constant = py + 2.0; M.rendu.clippingPlanes = [pl]; } else if (M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = []; }
+    coupeCage().constant = ax > CX0 - .4 && Number.isFinite(py) ? py + 2.0 : 1e6;
     if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, py + .4); }
     else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx > 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
     return true; };
@@ -11963,7 +11972,7 @@ function placerCamera(net) {
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
   // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
-  if (M.premiere && moi) { if (M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = []; moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
+  if (M.premiere && moi) { coupeCage().constant = 1e6; moi.g.visible = false; const p = moi.g.position, yeux = p.y + tailleBonhomme() * hauteurDe(moi) * .9, cy = Math.cos(M.fpPitch || 0);
     M.camera.position.set(p.x, yeux, p.z); M.camera.fov = portrait ? 84 : 72; M.camera.updateProjectionMatrix();
     M.camera.lookAt(p.x - Math.sin(M.fpYaw || 0) * cy, yeux + Math.sin(M.fpPitch || 0), p.z - Math.cos(M.fpYaw || 0) * cy); M.camVise = null; laserFP(); return; }
   laserFP(true);
@@ -13278,7 +13287,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
-  if (M.rendu && M.rendu.clippingPlanes.length) M.rendu.clippingPlanes = [];   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
+  coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
