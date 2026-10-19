@@ -11977,9 +11977,7 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
     A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A); }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
-  if (p.info.mortT && p.info.heros && av3OK(p)) { const f = Math.min(1, (performance.now() - p.info.mortT) / 700);   // (un héros mort : il tombe en arrière, et reste allongé sur le sol)
-    A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.sc.rotation.order = "YXZ"; A.sc.rotation.x = -f * Math.PI / 2 * .97; A.sc.position.set(0, .12 * f, 0);
-    if (A.cur !== "idle" && A.act.idle) { A.act.idle.reset().play(); if (A.curA && A.curA !== A.act.idle) A.curA.stop(); A.cur = "idle"; A.curA = A.act.idle; } A.mix.update(f < 1 ? dt : 0); return; }
+  if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A); return; }
   A.sc.rotation.x = 0;
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
@@ -11990,6 +11988,21 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
   A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
   if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+/* un héros mort : il tombe à genoux, puis en avant, face contre le sol, et y reste
+   (les genoux restent en place : le corps bascule autour d'eux, les jambes se déplient pour rester à plat derrière lui) */
+const _vk = () => new THREE.Vector3();
+function mort3D(p, A) { const t = performance.now() - p.info.mortT, u = Math.min(1, t / 450), w0 = Math.max(0, Math.min(1, (t - 650) / 550)), w = w0 * w0, th = w * Math.PI / 2 * .97;
+  A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.assisT = null;
+  if (A.cur !== "idle" && A.act.idle) { A.act.idle.reset().play(); if (A.curA && A.curA !== A.act.idle) A.curA.stop(); A.cur = "idle"; A.curA = A.act.idle; } A.mix.update(0);
+  A.sc.rotation.order = "YXZ"; A.sc.rotation.x = 0; A.sc.position.set(0, 0, 0);
+  if (!A.repM) { A.repM = {}; for (const n of ["LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg", "Spine", "Head", "LeftArm", "RightArm"]) { const b = os3D(A, n); if (b) A.repM[n] = b.quaternion.clone(); } }
+  for (const n in A.repM) os3D(A, n).quaternion.copy(A.repM[n]);   // (chaque image repart de la pose debout : l'animation ne remet pas tous les os en place)
+  const T = (n, a, v) => tourne3D(A, n, a, v), be = Math.max(0, 1.5 * u - th);   // (le genou : plié à angle droit à genoux, déplié une fois à plat)
+  T("LeftLeg", "x", be); T("RightLeg", "x", be); T("LeftUpLeg", "x", -.08 * u); T("RightUpLeg", "x", -.08 * u);
+  T("Spine", "x", .25 * u * (1 - w)); T("Head", "x", .3 * u * (1 - w)); T("LeftArm", "x", -.5 * w); T("RightArm", "x", -.5 * w);   // (à genoux, la tête basse ; en tombant, les bras partent en avant)
+  const genou = () => { A.sc.updateMatrixWorld(true); const a = os3D(A, "LeftLeg"), b = os3D(A, "RightLeg"); if (!a || !b) return null; const v = a.getWorldPosition(_vk()).add(b.getWorldPosition(_vk())).multiplyScalar(.5); return p.g.worldToLocal(v); };
+  const k0 = genou(); if (!k0) return; A.sc.rotation.x = th; const k1 = genou();
+  A.sc.position.set(k0.x - k1.x, k0.y + (.1 - k0.y) * u - k1.y + .05 * w, k0.z - k1.z); }
 /* le pistolet (le Samurai Edge de Resident Evil 0) dans la main droite : bras le long du corps quand on marche ; quand on tire, il se tourne vers la cible et tend les deux bras, l'arme pointée */
 let pistolet3D = null, _v1, _v2, _v3, _qa, _qb;
 function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant); if (!b || !c) return; b.parent.updateMatrixWorld(true); b.updateMatrixWorld(true);
