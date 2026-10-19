@@ -1369,8 +1369,8 @@
             <ul>
               <li>🚶 <b>Te déplacer</b> : touche le sol, comme dans la caserne.</li>
               <li>🔫 <b>Tirer</b> : touche un zombie (ou clique dessus sur PC). Il faut <b>2 balles</b> pour en abattre un.</li>
-              <li>📦 <b>Munitions</b> : ton arme a <b>9 balles</b>. Marche sur une boîte de munitions pour recharger (sur le comptoir du bar, touche « Prendre »).</li>
-              <li>🔥 <b>La mitraillette</b> : abats <b>14</b> zombies (le compteur 💀 est à côté de tes balles) et elle est à toi : <b>munitions infinies</b>, et en gardant le doigt appuyé sur un zombie, elle tire <b>en rafale</b>.</li>
+              <li>♾️ <b>Munitions</b> : illimitées, tu peux tirer autant que tu veux.</li>
+              <li>🔥 <b>La mitraillette</b> : abats <b>14</b> zombies (le compteur 💀 est à côté de ton arme) et elle est à toi : en gardant le doigt appuyé sur un zombie, elle tire <b>en rafale</b>.</li>
               <li>💉 <b>Spray de soin</b> : marche dessus (ou, au bar, touche « Prendre ») : il te rend <b>deux vies</b>.</li>
               <li>❤️ <b>Vies</b> : 4. Chaque morsure en coûte <b>une</b> ; à zéro, tu deviens zombie… et retour à la caserne.</li>
               <li>🔥 <b>Le feu</b> : ne marche pas dans les flammes (voitures, fûts, brasiers) : une vie en moins.</li>
@@ -2267,7 +2267,7 @@
             .catch(e => infoMatrice("Le flipper n'a pas pu démarrer : " + e.message, 6000)); },
         surApo: e => { $("mxApo").hidden = !e; if (!e) return;
           { const PIST = '<svg viewBox="0 0 64 40" width="30" height="19" style="vertical-align:-4px;margin-right:6px" aria-hidden="true"><path fill="#1b1b1d" stroke="#8a8a90" stroke-width="1.2" d="M4 6h52l3 3v7H30l-2 3h-4l-5 17c-.4 1.3-1.6 2-3 2H9c-1.8 0-3-1.7-2.5-3.4L11 18H6l-2-3z"/><path fill="none" stroke="#8a8a90" stroke-width="1.6" d="M22 18c0 5 3 8 8 7"/><rect x="40" y="8" width="12" height="2" fill="#4a4a50"/></svg>';   /* (un pistolet noir, et non l'émoji du pistolet à eau) */
-            $("mxApoBalles").innerHTML = e.sh ? (e.arme ? PIST + "∞" : "✋ Sans arme") : e.mitra ? "🔥 Mitraillette ∞" : `${PIST}${e.balles} / 9 · 💀 ${e.tues}/${e.tuesMitra}`; } $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, (e.max || 4) - e.vies));
+            $("mxApoBalles").innerHTML = e.sh ? (e.arme ? PIST + "∞" : "✋ Sans arme") : e.mitra ? "🔥 Mitraillette ∞" : `${PIST}∞ · 💀 ${e.tues}/${e.tuesMitra}`; } $("mxApoVies").textContent = "❤️".repeat(Math.max(0, e.vies)) + "🖤".repeat(Math.max(0, (e.max || 4) - e.vies));
           $("mxApo").querySelectorAll(".mx-apo-eq").forEach(x => x.remove());
           for (const q of e.equipe || []) { const sp = document.createElement("span"); sp.className = "mx-apo-eq"; sp.textContent = q.mort ? `💀 ${q.nom}` : `🤝 ${q.nom} ` + "❤️".repeat(q.vies) + "🖤".repeat(Math.max(0, 4 - q.vies)); $("mxApo").appendChild(sp); }
           if (e.zombie) $("mxApoMortTxt").textContent = `Retour à la caserne dans ${e.zombie} s…`; },

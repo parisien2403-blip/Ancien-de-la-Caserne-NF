@@ -10928,7 +10928,7 @@ function poseMurLK(l) { const { c, a, y } = l.mur, ux = new THREE.Vector3(c.ux[0
 function animerLickers(moi, now, dt) {
   if (!M.L.apo || M.L.sh || M.L.interieur || !(M.L.facadesFen && M.L.facadesFen.length) || M.evac) { if (M.lickers && M.lickL !== M.L) { for (const l of M.lickers) M.scene.remove(l.g); M.lickers = []; } return; }
   if (M.lickL !== M.L) { for (const l of M.lickers || []) M.scene.remove(l.g); M.lickers = []; M.cadavres = []; M.lickL = M.L; M.lickT = now + 4000; chargerLicker(); }
-  if (now > (M.lickT || 0) && M.lickers.filter(l => !l.mortT).length < LK.N) { M.lickT = now + 1500; licker3D && licker3D.then(G => { if (G && M && M.L === M.lickL && M.lickers.filter(l => !l.mortT).length < LK.N) { const l = creerLicker(G); if (l) M.lickers.push(l); } }); }
+  if (!(M.tyran && !M.tyran.mortT) && now > (M.lickT || 0) && M.lickers.filter(l => !l.mortT).length < LK.N) { M.lickT = now + 1500; licker3D && licker3D.then(G => { if (G && M && M.L === M.lickL && M.lickers.filter(l => !l.mortT).length < LK.N) { const l = creerLicker(G); if (l) M.lickers.push(l); } }); }
   const mp = moi.g.position, hSol = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, {}) : 0;
   for (const l of [...M.lickers]) { l.mix.update(dt);
     if (l.mortT) { if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
@@ -10968,6 +10968,10 @@ function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) r
     Object.assign(T, { attente: false, g, piv, sc, mix, act, cur: null, mesh: hit, x: px, z: pz, etat: "chute", t0: performance.now(), frappeT: 0, regardT: 0, os: {} });
     sc.traverse(o => { if (o.isBone && !T.os[o.name]) T.os[o.name] = o; }); jouerTY(T, "idle"); void mp; cineTyran(T); }); }
 /* l'arrivée du Tyran : il tombe du ciel sous nos yeux, on le voit de près, et les héros réagissent */
+// le combat contre le Tyran, sur la terrasse : lui seul ; aucun zombie ni Licker ne vient s'y mêler (ceux qui y sont, ou y montent, disparaissent)
+function terrasseBoss() { const T = M.tyran, c = M.L && M.L.heliport; if (!T || T.mortT || !c) return; const sur = (x, y, z) => Math.hypot(x - c.x, z - c.z) < 20 && Math.abs(y - c.y) < 2.5;
+  for (const z of [...(M.zomb ? M.zomb.values() : [])]) if (!z.mortT && z.g && sur(z.x, z.g.position.y, z.z)) retirerZ(z);
+  for (const l of [...(M.lickers || [])]) if (l.g && Math.hypot(l.x - c.x, l.z - c.z) < 25) { M.scene.remove(l.g); M.lickers.splice(M.lickers.indexOf(l), 1); } }
 function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const eq = equipierVivant(), gens = [moi, eq].filter(Boolean), cam = M.camera, caches = new Set(), t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0;
   const fin = () => { if (fini || !M) return; fini = true; for (const z of caches) z.g.visible = true; finCine(); placerCamera(true); if (T.etat === "regard") T.regardT = performance.now() + 500; };
   M.passerBtn = boutonPasser(fin);
@@ -11010,10 +11014,10 @@ function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.n
   if (T.hp <= 0) { T.mortT = performance.now(); M.tyranMort = true; sonPos("sons/zombie3.mp3", 1);
     M.ctx.surInfo && M.ctx.surInfo("💀 Le Tyran est à terre ! L'hélicoptère descend : vite, vers le cercle rouge !"); } }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
-let zombie3D = null, skelMod = null;
+let zombie3D = null, skelMod = null, zG = null;
 const Z3_MAX = 10, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-    const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
+    const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); zG = g; return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
 function poserZ3(z, g) { const sc = skelMod.clone(g.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
   const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
   sc.scale.setScalar(z.H * 1.02 / Z3_H * (g.scene.scale.x ? 1 : 1)); act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
@@ -11029,10 +11033,10 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
   Z.mix.timeScale = (ZTYPES[z.ty].v || .85) * 1.1; Z.mix.update(dt);
   const touche = now < (z.flashT || 0); if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
 /* qui est en 3D : les zombies ordinaires les plus proches de la caméra (pas le chien, ni Nemesis, ni les équipiers revenus) */
-function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 500; const g = zombie3D; chargerZombie3D();
+function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; const g = zombie3D; chargerZombie3D();
   zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
     const cand = [...M.zomb.values()].filter(z => !z.chien && !z.boss && !z.revenant).sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z));
-    cand.forEach((z, i) => { const veut = (i < (PETIT ? 4 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < 45) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) poserZ3(z, G); else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
+    let nouveaux = 0; cand.forEach((z, i) => { const veut = (i < (PETIT ? 4 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < 45) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) { if (nouveaux < 2) { poserZ3(z, G); nouveaux++; } }   /* (deux nouveaux à la fois au plus : l'image ne se fige plus en arrivant quelque part) */ else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
 function retirerZ(z) { if (z.z3 && z.mortT) garderCadavre(z.z3.pivot);   /* (le corps reste au sol, dans sa flaque) */ M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
@@ -11059,17 +11063,15 @@ function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   z.tireurT = performance.now();
   if (z.licker || z.tyran) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
-    if (!M.mitra) { if (APO.balles <= 0) { sonVide(); M.ctx.surInfo && M.ctx.surInfo("🔫 Plus de munitions ! Trouve une boîte de balles."); return; } APO.balles--; majHudApo(); }
     const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); if (z.tyran) toucherTyran(z); else toucherLicker(z, dx, dz); return; }
   if (M.mitra) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) return; const dx = dx0 / d, dz = dz0 / d;
     moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); sonBruit(.12, 2200, .6); impactZ(z, dx, dz); envoyerWS({ t: "z_tir", id: z.id, dx, dz }); if (estChefZ()) blesserZ(z, dx, dz); return; }
-  if (APO.balles <= 0) { sonVide(); M.ctx.surInfo && M.ctx.surInfo("🔫 Plus de munitions ! Trouve une boîte de balles."); return; }
+  // (munitions illimitées : plus de boîtes de balles à chercher)
   const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1;
   if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
   const dx = dx0 / d, dz = dz0 / d;
-  APO.balles--; majHudApo();
   moi.cible = null; moi.chemin = []; moi.tirT = performance.now();
   if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
   eclairDuCanon(moi, dx, dz); sonTir();
@@ -11361,9 +11363,9 @@ function objetsApo() {
       M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: etg, sp, cache: 0 }); mis++; } };
   const nb = { grande: [5, 2], rue: [3, 1], fetes: [2, 1], etage: [5, 3] }[base] || [0, 0];
   const horsRepos = (x, z) => !(L.repos && L.repos(x, z));
-  poser("balles", nb[0], horsRepos); poser("plante", nb[1], horsRepos);
+  void nb[0]; poser("plante", nb[1], horsRepos);   // (plus de boîtes de munitions : les balles sont illimitées)
   // la salle de repos : de quoi se refaire, posé sur le comptoir du bar (on le prend avec le bouton)
-  if (L.repos && L.comptoirSousSol) L.comptoirSousSol.forEach(([x, z], i) => { const type = i % 2 ? "plante" : "balles", y = L.yComptoirSousSol;
+  if (L.repos && L.comptoirSousSol) L.comptoirSousSol.forEach(([x, z], i) => { const type = "plante", y = L.yComptoirSousSol;
     const sp = type === "plante" ? spraySoin(true) : new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
     if (type === "plante") sp.position.set(x, y, z); else { sp.scale.set(.46, .31, 1); sp.position.set(x, y + .16, z); }
     M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: 0, sp, cache: 0, table: true }); });
@@ -11399,7 +11401,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt);
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss();
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -14926,7 +14928,9 @@ function preparerVoisin() {
   M.preparation = true; const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return;
       const q = construireScene(best); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[best] = q;
-      const fin = () => { if (M) M.preparation = false; };
+      // (l'apocalypse : un zombie et nos personnages en 3D, cachés sous le sol, le temps de préparer leur affichage avec les lumières du lieu — sinon tout se prépare d'un coup en arrivant, et l'image se fige)
+      const extra = []; if (q.L.apo && skelMod) { const add = o => { o.position.set(0, -500, 0); q.scene.add(o); extra.push(o); }; if (zG) add(skelMod.clone(zG.scene)); for (const p of M.gens.values()) if (p.av3) add(skelMod.clone(p.av3.sc)); }
+      const fin = () => { for (const o of extra) q.scene.remove(o); if (M) M.preparation = false; };
       // les images (murs, sols, affiches…) sont envoyées à la carte graphique dès maintenant
       const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
       if (q.scene.background && q.scene.background.isTexture) try { M.rendu.initTexture(q.scene.background); } catch (e) {}
