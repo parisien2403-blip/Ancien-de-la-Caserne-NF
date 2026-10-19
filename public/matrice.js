@@ -12050,7 +12050,7 @@ async function dessinerCorps(p) {
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
 /* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
-export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=4" }], 2: [{ id: "polo", nom: "Polo bleu, jean, chaussures marron", f: "avatars/0002.glb?v=3" }] };
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }], 2: [{ id: "polo", nom: "Polo bleu, jean, chaussures marron", f: "avatars/0002.glb?v=4" }] };
 const av3Cache = {}; let gltfMod = null;
 function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
@@ -12070,7 +12070,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=3", 25: "avatars/re-wesker.glb?v=3", 26: "avatars/re-chris.glb?v=3", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=3" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4" };
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
