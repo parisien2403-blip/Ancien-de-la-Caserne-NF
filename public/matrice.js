@@ -8113,28 +8113,32 @@ export async function ouvrir(ctx) {
   if (M) fermer();
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const T = textures();
-  const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
+  // un petit téléphone (peu de mémoire, petite carte graphique : Galaxy A22, A12…) : tout est allégé, sinon le navigateur manque de mémoire et recharge la page
+  PETIT = !!(navigator.deviceMemory && navigator.deviceMemory <= 4);
+  const rendu = new THREE.WebGLRenderer({ antialias: !PETIT, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
-    GPU_MODESTE = /Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom); M_GPU = nom; } catch (e) {}
+    if (/Mali-(G31|G51|G52|G57|G68|T\d)|Adreno \(TM\) ([3-5]\d\d|60\d|61\d)|PowerVR/i.test(nom)) PETIT = true;
+    GPU_MODESTE = PETIT || (/Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom)); M_GPU = nom; } catch (e) {}
+  LK.N = PETIT ? 1 : 3;   // (les Lickers : un seul à la fois sur un petit téléphone)
   // les façades de brique : deux fois plus fines sur une bonne carte, un peu plus sur un téléphone, telles quelles sur une carte modeste
   K_FAC = window.CASERNE_KFAC || (GPU_MODESTE ? 1 : (/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) ? 1.25 : 2);
   // un voyage précédent n'est pas arrivé au bout (gel, appli fermée de force) : on envoie le relevé à l'administrateur
   try { const t = localStorage.getItem("caserne-trace"); if (t) { localStorage.removeItem("caserne-trace");
-      fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Un voyage s'est bloqué. Dernières étapes : " + JSON.parse(t).map(([e, ms]) => e + " (" + ms + " ms)").join(" → ") + " — carte graphique : " + (M_GPU || "?"), appareil: navigator.userAgent }) }).catch(() => {}); } } catch (e) {}
+      fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Un voyage s'est bloqué. Dernières étapes : " + JSON.parse(t).map(([e, ms]) => e + " (" + ms + " ms)").join(" → ") + " — carte graphique : " + (M_GPU || "?") + " — mémoire : " + (navigator.deviceMemory || "?") + " Go" + (PETIT ? " (mode petit téléphone)" : ""), appareil: navigator.userAgent }) }).catch(() => {}); } } catch (e) {}
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
-  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : 1.5); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
+  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : 1.5) * (PETIT ? .85 : 1); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
-  const budget = logiciel ? 4e5 : 2.4e6, resMin = logiciel ? .5 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
+  const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
     rendu.setPixelRatio(Math.max(resMin, Math.min(res, Math.sqrt(budget / (w * h))))); };
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
   appliquerRes();
-  rendu.shadowMap.enabled = true; rendu.shadowMap.type = THREE.PCFSoftShadowMap;
+  rendu.shadowMap.enabled = !logiciel && !PETIT; rendu.shadowMap.type = THREE.PCFSoftShadowMap;   // (ni sans carte graphique, ni sur un petit téléphone : pas d'ombres portées)
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
@@ -10948,7 +10952,7 @@ function toucherLicker(l, dx, dz) { l.flashT = performance.now() + 160; sangAuSo
   if (l.etat === "mur" && l.hp > 0) { l.etat = "chute"; l.t0 = performance.now(); l.p0 = l.g.position.clone(); l.q0 = l.g.quaternion.clone(); const c = l.mur.c, n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize(); l.p1 = l.p0.clone().addScaledVector(n, 1.4); l.p1.y = M.L.hauteur ? M.L.hauteur(l.p1.x, l.p1.z, {}) : 0; }
   if (l.hp <= 0) { l.mortT = performance.now(); if (l.etat !== "sol") { l.g.position.y = M.L.hauteur ? M.L.hauteur(l.x, l.z, {}) : 0; l.g.rotation.set(0, l.g.rotation.y, 0); } jouerLK(l, LK_A.mort, true); sangAuSol(l.x, l.z, l.g.position.y, 2); M.ctx.surInfo && M.ctx.surInfo("💀 Le Licker est abattu."); } void dx; void dz; }
 /* les corps des monstres abattus restent au sol (une douzaine au plus : les plus anciens disparaissent) */
-function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.cadavres.push(o); while (M.cadavres.length > 24) { const v = M.cadavres.shift(); v.parent && v.parent.remove(v); } }
+function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.cadavres.push(o); while (M.cadavres.length > (PETIT ? 8 : 24)) { const v = M.cadavres.shift(); v.parent && v.parent.remove(v); } }
 /* le Tyran : quand le fumigène est posé sur le cercle de la terrasse, il tombe du ciel. Grand (2,6 m), il nous fixe, court vers nous et frappe (une vie) ;
    quinze balles pour l'abattre — alors seulement l'hélicoptère peut se poser */
 let tyran3D = null; const TY = { HP: 15, H: 1.45, V: 4.4 };
@@ -11028,7 +11032,7 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
 function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 500; const g = zombie3D; chargerZombie3D();
   zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
     const cand = [...M.zomb.values()].filter(z => !z.chien && !z.boss && !z.revenant).sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z));
-    cand.forEach((z, i) => { const veut = (i < Z3_MAX && Math.hypot(z.x - cam.x, z.z - cam.z) < 45) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < 70);   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) poserZ3(z, G); else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
+    cand.forEach((z, i) => { const veut = (i < (PETIT ? 4 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < 45) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) poserZ3(z, G); else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
 function retirerZ(z) { if (z.z3 && z.mortT) garderCadavre(z.z3.pivot);   /* (le corps reste au sol, dans sa flaque) */ M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
@@ -11434,7 +11438,7 @@ function animerApo(t, dt) {
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
-let GPU_MODESTE = false, M_GPU = "";
+let GPU_MODESTE = false, M_GPU = "", PETIT = false;
 // le carnet de bord d'un voyage (gardé dans le téléphone / l'ordinateur) : si l'appli gèle et qu'on la ferme de force, au retour on sait à quelle étape c'était, et l'administrateur reçoit le relevé
 function trace(etape) { try { const t = JSON.parse(localStorage.getItem("caserne-trace") || "[]"); t.push([etape, Math.round(performance.now())]); localStorage.setItem("caserne-trace", JSON.stringify(t.slice(-20))); } catch (e) {} }   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
 /* le ciel nuageux du jour, comme dans la vraie vie : des cumulus blancs, dessinés en perspective sur une couche haute (plus petits et plus serrés vers l'horizon),
