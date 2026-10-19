@@ -10260,6 +10260,7 @@ function abimerCabine(g) { const Lc = 1.05, bois = [0x7a6648, 0x6a5638, 0x8a7656
 function apocalypse(scene, L, base) {
   texturesApo();
   L.apo = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;
+  if (!L.interieur && !L.suivi) L.suivi = { d: 6, h: 3.4, av: 4, vy: 1.8 };   // (dehors aussi, la caméra suit derrière soi : on la fait tourner en glissant le doigt, ou avec ↻)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   // les passages mènent à la caserne de l'apocalypse ; seule la case de la déchetterie ramène à la vraie
   L.portails = (L.portails || []).filter(q => !q.pasApo); L.messVitres = null;
@@ -10399,7 +10400,7 @@ function apocalypse(scene, L, base) {
       const veut = !!(M && M.fumi && M.fumi.trouve && !M.evac); vis = Math.max(0, Math.min(1, vis + (veut ? dt / 3 : -dt / 2))); const actif = vis > 0, f = vis;
       const ox = L.heliport ? L.heliport.x : cx, oz = L.heliport ? L.heliport.z : cz, a = now / 9000, rr = L.heliport ? 24 : R * .7;
       const hx = ox + Math.cos(a) * rr, hz = oz + Math.sin(a) * rr, hy = 30 + (1 - vis) * 25;
-      modele.visible = actif && !M.evac; modele.position.set(hx, hy, hz); L.helicoPos = actif ? [hx, hy, hz, -a - Math.PI] : null; modele.rotation.set(0, -a - Math.PI, .18); modele.userData.rotor.rotation.y += dt * 26; modele.userData.rotorQ.rotation.z += dt * 40; modele.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+      modele.visible = actif && !M.evac; modele.position.set(hx, hy, hz); L.helicoPos = actif ? [hx, hy, hz, -a - Math.PI] : null; modele.rotation.set(0, -a - Math.PI, .18); modele.userData.rotor.rotation.y += dt * 9.5; modele.userData.rotorQ.rotation.z += dt * 40; modele.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
       const sx = ox + Math.sin(now / 1300) * 5, sz = oz + Math.cos(now / 1700) * 5;
       spot.position.set(hx, hy - 1, hz); spot.target.position.set(sx, 0, sz); spot.intensity = 0;   // (plus de vraie lumière : elle traversait les toits et les murs — la salle de judo sous la terrasse ; seuls le faisceau et la tache au sol, dessinés)
       const dir = new THREE.Vector3(sx - hx, -hy, sz - hz), lg = dir.length(); cone.position.set(hx, hy - 1, hz); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize().negate());
@@ -10573,7 +10574,7 @@ function cineSurvol(moi, [cri, reponse]) {
     hel.position.lerpVectors(D, F, Math.max(0, (u - .5) / 10.5)); const cn = hel.userData.cone, ta = hel.userData.tache; cn.visible = ta.visible = hel.position.clone().sub(p).dot(dir) > 3;   /* (le faisceau, une fois qu'il est passé devant : pas dans l'objectif) */
     cn.rotation.z = .35 + Math.sin(u * 1.1) * .3; cn.rotation.x = .3 + Math.sin(u * .7 + 1) * .35;   /* (le projecteur balaie le sol : il cherche des survivants… à côté de nous) */
     cn.scale.y = 30; hel.updateMatrixWorld(true); const bout = cn.localToWorld(new THREE.Vector3(0, -1, 0)), o0 = cn.localToWorld(new THREE.Vector3(0, 0, 0)), dv = bout.clone().sub(o0), kk = dv.y < -.01 ? (p.y + .06 - o0.y) / dv.y : 1;
-    ta.position.copy(o0).addScaledVector(dv, kk); ta.position.y = p.y + .06; cn.scale.y = 30 * Math.max(.2, kk); hel.rotation.z = .08; hel.userData.rotor.rotation.y += dt * 28; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+    ta.position.copy(o0).addScaledVector(dv, kk); ta.position.y = p.y + .06; cn.scale.y = 30 * Math.max(.2, kk); hel.rotation.z = .08; hel.userData.rotor.rotation.y += dt * 9.5; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
     helA.volume = Math.max(0, Math.min(.8, 1 - Math.abs(k - .5) * 2.2)) * .9;
     // on lève les yeux : la caméra, près de soi, suit l'hélico qui passe, haut dans le ciel
     const devant = hel.position.clone().sub(p).dot(dir);
@@ -10626,7 +10627,8 @@ function creerHelico() { const g = creerHelicoDessin(), U = g.userData;
     // (le modèle : le nez vers −x, 12 m de long, en centimètres ; le nôtre a le nez vers +x et son moyeu en (0,1 ; 3,42))
     const m = sc.clone(), corps = m.getObjectByName("corps"), rot = m.getObjectByName("rotor"), k = .01;
     const P = new THREE.Group(); P.rotation.y = Math.PI; P.scale.setScalar(k); P.position.set(.1 + .83, .93, 0); g.add(P); if (corps) P.add(corps);
-    if (rot) { rot.position.set(0, 0, 0); const R = new THREE.Group(); R.rotation.y = Math.PI; R.scale.setScalar(k); R.add(rot); U.rotor.add(R); U.rotor.position.set(.1, .93 + 3.36, 0); }
+    if (rot) { rot.position.set(0, 0, 0); const R = new THREE.Group(); R.rotation.y = Math.PI; R.scale.setScalar(k); R.add(rot); U.rotor.add(R); U.rotor.position.set(.1, .93 + 3.36, 0);
+      const flou = new THREE.Mesh(new THREE.CircleGeometry(5.6, 40), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide })); flou.rotation.x = -Math.PI / 2; flou.position.y = .05; U.rotor.add(flou); }   // (le disque flou des pales qui tournent : à pleine vitesse, l'œil ne voit pas chaque pale)
     U.feu.position.set(-8.3, 4.05, 0); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); });
   return g; }
 function creerHelicoDessin() {
@@ -10715,7 +10717,7 @@ function cineEvac(m) {
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
   cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
   const c = M.cine = { t0, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
-    hel.userData.rotor.rotation.y += dt * 28; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+    hel.userData.rotor.rotation.y += dt * 9.5; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
     // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
@@ -11975,6 +11977,10 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
     A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A); }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
+  if (p.info.mortT && p.info.heros && av3OK(p)) { const f = Math.min(1, (performance.now() - p.info.mortT) / 700);   // (un héros mort : il tombe en arrière, et reste allongé sur le sol)
+    A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.sc.rotation.order = "YXZ"; A.sc.rotation.x = -f * Math.PI / 2 * .97; A.sc.position.set(0, .12 * f, 0);
+    if (A.cur !== "idle" && A.act.idle) { A.act.idle.reset().play(); if (A.curA && A.curA !== A.act.idle) A.curA.stop(); A.cur = "idle"; A.curA = A.act.idle; } A.mix.update(f < 1 ? dt : 0); return; }
+  A.sc.rotation.x = 0;
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
   A.v = (A.v || 0) * .8 + v * .2;
