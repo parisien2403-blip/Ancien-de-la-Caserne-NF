@@ -10453,6 +10453,8 @@ function heliportApo(scene, L) {
   const geoF = new THREE.CylinderGeometry(.6, 1.4, 40, 24, 1, true); geoF.translate(0, 20, 0);
   const faisceau = new THREE.Mesh(geoF, rouge(0xff2020, .1)); cercle.add(faisceau);
   L.heliport = { ...H, cercle, anneau, disque, faisceau };
+  // la plateforme ronde, son H jaune, ses lampes (le modèle 3D) à la place du H peint ; 10,5 m de diamètre, au ras de la terrasse
+  chargerGLB("avatars/re-heliport.glb?v=1").then(sc => { if (!sc) return; const m = sc.clone(), k = .0075; m.scale.setScalar(k); m.position.y = .06 - 180 * k; m.traverse(o => { if (o.isMesh) o.receiveShadow = true; }); g.add(m); peint.visible = false; });
 }
 // des détritus au sol : journaux, feuilles, canettes, cartons (quatre dessins en tout : très léger)
 function detritusApo(scene, L, base, hSol, plus = 1) {
@@ -10597,7 +10599,18 @@ function surFumi(m) {
   if (m.trouve && !(avant && avant.trouve)) M.ctx.surInfo(Number(m.par) === Number(M.moiNum) ? "🧨 Tu as le fumigène ! Va vite sur la terrasse de la grande cour : au centre du H, le cercle rouge." : `🧨 ${esc(m.nom || "Quelqu'un")} a trouvé le fumigène ! Tous sur la terrasse de la grande cour, au cercle rouge !`);
 }
 // l'hélicoptère du S.T.A.R.S. (d'après la planche : AgustaWestland AW139 modifié, vert olive, « S.T.A.R.S. », « ST-01 ») ; le nez vers +x, la baie de troupes ouverte côté +z
-function creerHelico() {
+/* l'hélicoptère et l'héliport en vraie 3D (des modèles) : chargés une fois ; en attendant, l'ancien dessin reste visible */
+const glb3D = {}; function chargerGLB(f) { return glb3D[f] || (glb3D[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return (await new gltfMod.GLTFLoader().loadAsync(f)).scene; })().catch(e => { console.warn(f, e); return null; })); }
+function creerHelico() { const g = creerHelicoDessin(), U = g.userData;
+  chargerGLB("avatars/re-helico.glb?v=1").then(sc => { if (!sc) return; const garder = new Set([U.rotor, U.rotorQ, U.feu]);
+    for (const o of [...g.children]) if (!garder.has(o)) o.visible = false; U.rotorQ.visible = false; for (const o of [...U.rotor.children]) o.visible = false;
+    // (le modèle : le nez vers −x, 12 m de long, en centimètres ; le nôtre a le nez vers +x et son moyeu en (0,1 ; 3,42))
+    const m = sc.clone(), corps = m.getObjectByName("corps"), rot = m.getObjectByName("rotor"), k = .01;
+    const P = new THREE.Group(); P.rotation.y = Math.PI; P.scale.setScalar(k); P.position.set(.1 + .83, .93, 0); g.add(P); if (corps) P.add(corps);
+    if (rot) { rot.position.set(0, 0, 0); const R = new THREE.Group(); R.rotation.y = Math.PI; R.scale.setScalar(k); R.add(rot); U.rotor.add(R); U.rotor.position.set(.1, .93 + 3.36, 0); }
+    U.feu.position.set(-8.3, 4.05, 0); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); });
+  return g; }
+function creerHelicoDessin() {
   const g = new THREE.Group(), M_ = (o) => new THREE.MeshStandardMaterial(o);
   const vert = M_({ color: 0x55653f, roughness: .5, metalness: .25, emissive: 0x1e2616, emissiveIntensity: .9 }), vertF = M_({ color: 0x3e4b2e, roughness: .55, metalness: .2, emissive: 0x141a0e, emissiveIntensity: .9 });
   const noir = M_({ color: 0x121212, roughness: .5 }), vitre = M_({ color: 0x1a2630, roughness: .08, metalness: .8, emissive: 0x050a10 }), gris = M_({ color: 0xc8c8c4, roughness: .4, metalness: .3, emissive: 0x222222 }), jaune = M_({ color: 0xe0b020, emissive: 0x403000 });
