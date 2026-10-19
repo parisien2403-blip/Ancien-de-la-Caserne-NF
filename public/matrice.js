@@ -12050,7 +12050,7 @@ async function dessinerCorps(p) {
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
 /* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
-export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=2" }], 2: [{ id: "polo", nom: "Polo bleu, jean, chaussures marron", f: "avatars/0002.glb?v=1" }] };
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=3" }], 2: [{ id: "polo", nom: "Polo bleu, jean, chaussures marron", f: "avatars/0002.glb?v=2" }] };
 const av3Cache = {}; let gltfMod = null;
 function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
@@ -12070,7 +12070,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=1", 25: "avatars/re-wesker.glb?v=1", 26: "avatars/re-chris.glb?v=1", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=1" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=2", 25: "avatars/re-wesker.glb?v=2", 26: "avatars/re-chris.glb?v=2", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=2" };
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
@@ -12100,7 +12100,7 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   if (v > .05) { let d = Math.atan2(dx, dz) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 10); }   // (il se tourne dans le sens de sa marche)
   const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
-  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt); demarche3D(A);
+  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
   A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
   if (p.poseCine || A.poseC) poseCine3D(p, A);
   if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
@@ -12119,13 +12119,6 @@ function mort3D(p, A) { const t = performance.now() - p.info.mortT, u = Math.min
   const genou = () => { A.sc.updateMatrixWorld(true); const a = os3D(A, "LeftLeg"), b = os3D(A, "RightLeg"); if (!a || !b) return null; const v = a.getWorldPosition(_vk()).add(b.getWorldPosition(_vk())).multiplyScalar(.5); return p.g.worldToLocal(v); };
   const k0 = genou(); if (!k0) return; A.sc.rotation.x = th; const k1 = genou();
   A.sc.position.set(k0.x - k1.x, k0.y + (.1 - k0.y) * u - k1.y + .05 * w, k0.z - k1.z); }
-/* la démarche : le mouvement de marche du mannequin balance beaucoup les hanches (un déhanché) ; on le ramène en partie vers la pose debout,
-   pour une marche plus droite, plus masculine (le bassin et le bas du dos) */
-const DEMARCHE = [["Hips", .72], ["Spine", .5], ["Spine1", .3]];
-function demarche3D(A) { if (!A.repHips && A.cur === "idle") { A.repHips = {}; for (const [n] of DEMARCHE) { const b = os3D(A, n); if (b) A.repHips[n] = b.quaternion.clone(); } }
-  if (!A.repHips || (A.cur !== "walk" && A.cur !== "run")) return; for (const [n, k] of DEMARCHE) { const b = os3D(A, n); if (b && A.repHips[n]) b.quaternion.slerp(A.repHips[n], k); }
-  tourne3D(A, "LeftUpLeg", "z", DEMARCHE_ECART); tourne3D(A, "RightUpLeg", "z", -DEMARCHE_ECART); tourne3D(A, "LeftFoot", "z", -DEMARCHE_ECART); tourne3D(A, "RightFoot", "z", DEMARCHE_ECART); }   // (les pieds ne se croisent plus l'un devant l'autre)
-const DEMARCHE_ECART = .11;
 /* en cinématique : lever les yeux au ciel (poseCine), et, désespéré, lever la main gauche vers l'hélicoptère (poseCine.mainT) */
 function poseCine3D(p, A) { const P = p.poseCine, N = ["Head", "Neck", "LeftArm", "LeftForeArm"];
   if (!A.repC) { A.repC = {}; for (const n of N) { const b = os3D(A, n); if (b) A.repC[n] = b.quaternion.clone(); } }
