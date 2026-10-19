@@ -8184,7 +8184,7 @@ export async function ouvrir(ctx) {
     // à Silent Hill : toucher un monstre, c'est lui tirer dessus (avec l'arme de James)
     if (M.L.sh && M.shMonstres && M.shMonstres.length && !M.cine) { const m = monstresSHVises(ray); if (m) { tirerSH(m); return; } }
     // à l'apocalypse : toucher un zombie (ou un chien), c'est lui tirer dessus
-    if (M.L.apo && M.zomb && M.zomb.size) { const vv = [...M.zomb.values()].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
+    if (M.L.apo && M.zomb && (M.zomb.size || (M.lickers || []).length)) { const vv = [...M.zomb.values(), ...(M.lickers || [])].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
       if (hz) { tirer(vv.find(z => z.mesh === hz.object)); return; } }
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
     const toi = M.moiNum && M.gens.get(M.moiNum);
@@ -10280,9 +10280,10 @@ function apocalypse(scene, L, base) {
   const teinter = () => { scene.traverse(o => { if (!o.isLight || o.userData.apo) return;
       if (o.userData.i0 === undefined) { o.userData.i0 = o.intensity; if (o.isHemisphereLight) { o.color.setHex(0x7a3424); o.groundColor.setHex(0x1a0a06); } else o.color.lerp(orange, o.isPointLight || o.isSpotLight ? .35 : .5);
         if ((o.isPointLight || o.isSpotLight) && Math.random() < .3) clignos.push(o); }
-      if (o.isHemisphereLight) { o.color.setHex(0x7a3424); o.groundColor.setHex(0x1a0a06); }
-      o.intensity = o.userData.i0 * (o.isHemisphereLight ? .85 : .6); });
-    scene.background = ext ? ciel : new THREE.Color(0x0a0605); scene.fog = new THREE.Fog(brume, ext ? 7 : 4, ext ? 46 : 28); };
+      if (o.isHemisphereLight) { o.color.setHex(0xc08060); o.groundColor.setHex(0x3a2418); }
+      o.intensity = o.userData.i0 * (o.isHemisphereLight ? 1.5 : .85); });   /* (plus de lumière qu'avant : on distingue mieux les personnages et les monstres) */
+    if (!L.ambApo) { L.ambApo = new THREE.AmbientLight(0xd8a890, ext ? .9 : .7); L.ambApo.userData.apo = true; scene.add(L.ambApo); }
+    scene.background = ext ? ciel : new THREE.Color(0x0a0605); scene.fog = new THREE.Fog(brume, ext ? 12 : 6, ext ? 70 : 36); };
   const setN = L.setNuit;
   // plus de fête ni de fenêtres allumées : la boule, les projecteurs, les lyres sont éteints ; les fenêtres sont noires
   const eteindre = () => { (L.nuitObjets || []).forEach(o => { if (!o.isLight) o.visible = false; });
@@ -10426,7 +10427,7 @@ function apocalypse(scene, L, base) {
     if (!L.lumsT || t > L.lumsT) { L.lumsT = t + 400; const c = M && M.camera ? M.camera.position : { x: 0, z: 0 };
       L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
     lumsFeu.forEach((l, i) => { const f = L.feuxProches[i]; if (!f) { l.intensity = 0; return; }
-      l.position.set(f.x, f.y, f.z); l.distance = 12 * f.k; l.intensity = 9 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
+      l.position.set(f.x, f.y, f.z); l.distance = 16 * f.k; l.intensity = 13 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1);
     L.lampesApo(t); };
 }
@@ -10800,19 +10801,67 @@ function creerZ(d) {
 function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
   if (T.chien) { const im = z.mesh.material.map && z.mesh.material.map.image; z.H = tailleBonhomme() * T.h * (R.h || 1); z.W = z.H * (im && im.width ? im.width / im.height : T.ratio) * (R.l || 1); z.om.scale.set(z.W * 1.1, z.W * .45, 1); }
   else { z.H = tailleBonhomme() * (R.h || 1) * (T.taille || 1); z.W = z.H * .476 * 1.6; z.om.scale.set(z.H * .5, z.H * .5, 1); } }   // (comme un bonhomme : la corpulence est dans le dessin)
+/* les Lickers : accrochés aux façades, ils y rampent ; quand on approche, ils se laissent tomber, rampent vers nous et nous sautent dessus (une vie) ; cinq balles pour les abattre.
+   Chacun voit les siens (ils ne sont pas partagés entre joueurs) */
+let licker3D = null;
+const LK = { N: 3, K: .105, HP: 5, VUE: 10, SAUT: 3.6 };   // (K : l'échelle du modèle ; VUE : à quelle distance il nous repère ; SAUT : d'où il bondit)
+const LK_A = { rampe: 1, saut: 4, attente: 6, mort: 14 };
+function chargerLicker() { if (!licker3D) licker3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
+    return await new gltfMod.GLTFLoader().loadAsync("avatars/re-licker.glb?v=1"); })().catch(e => { console.warn("licker", e); return null; }); return licker3D; }
+function placeMurLicker() { const Fs = []; for (const [, cadres] of M.L.facadesFen || []) for (const c of cadres) if (c.W > 6 && c.H > 7) Fs.push(c); if (!Fs.length) return null;
+  const c = Fs[Math.floor(Math.random() * Fs.length)], a = (Math.random() - .5) * (c.W - 3), y = c.o[1] - c.H / 2 + 3 + Math.random() * Math.min(4, c.H - 5);
+  return { c, a, y, sens: Math.random() < .5 ? 1 : -1 }; }
+function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const sc = skelMod.clone(G.scene); sc.scale.setScalar(LK.K); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
+  const g = new THREE.Group(); g.add(sc); M.scene.add(g); const mix = new THREE.AnimationMixer(sc), act = G.animations.map(c => mix.clipAction(c));
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(.9, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = .5; g.add(hit);
+  const l = { licker: true, g, sc, mix, act, cur: -1, mur: m, etat: "mur", hp: LK.HP, mortT: 0, cine: false, mesh: hit, x: 0, z: 0, sautT: 0 }; jouerLK(l, LK_A.rampe); return l; }
+function jouerLK(l, i, une = false) { if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
+function poseMurLK(l) { const { c, a, y } = l.mur, ux = new THREE.Vector3(c.ux[0], 0, c.ux[2]).normalize(), n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize();
+  const p = new THREE.Vector3(c.o[0], 0, c.o[2]).addScaledVector(ux, a).addScaledVector(n, .12); p.y = y; l.g.position.copy(p);
+  const zA = ux.clone().multiplyScalar(l.mur.sens), xA = n.clone().cross(zA).normalize(); l.g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA, n, zA));   // (le ventre contre le mur : son « haut » est la normale de la façade)
+  l.x = p.x; l.z = p.z; }
+function animerLickers(moi, now, dt) {
+  if (!M.L.apo || M.L.sh || M.L.interieur || !(M.L.facadesFen && M.L.facadesFen.length) || M.evac) { if (M.lickers && M.lickL !== M.L) { for (const l of M.lickers) M.scene.remove(l.g); M.lickers = []; } return; }
+  if (M.lickL !== M.L) { for (const l of M.lickers || []) M.scene.remove(l.g); M.lickers = []; M.cadavres = []; M.lickL = M.L; M.lickT = now + 4000; chargerLicker(); }
+  if (now > (M.lickT || 0) && M.lickers.filter(l => !l.mortT).length < LK.N) { M.lickT = now + 1500; licker3D && licker3D.then(G => { if (G && M && M.L === M.lickL && M.lickers.filter(l => !l.mortT).length < LK.N) { const l = creerLicker(G); if (l) M.lickers.push(l); } }); }
+  const mp = moi.g.position, hSol = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, {}) : 0;
+  for (const l of [...M.lickers]) { l.mix.update(dt);
+    if (l.mortT) { if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
+      if (now - l.mortT > 2500) { garderCadavre(l.g); M.lickers.splice(M.lickers.indexOf(l), 1); M.lickT = now + 30000; } continue; }
+    const rouge = now < (l.flashT || 0); if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : 0); }); }
+    if (l.etat === "mur") { const c = l.mur.c; l.mur.a += l.mur.sens * dt * .7; if (Math.abs(l.mur.a) > (c.W - 3) / 2) { l.mur.sens *= -1; l.mur.a = Math.sign(l.mur.a) * (c.W - 3) / 2; }
+      poseMurLK(l); if (Math.hypot(mp.x - l.x, mp.z - l.z) < LK.VUE && !APO.zombieFin) { l.etat = "chute"; l.t0 = now; l.p0 = l.g.position.clone(); l.q0 = l.g.quaternion.clone();
+        const n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize(); l.p1 = l.p0.clone().addScaledVector(n, 1.4); l.p1.y = hSol(l.p1.x, l.p1.z); sonPos("sons/zombie3.mp3", .8); jouerLK(l, LK_A.attente); } continue; }
+    if (l.etat === "chute") { const f = Math.min(1, (now - l.t0) / 650), q1 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(mp.x - l.p1.x, mp.z - l.p1.z));
+      l.g.position.lerpVectors(l.p0, l.p1, f); l.g.position.y = l.p0.y + (l.p1.y - l.p0.y) * f * f; l.g.quaternion.slerpQuaternions(l.q0, q1, Math.min(1, f * 1.5)); l.x = l.g.position.x; l.z = l.g.position.z;
+      if (f >= 1) { l.etat = "sol"; jouerLK(l, LK_A.rampe); } continue; }
+    const dx = mp.x - l.x, dz = mp.z - l.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
+    if (l.etat === "saut") { const f = Math.min(1, (now - l.t0) / 600); l.x = l.sx + (l.tx - l.sx) * f; l.z = l.sz + (l.tz - l.sz) * f; l.g.position.set(l.x, hSol(l.x, l.z) + Math.sin(f * Math.PI) * 1.1, l.z);
+      if (f >= 1) { l.etat = "sol"; jouerLK(l, LK_A.rampe); if (Math.hypot(mp.x - l.x, mp.z - l.z) < 1.3) subirMorsure(l.x, l.z, 1); } continue; }
+    // au sol : il rampe vers nous ; assez près, il bondit
+    l.g.rotation.set(0, cap, 0); if (APO.zombieFin) { jouerLK(l, LK_A.attente); continue; }
+    if (d < LK.SAUT && now > l.sautT) { l.etat = "saut"; l.t0 = now; l.sautT = now + 2600; l.sx = l.x; l.sz = l.z; const k = Math.min(d, LK.SAUT) - .4; l.tx = l.x + dx / d * k; l.tz = l.z + dz / d * k; jouerLK(l, LK_A.saut, true); sonPos("sons/zombie1.mp3", .9); continue; }
+    if (d > 1.2) { const v = 2.4 * dt, nx = l.x + dx / d * v, nz = l.z + dz / d * v; if (M.L.limites(nx, nz)) { l.x = nx; l.z = nz; } jouerLK(l, LK_A.rampe); } else jouerLK(l, LK_A.attente);
+    l.g.position.set(l.x, hSol(l.x, l.z), l.z); } }
+function toucherLicker(l, dx, dz) { l.flashT = performance.now() + 160; sangAuSol(l.x, l.z, l.g.position.y, 1); l.hp--;
+  if (l.etat === "mur" && l.hp > 0) { l.etat = "chute"; l.t0 = performance.now(); l.p0 = l.g.position.clone(); l.q0 = l.g.quaternion.clone(); const c = l.mur.c, n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize(); l.p1 = l.p0.clone().addScaledVector(n, 1.4); l.p1.y = M.L.hauteur ? M.L.hauteur(l.p1.x, l.p1.z, {}) : 0; }
+  if (l.hp <= 0) { l.mortT = performance.now(); if (l.etat !== "sol") { l.g.position.y = M.L.hauteur ? M.L.hauteur(l.x, l.z, {}) : 0; l.g.rotation.set(0, l.g.rotation.y, 0); } jouerLK(l, LK_A.mort, true); sangAuSol(l.x, l.z, l.g.position.y, 2); M.ctx.surInfo && M.ctx.surInfo("💀 Le Licker est abattu."); } void dx; void dz; }
+/* les corps des monstres abattus restent au sol (une douzaine au plus : les plus anciens disparaissent) */
+function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.cadavres.push(o); while (M.cadavres.length > 14) { const v = M.cadavres.shift(); v.parent && v.parent.remove(v); } }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null;
 const Z3_MAX = 10, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
 function poserZ3(z, g) { const sc = skelMod.clone(g.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
-  const pivot = new THREE.Group(); pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
+  const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
   sc.scale.setScalar(z.H * 1.02 / Z3_H * (g.scene.scale.x ? 1 : 1)); act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
   z.z3 = { pivot, sc, mix, act, cur: "walk" }; z.mesh.visible = false; }
 function retirerZ3(z) { if (!z.z3) return; z.g.remove(z.z3.pivot); z.z3 = null; if (z.mesh.material.map) z.mesh.visible = true; }
 function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
-  if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); Z.pivot.rotation.x = -f * Math.PI / 2 * .95; Z.mix.timeScale = 0;   // (il tombe en arrière)
-    if (now - z.mortT > 6500) { const o = Math.max(0, 1 - (now - z.mortT - 6500) / 1500); Z.sc.traverse(m => { if (m.isMesh) { m.material.transparent = true; m.material.opacity = o; } }); } return; }
+  if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); Z.pivot.rotation.x = -f * Math.PI / 2 * .97; Z.pivot.position.y = f * .14; Z.mix.timeScale = 0;   // (il tombe en arrière, à plat sur le sol : sans s'y enfoncer)
+    if (f >= 1 && !Z.flaque) { Z.flaque = true; const c = Z.cap || 0; flaqueMort({ g: { position: new THREE.Vector3(z.x - Math.sin(c) * .8, yZ(z), z.z - Math.cos(c) * .8) } }); }   // (la flaque de sang s'étend sous lui)
+    return; }
   const moi = moiApo(); let cap = Z.cap ?? 0; if (marche && Math.hypot(vx, vz) > 1e-4) cap = Math.atan2(vx, vz); else if (moi) cap = Math.atan2(moi.g.position.x - z.x, moi.g.position.z - z.z);
   let d = cap - (Z.cap ?? cap); d = Math.atan2(Math.sin(d), Math.cos(d)); Z.cap = (Z.cap ?? cap) + d * Math.min(1, dt * 6); Z.pivot.rotation.y = Z.cap;
   const n = marche ? "walk" : "idle"; if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); Z.act[n].crossFadeFrom(Z.act[Z.cur], .3, false); Z.cur = n; }
@@ -10823,7 +10872,7 @@ function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 500; c
   zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
     const cand = [...M.zomb.values()].filter(z => !z.chien && !z.boss && !z.revenant).sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z));
     cand.forEach((z, i) => { const veut = i < Z3_MAX && Math.hypot(z.x - cam.x, z.z - cam.z) < 45; if (veut && !z.z3) poserZ3(z, G); else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
-function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
+function retirerZ(z) { if (z.z3 && z.mortT) garderCadavre(z.z3.pivot);   /* (le corps reste au sol, dans sa flaque) */ M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
   const m = new THREE.Mesh(new THREE.PlaneGeometry(.8 * k, .8 * k), new THREE.MeshBasicMaterial({ map: texSang[Math.floor(Math.random() * 4)], transparent: true, depthWrite: false }));
@@ -10848,6 +10897,10 @@ function monTue(z) { if (!z.tireurT || performance.now() - z.tireurT > 1500 || !
 function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   z.tireurT = performance.now();
+  if (z.licker) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
+    if (!M.mitra) { if (APO.balles <= 0) { sonVide(); M.ctx.surInfo && M.ctx.surInfo("🔫 Plus de munitions ! Trouve une boîte de balles."); return; } APO.balles--; majHudApo(); }
+    const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
+    eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); toucherLicker(z, dx, dz); return; }
   if (M.mitra) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) return; const dx = dx0 / d, dz = dz0 / d;
     moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); sonBruit(.12, 2200, .6); impactZ(z, dx, dz); envoyerWS({ t: "z_tir", id: z.id, dx, dz }); if (estChefZ()) blesserZ(z, dx, dz); return; }
@@ -11179,7 +11232,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now);
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt);
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -12392,9 +12445,9 @@ function manette() {
   if (tire && now > MAN.tirT && M.L.tirManette) { MAN.tirT = now + 330; M.L.tirManette(!!M.premiere); }   /* (Santa Carla : le pistolet à eau bénite) */
   else if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
     const choisir = l => { let best = null, bs = -1e9; for (const z of l) { const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz); if (dd > 14) continue; const sc = (dx * f.x + dz * f.z) / (dd || 1) * 6 - dd; if (sc > bs) { bs = sc; best = z; } } return best; };
-    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else { sonTir(); if (M.armeFP) M.armeFP.kick = 1; } MAN.tirT = now + (M.mitra ? 110 : 330); }
+    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values(), ...(M.lickers || [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else { sonTir(); if (M.armeFP) M.armeFP.kick = 1; } MAN.tirT = now + (M.mitra ? 110 : 330); }
     else if (M.premiere && M.L.sh && M.shMonstres) { const m = cibleFP(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) tirerSH(m); MAN.tirT = now + 330; }
-    else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values()].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
+    else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values(), ...(M.lickers || [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
     else if (M.L.sh && M.shMonstres) { const m = choisir(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) { tirerSH(m); MAN.tirT = now + 330; } } }
   fin(); }
 function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "none"; return; }
