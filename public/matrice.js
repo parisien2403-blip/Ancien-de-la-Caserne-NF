@@ -3954,6 +3954,10 @@ function construireEtage(A, L, scene) {
     if (ax > CX0 - .4) pos.y = Math.max(pos.y, py + 1.2);   // (jamais sous le plancher de l'étage où l'on arrive)
     if (M.dernPy != null && Math.abs(py - M.dernPy) > .4) M.camVise = null; M.dernPy = py;   // (on change d'étage : la caméra y saute d'un coup, sans traverser la dalle)
     coupeCage().constant = ax > CX0 - .4 && Number.isFinite(py) ? py + 2.0 : 1e6;
+    M.enCage = ax > CX0 - .4;
+    // (ce qui est coupé au-dessus de la tête — l'étage du dessus — ne doit pas laisser flotter dans le vide un équipier, un zombie, un monstre : on les cache le temps de la coupe)
+    for (const o of M.scene.children) { if (!o.userData.perso || o === moi.g) continue; const cache = M.enCage && o.position.y > py + 1.9;
+      if (cache && o.visible) { o.visible = false; o.userData.cacheCoupe = true; } else if (!cache && o.userData.cacheCoupe) { o.visible = true; o.userData.cacheCoupe = false; } }
     if (ax < CX0) { pos.z = Math.max(ZC0 + .12, Math.min(Z1 - .12, pos.z)); pos.x = Math.max(-CX1 + .15, Math.min(CX1 - .15, pos.x)); pos.y = Math.max(pos.y, py + .4); }
     else { pos.x = s * Math.max(Math.min(Math.abs(pos.x), CX1 - .15), ax < CXM && moi.g.position.z > 1.4 ? 0 : CX0 + .15); pos.z = Math.max(Z0 + .15, Math.min((mx > 0 && py < 1 ? ET.ZE : Z1) - .15, pos.z)); }
     return true; };
@@ -9524,10 +9528,10 @@ function silentHill(scene, L, base) {
       if (g === e.n) { M.ctx.surInfo && M.ctx.surInfo("🚧 L'escalier s'est effondré…"); return true; }
       return ae(moi, g === f ? x : sg * 9.5, g === f ? z : -1.9, g * H); };
     // les volées effondrées : des planches clouées en travers, des gravats
-    const bois = new THREE.MeshStandardMaterial({ color: 0xa88458, roughness: 1 }), grav = new THREE.MeshStandardMaterial({ color: 0x9a9286, roughness: 1 });
+    const bois = new THREE.MeshStandardMaterial({ color: 0xa88458, roughness: 1 }), grav = new THREE.MeshStandardMaterial({ color: 0x9a9286, roughness: 1 }); bois.clippingPlanes = grav.clippingPlanes = [coupeCage()];   // (dans la vue en coupe de la cage, coupées comme les marches)
     for (let n = 0; n < N; n++) for (const sg of [-1, 1]) { if (ouvert(sg, n)) continue;
       for (const [xc, y0] of [[sg * (CXM + CX1 - .25) / 2, n * H], [sg * (CX0 + CXM) / 2, (n + 1) * H]]) { if (y0 > N * H + .1) continue;
-        for (const [hy, rz] of [[.55, .35], [1.05, -.3], [1.45, .12]]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(1.75, .18, .05), bois); pl.castShadow = true; pl.position.set(xc, y0 + hy, .5 - 1.75); pl.rotation.z = rz; scene.add(pl); }
+        for (const [hy, rz] of [[.55, .35], [1.05, -.3], [1.45, .12]]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(1.75, .18, .05), bois); pl.castShadow = true; pl.position.set(xc, y0 + hy, .5 - 1.75); pl.rotation.z = rz; scene.add(pl); (L.masquesCam = L.masquesCam || []).push(pl); }
         for (let k = 0; k < 8; k++) { const r = new THREE.Mesh(new THREE.BoxGeometry(.12 + Math.random() * .2, .08 + Math.random() * .14, .12 + Math.random() * .2), grav); r.position.set(xc + (Math.random() - .5) * 1.2, y0 + .05, .5 - 1.75 + (Math.random() - .5) * .5); r.rotation.set(Math.random(), Math.random() * 3, Math.random()); scene.add(r); } } } }
   // dans la fosse, l'entrée du sous-sol (le stand de tir, le ping-pong) : condamnée, des planches clouées en travers
   if (base === "grande" && C3.sousSol) { const zP = C3.sousSol.zT - .08, yP = C3.sousSol.Y0, bois = new THREE.MeshStandardMaterial({ color: 0x8a6a46, roughness: 1 }), clou = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, metalness: .6 });
@@ -12027,7 +12031,10 @@ function placerCamera(net) {
   if (moi) { const q = moi.g.position, pr = M.camMoiPrec; if (pr && Math.hypot(q.x - pr[0], q.z - pr[1]) > 6) M.camVise = null; M.camMoiPrec = [q.x, q.z]; }   // (on réapparaît ailleurs — reconnexion, saut : la caméra y va d'un coup, sans traverser la cour)
   if (net || !M.camVise) { M.camera.position.copy(pos); M.camVise = vise.clone(); }
   else if (devantMur && M.camera.position.distanceTo(vise) > pos.distanceTo(vise)) { M.camera.position.copy(pos); M.camVise.lerp(vise, .2); }   // (devant un mur : tout de suite, sans traverser le mur)
-  else { const k = 1 - Math.pow(.94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k); M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
+  else { const k = 1 - Math.pow(M.enCage ? .86 : .94, (M.dtCam || .016) * 60); M.camera.position.lerp(pos, k);   // (dans la cage d'escalier, la caméra suit plus vite : en descendant, on ne sort plus de l'image)
+    M.camVise.lerp(vise, k); }   // (le même suivi, quelle que soit la vitesse du téléphone)
+  // (les planches clouées en travers d'un escalier : entre la caméra et son bonhomme, on ne les voit pas — elles ne bouchent plus la vue)
+  if (M.L.masquesCam && moi) { const c = M.camera.position, dp = c.distanceTo(moi.g.position); for (const o of M.L.masquesCam) { const dc = c.distanceTo(o.position); o.visible = !(dc < dp && dc < 3.2); } }
   if (moi && !M.L.interieur && M.toitY != null && M.camera.position.y > M.toitY - .35) M.camera.position.y = Math.max(moi.g.position.y + 1.3, M.toitY - .35);   /* (sous un toit : jamais au-dessus, même pendant le glissement) */
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
@@ -13287,7 +13294,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
-  coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
+  M.enCage = false; coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
