@@ -8227,7 +8227,7 @@ export async function ouvrir(ctx) {
     // à l'intérieur (pièces étroites) : on vise ce que le doigt touche vraiment — le sol, ou un mur, un meuble : on va juste devant
     if (M.L.interieur) {
       const sols = [M.L.sol, ...(M.L.solsPlus || [])];
-      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere || o.userData.perso || (o.parent && o.parent.userData.perso)) return false; for (let a = o; a; a = a.parent) if (!a.visible || a.userData.perso) return false;   // (les bonshommes ne bloquent pas le doigt)
+      const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere || dansPerso(o)) return false; for (let a = o; a; a = a.parent) if (!a.visible || a.userData.perso) return false;   // (les bonshommes ne bloquent pas le doigt)
         if (M.L.dansCour && !M.L.dansCour(q.point)) { let a = o; while (a && a !== M.L.copieCour) a = a.parent; if (a) return false; }   // (la cour, coupée au mur : invisible de ce côté-ci) if (sols.includes(o)) return true;
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
       if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
@@ -10596,6 +10596,8 @@ function preparerIntro2(moi) { const p = moi.g.position.clone(), dir = dirDegage
   const gens = [moi, eq].filter(Boolean), mid = gens.reduce((a, q) => a.add(q.g.position), new THREE.Vector3()).multiplyScalar(1 / gens.length);
   let r = 0; while (r < 4.4 && M.L.limites(mid.x + dir.x * (r + .3), mid.z + dir.z * (r + .3))) r += .2; r = Math.max(2.4, r);
   const hel = creerHelico(); M.scene.add(hel); hel.visible = false; hel.rotation.y = Math.atan2(dir.z, -dir.x);   // (il arrive de face, et passe au-dessus d'eux, vers l'arrière)
+  { const geo = new THREE.ConeGeometry(1, 1, 24, 1, true); geo.translate(0, -.5, 0); const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    cone.scale.set(5, 46, 5); cone.position.y = .6; hel.add(cone); hel.userData.cone = cone; }   // (son projecteur fouille le sol, devant lui… sans les trouver)
   const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
   return { moi, eq, gens, dir, p, mid, yaw: Math.atan2(dir.x, dir.z), hel, helA, caches: new Set(), dit: 0,
     camF: mid.clone().addScaledVector(dir, r).setY(p.y + 1.5), viseF: mid.clone().setY(p.y + 1.15), D0: mid.clone().addScaledVector(dir, 34).setY(p.y + 46), F0: mid.clone().addScaledVector(dir, -55).setY(p.y + 44) }; }   // (haut : au-dessus des toits, il passe juste au-dessus d'eux)
@@ -10604,6 +10606,7 @@ function majIntro2(S, u, dt) { const t = u - 11, cam = M.camera, hel = S.hel, no
   cacherAutour(S.mid, 15, S.caches); for (const q of S.gens) { q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = S.yaw; }   // (ils restent face à la caméra, tournés vers la cour)
   const k = (t - .4) / 12.3; hel.visible = k > 0 && k < 1; if (hel.visible) hel.position.lerpVectors(S.D0, S.F0, k);
   hel.rotation.z = .08; hel.userData.rotor.rotation.y += dt * 9.5; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
+  { const cn = hel.userData.cone; cn.rotation.z = .3 + Math.sin(t * 1.3) * .35; cn.rotation.x = .25 + Math.sin(t * .8 + 1) * .4; }   // (le faisceau balaie)
   S.helA.volume = k > 0 && k < 1 ? Math.max(0, Math.min(.85, 1 - Math.abs(k - .45) * 2.2)) : 0;
   if (t > 1.4 && !S.ciel) { S.ciel = true; for (const q of S.gens) q.poseCine = { t0: now }; }   // (ils l'entendent, et lèvent les yeux)
   if (t > 2.2 && !S.main) { S.main = true; S.moi.poseCine.mainT = now; }   // (l'un d'eux tend la main vers lui, désespéré)
@@ -10697,13 +10700,13 @@ function decorCaserne(scene, L, base) { if (base !== "grande" && base !== "rue")
     for (const z of [zb - 3.3, zb - .1, zb + 1.35, zb + 2.8]) { poser("avatars/deco-poubelle.glb?v=1", x0 - .56, RU.y(z), z, -Math.PI / 2 + (hasard(z) - .5) * .12); C3.poub.push([x0 - 1.1, x0, z - .65, z + .65]); } } }
 const glb3D = {}; function chargerGLB(f) { return glb3D[f] || (glb3D[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return (await new gltfMod.GLTFLoader().loadAsync(f)).scene; })().catch(e => { console.warn(f, e); return null; })); }
 function creerHelico() { const g = creerHelicoDessin(), U = g.userData;
-  chargerGLB("avatars/re-helico.glb?v=1").then(sc => { if (!sc) return; const garder = new Set([U.rotor, U.rotorQ, U.feu]);
+  chargerGLB("avatars/re-helico.glb?v=2").then(sc => { if (!sc) return; const garder = new Set([U.rotor, U.rotorQ, U.feu]);
     for (const o of [...g.children]) if (!garder.has(o)) o.visible = false; U.rotorQ.visible = false; for (const o of [...U.rotor.children]) o.visible = false;
     // (le modèle : le nez vers −x, 12 m de long, en centimètres ; le nôtre a le nez vers +x et son moyeu en (0,1 ; 3,42))
     const m = sc.clone(), corps = m.getObjectByName("corps"), rot = m.getObjectByName("rotor"), k = .01;
     const P = new THREE.Group(); P.rotation.y = Math.PI; P.scale.setScalar(k); P.position.set(.1 + .83, .93, 0); g.add(P); if (corps) P.add(corps);
     if (rot) { rot.position.set(0, 0, 0); const R = new THREE.Group(); R.rotation.y = Math.PI; R.scale.setScalar(k); R.add(rot); U.rotor.add(R); U.rotor.position.set(.1, .93 + 3.36, 0);
-      const flou = new THREE.Mesh(new THREE.CircleGeometry(5.6, 40), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide })); flou.rotation.x = -Math.PI / 2; flou.position.y = .05; U.rotor.add(flou); }   // (le disque flou des pales qui tournent : à pleine vitesse, l'œil ne voit pas chaque pale)
+      const flou = new THREE.Mesh(new THREE.CircleGeometry(6.9, 40), new THREE.MeshBasicMaterial({ color: 0x1a1a1a, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide })); flou.rotation.x = -Math.PI / 2; flou.position.y = .05; U.rotor.add(flou); }   // (le disque flou des pales qui tournent : à pleine vitesse, l'œil ne voit pas chaque pale)
     U.feu.position.set(-8.3, 4.05, 0); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); });
   return g; }
 function creerHelicoDessin() {
@@ -10885,7 +10888,7 @@ function limZ() {
 }
 const yZ = z => baseLieu(M.lieu) === "etage" ? z.n * ET.H : M.L.yNiv ? M.L.yNiv(z.n) : (M.L.hauteur ? M.L.hauteur(z.x, z.z, {}) : 0);
 function creerZ(d) {
-  const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
+  const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); g.userData.perso = true; geo.translate(0, .5, 0);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texChien() : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
   if (!T.chien) { mesh.visible = false; posesZ(d.ty).then(P => { if (!M || !M.zomb || M.zomb.get(d.id)?.mesh !== mesh) return; mesh.userData.poses = P; mesh.material.map = P.c; mesh.material.needsUpdate = true; mesh.visible = !M.zomb.get(d.id).z3; }); }
   const om = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
@@ -10910,7 +10913,7 @@ function placeMurLicker() { const Fs = []; for (const [, cadres] of M.L.facadesF
   const c = Fs[Math.floor(Math.random() * Fs.length)], a = (Math.random() - .5) * (c.W - 3), y = c.o[1] - c.H / 2 + 3 + Math.random() * Math.min(4, c.H - 5);
   return { c, a, y, sens: Math.random() < .5 ? 1 : -1 }; }
 function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const sc = skelMod.clone(G.scene); sc.scale.setScalar(LK.K); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
-  const g = new THREE.Group(); g.add(sc); M.scene.add(g); const mix = new THREE.AnimationMixer(sc), act = G.animations.map(c => mix.clipAction(c));
+  const g = new THREE.Group(); g.userData.perso = true; g.add(sc); M.scene.add(g); const mix = new THREE.AnimationMixer(sc), act = G.animations.map(c => mix.clipAction(c));
   const hit = new THREE.Mesh(new THREE.SphereGeometry(.9, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = .5; g.add(hit);
   const l = { licker: true, g, sc, mix, act, cur: -1, mur: m, etat: "mur", hp: LK.HP, mortT: 0, cine: false, mesh: hit, x: 0, z: 0, sautT: 0 }; jouerLK(l, LK_A.rampe); return l; }
 function jouerLK(l, i, une = false) { if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
@@ -10954,7 +10957,7 @@ function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) r
   tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/re-tyran.glb?v=1"); })().catch(e => { console.warn("tyran", e); return null; });
   tyran3D.then(G => { const T = M && M.tyran; if (!G || !T || !T.attente) return;
     const sc = skelMod.clone(G.scene); sc.scale.multiplyScalar(TY.H); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
-    const g = new THREE.Group(), piv = new THREE.Group(); piv.rotation.order = "YXZ"; piv.add(sc); g.add(piv); M.scene.add(g); const mix = new THREE.AnimationMixer(sc), act = {}; for (const a of G.animations) act[a.name] = mix.clipAction(a);
+    const g = new THREE.Group(), piv = new THREE.Group(); piv.rotation.order = "YXZ"; piv.add(sc); g.add(piv); M.scene.add(g); g.userData.perso = true; const mix = new THREE.AnimationMixer(sc), act = {}; for (const a of G.animations) act[a.name] = mix.clipAction(a);
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, 2.6, 8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1.3; g.add(hit);
     // il tombe du ciel, à quelques mètres du cercle, entre nous et l'escalier
     const mp = moiApo().g.position; let px = c.x, pz = c.z; for (let k = 0; k < 24; k++) { const a = k * .9, x = c.x + Math.sin(a) * 6.5, z = c.z + Math.cos(a) * 6.5; if (M.L.limites(x, z) && Math.abs((M.L.hauteur ? M.L.hauteur(x, z, {}) : 0) - c.y) < .3) { px = x; pz = z; break; } }
@@ -11912,6 +11915,8 @@ function construireScene(id) {
   return { scene, L, repere };
 }
 
+// (un objet qui fait partie d'un personnage ou d'un monstre — un bonhomme, sa tenue en 3D, un zombie… — ni un toit ni un mur, pour la caméra)
+function dansPerso(o) { for (let q = o; q; q = q.parent) if (q.userData.perso) return true; return false; }
 function placerCamera(net) {
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
@@ -11946,7 +11951,7 @@ function placerCamera(net) {
   // dehors, sous un toit (un passage couvert, un préau, une voûte) : la caméra reste dessous, même dézoomée (elle passait par-dessus le toit)
   if (moi && !M.L.interieur) { const now = performance.now(); if (!M.toitT || now - M.toitT > 300 || M.toitL !== M.L) { M.toitT = now; M.toitL = M.L; M.toitY = null;
       M.rayToit = M.rayToit || new THREE.Raycaster(); M.rayToit.camera = M.camera; M.rayToit.set(new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.8, moi.g.position.z), new THREE.Vector3(0, 1, 0)); M.rayToit.far = 6;
-      const h = M.rayToit.intersectObjects(M.scene.children, true).find(q => q.object.isMesh && !q.object.isSprite && q.object.visible && !(q.object.material && q.object.material.transparent) && !q.object.userData.perso && !(q.object.parent && q.object.parent.userData.perso));
+      const h = M.rayToit.intersectObjects(M.scene.children, true).find(q => q.object.isMesh && !q.object.isSprite && q.object.visible && !(q.object.material && q.object.material.transparent) && !dansPerso(q.object));
       if (h) M.toitY = h.point.y; }
     if (M.toitY != null && pos.y > M.toitY - .35) pos.y = Math.max(moi.g.position.y + 1.3, M.toitY - .35); }
   // (au sous-sol, le bar des fêtes : la caméra suit jusqu’au fond)
@@ -11956,7 +11961,7 @@ function placerCamera(net) {
   if (moi && (M.L.interieur || M.L.suivi || yaw)) { const tete = new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.3, moi.g.position.z), dir = pos.clone().sub(tete), dist = dir.length();
     if (dist > .6) { dir.divideScalar(dist); const now = performance.now();
       if (!M.obstCam || M.obstCam.scene !== M.scene || now - M.obstCam.t > 3000) { const liste = [];   // (les obstacles : les grandes pièces opaques du décor, pas les bonshommes, les vitres, les barrières ni les petits objets)
-        M.scene.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || o.userData.perso || !o.geometry) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || m.transparent || m.visible === false) return;
+        M.scene.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || dansPerso(o) || !o.geometry) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || m.transparent || m.visible === false) return;
           if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z) < 1.2) return; liste.push(o); });
         M.obstCam = { scene: M.scene, t: now, liste, ray: new THREE.Raycaster(), n: 0, d: null }; }
       const O = M.obstCam; if (O.n++ % 3 === 0) { O.ray.set(tete, dir); O.ray.far = dist + .3; const h = O.ray.intersectObjects(O.liste, false)[0]; O.d = h ? h.distance : null; }   // (une fois sur trois : léger pour le téléphone)
@@ -12091,7 +12096,7 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   if (v > .05) { let d = Math.atan2(dx, dz) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 10); }   // (il se tourne dans le sens de sa marche)
   const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
-  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
+  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt); demarche3D(A);
   A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
   if (p.poseCine || A.poseC) poseCine3D(p, A);
   if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
@@ -12110,6 +12115,13 @@ function mort3D(p, A) { const t = performance.now() - p.info.mortT, u = Math.min
   const genou = () => { A.sc.updateMatrixWorld(true); const a = os3D(A, "LeftLeg"), b = os3D(A, "RightLeg"); if (!a || !b) return null; const v = a.getWorldPosition(_vk()).add(b.getWorldPosition(_vk())).multiplyScalar(.5); return p.g.worldToLocal(v); };
   const k0 = genou(); if (!k0) return; A.sc.rotation.x = th; const k1 = genou();
   A.sc.position.set(k0.x - k1.x, k0.y + (.1 - k0.y) * u - k1.y + .05 * w, k0.z - k1.z); }
+/* la démarche : le mouvement de marche du mannequin balance beaucoup les hanches (un déhanché) ; on le ramène en partie vers la pose debout,
+   pour une marche plus droite, plus masculine (le bassin et le bas du dos) */
+const DEMARCHE = [["Hips", .72], ["Spine", .5], ["Spine1", .3]];
+function demarche3D(A) { if (!A.repHips && A.cur === "idle") { A.repHips = {}; for (const [n] of DEMARCHE) { const b = os3D(A, n); if (b) A.repHips[n] = b.quaternion.clone(); } }
+  if (!A.repHips || (A.cur !== "walk" && A.cur !== "run")) return; for (const [n, k] of DEMARCHE) { const b = os3D(A, n); if (b && A.repHips[n]) b.quaternion.slerp(A.repHips[n], k); }
+  tourne3D(A, "LeftUpLeg", "z", DEMARCHE_ECART); tourne3D(A, "RightUpLeg", "z", -DEMARCHE_ECART); tourne3D(A, "LeftFoot", "z", -DEMARCHE_ECART); tourne3D(A, "RightFoot", "z", DEMARCHE_ECART); }   // (les pieds ne se croisent plus l'un devant l'autre)
+const DEMARCHE_ECART = .11;
 /* en cinématique : lever les yeux au ciel (poseCine), et, désespéré, lever la main gauche vers l'hélicoptère (poseCine.mainT) */
 function poseCine3D(p, A) { const P = p.poseCine, N = ["Head", "Neck", "LeftArm", "LeftForeArm"];
   if (!A.repC) { A.repC = {}; for (const n of N) { const b = os3D(A, n); if (b) A.repC[n] = b.quaternion.clone(); } }
