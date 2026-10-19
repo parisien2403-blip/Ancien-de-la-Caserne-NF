@@ -8148,7 +8148,7 @@ export async function ouvrir(ctx) {
   rendu.domElement.addEventListener("pointerdown", e => { if (M && M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb) { viseGB(e); return; }   // (S.O.S. Fantômes : le doigt vise, la lance tire tant qu'il appuie)
     doigts.set(e.pointerId, [e.clientX, e.clientY]);
     if (doigts.size === 2) { const [a, b] = [...doigts.values()]; pince = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), D: M && M.camD }; if (glisse) glisse.bouge = true; return; }
-    glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, E: M ? M.camE : null, fy: M ? M.fpYaw || 0 : 0, fp: M ? M.fpPitch || 0 : 0 };
+    glisse = { x: e.clientX, y: e.clientY, id: e.pointerId, bouge: false, yaw: M ? M.yaw || 0 : 0, yd: M ? M.yawDehors || 0 : 0, E: M ? M.camE : null, fy: M ? M.fpYaw || 0 : 0, fp: M ? M.fpPitch || 0 : 0 };
     // la mitraillette : doigt appuyé sur un zombie, ça tire en rafale (on peut glisser le doigt d'un zombie à l'autre)
     if (M && M.mitra && M.L && M.L.apo && M.zomb && M.zomb.size && !M.cine) { const z = zombieSous(e.clientX, e.clientY); if (z) { arreterRafale(); rafale = { x: e.clientX, y: e.clientY, z, id: e.pointerId }; tirer(z); rafale.minuteur = setInterval(tirRafale, 105); } } });
   let rafale = null;
@@ -8169,6 +8169,7 @@ export async function ouvrir(ctx) {
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) glisse.bouge = true;
     if (glisse.bouge && M.premiere) { M.fpYaw = glisse.fy - dx * .006; M.fpPitch = Math.max(-1.3, Math.min(1.45, glisse.fp - dy * .004)); return; }
     if (glisse.bouge && M.L && (M.L.interieur || M.L.suivi)) { M.yaw = glisse.yaw - dx * .006; if (glisse.E != null) { M.camE = glisse.E + dy * .005; bornerCam(); } }
+    else if (glisse.bouge && M.L && !M.cine) M.yawDehors = glisse.yd + dx * .006;   // (dehors, caméra fixe : glisser le doigt la fait tourner autour de son bonhomme, jusqu'à le voir de face)
   });
   const leve = e => { doigts.delete(e.pointerId); if (doigts.size < 2) pince = null; };
   rendu.domElement.addEventListener("pointercancel", e => { if (M) M.gbVisee = null; arreterRafale(); leve(e); });
@@ -11938,7 +11939,7 @@ function placerCamera(net) {
     if (M.L.plafond) pos.y = Math.min(pos.y, M.L.plafond);
   }
   // dehors : tourner la vue (glisser le doigt, ou ↻) fait tourner la caméra autour de son bonhomme
-  const yaw = 0;
+  const yaw = !M.L.interieur && !M.L.suivi ? M.yawDehors || 0 : 0;
   if (yaw) { const px = moi ? moi.g.position.x : vise.x, pz = moi ? moi.g.position.z : vise.z, cs = Math.cos(yaw), sn = Math.sin(yaw);
     for (const v of [pos, vise]) { const dx = v.x - px, dz = v.z - pz; v.x = px + dx * cs - dz * sn; v.z = pz + dx * sn + dz * cs; } }
   if (M.L.contraindreCam && moi && M.L.contraindreCam(pos, moi)) {}
@@ -11952,7 +11953,7 @@ function placerCamera(net) {
   else if (M.L.boite) { const [a, b, c2, d] = moi && moi.g.position.y < -.5 && M.L.zone ? M.L.zone : M.L.boite; pos.x = Math.max(a + .3, Math.min(b - .3, pos.x)); pos.z = Math.max(c2 + .3, Math.min(d - .3, pos.z)); }
   // jamais derrière un mur : si un mur, un bâtiment se met entre son bonhomme et la caméra, la caméra vient se placer devant (on voit toujours son bonhomme)
   let devantMur = false;
-  if (moi && (M.L.interieur || M.L.suivi)) { const tete = new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.3, moi.g.position.z), dir = pos.clone().sub(tete), dist = dir.length();
+  if (moi && (M.L.interieur || M.L.suivi || yaw)) { const tete = new THREE.Vector3(moi.g.position.x, moi.g.position.y + 1.3, moi.g.position.z), dir = pos.clone().sub(tete), dist = dir.length();
     if (dist > .6) { dir.divideScalar(dist); const now = performance.now();
       if (!M.obstCam || M.obstCam.scene !== M.scene || now - M.obstCam.t > 3000) { const liste = [];   // (les obstacles : les grandes pièces opaques du décor, pas les bonshommes, les vitres, les barrières ni les petits objets)
         M.scene.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || o.userData.perso || !o.geometry) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!m || m.transparent || m.visible === false) return;
@@ -12065,7 +12066,16 @@ const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: 
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
 function corpsAv3(p, A) { const a = p.info.av3 || {}, k = tailleBonhomme() * hauteurDe(p) / A.h * 1.02, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
-  const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.set(k * t * l, k * t, k * t * l); }
+  const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
+/* le poids : chaque os du tronc et des membres s'élargit autour de lui-même (seulement pour la peau qu'il porte) ; les os enfants n'héritent pas
+   de cet élargissement — sinon (avec tout le personnage élargi en largeur) bras et jambes se déformaient en dansant, comme désarticulés */
+const GIRTH_OS = { Hips: 1, Spine: 1, Spine1: 1, Spine2: 1, LeftUpLeg: .8, RightUpLeg: .8, LeftLeg: .6, RightLeg: .6, LeftArm: .7, RightArm: .7, LeftForeArm: .5, RightForeArm: .5, Neck: .5 };
+function girthAv3(A) { if (A.girthOK) return; A.girthOK = true; const vus = new Set(), m = new THREE.Matrix4(), S = new THREE.Matrix4();
+  A.sc.traverse(o => { if (!o.isSkinnedMesh || vus.has(o.skeleton)) return; const sk = o.skeleton; vus.add(sk); const up = sk.update.bind(sk), idx = [];
+    sk.bones.forEach((b, i) => { const n = b.name.replace(/^mixamorig:?/, ""); if (GIRTH_OS[n]) idx.push([i, GIRTH_OS[n]]); });
+    sk.update = function () { up(); const g = A.girth || 1; if (Math.abs(g - 1) < .01) return;
+      for (const [i, w] of idx) { const e = 1 + (g - 1) * w; S.makeScale(e, 1, e); m.multiplyMatrices(sk.bones[i].matrixWorld, S).multiply(sk.boneInverses[i]); m.toArray(sk.boneMatrices, i * 16); }
+      if (sk.boneTexture) sk.boneTexture.needsUpdate = true; }; }); }
 function lookAv3(A, info) { const a = (!info.heros && info.av3) || {},   /* (un héros de Resident Evil garde ses couleurs, pas celles de notre personnage) */ C = a.c || {}, U = A.U, hx = (v, u) => { if (v) { const c = new THREE.Color(v); c.convertSRGBToLinear(); u.value.set(c.r, c.g, c.b, 1); } else u.value.w = 0; };
   hx(C.haut, U.uHaut); hx(C.bas, U.uBas); hx(C.pieds, U.uPieds); }
 function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); corpsAv3(p, p.av3); return; }
@@ -13199,7 +13209,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
-  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
+  M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
@@ -13224,7 +13234,7 @@ export function danser(on) {
   const style = styleDanse(on); if (style) M.styleDanse = style;
   p.info.danse = style; envoyerWS({ t: "danse", on: style }); M.ctx.surDanse && M.ctx.surDanse(style);
 }
-export function tourner(a = Math.PI) { if (M && M.L && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) + a; }
+export function tourner(a = Math.PI) { if (M && M.L && (M.L.interieur || M.L.suivi)) M.yaw = (M.yaw || 0) + a; else if (M && M.L) M.yawDehors = (M.yawDehors || 0) + a; }
 /* passer d'un lieu à l'autre sans coupure : les deux lieux ont la même géométrie à cet endroit (décalée de d) ;
    on garde sa position, son regard, la caméra, et l'on continue de marcher vers le même point */
 function changerLieuContinu(id, [dx, dz, dy = 0]) {
