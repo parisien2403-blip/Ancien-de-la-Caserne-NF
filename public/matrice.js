@@ -10714,7 +10714,7 @@ function cineEvac(m) {
       for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
       placer(H.x + 4, H.y + 2.6, H.z + 5.6, H.x, H.y + 1.3, H.z + 1, .05); }
     else if (u < 26) { for (const p of vivants) p.g.visible = false;
-      { const moiH = HEROS[M.perso] ? M.perso : 25, autreH = moiH === 23 ? 25 : 23, A = HEROS[moiH].court, B = HEROS[autreH].court, L2 = [[15.6, B, "Accrochez-vous, on décolle !"], [17.6, "Le pilote", "Message radio du gouvernement… Ils ont donné l'ordre : la zone va être rasée. Ils vont tout faire sauter !"],
+      { const moiH = HEROS[M.perso] ? M.perso : 25, autreH = (M.equipe && M.equipe[0] && HEROS[M.equipe[0].id]) ? M.equipe[0].id : APO_PAIRE[moiH], A = HEROS[moiH].court, B = HEROS[autreH].court, L2 = [[15.6, B, "Accrochez-vous, on décolle !"], [17.6, "Le pilote", "Message radio du gouvernement… Ils ont donné l'ordre : la zone va être rasée. Ils vont tout faire sauter !"],
           [20.6, A, "Tout faire sauter ?! Mais… la caserne, le quartier… tous ces gens…"], [23.2, B, "Il n'y a plus personne à sauver là-dessous. Regardez…"]];
         for (const [tu, qui, txt] of L2) if (u > tu && !(c.dits || (c.dits = new Set())).has(tu)) { c.dits.add(tu); bulle(`<b style="color:#e8c46a">${esc(qui)}</b> : ${txt}`, 2800); } }
       const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
@@ -10982,16 +10982,17 @@ function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.p
   const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: texSang[1], transparent: true, depthWrite: false }));
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
 /* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
-export const HEROS = { 21: { nom: "Rebecca Chambers", tenue: "rebecca", couleur: "#55534f", bas: "#3d3f37", pieds: "#141414", cle: "rebecca", court: "Rebecca" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111", cle: "leon", court: "Leon" },
+export const HEROS = { 21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a", cle: "claire", court: "Claire" }, 22: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111", cle: "leon", court: "Leon" },
   23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22", cle: "barry", court: "Barry" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515", cle: "jill", court: "Jill" },
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f", cle: "wesker", court: "Wesker" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616", cle: "chris", court: "Chris" } };
 function habillerHeros(info, id) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D.tenue, couleur: P.couleur || D.couleur, bas: P.tenue ? P.bas : D.bas, pieds: P.pieds || D.pieds, reglage: P.reglage || null, tete_v: null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/re/${D.cle}-tete.png`, heros: id }; }
 // (à l'entrée de l'apocalypse) qui l'on joue, et les équipiers qu'on emmène
+export const APO_PAIRE = { 25: 23, 23: 25, 26: 21, 21: 26 };   // (les héros jouables, et l'équipier qu'ils emmènent si l'on n'en choisit pas)
 export function choisirApo(perso, equipe) {
-  if (!M) return; M.perso = +perso === 23 ? 23 : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker ou Barry ; l'autre fait toujours équipe avec nous)
-  void equipe; M.equipe = [{ id: M.perso === 23 ? 25 : 23, vies: 4, mort: false, tirT: 0, suiviT: 0 }];
+  if (!M) return; M.perso = APO_PAIRE[+perso] ? +perso : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker, Barry, Chris ou Claire ; un équipier, choisi parmi les trois autres, fait toujours équipe avec nous)
+  const e = +((equipe || [])[0]); M.equipe = [{ id: APO_PAIRE[e] && e !== M.perso ? e : APO_PAIRE[M.perso], vies: 4, mort: false, tirT: 0, suiviT: 0 }];
 }
 const EQUIPIER = k => -(300 + k), FANTOME = (de, k) => -(5000 + de * 4 + k);
 function infoEquipier(id, numero, x, z, proprio, k) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
@@ -11233,24 +11234,29 @@ function objetsApo() {
       const etg = base === "etage" ? Math.floor(hasard(graine + k) * (ET.N + 1)) : 0;
       if (base === "etage" && !(Math.abs(x) < ET.CX0 && z > -2.7 && z < -1.1)) continue;
       const y = base === "etage" ? etg * ET.H : (L.hauteur ? L.hauteur(x, z, {}) : 0);
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
-      if (type === "plante") { sp.scale.set(.5, .65, 1); sp.position.set(x, y + .33, z); } else { sp.scale.set(.55, .37, 1); sp.position.set(x, y + .2, z); }
+      const sp = type === "plante" ? spraySoin() : new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
+      if (type === "plante") sp.position.set(x, y, z); else { sp.scale.set(.55, .37, 1); sp.position.set(x, y + .2, z); }
       M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: etg, sp, cache: 0 }); mis++; } };
   const nb = { grande: [5, 2], rue: [3, 1], fetes: [2, 1], etage: [5, 3] }[base] || [0, 0];
   const horsRepos = (x, z) => !(L.repos && L.repos(x, z));
   poser("balles", nb[0], horsRepos); poser("plante", nb[1], horsRepos);
   // la salle de repos : de quoi se refaire, posé sur le comptoir du bar (on le prend avec le bouton)
   if (L.repos && L.comptoirSousSol) L.comptoirSousSol.forEach(([x, z], i) => { const type = i % 2 ? "plante" : "balles", y = L.yComptoirSousSol;
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
-    if (type === "plante") { sp.scale.set(.42, .55, 1); sp.position.set(x, y + .27, z); } else { sp.scale.set(.46, .31, 1); sp.position.set(x, y + .16, z); }
+    const sp = type === "plante" ? spraySoin(true) : new THREE.Sprite(new THREE.SpriteMaterial({ map: texObj(type), transparent: true, alphaTest: .3 }));
+    if (type === "plante") sp.position.set(x, y, z); else { sp.scale.set(.46, .31, 1); sp.position.set(x, y + .16, z); }
     M.scene.add(sp); M.objets.push({ id: type + M.objets.length, type, x, z, y, n: 0, sp, cache: 0, table: true }); });
 }
+// le spray de premiers soins (à la place de la plante verte) : debout, il tourne doucement sur lui-même, un halo vert à ses pieds
+function spraySoin(table) { const g = new THREE.Group(), k = table ? 2.4 : 3.2; g.userData.spray = true;
+  const halo = new THREE.Mesh(new THREE.CircleGeometry(.22, 24), new THREE.MeshBasicMaterial({ color: 0x5cff8a, transparent: true, opacity: .35, depthWrite: false })); halo.rotation.x = -Math.PI / 2; halo.position.y = .02; if (!table) g.add(halo);
+  chargerGLB("avatars/re-spray.glb?v=1").then(sc => { if (!sc) return; const m = sc.clone(); m.scale.setScalar(k); m.position.y = .03 * k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.add(m); g.userData.m = m; });
+  return g; }
 let texObjets = null;
 function texObj(type) { texObjets = texObjets || { balles: new THREE.TextureLoader().load("images/apo/munitions.png"), plante: new THREE.TextureLoader().load("images/apo/plante.png") };
   for (const t of Object.values(texObjets)) t.colorSpace = THREE.SRGBColorSpace; return texObjets[type]; }
 function prendreObjet(o) {
   if (o.type === "balles") { APO.balles = 9; ramasser(o); M.ctx.surInfo && M.ctx.surInfo("🔫 Munitions ! 9 balles."); }
-  else { const g = Math.min(2, 4 - APO.vies); APO.vies += g; ramasser(o); M.ctx.surInfo && M.ctx.surInfo(g > 1 ? "🌿 Deux vies de plus !" : "🌿 Une vie de plus !"); }
+  else { const g = Math.min(2, 4 - APO.vies); APO.vies += g; ramasser(o); M.ctx.surInfo && M.ctx.surInfo(g > 1 ? "💉 Spray de soin : deux vies de plus !" : "💉 Spray de soin : une vie de plus !"); }
   majHudApo();
 }
 function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
@@ -11297,6 +11303,7 @@ function animerApo(t, dt) {
   }
   // les objets : ils réapparaissent ; au sol, on les ramasse en passant dessus (sur le comptoir, il faut les prendre)
   for (const o of M.objets || []) { if (o.cache && now > o.cache) { o.cache = 0; o.sp.visible = true; }
+    if (o.sp.userData.m) o.sp.userData.m.rotation.y = now / 900;
     if (o.cache || APO.zombieFin || o.table || (o.type === "balles" ? APO.balles >= 9 : APO.vies >= 4)) continue;
     if (baseLieu(M.lieu) === "etage" && o.n !== etageDe(moi)) continue;
     if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) prendreObjet(o); }
@@ -11939,7 +11946,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=1", 25: "avatars/re-wesker.glb?v=1" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=1", 25: "avatars/re-wesker.glb?v=1", 26: "avatars/re-chris.glb?v=1", 21: "avatars/re-claire.glb?v=1" };
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
