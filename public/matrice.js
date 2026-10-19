@@ -11107,13 +11107,13 @@ function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.p
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
 /* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
 export const HEROS = { 21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a", cle: "claire", court: "Claire" }, 22: { nom: "Hunk", tenue: "leon", couleur: "#1c1d20", bas: "#18191b", pieds: "#0e0e0e", cle: "hunk", court: "Hunk" },
-  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22", cle: "barry", court: "Barry" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515", cle: "jill", court: "Jill" },
+  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22", cle: "barry", court: "Barry" }, 24: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#20242a", bas: "#1c1f24", pieds: "#111111", cle: "leon", court: "Leon" },
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f", cle: "wesker", court: "Wesker" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616", cle: "chris", court: "Chris" } };
 function habillerHeros(info, id) { const D = HEROS[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
   return { ...info, tenue: P.tenue || D.tenue, couleur: P.couleur || D.couleur, bas: P.tenue ? P.bas : D.bas, pieds: P.pieds || D.pieds, reglage: P.reglage || null, tete_v: null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/re/${D.cle}-tete.png`, heros: id }; }
 // (à l'entrée de l'apocalypse) qui l'on joue, et les équipiers qu'on emmène
-export const APO_PAIRE = { 25: 23, 23: 25, 26: 21, 21: 26, 22: 25 };   // (les héros jouables, et l'équipier qu'ils emmènent si l'on n'en choisit pas)
+export const APO_PAIRE = { 25: 23, 23: 25, 26: 21, 21: 26, 22: 25, 24: 21 };   // (les héros jouables, et l'équipier qu'ils emmènent si l'on n'en choisit pas)
 export function choisirApo(perso, equipe) {
   if (!M) return; M.perso = APO_PAIRE[+perso] ? +perso : 25; envoyerWS({ t: "perso", id: M.perso });   // (on joue Wesker, Barry, Chris, Claire ou Hunk ; un équipier, choisi parmi les trois autres, fait toujours équipe avec nous)
   const e = +((equipe || [])[0]); M.equipe = [{ id: APO_PAIRE[e] && e !== M.perso ? e : APO_PAIRE[M.perso], vies: 4, mort: false, tirT: 0, suiviT: 0 }];
@@ -12074,7 +12074,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y; return { sc, mix, act, U, h: hb > .5 && hb < 5 ? hb : 1.744 }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1" };
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
@@ -12140,10 +12140,10 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolet3D.then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
   if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;   /* (dans le repère du personnage : à sa taille) */
   const vise = p.viseeT && performance.now() - p.viseeT < 1600;
-  if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend les bras)
+  if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
     const f = new THREE.Vector3(Math.sin(p.visee), -.08, Math.cos(p.visee)), dr = new THREE.Vector3(-f.z, 0, f.x);
     viser3D(A, "RightArm", "RightForeArm", f.clone().addScaledVector(dr, -.12)); viser3D(A, "RightForeArm", "RightHand", f);
-    viser3D(A, "LeftArm", "LeftForeArm", f.clone().addScaledVector(dr, .55).add(new THREE.Vector3(0, -.25, 0))); viser3D(A, "LeftForeArm", "LeftHand", f.clone().addScaledVector(dr, -.75)); }
+    }   // (d'une seule main, le bras droit tendu : le bras gauche reste le long du corps)
   const h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (!h || !fa) return; A.sc.updateMatrixWorld(true);
   h.getWorldPosition(_v1); fa.getWorldPosition(_v2); const dir = _v1.clone().sub(_v2).normalize();   // (l'arme dans le prolongement de l'avant-bras)
   if (!vise) dir.lerp(new THREE.Vector3(Math.sin(A.sc.rotation.y), 0, Math.cos(A.sc.rotation.y)), .55).normalize();   // (bras baissé : le canon vers l'avant et le bas)
@@ -12282,13 +12282,15 @@ function libererPoses(p) { const c = p.posesCache; if (c) for (const k of Object
 function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) return;
  M.scene.remove(p.g); M.gens.delete(numero); libererPoses(p);
   if (p.corps) { p.corps.geometry.dispose(); p.corps.material.dispose(); } }   // (la mémoire est rendue quand quelqu'un s'en va)
+// le nom de celui qui parle : à Resident Evil, celui de son héros (Chris, Claire, Leon…), pas celui du joueur
+function nomParle(p) { if (M.L && M.L.apo && !M.L.sh) { const h = p.info.numero === M.moiNum ? M.perso : (p.info.heros || p.info.perso); if (HEROS[h]) return HEROS[h].court; } return p.info.nom || ""; }
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (M.cine && M.cineSeul && numero !== M.cineSeul) return;   // (pendant certaines scènes, les autres se taisent)
   // pendant une cinématique : en sous-titre, fixe à l'écran (une bulle au-dessus de la tête sortait du cadre selon l'angle de la caméra)
-  if (M.cine) { bulle(`<b style="color:#b5573c">${esc(p.info.nom || "")}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }
+  if (M.cine) { bulle(`<b style="color:#b5573c">${esc(nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }
   // à la première personne : ce qu'on dit soi-même (et ce que disent ceux qui sont tout près) s'affiche en sous-titre — la bulle au-dessus de sa propre tête ne se voit pas
-  if (M.premiere) { const moi = M.gens.get(M.moiNum); if (numero === M.moiNum || (moi && p.g.position.distanceTo(moi.g.position) < 9)) { bulle(`<b style="color:#b5573c">${esc(numero === M.moiNum ? "Toi" : p.info.nom || "")}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; } }
+  if (M.premiere) { const moi = M.gens.get(M.moiNum); if (numero === M.moiNum || (moi && p.g.position.distanceTo(moi.g.position) < 9)) { bulle(`<b style="color:#b5573c">${esc(numero === M.moiNum && !(M.L && M.L.apo) ? "Toi" : nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; } }
   if (p.bulle) p.g.remove(p.bulle);
   const c = toileBulle(texte); const H = tailleBonhomme(); p.bulle = sprite(c, H * 1.25, H * 1.25 * c.height / c.width); p.bulle.center.set(.5, 0); p.bulle.position.y = H * hauteurDe(p) + .5; p.g.add(p.bulle);
   p.bulleFin = performance.now() + Math.min(6000, 2500 + texte.length * 40);

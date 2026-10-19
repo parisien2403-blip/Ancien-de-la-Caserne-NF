@@ -72,7 +72,7 @@ const PNJ_DEFAUT = { 95: { nom: "Homer", tenue: "polo", couleur: "#ffffff", bas:
   20: { nom: "Le guitariste", tenue: "guitariste", couleur: "#151517", bas: "#151517", pieds: "#0e0e0e" },
   // les héros de Resident Evil (l'apocalypse) : on peut jouer l'un d'eux, ou en prendre deux comme équipiers
   21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a" }, 22: { nom: "Hunk", tenue: "leon", couleur: "#1c1d20", bas: "#18191b", pieds: "#0e0e0e" },
-  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 24: { nom: "Jill Valentine", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
+  23: { nom: "Barry Burton", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 24: { nom: "Leon S. Kennedy", tenue: "leon", couleur: "#20242a", bas: "#1c1f24", pieds: "#111111" },
   25: { nom: "Albert Wesker", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 26: { nom: "Chris Redfield", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" },
   // Depeche Mode : sur scène dès qu'une de leurs chansons passe
   27: { nom: "Martin Gore", tenue: "gore", couleur: "#111113", bas: "#141416", pieds: "#0e0e0e" }, 28: { nom: "Dave Gahan", tenue: "gahan", couleur: "#1a1a1d", bas: "#121214", pieds: "#0e0e0e" },
@@ -90,7 +90,7 @@ const PNJ_DEFAUT = { 95: { nom: "Homer", tenue: "polo", couleur: "#ffffff", bas:
   46: { nom: "Lorraine Baines", tenue: "lorraine", couleur: "#8a86c8", bas: null, pieds: "#f4f2ec" }, 47: { nom: "George McFly", tenue: "george", couleur: "#b4aaa4", bas: "#7a7c80", pieds: "#2a1a10" },
   // les héros de Resident Evil revenus en zombies (l'équipier tombé revient)
   48: { nom: "Rebecca zombie", tenue: "rebecca", couleur: "#55534f", bas: "#3d3f37", pieds: "#141414" }, 49: { nom: "Leon zombie", tenue: "leon", couleur: "#2e3b57", bas: "#2b3650", pieds: "#111111" },
-  50: { nom: "Barry zombie", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 51: { nom: "Jill zombie", tenue: "jill", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
+  50: { nom: "Barry zombie", tenue: "barry", couleur: "#9a9c8c", bas: "#66665f", pieds: "#5a3a22" }, 51: { nom: "Leon zombie", tenue: "leon", couleur: "#4f7fa6", bas: null, pieds: "#151515" },
   52: { nom: "Wesker zombie", tenue: "wesker", couleur: "#2a3650", bas: "#141518", pieds: "#0f0f0f" }, 53: { nom: "Chris zombie", tenue: "chris", couleur: "#c4c4ba", bas: "#56544a", pieds: "#161616" },
   // Émile et Images, quand passe leur medley : le chanteur au micro, le batteur, le guitariste (qui chante aussi)
   54: { nom: "Le chanteur (Émile et Images)", tenue: "eichant", couleur: "#141416", bas: "#1c1c20", pieds: "#141414" }, 55: { nom: "Le batteur (Émile et Images)", tenue: "eibatterie", couleur: "#f4f4f2", bas: "#2c3240", pieds: "#1a1a1a" },
