@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[72]); chargerAvatar3D(HEROS_3D[71]);   // (Maria, Angela en 3D : chargées d'avance)
+function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[100]); chargerAvatar3D(HEROS_3D[72]); chargerAvatar3D(HEROS_3D[71]);   // (Harry, Maria, Angela en 3D : chargés d'avance)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9609,7 +9609,7 @@ const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin",
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
 function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
-const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
+const prenomSH = () => "Harry";   // (à Silent Hill, on est Harry Mason : c'est ainsi qu'on nous appelle)
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
   const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...(id === 72 || id === 71 ? { heros: id } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (Maria, Angela : en 3D)
@@ -12164,7 +12164,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1" };   // (71 : Angela, 72 : Maria, dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1" };   // (71 : Angela, 72 : Maria, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
@@ -12283,6 +12283,7 @@ function ajouterAncien(info) {
   if (M.L && M.L.lb && info.numero === M.moiNum && M.lbPerso && !info.vrai) info = { ...habillerLB(info, M.lbPerso), arme: true, armeEau: true, vrai: info };   // (à Santa Carla : on joue Sam, Edgar ou Alan Frog)
   { const hid = info.numero > 0 ? (info.numero === M.moiNum ? M.perso : info.perso) : null;
     if (M.L && M.L.apo && !M.L.sh && hid && HEROS[hid] && !info.vrai) info = { ...habillerHeros(info, hid), vrai: info }; }
+  if (M.L && M.L.sh && info.numero > 0 && !info.vrai) info = { ...info, heros: 100, nom: "Harry", tete_v: null, teteUrl: "images/sh/harry-tete.webp", vrai: info };   // (à Silent Hill, on joue Harry Mason, en 3D)
   if (M.gens.has(info.numero)) retirerAncien(info.numero);
   const g = new THREE.Group(); g.position.set(info.x || 0, 0, info.z || 0); g.userData.perso = true; M.scene.add(g);
   const p = { info, g, moi: info.numero === M.moiNum, cible: null };
