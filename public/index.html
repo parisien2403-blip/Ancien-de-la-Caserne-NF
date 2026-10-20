@@ -2645,7 +2645,7 @@
       <p class="p3e" style="color:#b81c22;margin:0 0 8px" hidden></p>
       <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn small alt p3x">Annuler</button><button type="button" class="btn small p3ok">Enregistrer</button></div></div>`;
     document.body.appendChild(d);
-    const majT = () => { d.querySelector(".p3t").innerHTML = liste.map(x => `<button type="button" class="btn small ${x.id === t ? "" : "alt"}" data-t="${x.id}">${esc(x.nom)}</button>`).join(""); d.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { t = b.dataset.t; majT(); }); };
+    const majT = () => { d.querySelector(".p3t").innerHTML = [...liste, { id: "ancien", nom: "🧍 Mon ancien bonhomme" }].map(x => `<button type="button" class="btn small ${x.id === t ? "" : "alt"}" data-t="${x.id}">${esc(x.nom)}</button>`).join(""); d.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { t = b.dataset.t; majT(); }); };
     d.querySelector(".p3x").onclick = () => d.remove();
     d.querySelector(".p3ok").onclick = async () => { const couleurs = {}; for (const k of ["haut", "bas", "pieds"]) couleurs[k] = d.querySelector(`[data-o="${k}"]`).checked ? null : d.querySelector(`[data-c="${k}"]`).value;
       try { const nb = (sel, a, z, nom) => { const v = d.querySelector(sel).value.trim(); if (!v) return null; const n = Math.round(Number(v)); if (!(n >= a && n <= z)) throw new Error(`${nom} : entre ${a} et ${z}.`); return n; };
@@ -3180,6 +3180,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["5.99", "20 octobre 2026", ["Mon personnage 3D : un nouveau choix, « Mon ancien bonhomme », pour reprendre son ancien personnage (et revenir à la 3D quand on veut)"]],
     ["5.98", "20 octobre 2026", ["Silent Hill : la radio, plus petite, se ramasse au comptoir avec la lampe et la carte (le rappel la cite) ; un bouton Radio permet de l'éteindre pour rentrer", "Le rappel du bar se ferme aussi à la manette (A ou B)", "Le micro : le bouton s'entoure de vert quand ton micro capte ta voix, le chiffre passe au vert quand tu entends quelqu'un ; si ton micro ne capte rien, un message te le dit", "Une fiche technique de chaque appareil (carte graphique, erreurs d'affichage) arrive dans les signalements de l'administrateur, pour comprendre les soucis d'affichage à distance"]],
     ["5.97", "20 octobre 2026", ["Le micro : dans la caserne de 1990 et à Resident Evil, un bouton 🎙️ pour parler aux autres et les entendre ; on l'allume et on le coupe quand on veut (pas à Silent Hill, où l'on est seul)"]],
     ["5.96", "20 octobre 2026", ["Silent Hill : à la scène finale, Maria, Lisa, James et Heather sont bien visibles autour de Harry (un personnage parti dans le brouillard restait transparent quand il revenait)", "À la fin, Heather reste à sa place, regarde son père à terre en lui parlant, puis part à son tour dans le brouillard"]],

@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "5.98";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "5.99";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12521,7 +12521,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
-const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
+const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
 function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : [110, 111].includes(p.info.heros) ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
