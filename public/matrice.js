@@ -9611,14 +9611,19 @@ function pontiacSH(scene, L) {
     sc.updateMatrixWorld(true); let corps = null; sc.traverse(o => { if (o.isMesh && /ventura/i.test(o.name)) corps = o; if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
     const b = new THREE.Box3().setFromObject(corps || sc), k = LG / (b.max.x - b.min.x), w = new THREE.Group(); w.add(sc); sc.scale.multiplyScalar(k);
     sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);   // (centrée, les roues au sol)
-    w.position.set(X, L.hauteur ? L.hauteur(X, Z) : 0, Z); w.rotation.set(0, TH, .025); scene.add(w); L.pontiac = w; })().catch(() => {}); }
+    w.position.set(X, L.hauteur ? L.hauteur(X, Z) : 0, Z); w.rotation.set(0, TH, .025); scene.add(w); L.pontiac = w; })().catch(() => {});
+  /* par terre, près de la portière : une photo d'un couple (James et Mary — Harry ne les connaît pas), tachée de sang séché, tombée là (un tirage de 13 × 13,5 cm, un peu gondolé, de travers) */
+  { const im = new Image(), t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; im.onload = () => { t.needsUpdate = true; }; im.src = "images/sh/photo-james-mary.webp";
+    const ph = new THREE.Mesh(new THREE.PlaneGeometry(.2, .21), new THREE.MeshStandardMaterial({ map: t, roughness: .45, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .35, polygonOffset: true, polygonOffsetFactor: -2 }));   // (un peu de sa propre lumière : on la voit au sol, dans le brouillard)
+    const px = X - .6 * Math.cos(TH) - 2.0 * Math.sin(TH), pz = Z + .6 * Math.sin(TH) - 2.0 * Math.cos(TH);   // (à côté de la portière, sur le pavé — pas sous la voiture)
+    ph.rotation.set(-Math.PI / 2 + .03, 0, .7); ph.position.set(px, (L.hauteur ? L.hauteur(px, pz) : 0) + .016, pz); ph.receiveShadow = true; scene.add(ph); L.photoSH = ph; L.photoPos = [px, pz]; if (M && M.shPhoto) ph.visible = false; } }
 const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605, heather: -606, alessa: -607 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73, [-606]: 110, [-607]: 111 };
 const SH_VIES = 5, SH_EDDIE_PV = 8;
 // les monstres : [image, hauteur, vitesse, points de vie]
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shPhoto = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => "Harry";   // (à Silent Hill, on est Harry Mason : c'est ainsi qu'on nous appelle)
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -10088,6 +10093,11 @@ function resterJames(H) { M.shChoix = "james";
     ["moi", "Merci, James. Et toi ?"], [SHN.james, `Moi… je dois retrouver ma femme. Bon courage, ${prenomSH()}.`], geste(() => evanouirSH(SHN.james, [H.x - 6, H.z + 4], 600, .9)), [null, null, 2400]],
     () => { M.shCleMess = true; evanouirSH(SHN.maria, [H.x + 6, H.z + 4], 0, .55); evanouirSH(SHN.james, [H.x - 6, H.z + 4], 0, .9); M.shEtape = 6; M.shMariaMess = true; }); }
 // la clé du mess (celle de Silent Hill 1), montrée en grand à l'écran
+/* la photo ramassée, près de la Pontiac : montrée en grand, et Harry pense tout haut */
+function montrerPhotoSH() { const d = voile("display:grid;place-items:center;background:rgba(0,0,0,.72);opacity:0;transition:opacity .6s", 6600);
+  d.innerHTML = `<div style="text-align:center;max-width:86%"><img src="images/sh/photo-james-mary.webp" alt="" style="width:min(62vw,300px);transform:rotate(-3deg);box-shadow:0 10px 28px rgba(0,0,0,.85)"><div style="font:900 18px 'Marcellus',serif;color:#efe6d4;letter-spacing:.12em;margin-top:12px;text-shadow:0 2px 6px #000">UNE PHOTO</div><div style="font:italic 15px/1.4 sans-serif;color:#d8cfc0;margin-top:8px;text-shadow:0 2px 5px #000">Un homme et une femme… Je ne les connais pas.<br>Ils avaient l'air heureux. Il y a du sang dessus… séché depuis longtemps.</div></div>`;
+  requestAnimationFrame(() => d.style.opacity = "1"); setTimeout(() => { d.style.opacity = "0"; }, 5900); sonBruit(.15, 2400, .2);
+}
 function montrerCleMess() { const d = voile("display:grid;place-items:center;background:rgba(0,0,0,.6);opacity:0;transition:opacity .5s", 3600);
   d.innerHTML = `<div style="text-align:center"><img src="images/sh/cle-mess.webp" alt="" style="width:min(40vw,170px);filter:drop-shadow(0 6px 14px rgba(0,0,0,.8))"><div style="font:900 22px 'Marcellus',serif;color:#efe6d4;letter-spacing:.1em;margin-top:6px;text-shadow:0 2px 6px #000">CLÉ DU MESS</div></div>`;
   requestAnimationFrame(() => d.style.opacity = "1"); setTimeout(() => { d.style.opacity = "0"; }, 3000); sonBruit(.25, 3000, .3); }
@@ -13301,6 +13311,7 @@ function chercherAction(t) {
     else if (estSH(M.lieu) && M.lieu === "sh-grande" && M.shCleMess && !M.shMessOuvert && (() => { const q = M.L.portails.find(pt => pt.vers === "sh-mess"), c = q && (q.seuil || centrePortail(q)); return c && Math.hypot(x - c[0], z - c[1]) < 1.1; })()) a = { type: "cleMess", label: "🗝️ Utiliser la clé" };
     else if (M.L.cadenasEnc && estSH(M.lieu) && M.shCle && Math.hypot(x - M.L.cadenasEnc[0], z - M.L.cadenasEnc[1]) < 1.4) a = { type: "cadenasSH", label: "🔑 Ouvrir le cadenas avec la clé" };
     else if (M.L.lampeComptoir && estSH(M.lieu) && !M.shLampe && Math.hypot(x - M.L.lampeComptoir[0], z - M.L.lampeComptoir[1]) < 1.5) a = { type: "lampeSH", label: "🔦 Prendre la lampe" };
+    else if (M.L.photoSH && M.L.photoSH.visible && estSH(M.lieu) && !M.shPhoto && Math.hypot(x - M.L.photoPos[0], z - M.L.photoPos[1]) < 1.1) a = { type: "photoSH", label: "🖼️ Ramasser la photo" };
     else if (M.L.carteMur && estSH(M.lieu) && !M.shCarteOK && Math.hypot(x - M.L.carteMur[0], z - M.L.carteMur[1]) < 1.7) a = { type: "carteSH", label: "🗺️ Prendre la carte" };
     else if (M.L.radioSortie && estSH(M.lieu) && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSortie", label: "📻 Éteindre la radio (rentrer)" };
     else if (!moi.cible) {
@@ -13357,6 +13368,7 @@ export function agir() {
   else if (a.type === "cleMess") { M.shMessOuvert = true; sonBruit(.15, 3000, .35); setTimeout(() => sonBruit(.5, 700, .35), 250); majBoutonCarte(); M.ctx.surInfo && M.ctx.surInfo("🗝️ La clé tourne dans la serrure… la porte du mess s'ouvre.");
     const p0 = moiApo() && moiApo().g.position.clone(); setTimeout(() => { if (!M || M.lieu !== "sh-grande" || M.cine || M.shMort) return; const mq = moiApo(); if (p0 && mq && mq.g.position.distanceTo(p0) > 2.5) return; const q = M.L.portails.find(pt => pt.vers === "sh-mess"); if (q && !M.passage) { M.passage = true; changerLieu(q.vers, q.arrivee, q.yaw, true); } }, 1600); }
   else if (a.type === "lampeSH") { M.shLampe = true; M.shLampeOn = true; sonBruit(.05, 5000, .3); majBoutonCarte(); }
+  else if (a.type === "photoSH") { M.shPhoto = true; M.L.photoSH.visible = false; montrerPhotoSH(); }
   else if (a.type === "carteSH") { M.shCarteOK = true; majBoutonCarte(); ouvrirCarteSH(); }
   else if (a.type === "rentrer2026") cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
