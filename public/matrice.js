@@ -12224,13 +12224,16 @@ function poseCine3D(p, A) { const P = p.poseCine, N = ["Head", "Neck", "LeftArm"
   T("Neck", "x", -.25 * k); T("Head", "x", -.5 * k);
   if (P.mainT) { const m = lisse(Math.min(1, (now - P.mainT) / 600)), o = Math.sin(now / 260) * .12 * m; T("LeftArm", "x", -2.55 * m + o); T("LeftArm", "z", .25 * m); T("LeftForeArm", "x", -.35 * m); } }
 /* le pistolet (le Samurai Edge de Resident Evil 0) dans la main droite : bras le long du corps quand on marche ; quand on tire, il se tourne vers la cible et tend les deux bras, l'arme pointée */
-let pistolet3D = null, _v1, _v2, _v3, _qa, _qb;
+const pistolets3D = {}; let _v1, _v2, _v3, _qa, _qb;
 function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant); if (!b || !c) return; b.parent.updateMatrixWorld(true); b.updateMatrixWorld(true);
   b.getWorldPosition(_v1); c.getWorldPosition(_v2); _v2.sub(_v1).normalize(); _qa.setFromUnitVectors(_v2, _v3.copy(dir).normalize()); b.parent.getWorldQuaternion(_qb);
   b.quaternion.premultiply(_qb.clone().invert().multiply(_qa).multiply(_qb)); b.updateMatrixWorld(true); }
 function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); }
-  if (!pistolet3D) { pistolet3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-pistolet.glb?v=1"); return g.scene; })().catch(() => null); }
-  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolet3D.then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
+  // (le pistolet : celui de Resident Evil ; à Silent Hill, celui de Harry — ramené au même repère : le canon vers +z, d'une longueur 1, la crosse en bas)
+  const fA = p.info.heros === 100 ? "avatars/sh-pistolet.glb?v=1" : "avatars/re-pistolet.glb?v=1";
+  if (!pistolets3D[fA]) pistolets3D[fA] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(fA), sc = g.scene; sc.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(sc), k = 1 / Math.max(1e-6, b.max.z - b.min.z), w = new THREE.Group(), o = new THREE.Group(); w.add(sc); w.scale.setScalar(k); w.position.set(-b.min.x * k, -b.min.y * k, -b.min.z * k); o.add(w); return o; })().catch(() => null);
+  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
   if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;   /* (dans le repère du personnage : à sa taille) */
   const vise = p.viseeT && performance.now() - p.viseeT < 1600;
   if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
