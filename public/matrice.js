@@ -857,7 +857,13 @@ function decouper(img, bx, by, bw, bh, alpha) {
    ===================================================================================== */
 let THREE = null;
 const sourcesTex = new WeakMap();   // (une même toile, posée à plusieurs endroits, n'est envoyée qu'une fois à la carte graphique)
-const tex = (c, rx = 1, ry = 1) => { const t = new THREE.CanvasTexture(c); const so = sourcesTex.get(c); if (so) t.source = so; else sourcesTex.set(c, t.source); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; };
+/* (sur un petit téléphone, les grandes toiles dessinées — les façades, jusqu'à 3520 × 2160 — sont réduites à 768 au plus avant d'aller à la carte graphique :
+   toutes ensemble, elles prenaient plus d'un demi-giga de mémoire, et l'application plantait) */
+const toilesReduites = new WeakMap();
+const toileReduite = (c) => { if (!PETIT || !c || !c.width || Math.max(c.width, c.height) <= 768) return c; let r = toilesReduites.get(c); if (r) return r;
+  const k = 768 / Math.max(c.width, c.height); r = document.createElement("canvas"); r.width = Math.max(1, Math.round(c.width * k)); r.height = Math.max(1, Math.round(c.height * k));
+  r.getContext("2d").drawImage(c, 0, 0, r.width, r.height); for (const cle of Object.keys(c)) r[cle] = c[cle]; toilesReduites.set(c, r); return r; };   // (ses fenêtres notées, etc. : gardées)
+const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.CanvasTexture(c); const so = sourcesTex.get(c); if (so) t.source = so; else sourcesTex.set(c, t.source); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; };
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
@@ -3817,6 +3823,7 @@ function construireEtage(A, L, scene) {
   // les deux cages d'escalier, sur toute la hauteur
   const mm = A.mat({ map: tex(carreaux, 1, .2), roughness: .5 }), cote = A.mat({ color: 0xc9bb9c, roughness: .9 }), matMarche = [cote, cote, mm, cote, mm, mm];
   const fer = A.mat({ color: 0x1a1a1a, metalness: .4, roughness: .5 });
+  const marches = [], barreaux = [];   // (toutes les marches, tous les barreaux des deux cages : dessinés d'un seul coup — sur un petit téléphone, des centaines d'objets séparés ralentissaient tout)
   for (const sg of [-1, 1]) { const X = v => sg * v, xb = (a, b) => (X(a) + X(b)) / 2, cageW = CX1 - CX0, cz = (Z0 + Z1) / 2;
     A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z0 - .1, false);
     if (sg < 0) A.ajoute(new THREE.BoxGeometry(cageW + .4, HTOT, .2), beige, xb(CX0, CX1), HTOT / 2, Z1 + .1, false);
@@ -3864,19 +3871,19 @@ function construireEtage(A, L, scene) {
       sol(cageW, Z1 - 1.6, xb(CX0, CX1), y, (1.6 + Z1) / 2);                                        // le palier de l'étage
       if (k === 0) sol(cageW, 1.6 - Z0, xb(CX0, CX1), 0, (Z0 + 1.6) / 2);                          // (au rez-de-chaussée : le sol, sous les volées et le palier intermédiaire)
       if (k === N) continue;
-      for (let i = 0; i < 10; i++) { const t = (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CX1 - CXM, MH + .3, MP), matMarche, xb(CXM, CX1), y + t - (MH + .3) / 2, 1.6 - (i + .5) * MP, false); }
+      for (let i = 0; i < 10; i++) { const t = (i + 1) * MH; marches.push([xb(CXM, CX1), y + t - (MH + .3) / 2, 1.6 - (i + .5) * MP]); }
       // (sous chaque volée, une paillasse en pente, comme un vrai escalier : on passe dessous sans se baisser)
       for (const [w, xc, zc, yc, s2] of [[CX1 - CXM, xb(CXM, CX1), .1 - .1 * Math.sin(PENTE), y + .55 - .1 * Math.cos(PENTE), 1], [CXM - CX0, xb(CX0, CXM), .1 + .1 * Math.sin(PENTE), y + 2.25 - .1 * Math.cos(PENTE), -1]]) {
         const p = A.ajoute(new THREE.BoxGeometry(w, .2, Math.hypot(3, 1.7)), cote, xc, yc, zc, false); p.rotation.x = s2 * PENTE; }
       A.ajoute(new THREE.BoxGeometry(cageW, .25, -1.4 - Z0), gris, xb(CX0, CX1), y + 1.7 - .125, (Z0 - 1.4) / 2, false);
       sol(cageW, -1.4 - Z0, xb(CX0, CX1), y + 1.7, (Z0 - 1.4) / 2, .02);                          // le palier intermédiaire
-      for (let i = 0; i < 10; i++) { const t = 1.7 + (i + 1) * MH; A.ajoute(new THREE.BoxGeometry(CXM - CX0, MH + .3, MP), matMarche, xb(CX0, CXM), y + t - (MH + .3) / 2, -1.4 + (i + .5) * MP, false); }
+      for (let i = 0; i < 10; i++) { const t = 1.7 + (i + 1) * MH; marches.push([xb(CX0, CXM), y + t - (MH + .3) / 2, -1.4 + (i + .5) * MP]); }
       // les rampes en fer, des deux volées, au milieu
       for (const [z0, y0, sens] of [[1.6, 0, -1], [-1.4, 1.7, 1]]) {
         const r = A.ajoute(new THREE.BoxGeometry(.05, .05, 3.45), fer, X(CXM), y + y0 + .85 + .95, z0 + sens * 1.5, false); r.rotation.x = sens * -Math.atan2(1.7, 3);
         // (un barreau par marche, posé sur la marche et fixé sous la main courante)
         for (let j = 0; j < 10; j++) { const d = (j + .5) * MP, bas = y + y0 + (j + 1) * MH, haut = y + y0 + .95 + d * 1.7 / 3;
-          A.ajoute(new THREE.BoxGeometry(.025, haut - bas, .025), fer, X(CXM), (bas + haut) / 2, z0 + sens * d, false); } }
+          barreaux.push([X(CXM), (bas + haut) / 2, z0 + sens * d, haut - bas]); } }
       // (les poteaux aux deux bouts : au palier intermédiaire et au palier de l'étage, là où les mains courantes se rejoignent)
       for (const [zp, yp] of [[-1.4, 1.7], [1.6, 0]]) A.ajoute(new THREE.BoxGeometry(.06, 1.02, .06), fer, X(CXM), y + yp + .51, zp, false);
       ampoule(Math.max(1, k), xb(CXM, CX1), y + HP, 2.5, etatAmpoule(Math.max(1, k), 10 + (sg > 0 ? 1 : 0)));
@@ -3889,6 +3896,11 @@ function construireEtage(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(.05, .05, 3.05), fer, X(CXM), yN + .95, .1, false);
       for (let j = 0; j <= 6; j++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM), yN + .47, 1.6 - j * .5, false); }
   }
+  { const coupeM = m => { const c = m.clone(); c.clippingPlanes = [coupeCage()]; return c; }, mt = new THREE.Matrix4(), un = new THREE.Vector3(1, 1, 1), q0 = new THREE.Quaternion();
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(CX1 - CXM, MH + .3, MP), matMarche.map(coupeM), marches.length); im.receiveShadow = true;
+    marches.forEach(([x, y, z], i) => im.setMatrixAt(i, mt.makeTranslation(x, y, z))); im.computeBoundingSphere(); scene.add(im);
+    const ib = new THREE.InstancedMesh(new THREE.BoxGeometry(.025, 1, .025), coupeM(fer), barreaux.length);
+    barreaux.forEach(([x, y, z, h], i) => ib.setMatrixAt(i, mt.compose(new THREE.Vector3(x, y, z), q0, un.set(1, h, 1)))); ib.computeBoundingSphere(); scene.add(ib); }
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
   // la vue en coupe : seulement les marches, les paillasses, les paliers et les rampes de la cage (des copies de leurs matières), pas les murs ni le plafond
   { const coupables = new Set([mm, cote, gris, fer]), copies = new Map();
@@ -8159,7 +8171,7 @@ export async function ouvrir(ctx) {
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
-  const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
+  const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
     rendu.setPixelRatio(Math.max(resMin, Math.min(res, Math.sqrt(budget / (w * h))))); };
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
@@ -8282,16 +8294,18 @@ export async function ouvrir(ctx) {
   let avant = performance.now();
   // (une erreur dans une image ne doit jamais arrêter la boucle : three.js ne redemande l'image suivante qu'après celle-ci, une erreur figeait tout l'écran)
   let erreurVue = 0;
-  rendu.setAnimationLoop(t => { try { image(t); } catch (e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } } });
+  let dernImg = 0;
+  rendu.setAnimationLoop(t => { if (PETIT && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
+    try { image(t); } catch (e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } } });
   function image(t) {
     if (!M || !M.scene) return;
     const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
     // trop lent (moins de 35 images par seconde) : on affine moins l'image ; très à l'aise : on la rend plus fine
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
-      const r = moy > 34 ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
+      const r = moy > (PETIT ? 45 : 34) ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
       if (r !== res) { res = r; M.redim && M.redim(); } } }
-    preparerVoisin(); trierLumieres(t);
+    preparerVoisin(); trierLumieres(t); if (PETIT) cacherLoin(t);
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -10232,13 +10246,25 @@ function ambianceApo() {
 /* la grande cour a beaucoup de lampes (sous-sol, judo, douches, passages…) : chaque lampe allumée coûte sur chaque point de l'image, même loin.
    On n'allume, pour le rendu, que les plus proches de la caméra — toujours le même nombre, pour ne pas recompiler les matières en marchant */
 const LAMPES_MAX = 8;
+/* petit téléphone : les groupes d'objets (voitures, bancs, lampadaires, arbres…) à plus de 55 m de la caméra ne sont pas dessinés — souvent derrière un bâtiment,
+   ils coûtaient pourtant autant que s'ils étaient devant nous. Les bâtiments, eux, restent toujours là ; ce qu'un autre a caché n'est jamais remontré */
+function cacherLoin(t) {
+  if (!M || !M.scene || !M.camera || t < (M.loinT || 0)) return; M.loinT = t + 300;
+  if (M.loinScene !== M.scene) { M.loinScene = M.scene; M.loin = [];
+    for (const g of M.scene.children) { if (g.isMesh || g.isLight || g.userData.perso || !g.children.length) continue; let n = 0; g.traverse(o => { if (o.isMesh) n++; if (o.userData.perso) n = -1e9; }); if (n < 6) continue;
+      g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.isEmpty()) continue; const sp = b.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 45) continue;   // (un très grand ensemble reste toujours là)
+      M.loin.push({ g, c: g.worldToLocal(sp.center.clone()), r: sp.radius }); } }
+  const cam = M.camera.position, v = new THREE.Vector3(), f = M.scene.fog, lim = f && f.far ? Math.min(55, f.far + 3) : 55;   // (dans le brouillard — Silent Hill — on n'y voit pas si loin : encore moins)
+  for (const q of M.loin) { const loin = q.g.localToWorld(v.copy(q.c)).distanceTo(cam) - q.r > lim;
+    if (loin && q.g.visible) { q.g.visible = false; q.cache = true; } else if (!loin && q.cache) { q.cache = false; q.g.visible = true; } } }
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
-  if (baseLieu(M.lieu) !== "grande" || estApo(M.lieu)) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if ((baseLieu(M.lieu) !== "grande" && !PETIT) || (estApo(M.lieu) && !(PETIT && baseLieu(M.lieu) === "etage"))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
   if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight) M.lampes.push(o); }); }
   const c = M.camera.position, v = new THREE.Vector3();
-  const tri = M.lampes.filter(l => l.visible).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
-  tri.forEach(([l], i) => l.layers.set(i < LAMPES_MAX ? 0 : 31));
+  const vu = l => { for (let o = l; o; o = o.parent) if (!o.visible) return false; return true; };   // (une lampe dans un groupe caché ne compte pas)
+  const tri = M.lampes.filter(vu).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
+  tri.forEach(([l], i) => l.layers.set(i < (PETIT ? 4 : LAMPES_MAX) ? 0 : 31));   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
 const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
@@ -10341,7 +10367,7 @@ function apocalypse(scene, L, base) {
     for (const f of L.feuxScene || []) { f.cone.visible = false; f.verre.material.color.setHex(0x222222); } L.feuxScene = null; };   // (les projecteurs de la scène : éteints, comme le reste)
   /* trop de lumières rendent tout lent (la salle des fêtes en a plus de trente) : les lampes de la pièce sont « éteintes »,
      et six lumières seulement, toujours là, prennent la place des lampes allumées les plus proches de nous */
-  const sources = [], pool = [0, 1, 2, 3, 4, 5].map(() => { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  const sources = [], pool = [0, 1, 2, 3, 4, 5].slice(0, PETIT ? 4 : 6).map(() => { const l = new THREE.PointLight(0xffffff, 0, 8, 1.5); l.userData.apo = true; scene.add(l); return l; });
   const regrouper = () => { if (base === "etage") return;   // (les étages ont déjà leur propre jeu de douze lampes)
     scene.updateMatrixWorld(true); scene.traverse(o => { if (!o.isPointLight || o.userData.apo) return;
       if (!o.userData.pos) { o.userData.pos = o.parent === scene ? o.position : o.getWorldPosition(new THREE.Vector3()); sources.push(o); }
@@ -10507,7 +10533,7 @@ function heliportApo(scene, L) {
   chargerGLB("avatars/re-heliport.glb?v=1").then(sc => { if (!sc) return; const m = sc.clone(), k = .0075; m.scale.setScalar(k); m.position.y = .06 - 180 * k; m.traverse(o => { if (o.isMesh) o.receiveShadow = true; }); g.add(m); peint.visible = false; });
 }
 // des détritus au sol : journaux, feuilles, canettes, cartons (quatre dessins en tout : très léger)
-function detritusApo(scene, L, base, hSol, plus = 1) {
+function detritusApo(scene, L, base, hSol, plus = 1) { if (PETIT) plus *= .5;   // (petit téléphone : deux fois moins de débris)
   texJournal = texJournal || tex(toile(256, 180, (x, w, h) => { x.fillStyle = "#e4dfcf"; x.fillRect(0, 0, w, h); x.fillStyle = "#1a1a1a"; x.font = "bold 30px Georgia"; x.fillText("LA GAZETTE", 14, 34); x.fillRect(10, 42, w - 20, 3);
     x.font = "bold 22px Arial"; x.fillText("ÉVACUATION !", 14, 70); x.fillStyle = "#8a8578"; x.fillRect(14, 80, 100, 70);
     x.fillStyle = "#6a665c"; for (let c = 0; c < 2; c++) for (let i = 0; i < 9; i++) x.fillRect(124 + c * 64, 82 + i * 9, 56, 3); for (let i = 0; i < 2; i++) x.fillRect(14, 158 + i * 9, w - 28, 3); }));
@@ -11086,7 +11112,7 @@ function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.ma
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
   const m = new THREE.Mesh(new THREE.PlaneGeometry(.8 * k, .8 * k), new THREE.MeshBasicMaterial({ map: texSang[Math.floor(Math.random() * 4)], transparent: true, depthWrite: false }));
   m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x + (Math.random() - .5) * .4, y + .025 + M.sangs.length * .0003, z + (Math.random() - .5) * .4); m.renderOrder = 1; M.scene.add(m); M.sangs.push(m);
-  if (M.sangs.length > 40) { const o = M.sangs.shift(); M.scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
+  if (M.sangs.length > (PETIT ? 15 : 40)) { const o = M.sangs.shift(); M.scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
 // le zombie touché : il recule un peu, rougit, saigne
 function impactZ(z, dx, dz) { z.flashT = performance.now() + 160; z.recul = [dx, dz, performance.now()]; sangAuSol(z.x, z.z, yZ(z), z.chien ? .8 : 1); }
 function blesserZ(z, dx, dz) {   // (le chef) la balle compte
@@ -15008,7 +15034,7 @@ function preparerVoisin() {
   for (const q of [...(M.L.portails || []), ...(M.L.raccourcis || [])]) { if (!q.vers || q.vers === M.lieu || M.prets[q.vers] || !LIEUX[baseLieu(q.vers)]) continue;
     const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
     const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
-  if (!best || Object.keys(M.prets).length >= 2) return;
+  if (!best || Object.keys(M.prets).length >= (PETIT ? 1 : 2)) return;   // (petit téléphone : un seul lieu préparé à l'avance — la mémoire)
   M.preparation = true; const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return;
       const q = construireScene(best); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[best] = q;
