@@ -10158,17 +10158,17 @@ function cineFinale(blanc) { if (!M) return; const moi = M.gens.get(M.moiNum); i
     if (u > 13.2) D("c", () => dire(SHN.james, "Laissez-le. Je suis persuadé qu'un jour, il finira par faire le bon choix."));
     if (u > 17.8) D("d", () => dire(SHN.maria, "Ils reviennent tous."));
     if (u > 20.6) D("e", () => { for (const [n, dx, dz] of AUTOUR.slice(0, 3)) { const q = M.gens.get(n); if (q) q.regardeA = null; evanouirSH(n, [p.x + dx * 4, p.z + dz * 4], 500, .7); } });   /* (ils s'en vont dans le brouillard ; elle, non) */
-    if (u > 22) D("f", () => { if (he) { he.regardeA = null; he.info.allure = .35; he.cible = new THREE.Vector3(p.x - .55, p.y, p.z + .15); he.chemin = []; } });
-    if (u > 24.8) D("g", () => { if (he) { he.regardeA = M.camera.position; he.teteVers = M.camera.position; } });   /* (elle regarde la caméra : c'est au joueur qu'elle parle) */
+    if (u > 23) D("g", () => { if (he) { he.regardeA = p; he.teteVers = p; } });   /* (elle reste là où elle est, et regarde son père, à terre) */
     if (u > 25.2) D("h", () => dire(SHN.heather, "Chut, papa… Ne te relève pas. Tu me cherches depuis si longtemps…"));
     if (u > 30.4) D("i", () => dire(SHN.heather, "Mais tu ne m'as jamais perdue. C'est moi qui t'ai fait venir ici. Moi qui fais hurler la sirène."));
     if (u > 36.4) D("j", () => dire(SHN.heather, "Tu ne te souviens pas ? Il y a sept ans… c'est toi qui m'as laissée brûler. Alors maintenant, tu brûles avec moi."));
     if (u > 43) D("k", () => dire(SHN.heather, "Dors, papa. On recommence. Et la prochaine fois encore… tu ne me reconnaîtras pas."));
-    if (u > 49.5 && !noir) { noir = voile("background:#000;opacity:0;transition:opacity 1.2s"); requestAnimationFrame(() => noir.style.opacity = "1"); }
-    if (u > 51.5 && !titre) { bulle(null); titre = voile("opacity:0;transition:opacity 2.5s;display:grid;place-items:center;align-content:center;gap:clamp(18px,5vh,46px)");   /* (sur le noir : le titre, et FIN, dans la même écriture) */
+    if (u > 48.6) D("l", () => { if (he) { he.regardeA = null; he.teteVers = null; } evanouirSH(SHN.heather, [p.x - 5, p.z + 2], 300, .55); });   /* (puis elle s'en va, elle aussi, dans le brouillard) */
+    if (u > 53.5 && !noir) { noir = voile("background:#000;opacity:0;transition:opacity 1.2s"); requestAnimationFrame(() => noir.style.opacity = "1"); }
+    if (u > 55.5 && !titre) { bulle(null); titre = voile("opacity:0;transition:opacity 2.5s;display:grid;place-items:center;align-content:center;gap:clamp(18px,5vh,46px)");   /* (sur le noir : le titre, et FIN, dans la même écriture) */
       titre.innerHTML = '<img src="images/sh/titre.webp" alt="Silent Hill" style="width:min(80%,760px);height:auto"><img src="images/sh/fin.webp" alt="Fin" style="width:min(21%,200px);height:auto">';
       requestAnimationFrame(() => requestAnimationFrame(() => { titre.style.opacity = "1"; })); }
-    if (u > 59.5) fin(); } }; }
+    if (u > 63.5) fin(); } }; }
 // au sous-sol du mess : Lisa ; elle pense pouvoir nous aider à partir — par le porche : « si c'est une entrée, c'est aussi une sortie, non ? »
 function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess" || M.shLauraBas) return; const mp = moi.g.position, nom = prenomSH();
   if (M.cine) { setTimeout(() => M && M.shEtape === 10 && !M.shLauraBas && lauraBas(), 800); return; }   /* (une autre scène est en cours : Lisa attend qu'elle finisse, au lieu d'être sautée) */
