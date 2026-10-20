@@ -47,6 +47,10 @@ const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
 const universDe = id => id === "santacarla" ? "lb" : /^spr-/.test(id || "") ? "spr" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;   // (les univers : une personne à la fois)
+/* les notifications (Web Push) : chiffrées pour chaque appareil (RFC 8291), signées par la caserne (VAPID, RFC 8292) — la clé de signature est créée par le registre lui-même et ne quitte jamais sa base */
+const b64u = buf => { let t = ""; for (const c of new Uint8Array(buf)) t += String.fromCharCode(c); return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const deB64u = s => { s = String(s).replace(/-/g, "+").replace(/_/g, "/"); s += "=".repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+const colle = (...a) => { const t = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let o = 0; for (const x of a) { t.set(x, o); o += x.length; } return t; };
 // la voix (le micro) : on s'entend entre tous ceux qui l'ont allumé, dans le même monde — la caserne de 1990, ou celle de l'apocalypse (Resident Evil) ; pas dans les univers à une personne (Silent Hill…)
 const salleVoix = l => !l ? null : l.startsWith("z-") ? "apo" : universDe(l) ? null : "1990";
 const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
@@ -131,6 +135,8 @@ export class Compteur extends DurableObject {
       id INTEGER PRIMARY KEY AUTOINCREMENT, de TEXT, a TEXT, sujet TEXT, texte TEXT,
       envoye TEXT, lu INTEGER DEFAULT 0)`);
     for (const col of ["chiffre TEXT"]) { try { this.sql.exec(`ALTER TABLE messages ADD COLUMN ${col}`); } catch (e) { /* déjà là */ } }
+    // les appareils abonnés aux notifications (téléphones, PC) : un membre peut en avoir plusieurs
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS push (endpoint TEXT PRIMARY KEY, email TEXT, p256dh TEXT, auth TEXT, cree TEXT)`);
     // colonnes ajoutées avec la connexion (code provisoire puis mot de passe personnel)
     this.sql.exec(`CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS photos (
@@ -984,6 +990,37 @@ export class Compteur extends DurableObject {
     return { moi, recus: liste("a"), envoyes: liste("de") };
   }
 
+  // ---- les notifications ----
+  async clesVapid() { if (this._vapid) return this._vapid; let k = await this.ctx.storage.get("vapid");
+    if (!k) { const p = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]); k = { prive: await crypto.subtle.exportKey("jwk", p.privateKey), pub: b64u(await crypto.subtle.exportKey("raw", p.publicKey)) }; await this.ctx.storage.put("vapid", k); }
+    this._vapid = { pub: k.pub, cle: await crypto.subtle.importKey("jwk", k.prive, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]) }; return this._vapid; }
+  async pushCle() { return { cle: (await this.clesVapid()).pub }; }
+  pushAbonner(token, x) { const moi = this.moi(token), s = (x && x.sub) || {}, k = s.keys || {};
+    if (!/^https:\/\//.test(s.endpoint || "") || String(s.endpoint).length > 1000 || typeof k.p256dh !== "string" || typeof k.auth !== "string" || k.p256dh.length > 200 || k.auth.length > 100) throw new Refus("Abonnement invalide");
+    this.sql.exec("INSERT OR REPLACE INTO push (endpoint, email, p256dh, auth, cree) VALUES (?, ?, ?, ?, ?)", s.endpoint, moi.email, k.p256dh, k.auth, new Date().toISOString()); return { ok: true }; }
+  pushDesabonner(token, x) { const moi = this.moi(token); this.sql.exec("DELETE FROM push WHERE endpoint = ? AND email = ?", String((x && x.endpoint) || ""), moi.email); return { ok: true }; }
+  async pushEssai(token) { const moi = this.moi(token); const n = await this.pousser(moi.email, { titre: "🔔 Caserne Nouvelle-France", corps: "Les notifications marchent : tu seras prévenu du courrier et des mises à jour.", tag: "essai" }); return { ok: true, appareils: n }; }
+  async pousser(email, d) { let n = 0; for (const s of this.sql.exec("SELECT * FROM push WHERE email = ?", email).toArray()) if (await this.pousserUn(s, d)) n++; return n; }
+  async pousserTous(d) { const l = this.sql.exec("SELECT * FROM push").toArray(); for (let i = 0; i < l.length; i += 20) await Promise.all(l.slice(i, i + 20).map(s => this.pousserUn(s, d))); return l.length; }
+  async pousserUn(s, d) {
+    try { const V = await this.clesVapid(), enc = new TextEncoder(), now = Math.floor(Date.now() / 1000);
+      const h = b64u(enc.encode(JSON.stringify({ typ: "JWT", alg: "ES256" }))), p = b64u(enc.encode(JSON.stringify({ aud: new URL(s.endpoint).origin, exp: now + 12 * 3600, sub: "mailto:vaguemestre@caserne-nouvelle-france.fr" })));
+      const jwt = h + "." + p + "." + b64u(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, V.cle, enc.encode(h + "." + p)));
+      // le chiffrement (aes128gcm) : une clé éphémère, le secret partagé avec l'appareil, et son secret d'authentification
+      const uaPub = deB64u(s.p256dh), auth = deB64u(s.auth), eph = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+      const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", eph.publicKey)), ua = await crypto.subtle.importKey("raw", uaPub, { name: "ECDH", namedCurve: "P-256" }, false, []);
+      const secret = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: ua }, eph.privateKey, 256));
+      const hkdf = async (salt, ikm, info, n) => new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]), n * 8));
+      const ikm = await hkdf(auth, secret, colle(enc.encode("WebPush: info\0"), uaPub, asPub), 32), sel = crypto.getRandomValues(new Uint8Array(16));
+      const cek = await hkdf(sel, ikm, enc.encode("Content-Encoding: aes128gcm\0"), 16), nonce = await hkdf(sel, ikm, enc.encode("Content-Encoding: nonce\0"), 12);
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]), colle(enc.encode(JSON.stringify(d)), new Uint8Array([2]))));
+      const r = await fetch(s.endpoint, { method: "POST", headers: { "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "172800", Urgency: "high", Authorization: `vapid t=${jwt}, k=${V.pub}` }, body: colle(sel, new Uint8Array([0, 0, 16, 0, 65]), asPub, ct) });
+      if (r.status === 404 || r.status === 410) this.sql.exec("DELETE FROM push WHERE endpoint = ?", s.endpoint);   // (l'appareil s'est désabonné)
+      return r.ok; } catch (e) { return false; } }
+  // une nouvelle version est en ligne : on prévient tout le monde, une seule fois
+  async verifierVersion(v) { v = String(v || ""); if (!/^[\d.]{1,12}$/.test(v)) return false; const avant = await this.ctx.storage.get("version_annoncee"); if (avant === v) return false;
+    await this.ctx.storage.put("version_annoncee", v); if (avant) await this.pousserTous({ titre: "🆕 Mise à jour disponible", corps: `La version ${v} de la caserne est arrivée. Ouvre l'appli pour la découvrir !`, tag: "maj" }); return true; }
+  annoncerCourrier(moi, a) { if (a === moi.email) return; this.ctx.waitUntil(this.pousser(a, { titre: "📬 Le vaguemestre", corps: `Du courrier de ${moi.prenom} ${moi.nom} t'attend.`, tag: "courrier" }).catch(() => {})); }   // (le nom de l'expéditeur seulement, jamais le message)
   async envoyer(token, lettre) {
     const moi = this.moi(token);
     const a = texte(lettre.a, 120).toLowerCase();
@@ -994,11 +1031,11 @@ export class Compteur extends DurableObject {
       if (typeof c.iv !== "string" || typeof c.ct !== "string" || typeof c.cle !== "string" || c.ct.length > 40000) throw new Refus("Message chiffré invalide");
       this.sql.exec("INSERT INTO messages (de, a, sujet, texte, envoye, chiffre) VALUES (?, ?, ?, ?, ?, ?)",
         moi.email, a, "🔒", "", new Date().toISOString(), JSON.stringify({ iv: c.iv, ct: c.ct, cle: c.cle }));
-      return { ok: true };
+      this.annoncerCourrier(moi, a); return { ok: true };
     }
     const sujet = texte(lettre.sujet, 120) || "(sans objet)", corps = texte(lettre.texte, 5000);
     if (!corps) throw new Refus("Le message est vide");
-    this.sql.exec("INSERT INTO messages (de, a, sujet, texte, envoye) VALUES (?, ?, ?, ?, ?)", moi.email, a, sujet, corps, new Date().toISOString());
+    this.sql.exec("INSERT INTO messages (de, a, sujet, texte, envoye) VALUES (?, ?, ?, ?, ?)", moi.email, a, sujet, corps, new Date().toISOString()); this.annoncerCourrier(moi, a);
     return { ok: true };
   }
 
@@ -1183,7 +1220,10 @@ export class Compteur extends DurableObject {
   }
 }
 
+let VERSION_VUE = false;
+async function annoncerVersion(env, origine) { const r = await env.ASSETS.fetch(new Request(origine + "/version.json")); const j = await r.json(); return env.COMPTEUR.get(env.COMPTEUR.idFromName("caserne")).verifierVersion(j.version); }
 export default {
+  async scheduled(ev, env, ctx) { ctx.waitUntil(annoncerVersion(env, "https://caserne.invalid").catch(() => {})); },   // (toutes les 15 minutes : même si personne n'ouvre l'appli)
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // les vidéos du site (l'écran géant du concert…) : servies par morceaux (« Range »), sinon l'iPhone n'affiche pas l'image
@@ -1205,6 +1245,7 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     const registre = env.COMPTEUR.get(env.COMPTEUR.idFromName("caserne"));
+    if (!VERSION_VUE) { VERSION_VUE = true; ctx.waitUntil(annoncerVersion(env, url.origin).catch(() => { VERSION_VUE = false; })); }   // (une nouvelle version en ligne : les abonnés sont prévenus)
     const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     const corps = async () => { try { return await request.json(); } catch { return {}; } };
     const route = `${request.method} ${url.pathname}`;
@@ -1413,6 +1454,10 @@ export default {
       else if (route === "PUT /api/pnj") r = await registre.changerPNJ(token, await corps(), Number(url.searchParams.get("id")) || 1);
       else if (route === "PUT /api/moi/avatar") r = await registre.changerAvatar(token, await corps());
       else if (route === "GET /api/moi/avatar") r = await registre.monAvatar(token);
+      else if (route === "GET /api/push/cle") r = await registre.pushCle();
+      else if (route === "POST /api/push") r = await registre.pushAbonner(token, await corps());
+      else if (route === "DELETE /api/push") r = await registre.pushDesabonner(token, await corps());
+      else if (route === "POST /api/push/essai") r = await registre.pushEssai(token);
       else if (route === "PUT /api/moi/av3") r = await registre.changerAv3(token, await corps());
       else if (route === "PUT /api/moi/escalier") r = await registre.changerEscalier(token, await corps());
       else if (route === "PUT /api/moi/fiche") r = await registre.corrigerFiche(token, await corps());

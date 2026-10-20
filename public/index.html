@@ -3017,6 +3017,7 @@
     modeInscription(!moi);
     fermerConnexion(); $("splash").hidden = true; $("attente").hidden = true; $("inside").hidden = false; go(tab);
     setTimeout(prechargerMX, 1500);
+    setTimeout(() => proposerNotifs().catch(() => {}), 4000);
     if (versoEnAttente) { versoEnAttente = false; setTimeout(annonceVerso, 700); }
   }
   function connecte(r) {
@@ -3115,7 +3116,7 @@
     $("rMail").textContent = moi.email || "Laissez-passer à faire au poste de police";
     $("rCarte").hidden = !moi.numero;
     $("rNotif").checked = notifActives();
-    $("rNotifInfo").textContent = notifActives() ? "Tu es prévenu quand le vaguemestre t'apporte du courrier." : "";
+    $("rNotifInfo").textContent = notifActives() ? (lire("caserne-push", false) ? "Tu es prévenu du courrier et des mises à jour, même l'appli fermée." : "Tu es prévenu quand le vaguemestre t'apporte du courrier.") : "";
     $("reglages").classList.add("open"); $("sheetBg").classList.add("open");
   }
   // --- signaler un problème
@@ -3181,6 +3182,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.00", "20 octobre 2026", ["Les vraies notifications, sur téléphone et sur PC, même l'appli fermée : le courrier qui te concerne, et chaque mise à jour de la caserne", "À la connexion, l'appli propose de les activer (une fois par semaine au plus, si on a dit « Plus tard ») ; ceux qui les avaient déjà activées sont abonnés tout seuls", "Dans les réglages, le bouton 🔔 envoie une notification d'essai"]],
     ["5.99", "20 octobre 2026", ["Mon personnage 3D : un nouveau choix, « Mon ancien bonhomme », pour reprendre son ancien personnage (et revenir à la 3D quand on veut)", "Le micro : si ton micro ne capte rien, la liste des micros de l'appareil s'affiche pour choisir le bon (retenu pour la suite) ; clic droit ou appui long sur 🎙️ pour la rouvrir"]],
     ["5.98", "20 octobre 2026", ["Silent Hill : la radio, plus petite, se ramasse au comptoir avec la lampe et la carte (le rappel la cite) ; un bouton Radio permet de l'éteindre pour rentrer", "Le rappel du bar se ferme aussi à la manette (A ou B)", "Le micro : le bouton s'entoure de vert quand ton micro capte ta voix, le chiffre passe au vert quand tu entends quelqu'un ; si ton micro ne capte rien, un message te le dit", "Une fiche technique de chaque appareil (carte graphique, erreurs d'affichage) arrive dans les signalements de l'administrateur, pour comprendre les soucis d'affichage à distance"]],
     ["5.97", "20 octobre 2026", ["Le micro : dans la caserne de 1990 et à Resident Evil, un bouton 🎙️ pour parler aux autres et les entendre ; on l'allume et on le coupe quand on veut (pas à Silent Hill, où l'on est seul)"]],
@@ -3769,32 +3771,47 @@
     e.target.value = "";
   };
 
-  /* ===== Notifications du téléphone ===== */
+  /* ===== Notifications du téléphone (et du PC) =====
+     De vraies notifications (« push ») : elles arrivent même l'appli fermée — le courrier qui nous concerne, et chaque mise à jour.
+     Le serveur les envoie à chaque appareil abonné ; sur iPhone, il faut d'abord installer l'appli sur l'écran d'accueil. */
   const notifActives = () => lire("caserne-notif", false) && "Notification" in window && Notification.permission === "granted";
+  const pushPossible = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const enOctets = s => { s = s.replace(/-/g, "+").replace(/_/g, "/"); s += "=".repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
   async function notifier(titre, corps) {
-    if (!notifActives()) return;
+    if (!notifActives() || lire("caserne-push", false)) return;   // (abonné aux vraies notifications : le serveur s'en charge, pas de doublon)
     const opts = { body: corps, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: "courrier" };
     try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) { reg.showNotification(titre, opts); return; } } catch (e) {}
     try { new Notification(titre, opts); } catch (e) {}
   }
+  // s'abonner (demander : on peut poser la question ; sinon, seulement si c'est déjà autorisé) ; renvoie "ok", "refuse", "attente" ou "indispo"
+  async function abonnerPush(demander) {
+    if (!pushPossible() || !moi || !moi.token) return "indispo";
+    if (Notification.permission === "default") { if (!demander) return "attente"; if ((await Notification.requestPermission()) !== "granted") return "refuse"; }
+    if (Notification.permission !== "granted") return "refuse";
+    try { const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription();
+      if (!sub) { const { cle } = await api("GET", "/api/push/cle"); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: enOctets(cle) }); }
+      await api("POST", "/api/push", { sub: sub.toJSON() }); ecrire("caserne-notif", true); ecrire("caserne-push", true); return "ok"; }
+    catch (e) { return "indispo"; } }
+  async function desabonnerPush() { ecrire("caserne-push", false); try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) { await api("DELETE", "/api/push", { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); } } catch (e) {} }
+  const infoIphone = "Sur iPhone : installe d'abord l'appli (Partager ⬆︎ → « Sur l'écran d'accueil »), ouvre-la depuis l'icône, puis active ici.";
+  // à l'arrivée : déjà autorisé, on se (ré)abonne sans rien demander ; jamais demandé, on propose (une fois par semaine au plus)
+  async function proposerNotifs() {
+    if (!moi || !moi.token || !pushPossible() || lire("caserne-notif-non", false)) return;
+    if (Notification.permission === "granted") { if (lire("caserne-notif", true) !== false) abonnerPush(false); return; }
+    if (Notification.permission !== "default" || Date.now() - lire("caserne-push-demande", 0) < 7 * 864e5) return;
+    ecrire("caserne-push-demande", Date.now());
+    const ok = await garde("Veux-tu être prévenu sur ce téléphone (ou cet ordinateur), même l'appli fermée, quand le vaguemestre t'apporte du courrier et quand une mise à jour de la caserne est disponible ?", { titre: "🔔 Les notifications", ok: "Oui, me prévenir", annuler: "Plus tard" });
+    if (!ok) return; const r = await abonnerPush(true);
+    if (r === "ok") { $("rNotif").checked = true; $("rNotifInfo").textContent = "Activées : courrier et mises à jour."; }
+    else if (r === "refuse") garde("Les notifications sont bloquées pour ce site. Tu peux les autoriser dans les réglages du navigateur (le cadenas à côté de l'adresse), puis les activer dans tes réglages.", { titre: "🔔 Notifications bloquées" }); }
   $("rNotif").onchange = async e => {
-    if (!e.target.checked) { ecrire("caserne-notif", false); $("rNotifInfo").textContent = "Notifications désactivées."; return; }
-    if (!("Notification" in window)) {
-      e.target.checked = false;
-      $("rNotifInfo").textContent = /iphone|ipad|ipod/i.test(navigator.userAgent)
-        ? "Sur iPhone : installe d'abord l'appli (Partager ⬆︎ → « Sur l'écran d'accueil »), ouvre-la depuis l'icône, puis active ici."
-        : "Ce navigateur ne permet pas les notifications.";
-      return;
-    }
-    const rep = await Notification.requestPermission();
-    if (rep === "granted") {
-      ecrire("caserne-notif", true);
-      $("rNotifInfo").textContent = "Activées : tu seras prévenu quand le vaguemestre t'apporte du courrier.";
-      notifier("Caserne Nouvelle-France", "Les notifications sont activées. Le vaguemestre te préviendra !");
-    } else {
-      e.target.checked = false; ecrire("caserne-notif", false);
-      $("rNotifInfo").textContent = "Refusé : autorise les notifications pour ce site dans les réglages du téléphone ou du navigateur.";
-    }
+    if (!e.target.checked) { ecrire("caserne-notif", false); ecrire("caserne-notif-non", true); desabonnerPush(); $("rNotifInfo").textContent = "Notifications désactivées."; return; }
+    ecrire("caserne-notif-non", false);
+    if (!("Notification" in window)) { e.target.checked = false; $("rNotifInfo").textContent = /iphone|ipad|ipod/i.test(navigator.userAgent) ? infoIphone : "Ce navigateur ne permet pas les notifications."; return; }
+    const r = await abonnerPush(true);
+    if (r === "ok") { $("rNotifInfo").textContent = "Activées : tu seras prévenu du courrier et des mises à jour, même l'appli fermée."; api("POST", "/api/push/essai").catch(() => {}); }
+    else if (r === "indispo" && Notification.permission === "granted") { ecrire("caserne-notif", true); $("rNotifInfo").textContent = /iphone|ipad|ipod/i.test(navigator.userAgent) ? infoIphone : "Activées quand l'appli est ouverte (ce navigateur ne permet pas les notifications appli fermée)."; }
+    else { e.target.checked = false; ecrire("caserne-notif", false); $("rNotifInfo").textContent = r === "indispo" && /iphone|ipad|ipod/i.test(navigator.userAgent) ? infoIphone : "Refusé : autorise les notifications pour ce site dans les réglages du téléphone ou du navigateur."; }
   };
 
   /* ===== Partagé entre tous les appareils : bibliothèque, anecdotes, commentaires =====

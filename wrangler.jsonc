@@ -18,5 +18,7 @@
   "durable_objects": {
     "bindings": [{ "name": "COMPTEUR", "class_name": "Compteur" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Compteur"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Compteur"] }],
+  // toutes les 15 minutes : une nouvelle version en ligne ? les abonnés aux notifications sont prévenus
+  "triggers": { "crons": ["*/15 * * * *"] }
 }
