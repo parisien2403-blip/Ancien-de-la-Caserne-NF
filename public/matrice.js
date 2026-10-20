@@ -9679,7 +9679,7 @@ function brumeSH(pos, ms = 4200) { if (!M || !M.scene) return; const sc = M.scen
     const op = Math.min(1, u / .18) * Math.min(1, (1 - u) / .35); for (const [sp, s0, vx, vz] of nuages) { sp.material.opacity = op * .9; sp.scale.setScalar(s0 * (1 + u * .6)); sp.position.x += vx * .016; sp.position.z += vz * .016; sp.position.y += .004; }
     requestAnimationFrame(pas); }; pas(); }
 // la silhouette d'un personnage : de rien à tout (ou l'inverse), image par image (son corps, dessiné un peu plus tard, suit)
-function fonduSH(p, de, a, ms, fin) { const t0 = performance.now(), pas = () => { if (!M || !M.gens.has(p.info.numero) || M.gens.get(p.info.numero) !== p) return; const k = Math.min(1, (performance.now() - t0) / ms), op = de + (a - de) * k;
+function fonduSH(p, de, a, ms, fin) { const t0 = performance.now(), pas = () => { if (!M || !M.gens.has(p.info.numero) || M.gens.get(p.info.numero) !== p) return; const k = Math.min(1, (performance.now() - t0) / ms), op = de + (a - de) * k; p.opa = op;
     p.g.traverse(o => { if (o.material && !Array.isArray(o.material)) { o.material.transparent = true; o.material.opacity = op; } }); if (k < 1) requestAnimationFrame(pas); else fin && fin(); }; pas(); }
 // un personnage repart : il s'éloigne, le brouillard l'enveloppe, il s'efface
 function evanouirSH(num, vers, apres = 1800, allure = 1.1) { const p = M && M.gens.get(num); if (!p || p.part) return; p.part = true; p.info.allure = allure;
@@ -10149,7 +10149,7 @@ function cineFinale(blanc) { if (!M) return; const moi = M.gens.get(M.moiNum); i
     const n = noir || voile("background:#000;opacity:1"); n.style.opacity = "1"; if (titre) titre.remove(); changerLieu("fetes", [0, 26.5], 0); setTimeout(() => { n.style.transition = "opacity 2.5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 2600); }, 700); };
   M.passerBtn = boutonPasser(fin);
   M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now;
-    if (!places) { places = true; for (const [n, dx, dz] of AUTOUR) { const q = poserPerso(n, p.x + dx, p.z + dz, p.y); if (q) { q.cible = null; q.chemin = []; q.regardeA = p; q.regardeVite = true; } } }
+    if (!places) { places = true; for (const [n, dx, dz] of AUTOUR) { if (M.gens.get(n)) retirerAncien(n); const q = poserPerso(n, p.x + dx, p.z + dz, p.y); if (q) fonduSH(q, 1, 1, 10); if (q) { q.cible = null; q.chemin = []; q.regardeA = p; q.regardeVite = true; } } }
     const he = M.gens.get(SHN.heather);
     if (u < 23 || !he) { M.camera.position.set(p.x - .4, p.y + 2.5, p.z + 2.9); M.camera.lookAt(p.x, p.y + .7, p.z - .3); }   /* (de haut : lui, par terre, et eux, debout autour) */
     else { const h = he.g.position, ex = h.x - p.x, ez = h.z - p.z, el = Math.hypot(ex, ez) || 1; M.camera.position.set(p.x - ex / el * 1.05 + ez / el * .55, p.y + .6, p.z - ez / el * 1.05 - ex / el * .55); M.camera.lookAt(h.x, p.y + 1.25, h.z); }   /* (au ras du sol, de là où il est couché : elle, penchée sur lui) */
@@ -12528,7 +12528,7 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
     /* (ses shaders compilés à part, sans geler l'image : avant, le jeu ralentissait quelques secondes à l'entrée) */
     if (!A.pret && M.rendu.compileAsync) { A.pret = A.pret || Promise.race([M.rendu.compileAsync(A.sc, M.camera, M.scene).catch(() => {}), new Promise(r => setTimeout(r, 3000))]); } if (A.pret) await A.pret;
     if (!M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
-    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A);
+    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; { const op = p.opa ?? 1; A.sc.traverse(o => { if (o.material && !Array.isArray(o.material) && o.material.opacity !== op) { o.material.transparent = true; o.material.opacity = op; } }); }   /* (le même modèle sert à chaque fois : parti dans le brouillard, il était resté transparent — à la fin, on ne voyait plus personne) */ p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A);
     // (Maria, Angela, dans le brouillard sombre de Silent Hill : un peu de sa propre lumière, sinon on ne voyait qu'une ombre noire)
     if (p.info.heros >= 69 && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
