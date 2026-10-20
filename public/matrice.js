@@ -5021,7 +5021,7 @@ function construireSantaCarla(A, L, scene) {
     for (const q of [t, n]) { q.wrapS = q.wrapT = THREE.RepeatWrapping; q.repeat.set(600 / 5, 66 / 5); q.anisotropy = 8; }
     return A.ajoute(new THREE.PlaneGeometry(600, 66), A.mat({ map: t, normalMap: n, normalScale: new THREE.Vector2(1.2, 1.2), roughness: .95, color: 0xffffff }), 0, 0, 38, false); })();   /* (la plage, derrière la scène, jusqu'au bord de l'eau) */ sable.rotation.x = -Math.PI / 2;
   const merT = tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#0a1a30"; x.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { x.strokeStyle = `rgba(${hasard(i) > .7 ? "200,220,255" : "60,90,140"},${.15 + hasard(i * 3) * .25})`; x.lineWidth = 1 + hasard(i * 5) * 2; const y = hasard(i * 1.9) * h, x0 = hasard(i * 2.7) * w; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 20, y - 4, x0 + 40 + hasard(i) * 40, y); x.stroke(); } }), 20, 10);
-  const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   // (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) mer.rotation.x = -Math.PI / 2;
+  const mer = A.ajoute(new THREE.PlaneGeometry(3000, 1500), A.mat({ map: merT, roughness: .15, metalness: .4, color: 0x8899bb }), 0, -.3, 795, false); merT.repeat.set(7.5, 7.5);   /* (jusqu'à l'horizon : on la voit d'en haut, pendant le survol) */ mer.rotation.x = -Math.PI / 2;
   const reflet = new THREE.Mesh(new THREE.PlaneGeometry(14, 160), new THREE.MeshBasicMaterial({ map: tex(toile(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "rgba(255,250,220,0)"); g.addColorStop(.5, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)"); x.fillStyle = g; for (let y = 0; y < h; y += 4) if (hasard(y) > .35) x.fillRect(0, y, w, 2); })), transparent: true, depthWrite: false }));
   reflet.rotation.x = -Math.PI / 2; reflet.position.set(18, .55, 150); reflet.material.blending = THREE.AdditiveBlending; reflet.material.depthWrite = false; scene.add(reflet);   // (la traînée de lune sur les vagues)
   // la mer : de vraies vagues — la houle qui roule vers la plage (plusieurs trains de vagues calculés à chaque image), l'écume sur les crêtes, le ciel qui s'y reflète
@@ -8258,7 +8258,7 @@ export async function ouvrir(ctx) {
     if (M.L.interieur) {
       const sols = [M.L.sol, ...(M.L.solsPlus || [])];
       const h = ray.intersectObjects(M.scene.children, true).find(q => { const o = q.object; if (!o.isMesh || o === M.repere || dansPerso(o)) return false; for (let a = o; a; a = a.parent) if (!a.visible || a.userData.perso) return false;   // (les bonshommes ne bloquent pas le doigt)
-        if (M.L.dansCour && !M.L.dansCour(q.point)) { let a = o; while (a && a !== M.L.copieCour) a = a.parent; if (a) return false; }   // (la cour, coupée au mur : invisible de ce côté-ci) if (sols.includes(o)) return true;
+        if (M.L.dansCour && !M.L.dansCour(q.point)) { let a = o; while (a && a !== M.L.copieCour) a = a.parent; if (a) return false; }   /* (la cour, coupée au mur : invisible de ce côté-ci) */ if (sols.includes(o)) return true;
         const m = Array.isArray(o.material) ? o.material[0] : o.material; return m && m.visible !== false && !(m.transparent && (m.opacity ?? 1) < .6) && m.blending !== THREE.AdditiveBlending; });
       if (h && M.L.copieCour && M.L.copieCour.visible) { let o = h.object; while (o && o !== M.L.copieCour) o = o.parent;
         if (o && M.L.dansCour && !M.L.dansCour(h.point)) o = null;
@@ -8570,7 +8570,7 @@ function texEnglue(t) { if (!t || !t.image || !t.image.width) return t; if (!t.u
 function texGBi(n) { if (!texGB[n]) { const t = texGB[n] = new THREE.TextureLoader().load(`images/gb/${n}.webp`, () => { try { M && M.rendu && M.rendu.initTexture(t); } catch (e) {} }); t.colorSpace = THREE.SRGBColorSpace; } return texGB[n]; }   // (envoyée tout de suite à la carte graphique : pas d'à-coup quand elle sert la première fois)
 function creerGB(cle, nom, x, z) { const H = tailleBonhomme() * 1.02, geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, .5, 0);
   texGBi(cle + "-dos"); const tf = texGBi(cle + "-face");   // (bien éclairés, même la nuit)
-  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .42, alphaTest: .5, side: THREE.DoubleSide, roughness: .8 }));   // (opaques : une découpe nette, pas de demi-transparence) mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tf, emissive: 0xffffff, emissiveMap: tf, emissiveIntensity: .42, alphaTest: .5, side: THREE.DoubleSide, roughness: .8 }));   /* (opaques : une découpe nette, pas de demi-transparence) */ mesh.scale.set(H * .42, H, 1); mesh.castShadow = true;
   const g = new THREE.Group(); g.add(mesh);
   const om = new THREE.Mesh(new THREE.PlaneGeometry(H * .45, H * .3), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, depthWrite: false })); om.rotation.x = -Math.PI / 2; om.position.y = .02; g.add(om);
   g.position.set(x, 0, z); M.scene.add(g);
@@ -9175,7 +9175,7 @@ function rocherGB(C, B, cibleP, verMoi, p) { const o = gravatGB(.75 + Math.rando
   const dep = new THREE.Vector3(B.x + (Math.random() < .5 ? -1 : 1) * 7.5, 13, B.z + 1.5); o.position.copy(dep); M.scene.add(o);
   C.cailloux.push({ o, dep, arr: cibleP.clone(), u: 0, dur: 1.6 + Math.random() * .4, moi: verMoi, p }); sonBruit(.3, 400, .3); if (Math.random() < .55) rugirSP(.9); }
 function animerCombatSP(dt, now) { const C = M.gbCombat, F = M.gbFinale; if (!C || !C.sp || !F) return; if (C.L !== M.L) { finCombatGB(); return; } const moi = M.gens.get(M.moiNum), B = F.sp; if (!moi || !B) return; C.t += dt;
-  gyroEcto(M.L.ecto1, true, now); cielVertGB(C.boum ? Math.max(0, 1 - C.boum.t / 4) : 1, dt); animerEclatsGB(F, dt);   // (après l'explosion, le ciel redevient normal) animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
+  gyroEcto(M.L.ecto1, true, now); cielVertGB(C.boum ? Math.max(0, 1 - C.boum.t / 4) : 1, dt); animerEclatsGB(F, dt);   /* (après l'explosion, le ciel redevient normal) */ animerFlammes(C, dt, now); F.secousse = Math.max(0, F.secousse - dt * 1.6);
   if (!C.fini) { B.vx = Math.cos(C.t * .35) * 1.4; B.x = Math.sin(C.t * .35) * 4; } else B.vx = 0; B.marche = !C.fini; majSPGB(B, now); animerSPDeco(C, B, dt, now);
   if (!C.boum) { C.rugT = (C.rugT == null ? 5 : C.rugT) - dt; if (C.rugT <= 0) { C.rugT = 6 + Math.random() * 6; rugirSP(); } }
   if (C.boum || C.ordre > 0) sonEffluves(0);
@@ -9788,7 +9788,7 @@ function brancardsSH(scene, L, base) {
       tr.rotation.set(-Math.PI / 2, 0, -b.ry + (d < 0 ? Math.PI : 0)); tr.position.set(b.x + c * d * (lg / 2 + .6), y + .014, b.z - sn * d * (lg / 2 + .6)); tr.renderOrder = 1; scene.add(tr); }   // (le brancard est arrivé là en roulant dans le sang)
     else flaque(b.x - sn * .8, b.z - c * .8, y, 1.3, Math.random() * 6.28); }   // (renversé : le corps a glissé, il a saigné à côté)
   const lim0 = L.limites; L.limites = (x, z) => { if (lim0 && !lim0(x, z)) return false; for (const b of liste) { const dx = x - b.x, dz = z - b.z, u = dx * Math.cos(b.ry) - dz * Math.sin(b.ry), v = dx * Math.sin(b.ry) + dz * Math.cos(b.ry); if (Math.abs(u) < 1.25 && Math.abs(v) < .55) return false; } return true; };
-  brancardG = brancardG || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/sh-brancard.glb?v=1"); })().catch(() => null);
+  brancardG = brancardG || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/sh-brancard.glb?v=2"); })().catch(() => null);
   const nomB = o => ({ cover_mat: "drap", foots_mat: "pieds", Stretcher_mat: "brancard" })[o.material && o.material.name] || o.name;   // (la compression renomme les morceaux : on les reconnaît à leur matière)
   brancardG.then(G => { if (!G) return; const draps = []; G.scene.updateMatrixWorld(true);
     /* le sang sur le drap : peint sur le drap lui-même (une couleur par sommet, mêlée à sa texture), là où le corps saigne — poitrine, ventre ;
@@ -9815,7 +9815,7 @@ function brancardsSH(scene, L, base) {
 function caissesSH(scene, L, base) { let cx, cz, bloque;
   if (base === "fetes") { cx = -VEST_VX + .62; cz = FETE_SZ; bloque = (x, z) => x < -VEST_VX + 1.2 && Math.abs(z - FETE_SZ) < VEST_LB / 2 + .5;
     L.portails = (L.portails || []).filter(q => !(q.continu && Array.isArray(q.continu) && q.continu[0] === VEST_X)); }   // (la sortie vers la cour, par le vestibule : condamnée)
-  else if (base === "grande") { const PB = L.porteBar || [16, 9.12]; cx = VEST_X - VEST_VX + .62; cz = PB[1];   // (au même endroit que vu du bar : le vestibule est le même) bloque = (x, z) => x > PB[0] - .2 && x < PB[0] + 1.2 && Math.abs(z - PB[1]) < VEST_LB / 2 + .5;
+  else if (base === "grande") { const PB = L.porteBar || [16, 9.12]; cx = VEST_X - VEST_VX + .62; cz = PB[1];   /* (au même endroit que vu du bar : le vestibule est le même) */ bloque = (x, z) => x > PB[0] - .2 && x < PB[0] + 1.2 && Math.abs(z - PB[1]) < VEST_LB / 2 + .5;
     L.portails = (L.portails || []).filter(q => !(q.continu && Array.isArray(q.continu) && q.continu[0] === -VEST_X)); L.raccourcis = (L.raccourcis || []).filter(q => !(q.marche && Math.abs(q.marche[0] - VEST_X) < .01)); }
   else return;
   const lim0 = L.limites; L.limites = (x, z) => (!lim0 || lim0(x, z)) && !bloque(x, z);
@@ -10457,12 +10457,12 @@ function cacherLoin(t) {
     if (loin && q.g.visible) { q.g.visible = false; q.cache = true; } else if (!loin && q.cache) { q.cache = false; q.g.visible = true; } } }
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
-  if ((baseLieu(M.lieu) !== "grande" && !PETIT) || (estApo(M.lieu) && !(PETIT && baseLieu(M.lieu) === "etage"))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if ((baseLieu(M.lieu) !== "grande" && !PETIT && !estSH(M.lieu)) || (estApo(M.lieu) && !(PETIT && baseLieu(M.lieu) === "etage"))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
   if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight) M.lampes.push(o); }); }
   const c = M.camera.position, v = new THREE.Vector3();
   const vu = l => { for (let o = l; o; o = o.parent) if (!o.visible) return false; return true; };   // (une lampe dans un groupe caché ne compte pas)
   const tri = M.lampes.filter(vu).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
-  tri.forEach(([l], i) => l.layers.set(i < (PETIT ? 4 : LAMPES_MAX) ? 0 : 31));   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
+  tri.forEach(([l], i) => l.layers.set(i < (PETIT ? 4 : estSH(M.lieu) ? 6 : LAMPES_MAX) ? 0 : 31));   // (Silent Hill : six, les plus proches — la salle des fêtes en avait vingt-trois allumées à la fois)   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
 const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
@@ -11286,7 +11286,7 @@ function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = 
     const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); zG = g; return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
 function poserZ3(z, g) { const sc = skelMod.clone(g.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
   const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
-  sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / Z3_H);   // (à la vraie taille, comme les héros) act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
+  sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / Z3_H);   /* (à la vraie taille, comme les héros) */ act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
   z.z3 = { pivot, sc, mix, act, cur: "walk" }; z.mesh.visible = false; }
 function retirerZ3(z) { if (!z.z3) return; z.g.remove(z.z3.pivot); z.z3 = null; if (z.mesh.material.map) z.mesh.visible = true; }
 function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
@@ -12587,7 +12587,7 @@ function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (M.cine && M.cineSeul && numero !== M.cineSeul) return;   // (pendant certaines scènes, les autres se taisent)
   // pendant une cinématique : en sous-titre, fixe à l'écran (une bulle au-dessus de la tête sortait du cadre selon l'angle de la caméra)
-  if (M.cine) { bulle(`<b style="color:#b5573c">${esc(nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }
+  if (M.cine || (M.L && M.L.sh)) { bulle(`<b style="color:#b5573c">${esc(nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }   // (à Silent Hill, toujours en sous-titre : jamais de bulle sur les personnages)
   // à la première personne : ce qu'on dit soi-même (et ce que disent ceux qui sont tout près) s'affiche en sous-titre — la bulle au-dessus de sa propre tête ne se voit pas
   if (M.premiere) { const moi = M.gens.get(M.moiNum); if (numero === M.moiNum || (moi && p.g.position.distanceTo(moi.g.position) < 9)) { bulle(`<b style="color:#b5573c">${esc(numero === M.moiNum && !(M.L && M.L.apo) ? "Toi" : nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; } }
   if (p.bulle) p.g.remove(p.bulle);
@@ -12856,7 +12856,7 @@ const EI = [[-54, 54, "chant", "Le chanteur", "eichant", "chanteur", 0, 3.18], [
 function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = Math.max(.001, k) * E.EH;
   E.toile.scale.y = Math.max(.001, k); E.toile.visible = k > .002; E.cadre.scale.y = h + .08; E.cadre.visible = k > .002; E.barre.position.y = -h - .02; }
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
-  const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   // (à l'apocalypse, plus de courant : pas de clip) if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
+  const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
   if (v && E.k > .9 && v.readyState >= 2) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
@@ -13688,7 +13688,19 @@ function combinePend(ms) { if (!M || !M.L.cabineTel) return; const scene = M.sce
   const pas = () => { if (!M || M.scene !== scene) return fin(); const t = (performance.now() - t0) / 1000; if (t * 1000 > ms) return fin(); const a = .55 * Math.exp(-t * .3);
     piv.rotation.z = a * Math.sin(t * 4); piv.rotation.x = a * .35 * Math.sin(t * 2.9 + 1); c.rotation.y = Math.sin(t * 1.2) * .9; requestAnimationFrame(pas); };
   pas(); }
-function bulle(texte, ms) { if (!M) return; bulle3D(texte, ms); if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
+/* à Silent Hill : pas de bulle — des sous-titres, comme dans le jeu : en bas de l'image, sans cadre, un texte clair ombré de noir, le nom de qui parle en petites capitales ;
+   ils ne cachent ni les visages ni la scène */
+function sousTitreSH(texte, ms) { if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
+  if (!document.getElementById("styleSousTitreSH")) { const st = document.createElement("style"); st.id = "styleSousTitreSH";
+    st.textContent = ".st-sh{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);z-index:9;width:min(88%,720px);padding:14px 18px 12px;text-align:center;pointer-events:none;" +
+      "font:400 clamp(15px,2.3vw,19px)/1.45 Georgia,'Times New Roman',serif;color:#e6e0d2;letter-spacing:.01em;text-shadow:0 0 3px #000,0 0 8px #000,0 2px 2px #000;" +
+      "background:radial-gradient(ellipse at center,rgba(0,0,0,.42) 0%,rgba(0,0,0,.18) 55%,rgba(0,0,0,0) 78%);opacity:0;transition:opacity .45s}" +
+      ".st-sh.on{opacity:1}.st-sh b{display:block;font:600 .72em/1.2 Georgia,serif;font-variant:small-caps;letter-spacing:.16em;color:#a9987a !important;margin-bottom:3px}.st-sh i{color:#cfc8b8}";
+    document.head.appendChild(st); }
+  const d = document.createElement("div"); d.className = "st-sh"; d.innerHTML = texte.replace(/^(<b[^>]*>[^<]*<\/b>)\s*:\s*/, "$1"); M.ctx.conteneur.appendChild(d); M.bulleEl = d;
+  requestAnimationFrame(() => d.classList.add("on"));
+  if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.classList.remove("on"); setTimeout(() => { d.remove(); if (M && M.bulleEl === d) M.bulleEl = null; }, 460); } }, ms); }
+function bulle(texte, ms) { if (!M) return; if (M.L && M.L.sh) { bulle3D(null); sousTitreSH(texte, ms); return; } bulle3D(texte, ms); if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
   d.innerHTML = texte; M.ctx.conteneur.appendChild(d); M.bulleEl = d; if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.remove(); M.bulleEl = null; } }, ms); }
 // le logo « Retour vers le futur » qui surgit en grand, puis s'efface
