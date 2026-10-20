@@ -9431,12 +9431,17 @@ function prechargerPersosSH() { if (M.shPreEnCours) return; const f = (SH_A_VENI
   M.shPreEnCours = true; const go = () => chargerAvatar3D(f).finally(() => { if (M) M.shPreEnCours = false; }); if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 200); }
 function placerBoutonsSH() { const c = M.ctx && M.ctx.conteneur, a = document.getElementById("mxApo"); if (!c) return; const rc = c.getBoundingClientRect();
   let y = 52; if (a && !a.hidden) { const ra = a.getBoundingClientRect(); if (ra.height) y = ra.bottom - rc.top + 8; }
-  for (const el of [M.carteBtn, M.lampeBtn, M.cleEl]) { if (!el || !el.isConnected) continue; const t = Math.round(y) + "px"; if (el.style.top !== t) el.style.top = t; y += el.offsetHeight + 7; } }
+  for (const el of [M.carteBtn, M.lampeBtn, M.radioBtn, M.cleEl]) { if (!el || !el.isConnected) continue; const t = Math.round(y) + "px"; if (el.style.top !== t) el.style.top = t; y += el.offsetHeight + 7; } }
+function majBoutonRadio() { if (!M || !M.ctx) return; const voir = !!(M.shRadio && estSH(M.lieu));
+  if (!voir) { if (M.radioBtn) { M.radioBtn.remove(); M.radioBtn = null; } return; } if (M.radioBtn) return;
+  const b = document.createElement("button"); b.type = "button"; b.className = "sh-btn on"; b.textContent = "Radio · allumée"; b.style.cssText = "position:absolute;left:10px;top:220px;z-index:7;padding:7px 14px;cursor:pointer";
+  b.onclick = e => { e.stopPropagation(); if (M.cine) return; choixSH("La radio", [["L'éteindre, et rentrer en 1990", () => sortirSH()], ["La garder allumée", () => {}]]); };   /* (l'éteindre : on quitte Silent Hill, comme avant au comptoir) */
+  M.ctx.conteneur.appendChild(b); M.radioBtn = b; }
 function majBoutonCle() { if (!M || !M.ctx) return; const voir = !!(M.shCleMess && !M.shMessOuvert && estSH(M.lieu));
   if (!voir) { if (M.cleEl) { M.cleEl.remove(); M.cleEl = null; } return; } if (M.cleEl) return;
   const d = document.createElement("div"); d.title = "Clé du mess"; d.className = "sh-btn"; d.style.cssText = "position:absolute;left:10px;top:178px;z-index:7;display:flex;align-items:center;gap:6px;padding:3px 12px 3px 4px;pointer-events:none";
   d.innerHTML = `<img src="images/sh/cle-mess.webp" alt="" style="width:26px;height:30px;object-fit:contain">Clé du mess`; M.ctx.conteneur.appendChild(d); M.cleEl = d; }
-function majBoutonCarte() { if (!M || !M.ctx) return; if (!estSH(M.lieu)) rappelBarSH(false); majBoutonLampe(); majBoutonCle(); const voir = !!(M.shCarteOK && estSH(M.lieu));
+function majBoutonCarte() { if (!M || !M.ctx) return; if (!estSH(M.lieu)) rappelBarSH(false); majBoutonLampe(); majBoutonCle(); majBoutonRadio(); const voir = !!(M.shCarteOK && estSH(M.lieu));
   if (!voir) { if (M.carteBtn) { M.carteBtn.remove(); M.carteBtn = null; } return; }
   if (M.carteBtn) return; const b = document.createElement("button"); b.type = "button"; b.className = "sh-btn"; b.textContent = "Carte";
   b.style.cssText = "position:absolute;left:10px;top:94px;z-index:7;padding:7px 14px;cursor:pointer";
@@ -9484,19 +9489,22 @@ function majLampePoitrine() { const moi = M && M.gens.get(M.moiNum); if (!moi) r
   sp.scale.set(H * .04, H * .096, 1); sp.position.set(dx / d * .07 - dr.x * H * .055, H * .6, dz / d * .07 - dr.z * H * .055); }   /* (à la taille du bonhomme : accrochée à la poche de poitrine) */
 // le bouton de la lampe : allumer, éteindre
 // l'onglet de rappel, dans le bar de Silent Hill : prendre la lampe et la carte avant d'en sortir
-function rappelBarSH(auBar) { if (!M || !M.ctx) return; const manque = [!M.shLampe && "🔦 la lampe (sur le comptoir)", !M.shCarteOK && "🗺️ la carte (au mur)"].filter(Boolean), voir = !!(auBar && manque.length && !M.cine && estSH(M.lieu));
-  if (M.shDansBar && !auBar && manque.length && M.lieu === "sh-fetes" && M.ctx.surInfo) M.ctx.surInfo("⚠️ Reviens au bar : prends " + manque.join(" et ") + " avant de partir.");
+const listeEt = l => l.length < 2 ? l.join("") : l.slice(0, -1).join(", ") + " et " + l[l.length - 1];
+function rappelBarSH(auBar) { if (!M || !M.ctx) return; const manque = [!M.shLampe && "🔦 la lampe (sur le comptoir)", !M.shRadio && "📻 la radio (sur le comptoir)", !M.shCarteOK && "🗺️ la carte (au mur)"].filter(Boolean), voir = !!(auBar && manque.length && !M.cine && estSH(M.lieu));
+  if (M.shDansBar && !auBar && manque.length && M.lieu === "sh-fetes" && M.ctx.surInfo) M.ctx.surInfo("⚠️ Reviens au bar : prends " + listeEt(manque) + " avant de partir.");
   M.shDansBar = !!auBar;
   if (!voir) { if (M.rappelEl) { M.rappelEl.remove(); M.rappelEl = null; } return; }
+  if (M.rappelEl && !M.manMenu && M.rappelFerme !== manque.join()) M.manMenu = { d: M.rappelEl };   /* (à la manette : A ou B pour la refermer) */
   /* (à la manière de Silent Hill : une note au centre, sur papier sombre, qu'on referme avec la croix ; elle ne revient que si l'on retourne au bar sans avoir tout pris) */
   if (M.rappelFerme === manque.join()) return;
   let d = M.rappelEl; if (!d) { d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(0,0,0,.45)";
     d.innerHTML = `<div style="position:relative;width:min(84%,440px);padding:26px 26px 22px;background:linear-gradient(#1c1a17,#121110);border:1px solid rgba(214,204,182,.35);box-shadow:0 0 0 4px rgba(0,0,0,.6),0 12px 40px #000;text-align:center;font:400 16px/1.55 Georgia,'Times New Roman',serif;color:#e6e0d2;text-shadow:0 1px 2px #000">
       <button type="button" aria-label="Fermer" style="position:absolute;top:6px;right:8px;width:34px;height:34px;border:0;background:none;color:#cfc6b2;font:400 26px/1 Georgia,serif;cursor:pointer">×</button>
       <div style="font:600 12px Georgia,serif;font-variant:small-caps;letter-spacing:.22em;color:#a9987a;margin-bottom:10px">Avant de partir</div><div class="txt"></div></div>`;
-    d.querySelector("button").onclick = e => { e.stopPropagation(); M.rappelFerme = manque.join(); d.remove(); M.rappelEl = null; };
-    M.ctx.conteneur.appendChild(d); M.rappelEl = d; }
-  const t = "Avant de quitter le bar, prends " + manque.map(m => m.replace(/^\S+\s/, "")).join(" et ") + "."; const tx = d.querySelector(".txt"); if (tx.textContent !== t) tx.textContent = t; }
+    d.querySelector("button").onclick = e => { e.stopPropagation(); M.rappelFerme = (M.rappelManque || []).join(); d.remove(); M.rappelEl = null; if (M.manMenu && M.manMenu.d === d) M.manMenu = null; };
+    M.ctx.conteneur.appendChild(d); M.rappelEl = d; if (!M.manMenu) M.manMenu = { d }; }
+  M.rappelManque = manque;
+  const t = "Avant de quitter le bar, prends " + listeEt(manque.map(m => m.replace(/^\S+\s/, ""))) + "."; const tx = d.querySelector(".txt"); if (tx.textContent !== t) tx.textContent = t; }
 function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe && estSH(M.lieu));
   if (!voir) { if (M.lampeBtn) { M.lampeBtn.remove(); M.lampeBtn = null; } return; }
   let b = M.lampeBtn; if (!b) { b = document.createElement("button"); b.type = "button"; b.className = "sh-btn"; b.style.cssText = "position:absolute;left:10px;top:136px;z-index:7;padding:7px 14px;cursor:pointer";
@@ -9542,7 +9550,7 @@ function silentHill(scene, L, base) { neigeTV(L); caissesSH(scene, L, base); bra
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const cendres = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xeeebe4, size: .07, map: texFlocon(), alphaTest: .02, transparent: true, opacity: .8, depthWrite: false, fog: false })); cendres.frustumCulled = false; if (ext) scene.add(cendres);
   // en bas du bar (sh-fetes), la radio posée sur le comptoir : on l'éteint pour rentrer
-  if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length) { const [x, z] = L.comptoirSousSol[1], r = creerRadio(); r.position.set(x, L.yComptoirSousSol + .005, z); r.rotation.y = .6; scene.add(r); L.radioSortie = [x, z]; }
+  if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length) { const [x, z] = L.comptoirSousSol[1], r = creerRadio(); r.scale.setScalar(.62); r.position.set(x, L.yComptoirSousSol + .005, z); r.rotation.y = .6; r.visible = !M.shRadio; scene.add(r); L.radioSortie = [x, z]; L.radioSHObj = r; }   /* (une petite radio de poche : on la ramasse, avec la lampe et la carte) */
   // la ruelle des douches, juste après la petite fenêtre : la route s'est effondrée — un trou noir, sans fond, des plaques de bitume brisées. Un cul-de-sac
   if (base === "grande") { const [xa, xb, za, zb] = ROUTE_DETRUITE, lim0 = L.limites, cx = (xa + xb) / 2, cz = (za + zb) / 2, hx = (zb - za + 1.6) / 2, hz = (xb - xa + 1.2) / 2;   // (le trou tel qu'on le voit : la plaque est tournée d'un quart de tour)
     L.dansTrou = (x, z, m = 0) => (x > xa - .3 - m && x < xb + .3 + m && z > za - .3 - m && z < zb + .3 + m) || (Math.abs(x - cx) < hx + .25 + m && Math.abs(z - cz) < hz + .25 + m);
@@ -9662,7 +9670,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shPhoto = false; M.shInfVu = false; M.shInf = null; M.shDansFosse = false; M.shAppelHeather = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shPhoto = false; M.shInfVu = false; M.shInf = null; M.shDansFosse = false; M.shAppelHeather = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; M.shRadio = false; majBoutonCarte(); }
 const prenomSH = () => "Harry";   // (à Silent Hill, on est Harry Mason : c'est ainsi qu'on nous appelle)
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -10543,7 +10551,7 @@ function cineReveil(essai = 0, noir = null) {
   /* Maria, debout près de nous, nous regarde ; elle parle ; elle sort par la porte du bar, et le brouillard l'avale. Alors seulement, on se relève */
   const PORTE = [0, 23.1]; let maria = null, dit = false, part = false, leve = false, ou = false, fini = false, u = 0, prec = t0;
   const fin = () => { if (fini || !M) return; fini = true; moi.info.mortT = 0; if (M.gens.get(SHN.maria)) retirerAncien(SHN.maria); if (!M.shEtape) M.shEtape = 1; finCine(); placerCamera(true);
-    M.ctx.surInfo && M.ctx.surInfo("📻 La radio grésille… Pour rentrer, éteins-la : elle est posée sur le comptoir du bar."); };
+    M.ctx.surInfo && M.ctx.surInfo("📻 La radio grésille, sur le comptoir. Prends-la : elle grésillera plus fort quand un monstre approche. Pour rentrer, il suffira de l'éteindre."); };
   M.passerBtn = boutonPasser(fin);
   M.cine = { t0, maj: (now) => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now;
     if (!maria) { maria = poserPerso(SHN.maria, p.x + .75, p.z - 1.35, p.y); if (maria) { maria.cible = null; noterCarteSH(SHN.maria, 0, 0); } }
@@ -13105,6 +13113,7 @@ function manette() {
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
+  if (appui(2) && M.radioBtn && M.L && M.L.sh) M.radioBtn.click();   /* (X : la radio — l'éteindre pour rentrer) */
   // X : les danses, l'une après l'autre (et on s'arrête) ; B arrête aussi
   if (appui(2) && M.L && !M.L.apo && !M.L.sh && !M.L.gb) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
     const i = D.indexOf(moi.info.danse), suiv = i + 1 < D.length ? D[i + 1] : false; danser(suiv); bulle(suiv ? N[suiv] + " <small>(X : danse suivante · B : stop)</small>" : "🛑 Fin de la danse", 1800); }
@@ -13513,7 +13522,7 @@ function chercherAction(t) {
     else if (M.L.lampeComptoir && estSH(M.lieu) && !M.shLampe && Math.hypot(x - M.L.lampeComptoir[0], z - M.L.lampeComptoir[1]) < 1.5) a = { type: "lampeSH", label: "🔦 Prendre la lampe" };
     else if (M.L.photoSH && M.L.photoSH.visible && estSH(M.lieu) && !M.shPhoto && Math.hypot(x - M.L.photoPos[0], z - M.L.photoPos[1]) < 1.1) a = { type: "photoSH", label: "🖼️ Ramasser la photo" };
     else if (M.L.carteMur && estSH(M.lieu) && !M.shCarteOK && Math.hypot(x - M.L.carteMur[0], z - M.L.carteMur[1]) < 1.7) a = { type: "carteSH", label: "🗺️ Prendre la carte" };
-    else if (M.L.radioSortie && estSH(M.lieu) && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSortie", label: "📻 Éteindre la radio (rentrer)" };
+    else if (M.L.radioSortie && estSH(M.lieu) && !M.shRadio && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSH", label: "📻 Prendre la radio" };
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
@@ -13565,6 +13574,7 @@ export function agir() {
   else if (a.type === "gbCine") { voile("background:#fff;opacity:1;transition:opacity 1s", 1400); changerLieu("gb-cour", [GARE_GB[0] - 5.2, GARE_GB[1] - 1.8], -Math.PI / 2); }
   else if (a.type === "radio") envoyerWS({ t: "radio_prendre" });
   else if (a.type === "radioSortie") sortirSH();
+  else if (a.type === "radioSH") { M.shRadio = true; if (M.L.radioSHObj) M.L.radioSHObj.visible = false; sonBruit(.05, 3000, .25); majBoutonCarte(); }   /* (dans la poche de son blouson : c'est elle qui grésille quand un monstre approche) */
   else if (a.type === "cadenasSH") sortieCleSH();
   else if (a.type === "cleMess") { M.shMessOuvert = true; sonBruit(.15, 3000, .35); setTimeout(() => sonBruit(.5, 700, .35), 250); majBoutonCarte(); M.ctx.surInfo && M.ctx.surInfo("🗝️ La clé tourne dans la serrure… la porte du mess s'ouvre.");
     const p0 = moiApo() && moiApo().g.position.clone(); setTimeout(() => { if (!M || M.lieu !== "sh-grande" || M.cine || M.shMort) return; const mq = moiApo(); if (p0 && mq && mq.g.position.distanceTo(p0) > 2.5) return; const q = M.L.portails.find(pt => pt.vers === "sh-mess"); if (q && !M.passage) { M.passage = true; changerLieu(q.vers, q.arrivee, q.yaw, true); } }, 1600); }
@@ -15436,13 +15446,24 @@ export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
    D'un téléphone à l'autre, en direct (WebRTC) : le serveur ne fait que les présenter l'un à l'autre. On allume, on coupe, quand on veut. */
 const VX = { on: false, flux: null, pcs: new Map(), salle: null, ws: null };
 const salleVoixDe = l => !l ? null : l.startsWith("z-") ? "apo" : /^(sh-|spr-|gb-)/.test(l) || ["santacarla", "bttf-cour", "hv1955"].includes(l) ? null : "1990";
-function voixInfo() { if (M && M.ctx.surVoix) M.ctx.surVoix({ on: VX.on, n: VX.pcs.size }); }
+function voixInfo() { if (M && M.ctx.surVoix) M.ctx.surVoix({ on: VX.on, n: VX.pcs.size, moi: !!VX.moiParle, autre: !!VX.autreParle }); }
+/* (qui parle : le niveau de notre micro, et celui de chaque voix reçue — le bouton s'entoure de vert quand on capte notre voix, le chiffre quand on entend quelqu'un ;
+   et si notre micro ne capte rien du tout, on le dit : sur un PC, c'est souvent le mauvais micro qui est choisi) */
+function niveau(an) { const d = new Uint8Array(an.fftSize); an.getByteTimeDomainData(d); let t = 0; for (const v of d) t += (v - 128) * (v - 128); return Math.sqrt(t / d.length) / 128; }
+function voixEcoute() { clearInterval(VX.niveauT); if (!VX.on || !VX.flux) return;
+  try { VX.ac = VX.ac || new (window.AudioContext || window.webkitAudioContext)(); if (VX.ac.state === "suspended") VX.ac.resume().catch(() => {}); VX.an = VX.ac.createAnalyser(); VX.an.fftSize = 512; VX.ac.createMediaStreamSource(VX.flux).connect(VX.an); } catch (e) { return; }
+  const t0 = performance.now(); let max = 0, dit = false;
+  VX.niveauT = setInterval(() => { if (!VX.on) { clearInterval(VX.niveauT); return; } const n = niveau(VX.an); max = Math.max(max, n);
+    let autre = false; for (const c of VX.pcs.values()) if (c.an && niveau(c.an) > .02) autre = true;
+    const moi = n > .03; if (moi !== VX.moiParle || autre !== VX.autreParle) { VX.moiParle = moi; VX.autreParle = autre; voixInfo(); }
+    if (!dit && performance.now() - t0 > 9000 && max < .006) { dit = true; M && M.ctx.surInfo && M.ctx.surInfo("🎙️ Ton micro ne capte aucun son. Sur ordinateur : clique sur l'icône 🎙️ de la barre d'adresse et choisis le bon micro (et vérifie qu'il n'est pas coupé)."); } }, 150); }
 function voixFermer(n) { const c = VX.pcs.get(n); if (!c) return; VX.pcs.delete(n); try { c.pc.close(); } catch (e) {} if (c.son) { c.son.srcObject = null; c.son.remove(); } voixInfo(); }
 function voixPair(n, appelle) { if (VX.pcs.has(n)) return VX.pcs.get(n);
   const pc = new RTCPeerConnection({ iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] }), c = { pc, son: null }; VX.pcs.set(n, c);
   if (VX.flux) for (const t of VX.flux.getTracks()) pc.addTrack(t, VX.flux);
   pc.onicecandidate = e => { if (e.candidate) envoyerWS({ t: "rtc", a: n, d: { ice: e.candidate.toJSON() } }); };
-  pc.ontrack = e => { if (!c.son) { c.son = document.createElement("audio"); c.son.autoplay = true; c.son.playsInline = true; c.son.style.display = "none"; document.body.appendChild(c.son); } c.son.srcObject = e.streams[0]; c.son.play().catch(() => {}); };
+  pc.ontrack = e => { if (!c.son) { c.son = document.createElement("audio"); c.son.autoplay = true; c.son.playsInline = true; c.son.style.display = "none"; document.body.appendChild(c.son); } c.son.srcObject = e.streams[0]; c.son.play().catch(() => { voixDebloquer(); });
+    try { if (VX.ac) { c.an = VX.ac.createAnalyser(); c.an.fftSize = 512; VX.ac.createMediaStreamSource(e.streams[0]).connect(c.an); } } catch (er) {} };
   pc.onconnectionstatechange = () => { if (["failed", "closed"].includes(pc.connectionState)) voixFermer(n); };
   if (appelle) pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => envoyerWS({ t: "rtc", a: n, d: { sdp: pc.localDescription.toJSON() } })).catch(() => voixFermer(n));
   voixInfo(); return c; }
@@ -15450,6 +15471,9 @@ async function voixRtc(de, d) { if (!VX.on) return;
   try { if (d.sdp) { const c = d.sdp.type === "offer" ? voixPair(de, false) : VX.pcs.get(de); if (!c) return; await c.pc.setRemoteDescription(d.sdp);
       if (d.sdp.type === "offer") { const r = await c.pc.createAnswer(); await c.pc.setLocalDescription(r); envoyerWS({ t: "rtc", a: de, d: { sdp: c.pc.localDescription.toJSON() } }); } }
     else if (d.ice) { const c = VX.pcs.get(de); if (c) await c.pc.addIceCandidate(d.ice); } } catch (e) {} }
+/* (un téléphone qui refuse de jouer le son tout seul : au prochain toucher de l'écran, on relance) */
+function voixDebloquer() { if (VX.deblo) return; VX.deblo = true; const f = () => { VX.deblo = false; document.removeEventListener("pointerdown", f, true); for (const c of VX.pcs.values()) if (c.son) c.son.play().catch(() => {}); if (VX.ac) VX.ac.resume().catch(() => {}); };
+  document.addEventListener("pointerdown", f, true); M && M.ctx.surInfo && M.ctx.surInfo("🔊 Touche l'écran pour entendre les autres."); }
 function voixToutFermer() { for (const n of [...VX.pcs.keys()]) voixFermer(n); }
 /* (à l'entrée d'un lieu : même monde, rien ne change ; autre monde, on se présente aux nouveaux ; Silent Hill, le micro se coupe) */
 function voixLieu() { if (!VX.on || !M) return; const s = salleVoixDe(M.lieu);
@@ -15460,8 +15484,8 @@ export async function micro(on) { if (!M) return false;
   if (on) { if (VX.on) return true; if (!salleVoixDe(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Pas de micro ici : on est seul dans cet univers."); return false; }
     try { VX.flux = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
     catch (e) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Le micro n'est pas autorisé : vérifie les autorisations du navigateur."); return false; }
-    VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixInfo(); return true; }
-  VX.on = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
+    VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixEcoute(); voixInfo(); return true; }
+  VX.on = false; clearInterval(VX.niveauT); VX.moiParle = VX.autreParle = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
