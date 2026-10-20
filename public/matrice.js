@@ -10109,24 +10109,53 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
       ["moi", "Tu n'es pas réelle. James avait raison."], [SHN.maria, `Réelle… Qu'est-ce que ça change ? Je suis là. Ta place est ici, ${nom}. Tu le sais.`], ["moi", "Adieu, Maria."],
       [SHN.maria, "…Tu reviendras. Le brouillard te ramènera. Il ramène toujours."], [null, null, 800]],
       () => { evanouirSH(SHN.maria, null, 400); passageFin(); }); } }
-function jamesFin(pyr) { const moi = moiApo(); if (!moi || !M.L.sh) return; if (M.cine) { setTimeout(() => M && jamesFin(pyr), 800); return; } const mp = moi.g.position, nom = prenomSH(); musiquePyramid(false);
-  pyr.fondu = pyr.fondu || performance.now(); brumeSH({ x: pyr.x, y: 0, z: pyr.z }, 3500);   /* (vaincu, il se dissout dans la brume avant que James n'arrive : il bouchait toute la vue) */
+function jamesFin(pyr) { const moi = moiApo(); if (!moi || !M.L.sh) return; if (M.cine) { setTimeout(() => M && jamesFin(pyr), 800); return; } musiquePyramid(false); moi.cible = null; moi.chemin = [];
+  /* (vaincu, il se dissout dans le brouillard, sous nos yeux ; alors seulement James arrive) */
+  pyr.fondu = pyr.fondu || performance.now(); brumeSH({ x: pyr.x, y: 0, z: pyr.z }, 3500);
+  const mp = moi.g.position, c0 = new THREE.Vector3(mp.x + (mp.x - pyr.x) * .35 + 1.2, mp.y + 1.9, mp.z + (mp.z - pyr.z) * .35 + 1.2); let u = 0, prec = performance.now(), fini = false;
+  const suite = () => { if (fini) return; fini = true; finCine(); jamesArrive(pyr); }; M.passerBtn = boutonPasser(suite);
+  M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now; M.camera.position.copy(c0); M.camera.lookAt(pyr.x, 1.5, pyr.z); if (u > 3) suite(); } }; }
+function jamesArrive(pyr) { const moi = moiApo(); if (!moi || !M.L.sh) return; const mp = moi.g.position, nom = prenomSH();
   const pj = apparaitreSH(poserPerso(SHN.james, ...placeEnVue(mp, 3.6, -.9, .4), 0)); noterCarteSH(SHN.james, 0, 29);
+  const derriere = () => { const j = M.gens.get(SHN.james); if (j) j.regardeA = new THREE.Vector3(j.g.position.x * 2 - mp.x, 0, j.g.position.z * 2 - mp.z); };   /* (il regarde derrière lui, d'où vient la sirène) */
+  const partir = d => { const j = M.gens.get(SHN.james); if (j) j.regardeA = null; evanouirSH(SHN.james, j ? [j.g.position.x * 2 - mp.x, j.g.position.z * 2 - mp.z] : [mp.x - 8, mp.z], d, 1.4); };
   dialogueSH(SHN.james, [[null, null, 1800], [SHN.james, `${nom} ! Tu es vivant…`], [SHN.james, "Je l'ai retrouvée. Mary. Elle m'attendait, là où on allait autrefois."],
     [SHN.james, "Elle m'a dit que tu étais la clé. Que grâce à toi, je pourrais enfin vivre… libéré du passé. Et de ce que j'ai fait."], ["moi", "Qu'est-ce que tu as fait, James ?"],
     [SHN.james, "Ça n'a plus d'importance. Toi, tu dois partir. Maintenant. Plus haut dans la rue, il y a une lumière… un passage."], [SHN.james, "Prends cette sortie, et tu rejoindras Heather. Elle t'attend, de l'autre côté."],
-    ["moi", "Heather… Elle est là-bas ? Elle est vivante ?"], [SHN.james, "Elle t'attend. Remonte la rue, et ne te retourne pas."], ["moi", "Merci, James. Pour tout."], [SHN.james, "Va. Avant que le brouillard ne change d'avis."],
-    geste(() => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 1200, .8); }, true), [null, null, 2400]],
-    () => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 0, .8); M.shEtape = 12; }); }
+    ["moi", "Heather… Elle est là-bas ? Elle est vivante ?"], [SHN.james, "Elle t'attend. Remonte la rue, et ne te retourne pas."], ["moi", "Merci, James. Pour tout."],
+    geste(() => sirenePH(11000)), [null, null, 2600], geste(derriere), [SHN.james, "…Cette sirène. Il revient déjà.", 2800],
+    geste(() => { const j = M.gens.get(SHN.james); if (j) j.regardeA = null; }), [SHN.james, `Dépêche-toi, ${nom} ! Cours vers la lumière. Je vais le retarder, le temps qu'il faudra.`],
+    ["moi", "James, viens avec moi !"], [SHN.james, "Non. Ma place est ici, avec elle. VA !"], geste(() => partir(500), true), [null, null, 2000]],
+    () => { pyr.fondu = pyr.fondu || performance.now(); partir(0); M.shEtape = 12; }); }
 // le passage : on y marche, la lumière nous prend… et l'on se réveille en 1990, dans le bar. Fin
-function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = RUE_PASSAGE; moi.cible = new THREE.Vector3(x, 0, z); moi.chemin = []; moi.info.allure = .6;
-  const t0 = performance.now(); let blanc = null, fini = false; const mp = moi.g.position;
-  M.cine = { maj: now => { const u = (now - t0) / 1000; M.camera.position.set(mp.x - 4.5, mp.y + 2, mp.z + 2.4); M.camera.lookAt(x, 1.8, z);
-    if (u > 2.2 && !blanc) { blanc = voile("background:#fff;opacity:0;transition:opacity 2.6s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }
-    if (u > 5.2 && !fini) { fini = true; moi.info.allure = 1; finCine(); const G = M.gresil; M.gresil = null; couperGresil(G); resetSH(); envoyerWS({ t: "radio_fin" }); changerLieu("fetes", [0, 26.5], 0);   /* (l'histoire est finie : la radio disparaît du sol, comme la plaque ECTO-1) */
-      setTimeout(() => { if (!M) return; blanc.style.transition = "opacity 3s"; blanc.style.opacity = "0"; setTimeout(() => blanc.remove(), 3100);
-        const f = voile("display:grid;place-items:center;opacity:0;transition:opacity 2s;font:900 clamp(30px,8vw,60px)/1.2 'Marcellus',serif;color:#f4efe2;text-align:center;text-shadow:0 2px 14px #000", 8000);
-        f.innerHTML = "FIN<br><span style='font-size:.4em;letter-spacing:.1em'>Tu es sorti de Silent Hill</span>"; requestAnimationFrame(() => f.style.opacity = "1"); setTimeout(() => f.style.opacity = "0", 6000); }, 600); } } }; }
+function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = RUE_PASSAGE; moi.cible = new THREE.Vector3(x, 0, z); moi.chemin = []; moi.info.allure = .5; moi.regardeA = null;
+  let u = 0, prec = performance.now(), blanc = null, fini = false; const mp = moi.g.position, dits = new Set(), D = (k, f) => { if (!dits.has(k)) { dits.add(k); f(); } };
+  /* (derrière lui, à hauteur d'épaule : il marche vers la lumière ; il entend la voix de sa fille, qui l'appelle) */
+  M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now; const vx = x - mp.x, vz = z - mp.z, vl = Math.hypot(vx, vz) || 1;
+    M.camera.position.set(mp.x - vx / vl * 2.6 + vz / vl * .7, mp.y + 1.75, mp.z - vz / vl * 2.6 - vx / vl * .7); M.camera.lookAt(x, 1.7, z);
+    if (u > 1.2) D("a", () => bulle("<i>« Papa… ? Papa, c'est toi… ? »</i>", 3000));
+    if (u > 4.4) D("b", () => dire(M.moiNum, "Heather… ? HEATHER ! J'arrive !"));
+    if (u > 7.4) D("c", () => bulle("<i>« Papa ! Je suis là… viens… »</i>", 3000));
+    if (u > 8.4 && !blanc) { blanc = voile("background:#fff;opacity:0;transition:opacity 2.8s"); requestAnimationFrame(() => blanc.style.opacity = "1"); }   /* (la lumière l'avale) */
+    if (u > 11.6 && !fini) { fini = true; moi.info.allure = 1; finCine(); bulle(null); M.shFinale = blanc; changerLieu("sh-fetes", [0, 26.5], 0); } } }; }
+/* le réveil, une dernière fois : allongé par terre, dans le bar de Silent Hill ; Maria, debout, le regarde… « Ils reviennent tous. » Le noir, le titre, FIN ; et le bar de 1990 */
+function cineFinale(blanc) { if (!M) return; const moi = M.gens.get(M.moiNum); if (!moi) { setTimeout(() => cineFinale(blanc), 150); return; } const nom = prenomSH();
+  blanc = blanc || voile("background:#fff;opacity:1"); blanc.style.transition = "opacity 3.5s"; requestAnimationFrame(() => requestAnimationFrame(() => { blanc.style.opacity = "0"; })); setTimeout(() => blanc.remove(), 3700);
+  moi.cible = null; moi.chemin = []; moi.info.mortT = performance.now() - 2000;   // (couché, tout de suite)
+  const p = moi.g.position; let maria = null, u = 0, prec = performance.now(), noir = null, titre = null, fini = false; const dits = new Set(), D = (k, f) => { if (!dits.has(k)) { dits.add(k); f(); } };
+  const fin = () => { if (fini || !M) return; fini = true; moi.info.mortT = 0; finCine(); if (M.gens.get(SHN.maria)) retirerAncien(SHN.maria); const G = M.gresil; M.gresil = null; couperGresil(G); grainSH(false); resetSH(); envoyerWS({ t: "radio_fin" });   /* (l'histoire est finie : la radio disparaît du sol) */
+    const n = noir || voile("background:#000;opacity:1"); n.style.opacity = "1"; if (titre) titre.remove(); changerLieu("fetes", [0, 26.5], 0); setTimeout(() => { n.style.transition = "opacity 2.5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 2600); }, 700); };
+  M.passerBtn = boutonPasser(fin);
+  M.cine = { maj: now => { u += Math.min(.05, Math.max(0, now - prec) / 1000); prec = now;
+    if (!maria) { maria = poserPerso(SHN.maria, p.x + .75, p.z - 1.35, p.y); if (maria) { maria.cible = null; maria.chemin = []; maria.regardeA = p; } }
+    const q = M.gens.get(SHN.maria); M.camera.position.set(p.x - .6, p.y + 1.9, p.z + 1.8); M.camera.lookAt(q ? (p.x + q.g.position.x) / 2 : p.x, p.y + .6, q ? (p.z + q.g.position.z) / 2 : p.z);
+    if (u > 3.4) D("a", () => dire(SHN.maria, `Je te l'avais dit, ${nom}… que tu reviendrais.`));
+    if (u > 8) D("b", () => dire(SHN.maria, "Ils reviennent tous."));
+    if (u > 12 && !noir) { noir = voile("background:#000;opacity:0;transition:opacity 2s"); requestAnimationFrame(() => noir.style.opacity = "1"); }
+    if (u > 14.5 && !titre) { bulle(null); titre = voile("opacity:0;transition:opacity 2.5s;display:grid;place-items:center;align-content:center;gap:clamp(18px,5vh,46px)");   /* (sur le noir : le titre, et FIN, dans la même écriture) */
+      titre.innerHTML = '<img src="images/sh/titre.webp" alt="Silent Hill" style="width:min(80%,760px);height:auto"><img src="images/sh/fin.webp" alt="Fin" style="width:min(21%,200px);height:auto">';
+      requestAnimationFrame(() => requestAnimationFrame(() => { titre.style.opacity = "1"; })); }
+    if (u > 22.5) fin(); } }; }
 // au sous-sol du mess : Lisa ; elle pense pouvoir nous aider à partir — par le porche : « si c'est une entrée, c'est aussi une sortie, non ? »
 function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess" || M.shLauraBas) return; const mp = moi.g.position, nom = prenomSH();
   if (M.cine) { setTimeout(() => M && M.shEtape === 10 && !M.shLauraBas && lauraBas(), 800); return; }   /* (une autre scène est en cours : Lisa attend qu'elle finisse, au lieu d'être sautée) */
@@ -13666,6 +13695,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.muetFete = 1; M.shEntreeT = performance.now(); M.shDuMess = lieuAvant === "sh-mess" && id === "sh-grande"; if (M.shCleObj && M.shCleObj.o.parent) M.shCleObj.o.parent.remove(M.shCleObj.o);   /* (la clé d'Eddie reste où elle est tombée) */
   majBoutonCarte();
   if (estSH(id) && M.shReveil) { M.shReveil = false; cineReveil(); }
+  if (estSH(id) && M.shFinale) { const b = M.shFinale; M.shFinale = null; cineFinale(b); }
   if (estSH(id) && M.shReveilBas) { M.shReveilBas = false; cineReveilBas(); }
   if (id === "bttf-cour") cineCour();
   if (id === "santacarla" && M.lbIntro) { M.lbIntro = false; cineSurvolSC(); }
@@ -15352,7 +15382,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, construireScene, choixSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, construireScene, choixSH, passageFin, jamesFin, creerBeteSH: creerBeteSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
