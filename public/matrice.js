@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.05";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.06";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8224,7 +8224,7 @@ export async function ouvrir(ctx) {
     // à Silent Hill : toucher un monstre, c'est lui tirer dessus (avec l'arme de James)
     if (M.L.sh && M.shMonstres && M.shMonstres.length && !M.cine) { const m = monstresSHVises(ray) || monstreSHPres(e.clientX - r.left, e.clientY - r.top, r.width, r.height); if (m) { tirerSH(m); return; } }
     // à l'apocalypse : toucher un zombie (ou un chien), c'est lui tirer dessus
-    if (M.L.apo && M.zomb && (M.zomb.size || (M.lickers || []).length || M.tyran)) { const vv = [...M.zomb.values(), ...(M.lickers || []), ...(M.tyran && !M.tyran.mortT ? [M.tyran] : [])].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
+    if (M.L.apo && M.zomb && (M.zomb.size || (M.lickers || []).length || M.tyran || M.lisa)) { const vv = [...M.zomb.values(), ...(M.lickers || []), ...(M.tyran && !M.tyran.mortT ? [M.tyran] : []), ...(M.lisa && M.lisa.g && !M.lisa.mortT ? [M.lisa] : [])].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
       if (hz) { tirer(vv.find(z => z.mesh === hz.object)); return; } }
     // toucher un ancien : son nom, écrire, (administrateur) faire taire / exclure
     const toi = M.moiNum && M.gens.get(M.moiNum);
@@ -8335,7 +8335,7 @@ export async function ouvrir(ctx) {
           if (p.corps && !p.info.danse && !Number.isInteger(p.info.assis)) p.corps.position.y = Math.abs(Math.sin(p.pasT * 3.4)) * .045 * Math.min(1, p.vit / 1.5);
           if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const px = p.g.position.x, pz = p.g.position.z;
-            const pt = M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true;
+            const pt = !lisaVivante() && M.L.portails.find(q => q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85); if (pt && !M.passage) { M.passage = true;
               if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
                 M.ctx.surAvantApo(ok => { if (!M) return; if (ok) { M.apoIntro = true; changerLieu(pt.vers, pt.arrivee, pt.yaw, true); }
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
@@ -10050,7 +10050,7 @@ function pousserCartons(dt = .016) { const C = M.L && M.L.cartons; if (!C) retur
   for (const p of M.gens.values()) qui.push([p.g.position.x, p.g.position.y, p.g.position.z, .38]);
   for (const m of M.shMonstres || []) if (!m.mortT && !m.p && m.g.visible) qui.push([m.x, m.y, m.z, m.cle === "pyramid" ? .6 : .42]);
   if (M.L.apo) { for (const z of M.zomb ? M.zomb.values() : []) if (!z.mortT && z.g.visible) qui.push([z.x, z.g.position.y, z.z, .38]); for (const l of M.lickers || []) if (!l.mortT && l.etat !== "mur" && l.g) qui.push([l.x, l.g.position.y, l.z, .5]);
-    if (M.tyran && M.tyran.g && !M.tyran.mortT) qui.push([M.tyran.x, M.tyran.g.position.y, M.tyran.z, .7]); }
+    if (M.tyran && M.tyran.g && !M.tyran.mortT) qui.push([M.tyran.x, M.tyran.g.position.y, M.tyran.z, .7]); if (M.lisa && M.lisa.g && !M.lisa.mortT) qui.push([M.lisa.x, 0, M.lisa.z, .5]); }
   let bouge = false;
   for (const c of C.c) for (const [x, y, z, r] of qui) { const dx = c.x - x, dz = c.z - z, d = Math.hypot(dx, dz), R = r + .24 * c.s; if (d >= R || Math.abs(c.y - y) > 1) continue;
     const ux = d > 1e-3 ? dx / d : 1, uz = d > 1e-3 ? dz / d : 0, nx = x + ux * R, nz = z + uz * R;
@@ -11458,6 +11458,104 @@ function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.n
   if (T.etat === "chute") return; if (T.hp > 0 && T.hp % 5 === 0) { T.etat = "regard"; T.regardT = performance.now() + 700; sonPos("sons/zombie3.mp3", 1); }   // (il encaisse, s'arrête, nous fixe)
   if (T.hp <= 0) { T.mortT = performance.now(); M.tyranMort = true; sonPos("sons/zombie3.mp3", 1);
     M.ctx.surInfo && M.ctx.surInfo("💀 Le Tyran est à terre ! L'hélicoptère descend : vite, vers le cercle rouge !"); } }
+/* Lisa Trevor, dans la salle des fêtes : au premier pas dans la salle, une scène — on entre à deux, on parle ; elle surgit derrière l'équipier et le frappe :
+   il tombe à genoux, puis face contre terre, assommé (pas mort). Tant qu'elle est debout, aucune porte ne s'ouvre ; vingt-cinq balles pour l'abattre.
+   Abattue, elle tombe à genoux puis face contre terre, et l'équipier reprend ses esprits */
+let lisa3D = null; const LT = { HP: 25, H: 1.95, V: 1.15 };
+const lisaVivante = () => !!(M && M.lisa && !M.lisa.mortT && baseLieu(M.lieu) === "fetes");
+function lancerLisa() {
+  const moi = moiApo(); if (!moi || M.cine || M.lisa || M.lisaMorte || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || M.evac) return;
+  const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (h < -.05 || mp.z > 10.8) return;   // (dans la salle même, pas sur les marches ni au bar)
+  const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
+  M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
+  lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/re-lisa.glb?v=1"); })().catch(e => { console.warn("lisa", e); return null; });
+  lisa3D.then(G => { const T = M && M.lisa; if (!G || !T || !T.attente || baseLieu(M.lieu) !== "fetes") { if (M && M.lisa === T) M.lisa = null; return; }
+    const sc = skelMod.clone(G.scene); sc.updateMatrixWorld(true); let hy = -1e9, by = 1e9; sc.traverse(o => { if (!o.isBone) return; const y = o.getWorldPosition(new THREE.Vector3()).y; if (y > hy) hy = y; if (y < by) by = y; });
+    sc.scale.multiplyScalar(hy > by ? LT.H / ((hy - by) * 1.03) : 1); sc.rotation.order = "YXZ";   // (sa taille : du bout des pieds au sommet du crâne, d'après le squelette)
+    sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); if (o.material.emissive) { o.material.emissive.set(0xffffff); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .12; } } });
+    const g = new THREE.Group(); g.add(sc); M.scene.add(g); g.userData.perso = true; g.visible = false;
+    const mix = new THREE.AnimationMixer(sc), act = {}; for (const a of G.animations) act[a.name] = mix.clipAction(a);
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, 2, 8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1; g.add(hit);
+    Object.assign(T, { attente: false, g, sc, mix, act, mesh: hit, A: { sc, mix, act, cur: null, curA: null }, ry: 0, etat: "attend", frappeT: 0, tw: [] });
+    cineLisa(T); }); }
+function jouerLT(T, n) { const A = T.A, a = A.act[n]; if (!a || A.cur === n) return; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .35, false); A.cur = n; A.curA = a; }
+function twLT(T, n, ax, a) { const b = os3D(T.A, n); if (!b) return; T.tw.push([b, b.quaternion.clone()]); tourne3D(T.A, n, ax, a); }
+// l'équipier assommé (à genoux, puis face contre terre) ; il reprend ses esprits quand elle est morte
+function assommer(p) { if (!p || p.info.mortT) return; p.lisaKO = true; p.info.mortT = performance.now(); p.cible = null; p.chemin = []; p.flashT = performance.now() + 250;
+  jetSang(p.g.position.x, 1.4, p.g.position.z); sangAuSol(p.g.position.x, p.g.position.z, p.g.position.y, .5); sonBruit(.18, 140, .9); sonBruit(.12, 900, .35); }
+function reveiller(p) { if (!p || !p.lisaKO) return; p.lisaKO = false; p.info.mortT = 0; }
+function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
+  if (T.g.parent !== M.scene) { for (const p of M.gens.values()) reveiller(p); M.lisa = null; return; }   // (on a changé de lieu)
+  const A = T.A; for (let i = T.tw.length - 1; i >= 0; i--) T.tw[i][0].quaternion.copy(T.tw[i][1]); T.tw.length = 0;   // (chaque image repart de la pose de l'animation)
+  const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) { o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); o.material.emissiveIntensity = rouge ? .6 : .12; } }); }
+  T.g.position.set(T.x, 0, T.z);
+  if (T.mortT) { mort3D({ info: { mortT: T.mortT }, g: T.g, corps: null }, A);
+    if (!T.flaque && now - T.mortT > 1300) { T.flaque = true; flaqueMort({ g: { position: new THREE.Vector3(T.x + Math.sin(T.ry) * 1.1, 0, T.z + Math.cos(T.ry) * 1.1) } }); }
+    if (!T.reveil && now - T.mortT > 3500) { T.reveil = true; const p = [...M.gens.values()].find(q => q.lisaKO); if (p) { reveiller(p);
+      setTimeout(() => { if (M && M.gens.get(p.info.numero) === p && !p.info.mortT) dire(p.info.numero, "Argh… ma tête… Elle est… morte ?"); }, 1600);
+      setTimeout(() => { if (M && M.lisaMorte) dire(M.moiNum, "Pour de bon, cette fois. Allez, on ne reste pas là."); }, 4600); } }
+    return; }
+  // (pendant le combat, elle seule : les zombies de la salle s'en vont)
+  for (const z of [...(M.zomb ? M.zomb.values() : [])]) if (!z.cine) retirerZ(z);
+  const mp = moi.g.position, c = T.vise || { x: mp.x, z: mp.z }, cx = c.x - T.x, cz = c.z - T.z, d = Math.hypot(cx, cz) || 1;
+  let da = Math.atan2(cx, cz) - T.ry; da = Math.atan2(Math.sin(da), Math.cos(da)); T.ry += da * Math.min(1, dt * (T.etat === "frappe" ? 2 : 4)); T.sc.rotation.y = T.ry;
+  let n = "idle";
+  if (T.etat === "frappe") { const k = now - T.t0; if (!T.touche && k > 720) { T.touche = true; if (T.vise) T.vise.coup && T.vise.coup(); else if (d < 2.2 && !T.cine) subirMorsure(T.x, T.z, 1); } if (k > 1500) T.etat = T.cine ? "attend" : "chasse"; }
+  else if (T.etat === "recule") { if (now > T.reculT) T.etat = "chasse"; }
+  else if (T.etat === "chasse" && !T.cine && !APO.zombieFin) {
+    if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; sonPos("sons/zombie3.mp3", .7); }
+    else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
+  else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
+  jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;   // (son pas lourd, traînant : les chaînes aux chevilles)
+  T.mix.update(dt); T.sc.updateMatrixWorld(true);
+  // voûtée, la tête penchée ; elle titube un peu
+  twLT(T, "Spine1", "x", .26); twLT(T, "Head", "x", .2); twLT(T, "Head", "z", Math.sin(now / 900) * .12); twLT(T, "Spine", "z", Math.sin(now / 1300) * .05);
+  if (T.etat === "recule") { const k = 1 - Math.max(0, (T.reculT - now) / 600); twLT(T, "Spine1", "x", -.45 * Math.sin(k * Math.PI)); twLT(T, "Head", "x", -.5 * Math.sin(k * Math.PI)); }   // (touchée : elle se cabre, et hurle)
+  // la frappe : le bras droit se lève au-dessus de la tête, puis s'abat devant elle
+  if (T.etat === "frappe") { const k = now - T.t0, fw = new THREE.Vector3(Math.sin(T.ry), 0, Math.cos(T.ry)), e = x => x * x * (3 - 2 * x); let dir;
+    if (k < 450) dir = new THREE.Vector3(0, -1, 0).lerp(new THREE.Vector3(0, 1, 0).addScaledVector(fw, -.3), e(k / 450));
+    else if (k < 820) { const a = Math.PI * .5 + Math.PI * .72 * e((k - 450) / 370); dir = new THREE.Vector3(0, Math.sin(a), 0).addScaledVector(fw, -Math.cos(a)); }
+    else dir = new THREE.Vector3(0, -.45, 0).addScaledVector(fw, .9).lerp(new THREE.Vector3(0, -1, 0), e(Math.min(1, (k - 820) / 680)));
+    for (const nb of ["RightArm", "RightForeArm"]) { const b = os3D(A, nb); if (b) T.tw.push([b, b.quaternion.clone()]); }
+    viser3D(A, "RightArm", "RightForeArm", dir.normalize()); viser3D(A, "RightForeArm", "RightHand", dir); } }
+function toucherLisa(T) { if (!T.g || T.mortT || T.cine) return; const now = performance.now(); T.flashT = now + 160; sangAuSol(T.x, T.z, 0, 1.1); T.hp--;
+  if (T.hp > 0 && T.hp % 5 === 0 && T.etat !== "frappe") { T.etat = "recule"; T.reculT = now + 600; sonPos("sons/zombie3.mp3", 1); }   // (elle encaisse, se cabre, hurle)
+  if (T.hp <= 0) { T.mortT = now; M.lisaMorte = true; sonPos("sons/zombie3.mp3", 1); } }
+/* la scène d'entrée : la salle vide, on parle ; une plainte (« Ma… man… ») ; elle est derrière lui */
+function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.camera, t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0, coup = false;
+  const k = (M.equipe || []).findIndex((e, i) => !e.mort && M.gens.get(EQUIPIER(i))), eq = k >= 0 ? M.gens.get(EQUIPIER(k)) : null, libre = (x, z) => M.L.limites(x, z);
+  const mp = moi.g.position; moi.cible = null; moi.chemin = [];
+  // vers le milieu de la salle
+  let f = new THREE.Vector3(-mp.x * .3, 0, 5 - mp.z); if (f.length() < 1.5) f.set(0, 0, -1); f.normalize(); const cote = new THREE.Vector3(f.z, 0, -f.x);
+  if (eq) { eq.lisaKO = true; eq.cible = null; eq.chemin = []; for (const s of [1, -1, 2, -2]) { const x = mp.x + cote.x * 1.15 * Math.sign(s) * (Math.abs(s) > 1 ? .7 : 1) + f.x * (Math.abs(s) > 1 ? .8 : 0), z = mp.z + cote.z * 1.15 * Math.sign(s) * (Math.abs(s) > 1 ? .7 : 1) + f.z * (Math.abs(s) > 1 ? .8 : 0); if (libre(x, z)) { eq.g.position.x = x; eq.g.position.z = z; break; } } }
+  // elle : derrière lui (sinon à côté, sinon devant, au fond de la salle)
+  const ep = (eq || moi).g.position; let lp = null; for (const [a, r] of [[0, 1.35], [.5, 1.4], [-.5, 1.4], [1.1, 1.4], [-1.1, 1.4], [Math.PI, eq ? 1.6 : 5]]) { const dir = f.clone().multiplyScalar(-1).applyAxisAngle(new THREE.Vector3(0, 1, 0), a), x = ep.x + dir.x * r, z = ep.z + dir.z * r; if (libre(x, z) && Math.hypot(x - mp.x, z - mp.z) > 1) { lp = [x, z]; break; } }
+  if (!lp) lp = [ep.x + f.x * 4, ep.z + f.z * 4]; T.x = lp[0]; T.z = lp[1]; T.ry = Math.atan2(ep.x - T.x, ep.z - T.z); T.g.visible = false;
+  const nomEq = eq ? ((HEROS[M.equipe[k].id] && HEROS[M.equipe[k].id].court) || eq.info.nom) : "", lisaDit = t => bulle(`<b style="color:#b5573c">Lisa Trevor</b> : ${t}`, 3600);
+  const L = eq ? [[.8, M.moiNum, "La salle des fêtes… Personne. Pas un bruit."], [4.2, eq.info.numero, "Reste sur tes gardes. Regarde par terre : on a traîné des chaînes jusqu'ici…"],
+      [8.0, M.moiNum, "Chut… Tu entends ? On dirait… une femme qui pleure."], [11.0, 0, "Ma… man… Ma… man…"], [13.2, eq.info.numero, "Qu'est-ce que… ?!"],
+      [15.8, M.moiNum, `${nomEq} !!!`], [18.2, M.moiNum, "Il respire encore… Toi, la chose, tu ne sortiras pas d'ici vivante !"]]
+    : [[.8, M.moiNum, "La salle des fêtes… Personne. Pas un bruit."], [4.2, M.moiNum, "Chut… On dirait… une femme qui pleure."], [7.2, 0, "Ma… man… Ma… man…"], [9.6, M.moiNum, "Qu'est-ce que c'est que ça… ?! Recule, saleté !"]];
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); T.cine = false; T.vise = null; T.marche = false; T.g.visible = true; T.etat = T.etat === "frappe" ? "frappe" : "chasse";
+    if (eq && !coup) { coup = true; assommer(eq); } if (eq) eq.lisaKO = !!eq.info.mortT; };
+  M.passerBtn = boutonPasser(fin);
+  const tApp = eq ? 10.6 : 6.6, tFrappe = 13.9, tFin = eq ? 21 : 12.6;
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+    const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp; T.g.visible = apparue;
+    // les héros : face à la salle ; elle apparue, tournés vers elle
+    for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue && (q === moi || u > 13.1) ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
+    if (eq && u > tFrappe && T.etat !== "frappe" && !coup) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: ep.x, z: ep.z, coup: () => { coup = true; assommer(eq); dire(eq.info.numero, "Aaargh !"); } }; sonPos("sons/zombie3.mp3", .9); }
+    if (!eq && u > tApp + 1) { T.marche = true; }
+    if (u > (eq ? 16.6 : 99)) T.vise = null;   // (puis elle se tourne vers nous)
+    let c, v; const ec = ep.clone();
+    if (u < 7.6) { const mid = mp.clone().lerp(ec, .5); c = mid.clone().addScaledVector(f, 3.4).addScaledVector(cote, .6); if (!libre(c.x, c.z)) c = mid.clone().addScaledVector(f, -3).addScaledVector(cote, .6); c.y = 1.65; v = mid.clone().setY(1.25); }   // (de face : nous deux, qui entrons)
+    else if (u < tApp || !eq) { c = ec.clone().addScaledVector(f, 2.2).addScaledVector(cote, -.9); c.y = 1.6; v = ec.clone().addScaledVector(f, -.6).setY(1.45);   // (de près sur lui ; elle surgit derrière son épaule)
+      if (!eq && apparue) { c = mp.clone().addScaledVector(f, -1.2).addScaledVector(cote, .7); c.y = 1.75; v = tp.clone().setY(1.3); } }
+    else if (u < 15.6) { const m2 = ec.clone().lerp(tp, .5), s = libre(m2.x + cote.x * 2.8, m2.z + cote.z * 2.8) ? 1 : -1; c = m2.clone().addScaledVector(cote, 2.9 * s); c.y = 1.45; v = m2.clone().setY(1.15); }   // (de côté : la frappe, il s'effondre)
+    else { const dl = tp.clone().sub(mp).setY(0).normalize(); c = mp.clone().addScaledVector(dl, -1.6).addScaledVector(new THREE.Vector3(dl.z, 0, -dl.x), .7); c.y = 1.8; v = tp.clone().setY(1.2); }   // (derrière nous : elle, et lui au sol)
+    cam.position.copy(c); cam.lookAt(v);
+    while (dit < L.length && u > L[dit][0]) { const [, n, txt] = L[dit]; if (n) dire(n, txt); else { lisaDit(txt); sonPos("sons/zombie3.mp3", .5); } dit++; }
+    if (u > tFin) fin(); } }; }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
@@ -11530,9 +11628,9 @@ function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   if (!voitZ(moi.g.position, z)) { if (performance.now() > (M.murMsgT || 0)) { M.murMsgT = performance.now() + 4000; M.ctx.surInfo && M.ctx.surInfo("🧱 Un mur entre toi et lui : impossible de tirer."); } return; }   // (pas à travers les murs, ni dans une autre salle)
   z.tireurT = performance.now();
-  if (z.licker || z.tyran) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
+  if (z.licker || z.tyran || z.lisa) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
     const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
-    eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); if (z.tyran) toucherTyran(z); else toucherLicker(z, dx, dz); return; }
+    eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); if (z.tyran) toucherTyran(z); else if (z.lisa) toucherLisa(z); else toucherLicker(z, dx, dz); return; }
   if (M.mitra) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) return; const dx = dx0 / d, dz = dz0 / d;
     moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); sonBruit(.12, 2200, .6); impactZ(z, dx, dz); envoyerWS({ t: "z_tir", id: z.id, dx, dz }); if (estChefZ()) blesserZ(z, dx, dz); return; }
@@ -11609,7 +11707,7 @@ function animerEquipe(now) {
   const etage = baseLieu(M.lieu) === "etage", mp = moi.g.position;
   M.equipe.forEach((e, k) => { const num = EQUIPIER(k); let p = M.gens.get(num);
     if (!p) { if (e.mort) return; const [x, z] = placeAPortee(moi, k); p = ajouterAncien(infoEquipier(e.id, num, x, z, M.moiNum, k)); if (!p) return; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; }
-    if (e.mort || APO.zombieFin || p.sacrifie) return;
+    if (e.mort || APO.zombieFin || p.sacrifie || p.lisaKO) return;
     const d = Math.hypot(p.g.position.x - mp.x, p.g.position.z - mp.z);
     // perdu (un autre étage, trop loin) : il nous rejoint aussitôt
     if ((etage && (etageDe(p) !== etageDe(moi) || (p.etg && moi.etg && p.etg.zone !== "P" && moi.etg.zone === "P" && d > 3))) || d > 13) { const [x, z] = placeAPortee(moi, k); p.g.position.x = x; p.g.position.z = z; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; p.cible = null; p.chemin = []; }
@@ -11630,7 +11728,7 @@ function animerEquipe(now) {
 // comment on nous appelle, à l'apocalypse : par le nom du héros qu'on joue (Wesker, Chris…), sinon par notre prénom
 const nomApo = () => M.perso && HEROS[M.perso] ? HEROS[M.perso].court : ((((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "Hé");
 function sacrificeApo(now) {
-  const moi = moiApo(); if (!moi || M.cine || M.sacrificeL === M.L || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || !M.equipe) return;
+  const moi = moiApo(); if (!moi || M.cine || M.sacrificeL === M.L || baseLieu(M.lieu) !== "fetes" || !M.lisaMorte || APO.zombieFin || !M.equipe) return;
   const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (!(h < -.15 && h > -1.2)) return;
   const k = M.equipe.findIndex((e, i) => !e.mort && M.gens.get(EQUIPIER(i))); if (k < 0) return;
   M.sacrificeL = M.L; const e = M.equipe[k], p = M.gens.get(EQUIPIER(k)), nom = p.info.nom;
@@ -11882,7 +11980,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss();
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); animerLisa(moi, now, dt); lancerLisa();
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -12594,7 +12692,7 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   if (p.coupe3D) { A.sc.visible = false; if (p.corps) p.corps.visible = false; return; }   // (coupée en deux par Pyramid Head : ce sont ses deux moitiés qu'on voit)
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A); return; }
-  A.sc.rotation.x = 0;
+  A.sc.rotation.x = 0; if (A.repM) { for (const n in A.repM) os3D(A, n).quaternion.copy(A.repM[n]); A.repM = null; A.sc.position.set(0, 0, 0); }   // (relevé : assommé, il reprend ses esprits)
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
   A.v = (A.v || 0) * .8 + v * .2;
@@ -12640,7 +12738,7 @@ function poseCine3D(p, A) { const P = p.poseCine, N = ["Head", "Neck", "LeftArm"
   if (P.mainT) { const m = lisse(Math.min(1, (now - P.mainT) / 600)), o = Math.sin(now / 260) * .12 * m; T("LeftArm", "x", -2.55 * m + o); T("LeftArm", "z", .25 * m); T("LeftForeArm", "x", -.35 * m); } }
 /* le pistolet (le Samurai Edge de Resident Evil 0) dans la main droite : bras le long du corps quand on marche ; quand on tire, il se tourne vers la cible et tend les deux bras, l'arme pointée */
 const pistolets3D = {}; let _v1, _v2, _v3, _qa, _qb;
-function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant); if (!b || !c) return; b.parent.updateMatrixWorld(true); b.updateMatrixWorld(true);
+function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant); if (!b || !c) return; if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); } b.parent.updateMatrixWorld(true); b.updateMatrixWorld(true);
   b.getWorldPosition(_v1); c.getWorldPosition(_v2); _v2.sub(_v1).normalize(); _qa.setFromUnitVectors(_v2, _v3.copy(dir).normalize()); b.parent.getWorldQuaternion(_qb);
   b.quaternion.premultiply(_qb.clone().invert().multiply(_qa).multiply(_qb)); b.updateMatrixWorld(true); }
 function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); }
@@ -12760,7 +12858,7 @@ function animerCercles(t) {
   // arrivé dans un cercle (en entrant dans le lieu) : il faut d'abord en sortir, pour ne pas repartir aussitôt
   if (moi && !M.cerclePret && !M.cercles.some(c => centrePortail(c.pt) && Math.hypot(moi.g.position.x - c.pt.centre[0], moi.g.position.z - c.pt.centre[1]) < RAYON_CERCLE + .1)) M.cerclePret = true;
   // arrêté sur le cercle d'un passage ouvert (le vestibule) : on franchit la porte tout seul
-  if (moi && M.cerclePret && !moi.cible && !M.passage) for (const c of M.cercles) { const q = c.pt;
+  if (moi && M.cerclePret && !moi.cible && !M.passage && !lisaVivante()) for (const c of M.cercles) { const q = c.pt;
     if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
@@ -12773,7 +12871,7 @@ function animerCercles(t) {
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
-    c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu));
+    c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && !lisaVivante();   // (Lisa debout : les portes de la salle des fêtes restent closes)
     const b = .5 + .5 * Math.sin(t / 420);
     c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
     c.halo.scale.setScalar(1 + .08 * b);
@@ -13183,9 +13281,9 @@ function manette() {
   if (tire && now > MAN.tirT && M.L.tirManette) { MAN.tirT = now + 330; M.L.tirManette(!!M.premiere); }   /* (Santa Carla : le pistolet à eau bénite) */
   else if (tire && now > MAN.tirT) { const p = moi.g.position, f = new THREE.Vector3(); M.camera.getWorldDirection(f); f.y = 0; f.normalize();
     const choisir = l => { let best = null, bs = -1e9; for (const z of l) { const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz); if (dd > 14 || !voitZ(p, z)) continue; const sc = (dx * f.x + dz * f.z) / (dd || 1) * 6 - dd; if (sc > bs) { bs = sc; best = z; } } return best; };
-    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values(), ...(M.lickers || []), ...(M.tyran ? [M.tyran] : [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else { sonTir(); if (M.armeFP) M.armeFP.kick = 1; } MAN.tirT = now + (M.mitra ? 110 : 330); }
+    if (M.premiere && M.L.apo && !M.L.sh && M.zomb) { const z = cibleFP([...M.zomb.values(), ...(M.lickers || []), ...(M.tyran ? [M.tyran] : []), ...(M.lisa && M.lisa.g ? [M.lisa] : [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) tirer(z); else { sonTir(); if (M.armeFP) M.armeFP.kick = 1; } MAN.tirT = now + (M.mitra ? 110 : 330); }
     else if (M.premiere && M.L.sh && M.shMonstres) { const m = cibleFP(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) tirerSH(m); MAN.tirT = now + 330; }
-    else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values(), ...(M.lickers || []), ...(M.tyran ? [M.tyran] : [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
+    else if (M.L.apo && !M.L.sh && M.zomb) { const z = choisir([...M.zomb.values(), ...(M.lickers || []), ...(M.tyran ? [M.tyran] : []), ...(M.lisa && M.lisa.g ? [M.lisa] : [])].filter(z => !z.mortT && z.g.visible && !z.cine)); if (z) { tirer(z); MAN.tirT = now + (M.mitra ? 110 : 330); } }
     else if (M.L.sh && M.shMonstres) { const m = choisir(M.shMonstres.filter(m => !m.mortT && !m.cine && !m.fige && m.g && m.g.visible)); if (m) { tirerSH(m); MAN.tirT = now + 330; } } }
   fin(); }
 function mireGB(m) { let d = M && M.mireEl; if (!m) { if (d) d.style.display = "none"; return; }
@@ -13728,7 +13826,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return; const lieuAvant = M.lieu;
   if (universOccupe(id)) { refusUnivers(id); return; }
   if (M.vfMenu) M.vfMenu.fermer();
-  if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.tyran = null; M.tyranMort = false; M.evac = false; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); }   /* (mort ou pas : on ressort entier, sans l'écran « YOU DIED ») */
+  if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; M.evac = false; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); }   /* (mort ou pas : on ressort entier, sans l'écran « YOU DIED ») */
   // (on quitte S.O.S. Fantômes avant la fin : la musique, la sirène, le combat et l'histoire s'arrêtent là ; le chef de poste reprend sa ronde)
   if (universDe(M.lieu) === "gb" && universDe(id) !== "gb") { musiqueGB(false); sireneGB(false); finCombatGB(); M.gbChef = false; if (!M.gbFinale || id !== "grande") { M.gbActe = 0; M.gbGare = false; M.gbCapture = false; M.gbFinale = null; M.gbScene = null; } }
   if (estSH(M.lieu) && !estSH(id)) { for (const a of [M.sirenePH, M.sireneA]) if (a) { try { a.pause(); } catch (e) {} } M.sirenePH = null; }   /* (la sirène de Pyramid Head ne nous suit pas en 1990) */
@@ -13753,7 +13851,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.tyran = null; M.tyranMort = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
