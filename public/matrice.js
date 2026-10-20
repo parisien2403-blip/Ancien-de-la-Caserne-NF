@@ -9454,7 +9454,19 @@ function texLampe(on) { return texLampeC[on] || (texLampeC[on] = tex(toile(150, 
   x.fillStyle = "#e8e8e0"; x.font = "bold 21px Arial"; x.textAlign = "center"; x.fillText("SILENT LIGHT", 75, 222);
   x.fillStyle = "#cfcfca"; x.beginPath(); x.roundRect(64, 262, 22, 46, 10); x.fill(); x.fillStyle = "#7a7a76"; x.beginPath(); x.roundRect(68, on ? 266 : 286, 14, 18, 6); x.fill(); }))); }
 // la lampe accrochée à la poitrine : on la voit de face, éteinte ou allumée
+let lampe3D = null;
+function chargerLampe3D() { return lampe3D = lampe3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return (await new gltfMod.GLTFLoader().loadAsync("avatars/sh-lampe.glb?v=1")).scene; })().catch(() => null); }
+/* la lampe de poche, accrochée au blouson, côté gauche de la poitrine (comme Harry dans Silent Hill) : elle suit le buste ; allumée, sa lentille brille */
+function lampePoitrine3D(moi, voir) { const A = moi.av3, P = M.lampeP;
+  if (!voir || !A || !A.sc.visible) { if (P && P.g.parent) P.g.parent.remove(P.g); return false; }
+  if (!P) { M.lampeP = { g: new THREE.Group() }; chargerLampe3D().then(m => { if (!m || !M || !M.lampeP) return; const c = m.clone(); c.position.y = -.1; M.lampeP.g.add(c);
+      const lent = new THREE.Mesh(new THREE.CircleGeometry(.034, 16), new THREE.MeshBasicMaterial({ color: 0xfff6d8, transparent: true, opacity: .95 })); lent.position.set(0, .07, .062); M.lampeP.g.add(lent); M.lampeP.lent = lent; }); return true; }   // (la lentille, quand elle éclaire)
+  if (P.g.parent !== M.scene) M.scene.add(P.g); const b = os3D(A, "Spine2") || os3D(A, "Spine1"); if (!b) return true;
+  A.sc.updateMatrixWorld(true); b.getWorldPosition(P.g.position); const q = A.sc.getWorldQuaternion(new THREE.Quaternion()), av = new THREE.Vector3(0, 0, 1).applyQuaternion(q), dr = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+  P.g.position.addScaledVector(av, .2).addScaledVector(dr, .085); P.g.position.y += .02; P.g.quaternion.copy(q);
+  if (P.lent) P.lent.visible = !!M.shLampeOn; M.lampePos = P.g.position; return true; }
 function majLampePoitrine() { const moi = M && M.gens.get(M.moiNum); if (!moi) return; const voir = !!(M.shLampe && M.L && M.L.sh);
+  if (lampePoitrine3D(moi, voir)) { if (M.lampeSp && M.lampeSp.parent) M.lampeSp.parent.remove(M.lampeSp); return; }   // (Harry en 3D : la vraie lampe ; sinon, l'image)
   if (!voir) { if (M.lampeSp && M.lampeSp.parent) M.lampeSp.parent.remove(M.lampeSp); return; }
   if (!M.lampeSp) { M.lampeSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLampe(false), transparent: true, depthWrite: false })); M.lampeSp.renderOrder = 3; }
   const sp = M.lampeSp; if (sp.parent !== moi.g) moi.g.add(sp); sp.material.map = texLampe(!!M.shLampeOn);
@@ -9474,7 +9486,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { brancardsSH(scene, L, base); chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "etage") chargerBete3D("avatars/sh-infirmiere.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
+function silentHill(scene, L, base) { caissesSH(scene, L, base); brancardsSH(scene, L, base); chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "etage") chargerBete3D("avatars/sh-infirmiere.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9520,7 +9532,8 @@ function silentHill(scene, L, base) { brancardsSH(scene, L, base); chargerBete3D
     const bar = new THREE.Mesh(new THREE.BoxGeometry(2.2, .18, .05), new THREE.MeshStandardMaterial({ color: 0xc8c2b4, roughness: .8 })); bar.position.set((xa + xb) / 2 - .4, .2, zb + .7); bar.rotation.set(0, .25, 1.2); scene.add(bar); }
   // sur le comptoir du bar : la lampe de poche verte « Silent Light »
   if (base === "fetes" && L.comptoirSousSol && L.comptoirSousSol.length > 3) { const [x, z] = L.comptoirSousSol[3], vert = new THREE.MeshStandardMaterial({ color: 0x3e5a30, roughness: .75 }), face = new THREE.MeshStandardMaterial({ map: texLampe(false), roughness: .6 });
-    const g = new THREE.Group(), corps = new THREE.Mesh(new THREE.BoxGeometry(.15, .36, .06), [vert, vert, vert, vert, face, vert]); corps.position.y = .18; corps.rotation.x = -.12; corps.castShadow = true; g.add(corps);   // debout, à peine penchée en arrière
+    const g = new THREE.Group(); void vert; void face;   // (la lampe de poche de Silent Hill 1 : couchée sur le comptoir, la lentille vers le haut)
+    chargerLampe3D().then(m => { if (!m) return; const c = m.clone(); c.rotation.x = -Math.PI / 2; c.position.set(0, .04, .1); c.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.add(c); });
     g.position.set(x, L.yComptoirSousSol + .002, z + .05); g.rotation.y = -.25; scene.add(g); L.lampeObj = g; L.lampeComptoir = [x, z]; }
   // des traînées de sang, comme si l'on avait traîné quelqu'un : dans les couloirs des étages, sur les paliers ; dehors, quelques-unes
   { const tr = texTrainees(), mat = new THREE.MeshStandardMaterial({ map: tr, transparent: true, depthWrite: false, roughness: .35, polygonOffset: true, polygonOffsetFactor: -3 });
@@ -9580,7 +9593,7 @@ function silentHill(scene, L, base) { brancardsSH(scene, L, base); chargerBete3D
     const cam = M.camera, moi = M.gens.get(M.moiNum);
     const allumee = !!(M.shLampe && M.shLampeOn); lampe.visible = halo.visible = allumee && !!moi; majLampePoitrine();
     if (moi && allumee) { const p = moi.g.position; cam.getWorldDirection(v); const dx = v.x, dz = v.z, dl = Math.hypot(dx, dz) || 1; const Hc = tailleBonhomme() * hauteurDe(moi) * .6; lampe.position.set(p.x + dx / dl * .3, p.y + Hc, p.z + dz / dl * .3); lampe.target.position.set(p.x + v.x * 7, p.y + .5 + v.y * 7, p.z + v.z * 7);
-      if (M.lampeSp) { halo.position.copy(M.lampeSp.position).add(moi.g.position); halo.position.y += tailleBonhomme() * hauteurDe(moi) * .051; } halo.material.opacity = .75 + Math.random() * .05; }
+      if (M.lampeP && M.lampeP.g.parent) { halo.position.copy(M.lampeP.g.position); halo.position.y += .07; } else if (M.lampeSp) { halo.position.copy(M.lampeSp.position).add(moi.g.position); halo.position.y += tailleBonhomme() * hauteurDe(moi) * .051; } halo.material.opacity = .75 + Math.random() * .05; }
     const abrite = !!(moi && L.c3 && C3.dedans(moi)); cendres.visible = ext && !abrite;   // (sous un toit — le judo, le sous-sol… — pas de cendres)
     if (ext && !abrite) { const a = geo.attributes.position.array; for (let i = 0; i < N; i++) { const k = i * 3; a[k + 1] -= dt * (.35 + (i % 7) * .04); a[k] += Math.sin(now / 1800 + i) * dt * .15;
         if (a[k + 1] < cam.position.y - 4) a[k + 1] += H; let dx = a[k] - cam.position.x, dz = a[k + 2] - cam.position.z; if (dx > V / 2) a[k] -= V; else if (dx < -V / 2) a[k] += V; if (dz > V / 2) a[k + 2] -= V; else if (dz < -V / 2) a[k + 2] += V; }
@@ -9798,6 +9811,17 @@ function brancardsSH(scene, L, base) {
           d.rotation.set(-Math.PI / 2, 0, Math.random() * 6.28); d.position.set(px, .778, (Math.random() - .5) * .16); d.renderOrder = 2; g.add(d); }   // (sur le matelas, à la tête et aux pieds — le drap, lui, a sa texture tachée)
         flaque(b.x + Math.cos(b.ry) * .9, b.z - Math.sin(b.ry) * .9, y, .55, Math.random() * 6.28); }   // (sous la tête : ce qui a coulé du matelas)
       scene.add(g); }); }); }
+/* deux caisses, l'une sur l'autre, contre la porte « BAR » du vestibule : on ne sort pas du bar par là — il faut monter l'escalier, à la salle des fêtes (les brancards) */
+function caissesSH(scene, L, base) { let cx, cz, bloque;
+  if (base === "fetes") { cx = -VEST_VX + .62; cz = FETE_SZ; bloque = (x, z) => x < -VEST_VX + 1.2 && Math.abs(z - FETE_SZ) < VEST_LB / 2 + .5;
+    L.portails = (L.portails || []).filter(q => !(q.continu && Array.isArray(q.continu) && q.continu[0] === VEST_X)); }   // (la sortie vers la cour, par le vestibule : condamnée)
+  else if (base === "grande") { const PB = L.porteBar || [16, 9.12]; cx = VEST_X - VEST_VX + .62; cz = PB[1];   // (au même endroit que vu du bar : le vestibule est le même) bloque = (x, z) => x > PB[0] - .2 && x < PB[0] + 1.2 && Math.abs(z - PB[1]) < VEST_LB / 2 + .5;
+    L.portails = (L.portails || []).filter(q => !(q.continu && Array.isArray(q.continu) && q.continu[0] === -VEST_X)); L.raccourcis = (L.raccourcis || []).filter(q => !(q.marche && Math.abs(q.marche[0] - VEST_X) < .01)); }
+  else return;
+  const lim0 = L.limites; L.limites = (x, z) => (!lim0 || lim0(x, z)) && !bloque(x, z);
+  const y = L.hauteur ? L.hauteur(cx, cz, { g: { position: { y: base === "fetes" ? FETE_HSS : 0 } } }) : 0;
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return (await new gltfMod.GLTFLoader().loadAsync("avatars/sh-caisse.glb?v=1")).scene; })().then(m => {
+    for (const [dy, ry, dx, dz] of [[0, .12, 0, 0], [.943, -.18, .03, .06]]) { const c = m.clone(); c.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); c.position.set(cx + dx, y + dy, cz + dz); c.rotation.y = ry; scene.add(c); } }).catch(() => {}); }
 const betes3D = {};   // (le Lying Figure ; Siam — le gros monstre aux bras énormes, de Silent Hill: Homecoming — même traitement, sans la traînée)
 function chargerBete3D(f) { return betes3D[f] = betes3D[f] || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
   return await new gltfMod.GLTFLoader().loadAsync(f); })().catch(() => null); }
