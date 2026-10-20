@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "etage") chargerBete3D("avatars/sh-infirmiere.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
+function silentHill(scene, L, base) { brancardsSH(scene, L, base); chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "etage") chargerBete3D("avatars/sh-infirmiere.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9736,6 +9736,63 @@ function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
 /* Pyramid Head frappe : nous, si l'on est à portée ; ou un monstre qui passe trop près — d'un coup, il le coupe en deux */
 /* le Lying Figure (le monstre sans bras de Silent Hill 2), en 3D : chaque monstre a sa copie du modèle, animée (repos, marche) ;
    en marchant, il laisse derrière lui une traînée noire, luisante, comme du goudron chaud ; touché, il saigne ; abattu, il tombe à genoux, puis face contre terre */
+/* les brancards (un vieux brancard d'hôpital rouillé, un corps sous un drap) : une dizaine dans la salle des fêtes, et trois devant, dans la cour d'honneur — deux renversés ;
+   du sang sur les draps (peint dans leur texture : il suit les plis), des flaques au sol, et les traces des roulettes qui sont passées dedans */
+let brancardG = null, texRoues = null, texSangR = null;
+/* du sang réaliste : pas du rouge vif — un cœur presque noir, épais, des bords brun-rouge sombre qui ont séché plus foncés que le reste, des gouttes, et un reflet mouillé (matière brillante) */
+function sangReel() { if (texSangR) return texSangR; texSangR = [];
+  for (let k = 0; k < 5; k++) texSangR.push(tex(toile(512, 512, (x, w, h) => { let s = 101 + k * 37; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; x.translate(256, 256);
+    const forme = () => { x.beginPath(); const n = 26; for (let i = 0; i <= n; i++) { const a = i / n * 6.283, d = 120 + 70 * Math.sin(a * 3 + k) * .5 + (r() - .5) * 60; x[i ? "lineTo" : "moveTo"](Math.cos(a) * d, Math.sin(a) * d * (.7 + k * .05)); } x.closePath(); };
+    x.save(); forme(); x.clip();
+    x.fillStyle = "rgb(66,5,5)"; x.fillRect(-256, -256, 512, 512);
+    for (let i = 0; i < 260; i++) { const a = r() * 6.28, d = r() * 170, rr = 6 + r() * 26; x.fillStyle = `rgba(${70 + r() * 45 | 0},${3 + r() * 6 | 0},${4 + r() * 5 | 0},${(.25 + r() * .4).toFixed(2)})`; x.beginPath(); x.ellipse(Math.cos(a) * d, Math.sin(a) * d, rr, rr * (.5 + r() * .5), r() * 3, 0, 7); x.fill(); }   // (l'épaisseur inégale)
+    const g = x.createRadialGradient(0, 0, 10, 0, 0, 200); g.addColorStop(0, "rgba(22,0,1,.6)"); g.addColorStop(.7, "rgba(30,1,1,.2)"); g.addColorStop(1, "rgba(20,1,1,0)"); x.fillStyle = g; x.fillRect(-256, -256, 512, 512);   // (là où c'est épais : presque noir)
+    x.restore(); x.save(); forme(); x.strokeStyle = "rgba(22,2,2,.85)"; x.lineWidth = 7; x.stroke(); x.restore();   // (le bord, séché, plus foncé)
+    for (let i = 0; i < 40; i++) { const a = r() * 6.28, d = 175 + r() * 70, rr = 2 + r() * 7; x.fillStyle = `rgba(${40 + r() * 25 | 0},3,3,${(.6 + r() * .35).toFixed(2)})`; x.beginPath(); x.ellipse(Math.cos(a) * d, Math.sin(a) * d * .8, rr * (1 + r()), rr, a, 0, 7); x.fill(); }   // (les gouttes autour)
+    x.globalCompositeOperation = "source-atop"; for (let i = 0; i < 5; i++) { x.strokeStyle = `rgba(255,220,220,${(.05 + r() * .07).toFixed(2)})`; x.lineWidth = 2 + r() * 4; x.beginPath(); x.arc(-30 + r() * 60, -30 + r() * 60, 30 + r() * 80, r() * 7, r() * 7 + .7); x.stroke(); } })));   // (un léger reflet, encore humide)
+  return texSangR; }
+function brancardsSH(scene, L, base) {
+  const liste = [], sol = (x, z) => L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
+  if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < 10; k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
+      if (!L.limites || !L.limites(x, z) || liste.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) continue; liste.push({ x, z, ry, pose: 0 }); } }
+  if (base === "grande") for (const b of [{ x: 8.9, z: 2.6, ry: .35, pose: 0 }, { x: 6.6, z: .4, ry: 1.9, pose: 1 }, { x: 9.0, z: 11.6, ry: -.5, pose: 2 }]) if (!L.limites || L.limites(b.x, b.z)) liste.push(b);   // (pose : 0 debout, 1 couché sur le flanc, 2 retourné)
+  if (!liste.length) return;
+  texturesApo();
+  texRoues = texRoues || tex(toile(512, 128, (x, w, h) => { let s = 41; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;   // (deux traces de roulettes, parallèles, qui s'effacent à mesure qu'elles s'éloignent de la flaque)
+    for (const y0 of [h / 2 - 44, h / 2 + 44]) for (let i = 0; i < 180; i++) { const xx = i / 180 * w, a = Math.max(0, 1 - xx / w * 1.15) * (r() < .12 ? .25 : 1);
+      x.fillStyle = `rgba(${34 + r() * 22 | 0},2,2,${(.85 * a).toFixed(3)})`; x.fillRect(xx, y0 - 3 + (r() - .5) * 1.5, w / 180 + 1, 5 + r() * 2); } }));
+  const TS = sangReel(), matS = TS.map(t => new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: .18, metalness: .05, polygonOffset: true, polygonOffsetFactor: -2 }));
+  const flaque = (x, z, y, t, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(t, t), matS[Math.floor(Math.random() * matS.length)]);
+    m.rotation.set(-Math.PI / 2, 0, ry); m.position.set(x, y + .012, z); m.renderOrder = 1; scene.add(m); };
+  for (const b of liste) { const y = sol(b.x, b.z), c = Math.cos(b.ry), sn = Math.sin(b.ry);
+    flaque(b.x + (Math.random() - .5) * .6, b.z + (Math.random() - .5) * .6, y, .9 + Math.random() * .6, Math.random() * 6.28);
+    if (b.pose === 0) { const d = Math.random() < .5 ? 1 : -1, lg = 2.6 + Math.random() * 1.8, tr = new THREE.Mesh(new THREE.PlaneGeometry(lg, 1), new THREE.MeshStandardMaterial({ map: texRoues, transparent: true, depthWrite: false, roughness: .3, polygonOffset: true, polygonOffsetFactor: -2 }));
+      tr.rotation.set(-Math.PI / 2, 0, -b.ry + (d < 0 ? Math.PI : 0)); tr.position.set(b.x + c * d * (lg / 2 + .6), y + .014, b.z - sn * d * (lg / 2 + .6)); tr.renderOrder = 1; scene.add(tr); }   // (le brancard est arrivé là en roulant dans le sang)
+    else flaque(b.x - sn * .8, b.z - c * .8, y, 1.3, Math.random() * 6.28); }   // (renversé : le corps a glissé, il a saigné à côté)
+  const lim0 = L.limites; L.limites = (x, z) => { if (lim0 && !lim0(x, z)) return false; for (const b of liste) { const dx = x - b.x, dz = z - b.z, u = dx * Math.cos(b.ry) - dz * Math.sin(b.ry), v = dx * Math.sin(b.ry) + dz * Math.cos(b.ry); if (Math.abs(u) < 1.25 && Math.abs(v) < .55) return false; } return true; };
+  brancardG = brancardG || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/sh-brancard.glb?v=1"); })().catch(() => null);
+  const nomB = o => ({ cover_mat: "drap", foots_mat: "pieds", Stretcher_mat: "brancard" })[o.material && o.material.name] || o.name;   // (la compression renomme les morceaux : on les reconnaît à leur matière)
+  brancardG.then(G => { if (!G) return; const draps = []; G.scene.updateMatrixWorld(true);
+    /* le sang sur le drap : peint sur le drap lui-même (une couleur par sommet, mêlée à sa texture), là où le corps saigne — poitrine, ventre ;
+       chaque tache, un cœur presque noir qui s'éclaircit en brun-rouge vers le bord, irrégulier, comme un tissu qui a bu le sang */
+    G.scene.traverse(o => { if (!o.isMesh || nomB(o) !== "drap" || draps.length) return; const po = o.geometry.attributes.position, n = po.count, vq = new THREE.Vector3(), P = [];
+      for (let q = 0; q < n; q++) P.push(vq.fromBufferAttribute(po, q).applyMatrix4(o.matrixWorld).clone());
+      for (let v = 0; v < 3; v++) { let s = 7 + v * 13; const r = () => (s = (s * 16807) % 2147483647) / 2147483647, col = new Float32Array(n * 3).fill(1);
+        const taches = [[-.1 + r() * .3, (r() - .5) * .08, .26 + r() * .1], [.32 + r() * .2, (r() - .5) * .1, .18 + r() * .08], [.62, (r() - .5) * .06, .12 + r() * .05]]; if (v) taches.push([-.45 + r() * .2, (r() - .5) * .14, .13 + r() * .06]);   // (le long du corps : poitrine, ventre ; parfois les jambes)
+        for (let q = 0; q < n; q++) { const p0 = P[q]; if (p0.y < .8) continue; let k = 0;
+          for (const [tx, tz, R] of taches) { const a = Math.atan2(p0.z - tz, p0.x - tx), d = Math.hypot(p0.x - tx, (p0.z - tz) * 1.3) / (R * (1 + .28 * Math.sin(a * 5 + tx * 9) + .15 * Math.sin(a * 11 + tz * 7))); k = Math.max(k, d < 1 ? 1 - d * d * .55 : d < 1.25 ? (1.25 - d) * 1.8 : 0); }
+          k = Math.min(1, k * 1.25); if (k <= 0) continue; const cr = 1 - k * .5, cg = 1 - k * .985, cb = 1 - k * .98;   // (multiplié par la texture du drap : brun-rouge au bord, presque noir au cœur)
+          col[q * 3] = cr * (1 - k * k * .62) * 1.15; col[q * 3 + 1] = cg; col[q * 3 + 2] = cb; }
+        const ge = o.geometry.clone(); ge.setAttribute("color", new THREE.BufferAttribute(col, 3)); const m2 = o.material.clone(); m2.vertexColors = true; draps.push([ge, m2]); } });
+    liste.forEach((b, i) => { const g = G.scene.clone(true); g.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.receiveShadow = true; if (nomB(o) === "drap" && draps.length) { const [ge, m2] = draps[i % draps.length]; o.geometry = ge; o.material = m2; } if (b.pose && (nomB(o) === "drap" || nomB(o) === "pieds")) o.visible = false; });
+      const y = sol(b.x, b.z); g.rotation.order = "YXZ"; g.rotation.y = b.ry;
+      if (b.pose === 1) { g.rotation.x = Math.PI / 2; g.position.set(b.x, y + .34, b.z); }   // (couché sur le flanc)
+      else if (b.pose === 2) { g.rotation.x = Math.PI; g.position.set(b.x, y + .78, b.z); }   // (retourné, les roues en l'air)
+      else { g.position.set(b.x, y, b.z);
+        const TS = sangReel(); for (const [px, t] of [[.86, .5], [-.94, .3], [.55, .4]]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(t, t * .8), new THREE.MeshStandardMaterial({ map: TS[Math.floor(Math.random() * TS.length)], transparent: true, depthWrite: false, roughness: .2, polygonOffset: true, polygonOffsetFactor: -2 }));
+          d.rotation.set(-Math.PI / 2, 0, Math.random() * 6.28); d.position.set(px, .778, (Math.random() - .5) * .16); d.renderOrder = 2; g.add(d); }   // (sur le matelas, à la tête et aux pieds — le drap, lui, a sa texture tachée)
+        flaque(b.x + Math.cos(b.ry) * .9, b.z - Math.sin(b.ry) * .9, y, .55, Math.random() * 6.28); }   // (sous la tête : ce qui a coulé du matelas)
+      scene.add(g); }); }); }
 const betes3D = {};   // (le Lying Figure ; Siam — le gros monstre aux bras énormes, de Silent Hill: Homecoming — même traitement, sans la traînée)
 function chargerBete3D(f) { return betes3D[f] = betes3D[f] || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
   return await new gltfMod.GLTFLoader().loadAsync(f); })().catch(() => null); }
