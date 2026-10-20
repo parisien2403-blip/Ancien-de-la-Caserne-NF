@@ -15456,21 +15456,40 @@ const salleVoixDe = l => !l ? null : l.startsWith("z-") ? "apo" : /^(sh-|spr-|gb
 function voixInfo() { if (M && M.ctx.surVoix) M.ctx.surVoix({ on: VX.on, n: VX.pcs.size, moi: !!VX.moiParle, autre: !!VX.autreParle }); }
 /* (qui parle : le niveau de notre micro, et celui de chaque voix reçue — le bouton s'entoure de vert quand on capte notre voix, le chiffre quand on entend quelqu'un ;
    et si notre micro ne capte rien du tout, on le dit : sur un PC, c'est souvent le mauvais micro qui est choisi) */
+/* (la mesure branchée sur une sortie muette : sans sortie, certains navigateurs ne font pas tourner la mesure, et l'on croyait le micro silencieux) */
+function voixMuet() { if (!VX.muet) { VX.muet = VX.ac.createGain(); VX.muet.gain.value = 0; VX.muet.connect(VX.ac.destination); } return VX.muet; }
 function niveau(an) { const d = new Uint8Array(an.fftSize); an.getByteTimeDomainData(d); let t = 0; for (const v of d) t += (v - 128) * (v - 128); return Math.sqrt(t / d.length) / 128; }
 function voixEcoute() { clearInterval(VX.niveauT); if (!VX.on || !VX.flux) return;
-  try { VX.ac = VX.ac || new (window.AudioContext || window.webkitAudioContext)(); if (VX.ac.state === "suspended") VX.ac.resume().catch(() => {}); VX.an = VX.ac.createAnalyser(); VX.an.fftSize = 512; VX.ac.createMediaStreamSource(VX.flux).connect(VX.an); } catch (e) { return; }
+  try { VX.ac = VX.ac || new (window.AudioContext || window.webkitAudioContext)(); if (VX.ac.state === "suspended") VX.ac.resume().catch(() => {}); VX.an = VX.ac.createAnalyser(); VX.an.fftSize = 512; VX.ac.createMediaStreamSource(VX.flux).connect(VX.an); VX.an.connect(voixMuet()); } catch (e) { return; }
   const t0 = performance.now(); let max = 0, dit = false;
   VX.niveauT = setInterval(() => { if (!VX.on) { clearInterval(VX.niveauT); return; } const n = niveau(VX.an); max = Math.max(max, n);
     let autre = false; for (const c of VX.pcs.values()) if (c.an && niveau(c.an) > .02) autre = true;
     const moi = n > .03; if (moi !== VX.moiParle || autre !== VX.autreParle) { VX.moiParle = moi; VX.autreParle = autre; voixInfo(); }
-    if (!dit && performance.now() - t0 > 9000 && max < .006) { dit = true; M && M.ctx.surInfo && M.ctx.surInfo("🎙️ Ton micro ne capte aucun son. Sur ordinateur : clique sur l'icône 🎙️ de la barre d'adresse et choisis le bon micro (et vérifie qu'il n'est pas coupé)."); } }, 150); }
+    if (!dit && performance.now() - t0 > 8000 && max < .006) { dit = true; voixChoixMicro(true); } }, 150); }
+/* (choisir son micro : sur un ordinateur, le navigateur prend souvent le mauvais — celui de la webcam, un micro débranché… ; on retient le choix) */
+async function voixChoixMicro(silence) { if (!M || !VX.on || M.choixMicroEl) return; let l = []; try { l = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audioinput"); } catch (e) {}
+  const cur = VX.flux && VX.flux.getAudioTracks()[0] && VX.flux.getAudioTracks()[0].getSettings().deviceId, d = document.createElement("div"); M.choixMicroEl = d;
+  d.style.cssText = "position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:rgba(0,0,0,.5)";
+  const n = document.createElement("div"); n.style.cssText = "width:min(88%,420px);max-height:84%;overflow:auto;padding:16px;border-radius:14px;background:#1f2a37;color:#fff;font:15px 'Lato',sans-serif;box-shadow:0 10px 30px #000"; d.appendChild(n);
+  n.innerHTML = `<b style="font-size:16px">🎙️ ${silence ? "Ton micro ne capte aucun son" : "Choisir le micro"}</b><p style="margin:6px 0 10px;font-size:13px;color:#cfd8e3">${silence ? "Ce n'est sans doute pas le bon micro. Choisis celui dans lequel tu parles :" : "Choisis celui dans lequel tu parles :"}</p>`;
+  const fermer = () => { d.remove(); if (M) { M.choixMicroEl = null; if (M.manMenu && M.manMenu.d === d) M.manMenu = null; } };
+  for (const m of l) { const b = document.createElement("button"); b.type = "button"; b.textContent = (m.deviceId === cur ? "✔ " : "") + (m.label || "Micro " + (l.indexOf(m) + 1));
+    b.style.cssText = "display:block;width:100%;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid #4b5b6e;background:" + (m.deviceId === cur ? "#c0392b" : "#2c3a4b") + ";color:#fff;font:600 14px 'Lato',sans-serif;text-align:left;cursor:pointer";
+    b.onclick = async e => { e.stopPropagation(); fermer(); await voixChangerMicro(m.deviceId); }; n.appendChild(b); }
+  if (!l.length) n.insertAdjacentHTML("beforeend", "<p>Aucun micro trouvé sur cet appareil.</p>");
+  const x = document.createElement("button"); x.type = "button"; x.textContent = "Fermer"; x.style.cssText = "margin-top:8px;padding:8px 14px;border-radius:10px;border:0;background:#55606e;color:#fff;font:700 14px 'Lato',sans-serif;cursor:pointer"; x.onclick = e => { e.stopPropagation(); fermer(); }; n.appendChild(x);
+  for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); if (!M.manMenu) M.manMenu = { d }; }
+async function voixChangerMicro(id) { if (!VX.on) return; let f; try { f = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: id }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); } catch (e) { M && M.ctx.surInfo && M.ctx.surInfo("🎙️ Ce micro ne répond pas."); return; }
+  try { localStorage.setItem("caserne-micro", id); } catch (e) {} const t = f.getAudioTracks()[0];
+  for (const c of VX.pcs.values()) for (const sd of c.pc.getSenders()) if (sd.track && sd.track.kind === "audio") sd.replaceTrack(t).catch(() => {});   // (les autres l'entendent aussitôt, sans se reconnecter)
+  if (VX.flux) for (const o of VX.flux.getTracks()) o.stop(); VX.flux = f; voixEcoute(); M && M.ctx.surInfo && M.ctx.surInfo("🎙️ Micro choisi : " + (t.label || "nouveau micro") + ". Parle : le bouton doit s'entourer de vert."); }
 function voixFermer(n) { const c = VX.pcs.get(n); if (!c) return; VX.pcs.delete(n); try { c.pc.close(); } catch (e) {} if (c.son) { c.son.srcObject = null; c.son.remove(); } voixInfo(); }
 function voixPair(n, appelle) { if (VX.pcs.has(n)) return VX.pcs.get(n);
   const pc = new RTCPeerConnection({ iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] }), c = { pc, son: null }; VX.pcs.set(n, c);
   if (VX.flux) for (const t of VX.flux.getTracks()) pc.addTrack(t, VX.flux);
   pc.onicecandidate = e => { if (e.candidate) envoyerWS({ t: "rtc", a: n, d: { ice: e.candidate.toJSON() } }); };
   pc.ontrack = e => { if (!c.son) { c.son = document.createElement("audio"); c.son.autoplay = true; c.son.playsInline = true; c.son.style.display = "none"; document.body.appendChild(c.son); } c.son.srcObject = e.streams[0]; c.son.play().catch(() => { voixDebloquer(); });
-    try { if (VX.ac) { c.an = VX.ac.createAnalyser(); c.an.fftSize = 512; VX.ac.createMediaStreamSource(e.streams[0]).connect(c.an); } } catch (er) {} };
+    try { if (VX.ac) { c.an = VX.ac.createAnalyser(); c.an.fftSize = 512; VX.ac.createMediaStreamSource(e.streams[0]).connect(c.an); c.an.connect(voixMuet()); } } catch (er) {} };
   pc.onconnectionstatechange = () => { if (["failed", "closed"].includes(pc.connectionState)) voixFermer(n); };
   if (appelle) pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => envoyerWS({ t: "rtc", a: n, d: { sdp: pc.localDescription.toJSON() } })).catch(() => voixFermer(n));
   voixInfo(); return c; }
@@ -15486,10 +15505,13 @@ function voixToutFermer() { for (const n of [...VX.pcs.keys()]) voixFermer(n); }
 function voixLieu() { if (!VX.on || !M) return; const s = salleVoixDe(M.lieu);
   if (!s) { micro(false); M.ctx.surInfo && M.ctx.surInfo("🎙️ Micro coupé : ici, on est seul."); return; }
   if (s !== VX.salle || VX.ws !== M.ws) { voixToutFermer(); VX.salle = s; VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); } }
+export const choisirMicro = () => voixChoixMicro(false);
 export const _voix = () => VX;   // (pour les essais)
 export async function micro(on) { if (!M) return false;
   if (on) { if (VX.on) return true; if (!salleVoixDe(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Pas de micro ici : on est seul dans cet univers."); return false; }
-    try { VX.flux = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    try { VX.ac = VX.ac || new (window.AudioContext || window.webkitAudioContext)(); VX.ac.resume().catch(() => {}); } catch (e) {}   // (créé tout de suite, pendant le clic : sinon il peut rester en pause, et ne rien mesurer)
+    let mic = null; try { mic = localStorage.getItem("caserne-micro"); } catch (e) {}
+    try { VX.flux = await navigator.mediaDevices.getUserMedia({ audio: { ...(mic ? { deviceId: { ideal: mic } } : {}), echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
     catch (e) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Le micro n'est pas autorisé : vérifie les autorisations du navigateur."); return false; }
     VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixEcoute(); voixInfo(); return true; }
   VX.on = false; clearInterval(VX.niveauT); VX.moiParle = VX.autreParle = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
