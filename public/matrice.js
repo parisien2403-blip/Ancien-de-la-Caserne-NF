@@ -10159,7 +10159,7 @@ function cineFinale(blanc) { if (!M) return; const moi = M.gens.get(M.moiNum); i
     if (u > 17.8) D("d", () => dire(SHN.maria, "Ils reviennent tous."));
     if (u > 20.6) D("e", () => { for (const [n, dx, dz] of AUTOUR.slice(0, 3)) { const q = M.gens.get(n); if (q) q.regardeA = null; evanouirSH(n, [p.x + dx * 4, p.z + dz * 4], 500, .7); } });   /* (ils s'en vont dans le brouillard ; elle, non) */
     if (u > 22) D("f", () => { if (he) { he.regardeA = null; he.info.allure = .35; he.cible = new THREE.Vector3(p.x - .55, p.y, p.z + .15); he.chemin = []; } });
-    if (u > 24.8) D("g", () => { if (he) he.regardeA = p; });
+    if (u > 24.8) D("g", () => { if (he) { he.regardeA = M.camera.position; he.teteVers = M.camera.position; } });   /* (elle regarde la caméra : c'est au joueur qu'elle parle) */
     if (u > 25.2) D("h", () => dire(SHN.heather, "Chut, papa… Ne te relève pas. Tu me cherches depuis si longtemps…"));
     if (u > 30.4) D("i", () => dire(SHN.heather, "Mais tu ne m'as jamais perdue. C'est moi qui t'ai fait venir ici. Moi qui fais hurler la sirène."));
     if (u > 36.4) D("j", () => dire(SHN.heather, "Tu ne te souviens pas ? Il y a sept ans… c'est toi qui m'as laissée brûler. Alors maintenant, tu brûles avec moi."));
