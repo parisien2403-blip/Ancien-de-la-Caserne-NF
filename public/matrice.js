@@ -9771,7 +9771,7 @@ function sangReel() { if (texSangR) return texSangR; texSangR = [];
   return texSangR; }
 function brancardsSH(scene, L, base) {
   const liste = [], sol = (x, z) => L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
-  if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < 10; k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
+  if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < (PETIT ? 6 : 10); k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
       if (!L.limites || !L.limites(x, z) || liste.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) continue; liste.push({ x, z, ry, pose: 0 }); } }
   if (base === "grande") for (const b of [{ x: 8.9, z: 2.6, ry: .35, pose: 0 }, { x: 6.6, z: .4, ry: 1.9, pose: 1 }, { x: 9.0, z: 11.6, ry: -.5, pose: 2 }]) if (!L.limites || L.limites(b.x, b.z)) liste.push(b);   // (pose : 0 debout, 1 couché sur le flanc, 2 retourné)
   L.brancards = liste; if (!liste.length) return;
@@ -10216,7 +10216,7 @@ function infirmiereFetes(moi, nom) { const L = M.L, mp = moi.g.position; if (mp.
     [SHN.laura, "Beaucoup de gens se réveillent ici. Tous perdus… et tous avec un nom qu'ils ont peur d'oublier."], ["moi", "Mais… qui êtes-vous ?"],
     [SHN.laura, "Disons que je suis… un peu la gardienne de ces lieux. Je veille sur ceux qui dorment ici."], [SHN.laura, "Écoutez-moi bien. Quand la sirène retentit… ne vous aventurez pas dehors. Surtout pas."],
     ["moi", "La sirène ? Attendez, je ne comprends pas…"], geste(() => { p.regardeA = null; evanouirSH(SHN.laura, [I.b.x - 3, I.b.z - 3], 500, .8); }), [null, null, 2800]],
-    () => { moi.regardeA = null; if (M.gens.has(SHN.laura) && !p.part) { p.regardeA = null; evanouirSH(SHN.laura, [I.b.x - 3, I.b.z - 3], 0, .8); } }); }
+    () => { moi.regardeA = null; setTimeout(() => M && M.lieu === "sh-fetes" && !M.cine && preparerLieu("sh-grande"), 2600);   /* (la cour se prépare tout de suite, pendant qu'on est immobile : pas en marchant vers la porte) */ if (M.gens.has(SHN.laura) && !p.part) { p.regardeA = null; evanouirSH(SHN.laura, [I.b.x - 3, I.b.z - 3], 0, .8); } }); }
 function poserPerso(num, x, z, y) { const p = persoSH(num, x, z, y); if (p && y != null && M.L.yNiv && y < -.5) p.nivMess = 1; if (p && y != null && Math.abs(p.g.position.y - y) > .5) p.g.position.y = y; return p; }
 function presSH(num, r, dyMax = 1.6) { const moi = moiApo(), p = M.gens.get(num); if (!moi || !p || M.cine || M.shMort) return false;
   return Math.hypot(moi.g.position.x - p.g.position.x, moi.g.position.z - p.g.position.z) < r && Math.abs(moi.g.position.y - p.g.position.y) < dyMax; }
@@ -13529,7 +13529,8 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   trace("construit " + id); M.trace1 = true;
   /* le lieu qu'on quitte : dans la vraie caserne, on le garde tout prêt (on y revient souvent, et on arrive près de sa porte : le reconstruire tout de suite figeait l'image
      quelques secondes en entrant) ; ailleurs, il est libéré un peu plus tard */
-  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(lieuAvant) && !ancL.apo && !ancL.sh && !ancL.gb;
+  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : !ancL.apo);   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
+    if (garder && ancL.sh) { for (const m of M.shMonstres || []) for (const o of [!m.p && m.g, m.lf && m.lf.g]) if (o && o.parent) o.parent.remove(o); M.shMonstres = []; M.shPopL = null; }   // (ses monstres ne restent pas plantés là : on les remet en arrivant)
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
@@ -15235,7 +15236,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, construireScene, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
