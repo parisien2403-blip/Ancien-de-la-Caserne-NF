@@ -9694,10 +9694,13 @@ function dialogueSH(num, lignes, fin, opt = {}) {
   const p0 = M.gens.get(num);
   /* (trop loin, ou de biais : il s'approche de nous, à pas lents, pour parler face à face) */
   if (p0 && !p0.part && !p0.regardeA && p0.info.heros >= 69 && p0.info.heros !== 111) { const a = moi.g.position, b = p0.g.position, d = Math.hypot(a.x - b.x, a.z - b.z);
-    if (d > 2.6 && Math.abs(a.y - b.y) < 1) { const k = (d - 1.9) / d, t = placeLibre(b.x + (a.x - b.x) * k, b.z + (a.z - b.z) * k); if (t) { p0.info.allure = .5; p0.cible = new THREE.Vector3(t[0], b.y, t[1]); p0.chemin = []; } } }
+    if (d > 2.6 && Math.abs(a.y - b.y) < 1) { const a0 = Math.atan2(b.x - a.x, b.z - a.z), autres = [...M.gens.values()].filter(q => q !== p0 && q !== moi && q.info.heros >= 69 && !q.part).map(q => q.g.position);
+      let t = null; for (const k of [0, 1, -1, 2, -2, 3, -3]) { const an = a0 + k * .38, x = a.x + Math.sin(an) * 2.1, z = a.z + Math.cos(an) * 2.1;   /* (à côté d'un autre, pas collé à lui : James arrivait contre Maria) */
+        if (M.L.limites(x, z) && !autres.some(o => Math.hypot(o.x - x, o.z - z) < 1.6)) { t = [x, z]; break; } }
+      t = t || placeLibre(b.x + (a.x - b.x) * (d - 1.9) / d, b.z + (a.z - b.z) * (d - 1.9) / d); if (t) { p0.info.allure = .5; p0.cible = new THREE.Vector3(t[0], b.y, t[1]); p0.chemin = []; } } }
   let i = -1, tProchain = 500, fini = false, cote = 0, clk = 0, prec = performance.now();   /* (clk : le temps de la scène, image par image — un téléphone qui rame ne saute pas de réplique) */
   if (opt.musique !== false) musiqueRencontre(true); else for (const a of [M.musExplo, M.musReveil]) if (a) { try { a.pause(); } catch (e) {} a.volume = 0; }
-  const finir = () => { if (fini) return; M.shRegard = null; M.shParle = false; if (regMoi && moi.regardeA === regMoi) moi.regardeA = null; fini = true; if (opt.musique !== false) musiqueRencontre(false); for (const l of lignes.slice(i + 1)) if (typeof l === "function" && l.toujours) l(); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } finCine(); placerCamera(true); fin && fin(); };
+  const finir = () => { if (fini) return; M.shRegard = null; M.shParle = false; for (const q of M.gens.values()) q.teteVers = null; if (regMoi && moi.regardeA === regMoi) moi.regardeA = null; fini = true; if (opt.musique !== false) musiqueRencontre(false); for (const l of lignes.slice(i + 1)) if (typeof l === "function" && l.toujours) l(); if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } finCine(); placerCamera(true); fin && fin(); };
   M.passerBtn = boutonPasser(finir); M.shParle = true; const regMoi = p0 && !moi.regardeA ? p0.g.position : null; if (regMoi) moi.regardeA = regMoi;   /* (et nous, face à lui) */
   M.shRegard = null;
   let parle = num;   /* (la caméra se tourne vers celui qui parle) */
@@ -9982,8 +9985,11 @@ function animerBetesSH(now, dt) {
   for (const m of M.shMonstres) { const mar = mar2; const memeEtage = !etg || !moi || etageDe(moi) === m.n;
     if (m.p) { if (!M.gens.has(m.p.info.numero)) continue; m.g = m.p.g; }
     else m.g.visible = memeEtage;
-    if (m.ph3) pyr3D(m, now, dt, moi);   /* (Pyramid Head en 3D : d'après sa position à l'image d'avant) */
+    /* (pendant une cinématique ou une conversation : les monstres qui n'en font pas partie s'effacent, et attendent — on ne voyait qu'eux, derrière Lisa) */
+    const horsScene = M.cine && !m.cine && !m.mortT && !m.p && !m.statique; if (horsScene) m.g.visible = false;
+    if (m.ph3) pyr3D(m, now, horsScene ? 0 : dt, moi);   /* (Pyramid Head en 3D : d'après sa position à l'image d'avant) */
     if (m.lf) lyingAnim(m, now, dt);   /* (le Lying Figure en 3D) */
+    if (horsScene) continue;
     if (m.statique && !m.mortT) continue;   /* (une personne, que Pyramid Head vise : elle reste un bonhomme) */
     if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); m.mesh.material.transparent = true; m.mesh.material.opacity = f; m.lame.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = f; } }); if (!f) m.g.visible = false; }
     if (m.fige) { if (m.lame) { m.lame.rotation.z = .3; m.g.scale.x = -(m.sens || 1); } continue; }   /* (Pyramid Head, arrêté net) */
@@ -10136,11 +10142,12 @@ function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess" || 
 function jamesTerrasse(H) { const moi = moiApo(); if (!moi || !M.L.sh) return; if (M.cine) { setTimeout(() => M && jamesTerrasse(H), 800); return; } const mp = moi.g.position, nom = prenomSH();
   /* (il arrive par la terrasse : un point de la terrasse, à 3 m de nous, loin de l'escalier) */
   let q = null, bz = 1e9; for (let k = 0; k < 48; k++) { const a = k / 48 * 6.283, r = 2.6 + (k % 3) * .6, x = mp.x + Math.cos(a) * r, z = mp.z + Math.sin(a) * r;
+    const ma = M.gens.get(SHN.maria); if (ma && Math.hypot(ma.g.position.x - x, ma.g.position.z - z) < 2) continue;   /* (pas contre Maria : un peu à l'écart) */
     if (!M.L.limites(x, z) || Math.abs(M.L.hauteur(x, z, { g: { position: { y: H.y } } }) - H.y) > .1) continue; if (z < bz) { bz = z; q = [x, z]; } }
   q = q || [mp.x - 2.6, mp.z - 1]; const pj = apparaitreSH(poserPerso(SHN.james, q[0], q[1], H.y)); if (pj) noterCarteSH(SHN.james, H.x, H.z);
-  dialogueSH(SHN.james, [[null, null, 1600], [SHN.james, `${nom} ! Ne la crois pas !`], [SHN.james, "Maria n'existe pas. C'est ce lieu qui l'a inventée, de toutes pièces… Elle n'est que ça : une pure invention de cet endroit."],
-    [SHN.james, "Elle te dira tout ce que tu veux entendre. Elle te mènera droit à lui."], [SHN.maria, "James… tu es jaloux ? Tu as toujours été jaloux."],
-    [SHN.maria, `Tu veux revoir ta fille, ${nom}, oui ou non ? Lui, il ne sait que fuir. Moi, je sais où elle est.`], [SHN.james, "Réfléchis bien. Après, il sera trop tard."], [null, null, 500]],
+  dialogueSH(SHN.james, [[null, null, 1600], [SHN.james, `${nom} ! Ne la crois pas !`], geste(() => { const j = M.gens.get(SHN.james), m = M.gens.get(SHN.maria); if (j && m) j.teteVers = m.g.position; }), [SHN.james, "Maria n'existe pas. C'est ce lieu qui l'a inventée, de toutes pièces… Elle n'est que ça : une pure invention de cet endroit."],
+    [SHN.james, "Elle te dira tout ce que tu veux entendre. Elle te mènera droit à lui."], geste(() => { const j = M.gens.get(SHN.james), m = M.gens.get(SHN.maria); if (j && m) { m.teteVers = j.g.position; j.teteVers = m.g.position; } }), [SHN.maria, "James… tu es jaloux ? Tu as toujours été jaloux."],
+    geste(() => { const j = M.gens.get(SHN.james), m = M.gens.get(SHN.maria); if (m) m.teteVers = null; if (j) j.teteVers = null; }), [SHN.maria, `Tu veux revoir ta fille, ${nom}, oui ou non ? Lui, il ne sait que fuir. Moi, je sais où elle est.`], [SHN.james, "Réfléchis bien. Après, il sera trop tard."], [null, null, 500]],
     () => choixSH("Que fais-tu ?", [["Suivre Maria", () => suivreMaria(H)], ["Rester avec James", () => resterJames(H)]])); }
 // un choix, à l'écran : deux grands boutons ; la caméra reste sur la scène
 function choixSH(question, options) { const moi = moiApo(); if (!moi) return; const c0 = M.camera.position.clone(), q0 = M.camera.quaternion.clone(); M.cine = { maj: () => { M.camera.position.copy(c0); M.camera.quaternion.copy(q0); } };
@@ -12497,10 +12504,17 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   else if (M.cine && M.shParle && p.info.heros >= 69 && p.info.heros !== 100 && !p.part) { const mo = M.gens.get(M.moiNum); if (mo && mo !== p) { let d = Math.atan2(mo.g.position.x - q.x, mo.g.position.z - q.z) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 3); } }   // (dans une conversation : il nous fait face — James arrivait de dos)
   const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
-  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
+  if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt); teteAv3(p, A, dt);
   A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
   if (p.poseCine || A.poseC) poseCine3D(p, A);
   if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
+/* la tête qui se tourne vers quelqu'un (p.teteVers), sans tourner le corps : James vers Maria quand il parle d'elle, Maria vers James */
+function teteAv3(p, A, dt) { const r = p.teteVers, q = p.g.position; let c = 0;
+  if (r) { let d = Math.atan2(r.x - q.x, r.z - q.z) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); c = Math.max(-1.1, Math.min(1.1, d)); }
+  A.teteA = (A.teteA || 0) + (c - (A.teteA || 0)) * Math.min(1, dt * 4); if (!r && Math.abs(A.teteA) < .01) { A.teteA = 0; return; }
+  if (A.teteAnim == null) { A.teteAnim = !!(A.act.idle && A.act.idle.getClip().tracks.some(t => /Head\.quaternion/.test(t.name))); A.teteRep = {}; for (const n of ["Neck", "Head"]) { const b = os3D(A, n); if (b) A.teteRep[n] = b.quaternion.clone(); } }
+  if (!A.teteAnim) for (const n in A.teteRep) os3D(A, n).quaternion.copy(A.teteRep[n]);   // (sans animation de la tête : on repart de sa pose, sinon elle tournerait sans fin)
+  tourne3D(A, "Neck", "y", A.teteA * .4); tourne3D(A, "Head", "y", A.teteA * .6); }
 /* un héros mort : il tombe à genoux, puis en avant, face contre le sol, et y reste
    (les genoux restent en place : le corps bascule autour d'eux, les jambes se déplient pour rester à plat derrière lui) */
 const _vk = () => new THREE.Vector3();
