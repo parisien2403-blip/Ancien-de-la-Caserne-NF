@@ -8134,6 +8134,8 @@ export async function apercuLieu(conteneur, id) {
   return { rendu, scene, camera };
 }
 
+/* précharger, pendant qu'on est encore sur l'accueil : le moteur 3D, le chargeur de modèles, et notre bonhomme en 3D — à l'entrée dans la caserne, tout est prêt */
+export async function precharger(numero) { try { THREE = THREE || await import(window.CASERNE_THREE || THREE_URL); const l = AVATARS_3D[Number(numero)]; if (l) for (const t of l) await chargerAvatar3D(t.f); else { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); } } catch (e) {} }
 export async function ouvrir(ctx) {
   // ctx : { conteneur, moi, token, admin, urlTete(numero, v), surFil(liste), surPresents(liste), surComptes(c), surInfo(t), surErreur(t), surLieu(id), surToucherAncien(p) }
   if (M) fermer();
@@ -8497,7 +8499,7 @@ export async function ouvrir(ctx) {
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
     animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
-    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.info.heros >= 69 && p.corps) p.corps.visible = false;   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
+    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (p.info.heros >= 69 || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -9423,6 +9425,10 @@ function ouvrirCarteSH() { if (!M || M.cadranEl) return;
   W.carteMan = { zoom: f => zoomer(zoom * f), defiler: (x, y) => { d.scrollLeft += x; d.scrollTop += y; }, fermer: () => b.onclick() }; }
 // l'onglet « Carte » : une fois la carte ramassée, à Silent Hill
 /* (les boutons Carte, Lampe, Clé : empilés juste sous l'arme et les vies — sur un téléphone, à position fixe, « Carte » tombait sur les vies) */
+/* les personnages de l'étape en cours, et de la suivante, chargés en avance, un à un, quand le téléphone a un moment : avant, chacun se chargeait en apparaissant (James : 2,3 Mo), et le jeu saccadait */
+const SH_A_VENIR = { 0: [72, 73, 71], 1: [71, 110], 2: [110, 69], 3: [69, 73], 4: [73, 72], 5: [72, 69], 6: [72, 110], 7: [110, 111], 8: [111, 73], 9: [73, 71], 10: [73, 71], 11: [71, 69], 12: [72], 13: [72] };
+function prechargerPersosSH() { if (M.shPreEnCours) return; const f = (SH_A_VENIR[M.shEtape] || []).map(id => HEROS_3D[id]).find(x => x && !av3Cache[x]); if (!f) return;
+  M.shPreEnCours = true; const go = () => chargerAvatar3D(f).finally(() => { if (M) M.shPreEnCours = false; }); if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 200); }
 function placerBoutonsSH() { const c = M.ctx && M.ctx.conteneur, a = document.getElementById("mxApo"); if (!c) return; const rc = c.getBoundingClientRect();
   let y = 52; if (a && !a.hidden) { const ra = a.getBoundingClientRect(); if (ra.height) y = ra.bottom - rc.top + 8; }
   for (const el of [M.carteBtn, M.lampeBtn, M.cleEl]) { if (!el || !el.isConnected) continue; const t = Math.round(y) + "px"; if (el.style.top !== t) el.style.top = t; y += el.offsetHeight + 7; } }
@@ -10424,6 +10430,7 @@ function peuplerSH(now) {
   if (M.shPopL !== M.L) { for (const m of M.shMonstres || []) { if (!m.p) M.scene.remove(m.g); if (m.lf) M.scene.remove(m.lf.g); } M.shPopL = M.L; M.shMonstres = [];
     if (M.shEtape === 8) { M.shEddieVu = false; M.shAlessa = null; }   /* (on a fui Alessa : elle reviendra, là-haut, au bout du couloir) */ if (M.shEtape === 11 && M.lieu === "sh-rue") M.shEtape = 10;   /* (on a fui Pyramid Head dans la rue : la scène se rejoue, on n'est pas bloqué) */ if (moiApo()) lacherBetesSH(); else M.shPopL = null; }
   if (!M.shPlaceT || now - M.shPlaceT > 400) { M.shPlaceT = now; placerBoutonsSH(); }
+  if (!M.shPreT || now - M.shPreT > 2500) { M.shPreT = now; prechargerPersosSH(); }
   histoireSH(now); animerBetesSH(now, dt); pousserCartons(); lieuxVusSH(); contournerSH(); flaconsSH();
   if (M.lieu === "sh-grande" && !M.shCroix) { const q = moiApo(); if (q && Math.hypot(q.g.position.x - (ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, q.g.position.z - (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2) < 7 && Math.abs(q.g.position.y) < 1) M.shCroix = true; }   /* (la route effondrée, vue : une croix rouge sur la carte) */
 }
@@ -12467,7 +12474,11 @@ function girthAv3(A) { if (A.girthOK) return; A.girthOK = true; const vus = new 
 function lookAv3(A, info) { const a = (!info.heros && info.av3) || {},   /* (un héros de Resident Evil garde ses couleurs, pas celles de notre personnage) */ C = a.c || {}, U = A.U, hx = (v, u) => { if (v) { const c = new THREE.Color(v); c.convertSRGBToLinear(); u.value.set(c.r, c.g, c.b, 1); } else u.value.w = 0; };
   hx(C.haut, U.uHaut); hx(C.bas, U.uBas); hx(C.pieds, U.uPieds); }
 function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); corpsAv3(p, p.av3); return; }
-  chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
+  p.av3T = p.av3T || performance.now();
+  chargerAvatar3D(T.f).then(async A => { if (!A) { p.av3Rate = true; return; } if (!M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return;
+    /* (ses shaders compilés à part, sans geler l'image : avant, le jeu ralentissait quelques secondes à l'entrée) */
+    if (!A.pret && M.rendu.compileAsync) { A.pret = A.pret || Promise.race([M.rendu.compileAsync(A.sc, M.camera, M.scene).catch(() => {}), new Promise(r => setTimeout(r, 3000))]); } if (A.pret) await A.pret;
+    if (!M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
     A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A);
     // (Maria, Angela, dans le brouillard sombre de Silent Hill : un peu de sa propre lumière, sinon on ne voyait qu'une ombre noire)
     if (p.info.heros >= 69 && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
