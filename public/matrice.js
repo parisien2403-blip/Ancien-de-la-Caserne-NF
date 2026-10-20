@@ -9425,7 +9425,7 @@ function ouvrirCarteSH() { if (!M || M.cadranEl) return;
 function majBoutonCle() { if (!M || !M.ctx) return; const voir = !!(M.shCleMess && !M.shMessOuvert && estSH(M.lieu));
   if (!voir) { if (M.cleEl) { M.cleEl.remove(); M.cleEl = null; } return; } if (M.cleEl) return;
   const d = document.createElement("div"); d.title = "Clé du mess"; d.style.cssText = "position:absolute;left:10px;top:212px;z-index:7;display:flex;align-items:center;gap:6px;border:1.5px solid #8a6a4a;border-radius:10px;padding:4px 10px 4px 4px;background:rgba(30,22,14,.85);color:#efe6d4;font:800 12px 'Lato',sans-serif;pointer-events:none";
-  d.innerHTML = `<img src="${dessinCle().toDataURL()}" alt="" style="width:30px;height:34px;object-fit:contain">Clé du mess`; M.ctx.conteneur.appendChild(d); M.cleEl = d; }
+  d.innerHTML = `<img src="images/sh/cle-mess.webp" alt="" style="width:30px;height:34px;object-fit:contain">Clé du mess`; M.ctx.conteneur.appendChild(d); M.cleEl = d; }
 function majBoutonCarte() { if (!M || !M.ctx) return; if (!estSH(M.lieu)) rappelBarSH(false); majBoutonLampe(); majBoutonCle(); const voir = !!(M.shCarteOK && estSH(M.lieu));
   if (!voir) { if (M.carteBtn) { M.carteBtn.remove(); M.carteBtn = null; } return; }
   if (M.carteBtn) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "🗺️ Carte";
@@ -10030,15 +10030,9 @@ function resterJames(H) { M.shChoix = "james";
     [SHN.james, "Tu as fait le bon choix."], [SHN.james, "Tiens. J'ai trouvé ça sur le corps d'un garde. Elle ouvre le mess. Il y a peut-être une issue, par là-bas."], geste(() => { M.shCleMess = true; montrerCleMess(); majBoutonCarte(); }, true),
     ["moi", "Merci, James. Et toi ?"], [SHN.james, `Moi… je dois retrouver ma femme. Bon courage, ${prenomSH()}.`], geste(() => evanouirSH(SHN.james, [H.x - 6, H.z + 4], 600, .9)), [null, null, 2400]],
     () => { M.shCleMess = true; evanouirSH(SHN.maria, [H.x + 6, H.z + 4], 0, .55); evanouirSH(SHN.james, [H.x - 6, H.z + 4], 0, .9); M.shEtape = 6; M.shMariaMess = true; }); }
-// la clé du mess, montrée en grand à l'écran
-let texCleC = null;
-function dessinCle() { return texCleC || (texCleC = toile(260, 300, (x) => { x.translate(130, 150); x.rotate(-.75); const rouille = (a, b) => { const g = x.createLinearGradient(-10, 0, 10, 0); g.addColorStop(0, a); g.addColorStop(.5, b); g.addColorStop(1, a); return g; };
-  x.strokeStyle = rouille("#4a3220", "#8a6a4a"); x.lineWidth = 14; x.beginPath(); x.arc(0, -105, 26, 0, 7); x.stroke();   // l'anneau
-  x.fillStyle = rouille("#4a3220", "#8a6a4a"); x.fillRect(-5, -80, 10, 175); x.beginPath(); x.ellipse(0, 20, 9, 12, 0, 0, 7); x.fill();   // la tige, la bague
-  x.beginPath(); x.moveTo(-5, 70); x.lineTo(30, 70); x.lineTo(30, 80); x.lineTo(22, 80); x.lineTo(22, 88); x.lineTo(30, 88); x.lineTo(30, 100); x.lineTo(-5, 100); x.closePath(); x.fill();   // le panneton
-  x.fillStyle = "rgba(120,60,30,.45)"; for (let k = 0; k < 40; k++) x.fillRect(-14 + Math.random() * 46, -130 + Math.random() * 230, 3, 3); })); }
+// la clé du mess (celle de Silent Hill 1), montrée en grand à l'écran
 function montrerCleMess() { const d = voile("display:grid;place-items:center;background:rgba(0,0,0,.6);opacity:0;transition:opacity .5s", 3600);
-  d.innerHTML = `<div style="text-align:center"><img src="${dessinCle().toDataURL()}" alt="" style="width:min(46vw,200px);filter:drop-shadow(0 6px 14px rgba(0,0,0,.8))"><div style="font:900 22px 'Marcellus',serif;color:#efe6d4;letter-spacing:.1em;margin-top:6px;text-shadow:0 2px 6px #000">CLÉ DU MESS</div></div>`;
+  d.innerHTML = `<div style="text-align:center"><img src="images/sh/cle-mess.webp" alt="" style="width:min(40vw,170px);filter:drop-shadow(0 6px 14px rgba(0,0,0,.8))"><div style="font:900 22px 'Marcellus',serif;color:#efe6d4;letter-spacing:.1em;margin-top:6px;text-shadow:0 2px 6px #000">CLÉ DU MESS</div></div>`;
   requestAnimationFrame(() => d.style.opacity = "1"); setTimeout(() => { d.style.opacity = "0"; }, 3000); sonBruit(.25, 3000, .3); }
 /* l'escorte de Maria, de la terrasse au mess : elle marche devant (elle nous attend si l'on traîne) ; un monstre approche, elle court se mettre derrière nous.
    Les monstres s'en prennent à elle aussi : cinq coups, et elle meurt — et pour nous, c'est la fin (retour en 1990) */
@@ -15111,7 +15105,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
