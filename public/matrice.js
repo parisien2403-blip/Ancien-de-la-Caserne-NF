@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.04";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.05";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10684,6 +10684,12 @@ function abimerCabine(g) { const Lc = 1.05, bois = [0x7a6648, 0x6a5638, 0x8a7656
   const f = sang(.9, .9, 0, .056, 0, 0, 3); f.rotation.x = -Math.PI / 2;
   const fil = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .55, 6), new THREE.MeshStandardMaterial({ color: 0x111111 })); fil.position.set(.12, .8, -Lc / 2 + .2); fil.rotation.z = .25; g.add(fil);
   const comb = new THREE.Mesh(new THREE.CapsuleGeometry(.03, .16, 4, 8), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .5 })); comb.position.set(.2, .5, -Lc / 2 + .25); comb.rotation.z = .3; g.add(comb); }
+/* le vieux bus de Resident Evil 2, accidenté en travers de la rue (la sur la chaussée, dans le sens de la rue, un peu de travers) : on passe à côté, par le trottoir */
+function busApo(scene, L) { const X = -26, Z = 3.6, LG = 11, TH = Math.PI / 2 + .07;
+  const lim0 = L.limites; L.limites = (x, z) => { if (lim0 && !lim0(x, z)) return false; const dx = x - X, dz = z - Z, c = Math.cos(TH), s = Math.sin(TH), u = dx * s + dz * c, v = dx * c - dz * s; return !(Math.abs(u) < LG / 2 + .2 && Math.abs(v) < 1.5 + .2); };   // (on ne le traverse pas)
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-bus.glb?v=1"); if (!M) return; const sc = g.scene;
+    sc.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(sc), k = LG / ((b.max.z - b.min.z) || 1), w = new THREE.Group(); sc.scale.multiplyScalar(k); sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
+    sc.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); w.add(sc); w.position.set(X, (L.hauteur ? L.hauteur(X, Z) : 0) || 0, Z); w.rotation.set(0, TH, .035); scene.add(w); L.busApo = w; })().catch(() => {}); }
 function apocalypse(scene, L, base) {
   texturesApo();
   L.apo = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;
@@ -12384,7 +12390,7 @@ function construireScene(id) {
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
     };
   }
-  if (estApo(id)) apocalypse(scene, L, baseLieu(id));
+  if (estApo(id)) { apocalypse(scene, L, baseLieu(id)); if (baseLieu(id) === "rue") busApo(scene, L); }   // (le bus de Resident Evil 2, dans la rue)
   if (estSH(id)) silentHill(scene, L, baseLieu(id));
   const repere = new THREE.Mesh(new THREE.RingGeometry(.35, .5, 32), new THREE.MeshBasicMaterial({ color: 0xf6d465, transparent: true, opacity: 0 }));
   repere.rotation.x = -Math.PI / 2; repere.position.y = .04; scene.add(repere);
