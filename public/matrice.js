@@ -10152,7 +10152,7 @@ function cineFinale(blanc) { if (!M) return; const moi = M.gens.get(M.moiNum); i
     if (!places) { places = true; for (const [n, dx, dz] of AUTOUR) { const q = poserPerso(n, p.x + dx, p.z + dz, p.y); if (q) { q.cible = null; q.chemin = []; q.regardeA = p; q.regardeVite = true; } } }
     const he = M.gens.get(SHN.heather);
     if (u < 23 || !he) { M.camera.position.set(p.x - .4, p.y + 2.5, p.z + 2.9); M.camera.lookAt(p.x, p.y + .7, p.z - .3); }   /* (de haut : lui, par terre, et eux, debout autour) */
-    else { const h = he.g.position, ex = h.x - p.x, ez = h.z - p.z, el = Math.hypot(ex, ez) || 1; M.camera.position.set(p.x - ex / el * .7 + ez / el * .5, p.y + .55, p.z - ez / el * .7 - ex / el * .5); M.camera.lookAt(h.x, p.y + 1.45, h.z); }   /* (au ras du sol, de là où il est couché : elle, penchée sur lui) */
+    else { const h = he.g.position, ex = h.x - p.x, ez = h.z - p.z, el = Math.hypot(ex, ez) || 1; M.camera.position.set(p.x - ex / el * 1.05 + ez / el * .55, p.y + .6, p.z - ez / el * 1.05 - ex / el * .55); M.camera.lookAt(h.x, p.y + 1.25, h.z); }   /* (au ras du sol, de là où il est couché : elle, penchée sur lui) */
     if (u > 3.4) D("a", () => dire(SHN.maria, `Je te l'avais dit, ${nom}… que tu reviendrais.`));
     if (u > 7.8) D("b", () => dire(SHN.laura, "Le pauvre… Il ne sait toujours pas. Il va revivre cette nuit encore, et encore… éternellement."));
     if (u > 13.2) D("c", () => dire(SHN.james, "Laissez-le. Je suis persuadé qu'un jour, il finira par faire le bon choix."));
