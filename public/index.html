@@ -1512,6 +1512,7 @@
     <label class="reglage"><span>📷 Changer ma photo</span>›<input type="file" accept="image/*" id="rPhotoFile" hidden></label>
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
+    <button type="button" class="btn small alt" id="rNotifTest" style="margin:0 4px 10px">🔔 Tester une notification</button>
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
     <button class="reglage" id="rEscalier"><span>🏢 Mon escalier et mon étage</span><span id="rEscEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
@@ -3182,6 +3183,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.01", "20 octobre 2026", ["Dans les réglages, un bouton « Tester une notification » : il active les notifications si besoin, et en envoie une vraie à l'appareil"]],
     ["6.00", "20 octobre 2026", ["Les vraies notifications, sur téléphone et sur PC, même l'appli fermée : le courrier qui te concerne, et chaque mise à jour de la caserne", "À la connexion, l'appli propose de les activer (une fois par semaine au plus, si on a dit « Plus tard ») ; ceux qui les avaient déjà activées sont abonnés tout seuls", "Dans les réglages, le bouton 🔔 envoie une notification d'essai", "Le micro écarte tout seul les faux micros (Steam, câbles audio virtuels, mixage stéréo) et prend le vrai micro de l'ordinateur"]],
     ["5.99", "20 octobre 2026", ["Mon personnage 3D : un nouveau choix, « Mon ancien bonhomme », pour reprendre son ancien personnage (et revenir à la 3D quand on veut)", "Le micro : si ton micro ne capte rien, la liste des micros de l'appareil s'affiche pour choisir le bon (retenu pour la suite) ; clic droit ou appui long sur 🎙️ pour la rouvrir"]],
     ["5.98", "20 octobre 2026", ["Silent Hill : la radio, plus petite, se ramasse au comptoir avec la lampe et la carte (le rappel la cite) ; un bouton Radio permet de l'éteindre pour rentrer", "Le rappel du bar se ferme aussi à la manette (A ou B)", "Le micro : le bouton s'entoure de vert quand ton micro capte ta voix, le chiffre passe au vert quand tu entends quelqu'un ; si ton micro ne capte rien, un message te le dit", "Une fiche technique de chaque appareil (carte graphique, erreurs d'affichage) arrive dans les signalements de l'administrateur, pour comprendre les soucis d'affichage à distance"]],
@@ -3804,6 +3806,16 @@
     if (!ok) return; const r = await abonnerPush(true);
     if (r === "ok") { $("rNotif").checked = true; $("rNotifInfo").textContent = "Activées : courrier et mises à jour."; }
     else if (r === "refuse") garde("Les notifications sont bloquées pour ce site. Tu peux les autoriser dans les réglages du navigateur (le cadenas à côté de l'adresse), puis les activer dans tes réglages.", { titre: "🔔 Notifications bloquées" }); }
+  // le test : on s'abonne s'il le faut, puis le serveur envoie une vraie notification à cet appareil (et aux autres appareils du membre)
+  $("rNotifTest").onclick = async () => { const b = $("rNotifTest"), info = $("rNotifInfo"); b.disabled = true; info.textContent = "Envoi en cours…";
+    try { if (!("Notification" in window)) { info.textContent = /iphone|ipad|ipod/i.test(navigator.userAgent) ? infoIphone : "Ce navigateur ne permet pas les notifications."; return; }
+      const r = await abonnerPush(true);
+      if (r === "refuse") { info.textContent = "Les notifications sont bloquées pour ce site : autorise-les dans les réglages du navigateur (le cadenas à côté de l'adresse), puis réessaie."; return; }
+      if (r !== "ok") { info.textContent = /iphone|ipad|ipod/i.test(navigator.userAgent) ? infoIphone : "Ce navigateur ne permet pas les notifications appli fermée."; return; }
+      $("rNotif").checked = true; ecrire("caserne-notif-non", false);
+      const x = await api("POST", "/api/push/essai");
+      info.textContent = x.appareils ? `Notification envoyée (${x.appareils} appareil${x.appareils > 1 ? "s" : ""}). Elle doit apparaître dans quelques secondes — si rien n'arrive, vérifie que les notifications de Chrome ne sont pas coupées sur l'appareil (mode « Ne pas déranger », réglages de notifications).` : "L'envoi n'a pas abouti : réessaie dans un instant.";
+    } catch (e) { info.textContent = "Erreur : " + e.message; } finally { b.disabled = false; } };
   $("rNotif").onchange = async e => {
     if (!e.target.checked) { ecrire("caserne-notif", false); ecrire("caserne-notif-non", true); desabonnerPush(); $("rNotifInfo").textContent = "Notifications désactivées."; return; }
     ecrire("caserne-notif-non", false);
