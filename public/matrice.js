@@ -8497,7 +8497,7 @@ export async function ouvrir(ctx) {
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
     animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
-    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.info.heros === 72 && p.corps) p.corps.visible = false;   // (Maria : pas de silhouette plate en attendant son modèle 3D)
+    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.info.heros >= 69 && p.corps) p.corps.visible = false;   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[72]);   // (Maria en 3D : chargée d'avance)
+function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[72]); chargerAvatar3D(HEROS_3D[71]);   // (Maria, Angela en 3D : chargées d'avance)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9612,7 +9612,7 @@ function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.sh
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
-  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...(id === 72 ? { heros: 72 } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (Maria : en 3D)
+  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...(id === 72 || id === 71 ? { heros: id } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (Maria, Angela : en 3D)
   p.cleInfo = ci.cle; p.info.allure = .5; if (y != null) p.g.position.y = y; return p; }
 /* un brouillard épais qui monte d'un coup, là où quelqu'un arrive ou s'en va : de gros nuages autour de lui, et toute la scène qui se bouche un instant */
 let texBrumeC = null;
@@ -9732,7 +9732,17 @@ function frappePyr(m, now, dJ, moi) { const voisin = M.shMonstres.find(o => o !=
 // un monstre coupé en deux : le bas s'effondre, le haut est projeté et retombe ; du sang partout
 function couperEnDeux(o, now, par) { o.mortT = now; o.flashT = now + 300; o.coupe = true; o.mesh.visible = false;
   const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); o.coupeSens = ((o.x - par.x) * dr.x + (o.z - par.z) * dr.z) >= 0 ? 1 : -1;
-  o.moities = [0, 1].map(h => { const g = new THREE.PlaneGeometry(1, .5); g.translate(0, .25, 0); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * .5 + h * .5);
+  const P3 = o.p3, A3 = P3 && P3.av3;
+  if (A3 && A3.sc.visible) {   // (en 3D — Angela : son corps, tel qu'il est à cet instant, coupé en deux à la taille)
+    P3.coupe3D = true; A3.sc.updateMatrixWorld(true); o.g.updateMatrixWorld(true); const inv = o.g.matrixWorld.clone().invert(), cut = o.mesh.scale.y * .5, v = new THREE.Vector3(), moities = [new THREE.Group(), new THREE.Group()];
+    A3.sc.traverse(me => { if (!me.isMesh) return; const g = me.geometry, pos = g.attributes.position, n = pos.count, P2 = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { if (me.isSkinnedMesh) me.getVertexPosition(i, v); else v.fromBufferAttribute(pos, i); v.applyMatrix4(me.matrixWorld).applyMatrix4(inv); P2[i * 3] = v.x; P2[i * 3 + 1] = v.y; P2[i * 3 + 2] = v.z; }
+      const idx = g.index ? g.index.array : Array.from({ length: n }, (_, i) => i);
+      for (const h of [0, 1]) { const I = []; for (let t = 0; t < idx.length; t += 3) { const yc = (P2[idx[t] * 3 + 1] + P2[idx[t + 1] * 3 + 1] + P2[idx[t + 2] * 3 + 1]) / 3; if ((yc >= cut) === (h === 1)) I.push(idx[t], idx[t + 1], idx[t + 2]); } if (!I.length) continue;
+        const ng = new THREE.BufferGeometry(); ng.setAttribute("position", new THREE.BufferAttribute(h ? P2.map((x, k) => k % 3 === 1 ? x - cut : x) : P2.slice(), 3)); if (g.attributes.uv) ng.setAttribute("uv", g.attributes.uv); ng.setIndex(I); ng.computeVertexNormals();
+        const mt = me.material.clone(); mt.transparent = true; mt.side = THREE.DoubleSide; moities[h].add(new THREE.Mesh(ng, mt)); } });
+    moities[1].position.y = cut; moities.forEach(m => o.g.add(m)); o.moities = moities; A3.sc.visible = false; }
+  else o.moities = [0, 1].map(h => { const g = new THREE.PlaneGeometry(1, .5); g.translate(0, .25, 0); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * .5 + h * .5);
     const mt = o.mesh.material.clone(); const me = new THREE.Mesh(g, mt); me.scale.copy(o.mesh.scale); me.position.y = h * o.mesh.scale.y * .5; o.g.add(me); return me; });
   sangAuSol(o.x, o.z, o.y, 2.2); sangAuSol(o.x + o.coupeSens * .8, o.z, o.y, 1.4); for (let k = 0; k < 3; k++) setTimeout(() => M && jetSang(o.x, o.y + o.H * .5, o.z), k * 120); sonBruit(.3, 450, .7); }
 /* un pas de monstre : tout droit si c'est libre (le pas, et un peu plus loin devant) ; sinon il contourne, toujours du même côté tant qu'il est gêné ; jamais à travers un meuble ou un mur */
@@ -9773,7 +9783,7 @@ function animerBetesSH(now, dt) {
       const e2 = t => t * t * (3 - 2 * t); bas.rotation.z = -m.coupeSens * Math.PI / 2 * .95 * e2(Math.max(0, Math.min(1, (u - .45) / .5)));
       const tv = Math.min(u, .62), yv = Math.max(m.W * .12, H * .5 + 1.5 * tv - 4.9 * tv * tv);
       haut.position.set(m.coupeSens * tv * 2.4, yv, 0); haut.rotation.z = m.coupeSens * Math.min(1, u / .62) * Math.PI / 2 * 1.02;
-      bas.material.opacity = haut.material.opacity = fd; m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z); continue; }
+      for (const h of [bas, haut]) h.traverse(q => { if (q.material) q.material.opacity = fd; }); m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z); continue; }
     if (m.mortT) { if (!m.p) { const f = Math.min(1, (now - m.mortT) / 550); m.mesh.rotation.x = -f * Math.PI / 2 * .97; m.mesh.material.opacity = now - m.mortT > 6000 ? Math.max(0, 1 - (now - m.mortT - 6000) / 1500) : 1; } continue; }
     const u = now / 1000 + m.ph; let dx = 0, dz = 0, d = 99;
     if (moi && memeEtage) { dx = moi.g.position.x - m.x; dz = moi.g.position.z - m.z; d = Math.hypot(dx, dz) || 1; if (Math.abs(moi.g.position.y - m.y) > 2.2 && !etg) d = 99; }
@@ -9865,7 +9875,7 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
     { const t = placeLibre(mp.x, mp.z + 6); if (t) { mp.x = t[0]; mp.z = t[1]; } moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: mp.x, z: mp.z }); }
     const pa = apparaitreSH(poserPerso(SHN.angela, ...placeEnVue(mp, 5.5, .6, .8), 0));   /* (dans la rue, en vue : elle était souvent cachée derrière la grille) */ if (!pa) return; M.shEtape = 11; noterCarteSH(SHN.angela, 0, 29);
     let pyr = null, vic = null; const sortir = () => { if (pyr) return; const q = viserLibre(pa.g.position.x + 13, pa.g.position.z); pyr = creerBeteSH("pyramid", q[0], q[1], 0); pyr.cine = true; pyr.portee = 60; pyr.boss = true; pyr.imbattable = false; pyr.hp = 24; brumeSH({ x: q[0], y: 0, z: q[1] }, 4500); musiquePyramid(true);
-      vic = { cle: "angela", p: null, g: pa.g, mesh: pa.corps, x: pa.g.position.x, z: pa.g.position.z, y: 0, n: 0, v: 0, hp: 1, ph: 0, W: pa.corps.scale.x, H: pa.corps.scale.y, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, statique: true }; M.shMonstres.push(vic); pyr.cineCible = vic; M.shRegard = pa.g.position;
+      vic = { cle: "angela", p: null, p3: pa, g: pa.g, mesh: pa.corps, x: pa.g.position.x, z: pa.g.position.z, y: 0, n: 0, v: 0, hp: 1, ph: 0, W: pa.corps.scale.x, H: pa.corps.scale.y, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, statique: true }; M.shMonstres.push(vic); pyr.cineCible = vic; M.shRegard = pa.g.position;
       pyr.surMort = () => setTimeout(() => M && jamesFin(pyr), 1800); };
     dialogueSH(SHN.angela, [[null, null, 1600], [SHN.angela, "TOI ! Je te reconnais… c'est toi !"], ["moi", "Angela ? Calme-toi… Qu'est-ce qui se passe ?"], [SHN.angela, "Tu sais où elle est ! Tu sais où est ma maman ! Tu l'as toujours su !"],
       ["moi", "Mais non… je ne comprends rien, je te jure."], [SHN.angela, "Menteur ! Ils mentent tous ! Le couteau… le feu… tout brûle, ici, tout le temps…"], [SHN.angela, "Pourquoi tu me regardes comme ça ?! ARRÊTE DE ME REGARDER !"],
@@ -12154,11 +12164,11 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1" };   // (72 : Maria, dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1" };   // (71 : Angela, 72 : Maria, dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
-function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? (p.info.heros === 72 ? .96 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
+function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? (p.info.heros === 72 || p.info.heros === 71 ? .96 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
   const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
 /* le poids : chaque os du tronc et des membres s'élargit autour de lui-même (seulement pour la peau qu'il porte) ; les os enfants n'héritent pas
    de cet élargissement — sinon (avec tout le personnage élargi en largeur) bras et jambes se déformaient en dansant, comme désarticulés */
@@ -12174,9 +12184,10 @@ function lookAv3(A, info) { const a = (!info.heros && info.av3) || {},   /* (un 
 function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); corpsAv3(p, p.av3); return; }
   chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
     A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A);
-    // (Maria, dans le brouillard sombre de Silent Hill : un peu de sa propre lumière, sinon on ne voyait qu'une ombre noire)
-    if (p.info.heros === 72 && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
+    // (Maria, Angela, dans le brouillard sombre de Silent Hill : un peu de sa propre lumière, sinon on ne voyait qu'une ombre noire)
+    if (p.info.heros >= 69 && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
+  if (p.coupe3D) { A.sc.visible = false; if (p.corps) p.corps.visible = false; return; }   // (coupée en deux par Pyramid Head : ce sont ses deux moitiés qu'on voit)
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A); return; }
   A.sc.rotation.x = 0;
@@ -15004,7 +15015,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
