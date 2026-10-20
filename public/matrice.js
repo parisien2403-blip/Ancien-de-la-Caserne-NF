@@ -9647,7 +9647,7 @@ function silentHill(scene, L, base) { neigeTV(L); caissesSH(scene, L, base); bra
     musiqueSH(dt);
     if (L.fete) { for (const q of L.fete.projos) q.spot.visible = q.cone.visible = false; for (const [sp] of L.fete.fumees) sp.visible = false; L.fete.reflets.visible = L.fete.boule.visible = false; }   // (pas de fête à Silent Hill)
     if (L.club3d) { for (const ly of L.club3d.lyres) ly.faisceau.visible = ly.sol.visible = ly.lentille.visible = false; for (const l of L.club3d.tournantes) l.visible = false; }
-    if (M.gresil) { const k = .045 + (Math.random() < .02 ? .12 : 0) + Math.max(0, Math.sin(now / 2300)) * .02 + Math.max(0, 1 - (M.shProche ?? 99) / 14) * .3; M.gresil.g.gain.setTargetAtTime(k, actx.currentTime, .05); } };   // (un monstre approche : la radio s'affole)
+    if (M.gresil) { const pr = Math.max(0, 1 - (M.shProche ?? 99) / 14), k = .006 + pr * pr * .3 + (pr > 0 && Math.random() < .03 ? .1 * pr : 0); M.gresil.g.gain.setTargetAtTime(k, actx.currentTime, .05); } };   // (au calme : un souffle à peine audible ; un monstre approche : la radio s'affole, de plus en plus fort)
 }
 function placeLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let r = .5; r < 8; r += .5) for (let a = 0; a < 12; a++) { const xx = x + Math.cos(a / 12 * 6.283) * r, zz = z + Math.sin(a / 12 * 6.283) * r; if (M.L.limites(xx, zz)) return [xx, zz]; } return null; }
 const solSH = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
@@ -10550,7 +10550,7 @@ function cineReveil(essai = 0, noir = null) {
   if (!M) return; noir = noir || voile("background:#d9d8d4;opacity:1;transition:opacity 4s");
   if (!estSH(M.lieu)) { noir.remove(); return; }   /* (refusé à l'entrée : on n'est pas à Silent Hill) */
   const moi = M.gens.get(M.moiNum); if (!moi) { if (essai < 60) setTimeout(() => cineReveil(essai + 1, noir), 100); else noir.remove(); return; }   // (notre bonhomme arrive avec la réponse du serveur)
-  M.gresil = M.gresil || sonGresil(.045); grainSH(true);
+  M.gresil = M.gresil || sonGresil(.006); grainSH(true);
   { const a = M.musReveil || new Audio("sons/sh-reveil.mp3"); M.musReveil = a; a.loop = true; a.currentTime = 0; a.volume = .85; a.play().catch(() => {}); }   // (« White Noiz », en continu)
   { const s = M.sireneA; if (s) { const v0 = s.volume || 1, t1 = performance.now(), baisse = () => { if (!M || M.sireneA !== s) return; const k = (performance.now() - t1) / 6000; if (k >= 1) { s.pause(); M.sireneA = null; return; } s.volume = v0 * (1 - k); requestAnimationFrame(baisse); }; baisse(); } }
   moi.info.mortT = performance.now() - 2000;   // (couché, tout de suite)
