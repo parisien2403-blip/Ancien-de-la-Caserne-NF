@@ -3874,7 +3874,11 @@ function construireEtage(A, L, scene) {
       // les rampes en fer, des deux volées, au milieu
       for (const [z0, y0, sens] of [[1.6, 0, -1], [-1.4, 1.7, 1]]) {
         const r = A.ajoute(new THREE.BoxGeometry(.05, .05, 3.45), fer, X(CXM), y + y0 + .85 + .95, z0 + sens * 1.5, false); r.rotation.x = sens * -Math.atan2(1.7, 3);
-        for (let j = 0; j <= 5; j++) A.ajoute(new THREE.BoxGeometry(.03, .95, .03), fer, X(CXM), y + y0 + (j + .5) * .3 + .47, z0 + sens * (j * .6 + .15), false); }
+        // (un barreau par marche, posé sur la marche et fixé sous la main courante)
+        for (let j = 0; j < 10; j++) { const d = (j + .5) * MP, bas = y + y0 + (j + 1) * MH, haut = y + y0 + .95 + d * 1.7 / 3;
+          A.ajoute(new THREE.BoxGeometry(.025, haut - bas, .025), fer, X(CXM), (bas + haut) / 2, z0 + sens * d, false); } }
+      // (les poteaux aux deux bouts : au palier intermédiaire et au palier de l'étage, là où les mains courantes se rejoignent)
+      for (const [zp, yp] of [[-1.4, 1.7], [1.6, 0]]) A.ajoute(new THREE.BoxGeometry(.06, 1.02, .06), fer, X(CXM), y + yp + .51, zp, false);
       ampoule(Math.max(1, k), xb(CXM, CX1), y + HP, 2.5, etatAmpoule(Math.max(1, k), 10 + (sg > 0 ? 1 : 0)));
       ampoule(Math.max(1, k + 1), xb(CX0, CX1), y + 1.7 + HP - .3, -2.2, etatAmpoule(Math.max(1, k + 1), 12 + (sg > 0 ? 1 : 0))); }
     A.ajoute(new THREE.BoxGeometry(cageW + .4, .2, Z1 - Z0 + .4), A.mat({ color: 0xece4d2 }), xb(CX0, CX1), HTOT + .1, cz, false);
@@ -7367,6 +7371,11 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
       if (mp.z < -17.5) {      // sous l'horloge, ou dans la deuxième cour
         { const b = C3.dedans(moi); if (b) { pos.x = Math.max(b[0], Math.min(b[1], pos.x)); pos.z = Math.max(b[2], Math.min(b[3], pos.z)); pos.y = Math.min(pos.y, b[4]); return true; } }   // (dans les pièces sous la terrasse : la caméra reste dedans)
+        // (sous les deux voûtes — l'horloge, le bâtiment d'en face : la caméra reste dans l'axe du passage, derrière son bonhomme, jamais collée à un mur ni en face)
+        if (Math.abs(mp.x) < 2.6 && mp.y < 1 && [[-30, -18], [C3.z0, C2.z1]].some(([a, b]) => mp.z > a - .5 && mp.z < b + .5)) {
+          const yw = M.yaw || 0, dz = Math.abs(pos.z - mp.z) > .8 ? Math.sign(pos.z - mp.z) : Math.cos(yw) >= 0 ? 1 : -1;   // (derrière : du côté où était déjà la caméra)
+          { const cible = dz > 0 ? 0 : Math.PI, d = Math.atan2(Math.sin(cible - yw), Math.cos(cible - yw)); M.yaw = yw + d * .12; }   // (la vue se tourne doucement dans l'axe du passage)
+          pos.x = Math.max(-1.9, Math.min(1.9, mp.x * .6)); pos.z = mp.z + dz * 3.6; pos.y = Math.min(Math.max(pos.y, mp.y + 2.2), 3.9); return true; }
         if (mp.z < C3.z1 - C3.PP && mp.z > RU.zA + RU.cour && mp.y > -.3 && mp.y < 2) { pos.x = Math.max((mp.z < C3.zMN ? -C3.x - 6 : -C3.x) + .3, Math.min(RU.xB - .3, pos.x)); pos.z = Math.max((mp.x < -C3.LB / 2 ? RU.zA : RU.zA + RU.cour) + .3, Math.min(pos.z, C3.z1 - C3.PP + 6)); return true; }   // (tout le chantier, dehors : une vue large, comme ailleurs, sans à-coups)
         if ((mp.x > C3.LB / 2 + .2 && mp.z < RU.zT + .2) || (mp.x > -C3.x - 6 && mp.z < RU.zA + RU.cour)) { if (RU.lz(mp.x, mp.z) < .5 && mp.x > RU.xB - RU.pc - 3) { const lx = Math.max(-1.9, Math.min(1.9, RU.lx(pos.x, pos.z))), lz = Math.max(-7.5, RU.lz(pos.x, pos.z)), cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2; pos.x = cx + (lx - lz) / Math.SQRT2; pos.z = cz + (lx + lz) / Math.SQRT2; pos.y = Math.min(pos.y, RU.y(RU.zA) + 5); } else pos.x = Math.max(mp.z < RU.zA + RU.cour ? -C3.x - 6 + .3 : C3.LB / 2 + .3, Math.min(RU.xB - .4, pos.x)); pos.z = Math.max(RU.zA - 6, Math.min(pos.z, C3.z1)); }   // (dans la rue en pente, sous l'arcade)
         else if (Math.abs(mp.x) > C3.LB / 2 + .2 && mp.z < C3.z1 + .3) { const sg = Math.sign(mp.x); pos.x = sg * Math.max(C3.LB / 2 + .3, Math.min((sg < 0 && mp.z < C3.zMN ? C3.x + 6 : C3.x) - .3, Math.abs(pos.x))); pos.z = Math.max(C3.zFond + .3, Math.min(pos.z, C3.z0 - .3)); }   // (dans une ruelle)
