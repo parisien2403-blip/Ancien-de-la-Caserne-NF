@@ -9636,7 +9636,7 @@ const SH_VIES = 5, SH_EDDIE_PV = 8;
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
 const SH_ID_BETE = { pyramid: 74, infirmiere: 75, tuyau: 76, bras: 77, mannequin: 78, capuche: 79 };   /* (leurs réglages, dans l'inventaire de l'administrateur) */
 const regBete = cle => ((M.ctx.pnjTrio && M.ctx.pnjTrio(SH_ID_BETE[cle])) || {}).reglage || {};
-function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shPhoto = false; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
+function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.shLauraBas = false; M.shVies = SH_VIES; M.shArme = false; M.shCle = false; M.shPhoto = false; M.shInfVu = false; M.shInf = null; M.shMort = false; M.shPopL = null; M.shEddieVu = false; M.shDegT = 0; M.shCarte = []; M.shCarteOK = false; M.shCroix = false; M.shVus = new Set(); M.shEscorte = null; M.shFlacons = []; M.shPerte = 0; M.shChoix = null; M.shCleMess = false; M.shMariaMess = false; M.shTerrasse = false; M.shMessOuvert = false; M.shLampe = false; M.shLampeOn = false; majBoutonCarte(); }
 const prenomSH = () => "Harry";   // (à Silent Hill, on est Harry Mason : c'est ainsi qu'on nous appelle)
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
@@ -9774,7 +9774,7 @@ function brancardsSH(scene, L, base) {
   if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < 10; k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
       if (!L.limites || !L.limites(x, z) || liste.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) continue; liste.push({ x, z, ry, pose: 0 }); } }
   if (base === "grande") for (const b of [{ x: 8.9, z: 2.6, ry: .35, pose: 0 }, { x: 6.6, z: .4, ry: 1.9, pose: 1 }, { x: 9.0, z: 11.6, ry: -.5, pose: 2 }]) if (!L.limites || L.limites(b.x, b.z)) liste.push(b);   // (pose : 0 debout, 1 couché sur le flanc, 2 retourné)
-  if (!liste.length) return;
+  L.brancards = liste; if (!liste.length) return;
   texturesApo();
   texRoues = texRoues || tex(toile(512, 128, (x, w, h) => { let s = 41; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;   // (deux traces de roulettes, parallèles, qui s'effacent à mesure qu'elles s'éloignent de la flaque)
     for (const y0 of [h / 2 - 44, h / 2 + 44]) for (let i = 0; i < 180; i++) { const xx = i / 180 * w, a = Math.max(0, 1 - xx / w * 1.15) * (r() < .12 ? .25 : 1);
@@ -10085,11 +10085,11 @@ function passageFin() { const moi = moiApo(); if (!moi) return; const [x, z] = R
 function lauraBas() { const moi = moiApo(); if (!moi || M.lieu !== "sh-mess" || M.shLauraBas) return; const mp = moi.g.position, nom = prenomSH();
   if (M.cine) { setTimeout(() => M && M.shEtape === 10 && !M.shLauraBas && lauraBas(), 800); return; }   /* (une autre scène est en cours : Lisa attend qu'elle finisse, au lieu d'être sautée) */
   const pl = apparaitreSH(poserPerso(SHN.laura, mp.x + 2.2, mp.z - 1.8, mp.y)); if (!pl) return; pl.nivMess = 1; noterCarteSH(SHN.laura, -14.25, 10.45); M.shLauraBas = true;
-  dialogueSH(SHN.laura, [[null, null, 1600], [SHN.laura, `${nom} ! Tu es encore en vie… Dieu merci.`], ["moi", "Lisa… Qu'est-ce que tu fais ici ?"], [SHN.laura, "Je me cache. Ici, il ne vient jamais. Alors… tu as vu Maria ?"],
+  dialogueSH(SHN.laura, [[null, null, 1600], [SHN.laura, `${nom} ! Vous êtes encore en vie… Dieu merci.`], ["moi", "Lisa… Qu'est-ce que vous faites ici ?"], [SHN.laura, "Je me cache. Ici, il ne vient jamais. Alors… vous avez vu Maria ?"],
     ["moi", "Oui. Elle est bizarre… Elle dit des choses qui n'ont aucun sens. On dirait qu'elle me connaît."], [SHN.laura, "Elle dit ça à tout le monde. À James aussi. Surtout à James."],
-    [SHN.laura, "Je crois que je peux t'aider à partir d'ici."], ["moi", "Comment ?"], [SHN.laura, "Le grand portail, là-bas, celui qui donne sur la rue. Tu es entré par là, non ?"],
-    [SHN.laura, "Si c'est une entrée, c'est aussi une sortie. Pour toi, en tout cas."], ["moi", "Viens avec moi, Lisa. Tu ne peux pas rester ici toute seule."],
-    [SHN.laura, `Je ne peux pas, ${nom}. Regarde mes mains… ce sang, il ne part jamais.`], [SHN.laura, "Et puis James a besoin de quelqu'un pour retrouver sa femme. Va. Et ne te retourne pas."],
+    [SHN.laura, "Je crois que je peux vous aider à partir d'ici."], ["moi", "Comment ?"], [SHN.laura, "Le grand portail, là-bas, celui qui donne sur la rue. Vous êtes entré par là, non ?"],
+    [SHN.laura, "Si c'est une entrée, c'est aussi une sortie. Pour vous, en tout cas."], ["moi", "Venez avec moi, Lisa. Vous ne pouvez pas rester ici toute seule."],
+    [SHN.laura, `Je ne peux pas, ${nom}. Regardez mes mains… ce sang, il ne part jamais.`], [SHN.laura, "Et puis James a besoin de quelqu'un pour retrouver sa femme. Allez. Et ne vous retournez pas."],
     geste(() => evanouirSH(SHN.laura, [mp.x - 4, mp.z + 3], 600, 1.4)), [null, null, 2600]],
     () => { evanouirSH(SHN.laura, [mp.x - 4, mp.z + 3], 0, 1.4); M.shEtape = 10; }); }
 /* sur la terrasse, James surgit du brouillard : « ne la suis pas, ce n'est qu'une illusion ». Maria insiste. Il faut choisir */
@@ -10200,11 +10200,29 @@ function rencontreSH(num, centre, rayon, loin, lignes, fin, y = null, cond = nul
   if (arr && de > 2.4) { p.info.allure = .5; p.cible = new THREE.Vector3(arr[0], p.g.position.y, arr[1]); }
   noterCarteSH(num, centre[0], centre[1]); M.shScenes.add(cle);
   dialogueSH(num, [[null, null, de > 2.4 ? Math.min(5200, 1400 + (de - 2.2) / (3.3 * .5) * 1000) : 1800], ...lignes], fin); return true; }
+/* en montant du bar dans la salle des fêtes : une infirmière, de dos, penchée sur un brancard ; on lui parle, elle se retourne… elle sait qui l'on est.
+   « Un peu la gardienne de ces lieux » : quand la sirène retentit, ne pas sortir. Puis elle s'efface dans le brouillard */
+function infirmiereFetes(moi, nom) { const L = M.L, mp = moi.g.position; if (mp.y < -.6 || mp.z > 15) return;   // (dans la salle, pas au sous-sol)
+  let I = M.shInf; if (!I || I.L !== L) { const bs = (L.brancards || []).filter(b => !b.pose && Math.hypot(b.x, b.z - 10.6) > 4.5 && Math.hypot(b.x, b.z - 10.6) < 9).sort((a, b) => Math.abs(a.x) - Math.abs(b.x));   /* (au fond de la salle, en face de l'escalier : on la voit en arrivant, de loin) */ const b = bs[0]; if (!b) { M.shInfVu = true; return; }
+    let ux = 0 - b.x, uz = 11 - b.z; const ul = Math.hypot(ux, uz) || 1; ux /= ul; uz /= ul;   // (entre l'escalier et le brancard : on la voit de dos)
+    let pos = null; for (const d of [.85, 1, 1.15, .75]) if (L.limites(b.x + ux * d, b.z + uz * d)) { pos = [b.x + ux * d, b.z + uz * d]; break; } if (!pos) pos = [b.x + ux, b.z + uz];
+    const p = poserPerso(SHN.laura, pos[0], pos[1], 0); if (!p) return; p.g.position.set(pos[0], 0, pos[1]); p.cible = null; p.chemin = []; p.regardeA = new THREE.Vector3(b.x, 0, b.z); p.regardeVite = true;
+    I = M.shInf = { L, p, b }; noterCarteSH(SHN.laura, pos[0], pos[1]); return; }
+  const p = I.p; if (!M.gens.has(SHN.laura)) return; if (Math.hypot(mp.x - p.g.position.x, mp.z - p.g.position.z) > 3.5) { p.regardeA = new THREE.Vector3(I.b.x, 0, I.b.z); return; }
+  M.shInfVu = true; moi.regardeA = p.g.position;
+  dialogueSH(SHN.laura, [[null, null, 900], ["moi", "Bonjour ?… Excusez-moi… Vous m'entendez ?"], [null, null, 1300],
+    geste(() => { p.regardeA = moi.g.position; }), [null, null, 2200],   /* (elle se retourne, lentement) */
+    [SHN.laura, `Bonjour, ${nom}.`], ["moi", "Comment… comment vous connaissez mon prénom ?"],
+    [SHN.laura, "Beaucoup de gens se réveillent ici. Tous perdus… et tous avec un nom qu'ils ont peur d'oublier."], ["moi", "Mais… qui êtes-vous ?"],
+    [SHN.laura, "Disons que je suis… un peu la gardienne de ces lieux. Je veille sur ceux qui dorment ici."], [SHN.laura, "Écoutez-moi bien. Quand la sirène retentit… ne vous aventurez pas dehors. Surtout pas."],
+    ["moi", "La sirène ? Attendez, je ne comprends pas…"], geste(() => { p.regardeA = null; evanouirSH(SHN.laura, [I.b.x - 3, I.b.z - 3], 500, .8); }), [null, null, 2800]],
+    () => { moi.regardeA = null; if (M.gens.has(SHN.laura) && !p.part) { p.regardeA = null; evanouirSH(SHN.laura, [I.b.x - 3, I.b.z - 3], 0, .8); } }); }
 function poserPerso(num, x, z, y) { const p = persoSH(num, x, z, y); if (p && y != null && M.L.yNiv && y < -.5) p.nivMess = 1; if (p && y != null && Math.abs(p.g.position.y - y) > .5) p.g.position.y = y; return p; }
 function presSH(num, r, dyMax = 1.6) { const moi = moiApo(), p = M.gens.get(num); if (!moi || !p || M.cine || M.shMort) return false;
   return Math.hypot(moi.g.position.x - p.g.position.x, moi.g.position.z - p.g.position.z) < r && Math.abs(moi.g.position.y - p.g.position.y) < dyMax; }
 function histoireSH(now) {
   const e = M.shEtape, lieu = M.lieu, moi = moiApo(); if (!moi || M.shMort || M.cine) return; const nom = prenomSH();
+  if (lieu === "sh-fetes" && !M.shInfVu && e <= 1) infirmiereFetes(moi, nom);
   if (lieu === "sh-grande") {
     // 1. Angela, devant la petite fenêtre (fermée) de la salle de bain
     if (e === 1) rencontreSH(SHN.angela, [-15.7, -77.4], 7, [-17.6, -79.6], [[SHN.angela, "Qui… qui êtes-vous ?"], ["moi", `Je m'appelle ${nom}. Où est-ce qu'on est, ici ? Tout est… gris.`], [SHN.angela, "Vous n'êtes pas d'ici, vous. Personne n'est d'ici."], [SHN.angela, "Vous n'avez pas vu ma maman ?"], ["moi", "Pardon ? Je… je ne comprends pas."],
@@ -10228,10 +10246,10 @@ function histoireSH(now) {
         ["moi", "Et toi ? Tu vas t'en sortir, sans arme ?"], [SHN.james, `Je n'ai plus grand-chose à perdre. Fais attention à toi, ${nom}. Et si tu croises une femme qui lui ressemble… ne la crois pas.`], geste(() => evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 800, .9)), [null, null, 2800]],
         () => { armerSH(); M.shEtape = 4; M.shPopL = null; evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 0, .9); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🔫 L'arme de James : munitions illimitées. Touche un monstre pour tirer."); }); }
     // 4. Lisa, dans la cour d'honneur : elle reconnaît Harry, et l'envoie vers Maria
-    if (e === 4) rencontreSH(SHN.laura, [0, -2], 8, 5, [[SHN.laura, `Oh… ${nom} ? C'est bien toi ? ${nom} Mason ?`], ["moi", "Lisa ? Lisa Garland… L'infirmière de l'hôpital Alchemilla ? Qu'est-ce que tu fais ici ?"],
-        [SHN.laura, "Je ne sais pas. Je me suis réveillée dans cette cour. Il y avait du brouillard… toujours ce brouillard."], ["moi", "Il y a des monstres, partout. Reste près de moi, je vais te sortir de là."],
-        [SHN.laura, "Me sortir ? … Je ne crois pas que je puisse partir. Je ne crois pas que j'en aie le droit."], [SHN.laura, "Mais toi, tu peux. Va voir Maria. Elle est sur la terrasse, tout en haut. Elle t'attend."],
-        ["moi", "Lisa, attends…"], [SHN.laura, `Fais attention à toi, ${nom}. Ne me laisse pas… Non. Pardon. Va-t'en.`], geste(() => evanouirSH(SHN.laura, [8, 6], 600, 1.7)), [null, null, 2800]],
+    if (e === 4) rencontreSH(SHN.laura, [0, -2], 8, 5, [[SHN.laura, `On se retrouve, ${nom}.`], ["moi", "Vous ! La gardienne… Vous ne m'avez même pas dit votre nom."],
+        [SHN.laura, "Lisa. Lisa Garland. J'étais infirmière, avant… à l'hôpital Alchemilla. Il y a longtemps."], ["moi", "Il y a des monstres, partout. Venez avec moi, je vais vous sortir de là."],
+        [SHN.laura, "Me sortir ? … Je ne crois pas que je puisse partir. Je ne crois pas que j'en aie le droit."], [SHN.laura, "Mais vous, vous pouvez. Allez voir Maria. Elle est sur la terrasse, tout en haut. Elle vous attend."],
+        ["moi", "Lisa, attendez…"], [SHN.laura, `Faites attention à vous, ${nom}. Ne me laissez pas… Non. Pardon. Allez-vous-en.`], geste(() => evanouirSH(SHN.laura, [8, 6], 600, 1.7)), [null, null, 2800]],
         () => { M.shEtape = 5; evanouirSH(SHN.laura, [8, 6], 0, 1.7); });
     // 5. Maria, sur la terrasse : elle savait qu'on reviendrait pour elle ; elle veut qu'on la suive
     if (e === 5 && !M.shTerrasse) { const H = helipad();
@@ -12378,6 +12396,7 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
   A.v = (A.v || 0) * .8 + v * .2;
   if (v > .05) { let d = Math.atan2(dx, dz) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 10); }   // (il se tourne dans le sens de sa marche)
+  else if (p.regardeA) { const r = p.regardeA; let d = Math.atan2(r.x - q.x, r.z - q.z) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += p.regardeVite ? d : d * Math.min(1, dt * 2.6); p.regardeVite = false; }   // (en scène : il se tourne vers quelqu'un, ou quelque chose — lentement)
   const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
   if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt);
@@ -15204,7 +15223,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
