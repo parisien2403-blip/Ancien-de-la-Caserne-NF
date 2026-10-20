@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
+function silentHill(scene, L, base) { if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9599,9 +9599,9 @@ function placeLibre(x, z) { if (M.L.limites(x, z)) return [x, z]; for (let r = .
 const solSH = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
 /* Silent Hill : le scénario. Chacun vit le sien (les personnages et les monstres ne sont que chez soi).
    0 réveil au bar (Maria) → 1 Angela, à la petite fenêtre des douches → 2 Heather, dans la fosse → 3 James, sous l'horloge jaune (l'arme)
-   → 4 Lisa, dans la cour d'honneur → 5 Maria, sur la terrasse → 6 Maria, à la porte du mess → 7 le mess (Pyramid Head) → 8 l'escalier R, les étages, Eddie au 6e
+   → 4 Lisa, dans la cour d'honneur → 5 Maria, sur la terrasse → 6 Maria, à la porte du mess → 7 le mess (Pyramid Head) → 8 l'escalier R, les étages, Alessa au bout du couloir du 6e
    → 9 la clé → 10 le cadenas des encombrants : on sort vivant. Cinq vies ; à la dernière, le sang, l'écran rouge, et retour en 1990 */
-const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Lisa", 110: "Heather" };
+const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Lisa", 110: "Heather", 111: "Alessa" };
 /* Silent Hill, la cour d'honneur : une Pontiac Ventura garée à l'arrache devant la salle des fêtes — de biais, le nez vers la porte (on passe encore à gauche) ;
    on ne la traverse pas */
 function pontiacSH(scene, L) {
@@ -9612,7 +9612,7 @@ function pontiacSH(scene, L) {
     const b = new THREE.Box3().setFromObject(corps || sc), k = LG / (b.max.x - b.min.x), w = new THREE.Group(); w.add(sc); sc.scale.multiplyScalar(k);
     sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);   // (centrée, les roues au sol)
     w.position.set(X, L.hauteur ? L.hauteur(X, Z) : 0, Z); w.rotation.set(0, TH, .025); scene.add(w); L.pontiac = w; })().catch(() => {}); }
-const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605, heather: -606 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73, [-606]: 110 };
+const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605, heather: -606, alessa: -607 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73, [-606]: 110, [-607]: 111 };
 const SH_VIES = 5, SH_EDDIE_PV = 8;
 // les monstres : [image, hauteur, vitesse, points de vie]
 const SH_BETES = { capuche: ["capuche", 1.85, 1.15, 3], mannequin: ["mannequin", 1.8, 1.55, 3], bras: ["bras", 2.1, 1.0, 4], infirmiere: ["infirmiere", 1.78, 1.3, 2], tuyau: ["tuyau", 1.72, 1.35, 3], pyramid: ["pyramid-corps", 3.2, 1.35, 999] };
@@ -9622,7 +9622,7 @@ function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.sh
 const prenomSH = () => "Harry";   // (à Silent Hill, on est Harry Mason : c'est ainsi qu'on nous appelle)
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
-  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...([69, 71, 72, 73, 110].includes(id) ? { heros: id } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (James, Angela, Maria, Lisa, Heather : en 3D)
+  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...([69, 71, 72, 73, 110, 111].includes(id) ? { heros: id } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (James, Angela, Maria, Lisa, Heather, Alessa : en 3D)
   p.cleInfo = ci.cle; p.info.allure = .5; if (y != null) p.g.position.y = y; return p; }
 /* un brouillard épais qui monte d'un coup, là où quelqu'un arrive ou s'en va : de gros nuages autour de lui, et toute la scène qui se bouche un instant */
 let texBrumeC = null;
@@ -9851,7 +9851,7 @@ function contournerSH() { const moi = M.gens.get(M.moiNum); if (!moi) return; co
     const L = Math.sqrt(L2), nx = -vz / L, nz = vx / L, cote = (m.x - a.x) * nx + (m.z - a.z) * nz > 0 ? -1 : 1;   /* (on passe du côté opposé) */
     let wp = null; for (const sg of [cote, -cote]) for (const r of [1.1, .9, 1.4]) { const x = m.x + nx * sg * r, z = m.z + nz * sg * r; if (!wp && M.L.limites(x, z)) wp = [x, z]; }
     if (!wp) continue; const v = new THREE.Vector3(wp[0], a.y, wp[1]); p.chemin = [c, ...(p.chemin || [])]; p.cible = v; p.detour = v; } }
-/* Eddie tombe : la sirène retentit, le brouillard nous enveloppe… et l'on se réveille au sous-sol du mess */
+/* Alessa tombe : la sirène retentit, le brouillard nous enveloppe… et l'on se réveille au sous-sol du mess */
 function cineSireneBas() { if (!M || !M.L.sh) return; const moi = moiApo(); if (!moi) return; moi.cible = null; moi.chemin = []; const sir = new Audio("sons/sh-sirene.mp3"); sir.volume = 1; sir.play().catch(() => {});
   const t0 = performance.now(), sc = M.scene, f0 = sc.fog ? [sc.fog.near, sc.fog.far] : null; let blanc = null, fini = false, u = 0, prec = t0;
   const fin = () => { if (fini || !M) return; fini = true; finCine(); if (!blanc) blanc = voile("background:#d9d8d4;opacity:1"); M.shReveilBas = true; M.sireneA = sir; changerLieu("sh-mess", M.L.pieceBas || [-8, 18], 0); setTimeout(() => blanc && blanc.remove(), 500); };
@@ -10121,14 +10121,19 @@ function histoireSH(now) {
       : [geste(() => { M.shRegard = null; }), ["moi", "Qu'est-ce que c'est que… ÇA ?!", 2400], [null, null, 600]];
     dialogueSH(SHN.maria, [...debut, geste(() => { musiqueRencontre(false); sirenePH(10000); }), [null, null, 4200], geste(() => { musiquePyramid(true); sortir(); }), [null, null, 8200], ...finale],   /* (la sirène d'abord, seule, pour prévenir ; puis il apparaît) */
       () => { sortir(); musiquePyramid(true); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); if (avecMaria) evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); M.ctx.surInfo && M.ctx.surInfo("🔺 Les balles ne le tuent pas… elles le ralentissent seulement."); }, {}); }
-  if (lieu === "sh-etage" && e === 8 && etageDe(moi) === ET.N && !M.shEddieVu) { M.shEddieVu = true;
-    const x = moi.g.position.x > 0 ? moi.g.position.x - 6 : moi.g.position.x + 6, p = poserPerso(SHN.eddie, x, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" }; apparaitreSH(p); noterCarteSH(SHN.eddie, 0, 0);
-    const m = { cle: "eddie", p, g: p.g, mesh: null, x: p.g.position.x, z: p.g.position.z, y: p.g.position.y, n: ET.N, v: 1.9, hp: SH_EDDIE_PV, ph: 0, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, portee: 40 };
-    p.info.couteau = true; dessinerCorps(p);   /* (son couteau, dans la main) */
-    m.surMort = () => { dire(SHN.eddie, "Aaah… Je voulais juste… qu'on arrête de rire…"); M.shEtape = 9; setTimeout(() => M && cineSireneBas(), 2600); }; M.shMonstres.push(m);
-    dialogueSH(SHN.eddie, [[null, null, 1600], [SHN.eddie, "Encore un… Qui t'es, toi ? Tu viens te moquer de moi, comme les autres ?"], ["moi", "Je ne te connais pas… Qu'est-ce que tu fais avec ce couteau ?"], [SHN.eddie, "Je m'appelle Eddie. Ils se moquaient tous de moi. Le gros Eddie, le lâche…"],
-      [SHN.eddie, "Toi aussi, tu te moques de moi. Je le vois dans tes yeux."], ["moi", "Personne ne se moque de toi ! Pose ça, Eddie…"], [SHN.eddie, "Je vais te faire taire… pour toujours."], [null, null, 600]],
-      () => { m.cine = false; }); }
+  /* 8. au 6e étage : Alessa — la part sombre de Heather, ce qu'elle a oublié — attend, immobile, au bout du couloir ; on marche jusqu'à elle ;
+     tout près, elle parle… puis attaque, son couteau à la main */
+  if (lieu === "sh-etage" && e === 8 && etageDe(moi) === ET.N) {
+    if (!M.shEddieVu) { M.shEddieVu = true;
+      const sg = Math.sign(moi.g.position.x) || 1, p = poserPerso(SHN.alessa, -sg * 9.5, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" }; p.cible = null; p.chemin = []; apparaitreSH(p); noterCarteSH(SHN.alessa, 0, 0);
+      const m = { cle: "alessa", p, g: p.g, mesh: null, x: p.g.position.x, z: p.g.position.z, y: p.g.position.y, n: ET.N, v: 1.9, hp: SH_EDDIE_PV, ph: 0, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, portee: 40, attend: true };
+      m.surMort = () => { dire(SHN.alessa, "Papa… pourquoi… tu ne m'as pas… choisie…"); M.shEtape = 9; setTimeout(() => M && cineSireneBas(), 2600); }; M.shMonstres.push(m); M.shAlessa = m; }
+    const m = M.shAlessa;
+    if (m && m.attend && m.p && M.gens.get(SHN.alessa) === m.p && Math.hypot(moi.g.position.x - m.p.g.position.x, moi.g.position.z - m.p.g.position.z) < 4.2) { m.attend = false;
+      dialogueSH(SHN.alessa, [[null, null, 900], [SHN.alessa, "Tu es venu jusqu'ici… papa."], ["moi", "Heather ? … Non. Tu n'es pas Heather."], [SHN.alessa, "Je suis ce qu'elle a oublié. Le feu. La douleur. Sept ans dans le noir."],
+        [SHN.alessa, "Elle sourit, elle t'appelle papa… et moi, je reste ici, en haut, toute seule."], ["moi", "Alessa… Pose ce couteau."], [SHN.alessa, "Tu l'as choisie, elle. Tu m'as laissée brûler."],
+        [SHN.alessa, "Alors maintenant… c'est toi qui vas avoir mal."], [null, null, 600]],
+        () => { m.cine = false; }); } }
   if (M.shCleObj && M.shCleObj.lieu === lieu && M.shEtape === 9) { const c = M.shCleObj; c.o.rotation.y += .04; c.o.position.y = c.y + .35 + Math.sin(now / 300) * .06;
     if (Math.hypot(moi.g.position.x - c.x, moi.g.position.z - c.z) < 1 && Math.abs(moi.g.position.y - c.y) < 1.5) { M.scene.remove(c.o); M.shCleObj = null; M.shCle = true; M.shEtape = 10; sonBruit(.25, 3000, .35); M.ctx.surInfo && M.ctx.surInfo("🔑 Tu as ramassé une petite clé."); } }
   if (M.shCleObj && M.shCleObj.lieu === lieu && !M.shCleObj.o.parent) M.scene.add(M.shCleObj.o);
@@ -10150,7 +10155,7 @@ function peuplerSH(now) {
   if (!M || !M.L || !M.L.sh) return; if (M.shEtape == null) resetSH();
   const dt = Math.min(.05, (now - (M.shT || now)) / 1000); M.shT = now;
   if (M.shPopL !== M.L) { for (const m of M.shMonstres || []) if (!m.p) M.scene.remove(m.g); M.shPopL = M.L; M.shMonstres = [];
-    if (M.shEtape === 8) M.shEddieVu = false;   /* (on a fui Eddie : il reviendra, là-haut) */ if (M.shEtape === 11 && M.lieu === "sh-rue") M.shEtape = 10;   /* (on a fui Pyramid Head dans la rue : la scène se rejoue, on n'est pas bloqué) */ if (moiApo()) lacherBetesSH(); else M.shPopL = null; }
+    if (M.shEtape === 8) { M.shEddieVu = false; M.shAlessa = null; }   /* (on a fui Alessa : elle reviendra, là-haut, au bout du couloir) */ if (M.shEtape === 11 && M.lieu === "sh-rue") M.shEtape = 10;   /* (on a fui Pyramid Head dans la rue : la scène se rejoue, on n'est pas bloqué) */ if (moiApo()) lacherBetesSH(); else M.shPopL = null; }
   histoireSH(now); animerBetesSH(now, dt); pousserCartons(); lieuxVusSH(); contournerSH(); flaconsSH();
   if (M.lieu === "sh-grande" && !M.shCroix) { const q = moiApo(); if (q && Math.hypot(q.g.position.x - (ROUTE_DETRUITE[0] + ROUTE_DETRUITE[1]) / 2, q.g.position.z - (ROUTE_DETRUITE[2] + ROUTE_DETRUITE[3]) / 2) < 7 && Math.abs(q.g.position.y) < 1) M.shCroix = true; }   /* (la route effondrée, vue : une croix rouge sur la carte) */
 }
@@ -12176,11 +12181,11 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=1", 110: "avatars/sh-heather.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=1", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
-function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : p.info.heros === 110 ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
+function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : [110, 111].includes(p.info.heros) ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
   const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
 /* le poids : chaque os du tronc et des membres s'élargit autour de lui-même (seulement pour la peau qu'il porte) ; les os enfants n'héritent pas
    de cet élargissement — sinon (avec tout le personnage élargi en largeur) bras et jambes se déformaient en dansant, comme désarticulés */
