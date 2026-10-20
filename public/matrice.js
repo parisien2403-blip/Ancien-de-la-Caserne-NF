@@ -10152,7 +10152,13 @@ function histoireSH(now) {
     // le mess : la porte fermée à clé ; on l'ouvre avec la clé de James (ou Maria l'ouvre, si on la suit)
     { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"); if (q && !q.verrou) { const d0 = q.dans; q.verrou = true; q.dans = (x, z) => !!M.shMessOuvert && d0(x, z); }
       for (const b of M.L.messBattants || []) { const cible = M.shMessOuvert ? b.userData.ouvert : 0; if (!b.userData.vu) { b.userData.vu = true; b.rotation.y = cible; } b.rotation.y += (cible - b.rotation.y) * Math.min(1, .04); }   /* (à l'arrivée : déjà fermée ; avec la clé, elle s'ouvre doucement) */
-      const c = q && (q.seuil || centrePortail(q)); if (c && !M.shMessOuvert && !M.shCleMess && Math.hypot(moi.g.position.x - c[0], moi.g.position.z - c[1]) < 1.2 && now > (M.shVerrouT || 0)) { M.shVerrouT = now + 5000; M.ctx.surInfo && M.ctx.surInfo("🔒 La porte du mess est fermée à clé."); } }
+      const c = q && (q.seuil || centrePortail(q)); if (c && !M.shMessOuvert && !M.shCleMess && Math.hypot(moi.g.position.x - c[0], moi.g.position.z - c[1]) < 1.2 && now > (M.shVerrouT || 0)) { M.shVerrouT = now + 6000;
+        /* (comme dans Silent Hill : la poignée qu'on secoue, et Harry qui pense tout haut — ce qu'il dit dépend de là où il en est) */
+        sonBruit(.22, 160, .25); setTimeout(() => M && sonBruit(.2, 140, .22), 260);
+        const pense = M.shChoix === "maria" ? "C'est fermé à clé… Maria a dit qu'elle savait comment entrer. Je ferais mieux de rester avec elle."
+          : M.shEtape >= 5 ? "Verrouillée. Il me faut la clé… Quelqu'un dans cette caserne doit bien l'avoir."
+          : "Fermée à clé. La poignée ne bouge pas d'un millimètre… Il doit y avoir un autre chemin. Ou une clé, quelque part.";
+        bulle(`<i>${pense}</i>`, 3800); M.ctx.surInfo && M.ctx.surInfo("🔒 La porte du mess est fermée à clé."); } }
     // 6. elle nous mène jusqu'au mess, à pied ; un monstre approche : elle se cache derrière nous — il faut la défendre
     if (e === 6 && !M.shMariaMess && M.shChoix === "maria") escorteMaria(now, moi);
     // 10. on repasse le porche : direction la rue
