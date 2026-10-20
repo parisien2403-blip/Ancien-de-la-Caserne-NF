@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.03";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.04";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11323,7 +11323,11 @@ let licker3D = null;
 const LK = { N: 3, K: .105, HP: 5, VUE: 10, SAUT: 3.6 };   // (K : l'échelle du modèle ; VUE : à quelle distance il nous repère ; SAUT : d'où il bondit)
 const LK_A = { rampe: 1, saut: 4, attente: 6, mort: 14 };
 function chargerLicker() { if (!licker3D) licker3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-    return await new gltfMod.GLTFLoader().loadAsync("avatars/re-licker.glb?v=1"); })().catch(e => { console.warn("licker", e); return null; }); return licker3D; }
+    /* le Licker de Resident Evil 2 (le remake) : modelé accroupi, à quatre pattes ; pas d'animation fournie — ses mouvements sont calculés ici, à partir de cette posture */
+    const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re-licker2.glb?v=1"); G.scene.updateMatrixWorld(true);
+    const os = {}; G.scene.traverse(o => { if (o.isBone) { const k = o.name.replace(/_\d+$/, "").replace(/^ValveBipedBip01_/, ""); if (!os[k]) os[k] = o; } });
+    const wp = n => os[n].getWorldPosition(new THREE.Vector3()), d = wp("Head1").sub(wp("Pelvis")), L0 = Math.hypot(d.x, d.z) || 1, k = .78 / L0, bb = new THREE.Box3().setFromObject(G.scene, true);
+    G.userData.lk = { yaw: Math.atan2(d.x, d.z), k, y: -bb.min.y * k }; return G; })().catch(e => { console.warn("licker", e); return null; }); return licker3D; }
 function placeMurLicker() { const Fs = []; for (const [, cadres] of M.L.facadesFen || []) for (const c of cadres) if (c.W > 6 && c.H > 7) Fs.push(c); if (!Fs.length) return null;
   const moi = moiApo(), my = moi ? moi.g.position.y : 0;
   // (une façade côté cour, là où l'on peut marcher : son pied — là où il retombera — est praticable, au niveau où l'on est, sans mur entre lui et le sol ; jamais l'arrière d'un bâtiment)
@@ -11332,11 +11336,25 @@ function placeMurLicker() { const Fs = []; for (const [, cadres] of M.L.facadesF
     const okPied = [1.4, 2.2].every(r => { const x = c.o[0] + ux * a + nx * r, z = c.o[2] + uz * a + nz * r; return M.L.limites(x, z) && Math.abs(hNiv(M.L, x, z, my) - my) < 1.2; });
     if (okPied) return { c, a, y, sens: Math.random() < .5 ? 1 : -1 }; }
   return null; }
-function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const sc = skelMod.clone(G.scene); sc.scale.setScalar(LK.K); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
-  const g = new THREE.Group(); g.userData.perso = true; g.add(sc); M.scene.add(g); const mix = new THREE.AnimationMixer(sc), act = G.animations.map(c => mix.clipAction(c));
+function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const U = G.userData.lk, s0 = skelMod.clone(G.scene); s0.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
+  const sc = new THREE.Group(); sc.add(s0); sc.scale.setScalar(U.k); sc.rotation.y = -U.yaw; sc.position.y = U.y;   // (tourné vers l'avant du groupe, à la bonne taille, les pattes au sol)
+  const g = new THREE.Group(); g.userData.perso = true; g.add(sc); M.scene.add(g); const mix = { update() {} }, act = [];
+  const os = {}; s0.traverse(o => { if (o.isBone) { const k = o.name.replace(/_\d+$/, "").replace(/^ValveBipedBip01_/, ""); if (!os[k]) os[k] = o; } }); const repos = {}; for (const n in os) repos[n] = os[n].quaternion.clone();
   const hit = new THREE.Mesh(new THREE.SphereGeometry(.9, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = .5; g.add(hit);
-  const l = { licker: true, g, sc, mix, act, cur: -1, mur: m, etat: "mur", hp: LK.HP, mortT: 0, cine: false, mesh: hit, x: 0, z: 0, sautT: 0 }; jouerLK(l, LK_A.rampe); return l; }
-function jouerLK(l, i, une = false) { if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
+  const l = { licker: true, g, sc, mix, act, cur: -1, mur: m, etat: "mur", hp: LK.HP, mortT: 0, cine: false, mesh: hit, x: 0, z: 0, sautT: 0, os, repos, ph: Math.random() * 9 }; jouerLK(l, LK_A.rampe); return l; }
+/* ses mouvements, d'après sa posture accroupie : il rampe (pattes en diagonale, le dos qui ondule), il attend (il respire, la tête qui guette, la langue qui pointe),
+   il bondit (pattes tendues, la langue dehors), il meurt (il s'affaisse, les membres écartés) */
+function bougerLK(l, now, dt) { const B = l.os; if (!B) return; for (const n in l.repos) B[n].quaternion.copy(l.repos[n]); l.g.updateMatrixWorld(true);
+  const mode = l.cur, t = (l.ph += dt), T = (n, a, v) => { const b = B[n]; if (!b || !v) return; tourne3D({ sc: l.g, os: B }, n, a, v); };
+  if (mode === LK_A.rampe) { const f = t * Math.PI * 2 * 1.8, s = Math.sin(f), c = Math.cos(f);
+    T("R_UpperArm", "x", .45 * s); T("L_UpperArm", "x", -.45 * s); T("R_Forearm", "x", -.35 * Math.max(0, c)); T("L_Forearm", "x", -.35 * Math.max(0, -c)); T("R_Thigh", "x", -.4 * s); T("L_Thigh", "x", .4 * s);
+    T("R_Calf", "x", .3 * Math.max(0, -c)); T("L_Calf", "x", .3 * Math.max(0, c)); T("Spine2", "y", .1 * s); T("Spine4", "y", -.08 * s); T("Head1", "y", .15 * Math.sin(f * .5)); }
+  else if (mode === LK_A.saut) { T("R_UpperArm", "x", -.9); T("L_UpperArm", "x", -.9); T("R_Thigh", "x", .7); T("L_Thigh", "x", .7); T("Head1", "x", -.25); }
+  else if (mode === LK_A.mort) { const f = Math.min(1, (now - (l.mortT || now)) / 700); T("R_UpperArm", "z", -.7 * f); T("L_UpperArm", "z", .7 * f); T("R_Thigh", "z", -.5 * f); T("L_Thigh", "z", .5 * f); T("Head1", "x", .5 * f); l.sc.position.y = (l.sc.userData.y0 ??= l.sc.position.y) * (1 - .55 * f); }
+  else { const f = t * Math.PI * 2 * .5; T("Spine2", "x", .05 * Math.sin(f)); T("Head1", "y", .25 * Math.sin(f * .7)); T("Head1", "x", .08 * Math.cos(f)); }
+  const flic = mode === LK_A.saut ? .32 : mode === LK_A.mort ? .15 : .04 + .22 * Math.pow(Math.max(0, Math.sin(t * 1.7)), 12);   // (la langue : rentrée, elle pointe de temps en temps ; dehors quand il bondit)
+  if (B.Tongue_base) B.Tongue_base.scale.setScalar(flic); l.g.updateMatrixWorld(true); }
+function jouerLK(l, i, une = false) { if (l.os) { l.cur = i; return; } if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
 function poseMurLK(l) { const { c, a, y } = l.mur, ux = new THREE.Vector3(c.ux[0], 0, c.ux[2]).normalize(), n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize();
   const p = new THREE.Vector3(c.o[0], 0, c.o[2]).addScaledVector(ux, a).addScaledVector(n, .12); p.y = y; l.g.position.copy(p);
   const zA = ux.clone().multiplyScalar(l.mur.sens), xA = n.clone().cross(zA).normalize(); l.g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xA, n, zA));   // (le ventre contre le mur : son « haut » est la normale de la façade)
@@ -11346,7 +11364,7 @@ function animerLickers(moi, now, dt) {
   if (M.lickL !== M.L) { for (const l of M.lickers || []) M.scene.remove(l.g); M.lickers = []; M.cadavres = []; M.lickL = M.L; M.lickT = now + 4000; chargerLicker(); }
   if (!(M.tyran && !M.tyran.mortT) && now > (M.lickT || 0) && M.lickers.filter(l => !l.mortT).length < LK.N) { M.lickT = now + 1500; licker3D && licker3D.then(G => { if (G && M && M.L === M.lickL && M.lickers.filter(l => !l.mortT).length < LK.N) { const l = creerLicker(G); if (l) M.lickers.push(l); } }); }
   const mp = moi.g.position, hSol = (x, z) => hNiv(M.L, x, z, mp.y);
-  for (const l of [...M.lickers]) { l.mix.update(dt);
+  for (const l of [...M.lickers]) { if (l.os) bougerLK(l, now, dt); else l.mix.update(dt);
     if (l.mortT) { if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
       const e = Math.min(1, Math.max(0, (now - l.mortT - 1600) / 1200));   // (abattu : il s'efface, comme les zombies — seule la flaque reste)
       if (e > 0) l.sc.traverse(o => { if (o.isMesh) { o.material.transparent = true; o.material.depthWrite = false; o.material.opacity = 1 - e; } });
@@ -11435,17 +11453,37 @@ function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.n
   if (T.hp <= 0) { T.mortT = performance.now(); M.tyranMort = true; sonPos("sons/zombie3.mp3", 1);
     M.ctx.surInfo && M.ctx.surInfo("💀 Le Tyran est à terre ! L'hélicoptère descend : vite, vers le cercle rouge !"); } }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
-let zombie3D = null, skelMod = null, zG = null;
+let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
+/* les zombies : un homme, une femme, une blonde (montés sur le même squelette que nos héros, avec la démarche de zombie de l'ancien modèle), et une qui rampe ;
+   l'ancien modèle ne sert plus qu'à prêter sa démarche */
+const Z3_FICHIERS = ["avatars/re-z-homme.glb?v=1", "avatars/re-z-femme.glb?v=1", "avatars/re-z-blonde.glb?v=1"], Z3_RAMPE = "avatars/re-z-rampe.glb?v=1";
+const rampeZ = z => !z.chien && !z.boss && !z.revenant && (z.ty | 0) <= 2 && (typeof z.id === "number" ? Math.floor(z.id / 7) : [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0)) % 6 === 0;   /* (un sur six environ rampe ; le même pour tout le monde) */
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-    const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-zombie.glb?v=1"); zG = g; return g; })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
-function poserZ3(z, g) { const sc = skelMod.clone(g.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
-  const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
-  sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / Z3_H);   /* (à la vraie taille, comme les héros) */ act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
-  z.z3 = { pivot, sc, mix, act, cur: "walk" }; z.mesh.visible = false; }
+    const ld = new gltfMod.GLTFLoader(), g = await ld.loadAsync("avatars/re-zombie.glb?v=1"); zG = g;
+    const demarche = n => { const c = g.animations.find(a => a.name === n); if (!c) return null; const k = c.clone(); k.tracks = k.tracks.filter(t => /\.quaternion$/.test(t.name)); for (const t of k.tracks) t.name = t.name.replace("mixamorig", "").replace(/_\d+(?=\.)/, ""); const vu = new Set(); k.tracks = k.tracks.filter(t => !vu.has(t.name) && vu.add(t.name)); return k; };   // (« Hips_1 » → « Hips » : des os en double dans l'ancien modèle)   // (sa démarche, prêtée aux nouveaux : mêmes os, sans le nom « mixamorig »)
+    const prep = m => { m.scene.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.scene); m.scene.traverse(o => { if (o.isMesh) { for (const mt of [].concat(o.material)) { mt.transparent = false; mt.depthWrite = true; if (mt.map) mt.alphaTest = .5; } } }); return { g: m, h: (b.max.y - b.min.y) || 1.8 }; };
+    let modeles = [], rampe = null; try { const L = await Promise.all([...Z3_FICHIERS, Z3_RAMPE].map(f => ld.loadAsync(f)));
+      modeles = L.slice(0, 3).map(prep); rampe = prep(L[3]); const c = L[3].animations[0];
+      if (c) { const k = c.clone(); for (const t of k.tracks) if (/\.position$/.test(t.name)) { const v = t.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } } rampe.clip = k; } }   // (elle rampe sur place : c'est le jeu qui la fait avancer)
+    catch (e) { console.warn("zombies 3D", e); }
+    return (zPack = { zG: g, scene: g.scene, animations: g.animations, modeles, rampe, walk: demarche("walk"), idle: demarche("idle") }); })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
+function poserZ3(z, P) { const r = rampeZ(z) && P.rampe && P.rampe.clip, n = [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0), mod = r ? P.rampe : P.modeles.length ? P.modeles[((z.ty | 0) + n) % P.modeles.length] : null;
+  const sc = skelMod.clone(mod ? mod.g.scene : P.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = [].concat(o.material).map(m => m.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
+  const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {};
+  if (r) act.walk = act.idle = mix.clipAction(P.rampe.clip); else if (mod) { for (const c of mod.g.animations) act[c.name] = mix.clipAction(c); } else for (const c of P.animations) act[c.name] = mix.clipAction(c);
+  sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / (mod ? mod.h : Z3_H));   /* (à la vraie taille, comme les héros) */ act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
+  z.z3 = { pivot, sc, mix, act, cur: "walk", rampe: !!r, zpose: !!(mod && !r) }; z.mesh.visible = false; }
+/* la démarche de zombie, sur la marche des nouveaux : les bras tendus devant, la tête penchée, le dos voûté ; défaite avant chaque image de l'animation
+   (le moteur ne réécrit pas un os dont la valeur n'a pas changé : sans cela, les réglages s'empilaient et le corps se tordait) */
+const ZPOSE = [["LeftArm", "x", -1.25], ["RightArm", "x", -1.15], ["LeftArm", "z", .25], ["RightArm", "z", -.25], ["LeftForeArm", "x", -.25], ["RightForeArm", "x", -.35], ["Head", "z", .28], ["Head", "x", .15], ["Spine1", "x", .12]];
+function zPoseAvant(Z) { if (Z.sauve) for (const [b, q] of Z.sauve) b.quaternion.copy(q); Z.sauve = null; }
+function zPoseApres(Z) { if (!Z.B) { Z.B = {}; Z.sc.traverse(o => { if (o.isBone && !Z.B[o.name]) Z.B[o.name] = o; }); } Z.sauve = []; for (const n of new Set(ZPOSE.map(p => p[0]))) if (Z.B[n]) Z.sauve.push([Z.B[n], Z.B[n].quaternion.clone()]);
+  if (!AX) { AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) }; _q = new THREE.Quaternion(); _qp = new THREE.Quaternion(); _qs = new THREE.Quaternion(); _ax = new THREE.Vector3(); }
+  Z.sc.updateMatrixWorld(true); Z.sc.getWorldQuaternion(_qs); for (const [n, axe, ang] of ZPOSE) { const b = Z.B[n]; if (!b) continue; _ax.copy(AX[axe]).applyQuaternion(_qs); b.parent.getWorldQuaternion(_qp); _q.setFromAxisAngle(_ax, ang); const inv = _qp.clone().invert(); b.quaternion.premultiply(inv.multiply(_q).multiply(_qp)); b.updateMatrixWorld(true); } }
 function retirerZ3(z) { if (!z.z3) return; z.g.remove(z.z3.pivot); z.z3 = null; if (z.mesh.material.map) z.mesh.visible = true; }
 function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
-  if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); Z.pivot.rotation.x = -f * Math.PI / 2 * .97; Z.pivot.position.y = f * .14; Z.mix.timeScale = 0;   // (il tombe en arrière, à plat sur le sol : sans s'y enfoncer)
+  if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); if (!Z.rampe) { Z.pivot.rotation.x = -f * Math.PI / 2 * .97; Z.pivot.position.y = f * .14; } Z.mix.timeScale = 0;   // (celle qui rampe : elle reste à plat, immobile)   // (il tombe en arrière, à plat sur le sol : sans s'y enfoncer)
     if (f >= 1 && !Z.flaque) { Z.flaque = true; const c = Z.cap || 0; flaqueMort({ g: { position: new THREE.Vector3(z.x - Math.sin(c) * .8, yZ(z), z.z - Math.cos(c) * .8) } }); }   // (la flaque de sang s'étend sous lui)
     const e = Math.min(1, Math.max(0, (now - z.mortT - 1800) / 1400));   // (puis il s'efface : il ne reste que la flaque)
     if (e > 0) { if (!Z.fondu) { Z.fondu = true; Z.sc.traverse(o => { if (o.isMesh) { o.material.transparent = true; o.material.depthWrite = false; } }); } Z.sc.traverse(o => { if (o.isMesh) o.material.opacity = 1 - e; }); }
@@ -11453,7 +11491,7 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
   const moi = moiApo(); let cap = Z.cap ?? 0; if (marche && Math.hypot(vx, vz) > 1e-4) cap = Math.atan2(vx, vz); else if (moi) cap = Math.atan2(moi.g.position.x - z.x, moi.g.position.z - z.z);
   let d = cap - (Z.cap ?? cap); d = Math.atan2(Math.sin(d), Math.cos(d)); Z.cap = (Z.cap ?? cap) + d * Math.min(1, dt * 6); Z.pivot.rotation.y = Z.cap;
   const n = marche ? "walk" : "idle"; if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); Z.act[n].crossFadeFrom(Z.act[Z.cur], .3, false); Z.cur = n; }
-  Z.mix.timeScale = (ZTYPES[z.ty].v || .85) * 1.1; Z.mix.update(dt);
+  Z.mix.timeScale = Z.rampe ? 1.6 : Z.zpose ? (ZTYPES[z.ty].v || .85) * .7 : (ZTYPES[z.ty].v || .85) * 1.1; if (Z.zpose) zPoseAvant(Z); Z.mix.update(dt); if (Z.zpose) zPoseApres(Z);
   const touche = now < (z.flashT || 0); if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
 /* qui est en 3D : les zombies ordinaires les plus proches de la caméra (pas le chien, ni Nemesis, ni les équipiers revenus) */
 function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; const g = zombie3D; chargerZombie3D();
@@ -11764,7 +11802,7 @@ function simulerZ(t, dt) {
     if (z.bloque && t < z.bloque) continue;
     if (z.chemin && z.chemin.length) { const [px, pz] = z.chemin[0], ddx = px - z.x, ddz = pz - z.z, d = Math.hypot(ddx, ddz);
       if (d < .12) z.chemin.shift();
-      else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(4).k || 1)) : 1) * (cible ? 1 : .55), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
+      else { const v = ZTYPES[z.ty].v * (z.chien ? Math.max(.5, Math.min(2, regZ(4).k || 1)) : 1) * (cible ? 1 : .55) * (rampeZ(z) ? .45 : 1), pas = Math.min(d, v * dt), nx = z.x + ddx / d * pas, nzz = z.z + ddz / d * pas;   // (la vitesse du chien : réglée par l'administrateur)
         if (Lz.limites(nx, nzz)) { z.x = nx; z.z = nzz; } else z.chemin = []; } } }
   // ils ne se marchent pas dessus
   const zs = [...M.zomb.values()].filter(z => !z.mortT && !z.cine);
@@ -15449,7 +15487,7 @@ function preparerVoisin() {
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return;
       const q = construireScene(best); if (q.L.setNuit) q.L.setNuit(estNuit()); M.prets[best] = q;
       // (l'apocalypse : un zombie et nos personnages en 3D, cachés sous le sol, le temps de préparer leur affichage avec les lumières du lieu — sinon tout se prépare d'un coup en arrivant, et l'image se fige)
-      const extra = []; if (q.L.apo && skelMod) { const add = o => { o.position.set(0, -500, 0); q.scene.add(o); extra.push(o); }; if (zG) add(skelMod.clone(zG.scene)); for (const p of M.gens.values()) if (p.av3) add(skelMod.clone(p.av3.sc)); }
+      const extra = []; if (q.L.apo && skelMod) { const add = o => { o.position.set(0, -500, 0); q.scene.add(o); extra.push(o); }; if (zPack) { for (const m of [...zPack.modeles, zPack.rampe].filter(Boolean)) add(skelMod.clone(m.g.scene)); } else if (zG) add(skelMod.clone(zG.scene));   /* (les nouveaux zombies, préparés eux aussi) */ for (const p of M.gens.values()) if (p.av3) add(skelMod.clone(p.av3.sc)); }
       const fin = () => { for (const o of extra) q.scene.remove(o); if (M) M.preparation = false; };
       // les images (murs, sols, affiches…) sont envoyées à la carte graphique dès maintenant
       const vues = new Set(); q.scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k in m) { const t = m[k]; if (t && t.isTexture && !vues.has(t)) { vues.add(t); try { M.rendu.initTexture(t); } catch (e) {} } } });
