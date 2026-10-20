@@ -8543,7 +8543,7 @@ export async function ouvrir(ctx) {
 }
 
 export function fermer() {
-  if (M) clearInterval(M.pingT);
+  if (M) clearInterval(M.pingT); if (M && VX.on) micro(false);
   if (!M) return;
   couperMusiqueBttf(0);
   couperSonsApo();
@@ -15431,6 +15431,37 @@ function preparerVoisin() {
 export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
 
 /* --- la connexion en direct --- */
+/* ===================== la voix : le micro =====================
+   On s'entend entre tous ceux qui ont allumé leur micro, dans le même monde (la caserne de 1990, ou celle de Resident Evil) — pas à Silent Hill ni dans les univers à une personne.
+   D'un téléphone à l'autre, en direct (WebRTC) : le serveur ne fait que les présenter l'un à l'autre. On allume, on coupe, quand on veut. */
+const VX = { on: false, flux: null, pcs: new Map(), salle: null, ws: null };
+const salleVoixDe = l => !l ? null : l.startsWith("z-") ? "apo" : /^(sh-|spr-|gb-)/.test(l) || ["santacarla", "bttf-cour", "hv1955"].includes(l) ? null : "1990";
+function voixInfo() { if (M && M.ctx.surVoix) M.ctx.surVoix({ on: VX.on, n: VX.pcs.size }); }
+function voixFermer(n) { const c = VX.pcs.get(n); if (!c) return; VX.pcs.delete(n); try { c.pc.close(); } catch (e) {} if (c.son) { c.son.srcObject = null; c.son.remove(); } voixInfo(); }
+function voixPair(n, appelle) { if (VX.pcs.has(n)) return VX.pcs.get(n);
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] }), c = { pc, son: null }; VX.pcs.set(n, c);
+  if (VX.flux) for (const t of VX.flux.getTracks()) pc.addTrack(t, VX.flux);
+  pc.onicecandidate = e => { if (e.candidate) envoyerWS({ t: "rtc", a: n, d: { ice: e.candidate.toJSON() } }); };
+  pc.ontrack = e => { if (!c.son) { c.son = document.createElement("audio"); c.son.autoplay = true; c.son.playsInline = true; c.son.style.display = "none"; document.body.appendChild(c.son); } c.son.srcObject = e.streams[0]; c.son.play().catch(() => {}); };
+  pc.onconnectionstatechange = () => { if (["failed", "closed"].includes(pc.connectionState)) voixFermer(n); };
+  if (appelle) pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => envoyerWS({ t: "rtc", a: n, d: { sdp: pc.localDescription.toJSON() } })).catch(() => voixFermer(n));
+  voixInfo(); return c; }
+async function voixRtc(de, d) { if (!VX.on) return;
+  try { if (d.sdp) { const c = d.sdp.type === "offer" ? voixPair(de, false) : VX.pcs.get(de); if (!c) return; await c.pc.setRemoteDescription(d.sdp);
+      if (d.sdp.type === "offer") { const r = await c.pc.createAnswer(); await c.pc.setLocalDescription(r); envoyerWS({ t: "rtc", a: de, d: { sdp: c.pc.localDescription.toJSON() } }); } }
+    else if (d.ice) { const c = VX.pcs.get(de); if (c) await c.pc.addIceCandidate(d.ice); } } catch (e) {} }
+function voixToutFermer() { for (const n of [...VX.pcs.keys()]) voixFermer(n); }
+/* (à l'entrée d'un lieu : même monde, rien ne change ; autre monde, on se présente aux nouveaux ; Silent Hill, le micro se coupe) */
+function voixLieu() { if (!VX.on || !M) return; const s = salleVoixDe(M.lieu);
+  if (!s) { micro(false); M.ctx.surInfo && M.ctx.surInfo("🎙️ Micro coupé : ici, on est seul."); return; }
+  if (s !== VX.salle || VX.ws !== M.ws) { voixToutFermer(); VX.salle = s; VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); } }
+export const _voix = () => VX;   // (pour les essais)
+export async function micro(on) { if (!M) return false;
+  if (on) { if (VX.on) return true; if (!salleVoixDe(M.lieu)) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Pas de micro ici : on est seul dans cet univers."); return false; }
+    try { VX.flux = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+    catch (e) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Le micro n'est pas autorisé : vérifie les autorisations du navigateur."); return false; }
+    VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixInfo(); return true; }
+  VX.on = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
 export function direDansLaCour(texte) { envoyerWS({ t: "dire", texte }); }
 export function dj(action, donnees = {}) { envoyerWS({ t: "dj_" + action, ...donnees }); }
@@ -15460,8 +15491,11 @@ function connecter() {
     changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? ici : null, M.lieu && moiR ? M.yaw : undefined); };   // (après une coupure : on reprend là où l'on était, pas à l'entrée du lieu)
   ws.onmessage = ev => {
     if (!M) return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.t === "voix_liste") { if (VX.on) for (const n of m.nums || []) voixPair(n, true); return; }   // (on vient d'allumer : on appelle ceux qui l'avaient déjà)
+    if (m.t === "voix") { if (!m.on) voixFermer(m.numero); return; }   // (un nouveau : c'est lui qui nous appelle)
+    if (m.t === "rtc") { voixRtc(m.de, m.d || {}); return; }
     if (m.t === "etat") {
-      if (m.lieu !== M.lieu) return;
+      if (m.lieu !== M.lieu) return; setTimeout(voixLieu, 0);
       M.moiNum = m.moi;
       if (!M.gens.has(m.moi)) ajouterAncien({ ...ctx.moiInfo(), numero: m.moi, x: M.posEntree[0], z: M.posEntree[1] });   // (déjà là après un passage sans coupure)
       m.gens.forEach(ajouterAncien);

@@ -47,6 +47,8 @@ const LIEUX_MATRICE = ["rue", "grande", "fetes", "cave", "etage", "mess", "z-rue
 const ALMANACH_PLACES = [["grande", -7.6, -8], ["grande", -4.6, 10], ["grande", 7.4, -11], ["grande", 1.4, -35], ["grande", 7.4, 7], ["grande", 4.4, -2], ["grande", -1.6, 13], ["grande", -7.6, 1], ["grande", 7.4, -32], ["grande", 10.4, 10]];   // (dans les cours de la caserne seulement : ni dans les bâtiments, ni dans la rue — tout le monde peut les trouver)
 const APPART_INVITES = [2, 3, 4];   // (les badges invités dans l'appartement de l'escalier Z, en plus de l'administrateur ; la même liste dans index.html)
 const universDe = id => id === "santacarla" ? "lb" : /^spr-/.test(id || "") ? "spr" : /^sh-/.test(id || "") ? "sh" : /^gb-/.test(id || "") ? "gb" : id === "bttf-cour" || id === "hv1955" ? "bttf" : null;   // (les univers : une personne à la fois)
+// la voix (le micro) : on s'entend entre tous ceux qui l'ont allumé, dans le même monde — la caserne de 1990, ou celle de l'apocalypse (Resident Evil) ; pas dans les univers à une personne (Silent Hill…)
+const salleVoix = l => !l ? null : l.startsWith("z-") ? "apo" : universDe(l) ? null : "1990";
 const LIEUX_BTTF = ["bttf-cour", "hv1955", "gb-cour", "gb-mess", "appart", "santacarla"];   // (et la cour et le mess de S.O.S. Fantômes, rien qu'à soi)   // (z- : la caserne de l'apocalypse)
 const DITS_DUREE = 3600e3;   // les messages de la Matrice sont effacés au bout d'une heure
 const MUSIQUE_MAX = 50 * 1024 * 1024, VIDEO_MAX = 150 * 1024 * 1024, DISCO_MAX = 2 * 1024 * 1024 * 1024;
@@ -445,6 +447,7 @@ export class Compteur extends DurableObject {
   presents(lieu, sauf) {
     return this.ctx.getWebSockets().map(ws => [ws, ws.deserializeAttachment()]).filter(([ws, a]) => a && a.lieu === lieu && ws !== sauf);
   }
+  diffuserVoix(salle, msg, sauf) { const t = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) { if (ws === sauf) continue; const b = ws.deserializeAttachment(); if (b && salleVoix(b.lieu) === salle) { try { ws.send(t); } catch (e) {} } } }
   diffuser(lieu, msg, sauf) { const t = JSON.stringify(msg); for (const [ws] of this.presents(lieu, sauf)) { try { ws.send(t); } catch (e) {} } }
   diffuserApo(msg) { const t = JSON.stringify(msg); for (const ws of this.ctx.getWebSockets()) { const b = ws.deserializeAttachment(); if (b && b.lieu && b.lieu.startsWith("z-")) { try { ws.send(t); } catch (e) {} } } }
   comptes() { const c = {}; for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.lieu) c[a.lieu] = (c[a.lieu] || 0) + 1; } return c; }
@@ -460,6 +463,7 @@ export class Compteur extends DurableObject {
     if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "appart" || a.admin || APPART_INVITES.includes(Number(a.numero)))) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
       const ancien = a.lieu;
       this.finirSlow(ws, a);
+      if (a.voix && salleVoix(m.lieu) !== a.salleV) { this.diffuserVoix(a.salleV, { t: "voix", numero: a.numero, on: false }, ws); a.voix = false; a.salleV = null; }   // (on change de monde : le micro se coupe ; on le rallume de l'autre côté)
       Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null, joue: null }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
       // les messages ne restent qu'une heure
@@ -607,6 +611,17 @@ export class Compteur extends DurableObject {
     } else if (m.t === "danse" && a.lieu) {
       a.danse = ["disco", "charleston", "madison", "thriller", "saut"].includes(m.on) ? m.on : m.on ? "balance" : false; ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
+    } else if (m.t === "voix") {
+      // le micro, allumé ou coupé : les autres du même monde le savent ; à celui qui l'allume, la liste de ceux qui l'ont déjà
+      const salle = salleVoix(a.lieu), avant = a.voix ? a.salleV : null; a.voix = !!m.on && !!salle; a.salleV = a.voix ? salle : null; ws.serializeAttachment(a);
+      if (avant && avant !== a.salleV) this.diffuserVoix(avant, { t: "voix", numero: a.numero, on: false }, ws);
+      if (a.voix) { this.diffuserVoix(salle, { t: "voix", numero: a.numero, on: true }, ws);
+        const nums = this.ctx.getWebSockets().filter(w => w !== ws).map(w => w.deserializeAttachment()).filter(b => b && b.voix && b.salleV === salle && b.numero !== a.numero).map(b => b.numero);
+        ws.send(JSON.stringify({ t: "voix_liste", nums })); }
+    } else if (m.t === "rtc" && a.voix) {
+      // la mise en relation de deux micros (WebRTC) : transmise telle quelle à l'autre, s'il a lui aussi le micro allumé, dans le même monde
+      const t = JSON.stringify({ t: "rtc", de: a.numero, d: m.d }); if (t.length > 40000) return;
+      for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (w !== ws && b && b.voix && b.salleV === a.salleV && String(b.numero) === String(m.a)) { try { w.send(t); } catch (e) {} } }
     } else if (m.t === "aller" && a.lieu) {
       Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "aller", numero: a.numero, x: a.x, z: a.z }, ws);
@@ -658,6 +673,7 @@ export class Compteur extends DurableObject {
     const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
     if (LIEUX_BTTF.includes(a.lieu)) this.almanach().then(al => { if (al.pris === Number(a.numero)) return this.reposerAlmanach(); }).catch(() => {});
     this.finirSlow(ws, a);
+    if (a.voix) { this.diffuserVoix(a.salleV, { t: "voix", numero: a.numero, on: false }, ws); a.voix = false; a.salleV = null; }   // (parti : son micro aussi)
     const lieu = a.lieu; a.lieu = null; try { ws.serializeAttachment(a); } catch (e) {}
     this.diffuser(lieu, { t: "part", numero: a.numero }, ws); this.diffuserComptes();
     if (lieu.startsWith("z-")) { this.diffuser(lieu, { t: "z_chef", numero: this.chefDe(lieu) }, ws); this.videApo().catch(() => {}); }
