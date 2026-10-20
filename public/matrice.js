@@ -10294,11 +10294,11 @@ function histoireSH(now) {
     // 2. Heather, au fond du lavoir (la fosse) : la fille de Harry, qu'il retrouve en bas, passé la porte du sous-sol ; un monstre sort du brouillard, du fond — elle file
     if (e === 2) { const FOND = [-11.5, -86.3];
       let bete = null; const sortir = () => { if (bete) return; bete = creerBeteSH("capuche", FOND[0], FOND[1], -C3.PF); bete.cine = true; bete.v = 1.05; brumeSH({ x: FOND[0], y: -C3.PF, z: FOND[1] }, 4600); sonBruit(.5, 300, .5); M.shRegard = bete.g.position; };
-      rencontreSH(SHN.heather, [1.5, -86.3], 9, FOND, [[SHN.heather, "Papa ?! … Papa, c'est toi ?"], ["moi", "Heather ? Mais… qu'est-ce que tu fais ici ? Tu devrais être à la maison !"],
-          [SHN.heather, "Je ne sais pas. J'étais au centre commercial, et puis tout est devenu gris. Le brouillard, la sirène… et je me suis réveillée ici, en bas."], ["moi", "Tu n'as rien ? Tu es blessée ?"],
-          [SHN.heather, "Ça va, ça va… Arrête de me regarder comme si j'avais encore sept ans."], [SHN.heather, "Papa… il y a quelque chose, là-dedans. Au fond. Je l'entends respirer depuis tout à l'heure."],
-          ["moi", "Reste derrière moi, Heather."], [SHN.heather, "Trop tard. Le voilà.", 2200],
-          geste(sortir), [null, null, 3200], geste(() => { M.shRegard = null; }), [SHN.heather, "Je ne suis plus une petite fille, papa ! On se retrouve dehors !", 2200], geste(() => evanouirSH(SHN.heather, [12.5, -86.3], 900, 1.6)), [null, null, 2600]],
+      rencontreSH(SHN.heather, [1.5, -86.3], 9, FOND, [[SHN.heather, "Papa ?! … Papa, c'est toi ?"], ["moi", "Heather ?! Qu'est-ce que tu fais ici ?"],
+          [SHN.heather, "Je suis venue la chercher."], ["moi", "La chercher ? Qui ça ?"], [SHN.heather, "…Tu le sais très bien. Elle est quelque part, dans cette ville. La nuit, je l'entends m'appeler."],
+          ["moi", "Heather, de qui tu parles ? Il n'y a personne, ici. Rentre avec moi, tout de suite."], [SHN.heather, "Pas sans elle. Je ne repartirai pas sans elle."],
+          [SHN.heather, "Papa… il y a quelque chose, là-dedans. Au fond. Je l'entends respirer depuis tout à l'heure."], ["moi", "Reste derrière moi, Heather."], [SHN.heather, "Trop tard. Le voilà.", 2200],
+          geste(sortir), [null, null, 3200], geste(() => { M.shRegard = null; }), [SHN.heather, "Papa, fuis ! Cours ! Ne t'occupe pas de moi !", 2200], geste(() => evanouirSH(SHN.heather, [12.5, -86.3], 900, 1.6)), [null, null, 2600]],
         () => { sortir(); bete.cine = false; M.shEtape = 3; evanouirSH(SHN.heather, [12.5, -86.3], 0, 1.6); }, -C3.PF, mp => mp.x < 4.5 && mp.z < -84.2); }
     // 3. James sort de sous le préau de l'horloge jaune : il cherche sa femme ; il nous donne son arme
     if (e === 3 && typeof RU !== "undefined" && RU.xB != null) { const T = [RU.xB - RU.pc / 2, RU.zA + RU.pc / 2];
