@@ -15513,6 +15513,10 @@ export async function micro(on) { if (!M) return false;
     let mic = null; try { mic = localStorage.getItem("caserne-micro"); } catch (e) {}
     try { VX.flux = await navigator.mediaDevices.getUserMedia({ audio: { ...(mic ? { deviceId: { ideal: mic } } : {}), echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
     catch (e) { M.ctx.surInfo && M.ctx.surInfo("🎙️ Le micro n'est pas autorisé : vérifie les autorisations du navigateur."); return false; }
+    /* (un faux micro choisi par défaut — celui de Steam, un câble audio virtuel, le « mixage stéréo » — n'envoie que du silence : on prend le vrai) */
+    const FAUX = /steam streaming|virtual|vb-audio|cable output|voicemeeter|stereo mix|mixage st[ée]r[ée]o|obs|droidcam/i, lab = (VX.flux.getAudioTracks()[0] || {}).label || "";
+    if (FAUX.test(lab) && !mic) { try { const vrai = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audioinput" && d.label && !FAUX.test(d.label) && !/^(default|communications)$/.test(d.deviceId))[0];
+      if (vrai) { const f = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: vrai.deviceId }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); for (const t of VX.flux.getTracks()) t.stop(); VX.flux = f; M.ctx.surInfo && M.ctx.surInfo("🎙️ Micro : " + vrai.label); } } catch (e) {} }
     VX.on = true; VX.salle = salleVoixDe(M.lieu); VX.ws = M.ws; envoyerWS({ t: "voix", on: true }); voixEcoute(); voixInfo(); return true; }
   VX.on = false; clearInterval(VX.niveauT); VX.moiParle = VX.autreParle = false; voixToutFermer(); if (VX.flux) for (const t of VX.flux.getTracks()) t.stop(); VX.flux = null; VX.salle = null; envoyerWS({ t: "voix", on: false }); voixInfo(); return false; }
 function envoyerWS(m) { if (M && M.ws && M.ws.readyState === 1) M.ws.send(JSON.stringify(m)); }
