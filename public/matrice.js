@@ -51,7 +51,7 @@ export function dessinerBonhomme(o, tete) {
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
     const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const peignoirAssis = t === "peignoir" && (o.pose === "assis" || o.pose === "boire");
-    const bas = peignoirAssis ? (o.bas || c) : t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "maria" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
+    const bas = peignoirAssis ? (o.bas || c) : t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
     const accroupi = o.pose === "genoux1" || o.pose === "genoux2", DY = 45;
     const GEN = o.pose === "genoux1" ? [[38, 328], [162, 328]] : [[114, 336], [86, 336]];   // genoux : écartés, puis croisés
@@ -123,18 +123,6 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = o.ceinture || "#141414"; x.fillRect(58, 236, 84, 11);   // la ceinture
       if (!dos2) { x.beginPath(); x.ellipse(100, 241, 9, 7, 0, 0, 7); x.fill();
         x.save(); x.translate(96, 244); x.rotate(.18); x.fillRect(-4, 0, 9, 38); x.restore(); x.save(); x.translate(104, 244); x.rotate(-.12); x.fillRect(-4, 0, 9, 34); x.restore(); } }
-    // Maria (Silent Hill) : la veste de cuir rouge, courte, ceinturée et ouverte sur une robe fourreau gris anthracite ; collants sombres, bottes hautes marron
-    if (t === "maria") { const dos2 = o.pose === "dos" || profil, cuir = assombrir(c, .72);
-      if (!dos2) { x.fillStyle = "#2c2b30"; x.beginPath(); x.moveTo(86, 146); x.lineTo(114, 146); x.lineTo(112, 250); x.lineTo(88, 250); x.closePath(); x.fill();   // la robe, entre les pans ouverts
-        x.fillStyle = peau; x.beginPath(); x.moveTo(88, 146); x.lineTo(112, 146); x.lineTo(100, 170); x.closePath(); x.fill();   // le décolleté
-        x.fillStyle = "#151517"; x.fillRect(90, 146, 20, 4);   // le ras-de-cou
-        x.fillStyle = cuir; x.beginPath(); x.moveTo(84, 146); x.lineTo(96, 196); x.lineTo(88, 200); x.lineTo(72, 154); x.closePath(); x.moveTo(116, 146); x.lineTo(104, 196); x.lineTo(112, 200); x.lineTo(128, 154); x.closePath(); x.fill(); }   // les revers
-      x.fillStyle = "rgba(255,255,255,.1)"; x.fillRect(66, 160, 6, 70); x.fillRect(128, 160, 4, 70);   // le reflet du cuir
-      x.fillStyle = cuir; x.fillRect(58, 222, 84, 11); x.strokeStyle = "#b9b2a6"; x.lineWidth = 2.5; for (const rx of [82, 118]) { x.beginPath(); x.arc(rx, 227.5, 5.5, 0, 7); x.stroke(); }   // la ceinture et ses deux anneaux
-      x.fillStyle = "#2c2b30"; x.beginPath(); x.moveTo(62, 252); x.lineTo(138, 252); x.lineTo(136, 334); x.lineTo(64, 334); x.closePath(); x.fill();   // la robe fourreau, sous la veste
-      x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(62, 252, 76, 4);
-      if (jambesDroites) { x.fillStyle = "rgba(38,30,36,.72)"; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill();   // les collants
-        x.fillStyle = "#6a4930"; x.beginPath(); x.roundRect(78, 348, 20, 56, 6); x.roundRect(102, 348, 20, 56, 6); x.fill(); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(82, 352, 3, 46); x.fillRect(106, 352, 3, 46); } }   // les bottes
     // les tenues du quotidien : jupe et chemisier, tailleur, chemisier et jean, salopette, robe longue
     if (t === "jupe" || t === "tailleur") { x.fillStyle = t === "jupe" ? (o.bas || "#26324e") : assombrir(c, .82); x.beginPath(); x.moveTo(60, 234); x.lineTo(140, 234); x.lineTo(156, 336); x.lineTo(44, 336); x.closePath(); x.fill();
       x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(60, 232, 80, 5);
@@ -8509,7 +8497,7 @@ export async function ouvrir(ctx) {
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
     animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
-    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt);
+    for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.info.heros === 72 && p.corps) p.corps.visible = false;   // (Maria : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
@@ -9486,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) {
+function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[72]);   // (Maria en 3D : chargée d'avance)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9624,8 +9612,7 @@ function resetSH() { if (!M) return; M.shEtape = 0; M.shScenes = new Set(); M.sh
 const prenomSH = () => (((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").split(" ")[0]) || "toi";
 function persoSH(num, x, z, y = null) {
   const id = SH_IDN[num], ci = infoGendarme(id, `images/sh/${SH_NOMS[id].toLowerCase()}-tete.webp`, SH_NOMS[id]); let p = M.gens.get(num); if (p) return p;
-  if (id === 72 && (!ci.info.tenue || ci.info.tenue === "tailleur")) Object.assign(ci.info, { tenue: "maria", couleur: "#a3243a", pieds: "#5a3c26" });   /* (Maria : sa veste de cuir rouge) */
-  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;
+  const pl = placeLibre(x, z) || [x, z]; p = ajouterAncien({ ...ci.info, ...(id === 72 ? { heros: 72 } : {}), numero: num, pnj: true, x: pl[0], z: pl[1] }); if (!p) return null;   // (Maria : en 3D)
   p.cleInfo = ci.cle; p.info.allure = .5; if (y != null) p.g.position.y = y; return p; }
 /* un brouillard épais qui monte d'un coup, là où quelqu'un arrive ou s'en va : de gros nuages autour de lui, et toute la scène qui se bouche un instant */
 let texBrumeC = null;
@@ -12167,11 +12154,11 @@ function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { glt
     const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
-const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1" };
+const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1" };   // (72 : Maria, dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; return l.find(t => t.id === a.t) || l[0]; };
-const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? M.L.apo && !M.L.sh : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
+const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
-function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? 1 : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
+function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? (p.info.heros === 72 ? .96 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
   const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
 /* le poids : chaque os du tronc et des membres s'élargit autour de lui-même (seulement pour la peau qu'il porte) ; les os enfants n'héritent pas
    de cet élargissement — sinon (avec tout le personnage élargi en largeur) bras et jambes se déformaient en dansant, comme désarticulés */
@@ -12186,7 +12173,9 @@ function lookAv3(A, info) { const a = (!info.heros && info.av3) || {},   /* (un 
   hx(C.haut, U.uHaut); hx(C.bas, U.uBas); hx(C.pieds, U.uPieds); }
 function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); if (p.av3 && p.av3f === T.f) { lookAv3(p.av3, p.info); corpsAv3(p, p.av3); return; }
   chargerAvatar3D(T.f).then(A => { if (!A || !M || M.gens.get(p.info.numero) !== p || !av3OK(p)) return; if (p.av3 && p.av3 !== A) p.av3.sc.parent && p.av3.sc.parent.remove(p.av3.sc);
-    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A); }); }
+    A.sc.parent && A.sc.parent.remove(A.sc); p.g.add(A.sc); p.av3 = A; p.av3f = T.f; A.cur = null; A.px = A.pz = null; lookAv3(A, p.info); corpsAv3(p, A);
+    // (Maria, dans le brouillard sombre de Silent Hill : un peu de sa propre lumière, sinon on ne voyait qu'une ombre noire)
+    if (p.info.heros === 72 && !A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.map && m.emissive) { m.emissive.set(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = .42; m.needsUpdate = true; } }); } }); }
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
   if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A); return; }
@@ -15015,6 +15004,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
