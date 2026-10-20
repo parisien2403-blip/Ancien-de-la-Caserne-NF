@@ -9788,7 +9788,7 @@ function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
   eclairDuCanon(moi, dx, dz); sonTir(); m.flashT = performance.now() + 160; sangAuSol(m.x, m.z, m.y, .9); if (m.lf) jetSang(m.x, m.y + 1.25, m.z);   /* (le Lying Figure : le sang gicle à l'impact) */
   if (m.imbattable) { m.lentT = performance.now() + 1800; return; }   // (Pyramid Head : on ne le tue pas, on le ralentit)
-  if (m.boss) { m.hp--; m.lentT = performance.now() + 450; if (m.hp <= 0) { m.fige = true; m.cine = true; m.frappeT = 0; M.ctx.surInfo && M.ctx.surInfo("🔺 Pyramid Head s'arrête net…"); m.surMort && m.surMort(m); } else if (m.hp % 6 === 0) M.ctx.surInfo && M.ctx.surInfo(`🔺 Il chancelle… (encore ${m.hp} balles)`); return; }
+  if (m.boss) { m.hp--; m.lentT = performance.now() + 450; if (m.hp <= 0) { m.fige = true; m.cine = true; m.frappeT = 0; m.surMort && m.surMort(m); } return; }
   m.hp--; const nx = m.x + dx * .35, nz = m.z + dz * .35; if (limBeteSH(m, nx, nz)) { m.x = nx; m.z = nz; }
   if (m.hp <= 0) { m.mortT = performance.now(); sangAuSol(m.x, m.z, m.y, 1.6); if (m.p) { m.p.info.mortT = performance.now(); flaqueMort(m.p); } if (m.surMort) m.surMort(m); } }
 /* Pyramid Head frappe : nous, si l'on est à portée ; ou un monstre qui passe trop près — d'un coup, il le coupe en deux */
@@ -10095,7 +10095,7 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
     dialogueSH(SHN.angela, [[null, null, 1600], [SHN.angela, "TOI ! Je te reconnais… c'est toi !"], ["moi", "Angela ? Calme-toi… Qu'est-ce qui se passe ?"], [SHN.angela, "Tu sais où elle est ! Tu sais où est ma maman ! Tu l'as toujours su !"],
       ["moi", "Mais non… je ne comprends rien, je te jure."], [SHN.angela, "Menteur ! Ils mentent tous ! Le couteau… le feu… tout brûle, ici, tout le temps…"], [SHN.angela, "Pourquoi tu me regardes comme ça ?! ARRÊTE DE ME REGARDER !"],
       geste(() => { musiqueRencontre(false); sirenePH(10000); }), ["moi", "Cette sirène… Non…", 3600], geste(sortir), [null, null, 5200], geste(() => { M.shRegard = null; }), ["moi", "Non… pas lui… pas maintenant."], [null, null, 600]],   /* (la musique de la rencontre s'efface quand la sirène retentit, avant le thème de Pyramid Head) */
-      () => { sortir(); pyr.cine = false; pyr.cineCible = null; pyr.lentT = performance.now() + 2500;   /* (il est tout près, maintenant : un instant de répit, le temps de lever l'arme) */ if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); M.ctx.surInfo && M.ctx.surInfo("🔺 Il faut au moins 24 balles pour l'arrêter. Tiens bon !"); }, {}); return; }
+      () => { sortir(); pyr.cine = false; pyr.cineCible = null; pyr.lentT = performance.now() + 2500;   /* (il est tout près, maintenant : un instant de répit, le temps de lever l'arme) */ if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); }, {}); return; }
   // le passage de lumière, plus haut dans la rue
   if (e >= 12 && !M.L.passage) { const g = new THREE.Group(), [x, z] = RUE_PASSAGE; g.position.set(x, 0, z); M.scene.add(g);
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 4.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, fog: false, side: THREE.DoubleSide })); pl.position.y = 2.1; pl.rotation.y = Math.PI / 2; g.add(pl);
@@ -10390,7 +10390,7 @@ function histoireSH(now) {
     const finale = avecMaria ? [geste(() => { M.shRegard = null; }), [SHN.maria, `Il est là… Pardonne-moi, ${nom} !`, 2600], geste(() => evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 600, 1.7)), [null, null, 1500]]
       : [geste(() => { M.shRegard = null; }), ["moi", "Qu'est-ce que c'est que… ÇA ?!", 2400], [null, null, 600]];
     dialogueSH(SHN.maria, [...debut, geste(() => { musiqueRencontre(false); sirenePH(10000); }), [null, null, 4200], geste(() => { musiquePyramid(true); sortir(); }), [null, null, 8200], ...finale],   /* (la sirène d'abord, seule, pour prévenir ; puis il apparaît) */
-      () => { sortir(); musiquePyramid(true); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); if (avecMaria) evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); M.ctx.surInfo && M.ctx.surInfo("🔺 Les balles ne le tuent pas… elles le ralentissent seulement."); }, {}); };
+      () => { sortir(); musiquePyramid(true); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); if (avecMaria) evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 0, 1.7); }, {}); };
     /* (il avance dans la salle, à pas lents ; la caméra derrière lui — puis on parle) */
     moi.info.allure = .55; moi.cible = new THREE.Vector3(but[0], mp.y, but[1]); moi.chemin = []; envoyerWS({ t: "aller", x: but[0], z: but[1] }); let u = 0, prec = performance.now(), parti = false;
     const go = () => { if (parti) return; parti = true; moi.info.allure = 1; moi.cible = null; moi.chemin = []; finCine(); suite(); };
