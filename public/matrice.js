@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.01";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.02";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12759,7 +12759,7 @@ function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (M.cine && M.cineSeul && numero !== M.cineSeul) return;   // (pendant certaines scènes, les autres se taisent)
   // pendant une cinématique : en sous-titre, fixe à l'écran (une bulle au-dessus de la tête sortait du cadre selon l'angle de la caméra)
-  if (M.cine || (M.L && M.L.sh)) { bulle(`<b style="color:#b5573c">${esc(nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; }   // (à Silent Hill, toujours en sous-titre : jamais de bulle sur les personnages)
+  if (M.cine || (M.L && (M.L.sh || M.L.apo))) { bulle(`<b style="color:#b5573c">${esc(nomParle(p))}</b> : ${esc(texte)}`, Math.min(6500, 2800 + texte.length * 45)); return; }   // (à Resident Evil aussi : des sous-titres de jeu, pas de bulles)   // (à Silent Hill, toujours en sous-titre : jamais de bulle sur les personnages)
   // à la première personne : ce qu'on dit soi-même (et ce que disent ceux qui sont tout près) s'affiche en sous-titre — la bulle au-dessus de sa propre tête ne se voit pas
   if (M.premiere) { const moi = M.gens.get(M.moiNum); if (numero === M.moiNum || (moi && p.g.position.distanceTo(moi.g.position) < 9)) { bulle(`<b style="color:#b5573c">${esc(numero === M.moiNum && !(M.L && M.L.apo) ? "Toi" : nomParle(p))}</b> : ${esc(texte)}`, Math.min(6000, 2500 + texte.length * 40)); return; } }
   if (p.bulle) p.g.remove(p.bulle);
@@ -13877,7 +13877,19 @@ function sousTitreSH(texte, ms) { if (M.bulleEl) M.bulleEl.remove(); if (!texte)
   const d = document.createElement("div"); d.className = "st-sh"; d.innerHTML = texte.replace(/^(<b[^>]*>[^<]*<\/b>)\s*:\s*/, "$1"); M.ctx.conteneur.appendChild(d); M.bulleEl = d;
   requestAnimationFrame(() => d.classList.add("on"));
   if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.classList.remove("on"); setTimeout(() => { d.remove(); if (M && M.bulleEl === d) M.bulleEl = null; }, 460); } }, ms); }
-function bulle(texte, ms) { if (!M) return; if (M.L && M.L.sh) { bulle3D(null); sousTitreSH(texte, ms); return; } bulle3D(texte, ms); if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
+/* à Resident Evil : des sous-titres comme dans le jeu — un bandeau noir en bas de l'image, le nom de qui parle en rouge, et le texte qui s'écrit lettre après lettre */
+function sousTitreRE(texte, ms) { if (M.bulleEl) M.bulleEl.remove(); clearInterval(M.reFrappe); if (!texte) { M.bulleEl = null; return; }
+  if (!document.getElementById("styleSousTitreRE")) { const st = document.createElement("style"); st.id = "styleSousTitreRE";
+    st.textContent = ".st-re{position:absolute;left:0;right:0;bottom:6%;z-index:9;padding:12px 6% 13px;text-align:center;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.78) 14%,rgba(0,0,0,.78) 86%,rgba(0,0,0,0));" +
+      "border-top:1px solid rgba(150,20,14,.55);border-bottom:1px solid rgba(150,20,14,.55);font:600 clamp(14px,2.2vw,18px)/1.45 'Lato',Arial,sans-serif;color:#f1ece4;letter-spacing:.02em;text-shadow:0 1px 2px #000;opacity:0;transition:opacity .25s}" +
+      ".st-re.on{opacity:1}.st-re b{display:block;font:800 .74em/1.2 'Lato',Arial,sans-serif;text-transform:uppercase;letter-spacing:.22em;color:#d42a1e !important;margin-bottom:4px}.st-re i{color:#cfc6b6}";
+    document.head.appendChild(st); }
+  const d = document.createElement("div"); d.className = "st-re"; const m = texte.match(/^(<b[^>]*>[^<]*<\/b>)\s*:?\s*([\s\S]*)$/), tete = m ? m[1] : "", corps = m ? m[2] : texte;
+  d.innerHTML = tete + "<span></span>"; M.ctx.conteneur.appendChild(d); M.bulleEl = d; requestAnimationFrame(() => d.classList.add("on"));
+  const sp = d.querySelector("span"), tmp = document.createElement("div"); tmp.innerHTML = corps; const plein = tmp.textContent; let n = 0;   /* (lettre après lettre, comme la machine à écrire du jeu) */
+  if (/<[a-z]/i.test(corps)) sp.innerHTML = corps; else M.reFrappe = setInterval(() => { n = Math.min(plein.length, n + 2); sp.textContent = plein.slice(0, n); if (n >= plein.length) clearInterval(M.reFrappe); }, 30);
+  if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.classList.remove("on"); setTimeout(() => { d.remove(); if (M && M.bulleEl === d) M.bulleEl = null; }, 260); } }, ms); }
+function bulle(texte, ms) { if (!M) return; if (M.L && M.L.sh) { bulle3D(null); sousTitreSH(texte, ms); return; } if (M.L && M.L.apo) { bulle3D(null); sousTitreRE(texte, ms); return; } bulle3D(texte, ms); if (M.bulleEl) M.bulleEl.remove(); if (!texte) { M.bulleEl = null; return; }
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:9;max-width:84%;padding:12px 16px;border-radius:16px;background:#fffef6;color:#1a1a1a;border:3px solid #111;font:800 17px/1.3 'Lato',sans-serif;text-align:center;box-shadow:4px 5px 0 rgba(0,0,0,.45);pointer-events:none";
   d.innerHTML = texte; M.ctx.conteneur.appendChild(d); M.bulleEl = d; if (ms) setTimeout(() => { if (M && M.bulleEl === d) { d.remove(); M.bulleEl = null; } }, ms); }
 // le logo « Retour vers le futur » qui surgit en grand, puis s'efface
@@ -15412,7 +15424,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, construireScene, choixSH, passageFin, jamesFin, creerBeteSH: creerBeteSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, tirerSH, montrerCleMess, infirmiereFetes, construireScene, choixSH, passageFin, jamesFin, creerBeteSH: creerBeteSH, dire, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
