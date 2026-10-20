@@ -8213,7 +8213,7 @@ export async function ouvrir(ctx) {
     const r = rendu.domElement.getBoundingClientRect(); v2.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(v2, M.camera);
     // à Silent Hill : toucher un monstre, c'est lui tirer dessus (avec l'arme de James)
-    if (M.L.sh && M.shMonstres && M.shMonstres.length && !M.cine) { const m = monstresSHVises(ray); if (m) { tirerSH(m); return; } }
+    if (M.L.sh && M.shMonstres && M.shMonstres.length && !M.cine) { const m = monstresSHVises(ray) || monstreSHPres(e.clientX - r.left, e.clientY - r.top, r.width, r.height); if (m) { tirerSH(m); return; } }
     // à l'apocalypse : toucher un zombie (ou un chien), c'est lui tirer dessus
     if (M.L.apo && M.zomb && (M.zomb.size || (M.lickers || []).length || M.tyran)) { const vv = [...M.zomb.values(), ...(M.lickers || []), ...(M.tyran && !M.tyran.mortT ? [M.tyran] : [])].filter(z => !z.mortT && z.g.visible); const hz = ray.intersectObjects(vv.map(z => z.mesh))[0];
       if (hz) { tirer(vv.find(z => z.mesh === hz.object)); return; } }
@@ -9760,6 +9760,14 @@ function lacherBetesSH() {
 function vivantSH(m) { return !m.mortT && m.g.visible; }
 function monstresSHVises(ray) { const vv = (M.shMonstres || []).filter(m => !m.mortT && !m.cine && m.g.visible && (m.p ? m.p.corps : m.mesh));
   const h = ray.intersectObjects(vv.map(m => m.p ? m.p.corps : m.mesh))[0]; return h ? vv.find(m => (m.p ? m.p.corps : m.mesh) === h.object) : null; }
+/* (au doigt, on visait mal : on tirait à côté, et le bonhomme marchait droit sur le monstre — maintenant, toucher près de lui suffit) */
+function monstreSHPres(px, py, w, h) { const a = new THREE.Vector3(), b = new THREE.Vector3(); let best = null, bd = 1e9;
+  for (const m of M.shMonstres || []) { if (m.mortT || m.cine || !m.g || !m.g.visible) continue;
+    a.set(m.x, (m.y || 0) + .15, m.z).project(M.camera); b.set(m.x, (m.y || 0) + (m.H || 1.8), m.z).project(M.camera); if (a.z > 1 || b.z > 1) continue;
+    const ax = (a.x + 1) / 2 * w, ay = (1 - a.y) / 2 * h, bx = (b.x + 1) / 2 * w, by = (1 - b.y) / 2 * h, vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l2)), d = Math.hypot(px - ax - vx * t, py - ay - vy * t), seuil = Math.max(46, Math.sqrt(l2) * .4);
+    if (d < seuil && d < bd) { bd = d; best = m; } }
+  return best; }
 function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || M.cine || M.shMort || m.mortT) return;
   if (!M.shArme) { M.ctx.surInfo && M.ctx.surInfo("✋ Tu n'as pas d'arme… fuis !"); return; }
@@ -9952,8 +9960,9 @@ function subirSH(x, z, deg = 1) {
 function mortSH(titre = "TU ES MORT") { const moi = moiApo(); if (!moi || M.shMort) return; M.shMort = true; M.shVies = 0; moi.info.mortT = performance.now(); moi.cible = null; moi.chemin = [];
   if (titre === "TU ES MORT") flaqueMort(moi); for (let k = 0; k < 4; k++) setTimeout(() => M && jetSang(moi.g.position.x, moi.g.position.y + .7, moi.g.position.z), k * 220);
   const r = voile("background:radial-gradient(circle,rgba(120,0,0,.55) 0%,rgba(150,0,0,.95) 100%);opacity:0;transition:opacity 1.6s;display:grid;place-items:center;font:900 clamp(30px,8vw,64px)/1 'Marcellus',serif;color:#ffd9d0;letter-spacing:.12em;text-shadow:0 0 20px #000");
-  r.textContent = titre; requestAnimationFrame(() => r.style.opacity = "1");
-  setTimeout(() => { if (!M) return; const G = M.gresil; M.gresil = null; couperGresil(G); r.style.transition = "opacity 2s"; resetSH(); M.flaques = []; changerLieu("fetes", [0, 26.5], 0);   /* (on se réveille au bar, comme à la fin du film) */
+  r.textContent = titre; setTimeout(() => { r.style.opacity = "1"; }, 1500);   /* (d'abord, on le voit tomber : à genoux, puis face contre terre ; ensuite, le rouge) */
+  { const mp = moi.g.position, a = (M.yaw || 0) + .9; if (M.passerBtn) { M.passerBtn.remove(); M.passerBtn = null; } M.cine = { maj: now => { const k = Math.min(1, (now - moi.info.mortT) / 2500); M.camera.position.set(mp.x + Math.sin(a) * (2.6 - k * .5), mp.y + 1.5 - k * .3, mp.z + Math.cos(a) * (2.6 - k * .5)); M.camera.lookAt(mp.x, mp.y + .5 - k * .3, mp.z); } }; }
+  setTimeout(() => { if (!M) return; finCine(); const G = M.gresil; M.gresil = null; couperGresil(G); r.style.transition = "opacity 2s"; resetSH(); M.flaques = []; changerLieu("fetes", [0, 26.5], 0);   /* (on se réveille au bar, comme à la fin du film) */
     setTimeout(() => { r.style.opacity = "0"; setTimeout(() => r.remove(), 2100); }, 500); M.ctx.surInfo && M.ctx.surInfo("💀 Silent Hill t'a eu… Te revoilà dans la caserne, en 1990."); }, 4200); }
 // les monstres, à chaque image : ils rôdent ; de près, ils nous poursuivent et frappent
 function animerBetesSH(now, dt) {
@@ -10064,12 +10073,12 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
     /* (on est sorti par la petite porte de la grille : sur le trottoir, devant — de derrière la grille, on ne voyait rien de la scène) */
     { const t = placeLibre(mp.x, mp.z + 6); if (t) { mp.x = t[0]; mp.z = t[1]; } moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: mp.x, z: mp.z }); }
     const pa = apparaitreSH(poserPerso(SHN.angela, ...placeEnVue(mp, 5.5, .6, .8), 0));   /* (dans la rue, en vue : elle était souvent cachée derrière la grille) */ if (!pa) return; M.shEtape = 11; noterCarteSH(SHN.angela, 0, 29);
-    let pyr = null, vic = null; const sortir = () => { if (pyr) return; const q = viserLibre(pa.g.position.x + 13, pa.g.position.z); pyr = creerBeteSH("pyramid", q[0], q[1], 0); pyr.cine = true; pyr.portee = 60; pyr.boss = true; pyr.imbattable = false; pyr.hp = 24; brumeSH({ x: q[0], y: 0, z: q[1] }, 4500); musiquePyramid(true);
+    let pyr = null, vic = null; const sortir = () => { if (pyr) return; const ax = pa.g.position.x - mp.x, az = pa.g.position.z - mp.z, al = Math.hypot(ax, az) || 1, q = placeLibre(pa.g.position.x + ax / al * 1.6, pa.g.position.z + az / al * 1.6) || viserLibre(pa.g.position.x + 1.6, pa.g.position.z);   /* (il sort du brouillard juste derrière elle : pas trois secondes de marche — il frappe tout de suite) */ pyr = creerBeteSH("pyramid", q[0], q[1], 0); pyr.cine = true; pyr.portee = 60; pyr.boss = true; pyr.imbattable = false; pyr.hp = 24; brumeSH({ x: q[0], y: 0, z: q[1] }, 4500); musiquePyramid(true);
       vic = { cle: "angela", p: null, p3: pa, g: pa.g, mesh: pa.corps, x: pa.g.position.x, z: pa.g.position.z, y: 0, n: 0, v: 0, hp: 1, ph: 0, W: pa.corps.scale.x, H: pa.corps.scale.y, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, statique: true }; M.shMonstres.push(vic); pyr.cineCible = vic; M.shRegard = pa.g.position;
       pyr.surMort = () => setTimeout(() => M && jamesFin(pyr), 1800); };
     dialogueSH(SHN.angela, [[null, null, 1600], [SHN.angela, "TOI ! Je te reconnais… c'est toi !"], ["moi", "Angela ? Calme-toi… Qu'est-ce qui se passe ?"], [SHN.angela, "Tu sais où elle est ! Tu sais où est ma maman ! Tu l'as toujours su !"],
       ["moi", "Mais non… je ne comprends rien, je te jure."], [SHN.angela, "Menteur ! Ils mentent tous ! Le couteau… le feu… tout brûle, ici, tout le temps…"], [SHN.angela, "Pourquoi tu me regardes comme ça ?! ARRÊTE DE ME REGARDER !"],
-      geste(() => { musiqueRencontre(false); sirenePH(10000); }), ["moi", "Cette sirène… Non…", 3600], geste(sortir), [null, null, 8500], geste(() => { M.shRegard = null; }), ["moi", "Non… pas lui… pas maintenant."], [null, null, 600]],   /* (la musique de la rencontre s'efface quand la sirène retentit, avant le thème de Pyramid Head) */
+      geste(() => { musiqueRencontre(false); sirenePH(10000); }), ["moi", "Cette sirène… Non…", 3600], geste(sortir), [null, null, 5200], geste(() => { M.shRegard = null; }), ["moi", "Non… pas lui… pas maintenant."], [null, null, 600]],   /* (la musique de la rencontre s'efface quand la sirène retentit, avant le thème de Pyramid Head) */
       () => { sortir(); pyr.cine = false; pyr.cineCible = null; if (vic && !vic.mortT) couperEnDeux(vic, performance.now(), pyr); M.ctx.surInfo && M.ctx.surInfo("🔺 Il faut au moins 24 balles pour l'arrêter. Tiens bon !"); }, {}); return; }
   // le passage de lumière, plus haut dans la rue
   if (e >= 12 && !M.L.passage) { const g = new THREE.Group(), [x, z] = RUE_PASSAGE; g.position.set(x, 0, z); M.scene.add(g);
@@ -10117,8 +10126,9 @@ function jamesTerrasse(H) { const moi = moiApo(); if (!moi || !M.L.sh) return; i
   let q = null, bz = 1e9; for (let k = 0; k < 48; k++) { const a = k / 48 * 6.283, r = 2.6 + (k % 3) * .6, x = mp.x + Math.cos(a) * r, z = mp.z + Math.sin(a) * r;
     if (!M.L.limites(x, z) || Math.abs(M.L.hauteur(x, z, { g: { position: { y: H.y } } }) - H.y) > .1) continue; if (z < bz) { bz = z; q = [x, z]; } }
   q = q || [mp.x - 2.6, mp.z - 1]; const pj = apparaitreSH(poserPerso(SHN.james, q[0], q[1], H.y)); if (pj) noterCarteSH(SHN.james, H.x, H.z);
-  dialogueSH(SHN.james, [[null, null, 1600], [SHN.james, `${nom} ! Ne la suis pas !`], [SHN.james, "Ce n'est qu'une illusion. Elle a le visage de Mary… mais ce n'est pas elle. Elle te mènera droit à lui."],
-    [SHN.maria, "James… tu es jaloux ? Tu as toujours été jaloux."], [SHN.maria, `Viens avec moi, ${nom}. Lui, il ne sait que fuir. Moi, je sais où il faut aller.`], [SHN.james, "Réfléchis bien. Après, il sera trop tard."], [null, null, 500]],
+  dialogueSH(SHN.james, [[null, null, 1600], [SHN.james, `${nom} ! Ne la crois pas !`], [SHN.james, "Maria n'existe pas. C'est ce lieu qui l'a inventée, de toutes pièces… Elle n'est que ça : une pure invention de cet endroit."],
+    [SHN.james, "Elle te dira tout ce que tu veux entendre. Elle te mènera droit à lui."], [SHN.maria, "James… tu es jaloux ? Tu as toujours été jaloux."],
+    [SHN.maria, `Tu veux revoir ta fille, ${nom}, oui ou non ? Lui, il ne sait que fuir. Moi, je sais où elle est.`], [SHN.james, "Réfléchis bien. Après, il sera trop tard."], [null, null, 500]],
     () => choixSH("Que fais-tu ?", [["🌹 Suivre Maria", () => suivreMaria(H)], ["🕯️ Rester avec James", () => resterJames(H)]])); }
 // un choix, à l'écran : deux grands boutons ; la caméra reste sur la scène
 function choixSH(question, options) { const moi = moiApo(); if (!moi) return; const c0 = M.camera.position.clone(), q0 = M.camera.quaternion.clone(); M.cine = { maj: () => { M.camera.position.copy(c0); M.camera.quaternion.copy(q0); } };
@@ -10128,7 +10138,7 @@ function choixSH(question, options) { const moi = moiApo(); if (!moi) return; co
     b.onclick = e => { e.stopPropagation(); d.remove(); finCine(); f(); }; d.appendChild(b); }
   for (const ev of ["pointerdown", "pointerup", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); M.manMenu = { d }; }
 function suivreMaria(H) { M.shChoix = "maria";
-  dialogueSH(SHN.james, [[SHN.james, "Comme tu voudras… Reste sur tes gardes."], geste(() => evanouirSH(SHN.james, [H.x - 6, H.z + 4], 500, .9)), [SHN.maria, "Viens. Reste près de moi."], [null, null, 1600]],
+  dialogueSH(SHN.james, [[SHN.james, "Comme tu voudras… Reste sur tes gardes."], geste(() => evanouirSH(SHN.james, [H.x - 6, H.z + 4], 500, .9)), [SHN.maria, "Viens. Reste près de moi… je t'amène à Heather."], [null, null, 1600]],
     () => { evanouirSH(SHN.james, [H.x - 6, H.z + 4], 0, .9); M.shEtape = 6; M.shEscorte = { pv: 5, ditT: 0, etape: 0 }; }); }
 function resterJames(H) { M.shChoix = "james";
   dialogueSH(SHN.maria, [[SHN.maria, "…Alors c'est lui que tu choisis."], [SHN.maria, "Tu me fais de la peine. Encore une fois."], geste(() => evanouirSH(SHN.maria, [H.x + 6, H.z + 4], 400, .55)), [null, null, 2600],
@@ -10294,20 +10304,21 @@ function histoireSH(now) {
         [SHN.james, "Je cherche ma femme, Mary. Elle m'a écrit une lettre… Elle dit qu'elle m'attend, dans notre « endroit spécial »."], [SHN.james, "Le problème… c'est que Mary est morte. Il y a trois ans. Et pourtant, c'est bien son écriture."],
         ["moi", "Comment on sort d'ici ? Et ces monstres… c'est quoi ?"], [SHN.james, "Je n'en sais pas plus que toi. Les routes s'arrêtent net, comme si la ville avait été coupée du monde."],
         [SHN.james, "Mais tiens, prends ça. Il ne s'enraye jamais, il ne se vide jamais. Ne me demande pas pourquoi."], geste(() => { armerSH(); sonBruit(.3, 2400, .4); majHudApo(); }, true),
-        ["moi", "Et toi ? Tu vas t'en sortir, sans arme ?"], [SHN.james, `Je n'ai plus grand-chose à perdre. Fais attention à toi, ${nom}. Et si tu croises une femme qui lui ressemble… ne la crois pas.`], geste(() => evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 800, .9)), [null, null, 2800]],
+        ["moi", "Et toi ? Tu vas t'en sortir, sans arme ?"], [SHN.james, `Je n'ai plus grand-chose à perdre. Fais attention à toi, ${nom}.`], [SHN.james, "Et si tu croises Heather… ce n'est pas elle. Ne la crois pas."],
+        ["moi", "Heather ?! D'où est-ce que vous connaissez ma fille ?"], [null, null, 700], geste(() => evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 300, .9)), ["moi", "James ! Attendez ! JAMES !", 2600], [null, null, 900]],
         () => { armerSH(); M.shEtape = 4; M.shPopL = null; evanouirSH(SHN.james, [T[0] + 3, T[1] - 3], 0, .9); majHudApo(); M.ctx.surInfo && M.ctx.surInfo("🔫 L'arme de James : munitions illimitées. Touche un monstre pour tirer."); }); }
     // 4. Lisa, dans la cour d'honneur : elle reconnaît Harry, et l'envoie vers Maria
     if (e === 4) rencontreSH(SHN.laura, [0, -2], 8, 5, [[SHN.laura, `On se retrouve, ${nom}.`], ["moi", "Vous ! La gardienne… Vous ne m'avez même pas dit votre nom."],
         [SHN.laura, "Lisa. Lisa Garland. J'étais infirmière, avant… à l'hôpital Alchemilla. Il y a longtemps."], ["moi", "Il y a des monstres, partout. Venez avec moi, je vais vous sortir de là."],
-        [SHN.laura, "Me sortir ? … Je ne crois pas que je puisse partir. Je ne crois pas que j'en aie le droit."], [SHN.laura, "Mais vous, vous pouvez. Allez voir Maria. Elle est sur la terrasse, tout en haut. Elle vous attend."],
-        ["moi", "Lisa, attendez…"], [SHN.laura, `Faites attention à vous, ${nom}. Ne me laissez pas… Non. Pardon. Allez-vous-en.`], geste(() => evanouirSH(SHN.laura, [8, 6], 600, 1.7)), [null, null, 2800]],
+        [SHN.laura, "Me sortir ? … Je ne crois pas que je puisse partir. Je ne crois pas que j'en aie le droit."], [SHN.laura, "Mais vous, vous pouvez. Montez sur la terrasse, tout en haut. Quelqu'un vous y attend."],
+        ["moi", "Quelqu'un ? … Heather ! C'est Heather, n'est-ce pas ? Ma fille est là-haut ?"], [SHN.laura, "Je… je ne peux pas vous en dire plus."], ["moi", "Lisa, attendez…"], [SHN.laura, `Faites attention à vous, ${nom}. Ne me laissez pas… Non. Pardon. Allez-vous-en.`], geste(() => evanouirSH(SHN.laura, [8, 6], 600, 1.7)), [null, null, 2800]],
         () => { M.shEtape = 5; evanouirSH(SHN.laura, [8, 6], 0, 1.7); });
     // 5. Maria, sur la terrasse : elle savait qu'on reviendrait pour elle ; elle veut qu'on la suive
     if (e === 5 && !M.shTerrasse) { const H = helipad();
-      rencontreSH(SHN.maria, [H.x, H.z], 7, 4, [[SHN.maria, `Je savais que tu reviendrais pour moi, ${nom}.`], ["moi", "Pour moi ? Mais… on se connaît ?"], [SHN.maria, "Tu m'as toujours fait attendre. Les fleurs ont fané sur la table, et il a neigé en plein été…"],
-        [SHN.maria, "Tu te souviens du parc, au bord du lac ? Tu disais que l'eau était trop froide pour s'y baigner. Tu avais raison."], ["moi", "Il n'y a pas de lac, ici. Il n'y a que la caserne."],
-        [SHN.maria, "Ne me regarde pas comme ça. Je ne suis pas elle. Ou peut-être que si… ça dépend de toi."], [SHN.maria, "L'infirmière t'a envoyé ? Lisa ne ment jamais. Elle ne dit juste pas tout."],
-        ["moi", "Je… je ne comprends rien."], [SHN.maria, "Ça ne fait rien. Suis-moi. Je veux t'emmener quelque part… il y a quelque chose que tu dois voir."], [null, null, 600]],
+      rencontreSH(SHN.maria, [H.x, H.z], 7, 4, [["moi", "Heather ? … Non. Vous n'êtes pas Heather."], [SHN.maria, `Désolée de te décevoir, ${nom}. Moi, c'est Maria.`], ["moi", "Comment vous connaissez mon nom ?"],
+        [SHN.maria, "Ici, tout le monde finit par se connaître. L'infirmière t'a envoyé, pas vrai ? Lisa ne ment jamais. Elle ne dit juste pas tout."],
+        ["moi", "Je cherche ma fille. Une adolescente, blonde, une veste blanche… Vous ne l'auriez pas vue ?"], [SHN.maria, "Heather ? … Oui. Je l'ai vue."], ["moi", "Où ça ?! Elle va bien ?"],
+        [SHN.maria, "Elle a peur. Elle se cache. Mais je sais où elle est… Viens avec moi, je vais t'amener jusqu'à elle."], [null, null, 600]],
         () => { M.shTerrasse = true; setTimeout(() => M && jamesTerrasse(H), 300); }, H.y); }
     // le mess : la porte fermée à clé ; on l'ouvre avec la clé de James (ou Maria l'ouvre, si on la suit)
     { const q = (M.L.portails || []).find(pt => pt.vers === "sh-mess"); if (q && !q.verrou) { const d0 = q.dans; q.verrou = true; q.dans = (x, z) => !!M.shMessOuvert && d0(x, z); }
@@ -10347,7 +10358,7 @@ function histoireSH(now) {
       q = q || pointSH(0, 400) || [mp.x + dS[0] * 6, mp.z + dS[1] * 6, mp.y]; pyr = creerBeteSH("pyramid", q[0], q[1], q[2]); pyr.cine = true; pyr.portee = 60; brumeSH({ x: q[0], y: q[2], z: q[1] }, 4000);
       const v = placeLibre(q[0] + (mp.x - q[0]) * .3, q[1] + (mp.z - q[1]) * .3) || [mp.x, mp.z - 3]; vic = creerBeteSH("bras", v[0], v[1], mp.y); vic.cine = true; pyr.cineCible = vic;
       M.shRegard = vic.g.position; };
-    const debut = avecMaria ? [[null, null, 1600], [SHN.maria, "C'est ici que tout recommence…"], ["moi", "Qu'est-ce qu'il y a, ici ? Pourquoi tu m'as amené là ?"], [SHN.maria, "Écoute… Tu l'entends ?"]]
+    const debut = avecMaria ? [[null, null, 1600], [SHN.maria, "C'est ici que tout recommence…"], ["moi", "Où est Heather ? Vous m'aviez dit que vous m'ameniez jusqu'à elle !"], [SHN.maria, "Écoute… Tu l'entends ?"]]
       : [[null, null, 1600], ["moi", "Il y a quelqu'un… ?"], ["moi", "La clé de James… Une issue, il disait. Tu parles."], ["moi", "Ce bruit… On dirait…"]];
     const finale = avecMaria ? [geste(() => { M.shRegard = null; }), [SHN.maria, `Il est là… Pardonne-moi, ${nom} !`, 2600], geste(() => evanouirSH(SHN.maria, [M.posEntree[0], M.posEntree[1]], 600, 1.7)), [null, null, 1500]]
       : [geste(() => { M.shRegard = null; }), ["moi", "Qu'est-ce que c'est que… ÇA ?!", 2400], [null, null, 600]];
