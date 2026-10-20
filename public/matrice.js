@@ -8488,7 +8488,7 @@ export async function ouvrir(ctx) {
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
     animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
-    { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre
+    { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
