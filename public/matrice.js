@@ -10088,16 +10088,18 @@ function rueFinale(now, moi) { const e = M.shEtape, mp = moi.g.position, nom = p
   if (M.L.passage) M.L.passage.children[1].material.opacity = .75 + Math.sin(now / 500) * .15;
   if (e === 12 && Math.hypot(mp.x - RUE_PASSAGE[0], mp.z - RUE_PASSAGE[1]) < 10) { M.shEtape = 13;
     const pm = apparaitreSH(poserPerso(SHN.maria, RUE_PASSAGE[0] - 3, RUE_PASSAGE[1] + 1.5, 0)); noterCarteSH(SHN.maria, 0, 29);
-    dialogueSH(SHN.maria, [[null, null, 1600], [SHN.maria, `${nom}… Tu t'en vas ?`], [SHN.maria, "Reste avec moi. Ici, avec moi, tu n'auras plus jamais à avoir peur. Plus jamais à être seul."], ["moi", "Je ne peux pas, Maria. Ce n'est pas ma place."],
-      [SHN.maria, "Ta place ? Ta place est là où quelqu'un t'attend. Moi, je t'attends. Je t'ai toujours attendu."], ["moi", "Tu n'es pas réelle. James avait raison… et Lisa aussi, à sa façon."],
-      [SHN.maria, "Réelle… Qu'est-ce que ça change ? Je suis là. Elle, elle n'est plus là."], ["moi", "Adieu, Maria."], [SHN.maria, "…Tu reviendras. Ils reviennent toujours."], [null, null, 800]],
+    dialogueSH(SHN.maria, [[null, null, 1600], [SHN.maria, `${nom}… Tu t'en vas ?`], ["moi", "Heather m'attend, de l'autre côté. Je vais la rejoindre."], [SHN.maria, "Non. Tu dois rester ici. Ta place est ici, avec moi… pas là-bas."],
+      ["moi", "Ce n'est pas ma place, Maria. Ma place est auprès de ma fille."], [SHN.maria, "Tu peux bien traverser cette lumière… le brouillard finira par te ramener. Il ramène toujours ceux qui lui appartiennent."],
+      ["moi", "Tu n'es pas réelle. James avait raison."], [SHN.maria, `Réelle… Qu'est-ce que ça change ? Je suis là. Ta place est ici, ${nom}. Tu le sais.`], ["moi", "Adieu, Maria."],
+      [SHN.maria, "…Tu reviendras. Le brouillard te ramènera. Il ramène toujours."], [null, null, 800]],
       () => { evanouirSH(SHN.maria, null, 400); passageFin(); }); } }
 function jamesFin(pyr) { const moi = moiApo(); if (!moi || !M.L.sh) return; if (M.cine) { setTimeout(() => M && jamesFin(pyr), 800); return; } const mp = moi.g.position, nom = prenomSH(); musiquePyramid(false);
   pyr.fondu = pyr.fondu || performance.now(); brumeSH({ x: pyr.x, y: 0, z: pyr.z }, 3500);   /* (vaincu, il se dissout dans la brume avant que James n'arrive : il bouchait toute la vue) */
   const pj = apparaitreSH(poserPerso(SHN.james, ...placeEnVue(mp, 3.6, -.9, .4), 0)); noterCarteSH(SHN.james, 0, 29);
   dialogueSH(SHN.james, [[null, null, 1800], [SHN.james, `${nom} ! Tu es vivant…`], [SHN.james, "Je l'ai retrouvée. Mary. Elle m'attendait, là où on allait autrefois."],
     [SHN.james, "Elle m'a dit que tu étais la clé. Que grâce à toi, je pourrais enfin vivre… libéré du passé. Et de ce que j'ai fait."], ["moi", "Qu'est-ce que tu as fait, James ?"],
-    [SHN.james, "Ça n'a plus d'importance. Toi, tu dois partir. Maintenant. Remonte la rue, ne te retourne pas."], ["moi", "Merci, James. Pour tout."], [SHN.james, "Va. Avant que le brouillard ne change d'avis."],
+    [SHN.james, "Ça n'a plus d'importance. Toi, tu dois partir. Maintenant. Plus haut dans la rue, il y a une lumière… un passage."], [SHN.james, "Prends cette sortie, et tu rejoindras Heather. Elle t'attend, de l'autre côté."],
+    ["moi", "Heather… Elle est là-bas ? Elle est vivante ?"], [SHN.james, "Elle t'attend. Remonte la rue, et ne te retourne pas."], ["moi", "Merci, James. Pour tout."], [SHN.james, "Va. Avant que le brouillard ne change d'avis."],
     geste(() => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 1200, .8); }, true), [null, null, 2400]],
     () => { pyr.fondu = pyr.fondu || performance.now(); evanouirSH(SHN.james, [mp.x - 8, mp.z], 0, .8); M.shEtape = 12; }); }
 // le passage : on y marche, la lumière nous prend… et l'on se réveille en 1990, dans le bar. Fin
@@ -10376,11 +10378,15 @@ function histoireSH(now) {
     if (!M.shEddieVu) { M.shEddieVu = true;
       const sg = Math.sign(moi.g.position.x) || 1, p = poserPerso(SHN.alessa, -sg * 9.5, -1.9, ET.N * ET.H); if (!p) return; p.etg = { n: ET.N, m: ET.N, zone: "P" }; p.cible = null; p.chemin = []; apparaitreSH(p); noterCarteSH(SHN.alessa, 0, 0);
       const m = { cle: "alessa", p, g: p.g, mesh: null, x: p.g.position.x, z: p.g.position.z, y: p.g.position.y, n: ET.N, v: 1.9, hp: SH_EDDIE_PV, ph: 0, mortT: 0, coupT: 0, lentT: 0, flashT: 0, cine: true, portee: 40, attend: true };
-      m.surMort = () => { dire(SHN.alessa, "Papa… pourquoi… tu ne m'as pas… choisie…"); M.shEtape = 9; setTimeout(() => M && cineSireneBas(), 2600); }; M.shMonstres.push(m); M.shAlessa = m; }
+      m.surMort = () => { dire(SHN.alessa, "Papa… pourquoi… tu ne m'as pas… choisie…"); M.shEtape = 9;
+        setTimeout(() => M && M.shEtape === 9 && dire(M.moiNum, "Non… non, non… Qu'est-ce que j'ai fait ?"), 2600); setTimeout(() => M && M.shEtape === 9 && dire(M.moiNum, "Alessa… Heather… Qu'est-ce que j'ai fait…"), 5200);   /* (il réalise, à genoux devant elle ; puis la sirène) */
+        setTimeout(() => M && cineSireneBas(), 8000); }; M.shMonstres.push(m); M.shAlessa = m; }
     const m = M.shAlessa;
     if (m && m.attend && m.p && M.gens.get(SHN.alessa) === m.p && Math.hypot(moi.g.position.x - m.p.g.position.x, moi.g.position.z - m.p.g.position.z) < 4.2) { m.attend = false;
       dialogueSH(SHN.alessa, [[null, null, 900], [SHN.alessa, "Tu es venu jusqu'ici… papa."], ["moi", "Heather ? … Non. Tu n'es pas Heather."], [SHN.alessa, "Je suis ce qu'elle a oublié. Le feu. La douleur. Sept ans dans le noir."],
-        [SHN.alessa, "Elle sourit, elle t'appelle papa… et moi, je reste ici, en haut, toute seule."], ["moi", "Alessa… Pose ce couteau."], [SHN.alessa, "Tu l'as choisie, elle. Tu m'as laissée brûler."],
+        [SHN.alessa, "Et maman ? Elle est perdue, quelque part dans le brouillard. Elle me cherche, elle crie mon nom… et personne ne lui répond."], [SHN.alessa, "Ne mens pas, papa. Je l'ai vu dans tes yeux. Tu es content qu'elle soit perdue à Silent Hill."],
+        ["moi", "C'est faux ! J'ai tout fait pour la retrouver. J'ai fouillé chaque rue, chaque maison… J'ai crié son nom jusqu'à ne plus avoir de voix."], [SHN.alessa, "Menteur. Tu voulais Heather pour toi tout seul. Et moi… tu m'as laissée brûler."],
+        ["moi", "Alessa… Pose ce couteau."],
         [SHN.alessa, "Alors maintenant… c'est toi qui vas avoir mal."], [null, null, 600]],
         () => { m.cine = false; }); } }
   if (M.shCleObj && M.shCleObj.lieu === lieu && M.shEtape === 9) { const c = M.shCleObj; c.o.rotation.y += .04; c.o.position.y = c.y + .35 + Math.sin(now / 300) * .06;
