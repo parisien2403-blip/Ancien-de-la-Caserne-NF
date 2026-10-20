@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
+function silentHill(scene, L, base) { chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "etage") chargerBete3D("avatars/sh-infirmiere.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9702,7 +9702,7 @@ function creerBeteSH(cle, x, z, y, n = 0) {
     m.placerBras = W => { const X = px => px / 216 * W, Y = py => py / 512 * h;
       piv.position.set(X(163) - W / 2, h - Y(140), .05); bras.scale.set(X(68), Y(220), 1); bras.position.set(X(182 - 163), -Y(230 - 140), 0); main.position.set(X(205 - 163), -Y(305 - 140), .01); };
     m.placerBras(h * lg * 216 / 512); pyramide3D(m); }
-  if (cle === "capuche") lying3D(m, "avatars/sh-lying.glb?v=1", 1.85); else if (cle === "bras") lying3D(m, "avatars/sh-siam.glb?v=1", 2.2);   // (le Lying Figure ; Siam, le gros)
+  if (cle === "capuche") lying3D(m, "avatars/sh-lying.glb?v=1", 1.85); else if (cle === "bras") lying3D(m, "avatars/sh-siam.glb?v=1", 2.2); else if (cle === "infirmiere" || cle === "tuyau") lying3D(m, "avatars/sh-infirmiere.glb?v=1", 1.72);   // (le Lying Figure ; Siam, le gros ; les infirmières des étages)
   M.shMonstres.push(m); return m; }
 function pointSH(loin, essais = 400) {
   const L = M.L, Z = L.zone || [-20, 20, -130, 20], [ex, ez] = M.posEntree || [0, 0];
@@ -9712,7 +9712,7 @@ function pointSH(loin, essais = 400) {
   return null; }
 function lacherBetesSH() {
   const base = baseLieu(M.lieu), e = M.shEtape;
-  if (base === "etage" && e >= 4) { for (let n = 1; n < ET.N; n++) for (let k = 0; k < 2; k++) {   /* (pas au rez-de-chaussée) */ const x = (Math.random() * 2 - 1) * (ET.CX0 - 1.5); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n); } return; }   // (les infirmières : seulement dans les couloirs des étages)
+  if (base === "etage" && e >= 4) { for (let n = 1; n < ET.N; n++) for (let k = 0; k < 2; k++) {   /* (pas au rez-de-chaussée ; au milieu du couloir, jamais tout près de l'escalier où l'on arrive) */ const x = (k ? 1 : -1) * (.6 + Math.random() * 3.4); creerBeteSH(k % 2 ? "tuyau" : "infirmiere", x, -1.9, n * ET.H, n).portee = 7; }   /* (elles ne viennent qu'une fois qu'on s'est avancé dans le couloir) */ return; }   // (les infirmières : seulement dans les couloirs des étages)
   if (e < 4) return;
   if (base === "mess" && e >= 9) return;   /* (le mess, après le réveil au sous-sol : vide) */
   if (base === "mess") { for (let k = 0; k < 2; k++) { const q = pointSH(10); if (q) creerBeteSH("bras", q[0], q[1], q[2]); } { const q = pointSH(9); if (q) creerBeteSH("capuche", q[0], q[1], q[2]); } if (e >= 7 && e < 9) { const q = pointSH(11); if (q) { const ph = creerBeteSH("pyramid", q[0], q[1], q[2]); ph.portee = 60; ph.lentT = performance.now() + 4000; sirenePH(8000); } } return; }   /* (il est toujours là : la sirène prévient, et il met un moment à venir) */
