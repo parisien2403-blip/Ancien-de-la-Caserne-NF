@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1;
+let K_FAC = 1; const DIAG_V = "5.98";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8153,6 +8153,13 @@ export async function ouvrir(ctx) {
   // un voyage précédent n'est pas arrivé au bout (gel, appli fermée de force) : on envoie le relevé à l'administrateur
   try { const t = localStorage.getItem("caserne-trace"); if (t) { localStorage.removeItem("caserne-trace");
       fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Un voyage s'est bloqué. Dernières étapes : " + JSON.parse(t).map(([e, ms]) => e + " (" + ms + " ms)").join(" → ") + " — carte graphique : " + (M_GPU || "?") + " — mémoire : " + (navigator.deviceMemory || "?") + " Go" + (PETIT ? " (mode petit téléphone)" : ""), appareil: navigator.userAgent }) }).catch(() => {}); } } catch (e) {}
+  /* la fiche technique de l'appareil, envoyée une fois par version à l'administrateur (dans les signalements) : sa carte graphique, ses limites,
+     et les erreurs d'affichage des premières secondes — pour comprendre ce qui manque à l'écran d'un téléphone qu'on n'a pas sous la main */
+  try { const cle = "caserne-diag-" + DIAG_V; if (!localStorage.getItem(cle)) { const errs = [], o = { e: console.error, w: console.warn }, garde = f => (...a) => { const t = a.map(String).join(" "); if (errs.length < 12 && /THREE|WebGL|GL_|shader|texture|program/i.test(t) && !/KHR_parallel_shader_compile/.test(t) && !errs.includes(t.slice(0, 220))) errs.push(t.slice(0, 220)); f.apply(console, a); };
+      console.error = garde(o.e); console.warn = garde(o.w);
+      setTimeout(() => { console.error = o.e; console.warn = o.w; if (!M) return; try { const gl = rendu.getContext(), r = rendu.capabilities;
+          const t = `[automatique] Fiche de l'appareil (v${DIAG_V}) — carte graphique : ${M_GPU || "?"} — WebGL ${r.isWebGL2 ? 2 : 1} — texture max ${r.maxTextureSize} — index 32 bits : ${r.isWebGL2 || !!gl.getExtension("OES_element_index_uint") ? "oui" : "non"} — mémoire : ${navigator.deviceMemory || "?"} Go — petit : ${PETIT ? "oui" : "non"} — finesse ${K_FAC} — écran ${screen.width}×${screen.height} ×${devicePixelRatio} — lieu : ${M.lieu} — objets : ${M.rendu.info.render.calls} dessins, ${M.rendu.info.memory.textures} textures — erreurs : ${errs.length ? errs.join(" | ") : "aucune"}`;
+          fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: t, appareil: navigator.userAgent.slice(0, 280) }) }).then(x => { if (x.ok) localStorage.setItem(cle, "1"); }).catch(() => {}); } catch (e) {} }, 40000); } } catch (e) {}
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
