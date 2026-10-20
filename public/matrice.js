@@ -9701,7 +9701,7 @@ function creerBeteSH(cle, x, z, y, n = 0) {
     /* (repères pris sur l'image de 216 × 512 : l'épaule en (163, 140), le bras découpé en (148, 120)–(216, 340), la main en (205, 305)) */
     m.placerBras = W => { const X = px => px / 216 * W, Y = py => py / 512 * h;
       piv.position.set(X(163) - W / 2, h - Y(140), .05); bras.scale.set(X(68), Y(220), 1); bras.position.set(X(182 - 163), -Y(230 - 140), 0); main.position.set(X(205 - 163), -Y(305 - 140), .01); };
-    m.placerBras(h * lg * 216 / 512); }
+    m.placerBras(h * lg * 216 / 512); pyramide3D(m); }
   M.shMonstres.push(m); return m; }
 function pointSH(loin, essais = 400) {
   const L = M.L, Z = L.zone || [-20, 20, -130, 20], [ex, ez] = M.posEntree || [0, 0];
@@ -9733,6 +9733,47 @@ function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   m.hp--; const nx = m.x + dx * .35, nz = m.z + dz * .35; if (limBeteSH(m, nx, nz)) { m.x = nx; m.z = nz; }
   if (m.hp <= 0) { m.mortT = performance.now(); sangAuSol(m.x, m.z, m.y, 1.6); if (m.p) { m.p.info.mortT = performance.now(); flaqueMort(m.p); } if (m.surMort) m.surMort(m); } }
 /* Pyramid Head frappe : nous, si l'on est à portée ; ou un monstre qui passe trop près — d'un coup, il le coupe en deux */
+/* Pyramid Head en 3D (le modèle de Silent Hill 2, animé comme les autres : repos, marche) : son grand couteau dans la main droite, traîné derrière lui ;
+   il le lève par-dessus sa tête et l'abat, au rythme de frappePyr. Tant que le modèle n'est pas chargé, l'image plate reste */
+let lamePyr3D = null, pyrA = null;
+function pyramide3D(m) { const f = "avatars/sh-pyramid.glb?v=1";
+  lamePyr3D = lamePyr3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-pyramid-lame.glb?v=1"); return g.scene; })().catch(() => null);
+  Promise.all([chargerAvatar3D(f), lamePyr3D]).then(([A, L3]) => { if (!A || !M || !M.shMonstres.includes(m) || m.mortT) return;
+    if (!A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) { o.castShadow = true; for (const mt of [].concat(o.material)) if (mt.map && mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; mt.needsUpdate = true; } } }); }
+    for (const q of M.shMonstres) if (q !== m && q.ph3 && q.ph3.A === A) q.ph3 = null;   // (un seul modèle : au dernier venu)
+    pyrA = A; A.sc.parent && A.sc.parent.remove(A.sc); M.scene.add(A.sc); A.sc.scale.setScalar(2.45 / A.h); A.sc.rotation.set(0, 0, 0); A.sc.visible = true;
+    if (!A.lamePyr && L3) { A.lamePyr = new THREE.Group(); const l = L3.clone(); l.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.lamePyr.add(l); A.sc.add(A.lamePyr); }
+    A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) { mt.transparent = false; mt.opacity = 1; } });
+    m.ph3 = { A, ry: Math.atan2((M.camera.position.x - m.x), (M.camera.position.z - m.z)), cur: null };
+    m.mesh.material.colorWrite = false; m.mesh.material.depthWrite = false; if (m.lame) m.lame.visible = false; }); }
+function pyr3D(m, now, dt, moi) { const P = m.ph3, A = P.A; if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); }
+  if (A.sc.parent !== M.scene) { m.ph3 = null; m.mesh.material.colorWrite = true; m.mesh.material.depthWrite = true; if (m.lame) m.lame.visible = true; return; }
+  A.sc.visible = m.g.visible; A.sc.position.set(m.x, m.y, m.z);
+  const vx = m.x - (P.px ?? m.x), vz = m.z - (P.pz ?? m.z); P.px = m.x; P.pz = m.z; const v = Math.hypot(vx, vz) / Math.max(.005, dt);
+  // (tourné vers où il va ; s'il frappe, vers sa cible)
+  const t = m.frappeT && (m.cineCible || moi) ? (m.cineCible ? { x: m.cineCible.x, z: m.cineCible.z } : { x: moi.g.position.x, z: moi.g.position.z }) : null;
+  const vis = t ? Math.atan2(t.x - m.x, t.z - m.z) : v > .15 ? Math.atan2(vx, vz) : P.ry; let d = vis - P.ry; d = Math.atan2(Math.sin(d), Math.cos(d)); P.ry += d * Math.min(1, dt * 6); A.sc.rotation.y = P.ry;
+  const n = m.fige ? null : v > .25 ? "walk" : "idle";
+  if (n && P.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (P.curA && P.curA !== a) a.crossFadeFrom(P.curA, .3, false); P.cur = n; P.curA = a; }
+  if (P.curA && n === "walk") P.curA.timeScale = Math.max(.5, Math.min(1.4, v / 1.1));   // (son pas lourd, lent)
+  if (!m.fige) A.mix.update(dt); A.sc.updateMatrixWorld(true);
+  // la frappe : le bras droit se lève par-dessus la tête, puis s'abat devant lui
+  const fw = new THREE.Vector3(Math.sin(P.ry), 0, Math.cos(P.ry)), k = m.frappeT ? now - m.frappeT : -1, e = x => x * x * (3 - 2 * x);
+  if (k >= 0 && k < 1500) { let dir;
+    if (k < 380) dir = new THREE.Vector3(0, -1, 0).lerp(new THREE.Vector3(0, 1, 0).addScaledVector(fw, -.35), e(k / 380));
+    else if (k < 820) { const a = Math.PI * .5 + Math.PI * .72 * e((k - 380) / 440); dir = new THREE.Vector3(0, Math.sin(a), 0).addScaledVector(fw, -Math.cos(a)); }
+    else dir = new THREE.Vector3(0, -.45, 0).addScaledVector(fw, .9).lerp(new THREE.Vector3(0, -1, 0), e(Math.min(1, (k - 820) / 680)));
+    viser3D(A, "RightArm", "RightForeArm", dir); viser3D(A, "RightForeArm", "RightHand", dir); A.sc.updateMatrixWorld(true); }
+  // le couteau : dans la main droite ; traîné, la pointe vers le sol derrière lui ; en frappant, dans le prolongement du bras
+  const L = A.lamePyr, h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (L && h && fa) { h.getWorldPosition(_v1); fa.getWorldPosition(_v2); const bras = _v1.clone().sub(_v2).normalize();
+    const dir = k >= 0 && k < 1500 ? bras : fw.clone().multiplyScalar(-.55).add(new THREE.Vector3(0, -.8, 0)).normalize();
+    A.sc.worldToLocal(_v3.copy(_v1)); L.position.copy(_v3); L.scale.setScalar(1.05 / A.sc.scale.x);
+    const xa = new THREE.Vector3(0, 1, 0).cross(dir); if (xa.lengthSq() < 1e-4) xa.set(1, 0, 0); xa.normalize(); const ya = dir.clone().cross(xa);
+    A.sc.getWorldQuaternion(_qb); L.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, dir)).premultiply(_qb.invert()); }
+  // arrêté net, puis effacé
+  if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) { mt.transparent = true; mt.opacity = f; } }); if (!f) A.sc.visible = false; }
+  // (touché : un éclair rouge)
+  const rouge = now < m.flashT; if (P.rouge !== rouge) { P.rouge = rouge; A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.emissive) mt.emissive.setHex(rouge ? 0xff4030 : 0xffffff); }); } }
 function frappePyr(m, now, dJ, moi) { const voisin = M.shMonstres.find(o => o !== m && !o.mortT && !o.p && Math.hypot(o.x - m.x, o.z - m.z) < 2.2);
   if (!m.frappeT && (dJ < 2.4 || voisin) && now > m.coupT) { m.frappeT = now; const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), c = dJ < 2.4 && moi ? moi.g.position : voisin; m.cibleCote = ((c.x - m.x) * dr.x + (c.z - m.z) * dr.z) >= 0 ? 1 : -1; }
   if (!m.frappeT) return; const k = now - m.frappeT;
@@ -9781,10 +9822,12 @@ function mortSH(titre = "TU ES MORT") { const moi = moiApo(); if (!moi || M.shMo
 // les monstres, à chaque image : ils rôdent ; de près, ils nous poursuivent et frappent
 function animerBetesSH(now, dt) {
   const moi = moiApo(), cam = M.camera.position, etg = baseLieu(M.lieu) === "etage"; let proche = 99;
+  if (pyrA && pyrA.sc.visible && !M.shMonstres.some(q => q.ph3)) pyrA.sc.visible = false;   // (Pyramid Head parti : son modèle ne reste pas planté là)
   const mar = M.shEscorte && M.gens.get(SHN.maria), mar2 = mar && !mar.info.mortT && !mar.part ? mar : null;
   for (const m of M.shMonstres) { const mar = mar2; const memeEtage = !etg || !moi || etageDe(moi) === m.n;
     if (m.p) { if (!M.gens.has(m.p.info.numero)) continue; m.g = m.p.g; }
     else m.g.visible = memeEtage;
+    if (m.ph3) pyr3D(m, now, dt, moi);   /* (Pyramid Head en 3D : d'après sa position à l'image d'avant) */
     if (m.statique && !m.mortT) continue;   /* (une personne, que Pyramid Head vise : elle reste un bonhomme) */
     if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); m.mesh.material.transparent = true; m.mesh.material.opacity = f; m.lame.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = f; } }); if (!f) m.g.visible = false; }
     if (m.fige) { if (m.lame) { m.lame.rotation.z = .3; m.g.scale.x = -(m.sens || 1); } continue; }   /* (Pyramid Head, arrêté net) */
@@ -15036,7 +15079,7 @@ function defautsHV(id, P) { const D = { 46: ["lorraine", "#8a86c8", null, "#f4f2
     36: ["pois", "#e0455c", null, "#f2f0ea"], 37: ["ecossaise", "#46543a", null, "#c9932a"], 38: ["bretelles", "#f4f2ec", "#6a5444", "#4a2414"], 39: ["serveur", "#f4f2ec", "#f2f2ee", "#f2f2ee"], 40: ["serveuse", "#c8202a", null, "#c8102e"], 41: ["gilet", "#f2f0ea", "#2f3236", "#3a2414"], 42: ["varsity", "#f2f2ee", "#3c5a86", "#e8e8e8"] }[id];
   return { tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3] }; }
 export const _etatMatrice = () => M;   // (pour les essais)
-export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
+export const _essaiSH = () => ({ poserPerso, apparaitreSH, evanouirSH, couperEnDeux, creerBeteSH, SHN });   // (pour les essais : faire venir un personnage de Silent Hill)
 /* préparer à l'avance le lieu derrière la porte la plus proche (construit, à la bonne heure, et ses rendus compilés en tâche de fond),
    pour qu'en la passant on y soit tout de suite, sans attendre */
 const compilations = new Set();   // (les préparations en cours, toutes scènes confondues : une matière partagée détruite pendant l'une d'elles la faisait planter)
