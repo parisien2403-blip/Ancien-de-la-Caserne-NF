@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerLying(); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
+function silentHill(scene, L, base) { chargerBete3D("avatars/sh-lying.glb?v=1"); chargerBete3D("avatars/sh-siam.glb?v=1"); if (base === "grande") pontiacSH(scene, L); for (const h of PETIT ? [100] : [100, 72, 71, 69, 73, 110, 111]) chargerAvatar3D(HEROS_3D[h]);   // (Harry, Maria, Angela, James, Lisa, Heather, Alessa en 3D : chargés d'avance — sur un petit téléphone, Harry seulement : la mémoire)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9702,7 +9702,7 @@ function creerBeteSH(cle, x, z, y, n = 0) {
     m.placerBras = W => { const X = px => px / 216 * W, Y = py => py / 512 * h;
       piv.position.set(X(163) - W / 2, h - Y(140), .05); bras.scale.set(X(68), Y(220), 1); bras.position.set(X(182 - 163), -Y(230 - 140), 0); main.position.set(X(205 - 163), -Y(305 - 140), .01); };
     m.placerBras(h * lg * 216 / 512); pyramide3D(m); }
-  if (cle === "capuche") lying3D(m);
+  if (cle === "capuche") lying3D(m, "avatars/sh-lying.glb?v=1", 1.85); else if (cle === "bras") lying3D(m, "avatars/sh-siam.glb?v=1", 2.2);   // (le Lying Figure ; Siam, le gros)
   M.shMonstres.push(m); return m; }
 function pointSH(loin, essais = 400) {
   const L = M.L, Z = L.zone || [-20, 20, -130, 20], [ex, ez] = M.posEntree || [0, 0];
@@ -9736,12 +9736,12 @@ function tirerSH(m) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
 /* Pyramid Head frappe : nous, si l'on est à portée ; ou un monstre qui passe trop près — d'un coup, il le coupe en deux */
 /* le Lying Figure (le monstre sans bras de Silent Hill 2), en 3D : chaque monstre a sa copie du modèle, animée (repos, marche) ;
    en marchant, il laisse derrière lui une traînée noire, luisante, comme du goudron chaud ; touché, il saigne ; abattu, il tombe à genoux, puis face contre terre */
-let lyingG = null;
-function chargerLying() { return lyingG = lyingG || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-  return await new gltfMod.GLTFLoader().loadAsync("avatars/sh-lying.glb?v=1"); })().catch(() => null); }
-function lying3D(m) { chargerLying().then(G => { if (!G || !M || !M.shMonstres.includes(m) || m.mortT || m.lf) return;
+const betes3D = {};   // (le Lying Figure ; Siam — le gros monstre aux bras énormes, de Silent Hill: Homecoming — même traitement, sans la traînée)
+function chargerBete3D(f) { return betes3D[f] = betes3D[f] || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
+  return await new gltfMod.GLTFLoader().loadAsync(f); })().catch(() => null); }
+function lying3D(m, f, haut) { chargerBete3D(f).then(G => { if (!G || !M || !M.shMonstres.includes(m) || m.mortT || m.lf) return;
     const sc = skelMod.clone(G.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); const mt = o.material; if (mt.map && mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .28; } } });
-    const g = new THREE.Group(); g.add(sc); M.scene.add(g); sc.scale.setScalar(1.85 / (hauteurOs(sc) || 1.8)); g.userData.perso = true;
+    const g = new THREE.Group(); g.add(sc); M.scene.add(g); sc.scale.setScalar(haut / (hauteurOs(sc) || 1.8)); g.userData.perso = true;
     const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of G.animations) act[c.name] = mix.clipAction(c);
     m.lf = { sc, g, mix, act, cur: null, ry: Math.random() * 6.28, pas: 0, pied: 1 }; m.mesh.material.colorWrite = false; m.mesh.material.depthWrite = false; }); }
 let texGoudron = null;
@@ -9762,7 +9762,7 @@ function lyingAnim(m, now, dt) { const P = m.lf;
   const n = v > .2 ? "walk" : "idle"; if (P.cur !== n && P.act[n]) { const a = P.act[n]; a.reset().play(); if (P.curA && P.curA !== a) a.crossFadeFrom(P.curA, .3, false); P.cur = n; P.curA = a; }
   if (P.curA && n === "walk") P.curA.timeScale = Math.max(.5, Math.min(1.3, v / 1.15)); P.mix.update(dt);
   // la traînée : un pas sur deux, du côté du pied qui se pose
-  P.pas += dd; if (P.pas > .38 && m.g.visible) { P.pas = 0; P.pied = -P.pied; const c = Math.cos(P.ry), s2 = Math.sin(P.ry); goudron(m.x + c * .12 * P.pied, m.y, m.z - s2 * .12 * P.pied, P.ry); }
+  P.pas += dd; if (P.pas > .38 && m.g.visible && m.cle === "capuche") { P.pas = 0; P.pied = -P.pied; const c = Math.cos(P.ry), s2 = Math.sin(P.ry); goudron(m.x + c * .12 * P.pied, m.y, m.z - s2 * .12 * P.pied, P.ry); }
   const rouge = performance.now() < m.flashT; if (P.rouge !== rouge) { P.rouge = rouge; P.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); }); } }
 /* Pyramid Head en 3D (le modèle de Silent Hill 2, animé comme les autres : repos, marche) : son grand couteau dans la main droite, traîné derrière lui ;
    il le lève par-dessus sa tête et l'abat, au rythme de frappePyr. Tant que le modèle n'est pas chargé, l'image plate reste */
