@@ -7349,8 +7349,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       let n = 0; const garer = (x, z, rot) => { if (sansVoituresGB) return; const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
         for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
         const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
-      for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
-      for (const z of [.4, 2.7]) garer(5.0, z, 0);                // côté salle des fêtes, pareil (pas devant sa porte)
+      if (!sansVoituresSH) for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
+      if (!sansVoituresSH) for (const z of [.4, 2.7]) garer(5.0, z, 0);                // côté salle des fêtes, pareil (pas devant sa porte)
       for (const x of [12.2, 9.9, 7.6, 5.3, -12.2, -9.9, -7.6, -5.3]) garer(x, C3.z0 - 1.4 - .6 - 1.9, -Math.PI / 2);   // face aux portes M et N (3e cour), côte à côte
       for (const x of (RU.portesFond || []).slice(1, 4)) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2);   // face aux portes B, C, D
       { const P = RU.portesFond || []; if (P.length > 2) for (const x of [P[1] - 2.3, P[2] + 2.3, P[2] - 2.3, P[1] + 2.25, P[1] + 4.5, P[1] + 6.75]) garer(x, RU.zA + 1.4 + .6 + 1.9, Math.PI / 2); }   // (et devant A)   // et trois de plus, à côté, devant B et C
@@ -9474,7 +9474,7 @@ function majBoutonLampe() { if (!M || !M.ctx) return; const voir = !!(M.shLampe 
     b.onclick = e => { e.stopPropagation(); M.shLampeOn = !M.shLampeOn; sonBruit(.04, 5000, .3); majBoutonLampe(); }; M.ctx.conteneur.appendChild(b); M.lampeBtn = b; }
   b.textContent = M.shLampeOn ? "🔦 Éteindre" : "🔦 Allumer"; b.style.background = M.shLampeOn ? "rgba(61,90,46,.9)" : "rgba(20,24,18,.82)"; }
 // la caserne de Silent Hill : à partir du vrai lieu, déserté, éteint, dans le brouillard
-function silentHill(scene, L, base) { chargerAvatar3D(HEROS_3D[100]); chargerAvatar3D(HEROS_3D[72]); chargerAvatar3D(HEROS_3D[71]);   // (Harry, Maria, Angela en 3D : chargés d'avance)
+function silentHill(scene, L, base) { if (base === "grande") pontiacSH(scene, L); chargerAvatar3D(HEROS_3D[100]); chargerAvatar3D(HEROS_3D[72]); chargerAvatar3D(HEROS_3D[71]);   // (Harry, Maria, Angela en 3D : chargés d'avance)
   L.apo = true; L.sh = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;   // (L.apo : personne de la caserne n'y est — ni gardes, ni DJ, ni voitures qui roulent)
   if (L.boutonDJ) { L.boutonDJ.visible = false; L.boutonDJ = null; } for (const b of L.boutonsPiste || []) b.visible = false; L.boutonsPiste = null;
   L.portails = (L.portails || []).filter(q => !q.pasApo && !q.entreeApo && LIEUX_SH.includes(baseLieu(q.vers))); for (const q of L.portails) q.vers = "sh-" + baseLieu(q.vers);
@@ -9602,6 +9602,16 @@ const solSH = (x, z) => M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { y: 0 
    → 4 Laura, dans la cour d'honneur → 5 Maria, sur la terrasse → 6 Maria, à la porte du mess → 7 le mess (Pyramid Head) → 8 l'escalier R, les étages, Eddie au 6e
    → 9 la clé → 10 le cadenas des encombrants : on sort vivant. Cinq vies ; à la dernière, le sang, l'écran rouge, et retour en 1990 */
 const SH_NOMS = { 69: "James", 70: "Eddie", 71: "Angela", 72: "Maria", 73: "Laura" };
+/* Silent Hill, la cour d'honneur : une Pontiac Ventura garée à l'arrache devant la salle des fêtes — de biais, le nez vers la porte (on passe encore à gauche) ;
+   on ne la traverse pas */
+function pontiacSH(scene, L) {
+  const X = 7.4, Z = 8.9, TH = .35, LG = 5.0, c = Math.cos(TH), s = Math.sin(TH);
+  const lim0 = L.limites; L.limites = (x, z) => { if (lim0 && !lim0(x, z)) return false; const dx = x - X, dz = z - Z, u = dx * c - dz * s, v = dx * s + dz * c; return !(Math.abs(u) < LG / 2 + .25 && Math.abs(v) < 1.0 + .25); };
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-pontiac.glb?v=1"); if (!M) return; const sc = g.scene;
+    sc.updateMatrixWorld(true); let corps = null; sc.traverse(o => { if (o.isMesh && /ventura/i.test(o.name)) corps = o; if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+    const b = new THREE.Box3().setFromObject(corps || sc), k = LG / (b.max.x - b.min.x), w = new THREE.Group(); w.add(sc); sc.scale.multiplyScalar(k);
+    sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);   // (centrée, les roues au sol)
+    w.position.set(X, L.hauteur ? L.hauteur(X, Z) : 0, Z); w.rotation.set(0, TH, .025); scene.add(w); L.pontiac = w; })().catch(() => {}); }
 const SHN = { james: -601, eddie: -602, angela: -603, maria: -604, laura: -605 }, SH_IDN = { [-601]: 69, [-602]: 70, [-603]: 71, [-604]: 72, [-605]: 73 };
 const SH_VIES = 5, SH_EDDIE_PV = 8;
 // les monstres : [image, hauteur, vitesse, points de vie]
@@ -11950,7 +11960,7 @@ function corbeilleParis(A, scene, x, y, z, rot, poteau = false) {
   else aj(new THREE.BoxGeometry(.4, .5, .03), vertF, 0, yb + .35, .015);   // la platine, contre le mur
   return g;
 }
-let sansVoituresGB = false;
+let sansVoituresGB = false, sansVoituresSH = false;   // (Silent Hill : plus de voitures garées dans la cour d'honneur — la Pontiac, seule)
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -11958,7 +11968,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = false; decorCaserne(scene, L, baseLieu(id));
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = false; decorCaserne(scene, L, baseLieu(id));
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
