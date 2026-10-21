@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.23";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.24";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11392,8 +11392,8 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
   if (!best) best = { c: { ux: [0, 0, 1] }, nx: -1, nz: 0, x: 10.7, z: Math.max(-6, Math.min(8, mp.z)), y: 7.0 };   /* (sinon : le toit plat du bâtiment de la salle des fêtes, au bord de la cour d'honneur) */
   const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id)].map(Number)), id = [21, 26, 24, 22, 23, 25].find(h => !pris.has(h)) || 24, femme = id === 21, nomH = HEROS[id].court;
   const ux = best.c.ux[0], uz = best.c.ux[2], yT = best.y, bord = (a, r = 0) => [best.x + ux * a - best.nx * r, best.z + uz * a - best.nz * r];
-  const [hx, hz] = bord(0, 1.3); retirerAncien(PNJ_TOIT);   /* (sur le toit lui-même, en retrait du bord — pas debout sur la corniche) */ const p = ajouterAncien({ ...infoEquipier(id, PNJ_TOIT, hx, hz, M.moiNum, 9), equipier: false }); if (!p) return false; p.g.position.y = yT; p.cineRE = true;
-  const zs = [[-1.6, 2.0], [1.5, 2.2]].map(([a, r]) => { const [x, z] = bord(a, r), q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x, z, y: yT }); q.cine = true; q.y = yT; q.x0 = x; q.z0 = z; return q; });
+  const [hx, hz] = bord(0, 2.0); retirerAncien(PNJ_TOIT);   /* (sur le toit lui-même, en retrait du bord — pas debout sur la corniche) */ const p = ajouterAncien({ ...infoEquipier(id, PNJ_TOIT, hx, hz, M.moiNum, 9), equipier: false }); if (!p) return false; p.g.position.y = yT; p.cineRE = true;
+  const zs = [[-1.6, 3.2], [1.5, 3.4]].map(([a, r]) => { const [x, z] = bord(a, r), q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x, z, y: yT }); q.cine = true; q.y = yT; q.x0 = x; q.z0 = z; return q; });
   const chute = []; let tombe = false, ecrase = false;
   const sol = hNiv(L, hx + best.nx * 1.6, hz + best.nz * 1.6, mp.y), cam = mp.clone().add(new THREE.Vector3(best.nx * 2.4 + ux * 2.3, 0, best.nz * 2.4 + uz * 2.3)); cam.y = mp.y + 2.3;   /* (un peu en retrait de nous, sur le côté : on nous voit lever la tête, sans nous avoir devant l'objectif) */
   /* les flammes entre la caméra et le pied du mur s'effacent le temps de la scène : rien ne masque la chute */
@@ -11411,11 +11411,11 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
       M.camera.position.copy(cam); M.camera.lookAt(cible);
       if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(hx - mp.x, hz - mp.z);
       const q = M.gens.get(PNJ_TOIT); if (!q) return;
-      if (!tombe) { q.g.position.set(hx, yT, hz); q.cible = null; q.chemin = [];
+      if (!tombe) { const kb = Math.max(0, Math.min(1, (u - 5.2) / 2.8)), [px, pz] = bord(0, 2.0 - 1.5 * kb * kb); q.g.position.set(px, yT, pz); q.cible = null; q.chemin = [];   /* (d'abord sur le toit, en retrait ; les zombies le repoussent pas à pas jusqu'au bord) */
         // il tire, à droite, à gauche ; les zombies avancent sur lui, le long du bord
-        zs.forEach((z, i) => { const k = Math.min(1, u / 7); z.x = z.x0 + (hx - z.x0) * k * .72; z.z = z.z0 + (hz - z.z0) * k * .72; z.tx = z.x; z.tz = z.z; z.y = yT; });
+        zs.forEach((z, i) => { const k = Math.min(1, u / 7), qp = q.g.position; z.x = z.x0 + (qp.x - z.x0) * k * .72; z.z = z.z0 + (qp.z - z.z0) * k * .72; z.tx = z.x; z.tz = z.z; z.y = yT; });
         if (u > 1 && now > (M.toitTir || 0)) { M.toitTir = now + 700 + Math.random() * 500; const z = zs[Math.floor(Math.random() * 2)], dx = z.x - hx, dz = z.z - hz, dd = Math.hypot(dx, dz) || 1; if (q.av3) q.av3.sc.rotation.y = Math.atan2(dx, dz); eclairDuCanon(q, dx / dd, dz / dd); sonTir(.55); impactZ(z, dx / dd, dz / dd); } }
-      else { if (!chute.length) { for (const o of [q, ...zs]) { const gp = o.g ? o.g.position : null; chute.push({ o, v: new THREE.Vector3(best.nx * (1.6 + Math.random()), .8 + Math.random() * .6, best.nz * (1.6 + Math.random())), x: o === q ? hx : o.x, z: o === q ? hz : o.z, y: yT, posee: false, gp }); } q.poseCine = null; q.info.mortT = 0; }
+      else { if (!chute.length) { for (const o of [q, ...zs]) { const gp = o.g ? o.g.position : null; chute.push({ o, v: new THREE.Vector3(best.nx * (1.6 + Math.random()), .8 + Math.random() * .6, best.nz * (1.6 + Math.random())), x: o === q ? q.g.position.x : o.x, z: o === q ? q.g.position.z : o.z, y: yT, posee: false, gp }); } q.poseCine = null; q.info.mortT = 0; }
         for (const c of chute) { if (c.posee) continue; c.v.y -= 9.8 * dt; c.x += c.v.x * dt; c.z += c.v.z * dt; c.y += c.v.y * dt;
           if (c.y <= sol) { c.y = sol; c.posee = true; sonBruit(.3, 180, .9); sangAuSol(c.x, c.z, sol, 1.4); if (!ecrase) { ecrase = true; sonBruit(.5, 90, 1); setTimeout(() => sonBruit(.25, 1200, .4), 60); } if (c.o === q) { q.info.mortT = performance.now() - 1300; flaqueMort(q); } else { c.o.mortT = performance.now() - 600; c.o.cadavre = true; } }   /* (écrasé : aussitôt à plat — et il reste là) */
           if (c.o === q) { q.g.position.set(c.x, c.y, c.z); if (q.av3) q.av3.sc.rotation.x = c.posee ? 0 : Math.min(1.3, (yT - c.y) * .12); } else { c.o.x = c.o.tx = c.x; c.o.z = c.o.tz = c.z; c.o.y = c.y; } } } } });
@@ -11428,7 +11428,12 @@ function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.
   /* dans la salle des fêtes : la lueur des feux sur les personnages (une lumière chaude qui nous suit et vacille), pour bien les voir dans la pénombre */
   if (b === "fetes") { if (!L.lueurPersos) { L.lueurPersos = new THREE.PointLight(0xff9a4a, 0, 7.5, 1.5); L.lueurPersos.userData.apo = true; M.scene.add(L.lueurPersos); }
     const lp = L.lueurPersos; lp.position.set(mp.x + 1.1, mp.y + 2.3, mp.z + .8); lp.intensity = 4.2 * (.85 + .15 * Math.sin(now / 90) * Math.sin(now / 57)); }
-  if (b === "fetes") { if (!L.c4Obj) { L.c4Obj = objetC4(); L.c4Obj.position.set(C4_FETES[0], 0, C4_FETES[1]); L.c4Obj.rotation.y = .5; M.scene.add(L.c4Obj); } L.c4Obj.visible = !M.c4;
+  if (b === "fetes") { if (!L.c4Obj) { L.c4Obj = objetC4(); L.c4Obj.position.set(C4_FETES[0], 0, C4_FETES[1]); L.c4Obj.rotation.y = .5; M.scene.add(L.c4Obj);
+      /* (le monstre abattu : le C4 se signale — un halo rouge qui palpite autour de lui, et un faisceau de lumière qui monte, visible de toute la salle) */
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: lueurGB(), color: 0xff3a1a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); halo.scale.setScalar(1.6); halo.position.set(C4_FETES[0], .35, C4_FETES[1]); M.scene.add(halo);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(.18, .5, 3.2, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xff5a2a, map: texFaisceau(), transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); col.rotation.x = Math.PI; col.position.set(C4_FETES[0], 1.6, C4_FETES[1]); M.scene.add(col);
+      L.c4Signal = { halo, col }; }
+    L.c4Obj.visible = !M.c4; { const v = !!(L.c4Signal && M.lisaMorte && !M.c4); if (L.c4Signal) { L.c4Signal.halo.visible = L.c4Signal.col.visible = v; if (v) { const k = .6 + .4 * Math.sin(now / 260); L.c4Signal.halo.material.opacity = k; L.c4Signal.halo.scale.setScalar(1.3 + .5 * k); } } }
     if (!M.c4 && !M.cine && Math.hypot(mp.x - C4_FETES[0], mp.z - C4_FETES[1]) < 1.1) { M.c4 = true; sonBruit(.06, 3000, .3); majBoutonsRE(); const eq = equipierVivant();
       dire(M.moiNum, "Du C4 ! De quoi faire sauter les gravats du porche."); if (eq && !eq.info.mortT) setTimeout(() => M && M.gens.get(eq.info.numero) === eq && !eq.info.mortT && dire(eq.info.numero, "Parfait. Direction le porche… et reste à couvert quand ça saute."), 3600); } }
   if (M.cine || moi.info.mortT) return;
@@ -11503,7 +11508,7 @@ const PAROLES_SURVOL_GPS = [["L'hélico de Brad ! Ici !", "Il ne nous voit toujo
 /* au-dessus de nous, un toit ? (un rayon vers le ciel) — son propre rayon, qui connaît la caméra : les flammes et la fumée (des images plates) en ont besoin ; sans elle, il plantait à chaque image et tout le jeu se figeait */
 function sousUnToit(moi) { try { const p = moi.g.position, r = M.rayToit || (M.rayToit = new THREE.Raycaster()); r.camera = M.camera; r.set(new THREE.Vector3(p.x, p.y + 2.2, p.z), new THREE.Vector3(0, 1, 0)); r.near = 0; r.far = 40;
   return r.intersectObjects(M.scene.children, true).some(h => h.object.isMesh && !h.object.isSprite && h.object.visible && !h.object.userData.perso && h.face && !(h.object.material && h.object.material.transparent)); } catch (e) { return false; } }
-function survolApo(moi, now) {
+function survolApo(moi, now) { return;   /* (plus d'hélicoptère qui patrouille pendant la partie : seulement au début, et à la fin) */
   if (!M.survolT || now < M.survolT || M.bradEnCours || M.cine || M.evac || APO.zombieFin || !M.L.apo || M.L.sh || M.L.interieur || (M.fumi && M.fumi.trouve) || moi.info.mortT) return;
   M.survolT = now + 5000; if (sousUnToit(moi)) return;   /* (à l'abri — un porche, une voûte — on ne le verrait pas : il passera plus tard) */
   const p = moi.g.position; if ([...(M.zomb || new Map()).values()].some(z => !z.mortT && Math.hypot(z.x - p.x, z.z - p.z) < 9)) { M.survolT = now + 4000; return; }   // (pas au milieu d'une attaque)
@@ -11993,18 +11998,40 @@ function assommer(p) { if (!p || p.info.mortT) return; p.lisaKO = true; p.info.m
   jetSang(p.g.position.x, 1.4, p.g.position.z); sangAuSol(p.g.position.x, p.g.position.z, p.g.position.y, .5); sonBruit(.18, 140, .9); sonBruit(.12, 900, .35); }
 /* d'un revers de la main, Lisa lui tranche la tête : le corps s'effondre, le sang gicle ; la tête (une copie du modèle, dont on ne garde que la tête et le cou)
    vole, retombe et roule jusqu'à nos pieds. Il est mort. Son modèle retrouve sa tête au changement de lieu */
+/* la vraie tête d'un personnage 3D : les triangles attachés à l'os de la tête (et à ses enfants : cheveux, yeux…), recopiés tels qu'ils sont à l'écran, en un objet fixe centré sur la tête */
+function teteReelle(A, pied) { try { A.sc.updateMatrixWorld(true); const pos = [], uv = [], groupes = [], mats = [], v = new THREE.Vector3(); let n = 0;
+    A.sc.traverse(m => { if (!m.isSkinnedMesh || !m.visible || !m.skeleton) return; const bones = m.skeleton.bones, tete = new Set(); const hb = bones.find(b => /(^|:|_)Head$/i.test(b.name)) || bones.find(b => /head/i.test(b.name) && !/end|top/i.test(b.name)); if (!hb) return;
+      bones.forEach((b, i) => { for (let o = b; o; o = o.parent) if (o === hb) { tete.add(i); break; } });
+      const g = m.geometry, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, P = g.attributes.position, U = g.attributes.uv, I = g.index; if (!si || !sw || !P) return;
+      const poidsTete = j => { let w = 0; for (let c = 0; c < 4; c++) if (tete.has(si.getComponent(j, c))) w += sw.getComponent(j, c); return w; };
+      const nt = I ? I.count / 3 : P.count / 3, debut = n; const ok = new Map();
+      for (let t = 0; t < nt; t++) { const a = I ? I.getX(t * 3) : t * 3, b = I ? I.getX(t * 3 + 1) : t * 3 + 1, c = I ? I.getX(t * 3 + 2) : t * 3 + 2;
+        if (poidsTete(a) + poidsTete(b) + poidsTete(c) < 1.8) continue;
+        for (const j of [a, b, c]) { m.getVertexPosition(j, v); v.applyMatrix4(m.matrixWorld); pos.push(v.x, v.y, v.z); if (U) uv.push(U.getX(j), U.getY(j)); else uv.push(0, 0); n++; } }
+      if (n > debut) { groupes.push([debut, n - debut, mats.length]); mats.push(Array.isArray(m.material) ? m.material[0] : m.material); } });
+    if (n < 30) return null;
+    const ctr = new THREE.Vector3(); for (let i = 0; i < pos.length; i += 3) { ctr.x += pos[i]; ctr.y += pos[i + 1]; ctr.z += pos[i + 2]; } ctr.multiplyScalar(3 / pos.length);
+    if (Math.hypot(ctr.x - pied.x, ctr.z - pied.z) > 1.2 || ctr.y - pied.y < .8 || ctr.y - pied.y > 2.6) return null;   /* (le squelette ailleurs que la tête visible : on n'en veut pas) */
+    const qi = A.sc.getWorldQuaternion(new THREE.Quaternion()).invert(), w = new THREE.Vector3();   /* (remise « de face » : le visage regarde vers +z, comme la tête dessinée qu'elle remplace) */
+    for (let i = 0; i < pos.length; i += 3) { w.set(pos[i] - ctr.x, pos[i + 1] - ctr.y, pos[i + 2] - ctr.z).applyQuaternion(qi); pos[i] = w.x; pos[i + 1] = w.y; pos[i + 2] = w.z; }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals();
+    for (const [s0, c0, mi] of groupes) geo.addGroup(s0, c0, mi);
+    const me = new THREE.Mesh(geo, mats.map(x => { const y = x.clone(); y.skinning = false; return y; })); me.castShadow = true; return me; } catch (e) { return null; } }
 function decapiter(p, k, cible) { if (!p || p.info.mortT) return null; const e = M.equipe && M.equipe[k]; if (e) { e.vies = 0; e.mort = true; }
   p.lisaKO = false; p.info.mortT = performance.now(); p.cible = null; p.chemin = []; flaqueMort(p); majHudApo(); const pos = p.g.position.clone();
   for (let i = 0; i < 7; i++) setTimeout(() => M && jetSang(pos.x + (Math.random() - .5) * .1, 1.55 - i * .14, pos.z + (Math.random() - .5) * .1), i * 200);   /* (le sang qui jaillit du cou) */
   sonBruit(.14, 1600, .8); sonBruit(.4, 220, .8); setTimeout(() => sonBruit(.6, 700, .25), 150);
-  const A = p.av3; if (A) { const tb = os3D(A, "Head"); if (tb) { tb.scale.setScalar(1e-3); (M.tetesCoupees = M.tetesCoupees || []).push(tb); } }   /* (sur le corps : plus de tête) */
-  /* la tête qui roule : une boule couleur peau et cheveux, le visage du héros (son portrait) posé devant, le cou tranché, rouge */
+  const A = p.av3, vraie = A ? teteReelle(A, p.g.position) : null;   /* (la vraie tête du modèle, telle qu'on la voit : découpée avant de la retirer du corps) */
+  if (A) { const tb = os3D(A, "Head"); if (tb) { tb.scale.setScalar(1e-3); (M.tetesCoupees = M.tetesCoupees || []).push(tb); } }   /* (sur le corps : plus de tête) */
   const id = M.equipe && M.equipe[k] ? M.equipe[k].id : null, c = new THREE.Group(); M.scene.add(c); M.teteObj = c;
+  if (vraie) { c.add(vraie); const cou = new THREE.Mesh(new THREE.CircleGeometry(.06, 16), new THREE.MeshStandardMaterial({ color: 0x5a0606, roughness: .3, side: THREE.DoubleSide })); cou.rotation.x = Math.PI / 2; cou.position.y = -.11; c.add(cou); }   /* (le cou tranché, rouge) */
+  else {
+  /* (sinon) la tête qui roule : une boule couleur peau et cheveux, le visage du héros (son portrait) posé devant, le cou tranché, rouge */
   const peau = new THREE.MeshStandardMaterial({ color: 0x8a6a58, roughness: .7 }), chev = new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: .9 });
   { const b = new THREE.Mesh(new THREE.SphereGeometry(.105, 18, 14), peau); b.scale.set(1, 1.18, 1.05); c.add(b); const h = new THREE.Mesh(new THREE.SphereGeometry(.11, 18, 14, 0, Math.PI * 2, 0, Math.PI * .55), chev); h.position.set(0, .02, -.012); h.scale.set(1.04, 1.16, 1.08); h.rotation.x = -.25; c.add(h);
     const cou = new THREE.Mesh(new THREE.CylinderGeometry(.055, .06, .07, 14), new THREE.MeshStandardMaterial({ color: 0x6a0a0a, roughness: .25 })); cou.position.y = -.13; c.add(cou);
     if (id && HEROS[id]) { const t = new THREE.TextureLoader().load(`images/re/${HEROS[id].cle}-tete.png`); t.colorSpace = THREE.SRGBColorSpace;
-      const vis = new THREE.Mesh(new THREE.PlaneGeometry(.27, .32), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, roughness: .7 })); vis.position.set(0, .0, .1); c.add(vis); } }
+      const vis = new THREE.Mesh(new THREE.PlaneGeometry(.27, .32), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, roughness: .7 })); vis.position.set(0, .0, .1); c.add(vis); } } }
   c.traverse(o => { if (o.isMesh) o.castShadow = true; });
   const w0 = new THREE.Vector3(), q0 = new THREE.Quaternion(), T = c;
   /* (l'os ne se trouve pas forcément là où la tête s'affiche — le modèle a été décalé après coup : on déplace l'os du même écart que la tête visible) */
@@ -12014,7 +12041,7 @@ function decapiter(p, k, cible) { if (!p || p.info.mortT) return null; const e =
   const poser = (P, ang) => { c.position.copy(P); qr.setFromAxisAngle(axe, ang).multiply(q0); c.quaternion.copy(qr); }; void qc; void w0;
   const S = { u: 0, pos: V0.clone(), maj(dt) { const u = (S.u += dt); let P, ang;
       if (u < .6) { const kk = u / .6; P = V0.clone().lerp(B, kk); P.y = V0.y + (B.y - V0.y) * kk + Math.sin(kk * Math.PI) * .35; ang = kk * 2.2; if (u + dt >= .6 && !S.toc) { S.toc = true; sonBruit(.12, 300, .7); } }   /* (elle vole, et retombe : un bruit sourd) */
-      else { const kk = Math.min(1, (u - .6) / 1.7), e2 = 1 - (1 - kk) * (1 - kk); P = B.clone().lerp(F, e2); ang = 2.2 + B.distanceTo(F) * e2 / r; }   /* (elle roule, ralentit, s'arrête) */
+      else { const kk = Math.min(1, (u - .6) / 1.7), e2 = 1 - (1 - kk) * (1 - kk), brut = 2.2 + B.distanceTo(F) / r, fin = Math.max(1, Math.round(brut / (Math.PI * 2))) * Math.PI * 2; P = B.clone().lerp(F, e2); ang = 2.2 + (fin - 2.2) * e2; }   /* (elle roule, ralentit, et s'arrête droite sur son cou tranché, le visage tourné vers nous — pas à l'envers) */
       S.pos.copy(P); poser(P, ang); },
     fin() { S.u = 99; S.maj(0); } };
   M.teteS = S; S.maj(0); return S; }
