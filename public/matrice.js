@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.13";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.14";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11646,7 +11646,7 @@ function posesZ(ty) {
 const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
 const sonsCourts = new Set();
 function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
-function couperSonsApo() { if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
+function couperSonsApo() { if (M && M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
   for (const a of [sonApo, sonFeu, sonRepos, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
   sonsCourts.clear(); sonApo = sonFeu = sonRepos = null;   // (recréés à la prochaine visite)
 }
@@ -11854,6 +11854,23 @@ function lancerLisa() {
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, 2, 8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1; g.add(hit);
     Object.assign(T, { attente: false, g, sc, mix, act, mesh: hit, A: { sc, mix, act, cur: null, curA: null }, ry: 0, etat: "attend", frappeT: 0, tw: [] });
     cineLisa(T); }); }
+/* les sons de Lisa Trevor (fabriqués à la volée) : ses chaînes qui traînent au sol — un raclement métallique et des cliquetis —, et son grognement, rauque et bas */
+function cliquetisChaine(vol = .25) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime;
+    for (let k = 0; k < 1 + Math.floor(Math.random() * 3); k++) { const t0 = t + k * (.03 + Math.random() * .05), o = actx.createOscillator(), g = actx.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(1800 + Math.random() * 2600, t0);
+      g.gain.setValueAtTime(vol * (.5 + Math.random() * .5), t0); g.gain.exponentialRampToValueAtTime(.0005, t0 + .09 + Math.random() * .08); o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + .2); } } catch (e) {} }
+function grognementLisa(duree = 1.6, vol = .5) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), o2 = actx.createOscillator(), lfo = actx.createOscillator(), lg = actx.createGain(), f = actx.createBiquadFilter(), g = actx.createGain();
+    o.type = "sawtooth"; o2.type = "square"; o.frequency.setValueAtTime(95, t); o.frequency.linearRampToValueAtTime(62, t + duree); o2.frequency.setValueAtTime(47, t); o2.frequency.linearRampToValueAtTime(33, t + duree);
+    lfo.frequency.value = 9 + Math.random() * 6; lg.gain.value = 14; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);   /* (la voix qui tremble, gargouille) */
+    f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(420, t + duree); f.Q.value = 4;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .18); g.gain.setValueAtTime(vol, t + duree * .6); g.gain.linearRampToValueAtTime(0, t + duree);
+    o.connect(f); o2.connect(f); f.connect(g).connect(actx.destination); for (const x of [o, o2, lfo]) { x.start(t); x.stop(t + duree + .05); } } catch (e) {}
+  sonBruit(duree * .7, 500, vol * .35); }   /* (et un souffle, dessous) */
+// le raclement des chaînes : un bruit en boucle, plus ou moins fort selon qu'elle avance
+function racleChaine(vol) { if (!M) return; if (vol > 0 && !M.racle) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = actx.sampleRate, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (.5 + .5 * Math.sin(i / n * Math.PI * 14) ** 2);
+      const src = actx.createBufferSource(); src.buffer = b; src.loop = true; const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2300; bp.Q.value = 1.8; const gn = actx.createGain(); gn.gain.value = 0;
+      src.connect(bp).connect(gn).connect(actx.destination); src.start(); M.racle = { src, gn }; } catch (e) { return; } }
+  if (M.racle) { const g = M.racle.gn.gain; g.value += (vol - g.value) * .12; if (vol <= 0 && g.value < .002) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } } }
 function jouerLT(T, n) { const A = T.A, a = A.act[n]; if (!a || A.cur === n) return; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .35, false); A.cur = n; A.curA = a; }
 function twLT(T, n, ax, a) { const b = os3D(T.A, n); if (!b) return; T.tw.push([b, b.quaternion.clone()]); tourne3D(T.A, n, ax, a); }
 // l'équipier assommé (à genoux, puis face contre terre) ; il reprend ses esprits quand elle est morte
@@ -11861,11 +11878,11 @@ function assommer(p) { if (!p || p.info.mortT) return; p.lisaKO = true; p.info.m
   jetSang(p.g.position.x, 1.4, p.g.position.z); sangAuSol(p.g.position.x, p.g.position.z, p.g.position.y, .5); sonBruit(.18, 140, .9); sonBruit(.12, 900, .35); }
 function reveiller(p) { if (!p || !p.lisaKO) return; p.lisaKO = false; p.info.mortT = 0; }
 function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
-  if (T.g.parent !== M.scene) { for (const p of M.gens.values()) reveiller(p); M.lisa = null; return; }   // (on a changé de lieu)
+  if (T.g.parent !== M.scene) { for (const p of M.gens.values()) reveiller(p); M.lisa = null; if (M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } return; }   // (on a changé de lieu)
   const A = T.A; for (let i = T.tw.length - 1; i >= 0; i--) T.tw[i][0].quaternion.copy(T.tw[i][1]); T.tw.length = 0;   // (chaque image repart de la pose de l'animation)
   const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) { o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); o.material.emissiveIntensity = rouge ? .6 : .12; } }); }
   T.g.position.set(T.x, 0, T.z);
-  if (T.mortT) { mort3D({ info: { mortT: T.mortT }, g: T.g, corps: null }, A);
+  if (T.mortT) { racleChaine(0); mort3D({ info: { mortT: T.mortT }, g: T.g, corps: null }, A);
     if (!T.flaque && now - T.mortT > 1300) { T.flaque = true; flaqueMort({ g: { position: new THREE.Vector3(T.x + Math.sin(T.ry) * 1.1, 0, T.z + Math.cos(T.ry) * 1.1) } }); }
     if (!T.reveil && now - T.mortT > 3500) { T.reveil = true; const p = [...M.gens.values()].find(q => q.lisaKO); if (p) { reveiller(p);
       setTimeout(() => { if (M && M.gens.get(p.info.numero) === p && !p.info.mortT) dire(p.info.numero, "Argh… ma tête… Elle est… morte ?"); }, 1600);
@@ -11882,7 +11899,10 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
     if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; sonPos("sons/zombie3.mp3", .7); }
     else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
   else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
-  jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;   // (son pas lourd, traînant : les chaînes aux chevilles)
+  jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;
+  { const bouge = n === "walk" || (T.cine && T.approche && !T.g.visible), vol = bouge ? (T.g.visible ? .07 : .045) : 0; racleChaine(vol);   /* (ses chaînes : on les entend traîner, même avant de la voir) */
+    if (bouge && now > (T.clinkT || 0)) { T.clinkT = now + 150 + Math.random() * 280; cliquetisChaine(T.g.visible ? .22 : .14); }
+    if (!T.cine && !APO.zombieFin && now > (T.grognT || 0)) { if (T.grognT) grognementLisa(1.2 + Math.random() * .8, .4); T.grognT = now + 6000 + Math.random() * 6000; } }   /* (pendant le combat, elle grogne de temps en temps) */   // (son pas lourd, traînant : les chaînes aux chevilles)
   T.mix.update(dt); T.sc.updateMatrixWorld(true);
   // voûtée, la tête penchée ; elle titube un peu
   twLT(T, "Spine1", "x", .26); twLT(T, "Head", "x", .2); twLT(T, "Head", "z", Math.sin(now / 900) * .12); twLT(T, "Spine", "z", Math.sin(now / 1300) * .05);
@@ -11918,6 +11938,9 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
   const tApp = eq ? 10.6 : 6.6, tFrappe = 13.9, tFin = eq ? 21 : 12.6;
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp; T.g.visible = apparue;
+    if (u > tApp - 3.4 && !T.approche) T.approche = true;   /* (on entend ses chaînes traîner, quelque part dans la salle…) */
+    if (u > tApp - 1.3 && !T.grogne1) { T.grogne1 = true; grognementLisa(1.4, .45); }   /* (un grognement, juste avant) */
+    if (apparue && !T.grogne2) { T.grogne2 = true; grognementLisa(2.4, .85); sonBruit(.3, 300, .5); }   /* (elle est là) */
     // les héros : face à la salle ; elle apparue, tournés vers elle
     for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue && (q === moi || u > 13.1) ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
     if (eq && u > tFrappe && T.etat !== "frappe" && !coup) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: ep.x, z: ep.z, coup: () => { coup = true; assommer(eq); dire(eq.info.numero, "Aaargh !"); } }; sonPos("sons/zombie3.mp3", .9); }
