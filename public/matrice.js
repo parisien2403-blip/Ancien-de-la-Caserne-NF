@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.11";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10799,6 +10799,7 @@ function apocalypse(scene, L, base) {
     { let n = 0; (L.voitures || []).forEach(([a, b, c, d], i) => { if ((c + d) / 2 >= -50 || n++ % 2) return; const x = (a + b) / 2, z = (c + d) / 2, vg = (L.voituresG || [])[i];   /* (la voiture garée là prend feu : calcinée, en flammes) */
       if (vg) { vg.userData.brule = true; if (vg.userData.calciner) vg.userData.calciner(); feu(x, hauteurSol(x, z) + .6, z, 2); L.feuxSon.push([x, z]); } else epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); }); }
     heliportApo(scene, L); }
+  L.ajouterFeu = feu;   /* (pour allumer un feu plus tard : après l'explosion du C4) */
   detritusApo(scene, L, base, hauteurSol); journauxVolants(scene, L, base, hauteurSol); tracesSang(deb, L, base, hauteurSol, libre);
   // les fenêtres des façades dessinées (la troisième cour, la rue en pente, l'immeuble…) : des planches clouées sur une sur trois (trois dessins en tout : léger)
   if (L.facadesFen && L.facadesFen.length) { const P = [], up = new THREE.Vector3(0, 1, 0); let k = 0;
@@ -11043,25 +11044,44 @@ function rouler3D(p, A) { const R = p.roulade, k = R.k != null ? R.k : Math.min(
   A.sc.updateMatrixWorld(true); let bas = Infinity; for (const n of ["Head", "HeadTop_End", "Neck", "Spine2", "Hips", "LeftShoulder", "RightShoulder", "LeftFoot", "RightFoot", "LeftToeBase", "RightToeBase", "LeftLeg", "RightLeg", "LeftHand", "RightHand"]) { const o = os3D(A, n); if (o) { const v = p.g.worldToLocal(o.getWorldPosition(_vk())); if (v.y < bas) bas = v.y; } }
   if (bas < Infinity) A.sc.position.y = .1 - bas; }
 // l'explosion : la boule de feu, l'éclair, les éclats, la fumée qui envahit la voûte
+/* la boule de feu (Three.js, un petit programme de rendu) : une sphère qui bouillonne — bosselée par un bruit qui bouge —, blanc-jaune au cœur,
+   orange, rouge sombre, puis fumée noire à mesure qu'elle refroidit en montant ; plusieurs bouffées, un peu décalées */
+const BOULE_GLSL = `vec3 h3(vec3 p) { p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6))); return fract(sin(p) * 43758.5453); }
+  float bruit(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); float n = 0.0;
+    n = mix(mix(mix(h3(i).x, h3(i + vec3(1,0,0)).x, f.x), mix(h3(i + vec3(0,1,0)).x, h3(i + vec3(1,1,0)).x, f.x), f.y), mix(mix(h3(i + vec3(0,0,1)).x, h3(i + vec3(1,0,1)).x, f.x), mix(h3(i + vec3(0,1,1)).x, h3(i + vec3(1,1,1)).x, f.x), f.y), f.z); return n; }
+  float fbm(vec3 p) { return bruit(p) * .55 + bruit(p * 2.1) * .3 + bruit(p * 4.3) * .15; }`;
+function bouleDeFeu(hdr, graine) { const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false,
+    uniforms: { uT: { value: 0 }, uHdr: { value: hdr }, uG: { value: graine } },
+    vertexShader: BOULE_GLSL + `uniform float uT, uG; varying float vN; varying vec3 vNor, vVue;
+      void main() { float n = fbm(normal * 2.3 + vec3(0.0, -uT * 1.6, uG)); vN = n; vec3 p = position * (0.78 + 0.5 * n); vec4 mv = modelViewMatrix * vec4(p, 1.0); vNor = normalize(normalMatrix * normal); vVue = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform float uT, uHdr; varying float vN; varying vec3 vNor, vVue;
+      void main() { float bord = clamp(dot(vNor, vVue), 0.0, 1.0); float chaud = clamp(1.25 - uT * 0.95 + (vN - 0.5) * 0.9 + bord * 0.35, 0.0, 1.0);
+        vec3 fumee = vec3(0.05, 0.045, 0.04), rouge = vec3(0.9, 0.16, 0.03), orange = vec3(1.9, 0.75, 0.15), blanc = vec3(2.8, 2.3, 1.3);
+        vec3 c = mix(fumee, rouge, smoothstep(0.12, 0.38, chaud)); c = mix(c, orange, smoothstep(0.38, 0.66, chaud)); c = mix(c, blanc, smoothstep(0.72, 0.95, chaud));
+        c *= mix(1.0, uHdr, smoothstep(0.3, 0.9, chaud));
+        float a = smoothstep(0.0, 0.25, bord + 0.15) * (1.0 - smoothstep(1.4, 2.6, uT)) * mix(0.35, 1.0, smoothstep(0.1, 0.5, chaud)); gl_FragColor = vec4(c, a); }` });
+  return new THREE.Mesh(new THREE.IcosahedronGeometry(1, PETIT ? 3 : 4), m); }
 const explosionPorche = P => explosionEn(P.ga, new THREE.Vector3(0, P.yb, P.zg + .4), new THREE.Vector3(0, 0, 1));
 // (une explosion en c, soufflée vers dir : la boule de feu, l'éclair, les éclats, la fumée)
 function explosionEn(ga, c, dir) { const g = new THREE.Group(); g.position.copy(c); g.rotation.y = Math.atan2(dir.x, dir.z); ga.add(g); const z0 = 0, y0 = 0;
-  const feu = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); feu.position.set(0, y0 + 1.6, z0); g.add(feu);
+  const feu = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); feu.position.set(0, y0 + 1.6, z0); g.add(feu); feu.material.opacity = .5;   /* (l'éclair du tout début, sous les bouffées) */
   const lum = new THREE.PointLight(0xff8a3a, 60, 26, 1.6); lum.position.set(0, y0 + 2, z0 + 1); g.add(lum); const hdr = QUALITE !== "bas" ? 2.6 : 1;   /* (avec les effets d'image, la boule de feu est bien plus lumineuse que tout : elle rayonne) */
   const etinc = []; for (let i = 0; i < (PETIT ? 14 : 40); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLueurRouge(), color: new THREE.Color(1.0, .75, .35).multiplyScalar(hdr * 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));   /* (les étincelles : des braises qui jaillissent et retombent) */
     sp.scale.setScalar(.12 + Math.random() * .12); sp.position.set((Math.random() - .5) * 1.2, y0 + 1 + Math.random() * 1.5, z0); g.add(sp); etinc.push({ sp, v: new THREE.Vector3((Math.random() - .5) * 9, 3 + Math.random() * 8, 2 + Math.random() * 10), t: .8 + Math.random() * 1.4 }); }
   const onde = new THREE.Mesh(new THREE.RingGeometry(.7, 1, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, .55, .2).multiplyScalar(hdr), transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); onde.rotation.x = -Math.PI / 2; onde.position.set(0, y0 + .06, z0 + .5); g.add(onde);   /* (le souffle, qui court au sol) */
+  const boules = [[0, 1.5, 0, 0, 2.5], [-1.0, 1.1, .5, .07, 1.9], [1.1, 1.3, .3, .12, 1.8], [.2, 2.4, -.2, .2, 2.0]].slice(0, PETIT ? 2 : 4).map(([x, y, z, d, r], i) => { const b = bouleDeFeu(hdr, i * 7.3); b.position.set(x, y0 + y, z0 + z); b.scale.setScalar(.01); g.add(b); return { b, d, r, y }; });   /* (les bouffées de feu) */
   const eclats = []; for (let i = 0; i < (PETIT ? 10 : 22); i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(.12 + Math.random() * .2, .06 + Math.random() * .1, .1 + Math.random() * .2), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x1c1e20 : 0x5a4a40, roughness: .8 }));
     o.position.set((Math.random() - .5) * 2.5, y0 + .5 + Math.random() * 3, z0); g.add(o); eclats.push({ o, v: new THREE.Vector3((Math.random() - .5) * 7, 2 + Math.random() * 6, 5 + Math.random() * 9), r: new THREE.Vector3(Math.random() * 9, Math.random() * 9, 0) }); }
   const fum = []; for (let i = 0; i < (PETIT ? 12 : 26); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, opacity: 0 })); sp.position.set((Math.random() - .5) * 3, y0 + .4 + Math.random() * 3, z0); g.add(sp);
     fum.push({ sp, v: new THREE.Vector3((Math.random() - .5) * 1.6, .25 + Math.random() * .6, .3 + Math.random() * 1.5), d: Math.random() * .4, s: 1.2 + Math.random() * 1.3 }); }
   const S = { g, fini: false, maj: (u, dt) => { if (S.fini) return;
-    const kf = Math.min(1, u / .3); feu.scale.set(.3 + 2.4 * Math.sqrt(kf), .3 + 1.9 * Math.sqrt(kf), .3 + 1.3 * Math.sqrt(kf)); feu.material.opacity = Math.max(0, .9 - u / .65); feu.visible = u < .6; feu.material.color.setHSL(.08 - .05 * Math.min(1, u), 1, .6 - .25 * Math.min(1, u)).multiplyScalar(hdr);
+    const kf = Math.min(1, u / .3); feu.scale.set(.3 + 2.4 * Math.sqrt(kf), .3 + 1.9 * Math.sqrt(kf), .3 + 1.3 * Math.sqrt(kf)); feu.material.opacity = Math.max(0, .55 - u / .45); feu.visible = u < .25; feu.material.color.setHSL(.08 - .05 * Math.min(1, u), 1, .6 - .25 * Math.min(1, u)).multiplyScalar(hdr);
+    for (const B of boules) { const v = u - B.d; B.b.visible = v > 0 && v < 2.6; if (!B.b.visible) continue; const k = Math.min(1, v / .3); B.b.scale.setScalar(.2 + B.r * (Math.sqrt(k) * .85 + Math.min(.45, v * .18))); B.b.position.y = y0 + B.y + v * .55; B.b.material.uniforms.uT.value = v; B.b.rotation.y += dt * .4; }
     for (const e of etinc) { const k = u / e.t; e.sp.visible = k < 1; if (k >= 1) continue; e.v.y -= 9.8 * dt; e.sp.position.addScaledVector(e.v, dt); e.sp.material.opacity = 1 - k * k; }
     { const k = Math.min(1, u / .55); onde.scale.setScalar(.5 + k * 9); onde.material.opacity = .8 * (1 - k); onde.visible = k < 1; }
     lum.intensity = Math.max(0, 60 * (1 - u / 1.1)) + (u > .15 && u < 2.4 ? 10 * (1 - u / 2.4) * (.7 + .3 * Math.sin(u * 40)) : 0); lum.visible = u < 2.4;   /* (l'éclair, puis la lueur du brasier qui retombe) */
     for (const e of eclats) { if (e.o.position.y <= y0 + .05) continue; e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.r.x * dt; e.o.rotation.y += e.r.y * dt; if (e.o.position.y <= y0 + .05) { e.o.position.y = y0 + .05; } }
-    for (const f of fum) { const v = u - f.d; if (v < 0) continue; f.sp.position.addScaledVector(f.v, dt * Math.max(.15, 1 - v / 4)); const s = f.s * (1 + v * .9); f.sp.scale.set(s, s, 1); f.sp.material.opacity = Math.min(.5, v * 2) * Math.max(0, 1 - v / 8); }   // (assez pour qu'ils en jaillissent, pas au point de tout cacher)
+    for (const f of fum) { const v = u - f.d; if (v < 0) continue; f.sp.position.addScaledVector(f.v, dt * Math.max(.15, 1 - v / 4)); const s = f.s * (1 + v * .9); f.sp.scale.set(s, s, 1); f.sp.material.opacity = Math.min(.5, v * 2) * Math.max(0, 1 - v / 8); const chaud = Math.max(0, 1 - v / 1.4); f.sp.material.color.setRGB(1 + chaud * 1.6, 1 + chaud * .3, 1 - chaud * .5); }   /* (la fumée, d'abord éclairée par le feu, orange, puis grise) */   // (assez pour qu'ils en jaillissent, pas au point de tout cacher)
     if (u > 10) S.nettoyer(); }, nettoyer: () => { if (S.fini) return; S.fini = true; ga.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map !== texFumee) o.material.dispose(); }); } };
   return S; }
 // la scène : la voûte vue de l'intérieur ; « charge posée » ; boum ; ils roulent sous la fumée, se relèvent ; derrière eux, la voûte s'écroule ; ils sortent sur la place
@@ -11116,7 +11136,7 @@ function gravatsPorche(scene, L) { if (L.gravatsPorche) return; const g = new TH
   for (let i = 0; i < (PETIT ? 24 : 48); i++) { const h = hasard(i * 4.1 + 5), h2 = hasard(i * 6.7 + 1), h3 = hasard(i * 2.3 + 9), a = h * Math.PI * 2, rr = Math.sqrt(h2) * .95, x = Math.cos(a) * rr * ea, z = zc + Math.sin(a) * rr * ec, r = .14 + h3 * .3;
     const o = new THREE.Mesh(i % 3 ? new THREE.DodecahedronGeometry(r, 0) : new THREE.BoxGeometry(r * 1.6, r * .8, r), i % 3 ? m1 : m2); o.position.set(x, haut(x, z) - r * .25, z); o.rotation.set(h * 6, h2 * 6, h3 * 6); o.castShadow = true; g.add(o); }
   for (const [x, y, z, ry, rz] of [[-.6, 1.6, 27.0, .4, .5], [.8, 1.3, 27.9, -.7, -.35], [0, 2.5, 27.5, 1.2, .15], [-.3, 3.0, 28.2, .1, -.6]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.2, .2, .22), bois); p.position.set(x, y, z); p.rotation.set(0, ry, rz); p.castShadow = true; g.add(p); }   // (des poutres tombées de la voûte)
-  scene.add(g); L.gravatsPorche = g;
+  scene.add(g); L.gravatsPorche = g; for (const o of g.children) o.userData.repos = [o.position.clone(), o.rotation.clone(), o.scale.clone()];   /* (pour remettre le tas en place à la partie suivante) */
   if (!L.limPorche) { const lim0 = L.limites; L.limPorche = true; L.limites = (x, z) => lim0(x, z) && (!!(M && M.porcheOuvert) || !(z > PORCHE_Z && Math.abs(x) < 2.8)); } }
 // le pain de C4 : un bloc vert olive, ruban noir, un petit minuteur à la diode rouge
 function objetC4(diode = false) { const g = new THREE.Group(), pain = new THREE.MeshStandardMaterial({ color: 0x6b6a3e, roughness: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .6 });
@@ -11205,23 +11225,36 @@ function cineRetrouvailles() { const moi = moiApo(); M.separe = false; M.retrouv
     { maj: (u) => { const k2 = Math.min(1, u / 2.6), x = a0[0] + (but[0] - a0[0]) * k2, z = a0[1] + (but[1] - a0[1]) * k2; p.g.position.x = x; p.g.position.z = z; p.cible = null; p.chemin = [];
       const v = new THREE.Vector3((mp.x + x) / 2, mp.y + 1.25, (mp.z + z) / 2); M.camera.position.copy(cam); M.camera.lookAt(v);
       if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(x - mp.x, z - mp.z); if (p.av3 && k2 >= 1) p.av3.sc.rotation.y = Math.atan2(mp.x - x, mp.z - z); } }); }
+/* l'explosion du C4 : les pierres, les briques et les poutres du tas sont projetées vers la cour, rebondissent, et restent éparpillées dans le passage ; la butte s'affaisse */
+function volGravats(L) { const G = L.gravatsPorche; if (!G) return null; L.gravatsSouffles = true; const items = G.children.map((o, i) => i === 0 ? { o, butte: true }
+    : { o, v: new THREE.Vector3((Math.random() - .5) * 5, 2 + Math.random() * 4.5, -(1.2 + Math.random() * 4.5)), w: new THREE.Vector3((Math.random() - .5) * 12, (Math.random() - .5) * 12, (Math.random() - .5) * 12), r: (q => q.width ? Math.min(q.width, q.height, q.depth) / 2 : (q.radius || .2) * .75)(o.geometry.parameters || {}), pose: false });   /* (r : la demi-épaisseur, pour qu'il repose à plat sur le sol) */
+  let t = 0;
+  return dt => { const fin = dt >= 99; t += fin ? 9 : dt;
+    for (const it of items) { const o = it.o; if (it.butte) { const k = Math.min(1, t / .45); o.scale.y = o.userData.repos[2].y * (1 - .78 * k); continue; }
+      if (it.pose) continue; const sol = .02 + it.r * Math.min(o.scale.x, o.scale.y, o.scale.z);
+      if (fin) { o.position.y = sol; o.position.z = Math.max(14, o.position.z + it.v.z * .35); o.position.x = Math.max(-1.9, Math.min(1.9, o.position.x + it.v.x * .2)); it.pose = true; continue; }
+      it.v.y -= 9.8 * dt; o.position.addScaledVector(it.v, dt); o.rotation.x += it.w.x * dt; o.rotation.y += it.w.y * dt; o.rotation.z += it.w.z * dt;
+      if (Math.abs(o.position.x) > 2.1) { o.position.x = Math.sign(o.position.x) * 2.1; it.v.x *= -.4; }   /* (les murs du passage) */
+      if (o.position.y <= sol) { o.position.y = sol; if (Math.abs(it.v.y) < 1.2) { it.pose = true; continue; } it.v.y *= -.32; it.v.x *= .6; it.v.z *= .6; it.w.multiplyScalar(.5); } } }; }
 // 4. le C4, posé sur les gravats du porche : à couvert… et boum
 function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true; majBoutonsRE(); const eq = equipierVivant(), gens = [moi, eq].filter(Boolean), L = M.L;
   const c4 = objetC4(true); c4.position.set(.2, .35, 26.35); c4.rotation.set(-.35, .3, 0); M.scene.add(c4);
-  const dep = gens.map(q => q.g.position.clone()), poseA = [[0, 25.1], [1.2, 24.6]], abri = [[-.6, 15.6], [1.1, 16.2]]; let fx = null, boum = false, prec = 0;
+  const dep = gens.map(q => q.g.position.clone()), poseA = [[0, 25.1], [1.2, 24.6]], abri = [[-.6, 15.6], [1.1, 16.2]]; let fx = null, boum = false, prec = 0, vol = null;
   for (const q of gens) q.cineRE = true;
   sceneParlee([[.3, M.moiNum, "Je pose la charge…"], [2.6, M.moiNum, "C'est armé ! À couvert !"], [5.6, () => { boum = true; }, ""], ...(eq ? [[8.2, eq.info.numero, "Voilà qui est fait ! La rue est à nous."]] : []), [eq ? 10.8 : 8.6, M.moiNum, "Le fumigène ne doit pas être loin. Allons-y !"]],
-    () => { if (fx) fx.nettoyer(); M.scene.remove(c4); for (const q of gens) q.cineRE = false; M.porcheOuvert = true; if (L.gravatsPorche) L.gravatsPorche.visible = false; },
+    () => { if (fx) fx.nettoyer(); M.scene.remove(c4); for (const q of gens) q.cineRE = false; if (!M.porcheOuvert) { M.porcheOuvert = true; vol = volGravats(L); } if (vol) vol(99); },
     { duree: eq ? 13.6 : 11.4, maj: (u, now) => { const dt = prec ? Math.min(.05, (now - prec) / 1000) : 0; prec = now;
       gens.forEach((q, i) => { const a = dep[i], b = poseA[i], c = abri[i]; let x, z; if (u < 1.2) { const k = u / 1.2; x = a.x + (b[0] - a.x) * k; z = a.z + (b[1] - a.z) * k; } else if (u < 2.9) { x = b[0]; z = b[1]; } else { const k = Math.min(1, (u - 2.9) / 2.2); x = b[0] + (c[0] - b[0]) * k; z = b[1] + (c[1] - b[1]) * k; }
         q.g.position.x = x; q.g.position.z = z; q.cible = null; q.chemin = []; if (q.av3 && (u < 2.9 || u > 5.1)) q.av3.sc.rotation.y = 0; });
       c4.userData.led.visible = Math.floor(now / (u > 3 ? 160 : 450)) % 2 === 0;
-      if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true; if (L.gravatsPorche) L.gravatsPorche.visible = false; }
+      if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true;
+        vol = volGravats(L); if (L.ajouterFeu && !(L.feuxC4 || []).length) L.feuxC4 = [L.ajouterFeu(-1.3, 0, 25.4, .8), L.ajouterFeu(1.5, 0, 26.9, .62)]; else for (const f of L.feuxC4 || []) f.visible = true; }   /* (les gravats sont projetés ; deux petits feux restent) */
+      if (vol) vol(dt);
       if (fx) fx.maj(u - 5.6, dt);
       const sh = fx ? Math.max(0, 1 - (u - 5.6) / 1.3) * .14 : 0; M.camera.position.set(1.3 + (Math.random() - .5) * sh, 1.8 + (Math.random() - .5) * sh, 12.6); M.camera.lookAt(0, 1.3, u < 5.4 ? 24 : 27);   /* (dans l'axe du porche, derrière eux) */ } }); }
 // à chaque image, à Resident Evil : où en est l'histoire
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
-  if (b === "grande") { gravatsPorche(M.scene, L); L.gravatsPorche.visible = !M.porcheOuvert; }
+  if (b === "grande") { gravatsPorche(M.scene, L); if (!M.porcheOuvert && L.gravatsSouffles) { L.gravatsSouffles = false; for (const o of L.gravatsPorche.children) { const [p, r, sc] = o.userData.repos; o.position.copy(p); o.rotation.copy(r); o.scale.copy(sc); } for (const f of L.feuxC4 || []) f.visible = false; } }   /* (une nouvelle partie : le tas est de nouveau là) */
   majBoutonsRE();
   /* dans la salle des fêtes : la lueur des feux sur les personnages (une lumière chaude qui nous suit et vacille), pour bien les voir dans la pénombre */
   if (b === "fetes") { if (!L.lueurPersos) { L.lueurPersos = new THREE.PointLight(0xff9a4a, 0, 7.5, 1.5); L.lueurPersos.userData.apo = true; M.scene.add(L.lueurPersos); }
