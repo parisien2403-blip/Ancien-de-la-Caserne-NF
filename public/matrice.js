@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.21";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.22";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10892,6 +10892,7 @@ function apocalypse(scene, L, base) {
         L.helicoA.volume = Math.max(0, Math.min(1, (.25 + .6 * proche) * f)); } };
   }
   // on ne traverse pas les épaves ni les fûts
+  L.obstaclesApo = obstacles; L.limitesSansObst = L.limites;   /* (pour vérifier qu'aucun obstacle ne coupe un passage) */
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
   // tout bouge : les flammes dansent, la fumée monte, les lumières vacillent ou grésillent
   const animAvant = L.anim;
@@ -14393,15 +14394,17 @@ export function repondreSlow(de, oui) { envoyerWS({ t: "slow_reponse", de, oui: 
 /* --- déplacements --- */
 // aller vers (x, z) : si le lieu impose un passage (le portillon de la grille, dans la rue), on fait le détour
 function ligneLibre(L, x0, z0, x1, z1) {
-  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .06);
-  for (let i = 1; i <= n; i++) if (!L.limites(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false;
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .06), ex = d > 1e-6 ? -(z1 - z0) / d * .12 : 0, ez = d > 1e-6 ? (x1 - x0) / d * .12 : 0;
+  /* (le passage doit avoir un peu de largeur, de part et d'autre de la ligne : sinon on suivait la « ligne » de jonction entre deux zones, large de zéro, où le personnage restait figé) */
+  for (let i = 1; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; if (!L.limites(x, z) || (i < n && (!L.limites(x + ex, z + ez) || !L.limites(x - ex, z - ez)))) return false; }
   return true;
 }
+const largeLibre = (L, x, z) => L.limites(x, z) && L.limites(x + .12, z) && L.limites(x - .12, z) && L.limites(x, z + .12) && L.limites(x, z - .12);   /* (une case de la carte des passages : assez large pour y marcher) */
 function itineraire(L, x0, z0, x1, z1) {
   if (ligneLibre(L, x0, z0, x1, z1) || !L.zone) return [[x1, z1]];
   const P = .35, [ax, bx, az, bz] = L.zone, nx = Math.ceil((bx - ax) / P) + 1, nz = Math.ceil((bz - az) / P) + 1;
   const cle = typeof estAdmin === "function" && estAdmin() ? "grilleAdmin" : "grille";   // (les chantiers : l'administrateur a sa propre carte des passages)
-  if (!L[cle]) { L[cle] = new Uint8Array(nx * nz); for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) L[cle][j * nx + i] = L.limites(ax + i * P, az + j * P) ? 1 : 0; }
+  if (!L[cle]) { L[cle] = new Uint8Array(nx * nz); for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) L[cle][j * nx + i] = largeLibre(L, ax + i * P, az + j * P) ? 1 : 0; }
   const G = L[cle], cx = i => ax + i * P, cz = j => az + j * P;
   const proche = (x, z) => { let best = -1, bd = 1e9; const i0 = Math.round((x - ax) / P), j0 = Math.round((z - az) / P);
     for (let r = 0; r < 12 && best < 0; r++) for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) {
@@ -16481,4 +16484,5 @@ function connecter() {
 }
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
 export const _allerVers = (x, z) => allerVers(x, z, true);   // (pour les essais)
+export const _itineraire = (x0, z0, x1, z1) => M && itineraire(M.L, x0, z0, x1, z1);   // (pour les essais)
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
