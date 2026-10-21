@@ -10718,9 +10718,9 @@ function apocalypse(scene, L, base) {
       if (o.userData.i0 === undefined) { o.userData.i0 = o.intensity; if (!o.isHemisphereLight) o.color.lerp(o.isPointLight || o.isSpotLight ? orange : froid, o.isPointLight || o.isSpotLight ? .35 : .6);
         if ((o.isPointLight || o.isSpotLight) && Math.random() < .3) clignos.push(o); }
       if (o.isHemisphereLight) { o.color.setHex(0x7c8aa0); o.groundColor.setHex(0x26241f); }
-      o.intensity = o.userData.i0 * (o.isHemisphereLight ? 1.5 : .85); });   /* (plus de lumière qu'avant : on distingue mieux les personnages et les monstres) */
-    if (!L.ambApo) { L.ambApo = new THREE.AmbientLight(0x9aa6b8, ext ? .9 : .7); L.ambApo.userData.apo = true; scene.add(L.ambApo); }
-    scene.background = ext ? ciel : new THREE.Color(0x07090c); scene.fog = new THREE.Fog(brume, ext ? 12 : 6, ext ? 70 : 36); };
+      o.intensity = o.userData.i0 * (o.isHemisphereLight ? .75 : o.isPointLight || o.isSpotLight ? (ext ? .9 : .6) : .4); });   /* (la nuit : la lune, faible et froide ; les lampes, elles, éclairent encore) */   /* (plus de lumière qu'avant : on distingue mieux les personnages et les monstres) */
+    if (!L.ambApo) { L.ambApo = new THREE.AmbientLight(0x7d8aa2, ext ? .42 : .36); L.ambApo.userData.apo = true; scene.add(L.ambApo); }
+    scene.background = ext ? ciel : new THREE.Color(0x07090c); scene.fog = new THREE.Fog(brume, ext ? 9 : 6, ext ? 58 : 34); };
   const setN = L.setNuit;
   // plus de fête ni de fenêtres allumées : la boule, les projecteurs, les lyres sont éteints ; les fenêtres sont noires
   const eteindre = () => { (L.nuitObjets || []).forEach(o => { if (!o.isLight) o.visible = false; });
@@ -10751,7 +10751,7 @@ function apocalypse(scene, L, base) {
     const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
-  const lumsFeu = [0, 1, 2, 3].map(() => { const l = new THREE.PointLight(0xff6a24, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  const lumsFeu = [0, 1, 2, 3].map(() => { const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
@@ -10864,7 +10864,7 @@ function apocalypse(scene, L, base) {
     if (!L.lumsT || t > L.lumsT) { L.lumsT = t + 400; const c = M && M.camera ? M.camera.position : { x: 0, z: 0 };
       L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
     lumsFeu.forEach((l, i) => { const f = L.feuxProches[i]; if (!f) { l.intensity = 0; return; }
-      l.position.set(f.x, f.y, f.z); l.distance = 16 * f.k; l.intensity = 13 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
+      l.position.set(f.x, f.y, f.z); l.distance = 11 * f.k; l.intensity = 7 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1);
     L.lampesApo(t); };
 }
