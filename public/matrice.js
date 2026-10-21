@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.17";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.18";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2406,7 +2406,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   { const xa = -C3.x - 6, xb = xB - RU.pc, fz = A.ajoute(new THREE.PlaneGeometry(xb - xa, 24 + drop), A.mat({ map: tex(toileBriqueBandes(xb - xa, 24 + drop)), roughness: .9 }), (xa + xb) / 2, (24 - drop) / 2, zA, false); allumerPlan(L, scene, fz); }   // (le mur du fond, jusqu'au pan coupé)
   /* au rez-de-chaussée de ce mur du fond, de droite à gauche : les portes A, B, C et D, régulièrement réparties, et deux fenêtres entre chacune */
   { const y0 = RU.y(zA), xD = -C3.x - 6 + RU.pc + 3.2, xA = xB - RU.pc - 1.6, n = 10, pierreC = A.mat({ color: 0xe6e0d4, roughness: .75 }), bois = A.mat({ color: 0x3e2a1c, roughness: .6 }), bois2 = A.mat({ color: 0x33221a, roughness: .6 });
-    const vitre = A.mat({ color: 0x2f3a46, roughness: .2, metalness: .3 }), portes = [];
+    const vitre = A.mat({ color: 0x2f3a46, roughness: .2, metalness: .3 }), portes = [], fenetres = [];
     for (let i = 0; i < n; i++) { const x = xA - i * (xA - xD) / (n - 1);
       if (i % 3 === 0) { const L2 = "ABCD"[i / 3];   // une porte, fermée, son encadrement de pierre, sa plaque bleu marine
         A.ajoute(new THREE.BoxGeometry(1.5, 2.6, .1), pierreC, x, y0 + 1.3, zA + .05, false); A.ajoute(new THREE.BoxGeometry(1.15, 2.3, .1), bois, x, y0 + 1.15, zA + .08, false);
@@ -2416,10 +2416,11 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           c.strokeStyle = "#e8e4da"; c.lineWidth = 3; c.beginPath(); c.roundRect(15, 15, 98, 98, 10); c.stroke(); c.fillStyle = "#f4f2ea"; c.font = "bold 78px Arial, Helvetica, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(L2, 64, 70); });
         A.ajoute(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 }), x, y0 + 3.0, zA + .11, false); portes.push(x); }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
+        fenetres.push(x);
         A.ajoute(new THREE.BoxGeometry(1.3, 1.7, .08), pierreC, x, y0 + 2.0, zA + .04, false); A.ajoute(new THREE.BoxGeometry(1.06, 1.46, .06), vitre, x, y0 + 2.0, zA + .07, false);
         A.ajoute(new THREE.BoxGeometry(.05, 1.46, .07), pierreC, x, y0 + 2.0, zA + .09, false); A.ajoute(new THREE.BoxGeometry(1.06, .05, .07), pierreC, x, y0 + 2.35, zA + .09, false);
         A.ajoute(new THREE.BoxGeometry(1.45, .1, .22), pierreC, x, y0 + 1.1, zA + .11, false); } }
-    RU.portesFond = portes; }
+    RU.portesFond = portes; RU.fenetresFond = fenetres; }
   // les corbeilles de rue : contre le local poubelle, côté place ; et sur son poteau, au bout du muret du contrebas, côté contre-allée
   // contre la façade des portes F et G, au milieu du trottoir qui descend vers la porte E : un banc parisien, lattes de bois vert, pieds en fonte
   { const F = C3.trotFG, zb = (F.zB + -115.05) / 2, x = F.x0 + .38, g = new THREE.Group(); g.position.set(x, F.yT(zb), zb); g.rotation.y = Math.PI / 2; scene.add(g);
@@ -8557,6 +8558,7 @@ export async function ouvrir(ctx) {
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
     if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
+    else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
     else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
@@ -11005,7 +11007,7 @@ function fumiApo(moi, now) {
 }
 /* l'arrivée à l'apocalypse : la caserne vue du ciel, les zombies qui errent dans la cour ; le logo RESIDENT EVIL s'abat à l'écran,
    puis la vue plonge vers la déchetterie, où les joueurs viennent d'arriver */
-function introApo(moi) { if (!M.apoIntro || M.cine || M.lieu !== "z-grande" || !M.L.apo) return; M.apoIntro = false; cineIntroApo(moi); }
+function introApo(moi) { if (!M.apoIntro || M.cine || M.lieu !== "z-grande" || !M.L.apo) return; M.apoIntro = false; M.apoIntroT = 0; cineIntroApo(moi); }
 function cineIntroApo(moi) {
   const sc = M.scene, cam = M.camera, Z = M.L.zone || [-30, 30, -60, 10], cx = (Z[0] + Z[1]) / 2, cz = (Z[2] + Z[3]) / 2, p = moi.g.position;
   const brouillard = sc.fog ? [sc.fog.near, sc.fog.far] : null; if (sc.fog) { sc.fog.near = 40; sc.fog.far = 320; }
@@ -11019,7 +11021,7 @@ function cineIntroApo(moi) {
   const A = new THREE.Vector3(cx + 24, 50, cz + 34), B = new THREE.Vector3(C.x, Math.max(48, C.y + 40), C.z);   /* (haut au-dessus de la cour, puis on glisse, au-dessus des toits, jusqu'à la verticale de la caméra du jeu,
      et on descend tout droit : on ne traverse plus les bâtiments) */
   let v0 = null, S2 = null, dtI = 0;
-  const fin = () => { if (fini || !M) return; fini = true; M.reMus = true; logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; } finExplo(SX); finIntro2(S2);
+  const fin = () => { if (fini || !M) return; fini = true; M.reMus = true; { const e = equipierVivant(); if (e) e.g.visible = true; } logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; } finExplo(SX); finIntro2(S2);
     finCine(); placerCamera(true); M.survolT = performance.now() + 150000; M.survolN = 0; M.sepA = performance.now() + 1200; M.calmeT = performance.now() + 60000; };   /* (puis une minute de calme : aucun monstre ne nous attaque dès l'arrivée) */   // (puis : « séparons-nous »)
   M.passerBtn = boutonPasser(fin);
   let clk = 0, prec = t0;   // (l'horloge n'avance qu'avec les images : le chargement du lieu ne mange pas le début)
@@ -11029,6 +11031,7 @@ function cineIntroApo(moi) {
     const a = Math.max(0, Math.min(1, (u - .9) / .35)), b = Math.max(0, Math.min(1, (u - 6.2) / .9));
     logo.style.opacity = String(a * (1 - b)); logo.style.transform = `translate(-50%,-50%) scale(${(1.6 - .6 * lisse(a)) * (1 + .05 * Math.max(0, u - 1.25) / 5)})`;
     if (u > 1.2 && !boum) { boum = true; sonBruit(2.4, 110, 1); voile("background:#5a0000;opacity:.35", 160); }
+    if (u < 11.05) { const e = equipierVivant(); if (e) e.g.visible = false; }   /* (l'équipier n'existe qu'une fois le lieu prêt : on ne le voit pas traîner au fond avant l'explosion) */
     if (u < 6.5) { const k = lisse(u / 6.5); cam.position.lerpVectors(A, B, k); vise.set(cx + (p.x - cx) * k, p.y * k, cz + (p.z - cz) * k); }
     else if (u < 11) { if (!v0) v0 = vise.clone(); const k = lisse((u - 6.5) / 4.5); cam.position.lerpVectors(B, C, k); vise.lerpVectors(v0, Cv, Math.min(1, k * 1.4)); }
     else if (SX && !SX.fini) { if (majExplo(SX, u - 11, Math.min(.05, dtI))) { finExplo(SX); SX.uFin = u; } return; }
@@ -11214,10 +11217,20 @@ function cineSeparation() { const moi = moiApo(), eq = equipierVivant(); M.sepFa
   sceneParlee([[.6, M.moiNum, "Écoute… À deux, on n'avancera pas assez vite. Séparons-nous : on couvrira plus de terrain."], [4.2, eq.info.numero, "Se séparer ? Avec tout ce qui rôde dans le coin ?"],
     [7.4, M.moiNum, "On garde le contact par radio. Le premier qui trouve un moyen de sortir prévient l'autre."], [11, eq.info.numero, `D'accord… Fais attention à toi, ${nom}.`], [13.2, () => { part = performance.now(); }, ""]],
     () => { M.separe = true; M.bradT = performance.now() + 22000; const q = equipierVivant(); if (q) { q.cineRE = false; } },
-    { duree: 16.4, maj: (u, now) => { M.camera.position.copy(cam); M.camera.lookAt(vise);
+    { duree: 19.5, maj: (u, now) => { if (eq.sepCam) { M.camera.position.copy(eq.sepCam); M.camera.lookAt(eq.g.position.x, eq.g.position.y + 1.2, eq.g.position.z); } else { M.camera.position.copy(cam); M.camera.lookAt(vise); }
       if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(eq.g.position.x - mp.x, eq.g.position.z - mp.z);
-      if (part) { const k = Math.min(1, (now - part) / 3000), b = ep0.clone().addScaledVector(dir, -9).addScaledVector(cote, 2.5); if (M.L.limites(b.x, b.z) || k < .5) { eq.g.position.lerpVectors(ep0, b, k); } eq.g.visible = k < .95; }
+      if (part) {   /* (il part vers la caserne, en marchant ; une fois sorti du champ de la caméra, on ne le voit plus) */
+        if (!eq.sepVise) { eq.sepVise = true; eq.sepBtn = M.passerBtn; for (const c of CASERNE_SEP) { const [tx, tz] = viserLibre(...c); viser(eq, tx, tz); if (eq.cible || (eq.chemin && eq.chemin.length)) break; }
+          const c1 = eq.cible || ep0, dv = new THREE.Vector3(c1.x - mp.x, 0, c1.z - mp.z); if (dv.lengthSq() < .01) dv.copy(dir).negate(); dv.normalize();
+          eq.sepCam = mp.clone().addScaledVector(dv, -2.8).addScaledVector(new THREE.Vector3(dv.z, 0, -dv.x), .7); eq.sepCam.y = mp.y + 1.8;
+          eq.sepChemin = [eq.cible, ...(eq.chemin || [])].filter(Boolean); eq.cible = null; eq.chemin = []; eq.sepPrec = now; }
+        { const dt = Math.min(.1, (now - eq.sepPrec) / 1000), c = eq.sepChemin[0]; eq.sepPrec = now;   /* (il marche lui-même le long du chemin : la cinématique fige les autres) */
+          if (c) { const dx = c.x - eq.g.position.x, dz = c.z - eq.g.position.z, d = Math.hypot(dx, dz), pas = 1.45 * dt; if (d <= pas) { eq.g.position.x = c.x; eq.g.position.z = c.z; eq.sepChemin.shift(); } else { eq.g.position.x += dx / d * pas; eq.g.position.z += dz / d * pas; }
+            if (eq.av3 && d > .01) eq.av3.sc.rotation.y = Math.atan2(dx, dz); } }   /* (la caméra passe derrière nous : on le regarde s'éloigner) */
+        M.camera.updateMatrixWorld(); const v = eq.g.position.clone().setY(eq.g.position.y + 1).project(M.camera), dehorsChamp = v.z > 1 || Math.abs(v.x) > 1.02 || Math.abs(v.y) > 1.02 || eq.g.position.distanceTo(mp) > 16;
+        eq.horsT = dehorsChamp ? (eq.horsT || now) : 0; if (eq.horsT && now - eq.horsT > 300 && now - part > 800) eq.g.visible = false; if (!eq.g.visible && now - part > 1500 && !eq.sepFin) { eq.sepFin = true; setTimeout(() => M && eq.sepBtn && eq.sepBtn.isConnected && eq.sepBtn.click(), 600); } }   /* (parti : la scène se termine) */
       else if (eq.av3) eq.av3.sc.rotation.y = Math.atan2(mp.x - eq.g.position.x, mp.z - eq.g.position.z); } }); }
+const CASERNE_SEP = [[0, -100], [0, -60], [10, -112], [-8, -120], [12, -124], [4, -128]];   /* (vers la cour d'honneur et les bâtiments de la caserne : le premier point où l'on peut aller) */
 // 2. Brad Vickers, à la radio : le fumigène, la balise GPS, la rue du Faubourg-Poissonnière
 function cineRadioBrad() { const moi = moiApo(); if (!moi) return; M.bradEnCours = true; const nom = nomApo(), eqNom = nomEquipier(), eq = equipierVivant();
   sceneParlee([[.4, "Brad Vickers", "… Ici Brad Vickers, à toutes les unités du S.T.A.R.S… Vous me recevez ?"], [4.4, M.moiNum, `Brad ! Ici ${nom}. On est coincés dans la caserne !`],
@@ -11279,7 +11292,7 @@ function pluieRE(now) { const L = M.L; if (!L) return; const dehors = !!(L.apo &
     L.pluie = new THREE.LineSegments(g, m); L.pluie.frustumCulled = false; L.pluie.renderOrder = 5; M.scene.add(L.pluie); }
   if (L.pluie) { L.pluie.visible = dehors && !(M.allege >= 2); L.pluie.material.uniforms.uT.value = (now % 600000) / 1000; L.pluie.material.uniforms.uCam.value.copy(M.camera.position); }
   // le son : un bruit blanc adouci, en boucle ; plus faible à l'abri
-  const vol = !estApo(M.lieu) || !(L.apo && !L.sh) ? 0 : dehors ? .11 : .03;
+  const vol = !estApo(M.lieu) || !(L.apo && !L.sh) ? 0 : dehors ? .035 : .01;   /* (discrète : la musique passe devant) */
   if (vol && !M.sonPluie) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = actx.sampleRate * 2, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
       const src = actx.createBufferSource(); src.buffer = b; src.loop = true; const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600; const hp = actx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 350; const gn = actx.createGain(); gn.gain.value = 0;
       src.connect(hp).connect(lp).connect(gn).connect(actx.destination); src.start(); M.sonPluie = { src, gn }; } catch (e) { M.sonPluie = { gn: null }; } }
@@ -11290,19 +11303,19 @@ let texCorbeau = null;
 function sursautsRE(moi, now) { const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position; if (b !== "grande" || L.interieur) return;
   M.sursauts = M.sursauts || new Set();
   // les endroits possibles (une seule fois par lieu) : au pied d'une façade, devant le rez-de-chaussée
-  if (!L.ptsFenetre) { L.ptsFenetre = []; for (const [, cadres] of L.facadesFen || []) for (const c of cadres) { if (c.W < 8 || Math.abs(c.o[1] - c.H / 2) > 1.6) continue; const nn = Math.hypot(c.n[0], c.n[2]) || 1, nx = c.n[0] / nn, nz = c.n[2] / nn;
-      for (const a of [-.3, .05, .35]) { const px = c.o[0] + c.ux[0] * a * c.W, pz = c.o[2] + c.ux[2] * a * c.W, x = px + nx * 1.2, z = pz + nz * 1.2; if (L.limites(x, z) && Math.abs(hNiv(L, x, z, 0)) < .6) L.ptsFenetre.push({ px, pz, nx, nz, x, z }); } } }
+  /* les endroits possibles : les vraies fenêtres du rez-de-chaussée, sur le mur du fond (entre les portes A, B, C, D) — pas un mur nu */
+  if (!L.ptsFenetre) { L.ptsFenetre = []; for (const px of RU.fenetresFond || []) { const pz = RU.zA, x = px, z = pz + 2.2; if (L.limites(x, z)) L.ptsFenetre.push({ px, pz, nx: 0, nz: 1, x, z, y0: RU.y(pz), wy: 2.0, ww: 1.0, wh: 1.4, ux: 1, uz: 0 }); } }
   if (!M.sursauts.has("fenetre") && !M.cine && M.sepFait && L.ptsFenetre.length) { const q = L.ptsFenetre.find(q => Math.hypot(mp.x - q.x, mp.z - q.z) < 3.4 && Math.hypot(mp.x - q.x, mp.z - q.z) > 1.4);
     if (q) { M.sursauts.add("fenetre"); fenetreBrisee(q); } }
   if (!M.sursauts.has("corbeaux") && !M.cine && M.sepFait) { if (!L.ptCorbeaux) L.ptCorbeaux = [[-4, -14], [6, -26], [-6, -30], [3, 8]].find(([x, z]) => L.limites(x, z)) || null;
     const c = L.ptCorbeaux; if (c && Math.hypot(mp.x - c[0], mp.z - c[1]) < 6) { M.sursauts.add("corbeaux"); envolCorbeaux(c[0], hNiv(L, c[0], c[1], mp.y), c[1]); } } }
 function fenetreBrisee(q) { const sc = M.scene, g = new THREE.Group(); sc.add(g); const verre = new THREE.MeshStandardMaterial({ color: 0xc8dce8, roughness: .1, metalness: .3, transparent: true, opacity: .75, side: THREE.DoubleSide });
-  const eclats = []; for (let i = 0; i < (PETIT ? 12 : 26); i++) { const o = new THREE.Mesh(new THREE.PlaneGeometry(.08 + Math.random() * .2, .08 + Math.random() * .22), verre); o.position.set(q.px + q.nx * .1 + (Math.random() - .5) * .9, 1.0 + Math.random() * 1.1, q.pz + q.nz * .1 + (Math.random() - .5) * .9); g.add(o);
+  const eclats = []; for (let i = 0; i < (PETIT ? 12 : 26); i++) { const o = new THREE.Mesh(new THREE.PlaneGeometry(.08 + Math.random() * .2, .08 + Math.random() * .22), verre); const la = (Math.random() - .5) * (q.ww || 1); o.position.set(q.px + q.nx * .1 + (q.ux ?? 1) * la, (q.y0 || 0) + (q.wy ?? 1.5) + (Math.random() - .5) * (q.wh || 1.1), q.pz + q.nz * .1 + (q.uz ?? 0) * la); g.add(o);   /* (dans le cadre de la fenêtre) */
     eclats.push({ o, v: new THREE.Vector3(q.nx * (2 + Math.random() * 4) + (Math.random() - .5) * 2, 1 + Math.random() * 2.5, q.nz * (2 + Math.random() * 4) + (Math.random() - .5) * 2), w: Math.random() * 14 }); }
   sonBruit(.5, 6500, .9); sonBruit(.25, 3000, .6); setTimeout(() => sonBruit(.4, 5000, .5), 120); sonPos(ZTYPES[0].son, 1);   // (le verre qui éclate, le râle)
   const z = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x: q.px + q.nx * .3, z: q.pz + q.nz * .3 }); if (z) { z.tx = q.x; z.tz = q.z; }   /* (il sort du mur, vers nous) */
   const t0 = performance.now(); let prec = t0; const f = () => { const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000), u = (now - t0) / 1000; prec = now; if (!M || M.scene !== sc || u > 2.4) { sc.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); verre.dispose(); return; }
-    for (const e of eclats) { if (e.o.position.y > .02) { e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.w * dt; e.o.rotation.y += e.w * .7 * dt; if (e.o.position.y < .02) { e.o.position.y = .02; e.o.rotation.set(-Math.PI / 2, 0, Math.random() * 7); } } }
+    const sol = (q.y0 || 0) + .02; for (const e of eclats) { if (e.o.position.y > sol) { e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.w * dt; e.o.rotation.y += e.w * .7 * dt; if (e.o.position.y < sol) { e.o.position.y = sol; e.o.rotation.set(-Math.PI / 2, 0, Math.random() * 7); } } }
     verre.opacity = .75 * Math.min(1, (2.4 - u) / .6); requestAnimationFrame(f); }; f();
   if (M.camera) { const c0 = performance.now(); const sec = () => { const k = 1 - (performance.now() - c0) / 400; if (!M || k <= 0) return; M.camera.position.x += (Math.random() - .5) * .06 * k; M.camera.position.y += (Math.random() - .5) * .06 * k; requestAnimationFrame(sec); }; sec(); } }
 function envolCorbeaux(x, y, z) { texCorbeau = texCorbeau || [0, 1].map(k => tex(toile(64, 32, c => { c.fillStyle = "#0b0b0d"; c.beginPath(); c.ellipse(32, 18, 9, 4, 0, 0, 7); c.fill(); c.beginPath(); c.arc(42, 16, 3.2, 0, 7); c.fill();
@@ -11353,13 +11366,7 @@ function pompeAuSol(L, mp, now) { if (M.pompe) { if (L.pompeObj) L.pompeObj.visi
   if (!M.cine && Math.hypot(mp.x - POMPE_POS[0], mp.z - POMPE_POS[1]) < 1.1) { M.pompe = true; g.visible = false; sonBruit(.07, 1800, .45); setTimeout(() => sonBruit(.07, 1300, .5), 160); majHudApo();
     dire(M.moiNum, "Un fusil à pompe… Celui-là ne les fera pas que reculer."); } }
 /* sur le toit de la cour d'honneur : un héros que personne n'a choisi se bat contre des zombies, tout au bord ; on lève les yeux…
-   ils basculent ensemble et s'écrasent au sol devant nous. Son cri — celui d'un homme ou d'une femme — en tombant. Une fois par partie */
-function criChute(femme, duree = 1.6) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), lfo = actx.createOscillator(), lg = actx.createGain(), f1 = actx.createBiquadFilter(), f2 = actx.createBiquadFilter(), g = actx.createGain();
-    const h = femme ? 560 : 230; o.type = "sawtooth"; o.frequency.setValueAtTime(h, t); o.frequency.linearRampToValueAtTime(h * 1.25, t + .25); o.frequency.exponentialRampToValueAtTime(h * .62, t + duree);   /* (le cri monte, puis s'éloigne en tombant) */
-    lfo.frequency.value = 6.5; lg.gain.value = h * .03; lfo.connect(lg).connect(o.frequency);
-    f1.type = "bandpass"; f1.frequency.value = femme ? 1100 : 700; f1.Q.value = 3; f2.type = "bandpass"; f2.frequency.value = femme ? 2600 : 1500; f2.Q.value = 4;   /* (les « voyelles » : un « aaah » plus aigu pour une femme) */
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.35, t + .08); g.gain.setValueAtTime(.32, t + duree * .7); g.gain.linearRampToValueAtTime(0, t + duree);
-    const m = actx.createGain(); m.gain.value = 1; o.connect(f1).connect(m); o.connect(f2).connect(m); m.connect(g).connect(actx.destination); o.start(t); lfo.start(t); o.stop(t + duree + .05); lfo.stop(t + duree + .05); } catch (e) {} }
+   ils basculent ensemble et s'écrasent au sol devant nous. Le bruit de la chute. Une fois par partie */
 const PNJ_TOIT = -490 - 20;
 function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait = true;
   // le bord de toit : la façade la plus proche, assez haute, devant nous
@@ -11375,7 +11382,7 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
   const caches = new Set(); cacherAutour(mp, 14, caches); for (const z of zs) { z.g.visible = true; caches.delete(z); }
   moi.poseCine = { t0: performance.now() };   /* (il lève les yeux vers le toit) */
   sceneParlee([[.6, M.moiNum, "Tu entends ? … Des coups de feu. Là-haut, sur le toit !"], [3.4, PNJ_TOIT, "Reculez ! Reculez, saletés !"], [6.2, M.moiNum, `C'est ${nomH} ! Tiens bon, j'arrive !`],
-      [8.2, () => { tombe = true; criChute(femme, 2.0); }, ""], [11.4, M.moiNum, femme ? "Non… Elle n'avait aucune chance." : "Non… Il n'avait aucune chance."]],
+      [8.2, () => { tombe = true; sonPos("sons/re-chute.mp3", 1); }, ""], [11.4, M.moiNum, femme ? "Non… Elle n'avait aucune chance." : "Non… Il n'avait aucune chance."]],
     () => { moi.poseCine = null; for (const z of caches) z.g.visible = true; const q = M.gens.get(PNJ_TOIT); if (q) { q.cineRE = false; if (!q.info.mortT) { q.g.position.set(hx + best.nx * 1.6, sol, hz + best.nz * 1.6); q.info.mortT = performance.now() - 3000; } }
       for (const z of zs) { z.cadavre = true; if (!z.mortT) { z.y = sol; z.mortT = performance.now() - 3000; } } },
     { duree: 14.4, maj: (u, now) => { const dt = Math.min(.05, Math.max(0, u - (M.toitU ?? u))); M.toitU = u;
@@ -14215,14 +14222,16 @@ function animerPNJ() {
 /* Resident Evil : pas de cercles jaunes. Près d'une porte, une petite phrase (on touche l'écran, on clique, ou A à la manette) */
 function modeRE() { return !!(M && M.L && estApo(M.lieu) && !M.L.sh); }
 function actionPorteRE(x, z) {
-  let best = null, bd = 1.9;
-  for (const q of M.L.portails || []) { if (q.continu || q.dans === undefined || (q.secret && !estApo(M.lieu))) continue;
-    const c = centrePortail(q); if (!c) continue; const d = Math.hypot(x - c[0], z - c[1]); if (d < bd) { bd = d; best = q; } }
+  let best = null, bd = 9;
+  for (const q of M.L.portails || []) { if (q.continu || !q.dans || (q.secret && !estApo(M.lieu))) continue;
+    /* (la zone de la porte, à portée de main : on la cherche tout autour de nous, jusqu'à 1,6 m — quelle que soit sa forme, même un long passage) */
+    let d = q.dans(x, z) ? 0 : 9; for (let r = .4; r <= 1.6 && d > r; r += .4) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; if (q.dans(x + Math.cos(a) * r, z + Math.sin(a) * r)) { d = r; break; } }
+    if (d < bd) { bd = d; best = q; } }
   if (best) {
     if (lisaVivante()) return { type: "fermeRE", label: "🔒 Les portes sont bloquées", dit: "Les portes sont bloquées… Il faut d'abord s'en débarrasser !" };
     if (best.vers === "z-rue" && !M.porcheOuvert) return { type: "fermeRE", label: "🚧 Le passage est bouché par des gravats", dit: "Le porche est bouché par les gravats… Il faudrait de quoi faire sauter tout ça." };
     const b = baseLieu(best.vers), nom = { mess: "le mess", grande: "la cour d'honneur", rue: "la rue", fetes: "la salle des fêtes", etage: "les étages" }[b];
-    return { type: "porteRE", pt: best, label: b === baseLieu(M.lieu) || !nom ? "🚪 Passer la porte" : "🚪 Entrer : " + nom, id: best.vers };
+    return { type: "porteRE", pt: best, label: b === baseLieu(M.lieu) || !nom ? "🚪 Passer la porte" : b === "grande" || b === "rue" ? "🚪 Sortir : " + nom : "🚪 Entrer : " + nom, id: best.vers };
   }
   if (M.lieu === "z-grande" && RU.portesFond && Math.abs(z - (RU.zA + .9)) < 1.1) for (const px of RU.portesFond) if (Math.abs(x - px) < 1.1) return { type: "fermeRE", label: "🔒 Fermé de l'autre côté", id: "fond" + px };
   return null;
