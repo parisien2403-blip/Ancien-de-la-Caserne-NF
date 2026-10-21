@@ -8312,7 +8312,10 @@ export async function ouvrir(ctx) {
     if (brut > 0 && brut < 250) { perf.n++; perf.s += brut; if (perf.n >= 60) { const moy = perf.s / perf.n; perf = { n: 0, s: 0 };
       const r = moy > (PETIT ? 45 : 34) ? Math.max(resMin, res - .25) : moy < 13 && t > (M.resBaisseT || 0) + 30000 ? Math.min(resMax, res + .25) : res;   // (on ne remonte pas tout de suite : pas de va-et-vient)
       if (r < res) M.resBaisseT = t;
-      if (r !== res) { res = r; M.redim && M.redim(); } } }
+      if (r !== res) { res = r; M.redim && M.redim(); }
+      /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
+      const lent = moy > (PETIT ? 45 : 34) && res <= resMin + .01; M.lentN = lent ? (M.lentN || 0) + 1 : 0;
+      if (M.lentN >= 2 && (M.allege || 0) < 2 && qualiteChoisie() === "auto") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
     preparerVoisin(); trierLumieres(t); if (PETIT) cacherLoin(t);
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
@@ -11273,7 +11276,7 @@ function pluieRE(now) { const L = M.L; if (!L) return; const dehors = !!(L.apo &
           w += vec3(.06, .55, .02) * bout; vB = bout; gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0); }`,
       fragmentShader: `varying float vB; void main() { gl_FragColor = vec4(.68, .74, .82, .32 * (1.0 - vB * .7)); }` });
     L.pluie = new THREE.LineSegments(g, m); L.pluie.frustumCulled = false; L.pluie.renderOrder = 5; M.scene.add(L.pluie); }
-  if (L.pluie) { L.pluie.visible = dehors; L.pluie.material.uniforms.uT.value = (now % 600000) / 1000; L.pluie.material.uniforms.uCam.value.copy(M.camera.position); }
+  if (L.pluie) { L.pluie.visible = dehors && !(M.allege >= 2); L.pluie.material.uniforms.uT.value = (now % 600000) / 1000; L.pluie.material.uniforms.uCam.value.copy(M.camera.position); }
   // le son : un bruit blanc adouci, en boucle ; plus faible à l'abri
   const vol = !estApo(M.lieu) || !(L.apo && !L.sh) ? 0 : dehors ? .11 : .03;
   if (vol && !M.sonPluie) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = actx.sampleRate * 2, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
@@ -12372,7 +12375,7 @@ function apparaitreZ(chien) {   // (true : un chien ; false : un zombie ; un nom
 }
 // (le chef) chaque zombie poursuit le joueur le plus proche ; sinon il erre
 function simulerZ(t, dt) {
-  const base = baseLieu(M.lieu), [nz, nc] = ZNOMBRE[base] || [0, 0], Lz = limZ();
+  const base = baseLieu(M.lieu), [nz0, nc] = ZNOMBRE[base] || [0, 0], Lz = limZ(), nz = Math.round(nz0 * (M.allege >= 2 ? .45 : PETIT ? .6 : 1));   /* (moins de monstres à la fois sur un petit téléphone) */
   const vivants = [...M.zomb.values()];
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
   for (const z of vivants) if (z.mortT && !z.cadavre && t - z.mortT > 3400) retirerZ(z);   // (abattu : il s'efface, et disparaît)
@@ -13932,7 +13935,10 @@ const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 },
       vec2 d = vUv - .5; col *= 1.0 - uVignette * smoothstep(.25, .75, length(d) * 1.25);
       col += (h(vUv * 913.0) - .5) * uGrain * (.4 + l);
       gl_FragColor = vec4(col, c.a); }` };
-function postActif() { return !!(M && QUALITE !== "bas" && !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
+function alleger(n) { M.allege = n;
+  if (n >= 1) { if (M.rendu.shadowMap.enabled) { M.rendu.shadowMap.enabled = false; M.scene && M.scene.traverse(o => { if (o.isLight) o.castShadow = false; if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); } }
+  if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; } }
+function postActif() { return !!(M && QUALITE !== "bas" && !(M.allege >= 1) && !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
     .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
 // rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
