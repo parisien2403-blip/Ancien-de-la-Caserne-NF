@@ -10643,12 +10643,13 @@ function cacherLoin(t) {
     if (loin && q.g.visible) { q.g.visible = false; q.cache = true; } else if (!loin && q.cache) { q.cache = false; q.g.visible = true; } } }
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
-  if ((baseLieu(M.lieu) !== "grande" && !PETIT && !estSH(M.lieu)) || (estApo(M.lieu) && !(PETIT && baseLieu(M.lieu) === "etage"))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
-  if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight) M.lampes.push(o); }); }
+  const re = modeRE();   /* (Resident Evil, comme Silent Hill : peu de lumières à la fois — elles en avaient treize, et chaque point de l'image était calculé treize fois) */
+  if (!re && ((baseLieu(M.lieu) !== "grande" && !PETIT && !estSH(M.lieu)) || estApo(M.lieu))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight && o !== (M.L && M.L.eclair)) M.lampes.push(o); }); }
   const c = M.camera.position, v = new THREE.Vector3();
   const vu = l => { for (let o = l; o; o = o.parent) if (!o.visible) return false; return true; };   // (une lampe dans un groupe caché ne compte pas)
   const tri = M.lampes.filter(vu).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
-  tri.forEach(([l], i) => l.layers.set(i < (PETIT ? 4 : estSH(M.lieu) ? 6 : LAMPES_MAX) ? 0 : 31));   // (Silent Hill : six, les plus proches — la salle des fêtes en avait vingt-trois allumées à la fois)   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
+  tri.forEach(([l], i) => l.layers.set(i < (re ? (qualiteChoisie() === "haut" ? 6 : 3) : PETIT ? 4 : estSH(M.lieu) ? 6 : LAMPES_MAX) ? 0 : 31));   // (Silent Hill : six, les plus proches — la salle des fêtes en avait vingt-trois allumées à la fois)   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
 const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
@@ -10778,13 +10779,13 @@ function apocalypse(scene, L, base) {
   // un feu : des flammes qui dansent, une lueur orange qui vacille, de la fumée qui monte
   const feu = (x, y, z, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g); L.feuxZ.push([x, z, k === 1 ? .75 : .72 * k]);
     // un brasier : plusieurs nappes de flammes pixelisées, côte à côte, chacune avec son temps de retard
-    const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false })); if (QUALITE !== "bas") sp.material.color.setScalar(1.35);   /* (avec les effets : les flammes, plus lumineuses que tout, rayonnent) */
+    const fl = [], riche = qualiteChoisie() === "haut"; for (let i = 0; i < (riche ? 3 + Math.round(k * 1.5) : 2 + Math.round(k * .5)); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false })); if (QUALITE !== "bas") sp.material.color.setScalar(1.35);   /* (avec les effets : les flammes, plus lumineuses que tout, rayonnent) */
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
-    const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
-    feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); (L.feuxG = L.feuxG || []).push(g); return g; };
+    const fu = []; for (let i = 0, nf = riche ? (ext ? 4 : 3) : 1; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
+    feux.push({ fl, fu, k, x, y: y + 1.2 * k, z, g }); (L.feuxG = L.feuxG || []).push(g); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
-  const lumsFeu = (QUALITE === "haut" && !MOBILE ? [0, 1, 2, 3, 4, 5] : MOBILE ? [0, 1, 2] : [0, 1, 2, 3]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
-  if (QUALITE === "haut" && !PETIT && !MOBILE) { const l = lumsFeu[0]; l.castShadow = true; l.shadow.mapSize.set(256, 256); l.shadow.bias = -.004; l.shadow.radius = 3; l.shadow.camera.near = .3; l.shadow.camera.far = 14; }   /* (qualité Haut : le feu le plus proche projette les ombres des personnages et des monstres sur le sol et les murs) */
+  const lumsFeu = (qualiteChoisie() === "haut" && !MOBILE ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  if (qualiteChoisie() === "haut" && !PETIT && !MOBILE) { const l = lumsFeu[0]; l.castShadow = true; l.shadow.mapSize.set(256, 256); l.shadow.bias = -.004; l.shadow.radius = 3; l.shadow.camera.near = .3; l.shadow.camera.far = 14; }   /* (qualité Haut : le feu le plus proche projette les ombres des personnages et des monstres sur le sol et les murs) */
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
@@ -10892,13 +10893,15 @@ function apocalypse(scene, L, base) {
         L.helicoA.volume = Math.max(0, Math.min(1, (.25 + .6 * proche) * f)); } };
   }
   // on ne traverse pas les épaves ni les fûts
+  if (qualiteChoisie() !== "haut") scene.traverse(o => { if (o.isLight && o.castShadow && !(L.sh)) o.castShadow = false; });   /* (comme à Silent Hill : pas d'ombre portée de la lune — elle faisait redessiner toute la scène à chaque image ; « Haut » la garde) */
   L.obstaclesApo = obstacles; L.limitesSansObst = L.limites;   /* (pour vérifier qu'aucun obstacle ne coupe un passage) */
   if (obstacles.length) { const lim = L.limites; L.limites = (x, z) => lim(x, z) && !obstacles.some(([ox, oz, r]) => (x - ox) * (x - ox) + (z - oz) * (z - oz) < r * r); }
   // tout bouge : les flammes dansent, la fumée monte, les lumières vacillent ou grésillent
   const animAvant = L.anim;
   L.anim = (t) => { animAvant && animAvant(t);
     const cam = M && M.camera ? M.camera.position : null, haut = ext ? 4.5 : 2;
-    for (const f of feux) { for (const [sp, ph, h] of f.fl) { sp.material.map = texFlammes[(Math.floor(t / 75) + ph) % 8]; const v = .9 + .1 * Math.sin(t / 130 + ph); sp.scale.set(1.25 * f.k * v, 2 * f.k * h * v, 1); }
+    for (const f of feux) { { const loin = cam && !(M && M.cine) && Math.hypot(cam.x - f.x, cam.z - f.z) > 34; if (loin && f.g.visible) { f.g.visible = false; f.loinCache = true; } else if (!loin && f.loinCache) { f.g.visible = true; f.loinCache = false; } if (f.loinCache) continue; }   /* (les feux loin, dans la nuit : ni dessinés ni animés) */
+      for (const [sp, ph, h] of f.fl) { sp.material.map = texFlammes[(Math.floor(t / 75) + ph) % 8]; const v = .9 + .1 * Math.sin(t / 130 + ph); sp.scale.set(1.25 * f.k * v, 2 * f.k * h * v, 1); }
       /* (la fumée : de grands voiles transparents ; tout près du feu, ils couvriraient tout l'écran, plusieurs fois l'un sur l'autre — ça fait ramer : ils s'effacent quand on s'approche) */
       const pres = cam ? Math.max(0, Math.min(1, (Math.hypot(cam.x - f.x, cam.z - f.z) - 1.5 * f.k) / (2.5 * f.k))) : 1;
       for (const [sp, d] of f.fu) { const u = ((t / 3200) + d) % 1; sp.visible = pres > .02; if (!sp.visible) continue; sp.position.set(Math.sin(u * 6 + d * 9) * .3 * f.k, .8 * f.k + u * haut * f.k, 0); sp.scale.setScalar((.8 + u * (ext ? 2.4 : 1.6)) * f.k); sp.material.opacity = .55 * (1 - u) * pres; }
@@ -13994,7 +13997,7 @@ const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 },
 function alleger(n) { M.allege = n;
   if (n >= 1) { if (M.rendu.shadowMap.enabled) { M.rendu.shadowMap.enabled = false; M.scene && M.scene.traverse(o => { if (o.isLight) o.castShadow = false; if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); } }
   if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; } }
-function postActif() { return !!(M && QUALITE !== "bas" && !(M.allege >= 1) && !(MOBILE && qualiteChoisie() !== "haut") &&   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
+function postActif() { return !!(M && qualiteChoisie() === "haut" && !(M.allege >= 1) &&   /* (la lueur des flammes : seulement en « Haut », choisi soi-même — Silent Hill s'en passe, et il est fluide) */   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
     .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
 // rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
