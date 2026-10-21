@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.13";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8553,7 +8553,8 @@ export async function ouvrir(ctx) {
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
-    if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
+    if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
+    else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
@@ -10763,6 +10764,7 @@ function apocalypse(scene, L, base) {
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
   const lumsFeu = (QUALITE === "haut" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  if (QUALITE === "haut" && !PETIT) { const l = lumsFeu[0]; l.castShadow = true; l.shadow.mapSize.set(256, 256); l.shadow.bias = -.004; l.shadow.radius = 3; l.shadow.camera.near = .3; l.shadow.camera.far = 14; }   /* (qualité Haut : le feu le plus proche projette les ombres des personnages et des monstres sur le sol et les murs) */
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
@@ -11252,8 +11254,97 @@ function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true;
       if (vol) vol(dt);
       if (fx) fx.maj(u - 5.6, dt);
       const sh = fx ? Math.max(0, 1 - (u - 5.6) / 1.3) * .14 : 0; M.camera.position.set(1.3 + (Math.random() - .5) * sh, 1.8 + (Math.random() - .5) * sh, 12.6); M.camera.lookAt(0, 1.3, u < 5.4 ? 24 : 27);   /* (dans l'axe du porche, derrière eux) */ } }); }
+/* la pluie, dehors, à Resident Evil (comme la nuit de Raccoon City) : des milliers de gouttes, calculées par la carte graphique (elles tombent, et se répètent
+   tout autour de la caméra) ; le bruit de la pluie, doux, fabriqué à la volée */
+function pluieRE(now) { const L = M.L; if (!L) return; const dehors = !!(L.apo && !L.sh && !L.interieur && estApo(M.lieu));
+  if (!L.pluie && dehors) { const N = QUALITE === "haut" ? 3200 : QUALITE === "moyen" ? 1800 : 800, p = new Float32Array(N * 6), bout = new Float32Array(N * 2);
+    for (let i = 0; i < N; i++) { const x = Math.random(), y = Math.random(), z = Math.random(); p.set([x, y, z, x, y, z], i * 6); bout[i * 2] = 0; bout[i * 2 + 1] = 1; }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("bout", new THREE.BufferAttribute(bout, 1));
+    const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, uniforms: { uT: { value: 0 }, uCam: { value: new THREE.Vector3() } },
+      vertexShader: `attribute float bout; uniform float uT; uniform vec3 uCam; varying float vB;
+        void main() { const vec3 B = vec3(34.0, 16.0, 34.0); vec3 q = position * B; float y = mod(q.y - uT * 11.0, B.y);
+          vec3 w = vec3(mod(q.x - uCam.x, B.x) + uCam.x - B.x * .5, y + uCam.y - B.y * .4, mod(q.z - uCam.z, B.z) + uCam.z - B.z * .5);
+          w += vec3(.06, .55, .02) * bout; vB = bout; gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0); }`,
+      fragmentShader: `varying float vB; void main() { gl_FragColor = vec4(.68, .74, .82, .32 * (1.0 - vB * .7)); }` });
+    L.pluie = new THREE.LineSegments(g, m); L.pluie.frustumCulled = false; L.pluie.renderOrder = 5; M.scene.add(L.pluie); }
+  if (L.pluie) { L.pluie.visible = dehors; L.pluie.material.uniforms.uT.value = (now % 600000) / 1000; L.pluie.material.uniforms.uCam.value.copy(M.camera.position); }
+  // le son : un bruit blanc adouci, en boucle ; plus faible à l'abri
+  const vol = !estApo(M.lieu) || !(L.apo && !L.sh) ? 0 : dehors ? .11 : .03;
+  if (vol && !M.sonPluie) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = actx.sampleRate * 2, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      const src = actx.createBufferSource(); src.buffer = b; src.loop = true; const lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600; const hp = actx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 350; const gn = actx.createGain(); gn.gain.value = 0;
+      src.connect(hp).connect(lp).connect(gn).connect(actx.destination); src.start(); M.sonPluie = { src, gn }; } catch (e) { M.sonPluie = { gn: null }; } }
+  if (M.sonPluie && M.sonPluie.gn) { const g = M.sonPluie.gn.gain; g.value += (vol - g.value) * .05; if (!vol && g.value < .002) { try { M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; } } }
+/* les sursauts (une fois par partie, chacun) : un zombie qui passe à travers une fenêtre du rez-de-chaussée, dans une pluie d'éclats de verre ;
+   une nuée de corbeaux qui s'envole d'un coup, en croassant, quand on approche de ce qu'ils picoraient */
+let texCorbeau = null;
+function sursautsRE(moi, now) { const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position; if (b !== "grande" || L.interieur) return;
+  M.sursauts = M.sursauts || new Set();
+  // les endroits possibles (une seule fois par lieu) : au pied d'une façade, devant le rez-de-chaussée
+  if (!L.ptsFenetre) { L.ptsFenetre = []; for (const [, cadres] of L.facadesFen || []) for (const c of cadres) { if (c.W < 8 || Math.abs(c.o[1] - c.H / 2) > 1.6) continue; const nn = Math.hypot(c.n[0], c.n[2]) || 1, nx = c.n[0] / nn, nz = c.n[2] / nn;
+      for (const a of [-.3, .05, .35]) { const px = c.o[0] + c.ux[0] * a * c.W, pz = c.o[2] + c.ux[2] * a * c.W, x = px + nx * 1.2, z = pz + nz * 1.2; if (L.limites(x, z) && Math.abs(hNiv(L, x, z, 0)) < .6) L.ptsFenetre.push({ px, pz, nx, nz, x, z }); } } }
+  if (!M.sursauts.has("fenetre") && !M.cine && M.sepFait && L.ptsFenetre.length) { const q = L.ptsFenetre.find(q => Math.hypot(mp.x - q.x, mp.z - q.z) < 3.4 && Math.hypot(mp.x - q.x, mp.z - q.z) > 1.4);
+    if (q) { M.sursauts.add("fenetre"); fenetreBrisee(q); } }
+  if (!M.sursauts.has("corbeaux") && !M.cine && M.sepFait) { if (!L.ptCorbeaux) L.ptCorbeaux = [[-4, -14], [6, -26], [-6, -30], [3, 8]].find(([x, z]) => L.limites(x, z)) || null;
+    const c = L.ptCorbeaux; if (c && Math.hypot(mp.x - c[0], mp.z - c[1]) < 6) { M.sursauts.add("corbeaux"); envolCorbeaux(c[0], hNiv(L, c[0], c[1], mp.y), c[1]); } } }
+function fenetreBrisee(q) { const sc = M.scene, g = new THREE.Group(); sc.add(g); const verre = new THREE.MeshStandardMaterial({ color: 0xc8dce8, roughness: .1, metalness: .3, transparent: true, opacity: .75, side: THREE.DoubleSide });
+  const eclats = []; for (let i = 0; i < (PETIT ? 12 : 26); i++) { const o = new THREE.Mesh(new THREE.PlaneGeometry(.08 + Math.random() * .2, .08 + Math.random() * .22), verre); o.position.set(q.px + q.nx * .1 + (Math.random() - .5) * .9, 1.0 + Math.random() * 1.1, q.pz + q.nz * .1 + (Math.random() - .5) * .9); g.add(o);
+    eclats.push({ o, v: new THREE.Vector3(q.nx * (2 + Math.random() * 4) + (Math.random() - .5) * 2, 1 + Math.random() * 2.5, q.nz * (2 + Math.random() * 4) + (Math.random() - .5) * 2), w: Math.random() * 14 }); }
+  sonBruit(.5, 6500, .9); sonBruit(.25, 3000, .6); setTimeout(() => sonBruit(.4, 5000, .5), 120); sonPos(ZTYPES[0].son, 1);   // (le verre qui éclate, le râle)
+  const z = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x: q.px + q.nx * .3, z: q.pz + q.nz * .3 }); if (z) { z.tx = q.x; z.tz = q.z; }   /* (il sort du mur, vers nous) */
+  const t0 = performance.now(); let prec = t0; const f = () => { const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000), u = (now - t0) / 1000; prec = now; if (!M || M.scene !== sc || u > 2.4) { sc.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); verre.dispose(); return; }
+    for (const e of eclats) { if (e.o.position.y > .02) { e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.w * dt; e.o.rotation.y += e.w * .7 * dt; if (e.o.position.y < .02) { e.o.position.y = .02; e.o.rotation.set(-Math.PI / 2, 0, Math.random() * 7); } } }
+    verre.opacity = .75 * Math.min(1, (2.4 - u) / .6); requestAnimationFrame(f); }; f();
+  if (M.camera) { const c0 = performance.now(); const sec = () => { const k = 1 - (performance.now() - c0) / 400; if (!M || k <= 0) return; M.camera.position.x += (Math.random() - .5) * .06 * k; M.camera.position.y += (Math.random() - .5) * .06 * k; requestAnimationFrame(sec); }; sec(); } }
+function envolCorbeaux(x, y, z) { texCorbeau = texCorbeau || [0, 1].map(k => tex(toile(64, 32, c => { c.fillStyle = "#0b0b0d"; c.beginPath(); c.ellipse(32, 18, 9, 4, 0, 0, 7); c.fill(); c.beginPath(); c.arc(42, 16, 3.2, 0, 7); c.fill();
+    c.beginPath(); if (k) { c.moveTo(26, 16); c.quadraticCurveTo(14, 2, 2, 6); c.lineTo(28, 18); c.moveTo(34, 16); c.quadraticCurveTo(46, 2, 60, 5); c.lineTo(32, 18); } else { c.moveTo(26, 18); c.quadraticCurveTo(14, 28, 2, 30); c.lineTo(28, 17); c.moveTo(34, 18); c.quadraticCurveTo(46, 28, 60, 29); c.lineTo(32, 17); } c.fill(); })));   /* (deux images : les ailes levées, baissées) */
+  const sc = M.scene, g = new THREE.Group(); sc.add(g); const N = PETIT ? 6 : 11, ois = [];
+  for (let i = 0; i < N; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texCorbeau[0], transparent: true, depthWrite: false })); s.scale.set(.95, .48, 1); s.position.set(x + (Math.random() - .5) * 2, y + .2 + Math.random() * .3, z + (Math.random() - .5) * 2); g.add(s);
+    const a = Math.random() * 7; ois.push({ s, v: new THREE.Vector3(Math.sin(a) * (2 + Math.random() * 3), 3 + Math.random() * 3, Math.cos(a) * (2 + Math.random() * 3)), ph: Math.random() * 7, d: Math.random() * .3 }); }
+  for (let k = 0; k < 6; k++) setTimeout(() => sonBruit(.06, 1800 + Math.random() * 900, .35), k * 70);   // (le battement des ailes)
+  for (let k = 0; k < 3; k++) setTimeout(() => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), f = actx.createBiquadFilter(), gn = actx.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(620, t); o.frequency.linearRampToValueAtTime(420, t + .22);
+      f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 3; gn.gain.setValueAtTime(.12, t); gn.gain.linearRampToValueAtTime(0, t + .25); o.connect(f).connect(gn).connect(actx.destination); o.start(t); o.stop(t + .26); } catch (e) {} }, 150 + k * 260);   /* (les croassements) */
+  const t0 = performance.now(); let prec = t0; const f = () => { const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000), u = (now - t0) / 1000; prec = now; if (!M || M.scene !== sc || u > 4) { sc.remove(g); return; }
+    for (const o of ois) { if (u < o.d) continue; o.s.position.addScaledVector(o.v, dt); o.v.y += .6 * dt; o.s.material.map = texCorbeau[Math.floor((now / 90) + o.ph) % 2]; o.s.material.opacity = Math.min(1, (4 - u) / .8); }
+    requestAnimationFrame(f); }; f(); }
+/* le fusil à pompe (dessiné ici en 3D, pièce par pièce) : le canon et le magasin tubulaire, la pompe en bois, la carcasse, la crosse ;
+   l'origine dans la main, le canon vers +z. Ramassé près du car de police, à côté d'un képi et d'une mare de sang : chaque tir, une gerbe — gros dégâts de près */
+const POMPE_POS = [3.5, -37.5];
+function fusilPompe() { const g = new THREE.Group(), fer = new THREE.MeshStandardMaterial({ color: 0x1e2024, metalness: .85, roughness: .32 }), bois = new THREE.MeshStandardMaterial({ color: 0x5a3820, roughness: .55 }), noir = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: .5 });
+  const cyl = (r, l, m, y, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 12), m); o.rotation.x = Math.PI / 2; o.position.set(0, y, z); g.add(o); return o; };
+  const box = (w, h, d, m, y, z, rx = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(0, y, z); o.rotation.x = rx; g.add(o); return o; };
+  cyl(.017, .62, fer, .055, .36); cyl(.015, .46, fer, .022, .28);   // (le canon, le magasin dessous)
+  cyl(.027, .17, bois, .022, .34);   // (la pompe)
+  box(.048, .075, .24, fer, .035, .02);   // (la carcasse)
+  box(.03, .08, .045, noir, -.035, -.03, .35);   // (la poignée, dans la main)
+  box(.042, .085, .32, bois, .0, -.27, -.12);   // (la crosse, qui descend vers l'épaule)
+  box(.044, .1, .02, noir, -.03, -.43, -.12);   // (la plaque de couche)
+  cyl(.006, .02, fer, .093, .64);   // (le guidon)
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g; }
+// le tir : la gerbe frappe la cible (plus fort de près) et les zombies juste derrière elle, dans le même axe ; un gros bruit, le recul, puis « clac-clac » (on réarme)
+function tirPompe(moi, z) { const now = performance.now(); if (now < (M.pompeT || 0)) return; M.pompeT = now + 900;
+  const mp = moi.g.position, dx0 = z.x - mp.x, dz0 = z.z - mp.z, d = Math.hypot(dx0, dz0) || 1; if (d > 18) { M.ctx.surInfo && M.ctx.surInfo("Trop loin pour le fusil à pompe… approche-toi."); return; }
+  const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = now; if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
+  eclairDuCanon(moi, dx, dz); sonBruit(.55, 850, 1); sonBruit(.22, 3200, .75); setTimeout(() => sonBruit(.07, 1800, .45), 380); setTimeout(() => sonBruit(.07, 1300, .5), 540);
+  { const c0 = performance.now(); const sec = () => { const k = 1 - (performance.now() - c0) / 260; if (!M || k <= 0) return; M.camera.position.x += (Math.random() - .5) * .07 * k; M.camera.position.y += Math.random() * .05 * k; requestAnimationFrame(sec); }; sec(); }   /* (le recul) */
+  const fort = d < 5 ? 3 : d < 10 ? 2 : 1;
+  if (z.tyran || z.lisa || z.licker) { for (let i = 0; i < fort + (d < 4 ? 1 : 0); i++) { if (z.tyran) toucherTyran(z); else if (z.lisa) toucherLisa(z); else toucherLicker(z, dx, dz); } return; }
+  for (const q of [...M.zomb.values()]) { if (q.mortT || q.cine || !q.g.visible) continue; const ex = q.x - mp.x, ez = q.z - mp.z, dq = Math.hypot(ex, ez) || 1;
+    if (q !== z && (dq > Math.min(d + 2.5, 12) || (ex * dx + ez * dz) / dq < .9)) continue;
+    impactZ(q, dx, dz); for (let i = 0; i < (q === z ? fort : 1); i++) { if (q.mortT) break; envoyerWS({ t: "z_tir", id: q.id, dx, dz }); if (estChefZ()) blesserZ(q, dx, dz); } } }
+// au sol, près du car de police : le fusil, un képi, du sang ; on passe dessus, on le ramasse
+function pompeAuSol(L, mp, now) { if (M.pompe) { if (L.pompeObj) L.pompeObj.visible = false; return; }
+  if (!L.pompeObj) { if (!L.limites(POMPE_POS[0], POMPE_POS[1])) { L.pompeObj = new THREE.Group(); return; } const g = new THREE.Group(), y = hNiv(L, POMPE_POS[0], POMPE_POS[1], 0); g.position.set(POMPE_POS[0], y, POMPE_POS[1]); M.scene.add(g); L.pompeObj = g;
+    const f = fusilPompe(); f.rotation.set(0, 0, Math.PI / 2); f.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), .6); f.position.y = .05; g.add(f);   /* (couché sur le flanc, par terre) */
+    const kepi = new THREE.Group(), bleu = new THREE.MeshStandardMaterial({ color: 0x1a2440, roughness: .7 }), visiere = new THREE.MeshStandardMaterial({ color: 0x0c0c0e, roughness: .3 }); { const c = new THREE.Mesh(new THREE.CylinderGeometry(.1, .11, .09, 16), bleu); c.position.y = .045; kepi.add(c); const v = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .01, 16, 1, false, 0, Math.PI), visiere); v.position.set(0, .01, .04); kepi.add(v); }
+    kepi.position.set(-.6, 0, .4); kepi.rotation.set(.25, 1.1, .4); g.add(kepi);
+    if (texSang.length) { const s = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), matSang(texSang[2])); s.rotation.x = -Math.PI / 2; s.position.set(-.2, .025, .1); g.add(s); }
+    const lueur = new THREE.PointLight(0xfff0d0, .6, 2.2, 2); lueur.position.set(0, .5, 0); g.add(lueur); g.userData.lueur = lueur; }   /* (un reflet sur le métal : on le remarque) */
+  const g = L.pompeObj; if (!g.parent) return; g.visible = true; if (g.userData.lueur) g.userData.lueur.intensity = .5 + .3 * Math.sin(now / 300);
+  if (!M.cine && Math.hypot(mp.x - POMPE_POS[0], mp.z - POMPE_POS[1]) < 1.1) { M.pompe = true; g.visible = false; sonBruit(.07, 1800, .45); setTimeout(() => sonBruit(.07, 1300, .5), 160); majHudApo();
+    dire(M.moiNum, "Un fusil à pompe… Celui-là ne les fera pas que reculer."); } }
 // à chaque image, à Resident Evil : où en est l'histoire
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
+  if (b === "grande") pompeAuSol(L, mp, now);
   if (b === "grande") { gravatsPorche(M.scene, L); if (!M.porcheOuvert && L.gravatsSouffles) { L.gravatsSouffles = false; for (const o of L.gravatsPorche.children) { const [p, r, sc] = o.userData.repos; o.position.copy(p); o.rotation.copy(r); o.scale.copy(sc); } for (const f of L.feuxC4 || []) f.visible = false; } }   /* (une nouvelle partie : le tas est de nouveau là) */
   majBoutonsRE();
   /* dans la salle des fêtes : la lueur des feux sur les personnages (une lumière chaude qui nous suit et vacille), pour bien les voir dans la pénombre */
@@ -11555,7 +11646,7 @@ function posesZ(ty) {
 const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
 const sonsCourts = new Set();
 function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
-function couperSonsApo() {
+function couperSonsApo() { if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
   for (const a of [sonApo, sonFeu, sonRepos, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
   sonsCourts.clear(); sonApo = sonFeu = sonRepos = null;   // (recréés à la prochaine visite)
 }
@@ -11916,6 +12007,7 @@ function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   if (!voitZ(moi.g.position, z)) { if (performance.now() > (M.murMsgT || 0)) { M.murMsgT = performance.now() + 4000; M.ctx.surInfo && M.ctx.surInfo("🧱 Un mur entre toi et lui : impossible de tirer."); } return; }   // (pas à travers les murs, ni dans une autre salle)
   z.tireurT = performance.now();
+  if (M.pompe && !M.mitra) { tirPompe(moi, z); return; }   /* (le fusil à pompe, une fois ramassé) */
   if (z.licker || z.tyran || z.lisa) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
     const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); if (z.tyran) toucherTyran(z); else if (z.lisa) toucherLisa(z); else toucherLicker(z, dx, dz); return; }
@@ -11944,7 +12036,7 @@ function eclairDuCanon(p, dx, dz) { p.visee = Math.atan2(dx, dz); p.viseeT = per
 }
 // une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
 function subirMorsure(zx, zz, deg = 1) {
-  const moi = moiApo(); if (!moi || APO.zombieFin || M.cine || M.evac) return;   // (pendant une cinématique, on ne peut pas se défendre : pas de morsure)
+  const moi = moiApo(); if (!moi || APO.zombieFin || M.cine || M.evac || M.porteRE) return;   // (pendant une cinématique, on ne peut pas se défendre : pas de morsure)
   APO.vies -= deg; M.ctx.surApoFlash && M.ctx.surApoFlash();
   const dx = moi.g.position.x - zx, dz = moi.g.position.z - zz, d = Math.hypot(dx, dz) || 1;
   for (let k = .8 * deg; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
@@ -12256,7 +12348,7 @@ function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false
 // le compteur de balles et les vies, à l'écran
 function majHudApo() {
   const e = M && M.L && M.L.sh ? { sh: true, vies: M.shVies ?? SH_VIES, max: SH_VIES, arme: !!M.shArme } : M && M.L && M.L.apo && !M.L.sh ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0,
-    mitra: !!M.mitra, tues: M.tues || 0, tuesMitra: TUES_MITRA, equipe: (M.equipe || []).map(q => ({ nom: HEROS[q.id].court, vies: q.vies, mort: q.mort })) } : null;
+    mitra: !!M.mitra, pompe: !!M.pompe, tues: M.tues || 0, tuesMitra: TUES_MITRA, equipe: (M.equipe || []).map(q => ({ nom: HEROS[q.id].court, vies: q.vies, mort: q.mort })) } : null;
   const cle = JSON.stringify(e); if (cle === M.hudCle) return; M.hudCle = cle; M.ctx.surApo && M.ctx.surApo(e);
 }
 // à chaque image : les zombies bougent, tombent, grognent ; on ramasse ; le compte à rebours du zombie
@@ -12270,7 +12362,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); animerLisa(moi, now, dt); lancerLisa();
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); pluieRE(now); sursautsRE(moi, now); animerLisa(moi, now, dt); lancerLisa();
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -13055,7 +13147,8 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   if (!pistolets3D[fA]) pistolets3D[fA] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(fA), sc = g.scene; sc.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(sc), k = 1 / Math.max(1e-6, b.max.z - b.min.z), w = new THREE.Group(), o = new THREE.Group(); w.add(sc); w.scale.setScalar(k); w.position.set(-b.min.x * k, -b.min.y * k, -b.min.z * k); o.add(w); return o; })().catch(() => null);
   if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
-  if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;   /* (dans le repère du personnage : à sa taille) */
+  if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;
+  { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
   const vise = p.viseeT && performance.now() - p.viseeT < 1600;
   if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
     const f = new THREE.Vector3(Math.sin(p.visee), -.08, Math.cos(p.visee)), dr = new THREE.Vector3(-f.z, 0, f.x);
@@ -14162,8 +14255,42 @@ const universDe = id => id === "santacarla" ? "lb" : /^spr-/.test(id || "") ? "s
 const NOM_UNIVERS = { lb: "Santa Carla", sh: "Silent Hill", gb: "S.O.S. Fantômes", bttf: "Hill Valley" };
 function universOccupe(id) { const u = universDe(id); if (!u || !M || universDe(M.lieu) === u) return false; return Object.entries(M.comptes || {}).some(([l, n]) => n > 0 && universDe(l) === u); }
 function refusUnivers(id) { if (M && M.cine && M.cine.nettoyer) { try { M.cine.nettoyer(); } catch (e) {} } if (M && M.lbNoir) { M.lbNoir.remove(); M.lbNoir = null; } if (M && M.cine) finCine(); bulle(`🔒 Quelqu'un est déjà à ${NOM_UNIVERS[universDe(id)]}. Une seule personne à la fois : reviens un peu plus tard.`, 5000); }
+/* l'ouverture de porte, comme dans Resident Evil 1 et 2 : d'un lieu à l'autre de la caserne, l'écran noir, une vieille porte en bois dans la pénombre,
+   qui s'ouvre lentement en grinçant ; on avance dans le noir… et l'on est de l'autre côté. Elle cache aussi la préparation du lieu suivant */
+let texPorteRE = null;
+function scenePorteRE() { const sc = new THREE.Scene(); sc.background = new THREE.Color(0x000000);
+  texPorteRE = texPorteRE || tex(toile(256, 512, (x, w, h) => { x.fillStyle = "#3a2618"; x.fillRect(0, 0, w, h); let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 90; i++) { const xx = r() * w; x.strokeStyle = `rgba(${20 + r() * 30 | 0},${10 + r() * 14 | 0},${4 + r() * 8 | 0},${.25 + r() * .3})`; x.lineWidth = 1 + r() * 3; x.beginPath(); x.moveTo(xx, 0); x.bezierCurveTo(xx + (r() - .5) * 20, h * .3, xx + (r() - .5) * 20, h * .7, xx + (r() - .5) * 14, h); x.stroke(); }   /* (le fil du bois) */
+    for (const [px, py, pw, ph] of [[26, 30, 204, 190], [26, 270, 204, 210]]) { x.strokeStyle = "rgba(15,8,4,.75)"; x.lineWidth = 7; x.strokeRect(px, py, pw, ph); x.strokeStyle = "rgba(120,80,50,.25)"; x.lineWidth = 2; x.strokeRect(px + 6, py + 6, pw - 12, ph - 12); }   /* (les deux panneaux moulurés) */
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(0,0,0,${r() * .25})`; x.beginPath(); x.arc(r() * w, r() * h, 2 + r() * 14, 0, 7); x.fill(); } }));   /* (la crasse, les éraflures) */
+  const bois = new THREE.MeshStandardMaterial({ map: texPorteRE, roughness: .75 }), cadreM = new THREE.MeshStandardMaterial({ color: 0x24170e, roughness: .8 }), mur = new THREE.MeshStandardMaterial({ color: 0x2c2a26, roughness: 1 }), fer = new THREE.MeshStandardMaterial({ color: 0x8a7a5a, metalness: .8, roughness: .35 });
+  const b = (w, h, d, m, x, y, z, p = sc) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); p.add(o); return o; };
+  b(1.25, 3.2, .3, mur, -1.15, 1.4, -.1); b(1.25, 3.2, .3, mur, 1.15, 1.4, -.1); b(1.06, .8, .3, mur, 0, 2.6, -.1);   // (le mur autour)
+  b(.08, 2.24, .34, cadreM, -.54, 1.1, 0); b(.08, 2.24, .34, cadreM, .54, 1.1, 0); b(1.16, .08, .34, cadreM, 0, 2.22, 0);   // (le chambranle)
+  const piv = new THREE.Group(); piv.position.set(-.5, 0, .02); sc.add(piv);
+  const battant = b(1.0, 2.16, .06, bois, .5, 1.08, 0, piv);
+  { const poignee = new THREE.Mesh(new THREE.SphereGeometry(.035, 12, 8), fer); poignee.position.set(.88, 1.02, .07); piv.add(poignee); b(.05, .16, .012, fer, .88, 1.0, .036, piv); }
+  const lampe = new THREE.SpotLight(0xffd9a0, 22, 9, .7, .6, 1.6); lampe.position.set(.3, 2.9, 1.8); lampe.target.position.set(0, 1.1, 0); sc.add(lampe, lampe.target);   /* (une ampoule nue, au-dessus) */
+  sc.add(new THREE.AmbientLight(0x6070a0, .12));
+  return { sc, piv, lampe }; }
+// le grincement : une note qui hésite et frotte (fabriqué à la volée), et deux pas
+function grincementPorte() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(190, t); for (let i = 1; i <= 14; i++) o.frequency.linearRampToValueAtTime(150 + Math.random() * 140, t + i * .11);
+    f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 6; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.16, t + .15); g.gain.linearRampToValueAtTime(.1, t + 1.2); g.gain.linearRampToValueAtTime(0, t + 1.7);
+    o.connect(f).connect(g).connect(actx.destination); o.start(t); o.stop(t + 1.75); } catch (e) {}
+  setTimeout(() => sonBruit(.09, 400, .5), 1900); setTimeout(() => sonBruit(.09, 380, .45), 2350); }
+function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveCamera(40, M.camera.aspect, .05, 30); let clk = 0, prec = performance.now(), passe = false, fini = false;
+  M.porteRE = { sc: P.sc, cam, maj: now => { clk += Math.min(50, Math.max(0, now - prec)) / 1000; prec = now; const u = clk;   /* (l'horloge n'avance qu'avec les images : la préparation du lieu ne fait pas sauter l'animation) */
+    cam.aspect = M.camera.aspect; cam.updateProjectionMatrix(); M.porteRE.u = u;
+    const o = Math.max(0, Math.min(1, (u - .55) / 2.0)), e = o * o * (3 - 2 * o); P.piv.rotation.y = -e * 1.75;   // (elle s'ouvre, vers l'intérieur)
+    const a = Math.max(0, Math.min(1, (u - 1.2) / 1.9)), ea = a * a; cam.position.set(0, 1.28 - ea * .05, 2.7 - ea * 2.9); cam.lookAt(0, 1.2, -2);   // (on avance, et l'on passe la porte)
+    P.lampe.intensity = 22 * Math.min(1, u / .4) * (1 - a * .8);
+    if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
+    if (u > .95 && !passe) { passe = true; apres(); }
+    if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
 function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return; const lieuAvant = M.lieu;
+  if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { porteRE(() => { M.sansPorte = true; try { changerLieu(id, arrivee, yaw, face); } finally { M.sansPorte = false; } }); return; }   /* (à Resident Evil : la porte qui s'ouvre, d'un lieu à l'autre) */
   if (universOccupe(id)) { refusUnivers(id); return; }
   if (M.vfMenu) M.vfMenu.fermer();
   if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; M.evac = false; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); }   /* (mort ou pas : on ressort entier, sans l'écran « YOU DIED ») */
@@ -14193,7 +14320,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
@@ -14232,7 +14359,7 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
   const info = moi.info, x = moi.g.position.x + dx, z = moi.g.position.z + dz;
   const but = moi.chemin && moi.chemin.length ? moi.chemin[moi.chemin.length - 1] : moi.cible, fin = but ? [but.x + dx, but.z + dz] : null;
   const yaw = M.yaw, E = M.camE, D = M.camD, num = M.moiNum, d3 = new THREE.Vector3(dx, dy, dz), vise = M.camVise && M.camVise.clone().add(d3);
-  changerLieu(id, [x, z], yaw);
+  M.sansPorte = true; try { changerLieu(id, [x, z], yaw); } finally { M.sansPorte = false; }   /* (un passage continu : pas de porte) */
   M.camE = E; M.camD = D; M.moiNum = num;
   ajouterAncien({ ...info, numero: num, x, z }); M.gens.get(num).moi = true;
   M.gens.get(num).g.position.y = M.L.hauteur ? M.L.hauteur(x, z) : 0;
