@@ -2354,9 +2354,9 @@
         surVolume: v => { bruitVol = v; bruitMaj(); const avant = djVolume; djVolume = v; djAudio.volume = djV(); if (!avant !== !v) djSynchro(); },   /* (on s'éloigne : le son baisse, mais la musique continue, sans bruit ; on revient : elle remonte tout de suite, au bon moment de la piste) */
         urlMusique: id => djSrc(id),
         surPremiere: on => { mx1P = on; $("mx1P").classList.toggle("on", on); },
-        surRelief: on => { window.mxReliefOn = on; const sc = $("mxScene"); sc.classList.toggle("relief", on);
+        surRelief: on => { const avant = !!window.mxReliefOn; window.mxReliefOn = on; const sc = $("mxScene"); sc.classList.toggle("relief", on);
           if (on) { if (!document.fullscreenElement && sc.requestFullscreen) sc.requestFullscreen().then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {})).catch(() => {}); }
-          else if (document.fullscreenElement === sc && !mxPleinVoulu) document.exitFullscreen().catch(() => {}); },   // (le fichier d'un titre : le clip vidéo, pour le grand écran de la scène)
+          else if (avant && document.fullscreenElement === sc && !mxPleinVoulu) document.exitFullscreen().catch(() => {}); },   /* (on ne quitte le plein écran que si le relief était vraiment allumé : en lançant Resident Evil, il s'éteint d'office — et l'on perdait le plein écran) */   // (le fichier d'un titre : le clip vidéo, pour le grand écran de la scène)
         surDJ: d => { djEtat = d; djSynchro(); const ids = [d.courant, ...d.file].filter(Boolean).map(f => f.id); if (ids.some(id => !djDisco.some(m => m.id === id))) chargerDisco(); },
         surPresents: liste => { $("mxPresents").innerHTML = liste.filter(p => !p.pnj).map(p => `<span class="${p.numero === MXmoi() ? "moi" : ""}">${esc(p.nom)}</span>`).join(""); },
         surComptes: c => { mxComptes = c; dessinerLieux(m); },

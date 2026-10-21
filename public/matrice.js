@@ -8321,6 +8321,8 @@ export async function ouvrir(ctx) {
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
+      else if (p.moi && modeRE() && M.L.limites && !M.cine) { const v = viserLibre(p.g.position.x, p.g.position.z);   /* (coincé « dans » un obstacle — repoussé par une morsure, une flamme : chaque pas était refusé, on ne bougeait plus du tout) : on se remet sur le point libre le plus proche */
+        if (M.L.limites(v[0], v[1]) && Math.hypot(v[0] - p.g.position.x, v[1] - p.g.position.z) < 3.2) { p.g.position.x = v[0]; p.g.position.z = v[1]; } else if (p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; } }
       if (p.cible) { const d = p.cible.clone().sub(p.g.position); d.y = 0; const L = d.length();
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0;
           if (p.suite) { const s2 = p.suite; p.suite = null; M.L.grille = M.L.grilleAdmin = null; M.hautVu = C3.enHaut() + 2 * C3.enBas(); if (!(p.moi && s2.length > 2 && C3.etage(p, s2[0], s2[2], s2[1]))) viser(p, s2[0], s2[1]);   // (la carte des passages du nouveau niveau, tout de suite : sinon on cherchait le chemin sur l'ancienne, et l'on s'arrêtait au pied des marches)
@@ -11387,8 +11389,8 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
   if (!best) best = { c: { ux: [0, 0, 1] }, nx: -1, nz: 0, x: 10.7, z: Math.max(-6, Math.min(8, mp.z)), y: 7.0 };   /* (sinon : le toit plat du bâtiment de la salle des fêtes, au bord de la cour d'honneur) */
   const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id)].map(Number)), id = [21, 26, 24, 22, 23, 25].find(h => !pris.has(h)) || 24, femme = id === 21, nomH = HEROS[id].court;
   const ux = best.c.ux[0], uz = best.c.ux[2], yT = best.y, bord = (a, r = 0) => [best.x + ux * a - best.nx * r, best.z + uz * a - best.nz * r];
-  const [hx, hz] = bord(0, .4); retirerAncien(PNJ_TOIT); const p = ajouterAncien({ ...infoEquipier(id, PNJ_TOIT, hx, hz, M.moiNum, 9), equipier: false }); if (!p) return false; p.g.position.y = yT; p.cineRE = true;
-  const zs = [[-1.6, 1.0], [1.5, 1.2]].map(([a, r]) => { const [x, z] = bord(a, r), q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x, z, y: yT }); q.cine = true; q.y = yT; q.x0 = x; q.z0 = z; return q; });
+  const [hx, hz] = bord(0, 1.3); retirerAncien(PNJ_TOIT);   /* (sur le toit lui-même, en retrait du bord — pas debout sur la corniche) */ const p = ajouterAncien({ ...infoEquipier(id, PNJ_TOIT, hx, hz, M.moiNum, 9), equipier: false }); if (!p) return false; p.g.position.y = yT; p.cineRE = true;
+  const zs = [[-1.6, 2.0], [1.5, 2.2]].map(([a, r]) => { const [x, z] = bord(a, r), q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x, z, y: yT }); q.cine = true; q.y = yT; q.x0 = x; q.z0 = z; return q; });
   const chute = []; let tombe = false, ecrase = false;
   const sol = hNiv(L, hx + best.nx * 1.6, hz + best.nz * 1.6, mp.y), cam = mp.clone().add(new THREE.Vector3(best.nx * 2.4 + ux * 2.3, 0, best.nz * 2.4 + uz * 2.3)); cam.y = mp.y + 2.3;   /* (un peu en retrait de nous, sur le côté : on nous voit lever la tête, sans nous avoir devant l'objectif) */
   /* les flammes entre la caméra et le pied du mur s'effacent le temps de la scène : rien ne masque la chute */
