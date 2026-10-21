@@ -14195,7 +14195,8 @@ function actionPorteRE(x, z) {
   if (best) {
     if (lisaVivante()) return { type: "fermeRE", label: "🔒 Les portes sont bloquées", dit: "Les portes sont bloquées… Il faut d'abord s'en débarrasser !" };
     if (best.vers === "z-rue" && !M.porcheOuvert) return { type: "fermeRE", label: "🚧 Le passage est bouché par des gravats", dit: "Le porche est bouché par les gravats… Il faudrait de quoi faire sauter tout ça." };
-    return { type: "porteRE", pt: best, label: "🚪 Entrer : " + ((LIEUX[baseLieu(best.vers)] || {}).nom || "plus loin"), id: best.vers };
+    const b = baseLieu(best.vers), nom = { mess: "le mess", grande: "la cour d'honneur", rue: "la rue", fetes: "la salle des fêtes", etage: "les étages" }[b];
+    return { type: "porteRE", pt: best, label: b === baseLieu(M.lieu) || !nom ? "🚪 Passer la porte" : "🚪 Entrer : " + nom, id: best.vers };
   }
   if (M.lieu === "z-grande" && RU.portesFond && Math.abs(z - (RU.zA + .9)) < 1.1) for (const px of RU.portesFond) if (Math.abs(x - px) < 1.1) return { type: "fermeRE", label: "🔒 Fermé de l'autre côté", id: "fond" + px };
   return null;
