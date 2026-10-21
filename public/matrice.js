@@ -10927,9 +10927,13 @@ const helipad = () => { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 
 let texFumR = null, texLueurR = null, texJournal = null;
 const texFumeeRouge = () => texFumR || (texFumR = tex(toile(128, 128, x => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(235,40,30,.85)"); g.addColorStop(.5, "rgba(200,25,20,.45)"); g.addColorStop(1, "rgba(160,10,10,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
 const texLueurRouge = () => texLueurR || (texLueurR = tex(toile(128, 128, x => { const g = x.createRadialGradient(64, 64, 2, 64, 64, 62); g.addColorStop(0, "rgba(255,60,40,.9)"); g.addColorStop(1, "rgba(255,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128); })));
-// sur la terrasse (pas d'héliport, pas de H : un simple toit-terrasse) : le cercle rouge et son faisceau (allumés quand le fumigène est trouvé)
+// sur la terrasse (pas de plateforme : juste un grand H peint, usé) : le cercle rouge et son faisceau (allumés quand le fumigène est trouvé)
 function heliportApo(scene, L) {
   const H = helipad(), g = new THREE.Group(); g.position.set(H.x, H.y + .02, H.z); scene.add(g);
+  const t = tex(toile(512, 512, (x, w, h) => { x.strokeStyle = "rgba(236,232,220,.92)"; x.lineWidth = 26; x.beginPath(); x.arc(256, 256, 226, 0, 7); x.stroke();
+    x.fillStyle = "rgba(236,232,220,.92)"; x.fillRect(150, 120, 58, 272); x.fillRect(304, 120, 58, 272); x.fillRect(150, 228, 212, 56);
+    x.globalCompositeOperation = "destination-out"; for (let i = 0; i < 1400; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * .6})`; x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 7, 2 + Math.random() * 4); } }));
+  const peint = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: .9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); peint.rotation.x = -Math.PI / 2; g.add(peint);
   const rouge = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide });
   const cercle = new THREE.Group(); cercle.visible = false; g.add(cercle);
   const anneau = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 48), rouge(0xff1a1a, .9)); anneau.rotation.x = -Math.PI / 2; anneau.position.y = .03; cercle.add(anneau);
