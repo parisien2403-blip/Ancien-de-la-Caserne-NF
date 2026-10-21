@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.20";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.21";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8325,7 +8325,7 @@ export async function ouvrir(ctx) {
         if (L < .05) { if (p.chemin && p.chemin.length) p.cible = p.chemin.shift(); else { p.cible = null; p.vit = 0; p.dir = null; p.rapide = false; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0;
           if (p.suite) { const s2 = p.suite; p.suite = null; M.L.grille = M.L.grilleAdmin = null; M.hautVu = C3.enHaut() + 2 * C3.enBas(); if (!(p.moi && s2.length > 2 && C3.etage(p, s2[0], s2[2], s2[1]))) viser(p, s2[0], s2[1]);   // (la carte des passages du nouveau niveau, tout de suite : sinon on cherchait le chemin sur l'ancienne, et l'on s'arrêtait au pied des marches)
             if (p.moi && p.cible) M.repere.material.opacity = 1; } } }   // (au bout de l'escalier : on repart vers le point visé, sur le nouveau niveau)
-        else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z))) {   // (le barman et le DJ vivent derrière leur comptoir)
+        else if (!M.L.limites(p.g.position.x + d.x / L * .15, p.g.position.z + d.z / L * .15) && (!p.info.pnj || M.L.limites(p.g.position.x, p.g.position.z)) && !(p.moi && M.L.limites(p.g.position.x, p.g.position.z) && (p.glisseN || 0) < 120)) {   // (le barman et le DJ vivent derrière leur comptoir)   /* (nous : un poteau, un coin de mur juste devant — on le contourne, plus bas, au lieu de s'arrêter net) */
           // jamais dans un mur, une barrière ou le vide : on s'arrête net ; si l'on s'y trouvait déjà, on revient au dernier endroit permis
           if (!M.L.limites(p.g.position.x, p.g.position.z) && p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; }
           // garde-fou : jamais dans un mur (on s'arrête net plutôt que de traverser)
@@ -8342,7 +8342,14 @@ export async function ouvrir(ctx) {
           // tout le pas est vérifié, tous les 5 cm (un téléphone qui rame fait de grands pas : on sautait par-dessus un muret, une barrière, le coin d'une voiture)
           const libreJusqua = (v) => { const ox = p.g.position.x, oz = p.g.position.z; if (!M.L.limites(ox, oz)) return pas; let ok = 0; for (let u = .05; u < pas + .05; u += .05) { const uu = Math.min(u, pas); if (!M.L.limites(ox + v.x * uu, oz + v.z * uu)) break; ok = uu; } return ok; };
           let pasOk = libreJusqua(sens); if (pasOk < pas - 1e-6 && sens !== dn) { const p2 = libreJusqua(dn); if (p2 > pasOk) { sens = dn; pasOk = p2; } }
-          if (pasOk < pas - 1e-6 && pasOk < .01) { p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; }   // (vraiment bloqué : on s'arrête)
+          /* contre un coin de mur : on glisse le long (de côté), au lieu de s'arrêter net ; toujours coincé un moment, on refait son chemin */
+          if (pasOk < pas - 1e-6 && pasOk < .01) p.glisseN = (p.glisseN || 0) + 1; else if (pasOk >= pas - 1e-6) p.glisseN = 0;
+          if (p.glisseN === 45) { const but = p.chemin && p.chemin.length ? p.chemin[p.chemin.length - 1] : p.cible; if (but) viser(p, but.x, but.z); }   /* (on glisse depuis un moment : on refait son chemin) */
+          if (pasOk < pas - 1e-6 && pasOk < .01) for (const c of [new THREE.Vector3(dn.x, 0, 0), new THREE.Vector3(0, 0, dn.z), new THREE.Vector3(dn.z, 0, -dn.x), new THREE.Vector3(-dn.z, 0, dn.x)]) { if (c.lengthSq() < .04) continue; c.normalize(); if (c.dot(dn) < -.1) continue; const pc = libreJusqua(c); if (pc > .01) { sens = c; pasOk = pc * Math.max(.5, c.dot(dn) + .3); break; } }
+          if (pasOk < .01) { p.bloqueN = (p.bloqueN || 0) + 1; const but = p.chemin && p.chemin.length ? p.chemin[p.chemin.length - 1] : p.cible;
+            if (p.bloqueN === 4 && but && !p.recalcule) { p.recalcule = true; viser(p, but.x, but.z); }
+            else if (p.bloqueN > 10) { p.bloqueN = 0; p.glisseN = 0; p.recalcule = false; p.cible = null; p.chemin = []; p.vit = 0; p.dir = null; if (p.corps) p.corps.position.y = 0; if (p.moi) M.repere.material.opacity = 0; } }   // (vraiment bloqué : on s'arrête)
+          else { p.bloqueN = 0; p.recalcule = false; }
           p.g.position.addScaledVector(sens, pasOk);
           if (!fin && L < .28) p.cible = p.chemin.shift();      // le coin : on enchaîne sur le bout de chemin suivant
           // le pas : un léger balancement du corps (pas pendant une danse)
@@ -12549,7 +12556,7 @@ function animerApo(t, dt) {
     if (baseLieu(M.lieu) === "etage" && o.n !== etageDe(moi)) continue;
     if (Math.hypot(moi.g.position.x - o.x, moi.g.position.z - o.z) < .75) prendreObjet(o); }
   // le feu brûle : une vie en moins, et l'on recule hors des flammes
-  if (!APO.zombieFin && now > (M.feuT || 0)) { const mp = moi.g.position, f = (M.L.feuxZ || []).find(([fx, fz, r]) => Math.hypot(mp.x - fx, mp.z - fz) < r);
+  if (!APO.zombieFin && now > (M.feuT || 0)) { const mp = moi.g.position, f = (M.L.feuxZ || []).find(([fx, fz, r]) => Math.hypot(mp.x - fx, mp.z - fz) < r * .55);   /* (on ne brûle qu'en marchant vraiment dans les flammes : les frôler en passant ne nous arrête plus) */
     if (f) { M.feuT = now + 1500; M.ctx.surInfo && M.ctx.surInfo("🔥 Tu brûles ! Une vie en moins."); const dx = mp.x - f[0], dz = mp.z - f[1], d = Math.hypot(dx, dz) || 1, nx = f[0] + dx / d * (f[2] + .3), nz = f[1] + dz / d * (f[2] + .3);
       if (M.L.limites(nx, nz)) { mp.x = nx; mp.z = nz; } subirMorsure(f[0], f[1], 1); if (APO.zombieFin) return; } }
   // devenu zombie : quinze secondes, puis retour dans la vraie caserne, devant la déchetterie
@@ -14249,12 +14256,11 @@ function animerPNJ() {
 /* --- ce qu'on peut faire là où l'on est : s'asseoir au bar, se relever, inviter quelqu'un à danser un slow, l'arrêter --- */
 /* Resident Evil : pas de cercles jaunes. Près d'une porte, une petite phrase (on touche l'écran, on clique, ou A à la manette) */
 function modeRE() { return !!(M && M.L && estApo(M.lieu) && !M.L.sh); }
-const portesRE = () => (M.L.portails || []).filter(q => !q.continu && q.dans && !(q.secret && !estApo(M.lieu)));
+const portesRE = () => (M.L.portails || []).filter(q => !q.continu && q.dans && estApo(q.vers) && !(q.secret && !estApo(M.lieu)));   /* (pas la sortie vers 1990 : on ne quitte pas la partie par erreur) */
 /* la distance jusqu'à la zone d'une porte (on la cherche tout autour du point, par pas de 20 cm) — quelle que soit sa forme, même un long passage */
 function distPortail(q, x, z, rmax) { if (q.dans(x, z)) return 0; for (let r = .2; r <= rmax + 1e-6; r += .2) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; if (q.dans(x + Math.cos(a) * r, z + Math.sin(a) * r)) return r; } return 9; }
 /* on a touché, au-delà d'un passage, l'autre côté (la cour d'honneur vue du porche…) : la porte visée, ou null */
-function porteToucheeRE(ox, oz, x, z) { const d = Math.hypot(x - ox, z - oz);
-  for (const q of portesRE()) { if (distPortail(q, x, z, 3) < 3) return q; for (let t = .3; t < d; t += .3) if (q.dans(ox + (x - ox) * t / d, oz + (z - oz) * t / d)) return q; } return null; }
+function porteToucheeRE(x, z) { let best = null, bd = 9; for (const q of portesRE()) { const d = distPortail(q, x, z, 1.4); if (d < bd) { bd = d; best = q; } } return best; }
 /* on marche jusqu'au bout d'un passage (ou l'on a touché ce qu'il y a derrière) : on le passe, sans s'arrêter */
 function passagesRE(moi, a) { const d = a ? a.d : 9, visee = M.porteVisee && a && a.pt === M.porteVisee;
   if (a && a.type === "porteRE" && !M.passage && (visee ? d <= 1.0 || !moi.cible : d <= .8 && d < (M.dPortePrec ?? 9) - .05 && (moi.cible || moi.vit > .3))) { M.porteVisee = null; M.dPortePrec = 9; agirPorteRE(moi, a.pt); return; }
@@ -14436,16 +14442,13 @@ function allerVers(x, z, envoyer, y = null) {
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   let px = x, pz = z;
   /* Resident Evil : on a touché ce qu'il y a derrière un passage (la cour vue du porche…) : on marche jusqu'au bout, et l'on passe */
-  M.porteVisee = modeRE() && !M.L.limites(x, z) ? porteToucheeRE(moi.g.position.x, moi.g.position.z, x, z) : null;
-  if (M.porteVisee) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz); let best = null;
-    for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; }
-    if (!best) best = [ox, oz]; [px, pz] = best; }
-  else if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
+  const visee = modeRE() && !M.L.limites(x, z) ? porteToucheeRE(x, z) : null;   /* (on va au plus près, par le vrai chemin — il contourne les murs —, puis on passe) */
+  if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
     // sinon (on a touché un mur, le porche…) : on marche dans cette direction aussi loin que possible
     if (!best) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz);
       for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; } }
     if (!best) return; [px, pz] = best; }
-  viser(moi, px, pz); M.repere.position.set(px, .04 + (M.L.hauteur ? M.L.hauteur(px, pz) : 0), pz); M.repere.material.opacity = 1;
+  moi.glisseN = moi.bloqueN = 0; moi.recalcule = false; viser(moi, px, pz); M.repere.position.set(px, .04 + (M.L.hauteur ? M.L.hauteur(px, pz) : 0), pz); M.repere.material.opacity = 1; M.porteVisee = visee;
   if (envoyer) envoyerWS({ t: "aller", x: px, z: pz });
   if (envoyer && moi.info.danse) danser(false);
   if (envoyer && Number.isInteger(moi.info.assis)) { moi.info.assis = null; envoyerWS({ t: "assis", i: null }); descendreTabouret(moi); viser(moi, px, pz); }   // (on descend d'abord du tabouret, côté salle, puis on y va)
