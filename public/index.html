@@ -1517,6 +1517,7 @@
     <div class="reglage"><span>🔔 Notifications du téléphone</span><label class="switch"><input type="checkbox" id="rNotif"><span></span></label></div>
     <p class="info-notif" id="rNotifInfo"></p>
     <button type="button" class="btn small alt" id="rNotifTest" style="margin:0 4px 10px">🔔 Tester une notification</button>
+    <div class="reglage"><span>🎨 Qualité graphique<br><small style="opacity:.7">caserne 3D, à la prochaine ouverture</small></span><select id="rQualite" style="font:inherit;padding:4px 6px;border-radius:8px;max-width:46%"><option value="auto">Auto (selon l'appareil)</option><option value="bas">Bas (téléphone faible)</option><option value="moyen">Moyen</option><option value="haut">Haut (beaux effets)</option></select></div>
     <button class="reglage" id="rConfid"><span>🛡️ Protection de tes données</span>›</button>
     <button class="reglage" id="rEscalier"><span>🏢 Mon escalier et mon étage</span><span id="rEscEtat" class="pin-etat"></span>›</button>
     <button class="reglage" id="rPin"><span>🔢 Code de déverrouillage</span><span id="rPinEtat" class="pin-etat"></span>›</button>
@@ -2265,6 +2266,9 @@
   function infoMatrice(texte, duree = 3500) { const el = $("mxInfo"), sh = /^sh-/.test(mxLieu || ""); el.textContent = sansEmojiSH(texte); el.hidden = false; clearTimeout(infoMatrice.t);
     if (sh) { const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.setAttribute("aria-label", "Fermer"); x.textContent = "×"; x.onclick = e => { e.stopPropagation(); el.hidden = true; }; el.appendChild(x); duree = Math.max(duree, 5000); }   // (on le referme d'un doigt ; sinon il s'en va seul)
     infoMatrice.t = setTimeout(() => el.hidden = true, duree); }
+  /* la qualité graphique de la caserne en 3D : « Auto » choisit selon l'appareil ; elle compte à la prochaine ouverture */
+  try { $("rQualite").value = localStorage.getItem("caserne-qualite") || "auto"; } catch (e) {}
+  $("rQualite").onchange = () => { const v = $("rQualite").value; try { if (v === "auto") localStorage.removeItem("caserne-qualite"); else localStorage.setItem("caserne-qualite", v); } catch (e) {} };
   $("mxMicro").oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if (MX && $("mxMicro").classList.contains("on")) MX.choisirMicro(); };   // (clic droit, ou appui long : choisir le micro)
   $("mxMicro").onclick = async e => { e.stopPropagation(); if (!MX) return; const b = $("mxMicro"); b.disabled = true; try { await MX.micro(!b.classList.contains("on")); } finally { b.disabled = false; } };
   $("mxEntrer").onclick = () => { $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
@@ -3204,6 +3208,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.10", "21 octobre 2026", ["Caserne 3D : le moteur 3D (Three.js) est désormais dans l'appli elle-même — plus besoin d'un site extérieur pour l'afficher", "Réglages : « Qualité graphique » (Auto, Bas, Moyen, Haut) pour la caserne en 3D — Auto choisit selon l'appareil"]],
     ["6.09", "21 octobre 2026", ["Resident Evil : nouvelle histoire — on se sépare pour couvrir plus de terrain ; Brad Vickers, le pilote, appelle à la radio : il a largué un fumigène avec une balise GPS, tombé dans la rue du Faubourg-Poissonnière", "Resident Evil : bouton 📡 GPS sous la vie (Y à la manette) : la carte de la caserne sur l'écran vert, la balise qui clignote", "Resident Evil : le porche vers la rue est bouché par des gravats ; le C4 est dans la salle des fêtes — l'équipier nous rejoint juste avant, on entre ensemble ; on pose la charge, et boum", "Resident Evil : plus de barre pour écrire, ni de micro, ni de vue à la première personne, ni de VR ; plus de musique de Silent Hill au début", "Resident Evil : on passe plus vite d'un lieu à l'autre (les lieux restent prêts)"]],
     ["6.08", "21 octobre 2026", ["Resident Evil : nouvelle arrivée — les deux héros font sauter le portail de la voûte de l'horloge jaune, et entrent en roulade dans la fumée ; derrière eux, la voûte s'effondre", "Resident Evil : ambiance de nuit froide, gris-bleu, comme Raccoon City (fini le rouge partout) ; les lampes et les feux éclairent autour d'eux"]],
     ["6.07", "21 octobre 2026", ["Resident Evil : Chris a, dans le choix des personnages, la tête de son bonhomme 3D"]],

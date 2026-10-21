@@ -6,7 +6,7 @@
    - présence et discussion en direct avec le serveur de la caserne (WebSocket)
    Le moteur 3D (three.js) et le détourage (MediaPipe) sont chargés seulement à l'ouverture. */
 
-const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const THREE_URL = "./vendor/three.module.js?v=160";   // (Three.js r160, copié dans le projet : plus besoin d'un site extérieur)
 const MP_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 const MP_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MP_MODELE = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite";
@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.09";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.10";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8120,6 +8120,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
    ===================================================================================== */
 let M = null;   // l'état de la Matrice ouverte
 
+/* la qualité graphique : « auto » (selon l'appareil), ou choisie dans les réglages ; elle compte à la prochaine ouverture de la caserne en 3D */
+function qualiteChoisie() { try { const v = localStorage.getItem("caserne-qualite"); return ["bas", "moyen", "haut"].includes(v) ? v : "auto"; } catch (e) { return "auto"; } }
+export function qualiteGraphique(v) { if (v !== undefined) { try { if (["bas", "moyen", "haut"].includes(v)) localStorage.setItem("caserne-qualite", v); else localStorage.removeItem("caserne-qualite"); } catch (e) {} } return { choix: qualiteChoisie(), effective: M ? QUALITE : null }; }
 export async function apercuLieu(conteneur, id) {
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
   const rendu = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -8146,10 +8149,13 @@ export async function ouvrir(ctx) {
   const T = textures();
   // un petit téléphone (peu de mémoire, petite carte graphique : Galaxy A22, A12…) : tout est allégé, sinon le navigateur manque de mémoire et recharge la page
   PETIT = !!(navigator.deviceMemory && navigator.deviceMemory <= 4);
+  const choixQ = qualiteChoisie(); if (choixQ === "bas") PETIT = true;   // (la qualité « Bas », choisie dans les réglages : tout est allégé, comme sur un petit téléphone)
   const rendu = new THREE.WebGLRenderer({ antialias: !PETIT, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     if (/Mali-(G31|G51|G52|G57|G68|T\d)|Adreno \(TM\) ([3-5]\d\d|60\d|61\d)|PowerVR/i.test(nom)) PETIT = true;
     GPU_MODESTE = PETIT || (/Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom)); M_GPU = nom; } catch (e) {}
+  if (choixQ === "haut" && !(navigator.deviceMemory <= 2)) PETIT = false;   // (« Haut » : on fait confiance à l'appareil — sauf s'il n'a vraiment presque pas de mémoire)
+  QUALITE = choixQ !== "auto" ? choixQ : PETIT ? "bas" : GPU_MODESTE ? "moyen" : "haut";
   LK.N = PETIT ? 1 : 3;   // (les Lickers : un seul à la fois sur un petit téléphone)
   // les façades de brique : deux fois plus fines sur une bonne carte, un peu plus sur un téléphone, telles quelles sur une carte modeste
   K_FAC = window.CASERNE_KFAC || (GPU_MODESTE ? 1 : (/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) ? 1.25 : 2);
@@ -8161,7 +8167,7 @@ export async function ouvrir(ctx) {
   try { const cle = "caserne-diag-" + DIAG_V; if (!localStorage.getItem(cle)) { const errs = [], o = { e: console.error, w: console.warn }, garde = f => (...a) => { const t = a.map(String).join(" "); if (errs.length < 12 && /THREE|WebGL|GL_|shader|texture|program/i.test(t) && !/KHR_parallel_shader_compile/.test(t) && !errs.includes(t.slice(0, 220))) errs.push(t.slice(0, 220)); f.apply(console, a); };
       console.error = garde(o.e); console.warn = garde(o.w);
       setTimeout(() => { console.error = o.e; console.warn = o.w; if (!M) return; try { const gl = rendu.getContext(), r = rendu.capabilities;
-          const t = `[automatique] Fiche de l'appareil (v${DIAG_V}) — carte graphique : ${M_GPU || "?"} — WebGL ${r.isWebGL2 ? 2 : 1} — texture max ${r.maxTextureSize} — index 32 bits : ${r.isWebGL2 || !!gl.getExtension("OES_element_index_uint") ? "oui" : "non"} — mémoire : ${navigator.deviceMemory || "?"} Go — petit : ${PETIT ? "oui" : "non"} — finesse ${K_FAC} — écran ${screen.width}×${screen.height} ×${devicePixelRatio} — lieu : ${M.lieu} — objets : ${M.rendu.info.render.calls} dessins, ${M.rendu.info.memory.textures} textures — erreurs : ${errs.length ? errs.join(" | ") : "aucune"}`;
+          const t = `[automatique] Fiche de l'appareil (v${DIAG_V}) — carte graphique : ${M_GPU || "?"} — WebGL ${r.isWebGL2 ? 2 : 1} — texture max ${r.maxTextureSize} — index 32 bits : ${r.isWebGL2 || !!gl.getExtension("OES_element_index_uint") ? "oui" : "non"} — mémoire : ${navigator.deviceMemory || "?"} Go — petit : ${PETIT ? "oui" : "non"} — qualité : ${QUALITE} — finesse ${K_FAC} — écran ${screen.width}×${screen.height} ×${devicePixelRatio} — lieu : ${M.lieu} — objets : ${M.rendu.info.render.calls} dessins, ${M.rendu.info.memory.textures} textures — erreurs : ${errs.length ? errs.join(" | ") : "aucune"}`;
           fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: t, appareil: navigator.userAgent.slice(0, 280) }) }).then(x => { if (x.ok) localStorage.setItem(cle, "1"); }).catch(() => {}); } catch (e) {} }, 40000); } } catch (e) {}
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
@@ -12235,7 +12241,7 @@ function animerApo(t, dt) {
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
-let GPU_MODESTE = false, M_GPU = "", PETIT = false;
+let GPU_MODESTE = false, M_GPU = "", PETIT = false, QUALITE = "haut";   /* (QUALITE : « bas », « moyen » ou « haut » — ce que l'appareil peut se permettre comme effets ; choisie d'office, ou dans les réglages) */
 // le carnet de bord d'un voyage (gardé dans le téléphone / l'ordinateur) : si l'appli gèle et qu'on la ferme de force, au retour on sait à quelle étape c'était, et l'administrateur reçoit le relevé
 function trace(etape) { try { const t = JSON.parse(localStorage.getItem("caserne-trace") || "[]"); t.push([etape, Math.round(performance.now())]); localStorage.setItem("caserne-trace", JSON.stringify(t.slice(-20))); } catch (e) {} }   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
 /* le ciel nuageux du jour, comme dans la vraie vie : des cumulus blancs, dessinés en perspective sur une couche haute (plus petits et plus serrés vers l'horizon),
