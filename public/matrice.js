@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.08";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.09";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11088,11 +11088,11 @@ function parleRadio(nom, texte, ms) { bulle(`<b style="color:#b5573c">${esc(nom)
 const nomEquipier = () => { const e = (M.equipe || []).find(q => !q.mort); return e && HEROS[e.id] ? HEROS[e.id].court : "Ton équipier"; };
 // les gravats du porche (dans la grande cour) : une butte de pierres et de poutres, qui bouche le passage vers la rue
 function gravatsPorche(scene, L) { if (L.gravatsPorche) return; const g = new THREE.Group(), m1 = new THREE.MeshStandardMaterial({ color: 0x5a554e, roughness: .95 }), m2 = new THREE.MeshStandardMaterial({ color: 0x7a4a38, roughness: .9 }), bois = new THREE.MeshStandardMaterial({ color: 0x4a3524, roughness: .9 });
-  const ea = 2.5, eb = 2.0, ec = 1.4, zc = 27.6, haut = (x, z) => { const q = 1 - (x / ea) ** 2 - ((z - zc) / ec) ** 2; return q > 0 ? eb * Math.sqrt(q) : 0; };
+  const ea = 2.6, eb = 3.0, ec = 1.5, zc = 27.6, haut = (x, z) => { const q = 1 - (x / ea) ** 2 - ((z - zc) / ec) ** 2; return q > 0 ? eb * Math.sqrt(q) : 0; };
   { const b = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), m1); b.scale.set(ea, eb, ec); b.position.set(0, 0, zc); b.receiveShadow = true; g.add(b); }
   for (let i = 0; i < (PETIT ? 24 : 48); i++) { const h = hasard(i * 4.1 + 5), h2 = hasard(i * 6.7 + 1), h3 = hasard(i * 2.3 + 9), a = h * Math.PI * 2, rr = Math.sqrt(h2) * .95, x = Math.cos(a) * rr * ea, z = zc + Math.sin(a) * rr * ec, r = .14 + h3 * .3;
     const o = new THREE.Mesh(i % 3 ? new THREE.DodecahedronGeometry(r, 0) : new THREE.BoxGeometry(r * 1.6, r * .8, r), i % 3 ? m1 : m2); o.position.set(x, haut(x, z) - r * .25, z); o.rotation.set(h * 6, h2 * 6, h3 * 6); o.castShadow = true; g.add(o); }
-  for (const [x, y, z, ry, rz] of [[-.6, 1.3, 27.2, .4, .5], [.8, 1.0, 27.9, -.7, -.35], [0, 1.7, 27.5, 1.2, .15]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.2, .2, .22), bois); p.position.set(x, y, z); p.rotation.set(0, ry, rz); p.castShadow = true; g.add(p); }   // (des poutres tombées de la voûte)
+  for (const [x, y, z, ry, rz] of [[-.6, 1.6, 27.0, .4, .5], [.8, 1.3, 27.9, -.7, -.35], [0, 2.5, 27.5, 1.2, .15], [-.3, 3.0, 28.2, .1, -.6]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.2, .2, .22), bois); p.position.set(x, y, z); p.rotation.set(0, ry, rz); p.castShadow = true; g.add(p); }   // (des poutres tombées de la voûte)
   scene.add(g); L.gravatsPorche = g;
   if (!L.limPorche) { const lim0 = L.limites; L.limPorche = true; L.limites = (x, z) => lim0(x, z) && (!!(M && M.porcheOuvert) || !(z > PORCHE_Z && Math.abs(x) < 2.8)); } }
 // le pain de C4 : un bloc vert olive, ruban noir, un petit minuteur à la diode rouge
@@ -11195,7 +11195,7 @@ function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true;
       c4.userData.led.visible = Math.floor(now / (u > 3 ? 160 : 450)) % 2 === 0;
       if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true; if (L.gravatsPorche) L.gravatsPorche.visible = false; }
       if (fx) fx.maj(u - 5.6, dt);
-      const sh = fx ? Math.max(0, 1 - (u - 5.6) / 1.3) * .14 : 0; M.camera.position.set(3.4 + (Math.random() - .5) * sh, 1.9 + (Math.random() - .5) * sh, 11.5); M.camera.lookAt(0, 1.2, u < 5.4 ? 24 : 27); } }); }
+      const sh = fx ? Math.max(0, 1 - (u - 5.6) / 1.3) * .14 : 0; M.camera.position.set(1.3 + (Math.random() - .5) * sh, 1.8 + (Math.random() - .5) * sh, 12.6); M.camera.lookAt(0, 1.3, u < 5.4 ? 24 : 27);   /* (dans l'axe du porche, derrière eux) */ } }); }
 // à chaque image, à Resident Evil : où en est l'histoire
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
   if (b === "grande") { gravatsPorche(M.scene, L); L.gravatsPorche.visible = !M.porcheOuvert; }
