@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.24";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.25";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11020,7 +11020,7 @@ function fumiApo(moi, now) {
   if (F.trouve && L.heliport && !APO.zombieFin) { const c = L.heliport, p = moi.g.position;
     const surCercle = Math.hypot(p.x - c.x, p.z - c.z) < 1.6 && Math.abs(p.y - c.y) < 1;
     if (surCercle && !M.tyran && !M.tyranMort) lancerTyran(c);   // (le fumigène posé : le Tyran arrive ; il faut l'abattre avant que l'hélicoptère se pose)
-    else if (M.tyranMort && (surCercle || Math.hypot(p.x - c.x, p.z - c.z) < 12) && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
+    else if (M.tyranMort && !(M.tyran && M.tyran.g && M.tyran.g.parent) && (surCercle || Math.hypot(p.x - c.x, p.z - c.z) < 12) && now > (M.fumiEnvoiT || 0)) {   /* (le Tyran à terre, puis disparu : alors seulement l'hélicoptère descend) */ M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
 }
 /* l'arrivée à l'apocalypse : la caserne vue du ciel, les zombies qui errent dans la cour ; le logo RESIDENT EVIL s'abat à l'écran,
    puis la vue plonge vers la déchetterie, où les joueurs viennent d'arriver */
@@ -11662,7 +11662,7 @@ function surEvac(m) {
 }
 function cineEvac(m) {
   if (M.cine && M.cine.nettoyer) { try { M.cine.nettoyer(); } catch (e) {} } if (M.cine) finCine();   /* (l'intro ou le survol en cours s'effacent proprement : l'évacuation prend la main) */
-  const sc = M.scene, Hp = M.L.heliport, H = new THREE.Vector3(Hp.x, Hp.y, Hp.z); M.evac = true;
+  const sc = M.scene, Hp = M.L.heliport, H = new THREE.Vector3(Hp.x, Hp.y, Hp.z); M.evac = true; if (M.tyran && M.tyran.g && M.tyran.g.parent) M.tyran.g.parent.remove(M.tyran.g);
   for (const z of (M.zomb || new Map()).values()) z.g.visible = false; for (const l of M.lickers || []) l.g.visible = false;
   const moi = M.gens.get(M.moiNum);
   const vivant = p => !p.info.mortT && (p.moi ? !APO.zombieFin : (!p.info.pnj || p.info.equipier)) && !(p.info.equipier && Number(p.info.proprio) === Number(M.moiNum) && (M.equipe || [])[p.info.slot] && M.equipe[p.info.slot].mort);
@@ -11937,9 +11937,15 @@ function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const 
 function jouerTY(T, n, une = false) { if (T.cur === n || !T.act[n]) return; const a = T.act[n]; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (T.act[T.cur]) a.crossFadeFrom(T.act[T.cur], .2, false); T.cur = n; }
 function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; const mp = moi.g.position, hS = (x, z) => { const h = hNiv(M.L, x, z, T.y ?? (M.L.heliport ? M.L.heliport.y : mp.y)); if (T.y == null || Math.abs(h - T.y) < .6) T.y = h; return T.y; };   // (il garde son niveau : la terrasse)
   T.mix.update(dt); if (T.os.Spine1 && !T.mortT) T.os.Spine1.rotateX(-.32);   // (redressé : le modèle est voûté)
+  if (!T.mortT && T.etat !== "frappe" && T.os.LeftArm) { const ry = T.piv.rotation.y, fx = Math.sin(ry), fz = Math.cos(ry), rx = Math.cos(ry), rz = -Math.sin(ry);   /* (ses bras, que l'animation laissait repliés contre la poitrine : pendants, le long du corps, un peu en avant, en balancier quand il marche) */
+    T.g.updateMatrixWorld(true); const bal = T.cur === "walk" || T.cur === "run" ? Math.sin(performance.now() / 260) * .35 : 0;
+    for (const [c, sg] of [["Left", 1], ["Right", -1]]) { const d = new THREE.Vector3(fx * (.2 + bal * sg) + rx * sg * .12, -1, fz * (.2 + bal * sg) + rz * sg * .12).normalize();
+      viser3D(T, c + "Arm", c + "ForeArm", d); viser3D(T, c + "ForeArm", c + "Hand", d.clone().add(new THREE.Vector3(fx * .25, 0, fz * .25)).normalize()); } }
   const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0x660000 : 0); }); }
   if (T.mortT) { const f = Math.min(1, (now - T.mortT) / 900); T.piv.rotation.x = -f * Math.PI / 2 * .97; T.piv.position.y = f * .2; T.mix.timeScale = 0;
-    if (f >= 1 && !T.flaque) { T.flaque = true; const c = T.piv.rotation.y; flaqueMort({ g: { position: new THREE.Vector3(T.x - Math.sin(c) * 1.2, T.g.position.y, T.z - Math.cos(c) * 1.2) } }); } return; }
+    if (f >= 1 && !T.flaque) { T.flaque = true; const c = T.piv.rotation.y; flaqueMort({ g: { position: new THREE.Vector3(T.x - Math.sin(c) * 1.2, T.g.position.y, T.z - Math.cos(c) * 1.2) } }); }
+    const k = Math.max(0, Math.min(1, (now - T.mortT - 3200) / 1500)); if (k > 0) T.piv.position.y = .2 - k * 1.4; if (k >= 1 && T.g.parent) T.g.parent.remove(T.g);   /* (puis il s'enfonce, et disparaît : l'hélicoptère ne se pose pas sur lui) */
+    return; }
   const dx = mp.x - T.x, dz = mp.z - T.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
   if (T.etat === "chute") { const f = Math.min(1, (now - T.t0) / 700); T.g.position.set(T.x, hS(T.x, T.z) + (1 - f * f) * 14, T.z); T.piv.rotation.y = cap;
     if (f >= 1) { T.etat = "regard"; T.regardT = now + 1500; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); M.ctx.surInfo && M.ctx.surInfo("☠️ LE TYRAN ! Abats-le (15 balles) pour que l'hélicoptère puisse se poser !"); } return; }
@@ -12197,10 +12203,9 @@ function blesserZ(z, dx, dz) {   // (le chef) la balle compte
     if (z.boss) M.zKills = 0;
     else { M.zKills = (M.zKills || 0) + 1; if (M.zKills >= 6) M.zKills = 0; } }   // (six zombies ou chiens abattus : Nemesis)
 }
-/* la mitraillette : au bout de 14 zombies ou chiens abattus (par soi), elle est à nous — munitions infinies ; doigt appuyé sur un zombie, elle tire en rafale */
+/* le compte des zombies abattus par soi (plus de mitraillette à gagner : on garde le pistolet, puis le fusil à pompe) */
 const TUES_MITRA = 14;
 function monTue(z) { if (!z.tireurT || performance.now() - z.tireurT > 1500 || !M) return; z.tireurT = 0; M.tues = (M.tues || 0) + 1;
-  if (M.tues >= TUES_MITRA && !M.mitra) { M.mitra = true; sonBruit(.5, 2400, .6); M.ctx.surInfo && M.ctx.surInfo(`🔥 ${TUES_MITRA} zombies abattus : la MITRAILLETTE est à toi ! Munitions infinies — garde le doigt appuyé sur un zombie pour tirer en rafale.`); }
   majHudApo(); }
 function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
