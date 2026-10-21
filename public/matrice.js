@@ -10962,7 +10962,7 @@ function fumiApo(moi, now) {
   const F = M.fumi, L = M.L; if (!F) return;
   if (L.heliport) { const c = L.heliport, on = !!F.trouve; c.cercle.visible = on; if (on) { const k = .65 + .35 * Math.sin(now / 260); c.anneau.material.opacity = .9 * k; c.disque.material.opacity = .45 * k; c.faisceau.material.opacity = .1 * k; } }
   if (!F.trouve && F.lieu === M.lieu) {
-    if (M.fumiL !== L) { M.fumiL = L; const C = candidatsFumi(); M.fumiPos = C.length ? C[Math.min(C.length - 1, Math.floor(F.r * C.length))] : null; M.fumiObj = M.fumiPos ? objetFumi(M.fumiPos[0], M.fumiPos[1], M.fumiPos[2]) : null; }
+    if (M.fumiL !== L) { M.fumiL = L; const C = M.lieu === "z-rue" ? [[FUMI_RUE[0], L.hauteur ? L.hauteur(FUMI_RUE[0], FUMI_RUE[1], { g: { position: { y: 0 } } }) : 0, FUMI_RUE[1], 0]] : candidatsFumi();   // (dans la rue : là où la balise GPS le montre) M.fumiPos = C.length ? C[Math.min(C.length - 1, Math.floor(F.r * C.length))] : null; M.fumiObj = M.fumiPos ? objetFumi(M.fumiPos[0], M.fumiPos[1], M.fumiPos[2]) : null; }
     const o = M.fumiObj; if (o) { for (const [sp, d] of o.userData.fu) { const u = ((now / 4200) + d) % 1; sp.position.set(.18 + Math.sin(u * 5 + d * 9) * .3 * u, .12 + u * 7, 0); sp.scale.setScalar(.3 + u * 2.6); sp.material.opacity = .8 * (1 - u * .85); }
       const P = M.fumiPos; if (!APO.zombieFin && Math.hypot(moi.g.position.x - P[0], moi.g.position.z - P[2]) < .9 && (baseLieu(M.lieu) !== "etage" || etageDe(moi) === P[3]) && now > (M.fumiEnvoiT || 0)) { M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_pris" }); } } }
   else if (M.fumiObj) { M.scene.remove(M.fumiObj); M.fumiObj = null; }
@@ -10989,7 +10989,7 @@ function cineIntroApo(moi) {
      et on descend tout droit : on ne traverse plus les bâtiments) */
   let v0 = null, S2 = null, dtI = 0;
   const fin = () => { if (fini || !M) return; fini = true; logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; } finExplo(SX); finIntro2(S2);
-    finCine(); placerCamera(true); M.survolT = performance.now() + 150000; M.survolN = 0; };
+    finCine(); placerCamera(true); M.survolT = performance.now() + 150000; M.survolN = 0; M.sepA = performance.now() + 1200; };   // (puis : « séparons-nous »)
   M.passerBtn = boutonPasser(fin);
   let clk = 0, prec = t0;   // (l'horloge n'avance qu'avec les images : le chargement du lieu ne mange pas le début)
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; logo.remove(); noir && noir.remove(); finExplo(SX); finIntro2(S2); }, maj: (now) => { if (fini) return; dtI = Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; clk += dtI * 1000; prec = now; const u = clk / 1000; M.cine.u = u;
@@ -11025,7 +11025,9 @@ function rouler3D(p, A) { const R = p.roulade, k = R.k != null ? R.k : Math.min(
   A.sc.updateMatrixWorld(true); let bas = Infinity; for (const n of ["Head", "HeadTop_End", "Neck", "Spine2", "Hips", "LeftShoulder", "RightShoulder", "LeftFoot", "RightFoot", "LeftToeBase", "RightToeBase", "LeftLeg", "RightLeg", "LeftHand", "RightHand"]) { const o = os3D(A, n); if (o) { const v = p.g.worldToLocal(o.getWorldPosition(_vk())); if (v.y < bas) bas = v.y; } }
   if (bas < Infinity) A.sc.position.y = .1 - bas; }
 // l'explosion : la boule de feu, l'éclair, les éclats, la fumée qui envahit la voûte
-function explosionPorche(P) { const ga = P.ga, g = new THREE.Group(); ga.add(g); const z0 = P.zg + .4, y0 = P.yb;
+const explosionPorche = P => explosionEn(P.ga, new THREE.Vector3(0, P.yb, P.zg + .4), new THREE.Vector3(0, 0, 1));
+// (une explosion en c, soufflée vers dir : la boule de feu, l'éclair, les éclats, la fumée)
+function explosionEn(ga, c, dir) { const g = new THREE.Group(); g.position.copy(c); g.rotation.y = Math.atan2(dir.x, dir.z); ga.add(g); const z0 = 0, y0 = 0;
   const feu = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); feu.position.set(0, y0 + 1.6, z0); g.add(feu);
   const lum = new THREE.PointLight(0xff8a3a, 60, 26, 1.6); lum.position.set(0, y0 + 2, z0 + 1); g.add(lum);
   const eclats = []; for (let i = 0; i < (PETIT ? 10 : 22); i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(.12 + Math.random() * .2, .06 + Math.random() * .1, .1 + Math.random() * .2), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x1c1e20 : 0x5a4a40, roughness: .8 }));
@@ -11050,7 +11052,7 @@ function finExplo(S) { if (!S || S.fini) return; S.fini = true; if (S.fx) S.fx.n
   envoyerWS({ t: "aller", x: S.gens[0].g.position.x, z: S.gens[0].g.position.z }); M.yaw = S.yaw + Math.PI; }
 function majExplo(S, t, dt) { const cam = M.camera, P = S.P, W = S.W, now = performance.now(), yb = P.yb;
   cacherAutour(W(0, 0, -2), 16, S.caches); if (!S.eq) { S.eq = equipierVivant(); if (S.eq) S.gens.push(S.eq); }   // (l'équipier : il n'existe qu'une fois le lieu prêt)
-  if (t > 1.4 && !S.boum) { S.boum = true; S.fx = explosionPorche(P); sonPos("sons/sh-explo.mp3", 1); sonBruit(2.6, 140, 1); voile("background:#ffd8a0;opacity:.75", 140); setTimeout(() => M && voile("background:#ff7a20;opacity:.25", 260), 140); }
+  if (t > 1.4 && !S.boum) { S.boum = true; S.fx = explosionPorche(P); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.75", 140); setTimeout(() => M && voile("background:#ff7a20;opacity:.25", 260), 140); }
   if (S.fx) S.fx.maj(t - 1.4, dt);
   // le portail : il s'arrache et s'abat dans la voûte
   if (S.boum) { const k = Math.min(1, (t - 1.4) / .5); portailSouffle(M.scene, M.L, k < 1 ? k * k * 1.03 : 1); }
@@ -11075,6 +11077,141 @@ function majExplo(S, t, dt) { const cam = M.camera, P = S.P, W = S.W, now = perf
   while (S.dit < L5.length && t > L5[S.dit][0]) { dire(L5[S.dit][1], L5[S.dit][2]); S.dit++; }
   if (t > 6.6 && t < 6.7 && !S.gronde) { S.gronde = true; sonBruit(1.6, 90, .7); }
   return t > 16.4; }
+/* ===================== Resident Evil : l'histoire =====================
+   Arrivés par la voûte de l'horloge jaune, l'hélicoptère passe sans les voir. On propose de se séparer pour couvrir plus de terrain ; l'équipier s'en va.
+   Brad Vickers, le pilote, appelle à la radio : il a largué un fumigène avec une balise GPS, tombé dans la rue du Faubourg-Poissonnière (le bouton GPS montre où).
+   Mais le porche qui mène à la rue est bouché par des gravats : il faut de quoi les faire sauter. Le C4 est dans la salle des fêtes ; juste avant d'y entrer,
+   l'équipier nous rejoint, on entre ensemble (Lisa Trevor l'assomme). Le C4 trouvé, on le pose sur les gravats du porche : explosion ; la rue, le fumigène */
+const FUMI_RUE = [14, 2], FUMI_CARTE = [14, 31.8], C4_FETES = [-4.85, -1.35], PORCHE_Z = 25.6;
+const PORTES_FETES = [[15.3, 9.12], [9.81, 6.49]];   // (dans la grande cour : les deux portes de la salle des fêtes — par le vestibule, par la cour)
+function parleRadio(nom, texte, ms) { bulle(`<b style="color:#b5573c">${esc(nom)} (radio)</b> : ${esc(texte)}`, ms || Math.min(6500, 2800 + texte.length * 45)); sonBruit(.35, 2600, .12); }
+const nomEquipier = () => { const e = (M.equipe || []).find(q => !q.mort); return e && HEROS[e.id] ? HEROS[e.id].court : "Ton équipier"; };
+// les gravats du porche (dans la grande cour) : une butte de pierres et de poutres, qui bouche le passage vers la rue
+function gravatsPorche(scene, L) { if (L.gravatsPorche) return; const g = new THREE.Group(), m1 = new THREE.MeshStandardMaterial({ color: 0x5a554e, roughness: .95 }), m2 = new THREE.MeshStandardMaterial({ color: 0x7a4a38, roughness: .9 }), bois = new THREE.MeshStandardMaterial({ color: 0x4a3524, roughness: .9 });
+  const ea = 2.5, eb = 2.0, ec = 1.4, zc = 27.6, haut = (x, z) => { const q = 1 - (x / ea) ** 2 - ((z - zc) / ec) ** 2; return q > 0 ? eb * Math.sqrt(q) : 0; };
+  { const b = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), m1); b.scale.set(ea, eb, ec); b.position.set(0, 0, zc); b.receiveShadow = true; g.add(b); }
+  for (let i = 0; i < (PETIT ? 24 : 48); i++) { const h = hasard(i * 4.1 + 5), h2 = hasard(i * 6.7 + 1), h3 = hasard(i * 2.3 + 9), a = h * Math.PI * 2, rr = Math.sqrt(h2) * .95, x = Math.cos(a) * rr * ea, z = zc + Math.sin(a) * rr * ec, r = .14 + h3 * .3;
+    const o = new THREE.Mesh(i % 3 ? new THREE.DodecahedronGeometry(r, 0) : new THREE.BoxGeometry(r * 1.6, r * .8, r), i % 3 ? m1 : m2); o.position.set(x, haut(x, z) - r * .25, z); o.rotation.set(h * 6, h2 * 6, h3 * 6); o.castShadow = true; g.add(o); }
+  for (const [x, y, z, ry, rz] of [[-.6, 1.3, 27.2, .4, .5], [.8, 1.0, 27.9, -.7, -.35], [0, 1.7, 27.5, 1.2, .15]]) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.2, .2, .22), bois); p.position.set(x, y, z); p.rotation.set(0, ry, rz); p.castShadow = true; g.add(p); }   // (des poutres tombées de la voûte)
+  scene.add(g); L.gravatsPorche = g;
+  if (!L.limPorche) { const lim0 = L.limites; L.limPorche = true; L.limites = (x, z) => lim0(x, z) && (!!(M && M.porcheOuvert) || !(z > PORCHE_Z && Math.abs(x) < 2.8)); } }
+// le pain de C4 : un bloc vert olive, ruban noir, un petit minuteur à la diode rouge
+function objetC4(diode = false) { const g = new THREE.Group(), pain = new THREE.MeshStandardMaterial({ color: 0x6b6a3e, roughness: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .6 });
+  const b = new THREE.Mesh(new THREE.BoxGeometry(.3, .09, .16), pain); b.position.y = .045; g.add(b);
+  for (const x of [-.09, .09]) { const r = new THREE.Mesh(new THREE.BoxGeometry(.03, .095, .165), noir); r.position.set(x, .046, 0); g.add(r); }
+  const t = new THREE.Mesh(new THREE.BoxGeometry(.09, .03, .07), noir); t.position.set(0, .105, 0); g.add(t);
+  const led = new THREE.Mesh(new THREE.SphereGeometry(.012, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2010 })); led.position.set(.025, .125, .02); g.add(led); g.userData.led = led; led.visible = diode;
+  return g; }
+// le GPS : la carte de la caserne sur l'écran vert du boîtier ; la balise du fumigène qui clignote ; nous, en jaune
+function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
+  const W = document.createElement("div"); W.style.cssText = "position:absolute;inset:0;z-index:11;background:rgba(0,0,0,.88)";
+  const cadre = document.createElement("div"); cadre.style.cssText = "position:absolute;inset:14px;border-radius:22px;background:linear-gradient(#2a2d2a,#151715);border:2px solid #3c423c;box-shadow:inset 0 0 0 6px #0c0e0c,0 8px 30px rgba(0,0,0,.8);display:flex;flex-direction:column;overflow:hidden";
+  const tete = document.createElement("div"); tete.style.cssText = "flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 64px 8px 18px;font:800 12px/1.2 'Courier New',monospace;letter-spacing:.18em;color:#7dff8a;text-shadow:0 0 6px rgba(80,255,110,.6)";
+  const ecran = document.createElement("div"); ecran.style.cssText = "position:relative;flex:1;margin:0 12px 12px;border-radius:10px;background:#031a08;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:inset 0 0 30px rgba(0,0,0,.9)";
+  const box = document.createElement("div"); box.style.cssText = "position:relative;width:min(100%,520px);margin:0 auto";
+  const moi = moiApo(), dir = new THREE.Vector3(); M.camera.getWorldDirection(dir); const b0 = baseLieu(M.lieu), p = moi && moi.g.position;
+  const ici = !p ? null : b0 === "grande" ? [p.x, p.z] : b0 === "rue" ? [p.x, FUMI_CARTE[1] + (p.z - FUMI_RUE[1]) * .35] : LIEU_CARTE["sh-" + b0] || null;
+  const dist = ici ? Math.round(Math.hypot(ici[0] - FUMI_CARTE[0], (ici[1] - FUMI_CARTE[1]) * (b0 === "rue" ? 1 / .35 : 1))) : null;
+  tete.innerHTML = `<span>S.T.A.R.S. · GPS</span><span>BALISE${dist != null ? " · " + dist + " M" : ""}</span>`;
+  const cv = document.createElement("canvas"); cv.width = 1290; cv.height = 3640; cv.style.cssText = "display:block;width:100%;height:auto";
+  const [bx, by] = CARTE_PX(FUMI_CARTE[0], FUMI_CARTE[1]);
+  const balise = document.createElement("div"); balise.style.cssText = `position:absolute;left:${bx / 12.9}%;top:${by / 36.4}%;width:0;height:0;pointer-events:none`;
+  balise.innerHTML = "<i style='position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#ff3020;box-shadow:0 0 12px #ff3020;animation:gpsClig 1s steps(2) infinite'></i><i style='position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;border:2px solid #ff5040;animation:gpsOnde 1.6s ease-out infinite'></i>";
+  if (!document.getElementById("styleGPS")) { const st = document.createElement("style"); st.id = "styleGPS"; st.textContent = "@keyframes gpsClig{50%{opacity:.25}}@keyframes gpsOnde{from{transform:scale(1);opacity:1}to{transform:scale(4.5);opacity:0}}"; document.head.appendChild(st); }
+  const im = new Image(); im.onload = () => { if (!M) return; const x = cv.getContext("2d"); x.drawImage(im, 0, 0);
+    // l'écran vert : la carte en lueur verte, des lignes de balayage
+    const D = x.getImageData(0, 0, 1290, 3640), q = D.data; for (let i = 0; i < q.length; i += 4) { const g = (q[i] * .3 + q[i + 1] * .59 + q[i + 2] * .11) / 255, v = Math.pow(g, 1.6); q[i] = 8 + v * 60; q[i + 1] = 22 + v * 200; q[i + 2] = 12 + v * 80; } x.putImageData(D, 0, 0);
+    // la rue du Faubourg-Poissonnière, au bas de la carte (devant le porche)
+    const [, y0] = CARTE_PX(0, 29.6), [, y1] = CARTE_PX(0, 34.4); x.fillStyle = "rgba(60,200,100,.35)"; x.fillRect(70, y0, 1150, y1 - y0); x.strokeStyle = "rgba(120,255,150,.6)"; x.lineWidth = 3; x.strokeRect(70, y0, 1150, y1 - y0);
+    x.font = "bold 30px 'Courier New', monospace"; x.fillStyle = "#8dffa0"; x.textAlign = "center"; x.fillText("RUE DU FAUBOURG-POISSONNIÈRE", 645, y1 - 14); x.textAlign = "start";
+    x.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < 3640; y += 6) x.fillRect(0, y, 1290, 2);
+    if (ici) { const [px, py] = CARTE_PX(ici[0], ici[1]), a = Math.atan2(dir.z, dir.x); x.save(); x.translate(px, py); x.rotate(a); x.fillStyle = "#ffe14a"; x.strokeStyle = "#3a3000"; x.lineWidth = 6; x.lineJoin = "round"; x.beginPath(); x.moveTo(46, 0); x.lineTo(-26, -30); x.lineTo(-26, 30); x.closePath(); x.fill(); x.stroke(); x.restore(); }
+    requestAnimationFrame(() => { const r2 = cv.getBoundingClientRect(), k = r2.height / 3640; ecran.scrollTop = Math.max(0, by * k - ecran.clientHeight * .6); }); };
+  im.src = "images/sh/carte-caserne.webp";
+  const ferme = document.createElement("button"); ferme.type = "button"; ferme.setAttribute("aria-label", "Ranger le GPS"); ferme.textContent = "✕"; ferme.style.cssText = "position:absolute;top:18px;right:20px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;background:#7dff8a;color:#031a08;font:900 20px sans-serif";
+  box.append(cv, balise); ecran.append(box); cadre.append(tete, ecran); W.append(cadre, ferme); ecran.addEventListener("click", e => { if (e.target === ecran) ferme.onclick(); });
+  M.ctx.conteneur.appendChild(W); M.cadranEl = W; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) W.addEventListener(ev, e => e.stopPropagation());
+  sonBruit(.08, 4000, .2); ferme.onclick = () => { W.remove(); if (M) M.cadranEl = null; };
+  W.carteMan = { zoom: () => {}, defiler: (dx, dy) => { ecran.scrollLeft += dx; ecran.scrollTop += dy; }, fermer: () => ferme.onclick() }; }
+// sous la vie : le bouton GPS (dès l'appel de Brad, tant que le fumigène n'est pas ramassé), et le C4 qu'on porte
+function majBoutonsRE() { if (!M || !M.ctx) return; const re = estApo(M.lieu) && M.L && M.L.apo;
+  const voirG = re && M.gps && !(M.fumi && M.fumi.trouve) && !M.evac, voirC = re && M.c4 && !M.c4Pose;
+  if (!voirG && M.gpsBtn) { M.gpsBtn.remove(); M.gpsBtn = null; } if (!voirC && M.c4El) { M.c4El.remove(); M.c4El = null; }
+  if (voirG && !M.gpsBtn) { const b = document.createElement("button"); b.type = "button"; b.className = "re-btn"; b.innerHTML = "📡 GPS"; b.style.cssText = "position:absolute;left:10px;top:150px;z-index:7;padding:6px 14px;border-radius:10px;border:1px solid rgba(80,255,110,.55);background:rgba(4,20,8,.85);color:#7dff8a;font:800 12px/1.2 'Courier New',monospace;letter-spacing:.12em;cursor:pointer;text-shadow:0 0 6px rgba(80,255,110,.6)";
+    b.onclick = e => { e.stopPropagation(); ouvrirGPS(); }; M.ctx.conteneur.appendChild(b); M.gpsBtn = b; }
+  if (voirC && !M.c4El) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:10px;top:190px;z-index:7;padding:5px 12px;border-radius:10px;border:1px solid rgba(220,200,120,.5);background:rgba(20,18,8,.85);color:#e8dca0;font:800 12px/1.2 'Courier New',monospace;letter-spacing:.1em;pointer-events:none"; d.textContent = "💣 C4"; M.ctx.conteneur.appendChild(d); M.c4El = d; }
+  const c = M.ctx.conteneur, a = document.getElementById("mxApo"); if (!c || !a || a.hidden) return; const rc = c.getBoundingClientRect(), ra = a.getBoundingClientRect(); let y = ra.bottom - rc.top + 8;
+  for (const el of [M.gpsBtn, M.c4El]) { if (!el) continue; const t = Math.round(y) + "px"; if (el.style.top !== t) el.style.top = t; y += el.offsetHeight + 7; } }
+// une petite scène : la caméra immobile (là où elle est), le temps qu'on se parle ; on ne peut pas être mordu pendant ce temps
+function sceneParlee(lignes, finir, opts = {}) { const t0 = performance.now(); let fini = false, dit = 0, clk = 0, prec = t0; const moi = moiApo();
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); finir && finir(); };
+  M.passerBtn = boutonPasser(fin);
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+    if (moi) { moi.cible = null; moi.chemin = []; } if (opts.maj) opts.maj(u, now);
+    while (dit < lignes.length && u > lignes[dit][0]) { const [, qui, txt] = lignes[dit]; if (typeof qui === "function") qui(); else if (typeof qui === "string") parleRadio(qui, txt); else if (M.gens.get(qui)) dire(qui, txt); dit++; }
+    if (u > (opts.duree || (lignes.length ? lignes[lignes.length - 1][0] + 3.4 : 1))) fin(); } }; }
+// 1. on se sépare (juste après le passage de l'hélicoptère, au début)
+function cineSeparation() { const moi = moiApo(), eq = equipierVivant(); M.sepFait = true; if (!moi) return;
+  if (!eq) { M.separe = true; M.bradT = performance.now() + 15000; return; }
+  const nom = nomApo(), mp = moi.g.position.clone(), dir = dirDegagee(mp), cote = new THREE.Vector3(dir.z, 0, -dir.x), ep0 = eq.g.position.clone(); let part = null;
+  const cam = mp.clone().addScaledVector(dir, 3.2).addScaledVector(cote, 1.4); cam.y = mp.y + 1.7; const vise = mp.clone().lerp(ep0, .5).setY(mp.y + 1.3);
+  eq.cineRE = true;
+  sceneParlee([[.6, M.moiNum, "Écoute… À deux, on n'avancera pas assez vite. Séparons-nous : on couvrira plus de terrain."], [4.2, eq.info.numero, "Se séparer ? Avec tout ce qui rôde dans le coin ?"],
+    [7.4, M.moiNum, "On garde le contact par radio. Le premier qui trouve un moyen de sortir prévient l'autre."], [11, eq.info.numero, `D'accord… Fais attention à toi, ${nom}.`], [13.2, () => { part = performance.now(); }, ""]],
+    () => { M.separe = true; M.bradT = performance.now() + 22000; const q = equipierVivant(); if (q) { q.cineRE = false; } },
+    { duree: 16.4, maj: (u, now) => { M.camera.position.copy(cam); M.camera.lookAt(vise);
+      if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(eq.g.position.x - mp.x, eq.g.position.z - mp.z);
+      if (part) { const k = Math.min(1, (now - part) / 3000), b = ep0.clone().addScaledVector(dir, -9).addScaledVector(cote, 2.5); if (M.L.limites(b.x, b.z) || k < .5) { eq.g.position.lerpVectors(ep0, b, k); } eq.g.visible = k < .95; }
+      else if (eq.av3) eq.av3.sc.rotation.y = Math.atan2(mp.x - eq.g.position.x, mp.z - eq.g.position.z); } }); }
+// 2. Brad Vickers, à la radio : le fumigène, la balise GPS, la rue du Faubourg-Poissonnière
+function cineRadioBrad() { const moi = moiApo(); if (!moi) return; M.bradEnCours = true; const nom = nomApo(), eqNom = nomEquipier(), eq = equipierVivant();
+  sceneParlee([[.4, "Brad Vickers", "… Ici Brad Vickers, à toutes les unités du S.T.A.R.S… Vous me recevez ?"], [4.4, M.moiNum, `Brad ! Ici ${nom}. On est coincés dans la caserne !`],
+    [7.6, "Brad Vickers", "Je vous ai repérés, mais impossible de me poser : ces choses sont partout."], [11.4, "Brad Vickers", "Je vous ai largué un fumigène, avec une balise GPS. Il est tombé dans la rue du Faubourg-Poissonnière."],
+    [16.2, "Brad Vickers", "Allumez-le au centre du H, sur la terrasse : je viendrai vous chercher. Brad, terminé."], [20.4, () => { M.gps = true; majBoutonsRE(); sonBruit(.08, 4000, .25); }, ""],
+    [20.6, M.moiNum, "Bien reçu, Brad. Je vais chercher ce fumigène."], ...(eq ? [] : [[24, eqNom, `${nom}, j'ai tout entendu. Je fouille encore de mon côté… on se retrouve vite.`]])],
+    () => { M.gps = true; M.bradEnCours = false; majBoutonsRE(); }, { duree: eq ? 24 : 28 }); }
+// 3. les retrouvailles, juste avant la salle des fêtes : il nous rejoint en courant ; le C4, c'est là-dedans
+function cineRetrouvailles() { const moi = moiApo(); M.separe = false; M.retrouve = true; if (!moi) return; const k = (M.equipe || []).findIndex(e => !e.mort); if (k < 0) return;
+  const e = M.equipe[k], num = EQUIPIER(k), mp = moi.g.position.clone(), dir = dirDegagee(mp); let a0 = null;
+  for (const r of [8, 6.5, 5, 3.5]) for (const s of [1, -1]) { const v = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), s * .5), x = mp.x + v.x * r, z = mp.z + v.z * r; if (!a0 && M.L.limites(x, z)) a0 = [x, z]; }
+  if (!a0) a0 = [mp.x + dir.x * 2, mp.z + dir.z * 2]; retirerAncien(num); const p = ajouterAncien(infoEquipier(e.id, num, a0[0], a0[1], M.moiNum, k)); if (!p) return; p.cineRE = true; p.g.position.y = mp.y;
+  const but = [mp.x + dir.x * 1.2 + dir.z * .9, mp.z + dir.z * 1.2 - dir.x * .9], cam = mp.clone().addScaledVector(new THREE.Vector3(dir.z, 0, -dir.x), 3.4).addScaledVector(dir, .6); cam.y = mp.y + 1.7; const nom = nomApo();
+  sceneParlee([[.3, num, `${nom} ! Attends-moi !`], [3.2, M.moiNum, "Te voilà ! Tu as trouvé quelque chose ?"], [6.2, num, "Rien de mon côté… Mais j'ai entendu Brad. Et le porche est bouché : j'ai vu les gravats."],
+    [10.6, num, "Les démolisseurs avaient stocké du C4 dans la salle des fêtes. Avec ça, on dégage le passage."], [14.6, M.moiNum, "Alors on y va. Ensemble, cette fois."]],
+    () => { const q = M.gens.get(num); if (q) { q.cineRE = false; q.cible = null; q.chemin = []; } },
+    { maj: (u) => { const k2 = Math.min(1, u / 2.6), x = a0[0] + (but[0] - a0[0]) * k2, z = a0[1] + (but[1] - a0[1]) * k2; p.g.position.x = x; p.g.position.z = z; p.cible = null; p.chemin = [];
+      const v = new THREE.Vector3((mp.x + x) / 2, mp.y + 1.25, (mp.z + z) / 2); M.camera.position.copy(cam); M.camera.lookAt(v);
+      if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(x - mp.x, z - mp.z); if (p.av3 && k2 >= 1) p.av3.sc.rotation.y = Math.atan2(mp.x - x, mp.z - z); } }); }
+// 4. le C4, posé sur les gravats du porche : à couvert… et boum
+function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true; majBoutonsRE(); const eq = equipierVivant(), gens = [moi, eq].filter(Boolean), L = M.L;
+  const c4 = objetC4(true); c4.position.set(.2, .35, 26.35); c4.rotation.set(-.35, .3, 0); M.scene.add(c4);
+  const dep = gens.map(q => q.g.position.clone()), poseA = [[0, 25.1], [1.2, 24.6]], abri = [[-.6, 15.6], [1.1, 16.2]]; let fx = null, boum = false, prec = 0;
+  for (const q of gens) q.cineRE = true;
+  sceneParlee([[.3, M.moiNum, "Je pose la charge…"], [2.6, M.moiNum, "C'est armé ! À couvert !"], [5.6, () => { boum = true; }, ""], ...(eq ? [[8.2, eq.info.numero, "Voilà qui est fait ! La rue est à nous."]] : []), [eq ? 10.8 : 8.6, M.moiNum, "Le fumigène ne doit pas être loin. Allons-y !"]],
+    () => { if (fx) fx.nettoyer(); M.scene.remove(c4); for (const q of gens) q.cineRE = false; M.porcheOuvert = true; if (L.gravatsPorche) L.gravatsPorche.visible = false; },
+    { duree: eq ? 13.6 : 11.4, maj: (u, now) => { const dt = prec ? Math.min(.05, (now - prec) / 1000) : 0; prec = now;
+      gens.forEach((q, i) => { const a = dep[i], b = poseA[i], c = abri[i]; let x, z; if (u < 1.2) { const k = u / 1.2; x = a.x + (b[0] - a.x) * k; z = a.z + (b[1] - a.z) * k; } else if (u < 2.9) { x = b[0]; z = b[1]; } else { const k = Math.min(1, (u - 2.9) / 2.2); x = b[0] + (c[0] - b[0]) * k; z = b[1] + (c[1] - b[1]) * k; }
+        q.g.position.x = x; q.g.position.z = z; q.cible = null; q.chemin = []; if (q.av3 && (u < 2.9 || u > 5.1)) q.av3.sc.rotation.y = 0; });
+      c4.userData.led.visible = Math.floor(now / (u > 3 ? 160 : 450)) % 2 === 0;
+      if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true; if (L.gravatsPorche) L.gravatsPorche.visible = false; }
+      if (fx) fx.maj(u - 5.6, dt);
+      const sh = fx ? Math.max(0, 1 - (u - 5.6) / 1.3) * .14 : 0; M.camera.position.set(3.4 + (Math.random() - .5) * sh, 1.9 + (Math.random() - .5) * sh, 11.5); M.camera.lookAt(0, 1.2, u < 5.4 ? 24 : 27); } }); }
+// à chaque image, à Resident Evil : où en est l'histoire
+function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
+  if (b === "grande") { gravatsPorche(M.scene, L); L.gravatsPorche.visible = !M.porcheOuvert; }
+  majBoutonsRE();
+  if (b === "fetes") { if (!L.c4Obj) { L.c4Obj = objetC4(); L.c4Obj.position.set(C4_FETES[0], 0, C4_FETES[1]); L.c4Obj.rotation.y = .5; M.scene.add(L.c4Obj); } L.c4Obj.visible = !M.c4;
+    if (!M.c4 && !M.cine && Math.hypot(mp.x - C4_FETES[0], mp.z - C4_FETES[1]) < 1.1) { M.c4 = true; sonBruit(.06, 3000, .3); majBoutonsRE(); const eq = equipierVivant();
+      dire(M.moiNum, "Du C4 ! De quoi faire sauter les gravats du porche."); if (eq && !eq.info.mortT) setTimeout(() => M && M.gens.get(eq.info.numero) === eq && !eq.info.mortT && dire(eq.info.numero, "Parfait. Direction le porche… et reste à couvert quand ça saute."), 3600); } }
+  if (M.cine || moi.info.mortT) return;
+  if (M.sepA && !M.sepFait && now > M.sepA) { cineSeparation(); return; }
+  const loinZ = ![...(M.zomb ? M.zomb.values() : [])].some(z => !z.mortT && Math.hypot(z.x - mp.x, z.z - mp.z) < 7);
+  if (M.separe && !M.gps && !M.bradEnCours && ((M.bradT && now > M.bradT && loinZ) || b === "fetes" || (b === "grande" && PORTES_FETES.some(([x, z]) => Math.hypot(mp.x - x, mp.z - z) < 8)))) { cineRadioBrad(); return; }
+  if (M.separe && M.gps && (b === "fetes" || (b === "grande" && PORTES_FETES.some(([x, z]) => Math.hypot(mp.x - x, mp.z - z) < 8)))) { cineRetrouvailles(); return; }
+  if (!M.gps && !M.separe && M.sepFait && !M.bradEnCours && M.bradT && now > M.bradT && loinZ) { cineRadioBrad(); return; }   // (seul depuis le début : Brad appelle quand même)
+  if (b === "grande" && !M.porcheOuvert && mp.z > PORCHE_Z - 2.2 && Math.abs(mp.x) < 3) {
+    if (M.c4 && !M.c4Pose) { cinePoseC4(); return; }
+    if (!M.c4 && now > (M.porcheDitT || 0)) { M.porcheDitT = now + 45000; dire(M.moiNum, "Le porche est bouché par les gravats… Impossible de passer. Il me faudrait de quoi faire sauter tout ça."); } } }
 const equipierVivant = () => (M.equipe || []).map((e, k) => !e.mort && M.gens.get(EQUIPIER(k))).find(Boolean);
 // la direction la plus dégagée autour d'un point (là où le sol est libre le plus loin)
 function dirDegagee(p) { let dir = new THREE.Vector3(0, 0, 1), best = 0;
@@ -11115,7 +11252,7 @@ const PAROLES_SURVOL = [["Hé ! Ici ! On est là !", "Il ne nous voit pas… Il 
   ["L'hélico ! Par ici !", "Encore raté… Sans fumigène, il ne nous verra jamais ! Cherchons partout."],
   ["Il repasse !", "Trop haut, et avec ce brouillard… Trouvons ce fumigène, vite !"]];
 function survolApo(moi, now) {
-  if (!M.survolT || now < M.survolT || M.cine || M.evac || APO.zombieFin || !M.L.apo || M.L.interieur || (M.fumi && M.fumi.trouve) || moi.info.mortT) return;
+  if (!M.survolT || now < M.survolT || M.sepFait || M.cine || M.evac || APO.zombieFin || !M.L.apo || M.L.interieur || (M.fumi && M.fumi.trouve) || moi.info.mortT) return;
   const p = moi.g.position; if ([...(M.zomb || new Map()).values()].some(z => !z.mortT && Math.hypot(z.x - p.x, z.z - p.z) < 9)) { M.survolT = now + 4000; return; }   // (pas au milieu d'une attaque)
   M.survolT = now + 150000 + Math.random() * 60000; cineSurvol(moi, PAROLES_SURVOL[Math.min(M.survolN || 0, PAROLES_SURVOL.length - 1)]); M.survolN = (M.survolN || 0) + 1;
 }
@@ -11541,7 +11678,7 @@ function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.n
 let lisa3D = null; const LT = { HP: 25, H: 1.95, V: 1.15 };
 const lisaVivante = () => !!(M && M.lisa && !M.lisa.mortT && baseLieu(M.lieu) === "fetes");
 function lancerLisa() {
-  const moi = moiApo(); if (!moi || M.cine || M.lisa || M.lisaMorte || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || M.evac) return;
+  const moi = moiApo(); if (!moi || M.cine || M.lisa || M.lisaMorte || M.separe || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || M.evac) return;
   const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (h < -.05 || mp.z > 10.8) return;   // (dans la salle même, pas sur les marches ni au bar)
   const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
   M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
@@ -11783,8 +11920,9 @@ function animerEquipe(now) {
   const moi = moiApo(); if (!moi || !M.equipe || !M.equipe.length) return;
   const etage = baseLieu(M.lieu) === "etage", mp = moi.g.position;
   M.equipe.forEach((e, k) => { const num = EQUIPIER(k); let p = M.gens.get(num);
+    if (M.separe) { if (p) retirerAncien(num); return; }   // (séparés : il fouille de son côté)
     if (!p) { if (e.mort) return; const [x, z] = placeAPortee(moi, k); p = ajouterAncien(infoEquipier(e.id, num, x, z, M.moiNum, k)); if (!p) return; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; }
-    if (e.mort || APO.zombieFin || p.sacrifie || p.lisaKO) return;
+    if (e.mort || APO.zombieFin || p.sacrifie || p.lisaKO || p.cineRE) return;
     const d = Math.hypot(p.g.position.x - mp.x, p.g.position.z - mp.z);
     // perdu (un autre étage, trop loin) : il nous rejoint aussitôt
     if ((etage && (etageDe(p) !== etageDe(moi) || (p.etg && moi.etg && p.etg.zone !== "P" && moi.etg.zone === "P" && d > 3))) || d > 13) { const [x, z] = placeAPortee(moi, k); p.g.position.x = x; p.g.position.z = z; if (etage) p.etg = { ...(moi.etg || { n: 0, m: 0, zone: "P" }) }; p.cible = null; p.chemin = []; }
@@ -12058,7 +12196,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); animerLisa(moi, now, dt); lancerLisa();
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); animerLisa(moi, now, dt); lancerLisa();
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -12951,7 +13089,7 @@ function animerCercles(t) {
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
-    c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && !lisaVivante();   // (Lisa debout : les portes de la salle des fêtes restent closes)
+    c.g.visible = (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && !lisaVivante() && !(c.pt.vers === "z-rue" && !M.porcheOuvert);   // (le porche bouché : pas de cercle)   // (Lisa debout : les portes de la salle des fêtes restent closes)
     const b = .5 + .5 * Math.sin(t / 420);
     c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
     c.halo.scale.setScalar(1 + .08 * b);
@@ -13319,8 +13457,9 @@ function manette() {
     if (appui(1) || appui(3) || appui(0)) C.fermer(); fin(); return; }
   if (M.cadranEl && M.cadranEl.isConnected && !M.cadenasMan?.d?.isConnected) { if (appui(0) || appui(1)) { const bx = M.cadranEl.querySelector("button[aria-label]") || M.cadranEl.querySelector("button"); bx && bx.click(); } fin(); return; }
   { const intro = document.getElementById("mxApoIntro"); if (intro && !intro.hidden) { if (appui(0)) document.getElementById("mxApoOui").click(); if (appui(1)) document.getElementById("mxApoNon").click(); fin(); return; } }
-  if (appui(9)) relief(!M.relief);
-  if (appui(8)) premiere(!M.premiere);
+  const enRE = estApo(M.lieu) && !estSH(M.lieu);   // (à Resident Evil : ni relief, ni vue à la première personne)
+  if (appui(9) && !enRE) relief(!M.relief);
+  if (appui(8) && !enRE) premiere(!M.premiere);
   if (appui(1)) { if (M.passerBtn) M.passerBtn.click(); else if (Number.isInteger(moi.info.assis)) { M.action = { type: "lever" }; agir(); } else if (moi.info.danse) { danser(false); bulle("🛑 Fin de la danse", 1500); } }
   // S.O.S. Fantômes : la mire (joysticks), la gâchette tient le faisceau ; sans toucher aux joysticks, la mire glisse vers le monstre
   const gb = M.gbCombat && !M.gbCombat.fini && M.cine && M.cine.gb;
@@ -13342,6 +13481,7 @@ function manette() {
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
+  if (appui(3) && M.gpsBtn) M.gpsBtn.click();   /* (Y : le GPS, à Resident Evil) */
   if (appui(2) && M.radioBtn && M.L && M.L.sh) M.radioBtn.click();   /* (X : la radio — l'éteindre pour rentrer) */
   // X : les danses, l'une après l'autre (et on s'arrête) ; B arrête aussi
   if (appui(2) && M.L && !M.L.apo && !M.L.sh && !M.L.gb) { const D = ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
@@ -13912,7 +14052,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (estSH(M.lieu) && !estSH(id)) { for (const a of [M.sirenePH, M.sireneA]) if (a) { try { a.pause(); } catch (e) {} } M.sirenePH = null; }   /* (la sirène de Pyramid Head ne nous suit pas en 1990) */
   if (M.cine && M.cine.nettoyer) { try { M.cine.nettoyer(); } catch (e) {} }   /* (une scène en cours retire ce qu'elle a posé à l'écran) */
   if (M.lbNoir && id !== "santacarla") { M.lbNoir.remove(); M.lbNoir = null; }
-  M.fumiObj = null; M.fumiL = null;
+  if (M.fumiObj && M.fumiObj.parent) M.fumiObj.parent.remove(M.fumiObj); M.fumiObj = null; M.fumiL = null;
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
   if (M.cadranEl) { M.cadranEl.remove(); M.cadranEl = null; }
   for (const n of [...M.gens.keys()]) retirerAncien(n);
@@ -13926,12 +14066,14 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   trace("construit " + id); M.trace1 = true;
   /* le lieu qu'on quitte : dans la vraie caserne, on le garde tout prêt (on y revient souvent, et on arrive près de sa porte : le reconstruire tout de suite figeait l'image
      quelques secondes en entrant) ; ailleurs, il est libéré un peu plus tard */
-  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : !ancL.apo);   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
+  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : ancL.apo ? estApo(id) : true);   // (à Resident Evil aussi, d'un lieu à l'autre : la grande cour se reconstruisait à chaque retour, de longues secondes)   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
+    if (garder && ancL.apo) { for (const o of [...(M.zomb ? [...M.zomb.values()].map(z => z.g) : []), ...(M.lickers || []).map(l => l.g), M.tyran && M.tyran.g, M.lisa && M.lisa.g, ...(M.cadavres || [])]) if (o && o.parent) o.parent.remove(o); M.cadavres = [];   // (zombies, Lickers, boss : remis à neuf en revenant)
+      if (M.lisa && !M.lisa.mortT) M.lisa = null; if (M.tyran && !M.tyran.mortT) M.tyran = null; M.lickers = []; M.lickL = null; M.zombL = null; }
     if (garder && ancL.sh) { for (const m of M.shMonstres || []) for (const o of [!m.p && m.g, m.lf && m.lf.g]) if (o && o.parent) o.parent.remove(o); M.shMonstres = []; M.shPopL = null; }   // (ses monstres ne restent pas plantés là : on les remet en arrivant)
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
