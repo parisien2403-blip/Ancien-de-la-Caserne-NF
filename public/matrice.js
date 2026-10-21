@@ -6963,11 +6963,11 @@ function construireMess(A, L, scene) {
   // l'apocalypse, en bas (le décor commun ne pose ses débris qu'au niveau où l'on est) : sang et planches au sous-sol, dans la courette et les toilettes
   L.apoMess = () => { const rouille = A.mat({ color: 0x5a3a22, roughness: 1 }), cendre = A.mat({ color: 0x2a2624, roughness: 1 }); let g = 31; const al = () => (g = (g * 9301 + 49297) % 233280) / 233280;
     for (let k = 0, n = 0; k < 600 && n < 26; k++) { const x = RX0 + al() * (CX1 - RX0), z = RZ0 + al() * (RZ1 - RZ0); if (!L.limitesNiv(x, z, 1)) continue; n++;
-      if (n % 2) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1 + al(), 1.1 + al()), new THREE.MeshBasicMaterial({ map: texSang[n % texSang.length], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+      if (n % 2) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1 + al(), 1.1 + al()), matSang(texSang[n % texSang.length], { sec: true }));
         m.rotation.set(-Math.PI / 2, 0, al() * 7); m.position.set(x, YB + .015 + n * .0004, z); scene.add(m); }
       else { const pl = al() < .6, o = new THREE.Mesh(pl ? new THREE.BoxGeometry(1 + al(), .05, .18) : new THREE.DodecahedronGeometry(.12 + al() * .16), pl ? rouille : cendre); o.position.set(x, YB + .06, z); o.rotation.set(pl ? 0 : al() * 3, al() * 7, pl ? (al() - .5) * .3 : al() * 3); scene.add(o); } }
     for (const [x, z, ry] of [[RX0 + .05, 17, Math.PI / 2], [-6, RZ1 - .05, Math.PI], [CX1 - .05, 18, -Math.PI / 2], [RX1 - .05, 15, -Math.PI / 2]]) {   // du sang sur les murs
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.2), new THREE.MeshBasicMaterial({ map: texSang[(x * 7 | 0) & 3], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); m.position.set(x, YB + 1.1, z); m.rotation.y = ry; scene.add(m); } };   // (pour les zombies : chacun reste à son niveau)
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.2), matSang(texSang[(x * 7 | 0) & 3], { sec: true })); m.position.set(x, YB + 1.1, z); m.rotation.y = ry; scene.add(m); } };   // (pour les zombies : chacun reste à son niveau)
   L.contraindreCam = (pos, moi) => { const q = moi.g.position, cour = niv() && q.x > RX1, [a0, a1, b0, b1] = cour ? [CX0, CX1, CZ0, CZ1] : q.z > Z1 ? [RX0, RX1, RZ0, RZ1] : [X0, X1, Z0, Z1];
     pos.x = Math.max(a0 + .3, Math.min(a1 - .3, pos.x)); pos.z = Math.max(b0 + .3, Math.min(b1 - .3, pos.z)); pos.y = Math.min(pos.y, cour ? 4 : niv() && !surEsc(q.x, q.z) ? -.45 : HT - .3); return true; };
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [X0, X1, Z0, RZ1]; L.boite = [X0, X1, Z0, RZ1]; L.plafond = HT - .3;
@@ -7349,7 +7349,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
        et face aux bâtiments devant les portes M et N, I et J, B, C et D, et devant F et G face à la rampe ; on ne passe pas à travers */
     if (!copie) { const VO = L.voitures = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]);
       const haut = (x, z) => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
-      let n = 0; const garer = (x, z, rot) => { if (sansVoituresGB) return; const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
+      let n = 0; L.voituresG = []; const garer = (x, z, rot) => { if (sansVoituresGB) return;
+        if (voituresRE) { const vg = voitureRE(scene, x, haut(x, z), z, rot, COULEURS_RE[n++ % COULEURS_RE.length], false); L.voituresG.push(vg); const lg = 2.25, la = .92, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); return; }   /* (à Resident Evil : la Pontiac de Silent Hill, de toutes les couleurs) */
+        const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
         for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
         const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
       if (!sansVoituresSH) for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
@@ -9833,9 +9835,9 @@ function sangReel() { if (texSangR) return texSangR; texSangR = [];
     for (let i = 0; i < 40; i++) { const a = r() * 6.28, d = 175 + r() * 70, rr = 2 + r() * 7; x.fillStyle = `rgba(${40 + r() * 25 | 0},3,3,${(.6 + r() * .35).toFixed(2)})`; x.beginPath(); x.ellipse(Math.cos(a) * d, Math.sin(a) * d * .8, rr * (1 + r()), rr, a, 0, 7); x.fill(); }   // (les gouttes autour)
     x.globalCompositeOperation = "source-atop"; for (let i = 0; i < 5; i++) { x.strokeStyle = `rgba(255,220,220,${(.05 + r() * .07).toFixed(2)})`; x.lineWidth = 2 + r() * 4; x.beginPath(); x.arc(-30 + r() * 60, -30 + r() * 60, 30 + r() * 80, r() * 7, r() * 7 + .7); x.stroke(); } })));   // (un léger reflet, encore humide)
   return texSangR; }
-function brancardsSH(scene, L, base) {
+function brancardsSH(scene, L, base, nMax) {
   const liste = [], sol = (x, z) => L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0;
-  if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < (PETIT ? 6 : 10); k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
+  if (base === "fetes") { for (let k = 0, n = 0; k < 400 && liste.length < (nMax || (PETIT ? 6 : 10)); k++, n++) { const x = -4.4 + hasard(n * 3.1 + 7) * 8.8, z = .2 + hasard(n * 5.7 + 2) * 14, ry = hasard(n * 2.3 + 11) * 6.28;
       if (!L.limites || !L.limites(x, z) || liste.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) continue; liste.push({ x, z, ry, pose: 0 }); } }
   if (base === "grande") for (const b of [{ x: 8.9, z: 2.6, ry: .35, pose: 0 }, { x: 6.6, z: .4, ry: 1.9, pose: 1 }, { x: 9.0, z: 11.6, ry: -.5, pose: 2 }]) if (!L.limites || L.limites(b.x, b.z)) liste.push(b);   // (pose : 0 debout, 1 couché sur le flanc, 2 retourné)
   L.brancards = liste; if (!liste.length) return;
@@ -10663,7 +10665,10 @@ function texturesApo() {
     const g = x.createRadialGradient(-6, -4, 4, 0, 0, 64); g.addColorStop(0, "rgba(28,1,2,.9)"); g.addColorStop(.6, "rgba(40,2,3,.55)"); g.addColorStop(1, "rgba(40,2,3,0)"); x.fillStyle = g; x.beginPath(); x.arc(0, 0, 64, 0, 7); x.fill();
     const a0 = r() * 7; for (let i = 0; i < 26; i++) { const a = a0 + (r() - .5) * 1.1, d = 66 + r() * 52, rr = 1.5 + r() * 5.5; x.save(); x.translate(Math.cos(a) * d, Math.sin(a) * d); x.rotate(a); x.fillStyle = `rgba(${86 + r() * 30 | 0},5,6,${.7 + r() * .25})`;
       x.beginPath(); x.ellipse(0, 0, rr * (1.4 + r() * 1.6), rr, 0, 0, 7); x.fill(); x.restore(); }   // (les gouttes, projetées, s'étirent dans leur élan)
-    x.globalCompositeOperation = "source-atop"; for (let i = 0; i < 6; i++) { x.strokeStyle = `rgba(255,190,190,${.1 + r() * .12})`; x.lineWidth = 1.5 + r() * 3; x.beginPath(); x.arc(-10 + r() * 20, -10 + r() * 20, 14 + r() * 34, r() * 7, r() * 7 + .8); x.stroke(); } })));
+    for (let i = 0; i < 18; i++) { const a = r() * 7, d = 70 + r() * 50, rr = 1 + r() * 2.6; x.save(); x.translate(Math.cos(a) * d, Math.sin(a) * d); x.rotate(a); x.fillStyle = `rgba(${60 + r() * 30 | 0},3,5,.85)`;   /* (des gouttes isolées, rondes, avec leur petite queue tournée vers l'extérieur) */
+      x.beginPath(); x.arc(0, 0, rr, 0, 7); x.fill(); x.beginPath(); x.moveTo(-rr * .5, -rr * .6); x.lineTo(rr * (2.5 + r() * 3), 0); x.lineTo(-rr * .5, rr * .6); x.fill(); x.restore(); }
+    x.globalCompositeOperation = "source-atop"; for (let i = 0; i < 260; i++) { const a = r() * 7, d = r() * 120, rr = 1 + r() * 4; x.fillStyle = r() < .5 ? `rgba(20,0,1,${.12 + r() * .2})` : `rgba(120,10,12,${.08 + r() * .14})`; x.beginPath(); x.arc(Math.cos(a) * d, Math.sin(a) * d, rr, 0, 7); x.fill(); }   /* (la matière : plus épaisse ici, plus claire là — pas de cercles dessinés) */
+    const bord = x.createRadialGradient(0, 0, 40, 0, 0, 110); bord.addColorStop(0, "rgba(0,0,0,0)"); bord.addColorStop(1, "rgba(25,0,2,.35)"); x.fillStyle = bord; x.fillRect(-128, -128, 256, 256); })));   /* (le bord, qui sèche, plus sombre) */
   // les traînées : un corps qu'on a tiré au sol (des stries, du plus foncé au plus pâle), et des traces de doigts
   for (let k = 0; k < 2; k++) texTrainee.push(tex(toile(512, 128, (x, w, h) => { let s = 91 + k * 57; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 46; i++) { const y = h / 2 + (r() - .5) * h * .62, L = w * (.45 + r() * .55), g = x.createLinearGradient(0, 0, L, 0); g.addColorStop(0, `rgba(${70 + r() * 30 | 0},4,5,${.55 + r() * .35})`); g.addColorStop(1, "rgba(80,5,6,0)");
@@ -10688,7 +10693,7 @@ function abimerCabine(g) { const Lc = 1.05, bois = [0x7a6648, 0x6a5638, 0x8a7656
   planche(0, 1.3, Lc / 2 + .02, 1.35, .62, 0, 0); planche(0, 1.15, Lc / 2 + .045, 1.35, -.55, 0, 1); planche(0, .55, Lc / 2 + .03, 1.15, .08, 0, 2);   // le devant, condamné
   planche(-Lc / 2 - .02, 1.5, 0, 1.0, .35, Math.PI / 2, 1); planche(Lc / 2 + .02, .9, 0, 1.0, -.25, Math.PI / 2, 2);
   g.traverse(o => { if (o.isMesh && o.material && o.material.transparent && o.material.opacity < .3) { o.material = o.material.clone(); o.material.color.setHex(0x4a3a30); o.material.opacity = .45; } });   // (les vitres, crasseuses)
-  const sang = (w, h, x, y, z, ry, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texSang[i % texSang.length], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); return m; };
+  const sang = (w, h, x, y, z, ry, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), matSang(texSang[i % texSang.length], { sec: true })); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); return m; };
   sang(.5, .6, .05, 1.25, -Lc / 2 + .09, 0, 0); sang(.6, .5, -.2, .8, -Lc / 2 + .04, 0, 1); sang(.45, .7, Lc / 2 - .03, 1.1, .1, -Math.PI / 2, 2);
   const f = sang(.9, .9, 0, .056, 0, 0, 3); f.rotation.x = -Math.PI / 2;
   const fil = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .55, 6), new THREE.MeshStandardMaterial({ color: 0x111111 })); fil.position.set(.12, .8, -Lc / 2 + .2); fil.rotation.z = .25; g.add(fil);
@@ -10752,23 +10757,21 @@ function apocalypse(scene, L, base) {
   // un feu : des flammes qui dansent, une lueur orange qui vacille, de la fumée qui monte
   const feu = (x, y, z, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g); L.feuxZ.push([x, z, k === 1 ? .75 : .72 * k]);
     // un brasier : plusieurs nappes de flammes pixelisées, côte à côte, chacune avec son temps de retard
-    const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false })); if (QUALITE !== "bas") sp.material.color.setScalar(1.7);   /* (avec les effets : les flammes, plus lumineuses que tout, rayonnent) */
+    const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false })); if (QUALITE !== "bas") sp.material.color.setScalar(1.35);   /* (avec les effets : les flammes, plus lumineuses que tout, rayonnent) */
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
     const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
-  const lumsFeu = [0, 1, 2, 3].map(() => { const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  const lumsFeu = (QUALITE === "haut" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
-  const epave = (x, z, a, brule = true, y = 0, obst = true) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = a; scene.add(g);
-    const b = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
-    b(4.2, .75, 1.8, charbon, 0, .62, 0); b(2.2, .62, 1.62, rouille, -.2, 1.3, 0);
-    b(.02, .5, 1.5, vitreN, .92, 1.3, 0); b(.02, .5, 1.5, vitreN, -1.32, 1.3, 0); b(2, .45, .02, vitreN, -.2, 1.32, .82); b(2, .45, .02, vitreN, -.2, 1.32, -.82);
-    for (const [wx, wz] of [[1.35, .9], [-1.35, .9], [1.35, -.9], [-1.35, -.9]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .22, 14), cendre); r.rotation.x = Math.PI / 2; r.position.set(wx, .3, wz); g.add(r); }
-    b(.5, .25, .9, rouille, 1.6, 1.0, .1).rotation.z = -.5;   // le capot arraché
+  /* une voiture (la Pontiac de Silent Hill) : calcinée, et qui brûle encore — ou simplement garée là, de travers, dans sa couleur */
+  const epave = (x, z, a, brule = true, y = 0, obst = true) => { const vg = brule && (L.voituresG || []).find(v => Math.hypot(v.position.x - x, v.position.z - z) < 2.4);   /* (une voiture garée est déjà là : c'est elle qui brûle) */
+    if (vg) { vg.userData.brule = true; if (vg.userData.calciner) vg.userData.calciner(); feu(vg.position.x, vg.position.y + .6, vg.position.z, 2); L.feuxSon.push([vg.position.x, vg.position.z]); return; }
+    voitureRE(scene, x, y, z, a, brule ? null : COULEURS_RE[Math.floor(hasard(x * 3.1 + z) * COULEURS_RE.length)], brule);
     if (brule) { feu(x + Math.cos(a) * .9, y + .6, z - Math.sin(a) * .9, 2); L.feuxSon.push([x, z]); }
-    if (obst) obstacles.push([x, z, 2.3]); fusionnerParMatiere(g); };
+    if (obst) obstacles.push([x, z, 2.3]); };
   // un fût qui brûle
   const fut = (x, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(.32, .3, .9, 14), rouille); o.position.set(x, .45, z); scene.add(o); feu(x, .85, z, 1); obstacles.push([x, z, .45]); };
   // un grand brasier (des meubles, des gravats qui brûlent), plus haut qu'un homme
@@ -10784,7 +10787,7 @@ function apocalypse(scene, L, base) {
     for (let n = 0; n <= ET.N; n++) for (let i = 0; i < 9; i++) { const x = (hasard(n * 17 + i) - .5) * 21, z = -1.15 - hasard(n * 5 + i * 3) * 1.5; libre.push([x, z, n * ET.H]); } }
   const hauteurSol0 = hauteurSol;
   /* (les débris, le sang, les gravats : des centaines de petits objets immobiles ; on les fond par matière à la fin — bien moins d'appels de dessin) */
-  const deb = new THREE.Group(); scene.add(deb); const matsSang = texSang.map(t => new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }));
+  const deb = new THREE.Group(); scene.add(deb); const matsSang = texSang.map((t, i) => matSang(t, { sec: i % 2 === 0 }));
   libre.slice(0, base === "etage" ? 70 : 55).forEach(([x, z], i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.2 + Math.random() * 1.4, 1.2 + Math.random() * 1.4), matsSang[i % 4]);
     m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x, (libre[i][2] ?? hauteurSol0(x, z)) + .02 + i * .0004, z); deb.add(m); });
   (base === "etage" ? libre.filter((q, i) => i % 2) : libre.slice(60, 120)).forEach(([x, z, y0]) => { const planche = Math.random() < .5;
@@ -10793,7 +10796,8 @@ function apocalypse(scene, L, base) {
   // le décor de chaque lieu
   if (base === "rue") { epave(-26, -1.2, .25); epave(-9, .8, -.5); epave(9, -.6, .35, false); epave(24, 1.2, -.2); epave(40, -1.5, .6); fut(-16, 4.2); fut(16, -5.2); fut(32, 4.6); fut(-36, 4.4); brasier(-20, 5.3); brasier(30, -5.6); }
   if (base === "grande") {   // dans la troisième cour, une voiture garée sur deux brûle ; sur la terrasse, le H de l'hélicoptère
-    (L.voitures || []).filter(([a, b, c, d]) => (c + d) / 2 < -50).filter((v, i) => i % 2 === 0).forEach(([a, b, c, d]) => { const x = (a + b) / 2, z = (c + d) / 2; epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); });
+    { let n = 0; (L.voitures || []).forEach(([a, b, c, d], i) => { if ((c + d) / 2 >= -50 || n++ % 2) return; const x = (a + b) / 2, z = (c + d) / 2, vg = (L.voituresG || [])[i];   /* (la voiture garée là prend feu : calcinée, en flammes) */
+      if (vg) { vg.userData.brule = true; if (vg.userData.calciner) vg.userData.calciner(); feu(x, hauteurSol(x, z) + .6, z, 2); L.feuxSon.push([x, z]); } else epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); }); }
     heliportApo(scene, L); }
   detritusApo(scene, L, base, hauteurSol); journauxVolants(scene, L, base, hauteurSol); tracesSang(deb, L, base, hauteurSol, libre);
   // les fenêtres des façades dessinées (la troisième cour, la rue en pente, l'immeuble…) : des planches clouées sur une sur trois (trois dessins en tout : léger)
@@ -10809,6 +10813,9 @@ function apocalypse(scene, L, base) {
       const im = new THREE.InstancedMesh(geo, A.mat({ color: coul, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .9 }), L3.length);
       L3.forEach(([x, y, z, lg, ep, tilt, qb], i) => { q.copy(qb).multiply(rz.setFromAxisAngle(Z, tilt)); m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(lg, ep, 1)); im.setMatrixAt(i, m4); });
       scene.add(im); }); }
+  if (base === "fetes") {   /* la salle des fêtes : le comptoir du bar en flammes, et des brancards de Silent Hill, abandonnés là, couverts de sang */
+    for (const [z, k] of [[2.6, .95], [5.4, 1.15], [8.3, 1.0], [10.6, .85]]) { feu(4.35, 1.12, z, k); L.feuxSon.push([4.35, z]); }
+    brancardsSH(scene, L, "fetes", PETIT ? 3 : 5); }
   if (base === "grande") {   /* la voûte de l'horloge jaune : son portail a sauté — des flammes sur les gravats, au pied des murs, et sur la place devant */
     const pq = (lx, lz) => [RU.xB - RU.pc / 2 + (lx - lz) / Math.SQRT2, RU.zA + RU.pc / 2 + (lx + lz) / Math.SQRT2];
     for (const [lx, lz, k] of [[-1.85, -6.6, 1.25], [1.9, -5.4, 1.05], [-1.7, -2.6, .8], [2.6, 2.4, 1.1]]) { const [x, z] = pq(lx, lz); feu(x, hauteurSol(x, z), z, k); L.feuxSon.push([x, z]); }
@@ -10943,9 +10950,9 @@ function ventJournaux(dt, now) { const V = M.L && M.L.journaux; if (!V) return;
     j.o.rotation.x += j.sp * dt; j.o.rotation.y += j.sp * .6 * dt; j.o.rotation.z += j.sp * .4 * dt; } }
 // du sang au sol, en plus des flaques : des corps traînés (de longues traînées), et des pas ensanglantés qui s'éloignent en s'effaçant
 function tracesSang(deb, L, base, hSol, libre) { if (!texTrainee.length || !libre.length) return; const y0 = (q) => q[2] ?? hSol(q[0], q[1]);
-  const mT = texTrainee.map(t => new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+  const mT = texTrainee.map(t => matSang(t, { sec: true }));
   libre.slice(-(base === "etage" ? 12 : 10)).forEach((q, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(3 + Math.random() * 1.6, .85 + Math.random() * .3), mT[i % 2]); m.rotation.set(-Math.PI / 2, 0, Math.random() * 7); m.position.set(q[0], y0(q) + .022 + i * .0003, q[1]); deb.add(m); });
-  const mP = [.85, .6, .38].map(o => new THREE.MeshBasicMaterial({ map: texPas, transparent: true, opacity: o, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+  const mP = [.85, .6, .38].map(o => matSang(texPas, { sec: true, opacity: o }));
   libre.slice(-16, -12).forEach((q) => { let x = q[0], z = q[1]; const a = Math.random() * 7, dx = Math.sin(a), dz = Math.cos(a);
     for (let n = 0; n < 10; n++) { const c = n % 2 ? .12 : -.12, px = x + dz * c, pz = z - dx * c; if (!L.limites(px, pz)) { if (n) break; continue; }
       const m = new THREE.Mesh(new THREE.PlaneGeometry(.13, .27), mP[Math.min(2, n / 3.4 | 0)]); m.rotation.set(-Math.PI / 2, 0, a); m.position.set(px, (q[2] ?? hSol(px, pz)) + .023, pz); deb.add(m); x += dx * .62; z += dz * .62; } }); }
@@ -11575,7 +11582,9 @@ function placeMurLicker() { const Fs = []; for (const [, cadres] of M.L.facadesF
     const okPied = [1.4, 2.2].every(r => { const x = c.o[0] + ux * a + nx * r, z = c.o[2] + uz * a + nz * r; return M.L.limites(x, z) && Math.abs(hNiv(M.L, x, z, my) - my) < 1.2; });
     if (okPied) return { c, a, y, sens: Math.random() < .5 ? 1 : -1 }; }
   return null; }
-function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const U = G.userData.lk, s0 = skelMod.clone(G.scene); s0.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
+function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const U = G.userData.lk, s0 = skelMod.clone(G.scene); s0.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone();
+    if (QUALITE !== "bas" && o.material.color) { const mt = o.material; mt.color.multiply(new THREE.Color(1.45, .92, .88)); if ("roughness" in mt) { mt.roughness = .36; mt.metalness = 0; } if (mt.emissive) { mt.emissive.setHex(0x3a0808); if (mt.map) mt.emissiveMap = mt.map; mt.emissiveIntensity = .55; mt.needsUpdate = true; } }   /* (de la chair à vif, rouge et luisante : elle ressort dans la nuit, et brille à la lueur des feux) */
+    o.userData.emi = o.material.emissive ? o.material.emissive.getHex() : 0; } });
   const sc = new THREE.Group(); sc.add(s0); sc.scale.setScalar(U.k); sc.rotation.y = -U.yaw; sc.position.y = U.y;   // (tourné vers l'avant du groupe, à la bonne taille, les pattes au sol)
   const g = new THREE.Group(); g.userData.perso = true; g.add(sc); M.scene.add(g); const mix = { update() {} }, act = [];
   const os = {}; s0.traverse(o => { if (o.isBone) { const k = o.name.replace(/_\d+$/, "").replace(/^ValveBipedBip01_/, ""); if (!os[k]) os[k] = o; } }); const repos = {}; for (const n in os) repos[n] = os[n].quaternion.clone();
@@ -11593,6 +11602,15 @@ function bougerLK(l, now, dt) { const B = l.os; if (!B) return; for (const n in 
   else { const f = t * Math.PI * 2 * .5; T("Spine2", "x", .05 * Math.sin(f)); T("Head1", "y", .25 * Math.sin(f * .7)); T("Head1", "x", .08 * Math.cos(f)); }
   const flic = mode === LK_A.saut ? .32 : mode === LK_A.mort ? .15 : .04 + .22 * Math.pow(Math.max(0, Math.sin(t * 1.7)), 12);   // (la langue : rentrée, elle pointe de temps en temps ; dehors quand il bondit)
   if (B.Tongue_base) B.Tongue_base.scale.setScalar(flic); l.g.updateMatrixWorld(true); }
+/* son ombre : sur la façade quand il s'y accroche (une tache sombre et douce, juste sous lui), au sol sinon ; elle le suit (enfant de son groupe) */
+let _qLK, _qLK2, _vLK;   // (créés au premier usage : THREE n'est chargé qu'à l'ouverture)
+function ombreLK(l, hSol) { if (!_qLK) { _qLK = new THREE.Quaternion(); _qLK2 = new THREE.Quaternion(); _vLK = new THREE.Vector3(); } if (!l.ombre) { l.ombre = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex(textures().ombre), transparent: true, opacity: .62, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 })); l.g.add(l.ombre); }
+  const o = l.ombre, p = l.g.position; l.g.updateMatrixWorld(true);
+  if (l.etat === "mur" && l.mur) { const c = l.mur.c, nn = Math.hypot(c.n[0], c.n[2]) || 1, nx = c.n[0] / nn, nz = c.n[2] / nn, d = (p.x - c.o[0]) * nx + (p.z - c.o[2]) * nz;
+    _vLK.set(p.x - nx * (d - .04), p.y - .35, p.z - nz * (d - .04)); _qLK.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(nx, nz)); o.scale.set(1.9, 1.5, 1); }
+  else { _vLK.set(p.x, (hSol ? hSol(p.x, p.z) : p.y) + .03, p.z); _qLK.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2); o.scale.set(1.6, 1.2, 1); }
+  o.position.copy(l.g.worldToLocal(_vLK)); l.g.getWorldQuaternion(_qLK2); o.quaternion.copy(_qLK2.invert().multiply(_qLK));
+  o.material.opacity = l.mortT ? .62 * Math.max(0, 1 - (performance.now() - l.mortT - 1600) / 1200) : .62; }
 function jouerLK(l, i, une = false) { if (l.os) { l.cur = i; return; } if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
 function poseMurLK(l) { const { c, a, y } = l.mur, ux = new THREE.Vector3(c.ux[0], 0, c.ux[2]).normalize(), n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize();
   const p = new THREE.Vector3(c.o[0], 0, c.o[2]).addScaledVector(ux, a).addScaledVector(n, .12); p.y = y; l.g.position.copy(p);
@@ -11604,11 +11622,12 @@ function animerLickers(moi, now, dt) {
   if (!(M.tyran && !M.tyran.mortT) && now > (M.lickT || 0) && M.lickers.filter(l => !l.mortT).length < LK.N) { M.lickT = now + 1500; licker3D && licker3D.then(G => { if (G && M && M.L === M.lickL && M.lickers.filter(l => !l.mortT).length < LK.N) { const l = creerLicker(G); if (l) M.lickers.push(l); } }); }
   const mp = moi.g.position, hSol = (x, z) => hNiv(M.L, x, z, mp.y);
   for (const l of [...M.lickers]) { if (l.os) bougerLK(l, now, dt); else l.mix.update(dt);
-    if (l.mortT) { if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
+    if (l.mortT) { ombreLK(l, hSol); if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
       const e = Math.min(1, Math.max(0, (now - l.mortT - 1600) / 1200));   // (abattu : il s'efface, comme les zombies — seule la flaque reste)
       if (e > 0) l.sc.traverse(o => { if (o.isMesh) { o.material.transparent = true; o.material.depthWrite = false; o.material.opacity = 1 - e; } });
       if (e >= 1) { M.scene.remove(l.g); M.lickers.splice(M.lickers.indexOf(l), 1); M.lickT = now + 30000; } continue; }
-    const rouge = now < (l.flashT || 0); if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : 0); }); }
+    const rouge = now < (l.flashT || 0); if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : o.userData.emi || 0); }); }
+    ombreLK(l, hSol);
     if (l.etat === "mur") { const c = l.mur.c; l.mur.a += l.mur.sens * dt * .7; if (Math.abs(l.mur.a) > (c.W - 3) / 2) { l.mur.sens *= -1; l.mur.a = Math.sign(l.mur.a) * (c.W - 3) / 2; }
       poseMurLK(l); if (Math.hypot(mp.x - l.x, mp.z - l.z) < LK.VUE && !APO.zombieFin) { l.etat = "chute"; l.t0 = now; l.p0 = l.g.position.clone(); l.q0 = l.g.quaternion.clone();
         const n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize(); l.p1 = l.p0.clone().addScaledVector(n, 1.4); l.p1.y = hSol(l.p1.x, l.p1.z); sonPos("sons/zombie3.mp3", .8); jouerLK(l, LK_A.attente); } continue; }
@@ -11837,8 +11856,11 @@ function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; c
     let nouveaux = 0; cand.forEach((z, i) => { const veut = (i < (PETIT ? 4 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 45 : 90)) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) { if (nouveaux < 2) { poserZ3(z, G); nouveaux++; } }   /* (deux nouveaux à la fois au plus : l'image ne se fige plus en arrivant quelque part) */ else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
 function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
+/* le sang : avec les effets d'image, il prend la lumière — mouillé, il brille près d'un feu ou d'une lampe ; séché, il est mat ; un peu de sa propre teinte pour ne pas disparaître tout à fait dans le noir */
+function matSang(map, o = {}) { if (QUALITE === "bas") return new THREE.MeshBasicMaterial({ map, color: 0xd8d0d0, transparent: true, opacity: o.opacity ?? 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  return new THREE.MeshStandardMaterial({ map, transparent: true, opacity: o.opacity ?? 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, roughness: o.sec ? .78 : .14, metalness: 0, color: new THREE.Color(2.6, 1.5, 1.5), emissive: 0x7a0c0c, emissiveMap: map, emissiveIntensity: o.sec ? .55 : .7 }); }   /* (la texture est très sombre : on la relève, et on pousse le rouge) */
 function sangAuSol(x, z, y, k = 1) { M.sangs = M.sangs || [];
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(.8 * k, .8 * k), new THREE.MeshBasicMaterial({ map: texSang[Math.floor(Math.random() * 4)], transparent: true, depthWrite: false }));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.8 * k, .8 * k), matSang(texSang[Math.floor(Math.random() * 4)]));
   m.rotation.x = -Math.PI / 2; m.rotation.z = Math.random() * 7; m.position.set(x + (Math.random() - .5) * .4, y + .025 + M.sangs.length * .0003, z + (Math.random() - .5) * .4); m.renderOrder = 1; M.scene.add(m); M.sangs.push(m);
   if (M.sangs.length > (PETIT ? 15 : 40)) { const o = M.sangs.shift(); M.scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
 // le zombie touché : il recule un peu, rougit, saigne
@@ -11902,7 +11924,7 @@ function subirMorsure(zx, zz, deg = 1) {
 const estChefZ = () => M.chefZ === M.moiNum || (M.chefZ == null && ![...M.gens.values()].some(p => !p.moi && p.info.numero > 0));
 // la flaque de sang qui s'étend sous un joueur tombé
 function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.position.y;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: texSang[1], transparent: true, depthWrite: false }));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), matSang(texSang[1]));
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
 /* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
 export const HEROS = { 21: { nom: "Claire Redfield", tenue: "rebecca", couleur: "#c8302a", bas: "#3c5a82", pieds: "#8a5a2a", cle: "claire", court: "Claire" }, 22: { nom: "Hunk", tenue: "leon", couleur: "#1c1d20", bas: "#18191b", pieds: "#0e0e0e", cle: "hunk", court: "Hunk" },
@@ -12296,6 +12318,18 @@ function fusionnerParMatiere(g) {
   for (const o of aRetirer) o.parent && o.parent.remove(o);
   return g;
 }
+/* la Pontiac de Silent Hill, prêtée à Resident Evil : garée (dans sa couleur) ou calcinée ; un seul modèle, chargé une fois, recopié partout */
+const COULEURS_RE = [0xff6a6a, 0x7aa2ff, 0xfff2d2, 0x8ae08f, 0xeef1f5, 0x8a8f96, 0xffb35a, 0xe8e070, 0xd0a0ff, 0x70e0e0];   /* (vives : elles teintent la peinture d'origine du modèle, qui assombrit tout) */
+let pontiacRE = null;
+const chargerPontiac = () => pontiacRE || (pontiacRE = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-pontiac.glb?v=1"); const sc = g.scene;
+  sc.updateMatrixWorld(true); let corps = null; sc.traverse(o => { if (o.isMesh && /ventura/i.test(o.name)) corps = o; }); if (corps) corps.userData.corps = true;
+  const b = new THREE.Box3().setFromObject(corps || sc), k = 4.5 / (b.max.x - b.min.x), w = new THREE.Group(); w.add(sc); sc.scale.multiplyScalar(k);
+  sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k); return w; })().catch(e => { console.warn("pontiac", e); return null; }));
+function voitureRE(scene, x, y, z, rot, couleur, brule) { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; scene.add(g); g.userData.brule = !!brule;
+  const calciner = c => c.traverse(o => { if (o.isMesh) { o.material.color.setHex(0x2b2724); o.material.roughness = 1; o.material.metalness = 0; if (o.material.emissive) o.material.emissive.setHex(0x000000); } });
+  chargerPontiac().then(T => { if (!T) return; const c = T.clone(true); c.traverse(o => { if (!o.isMesh) return; o.material = o.material.clone(); o.castShadow = true; o.receiveShadow = true; if (o.userData.corps && couleur != null) o.material.color.set(couleur); });
+    if (g.userData.brule) calciner(c); g.userData.calciner = () => calciner(c); g.add(c); });
+  return g; }
 function citadine(scene, modele, couleur, x, z, rot) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
   const clio = modele === "clio", L = clio ? 3.71 : 3.56, W = 1.62, H = 1.39;
@@ -12683,7 +12717,7 @@ function corbeilleParis(A, scene, x, y, z, rot, poteau = false) {
   else aj(new THREE.BoxGeometry(.4, .5, .03), vertF, 0, yb + .35, .015);   // la platine, contre le mur
   return g;
 }
-let sansVoituresGB = false, sansVoituresSH = false;   // (Silent Hill : plus de voitures garées dans la cour d'honneur — la Pontiac, seule)
+let sansVoituresGB = false, sansVoituresSH = false, voituresRE = false;   // (Silent Hill : plus de voitures garées dans la cour d'honneur — la Pontiac, seule)
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -12691,7 +12725,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = false; decorCaserne(scene, L, baseLieu(id));
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id));
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
@@ -13675,7 +13709,7 @@ function rendrePost(rendu, now) { if (!postActif()) return false; if (!POST.comp
   if (s.x !== POST.w || s.y !== POST.h || pr !== POST.pr) { POST.w = s.x; POST.h = s.y; POST.pr = pr; POST.comp.setPixelRatio(pr); POST.comp.setSize(s.x, s.y);
     const k = QUALITE === "haut" ? .5 : .33; POST.bloom.setSize(Math.max(64, Math.round(s.x * pr * k)), Math.max(64, Math.round(s.y * pr * k))); }   /* (la lueur se calcule sur une image réduite : bien plus léger) */
   POST.rp.scene = M.scene; POST.rp.camera = M.camera; POST.grade.uniforms.uTemps.value = (now % 10000) / 1000;
-  { const dedans = !!M.L.interieur; POST.bloom.threshold = dedans ? .95 : .82; POST.bloom.strength = (QUALITE === "haut" ? .85 : .6) * (dedans ? .45 : 1); }   /* (dedans, les murs clairs et les projecteurs ne doivent pas tout voiler) */
+  { const dedans = !!M.L.interieur; POST.bloom.threshold = dedans ? .95 : .86; POST.bloom.strength = (QUALITE === "haut" ? .85 : .6) * (dedans ? .45 : 1); }   /* (dedans, les murs clairs et les projecteurs ne doivent pas tout voiler) */
   POST.comp.render(); return true; }
 function rendreRelief(rendu) { ecranRelief(); const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
