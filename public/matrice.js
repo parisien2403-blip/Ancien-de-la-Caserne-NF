@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.16";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.17";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10592,9 +10592,15 @@ function sortirSH() { const G = M.gresil; M.gresil = null; couperGresil(G); bull
    qui brûlent dans la rue, débris, sang séché, lumières qui grésillent. Les lieux s'appellent « z-rue », « z-grande », « z-fetes », « z-etage » :
    même géométrie que les vrais, mais on n'y croise que ceux qui sont passés de l'autre côté. */
 /* l'ambiance sonore dehors, à l'apocalypse (sirènes lointaines, vent, cris) : en boucle, tant qu'on est à l'extérieur */
-let sonApo = null, sonFeu = null, sonRepos = null;
+let sonApo = null, sonFeu = null, sonRepos = null, sonRE = null, sonG = null;
 function ambianceApo() {
   const moiR = M && M.moiNum && M.gens.get(M.moiNum), auRepos = !!(moiR && M.L && estApo(M.lieu) && M.L.repos && M.L.repos(moiR.g.position.x, moiR.g.position.z));
+  /* Resident Evil : « Raccoon City » (RE2), en continu dès l'explosion du portail */
+  const combatG = !!(M && lisaVivante() && !M.lisa.attente && (M.lisaMus || !M.cine));   /* (« The Second Malformation of G » (RE2) : le combat contre Lisa, dès qu'elle apparaît) */
+  if (combatG && !sonG) { sonG = new Audio("sons/re-g2.mp3"); sonG.loop = true; sonG.volume = .75; }
+  if (sonG) { if (combatG && sonG.paused) { if (performance.now() - (sonG.essai || 0) > 2000) { sonG.essai = performance.now(); sonG.play().catch(() => {}); } } else if (!combatG && !sonG.paused) { sonG.pause(); sonG.currentTime = 0; } }
+  { const on = !!(M && M.reMus && modeRE() && !auRepos && !combatG && !M.evac);   /* (l'évacuation a sa propre musique) */ if (on && !sonRE) { sonRE = new Audio("sons/re-raccoon.mp3"); sonRE.loop = true; sonRE.volume = .55; }
+    if (sonRE) { if (on && sonRE.paused) { if (performance.now() - (sonRE.essai || 0) > 2000) { sonRE.essai = performance.now(); sonRE.play().catch(() => {}); } } else if (!on && !sonRE.paused) sonRE.pause(); } }
   if (auRepos && !sonRepos) { sonRepos = new Audio("sons/apo-repos.mp3"); sonRepos.loop = true; sonRepos.volume = .8; }
   if (sonRepos) { if (auRepos && sonRepos.paused) { if (performance.now() - (sonRepos.essai || 0) > 2000) { sonRepos.essai = performance.now(); sonRepos.play().catch(() => {}); } } else if (!auRepos && !sonRepos.paused) sonRepos.pause(); }
   // le crépitement de l'essence qui brûle : plus fort en s'approchant d'une voiture en feu ou d'un brasier
@@ -11003,13 +11009,13 @@ function cineIntroApo(moi) {
   logo.style.cssText = "position:absolute;left:50%;top:42%;width:min(84%,620px);transform:translate(-50%,-50%) scale(1.6);opacity:0;z-index:9;pointer-events:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.85))";
   M.ctx.conteneur.appendChild(logo); const noir = voile("background:#000;opacity:1");
   const vise = new THREE.Vector3(cx, 0, cz), t0 = performance.now(); let fini = false, boum = false;
-  M.calmeT = performance.now() + 9e5; const SX = preparerExplo(moi);   // (nos héros, derrière le portail de la voûte de l'horloge jaune : ils vont le faire sauter)
+  M.calmeT = performance.now() + 9e5; M.reMus = false; const SX = preparerExplo(moi);   // (nos héros, derrière le portail de la voûte de l'horloge jaune : ils vont le faire sauter)
   placerCamera(true); cam.updateMatrixWorld(); let C = cam.position.clone(), Cv = C.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6));   // (là où la caméra du jeu reprendra)
   if (SX) { C = SX.W(1.8, SX.P.yb + 2.0, 6.2); Cv = SX.W(0, SX.P.yb + 1.3, 0); }   // (la vue plonge sur la petite place, face à la voûte)
   const A = new THREE.Vector3(cx + 24, 50, cz + 34), B = new THREE.Vector3(C.x, Math.max(48, C.y + 40), C.z);   /* (haut au-dessus de la cour, puis on glisse, au-dessus des toits, jusqu'à la verticale de la caméra du jeu,
      et on descend tout droit : on ne traverse plus les bâtiments) */
   let v0 = null, S2 = null, dtI = 0;
-  const fin = () => { if (fini || !M) return; fini = true; logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; } finExplo(SX); finIntro2(S2);
+  const fin = () => { if (fini || !M) return; fini = true; M.reMus = true; logo.remove(); noir && noir.remove(); if (brouillard && sc.fog) { sc.fog.near = brouillard[0]; sc.fog.far = brouillard[1]; } finExplo(SX); finIntro2(S2);
     finCine(); placerCamera(true); M.survolT = performance.now() + 150000; M.survolN = 0; M.sepA = performance.now() + 1200; M.calmeT = performance.now() + 60000; };   /* (puis une minute de calme : aucun monstre ne nous attaque dès l'arrivée) */   // (puis : « séparons-nous »)
   M.passerBtn = boutonPasser(fin);
   let clk = 0, prec = t0;   // (l'horloge n'avance qu'avec les images : le chargement du lieu ne mange pas le début)
@@ -11097,7 +11103,7 @@ function finExplo(S) { if (!S || S.fini) return; S.fini = true; if (S.fx) S.fx.n
   envoyerWS({ t: "aller", x: S.gens[0].g.position.x, z: S.gens[0].g.position.z }); M.yaw = S.yaw + Math.PI; }
 function majExplo(S, t, dt) { const cam = M.camera, P = S.P, W = S.W, now = performance.now(), yb = P.yb;
   cacherAutour(W(0, 0, -2), 16, S.caches); if (!S.eq) { S.eq = equipierVivant(); if (S.eq) S.gens.push(S.eq); }   // (l'équipier : il n'existe qu'une fois le lieu prêt)
-  if (t > 1.4 && !S.boum) { S.boum = true; S.fx = explosionPorche(P); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.75", 140); setTimeout(() => M && voile("background:#ff7a20;opacity:.25", 260), 140); }
+  if (t > 1.4 && !S.boum) { S.boum = true; M.reMus = true; S.fx = explosionPorche(P); sonPos("sons/re-dynamite.mp3", 1); sonBruit(3.8, 60, .5); voile("background:#ffd8a0;opacity:.75", 140); setTimeout(() => M && voile("background:#ff7a20;opacity:.25", 260), 140); }
   if (S.fx) S.fx.maj(t - 1.4, dt);
   // le portail : il s'arrache et s'abat dans la voûte
   if (S.boum) { const k = Math.min(1, (t - 1.4) / .5); portailSouffle(M.scene, M.L, k < 1 ? k * k * 1.03 : 1); }
@@ -11243,13 +11249,13 @@ function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true;
   const c4 = objetC4(true); c4.position.set(.2, .35, 26.35); c4.rotation.set(-.35, .3, 0); M.scene.add(c4);
   const dep = gens.map(q => q.g.position.clone()), poseA = [[0, 25.1], [1.2, 24.6]], abri = [[-.6, 15.6], [1.1, 16.2]]; let fx = null, boum = false, prec = 0, vol = null;
   for (const q of gens) q.cineRE = true;
-  sceneParlee([[.3, M.moiNum, "Je pose la charge…"], [2.6, M.moiNum, "C'est armé ! À couvert !"], [5.6, () => { boum = true; }, ""], ...(eq ? [[8.2, eq.info.numero, "Voilà qui est fait ! La rue est à nous."]] : []), [eq ? 10.8 : 8.6, M.moiNum, "Le fumigène ne doit pas être loin. Allons-y !"]],
+  sceneParlee([[.3, M.moiNum, "Je pose la charge…"], [2.6, M.moiNum, "C'est armé ! À couvert !"], [2.6, () => sonPos("sons/re-minuterie.mp3", .9), ""], [5.6, () => { boum = true; }, ""], ...(eq ? [[8.2, eq.info.numero, "Voilà qui est fait ! La rue est à nous."]] : []), [eq ? 10.8 : 8.6, M.moiNum, "Le fumigène ne doit pas être loin. Allons-y !"]],
     () => { if (fx) fx.nettoyer(); M.scene.remove(c4); for (const q of gens) q.cineRE = false; if (!M.porcheOuvert) { M.porcheOuvert = true; vol = volGravats(L); } if (vol) vol(99); },
     { duree: eq ? 13.6 : 11.4, maj: (u, now) => { const dt = prec ? Math.min(.05, (now - prec) / 1000) : 0; prec = now;
       gens.forEach((q, i) => { const a = dep[i], b = poseA[i], c = abri[i]; let x, z; if (u < 1.2) { const k = u / 1.2; x = a.x + (b[0] - a.x) * k; z = a.z + (b[1] - a.z) * k; } else if (u < 2.9) { x = b[0]; z = b[1]; } else { const k = Math.min(1, (u - 2.9) / 2.2); x = b[0] + (c[0] - b[0]) * k; z = b[1] + (c[1] - b[1]) * k; }
         q.g.position.x = x; q.g.position.z = z; q.cible = null; q.chemin = []; if (q.av3 && (u < 2.9 || u > 5.1)) q.av3.sc.rotation.y = 0; });
       c4.userData.led.visible = Math.floor(now / (u > 3 ? 160 : 450)) % 2 === 0;
-      if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonBruit(2.6, 140, 1); sonBruit(3.8, 60, 1); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true;
+      if (boum && !fx) { fx = explosionEn(M.scene, new THREE.Vector3(0, 0, 27.2), new THREE.Vector3(0, 0, -1)); sonPos("sons/re-dynamite.mp3", 1); sonBruit(3.8, 60, .5); voile("background:#ffd8a0;opacity:.7", 140); M.scene.remove(c4); M.porcheOuvert = true;
         vol = volGravats(L); if (L.ajouterFeu && !(L.feuxC4 || []).length) L.feuxC4 = [L.ajouterFeu(-1.3, 0, 25.4, .8), L.ajouterFeu(1.5, 0, 26.9, .62)]; else for (const f of L.feuxC4 || []) f.visible = true; }   /* (les gravats sont projetés ; deux petits feux restent) */
       if (vol) vol(dt);
       if (fx) fx.maj(u - 5.6, dt);
@@ -11495,7 +11501,7 @@ function objectifApo() {
   M.objectifEl.textContent = t; }
 function surFumi(m) {
   const avant = M.fumi; M.fumi = m; if (!M.ctx.surInfo) return;
-  if (m.trouve && !M.musEvac) { M.musEvac = new Audio("sons/apo-evacuation.mp3"); M.musEvac.preload = "auto"; M.musEvac.load(); }   // (prête à partir)
+  if (m.trouve && !M.musEvac) { M.musEvac = new Audio("sons/re-evil-eye.mp3"); M.musEvac.preload = "auto"; M.musEvac.load(); }   // (prête à partir)
   if (m.trouve && !(avant && avant.trouve) && M.L && M.L.apo && moiApo()) { const eq = equipierVivant(), moiT = Number(m.par) === Number(M.moiNum);
     setTimeout(() => M && dire(M.moiNum, moiT ? "Un fumigène ! On a enfin de quoi se faire repérer par l'hélico !" : "Ils ont trouvé un fumigène ! On a ce qu'il faut pour se faire repérer !"), 500);
     if (eq) setTimeout(() => M && M.gens.get(eq.info.numero) && dire(eq.info.numero, "Parfait ! Vite, sur la terrasse : on l'allume au centre du H, il ne pourra pas le rater !"), 3700); }
@@ -11605,7 +11611,7 @@ function cineEvac(m) {
   const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
   const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
   // la musique (« The Mansion Explodes ») : la cinématique est calée dessus — l'hélico se pose sur le silence (10 s), la caserne explose sur le grand coup (26 s)
-  const mus = M.musEvac || new Audio("sons/apo-evacuation.mp3"); M.musEvac = null; mus.currentTime = 0; mus.volume = 1; sonsCourts.add(mus); mus.play().catch(() => {});
+  const mus = M.musEvac || new Audio("sons/re-evil-eye.mp3"); M.musEvac = null; mus.currentTime = 0; mus.volume = 1; sonsCourts.add(mus);   /* (« The Evil Eye » (RE2) : elle part quand l'hélicoptère arrive au-dessus du H, et s'achève juste avant que la caserne explose) */
   sonBruit(1.4, 700, .7);   // (le fumigène éclate)
   const brouillard = sc.fog ? [sc.fog.near, sc.fog.far] : null, cam = M.camera, vise = new THREE.Vector3(), t0 = performance.now();
   let fini = false, monte = false, prec = t0, boum = 0;
@@ -11620,6 +11626,7 @@ function cineEvac(m) {
     // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
+    if (u > 4.5 && !mus.parti) { mus.parti = true; mus.play().catch(() => {}); }
     helA.volume = Math.max(0, Math.min(.45, u / 5)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);
     if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
     else if (u < 5.5) { const k = lisse((u - 2.5) / 3); hel.position.lerpVectors(dep, haut, k); hel.rotation.z = Math.sin(k * Math.PI) * .18; hel.rotation.y = ry0 * (1 - k);   // il vient se placer au-dessus du H…
@@ -11640,7 +11647,7 @@ function cineEvac(m) {
       else placer(12, 115, -10, 0, 0, -50, .035); }   // la caserne, vue du ciel
     else { placer(12, 115, -10, 0, 0, -50, .035);
       // et elle explose : des boules de feu, l'une après l'autre, le flash, la secousse
-      while (boum < P.length && u > 26 + boum * .4) { const [x, z] = P[boum++]; voile("background:#fff6e0;opacity:.75", 160); sonBruit(2.6, 140 + Math.random() * 140, 1);
+      while (boum < P.length && u > 26 + boum * .4) { const [x, z] = P[boum++]; voile("background:#fff6e0;opacity:.75", 160); if (boum % 3 === 1) sonPos("sons/re-bombe.mp3", boum === 1 ? 1 : .8); else sonBruit(1.6, 140 + Math.random() * 140, .45);   /* (la vraie déflagration, et des grondements entre deux) */
         const g = new THREE.Group(); g.position.set(x, 0, z); sc.add(g); const fl = [];
         for (let i = 0; i < 8; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[i % 8], transparent: true, depthWrite: false, fog: false })); sp.center.set(.5, .1); sp.position.set((Math.random() - .5) * 10, 0, (Math.random() - .5) * 10); g.add(sp); fl.push([sp, i, .7 + Math.random() * .6]); }
         const fu = []; for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, fog: false })); g.add(sp); fu.push([sp, Math.random()]); }
@@ -11689,8 +11696,8 @@ const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage
 const sonsCourts = new Set();
 function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
 function couperSonsApo() { if (M && M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
-  for (const a of [sonApo, sonFeu, sonRepos, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
-  sonsCourts.clear(); sonApo = sonFeu = sonRepos = null;   // (recréés à la prochaine visite)
+  for (const a of [sonApo, sonFeu, sonRepos, sonRE, sonG, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
+  sonsCourts.clear(); sonApo = sonFeu = sonRepos = sonRE = sonG = null; if (M) M.reMus = false;   // (recréés à la prochaine visite)
 }
 function sonBruit(duree, coupure, vol) {   // le coup de feu (et le « clic » à vide), fabriqué à la volée
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(actx.sampleRate * duree), b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
@@ -11885,7 +11892,7 @@ function lancerLisa() {
   const moi = moiApo(); if (!moi || M.cine || M.lisa || M.lisaMorte || M.separe || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || M.evac) return;
   const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (h < -.05 || mp.z > 10.8) return;   // (dans la salle même, pas sur les marches ni au bar)
   const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
-  M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
+  M.lisaMus = false; M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
   lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/re-lisa.glb?v=1"); })().catch(e => { console.warn("lisa", e); return null; });
   lisa3D.then(G => { const T = M && M.lisa; if (!G || !T || !T.attente || baseLieu(M.lieu) !== "fetes") { if (M && M.lisa === T) M.lisa = null; return; }
     const sc = skelMod.clone(G.scene); sc.updateMatrixWorld(true); let hy = -1e9, by = 1e9; sc.traverse(o => { if (!o.isBone) return; const y = o.getWorldPosition(new THREE.Vector3()).y; if (y > hy) hy = y; if (y < by) by = y; });
@@ -12013,7 +12020,7 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
     const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp; T.g.visible = apparue;
     if (u > tApp - 3.4 && !T.approche) T.approche = true;   /* (on entend ses chaînes traîner, quelque part dans la salle…) */
     if (u > tApp - 1.3 && !T.grogne1) { T.grogne1 = true; grognementLisa(1.4, .45); }   /* (un grognement, juste avant) */
-    if (apparue && !T.grogne2) { T.grogne2 = true; grognementLisa(2.4, .85); sonBruit(.3, 300, .5); }   /* (elle est là) */
+    if (apparue && !T.grogne2) { T.grogne2 = true; M.lisaMus = true; grognementLisa(2.4, .85); sonBruit(.3, 300, .5); }   /* (elle est là) */
     // les héros : face à la salle ; elle apparue, tournés vers elle
     for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue && (q === moi || u > 13.1) ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
     if (eq && u > tFrappe && T.etat !== "frappe" && !coup) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: ep.x, z: ep.z, coup: () => { coup = true; uCoup = M.cine ? M.cine.u : 0; tete = decapiter(eq, k, aPieds()); } }; sonPos("sons/zombie3.mp3", .9); }
