@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.18";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.19";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8182,7 +8182,7 @@ export async function ouvrir(ctx) {
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
   const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
-    rendu.setPixelRatio(Math.max(resMin, Math.min(res, Math.sqrt(budget / (w * h))))); };
+    rendu.setPixelRatio(Math.max(resMin, Math.min(res, M && M.capRes || 9, Math.sqrt(budget / (w * h))))); };   /* (capRes : Resident Evil sur téléphone, une image un peu moins fine, pour rester fluide) */
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
   appliquerRes();
   rendu.shadowMap.enabled = !logiciel && !PETIT; rendu.shadowMap.type = THREE.PCFSoftShadowMap;   // (ni sans carte graphique, ni sur un petit téléphone : pas d'ombres portées)
@@ -8317,7 +8317,7 @@ export async function ouvrir(ctx) {
       /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
       const lent = moy > (PETIT ? 45 : 34) && res <= resMin + .01; M.lentN = lent ? (M.lentN || 0) + 1 : 0;
       if (M.lentN >= 2 && (M.allege || 0) < 2 && qualiteChoisie() === "auto") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
-    preparerVoisin(); trierLumieres(t); if (PETIT) cacherLoin(t);
+    preparerVoisin(); trierLumieres(t); if (PETIT || (MOBILE && modeRE())) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -10775,8 +10775,8 @@ function apocalypse(scene, L, base) {
     const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
   // les lueurs des feux : quatre lumières seulement, prêtées aux feux les plus proches (moins de lumières = bien plus fluide)
-  const lumsFeu = (QUALITE === "haut" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
-  if (QUALITE === "haut" && !PETIT) { const l = lumsFeu[0]; l.castShadow = true; l.shadow.mapSize.set(256, 256); l.shadow.bias = -.004; l.shadow.radius = 3; l.shadow.camera.near = .3; l.shadow.camera.far = 14; }   /* (qualité Haut : le feu le plus proche projette les ombres des personnages et des monstres sur le sol et les murs) */
+  const lumsFeu = (QUALITE === "haut" && !MOBILE ? [0, 1, 2, 3, 4, 5] : MOBILE ? [0, 1, 2] : [0, 1, 2, 3]).map(() => {   /* (en qualité Haut : six lueurs de feu sur les murs, au lieu de quatre) */ const l = new THREE.PointLight(0xff8c3c, 0, 12, 1.5); l.userData.apo = true; scene.add(l); return l; });
+  if (QUALITE === "haut" && !PETIT && !MOBILE) { const l = lumsFeu[0]; l.castShadow = true; l.shadow.mapSize.set(256, 256); l.shadow.bias = -.004; l.shadow.radius = 3; l.shadow.camera.near = .3; l.shadow.camera.far = 14; }   /* (qualité Haut : le feu le plus proche projette les ombres des personnages et des monstres sur le sol et les murs) */
   // l'éclair du canon : une lumière toujours là, allumée le temps d'un tir (en ajouter une à chaque tir faisait tout recalculer)
   L.eclair = new THREE.PointLight(0xffc060, 0, 7, 1.5); L.eclair.userData.apo = true; scene.add(L.eclair);
   // une voiture calcinée, à l'arrêt, de travers (elle bloque le passage) ; souvent, elle brûle encore
@@ -11025,7 +11025,7 @@ function cineIntroApo(moi) {
     finCine(); placerCamera(true); M.survolT = performance.now() + 150000; M.survolN = 0; M.sepA = performance.now() + 1200; M.calmeT = performance.now() + 60000; };   /* (puis une minute de calme : aucun monstre ne nous attaque dès l'arrivée) */   // (puis : « séparons-nous »)
   M.passerBtn = boutonPasser(fin);
   let clk = 0, prec = t0;   // (l'horloge n'avance qu'avec les images : le chargement du lieu ne mange pas le début)
-  M.cine = { t0, gel: true, nettoyer: () => { fini = true; logo.remove(); noir && noir.remove(); finExplo(SX); finIntro2(S2); }, maj: (now) => { if (fini) return; dtI = Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; clk += dtI * 1000; prec = now; const u = clk / 1000; M.cine.u = u;
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; logo.remove(); noir && noir.remove(); finExplo(SX); finIntro2(S2); }, maj: (now) => { if (fini) return; dtI = Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; clk += dtI * 1000; prec = now; const u = clk / 1000; M.cine.u = u;
     if (noir) noir.style.opacity = String(Math.max(0, 1 - u / 1.2));
     // le logo : il tombe d'un coup (un grand boum), reste, puis s'efface quand la vue plonge
     const a = Math.max(0, Math.min(1, (u - .9) / .35)), b = Math.max(0, Math.min(1, (u - 6.2) / .9));
@@ -11201,11 +11201,11 @@ function majBoutonsRE() { if (!M || !M.ctx) return; const re = estApo(M.lieu) &&
   const c = M.ctx.conteneur, a = document.getElementById("mxApo"); if (!c || !a || a.hidden) return; const rc = c.getBoundingClientRect(), ra = a.getBoundingClientRect(); let y = ra.bottom - rc.top + 8;
   for (const el of [M.gpsBtn, M.c4El]) { if (!el) continue; const t = Math.round(y) + "px"; if (el.style.top !== t) el.style.top = t; y += el.offsetHeight + 7; } }
 // une petite scène : la caméra immobile (là où elle est), le temps qu'on se parle ; on ne peut pas être mordu pendant ce temps
-function sceneParlee(lignes, finir, opts = {}) { const t0 = performance.now(); let fini = false, dit = 0, clk = 0, prec = t0; const moi = moiApo();
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); finir && finir(); };
+function sceneParlee(lignes, finir, opts = {}) { const t0 = performance.now(); let fini = false, dit = 0, clk = 0, prec = t0; const moi = moiApo(), caches = new Set();   /* (les monstres tout près de nous s'effacent le temps de la scène) */
+  const fin = () => { if (fini || !M) return; fini = true; for (const z of caches) if (!z.mortT) z.g.visible = true; finCine(); placerCamera(true); finir && finir(); };
   M.passerBtn = boutonPasser(fin);
-  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
-    if (moi) { moi.cible = null; moi.chemin = []; } if (opts.maj) opts.maj(u, now);
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+    if (moi) { moi.cible = null; moi.chemin = []; cacherAutour(moi.g.position, 4.5, caches); } if (opts.maj) opts.maj(u, now);
     while (dit < lignes.length && u > lignes[dit][0]) { const [, qui, txt] = lignes[dit]; if (typeof qui === "function") qui(); else if (typeof qui === "string") parleRadio(qui, txt); else if (M.gens.get(qui)) dire(qui, txt); dit++; }
     if (u > (opts.duree || (lignes.length ? lignes[lignes.length - 1][0] + 3.4 : 1))) fin(); } }; }
 // 1. on se sépare (juste après le passage de l'hélicoptère, au début)
@@ -11280,7 +11280,7 @@ function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true;
 /* la pluie, dehors, à Resident Evil (comme la nuit de Raccoon City) : des milliers de gouttes, calculées par la carte graphique (elles tombent, et se répètent
    tout autour de la caméra) ; le bruit de la pluie, doux, fabriqué à la volée */
 function pluieRE(now) { const L = M.L; if (!L) return; const dehors = !!(L.apo && !L.sh && !L.interieur && estApo(M.lieu));
-  if (!L.pluie && dehors) { const N = QUALITE === "haut" ? 3200 : QUALITE === "moyen" ? 1800 : 800, p = new Float32Array(N * 6), bout = new Float32Array(N * 2);
+  if (!L.pluie && dehors) { const N = MOBILE ? (PETIT ? 600 : 1100) : QUALITE === "haut" ? 3200 : QUALITE === "moyen" ? 1800 : 800, p = new Float32Array(N * 6), bout = new Float32Array(N * 2);
     for (let i = 0; i < N; i++) { const x = Math.random(), y = Math.random(), z = Math.random(); p.set([x, y, z, x, y, z], i * 6); bout[i * 2] = 0; bout[i * 2 + 1] = 1; }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("bout", new THREE.BufferAttribute(bout, 1));
     const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, uniforms: { uT: { value: 0 }, uCam: { value: new THREE.Vector3() } },
@@ -11871,7 +11871,7 @@ function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const 
   const autre = eq ? eq.info.numero : M.moiNum, L4 = [[1.9, M.moiNum, "Putain… c'est quoi ce truc ?!"], [4.6, autre, "Un Tyran… une arme d'Umbrella ! Ces choses-là ne meurent jamais !"],
     [7.6, M.moiNum, "Tant qu'il est là, l'hélico ne pourra jamais se poser !"], [10.4, autre, "Alors on le descend. Vise-le, et ne t'arrête pas de tirer !"]];
   const libre = v => M.L.limites(v.x, v.z);
-  M.cine = { t0, gel: true, nettoyer: () => { fini = true; for (const z of caches) z.g.visible = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; for (const z of caches) z.g.visible = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     if (!T.g || T.mortT) { fin(); return; } if (T.etat === "regard") T.regardT = now + 1500;   // (il nous fixe, sans bouger, le temps de la scène)
     const mp = moi.g.position, tp = new THREE.Vector3(T.x, T.g.position.y, T.z), d = mp.clone().sub(tp).setY(0).normalize(), cote = new THREE.Vector3(d.z, 0, -d.x);
     cacherAutour(mp.clone().lerp(tp, .5), 16, caches); for (const q of gens) { q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z); }
@@ -12039,7 +12039,7 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
   M.passerBtn = boutonPasser(fin);
   const aPieds = () => { const d = new THREE.Vector3(ep.x - mp.x, 0, ep.z - mp.z).normalize(); return mp.clone().addScaledVector(d, .55).addScaledVector(new THREE.Vector3(d.z, 0, -d.x), .25); };   /* (là où la tête vient rouler : à nos pieds) */
   const tApp = eq ? 10.6 : 6.6, tFrappe = 13.9, tFin = eq ? 22.8 : 12.6;
-  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(50, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+  M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp; T.g.visible = apparue;
     if (u > tApp - 3.4 && !T.approche) T.approche = true;   /* (on entend ses chaînes traîner, quelque part dans la salle…) */
     if (u > tApp - 1.3 && !T.grogne1) { T.grogne1 = true; grognementLisa(1.4, .45); }   /* (un grognement, juste avant) */
@@ -12402,7 +12402,8 @@ function simulerZ(t, dt) {
   if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 6000; const zs = [...M.zomb.values()];
     if (zs.filter(z => !z.chien && !z.boss && !z.revenant).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
-  for (const z of M.zomb.values()) { if (z.mortT || z.cine) continue; M.zY = z.y ?? null;
+  const figes = !!(M.cine && M.cine.gel);   /* (pendant une scène — la radio de Brad, une discussion — les monstres ne bougent plus : personne ne vient sur nous) */
+  for (const z of M.zomb.values()) { if (z.mortT || z.cine || figes) continue; M.zY = z.y ?? null;
     let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
     M.zN = z.n; if (!(M.cine && M.cine.gel) && !(M.calmeT && t < M.calmeT)) for (const q of ps) { if ((base === "etage" || base === "mess") && q.n !== z.n) continue; if (z.y != null && q.p && q.p.g && Math.abs(q.p.g.position.y - z.y) > 1.5) continue;   /* (pas à un autre niveau : la terrasse au-dessus, le sous-sol) */ const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
     if (cible) {
@@ -12530,6 +12531,7 @@ function animerApo(t, dt) {
   if (APO.zombieFin && now > APO.zombieFin) { APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; moi.info.mortT = 0; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); return; }
   majHudApo();
 }
+const MOBILE = typeof navigator !== "undefined" && (/Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform)));   /* (un téléphone, une tablette : même puissants, ils chauffent et ralentissent vite) */
 let GPU_MODESTE = false, M_GPU = "", PETIT = false, QUALITE = "haut";   /* (QUALITE : « bas », « moyen » ou « haut » — ce que l'appareil peut se permettre comme effets ; choisie d'office, ou dans les réglages) */
 // le carnet de bord d'un voyage (gardé dans le téléphone / l'ordinateur) : si l'appli gèle et qu'on la ferme de force, au retour on sait à quelle étape c'était, et l'administrateur reçoit le relevé
 function trace(etape) { try { const t = JSON.parse(localStorage.getItem("caserne-trace") || "[]"); t.push([etape, Math.round(performance.now())]); localStorage.setItem("caserne-trace", JSON.stringify(t.slice(-20))); } catch (e) {} }   // (la carte graphique : une Intel intégrée est traitée avec ménagement)
@@ -13958,7 +13960,7 @@ const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 },
 function alleger(n) { M.allege = n;
   if (n >= 1) { if (M.rendu.shadowMap.enabled) { M.rendu.shadowMap.enabled = false; M.scene && M.scene.traverse(o => { if (o.isLight) o.castShadow = false; if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); } }
   if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; } }
-function postActif() { return !!(M && QUALITE !== "bas" && !(M.allege >= 1) && !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
+function postActif() { return !!(M && QUALITE !== "bas" && !(M.allege >= 1) && !(MOBILE && qualiteChoisie() !== "haut") &&   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
     .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
 // rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
@@ -14221,17 +14223,26 @@ function animerPNJ() {
 /* --- ce qu'on peut faire là où l'on est : s'asseoir au bar, se relever, inviter quelqu'un à danser un slow, l'arrêter --- */
 /* Resident Evil : pas de cercles jaunes. Près d'une porte, une petite phrase (on touche l'écran, on clique, ou A à la manette) */
 function modeRE() { return !!(M && M.L && estApo(M.lieu) && !M.L.sh); }
+const portesRE = () => (M.L.portails || []).filter(q => !q.continu && q.dans && !(q.secret && !estApo(M.lieu)));
+/* la distance jusqu'à la zone d'une porte (on la cherche tout autour du point, par pas de 20 cm) — quelle que soit sa forme, même un long passage */
+function distPortail(q, x, z, rmax) { if (q.dans(x, z)) return 0; for (let r = .2; r <= rmax + 1e-6; r += .2) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; if (q.dans(x + Math.cos(a) * r, z + Math.sin(a) * r)) return r; } return 9; }
+/* on a touché, au-delà d'un passage, l'autre côté (la cour d'honneur vue du porche…) : la porte visée, ou null */
+function porteToucheeRE(ox, oz, x, z) { const d = Math.hypot(x - ox, z - oz);
+  for (const q of portesRE()) { if (distPortail(q, x, z, 3) < 3) return q; for (let t = .3; t < d; t += .3) if (q.dans(ox + (x - ox) * t / d, oz + (z - oz) * t / d)) return q; } return null; }
+/* on marche jusqu'au bout d'un passage (ou l'on a touché ce qu'il y a derrière) : on le passe, sans s'arrêter */
+function passagesRE(moi, a) { const d = a ? a.d : 9, visee = M.porteVisee && a && a.pt === M.porteVisee;
+  if (a && a.type === "porteRE" && !M.passage && (visee ? d <= 1.0 || !moi.cible : d <= .8 && d < (M.dPortePrec ?? 9) - .05 && (moi.cible || moi.vit > .3))) { M.porteVisee = null; M.dPortePrec = 9; agirPorteRE(moi, a.pt); return; }
+  if (a && a.type === "fermeRE" && visee && (d <= 1.0 || !moi.cible)) { M.porteVisee = null; verrouRE(); dire(M.moiNum, a.dit || "C'est fermé… de l'autre côté."); }
+  M.dPortePrec = d; }
+function agirPorteRE(moi, pt) { if (M.passage || M.cine) return; M.passage = true; moi.cible = null; moi.chemin = []; changerLieu(pt.vers, pt.arrivee, pt.yaw, true); }
 function actionPorteRE(x, z) {
   let best = null, bd = 9;
-  for (const q of M.L.portails || []) { if (q.continu || !q.dans || (q.secret && !estApo(M.lieu))) continue;
-    /* (la zone de la porte, à portée de main : on la cherche tout autour de nous, jusqu'à 1,6 m — quelle que soit sa forme, même un long passage) */
-    let d = q.dans(x, z) ? 0 : 9; for (let r = .4; r <= 1.6 && d > r; r += .4) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; if (q.dans(x + Math.cos(a) * r, z + Math.sin(a) * r)) { d = r; break; } }
-    if (d < bd) { bd = d; best = q; } }
+  for (const q of portesRE()) { const d = distPortail(q, x, z, 1.6); if (d < bd) { bd = d; best = q; } }
   if (best) {
-    if (lisaVivante()) return { type: "fermeRE", label: "🔒 Les portes sont bloquées", dit: "Les portes sont bloquées… Il faut d'abord s'en débarrasser !" };
-    if (best.vers === "z-rue" && !M.porcheOuvert) return { type: "fermeRE", label: "🚧 Le passage est bouché par des gravats", dit: "Le porche est bouché par les gravats… Il faudrait de quoi faire sauter tout ça." };
+    if (lisaVivante()) return { type: "fermeRE", pt: best, d: bd, label: "🔒 Les portes sont bloquées", dit: "Les portes sont bloquées… Il faut d'abord s'en débarrasser !" };
+    if (best.vers === "z-rue" && !M.porcheOuvert) return { type: "fermeRE", pt: best, d: bd, label: "🚧 Le passage est bouché par des gravats", dit: "Le porche est bouché par les gravats… Il faudrait de quoi faire sauter tout ça." };
     const b = baseLieu(best.vers), nom = { mess: "le mess", grande: "la cour d'honneur", rue: "la rue", fetes: "la salle des fêtes", etage: "les étages" }[b];
-    return { type: "porteRE", pt: best, label: b === baseLieu(M.lieu) || !nom ? "🚪 Passer la porte" : b === "grande" || b === "rue" ? "🚪 Sortir : " + nom : "🚪 Entrer : " + nom, id: best.vers };
+    return { type: "porteRE", pt: best, d: bd, label: b === baseLieu(M.lieu) || !nom ? "🚪 Passer la porte" : b === "grande" || b === "rue" ? "🚪 Sortir : " + nom : "🚪 Entrer : " + nom, id: best.vers };
   }
   if (M.lieu === "z-grande" && RU.portesFond && Math.abs(z - (RU.zA + .9)) < 1.1) for (const px of RU.portesFond) if (Math.abs(x - px) < 1.1) return { type: "fermeRE", label: "🔒 Fermé de l'autre côté", id: "fond" + px };
   return null;
@@ -14247,7 +14258,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
-    else if (modeRE() && (a = actionPorteRE(x, z))) ;   /* (Resident Evil : plus de cercles, une phrase près des portes) */
+    else if (modeRE() && ((a = actionPorteRE(x, z)), passagesRE(moi, a), a)) ;   /* (Resident Evil : plus de cercles, une phrase près des portes ; au bout d'un passage, on le passe) */
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
@@ -14301,7 +14312,7 @@ function asseoir(p, i) {
 }
 export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
-  if (a.type === "porteRE") { if (M.passage || M.cine) return; M.passage = true; moi.cible = null; moi.chemin = []; changerLieu(a.pt.vers, a.pt.arrivee, a.pt.yaw, true); return; }
+  if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "fermeRE") { if (!M.fermeDitT || performance.now() - M.fermeDitT > 2500) { M.fermeDitT = performance.now(); verrouRE(); dire(M.moiNum, a.dit || "C'est fermé… de l'autre côté."); } return; }
   if (a.type === "asseoir") { if (moi.info.danse) danser(false); const [x, z] = M.L.tabourets[a.i]; envoyerWS({ t: "aller", x, z }); asseoir(moi, a.i); envoyerWS({ t: "assis", i: a.i }); }
   else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null });
@@ -14398,7 +14409,12 @@ function allerVers(x, z, envoyer, y = null) {
   if (y != null && M.lieu === "grande" && C3.etage(moi, x, y, z)) { M.repere.position.set(x, y + .04, z); M.repere.material.opacity = 1; if (envoyer) envoyerWS({ t: "aller", x, z }); return; }   // (changer de niveau dans le chantier : par l'escalier)
   // on reste dans la cour : si le point est hors limites, on va au bord le plus proche
   let px = x, pz = z;
-  if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
+  /* Resident Evil : on a touché ce qu'il y a derrière un passage (la cour vue du porche…) : on marche jusqu'au bout, et l'on passe */
+  M.porteVisee = modeRE() && !M.L.limites(x, z) ? porteToucheeRE(moi.g.position.x, moi.g.position.z, x, z) : null;
+  if (M.porteVisee) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz); let best = null;
+    for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; }
+    if (!best) best = [ox, oz]; [px, pz] = best; }
+  else if (!M.L.limites(px, pz)) { let best = null; for (let k = 1; k <= 30 && !best; k++) for (let a = 0; a < 16; a++) { const tx = x + Math.cos(a / 16 * Math.PI * 2) * k * .4, tz = z + Math.sin(a / 16 * Math.PI * 2) * k * .4; if (M.L.limites(tx, tz)) { best = [tx, tz]; break; } }
     // sinon (on a touché un mur, le porche…) : on marche dans cette direction aussi loin que possible
     if (!best) { const ox = moi.g.position.x, oz = moi.g.position.z, d = Math.hypot(x - ox, z - oz);
       for (let t = .25; t <= d; t += .25) { const tx = ox + (x - ox) * t / d, tz = oz + (z - oz) * t / d; if (!M.L.limites(tx, tz)) break; best = [tx, tz]; } }
@@ -14439,7 +14455,7 @@ function grincementPorte() { try { actx = actx || new (window.AudioContext || wi
     o.connect(f).connect(g).connect(actx.destination); o.start(t); o.stop(t + 1.75); } catch (e) {}
   setTimeout(() => sonBruit(.09, 400, .5), 1900); setTimeout(() => sonBruit(.09, 380, .45), 2350); }
 function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveCamera(40, M.camera.aspect, .05, 30); let clk = 0, prec = performance.now(), passe = false, fini = false;
-  M.porteRE = { sc: P.sc, cam, maj: now => { clk += Math.min(50, Math.max(0, now - prec)) / 1000; prec = now; const u = clk;   /* (l'horloge n'avance qu'avec les images : la préparation du lieu ne fait pas sauter l'animation) */
+  M.porteRE = { sc: P.sc, cam, maj: now => { clk += Math.min(200, Math.max(0, now - prec)) / 1000; prec = now; const u = clk;   /* (l'horloge n'avance qu'avec les images : la préparation du lieu ne fait pas sauter l'animation) */
     cam.aspect = M.camera.aspect; cam.updateProjectionMatrix(); M.porteRE.u = u;
     const o = Math.max(0, Math.min(1, (u - .55) / 2.0)), e = o * o * (3 - 2 * o); P.piv.rotation.y = -e * 1.75;   // (elle s'ouvre, vers l'intérieur)
     const a = Math.max(0, Math.min(1, (u - 1.2) / 1.9)), ea = a * a; cam.position.set(0, 1.28 - ea * .05, 2.7 - ea * 2.9); cam.lookAt(0, 1.2, -2);   // (on avance, et l'on passe la porte)
@@ -14485,6 +14501,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
   M.enCage = false; coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
+  M.dPortePrec = 0; M.porteVisee = null; { const cap = MOBILE && estApo(id) && !L.sh ? 1.3 : null; if (cap !== M.capRes) { M.capRes = cap; setTimeout(() => M && M.redim && M.redim(), 0); } }   /* (à l'arrivée, on ne repasse pas aussitôt la porte d'où l'on vient) */
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
@@ -16433,4 +16450,5 @@ function connecter() {
   };
 }
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
+export const _allerVers = (x, z) => allerVers(x, z, true);   // (pour les essais)
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
