@@ -10882,7 +10882,7 @@ function apocalypse(scene, L, base) {
     if (!L.lumsT || t > L.lumsT) { L.lumsT = t + 400; const c = M && M.camera ? M.camera.position : { x: 0, z: 0 };
       L.feuxProches = feux.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, lumsFeu.length); }
     lumsFeu.forEach((l, i) => { const f = L.feuxProches[i]; if (!f) { l.intensity = 0; return; }
-      l.position.set(f.x, f.y, f.z); l.distance = 11 * f.k; l.intensity = 7 * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
+      l.position.set(f.x, f.y, f.z); l.distance = 11 * f.k; l.intensity = (ext ? 7 : 4.6) * f.k * (.75 + .25 * Math.sin(t / 80 + i) * Math.sin(t / 53)); });
     for (const l of clignos) l.intensity = (l.userData.i0 || 1) * .5 * (Math.sin(t / 37 + l.id) > .6 || Math.random() < .04 ? .05 : 1);
     L.lampesApo(t); };
 }
@@ -10930,7 +10930,7 @@ function detritusApo(scene, L, base, hSol, plus = 1) { if (PETIT) plus *= .5;   
   poser(new THREE.CylinderGeometry(.033, .033, .12, 10), new THREE.MeshStandardMaterial({ color: 0x9a2a20, roughness: .4, metalness: .6 }), q(3).slice(0, 16), (o, [x, y, z]) => { o.position.set(x, y + .034, z); o.rotation.set(Math.PI / 2, 0, Math.random() * 7); });
   // les cartons : on garde leur place — on les pousse en passant (soi, les monstres)
   const cartons = q(3).slice(16).map(([x, y, z]) => ({ x, y, z, ry: Math.random() * 7, rz: (Math.random() - .5) * .3, s: .8 + Math.random() * .6 }));
-  const imC = poser(new THREE.BoxGeometry(.5, .32, .4), new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 }), cartons, (o, c) => { o.position.set(c.x, c.y + .16 * c.s, c.z); o.rotation.set(0, c.ry, c.rz); o.scale.setScalar(c.s); });
+  const imC = poser(new THREE.BoxGeometry(.5, .32, .4), new THREE.MeshStandardMaterial({ color: 0x5c432b, roughness: 1 }), cartons,   /* (un carton brun foncé : près des flammes, il ne vire plus au blanc) */ (o, c) => { o.position.set(c.x, c.y + .16 * c.s, c.z); o.rotation.set(0, c.ry, c.rz); o.scale.setScalar(c.s); });
   if (imC) { imC.castShadow = true; L.cartons = { im: imC, c: cartons, maj: () => { cartons.forEach((c, k) => { d.position.set(c.x, c.y + .16 * c.s, c.z); d.rotation.set(0, c.ry, c.rz); d.scale.setScalar(c.s); d.updateMatrix(); imC.setMatrixAt(k, d.matrix); }); imC.instanceMatrix.needsUpdate = true; } }; }
 }
 /* le vent : quelques feuilles de journal posées au sol ; de temps en temps, une rafale en soulève une, qui vole, tourbillonne et retombe plus loin */
