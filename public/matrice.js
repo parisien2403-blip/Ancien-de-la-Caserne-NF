@@ -14544,6 +14544,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
   M.posEntree = [x, z];
   envoyerWS({ t: "entrer", lieu: id, x, z });
   M.ctx.surLieu && M.ctx.surLieu(id);
+  majBoutonsRE();   /* (le GPS et le C4 n'existent qu'à Resident Evil : on les retire en revenant dans la caserne de 1990) */
   majAmbiance();
   M.almMesh = null; majAlmanach(); M.radioObj = null; majRadio(); M.plaqueObj = null; majPlaqueGB();
   if (!estSH(id)) { if (M.gresil) { couperGresil(M.gresil); M.gresil = null; } grainSH(false); if (M.musReveil) { try { M.musReveil.pause(); } catch (e) {} M.musReveil = null; } if (M.musExplo) { try { M.musExplo.pause(); } catch (e) {} M.musExplo = null; } if (M.musRencontre) { try { M.musRencontre.pause(); } catch (e) {} M.musRencontre = null; } if (M.musPyr) { try { M.musPyr.pause(); } catch (e) {} M.musPyr = null; } if (M.sireneA) { try { M.sireneA.pause(); } catch (e) {} M.sireneA = null; } } else { grainSH(true); if (!M.gresil) M.gresil = sonGresil(.045); }   // (Silent Hill : le grain de l'image, la radio qui grésille)
