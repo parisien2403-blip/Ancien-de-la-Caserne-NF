@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.10";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.11";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8551,7 +8551,7 @@ export async function ouvrir(ctx) {
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
-    if (M.relief) rendreRelief(rendu); else rendu.render(M.scene, M.camera);
+    if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
   M.redim();
@@ -10752,7 +10752,7 @@ function apocalypse(scene, L, base) {
   // un feu : des flammes qui dansent, une lueur orange qui vacille, de la fumée qui monte
   const feu = (x, y, z, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g); L.feuxZ.push([x, z, k === 1 ? .75 : .72 * k]);
     // un brasier : plusieurs nappes de flammes pixelisées, côte à côte, chacune avec son temps de retard
-    const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false }));
+    const fl = []; for (let i = 0; i < 3 + Math.round(k * 1.5); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[0], transparent: true, alphaTest: .05, depthWrite: false, fog: false })); if (QUALITE !== "bas") sp.material.color.setScalar(1.7);   /* (avec les effets : les flammes, plus lumineuses que tout, rayonnent) */
       sp.center.set(.5, .05); sp.position.set((Math.random() - .5) * 1.1 * k, 0, (Math.random() - .5) * .8 * k); g.add(sp); fl.push([sp, Math.floor(Math.random() * 8), .8 + Math.random() * .6]); }
     const fu = []; for (let i = 0, nf = ext ? 4 : 3; i < nf; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false })); g.add(sp); fu.push([sp, i / 5]); }
     feux.push({ fl, fu, k, x, y: y + 1.2 * k, z }); return g; };
@@ -10809,6 +10809,11 @@ function apocalypse(scene, L, base) {
       const im = new THREE.InstancedMesh(geo, A.mat({ color: coul, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .9 }), L3.length);
       L3.forEach(([x, y, z, lg, ep, tilt, qb], i) => { q.copy(qb).multiply(rz.setFromAxisAngle(Z, tilt)); m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(lg, ep, 1)); im.setMatrixAt(i, m4); });
       scene.add(im); }); }
+  if (base === "grande") {   /* la voûte de l'horloge jaune : son portail a sauté — des flammes sur les gravats, au pied des murs, et sur la place devant */
+    const pq = (lx, lz) => [RU.xB - RU.pc / 2 + (lx - lz) / Math.SQRT2, RU.zA + RU.pc / 2 + (lx + lz) / Math.SQRT2];
+    for (const [lx, lz, k] of [[-1.85, -6.6, 1.25], [1.9, -5.4, 1.05], [-1.7, -2.6, .8], [2.6, 2.4, 1.1]]) { const [x, z] = pq(lx, lz); feu(x, hauteurSol(x, z), z, k); L.feuxSon.push([x, z]); }
+    /* devant le local poubelle (à l'escalier E) : deux voitures qui brûlent — leur lueur éclaire ce coin sombre de la caserne */
+    for (const [x, z, a] of [[-15.5, -126.1, .12], [-1.6, -123.3, -.35]]) if (L.limites(x, z)) epave(x, z, a, true, hauteurSol(x, z), false); }   /* (devant le local poubelle et l'escalier E ; elles ne bouchent pas le passage) */
   if (base === "grande") { epave(-4.5, 3, .7); epave(5.5, -9, -.4); fut(-8.5, -4); fut(8.6, 4); fut(0, -14); fut(-5, -24); fut(6, -40); fut(-8, 10); fut(3, 11); brasier(-1.5, -6); brasier(9.2, -2.5, 2.2); brasier(-9.3, 4, 2.2); }
   if (base === "fetes") { fut(3.2, 1.5); brasier(4.4, 9, 2); for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, .06, .8), rouille); t.position.set(-3 + Math.random() * 6, .05, 2 + Math.random() * 10); t.rotation.y = Math.random() * 3; deb.add(t); } }
   fusionnerParMatiere(deb); deb.children.forEach(o => { if (o.material.transparent) o.renderOrder = 1; });
@@ -11035,14 +11040,19 @@ const explosionPorche = P => explosionEn(P.ga, new THREE.Vector3(0, P.yb, P.zg +
 // (une explosion en c, soufflée vers dir : la boule de feu, l'éclair, les éclats, la fumée)
 function explosionEn(ga, c, dir) { const g = new THREE.Group(); g.position.copy(c); g.rotation.y = Math.atan2(dir.x, dir.z); ga.add(g); const z0 = 0, y0 = 0;
   const feu = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); feu.position.set(0, y0 + 1.6, z0); g.add(feu);
-  const lum = new THREE.PointLight(0xff8a3a, 60, 26, 1.6); lum.position.set(0, y0 + 2, z0 + 1); g.add(lum);
+  const lum = new THREE.PointLight(0xff8a3a, 60, 26, 1.6); lum.position.set(0, y0 + 2, z0 + 1); g.add(lum); const hdr = QUALITE !== "bas" ? 2.6 : 1;   /* (avec les effets d'image, la boule de feu est bien plus lumineuse que tout : elle rayonne) */
+  const etinc = []; for (let i = 0; i < (PETIT ? 14 : 40); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLueurRouge(), color: new THREE.Color(1.0, .75, .35).multiplyScalar(hdr * 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));   /* (les étincelles : des braises qui jaillissent et retombent) */
+    sp.scale.setScalar(.12 + Math.random() * .12); sp.position.set((Math.random() - .5) * 1.2, y0 + 1 + Math.random() * 1.5, z0); g.add(sp); etinc.push({ sp, v: new THREE.Vector3((Math.random() - .5) * 9, 3 + Math.random() * 8, 2 + Math.random() * 10), t: .8 + Math.random() * 1.4 }); }
+  const onde = new THREE.Mesh(new THREE.RingGeometry(.7, 1, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, .55, .2).multiplyScalar(hdr), transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); onde.rotation.x = -Math.PI / 2; onde.position.set(0, y0 + .06, z0 + .5); g.add(onde);   /* (le souffle, qui court au sol) */
   const eclats = []; for (let i = 0; i < (PETIT ? 10 : 22); i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(.12 + Math.random() * .2, .06 + Math.random() * .1, .1 + Math.random() * .2), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x1c1e20 : 0x5a4a40, roughness: .8 }));
     o.position.set((Math.random() - .5) * 2.5, y0 + .5 + Math.random() * 3, z0); g.add(o); eclats.push({ o, v: new THREE.Vector3((Math.random() - .5) * 7, 2 + Math.random() * 6, 5 + Math.random() * 9), r: new THREE.Vector3(Math.random() * 9, Math.random() * 9, 0) }); }
   const fum = []; for (let i = 0; i < (PETIT ? 12 : 26); i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, opacity: 0 })); sp.position.set((Math.random() - .5) * 3, y0 + .4 + Math.random() * 3, z0); g.add(sp);
     fum.push({ sp, v: new THREE.Vector3((Math.random() - .5) * 1.6, .25 + Math.random() * .6, .3 + Math.random() * 1.5), d: Math.random() * .4, s: 1.2 + Math.random() * 1.3 }); }
   const S = { g, fini: false, maj: (u, dt) => { if (S.fini) return;
-    const kf = Math.min(1, u / .3); feu.scale.set(.3 + 2.4 * Math.sqrt(kf), .3 + 1.9 * Math.sqrt(kf), .3 + 1.3 * Math.sqrt(kf)); feu.material.opacity = Math.max(0, .9 - u / .65); feu.visible = u < .6; feu.material.color.setHSL(.08 - .05 * Math.min(1, u), 1, .6 - .25 * Math.min(1, u));
-    lum.intensity = Math.max(0, 60 * (1 - u / 1.1)); lum.visible = u < 1.1;
+    const kf = Math.min(1, u / .3); feu.scale.set(.3 + 2.4 * Math.sqrt(kf), .3 + 1.9 * Math.sqrt(kf), .3 + 1.3 * Math.sqrt(kf)); feu.material.opacity = Math.max(0, .9 - u / .65); feu.visible = u < .6; feu.material.color.setHSL(.08 - .05 * Math.min(1, u), 1, .6 - .25 * Math.min(1, u)).multiplyScalar(hdr);
+    for (const e of etinc) { const k = u / e.t; e.sp.visible = k < 1; if (k >= 1) continue; e.v.y -= 9.8 * dt; e.sp.position.addScaledVector(e.v, dt); e.sp.material.opacity = 1 - k * k; }
+    { const k = Math.min(1, u / .55); onde.scale.setScalar(.5 + k * 9); onde.material.opacity = .8 * (1 - k); onde.visible = k < 1; }
+    lum.intensity = Math.max(0, 60 * (1 - u / 1.1)) + (u > .15 && u < 2.4 ? 10 * (1 - u / 2.4) * (.7 + .3 * Math.sin(u * 40)) : 0); lum.visible = u < 2.4;   /* (l'éclair, puis la lueur du brasier qui retombe) */
     for (const e of eclats) { if (e.o.position.y <= y0 + .05) continue; e.v.y -= 9.8 * dt; e.o.position.addScaledVector(e.v, dt); e.o.rotation.x += e.r.x * dt; e.o.rotation.y += e.r.y * dt; if (e.o.position.y <= y0 + .05) { e.o.position.y = y0 + .05; } }
     for (const f of fum) { const v = u - f.d; if (v < 0) continue; f.sp.position.addScaledVector(f.v, dt * Math.max(.15, 1 - v / 4)); const s = f.s * (1 + v * .9); f.sp.scale.set(s, s, 1); f.sp.material.opacity = Math.min(.5, v * 2) * Math.max(0, 1 - v / 8); }   // (assez pour qu'ils en jaillissent, pas au point de tout cacher)
     if (u > 10) S.nettoyer(); }, nettoyer: () => { if (S.fini) return; S.fini = true; ga.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map !== texFumee) o.material.dispose(); }); } };
@@ -11206,6 +11216,9 @@ function cinePoseC4() { const moi = moiApo(); if (!moi) return; M.c4Pose = true;
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
   if (b === "grande") { gravatsPorche(M.scene, L); L.gravatsPorche.visible = !M.porcheOuvert; }
   majBoutonsRE();
+  /* dans la salle des fêtes : la lueur des feux sur les personnages (une lumière chaude qui nous suit et vacille), pour bien les voir dans la pénombre */
+  if (b === "fetes") { if (!L.lueurPersos) { L.lueurPersos = new THREE.PointLight(0xff9a4a, 0, 7.5, 1.5); L.lueurPersos.userData.apo = true; M.scene.add(L.lueurPersos); }
+    const lp = L.lueurPersos; lp.position.set(mp.x + 1.1, mp.y + 2.3, mp.z + .8); lp.intensity = 4.2 * (.85 + .15 * Math.sin(now / 90) * Math.sin(now / 57)); }
   if (b === "fetes") { if (!L.c4Obj) { L.c4Obj = objetC4(); L.c4Obj.position.set(C4_FETES[0], 0, C4_FETES[1]); L.c4Obj.rotation.y = .5; M.scene.add(L.c4Obj); } L.c4Obj.visible = !M.c4;
     if (!M.c4 && !M.cine && Math.hypot(mp.x - C4_FETES[0], mp.z - C4_FETES[1]) < 1.1) { M.c4 = true; sonBruit(.06, 3000, .3); majBoutonsRE(); const eq = equipierVivant();
       dire(M.moiNum, "Du C4 ! De quoi faire sauter les gravats du porche."); if (eq && !eq.info.mortT) setTimeout(() => M && M.gens.get(eq.info.numero) === eq && !eq.info.mortT && dire(eq.info.numero, "Parfait. Direction le porche… et reste à couvert quand ça saute."), 3600); } }
@@ -12866,8 +12879,12 @@ function hauteurOs(sc) { sc.updateMatrixWorld(true); const os = {}; sc.traverse(
   const pieds = ["LeftToeBase", "RightToeBase", "LeftFoot", "RightFoot"].map(y).filter(v => v != null), tete = y("Head"); if (!pieds.length || tete == null) return 0;
   const bas = Math.min(...pieds), span = tete - bas; if (!(span > 0)) return 0; const haut = y("HeadTop_End") ?? tete + .125 * span; return (haut - bas) + .02 * span; }
 const TAILLE_3D = 1.78;   // (un homme : 1,78 m, partout — dedans comme dehors ; les portes, les escaliers sont à la vraie taille)
+let clipsSH = null;   // (la marche, l'attente et la course des personnages de Silent Hill — Harry —, prêtées aux héros de Resident Evil)
+const clipsMarcheSH = () => clipsSH || (clipsSH = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-harry.glb?v=1"); return g.animations.filter(c => ["idle", "walk", "run"].includes(c.name)); })().catch(() => null));
 function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
+    if (/avatars\/re-(wesker|barry|chris|claire|hunk|leon)\./.test(f)) { const cl = await clipsMarcheSH(); if (cl) { const os = new Set(); sc.traverse(o => o.name && os.add(o.name));   /* (les héros de Resident Evil marchent comme ceux de Silent Hill : la marche complète — le dos, les épaules, les mains —, et non plus la marche raide de leur modèle) */
+      for (const c of cl) { const k = c.clone(); k.tracks = k.tracks.filter(t => os.has(t.name.split(".")[0])); act[c.name] = mix.clipAction(k); } } }
     // la tenue : on peut changer la couleur du haut, du bas, des chaussures (selon la hauteur sur le corps, au repos)
     const U = { uHaut: { value: new THREE.Vector4(1, 1, 1, 0) }, uBas: { value: new THREE.Vector4(1, 1, 1, 0) }, uPieds: { value: new THREE.Vector4(1, 1, 1, 0) }, uB0: { value: new THREE.Vector3() }, uB1: { value: new THREE.Vector3() }, uSeuil: { value: new THREE.Vector2(.075, .58) } };
     let tenue = null; sc.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.frustumCulled = false; o.geometry.computeBoundingBox();
@@ -13630,6 +13647,36 @@ function ecranRelief() { const d = M.cadranEl, C = M.copieRelief;
   const el = d.cloneNode(true); el.classList.add("relief-ok"); el.style.transform = "scaleX(.5)"; el.style.transformOrigin = "100% 50%"; el.style.pointerEvents = "none"; d.parentNode.appendChild(el);
   const obs = new MutationObserver(() => { const n = d.cloneNode(true); n.className = el.className; n.style.cssText = el.style.cssText; el.innerHTML = n.innerHTML; }); obs.observe(d, { subtree: true, childList: true, characterData: true, attributes: true });
   M.copieRelief = { src: d, el, obs }; }
+/* ===================== les effets d'image (graphisme, étape 3) =====================
+   À Resident Evil, en qualité « Moyen » ou « Haut » : la lueur des feux, des lampes et des explosions (bloom), un étalonnage de film
+   (ombres froides et bleutées, lumières chaudes, un peu de contraste), une vignette et un grain léger. En qualité « Bas » : rien, l'image d'avant */
+let postMods = null; const POST = { comp: null, rp: null, bloom: null, grade: null, w: 0, h: 0, pr: 0 };
+const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 }, uGrain: { value: .035 }, uVignette: { value: .38 } },
+  vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTemps, uGrain, uVignette; varying vec2 vUv;
+    float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + uTemps) * 43758.5453); }
+    void main() { vec4 c = texture2D(tDiffuse, vUv); vec3 col = c.rgb; float l = dot(col, vec3(.2126, .7152, .0722));
+      col = mix(vec3(l), col, .82);   /* (un peu moins de couleur : la nuit de Raccoon City) */
+      col *= mix(vec3(.82, .9, 1.08), vec3(1.08, 1.0, .9), smoothstep(.05, .6, l));   /* (les ombres bleutées, les lumières chaudes) */
+      col = max(col - .008, 0.0) * 1.04;   /* (des noirs un peu plus profonds) */
+      vec2 d = vUv - .5; col *= 1.0 - uVignette * smoothstep(.25, .75, length(d) * 1.25);
+      col += (h(vUv * 913.0) - .5) * uGrain * (.4 + l);
+      gl_FragColor = vec4(col, c.a); }` };
+function postActif() { return !!(M && QUALITE !== "bas" && !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
+function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
+    .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
+// rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
+function rendrePost(rendu, now) { if (!postActif()) return false; if (!POST.comp) { chargerPost().then(m => { if (!m || POST.comp || !M) return;
+      const comp = new m.EffectComposer(rendu), rp = new m.RenderPass(M.scene, M.camera), haut = QUALITE === "haut";
+      const bloom = new m.UnrealBloomPass(new THREE.Vector2(256, 256), haut ? .85 : .6, .55, .82);   /* (seul ce qui est vraiment lumineux rayonne : les flammes, les lampes, les explosions) */
+      const grade = new m.ShaderPass(ETALON_RE); if (!haut) grade.uniforms.uGrain.value = .02;
+      comp.addPass(rp); comp.addPass(bloom); comp.addPass(grade); comp.addPass(new m.OutputPass()); Object.assign(POST, { comp, rp, bloom, grade, w: 0, h: 0, pr: 0 }); }); return false; }
+  const s = rendu.getSize(new THREE.Vector2()), pr = rendu.getPixelRatio();
+  if (s.x !== POST.w || s.y !== POST.h || pr !== POST.pr) { POST.w = s.x; POST.h = s.y; POST.pr = pr; POST.comp.setPixelRatio(pr); POST.comp.setSize(s.x, s.y);
+    const k = QUALITE === "haut" ? .5 : .33; POST.bloom.setSize(Math.max(64, Math.round(s.x * pr * k)), Math.max(64, Math.round(s.y * pr * k))); }   /* (la lueur se calcule sur une image réduite : bien plus léger) */
+  POST.rp.scene = M.scene; POST.rp.camera = M.camera; POST.grade.uniforms.uTemps.value = (now % 10000) / 1000;
+  { const dedans = !!M.L.interieur; POST.bloom.threshold = dedans ? .95 : .82; POST.bloom.strength = (QUALITE === "haut" ? .85 : .6) * (dedans ? .45 : 1); }   /* (dedans, les murs clairs et les projecteurs ne doivent pas tout voiler) */
+  POST.comp.render(); return true; }
 function rendreRelief(rendu) { ecranRelief(); const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
   action3D(); const a3 = M.action3D; if (a3) { if (a3.parent !== M.scene) M.scene.add(a3); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); a3.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, -.3); }
