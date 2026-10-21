@@ -10599,6 +10599,7 @@ let sonApo = null, sonFeu = null, sonRepos = null, sonRE = null, sonG = null;
 function ambianceApo() {
   const moiR = M && M.moiNum && M.gens.get(M.moiNum), auRepos = !!(moiR && M.L && estApo(M.lieu) && M.L.repos && M.L.repos(moiR.g.position.x, moiR.g.position.z));
   /* Resident Evil : « Raccoon City » (RE2), en continu dès l'explosion du portail */
+  if (!bufTirP && modeRE()) tirRE(0);   /* (le coup de feu, préparé dès l'arrivée) */
   const combatG = !!(M && lisaVivante() && !M.lisa.attente && (M.lisaMus || !M.cine));   /* (« The Second Malformation of G » (RE2) : le combat contre Lisa, dès qu'elle apparaît) */
   if (combatG && !sonG) { sonG = new Audio("sons/re-g2.mp3"); sonG.loop = true; sonG.volume = .75; }
   if (sonG) { if (combatG && sonG.paused) { if (performance.now() - (sonG.essai || 0) > 2000) { sonG.essai = performance.now(); sonG.play().catch(() => {}); } } else if (!combatG && !sonG.paused) { sonG.pause(); sonG.currentTime = 0; } }
@@ -11419,6 +11420,13 @@ function dirDegagee(p) { let dir = new THREE.Vector3(0, 0, 1), best = 0;
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, dx = Math.sin(a), dz = Math.cos(a); let r = 0; while (r < 30 && M.L.limites(p.x + dx * (r + .5), p.z + dz * (r + .5))) r += .5; if (r > best + .5) { best = r; dir = new THREE.Vector3(dx, 0, dz); } }
   return dir; }
 // (les zombies et les monstres trop près : cachés le temps du plan — personne ne passe devant la caméra ni devant les héros)
+/* le bruit de l'hélicoptère (son approche, de plus en plus fort) : on part de « debut » secondes, pour que le plus fort tombe quand il est au-dessus de nous ;
+   arrivé au bout, on reprend un peu avant, sans retomber au début (là où il est encore loin, tout bas) */
+function sonHelico(debut) { const a = new Audio("sons/apo-helico.mp3"); a.volume = 0; sonsCourts.add(a); let pose = false;
+  const placer = () => { if (pose) return; pose = true; try { a.currentTime = debut; } catch (e) {} };
+  a.addEventListener("loadedmetadata", placer); a.addEventListener("timeupdate", () => { if (a.duration && a.currentTime > a.duration - .9) a.currentTime = Math.max(0, a.duration - 5); });
+  a.addEventListener("ended", () => { if (sonsCourts.has(a)) { a.currentTime = Math.max(0, (a.duration || 20) - 5); a.play().catch(() => {}); } });
+  if (a.readyState >= 1) placer(); a.play().catch(() => {}); return a; }
 function cacherAutour(c, R, liste) { for (const z of [...(M.zomb ? M.zomb.values() : []), ...(M.lickers || [])]) if (z.g && Math.hypot(z.x - c.x, z.z - c.z) < R) { if (z.g.visible) liste.add(z); z.g.visible = false; } }
 function preparerIntro2(moi) { const p = moi.g.position.clone(), dir = dirDegagee(p), cote = new THREE.Vector3(dir.z, 0, -dir.x), eq = equipierVivant();
   if (eq) { let s = 1; for (const k of [1, -1]) if (M.L.limites(p.x + cote.x * 1.1 * k, p.z + cote.z * 1.1 * k)) { s = k; break; }
@@ -11428,7 +11436,7 @@ function preparerIntro2(moi) { const p = moi.g.position.clone(), dir = dirDegage
   const hel = creerHelico(); M.scene.add(hel); hel.visible = false; hel.rotation.y = Math.atan2(dir.z, -dir.x);   // (il arrive de face, et passe au-dessus d'eux, vers l'arrière)
   { const geo = new THREE.ConeGeometry(1, 1, 24, 1, true); geo.translate(0, -.5, 0); const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
     cone.scale.set(5, 46, 5); cone.position.y = .6; hel.add(cone); hel.userData.cone = cone; }   // (son projecteur fouille le sol, devant lui… sans les trouver)
-  const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
+  const helA = sonHelico(12);
   return { moi, eq, gens, dir, p, mid, yaw: Math.atan2(dir.x, dir.z), hel, helA, caches: new Set(), dit: 0,
     camF: mid.clone().addScaledVector(dir, r).setY(p.y + 1.5), viseF: mid.clone().setY(p.y + 1.15), D0: mid.clone().addScaledVector(dir, 34).setY(p.y + 46), F0: mid.clone().addScaledVector(dir, -55).setY(p.y + 44) }; }   // (haut : au-dessus des toits, il passe juste au-dessus d'eux)
 function finIntro2(S) { if (!S || S.fini) return; S.fini = true; M.scene.remove(S.hel); try { S.helA.pause(); } catch (e) {} sonsCourts.delete(S.helA); for (const q of S.gens) q.poseCine = null; for (const z of S.caches) z.g.visible = true; }
@@ -11470,7 +11478,7 @@ function cineSurvol(moi, [cri, reponse]) {
     const tache = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), new THREE.MeshBasicMaterial({ color: 0xeef3ff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); tache.rotation.x = -Math.PI / 2; sc.add(tache); hel.userData.tache = tache; }   // (son projecteur fouille le sol, devant lui… mais pas là où nous sommes)
   // (il arrive de face, son projecteur fouille la cour devant nous, puis il passe au-dessus de nos têtes… sans nous voir)
   hel.rotation.y = Math.atan2(dir.z, -dir.x);   // (le nez vers +x : tourné dans le sens du vol, vers nous)
-  const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
+  const helA = sonHelico(12);
   const eq = (M.equipe || []).map((e, k) => !e.mort && M.gens.get(EQUIPIER(k))).find(Boolean), autre = eq ? eq.info.numero : M.moiNum;
   const haut = p.clone().addScaledVector(dir, 20).setY(p.y + 19), vise = cam.position.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(6)), vise0 = vise.clone(), t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0;
   const fin = () => { if (fini || !M) return; fini = true; moi.g.visible = true; sc.remove(hel); sc.remove(hel.userData.tache); try { helA.pause(); } catch (e) {} sonsCourts.delete(helA); finCine(); placerCamera(true); };
@@ -11612,7 +11620,7 @@ function cineEvac(m) {
   const hel = creerHelico(); sc.add(hel); const hp0 = M.L.helicoPos, dep = hp0 ? new THREE.Vector3(hp0[0], hp0[1], hp0[2]) : new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35), haut = new THREE.Vector3(H.x, H.y + 24, H.z), ry0 = hp0 ? Math.atan2(Math.sin(hp0[3]), Math.cos(hp0[3])) : .6;   /* (l'angle ramené entre −π et π : il pivotait de plusieurs tours sur lui-même avant de se poser) */ hel.position.copy(dep); hel.rotation.y = ry0;
   const fum = []; for (let i = 0; i < 34; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, opacity: 0 })); sc.add(sp); fum.push({ sp, a: Math.random() * 7, v: .5 + Math.random(), d: Math.random() * 1.2 }); }
   const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
-  const helA = new Audio("sons/apo-helico.mp3"); helA.loop = true; helA.volume = 0; sonsCourts.add(helA); helA.play().catch(() => {});
+  const helA = sonHelico(8);
   // la musique (« The Mansion Explodes ») : la cinématique est calée dessus — l'hélico se pose sur le silence (10 s), la caserne explose sur le grand coup (26 s)
   const mus = M.musEvac || new Audio("sons/re-evil-eye.mp3"); M.musEvac = null; mus.currentTime = 0; mus.volume = 1; sonsCourts.add(mus);   /* (« The Evil Eye » (RE2) : elle part quand l'hélicoptère arrive au-dessus du H, et s'achève juste avant que la caserne explose) */
   sonBruit(1.4, 700, .7);   // (le fumigène éclate)
@@ -11630,7 +11638,7 @@ function cineEvac(m) {
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
     if (u > 4.5 && !mus.parti) { mus.parti = true; mus.play().catch(() => {}); }
-    helA.volume = Math.max(0, Math.min(.45, u / 5)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);
+    helA.volume = Math.max(0, Math.min(.95, .25 + u / 6)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);   /* (il approche, se pose — au plus fort —, puis redécolle et s'éloigne) */
     if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
     else if (u < 5.5) { const k = lisse((u - 2.5) / 3); hel.position.lerpVectors(dep, haut, k); hel.rotation.z = Math.sin(k * Math.PI) * .18; hel.rotation.y = ry0 * (1 - k);   // il vient se placer au-dessus du H…
       placer(H.x + 11, H.y + 3, H.z - 9, hel.position.x, hel.position.y, hel.position.z, .06); }
@@ -11707,7 +11715,12 @@ function sonBruit(duree, coupure, vol) {   // le coup de feu (et le « clic » �
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
     const src = actx.createBufferSource(); src.buffer = b; const f = actx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = coupure; const g = actx.createGain(); g.gain.value = vol;
     src.connect(f).connect(g).connect(actx.destination); src.start(); } catch (e) {} }
-const sonTir = (v = 1) => sonBruit(.28, 1600, .95 * v), sonVide = () => sonBruit(.04, 6000, .4);
+/* Resident Evil : le vrai coup de feu (décodé une fois, joué sans délai à chaque tir) ; ailleurs, le bruit synthétique */
+let bufTir = null, bufTirP = null;
+function tirRE(v) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (!bufTirP) bufTirP = fetch("sons/re-tir.mp3").then(r => r.arrayBuffer()).then(a => new Promise((ok, ko) => actx.decodeAudioData(a, ok, ko))).then(b => (bufTir = b)).catch(() => null);
+    if (!bufTir) return false; const s = actx.createBufferSource(), g = actx.createGain(); s.buffer = bufTir; s.playbackRate.value = .96 + Math.random() * .08; g.gain.value = Math.min(1, .85 * v); s.connect(g).connect(actx.destination); s.start(); return true; } catch (e) { return false; } }
+const sonTir = (v = 1) => { if (!(modeRE() && tirRE(v))) sonBruit(.28, 1600, .95 * v); }, sonVide = () => sonBruit(.04, 6000, .4);
 const moiApo = () => M && M.moiNum && M.gens.get(M.moiNum);
 const etageDe = p => p && p.etg ? p.etg.n : 0;
 // où les zombies peuvent marcher : le lieu, sans la salle de repos ; dans les bâtiments, le couloir de leur étage
@@ -16306,6 +16319,7 @@ function connecter() {
   const ws = new WebSocket(url); M.ws = ws; let ouverte = false;
   clearInterval(M.pingT); M.pingT = setInterval(() => { if (M && M.ws === ws && ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);   // (la connexion reste éveillée)
   ws.onopen = () => { ouverte = true; M.echecs = 0; if (M.recoInfo) { M.recoInfo = false; ctx.surInfo && ctx.surInfo("✅ Reconnecté !"); } const moiR = M.lieu && M.moiNum && M.gens.get(M.moiNum), ici = moiR && M.L && M.L.limites && M.L.limites(moiR.g.position.x, moiR.g.position.z) ? [moiR.g.position.x, moiR.g.position.z] : M.posEntree;
+    if (moiR && M.scene && (estApo(M.lieu) || M.cine)) { envoyerWS({ t: "entrer", lieu: M.lieu, x: moiR.g.position.x, z: moiR.g.position.z }); return; }   /* (Resident Evil, ou une cinématique : on rejoint le lieu sans le reconstruire — rien ne saute, la scène continue) */
     changerLieu(M.lieu || ctx.lieuDepart || "grande", M.lieu ? ici : null, M.lieu && moiR ? M.yaw : undefined); };   // (après une coupure : on reprend là où l'on était, pas à l'entrée du lieu)
   ws.onmessage = ev => {
     if (!M) return; let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -16314,9 +16328,10 @@ function connecter() {
     if (m.t === "rtc") { voixRtc(m.de, m.d || {}); return; }
     if (m.t === "etat") {
       if (m.lieu !== M.lieu) return; setTimeout(voixLieu, 0);
-      M.moiNum = m.moi;
-      if (!M.gens.has(m.moi)) ajouterAncien({ ...ctx.moiInfo(), numero: m.moi, x: M.posEntree[0], z: M.posEntree[1] });   // (déjà là après un passage sans coupure)
-      m.gens.forEach(ajouterAncien);
+      M.moiNum = m.moi; const dejaLa = M.gens.get(m.moi);
+      if (!dejaLa) ajouterAncien({ ...ctx.moiInfo(), numero: m.moi, x: M.posEntree[0], z: M.posEntree[1] });   // (déjà là après un passage sans coupure)
+      m.gens.forEach(q => { if (dejaLa && q.numero === m.moi) return; ajouterAncien(q); });   /* (une coupure de réseau, puis la reconnexion : on reste où l'on est — pas de saut au milieu de la cour, la cinématique continue) */
+      if (dejaLa) envoyerWS({ t: "aller", x: dejaLa.g.position.x, z: dejaLa.g.position.z });
       ajouterPNJ(); ajouterDJ(); ajouterBarman();
       M.fil = m.dits || []; ctx.surFil && ctx.surFil(M.fil);
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
