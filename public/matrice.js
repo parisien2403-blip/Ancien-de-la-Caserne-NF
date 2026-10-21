@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.22";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.23";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8305,7 +8305,10 @@ export async function ouvrir(ctx) {
   let erreurVue = 0;
   let dernImg = 0;
   rendu.setAnimationLoop(t => { if (PETIT && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
-    try { image(t); } catch (e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } } });
+    try { image(t); } catch (e) { signalerErreur(e); } });
+  /* une erreur : envoyée à l'administrateur (une fois toutes les 8 secondes au plus) */
+  function signalerErreur(e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } }
+  M.signalerErreur = signalerErreur;
   function image(t) {
     if (!M || !M.scene) return;
     const brut = t - avant, dt = Math.min(.05, brut / 1000); avant = t; M.dtCam = dt;
@@ -8520,7 +8523,7 @@ export async function ouvrir(ctx) {
     if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
-    animerCercles(t); ambianceApo(); animerApo(performance.now(), dt);
+    animerCercles(t); ambianceApo(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
@@ -11497,11 +11500,12 @@ const PAROLES_SURVOL = [["Hé ! Ici ! On est là !", "Il ne nous voit pas… Il 
   ["L'hélico ! Par ici !", "Encore raté… Sans fumigène, il ne nous verra jamais ! Cherchons partout."],
   ["Il repasse !", "Trop haut, et avec ce brouillard… Trouvons ce fumigène, vite !"]];
 const PAROLES_SURVOL_GPS = [["L'hélico de Brad ! Ici !", "Il ne nous voit toujours pas… Le fumigène, vite : la balise est sur le GPS."], ["Il repasse !", "Il tourne en rond, il nous cherche… Allumons ce fumigène sur le H !"]];
-function sousUnToit(moi) { const p = moi.g.position, r = M.obstTir && M.obstTir.ray || new THREE.Raycaster(); r.set(new THREE.Vector3(p.x, p.y + 2.2, p.z), new THREE.Vector3(0, 1, 0)); r.near = 0; r.far = 40;
-  return r.intersectObjects(M.scene.children, true).some(h => h.object.isMesh && h.object.visible && !h.object.userData.perso && h.face && !(h.object.material && h.object.material.transparent)); }
+/* au-dessus de nous, un toit ? (un rayon vers le ciel) — son propre rayon, qui connaît la caméra : les flammes et la fumée (des images plates) en ont besoin ; sans elle, il plantait à chaque image et tout le jeu se figeait */
+function sousUnToit(moi) { try { const p = moi.g.position, r = M.rayToit || (M.rayToit = new THREE.Raycaster()); r.camera = M.camera; r.set(new THREE.Vector3(p.x, p.y + 2.2, p.z), new THREE.Vector3(0, 1, 0)); r.near = 0; r.far = 40;
+  return r.intersectObjects(M.scene.children, true).some(h => h.object.isMesh && !h.object.isSprite && h.object.visible && !h.object.userData.perso && h.face && !(h.object.material && h.object.material.transparent)); } catch (e) { return false; } }
 function survolApo(moi, now) {
   if (!M.survolT || now < M.survolT || M.bradEnCours || M.cine || M.evac || APO.zombieFin || !M.L.apo || M.L.sh || M.L.interieur || (M.fumi && M.fumi.trouve) || moi.info.mortT) return;
-  if (sousUnToit(moi)) { M.survolT = now + 5000; return; }   /* (à l'abri — un porche, une voûte — on ne le verrait pas : il passera plus tard) */
+  M.survolT = now + 5000; if (sousUnToit(moi)) return;   /* (à l'abri — un porche, une voûte — on ne le verrait pas : il passera plus tard) */
   const p = moi.g.position; if ([...(M.zomb || new Map()).values()].some(z => !z.mortT && Math.hypot(z.x - p.x, z.z - p.z) < 9)) { M.survolT = now + 4000; return; }   // (pas au milieu d'une attaque)
   M.survolT = now + 150000 + Math.random() * 60000; { const P = M.gps ? PAROLES_SURVOL_GPS : PAROLES_SURVOL; cineSurvol(moi, P[Math.min(M.survolN || 0, P.length - 1) % P.length]); } M.survolN = (M.survolN || 0) + 1;
 }
@@ -14503,7 +14507,8 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
 function changerLieu(id, arrivee, yaw = 0, face = false) {
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
-  if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { porteRE(() => { M.sansPorte = true; try { changerLieu(id, arrivee, yaw, face); } finally { M.sansPorte = false; } }); return; }   /* (à Resident Evil : la porte qui s'ouvre, d'un lieu à l'autre) */
+  if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { const n = voile("background:#000;opacity:1");   /* (à Resident Evil : un bref fondu au noir, d'un lieu à l'autre — plus de porte qui s'ouvre) */
+    setTimeout(() => { if (!M) return; M.sansPorte = true; try { changerLieu(id, arrivee, yaw, face); } finally { M.sansPorte = false; } if (n) { n.style.transition = "opacity .45s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 500); } }, 40); return; }
   if (universOccupe(id)) { refusUnivers(id); return; }
   if (M.vfMenu) M.vfMenu.fermer();
   if (estApo(M.lieu) && !estApo(id)) { couperSonsApo(); M.fumi = null; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; M.evac = false; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.flaques = []; M.ctx.surApoMort && M.ctx.surApoMort(false); }   /* (mort ou pas : on ressort entier, sans l'écran « YOU DIED ») */
