@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.33";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.34";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2398,7 +2398,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(k, 64, 70); });
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
         if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur et ses invités voient seuls ; il mène à l'appartement (une carte à part)
-          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart)); PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
+          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || (M.ctx.moiInfo().appart && M.appartOuvert)));   /* (les invités : seulement quand l'administrateur l'a ouvert) */ PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
           L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: 0, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
@@ -6025,7 +6025,8 @@ function construireSantaCarla(A, L, scene) {
 /* là où poser une fenêtre par-dessus le monde : l'élément en plein écran s'il y en a un (sinon elle resterait cachée derrière), sinon la page */
 const hoteFS = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
 function construireAppart(A, L, scene) {
-  const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
+  const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;
+  L.meublesAppart = []; const nMb = {}, mb = (g, nom) => { nMb[nom] = (nMb[nom] || 0) + 1; L.meublesAppart.push({ id: nom + "#" + nMb[nom], nom, g }); return g; };   // (les meubles qu'on peut déplacer : l'aménagement)   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
   const niveau = z => z > ZM1 ? H4 : 0;
   const peinture = A.mat({ color: 0xe6d9bd, roughness: .95 }), blanc = A.mat({ color: 0xf2efe6, roughness: .5 }), bois = A.mat({ color: 0x6a4024, roughness: .55 });
   /* le carrelage de la cuisine : un damier de grands carreaux, terre cuite et blanc, posés droit */
@@ -6054,7 +6055,7 @@ function construireAppart(A, L, scene) {
       for (const t of (tr || []).filter(t => t.y0 < .05).sort((p, q) => p.c - q.c)) { fin(u, t.c - t.w / 2); u = t.c + t.w / 2; } fin(u, a); };
     plinthe("z", x0 + E / 2, z0, z1, trous.x0, 1); plinthe("z", x1 - E / 2, z0, z1, trous.x1, -1); plinthe("x", z0 + E / 2, x0 + E, x1 - E, trous.z0, 1); plinthe("x", z1 - E / 2, x0 + E, x1 - E, trous.z1, -1); };
   const porte = (c, w = .85) => ({ c, w, y0: 0, h: 2.1, porte: true }), fen = (c, w, y0, h) => ({ c, w, y0, h });
-  const papierPeint = (f, lx, ly, eclat = .16, teinte = 0xffffff) => { const tp = new THREE.TextureLoader().load(f); tp.colorSpace = THREE.SRGBColorSpace; tp.wrapS = tp.wrapT = THREE.RepeatWrapping; tp.anisotropy = 8;   // (un papier peint : son image, la taille réelle d'un raccord, en mètres)
+  const papierPeint = (f, lx, ly, eclat = .16, teinte = 0xffffff) => { const tp = typeof f === "string" ? new THREE.TextureLoader().load(f) : new THREE.CanvasTexture(f); tp.colorSpace = THREE.SRGBColorSpace; tp.wrapS = tp.wrapT = THREE.RepeatWrapping; tp.anisotropy = 8;   // (un papier peint : son image, la taille réelle d'un raccord, en mètres)
     return (lg, hh, u0, y0) => { const t = tp.clone(); t.repeat.set(lg / lx, hh / ly); t.offset.set(u0 / lx, y0 / ly); t.needsUpdate = true; return A.mat({ map: t, color: teinte, roughness: .85, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: eclat }); }; };   // (un léger éclat : ses vraies couleurs, même dans la pénombre)
   // ---------- le plan (les portes : sur la grille des chemins, tous les 35 cm) ----------
   const XC = 1;                          // le couloir : 2 m de large, de x = −1 à x = 1
@@ -6075,7 +6076,7 @@ function construireAppart(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, y, z1 - z0), marche, 0, y / 2, (z0 + z1) / 2, false);
       A.ajoute(new THREE.BoxGeometry(XC * 2 - .2, .03, .04), nez, 0, y - .015, z0 + .02, false); } }
   // en bas : les chambres, la salle de bain, le placard
-  piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] });                       // la première chambre
+  piece(XG, -XC, ZC[0], 0, "fonce", { x1: [porte(P.ch1)], x0: [fen(-1.9, FW, FY, FH)] }, papierPeint(texNuagesZ || (texNuagesZ = toileNuages()), .7, .7, .22));   /* (bleu ciel, semé de petits nuages) */                       // la première chambre
   piece(XG, -XC, Z2, ZC[0], "fonce", { x1: [porte(P.ch2)], x0: [fen(-6.1, FW, FY, FH)] }, papierPeint("images/appart/tapisserie-chambre2.webp", .365, .181));   // (le papier peint à petites fleurs : un raccord de 36,5 × 18,1 cm)                  // la deuxième chambre
   piece(XC, XD, ZD, 0, "fonce", { x0: [porte(P.ch3)], x1: [fen(-1.9, FW, FY, FH)] });                        // la troisième chambre
   piece(XC, XB, ZC[1], ZD, "carreaux", { x0: [porte(P.sdb, .8)], x1: [fen((ZD + ZC[1]) / 2, .5, 1.75, .45)] }); // la salle de bain (la lucarne au-dessus de la douche)
@@ -6293,7 +6294,7 @@ function construireAppart(A, L, scene) {
       x.font = "9px Arial"; (seche ? ["120", "90", "60", "30", "0"] : ["A", "B", "C", "D", "E", "F"]).forEach((t, i, T2) => { const a = -Math.PI * .8 + i * Math.PI * 1.6 / (T2.length - 1); x.fillText(t, 426 + 52 * Math.cos(a), 54 + 50 * Math.sin(a)); });
       if (!seche) { x.fillStyle = "#4a4d50"; x.font = "10px Arial"; x.fillText("I    II    ❀", 20, 82); } });
     // la machine à laver (hublot, bac à produits, programmateur) ou le sèche-linge (sa grande porte, le filtre)
-    const machine = (x, seche) => { const g = new THREE.Group(), W = .6, H = .85, D = .58; g.position.set(x, H4, ZC[3] + E / 2 + D + .015); scene.add(g);
+    const machine = (x, seche) => { const g = new THREE.Group(), W = .6, H = .85, D = .58; g.position.set(x, H4, ZC[3] + E / 2 + D + .015); scene.add(g); mb(g, seche ? "Sèche-linge" : "Machine à laver");
       caisse(g, W, H - .05, D, email, 0, .05); bx(g, W - .03, .05, D - .05, plast, 0, .025, -D / 2); bx(g, W - .03, .006, .01, grisC, 0, .05, .002);   // (la caisse ; le socle en retrait)
       caisse(g, W + .006, .03, D + .01, A.mat({ color: 0xf0efe9, roughness: .25 }), 0, H - .03, .004, .008);   // (le dessus)
       const yb = H - .13; bx(g, W - .016, .1, .03, plast, 0, yb + .05, .006); const pb = new THREE.Mesh(new THREE.PlaneGeometry(W - .02, .1), bandeau(seche)); pb.position.set(0, yb + .05, .0215); g.add(pb);   // (le bandeau)
@@ -6316,7 +6317,7 @@ function construireAppart(A, L, scene) {
       return g; };
     machine(XD - E - 1.0 - .02 - .3, false); machine(XD - E - 1.0 - .02 - .3 - .615, true);
     // le grand frigo, contre le mur de la porte, au milieu entre l'entrée et le mur du fond : 1,85 m, le frigo en haut, le congélateur en bas, les poignées encastrées dans le côté des portes
-    { const g = new THREE.Group(), W = .6, H = 1.85, D = .64; g.position.set(XC + E / 2 + D + .02, H4, (ZC[3] + E / 2 + P.cuisine - .425) / 2); g.rotation.y = Math.PI / 2; scene.add(g);
+    { const g = new THREE.Group(), W = .6, H = 1.85, D = .64; g.position.set(XC + E / 2 + D + .02, H4, (ZC[3] + E / 2 + P.cuisine - .425) / 2); g.rotation.y = Math.PI / 2; scene.add(g); mb(g, "Frigo");
       caisse(g, W, H - .08, D - .05, email, 0, .08, -.05, .01); bx(g, W - .03, .08, D - .1, noir, 0, .04, -D / 2); for (let i = 0; i < 4; i++) bx(g, W - .1, .01, .004, grisF, 0, .018 + i * .016, -.048);   // (la caisse ; la grille du bas)
       const hb = .7, porte = (y0, y1) => { caisse(g, W - .004, y1 - y0, .05, email, 0, y0, 0, .015); bx(g, W - .03, y1 - y0 - .03, .004, A.mat({ color: 0xd2d1cc, roughness: .6 }), 0, (y0 + y1) / 2, -.052);   // (une porte, son joint)
         bx(g, .022, Math.min(.5, y1 - y0 - .1), .02, A.mat({ color: 0xdcdbd5, roughness: .4 }), -W / 2 + .012, y1 > hb + .1 ? y0 + .14 + Math.min(.5, y1 - y0 - .1) / 2 : y1 - .05 - Math.min(.5, y1 - y0 - .1) / 2, -.006); };   // (la poignée encastrée)
@@ -6332,7 +6333,7 @@ function construireAppart(A, L, scene) {
         for (let i = 0; i < 6; i++) for (let j = 0; j < 7; j++) x.fillText(String(1 + i * 7 + j).slice(0, 2), 16 + j * 25, 188 + i * 15); })); cal.position.set(-.1, 1.45, .003); cal.rotation.z = -.03; g.add(cal);
       const ai2 = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .01, 14), A.mat({ color: 0xd8262a, roughness: .4 })); ai2.rotation.x = Math.PI / 2; ai2.position.set(-.1, 1.58, .009); g.add(ai2); }
     // le congélateur coffre, à côté de l'enfilade : le couvercle qu'on soulève par sa poignée, la serrure, les voyants
-    { const g = new THREE.Group(), W = .95, H = .86, D = .66; g.position.set((XC + XD) / 2 + .2 - .9 - .05 - W / 2, H4, ZC[4] - E / 2 - D - .01); g.rotation.y = Math.PI; scene.add(g);
+    { const g = new THREE.Group(), W = .95, H = .86, D = .66; g.position.set((XC + XD) / 2 + .2 - .9 - .05 - W / 2, H4, ZC[4] - E / 2 - D - .01); g.rotation.y = Math.PI; scene.add(g); mb(g, "Congélateur coffre");
       caisse(g, W, H - .12, D, email, 0, .05, 0, .02); bx(g, W - .04, .05, D - .04, grisF, 0, .025, -D / 2);   // (la cuve ; le socle)
       caisse(g, W + .01, .07, D + .012, email, 0, H - .07, .006, .02); bx(g, W - .01, .008, D - .01, grisC, 0, H - .074, -D / 2 + .003);   // (le couvercle, son joint)
       bx(g, .4, .03, .03, A.mat({ color: 0xe8e7e1, roughness: .4 }), 0, H - .06, .018); bx(g, .36, .012, .025, grisF, 0, H - .078, .015);   // (la poignée, son creux)
@@ -6343,7 +6344,7 @@ function construireAppart(A, L, scene) {
   }
   /* la table de cuisine (d'après la photo) : ronde, le plateau en bois clair verni, le bandeau dessous, quatre pieds tournés en bois plus foncé ;
      trois chaises bistrot en bois courbé, sans coussin, autour */
-  { const xt = 3.15, zt = 5.2, R = .56, H = .75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
+  { const xt = 3.15, zt = 5.2, R = .56, H = .75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g); mb(g, "Table ronde de la cuisine");
     const plateau = A.mat({ map: tex(toile(512, 512, (x, w, h) => { x.fillStyle = "#a8743e"; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.strokeStyle = hasard(i * 2.3) > .5 ? `rgba(196,140,80,${.2 + .25 * hasard(i)})` : `rgba(110,62,26,${.15 + .25 * hasard(i * 7)})`; x.lineWidth = .7 + 2.5 * hasard(i * 3.1);
         x.beginPath(); const y0 = h * hasard(i * 1.7); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 6 * Math.sin(xx * .012 + i) + 2 * Math.sin(xx * .07 + i * 3)); x.stroke(); } }), 1, 1), roughness: .22 });
     const boisP = A.mat({ color: 0x7a4422, roughness: .3 }), chantT = A.mat({ color: 0x8a5a2e, roughness: .3 });
@@ -6371,7 +6372,7 @@ function construireAppart(A, L, scene) {
       for (let k = 0; k < 6; k++) pose(new THREE.BoxGeometry(.006, .003, .006), m(0xc89050), .1 + hasard(k) * .2, .002, .1 + hasard(k * 3) * .1); }
     // la chaise bistrot : l'assise ronde, quatre pieds écartés, l'anneau de renfort, le dossier courbé (les deux montants, la traverse cintrée, trois barreaux)
     const boisC = A.mat({ color: 0x8a6440, roughness: .55 }), boisAs = A.mat({ color: 0x96704a, roughness: .45 });
-    const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(x, H4, z); c.rotation.y = ry; scene.add(c); const hs = .46;
+    const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(x, H4, z); c.rotation.y = ry; scene.add(c); mb(c, "Chaise bistrot"); const hs = .46;
       const as = new THREE.Mesh(new THREE.CylinderGeometry(.205, .2, .025, 32), boisAs); as.position.y = hs; c.add(as); const bord = new THREE.Mesh(new THREE.TorusGeometry(.2, .012, 8, 36), boisC); bord.rotation.x = Math.PI / 2; bord.position.y = hs - .015; c.add(bord);
       const tige = (pts, r = .013) => { const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 20, r, 8), boisC); c.add(t); return t; };
       for (const sx of [-1, 1]) tige([[sx * .2, 0, .21], [sx * .175, hs * .5, .17], [sx * .15, hs - .02, .13]], .014);   // (les pieds avant)
@@ -6413,10 +6414,10 @@ function construireAppart(A, L, scene) {
       const cr = new THREE.Mesh(new THREE.TorusGeometry(.025, .004, 6, 12, Math.PI * 1.4), crochet); cr.position.y = .005; cr.rotation.y = Math.PI / 2; h.add(cr); });
   }
   // la cuisine : contre le mur du fond, l'enfilade de chêne (portes fermées, rien dessus)
-  { const g = new THREE.Group(); g.position.set((XC + XD) / 2 + .2, H4, ZC[4] - E - .5); g.rotation.y = Math.PI; scene.add(g); enfiladeChene(g); }
+  { const g = new THREE.Group(); g.position.set((XC + XD) / 2 + .2, H4, ZC[4] - E - .5); g.rotation.y = Math.PI; scene.add(g); enfiladeChene(g); mb(g, "Enfilade en chêne"); }
   /* le chien (découpé dans sa photo), couché sur sa couverture orange rouille, dans le coin de la cuisine entre l'enfilade et le mur de la fenêtre :
      une carte pliée — le haut (la tête, le corps) debout, un peu penché en arrière ; le bas (les pattes de devant) à plat sur la couverture */
-  { const g = new THREE.Group(), xc = XD - E - .48, zc = ZC[4] - E - .42; g.position.set(xc, H4, zc); scene.add(g);
+  { const g = new THREE.Group(), xc = XD - E - .48, zc = ZC[4] - E - .42; g.position.set(xc, H4, zc); scene.add(g); mb(g, "Le chien et sa couverture");
     // la couverture : une laine orange rouille, un peu froissée, un coin replié
     const laine = tex(toile(256, 256, (x, w) => { x.fillStyle = "#b9652e"; x.fillRect(0, 0, w, w); for (let i = 0; i < 2600; i++) { const v = hasard(i * 1.7), u = hasard(i * 2.9); x.fillStyle = v > .5 ? "rgba(90,40,10,.14)" : "rgba(220,140,80,.12)"; x.fillRect(u * w, hasard(i * 4.1) * w, 2, 1 + 3 * v); }
       x.strokeStyle = "rgba(60,20,6,.35)"; x.lineWidth = 3; x.strokeRect(6, 6, w - 12, w - 12); }), 1, 1);
@@ -6434,7 +6435,7 @@ function construireAppart(A, L, scene) {
     const bas = carte(0, V, hB); bas.geometry.translate(0, -hB / 2, 0); bas.rotation.x = -Math.PI / 2; chien.add(bas); }
   /* la chambre 2 : dans le coin à droite de la fenêtre, le lit deux places (d'après la photo) — la tête de lit et le pied en panneaux d'acajou ronceux foncé verni,
      la tête de lit en partie sous la fenêtre ; le couvre-lit à bouquets de roses, comme le papier peint de la cuisine, qui retombe sur les côtés et recouvre le traversin */
-  { const W = 1.48, L = 2.0, g = new THREE.Group(); g.position.set(XG + E / 2 + .2, 0, Z2 + E / 2 + .05 + W / 2); g.rotation.y = Math.PI / 2; scene.add(g);   /* (la tête sous la fenêtre, devant le radiateur ; le lit vers la porte) */
+  { const W = 1.48, L = 2.0, g = new THREE.Group(); g.position.set(XG + E / 2 + .2, 0, Z2 + E / 2 + .05 + W / 2); g.rotation.y = Math.PI / 2; scene.add(g); mb(g, "Lit deux places");   /* (la tête sous la fenêtre, devant le radiateur ; le lit vers la porte) */
     const veine = tex(toile(256, 512, (x, w, h) => { x.fillStyle = "#4a2012"; x.fillRect(0, 0, w, h); for (let i = 0; i < 90; i++) { const px = w * hasard(i * 1.7), lw = 1 + 6 * hasard(i * 2.9); x.fillStyle = hasard(i * 3.3) > .5 ? `rgba(110,48,24,${.25 + .3 * hasard(i)})` : `rgba(30,10,4,${.2 + .3 * hasard(i * 5)})`; x.beginPath(); x.moveTo(px, 0); for (let y = 0; y <= h; y += 32) x.lineTo(px + 4 * Math.sin(y * .02 + i), y); x.lineTo(px + lw + 4 * Math.sin(h * .02 + i), h); for (let y = h; y >= 0; y -= 32) x.lineTo(px + lw + 4 * Math.sin(y * .02 + i), y); x.fill(); } }), 1, 1);
     const acajou = A.mat({ map: veine, roughness: .22, metalness: .05 }), chant = A.mat({ color: 0x3a1a0e, roughness: .3 });
     const b = (dx, dy, dz, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
@@ -6459,7 +6460,7 @@ function construireAppart(A, L, scene) {
   /* la chambre 2, dans le coin de droite (au fond, côté porte) : un bureau simple, noir, sa chaise de bureau, et l'ordinateur de 1997 (d'après la photo) —
      le moniteur cathodique beige sur son pied orientable, la tour aux deux lecteurs de CD et au lecteur de disquettes, le clavier, la souris ;
      on touche l'ordinateur : Windows 95 démarre, avec son Solitaire et son Démineur, et l'écran du moniteur montre la partie en cours */
-  { const g = new THREE.Group(), BW = 1.25, BD = .68, BH = .74; g.position.set(-XC - E / 2 - .02 - BW / 2, 0, Z2 + E / 2 + .01); scene.add(g);
+  { const g = new THREE.Group(), BW = 1.25, BD = .68, BH = .74; g.position.set(-XC - E / 2 - .02 - BW / 2, 0, Z2 + E / 2 + .01); scene.add(g); mb(g, "Bureau et ordinateur");
     const noirB = A.mat({ color: 0x1c1b1d, roughness: .35 }), beige = A.mat({ color: 0xe9e5d8, roughness: .42 }), beigeF = A.mat({ color: 0xd8d3c4, roughness: .5 }), grisF = A.mat({ color: 0x4a4a4c, roughness: .6 }), noir = A.mat({ color: 0x151515, roughness: .6 });
     const b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
     // le bureau : le plateau, les deux joues, le panneau de fond
@@ -6525,7 +6526,7 @@ function construireAppart(A, L, scene) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: et, transparent: true, depthWrite: false })); sp.scale.set(.6, .1125, 1); sp.position.set(-.12, BH + .62, .3); g.add(sp); }
   /* le premier salon : la table de ferme (d'après la photo) — en bois foncé laqué, le plateau épais, les deux pieds en os de mouton et leur traverse chevillée ;
      le bout contre le mur de la porte ; six chaises à dossier à barrettes, l'assise en paille tressée : trois dos au buffet, trois dos à l'entrée */
-  { const TL = 2.0, TD = .82, TH = .76, xt = -XC - E / 2 - .01 - TL / 2, zt = 6.75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g);
+  { const TL = 2.0, TD = .82, TH = .76, xt = -XC - E / 2 - .01 - TL / 2, zt = 6.75, g = new THREE.Group(); g.position.set(xt, H4, zt); scene.add(g); mb(g, "Table de ferme");
     const fil = tex(toile(512, 256, (x, w, h) => { x.fillStyle = "#6a3a1c"; x.fillRect(0, 0, w, h); for (let i = 0; i < 120; i++) { x.strokeStyle = hasard(i * 2.1) > .5 ? `rgba(150,88,46,${.2 + .3 * hasard(i)})` : `rgba(18,8,3,${.25 + .3 * hasard(i * 3)})`; x.lineWidth = .8 + 3 * hasard(i * 5.3); x.beginPath(); const y0 = h * hasard(i * 1.3); x.moveTo(0, y0); for (let xx = 0; xx <= w; xx += 32) x.lineTo(xx, y0 + 5 * Math.sin(xx * .013 + i) + 3 * Math.sin(xx * .05 + i * 2)); x.stroke(); }
         for (let i = 0; i < 5; i++) { const cx = w * hasard(i * 9.1), cy = h * hasard(i * 7.7); x.strokeStyle = "rgba(20,8,2,.45)"; for (let r = 2; r < 14; r += 3) { x.beginPath(); x.ellipse(cx, cy, r * 2.2, r * .7, 0, 0, 7); x.stroke(); } } }), 1, 1);   // (le fil du bois, quelques nœuds)
     const laque = A.mat({ map: fil, roughness: .18, metalness: .05 }), laqueF = A.mat({ color: 0x4e2a14, roughness: .25 });
@@ -6544,7 +6545,7 @@ function construireAppart(A, L, scene) {
       tri([[0, 0], [w, 0], [w / 2, h / 2]], 0); tri([[w, 0], [w, h], [w / 2, h / 2]], Math.PI / 2); tri([[0, h], [w, h], [w / 2, h / 2]], 0); tri([[0, 0], [0, h], [w / 2, h / 2]], Math.PI / 2);
       x.strokeStyle = "rgba(60,40,10,.6)"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, 0); x.lineTo(w, h); x.moveTo(w, 0); x.lineTo(0, h); x.stroke(); }), 1, 1);
     const assise = A.mat({ map: paille, roughness: .85 }), boisCh = A.mat({ color: 0x7a5230, roughness: .4 });
-    const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(xt + x, H4, zt + z); c.rotation.y = ry; scene.add(c); const W = .44, D = .42, hs = .46;
+    const chaise = (x, z, ry) => { const c = new THREE.Group(); c.position.set(xt + x, H4, zt + z); c.rotation.y = ry; scene.add(c); mb(c, "Chaise paillée"); const W = .44, D = .42, hs = .46;
       for (const sx of [-1, 1]) { b(.035, hs, .035, boisCh, sx * (W / 2 - .02), hs / 2, D / 2 - .02, c); const m = b(.04, 1.08, .04, boisCh, sx * (W / 2 - .02), .54, -D / 2 + .02, c); m.rotation.x = -.06; }   // (les pieds avant ; les montants arrière, un peu inclinés)
       for (const [y, h] of [[.66, .07], [.82, .08], [.97, .085]]) { const geo = new THREE.BoxGeometry(W - .04, h, .022, 8, 1, 1), pa = geo.attributes.position; for (let i = 0; i < pa.count; i++) pa.setZ(i, pa.getZ(i) - .03 * (1 - Math.pow(pa.getX(i) / (W / 2), 2)));
         geo.computeVertexNormals(); const s2 = new THREE.Mesh(geo, boisCh); s2.position.set(0, y, -D / 2 + .02 - (y - .5) * .06 + .015); c.add(s2); }   // (les barrettes cintrées)
@@ -6556,7 +6557,7 @@ function construireAppart(A, L, scene) {
   /* le second salon, dans le coin entre la fenêtre et le renfoncement aux étagères : la desserte en acajou sur roulettes (d'après la photo), et dessus la télé des années 80
      (la caisse argentée, l'écran bombé, le panneau des boutons à droite). On passe devant : elle joue les vidéos que l'administrateur a mises dans sa bibliothèque,
      une par chaîne ; on la touche : la télécommande (chaîne suivante, précédente, le son ; et pour l'administrateur, la bibliothèque) */
-  { const g = new THREE.Group(); g.position.set(XS + E / 2 + .42, H4, ZC[6] + E / 2 + .98); g.rotation.y = 1.2; scene.add(g);
+  { const g = new THREE.Group(); g.position.set(XS + E / 2 + .42, H4, ZC[6] + E / 2 + .98); g.rotation.y = 1.2; scene.add(g); mb(g, "Desserte et télé");
     const acajou = A.mat({ color: 0x5a2414, roughness: .2 }), laitonT = A.mat({ color: 0xc8a050, metalness: .7, roughness: .3 }), b = (dx, dy, dz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(dx, dy, dz), m); o.position.set(x, y, z); par.add(o); return o; };
     const W = 1.05, D = .6, H = .64;
     for (const y of [H - .0125, .17]) { b(W, .025, D, acajou, 0, y, 0); b(W + .004, .008, D + .004, laitonT, 0, y - .009, 0); }   // (les deux plateaux, leur jonc de laiton)
@@ -6636,7 +6637,7 @@ function construireAppart(A, L, scene) {
         catch (err) { er.textContent = err.message; } }; };
     L.objetsClic = (L.objetsClic || []).concat([{ obj: tv, action: telecommande }]); }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
-  { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); }
+  { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); mb(g, "Buffet en chêne"); }
   // le placard : des étagères
   for (const y of [.5, 1.1, 1.7, 2.3]) A.ajoute(new THREE.BoxGeometry(1.4, .03, .5), bois, 0, y, Z_FOND - 1.8 + E + .25, false);
   A.ajoute(new THREE.CylinderGeometry(.015, .015, 1.4, 8), chrome, 0, 1.9, Z_FOND - .9, false).rotation.z = Math.PI / 2;
@@ -6677,7 +6678,14 @@ function construireAppart(A, L, scene) {
     [2.5, 4.4, 6.76, 7.3], [1.49, 2.46, 6.57, 7.3], [4.5, 5.45, 6.4, 7.3],
     [-5.3, -2.7, 4.7, 5.35], [-3.15, -1.0, 5.85, 7.65], [-7.1, -6.05, 9.8, 10.95],
     [-5.3, -3.2, -8.4, -6.8], [-2.35, -1.0, -8.4, -7.62], [-2.05, -1.5, -7.62, -7.1]], MARGE = .14;
-  L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !MEUBLES.some(([a, b, c, d]) => x > a - MARGE && x < b + MARGE && z > c - MARGE && z < d + MARGE);
+  // (les meubles qu'on déplace : leur emprise suit leur place ; les autres obstacles restent fixes)
+  for (const m of L.meublesAppart) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }
+  const FIXES = MEUBLES.filter(([a, b, c, d]) => !L.meublesAppart.some(m => { const x = (a + b) / 2, z = (c + d) / 2; return x > m.bx[0] && x < m.bx[1] && z > m.bx[2] && z < m.bx[3]; }));
+  L.piecesAppart = R; L.fixesAppart = FIXES;
+  meublesSalonTele(L, scene, mb, R[10], H4); meublesChambres(L, scene, mb, R[1], R[2], R[3]); for (const m of L.meublesAppart) if (!m.base) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }   /* (les nouveaux meubles du salon de la télé) */
+  chargerEtatAppart(L);   // (la place de chaque meuble, enregistrée)
+  L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !FIXES.some(([a, b, c, d]) => x > a - MARGE && x < b + MARGE && z > c - MARGE && z < d + MARGE)
+    && !L.meublesAppart.some(m => !m.range && !m.plat && !m.suspendu && m.bx && x > m.bx[0] - MARGE && x < m.bx[1] + MARGE && z > m.bx[2] - MARGE && z < m.bx[3] + MARGE);
   L.hauteur = (x, z) => z >= ZM1 ? H4 : z <= ZM0 ? 0 : Math.abs(x) < XC ? H4 * Math.ceil((z - ZM0) / ((ZM1 - ZM0) / 4)) / 4 : 0;   // (marche par marche)
   L.sol = sols[0]; L.solsPlus = sols.slice(1);
   // la sortie : le cercle dans l'embrasure de la porte d'entrée ; on ressort devant la porte Z, dans la troisième cour
@@ -6685,6 +6693,229 @@ function construireAppart(A, L, scene) {
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.appart = true;
   L.zone = [-7.7, 7.35, -11.2, 15.4]; L.boite = [XS + .1, XB - .1, Z2 + .1, ZC[7] - .1]; L.plafond = HT - .25;
   L.depart = [0, 7.7]; L.cam = { pos: [0, 2.4, 10], vise: [0, 1.2, 0] };
+}
+/* ===================== l'appartement de l'escalier Z : les meubles qu'on déplace, et l'aménagement (l'administrateur) =====================
+   Chaque meuble a sa place enregistrée (sur le serveur) ; en mode « aménagement » : la vue du ciel, un quadrillage au sol, on touche un meuble
+   pour le prendre, le faire glisser, le tourner, le ranger dans l'inventaire ; on le ressort de l'inventaire pour le poser ailleurs */
+const majBoiteMeuble = m => { m.g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.g); m.bx = [b.min.x, b.max.x, b.min.z, b.max.z]; };
+function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
+  for (const m of L.meublesAppart) { const s = d[m.id]; if (!s) continue; m.range = !!s.r; m.g.visible = !m.range;
+    if (!m.range) { m.g.position.set(s.x, m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(s.x, s.z) : 0), s.z); m.g.rotation.y = s.ry; } majBoiteMeuble(m); } }
+async function chargerEtatAppart(L) { try { const r = await fetch("/api/appart", { headers: { Authorization: "Bearer " + M.ctx.token } }); if (!r.ok) return; const j = await r.json();
+    if (!M) return; M.appartOuvert = !!j.ouvert; if (L && M.L === L) appliquerAmenagement(L, j.meubles); } catch (e) {} }
+function sauverAmenagement(extra = {}) { const L = M && M.L; if (!L || !L.meublesAppart) return; clearTimeout(M.amSauveT);
+  M.amSauveT = setTimeout(() => { const d = {}; for (const m of L.meublesAppart) d[m.id] = { x: +m.g.position.x.toFixed(3), z: +m.g.position.z.toFixed(3), ry: +m.g.rotation.y.toFixed(4), r: m.range ? 1 : 0 };
+    fetch("/api/appart", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ meubles: d, ...extra }) }).catch(() => {}); }, 500); }
+// un meuble peut-il être là : dans une pièce, sans chevaucher un autre meuble ni un obstacle fixe
+function placeMeubleOK(L, m) { majBoiteMeuble(m); const [a, b, c, d] = m.bx, cx = (a + b) / 2, cz = (c + d) / 2, R = L.piecesAppart || [];
+  if (m.suspendu) return R.some(([x0, x1, z0, z1]) => cx > x0 - .3 && cx < x1 + .3 && cz > z0 - .3 && cz < z1 + .3);
+  const dans = (x, z) => R.some(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3);   // (contre le mur : on tolère la marge des passages)
+  if (!dans(cx, cz) || !dans(a + .05, c + .05) || !dans(b - .05, c + .05) || !dans(a + .05, d - .05) || !dans(b - .05, d - .05)) return false;
+  if (m.plat) return true;
+  const sur = ([x0, x1, z0, z1]) => a < x1 - .02 && b > x0 + .02 && c < z1 - .02 && d > z0 + .02;
+  return !(L.fixesAppart || []).some(sur) && !L.meublesAppart.some(o => o !== m && !o.range && !o.plat && !o.suspendu && o.bx && sur(o.bx)); }
+
+// les meubles du second salon (celui de la télé), d'après les demandes : le tapis persan, le canapé et son fauteuil, l'horloge de parquet, les plantes
+let texTapis = null;
+function toileTapis() { return toile(320, 480, (x, w, h) => {
+  const rouge = "#a3201c", bleu = "#1d2547", creme = "#e8dcc0", or = "#c89a4a", rose = "#c97a7a";
+  x.fillStyle = bleu; x.fillRect(0, 0, w, h);
+  const cadre = (m, c, lw) => { x.strokeStyle = c; x.lineWidth = lw; x.strokeRect(m, m, w - 2 * m, h - 2 * m); };
+  cadre(8, creme, 5); cadre(16, rouge, 4); cadre(48, creme, 4); cadre(54, rouge, 3);
+  for (let i = 0; i < 70; i++) { const t = i / 70, per = 2 * (w + h - 128), p = t * per, m = 32; let px, py; if (p < w - 64) { px = m + p; py = m; } else if (p < w - 64 + h - 64) { px = w - m; py = m + p - (w - 64); } else if (p < 2 * (w - 64) + h - 64) { px = w - m - (p - (w - 64) - (h - 64)); py = h - m; } else { px = m; py = h - m - (p - 2 * (w - 64) - (h - 64)); }
+    x.fillStyle = i % 3 ? rose : creme; x.beginPath(); x.arc(px, py, 5, 0, 7); x.fill(); x.fillStyle = rouge; x.beginPath(); x.arc(px, py, 2, 0, 7); x.fill(); }   // (la bordure fleurie)
+  x.fillStyle = rouge; x.fillRect(58, 58, w - 116, h - 116);   // (le champ rouge)
+  for (let i = 0; i < 160; i++) { const px = 64 + Math.random() * (w - 128), py = 64 + Math.random() * (h - 128); x.fillStyle = ["#e8dcc0", "#2a3460", "#c97a7a", "#7a9a8a", "#c89a4a"][i % 5]; x.globalAlpha = .55; x.beginPath(); x.ellipse(px, py, 3 + Math.random() * 4, 2 + Math.random() * 3, Math.random() * 3, 0, 7); x.fill(); } x.globalAlpha = 1;   // (les rinceaux de fleurs)
+  const cx = w / 2, cy = h / 2;
+  for (const [ry, k] of [[h * .33, 1], [-h * .33, -1]]) { x.fillStyle = bleu; x.beginPath(); x.moveTo(cx, cy - ry * .62); x.lineTo(cx - 22, cy - ry * .48); x.lineTo(cx, cy - ry * .34); x.lineTo(cx + 22, cy - ry * .48); x.closePath(); x.fill(); void k; }   // (les pendentifs)
+  for (const [r, c] of [[78, creme], [72, bleu], [54, rouge], [44, creme], [38, bleu], [22, or], [12, rouge]]) { x.fillStyle = c; x.beginPath(); for (let a = 0; a <= 16; a++) { const t = a / 16 * Math.PI * 2, rr = r * (a % 2 ? .86 : 1); x.lineTo(cx + Math.cos(t) * rr, cy + Math.sin(t) * rr * 1.25); } x.fill(); }   // (le médaillon central)
+  for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { x.fillStyle = bleu; x.beginPath(); x.ellipse(58 + qx * (w - 116), 58 + qy * (h - 116), 46, 58, 0, 0, 7); x.fill(); x.fillStyle = creme; x.beginPath(); x.ellipse(58 + qx * (w - 116), 58 + qy * (h - 116), 30, 40, 0, 0, 7); x.fill(); x.fillStyle = rose; x.beginPath(); x.ellipse(58 + qx * (w - 116), 58 + qy * (h - 116), 16, 22, 0, 0, 7); x.fill(); }   // (les écoinçons)
+  cadre(58, creme, 3); }); }
+function meublesSalonTele(L, scene, mb, rect, y0) { const [x0, x1, z0, z1] = rect, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, M3 = (c, r = .8, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+  const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const cy = (g, rt, rb, h, m, x, y, z, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(x, y, z); g.add(o); return o; };
+  const nouveau = (nom, x, z, ry = 0, y = y0) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g); mb(g, nom); return g; };
+  // le tapis persan (le champ rouge, le médaillon bleu, la bordure bleu marine fleurie) : 2 m sur 3
+  { const g = nouveau("Tapis persan", cx, cz); texTapis = texTapis || tex(toileTapis()); const t = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 3.0), new THREE.MeshStandardMaterial({ map: texTapis, roughness: 1 })); t.rotation.x = -Math.PI / 2; t.position.y = .012; t.receiveShadow = true; g.add(t);
+    L.meublesAppart[L.meublesAppart.length - 1].plat = true; }
+  // le canapé en tissu à l'ancienne : velours vieux rose à motifs, accoudoirs roulés, dossier galbé, pieds tournés en bois, coussins
+  const velours = M3(0x9a5a52, .95), boisF = M3(0x4a2c18, .45), coussin = M3(0xb07a68, .95);
+  const assise = (g, W) => { bx(g, W, .22, .78, velours, 0, .32, 0); bx(g, W - .24, .12, .62, coussin, 0, .49, .06); bx(g, W, .5, .2, velours, 0, .63, -.31);
+    const dos = cy(g, .1, .1, W - .1, velours, 0, .88, -.31, 14); dos.rotation.z = Math.PI / 2;   // (le haut du dossier, arrondi)
+    for (const s of [-1, 1]) { bx(g, .16, .3, .78, velours, s * (W / 2 - .08), .5, 0); const a = cy(g, .1, .1, .78, velours, s * (W / 2 - .08), .66, 0, 14); a.rotation.x = Math.PI / 2; }   // (les accoudoirs roulés)
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, .035, .025, .2, boisF, sx * (W / 2 - .1), .1, sz * .3, 10); };   // (les pieds tournés)
+  { const g = nouveau("Canapé en tissu", cx, z1 - .45, Math.PI); assise(g, 2.0); for (const s of [-1, 1]) { const c = bx(g, .4, .38, .14, coussin, s * .45, .72, -.18); c.rotation.x = -.25; } }
+  { const g = nouveau("Fauteuil assorti", x0 + .55, cz + .6, Math.PI / 2); assise(g, .95); }
+  // l'horloge de parquet, victorienne : la caisse en acajou, le fronton en chapeau de gendarme, le cadran crème et laiton, la porte vitrée et son balancier
+  { const g = nouveau("Horloge comtoise victorienne", x1 - .3, z0 + .3, -Math.PI / 4), acaj = M3(0x5a2414, .4), laiton = M3(0xc9a227, .3, { metalness: .8 });
+    bx(g, .56, .3, .36, acaj, 0, .15, 0); bx(g, .48, 1.25, .3, acaj, 0, .92, 0); bx(g, .58, .5, .36, acaj, 0, 1.79, 0); bx(g, .62, .06, .4, acaj, 0, 2.07, 0);
+    const fr = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .38, 20, 1, false, 0, Math.PI), acaj); fr.rotation.set(Math.PI / 2, 0, Math.PI / 2); fr.rotation.set(0, 0, 0); fr.rotation.x = Math.PI / 2; fr.rotation.z = Math.PI / 2; fr.scale.set(1, 1, .55); fr.position.set(0, 2.1, 0); g.add(fr);
+    for (const s of [-1, 1]) { cy(g, .025, .025, 1.15, acaj, s * .2, .92, .16, 10); cy(g, .03, .03, .06, laiton, s * .2, 2.2, .1, 10); }   // (les colonnettes)
+    const cad = new THREE.Mesh(new THREE.CircleGeometry(.18, 32), new THREE.MeshStandardMaterial({ map: tex(toile(128, 128, c => { c.fillStyle = "#efe4c8"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.strokeStyle = "#b08a3a"; c.lineWidth = 5; c.stroke(); c.fillStyle = "#222"; c.font = "bold 13px Georgia"; c.textAlign = "center"; c.textBaseline = "middle"; ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2 - Math.PI / 2; c.fillText(n, 64 + Math.cos(a) * 46, 64 + Math.sin(a) * 46); }); c.lineWidth = 3; c.strokeStyle = "#111"; c.beginPath(); c.moveTo(64, 64); c.lineTo(64, 30); c.moveTo(64, 64); c.lineTo(88, 72); c.stroke(); })), roughness: .5 }));
+    cad.position.set(0, 1.8, .181); g.add(cad); const bague = new THREE.Mesh(new THREE.TorusGeometry(.185, .015, 8, 32), laiton); bague.position.copy(cad.position); g.add(bague);
+    const vitre = new THREE.Mesh(new THREE.PlaneGeometry(.3, .9), new THREE.MeshStandardMaterial({ color: 0x223, transparent: true, opacity: .35, roughness: .1 })); vitre.position.set(0, .95, .152); g.add(vitre);
+    const bal = new THREE.Group(); bal.position.set(0, 1.4, .1); g.add(bal); cy(bal, .006, .006, .55, laiton, 0, -.28, 0, 6); const disque = cy(bal, .07, .07, .012, laiton, 0, -.58, 0, 24); disque.rotation.x = Math.PI / 2;
+    const tic = () => { if (!g.parent) return; bal.rotation.z = Math.sin(performance.now() / 1000 * Math.PI) * .13; requestAnimationFrame(tic); }; tic(); }   // (le balancier : une seconde par battement)
+  // la grande plante : un caoutchouc (ficus) dans un grand cache-pot en cuivre
+  const feuille = M3(0x2f5a2a, .6), tige = M3(0x4a3a22, .8);
+  const ficus = (g, H) => { cy(g, .2, .16, .38, M3(0xa8643a, .35, { metalness: .5 }), 0, .19, 0, 20); cy(g, .18, .18, .02, M3(0x2a1c12, 1), 0, .37, 0, 20); cy(g, .02, .025, H, tige, 0, .38 + H / 2, 0, 8);
+    for (let i = 0; i < 26; i++) { const a = i * 2.4, yy = .6 + (i / 26) * (H - .2), r = .12 + Math.random() * .22, f = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), feuille); f.scale.set(1, .25, 1.9); f.position.set(Math.cos(a) * r, yy, Math.sin(a) * r); f.rotation.set(.4 * Math.random(), -a, .5); g.add(f); } };
+  { const g = nouveau("Grande plante", x0 + .3, z1 - .3); ficus(g, 1.5); }
+  // les plantes suspendues au plafond : un pot en terre dans un filet de macramé, ses tiges qui retombent
+  const yPlaf = (L.plafond || 3.15) + .2;
+  for (const [px, pz] of [[x1 - .7, cz - .8], [x0 + .9, z0 + .7]]) { const g = nouveau("Plante suspendue", px, pz, 0, y0 + yPlaf - y0); L.meublesAppart[L.meublesAppart.length - 1].suspendu = true; const corde = M3(0xd8c8a0, .95);
+    for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, c = cy(g, .006, .006, .95, corde, Math.cos(a) * .07, -.48, Math.sin(a) * .07, 5); c.rotation.set(Math.sin(a) * .14, 0, -Math.cos(a) * .14); }
+    cy(g, .14, .1, .16, M3(0xa85a32, .85), 0, -1.0, 0, 16); cy(g, .13, .13, .02, M3(0x2a1c12, 1), 0, -.93, 0, 16);
+    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, n = 5 + Math.floor(Math.random() * 4); for (let j = 0; j < n; j++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 4), feuille); f.scale.set(1, .4, 1.5); f.position.set(Math.cos(a) * (.13 + j * .012), -.95 - j * .09, Math.sin(a) * (.13 + j * .012)); g.add(f); } } }   // (les tiges du pothos, qui pendent)
+}
+
+// caser un nouveau meuble dans sa pièce : le dos contre un mur, sans chevaucher les autres (la première fois ; ensuite, sa place enregistrée)
+function caserMeuble(L, m, rect) { const [x0, x1, z0, z1] = rect, W = [x0 - .25, x1 + .25, z0 - .25, z1 + .25], g = m.g; let best = null;
+  for (const ry of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) for (let x = x0; x <= x1 + .001; x += .25) for (let z = z0; z <= z1 + .001; z += .25) {
+    g.position.x = x; g.position.z = z; g.rotation.y = ry; if (!placeMeubleOK(L, m)) continue; const [a, b, c, d] = m.bx, f = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
+    const gaps = [[a - W[0], 1, 0], [W[1] - b, -1, 0], [c - W[2], 0, 1], [W[3] - d, 0, -1]]; let sc = 9;
+    for (const [gp, nx, nz] of gaps) if (nx * f.x + nz * f.z > .9) sc = Math.min(sc, Math.max(0, gp));   // (le dos contre le mur : la face vers la pièce)
+    if (!best || sc < best.sc) best = { sc, x, z, ry }; }
+  if (best) { g.position.x = best.x; g.position.z = best.z; g.rotation.y = best.ry; } majBoiteMeuble(m); }
+// au mur : le dos contre le mur le plus proche, à la hauteur voulue
+function murMeuble(L, m, rect, cote, t = .5, y = 1.55) { const [x0, x1, z0, z1] = rect, g = m.g;
+  if (cote === "x0") { g.position.set(x0 - .23, y, z0 + (z1 - z0) * t); g.rotation.y = Math.PI / 2; } else if (cote === "x1") { g.position.set(x1 + .23, y, z0 + (z1 - z0) * t); g.rotation.y = -Math.PI / 2; }
+  else if (cote === "z0") { g.position.set(x0 + (x1 - x0) * t, y, z0 - .23); g.rotation.y = 0; } else { g.position.set(x0 + (x1 - x0) * t, y, z1 + .23); g.rotation.y = Math.PI; } majBoiteMeuble(m); }
+let texNuagesZ = null, texPSG = null;
+// le papier peint bleu ciel, semé de petits nuages blancs
+function toileNuages() { return toile(256, 256, (x, w, h) => { x.fillStyle = "#a9d4f2"; x.fillRect(0, 0, w, h);
+  const nuage = (cx, cy, k) => { x.fillStyle = "rgba(255,255,255,.95)"; for (const [dx, dy, r] of [[0, 0, 11], [12, -4, 13], [25, 1, 10], [11, 5, 10], [-9, 4, 7], [33, 5, 7]]) { x.beginPath(); x.arc(cx + dx * k, cy + dy * k, r * k, 0, 7); x.fill(); } };
+  for (const [cx, cy, k] of [[30, 40, 1], [150, 30, .8], [90, 120, 1.1], [200, 140, .9], [40, 200, .85], [160, 220, 1]]) { nuage(cx, cy, k); if (cx > w - 60) nuage(cx - w, cy, k); if (cy > h - 30) nuage(cx, cy - h, k); } }); }
+// le drapeau du PSG (d'après la photo) : blanc, le P bleu, le S rouge, le G bleu, le bandeau noir « PARIS SAINT-GERMAIN », ses œillets
+function toilePSG() { return toile(400, 300, (x, w, h) => { x.fillStyle = "#f6f6f4"; x.fillRect(0, 0, w, h);
+  const bloc = (c, l, X) => { x.fillStyle = c; x.fillRect(X, 30, 108, 180); x.fillStyle = "#fff"; x.font = "900 150px 'Arial Black', Impact, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(l, X + 54, 128); };
+  bloc("#2e6fc1", "P", 34); bloc("#e0262e", "S", 146); bloc("#2e6fc1", "G", 258);
+  x.fillStyle = "#1e2230"; x.fillRect(34, 222, 332, 46); x.fillStyle = "#fff"; x.font = "700 30px Arial, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("PARIS SAINT-GERMAIN", w / 2, 246);
+  for (const [px, py] of [[12, 12], [w - 12, 12], [12, h - 12], [w - 12, h - 12]]) { x.fillStyle = "#b08a3a"; x.beginPath(); x.arc(px, py, 6, 0, 7); x.fill(); x.fillStyle = "#555"; x.beginPath(); x.arc(px, py, 3, 0, 7); x.fill(); } }); }
+function meublesChambres(L, scene, mb, R1, R2, R3) { const M3 = (c, r = .8, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+  const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const cy = (g, rt, rb, h, m, x, y, z, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(x, y, z); g.add(o); return o; };
+  const nouveau = (nom, rect) => { const g = new THREE.Group(); g.position.set((rect[0] + rect[1]) / 2, 0, (rect[2] + rect[3]) / 2); scene.add(g); mb(g, nom); return L.meublesAppart[L.meublesAppart.length - 1]; };
+  const noir = M3(0x161618, .35), miroir = M3(0xc8d4dc, .04, { metalness: 1 }), poignee = M3(0xb8b8b8, .3, { metalness: .9 });
+  // la penderie noire, ses deux portes à miroir
+  const penderie = g => { bx(g, 1.2, 2.1, .6, noir, 0, 1.05, 0); for (const s of [-1, 1]) { bx(g, .56, 1.95, .01, miroir, s * .29, 1.06, .305); bx(g, .02, .14, .03, poignee, s * .04, 1.05, .33); } bx(g, 1.24, .06, .64, noir, 0, 2.13, 0); };
+  // le bureau de travail : le plateau en bois clair, le caisson à tiroirs, la chaise
+  const bureau = g => { const bois = M3(0xc8a878, .55); bx(g, 1.3, .04, .65, bois, 0, .74, 0); bx(g, .04, .72, .62, bois, -.63, .36, 0); bx(g, .42, .72, .62, bois, .42, .36, 0); for (let i = 0; i < 3; i++) bx(g, .38, .2, .01, M3(0xb89868, .55), .42, .6 - i * .23, .315);
+    bx(g, .5, .36, .02, M3(0x2a2a2e, .4), -.2, 1.0, -.24); bx(g, .45, .02, .15, M3(0x2a2a2e, .5), -.2, .76, .05);   /* (un écran, un clavier) */
+    const ch = new THREE.Group(); ch.position.set(-.15, 0, .55); ch.rotation.y = Math.PI; g.add(ch); const tissu = M3(0x30343c, .95);
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5, b2 = bx(ch, .03, .025, .3, noir, Math.sin(a) * .15, .07, Math.cos(a) * .15); b2.rotation.y = a; }
+    cy(ch, .025, .025, .34, noir, 0, .25, 0); bx(ch, .46, .08, .44, tissu, 0, .45, 0); bx(ch, .42, .45, .07, tissu, 0, .82, -.24); };
+  // le canapé-lit deux places, déplié : la structure en tissu bleu-gris, le dossier et ses coussins, le matelas, les draps, la couette
+  const canapeLit = (g, cTissu = 0x4a5a72, cCouette = 0x5b8fc8) => { const tissu = M3(cTissu, .95), drap = M3(0xf2f0ea, .9), couette = M3(cCouette, .95);
+    bx(g, 1.62, .3, 2.1, tissu, 0, .15, 0); bx(g, 1.62, .55, .3, tissu, 0, .55, -.95); for (const s of [-1, 1]) bx(g, .16, .45, .9, tissu, s * .73, .45, -.5);
+    bx(g, 1.4, .14, 1.85, drap, 0, .37, .1); bx(g, 1.42, .08, 1.3, couette, 0, .46, .35); for (const s of [-1, 1]) { const o = bx(g, .55, .12, .35, drap, s * .34, .5, -.6); o.rotation.x = -.15; } };
+  { const m = nouveau("Canapé-lit déplié", R1); canapeLit(m.g); caserMeuble(L, m, R1); }
+  { const m = nouveau("Penderie noire à miroirs", R1); penderie(m.g); caserMeuble(L, m, R1); }
+  { const m = nouveau("Bureau de travail et sa chaise", R1); bureau(m.g); caserMeuble(L, m, R1); }
+  { const m = nouveau("Grand miroir debout", R1), g = m.g, cadre = M3(0x2a2a2c, .4);   // (le grand miroir rectangulaire, posé debout contre le mur, un peu incliné)
+    const p2 = new THREE.Group(); p2.rotation.x = -.1; p2.position.z = .08; g.add(p2); bx(p2, .62, 1.62, .04, cadre, 0, .81, 0); bx(p2, .54, 1.54, .01, miroir, 0, .81, .022); caserMeuble(L, m, R1); }
+  { const m = nouveau("Drapeau du PSG", R1); m.suspendu = true; texPSG = texPSG || tex(toilePSG()); const d = new THREE.Mesh(new THREE.PlaneGeometry(1.0, .75), new THREE.MeshStandardMaterial({ map: texPSG, roughness: .9, side: THREE.DoubleSide })); d.position.z = .02; m.g.add(d);
+    murMeuble(L, m, R1, "z1", .5, 1.6); }
+  // la deuxième chambre : la penderie, le lit à barreaux, deux bergères Louis XVI (velours bordeaux, noyer, pieds cannelés)
+  { const m = nouveau("Penderie noire à miroirs", R2); penderie(m.g); caserMeuble(L, m, R2); }
+  { const m = nouveau("Lit à barreaux d'enfant", R2), g = m.g, blanc = M3(0xf4f0e6, .5), matelas = M3(0xe8eef6, .9), couv = M3(0xf2c8d0, .95);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) cy(g, .025, .025, .95, blanc, sx * .62, .475, sz * .32, 8);
+    for (const sz of [-1, 1]) { bx(g, 1.28, .04, .04, blanc, 0, .92, sz * .32); bx(g, 1.28, .04, .04, blanc, 0, .3, sz * .32); for (let i = -7; i <= 7; i++) cy(g, .009, .009, .62, blanc, i * .08, .61, sz * .32, 6); }
+    for (const sx of [-1, 1]) { bx(g, .04, .04, .64, blanc, sx * .62, .92, 0); for (let i = -3; i <= 3; i++) cy(g, .009, .009, .62, blanc, sx * .62, .61, i * .08, 6); }
+    bx(g, 1.2, .1, .6, matelas, 0, .37, 0); bx(g, .7, .04, .55, couv, .2, .44, 0); caserMeuble(L, m, R2); }
+  const bergere = g => { const noyer = M3(0x7a4a24, .45), vel = M3(0x7a1424, .95);
+    for (const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { cy(g, .03, .02, .4, noyer, sx * .27, .2, sz * .24, 10); bx(g, .07, .07, .07, noyer, sx * .27, .42, sz * .24); }   // (les pieds cannelés, les dés de raccord)
+    bx(g, .62, .06, .56, noyer, 0, .43, 0); bx(g, .58, .1, .52, vel, 0, .5, .01);   // (la ceinture, l'assise)
+    bx(g, .56, .62, .05, noyer, 0, .86, -.27); bx(g, .48, .54, .04, vel, 0, .86, -.245);   // (le dossier carré, son cadre)
+    for (const s of [-1, 1]) { bx(g, .05, .05, .42, noyer, s * .29, .7, -.03); bx(g, .05, .22, .05, noyer, s * .29, .58, .17); bx(g, .06, .04, .16, vel, s * .29, .735, -.1); } };   // (les accotoirs, leurs manchettes de velours)
+  for (let i = 0; i < 2; i++) { const m = nouveau("Bergère Louis XVI", R2); bergere(m.g); caserMeuble(L, m, R2); }
+  // la troisième chambre (des enfants) : le lit superposé, le canapé-lit, la commode et sa télé, le coffre à jouets, la maison de Barbie, le bureau d'écolier
+  if (!R3) return;
+  { const m = nouveau("Lit superposé", R3), g = m.g, pin = M3(0xc89a5e, .55), matelas = M3(0xeef2f6, .9), c1 = M3(0xd8443c, .95), c2 = M3(0x3c6ad8, .95);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) bx(g, .06, 1.7, .06, pin, sx * .47, .85, sz * 1.0);
+    for (const y of [.3, 1.35]) { for (const sz of [-1, 1]) bx(g, 1.0, .12, .04, pin, 0, y, sz * 1.0); for (const sx of [-1, 1]) bx(g, .04, .12, 2.0, pin, sx * .47, y, 0); bx(g, .9, .12, 1.9, matelas, 0, y + .1, 0); bx(g, .92, .06, 1.3, y < 1 ? c1 : c2, 0, y + .19, .3); bx(g, .5, .1, .3, matelas, 0, y + .21, -.75); }
+    for (const sz of [-1, 1]) bx(g, 1.0, .05, .04, pin, 0, 1.68, sz * 1.0); for (const z of [-.6, -.2, .2]) bx(g, .04, .05, .04, pin, .47, 1.62, z); bx(g, .04, .3, 1.3, pin, .47, 1.58, -.2);   // (la barrière du haut)
+    for (const y of [.55, .8, 1.05]) bx(g, .04, .04, .4, pin, .5, y, .78); caserMeuble(L, m, R3); }   // (l'échelle)
+  { const m = nouveau("Canapé-lit déplié", R3); canapeLit(m.g, 0x8a3a5a, 0xf0b8c8); caserMeuble(L, m, R3); }
+  { const m = nouveau("Commode et sa télé", R3), g = m.g, blanc = M3(0xf2efe8, .5), bouton = M3(0xd8b048, .3, { metalness: .7 });
+    bx(g, .9, .8, .45, blanc, 0, .4, 0); for (let i = 0; i < 3; i++) { bx(g, .84, .22, .01, M3(0xe8e4dc, .5), 0, .65 - i * .25, .226); for (const s of [-1, 1]) bx(g, .06, .02, .03, bouton, s * .22, .65 - i * .25, .24); }
+    const tv = new THREE.Group(); tv.position.set(0, .8, -.02); g.add(tv); bx(tv, .5, .4, .4, M3(0x2a2a2c, .5), 0, .2, 0); const ec = bx(tv, .4, .3, .01, M3(0x101820, .15, { emissive: 0x1a2a40 }), 0, .21, .2); void ec; bx(tv, .5, .04, .4, M3(0x1a1a1c, .5), 0, .02, 0);
+    caserMeuble(L, m, R3); }
+  { const m = nouveau("Coffre à jouets de pirate", R3), g = m.g, bleu = M3(0x2a64c8, .35), jaune = M3(0xf0c020, .4), noirP = M3(0x1a1a1a, .5);
+    bx(g, .8, .42, .48, bleu, 0, .21, 0); const cv = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .8, 18, 1, false, 0, Math.PI), bleu); cv.rotation.z = Math.PI / 2; cv.position.y = .42; g.add(cv);
+    for (const x of [-.3, 0, .3]) { bx(g, .05, .43, .49, jaune, x, .215, 0); const b2 = new THREE.Mesh(new THREE.TorusGeometry(.245, .02, 6, 18, Math.PI), jaune); b2.rotation.y = Math.PI / 2; b2.position.set(x, .42, 0); g.add(b2); }   // (les ferrures, en plastique jaune)
+    bx(g, .12, .14, .02, jaune, 0, .4, .25); cy(g, .02, .02, .02, noirP, 0, .38, .262, 10).rotation.x = Math.PI / 2;   // (la serrure)
+    const crane = new THREE.Mesh(new THREE.CircleGeometry(.06, 16), M3(0xffffff, .5)); crane.position.set(-.18, .25, .242); g.add(crane); caserMeuble(L, m, R3); }
+  { const m = nouveau("Maison de poupée Barbie", R3), g = m.g, rose = M3(0xf07aa8, .6), roseC = M3(0xf8c8dc, .6), blanc = M3(0xffffff, .5), violet = M3(0xa04ab8, .6);
+    bx(g, .9, .04, .4, blanc, 0, .02, 0); for (let e = 0; e < 3; e++) { const y = .04 + e * .32; bx(g, .9, .02, .4, roseC, 0, y + .3, 0); bx(g, .9, .3, .02, rose, 0, y + .15, -.19); for (const s of [-1, 1]) bx(g, .02, .3, .4, rose, s * .44, y + .15, 0); bx(g, .02, .3, .4, roseC, -.1, y + .15, 0);
+      bx(g, .14, .1, .01, M3(0x9ad0f0, .2), .25, y + .17, -.175); }   // (trois étages, ouverts devant, des fenêtres)
+    const toit = new THREE.Mesh(new THREE.CylinderGeometry(0, .55, .3, 4, 1), violet); toit.rotation.y = Math.PI / 4; toit.scale.set(1.15, 1, .52); toit.position.y = 1.15; g.add(toit);
+    bx(g, .1, .04, .07, M3(0xf05a8a, .5), -.25, .1, .05); bx(g, .08, .06, .06, blanc, .2, .42, .02); bx(g, .12, .05, .06, M3(0xf0d040, .5), -.28, .74, .03); caserMeuble(L, m, R3); }   // (un petit lit, une baignoire, un canapé)
+  { const m = nouveau("Bureau d'écolier et sa chaise", R3), g = m.g; bureau(g);
+    const cahier = (c, x, z, r) => { const o = bx(g, .17, .012, .22, M3(c, .8), x, .767, z); o.rotation.y = r; }; cahier(0x2a7ad8, .25, .05, .2); cahier(0xe04040, .27, .07, .5); cahier(0x40b060, .5, -.05, -.1);
+    const trousse = cy(g, .035, .035, .2, M3(0x8a40c0, .8), .05, .79, .18, 12); trousse.rotation.z = Math.PI / 2;
+    for (let i = 0; i < 4; i++) { const cr = cy(g, .004, .004, .16, M3([0xe03030, 0x3060e0, 0x30a040, 0xf0c020][i], .6), -.45 + i * .02, .762, .2, 6); cr.rotation.x = Math.PI / 2; cr.rotation.z = .3; }   // (des crayons de couleur)
+    const regle = bx(g, .3, .004, .03, M3(0xd8e8f0, .3, { transparent: true, opacity: .8 }), .3, .764, .25); regle.rotation.y = .3;
+    { const sac = new THREE.Group(); sac.position.set(.75, 0, .35); g.add(sac); bx(sac, .32, .36, .14, M3(0xd83a6a, .7), 0, .18, 0); bx(sac, .3, .14, .02, M3(0xf0a0c0, .7), 0, .22, .075); }   // (le cartable, posé au pied du bureau)
+    caserMeuble(L, m, R3); }
+}
+// le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
+function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
+function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen;
+  if (ok && !M.amenBtn) { const b = document.createElement("button"); b.type = "button"; b.textContent = "🛋️ Aménager"; b.style.cssText = "position:absolute;left:12px;bottom:88px;z-index:7;padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer";
+    for (const ev of ["pointerdown", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation()); b.onclick = e => { e.stopPropagation(); amenager(true); }; M.ctx.conteneur.appendChild(b); M.amenBtn = b; }
+  else if (!ok && M && M.amenBtn) { M.amenBtn.remove(); M.amenBtn = null; } }
+function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) return; const cam = M.camera, cv = M.rendu.domElement;
+  if (!actif) { const S = M.amen; if (!S) return; M.amen = null; for (const [t, f] of S.ecoute) cv.removeEventListener(t, f, true); S.ui.remove(); S.inv.remove(); M.scene.remove(S.grille); M.scene.remove(S.cadre); M.rendu.clippingPlanes = []; if (M.cine === S.cine) finCine(); placerCamera(true); return; }
+  const moi = M.gens.get(M.moiNum), p = moi ? moi.g.position : new THREE.Vector3();
+  const S = M.amen = { cx: p.x, cz: p.z, h: 7, yaw: 0, sel: null, drag: null, pts: new Map(), ecoute: [] };
+  M.rendu.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), (L.plafond || 3.15) - .25)];   // (le plafond s'efface : on voit dans les pièces)
+  // le quadrillage : des carreaux de 25 cm, sur les deux niveaux de l'appartement
+  S.grille = new THREE.Group(); for (const y of [.015, .695]) { const gr = new THREE.GridHelper(30, 120, 0x6a8fd0, 0x9ab4e0); gr.position.set(-.5, y, 2); gr.material.transparent = true; gr.material.opacity = .35; gr.material.depthWrite = false; S.grille.add(gr); } M.scene.add(S.grille);
+  S.cadre = new THREE.Box3Helper(new THREE.Box3(), 0xffd040); S.cadre.visible = false; M.scene.add(S.cadre);
+  S.cine = M.cine = { gel: true, maj: () => { const base = L.hauteur ? L.hauteur(S.cx, S.cz) : 0; cam.position.set(S.cx + Math.sin(S.yaw) * S.h * .45, base + S.h, S.cz + Math.cos(S.yaw) * S.h * .45); cam.lookAt(S.cx, base, S.cz);
+    if (S.sel) { majBoiteMeuble(S.sel); const b = new THREE.Box3().setFromObject(S.sel.g); S.cadre.box.copy(b); S.cadre.visible = S.sel.g.visible; S.cadre.material.color.setHex(S.ok === false ? 0xff3030 : 0xffd040); } else S.cadre.visible = false; } };
+  // les boutons
+  const ui = S.ui = document.createElement("div"); ui.style.cssText = "position:absolute;left:8px;right:56px;top:8px;z-index:12;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none";
+  const btn = (t, f, titre) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = titre || ""; b.style.cssText = "pointer-events:auto;padding:8px 11px;border-radius:16px;border:0;background:rgba(30,24,18,.88);color:#f4ead2;font:700 13px Lato,sans-serif;cursor:pointer"; b.onclick = e => { e.stopPropagation(); f(b); }; ui.appendChild(b); return b; };
+  btn("⟲", () => { S.yaw += Math.PI / 4; }, "Tourner la vue"); btn("⟳", () => { S.yaw -= Math.PI / 4; }, "Tourner la vue"); btn("＋", () => { S.h = Math.max(2.5, S.h / 1.25); }, "Zoomer"); btn("－", () => { S.h = Math.min(22, S.h * 1.25); }, "Dézoomer");
+  const bTourne = btn("↻ Tourner le meuble", () => { if (!S.sel) return; S.sel.g.rotation.y -= Math.PI / 4; valider(); }), bRange = btn("📦 Ranger", () => { if (!S.sel) return; S.sel.range = true; S.sel.g.visible = false; S.sel = null; majInv(); sauverAmenagement(); majBtns(); });
+  btn("🧰 Inventaire", () => { S.inv.hidden = !S.inv.hidden; majInv(); });
+  const bInv = btn(M.appartOuvert ? "🔓 Ouvert aux invités" : "🔒 Fermé aux invités", b => { M.appartOuvert = !M.appartOuvert; b.textContent = M.appartOuvert ? "🔓 Ouvert aux invités" : "🔒 Fermé aux invités"; sauverAmenagement({ ouvert: M.appartOuvert }); }); void bInv;
+  btn("👁 Visiter", () => amenager(false));
+  const majBtns = () => { bTourne.style.opacity = bRange.style.opacity = S.sel ? "1" : ".4"; }; majBtns();
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) ui.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.conteneur.appendChild(ui);
+  // l'inventaire : les meubles rangés ; on en touche un, il apparaît au milieu de la vue, prêt à être placé
+  const inv = S.inv = document.createElement("div"); inv.hidden = true; inv.style.cssText = "position:absolute;right:8px;top:96px;bottom:10px;width:min(240px,62%);z-index:12;overflow:auto;background:rgba(30,24,18,.92);color:#f4ead2;border-radius:12px;padding:8px;font:14px Lato,sans-serif";
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) inv.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(inv);
+  const majInv = () => { const r = L.meublesAppart.filter(m => m.range); inv.innerHTML = `<b>🧰 Inventaire</b> <span style="opacity:.7">(${r.length})</span>` + (r.length ? "" : `<div style="opacity:.7;margin-top:8px">Vide : touche un meuble puis « 📦 Ranger ».</div>`);
+    for (const m of r) { const d = document.createElement("button"); d.type = "button"; d.textContent = m.nom; d.style.cssText = "display:block;width:100%;text-align:left;margin-top:6px;padding:8px;border-radius:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;cursor:pointer";
+      d.onclick = e => { e.stopPropagation(); m.range = false; m.g.visible = true; const y = m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(S.cx, S.cz) : 0); m.g.position.set(Math.round(S.cx * 10) / 10, y, Math.round(S.cz * 10) / 10); S.sel = m; valider(); majInv(); majBtns(); inv.hidden = true; }; inv.appendChild(d); } };
+  const valider = () => { if (!S.sel) return; S.ok = placeMeubleOK(L, S.sel); if (S.ok) { S.sel.dernier = { x: S.sel.g.position.x, z: S.sel.g.position.z, ry: S.sel.g.rotation.y }; sauverAmenagement(); } };
+  // toucher, glisser, pincer
+  const ray = new THREE.Raycaster(), ndc = e => { const r = cv.getBoundingClientRect(); return new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); };
+  const surSol = (e, y) => { ray.setFromCamera(ndc(e), cam); const pt = new THREE.Vector3(); return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -y), pt) ? pt : null; };
+  const quelMeuble = e => { ray.setFromCamera(ndc(e), cam); const vis = L.meublesAppart.filter(m => !m.range && m.g.visible); const hits = ray.intersectObjects(vis.map(m => m.g), true).filter(h => h.point.y < (L.plafond || 3.15) - .25);
+    for (const h of hits) { let o = h.object; while (o) { const m = vis.find(q => q.g === o); if (m) return m; o = o.parent; } } return null; };
+  const ecoute = (t, f) => { cv.addEventListener(t, f, true); S.ecoute.push([t, f]); };
+  ecoute("pointerdown", e => { e.stopPropagation(); e.preventDefault(); S.pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    if (S.pts.size === 2) { S.drag = null; const [a, b] = [...S.pts.values()]; S.pince = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), h: S.h, yaw: S.yaw }; return; }
+    const m = quelMeuble(e); if (m) { S.sel = m; majBtns(); const y = m.g.position.y, pt = surSol(e, m.suspendu ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : y); S.drag = { m, dx: pt ? m.g.position.x - pt.x : 0, dz: pt ? m.g.position.z - pt.z : 0, x0: m.g.position.x, z0: m.g.position.z, bouge: false }; }
+    else { S.drag = { pan: true, x: e.clientX, y: e.clientY, cx: S.cx, cz: S.cz, bouge: false }; } });
+  ecoute("pointermove", e => { if (!S.pts.has(e.pointerId)) return; e.stopPropagation(); e.preventDefault(); S.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (S.pts.size === 2 && S.pince) { const [a, b] = [...S.pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x); S.h = Math.max(2.5, Math.min(22, S.pince.h * S.pince.d / Math.max(20, d))); S.yaw = S.pince.yaw - (ang - S.pince.ang); return; }
+    const D = S.drag; if (!D) return;
+    if (D.pan) { const r = cv.getBoundingClientRect(), k = S.h * 1.1 / r.height, dx = (e.clientX - D.x) * k, dy = (e.clientY - D.y) * k; if (Math.hypot(e.clientX - D.x, e.clientY - D.y) > 6) D.bouge = true;
+      const c = Math.cos(S.yaw), s = Math.sin(S.yaw); S.cx = D.cx - (dx * c + dy * s); S.cz = D.cz - (-dx * s + dy * c); if (!D.bouge) return; S.sel = null; majBtns(); return; }
+    const m = D.m, sol = m.suspendu ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : m.g.position.y, pt = surSol(e, sol); if (!pt) return; D.bouge = true;
+    const x = Math.round((pt.x + D.dx) * 10) / 10, z = Math.round((pt.z + D.dz) * 10) / 10; m.g.position.x = x; m.g.position.z = z; if (!m.suspendu && L.hauteur) m.g.position.y = L.hauteur(x, z); S.ok = placeMeubleOK(L, m); });   // (calé sur une grille de 10 cm)
+  const fin = e => { if (!S.pts.has(e.pointerId)) return; e.stopPropagation(); S.pts.delete(e.pointerId); if (S.pts.size < 2) S.pince = null; const D = S.drag; S.drag = null; if (!D) return;
+    if (D.pan && !D.bouge) { const m = quelMeuble(e); S.sel = m; majBtns(); return; }
+    if (D.m && D.bouge) { if (placeMeubleOK(L, D.m)) { S.ok = true; sauverAmenagement(); } else { D.m.g.position.x = D.x0; D.m.g.position.z = D.z0; if (!D.m.suspendu && L.hauteur) D.m.g.position.y = L.hauteur(D.x0, D.z0); S.ok = placeMeubleOK(L, D.m); } } };   // (là où il ne tient pas : il revient à sa place)
+  ecoute("pointerup", fin); ecoute("pointercancel", fin);
+  ecoute("wheel", e => { e.stopPropagation(); e.preventDefault(); S.h = Math.max(2.5, Math.min(22, S.h * (e.deltaY > 0 ? 1.12 : 1 / 1.12))); });
+  for (const t of ["click", "touchstart", "touchmove", "mousedown", "dblclick"]) ecoute(t, e => { e.stopPropagation(); });
 }
 function construireMess(A, L, scene) {
   const X0 = -10, X1 = 6, CX = (X0 + X1) / 2, Z0 = -12, Z1 = 12, HT = 5.2, LAMB = 1.15, larg = X1 - X0, long = Z1 - Z0;
@@ -8189,6 +8420,7 @@ export async function ouvrir(ctx) {
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
+  M.appartOuvert = false; if (ctx.moiInfo && ctx.moiInfo().appart) setTimeout(() => M && chargerEtatAppart(null), 0);
   if (ctx.surInfo && !ctx.surInfoRE) { const o = ctx.surInfo; ctx.surInfoRE = true; ctx.surInfo = (...x) => { if (M && M.L && M.L.apo && !M.L.sh) return; return o(...x); }; }   /* (Resident Evil : aucun petit message d'aide — le jeu parle par les personnages, pas par des bandeaux) */
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
   // glisser le doigt à gauche ou à droite : tourner la vue ; toucher sans glisser : marcher (ou toucher un ancien)
@@ -8524,7 +8756,7 @@ export async function ouvrir(ctx) {
     if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
-    animerCercles(t); ambianceApo(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
+    animerCercles(t); ambianceApo(); boutonAmenager(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
@@ -14745,7 +14977,7 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) {
+function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.amen) amenager(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
   if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { const n = voile("background:#000;opacity:1");   /* (à Resident Evil : un bref fondu au noir, d'un lieu à l'autre — plus de porte qui s'ouvre) */
