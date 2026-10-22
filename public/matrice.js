@@ -10609,7 +10609,7 @@ function sortirSH() { const G = M.gresil; M.gresil = null; couperGresil(G); bull
    qui brûlent dans la rue, débris, sang séché, lumières qui grésillent. Les lieux s'appellent « z-rue », « z-grande », « z-fetes », « z-etage » :
    même géométrie que les vrais, mais on n'y croise que ceux qui sont passés de l'autre côté. */
 /* l'ambiance sonore dehors, à l'apocalypse (sirènes lointaines, vent, cris) : en boucle, tant qu'on est à l'extérieur */
-let sonApo = null, sonFeu = null, sonRepos = null, sonRE = null, sonG = null;
+let sonApo = null, sonFeu = null, sonRepos = null, sonRE = null, sonG = null, sonFin = null;
 function ambianceApo() {
   const moiR = M && M.moiNum && M.gens.get(M.moiNum), auRepos = !!(moiR && M.L && estApo(M.lieu) && M.L.repos && M.L.repos(moiR.g.position.x, moiR.g.position.z));
   /* Resident Evil : « Raccoon City » (RE2), en continu dès l'explosion du portail */
@@ -10617,7 +10617,10 @@ function ambianceApo() {
   const combatG = !!(M && lisaVivante() && !M.lisa.attente && (M.lisaMus || !M.cine));   /* (« The Second Malformation of G » (RE2) : le combat contre Lisa, dès qu'elle apparaît) */
   if (combatG && !sonG) { sonG = new Audio("sons/re-g2.mp3"); sonG.loop = true; sonG.volume = .75; }
   if (sonG) { if (combatG && sonG.paused) { if (performance.now() - (sonG.essai || 0) > 2000) { sonG.essai = performance.now(); sonG.play().catch(() => {}); } } else if (!combatG && !sonG.paused) { sonG.pause(); sonG.currentTime = 0; } }
-  { const on = !!(M && M.reMus && modeRE() && !auRepos && !combatG && !M.evac);   /* (l'évacuation a sa propre musique) */ if (on && !sonRE) { sonRE = new Audio("sons/re-raccoon.mp3"); sonRE.loop = true; sonRE.volume = .55; }
+  /* « Sweet Dreams » (Marilyn Manson) : dès que le Tyran arrive sur la terrasse, et jusqu'à la fin de la partie (l'évacuation, l'explosion, le titre) */
+  if (M && M.musFin && !sonFin) { sonFin = new Audio("sons/re-sweet-dreams.mp3"); sonFin.volume = 1; }
+  if (sonFin && M && M.musFin && sonFin.paused && !sonFin.ended && performance.now() - (sonFin.essai || 0) > 2000) { sonFin.essai = performance.now(); sonFin.play().catch(() => {}); }
+  { const on = !!(M && M.reMus && modeRE() && !auRepos && !combatG && !M.evac && !M.musFin);   /* (l'évacuation a sa propre musique) */ if (on && !sonRE) { sonRE = new Audio("sons/re-raccoon.mp3"); sonRE.loop = true; sonRE.volume = .55; }
     if (sonRE) { if (on && sonRE.paused) { if (performance.now() - (sonRE.essai || 0) > 2000) { sonRE.essai = performance.now(); sonRE.play().catch(() => {}); } } else if (!on && !sonRE.paused) sonRE.pause(); } }
   if (auRepos && !sonRepos) { sonRepos = new Audio("sons/apo-repos.mp3"); sonRepos.loop = true; sonRepos.volume = .8; }
   if (sonRepos) { if (auRepos && sonRepos.paused) { if (performance.now() - (sonRepos.essai || 0) > 2000) { sonRepos.essai = performance.now(); sonRepos.play().catch(() => {}); } } else if (!auRepos && !sonRepos.paused) sonRepos.pause(); }
@@ -11662,29 +11665,39 @@ function surEvac(m) {
    allumées la nuit), coiffées de toits mansardés en zinc et de cheminées ; çà et là un incendie, et des gyrophares bleus et rouges dans les rues : le chaos.
    Quelques maillages en tout (très léger), posés seulement pendant l'évacuation */
 let parisVariantes = null;
-function parisAutour(sc) { const g = new THREE.Group(); sc.add(g); const W = 26;
-  parisVariantes = parisVariantes || [[5, .2], [6, .5], [5, .8], [6, .1]].map(([n, t], k) => { const H = 4.2 + n * 3.1 + .6, nu = tex(toileImmeuble(W, n, t, k + 3, true));
-    return { H, mat: new THREE.MeshLambertMaterial({ map: nu, emissive: 0xffffff, emissiveMap: nu, emissiveIntensity: .55 }) }; });
-  const zinc = new THREE.MeshLambertMaterial({ color: 0x6c7682, emissive: 0x1c2026 }), dessus = new THREE.MeshLambertMaterial({ color: 0x4a525c, emissive: 0x15181c }), brique = new THREE.MeshLambertMaterial({ color: 0x8a4630, emissive: 0x2a1208 }), sol = new THREE.MeshBasicMaterial({ color: 0x18181a });
-  const blocs = []; for (let x = -214; x <= 214; x += 36) for (let z = -330; z <= 210; z += 36) { if (x + 13 > -50 && x - 13 < 52 && z + 13 > -160 && z - 13 < 44) continue; blocs.push([x, z, Math.floor(Math.random() * 4)]); }   // (pas sur la caserne ni ses rues)
-  const mt = new THREE.Matrix4(), q45 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 4), V = (x, y, z) => new THREE.Vector3(x, y, z);
-  parisVariantes.forEach((v, k) => { const bs = blocs.filter(b => b[2] === k); if (!bs.length) return; const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), [v.mat, v.mat, dessus, dessus, v.mat, v.mat], bs.length);
-    bs.forEach(([x, z], i) => { mt.makeScale(W, v.H, W).setPosition(x, v.H / 2, z); im.setMatrixAt(i, mt); b4(bs[i], v.H); }); g.add(im); });
-  function b4(b, H) { b[3] = H; }
-  // le toit mansardé : le brisis en pente raide, couvert de zinc (une pyramide tronquée à quatre pans), et ses cheminées de brique
-  const toits = new THREE.InstancedMesh(new THREE.CylinderGeometry(.56, .71, 1, 4, 1), zinc, blocs.length); blocs.forEach(([x, z, , H], i) => { toits.setMatrixAt(i, mt.compose(V(x, H + 2, z), q45, V(W, 4, W))); }); g.add(toits);
-  const nc = blocs.length * 3, chem = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), brique, nc); let ci = 0;
-  for (const [x, z, , H] of blocs) for (let i = 0; i < 3; i++) chem.setMatrixAt(ci++, mt.compose(V(x + (Math.random() - .5) * 18, H + 4.6, z + (Math.random() - .5) * 18), new THREE.Quaternion(), V(1.4 + Math.random(), 2.2, .7))); g.add(chem);
+function parisAutour(sc) { const g = new THREE.Group(); sc.add(g); const SW = 14, PR = 12;   // (un immeuble : 14 m de façade, 12 m de profondeur)
+  parisVariantes = parisVariantes || [[5, 0], [6, .3], [7, .1], [6, .6]].map(([n, t], k) => { const H = 4.2 + n * 3.1 + .6, nu = tex(toileImmeuble(SW, n, t, k + 3));
+    return { H, mat: new THREE.MeshLambertMaterial({ map: nu, emissive: 0xffffff, emissiveMap: nu, emissiveIntensity: .5 }) }; });   /* (la pierre de taille, claire, comme vue du ciel) */
+  const zinc = new THREE.MeshLambertMaterial({ color: 0x9aa2ab, emissive: 0x30353b }), dessus = new THREE.MeshLambertMaterial({ color: 0x7d868f, emissive: 0x272b30 }), pot = new THREE.MeshLambertMaterial({ color: 0xb8582f, emissive: 0x3a160a }),
+    sol = new THREE.MeshBasicMaterial({ color: 0x1d1d20 }), cour = new THREE.MeshBasicMaterial({ color: 0x141416 });
+  // les îlots : un anneau d'immeubles autour d'une cour ; des rues étroites entre eux ; pas sur la caserne ni sur ses rues
+  const segs = [[], [], [], []], ilots = [], V = (x, y, z) => new THREE.Vector3(x, y, z), qy = a => new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), a), mt = new THREE.Matrix4();
+  for (let x0 = -230; x0 < 230; x0 += 68) for (let z0 = -340; z0 < 220; z0 += 82) { const lx = 56, lz = 70, cx = x0 + lx / 2, cz = z0 + lz / 2;
+    if (x0 + lx > -40 && x0 < 44 && z0 + lz > -192 && z0 < 34) continue; ilots.push([cx, cz]);
+    const pose = (x, z, rot) => { const k = Math.floor(Math.random() * 4); segs[k].push([x, z, rot, parisVariantes[k].H]); };
+    for (let i = 0; i < 4; i++) { pose(x0 + 7 + i * 14, z0 + PR / 2, 0); pose(x0 + 7 + i * 14, z0 + lz - PR / 2, Math.PI); }   // (les deux longs côtés)
+    for (let j = 0; j < 3; j++) { const z = z0 + PR + 7 + j * 14 + (j === 2 ? -4 : 0); pose(x0 + PR / 2, z, Math.PI / 2); pose(x0 + lx - PR / 2, z, -Math.PI / 2); }   // (les petits côtés)
+    const c = new THREE.Mesh(new THREE.PlaneGeometry(lx - 2 * PR, lz - 2 * PR), cour); c.rotation.x = -Math.PI / 2; c.position.set(cx, .02, cz); g.add(c); }
+  const tous = []; parisVariantes.forEach((v, k) => { const L = segs[k]; if (!L.length) return; const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), [v.mat, v.mat, dessus, dessus, v.mat, v.mat], L.length);
+    L.forEach(([x, z, r], i) => im.setMatrixAt(i, mt.compose(V(x, v.H / 2, z), qy(r), V(SW, v.H, PR)))); g.add(im); tous.push(...L); });
+  // les toits mansardés en zinc (le brisis en pente raide, le terrasson presque plat), et leurs cheminées aux pots de terre cuite
+  const toits = new THREE.InstancedMesh(new THREE.CylinderGeometry(.5, .707, 1, 4, 1), zinc, tous.length); tous.forEach(([x, z, r, H], i) => toits.setMatrixAt(i, mt.compose(V(x, H + 1.6, z), qy(r + Math.PI / 4), V(SW * 1.0, 3.2, PR * 1.0).multiply(V(1, 1, 1))))); g.add(toits);
+  const chem = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), pot, tous.length * 2); tous.forEach(([x, z, r, H], i) => { for (const d of [-4, 4]) { const ox = Math.cos(r) * d, oz = -Math.sin(r) * d; chem.setMatrixAt(i * 2 + (d > 0 ? 1 : 0), mt.compose(V(x + ox, H + 3.6, z + oz), qy(r), V(1.6, 1.8, .6))); } }); g.add(chem);
+  // derrière la caserne : la grande barre de brique rouge, ses toits de tuiles
+  { const brq = new THREE.MeshLambertMaterial({ map: tex(toileBriqueBandes(60, 30)), emissive: 0x6a2a1c, emissiveIntensity: .5 }), tuile = new THREE.MeshLambertMaterial({ color: 0xb8452a, emissive: 0x3e1408 });
+    for (const [x, z, lx, lz, h] of [[-6, -168, 46, 14, 27], [4, -182, 40, 12, 30]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(lx, h, lz), [brq, brq, tuile, tuile, brq, brq]); b.position.set(x, h / 2, z); g.add(b);
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(.5, .707, 1, 4, 1), tuile); t.rotation.y = Math.PI / 4; t.scale.set(lx, 3, lz); t.position.set(x, h + 1.5, z); g.add(t); } }
   const s = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), sol); s.rotation.x = -Math.PI / 2; s.position.set(0, -.08, -60); g.add(s);
+  const blocs = ilots.map(([x, z]) => [x, z, 0, parisVariantes[1].H]);
   // des incendies, çà et là (sur des toits, dans des rues), avec leur fumée
   const pres = [...blocs].sort((a, b) => Math.hypot(a[0], a[1] + 55) - Math.hypot(b[0], b[1] + 55)).slice(0, 28), unPres = () => pres[Math.floor(Math.random() * pres.length)];   // (les îlots qu'on voit du ciel)
-  const feux = [], fum = []; for (let i = 0; i < 12; i++) { const b = unPres(), rue = i % 3 === 0, x = b[0] + (rue ? 18 : (Math.random() - .5) * 12), z = b[1] + (rue ? (Math.random() - .5) * 20 : (Math.random() - .5) * 12), y = rue ? 0 : b[3] + 3;
+  const feux = [], fum = []; for (let i = 0; i < 12; i++) { const b = unPres(), rue = i % 3 === 0, x = b[0] + (rue ? 34 : (Math.random() < .5 ? -1 : 1) * 22), z = b[1] + (rue ? (Math.random() - .5) * 30 : (Math.random() - .5) * 40), y = rue ? 0 : b[3] + 3;
     for (let k = 0; k < 3; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[k], transparent: true, depthWrite: false })); sp.center.set(.5, .1); sp.position.set(x + (k - 1) * 3, y, z + (Math.random() - .5) * 3); const h = 12 + Math.random() * 8; sp.scale.set(h * .75, h, 1); g.add(sp); feux.push([sp, k + i]); }
     const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, opacity: .7 })); f.position.set(x, y + 22, z); f.scale.setScalar(26); g.add(f); fum.push([f, Math.random() * 7, y]); }
   // les gyrophares : des voitures de police arrêtées dans les rues, leurs feux bleu et rouge qui tournent
   const giro = [], halo = tex(toile(64, 64, c => { const r = c.createRadialGradient(32, 32, 0, 32, 32, 31); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.25, "rgba(255,255,255,.6)"); r.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = r; c.fillRect(0, 0, 64, 64); }));
   const carros = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xd8dade, emissive: 0x30343a }), 12);
-  for (let i = 0; i < 12; i++) { const b = unPres(), ax = Math.random() < .5, x = b[0] + (ax ? 18 : (Math.random() - .5) * 20), z = b[1] + (ax ? (Math.random() - .5) * 20 : 18);
+  for (let i = 0; i < 12; i++) { const b = unPres(), ax = Math.random() < .5, x = b[0] + (ax ? 34 : (Math.random() - .5) * 40), z = b[1] + (ax ? (Math.random() - .5) * 50 : 41);
     carros.setMatrixAt(i, mt.compose(V(x, .7, z), new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), ax ? 0 : Math.PI / 2), V(1.8, 1.4, 4.4)));
     for (const [c, d] of [[0x2050ff, -.45], [0xff1a1a, .45]]) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); sp.position.set(x + (ax ? d : 0), 1.7, z + (ax ? 0 : d)); sp.scale.setScalar(11); g.add(sp); giro.push([sp, Math.random() * 6, d > 0]); } }
   g.add(carros);
@@ -11750,7 +11763,7 @@ function cineEvac(m) {
     // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
-    if (u > 4.5 && !mus.parti) { mus.parti = true; mus.play().catch(() => {}); }
+    if (u > 4.5 && !mus.parti && !M.musFin) { mus.parti = true; mus.play().catch(() => {}); }   /* (« Sweet Dreams » joue déjà depuis l'arrivée du Tyran : elle mène jusqu'au bout) */
     helA.volume = Math.max(0, Math.min(.95, .25 + u / 6)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);   /* (il approche, se pose — au plus fort —, puis redécolle et s'éloigne) */
     if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
     else if (u < 5.5) { const k = lisse((u - 2.5) / 3); hel.position.lerpVectors(dep, haut, k); hel.rotation.z = Math.sin(k * Math.PI) * .18; hel.rotation.y = ry0 * (1 - k);   // il vient se placer au-dessus du H…
@@ -11824,8 +11837,8 @@ const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage
 const sonsCourts = new Set();
 function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
 function couperSonsApo() { if (M && M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
-  for (const a of [sonApo, sonFeu, sonRepos, sonRE, sonG, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
-  sonsCourts.clear(); sonApo = sonFeu = sonRepos = sonRE = sonG = null; if (M) M.reMus = false;   // (recréés à la prochaine visite)
+  if (M) M.musFin = false; for (const a of [sonApo, sonFeu, sonRepos, sonRE, sonG, sonFin, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
+  sonsCourts.clear(); sonApo = sonFeu = sonRepos = sonRE = sonG = sonFin = null; if (M) M.reMus = false;   // (recréés à la prochaine visite)
 }
 function sonBruit(duree, coupure, vol) {   // le coup de feu (et le « clic » à vide), fabriqué à la volée
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(actx.sampleRate * duree), b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
@@ -11959,7 +11972,7 @@ function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.
 /* le Tyran : quand le fumigène est posé sur le cercle de la terrasse, il tombe du ciel. Grand (2,6 m), il nous fixe, court vers nous et frappe (une vie) ;
    quinze balles pour l'abattre — alors seulement l'hélicoptère peut se poser */
 let tyran3D = null; const TY = { HP: 15, H: 1.45, V: 4.4 };
-function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
+function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
   M.ctx.surInfo && M.ctx.surInfo("🧨 Le fumigène est posé… l'hélicoptère arrive ! Mais quelque chose approche…");
   tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/re-tyran.glb?v=1"); })().catch(e => { console.warn("tyran", e); return null; });
   tyran3D.then(G => { const T = M && M.tyran; if (!G || !T || !T.attente) return;
