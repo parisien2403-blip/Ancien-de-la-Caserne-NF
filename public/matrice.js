@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.48";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.49";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7591,35 +7591,53 @@ function construireCoraline(A, L, scene) {
   const uvMetre = (geo, w, h, d) => { const uv = geo.attributes.uv; const tailles = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
     for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * tailles[f][0], uv.getY(i) * tailles[f][1]); } return geo; };
   const boite = (w, h, d, m, x, y, z, ombre = false) => A.ajoute(uvMetre(new THREE.BoxGeometry(w, h, d), w, h, d), m, x, y, z, ombre);
-  const motif = (c, taille, o = {}) => { const t = tex(c, 1 / taille, 1 / taille); return A.mat({ map: t, roughness: .85, ...o }); };
+  /* le relief : une carte des pentes tirée du dessin lui-même (les joints, le grain du bois, les motifs en léger relief accrochent la lumière) */
+  const normalDe = (c, force) => { const w = c.width, h = c.height, src = c.getContext("2d").getImageData(0, 0, w, h).data, o = document.createElement("canvas"); o.width = w; o.height = h;
+    const x = o.getContext("2d"), img = x.createImageData(w, h), d = img.data, L = (i, j) => { i = (i + w) % w; j = (j + h) % h; const k = (j * w + i) * 4; return (src[k] + src[k + 1] + src[k + 2]) / 765; };
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const dx = (L(i + 1, j) - L(i - 1, j)) * force, dy = (L(i, j + 1) - L(i, j - 1)) * force, l = Math.hypot(dx, dy, 1), k = (j * w + i) * 4;
+      d[k] = (-dx / l * .5 + .5) * 255; d[k + 1] = (dy / l * .5 + .5) * 255; d[k + 2] = (1 / l * .5 + .5) * 255; d[k + 3] = 255; }
+    x.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(o); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t; };
+  const motif = (c, taille, o = {}) => { const { relief = 0, ...r } = o, t = tex(c, 1 / taille, 1 / taille), m = A.mat({ map: t, roughness: .85, ...r });
+    if (relief && !PETIT) { m.normalMap = normalDe(c, relief); m.normalMap.repeat.set(1 / taille, 1 / taille); m.normalScale = new THREE.Vector2(1, 1); } return m; };
   const deuxFaces = m => { const c = m.clone(); c.side = THREE.DoubleSide; return c; };
   const repete = (m, rx, ry) => { const c = m.clone(); c.map = m.map.clone(); c.map.repeat.set(rx, ry); c.map.needsUpdate = true; return c; };   // (pour une forme dont les coordonnées vont de 0 à 1)
   const bruit = (x, w, h, n, coul) => { for (let i = 0; i < n; i++) { x.fillStyle = coul(i); x.fillRect(hasard(i * 1.7) * w, hasard(i * 3.3) * h, 1 + hasard(i * 5.1) * 3, 1 + hasard(i * 7.9) * 2); } };
   // le bardage rose : des planches horizontales, le bas de chacune dans l'ombre
   const bardage = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#e6a0b2"; x.fillRect(0, 0, w, h); const n = 12, p = h / n;
     for (let i = 0; i < n; i++) { const g = x.createLinearGradient(0, i * p, 0, (i + 1) * p); g.addColorStop(0, "#f4c0ce"); g.addColorStop(.75, "#e6a0b2"); g.addColorStop(1, "#b87084"); x.fillStyle = g; x.fillRect(0, i * p, w, p); x.fillStyle = "rgba(90,30,50,.55)"; x.fillRect(0, (i + 1) * p - 2, w, 2); }
-    bruit(x, w, h, 900, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "120,50,70"},.05)`); }), 2.2, { emissive: 0x4a2028, emissiveIntensity: .45 });   // (un rose tendre, un peu réchauffé : sous la lune, il virait au violet)
-  const blanc = A.mat({ color: 0xf4eee8, roughness: .6, emissive: 0x2a2a30, emissiveIntensity: .3 });
+    bruit(x, w, h, 900, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "120,50,70"},.05)`); }), 2.2, { emissive: 0x4a2028, emissiveIntensity: .45, relief: 2.5 });   // (un rose tendre, un peu réchauffé : sous la lune, il virait au violet)
+  const blanc = A.mat({ color: 0xf4eee8, roughness: .6, emissive: 0x2a2a30, emissiveIntensity: .3 }), M0 = (c, r = .8) => A.mat({ color: c, roughness: r });
   const tuiles = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#8c5550"; x.fillRect(0, 0, w, h); const n = 10, p = h / n;
-    for (let i = 0; i < n; i++) for (let j = 0; j < 8; j++) { const dx = (i % 2) * 16, v = hasard(i * 9 + j); x.fillStyle = `hsl(${4 + v * 10}, ${28 + v * 12}%, ${34 + v * 10}%)`; x.fillRect(j * 32 + dx - 16, i * p, 30, p - 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(j * 32 + dx - 16, (i + 1) * p - 3, 30, 3); } }), 2.4, { roughness: .9 });
+    for (let i = 0; i < n; i++) for (let j = 0; j < 8; j++) { const dx = (i % 2) * 16, v = hasard(i * 9 + j); x.fillStyle = `hsl(${4 + v * 10}, ${28 + v * 12}%, ${34 + v * 10}%)`; x.fillRect(j * 32 + dx - 16, i * p, 30, p - 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(j * 32 + dx - 16, (i + 1) * p - 3, 30, 3); } }), 2.4, { relief: 3, roughness: .9 });
   const pierre = motif(toile(256, 128, (x, w, h) => { x.fillStyle = "#5f6064"; x.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) { const v = hasard(i * 13 + j), dx = (i % 2) * 22;
-      x.fillStyle = `hsl(220, 6%, ${34 + v * 18}%)`; x.beginPath(); x.roundRect(j * 44 + dx - 20, i * 32 + 2, 40, 28, 6); x.fill(); } }), 1.6);
-  const brique = motif(toile(128, 128, (x, w, h) => { x.fillStyle = "#5a3a32"; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { const v = hasard(i * 7 + j * 3); x.fillStyle = `hsl(8, ${35 + v * 15}%, ${30 + v * 12}%)`; x.fillRect(j * 32 + (i % 2) * 16 - 16, i * 16 + 1, 30, 14); } }), .8);
-  const planches = (c1, c2, n = 8) => toile(256, 256, (x, w, h) => { const p = w / n; for (let i = 0; i < n; i++) { const v = hasard(i * 3.7); x.fillStyle = v > .5 ? c1 : c2; x.fillRect(i * p, 0, p, h); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(i * p, 0, 1.5, h);
-      const cut = hasard(i * 11) * h; x.fillRect(i * p, cut, p, 1.5); } bruit(x, w, h, 1400, i => `rgba(${hasard(i) > .5 ? "255,240,220" : "40,20,10"},.06)`); });
+      x.fillStyle = `hsl(220, 6%, ${34 + v * 18}%)`; x.beginPath(); x.roundRect(j * 44 + dx - 20, i * 32 + 2, 40, 28, 6); x.fill(); } }), 1.6, { relief: 4 });
+  const brique = motif(toile(128, 128, (x, w, h) => { x.fillStyle = "#5a3a32"; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { const v = hasard(i * 7 + j * 3); x.fillStyle = `hsl(8, ${35 + v * 15}%, ${30 + v * 12}%)`; x.fillRect(j * 32 + (i % 2) * 16 - 16, i * 16 + 1, 30, 14); } }), .8, { relief: 4 });
+  /* le parquet : des lames de teintes un peu différentes, le fil du bois qui ondule, quelques nœuds, les joints */
+  const planches = (c1, c2, n = 8) => toile(512, 512, (x, w, h) => { const p = w / n; for (let i = 0; i < n; i++) { const v = hasard(i * 3.7); x.fillStyle = v > .5 ? c1 : c2; x.fillRect(i * p, 0, p, h);
+      x.globalAlpha = .1 + hasard(i * 1.3) * .08; x.fillStyle = hasard(i * 2.1) > .5 ? "#fff" : "#000"; x.fillRect(i * p, 0, p, h); x.globalAlpha = 1;
+      for (let k = 0; k < 14; k++) { x.strokeStyle = `rgba(${hasard(i * 17 + k) > .5 ? "30,15,5" : "255,235,210"},${.08 + hasard(k * 3 + i) * .12})`; x.lineWidth = .8 + hasard(k + i * 5) * 1.6; x.beginPath(); const x0 = i * p + 3 + hasard(i * 7 + k) * (p - 6);
+        for (let y = 0; y <= h; y += 16) x.lineTo(x0 + Math.sin(y / (30 + k * 3) + i + k) * (2 + hasard(k) * 3), y); x.stroke(); }
+      if (hasard(i * 13) > .5) { const ky = hasard(i * 19) * h, kx = i * p + p / 2; x.fillStyle = "rgba(40,20,8,.45)"; x.beginPath(); x.ellipse(kx, ky, 3, 7, 0, 0, 7); x.fill(); x.strokeStyle = "rgba(40,20,8,.25)"; x.beginPath(); x.ellipse(kx, ky, 6, 14, 0, 0, 7); x.stroke(); }
+      x.fillStyle = "rgba(0,0,0,.55)"; x.fillRect(i * p, 0, 2, h); const cut = hasard(i * 11) * h; x.fillRect(i * p, cut, p, 2); } });
   const sols = {
-    parquet: motif(planches("#7a4a2c", "#6a3e24"), 1.6, { roughness: .45 }), gris: motif(planches("#8c8a86", "#7a7874"), 1.6), clair: motif(planches("#a8865e", "#987654"), 1.6, { roughness: .5 }),
+    parquet: motif(planches("#7a4a2c", "#6a3e24"), 1.6, { roughness: .4, relief: 3 }), gris: motif(planches("#8c8a86", "#7a7874"), 1.6, { relief: 3 }), clair: motif(planches("#a8865e", "#987654"), 1.6, { roughness: .45, relief: 3 }),
     carreau: motif(toile(128, 128, (x, w) => { x.fillStyle = "#d6dccc"; x.fillRect(0, 0, w, w); x.strokeStyle = "#6a9a94"; x.lineWidth = 7; for (const [p, q] of [[0, 64], [64, 0], [64, 128], [128, 64]]) { x.beginPath(); x.moveTo(64, 64); x.lineTo(p, q); x.stroke(); }   /* (le carrelage de la cuisine : des losanges bleu-vert, comme dans le film) */
-      x.strokeStyle = "#8ab4ac"; x.lineWidth = 3; x.strokeRect(0, 0, w, w); x.fillStyle = "#5a8a86"; for (const [p, q] of [[32, 32], [96, 32], [32, 96], [96, 96]]) x.fillRect(p - 7, q - 7, 14, 14); bruit(x, w, w, 400, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "40,60,60"},.06)`); }), .55, { roughness: .35 }),
+      x.strokeStyle = "#8ab4ac"; x.lineWidth = 3; x.strokeRect(0, 0, w, w); x.fillStyle = "#5a8a86"; for (const [p, q] of [[32, 32], [96, 32], [32, 96], [96, 96]]) x.fillRect(p - 7, q - 7, 14, 14); bruit(x, w, w, 400, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "40,60,60"},.06)`); }), .55, { roughness: .3, relief: 4 }),
     chevrons: motif(toile(128, 128, (x, w) => { x.fillStyle = "#4a4a4e"; x.fillRect(0, 0, w, w); for (let i = -4; i < 8; i++) for (let j = 0; j < 8; j++) { x.save(); x.translate(j * 32 - i * 16 + (j % 2) * 16, i * 32 + j * 16); x.rotate(j % 2 ? Math.PI / 4 : -Math.PI / 4); x.fillStyle = `hsl(240, 3%, ${26 + hasard(i * 5 + j) * 12}%)`; x.fillRect(0, 0, 30, 10); x.restore(); } }), 1.2),
-    blancs: motif(toile(64, 64, (x, w) => { x.fillStyle = "#eef0ee"; x.fillRect(0, 0, w, w); x.strokeStyle = "#c4cac8"; x.lineWidth = 2; x.strokeRect(0, 0, 32, 32); x.strokeRect(32, 32, 32, 32); x.strokeRect(32, 0, 32, 32); x.strokeRect(0, 32, 32, 32); }), .4, { roughness: .25 }),
-    tomettes: motif(toile(64, 64, (x, w) => { x.fillStyle = "#8a4a32"; x.fillRect(0, 0, w, w); x.strokeStyle = "#5a2e1e"; x.lineWidth = 2; x.strokeRect(1, 1, 30, 30); x.strokeRect(33, 33, 30, 30); x.strokeRect(33, 1, 30, 30); x.strokeRect(1, 33, 30, 30); }), .5) };
+    blancs: motif(toile(64, 64, (x, w) => { x.fillStyle = "#eef0ee"; x.fillRect(0, 0, w, w); x.strokeStyle = "#c4cac8"; x.lineWidth = 2; x.strokeRect(0, 0, 32, 32); x.strokeRect(32, 32, 32, 32); x.strokeRect(32, 0, 32, 32); x.strokeRect(0, 32, 32, 32); }), .4, { roughness: .2, relief: 4 }),
+    tomettes: motif(toile(64, 64, (x, w) => { x.fillStyle = "#8a4a32"; x.fillRect(0, 0, w, w); x.strokeStyle = "#5a2e1e"; x.lineWidth = 2; x.strokeRect(1, 1, 30, 30); x.strokeRect(33, 33, 30, 30); x.strokeRect(33, 1, 30, 30); x.strokeRect(1, 33, 30, 30); }), .5, { relief: 4 }) };
   // les papiers peints (d'après le film : des teintes passées, grises, vertes, mauves ; la chambre de Coraline, bleu-gris)
-  const papier = (fond, motifC, genre) => motif(toile(128, 128, (x, w) => { x.fillStyle = fond; x.fillRect(0, 0, w, w); x.fillStyle = motifC; x.strokeStyle = motifC;
-    if (genre === "rayures") { for (let i = 0; i < 4; i++) x.fillRect(i * 32 + 4, 0, 8, w); }
-    else if (genre === "fleurs") { for (const [a, b] of [[32, 32], [96, 96], [96, 32], [32, 96]]) { for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(a + Math.cos(k * 1.26) * 6, b + Math.sin(k * 1.26) * 6, 4, 0, 7); x.fill(); } } }
-    else { x.lineWidth = 3; for (const [a, b] of [[32, 32], [96, 96]]) { x.beginPath(); x.ellipse(a, b, 12, 20, 0, 0, 7); x.stroke(); x.beginPath(); x.moveTo(a, b - 26); x.lineTo(a, b + 26); x.stroke(); } } }), .6, { emissive: 0x161210, emissiveIntensity: .5 });
-  const P = { hall: papier("#8e7276", "#9c8084", "damas"), cuisine: motif(toile(128, 128, (x, w) => { x.fillStyle = "#e6cf8e"; x.fillRect(0, 0, w, w); bruit(x, w, w, 900, i => `rgba(${hasard(i) > .5 ? "255,240,200" : "150,110,50"},.07)`); }), 1, { emissive: 0x2a2010, emissiveIntensity: .5 }), salle: papier("#76736c", "#85827a", "damas"),   /* (d'après le film : le hall rose fané, la salle à manger grise, à motifs) */ salon: papier("#5e5a6c", "#6a6679", "fleurs"),
+  /* les papiers peints, dessinés finement (un raccord de 60 cm) : damas à volutes, rayures à filets, petits bouquets ; le papier vieilli, un peu passé ; ses motifs en léger relief */
+  const papier = (fond, motifC, genre) => motif(toile(256, 256, (x, w) => { x.fillStyle = fond; x.fillRect(0, 0, w, w); x.fillStyle = motifC; x.strokeStyle = motifC; x.lineCap = "round";
+    if (genre === "rayures") { for (let i = 0; i < 4; i++) { x.fillRect(i * 64 + 6, 0, 18, w); x.fillRect(i * 64 + 30, 0, 3, w); x.fillRect(i * 64 + 38, 0, 3, w); } }
+    else if (genre === "fleurs") { for (const [a, b] of [[64, 64], [192, 192], [192, 64], [64, 192]]) { x.lineWidth = 2; x.beginPath(); x.moveTo(a, b + 8); x.quadraticCurveTo(a + 10, b + 22, a + 2, b + 34); x.stroke();
+        for (let k = 0; k < 6; k++) { x.beginPath(); x.ellipse(a + Math.cos(k * 1.05) * 8, b + Math.sin(k * 1.05) * 8, 6, 3.5, k * 1.05, 0, 7); x.fill(); } x.beginPath(); x.ellipse(a + 12, b + 24, 6, 3, .6, 0, 7); x.fill(); x.beginPath(); x.ellipse(a - 8, b + 26, 6, 3, -.6, 0, 7); x.fill(); } }
+    else { x.lineWidth = 3.5; for (const [a, b] of [[64, 64], [192, 192]]) { x.beginPath(); x.moveTo(a, b - 56); x.bezierCurveTo(a + 30, b - 30, a + 34, b + 10, a, b + 56); x.bezierCurveTo(a - 34, b + 10, a - 30, b - 30, a, b - 56); x.stroke();
+        x.beginPath(); x.ellipse(a, b, 10, 18, 0, 0, 7); x.stroke(); for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(a, b - 20); x.bezierCurveTo(a + sg * 22, b - 34, a + sg * 30, b - 6, a + sg * 16, b + 4); x.stroke(); x.beginPath(); x.arc(a + sg * 16, b + 8, 4, 0, 7); x.fill(); }
+        x.beginPath(); x.moveTo(a - 6, b + 30); x.lineTo(a, b + 40); x.lineTo(a + 6, b + 30); x.stroke(); } }
+    const v = x.createRadialGradient(w / 2, w / 2, 20, w / 2, w / 2, w * .75); v.addColorStop(0, "rgba(255,250,235,.05)"); v.addColorStop(1, "rgba(60,50,30,.06)"); x.fillStyle = v; x.fillRect(0, 0, w, w);
+    bruit(x, w, w, 1600, i => `rgba(${hasard(i) > .5 ? "255,250,235" : "40,30,20"},.05)`); }), .6, { emissive: 0x161210, emissiveIntensity: .5, relief: 1.5 });
+  const P = { hall: papier("#8e7276", "#9c8084", "damas"), cuisine: motif(toile(128, 128, (x, w) => { x.fillStyle = "#e6cf8e"; x.fillRect(0, 0, w, w); bruit(x, w, w, 900, i => `rgba(${hasard(i) > .5 ? "255,240,200" : "150,110,50"},.07)`); }), 1, { emissive: 0x2a2010, emissiveIntensity: .5, relief: 2 }), salle: papier("#76736c", "#85827a", "damas"),   /* (d'après le film : le hall rose fané, la salle à manger grise, à motifs) */ salon: papier("#5e5a6c", "#6a6679", "fleurs"),
     bureau: papier("#8f989a", "#9ba3a5", "rayures"), tour: papier("#7a6a5a", "#87776a", "fleurs"), coraline: papier("#6f8590", "#7b919c", "fleurs"), parents: papier("#9c8c70", "#a8987c", "rayures"),
     bain: sols.blancs, grenier: motif(planches("#7a6450", "#6e5a48", 6), 1.4), lingerie: papier("#a0a49a", "#aeb2a8", "rayures"), amis: papier("#7c6f80", "#887b8c", "damas") };
   const plafond = A.mat({ color: 0xe6e0d4, roughness: .95, side: THREE.DoubleSide });
@@ -7677,6 +7695,22 @@ function construireCoraline(A, L, scene) {
     if (solG) { const s = boite(x1 - x0, .02, z1 - z0, sols[solG], (x0 + x1) / 2, yb + .01, (z0 + z1) / 2); s.receiveShadow = true; }
     if (!/^escalier/.test(nom)) boite(x1 - x0, .02, z1 - z0, plafond, (x0 + x1) / 2, yb + h - .02, (z0 + z1) / 2);   // (le plafond)
   }
+  // ---------- les finitions de chaque pièce : la plinthe, la corniche sous le plafond, l'ombre douce au pied des murs et sous le plafond (comme une vraie pièce, éclairée de l'intérieur) ;
+  //            l'encadrement de bois autour de chaque porte ----------
+  const degrade = (haut) => { const t = new THREE.CanvasTexture(toile(4, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(haut ? 1 : 0, "rgba(0,0,0,0)"); g.addColorStop(haut ? 0 : 1, "rgba(10,6,2,.5)"); x.fillStyle = g; x.fillRect(0, 0, w, h); }));
+    return new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  const ombreBas = degrade(false), ombreHaut = degrade(true), plintheB = M0(0xece6da, .5), plintheF = M0(0x2e1c12, .45), encadre = M0(0x3a2418, .45);
+  for (const r of ROOMS) { if (/^escalier/.test(r.nom)) continue; const { x0, x1, z0, z1, niv } = r, yb = niv ? Y1 : Y0, h = niv ? HE : Y1 - Y0, fonce = ["hall", "entree", "salle"].includes(r.nom), pl = fonce ? plintheF : plintheB;
+    for (const [axe, X, a, b2, f, ry] of [["x", x0, z0 + E, z1 - E, x0 + E, Math.PI / 2], ["x", x1, z0 + E, z1 - E, x1 - E, -Math.PI / 2], ["z", z0, x0 + E, x1 - E, z0 + E, 0], ["z", z1, x0 + E, x1 - E, z1 - E, Math.PI]]) {
+      const dir = ry === Math.PI / 2 || ry === 0 ? 1 : -1, trous = [...portesDe(niv, axe, X, a - .2, b2 + .2), ...(r.nom === "tour" || r.nom === "coraline" ? (VIDE_TOUR[axe === "x" ? (X === x0 ? "x0" : "x1") : (X === z0 ? "z0" : "z1")] || []) : [])].sort((p, q) => p.c - q.c);
+      let u = a; const pose = (u0, u1) => { const l = u1 - u0; if (l < .05) return; const m = (u0 + u1) / 2, at = (o, y, off) => { if (axe === "x") o.position.set(f + dir * off, y, m); else o.position.set(m, y, f + dir * off); o.rotation.y = ry; scene.add(o); };
+        at(new THREE.Mesh(uvMetre(new THREE.BoxGeometry(l, .13, .025), l, .13, .025), pl), yb + .065, .012); at(new THREE.Mesh(new THREE.PlaneGeometry(l, .5), ombreBas), yb + .25, .004);
+        at(new THREE.Mesh(new THREE.PlaneGeometry(l, .4), ombreHaut), yb + h - .2, .004); at(new THREE.Mesh(uvMetre(new THREE.BoxGeometry(l, .1, .06), l, .1, .06), blanc), yb + h - .07, .03); at(new THREE.Mesh(uvMetre(new THREE.BoxGeometry(l, .03, .1), l, .03, .1), blanc), yb + h - .13, .05); };
+      for (const t of trous) { pose(u, t.c - t.w / 2); u = Math.max(u, t.c + t.w / 2); } pose(u, b2); } }
+  for (const [n, axe, X, c, w, hP = 2.1] of PO) { if (n === 0 && axe === "x" && Math.abs(X + 1.9) < .01 && Math.abs(c - .5) < .01) continue;   // (le grand encadrement de la salle à manger : déjà là)
+    for (const sg of [-1, 1]) { const px = axe === "x" ? X + sg * (E + .013) : c, pz = axe === "x" ? c : X + sg * (E + .013), dedansP = ROOMS.some(r => r.niv === n && px > r.x0 && px < r.x1 && pz > r.z0 && pz < r.z1);
+      if (!dedansP) continue; const yb = n ? Y1 : Y0, cad = (lw, lh, du, y) => { const o = new THREE.Mesh(uvMetre(new THREE.BoxGeometry(lw, lh, .03), lw, lh, .03), encadre); o.position.set(axe === "x" ? px : c + du, y, axe === "x" ? c + du : pz); o.rotation.y = axe === "x" ? Math.PI / 2 : 0; scene.add(o); };
+      for (const s2 of [-1, 1]) cad(.1, hP + .05, s2 * (w / 2 + .05), yb + (hP + .05) / 2); cad(w + .2, .12, 0, yb + hP + .06); } }
   // le lambris de bois sombre, à hauteur d'appui, dans le hall, l'entrée et la salle à manger (comme dans le film)
   const lambrisM = motif(toile(128, 128, (x, w) => { x.fillStyle = "#3e2a20"; x.fillRect(0, 0, w, w); x.strokeStyle = "#2a1a12"; x.lineWidth = 4; x.strokeRect(10, 14, 44, 100); x.strokeRect(74, 14, 44, 100); x.fillStyle = "#4e3628"; x.fillRect(0, 0, w, 8); }), 1.1, { roughness: .5 });
   for (const r of ROOMS.filter(r => ["hall", "entree", "salle"].includes(r.nom))) { const { x0, x1, z0, z1 } = r;
@@ -7802,11 +7836,25 @@ function construireCoraline(A, L, scene) {
   const M3 = (c, r = .8, o = {}) => A.mat({ color: c, roughness: r, ...o });
   const noyer = M3(0x3e2416, .5), chene = M3(0x6e4a2c, .55), acajou = M3(0x4a1e14, .4), fer = M3(0x2a2a2c, .5, { metalness: .5 }), laiton = M3(0xb8913a, .3, { metalness: .8 }), email = M3(0xeeeae0, .25),
     noir = M3(0x161414, .6), drap = M3(0xe8e4da, .9), beige = M3(0xcfc6b0, .5), chrome = M3(0xc8ccd0, .25, { metalness: .8 }), carton = M3(0xa88458, .95), lampe = new THREE.MeshBasicMaterial({ color: 0xffe0a8 });
+  /* les reflets : une pièce chaude, ses fenêtres et ses lampes, que l'émail, le chrome, le laiton, le vernis et le carrelage renvoient */
+  const envInt = (() => { const t = new THREE.CanvasTexture(toile(256, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#efe6d2"); g.addColorStop(.45, "#b89c74"); g.addColorStop(.55, "#8a6a4a"); g.addColorStop(1, "#3a2818"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 5; i++) { const cx = 20 + i * 52, r = x.createRadialGradient(cx, 44, 2, cx, 44, 22); r.addColorStop(0, "rgba(255,248,225,1)"); r.addColorStop(1, "rgba(255,240,210,0)"); x.fillStyle = r; x.fillRect(cx - 22, 22, 44, 44); } }));
+    t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  for (const [m, k] of [[email, .9], [chrome, 1.2], [laiton, 1], [acajou, .5], [noyer, .3], [sols.carreau, .35], [sols.blancs, .5], [verre, .6], [sols.parquet, .25], [sols.clair, .2]]) { m.envMap = envInt; m.envMapIntensity = k; m.needsUpdate = true; }
+  /* les angles adoucis : chaque planche, chaque coussin a ses arêtes arrondies */
+  const ronds = new Map(), geoRonde = (w, h, d, r) => { const k = [w, h, d, r].map(v => v.toFixed(3)).join(); if (ronds.has(k)) return ronds.get(k);
+    const a = w / 2 - r, b0 = h / 2 - r, sh = new THREE.Shape(); sh.moveTo(-a, -b0); sh.lineTo(a, -b0); sh.lineTo(a, b0); sh.lineTo(-a, b0); sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, { depth: Math.max(.001, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 1 }); g.translate(0, 0, -Math.max(.001, d - 2 * r) / 2); g.clearGroups(); ronds.set(k, g); return g; };
+  /* l'ombre douce sous chaque meuble, posée sur le sol ; le halo des lampes */
+  const ombreM = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(toile(64, 64, (x, w) => { x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 14; x.fillStyle = "rgba(0,0,0,.55)"; x.fillRect(16, 16, w - 32, w - 32); })), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
+  const haloM = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(toile(64, 64, (x, w) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,220,160,.55)"); g.addColorStop(.4, "rgba(255,200,130,.18)"); g.addColorStop(1, "rgba(255,190,120,0)"); x.fillStyle = g; x.fillRect(0, 0, w, w); })), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+  const halo = (g, x, y, z, t = .9) => { const sp = new THREE.Sprite(haloM); sp.position.set(x, y, z); sp.scale.set(t, t, 1); g.add(sp); };
   const meuble = (n, x, z, ry, larg, prof, bloque, f) => { const g = new THREE.Group(); g.position.set(x, n ? Y1 : Y0, z); g.rotation.y = ry; scene.add(g);
-    const b = (w, h, d, m, px, py, pz, rx = 0, rz = 0) => { const o = new THREE.Mesh(uvMetre(new THREE.BoxGeometry(w, h, d), w, h, d), m); o.position.set(px, py, pz); o.rotation.set(rx, 0, rz); g.add(o); return o; };
+    const b = (w, h, d, m, px, py, pz, rx = 0, rz = 0) => { const mn = Math.min(w, h, d), o = new THREE.Mesh(mn > .045 && !PETIT ? geoRonde(w, h, d, Math.min(.02, mn * .18)) : uvMetre(new THREE.BoxGeometry(w, h, d), w, h, d), m); o.position.set(px, py, pz); o.rotation.set(rx, 0, rz); g.add(o); return o; };
     const c = (rt, rb, h, m, px, py, pz, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(px, py, pz); g.add(o); return o; };
     const s = (r, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m); o.position.set(px, py, pz); g.add(o); return o; };
     f(b, c, s, g);
+    if (larg > .2 && prof > .2) { const o = new THREE.Mesh(new THREE.PlaneGeometry(larg * 1.3 + .15, prof * 1.3 + .15), ombreM); o.rotation.x = -Math.PI / 2; o.position.y = .026; g.add(o); }
     g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g);
     if (bloque) { const q = Math.abs(Math.sin(ry)) > .5, w = q ? prof : larg, d = q ? larg : prof; ob(n, x - w / 2, x + w / 2, z - d / 2, z + d / 2); } };
   // les meubles du film
@@ -7822,7 +7870,7 @@ function construireCoraline(A, L, scene) {
     for (let i = 0; i < 3; i++) b(w / 3 - .14, .1, .6, tissu, -w / 3 + i * w / 3, .53, .08); for (const [a, e] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(.05, .28, .05, noyer, a * (w / 2 - .1), .14, e * .34); });
   const lit = (n, x, z, ry, w, l, couv) => meuble(n, x, z, ry, w, l, true, (b) => { b(w, .22, l, noyer, 0, .3, 0); b(w - .06, .2, l - .1, drap, 0, .5, .02); b(w - .02, .06, l * .72, couv, 0, .62, l * .14);   // (la tête de lit contre le mur, derrière : −z)
     b(w + .06, 1.15, .07, noyer, 0, .58, -l / 2); b(w + .06, .7, .07, noyer, 0, .35, l / 2); for (let i = 0; i < Math.round(w / .5); i++) b(w / Math.round(w / .5) - .1, .3, .05, drap, -w / 2 + (i + .5) * w / Math.round(w / .5), .7, -l / 2 + .2); });
-  const chevet = (n, x, z, ry) => meuble(n, x, z, ry, .45, .4, true, (b, c) => { b(.45, .55, .4, noyer, 0, .275, 0); b(.36, .12, .02, acajou, 0, .42, .2); c(.02, .02, .3, laiton, 0, .7, 0, 6); c(.1, .16, .18, lampe, 0, .9, 0, 10); });
+  const chevet = (n, x, z, ry) => meuble(n, x, z, ry, .45, .4, true, (b, c, s, g) => { b(.45, .55, .4, noyer, 0, .275, 0); b(.36, .12, .02, acajou, 0, .42, .2); c(.02, .02, .3, laiton, 0, .7, 0, 6); c(.1, .16, .18, lampe, 0, .9, 0, 10); halo(g, 0, .9, 0, .8); });
   const armoire = (n, x, z, ry, w = 1.1, h = 2.05, m = noyer) => meuble(n, x, z, ry, w, .6, true, (b, c, s) => { b(w, h, .6, m, 0, h / 2, 0); b(w + .08, .1, .66, m, 0, h + .05, 0); b(.02, h - .2, .02, acajou, 0, h / 2, .305); for (const a of [-1, 1]) { b(w / 2 - .1, h - .3, .02, acajou, a * w / 4, h / 2 + .05, .305); s(.025, laiton, a * .06, h / 2, .33); } });
   const carton2 = (() => { const lbl = ["CUISINE", "FRAGILE", "CORALINE", "LIVRES", "BUREAU", "LINGE"]; return lbl.map(t => A.mat({ map: tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#a88458"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(60,40,20,.25)"; x.fillRect(0, 54, w, 20);
     x.fillStyle = "#2a1c10"; x.font = "bold 18px 'Courier New', monospace"; x.textAlign = "center"; x.fillText(t, w / 2, 100); x.strokeStyle = "rgba(40,25,10,.4)"; x.strokeRect(2, 2, w - 4, h - 4); })), roughness: .95 })); })();
@@ -7830,8 +7878,8 @@ function construireCoraline(A, L, scene) {
   const tapis = (n, x, z, ry, w, d, c1, c2) => { const t = tex(toile(256, 160, (x2, W, H) => { x2.fillStyle = c1; x2.fillRect(0, 0, W, H); x2.strokeStyle = c2; x2.lineWidth = 8; x2.strokeRect(10, 10, W - 20, H - 20); x2.lineWidth = 3; x2.strokeRect(24, 24, W - 48, H - 48);
       x2.fillStyle = c2; for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) { x2.beginPath(); x2.arc(48 + i * 32, 52 + j * 28, 6, 0, 7); x2.fill(); } }));
     const o = A.ajoute(new THREE.PlaneGeometry(w, d), A.mat({ map: t, roughness: 1 }), x, (n ? Y1 : Y0) + .022, z, false); o.rotation.set(-Math.PI / 2, 0, ry); o.receiveShadow = true; };
-  const suspension = (n, x, z, h = 2.4) => meuble(n, x, z, 0, 0, 0, false, (b, c) => { const yp = (n ? HE : Y1 - Y0); c(.008, .008, yp - h, noir, 0, (yp + h) / 2, 0, 4); c(.06, .28, .22, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, h, 0, 14); c(.05, .05, .08, lampe, 0, h - .1, 0, 8); });
-  const applique = (n, x, z, ry, y = 1.9) => meuble(n, x, z, ry, 0, 0, false, (b, c) => { b(.08, .16, .04, laiton, 0, y, .02); b(.03, .03, .14, laiton, 0, y, .1); const t = c(.07, .04, .14, M3(0xf0e6cc, .5, { emissive: 0xffd8a0, emissiveIntensity: .8 }), 0, y + .08, .17, 10); void t; });
+  const suspension = (n, x, z, h = 2.4) => meuble(n, x, z, 0, 0, 0, false, (b, c, s, g) => { halo(g, 0, h - .12, 0, 1.4); const yp = (n ? HE : Y1 - Y0); c(.008, .008, yp - h, noir, 0, (yp + h) / 2, 0, 4); c(.06, .28, .22, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, h, 0, 14); c(.05, .05, .08, lampe, 0, h - .1, 0, 8); });
+  const applique = (n, x, z, ry, y = 1.9) => meuble(n, x, z, ry, 0, 0, false, (b, c, s, g) => { halo(g, 0, y + .1, .17, .7); b(.08, .16, .04, laiton, 0, y, .02); b(.03, .03, .14, laiton, 0, y, .1); const t = c(.07, .04, .14, M3(0xf0e6cc, .5, { emissive: 0xffd8a0, emissiveIntensity: .8 }), 0, y + .08, .17, 10); void t; });
   const radiateur = (n, x, z, ry, w = .9) => meuble(n, x, z, ry, w, .2, true, (b) => { const k = Math.round(w / .08); for (let i = 0; i < k; i++) b(.05, .62, .16, M3(0xb8b4a8, .4, { metalness: .3 }), -w / 2 + (i + .5) * w / k, .37, 0); b(w, .04, .12, M3(0xa8a498, .4), 0, .06, 0); });
   const etagere = (n, x, z, ry, w, h) => meuble(n, x, z, ry, w, .32, true, (b) => { b(w, h, .03, noyer, 0, h / 2, -.15); for (const a of [-1, 1]) b(.04, h, .32, noyer, a * w / 2, h / 2, 0); const k = Math.round(h / .4);
     for (let i = 0; i <= k; i++) { const y = i * h / k; b(w, .03, .32, noyer, 0, y, 0); if (i < k) { let px = -w / 2 + .05; for (let j = 0; px < w / 2 - .1; j++) { const e = .03 + hasard(i * 31 + j) * .04, hh = h / k * (.6 + hasard(j * 7 + i) * .3);
@@ -7882,7 +7930,7 @@ function construireCoraline(A, L, scene) {
       b(1.5, .005, .38, M3(0xf2eee4, .9), 0, .79, 0); for (let i = 0; i < 5; i++) c(.12, .12, .025, M3(0xc8843a, .7), -.2, .81 + i * .026, -.05, 14); s(.035, M3(0xb8202a, .7), -.2, .95, -.05);
       for (const [x, z, col] of [[.15, .2, 0x8ab0a0], [.3, -.15, 0xe8c040], [-.35, .25, 0x5a9a8a]]) { const bo = s(.09, M3(col, .4), x, .8, z); bo.scale.y = .6; }
       c(.05, .07, .28, M3(0x1a3a9a, .3), .4, .93, .2, 12); for (let i = 0; i < 5; i++) s(.05, M3(0xe8743a, .7), .4 + Math.cos(i * 1.25) * .08, 1.12 + hasard(i * 5) * .07, .2 + Math.sin(i * 1.25) * .08); });
-    meuble(0, -2.75, -4.35, 0, 0, 0, false, (b, c) => { c(.008, .008, 1.2, M3(0x2a2a2a, .5, { metalness: .6 }), 0, 2.55, 0, 4); const ab = c(.06, .36, .26, verreR, 0, 1.85, 0, 8); void ab; c(.07, .07, .06, laiton, 0, 1.99, 0, 8); c(.05, .05, .08, lampe, 0, 1.78, 0, 8); });
+    meuble(0, -2.75, -4.35, 0, 0, 0, false, (b, c, s, g) => { halo(g, 0, 1.78, 0, 1.6); c(.008, .008, 1.2, M3(0x2a2a2a, .5, { metalness: .6 }), 0, 2.55, 0, 4); const ab = c(.06, .36, .26, verreR, 0, 1.85, 0, 8); void ab; c(.07, .07, .06, laiton, 0, 1.99, 0, 8); c(.05, .05, .08, lampe, 0, 1.78, 0, 8); });
     // la moulure blanche, sous le plafond, tout autour ; la cimaise, plus bas
     for (const [w, d, x, z] of [[7.1, .12, -2.75, -6.68], [7.1, .12, -2.75, -2.32], [.12, 4.4, -6.28, -4.5], [.12, 4.4, .78, -4.5]]) { boite(w, .16, d, blanc, x, Y1 - .1, z); boite(w, .03, d * .4, blanc, x, Y0 + 2.4, z); } }
   // le bureau du père : la grande table de travail face au bow-window, l'ordinateur et la machine à écrire, les catalogues de jardinage, les étagères de livres, les cartons
@@ -7891,7 +7939,7 @@ function construireCoraline(A, L, scene) {
   meuble(0, 5.45, -3.0, -Math.PI / 2, 0, 0, false, (b) => { b(.4, .14, .32, M3(0x2a2a2a, .4), 0, .83, 0); b(.36, .1, .04, M3(0x1a1a1a, .4), 0, .93, -.1); for (let i = 0; i < 6; i++) b(.24, .01, .2, drap, .04 * Math.sin(i), .78 + i * .012, .05); });
   etagere(0, 1.1, -5.2, Math.PI / 2, 2.2, 2.1); etagere(0, 1.1, -2.5, Math.PI / 2, 1.4, 1.7);
   cartons(0, 2.4, -6.3, .2, 3, 4); cartons(0, 3.2, -6.4, -.1, 2, 3); cartons(0, 5.9, -6.3, .1, 2, 4); tapis(0, 4.2, -3.6, 0, 2.6, 1.8, "#5a5040", "#7a6a4a");
-  meuble(0, 6.1, -1.1, 0, .3, .3, true, (b, c) => { c(.15, .17, .03, fer, 0, .015, 0); c(.012, .012, 1.5, fer, 0, .76, 0, 6); c(.12, .2, .26, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, 1.5, 0, 12); c(.05, .05, .08, lampe, 0, 1.42, 0, 8); });   // (le lampadaire)
+  meuble(0, 6.1, -1.1, 0, .3, .3, true, (b, c, s, g) => { halo(g, 0, 1.45, 0, 1); c(.15, .17, .03, fer, 0, .015, 0); c(.012, .012, 1.5, fer, 0, .76, 0, 6); c(.12, .2, .26, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, 1.5, 0, 12); c(.05, .05, .08, lampe, 0, 1.42, 0, 8); });   // (le lampadaire)
   // le hall : la console et son miroir, le porte-parapluies ; les appliques de la salle à manger, de part et d'autre du grand encadrement
   meuble(0, -1.65, -1.4, Math.PI / 2, .9, .35, true, (b) => { b(.9, .05, .35, noyer, 0, .82, 0); for (const a of [-1, 1]) b(.04, .8, .04, noyer, a * .4, .4, 0); b(.7, .9, .03, M3(0x8a9aa8, .1, { metalness: .6 }), 0, 1.5, -.15); b(.78, .98, .02, laiton, 0, 1.5, -.165); });
   for (const z of [-1.15, 2.15]) { applique(0, -2.02, z, -Math.PI / 2); applique(0, -1.78, z, Math.PI / 2); }
@@ -7953,7 +8001,8 @@ function construireCoraline(A, L, scene) {
   tapis(1, -.5, 1, Math.PI / 2, 9, 1.1, "#4a2a2a", "#8a6a4a"); for (const z of [-2.5, 3.5]) { applique(1, -1.78, z, Math.PI / 2, 1.8); applique(1, .78, z, -Math.PI / 2, 1.8); }
   // ---------- les lumières : une lampe par étage et dans la cuisine (peu de lampes : les petits téléphones) ----------
   for (const [x, y, z, i] of [[-.5, Y1 - .4, .5, 4.5], [-2.75, Y0 + 1.7, -4.35, 4.5], [3.6, Y1 - .4, 4.4, 3.5], [-.5, YT - .4, 1, 4], [-4.2, YT - .4, 3.6, 3.5]]) { const l = new THREE.PointLight(0xffc88a, i, 9, 1.4); l.position.set(x, y, z); scene.add(l); }
-  scene.add(new THREE.AmbientLight(0x8a90b8, .35));
+  if (!PETIT) for (const [x, y, z, i] of [[-4.15, Y0 + 2.1, .5, 3], [4.2, Y0 + 2.3, -3.5, 2.6], [3.3, YT - .5, -3.6, 2.6], [-4.2, YT - .5, -2.8, 2.2]]) { const l = new THREE.PointLight(0xffc88a, i, 7, 1.5); l.position.set(x, y, z); scene.add(l); }   // (la salle à manger, le bureau, la chambre des parents, la salle de bain)
+  scene.add(new THREE.AmbientLight(0x8a90b8, .3));
   // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
   const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
   const sol = A.ajoute(new THREE.PlaneGeometry(120, 120), A.mat({ map: herbe, roughness: 1 }), 0, 0, 4, false); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; L.sol = sol;
