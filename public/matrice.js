@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.43";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.44";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12900,22 +12900,61 @@ let texLettreT = null;
 const texLettre = () => texLettreT || (texLettreT = tex(toile(256, 188, (x, w, h) => { x.fillStyle = "#efe6cf"; x.fillRect(0, 0, w, h); x.strokeStyle = "rgba(40,40,90,.55)"; x.lineWidth = 2;
   for (let i = 0; i < 9; i++) { x.beginPath(); const y = 26 + i * 17; x.moveTo(18, y); for (let k = 18; k < w - 18 - (i === 8 ? 120 : 0); k += 8) x.lineTo(k, y + Math.sin(k * .4 + i) * 1.6); x.stroke(); }
   x.fillStyle = "rgba(120,20,20,.35)"; x.beginPath(); x.arc(w * .78, h * .7, 14, 0, 7); x.fill(); })));   // (une feuille pliée, griffonnée ; une tache de sang)
-// la lettre, écrite à la main
-function lireLettre(nom, ami) { const moiN = nomApo();
+// la lettre, écrite à la main : chacun la sienne, avec sa vie (celui qu'on trouve au bar a été mordu sur le toit, avec celui qui est tombé)
+const LETTRES_RE = {
+  23: a => ({ debut: "Kathy, mes chéries, Moira, Polly,", sig: "Papa — Barry", p: [
+    "Si quelqu'un trouve ce mot, je vous en prie, faites-le parvenir à ma femme, Kathy Burton. Et dites-lui que je l'aimais.",
+    `Sur le toit, avec ${a}, j'ai vidé mon Python jusqu'à la dernière balle. Il en venait toujours plus. L'un d'eux m'a mordu à l'avant-bras. J'ai serré un bandage et j'ai fait comme si de rien n'était… Moi qui n'ai jamais su mentir, cette fois, j'y suis arrivé.`,
+    "Kathy, je t'avais promis de ne plus jamais te laisser seule. Après le manoir, après ce que Wesker m'a forcé à faire pour vous garder en vie, je m'étais juré que plus rien ne nous séparerait. Pardonne-moi.",
+    "La fièvre monte. Je sens la chose en moi. Je ne veux pas que mes filles voient un jour leur père devenir un de ces monstres.",
+    "Moira, ma grande, je sais qu'on s'est disputés. Je suis fier de toi, je l'ai toujours été. Prends soin de ta sœur. Polly, mon petit cœur, papa ne rentrera pas ce soir. Sois sage avec maman.",
+    "Je vous aime, toutes les trois. Plus que tout au monde."] }),
+  22: a => ({ machine: true, debut: "RAPPORT — UMBRELLA SECURITY SERVICE, ÉQUIPE ALPHA. MATRICULE : HUNK.", sig: "HUNK", p: [
+    "Statut de la mission : échec. Échantillon non récupéré. Unité : décimée.",
+    `Toit du bâtiment : encerclés, avec ${a}. Contact avec un sujet infecté. Morsure à l'avant-bras. Plaie pansée. Non signalée.`,
+    "On m'appelle « Mr. Death ». À chaque mission, je suis le seul à revenir. Les autres tombent, moi je rentre. On dit que la Mort ne meurt pas. Le virus, lui, ne fait pas la différence.",
+    "Symptômes : fièvre, tremblements, faim anormale. Délai estimé avant transformation : moins d'une heure. Je connais le protocole. Je l'ai appliqué moi-même. Sur d'autres.",
+    "Aucun sujet infecté ne doit quitter la zone. Je ne ferai pas exception.",
+    "Ni nom, ni famille, ni regret. Juste ce rapport. Pour une fois, personne ne m'attendra à l'extraction.",
+    "Fin de transmission."] }),
+  24: a => ({ debut: "À qui trouvera ce mot,", sig: "Leon S. Kennedy", p: [
+    "Je m'appelle Leon S. Kennedy. Officier de police. À Raccoon City, mon premier jour avait déjà été un enfer. Je croyais avoir tout vu.",
+    `Sur le toit, avec ${a}, ils nous ont encerclés. L'un d'eux m'a mordu à l'avant-bras. J'ai serré un bandage et je n'ai rien dit. Je ne voulais pas qu'on me regarde comme on regarde ces choses.`,
+    "J'ai prêté serment pour protéger les gens. Là-bas, avec Claire et la petite Sherry, je n'ai pas pu sauver tout le monde. Ce soir non plus.",
+    "Ada… si un jour ce papier arrive jusqu'à toi : je ne sais toujours pas qui tu es vraiment. Mais je n'ai jamais cessé de penser à toi.",
+    "La fièvre monte. Mes mains tremblent. J'ai faim, et ce n'est pas une faim normale. Je refuse de me relever pour m'en prendre à ceux que j'ai juré de protéger.",
+    "Je pars pendant que je suis encore flic. Encore moi."] }),
+  26: a => ({ debut: "Claire,", sig: "Ton frère, Chris", p: [
+    "Si tu lis ça, petite sœur, c'est que je n'ai pas tenu ma promesse de rentrer.",
+    `Sur le toit, avec ${a}, ils sont montés de partout. J'en ai abattu je ne sais combien. Un seul m'a eu, à l'avant-bras. Une morsure, c'est tout ce qu'il faut. J'ai serré un bandage et j'ai continué à me battre.`,
+    "Depuis le manoir, je me bats contre Umbrella, contre ce que Wesker a fait de nous, des S.T.A.R.S. Je voulais que ça finisse avec moi. Pas comme ça.",
+    "Jill, si tu vois Claire avant moi… veille sur elle. Tu as toujours été la meilleure partenaire qu'on puisse avoir. Finis le travail. Ne les laisse pas gagner.",
+    "La fièvre me brûle. Je connais les étapes : je les ai vues sur Joseph, sur Forest, sur tous les autres. Je ne veux pas que tu me retrouves avec leurs yeux.",
+    "Tu as traversé une ville morte pour me chercher, Claire. Cette fois, ne viens pas. Vis."] }),
+  21: a => ({ debut: "Chris,", sig: "Claire", p: [
+    a === "Chris" ? "Je suis venue jusqu'ici pour te retrouver. Comme à Raccoon City. Je t'ai retrouvé, sur ce toit… et je t'ai reperdu aussitôt, dans la nuit." : "Je suis venue jusqu'ici pour te retrouver. Comme à Raccoon City : la moto, mon blouson… Je me disais que tu étais forcément quelque part, en train de jouer les héros.",
+    `Sur le toit, avec ${a}, ils nous ont encerclés. L'un d'eux m'a mordue à l'avant-bras. J'ai serré un bandage et je n'ai rien dit. Je ne voulais pas qu'on me regarde avec pitié.`,
+    "La fièvre monte. Je sais ce que c'est : j'ai vu Raccoon mourir. J'ai vu ce que le virus fait des gens.",
+    "Sherry, si quelqu'un te lit ce mot un jour : tu es la fille la plus courageuse que j'aie connue. Tu n'es pas tes parents. Tu as le droit d'être heureuse. Promets-le-moi.",
+    "Chris, ne te reproche rien. C'est toi qui m'as appris à ne jamais abandonner. Mais là… je préfère partir pendant que je suis encore moi.",
+    "Je t'aime, grand frère. Fais-leur payer."] }),
+  25: a => ({ debut: "À qui ramassera ceci,", sig: "A. W.", p: [
+    "Albert Wesker. Capitaine des S.T.A.R.S. — un titre que je n'ai porté que pour servir des intérêts bien plus grands que cette pathétique police.",
+    `Sur le toit, avec ${a}, une de ces créatures m'a mordu. Une morsure. Moi. Celui qui a vu naître le Tyrant, qui a trahi Umbrella et Spencer avant qu'ils ne me trahissent.`,
+    "J'ai survécu au manoir, au Tyrant, à la mort elle-même. Le virus qui coule dans mes veines devait faire de moi le premier homme d'une humanité nouvelle. Ce n'est pas ce virus-là.",
+    "Je l'observe progresser avec un certain intérêt scientifique. Fièvre. Tremblements. Une faim… vulgaire. Celui-ci ne fera pas de moi un dieu : il ferait de moi l'une de ces choses sans esprit, qui rampent et qui gémissent.",
+    "Je refuse. Un dieu ne rampe pas.",
+    "Chris, si c'est toi qui lis ceci : ne te réjouis pas trop vite. Ce n'est pas toi qui m'as vaincu. Je choisis l'heure et la manière. Comme toujours."] }) };
+function lireLettre(nom, ami) { const f = LETTRES_RE[M.barId], o = f ? f(esc(ami)) : { debut: "À qui trouvera ce mot,", sig: esc(nom), p: [`Je m'appelle ${esc(nom)}. Sur le toit, avec ${esc(ami)}, l'un d'eux m'a mordu. Je pars pendant que je suis encore moi. Pardonnez-moi.`] };
+  const police = o.machine ? "500 16px/28px 'Courier New',monospace" : "500 22px/32px 'Caveat','Segoe Script','Bradley Hand',cursive", lgn = o.machine ? 28 : 32;   // (Hunk : un rapport tapé à la machine)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:rgba(0,0,0,.72);padding:14px";
-  d.innerHTML = `<div style="position:relative;max-width:520px;width:100%;max-height:92%;overflow:auto;background:#efe6cf linear-gradient(transparent 0 31px,rgba(60,70,140,.18) 31px 32px) 0 6px/100% 32px;color:#1d2340;padding:22px 24px 18px;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.7);transform:rotate(-1deg);font:500 22px/32px 'Caveat','Segoe Script','Bradley Hand',cursive">
+  d.innerHTML = `<div style="position:relative;max-width:520px;width:100%;max-height:92%;overflow:auto;background:#efe6cf linear-gradient(transparent 0 ${lgn - 1}px,rgba(60,70,140,.18) ${lgn - 1}px ${lgn}px) 0 6px/100% ${lgn}px;color:#1d2340;padding:22px 24px 18px;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.7);transform:rotate(-1deg);font:${police}">
     <div style="position:absolute;right:26px;bottom:60px;width:46px;height:40px;border-radius:50%;background:radial-gradient(rgba(130,20,20,.45),rgba(130,20,20,0) 70%)"></div>
-    <p style="margin:0 0 6px">À qui trouvera ce mot,</p>
-    <p style="margin:0 0 6px">Je m'appelle ${esc(nom)}. Si vous lisez ça, c'est que je suis parti avant que ça me prenne.</p>
-    <p style="margin:0 0 6px">Sur le toit, quand ils nous ont encerclés, ${esc(ami)} et moi, l'un d'eux m'a mordu à l'avant-bras. Une seule morsure. J'ai serré un bandage et je n'ai rien dit. Je ne voulais pas qu'il me regarde comme on regarde ces choses.</p>
-    <p style="margin:0 0 6px">Depuis, la fièvre ne me lâche plus. J'ai froid, puis chaud. Mes mains tremblent. J'ai faim, et ce n'est pas une faim normale. Je sais ce qui vient après : je l'ai vu cent fois cette nuit. Il ne me reste plus beaucoup de temps.</p>
-    <p style="margin:0 0 6px">J'ai peur. Pas de mourir… j'ai peur de me relever. De revenir vous chercher, avec leurs yeux.</p>
-    <p style="margin:0 0 6px">Alors je préfère partir pendant que je suis encore moi. Pardonnez-moi.</p>
-    <p style="margin:0 0 6px">Si vous sortez d'ici, racontez ce qui s'est passé. Que personne n'oublie.</p>
-    <p style="margin:0 0 4px">Adieu.</p><p style="margin:0;text-align:right;font-size:28px">${esc(nom)}</p>
+    <p style="margin:0 0 6px">${o.debut}</p>${o.p.map(t => `<p style="margin:0 0 6px">${t}</p>`).join("")}
+    <p style="margin:0;text-align:right;font-size:${o.machine ? 18 : 28}px">${o.sig}</p>
     <div style="text-align:center;margin-top:14px"><button style="font:700 15px Lato,sans-serif;padding:9px 22px;border-radius:20px;border:0;background:#3a2a1c;color:#f4ead2;cursor:pointer">Fermer</button></div></div>`;
   M.ctx.conteneur.appendChild(d); for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
-  d.querySelector("button").onclick = () => { d.remove(); if (M) setTimeout(() => M && dire(M.moiNum, `Repose en paix, ${nom}.`), 400); }; void moiN; }
+  d.querySelector("button").onclick = () => { d.remove(); if (M) setTimeout(() => M && dire(M.moiNum, `Repose en paix, ${nom}.`), 400); }; }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
