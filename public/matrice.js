@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.40";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.41";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6972,7 +6972,7 @@ function meublesInventaire2(L, scene, mb, rect) { const M3 = (c, r = .8, o = {})
   const or = M3(0xd4a83a, .25, { metalness: .9 }), ivoire = M3(0xefe6d2, .45);
   // les crucifix en bois, ornés d'or (au mur, à 1,70 m)
   [["Crucifix en chêne doré", 0x6a4020, .5, true], ["Crucifix en noyer, Christ doré", 0x4a2a14, .42, false], ["Petit crucifix en ébène et or", 0x1e1612, .3, true], ["Crucifix en bois clair, fleurons dorés", 0xa87a48, .46, false], ["Grand crucifix sculpté", 0x5a3418, .7, true]]
-    .forEach(([nom, c, H, fleur]) => { const m = nouveau(nom, { suspendu: true, mural: true }, 1.7), g = m.g, bois = M3(c, .45), W = H * .58, e = H * .1;
+    .forEach(([nom, c, H0, fleur]) => { const H = H0 * 1.35, m = nouveau(nom, { suspendu: true, mural: true }, 1.7), g = m.g, bois = M3(c, .45), W = H * .58, e = H * .1;
       bx(g, e, H, .025, bois, 0, 0, .02); bx(g, W, e, .025, bois, 0, H * .22, .02);   // (la croix)
       for (const [x, y] of [[0, H / 2], [0, -H / 2], [W / 2, H * .22], [-W / 2, H * .22]]) { if (fleur) { const f = sp(g, e * .55, or, x, y, .035); f.scale.z = .5; } else bx(g, e * 1.3, e * 1.3, .03, or, x, y, .03); }   // (les bouts : fleurons ou plaques d'or)
       const ch = new THREE.Group(); ch.position.set(0, H * .12, .045); g.add(ch); const corps = cy(ch, e * .22, e * .18, H * .38, or, 0, -H * .04, 0, 8); void corps; sp(ch, e * .22, or, 0, H * .17, 0);   // (le Christ, doré)
@@ -6980,7 +6980,7 @@ function meublesInventaire2(L, scene, mb, rect) { const M3 = (c, r = .8, o = {})
       const ti = bx(g, e * 1.2, e * .5, .01, ivoire, 0, H * .36, .036); void ti; });   // (le titre, INRI)
   // les miroirs victoriens : cadres dorés moulurés, ovale et rectangulaire (au mur, à 1,55 m)
   const glace = M3(0xc8d4dc, .04, { metalness: 1 });
-  [["Miroir victorien ovale doré", "ovale", .55, .78], ["Miroir victorien à fronton", "rect", .62, .9], ["Petit miroir rond doré", "rond", .42, .42]]
+  [["Miroir victorien ovale doré", "ovale", .7, 1.0], ["Miroir victorien à fronton", "rect", .8, 1.15], ["Petit miroir rond doré", "rond", .55, .55]]
     .forEach(([nom, f, W, H]) => { const m = nouveau(nom, { suspendu: true, mural: true }, 1.55), g = m.g;
       if (f === "rect") { bx(g, W, H, .04, or, 0, 0, .02); bx(g, W - .1, H - .1, .01, glace, 0, 0, .045); const fr = new THREE.Mesh(new THREE.CylinderGeometry(W / 2, W / 2, .04, 24, 1, false, -Math.PI / 2, Math.PI), or); fr.rotation.x = Math.PI / 2; fr.scale.set(1, 1, .35); fr.position.set(0, H / 2, .02); g.add(fr); sp(g, .035, or, 0, H / 2 + W * .18 + .03, .03); }
       else { const r = W / 2, an = new THREE.Mesh(new THREE.TorusGeometry(r, .035, 10, 40), or); an.scale.set(1, H / W, 1); an.position.z = .03; g.add(an); const gl = new THREE.Mesh(new THREE.CircleGeometry(r - .02, 40), glace); gl.scale.set(1, H / W, 1); gl.position.z = .025; g.add(gl);
@@ -7128,14 +7128,69 @@ function animerChefAppart() { if (!M || !M.L) return; let g = M.gens.get(CHEF_AP
   if (!g) { const P = (M.ctx.pnj && M.ctx.pnj()) || {}; g = ajouterAncien({ numero: CHEF_APPART, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
       teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, sansVerre: true, x, z }); if (!g) return; g.info.assis = 0; }
   g.cible = null; g.chemin = []; if (Math.hypot(g.g.position.x - x, g.g.position.z - z) > .02) { g.g.position.x = x; g.g.position.z = z; } g.g.position.y = f.g.position.y - .1; }   /* (l'assise du fauteuil est plus basse qu'un tabouret de bar) */
+/* placer un objet à hauteur d'homme (l'administrateur, dans l'appartement, hors du mode « Aménager ») : on le prend dans l'inventaire — ou on prend un objet déjà posé —,
+   il apparaît dans la pièce où l'on est, en surbrillance, et suit le regard (le milieu de l'écran) : collé au mur qu'on regarde, ou posé au sol / sur un meuble devant soi ;
+   on le tourne, on le pose. Il ne sort jamais de la pièce où l'on est */
+function pieceAppart(L, x, z) { const R = [...(L.piecesAppart || []).slice(1), ...(L.couloirAppart ? [[-.75, .75, L.couloirAppart[2] + .3, L.couloirAppart[3] - .3]] : [])];
+  return R.find(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3) || null; }
+function lueurPlacement(m, on) { if (on) { m.lueur = []; m.g.traverse(o => { if (!o.isMesh) return; for (const mt of [].concat(o.material)) if (mt.emissive && !m.lueur.some(l => l[0] === mt)) m.lueur.push([mt, mt.emissive.getHex(), mt.emissiveIntensity]); }); }
+  else if (m.lueur) { for (const [mt, c, k] of m.lueur) { mt.emissive.setHex(c); mt.emissiveIntensity = k; } m.lueur = null; } }
+function prendrePlacement(m) { const L = M.L, moi = M.gens.get(M.moiNum); if (!L || !moi || !m) return; if (M.place) finPlacement(false);
+  M.place = { m, avant: { x: m.g.position.x, y: m.g.position.y, z: m.g.position.z, ry: m.g.rotation.y, range: m.range } }; m.range = false; m.g.visible = true; lueurPlacement(m, true);
+  majPlacement(); if (M.place.avant.range && !m.mural) { const p = moi.g.position; m.g.rotation.y = Math.atan2(p.x - m.g.position.x, p.z - m.g.position.z); }   // (sorti de l'inventaire : devant soi, tourné vers nous)
+  interfacePlacement(); }
+function majPlacement() { const P = M.place; if (!P) return; const L = M.L, m = P.m, moi = M.gens.get(M.moiNum), cam = M.camera; if (!moi) return;
+  const p = moi.g.position, R = pieceAppart(L, p.x, p.z); if (!R) return; const [x0, x1, z0, z1] = R, W = [x0 - .25, x1 + .25, z0 - .25, z1 + .25];
+  cam.updateMatrixWorld(); const o = cam.position.clone(), d = cam.getWorldDirection(new THREE.Vector3()); const sol = L.hauteur ? L.hauteur(p.x, p.z) : 0;
+  if (m.mural) { let best = null;
+    for (const [axe, v, ry] of [["x", W[0], Math.PI / 2], ["x", W[1], -Math.PI / 2], ["z", W[2], 0], ["z", W[3], Math.PI]]) { const dv = axe === "x" ? d.x : d.z; if (Math.abs(dv) < 1e-4) continue; const t = ((axe === "x" ? v : v) - (axe === "x" ? o.x : o.z)) / dv; if (t <= .05) continue;
+      const h = o.clone().addScaledVector(d, t), u = axe === "x" ? h.z : h.x, [u0, u1] = axe === "x" ? [W[2], W[3]] : [W[0], W[1]]; if (u < u0 - .05 || u > u1 + .05) continue; if (!best || t < best.t) best = { t, h, axe, v, ry }; }
+    if (!best) { const f = new THREE.Vector3(d.x, 0, d.z).normalize(); best = null; for (const [axe, v, ry] of [["x", W[0], Math.PI / 2], ["x", W[1], -Math.PI / 2], ["z", W[2], 0], ["z", W[3], Math.PI]]) { const dv = axe === "x" ? f.x : f.z; if (Math.abs(dv) < 1e-4) continue; const t = (v - (axe === "x" ? p.x : p.z)) / dv; if (t <= 0) continue; const h = p.clone().addScaledVector(f, t); h.y = sol + 1.6; if (!best || t < best.t) best = { t, h, axe, v, ry }; } }
+    if (!best) return; const ep = .03, y = Math.max(sol + .8, Math.min(sol + 2.5, best.h.y)), u = best.axe === "x" ? Math.max(W[2] + .25, Math.min(W[3] - .25, best.h.z)) : Math.max(W[0] + .25, Math.min(W[1] - .25, best.h.x));
+    if (best.axe === "x") m.g.position.set(best.v + (best.ry > 0 ? ep : -ep), y, u); else m.g.position.set(u, y, best.v + (best.ry === 0 ? ep : -ep)); m.g.rotation.y = best.ry; }
+  else { let h = null; if (d.y < -.05) { const t = (sol - o.y) / d.y; if (t > 0 && t < 7) h = o.clone().addScaledVector(d, t); }
+    if (!h) { const f = new THREE.Vector3(d.x, 0, d.z).normalize(); h = p.clone().addScaledVector(f, 1.4); }   // (on regarde au loin : devant soi)
+    majBoiteMeuble(m); const dx = (m.bx[1] - m.bx[0]) / 2, dz = (m.bx[3] - m.bx[2]) / 2, x = Math.max(x0 - .2 + Math.min(dx, (x1 - x0) / 2), Math.min(x1 + .2 - Math.min(dx, (x1 - x0) / 2), h.x)), z = Math.max(z0 - .2 + Math.min(dz, (z1 - z0) / 2), Math.min(z1 + .2 - Math.min(dz, (z1 - z0) / 2), h.z));
+    m.g.position.x = Math.round(x * 20) / 20; m.g.position.z = Math.round(z * 20) / 20; m.g.position.y = m.suspendu ? m.g.position.y : m.surMeuble ? hauteurPose(L, m, m.g.position.x, m.g.position.z) : (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0); }
+  P.ok = placeMeubleOK(L, m); const k = .35 + .25 * Math.sin(performance.now() / 180); if (m.lueur) for (const [mt] of m.lueur) { mt.emissive.setHex(P.ok ? 0xffc030 : 0xff2020); mt.emissiveIntensity = k; }
+  if (P.btnPoser) P.btnPoser.style.opacity = P.ok ? "1" : ".45"; }
+function finPlacement(poser) { const P = M.place; if (!P) return; const m = P.m;
+  if (poser === true) { if (!placeMeubleOK(M.L, m)) { dire(M.moiNum, "Pas ici : il ne tient pas."); return; } }
+  else if (poser === "ranger") { m.range = true; m.g.visible = false; }
+  else { const a = P.avant; m.g.position.set(a.x, a.y, a.z); m.g.rotation.y = a.ry; m.range = a.range; m.g.visible = !a.range; }
+  lueurPlacement(m, false); majBoiteMeuble(m); M.place = null; if (P.ui) P.ui.remove(); if (poser === true || poser === "ranger") sauverAmenagement(); else M.L.grille = M.L.grilleAdmin = null; }
+function interfacePlacement() { const P = M.place; if (!P) return; if (P.ui) P.ui.remove();
+  const ui = P.ui = document.createElement("div"); ui.style.cssText = "position:absolute;left:8px;right:8px;top:8px;z-index:12;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none";
+  const btn = (t, f, fond = "rgba(30,24,18,.9)") => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = `pointer-events:auto;padding:9px 13px;border-radius:16px;border:0;background:${fond};color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer`; b.onclick = e => { e.stopPropagation(); f(); }; ui.appendChild(b); return b; };
+  const titre = document.createElement("div"); titre.textContent = "✨ " + P.m.nom + " — vise l'endroit (" + (P.m.mural ? "un mur" : "le sol ou un meuble") + ")"; titre.style.cssText = "width:100%;text-align:center;color:#ffd060;font:700 13px Lato,sans-serif;text-shadow:0 1px 3px #000"; ui.appendChild(titre);
+  if (!P.m.mural) btn("↻ Tourner", () => { P.m.g.rotation.y -= Math.PI / 4; });
+  P.btnPoser = btn("✅ Poser ici", () => finPlacement(true), "rgba(40,110,50,.92)"); btn("📦 Ranger", () => finPlacement("ranger")); btn("✖ Annuler", () => finPlacement(false), "rgba(120,30,30,.9)");
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) ui.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(ui); }
+// les boutons, à hauteur d'homme : l'inventaire (prendre un objet), « Déplacer » (prendre l'objet qu'on regarde)
+function boutonsPlacement() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place && !M.cine;
+  if (ok && !M.placeUI) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:12px;bottom:132px;z-index:7;display:flex;flex-direction:column;gap:6px;align-items:flex-start";
+    const btn = (t, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer"; b.onclick = e => { e.stopPropagation(); f(); }; d.appendChild(b); return b; };
+    btn("🧰 Inventaire", () => inventairePlacement()); btn("✋ Déplacer ce que je regarde", () => { const m = meubleRegarde(); if (m) prendrePlacement(m); else dire(M.moiNum, "Je ne vise aucun objet… Regarde-le bien en face."); });
+    for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); M.placeUI = d; }
+  else if (!ok && M && M.placeUI) { M.placeUI.remove(); M.placeUI = null; }
+  if (M && M.place) majPlacement(); }
+function meubleRegarde() { const L = M.L, cam = M.camera, r = new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(0, 0), cam); const vis = L.meublesAppart.filter(m => !m.range && m.g.visible), moi = M.gens.get(M.moiNum);
+  const hits = r.intersectObjects(vis.map(m => m.g), true); for (const h of hits) { if (moi && h.distance < .3) continue; let o = h.object; while (o) { const m = vis.find(q => q.g === o); if (m) return m; o = o.parent; } } return null; }
+function inventairePlacement() { const L = M.L; const r = L.meublesAppart.filter(m => m.range); const d = document.createElement("div");
+  d.style.cssText = "position:absolute;left:8px;right:8px;top:8px;bottom:8px;z-index:12;overflow:auto;background:rgba(30,24,18,.95);color:#f4ead2;border-radius:12px;padding:10px;font:15px Lato,sans-serif";
+  d.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b>🧰 Inventaire (${r.length})</b><button type="button" style="border:0;border-radius:14px;padding:6px 12px;background:#5a3a2a;color:#fff;font:700 14px Lato">✕</button></div>` + (r.length ? "" : `<div style="opacity:.7;margin-top:10px">Vide.</div>`);
+  d.querySelector("button").onclick = e => { e.stopPropagation(); d.remove(); };
+  for (const m of r) { const b = document.createElement("button"); b.type = "button"; b.textContent = (m.mural ? "🖼️ " : m.surMeuble ? "🕰️ " : "🪑 ") + m.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin-top:6px;padding:10px;border-radius:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;cursor:pointer";
+    b.onclick = e => { e.stopPropagation(); d.remove(); prendrePlacement(m); }; d.appendChild(b); }
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); }
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
-function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen;
+function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place;
   if (ok && !M.amenBtn) { const b = document.createElement("button"); b.type = "button"; b.textContent = "🛋️ Aménager"; b.style.cssText = "position:absolute;left:12px;bottom:88px;z-index:7;padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer";
     for (const ev of ["pointerdown", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation()); b.onclick = e => { e.stopPropagation(); amenager(true); }; M.ctx.conteneur.appendChild(b); M.amenBtn = b; }
   else if (!ok && M && M.amenBtn) { M.amenBtn.remove(); M.amenBtn = null; } }
 function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) return; const cam = M.camera, cv = M.rendu.domElement;
-  if (!actif) { const S = M.amen; if (!S) return; M.amen = null; for (const [t, f] of S.ecoute) cv.removeEventListener(t, f, true); S.ui.remove(); S.inv.remove(); M.scene.remove(S.grille); M.scene.remove(S.cadre); M.rendu.clippingPlanes = []; if (M.cine === S.cine) finCine(); placerCamera(true); return; }
+  if (!actif) { const S = M.amen; if (!S) return; M.amen = null; if (S.lueurM) lueurPlacement(S.lueurM, false); for (const [t, f] of S.ecoute) cv.removeEventListener(t, f, true); S.ui.remove(); S.inv.remove(); M.scene.remove(S.grille); M.scene.remove(S.cadre); M.rendu.clippingPlanes = []; if (M.cine === S.cine) finCine(); placerCamera(true); return; }
   const moi = M.gens.get(M.moiNum), p = moi ? moi.g.position : new THREE.Vector3();
   const S = M.amen = { cx: p.x, cz: p.z, h: 7, yaw: 0, sel: null, drag: null, pts: new Map(), ecoute: [] };
   M.rendu.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), (L.plafond || 3.15) - .25)];   // (le plafond s'efface : on voit dans les pièces)
@@ -7143,6 +7198,8 @@ function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) retur
   S.grille = new THREE.Group(); for (const y of [.015, .695]) { const gr = new THREE.GridHelper(30, 120, 0x6a8fd0, 0x9ab4e0); gr.position.set(-.5, y, 2); gr.material.transparent = true; gr.material.opacity = .35; gr.material.depthWrite = false; S.grille.add(gr); } M.scene.add(S.grille);
   S.cadre = new THREE.Box3Helper(new THREE.Box3(), 0xffd040); S.cadre.visible = false; M.scene.add(S.cadre);
   S.cine = M.cine = { gel: true, maj: () => { const base = L.hauteur ? L.hauteur(S.cx, S.cz) : 0; cam.position.set(S.cx + Math.sin(S.yaw) * S.h * .45, base + S.h, S.cz + Math.cos(S.yaw) * S.h * .45); cam.lookAt(S.cx, base, S.cz);
+    if (S.lueurM !== S.sel) { if (S.lueurM) lueurPlacement(S.lueurM, false); S.lueurM = S.sel; if (S.sel) lueurPlacement(S.sel, true); }   // (l'objet choisi brille)
+    if (S.sel && S.sel.lueur) { const k = .3 + .25 * Math.sin(performance.now() / 180); for (const [mt] of S.sel.lueur) { mt.emissive.setHex(S.ok === false ? 0xff2020 : 0xffc030); mt.emissiveIntensity = k; } }
     if (S.sel) { majBoiteMeuble(S.sel); const b = new THREE.Box3().setFromObject(S.sel.g); S.cadre.box.copy(b); S.cadre.visible = S.sel.g.visible; S.cadre.material.color.setHex(S.ok === false ? 0xff3030 : 0xffd040); } else S.cadre.visible = false; } };
   // les boutons
   const ui = S.ui = document.createElement("div"); ui.style.cssText = "position:absolute;left:8px;right:56px;top:8px;z-index:12;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none";
@@ -7160,7 +7217,7 @@ function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) retur
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) inv.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(inv);
   const majInv = () => { const r = L.meublesAppart.filter(m => m.range); inv.innerHTML = `<b>🧰 Inventaire</b> <span style="opacity:.7">(${r.length})</span>` + (r.length ? "" : `<div style="opacity:.7;margin-top:8px">Vide : touche un meuble puis « 📦 Ranger ».</div>`);
     for (const m of r) { const d = document.createElement("button"); d.type = "button"; d.textContent = m.nom; d.style.cssText = "display:block;width:100%;text-align:left;margin-top:6px;padding:8px;border-radius:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;cursor:pointer";
-      d.onclick = e => { e.stopPropagation(); m.range = false; m.g.visible = true; const px = Math.round(S.cx * 10) / 10, pz = Math.round(S.cz * 10) / 10, y = m.suspendu ? m.g.position.y : m.surMeuble ? hauteurPose(L, m, px, pz) : (L.hauteur ? L.hauteur(S.cx, S.cz) : 0); m.g.position.set(px, y, pz); if (m.mural) collerAuMur(L, m, px, pz); S.sel = m; valider(); majInv(); majBtns(); inv.hidden = true; }; inv.appendChild(d); } };
+      d.onclick = e => { e.stopPropagation(); m.range = false; m.g.visible = true; const px = Math.round(S.cx * 10) / 10, pz = Math.round(S.cz * 10) / 10, y = m.suspendu ? m.g.position.y : m.surMeuble ? hauteurPose(L, m, px, pz) : (L.hauteur ? L.hauteur(S.cx, S.cz) : 0); m.g.position.set(px, y, pz); if (m.mural) collerAuMur(L, m, px, pz); S.sel = m; S.cx = m.g.position.x; S.cz = m.g.position.z; S.h = Math.min(S.h, 4.5);   /* (la vue se resserre sur lui : on voit où il est) */ valider(); majInv(); majBtns(); inv.hidden = true; }; inv.appendChild(d); } };
   const valider = () => { if (!S.sel) return; S.ok = placeMeubleOK(L, S.sel); if (S.ok) { S.sel.dernier = { x: S.sel.g.position.x, z: S.sel.g.position.z, ry: S.sel.g.rotation.y }; sauverAmenagement(); } };
   // toucher, glisser, pincer
   const ray = new THREE.Raycaster(), ndc = e => { const r = cv.getBoundingClientRect(); return new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); };
@@ -9025,7 +9082,7 @@ export async function ouvrir(ctx) {
     if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
-    animerCercles(t); ambianceApo(); boutonAmenager(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
+    animerCercles(t); ambianceApo(); boutonAmenager(); boutonsPlacement(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
@@ -15253,7 +15310,7 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.amen) amenager(false);
+function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
   if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { const n = voile("background:#000;opacity:1");   /* (à Resident Evil : un bref fondu au noir, d'un lieu à l'autre — plus de porte qui s'ouvre) */
