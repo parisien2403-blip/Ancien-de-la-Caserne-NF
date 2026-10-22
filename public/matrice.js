@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.31";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.32";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8189,6 +8189,7 @@ export async function ouvrir(ctx) {
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
+  if (ctx.surInfo && !ctx.surInfoRE) { const o = ctx.surInfo; ctx.surInfoRE = true; ctx.surInfo = (...x) => { if (M && M.L && M.L.apo && !M.L.sh) return; return o(...x); }; }   /* (Resident Evil : aucun petit message d'aide — le jeu parle par les personnages, pas par des bandeaux) */
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
   // glisser le doigt à gauche ou à droite : tourner la vue ; toucher sans glisser : marcher (ou toucher un ancien)
   let glisse = null;
@@ -11754,6 +11755,7 @@ function cineEvac(m) {
   let noirF = null;
   const fin = () => { if (fini || !M) return; fini = true; finCine(); try { helA.pause(); mus.pause(); } catch (e) {} sonsCourts.delete(helA); sonsCourts.delete(mus); void noms;
     const n = noirF || voile("background:#000;opacity:1"); n && (n.style.opacity = "1"); logo.remove(); motFin.remove();
+    if (sonFin && sonFin.volume > .02) { const s0 = sonFin, v0 = s0.volume, t0f = performance.now(), f = () => { const k = (performance.now() - t0f) / 550; s0.volume = Math.max(0, v0 * (1 - k)); if (k < 1) requestAnimationFrame(f); }; f(); }   /* (passée : elle se baisse vite, sans couper net) */
     setTimeout(() => { n && n.remove(); retourCaserneApo(); }, 600); };
   M.passerBtn = boutonPasser(fin);
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
@@ -11803,6 +11805,7 @@ function cineEvac(m) {
       if (u > 29.6 && !logo.isConnected) { M.ctx.conteneur.appendChild(logo); M.ctx.conteneur.appendChild(motFin); requestAnimationFrame(() => { logo.style.opacity = "1"; logo.style.transform = "translate(-50%,-50%) scale(1)"; }); }
       if (u > 34.5 && !noirF) { noirF = voile("background:#000;opacity:0;transition:opacity 2s"); requestAnimationFrame(() => { if (noirF) noirF.style.opacity = "1"; }); }
       if (u > 37 && motFin.style.opacity !== "1") motFin.style.opacity = "1";
+      if (u > 39.5 && sonFin) sonFin.volume = Math.max(0, 1 - (u - 39.5) / 3.4);   /* (« Sweet Dreams » s'éteint doucement avec l'écran noir) */
       if (u > 43) fin(); } } };
 }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
@@ -12669,11 +12672,11 @@ function apparaitreZ(chien) {   // (true : un chien ; false : un zombie ; un nom
 }
 // (le chef) chaque zombie poursuit le joueur le plus proche ; sinon il erre
 function simulerZ(t, dt) {
-  const base = baseLieu(M.lieu), [nz0, nc] = ZNOMBRE[base] || [0, 0], Lz = limZ(), nz = Math.round(nz0 * (M.allege >= 2 ? .45 : PETIT ? .6 : 1));   /* (moins de monstres à la fois sur un petit téléphone) */
+  const base = baseLieu(M.lieu), [nz00, nc] = ZNOMBRE[base] || [0, 0], route = base === "grande" && M.separe, nz0 = route ? 19 : nz00, Lz = limZ(), nz = Math.round(nz0 * (M.allege >= 2 ? .45 : PETIT ? .6 : 1));   /* (séparés, seuls jusqu'à la cour d'honneur : plus de monstres sur le trajet) */   /* (moins de monstres à la fois sur un petit téléphone) */
   const vivants = [...M.zomb.values()];
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
   for (const z of vivants) if (z.mortT && !z.cadavre && t - z.mortT > 3400) retirerZ(z);   // (abattu : il s'efface, et disparaît)
-  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + 6000; const zs = [...M.zomb.values()];
+  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + (route ? 2500 : 6000); const zs = [...M.zomb.values()];
     if (zs.filter(z => !z.chien && !z.boss && !z.revenant).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
   const figes = !!(M.cine && M.cine.gel);   /* (pendant une scène — la radio de Brad, une discussion — les monstres ne bougent plus : personne ne vient sur nous) */
