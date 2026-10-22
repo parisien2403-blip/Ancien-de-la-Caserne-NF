@@ -760,7 +760,7 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = "#8a3b22"; x.font = "bold 34px Arial"; x.textAlign = "center"; x.fillText(o.initiales || "?", 100, 92); }
     }
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);    // (les verres, le torchon : dans les mains, qui ont suivi la corpulence)
-    if (assis && !/^batterie/.test(o.pose || "")) {
+    if (assis && !o.sansVerre && !/^batterie/.test(o.pose || "")) {
       // le verre (une bière, avec sa mousse), dans la main ; incliné quand on boit
       const [gx, gy, a] = o.pose === "boire" ? [100, 146, -.9] : [130, 206, 0];
       x.save(); x.translate(gx, gy); x.rotate(a);
@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.39";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.40";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7126,8 +7126,8 @@ function animerChefAppart() { if (!M || !M.L) return; let g = M.gens.get(CHEF_AP
   if (!f) { if (g) retirerAncien(CHEF_APPART); return; }
   const ry = f.g.rotation.y, x = f.g.position.x + Math.sin(ry) * .05, z = f.g.position.z + Math.cos(ry) * .05;
   if (!g) { const P = (M.ctx.pnj && M.ctx.pnj()) || {}; g = ajouterAncien({ numero: CHEF_APPART, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
-      teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, maman: true, x, z }); if (!g) return; g.info.assis = 0; }
-  g.cible = null; g.chemin = []; if (Math.hypot(g.g.position.x - x, g.g.position.z - z) > .02) { g.g.position.x = x; g.g.position.z = z; } g.g.position.y = f.g.position.y; }
+      teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, sansVerre: true, x, z }); if (!g) return; g.info.assis = 0; }
+  g.cible = null; g.chemin = []; if (Math.hypot(g.g.position.x - x, g.g.position.z - z) > .02) { g.g.position.x = x; g.g.position.z = z; } g.g.position.y = f.g.position.y - .1; }   /* (l'assise du fauteuil est plus basse qu'un tabouret de bar) */
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
 function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen;
@@ -8916,7 +8916,7 @@ export async function ouvrir(ctx) {
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
         else if (Number.isInteger(p.info.assis)) {
           // assis au bar : il boit une gorgée de temps en temps
-          const ph = (t + p.info.numero * 1300) % 6000, pose = ph < 1300 ? "boire" : "assis";
+          const ph = (t + p.info.numero * 1300) % 6000, pose = ph < 1300 && !p.info.sansVerre ? "boire" : "assis";   /* (sans verre : il ne boit pas) */
           if (p.corps.material.map !== p.poses[pose]) { p.corps.material.map = p.poses[pose]; p.corps.material.needsUpdate = true; }
           p.corps.material.rotation = 0; p.corps.position.x = 0; p.corps.position.y = 0; p.dansait = true; }
         else if (partenaire) {
