@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.28";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.29";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10810,6 +10810,7 @@ function apocalypse(scene, L, base) {
   const hauteurSol = (x, z) => base === "etage" ? 0 : (L.hauteur ? L.hauteur(x, z, { g: { position: { y: 0 } } }) : 0);   // (le sol où l'on marche, pas le sous-sol)
   const repos = (x, z) => base === "fetes" && z > 17.6;   // le vestibule et le bar du sous-sol : la salle de repos, intacte
   L.repos = repos;
+  if (!L.sh) caissesSH(scene, L, base);   /* (le vestibule, condamné par des caisses — des deux côtés : on passe forcément par la salle des fêtes) */
   for (let i = libre.length - 1; i >= 0; i--) if (repos(libre[i][0], libre[i][1])) libre.splice(i, 1);
   if (base === "etage") { libre.length = 0;   // les couloirs : sur chaque étage
     for (let n = 0; n <= ET.N; n++) for (let i = 0; i < 9; i++) { const x = (hasard(n * 17 + i) - .5) * 21, z = -1.15 - hasard(n * 5 + i * 3) * 1.5; libre.push([x, z, n * ET.H]); } }
@@ -11388,7 +11389,7 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
   let best = null, bd = 30; for (const [, cadres] of L.facadesFen || []) for (const c of cadres) { if (c.H < 8 || c.H > 26) continue; const nn = Math.hypot(c.n[0], c.n[2]) || 1, nx = c.n[0] / nn, nz = c.n[2] / nn;
       const x = c.o[0] + nx * .55, z = c.o[2] + nz * .55, d = Math.hypot(x - mp.x, z - mp.z); if (d < bd && d > 6 && (mp.x - x) * nx + (mp.z - z) * nz > 0) { bd = d; best = { c, nx, nz, x, z, y: c.o[1] + c.H / 2 }; } }
   if (!best) best = { c: { ux: [0, 0, 1] }, nx: -1, nz: 0, x: 10.7, z: Math.max(-6, Math.min(8, mp.z)), y: 7.0 };   /* (sinon : le toit plat du bâtiment de la salle des fêtes, au bord de la cour d'honneur) */
-  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id)].map(Number)), id = [21, 26, 24, 22, 23, 25].find(h => !pris.has(h)) || 24, femme = id === 21, nomH = HEROS[id].court;
+  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id)].map(Number)), id = [21, 26, 24, 22, 23, 25].find(h => !pris.has(h)) || 24, femme = id === 21, nomH = HEROS[id].court; M.toitId = id; M.toitNom = nomH;
   const ux = best.c.ux[0], uz = best.c.ux[2], yT = best.y, bord = (a, r = 0) => [best.x + ux * a - best.nx * r, best.z + uz * a - best.nz * r];
   const [hx, hz] = bord(0, 2.0); retirerAncien(PNJ_TOIT);   /* (sur le toit lui-même, en retrait du bord — pas debout sur la corniche) */ const p = ajouterAncien({ ...infoEquipier(id, PNJ_TOIT, hx, hz, M.moiNum, 9), equipier: false }); if (!p) return false; p.g.position.y = yT; p.cineRE = true;
   const zs = [[-1.6, 3.2], [1.5, 3.4]].map(([a, r]) => { const [x, z] = bord(a, r), q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: 0, x, z, y: yT }); q.cine = true; q.y = yT; q.x0 = x; q.z0 = z; return q; });
@@ -11549,9 +11550,7 @@ function objectifApo() {
   const F = M && M.fumi, L = M && M.L; let t = "";
   const NOMS = { "z-grande": "la grande cour", "z-fetes": "la salle des fêtes", "z-etage": "les couloirs des étages", "z-mess": "le mess", "z-rue": "la rue" };
   const ici = F && !F.trouve && F.lieu === (M && M.lieu), moi = M && moiApo(), P = M && M.fumiPos, d = ici && moi && P && (baseLieu(M.lieu) !== "etage" || etageDe(moi) === P[3]) ? Math.hypot(moi.g.position.x - P[0], moi.g.position.z - P[2]) : 99, etg = ici && P && baseLieu(M.lieu) === "etage" ? ` (${P[3] === 0 ? "au rez-de-chaussée" : P[3] === 1 ? "au 1er étage" : "au " + P[3] + "e étage"})` : "";
-  if (L && L.apo && F && !M.evac && !M.cine && !APO.zombieFin) t = !F.trouve ? ""   /* (aucune aide pour le trouver : c'est un équipier qui dit qu'il en faut un, quand l'hélico passe sans nous voir) */
-    : M.lieu === "z-grande" ? "🚁 Monte sur la terrasse (au fond, après le passage) et marche sur le cercle rouge du H"
-    : "🚁 Va dans la grande cour, puis sur la terrasse : marche sur le cercle rouge du H";
+  /* (Resident Evil : plus de bandeau d'objectif — ni pour chercher le fumigène, ni pour la terrasse) */ void F; void L;
   if (L && L.sh) t = texteObjectifSH();
   if (t === (M && M.objectifT)) return; if (M) M.objectifT = t;
   if (!t) { if (M && M.objectifEl) { M.objectifEl.remove(); M.objectifEl = null; } return; }
@@ -12117,7 +12116,7 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
   if (!lp) lp = [mp.x + f.x * 4, mp.z + f.z * 4]; T.x = lp[0]; T.z = lp[1]; T.ry = Math.atan2(ep.x - T.x, ep.z - T.z); T.g.visible = false;
   const L = eq ? [[1.0, M.moiNum, "Tu entends ça ?"], [5.0, eq.info.numero, "Laisse-le-moi !"]] : [[1.0, M.moiNum, "Tu entends ça ?"], [5.0, M.moiNum, "Qu'est-ce que c'est que ça… ?! Recule, saleté !"]];
   const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); T.cine = false; T.vise = null; T.marche = false; T.g.visible = true; T.etat = T.etat === "frappe" ? "frappe" : "chasse";
-    if (eq && !coup) { coup = true; tete = decapiter(eq, k, aPieds()); criLisa(1); } if (tete) tete.fin(); };
+    if (eq && !coup) { coup = true; M.lisaVictime = (HEROS[M.equipe[k].id] && HEROS[M.equipe[k].id].court) || eq.info.nom; tete = decapiter(eq, k, aPieds()); criLisa(1); } if (tete) tete.fin(); };
   M.passerBtn = boutonPasser(fin);
   const aPieds = () => { const q = eq ? eq.g.position : ep, d = new THREE.Vector3(q.x - mp.x, 0, q.z - mp.z).normalize(); return mp.clone().addScaledVector(d, .55).addScaledVector(new THREE.Vector3(d.z, 0, -d.x), .25); };   /* (là où la tête vient rouler : à nos pieds) */
   const tApp = 2.6, tCharge = 5.4;
@@ -12133,7 +12132,7 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
     if (eq && !coup && u > tCharge) { const dx = T.x - qp.x, dz = T.z - qp.z, d = Math.hypot(dx, dz) || 1;
       if (d > 1.5) { if (!eq.cible) eq.cible = new THREE.Vector3(T.x - dx / d * 1.2, qp.y, T.z - dz / d * 1.2); } else { eq.cible = null; eq.chemin = []; }
       if (tirs < 3 && u > tCharge + .3 + tirs * .55) { tirs++; eclairDuCanon(eq, dx / d, dz / d); sonTir(.8); T.flashT = now + 140; }   /* (il tire en avançant : elle ne s'arrête pas) */
-      if (T.etat !== "frappe" && (d < 1.7 || u > tCharge + 3.2)) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: qp.x, z: qp.z, coup: () => { coup = true; uCoup = M.cine ? M.cine.u : 0; eq.cible = null; tete = decapiter(eq, k, aPieds()); } }; } }
+      if (T.etat !== "frappe" && (d < 1.7 || u > tCharge + 3.2)) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: qp.x, z: qp.z, coup: () => { coup = true; uCoup = M.cine ? M.cine.u : 0; eq.cible = null; M.lisaVictime = (HEROS[M.equipe[k].id] && HEROS[M.equipe[k].id].court) || eq.info.nom; tete = decapiter(eq, k, aPieds()); } }; } }
     if (tete) tete.maj(Math.min(.05, Math.max(0, u - (M.cine.uPrec ?? u)))); M.cine.uPrec = u;
     if (coup && u > uCoup + 1.6) T.vise = null;   // (puis elle se tourne vers nous)
     let c, v;
@@ -12148,6 +12147,87 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
     if (eq ? coup && u > uCoup + 4.8 : u > 8) fin(); } }; }
 // le cri de Lisa, court (pendant le combat : touchée, sa frappe, sa mort)
 let criLisaT = 0; const criLisa = (vol = 1, force) => { const now = performance.now(); if (!force && now < criLisaT) return; criLisaT = now + 4500; sonPos("sons/re-lisa-cri.mp3", vol); };   /* (pas plus d'un cri toutes les quatre secondes et demie, sauf sa mort) */
+/* le bar du sous-sol, à l'apocalypse (Lisa abattue) : on y tombe sur un survivant. On lui parle de l'équipier tué par Lisa ; lui était sur le toit
+   avec celui qui est tombé, ils ont été séparés ; on lui apprend sa mort… il craque, et se tire une balle. Une lettre tombe de sa poche */
+const PNJ_BAR = -490 - 21;
+function barApo(moi, now) {
+  if (M.barL && M.barL !== M.L) { M.barL = null; if (M.lettre) { M.lettre.g.parent && M.lettre.g.parent.remove(M.lettre.g); M.lettre = null; } if (M.gens.get(PNJ_BAR)) retirerAncien(PNJ_BAR); }
+  if (M.lettre && !M.lettre.pris && !M.cine && !APO.zombieFin) { const l = M.lettre; l.halo.material.opacity = .3 + .2 * Math.sin(now / 300);
+    if (Math.hypot(moi.g.position.x - l.x, moi.g.position.z - l.z) < .8) { l.pris = true; l.g.parent && l.g.parent.remove(l.g); lireLettre(l.nom, l.ami); } }
+  if (M.barFait || M.cine || baseLieu(M.lieu) !== "fetes" || !M.lisaMorte || lisaVivante() || APO.zombieFin || M.evac || !M.L.repos) return;
+  const mp = moi.g.position; if (!M.L.repos(mp.x, mp.z) || mp.y > -1) return;   // (en bas, dans le bar)
+  // lui : à trois ou quatre pas devant nous, dans le bar
+  const fw = new THREE.Vector3(Math.sin(moi.av3 ? moi.av3.sc.rotation.y : 0), 0, Math.cos(moi.av3 ? moi.av3.sc.rotation.y : 0)); let pos = null;
+  for (let i = 0; i < 16 && !pos; i++) { const a = (i % 2 ? 1 : -1) * Math.floor((i + 1) / 2) * .4, r = 3.2 - (i % 3) * .5, d = fw.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), a), x = mp.x + d.x * r, z = mp.z + d.z * r;
+    if (M.L.limites(x, z) && M.L.repos(x, z) && ligneLibre(M.L, mp.x, mp.z, x, z) && Math.abs(hNiv(M.L, x, z, mp.y) - mp.y) < .3) pos = [x, z]; }
+  if (!pos) return; M.barFait = true; M.barL = M.L;
+  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id), M.toitId].map(Number)), id = [23, 22, 24, 26, 21, 25].find(h => HEROS[h] && !pris.has(h)) || 23;
+  retirerAncien(PNJ_BAR); const p = ajouterAncien({ ...infoEquipier(id, PNJ_BAR, pos[0], pos[1], M.moiNum, 9), equipier: false }); if (!p) return; p.g.position.y = hNiv(M.L, pos[0], pos[1], mp.y); p.cineRE = true;
+  cineBar(moi, p, HEROS[id].court);
+}
+function cineBar(moi, p, nom) {
+  const cam = M.camera, mp = moi.g.position, pp = p.g.position, moiN = nomApo(), mort = M.lisaVictime || "", ami = M.toitNom || "Leon"; moi.cible = null; moi.chemin = [];
+  const L = [[.6, p, `Qui est là ?! … ${moiN} ? Bon sang… j'ai cru que c'était encore une de ces choses.`],
+    [4.4, moi, mort ? `${nom}… Tu es vivant. On a perdu ${mort}, là-haut, dans la salle des fêtes. Une créature… elle lui a arraché la tête.` : `${nom}… Tu es vivant. Là-haut, dans la salle des fêtes, il y avait une créature… On a eu de la chance.`],
+    [9.0, p, mort ? `Non… pas ${mort}…` : "Une créature…"], [11.2, p, `J'étais avec ${ami}, sur le toit. Ils sont montés de partout… On a été séparés. Je l'ai cherché, partout. Tu l'as vu ?`],
+    [16.2, moi, `${nom}… ${ami} est mort. Je l'ai vu tomber du toit.`], [19.6, p, "Non… non, non, non… Ils sont tous morts. Tous."],
+    [22.6, moi, "Écoute-moi. On va s'en sortir. L'hélicoptère va venir nous chercher…"], [26.0, p, `Je suis désolé, ${moiN}.`], [30.6, moi, `${nom} !!! NOOON !`]];
+  const tTempe = 27.2, tTir = 29.2, tFin = 34.5; let dit = 0, fini = false, tire = false, clk = 0, prec = performance.now();
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); p.tempe = false;
+    if (!tire) { tire = true; p.info.mortT = performance.now(); flaqueMort(p); }
+    // la lettre, tombée de sa poche, près du corps
+    const d = new THREE.Vector3(mp.x - pp.x, 0, mp.z - pp.z).normalize(), lx = pp.x + d.x * .7 + d.z * .45, lz = pp.z + d.z * .7 - d.x * .45, ok = M.L.limites(lx, lz), x = ok ? lx : pp.x + d.x * .8, z = ok ? lz : pp.z + d.z * .8;
+    const g = new THREE.Group(), y = hNiv(M.L, x, z, pp.y); g.position.set(x, y + .015, z); M.scene.add(g);
+    const papier = new THREE.Mesh(new THREE.PlaneGeometry(.26, .19), new THREE.MeshStandardMaterial({ map: texLettre(), roughness: .9 })); papier.rotation.set(-Math.PI / 2, 0, .4); g.add(papier);
+    const halo = new THREE.Mesh(new THREE.CircleGeometry(.32, 24), new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: .4, depthWrite: false })); halo.rotation.x = -Math.PI / 2; halo.position.y = -.005; g.add(halo);
+    M.lettre = { g, halo, x, z, nom, ami, pris: false }; M.ctx.surInfo && M.ctx.surInfo("✉️ Un papier est tombé de sa poche…"); };
+  M.passerBtn = boutonPasser(fin);
+  M.cine = { t0: performance.now(), gel: true, nettoyer: () => { fini = true; p.tempe = false; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+    const d = new THREE.Vector3(pp.x - mp.x, 0, pp.z - mp.z), dl = d.length() || 1; d.divideScalar(dl); const sd = new THREE.Vector3(d.z, 0, -d.x);
+    moi.cible = null; moi.chemin = []; if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(d.x, d.z); if (!tire && p.av3) p.av3.sc.rotation.y = Math.atan2(-d.x, -d.z);
+    if (p.av3 && !p.bandage) p.bandage = bandageBras(p.av3);   /* (le bandage, à l'avant-bras gauche : la morsure) */
+    if (u > tTempe && !tire) p.tempe = true;   /* (il lève son arme, le canon sur la tempe) */
+    if (u > tTir && !tire) { tire = true; p.tempe = false; p.info.mortT = now; sonPos("sons/re-tir.mp3", 1); voile("background:#fff;opacity:.25", 90);
+      for (let i = 0; i < 6; i++) setTimeout(() => M && jetSang(pp.x - sd.x * (.15 + i * .05), pp.y + 1.55 - i * .1, pp.z - sz(sd) * (.15 + i * .05)), i * 70);   /* (le sang qui gicle, de l'autre côté de la tête) */
+      sangAuSol(pp.x - sd.x * .9, pp.z - sd.z * .9, pp.y, 1); setTimeout(() => M && flaqueMort(p), 1300); }
+    // la caméra : de côté, nous deux ; sur lui quand il craque ; puis derrière nous
+    let c, v; const lib = q => M.L.limites(q.x, q.z) && ligneLibre(M.L, q.x, q.z, pp.x, pp.z);
+    if (u > tTempe - .4 && u < tTir + .7) { c = pp.clone().addScaledVector(sd, 1.3).addScaledVector(d, -1.1); if (!lib(c)) c = pp.clone().addScaledVector(d, -1.7).addScaledVector(sd, .35); c.y = pp.y + 1.55; v = pp.clone().setY(pp.y + 1.45); }   // (de près, du côté de l'arme : lui, le canon sur la tempe)
+    else if (u >= tTir + .7) { c = pp.clone().addScaledVector(sd, 1.2).addScaledVector(d, -1.6); if (!lib(c)) c = pp.clone().addScaledVector(sd, -1.2).addScaledVector(d, -1.6); c.y = pp.y + 1.3; v = pp.clone().addScaledVector(d, -.6).setY(pp.y + .2); }   // (il s'effondre : son corps, à terre, d'en haut)
+    else { c = mp.clone().addScaledVector(d, -.9).addScaledVector(sd, .5); c.y = mp.y + 1.75; v = pp.clone().setY(pp.y + 1.4); }   // (par-dessus notre épaule : lui, qui parle)
+    if (!M.L.limites(c.x, c.z)) { c = mp.clone().addScaledVector(d, -.6).addScaledVector(sd, -.5); c.y = mp.y + 1.75; }
+    cam.position.copy(c); cam.lookAt(v);
+    while (dit < L.length && u > L[dit][0]) { const [, q, txt] = L[dit]; dire(q.info.numero, txt); dit++; }
+    if (u > tFin) fin(); } };
+}
+const sz = v => v.z;
+// un bandage blanc taché de sang, autour de l'avant-bras gauche
+function bandageBras(A) { const b = os3D(A, "LeftForeArm"), h = os3D(A, "LeftHand"); if (!b || !h) return null; A.sc.updateMatrixWorld(true);
+  const pb = b.getWorldPosition(new THREE.Vector3()), ph = h.getWorldPosition(new THREE.Vector3()), lg = pb.distanceTo(ph), ws = b.getWorldScale(new THREE.Vector3()).x || 1;
+  const t = tex(toile(64, 32, x => { x.fillStyle = "#e9e4d8"; x.fillRect(0, 0, 64, 32); x.strokeStyle = "rgba(150,140,120,.6)"; for (let i = 0; i < 8; i++) { x.beginPath(); x.moveTo(i * 9, 0); x.lineTo(i * 9 + 14, 32); x.stroke(); } x.fillStyle = "rgba(140,15,15,.75)"; x.beginPath(); x.ellipse(36, 16, 11, 7, .3, 0, 7); x.fill(); }));
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(.072, .064, lg * .6, 12, 1, true), new THREE.MeshStandardMaterial({ map: t, roughness: .95, side: THREE.DoubleSide, emissive: 0x605a50, emissiveMap: t }));
+  const loc = h.position.clone().multiplyScalar(.5);   // (au milieu de l'avant-bras, dans l'axe de l'os)
+  m.position.copy(loc); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), h.position.clone().normalize()); m.scale.setScalar(1 / ws); b.add(m); return m; }
+let texLettreT = null;
+const texLettre = () => texLettreT || (texLettreT = tex(toile(256, 188, (x, w, h) => { x.fillStyle = "#efe6cf"; x.fillRect(0, 0, w, h); x.strokeStyle = "rgba(40,40,90,.55)"; x.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { x.beginPath(); const y = 26 + i * 17; x.moveTo(18, y); for (let k = 18; k < w - 18 - (i === 8 ? 120 : 0); k += 8) x.lineTo(k, y + Math.sin(k * .4 + i) * 1.6); x.stroke(); }
+  x.fillStyle = "rgba(120,20,20,.35)"; x.beginPath(); x.arc(w * .78, h * .7, 14, 0, 7); x.fill(); })));   // (une feuille pliée, griffonnée ; une tache de sang)
+// la lettre, écrite à la main
+function lireLettre(nom, ami) { const moiN = nomApo();
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:rgba(0,0,0,.72);padding:14px";
+  d.innerHTML = `<div style="position:relative;max-width:520px;width:100%;max-height:92%;overflow:auto;background:#efe6cf linear-gradient(transparent 0 31px,rgba(60,70,140,.18) 31px 32px) 0 6px/100% 32px;color:#1d2340;padding:22px 24px 18px;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.7);transform:rotate(-1deg);font:500 22px/32px 'Caveat','Segoe Script','Bradley Hand',cursive">
+    <div style="position:absolute;right:26px;bottom:60px;width:46px;height:40px;border-radius:50%;background:radial-gradient(rgba(130,20,20,.45),rgba(130,20,20,0) 70%)"></div>
+    <p style="margin:0 0 6px">À qui trouvera ce mot,</p>
+    <p style="margin:0 0 6px">Je m'appelle ${esc(nom)}. Si vous lisez ça, c'est que je suis parti avant que ça me prenne.</p>
+    <p style="margin:0 0 6px">Sur le toit, quand ils nous ont encerclés, ${esc(ami)} et moi, l'un d'eux m'a mordu à l'avant-bras. Une seule morsure. J'ai serré un bandage et je n'ai rien dit. Je ne voulais pas qu'il me regarde comme on regarde ces choses.</p>
+    <p style="margin:0 0 6px">Depuis, la fièvre ne me lâche plus. J'ai froid, puis chaud. Mes mains tremblent. J'ai faim, et ce n'est pas une faim normale. Je sais ce qui vient après : je l'ai vu cent fois cette nuit. Il ne me reste plus beaucoup de temps.</p>
+    <p style="margin:0 0 6px">J'ai peur. Pas de mourir… j'ai peur de me relever. De revenir vous chercher, avec leurs yeux.</p>
+    <p style="margin:0 0 6px">Alors je préfère partir pendant que je suis encore moi. Pardonnez-moi.</p>
+    <p style="margin:0 0 6px">Si vous sortez d'ici, racontez ce qui s'est passé. Que personne n'oublie.</p>
+    <p style="margin:0 0 4px">Adieu.</p><p style="margin:0;text-align:right;font-size:28px">${esc(nom)}</p>
+    <div style="text-align:center;margin-top:14px"><button style="font:700 15px Lato,sans-serif;padding:9px 22px;border-radius:20px;border:0;background:#3a2a1c;color:#f4ead2;cursor:pointer">Fermer</button></div></div>`;
+  M.ctx.conteneur.appendChild(d); for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
+  d.querySelector("button").onclick = () => { d.remove(); if (M) setTimeout(() => M && dire(M.moiNum, `Repose en paix, ${nom}.`), 400); }; void moiN; }
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
@@ -12588,7 +12668,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); pluieRE(now); sursautsRE(moi, now); animerLisa(moi, now, dt); lancerLisa();
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); pluieRE(now); sursautsRE(moi, now); animerLisa(moi, now, dt); lancerLisa(); barApo(moi, now);
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
@@ -13380,8 +13460,10 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, -.36 * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
   if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;
   { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
-  const vise = p.viseeT && performance.now() - p.viseeT < 1600;
-  if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
+  const vise = (p.viseeT && performance.now() - p.viseeT < 1600) || p.tempe;
+  if (p.tempe) { A.sc.updateMatrixWorld(true); const ry = A.sc.rotation.y, f = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry)), dr = new THREE.Vector3(-f.z, 0, f.x);   // (l'arme sur la tempe : le coude levé sur le côté, l'avant-bras replié vers la tête)
+    viser3D(A, "RightArm", "RightForeArm", dr.clone().multiplyScalar(.75).add(new THREE.Vector3(0, .45, 0)).addScaledVector(f, .1).normalize()); viser3D(A, "RightForeArm", "RightHand", dr.clone().multiplyScalar(-.85).add(new THREE.Vector3(0, .5, 0)).addScaledVector(f, .15).normalize()); }
+  else if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
     const f = new THREE.Vector3(Math.sin(p.visee), -.08, Math.cos(p.visee)), dr = new THREE.Vector3(-f.z, 0, f.x);
     viser3D(A, "RightArm", "RightForeArm", f.clone().addScaledVector(dr, -.12)); viser3D(A, "RightForeArm", "RightHand", f);
     }   // (d'une seule main, le bras droit tendu : le bras gauche reste le long du corps)
@@ -14591,7 +14673,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.lettre = null; M.lisaVictime = M.toitNom = M.toitId = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
