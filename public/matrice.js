@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.32";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.33";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10613,7 +10613,7 @@ function sortirSH() { const G = M.gresil; M.gresil = null; couperGresil(G); bull
 let sonApo = null, sonFeu = null, sonRepos = null, sonRE = null, sonG = null, sonFin = null;
 function ambianceApo() {
   const moiR = M && M.moiNum && M.gens.get(M.moiNum), auRepos = !!(moiR && M.L && estApo(M.lieu) && M.L.repos && M.L.repos(moiR.g.position.x, moiR.g.position.z));
-  /* Resident Evil : « Tainted Love » (Marilyn Manson), fort, en continu dès que le titre RESIDENT EVIL apparaît */
+  /* Resident Evil : « Raccoon City » (RE2), en continu dès l'explosion du portail */
   if (!bufTirP && modeRE()) tirRE(0);   /* (le coup de feu, préparé dès l'arrivée) */
   const combatG = !!(M && lisaVivante() && !M.lisa.attente && (M.lisaMus || !M.cine));   /* (« The Second Malformation of G » (RE2) : le combat contre Lisa, dès qu'elle apparaît) */
   if (combatG && !sonG) { sonG = new Audio("sons/re-g2.mp3"); sonG.loop = true; sonG.volume = .75; }
@@ -10621,7 +10621,7 @@ function ambianceApo() {
   /* « Sweet Dreams » (Marilyn Manson) : dès que le Tyran arrive sur la terrasse, et jusqu'à la fin de la partie (l'évacuation, l'explosion, le titre) */
   if (M && M.musFin && !sonFin) { sonFin = new Audio("sons/re-sweet-dreams.mp3"); sonFin.volume = 1; }
   if (sonFin && M && M.musFin && sonFin.paused && !sonFin.ended && performance.now() - (sonFin.essai || 0) > 2000) { sonFin.essai = performance.now(); sonFin.play().catch(() => {}); }
-  { const on = !!(M && M.reMus && modeRE() && !auRepos && !combatG && !M.evac && !M.musFin);   /* (l'évacuation a sa propre musique) */ if (on && !sonRE) { sonRE = new Audio("sons/re-tainted-love.mp3"); sonRE.loop = true; sonRE.volume = 1; }
+  { const on = !!(M && M.reMus && modeRE() && !auRepos && !combatG && !M.evac && !M.musFin);   /* (l'évacuation a sa propre musique) */ if (on && !sonRE) { sonRE = new Audio("sons/re-raccoon.mp3"); sonRE.loop = true; sonRE.volume = .55; }
     if (sonRE) { if (on && sonRE.paused) { if (performance.now() - (sonRE.essai || 0) > 2000) { sonRE.essai = performance.now(); sonRE.play().catch(() => {}); } } else if (!on && !sonRE.paused) sonRE.pause(); } }
   if (auRepos && !sonRepos) { sonRepos = new Audio("sons/apo-repos.mp3"); sonRepos.loop = true; sonRepos.volume = .8; }
   if (sonRepos) { if (auRepos && sonRepos.paused) { if (performance.now() - (sonRepos.essai || 0) > 2000) { sonRepos.essai = performance.now(); sonRepos.play().catch(() => {}); } } else if (!auRepos && !sonRepos.paused) sonRepos.pause(); }
@@ -10629,7 +10629,7 @@ function ambianceApo() {
   const moi = M && M.moiNum && M.gens.get(M.moiNum), F = M && M.L && estApo(M.lieu) && M.L.feuxSon || [];
   let vf = 0; if (moi && F.length && !auRepos) { const d = Math.min(...F.map(([x, z]) => Math.hypot(moi.g.position.x - x, moi.g.position.z - z))); vf = Math.max(0, 1 - d / 16) ** 1.5; }
   if (vf > 0 && !sonFeu) { sonFeu = new Audio("sons/apo-feu.mp3"); sonFeu.loop = true; }
-  const duck = M && M.musFin ? .15 : sonRE && !sonRE.paused ? .5 : 1;   /* (« Tainted Love » devant : la ville et le feu derrière) */   /* (« Sweet Dreams » : on n'entend presque qu'elle) */
+  const duck = M && M.musFin ? .15 : 1;   /* (« Sweet Dreams » : on n'entend presque qu'elle) */   /* (« Sweet Dreams » : on n'entend presque qu'elle) */
   if (sonFeu) { sonFeu.volume = Math.min(1, vf) * duck;
     if (vf > .01 && sonFeu.paused) { if (performance.now() - (sonFeu.essai || 0) > 2000) { sonFeu.essai = performance.now(); sonFeu.play().catch(() => {}); } } else if (vf <= .01 && !sonFeu.paused) sonFeu.pause(); }
   const dehors = M && M.L && estApo(M.lieu) && !M.L.interieur;
@@ -11051,7 +11051,7 @@ function cineIntroApo(moi) {
     // le logo : il tombe d'un coup (un grand boum), reste, puis s'efface quand la vue plonge
     const a = Math.max(0, Math.min(1, (u - .9) / .35)), b = Math.max(0, Math.min(1, (u - 6.2) / .9));
     logo.style.opacity = String(a * (1 - b)); logo.style.transform = `translate(-50%,-50%) scale(${(1.6 - .6 * lisse(a)) * (1 + .05 * Math.max(0, u - 1.25) / 5)})`;
-    if (u > 1.2 && !boum) { boum = true; M.reMus = true; sonBruit(2.4, 110, 1); voile("background:#5a0000;opacity:.35", 160); }
+    if (u > 1.2 && !boum) { boum = true; sonBruit(2.4, 110, 1); voile("background:#5a0000;opacity:.35", 160); }
     if (u < 11.05) { const e = equipierVivant(); if (e) e.g.visible = false; }   /* (l'équipier n'existe qu'une fois le lieu prêt : on ne le voit pas traîner au fond avant l'explosion) */
     if (u < 6.5) { const k = lisse(u / 6.5); cam.position.lerpVectors(A, B, k); vise.set(cx + (p.x - cx) * k, p.y * k, cz + (p.z - cz) * k); }
     else if (u < 11) { if (!v0) v0 = vise.clone(); const k = lisse((u - 6.5) / 4.5); cam.position.lerpVectors(B, C, k); vise.lerpVectors(v0, Cv, Math.min(1, k * 1.4)); }
