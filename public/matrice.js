@@ -12029,7 +12029,7 @@ function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; 
     return; }
   const dx = mp.x - T.x, dz = mp.z - T.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
   if (T.etat === "chute") { const f = Math.min(1, (now - T.t0) / 700); T.g.position.set(T.x, hS(T.x, T.z) + (1 - f * f) * 14, T.z); T.piv.rotation.y = cap;
-    if (f >= 1) { T.etat = "regard"; T.regardT = now + 1500; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); M.ctx.surInfo && M.ctx.surInfo("☠️ LE TYRAN ! Abats-le (15 balles) pour que l'hélicoptère puisse se poser !"); } return; }
+    if (f >= 1) { T.etat = "regard"; T.regardT = now + 1500; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); } return; }
   T.g.position.set(T.x, hS(T.x, T.z), T.z); let dc = cap - T.piv.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); T.piv.rotation.y += dc * Math.min(1, dt * 7);
   if (APO.zombieFin) { jouerTY(T, "idle"); return; }
   if (T.etat === "frappe") { if (!T.touche && now - T.t0 > 520) { T.touche = true; if (d < 2.3) subirMorsure(T.x, T.z, 1); } if (now - T.t0 > 1300) { T.etat = "course"; } return; }
