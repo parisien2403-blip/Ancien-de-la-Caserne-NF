@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.41";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.42";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6657,18 +6657,19 @@ function construireAppart(A, L, scene) {
     for (const [y, piles] of [[.5, [[-.45, 6, 1], [0, 5, 1], [.45, 7, 0]]], [1.1, [[-.48, 5, 0], [-.1, 6, 0], [.3, 4, 1]]], [1.7, [[-.45, 4, 0], [.0, 3, 0], [.42, 5, 0]]], [2.3, [[-.35, 3, 1], [.3, 4, 1]]]])
       for (const [x, k, large] of piles) pile(x, y + .015, k, large); }
   // ---------- la lumière : douce partout, quelques plafonniers ----------
-  scene.add(new THREE.AmbientLight(0xfff1dc, .3));   // (un appartement plutôt sombre, comme à l'époque)
+  const ambAppart = new THREE.AmbientLight(0xfff1dc, .3); scene.add(ambAppart);   // (un appartement plutôt sombre, comme à l'époque)
   /* au plafond, partout : une petite ampoule à filament, en verre ambré, directement dans sa douille vissée au plafond ; elle éclaire peu, jaune orangé */
-  const fil = A.mat({ color: 0x141414 }), douille = A.mat({ color: 0x8a8a86, metalness: .8, roughness: .35 }), verre = new THREE.MeshStandardMaterial({ color: 0xf0a040, emissive: 0xff9a30, emissiveIntensity: .55, transparent: true, opacity: .55, roughness: .1, depthWrite: false });
+  const fil = A.mat({ color: 0x141414 }), douille = A.mat({ color: 0x8a8a86, metalness: .8, roughness: .35 }), verre0 = new THREE.MeshStandardMaterial({ color: 0xf0a040, emissive: 0xff9a30, emissiveIntensity: .55, transparent: true, opacity: .55, roughness: .1, depthWrite: false });
   const filament = new THREE.MeshBasicMaterial({ color: 0xffd27a });
-  const ampoule = (x, z) => { const y = HT - .07, g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+  const ampoules = [], ampoule = (x, z) => { const y = HT - .07, g = new THREE.Group(); g.position.set(x, y, z); scene.add(g); const verre = verre0.clone(); ampoules.push({ x, z, verre, c: verre.emissive ? verre.emissive.getHex() : 0, k: verre.emissiveIntensity });
     const m = (geo, mt, py, sx = 1, sy = 1) => { const o = new THREE.Mesh(geo, mt); o.position.y = py; o.scale.set(sx, sy, sx); g.add(o); return o; };
     m(new THREE.CylinderGeometry(.03, .03, .01, 14), douille, .065); m(new THREE.CylinderGeometry(.018, .02, .05, 12), douille, .035);   // (la douille, vissée au plafond)
     m(new THREE.CylinderGeometry(.014, .012, .025, 12), douille, -.005);   // (le culot à vis)
     m(new THREE.SphereGeometry(.03, 16, 12), verre, -.055, 1, 1.15); m(new THREE.CylinderGeometry(.014, .022, .03, 12), verre, -.025);   // (la poire de verre ambré)
     for (const a of [0, 2.1, 4.2]) { const f = m(new THREE.BoxGeometry(.002, .036, .002), filament, -.05); f.position.x = Math.cos(a) * .008; f.position.z = Math.sin(a) * .008; f.rotation.z = Math.cos(a) * .12; } };
   for (const [x, z] of [[0, -3.85], [0, 6], [-3.25, -1.9], [-3.25, -6.1], [3.25, -1.9], [3.9, -5.6], [3.25, P.cuisine], [-3.5, 2.1], [-4, 6.8], [-4, 12.15]]) ampoule(x, z);
-  for (const [x, z, i] of [[0, -3.85, 1.6], [0, 6, 1.6], [-4, 12.15, 2.4], [-4, 6.8, 2.4], [-3.25, -3.85, 2.2], [3.25, -2.5, 2.2]]) { const l = new THREE.PointLight(0xffa450, i, 8, 1.5); l.position.set(x, HT - .2, z); scene.add(l); }
+  const lampes = []; for (const [x, z, i] of [[0, -3.85, 1.6], [0, 6, 1.6], [-4, 12.15, 2.4], [-4, 6.8, 2.4], [-3.25, -3.85, 2.2], [3.25, -2.5, 2.2]]) { const l = new THREE.PointLight(0xffa450, i, 8, 1.5); l.position.set(x, HT - .2, z); scene.add(l); lampes.push({ l, x, z, i }); }
+  L.lumieresAppart = { ampoules, lampes, amb: ambAppart, etat: {} };   // (les interrupteurs : chaque pièce, le couloir)
   // ---------- où l'on marche ----------
   const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .3, c + .3] : [.3, XC + .5, c - .3, c + .3];   /* (assez large pour la carte des passages, tous les 35 cm : la porte du premier salon tombait entre deux cases) */   // (le passage d'une porte, à gauche ou à droite du couloir)
   const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
@@ -6795,8 +6796,8 @@ function caserMeuble(L, m, rect) { const [x0, x1, z0, z1] = rect, W = [x0 - .25,
   if (best) { g.position.x = best.x; g.position.z = best.z; g.rotation.y = best.ry; } majBoiteMeuble(m); }
 // au mur : le dos contre le mur le plus proche, à la hauteur voulue
 function murMeuble(L, m, rect, cote, t = .5, y = 1.55) { const [x0, x1, z0, z1] = rect, g = m.g;
-  if (cote === "x0") { g.position.set(x0 - .23, y, z0 + (z1 - z0) * t); g.rotation.y = Math.PI / 2; } else if (cote === "x1") { g.position.set(x1 + .23, y, z0 + (z1 - z0) * t); g.rotation.y = -Math.PI / 2; }
-  else if (cote === "z0") { g.position.set(x0 + (x1 - x0) * t, y, z0 - .23); g.rotation.y = 0; } else { g.position.set(x0 + (x1 - x0) * t, y, z1 + .23); g.rotation.y = Math.PI; } majBoiteMeuble(m); }
+  if (cote === "x0") { g.position.set(x0 - .175, y, z0 + (z1 - z0) * t); g.rotation.y = Math.PI / 2; } else if (cote === "x1") { g.position.set(x1 + .175, y, z0 + (z1 - z0) * t); g.rotation.y = -Math.PI / 2; }
+  else if (cote === "z0") { g.position.set(x0 + (x1 - x0) * t, y, z0 - .175); g.rotation.y = 0; } else { g.position.set(x0 + (x1 - x0) * t, y, z1 + .175); g.rotation.y = Math.PI; } majBoiteMeuble(m); }
 let texNuagesZ = null, texPSG = null;
 // le papier peint bleu ciel, semé de petits nuages blancs
 function toileNuages() { return toile(256, 256, (x, w, h) => { x.fillStyle = "#a9d4f2"; x.fillRect(0, 0, w, h);
@@ -6960,7 +6961,7 @@ function ouvrirMinitel() { if (!M || document.getElementById("minitel")) return;
 // un objet qu'on accroche au mur (crucifix, miroir, téléphone, drapeau) : il se colle au mur le plus proche de la pièce où on le pose, tourné vers la pièce
 function collerAuMur(L, m, x, z) { const R = [...(L.piecesAppart || []), ...(L.couloirAppart ? [[-.75, .75, L.couloirAppart[2], L.couloirAppart[3]]] : [])];
   let r = R.find(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3); if (!r) return false; const [x0, x1, z0, z1] = r, cote = [[x - x0, "x0"], [x1 - x, "x1"], [z - z0, "z0"], [z1 - z, "z1"]].sort((a, b) => a[0] - b[0])[0][1];
-  const W0 = [x0 - .25, x1 + .25, z0 - .25, z1 + .25], g = m.g, y = g.position.y, ep = .03;
+  const W0 = [x0 - .25, x1 + .25, z0 - .25, z1 + .25], g = m.g, y = g.position.y, ep = .075;   /* (devant la face du mur : le mur fait 10 cm d'épaisseur) */
   if (cote === "x0") { g.position.set(W0[0] + ep, y, Math.min(z1 + .1, Math.max(z0 - .1, z))); g.rotation.y = Math.PI / 2; } else if (cote === "x1") { g.position.set(W0[1] - ep, y, Math.min(z1 + .1, Math.max(z0 - .1, z))); g.rotation.y = -Math.PI / 2; }
   else if (cote === "z0") { g.position.set(Math.min(x1 + .1, Math.max(x0 - .1, x)), y, W0[2] + ep); g.rotation.y = 0; } else { g.position.set(Math.min(x1 + .1, Math.max(x0 - .1, x)), y, W0[3] - ep); g.rotation.y = Math.PI; } return true; }
 // d'autres objets de maman, dans l'inventaire : les crucifix, les miroirs victoriens, le cheval à bascule, les plantes, le téléphone mural
@@ -7146,7 +7147,7 @@ function majPlacement() { const P = M.place; if (!P) return; const L = M.L, m = 
     for (const [axe, v, ry] of [["x", W[0], Math.PI / 2], ["x", W[1], -Math.PI / 2], ["z", W[2], 0], ["z", W[3], Math.PI]]) { const dv = axe === "x" ? d.x : d.z; if (Math.abs(dv) < 1e-4) continue; const t = ((axe === "x" ? v : v) - (axe === "x" ? o.x : o.z)) / dv; if (t <= .05) continue;
       const h = o.clone().addScaledVector(d, t), u = axe === "x" ? h.z : h.x, [u0, u1] = axe === "x" ? [W[2], W[3]] : [W[0], W[1]]; if (u < u0 - .05 || u > u1 + .05) continue; if (!best || t < best.t) best = { t, h, axe, v, ry }; }
     if (!best) { const f = new THREE.Vector3(d.x, 0, d.z).normalize(); best = null; for (const [axe, v, ry] of [["x", W[0], Math.PI / 2], ["x", W[1], -Math.PI / 2], ["z", W[2], 0], ["z", W[3], Math.PI]]) { const dv = axe === "x" ? f.x : f.z; if (Math.abs(dv) < 1e-4) continue; const t = (v - (axe === "x" ? p.x : p.z)) / dv; if (t <= 0) continue; const h = p.clone().addScaledVector(f, t); h.y = sol + 1.6; if (!best || t < best.t) best = { t, h, axe, v, ry }; } }
-    if (!best) return; const ep = .03, y = Math.max(sol + .8, Math.min(sol + 2.5, best.h.y)), u = best.axe === "x" ? Math.max(W[2] + .25, Math.min(W[3] - .25, best.h.z)) : Math.max(W[0] + .25, Math.min(W[1] - .25, best.h.x));
+    if (!best) return; const ep = .075, y = Math.max(sol + .8, Math.min(sol + 2.5, best.h.y)), u = best.axe === "x" ? Math.max(W[2] + .25, Math.min(W[3] - .25, best.h.z)) : Math.max(W[0] + .25, Math.min(W[1] - .25, best.h.x));
     if (best.axe === "x") m.g.position.set(best.v + (best.ry > 0 ? ep : -ep), y, u); else m.g.position.set(u, y, best.v + (best.ry === 0 ? ep : -ep)); m.g.rotation.y = best.ry; }
   else { let h = null; if (d.y < -.05) { const t = (sol - o.y) / d.y; if (t > 0 && t < 7) h = o.clone().addScaledVector(d, t); }
     if (!h) { const f = new THREE.Vector3(d.x, 0, d.z).normalize(); h = p.clone().addScaledVector(f, 1.4); }   // (on regarde au loin : devant soi)
@@ -7183,6 +7184,22 @@ function inventairePlacement() { const L = M.L; const r = L.meublesAppart.filter
   for (const m of r) { const b = document.createElement("button"); b.type = "button"; b.textContent = (m.mural ? "🖼️ " : m.surMeuble ? "🕰️ " : "🪑 ") + m.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin-top:6px;padding:10px;border-radius:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;cursor:pointer";
     b.onclick = e => { e.stopPropagation(); d.remove(); prendrePlacement(m); }; d.appendChild(b); }
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); }
+// les interrupteurs de l'appartement : chacun peut éteindre ou rallumer la pièce où il se trouve (le couloir aussi)
+function cleLumiere(L, x, z) { const R = pieceAppart(L, x, z); if (!R) return null; const i = (L.piecesAppart || []).indexOf(R); return i > 0 ? i : "c"; }
+function lumieresAppart() { const L = M && M.L, LA = L && L.appart && L.lumieresAppart, moi = LA && M.gens.get(M.moiNum), ok = !!(moi && !M.amen && !M.cine);
+  if (!LA) { if (M && M.lumUI) { M.lumUI.remove(); M.lumUI = null; } if (M && M.lumExpo != null) { M.rendu.toneMappingExposure = M.lumExpo; M.lumExpo = null; } return; }
+  if (!LA.prete) { LA.prete = true; for (const o of [...LA.ampoules, ...LA.lampes]) o.cle = cleLumiere(L, o.x, o.z); LA.expo = M.lumExpo != null ? M.lumExpo : M.rendu.toneMappingExposure; M.lumExpo = LA.expo; LA.f = 1; }
+  const cle = moi ? cleLumiere(L, moi.g.position.x, moi.g.position.z) : null, noir = cle != null && LA.etat[cle] === false;
+  if (ok && cle != null && !M.lumUI) { const b = document.createElement("button"); b.type = "button"; b.style.cssText = "position:absolute;left:12px;z-index:7;padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer";
+    for (const ev of ["pointerdown", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
+    b.onclick = e => { e.stopPropagation(); const k = b.cle; if (k == null) return; LA.etat[k] = LA.etat[k] === false; for (const o of LA.lampes) if (o.cle === k) o.l.intensity = LA.etat[k] === false ? 0 : o.i;
+      for (const o of LA.ampoules) if (o.cle === k) { o.verre.emissiveIntensity = LA.etat[k] === false ? 0 : o.k; o.verre.opacity = LA.etat[k] === false ? .35 : .55; } };
+    M.ctx.conteneur.appendChild(b); M.lumUI = b; }
+  else if ((!ok || cle == null) && M.lumUI) { M.lumUI.remove(); M.lumUI = null; }
+  if (M.lumUI) { const t = noir ? "💡 Allumer" : "💡 Éteindre"; if (M.lumUI.textContent !== t) M.lumUI.textContent = t; M.lumUI.cle = cle; const bas = adminAppart() ? "220px" : "88px"; if (M.lumUI.style.bottom !== bas) M.lumUI.style.bottom = bas; }
+  /* dans une pièce éteinte, tout s'assombrit (l'exposition baisse doucement) ; le salon de la télé et du sapin garde un peu de lumière */
+  const vise = noir ? (cle === 10 ? .55 : .3) : 1; LA.f += (vise - LA.f) * .08; if (Math.abs(vise - LA.f) < .002) LA.f = vise;
+  M.rendu.toneMappingExposure = LA.expo * LA.f; LA.amb.intensity = .3 * (noir ? (cle === 10 ? .7 : .35) : 1); }
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
 function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place;
@@ -9082,7 +9099,7 @@ export async function ouvrir(ctx) {
     if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
     if (M.L.antenne) M.L.antenne.forEach((b, i) => { const on = ((t + i * 700) % 1400) < 380; b.material.color.setHex(on ? 0xff2a1a : 0x3a0806); });   // (les lampes de l'antenne)
     if (!M.triVus || t - M.triVus > 1000) { M.triVus = t; trierVisibles(); }
-    animerCercles(t); ambianceApo(); boutonAmenager(); boutonsPlacement(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
+    animerCercles(t); ambianceApo(); boutonAmenager(); boutonsPlacement(); lumieresAppart(); try { animerApo(performance.now(), dt); } catch (e) { M.signalerErreur && M.signalerErreur(e); }   /* (un souci dans le jeu de Resident Evil ne fige plus tout : l'image et les déplacements continuent) */
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
