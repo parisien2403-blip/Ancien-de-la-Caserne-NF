@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.47";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.48";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7609,8 +7609,8 @@ function construireCoraline(A, L, scene) {
       const cut = hasard(i * 11) * h; x.fillRect(i * p, cut, p, 1.5); } bruit(x, w, h, 1400, i => `rgba(${hasard(i) > .5 ? "255,240,220" : "40,20,10"},.06)`); });
   const sols = {
     parquet: motif(planches("#7a4a2c", "#6a3e24"), 1.6, { roughness: .45 }), gris: motif(planches("#8c8a86", "#7a7874"), 1.6), clair: motif(planches("#a8865e", "#987654"), 1.6, { roughness: .5 }),
-    carreau: motif(toile(128, 128, (x, w) => { x.fillStyle = "#e8e6de"; x.fillRect(0, 0, w, w); x.strokeStyle = "#a9a59a"; x.lineWidth = 2; x.strokeRect(1, 1, 62, 62); x.strokeRect(65, 1, 62, 62); x.strokeRect(1, 65, 62, 62); x.strokeRect(65, 65, 62, 62);
-      x.fillStyle = "#9aa2a8"; for (const [a, b] of [[64, 64], [0, 0], [128, 0], [0, 128], [128, 128]]) { x.beginPath(); x.arc(a, b, 9, 0, 7); x.fill(); } }), .9, { roughness: .3 }),
+    carreau: motif(toile(128, 128, (x, w) => { x.fillStyle = "#d6dccc"; x.fillRect(0, 0, w, w); x.strokeStyle = "#6a9a94"; x.lineWidth = 7; for (const [p, q] of [[0, 64], [64, 0], [64, 128], [128, 64]]) { x.beginPath(); x.moveTo(64, 64); x.lineTo(p, q); x.stroke(); }   /* (le carrelage de la cuisine : des losanges bleu-vert, comme dans le film) */
+      x.strokeStyle = "#8ab4ac"; x.lineWidth = 3; x.strokeRect(0, 0, w, w); x.fillStyle = "#5a8a86"; for (const [p, q] of [[32, 32], [96, 32], [32, 96], [96, 96]]) x.fillRect(p - 7, q - 7, 14, 14); bruit(x, w, w, 400, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "40,60,60"},.06)`); }), .55, { roughness: .35 }),
     chevrons: motif(toile(128, 128, (x, w) => { x.fillStyle = "#4a4a4e"; x.fillRect(0, 0, w, w); for (let i = -4; i < 8; i++) for (let j = 0; j < 8; j++) { x.save(); x.translate(j * 32 - i * 16 + (j % 2) * 16, i * 32 + j * 16); x.rotate(j % 2 ? Math.PI / 4 : -Math.PI / 4); x.fillStyle = `hsl(240, 3%, ${26 + hasard(i * 5 + j) * 12}%)`; x.fillRect(0, 0, 30, 10); x.restore(); } }), 1.2),
     blancs: motif(toile(64, 64, (x, w) => { x.fillStyle = "#eef0ee"; x.fillRect(0, 0, w, w); x.strokeStyle = "#c4cac8"; x.lineWidth = 2; x.strokeRect(0, 0, 32, 32); x.strokeRect(32, 32, 32, 32); x.strokeRect(32, 0, 32, 32); x.strokeRect(0, 32, 32, 32); }), .4, { roughness: .25 }),
     tomettes: motif(toile(64, 64, (x, w) => { x.fillStyle = "#8a4a32"; x.fillRect(0, 0, w, w); x.strokeStyle = "#5a2e1e"; x.lineWidth = 2; x.strokeRect(1, 1, 30, 30); x.strokeRect(33, 33, 30, 30); x.strokeRect(33, 1, 30, 30); x.strokeRect(1, 33, 30, 30); }), .5) };
@@ -7619,7 +7619,7 @@ function construireCoraline(A, L, scene) {
     if (genre === "rayures") { for (let i = 0; i < 4; i++) x.fillRect(i * 32 + 4, 0, 8, w); }
     else if (genre === "fleurs") { for (const [a, b] of [[32, 32], [96, 96], [96, 32], [32, 96]]) { for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(a + Math.cos(k * 1.26) * 6, b + Math.sin(k * 1.26) * 6, 4, 0, 7); x.fill(); } } }
     else { x.lineWidth = 3; for (const [a, b] of [[32, 32], [96, 96]]) { x.beginPath(); x.ellipse(a, b, 12, 20, 0, 0, 7); x.stroke(); x.beginPath(); x.moveTo(a, b - 26); x.lineTo(a, b + 26); x.stroke(); } } }), .6, { emissive: 0x161210, emissiveIntensity: .5 });
-  const P = { hall: papier("#8e7276", "#9c8084", "damas"), cuisine: papier("#cfc8a8", "#bdb593", "rayures"), salle: papier("#76736c", "#85827a", "damas"),   /* (d'après le film : le hall rose fané, la salle à manger grise, à motifs) */ salon: papier("#5e5a6c", "#6a6679", "fleurs"),
+  const P = { hall: papier("#8e7276", "#9c8084", "damas"), cuisine: motif(toile(128, 128, (x, w) => { x.fillStyle = "#e6cf8e"; x.fillRect(0, 0, w, w); bruit(x, w, w, 900, i => `rgba(${hasard(i) > .5 ? "255,240,200" : "150,110,50"},.07)`); }), 1, { emissive: 0x2a2010, emissiveIntensity: .5 }), salle: papier("#76736c", "#85827a", "damas"),   /* (d'après le film : le hall rose fané, la salle à manger grise, à motifs) */ salon: papier("#5e5a6c", "#6a6679", "fleurs"),
     bureau: papier("#8f989a", "#9ba3a5", "rayures"), tour: papier("#7a6a5a", "#87776a", "fleurs"), coraline: papier("#6f8590", "#7b919c", "fleurs"), parents: papier("#9c8c70", "#a8987c", "rayures"),
     bain: sols.blancs, grenier: motif(planches("#7a6450", "#6e5a48", 6), 1.4), lingerie: papier("#a0a49a", "#aeb2a8", "rayures"), amis: papier("#7c6f80", "#887b8c", "damas") };
   const plafond = A.mat({ color: 0xe6e0d4, roughness: .95, side: THREE.DoubleSide });
@@ -7627,7 +7627,7 @@ function construireCoraline(A, L, scene) {
   // ---------- le plan ----------
   /* les pièces : [nom, x0, x1, z0, z1, niveau, sol, papier, côtés extérieurs, fenêtres { x0: [[c, w, y0, h]] … }] */
   const PI = [
-    ["cuisine", -6.4, .9, -6.8, -2.2, 0, "carreau", "cuisine", "x0 z0", { z0: [[-5, 1.1], [-2.75, 1.8, .95, 1.5], [-.5, 1.1]], x0: [[-6, .9]] }],
+    ["cuisine", -6.4, .9, -6.8, -2.2, 0, "carreau", "cuisine", "x0 z0", { z0: [[-3.85, .95, 1.05, 1.35], [-2.75, .95, 1.05, 1.35], [-1.65, .95, 1.05, 1.35]] }],   /* (les trois fenêtres au-dessus de l'évier) */
     ["bureau", .9, 6.4, -6.8, -.5, 0, "gris", "bureau", "x1 z0", { z0: [[2.4, 1.1], [4.9, 1.1]], x1: [[-3.6, 1.8]] }],
     ["hall", -1.9, .9, -2.2, 3.2, 0, "parquet", "hall", "", {}],
     ["salle", -6.4, -1.9, -2.2, 3.2, 0, "parquet", "salle", "x0", { x0: [[-1.6, .9]] }],
@@ -7796,33 +7796,163 @@ function construireCoraline(A, L, scene) {
     boite(13.4, .22, 14.2, blanc, 0, YT + .02, 0);   // (la corniche blanche, sous le bord du toit)
     pignon(3.65, YT, 6.8, 0, 5.6, 3.6, 4.5); pignon(6.4, YT, -3.6, Math.PI / 2, 5, 3.4, 4.2); pignon(-2.75, YT, -6.8, Math.PI, 4.6, 3.3, 4); pignon(-6.4, YT, -4.3, -Math.PI / 2, 3.6, 3, 3.6); pignon(-6.4, YT, 1.4, -Math.PI / 2, 3.8, 3.1, 3.6);   // (devant ; à droite ; derrière ; les deux du côté gauche, le bow-window entre eux)
     boite(1, 6.4, 1.3, brique, 3.2, YT + 3.2, -3.8, true); boite(1.2, .2, 1.5, A.mat({ color: 0x4a3a34 }), 3.2, YT + 6.45, -3.8); }
-  // ---------- dedans : les meubles (simples, pour les petits téléphones) ----------
+  // ---------- dedans, pièce par pièce, comme dans le film (le vrai monde : des teintes passées, des cartons du déménagement partout) ----------
+  /* chaque meuble est construit dans son repère (sa face vers +z), puis posé dans la pièce : ses morceaux rejoignent la scène (ils se fondent avec les autres) */
   const OB = [[], []], ob = (n, x0, x1, z0, z1) => OB[n].push([x0, x1, z0, z1]);
-  const meuble = (n, w, h, d, m, x, z, y0 = 0, bloque = true) => { boite(w, h, d, m, x, (n ? Y1 : Y0) + y0 + h / 2, z); if (bloque) ob(n, x - w / 2, x + w / 2, z - d / 2, z + d / 2); };
-  const formica = A.mat({ color: 0xe8e2cc, roughness: .4 }), tissu = (c) => A.mat({ color: c, roughness: .9 }), metal = A.mat({ color: 0xc8ccd0, metalness: .6, roughness: .3 }), carton = A.mat({ color: 0xa88458, roughness: .9 });
-  // la cuisine : le long plan de travail sous la grande fenêtre, l'évier, le frigo, la table ronde et ses chaises
-  meuble(0, 5.2, .9, .62, formica, -3.2, -6.4); meuble(0, .75, 1.75, .7, A.mat({ color: 0xf0eee6, roughness: .3 }), .35, -6.35); meuble(0, .9, .9, .62, A.mat({ color: 0x2a2a2c }), -5.9, -6.4);
-  { const t = A.ajoute(new THREE.CylinderGeometry(.6, .6, .05, 20), bois, -2.6, Y0 + .76, -4.3, false); void t; A.ajoute(new THREE.CylinderGeometry(.08, .2, .74, 8), bois, -2.6, Y0 + .37, -4.3, false); ob(0, -3.2, -2, -4.9, -3.7);
-    for (const a of [0, 1.6, 3.4]) meuble(0, .4, .45, .4, tissu(0x6a3a2a), -2.6 + Math.cos(a) * .95, -4.3 + Math.sin(a) * .95, 0, false); }
-  // le bureau du père : la table encombrée, l'ordinateur, les cartons du déménagement, l'étagère
-  meuble(0, 1.6, .76, .8, bois, 4.2, -2.4); meuble(0, .45, .38, .3, A.mat({ color: 0xd8d4c4 }), 4.1, -2.5, .76, false); meuble(0, .5, .5, .5, tissu(0x3a3a3a), 4.2, -1.6);
-  for (const [x, z, s] of [[5.6, -6.2, .6], [5, -6.3, .5], [5.6, -6.2, .45], [2, -6.2, .55], [2.6, -5.9, .5]]) meuble(0, s, s * .75, s, carton, x, z, x === 5.6 && s < .5 ? .45 : 0); meuble(0, 1.4, 2, .35, bois, 1.6, -3.4 + .2);
-  // la salle à manger : la longue table, ses huit chaises, le buffet
-  meuble(0, 1, .76, 2.6, bois, -4.15, .5); for (const z of [-.3, .5, 1.3]) for (const s of [-1, 1]) meuble(0, .42, .9, .42, tissu(0x5a3a2a), -4.15 + s * .75, z, 0, false); meuble(0, .5, 1, 1.8, bois, -6, 2);
-  // le salon : le tapis, deux fauteuils, la table ronde, le piano droit
-  { const tp = boite(2.6, .01, 2, A.mat({ color: 0x6a5a24, roughness: .9 }), 3.6, Y0 + .025, 4.4); void tp; }
-  meuble(0, .8, .85, .8, tissu(0xb86a2a), 2.4, 3.4); meuble(0, .8, .85, .8, tissu(0x7a8a3a), 2.6, 5.4); meuble(0, .9, .7, .9, bois, 3.7, 4.4); meuble(0, .6, 1.3, 1.5, A.mat({ color: 0x1a1414, roughness: .35 }), 6, 4.4);
-  // la pièce de la tourelle : un vieux canapé, une plante ; l'entrée : le portemanteau
-  meuble(0, 2, .8, .85, tissu(0x6a5a4a), -4.6, 6.3); meuble(0, .5, 1.6, .5, bois, -1.5, 6.3);
-  // en haut : le grand lit des parents, les tables de nuit ; la baignoire, le lavabo ; le lit de Coraline, son bureau ; la lingerie ; la chambre d'amis, les cartons
-  meuble(1, 1.7, .55, 2.1, tissu(0xc8642a), 3.6, -5.6); meuble(1, 1.8, 1.1, .12, bois, 3.6, -6.62); meuble(1, .5, .55, .45, bois, 2.4, -6.4); meuble(1, .5, .55, .45, bois, 4.8, -6.4);
-  meuble(1, 1.7, .6, .8, A.mat({ color: 0xf2f2ee, roughness: .2 }), -4.2, -4.1); meuble(1, .6, .85, .45, A.mat({ color: 0xf2f2ee, roughness: .2 }), -6, -1.8); meuble(1, .45, .45, .6, A.mat({ color: 0xf2f2ee, roughness: .2 }), -2.4, -4.2);
-  meuble(1, 1.1, .5, 2, tissu(0x4a5a8a), -5.7, 1.9); meuble(1, 1.1, .9, .1, bois, -5.7, .92); meuble(1, 1.2, .75, .6, bois, -2.4, 4.6); meuble(1, .9, 1.8, .45, bois, -2.3, 1.2);
-  meuble(1, 1.6, 1.9, .45, bois, -4.2, .5);
-  for (const [x, z, s] of [[5.6, 6.2, .6], [5, 6.3, .5], [2, 6.2, .55], [6, 3, .5], [5.4, 3.2, .45]]) meuble(1, s, s * .75, s, carton, x, z); meuble(1, 1.1, .5, 2, tissu(0x6a6a7a), 2.2, 4);
-  for (const [x, z] of [[-5.6, -6.2], [-4.8, -6.3], [-1.2, -6.2]]) meuble(1, .6, .5, .6, carton, x, z);
+  const M3 = (c, r = .8, o = {}) => A.mat({ color: c, roughness: r, ...o });
+  const noyer = M3(0x3e2416, .5), chene = M3(0x6e4a2c, .55), acajou = M3(0x4a1e14, .4), fer = M3(0x2a2a2c, .5, { metalness: .5 }), laiton = M3(0xb8913a, .3, { metalness: .8 }), email = M3(0xeeeae0, .25),
+    noir = M3(0x161414, .6), drap = M3(0xe8e4da, .9), beige = M3(0xcfc6b0, .5), chrome = M3(0xc8ccd0, .25, { metalness: .8 }), carton = M3(0xa88458, .95), lampe = new THREE.MeshBasicMaterial({ color: 0xffe0a8 });
+  const meuble = (n, x, z, ry, larg, prof, bloque, f) => { const g = new THREE.Group(); g.position.set(x, n ? Y1 : Y0, z); g.rotation.y = ry; scene.add(g);
+    const b = (w, h, d, m, px, py, pz, rx = 0, rz = 0) => { const o = new THREE.Mesh(uvMetre(new THREE.BoxGeometry(w, h, d), w, h, d), m); o.position.set(px, py, pz); o.rotation.set(rx, 0, rz); g.add(o); return o; };
+    const c = (rt, rb, h, m, px, py, pz, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(px, py, pz); g.add(o); return o; };
+    const s = (r, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m); o.position.set(px, py, pz); g.add(o); return o; };
+    f(b, c, s, g);
+    g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g);
+    if (bloque) { const q = Math.abs(Math.sin(ry)) > .5, w = q ? prof : larg, d = q ? larg : prof; ob(n, x - w / 2, x + w / 2, z - d / 2, z + d / 2); } };
+  // les meubles du film
+  const chaise = (n, x, z, ry, m = noyer) => meuble(n, x, z, ry, .45, .45, false, (b) => { b(.44, .05, .42, m, 0, .46, 0); for (const [a, e] of [[-.19, -.18], [.19, -.18], [-.19, .18], [.19, .18]]) b(.04, .46, .04, m, a, .23, e);
+    for (let i = 0; i < 5; i++) b(.035, .5, .025, m, -.16 + i * .08, .74, -.19); b(.44, .06, .04, m, 0, 1.0, -.19); });   // (le dossier à barreaux, comme dans le film)
+  const table = (n, x, z, ry, w, d, m = noyer, h = .76) => meuble(n, x, z, ry, w, d, true, (b) => { b(w, .05, d, m, 0, h - .025, 0); b(w - .1, .1, d - .1, m, 0, h - .1, 0);
+    for (const [a, e] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(.07, h - .05, .07, m, a * (w / 2 - .08), (h - .05) / 2, e * (d / 2 - .08)); });
+  const buffet = (n, x, z, ry, w, h, d, m = noyer) => meuble(n, x, z, ry, w, d, true, (b, c, s) => { b(w, h, d, m, 0, h / 2, 0); b(w + .06, .04, d + .04, m, 0, h + .02, 0);
+    const k = Math.max(2, Math.round(w / .5)); for (let i = 0; i < k; i++) { const px = -w / 2 + (i + .5) * w / k; b(w / k - .06, h * .55, .02, acajou, px, h * .38, d / 2 + .005); s(.02, laiton, px + (i % 2 ? -1 : 1) * (w / k / 2 - .08), h * .4, d / 2 + .03); b(w / k - .06, h * .2, .02, acajou, px, h * .82, d / 2 + .005); } });
+  const fauteuil = (n, x, z, ry, tissu) => meuble(n, x, z, ry, .82, .82, true, (b) => { b(.7, .14, .7, tissu, 0, .4, .02); b(.7, .55, .16, tissu, 0, .72, -.3); for (const a of [-1, 1]) b(.13, .3, .72, tissu, a * .36, .55, 0);
+    for (const [a, e] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(.05, .33, .05, noyer, a * .32, .165, e * .3); });
+  const canape = (n, x, z, ry, w, tissu) => meuble(n, x, z, ry, w, .9, true, (b) => { b(w, .2, .78, tissu, 0, .38, .04); b(w, .6, .18, tissu, 0, .72, -.34); for (const a of [-1, 1]) b(.16, .34, .84, tissu, a * (w / 2 - .08), .6, 0);
+    for (let i = 0; i < 3; i++) b(w / 3 - .14, .1, .6, tissu, -w / 3 + i * w / 3, .53, .08); for (const [a, e] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(.05, .28, .05, noyer, a * (w / 2 - .1), .14, e * .34); });
+  const lit = (n, x, z, ry, w, l, couv) => meuble(n, x, z, ry, w, l, true, (b) => { b(w, .22, l, noyer, 0, .3, 0); b(w - .06, .2, l - .1, drap, 0, .5, .02); b(w - .02, .06, l * .72, couv, 0, .62, l * .14);   // (la tête de lit contre le mur, derrière : −z)
+    b(w + .06, 1.15, .07, noyer, 0, .58, -l / 2); b(w + .06, .7, .07, noyer, 0, .35, l / 2); for (let i = 0; i < Math.round(w / .5); i++) b(w / Math.round(w / .5) - .1, .3, .05, drap, -w / 2 + (i + .5) * w / Math.round(w / .5), .7, -l / 2 + .2); });
+  const chevet = (n, x, z, ry) => meuble(n, x, z, ry, .45, .4, true, (b, c) => { b(.45, .55, .4, noyer, 0, .275, 0); b(.36, .12, .02, acajou, 0, .42, .2); c(.02, .02, .3, laiton, 0, .7, 0, 6); c(.1, .16, .18, lampe, 0, .9, 0, 10); });
+  const armoire = (n, x, z, ry, w = 1.1, h = 2.05, m = noyer) => meuble(n, x, z, ry, w, .6, true, (b, c, s) => { b(w, h, .6, m, 0, h / 2, 0); b(w + .08, .1, .66, m, 0, h + .05, 0); b(.02, h - .2, .02, acajou, 0, h / 2, .305); for (const a of [-1, 1]) { b(w / 2 - .1, h - .3, .02, acajou, a * w / 4, h / 2 + .05, .305); s(.025, laiton, a * .06, h / 2, .33); } });
+  const carton2 = (() => { const lbl = ["CUISINE", "FRAGILE", "CORALINE", "LIVRES", "BUREAU", "LINGE"]; return lbl.map(t => A.mat({ map: tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#a88458"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(60,40,20,.25)"; x.fillRect(0, 54, w, 20);
+    x.fillStyle = "#2a1c10"; x.font = "bold 18px 'Courier New', monospace"; x.textAlign = "center"; x.fillText(t, w / 2, 100); x.strokeStyle = "rgba(40,25,10,.4)"; x.strokeRect(2, 2, w - 4, h - 4); })), roughness: .95 })); })();
+  const cartons = (n, x, z, ry, pile = 2, l = 0) => meuble(n, x, z, ry, .6, .5, true, (b) => { let y = 0; for (let i = 0; i < pile; i++) { const w = .6 - i * .06, h = .42 - i * .04, o = b(w, h, .5 - i * .05, i ? carton : carton2[(l + i) % carton2.length], (i % 2) * .04, y + h / 2, 0); o.rotation.y = (i % 2 ? .12 : -.05); y += h; } });
+  const tapis = (n, x, z, ry, w, d, c1, c2) => { const t = tex(toile(256, 160, (x2, W, H) => { x2.fillStyle = c1; x2.fillRect(0, 0, W, H); x2.strokeStyle = c2; x2.lineWidth = 8; x2.strokeRect(10, 10, W - 20, H - 20); x2.lineWidth = 3; x2.strokeRect(24, 24, W - 48, H - 48);
+      x2.fillStyle = c2; for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) { x2.beginPath(); x2.arc(48 + i * 32, 52 + j * 28, 6, 0, 7); x2.fill(); } }));
+    const o = A.ajoute(new THREE.PlaneGeometry(w, d), A.mat({ map: t, roughness: 1 }), x, (n ? Y1 : Y0) + .022, z, false); o.rotation.set(-Math.PI / 2, 0, ry); o.receiveShadow = true; };
+  const suspension = (n, x, z, h = 2.4) => meuble(n, x, z, 0, 0, 0, false, (b, c) => { const yp = (n ? HE : Y1 - Y0); c(.008, .008, yp - h, noir, 0, (yp + h) / 2, 0, 4); c(.06, .28, .22, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, h, 0, 14); c(.05, .05, .08, lampe, 0, h - .1, 0, 8); });
+  const applique = (n, x, z, ry, y = 1.9) => meuble(n, x, z, ry, 0, 0, false, (b, c) => { b(.08, .16, .04, laiton, 0, y, .02); b(.03, .03, .14, laiton, 0, y, .1); const t = c(.07, .04, .14, M3(0xf0e6cc, .5, { emissive: 0xffd8a0, emissiveIntensity: .8 }), 0, y + .08, .17, 10); void t; });
+  const radiateur = (n, x, z, ry, w = .9) => meuble(n, x, z, ry, w, .2, true, (b) => { const k = Math.round(w / .08); for (let i = 0; i < k; i++) b(.05, .62, .16, M3(0xb8b4a8, .4, { metalness: .3 }), -w / 2 + (i + .5) * w / k, .37, 0); b(w, .04, .12, M3(0xa8a498, .4), 0, .06, 0); });
+  const etagere = (n, x, z, ry, w, h) => meuble(n, x, z, ry, w, .32, true, (b) => { b(w, h, .03, noyer, 0, h / 2, -.15); for (const a of [-1, 1]) b(.04, h, .32, noyer, a * w / 2, h / 2, 0); const k = Math.round(h / .4);
+    for (let i = 0; i <= k; i++) { const y = i * h / k; b(w, .03, .32, noyer, 0, y, 0); if (i < k) { let px = -w / 2 + .05; for (let j = 0; px < w / 2 - .1; j++) { const e = .03 + hasard(i * 31 + j) * .04, hh = h / k * (.6 + hasard(j * 7 + i) * .3);
+        b(e, hh, .22, M3([0x6a2a22, 0x2a3a5a, 0x3a5a3a, 0x8a6a3a, 0x4a3a5a][(i + j) % 5], .8), px + e / 2, y + hh / 2 + .015, .02); px += e + .005; } } } });
+  // ===== le rez-de-chaussée =====
+  // la cuisine (d'après le décor du film) : les murs de plâtre jaune et la moulure blanche, le carrelage à losanges bleu-vert ; contre le mur de gauche, le grand fourneau blanc à double four
+  // sous sa hotte à festons ; au fond, les trois fenêtres à rideaux de dentelle, l'évier de céramique, la tringle aux bouquets de fleurs séchées ; à droite, les placards crème ;
+  // au milieu, la table ronde sur pied griffu, et au-dessus, la suspension en vitrail rouge au bout de sa chaîne
+  { const creme = M3(0xe8dcb4, .55), plan = M3(0x8a9a8e, .45), pomme = M3(0xc8b890, .3, { metalness: .4 }), verreR = M3(0xd8603a, .5, { emissive: 0xff7a3a, emissiveIntensity: .9, side: THREE.DoubleSide });
+    const faience = motif(toile(64, 64, (x, w) => { x.fillStyle = "#f2f0ea"; x.fillRect(0, 0, w, w); x.strokeStyle = "#b8bcc0"; x.lineWidth = 2; x.strokeRect(1, 1, 30, 30); x.strokeRect(33, 1, 30, 30); x.strokeRect(1, 33, 30, 30); x.strokeRect(33, 33, 30, 30); }), .3, { roughness: .25 });
+    const dentelleRideau = new THREE.MeshStandardMaterial({ map: (() => { const t = new THREE.CanvasTexture(toile(128, 96, (x, w, h) => { x.fillStyle = "rgba(240,236,228,.85)"; x.fillRect(0, 0, w, h - 10);
+      x.globalCompositeOperation = "destination-out"; for (let i = 0; i < 8; i++) for (let j = 0; j < 5; j++) { x.beginPath(); x.arc(8 + i * 16, 9 + j * 16, 4.5, 0, 7); x.fill(); }
+      for (let i = 0; i < 8; i++) { x.beginPath(); x.arc(8 + i * 16, h - 10, 8, 0, Math.PI); x.fill(); } })); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true, alphaTest: .3, side: THREE.DoubleSide, roughness: .9 });
+    // le plan de travail du fond : les placards crème à tiroirs et boutons, le dessus gris-vert, l'évier de céramique au milieu, la crédence de faïence
+    meuble(0, -2.4, -6.4, 0, 6.3, .62, true, (b, c, s) => { b(6.3, .82, .58, creme, 0, .45, 0); b(6.36, .05, .64, plan, 0, .885, .01); b(6.3, .06, .5, M3(0x3a3a34, .8), 0, .03, .02);
+      for (let i = 0; i < 10; i++) { const x = -2.84 + i * .63; if (Math.abs(x + .35) < .5) continue; b(.56, .18, .02, creme, x, .72, .3); s(.02, pomme, x, .72, .32); b(.56, .44, .02, creme, x, .34, .3); s(.02, pomme, x + .2, .42, .32); b(.57, .005, .005, M3(0xb8a880, .6), x, .615, .312); }
+      b(.82, .34, .56, email, -.35, .74, .04); b(.7, .02, .44, M3(0xd8d8d0, .3), -.35, .9, 0); c(.012, .012, .3, chrome, -.35, 1.06, -.22, 6); b(.02, .02, .2, chrome, -.35, 1.2, -.13);   // (l'évier de céramique, son robinet)
+      b(6.3, .45, .02, faience, 0, 1.13, -.3); b(6.3, .03, .03, M3(0x3a5a8a, .4), 0, 1.36, -.29);   // (la crédence, son liseré bleu)
+      b(.4, .03, .28, M3(0x8a5a32, .6), -1.6, .92, 0); for (let i = 0; i < 3; i++) c(.07, .07, .2 - i * .03, M3(0x2a4aa8, .4), -2.7 + i * .17, 1.0 - i * .015, -.12, 10);   // (la planche à découper, les pots bleus)
+      b(.16, .12, .14, M3(0x7aa8a0, .4), -.95, .97, -.05); c(.07, .07, .015, chrome, -.95, 1.04, -.05, 12); });   // (la balance)
+    // le mur de droite : les placards du bas et du haut, crème
+    meuble(0, .5, -4.6, -Math.PI / 2, 2.9, .6, true, (b, c, s) => { b(2.9, .82, .58, creme, 0, .45, 0); b(2.96, .05, .64, plan, 0, .885, .01); b(2.9, .45, .02, faience, 0, 1.13, -.3);
+      for (let i = 0; i < 4; i++) { const x = -1.09 + i * .73; b(.66, .74, .02, creme, x, .45, .3); s(.022, pomme, x + .25, .62, .32); b(.66, .8, .32, creme, x, 2.0, -.13); b(.6, .72, .02, creme, x, 2.0, .035); s(.02, pomme, x + .25, 1.75, .05); }
+      b(2.9, .05, .38, creme, 0, 2.43, -.12); b(2.8, .02, .02, M3(0xfff0c0, .5, { emissive: 0xffd890, emissiveIntensity: .9 }), 0, 1.58, .02); c(.1, .12, .2, email, .8, 1.0, -.1, 12); b(.3, .12, .2, M3(0x6a9a7a, .4), -.6, .97, -.05); });
+    // l'étagère d'angle, ouverte : un pichet, des vases
+    meuble(0, -5.95, -6.45, 0, .7, .45, false, (b, c) => { for (let i = 0; i < 4; i++) b(.66, .03, .42, creme, 0, 1.2 + i * .42, 0); b(.03, 1.3, .42, creme, .33, 1.85, 0);
+      c(.06, .08, .2, M3(0xe8e4d8, .3), -.15, 1.32, 0, 10); c(.05, .04, .26, M3(0x6a2a3a, .3), .1, 1.77, 0, 10); c(.04, .06, .18, M3(0x3a2a4a, .3), -.12, 1.73, 0, 10); c(.08, .06, .16, M3(0x8aa0a8, .3), .05, 2.17, 0, 10); });
+    // le grand fourneau émaillé, contre le mur de gauche : six feux, deux fours vitrés, leurs poignées chromées, les tiroirs ; la hotte à festons au-dessus
+    meuble(0, -5.95, -3.35, Math.PI / 2, 1.2, .72, true, (b, c) => { b(1.2, .88, .68, email, 0, .44, 0); b(1.22, .05, .7, email, 0, .905, 0); b(1.2, .03, .62, noir, 0, .935, 0);
+      for (const [a, e] of [[-.4, -.15], [0, -.15], [.4, -.15], [-.4, .15], [0, .15], [.4, .15]]) { c(.1, .1, .02, fer, a, .95, e, 12); c(.04, .04, .025, noir, a, .96, e, 8); }
+      b(1.2, .18, .06, email, 0, 1.0, -.31); for (let i = 0; i < 6; i++) c(.025, .025, .03, noir, -.5 + i * .2, .82, .35, 8);
+      for (const a of [-.29, .29]) { b(.52, .4, .02, M3(0xdedad0, .3), a, .52, .345); b(.36, .22, .01, M3(0x1a1a1a, .1, { metalness: .3 }), a, .54, .356); b(.4, .03, .04, chrome, a, .75, .37); b(.52, .14, .02, M3(0xdedad0, .3), a, .15, .345); b(.2, .02, .03, chrome, a, .17, .36); }
+      c(.13, .12, .14, M3(0x6a3a2a, .4, { metalness: .4 }), -.4, 1.02, -.15, 12); c(.15, .15, .05, fer, .4, .98, .15, 14);   // (une casserole, une poêle)
+      const h = new THREE.Mesh(new THREE.CylinderGeometry(.34, .62, .85, 4, 1).rotateY(Math.PI / 4), email); h.scale.set(1.3, 1, .95); h.position.set(0, 2.15, -.12); b(.001, .001, .001, noir, 0, 0, 0).add(h);
+      b(.14, .6, .3, email, 0, 2.88, -.2); });
+    { const t = new THREE.CanvasTexture(toile(256, 64, (x, w, h) => { x.fillStyle = "#f4f0e6"; x.beginPath(); x.moveTo(0, 0); x.lineTo(w, 0); x.lineTo(w, 30); for (let i = 7; i >= 0; i--) x.arc(i * 32 + 16, 30, 16, 0, Math.PI); x.closePath(); x.fill();
+        x.fillStyle = "#3a3236"; for (let i = 0; i < 8; i++) { const cx = i * 32 + 16; x.beginPath(); x.moveTo(cx, 12); x.lineTo(cx - 5, 26); x.lineTo(cx, 36); x.lineTo(cx + 5, 26); x.closePath(); x.fill(); x.fillRect(cx - 7, 24, 14, 3); } })); t.colorSpace = THREE.SRGBColorSpace;
+      const fes = new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: .6 });   // (le feston de la hotte, ses fleurs de lys)
+      for (const [w, x, z, ry] of [[1.16, -5.64, -3.35, Math.PI / 2], [.8, -6.05, -3.93, 0], [.8, -6.05, -2.77, 0]]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, .3), fes); o.position.set(x, Y0 + 1.58, z); o.rotation.y = ry; scene.add(o); } }
+    // les trois fenêtres : leurs rideaux de dentelle (à mi-hauteur), l'appui blanc, le vase de fleurs ; au-dessus, la tringle noire et ses bouquets de fleurs séchées
+    for (const x of [-3.85, -2.75, -1.65]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(.92, .62), dentelleRideau); o.position.set(x, Y0 + 1.42, -6.64); scene.add(o); }
+    meuble(0, -2.75, -6.62, 0, 0, 0, false, (b, c, s) => { b(3.5, .05, .2, M3(0xf2ece0, .5), 0, 1.03, 0); c(.07, .09, .18, M3(0x6a1a20, .3), -.85, 1.15, 0, 10); for (let i = 0; i < 5; i++) s(.04, M3(0xe8b020, .7), -.85 + Math.cos(i * 1.3) * .06, 1.3 + hasard(i) * .06, Math.sin(i * 1.3) * .05);
+      b(4.2, .025, .025, noir, 0, 2.55, .12); for (const a of [-2, 2]) b(.03, .12, .14, noir, a, 2.5, .06);
+      for (let i = 0; i < 15; i++) { const x = -1.9 + i * .27, l = .25 + hasard(i * 3) * .15; b(.004, .08, .004, M3(0x8a7a5a, .8), x, 2.5, .12); const bq = c(.05, .01, l, M3([0x8a3a6a, 0xa8483a, 0xb8903a, 0x6a5a8a, 0x9a6a4a][i % 5], .9), x, 2.43 - l / 2, .12, 6); void bq; } });
+    // la table ronde sur son pied griffu : la nappe, les crêpes, les bols, le vase bleu et ses fleurs ; la suspension en vitrail, au bout de sa longue chaîne
+    meuble(0, -2.75, -4.35, 0, 1.3, 1.3, true, (b, c, s) => { c(.66, .66, .05, acajou, 0, .76, 0, 28); c(.06, .1, .62, acajou, 0, .43, 0, 10); c(.16, .1, .14, acajou, 0, .14, 0, 10);
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, p = b(.32, .06, .07, acajou, Math.cos(a) * .2, .07, Math.sin(a) * .2); p.rotation.y = -a; p.rotation.z = .25; s(.045, acajou, Math.cos(a) * .36, .04, Math.sin(a) * .36); }
+      b(1.5, .005, .38, M3(0xf2eee4, .9), 0, .79, 0); for (let i = 0; i < 5; i++) c(.12, .12, .025, M3(0xc8843a, .7), -.2, .81 + i * .026, -.05, 14); s(.035, M3(0xb8202a, .7), -.2, .95, -.05);
+      for (const [x, z, col] of [[.15, .2, 0x8ab0a0], [.3, -.15, 0xe8c040], [-.35, .25, 0x5a9a8a]]) { const bo = s(.09, M3(col, .4), x, .8, z); bo.scale.y = .6; }
+      c(.05, .07, .28, M3(0x1a3a9a, .3), .4, .93, .2, 12); for (let i = 0; i < 5; i++) s(.05, M3(0xe8743a, .7), .4 + Math.cos(i * 1.25) * .08, 1.12 + hasard(i * 5) * .07, .2 + Math.sin(i * 1.25) * .08); });
+    meuble(0, -2.75, -4.35, 0, 0, 0, false, (b, c) => { c(.008, .008, 1.2, M3(0x2a2a2a, .5, { metalness: .6 }), 0, 2.55, 0, 4); const ab = c(.06, .36, .26, verreR, 0, 1.85, 0, 8); void ab; c(.07, .07, .06, laiton, 0, 1.99, 0, 8); c(.05, .05, .08, lampe, 0, 1.78, 0, 8); });
+    // la moulure blanche, sous le plafond, tout autour ; la cimaise, plus bas
+    for (const [w, d, x, z] of [[7.1, .12, -2.75, -6.68], [7.1, .12, -2.75, -2.32], [.12, 4.4, -6.28, -4.5], [.12, 4.4, .78, -4.5]]) { boite(w, .16, d, blanc, x, Y1 - .1, z); boite(w, .03, d * .4, blanc, x, Y0 + 2.4, z); } }
+  // le bureau du père : la grande table de travail face au bow-window, l'ordinateur et la machine à écrire, les catalogues de jardinage, les étagères de livres, les cartons
+  table(0, 5.35, -3.6, -Math.PI / 2, 1.7, .85, chene); chaise(0, 4.55, -3.6, Math.PI / 2, chene);
+  meuble(0, 5.45, -3.95, -Math.PI / 2, 0, 0, false, (b) => { b(.42, .36, .4, beige, 0, .94, 0); b(.33, .27, .02, M3(0x1a2a24, .3, { emissive: 0x2a5a3a, emissiveIntensity: .7 }), 0, .96, .21); b(.46, .03, .17, beige, 0, .78, .32); });
+  meuble(0, 5.45, -3.0, -Math.PI / 2, 0, 0, false, (b) => { b(.4, .14, .32, M3(0x2a2a2a, .4), 0, .83, 0); b(.36, .1, .04, M3(0x1a1a1a, .4), 0, .93, -.1); for (let i = 0; i < 6; i++) b(.24, .01, .2, drap, .04 * Math.sin(i), .78 + i * .012, .05); });
+  etagere(0, 1.1, -5.2, Math.PI / 2, 2.2, 2.1); etagere(0, 1.1, -2.5, Math.PI / 2, 1.4, 1.7);
+  cartons(0, 2.4, -6.3, .2, 3, 4); cartons(0, 3.2, -6.4, -.1, 2, 3); cartons(0, 5.9, -6.3, .1, 2, 4); tapis(0, 4.2, -3.6, 0, 2.6, 1.8, "#5a5040", "#7a6a4a");
+  meuble(0, 6.1, -1.1, 0, .3, .3, true, (b, c) => { c(.15, .17, .03, fer, 0, .015, 0); c(.012, .012, 1.5, fer, 0, .76, 0, 6); c(.12, .2, .26, M3(0xd8cca8, .6, { side: THREE.DoubleSide }), 0, 1.5, 0, 12); c(.05, .05, .08, lampe, 0, 1.42, 0, 8); });   // (le lampadaire)
+  // le hall : la console et son miroir, le porte-parapluies ; les appliques de la salle à manger, de part et d'autre du grand encadrement
+  meuble(0, -1.65, -1.4, Math.PI / 2, .9, .35, true, (b) => { b(.9, .05, .35, noyer, 0, .82, 0); for (const a of [-1, 1]) b(.04, .8, .04, noyer, a * .4, .4, 0); b(.7, .9, .03, M3(0x8a9aa8, .1, { metalness: .6 }), 0, 1.5, -.15); b(.78, .98, .02, laiton, 0, 1.5, -.165); });
+  for (const z of [-1.15, 2.15]) { applique(0, -2.02, z, -Math.PI / 2); applique(0, -1.78, z, Math.PI / 2); }
+  // la salle à manger : la longue table, six chaises à barreaux, le buffet, le lustre
+  table(0, -4.15, .5, 0, 1.05, 2.5, noyer); for (const z of [-.3, .5, 1.3]) { chaise(0, -4.95, z, Math.PI / 2); chaise(0, -3.35, z, -Math.PI / 2); } chaise(0, -4.15, 2.05, Math.PI);
+  buffet(0, -6.05, 2.45, Math.PI / 2, 1.4, .95, .5); suspension(0, -4.15, .5, 2.2); tapis(0, -4.15, .5, Math.PI / 2, 3.2, 2, "#4a3a34", "#7a5a44"); radiateur(0, -2.15, -1.8, -Math.PI / 2);
+  // l'entrée : le portemanteau, le banc, la desserte au courrier
+  meuble(0, -1.55, 6.35, 0, .5, .5, true, (b, c, s) => { c(.02, .03, 1.8, noyer, 0, .9, 0, 8); c(.2, .22, .04, noyer, 0, .02, 0, 10); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, k = b(.02, .02, .2, noyer, Math.sin(a) * .08, 1.65, Math.cos(a) * .08); k.rotation.y = a; } b(.32, .5, .14, M3(0x6a3a3a, .9), .1, 1.35, .1); });
+  meuble(0, .55, 3.75, -Math.PI / 2, 1, .4, true, (b) => { b(1, .06, .38, chene, 0, .45, 0); for (const a of [-1, 1]) b(.06, .45, .36, chene, a * .44, .225, 0); });
+  // le salon (la pièce de la petite porte) : la cheminée et ses boules à neige, le vieux canapé de la grand-mère, les fauteuils, le piano, le lampadaire, le radiateur sous le bow-window
+  meuble(0, 3.0, 2.12, 0, 1.6, .4, true, (b, c, s) => { b(1.6, 1.1, .3, M3(0x7a7068, .7), 0, .55, 0); b(.8, .7, .05, noir, 0, .35, .14); b(1.8, .08, .42, noyer, 0, 1.14, .04); b(1.7, .06, .5, M3(0x5a5048, .8), 0, .03, .2);
+    for (let i = 0; i < 4; i++) { const px = -.6 + i * .4; c(.05, .06, .03, noyer, px, 1.195, .05, 10); const g2 = new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 10), new THREE.MeshStandardMaterial({ color: 0xdfeaf2, transparent: true, opacity: .45, roughness: .05 })); g2.position.set(px, 1.28, .05); b(.001, .001, .001, noir, 0, 0, 0).add(g2); }   // (les boules à neige, sur la cheminée)
+    b(1, .8, .04, M3(0x6a5a4a, .5), 0, 1.75, -.12); b(.9, .7, .02, M3(0x2a2e34, .2, { metalness: .5 }), 0, 1.75, -.09); });
+  canape(0, 3.0, 4.6, Math.PI, 2, M3(0x6a5040, .9)); fauteuil(0, 1.6, 3.6, Math.PI / 2, M3(0x7a6a4a, .9)); fauteuil(0, 4.6, 3.3, -Math.PI / 2 - .4, M3(0x5a4a5a, .9));
+  table(0, 3.0, 3.35, 0, .9, .5, noyer, .42); tapis(0, 3.0, 3.8, 0, 3, 2.2, "#5a3a3a", "#9a7a5a");
+  meuble(0, 6.05, 5.0, -Math.PI / 2, 1.45, .6, true, (b) => { b(1.45, 1.25, .55, M3(0x1a1210, .3), 0, .625, 0); b(1.3, .04, .2, email, 0, .74, .32); for (let i = 0; i < 18; i++) b(.025, .04, .12, noir, -.6 + i * .07, .77, .33); b(1.45, .5, .05, M3(0x241814, .3), 0, 1.05, .25); });   // (le piano droit)
+  radiateur(0, 3.65, 6.6, Math.PI, 1.2);
+  /* la petite porte : basse, dans un coin du salon, cachée sous le papier peint ; seulement son contour, sa poignée et le trou de la serrure */
+  meuble(0, 5.7, 2.118, 0, 0, 0, false, (b, c, s) => { const pp = b(.62, .82, .015, P.salon, 0, .41, 0); void pp; for (const [w, h, x, y] of [[.68, .03, 0, .82], [.03, .82, -.33, .41], [.03, .82, .33, .41]]) b(w, h, .02, M3(0x1a1010, .8), x, y, .01);   // (la fente du papier peint, tout autour)
+    s(.02, laiton, .22, .4, .02); b(.03, .05, .01, noir, .22, .33, .015); });
+  L.petitePorte = [5.7, 2.2];   // (pour la suite : l'Autre Monde)
+  // la pièce de la tourelle : le chauffe-eau, un vieux fauteuil, le canapé sous un drap, des cartons
+  meuble(0, -2.3, 6.35, 0, .55, .55, true, (b, c) => { c(.26, .26, 1.6, M3(0xa8aca8, .35, { metalness: .4 }), 0, .9, 0, 16); c(.27, .27, .05, fer, 0, 1.72, 0, 16); c(.02, .02, .8, laiton, .15, 2.1, 0, 6); });
+  fauteuil(0, -5.9, 6.6, -2.4, M3(0x7a4a3a, .9)); meuble(0, -2.9, 4.5, -Math.PI / 2, 1.9, .85, true, (b) => { b(1.9, .5, .8, drap, 0, .25, 0); b(1.9, .55, .25, drap, 0, .62, -.28); b(1.96, .04, .9, drap, 0, .51, .02); });
+  cartons(0, -5.8, 3.7, .4, 2, 2); cartons(0, -3.7, 6.3, -.3, 3, 1);
+  // la serre : des pots, des plantes, l'arrosoir
+  { const pot = M3(0xa8583a, .8), feuille = M3(0x2f5a2a, .9); for (let k = 0; k < 5; k++) { const z = .2 + k * .95; meuble(0, -7.85, z, 0, .5, .5, true, (b, c, s) => { c(.22, .16, .4, pot, 0, .2, 0); const f = s(.32, feuille, 0, .65, 0); f.scale.y = 1.3; }); }
+    meuble(0, -6.9, 3.6, 0, .4, .3, false, (b, c) => { c(.12, .14, .28, M3(0x5a7a6a, .4, { metalness: .5 }), 0, .14, 0); const t = c(.015, .02, .3, M3(0x5a7a6a, .4, { metalness: .5 }), .15, .3, 0, 6); t.rotation.z = -.8; }); }
+  // ===== l'étage =====
+  // le grenier : la malle, le fauteuil à bascule, le mannequin de couture, les cartons
+  meuble(1, -5.2, -6.3, 0, 1, .55, true, (b) => { b(1, .5, .55, M3(0x4a3a2a, .7), 0, .25, 0); b(1.02, .12, .57, M3(0x3a2a1a, .7), 0, .56, 0); for (const a of [-1, 1]) b(.04, .62, .58, laiton, a * .35, .31, 0); });
+  meuble(1, -2.5, -5.6, .5, .6, .9, true, (b) => { b(.5, .05, .45, noyer, 0, .44, 0); for (let i = 0; i < 5; i++) b(.03, .6, .02, noyer, -.2 + i * .1, .74, -.2); for (const a of [-1, 1]) { const r = b(.04, .04, .9, noyer, a * .23, .04, 0); r.rotation.x = 0; b(.04, .44, .04, noyer, a * .22, .24, -.15); b(.04, .44, .04, noyer, a * .22, .24, .15); } });
+  meuble(1, -.4, -6.2, 0, .5, .5, true, (b, c, s) => { c(.16, .2, .6, M3(0xc8b8a0, .9), 0, 1.2, 0, 12); s(.18, M3(0xc8b8a0, .9), 0, 1.5, 0); c(.012, .012, .9, noyer, 0, .45, 0, 6); c(.2, .2, .03, noyer, 0, .02, 0, 10); });
+  cartons(1, -6, -5.2, .2, 3, 5); cartons(1, -3.6, -6.4, -.2, 2, 3); cartons(1, .4, -5.2, .1, 2, 0);
+  // la salle de bain : la baignoire à pieds de lion, les toilettes à chasse d'eau en hauteur, le lavabo sur pied et son miroir
+  meuble(1, -4.5, -4.15, 0, 1.6, .75, true, (b, c, s) => { b(1.6, .5, .74, email, 0, .52, 0); b(1.66, .06, .8, email, 0, .78, 0); b(1.48, .04, .6, M3(0x7a6a50, .2), 0, .74, 0); for (const [a, e] of [[-.65, -.28], [.65, -.28], [-.65, .28], [.65, .28]]) s(.07, laiton, a, .1, e); c(.015, .015, .25, chrome, -.72, .9, 0, 6); });
+  meuble(1, -6.05, -2.5, Math.PI / 2, .45, .6, true, (b, c, s) => { c(.2, .16, .4, email, 0, .2, .05, 14); c(.22, .22, .04, noyer, 0, .42, .06, 14); b(.46, .28, .2, noyer, 0, 1.95, -.22); c(.015, .015, 1.5, chrome, -.12, 1.2, -.22, 6); c(.004, .004, .45, chrome, .16, 1.6, -.15, 4); s(.02, laiton, .16, 1.37, -.15); });
+  meuble(1, -2.2, -4.0, -Math.PI / 2, .55, .45, true, (b, c) => { c(.07, .1, .8, email, 0, .4, 0, 12); b(.55, .14, .42, email, 0, .85, .02); c(.012, .012, .15, chrome, 0, .97, -.12, 6); b(.5, .65, .02, M3(0x9aaab8, .05, { metalness: .7 }), 0, 1.5, -.2); b(.56, .71, .02, laiton, 0, 1.5, -.21); });
+  // la lingerie : les étagères de draps, le baquet, la planche à repasser
+  meuble(1, -4.2, .5, Math.PI, 1.6, .45, true, (b) => { b(1.6, 1.9, .03, noyer, 0, .95, -.22); for (let i = 0; i < 5; i++) { b(1.6, .03, .42, noyer, 0, .1 + i * .44, 0); for (let j = 0; j < 4; j++) b(.32, .1, .34, M3([0xe8e4da, 0xc8d4dc, 0xdcc8c8][(i + j) % 3], .9), -.6 + j * .4, .17 + i * .44, 0); } });
+  meuble(1, -5.8, -.5, 0, .6, .6, true, (b, c) => { c(.28, .24, .45, M3(0x8a8e90, .4, { metalness: .5 }), 0, .23, 0, 16); });
+  meuble(1, -2.6, -.6, -.3, 1.3, .35, false, (b) => { b(1.3, .03, .32, M3(0xd8d0c0, .8), 0, .85, 0); for (const a of [-1, 1]) { const p = b(.03, .95, .03, fer, a * .35, .43, 0); p.rotation.z = a * .3; } });
+  // la chambre de Coraline : le lit contre le mur, sa poupée aux yeux de bouton, la commode, le bureau sous la fenêtre, l'armoire, les cartons « CORALINE »
+  lit(1, -5.35, 4.3, Math.PI / 2, 1.0, 2, M3(0x4a6a8a, .9));
+  meuble(1, -5.0, 4.15, Math.PI / 2, 0, 0, false, (b, c, s) => { const y = .65; c(.035, .055, .13, M3(0xe8c020, .7), 0, y + .065, 0, 10); s(.04, M3(0xe8c8b0, .8), 0, y + .165, 0); s(.043, M3(0x1a3aa8, .7), 0, y + .185, -.008);   // (la petite poupée : l'imperméable jaune, les cheveux bleus, les deux boutons)
+    for (const a of [-1, 1]) { const o = c(.01, .01, .008, noir, a * .015, y + .172, .037, 8); o.rotation.x = Math.PI / 2; } });
+  chevet(1, -6.05, 2.9, Math.PI / 2); buffet(1, -4.1, 1.05, 0, 1.2, .9, .45, M3(0x6a7a8a, .7));
+  table(1, -3.1, 6.45, Math.PI, 1.1, .55, M3(0x8a6a4a, .6)); chaise(1, -3.1, 5.9, 0, M3(0x8a6a4a, .6)); armoire(1, -2.25, 1.6, -Math.PI / 2, 1.0, 1.9, M3(0x5a6a7a, .7));
+  cartons(1, -2.4, 5.0, .3, 3, 2); cartons(1, -5.7, 1.3, -.2, 2, 2); tapis(1, -3.9, 3.8, 0, 2, 1.4, "#3a4a6a", "#8a9ab0");
+  meuble(1, -6.25, 3.4, 0, 0, 0, false, (b) => { const r = b(.03, 1, .03, M3(0x6a5a3a, .8), 0, .5, 0); r.rotation.z = .2; const y2 = b(.025, .4, .025, M3(0x6a5a3a, .8), .08, 1.05, 0); y2.rotation.z = -.5; });   // (sa baguette de sourcier, contre le mur)
+  // la chambre des parents : le grand lit, les tables de nuit, la commode entre les fenêtres, l'armoire, les cartons
+  lit(1, 2.0, -3.6, Math.PI / 2, 1.6, 2.05, M3(0x8a5a4a, .9)); chevet(1, 1.2, -4.75, Math.PI / 2); chevet(1, 1.2, -2.45, Math.PI / 2);
+  buffet(1, 3.65, -6.5, 0, 1.2, .95, .5); armoire(1, 6.0, -6.15, -Math.PI / 2); cartons(1, 5.8, -1.3, .2, 2, 1); tapis(1, 3.3, -3.6, 0, 2.2, 1.6, "#6a4a3a", "#a08060");
+  // la chambre d'amis : le lit, la machine à coudre, le mannequin, les cartons
+  lit(1, 5.4, 4.3, -Math.PI / 2, 1.1, 2, M3(0x6a6a7a, .9)); table(1, 1.5, 4.6, Math.PI / 2, 1, .5, chene);
+  meuble(1, 1.5, 4.6, Math.PI / 2, 0, 0, false, (b) => { b(.36, .2, .16, noir, 0, .86, 0); b(.08, .1, .16, noir, .14, .99, 0); b(.3, .05, .1, noir, -.02, 1.06, 0); });
+  cartons(1, 2.3, 6.3, .1, 3, 1); cartons(1, 4.0, 2.5, -.2, 2, 3); meuble(1, 3.4, 6.35, 0, .5, .5, true, (b, c, s) => { c(.16, .2, .6, M3(0x9a8a7a, .9), 0, 1.2, 0, 12); s(.18, M3(0x9a8a7a, .9), 0, 1.5, 0); c(.012, .012, .9, noyer, 0, .45, 0, 6); c(.2, .2, .03, noyer, 0, .02, 0, 10); });
+  // le palier : le long tapis, les appliques
+  tapis(1, -.5, 1, Math.PI / 2, 9, 1.1, "#4a2a2a", "#8a6a4a"); for (const z of [-2.5, 3.5]) { applique(1, -1.78, z, Math.PI / 2, 1.8); applique(1, .78, z, -Math.PI / 2, 1.8); }
   // ---------- les lumières : une lampe par étage et dans la cuisine (peu de lampes : les petits téléphones) ----------
-  for (const [x, y, z, i] of [[-.5, Y1 - .4, .5, 4.5], [-2.6, Y1 - .4, -4.3, 4], [3.6, Y1 - .4, 4.4, 3.5], [-.5, YT - .4, 1, 4], [-4.2, YT - .4, 3.6, 3.5]]) { const l = new THREE.PointLight(0xffc88a, i, 9, 1.4); l.position.set(x, y, z); scene.add(l); }
+  for (const [x, y, z, i] of [[-.5, Y1 - .4, .5, 4.5], [-2.75, Y0 + 1.7, -4.35, 4.5], [3.6, Y1 - .4, 4.4, 3.5], [-.5, YT - .4, 1, 4], [-4.2, YT - .4, 3.6, 3.5]]) { const l = new THREE.PointLight(0xffc88a, i, 9, 1.4); l.position.set(x, y, z); scene.add(l); }
   scene.add(new THREE.AmbientLight(0x8a90b8, .35));
   // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
   const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
@@ -7835,7 +7965,7 @@ function construireCoraline(A, L, scene) {
       b.position.set(Math.cos(a) * l * .4, h * (.62 + hasard(i * 3 + k) * .35), Math.sin(a) * l * .4); b.rotation.set(Math.sin(a) * 1.1, 0, -Math.cos(a) * 1.1); g.add(b);
       const b2 = new THREE.Mesh(new THREE.CylinderGeometry(.015, .04, l * .6, 4), ecorce); b2.position.set(Math.cos(a) * l * .78, b.position.y + l * .32, Math.sin(a) * l * .78); b2.rotation.set(Math.sin(a + .6) * 1.3, 0, -Math.cos(a + .6) * 1.3); g.add(b2); }
     return [x - .5, x + .5, z - .5, z + .5]; };
-  const ARBRES = [[.75, 2.25, 15.3, 15.7], ...[[-14, 10, 7, 1], [13, 14, 8, 2], [-18, -6, 6.5, 3], [17, -9, 7.5, 4], [-10, -16, 6, 5], [9, -18, 7, 6], [-22, 18, 8, 7], [22, 4, 6, 8]].map(([x, z, h, k]) => arbre(x, z, h, k))];   // (et la pancarte)
+  const ARBRES = [[.75, 2.25, 15.3, 15.7], ...[[-14, 10, 7, 1], [13, 14, 8, 2], [-18, -6, 6.5, 3], [17, -9, 7.5, 4], [-17, -24, 6, 5], [21, -22, 7, 6], [-22, 18, 8, 7], [22, 4, 6, 8]].map(([x, z, h, k]) => arbre(x, z, h, k))];   // (et la pancarte)
   // la pancarte « Pink Palace apartments », au bord de l'allée (d'après la vraie) : des planches crème usées, un cadre bordeaux à volutes et chapeau, l'écriture rose à l'ombre noire
   { const c = document.createElement("canvas"); c.width = 640; c.height = 400; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
     const dessin = () => { const x = c.getContext("2d"), W = 640, H = 400; x.clearRect(0, 0, W, H);
@@ -7855,6 +7985,63 @@ function construireCoraline(A, L, scene) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.06), m); p.position.set(1.5, 1.35, 15.52); scene.add(p);
     const dos = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.06), new THREE.MeshStandardMaterial({ map: t, color: 0x6a5a50, transparent: true, alphaTest: .3 })); dos.rotation.y = Math.PI; dos.position.set(1.5, 1.35, 15.48); scene.add(dos);
     for (const s of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.08, 1.1, .08), A.mat({ color: 0x5a4636, roughness: .9 }), 1.5 + s * .62, .55, 15.5); }
+  // ---------- le jardin, derrière la maison (d'après les dessins du film) : un ovale clos de murets de pierre, en terrasses ; on y entre par le portail de fer forgé ;
+  //            les allées de gravier, les massifs de plantes sèches ; au centre, le pont de bois en arc au-dessus du bassin creux ; au fond, l'arche de pierre en ruine ; la petite serre, le grand pot ----------
+  const JX = 3, JZ = -24, JA = 12, JB = 8.5;   // (le centre de l'ovale, ses deux rayons)
+  const ell = (x, z, k = 1) => ((x - JX) / (JA * k)) ** 2 + ((z - JZ) / (JB * k)) ** 2;
+  const BX = 4.2, BH = 1.5, bassin = (x, z) => ((x - JX) / 3) ** 2 + ((z - JZ) / 1.8) ** 2 < 1, surPont = (x, z) => Math.abs(z - JZ) < .62 && Math.abs(x - JX) < BX;
+  const pierreJ = motif(toile(128, 64, (x, w, h) => { x.fillStyle = "#6a6a62"; x.fillRect(0, 0, w, h); for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const v = hasard(i * 9 + j * 5); x.fillStyle = `hsl(60, 4%, ${36 + v * 16}%)`; x.fillRect(j * 32 + (i % 2) * 16 - 16 + 1, i * 21 + 1, 30, 19); } }), 1.2);
+  // le sol du jardin : un seul dessin (l'herbe sèche, les massifs de terre, les allées de gravier en anneau et en croix)
+  { const W = 1024, H = 768, c = toile(W, H, (x) => { const px = X => (X - (JX - JA)) / (2 * JA) * W, pz = Z => (Z - (JZ - JB)) / (2 * JB) * H;
+      x.fillStyle = "#3e3c30"; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2, H / 2, 0, 0, 7); x.fill();
+      for (let i = 0; i < 9000; i++) { x.fillStyle = hasard(i) > .5 ? "rgba(120,110,80,.25)" : "rgba(30,28,20,.25)"; x.fillRect(hasard(i * 3.3) * W, hasard(i * 7.1) * H, 2, 3); }
+      const anneau = (k, l, col) => { x.strokeStyle = col; x.lineWidth = l; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2 * k, H / 2 * k, 0, 0, 7); x.stroke(); };
+      anneau(.82, 70, "#8a8478"); anneau(.45, 60, "#8a8478"); x.fillStyle = "#8a8478"; x.fillRect(px(JX - 1), pz(JZ + 1.5), px(JX + 1) - px(JX - 1), H); x.fillRect(px(JX - 1), 0, px(JX + 1) - px(JX - 1), pz(JZ - 1.5));
+      x.fillRect(0, pz(JZ - .9), px(JX - 3.2), pz(JZ + .9) - pz(JZ - .9)); x.fillRect(px(JX + 3.2), pz(JZ - .9), W, pz(JZ + .9) - pz(JZ - .9));
+      for (let i = 0; i < 6000; i++) { x.fillStyle = hasard(i * 1.7) > .5 ? "rgba(200,195,180,.18)" : "rgba(60,55,45,.18)"; x.fillRect(hasard(i * 2.9) * W, hasard(i * 5.3) * H, 2, 2); }
+      x.globalCompositeOperation = "destination-in"; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2, H / 2, 0, 0, 7); x.fill(); });
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    const o = A.ajoute(new THREE.PlaneGeometry(2 * JA, 2 * JB), A.mat({ map: t, transparent: true, alphaTest: .5, roughness: 1 }), JX, .012, JZ, false); o.rotation.x = -Math.PI / 2; o.receiveShadow = true; }
+  // les murets : l'enceinte (ouverte devant, au portail, et au fond, sous l'arche) ; le muret des terrasses, plus bas (ouvert sur les allées)
+  const muret = (k, h, ep, ouvert) => { const N = 64; for (let i = 0; i < N; i++) { const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, am = (a0 + a1) / 2;
+      const x0 = JX + Math.sin(a0) * JA * k, z0 = JZ + Math.cos(a0) * JB * k, x1 = JX + Math.sin(a1) * JA * k, z1 = JZ + Math.cos(a1) * JB * k, xm = (x0 + x1) / 2, zm = (z0 + z1) / 2;
+      if (ouvert(xm, zm, am)) continue; const l = Math.hypot(x1 - x0, z1 - z0) + .05, m = boite(l, h, ep, pierreJ, xm, h / 2, zm); m.rotation.y = -Math.atan2(z1 - z0, x1 - x0); const co = boite(l, .08, ep + .12, pierreJ, xm, h + .04, zm); co.rotation.y = m.rotation.y; } };
+  muret(1, 1.1, .4, (x) => Math.abs(x - JX) < 1.3); muret(.64, .5, .3, (x, z) => Math.abs(x - JX) < 1.2 || Math.abs(z - JZ) < 1.1);
+  // le bassin creux, au centre ; son rebord de pierre ; le pont de bois en arc qui l'enjambe, ses marches, sa rampe de fer noir
+  { const fond = A.ajoute(new THREE.CircleGeometry(1, 32), M3(0x1c1a14, 1), JX, .02, JZ, false); fond.rotation.x = -Math.PI / 2; fond.scale.set(3, 1.8, 1);
+    const N = 24; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, b2 = boite(.5, .3, .3, pierreJ, JX + Math.cos(a) * 3.05, .15, JZ + Math.sin(a) * 1.85); b2.rotation.y = -a + Math.PI / 2; }
+    const bois2 = M3(0x5a3e28, .8), ferN = M3(0x141414, .5, { metalness: .4 }), hP = x => BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX));
+    for (let i = 0; i < N; i++) { const xa = JX - BX + i * 2 * BX / N, xb = xa + 2 * BX / N, ya = hP(xa), yb = hP(xb), l = Math.hypot(xb - xa, yb - ya);
+      const d = boite(l + .02, .1, 1.3, bois2, (xa + xb) / 2, (ya + yb) / 2 - .05, JZ); d.rotation.z = Math.atan2(yb - ya, xb - xa); boite(.05, .03, 1.3, M3(0x3a2818, .8), xa, ya + .01, JZ);
+      const s2 = boite(l + .02, .35, .08, M3(0x3a2a1c, .8), (xa + xb) / 2, (ya + yb) / 2 - .25, JZ - .62); s2.rotation.z = d.rotation.z; const s3 = boite(l + .02, .35, .08, M3(0x3a2a1c, .8), (xa + xb) / 2, (ya + yb) / 2 - .25, JZ + .62); s3.rotation.z = d.rotation.z;
+      for (const e of [-.62, .62]) { boite(.03, .95, .03, ferN, xa, ya + .48, JZ + e); const r = boite(l, .04, .04, ferN, (xa + xb) / 2, (ya + yb) / 2 + .95, JZ + e); r.rotation.z = d.rotation.z; } }
+    for (const e of [-.62, .62]) for (const s of [-1, 1]) { const v = boite(.05, .05, .05, ferN, JX + s * BX, 1.0, JZ + e); void v; const cr = A.ajoute(new THREE.TorusGeometry(.18, .02, 6, 12, Math.PI * 1.5), ferN, JX + s * (BX + .1), .85, JZ + e, false); cr.rotation.y = Math.PI / 2; } }   // (les crosses au bout des rampes)
+  // l'arche de pierre en ruine, au fond ; la petite serre, à gauche ; le grand pot, près du pont ; le portail de fer forgé et ses piliers
+  { const az = JZ - JB + .1; for (const s of [-1, 1]) { boite(.7, 3.2, .7, pierreJ, JX + s * 1.25, 1.6, az, true); boite(.85, .2, .85, pierreJ, JX + s * 1.25, 3.25, az); ob(0, JX + s * 1.25 - .4, JX + s * 1.25 + .4, az - .4, az + .4); }
+    const arcG = new THREE.Mesh(new THREE.TorusGeometry(1.25, .32, 8, 16, Math.PI * .82), pierreJ); arcG.position.set(JX, 3.2, az); arcG.rotation.z = .02; scene.add(arcG);   // (l'arc, entamé d'un côté)
+    for (let i = 0; i < 6; i++) boite(.4 + hasard(i) * .3, .25, .35, pierreJ, JX + 1.6 + hasard(i * 3) * 1.4, .12, az + 1 + hasard(i * 7) * 1.2); }
+  { const gx = JX - 7.5, gz = JZ - 3.2, w = 3, d = 2.4, h = 2.3, verreS = new THREE.MeshStandardMaterial({ color: 0xa8c8cc, transparent: true, opacity: .3, roughness: .1, side: THREE.DoubleSide, depthWrite: false });
+    const cadre = M3(0xd8d8d0, .5); boite(w, h, d, verreS, gx, h / 2, gz); for (const s of [-1, 1]) for (const e of [-1, 1]) boite(.06, h, .06, cadre, gx + s * w / 2, h / 2, gz + e * d / 2);
+    for (let i = 1; i < 4; i++) for (const e of [-1, 1]) boite(.04, h, .04, cadre, gx - w / 2 + i * w / 4, h / 2, gz + e * d / 2); ob(0, gx - w / 2 - .1, gx + w / 2 + .1, gz - d / 2 - .1, gz + d / 2 + .1);
+    const toitS = new THREE.Mesh(new THREE.CylinderGeometry(.05, w * .75, 1.1, 4, 1).rotateY(Math.PI / 4), verreS); toitS.scale.set(1, 1, d / w); toitS.position.set(gx, h + .55, gz); scene.add(toitS);
+    for (let i = 0; i < 4; i++) A.ajoute(new THREE.CylinderGeometry(.18, .14, .3, 8), M3(0x8a4a32, .8), gx - 1 + i * .65, .15, gz - .6, false); }
+  meuble(0, JX + 5, JZ + 2.2, 0, 1.3, 1.3, true, (b, c, s) => { c(.62, .48, .9, M3(0x2a2420, .8), 0, .45 - Y0, 0, 16); c(.64, .64, .08, M3(0x3a3028, .8), 0, .9 - Y0, 0, 16);
+    for (let i = 0; i < 7; i++) { const t2 = c(.01, .025, 1.2, M3(0x5a4a30, .9), Math.cos(i) * .2, 1.4 - Y0, Math.sin(i * 1.7) * .2, 4); t2.rotation.set(Math.sin(i) * .4, 0, Math.cos(i * 2) * .4); } });
+  { const gz = JZ + JB, ferN = M3(0x141414, .5, { metalness: .4 }); for (const s of [-1, 1]) { ob(0, JX + s * 1.5 - .35, JX + s * 1.5 + .35, gz - .35, gz + .35); boite(.55, 2.2, .55, pierreJ, JX + s * 1.5, 1.1, gz, true); boite(.7, .16, .7, pierreJ, JX + s * 1.5, 2.28, gz); A.ajoute(new THREE.SphereGeometry(.2, 10, 8), pierreJ, JX + s * 1.5, 2.55, gz, false); }
+    const t = new THREE.CanvasTexture(toile(128, 256, (x, w, h) => { x.strokeStyle = "#151515"; x.lineWidth = 5; x.strokeRect(4, 30, w - 8, h - 34); for (let i = 1; i < 7; i++) { x.beginPath(); x.moveTo(i * w / 7, 30); x.lineTo(i * w / 7, h); x.stroke(); }
+      x.lineWidth = 4; x.beginPath(); x.moveTo(4, 30); x.quadraticCurveTo(w / 2, -10, w - 4, 30); x.stroke(); for (let i = 0; i < 3; i++) { x.beginPath(); x.arc(30 + i * 34, 120, 12, 0, 7); x.stroke(); } x.beginPath(); x.moveTo(4, 150); x.lineTo(w - 4, 150); x.stroke(); }));
+    t.colorSpace = THREE.SRGBColorSpace; const mg = new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, metalness: .4, roughness: .5 });
+    for (const s of [-1, 1]) { const v = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.3), mg); v.position.set(JX + s * 1.15, 1.15, gz + s * .35); v.rotation.y = s * .7; scene.add(v); }   // (les deux battants, entrouverts)
+    const ar = A.ajoute(new THREE.TorusGeometry(1.5, .03, 6, 24, Math.PI), ferN, JX, 2.3, gz, false); void ar; }
+  // les massifs : des tiges sèches et des touffes, par centaines (deux dessins seulement : légers pour les petits téléphones)
+  { const tiges = new THREE.InstancedMesh(new THREE.CylinderGeometry(.008, .02, 1, 4), M3(0x7a6a48, .9), 420), touffes = new THREE.InstancedMesh(new THREE.SphereGeometry(.35, 7, 5), M3(0x4a4a34, .95), 70), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    let n = 0, k = 0; for (let i = 0; n < 420 && i < 4000; i++) { const x = JX + (hasard(i * 1.3) - .5) * 2 * JA, z = JZ + (hasard(i * 2.7) - .5) * 2 * JB, r = ell(x, z), ri = Math.sqrt(r);
+      if (r > .9 || Math.abs(ri - .82) < .07 || Math.abs(ri - .45) < .07 || ri < .3 || Math.abs(x - JX) < 1.2 || Math.abs(z - JZ) < 1 || Math.abs(ri - .64) < .04) continue;
+      const h = .4 + hasard(i * 5.1) * 1.2; e.set((hasard(i * 7) - .5) * .4, 0, (hasard(i * 9) - .5) * .4); q.setFromEuler(e); tiges.setMatrixAt(n++, mt.compose(new THREE.Vector3(x, h / 2, z), q, new THREE.Vector3(1, h, 1)));
+      if (k < 70 && i % 6 === 0) { const s = .6 + hasard(i * 11) * .8; touffes.setMatrixAt(k++, mt.compose(new THREE.Vector3(x + .3, .2 * s, z), new THREE.Quaternion(), new THREE.Vector3(s, s * .8, s))); } }
+    tiges.count = n; touffes.count = k; scene.add(tiges, touffes); }
+  // l'allée de gravier, de l'arrière de la maison jusqu'au portail
+  { const a = A.ajoute(new THREE.PlaneGeometry(2.2, 9.6), gravier, 4.6, .014, -10.9, false); a.rotation.set(-Math.PI / 2, 0, -.3); }
   // la lune de l'affiche : énorme, pâle, derrière la maison
   { const lune = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(512, 512, (x) => { const g = x.createRadialGradient(256, 256, 120, 256, 256, 256); g.addColorStop(0, "rgba(220,235,255,.55)"); g.addColorStop(1, "rgba(160,190,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 512, 512);
       const d = x.createRadialGradient(230, 230, 20, 256, 256, 140); d.addColorStop(0, "#f8fbff"); d.addColorStop(1, "#c8d6ee"); x.fillStyle = d; x.beginPath(); x.arc(256, 256, 140, 0, 7); x.fill();
@@ -7878,12 +8065,15 @@ function construireCoraline(A, L, scene) {
     if (o) return false; if (d < TR - .35) return true; if (d < TR + .3) return false;   // (dans la tourelle : depuis la pièce ; sa paroi, autour)
     if (n === 1) return PIECES[1].some(r => dedans(x, z, r)) || PASSAGES[1].some(r => dedans(x, z, r));
     if (PIECES[0].some(r => dedans(x, z, r)) || PASSAGES[0].some(r => dedans(x, z, r)) || PORCHE.some(r => dedans(x, z, r)) || MARCHES.some(r => dedans(x, z, r))) return true;
+    if (ell(x, z) < 1.12) { if (surPont(x, z)) return true; if (bassin(x, z)) return false; const r = Math.sqrt(ell(x, z));   // (le jardin : ses murets, le bassin creux ; le pont)
+      if (Math.abs(r - 1) < .06 && Math.abs(x - JX) > 1.25) return false; if (Math.abs(r - .64) < .045 && Math.abs(x - JX) > 1.15 && Math.abs(z - JZ) > 1.05) return false; }
     return x > -40 && x < 40 && z > -40 && z < 40 && !EMPRISE.some(r => dedans(x, z, r, -.4)) && d > TR + .4 && !ARBRES.some(r => dedans(x, z, r)); };
   L.hauteur = (x, z, p) => { if (p && p.corN == null) p.corN = p.g && p.g.position && p.g.position.y > (Y0 + Y1) / 2 ? 1 : 0;
     const n = p ? p.corN : niveau();
     if (surEsc(x, z)) { const h = Y0 + Math.max(0, Math.min(1, (x - 1.2) / 3.8)) * (Y1 - Y0); if (p) p.corN = h > (Y0 + Y1) / 2 ? 1 : 0; return h; }
     if (surSecours(x, z)) { const h = Math.max(0, Math.min(1, (7.2 - z) / 5.15)) * Y1; if (p) p.corN = h > Y1 / 2 ? 1 : 0; return h; }
     if (n === 1) return Y1;
+    if (surPont(x, z)) return Math.max(0, BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX)));   // (sur le pont du jardin)
     if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 9.6) / .3) * Y0 / 4));
     if (dedans(x, z, MARCHES[1])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((-8.1 - x) / .3) * Y0 / 4));
     return EMPRISE.slice(0, 4).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : 0; };
