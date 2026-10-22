@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.36";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.37";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6670,7 +6670,7 @@ function construireAppart(A, L, scene) {
   for (const [x, z] of [[0, -3.85], [0, 6], [-3.25, -1.9], [-3.25, -6.1], [3.25, -1.9], [3.9, -5.6], [3.25, P.cuisine], [-3.5, 2.1], [-4, 6.8], [-4, 12.15]]) ampoule(x, z);
   for (const [x, z, i] of [[0, -3.85, 1.6], [0, 6, 1.6], [-4, 12.15, 2.4], [-4, 6.8, 2.4], [-3.25, -3.85, 2.2], [3.25, -2.5, 2.2]]) { const l = new THREE.PointLight(0xffa450, i, 8, 1.5); l.position.set(x, HT - .2, z); scene.add(l); }
   // ---------- où l'on marche ----------
-  const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .2, c + .2] : [.3, XC + .5, c - .2, c + .2];   // (le passage d'une porte, à gauche ou à droite du couloir)
+  const S = (c, g) => g < 0 ? [-XC - .5, -.3, c - .3, c + .3] : [.3, XC + .5, c - .3, c + .3];   /* (assez large pour la carte des passages, tous les 35 cm : la porte du premier salon tombait entre deux cases) */   // (le passage d'une porte, à gauche ou à droite du couloir)
   const R = [[-.6, .6, Z_FOND + .25, Z_BOUT - .25],   // le couloir (on marche vers le milieu : le cercle de la porte d'entrée ne se déclenche qu'en y allant)
     [XG + .25, -XC - .25, ZC[0] + .25, -.25], [XG + .25, -XC - .25, Z2 + .25, ZC[0] - .25], [XC + .25, XD - .25, ZD + .25, -.25], [XC + .25, XB - .25, ZC[1] + .25, ZD - .25],
     [-.55, .55, Z_FOND - 1.55, Z_FOND - .25], [-.2, .2, Z_FOND - .4, Z_FOND + .4],
@@ -6685,7 +6685,8 @@ function construireAppart(A, L, scene) {
   for (const m of L.meublesAppart) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }
   const FIXES = MEUBLES.filter(([a, b, c, d]) => !L.meublesAppart.some(m => { const x = (a + b) / 2, z = (c + d) / 2; return x > m.bx[0] && x < m.bx[1] && z > m.bx[2] && z < m.bx[3]; }));
   L.piecesAppart = R; L.fixesAppart = FIXES;
-  L.portesAppart = [[-XC - .05, XC + .05, Z_FOND - 1.6, Z_BOUT], ...[[P.ch1, -1], [P.ch2, -1], [P.ch3, 1], [P.sdb, 1], [P.wc, -1], [P.salon, -1], [P.salon2, -1], [P.cuisine, 1]].map(([c, g]) => g < 0 ? [-XC - 1.1, -XC + .1, c - .6, c + .6] : [XC - .1, XC + 1.1, c - .6, c + .6])];   // (le couloir, et devant chaque porte : on ne pose rien)
+  L.couloirAppart = [-XC - .05, XC + .05, Z_FOND - 1.6, Z_BOUT]; L.marchesAppart = [ZM0 - .25, ZM1 + .25];
+  L.portesAppart = [[.2, XC + .1, P.entree - .6, P.entree + .6], ...[[P.ch1, -1], [P.ch2, -1], [P.ch3, 1], [P.sdb, 1], [P.wc, -1], [P.salon, -1], [P.salon2, -1], [P.cuisine, 1]].map(([c, g]) => g < 0 ? [-XC - 1.1, -XC + .1, c - .6, c + .6] : [XC - .1, XC + 1.1, c - .6, c + .6])];   // (le couloir, et devant chaque porte : on ne pose rien)
   meublesSalonTele(L, scene, mb, R[10], H4); meublesChambres(L, scene, mb, R[1], R[2], R[3]); meublesInventaire(L, scene, mb, R[10]); for (const m of L.meublesAppart) if (!m.base) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }   /* (les nouveaux meubles du salon de la télé) */
   chargerEtatAppart(L);   // (la place de chaque meuble, enregistrée)
   L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !FIXES.some(([a, b, c, d]) => x > a - MARGE && x < b + MARGE && z > c - MARGE && z < d + MARGE)
@@ -6706,23 +6707,27 @@ function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
   for (const m of L.meublesAppart) { const s = d[m.id]; if (!s) continue; m.range = !!s.r; m.g.visible = !m.range;
     if (!m.range) { m.g.position.set(s.x, m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(s.x, s.z) : 0), s.z); m.g.rotation.y = s.ry; } majBoiteMeuble(m); }
   for (const m of L.meublesAppart) if (m.surMeuble && !m.range) { m.g.position.y = hauteurPose(L, m, m.g.position.x, m.g.position.z); majBoiteMeuble(m); }
+  L.grille = L.grilleAdmin = null;   // (la carte des passages se refait avec les meubles à leur place)
   // (un meuble resté devant une porte, ou dans le couloir : on lui retrouve une place dans sa pièce)
   let repare = false; for (const m of L.meublesAppart) { if (m.range || m.plat || m.suspendu || m.surMeuble || !m.bx) continue; const [a, b, c, d] = m.bx, sur = ([x0, x1, z0, z1]) => a < x1 - .02 && b > x0 + .02 && c < z1 - .02 && d > z0 + .02;
     if ((L.portesAppart || []).some(sur)) { const cx = (a + b) / 2, cz = (c + d) / 2, R = (L.piecesAppart || []).slice(1).find(([x0, x1, z0, z1]) => cx > x0 - .3 && cx < x1 + .3 && cz > z0 - .3 && cz < z1 + .3); if (R) { caserMeuble(L, m, R); repare = true; } } }
   if (repare && adminAppart()) sauverAmenagement(); }
 async function chargerEtatAppart(L) { try { const r = await fetch("/api/appart", { headers: { Authorization: "Bearer " + M.ctx.token } }); if (!r.ok) return; const j = await r.json();
     if (!M) return; M.appartOuvert = !!j.ouvert; if (L && M.L === L) appliquerAmenagement(L, j.meubles); } catch (e) {} }
-function sauverAmenagement(extra = {}) { const L = M && M.L; if (!L || !L.meublesAppart) return; clearTimeout(M.amSauveT);
+function sauverAmenagement(extra = {}) { const L = M && M.L; if (!L || !L.meublesAppart) return; clearTimeout(M.amSauveT); L.grille = L.grilleAdmin = null;   /* (la carte des passages : refaite, les meubles ont bougé) */
   M.amSauveT = setTimeout(() => { const d = {}; for (const m of L.meublesAppart) d[m.id] = { x: +m.g.position.x.toFixed(3), z: +m.g.position.z.toFixed(3), ry: +m.g.rotation.y.toFixed(4), r: m.range ? 1 : 0 };
     fetch("/api/appart", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ meubles: d, ...extra }) }).catch(() => {}); }, 500); }
 // un meuble peut-il être là : dans une pièce, sans chevaucher un autre meuble ni un obstacle fixe
 function placeMeubleOK(L, m) { majBoiteMeuble(m); const [a, b, c, d] = m.bx, cx = (a + b) / 2, cz = (c + d) / 2, R = L.piecesAppart || [];
   if (m.suspendu) return R.some(([x0, x1, z0, z1]) => cx > x0 - .3 && cx < x1 + .3 && cz > z0 - .3 && cz < z1 + .3);
-  const dans = (x, z) => R.some(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3);   // (contre le mur : on tolère la marge des passages)
+  const C = L.couloirAppart, dans = (x, z) => R.some(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3) || !!(C && x > C[0] && x < C[1] && z > C[2] && z < C[3]);   // (contre le mur : on tolère la marge des passages)
   if (!dans(cx, cz) || !dans(a + .05, c + .05) || !dans(b - .05, c + .05) || !dans(a + .05, d - .05) || !dans(b - .05, d - .05)) return false;
   if (m.plat || m.surMeuble) return true;
   const sur = ([x0, x1, z0, z1]) => a < x1 - .02 && b > x0 + .02 && c < z1 - .02 && d > z0 + .02;
-  return !(L.fixesAppart || []).some(sur) && !(L.portesAppart || []).some(sur) && !L.meublesAppart.some(o => o !== m && !o.range && !o.plat && !o.suspendu && !o.surMeuble && o.bx && sur(o.bx)); }   /* (ni devant une porte, ni dans le couloir) */
+  // (le couloir : on peut y mettre un meuble contre un mur, s'il reste 80 cm pour passer au milieu ; pas sur les marches)
+  if (C && sur(C) && !((b <= C[0] + .62 || a >= C[1] - .62) && !(c < L.marchesAppart[1] && d > L.marchesAppart[0]))) return false;
+  const chaise = q => /^Chaise/.test(q.nom), table = q => /^(Table|Bureau)/.test(q.nom);   // (une chaise se glisse sous la table)
+  return !(L.fixesAppart || []).some(sur) && !(L.portesAppart || []).some(sur) && !L.meublesAppart.some(o => o !== m && !o.range && !o.plat && !o.suspendu && !o.surMeuble && o.bx && sur(o.bx) && !((chaise(m) && table(o)) || (table(m) && chaise(o)))); }   /* (ni devant une porte, ni dans le couloir) */
 // la hauteur où poser un petit objet : sur le dessus du meuble qui est dessous, sinon au sol
 function hauteurPose(L, m, x, z) { let y = L.hauteur ? L.hauteur(x, z) : 0; for (const o of L.meublesAppart) if (o !== m && !o.range && !o.plat && !o.suspendu && !o.surMeuble && o.bx && o.by && x > o.bx[0] + .02 && x < o.bx[1] - .02 && z > o.bx[2] + .02 && z < o.bx[3] - .02) y = Math.max(y, o.by); return y; }
 
@@ -13757,7 +13762,7 @@ async function dessinerCorps(p) {
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
 /* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
-export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }], 2: [{ id: "polo", nom: "Polo bleu, jean, chaussures marron", f: "avatars/0002.glb?v=4" }] };
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }] };   // (0002 : retour à son bonhomme de base, la tête de sa photo — à sa demande)
 const av3Cache = {}; let gltfMod = null;
 // la taille d'un personnage 3D, mesurée sur son squelette (des pieds au sommet du crâne), dans les unités du modèle — la boîte englobante, elle, varie d'un modèle à l'autre (cheveux, armes, sac…)
 function hauteurOs(sc) { sc.updateMatrixWorld(true); const os = {}; sc.traverse(o => { if (o.isBone && !os[o.name]) os[o.name] = o; }); const y = n => os[n] ? os[n].getWorldPosition(new THREE.Vector3()).y : null;
