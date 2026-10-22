@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.35";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.36";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6597,7 +6597,7 @@ function construireAppart(A, L, scene) {
     const eteindre = () => { ex.fillStyle = "#1c1f22"; ex.fillRect(0, 0, 320, 240); const r = ex.createRadialGradient(110, 80, 10, 160, 120, 200); r.addColorStop(0, "rgba(255,255,255,.12)"); r.addColorStop(1, "rgba(0,0,0,0)"); ex.fillStyle = r; ex.fillRect(0, 0, 320, 240); ecranT.needsUpdate = true; };
     eteindre();
     // allumée quand on est dans le second salon ; le son baisse quand on s'éloigne
-    const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, dans = p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7];
+    const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, tc = L.teleCopie, dans = (p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7]) || !!(tc && tc.visible && Math.hypot(p.x - tc.position.x, p.z - tc.position.z) < 3.5);   /* (ou près de sa copie) */
       if (dans !== allumee) { allumee = dans; voyant.visible = dans;
         if (dans) { if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); osd = performance.now(); }
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
@@ -6635,7 +6635,10 @@ function construireAppart(A, L, scene) {
           for (let n = 0; n < j.morceaux; n++) { const rr = await fetch(`/api/tele/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + M.ctx.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() }); if (!rr.ok) throw new Error((await rr.json().catch(() => ({}))).erreur || "Envoi interrompu"); barre.style.width = ((n + 1) / j.morceaux * 100) + "%"; }
           await charger(); ch = liste.length - 1; if (allumee) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } majPanneau(); bibliotheque(); }
         catch (err) { er.textContent = err.message; } }; };
-    L.objetsClic = (L.objetsClic || []).concat([{ obj: tv, action: telecommande }]); }
+    L.objetsClic = (L.objetsClic || []).concat([{ obj: tv, action: telecommande }]);
+    /* sa copie (dans l'inventaire) : la même desserte, la même télé, les mêmes chaînes — elle s'allume quand on est près d'elle */
+    { const k = g.children.indexOf(tv), c = g.clone(true); c.visible = false; scene.add(c); mb(c, "Desserte et télé (copie)"); const mc = L.meublesAppart[L.meublesAppart.length - 1]; mc.defautRange = true; mc.range = true;
+      L.teleCopie = c; if (k >= 0) L.objetsClic.push({ obj: c.children[k], action: telecommande }); } }
   // le premier salon : contre le mur du fond (sans porte), le grand buffet de chêne
   { const g = new THREE.Group(); g.position.set((XS - XC) / 2, H4, SZ0 + E + .5); scene.add(g); buffetChene(g); mb(g, "Buffet en chêne"); }
   // le placard : des étagères
@@ -6682,7 +6685,8 @@ function construireAppart(A, L, scene) {
   for (const m of L.meublesAppart) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }
   const FIXES = MEUBLES.filter(([a, b, c, d]) => !L.meublesAppart.some(m => { const x = (a + b) / 2, z = (c + d) / 2; return x > m.bx[0] && x < m.bx[1] && z > m.bx[2] && z < m.bx[3]; }));
   L.piecesAppart = R; L.fixesAppart = FIXES;
-  meublesSalonTele(L, scene, mb, R[10], H4); meublesChambres(L, scene, mb, R[1], R[2], R[3]); for (const m of L.meublesAppart) if (!m.base) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }   /* (les nouveaux meubles du salon de la télé) */
+  L.portesAppart = [[-XC - .05, XC + .05, Z_FOND - 1.6, Z_BOUT], ...[[P.ch1, -1], [P.ch2, -1], [P.ch3, 1], [P.sdb, 1], [P.wc, -1], [P.salon, -1], [P.salon2, -1], [P.cuisine, 1]].map(([c, g]) => g < 0 ? [-XC - 1.1, -XC + .1, c - .6, c + .6] : [XC - .1, XC + 1.1, c - .6, c + .6])];   // (le couloir, et devant chaque porte : on ne pose rien)
+  meublesSalonTele(L, scene, mb, R[10], H4); meublesChambres(L, scene, mb, R[1], R[2], R[3]); meublesInventaire(L, scene, mb, R[10]); for (const m of L.meublesAppart) if (!m.base) { m.base = { x: m.g.position.x, z: m.g.position.z, ry: m.g.rotation.y }; majBoiteMeuble(m); }   /* (les nouveaux meubles du salon de la télé) */
   chargerEtatAppart(L);   // (la place de chaque meuble, enregistrée)
   L.limites = (x, z) => R.some(([a, b, c, d]) => x >= a && x <= b && z >= c && z <= d) && !FIXES.some(([a, b, c, d]) => x > a - MARGE && x < b + MARGE && z > c - MARGE && z < d + MARGE)
     && !L.meublesAppart.some(m => !m.range && !m.plat && !m.suspendu && m.bx && x > m.bx[0] - MARGE && x < m.bx[1] + MARGE && z > m.bx[2] - MARGE && z < m.bx[3] + MARGE);
@@ -6697,10 +6701,15 @@ function construireAppart(A, L, scene) {
 /* ===================== l'appartement de l'escalier Z : les meubles qu'on déplace, et l'aménagement (l'administrateur) =====================
    Chaque meuble a sa place enregistrée (sur le serveur) ; en mode « aménagement » : la vue du ciel, un quadrillage au sol, on touche un meuble
    pour le prendre, le faire glisser, le tourner, le ranger dans l'inventaire ; on le ressort de l'inventaire pour le poser ailleurs */
-const majBoiteMeuble = m => { m.g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.g); m.bx = [b.min.x, b.max.x, b.min.z, b.max.z]; };
+const majBoiteMeuble = m => { m.g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.g); m.bx = [b.min.x, b.max.x, b.min.z, b.max.z]; m.by = b.max.y; };
 function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
   for (const m of L.meublesAppart) { const s = d[m.id]; if (!s) continue; m.range = !!s.r; m.g.visible = !m.range;
-    if (!m.range) { m.g.position.set(s.x, m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(s.x, s.z) : 0), s.z); m.g.rotation.y = s.ry; } majBoiteMeuble(m); } }
+    if (!m.range) { m.g.position.set(s.x, m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(s.x, s.z) : 0), s.z); m.g.rotation.y = s.ry; } majBoiteMeuble(m); }
+  for (const m of L.meublesAppart) if (m.surMeuble && !m.range) { m.g.position.y = hauteurPose(L, m, m.g.position.x, m.g.position.z); majBoiteMeuble(m); }
+  // (un meuble resté devant une porte, ou dans le couloir : on lui retrouve une place dans sa pièce)
+  let repare = false; for (const m of L.meublesAppart) { if (m.range || m.plat || m.suspendu || m.surMeuble || !m.bx) continue; const [a, b, c, d] = m.bx, sur = ([x0, x1, z0, z1]) => a < x1 - .02 && b > x0 + .02 && c < z1 - .02 && d > z0 + .02;
+    if ((L.portesAppart || []).some(sur)) { const cx = (a + b) / 2, cz = (c + d) / 2, R = (L.piecesAppart || []).slice(1).find(([x0, x1, z0, z1]) => cx > x0 - .3 && cx < x1 + .3 && cz > z0 - .3 && cz < z1 + .3); if (R) { caserMeuble(L, m, R); repare = true; } } }
+  if (repare && adminAppart()) sauverAmenagement(); }
 async function chargerEtatAppart(L) { try { const r = await fetch("/api/appart", { headers: { Authorization: "Bearer " + M.ctx.token } }); if (!r.ok) return; const j = await r.json();
     if (!M) return; M.appartOuvert = !!j.ouvert; if (L && M.L === L) appliquerAmenagement(L, j.meubles); } catch (e) {} }
 function sauverAmenagement(extra = {}) { const L = M && M.L; if (!L || !L.meublesAppart) return; clearTimeout(M.amSauveT);
@@ -6711,9 +6720,11 @@ function placeMeubleOK(L, m) { majBoiteMeuble(m); const [a, b, c, d] = m.bx, cx 
   if (m.suspendu) return R.some(([x0, x1, z0, z1]) => cx > x0 - .3 && cx < x1 + .3 && cz > z0 - .3 && cz < z1 + .3);
   const dans = (x, z) => R.some(([x0, x1, z0, z1]) => x > x0 - .3 && x < x1 + .3 && z > z0 - .3 && z < z1 + .3);   // (contre le mur : on tolère la marge des passages)
   if (!dans(cx, cz) || !dans(a + .05, c + .05) || !dans(b - .05, c + .05) || !dans(a + .05, d - .05) || !dans(b - .05, d - .05)) return false;
-  if (m.plat) return true;
+  if (m.plat || m.surMeuble) return true;
   const sur = ([x0, x1, z0, z1]) => a < x1 - .02 && b > x0 + .02 && c < z1 - .02 && d > z0 + .02;
-  return !(L.fixesAppart || []).some(sur) && !L.meublesAppart.some(o => o !== m && !o.range && !o.plat && !o.suspendu && o.bx && sur(o.bx)); }
+  return !(L.fixesAppart || []).some(sur) && !(L.portesAppart || []).some(sur) && !L.meublesAppart.some(o => o !== m && !o.range && !o.plat && !o.suspendu && !o.surMeuble && o.bx && sur(o.bx)); }   /* (ni devant une porte, ni dans le couloir) */
+// la hauteur où poser un petit objet : sur le dessus du meuble qui est dessous, sinon au sol
+function hauteurPose(L, m, x, z) { let y = L.hauteur ? L.hauteur(x, z) : 0; for (const o of L.meublesAppart) if (o !== m && !o.range && !o.plat && !o.suspendu && !o.surMeuble && o.bx && o.by && x > o.bx[0] + .02 && x < o.bx[1] - .02 && z > o.bx[2] + .02 && z < o.bx[3] - .02) y = Math.max(y, o.by); return y; }
 
 // les meubles du second salon (celui de la télé), d'après les demandes : le tapis persan, le canapé et son fauteuil, l'horloge de parquet, les plantes
 let texTapis = null;
@@ -6859,6 +6870,77 @@ function meublesChambres(L, scene, mb, R1, R2, R3) { const M3 = (c, r = .8, o = 
     { const sac = new THREE.Group(); sac.position.set(.75, 0, .35); g.add(sac); bx(sac, .32, .36, .14, M3(0xd83a6a, .7), 0, .18, 0); bx(sac, .3, .14, .02, M3(0xf0a0c0, .7), 0, .22, .075); }   // (le cartable, posé au pied du bureau)
     caserMeuble(L, m, R3); }
 }
+// les objets ajoutés directement dans l'inventaire : le Minitel sur son petit meuble, les poupées de porcelaine, le buffet de cuisine en formica, les petites horloges, le drapeau du PSG
+function meublesInventaire(L, scene, mb, rect) { const M3 = (c, r = .8, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+  const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const cy = (g, rt, rb, h, m, x, y, z, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(x, y, z); g.add(o); return o; };
+  const sp = (g, r, m, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), m); o.position.set(x, y, z); g.add(o); return o; };
+  const nouveau = (nom, opts = {}) => { const g = new THREE.Group(); g.position.set((rect[0] + rect[1]) / 2, 0, (rect[2] + rect[3]) / 2); g.visible = false; scene.add(g); mb(g, nom); const m = L.meublesAppart[L.meublesAppart.length - 1]; Object.assign(m, { range: true, defautRange: true }, opts); return m; };
+  // le Minitel sur son petit meuble en bois : on le touche, on se connecte (3615…)
+  { const m = nouveau("Minitel sur son petit meuble"), g = m.g, bois = M3(0x8a5a32, .55), beige = M3(0xcfc4ac, .6), brun = M3(0x5a4636, .6);
+    bx(g, .6, .03, .45, bois, 0, .62, 0); for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) bx(g, .04, .62, .04, bois, sx * .26, .31, sz * .19); bx(g, .52, .02, .37, bois, 0, .2, 0);   // (la petite table, sa tablette du bas)
+    const mi = new THREE.Group(); mi.position.set(0, .635, -.02); g.add(mi);
+    bx(mi, .3, .25, .26, beige, 0, .14, -.02); const ec = bx(mi, .22, .17, .01, M3(0x0a0a0a, .15, { emissive: 0x0a1a10 }), 0, .155, .112); ec.rotation.x = -.12;   // (le boîtier, l'écran)
+    bx(mi, .3, .025, .14, brun, 0, .012, .18); for (let i = 0; i < 4; i++) for (let j = 0; j < 10; j++) bx(mi, .022, .006, .022, beige, -.125 + j * .028, .027, .135 + i * .026);   // (le clavier rabattu, ses touches)
+    bx(mi, .06, .015, .01, M3(0x6a5a4a, .5), .1, .04, .113);   // (la marque)
+    L.objetsClic = (L.objetsClic || []).concat([{ obj: mi, action: () => ouvrirMinitel() }]); }
+  // les poupées de porcelaine (la collection) : quatre poupées debout sur leur socle, robes à volants, visages de biscuit
+  { const m = nouveau("Poupées de porcelaine", { surMeuble: true }), g = m.g, peau = M3(0xf4e2d6, .35);
+    bx(g, .5, .02, .16, M3(0x5a3a22, .5), 0, .01, 0);
+    [[0xb03a5a, 0x3a2414], [0x5a7ac8, 0xd8b048], [0xe8e0f0, 0x6a3a1a], [0x3a8a6a, 0x1a1a1a]].forEach(([robe, cheveux], i) => { const x = -.18 + i * .12, d = new THREE.Group(); d.position.set(x, .02, 0); g.add(d);
+      cy(d, .015, .05, .14, M3(robe, .7), 0, .07, 0, 14); cy(d, .052, .052, .015, M3(0xffffff, .8), 0, .01, 0, 14); cy(d, .018, .014, .05, M3(robe, .7), 0, .16, 0, 10); sp(d, .028, peau, 0, .205, 0); const ch = sp(d, .03, M3(cheveux, .6), 0, .214, -.006); ch.scale.set(1, .9, .9);
+      for (const s of [-1, 1]) { const b = cy(d, .006, .006, .07, peau, s * .028, .15, 0, 6); b.rotation.z = s * .3; } });
+    m.g.scale.setScalar(1.15); }
+  // le grand buffet de cuisine en formica blanc : le bas à portes et tiroirs, le haut vitré, les poignées chromées
+  { const m = nouveau("Buffet de cuisine en formica"), g = m.g, blanc = M3(0xf4f2ec, .3), chrome = M3(0xd0d0d0, .2, { metalness: .9 }), vitre = M3(0xbfd8e0, .05, { transparent: true, opacity: .35 });
+    bx(g, 1.3, .9, .5, blanc, 0, .45, 0); bx(g, 1.34, .03, .54, M3(0xe8e4dc, .25), 0, .915, 0); for (let i = 0; i < 2; i++) { bx(g, .62, .55, .01, blanc, -.33 + i * .66, .32, .255); bx(g, .1, .02, .03, chrome, -.33 + i * .66 + (i ? -.22 : .22), .4, .27); bx(g, .62, .18, .01, blanc, -.33 + i * .66, .73, .255); bx(g, .12, .02, .03, chrome, -.33 + i * .66, .73, .27); }
+    bx(g, 1.2, .12, .3, blanc, 0, 1.12, -.1); bx(g, 1.3, .75, .32, blanc, 0, 1.55, -.09); for (let i = 0; i < 2; i++) { bx(g, .6, .65, .01, vitre, -.31 + i * .62, 1.55, .075); bx(g, .02, .1, .03, chrome, -.31 + i * .62 + (i ? -.26 : .26), 1.5, .09); }
+    bx(g, 1.34, .04, .36, blanc, 0, 1.94, -.09); for (const y of [1.4, 1.68]) bx(g, 1.24, .015, .28, M3(0xe8e4dc, .4), 0, y, -.1); }
+  // les petites horloges en bois d'époque (à poser sur un meuble) : une capucine, une borne, une pendulette en chapeau de gendarme
+  const cadran = r => { const c = new THREE.Mesh(new THREE.CircleGeometry(r, 24), new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, x => { x.fillStyle = "#f2e8d0"; x.beginPath(); x.arc(32, 32, 31, 0, 7); x.fill(); x.strokeStyle = "#333"; x.lineWidth = 2; for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; x.beginPath(); x.moveTo(32 + Math.cos(a) * 24, 32 + Math.sin(a) * 24); x.lineTo(32 + Math.cos(a) * 29, 32 + Math.sin(a) * 29); x.stroke(); } x.lineWidth = 3; x.beginPath(); x.moveTo(32, 32); x.lineTo(32, 14); x.moveTo(32, 32); x.lineTo(44, 36); x.stroke(); })), roughness: .5 })); return c; };
+  [["Petite horloge borne", (g, bo) => { bx(g, .2, .26, .1, bo, 0, .13, 0); const t = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, .1, 20, 1, false, 0, Math.PI), bo); t.rotation.set(Math.PI / 2, 0, Math.PI / 2); t.rotation.set(0, 0, 0); t.rotation.z = Math.PI / 2; t.rotation.y = Math.PI / 2; t.position.y = .26; g.add(t); const c = cadran(.07); c.position.set(0, .17, .051); g.add(c); }],
+   ["Pendulette chapeau de gendarme", (g, bo) => { bx(g, .3, .03, .1, bo, 0, .015, 0); bx(g, .24, .14, .09, bo, 0, .1, 0); const t = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .09, 24, 1, false, -Math.PI / 2, Math.PI), bo); t.rotation.x = Math.PI / 2; t.rotation.z = -Math.PI / 2; t.position.y = .17; t.scale.set(1, 1, .6); g.add(t); const c = cadran(.055); c.position.set(0, .14, .046); g.add(c); }],
+   ["Horloge capucine", (g, bo) => { bx(g, .14, .2, .09, M3(0xc9a227, .3, { metalness: .8 }), 0, .1, 0); bx(g, .16, .02, .1, bo, 0, .21, 0); const cl = cy(g, .02, .02, .03, M3(0xc9a227, .3, { metalness: .8 }), 0, .25, 0, 10); void cl; const c = cadran(.05); c.position.set(0, .12, .046); g.add(c); }]]
+    .forEach(([nom, f], i) => { const m = nouveau(nom, { surMeuble: true }); f(m.g, M3([0x6a3418, 0x4a2a14, 0x7a4a24][i], .4)); });
+  // le drapeau du PSG (un deuxième, dans l'inventaire)
+  { const m = nouveau("Drapeau du PSG (2)", { suspendu: true }); texPSG = texPSG || tex(toilePSG()); const d = new THREE.Mesh(new THREE.PlaneGeometry(1.0, .75), new THREE.MeshStandardMaterial({ map: texPSG, roughness: .9, side: THREE.DoubleSide })); d.position.z = .02; m.g.add(d); m.g.position.y = 1.6; }
+}
+// le Minitel : on se connecte, comme en 1990 — le code du service, le bip du modem, la page d'accueil en mosaïque de couleurs
+function ouvrirMinitel() { if (!M || document.getElementById("minitel")) return; const nom = esc(((M.ctx.moiInfo && M.ctx.moiInfo().nom) || "").toUpperCase());
+  const d = document.createElement("div"); d.id = "minitel"; d.style.cssText = "position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:rgba(0,0,0,.75);padding:10px";
+  d.innerHTML = `<div style="width:min(560px,96vw);background:linear-gradient(#d8ccb2,#bfb294);border-radius:22px 22px 10px 10px;padding:18px 18px 12px;box-shadow:0 12px 40px rgba(0,0,0,.6)">
+    <div id="mtEcran" style="position:relative;aspect-ratio:4/3;background:#050806;border-radius:26px/20px;border:10px solid #3a3530;overflow:hidden;font:700 clamp(12px,3.6vw,19px)/1.3 'Courier New',monospace;color:#e8e8e8;padding:14px 16px;box-shadow:inset 0 0 40px rgba(120,255,160,.08)"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px" id="mtTouches"></div></div>`;
+  document.body.appendChild(d); for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel", "keydown"]) d.addEventListener(ev, e => e.stopPropagation());
+  const ecran = d.querySelector("#mtEcran"), touches = d.querySelector("#mtTouches");
+  const lignes = ecran.style; void lignes; const C = { r: "#ff4040", v: "#40ff60", j: "#ffff40", b: "#4060ff", m: "#ff40ff", c: "#40ffff", w: "#ffffff" };
+  const mosaique = (t, coul) => `<div style="font:900 clamp(26px,9vw,52px)/1 'Courier New',monospace;letter-spacing:.06em;color:${coul};text-shadow:3px 3px 0 #000;transform:scaleY(1.5);margin:8px 0 14px">${t}</div>`;
+  const bande = cs => `<div style="display:flex;height:10px;margin:2px 0">${cs.map(c => `<div style="flex:1;background:${c}"></div>`).join("")}</div>`;
+  let page = "", code = "";
+  const touche = (t, f, c = "#4a4038") => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = `padding:8px 10px;border-radius:6px;border:0;background:${c};color:#f4ead2;font:700 12px Lato,sans-serif;cursor:pointer;box-shadow:0 3px 0 #1a1612`; b.onclick = e => { e.stopPropagation(); bip(); f(); }; touches.appendChild(b); return b; };
+  const bip = (f = 1200, du = .06) => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.type = "square"; o.frequency.value = f; g.gain.value = .05; o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + du); } catch (e) {} };
+  const modem = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = "sine"; o.frequency.setValueAtTime(1300, t); o.frequency.setValueAtTime(2100, t + .5); o.frequency.setValueAtTime(390, t + 1.1); o.frequency.setValueAtTime(1300, t + 1.25); g.gain.value = .06; o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 1.8); } catch (e) {} };
+  const afficher = h => { ecran.innerHTML = h + `<div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.25) 2px 3px)"></div>`; };
+  const PAGES = {
+    accueil: () => bande([C.r, C.j, C.v, C.c, C.b, C.m]) + mosaique("3615 CASERNE", C.j) + bande([C.m, C.b, C.c, C.v, C.j, C.r]) + `<div style="margin-top:10px;color:${C.c}">BONJOUR ${nom || "À VOUS"}</div><div style="margin-top:8px">
+      <span style="color:${C.j}">1</span> L'ANNUAIRE DES ANCIENS<br><span style="color:${C.j}">2</span> LES PETITES ANNONCES<br><span style="color:${C.j}">3</span> L'HOROSCOPE DU JOUR<br><span style="color:${C.j}">4</span> LA MÉTÉO DE PARIS<br><span style="color:${C.j}">5</span> LE COIN DES JEUX</div>
+      <div style="margin-top:10px;color:${C.v}">TAPEZ LE NUMÉRO + <span style="background:${C.v};color:#000;padding:0 4px">ENVOI</span></div>`,
+    1: () => mosaique("ANNUAIRE", C.c) + `<div>FAMILLES DE LA CASERNE<br>DE LA NOUVELLE-FRANCE<br><br><span style="color:${C.j}">ESC. Z</span> ........ 5e ÉTAGE<br><span style="color:${C.j}">POSTE DE POLICE</span> .. COUR D'HONNEUR<br><span style="color:${C.j}">LE MESS</span> ........ 1er ÉTAGE<br><br><span style="color:${C.m}">117 ANCIENS INSCRITS</span></div>`,
+    2: () => mosaique("ANNONCES", C.m) + `<div><span style="color:${C.j}">VDS</span> VÉLO BMX CHROMÉ, TBE<br>&nbsp;&nbsp;TÉL. AU 3e GAUCHE<br><span style="color:${C.j}">ÉCH.</span> CARTES PANINI 1990<br>&nbsp;&nbsp;CONTRE ALBUM ITALIA 90<br><span style="color:${C.j}">CHERCHE</span> NOUNOU LE MERCREDI<br>&nbsp;&nbsp;ESCALIER B<br><span style="color:${C.j}">VDS</span> CONSOLE NES + 2 JEUX</div>`,
+    3: () => mosaique("HOROSCOPE", C.j) + `<div>VOTRE JOURNÉE :<br><br><span style="color:${C.c}">AMOUR</span> ★★★☆☆<br>UN VOISIN DU 2e VOUS SOURIT<br><span style="color:${C.c}">TRAVAIL</span> ★★★★☆<br>LA RELÈVE ARRIVE À 19 H<br><span style="color:${C.c}">SANTÉ</span> ★★☆☆☆<br>MOINS DE CAFÉ AU MESS</div>`,
+    4: () => mosaique("MÉTÉO", C.b) + `<div>PARIS ET PETITE COURONNE<br><br><span style="color:${C.j}">MATIN</span>  ☁ 12°C BRUMES<br><span style="color:${C.j}">APRÈS-MIDI</span>  ☀ 18°C<br><span style="color:${C.j}">SOIR</span>  🌧 AVERSES<br><br>VENT FAIBLE DE SUD-OUEST</div>`,
+    5: () => mosaique("JEUX", C.v) + `<div>LA QUESTION DU JOUR :<br><br>EN QUELLE ANNÉE LE PSG<br>A-T-IL ÉTÉ CRÉÉ ?<br><br><span style="color:${C.j}">A</span> 1965 <span style="color:${C.j}">B</span> 1970 <span style="color:${C.j}">C</span> 1975<br><br><span style="color:${C.m}">RÉPONSE : B (12 AOÛT 1970)</span></div>` };
+  const connexion = () => { afficher(`<div style="color:${C.v}">CONNEXION EN COURS…</div><div style="margin-top:14px">3615 ${esc(code || "CASERNE")}</div><div style="margin-top:20px;color:${C.j}">▓▓▓▓▒▒░░</div>`); modem();
+    setTimeout(() => { if (!document.getElementById("minitel")) return; page = "accueil"; afficher(PAGES.accueil()); }, 1900); };
+  const debut = () => { page = ""; code = ""; afficher(bande([C.b, C.w, C.r]) + mosaique("MINITEL", C.w) + `<div style="color:${C.c}">FRANCE TÉLÉCOM</div><div style="margin-top:18px">COMPOSEZ LE CODE DU SERVICE<br>PUIS APPUYEZ SUR <span style="background:${C.v};color:#000;padding:0 4px">CONNEXION/FIN</span></div><div style="margin-top:12px;font-size:1.3em;color:${C.j}">3615 <span id="mtCode">CASERNE</span>▮</div>`); };
+  let saisie = "";
+  for (const n of ["1", "2", "3", "4", "5"]) touche(n, () => { if (page) { saisie = n; const e = ecran.querySelector("div:last-of-type"); void e; } });
+  touche("ENVOI", () => { if (page && PAGES[saisie]) { page = saisie; afficher(PAGES[saisie]()); } }, "#2a6a3a");
+  touche("RETOUR", () => { if (page && page !== "accueil") { page = "accueil"; afficher(PAGES.accueil()); } });
+  touche("SOMMAIRE", () => { if (page) { page = "accueil"; afficher(PAGES.accueil()); } });
+  touche("CONNEXION/FIN", () => { if (!page) connexion(); else { afficher(`<div style="color:${C.r}">FIN DE CONNEXION</div><div style="margin-top:10px">DURÉE : 0 H 03 MIN<br>MERCI ET À BIENTÔT</div>`); setTimeout(() => d.remove(), 1400); } }, "#7a2a2a");
+  touche("✕", () => d.remove(), "#222");
+  debut(); }
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
 function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen;
@@ -6891,7 +6973,7 @@ function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) retur
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) inv.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(inv);
   const majInv = () => { const r = L.meublesAppart.filter(m => m.range); inv.innerHTML = `<b>🧰 Inventaire</b> <span style="opacity:.7">(${r.length})</span>` + (r.length ? "" : `<div style="opacity:.7;margin-top:8px">Vide : touche un meuble puis « 📦 Ranger ».</div>`);
     for (const m of r) { const d = document.createElement("button"); d.type = "button"; d.textContent = m.nom; d.style.cssText = "display:block;width:100%;text-align:left;margin-top:6px;padding:8px;border-radius:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;cursor:pointer";
-      d.onclick = e => { e.stopPropagation(); m.range = false; m.g.visible = true; const y = m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(S.cx, S.cz) : 0); m.g.position.set(Math.round(S.cx * 10) / 10, y, Math.round(S.cz * 10) / 10); S.sel = m; valider(); majInv(); majBtns(); inv.hidden = true; }; inv.appendChild(d); } };
+      d.onclick = e => { e.stopPropagation(); m.range = false; m.g.visible = true; const px = Math.round(S.cx * 10) / 10, pz = Math.round(S.cz * 10) / 10, y = m.suspendu ? m.g.position.y : m.surMeuble ? hauteurPose(L, m, px, pz) : (L.hauteur ? L.hauteur(S.cx, S.cz) : 0); m.g.position.set(px, y, pz); S.sel = m; valider(); majInv(); majBtns(); inv.hidden = true; }; inv.appendChild(d); } };
   const valider = () => { if (!S.sel) return; S.ok = placeMeubleOK(L, S.sel); if (S.ok) { S.sel.dernier = { x: S.sel.g.position.x, z: S.sel.g.position.z, ry: S.sel.g.rotation.y }; sauverAmenagement(); } };
   // toucher, glisser, pincer
   const ray = new THREE.Raycaster(), ndc = e => { const r = cv.getBoundingClientRect(); return new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); };
@@ -6909,10 +6991,10 @@ function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) retur
     if (D.pan) { const r = cv.getBoundingClientRect(), k = S.h * 1.1 / r.height, dx = (e.clientX - D.x) * k, dy = (e.clientY - D.y) * k; if (Math.hypot(e.clientX - D.x, e.clientY - D.y) > 6) D.bouge = true;
       const c = Math.cos(S.yaw), s = Math.sin(S.yaw); S.cx = D.cx - (dx * c + dy * s); S.cz = D.cz - (-dx * s + dy * c); if (!D.bouge) return; S.sel = null; majBtns(); return; }
     const m = D.m, sol = m.suspendu ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : m.g.position.y, pt = surSol(e, sol); if (!pt) return; D.bouge = true;
-    const x = Math.round((pt.x + D.dx) * 10) / 10, z = Math.round((pt.z + D.dz) * 10) / 10; m.g.position.x = x; m.g.position.z = z; if (!m.suspendu && L.hauteur) m.g.position.y = L.hauteur(x, z); S.ok = placeMeubleOK(L, m); });   // (calé sur une grille de 10 cm)
+    const x = Math.round((pt.x + D.dx) * 10) / 10, z = Math.round((pt.z + D.dz) * 10) / 10; m.g.position.x = x; m.g.position.z = z; if (m.surMeuble) m.g.position.y = hauteurPose(L, m, x, z); else if (!m.suspendu && L.hauteur) m.g.position.y = L.hauteur(x, z); S.ok = placeMeubleOK(L, m); });   // (calé sur une grille de 10 cm)
   const fin = e => { if (!S.pts.has(e.pointerId)) return; e.stopPropagation(); S.pts.delete(e.pointerId); if (S.pts.size < 2) S.pince = null; const D = S.drag; S.drag = null; if (!D) return;
     if (D.pan && !D.bouge) { const m = quelMeuble(e); S.sel = m; majBtns(); return; }
-    if (D.m && D.bouge) { if (placeMeubleOK(L, D.m)) { S.ok = true; sauverAmenagement(); } else { D.m.g.position.x = D.x0; D.m.g.position.z = D.z0; if (!D.m.suspendu && L.hauteur) D.m.g.position.y = L.hauteur(D.x0, D.z0); S.ok = placeMeubleOK(L, D.m); } } };   // (là où il ne tient pas : il revient à sa place)
+    if (D.m && D.bouge) { if (placeMeubleOK(L, D.m)) { S.ok = true; sauverAmenagement(); } else { D.m.g.position.x = D.x0; D.m.g.position.z = D.z0; if (D.m.surMeuble) D.m.g.position.y = hauteurPose(L, D.m, D.x0, D.z0); else if (!D.m.suspendu && L.hauteur) D.m.g.position.y = L.hauteur(D.x0, D.z0); S.ok = placeMeubleOK(L, D.m); } } };   // (là où il ne tient pas : il revient à sa place)
   ecoute("pointerup", fin); ecoute("pointercancel", fin);
   ecoute("wheel", e => { e.stopPropagation(); e.preventDefault(); S.h = Math.max(2.5, Math.min(22, S.h * (e.deltaY > 0 ? 1.12 : 1 / 1.12))); });
   for (const t of ["click", "touchstart", "touchmove", "mousedown", "dblclick"]) ecoute(t, e => { e.stopPropagation(); });
@@ -8486,7 +8568,7 @@ export async function ouvrir(ctx) {
     // ce que le lieu veut qu'on touche (les vampires de Santa Carla…)
     if (M.L.toucher && M.L.toucher(ray)) return;
     // un objet qu'on touche pour s'en servir (l'ordinateur de la chambre…)
-    for (const q of M.L.objetsClic || []) if (ray.intersectObject(q.obj, true)[0]) { q.action(); return; }
+    for (const q of M.L.objetsClic || []) { let vu = true; for (let o = q.obj; o; o = o.parent) if (!o.visible) { vu = false; break; } if (vu && ray.intersectObject(q.obj, true)[0]) { q.action(); return; } }   /* (pas un meuble rangé dans l'inventaire) */
     // un cercle lumineux touché : on y va (il passe avant l'escalier, les meubles, la cour vue par la porte)
     if (M.cercles) { const vus = M.cercles.filter(c => c.g && c.g.visible); const h = ray.intersectObjects(vus.flatMap(c => [c.disque, c.anneau, c.halo]))[0];
       if (h) { const c = vus.find(c => [c.disque, c.anneau, c.halo].includes(h.object)), q = c.pt.traverse || c.pt.centre; allerVers(q[0], q[1], true); return; } }
