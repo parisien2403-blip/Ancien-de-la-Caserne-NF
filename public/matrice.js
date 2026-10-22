@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.30";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.31";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10628,11 +10628,12 @@ function ambianceApo() {
   const moi = M && M.moiNum && M.gens.get(M.moiNum), F = M && M.L && estApo(M.lieu) && M.L.feuxSon || [];
   let vf = 0; if (moi && F.length && !auRepos) { const d = Math.min(...F.map(([x, z]) => Math.hypot(moi.g.position.x - x, moi.g.position.z - z))); vf = Math.max(0, 1 - d / 16) ** 1.5; }
   if (vf > 0 && !sonFeu) { sonFeu = new Audio("sons/apo-feu.mp3"); sonFeu.loop = true; }
-  if (sonFeu) { sonFeu.volume = Math.min(1, vf);
+  const duck = M && M.musFin ? .15 : 1;   /* (« Sweet Dreams » : on n'entend presque qu'elle) */
+  if (sonFeu) { sonFeu.volume = Math.min(1, vf) * duck;
     if (vf > .01 && sonFeu.paused) { if (performance.now() - (sonFeu.essai || 0) > 2000) { sonFeu.essai = performance.now(); sonFeu.play().catch(() => {}); } } else if (vf <= .01 && !sonFeu.paused) sonFeu.pause(); }
   const dehors = M && M.L && estApo(M.lieu) && !M.L.interieur;
   if (dehors && !sonApo) { sonApo = new Audio("sons/apo-ville.mp3"); sonApo.loop = true; sonApo.volume = .7; }
-  if (!sonApo) return;
+  if (!sonApo) return; sonApo.volume = .7 * duck;
   if (dehors && sonApo.paused) { if (performance.now() - (sonApo.essai || 0) > 2000) { sonApo.essai = performance.now(); sonApo.play().catch(() => {}); } } else if (!dehors && !sonApo.paused) sonApo.pause();
 }
 /* la grande cour a beaucoup de lampes (sous-sol, judo, douches, passages…) : chaque lampe allumée coûte sur chaque point de l'image, même loin.
@@ -11366,7 +11367,7 @@ function fusilPompe() { const g = new THREE.Group(), fer = new THREE.MeshStandar
 function tirPompe(moi, z) { const now = performance.now(); if (now < (M.pompeT || 0)) return; M.pompeT = now + 900;
   const mp = moi.g.position, dx0 = z.x - mp.x, dz0 = z.z - mp.z, d = Math.hypot(dx0, dz0) || 1; if (d > 18) { M.ctx.surInfo && M.ctx.surInfo("Trop loin pour le fusil à pompe… approche-toi."); return; }
   const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = now; if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
-  eclairDuCanon(moi, dx, dz); sonBruit(.55, 850, 1); sonBruit(.22, 3200, .75); setTimeout(() => sonBruit(.07, 1800, .45), 380); setTimeout(() => sonBruit(.07, 1300, .5), 540);
+  eclairDuCanon(moi, dx, dz); sonTir();   /* (le même coup de feu que l'arme de base) */
   { const c0 = performance.now(); const sec = () => { const k = 1 - (performance.now() - c0) / 260; if (!M || k <= 0) return; M.camera.position.x += (Math.random() - .5) * .07 * k; M.camera.position.y += Math.random() * .05 * k; requestAnimationFrame(sec); }; sec(); }   /* (le recul) */
   const fort = d < 5 ? 3 : d < 10 ? 2 : 1;
   if (z.tyran || z.lisa || z.licker) { for (let i = 0; i < fort + (d < 4 ? 1 : 0); i++) { if (z.tyran) toucherTyran(z); else if (z.lisa) toucherLisa(z); else toucherLicker(z, dx, dz); } return; }
@@ -11672,21 +11673,23 @@ function parisAutour(sc) { const g = new THREE.Group(); sc.add(g); const SW = 14
     sol = new THREE.MeshBasicMaterial({ color: 0x1d1d20 }), cour = new THREE.MeshBasicMaterial({ color: 0x141416 });
   // les îlots : un anneau d'immeubles autour d'une cour ; des rues étroites entre eux ; pas sur la caserne ni sur ses rues
   const segs = [[], [], [], []], ilots = [], V = (x, y, z) => new THREE.Vector3(x, y, z), qy = a => new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), a), mt = new THREE.Matrix4();
-  for (let x0 = -230; x0 < 230; x0 += 68) for (let z0 = -340; z0 < 220; z0 += 82) { const lx = 56, lz = 70, cx = x0 + lx / 2, cz = z0 + lz / 2;
-    if (x0 + lx > -40 && x0 < 44 && z0 + lz > -192 && z0 < 34) continue; ilots.push([cx, cz]);
-    const pose = (x, z, rot) => { const k = Math.floor(Math.random() * 4); segs[k].push([x, z, rot, parisVariantes[k].H]); };
-    for (let i = 0; i < 4; i++) { pose(x0 + 7 + i * 14, z0 + PR / 2, 0); pose(x0 + 7 + i * 14, z0 + lz - PR / 2, Math.PI); }   // (les deux longs côtés)
-    for (let j = 0; j < 3; j++) { const z = z0 + PR + 7 + j * 14 + (j === 2 ? -4 : 0); pose(x0 + PR / 2, z, Math.PI / 2); pose(x0 + lx - PR / 2, z, -Math.PI / 2); }   // (les petits côtés)
-    const c = new THREE.Mesh(new THREE.PlaneGeometry(lx - 2 * PR, lz - 2 * PR), cour); c.rotation.x = -Math.PI / 2; c.position.set(cx, .02, cz); g.add(c); }
+  /* collés à la caserne, de l'autre côté de rues étroites (10 m) : la caserne va de x −35 à 38, de z −142 à 30 ; derrière, la barre de brique */
+  const XI = [[-215, -159], [-147, -91], [-79, -45], [-35, 38], [48, 84], [94, 150], [160, 216]], ZI = [[-330, -262], [-252, -196], [-186, -152], [-142, -60], [-50, 30], [40, 76], [86, 150], [160, 216]];
+  for (const [x0, x1] of XI) for (const [z0, z1] of ZI) { const mx = x0 === -35, mz = z0 >= -142 && z1 <= 30; if (mx && (mz || z0 === -186)) continue;   // (la caserne, et la barre de brique derrière)
+    const lx = x1 - x0, lz = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2; ilots.push([cx, cz]);
+    const pose = (x, z, rot, w) => { const k = Math.floor(Math.random() * 4); segs[k].push([x, z, rot, parisVariantes[k].H, w]); };
+    { const n = Math.max(1, Math.round(lx / 14)), w = lx / n; for (let i = 0; i < n; i++) { pose(x0 + w * (i + .5), z0 + PR / 2, 0, w); pose(x0 + w * (i + .5), z1 - PR / 2, Math.PI, w); } }   // (les deux côtés sur x)
+    const lc = lz - 2 * PR; if (lc > 4) { const n = Math.max(1, Math.round(lc / 14)), w = lc / n; for (let j = 0; j < n; j++) { const z = z0 + PR + w * (j + .5); pose(x0 + Math.min(PR, lx / 2) / 2, z, Math.PI / 2, w); if (lx > PR * 1.5) pose(x1 - PR / 2, z, -Math.PI / 2, w); } }   // (les deux côtés sur z)
+    if (lx > 2 * PR + 2 && lz > 2 * PR + 2) { const c = new THREE.Mesh(new THREE.PlaneGeometry(lx - 2 * PR, lz - 2 * PR), cour); c.rotation.x = -Math.PI / 2; c.position.set(cx, .02, cz); g.add(c); } }
   const tous = []; parisVariantes.forEach((v, k) => { const L = segs[k]; if (!L.length) return; const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), [v.mat, v.mat, dessus, dessus, v.mat, v.mat], L.length);
-    L.forEach(([x, z, r], i) => im.setMatrixAt(i, mt.compose(V(x, v.H / 2, z), qy(r), V(SW, v.H, PR)))); g.add(im); tous.push(...L); });
+    L.forEach(([x, z, r, , w], i) => im.setMatrixAt(i, mt.compose(V(x, v.H / 2, z), qy(r), V(w + .02, v.H, PR)))); g.add(im); tous.push(...L); });
   // les toits mansardés en zinc (le brisis en pente raide, le terrasson presque plat), et leurs cheminées aux pots de terre cuite
-  const toits = new THREE.InstancedMesh(new THREE.CylinderGeometry(.5, .707, 1, 4, 1), zinc, tous.length); tous.forEach(([x, z, r, H], i) => toits.setMatrixAt(i, mt.compose(V(x, H + 1.6, z), qy(r + Math.PI / 4), V(SW * 1.0, 3.2, PR * 1.0).multiply(V(1, 1, 1))))); g.add(toits);
+  const toits = new THREE.InstancedMesh(new THREE.CylinderGeometry(.42, .707, 1, 4, 1).rotateY(Math.PI / 4), zinc, tous.length); tous.forEach(([x, z, r, H, w], i) => toits.setMatrixAt(i, mt.compose(V(x, H + 1.6, z), qy(r), V(w + .02, 3.2, PR)))); g.add(toits);
   const chem = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), pot, tous.length * 2); tous.forEach(([x, z, r, H], i) => { for (const d of [-4, 4]) { const ox = Math.cos(r) * d, oz = -Math.sin(r) * d; chem.setMatrixAt(i * 2 + (d > 0 ? 1 : 0), mt.compose(V(x + ox, H + 3.6, z + oz), qy(r), V(1.6, 1.8, .6))); } }); g.add(chem);
   // derrière la caserne : la grande barre de brique rouge, ses toits de tuiles
   { const brq = new THREE.MeshLambertMaterial({ map: tex(toileBriqueBandes(60, 30)), emissive: 0x6a2a1c, emissiveIntensity: .5 }), tuile = new THREE.MeshLambertMaterial({ color: 0xb8452a, emissive: 0x3e1408 });
-    for (const [x, z, lx, lz, h] of [[-6, -168, 46, 14, 27], [4, -182, 40, 12, 30]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(lx, h, lz), [brq, brq, tuile, tuile, brq, brq]); b.position.set(x, h / 2, z); g.add(b);
-      const t = new THREE.Mesh(new THREE.CylinderGeometry(.5, .707, 1, 4, 1), tuile); t.rotation.y = Math.PI / 4; t.scale.set(lx, 3, lz); t.position.set(x, h + 1.5, z); g.add(t); } }
+    for (const [x, z, lx, lz, h] of [[-4, -160, 52, 14, 27], [4, -176, 44, 14, 30]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(lx, h, lz), [brq, brq, tuile, tuile, brq, brq]); b.position.set(x, h / 2, z); g.add(b);
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(.42, .707, 1, 4, 1).rotateY(Math.PI / 4), tuile); t.scale.set(lx, 3, lz); t.position.set(x, h + 1.5, z); g.add(t); } }
   const s = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), sol); s.rotation.x = -Math.PI / 2; s.position.set(0, -.08, -60); g.add(s);
   const blocs = ilots.map(([x, z]) => [x, z, 0, parisVariantes[1].H]);
   // des incendies, çà et là (sur des toits, dans des rues), avec leur fumée
@@ -11731,7 +11734,9 @@ function cineEvac(m) {
     for (let i = 0; i < 4; i++) { const q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x: sp[0], z: sp[1], y: H.y }); q.cine = true; q.evacZ = true; q.y = H.y; q.g.visible = false; renfZ.push({ q, t: 6.7 + i * .35, x: sp[0] + cote.x * ((i % 2) - .5) * 1.4, z: sp[1] + cote.z * ((i % 2) - .5) * 1.4 }); }
   };
   const partirRenforts = () => { for (const p of renf) { p.g.visible = true; p.cible = p.renfCible; p.chemin = []; p.rapide = true; }
-    if (renf[0]) dire(renf[0].info.numero, "Attendez-nous !!! Ne partez pas sans nous !"); setTimeout(() => M && M.evac && dire(M.moiNum, "Vite ! Courez !!!"), 1500); };
+    if (!renf.length) return; const nm = p => esc((HEROS[p.info.heros] && HEROS[p.info.heros].court) || p.info.nom), moiN = esc(nomApo()), r1 = nm(renf[0]), r2 = renf[1] ? nm(renf[1]) : null;
+    c.renfL = [[6.4, r1, "Attendez-nous !!! Ne partez pas sans nous !"], [7.7, moiN, r2 ? `${r1} ?! ${r2} ?! Vous êtes vivants ! Courez, vite !` : `${r1} ?! Tu es vivant ! Cours, vite !`],
+      [9.5, r2 || r1, "On s'était retranchés au mess… On a vu la fumée rouge du fumigène, et on a foncé !"], [11.7, r1, "Ils étaient des dizaines derrière nous… Sans vous, on finissait comme eux."], [13.5, moiN, "Montez ! On s'en va d'ici !"]]; };
   const hel = creerHelico(); sc.add(hel); const hp0 = M.L.helicoPos, dep = hp0 ? new THREE.Vector3(hp0[0], hp0[1], hp0[2]) : new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35), haut = new THREE.Vector3(H.x, H.y + 24, H.z), ry0 = hp0 ? Math.atan2(Math.sin(hp0[3]), Math.cos(hp0[3])) : .6;   /* (l'angle ramené entre −π et π : il pivotait de plusieurs tours sur lui-même avant de se poser) */ hel.position.copy(dep); hel.rotation.y = ry0;
   const fum = []; for (let i = 0; i < 34; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, opacity: 0 })); sc.add(sp); fum.push({ sp, a: Math.random() * 7, v: .5 + Math.random(), d: Math.random() * 1.2 }); }
   const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
@@ -11759,12 +11764,13 @@ function cineEvac(m) {
     for (const p of renf) if (p.av3 && p.g.visible) eclairer3D(p.av3.sc, .28);   /* (la nuit, sur la terrasse : on les voit courir) */
     for (const Z of renfZ) { if (Z.q.z3) eclairer3D(Z.q.z3.sc, .22); if (u < Z.t) continue; const q = Z.q, d = Math.hypot(Z.x - H.x, Z.z - H.z) || 1, v = (d > 7 ? 3.4 : d > 4.6 ? .8 : 0) * dt; q.g.visible = true; Z.x += (H.x - Z.x) / d * v; Z.z += (H.z - Z.z) / d * v; q.x = q.tx = Z.x; q.z = q.tz = Z.z; q.y = H.y; }   /* (ils les poursuivent, puis s'arrêtent, à distance des pales) */
     paris.visible = u > 14; if (paris.visible) paris.userData.maj(now);
+    for (const l of c.renfL || []) if (u > l[0] && !l.dit) { l.dit = true; bulle(`<b style="color:#e8c46a">${l[1]}</b> : ${l[2]}`, 2400); }   /* (les derniers survivants, et nous) */
     hel.userData.rotor.rotation.y += dt * 9.5; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
     // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
       f.sp.position.set(H.x + Math.cos(f.a + k * .2) * r, y, H.z + Math.sin(f.a + k * .2) * r); f.sp.scale.setScalar(1.2 + k * 1.1); f.sp.material.opacity = u < 18 ? Math.min(.75, k * 1.5) * Math.max(0, 1 - Math.max(0, u - 13) / 5) : 0; }
     if (u > 4.5 && !mus.parti && !M.musFin) { mus.parti = true; mus.play().catch(() => {}); }   /* (« Sweet Dreams » joue déjà depuis l'arrivée du Tyran : elle mène jusqu'au bout) */
-    helA.volume = Math.max(0, Math.min(.95, .25 + u / 6)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1);   /* (il approche, se pose — au plus fort —, puis redécolle et s'éloigne) */
+    helA.volume = Math.max(0, Math.min(.95, .25 + u / 6)) * (u > 19 ? Math.max(0, 1 - (u - 19) / 3) : 1) * (M.musFin ? .22 : 1);   /* (« Sweet Dreams » devant : l'hélicoptère, loin derrière) */   /* (il approche, se pose — au plus fort —, puis redécolle et s'éloigne) */
     if (u < 2.5) placer(H.x + 9, H.y + 3.5, H.z - 5, H.x, H.y + 1, H.z, .03);
     else if (u < 5.5) { const k = lisse((u - 2.5) / 3); hel.position.lerpVectors(dep, haut, k); hel.rotation.z = Math.sin(k * Math.PI) * .18; hel.rotation.y = ry0 * (1 - k);   // il vient se placer au-dessus du H…
       placer(H.x + 11, H.y + 3, H.z - 9, hel.position.x, hel.position.y, hel.position.z, .06); }
@@ -12154,9 +12160,7 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
     else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
   else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
   jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;
-  { const bouge = n === "walk" && !T.cine, vol = bouge ? .07 : 0;   /* (pendant la scène : le vrai son des chaînes, fourni à part) */ racleChaine(vol);   /* (ses chaînes : on les entend traîner, même avant de la voir) */
-    if (bouge && now > (T.clinkT || 0)) { T.clinkT = now + 150 + Math.random() * 280; cliquetisChaine(T.g.visible ? .22 : .14); }
-    if (!T.cine && !APO.zombieFin && now > (T.grognT || 0)) { if (T.grognT) grognementLisa(1.2 + Math.random() * .8, .4); T.grognT = now + 6000 + Math.random() * 6000; } }   /* (pendant le combat, elle grogne de temps en temps) */   // (son pas lourd, traînant : les chaînes aux chevilles)
+  racleChaine(0);   /* (plus de sons fabriqués : seulement sa vraie voix, fournie à part) */
   T.mix.update(dt); T.sc.updateMatrixWorld(true);
   // voûtée, la tête penchée ; elle titube un peu
   twLT(T, "Spine1", "x", .26); twLT(T, "Head", "x", .2); twLT(T, "Spine", "x", .1); twLT(T, "Spine2", "x", .09);   /* (courbée, le dos rond) */
@@ -13560,13 +13564,14 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
   const vise = (p.viseeT && performance.now() - p.viseeT < 1600) || p.tempe;
   if (p.tempe) { A.sc.updateMatrixWorld(true); const ry = A.sc.rotation.y, f = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry)), dr = new THREE.Vector3(-f.z, 0, f.x);   // (l'arme sur la tempe : le coude levé sur le côté, l'avant-bras replié vers la tête)
-    viser3D(A, "RightArm", "RightForeArm", dr.clone().multiplyScalar(.75).add(new THREE.Vector3(0, .45, 0)).addScaledVector(f, .1).normalize()); viser3D(A, "RightForeArm", "RightHand", dr.clone().multiplyScalar(-.85).add(new THREE.Vector3(0, .5, 0)).addScaledVector(f, .15).normalize()); }
+    viser3D(A, "RightArm", "RightForeArm", dr.clone().multiplyScalar(.95).add(new THREE.Vector3(0, -.05, 0)).addScaledVector(f, .2).normalize()); viser3D(A, "RightForeArm", "RightHand", dr.clone().multiplyScalar(-.8).add(new THREE.Vector3(0, .55, 0)).addScaledVector(f, .1).normalize()); }   // (le coude à hauteur d'épaule, la main contre la tempe)
   else if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; A.sc.updateMatrixWorld(true);   // (il se tourne vers la cible, et tend le bras)
     const f = new THREE.Vector3(Math.sin(p.visee), -.08, Math.cos(p.visee)), dr = new THREE.Vector3(-f.z, 0, f.x);
     viser3D(A, "RightArm", "RightForeArm", f.clone().addScaledVector(dr, -.12)); viser3D(A, "RightForeArm", "RightHand", f);
     }   // (d'une seule main, le bras droit tendu : le bras gauche reste le long du corps)
   const h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (!h || !fa) return; A.sc.updateMatrixWorld(true);
   h.getWorldPosition(_v1); fa.getWorldPosition(_v2); const dir = _v1.clone().sub(_v2).normalize();   // (l'arme dans le prolongement de l'avant-bras)
+  if (p.tempe) { const ry = A.sc.rotation.y; dir.set(Math.cos(ry), .08, -Math.sin(ry)).normalize(); }   /* (le canon pointé dans la tempe, à l'horizontale) */
   const bras = dir.clone(); if (!vise) dir.lerp(new THREE.Vector3(Math.sin(A.sc.rotation.y), 0, Math.cos(A.sc.rotation.y)), .55).normalize();   // (bras baissé : le canon vers l'avant et le bas)
   /* (la poignée au creux de la paume — entre le poignet et la base des doigts — et non devant la main : le pistolet de Harry flottait à côté) */
   const md = p.info.heros === 100 && os3D(A, "RightHandMiddle1"); if (md) { md.getWorldPosition(_v3); _v1.lerp(_v3, .8); } else _v1.addScaledVector(p.info.heros === 100 ? bras : dir, p.info.heros === 100 ? .06 : .04);
