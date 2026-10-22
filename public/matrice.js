@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.49";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.50";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -14163,7 +14163,7 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.add(new THREE.Mesh(cadre.geometry, cadre.material)); const afL = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .25, roughness: .5 })); afL.position.z = .017; gL.add(afL);
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
-const MUSIQUES_LB = { spr: "sons/spr-menu.mp3", intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
+const MUSIQUES_LB = { spr: "sons/spr-menu.mp3", cor: "sons/cor-dreaming.mp3", intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
 const CONCERT_LB = { v: null }, now0lb = () => performance.now();   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
   const fondu = (a, de, vers, ms, fin) => { const t0 = performance.now(); clearInterval(a.fondu); a.fondu = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, de + (vers - de) * u)); if (u >= 1) { clearInterval(a.fondu); fin && fin(); } }, 40); };
@@ -14172,7 +14172,7 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
   M.lbMus = null; M.lbSilence = performance.now() + attente; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
   const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
-  const ici = l => cle === "spr" ? /^spr-/.test(l || "") : l === "santacarla";   // (Springfield : sa musique tant qu'on y est)
+  const ici = l => cle === "spr" ? /^spr-/.test(l || "") : cle === "cor" ? /^cor-/.test(l || "") : l === "santacarla";   /* (Coraline : « Dreaming », tant qu'on y est) */   // (Springfield : sa musique tant qu'on y est)
   let arrive = false; const garde = setInterval(() => { if (M && ici(M.lieu)) arrive = true; if (!M || (!ici(M.lieu) && (arrive || (M.lieu !== "mess" && M.lieu !== "rue")) && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
 /* le Video Futur de la rue : on loue la cassette d'un film… et l'on part dans son monde.
@@ -14240,7 +14240,7 @@ function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOcc
     else if (f.cle === "bttf") { musiqueBttf("sons/bttf/ramasser.mp3"); changerLieu("bttf-cour", [-1.6, 5.2], 0); }
     else if (f.cle === "sh") cineRadio();
     else if (f.cle === "spr") changerLieu("spr-rue", [2, -4.8], 0);
-    else if (f.cle === "cor") changerLieu("cor-maison", [-.7, 24], 0);
+    else if (f.cle === "cor") { M.corIntro = true; changerLieu("cor-maison", [-.7, 24], 0); }
     else if (f.cle === "re") { const go = () => { M.apoIntro = true; changerLieu("z-grande", ENTREE_APO.arrivee, ENTREE_APO.yaw, true); };
       if (M.ctx.surAvantApo) M.ctx.surAvantApo(ok => { if (M && ok) go(); }); else go(); } }, 2600); }
 function cineAfficheLB() { if (!M || M.cine) return; if (universOccupe("santacarla")) { refusUnivers("santacarla"); return; } let parti = false;
@@ -14254,6 +14254,20 @@ function cineAfficheLB() { if (!M || M.cine) return; if (universOccupe("santacar
   const partir = () => { if (parti || !M) return; parti = true; M.lbIntro = true; changerLieu("santacarla"); };
   M.passerBtn = boutonPasser(() => { partir(); });
   M.cine = { maj: () => {} }; setTimeout(() => { if (M && M.cine && !parti) { finCine(); partir(); } }, 6000); }
+/* l'arrivée chez Coraline : la caméra part tout près de la maison, par derrière (le jardin), et la contourne en s'éloignant jusqu'à la voir de face, sous la grosse lune ;
+   le titre « Coraline » apparaît en haut de l'écran ; « Dreaming » joue (puis en continu, tant qu'on reste) */
+function cineCoraline() { if (!M) return; const cam = M.camera, D = 13000, t0 = performance.now() + 700, vise = new THREE.Vector3(); let fini = false;
+  const titre = document.createElement("img"); titre.src = "images/coraline/titre.webp"; titre.alt = "Coraline";
+  titre.style.cssText = "position:absolute;left:50%;top:max(110px,25%);width:min(58%,440px);transform:translate(-50%,-50%) scale(1.08);opacity:0;z-index:9;pointer-events:none;filter:drop-shadow(0 4px 18px rgba(0,0,40,.85));transition:opacity 2.6s ease,transform 11s ease-out";
+  M.ctx.conteneur.appendChild(titre);
+  const fin = () => { if (fini || !M) return; fini = true; titre.style.transition = "opacity 1.4s"; titre.style.opacity = "0"; setTimeout(() => titre.remove(), 1500); finCine(); placerCamera(true); };
+  M.passerBtn = boutonPasser(fin);
+  const lisse = u => u * u * (3 - 2 * u);
+  M.cine = { nettoyer: () => { fini = true; titre.remove(); }, maj: (now) => { if (fini) return; const u = Math.max(0, Math.min(1, (now - t0) / D)), k = lisse(u);
+    const a = Math.PI * (1.05 - .93 * k), r = 12 + 23 * k, y = 4.2 + 4.6 * k;   // (de derrière, tout près, jusque devant, de loin ; la caméra monte un peu)
+    cam.position.set(Math.sin(a) * r * 1.05, y, Math.cos(a) * r); vise.set(-.5 * k, 4.8 + .6 * k, -2 * (1 - k)); cam.lookAt(vise);
+    if (now - t0 > 1800 && titre.style.opacity !== "1") { titre.style.opacity = "1"; titre.style.transform = "translate(-50%,-50%) scale(1)"; }
+    if (now - t0 > D + 2800) fin(); } }; }
 // à Santa Carla : la baie vue d'en haut, comme un oiseau — de l'océan vers la jetée, en tournant ; on se pose devant l'arche, puis on choisit son personnage
 function cineSurvolSC() { if (!M) return; const D = 30000; let fini = false, t0 = performance.now() + 1600;   /* (1,6 s dans le noir : le temps que tout soit chargé et dessiné une première fois ; puis 30 s de vol, d'un seul trait) */
   const noir = M.lbNoir; M.lbNoir = null; if (noir) { const img = noir.querySelector("img"); if (img) img.remove(); }
@@ -16036,8 +16050,9 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.choix) cho
   if (estSH(id) && M.shReveilBas) { M.shReveilBas = false; cineReveilBas(); }
   if (id === "bttf-cour") cineCour();
   if (id === "santacarla" && M.lbIntro) { M.lbIntro = false; cineSurvolSC(); }
+  if (id === "cor-maison" && M.corIntro) { M.corIntro = false; cineCoraline(); }
   M.camera.far = (M.L && M.L.loin) || 300; M.camera.updateProjectionMatrix();   /* (Springfield : on voit toute la ville, jusqu'aux montagnes) */
-  if (/^spr-/.test(id)) musiqueLB("spr"); else if (M.lbMus && M.lbMus.cle === "spr") musiqueLB(null);   /* (Springfield : sa musique en continu, de la rue au salon et au Kwik-E-Mart ; elle s'efface en partant) */
+  if (/^spr-/.test(id)) musiqueLB("spr"); else if (/^cor-/.test(id)) musiqueLB("cor"); else if (M.lbMus && (M.lbMus.cle === "spr" || M.lbMus.cle === "cor")) musiqueLB(null);   /* (Springfield : sa musique en continu, de la rue au salon et au Kwik-E-Mart ; elle s'efface en partant) */
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; cineHV(); }
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
