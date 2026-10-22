@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.42";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.43";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6574,6 +6574,9 @@ function construireAppart(A, L, scene) {
     const ecranC = document.createElement("canvas"); ecranC.width = 320; ecranC.height = 240; const ex = ecranC.getContext("2d"); const ecranT = new THREE.CanvasTexture(ecranC); ecranT.colorSpace = THREE.SRGBColorSpace;
     const eg = new THREE.PlaneGeometry(.46, .345, 16, 12), ep = eg.attributes.position; for (let i = 0; i < ep.count; i++) ep.setZ(i, .02 * (1 - Math.pow(ep.getX(i) / .23, 2)) * (1 - Math.pow(ep.getY(i) / .1725, 2)));
     const ecran = new THREE.Mesh(eg, new THREE.MeshBasicMaterial({ map: ecranT, toneMapped: false })); ecran.position.set(-.07, TH / 2 + .01, .141); tv.add(ecran);
+    /* la vitre du tube, par-dessus l'image : les lignes, le bord sombre, le numéro de chaîne (dessinés une fois, pas à chaque image) */
+    const vitreC = document.createElement("canvas"); vitreC.width = 320; vitreC.height = 240; const vx = vitreC.getContext("2d"), vitreT = new THREE.CanvasTexture(vitreC); vitreT.colorSpace = THREE.SRGBColorSpace;
+    const vitre = new THREE.Mesh(eg, new THREE.MeshBasicMaterial({ map: vitreT, transparent: true, depthWrite: false, toneMapped: false })); vitre.position.set(-.07, TH / 2 + .01, .1435); tv.add(vitre);
     // le panneau de droite : la plaque de la marque, les touches des chaînes, le bouton marche, la grille du haut-parleur
     b(.12, .44, .012, grisT, .27, TH / 2 + .01, .136, tv); b(.09, .02, .004, A.mat({ color: 0xd8d4c8, metalness: .5, roughness: .3 }), .27, TH - .05, .143, tv);
     for (let i = 0; i < 8; i++) b(.032, .014, .01, A.mat({ color: 0x2a2a2c, roughness: .4 }), .27 + (i % 2 ? .022 : -.022), TH - .12 - Math.floor(i / 2) * .026, .145, tv);
@@ -6583,7 +6586,8 @@ function construireAppart(A, L, scene) {
     antenne(.5); antenne(-.45); b(.1, .03, .07, noirT, 0, TH + .025, -.2, tv);   // (l'antenne en V, posée dessus)
     const lueur = new THREE.PointLight(0x9ab8ff, 0, 3, 2); lueur.position.set(0, TH / 2, .6); tv.add(lueur);
     // la lecture : une vidéo par chaîne (la bibliothèque de l'administrateur) ; la neige quand il n'y a rien
-    const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous";
+    const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous"; video.setAttribute("playsinline", "");
+    const videoT = new THREE.VideoTexture(video); videoT.colorSpace = THREE.SRGBColorSpace; videoT.generateMipmaps = false; videoT.minFilter = THREE.LinearFilter;   // (la vidéo va droit sur l'écran, image par image, en pleine définition)
     let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false;
     const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
     const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
@@ -6591,10 +6595,12 @@ function construireAppart(A, L, scene) {
     const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
     video.onended = () => zapper(1);
     const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
-    const finition = () => { ex.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) ex.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
-      const v = ex.createRadialGradient(160, 120, 80, 160, 120, 210); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)"); ex.fillStyle = v; ex.fillRect(0, 0, 320, 240);
-      if (performance.now() - osd < 3000) { ex.font = "bold 26px 'Courier New', monospace"; ex.fillStyle = "#3aff5a"; ex.shadowColor = "#000"; ex.shadowBlur = 4; ex.fillText(liste && liste.length ? `CH ${ch + 1}` : "PAS DE CHAÎNE", 16, 36); if (liste && liste[ch]) { ex.font = "bold 14px Arial"; ex.fillText(liste[ch].titre.slice(0, 32), 16, 222); } ex.shadowBlur = 0; } };
-    const eteindre = () => { ex.fillStyle = "#1c1f22"; ex.fillRect(0, 0, 320, 240); const r = ex.createRadialGradient(110, 80, 10, 160, 120, 200); r.addColorStop(0, "rgba(255,255,255,.12)"); r.addColorStop(1, "rgba(0,0,0,0)"); ex.fillStyle = r; ex.fillRect(0, 0, 320, 240); ecranT.needsUpdate = true; };
+    let vitreTxt = null; const finition = () => { const txt = allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
+      vx.clearRect(0, 0, 320, 240); vx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) vx.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
+      const v = vx.createRadialGradient(160, 120, 80, 160, 120, 210); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)"); vx.fillStyle = v; vx.fillRect(0, 0, 320, 240);
+      if (txt) { const [a, b2] = txt.split("|"); vx.font = "bold 26px 'Courier New', monospace"; vx.fillStyle = "#3aff5a"; vx.shadowColor = "#000"; vx.shadowBlur = 4; vx.fillText(a, 16, 36); if (b2) { vx.font = "bold 14px Arial"; vx.fillText(b2, 16, 222); } vx.shadowBlur = 0; }
+      vitreT.needsUpdate = true; };
+    const eteindre = () => { ex.fillStyle = "#1c1f22"; ex.fillRect(0, 0, 320, 240); const r = ex.createRadialGradient(110, 80, 10, 160, 120, 200); r.addColorStop(0, "rgba(255,255,255,.12)"); r.addColorStop(1, "rgba(0,0,0,0)"); ex.fillStyle = r; ex.fillRect(0, 0, 320, 240); ecranT.needsUpdate = true; ecran.material.map = ecranT; finition(); };
     eteindre();
     // allumée quand on est dans le second salon ; le son baisse quand on s'éloigne
     const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, tc = L.teleCopie, dans = (p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7]) || !!(tc && tc.visible && Math.hypot(p.x - tc.position.x, p.z - tc.position.z) < 3.5);   /* (ou près de sa copie) */
@@ -6603,8 +6609,8 @@ function construireAppart(A, L, scene) {
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
       if (!allumee || t - dernier < 40) return; dernier = t;
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
-      if (liste && liste.length && video.readyState >= 2) { ex.drawImage(video, 0, 0, 320, 240); lueur.intensity = .5; } else { neige(); lueur.intensity = .25; }
-      finition(); ecranT.needsUpdate = true; };
+      if (liste && liste.length && video.readyState >= 2) { ecran.material.map = videoT; lueur.intensity = .5; } else { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }
+      finition(); };
     const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
     // la télécommande, et la bibliothèque (l'administrateur seul)
     let panneau = null;
@@ -6706,7 +6712,9 @@ function construireAppart(A, L, scene) {
 const majBoiteMeuble = m => { m.g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.g); m.bx = [b.min.x, b.max.x, b.min.z, b.max.z]; m.by = b.max.y; };
 function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
   for (const m of L.meublesAppart) { const s = d[m.id]; if (!s) continue; m.range = !!s.r; m.g.visible = !m.range;
-    if (!m.range) { m.g.position.set(s.x, m.suspendu ? m.g.position.y : (L.hauteur ? L.hauteur(s.x, s.z) : 0), s.z); m.g.rotation.y = s.ry; } majBoiteMeuble(m); }
+    if (!m.range) { const sol = L.hauteur ? L.hauteur(s.x, s.z) : 0; m.g.position.set(s.x, m.suspendu ? m.g.position.y : m.mural ? (s.y != null ? s.y : sol + 1.55) : sol, s.z); m.g.rotation.y = s.ry;
+      if (m.mural && s.y == null) { m.g.position.x += Math.sin(s.ry) * .045; m.g.position.z += Math.cos(s.ry) * .045; } }   // (un objet mural d'avant : sorti de l'épaisseur du mur)
+    majBoiteMeuble(m); }
   for (const m of L.meublesAppart) if (m.surMeuble && !m.range) { m.g.position.y = hauteurPose(L, m, m.g.position.x, m.g.position.z); majBoiteMeuble(m); }
   L.grille = L.grilleAdmin = null;   // (la carte des passages se refait avec les meubles à leur place)
   // (un meuble resté devant une porte, ou dans le couloir : on lui retrouve une place dans sa pièce)
@@ -6716,7 +6724,7 @@ function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
 async function chargerEtatAppart(L) { try { const r = await fetch("/api/appart", { headers: { Authorization: "Bearer " + M.ctx.token } }); if (!r.ok) return; const j = await r.json();
     if (!M) return; M.appartOuvert = !!j.ouvert; if (L && M.L === L) appliquerAmenagement(L, j.meubles); } catch (e) {} }
 function sauverAmenagement(extra = {}) { const L = M && M.L; if (!L || !L.meublesAppart) return; clearTimeout(M.amSauveT); L.grille = L.grilleAdmin = null;   /* (la carte des passages : refaite, les meubles ont bougé) */
-  M.amSauveT = setTimeout(() => { const d = {}; for (const m of L.meublesAppart) d[m.id] = { x: +m.g.position.x.toFixed(3), z: +m.g.position.z.toFixed(3), ry: +m.g.rotation.y.toFixed(4), r: m.range ? 1 : 0 };
+  M.amSauveT = setTimeout(() => { const d = {}; for (const m of L.meublesAppart) d[m.id] = { x: +m.g.position.x.toFixed(3), y: +m.g.position.y.toFixed(3), z: +m.g.position.z.toFixed(3), ry: +m.g.rotation.y.toFixed(4), r: m.range ? 1 : 0 };   /* (la hauteur aussi : un tableau reste au mur) */
     fetch("/api/appart", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ meubles: d, ...extra }) }).catch(() => {}); }, 500); }
 // un meuble peut-il être là : dans une pièce, sans chevaucher un autre meuble ni un obstacle fixe
 function placeMeubleOK(L, m) { majBoiteMeuble(m); const [a, b, c, d] = m.bx, cx = (a + b) / 2, cz = (c + d) / 2, R = L.piecesAppart || [];
@@ -7168,13 +7176,28 @@ function interfacePlacement() { const P = M.place; if (!P) return; if (P.ui) P.u
   P.btnPoser = btn("✅ Poser ici", () => finPlacement(true), "rgba(40,110,50,.92)"); btn("📦 Ranger", () => finPlacement("ranger")); btn("✖ Annuler", () => finPlacement(false), "rgba(120,30,30,.9)");
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) ui.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(ui); }
 // les boutons, à hauteur d'homme : l'inventaire (prendre un objet), « Déplacer » (prendre l'objet qu'on regarde)
-function boutonsPlacement() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place && !M.cine;
+function boutonsPlacement() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place && !M.cine && !M.choix;
   if (ok && !M.placeUI) { const d = document.createElement("div"); d.style.cssText = "position:absolute;left:12px;bottom:132px;z-index:7;display:flex;flex-direction:column;gap:6px;align-items:flex-start";
     const btn = (t, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer"; b.onclick = e => { e.stopPropagation(); f(); }; d.appendChild(b); return b; };
-    btn("🧰 Inventaire", () => inventairePlacement()); btn("✋ Déplacer ce que je regarde", () => { const m = meubleRegarde(); if (m) prendrePlacement(m); else dire(M.moiNum, "Je ne vise aucun objet… Regarde-le bien en face."); });
+    btn("🧰 Inventaire", () => inventairePlacement()); btn("✋ Déplacer les objets", () => choixObjets(true));
     for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(d); M.placeUI = d; }
   else if (!ok && M && M.placeUI) { M.placeUI.remove(); M.placeUI = null; }
-  if (M && M.place) majPlacement(); }
+  if (M && M.place) majPlacement(); if (M && M.choix) animerChoix(); }
+/* « Déplacer les objets » : tout ce qui se déplace brille ; on touche celui qu'on veut (toucher ailleurs : on marche, comme d'habitude) */
+function choixObjets(on) { if (!M) return; const cv = M.rendu.domElement;
+  if (!on) { const C = M.choix; if (!C) return; M.choix = null; for (const [t, f] of C.ecoute) cv.removeEventListener(t, f, true); C.ui.remove(); for (const m of C.ms) lueurPlacement(m, false); return; }
+  if (M.choix || !M.L || !M.L.meublesAppart) return; const ms = M.L.meublesAppart.filter(m => !m.range && m.g.visible); for (const m of ms) lueurPlacement(m, true);
+  const C = M.choix = { ms, ecoute: [], p0: null };
+  const ui = C.ui = document.createElement("div"); ui.style.cssText = "position:absolute;left:8px;right:8px;top:8px;z-index:12;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none";
+  ui.innerHTML = `<div style="width:100%;text-align:center;color:#ffd060;font:700 13px Lato,sans-serif;text-shadow:0 1px 3px #000">✨ Touche l'objet à déplacer</div>`;
+  const b = document.createElement("button"); b.type = "button"; b.textContent = "✖ Fini"; b.style.cssText = "pointer-events:auto;padding:9px 13px;border-radius:16px;border:0;background:rgba(120,30,30,.9);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer"; b.onclick = e => { e.stopPropagation(); choixObjets(false); }; ui.appendChild(b);
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) ui.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(ui);
+  const vise = e => { const r = cv.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), M.camera);
+    for (const h of ray.intersectObjects(C.ms.map(m => m.g), true)) { let o = h.object; while (o) { const m = C.ms.find(q => q.g === o); if (m) return m; o = o.parent; } } return null; };
+  const bas = e => { C.p0 = [e.clientX, e.clientY]; if (vise(e)) { e.stopImmediatePropagation(); e.preventDefault(); } };
+  const haut = e => { const p0 = C.p0; C.p0 = null; if (!p0 || Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) return; const m = vise(e); if (!m) return; e.stopImmediatePropagation(); e.preventDefault(); choixObjets(false); prendrePlacement(m); };
+  for (const [t, f] of [["pointerdown", bas], ["pointerup", haut]]) { cv.addEventListener(t, f, true); C.ecoute.push([t, f]); } }
+function animerChoix() { const C = M.choix, k = .5 + .2 * Math.sin(performance.now() / 220); for (const m of C.ms) if (m.lueur) for (const [mt] of m.lueur) { mt.emissive.setHex(0xffc030); mt.emissiveIntensity = k; } }
 function meubleRegarde() { const L = M.L, cam = M.camera, r = new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(0, 0), cam); const vis = L.meublesAppart.filter(m => !m.range && m.g.visible), moi = M.gens.get(M.moiNum);
   const hits = r.intersectObjects(vis.map(m => m.g), true); for (const h of hits) { if (moi && h.distance < .3) continue; let o = h.object; while (o) { const m = vis.find(q => q.g === o); if (m) return m; o = o.parent; } } return null; }
 function inventairePlacement() { const L = M.L; const r = L.meublesAppart.filter(m => m.range); const d = document.createElement("div");
@@ -7202,7 +7225,7 @@ function lumieresAppart() { const L = M && M.L, LA = L && L.appart && L.lumieres
   M.rendu.toneMappingExposure = LA.expo * LA.f; LA.amb.intensity = .3 * (noir ? (cle === 10 ? .7 : .35) : 1); }
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
-function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place;
+function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen && !M.place && !M.choix;
   if (ok && !M.amenBtn) { const b = document.createElement("button"); b.type = "button"; b.textContent = "🛋️ Aménager"; b.style.cssText = "position:absolute;left:12px;bottom:88px;z-index:7;padding:9px 14px;border-radius:20px;border:0;background:rgba(40,28,18,.85);color:#f4ead2;font:700 14px Lato,sans-serif;cursor:pointer";
     for (const ev of ["pointerdown", "touchstart", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation()); b.onclick = e => { e.stopPropagation(); amenager(true); }; M.ctx.conteneur.appendChild(b); M.amenBtn = b; }
   else if (!ok && M && M.amenBtn) { M.amenBtn.remove(); M.amenBtn = null; } }
@@ -15327,7 +15350,7 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
+function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.choix) choixObjets(false); if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
   if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { const n = voile("background:#000;opacity:1");   /* (à Resident Evil : un bref fondu au noir, d'un lieu à l'autre — plus de porte qui s'ouvre) */
