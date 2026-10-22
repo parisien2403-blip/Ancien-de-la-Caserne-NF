@@ -1390,8 +1390,9 @@ export default {
       ctx.waitUntil((async () => {
         const w = writable.getWriter();
         try {
+          let suivant = registre.morceauDeTele(t, id, Math.floor(debut / MORCEAU));   // (le morceau suivant se lit pendant qu'on envoie celui-ci : la vidéo ne cale plus)
           for (let n = Math.floor(debut / MORCEAU); n * MORCEAU <= fin; n++) {
-            const b = new Uint8Array(await registre.morceauDeTele(t, id, n)), d0 = n * MORCEAU;
+            const b = new Uint8Array(await suivant), d0 = n * MORCEAU; if ((n + 1) * MORCEAU <= fin) { suivant = registre.morceauDeTele(t, id, n + 1); suivant.catch(() => {}); }
             await w.write(b.subarray(Math.max(0, debut - d0), Math.min(b.byteLength, fin - d0 + 1)));
           }
           await w.close();

@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.45";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.46";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6588,12 +6588,12 @@ function construireAppart(A, L, scene) {
     // la lecture : une vidéo par chaîne (la bibliothèque de l'administrateur) ; la neige quand il n'y a rien
     const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous"; video.setAttribute("playsinline", "");
     const videoT = new THREE.VideoTexture(video); videoT.colorSpace = THREE.SRGBColorSpace; videoT.generateMipmaps = false; videoT.minFilter = THREE.LinearFilter;   // (la vidéo va droit sur l'écran, image par image, en pleine définition)
-    let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false;
+    let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false, vu = false, horsT = 0;
     const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
     const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
-    const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; video.src = src(liste[ch]); video.currentTime = 0; jouer(); osd = performance.now(); majPanneau(); };
+    const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; vu = false; video.src = src(liste[ch]); video.currentTime = 0; jouer(); osd = performance.now(); majPanneau(); };
     const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
-    video.onended = () => zapper(1);
+    video.onended = () => zapper(1); video.addEventListener("emptied", () => { vu = false; });   // (une autre vidéo : la neige, le temps qu'elle arrive)
     const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
     let vitreTxt = null; const finition = () => { const txt = allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
       vx.clearRect(0, 0, 320, 240); vx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) vx.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
@@ -6604,12 +6604,13 @@ function construireAppart(A, L, scene) {
     eteindre();
     // allumée quand on est dans le second salon ; le son baisse quand on s'éloigne
     const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, tc = L.teleCopie, dans = (p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7]) || !!(tc && tc.visible && Math.hypot(p.x - tc.position.x, p.z - tc.position.z) < 3.5);   /* (ou près de sa copie) */
-      if (dans !== allumee) { allumee = dans; voyant.visible = dans;
+      if (dans) horsT = 0; else if (allumee && !horsT) horsT = t;   /* (on s'éloigne : elle s'éteint au bout de deux secondes, pas au moindre pas au bord de la pièce) */
+      if (dans !== allumee && (dans || t - horsT > 2000)) { allumee = dans; voyant.visible = dans;
         if (dans) { if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); osd = performance.now(); }
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
       if (!allumee || t - dernier < 40) return; dernier = t;
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
-      if (liste && liste.length && video.readyState >= 2) { ecran.material.map = videoT; lueur.intensity = .5; } else { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }
+      if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; ecran.material.map = videoT; lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige) else { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }
       finition(); };
     const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
     // la télécommande, et la bibliothèque (l'administrateur seul)
@@ -6712,7 +6713,10 @@ function construireAppart(A, L, scene) {
 const majBoiteMeuble = m => { m.g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m.g); m.bx = [b.min.x, b.max.x, b.min.z, b.max.z]; m.by = b.max.y; };
 function appliquerAmenagement(L, d) { if (!d || !L.meublesAppart) return;
   for (const m of L.meublesAppart) { const s = d[m.id]; if (!s) continue; m.range = !!s.r; m.g.visible = !m.range;
-    if (!m.range) { const sol = L.hauteur ? L.hauteur(s.x, s.z) : 0; m.g.position.set(s.x, m.suspendu ? m.g.position.y : m.mural ? (s.y != null ? s.y : sol + 1.55) : sol, s.z); m.g.rotation.y = s.ry;
+    if (!m.range) { const sol = L.hauteur ? L.hauteur(s.x, s.z) : 0, hd = m.hDef != null ? m.hDef : 1.55;
+      /* un objet au mur : à la hauteur où on l'a posé (avant, sa hauteur de départ revenait, comptée du bas de l'appartement : trop bas dans les pièces surélevées) */
+      const ym = s.y == null || s.y < sol + .5 || (m.hDef != null && Math.abs(s.y - m.hDef) < .002 && sol > .1) ? sol + hd : s.y;   // (jamais plus bas que 50 cm du sol)
+      m.g.position.set(s.x, m.mural ? ym : m.suspendu ? m.g.position.y : sol, s.z); m.g.rotation.y = s.ry;
       if (m.mural && s.y == null) { m.g.position.x += Math.sin(s.ry) * .045; m.g.position.z += Math.cos(s.ry) * .045; } }   // (un objet mural d'avant : sorti de l'épaisseur du mur)
     majBoiteMeuble(m); }
   for (const m of L.meublesAppart) if (m.surMeuble && !m.range) { m.g.position.y = hauteurPose(L, m, m.g.position.x, m.g.position.z); majBoiteMeuble(m); }
@@ -6977,7 +6981,7 @@ function meublesInventaire2(L, scene, mb, rect) { const M3 = (c, r = .8, o = {})
   const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
   const cy = (g, rt, rb, h, m, x, y, z, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(x, y, z); g.add(o); return o; };
   const sp = (g, r, m, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), m); o.position.set(x, y, z); g.add(o); return o; };
-  const nouveau = (nom, opts = {}, y = 0) => { const g = new THREE.Group(); g.position.set((rect[0] + rect[1]) / 2, y, (rect[2] + rect[3]) / 2); g.visible = false; scene.add(g); mb(g, nom); const m = L.meublesAppart[L.meublesAppart.length - 1]; Object.assign(m, { range: true, defautRange: true }, opts); return m; };
+  const nouveau = (nom, opts = {}, y = 0) => { const g = new THREE.Group(); g.position.set((rect[0] + rect[1]) / 2, y, (rect[2] + rect[3]) / 2); g.visible = false; scene.add(g); mb(g, nom); const m = L.meublesAppart[L.meublesAppart.length - 1]; Object.assign(m, { range: true, defautRange: true }, opts); if (m.mural) m.hDef = y || 1.55; return m; };
   const or = M3(0xd4a83a, .25, { metalness: .9 }), ivoire = M3(0xefe6d2, .45);
   // les crucifix en bois, ornés d'or (au mur, à 1,70 m)
   [["Crucifix en chêne doré", 0x6a4020, .5, true], ["Crucifix en noyer, Christ doré", 0x4a2a14, .42, false], ["Petit crucifix en ébène et or", 0x1e1612, .3, true], ["Crucifix en bois clair, fleurons dorés", 0xa87a48, .46, false], ["Grand crucifix sculpté", 0x5a3418, .7, true]]
