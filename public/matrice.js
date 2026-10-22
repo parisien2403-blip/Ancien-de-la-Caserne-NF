@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.38";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.39";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6811,6 +6811,7 @@ function toilePSG() { return toile(400, 300, (x, w, h) => { x.fillStyle = "#f6f6
 function meublesChambres(L, scene, mb, R1, R2, R3) { const M3 = (c, r = .8, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
   const bx = (g, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
   const cy = (g, rt, rb, h, m, x, y, z, s = 12) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m); o.position.set(x, y, z); g.add(o); return o; };
+  const sp = (g, r, m, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m); o.position.set(x, y, z); g.add(o); return o; };
   const nouveau = (nom, rect) => { const g = new THREE.Group(); g.position.set((rect[0] + rect[1]) / 2, 0, (rect[2] + rect[3]) / 2); scene.add(g); mb(g, nom); return L.meublesAppart[L.meublesAppart.length - 1]; };
   const noir = M3(0x161618, .35), miroir = M3(0xc8d4dc, .04, { metalness: 1 }), poignee = M3(0xb8b8b8, .3, { metalness: .9 });
   // la penderie noire, ses deux portes à miroir
@@ -6855,7 +6856,17 @@ function meublesChambres(L, scene, mb, R1, R2, R3) { const M3 = (c, r = .8, o = 
   { const m = nouveau("Canapé-lit déplié", R3); canapeLit(m.g, 0x8a3a5a, 0xf0b8c8); caserMeuble(L, m, R3); }
   { const m = nouveau("Commode et sa télé", R3), g = m.g, blanc = M3(0xf2efe8, .5), bouton = M3(0xd8b048, .3, { metalness: .7 });
     bx(g, .9, .8, .45, blanc, 0, .4, 0); for (let i = 0; i < 3; i++) { bx(g, .84, .22, .01, M3(0xe8e4dc, .5), 0, .65 - i * .25, .226); for (const s of [-1, 1]) bx(g, .06, .02, .03, bouton, s * .22, .65 - i * .25, .24); }
-    const tv = new THREE.Group(); tv.position.set(0, .8, -.02); g.add(tv); bx(tv, .5, .4, .4, M3(0x2a2a2c, .5), 0, .2, 0); const ec = bx(tv, .4, .3, .01, M3(0x101820, .15, { emissive: 0x1a2a40 }), 0, .21, .2); void ec; bx(tv, .5, .04, .4, M3(0x1a1a1c, .5), 0, .02, 0);
+    const tv = new THREE.Group(); tv.position.set(-.12, .8, -.02); g.add(tv); bx(tv, .5, .4, .4, M3(0x2a2a2c, .5), 0, .2, 0); bx(tv, .5, .04, .4, M3(0x1a1a1c, .5), 0, .02, 0);
+    const ecranT = tex(toile(320, 240, (x, w, h) => { const gr = x.createRadialGradient(w * .55, h * .5, 10, w / 2, h / 2, w * .7); gr.addColorStop(0, "#6b4fb8"); gr.addColorStop(.5, "#2b2a6e"); gr.addColorStop(1, "#0b0c1c"); x.fillStyle = gr; x.fillRect(0, 0, w, h);
+      x.fillStyle = "rgba(255,255,255,.05)"; for (let y = 0; y < h; y += 3) x.fillRect(0, y, w, 1); x.fillStyle = "#f4f1ea"; x.font = "bold 26px 'Arial Black', Arial"; x.textAlign = "center"; x.fillText("SUPER NINTENDO", w / 2, h / 2 - 8);
+      x.font = "bold 18px 'Courier New', monospace"; x.fillStyle = "#ffd75e"; x.fillText("▶ CHOISIS TON JEU", w / 2, h / 2 + 30); }));   // (comme la télé du bar : la Super Nintendo allumée)
+    const ec = new THREE.Mesh(new THREE.PlaneGeometry(.42, .31), new THREE.MeshStandardMaterial({ map: ecranT, emissive: 0xffffff, emissiveMap: ecranT, emissiveIntensity: .75, roughness: .15 })); ec.position.set(0, .21, .202); tv.add(ec);
+    // la Super Nintendo, ses deux manettes, des cartouches
+    { const sn = new THREE.Group(); sn.position.set(.3, .8, .02); g.add(sn); const gS = M3(0xb9b8bd, .55), gF = M3(0x6f6e75, .5), violet = M3(0x6a4aa8, .5);
+      bx(sn, .24, .06, .2, gS, 0, .03, 0); bx(sn, .1, .03, .07, gF, 0, .075, -.02); bx(sn, .03, .015, .03, violet, -.08, .065, .07); bx(sn, .03, .015, .03, gF, -.04, .065, .07);
+      for (const [x, z, r] of [[-.06, .17, .3], [.08, .19, -.2]]) { const mn = new THREE.Group(); mn.position.set(x, .012, z); mn.rotation.y = r; sn.add(mn); bx(mn, .12, .02, .05, gS, 0, 0, 0); for (const [cx, c] of [[.035, 0xd03a3a], [.05, 0x3a5ad8], [.035, 0x2a9a4a], [.02, 0xe0c020]]) sp(mn, .006, M3(c, .4), cx + (c === 0x3a5ad8 ? 0 : c === 0x2a9a4a ? -.015 : 0), .011, c === 0xe0c020 ? .006 : c === 0xd03a3a ? .006 : -.006); }
+      for (let i = 0; i < 3; i++) bx(sn, .1, .015, .07, M3([0x8a8a90, 0x6a6a70, 0x9a9aa0][i], .6), .18, .008 + i * .016, .12); }
+    L.meublesAppart[L.meublesAppart.length - 1].consoleSN = true;
     caserMeuble(L, m, R3); }
   { const m = nouveau("Coffre à jouets de pirate", R3), g = m.g, bleu = M3(0x2a64c8, .35), jaune = M3(0xf0c020, .4), noirP = M3(0x1a1a1a, .5);
     bx(g, .8, .42, .48, bleu, 0, .21, 0); const cv = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .8, 18, 1, false, 0, Math.PI), bleu); cv.rotation.z = Math.PI / 2; cv.position.y = .42; g.add(cv);
@@ -7017,6 +7028,61 @@ function meublesInventaire2(L, scene, mb, rect) { const M3 = (c, r = .8, o = {})
    ["Portrait : la dame en bleu", .5, .66, portrait(["#4a3a2a", "#1a120a"], "#2a3a6a", "#e8c8a8", "#3a2414", true)], ["Portrait : le monsieur à la redingote", .5, .66, portrait(["#3a3020", "#120c06"], "#1a1a1a", "#e0b898", "#5a4a3a", false)],
    ["Portrait : la jeune fille", .42, .55, portrait(["#5a4a30", "#201408"], "#7a2a2a", "#f0d0b8", "#8a5a2a", true)]]
     .forEach(([nom, W, H, f]) => { const m = nouveau(nom, { suspendu: true, mural: true }, 1.6); cadre(m.g, W, H, huile(Math.round(W * 300), Math.round(H * 300), f)); });
+  // le paquet de rouleaux de papier toilette (au sol), sous son film plastique
+  { const m = nouveau("Paquet de papier toilette"), g = m.g, pap = M3(0xf6f4ee, .9);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) { const r = cy(g, .055, .055, .1, pap, -.11 + i * .11, .05 + k * .1, -.055 + j * .11, 14); void r; }
+    const film = new THREE.Mesh(new THREE.BoxGeometry(.35, .21, .24), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .18, roughness: .1 })); film.position.y = .105; g.add(film);
+    bx(g, .12, .08, .001, M3(0x3a7ad8, .6), 0, .12, .121); }   // (l'étiquette bleue)
+  // la pile de journaux (au sol), un peu de travers
+  { const m = nouveau("Pile de vieux journaux"), g = m.g, tJ = tex(toile(128, 160, (x, w, h) => { x.fillStyle = "#e8e2d0"; x.fillRect(0, 0, w, h); x.fillStyle = "#1a1a1a"; x.font = "bold 16px Georgia"; x.fillText("LE PARISIEN", 8, 20); x.fillRect(6, 26, w - 12, 2);
+      x.font = "bold 11px Arial"; x.fillText("LE PSG CHAMPION !", 8, 42); x.fillStyle = "#888"; x.fillRect(8, 50, 54, 40); for (let i = 0; i < 12; i++) { x.fillStyle = "#555"; x.fillRect(68, 52 + i * 8, 52, 2); x.fillRect(8, 98 + i * 5, 112, 1.5); } }));
+    for (let i = 0; i < 9; i++) { const f = bx(g, .4, .012, .3, i === 8 ? new THREE.MeshStandardMaterial({ map: tJ, roughness: .9 }) : M3([0xe4dece, 0xdcd4c0, 0xe8e2d4][i % 3], .95), (Math.random() - .5) * .04, .006 + i * .013, (Math.random() - .5) * .04); f.rotation.y = (Math.random() - .5) * .2; } }
+  // le carnet de mots croisés (sur une table), son crayon
+  { const m = nouveau("Carnet de mots croisés", { surMeuble: true }), g = m.g, tM = tex(toile(128, 170, (x, w, h) => { x.fillStyle = "#f4ecd8"; x.fillRect(0, 0, w, h); x.fillStyle = "#c8302a"; x.fillRect(0, 0, w, 30); x.fillStyle = "#fff"; x.font = "bold 13px Arial"; x.fillText("MOTS CROISÉS", 10, 20);
+      const c = 11; for (let i = 0; i < 10; i++) for (let j = 0; j < 11; j++) { x.fillStyle = (i * 7 + j * 3) % 9 === 0 ? "#111" : "#fff"; x.fillRect(9 + i * c, 40 + j * c, c - 1, c - 1); if ((i + j) % 4 === 1 && x.fillStyle !== "#111111") { x.fillStyle = "#2a3a8a"; x.font = "9px Arial"; x.fillText("ABCDEFGHIJ"[(i * 3 + j) % 10], 11 + i * c, 48 + j * c); } } }));
+    bx(g, .15, .008, .2, M3(0xc8302a, .7), 0, .004, 0); const pg = new THREE.Mesh(new THREE.PlaneGeometry(.145, .195), new THREE.MeshStandardMaterial({ map: tM, roughness: .9 })); pg.rotation.x = -Math.PI / 2; pg.position.y = .0085; g.add(pg);
+    const cr = cy(g, .004, .004, .16, M3(0xe0b030, .6), .1, .006, 0, 6); cr.rotation.x = Math.PI / 2; cr.rotation.z = .3; }
+  // le gros panier à linge sale en plastique rose, le linge qui déborde
+  { const m = nouveau("Panier à linge rose"), g = m.g, rose = M3(0xf08ab8, .4);
+    const pa = new THREE.Mesh(new THREE.CylinderGeometry(.27, .23, .55, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0xf08ab8, roughness: .4, side: THREE.DoubleSide })); pa.position.y = .275; g.add(pa); cy(g, .23, .23, .02, rose, 0, .01, 0, 24);
+    for (const y of [.12, .25, .38]) for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, t = bx(g, .06, .025, .01, M3(0xb04a7a, .6), Math.cos(a) * .262, y, Math.sin(a) * .262); t.rotation.y = -a + Math.PI / 2; }   // (les jours du plastique)
+    const an = new THREE.Mesh(new THREE.TorusGeometry(.275, .018, 8, 32), rose); an.rotation.x = Math.PI / 2; an.position.y = .55; g.add(an);
+    [[0x3a5ad8, .05, .58, 0], [0xf4f0e6, -.1, .6, .08], [0xd83a3a, .1, .57, -.1], [0x2a2a2a, -.05, .62, -.06], [0x7ac8e8, .14, .6, .1]].forEach(([c, x, y, z], i) => { const l = sp(g, .13, M3(c, .95), x, y, z); l.scale.set(1.2, .5, 1); l.rotation.y = i; });
+    const manche = bx(g, .08, .02, .35, M3(0xf4f0e6, .95), .2, .42, .22); manche.rotation.set(-.9, .4, .2); const chau = bx(g, .06, .02, .22, M3(0x3a5ad8, .95), -.24, .36, -.12); chau.rotation.set(.9, -.3, -.2); }   // (une manche, une chaussette qui pendent par-dessus le bord)
+  // l'horloge ronde de cuisine, toute simple (au mur, à 1,9 m) : le cadre noir, le cadran blanc, les aiguilles qui tournent vraiment
+  { const m = nouveau("Horloge ronde murale", { suspendu: true, mural: true }, 1.9), g = m.g; const an = new THREE.Mesh(new THREE.TorusGeometry(.15, .018, 10, 36), M3(0x1a1a1a, .4)); an.position.z = .02; g.add(an);
+    const fond = new THREE.Mesh(new THREE.CircleGeometry(.15, 36), new THREE.MeshStandardMaterial({ map: tex(toile(128, 128, x => { x.fillStyle = "#fbfaf6"; x.fillRect(0, 0, 128, 128); x.fillStyle = "#111"; x.font = "bold 15px Arial"; x.textAlign = "center"; x.textBaseline = "middle";
+      for (let i = 1; i <= 12; i++) { const a = i / 12 * Math.PI * 2 - Math.PI / 2; x.fillText(String(i), 64 + Math.cos(a) * 48, 64 + Math.sin(a) * 48); } for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2; x.fillRect(64 + Math.cos(a) * 58 - 1, 64 + Math.sin(a) * 58 - 1, 2, 2); } })), roughness: .5 })); fond.position.z = .015; g.add(fond);
+    const aig = (lg, ep, c) => { const a = new THREE.Group(); a.position.z = .022; g.add(a); bx(a, ep, lg, .004, M3(c, .4), 0, lg / 2 - .015, 0); return a; }, ah = aig(.08, .012, 0x111111), am = aig(.12, .008, 0x111111), as = aig(.13, .003, 0xd02020); sp(g, .01, M3(0x111111, .4), 0, 0, .026);
+    const tic = () => { if (!g.parent) return; const d = new Date(), s2 = d.getSeconds() + d.getMilliseconds() / 1000, mi = d.getMinutes() + s2 / 60, h = (d.getHours() % 12) + mi / 60; as.rotation.z = -s2 / 60 * Math.PI * 2; am.rotation.z = -mi / 60 * Math.PI * 2; ah.rotation.z = -h / 12 * Math.PI * 2; if (g.visible) setTimeout(tic, 250); else setTimeout(tic, 2000); }; tic(); }   // (l'heure de Paris, la vraie)
+  // l'étagère à épices ancienne, en bois (au mur, à 1,5 m) : deux rayons, leurs petits pots étiquetés
+  { const m = nouveau("Étagère à épices ancienne", { suspendu: true, mural: true }, 1.5), g = m.g, chene = M3(0x7a4e28, .5);
+    bx(g, .55, .02, .14, chene, 0, -.17, .07); bx(g, .55, .02, .14, chene, 0, .05, .07); bx(g, .55, .02, .1, chene, 0, .27, .05); for (const s of [-1, 1]) bx(g, .02, .5, .14, chene, s * .265, .05, .07); bx(g, .55, .5, .01, M3(0x5a3418, .6), 0, .05, .005);
+    for (const y of [-.12, .1]) bx(g, .51, .012, .006, chene, 0, y, .135);   // (les barres qui retiennent les pots)
+    const noms = ["SEL", "POIVRE", "THYM", "LAURIER", "PAPRIKA", "CUMIN", "ORIGAN", "CANNELLE", "MUSCADE", "CURRY"];
+    noms.forEach((n, i) => { const y = i < 5 ? -.16 : .06, x = -.2 + (i % 5) * .1; const v = cy(g, .028, .028, .09, new THREE.MeshStandardMaterial({ color: 0xe8f0f0, transparent: true, opacity: .55, roughness: .1 }), x, y + .045, .07, 12); void v;
+      cy(g, .024, .024, .07, M3([0xf4f4f0, 0x2a2018, 0x6a7a3a, 0x5a6a2a, 0xc0401a, 0xa0702a, 0x5a6a30, 0x9a5a2a, 0x8a5a3a, 0xd0a020][i], .9), x, y + .04, .07, 10); cy(g, .03, .03, .02, M3(0xc8c8cc, .3, { metalness: .7 }), x, y + .1, .07, 12);
+      const et = new THREE.Mesh(new THREE.PlaneGeometry(.05, .03), new THREE.MeshStandardMaterial({ map: tex(toile(64, 40, c => { c.fillStyle = "#f2e8cc"; c.fillRect(0, 0, 64, 40); c.strokeStyle = "#8a6a3a"; c.strokeRect(2, 2, 60, 36); c.fillStyle = "#2a1a0a"; c.font = "bold 11px Georgia"; c.textAlign = "center"; c.fillText(n, 32, 25); })), roughness: .8 })); et.position.set(x, y + .045, .1); g.add(et); }); }
+  // le grand sapin de Noël : ses étages de branches, la guirlande dorée en spirale, les boules, les ampoules qui clignotent, l'étoile au sommet
+  { const m = nouveau("Grand sapin de Noël"), g = m.g, vert = M3(0x1e4a2a, .85), boules = [0xd02a2a, 0xd4a83a, 0x2a5ad0, 0xe8e8f0, 0x9a2ad0];
+    cy(g, .2, .17, .28, M3(0xb02a2a, .6), 0, .14, 0, 16); cy(g, .05, .06, .5, M3(0x4a3018, .9), 0, .4, 0, 8);   // (le cache-pot rouge, le tronc)
+    for (let i = 0; i < 5; i++) { const r = .75 - i * .14, h = .62, c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 14), vert); c.position.y = .62 + i * .36; c.castShadow = true; g.add(c); }
+    const pts = []; for (let i = 0; i <= 120; i++) { const t = i / 120, a = t * Math.PI * 2 * 5, y = .55 + t * 1.75, r = (.74 - t * .66) + .02; pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r)); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, .012, 5), M3(0xe0b040, .25, { metalness: .8 })));   // (la guirlande)
+    for (let i = 0; i < 26; i++) { const t = Math.random(), a = Math.random() * 7, y = .55 + t * 1.65, r = (.72 - t * .64); sp(g, .035, M3(boules[i % boules.length], .2, { metalness: .6 }), Math.cos(a) * r, y, Math.sin(a) * r); }
+    const lum = [0xff3030, 0x30ff60, 0x3070ff, 0xffd030].map(c => new THREE.MeshBasicMaterial({ color: c })); for (let i = 0; i < 40; i++) { const t = i / 40, a = t * Math.PI * 2 * 7 + 1, y = .55 + t * 1.7, r = (.73 - t * .65); sp(g, .018, lum[i % 4], Math.cos(a) * r, y, Math.sin(a) * r); }
+    const etoile = new THREE.Mesh(new THREE.OctahedronGeometry(.1, 0), new THREE.MeshBasicMaterial({ color: 0xffe070 })); etoile.position.y = 2.42; etoile.scale.set(1, 1.2, .35); g.add(etoile);
+    const cl = () => { if (!g.parent) return; const k = Math.floor(performance.now() / 600) % 4; lum.forEach((mt, i) => mt.color.setHex([0xff3030, 0x30ff60, 0x3070ff, 0xffd030][i]).multiplyScalar(i === k ? .25 : 1)); setTimeout(cl, 600); }; cl(); }   // (les ampoules qui clignotent, chacune à son tour)
+  // la crèche de Noël (au sol) : l'étable en bois et son toit de chaume, la paille, Marie, Joseph, l'Enfant dans la mangeoire, le bœuf, l'âne, l'étoile
+  { const m = nouveau("Crèche de Noël"), g = m.g, bois = M3(0x6a4426, .8), chaume = M3(0xc8a050, .95), paille = M3(0xd8b860, .95);
+    bx(g, .8, .03, .5, bois, 0, .015, 0); bx(g, .78, .015, .48, paille, 0, .035, 0); for (const [x, z] of [[-.37, -.22], [.37, -.22], [-.37, .2], [.37, .2]]) bx(g, .04, .5, .04, bois, x, .27, z); bx(g, .8, .45, .02, bois, 0, .26, -.24);
+    const t1 = bx(g, .9, .03, .33, chaume, 0, .58, -.1); t1.rotation.x = -.45; const t2 = bx(g, .9, .03, .33, chaume, 0, .58, .14); t2.rotation.x = .45;
+    const fig = (x, z, robe, tete, h) => { cy(g, .025, .045, h, M3(robe, .7), x, .04 + h / 2, z, 10); sp(g, .025, M3(tete, .5), x, .065 + h, z); };
+    fig(-.15, -.02, 0x3a5ab0, 0xe8c8a8, .17); fig(.15, -.02, 0x7a4a2a, 0xd8b898, .2);   // (Marie, en bleu ; Joseph)
+    bx(g, .12, .05, .07, bois, 0, .065, .06); const jesus = sp(g, .028, M3(0xf0d8c0, .5), 0, .1, .06); jesus.scale.set(1.6, .8, 1);   // (la mangeoire, l'Enfant)
+    const bete = (x, c, oreilles) => { const b = sp(g, .07, M3(c, .8), x, .1, -.12); b.scale.set(1.5, .9, .9); sp(g, .04, M3(c, .8), x + (x < 0 ? .1 : -.1), .14, -.08); if (oreilles) for (const s of [-1, 1]) cy(g, .006, .01, .06, M3(c, .8), x + (x < 0 ? .1 : -.1) + s * .015, .19, -.08, 6); };
+    bete(-.25, 0x8a6a4a, false); bete(.25, 0x7a7a7a, true);   // (le bœuf, l'âne)
+    const et = new THREE.Mesh(new THREE.OctahedronGeometry(.04, 0), new THREE.MeshBasicMaterial({ color: 0xffe070 })); et.position.set(0, .72, 0); et.scale.set(1, 1.3, .3); g.add(et); }
   // le téléphone mural d'époque : la caisse en bois, ses ornements dorés, le combiné à son crochet, la manivelle, les deux sonnettes
   { const m = nouveau("Téléphone mural d'époque", { suspendu: true, mural: true }, 1.35), g = m.g, noyer = M3(0x5a3418, .4);
     bx(g, .26, .42, .12, noyer, 0, 0, .06); bx(g, .3, .04, .14, noyer, 0, .23, .07); bx(g, .3, .04, .14, noyer, 0, -.23, .07); bx(g, .16, .1, .04, noyer, 0, -.06, .14);   // (la caisse, ses corniches, le pupitre)
@@ -7026,6 +7092,42 @@ function meublesInventaire2(L, scene, mb, rect) { const M3 = (c, r = .8, o = {})
     cy(g, .015, .015, .12, or, .19, .02, .08, 8); const ec = cy(g, .022, .03, .14, M3(0x1a1a1a, .4), .21, -.06, .1, 12); void ec; sp(g, .022, or, .21, .02, .1);   // (le crochet, l'écouteur noir pendu, son embout doré)
     const mv = cy(g, .008, .008, .09, or, -.16, .02, .1, 6); mv.rotation.z = Math.PI / 2; sp(g, .015, M3(0x1a1a1a, .4), -.2, .02, .1); }   // (la manivelle)
 }
+/* s'asseoir ou s'allonger dans l'appartement : les chaises, les fauteuils, les bergères, le canapé ; les lits, les canapés-lits, le lit superposé (en bas) */
+const SIEGES_APPART = [[/^Chaise/, "assis", .46, [[0, 0]]], [/^Bergère/, "assis", .54, [[0, .03]]], [/^Fauteuil/, "assis", .55, [[0, .12]]], [/^Canapé en tissu/, "assis", .55, [[-.6, .12], [0, .12], [.6, .12]]],
+  [/^Lit deux places/, "allonge", .58, [[0, 1.05]]], [/^Canapé-lit/, "allonge", .5, [[0, .05]]], [/^Lit superposé/, "allonge", .45, [[0, .05]]]];
+function siegeAppart(x, z) { const L = M.L; if (!L || !L.meublesAppart) return null; let best = null, bd = 1.3;
+  for (const m of L.meublesAppart) { if (m.range || !m.g.visible) continue; const s = SIEGES_APPART.find(([re]) => re.test(m.nom)); if (!s) continue; const [, sorte, h, places] = s;
+    places.forEach(([lx, lz], k) => { const ry = m.g.rotation.y, wx = m.g.position.x + Math.cos(ry) * lx + Math.sin(ry) * lz, wz = m.g.position.z - Math.sin(ry) * lx + Math.cos(ry) * lz, d = Math.hypot(wx - x, wz - z);
+      if (d < bd) { bd = d; best = { type: "installer", id: m.id, k, sorte, h, x: wx, z: wz, ry, y: m.g.position.y, label: sorte === "assis" ? "🪑 S'asseoir" : "🛏️ S'allonger" }; } }); }
+  return best; }
+function installer(moi, s) { if (moi.info.danse) danser(false); moi.cible = null; moi.chemin = []; moi.installe = s; moi.g.position.set(s.x, s.y, s.z); envoyerWS({ t: "aller", x: s.x, z: s.z }); }
+function seLeverAppart(moi) { const s = moi.installe; moi.installe = null; const A = moi.av3; if (A) { A.sc.position.set(0, 0, 0); A.sc.rotation.x = 0; A.installeOK = false; }
+  if (s) { const p = moi.g.position, f = [Math.sin(s.ry), Math.cos(s.ry)]; for (const d of [.6, .9, 1.2, -.6, -.9]) { const x = s.x + f[0] * d, z = s.z + f[1] * d; if (M.L.limites(x, z)) { p.x = x; p.z = z; break; } } if (!M.L.limites(p.x, p.z)) { const v = viserLibre(p.x, p.z); p.x = v[0]; p.z = v[1]; } p.y = M.L.hauteur ? M.L.hauteur(p.x, p.z) : 0; } }
+// la pose : assis (les cuisses à l'horizontale, les jambes pendantes, les mains sur les genoux) ou allongé sur le dos, la tête vers la tête du lit
+function installe3D(p, A) { const s = p.installe, T = (n, a, v) => tourne3D(A, n, a, v);
+  if (!A.repI) { A.repI = {}; for (const n of ["LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg", "LeftArm", "RightArm", "LeftForeArm", "RightForeArm", "Head", "Spine"]) { const b = os3D(A, n); if (b) A.repI[n] = b.quaternion.clone(); } }   /* (la pose de départ du modèle, prise une fois : debout, droit) */
+  for (const n in A.repI) os3D(A, n).quaternion.copy(A.repI[n]);
+  A.sc.rotation.order = "YXZ";
+  const f = new THREE.Vector3(Math.sin(s.ry), 0, Math.cos(s.ry)), bas = new THREE.Vector3(0, -1, 0); void T;
+  if (s.sorte === "assis") { A.sc.rotation.set(0, s.ry, 0); A.sc.updateMatrixWorld(true);   // (les cuisses à l'horizontale vers l'avant, les jambes qui descendent devant l'assise, les mains posées sur les genoux)
+    for (const c of ["Left", "Right"]) { viser3D(A, c + "UpLeg", c + "Leg", f.clone().addScaledVector(bas, .08).normalize()); viser3D(A, c + "Leg", c + "Foot", bas.clone().addScaledVector(f, .12).normalize());
+      viser3D(A, c + "Arm", c + "ForeArm", bas.clone().addScaledVector(f, .45).normalize()); viser3D(A, c + "ForeArm", c + "Hand", f.clone().addScaledVector(bas, .55).normalize()); } }
+  else { A.sc.rotation.set(-Math.PI / 2, s.ry, 0); A.sc.updateMatrixWorld(true); const pieds = f.clone();   // (allongé sur le dos : les jambes tendues, les bras le long du corps)
+    for (const c of ["Left", "Right"]) { viser3D(A, c + "UpLeg", c + "Leg", pieds); viser3D(A, c + "Leg", c + "Foot", pieds); viser3D(A, c + "Arm", c + "ForeArm", pieds.clone().addScaledVector(bas, .15).normalize()); viser3D(A, c + "ForeArm", c + "Hand", pieds); } }
+  const h = os3D(A, "Hips"); if (!h) return; A.sc.position.set(0, 0, 0); A.sc.updateMatrixWorld(true); const v = h.getWorldPosition(new THREE.Vector3());
+  const cible = new THREE.Vector3(s.x, s.y + s.h + (s.sorte === "assis" ? .09 : .12), s.z); if (s.sorte === "assis") cible.addScaledVector(f, -.08); else cible.addScaledVector(f, -.05);
+  const a = p.g.worldToLocal(cible.clone()), b = p.g.worldToLocal(v.clone()); A.sc.position.copy(a.sub(b)); }
+
+/* le chef de poste, dans l'appartement : assis dans le fauteuil du salon, devant la télé */
+const CHEF_APPART = -81;
+function animerChefAppart() { if (!M || !M.L) return; let g = M.gens.get(CHEF_APPART); const L = M.L, cs = L.appart && L.meublesAppart && L.meublesAppart.find(m => m.consoleSN && !m.range && m.g.visible);
+  if (L.appart) L.console = cs ? [cs.g.position.x, cs.g.position.z] : null;   // (la Super Nintendo de la chambre : « Jouer à la console », comme au bar)
+  const f = L.appart && L.meublesAppart && L.meublesAppart.find(m => /^Fauteuil assorti/.test(m.nom) && !m.range && m.g.visible);
+  if (!f) { if (g) retirerAncien(CHEF_APPART); return; }
+  const ry = f.g.rotation.y, x = f.g.position.x + Math.sin(ry) * .05, z = f.g.position.z + Math.cos(ry) * .05;
+  if (!g) { const P = (M.ctx.pnj && M.ctx.pnj()) || {}; g = ajouterAncien({ numero: CHEF_APPART, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
+      teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, maman: true, x, z }); if (!g) return; g.info.assis = 0; }
+  g.cible = null; g.chemin = []; if (Math.hypot(g.g.position.x - x, g.g.position.z - z) > .02) { g.g.position.x = x; g.g.position.z = z; } g.g.position.y = f.g.position.y; }
 // le mode « aménagement » : la vue du ciel, le quadrillage, l'inventaire
 function adminAppart() { return !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin); }
 function boutonAmenager() { const ok = M && M.L && M.L.appart && adminAppart() && !M.amen;
@@ -7068,14 +7170,14 @@ function amenager(actif) { const L = M && M.L; if (!L || !L.meublesAppart) retur
   const ecoute = (t, f) => { cv.addEventListener(t, f, true); S.ecoute.push([t, f]); };
   ecoute("pointerdown", e => { e.stopPropagation(); e.preventDefault(); S.pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { cv.setPointerCapture(e.pointerId); } catch (er) {}
     if (S.pts.size === 2) { S.drag = null; const [a, b] = [...S.pts.values()]; S.pince = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), h: S.h, yaw: S.yaw }; return; }
-    const m = quelMeuble(e); if (m) { S.sel = m; majBtns(); const y = m.g.position.y, pt = surSol(e, m.suspendu ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : y); S.drag = { m, dx: pt ? m.g.position.x - pt.x : 0, dz: pt ? m.g.position.z - pt.z : 0, x0: m.g.position.x, z0: m.g.position.z, bouge: false }; }
+    const m = quelMeuble(e); if (m) { S.sel = m; majBtns(); const y = m.g.position.y, pt = surSol(e, m.suspendu && !m.mural ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : y); S.drag = { m, dx: pt && !m.mural ? m.g.position.x - pt.x : 0, dz: pt && !m.mural ? m.g.position.z - pt.z : 0, x0: m.g.position.x, z0: m.g.position.z, bouge: false }; }
     else { S.drag = { pan: true, x: e.clientX, y: e.clientY, cx: S.cx, cz: S.cz, bouge: false }; } });
   ecoute("pointermove", e => { if (!S.pts.has(e.pointerId)) return; e.stopPropagation(); e.preventDefault(); S.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (S.pts.size === 2 && S.pince) { const [a, b] = [...S.pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x); S.h = Math.max(2.5, Math.min(22, S.pince.h * S.pince.d / Math.max(20, d))); S.yaw = S.pince.yaw - (ang - S.pince.ang); return; }
     const D = S.drag; if (!D) return;
     if (D.pan) { const r = cv.getBoundingClientRect(), k = S.h * 1.1 / r.height, dx = (e.clientX - D.x) * k, dy = (e.clientY - D.y) * k; if (Math.hypot(e.clientX - D.x, e.clientY - D.y) > 6) D.bouge = true;
       const c = Math.cos(S.yaw), s = Math.sin(S.yaw); S.cx = D.cx - (dx * c + dy * s); S.cz = D.cz - (-dx * s + dy * c); if (!D.bouge) return; S.sel = null; majBtns(); return; }
-    const m = D.m, sol = m.suspendu ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : m.g.position.y, pt = surSol(e, sol); if (!pt) return; D.bouge = true;
+    const m = D.m, sol = m.suspendu && !m.mural ? (L.hauteur ? L.hauteur(m.g.position.x, m.g.position.z) : 0) : m.g.position.y, pt = surSol(e, sol);   /* (un objet au mur : suivi à sa hauteur, sous le doigt — il ne saute plus sur le mur de la pièce d'à côté) */ if (!pt) return; D.bouge = true;
     const x = Math.round((pt.x + D.dx) * 10) / 10, z = Math.round((pt.z + D.dz) * 10) / 10; m.g.position.x = x; m.g.position.z = z; if (m.mural) collerAuMur(L, m, x, z); else if (m.surMeuble) m.g.position.y = hauteurPose(L, m, x, z); else if (!m.suspendu && L.hauteur) m.g.position.y = L.hauteur(x, z); S.ok = placeMeubleOK(L, m); });   // (calé sur une grille de 10 cm)
   const fin = e => { if (!S.pts.has(e.pointerId)) return; e.stopPropagation(); S.pts.delete(e.pointerId); if (S.pts.size < 2) S.pince = null; const D = S.drag; S.drag = null; if (!D) return;
     if (D.pan && !D.bouge) { const m = quelMeuble(e); S.sel = m; majBtns(); return; }
@@ -13918,6 +14020,8 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   A.sc.position.set(0, 0, 0); if (M.L.apo && p.info.arme) arme3D(p, A); else if (A.arme) A.arme.visible = false;
   if (p.poseCine || A.poseC) poseCine3D(p, A);
   if (p.roulade) rouler3D(p, A); else if (A.sc.rotation.x) A.sc.rotation.x = 0;   // (la roulade de l'arrivée)
+  if (p.installe && p.cible) seLeverAppart(p);   /* (on touche ailleurs : on se lève, et on y va) */
+  if (p.installe) { installe3D(p, A); return; }
   if (assis) { assis3D(p, A, assis); return; } A.assisT = null; if (p.info.danse && A.cur === "idle" && !A.act[dn]) danser3D(A, String(p.info.danse === true ? "balance" : p.info.danse), performance.now() / 1000); }
 /* la tête qui se tourne vers quelqu'un (p.teteVers), sans tourner le corps : James vers Maria quand il parle d'elle, Maria vers James */
 function teteAv3(p, A, dt) { const r = p.teteVers, q = p.g.position; let c = 0;
@@ -14227,18 +14331,19 @@ function animerProf() {
 const MAMAN = -80, PHRASES_MAMAN = ["Tu veux un café ?", "Bonjour mon grand !", "Tu as bien dormi ?", "Il reste du pain dans la corbeille.", "Fais attention, c'est chaud !", "Range ta chambre, s'il te plaît.", "Tu as mangé ?", "Ferme la porte, il y a un courant d'air !"];
 const POINTS_MAMAN = [[0, 4.2], [0, 9.5], [0, -3], [-3.4, 8.4], [-4.2, 12.2], [-3, -2], [-3.4, -5.4], [3, -2.2], [2.3, 6.2], [4.6, 4.6], [0, 1.8]];
 function animerMaman() {
-  if (!M || !M.L) return; const T = M.L.maman, ici = M.lieu === "appart" && T; let g = M.gens.get(MAMAN);
+  if (!M || !M.L) return; animerChefAppart(); const T = M.L.maman, ici = M.lieu === "appart" && T; let g = M.gens.get(MAMAN);
   if (!ici) { if (g) retirerAncien(MAMAN); return; }
   const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(80)) || {};
   const info = { nom: P.nom || "Maman", tenue: P.tenue || "peignoir", couleur: P.couleur || "#d23c6c", bas: P.bas || null, pieds: P.pieds || "#1c1c1e", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 80) : "images/appart/maman-tete.webp" }, cle = JSON.stringify(info);
-  const now = Date.now(), assise = () => { g.etat = "table"; g.info.assis = 0; g.g.position.x = T.x; g.g.position.z = T.z; g.cible = null; g.chemin = []; g.fin = now + 35000 + Math.random() * 45000; };
+  const now = Date.now(), assise = () => { g.etat = "table"; g.info.assis = 0; g.g.position.x = T.x; g.g.position.z = T.z; g.cible = null; g.chemin = []; g.fin = now + 15000 + Math.random() * 20000; };   /* (un café, pas trop long : puis elle refait le tour de l'appartement) */
   if (g && g.cleInfo !== cle) { retirerAncien(MAMAN); g = null; }   // (l'administrateur a changé sa tête, sa taille, sa tenue)
   if (!g) { g = ajouterAncien({ ...info, numero: MAMAN, pnj: true, maman: true, allure: .3, x: T.x, z: T.z }); if (g) { g.cleInfo = cle; assise(); } return; }
   if (g.etat === "table") { if (Math.hypot(g.g.position.x - T.x, g.g.position.z - T.z) > .05) { g.g.position.x = T.x; g.g.position.z = T.z; }
-    if (now > g.fin) { delete g.info.assis; g.etat = "promene"; g.etapes = 1 + Math.floor(Math.random() * 3); g.repos = now + 800; } return; }
+    if (now > g.fin) { delete g.info.assis; g.etat = "promene"; g.repos = now + 800;   // (le tour complet : chaque pièce, dans le désordre, puis le couloir)
+      const R = (M.L.piecesAppart || []).slice(1, 11).sort(() => Math.random() - .5); g.tour = R.map(([x0, x1, z0, z1]) => { for (let k = 0; k < 30; k++) { const x = x0 + .3 + Math.random() * (x1 - x0 - .6), z = z0 + .3 + Math.random() * (z1 - z0 - .6); if (M.L.limites(x, z)) return [x, z]; } return null; }).filter(Boolean); g.etapes = g.tour.length; } return; }
   if (g.cible) return;
   if (g.etat === "promene") { if (now < g.repos) return;
-    if (g.etapes-- > 0) { const libres = POINTS_MAMAN.filter(([x, z]) => M.L.limites(x, z)), [x, z] = libres[Math.floor(Math.random() * libres.length)] || [0, 4]; viser(g, x, z); g.repos = now + 3500 + Math.random() * 6000; }
+    if (g.etapes-- > 0) { const libres = POINTS_MAMAN.filter(([x, z]) => M.L.limites(x, z)), [x, z] = (g.tour && g.tour.shift()) || libres[Math.floor(Math.random() * libres.length)] || [0, 4]; viser(g, x, z); g.repos = now + 2500 + Math.random() * 4000; }
     else { g.etat = "retour"; viser(g, T.x, T.z); } return; }
   if (g.etat === "retour") { if (Math.hypot(g.g.position.x - T.x, g.g.position.z - T.z) < .5) assise(); else { viser(g, T.x, T.z); if (!g.cible) assise(); } } }
 function animerEboueurs() {
@@ -14968,6 +15073,8 @@ function chercherAction(t) {
       else if (C3.hifi && M.lieu === "grande" && Math.abs(moi.g.position.y - C3.FL) < .6 && Math.hypot(x - C3.hifi[0], z - C3.hifi[1]) < 1.4) a = { type: "hifi", label: M.hifiOn ? "⏹ Arrêter la musique" : "▶️ Mettre la musique" };
       else if (M.L.flipper && Math.hypot(x - M.L.flipper[0], z - M.L.flipper[1]) < 2) a = { type: "flipper", label: "🎰 Jouer au flipper" };
       else if (i >= 0) a = { type: "asseoir", i, label: "🪑 S'asseoir au bar" };
+      else if (M.L.appart && moi.installe) a = { type: "leverAppart", label: "🧍 Se lever" };
+      else if (M.L.appart && !M.amen && siegeAppart(x, z)) a = siegeAppart(x, z);   /* (l'appartement : s'asseoir, s'allonger) */
       else if (M.L.apo) {}
       else { let best = null, bd = 1.9;
         for (const p of M.gens.values()) { if (p.moi || p.info.pnj || p.info.numero < 0 || p.info.slow || Number.isInteger(p.info.assis)) continue;
@@ -14996,6 +15103,8 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "fermeRE") { if (!M.fermeDitT || performance.now() - M.fermeDitT > 2500) { M.fermeDitT = performance.now(); verrouRE(); dire(M.moiNum, a.dit || "C'est fermé… de l'autre côté."); } return; }
+  if (a.type === "installer") { installer(moi, a); return; }
+  if (a.type === "leverAppart") { seLeverAppart(moi); return; }
   if (a.type === "asseoir") { if (moi.info.danse) danser(false); const [x, z] = M.L.tabourets[a.i]; envoyerWS({ t: "aller", x, z }); asseoir(moi, a.i); envoyerWS({ t: "assis", i: a.i }); }
   else if (a.type === "lever") { moi.info.assis = null; envoyerWS({ t: "assis", i: null });
     descendreTabouret(moi); moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: moi.g.position.x, z: moi.g.position.z }); }
