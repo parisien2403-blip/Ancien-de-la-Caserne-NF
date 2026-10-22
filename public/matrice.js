@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.44";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.45";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12280,15 +12280,15 @@ function parisAutour(sc) { const g = new THREE.Group(); sc.add(g); const SW = 14
     { const n = Math.max(1, Math.round(lx / 14)), w = lx / n; for (let i = 0; i < n; i++) { pose(x0 + w * (i + .5), z0 + PR / 2, 0, w); pose(x0 + w * (i + .5), z1 - PR / 2, Math.PI, w); } }   // (les deux côtés sur x)
     const lc = lz - 2 * PR; if (lc > 4) { const n = Math.max(1, Math.round(lc / 14)), w = lc / n; for (let j = 0; j < n; j++) { const z = z0 + PR + w * (j + .5); pose(x0 + Math.min(PR, lx / 2) / 2, z, Math.PI / 2, w); if (lx > PR * 1.5) pose(x1 - PR / 2, z, -Math.PI / 2, w); } }   // (les deux côtés sur z)
     if (lx > 2 * PR + 2 && lz > 2 * PR + 2) { const c = new THREE.Mesh(new THREE.PlaneGeometry(lx - 2 * PR, lz - 2 * PR), cour); c.rotation.x = -Math.PI / 2; c.position.set(cx, .02, cz); g.add(c); } }
-  const tous = []; parisVariantes.forEach((v, k) => { const L = segs[k]; if (!L.length) return; const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), [v.mat, v.mat, dessus, dessus, v.mat, v.mat], L.length);
-    L.forEach(([x, z, r, , w], i) => im.setMatrixAt(i, mt.compose(V(x, v.H / 2, z), qy(r), V(w + .02, v.H, PR)))); g.add(im); tous.push(...L); });
+  const tous = [], murs = []; parisVariantes.forEach((v, k) => { const L = segs[k]; if (!L.length) return; const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), [v.mat, v.mat, dessus, dessus, v.mat, v.mat], L.length);
+    L.forEach(([x, z, r, , w], i) => { im.setMatrixAt(i, mt.compose(V(x, v.H / 2, z), qy(r), V(w + .02, v.H, PR))); murs.push([im, i]); }); g.add(im); tous.push(...L); });
   // les toits mansardés en zinc (le brisis en pente raide, le terrasson presque plat), et leurs cheminées aux pots de terre cuite
   const toits = new THREE.InstancedMesh(new THREE.CylinderGeometry(.42, .707, 1, 4, 1).rotateY(Math.PI / 4), zinc, tous.length); tous.forEach(([x, z, r, H, w], i) => toits.setMatrixAt(i, mt.compose(V(x, H + 1.6, z), qy(r), V(w + .02, 3.2, PR)))); g.add(toits);
   const chem = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), pot, tous.length * 2); tous.forEach(([x, z, r, H], i) => { for (const d of [-4, 4]) { const ox = Math.cos(r) * d, oz = -Math.sin(r) * d; chem.setMatrixAt(i * 2 + (d > 0 ? 1 : 0), mt.compose(V(x + ox, H + 3.6, z + oz), qy(r), V(1.6, 1.8, .6))); } }); g.add(chem);
   // derrière la caserne : la grande barre de brique rouge, ses toits de tuiles
-  { const brq = new THREE.MeshLambertMaterial({ map: tex(toileBriqueBandes(60, 30)), emissive: 0x6a2a1c, emissiveIntensity: .5 }), tuile = new THREE.MeshLambertMaterial({ color: 0xb8452a, emissive: 0x3e1408 });
+  const barres = []; { const brq = new THREE.MeshLambertMaterial({ map: tex(toileBriqueBandes(60, 30)), emissive: 0x6a2a1c, emissiveIntensity: .5 }), tuile = new THREE.MeshLambertMaterial({ color: 0xb8452a, emissive: 0x3e1408 });
     for (const [x, z, lx, lz, h] of [[-4, -160, 52, 14, 27], [4, -176, 44, 14, 30]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(lx, h, lz), [brq, brq, tuile, tuile, brq, brq]); b.position.set(x, h / 2, z); g.add(b);
-      const t = new THREE.Mesh(new THREE.CylinderGeometry(.42, .707, 1, 4, 1).rotateY(Math.PI / 4), tuile); t.scale.set(lx, 3, lz); t.position.set(x, h + 1.5, z); g.add(t); } }
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(.42, .707, 1, 4, 1).rotateY(Math.PI / 4), tuile); t.scale.set(lx, 3, lz); t.position.set(x, h + 1.5, z); g.add(t); barres.push([b, t, x, z, h]); } }
   const s = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), sol); s.rotation.x = -Math.PI / 2; s.position.set(0, -.08, -60); g.add(s);
   const blocs = ilots.map(([x, z]) => [x, z, 0, parisVariantes[1].H]);
   // des incendies, çà et là (sur des toits, dans des rues), avec leur fumée
@@ -12303,7 +12303,17 @@ function parisAutour(sc) { const g = new THREE.Group(); sc.add(g); const SW = 14
     carros.setMatrixAt(i, mt.compose(V(x, .7, z), new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), ax ? 0 : Math.PI / 2), V(1.8, 1.4, 4.4)));
     for (const [c, d] of [[0x2050ff, -.45], [0xff1a1a, .45]]) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); sp.position.set(x + (ax ? d : 0), 1.7, z + (ax ? 0 : d)); sp.scale.setScalar(11); g.add(sp); giro.push([sp, Math.random() * 6, d > 0]); } }
   g.add(carros);
-  g.userData.maj = now => { for (const [sp, k] of feux) sp.material.map = texFlammes[(Math.floor(now / 80) + k) % 8];
+  /* le souffle de l'explosion : il part de la caserne et rase le quartier, immeuble après immeuble (ils s'affaissent sur eux-mêmes) */
+  const chute = new Map(); let majChute = 0;
+  g.userData.ilots = ilots; g.userData.souffle = (cx, cz, R, now) => { tous.forEach(([x, z], i) => { if (!chute.has(i) && Math.hypot(x - cx, z - cz) < R) chute.set(i, now + Math.random() * 400); });
+    for (const B of barres) if (!B.t && Math.hypot(B[2] - cx, B[3] - cz) < R + 20) B.t = now; };
+  const affaisser = now => { if (now - majChute < 90) return; majChute = now; let ch = false;
+    chute.forEach((t0, i) => { const f = Math.max(.22, 1 - Math.max(0, now - t0) / 1600), [x, z, r, H, w] = tous[i], [im, j] = murs[i]; if (f === .22 && t0 < 0) return; if (f === .22) chute.set(i, -1);
+      im.setMatrixAt(j, mt.compose(V(x, H * f / 2, z), qy(r), V(w + .02, H * f, PR))); im.instanceMatrix.needsUpdate = true;
+      toits.setMatrixAt(i, mt.compose(V(x, H * f + 1.6 * f, z), qy(r), V(w + .02, 3.2 * f, PR))); for (const d of [-4, 4]) chem.setMatrixAt(i * 2 + (d > 0 ? 1 : 0), mt.compose(V(x, -10, z), qy(r), V(.01, .01, .01))); ch = true; });
+    if (ch) { toits.instanceMatrix.needsUpdate = true; chem.instanceMatrix.needsUpdate = true; }
+    for (const B of barres) if (B.t) { const f = Math.max(.25, 1 - (now - B.t) / 1800); B[0].scale.y = f; B[0].position.y = B[4] * f / 2; B[1].position.y = B[4] * f + 1.5 * f; B[1].scale.y = 3 * f; } };
+  g.userData.maj = now => { if (chute.size || barres.some(B => B.t)) affaisser(now); for (const [sp, k] of feux) sp.material.map = texFlammes[(Math.floor(now / 80) + k) % 8];
     for (const [f, a, y] of fum) { const t = (now / 1000 + a) % 7; f.position.y = y + 18 + t * 4; f.material.opacity = .7 * (1 - t / 7); f.scale.setScalar(22 + t * 5); }
     for (const [sp, a, rouge] of giro) { const ph = (now / 260 + a) % 2; sp.material.opacity = (rouge ? ph >= 1 : ph < 1) ? 1 : .08; } };
   return g; }
@@ -12339,6 +12349,11 @@ function cineEvac(m) {
   const hel = creerHelico(); sc.add(hel); const hp0 = M.L.helicoPos, dep = hp0 ? new THREE.Vector3(hp0[0], hp0[1], hp0[2]) : new THREE.Vector3(H.x - 45, H.y + 40, H.z + 35), haut = new THREE.Vector3(H.x, H.y + 24, H.z), ry0 = hp0 ? Math.atan2(Math.sin(hp0[3]), Math.cos(hp0[3])) : .6;   /* (l'angle ramené entre −π et π : il pivotait de plusieurs tours sur lui-même avant de se poser) */ hel.position.copy(dep); hel.rotation.y = ry0;
   const fum = []; for (let i = 0; i < 34; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumeeRouge(), transparent: true, depthWrite: false, opacity: 0 })); sc.add(sp); fum.push({ sp, a: Math.random() * 7, v: .5 + Math.random(), d: Math.random() * 1.2 }); }
   const explo = [], P = [[0, -50], [-12, -95], [14, -70], [0, 2], [-16, -25], [16, -118], [0, -94.6], [-14, -60]];
+  const boule = (x, z, S, nF, nU, now) => { const g = new THREE.Group(); g.position.set(x, 0, z); sc.add(g); const fl = [], fu = [];   // (une boule de feu, sa fumée ; S : sa taille)
+    for (let i = 0; i < nF; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[i % 8], transparent: true, depthWrite: false, fog: false })); sp.center.set(.5, .1); sp.position.set((Math.random() - .5) * 10 * S, 0, (Math.random() - .5) * 10 * S); g.add(sp); fl.push([sp, i, .7 + Math.random() * .6]); }
+    for (let i = 0; i < nU; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, fog: false })); g.add(sp); fu.push([sp, Math.random()]); }
+    explo.push({ g, fl, fu, t: now, s: S }); };
+  const ilotsB = paris.userData.ilots.map(([x, z]) => ({ x, z, d: Math.hypot(x, z + 55) })).filter(I => I.d < 260);   /* (les îlots qu'on voit du ciel) */
   const helA = sonHelico(8);
   // la musique (« The Mansion Explodes ») : la cinématique est calée dessus — l'hélico se pose sur le silence (10 s), la caserne explose sur le grand coup (26 s)
   const mus = M.musEvac || new Audio("sons/re-evil-eye.mp3"); M.musEvac = null; mus.currentTime = 0; mus.volume = 1; sonsCourts.add(mus);   /* (« The Evil Eye » (RE2) : elle part quand l'hélicoptère arrive au-dessus du H, et s'achève juste avant que la caserne explose) */
@@ -12389,18 +12404,18 @@ function cineEvac(m) {
       if (brouillard && sc.fog) { sc.fog.near = 60; sc.fog.far = 700; }
       if (u < 17) placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1, hel.position.z, .06);
       else placer(12, 115, -10, 0, 0, -50, .035); }   // la caserne, vue du ciel
-    else { placer(12, 115, -10, 0, 0, -50, .035);
+    else { if (u < 27.5) placer(12, 115, -10, 0, 0, -50, .035); else placer(30, 230, 120, 0, 0, -60, .02);   /* (on prend de la hauteur : tout le quartier saute) */
       // et elle explose : des boules de feu, l'une après l'autre, le flash, la secousse
       while (boum < P.length && u > 26 + boum * .4) { const [x, z] = P[boum++]; voile("background:#fff6e0;opacity:.75", 160); if (boum % 3 === 1) sonPos("sons/re-bombe.mp3", boum === 1 ? 1 : .8); else sonBruit(1.6, 140 + Math.random() * 140, .45);   /* (la vraie déflagration, et des grondements entre deux) */
-        const g = new THREE.Group(); g.position.set(x, 0, z); sc.add(g); const fl = [];
-        for (let i = 0; i < 8; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFlammes[i % 8], transparent: true, depthWrite: false, fog: false })); sp.center.set(.5, .1); sp.position.set((Math.random() - .5) * 10, 0, (Math.random() - .5) * 10); g.add(sp); fl.push([sp, i, .7 + Math.random() * .6]); }
-        const fu = []; for (let i = 0; i < 6; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFumee, transparent: true, depthWrite: false, fog: false })); g.add(sp); fu.push([sp, Math.random()]); }
-        explo.push({ g, fl, fu, t: now }); }
-      for (const e of explo) { const k = (now - e.t) / 1000;
-        for (const [sp, ph, h] of e.fl) { sp.material.map = texFlammes[(Math.floor(now / 70) + ph) % 8]; const s = Math.min(1, k / .8) * 16 * h; sp.scale.set(s * .8, s * 1.4, 1); }
-        for (const [sp, d] of e.fu) { sp.position.set(Math.sin(d * 9) * 6, 6 + k * 9 + d * 8, Math.cos(d * 9) * 6); sp.scale.setScalar(10 + k * 9); sp.material.opacity = Math.min(.8, k) * .8; } }
-      const sec = boum && u < 26 + P.length * .4 + 1 ? .6 : 0; cam.position.x += (Math.random() - .5) * sec; cam.position.y += (Math.random() - .5) * sec;
-      if (u > 29.6 && !logo.isConnected) { M.ctx.conteneur.appendChild(logo); M.ctx.conteneur.appendChild(motFin); requestAnimationFrame(() => { logo.style.opacity = "1"; logo.style.transform = "translate(-50%,-50%) scale(1)"; }); }
+        boule(x, z, 1, 8, 6, now); }
+      // puis le souffle gagne tout le quartier : les îlots sautent l'un après l'autre, du plus proche au plus loin
+      if (u > 27) { const R = (u - 27) * 75; paris.userData.souffle(0, -55, R, now);
+        for (const I of ilotsB) if (!I.parti && I.d < R) { I.parti = true; boule(I.x + (Math.random() - .5) * 20, I.z + (Math.random() - .5) * 20, 2.6, 3, 1, now); if ((c.nB = (c.nB || 0) + 1) % 6 === 1) { sonBruit(2.2, 90 + Math.random() * 80, .5); voile("background:#ffb060;opacity:.3", 120); } } }
+      for (const e of explo) { const k = (now - e.t) / 1000, S = e.s;
+        for (const [sp, ph, h] of e.fl) { sp.material.map = texFlammes[(Math.floor(now / 70) + ph) % 8]; const s = Math.min(1, k / .8) * 16 * h * S; sp.scale.set(s * .8, s * 1.4, 1); }
+        for (const [sp, d] of e.fu) { sp.position.set(Math.sin(d * 9) * 6 * S, (6 + k * 9 + d * 8) * S, Math.cos(d * 9) * 6 * S); sp.scale.setScalar((10 + k * 9) * S); sp.material.opacity = Math.min(.8, k) * .8; } }
+      const sec = boum && u < 26 + P.length * .4 + 1 ? .6 : u < 31 ? .35 : 0; cam.position.x += (Math.random() - .5) * sec; cam.position.y += (Math.random() - .5) * sec;
+      if (u > 30.4 && !logo.isConnected) { M.ctx.conteneur.appendChild(logo); M.ctx.conteneur.appendChild(motFin); requestAnimationFrame(() => { logo.style.opacity = "1"; logo.style.transform = "translate(-50%,-50%) scale(1)"; }); }
       if (u > 34.5 && !noirF) { noirF = voile("background:#000;opacity:0;transition:opacity 2s"); requestAnimationFrame(() => { if (noirF) noirF.style.opacity = "1"; }); }
       if (u > 37 && motFin.style.opacity !== "1") motFin.style.opacity = "1";
       if (u > 39.5 && sonFin) sonFin.volume = Math.max(0, 1 - (u - 39.5) / 3.4);   /* (« Sweet Dreams » s'éteint doucement avec l'écran noir) */
@@ -12824,19 +12839,21 @@ let criLisaT = 0; const criLisa = (vol = 1, force) => { const now = performance.
    avec celui qui est tombé, ils ont été séparés ; on lui apprend sa mort… il craque, et se tire une balle. Une lettre tombe de sa poche */
 const PNJ_BAR = -490 - 21;
 function barApo(moi, now) {
-  if (M.barL && M.barL !== M.L) { M.barL = null; if (M.lettre) { M.lettre.g.parent && M.lettre.g.parent.remove(M.lettre.g); M.lettre = null; } if (M.gens.get(PNJ_BAR)) retirerAncien(PNJ_BAR); }
+  if (M.barL && M.barL !== M.L) { M.barL = null; M.barAttente = null; if (M.lettre) { M.lettre.g.parent && M.lettre.g.parent.remove(M.lettre.g); M.lettre = null; } if (M.gens.get(PNJ_BAR)) retirerAncien(PNJ_BAR); }
   if (M.lettre && !M.lettre.pris && !M.cine && !APO.zombieFin) { const l = M.lettre; l.halo.material.opacity = .3 + .2 * Math.sin(now / 300);
     if (Math.hypot(moi.g.position.x - l.x, moi.g.position.z - l.z) < .8) { l.pris = true; l.g.parent && l.g.parent.remove(l.g); lireLettre(l.nom, l.ami); } }
+  if (M.barAttente) { const A = M.barAttente; if (M.cine) return; if (A.p.av3 || now - A.t0 > 5000) { M.barAttente = null; A.p.g.visible = true; cineBar(moi, A.p, HEROS[M.barId].court); } else A.p.g.visible = false; return; }   /* (il n'apparaît qu'une fois son modèle prêt : pas de bar vide, pas d'apparition « par magie ») */
   if (M.barFait || M.cine || baseLieu(M.lieu) !== "fetes" || !M.lisaMorte || lisaVivante() || APO.zombieFin || M.evac || !M.L.repos) return;
+  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id), M.toitId].map(Number)), id = [23, 22, 24, 26, 21, 25].find(h => HEROS[h] && !pris.has(h)) || 23;
+  if (HEROS_3D[id] && M.barPret !== id) { if (M.barCharge !== id) { M.barCharge = id; chargerAvatar3D(HEROS_3D[id]).then(() => { if (M) M.barPret = id; }).catch(() => { if (M) M.barPret = id; }); } return; }   // (son modèle 3D se charge dès la salle des fêtes, avant qu'on descende)
   const mp = moi.g.position; if (!M.L.repos(mp.x, mp.z) || mp.y > -1) return;   // (en bas, dans le bar)
   // lui : à trois ou quatre pas devant nous, dans le bar
   const fw = new THREE.Vector3(Math.sin(moi.av3 ? moi.av3.sc.rotation.y : 0), 0, Math.cos(moi.av3 ? moi.av3.sc.rotation.y : 0)); let pos = null;
   for (let i = 0; i < 16 && !pos; i++) { const a = (i % 2 ? 1 : -1) * Math.floor((i + 1) / 2) * .4, r = 3.2 - (i % 3) * .5, d = fw.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), a), x = mp.x + d.x * r, z = mp.z + d.z * r;
     if (M.L.limites(x, z) && M.L.repos(x, z) && ligneLibre(M.L, mp.x, mp.z, x, z) && Math.abs(hNiv(M.L, x, z, mp.y) - mp.y) < .3) pos = [x, z]; }
   if (!pos) return; M.barFait = true; M.barL = M.L;
-  const pris = new Set([M.perso, ...(M.equipe || []).map(e => e.id), M.toitId].map(Number)), id = [23, 22, 24, 26, 21, 25].find(h => HEROS[h] && !pris.has(h)) || 23;
   M.barId = id; retirerAncien(PNJ_BAR); const p = ajouterAncien({ ...infoEquipier(id, PNJ_BAR, pos[0], pos[1], M.moiNum, 9), equipier: false }); if (!p) return; p.g.position.y = hNiv(M.L, pos[0], pos[1], mp.y); p.cineRE = true;
-  cineBar(moi, p, HEROS[id].court);
+  if (p.av3) cineBar(moi, p, HEROS[id].court); else { p.g.visible = false; M.barAttente = { p, t0: now }; }
 }
 function cineBar(moi, p, nom) {
   const cam = M.camera, mp = moi.g.position, pp = p.g.position, moiN = nomApo(), mort = M.lisaVictime || "", ami = M.toitNom || "Leon"; moi.cible = null; moi.chemin = [];
@@ -15423,7 +15440,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.choix) cho
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.lettre = null; M.pompePos = M.pompeL = null; M.lisaVictime = M.toitNom = M.toitId = M.barId = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.barAttente = null; M.lettre = null; M.pompePos = M.pompeL = null; M.lisaVictime = M.toitNom = M.toitId = M.barId = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
