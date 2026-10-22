@@ -11370,9 +11370,9 @@ function tirPompe(moi, z) { const now = performance.now(); if (now < (M.pompeT |
   for (const q of [...M.zomb.values()]) { if (q.mortT || q.cine || !q.g.visible) continue; const ex = q.x - mp.x, ez = q.z - mp.z, dq = Math.hypot(ex, ez) || 1;
     if (q !== z && (dq > Math.min(d + 2.5, 12) || (ex * dx + ez * dz) / dq < .9)) continue;
     impactZ(q, dx, dz); for (let i = 0; i < (q === z ? fort : 1); i++) { if (q.mortT) break; envoyerWS({ t: "z_tir", id: q.id, dx, dz }); if (estChefZ()) blesserZ(q, dx, dz); } } }
-// au sol, près du car de police : le fusil, un képi, du sang ; on passe dessus, on le ramasse
-function pompeAuSol(L, mp, now) { if (M.pompe) { if (L.pompeObj) L.pompeObj.visible = false; return; }
-  if (!L.pompeObj) { if (!L.limites(POMPE_POS[0], POMPE_POS[1])) { L.pompeObj = new THREE.Group(); return; } const g = new THREE.Group(), y = hNiv(L, POMPE_POS[0], POMPE_POS[1], 0); g.position.set(POMPE_POS[0], y, POMPE_POS[1]); M.scene.add(g); L.pompeObj = g;
+// au bar du sous-sol, à côté du survivant qui s'est tiré une balle : son fusil, un képi, du sang ; on passe dessus, on le ramasse
+function pompeAuSol(L, mp, now) { if (M.pompe) { if (L.pompeObj) L.pompeObj.visible = false; return; } const POMPE_POS = M.pompePos;
+  if (!L.pompeObj) { if (!L.limites(POMPE_POS[0], POMPE_POS[1])) { L.pompeObj = new THREE.Group(); return; } const g = new THREE.Group(), y = hNiv(L, POMPE_POS[0], POMPE_POS[1], mp.y); g.position.set(POMPE_POS[0], y, POMPE_POS[1]); M.scene.add(g); L.pompeObj = g;
     const f = fusilPompe(); f.rotation.set(0, 0, Math.PI / 2); f.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), .6); f.position.y = .05; g.add(f);   /* (couché sur le flanc, par terre) */
     const kepi = new THREE.Group(), bleu = new THREE.MeshStandardMaterial({ color: 0x1a2440, roughness: .7 }), visiere = new THREE.MeshStandardMaterial({ color: 0x0c0c0e, roughness: .3 }); { const c = new THREE.Mesh(new THREE.CylinderGeometry(.1, .11, .09, 16), bleu); c.position.y = .045; kepi.add(c); const v = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .01, 16, 1, false, 0, Math.PI), visiere); v.position.set(0, .01, .04); kepi.add(v); }
     kepi.position.set(-.6, 0, .4); kepi.rotation.set(.25, 1.1, .4); g.add(kepi);
@@ -11421,7 +11421,7 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
   return true; }
 // à chaque image, à Resident Evil : où en est l'histoire
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
-  if (b === "grande") pompeAuSol(L, mp, now);
+  if (M.pompePos && M.pompeL === L && !M.cine) pompeAuSol(L, mp, now);
   if (b === "grande") { gravatsPorche(M.scene, L); if (!M.porcheOuvert && L.gravatsSouffles) { L.gravatsSouffles = false; for (const o of L.gravatsPorche.children) { const [p, r, sc] = o.userData.repos; o.position.copy(p); o.rotation.copy(r); o.scale.copy(sc); } for (const f of L.feuxC4 || []) f.visible = false; } }   /* (une nouvelle partie : le tas est de nouveau là) */
   majBoutonsRE();
   /* dans la salle des fêtes : la lueur des feux sur les personnages (une lumière chaude qui nous suit et vacille), pour bien les voir dans la pénombre */
@@ -12173,34 +12173,47 @@ function cineBar(moi, p, nom) {
     [16.2, moi, `${nom}… ${ami} est mort. Je l'ai vu tomber du toit.`], [19.6, p, "Non… non, non, non… Ils sont tous morts. Tous."],
     [22.6, moi, "Écoute-moi. On va s'en sortir. L'hélicoptère va venir nous chercher…"], [26.0, p, `Je suis désolé, ${moiN}.`], [30.6, moi, `${nom} !!! NOOON !`]];
   const tTempe = 27.2, tTir = 29.2, tFin = 34.5; let dit = 0, fini = false, tire = false, clk = 0, prec = performance.now();
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); p.tempe = false;
+  const caches = [...M.gens.values()].filter(q => q !== moi && q !== p && q.g.visible); for (const q of caches) q.g.visible = false;   /* (les autres, le temps de la scène : personne ne passe devant la caméra) */
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); p.tempe = false; for (const q of caches) if (M.gens.get(q.info.numero) === q) q.g.visible = true;
     if (!tire) { tire = true; p.info.mortT = performance.now(); flaqueMort(p); }
     // la lettre, tombée de sa poche, près du corps
     const d = new THREE.Vector3(mp.x - pp.x, 0, mp.z - pp.z).normalize(), lx = pp.x + d.x * .7 + d.z * .45, lz = pp.z + d.z * .7 - d.x * .45, ok = M.L.limites(lx, lz), x = ok ? lx : pp.x + d.x * .8, z = ok ? lz : pp.z + d.z * .8;
     const g = new THREE.Group(), y = hNiv(M.L, x, z, pp.y); g.position.set(x, y + .015, z); M.scene.add(g);
     const papier = new THREE.Mesh(new THREE.PlaneGeometry(.26, .19), new THREE.MeshStandardMaterial({ map: texLettre(), roughness: .9 })); papier.rotation.set(-Math.PI / 2, 0, .4); g.add(papier);
     const halo = new THREE.Mesh(new THREE.CircleGeometry(.32, 24), new THREE.MeshBasicMaterial({ color: 0xfff2c0, transparent: true, opacity: .4, depthWrite: false })); halo.rotation.x = -Math.PI / 2; halo.position.y = -.005; g.add(halo);
-    M.lettre = { g, halo, x, z, nom, ami, pris: false }; M.ctx.surInfo && M.ctx.surInfo("✉️ Un papier est tombé de sa poche…"); };
+    M.lettre = { g, halo, x, z, nom, ami, pris: false };
+    { const fx = pp.x + d.x * .5 - d.z * .7, fz = pp.z + d.z * .5 + d.x * .7; M.pompePos = M.L.limites(fx, fz) ? [fx, fz] : [pp.x - d.z * .9, pp.z + d.x * .9]; M.pompeL = M.L; }   /* (son fusil à pompe, à côté de lui : bien en vue) */ M.ctx.surInfo && M.ctx.surInfo("✉️ Un papier est tombé de sa poche…"); };
   M.passerBtn = boutonPasser(fin);
-  M.cine = { t0: performance.now(), gel: true, nettoyer: () => { fini = true; p.tempe = false; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
+  M.cine = { t0: performance.now(), gel: true, nettoyer: () => { fini = true; p.tempe = false; for (const q of caches) q.g.visible = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     const d = new THREE.Vector3(pp.x - mp.x, 0, pp.z - mp.z), dl = d.length() || 1; d.divideScalar(dl); const sd = new THREE.Vector3(d.z, 0, -d.x);
     moi.cible = null; moi.chemin = []; if (moi.av3) moi.av3.sc.rotation.y = Math.atan2(d.x, d.z); if (!tire && p.av3) p.av3.sc.rotation.y = Math.atan2(-d.x, -d.z);
     if (p.av3 && !p.bandage) p.bandage = bandageBras(p.av3);   /* (le bandage, à l'avant-bras gauche : la morsure) */
     if (u > tTempe && !tire) p.tempe = true;   /* (il lève son arme, le canon sur la tempe) */
-    if (u > tTir && !tire) { tire = true; p.tempe = false; p.info.mortT = now; sonPos("sons/re-tir.mp3", 1); voile("background:#fff;opacity:.25", 90);
+    if (u > tTir && !tire) { tire = true; p.tempe = false; p.info.mortT = now;
+      if (p.av3) p.av3.sc.traverse(o => { if (o.isMesh && o.material && o.material.emissive) { o.material = o.material.clone(); o.material.emissive.set(0xffffff); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .3; } });   /* (le bar est sombre : son corps, à terre, reste visible) */ sonPos("sons/re-tir.mp3", 1); voile("background:#fff;opacity:.25", 90);
       for (let i = 0; i < 6; i++) setTimeout(() => M && jetSang(pp.x - sd.x * (.15 + i * .05), pp.y + 1.55 - i * .1, pp.z - sz(sd) * (.15 + i * .05)), i * 70);   /* (le sang qui gicle, de l'autre côté de la tête) */
       sangAuSol(pp.x - sd.x * .9, pp.z - sd.z * .9, pp.y, 1); setTimeout(() => M && flaqueMort(p), 1300); }
     // la caméra : de côté, nous deux ; sur lui quand il craque ; puis derrière nous
-    let c, v; const lib = q => M.L.limites(q.x, q.z) && ligneLibre(M.L, q.x, q.z, pp.x, pp.z);
-    if (u > tTempe - .4 && u < tTir + .7) { c = pp.clone().addScaledVector(sd, 1.3).addScaledVector(d, -1.1); if (!lib(c)) c = pp.clone().addScaledVector(d, -1.7).addScaledVector(sd, .35); c.y = pp.y + 1.55; v = pp.clone().setY(pp.y + 1.45); }   // (de près, du côté de l'arme : lui, le canon sur la tempe)
-    else if (u >= tTir + .7) { c = pp.clone().addScaledVector(sd, 1.2).addScaledVector(d, -1.6); if (!lib(c)) c = pp.clone().addScaledVector(sd, -1.2).addScaledVector(d, -1.6); c.y = pp.y + 1.3; v = pp.clone().addScaledVector(d, -.6).setY(pp.y + .2); }   // (il s'effondre : son corps, à terre, d'en haut)
-    else { c = mp.clone().addScaledVector(d, -.9).addScaledVector(sd, .5); c.y = mp.y + 1.75; v = pp.clone().setY(pp.y + 1.4); }   // (par-dessus notre épaule : lui, qui parle)
-    if (!M.L.limites(c.x, c.z)) { c = mp.clone().addScaledVector(d, -.6).addScaledVector(sd, -.5); c.y = mp.y + 1.75; }
+    // la caméra : un plan par moment (qui parle, l'arme sur la tempe, le corps) ; posée une fois par plan, à un endroit d'où rien ne cache la vue
+    const plan = u >= tTir + .7 ? "corps" : u > tTempe - .4 ? "tempe" : (L[Math.max(0, dit - 1)][1] === moi && dit > 0 ? "moi" : "lui");
+    if (plan !== M.cine.plan) { M.cine.plan = plan; const cp = vueLibre(plan === "moi" ? moi : p, plan === "moi" ? p : moi, plan, [moi, p]); M.cine.cam = cp; }
+    const vh = plan === "corps" ? p.g.position.clone().addScaledVector(d, -.6).setY(pp.y + .25) : plan === "moi" ? mp.clone().setY(mp.y + 1.45) : pp.clone().setY(pp.y + 1.45);
+    const c = M.cine.cam || mp.clone().setY(mp.y + 1.7), v = vh;
     cam.position.copy(c); cam.lookAt(v);
     while (dit < L.length && u > L[dit][0]) { const [, q, txt] = L[dit]; dire(q.info.numero, txt); dit++; }
     if (u > tFin) fin(); } };
 }
 const sz = v => v.z;
+/* une place pour la caméra, face à « qui » (tourné vers « vers ») : aucun mur, aucun meuble, aucun personnage entre elle et lui ; sous le plafond */
+function vueLibre(qui, vers, plan, gens) { const q = qui.g.position, o = vers.g.position, f = new THREE.Vector3(o.x - q.x, 0, o.z - q.z).normalize(), Y = new THREE.Vector3(0, 1, 0);
+  const cible = plan === "corps" ? q.clone().addScaledVector(f, .6) : q, hC = plan === "corps" ? 1.5 : plan === "tempe" ? 1.55 : 1.6;
+  const essais = plan === "tempe" ? [[-75, 1.4], [-60, 1.7], [-95, 1.5], [-40, 2], [75, 1.6], [40, 2], [0, 2.2]] : plan === "corps" ? [[-70, 2], [70, 2], [-40, 2.4], [40, 2.4], [-110, 2.2], [110, 2.2], [0, 2.6]] : [[30, 2.2], [-30, 2.2], [45, 2.4], [-45, 2.4], [15, 2.8], [-15, 2.8], [65, 2.2], [-65, 2.2], [0, 3]];
+  const dSeg = (px, pz, ax, az, bx, bz) => { const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1, t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / l2)); return Math.hypot(px - ax - vx * t, pz - az - vz * t); };
+  for (const [deg, r] of essais) { const dir = f.clone().applyAxisAngle(Y, deg * Math.PI / 180), x = cible.x + dir.x * r, z = cible.z + dir.z * r;
+    if (!M.L.limites(x, z) || !ligneLibre(M.L, x, z, cible.x, cible.z) || !largeLibre(M.L, x, z)) continue;
+    if (gens.some(g => g !== qui && !(plan === "corps" && g === qui) && (dSeg(g.g.position.x, g.g.position.z, x, z, cible.x, cible.z) < .5 || Math.hypot(g.g.position.x - x, g.g.position.z - z) < .6))) continue;   // (personne devant l'objectif)
+    return new THREE.Vector3(x, q.y + hC, z); }
+  return q.clone().addScaledVector(f, 1.8).setY(q.y + 1.7); }
 // un bandage blanc taché de sang, autour de l'avant-bras gauche
 function bandageBras(A) { const b = os3D(A, "LeftForeArm"), h = os3D(A, "LeftHand"); if (!b || !h) return null; A.sc.updateMatrixWorld(true);
   const pb = b.getWorldPosition(new THREE.Vector3()), ph = h.getWorldPosition(new THREE.Vector3()), lg = pb.distanceTo(ph), ws = b.getWorldScale(new THREE.Vector3()).x || 1;
@@ -14673,7 +14686,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) {
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.lettre = null; M.lisaVictime = M.toitNom = M.toitId = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.lettre = null; M.pompePos = M.pompeL = null; M.lisaVictime = M.toitNom = M.toitId = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
