@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.27";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.28";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12127,7 +12127,9 @@ function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.cam
     if (apparue) T.marche = !coup;   /* (elle avance, lentement, vers lui) */
     if (!T.vise || !T.vise.coup) T.vise = { x: qp.x, z: qp.z };
     // les héros : face à la salle ; elle apparue, tournés vers elle ; lui, il fonce sur elle
-    for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; if (q === eq && u > tCharge) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
+    if (coup && u > uCoup + .6 && !M.cine.recul) { M.cine.recul = true; const dl = new THREE.Vector3(mp.x - T.x, 0, mp.z - T.z).normalize();   /* (lui mort : on recule de quelques pas, sans la quitter des yeux) */
+      for (const r of [2.2, 1.6, 1.1]) { const x = mp.x + dl.x * r, z = mp.z + dl.z * r; if (libre(x, z) && ligneLibre(M.L, mp.x, mp.z, x, z)) { moi.cible = new THREE.Vector3(x, mp.y, z); moi.chemin = []; break; } } }
+    for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; if (q === eq && u > tCharge) continue; if (q === moi && M.cine.recul) { if (q.av3) q.av3.sc.rotation.y = Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z); continue; } q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
     if (eq && !coup && u > tCharge) { const dx = T.x - qp.x, dz = T.z - qp.z, d = Math.hypot(dx, dz) || 1;
       if (d > 1.5) { if (!eq.cible) eq.cible = new THREE.Vector3(T.x - dx / d * 1.2, qp.y, T.z - dz / d * 1.2); } else { eq.cible = null; eq.chemin = []; }
       if (tirs < 3 && u > tCharge + .3 + tirs * .55) { tirs++; eclairDuCanon(eq, dx / d, dz / d); sonTir(.8); T.flashT = now + 140; }   /* (il tire en avançant : elle ne s'arrête pas) */
