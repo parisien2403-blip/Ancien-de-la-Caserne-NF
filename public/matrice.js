@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.25";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.26";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11652,7 +11652,8 @@ function finPartieApo(titre, texte) {
   const d = voile("background:#000;opacity:0;transition:opacity 1.2s;display:grid;place-items:center;text-align:center;color:#fff;font:700 18px 'Lato',sans-serif");
   if (!d) return; d.innerHTML = `<div><div style="font:900 40px Impact,'Arial Black',sans-serif;letter-spacing:2px;color:#ffcf3a">${titre}</div><div style="margin-top:14px;line-height:1.5;padding:0 18px">${texte}</div><div style="margin-top:18px;font:900 26px Impact,'Arial Black',sans-serif;color:#ff5a4a">FIN DE LA PARTIE</div></div>`;
   requestAnimationFrame(() => { d.style.opacity = "1"; });
-  setTimeout(() => { d.remove(); if (!M || !estApo(M.lieu)) return; M.evac = false; M.fumi = null; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); }, 6500); }
+  setTimeout(() => { d.remove(); retourCaserneApo(); }, 6500); }
+function retourCaserneApo() { if (!M || !estApo(M.lieu)) return; M.evac = false; M.fumi = null; APO.zombieFin = 0; APO.vies = 4; APO.balles = 9; M.ctx.surApoMort && M.ctx.surApoMort(false); changerLieu("grande", [-6.4, -38.5], Math.PI / 2); }
 function surEvac(m) {
   if (!M || M.evac) return; M.fumi = null; if (M.fumiObj) { M.scene.remove(M.fumiObj); M.fumiObj = null; }
   if (M.lieu !== "z-grande" || !M.L.heliport) { M.evac = true; M.ctx.surInfo && M.ctx.surInfo("🚁 L'hélicoptère a décollé de la terrasse… sans toi !"); setTimeout(() => { if (M && estApo(M.lieu)) finPartieApo("TROP TARD…", "L'hélicoptère est parti sans toi. La caserne n'a pas tenu."); }, 6000); return; }
@@ -11679,13 +11680,19 @@ function cineEvac(m) {
   sonBruit(1.4, 700, .7);   // (le fumigène éclate)
   const brouillard = sc.fog ? [sc.fog.near, sc.fog.far] : null, cam = M.camera, vise = new THREE.Vector3(), t0 = performance.now();
   let fini = false, monte = false, prec = t0, boum = 0;
-  const fin = () => { if (fini || !M) return; fini = true; finCine(); try { helA.pause(); mus.pause(); } catch (e) {} sonsCourts.delete(helA); sonsCourts.delete(mus);
-    const moiVivant = moi && vivants.includes(moi);
-    finPartieApo(moiVivant ? "ÉVACUÉS !" : "LA CASERNE EST TOMBÉE", (moiVivant ? "Vous avez survécu à la fin du monde." : "Tu n'as pas survécu… mais d'autres sont partis.") + (noms.length ? `<br>À bord : ${noms.join(", ")}` : "")); };
+  // le générique : le titre RESIDENT EVIL revient sur la caserne en flammes, puis sur fond noir, et « FIN » apparaît dessous
+  const logo = document.createElement("img"); logo.src = "images/apo/re-logo.webp"; logo.alt = "Resident Evil";
+  logo.style.cssText = "position:absolute;left:50%;top:44%;width:min(80%,600px);transform:translate(-50%,-50%) scale(1.25);opacity:0;z-index:9;pointer-events:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.85));transition:opacity 2.2s,transform 7s ease-out";
+  const motFin = document.createElement("div"); motFin.textContent = "FIN";
+  motFin.style.cssText = "position:absolute;left:0;right:0;top:calc(44% + min(17vw,130px));text-align:center;z-index:9;pointer-events:none;opacity:0;transition:opacity 2.5s;font:900 clamp(40px,11vw,80px) 'Times New Roman',Georgia,serif;letter-spacing:.4em;padding-left:.4em;color:#e01010;text-shadow:0 0 18px rgba(255,0,0,.55),0 4px 0 #4a0000";
+  let noirF = null;
+  const fin = () => { if (fini || !M) return; fini = true; finCine(); try { helA.pause(); mus.pause(); } catch (e) {} sonsCourts.delete(helA); sonsCourts.delete(mus); void noms;
+    const n = noirF || voile("background:#000;opacity:1"); n && (n.style.opacity = "1"); logo.remove(); motFin.remove();
+    setTimeout(() => { n && n.remove(); retourCaserneApo(); }, 600); };
   M.passerBtn = boutonPasser(fin);
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
   cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
-  const c = M.cine = { t0, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
+  const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); }, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
     hel.userData.rotor.rotation.y += dt * 9.5; hel.userData.rotorQ.rotation.z += dt * 40; hel.userData.feu.visible = Math.floor(now / 450) % 2 === 0;
     // la fumée rouge : elle jaillit du cercle, puis le souffle des pales la chasse tout autour
     for (const f of fum) { const k = Math.max(0, u - f.d), r = .3 + k * f.v * (u > 6 ? 2.2 : .9), y = H.y + .3 + Math.min(4, k * f.v * .9);
@@ -11720,7 +11727,10 @@ function cineEvac(m) {
         for (const [sp, ph, h] of e.fl) { sp.material.map = texFlammes[(Math.floor(now / 70) + ph) % 8]; const s = Math.min(1, k / .8) * 16 * h; sp.scale.set(s * .8, s * 1.4, 1); }
         for (const [sp, d] of e.fu) { sp.position.set(Math.sin(d * 9) * 6, 6 + k * 9 + d * 8, Math.cos(d * 9) * 6); sp.scale.setScalar(10 + k * 9); sp.material.opacity = Math.min(.8, k) * .8; } }
       const sec = boum && u < 26 + P.length * .4 + 1 ? .6 : 0; cam.position.x += (Math.random() - .5) * sec; cam.position.y += (Math.random() - .5) * sec;
-      if (u > 31) fin(); } } };
+      if (u > 29.6 && !logo.isConnected) { M.ctx.conteneur.appendChild(logo); M.ctx.conteneur.appendChild(motFin); requestAnimationFrame(() => { logo.style.opacity = "1"; logo.style.transform = "translate(-50%,-50%) scale(1)"; }); }
+      if (u > 34.5 && !noirF) { noirF = voile("background:#000;opacity:0;transition:opacity 2s"); requestAnimationFrame(() => { if (noirF) noirF.style.opacity = "1"; }); }
+      if (u > 37 && motFin.style.opacity !== "1") motFin.style.opacity = "1";
+      if (u > 43) fin(); } } };
 }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
    L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
@@ -11737,7 +11747,7 @@ const ZTYPES = [
   // les héros revenus d'entre les morts (types 5 à 10, dans l'ordre des héros 21 à 26) : l'équipier tombé revient en zombie ; trois balles au moins, et il ne revient pas une deuxième fois
   ...[["rebecca", 21], ["leon", 22], ["barry", 23], ["jill", 24], ["wesker", 25], ["chris", 26]].map(([cle, h], i) => ({ revenant: h, tete: `images/re/z-${cle}-tete.png`, id: 48 + i, son: i % 2 ? "sons/zombie3.mp3" : "sons/zombie1.mp3", v: .95, hp: 3, zombifie: true, def: null })) ];
 const tyRevenant = h => 5 + (h - 21);
-const ZNOMBRE = { grande: [12, 0], rue: [10, 0], fetes: [7, 0], etage: [13, 0], mess: [12, 0] };   // [zombies, chiens] (plus de chiens, ni de Nemesis)
+const ZNOMBRE = { grande: [12, 0], rue: [10, 0], fetes: [0, 0], etage: [13, 0], mess: [12, 0] };   // [zombies, chiens] (plus de chiens, ni de Nemesis)
 let zTex = null, texEclair = null, actx = null;
 const texZ = i => (zTex = zTex || ZTYPES.map(t => { if (!t.img) return null; const x = new THREE.TextureLoader().load(t.img); x.colorSpace = THREE.SRGBColorSpace; return x; }))[i];
 // l'image du chien : celle d'origine, ou celle que l'administrateur a choisie (rechargée quand il la change)
@@ -11964,8 +11974,10 @@ function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.n
 let lisa3D = null; const LT = { HP: 25, H: 1.95, V: 1.15 };
 const lisaVivante = () => !!(M && M.lisa && !M.lisa.mortT && baseLieu(M.lieu) === "fetes");
 function lancerLisa() {
+  if (M && baseLieu(M.lieu) !== "fetes") M.fetesT = 0;
   const moi = moiApo(); if (!moi || M.cine || M.lisa || M.lisaMorte || M.separe || baseLieu(M.lieu) !== "fetes" || APO.zombieFin || M.evac) return;
-  const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (h < -.05 || mp.z > 10.8) return;   // (dans la salle même, pas sur les marches ni au bar)
+  const mp = moi.g.position, h = M.L.hauteur ? M.L.hauteur(mp.x, mp.z, moi) : 0; if (h < -.05 || mp.z > 10.8) { M.fetesT = 0; return; }   // (dans la salle même, pas sur les marches ni au bar)
+  { const now = performance.now(); if (!M.fetesT) M.fetesT = now; if (now - M.fetesT < 6000 && mp.z > 4.5) return; }   /* (pas tout de suite : on laisse les personnages avancer dans la salle — six secondes, ou jusqu'au milieu) */
   const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
   M.lisaMus = false; M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
   lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); return await new gltfMod.GLTFLoader().loadAsync("avatars/re-lisa.glb?v=1"); })().catch(e => { console.warn("lisa", e); return null; });
@@ -12071,11 +12083,11 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
   if (T.etat === "frappe") { const k = now - T.t0; if (!T.touche && k > 720) { T.touche = true; if (T.vise) T.vise.coup && T.vise.coup(); else if (d < 2.2 && !T.cine) subirMorsure(T.x, T.z, 1); } if (k > 1500) T.etat = T.cine ? "attend" : "chasse"; }
   else if (T.etat === "recule") { if (now > T.reculT) T.etat = "chasse"; }
   else if (T.etat === "chasse" && !T.cine && !APO.zombieFin) {
-    if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; sonPos("sons/zombie3.mp3", .7); }
+    if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; criLisa(.7); }
     else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
   else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
   jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;
-  { const bouge = n === "walk" || (T.cine && T.approche && !T.g.visible), vol = bouge ? (T.g.visible ? .07 : .045) : 0; racleChaine(vol);   /* (ses chaînes : on les entend traîner, même avant de la voir) */
+  { const bouge = n === "walk" && !T.cine, vol = bouge ? .07 : 0;   /* (pendant la scène : le vrai son des chaînes, fourni à part) */ racleChaine(vol);   /* (ses chaînes : on les entend traîner, même avant de la voir) */
     if (bouge && now > (T.clinkT || 0)) { T.clinkT = now + 150 + Math.random() * 280; cliquetisChaine(T.g.visible ? .22 : .14); }
     if (!T.cine && !APO.zombieFin && now > (T.grognT || 0)) { if (T.grognT) grognementLisa(1.2 + Math.random() * .8, .4); T.grognT = now + 6000 + Math.random() * 6000; } }   /* (pendant le combat, elle grogne de temps en temps) */   // (son pas lourd, traînant : les chaînes aux chevilles)
   T.mix.update(dt); T.sc.updateMatrixWorld(true);
@@ -12091,50 +12103,49 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
     for (const nb of ["RightArm", "RightForeArm"]) { const b = os3D(A, nb); if (b) T.tw.push([b, b.quaternion.clone()]); }
     viser3D(A, "RightArm", "RightForeArm", dir.normalize()); viser3D(A, "RightForeArm", "RightHand", dir); } }
 function toucherLisa(T) { if (!T.g || T.mortT || T.cine) return; const now = performance.now(); T.flashT = now + 160; sangAuSol(T.x, T.z, 0, 1.1); T.hp--;
-  if (T.hp > 0 && T.hp % 5 === 0 && T.etat !== "frappe") { T.etat = "recule"; T.reculT = now + 600; sonPos("sons/zombie3.mp3", 1); }   // (elle encaisse, se cabre, hurle)
-  if (T.hp <= 0) { T.mortT = now; M.lisaMorte = true; sonPos("sons/zombie3.mp3", 1); } }
-/* la scène d'entrée : la salle vide, on parle ; une plainte (« Ma… man… ») ; elle est derrière lui */
-function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.camera, t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0, coup = false, tete = null, uCoup = 0;
+  if (T.hp > 0 && T.hp % 5 === 0 && T.etat !== "frappe") { T.etat = "recule"; T.reculT = now + 600; criLisa(1); }   // (elle encaisse, se cabre, hurle)
+  if (T.hp <= 0) { T.mortT = now; M.lisaMorte = true; criLisa(1); } }
+/* la scène : on a fait quelques pas dans la salle vide ; « Tu entends ça ? » — ses chaînes ; elle avance, en gros plan ; l'équipier : « Laisse-le-moi ! », il fonce, elle lui arrache la tête */
+function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.camera, t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0, coup = false, tete = null, uCoup = 0, tirs = 0;
   const k = (M.equipe || []).findIndex((e, i) => !e.mort && M.gens.get(EQUIPIER(i))), eq = k >= 0 ? M.gens.get(EQUIPIER(k)) : null, libre = (x, z) => M.L.limites(x, z);
   const mp = moi.g.position; moi.cible = null; moi.chemin = [];
   // vers le milieu de la salle
   let f = new THREE.Vector3(-mp.x * .3, 0, 5 - mp.z); if (f.length() < 1.5) f.set(0, 0, -1); f.normalize(); const cote = new THREE.Vector3(f.z, 0, -f.x);
   if (eq) { eq.lisaKO = true; eq.cible = null; eq.chemin = []; for (const s of [1, -1, 2, -2]) { const x = mp.x + cote.x * 1.15 * Math.sign(s) * (Math.abs(s) > 1 ? .7 : 1) + f.x * (Math.abs(s) > 1 ? .8 : 0), z = mp.z + cote.z * 1.15 * Math.sign(s) * (Math.abs(s) > 1 ? .7 : 1) + f.z * (Math.abs(s) > 1 ? .8 : 0); if (libre(x, z)) { eq.g.position.x = x; eq.g.position.z = z; break; } } }
-  // elle : derrière lui (sinon à côté, sinon devant, au fond de la salle)
-  const ep = (eq || moi).g.position; let lp = null; for (const [a, r] of [[0, 1.35], [.5, 1.4], [-.5, 1.4], [1.1, 1.4], [-1.1, 1.4], [Math.PI, eq ? 1.6 : 5]]) { const dir = f.clone().multiplyScalar(-1).applyAxisAngle(new THREE.Vector3(0, 1, 0), a), x = ep.x + dir.x * r, z = ep.z + dir.z * r; if (libre(x, z) && Math.hypot(x - mp.x, z - mp.z) > 1) { lp = [x, z]; break; } }
-  if (!lp) lp = [ep.x + f.x * 4, ep.z + f.z * 4]; T.x = lp[0]; T.z = lp[1]; T.ry = Math.atan2(ep.x - T.x, ep.z - T.z); T.g.visible = false;
-  const nomEq = eq ? ((HEROS[M.equipe[k].id] && HEROS[M.equipe[k].id].court) || eq.info.nom) : "", lisaDit = t => bulle(`<b style="color:#b5573c">Lisa Trevor</b> : ${t}`, 3600);
-  const L = eq ? [[.8, M.moiNum, "La salle des fêtes… Personne. Pas un bruit."], [4.2, eq.info.numero, "Reste sur tes gardes. Regarde par terre : on a traîné des chaînes jusqu'ici…"],
-      [8.0, M.moiNum, "Chut… Tu entends ? On dirait… une femme qui pleure."], [11.0, 0, "Ma… man… Ma… man…"], [13.2, eq.info.numero, "Qu'est-ce que… ?!"],
-      [17.4, M.moiNum, `${nomEq} !!! NOOON !`], [19.8, M.moiNum, "Espèce de monstre… Tu vas me le payer !"]]
-    : [[.8, M.moiNum, "La salle des fêtes… Personne. Pas un bruit."], [4.2, M.moiNum, "Chut… On dirait… une femme qui pleure."], [7.2, 0, "Ma… man… Ma… man…"], [9.6, M.moiNum, "Qu'est-ce que c'est que ça… ?! Recule, saleté !"]];
+  // elle : devant nous, au fond de la salle ; elle avance vers nous
+  const ep = (eq || moi).g.position; let lp = null; for (const [a, r] of [[0, 6.5], [.35, 6], [-.35, 6], [0, 5], [.6, 4.5], [-.6, 4.5], [0, 3.6]]) { const dir = f.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), a), x = mp.x + dir.x * r, z = mp.z + dir.z * r; if (libre(x, z) && ligneLibre(M.L, mp.x, mp.z, x, z)) { lp = [x, z]; break; } }
+  if (!lp) lp = [mp.x + f.x * 4, mp.z + f.z * 4]; T.x = lp[0]; T.z = lp[1]; T.ry = Math.atan2(ep.x - T.x, ep.z - T.z); T.g.visible = false;
+  const L = eq ? [[1.0, M.moiNum, "Tu entends ça ?"], [5.0, eq.info.numero, "Laisse-le-moi !"]] : [[1.0, M.moiNum, "Tu entends ça ?"], [5.0, M.moiNum, "Qu'est-ce que c'est que ça… ?! Recule, saleté !"]];
   const fin = () => { if (fini || !M) return; fini = true; finCine(); placerCamera(true); T.cine = false; T.vise = null; T.marche = false; T.g.visible = true; T.etat = T.etat === "frappe" ? "frappe" : "chasse";
-    if (eq && !coup) { coup = true; tete = decapiter(eq, k, aPieds()); } if (tete) tete.fin(); };
+    if (eq && !coup) { coup = true; tete = decapiter(eq, k, aPieds()); criLisa(1); } if (tete) tete.fin(); };
   M.passerBtn = boutonPasser(fin);
-  const aPieds = () => { const d = new THREE.Vector3(ep.x - mp.x, 0, ep.z - mp.z).normalize(); return mp.clone().addScaledVector(d, .55).addScaledVector(new THREE.Vector3(d.z, 0, -d.x), .25); };   /* (là où la tête vient rouler : à nos pieds) */
-  const tApp = eq ? 10.6 : 6.6, tFrappe = 13.9, tFin = eq ? 22.8 : 12.6;
+  const aPieds = () => { const q = eq ? eq.g.position : ep, d = new THREE.Vector3(q.x - mp.x, 0, q.z - mp.z).normalize(); return mp.clone().addScaledVector(d, .55).addScaledVector(new THREE.Vector3(d.z, 0, -d.x), .25); };   /* (là où la tête vient rouler : à nos pieds) */
+  const tApp = 2.6, tCharge = 5.4;
+  sonPos("sons/re-chaines.mp3", .9);   /* (le bruit de ses chaînes, quelque part dans la salle) */
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
-    const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp; T.g.visible = apparue;
-    if (u > tApp - 3.4 && !T.approche) T.approche = true;   /* (on entend ses chaînes traîner, quelque part dans la salle…) */
-    if (u > tApp - 1.3 && !T.grogne1) { T.grogne1 = true; grognementLisa(1.4, .45); }   /* (un grognement, juste avant) */
-    if (apparue && !T.grogne2) { T.grogne2 = true; M.lisaMus = true; grognementLisa(2.4, .85); sonBruit(.3, 300, .5); }   /* (elle est là) */
-    // les héros : face à la salle ; elle apparue, tournés vers elle
-    for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue && (q === moi || u > 13.1) ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
-    if (eq && u > tFrappe && T.etat !== "frappe" && !coup) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: ep.x, z: ep.z, coup: () => { coup = true; uCoup = M.cine ? M.cine.u : 0; tete = decapiter(eq, k, aPieds()); } }; sonPos("sons/zombie3.mp3", .9); }
+    const tp = new THREE.Vector3(T.x, 0, T.z), apparue = u > tApp, qp = eq ? eq.g.position : mp; T.g.visible = apparue;
+    if (apparue) T.marche = !coup;   /* (elle avance, lentement, vers lui) */
+    if (!T.vise || !T.vise.coup) T.vise = { x: qp.x, z: qp.z };
+    // les héros : face à la salle ; elle apparue, tournés vers elle ; lui, il fonce sur elle
+    for (const q of [moi, eq]) { if (!q || q.info.mortT) continue; if (q === eq && u > tCharge) continue; q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = apparue ? Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z) : Math.atan2(f.x, f.z); }
+    if (eq && !coup && u > tCharge) { const dx = T.x - qp.x, dz = T.z - qp.z, d = Math.hypot(dx, dz) || 1;
+      if (d > 1.5) { if (!eq.cible) eq.cible = new THREE.Vector3(T.x - dx / d * 1.2, qp.y, T.z - dz / d * 1.2); } else { eq.cible = null; eq.chemin = []; }
+      if (tirs < 3 && u > tCharge + .3 + tirs * .55) { tirs++; eclairDuCanon(eq, dx / d, dz / d); sonTir(.8); T.flashT = now + 140; }   /* (il tire en avançant : elle ne s'arrête pas) */
+      if (T.etat !== "frappe" && (d < 1.7 || u > tCharge + 3.2)) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.vise = { x: qp.x, z: qp.z, coup: () => { coup = true; uCoup = M.cine ? M.cine.u : 0; eq.cible = null; tete = decapiter(eq, k, aPieds()); criLisa(1); } }; } }
     if (tete) tete.maj(Math.min(.05, Math.max(0, u - (M.cine.uPrec ?? u)))); M.cine.uPrec = u;
-    if (!eq && u > tApp + 1) { T.marche = true; }
-    if (u > (eq ? 16.6 : 99)) T.vise = null;   // (puis elle se tourne vers nous)
-    let c, v; const ec = ep.clone();
-    if (u < 7.6) { const mid = mp.clone().lerp(ec, .5); c = mid.clone().addScaledVector(f, 3.4).addScaledVector(cote, .6); if (!libre(c.x, c.z)) c = mid.clone().addScaledVector(f, -3).addScaledVector(cote, .6); c.y = 1.65; v = mid.clone().setY(1.25); }   // (de face : nous deux, qui entrons)
-    else if (u < tApp || !eq) { c = ec.clone().addScaledVector(f, 2.2).addScaledVector(cote, -.9); c.y = 1.6; v = ec.clone().addScaledVector(f, -.6).setY(1.45);   // (de près sur lui ; elle surgit derrière son épaule)
-      if (!eq && apparue) { c = mp.clone().addScaledVector(f, -1.2).addScaledVector(cote, .7); c.y = 1.75; v = tp.clone().setY(1.3); } }
-    else if (tete && u > uCoup + .25 && u < uCoup + 3.4) { const tq = tete.pos, d0 = new THREE.Vector3(mp.x - ep.x, 0, mp.z - ep.z).normalize(), sd = new THREE.Vector3(d0.z, 0, -d0.x); c = mp.clone().addScaledVector(d0, .9).addScaledVector(sd, 1.1); c.y = .55; v = tq.clone(); v.y = Math.max(.1, tq.y);   /* (au ras du sol : la tête qui roule jusqu'à nos pieds) */
+    if (coup && u > uCoup + 1.6) T.vise = null;   // (puis elle se tourne vers nous)
+    let c, v;
+    if (u < tApp) { const mid = mp.clone().lerp(qp, .5); c = mid.clone().addScaledVector(f, 3.4).addScaledVector(cote, .6); if (!libre(c.x, c.z)) c = mid.clone().addScaledVector(f, -3).addScaledVector(cote, .6); c.y = 1.65; v = mid.clone().setY(1.25); }   // (de face : nous deux, qui tendons l'oreille)
+    else if (u < tCharge) { const dq = new THREE.Vector3(qp.x - T.x, 0, qp.z - T.z).normalize(), sd = new THREE.Vector3(dq.z, 0, -dq.x); c = tp.clone().addScaledVector(dq, 1.8).addScaledVector(sd, .45); c.y = 1.15; v = tp.clone().setY(1.5); }   // (en gros plan : elle, qui avance)
+    else if (tete && u > uCoup + .25 && u < uCoup + 3.4) { const tq = tete.pos, d0 = new THREE.Vector3(mp.x - qp.x, 0, mp.z - qp.z).normalize(), sd = new THREE.Vector3(d0.z, 0, -d0.x); c = mp.clone().addScaledVector(d0, .9).addScaledVector(sd, 1.1); c.y = .55; v = tq.clone(); v.y = Math.max(.1, tq.y);   /* (au ras du sol : la tête qui roule jusqu'à nos pieds) */
       if (!libre(c.x, c.z)) { c = mp.clone().addScaledVector(sd, -1.1).addScaledVector(d0, .9); c.y = .55; } }
-    else if (u < 15.6) { const m2 = ec.clone().lerp(tp, .5), s = libre(m2.x + cote.x * 2.8, m2.z + cote.z * 2.8) ? 1 : -1; c = m2.clone().addScaledVector(cote, 2.9 * s); c.y = 1.45; v = m2.clone().setY(1.15); }   // (de côté : la frappe, il s'effondre)
+    else if (eq && !(coup && u > uCoup + 3.4)) { const m2 = qp.clone().lerp(tp, .5), s = libre(m2.x + cote.x * 2.8, m2.z + cote.z * 2.8) ? 1 : -1; c = m2.clone().addScaledVector(cote, 2.9 * s); c.y = 1.45; v = m2.clone().setY(1.15); }   // (de côté : il fonce sur elle, elle frappe)
     else { const dl = tp.clone().sub(mp).setY(0).normalize(); c = mp.clone().addScaledVector(dl, -1.6).addScaledVector(new THREE.Vector3(dl.z, 0, -dl.x), .7); c.y = 1.8; v = tp.clone().setY(1.2); }   // (derrière nous : elle, et lui au sol)
     cam.position.copy(c); cam.lookAt(v);
-    while (dit < L.length && u > L[dit][0]) { const [, n, txt] = L[dit]; if (n) dire(n, txt); else { lisaDit(txt); sonPos("sons/zombie3.mp3", .5); } dit++; }
-    if (u > tFin) fin(); } }; }
+    while (dit < L.length && u > L[dit][0]) { const [, n, txt] = L[dit]; dire(n, txt); dit++; }
+    if (eq ? coup && u > uCoup + 4.8 : u > 8) fin(); } }; }
+// le cri de Lisa (le son, fourni à part : sons/re-lisa-cri.mp3)
+const criLisa = (vol = 1) => sonPos("sons/re-lisa-cri.mp3", vol);
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
@@ -12246,8 +12257,16 @@ function subirMorsure(zx, zz, deg = 1) {
   // la troisième : on tombe au sol, une flaque de sang s'étend, « YOU DIED » apparaît doucement ; quinze secondes plus tard, retour à la caserne
   if (APO.vies <= 0) { APO.vies = 0; APO.zombieFin = performance.now() + 15000; moi.info.mortT = performance.now(); moi.info.danse = false;
     flaqueMort(moi); envoyerWS({ t: "z_zombi", on: true }); M.ctx.surApoMort && M.ctx.surApoMort(true); }
+  else sprayTouche(moi, zx, zz);
   majHudApo();
 }
+// touché par un monstre : un spray de soin apparaît, à quelques pas (deux au plus à la fois ; on le ramasse en passant dessus, il ne revient pas)
+function sprayTouche(moi, zx, zz) { if (!M.objets || M.objets.filter(o => o.touche && !o.cache).length >= 2) return; const p = moi.g.position, a0 = Math.atan2(p.x - zx, p.z - zz);
+  for (let i = 0; i < 24; i++) { const a = a0 + (i % 2 ? 1 : -1) * Math.floor((i + 1) / 2) * .5, r = 2.2 + (i % 3) * .6, x = p.x + Math.sin(a) * r, z = p.z + Math.cos(a) * r;
+    if (!M.L.limites(x, z) || !ligneLibre(M.L, p.x, p.z, x, z) || (M.L.feuxZ || []).some(([fx, fz, rf]) => Math.hypot(x - fx, z - fz) < rf + .6)) continue;
+    const y = M.L.hauteur ? hNiv(M.L, x, z, p.y) : p.y; if (Math.abs(y - p.y) > .4) continue;
+    const sp = spraySoin(); sp.position.set(x, y, z); M.scene.add(sp); M.objets.push({ id: "touche" + (M.sprayN = (M.sprayN || 0) + 1), type: "plante", x, z, y, n: etageDe(moi), sp, cache: 0, touche: true });
+    M.ctx.surInfo && M.ctx.surInfo("💉 Un spray de soin est apparu, tout près !"); return; } }
 const estChefZ = () => M.chefZ === M.moiNum || (M.chefZ == null && ![...M.gens.values()].some(p => !p.moi && p.info.numero > 0));
 // la flaque de sang qui s'étend sous un joueur tombé
 function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.position.y;
@@ -12462,6 +12481,7 @@ function pointLibreZ(seed, loin) {
   return null;
 }
 function apparaitreZ(chien) {   // (true : un chien ; false : un zombie ; un nombre : ce type-là)
+  if (baseLieu(M.lieu) === "fetes") return;   /* (la salle des fêtes : pas de zombie — seulement Lisa) */
   const pt = pointLibreZ(0, M.calmeT && performance.now() < M.calmeT ? 30 : 16);   /* (au début, ils apparaissent loin) */ if (!pt) { M.zY = null; return; }
   M.zSeq = (M.zSeq || 0) + 1;
   creerZ({ id: Math.floor(Math.random() * 1e9), ty: typeof chien === "number" ? chien : chien ? 4 : Math.floor(Math.random() * 3), x: pt[0], z: pt[1], n: pt[2], y: M.L.hauteur ? hNiv(M.L, pt[0], pt[1], M.zY ?? 0) : 0 }); M.zY = null;
@@ -12547,7 +12567,8 @@ function prendreObjet(o) {
   else { const g = Math.min(2, 4 - APO.vies); APO.vies += g; ramasser(o); M.ctx.surInfo && M.ctx.surInfo(g > 1 ? "💉 Spray de soin : deux vies de plus !" : "💉 Spray de soin : une vie de plus !"); }
   majHudApo();
 }
-function ramasser(o) { o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
+function ramasser(o) { if (o.touche) { M.scene.remove(o.sp); M.objets = M.objets.filter(q => q !== o); return; }   // (le spray apparu quand on a été touché : il ne revient pas)
+  o.cache = performance.now() + 45000; o.sp.visible = false; envoyerWS({ t: "z_ramasse", id: o.id }); }
 // le compteur de balles et les vies, à l'écran
 function majHudApo() {
   const e = M && M.L && M.L.sh ? { sh: true, vies: M.shVies ?? SH_VIES, max: SH_VIES, arme: !!M.shArme } : M && M.L && M.L.apo && !M.L.sh ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0,
@@ -16526,4 +16547,5 @@ function connecter() {
 export const _musBttf = () => musBttf && [musBttf.src.split("/").pop(), musBttf.loop, +musBttf.volume.toFixed(2)];
 export const _allerVers = (x, z) => allerVers(x, z, true);   // (pour les essais)
 export const _itineraire = (x0, z0, x1, z1) => M && itineraire(M.L, x0, z0, x1, z1);   // (pour les essais)
+export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMorsure(x, z);   // (pour les essais)
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
