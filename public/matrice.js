@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.68";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.69";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2245,11 +2245,6 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   { const zf0 = C3.z1 - C3.PP - C3.NT * C3.PT, f = A.ajoute(new THREE.PlaneGeometry(zT - zf0, drop + .02), A.mat({ color: 0x3a3a3a, roughness: .95 }), DB + .005, -drop / 2, (zT + zf0) / 2, false); f.rotation.y = Math.PI / 2; }   // (le long de la fosse seulement : ailleurs, le sol suit la pente jusqu'à la rue)
   // à gauche, plus loin : le flanc du bâtiment du fond, avec ses fenêtres
   { const zf = C3.zFond, zb = zA + RU.cour, lg = zf - zb, f = A.ajoute(new THREE.PlaneGeometry(lg, 24 + drop), A.mat({ map: tex(toileBriqueBandes(lg, 24 + drop, { sansFenetres: true })), roughness: .9 }), DB + .02, (24 - drop) / 2, (zf + zb) / 2, false); f.rotation.y = Math.PI / 2;
-    for (const zw of [-108.3, -113.7]) { const cadre = A.mat({ color: 0xefeae0, roughness: .7 });   // de part et d'autre de la lampe, en hauteur : deux petites fenêtres couchées (verre dépoli)
-      A.ajoute(new THREE.BoxGeometry(.08, .62, 1.42), cadre, DB + .04, 3.75, zw, false);
-      const v = A.ajoute(new THREE.PlaneGeometry(1.22, .44), A.mat({ color: 0xc9d3d8, roughness: .3, metalness: .1, emissive: 0x2a3034 }), DB + .085, 3.75, zw, false); v.rotation.y = Math.PI / 2;
-      A.ajoute(new THREE.BoxGeometry(.04, .44, .03), cadre, DB + .09, 3.75, zw, false);
-      A.ajoute(new THREE.BoxGeometry(.12, .05, 1.54), A.mat({ color: 0xe2ddd2 }), DB + .07, 3.42, zw, false); }
     // (à gauche de la place, plus d'immeuble : les pavés continuent derrière le bâtiment du fond, puis tournent à gauche vers la ruelle)
     { const lf = zf - zb, fl = A.ajoute(new THREE.PlaneGeometry(lf, 24 + drop), A.mat({ map: tex(toileBriqueBandes(lf, 24 + drop)), roughness: .9 }), -DB - .02, (24 - drop) / 2, (zf + zb) / 2, false); fl.rotation.y = -Math.PI / 2; allumerPlan(L, scene, fl); }   // (le flanc gauche du bâtiment du fond)
     const fb = A.ajoute(new THREE.PlaneGeometry(2 * DB, 24 + drop), A.mat({ map: tex(toileBriqueBandes(2 * DB, 24 + drop)), roughness: .9 }), 0, (24 - drop) / 2, zA + RU.cour - .02, false); fb.rotation.y = Math.PI; allumerPlan(L, scene, fb); }   // (au fond de la place, l'arrière du bâtiment du fond)
@@ -12572,13 +12567,13 @@ function surFumi(m) {
 /* l'hélicoptère et l'héliport en vraie 3D (des modèles) : chargés une fois ; en attendant, l'ancien dessin reste visible */
 /* le décor de la caserne : des blocs de climatisation (sur quelques balcons de la cour d'honneur, sous quelques fenêtres des façades),
    et de grands conteneurs à ordures contre le local poubelle, dans la ruelle */
-function decorCaserne(scene, L, base) { if (base !== "grande" && base !== "rue") return;
+function decorCaserne(scene, L, base, sh) { if (base !== "grande" && base !== "rue") return;
   const poser = (f, x, y, z, ry, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
     chargerGLB(f).then(sc => { if (!sc) return; const m = sc.clone(); m.scale.setScalar(k); m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(m); }); return g; };
   const clim = (x, y, z, ry) => poser("avatars/deco-clim.glb?v=1", x, y, z, ry);
-  if (base === "grande") {   // (sur les balcons du bâtiment du fond, contre le mur, à côté de la porte-fenêtre)
+  if (sh && base === "grande") {   // (Silent Hill seulement : sur les balcons du bâtiment du fond, contre le mur, à côté de la porte-fenêtre)
     for (const [r, c, d] of [[0, 3, 1], [1, 9, -1], [2, 1, 1], [2, 11, -1], [3, 5, 1], [4, 13, -1], [5, 7, 1], [6, 3, -1]]) clim(-22 + (c + .5) * 44 / 14 + d * .66, 27 - (34 + r * 112 + 80) / 40 + .08, -17.7, 0); }
-  { let k = 0, n = 0;   // (sous quelques fenêtres des étages, sur leurs équerres)
+  if (sh) { let k = 0, n = 0;   // (Silent Hill seulement : sous quelques fenêtres des étages, sur leurs équerres)
     for (const [fens, cadres] of L.facadesFen || []) for (const c of cadres) for (const [fu, fv, fw, fh] of fens || []) { k++;
       const yb = c.o[1] + (.5 - fv - fh) * c.H; if (yb - (c.o[1] - c.H / 2) < 3.5 || fw * c.W < .7 || hasard(k * 5.3 + 2) > .1 || n >= 9) continue;
       const a = (fu + fw / 2 - .5) * c.W, x = c.o[0] + c.ux[0] * a + c.n[0] * .3, z = c.o[2] + c.ux[2] * a + c.n[2] * .3, ry = Math.atan2(c.n[0], c.n[2]), y = yb - .85;
@@ -14381,7 +14376,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id));
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^sh-/.test(id));
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
