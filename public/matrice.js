@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.65";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.66";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11922,6 +11922,30 @@ function heliportApo(scene, L) {
   const geoF = new THREE.CylinderGeometry(.6, 1.4, 40, 24, 1, true); geoF.translate(0, 20, 0);
   const faisceau = new THREE.Mesh(geoF, rouge(0xff2020, .1)); cercle.add(faisceau);
   L.heliport = { ...H, cercle, anneau, disque, faisceau };
+  // autour de la piste : seize feux de balisage encastrés, qui clignotent en tournant (une lueur qui fait le tour) ; aux quatre coins de la terrasse, un projecteur sur son mât,
+  // braqué vers la piste : son cône de lumière dans la pluie, la tache claire au sol (de fausses lumières : rien à recalculer, légères pour les petits téléphones)
+  { const halo = tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 31); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.35, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
+    const NF = 16, R0 = 4.25, feux = [], boitier = new THREE.MeshStandardMaterial({ color: 0x2a2a2c, roughness: .6, metalness: .5 }), verreF = c => new THREE.MeshBasicMaterial({ color: c, fog: false });
+    for (let i = 0; i < NF; i++) { const a = i / NF * Math.PI * 2, x = Math.cos(a) * R0, z = Math.sin(a) * R0, c = i % 2 ? 0xffd040 : 0x40ff70;   // (jaune et vert, en alternance)
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(.11, .13, .06, 10), boitier); b.position.set(x, .03, z); g.add(b);
+      const v = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), verreF(c)); v.position.set(x, .06, z); g.add(v);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); s.position.set(x, .2, z); s.scale.setScalar(.9); g.add(s); feux.push({ v, s, c: new THREE.Color(c) }); }
+    const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, mg = .7, coins = [[-C3.LT / 2 + mg, zt0 - mg], [C3.LT / 2 - mg, zt0 - mg], [-C3.LT / 2 + mg, zt1 + mg], [C3.LT / 2 - mg, zt1 + mg]];
+    const metal = new THREE.MeshStandardMaterial({ color: 0x3a3c40, roughness: .5, metalness: .7 }), cone = new THREE.MeshBasicMaterial({ color: 0xfff2d8, transparent: true, opacity: .08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const tache = new THREE.MeshBasicMaterial({ map: halo, color: 0xfff0d0, transparent: true, opacity: .32, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
+    for (const [cx, cz] of coins) { const lx = cx - H.x, lz = cz - H.z, hM = 4.2, p = new THREE.Group(); p.position.set(lx, 0, lz); g.add(p);
+      { const mat2 = new THREE.Mesh(new THREE.CylinderGeometry(.06, .09, hM, 8), metal); mat2.position.y = hM / 2; p.add(mat2); }
+      const base = new THREE.Mesh(new THREE.BoxGeometry(.4, .12, .4), metal); base.position.y = .06; p.add(base);
+      const vers = new THREE.Vector3(-lx, -hM, -lz).normalize(), tete = new THREE.Group(); tete.position.y = hM; tete.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), vers); p.add(tete);
+      const corps = new THREE.Mesh(new THREE.CylinderGeometry(.24, .2, .38, 14), metal); corps.rotation.x = Math.PI / 2; tete.add(corps);
+      const vitre = new THREE.Mesh(new THREE.CircleGeometry(.21, 16), new THREE.MeshBasicMaterial({ color: 0xfffbe8, fog: false })); vitre.position.z = .195; tete.add(vitre);
+      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xfff4d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); gl.position.z = .3; gl.scale.setScalar(1.6); tete.add(gl);
+      const dist = Math.hypot(lx, hM, lz) * .78, gc = new THREE.ConeGeometry(1.9, dist, 20, 1, true); gc.translate(0, -dist / 2, 0); gc.rotateX(-Math.PI / 2); const cm = new THREE.Mesh(gc, cone); cm.position.z = .2; tete.add(cm);   // (le cône de lumière)
+      const t2 = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 5.5), tache); t2.rotation.x = -Math.PI / 2; t2.position.set(lx * .25, .04, lz * .25); g.add(t2); }   // (la tache claire, au sol, entre le mât et la piste)
+    // le clignotement : une lueur qui tourne autour de la piste, et tous les feux qui pulsent doucement
+    feux[0].v.onBeforeRender = () => { const t = performance.now() / 1000, tete = (t * 8) % NF;
+      for (let i = 0; i < NF; i++) { const d = Math.min(Math.abs(i - tete), NF - Math.abs(i - tete)), k = Math.max(.15, 1 - d / 2.2) * (.85 + .15 * Math.sin(t * 6)), F = feux[i];
+        F.s.material.opacity = k; F.s.scale.setScalar(.6 + k * 1.3); F.v.material.color.copy(F.c).multiplyScalar(.35 + k * .65); } }; }
 }
 // des détritus au sol : journaux, feuilles, canettes, cartons (quatre dessins en tout : très léger)
 function detritusApo(scene, L, base, hSol, plus = 1) { if (PETIT) plus *= .5;   // (petit téléphone : deux fois moins de débris)
