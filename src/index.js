@@ -614,7 +614,7 @@ export class Compteur extends DurableObject {
     } else if (m.t === "slow_fin" && a.lieu) {
       this.finirSlow(ws, a);
     } else if (m.t === "danse" && a.lieu) {
-      a.danse = ["disco", "charleston", "madison", "thriller", "saut", ...(a.admin ? ["ymca", "hiphop", "samba", "soul", "gangnam", "salsa"] : [])].includes(m.on) ? m.on : m.on ? "balance" : false;   // (les danses de l'administrateur : à lui seul) ws.serializeAttachment(a);
+      a.danse = ["disco", "charleston", "madison", "thriller", "saut", ...(a.admin ? ["village", "hiphop", "samba", "soul", "gangnam", "salsa"] : [])].includes(m.on) ? m.on : m.on ? "balance" : false;   // (les danses de l'administrateur : à lui seul) ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "voix") {
       // le micro, allumé ou coupé : les autres du même monde le savent ; à celui qui l'allume, la liste de ceux qui l'ont déjà

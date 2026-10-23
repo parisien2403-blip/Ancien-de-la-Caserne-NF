@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.77";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.78";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12014,7 +12014,7 @@ function fumiApo(moi, now) {
   if (F.trouve && L.heliport && !APO.zombieFin) { const c = L.heliport, p = moi.g.position;
     const surCercle = Math.hypot(p.x - c.x, p.z - c.z) < 1.6 && Math.abs(p.y - c.y) < 1;
     if (surCercle && !M.tyran && !M.tyranMort) lancerTyran(c);   // (le fumigène posé : le Tyran arrive ; il faut l'abattre avant que l'hélicoptère se pose)
-    else if (M.tyranMort && !(M.tyran && M.tyran.g && M.tyran.g.parent) && (surCercle || Math.hypot(p.x - c.x, p.z - c.z) < 12) && now > (M.fumiEnvoiT || 0)) {   /* (le Tyran à terre, puis disparu : alors seulement l'hélicoptère descend) */ M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
+    else if (M.tyranMort && !(M.tyran && M.tyran.mortT && now - M.tyran.mortT < 5000) && (surCercle || Math.hypot(p.x - c.x, p.z - c.z) < 12) && now > (M.fumiEnvoiT || 0)) {   /* (le Tyran à terre depuis cinq secondes — son corps reste là : alors l'hélicoptère descend) */ M.fumiEnvoiT = now + 3000; envoyerWS({ t: "z_fumi_fin" }); } }
 }
 /* l'arrivée à l'apocalypse : la caserne vue du ciel, les zombies qui errent dans la cour ; le logo RESIDENT EVIL s'abat à l'écran,
    puis la vue plonge vers la déchetterie, où les joueurs viennent d'arriver */
@@ -12962,7 +12962,7 @@ function tailleZ(z) { const T = ZTYPES[z.ty], R = regZ(z.ty);
    Chacun voit les siens (ils ne sont pas partagés entre joueurs) */
 let licker3D = null;
 const LK = { N: 3, K: .105, HP: 5, VUE: 10, SAUT: 3.6 };   // (K : l'échelle du modèle ; VUE : à quelle distance il nous repère ; SAUT : d'où il bondit)
-const LK_A = { rampe: 1, saut: 4, attente: 6, mort: 14 };
+const LK_A = { rampe: 1, saut: 4, attente: 6, mort: 14, griffe: 20 };
 function chargerLicker() { if (!licker3D) licker3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     /* le Licker de Resident Evil 2 (le remake) : modelé accroupi, à quatre pattes ; pas d'animation fournie — ses mouvements sont calculés ici, à partir de cette posture */
     const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re-licker2.glb?v=1"); G.scene.updateMatrixWorld(true);
@@ -12987,16 +12987,22 @@ function creerLicker(G) { const m = placeMurLicker(); if (!m) return null; const
   const l = { licker: true, g, sc, mix, act, cur: -1, mur: m, etat: "mur", hp: LK.HP, mortT: 0, cine: false, mesh: hit, x: 0, z: 0, sautT: 0, os, repos, ph: Math.random() * 9 }; jouerLK(l, LK_A.rampe); return l; }
 /* ses mouvements, d'après sa posture accroupie : il rampe (pattes en diagonale, le dos qui ondule), il attend (il respire, la tête qui guette, la langue qui pointe),
    il bondit (pattes tendues, la langue dehors), il meurt (il s'affaisse, les membres écartés) */
-function bougerLK(l, now, dt) { const B = l.os; if (!B) return; for (const n in l.repos) B[n].quaternion.copy(l.repos[n]); l.g.updateMatrixWorld(true);
+/* à plat : les cuisses et les bras étalés de côté, les jambes et les avant-bras repliés à plat ; puis posé : son point le plus bas sur la surface (le sol, ou la façade quand il y est accroché) */
+function aplatirLK(l, T, k, lev = .06) { if (k <= 0) return; const P = { uaz: .6, uax: -.5, fax: 0, thz: .5, thx: 1.3, cax: 0, sp: .25 };
+  for (const [c, sg] of [["R", 1], ["L", -1]]) { T(c + "_UpperArm", "z", sg * P.uaz * k); T(c + "_UpperArm", "x", P.uax * k); T(c + "_Forearm", "x", P.fax * k); T(c + "_Thigh", "z", sg * P.thz * k); T(c + "_Thigh", "x", P.thx * k); T(c + "_Calf", "x", P.cax * k); }
+  T("Spine2", "x", P.sp * k); T("Head1", "x", .2 * k);
+  const B = l.os; l.sc.userData.y0 ??= l.sc.position.y; l.sc.position.y = l.sc.userData.y0; l.g.updateMatrixWorld(true); let bas = Infinity; const w = new THREE.Vector3();
+  for (const n in B) { if (!/^(Pelvis|Spine\d?|Head1|[LR]_(Thigh|Calf|Foot|Toe0|UpperArm|Forearm|Hand|Finger\d+))$/.test(n)) continue; B[n].getWorldPosition(w);   /* (pas l'os racine, sous ses pieds : il le soulevait d'un demi-mètre) */ l.g.worldToLocal(w); if (w.y < bas) bas = w.y; }   /* (dans le repère du Licker : « en bas », c'est le sol — ou le mur) */
+  if (isFinite(bas)) l.sc.position.y -= (bas - lev) * k; }
+function bougerLK(l, now, dt) { const B = l.os; if (!B) return; for (const n in l.repos) B[n].quaternion.copy(l.repos[n]); if (l.sc.userData.y0 != null) l.sc.position.y = l.sc.userData.y0; l.g.updateMatrixWorld(true);
   const mode = l.cur, t = (l.ph += dt), T = (n, a, v) => { const b = B[n]; if (!b || !v) return; tourne3D({ sc: l.g, os: B }, n, a, v); };
-  if (mode === LK_A.rampe) { const f = t * Math.PI * 2 * 1.8, s = Math.sin(f), c = Math.cos(f);
+  if (l.etat === "mur" || l.etat === "chute") aplatirLK(l, T, l.etat === "mur" ? 1 : Math.max(0, 1 - (now - l.t0) / 400), .02);   /* (sur la façade : collé au mur, à plat, les membres étalés) */
+  if (mode === LK_A.griffe) { const k = Math.min(1, (now - l.t0) / 650), e = k < .35 ? k / .35 : 1 - (k - .35) / .65; T("R_UpperArm", "x", -1.3 * e); T("R_UpperArm", "z", .5 * e); T("R_Forearm", "x", -.6 * e * (k < .35 ? 1 : -.5)); T("Spine4", "x", -.25 * e); T("Head1", "x", -.3 * e); }   /* (le coup de patte : la griffe se lève et s'abat) */
+  else if (mode === LK_A.rampe) { const f = t * Math.PI * 2 * 1.8, s = Math.sin(f), c = Math.cos(f);
     T("R_UpperArm", "x", .45 * s); T("L_UpperArm", "x", -.45 * s); T("R_Forearm", "x", -.35 * Math.max(0, c)); T("L_Forearm", "x", -.35 * Math.max(0, -c)); T("R_Thigh", "x", -.4 * s); T("L_Thigh", "x", .4 * s);
     T("R_Calf", "x", .3 * Math.max(0, -c)); T("L_Calf", "x", .3 * Math.max(0, c)); T("Spine2", "y", .1 * s); T("Spine4", "y", -.08 * s); T("Head1", "y", .15 * Math.sin(f * .5)); }
   else if (mode === LK_A.saut) { T("R_UpperArm", "x", -.9); T("L_UpperArm", "x", -.9); T("R_Thigh", "x", .7); T("L_Thigh", "x", .7); T("Head1", "x", -.25); }
-  else if (mode === LK_A.mort) { const f = Math.min(1, (now - (l.mortT || now)) / 700); T("R_UpperArm", "x", .35 * f); T("L_UpperArm", "x", .35 * f); T("R_Forearm", "x", .5 * f); T("L_Forearm", "x", .5 * f); T("R_Thigh", "x", -.25 * f); T("L_Thigh", "x", -.25 * f); T("R_Calf", "x", .4 * f); T("L_Calf", "x", .4 * f); T("Head1", "x", .45 * f); T("Head1", "z", .3 * f);
-    // (à plat sur le sol : on cherche son point le plus bas, et on le pose par terre — il ne flotte plus)
-    l.sc.userData.y0 ??= l.sc.position.y; l.sc.position.y = l.sc.userData.y0; l.g.updateMatrixWorld(true); let bas = Infinity; const w = new THREE.Vector3(); for (const n in B) { B[n].getWorldPosition(w); if (w.y < bas) bas = w.y; }
-    if (isFinite(bas)) l.sc.position.y -= (bas - l.g.position.y - .06) * f / (l.g.scale.y || 1); }
+  else if (mode === LK_A.mort) { const f = Math.min(1, (now - (l.mortT || now)) / 700); aplatirLK(l, T, f); T("Head1", "z", .3 * f); }   /* (abattu : il s'affale, à plat ventre, les membres étalés, posé sur le sol) */
   else { const f = t * Math.PI * 2 * .5; T("Spine2", "x", .05 * Math.sin(f)); T("Head1", "y", .25 * Math.sin(f * .7)); T("Head1", "x", .08 * Math.cos(f)); }
   const flic = mode === LK_A.saut ? .32 : mode === LK_A.mort ? .15 : .04 + .22 * Math.pow(Math.max(0, Math.sin(t * 1.7)), 12);   // (la langue : rentrée, elle pointe de temps en temps ; dehors quand il bondit)
   if (B.Tongue_base) B.Tongue_base.scale.setScalar(flic); l.g.updateMatrixWorld(true); }
@@ -13008,7 +13014,7 @@ function ombreLK(l, hSol) { if (!_qLK) { _qLK = new THREE.Quaternion(); _qLK2 = 
     _vLK.set(p.x - nx * (d - .04), p.y - .35, p.z - nz * (d - .04)); _qLK.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(nx, nz)); o.scale.set(1.9, 1.5, 1); }
   else { _vLK.set(p.x, (hSol ? hSol(p.x, p.z) : p.y) + .03, p.z); _qLK.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2); o.scale.set(1.6, 1.2, 1); }
   o.position.copy(l.g.worldToLocal(_vLK)); l.g.getWorldQuaternion(_qLK2); o.quaternion.copy(_qLK2.invert().multiply(_qLK));
-  o.material.opacity = l.mortT ? .62 * Math.max(0, 1 - (performance.now() - l.mortT - 1600) / 1200) : .62; }
+  o.material.opacity = .62; }
 function jouerLK(l, i, une = false) { if (l.os) { l.cur = i; return; } if (l.cur === i) return; const a = l.act[i]; if (!a) return; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (l.act[l.cur]) a.crossFadeFrom(l.act[l.cur], .2, false); l.cur = i; }
 function poseMurLK(l) { const { c, a, y } = l.mur, ux = new THREE.Vector3(c.ux[0], 0, c.ux[2]).normalize(), n = new THREE.Vector3(c.n[0], 0, c.n[2]).normalize();
   const p = new THREE.Vector3(c.o[0], 0, c.o[2]).addScaledVector(ux, a).addScaledVector(n, .12); p.y = y; l.g.position.copy(p);
@@ -13021,9 +13027,7 @@ function animerLickers(moi, now, dt) {
   const mp = moi.g.position, hSol = (x, z) => hNiv(M.L, x, z, mp.y);
   for (const l of [...M.lickers]) { if (l.os) bougerLK(l, now, dt); else l.mix.update(dt);
     if (l.mortT) { ombreLK(l, hSol); if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
-      const e = Math.min(1, Math.max(0, (now - l.mortT - 1600) / 1200));   // (abattu : il s'efface, comme les zombies — seule la flaque reste)
-      if (e > 0) l.sc.traverse(o => { if (o.isMesh) { o.material.transparent = true; o.material.depthWrite = false; o.material.opacity = 1 - e; } });
-      if (e >= 1) { M.scene.remove(l.g); M.lickers.splice(M.lickers.indexOf(l), 1); M.lickT = now + 30000; } continue; }
+      if (!l.compte) { l.compte = true; M.lickT = now + 30000; } continue; }   /* (abattu : son corps reste là, à plat sur le sol) */
     const rouge = now < (l.flashT || 0); if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : o.userData.emi || 0); }); }
     ombreLK(l, hSol);
     if (l.etat === "mur") { const c = l.mur.c; l.mur.a += l.mur.sens * dt * .7; if (Math.abs(l.mur.a) > (c.W - 3) / 2) { l.mur.sens *= -1; l.mur.a = Math.sign(l.mur.a) * (c.W - 3) / 2; }
@@ -13035,8 +13039,10 @@ function animerLickers(moi, now, dt) {
     const dx = mp.x - l.x, dz = mp.z - l.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
     if (l.etat === "saut") { const f = Math.min(1, (now - l.t0) / 600); l.x = l.sx + (l.tx - l.sx) * f; l.z = l.sz + (l.tz - l.sz) * f; l.g.position.set(l.x, (l.sy ?? hSol(l.x, l.z)) + Math.sin(f * Math.PI) * 1.1, l.z);
       if (f >= 1) { l.etat = "sol"; jouerLK(l, LK_A.rampe); if (Math.hypot(mp.x - l.x, mp.z - l.z) < 1.3) subirMorsure(l.x, l.z, 1); } continue; }
-    // au sol : il rampe vers nous ; assez près, il bondit
+    if (l.etat === "griffe") { l.g.rotation.set(0, cap, 0); const k = now - l.t0; if (!l.griffeTouche && k > 260) { l.griffeTouche = true; if (d < 1.8) subirMorsure(l.x, l.z, 1); sonBruit(.12, 900, .4); } if (k > 650) { l.etat = "sol"; jouerLK(l, LK_A.attente); } continue; }
+    // au sol : il rampe vers nous ; tout près, un coup de patte ; un peu plus loin, il bondit
     l.g.rotation.set(0, cap, 0); if (APO.zombieFin) { jouerLK(l, LK_A.attente); continue; }
+    if (d < 1.5 && now > (l.griffeT || 0)) { l.etat = "griffe"; l.t0 = now; l.griffeT = now + 1500; l.griffeTouche = false; jouerLK(l, LK_A.griffe); sonPos("sons/zombie1.mp3", .7); continue; }
     if (d < LK.SAUT && now > l.sautT && voitZ(l.g.position, { x: mp.x, z: mp.z, g: moi.g }) && M.L.limites(l.x + dx / d * (Math.min(d, LK.SAUT) - .4), l.z + dz / d * (Math.min(d, LK.SAUT) - .4))) { l.etat = "saut"; l.sy = l.g.position.y; l.t0 = now; l.sautT = now + 2600; l.sx = l.x; l.sz = l.z; const k = Math.min(d, LK.SAUT) - .4; l.tx = l.x + dx / d * k; l.tz = l.z + dz / d * k; jouerLK(l, LK_A.saut, true); sonPos("sons/zombie1.mp3", .9); continue; }
     const ly = l.g.position.y, hL = (x, z) => hNiv(M.L, x, z, ly);   // (il reste à son niveau : il ne traverse ni mur ni plafond)
     if (d > 1.2 && Math.abs(mp.y - ly) < 1.5) { const v = 2.4 * dt, nx = l.x + dx / d * v, nz = l.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hL(nx, nz) - ly) < .5) { l.x = nx; l.z = nz; } jouerLK(l, LK_A.rampe); } else jouerLK(l, LK_A.attente);
@@ -13505,7 +13511,7 @@ function clipMXcible(A, cle, sc, nomOs = n => n) {
   for (let i = 0; i < hv.length; i += 3) { w.set(hv[i] * hy, 0, hv[i + 2] * hy).applyQuaternion(F); w.x += p0.x; w.z += p0.z; w.y = bb.min.y + hv[i + 1] * hy; w.applyMatrix4(pinv); w.toArray(out, i); }
   tr.push(new THREE.VectorKeyframeTrack(H.name + ".position", t, out)); return new THREE.AnimationClip(cle, a.duree, tr); }
 /* les danses de l'administrateur : de vrais danseurs (YMCA, hip-hop, samba, Northern Soul, Gangnam Style, salsa) — sur son bonhomme 3D seulement */
-const DANSES_ADMIN = ["ymca", "hiphop", "samba", "soul", "gangnam", "salsa"], NOMS_DANSES_ADMIN = { ymca: "🙆 YMCA", hiphop: "🎤 Hip-hop", samba: "🥁 Samba", soul: "🌀 Northern Soul", gangnam: "🐎 Gangnam Style", salsa: "💃 Salsa" };
+const DANSES_ADMIN = ["village", "hiphop", "samba", "soul", "gangnam", "salsa"], NOMS_DANSES_ADMIN = { village: "🙆 YMCA", hiphop: "🎤 Hip-hop", samba: "🥁 Samba", soul: "🌀 Northern Soul", gangnam: "🐎 Gangnam Style", salsa: "💃 Salsa" };
 export const DANSES_ADMIN_NOMS = () => DANSES_ADMIN.map(d => [d, NOMS_DANSES_ADMIN[d]]);
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     const ld = new gltfMod.GLTFLoader(), g = await ld.loadAsync("avatars/re-zombie.glb?v=1"); zG = g;
@@ -15013,7 +15019,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
       return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
     if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
       clipsDS(sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; }
-    if (/avatars\/0001\.glb/.test(f)) { const AD = await chargerAnimsMX("anims/danses-admin.json?v=1"); if (AD) for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + n, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
+    if (/avatars\/0001\.glb/.test(f)) { const AD = await chargerAnimsMX("anims/danses-admin.json?v=1"); if (AD) for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + (n === "village" ? "ymca" : n), sc);   /* (« village » : le YMCA des Village People — le nom « ymca » est déjà celui de l'ancienne danse, faite avec le bonhomme plat) */ if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
     return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
@@ -15549,14 +15555,14 @@ function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = 
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
   const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
-  if (v && E.k > .9 && v.readyState >= 2) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
+  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
 function videoDJ(c) { let v = M.videoDJ;
   if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
   if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous"; }
-  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; }
+  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
   const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
-    if (pos >= 0 && v.readyState >= 1) { if (Math.abs(v.currentTime - pos) > .4 && (!v.duration || pos < v.duration)) { try { v.currentTime = pos; } catch (e) {} } if (v.paused) v.play().catch(() => {}); } } }
+    if (pos >= 0 && v.readyState >= 1) { const ecart = Math.abs(v.currentTime - pos); if (!v.seeking && (!v.duration || pos < v.duration) && (!M.videoCalee ? ecart > .4 : ecart > 3 && now > (M.videoSautT || 0))) { M.videoCalee = true; M.videoSautT = now + 6000; try { v.currentTime = pos + (M.videoCalee && ecart > 3 ? .8 : 0); } catch (e) {} }   /* (calée une fois au départ ; ensuite seulement si elle s'est égarée : elle se recalait sans cesse, n'avait jamais le temps de repartir, et l'écran restait blanc) */ if (v.paused) v.play().catch(() => {}); } } }
 /* ===================== la manette (Bluetooth) et les lunettes 3D =====================
    Une manette de jeu (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour tourner la vue,
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
