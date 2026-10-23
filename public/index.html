@@ -2453,7 +2453,7 @@
       if (chg) { try { localStorage.setItem("apoChoix", JSON.stringify(apoChoix)); } catch (e) {} dessinerChoixApo();
         $("mxApoEquipe").querySelectorAll("[data-e]").forEach(b => b.style.outline = +b.dataset.e === ids[vise] ? "3px solid #f6d465" : ""); } };
     requestAnimationFrame(tour); })();
-  function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => `images/re/${H[id].cle}-tete.png?v=2`, prenom = id => H[id].court;
+  function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => `images/re/${H[id].cle}-tete.png?v=3`, prenom = id => H[id].court;
     if (!APO_JOUABLES.includes(apoChoix.perso)) apoChoix.perso = 25;   /* (Wesker, Barry, Chris, Claire, Hunk ou Leon ; un équipier parmi les autres, toujours) */
     if (!(apoChoix.equipe.length === 1 && APO_JOUABLES.includes(apoChoix.equipe[0]) && apoChoix.equipe[0] !== apoChoix.perso)) apoChoix.equipe = [MX.APO_PAIRE[apoChoix.perso]];
     $("mxApoPerso").innerHTML = APO_JOUABLES.map(id => `<button type="button" data-p="${id}" class="${id === apoChoix.perso ? "on" : ""}"><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");
@@ -3199,6 +3199,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.74", "23 octobre 2026", ["Resident Evil : nouvelle Jill Valentine (tenue S.T.A.R.S. de Resident Evil Umbrella Chronicles) avec les vrais mouvements — attente, marche pistolet en main, course, mort, chute — et son nouveau médaillon au choix des personnages", "Chute du toit : le héros tombe vraiment dans le vide (animation de chute) puis reste au sol à l'atterrissage"]],
     ["6.73", "23 octobre 2026", ["Resident Evil : les héros bougent avec de vrais mouvements (Mixamo) — au repos ils respirent et regardent autour, ils marchent pistolet en main, courent ; Claire et Jill ont leur attente et leur course de femme ; un héros tué s'écroule en avant pour de vrai", "Lisa Trevor : sa vraie démarche de mutante, voûtée, et elle hurle quand on la touche"]],
     ["6.72", "23 octobre 2026", ["Nemesis bouge avec de vrais mouvements (Mixamo) : il tombe du ciel et atterrit un genou au sol, se relève et rugit en nous fixant ; il marche, charge en courant, frappe d'un coup de griffe ou d'un coup de poing, et s'effondre pour de vrai quand on l'abat", "Son cri, juste avant qu'il charge ou qu'il frappe"]],
     ["6.71", "23 octobre 2026", ["Resident Evil : les zombies bougent avec de vrais mouvements enregistrés (Mixamo) — deux démarches, deux attentes, deux attaques (la morsure au cou, le coup à deux mains), la réaction quand on les touche, et deux morts : ils s'écroulent pour de vrai", "Ceux qui rampent ont leur vraie reptation, et leur mort à plat ventre", "Abattus, les zombies restent allongés au sol dans leur sang (on ne les efface plus) ; la flaque coule sous leur tête"]],

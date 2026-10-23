@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.73";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.74";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12415,8 +12415,8 @@ function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait 
         if (u > 1 && now > (M.toitTir || 0)) { M.toitTir = now + 700 + Math.random() * 500; const z = zs[Math.floor(Math.random() * 2)], dx = z.x - hx, dz = z.z - hz, dd = Math.hypot(dx, dz) || 1; if (q.av3) q.av3.sc.rotation.y = Math.atan2(dx, dz); eclairDuCanon(q, dx / dd, dz / dd); sonTir(.55); impactZ(z, dx / dd, dz / dd); } }
       else { if (!chute.length) { for (const o of [q, ...zs]) { const gp = o.g ? o.g.position : null; chute.push({ o, v: new THREE.Vector3(best.nx * (1.6 + Math.random()), .8 + Math.random() * .6, best.nz * (1.6 + Math.random())), x: o === q ? q.g.position.x : o.x, z: o === q ? q.g.position.z : o.z, y: yT, posee: false, gp }); } q.poseCine = null; q.info.mortT = 0; }
         for (const c of chute) { if (c.posee) continue; c.v.y -= 9.8 * dt; c.x += c.v.x * dt; c.z += c.v.z * dt; c.y += c.v.y * dt;
-          if (c.y <= sol) { c.y = sol; c.posee = true; sonBruit(.3, 180, .9); sangAuSol(c.x, c.z, sol, 1.4); if (!ecrase) { ecrase = true; sonBruit(.5, 90, 1); setTimeout(() => sonBruit(.25, 1200, .4), 60); } if (c.o === q) { q.info.mortT = performance.now() - 1300; flaqueMort(q); } else { c.o.mortT = performance.now() - 600; c.o.cadavre = true; } }   /* (écrasé : aussitôt à plat — et il reste là) */
-          if (c.o === q) { q.g.position.set(c.x, c.y, c.z); if (q.av3) q.av3.sc.rotation.x = c.posee ? 0 : Math.min(1.3, (yT - c.y) * .12); } else { c.o.x = c.o.tx = c.x; c.o.z = c.o.tz = c.z; c.o.y = c.y; } } } } });
+          if (c.y <= sol) { c.y = sol; c.posee = true; sonBruit(.3, 180, .9); sangAuSol(c.x, c.z, sol, 1.4); if (!ecrase) { ecrase = true; sonBruit(.5, 90, 1); setTimeout(() => sonBruit(.25, 1200, .4), 60); } if (c.o === q) { q.chute = false; q.mortAuSol = true; q.info.mortT = performance.now() - 1300; flaqueMort(q); } else { c.o.mortT = performance.now() - 600; c.o.cadavre = true; } }   /* (écrasé : aussitôt à plat — et il reste là) */
+          if (c.o === q) { q.g.position.set(c.x, c.y, c.z); q.chute = !c.posee; if (q.av3) q.av3.sc.rotation.x = c.posee || q.av3.act.chuteMX ? 0 : Math.min(1.3, (yT - c.y) * .12); }   /* (il tombe en battant des bras ; à terre, il ne bouge plus) */ else { c.o.x = c.o.tx = c.x; c.o.z = c.o.tz = c.z; c.o.y = c.y; } } } } });
   return true; }
 // à chaque image, à Resident Evil : où en est l'histoire
 function histoireRE(moi, now) { if (!M.L || !M.L.apo || M.L.sh || M.evac || APO.zombieFin) return; const L = M.L, b = baseLieu(M.lieu), mp = moi.g.position;
@@ -14931,8 +14931,8 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
           }`); };
       o.material.needsUpdate = true; }
     const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/avatars\/re2-/.test(f)) { clipsDS(sc, mix, act, true);
-      const AM = await chargerAnimsMX("anims/re-heros.json?v=1"), fem = /re2-(claire|jill)/.test(f);   /* (les vrais mouvements : au repos, la marche pistolet en main, la course ; Claire et Jill ont les leurs) */
-      if (AM) { for (const [n, c] of [["idle", fem ? "f-idle" : "h-idle"], ["walk", "h-pmarche"], ["run", fem ? "f-course" : "h-rcourse"], ["mortMX", "h-mort"]]) { const k = clipMX(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }
+      const AM = await chargerAnimsMX("anims/re-heros.json?v=2"), fem = /re2-(claire|jill)/.test(f);   /* (les vrais mouvements : au repos, la marche pistolet en main, la course ; Claire et Jill ont les leurs) */
+      if (AM) { for (const [n, c] of [["idle", fem ? "f-idle" : "h-idle"], ["walk", "h-pmarche"], ["run", fem ? "f-course" : "h-rcourse"], ["mortMX", "h-mort"], ["chuteMX", "h-chute"]]) { const k = clipMX(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }
         if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
       return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
     if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
@@ -14940,7 +14940,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const herosSH = h => h >= 69 && h !== 95;   // (les héros de Silent Hill : 69 et au-delà — sauf Jill, 95, de Resident Evil)
-const HEROS_3D = { 23: "avatars/re2-barry.glb?v=2", 25: "avatars/re2-wesker.glb?v=2", 26: "avatars/re2-chris.glb?v=2", 95: "avatars/re2-jill.glb?v=2", 21: "avatars/re2-claire.glb?v=2", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=2", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re2-barry.glb?v=2", 25: "avatars/re2-wesker.glb?v=2", 26: "avatars/re2-chris.glb?v=2", 95: "avatars/re2-jill.glb?v=3", 21: "avatars/re2-claire.glb?v=2", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=2", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
@@ -14979,7 +14979,7 @@ function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.paren
   else if (v > .05) { let d = Math.atan2(dx, dz) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 10); }   // (il se tourne dans le sens de sa marche)
   else if (p.regardeA) { const r = p.regardeA; let d = Math.atan2(r.x - q.x, r.z - q.z) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += p.regardeVite ? d : d * Math.min(1, dt * 2.6); p.regardeVite = false; }   // (en scène : il se tourne vers quelqu'un, ou quelque chose — lentement)
   else if (M.cine && M.shParle && herosSH(p.info.heros) && p.info.heros !== 100 && !p.part) { const mo = M.gens.get(M.moiNum); if (mo && mo !== p) { let d = Math.atan2(mo.g.position.x - q.x, mo.g.position.z - q.z) - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * Math.min(1, dt * 3); } }   // (dans une conversation : il nous fait face — James arrivait de dos)
-  const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
+  const dn = p.info.danse ? String(p.info.danse === true ? "balance" : p.info.danse) : null, n = p.chute && A.act.chuteMX ? "chuteMX" : A.v > 4.2 ? "run" : A.v > .3 ? "walk" : dn && A.act[dn] ? dn : "idle";   // (les danses : de vrais mouvements de danseurs, enregistrés)
   if (A.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (A.curA) a.crossFadeFrom(A.curA, .25, false); A.cur = n; A.curA = a; }
   if (A.rouleT) { for (const [b, q] of A.rouleT) b.quaternion.copy(q); A.rouleT = null; }
   if (A.act.walk) A.act.walk.timeScale = Math.max(.7, Math.min(1.5, A.v / 1.6)); A.mix.update(dt); teteAv3(p, A, dt);
@@ -15000,7 +15000,7 @@ function teteAv3(p, A, dt) { const r = p.teteVers, q = p.g.position; let c = 0;
    (les genoux restent en place : le corps bascule autour d'eux, les jambes se déplient pour rester à plat derrière lui) */
 const _vk = () => new THREE.Vector3();
 function mort3D(p, A, dt = 1 / 60) { if (A.act.mortMX) { A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.sc.rotation.x = 0; A.sc.position.set(0, 0, 0);   // (il s'écroule en avant, pour de vrai)
-    if (A.cur !== "mortMX") { const a = A.act.mortMX; a.reset().play(); if (A.curA && A.curA !== a) a.crossFadeFrom(A.curA, .2, false); A.cur = "mortMX"; A.curA = a; } A.mix.update(dt); return; }
+    if (A.cur !== "mortMX") { const a = A.act.mortMX; a.reset().play(); if (A.curA && A.curA !== a) a.crossFadeFrom(A.curA, .2, false); A.cur = "mortMX"; A.curA = a; if (p.mortAuSol) a.time = a.getClip().duration - .01; } A.mix.update(dt); return; }   /* (après une chute : il est déjà à terre) */
  const t = performance.now() - p.info.mortT, u = Math.min(1, t / 450), w0 = Math.max(0, Math.min(1, (t - 650) / 550)), w = w0 * w0, th = w * Math.PI / 2 * .97;
   A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.assisT = null;
   if (A.cur !== "idle" && A.act.idle) { A.act.idle.reset().play(); if (A.curA && A.curA !== A.act.idle) A.curA.stop(); A.cur = "idle"; A.curA = A.act.idle; } A.mix.update(0);
@@ -18216,5 +18216,5 @@ export const _allerVers = (x, z) => allerVers(x, z, true);   // (pour les essais
 export const _itineraire = (x0, z0, x1, z1) => M && itineraire(M.L, x0, z0, x1, z1);   // (pour les essais)
 export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMorsure(x, z), _sang = (...a) => M && jetSang(...a);   // (pour les essais)
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
-export const _essaiRE = () => ({ lancerTyran, lancerLisa });   // (pour les essais)
+export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ });   // (pour les essais)
