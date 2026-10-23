@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.01";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.02";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15636,7 +15636,7 @@ function animerBarman(t) {
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
-  const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(DANSEUR);
+  const air = false, p = M.gens.get(DANSEUR);   /* (plus de trio sur la scène : Michael Jackson et ses zombies dansent sur la piste, le groupe joue derrière) */
   if (air && !p) { const [x, z] = placeScene(0, -.7); M.trioPret = false;
     // le danseur au milieu, le zombie à sa gauche, la mariée à sa droite (vus depuis la salle)
     for (const [num, id, dx, def, tete] of [[DANSEUR, 4, 0, { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" }, "images/danseur-tete.png"],
@@ -16041,7 +16041,7 @@ function animerGroupe() {
 /* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
 /* Michael Jackson en 3D, au centre de la piste, et six zombies de Resident Evil, trois de chaque côté : quand passe Thriller, ou dès qu'on danse.
    Ils dansent comme nous, au même moment (la danse qu'on a choisie, au même temps) ; sans nous, sur Thriller, la chorégraphie du clip */
-const TROUPE_F = ["avatars/re2-mj.glb?v=1", "avatars/re2-uss.glb?v=1", "avatars/re2-zombie1.glb?v=1", "avatars/re2-zf.glb?v=1", "avatars/re2-zombie2.glb?v=1"];
+const TROUPE_F = ["avatars/re2-mj.glb?v=2", "avatars/re2-uss.glb?v=1", "avatars/re2-zombie1.glb?v=1", "avatars/re2-zf.glb?v=1", "avatars/re2-zombie2.glb?v=1"];
 const TROUPE_POS = [[0, 0, 0], [-1.35, -.55, 1], [-2.6, -1.1, 2], [-3.85, -1.65, 3], [1.35, -.55, 3], [2.6, -1.1, 4], [3.85, -1.65, 1]];   // (x sur le côté, z en arrière, le modèle : lui au milieu, les zombies en V derrière)
 let troupeP = null;
 function chargerTroupe() { return troupeP = troupeP || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
@@ -16055,7 +16055,7 @@ function chargerTroupe() { return troupeP = troupeP || (async () => { gltfMod = 
   return { g, membres }; })().catch(e => { console.warn("troupe", e); troupeP = null; return null; }); }
 function animerMJ() { const T = M && M.troupe;
   const moi = M && M.gens.get(M.moiNum), A = moi && moi.av3, dMoi = A && DANSES_ADMIN.includes(A.cur) && A.act[A.cur] ? A.cur : null;
-  const veut = !!(M && M.L && M.lieu === "fetes" && M.L.pisteCentre && (dMoi || (M.djJoue && /thriller/.test(M.djTitre || ""))));
+  const veut = !!(M && M.L && M.lieu === "fetes" && M.L.pisteCentre && M.djJoue && /thriller/.test(M.djTitre || ""));   /* (seulement sur Thriller ; si l'on danse, ils font comme nous) */
   if (!veut) { if (T) T.g.visible = false; return; }
   if (!T) { if (!M.troupeCh) { M.troupeCh = true; chargerTroupe().then(t => { if (M && t) M.troupe = t; }); } return; }
   if (T.g.parent !== M.scene) { const [x, z] = M.L.pisteCentre, S = M.L.scene, sz = S ? S.centre[1] : z + 3, sens = sz > z ? -1 : 1;   /* (dos à la scène, face à la salle) */
