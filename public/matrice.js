@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.84";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.85";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6174,7 +6174,7 @@ function construireAppart(A, L, scene) {
     const lueur = new THREE.PointLight(0x9ab8ff, 0, 3, 2); lueur.position.set(0, TH / 2, .6); tv.add(lueur);
     // la lecture : une vidéo par chaîne (la bibliothèque de l'administrateur) ; la neige quand il n'y a rien
     const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous"; video.setAttribute("playsinline", "");
-    const videoT = new THREE.VideoTexture(video); videoT.colorSpace = THREE.SRGBColorSpace; videoT.generateMipmaps = false; videoT.minFilter = THREE.LinearFilter;   // (la vidéo va droit sur l'écran, image par image, en pleine définition)
+    const petitC = document.createElement("canvas"); petitC.width = 480; petitC.height = 360; const petitX = petitC.getContext("2d"); const videoT = new THREE.CanvasTexture(petitC); videoT.colorSpace = THREE.SRGBColorSpace; videoT.generateMipmaps = false; videoT.minFilter = THREE.LinearFilter;   /* (la vidéo réduite à la taille de l'écran de la télé, 25 images par seconde : envoyée en pleine définition à chaque image, elle faisait ramer tout le jeu) */   // (la vidéo va droit sur l'écran, image par image, en pleine définition)
     let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false, vu = false, horsT = 0;
     const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
     const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
@@ -6197,7 +6197,7 @@ function construireAppart(A, L, scene) {
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
       if (!allumee || t - dernier < 40) return; dernier = t;
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
-      if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; ecran.material.map = videoT; lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige)
+      if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; if (video.readyState >= 2 && (video.currentTime !== petitC.t || !petitC.t)) { petitC.t = video.currentTime; try { petitX.drawImage(video, 0, 0, 480, 360); videoT.needsUpdate = true; } catch (e) {} } if (ecran.material.map !== videoT) { ecran.material.map = videoT; ecran.material.needsUpdate = true; } lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige)
       else if (!vu) { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }   /* (rien à montrer encore : la neige — la ligne était restée dans le commentaire, l'écran restait figé) */
       finition(); };
     const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
