@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.94";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.95";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12162,6 +12162,8 @@ function parleRadio(nom, texte, ms) { codecDire("lui", nom, texte, ms); }
    dessous, ce qui se dit. Les portraits en vert, comme sur un vieil écran ; celui qui parle s'éclaire. L'écran se referme seul quand on ne parle plus */
 const BRAD_IMG = "images/re/brad-tete.webp?v=1";
 function codecDire(qui, nom, texte, ms) { if (!M || !M.ctx || !M.ctx.conteneur) return; let C = M.codec;
+  /* (le premier appel : la sonnerie, et une demi-seconde après, l'écran) */ if (!C || !C.el.isConnected) { if (!M.codecSonne) { M.codecSonne = []; bipRadio(); setTimeout(() => { if (!M) return; const L = M.codecSonne; M.codecSonne = null; for (const a of L || []) codecDire(...a); }, 500); } if (M.codecSonne) { M.codecSonne.push([qui, nom, texte, ms]); return; } }
+  const imgDe = n => { if (/brad/i.test(n)) return BRAD_IMG; const h = Object.values(HEROS).find(H => H.court && n && n.indexOf(H.court) >= 0); return h ? `images/re/${h.cle}-tete.png?v=3` : BRAD_IMG; };
   if (!C || !C.el.isConnected) { const el = document.createElement("div"); el.style.cssText = "position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:min(94%,620px);z-index:9;pointer-events:none;background:rgba(0,0,0,.92);border:2px solid #7a1010;border-radius:6px;padding:12px 14px 14px;font-family:Arial,Helvetica,sans-serif;animation:codecIn .25s ease-out";
     if (!document.getElementById("styleCodec")) { const st = document.createElement("style"); st.id = "styleCodec"; st.textContent = "@keyframes codecIn{from{opacity:0;transform:translateX(-50%) scaleY(.1)}to{opacity:1;transform:translateX(-50%) scaleY(1)}}@keyframes codecSig{0%,100%{opacity:1}50%{opacity:.55}}.codec-port{position:relative;width:24%;aspect-ratio:5/6;border:3px solid #2f6a3a;border-radius:4px;overflow:hidden;background:#071407;box-shadow:0 0 12px rgba(80,220,110,.35);transition:filter .2s,box-shadow .2s}.codec-port img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) sepia(1) hue-rotate(70deg) saturate(2.2) brightness(.95) contrast(1.15)}.codec-port::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 2px,transparent 2px 4px)}.codec-port.muet{filter:brightness(.45);box-shadow:none}"; document.head.appendChild(st); }
     const H = M.perso && HEROS[M.perso], moiImg = `images/re/${H ? H.cle : "jill"}-tete.png?v=3`;
@@ -12177,7 +12179,8 @@ function codecDire(qui, nom, texte, ms) { if (!M || !M.ctx || !M.ctx.conteneur) 
       <div class="codec-txt" style="margin-top:12px;min-height:3.2em;color:#f2f2f2;font:16px/1.45 Arial;text-shadow:0 1px 2px #000"></div>`;
     M.ctx.conteneur.appendChild(el); C = M.codec = { el, txt: el.querySelector(".codec-txt"), barres: [...el.querySelectorAll(".codec-barres i")], t: 0 };
     C.anim = setInterval(() => { if (!C.el.isConnected) { clearInterval(C.anim); return; } const k = C.parle ? 3 + Math.floor(Math.random() * 6) : 2; C.barres.forEach((b, i) => b.style.opacity = i < k ? 1 : .2); }, 110);
-    bipRadio(); }
+  }
+  if (qui === "lui") { const im = C.el.querySelector('.codec-port[data-q="lui"] img'), src = imgDe(nom); if (im && !im.src.endsWith(src)) im.src = src; }   /* (l'équipier qui appelle : son visage, pas celui de Brad) */
   for (const p of C.el.querySelectorAll(".codec-port")) p.classList.toggle("muet", p.dataset.q !== qui);
   C.txt.innerHTML = `<b style="color:${qui === "lui" ? "#8fe39b" : "#f2d27a"}">${esc(nom)}</b> : ${esc(texte)}`; C.parle = true;
   const d = ms || Math.min(7000, 2600 + texte.length * 50); clearTimeout(C.fin); clearTimeout(C.taire); C.taire = setTimeout(() => { C.parle = false; }, Math.min(d, 600 + texte.length * 40));
@@ -12240,9 +12243,9 @@ function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
   bloc(0, 864, 1280, 64, `background:linear-gradient(180deg,#8e9e8b,#4b574a);border-top:${u(3)} solid #c9d6c6`); bloc(468, 870, 812, 26, `border:${u(3)} solid #c9d6c6;background:#3f4b3e`);
   // les objets qu'on porte
   const objets = [{ k: "pistolet", nom: M.mitra ? "Mitraillette" : "Pistolet", n: "∞" }, ...(M.pompe ? [{ k: "pompe", nom: "Fusil à pompe", n: "∞" }] : []), ...(M.c4 && !M.c4Pose ? [{ k: "c4", nom: "C4 et son détonateur", n: "" }] : [])];
-  const arme = M.pompe && !M.mitra ? objets[1] : objets[0], img = (k, css) => `<img src="images/re/inv-${k}.${k === "pistolet" ? "webp" : "svg"}?v=2" alt="" style="max-width:${css};max-height:${css};object-fit:contain;filter:drop-shadow(0 ${u(3)} ${u(3)} rgba(0,0,0,.6))">`, chiffre = n => n ? `<b style="position:absolute;left:${u(14)};bottom:${u(6)};color:#4dff4d;font:${u(40)} 'Courier New',monospace;font-weight:700">${n}</b>` : "";
+  const arme = pompeEnMain() ? objets[1] : objets[0], img = (k, css) => `<img src="images/re/inv-${k}.${k === "pistolet" ? "webp" : "svg"}?v=2" alt="" style="max-width:${css};max-height:${css};object-fit:contain;filter:drop-shadow(0 ${u(3)} ${u(3)} rgba(0,0,0,.6))">`, chiffre = n => n ? `<b style="position:absolute;left:${u(14)};bottom:${u(6)};color:#4dff4d;font:${u(40)} 'Courier New',monospace;font-weight:700">${n}</b>` : "";
   equip.innerHTML = img(arme.k, "86%") + chiffre(arme.n);
-  const cases = []; objets.forEach((o, i) => { const c = document.createElement("div"); c.style.cssText = `position:absolute;left:${u(16 + (i % 2) * 160)};top:${u(14 + Math.floor(i / 2) * 124)};width:${u(158)};height:${u(118)};display:grid;place-items:center;cursor:pointer;border:${u(3)} solid transparent`; c.innerHTML = img(o.k, "90%") + chiffre(o.n); c.onclick = () => voirObjet(o, c); inv.appendChild(c); cases.push(c); });
+  const cases = []; objets.forEach((o, i) => { const c = document.createElement("div"); c.style.cssText = `position:absolute;left:${u(16 + (i % 2) * 160)};top:${u(14 + Math.floor(i / 2) * 124)};width:${u(158)};height:${u(118)};display:grid;place-items:center;cursor:pointer;border:${u(3)} solid transparent`; c.innerHTML = img(o.k, "90%") + chiffre(o.n); c.voir = () => voirObjet(o, c); c.onclick = () => { voirObjet(o, c); if (o.k === "pistolet" || o.k === "pompe") { M.armeChoisie = o.k; equip.innerHTML = img(o.k, "86%") + chiffre(o.n); nom.textContent = o.nom + " — équipé"; sonBruit(.07, 1800, .45); majHudApo(); } }; inv.appendChild(c); cases.push(c); });   /* (toucher une arme : on la prend en main) */
   // le grand écran : la carte
   const box = document.createElement("div"); box.style.cssText = "position:relative;width:100%";
   const moi = moiApo(), dir = new THREE.Vector3(); M.camera.getWorldDirection(dir); const b0 = baseLieu(M.lieu), p = moi && moi.g.position;
@@ -12883,19 +12886,21 @@ function cineEvac(m) {
   M.passerBtn = boutonPasser(fin);
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
   cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
-  const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); sc.remove(paris); }, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
+  const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); sc.remove(paris); }, maj: (now) => { if (fini) return; const dt = Math.min(.05, (now - prec) / 1000); c.clk = (c.clk || 0) + Math.min(.1, Math.max(0, now - prec) / 1000) * (M.vite || 1); prec = now; let u = c.clk + (c.saut || 0);   /* (l'horloge de la scène n'avance qu'avec les images : sur un téléphone lent, aucun plan n'est sauté) */
+    /* tout le monde est monté : le temps s'arrête là (l'hélicoptère attend sur le H) — plan sur la cour d'honneur, la horde déboule par la voûte ; puis on reprend : le décollage */
+    c.enPause = false; if (c.horde && !c.pauseFin && u >= 14.95) { if (c.pauseC == null) c.pauseC = c.clk; const pu = c.clk - c.pauseC; if (pu < 4.8) { c.enPause = true; c.hu = 12.2 + pu; u = 14.95; } else { c.pauseFin = true; c.saut = -pu; u = c.clk - pu; } }
     if (!c.renfPrep) { c.renfPrep = true; lancerRenforts();
       /* la horde : le porche a sauté (le C4) — par là, des dizaines de zombies entrent en courant et remontent la cour d'honneur, entre les bâtiments R et S */
       const nH = PETIT ? 16 : 30; c.horde = []; for (let i = 0; i < nH; i++) { const x0 = (Math.random() - .5) * 2.2, q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x: x0, z: 27.5, y: 0 }); q.cine = true; q.evacZ = true; q.forceZ3 = true; q.court = true; q.y = 0; q.g.visible = false;
         c.horde.push({ q, d: (i / nH) * 2.1 + Math.random() * .25, x: x0, tx: ((i * 7) % nH / nH - .5) * 13 + (Math.random() - .5), v: 5.2 + Math.random() * .6, monte: i % 3 === 1 });   /* (tous par la voûte, puis ils se déploient dans la cour) */ } }
-    if (u > 11.6 && !c.bradVite) { c.bradVite = true; bulle(`<b style="color:#e8c46a">Brad Vickers</b> : Dépêchez-vous !!! Ils arrivent !`, 2600); }
-    const vueHorde = !!(c.horde && u > 12.0 && u < 16.8);   /* (le plan sur la cour d'honneur : face aux bâtiments R et S, la horde qui accourt) */
-    if (c.horde) for (const Hd of c.horde) { const q = Hd.q, t = u - 11.4 - Hd.d * .8; if (!vueHorde || t < 0) { q.g.visible = false; continue; } q.g.visible = true;
+    if (u > 9.8 && !c.bradVite) { c.bradVite = true; bulle(`<b style="color:#e8c46a">Brad Vickers</b> : Dépêchez-vous !!! Ils arrivent !`, 2600); }
+    const vueHorde = !!c.enPause, hu = c.hu ?? 0;   /* (le plan sur la cour d'honneur : face aux bâtiments R et S, la horde qui accourt) */
+    if (c.horde) for (const Hd of c.horde) { const q = Hd.q, t = hu - 11.4 - Hd.d * .8; if (!vueHorde || t < 0) { q.g.visible = false; continue; } q.g.visible = true;
       q.x = q.tx = Hd.x + (Hd.tx - Hd.x) * Math.max(0, Math.min(1, (t * Hd.v - 8) / 10)); q.z = q.tz = 21 - t * Hd.v; q.y = 0; if (q.z3) eclairer3D(q.z3.sc, .3);
       /* une voiture sur leur chemin : les uns sautent par-dessus sans ralentir, les autres grimpent dessus et courent sur le toit */
       const vt = (M.L.voitures || []).find(([a, b, c2, d]) => q.x > a - .25 && q.x < b + .25 && q.z > c2 - 1.4 && q.z < d + .4);
       if (Hd.monte) { if (vt) { const [, , c2, d] = vt, e = Math.min(q.z - (c2 - 1.4), d + .4 - q.z); q.y = Math.min(1.3, Math.max(0, e) * 1.6); } }
-      else { if (vt && (Hd.sautU == null || u - Hd.sautU > 1.2)) Hd.sautU = u; q.saute = Hd.sautU != null && u - Hd.sautU < .75; if (q.saute) q.y = Math.sin((u - Hd.sautU) / .75 * Math.PI) * 1.15; } }
+      else { if (vt && (Hd.sautU == null || hu - Hd.sautU > 1.2)) Hd.sautU = hu; q.saute = Hd.sautU != null && hu - Hd.sautU < .75; if (q.saute) q.y = Math.sin((hu - Hd.sautU) / .75 * Math.PI) * 1.15; } q.g.position.set(q.x, q.y || 0, q.z); }
     if (u > 6.2 && !c.renfFait) { c.renfFait = true; partirRenforts(); }
     for (const p of renf) if (p.av3 && p.g.visible) eclairer3D(p.av3.sc, .28);   /* (la nuit, sur la terrasse : on les voit courir) */
     if (proie) { const P = proie, pp = P.p.g.position;
@@ -12921,12 +12926,12 @@ function cineEvac(m) {
       else placer(H.x + 11, H.y + 2.2 + 3 * (1 - k), H.z - 9, H.x, hel.position.y + 1.4, H.z, .08); }
     else if (vueHorde) { hel.position.copy(H); for (const p of vivants) p.g.visible = false; cam.position.set(0, 7.5, -7); vise.set(0, 1.2, 12); cam.lookAt(vise); if (!c.feuxH) c.feuxH = [...cacherFeuxEntre(new THREE.Vector3(0, 0, -7), new THREE.Vector3(-6, 0, 14), 4.5), ...cacherFeuxEntre(new THREE.Vector3(0, 0, -7), new THREE.Vector3(6, 0, 14), 4.5)]; }   /* (les feux devant l'objectif s'effacent le temps du plan) */
     /* au décollage : la horde a traversé la cour — elle remonte en courant l'escalier en U de la terrasse, jusqu'au H que l'hélicoptère vient de quitter */
-    if (c.horde && u > 16.8 && u < 21.5) { if (!c.escP) { const E = C3.ESC, W = E.W, LT2 = C3.LT / 2, xo = LT2 + W * 1.5, xi = LT2 + W / 2, z1 = E.z0 + E.run, yT = H.y;
+    if (c.horde && c.pauseFin && u > 15 && u < 21.5) { if (!c.escP) { const E = C3.ESC, W = E.W, LT2 = C3.LT / 2, xo = LT2 + W * 1.5, xi = LT2 + W / 2, z1 = E.z0 + E.run, yT = H.y;
         c.escP = [[xo, 0, E.z0 - 7], [xo, 0, E.z0], [xo, yT / 2, z1], [xo, yT / 2, z1 + E.pal / 2], [xi, yT / 2, z1 + E.pal / 2], [xi, yT / 2, z1], [xi, yT, E.z0], [xi, yT, E.zA + .4], [LT2 - 2.5, yT, E.zA + .4], [H.x + 2, yT, H.z]];
         c.escL = []; let a = 0; for (let i = 1; i < c.escP.length; i++) { const [x0, y0, z0] = c.escP[i - 1], [x1, y1, z1b] = c.escP[i]; a += Math.hypot(x1 - x0, y1 - y0, z1b - z0); c.escL.push(a); } }
-      c.horde.slice(0, PETIT ? 10 : 18).forEach((Hd, i) => { const q = Hd.q, d = (u - 16.6 - i * .26) * 4.4; if (d < 0) { q.g.visible = false; return; } let k = c.escL.findIndex(l => l >= d); if (k < 0) { q.g.visible = false; return; }
+      c.horde.forEach((Hd, i) => { const q = Hd.q, d = (u - 15 - i * .13) * 3.8 + 4;   /* (toute la horde, serrée, à l'assaut de l'escalier) */ if (d < 0) { q.g.visible = false; return; } let k = c.escL.findIndex(l => l >= d); if (k < 0) { q.g.visible = false; return; }
         const l0 = k ? c.escL[k - 1] : 0, f = (d - l0) / (c.escL[k] - l0), A0 = c.escP[k], B0 = c.escP[k + 1], dec = ((i % 3) - 1) * .35;
-        q.g.visible = true; q.x = q.tx = A0[0] + (B0[0] - A0[0]) * f + (k === 0 || k >= 8 ? dec : 0); q.z = q.tz = A0[2] + (B0[2] - A0[2]) * f + (k > 0 && k < 8 ? dec * .6 : 0); q.y = A0[1] + (B0[1] - A0[1]) * f; if (q.z3) eclairer3D(q.z3.sc, .3); }); }
+        q.g.visible = true; q.x = q.tx = A0[0] + (B0[0] - A0[0]) * f + (k === 0 || k >= 8 ? dec : 0); q.z = q.tz = A0[2] + (B0[2] - A0[2]) * f + (k > 0 && k < 8 ? dec * .6 : 0); q.y = A0[1] + (B0[1] - A0[1]) * f; q.g.position.set(q.x, q.y, q.z); if (q.z3) eclairer3D(q.z3.sc, .3); }); }
     if (!vueHorde && c.feuxH && !c.feuxR) { c.feuxR = true; for (const f of c.feuxH) f.visible = true; }   /* (en hauteur, face aux bâtiments R et S : la voûte au centre) */
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
       if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x - .35 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
@@ -13164,7 +13169,7 @@ function toucherLicker(l, dx, dz) { l.flashT = performance.now() + 160; sangAuSo
 function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.cadavres.push(o); while (M.cadavres.length > (PETIT ? 8 : 24)) { const v = M.cadavres.shift(); v.parent && v.parent.remove(v); } }
 /* le Tyran : quand le fumigène est posé sur le cercle de la terrasse, il tombe du ciel. Grand (2,6 m), il nous fixe, court vers nous et frappe (une vie) ;
    quinze balles pour l'abattre — alors seulement l'hélicoptère peut se poser */
-let tyran3D = null; const TY = { HP: 15, H: 1.45, V: 4.4 };
+let tyran3D = null; const TY = { HP: 40, H: 1.45, V: 4.4 };   // (quarante balles : il encaisse)
 function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
   M.ctx.surInfo && M.ctx.surInfo("🧨 Le fumigène est posé… l'hélicoptère arrive ! Mais quelque chose approche…");
   tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=2"), A = await chargerAnimsMX("anims/re-nemesis.json?v=3");
@@ -13186,8 +13191,11 @@ function terrasseBoss() { const T = M.tyran, c = M.L && M.L.heliport; if (!T || 
 function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const eq = equipierVivant(), gens = [moi, eq].filter(Boolean), cam = M.camera, caches = new Set(), t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0;
   const fin = () => { if (fini || !M) return; fini = true; for (const z of caches) z.g.visible = true; finCine(); placerCamera(true); if (T.etat === "regard") T.regardT = performance.now() + 500; };
   M.passerBtn = boutonPasser(fin);
-  const autre = eq ? eq.info.numero : M.moiNum, L4 = [[1.9, M.moiNum, "Putain… c'est quoi ce truc ?!"], [4.6, autre, "Nemesis… l'arme d'Umbrella qui traque les S.T.A.R.S. ! Ce monstre-là ne meurt jamais !"],
-    [7.6, M.moiNum, "Tant qu'il est là, l'hélico ne pourra jamais se poser !"], [10.4, autre, "Alors on le descend. Vise-le, et ne t'arrête pas de tirer !"]];
+  /* (avec un équipier en vie, il répond ; seul, c'est Brad, à la radio, qui voit la scène d'en haut) */
+  const autre = eq ? eq.info.numero : "Brad Vickers", L4 = eq ? [[1.9, M.moiNum, "Putain… c'est quoi ce truc ?!"], [4.6, autre, "Nemesis… l'arme d'Umbrella qui traque les S.T.A.R.S. ! Il ne lâche jamais sa proie !"],
+    [7.6, M.moiNum, "Tant qu'il est là, l'hélico ne pourra jamais se poser !"], [10.4, autre, "Alors on le descend. Vise la tête, et ne t'arrête pas de tirer !"]]
+    : [[1.9, M.moiNum, "Putain… c'est quoi ce truc ?!"], [4.6, autre, "Ici Brad ! Je le vois d'ici… C'est Nemesis, l'arme d'Umbrella ! Il traque les S.T.A.R.S. !"],
+    [8.4, M.moiNum, "Brad, tant qu'il est là, tu ne pourras jamais te poser !"], [11.2, autre, "Alors abats-le ! Je reste en l'air, je tourne au-dessus de toi. Ne t'arrête pas de tirer !"]];
   const libre = v => M.L.limites(v.x, v.z);
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; for (const z of caches) z.g.visible = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     if (!T.g || T.mortT) { fin(); return; } if (T.etat === "regard") T.regardT = now + 1500; if (T.etat === "charge" || T.etat === "souffle") T.etat = "regard";   // (il nous fixe, sans bouger, le temps de la scène)
@@ -13202,8 +13210,8 @@ function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const 
       c = best || tp.clone().addScaledVector(cote, 2.5); c.y = tp.y + 1.1; v = tp.clone().setY(tp.y + 2.45); }
     else { c = mp.clone().addScaledVector(cote, 2.4).addScaledVector(d, 1.2); if (!libre(c)) c = mp.clone().addScaledVector(cote, -2.4).addScaledVector(d, 1.2); c.y = mp.y + 1.7; v = mp.clone().lerp(tp, .45).setY(mp.y + 1.5); }   // (de côté : les héros face à lui)
     cam.position.copy(c); cam.lookAt(v);
-    while (dit < L4.length && u > L4[dit][0]) { dire(L4[dit][1], L4[dit][2]); dit++; }
-    if (u > 13.4) fin(); } }; }
+    while (dit < L4.length && u > L4[dit][0]) { const [, q, t] = L4[dit]; if (typeof q === "string") parleRadio(q, t); else if (q === M.moiNum && codecOuvert()) codecDire("moi", nomApo(), t); else dire(q, t); dit++; }
+    if (u > (eq ? 13.4 : 15)) fin(); } }; }
 function jouerTY(T, n, une = false) { if (T.cur === n || !T.act[n]) return; const a = T.act[n]; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (T.act[T.cur]) a.crossFadeFrom(T.act[T.cur], .2, false); T.cur = n; }
 function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; const mp = moi.g.position, hS = (x, z) => { const h = hNiv(M.L, x, z, T.y ?? (M.L.heliport ? M.L.heliport.y : mp.y)); if (T.y == null || Math.abs(h - T.y) < .6) T.y = h; return T.y; };   // (il garde son niveau : la terrasse)
   if (!T.mx) { if (!T.rep0) { T.rep0 = []; for (const n in T.os) T.rep0.push([T.os[n], T.os[n].quaternion.clone()]); } for (const [b, q] of T.rep0) b.quaternion.copy(q); }   // (chaque image repart de la pose de départ : nos poses ne s'empilent pas — pas avec ses vrais mouvements : figés (l'atterrissage en suspens, la mort), le moteur ne les réécrit pas, et il restait les bras en croix)
@@ -13580,7 +13588,8 @@ function lireLettre(nom, ami) { const f = LETTRES_RE[M.barId], o = f ? f(esc(ami
     <p style="margin:0;text-align:right;font-size:${o.machine ? 18 : 28}px">${o.sig}</p>
     <div style="text-align:center;margin-top:14px"><button style="font:700 15px Lato,sans-serif;padding:9px 22px;border-radius:20px;border:0;background:#3a2a1c;color:#f4ead2;cursor:pointer">Fermer</button></div></div>`;
   M.ctx.conteneur.appendChild(d); for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
-  d.querySelector("button").onclick = () => { d.remove(); if (M) setTimeout(() => M && dire(M.moiNum, `Repose en paix, ${nom}.`), 400); }; }
+  d.querySelector("button").onclick = () => { d.remove(); if (M && M.manMenu && M.manMenu.d === d) M.manMenu = null; if (M) setTimeout(() => M && dire(M.moiNum, `Repose en paix, ${nom}.`), 400); };
+  M.manMenu = { d, fermer: () => d.querySelector("button").click() }; }   /* (à la manette : ✕ ou ○ referme la lettre) */
 /* les zombies en vraie 3D (un modèle animé, sa démarche de zombie) : les plus proches de nous, une dizaine au plus ; les autres restent dessinés */
 let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
@@ -13701,11 +13710,14 @@ function monTue(z) { if (!z.tireurT || performance.now() - z.tireurT > 1500 || !
   majHudApo(); }
 /* (un zombie qu'on ne voit pas — au loin, son modèle 3D pas encore là — ne prend pas le tir : on visait celui de devant) */
 const visableZ = z => !!(z.licker || z.tyran || z.lisa || z.z3 || z.c3 || (z.mesh && z.mesh.visible));
+/* une giclée de sang sur la cible, à chaque balle qui touche */
+function giclee(z, fort = 1) { const moi = moiApo(); if (!moi || !z || !z.g) return; const p = z.g.position, dx = p.x - moi.g.position.x, dz = p.z - moi.g.position.z, d = Math.hypot(dx, dz) || 1, h = z.tyran ? 2.1 : z.licker ? .45 : z.lisa ? 1.4 : 1.25;
+  for (let i = 0; i < 2 + fort * 2; i++) setTimeout(() => M && jetSang(p.x + (Math.random() - .5) * .3, p.y + h + (Math.random() - .5) * .3, p.z + (Math.random() - .5) * .3, dx / d + (Math.random() - .5) * .6, dz / d + (Math.random() - .5) * .6), i * 30); }
 function tirer(z) { if (M && M.armeFP && M.premiere) M.armeFP.kick = 1;
   const moi = moiApo(); if (!moi || APO.zombieFin || z.mortT || M.cine || z.cine) return;
   if (!voitZ(moi.g.position, z)) { if (performance.now() > (M.murMsgT || 0)) { M.murMsgT = performance.now() + 4000; M.ctx.surInfo && M.ctx.surInfo("🧱 Un mur entre toi et lui : impossible de tirer."); } return; }   // (pas à travers les murs, ni dans une autre salle)
-  z.tireurT = performance.now();
-  if (M.pompe && !M.mitra) { tirPompe(moi, z); return; }   /* (le fusil à pompe, une fois ramassé) */
+  z.tireurT = performance.now(); giclee(z, pompeEnMain() ? 3 : 1);
+  if (pompeEnMain()) { tirPompe(moi, z); return; }   /* (le fusil à pompe, une fois ramassé) */
   if (z.licker || z.tyran || z.lisa) { const dx0 = z.x - moi.g.position.x, dz0 = z.z - moi.g.position.z, d = Math.hypot(dx0, dz0) || 1; if (d > 24) { M.ctx.surInfo && M.ctx.surInfo("Trop loin… approche-toi."); return; }
     const dx = dx0 / d, dz = dz0 / d; moi.cible = null; moi.chemin = []; moi.tirT = performance.now(); if (M.L.interieur || M.L.suivi) M.yaw = Math.atan2(-dx, -dz);
     eclairDuCanon(moi, dx, dz); if (M.mitra) sonBruit(.12, 2200, .6); else sonTir(); if (z.tyran) toucherTyran(z); else if (z.lisa) toucherLisa(z); else toucherLicker(z, dx, dz); return; }
@@ -14071,7 +14083,7 @@ function ramasser(o) { if (o.touche) { M.scene.remove(o.sp); M.objets = M.objets
 // le compteur de balles et les vies, à l'écran
 function majHudApo() {
   const e = M && M.L && M.L.sh ? { sh: true, vies: M.shVies ?? SH_VIES, max: SH_VIES, arme: !!M.shArme } : M && M.L && M.L.apo && !M.L.sh ? { balles: APO.balles, vies: APO.vies, zombie: APO.zombieFin ? Math.max(0, Math.ceil((APO.zombieFin - performance.now()) / 1000)) : 0,
-    mitra: !!M.mitra, pompe: !!M.pompe, tues: M.tues || 0, tuesMitra: TUES_MITRA, equipe: (M.equipe || []).map(q => ({ nom: HEROS[q.id].court, vies: q.vies, mort: q.mort })) } : null;
+    mitra: !!M.mitra, pompe: pompeEnMain(), tues: M.tues || 0, tuesMitra: TUES_MITRA, equipe: (M.equipe || []).map(q => ({ nom: HEROS[q.id].court, vies: q.vies, mort: q.mort })) } : null;
   const cle = JSON.stringify(e); if (cle === M.hudCle) return; M.hudCle = cle; M.ctx.surApo && M.ctx.surApo(e);
 }
 // à chaque image : les zombies bougent, tombent, grognent ; on ramasse ; le compte à rebours du zombie
@@ -15221,15 +15233,17 @@ function viser3D(A, n, enfant, dir) { const b = os3D(A, n), c = os3D(A, enfant);
   b.getWorldPosition(_v1); c.getWorldPosition(_v2); _v2.sub(_v1).normalize(); _qa.setFromUnitVectors(_v2, _v3.copy(dir).normalize()); b.parent.getWorldQuaternion(_qb);
   b.quaternion.premultiply(_qb.clone().invert().multiply(_qa).multiply(_qb)); b.updateMatrixWorld(true); }
 /* le fusil à pompe en main : on le tient à deux mains (l'attente, la marche, la course du fusil) */
-const fusilF = (p, A, n) => p.moi && M.pompe && M.L && M.L.apo && A.act[n + "F"] ? n + "F" : n;
+const fusilF = (p, A, n) => p.moi && pompeEnMain() && M.L && M.L.apo && A.act[n + "F"] ? n + "F" : n;
+/* l'arme en main : le fusil à pompe une fois ramassé — sauf si l'on a repris le pistolet dans le menu */
+function pompeEnMain() { return !!(M && M.pompe && !M.mitra && M.armeChoisie !== "pistolet"); }
 function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.Vector3(); _v3 = new THREE.Vector3(); _qa = new THREE.Quaternion(); _qb = new THREE.Quaternion(); }
   // (le pistolet : celui de Resident Evil ; à Silent Hill, celui de Harry — ramené au même repère : le canon vers +z, d'une longueur 1, la crosse en bas)
   const fA = p.info.heros === 100 ? "avatars/sh-pistolet.glb?v=1" : "avatars/re-pistolet.glb?v=1";
   if (!pistolets3D[fA]) pistolets3D[fA] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(fA), sc = g.scene; sc.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(sc), k = 1 / Math.max(1e-6, b.max.z - b.min.z), w = new THREE.Group(), o = new THREE.Group(); w.add(sc); w.scale.setScalar(k); w.position.set(-b.min.x * k, -b.min.y * k, -b.min.z * k); o.add(w); return o; })().catch(() => null);
-  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); const G = fA.includes("re-") ? [-.07, -.4, .05] : [-.07, -.36, -.1];   /* (la crosse dans le poing, le canon devant) */ m.position.set(G[0] * k, G[1] * k, G[2] * k); m.userData.grip = true;   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
-  if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;
-  { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
+  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); const G = fA.includes("re-") ? [-.07, -.4, .05] : [-.07, -.36, -.1];   /* (la crosse dans le poing, le canon devant) */ m.position.set(G[0] * k, G[1] * k, G[2] * k); m.userData.grip = G;   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
+  if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible; { const kk = .26 / (A.sc.scale.x || 1); if (A.armeK && Math.abs(kk - A.armeK) > 1e-4) { A.armeK = kk; for (const c of A.arme.children) if (Array.isArray(c.userData.grip)) { const G = c.userData.grip; c.scale.setScalar(kk); c.position.set(G[0] * kk, G[1] * kk, G[2] * kk); } } }   /* (la taille du personnage changée après coup — Barry, au bar : l'arme reste dans la main) */
+  { const fp = !!(p.moi && pompeEnMain() && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
   const vise = (p.viseeT && performance.now() - p.viseeT < 1600) || p.tempe, fusil = !!(A.pompe && A.pompe.visible && A.act.idleF);
   if (fusil) { if (vise) { let d = p.visee - A.sc.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); A.sc.rotation.y += d * .35; } A.sc.updateMatrixWorld(true);
     const rh = os3D(A, "RightHand"), lh = os3D(A, "LeftHand"); if (rh && lh) { const a = rh.getWorldPosition(new THREE.Vector3()), b = lh.getWorldPosition(new THREE.Vector3()), dir = b.clone().sub(a).normalize(); a.addScaledVector(dir, -.04);
@@ -15243,8 +15257,8 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
     const rh = os3D(A, "RightHand"), la = os3D(A, "LeftArm"), lf = os3D(A, "LeftForeArm"); if (rh && la && lf) { A.sc.updateMatrixWorld(true); const T = rh.getWorldPosition(new THREE.Vector3()).addScaledVector(dr, .03).add(new THREE.Vector3(0, -.03, 0)), ep = la.getWorldPosition(new THREE.Vector3());
       viser3D(A, "LeftArm", "LeftForeArm", T.clone().sub(ep).normalize().add(new THREE.Vector3(0, -.45, 0)).addScaledVector(dr, -.2)); viser3D(A, "LeftForeArm", "LeftHand", T.clone().sub(lf.getWorldPosition(new THREE.Vector3()))); } }   // (les deux bras tendus, l'arme pointée)
   const h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (!h || !fa) return; A.sc.updateMatrixWorld(true);
-  { const he = os3D(A, "RightHandEnd"); if (he && p.info.heros !== 100 && !p.tempe) {   /* (les héros de Resident Evil : l'arme réglée sur la main elle-même — la crosse dans l'axe des doigts, au milieu de la paume ; le canon vers l'avant, ou dans l'axe du bras quand on vise) */
-    h.getWorldPosition(_v1); he.getWorldPosition(_v3); const ax = _v3.clone().sub(_v1).normalize(), paume = _v1.clone().lerp(_v3, .4), ry = A.sc.rotation.y, fw = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
+  { const he = os3D(A, "RightHandEnd"); if (he && p.info.heros !== 100) {   /* (les héros de Resident Evil : l'arme réglée sur la main elle-même — la crosse dans l'axe des doigts, au milieu de la paume ; le canon vers l'avant, ou dans l'axe du bras quand on vise) */
+    h.getWorldPosition(_v1); he.getWorldPosition(_v3); const ax = _v3.clone().sub(_v1).normalize(), paume = _v1.clone().addScaledVector(ax, Math.min(_v1.distanceTo(_v3) * .4, .075) - (p.info.heros === 23 ? .27 : 0) * A.sc.scale.y),   /* (Barry : sa main visible est plus haut que l'os de sa main) */   /* (au plus 7,5 cm du poignet : le bout de la main de Barry est mal placé, l'arme tombait au genou) */ ry = A.sc.rotation.y, fw = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
     const d = ax.clone(), up = (vise ? new THREE.Vector3(0, 1, 0) : fw).addScaledVector(ax, -(vise ? ax.y : fw.dot(ax))).normalize();   /* (le canon dans le prolongement du bras et de la main ; le dessus de l'arme vers l'avant, ou vers le haut quand on vise) */
     const xa = up.clone().cross(d).normalize(), ya = d.clone().cross(xa); A.sc.worldToLocal(paume); A.arme.position.copy(paume); A.sc.getWorldQuaternion(_qb);
     A.arme.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, d)).premultiply(_qb.invert()); return; } }
@@ -15737,7 +15751,7 @@ function manette() {
     if (dx || dy) { const r0 = es[cur].getBoundingClientRect(), c0 = [r0.left + r0.width / 2, r0.top + r0.height / 2]; let best = -1, bsc = 1e9;
       es.forEach((b, j) => { if (j === cur) return; const r = b.getBoundingClientRect(), vx = r.left + r.width / 2 - c0[0], vy = r.top + r.height / 2 - c0[1], av = vx * dx + vy * dy; if (av <= 4) return; const sc = av + Math.abs(vx * dy - vy * dx) * 2.5; if (sc < bsc) { bsc = sc; best = j; } });
       if (best >= 0) cur = best; }
-    if (G.sel !== es[cur]) { if (G.sel) G.sel.style.outline = ""; G.sel = es[cur]; G.sel.style.outline = "3px solid #ffd23a"; G.sel.style.outlineOffset = "2px"; if (cur >= 4) G.sel.click(); }   /* (un objet : il s'affiche dès qu'on passe dessus) */
+    if (G.sel !== es[cur]) { if (G.sel) G.sel.style.outline = ""; G.sel = es[cur]; G.sel.style.outline = "3px solid #ffd23a"; G.sel.style.outlineOffset = "2px"; if (cur >= 4 && G.sel.voir) G.sel.voir(); }   /* (un objet : il s'affiche dès qu'on passe dessus) */
     if (appui(0)) G.sel.click(); else if (appui(1) || appui(3)) G.fermer(); fin(); return; }
   // la carte de Silent Hill : joystick gauche pour la parcourir, joystick droit (ou les gâchettes) pour zoomer, B ou Y pour la ranger
   if (M.cadranEl && M.cadranEl.isConnected && M.cadranEl.carteMan) { const C = M.cadranEl.carteMan; C.defiler(lx * dt * 900, ly * dt * 900);
@@ -16469,7 +16483,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { for (const f of quitt
     if (garder) { for (const o of [M.almMesh, M.radioObj, M.plaqueObj, ...(M.verresBar ? M.verresBar.values() : [])]) if (o && o.parent) o.parent.remove(o);   // (ce qui est posé à nouveau à chaque visite)
       ancL.cadenasOuvert = false; if (ancL.porteEnc) ancL.porteEnc.rotation.y = 0; M.garde = { id: lieuAvant, q: { scene: ancienne, L: ancL, repere: ancRep } }; }
     else setTimeout(() => libererScene(ancienne), 2500); }   // (plus tard, pas au moment du passage : l'image ne se fige plus en entrant) (l'ancien lieu libère aussi ses images dans la carte graphique : sinon, de voyage en voyage, la mémoire se remplit et l'image finit par se figer)
-  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.barAttente = null; M.lettre = null; M.pompePos = M.pompeL = null; M.lisaVictime = M.toitNom = M.toitId = M.barId = M.toitRadio = M.toitMord = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
+  if (estApo(id) && !estApo(M.lieu)) { M.barFait = false; M.barAttente = null; M.lettre = null; M.armeChoisie = null; M.pompePos = M.pompeL = null; M.lisaVictime = M.toitNom = M.toitId = M.barId = M.toitRadio = M.toitMord = null; M.horlogeFaite = false; M.tues = 0; M.mitra = false; APO.balles = 9; APO.vies = 4; APO.zombieFin = 0; M.zKills = 0; M.revenants = []; M.revenantsFinis = new Set(); M.horlogeLoin = false; M.sepA = 0; M.sepFait = false; M.separe = false; M.bradT = 0; M.bradEnCours = false; M.gps = false; M.retrouve = false; M.c4 = false; M.c4Pose = false; M.porcheOuvert = false; M.porcheDitT = 0; M.sursauts = new Set(); M.pompe = false; M.toitFait = false; M.tyran = null; M.tyranMort = false; M.lisa = null; M.lisaMorte = false; for (const e of M.equipe || []) { e.vies = 4; e.mort = false; } }
   M.chefZ = null;
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
