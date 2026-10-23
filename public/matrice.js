@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.90";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.91";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12177,11 +12177,17 @@ function codecDire(qui, nom, texte, ms) { if (!M || !M.ctx || !M.ctx.conteneur) 
       <div class="codec-txt" style="margin-top:12px;min-height:3.2em;color:#f2f2f2;font:16px/1.45 Arial;text-shadow:0 1px 2px #000"></div>`;
     M.ctx.conteneur.appendChild(el); C = M.codec = { el, txt: el.querySelector(".codec-txt"), barres: [...el.querySelectorAll(".codec-barres i")], t: 0 };
     C.anim = setInterval(() => { if (!C.el.isConnected) { clearInterval(C.anim); return; } const k = C.parle ? 3 + Math.floor(Math.random() * 6) : 2; C.barres.forEach((b, i) => b.style.opacity = i < k ? 1 : .2); }, 110);
-    sonBruit(.35, 2600, .12); }
+    bipRadio(); }
   for (const p of C.el.querySelectorAll(".codec-port")) p.classList.toggle("muet", p.dataset.q !== qui);
   C.txt.innerHTML = `<b style="color:${qui === "lui" ? "#8fe39b" : "#f2d27a"}">${esc(nom)}</b> : ${esc(texte)}`; C.parle = true;
   const d = ms || Math.min(7000, 2600 + texte.length * 50); clearTimeout(C.fin); clearTimeout(C.taire); C.taire = setTimeout(() => { C.parle = false; }, Math.min(d, 600 + texte.length * 40));
   C.fin = setTimeout(() => { C.el.remove(); clearInterval(C.anim); if (M && M.codec === C) M.codec = null; }, d + 1200); }
+/* la sonnerie de l'appel radio : deux fois « bip-bip », aigu et clair, puis le grésillement de la liaison */
+function bipRadio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t0 = actx.currentTime + .02;
+    for (const [dt, f] of [[0, 1760], [.13, 2090], [.5, 1760], [.63, 2090]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = "square"; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0 + dt); g.gain.linearRampToValueAtTime(.09, t0 + dt + .008); g.gain.setValueAtTime(.09, t0 + dt + .09); g.gain.linearRampToValueAtTime(0, t0 + dt + .11);
+      o.connect(g).connect(actx.destination); o.start(t0 + dt); o.stop(t0 + dt + .12); }
+    setTimeout(() => sonBruit(.35, 2600, .12), 820); } catch (e) {} }
 const codecOuvert = () => !!(M && M.codec && M.codec.el.isConnected);
 const nomEquipier = () => { const e = (M.equipe || []).find(q => !q.mort); return e && HEROS[e.id] ? HEROS[e.id].court : "Ton équipier"; };
 // les gravats du porche (dans la grande cour) : une butte de pierres et de poutres, qui bouche le passage vers la rue
