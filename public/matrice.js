@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.91";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.92";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12287,7 +12287,7 @@ function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
   W.appendChild(menu); voirObjet(arme, cases[objets.indexOf(arme)]); W.addEventListener("click", e => { if (e.target === W) ferme(); });
   M.ctx.conteneur.appendChild(W); M.cadranEl = W; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) W.addEventListener(ev, e => e.stopPropagation());
   sonBruit(.08, 4000, .2);
-  W.carteMan = { zoom: () => {}, defiler: (dx, dy) => { zone.scrollLeft += dx; zone.scrollTop += dy; }, fermer: () => plan.style.display === "block" ? retour.onclick() : ferme() }; }
+  W.menuMan = { carte: () => plan.style.display === "block", defiler: (dx, dy) => { zone.scrollLeft += dx; zone.scrollTop += dy; }, retour: () => retour.onclick(), fermer: ferme, elems: () => [bMap, bFile, bRadio, bExit, ...cases], sel: null }; }   /* (à la manette : voir manette()) */
 // sous la vie : le bouton GPS (dès l'appel de Brad, tant que le fumigène n'est pas ramassé), et le C4 qu'on porte
 function majBoutonsRE() { if (!M || !M.ctx) return; const re = estApo(M.lieu) && M.L && M.L.apo;
   const voirG = re && M.gps && !(M.fumi && M.fumi.trouve) && !M.evac, voirC = re && M.c4 && !M.c4Pose;
@@ -15710,6 +15710,15 @@ function manette() {
     if (avant) { C.i = (C.i + 1) % C.n; C.sel(C.i); } if (arriere) { C.i = (C.i + C.n - 1) % C.n; C.sel(C.i); }
     if (appui(0)) C.composer(); if (appui(2)) C.eff(); if (appui(1)) C.rac(); fin(); return; }
   // l'affiche lue en grand (ou tout autre écran par-dessus le jeu) : A ou B la repose
+  /* le menu du GPS (Resident Evil) : la croix ou le joystick passe d'un bouton, d'un objet à l'autre ; ✕ (A) choisit ; ○ ou △ (B, Y) revient, puis ferme ; sur la carte, le joystick la fait défiler */
+  if (M.cadranEl && M.cadranEl.isConnected && M.cadranEl.menuMan) { const G = M.cadranEl.menuMan;
+    if (G.carte()) { G.defiler(lx * dt * 900, ly * dt * 900); if (appui(13)) G.defiler(0, 120); if (appui(12)) G.defiler(0, -120); if (appui(1) || appui(3) || appui(0)) G.retour(); fin(); return; }
+    const es = G.elems(); let cur = Math.max(0, es.indexOf(G.sel)); const dx = appui(15) || (lx > .6 && !MAN.cadX) ? 1 : appui(14) || (lx < -.6 && !MAN.cadX) ? -1 : 0, dy = appui(13) || (ly > .6 && !MAN.cadY) ? 1 : appui(12) || (ly < -.6 && !MAN.cadY) ? -1 : 0; MAN.cadX = Math.abs(lx) > .6; MAN.cadY = Math.abs(ly) > .6;
+    if (dx || dy) { const r0 = es[cur].getBoundingClientRect(), c0 = [r0.left + r0.width / 2, r0.top + r0.height / 2]; let best = -1, bsc = 1e9;
+      es.forEach((b, j) => { if (j === cur) return; const r = b.getBoundingClientRect(), vx = r.left + r.width / 2 - c0[0], vy = r.top + r.height / 2 - c0[1], av = vx * dx + vy * dy; if (av <= 4) return; const sc = av + Math.abs(vx * dy - vy * dx) * 2.5; if (sc < bsc) { bsc = sc; best = j; } });
+      if (best >= 0) cur = best; }
+    if (G.sel !== es[cur]) { if (G.sel) G.sel.style.outline = ""; G.sel = es[cur]; G.sel.style.outline = "3px solid #ffd23a"; G.sel.style.outlineOffset = "2px"; if (cur >= 4) G.sel.click(); }   /* (un objet : il s'affiche dès qu'on passe dessus) */
+    if (appui(0)) G.sel.click(); else if (appui(1) || appui(3)) G.fermer(); fin(); return; }
   // la carte de Silent Hill : joystick gauche pour la parcourir, joystick droit (ou les gâchettes) pour zoomer, B ou Y pour la ranger
   if (M.cadranEl && M.cadranEl.isConnected && M.cadranEl.carteMan) { const C = M.cadranEl.carteMan; C.defiler(lx * dt * 900, ly * dt * 900);
     const plus = ry < -.4 || bt(5) || bt(7), moins = ry > .4 || bt(4) || bt(6); if (plus) C.zoom(1 + dt * 1.6); else if (moins) C.zoom(1 / (1 + dt * 1.6));
