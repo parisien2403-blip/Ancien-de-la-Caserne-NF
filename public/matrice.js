@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.02";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.03";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -16041,13 +16041,15 @@ function animerGroupe() {
 /* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
 /* Michael Jackson en 3D, au centre de la piste, et six zombies de Resident Evil, trois de chaque côté : quand passe Thriller, ou dès qu'on danse.
    Ils dansent comme nous, au même moment (la danse qu'on a choisie, au même temps) ; sans nous, sur Thriller, la chorégraphie du clip */
-const TROUPE_F = ["avatars/re2-mj.glb?v=2", "avatars/re2-uss.glb?v=1", "avatars/re2-zombie1.glb?v=1", "avatars/re2-zf.glb?v=1", "avatars/re2-zombie2.glb?v=1"];
-const TROUPE_POS = [[0, 0, 0], [-1.35, -.55, 1], [-2.6, -1.1, 2], [-3.85, -1.65, 3], [1.35, -.55, 3], [2.6, -1.1, 4], [3.85, -1.65, 1]];   // (x sur le côté, z en arrière, le modèle : lui au milieu, les zombies en V derrière)
+const TROUPE_F = ["avatars/re2-mj.glb?v=2", "avatars/re2-uss.glb?v=1", "avatars/re2-zombie1.glb?v=1", "avatars/re2-zombie2.glb?v=1"];   /* (pas la zombie : sur son squelette, la tête se retournait en dansant) */
+const TROUPE_POS = [[0, 0, 0], [-.75, -1.2, 1], [.75, -1.2, 3], [-1.65, -2.4, 2], [-.55, -2.4, 3], [.55, -2.4, 1], [1.65, -2.4, 2]];   // (x sur le côté, z en arrière, le modèle : un triangle — lui en pointe, deux zombies, puis quatre)
 let troupeP = null;
 function chargerTroupe() { return troupeP = troupeP || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-  const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"), ld = new gltfMod.GLTFLoader(), G = await Promise.all(TROUPE_F.map(f => ld.loadAsync(f)));
-  const mods = G.map(g => { const sc = g.scene, clips = {};   /* (les danses faites une fois par modèle, sur sa pose de départ ; chaque copie s'en sert) */
-    for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc); if (k) { k.name = n; clips[n] = k; } }
+  const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"), AH = await chargerAnimsMX("anims/re-heros.json?v=4"), AZ = await chargerAnimsMX("anims/re-zombies.json?v=5"), ld = new gltfMod.GLTFLoader(), G = await Promise.all(TROUPE_F.map(f => ld.loadAsync(f)));
+  const mods = G.map((g, i) => { const sc = g.scene, clips = {}, cou = false;   /* (les danses faites une fois par modèle, sur sa pose de départ ; chaque copie s'en sert) */
+    const net = k => { if (k && cou) k.tracks = k.tracks.filter(t => !/^(Neck|Head)\./.test(t.name)); return k; };   /* (la zombie : son cou et sa tête restent comme au repos — sinon sa tête se retournait) */
+    for (const n of DANSES_ADMIN) { const k = net(clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc)); if (k) { k.name = n; clips[n] = k; } }
+    { const k = net(i ? clipMXcible(AZ, "z-idle", sc) : clipMXcible(AH, "h-idle", sc)); if (k) { k.name = "repos"; clips.repos = k; } }   /* (en attendant qu'on danse : debout, sur place — lui droit, les zombies qui se balancent) */
     sc.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(sc); return { sc, clips, h: hauteurOs(sc) || (b.max.y - b.min.y) || 1.75 }; });
   const g = new THREE.Group(), membres = TROUPE_POS.map(([x, z, m]) => { const M0 = mods[m], sc = skelMod.clone(M0.sc);
     sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = [].concat(o.material).map(mt => { mt = mt.clone(); mt.transparent = false; mt.depthWrite = true; if (mt.map) { mt.alphaTest = .5; if (mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; } } return mt; }); if (o.material.length === 1) o.material = o.material[0]; } });
@@ -16061,11 +16063,11 @@ function animerMJ() { const T = M && M.troupe;
   if (T.g.parent !== M.scene) { const [x, z] = M.L.pisteCentre, S = M.L.scene, sz = S ? S.centre[1] : z + 3, sens = sz > z ? -1 : 1;   /* (dos à la scène, face à la salle) */
     T.g.position.set(x, M.L.hauteur ? M.L.hauteur(x, z) : 0, z); T.g.rotation.y = sens > 0 ? 0 : Math.PI; for (const m of T.membres) m.sc.position.z = -Math.abs(m.sc.position.z); M.scene.add(T.g); }
   T.g.visible = true; const now = performance.now(), dt = Math.min(.1, (now - (T.prec || now)) / 1000); T.prec = now;
-  // la danse : la nôtre, au même instant ; sinon (sur Thriller), celle du clip, réglée sur l'horloge
-  const d = dMoi || "thriller2", aMoi = dMoi && A.act[dMoi];
-  for (const m of T.membres) { const a = m.act[d] || m.act.thriller2; if (!a) continue;
+  // ils ne dansent que quand on danse : la même danse, au même instant ; sinon, ils attendent sur place
+  const d = dMoi || "repos", aMoi = dMoi && A.act[dMoi];
+  for (const m of T.membres) { const a = m.act[d] || m.act.repos; if (!a) continue;
     if (m.cur !== a) { a.reset().play(); if (m.cur) a.crossFadeFrom(m.cur, .25, false); m.cur = a; }
-    m.mix.update(dt); a.time = aMoi ? aMoi.time % a.getClip().duration : (Date.now() / 1000) % a.getClip().duration; m.mix.update(0); } }
+    m.mix.update(dt); if (aMoi) { a.time = aMoi.time % a.getClip().duration; m.mix.update(0); } } }
 const SMITH = -16;
 function animerSmith() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
