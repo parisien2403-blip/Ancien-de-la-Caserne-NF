@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.72";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.73";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13114,7 +13114,9 @@ function lancerLisa() {
   { const now = performance.now(); if (!M.fetesT) M.fetesT = now; if (now - M.fetesT < 6000 && mp.z > 4.5) return; }   /* (pas tout de suite : on laisse les personnages avancer dans la salle — six secondes, ou jusqu'au milieu) */
   const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
   M.lisaMus = false; M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
-  lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-lisa.glb?v=2"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, "bossu"); return G; })().catch(e => { console.warn("lisa", e); return null; });
+  lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-lisa.glb?v=2"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, "bossu");
+      const AL = await chargerAnimsMX("anims/re-lisa.json?v=1"); if (AL) { const w = clipMX(AL, "l-marche", G.scene), c = clipMX(AL, "l-cri", G.scene); G.animations = G.animations.filter(a => a.name !== "walk"); if (w) { w.name = "walk"; G.animations.push(w); } if (c) { c.name = "cri"; G.animations.push(c); } G.mx = true; }   /* (sa vraie démarche de mutante, voûtée ; son hurlement) */
+      return G; })().catch(e => { console.warn("lisa", e); return null; });
   lisa3D.then(G => { const T = M && M.lisa; if (!G || !T || !T.attente || baseLieu(M.lieu) !== "fetes") { if (M && M.lisa === T) M.lisa = null; return; }
     const sc = skelMod.clone(G.scene); sc.updateMatrixWorld(true); let hy = -1e9, by = 1e9; sc.traverse(o => { if (!o.isBone) return; const y = o.getWorldPosition(new THREE.Vector3()).y; if (y > hy) hy = y; if (y < by) by = y; });
     sc.scale.multiplyScalar(hy > by ? LT.H / ((hy - by) * 1.03) : 1); sc.rotation.order = "YXZ";   // (sa taille : du bout des pieds au sommet du crâne, d'après le squelette)
@@ -13215,12 +13217,12 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
   let da = Math.atan2(cx, cz) - T.ry; da = Math.atan2(Math.sin(da), Math.cos(da)); T.ry += da * Math.min(1, dt * (T.etat === "frappe" ? 2 : 4)); T.sc.rotation.y = T.ry;
   let n = "idle";
   if (T.etat === "frappe") { const k = now - T.t0; if (!T.touche && k > 720) { T.touche = true; if (T.vise) T.vise.coup && T.vise.coup(); else if (d < 2.2 && !T.cine) subirMorsure(T.x, T.z, 1); } if (k > 1500) T.etat = T.cine ? "attend" : "chasse"; }
-  else if (T.etat === "recule") { if (now > T.reculT) T.etat = "chasse"; }
+  else if (T.etat === "recule") { if (T.A.act.cri) n = "cri"; if (now > T.reculT) T.etat = "chasse"; }
   else if (T.etat === "chasse" && !T.cine && !APO.zombieFin) {
     if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; criLisa(.7); }
     else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
   else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
-  jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = .7;
+  jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = T.A.act.cri ? .85 : .7;
   racleChaine(0);   /* (plus de sons fabriqués : seulement sa vraie voix, fournie à part) */
   T.mix.update(dt); T.sc.updateMatrixWorld(true);
   // voûtée, la tête penchée ; elle titube un peu
@@ -13235,7 +13237,7 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
     for (const nb of ["RightArm", "RightForeArm"]) { const b = os3D(A, nb); if (b) T.tw.push([b, b.quaternion.clone()]); }
     viser3D(A, "RightArm", "RightForeArm", dir.normalize()); viser3D(A, "RightForeArm", "RightHand", dir); } }
 function toucherLisa(T) { if (!T.g || T.mortT || T.cine) return; const now = performance.now(); T.flashT = now + 160; sangAuSol(T.x, T.z, 0, 1.1); T.hp--;
-  if (T.hp > 0 && T.hp % 5 === 0 && T.etat !== "frappe") { T.etat = "recule"; T.reculT = now + 600; criLisa(1); }   // (elle encaisse, se cabre, hurle)
+  if (T.hp > 0 && T.hp % 5 === 0 && T.etat !== "frappe") { T.etat = "recule"; T.reculT = now + (T.A.act.cri ? 1700 : 600); criLisa(1); }   // (elle encaisse, se cabre, hurle)
   if (T.hp <= 0) { T.mortT = now; M.lisaMorte = true; criLisa(1, true); } }
 /* la scène : on a fait quelques pas dans la salle vide ; « Tu entends ça ? » — ses chaînes ; elle avance, en gros plan ; l'équipier : « Laisse-le-moi ! », il fonce, elle lui arrache la tête */
 function cineLisa(T) { const moi = moiApo(); if (!moi) return; const cam = M.camera, t0 = performance.now(); let fini = false, dit = 0, prec = t0, clk = 0, coup = false, tete = null, uCoup = 0, tirs = 0;
@@ -14928,7 +14930,11 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
             if (zc.a > .5) { float l = dot(diffuseColor.rgb, vec3(.299, .587, .114)); diffuseColor.rgb = zc.rgb * clamp(.35 + l * 1.1, 0.0, 1.25); }
           }`); };
       o.material.needsUpdate = true; }
-    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/avatars\/re2-/.test(f)) { clipsDS(sc, mix, act, true); return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
+    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/avatars\/re2-/.test(f)) { clipsDS(sc, mix, act, true);
+      const AM = await chargerAnimsMX("anims/re-heros.json?v=1"), fem = /re2-(claire|jill)/.test(f);   /* (les vrais mouvements : au repos, la marche pistolet en main, la course ; Claire et Jill ont les leurs) */
+      if (AM) { for (const [n, c] of [["idle", fem ? "f-idle" : "h-idle"], ["walk", "h-pmarche"], ["run", fem ? "f-course" : "h-rcourse"], ["mortMX", "h-mort"]]) { const k = clipMX(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }
+        if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
+      return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
     if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
       clipsDS(sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; } return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
@@ -14963,7 +14969,7 @@ function poserAvatar3D(p) { if (!av3OK(p)) return; const T = tenueAv3(p.info); i
 function animerAvatar3D(p, dt) { const A = p.av3; if (!A) return; if (A.sc.parent !== p.g) { p.av3 = null; return; }
   if (p.coupe3D) { A.sc.visible = false; if (p.corps) p.corps.visible = false; return; }   // (coupée en deux par Pyramid Head : ce sont ses deux moitiés qu'on voit)
   const assis = Number.isInteger(p.info.assis) && M.L.tabourets && M.L.tabourets[p.info.assis], use = av3OK(p) && (assis || !Number.isInteger(p.info.assis)) && !p.info.mortT && !p.info.joue && !p.info.slow && !(p.info.danse && /ymca|slow|chant|clavier|guitare|batterie/.test(String(p.info.danse)));
-  if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A); return; }
+  if (p.info.mortT && p.info.heros && av3OK(p)) { mort3D(p, A, dt); return; }
   A.sc.rotation.x = 0; if (A.repM) { for (const n in A.repM) os3D(A, n).quaternion.copy(A.repM[n]); A.repM = null; A.sc.position.set(0, 0, 0); }   // (relevé : assommé, il reprend ses esprits)
   A.sc.visible = use; if (p.corps) p.corps.visible = !use; if (!use) return;
   const q = p.g.position, dx = q.x - (A.px ?? q.x), dz = q.z - (A.pz ?? q.z); A.px = q.x; A.pz = q.z; const v = Math.hypot(dx, dz) / Math.max(.005, dt);
@@ -14993,7 +14999,9 @@ function teteAv3(p, A, dt) { const r = p.teteVers, q = p.g.position; let c = 0;
 /* un héros mort : il tombe à genoux, puis en avant, face contre le sol, et y reste
    (les genoux restent en place : le corps bascule autour d'eux, les jambes se déplient pour rester à plat derrière lui) */
 const _vk = () => new THREE.Vector3();
-function mort3D(p, A) { const t = performance.now() - p.info.mortT, u = Math.min(1, t / 450), w0 = Math.max(0, Math.min(1, (t - 650) / 550)), w = w0 * w0, th = w * Math.PI / 2 * .97;
+function mort3D(p, A, dt = 1 / 60) { if (A.act.mortMX) { A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.sc.rotation.x = 0; A.sc.position.set(0, 0, 0);   // (il s'écroule en avant, pour de vrai)
+    if (A.cur !== "mortMX") { const a = A.act.mortMX; a.reset().play(); if (A.curA && A.curA !== a) a.crossFadeFrom(A.curA, .2, false); A.cur = "mortMX"; A.curA = a; } A.mix.update(dt); return; }
+ const t = performance.now() - p.info.mortT, u = Math.min(1, t / 450), w0 = Math.max(0, Math.min(1, (t - 650) / 550)), w = w0 * w0, th = w * Math.PI / 2 * .97;
   A.sc.visible = true; if (p.corps) p.corps.visible = false; if (A.arme) A.arme.visible = false; A.assisT = null;
   if (A.cur !== "idle" && A.act.idle) { A.act.idle.reset().play(); if (A.curA && A.curA !== A.act.idle) A.curA.stop(); A.cur = "idle"; A.curA = A.act.idle; } A.mix.update(0);
   A.sc.rotation.order = "YXZ"; A.sc.rotation.x = 0; A.sc.position.set(0, 0, 0);
