@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.79";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.80";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2146,7 +2146,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   const bit = toile(256, 256, (x) => { x.fillStyle = "#5c5a58"; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 70 + alea() * 50; x.fillStyle = `rgba(${v},${v - 4},${v - 8},.5)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); } });
   /* entre la barrière du mur noir et celle d'en face : un contrebas d'un mètre (six marches) ; la barrière d'en face, la contre-allée et le bâtiment sont en bas */
   const DH = RU.DH, DT = DH + 1.5, x0s = C3.x - .1, zE = zA + RU.cour; RU.x0s = x0s; RU.zS = [zT - 3, zT - 1.8]; RU.DT = DT;   // (DT : le creux entre les deux barrières, 1,50 m plus profond)
-  const planP = (xa, xb, za, zb, dy, map) => { const L2 = (zb - za) / Math.cos(ang), o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, L2), A.mat({ map: tex(map || textures().paves, (xb - xa) / 4, L2 / 4), roughness: .92 }), (xa + xb) / 2, RU.y((za + zb) / 2) - dy + .01, (za + zb) / 2, false)); o.rotation.x = -Math.PI / 2 - ang; return o; };
+  const planP = (xa, xb, za, zb, dy, map) => { const L2 = (zb - za) / Math.cos(ang), o = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, L2), A.mat({ map: tex(map || (dy > 0 ? textures().betonClair : textures().paves), (xb - xa) / (dy > 0 && !map ? 2 : 4), L2 / (dy > 0 && !map ? 2 : 4)), roughness: .92 })   /* (en contrebas : du béton gris clair, pas des pavés) */, (xa + xb) / 2, RU.y((za + zb) / 2) - dy + .01, (za + zb) / 2, false)); o.rotation.x = -Math.PI / 2 - ang; return o; };
   planP(DB, x0s, zA, zT, 0); planP(x0s, xR, zA, zE, 0); planP(x0s, xR, zE, RU.zS[0], DT); planP(xR, xR + .4, zE, RU.zS[0], DH); planP(x0s, xR + .4, RU.zS[0], RU.zS[1], DH); planP(x0s, xR + .4, RU.zS[1], zT, 0);   // (au bout, contre le mur noir : un bloc plein, à hauteur de taille)
   { const beton = A.mat({ map: tex(textures().betonClair, 4, 1), color: 0xcfcfcf, roughness: .95 }), L2 = (zT - zE) / Math.cos(ang), zm = (zT + zE) / 2;
     const m1 = A.ajoute(new THREE.BoxGeometry(.2, DT, L2), beton, x0s + .1, RU.y(zm) - DT / 2, zm, false); m1.rotation.x = -ang;   // le mur de soutènement, sous la barrière du mur noir
@@ -2223,6 +2223,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE + RU.LR, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
   { const t0 = zT - C3.NT * C3.PT, ta = t0 - C3.PTr - (zT - t0), pe = { ang, y: z => RU.y(z) };   // (le long de la terrasse, à plat, dans la continuité du gris d'à côté)
     trottoir(A, L, DB, DB + 1.4, zA + RU.cour, ta, ["x1"], pe); trottoir(A, L, DB, DB + 1.4, t0, zT, ["x1"], pe);
+    { const pe2 = { ang, y: z => RU.y(z) + .004 }; trottoir(A, L, DB, DB + 1.4, ta, t0, ["x1"], pe2); L.trottoirs.pop(); }   /* (et entre les deux, le long de la terrasse : le trottoir et sa bordure continuent — le sol y est déjà à sa hauteur) */
     C3.rampe = [C3.LT / 2, DB + 1.4, ta, t0]; }   // (derrière la terrasse jusqu'au bord de la rue : le sol suit la pente de la rue, sans marche ni rampe en travers — voir plus bas)
   // à gauche, le long de l'immeuble : le trottoir, qui suit la pente
   // à gauche : le flanc de l'immeuble, en brique sans fenêtre
@@ -6200,6 +6201,7 @@ function construireAppart(A, L, scene) {
       else if (!vu) { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }   /* (rien à montrer encore : la neige — la ligne était restée dans le commentaire, l'écran restait figé) */
       finition(); };
     const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
+    quitterLieu.add(() => { if (allumee) { allumee = false; voyant.visible = false; video.pause(); eteindre(); lueur.intensity = 0; } });   /* (on sort de l'appartement : elle s'éteint, on ne l'entend plus) */
     // la télécommande, et la bibliothèque (l'administrateur seul)
     let panneau = null;
     const bouton = (txt, f, titre) => { const b2 = document.createElement("button"); b2.textContent = txt; if (titre) b2.title = titre; b2.style.cssText = "font:600 15px system-ui;padding:9px 13px;border-radius:10px;border:1px solid #555;background:#2a2c30;color:#fff;cursor:pointer"; b2.onclick = e => { e.stopPropagation(); f(); }; return b2; };
@@ -12886,6 +12888,7 @@ function posesZ(ty) {
 }
 const regZ = i => ((M.ctx.pnjTrio && M.ctx.pnjTrio(ZTYPES[i].id)) || {}).reglage || {};
 const sonsCourts = new Set();
+const quitterLieu = new Set();   // (ce qui doit se taire quand on change de lieu : la télé de l'appartement…)
 function sonPos(src, vol) { try { const a = new Audio(src); a.volume = Math.max(0, Math.min(1, vol)); sonsCourts.add(a); a.onended = () => sonsCourts.delete(a); a.play().catch(() => {}); } catch (e) {} }
 function couperSonsApo() { if (M && M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } if (M && M.sonPluie) { try { M.sonPluie.src && M.sonPluie.src.stop(); } catch (e) {} M.sonPluie = null; }   /* (la pluie se tait en quittant Resident Evil) */
   if (M) M.musFin = false; for (const a of [sonApo, sonFeu, sonRepos, sonRE, sonG, sonFin, ...sonsCourts]) if (a) { try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} }
@@ -16312,7 +16315,7 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.choix) choixObjets(false); if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
+function changerLieu(id, arrivee, yaw = 0, face = false) { for (const f of quitterLieu) try { f(id); } catch (e) {} if (M && M.choix) choixObjets(false); if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
   if (estApo(M.lieu) && estApo(id) && M.lieu !== id && !M.porteRE && !M.sansPorte && !M.cine && M.L && M.L.apo) { const n = voile("background:#000;opacity:1");   /* (à Resident Evil : un bref fondu au noir, d'un lieu à l'autre — plus de porte qui s'ouvre) */
