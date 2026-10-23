@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.60";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.61";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8292,12 +8292,9 @@ function construireCoraline(A, L, scene) {
     if (n >= 1) return PIECES[n].some(r => dedans(x, z, r)) || PASSAGES[n].some(r => dedans(x, z, r));
     if (dedans(x, z, FOSSE)) return true;   // (la courette, son escalier)
     if (PIECES[0].some(r => dedans(x, z, r)) || PASSAGES[0].some(r => dedans(x, z, r)) || PORCHE.some(r => dedans(x, z, r)) || MARCHES.some(r => dedans(x, z, r))) return true;
-    if (Math.abs(z - PLAT[3] - .3) < .3 && x > PLAT[0] + .5 && x < PLAT[1] - .5 && !(x > ESC[0] && x < ESC[1])) return false;   // (le muret au bord du plateau ; on descend par l'escalier)
-    if (z > ESC[2] - .5 && z < ESC[3] && (Math.abs(x - ESC[0] + .18) < .3 || Math.abs(x - ESC[1] - .18) < .3)) return false;   // (les murets de l'escalier)
-    if (OBST.some(([a, b, r]) => Math.hypot(x - a, z - b) < r)) return false;   // (les rochers, les murets des chemins)
     if (ell(x, z) < 1.25) { const r = Math.sqrt(ell(x, z)); if (surPont(x, z)) return true; if (Math.abs(x - JX) < .8 && Math.abs(z - ZR) < BZ) return false; if (oeil(x, z) || rigole(x, z) || sourcil(x, z)) return false;   // (le jardin : ses murets, ses escaliers, le bassin creux ; le pont)
       if (Math.abs(r - 1.02) < .055 && !axeX(x)) return false; if (axeX(x) && z < JZ && r > 1.07) return false; if (Math.abs(r - RI) < .04 && !axeX(x) && !axeZ(z)) return false; }
-    return horsPlat(x, z) < 23 && !EMPRISE.some(r => dedans(x, z, r, -.4)) && d > TR + .4 && !ARBRES.some(r => dedans(x, z, r)); };
+    return horsPlat(x, z) < 42 && !EMPRISE.some(r => dedans(x, z, r, -.4)) && d > TR + .4 && !ARBRES.some(r => dedans(x, z, r)); };
   L.hauteur = (x, z, p) => { if (p && p.corN == null) p.corN = p.g && p.g.position && p.g.position.y > (Y0 + Y1) / 2 ? 1 : 0;
     const n = p ? p.corN : niveau();
     if (surEsc(x, z)) { const h = Y0 + Math.max(0, Math.min(1, (x - 1.2) / 3.8)) * (Y1 - Y0); if (p) p.corN = h > (Y0 + Y1) / 2 ? 1 : 0; return h; }
@@ -8308,8 +8305,12 @@ function construireCoraline(A, L, scene) {
     if (x > FX0 - .05 && x < FX1 && z > FZ0 && z < FZ1) return x > FX1 - FPAL ? FY : Math.max(FY, Math.min(0, FY + (Math.floor((FX1 - FPAL - x) / ((FX1 - FX0 - FPAL) / NF)) + 1) * -FY / NF));   // (l'escalier de la courette, marche par marche)
     if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 11.3) / .3) * Y0 / 4));
     if (dedans(x, z, MARCHES[1])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((-8.1 - x) / .3) * Y0 / 4));
-    return EMPRISE.slice(0, 5).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : dansEsc(x, z) ? hEsc(z) : colline(x, z); };   // (… et la colline, son escalier)   // (le plancher des porches ; la courette n'en fait pas partie)
+    return EMPRISE.slice(0, 5).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : dansEsc(x, z) ? hEsc(z) : surMuret(x, z) ?? colline(x, z); };   // (… et la colline, son escalier)   // (le plancher des porches ; la courette n'en fait pas partie)
   // la caméra : dans la maison, elle reste dans la pièce où l'on est (sous son plafond) ; dehors, elle suit de plus loin
+  // (les murets bas et les rochers : on peut grimper dessus — on va partout, jusque dans la forêt)
+  const surMuret = (x, z) => { if (Math.abs(z - PLAT[3] - .3) < .25 && x > PLAT[0] + .5 && x < PLAT[1] - .5 && !(x > ESC[0] && x < ESC[1])) return .55;
+    if (z > ESC[2] - .5 && z < ESC[3] && (Math.abs(x - ESC[0] + .18) < .2 || Math.abs(x - ESC[1] - .18) < .2)) return Math.max(colline(x, z), hEsc(z)) + .5;
+    const o = OBST.find(([a, b, r]) => Math.hypot(x - a, z - b) < r * .8); return o ? colline(x, z) + .5 : null; };
   const DEHORS = { d: 6, h: 3.2, av: 3, vy: 1.7 }, DEDANS = { d: 2.8, h: 1.9, av: 2.4, vy: 1.2 };
   const pieceDe = (x, z, n) => dT(x, z) < TR - .1 ? ROOMS.find(r => r.nom === (n ? "coraline" : "tour")) : ROOMS.find(r => r.niv === n && x > r.x0 - .05 && x < r.x1 + .05 && z > r.z0 - .05 && z < r.z1 + .05);
   L.suivi = DEHORS;
@@ -8318,6 +8319,27 @@ function construireCoraline(A, L, scene) {
   let dansVu = null;
   L.anim = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const q = moi.g.position, d = !!pieceDe(q.x, q.z, moi.corN ? 1 : 0) || surEsc(q.x, q.z);
     if (d !== dansVu) { dansVu = d; L.suivi = d ? DEDANS : DEHORS; M.camE = null; } if ((moi.corN || 0) !== L.nivVu) { L.nivVu = moi.corN || 0; L.grille = L.grilleAdmin = null; } };   // (les passages changent selon l'étage)
+  // ---------- la famille et le voisinage : le père à son bureau, la mère à la cuisine ; Wybie traîne devant la maison, le chat aussi — dès qu'on sort, ils nous suivent (dehors seulement) ----------
+  { const P = [], ajoute = (A, x, y, z, ry) => { A.sc.position.set(x, y, z); A.sc.rotation.y = ry; scene.add(A.sc); A.act.idle.play(); A.cur = "idle"; P.push(A); return A; };
+    ajoute(genPere(), 4.55, Y0 + .5 - .98, -3.6, Math.PI / 2); ajoute(genMere(), -1.4, Y0, -5.75, Math.PI);
+    const wy = ajoute(genWybie(), 3.4, 0, 13.6, Math.PI * .85), chat = ajoute(genChat(), -2.7, 0, 13.4, Math.PI * 1.15);
+    Object.assign(wy, { attente: [3.4, 13.6], dist: 1.8, cote: .9, vit: 4.4, marche: 1.3 }); Object.assign(chat, { attente: null, dist: 1.1, cote: -.7, vit: 5, marche: .9 });
+    const jouer = (A, n) => { if (A.cur === n) return; const a = A.act[n]; a.reset().play(); a.crossFadeFrom(A.act[A.cur], .25, false); A.cur = n; };
+    const pp = { corN: 0 }; let t0 = performance.now(), mx = null, mz = null, dirX = 0, dirZ = 1;
+    const suivre = (A, m, dehors, dt) => { const q = A.sc.position; let tx = q.x, tz = q.z;
+      if (dehors) { tx = m.x - dirX * A.dist + dirZ * A.cote; tz = m.z - dirZ * A.dist - dirX * A.cote; if (Math.hypot(q.x - m.x, q.z - m.z) > 16) { q.x = tx; q.z = tz; } }
+      else if (A.attente) [tx, tz] = A.attente;
+      const dx = tx - q.x, dz = tz - q.z, d = Math.hypot(dx, dz); let v = 0;
+      if (d > .3) { v = d > 3 ? A.vit : Math.min(A.marche, d * 1.2); const k = Math.min(d, v * dt), nx = q.x + dx / d * k, nz = q.z + dz / d * k;
+        if (L.limites(nx, nz)) { q.x = nx; q.z = nz; } else if (L.limites(nx, q.z)) q.x = nx; else if (L.limites(q.x, nz)) q.z = nz; else v = 0;
+        if (v) { let r = Math.atan2(dx, dz) - A.sc.rotation.y; r = Math.atan2(Math.sin(r), Math.cos(r)); A.sc.rotation.y += r * Math.min(1, dt * 8); } }
+      else if (dehors) { let r = Math.atan2(m.x - q.x, m.z - q.z) - A.sc.rotation.y; r = Math.atan2(Math.sin(r), Math.cos(r)); A.sc.rotation.y += r * Math.min(1, dt * 2); }   // (arrivé : il nous regarde)
+      q.y = L.hauteur(q.x, q.z, pp); jouer(A, v > 3 ? "run" : v > .15 ? "walk" : "idle"); if (A.cur === "walk") A.act.walk.timeScale = Math.max(.6, v / A.marche); };
+    const avant = L.anim; L.anim = () => { avant(); const now = performance.now(), dt = Math.min(.1, (now - t0) / 1000); t0 = now; const moi = M && M.moiNum && M.gens.get(M.moiNum);
+      if (moi) { const m = moi.g.position, dehors = !(moi.corN || 0) && !pieceDe(m.x, m.z, 0) && !surEsc(m.x, m.z) && !PORCHE.some(r => dedans(m.x, m.z, r)) || (moi.corN === 0 && m.z > 9.5);
+        if (mx != null) { const ax = m.x - mx, az = m.z - mz, l = Math.hypot(ax, az); if (l > .01) { dirX = ax / l; dirZ = az / l; } } mx = m.x; mz = m.z;
+        suivre(wy, m, dehors, dt); suivre(chat, m, dehors, dt); }
+      for (const A of P) A.mix.update(dt); }; }
   // le cercle du retour, au bout de l'allée : on revient dans la rue de la caserne, devant le Video Futur
   L.portails.push({ dans: (x, z) => Math.hypot(x + .7, z - 27) < .9, vers: "rue", arrivee: [19.1, 5.2], yaw: Math.PI, indice: [-.7, 27] });
   L.depart = [-.7, 24]; L.cam = { pos: [4, 4, 32], vise: [0, 4, 0] };
@@ -14875,7 +14897,7 @@ async function dessinerCorps(p) {
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
 /* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
-export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }] };   // (0002 : retour à son bonhomme de base, la tête de sa photo — à sa demande)
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }, { id: "coraline", nom: "🧥 Coraline (imperméable jaune)", f: "gen:coraline" }] };   // (0002 : retour à son bonhomme de base, la tête de sa photo — à sa demande)
 const av3Cache = {}; let gltfMod = null;
 // la taille d'un personnage 3D, mesurée sur son squelette (des pieds au sommet du crâne), dans les unités du modèle — la boîte englobante, elle, varie d'un modèle à l'autre (cheveux, armes, sac…)
 function hauteurOs(sc) { sc.updateMatrixWorld(true); const os = {}; sc.traverse(o => { if (o.isBone && !os[o.name]) os[o.name] = o; }); const y = n => os[n] ? os[n].getWorldPosition(new THREE.Vector3()).y : null;
@@ -14884,7 +14906,295 @@ function hauteurOs(sc) { sc.updateMatrixWorld(true); const os = {}; sc.traverse(
 const TAILLE_3D = 1.78;   // (un homme : 1,78 m, partout — dedans comme dehors ; les portes, les escaliers sont à la vraie taille)
 let clipsSH = null;   // (la marche, l'attente et la course des personnages de Silent Hill — Harry —, prêtées aux héros de Resident Evil)
 const clipsMarcheSH = () => clipsSH || (clipsSH = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-harry.glb?v=1"); return g.animations.filter(c => ["idle", "walk", "run"].includes(c.name)); })().catch(() => null));
-function chargerAvatar3D(f) { if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
+/* les autres personnages du monde de Coraline, faits comme elle, pièce par pièce, sur un vrai squelette : le père (dans son bureau), la mère (dans la cuisine),
+   Wybie (devant la maison, qui nous suit dehors) et le chat noir (qui nous suit partout dehors) */
+/* une coiffure en 3D : une nappe de cheveux posée sur le crâne (l'ellipsoïde rx, ry, rz centré en (0, TY, zc)), de l'angle phA à phB (0 : devant, en tournant vers la gauche du personnage),
+   du haut yH(φ) au bas yB(φ) ; off : à quelle distance du crâne, ev : comme le bas s'évase (un carré) */
+function coiffeGeo(TY, zc, rx, ry, rz, off, phA, phB, yH, yB, ev = 0, nx = 32, ny = 12) { const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= nx; i++) { const ph = phA + (phB - phA) * i / nx, y0 = yH(ph), y1 = yB(ph);
+    for (let j = 0; j <= ny; j++) { const y = y0 + (y1 - y0) * j / ny, t = Math.max(-1, Math.min(1, (y - TY) / (ry * off))), k = Math.sqrt(1 - t * t) * off * (1 + ev * Math.max(0, TY - y) / ry);
+      pos.push(Math.sin(ph) * rx * k, y, zc + Math.cos(ph) * rz * k); uv.push(i / nx * (phB - phA) * 1.2, j / ny); } }
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const a = i * (ny + 1) + j, b = a + ny + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; }
+/* des cheveux : la couleur, et les mèches (des traits plus clairs et plus sombres, dans le sens des cheveux) */
+function matCheveux(c, r = .5) { const cv = document.createElement("canvas"); cv.width = 128; cv.height = 128; const x = cv.getContext("2d"); x.fillStyle = c; x.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 220; i++) { const v = hasard(i * 1.7); x.strokeStyle = v > .5 ? `rgba(255,255,255,${.04 + v * .08})` : `rgba(0,0,0,${.08 + v * .2})`; x.lineWidth = 1 + hasard(i * 2.9) * 2; const px = hasard(i * 3.3) * 128; x.beginPath(); x.moveTo(px, 0); x.quadraticCurveTo(px + (hasard(i) - .5) * 10, 64, px + (hasard(i * 5) - .5) * 6, 128); x.stroke(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return new THREE.MeshStandardMaterial({ map: t, roughness: r, side: THREE.DoubleSide }); }
+function atelierPerso(def) {
+  const os = {}, PW = {}, liste = [];
+  for (const [n, par, x, y, z] of def) { const b = new THREE.Bone(); b.name = n; PW[n] = [x, y, z]; if (par) { const P = PW[par]; b.position.set(x - P[0], y - P[1], z - P[2]); os[par].add(b); } else b.position.set(x, y, z); os[n] = b; liste.push(b); }
+  const idx = {}; liste.forEach((b, i) => idx[b.name] = i); const parts = new Map();
+  const piece = (geo, mat, o1) => { const g = geo.index ? geo.toNonIndexed() : geo, n = g.attributes.position.count, si = new Float32Array(n * 4), sw = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { const o = typeof o1 === "function" ? o1(g.attributes.position.getX(i), g.attributes.position.getY(i), g.attributes.position.getZ(i)) : o1; si[i * 4] = idx[o]; sw[i * 4] = 1; }
+    g.setAttribute("skinIndex", new THREE.Float32BufferAttribute(si, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4)); if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
+    if (!parts.has(mat)) parts.set(mat, []); parts.get(mat).push(g); return g; };
+  const place = (g, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz)));
+  const tube = (a, b, r0, r1, seg = 12) => { const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b), g = new THREE.CylinderGeometry(r1, r0, va.distanceTo(vb), seg, 1, true);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize())); g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); return g; };
+  const boule = (r, x, y, z, sx = 1, sy = 1, sz = 1, seg = 14) => place(new THREE.SphereGeometry(r, seg, Math.max(6, seg * .7 | 0)), x, y, z, 0, 0, 0, sx, sy, sz);
+  const M = (c, r = .6, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+  /* un visage peint (yeux, sourcils, bouche…) posé en relief sur l'avant d'une tête ronde : R le rayon, (sx, sy, sz) son allongement */
+  const visage = (os1, TY, R, [sx, sy, sz], dessin, zc = 0) => { const c = document.createElement("canvas"); c.width = c.height = 512; const x = c.getContext("2d"); dessin(x, 512);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; const g = new THREE.SphereGeometry(R * 1.025, 36, 28, Math.PI / 2 - 1.3, 2.6, .35, 2.35);
+    g.scale(sx, sy, sz); g.translate(0, TY, zc); const P = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < P.count; i++) uv.setXY(i, .5 + P.getX(i) / (2.2 * R * sx), .5 + (P.getY(i) - TY) / (2.2 * R * sy));
+    piece(g, new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, roughness: .55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), os1); };
+  /* la vraie tête, d'après l'image du film (comme Coraline) : un volume (rx, ry, rz) de la couleur du dessous (peau ou cheveux), et l'image posée en relief sur tout l'avant ;
+     (cx, cy) : le centre de la tête dans l'image, s : des mètres par pixel, cad : la partie de l'image gardée dans le fichier */
+  const teteImage = (os1, url, cad, TY, zc, rx, ry, rz, cx, cy, s, dessous) => { piece(boule(1, 0, TY, zc, rx, ry, rz, 28), dessous, os1);
+    const g = new THREE.SphereGeometry(1.012, 40, 30, Math.PI / 2 - 1.45, 2.9, .04, 3.0); g.scale(rx, ry, rz); g.translate(0, TY, zc); const P = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < P.count; i++) uv.setXY(i, (cx + P.getX(i) / s - cad[0]) / cad[2], 1 - (cy - (P.getY(i) - TY) / s - cad[1]) / cad[3]);
+    const t = new THREE.TextureLoader().load(url); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    piece(g, new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .45, roughness: .55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), os1); };
+  const finir = (clips, extra = {}) => { const sc = new THREE.Group(); os[liste[0].name].updateMatrixWorld(true); const sk = new THREE.Skeleton(liste); let racine = false;
+    for (const [mat, gs] of parts) { const g = new THREE.BufferGeometry(); for (const n of ["position", "normal", "uv", "skinIndex", "skinWeight"]) { const a = new Float32Array(gs.reduce((s, x) => s + x.attributes[n].array.length, 0)); let o = 0; for (const x of gs) { a.set(x.attributes[n].array, o); o += x.attributes[n].array.length; } g.setAttribute(n, new THREE.BufferAttribute(a, gs[0].attributes[n].itemSize)); }
+      const m = new THREE.SkinnedMesh(g, mat); if (!racine) { m.add(os[liste[0].name]); racine = true; } m.bind(sk); m.castShadow = true; m.frustumCulled = false; sc.add(m); }
+    const mix = new THREE.AnimationMixer(sc), act = {}; for (const c of clips) act[c.name] = mix.clipAction(c); return { sc, mix, act, os, ...extra }; };
+  const clip = (nom, D, f, base, hy) => { const N = 24, tr = [], t = [...Array(N + 1)].map((_, i) => i / N * D), v = {};
+    for (let i = 0; i <= N; i++) { const r = f(i / N * Math.PI * 2); for (const n in r) (v[n] = v[n] || []).push(...new THREE.Quaternion().setFromEuler(new THREE.Euler(...r[n], "XYZ")).toArray()); }
+    for (const n in v) tr.push(new THREE.QuaternionKeyframeTrack(n + ".quaternion", t, v[n]));
+    if (hy) tr.push(new THREE.VectorKeyframeTrack(liste[0].name + ".position", t, t.flatMap((_, i) => { const q = hy(i / N * Math.PI * 2); return [base[0] + (q[0] || 0), base[1] + (q[1] || 0), base[2] + (q[2] || 0)]; })));
+    return new THREE.AnimationClip(nom, D, tr); };
+  return { os, PW, piece, place, tube, boule, M, visage, teteImage, finir, clip }; }
+/* un squelette d'humain (les mêmes os que les autres personnages 3D), d'après quelques hauteurs */
+function osHumain(o) { const d = [["Hips", null, 0, o.hanche, 0], ["Spine", "Hips", 0, o.hanche + o.dos * .12, 0], ["Spine1", "Spine", 0, o.hanche + o.dos * .45, 0], ["Spine2", "Spine1", 0, o.hanche + o.dos * .75, 0],
+    ["Neck", "Spine2", 0, o.cou, o.couZ || 0], ["Head", "Neck", 0, o.tete, o.teteZ || 0], ["HeadTop_End", "Head", 0, o.haut, o.teteZ || 0]];
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) d.push([c + "Shoulder", "Spine2", s * o.epX * .35, o.epY, 0], [c + "Arm", c + "Shoulder", s * o.epX, o.epY, 0], [c + "ForeArm", c + "Arm", s * (o.epX + .01), o.coude, 0], [c + "Hand", c + "ForeArm", s * (o.epX + .01), o.poignet, 0],
+    [c + "UpLeg", "Hips", s * o.jX, o.hanche - .02, 0], [c + "Leg", c + "UpLeg", s * o.jX, o.genou, 0], [c + "Foot", c + "Leg", s * o.jX, o.cheville, 0], [c + "ToeBase", c + "Foot", s * o.jX, .025, .08], [c + "Toe_End", c + "ToeBase", s * o.jX, .025, .16]);
+  return d; }
+/* la marche et la course, communes aux personnages (a : l'ampleur des jambes, k : les genoux, br : les bras, av : les avant-bras, pen : le buste penché) */
+const pasPerso = (a, k, br, av, pen) => p => { const s = Math.sin(p), c = Math.cos(p);
+  return { Hips: [0, .08 * s * a, 0], Spine: [pen, -.1 * s * a, 0], Head: [-pen * .6, .05 * s, 0], LeftUpLeg: [-a * s, 0, 0], RightUpLeg: [a * s, 0, 0], LeftLeg: [.08 + k * Math.max(0, c), 0, 0], RightLeg: [.08 + k * Math.max(0, -c), 0, 0],
+    LeftFoot: [-.15 * Math.max(0, c), 0, 0], RightFoot: [-.15 * Math.max(0, -c), 0, 0], LeftArm: [br * s, 0, .08], RightArm: [-br * s, 0, -.08], LeftForeArm: [-av, 0, 0], RightForeArm: [-av, 0, 0] }; };
+const mouvHumain = (W, hanche, repos, opts = {}) => [W.clip("idle", opts.D || 3.4, repos, [0, hanche, 0], opts.hyRepos), W.clip("walk", .95, pasPerso(.42, .7, .35, .25, opts.pen || .04), [0, hanche, 0], p => [0, .018 * Math.abs(Math.cos(p)) - .008, 0]),
+  W.clip("run", .64, pasPerso(.75, 1.1, .7, 1.05, (opts.pen || 0) + .18), [0, hanche, 0], p => [0, .03 * Math.abs(Math.cos(p)) - .01, 0])];
+/* des mains : une paume et quatre doigts serrés, un pouce */
+function mainsPerso(W, mat, o, gauche, droite) { for (const [c, s] of [["Left", 1], ["Right", -1]]) { const m = (s > 0 ? gauche : droite) || mat, x = s * (o.epX + .01), y = o.poignet - .045;
+    W.piece(W.boule(.032, x, y, .005, .62, 1.25, .95, 10), m, c + "Hand"); W.piece(W.place(new THREE.CapsuleGeometry(.009, .04, 3, 6), x + s * .02, y + .005, .02, 0, 0, s * .45), m, c + "Hand"); } }
+
+/* ---------- le père : grand, maigre, le long cou, le nez qui tombe, les lunettes ; le pull vert « MICHIGAN STATE », le jean foncé et la ceinture, les tongs bleues ---------- */
+function genPere() {
+  const o = { hanche: .98, dos: .48, cou: 1.47, tete: 1.6, haut: 1.92, teteZ: .02, epX: .17, epY: 1.42, coude: 1.14, poignet: .86, jX: .085, genou: .53, cheville: .08 }, W = atelierPerso(osHumain(o));
+  const { piece, place, tube, boule, M } = W, peau = M(0xc9b097, .6), pull = M(0x5b6a3c, .95), jean = M(0x1f2b47, .85), cuir = M(0x7a3e1c, .5), tong = M(0x2a4f9a, .5), noirC = M(0x1c1612, .8, { side: THREE.DoubleSide }), metal = M(0x5a4a3a, .3, { metalness: .7 });
+  const TY = 1.74, H = "Head", dos = (x, y) => y > 1.3 ? "Spine2" : y > 1.15 ? "Spine1" : y > 1.04 ? "Spine" : "Hips";
+  // la vraie tête (d'après l'image du film) : longue et étroite, le grand nez, les yeux ronds, les sourcils, les cheveux noirs en bataille, les lunettes qu'il tient
+  W.teteImage(H, "images/coraline/pere.webp?v=2", [205, 15, 140, 180], TY, .02, .1, .15, .105, 276, 115, .0019, peau);
+  // ses cheveux en 3D : courts, noirs, en bataille ; le front dégarni ; des mèches qui rebiquent, deux ou trois épis dressés
+  { const ch = matCheveux("#1e1814", .7); piece(coiffeGeo(TY, .02, .1, .15, .105, 1.07, .7, Math.PI * 2 - .7, () => TY + .165, ph => TY + .02 - .05 * Math.max(0, Math.cos(ph - Math.PI)), 0, 30, 8), ch, H);
+    piece(coiffeGeo(TY, .02, .1, .15, .105, 1.07, -.72, .72, () => TY + .165, ph => TY + .11 + .015 * Math.cos(ph * 3), 0, 16, 6), ch, H);
+    for (let i = 0; i < 34; i++) { const ph = hasard(i * 3.1) * Math.PI * 2, t = .55 + hasard(i * 5.7) * .4, k = Math.sqrt(1 - t * t) * 1.1, y = TY + t * .15 * 1.1;
+      if (Math.cos(ph) > .6 && t < .75) continue; piece(place(new THREE.TorusGeometry(.014 + hasard(i) * .01, .0055, 4, 8, 3.6), Math.sin(ph) * .1 * k, y, .02 + Math.cos(ph) * .105 * k, hasard(i * 7) * 3, hasard(i * 9) * 3, 0), ch, H); }
+    for (const [x, z, a] of [[.01, .0, .2], [-.02, .03, -.3], [.03, -.03, .5]]) piece(tube([x, TY + .16, z], [x + a * .05, TY + .23, z + .01], .003, .001, 3), ch, H); }
+  // le cou, très long  // le cou, très long ; le pull vert, ses côtes au col, aux poignets et en bas, l'écusson « MICHIGAN STATE » ; le jean, la ceinture de cuir
+  piece(tube([0, 1.4, .01], [0, 1.64, .03], .036, .03, 10), peau, "Neck");
+  piece(new THREE.LatheGeometry([[.05, 1.47], [.12, 1.44], [.165, 1.4], [.16, 1.3], [.14, 1.12], [.145, 1.0], [.15, .95], [.14, .94]].map(([r, y]) => new THREE.Vector2(r, y)), 22).scale(1, 1, .72), pull, dos);
+  piece(place(new THREE.TorusGeometry(.05, .013, 5, 16), 0, 1.465, .005, Math.PI / 2, 0, 0), pull, "Spine2");
+  { const c = document.createElement("canvas"); c.width = 256; c.height = 128; const x = c.getContext("2d"); x.fillStyle = "#c8cbb8"; x.font = "bold 44px Georgia, serif"; x.textAlign = "center"; x.globalAlpha = .85; x.fillText("MICHIGAN", 128, 56); x.fillText("STATE", 128, 108);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; piece(place(new THREE.PlaneGeometry(.2, .1), 0, 1.3, .118, -.08), new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 1 }), "Spine2"); }
+  piece(place(new THREE.TorusGeometry(.148, .016, 5, 22), 0, .955, 0, Math.PI / 2, 0, 0, 1, .72, 1), pull, "Hips");
+  piece(place(new THREE.CylinderGeometry(.142, .14, .045, 22), 0, .93, 0, 0, 0, 0, 1, 1, .72), cuir, "Hips"); piece(place(new THREE.BoxGeometry(.04, .035, .01), .02, .93, .104), M(0xb89040, .3, { metalness: .8 }), "Hips");
+  piece(place(new THREE.CylinderGeometry(.14, .14, .14, 20), 0, .86, 0, 0, 0, 0, 1, 1, .72), jean, "Hips");
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) { const x = s * (o.epX + .01);
+    piece(boule(.045, s * o.epX, o.epY, 0, 1, 1, 1, 10), pull, c + "Arm"); piece(tube([s * o.epX, o.epY, 0], [x, o.coude, 0], .044, .038), pull, c + "Arm"); piece(boule(.038, x, o.coude, 0, 1, 1, 1, 8), pull, c + "ForeArm");
+    piece(tube([x, o.coude, 0], [x, o.poignet + .02, 0], .038, .036), pull, c + "ForeArm"); piece(tube([x, o.poignet + .05, 0], [x, o.poignet, 0], .04, .04, 10), pull, c + "ForeArm");
+    piece(tube([s * o.jX, .96, 0], [s * o.jX, o.genou, 0], .07, .058), jean, c + "UpLeg"); piece(boule(.058, s * o.jX, o.genou, 0, 1, 1, 1, 10), jean, c + "Leg"); piece(tube([s * o.jX, o.genou, 0], [s * o.jX, .1, 0], .058, .062), jean, c + "Leg");
+    piece(tube([s * o.jX, .12, .005], [s * o.jX, .05, .005], .034, .036, 10), peau, c + "Foot"); piece(boule(.045, s * o.jX, .04, .07, .9, .5, 1.7, 12), peau, c + "Foot");
+    piece(place(new THREE.BoxGeometry(.1, .018, .27), s * o.jX, .009, .06), tong, c + "Foot"); piece(tube([s * o.jX - .03, .02, .02], [s * o.jX, .05, .1], .006, .006, 4), tong, c + "Foot"); piece(tube([s * o.jX + .03, .02, .02], [s * o.jX, .05, .1], .006, .006, 4), tong, c + "Foot"); }
+  mainsPerso(W, peau, o);
+  // assis à son bureau : il tape à la machine, un œil sur l'écran ; de temps en temps, il remonte ses lunettes
+  const assis = p => { const s = Math.sin(p * 6), lun = Math.max(0, Math.sin(p) - .85) * 6.6;
+    return { Hips: [0, 0, 0], Spine: [.12, 0, 0], Spine1: [.05, 0, 0], Head: [.1 + .03 * Math.sin(p * 2), .12 * Math.sin(p), 0], LeftUpLeg: [-1.5, 0, .06], RightUpLeg: [-1.5, 0, -.06], LeftLeg: [1.45, 0, 0], RightLeg: [1.45, 0, 0], LeftFoot: [.1, 0, 0], RightFoot: [.1, 0, 0],
+      LeftArm: [-.55, 0, .12], LeftForeArm: [-.75 + .05 * s, 0, 0], LeftHand: [.3 * Math.max(0, s), 0, 0], RightArm: [-.55 - lun * .9, 0, -.12 - lun * .25], RightForeArm: [-.75 - .05 * s - lun * 1.4, lun * .4, 0], RightHand: [.3 * Math.max(0, -s), 0, 0] }; };
+  return W.finir(mouvHumain(W, o.hanche, assis, { D: 6 }), { hanche: o.hanche }); }
+
+/* ---------- la mère : le carré noir, la minerve grise autour du cou, le pull beige, le manteau de velours côtelé rouille, le pantalon crème, les chaussures rouges, le sac rouge ---------- */
+function genMere() {
+  const o = { hanche: .9, dos: .45, cou: 1.36, tete: 1.42, haut: 1.7, epX: .15, epY: 1.31, coude: 1.06, poignet: .82, jX: .075, genou: .48, cheville: .08 }, W = atelierPerso(osHumain(o));
+  const { piece, place, tube, boule, M } = W, peau = M(0xe8cdb6, .6), noir = M(0x141216, .45, { side: THREE.DoubleSide }), minerve = M(0x9aa0a6, .7), pull = M(0xb89a6a, .95), manteau = M(0x9a4422, .9), creme = M(0xe8d7ae, .85), rouge = M(0x8e2014, .45), chauss = M(0x7a2a1a, .4);
+  const TY = 1.55, H = "Head", dos = (x, y) => y > 1.2 ? "Spine2" : y > 1.07 ? "Spine1" : y > .97 ? "Spine" : "Hips";
+  W.teteImage(H, "images/coraline/mere.webp?v=2", [28, 18, 112, 100], TY, 0, .1, .108, .1, 83, 70, .00225, peau);
+  // son carré noir en 3D : coupé au menton, gonflé, la raie sur le côté gauche, la frange qui balaie le front vers la droite ; l'épi sur le dessus
+  { const ch = matCheveux("#121014", .45); piece(coiffeGeo(TY, 0, .1, .108, .1, 1.16, .78, Math.PI * 2 - .78, () => TY + .125, () => TY - .085, .35, 30, 12), ch, H);
+    piece(coiffeGeo(TY, 0, .1, .108, .1, 1.14, -1.0, 1.0, () => TY + .125, ph => TY + .035 + .03 * ph - (Math.abs(ph) > .75 ? .35 * (Math.abs(ph) - .75) : 0), .35, 20, 8), ch, H);
+    for (const [a, b] of [[.02, .3], [-.01, -.2], [.03, .6]]) piece(tube([a, TY + .118, -.01], [a + b * .03, TY + .16, .005], .006, .002, 4), ch, H); }   // (la vraie tête, d'après l'image du film : le carré noir, ses yeux cernés, sa bouche pincée)
+  piece(tube([0, 1.3, 0], [0, 1.43, 0], .03, .03, 10), peau, "Neck"); piece(place(new THREE.CylinderGeometry(.066, .075, .085, 20), 0, 1.385, .005), minerve, "Neck");
+  piece(place(new THREE.TorusGeometry(.068, .008, 5, 20), 0, 1.428, .005, Math.PI / 2), minerve, "Neck"); piece(place(new THREE.TorusGeometry(.076, .008, 5, 20), 0, 1.343, .005, Math.PI / 2), minerve, "Neck");
+  // le pull beige ; le manteau de velours rouille, ouvert, jusqu'à mi-cuisse, son col, ses boutons ; le pantalon crème ; les chaussures rouges ; le sac rouge sur l'épaule
+  piece(new THREE.LatheGeometry([[.04, 1.36], [.1, 1.33], [.13, 1.27], [.12, 1.12], [.12, .95], [.13, .9]].map(([r, y]) => new THREE.Vector2(r, y)), 20).scale(1, 1, .75), pull, dos);
+  piece(new THREE.LatheGeometry([[.07, 1.34], [.125, 1.32], [.145, 1.27], [.138, 1.1], [.142, .95], [.158, .8], [.168, .7], [.16, .7]].map(([r, y]) => new THREE.Vector2(r, y)), 26, Math.PI * .1, Math.PI * 1.8).scale(1, 1, .78), manteau, dos);
+  for (const s of [-1, 1]) { piece(place(new THREE.BoxGeometry(.05, .16, .012), s * .06, 1.27, .1, -.2, s * .35, s * .1), manteau, "Spine2"); for (let i = 0; i < 3; i++) piece(boule(.009, s * .035, 1.17 - i * .12, .108, 1, 1, .6, 6), M(0x3a2010, .4), dos(0, 1.17 - i * .12)); }
+  piece(place(new THREE.CylinderGeometry(.13, .12, .14, 20), 0, .85, 0, 0, 0, 0, 1, 1, .78), creme, "Hips");
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) { const x = s * (o.epX + .01);
+    piece(boule(.045, s * o.epX, o.epY, 0, 1, 1, 1, 10), manteau, c + "Arm"); piece(tube([s * o.epX, o.epY, 0], [x, o.coude, 0], .046, .04), manteau, c + "Arm"); piece(boule(.04, x, o.coude, 0, 1, 1, 1, 8), manteau, c + "ForeArm");
+    piece(tube([x, o.coude, 0], [x, o.poignet + .02, 0], .04, .042), manteau, c + "ForeArm"); piece(place(new THREE.TorusGeometry(.042, .008, 5, 14), x, o.poignet + .025, 0, Math.PI / 2), manteau, c + "ForeArm");
+    piece(tube([s * o.jX, .88, 0], [s * o.jX, o.genou, 0], .065, .05), creme, c + "UpLeg"); piece(boule(.05, s * o.jX, o.genou, 0, 1, 1, 1, 10), creme, c + "Leg"); piece(tube([s * o.jX, o.genou, 0], [s * o.jX, .07, 0], .05, .045), creme, c + "Leg");
+    piece(boule(.045, s * o.jX, .04, .05, .85, .65, 1.75, 12), chauss, c + "Foot"); piece(place(new THREE.BoxGeometry(.08, .014, .2), s * o.jX, .007, .05), M(0x2a1410, .6), c + "Foot"); }
+  mainsPerso(W, peau, o);
+  piece(place(new THREE.BoxGeometry(.06, .17, .2), .2, .97, -.02, 0, 0, -.05), rouge, "Spine"); piece(tube([.12, 1.32, .02], [.19, 1.06, .0], .01, .01, 5), rouge, "Spine2"); piece(tube([.12, 1.32, -.05], [.19, 1.06, -.06], .01, .01, 5), rouge, "Spine2");
+  // à la cuisine : elle tape sur son ordinateur portable, debout, un coude sur le plan de travail, puis se redresse et se frotte la nuque (la minerve)
+  const repos = p => { const s = Math.sin(p * 5), nu = Math.max(0, Math.sin(p) - .75) * 4;
+    return { Spine: [.18 - nu * .1, 0, 0], Spine1: [.05, 0, 0], Head: [.15 - nu * .1, .04 * Math.sin(p * 2), 0], LeftArm: [-.7, 0, .1], LeftForeArm: [-.7 + .04 * s, 0, 0], LeftHand: [.25 * Math.max(0, s), 0, 0],
+      RightArm: [-.7 + nu * .2, 0, -.1 - nu * 1.1], RightForeArm: [-.7 - .04 * s - nu * 1.1, nu * .6, 0], RightHand: [.25 * Math.max(0, -s), 0, 0], LeftUpLeg: [0, 0, .03], RightUpLeg: [-.05, 0, -.05], LeftLeg: [0, 0, 0], RightLeg: [.1, 0, 0] }; };
+  return W.finir(mouvHumain(W, o.hanche, repos, { D: 7 }), { hanche: o.hanche }); }
+
+/* ---------- Wybie : voûté, la tête penchée, la masse de cheveux bouclés brun-rouge ; le grand blouson noir à bandes réfléchissantes, le gant squelette,
+   le jean roulé au-dessus des chevilles maigres, les grosses baskets noires ---------- */
+function genWybie() {
+  const o = { hanche: .62, dos: .4, cou: .98, couZ: .06, tete: 1.03, teteZ: .1, haut: 1.38, epX: .14, epY: .95, coude: .75, poignet: .55, jX: .06, genou: .33, cheville: .07 }, W = atelierPerso(osHumain(o));
+  const { piece, place, tube, boule, M } = W, peau = M(0xd9a476, .6), blouson = M(0x1c1e26, .55), bande = M(0xc6ccd2, .25, { metalness: .6, emissive: 0x30343a, emissiveIntensity: .4 }), jean = M(0x6a86a8, .9), chev = matCheveux("#3a1712", .85), basket = M(0x1a1a1c, .7), gant = M(0x101012, .6), os1 = M(0xe8e6dc, .5);
+  const TY = 1.2, H = "Head", dos = (x, y) => y > .87 ? "Spine2" : y > .77 ? "Spine1" : y > .68 ? "Spine" : "Hips";
+  W.teteImage(H, "images/coraline/wybie.webp?v=2", [60, 50, 260, 270], TY, .08, .17, .185, .17, 200, 215, .0018, peau);
+  // sa masse de cheveux bouclés en 3D, brun-rouge : un casque de boucles, la frange de boucles sur le front, les longues mèches bouclées qui pendent sur le côté
+  piece(coiffeGeo(TY, .08, .17, .185, .17, 1.1, .7, Math.PI * 2 - .7, () => TY + .21, ph => TY - .02 - .06 * Math.max(0, Math.cos(ph - Math.PI)), .2, 30, 10), chev, H);
+  piece(coiffeGeo(TY, .08, .17, .185, .17, 1.1, -.72, .72, () => TY + .21, ph => TY + .085 + .02 * Math.sin(ph * 7), 0, 20, 6), chev, H);
+  { const boucle = M(0x4a2018, .9); for (let i = 0; i < (PETIT ? 70 : 120); i++) { const ph = hasard(i * 2.3) * Math.PI * 2, t = -.15 + hasard(i * 4.9) * 1.1, tt = Math.min(.98, t), k = Math.sqrt(1 - tt * tt) * (1.14 + hasard(i * 6.1) * .12);
+      if (Math.cos(ph) > .5 && t < .5) continue; const x = Math.sin(ph) * .17 * k, y = TY + tt * .185 * 1.12, z = .08 + Math.cos(ph) * .17 * k;
+      piece(place(new THREE.TorusGeometry(.02 + hasard(i) * .012, .01, 4, 8), x, y, z, hasard(i * 3) * 3, hasard(i * 5) * 3, 0), hasard(i * 7) > .5 ? chev : boucle, H); }
+    for (let r = 0; r < 5; r++) for (let j = 0; j < 7; j++) piece(place(new THREE.TorusGeometry(.016, .008, 4, 8), -.19 - r * .025 - j * .012, TY + .02 - j * .035 - r * .01, .06 + r * .03, j * .8, r, 0), boucle, H); }   // (la vraie tête, d'après l'image du film : la masse de boucles, les yeux verts levés au ciel, le nez, le sourire en coin)
+  piece(tube([0, .93, .03], [0, 1.08, .1], .032, .03, 10), peau, "Neck");
+  // le grand blouson noir, trop grand, ses bandes argentées réfléchissantes (le bas, les manches), son col relevé
+  piece(new THREE.LatheGeometry([[.06, 1.0], [.12, .98], [.16, .94], [.16, .84], [.155, .7], [.165, .56], [.17, .5], [.16, .5]].map(([r, y]) => new THREE.Vector2(r, y)), 24).scale(1, 1, .85), blouson, dos);
+  for (const y of [.56, .66]) piece(place(new THREE.CylinderGeometry(.167, .163, .028, 24, 1, true), 0, y, 0, 0, 0, 0, 1.005, 1, .855), bande, "Hips");
+  piece(place(new THREE.CylinderGeometry(.09, .12, .1, 18, 1, true), 0, 1.01, .02), blouson, "Spine2");
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) { const x = s * (o.epX + .01);
+    piece(boule(.052, s * o.epX, o.epY, 0, 1, 1, 1, 10), blouson, c + "Arm"); piece(tube([s * o.epX, o.epY, 0], [x, o.coude, 0], .052, .048), blouson, c + "Arm"); piece(boule(.048, x, o.coude, 0, 1, 1, 1, 8), blouson, c + "ForeArm");
+    piece(tube([x, o.coude, 0], [x, o.poignet + .01, 0], .048, .052), blouson, c + "ForeArm"); for (const y of [o.coude + .1, o.poignet + .06]) piece(place(new THREE.CylinderGeometry(.051, .05, .025, 14, 1, true), x, y, 0), bande, y > o.coude ? c + "Arm" : c + "ForeArm");
+    piece(tube([s * o.jX, .6, 0], [s * o.jX, o.genou, 0], .05, .045), jean, c + "UpLeg"); piece(tube([s * o.jX, o.genou, 0], [s * o.jX, .2, 0], .047, .05), jean, c + "Leg");
+    piece(place(new THREE.TorusGeometry(.05, .015, 5, 14), s * o.jX, .2, 0, Math.PI / 2), jean, c + "Leg");   // (le revers du jean, roulé)
+    piece(tube([s * o.jX, .2, 0], [s * o.jX, .08, 0], .022, .02, 8), peau, c + "Leg");
+    piece(boule(.06, s * o.jX, .055, .045, 1, .8, 1.7, 14), basket, c + "Foot"); piece(place(new THREE.BoxGeometry(.12, .025, .25), s * o.jX, .012, .04), M(0x2a2a2c, .8), c + "Foot"); piece(boule(.025, s * o.jX, .055, .145, 1.6, .5, .7, 8), M(0xd9a476, .6), c + "Foot"); }   // (le bout troué de la basket)
+  // les gants : le gauche noir, le droit noir dessiné d'os blancs (le gant squelette)
+  mainsPerso(W, gant, o); for (let i = 0; i < 4; i++) W.piece(W.place(new THREE.BoxGeometry(.006, .03, .006), -(o.epX + .01) - .012 + i * .008, o.poignet - .06 - (i % 2) * .01, .035), os1, "RightHand");
+  W.piece(W.place(new THREE.BoxGeometry(.03, .006, .006), -(o.epX + .01), o.poignet - .035, .036), os1, "RightHand");
+  // il traîne : voûté, la tête penchée sur le côté, les bras ballants, il se balance d'un pied sur l'autre
+  const repos = p => { const s = Math.sin(p);
+    return { Spine: [.28, 0, .04 * s], Spine1: [.12, 0, 0], Head: [-.12, .1 * Math.sin(p * 2), .35 + .05 * s], LeftArm: [-.2, 0, .05], RightArm: [-.15, 0, -.05], LeftForeArm: [-.3, 0, 0], RightForeArm: [-.4, 0, 0],
+      LeftUpLeg: [0, 0, .03 + .03 * s], RightUpLeg: [0, 0, -.03 + .03 * s], Hips: [0, 0, .03 * s] }; };
+  return W.finir(mouvHumain(W, o.hanche, repos, { D: 4, pen: .2 }), { hanche: o.hanche }); }
+
+/* ---------- le chat noir : maigre, ses longues pattes, les grands yeux bleus, la queue dressée ---------- */
+function genChat() {
+  const d = [["Hips", null, 0, .25, -.1], ["Spine", "Hips", 0, .26, .05], ["Neck", "Spine", 0, .3, .14], ["Head", "Neck", 0, .36, .18], ["Queue1", "Hips", 0, .28, -.17], ["Queue2", "Queue1", 0, .4, -.2], ["Queue3", "Queue2", 0, .52, -.18], ["Queue4", "Queue3", 0, .62, -.13]];
+  for (const [n, s, z, par] of [["AvG", 1, .12, "Spine"], ["AvD", -1, .12, "Spine"], ["ArG", 1, -.1, "Hips"], ["ArD", -1, -.1, "Hips"]]) d.push([n, par, s * .045, .24, z], [n + "2", n, s * .045, .12, z + (z < 0 ? -.01 : .01)], [n + "3", n + "2", s * .045, .02, z]);
+  const W = atelierPerso(d), { piece, place, tube, boule, M } = W, poil = M(0x15151a, .95), bleu = M(0x7ab8e8, .15, { emissive: 0x1a3a5a, emissiveIntensity: .5 }), noir = M(0x000000, .2), rose = M(0xc07a78, .5), blanc = M(0xffffff, .2, { emissive: 0xffffff, emissiveIntensity: .5 }), moust = M(0xd8d8d8, .4);
+  const corps = (x, y, z) => z > .03 ? "Spine" : "Hips";
+  piece(place(new THREE.CapsuleGeometry(.065, .22, 6, 12), 0, .27, .02, Math.PI / 2, 0, 0, 1, 1, .9), poil, corps);
+  piece(tube([0, .28, .12], [0, .34, .18], .045, .04, 10), poil, "Neck");
+  W.teteImage("Head", "images/coraline/chat.webp?v=1", [25, 215, 235, 210], .37, .2, .071, .065, .068, 140, 318, .00068, poil);   // (la vraie tête, d'après l'image du film : les grands yeux bleus mi-clos, le petit nez rose)
+  for (const s of [-1, 1]) { piece(place(new THREE.ConeGeometry(.03, .075, 6), s * .042, .44, .19, -.15, 0, -s * .35), poil, "Head");
+    for (let k = 0; k < 3; k++) piece(tube([s * .025, .345, .265], [s * .12, .35 + (k - 1) * .02, .26 - k * .01], .0012, .0008, 3), moust, "Head"); }
+  for (const [n, s, z] of [["AvG", 1, .12], ["AvD", -1, .12], ["ArG", 1, -.1], ["ArD", -1, -.1]]) { const x = s * .045;
+    piece(tube([x, .27, z], [x, .12, z + (z < 0 ? -.01 : .01)], .024, .016, 8), poil, n); piece(tube([x, .12, z + (z < 0 ? -.01 : .01)], [x, .02, z], .016, .012, 8), poil, n + "2"); piece(boule(.017, x, .012, z + .012, 1, .7, 1.4, 8), poil, n + "3"); }
+  for (const [a, b, n] of [[[0, .28, -.17], [0, .4, -.2], "Queue1"], [[0, .4, -.2], [0, .52, -.18], "Queue2"], [[0, .52, -.18], [0, .62, -.13], "Queue3"], [[0, .62, -.13], [0, .66, -.07], "Queue4"]]) piece(tube(a, b, .014, .012, 8), poil, n);
+  // ses mouvements : assis-debout tranquille (la queue qui ondule, la tête qui regarde autour), la marche (les pattes en diagonale), le trot
+  const repos = p => ({ Head: [.05 * Math.sin(p), .4 * Math.sin(p * .5), 0], Queue1: [0, .15 * Math.sin(p), 0], Queue2: [0, .2 * Math.sin(p - .6), 0], Queue3: [.1, .25 * Math.sin(p - 1.2), 0], Queue4: [.2, .3 * Math.sin(p - 1.8), 0] });
+  const pas = (a, k) => p => { const s = Math.sin(p), c = Math.cos(p); return { AvG: [-a * s, 0, 0], ArD: [-a * s, 0, 0], AvD: [a * s, 0, 0], ArG: [a * s, 0, 0], AvG2: [-k * Math.max(0, c), 0, 0], ArD2: [k * Math.max(0, c), 0, 0], AvD2: [-k * Math.max(0, -c), 0, 0], ArG2: [k * Math.max(0, -c), 0, 0],
+    Head: [.04 * Math.sin(p * 2), 0, 0], Queue1: [-.1, .1 * s, 0], Queue2: [0, .15 * Math.sin(p - .6), 0], Queue3: [.1, .2 * Math.sin(p - 1.2), 0], Queue4: [.2, .2 * Math.sin(p - 1.8), 0] }; };
+  return W.finir([W.clip("idle", 4, repos), W.clip("walk", .7, pas(.45, .6), [0, .25, -.1], p => [0, .008 * Math.abs(Math.cos(p)), 0]), W.clip("run", .42, pas(.8, .9), [0, .25, -.1], p => [0, .03 * Math.abs(Math.cos(p)), 0])]); }
+/* Coraline en 3D, faite ici pièce par pièce comme la marionnette du film : la grosse tête, le carré bleu nuit et sa frange droite, la barrette libellule,
+   les grands yeux noirs ; l'imperméable jaune (son col, ses boutons, sa capuche dans le dos), la jupe bordeaux qui dépasse, les collants rayés,
+   les grosses bottes de pluie jaunes, la besace bordeaux en bandoulière. Un vrai squelette (les mêmes os que les autres personnages 3D :
+   les danses, s'asseoir, tourner la tête marchent pareil), et ses mouvements : au repos les mains sur les hanches, la marche, la course */
+function genCoraline() {
+  const os = {}, PW = {};   // (les os, et leur position dans la pose de départ)
+  const def = [["Hips", null, 0, .62, 0], ["Spine", "Hips", 0, .70, 0], ["Spine1", "Spine", 0, .80, 0], ["Spine2", "Spine1", 0, .88, 0], ["Neck", "Spine2", 0, .97, 0], ["Head", "Neck", 0, 1.04, 0], ["HeadTop_End", "Head", 0, 1.43, 0]];
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) def.push([c + "Shoulder", "Spine2", s * .04, .94, 0], [c + "Arm", c + "Shoulder", s * .12, .93, 0], [c + "ForeArm", c + "Arm", s * .13, .72, 0], [c + "Hand", c + "ForeArm", s * .13, .53, 0],
+    [c + "UpLeg", "Hips", s * .065, .6, 0], [c + "Leg", c + "UpLeg", s * .065, .34, 0], [c + "Foot", c + "Leg", s * .065, .09, 0], [c + "ToeBase", c + "Foot", s * .065, .03, .07], [c + "Toe_End", c + "ToeBase", s * .065, .03, .15]);
+  const liste = [];
+  for (const [n, par, x, y, z] of def) { const b = new THREE.Bone(); b.name = n; PW[n] = [x, y, z]; if (par) { const P = PW[par]; b.position.set(x - P[0], y - P[1], z - P[2]); os[par].add(b); } else b.position.set(x, y, z); os[n] = b; liste.push(b); }
+  const idx = {}; liste.forEach((b, i) => idx[b.name] = i);
+  // chaque pièce : une forme (posée à sa place), attachée à un os — ou à plusieurs, selon la hauteur (le manteau suit le dos et les hanches)
+  const parts = new Map();
+  const piece = (geo, mat, os1) => { const g = geo.index ? geo.toNonIndexed() : geo, n = g.attributes.position.count, si = new Float32Array(n * 4), sw = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { const o = typeof os1 === "function" ? os1(g.attributes.position.getX(i), g.attributes.position.getY(i)) : os1; si[i * 4] = idx[o]; sw[i * 4] = 1; }
+    g.setAttribute("skinIndex", new THREE.Float32BufferAttribute(si, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4)); if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
+    if (!parts.has(mat)) parts.set(mat, []); parts.get(mat).push(g); return g; };
+  const place = (g, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz)); g.applyMatrix4(m); return g; };
+  // (un cylindre d'un point à un autre : bras, jambes, la bandoulière)
+  const tube = (a, b, r0, r1, seg = 12) => { const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b), l = va.distanceTo(vb), g = new THREE.CylinderGeometry(r1, r0, l, seg, 1, true);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize())); g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); return g; };
+  const boule = (r, x, y, z, sx = 1, sy = 1, sz = 1, seg = 14) => place(new THREE.SphereGeometry(r, seg, Math.max(6, seg * .7 | 0)), x, y, z, 0, 0, 0, sx, sy, sz);
+  const M = (c, r = .6, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, ...o });
+  const peau = M(0xdcb896, .55), jaune = M(0xf2c418, .32, { metalness: .05 }), jauneF = M(0xd9a90e, .4), cheveux = matCheveux("#26357a", .42), noir = M(0x0c0a0c, .15), blanc = M(0xffffff, .2, { emissive: 0xffffff, emissiveIntensity: .6 }),
+    rose = M(0xc0606a, .5), joue = M(0xf2b4ae, .7, { transparent: true, opacity: .55 }), jupe = M(0x7a2633, .8), sac = M(0x6e2232, .75), bottes = M(0xeec21c, .28), semelle = M(0x8a6a10, .7), libel = M(0x7fa6d8, .25, { metalness: .5 }), sourcil = M(0x2a2238, .6);
+  const raye = (() => { const c = document.createElement("canvas"); c.width = 8; c.height = 64; const x = c.getContext("2d"); for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? "#3f3247" : "#8f8496"; x.fillRect(0, i * 8, 8, 8); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 4); return new THREE.MeshStandardMaterial({ map: t, roughness: .85 }); })();   // (les collants rayés gris et prune)
+  // ---- la tête (sur l'os Head) : un peu plus large que haute, le visage rond ----
+  const TY = 1.215, H = "Head";
+  piece(boule(.18, 0, TY, 0, 1.02, 1.06, .98, 28), peau, H);
+  piece(tube([0, .96, 0], [0, 1.06, 0], .035, .033, 10), peau, "Neck");
+  // le carré bleu nuit : un bol (le dos, les côtés jusqu'au menton, le bas qui s'évase un peu), et la frange droite, coupée net au-dessus des sourcils
+  const prof = [[0, .205], [.07, .2], [.13, .175], [.175, .125], [.196, .06], [.2, 0], [.2, -.06], [.205, -.11], [.222, -.15], [.214, -.158], [.19, -.15]].map(([r, y]) => new THREE.Vector2(r, y));
+  piece(place(new THREE.LatheGeometry(prof, 30, .95, Math.PI * 2 - 1.9), 0, TY, -.005), cheveux, H);
+  piece(coiffeGeo(TY, 0, .184, .19, .176, 1.1, -1.15, 1.15, () => TY + .23, ph => { const a = Math.abs(ph); return TY + .135 - .1 * Math.min(1, a / .8) - (a > .8 ? .2 * (a - .8) / .35 : 0); }, .4, 30, 10), cheveux, H);   // (la frange : séparée au milieu, elle retombe en rideau sur les tempes)
+  // la barrette libellule, piquée dans ses cheveux, sur le côté droit du front : le corps fin argenté et bleu, la tête ronde, les quatre ailes transparentes
+  { const LB = new THREE.Group(), cps = M(0x9ec4ec, .2, { metalness: .6, emissive: 0x1a3050, emissiveIntensity: .3 }), aile = M(0xdff0ff, .1, { metalness: .3, transparent: true, opacity: .55, side: THREE.DoubleSide, emissive: 0x6080a0, emissiveIntensity: .3 });
+    const lb = (g, mt) => { g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(-.135, TY + .118, .115), new THREE.Quaternion().setFromEuler(new THREE.Euler(-.35, -.55, -.75)), new THREE.Vector3(1, 1, 1))); piece(g, mt, H); };
+    lb(new THREE.CapsuleGeometry(.0055, .062, 3, 8), cps); lb(new THREE.SphereGeometry(.009, 8, 6).translate(0, .04, 0), cps);
+    for (const [s, y, l] of [[1, .022, .045], [-1, .022, .045], [1, .008, .038], [-1, .008, .038]]) lb(new THREE.SphereGeometry(1, 10, 6).scale(l / 2, .009, .004).rotateZ(s * (y > .01 ? -.25 : .2)).translate(s * l / 2, y, .006), aile);
+    for (let k = 0; k < 3; k++) lb(new THREE.TorusGeometry(.006, .0018, 4, 8).translate(0, -.012 - k * .011, 0), M(0x3d6fb0, .3, { metalness: .5 })); }
+  // le vrai visage (celui de la marionnette du film) : l'image posée sur l'avant de la tête, en relief — ses yeux, sa bouche, ses taches de rousseur, sa frange, sa barrette
+  { const g = new THREE.SphereGeometry(.186, 36, 28, Math.PI / 2 - 1.35, 2.7, 0, 2.55); g.scale(1.02, 1.06, .98); g.translate(0, TY, 0); const P = g.attributes.position, uv = g.attributes.uv, s = .0034;
+    for (let i = 0; i < P.count; i++) { const px = 116 + P.getX(i) / s, py = 52 + (TY + .005 - P.getY(i)) / s; uv.setXY(i, (px - 40) / 152, 1 - py / 118); }
+    const t = new THREE.TextureLoader().load("images/coraline/tete.webp?v=2"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    piece(g, new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .45, roughness: .55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), H); }
+  // ---- l'imperméable jaune : le corps en cloche (il suit le dos et les hanches), le col, la capuche dans le dos, les boutons, les poches, les manches ----
+  const cloche = [[.05, .99], [.1, .975], [.13, .945], [.135, .9], [.128, .82], [.128, .74], [.138, .66], [.152, .58], [.168, .5], [.172, .49], [.16, .5]].map(([r, y]) => new THREE.Vector2(r, y));
+  const dos = (x, y) => y > .86 ? "Spine2" : y > .77 ? "Spine1" : y > .68 ? "Spine" : "Hips";
+  piece(place(new THREE.LatheGeometry(cloche, 28), 0, 0, 0, 0, 0, 0, 1, 1, .82), jaune, dos);
+  piece(place(new THREE.TorusGeometry(.085, .028, 6, 20), 0, .965, .005, Math.PI / 2 - .25, 0, 0, 1.05, 1, .8), jaune, "Spine2");   // (le col)
+  piece(boule(.11, 0, .93, -.1, 1, .8, .55, 14), jauneF, "Spine2");   // (la capuche, rabattue dans le dos)
+  for (let i = 0; i < 4; i++) piece(boule(.012, .025, .9 - i * .09, .118 - (i > 1 ? -.01 * (i - 1) : 0), 1, 1, .5, 6), jauneF, dos(0, .9 - i * .09));
+  piece(place(new THREE.BoxGeometry(.006, .38, .01), .012, .72, .113, -.03, 0, 0), jauneF, dos);   // (la patte de boutonnage)
+  for (const s of [-1, 1]) piece(place(new THREE.BoxGeometry(.075, .012, .02), s * .085, .63, .125, -.12, s * .3, 0), jauneF, "Hips");   // (les rabats des poches)
+  for (const [c, s] of [["Left", 1], ["Right", -1]]) {
+    piece(boule(.05, s * .12, .925, 0, 1, 1, 1, 10), jaune, c + "Arm");
+    piece(tube([s * .12, .93, 0], [s * .13, .72, 0], .048, .044), jaune, c + "Arm"); piece(boule(.045, s * .13, .72, 0, 1, 1, 1, 10), jaune, c + "ForeArm");
+    piece(tube([s * .13, .72, 0], [s * .13, .545, 0], .044, .05), jaune, c + "ForeArm");
+    piece(place(new THREE.TorusGeometry(.045, .01, 5, 14), s * .13, .55, 0, Math.PI / 2, 0, 0), jauneF, c + "ForeArm");   // (le revers de la manche)
+    piece(boule(.034, s * .13, .5, .005, .8, 1.15, .65, 10), peau, c + "Hand"); piece(place(new THREE.CapsuleGeometry(.011, .03, 3, 6), s * .13 + s * .025, .505, .015, 0, 0, s * .4), peau, c + "Hand");   // (la main, le pouce)
+    // ---- les jambes : les collants rayés ; les grosses bottes de pluie jaunes ----
+    piece(tube([s * .065, .6, 0], [s * .065, .34, 0], .034, .028, 10), raye, c + "UpLeg"); piece(boule(.029, s * .065, .34, 0, 1, 1, 1, 8), raye, c + "Leg");
+    piece(tube([s * .065, .34, 0], [s * .065, .2, 0], .028, .025, 10), raye, c + "Leg");
+    piece(tube([s * .065, .24, .005], [s * .065, .05, .005], .058, .052, 14), bottes, c + "Foot"); piece(place(new THREE.TorusGeometry(.058, .009, 5, 16), s * .065, .24, .005, Math.PI / 2, 0, 0), bottes, c + "Foot");   // (la tige, son bord roulé)
+    piece(place(new THREE.CylinderGeometry(.056, .056, .01, 14), s * .065, .24, .005), noir, c + "Foot");   // (le dedans de la botte)
+    piece(boule(.06, s * .065, .05, .07, 1, .75, 1.55, 14), bottes, c + "Foot"); piece(place(new THREE.BoxGeometry(.115, .022, .22), s * .065, .011, .045), semelle, c + "Foot"); }
+  // la jupe bordeaux, qui dépasse sous l'imperméable
+  piece(new THREE.LatheGeometry([[.15, .53], [.16, .47], [.165, .455], [.15, .46]].map(([r, y]) => new THREE.Vector2(r, y)), 24).scale(1, 1, .85), jupe, "Hips");
+  // la besace bordeaux : sur la hanche droite, la bandoulière en travers de la poitrine, depuis l'épaule gauche
+  piece(place(new THREE.BoxGeometry(.05, .13, .15), -.175, .58, .02, 0, 0, .08), sac, "Hips"); piece(place(new THREE.BoxGeometry(.055, .06, .155), -.178, .625, .02, 0, 0, .08), M(0x5a1a28, .8), "Hips");
+  piece(tube([.1, .965, .07], [-.03, .78, .125], .012, .012, 5), sac, "Spine2"); piece(tube([-.03, .78, .125], [-.165, .64, .07], .012, .012, 5), sac, "Spine");
+  piece(tube([.1, .965, .07], [.06, .97, -.09], .012, .012, 5), sac, "Spine2"); piece(tube([.06, .97, -.09], [-.17, .66, -.04], .012, .012, 5), sac, "Spine");
+  // tout en une : un maillage par matière, tous sur le même squelette
+  os.Hips.updateMatrixWorld(true); const sc = new THREE.Group(), sk = new THREE.Skeleton(liste); let racine = false;
+  for (const [mat, gs] of parts) { const g = new THREE.BufferGeometry(), noms = ["position", "normal", "uv", "skinIndex", "skinWeight"];
+    for (const n of noms) { const t = gs.reduce((s, x) => s + x.attributes[n].array.length, 0), a = new Float32Array(t); let o = 0; for (const x of gs) { a.set(x.attributes[n].array, o); o += x.attributes[n].array.length; } g.setAttribute(n, new THREE.BufferAttribute(a, gs[0].attributes[n].itemSize)); }
+    const m = new THREE.SkinnedMesh(g, mat); if (!racine) { m.add(os.Hips); racine = true; } m.bind(sk); m.castShadow = true; m.frustumCulled = false; sc.add(m); }
+  // ---- ses mouvements ----
+  const clip = (nom, D, f) => { const N = 24, tr = []; const t = [...Array(N + 1)].map((_, i) => i / N * D), v = {};
+    for (let i = 0; i <= N; i++) { const r = f(i / N * Math.PI * 2); for (const n in r) (v[n] = v[n] || []).push(...new THREE.Quaternion().setFromEuler(new THREE.Euler(...r[n], "XYZ")).toArray()); }
+    for (const n in v) tr.push(new THREE.QuaternionKeyframeTrack(n + ".quaternion", t, v[n]));
+    const hy = f.hy; if (hy) tr.push(new THREE.VectorKeyframeTrack("Hips.position", t, t.flatMap((_, i) => [0, .62 + hy(i / N * Math.PI * 2), 0])));
+    return new THREE.AnimationClip(nom, D, tr); };
+  const repos = p => ({ Spine: [.015 * Math.sin(p), 0, 0], Neck: [0, 0, 0], Head: [-.03 + .015 * Math.sin(p), .06 * Math.sin(p / 1), 0],   // (les mains sur les hanches, les coudes écartés, comme sur l'affiche)
+    LeftArm: [.2, 0, .85 + .02 * Math.sin(p)], LeftForeArm: [0, -.3, -1.45], LeftHand: [0, 0, .3], RightArm: [.2, 0, -.85 - .02 * Math.sin(p)], RightForeArm: [0, .3, 1.45], RightHand: [0, 0, -.3],
+    LeftUpLeg: [0, 0, .04], RightUpLeg: [0, 0, -.04], LeftLeg: [0, 0, 0], RightLeg: [0, 0, 0], Hips: [0, 0, 0] });
+  const pas = (a, k, br, av, pen) => { const f = p => { const s = Math.sin(p), c = Math.cos(p);
+      return { Hips: [0, .08 * s * a, 0], Spine: [pen, -.1 * s * a, 0], Spine1: [0, 0, 0], Head: [-pen * .6, .05 * s, 0], Neck: [0, 0, 0],
+        LeftUpLeg: [-a * s, 0, 0], RightUpLeg: [a * s, 0, 0], LeftLeg: [.08 + k * Math.max(0, c), 0, 0], RightLeg: [.08 + k * Math.max(0, -c), 0, 0],
+        LeftFoot: [-.15 * Math.max(0, c) + .1 * Math.max(0, -s), 0, 0], RightFoot: [-.15 * Math.max(0, -c) + .1 * Math.max(0, s), 0, 0],
+        LeftArm: [br * s, 0, .1], RightArm: [-br * s, 0, -.1], LeftForeArm: [-av, 0, 0], RightForeArm: [-av, 0, 0], LeftHand: [0, 0, 0], RightHand: [0, 0, 0] }; };
+    f.hy = p => .018 * Math.abs(Math.cos(p)) * (1 + a) - .01; return f; };
+  const reposF = repos; reposF.hy = null;
+  const mix = new THREE.AnimationMixer(sc), act = {};
+  for (const c of [clip("idle", 3.2, reposF), clip("walk", .95, pas(.45, .7, .38, .25, .04)), clip("run", .62, pas(.8, 1.15, .75, 1.1, .2))]) act[c.name] = mix.clipAction(c);
+  // (les couleurs qu'on choisit : l'imperméable, la jupe, les bottes)
+  const U = { uHaut: { value: new THREE.Vector4(1, 1, 1, 0) }, uBas: { value: new THREE.Vector4(1, 1, 1, 0) }, uPieds: { value: new THREE.Vector4(1, 1, 1, 0) } };
+  const teinte = (m, u) => { m.onBeforeCompile = sh => { sh.uniforms.uT = u; sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform vec4 uT;").replace("#include <map_fragment>", "#include <map_fragment>\nif (uT.a > .5) diffuseColor.rgb = uT.rgb;"); }; m.needsUpdate = true; };
+  teinte(jaune, U.uHaut); teinte(jupe, U.uBas); teinte(bottes, U.uPieds);
+  return { sc, mix, act, U, h: hauteurOs(sc), taille0: .78 }; }
+function chargerAvatar3D(f) { if (!av3Cache[f] && f === "gen:coraline") av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
+  if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
     const hipsRE = /avatars\/re-(wesker|barry|chris|claire|hunk|leon)\./.test(f) && sc.getObjectByName("Hips");   /* (seulement les squelettes faits comme celui de Harry : sur les autres — Claire, Chris, Barry, Wesker —, sa marche envoyait le corps à cent mètres, invisible) */
     if (hipsRE && Math.abs(hipsRE.position.y - 103.99) < 3 && Math.abs(hipsRE.position.z - 2.08) < 3 && hipsRE.quaternion.w > .99) { const cl = await clipsMarcheSH(); if (cl) { const os = new Set(); sc.traverse(o => o.name && os.add(o.name));   /* (les héros de Resident Evil marchent comme ceux de Silent Hill : la marche complète — le dos, les épaules, les mains —, et non plus la marche raide de leur modèle) */
@@ -14909,7 +15219,7 @@ const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (p.info.heros >= 69 ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
-function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : [110, 111].includes(p.info.heros) ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.8, Math.min(1.2, a.taille / 175)) : 1;
+function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : [110, 111].includes(p.info.heros) ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.57, Math.min(1.2, a.taille / 175)) : (A.taille0 || 1);   /* (Coraline : une enfant, 1,39 m, si l'on n'a pas choisi sa taille) */
   const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
 /* le poids : chaque os du tronc et des membres s'élargit autour de lui-même (seulement pour la peau qu'il porte) ; les os enfants n'héritent pas
    de cet élargissement — sinon (avec tout le personnage élargi en largeur) bras et jambes se déformaient en dansant, comme désarticulés */

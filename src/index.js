@@ -410,7 +410,7 @@ export class Compteur extends DurableObject {
     if (![1].includes(Number(moi.numero))) throw new Refus("Pas de personnage 3D pour ce laissez-passer", 403);   // (seul le laissez-passer 0001 a un personnage 3D ; 0002 est revenu à son bonhomme de base)
     const hx = v => /^#[0-9a-f]{6}$/i.test(v || "") ? v : null, C = x.couleurs || {};
     const nb = (v, a, z) => Number.isInteger(v) && v >= a && v <= z ? v : null;
-    const a = { t: typeof x.t === "string" && /^[a-z0-9-]{1,30}$/.test(x.t) ? x.t : null, c: { haut: hx(C.haut), bas: hx(C.bas), pieds: hx(C.pieds) }, taille: nb(x.taille, 140, 210), poids: nb(x.poids, 40, 160) };
+    const a = { t: typeof x.t === "string" && /^[a-z0-9-]{1,30}$/.test(x.t) ? x.t : null, c: { haut: hx(C.haut), bas: hx(C.bas), pieds: hx(C.pieds) }, taille: nb(x.taille, 100, 210), poids: nb(x.poids, 40, 160) };
     this.sql.exec("UPDATE membres SET av3 = ? WHERE email = ?", JSON.stringify(a), moi.email);
     const p = this.personneMatrice(moi.numero);
     for (const ws of this.ctx.getWebSockets()) { const b = ws.deserializeAttachment(); if (b && b.numero === p.numero) { b.av3 = p.av3; ws.serializeAttachment(b); if (b.lieu) this.diffuser(b.lieu, { t: "avatar", p: this.publicMatrice(b) }); } }
