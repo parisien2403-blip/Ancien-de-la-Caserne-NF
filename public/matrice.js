@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.62";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.63";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -5795,6 +5795,40 @@ function construireAppart(A, L, scene) {
     A.ajoute(new THREE.CylinderGeometry(.06, .04, .05, 12), chrome, x1 - .1, 2.1, (z0 + z1) / 2, false).rotation.z = Math.PI / 2; }
   // les toilettes : le lavabo à droite en entrant, au fond la cuvette et, derrière, le coffrage (on pouvait presque monter dessus)
   lavabo(-2.6, H4, WZ[0] + E, 0);   // (assez loin de la porte)
+  // entre le lavabo et les toilettes, contre le mur : la cage du lapin gris — le bac en plastique, les barreaux, la porte sur le dessus, la paille, le biberon, la gamelle, le foin ; le lapin, qui remue le nez et les oreilles
+  { const CX = -3.75, CZ = WZ[0] + E + .24, LX = .76, LZ = .44, HB = .13, HC = .44, g = new THREE.Group(); g.position.set(CX, H4, CZ); scene.add(g);
+    const bac = A.mat({ color: 0x8a96a6, roughness: .45 }), fer = A.mat({ color: 0xe8e8ea, roughness: .3, metalness: .7 }), add = (geo, mt, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; g.add(o); return o; };
+    add(new THREE.BoxGeometry(LX, .015, LZ), bac, 0, .008, 0); for (const s of [-1, 1]) { add(new THREE.BoxGeometry(LX, HB, .015), bac, 0, HB / 2, s * LZ / 2); add(new THREE.BoxGeometry(.015, HB, LZ), bac, s * LX / 2, HB / 2, 0); }   // (le bac)
+    add(new THREE.BoxGeometry(LX - .03, .03, LZ - .03), A.mat({ color: 0xd8c27a, roughness: 1 }), 0, .03, 0);   // (la litière de paille)
+    for (let i = 0; i < 40; i++) add(new THREE.CylinderGeometry(.003, .003, .05 + hasard(i) * .05, 3), A.mat({ color: 0xc8b060, roughness: 1 }), (hasard(i * 3) - .5) * (LX - .06), .05, (hasard(i * 5) - .5) * (LZ - .06), Math.PI / 2, hasard(i * 7) * 3, 0);
+    const bar = new THREE.CylinderGeometry(.0035, .0035, HC, 4), barH = (l) => new THREE.CylinderGeometry(.0035, .0035, l, 4);
+    for (let i = 0; i <= 26; i++) for (const s of [-1, 1]) add(bar, fer, -LX / 2 + i * LX / 26, HB + HC / 2, s * LZ / 2);   // (les barreaux, devant et derrière)
+    for (let i = 0; i <= 14; i++) for (const s of [-1, 1]) add(bar, fer, s * LX / 2, HB + HC / 2, -LZ / 2 + i * LZ / 14);
+    for (let i = 0; i <= 14; i++) add(barH(LX), fer, 0, HB + HC, -LZ / 2 + i * LZ / 14, 0, 0, Math.PI / 2);   // (le dessus)
+    for (const y of [HB, HB + HC]) for (const s of [-1, 1]) { add(barH(LX), fer, 0, y, s * LZ / 2, 0, 0, Math.PI / 2); add(barH(LZ), fer, s * LX / 2, y, 0, Math.PI / 2); }
+    for (const s of [-1, 1]) add(new THREE.BoxGeometry(.02, .02, .03), bac, s * LX / 2, HB + .02, s * LZ / 2 - s * .015);   // (les clips du bac)
+    add(new THREE.BoxGeometry(.3, .006, .01), fer, .12, HB + HC + .004, LZ / 2 - .02);   // (la porte du dessus, son loquet)
+    // le biberon, accroché aux barreaux ; la gamelle de granulés ; le râtelier de foin
+    add(new THREE.CylinderGeometry(.03, .03, .16, 12), A.mat({ color: 0xcfe8f0, roughness: .1, transparent: true, opacity: .6 }), -.25, HB + .3, -LZ / 2 + .04); add(new THREE.CylinderGeometry(.006, .004, .08, 6), fer, -.25, HB + .19, -LZ / 2 + .05, .5);
+    add(new THREE.CylinderGeometry(.031, .031, .05, 12), A.mat({ color: 0x2a7ac8, roughness: .4 }), -.25, HB + .4, -LZ / 2 + .04);
+    add(new THREE.CylinderGeometry(.06, .05, .035, 16), A.mat({ color: 0xd84a3a, roughness: .5 }), -.22, .065, .08); add(new THREE.CylinderGeometry(.052, .052, .01, 16), A.mat({ color: 0x8a6a3a, roughness: 1 }), -.22, .08, .08);
+    for (let i = 0; i < 18; i++) add(new THREE.CylinderGeometry(.002, .002, .12, 3), A.mat({ color: 0x9aa860, roughness: 1 }), .3 + (hasard(i) - .5) * .06, HB + .22 + (hasard(i * 2) - .5) * .08, -LZ / 2 + .05, (hasard(i * 3) - .5), 0, (hasard(i * 4) - .5) * 1.4);
+    // le lapin gris, couché sur la paille, tourné vers nous
+    const poil = A.mat({ color: 0x8e8c88, roughness: 1 }), clair = A.mat({ color: 0xc8c4bc, roughness: 1 }), rose = A.mat({ color: 0xd89aa0, roughness: .6 }), oeil = A.mat({ color: 0x0c0806, roughness: .15 }), l = new THREE.Group(); l.position.set(.08, .05, .02); l.rotation.y = .5; g.add(l);
+    const b = (r, x, y, z, sx, sy, sz, mt = poil) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mt); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; l.add(o); return o; };
+    b(.1, 0, .085, -.03, 1, .85, 1.25); b(.075, 0, .07, -.12, 1.15, .95, 1);   // (le corps, la croupe ronde)
+    b(.045, 0, .07, .07, 1.05, .9, 1, clair);   // (le poitrail)
+    const tete = new THREE.Group(); tete.position.set(0, .14, .1); l.add(tete);
+    const bt = (r, x, y, z, sx, sy, sz, mt = poil) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), mt); o.position.set(x, y, z); o.scale.set(sx, sy, sz); tete.add(o); return o; };
+    bt(.06, 0, 0, 0, 1, .95, 1.1); bt(.035, 0, -.018, .05, 1.15, .85, .9, clair);   // (la tête, le museau)
+    const nez = bt(.009, 0, -.005, .082, 1.2, .8, .7, rose); for (const s of [-1, 1]) { bt(.012, s * .04, .012, .04, .9, 1, .7, oeil); bt(.004, s * .043, .016, .049, 1, 1, 1, A.mat({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: .5 })); bt(.016, s * .016, -.03, .065, 1, .8, .6, clair); }
+    const oreilles = []; for (const s of [-1, 1]) { const o = new THREE.Group(); o.position.set(s * .025, .045, -.01); o.rotation.set(-.35, 0, s * -.2); tete.add(o); oreilles.push(o);
+      const e = new THREE.Mesh(new THREE.SphereGeometry(.022, 12, 10), poil); e.scale.set(1, 3.6, .45); e.position.y = .07; o.add(e); const d = new THREE.Mesh(new THREE.SphereGeometry(.016, 10, 8), rose); d.scale.set(1, 3.5, .3); d.position.set(0, .07, .007); o.add(d); }
+    b(.025, 0, .1, -.2, 1, 1, 1, A.mat({ color: 0xf2efe8, roughness: 1 }));   // (la queue, une boule de coton blanche)
+    for (const s of [-1, 1]) { b(.022, s * .045, .02, .1, .8, .6, 1.6); b(.03, s * .07, .035, -.13, .8, .7, 1.8); }   // (les pattes avant, les grandes pattes arrière)
+    const avant = L.anim; L.anim = (t) => { avant && avant(t); const s = (t || performance.now()) / 1000; nez.position.y = -.005 + Math.max(0, Math.sin(s * 14)) * .003 * (Math.sin(s * .7) > 0 ? 1 : 0);
+      oreilles[0].rotation.x = -.35 + Math.max(0, Math.sin(s * .9) - .9) * 3; oreilles[1].rotation.x = -.35 + Math.max(0, Math.sin(s * .9 + 2) - .9) * 3; tete.rotation.y = Math.sin(s * .3) * .25; };
+    L.cageLapin = [CX - LX / 2 - .02, CX + LX / 2 + .02, CZ - LZ / 2 - .02, CZ + LZ / 2 + .02]; }
   { const xf = XW + E, coff = A.mat({ color: 0xe6d9bd, roughness: .9 });
     A.ajoute(new THREE.BoxGeometry(.5, 1.05, WZ[1] - WZ[0] - 2 * E), coff, xf + .25, H4 + .525, (WZ[0] + WZ[1]) / 2, false);
     A.ajoute(new THREE.BoxGeometry(.52, .03, WZ[1] - WZ[0] - 2 * E), A.mat({ color: 0xd8ccb0, roughness: .6 }), xf + .26, H4 + 1.065, (WZ[0] + WZ[1]) / 2, false);
@@ -6247,7 +6281,7 @@ function construireAppart(A, L, scene) {
     [XC + .25, XD - .25, ZC[3] + .25, ZC[4] - .25], [XW + 1.15, -XC - .25, WZ[0] + .25, WZ[1] - .25], [XS + .25, -XC - .25, SZ0 + .25, ZC[5] - .25], [XS + .25, -XC - .25, ZC[6] + .25, ZC[7] - .25],
     S(P.ch1, -1), S(P.ch2, -1), S(P.ch3, 1), S(P.sdb, 1), S(P.wc, -1), S(P.salon, -1), S(P.salon2, -1), S(P.cuisine, 1), [.3, XC + .1, P.entree - .2, P.entree + .2]];
   /* les meubles, où l'on ne passe pas (avec une marge pour le corps) : la cuisine, les salons, la chambre 2 */
-  const MEUBLES = [[4.4, 5.45, 3.2, 3.88], [3.13, 4.4, 3.2, 3.86], [1.05, 1.73, 3.72, 4.36], [2.59, 3.71, 4.64, 5.76], [2.75, 3.25, 4.2, 4.7], [2.14, 2.64, 4.87, 5.37],
+  const MEUBLES = [...(L.cageLapin ? [L.cageLapin] : []), [4.4, 5.45, 3.2, 3.88], [3.13, 4.4, 3.2, 3.86], [1.05, 1.73, 3.72, 4.36], [2.59, 3.71, 4.64, 5.76], [2.75, 3.25, 4.2, 4.7], [2.14, 2.64, 4.87, 5.37],
     [2.5, 4.4, 6.76, 7.3], [1.49, 2.46, 6.57, 7.3], [4.5, 5.45, 6.4, 7.3],
     [-5.3, -2.7, 4.7, 5.35], [-3.15, -1.0, 5.85, 7.65], [-7.1, -6.05, 9.8, 10.95],
     [-5.3, -3.2, -8.4, -6.8], [-2.35, -1.0, -8.4, -7.62], [-2.05, -1.5, -7.62, -7.1]], MARGE = .14;
