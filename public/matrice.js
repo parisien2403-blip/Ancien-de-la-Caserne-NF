@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.95";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.96";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13628,7 +13628,7 @@ function clipMXcible(A, cle, sc, nomOs = n => n) {
   for (let i = 0; i < hv.length; i += 3) { w.set(hv[i] * hy, 0, hv[i + 2] * hy).applyQuaternion(F); w.x += p0.x; w.z += p0.z; w.y = bb.min.y + hv[i + 1] * hy; w.applyMatrix4(pinv); w.toArray(out, i); }
   tr.push(new THREE.VectorKeyframeTrack(H.name + ".position", t, out)); return new THREE.AnimationClip(cle, a.duree, tr); }
 /* les danses de l'administrateur : de vrais danseurs (YMCA, hip-hop, samba, Northern Soul, Gangnam Style, salsa) — sur son bonhomme 3D seulement */
-const DANSES_ADMIN = ["village", "hiphop", "samba", "soul", "gangnam", "salsa"], NOMS_DANSES_ADMIN = { village: "🙆 YMCA", hiphop: "🎤 Hip-hop", samba: "🥁 Samba", soul: "🌀 Northern Soul", gangnam: "🐎 Gangnam Style", salsa: "💃 Salsa" };
+const DANSES_ADMIN = ["village", "hiphop", "samba", "soul", "gangnam", "salsa", "moonwalk", "breakdance", "thriller2"], NOMS_DANSES_ADMIN = { moonwalk: "🌙 Moonwalk", breakdance: "🌀 Breakdance", thriller2: "🧟 Thriller", village: "🙆 YMCA", hiphop: "🎤 Hip-hop", samba: "🥁 Samba", soul: "🌀 Northern Soul", gangnam: "🐎 Gangnam Style", salsa: "💃 Salsa" };
 export const DANSES_ADMIN_NOMS = () => DANSES_ADMIN.map(d => [d, NOMS_DANSES_ADMIN[d]]);
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     const ld = new gltfMod.GLTFLoader(), g = await ld.loadAsync("avatars/re-zombie.glb?v=1"); zG = g;
@@ -15113,6 +15113,9 @@ function genCoraline() {
   const teinte = (m, u) => { m.onBeforeCompile = sh => { sh.uniforms.uT = u; sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform vec4 uT;").replace("#include <map_fragment>", "#include <map_fragment>\nif (uT.a > .5) diffuseColor.rgb = uT.rgb;"); }; m.needsUpdate = true; };
   teinte(jaune, U.uHaut); teinte(jupe, U.uBas); teinte(bottes, U.uPieds);
   return { sc, mix, act, U, h: hauteurOs(sc), taille0: .78 }; }
+/* les danses de l'administrateur, sur chacun de ses bonshommes 3D (le sien, Coraline DS…) */
+async function dansesAdmin(f, sc, mix, act) { if (!/avatars\/(0001|cor-ds-)/.test(f) || !sc.getObjectByName("Hips")) return; const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"); if (!AD) return;
+  for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
 function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
   if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
@@ -15138,8 +15141,8 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
         if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
       return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
     if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
-      clipsDS(sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; }
-    if (/avatars\/0001\.glb/.test(f)) { const AD = await chargerAnimsMX("anims/danses-admin.json?v=1"); if (AD) for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + (n === "village" ? "ymca" : n), sc);   /* (« village » : le YMCA des Village People — le nom « ymca » est déjà celui de l'ancienne danse, faite avec le bonhomme plat) */ if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
+      clipsDS(sc, mix, act); await dansesAdmin(f, sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; }
+    await dansesAdmin(f, sc, mix, act);
     return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
@@ -15690,7 +15693,7 @@ function videoDJ(c) { let v = M.videoDJ;
     v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
   const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
   const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
-    if (pos >= 0 && v.readyState >= 1) { const ecart = Math.abs(v.currentTime - pos); if (!v.seeking && (!v.duration || pos < v.duration) && (!M.videoCalee ? ecart > .4 : ecart > 3 && now > (M.videoSautT || 0))) { M.videoCalee = true; M.videoSautT = now + 6000; try { v.currentTime = pos + (M.videoCalee && ecart > 3 ? .8 : 0); } catch (e) {} }   /* (calée une fois au départ ; ensuite seulement si elle s'est égarée : elle se recalait sans cesse, n'avait jamais le temps de repartir, et l'écran restait blanc) */ if (v.paused) v.play().catch(() => {}); } } }
+    if (pos >= 0 && v.readyState >= 1) { if (!v.seeking && Math.abs(v.currentTime - pos) > .6 && (!v.duration || pos < v.duration)) { try { v.currentTime = pos; } catch (e) {} }   /* (calée sur le moment commun, comme avant — sauf pendant qu'elle se cale déjà) */ if (v.paused) v.play().catch(() => {}); } } }
 /* ===================== la manette (Bluetooth) et les lunettes 3D =====================
    Une manette de jeu (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour tourner la vue,
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
@@ -18446,4 +18449,4 @@ export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMors
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo, cineBar, bandageBras });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ, tirer });   // (pour les essais)
-export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS, parleRadio, codecDire });   // (pour les essais)
+export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS, parleRadio, codecDire, chargerAvatar3D });   // (pour les essais)

@@ -2459,7 +2459,10 @@
   /* les six boutons de danse ; pour l'administrateur, ses danses à lui (de vrais danseurs, avec leur vrai nom) */
   const DANSES_TOUS = [["balance", "💃 Danser"], ["disco", "🕺 Disco"], ["charleston", "🦵 Charleston"], ["madison", "👏 Madison"], ["thriller", "🧟 Thriller"], ["saut", "🙌 Saut"]], BOUTONS_DANSE = ["mxDanse", "mxDisco", "mxCharleston", "mxMadison", "mxThriller", "mxSaut"];
   const lesDanses = () => (moi && moi.admin && MX && MX.DANSES_ADMIN_NOMS) ? MX.DANSES_ADMIN_NOMS() : DANSES_TOUS;
-  function majBoutonsDanse() { const L = lesDanses(); BOUTONS_DANSE.forEach((id, i) => { const [d, nom] = L[i] || DANSES_TOUS[i], b = $(id); b.classList.toggle("on", jeDanse === d); b.textContent = jeDanse === d ? "🛑 Stop" : nom; b.onclick = () => MX && MX.danser(jeDanse === d ? false : d); }); }
+  function majBoutonsDanse() { const L = lesDanses(), boite = document.querySelector(".mx-danses");
+    for (let i = BOUTONS_DANSE.length; i < L.length; i++) { const id = "mxDanseX" + i; if (!$(id)) { const b = document.createElement("button"); b.className = "mx-danse"; b.id = id; b.type = "button"; boite.appendChild(b); } }   /* (l'administrateur a plus de danses : des boutons en plus) */
+    document.querySelectorAll("[id^=mxDanseX]").forEach(b => { const i = +b.id.slice(8); b.hidden = !(i < L.length); });
+    [...BOUTONS_DANSE, ...[...document.querySelectorAll("[id^=mxDanseX]")].map(b => b.id)].forEach((id, i) => { if (!L[i] && i >= BOUTONS_DANSE.length) return; const [d, nom] = L[i] || DANSES_TOUS[i], b = $(id); b.classList.toggle("on", jeDanse === d); b.textContent = jeDanse === d ? "🛑 Stop" : nom; b.onclick = () => MX && MX.danser(jeDanse === d ? false : d); }); }
   majBoutonsDanse();
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
@@ -3199,6 +3202,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.96", "23 octobre 2026", ["Administrateur : trois danses de plus — Moonwalk, Breakdance, Thriller ; et toutes tes danses marchent aussi sur ton bonhomme Coraline DS", "Salle des fêtes : la discothèque passe au hasard et en continu, musiques et clips mêlés (sans repasser les derniers titres)", "Le clip vidéo se cale de nouveau comme avant sur le moment de la musique"]],
     ["6.95", "23 octobre 2026", ["La fin remise dans l'ordre : l'hélicoptère se pose, on monte, les deux survivants accourent (l'un trébuche) ; puis la horde déboule par la voûte et remonte la cour ; enfin le décollage, les zombies à l'assaut de l'escalier de la terrasse — et sur un téléphone lent, plus aucun plan n'est sauté", "Le menu GPS : toucher une arme (ou ✕ à la manette) la prend en main — pistolet ou fusil à pompe", "La lettre se ferme à la manette", "La radio : la sonnerie, puis l'écran une demi-seconde après ; quand un équipier appelle, c'est son visage qui s'affiche", "Nemesis plus résistant (40 balles) ; s'il n'y a plus d'équipier, c'est Brad qui parle à la radio à son arrivée", "Une giclée de sang à chaque balle qui touche (plus forte au fusil à pompe)", "Barry tient son pistolet en main, y compris l'arme sur la tempe"]],
     ["6.94", "23 octobre 2026", ["La horde de la fin : ils courent tous dans le même sens et remontent la cour d'honneur ; les uns sautent par-dessus les voitures, les autres grimpent dessus", "Au décollage de l'hélicoptère, on les voit remonter en courant l'escalier de la terrasse jusqu'au H"]],
     ["6.93", "23 octobre 2026", ["La fin de Resident Evil : pendant qu'on monte dans l'hélicoptère, Brad crie « Dépêchez-vous !!! Ils arrivent ! » ; plan en hauteur sur la cour d'honneur, face aux bâtiments R et S — une trentaine de zombies déboulent en courant par la voûte (le porche a sauté) ; puis retour sur l'hélicoptère qui décolle"]],

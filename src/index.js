@@ -614,7 +614,7 @@ export class Compteur extends DurableObject {
     } else if (m.t === "slow_fin" && a.lieu) {
       this.finirSlow(ws, a);
     } else if (m.t === "danse" && a.lieu) {
-      a.danse = ["disco", "charleston", "madison", "thriller", "saut", ...(a.admin ? ["village", "hiphop", "samba", "soul", "gangnam", "salsa"] : [])].includes(m.on) ? m.on : m.on ? "balance" : false;   // (les danses de l'administrateur : à lui seul) ws.serializeAttachment(a);
+      a.danse = ["disco", "charleston", "madison", "thriller", "saut", ...(a.admin ? ["village", "hiphop", "samba", "soul", "gangnam", "salsa", "moonwalk", "breakdance", "thriller2"] : [])].includes(m.on) ? m.on : m.on ? "balance" : false;   // (les danses de l'administrateur : à lui seul) ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "danse", numero: a.numero, on: a.danse }, ws);
     } else if (m.t === "voix") {
       // le micro, allumé ou coupé : les autres du même monde le savent ; à celui qui l'allume, la liste de ceux qui l'ont déjà
@@ -894,8 +894,12 @@ export class Compteur extends DurableObject {
   async etatDJ() { return (await this.ctx.storage.get("dj")) || { courant: null, file: [] }; }
   // le titre qui viendra après celui-ci (la file d'attente, sinon la discothèque) : chacun le charge à l'avance
   prochainDJ(dj) { if (!dj.courant) return null; if (dj.file.length) return dj.file[0];
-    const m = this.sql.exec("SELECT id FROM musiques WHERE complet = 1 AND id > ? ORDER BY id LIMIT 1", dj.courant.id).toArray()[0] || this.sql.exec("SELECT id FROM musiques WHERE complet = 1 ORDER BY id LIMIT 1").toArray()[0];
-    return m ? this.ficheDJ(m.id, "la discothèque") : null; }
+    if (dj.prochain && dj.prochain.par === "la discothèque" && dj.prochain.id !== dj.courant.id) return dj.prochain;   // (déjà tiré au sort : on le garde)
+    const m = this.auHasardDJ(dj); return m ? this.ficheDJ(m, "la discothèque") : null; }
+  // la discothèque au hasard, musiques et clips mêlés : ni le titre en cours, ni les derniers passés
+  auHasardDJ(dj) { const tous = this.sql.exec("SELECT id FROM musiques WHERE complet = 1").toArray().map(r => r.id); if (!tous.length) return null;
+    const recents = new Set([dj.courant && dj.courant.id, ...(dj.histo || []).slice(-Math.min(8, Math.floor(tous.length / 2))).map(h => h.id)]), libres = tous.filter(i => !recents.has(i));
+    const l = libres.length ? libres : tous.filter(i => !dj.courant || i !== dj.courant.id); return (l.length ? l : tous)[Math.floor(Math.random() * (l.length || tous.length))]; }
   async majDJ(dj) { dj.prochain = this.prochainDJ(dj); await this.ctx.storage.put("dj", dj); for (const l of LIEUX_MATRICE) this.diffuser(l, { t: "dj", dj }); }
   ficheDJ(id, qui) {
     const m = this.sql.exec("SELECT id, titre, artiste, duree, type FROM musiques WHERE id = ? AND complet = 1", Number(id)).toArray()[0];
@@ -905,9 +909,8 @@ export class Compteur extends DurableObject {
   async suivantDJ(dj, direct = false) {
     if (dj.courant) { const { debut, ...h } = dj.courant; dj.histo = [...(dj.histo || []), h].slice(-20); }   // (pour revenir au titre d'avant)
     let f = dj.file.shift();
-    if (!f) { const apres = dj.courant ? dj.courant.id : 0;
-      const m = this.sql.exec("SELECT id FROM musiques WHERE complet = 1 AND id > ? ORDER BY id LIMIT 1", apres).toArray()[0] || this.sql.exec("SELECT id FROM musiques WHERE complet = 1 ORDER BY id LIMIT 1").toArray()[0];
-      f = m ? this.ficheDJ(m.id, "la discothèque") : null; }
+    if (!f) { const p = dj.prochain && dj.prochain.par === "la discothèque" && (!dj.courant || dj.prochain.id !== dj.courant.id) ? dj.prochain.id : this.auHasardDJ(dj);   /* (au hasard — celui annoncé à l'avance, déjà chargé chez chacun) */
+      f = p ? this.ficheDJ(p, "la discothèque") : null; }
     dj.courant = f ? { ...f, debut: Date.now() + (direct ? 0 : 1500) } : null;
   }
 
