@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.71";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.72";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13020,15 +13020,17 @@ function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.
 let tyran3D = null; const TY = { HP: 15, H: 1.45, V: 4.4 };
 function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
   M.ctx.surInfo && M.ctx.surInfo("🧨 Le fumigène est posé… l'hélicoptère arrive ! Mais quelque chose approche…");
-  tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=2"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, true); return G; })().catch(e => { console.warn("tyran", e); return null; });
+  tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=2"), A = await chargerAnimsMX("anims/re-nemesis.json?v=2");
+      if (A) { G.animations = [["idle", "n-idle"], ["walk", "n-marche"], ["run", "n-course"], ["origine0", "n-coup"], ["poing", "n-poing"], ["charge", "n-charge"], ["atterri", "n-atterri"], ["rugit", "n-rugit"], ["mort", "n-mort"]].map(([n, c]) => { const k = clipMX(A, c, G.scene); if (k) k.name = n; return k; }).filter(Boolean); G.mx = true; }   /* (ses vrais mouvements) */
+      else if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, true); return G; })().catch(e => { console.warn("tyran", e); return null; });
   tyran3D.then(G => { const T = M && M.tyran; if (!G || !T || !T.attente) return;
     const sc = skelMod.clone(G.scene);   /* (Nemesis, à sa taille : 2,45 m) */ sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
     const g = new THREE.Group(), piv = new THREE.Group(); piv.rotation.order = "YXZ"; piv.add(sc); g.add(piv); M.scene.add(g); g.userData.perso = true; const mix = new THREE.AnimationMixer(sc), act = {}; for (const a of G.animations) act[a.name] = mix.clipAction(a);
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, 2.6, 8), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1.3; g.add(hit);
     // il tombe du ciel, à quelques mètres du cercle, entre nous et l'escalier
     const mp = moiApo().g.position; let px = c.x, pz = c.z; for (let k = 0; k < 24; k++) { const a = k * .9, x = c.x + Math.sin(a) * 6.5, z = c.z + Math.cos(a) * 6.5; if (M.L.limites(x, z) && Math.abs(hNiv(M.L, x, z, c.y) - c.y) < .3) { px = x; pz = z; break; } }
-    Object.assign(T, { attente: false, g, piv, sc, mix, act, cur: null, mesh: hit, x: px, z: pz, etat: "chute", t0: performance.now(), frappeT: 0, regardT: 0, os: {} });
-    sc.traverse(o => { if (o.isBone && !T.os[o.name]) T.os[o.name] = o; }); jouerTY(T, "idle"); void mp; cineTyran(T); }); }
+    Object.assign(T, { attente: false, g, piv, sc, mix, act, cur: null, mesh: hit, x: px, z: pz, etat: "chute", t0: performance.now(), frappeT: 0, regardT: 0, os: {}, mx: !!G.mx });
+    sc.traverse(o => { if (o.isBone && !T.os[o.name]) T.os[o.name] = o; }); if (T.mx && act.atterri) { jouerTY(T, "atterri", true); act.atterri.paused = true; } else jouerTY(T, "idle"); void mp; cineTyran(T); }); }   /* (en tombant : la pose du saut, figée ; il l'achève en touchant le sol) */
 /* l'arrivée du Tyran : il tombe du ciel sous nos yeux, on le voit de près, et les héros réagissent */
 // le combat contre le Tyran, sur la terrasse : lui seul ; aucun zombie ni Licker ne vient s'y mêler (ceux qui y sont, ou y montent, disparaissent)
 function terrasseBoss() { const T = M.tyran, c = M.L && M.L.heliport; if (!T || T.mortT || !c) return; const sur = (x, y, z) => Math.hypot(x - c.x, z - c.z) < 20 && Math.abs(y - c.y) < 2.5;
@@ -13060,36 +13062,42 @@ function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; 
   if (!T.rep0) { T.rep0 = []; for (const n in T.os) T.rep0.push([T.os[n], T.os[n].quaternion.clone()]); } for (const [b, q] of T.rep0) b.quaternion.copy(q);   // (chaque image repart de la pose de départ : nos poses ne s'empilent pas)
   T.mix.update(dt);
   /* ses poses, par-dessus l'animation : en tombant, les genoux repliés ; à l'atterrissage, un genou au sol, une main posée, puis il se redresse ; en charge, penché en avant */
-  { const TT = (n, a, v) => tourne3D({ sc: T.sc, os: T.os }, n, a, v); let k = 0;
+  if (!T.mx) { const TT = (n, a, v) => tourne3D({ sc: T.sc, os: T.os }, n, a, v); let k = 0;
     if (T.etat === "chute") { TT("LeftUpLeg", "x", -.6); TT("RightUpLeg", "x", -.3); TT("LeftLeg", "x", .9); TT("RightLeg", "x", .7); TT("LeftArm", "z", .5); TT("RightArm", "z", -.5); }
     if (T.etat === "atterri") { const u = (now - T.t0) / 2200; k = u < .55 ? 1 : Math.max(0, 1 - (u - .55) / .45); k = k * k * (3 - 2 * k);
       TT("Spine", "x", .55 * k); TT("Spine1", "x", .2 * k); TT("Head", "x", -.35 * k); TT("RightUpLeg", "x", -1.5 * k); TT("RightLeg", "x", 1.45 * k); TT("LeftUpLeg", "x", .15 * k); TT("LeftLeg", "x", 1.9 * k); TT("LeftFoot", "x", -.6 * k);
       TT("RightArm", "x", -1.1 * k); TT("RightArm", "z", .4 * k); TT("RightForeArm", "x", -.3 * k); }
     if (T.etat === "charge") { TT("Spine", "x", .4); TT("Head", "x", -.3); }
     T.piv.position.y = T.mortT ? T.piv.position.y : -.62 * k; }
-  if (!T.mortT && T.etat !== "frappe" && T.etat !== "atterri" && T.etat !== "chute" && T.os.LeftArm) { const ry = T.piv.rotation.y, fx = Math.sin(ry), fz = Math.cos(ry), rx = Math.cos(ry), rz = -Math.sin(ry);   /* (ses bras, que l'animation laissait repliés contre la poitrine : pendants, le long du corps, un peu en avant, en balancier quand il marche) */
+  if (!T.mx && !T.mortT && T.etat !== "frappe" && T.etat !== "atterri" && T.etat !== "chute" && T.os.LeftArm) { const ry = T.piv.rotation.y, fx = Math.sin(ry), fz = Math.cos(ry), rx = Math.cos(ry), rz = -Math.sin(ry);   /* (ses bras, que l'animation laissait repliés contre la poitrine : pendants, le long du corps, un peu en avant, en balancier quand il marche) */
     T.g.updateMatrixWorld(true); const bal = T.cur === "walk" || T.cur === "run" ? Math.sin(performance.now() / 260) * .35 : 0;
     for (const [c, sg] of [["Left", 1], ["Right", -1]]) { const d = new THREE.Vector3(fx * (.2 + bal * sg) + rx * sg * .12, -1, fz * (.2 + bal * sg) + rz * sg * .12).normalize();
       viser3D(T, c + "Arm", c + "ForeArm", d); viser3D(T, c + "ForeArm", c + "Hand", d.clone().add(new THREE.Vector3(fx * .25, 0, fz * .25)).normalize()); } }
   const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0x660000 : 0); }); }
+  if (T.mortT && T.mx && T.act.mort) { if (T.cur !== "mort") jouerTY(T, "mort", true); T.mix.timeScale = 1;   // (il s'effondre pour de vrai, à genoux puis sur le dos)
+    if (!T.flaque && now - T.mortT > 2600) { T.flaque = true; const h = T.os.Head, w = h ? h.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(T.x, 0, T.z); flaqueMort({ g: { position: new THREE.Vector3(w.x, T.g.position.y, w.z) } }); }
+    const k = Math.max(0, Math.min(1, (now - T.mortT - 5600) / 1500)); T.piv.position.y = -k * 1.4; if (k >= 1 && T.g.parent) T.g.parent.remove(T.g);   /* (puis il s'enfonce, et disparaît : l'hélicoptère ne se pose pas sur lui) */
+    return; }
   if (T.mortT) { const f = Math.min(1, (now - T.mortT) / 900); T.piv.rotation.x = -f * Math.PI / 2 * .97; T.piv.position.y = f * .2; T.mix.timeScale = 0;
     if (f >= 1 && !T.flaque) { T.flaque = true; const c = T.piv.rotation.y; flaqueMort({ g: { position: new THREE.Vector3(T.x - Math.sin(c) * 1.2, T.g.position.y, T.z - Math.cos(c) * 1.2) } }); }
     const k = Math.max(0, Math.min(1, (now - T.mortT - 3200) / 1500)); if (k > 0) T.piv.position.y = .2 - k * 1.4; if (k >= 1 && T.g.parent) T.g.parent.remove(T.g);   /* (puis il s'enfonce, et disparaît : l'hélicoptère ne se pose pas sur lui) */
     return; }
   const dx = mp.x - T.x, dz = mp.z - T.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
   if (T.etat === "chute") { const f = Math.min(1, (now - T.t0) / 700); T.g.position.set(T.x, hS(T.x, T.z) + (1 - f * f) * 14, T.z); T.piv.rotation.y = cap;
-    if (f >= 1) { T.etat = "atterri"; T.t0 = now; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); } return; }
-  if (T.etat === "atterri") { jouerTY(T, "idle"); if (now - T.t0 > 2200) { T.etat = "regard"; T.regardT = now + 900; } return; }   // (un genou au sol, puis il se relève lentement)
+    if (f >= 1) { T.etat = "atterri"; T.t0 = now; if (T.mx && T.act.atterri) T.act.atterri.paused = false; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); } return; }
+  if (T.etat === "atterri") { if (!T.mx) jouerTY(T, "idle"); if (now - T.t0 > (T.mx ? 1900 : 2200)) { T.etat = "regard"; T.regardT = now + (T.mx ? 2600 : 900); if (T.mx) jouerTY(T, "rugit", true); } return; }   // (un genou au sol, il se relève ; puis il rugit en nous fixant)   // (un genou au sol, puis il se relève lentement)
   T.g.position.set(T.x, hS(T.x, T.z), T.z); let dc = cap - T.piv.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); T.piv.rotation.y += dc * Math.min(1, dt * 7);
   if (APO.zombieFin) { jouerTY(T, "idle"); return; }
-  if (T.etat === "frappe") { if (!T.touche && now - T.t0 > 520) { T.touche = true; if (d < 2.3) subirMorsure(T.x, T.z, 1); } if (now - T.t0 > 1300) { T.etat = "course"; } return; }
-  if (T.etat === "regard") { jouerTY(T, "idle"); if (now > T.regardT) { T.etat = "course"; T.prochainRegard = now + 4000 + Math.random() * 3000; } return; }   // (il nous fixe)
-  if (d < 1.8 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 1900; jouerTY(T, "origine0", true); return; }
-  if (T.etat === "charge") { if (now - T.t0 > 1700) { T.etat = "souffle"; T.t0 = now; } else { const v = TY.V * 2 * dt, nx = T.x + dx / d * v, nz = T.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hNiv(M.L, nx, nz, T.y ?? 0) - (T.y ?? 0)) < .5) { T.x = nx; T.z = nz; } jouerTY(T, "run"); if (T.act.run) T.act.run.timeScale = 1.6; return; } }   // (la charge : il fonce, penché en avant)
+  if (T.etat === "frappe") { if (!T.touche && now - T.t0 > (T.mx ? 950 : 520)) { T.touche = true; if (d < 2.4) subirMorsure(T.x, T.z, 1); } if (now - T.t0 > (T.mx ? 2000 : 1300)) { T.etat = "course"; } return; }   // (le coup de griffe : il porte au milieu du geste)
+  if (T.etat === "regard") { if (!(T.mx && T.cur === "rugit")) jouerTY(T, "idle"); if (now > T.regardT) { T.etat = "course"; T.prochainRegard = now + 4000 + Math.random() * 3000; } return; }   // (il nous fixe)
+  if (d < 1.8 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 1900; criNemesis(); jouerTY(T, T.mx && T.act.poing && Math.random() < .5 ? "poing" : "origine0", true); return; }   // (le coup de griffe, ou le coup de poing)
+  if (T.etat === "charge") { if (now - T.t0 > 1700) { T.etat = "souffle"; T.t0 = now; } else { const v = TY.V * 2 * dt, nx = T.x + dx / d * v, nz = T.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hNiv(M.L, nx, nz, T.y ?? 0) - (T.y ?? 0)) < .5) { T.x = nx; T.z = nz; } if (T.mx && T.act.charge) jouerTY(T, "charge"); else { jouerTY(T, "run"); if (T.act.run) T.act.run.timeScale = 1.6; } return; } }   // (la charge : il fonce, penché en avant)
   if (T.etat === "souffle") { jouerTY(T, "idle"); if (now - T.t0 > 700) { T.etat = "course"; T.chargeT = now + 2500 + Math.random() * 2000; } return; }   // (il s'arrête, souffle, nous fixe)
-  if (d > 4 && now > (T.chargeT || 0)) { T.etat = "charge"; T.t0 = now; grognementLisa(.9, .6); return; }
-  if (now > (T.prochainRegard || 0) && d > 5) { T.etat = "regard"; T.regardT = now + 1100; return; }
+  if (d > 4 && now > (T.chargeT || 0)) { T.etat = "charge"; T.t0 = now; criNemesis(); return; }   // (il hurle, et charge)
+  if (now > (T.prochainRegard || 0) && d > 5) { T.etat = "regard"; T.regardT = now + (T.mx ? 2600 : 1100); if (T.mx) jouerTY(T, "rugit", true); return; }
   if (d > 1.5) { const v = (d > 4 ? TY.V : TY.V * .5) * dt, nx = T.x + dx / d * v, nz = T.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hNiv(M.L, nx, nz, T.y ?? 0) - (T.y ?? 0)) < .5) { T.x = nx; T.z = nz; } jouerTY(T, d > 4 ? "run" : "walk"); if (T.act.run) T.act.run.timeScale = 1.15; } else jouerTY(T, "idle"); }
+/* le cri de Nemesis, juste avant qu'il attaque (pas plus d'un toutes les cinq secondes) */
+let criNemT = 0; const criNemesis = () => { const now = performance.now(); if (now < criNemT) return; criNemT = now + 5000; sonPos("sons/re-nemesis-cri.mp3", 1); };
 function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.now() + 160; sangAuSol(T.x, T.z, T.g.position.y, 1.2); T.hp--;
   if (T.etat === "chute") return; if (T.hp > 0 && T.hp % 5 === 0) { T.etat = "regard"; T.regardT = performance.now() + 700; sonPos("sons/zombie3.mp3", 1); }   // (il encaisse, s'arrête, nous fixe)
   if (T.hp <= 0) { T.mortT = performance.now(); M.tyranMort = true; sonPos("sons/zombie3.mp3", 1);
