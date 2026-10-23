@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.85";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.86";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15570,7 +15570,8 @@ function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(nu
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
 function videoDJ(c) { let v = M.videoDJ;
   if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
-  if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous"; }
+  if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
+    v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
   const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
   const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
     if (pos >= 0 && v.readyState >= 1) { const ecart = Math.abs(v.currentTime - pos); if (!v.seeking && (!v.duration || pos < v.duration) && (!M.videoCalee ? ecart > .4 : ecart > 3 && now > (M.videoSautT || 0))) { M.videoCalee = true; M.videoSautT = now + 6000; try { v.currentTime = pos + (M.videoCalee && ecart > 3 ? .8 : 0); } catch (e) {} }   /* (calée une fois au départ ; ensuite seulement si elle s'est égarée : elle se recalait sans cesse, n'avait jamais le temps de repartir, et l'écran restait blanc) */ if (v.paused) v.play().catch(() => {}); } } }

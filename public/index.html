@@ -2589,6 +2589,9 @@
         const nom = f.name.replace(/\.[^.]+$/, "").replace(/_/g, " ").trim(), parts = nom.split(/\s+-\s+/);
         const [artiste, titre] = parts.length > 1 ? [parts[0], parts.slice(1).join(" - ")] : ["", nom];
         const type = (f.type === "video/x-m4v" ? "video/mp4" : f.type) || (/\.mp3$/i.test(f.name) ? "audio/mpeg" : /\.m4a$/i.test(f.name) ? "audio/mp4" : /\.ogg$/i.test(f.name) ? "audio/ogg" : /\.(mp4|m4v)$/i.test(f.name) ? "video/mp4" : /\.mov$/i.test(f.name) ? "video/quicktime" : /\.webm$/i.test(f.name) ? "video/webm" : "");
+        if (/^video\//.test(type)) { const lisible = await new Promise(ok => { const v = document.createElement("video"), u = URL.createObjectURL(f); let fini = false; const fin = r => { if (fini) return; fini = true; URL.revokeObjectURL(u); ok(r); };
+            v.muted = true; v.preload = "metadata"; v.onloadeddata = () => fin(v.videoWidth > 0); v.onloadedmetadata = () => { if (!v.videoWidth) fin(false); }; v.onerror = () => fin(false); setTimeout(() => fin(v.videoWidth > 0 || null), 10000); v.src = u; });   /* (le clip : on vérifie que l'image se lit, avant de l'envoyer) */
+          if (lisible === false) throw new Error("ce navigateur ne sait pas lire l'image de cette vidéo (format non pris en charge) — convertis-la en MP4 H.264 avant de l'envoyer"); }
         const j = await api("POST", "/api/musiques", { titre, artiste, taille: f.size, type, duree: await dureeAudio(f) });
         for (let n = 0; n < j.morceaux; n++) {
           const r = await fetch(`/api/musiques/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + moi.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() });
@@ -3193,6 +3196,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.86", "23 octobre 2026", ["Salle des fêtes : si un clip ne peut pas s'afficher (format vidéo non pris en charge par le navigateur), un message le dit au lieu d'un écran blanc", "En ajoutant une vidéo au DJ : on vérifie d'abord que son image se lit ; sinon, elle est refusée avec l'explication"]],
     ["6.85", "23 octobre 2026", ["La télé de l'appartement : la vidéo réduite à la taille de l'écran (25 images par seconde) — en pleine définition, elle faisait ramer tout le jeu"]],
     ["6.84", "23 octobre 2026", ["Resident Evil : le canon du pistolet dans le prolongement du bras et de la main, la crosse dans le poing"]],
     ["6.83", "23 octobre 2026", ["Resident Evil : le pistolet tenu pour de vrai — la crosse dans le poing, le canon vers l'avant (calé sur la main elle-même, plus sur le bras)"]],
