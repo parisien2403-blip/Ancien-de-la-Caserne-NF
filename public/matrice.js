@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.87";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.88";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12175,17 +12175,49 @@ function objetC4(diode = false) { const g = new THREE.Group(), pain = new THREE.
   const t = new THREE.Mesh(new THREE.BoxGeometry(.09, .03, .07), noir); t.position.set(0, .105, 0); g.add(t);
   const led = new THREE.Mesh(new THREE.SphereGeometry(.012, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2010 })); led.position.set(.025, .125, .02); g.add(led); g.userData.led = led; led.visible = diode;
   return g; }
-// le GPS : la carte de la caserne sur l'écran vert du boîtier ; la balise du fumigène qui clignote ; nous, en jaune
+/* le GPS, à la manière du menu de Resident Evil : le grand écran (la carte, ou l'objet choisi), MAP · FILE · RADIO · EXIT, l'inventaire (les armes qu'on porte),
+   le portrait du héros, l'ECG (l'état de santé du moment : Fine, Caution, Danger) et l'arme équipée ; en bas, le nom de ce qu'on regarde */
 function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
-  const W = document.createElement("div"); W.style.cssText = "position:absolute;inset:0;z-index:11;background:rgba(0,0,0,.88)";
-  const cadre = document.createElement("div"); cadre.style.cssText = "position:absolute;inset:14px;border-radius:22px;background:linear-gradient(#2a2d2a,#151715);border:2px solid #3c423c;box-shadow:inset 0 0 0 6px #0c0e0c,0 8px 30px rgba(0,0,0,.8);display:flex;flex-direction:column;overflow:hidden";
-  const tete = document.createElement("div"); tete.style.cssText = "flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 64px 8px 18px;font:800 12px/1.2 'Courier New',monospace;letter-spacing:.18em;color:#7dff8a;text-shadow:0 0 6px rgba(80,255,110,.6)";
-  const ecran = document.createElement("div"); ecran.style.cssText = "position:relative;flex:1;margin:0 12px 12px;border-radius:10px;background:#031a08;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:inset 0 0 30px rgba(0,0,0,.9)";
-  const box = document.createElement("div"); box.style.cssText = "position:relative;width:min(100%,520px);margin:0 auto";
+  const R = M.ctx.conteneur.getBoundingClientRect(), Wm = Math.min(R.width - 8, (R.height - 8) * 4 / 3), u = v => (v * Wm / 1280) + "px";
+  if (!document.getElementById("styleGPS")) { const st = document.createElement("style"); st.id = "styleGPS"; st.textContent = "@keyframes gpsClig{50%{opacity:.25}}@keyframes gpsOnde{from{transform:scale(1);opacity:1}to{transform:scale(4.5);opacity:0}}"; document.head.appendChild(st); }
+  const W = document.createElement("div"); W.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;display:grid;place-items:center";
+  const menu = document.createElement("div"); menu.style.cssText = `position:relative;width:${Wm}px;height:${Wm * .75}px;background:#000;font-family:'Arial Black',Impact,sans-serif;user-select:none`;
+  const metal = "linear-gradient(180deg,#d9e2d6,#9fae9b 45%,#6f7d6c 55%,#c3cfc0)", bloc = (x, y, w, h, css = "") => { const d = document.createElement("div"); d.style.cssText = `position:absolute;left:${u(x)};top:${u(y)};width:${u(w)};height:${u(h)};${css}`; menu.appendChild(d); return d; };
+  const vis = (el) => { el.style.boxShadow = "inset 0 0 0 " + u(3) + " #50604e"; };
+  // le grand écran, son cadre de métal vert, ses quatre vis
+  const cadre = bloc(32, 46, 768, 512, `background:${metal};border-radius:${u(6)};box-shadow:inset 0 0 ${u(6)} rgba(0,0,0,.6)`);
+  bloc(48, 84, 64, 436, `background:linear-gradient(90deg,#5d7a5f,#cfe8cf 50%,#5d7a5f);border:${u(3)} solid #3d4a3b`);
+  for (const [x, y] of [[46, 63], [784, 63], [46, 541], [784, 541]]) bloc(x - 11, y - 11, 22, 22, "border-radius:50%;background:radial-gradient(#e8ece6,#4a5548 70%);box-shadow:0 0 2px #000");
+  const ecran = bloc(124, 80, 656, 446, `background:#0a0c40;overflow:auto;-webkit-overflow-scrolling:touch;border:${u(4)} solid #303a30;box-shadow:inset 0 0 ${u(30)} rgba(0,0,0,.9)`);
+  // MAP · FILE · RADIO · EXIT
+  bloc(816, 50, 414, 152, `background:${metal};border-radius:${u(8)}`);
+  const onglet = (x, y, txt) => { const b = bloc(x, y, 186, 60, `display:grid;place-items:center;cursor:pointer;background:linear-gradient(180deg,#fafafa,#bdbdbd 48%,#8d8d8d 52%,#e4e4e4);border:${u(4)} solid #111;border-radius:${u(6)};color:#000;font-size:${u(50)};letter-spacing:${u(1)};line-height:1`); b.textContent = txt; return b; };
+  const bMap = onglet(834, 66, "MAP"), bFile = onglet(1026, 66, "FILE"), bRadio = onglet(834, 132, "RADIO"), bExit = onglet(1026, 132, "EXIT");
+  // l'inventaire : la grille bleue
+  bloc(832, 194, 414, 540, `background:#1b241b;border:${u(5)} solid #3e4a3e`);
+  const inv = bloc(862, 222, 354, 498, `background:linear-gradient(135deg,#0c1590,#060b5c);border:${u(4)} solid #2a3570;box-shadow:inset 0 0 ${u(14)} #000`);
+  // le portrait, l'ECG, l'arme équipée
+  const HH = M.perso && HEROS[M.perso]; const port = bloc(66, 566, 210, 152, `background:${metal};border-radius:${u(10)}`);
+  bloc(86, 582, 124, 120, `background:#08103a url('images/re/${HH ? HH.cle : "jill"}-tete.png?v=3') center/cover;border:${u(3)} solid #222`); void port;
+  bloc(286, 566, 256, 152, `background:${metal};border-radius:${u(10)}`); const ecg = document.createElement("canvas"); ecg.width = 380; ecg.height = 200; const ecgB = bloc(334, 582, 192, 120, `background:#020a02;border:${u(3)} solid #222`); ecg.style.cssText = "width:100%;height:100%;display:block"; ecgB.appendChild(ecg);
+  bloc(294, 592, 34, 100, `color:#1b221b;font-size:${u(30)};writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;line-height:1`).textContent = "≋ECG";
+  bloc(592, 568, 240, 150, `background:${metal};clip-path:polygon(8% 0,100% 0,100% 100%,8% 100%,0 85%,0 15%);border-radius:${u(10)}`);
+  bloc(606, 615, 22, 50, "background:#111;clip-path:polygon(0 0,100% 50%,0 100%)");
+  const equip = bloc(636, 580, 166, 126, `background:linear-gradient(135deg,#0c1590,#060b5c);border:${u(3)} solid #222;display:grid;place-items:center;position:absolute`);
+  // le bas : le nom de ce qu'on regarde
+  bloc(0, 728, 1280, 4, "background:linear-gradient(90deg,#a8b8a5,#5c6a5a)"); const nom = bloc(130, 742, 1100, 70, `color:#d8dcd8;font-family:Georgia,'Times New Roman',serif;font-size:${u(48)};letter-spacing:${u(5)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis`);
+  bloc(0, 864, 1280, 64, `background:linear-gradient(180deg,#8e9e8b,#4b574a);border-top:${u(3)} solid #c9d6c6`); bloc(468, 870, 812, 26, `border:${u(3)} solid #c9d6c6;background:#3f4b3e`);
+  // les objets qu'on porte
+  const objets = [{ k: "pistolet", nom: M.mitra ? "Mitraillette" : "Pistolet", n: "∞" }, ...(M.pompe ? [{ k: "pompe", nom: "Fusil à pompe", n: "∞" }] : []), ...(M.c4 && !M.c4Pose ? [{ k: "c4", nom: "C4 et son détonateur", n: "" }] : [])];
+  const arme = M.pompe && !M.mitra ? objets[1] : objets[0], img = (k, css) => `<img src="images/re/inv-${k}.${k === "pistolet" ? "webp" : "svg"}?v=2" alt="" style="max-width:${css};max-height:${css};object-fit:contain;filter:drop-shadow(0 ${u(3)} ${u(3)} rgba(0,0,0,.6))">`, chiffre = n => n ? `<b style="position:absolute;left:${u(14)};bottom:${u(6)};color:#4dff4d;font:${u(40)} 'Courier New',monospace;font-weight:700">${n}</b>` : "";
+  equip.innerHTML = img(arme.k, "86%") + chiffre(arme.n);
+  const cases = []; objets.forEach((o, i) => { const c = document.createElement("div"); c.style.cssText = `position:absolute;left:${u(16 + (i % 2) * 160)};top:${u(14 + Math.floor(i / 2) * 124)};width:${u(158)};height:${u(118)};display:grid;place-items:center;cursor:pointer;border:${u(3)} solid transparent`; c.innerHTML = img(o.k, "90%") + chiffre(o.n); c.onclick = () => voirObjet(o, c); inv.appendChild(c); cases.push(c); });
+  // le grand écran : la carte
+  const box = document.createElement("div"); box.style.cssText = "position:relative;width:100%";
   const moi = moiApo(), dir = new THREE.Vector3(); M.camera.getWorldDirection(dir); const b0 = baseLieu(M.lieu), p = moi && moi.g.position;
   const ici = !p ? null : b0 === "grande" ? [p.x, p.z] : b0 === "rue" ? [p.x, FUMI_CARTE[1] + (p.z - FUMI_RUE[1]) * .35] : LIEU_CARTE["sh-" + b0] || null;
   const dist = ici ? Math.round(Math.hypot(ici[0] - FUMI_CARTE[0], (ici[1] - FUMI_CARTE[1]) * (b0 === "rue" ? 1 / .35 : 1))) : null;
-  tete.innerHTML = `<span>S.T.A.R.S. · GPS</span><span>BALISE${dist != null ? " · " + dist + " M" : ""}</span>`;
+  const infoBalise = `Balise du fumigène${dist != null ? " — " + dist + " m" : ""}`;
   const cv = document.createElement("canvas"); cv.width = 1290; cv.height = 3640; cv.style.cssText = "display:block;width:100%;height:auto";
   const [bx, by] = CARTE_PX(FUMI_CARTE[0], FUMI_CARTE[1]);
   const balise = document.createElement("div"); balise.style.cssText = `position:absolute;left:${bx / 12.9}%;top:${by / 36.4}%;width:0;height:0;pointer-events:none`;
@@ -12193,19 +12225,38 @@ function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
   if (!document.getElementById("styleGPS")) { const st = document.createElement("style"); st.id = "styleGPS"; st.textContent = "@keyframes gpsClig{50%{opacity:.25}}@keyframes gpsOnde{from{transform:scale(1);opacity:1}to{transform:scale(4.5);opacity:0}}"; document.head.appendChild(st); }
   const im = new Image(); im.onload = () => { if (!M) return; const x = cv.getContext("2d"); x.drawImage(im, 0, 0);
     // l'écran vert : la carte en lueur verte, des lignes de balayage
-    const D = x.getImageData(0, 0, 1290, 3640), q = D.data; for (let i = 0; i < q.length; i += 4) { const g = (q[i] * .3 + q[i + 1] * .59 + q[i + 2] * .11) / 255, v = Math.pow(g, 1.6); q[i] = 8 + v * 60; q[i + 1] = 22 + v * 200; q[i + 2] = 12 + v * 80; } x.putImageData(D, 0, 0);
+    const D = x.getImageData(0, 0, 1290, 3640), q = D.data; for (let i = 0; i < q.length; i += 4) { const g = (q[i] * .3 + q[i + 1] * .59 + q[i + 2] * .11) / 255, v = Math.pow(g, 1.6); q[i] = 6 + v * 70; q[i + 1] = 10 + v * 120; q[i + 2] = 30 + v * 225; } x.putImageData(D, 0, 0);   /* (la carte à la manière de Resident Evil : les lieux en bleu sur fond sombre) */
     // la rue du Faubourg-Poissonnière, au bas de la carte (devant le porche)
-    const [, y0] = CARTE_PX(0, 29.6), [, y1] = CARTE_PX(0, 34.4); x.fillStyle = "rgba(60,200,100,.35)"; x.fillRect(70, y0, 1150, y1 - y0); x.strokeStyle = "rgba(120,255,150,.6)"; x.lineWidth = 3; x.strokeRect(70, y0, 1150, y1 - y0);
-    x.font = "bold 30px 'Courier New', monospace"; x.fillStyle = "#8dffa0"; x.textAlign = "center"; x.fillText("RUE DU FAUBOURG-POISSONNIÈRE", 645, y1 - 14); x.textAlign = "start";
+    const [, y0] = CARTE_PX(0, 29.6), [, y1] = CARTE_PX(0, 34.4); x.fillStyle = "rgba(60,110,220,.35)"; x.fillRect(70, y0, 1150, y1 - y0); x.strokeStyle = "rgba(140,190,255,.7)"; x.lineWidth = 3; x.strokeRect(70, y0, 1150, y1 - y0);
+    x.font = "bold 30px 'Courier New', monospace"; x.fillStyle = "#cfe0ff"; x.textAlign = "center"; x.fillText("RUE DU FAUBOURG-POISSONNIÈRE", 645, y1 - 14); x.textAlign = "start";
     x.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < 3640; y += 6) x.fillRect(0, y, 1290, 2);
     if (ici) { const [px, py] = CARTE_PX(ici[0], ici[1]), a = Math.atan2(dir.z, dir.x); x.save(); x.translate(px, py); x.rotate(a); x.fillStyle = "#ffe14a"; x.strokeStyle = "#3a3000"; x.lineWidth = 6; x.lineJoin = "round"; x.beginPath(); x.moveTo(46, 0); x.lineTo(-26, -30); x.lineTo(-26, 30); x.closePath(); x.fill(); x.stroke(); x.restore(); }
-    requestAnimationFrame(() => { const r2 = cv.getBoundingClientRect(), k = r2.height / 3640; ecran.scrollTop = Math.max(0, by * k - ecran.clientHeight * .6); }); };
+    requestAnimationFrame(() => { const r2 = cv.getBoundingClientRect(), k = r2.height / 3640; ecran.scrollTop = Math.max(0, by * k - ecran.clientHeight * .5); }); };
   im.src = "images/sh/carte-caserne.webp";
-  const ferme = document.createElement("button"); ferme.type = "button"; ferme.setAttribute("aria-label", "Ranger le GPS"); ferme.textContent = "✕"; ferme.style.cssText = "position:absolute;top:18px;right:20px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;background:#7dff8a;color:#031a08;font:900 20px sans-serif";
-  box.append(cv, balise); ecran.append(box); cadre.append(tete, ecran); W.append(cadre, ferme); ecran.addEventListener("click", e => { if (e.target === ecran) ferme.onclick(); });
+  box.append(cv, balise);
+  /* MAP : la carte en grand, sur tout l'écran du menu ; on la fait glisser du doigt ; « RETOUR » pour revenir au menu */
+  const plan = document.createElement("div"); plan.style.cssText = "position:absolute;inset:0;background:#02040f;display:none;z-index:5;font-family:'Arial Black',Impact,sans-serif"; W.appendChild(plan); const zone = document.createElement("div"); zone.style.cssText = `position:absolute;left:10px;right:10px;top:54px;bottom:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:${u(4)} solid #2c3c7a;box-shadow:inset 0 0 ${u(30)} #000`; plan.appendChild(zone);
+  const titreP = document.createElement("div"); titreP.style.cssText = "position:absolute;left:14px;top:8px;color:#cfe0ff;font-size:24px;letter-spacing:3px"; titreP.textContent = "CASERNE"; plan.appendChild(titreP);
+  const retour = document.createElement("div"); retour.style.cssText = "position:absolute;right:12px;top:7px;padding:4px 14px;cursor:pointer;background:linear-gradient(180deg,#fafafa,#bdbdbd 48%,#8d8d8d 52%,#e4e4e4);border:3px solid #111;border-radius:6px;color:#000;font-size:20px"; retour.textContent = "RETOUR"; plan.appendChild(retour);
+  const infoP = document.createElement("div"); infoP.style.cssText = "position:absolute;left:150px;right:120px;top:14px;color:#ff8a7a;font:bold 15px 'Courier New',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"; plan.appendChild(infoP);
+  box.style.cssText = "position:relative;width:100%;max-width:900px;margin:0 auto"; zone.appendChild(box);
+  const voirCarte = () => { plan.style.display = "block"; infoP.textContent = infoBalise; requestAnimationFrame(() => { const r2 = cv.getBoundingClientRect(), k = r2.height / 3640, kx = r2.width / 1290, moiP = ici ? CARTE_PX(ici[0], ici[1]) : [bx, by]; zone.scrollTop = Math.max(0, moiP[1] * k - zone.clientHeight * .5); zone.scrollLeft = Math.max(0, moiP[0] * kx - zone.clientWidth * .5); }); };
+  retour.onclick = () => { plan.style.display = "none"; };
+  const voirObjet = (o, c) => { ecran.innerHTML = ""; ecran.style.overflow = "hidden"; const d = document.createElement("div"); d.style.cssText = "width:100%;height:100%;display:grid;place-items:center"; d.innerHTML = img(o.k, "78%").replace("drop-shadow", "drop-shadow"); ecran.appendChild(d); for (const q of cases) q.style.borderColor = "transparent"; c.style.borderColor = "#a01818"; nom.textContent = o.nom; };
+  const ferme = () => { W.remove(); if (M) M.cadranEl = null; cancelAnimationFrame(raf); };
+  bMap.onclick = voirCarte; bExit.onclick = ferme;
+  bFile.onclick = () => { if (M.lettre && M.lettre.pris) { ferme(); lireLettre(M.lettre.nom, M.lettre.ami); } else nom.textContent = "Aucun document"; };
+  bRadio.onclick = () => { nom.textContent = M.gps ? "Brad : « Allumez le fumigène au centre du H, sur la terrasse. »" : "Radio : … friture …"; sonBruit(.35, 2600, .12); };
+  // l'ECG : l'état de santé du moment (4 vies : Fine ; 2 : Caution ; 1 : Danger)
+  const vies = APO.vies ?? 4, etat = vies >= 3 ? ["Fine", "#3cff3c", 1] : vies === 2 ? ["Caution", "#ffb020", 1.6] : ["Danger", "#ff3030", 2.4], ex = ecg.getContext("2d"); let raf = 0, t0 = performance.now();
+  const trace = () => { const t = (performance.now() - t0) / 1000; ex.fillStyle = "#020a02"; ex.fillRect(0, 0, 380, 200); ex.strokeStyle = "rgba(60,160,60,.55)"; ex.lineWidth = 3; for (let y = 22; y < 200; y += 22) { ex.beginPath(); ex.moveTo(0, y); ex.lineTo(380, y); ex.stroke(); }
+    ex.strokeStyle = etat[1]; ex.lineWidth = 6; ex.shadowColor = etat[1]; ex.shadowBlur = 10; ex.beginPath(); for (let x = 0; x <= 380; x += 4) { const ph = ((x / 380 + t * .55 * etat[2]) % 1), pic = ph > .45 && ph < .5 ? -70 * Math.sin((ph - .45) / .05 * Math.PI) : ph > .5 && ph < .53 ? 30 : 0; const y = 100 + pic; x ? ex.lineTo(x, y) : ex.moveTo(x, y); } ex.stroke(); ex.shadowBlur = 0;
+    ex.fillStyle = etat[1]; ex.font = "bold 58px Arial"; ex.fillText(etat[0], 120, 185); raf = requestAnimationFrame(trace); };
+  trace();
+  W.appendChild(menu); voirObjet(arme, cases[objets.indexOf(arme)]); W.addEventListener("click", e => { if (e.target === W) ferme(); });
   M.ctx.conteneur.appendChild(W); M.cadranEl = W; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) W.addEventListener(ev, e => e.stopPropagation());
-  sonBruit(.08, 4000, .2); ferme.onclick = () => { W.remove(); if (M) M.cadranEl = null; };
-  W.carteMan = { zoom: () => {}, defiler: (dx, dy) => { ecran.scrollLeft += dx; ecran.scrollTop += dy; }, fermer: () => ferme.onclick() }; }
+  sonBruit(.08, 4000, .2);
+  W.carteMan = { zoom: () => {}, defiler: (dx, dy) => { zone.scrollLeft += dx; zone.scrollTop += dy; }, fermer: () => plan.style.display === "block" ? retour.onclick() : ferme() }; }
 // sous la vie : le bouton GPS (dès l'appel de Brad, tant que le fumigène n'est pas ramassé), et le C4 qu'on porte
 function majBoutonsRE() { if (!M || !M.ctx) return; const re = estApo(M.lieu) && M.L && M.L.apo;
   const voirG = re && M.gps && !(M.fumi && M.fumi.trouve) && !M.evac, voirC = re && M.c4 && !M.c4Pose;
@@ -18321,4 +18372,4 @@ export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMors
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo, cineBar, bandageBras });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ, tirer });   // (pour les essais)
-export const _essaiCam = () => ({ placerCamera, C3 });   // (pour les essais)
+export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS });   // (pour les essais)
