@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.82";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.83";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15125,7 +15125,7 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   const fA = p.info.heros === 100 ? "avatars/sh-pistolet.glb?v=1" : "avatars/re-pistolet.glb?v=1";
   if (!pistolets3D[fA]) pistolets3D[fA] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(fA), sc = g.scene; sc.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(sc), k = 1 / Math.max(1e-6, b.max.z - b.min.z), w = new THREE.Group(), o = new THREE.Group(); w.add(sc); w.scale.setScalar(k); w.position.set(-b.min.x * k, -b.min.y * k, -b.min.z * k); o.add(w); return o; })().catch(() => null);
-  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); const G = fA.includes("re-") ? [-.07, -.6, -.05] : [-.07, -.36, -.1];   /* (la crosse dans le poing, le canon devant) */ m.position.set(G[0] * k, G[1] * k, G[2] * k); m.userData.grip = true;   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
+  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); const G = fA.includes("re-") ? [-.07, -.35, -.2] : [-.07, -.36, -.1];   /* (la crosse dans le poing, le canon devant) */ m.position.set(G[0] * k, G[1] * k, G[2] * k); m.userData.grip = true;   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
   if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;
   { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
   const vise = (p.viseeT && performance.now() - p.viseeT < 1600) || p.tempe, fusil = !!(A.pompe && A.pompe.visible && A.act.idleF);
@@ -15141,6 +15141,11 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
     const rh = os3D(A, "RightHand"), la = os3D(A, "LeftArm"), lf = os3D(A, "LeftForeArm"); if (rh && la && lf) { A.sc.updateMatrixWorld(true); const T = rh.getWorldPosition(new THREE.Vector3()).addScaledVector(dr, .03).add(new THREE.Vector3(0, -.03, 0)), ep = la.getWorldPosition(new THREE.Vector3());
       viser3D(A, "LeftArm", "LeftForeArm", T.clone().sub(ep).normalize().add(new THREE.Vector3(0, -.45, 0)).addScaledVector(dr, -.2)); viser3D(A, "LeftForeArm", "LeftHand", T.clone().sub(lf.getWorldPosition(new THREE.Vector3()))); } }   // (les deux bras tendus, l'arme pointée)
   const h = os3D(A, "RightHand"), fa = os3D(A, "RightForeArm"); if (!h || !fa) return; A.sc.updateMatrixWorld(true);
+  { const he = os3D(A, "RightHandEnd"); if (he && p.info.heros !== 100 && !p.tempe) {   /* (les héros de Resident Evil : l'arme réglée sur la main elle-même — la crosse dans l'axe des doigts, au milieu de la paume ; le canon vers l'avant, ou dans l'axe du bras quand on vise) */
+    h.getWorldPosition(_v1); he.getWorldPosition(_v3); const ax = _v3.clone().sub(_v1).normalize(), paume = _v1.clone().lerp(_v3, .4), ry = A.sc.rotation.y, fw = new THREE.Vector3(Math.sin(ry), 0, Math.cos(ry));
+    let up, d; if (vise) { d = ax.clone(); up = new THREE.Vector3(0, 1, 0); } else { up = ax.clone().negate(); d = fw.addScaledVector(up, -fw.dot(up)).normalize(); }
+    const xa = up.clone().cross(d).normalize(), ya = d.clone().cross(xa); A.sc.worldToLocal(paume); A.arme.position.copy(paume); A.sc.getWorldQuaternion(_qb);
+    A.arme.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, d)).premultiply(_qb.invert()); return; } }
   h.getWorldPosition(_v1); fa.getWorldPosition(_v2); const dir = _v1.clone().sub(_v2).normalize();   // (l'arme dans le prolongement de l'avant-bras)
   if (p.tempe) { const ry = A.sc.rotation.y; dir.set(Math.cos(ry), .08, -Math.sin(ry)).normalize(); }   /* (le canon pointé dans la tempe, à l'horizontale) */
   const bras = dir.clone(); if (!vise) dir.lerp(new THREE.Vector3(Math.sin(A.sc.rotation.y), 0, Math.cos(A.sc.rotation.y)), .55).normalize();   // (bras baissé : le canon vers l'avant et le bas)
