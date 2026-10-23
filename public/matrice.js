@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.69";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.70";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12571,9 +12571,9 @@ function decorCaserne(scene, L, base, sh) { if (base !== "grande" && base !== "r
   const poser = (f, x, y, z, ry, k = 1) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
     chargerGLB(f).then(sc => { if (!sc) return; const m = sc.clone(); m.scale.setScalar(k); m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(m); }); return g; };
   const clim = (x, y, z, ry) => poser("avatars/deco-clim.glb?v=1", x, y, z, ry);
-  if (sh && base === "grande") {   // (Silent Hill seulement : sur les balcons du bâtiment du fond, contre le mur, à côté de la porte-fenêtre)
+  if (sh && base === "grande") {   // (Silent Hill et l'apocalypse : sur les balcons du bâtiment du fond, contre le mur, à côté de la porte-fenêtre)
     for (const [r, c, d] of [[0, 3, 1], [1, 9, -1], [2, 1, 1], [2, 11, -1], [3, 5, 1], [4, 13, -1], [5, 7, 1], [6, 3, -1]]) clim(-22 + (c + .5) * 44 / 14 + d * .66, 27 - (34 + r * 112 + 80) / 40 + .08, -17.7, 0); }
-  if (sh) { let k = 0, n = 0;   // (Silent Hill seulement : sous quelques fenêtres des étages, sur leurs équerres)
+  if (sh) { let k = 0, n = 0;   // (Silent Hill et l'apocalypse : sous quelques fenêtres des étages, sur leurs équerres)
     for (const [fens, cadres] of L.facadesFen || []) for (const c of cadres) for (const [fu, fv, fw, fh] of fens || []) { k++;
       const yb = c.o[1] + (.5 - fv - fh) * c.H; if (yb - (c.o[1] - c.H / 2) < 3.5 || fw * c.W < .7 || hasard(k * 5.3 + 2) > .1 || n >= 9) continue;
       const a = (fu + fw / 2 - .5) * c.W, x = c.o[0] + c.ux[0] * a + c.n[0] * .3, z = c.o[2] + c.ux[2] * a + c.n[2] * .3, ry = Math.atan2(c.n[0], c.n[2]), y = yb - .85;
@@ -14376,7 +14376,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^sh-/.test(id));
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
