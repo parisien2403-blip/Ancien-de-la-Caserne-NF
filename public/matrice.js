@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.50";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.51";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7606,7 +7606,7 @@ function construireCoraline(A, L, scene) {
   const bardage = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#e6a0b2"; x.fillRect(0, 0, w, h); const n = 12, p = h / n;
     for (let i = 0; i < n; i++) { const g = x.createLinearGradient(0, i * p, 0, (i + 1) * p); g.addColorStop(0, "#f4c0ce"); g.addColorStop(.75, "#e6a0b2"); g.addColorStop(1, "#b87084"); x.fillStyle = g; x.fillRect(0, i * p, w, p); x.fillStyle = "rgba(90,30,50,.55)"; x.fillRect(0, (i + 1) * p - 2, w, 2); }
     bruit(x, w, h, 900, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "120,50,70"},.05)`); }), 2.2, { emissive: 0x4a2028, emissiveIntensity: .45, relief: 2.5 });   // (un rose tendre, un peu réchauffé : sous la lune, il virait au violet)
-  const blanc = A.mat({ color: 0xf4eee8, roughness: .6, emissive: 0x2a2a30, emissiveIntensity: .3 }), M0 = (c, r = .8) => A.mat({ color: c, roughness: r });
+  const laitonP = A.mat({ color: 0xb8913a, roughness: .3, metalness: .8 }), blanc = A.mat({ color: 0xf4eee8, roughness: .6, emissive: 0x2a2a30, emissiveIntensity: .3 }), M0 = (c, r = .8) => A.mat({ color: c, roughness: r });
   const tuiles = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#8c5550"; x.fillRect(0, 0, w, h); const n = 10, p = h / n;
     for (let i = 0; i < n; i++) for (let j = 0; j < 8; j++) { const dx = (i % 2) * 16, v = hasard(i * 9 + j); x.fillStyle = `hsl(${4 + v * 10}, ${28 + v * 12}%, ${34 + v * 10}%)`; x.fillRect(j * 32 + dx - 16, i * p, 30, p - 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(j * 32 + dx - 16, (i + 1) * p - 3, 30, 3); } }), 2.4, { relief: 3, roughness: .9 });
   const pierre = motif(toile(256, 128, (x, w, h) => { x.fillStyle = "#5f6064"; x.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) { const v = hasard(i * 13 + j), dx = (i % 2) * 22;
@@ -8005,7 +8005,27 @@ function construireCoraline(A, L, scene) {
   scene.add(new THREE.AmbientLight(0x8a90b8, .3));
   // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
   const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
-  const sol = A.ajoute(new THREE.PlaneGeometry(120, 120), A.mat({ map: herbe, roughness: 1 }), 0, 0, 4, false); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; L.sol = sol;
+  /* la pelouse, percée devant le bow-window : la courette en contrebas, l'escalier de pierre qui descend chez Miss Spink et Miss Forcible (comme dans le film) */
+  const FX0 = 2.3, FX1 = 3.6, FZ0 = 7.6, FZ1 = 10.4, FY = -2.1, NF = 11;   // (la courette : ses bords ; sa profondeur ; ses marches)
+  { const sh = new THREE.Shape(); sh.moveTo(-60, -64); sh.lineTo(60, -64); sh.lineTo(60, 56); sh.lineTo(-60, 56); sh.closePath();
+    const tr = new THREE.Path(); tr.moveTo(FX0, -FZ0); tr.lineTo(FX0, -FZ1); tr.lineTo(FX1, -FZ1); tr.lineTo(FX1, -FZ0); tr.closePath(); sh.holes.push(tr); herbe.repeat.set(.25, .25);
+    const sol = A.ajoute(new THREE.ShapeGeometry(sh), A.mat({ map: herbe, roughness: 1 }), 0, 0, 0, false); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; L.sol = sol; }
+  { const H = -FY, pas = (FZ1 - FZ0 - .8) / NF;
+    for (const [w, d, x, z] of [[.18, FZ1 - FZ0 + .1, FX0 - .09, (FZ0 + FZ1) / 2], [.18, FZ1 - FZ0 + .1, FX1 + .09, (FZ0 + FZ1) / 2], [FX1 - FX0 + .36, .18, (FX0 + FX1) / 2, FZ0 - .09]]) boite(w, H + .1, d, pierre, x, FY / 2 - .05, z);   // (les murs de pierre)
+    boite(FX1 - FX0, .1, .8, sols.gris, (FX0 + FX1) / 2, FY - .05, FZ0 + .4);   // (le palier, en bas)
+    for (let k = 0; k < NF; k++) { const z = FZ0 + .8 + (k + .5) * pas, y = FY + (k + 1) * H / NF; boite(FX1 - FX0, y - FY, pas + .01, pierre, (FX0 + FX1) / 2, (y + FY) / 2, z); boite(FX1 - FX0, .03, .05, M0(0x8a8478, .7), (FX0 + FX1) / 2, y - .015, z - pas / 2 + .025); }
+    for (const x of [FX0 - .12, FX1 + .12]) rampe(x, FZ0 - .1, x, FZ1, 0); rampe(FX0 - .12, FZ0 - .1, FX1 + .12, FZ0 - .1, 0);   // (la balustrade blanche tout autour)
+    // la porte du bas : en bois, sous un arc de pierre, sa fenêtre cintrée éclairée, la petite plaque de cuivre, la lanterne
+    const pz = FZ0 + .01, cx = (FX0 + FX1) / 2; boite(.9, 2, .06, A.mat({ color: 0x6a3e26, roughness: .5, emissive: 0x3a1c0c, emissiveIntensity: .6 }), cx, FY + 1, pz + .03); for (const [w, h, y] of [[.66, .7, 1.45], [.66, .8, .55]]) boite(w, h, .02, A.mat({ color: 0x5a3220, roughness: .5, emissive: 0x2a1408, emissiveIntensity: .6 }), cx, FY + y, pz + .065);   // (la porte, ses panneaux, dans la lueur de la lanterne) boite(.98, .08, .08, M0(0x3a2014, .5), cx, FY + 2.04, pz + .04);
+    const arcP = new THREE.Mesh(new THREE.TorusGeometry(.5, .07, 6, 14, Math.PI), pierre); arcP.position.set(cx, FY + 2.05, pz + .05); scene.add(arcP);
+    const vit = new THREE.Mesh(new THREE.CircleGeometry(.43, 16, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0xffc070 })); vit.position.set(cx, FY + 2.07, pz + .04); scene.add(vit);
+    for (let i = -1; i <= 1; i++) { const b2 = boite(.02, .42, .02, M0(0x2a1810, .5), cx + i * .2, FY + 2.25, pz + .05); b2.rotation.z = -i * .5; }
+    boite(.3, .4, .02, new THREE.MeshBasicMaterial({ color: 0xf0b060 }), cx, FY + 1.5, pz + .065); A.ajoute(new THREE.SphereGeometry(.03, 8, 6), laitonP, cx + .32, FY + 1, pz + .09, false);
+    const pl = new THREE.CanvasTexture(toile(128, 48, (x, w, h) => { x.fillStyle = "#b8913a"; x.fillRect(0, 0, w, h); x.strokeStyle = "#6a4a1a"; x.lineWidth = 3; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = "#3a2a10"; x.font = "italic bold 13px Georgia, serif"; x.textAlign = "center"; x.fillText("Miss Spink", w / 2, 20); x.fillText("& Miss Forcible", w / 2, 37); }));
+    pl.colorSpace = THREE.SRGBColorSpace; const pq = new THREE.Mesh(new THREE.PlaneGeometry(.32, .12), new THREE.MeshStandardMaterial({ map: pl, metalness: .6, roughness: .35 })); pq.position.set(cx + .7, FY + 1.5, pz + .03); scene.add(pq);
+    const lan = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, .22, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, emissive: 0xffb050, emissiveIntensity: 1.2 })); lan.position.set(cx - .7, FY + 1.95, pz + .12); scene.add(lan);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,210,140,.7)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); })), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    sp.position.copy(lan.position); sp.scale.set(1.3, 1.3, 1); scene.add(sp); }
   const gravier = A.mat({ map: tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#6e675e"; x.fillRect(0, 0, w, h); bruit(x, w, h, 2400, i => `rgba(${hasard(i) > .5 ? "200,190,175" : "40,35,30"},.4)`); }), 2, 12), roughness: 1 });
   { const a = A.ajoute(new THREE.PlaneGeometry(2.6, 20), gravier, -.7, .015, 21, false); a.rotation.x = -Math.PI / 2; a.receiveShadow = true; }
   const ecorce = A.mat({ color: 0x1c1612, roughness: 1 });
@@ -8098,7 +8118,7 @@ function construireCoraline(A, L, scene) {
     lune.position.set(-30, 46, -95); lune.scale.set(70, 70, 1); scene.add(lune); }
   // ---------- où l'on marche : le jardin (autour de la maison), les porches, les pièces de chaque étage, les deux escaliers ----------
   const dedans = (x, z, [a, b, c, d], m = 0) => x > a + m && x < b - m && z > c + m && z < d - m;
-  const EMPRISE = [[-6.4, 6.4, -6.8, 6.8], [-8.3, 1.9, 6.8, 9.6], [-8.3, -6.4, -.4, 4.4], [-8.1, -6.4, -5.6, -3.4], [6.4, 7.75, -.55, 7.2], [1.45, 5.85, 6.8, 7.5], [-4.95, -.55, -7.5, -6.8], [6.4, 7, -5.2, -2], [-6.9, -6.4, -2.6, -.6]];   // (la maison, le porche, la serre, le porche de service, l'escalier de secours, les bow-windows)
+  const FOSSE = [FX0 + .2, FX1 - .2, FZ0 + .25, FZ1 + .6], EMPRISE = [[-6.4, 6.4, -6.8, 6.8], [-8.3, 1.9, 6.8, 9.6], [-8.3, -6.4, -.4, 4.4], [-8.1, -6.4, -5.6, -3.4], [FX0, FX1, FZ0, FZ1], [6.4, 7.75, -.55, 7.2], [1.45, 5.85, 6.8, 7.5], [-4.95, -.55, -7.5, -6.8], [6.4, 7, -5.2, -2], [-6.9, -6.4, -2.6, -.6]];   // (la maison, le porche, la serre, le porche de service, l'escalier de secours, les bow-windows)
   const surEsc = (x, z) => x > 1.2 && x < 5.25 && z > -.45 && z < .75, surSecours = (x, z) => x > 6.55 && x < 7.65 && z > 1.95 && z < 7.7;
   const PASSAGES = [[], []];
   for (const [n, axe, X, c, w] of PO) PASSAGES[n].push(axe === "x" ? [X - .5, X + .5, c - w / 2 + .12, c + w / 2 - .12] : [c - w / 2 + .12, c + w / 2 - .12, X - .5, X + .5]);
@@ -8113,6 +8133,7 @@ function construireCoraline(A, L, scene) {
     if (surEsc(x, z) || surSecours(x, z)) return true;
     if (o) return false; if (d < TR - .35) return true; if (d < TR + .3) return false;   // (dans la tourelle : depuis la pièce ; sa paroi, autour)
     if (n === 1) return PIECES[1].some(r => dedans(x, z, r)) || PASSAGES[1].some(r => dedans(x, z, r));
+    if (dedans(x, z, FOSSE)) return true;   // (la courette, son escalier)
     if (PIECES[0].some(r => dedans(x, z, r)) || PASSAGES[0].some(r => dedans(x, z, r)) || PORCHE.some(r => dedans(x, z, r)) || MARCHES.some(r => dedans(x, z, r))) return true;
     if (ell(x, z) < 1.12) { if (surPont(x, z)) return true; if (bassin(x, z)) return false; const r = Math.sqrt(ell(x, z));   // (le jardin : ses murets, le bassin creux ; le pont)
       if (Math.abs(r - 1) < .06 && Math.abs(x - JX) > 1.25) return false; if (Math.abs(r - .64) < .045 && Math.abs(x - JX) > 1.15 && Math.abs(z - JZ) > 1.05) return false; }
@@ -8123,9 +8144,10 @@ function construireCoraline(A, L, scene) {
     if (surSecours(x, z)) { const h = Math.max(0, Math.min(1, (7.2 - z) / 5.15)) * Y1; if (p) p.corN = h > Y1 / 2 ? 1 : 0; return h; }
     if (n === 1) return Y1;
     if (surPont(x, z)) return Math.max(0, BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX)));   // (sur le pont du jardin)
+    if (x > FX0 && x < FX1 && z > FZ0 && z < FZ1 + .05) return z < FZ0 + .8 ? FY : Math.max(FY, Math.min(0, FY + (Math.floor((z - FZ0 - .8) / ((FZ1 - FZ0 - .8) / NF)) + 1) * -FY / NF));   // (l'escalier de la courette, marche par marche)
     if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 9.6) / .3) * Y0 / 4));
     if (dedans(x, z, MARCHES[1])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((-8.1 - x) / .3) * Y0 / 4));
-    return EMPRISE.slice(0, 4).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : 0; };
+    return EMPRISE.slice(0, 4).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : 0; };   // (la courette n'est pas dans les quatre premières)
   // la caméra : dans la maison, elle reste dans la pièce où l'on est (sous son plafond) ; dehors, elle suit de plus loin
   const DEHORS = { d: 6, h: 3.2, av: 3, vy: 1.7 }, DEDANS = { d: 2.8, h: 1.9, av: 2.4, vy: 1.2 };
   const pieceDe = (x, z, n) => dT(x, z) < TR - .1 ? ROOMS.find(r => r.nom === (n ? "coraline" : "tour")) : ROOMS.find(r => r.niv === n && x > r.x0 - .05 && x < r.x1 + .05 && z > r.z0 - .05 && z < r.z1 + .05);
