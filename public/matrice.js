@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.04";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.05";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15119,7 +15119,7 @@ function genCoraline() {
   teinte(jaune, U.uHaut); teinte(jupe, U.uBas); teinte(bottes, U.uPieds);
   return { sc, mix, act, U, h: hauteurOs(sc), taille0: .78 }; }
 /* les danses de l'administrateur, sur chacun de ses bonshommes 3D (le sien, Coraline DS…) */
-async function dansesAdmin(f, sc, mix, act) { if (!/avatars\/(0001|cor-ds-|re2-mj)/.test(f) || !sc.getObjectByName("Hips")) return; const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"); if (!AD) return;
+async function dansesAdmin(f, sc, mix, act) { if (!/avatars\/(0001|cor-ds-|re2-mj)/.test(f) || !sc.getObjectByName("Hips")) return; const AD = await chargerAnimsMX("anims/danses-admin.json?v=4"); if (!AD) return;
   for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
 function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
   if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
@@ -16045,7 +16045,7 @@ const TROUPE_F = ["avatars/re2-mj.glb?v=2", "avatars/re2-uss.glb?v=1", "avatars/
 const TROUPE_POS = [[0, 0, 0], [-.75, -1.2, 1], [.75, -1.2, 3], [-1.65, -2.4, 2], [-.55, -2.4, 3], [.55, -2.4, 1], [1.65, -2.4, 2]];   // (x sur le côté, z en arrière, le modèle : un triangle — lui en pointe, deux zombies, puis quatre)
 let troupeP = null;
 function chargerTroupe() { return troupeP = troupeP || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-  const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"), AH = await chargerAnimsMX("anims/re-heros.json?v=4"), AZ = await chargerAnimsMX("anims/re-zombies.json?v=5"), ld = new gltfMod.GLTFLoader(), G = await Promise.all(TROUPE_F.map(f => ld.loadAsync(f)));
+  const AD = await chargerAnimsMX("anims/danses-admin.json?v=4"), AH = await chargerAnimsMX("anims/re-heros.json?v=4"), AZ = await chargerAnimsMX("anims/re-zombies.json?v=5"), ld = new gltfMod.GLTFLoader(), G = await Promise.all(TROUPE_F.map(f => ld.loadAsync(f)));
   const mods = G.map((g, i) => { const sc = g.scene, clips = {}, cou = false;   /* (les danses faites une fois par modèle, sur sa pose de départ ; chaque copie s'en sert) */
     const net = k => { if (k && cou) k.tracks = k.tracks.filter(t => !/^(Neck|Head)\./.test(t.name)); return k; };   /* (la zombie : son cou et sa tête restent comme au repos — sinon sa tête se retournait) */
     for (const n of DANSES_ADMIN) { const k = net(clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc)); if (k) { k.name = n; clips[n] = k; } }
