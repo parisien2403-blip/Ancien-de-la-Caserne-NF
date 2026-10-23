@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.88";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.89";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12157,7 +12157,32 @@ function majExplo(S, t, dt) { const cam = M.camera, P = S.P, W = S.W, now = perf
    l'équipier nous rejoint, on entre ensemble (Lisa Trevor l'assomme). Le C4 trouvé, on le pose sur les gravats du porche : explosion ; la rue, le fumigène */
 const FUMI_RUE = [14, 2], FUMI_CARTE = [14, 31.8], C4_FETES = [-4.85, -1.35], PORCHE_Z = 25.6;
 const PORTES_FETES = [[15.3, 9.12], [9.81, 6.49]];   // (dans la grande cour : les deux portes de la salle des fêtes — par le vestibule, par la cour)
-function parleRadio(nom, texte, ms) { bulle(`<b style="color:#b5573c">${esc(nom)} (radio)</b> : ${esc(texte)}`, ms || Math.min(6500, 2800 + texte.length * 45)); sonBruit(.35, 2600, .12); }
+function parleRadio(nom, texte, ms) { codecDire("lui", nom, texte, ms); }
+/* l'appel radio : l'écran de la radio s'ouvre — à gauche, celui qui appelle (Brad), à droite, nous ; au milieu, la fréquence et le signal ;
+   dessous, ce qui se dit. Les portraits en vert, comme sur un vieil écran ; celui qui parle s'éclaire. L'écran se referme seul quand on ne parle plus */
+const BRAD_IMG = "images/re/brad-tete.svg?v=1";
+function codecDire(qui, nom, texte, ms) { if (!M || !M.ctx || !M.ctx.conteneur) return; let C = M.codec;
+  if (!C || !C.el.isConnected) { const el = document.createElement("div"); el.style.cssText = "position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:min(94%,620px);z-index:9;pointer-events:none;background:rgba(0,0,0,.92);border:2px solid #7a1010;border-radius:6px;padding:12px 14px 14px;font-family:Arial,Helvetica,sans-serif;animation:codecIn .25s ease-out";
+    if (!document.getElementById("styleCodec")) { const st = document.createElement("style"); st.id = "styleCodec"; st.textContent = "@keyframes codecIn{from{opacity:0;transform:translateX(-50%) scaleY(.1)}to{opacity:1;transform:translateX(-50%) scaleY(1)}}@keyframes codecSig{0%,100%{opacity:1}50%{opacity:.55}}.codec-port{position:relative;width:24%;aspect-ratio:5/6;border:3px solid #2f6a3a;border-radius:4px;overflow:hidden;background:#071407;box-shadow:0 0 12px rgba(80,220,110,.35);transition:filter .2s,box-shadow .2s}.codec-port img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) sepia(1) hue-rotate(70deg) saturate(2.2) brightness(.95) contrast(1.15)}.codec-port::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 2px,transparent 2px 4px)}.codec-port.muet{filter:brightness(.45);box-shadow:none}"; document.head.appendChild(st); }
+    const H = M.perso && HEROS[M.perso], moiImg = `images/re/${H ? H.cle : "jill"}-tete.png?v=3`;
+    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:3%">
+      <div class="codec-port" data-q="lui"><img src="${BRAD_IMG}" alt=""></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="color:#5fc06f;font:700 11px Arial;letter-spacing:.3em;border-bottom:1px solid #2f6a3a;padding:0 10px 2px">S.T.A.R.S.</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;background:#061206;border:2px solid #2f6a3a;padding:6px 10px;border-radius:3px">
+          <div class="codec-barres" style="display:flex;align-items:flex-end;gap:2px;height:34px">${[...Array(8)].map((_, i) => `<i style="display:block;width:5px;height:${6 + i * 3.6}px;background:#7dff8a;opacity:.25"></i>`).join("")}</div>
+          <div style="color:#7dff8a;font:700 30px 'Courier New',monospace;text-shadow:0 0 8px rgba(110,255,130,.8);letter-spacing:1px">141.12</div></div>
+        <div style="color:#5fc06f;font:700 10px Arial;letter-spacing:.3em;border-top:1px solid #2f6a3a;padding:2px 10px 0">FRÉQUENCE</div></div>
+      <div class="codec-port" data-q="moi"><img src="${moiImg}" alt=""></div></div>
+      <div class="codec-txt" style="margin-top:12px;min-height:3.2em;color:#f2f2f2;font:16px/1.45 Arial;text-shadow:0 1px 2px #000"></div>`;
+    M.ctx.conteneur.appendChild(el); C = M.codec = { el, txt: el.querySelector(".codec-txt"), barres: [...el.querySelectorAll(".codec-barres i")], t: 0 };
+    C.anim = setInterval(() => { if (!C.el.isConnected) { clearInterval(C.anim); return; } const k = C.parle ? 3 + Math.floor(Math.random() * 6) : 2; C.barres.forEach((b, i) => b.style.opacity = i < k ? 1 : .2); }, 110);
+    sonBruit(.35, 2600, .12); }
+  for (const p of C.el.querySelectorAll(".codec-port")) p.classList.toggle("muet", p.dataset.q !== qui);
+  C.txt.innerHTML = `<b style="color:${qui === "lui" ? "#8fe39b" : "#f2d27a"}">${esc(nom)}</b> : ${esc(texte)}`; C.parle = true;
+  const d = ms || Math.min(7000, 2600 + texte.length * 50); clearTimeout(C.fin); clearTimeout(C.taire); C.taire = setTimeout(() => { C.parle = false; }, Math.min(d, 600 + texte.length * 40));
+  C.fin = setTimeout(() => { C.el.remove(); clearInterval(C.anim); if (M && M.codec === C) M.codec = null; }, d + 1200); }
+const codecOuvert = () => !!(M && M.codec && M.codec.el.isConnected);
 const nomEquipier = () => { const e = (M.equipe || []).find(q => !q.mort); return e && HEROS[e.id] ? HEROS[e.id].court : "Ton équipier"; };
 // les gravats du porche (dans la grande cour) : une butte de pierres et de poutres, qui bouche le passage vers la rue
 function gravatsPorche(scene, L) { if (L.gravatsPorche) return; const g = new THREE.Group(), m1 = new THREE.MeshStandardMaterial({ color: 0x5a554e, roughness: .95 }), m2 = new THREE.MeshStandardMaterial({ color: 0x7a4a38, roughness: .9 }), bois = new THREE.MeshStandardMaterial({ color: 0x4a3524, roughness: .9 });
@@ -12272,7 +12297,7 @@ function sceneParlee(lignes, finir, opts = {}) { const t0 = performance.now(); l
   M.passerBtn = boutonPasser(fin);
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
     if (moi) { moi.cible = null; moi.chemin = []; cacherAutour(moi.g.position, 4.5, caches); } if (opts.maj) opts.maj(u, now);
-    while (dit < lignes.length && u > lignes[dit][0]) { const [, qui, txt] = lignes[dit]; if (typeof qui === "function") qui(); else if (typeof qui === "string") parleRadio(qui, txt); else if (M.gens.get(qui)) dire(qui, txt); dit++; }
+    while (dit < lignes.length && u > lignes[dit][0]) { const [, qui, txt] = lignes[dit]; if (typeof qui === "function") qui(); else if (typeof qui === "string") parleRadio(qui, txt); else if (qui === M.moiNum && codecOuvert()) codecDire("moi", nomApo(), txt); else if (M.gens.get(qui)) dire(qui, txt); dit++; }
     if (u > (opts.duree || (lignes.length ? lignes[lignes.length - 1][0] + 3.4 : 1))) fin(); } }; }
 // 1. on se sépare (juste après le passage de l'hélicoptère, au début)
 function cineSeparation() { const moi = moiApo(), eq = equipierVivant(); M.sepFait = true; if (!moi) return;
@@ -12439,7 +12464,7 @@ const heroToit = () => { const pris = new Set([M.perso, ...(M.equipe || []).map(
 function radioToit() { M.toitRadio = performance.now(); const id = heroToit(), nomH = HEROS[id].court, elle = id === 21;
   const L = [[0, "Brad Vickers", `Ici Brad Vickers ! Je survole la caserne… Il y a quelqu'un sur le toit de la salle des fêtes : c'est ${nomH} !`], [4800, "Brad Vickers", `${elle ? "Elle" : "Il"} est en difficulté, cerné${elle ? "e" : ""} par ces choses… ${elle ? "Elle" : "Il"} ne tiendra pas longtemps !`],
     [9400, M.moiNum, `Bien reçu, Brad ! J'arrive, je suis tout près de la cour d'honneur !`], [12200, "Brad Vickers", "Je l'éclaire avec le projecteur. Faites vite !"]];
-  for (const [t, qui, txt] of L) setTimeout(() => { if (!M || !M.L || !M.L.apo || M.toitFait && qui !== M.moiNum && t > 9000) return; if (typeof qui === "string") parleRadio(qui, txt); else if (M.gens.get(qui)) dire(qui, txt); }, t);
+  for (const [t, qui, txt] of L) setTimeout(() => { if (!M || !M.L || !M.L.apo || M.toitFait && qui !== M.moiNum && t > 9000) return; if (typeof qui === "string") parleRadio(qui, txt); else if (qui === M.moiNum && codecOuvert()) codecDire("moi", nomApo(), txt); else if (M.gens.get(qui)) dire(qui, txt); }, t);
   sonBruit(.35, 2600, .12); }
 function cineToit(moi) { const L = M.L, mp = moi.g.position.clone(); M.toitFait = true;
   // le bord de toit : la façade la plus proche, assez haute, devant nous
@@ -18372,4 +18397,4 @@ export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMors
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo, cineBar, bandageBras });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ, tirer });   // (pour les essais)
-export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS });   // (pour les essais)
+export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS, parleRadio, codecDire });   // (pour les essais)
