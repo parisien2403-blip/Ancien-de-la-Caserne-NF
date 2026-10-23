@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.99";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.00";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -9501,7 +9501,7 @@ export async function ouvrir(ctx) {
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     animerGB(dt); if (M.L.gbMess) { animerSlimer(Math.min(.05, dt), performance.now()); animerCombatGB(Math.min(.05, dt), performance.now()); }
     if (M.gbCombat && M.gbCombat.sp) animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); animerHV(performance.now()); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
@@ -15119,7 +15119,7 @@ function genCoraline() {
   teinte(jaune, U.uHaut); teinte(jupe, U.uBas); teinte(bottes, U.uPieds);
   return { sc, mix, act, U, h: hauteurOs(sc), taille0: .78 }; }
 /* les danses de l'administrateur, sur chacun de ses bonshommes 3D (le sien, Coraline DS…) */
-async function dansesAdmin(f, sc, mix, act) { if (!/avatars\/(0001|cor-ds-)/.test(f) || !sc.getObjectByName("Hips")) return; const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"); if (!AD) return;
+async function dansesAdmin(f, sc, mix, act) { if (!/avatars\/(0001|cor-ds-|re2-mj)/.test(f) || !sc.getObjectByName("Hips")) return; const AD = await chargerAnimsMX("anims/danses-admin.json?v=2"); if (!AD) return;
   for (const n of DANSES_ADMIN) { const k = clipMXcible(AD, "d-" + ({ village: "ymca", breakdance: "break", thriller2: "thriller" }[n] || n), sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } } }
 function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
   if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
@@ -15140,7 +15140,10 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
             if (zc.a > .5) { float l = dot(diffuseColor.rgb, vec3(.299, .587, .114)); diffuseColor.rgb = zc.rgb * clamp(.35 + l * 1.1, 0.0, 1.25); }
           }`); };
       o.material.needsUpdate = true; }
-    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/avatars\/re2-/.test(f)) { clipsDS(sc, mix, act, true);
+    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/avatars\/re2-mj/.test(f)) { clipsDS(sc, mix, act, true); await dansesAdmin(f, sc, mix, act);   /* (Michael Jackson : sa danse de Thriller, son moonwalk ; un peu de sa propre lumière, sous les spots de la salle) */
+      sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map && mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; mt.needsUpdate = true; } });
+      return { sc, mix, act, U, h: ho || hb }; }
+    if (/avatars\/re2-/.test(f)) { clipsDS(sc, mix, act, true);
       const AM = await chargerAnimsMX("anims/re-heros.json?v=4"), fem = /re2-(claire|jill)/.test(f);   /* (les vrais mouvements : au repos, la marche pistolet en main, la course ; Claire et Jill ont les leurs) */
       if (AM) { for (const [n, c] of [["idle", fem ? "f-idle" : "h-idle"], ["walk", "h-marche"], ["run", fem ? "f-course" : "h-rcourse"], ["mortMX", "h-mort"], ["chuteMX", "h-chute"], ["idleF", "f-idle-fusil"], ["walkF", "f-marche-fusil"], ["runF", "f-course-fusil"]]) { const k = clipMXcible(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }   /* (la pose de repos de chaque modèle ramenée en T : Leon, modelé les bras en A, les avait dans le dos) */
         if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
@@ -15153,8 +15156,9 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const herosSH = h => h >= 69 && h !== 95;   // (les héros de Silent Hill : 69 et au-delà — sauf Jill, 95, de Resident Evil)
 const HEROS_3D = { 23: "avatars/re2-barry.glb?v=4", 25: "avatars/re2-wesker.glb?v=5", 26: "avatars/re2-chris.glb?v=4", 95: "avatars/re2-jill.glb?v=5", 21: "avatars/re2-claire.glb?v=4", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=4", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
-const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
-const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
+const MJ_3D = "avatars/re2-mj.glb?v=1";
+const tenueAv3 = info => { if (info.mj) return { id: "mj", f: MJ_3D }; if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
+const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.mj ? M.lieu === "fetes" : p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
 function corpsAv3(p, A) { const a = p.info.av3 || {}, k = TAILLE_3D * (p.info.heros ? ([71, 72, 73].includes(p.info.heros) ? .96 : [110, 111].includes(p.info.heros) ? .93 : 1) : hauteurDe(p)) / A.h, t = a.taille ? Math.max(.57, Math.min(1.2, a.taille / 175)) : (A.taille0 || 1);   /* (Coraline : une enfant, 1,39 m, si l'on n'a pas choisi sa taille) */
   const l = a.poids ? Math.max(.82, Math.min(1.4, Math.sqrt(a.poids / Math.pow((a.taille || 175) / 100, 2) / 23))) : 1; A.sc.scale.setScalar(k * t); A.girth = l; girthAv3(A); }
@@ -16035,6 +16039,16 @@ function animerGroupe() {
     if (best && best.col) { p.corps.material.color.copy(blanc).lerp(best.col, .3); p.teinte = true; } }
 }
 /* --- Robert Smith (réglé par l'administrateur) : dès que passe Just Like Heaven, il arrive au milieu de la piste avec sa guitare, devant son micro sur pied --- */
+/* Michael Jackson en 3D, au centre de la piste, dès que passe Thriller : il danse la chorégraphie du clip, et de temps en temps un moonwalk */
+const MJ = -97;
+function animerMJ() {
+  if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
+  const air = M.djJoue && /thriller/.test(M.djTitre || ""), p = M.gens.get(MJ), [x, z] = M.L.pisteCentre;
+  if (air && !p) { const q = ajouterAncien({ numero: MJ, nom: "Michael Jackson", tenue: "thriller", couleur: "#141414", bas: "#141414", pieds: "#f4f4f2", initiales: "MJ", teteUrl: "images/danseur-tete.png", pnj: true, danseur: true, mj: true, x, z });
+    if (q) { q.info.danse = "thriller2"; const S = M.L.scene, sz = S ? S.centre[1] : z + 3; q.regardeA = { x, z: z + (sz > z ? -6 : 6) }; } }   /* (dos à la scène, face à la salle) */
+  else if (!air && p) retirerAncien(MJ);
+  else if (p) { const t = (Date.now() / 1000) % 40; p.info.danse = t > 31 ? "moonwalk" : "thriller2"; p.g.position.x = x; p.g.position.z = z; }   /* (toutes les 40 s, 9 s de moonwalk) */
+}
 const SMITH = -16;
 function animerSmith() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
