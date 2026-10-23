@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.55";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.56";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7828,7 +7828,7 @@ function construireCoraline(A, L, scene) {
     L.serre = [x0, x1, z0, z1]; }
   /* l'escalier extérieur de M. Bobinsky, à droite du perron (comme sur la maquette) : une première volée monte le long de la façade jusqu'au palier du coin,
      la seconde longe le côté droit jusqu'au balcon de l'étage ; là-haut, la porte ne donne pas dans la maison : c'est chez lui */
-  const E1 = { x0: 2.3, x1: 6.6, z0: 8.65, z1: 9.6, h: 1.8 }, E2 = { x0: 6.55, x1: 7.65, z0: 2, z1: 8.4 }, E3 = { z0: -2, z1: .6 }, TOP = [6.45, 7.9, -5.25, -1.95];   // (les volées ; la plateforme du haut)
+  const E1 = { x0: 2.3, x1: 6.6, z0: 8.65, z1: 9.6, h: 1.8 }, E2 = { x0: 6.55, x1: 7.65, z0: 2, z1: 8.4 }, E3 = { z0: -2, z1: .6 }, TOP = [6.45, 9.4, -6.6, -1.95], poteauxB = [];   // (les volées ; la plateforme du haut)
   { const N1 = 12, l1 = E1.x1 - E1.x0, a1 = Math.atan2(E1.h, l1), L1 = Math.hypot(l1, E1.h), cz = (E1.z0 + E1.z1) / 2;
     for (let k = 0; k < N1; k++) { const x = E1.x0 + (k + .5) * l1 / N1, y = (k + 1) * E1.h / N1; boite(l1 / N1 + .02, .06, E1.z1 - E1.z0, sols.gris, x, y - .03, cz); }
     for (const z of [E1.z0, E1.z1]) { const r = boite(L1, .2, .08, blanc, (E1.x0 + E1.x1) / 2, E1.h / 2 - .1, z); r.rotation.z = a1; const m = boite(L1, .06, .06, blanc, (E1.x0 + E1.x1) / 2, E1.h / 2 + .9, z); m.rotation.z = a1;
@@ -7853,7 +7853,10 @@ function construireCoraline(A, L, scene) {
     const ferR = M0(0x2a2622, .55), barreF = (xa, za, xb, zb) => { const l = Math.hypot(xb - xa, zb - za), a = Math.atan2(zb - za, xb - xa); const r = boite(l, .05, .05, ferR, (xa + xb) / 2, YT + 1, (za + zb) / 2); r.rotation.y = -a;
       const n = Math.round(l / .15); for (let k = 0; k <= n; k++) boite(.025, 1, .025, ferR, xa + (xb - xa) * k / n, YT + .5, za + (zb - za) * k / n); };
     barreF(TOP[1], TOP[2], TOP[1], TOP[3]); barreF(TOP[0], TOP[2], TOP[1], TOP[2]); barreF(E2.x1, TOP[3], TOP[1], TOP[3]);
-    const caisse = M0(0x8a6a44, .9); boite(.6, .45, .45, caisse, 7.5, YT + .225, -4.8); const cv = boite(.6, .06, .5, caisse, 7.45, YT + .5, -4.75); cv.rotation.z = .5; boite(.55, .35, .5, caisse, 7.55, YT + .175, -2.6);
+    const caisse = M0(0x8a6a44, .9); boite(.6, .45, .45, caisse, 8.7, YT + .225, -5.9); const cv = boite(.6, .06, .5, caisse, 8.65, YT + .5, -5.85); cv.rotation.z = .5; boite(.55, .35, .5, caisse, 8.8, YT + .175, -2.6); boite(.5, .3, .4, caisse, 8.2, YT + .15, -6.2);
+    boite(.9, .01, .6, M0(0x6a5a4a, .95), 8.3, YT + .006, -4.3);   // (une vieille bâche)
+    for (const [x, z] of [[TOP[1] - .1, TOP[2] + .1], [TOP[1] - .1, TOP[3] - .1], [TOP[1] - .1, (TOP[2] + TOP[3]) / 2]]) { boite(.14, YT, .14, blanc, x, YT / 2, z); poteauxB.push([x - .2, x + .2, z - .2, z + .2]); }   // (les poteaux qui la portent)
+    for (const z of [TOP[2] + .1, TOP[3] - .1]) { const br = boite(Math.hypot(TOP[1] - 6.6, 1.4), .08, .08, blanc, (TOP[1] + 6.5) / 2, YT - .75, z); br.rotation.z = Math.atan2(1.4, TOP[1] - 6.6); }   // (les jambes de force)
     boite(.7, .01, 1.1, M0(0x8a3a32, .95), 7.15, YT + .006, -3.2); A.ajoute(new THREE.CylinderGeometry(.3, .3, .015, 20), M0(0x6a8a7a, .9), 6.75, YT + .01, -3.6, false);
     { const porte = A.mat({ color: 0xe6dccc, roughness: .6, emissive: 0x2a2620, emissiveIntensity: .4 }), rideau = new THREE.MeshBasicMaterial({ color: 0xe8d8a8 });
       boite(.06, 2.05, .9, porte, 6.45, YT + 1.03, -3.6); for (const [h, y] of [[.7, 1.45], [.8, .55]]) boite(.02, h, .66, M0(0xd8ccb8, .6), 6.49, YT + y, -3.6);
@@ -7874,7 +7877,7 @@ function construireCoraline(A, L, scene) {
     boite(1, 6.4, 1.3, brique, 3.2, YT + 3.2, -3.8, true); boite(1.2, .2, 1.5, A.mat({ color: 0x4a3a34 }), 3.2, YT + 6.45, -3.8); }
   // ---------- dedans, pièce par pièce, comme dans le film (le vrai monde : des teintes passées, des cartons du déménagement partout) ----------
   /* chaque meuble est construit dans son repère (sa face vers +z), puis posé dans la pièce : ses morceaux rejoignent la scène (ils se fondent avec les autres) */
-  const OB = [[], [], []], ob = (n, x0, x1, z0, z1) => OB[n].push([x0, x1, z0, z1]);
+  const OB = [[], [], []], ob = (n, x0, x1, z0, z1) => OB[n].push([x0, x1, z0, z1]); OB[0].push(...poteauxB);
   const M3 = (c, r = .8, o = {}) => A.mat({ color: c, roughness: r, ...o });
   const noyer = M3(0x3e2416, .5), chene = M3(0x6e4a2c, .55), acajou = M3(0x4a1e14, .4), fer = M3(0x2a2a2c, .5, { metalness: .5 }), laiton = M3(0xb8913a, .3, { metalness: .8 }), email = M3(0xeeeae0, .25),
     noir = M3(0x161414, .6), drap = M3(0xe8e4da, .9), beige = M3(0xcfc6b0, .5), chrome = M3(0xc8ccd0, .25, { metalness: .8 }), carton = M3(0xa88458, .95), lampe = new THREE.MeshBasicMaterial({ color: 0xffe0a8 });
