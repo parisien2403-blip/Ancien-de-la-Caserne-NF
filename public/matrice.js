@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.67";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.68";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12965,7 +12965,10 @@ function bougerLK(l, now, dt) { const B = l.os; if (!B) return; for (const n in 
     T("R_UpperArm", "x", .45 * s); T("L_UpperArm", "x", -.45 * s); T("R_Forearm", "x", -.35 * Math.max(0, c)); T("L_Forearm", "x", -.35 * Math.max(0, -c)); T("R_Thigh", "x", -.4 * s); T("L_Thigh", "x", .4 * s);
     T("R_Calf", "x", .3 * Math.max(0, -c)); T("L_Calf", "x", .3 * Math.max(0, c)); T("Spine2", "y", .1 * s); T("Spine4", "y", -.08 * s); T("Head1", "y", .15 * Math.sin(f * .5)); }
   else if (mode === LK_A.saut) { T("R_UpperArm", "x", -.9); T("L_UpperArm", "x", -.9); T("R_Thigh", "x", .7); T("L_Thigh", "x", .7); T("Head1", "x", -.25); }
-  else if (mode === LK_A.mort) { const f = Math.min(1, (now - (l.mortT || now)) / 700); T("R_UpperArm", "z", -.7 * f); T("L_UpperArm", "z", .7 * f); T("R_Thigh", "z", -.5 * f); T("L_Thigh", "z", .5 * f); T("Head1", "x", .5 * f); l.sc.position.y = (l.sc.userData.y0 ??= l.sc.position.y) * (1 - .55 * f); }
+  else if (mode === LK_A.mort) { const f = Math.min(1, (now - (l.mortT || now)) / 700); T("R_UpperArm", "x", .35 * f); T("L_UpperArm", "x", .35 * f); T("R_Forearm", "x", .5 * f); T("L_Forearm", "x", .5 * f); T("R_Thigh", "x", -.25 * f); T("L_Thigh", "x", -.25 * f); T("R_Calf", "x", .4 * f); T("L_Calf", "x", .4 * f); T("Head1", "x", .45 * f); T("Head1", "z", .3 * f);
+    // (à plat sur le sol : on cherche son point le plus bas, et on le pose par terre — il ne flotte plus)
+    l.sc.userData.y0 ??= l.sc.position.y; l.sc.position.y = l.sc.userData.y0; l.g.updateMatrixWorld(true); let bas = Infinity; const w = new THREE.Vector3(); for (const n in B) { B[n].getWorldPosition(w); if (w.y < bas) bas = w.y; }
+    if (isFinite(bas)) l.sc.position.y -= (bas - l.g.position.y - .06) * f / (l.g.scale.y || 1); }
   else { const f = t * Math.PI * 2 * .5; T("Spine2", "x", .05 * Math.sin(f)); T("Head1", "y", .25 * Math.sin(f * .7)); T("Head1", "x", .08 * Math.cos(f)); }
   const flic = mode === LK_A.saut ? .32 : mode === LK_A.mort ? .15 : .04 + .22 * Math.pow(Math.max(0, Math.sin(t * 1.7)), 12);   // (la langue : rentrée, elle pointe de temps en temps ; dehors quand il bondit)
   if (B.Tongue_base) B.Tongue_base.scale.setScalar(flic); l.g.updateMatrixWorld(true); }
@@ -13022,7 +13025,7 @@ function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.
 let tyran3D = null; const TY = { HP: 15, H: 1.45, V: 4.4 };
 function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
   M.ctx.surInfo && M.ctx.surInfo("🧨 Le fumigène est posé… l'hélicoptère arrive ! Mais quelque chose approche…");
-  tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=1"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, true); return G; })().catch(e => { console.warn("tyran", e); return null; });
+  tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=2"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, true); return G; })().catch(e => { console.warn("tyran", e); return null; });
   tyran3D.then(G => { const T = M && M.tyran; if (!G || !T || !T.attente) return;
     const sc = skelMod.clone(G.scene);   /* (Nemesis, à sa taille : 2,45 m) */ sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); } });
     const g = new THREE.Group(), piv = new THREE.Group(); piv.rotation.order = "YXZ"; piv.add(sc); g.add(piv); M.scene.add(g); g.userData.perso = true; const mix = new THREE.AnimationMixer(sc), act = {}; for (const a of G.animations) act[a.name] = mix.clipAction(a);
@@ -13043,7 +13046,7 @@ function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const 
     [7.6, M.moiNum, "Tant qu'il est là, l'hélico ne pourra jamais se poser !"], [10.4, autre, "Alors on le descend. Vise-le, et ne t'arrête pas de tirer !"]];
   const libre = v => M.L.limites(v.x, v.z);
   M.cine = { t0, gel: true, nettoyer: () => { fini = true; for (const z of caches) z.g.visible = true; }, maj: (now) => { if (fini) return; clk += Math.min(200, Math.max(0, now - prec)) * (M.vite || 1) / 1000; prec = now; const u = clk; M.cine.u = u;
-    if (!T.g || T.mortT) { fin(); return; } if (T.etat === "regard") T.regardT = now + 1500;   // (il nous fixe, sans bouger, le temps de la scène)
+    if (!T.g || T.mortT) { fin(); return; } if (T.etat === "regard") T.regardT = now + 1500; if (T.etat === "charge" || T.etat === "souffle") T.etat = "regard";   // (il nous fixe, sans bouger, le temps de la scène)
     const mp = moi.g.position, tp = new THREE.Vector3(T.x, T.g.position.y, T.z), d = mp.clone().sub(tp).setY(0).normalize(), cote = new THREE.Vector3(d.z, 0, -d.x);
     cacherAutour(mp.clone().lerp(tp, .5), 16, caches); for (const q of gens) { q.cible = null; q.chemin = []; if (q.av3) q.av3.sc.rotation.y = Math.atan2(T.x - q.g.position.x, T.z - q.g.position.z); }
     let c, v;
@@ -13059,8 +13062,17 @@ function cineTyran(T) { const moi = moiApo(); if (!moi || M.cine) return; const 
     if (u > 13.4) fin(); } }; }
 function jouerTY(T, n, une = false) { if (T.cur === n || !T.act[n]) return; const a = T.act[n]; a.reset(); a.setLoop(une ? THREE.LoopOnce : THREE.LoopRepeat); a.clampWhenFinished = une; a.play(); if (T.act[T.cur]) a.crossFadeFrom(T.act[T.cur], .2, false); T.cur = n; }
 function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; const mp = moi.g.position, hS = (x, z) => { const h = hNiv(M.L, x, z, T.y ?? (M.L.heliport ? M.L.heliport.y : mp.y)); if (T.y == null || Math.abs(h - T.y) < .6) T.y = h; return T.y; };   // (il garde son niveau : la terrasse)
+  if (!T.rep0) { T.rep0 = []; for (const n in T.os) T.rep0.push([T.os[n], T.os[n].quaternion.clone()]); } for (const [b, q] of T.rep0) b.quaternion.copy(q);   // (chaque image repart de la pose de départ : nos poses ne s'empilent pas)
   T.mix.update(dt);
-  if (!T.mortT && T.etat !== "frappe" && T.os.LeftArm) { const ry = T.piv.rotation.y, fx = Math.sin(ry), fz = Math.cos(ry), rx = Math.cos(ry), rz = -Math.sin(ry);   /* (ses bras, que l'animation laissait repliés contre la poitrine : pendants, le long du corps, un peu en avant, en balancier quand il marche) */
+  /* ses poses, par-dessus l'animation : en tombant, les genoux repliés ; à l'atterrissage, un genou au sol, une main posée, puis il se redresse ; en charge, penché en avant */
+  { const TT = (n, a, v) => tourne3D({ sc: T.sc, os: T.os }, n, a, v); let k = 0;
+    if (T.etat === "chute") { TT("LeftUpLeg", "x", -.6); TT("RightUpLeg", "x", -.3); TT("LeftLeg", "x", .9); TT("RightLeg", "x", .7); TT("LeftArm", "z", .5); TT("RightArm", "z", -.5); }
+    if (T.etat === "atterri") { const u = (now - T.t0) / 2200; k = u < .55 ? 1 : Math.max(0, 1 - (u - .55) / .45); k = k * k * (3 - 2 * k);
+      TT("Spine", "x", .55 * k); TT("Spine1", "x", .2 * k); TT("Head", "x", -.35 * k); TT("RightUpLeg", "x", -1.5 * k); TT("RightLeg", "x", 1.45 * k); TT("LeftUpLeg", "x", .15 * k); TT("LeftLeg", "x", 1.9 * k); TT("LeftFoot", "x", -.6 * k);
+      TT("RightArm", "x", -1.1 * k); TT("RightArm", "z", .4 * k); TT("RightForeArm", "x", -.3 * k); }
+    if (T.etat === "charge") { TT("Spine", "x", .4); TT("Head", "x", -.3); }
+    T.piv.position.y = T.mortT ? T.piv.position.y : -.62 * k; }
+  if (!T.mortT && T.etat !== "frappe" && T.etat !== "atterri" && T.etat !== "chute" && T.os.LeftArm) { const ry = T.piv.rotation.y, fx = Math.sin(ry), fz = Math.cos(ry), rx = Math.cos(ry), rz = -Math.sin(ry);   /* (ses bras, que l'animation laissait repliés contre la poitrine : pendants, le long du corps, un peu en avant, en balancier quand il marche) */
     T.g.updateMatrixWorld(true); const bal = T.cur === "walk" || T.cur === "run" ? Math.sin(performance.now() / 260) * .35 : 0;
     for (const [c, sg] of [["Left", 1], ["Right", -1]]) { const d = new THREE.Vector3(fx * (.2 + bal * sg) + rx * sg * .12, -1, fz * (.2 + bal * sg) + rz * sg * .12).normalize();
       viser3D(T, c + "Arm", c + "ForeArm", d); viser3D(T, c + "ForeArm", c + "Hand", d.clone().add(new THREE.Vector3(fx * .25, 0, fz * .25)).normalize()); } }
@@ -13071,12 +13083,16 @@ function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; 
     return; }
   const dx = mp.x - T.x, dz = mp.z - T.z, d = Math.hypot(dx, dz) || 1, cap = Math.atan2(dx, dz);
   if (T.etat === "chute") { const f = Math.min(1, (now - T.t0) / 700); T.g.position.set(T.x, hS(T.x, T.z) + (1 - f * f) * 14, T.z); T.piv.rotation.y = cap;
-    if (f >= 1) { T.etat = "regard"; T.regardT = now + 1500; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); } return; }
+    if (f >= 1) { T.etat = "atterri"; T.t0 = now; sonBruit(1.2, 120, 1); voile("background:#fff;opacity:.25", 120); sonPos("sons/zombie3.mp3", 1); } return; }
+  if (T.etat === "atterri") { jouerTY(T, "idle"); if (now - T.t0 > 2200) { T.etat = "regard"; T.regardT = now + 900; } return; }   // (un genou au sol, puis il se relève lentement)
   T.g.position.set(T.x, hS(T.x, T.z), T.z); let dc = cap - T.piv.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); T.piv.rotation.y += dc * Math.min(1, dt * 7);
   if (APO.zombieFin) { jouerTY(T, "idle"); return; }
   if (T.etat === "frappe") { if (!T.touche && now - T.t0 > 520) { T.touche = true; if (d < 2.3) subirMorsure(T.x, T.z, 1); } if (now - T.t0 > 1300) { T.etat = "course"; } return; }
   if (T.etat === "regard") { jouerTY(T, "idle"); if (now > T.regardT) { T.etat = "course"; T.prochainRegard = now + 4000 + Math.random() * 3000; } return; }   // (il nous fixe)
   if (d < 1.8 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 1900; jouerTY(T, "origine0", true); return; }
+  if (T.etat === "charge") { if (now - T.t0 > 1700) { T.etat = "souffle"; T.t0 = now; } else { const v = TY.V * 2 * dt, nx = T.x + dx / d * v, nz = T.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hNiv(M.L, nx, nz, T.y ?? 0) - (T.y ?? 0)) < .5) { T.x = nx; T.z = nz; } jouerTY(T, "run"); if (T.act.run) T.act.run.timeScale = 1.6; return; } }   // (la charge : il fonce, penché en avant)
+  if (T.etat === "souffle") { jouerTY(T, "idle"); if (now - T.t0 > 700) { T.etat = "course"; T.chargeT = now + 2500 + Math.random() * 2000; } return; }   // (il s'arrête, souffle, nous fixe)
+  if (d > 4 && now > (T.chargeT || 0)) { T.etat = "charge"; T.t0 = now; grognementLisa(.9, .6); return; }
   if (now > (T.prochainRegard || 0) && d > 5) { T.etat = "regard"; T.regardT = now + 1100; return; }
   if (d > 1.5) { const v = (d > 4 ? TY.V : TY.V * .5) * dt, nx = T.x + dx / d * v, nz = T.z + dz / d * v; if (M.L.limites(nx, nz) && Math.abs(hNiv(M.L, nx, nz, T.y ?? 0) - (T.y ?? 0)) < .5) { T.x = nx; T.z = nz; } jouerTY(T, d > 4 ? "run" : "walk"); if (T.act.run) T.act.run.timeScale = 1.15; } else jouerTY(T, "idle"); }
 function toucherTyran(T) { if (!T.g || T.mortT) return; T.flashT = performance.now() + 160; sangAuSol(T.x, T.z, T.g.position.y, 1.2); T.hp--;
@@ -13095,7 +13111,7 @@ function lancerLisa() {
   { const now = performance.now(); if (!M.fetesT) M.fetesT = now; if (now - M.fetesT < 6000 && mp.z > 4.5) return; }   /* (pas tout de suite : on laisse les personnages avancer dans la salle — six secondes, ou jusqu'au milieu) */
   const L = M.L; if (!L.limLisa) { const lim0 = L.limites; L.limLisa = true; L.limites = (x, z) => lim0(x, z) && (!lisaVivante() || (z < 11.2 && !(x < -4.7 && Math.abs(z - 6) < 1.6))); }   // (ni l'escalier, ni la porte de la cour)
   M.lisaMus = false; M.lisa = { lisa: true, attente: true, hp: LT.HP, mortT: 0, cine: true, x: mp.x, z: mp.z };
-  lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-lisa.glb?v=1"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, true); return G; })().catch(e => { console.warn("lisa", e); return null; });
+  lisa3D = lisa3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-lisa.glb?v=2"); if (!G.animations.length) G.animations = clipsDS(G.scene, null, {}, "bossu"); return G; })().catch(e => { console.warn("lisa", e); return null; });
   lisa3D.then(G => { const T = M && M.lisa; if (!G || !T || !T.attente || baseLieu(M.lieu) !== "fetes") { if (M && M.lisa === T) M.lisa = null; return; }
     const sc = skelMod.clone(G.scene); sc.updateMatrixWorld(true); let hy = -1e9, by = 1e9; sc.traverse(o => { if (!o.isBone) return; const y = o.getWorldPosition(new THREE.Vector3()).y; if (y > hy) hy = y; if (y < by) by = y; });
     sc.scale.multiplyScalar(hy > by ? LT.H / ((hy - by) * 1.03) : 1); sc.rotation.order = "YXZ";   // (sa taille : du bout des pieds au sommet du crâne, d'après le squelette)
@@ -13410,7 +13426,7 @@ let zombie3D = null, skelMod = null, zG = null, zPack = null;
 const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
 /* les zombies : un homme, une femme, une blonde (montés sur le même squelette que nos héros, avec la démarche de zombie de l'ancien modèle), et une qui rampe ;
    l'ancien modèle ne sert plus qu'à prêter sa démarche */
-const Z3_FICHIERS = ["avatars/re2-zombie1.glb?v=1", "avatars/re2-zombie2.glb?v=1", "avatars/re2-nu.glb?v=1", "avatars/re2-uss.glb?v=1", "avatars/re2-zf.glb?v=1"], Z3_RAMPE = "avatars/re-z-rampe.glb?v=1";
+const Z3_FICHIERS = ["avatars/re2-zombie1.glb?v=2", "avatars/re2-zombie2.glb?v=2", "avatars/re2-nu.glb?v=2", "avatars/re2-uss.glb?v=2", "avatars/re2-zf.glb?v=2"], Z3_RAMPE = "avatars/re-z-rampe.glb?v=1";
 const rampeZ = z => !z.chien && !z.boss && !z.revenant && (z.ty | 0) <= 2 && (typeof z.id === "number" ? Math.floor(z.id / 7) : [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0)) % 6 === 0;   /* (un sur six environ rampe ; le même pour tout le monde) */
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     const ld = new gltfMod.GLTFLoader(), g = await ld.loadAsync("avatars/re-zombie.glb?v=1"); zG = g;
@@ -13528,7 +13544,7 @@ function sprayTouche(moi, zx, zz) { if (!M.objets || M.objets.filter(o => o.touc
     M.ctx.surInfo && M.ctx.surInfo("💉 Un spray de soin est apparu, tout près !"); return; } }
 const estChefZ = () => M.chefZ === M.moiNum || (M.chefZ == null && ![...M.gens.values()].some(p => !p.moi && p.info.numero > 0));
 // la flaque de sang qui s'étend sous un joueur tombé
-function flaqueMort(p) { const x = p.g.position.x, z = p.g.position.z, y = p.g.position.y;
+function flaqueMort(p) { const A = p.av3, ry = A && A.sc ? A.sc.rotation.y : null, x = p.g.position.x + (ry != null ? Math.sin(ry) * 1.35 : 0), z = p.g.position.z + (ry != null ? Math.cos(ry) * 1.35 : 0), y = p.g.position.y;   // (un personnage 3D tombe en avant : le sang coule de sa tête)
   const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), matSang(texSang[1]));
   m.rotation.x = -Math.PI / 2; m.position.set(x, y + .03, z); m.scale.setScalar(.05); m.renderOrder = 1; M.scene.add(m); (M.flaques = M.flaques || []).push([m, performance.now()]); }
 /* --- les héros de Resident Evil (réglés par l'administrateur) : on peut jouer l'un d'eux, ou en emmener deux comme équipiers --- */
@@ -14763,6 +14779,13 @@ function clipsDS(sc, mix, act, soldat) { sc.updateMatrixWorld(true); const q0 = 
   const coup = p => { const t = p / (Math.PI * 2), e = t < .35 ? t / .35 : t < .55 ? 1 : Math.max(0, 1 - (t - .55) / .45);   // (un coup de poing, du bras droit, de haut en bas)
     return { Spine: [.15 * e, -.35 * e, 0], RightArm: [-2.3 * e + (t > .35 && t < .6 ? 1.6 * (t - .35) / .25 : 0), 0, -.2 * e], RightForeArm: [-.6 * e, 0, 0], LeftArm: [-.3 * e, 0, .1], Head: [.1 * e, 0, 0] }; };
   const clips = [];
+  if (soldat === "bossu") {   // (Lisa Trevor : voûtée, la tête basse et penchée, les bras qui pendent devant elle ; elle avance en traînant, de travers, en boitant)
+    const bossu = (k, br) => p => { const s = Math.sin(p), c = Math.cos(p), lourd = Math.max(0, s);
+      return { Spine: [.55 + .05 * c * k, .12 * s * k, .1], Spine1: [.3, 0, .05], Spine2: [.15, 0, 0], Neck: [.2, 0, 0], Head: [-.15 + .08 * Math.sin(p * 2), .3 * Math.sin(p / 2), .45 + .08 * s],
+        LeftArm: [-.55 + .3 * s * k * br, .1, .2], RightArm: [-.7 - .25 * s * k * br, -.1, -.15], LeftForeArm: [-.6, 0, 0], RightForeArm: [-.4, 0, 0], LeftHand: [.4, 0, 0], RightHand: [.5, 0, 0],
+        Hips: [0, .15 * s * k, .06 * c * k], LeftUpLeg: [-.15 - .5 * s * k, 0, .05], RightUpLeg: [-.15 + .35 * s * k, 0, -.08], LeftLeg: [.35 + .6 * lourd * k, 0, 0], RightLeg: [.45 + .3 * Math.max(0, -s) * k, 0, 0],   // (la jambe droite raide : elle boite)
+        LeftFoot: [-.1, 0, 0], RightFoot: [-.2, .3, 0] }; };
+    for (const c of [clip("origine0", 1.2, coup), clip("idle", 4.5, bossu(.25, 1)), clip("walk", 1.5, bossu(1, 1)), clip("run", .95, bossu(1.3, 1.6))]) { clips.push(c); if (mix) act[c.name] = mix.clipAction(c); } return clips; }
   for (const c of [...(soldat ? [clip("origine0", 1.2, coup)] : []), clip("idle", soldat ? 5 : 3.2, soldat ? garde : repos), clip("walk", .95, pasPerso(.45, .7, .38, .25, .04)), clip("run", .62, pasPerso(.8, 1.15, .75, 1.1, .2))]) { clips.push(c); if (mix) act[c.name] = mix.clipAction(c); } return clips; }
 /* Coraline en 3D, faite ici pièce par pièce comme la marionnette du film : la grosse tête, le carré bleu nuit et sa frange droite, la barrette libellule,
    les grands yeux noirs ; l'imperméable jaune (son col, ses boutons, sa capuche dans le dos), la jupe bordeaux qui dépasse, les collants rayés,
@@ -14891,7 +14914,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const herosSH = h => h >= 69 && h !== 95;   // (les héros de Silent Hill : 69 et au-delà — sauf Jill, 95, de Resident Evil)
-const HEROS_3D = { 23: "avatars/re2-barry.glb?v=1", 25: "avatars/re2-wesker.glb?v=1", 26: "avatars/re2-chris.glb?v=1", 95: "avatars/re2-jill.glb?v=1", 21: "avatars/re2-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re2-barry.glb?v=2", 25: "avatars/re2-wesker.glb?v=2", 26: "avatars/re2-chris.glb?v=2", 95: "avatars/re2-jill.glb?v=2", 21: "avatars/re2-claire.glb?v=2", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=2", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
