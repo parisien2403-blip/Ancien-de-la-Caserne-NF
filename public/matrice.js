@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.58";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.59";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7580,12 +7580,12 @@ function construireMess(A, L, scene) {
    La maison victorienne rose, son porche à dentelle de bois, la tourelle au toit pointu, la serre, l'escalier de secours à droite ;
    dedans : la cuisine, le bureau du père, le hall et le grand escalier, la salle à manger, le petit salon, la pièce de la tourelle, le salon ;
    en haut : le grenier, la salle de bain, la lingerie, la chambre de Coraline, la chambre des parents, la chambre d'amis.
-   (x : vers la droite de la façade ; z : vers l'avant, l'entrée ; la nuit, une grosse lune, comme sur l'affiche)
+   (x : vers la droite de la façade ; z : vers l'avant, l'entrée ; le jour, sous un ciel couvert et terne, comme dans le film)
    ===================================================================================== */
 function construireCoraline(A, L, scene) {
   const Y0 = .75, Y1 = 3.9, HE = 2.9, E = .1, YT = Y1 + HE, TX = -5.9, TZ = 6.5, TR = 1.5;   // (… et la tourelle : son centre, son rayon)   // (le plancher du rez-de-chaussée, celui de l'étage ; la hauteur de l'étage ; le haut des murs)
-  L.toujoursNuit = true; L.sansLune = true; L.sansPNJ = true; L.sansMusique = true; L.cor = true; L.taille = 1.85;
-  L.brumePerso = 0x0b1430; L.loin = 400;
+  L.toujoursJour = true; L.couvert = true; L.sansLune = true; L.sansPNJ = true; L.sansMusique = true; L.cor = true; L.taille = 1.85;
+  L.brumePerso = 0xaeb1ae; L.loin = 400;
   const n0 = scene.children.length;
   // ---------- les matières : tout est mesuré en mètres (une matière par motif : tous les morceaux se fondent en un seul dessin) ----------
   const uvMetre = (geo, w, h, d) => { const uv = geo.attributes.uv; const tailles = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
@@ -7603,12 +7603,14 @@ function construireCoraline(A, L, scene) {
   const repete = (m, rx, ry) => { const c = m.clone(); c.map = m.map.clone(); c.map.repeat.set(rx, ry); c.map.needsUpdate = true; return c; };   // (pour une forme dont les coordonnées vont de 0 à 1)
   const bruit = (x, w, h, n, coul) => { for (let i = 0; i < n; i++) { x.fillStyle = coul(i); x.fillRect(hasard(i * 1.7) * w, hasard(i * 3.3) * h, 1 + hasard(i * 5.1) * 3, 1 + hasard(i * 7.9) * 2); } };
   // le bardage rose : des planches horizontales, le bas de chacune dans l'ombre
-  const bardage = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#e6a0b2"; x.fillRect(0, 0, w, h); const n = 12, p = h / n;
-    for (let i = 0; i < n; i++) { const g = x.createLinearGradient(0, i * p, 0, (i + 1) * p); g.addColorStop(0, "#f4c0ce"); g.addColorStop(.75, "#e6a0b2"); g.addColorStop(1, "#b87084"); x.fillStyle = g; x.fillRect(0, i * p, w, p); x.fillStyle = "rgba(90,30,50,.55)"; x.fillRect(0, (i + 1) * p - 2, w, 2); }
-    bruit(x, w, h, 900, i => `rgba(${hasard(i) > .5 ? "255,255,255" : "120,50,70"},.05)`); }), 2.2, { emissive: 0x4a2028, emissiveIntensity: .45, relief: 2.5 });   // (un rose tendre, un peu réchauffé : sous la lune, il virait au violet)
-  const laitonP = A.mat({ color: 0xb8913a, roughness: .3, metalness: .8 }), blanc = A.mat({ color: 0xf4eee8, roughness: .6, emissive: 0x2a2a30, emissiveIntensity: .3 }), M0 = (c, r = .8) => A.mat({ color: c, roughness: r });
-  const tuiles = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#8c5550"; x.fillRect(0, 0, w, h); const n = 10, p = h / n;
-    for (let i = 0; i < n; i++) for (let j = 0; j < 8; j++) { const dx = (i % 2) * 16, v = hasard(i * 9 + j); x.fillStyle = `hsl(${4 + v * 10}, ${28 + v * 12}%, ${34 + v * 10}%)`; x.fillRect(j * 32 + dx - 16, i * p, 30, p - 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(j * 32 + dx - 16, (i + 1) * p - 3, 30, 3); } }), 2.4, { relief: 3, roughness: .9 });
+  const bardage = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#c4a8b0"; x.fillRect(0, 0, w, h); const n = 12, p = h / n;
+    for (let i = 0; i < n; i++) { const g = x.createLinearGradient(0, i * p, 0, (i + 1) * p); g.addColorStop(0, "#d6c0c4"); g.addColorStop(.75, "#c4a8b0"); g.addColorStop(1, "#97808a"); x.fillStyle = g; x.fillRect(0, i * p, w, p); x.fillStyle = "rgba(60,40,48,.5)"; x.fillRect(0, (i + 1) * p - 2, w, 2); }
+    for (let i = 0; i < 14; i++) { const sx = hasard(i * 4.3) * w, sh = 40 + hasard(i * 2.9) * 160, g = x.createLinearGradient(0, 0, 0, sh); g.addColorStop(0, "rgba(70,62,58,.22)"); g.addColorStop(1, "rgba(70,62,58,0)"); x.fillStyle = g; x.fillRect(sx, hasard(i * 6.1) * h * .5, 3 + hasard(i) * 8, sh); }   // (les coulures)
+    for (let i = 0; i < 30; i++) { x.fillStyle = `rgba(${hasard(i * 3.1) > .4 ? "222,214,204" : "150,138,128"},.55)`; x.beginPath(); x.ellipse(hasard(i * 8.3) * w, hasard(i * 5.7) * h, 2 + hasard(i * 1.9) * 9, 1 + hasard(i * 2.3) * 3, 0, 0, 7); x.fill(); }   // (la peinture écaillée)
+    bruit(x, w, h, 1400, i => `rgba(${hasard(i) > .5 ? "235,230,225" : "70,55,60"},.07)`); }), 2.2, { emissive: 0x161214, emissiveIntensity: .2, relief: 2.5 });   // (un rose pâle, défraîchi, comme dans le film)
+  const laitonP = A.mat({ color: 0xb8913a, roughness: .3, metalness: .8 }), blanc = A.mat({ color: 0xdcd6cc, roughness: .75, emissive: 0x2a2a30, emissiveIntensity: .1 }), M0 = (c, r = .8) => A.mat({ color: c, roughness: r });
+  const tuiles = motif(toile(256, 256, (x, w, h) => { x.fillStyle = "#4c4e52"; x.fillRect(0, 0, w, h); const n = 10, p = h / n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < 8; j++) { const dx = (i % 2) * 16, v = hasard(i * 9 + j); x.fillStyle = `hsl(${200 + v * 30}, ${4 + v * 5}%, ${30 + v * 12}%)`; x.fillRect(j * 32 + dx - 16, i * p, 30, p - 2); x.fillStyle = "rgba(0,0,0,.35)"; x.fillRect(j * 32 + dx - 16, (i + 1) * p - 3, 30, 3); } }), 2.4, { relief: 3, roughness: .9 });
   const pierre = motif(toile(256, 128, (x, w, h) => { x.fillStyle = "#5f6064"; x.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) { const v = hasard(i * 13 + j), dx = (i % 2) * 22;
       x.fillStyle = `hsl(220, 6%, ${34 + v * 18}%)`; x.beginPath(); x.roundRect(j * 44 + dx - 20, i * 32 + 2, 40, 28, 6); x.fill(); } }), 1.6, { relief: 4 });
   const brique = motif(toile(128, 128, (x, w, h) => { x.fillStyle = "#5a3a32"; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { const v = hasard(i * 7 + j * 3); x.fillStyle = `hsl(8, ${35 + v * 15}%, ${30 + v * 12}%)`; x.fillRect(j * 32 + (i % 2) * 16 - 16, i * 16 + 1, 30, 14); } }), .8, { relief: 4 });
@@ -7641,7 +7643,7 @@ function construireCoraline(A, L, scene) {
     bureau: papier("#8f989a", "#9ba3a5", "rayures"), tour: papier("#7a6a5a", "#87776a", "fleurs"), coraline: papier("#6f8590", "#7b919c", "fleurs"), parents: papier("#9c8c70", "#a8987c", "rayures"),
     bain: sols.blancs, grenier: motif(planches("#7a6450", "#6e5a48", 6), 1.4), lingerie: papier("#a0a49a", "#aeb2a8", "rayures"), amis: papier("#7c6f80", "#887b8c", "damas") };
   const plafond = A.mat({ color: 0xe6e0d4, roughness: .95, side: THREE.DoubleSide });
-  const verre = new THREE.MeshStandardMaterial({ color: 0x1a2440, emissive: 0xffb860, emissiveIntensity: .32, roughness: .1, metalness: .3, transparent: true, opacity: .55, side: THREE.DoubleSide });   // (la nuit : une lumière chaude derrière les vitres)
+  const verre = new THREE.MeshStandardMaterial({ color: 0x4a5458, emissive: 0xffb860, emissiveIntensity: .04, roughness: .08, metalness: .5, transparent: true, opacity: .72, side: THREE.DoubleSide });   // (le jour couvert : des vitres grises, qui reflètent le ciel)
   // ---------- le plan ----------
   /* les pièces : [nom, x0, x1, z0, z1, niveau, sol, papier, côtés extérieurs, fenêtres { x0: [[c, w, y0, h]] … }] */
   const PI = [
@@ -8048,8 +8050,8 @@ function construireCoraline(A, L, scene) {
   for (const [x, y, z, i] of [[-.5, Y1 - .4, .5, 4.5], [-2.75, Y0 + 1.7, -4.35, 4.5], [3.6, Y1 - .4, 4.4, 3.5], [-.5, YT - .4, 1, 4], [-4.2, YT - .4, 3.6, 3.5]]) { const l = new THREE.PointLight(0xffc88a, i, 9, 1.4); l.position.set(x, y, z); scene.add(l); }
   if (!PETIT) for (const [x, y, z, i] of [[-4.15, Y0 + 2.1, .5, 3], [4.2, Y0 + 2.3, -3.5, 2.6], [3.3, YT - .5, -3.6, 2.6], [-4.2, YT - .5, -2.8, 2.2]]) { const l = new THREE.PointLight(0xffc88a, i, 7, 1.5); l.position.set(x, y, z); scene.add(l); }   // (la salle à manger, le bureau, la chambre des parents, la salle de bain)
   scene.add(new THREE.AmbientLight(0x8a90b8, .3));
-  // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
-  const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
+  // ---------- le jardin : la pelouse, l'allée de gravier, les arbres tordus, la pancarte ----------
+  const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#68664a"; x.fillRect(0, 0, w, h); bruit(x, w, h, 6000, i => `rgba(${hasard(i) > .55 ? "150,140,96" : hasard(i * 3) > .5 ? "84,94,62" : "52,48,34"},.4)`); }), 30, 30);
   /* la pelouse, percée à gauche des marches du perron : la courette en contrebas ; son escalier de pierre descend vers le dessous du palier de l'avancée,
      où est la porte de Miss Spink et Miss Forcible (comme sur la maquette) */
   const FX0 = -5, FX1 = -2.15, FZ0 = 9.85, FZ1 = 11.15, FY = -2.1, NF = 11, FPAL = .8;   // (la courette : de l'allée jusqu'au palier ; sa largeur ; sa profondeur ; ses marches ; le palier du bas)
@@ -8076,7 +8078,7 @@ function construireCoraline(A, L, scene) {
     sp.position.copy(lan.position); sp.scale.set(1.2, 1.2, 1); g.add(sp); g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g); }
   const gravier = A.mat({ map: tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#6e675e"; x.fillRect(0, 0, w, h); bruit(x, w, h, 2400, i => `rgba(${hasard(i) > .5 ? "200,190,175" : "40,35,30"},.4)`); }), 2, 12), roughness: 1 });
   { const a = A.ajoute(new THREE.PlaneGeometry(2.6, 20), gravier, -.7, .015, 21, false); a.rotation.x = -Math.PI / 2; a.receiveShadow = true; }
-  const ecorce = A.mat({ color: 0x1c1612, roughness: 1 });
+  const ecorce = A.mat({ color: 0x4a4440, roughness: 1 });   // (un bois mort, gris, délavé)
   const arbre = (x, z, h, k) => { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const tronc = new THREE.Mesh(new THREE.CylinderGeometry(.18, .38, h, 7), ecorce); tronc.position.y = h / 2; tronc.rotation.z = (hasard(k) - .5) * .25; g.add(tronc);
     for (let i = 0; i < 6; i++) { const l = 1.6 + hasard(k * 7 + i) * 2.4, b = new THREE.Mesh(new THREE.CylinderGeometry(.03, .12, l, 5), ecorce), a = i * 1.05 + hasard(k + i);
       b.position.set(Math.cos(a) * l * .4, h * (.62 + hasard(i * 3 + k) * .35), Math.sin(a) * l * .4); b.rotation.set(Math.sin(a) * 1.1, 0, -Math.cos(a) * 1.1); g.add(b);
@@ -8219,11 +8221,6 @@ function construireCoraline(A, L, scene) {
     tiges.count = n; touffes.count = k; scene.add(tiges, touffes); }
   // l'allée de gravier, de l'arrière de la maison jusqu'au portail
   { const a = A.ajoute(new THREE.PlaneGeometry(2.2, 9.6), gravier, 4.6, .014, -10.9, false); a.rotation.set(-Math.PI / 2, 0, -.3); }
-  // la lune de l'affiche : énorme, pâle, derrière la maison
-  { const lune = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(512, 512, (x) => { const g = x.createRadialGradient(256, 256, 120, 256, 256, 256); g.addColorStop(0, "rgba(220,235,255,.55)"); g.addColorStop(1, "rgba(160,190,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 512, 512);
-      const d = x.createRadialGradient(230, 230, 20, 256, 256, 140); d.addColorStop(0, "#f8fbff"); d.addColorStop(1, "#c8d6ee"); x.fillStyle = d; x.beginPath(); x.arc(256, 256, 140, 0, 7); x.fill();
-      x.fillStyle = "rgba(140,160,200,.35)"; for (const [a, b, r] of [[200, 210, 26], [300, 300, 34], [240, 320, 18], [320, 200, 14], [180, 300, 12]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); } })), fog: false, depthWrite: false }));
-    lune.position.set(-30, 46, -95); lune.scale.set(70, 70, 1); scene.add(lune); }
   // ---------- où l'on marche : le jardin (autour de la maison), les porches, les pièces de chaque étage, les deux escaliers ----------
   const dedans = (x, z, [a, b, c, d], m = 0) => x > a + m && x < b - m && z > c + m && z < d - m;
   const FOSSE = [FX0 - .6, FX1 - .2, FZ0 + .2, FZ1 - .2], EMPRISE = [[-6.4, 6.4, -6.8, 6.8], [-8.3, 1.9, 6.8, 9.6], [-8.3, -6.4, -.4, 4.4], [-8.1, -6.4, -5.6, -3.4], [-2.15, 1.15, 9.6, 11.3], [FX0, FX1, FZ0, FZ1], [6.4, 7.8, -2.1, 9.7], [3, 6.6, 8.6, 9.7], [1.45, 5.85, 6.8, 7.5], [-4.95, -.55, -7.5, -6.8], [6.4, 7, -5.2, -2], [-6.9, -6.4, -2.6, -.6]];   // (la maison, le porche, la serre, le porche de service, l'escalier de secours, les bow-windows)
@@ -8270,7 +8267,12 @@ function construireCoraline(A, L, scene) {
   // le cercle du retour, au bout de l'allée : on revient dans la rue de la caserne, devant le Video Futur
   L.portails.push({ dans: (x, z) => Math.hypot(x + .7, z - 27) < .9, vers: "rue", arrivee: [19.1, 5.2], yaw: Math.PI, indice: [-.7, 27] });
   L.depart = [-.7, 24]; L.cam = { pos: [4, 4, 32], vise: [0, 4, 0] };
-  scene.fog = new THREE.Fog(0x0b1430, 40, 140);
+  // le ciel : couvert, bas, gris, comme dans le film (une couche de nuages pommelés, sans soleil)
+  L.cielPerso = tex(toile(1024, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#7e8286"); g.addColorStop(.42, "#a6a9aa"); g.addColorStop(.5, "#c2c4c0"); g.addColorStop(1, "#8a8c86"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 420; i++) { const cx = hasard(i * 1.7) * w, cy = hasard(i * 2.9) * h * .48, r = 18 + hasard(i * 4.1) * 70, v = hasard(i * 6.3) > .5, rg = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+      rg.addColorStop(0, v ? "rgba(212,214,214,.32)" : "rgba(96,100,106,.28)"); rg.addColorStop(1, "rgba(150,150,150,0)"); x.fillStyle = rg; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); } }));
+  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping;
+  scene.fog = new THREE.Fog(0xaeb1ae, 18, 120);
   const nF = fusionStatique(scene, L, n0); trace("coraline : fusion " + nF);
 }
 
@@ -14666,6 +14668,8 @@ function construireScene(id) {
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
       (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); L.grille = L.grilleAdmin = null;   // (le camion-benne : le jour seulement ; ses passages changent)
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
+      if (L.couvert) { hemi.intensity = 1.2; hemi.color.setHex(0xd8dcdf); hemi.groundColor.setHex(0x55554c); soleil.intensity = .6; soleil.color.setHex(0xe4e6e8); soleil.position.set(-8, 40, 10);
+        nuages.forEach(o => o.visible = false); if (dome) dome.visible = false; }   // (Coraline : le jour, mais couvert — une lumière grise et plate, presque sans ombre)
     };
   }
   if (estApo(id)) { apocalypse(scene, L, baseLieu(id)); if (baseLieu(id) === "rue") busApo(scene, L); if (baseLieu(id) === "grande") portailSouffle(scene, L, 1); }   // (le portail de la voûte de l'horloge jaune, soufflé par l'explosion de notre arrivée)   // (le bus de Resident Evil 2, dans la rue)
