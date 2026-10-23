@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.70";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.71";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13423,6 +13423,13 @@ const Z3_MAX = 14, Z3_H = 179.4;   // (la hauteur du modèle, dans ses unités)
    l'ancien modèle ne sert plus qu'à prêter sa démarche */
 const Z3_FICHIERS = ["avatars/re2-zombie1.glb?v=2", "avatars/re2-zombie2.glb?v=2", "avatars/re2-nu.glb?v=2", "avatars/re2-uss.glb?v=2", "avatars/re2-zf.glb?v=2"], Z3_RAMPE = "avatars/re-z-rampe.glb?v=1";
 const rampeZ = z => !z.chien && !z.boss && !z.revenant && (z.ty | 0) <= 2 && (typeof z.id === "number" ? Math.floor(z.id / 7) : [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0)) % 6 === 0;   /* (un sur six environ rampe ; le même pour tout le monde) */
+/* les vrais mouvements (enregistrés sur des acteurs — Mixamo), rendus indépendants du squelette : pour nos modèles, dont les os n'ont aucune rotation au repos, la rotation locale de chaque os est celle du fichier */
+const animsMX = {};
+const chargerAnimsMX = f => animsMX[f] || (animsMX[f] = fetch(f).then(r => r.json()).catch(e => { console.warn(f, e); return null; }));
+function clipMX(A, cle, sc) { const a = A && A[cle]; if (!a) return null; const hips = sc.getObjectByName("Hips"); if (!hips) return null; const y0 = hips.position.y, t = [], tr = [];
+  for (let i = 0; i < a.n; i++) t.push(i / 30);
+  for (const k in a.T) if (k !== "hips" && sc.getObjectByName(k)) tr.push(new THREE.QuaternionKeyframeTrack(k + ".quaternion", t, a.T[k]));
+  tr.push(new THREE.VectorKeyframeTrack("Hips.position", t, a.T.hips.map(v => v * y0))); return new THREE.AnimationClip(cle, a.duree, tr); }
 function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
     const ld = new gltfMod.GLTFLoader(), g = await ld.loadAsync("avatars/re-zombie.glb?v=1"); zG = g;
     const demarche = n => { const c = g.animations.find(a => a.name === n); if (!c) return null; const k = c.clone(); k.tracks = k.tracks.filter(t => /\.quaternion$/.test(t.name)); for (const t of k.tracks) t.name = t.name.replace("mixamorig", "").replace(/_\d+(?=\.)/, ""); const vu = new Set(); k.tracks = k.tracks.filter(t => !vu.has(t.name) && vu.add(t.name)); return k; };   // (« Hips_1 » → « Hips » : des os en double dans l'ancien modèle)   // (sa démarche, prêtée aux nouveaux : mêmes os, sans le nom « mixamorig »)
@@ -13431,13 +13438,18 @@ function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = 
       const NZ = Z3_FICHIERS.length; modeles = L.slice(0, NZ).map(prep); rampe = prep(L[NZ]); const c = L[NZ].animations[0];
       if (c) { const k = c.clone(); for (const t of k.tracks) if (/\.position$/.test(t.name)) { const v = t.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } } rampe.clip = k; } }   // (elle rampe sur place : c'est le jeu qui la fait avancer)
     catch (e) { console.warn("zombies 3D", e); }
-    return (zPack = { zG: g, scene: g.scene, animations: g.animations, modeles, rampe, walk: demarche("walk"), idle: demarche("idle") }); })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
-function poserZ3(z, P) { const r = rampeZ(z) && P.rampe && P.rampe.clip, n = [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0), mod = r ? P.rampe : P.modeles.length ? P.modeles[((z.ty | 0) + n) % P.modeles.length] : null;
+    const mx = await chargerAnimsMX("anims/re-zombies.json?v=1");
+    return (zPack = { zG: g, scene: g.scene, animations: g.animations, modeles, rampe, mx, walk: demarche("walk"), idle: demarche("idle") }); })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
+function poserZ3(z, P) { const n = [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0), r = rampeZ(z) && (P.mx || (P.rampe && P.rampe.clip)), mod = r && !P.mx ? P.rampe : P.modeles.length ? P.modeles[((z.ty | 0) + n) % P.modeles.length] : null;
   const sc = skelMod.clone(mod ? mod.g.scene : P.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = [].concat(o.material).map(m => m.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
   const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {};
-  if (r) act.walk = act.idle = mix.clipAction(P.rampe.clip); else if (mod) { for (const c of mod.g.animations) act[c.name] = mix.clipAction(c); } else for (const c of P.animations) act[c.name] = mix.clipAction(c);
+  const C = cle => clipMX(P.mx, cle, sc), ca = c => c && mix.clipAction(c), choix = (...l) => l[n % l.length];
+  if (P.mx && mod) { if (r) { act.walk = act.idle = ca(C("z-rampe")); act.mort = ca(C("z-rampe-mort")); }   /* (les vrais mouvements : ceux qui rampent, les autres — chacun sa démarche, son attente, son attaque, sa mort) */
+    else { act.walk = ca(C(choix("z-marche", "z-marche2"))); act.idle = ca(C(choix("z-idle", "z-idle2"))); act.att = ca(C(choix("z-morsure2", "z-attaque"))); act.mort = ca(C(choix("z-mort", "z-mort2"))); act.touche = ca(C("z-touche")); }
+    for (const k of ["mort", "att", "touche"]) if (act[k]) { act[k].setLoop(THREE.LoopOnce); act[k].clampWhenFinished = true; } }
+  else if (r) act.walk = act.idle = mix.clipAction(P.rampe.clip); else if (mod) { for (const c of mod.g.animations) act[c.name] = mix.clipAction(c); } else for (const c of P.animations) act[c.name] = mix.clipAction(c);
   sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / (mod ? mod.h : Z3_H));   /* (à la vraie taille, comme les héros) */ act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
-  z.z3 = { pivot, sc, mix, act, cur: "walk", rampe: !!r, zpose: !!(mod && !r) }; z.mesh.visible = false; }
+  z.z3 = { pivot, sc, mix, act, cur: "walk", rampe: !!r, mx: !!(P.mx && mod), zpose: !!(mod && !r && !P.mx) }; z.mesh.visible = false; }
 /* la démarche de zombie, sur la marche des nouveaux : les bras tendus devant, la tête penchée, le dos voûté ; défaite avant chaque image de l'animation
    (le moteur ne réécrit pas un os dont la valeur n'a pas changé : sans cela, les réglages s'empilaient et le corps se tordait) */
 const ZPOSE = [["LeftArm", "x", -1.25], ["RightArm", "x", -1.15], ["LeftArm", "z", .25], ["RightArm", "z", -.25], ["LeftForeArm", "x", -.25], ["RightForeArm", "x", -.35], ["Head", "z", .28], ["Head", "x", .15], ["Spine1", "x", .12]];
@@ -13447,6 +13459,9 @@ function zPoseApres(Z) { if (!Z.B) { Z.B = {}; Z.sc.traverse(o => { if (o.isBone
   Z.sc.updateMatrixWorld(true); Z.sc.getWorldQuaternion(_qs); for (const [n, axe, ang] of ZPOSE) { const b = Z.B[n]; if (!b) continue; _ax.copy(AX[axe]).applyQuaternion(_qs); b.parent.getWorldQuaternion(_qp); _q.setFromAxisAngle(_ax, ang); const inv = _qp.clone().invert(); b.quaternion.premultiply(inv.multiply(_q).multiply(_qp)); b.updateMatrixWorld(true); } }
 function retirerZ3(z) { if (!z.z3) return; z.g.remove(z.z3.pivot); z.z3 = null; if (z.mesh.material.map) z.mesh.visible = true; }
 function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
+  if (z.mortT && Z.act.mort) { if (Z.cur !== "mort") { const a = Z.act.mort; a.reset().play(); if (Z.act[Z.cur]) a.crossFadeFrom(Z.act[Z.cur], .15, false); Z.cur = "mort"; } Z.mix.timeScale = 1; Z.mix.update(dt);   // (il s'écroule pour de vrai)
+    if (!Z.flaque && now - z.mortT > 1500) { Z.flaque = true; const h = Z.sc.getObjectByName("Head"), w = h ? h.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(z.x, 0, z.z); flaqueMort({ g: { position: new THREE.Vector3(w.x, yZ(z), w.z) } }); }   // (la flaque sous sa tête)
+    return; }   // (il reste allongé au sol : on ne l'efface plus)
   if (z.mortT) { const f = Math.min(1, (now - z.mortT) / 650); if (!Z.rampe) { Z.pivot.rotation.x = -f * Math.PI / 2 * .97; Z.pivot.position.y = f * .14; } Z.mix.timeScale = 0;   // (celle qui rampe : elle reste à plat, immobile)   // (il tombe en arrière, à plat sur le sol : sans s'y enfoncer)
     if (f >= 1 && !Z.flaque) { Z.flaque = true; const c = Z.cap || 0; flaqueMort({ g: { position: new THREE.Vector3(z.x - Math.sin(c) * .8, yZ(z), z.z - Math.cos(c) * .8) } }); }   // (la flaque de sang s'étend sous lui)
     const e = z.cadavre ? 0 : Math.min(1, Math.max(0, (now - z.mortT - 1800) / 1400));   // (puis il s'efface : il ne reste que la flaque)
@@ -13454,8 +13469,9 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
     return; }
   const moi = moiApo(); let cap = Z.cap ?? 0; if (marche && Math.hypot(vx, vz) > 1e-4) cap = Math.atan2(vx, vz); else if (moi) cap = Math.atan2(moi.g.position.x - z.x, moi.g.position.z - z.z);
   let d = cap - (Z.cap ?? cap); d = Math.atan2(Math.sin(d), Math.cos(d)); Z.cap = (Z.cap ?? cap) + d * Math.min(1, dt * 6); Z.pivot.rotation.y = Z.cap;
-  const n = marche ? "walk" : "idle"; if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); Z.act[n].crossFadeFrom(Z.act[Z.cur], .3, false); Z.cur = n; }
-  Z.mix.timeScale = Z.rampe ? 1.6 : Z.zpose ? (ZTYPES[z.ty].v || .85) * .7 : (ZTYPES[z.ty].v || .85) * 1.1; if (Z.zpose) zPoseAvant(Z); Z.mix.update(dt); if (Z.zpose) zPoseApres(Z);
+  let n = marche ? "walk" : "idle"; if (Z.act.att && z.coupT && now - z.coupT < 1600) n = "att"; else if (Z.act.touche && z.flashT && now < z.flashT + 300 && !marche) n = "touche";   // (il attaque ; touché, il encaisse)
+  if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); if (Z.act[Z.cur]) Z.act[n].crossFadeFrom(Z.act[Z.cur], .25, false); Z.cur = n; }
+  Z.mix.timeScale = Z.mx ? (n === "walk" ? Math.max(.8, Math.min(1.4, (ZTYPES[z.ty].v || .85) * 1.2)) : 1) : Z.rampe ? 1.6 : Z.zpose ? (ZTYPES[z.ty].v || .85) * .7 : (ZTYPES[z.ty].v || .85) * 1.1; if (Z.zpose) zPoseAvant(Z); Z.mix.update(dt); if (Z.zpose) zPoseApres(Z);
   const touche = now < (z.flashT || 0); if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
 /* qui est en 3D : les zombies ordinaires les plus proches de la caméra (pas le chien, ni Nemesis, ni les équipiers revenus) */
 function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; const g = zombie3D; chargerZombie3D();
@@ -13774,8 +13790,9 @@ function simulerZ(t, dt) {
   const base = baseLieu(M.lieu), [nz00, nc] = ZNOMBRE[base] || [0, 0], route = base === "grande" && M.separe, nz0 = route ? 19 : nz00, Lz = limZ(), nz = Math.round(nz0 * (M.allege >= 2 ? .45 : PETIT ? .6 : 1));   /* (séparés, seuls jusqu'à la cour d'honneur : plus de monstres sur le trajet) */   /* (moins de monstres à la fois sur un petit téléphone) */
   const vivants = [...M.zomb.values()];
   if (!M.zInit) { M.zInit = true; for (let i = 0; i < nz; i++) apparaitreZ(false); for (let i = 0; i < nc; i++) apparaitreZ(true); }
-  for (const z of vivants) if (z.mortT && !z.cadavre && t - z.mortT > 3400) retirerZ(z);   // (abattu : il s'efface, et disparaît)
-  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + (route ? 2500 : 6000); const zs = [...M.zomb.values()];
+  for (const z of vivants) if (z.mortT && !z.cadavre && !(z.z3 && z.z3.mx) && t - z.mortT > 3400) retirerZ(z);
+  { const corps = vivants.filter(z => z.mortT && z.z3 && z.z3.mx).sort((a, b) => a.mortT - b.mortT); for (let i = 0; i < corps.length - (PETIT ? 8 : 18); i++) retirerZ(corps[i]); }   // (les corps restent au sol ; au-delà d'un certain nombre, les plus anciens s'en vont)   // (abattu : il s'efface, et disparaît)
+  if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + (route ? 2500 : 6000); const zs = [...M.zomb.values()].filter(z => !z.mortT);   // (les corps au sol ne comptent pas : d'autres zombies arrivent)
     if (zs.filter(z => !z.chien && !z.boss && !z.revenant).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
   const figes = !!(M.cine && M.cine.gel);   /* (pendant une scène — la radio de Brad, une discussion — les monstres ne bougent plus : personne ne vient sur nous) */
@@ -18184,3 +18201,4 @@ export const _itineraire = (x0, z0, x1, z1) => M && itineraire(M.L, x0, z0, x1, 
 export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMorsure(x, z), _sang = (...a) => M && jetSang(...a);   // (pour les essais)
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa });   // (pour les essais)
+export const _essaiZ = () => ({ blesserZ });   // (pour les essais)
