@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.97";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.98";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15691,9 +15691,11 @@ function videoDJ(c) { let v = M.videoDJ;
   if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
   if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
     v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
-  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
+  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; v.src = M.ctx.urlMusique(c.id); v.load(); v.playbackRate = 1; M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
   const now = Date.now(); if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
-    if (pos >= 0 && v.readyState >= 1) { if (!v.seeking && Math.abs(v.currentTime - pos) > .6 && (!v.duration || pos < v.duration)) { try { v.currentTime = pos; } catch (e) {} }   /* (calée sur le moment commun, comme avant — sauf pendant qu'elle se cale déjà) */ if (v.paused) v.play().catch(() => {}); } } }
+    if (pos >= 0 && v.readyState >= 1) { const ec = pos - v.currentTime; if (!v.seeking && (!v.duration || pos < v.duration)) {
+      if (!M.videoCalee || Math.abs(ec) > 4) { if (!M.videoCalee || now > (M.videoSautT || 0)) { M.videoCalee = true; M.videoSautT = now + 8000; try { v.currentTime = pos + .3; } catch (e) {} } }   /* (calée une fois au départ ; ensuite plus de saut — sauf si elle s'est vraiment égarée) */
+      else v.playbackRate = Math.abs(ec) < .15 ? 1 : Math.max(.92, Math.min(1.08, 1 + ec * .12)); }   /* (le petit décalage, rattrapé en douceur : un poil plus vite ou plus lent, sans que l'image saute) */ if (v.paused) v.play().catch(() => {}); } } }
 /* ===================== la manette (Bluetooth) et les lunettes 3D =====================
    Une manette de jeu (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour tourner la vue,
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
