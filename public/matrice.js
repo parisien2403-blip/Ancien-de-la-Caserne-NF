@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.63";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.64";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -14490,7 +14490,8 @@ async function dessinerCorps(p) {
 /* les personnages en vrai 3D (un modèle animé : repos, marche, course) — pour l'instant, l'administrateur seul ;
    dans les films (Resident Evil, Silent Hill, S.O.S. Fantômes, Santa Carla), assis ou en train de danser : on reste le bonhomme dessiné */
 /* la bibliothèque des personnages 3D : pour chaque membre, ses tenues complètes (un modèle animé chacune : repos, marche, course) */
-export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }, { id: "coraline", nom: "🧥 Coraline (imperméable jaune)", f: "gen:coraline" }] };   // (0002 : retour à son bonhomme de base, la tête de sa photo — à sa demande)
+export const AVATARS_3D = { 1: [{ id: "blanc", nom: "T-shirt blanc, jean brut, chaussures camel", f: "avatars/0001.glb?v=5" }, { id: "coraline", nom: "🧥 Coraline (imperméable jaune)", f: "gen:coraline" }, { id: "ds-b", nom: "🎮 Coraline DS : pull rayé et jean", f: "avatars/cor-ds-b.glb?v=2" }, { id: "ds-c", nom: "🎮 Coraline DS : imperméable jaune", f: "avatars/cor-ds-c.glb?v=2" },
+  { id: "ds-a", nom: "🎮 Coraline DS : pull violet et jupe", f: "avatars/cor-ds-a.glb?v=2" }, { id: "ds-d", nom: "🎮 Coraline DS : pull à étoiles", f: "avatars/cor-ds-d.glb?v=2" }, { id: "ds-e", nom: "🎮 Coraline DS : pyjama", f: "avatars/cor-ds-e.glb?v=2" }] };   // (0002 : retour à son bonhomme de base, la tête de sa photo — à sa demande)
 const av3Cache = {}; let gltfMod = null;
 // la taille d'un personnage 3D, mesurée sur son squelette (des pieds au sommet du crâne), dans les unités du modèle — la boîte englobante, elle, varie d'un modèle à l'autre (cheveux, armes, sac…)
 function hauteurOs(sc) { sc.updateMatrixWorld(true); const os = {}; sc.traverse(o => { if (o.isBone && !os[o.name]) os[o.name] = o; }); const y = n => os[n] ? os[n].getWorldPosition(new THREE.Vector3()).y : null;
@@ -14684,6 +14685,19 @@ function genChat() {
   const pas = (a, k) => p => { const s = Math.sin(p), c = Math.cos(p); return { AvG: [-a * s, 0, 0], ArD: [-a * s, 0, 0], AvD: [a * s, 0, 0], ArG: [a * s, 0, 0], AvG2: [-k * Math.max(0, c), 0, 0], ArD2: [k * Math.max(0, c), 0, 0], AvD2: [-k * Math.max(0, -c), 0, 0], ArG2: [k * Math.max(0, -c), 0, 0],
     Head: [.04 * Math.sin(p * 2), 0, 0], Queue1: [-.1, .1 * s, 0], Queue2: [0, .15 * Math.sin(p - .6), 0], Queue3: [.1, .2 * Math.sin(p - 1.2), 0], Queue4: [.2, .2 * Math.sin(p - 1.8), 0] }; };
   return W.finir([W.clip("idle", 4, repos), W.clip("walk", .7, pas(.45, .6), [0, .25, -.1], p => [0, .008 * Math.abs(Math.cos(p)), 0]), W.clip("run", .42, pas(.8, .9), [0, .25, -.1], p => [0, .03 * Math.abs(Math.cos(p)), 0])]); }
+/* les mouvements de Coraline du jeu DS (le modèle du jeu, en T, sans animation) : chaque os tourne autour des axes du personnage (droite, haut, devant),
+   par-dessus sa pose de départ — les bras d'abord baissés le long du corps ; au repos les mains sur les hanches ; la marche, la course */
+function clipsDS(sc, mix, act) { sc.updateMatrixWorld(true); const q0 = sc.getWorldQuaternion(new THREE.Quaternion()).invert(), os = {}; sc.traverse(o => { if (o.isBone && !os[o.name]) os[o.name] = o; });
+  const W = {}, Lr = {}; for (const n in os) { W[n] = q0.clone().multiply(os[n].getWorldQuaternion(new THREE.Quaternion())); Lr[n] = os[n].quaternion.clone(); }
+  const BASE = { LeftArm: [0, 0, -1.25], RightArm: [0, 0, 1.25], LeftForeArm: [0, 0, 0], RightForeArm: [0, 0, 0] };
+  const qe = e => new THREE.Quaternion().setFromEuler(new THREE.Euler(...e, "XYZ"));
+  const clip = (nom, D, f) => { const N = 24, t = [...Array(N + 1)].map((_, i) => i / N * D), v = {};
+    for (let i = 0; i <= N; i++) { const r = { ...f(i / N * Math.PI * 2) }; for (const n in BASE) r[n] = r[n] || [0, 0, 0];
+      for (const n in r) { if (!os[n]) continue; const d = qe(r[n]); if (BASE[n]) d.multiply(qe(BASE[n])); const l = Lr[n].clone().multiply(W[n].clone().invert().multiply(d).multiply(W[n])); (v[n] = v[n] || []).push(...l.toArray()); } }
+    return new THREE.AnimationClip(nom, D, Object.keys(v).map(n => new THREE.QuaternionKeyframeTrack(n + ".quaternion", t, v[n]))); };
+  const repos = p => ({ Spine: [.015 * Math.sin(p), 0, 0], Head: [-.03 + .015 * Math.sin(p), .08 * Math.sin(p), 0],   // (les mains sur les hanches, les coudes écartés)
+    LeftArm: [.15, 0, .55 + .02 * Math.sin(p)], LeftForeArm: [0, 0, -1.2], RightArm: [.15, 0, -.55 - .02 * Math.sin(p)], RightForeArm: [0, 0, 1.2], LeftUpLeg: [0, 0, .04], RightUpLeg: [0, 0, -.04] });
+  for (const c of [clip("idle", 3.2, repos), clip("walk", .95, pasPerso(.45, .7, .38, .25, .04)), clip("run", .62, pasPerso(.8, 1.15, .75, 1.1, .2))]) act[c.name] = mix.clipAction(c); }
 /* Coraline en 3D, faite ici pièce par pièce comme la marionnette du film : la grosse tête, le carré bleu nuit et sa frange droite, la barrette libellule,
    les grands yeux noirs ; l'imperméable jaune (son col, ses boutons, sa capuche dans le dos), la jupe bordeaux qui dépasse, les collants rayés,
    les grosses bottes de pluie jaunes, la besace bordeaux en bandoulière. Un vrai squelette (les mêmes os que les autres personnages 3D :
@@ -14786,7 +14800,7 @@ function genCoraline() {
   const teinte = (m, u) => { m.onBeforeCompile = sh => { sh.uniforms.uT = u; sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform vec4 uT;").replace("#include <map_fragment>", "#include <map_fragment>\nif (uT.a > .5) diffuseColor.rgb = uT.rgb;"); }; m.needsUpdate = true; };
   teinte(jaune, U.uHaut); teinte(jupe, U.uBas); teinte(bottes, U.uPieds);
   return { sc, mix, act, U, h: hauteurOs(sc), taille0: .78 }; }
-function chargerAvatar3D(f) { if (!av3Cache[f] && f === "gen:coraline") av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
+function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] = (async () => genCoraline())().catch(e => { console.warn("avatar 3D", e); return null; });   // (Coraline : faite ici, pas de fichier à charger)
   if (!av3Cache[f]) av3Cache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(f);
     const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), mix = new THREE.AnimationMixer(sc), act = {}; for (const c of g.animations) act[c.name] = mix.clipAction(c);
     const hipsRE = /avatars\/re-(wesker|barry|chris|claire|hunk|leon)\./.test(f) && sc.getObjectByName("Hips");   /* (seulement les squelettes faits comme celui de Harry : sur les autres — Claire, Chris, Barry, Wesker —, sa marche envoyait le corps à cent mètres, invisible) */
@@ -14805,7 +14819,8 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && f === "gen:coraline") av3Cache
             if (zc.a > .5) { float l = dot(diffuseColor.rgb, vec3(.299, .587, .114)); diffuseColor.rgb = zc.rgb * clamp(.35 + l * 1.1, 0.0, 1.25); }
           }`); };
       o.material.needsUpdate = true; }
-    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
+    const hb = bb.max.y - bb.min.y, ho = hauteurOs(sc); if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
+      clipsDS(sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; } return { sc, mix, act, U, h: ho || (hb > .5 && hb < 5 ? hb : 1.744) }; })().catch(e => { console.warn("avatar 3D", e); return null; });   /* (la boîte d'un modèle compressé est fausse : sa vraie taille, 1,74 m) */
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const HEROS_3D = { 23: "avatars/re-barry.glb?v=4", 25: "avatars/re-wesker.glb?v=4", 26: "avatars/re-chris.glb?v=4", 21: "avatars/re-claire.glb?v=1", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re-leon.glb?v=1", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
