@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.51";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.52";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8005,8 +8005,8 @@ function construireCoraline(A, L, scene) {
   scene.add(new THREE.AmbientLight(0x8a90b8, .3));
   // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
   const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
-  /* la pelouse, percée devant le bow-window : la courette en contrebas, l'escalier de pierre qui descend chez Miss Spink et Miss Forcible (comme dans le film) */
-  const FX0 = 2.3, FX1 = 3.6, FZ0 = 7.6, FZ1 = 10.4, FY = -2.1, NF = 11;   // (la courette : ses bords ; sa profondeur ; ses marches)
+  /* la pelouse, percée devant le porche, à gauche des marches de l'entrée : la courette en contrebas, l'escalier de pierre qui descend vers le dessous du porche, chez Miss Spink et Miss Forcible (comme sur la maquette) */
+  const FX0 = -5.2, FX1 = -3.5, FZ0 = 9.6, FZ1 = 12.4, FY = -2.1, NF = 11;   // (la courette : ses bords ; sa profondeur ; ses marches)
   { const sh = new THREE.Shape(); sh.moveTo(-60, -64); sh.lineTo(60, -64); sh.lineTo(60, 56); sh.lineTo(-60, 56); sh.closePath();
     const tr = new THREE.Path(); tr.moveTo(FX0, -FZ0); tr.lineTo(FX0, -FZ1); tr.lineTo(FX1, -FZ1); tr.lineTo(FX1, -FZ0); tr.closePath(); sh.holes.push(tr); herbe.repeat.set(.25, .25);
     const sol = A.ajoute(new THREE.ShapeGeometry(sh), A.mat({ map: herbe, roughness: 1 }), 0, 0, 0, false); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; L.sol = sol; }
@@ -8014,7 +8014,7 @@ function construireCoraline(A, L, scene) {
     for (const [w, d, x, z] of [[.18, FZ1 - FZ0 + .1, FX0 - .09, (FZ0 + FZ1) / 2], [.18, FZ1 - FZ0 + .1, FX1 + .09, (FZ0 + FZ1) / 2], [FX1 - FX0 + .36, .18, (FX0 + FX1) / 2, FZ0 - .09]]) boite(w, H + .1, d, pierre, x, FY / 2 - .05, z);   // (les murs de pierre)
     boite(FX1 - FX0, .1, .8, sols.gris, (FX0 + FX1) / 2, FY - .05, FZ0 + .4);   // (le palier, en bas)
     for (let k = 0; k < NF; k++) { const z = FZ0 + .8 + (k + .5) * pas, y = FY + (k + 1) * H / NF; boite(FX1 - FX0, y - FY, pas + .01, pierre, (FX0 + FX1) / 2, (y + FY) / 2, z); boite(FX1 - FX0, .03, .05, M0(0x8a8478, .7), (FX0 + FX1) / 2, y - .015, z - pas / 2 + .025); }
-    for (const x of [FX0 - .12, FX1 + .12]) rampe(x, FZ0 - .1, x, FZ1, 0); rampe(FX0 - .12, FZ0 - .1, FX1 + .12, FZ0 - .1, 0);   // (la balustrade blanche tout autour)
+    for (const x of [FX0 - .12, FX1 + .12]) rampe(x, FZ0 + .05, x, FZ1, 0);   // (la balustrade blanche, des deux côtés ; au fond, le porche)
     // la porte du bas : en bois, sous un arc de pierre, sa fenêtre cintrée éclairée, la petite plaque de cuivre, la lanterne
     const pz = FZ0 + .01, cx = (FX0 + FX1) / 2; boite(.9, 2, .06, A.mat({ color: 0x6a3e26, roughness: .5, emissive: 0x3a1c0c, emissiveIntensity: .6 }), cx, FY + 1, pz + .03); for (const [w, h, y] of [[.66, .7, 1.45], [.66, .8, .55]]) boite(w, h, .02, A.mat({ color: 0x5a3220, roughness: .5, emissive: 0x2a1408, emissiveIntensity: .6 }), cx, FY + y, pz + .065);   // (la porte, ses panneaux, dans la lueur de la lanterne) boite(.98, .08, .08, M0(0x3a2014, .5), cx, FY + 2.04, pz + .04);
     const arcP = new THREE.Mesh(new THREE.TorusGeometry(.5, .07, 6, 14, Math.PI), pierre); arcP.position.set(cx, FY + 2.05, pz + .05); scene.add(arcP);
@@ -8022,8 +8022,8 @@ function construireCoraline(A, L, scene) {
     for (let i = -1; i <= 1; i++) { const b2 = boite(.02, .42, .02, M0(0x2a1810, .5), cx + i * .2, FY + 2.25, pz + .05); b2.rotation.z = -i * .5; }
     boite(.3, .4, .02, new THREE.MeshBasicMaterial({ color: 0xf0b060 }), cx, FY + 1.5, pz + .065); A.ajoute(new THREE.SphereGeometry(.03, 8, 6), laitonP, cx + .32, FY + 1, pz + .09, false);
     const pl = new THREE.CanvasTexture(toile(128, 48, (x, w, h) => { x.fillStyle = "#b8913a"; x.fillRect(0, 0, w, h); x.strokeStyle = "#6a4a1a"; x.lineWidth = 3; x.strokeRect(3, 3, w - 6, h - 6); x.fillStyle = "#3a2a10"; x.font = "italic bold 13px Georgia, serif"; x.textAlign = "center"; x.fillText("Miss Spink", w / 2, 20); x.fillText("& Miss Forcible", w / 2, 37); }));
-    pl.colorSpace = THREE.SRGBColorSpace; const pq = new THREE.Mesh(new THREE.PlaneGeometry(.32, .12), new THREE.MeshStandardMaterial({ map: pl, metalness: .6, roughness: .35 })); pq.position.set(cx + .7, FY + 1.5, pz + .03); scene.add(pq);
-    const lan = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, .22, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, emissive: 0xffb050, emissiveIntensity: 1.2 })); lan.position.set(cx - .7, FY + 1.95, pz + .12); scene.add(lan);
+    pl.colorSpace = THREE.SRGBColorSpace; const pq = new THREE.Mesh(new THREE.PlaneGeometry(.32, .12), new THREE.MeshStandardMaterial({ map: pl, metalness: .6, roughness: .35 })); pq.position.set(cx + .64, FY + 1.5, pz + .03); scene.add(pq);
+    const lan = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, .22, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, emissive: 0xffb050, emissiveIntensity: 1.2 })); lan.position.set(cx - .64, FY + 1.95, pz + .12); scene.add(lan);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,210,140,.7)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); })), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     sp.position.copy(lan.position); sp.scale.set(1.3, 1.3, 1); scene.add(sp); }
   const gravier = A.mat({ map: tex(toile(128, 128, (x, w, h) => { x.fillStyle = "#6e675e"; x.fillRect(0, 0, w, h); bruit(x, w, h, 2400, i => `rgba(${hasard(i) > .5 ? "200,190,175" : "40,35,30"},.4)`); }), 2, 12), roughness: 1 });
