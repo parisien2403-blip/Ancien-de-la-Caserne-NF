@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.76";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.77";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2816,22 +2816,17 @@ function troisiemeCour(A, L, scene) {
     { const X0 = -LT / 2 + E, X1 = OX0 - .08, Z0 = zt1 + E, Z1 = zt0 - E, W = X1 - X0, D = Z1 - Z0, xc = (X0 + X1) / 2, zc = (Z0 + Z1) / 2, H = yT - .3 - FL, P = 40;
       const WT = W - 6.2, xtc = X0 + WT / 2;   // (côté entrée, 6,2 m de carrelage ; le tatami commence ensuite)
       const tat = toile(Math.round(WT * P), Math.round(D * P), (x, w, h) => {
-        const bb = 1.4 * P; x.fillStyle = "#3e5f86"; x.fillRect(w - bb, 0, bb, h);                                       // une seule bande bleue, en travers, côté entrée
-        const wv = w - bb, r = 1.2 * P, r2 = 1.6 * P; x.fillStyle = "#2f6e4a"; x.fillRect(0, 0, wv, h);                  // le carré vert
-        x.fillStyle = "#b02a2c"; x.fillRect(r, r, wv - 2 * r, h - 2 * r);                                               // le carré rouge
-        x.fillStyle = "#3a7d55"; x.fillRect(r + r2, r + r2, wv - 2 * (r + r2), h - 2 * (r + r2));                      // le centre vert
-        x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = 0; X <= w; X += 2 * P) { x.beginPath(); x.moveTo(X, 0); x.lineTo(X, h); x.stroke(); }
+        /* chaque tapis (2 m × 1 m) d'une seule couleur : la rangée bleue côté entrée, le tour vert, la bande rouge, le centre vert — les couleurs suivent les jointures */
+        const nx = Math.ceil(w / (2 * P)), ny = Math.ceil(h / P);
+        for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { const d = Math.min(Math.min(i - 1, nx - 1 - i) * 2, Math.min(j, ny - 1 - j));   /* (i = 0 : la rangée côté entrée) */
+          x.fillStyle = i === 0 ? "#3e5f86" : d < 1.2 ? "#2f6e4a" : d < 2.8 ? "#b02a2c" : "#3a7d55"; x.fillRect(w - (i + 1) * 2 * P, j * P, 2 * P, P); }
+        x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let X = w; X >= 0; X -= 2 * P) { x.beginPath(); x.moveTo(X, 0); x.lineTo(X, h); x.stroke(); }
         for (let Y = 0; Y <= h; Y += P) { x.beginPath(); x.moveTo(0, Y); x.lineTo(w, Y); x.stroke(); }          // les jointures des tapis (1 m × 2 m)
         grain(x, 14); });
       const sl = SOL(A.ajoute(new THREE.PlaneGeometry(WT, D), A.mat({ map: tex(tat), roughness: .85 }), xtc, FL + .03, zc, false)); sl.rotation.x = -Math.PI / 2;
       { const cr = SOL(A.ajoute(new THREE.PlaneGeometry(W - WT, D), A.mat({ map: tex(toileCarreaux(), (W - WT) / 1.6, D / 1.6), roughness: .5 }), X0 + WT + (W - WT) / 2, FL + .005, zc, false)); cr.rotation.x = -Math.PI / 2; }   // (le carrelage, côté entrée)
       { const x0v = X1 - .1, x1v = LT / 2 - E, cv = SOL(A.ajoute(new THREE.PlaneGeometry(x1v - x0v, D), A.mat({ map: tex(toileCarreaux(), (x1v - x0v) / 1.6, D / 1.6), roughness: .5 }), (x0v + x1v) / 2, FL + .004, zc, false)); cv.rotation.x = -Math.PI / 2; }   // (et celui du vestibule, des toilettes)
-      // le bas des murs, capitonné terracotta (1,5 m), sa baguette ; le haut, crème
-      const vert = A.mat({ map: tex(toile(256, 64, (x, w, h) => { x.fillStyle = "#a9553a"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(60,20,10,.35)"; for (let X = 0; X < w; X += 64) x.fillRect(X, 0, 3, h); grain(x, 10); }), 1, 1), roughness: .8 });
-      const cap = (L2, x, z, ry) => { const v = A.ajoute(new THREE.BoxGeometry(L2, 1.5, .06), vert, x, FL + .75, z, false); v.rotation.y = ry; v.material = v.material.clone(); v.material.map = v.material.map.clone(); v.material.map.repeat.set(L2 / 1.6, 1); v.material.map.needsUpdate = true;
-        const bg = A.ajoute(new THREE.BoxGeometry(L2, .05, .1), A.mat({ color: 0xd8d0bc }), x, FL + 1.52, z, false); bg.rotation.y = ry; };
-      const V = C3.vest; cap(D, X0 + .03, zc, Math.PI / 2); cap(V.dz0 - Z0, X1 - .03, (Z0 + V.dz0) / 2, Math.PI / 2); cap(Z1 - V.dz1, X1 - .03, (V.dz1 + Z1) / 2, Math.PI / 2); cap(W, xc, Z1 - .03, 0);   // (l'ouverture vers les marches reste libre)
-      cap(OX0 - X0 - .1, (X0 + OX0) / 2, Z0 + .03, 0);
+      // les murs : unis, crème, du sol au plafond (pas de lambris)
       // le faux plafond quadrillé, et ses plafonniers ronds
       const fp = A.ajoute(new THREE.PlaneGeometry(W, D), A.mat({ map: tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#e8e6df"; x.fillRect(0, 0, w, h); x.fillStyle = "#9a978e"; for (let k = 0; k <= 256; k += 64) { x.fillRect(k - 2, 0, 4, h); x.fillRect(0, k - 2, w, 4); } }), W / 2.4, D / 2.4), roughness: .9 }), xc, FL + H - .02, zc, false); fp.rotation.x = Math.PI / 2;
       const lum = new THREE.MeshBasicMaterial({ color: 0xfff6e2 });
@@ -6201,7 +6196,8 @@ function construireAppart(A, L, scene) {
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
       if (!allumee || t - dernier < 40) return; dernier = t;
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
-      if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; ecran.material.map = videoT; lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige) else { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }
+      if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; ecran.material.map = videoT; lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige)
+      else if (!vu) { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }   /* (rien à montrer encore : la neige — la ligne était restée dans le commentaire, l'écran restait figé) */
       finition(); };
     const avant = L.anim; L.anim = t => { avant && avant(t); animTV(t); };
     // la télécommande, et la bibliothèque (l'administrateur seul)
@@ -15022,7 +15018,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const herosSH = h => h >= 69 && h !== 95;   // (les héros de Silent Hill : 69 et au-delà — sauf Jill, 95, de Resident Evil)
-const HEROS_3D = { 23: "avatars/re2-barry.glb?v=2", 25: "avatars/re2-wesker.glb?v=3", 26: "avatars/re2-chris.glb?v=2", 95: "avatars/re2-jill.glb?v=3", 21: "avatars/re2-claire.glb?v=2", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=2", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re2-barry.glb?v=3", 25: "avatars/re2-wesker.glb?v=4", 26: "avatars/re2-chris.glb?v=3", 95: "avatars/re2-jill.glb?v=4", 21: "avatars/re2-claire.glb?v=3", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=3", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
@@ -18307,4 +18303,4 @@ export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMors
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo, cineBar, bandageBras });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ, tirer });   // (pour les essais)
-export const _essaiCam = () => ({ placerCamera });   // (pour les essais)
+export const _essaiCam = () => ({ placerCamera, C3 });   // (pour les essais)
