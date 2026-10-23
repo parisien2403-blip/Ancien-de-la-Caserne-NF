@@ -2278,18 +2278,12 @@
       if (!moi.admin && APPART_INVITES.includes(Number(moi.numero))) { try { appartLibre = !!(await api("GET", "/api/appart")).ouvert; } catch (e) { appartLibre = false; } }
       monAvatar = av; pnjInfo = pj; djInfo = pd; $("mxPerso3D").hidden = !m.AVATARS_3D[Number(moi.numero)]; $("mxPNJ").hidden = $("mxPNJDJ").hidden = $("mxPNJBar").hidden = $("mxPNJDanseur").hidden = $("mxPNJZombie").hidden = $("mxPNJMariee").hidden = $("mxPNJHernandez").hidden = $("mxPNJRobin").hidden = $("mxPNJBarry").hidden = $("mxPNJMaurice").hidden = $("mxPNJTravolta").hidden = $("mxPNJMonstresSH").hidden = $("mxPNJSmith").hidden = $("mxPNJBatteuse").hidden = $("mxPNJBassiste").hidden = $("mxPNJGuitariste").hidden = !moi.admin; $("mxPersosBtn").hidden = !moi.admin; if (!moi.admin) $("mxPersos").hidden = true; document.querySelectorAll(".mx-hv").forEach(b => b.hidden = !moi.admin || b.hasAttribute("data-retire"));   /* (les personnages : l'administrateur seul) */ $("mxPNJDoc").hidden = $("mxAffTaille").hidden = $("mxAlmTaille").hidden = $("mxAlmIci").hidden = $("mxRadioIci").hidden = $("mxPNJGore").hidden = $("mxPNJGahan").hidden = $("mxPNJFletcher").hidden = /* (les anciens héros dessinés de Resident Evil, leurs zombies, et les anciens zombies dessinés : retirés, tout est en 3D) */ $("mxAmbiance").hidden = !moi.admin; $("djStop").hidden = !moi.admin;   /* arrêter la musique : l'administrateur seul (les autres changent la piste) */
       if (!mxOuverte) return;
-      dessinerLieux(m, null, {});
+      dessinerLieux(m, null, {}); majBoutonsDanse();
       await m.ouvrir({
         conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; }, pnjDJ: () => djInfo, surPNJDJ: p => { djInfo = p; }, pnjBar: () => barInfo, surPNJBar: p => { barInfo = p; }, pnjTrio: id => trioInfo[id], surPNJTrio: p => { trioInfo[p.id] = p; },
         surToucherDJ: allerAuDJ,
         surAmbiance: mode => { document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)); window.mxCielMode = mode; $("mxCiel").textContent = { auto: "🕒", jour: "☀️", nuit: "🌙" }[mode] || "🕒"; },
-        surDanse: on => { jeDanse = on;
-          $("mxDanse").classList.toggle("on", on === "balance"); $("mxDanse").textContent = on === "balance" ? "🛑 Stop" : "💃 Danser";
-          $("mxDisco").classList.toggle("on", on === "disco"); $("mxDisco").textContent = on === "disco" ? "🛑 Stop" : "🕺 Disco";
-          $("mxCharleston").classList.toggle("on", on === "charleston"); $("mxCharleston").textContent = on === "charleston" ? "🛑 Stop" : "🦵 Charleston";
-          $("mxMadison").classList.toggle("on", on === "madison"); $("mxMadison").textContent = on === "madison" ? "🛑 Stop" : "👏 Madison";
-          $("mxThriller").classList.toggle("on", on === "thriller"); $("mxThriller").textContent = on === "thriller" ? "🛑 Stop" : "🧟 Thriller";
-          $("mxSaut").classList.toggle("on", on === "saut"); $("mxSaut").textContent = on === "saut" ? "🛑 Stop" : "🙌 Saut"; },
+        surDanse: on => { jeDanse = on; majBoutonsDanse(); },
         moiInfo: () => ({ appart: appartOuvert(), nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage, av3: monAvatar.av3 || null }),
         surVoix: v => { $("mxMicro").classList.toggle("on", !!v.on); $("mxMicro").title = v.on ? "Micro allumé — touche pour le couper (clic droit ou appui long : choisir le micro)" : "Micro coupé — touche pour parler aux autres"; $("mxMicroN").hidden = !v.on || !v.n; $("mxMicroN").textContent = v.n || ""; $("mxMicro").classList.toggle("parle", !!v.moi); $("mxMicroN").classList.toggle("parle", !!v.autre); },
         surLieu: id => { dessinerLieux(m, id); $("mxMicro").hidden = /^(sh-|gb-|z-|cor-)/.test(id) || ["santacarla", "bttf-cour", "hv1955"].includes(id);   /* (le micro : à la caserne de 1990 seulement ; ni dans les univers où l'on est seul, ni à Resident Evil) */
@@ -2462,12 +2456,11 @@
     $("mxApoPerso").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { apoChoix.perso = +b.dataset.p || null; apoChoix.equipe = apoChoix.equipe.filter(i => i !== apoChoix.perso); garder(); });
     $("mxApoEquipe").querySelectorAll("[data-e]").forEach(b => b.onclick = () => { apoChoix.equipe = [+b.dataset.e]; garder(); }); }
   let jeDanse = false;
-  $("mxDanse").onclick = () => MX && MX.danser(jeDanse === "balance" ? false : "balance");
-  $("mxDisco").onclick = () => MX && MX.danser(jeDanse === "disco" ? false : "disco");
-  $("mxCharleston").onclick = () => MX && MX.danser(jeDanse === "charleston" ? false : "charleston");
-  $("mxMadison").onclick = () => MX && MX.danser(jeDanse === "madison" ? false : "madison");
-  $("mxThriller").onclick = () => MX && MX.danser(jeDanse === "thriller" ? false : "thriller");
-  $("mxSaut").onclick = () => MX && MX.danser(jeDanse === "saut" ? false : "saut");
+  /* les six boutons de danse ; pour l'administrateur, ses danses à lui (de vrais danseurs, avec leur vrai nom) */
+  const DANSES_TOUS = [["balance", "💃 Danser"], ["disco", "🕺 Disco"], ["charleston", "🦵 Charleston"], ["madison", "👏 Madison"], ["thriller", "🧟 Thriller"], ["saut", "🙌 Saut"]], BOUTONS_DANSE = ["mxDanse", "mxDisco", "mxCharleston", "mxMadison", "mxThriller", "mxSaut"];
+  const lesDanses = () => (moi && moi.admin && MX && MX.DANSES_ADMIN_NOMS) ? MX.DANSES_ADMIN_NOMS() : DANSES_TOUS;
+  function majBoutonsDanse() { const L = lesDanses(); BOUTONS_DANSE.forEach((id, i) => { const [d, nom] = L[i] || DANSES_TOUS[i], b = $(id); b.classList.toggle("on", jeDanse === d); b.textContent = jeDanse === d ? "🛑 Stop" : nom; b.onclick = () => MX && MX.danser(jeDanse === d ? false : d); }); }
+  majBoutonsDanse();
   const MXmoi = () => moi && +moi.numero;
   function dessinerLieux(m, lieu) {
     if (lieu) mxLieu = lieu;
@@ -3199,6 +3192,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.76", "23 octobre 2026", ["Administrateur : six nouvelles danses de vrais danseurs sur ton bonhomme 3D, avec leur vrai nom — YMCA, Hip-hop, Samba, Northern Soul, Gangnam Style, Salsa (pour toi seul)", "Resident Evil : une marche plus posée et fluide, l'arme en joue à deux mains ; le fusil à pompe tenu à deux mains (attente, marche, course) et il tire de nouveau", "Leon n'a plus les bras dans le dos ; le pistolet bien dans le poing", "Nemesis ne reste plus les bras en croix : il atterrit, et à sa mort il tombe à genoux puis reste au sol", "Lisa : elle tombe à plat (plus à moitié dans le sol) et recule à chaque balle", "Le toit : le personnage se tient vraiment sur le toit, se fait mordre et bascule ; les zombies culbutent dans le vide", "La terrasse : le survivant trébuche en pleine course et les zombies se jettent sur lui", "Les zombies ne tombent plus dans les murs", "Caserne : la caméra ne se colle plus derrière la tête quand une voiture passe entre elle et toi"]],
     ["6.75", "23 octobre 2026", ["Resident Evil : juste avant la cour d'honneur, Brad appelle à la radio — quelqu'un est en difficulté sur le toit de la salle des fêtes ; son hélicoptère arrive et l'éclaire au projecteur pendant l'attaque ; après la chute, Brad nous dit de ne pas nous en vouloir et de vite trouver la balise", "Sur la terrasse, à la fin : des deux survivants qui accourent, l'un est rattrapé par derrière, s'écroule et se fait dévorer pendant que l'autre monte dans l'hélicoptère", "Les morts restent au sol : les héros, les zombies et Nemesis ne se relèvent plus à la fin de leur chute", "Plus de zombies « en papier » au loin", "Le pistolet est bien dans la main ; on tire à deux mains ; la marche pistolet en main est fluide", "Le bandage du survivant du bar refait, l'épaule de Wesker sans trou, Nemesis crie avant d'attaquer"]],
     ["6.74", "23 octobre 2026", ["Resident Evil : nouvelle Jill Valentine (tenue S.T.A.R.S. de Resident Evil Umbrella Chronicles) avec les vrais mouvements — attente, marche pistolet en main, course, mort, chute — et son nouveau médaillon au choix des personnages", "Chute du toit : le héros tombe vraiment dans le vide (animation de chute) puis reste au sol à l'atterrissage"]],
     ["6.73", "23 octobre 2026", ["Resident Evil : les héros bougent avec de vrais mouvements (Mixamo) — au repos ils respirent et regardent autour, ils marchent pistolet en main, courent ; Claire et Jill ont leur attente et leur course de femme ; un héros tué s'écroule en avant pour de vrai", "Lisa Trevor : sa vraie démarche de mutante, voûtée, et elle hurle quand on la touche"]],
