@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.52";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.53";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7779,17 +7779,26 @@ function construireCoraline(A, L, scene) {
   // les poteaux tournés, les arcs de dentelle entre eux, la balustrade ; devant la porte, le portique à pignon au-dessus des marches
   const poteau = (x, z, y = Y0, h = 2.6) => { boite(.14, h, .14, blanc, x, y + h / 2, z, true); boite(.22, .12, .22, blanc, x, y + .06, z); boite(.22, .1, .22, blanc, x, y + h - .05, z); };
   const arc = (a, b, fixe, axe, y = Y0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(b - a - .14, .6), arcM); if (axe === "x") o.position.set((a + b) / 2, y + 2.27, fixe); else { o.rotation.y = Math.PI / 2; o.position.set(fixe, y + 2.27, (a + b) / 2); } scene.add(o); };
-  const PX = [-8.15, -5.8, -3.6, -1.95, .95, 1.75]; for (const x of PX) poteau(x, 9.45); for (let i = 0; i < PX.length - 1; i++) arc(PX[i], PX[i + 1], 9.45, "x");
-  for (const z of [6.95, 8.2]) poteau(-8.15, z); arc(6.95, 8.2, -8.15, "z"); arc(8.2, 9.45, -8.15, "z"); poteau(1.75, 6.95); arc(6.95, 9.45, 1.75, "z");
-  rampe(-8.15, 9.45, -1.95, 9.45, Y0); rampe(.95, 9.45, 1.75, 9.45, Y0); rampe(1.75, 9.45, 1.75, 6.95, Y0); rampe(-8.15, 6.95, -8.15, 9.45, Y0);
-  pignon(-.5, Y0 + 2.75, 9.9, 0, 3.3, 1.35, 3.1, false);   // (le portique de l'entrée)
+  /* le perron est en L : devant la porte, l'avancée à pignon ressort du porche (ses marches devant) ; à sa droite, le porche continue jusque devant le bow-window,
+     et dans l'angle, sous lui, la courette de Miss Spink et Miss Forcible */
+  { const pl = (x0, x1, z0, z1) => boite(x1 - x0, .1, z1 - z0, sols.gris, (x0 + x1) / 2, Y0 - .05, (z0 + z1) / 2, true);
+    pl(1.9, 3.1, 7.55, 9.6); pl(-2.15, 1.15, 9.6, 11.3);
+    for (const x of [-2.15, 1.15]) boite(.04, Y0 - .1, 1.7, treillis, x, (Y0 - .1) / 2, 10.45); for (const [a, b] of [[-2.15, -1.6], [.6, 1.15]]) boite(b - a, Y0 - .1, .04, treillis, (a + b) / 2, (Y0 - .1) / 2, 11.3);
+    boite(1.7, .14, 2.35, tuiles, 2.55, Y0 + 2.75, 8.5, true); boite(1.7, .1, 2.35, blanc, 2.55, Y0 + 2.63, 8.5); }
+  const PX = [-8.15, -5.8, -3.6, -2]; for (const x of PX) poteau(x, 9.45); for (let i = 0; i < PX.length - 1; i++) arc(PX[i], PX[i + 1], 9.45, "x");
+  for (const z of [6.95, 8.2]) poteau(-8.15, z); arc(6.95, 8.2, -8.15, "z"); arc(8.2, 9.45, -8.15, "z");
+  for (const [x, z] of [[-2, 11.15], [1, 11.15], [1, 9.45], [3, 9.45], [3, 7.65]]) poteau(x, z);
+  arc(9.45, 11.15, -2, "z"); arc(9.45, 11.15, 1, "z"); arc(-2, 1, 11.15, "x"); arc(1, 3, 9.45, "x"); arc(7.65, 9.45, 3, "z");
+  rampe(-8.15, 9.45, -2, 9.45, Y0); rampe(-8.15, 6.95, -8.15, 9.45, Y0); rampe(-2, 9.45, -2, 11.15, Y0); rampe(1, 9.45, 1, 11.15, Y0); rampe(-2, 11.15, -1.65, 11.15, Y0); rampe(.65, 11.15, 1, 11.15, Y0);
+  rampe(1, 9.45, 3, 9.45, Y0); rampe(3, 9.45, 3, 7.65, Y0);
+  pignon(-.5, Y0 + 2.75, 11.5, 0, 3.3, 1.35, 4.7, false);   // (le toit à pignon de l'avancée)
   // la porte de service (la cuisine) : son petit porche, ses deux poteaux, son toit à pignon, ses marches sur le côté
   for (const z of [-5.45, -3.55]) poteau(-7.95, z); arc(-5.45, -3.55, -7.95, "z"); rampe(-7.95, -5.45, -7.95, -5.05, Y0); rampe(-7.95, -3.95, -7.95, -3.55, Y0); rampe(-7.95, -5.45, -6.45, -5.45, Y0); rampe(-7.95, -3.55, -6.45, -3.55, Y0);
   pignon(-8.2, Y0 + 2.6, -4.5, -Math.PI / 2, 2.6, 1.05, 1.85, false);
   // les marches du perron (devant l'entrée) et celles de la porte de service
-  for (let k = 0; k < 4; k++) { const y = Y0 - (k + 1) * Y0 / 4; boite(2.2, .06, .3, blanc, -.5, y + .17, 9.75 + k * .3); boite(2.2, y + .15, .3, sols.gris, -.5, (y + .15) / 2, 9.75 + k * .3); }
+  for (let k = 0; k < 4; k++) { const y = Y0 - (k + 1) * Y0 / 4; boite(2.2, .06, .3, blanc, -.5, y + .17, 11.45 + k * .3); boite(2.2, y + .15, .3, sols.gris, -.5, (y + .15) / 2, 11.45 + k * .3); }
   for (let k = 0; k < 4; k++) { const y = Y0 - (k + 1) * Y0 / 4; boite(.3, y + .15, 1, sols.gris, -8.25 - k * .3, (y + .15) / 2, -4.5); }
-  for (const s of [-1, 1]) rampe(-.5 + s * 1.1, 9.5, -.5 + s * 1.1, 10.9, 0);
+  for (const s of [-1, 1]) rampe(-.5 + s * 1.1, 11.35, -.5 + s * 1.1, 12.6, 0);
   // la tourelle, dans l'angle avant gauche : en bas, elle prolonge la pièce de la tourelle et la chambre de Coraline (des fenêtres tout autour) ;
   // au-dessus du toit, elle continue, octogonale, jusqu'à son toit en pointe et sa flèche
   { const g = new THREE.Group(); g.position.set(TX, 0, TZ); scene.add(g); const T0 = -2.8, TL = 4.17, HB = YT - Y0, HH = 2.3;
@@ -8005,8 +8014,8 @@ function construireCoraline(A, L, scene) {
   scene.add(new THREE.AmbientLight(0x8a90b8, .3));
   // ---------- le jardin, la nuit : la pelouse, l'allée de gravier, les arbres tordus, la pancarte, et la grosse lune ----------
   const herbe = tex(toile(256, 256, (x, w, h) => { x.fillStyle = "#1f3324"; x.fillRect(0, 0, w, h); bruit(x, w, h, 5000, i => `rgba(${hasard(i) > .5 ? "70,110,70" : "10,20,12"},.35)`); }), 30, 30);
-  /* la pelouse, percée devant le porche, à gauche des marches de l'entrée : la courette en contrebas, l'escalier de pierre qui descend vers le dessous du porche, chez Miss Spink et Miss Forcible (comme sur la maquette) */
-  const FX0 = -5.2, FX1 = -3.5, FZ0 = 9.6, FZ1 = 12.4, FY = -2.1, NF = 11;   // (la courette : ses bords ; sa profondeur ; ses marches)
+  /* la pelouse, percée dans l'angle du perron en L (contre l'avancée de l'entrée) : la courette en contrebas, l'escalier de pierre qui descend vers le dessous du porche, chez Miss Spink et Miss Forcible (comme sur la maquette) */
+  const FX0 = 1.3, FX1 = 2.9, FZ0 = 9.6, FZ1 = 12.4, FY = -2.1, NF = 11;   // (la courette : ses bords ; sa profondeur ; ses marches)
   { const sh = new THREE.Shape(); sh.moveTo(-60, -64); sh.lineTo(60, -64); sh.lineTo(60, 56); sh.lineTo(-60, 56); sh.closePath();
     const tr = new THREE.Path(); tr.moveTo(FX0, -FZ0); tr.lineTo(FX0, -FZ1); tr.lineTo(FX1, -FZ1); tr.lineTo(FX1, -FZ0); tr.closePath(); sh.holes.push(tr); herbe.repeat.set(.25, .25);
     const sol = A.ajoute(new THREE.ShapeGeometry(sh), A.mat({ map: herbe, roughness: 1 }), 0, 0, 0, false); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = true; L.sol = sol; }
@@ -8014,7 +8023,7 @@ function construireCoraline(A, L, scene) {
     for (const [w, d, x, z] of [[.18, FZ1 - FZ0 + .1, FX0 - .09, (FZ0 + FZ1) / 2], [.18, FZ1 - FZ0 + .1, FX1 + .09, (FZ0 + FZ1) / 2], [FX1 - FX0 + .36, .18, (FX0 + FX1) / 2, FZ0 - .09]]) boite(w, H + .1, d, pierre, x, FY / 2 - .05, z);   // (les murs de pierre)
     boite(FX1 - FX0, .1, .8, sols.gris, (FX0 + FX1) / 2, FY - .05, FZ0 + .4);   // (le palier, en bas)
     for (let k = 0; k < NF; k++) { const z = FZ0 + .8 + (k + .5) * pas, y = FY + (k + 1) * H / NF; boite(FX1 - FX0, y - FY, pas + .01, pierre, (FX0 + FX1) / 2, (y + FY) / 2, z); boite(FX1 - FX0, .03, .05, M0(0x8a8478, .7), (FX0 + FX1) / 2, y - .015, z - pas / 2 + .025); }
-    for (const x of [FX0 - .12, FX1 + .12]) rampe(x, FZ0 + .05, x, FZ1, 0);   // (la balustrade blanche, des deux côtés ; au fond, le porche)
+    rampe(FX1 + .12, FZ0 + .05, FX1 + .12, FZ1, 0);   // (la balustrade blanche, du côté ouvert ; de l'autre, l'avancée du perron ; au fond, sous le porche, la porte)
     // la porte du bas : en bois, sous un arc de pierre, sa fenêtre cintrée éclairée, la petite plaque de cuivre, la lanterne
     const pz = FZ0 + .01, cx = (FX0 + FX1) / 2; boite(.9, 2, .06, A.mat({ color: 0x6a3e26, roughness: .5, emissive: 0x3a1c0c, emissiveIntensity: .6 }), cx, FY + 1, pz + .03); for (const [w, h, y] of [[.66, .7, 1.45], [.66, .8, .55]]) boite(w, h, .02, A.mat({ color: 0x5a3220, roughness: .5, emissive: 0x2a1408, emissiveIntensity: .6 }), cx, FY + y, pz + .065);   // (la porte, ses panneaux, dans la lueur de la lanterne) boite(.98, .08, .08, M0(0x3a2014, .5), cx, FY + 2.04, pz + .04);
     const arcP = new THREE.Mesh(new THREE.TorusGeometry(.5, .07, 6, 14, Math.PI), pierre); arcP.position.set(cx, FY + 2.05, pz + .05); scene.add(arcP);
@@ -8118,15 +8127,15 @@ function construireCoraline(A, L, scene) {
     lune.position.set(-30, 46, -95); lune.scale.set(70, 70, 1); scene.add(lune); }
   // ---------- où l'on marche : le jardin (autour de la maison), les porches, les pièces de chaque étage, les deux escaliers ----------
   const dedans = (x, z, [a, b, c, d], m = 0) => x > a + m && x < b - m && z > c + m && z < d - m;
-  const FOSSE = [FX0 + .2, FX1 - .2, FZ0 + .25, FZ1 + .6], EMPRISE = [[-6.4, 6.4, -6.8, 6.8], [-8.3, 1.9, 6.8, 9.6], [-8.3, -6.4, -.4, 4.4], [-8.1, -6.4, -5.6, -3.4], [FX0, FX1, FZ0, FZ1], [6.4, 7.75, -.55, 7.2], [1.45, 5.85, 6.8, 7.5], [-4.95, -.55, -7.5, -6.8], [6.4, 7, -5.2, -2], [-6.9, -6.4, -2.6, -.6]];   // (la maison, le porche, la serre, le porche de service, l'escalier de secours, les bow-windows)
+  const FOSSE = [FX0 + .2, FX1 - .2, FZ0 + .25, FZ1 + .6], EMPRISE = [[-6.4, 6.4, -6.8, 6.8], [-8.3, 1.9, 6.8, 9.6], [-8.3, -6.4, -.4, 4.4], [-8.1, -6.4, -5.6, -3.4], [1.9, 3.1, 7.55, 9.6], [-2.15, 1.15, 9.6, 11.3], [FX0, FX1, FZ0, FZ1], [6.4, 7.75, -.55, 7.2], [1.45, 5.85, 6.8, 7.5], [-4.95, -.55, -7.5, -6.8], [6.4, 7, -5.2, -2], [-6.9, -6.4, -2.6, -.6]];   // (la maison, le porche, la serre, le porche de service, l'escalier de secours, les bow-windows)
   const surEsc = (x, z) => x > 1.2 && x < 5.25 && z > -.45 && z < .75, surSecours = (x, z) => x > 6.55 && x < 7.65 && z > 1.95 && z < 7.7;
   const PASSAGES = [[], []];
   for (const [n, axe, X, c, w] of PO) PASSAGES[n].push(axe === "x" ? [X - .5, X + .5, c - w / 2 + .12, c + w / 2 - .12] : [c - w / 2 + .12, c + w / 2 - .12, X - .5, X + .5]);
   const PIECES = [ROOMS.filter(r => !r.niv && !/^escalier/.test(r.nom)).map(r => [r.x0 + .25, r.x1 - .25, r.z0 + .25, r.z1 - .25]), ROOMS.filter(r => r.niv && !/^escalier/.test(r.nom)).map(r => [r.x0 + .25, r.x1 - .25, r.z0 + .25, r.z1 - .25])];
   PIECES[0].push([-8.1, -6.6, -.2, 4.2]);   // (la serre)
   PIECES[1].push([1, 6.2, .95, 1.85], [5.15, 6.2, -.35, 1.85], [6.45, 7.6, -.35, 2.1]);   // (le couloir du haut, le palier, le balcon)
-  const PORCHE = [[-8, 1.6, 7.1, 9.3], [-7.8, -6.65, -5.3, -3.7]];
-  const MARCHES = [[-1.45, .45, 9.2, 11.4], [-9.6, -7.6, -4.95, -4.05]];
+  const PORCHE = [[-8, 1.6, 7.1, 9.3], [-7.8, -6.65, -5.3, -3.7], [1.6, 2.75, 7.85, 9.3], [-1.85, .85, 9.2, 11]];   // (le porche, celui de service ; le bout du porche ; l'avancée)
+  const MARCHES = [[-1.45, .45, 10.9, 13.1], [-9.6, -7.6, -4.95, -4.05]];
   const niveau = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); return moi && moi.corN ? 1 : 0; };
   const dT = (x, z) => Math.hypot(x - TX, z - TZ);   // (la distance au centre de la tourelle)
   L.limites = (x, z) => { const n = niveau(), o = OB[n].some(r => dedans(x, z, r, -.15)), d = dT(x, z);
@@ -8145,9 +8154,9 @@ function construireCoraline(A, L, scene) {
     if (n === 1) return Y1;
     if (surPont(x, z)) return Math.max(0, BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX)));   // (sur le pont du jardin)
     if (x > FX0 && x < FX1 && z > FZ0 && z < FZ1 + .05) return z < FZ0 + .8 ? FY : Math.max(FY, Math.min(0, FY + (Math.floor((z - FZ0 - .8) / ((FZ1 - FZ0 - .8) / NF)) + 1) * -FY / NF));   // (l'escalier de la courette, marche par marche)
-    if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 9.6) / .3) * Y0 / 4));
+    if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 11.3) / .3) * Y0 / 4));
     if (dedans(x, z, MARCHES[1])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((-8.1 - x) / .3) * Y0 / 4));
-    return EMPRISE.slice(0, 4).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : 0; };   // (la courette n'est pas dans les quatre premières)
+    return EMPRISE.slice(0, 6).some(r => dedans(x, z, r)) || dT(x, z) < TR ? Y0 : 0; };   // (le plancher des porches ; la courette n'en fait pas partie)
   // la caméra : dans la maison, elle reste dans la pièce où l'on est (sous son plafond) ; dehors, elle suit de plus loin
   const DEHORS = { d: 6, h: 3.2, av: 3, vy: 1.7 }, DEDANS = { d: 2.8, h: 1.9, av: 2.4, vy: 1.2 };
   const pieceDe = (x, z, n) => dT(x, z) < TR - .1 ? ROOMS.find(r => r.nom === (n ? "coraline" : "tour")) : ROOMS.find(r => r.niv === n && x > r.x0 - .05 && x < r.x1 + .05 && z > r.z0 - .05 && z < r.z1 + .05);
