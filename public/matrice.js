@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.81";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.82";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10828,6 +10828,8 @@ function brancardsSH(scene, L, base, nMax) {
       if (!L.limites || !L.limites(x, z) || liste.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) continue; liste.push({ x, z, ry, pose: 0 }); } }
   if (base === "grande") for (const b of [{ x: 8.9, z: 2.6, ry: .35, pose: 0 }, { x: 6.6, z: .4, ry: 1.9, pose: 1 }, { x: 9.0, z: 11.6, ry: -.5, pose: 2 }]) if (!L.limites || L.limites(b.x, b.z)) liste.push(b);   // (pose : 0 debout, 1 couché sur le flanc, 2 retourné)
   L.brancards = liste; if (!liste.length) return;
+  if (base === "fetes" && L.limites && !L.limBrancards) { const lim0 = L.limites; L.limBrancards = true;   /* (un brancard, on ne passe pas au travers : ni nous, ni Lisa) */
+    L.limites = (x, z) => lim0(x, z) && !liste.some(b => { const dx = x - b.x, dz = z - b.z, c = Math.cos(b.ry), sn = Math.sin(b.ry), u = dx * c - dz * sn, v = dx * sn + dz * c; return Math.abs(u) < 1.15 && Math.abs(v) < .45; }); }
   texturesApo();
   texRoues = texRoues || tex(toile(512, 128, (x, w, h) => { let s = 41; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;   // (deux traces de roulettes, parallèles, qui s'effacent à mesure qu'elles s'éloignent de la flaque)
     for (const y0 of [h / 2 - 44, h / 2 + 44]) for (let i = 0; i < 180; i++) { const xx = i / 180 * w, a = Math.max(0, 1 - xx / w * 1.15) * (r() < .12 ? .25 : 1);
@@ -12804,7 +12806,8 @@ function cineEvac(m) {
     if (u > 6.2 && !c.renfFait) { c.renfFait = true; partirRenforts(); }
     for (const p of renf) if (p.av3 && p.g.visible) eclairer3D(p.av3.sc, .28);   /* (la nuit, sur la terrasse : on les voit courir) */
     if (proie) { const P = proie, pp = P.p.g.position;
-      if (u > 7.9 && !P.tombe) { P.tombe = true; P.p.cible = null; P.p.chemin = []; P.p.info.mortT = performance.now(); sonBruit(.3, 160, .8); const i = vivants.indexOf(P.p); if (i >= 0) vivants.splice(i, 1); setTimeout(() => M && P.p.g.parent && flaqueMort(P.p), 2600);   /* (en pleine course, il trébuche et s'étale de tout son long ; les zombies se jettent sur lui) */
+      { const A = P.p.av3; if (P.tombe && A && A.cur === "chuteMX" && !P.cale) { P.cale = true; const a = A.act.chuteMX; a.setLoop(THREE.LoopOnce); a.clampWhenFinished = true; a.time = a.getClip().duration * .86; } }
+      if (u > 7.9 && !P.tombe) { P.tombe = true; P.p.cible = null; P.p.chemin = []; P.p.chute = true;   /* (il trébuche : il s'étale en avant, les bras en avant — il n'est pas mort, il se débat) */ sonBruit(.3, 160, .8); const i = vivants.indexOf(P.p); if (i >= 0) vivants.splice(i, 1); setTimeout(() => M && P.p.g.parent && flaqueMort(P.p), 2600);   /* (en pleine course, il trébuche et s'étale de tout son long ; les zombies se jettent sur lui) */
         renfZ.forEach((Z, k) => { const a = k / renfZ.length * Math.PI * 2 + .4; Z.mangeur = [pp.x + Math.sin(a) * .75, pp.z + Math.cos(a) * .75]; Z.t = Math.min(Z.t, u + .15 + k * .25); }); }
       if (P.tombe) for (const Z of renfZ) { if (!Z.mangeur || u < Z.t) continue; const q2 = Z.q, [mx, mz] = Z.mangeur, dx = mx - Z.x, dz = mz - Z.z, d = Math.hypot(dx, dz); q2.g.visible = true;
         if (d > .08) { const v = Math.min(d, (d > 1.5 ? 4.6 : 2.4) * dt); Z.x += dx / d * v; Z.z += dz / d * v; q2.mange = null; } else q2.mange = { x: pp.x, z: pp.z }; q2.x = q2.tx = Z.x; q2.z = q2.tz = Z.z; q2.y = H.y; if (q2.z3) eclairer3D(q2.z3.sc, .22); } }
@@ -12828,7 +12831,7 @@ function cineEvac(m) {
       for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
       placer(H.x + 4, H.y + 2.6, H.z + 5.6, H.x, H.y + 1.3, H.z + 1, .05); }
     else if (u < 26) { for (const p of vivants) p.g.visible = false;
-      { const moiH = HEROS[M.perso] ? M.perso : 25, autreH = (M.equipe && M.equipe[0] && HEROS[M.equipe[0].id]) ? M.equipe[0].id : APO_PAIRE[moiH], A = HEROS[moiH].court, B = HEROS[autreH].court, L2 = [[15.6, B, "Accrochez-vous, on décolle !"], [17.6, "Le pilote", "Message radio du gouvernement… Ils ont donné l'ordre : la zone va être rasée. Ils vont tout faire sauter !"],
+      { const moiH = HEROS[M.perso] ? M.perso : 25, eqV = (M.equipe || []).find(e => !e.mort && HEROS[e.id]), rv = renf.find(p => !p.info.mortT && HEROS[p.info.heros]), autreH = eqV ? eqV.id : rv ? rv.info.heros : null, A = HEROS[moiH].court, B = autreH ? HEROS[autreH].court : "Brad Vickers",   /* (seulement quelqu'un de vivant : pas Jill, morte dans la salle des fêtes) */ L2 = [[15.6, B, "Accrochez-vous, on décolle !"], [17.6, "Le pilote", "Message radio du gouvernement… Ils ont donné l'ordre : la zone va être rasée. Ils vont tout faire sauter !"],
           [20.6, A, "Tout faire sauter ?! Mais… la caserne, le quartier… tous ces gens…"], [23.2, B, "Il n'y a plus personne à sauver là-dessous. Regardez…"]];
         for (const [tu, qui, txt] of L2) if (u > tu && !(c.dits || (c.dits = new Set())).has(tu)) { c.dits.add(tu); bulle(`<b style="color:#e8c46a">${esc(qui)}</b> : ${txt}`, 2800); } }
       const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
@@ -13264,8 +13267,8 @@ function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
   else if (T.etat === "recule") { if (T.A.act.cri) n = "cri"; if (now > T.reculT) T.etat = "chasse"; }
   else if (T.etat === "chasse" && !T.cine && !APO.zombieFin) {
     if (d < 1.5 && now > T.frappeT) { T.etat = "frappe"; T.t0 = now; T.touche = false; T.frappeT = now + 2300; criLisa(.7); }
-    else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }
-  else if (T.marche && d > 1.3) { const v = LT.V * dt; T.x += cx / d * v; T.z += cz / d * v; n = "walk"; }
+    else if (d > 1.25) { const v = LT.V * (d > 7 ? 1.4 : 1) * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz) || !M.L.limites(T.x, T.z)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; } }   /* (coincée dans un obstacle : elle en sort) */
+  else if (T.marche && d > 1.3) { const v = LT.V * dt, nx = T.x + cx / d * v, nz = T.z + cz / d * v; if (M.L.limites(nx, nz) || !M.L.limites(T.x, T.z)) { T.x = nx; T.z = nz; } else if (M.L.limites(nx, T.z)) T.x = nx; else if (M.L.limites(T.x, nz)) T.z = nz; n = "walk"; }   /* (elle contourne les brancards, même pendant la scène) */
   if (A.act.touche && T.etat !== "frappe" && T.etat !== "recule" && now - (T.toucheT || 0) < 450) { n = "touche"; if (T.toucheNouv && A.cur === "touche") A.act.touche.reset().play(); }   /* (une balle : elle encaisse, recule d'un pas) */ T.toucheNouv = false;
   jouerLT(T, n); if (A.curA && n === "walk") A.curA.timeScale = T.A.act.cri ? .85 : .7;
   racleChaine(0);   /* (plus de sons fabriqués : seulement sa vraie voix, fournie à part) */
@@ -15122,7 +15125,7 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   const fA = p.info.heros === 100 ? "avatars/sh-pistolet.glb?v=1" : "avatars/re-pistolet.glb?v=1";
   if (!pistolets3D[fA]) pistolets3D[fA] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync(fA), sc = g.scene; sc.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(sc), k = 1 / Math.max(1e-6, b.max.z - b.min.z), w = new THREE.Group(), o = new THREE.Group(); w.add(sc); w.scale.setScalar(k); w.position.set(-b.min.x * k, -b.min.y * k, -b.min.z * k); o.add(w); return o; })().catch(() => null);
-  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); m.position.set(-.07 * k, (fA.includes("re-") ? -.16 : -.36) * k, -.1 * k);   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
+  if (!A.arme) { A.arme = new THREE.Group(); A.arme.visible = false; pistolets3D[fA].then(sc => { if (!sc || !A.arme) return; const m = sc.clone(), k = .26 / A.sc.scale.x; m.scale.setScalar(k); const G = fA.includes("re-") ? [-.07, -.6, -.05] : [-.07, -.36, -.1];   /* (la crosse dans le poing, le canon devant) */ m.position.set(G[0] * k, G[1] * k, G[2] * k); m.userData.grip = true;   /* (la poignée dans la main, le canon devant) */ A.armeK = k; m.traverse(o => { if (o.isMesh) o.castShadow = true; }); A.arme.add(m); }); }
   if (A.arme.parent !== A.sc) A.sc.add(A.arme); A.arme.visible = A.sc.visible;
   { const fp = !!(p.moi && M.pompe && M.L && M.L.apo); if (fp && !A.pompe) { A.pompe = fusilPompe(); A.arme.add(A.pompe); } if (A.pompe) { A.pompe.scale.setScalar(1 / A.sc.scale.x); A.pompe.visible = fp; for (const c of A.arme.children) if (c !== A.pompe) c.visible = !fp; } }   /* (le fusil à pompe, dans la main, à la place du pistolet) */   /* (dans le repère du personnage : à sa taille) */
   const vise = (p.viseeT && performance.now() - p.viseeT < 1600) || p.tempe, fusil = !!(A.pompe && A.pompe.visible && A.act.idleF);
@@ -15142,7 +15145,7 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   if (p.tempe) { const ry = A.sc.rotation.y; dir.set(Math.cos(ry), .08, -Math.sin(ry)).normalize(); }   /* (le canon pointé dans la tempe, à l'horizontale) */
   const bras = dir.clone(); if (!vise) dir.lerp(new THREE.Vector3(Math.sin(A.sc.rotation.y), 0, Math.cos(A.sc.rotation.y)), .55).normalize();   // (bras baissé : le canon vers l'avant et le bas)
   /* (la poignée au creux de la paume — entre le poignet et la base des doigts — et non devant la main : le pistolet de Harry flottait à côté) */
-  const md = p.info.heros === 100 && os3D(A, "RightHandMiddle1"); if (md) { md.getWorldPosition(_v3); _v1.lerp(_v3, .8); } else _v1.addScaledVector(p.info.heros === 100 ? bras : dir, p.info.heros === 100 ? .06 : -.1);
+  const md = p.info.heros === 100 && os3D(A, "RightHandMiddle1"); if (md) { md.getWorldPosition(_v3); _v1.lerp(_v3, .8); } else { const he = os3D(A, "RightHandEnd"); if (he && p.info.heros !== 100) { he.getWorldPosition(_v3); _v1.lerp(_v3, .45); } else _v1.addScaledVector(p.info.heros === 100 ? bras : dir, .06); }   /* (la crosse au creux de la paume : entre le poignet et le bout des doigts) */
   A.sc.worldToLocal(_v1); A.arme.position.copy(_v1); A.sc.getWorldQuaternion(_qb); const xa = new THREE.Vector3(0, 1, 0).cross(dir).normalize(), ya = dir.clone().cross(xa);   // (l'arme droite, le dessus vers le haut)
   A.arme.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, dir)).premultiply(_qb.invert()); }
 /* assis sur un tabouret du bar : tourné vers le comptoir (le côté où l'on ne peut pas avancer), les cuisses à l'horizontale, les jambes pendantes ; de temps en temps, il boit une gorgée */
