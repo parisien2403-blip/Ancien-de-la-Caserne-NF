@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.92";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.93";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12884,7 +12884,14 @@ function cineEvac(m) {
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
   cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
   const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); sc.remove(paris); }, maj: (now) => { if (fini) return; const u = (now - c.t0) / 1000, dt = Math.min(.05, (now - prec) / 1000); prec = now;
-    if (!c.renfPrep) { c.renfPrep = true; lancerRenforts(); }
+    if (!c.renfPrep) { c.renfPrep = true; lancerRenforts();
+      /* la horde : le porche a sauté (le C4) — par là, des dizaines de zombies entrent en courant et remontent la cour d'honneur, entre les bâtiments R et S */
+      const nH = PETIT ? 16 : 30; c.horde = []; for (let i = 0; i < nH; i++) { const x0 = (Math.random() - .5) * 2.2, q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x: x0, z: 27.5, y: 0 }); q.cine = true; q.evacZ = true; q.forceZ3 = true; q.court = true; q.y = 0; q.g.visible = false;
+        c.horde.push({ q, d: (i / nH) * 2.1 + Math.random() * .25, x: x0, tx: (Math.random() - .5) * 15, v: 4.6 + Math.random() * 1.3 });   /* (tous par la voûte, puis ils se déploient dans la cour) */ } }
+    if (u > 11.6 && !c.bradVite) { c.bradVite = true; bulle(`<b style="color:#e8c46a">Brad Vickers</b> : Dépêchez-vous !!! Ils arrivent !`, 2600); }
+    const vueHorde = !!(c.horde && u > 12.2 && u < 16.4);   /* (le plan sur la cour d'honneur : face aux bâtiments R et S, la horde qui accourt) */
+    if (c.horde) for (const Hd of c.horde) { const q = Hd.q, t = u - 12.0 - Hd.d * .8; if (!vueHorde || t < 0) { q.g.visible = false; continue; } q.g.visible = true;
+      q.x = q.tx = Hd.x + (Hd.tx - Hd.x) * Math.max(0, Math.min(1, (t * Hd.v - 8) / 10)); q.z = q.tz = 21 - t * Hd.v; q.y = 0; if (q.z3) eclairer3D(q.z3.sc, .3); }
     if (u > 6.2 && !c.renfFait) { c.renfFait = true; partirRenforts(); }
     for (const p of renf) if (p.av3 && p.g.visible) eclairer3D(p.av3.sc, .28);   /* (la nuit, sur la terrasse : on les voit courir) */
     if (proie) { const P = proie, pp = P.p.g.position;
@@ -12908,6 +12915,8 @@ function cineEvac(m) {
     else if (u < 10) { const k = lisse((u - 5.5) / 4.5); hel.position.set(H.x, H.y + 24 * (1 - k), H.z); hel.rotation.set(0, 0, 0);   // …et descend à la verticale ; la caméra le suit
       if (renf.length && c.vueR && u > 6.2 && u < 9.9) { const m = (proie && u > 7.7 ? proie.p : renf[0]).g.position, w = c.vueR; placer(w.x, w.y, w.z, m.x, H.y + (proie && u > 8.3 ? .6 : 1.1), m.z, c.coupe ? .12 : 1); c.coupe = true; }   // (eux, qui accourent, les zombies derrière)
       else placer(H.x + 11, H.y + 2.2 + 3 * (1 - k), H.z - 9, H.x, hel.position.y + 1.4, H.z, .08); }
+    else if (vueHorde) { hel.position.copy(H); for (const p of vivants) p.g.visible = false; cam.position.set(0, 7.5, -7); vise.set(0, 1.2, 12); cam.lookAt(vise); if (!c.feuxH) c.feuxH = [...cacherFeuxEntre(new THREE.Vector3(0, 0, -7), new THREE.Vector3(-6, 0, 14), 4.5), ...cacherFeuxEntre(new THREE.Vector3(0, 0, -7), new THREE.Vector3(6, 0, 14), 4.5)]; }   /* (les feux devant l'objectif s'effacent le temps du plan) */
+    if (!vueHorde && c.feuxH && !c.feuxR) { c.feuxR = true; for (const f of c.feuxH) f.visible = true; }   /* (en hauteur, face aux bâtiments R et S : la voûte au centre) */
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
       if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x - .35 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
       for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
@@ -12918,7 +12927,7 @@ function cineEvac(m) {
         for (const [tu, qui, txt] of L2) if (u > tu && !(c.dits || (c.dits = new Set())).has(tu)) { c.dits.add(tu); bulle(`<b style="color:#e8c46a">${esc(qui)}</b> : ${txt}`, 2800); } }
       const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
       if (brouillard && sc.fog) { sc.fog.near = 60; sc.fog.far = 700; }
-      if (u < 17) placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1, hel.position.z, .06);
+      if (u < 17) { placer(H.x + 10, H.y + 5, H.z - 8, hel.position.x, hel.position.y + 1, hel.position.z, c.snapH ? .06 : 1); c.snapH = true; }   /* (retour sur l'hélicoptère : d'un coup, après le plan sur la cour d'honneur) */
       else placer(12, 115, -10, 0, 0, -50, .035); }   // la caserne, vue du ciel
     else { if (u < 27.5) placer(12, 115, -10, 0, 0, -50, .035); else placer(30, 230, 120, 0, 0, -60, .02);   /* (on prend de la hauteur : tout le quartier saute) */
       // et elle explose : des boules de feu, l'une après l'autre, le flash, la secousse
@@ -13609,14 +13618,14 @@ function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = 
       const NZ = Z3_FICHIERS.length; modeles = L.slice(0, NZ).map(prep); rampe = prep(L[NZ]); const c = L[NZ].animations[0];
       if (c) { const k = c.clone(); for (const t of k.tracks) if (/\.position$/.test(t.name)) { const v = t.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } } rampe.clip = k; } }   // (elle rampe sur place : c'est le jeu qui la fait avancer)
     catch (e) { console.warn("zombies 3D", e); }
-    const mx = await chargerAnimsMX("anims/re-zombies.json?v=3");
+    const mx = await chargerAnimsMX("anims/re-zombies.json?v=4");
     return (zPack = { zG: g, scene: g.scene, animations: g.animations, modeles, rampe, mx, walk: demarche("walk"), idle: demarche("idle") }); })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
 function poserZ3(z, P) { const n = [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0), r = rampeZ(z) && (P.mx || (P.rampe && P.rampe.clip)), mod = r && !P.mx ? P.rampe : P.modeles.length ? P.modeles[((z.ty | 0) + n) % P.modeles.length] : null;
   const sc = skelMod.clone(mod ? mod.g.scene : P.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = [].concat(o.material).map(m => m.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
   const pivot = new THREE.Group(); pivot.rotation.order = "YXZ"; pivot.add(sc); z.g.add(pivot); const mix = new THREE.AnimationMixer(sc), act = {};
   const C = cle => clipMX(P.mx, cle, sc), ca = c => c && mix.clipAction(c), choix = (...l) => l[n % l.length];
   if (P.mx && mod) { if (r) { act.walk = act.idle = ca(C("z-rampe")); act.mort = ca(C("z-rampe-mort")); }   /* (les vrais mouvements : ceux qui rampent, les autres — chacun sa démarche, son attente, son attaque, sa mort) */
-    else { act.walk = ca(C(choix("z-marche", "z-marche2"))); act.idle = ca(C(choix("z-idle", "z-idle2"))); act.att = ca(C(choix("z-morsure2", "z-attaque"))); act.mort = ca(C(choix("z-mort", "z-mort2"))); act.touche = ca(C("z-touche")); }
+    else { act.walk = ca(C(choix("z-marche", "z-marche2"))); act.idle = ca(C(choix("z-idle", "z-idle2"))); act.att = ca(C(choix("z-morsure2", "z-attaque"))); act.mort = ca(C(choix("z-mort", "z-mort2"))); act.touche = ca(C("z-touche")); act.run = ca(C("z-course")); }
     for (const k of ["mort", "att", "touche"]) if (act[k]) { act[k].setLoop(THREE.LoopOnce); act[k].clampWhenFinished = true; } }
   else if (r) act.walk = act.idle = mix.clipAction(P.rampe.clip); else if (mod) { for (const c of mod.g.animations) act[c.name] = mix.clipAction(c); } else for (const c of P.animations) act[c.name] = mix.clipAction(c);
   sc.scale.setScalar(TAILLE_3D * (z.H / tailleBonhomme()) * 1.02 / (mod ? mod.h : Z3_H));   /* (à la vraie taille, comme les héros) */ act.walk && act.walk.play(); act.walk && (act.walk.time = Math.random() * 3);
@@ -13646,7 +13655,7 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
     if (a && a.time >= a.getClip().duration - .03) a.reset().play(); Z.mix.timeScale = 1; Z.mix.update(dt); return; }
   const moi = moiApo(); let cap = Z.cap ?? 0; if (marche && Math.hypot(vx, vz) > 1e-4) cap = Math.atan2(vx, vz); else if (moi) cap = Math.atan2(moi.g.position.x - z.x, moi.g.position.z - z.z);
   let d = cap - (Z.cap ?? cap); d = Math.atan2(Math.sin(d), Math.cos(d)); Z.cap = (Z.cap ?? cap) + d * Math.min(1, dt * 6); Z.pivot.rotation.y = Z.cap;
-  let n = marche ? "walk" : "idle"; if (Z.act.att && z.coupT && now - z.coupT < 1600) n = "att"; else if (Z.act.touche && z.flashT && now < z.flashT + 300 && !marche) n = "touche";   // (il attaque ; touché, il encaisse)
+  let n = marche ? (z.court && Z.act.run ? "run" : "walk") : "idle"; if (Z.act.att && z.coupT && now - z.coupT < 1600) n = "att"; else if (Z.act.touche && z.flashT && now < z.flashT + 300 && !marche) n = "touche";   // (il attaque ; touché, il encaisse)
   if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); if (Z.act[Z.cur]) Z.act[n].crossFadeFrom(Z.act[Z.cur], .25, false); Z.cur = n; }
   Z.mix.timeScale = Z.mx ? (n === "walk" ? Math.max(.8, Math.min(1.4, (ZTYPES[z.ty].v || .85) * 1.2)) : 1) : Z.rampe ? 1.6 : Z.zpose ? (ZTYPES[z.ty].v || .85) * .7 : (ZTYPES[z.ty].v || .85) * 1.1; if (Z.zpose) zPoseAvant(Z); Z.mix.update(dt); if (Z.zpose) zPoseApres(Z);
   const touche = false; if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
@@ -13654,7 +13663,7 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
 function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; const g = zombie3D; chargerZombie3D();
   zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
     const cand = [...M.zomb.values()].filter(z => !z.chien && !z.boss && !z.revenant).sort((a, b) => Math.hypot(a.x - cam.x, a.z - cam.z) - Math.hypot(b.x - cam.x, b.z - cam.z));
-    let nouveaux = 0, rang = 0; cand.forEach(z => { const i = z.mortT ? 99 : rang++, veut = (i < (PETIT ? 7 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 45 : 90)) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) { if (nouveaux < 2) { poserZ3(z, G); nouveaux++; } }   /* (deux nouveaux à la fois au plus : l'image ne se fige plus en arrivant quelque part) */ else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
+    let nouveaux = 0, rang = 0; cand.forEach(z => { const i = z.mortT ? 99 : rang++, veut = z.forceZ3 || (i < (PETIT ? 7 : Z3_MAX) && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 45 : 90)) || (z.mortT && Math.hypot(z.x - cam.x, z.z - cam.z) < (PETIT ? 25 : 70));   /* (un zombie abattu a toujours son corps en 3D : il reste au sol) */ if (veut && !z.z3) { if (nouveaux < (z.forceZ3 ? 4 : 2)) { poserZ3(z, G); nouveaux++; } }   /* (deux nouveaux à la fois au plus : l'image ne se fige plus en arrivant quelque part) */ else if (!veut && z.z3 && !z.mortT) retirerZ3(z); }); }); void g; }
 function retirerZ(z) { M.scene.remove(z.g); z.mesh.geometry.dispose(); z.mesh.material.dispose(); z.om.geometry.dispose(); M.zomb.delete(z.id); }
 // une tache de sang au sol, là où le zombie a été touché
 /* le sang : avec les effets d'image, il prend la lumière — mouillé, il brille près d'un feu ou d'une lampe ; séché, il est mat ; un peu de sa propre teinte pour ne pas disparaître tout à fait dans le noir */
