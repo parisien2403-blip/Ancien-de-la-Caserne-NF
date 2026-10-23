@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.78";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.79";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2265,8 +2265,8 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
       for (let x = xa + .14; x < xa + Lm - .05; x += .14) A.ajoute(new THREE.BoxGeometry(.016, .88, .016), ferM, x, ym + 1.11, zm, false);
       // la courette : son sol pavé, 68 cm plus bas ; et les trois marches de béton qui y descendent, dans la première travée
       const Cq = RU.courette, beton = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .95 });
-      { const zc = (Cq.z0 + Cq.z1) / 2, xr = Cq.x1 - Cq.R, yc = RU.y(zc), mt = A.mat({ map: tex(textures().trottoir, 1, 1), roughness: .92, side: THREE.DoubleSide });   // (plat, puis une pente douce qui remonte au niveau de la place, côté infirmerie : c'est ouvert)
-        const FJ = RU.fosses[1], pc = (xa, xb, za, zb) => { const f = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, zb - za), A.mat({ map: tex(textures().trottoir, (xb - xa) / 2, (zb - za) / 2), roughness: .92 }), (xa + xb) / 2, yc - Cq.P + .012, (za + zb) / 2, false)); f.rotation.x = -Math.PI / 2; };
+      { const zc = (Cq.z0 + Cq.z1) / 2, xr = Cq.x1 - Cq.R, yc = RU.y(zc), mt = A.mat({ map: tex(textures().betonClair, 1, 1), roughness: .92, side: THREE.DoubleSide });   // (plat, puis une pente douce qui remonte au niveau de la place, côté infirmerie : c'est ouvert)
+        const FJ = RU.fosses[1], pc = (xa, xb, za, zb) => { const f = SOL(A.ajoute(new THREE.PlaneGeometry(xb - xa, zb - za), A.mat({ map: tex(textures().betonClair, (xb - xa) / 2, (zb - za) / 2), roughness: .92 }), (xa + xb) / 2, yc - Cq.P + .012, (za + zb) / 2, false)); f.rotation.x = -Math.PI / 2; };
         pc(Cq.x0, FJ.x0, Cq.z0, Cq.z1); pc(FJ.x1, xr, Cq.z0, Cq.z1); pc(FJ.x0, FJ.x1, Cq.z0, FJ.z0);   // (le sol de la courette, troué par l'escalier J)
         const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute([xr, yc - Cq.P + .012, Cq.z0, Cq.x1, yc + .012, Cq.z0, xr, yc - Cq.P + .012, Cq.z1, Cq.x1, yc + .012, Cq.z1], 3));
         g.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, Cq.R / 2, 0, 0, 2, Cq.R / 2, 2], 2)); g.setIndex([0, 2, 1, 1, 2, 3]); g.computeVertexNormals(); SOL(A.ajoute(g, mt, 0, 0, 0, false));
@@ -2715,7 +2715,7 @@ function troisiemeCour(A, L, scene) {
   { const L2 = Math.hypot(D, yT - hp), lim = A.ajoute(new THREE.BoxGeometry(LM * 2, .2, L2), betonC, 0, (hp + yT) / 2 - HT2 - .02, zm2); lim.rotation.x = Math.atan2(yT - hp, D); }   // la paillasse, dessous
   A.ajoute(new THREE.BoxGeometry(LM * 2, hp, .3), betonC, 0, hp / 2, zT + .17);   // (le palier, au bout du passage ; sa face en retrait du mur : plus de scintillement)
   // la fosse : le fond pavé, ses parois (sous l'immeuble, sous la terrasse, aux deux bouts)
-  { const fondP = SOL(A.ajoute(new THREE.PlaneGeometry(DB * 2, D), A.mat({ map: tex(textures().trottoir, DB, D / 2), roughness: .92 }), 0, -PF + .01, zm2, false)); fondP.rotation.x = -Math.PI / 2;
+  { const fondP = SOL(A.ajoute(new THREE.PlaneGeometry(DB * 2, D), A.mat({ map: tex(textures().betonClair, DB, D / 2), roughness: .92 }), 0, -PF + .01, zm2, false)); fondP.rotation.x = -Math.PI / 2;
     const paroi = A.mat({ map: tex(tuileBrique("rouge", K_FAC), DB * 2 / 9.2, PF / 6.75), roughness: .9 });   // (les parois de la fosse : en brique)
     { const pa = 1.85, pb = 3.15, HP2 = 2.35;   // (devant le pied de l'immeuble, pas dans son plan : plus de scintillement) ; percée de l'entrée du sous-sol
       for (const [a, b] of [[-DB, pa], [pb, DB]]) A.ajoute(new THREE.BoxGeometry(b - a, PF, .1), paroi, (a + b) / 2, -PF / 2 - .02, zT - .06, false);
