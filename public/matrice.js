@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.56";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.57";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8102,60 +8102,85 @@ function construireCoraline(A, L, scene) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.06), m); p.position.set(1.5, 1.35, 15.52); scene.add(p);
     const dos = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.06), new THREE.MeshStandardMaterial({ map: t, color: 0x6a5a50, transparent: true, alphaTest: .3 })); dos.rotation.y = Math.PI; dos.position.set(1.5, 1.35, 15.48); scene.add(dos);
     for (const s of [-1, 1]) A.ajoute(new THREE.BoxGeometry(.08, 1.1, .08), A.mat({ color: 0x5a4636, roughness: .9 }), 1.5 + s * .62, .55, 15.5); }
-  // ---------- le jardin, derrière la maison (d'après les dessins du film) : un ovale clos de murets de pierre, en terrasses ; on y entre par le portail de fer forgé ;
-  //            les allées de gravier, les massifs de plantes sèches ; au centre, le pont de bois en arc au-dessus du bassin creux ; au fond, l'arche de pierre en ruine ; la petite serre, le grand pot ----------
-  const JX = 3, JZ = -24, JA = 12, JB = 8.5;   // (le centre de l'ovale, ses deux rayons)
+  // ---------- le jardin, derrière la maison (d'après le film) : un ovale en terrasses — l'anneau du haut, bordé de murets de pierres sèches, autour du jardin creusé au centre ;
+  //            les allées pavées, les escaliers de pierre d'une terrasse à l'autre ; au centre, le pont de bois en arc, l'arbre tordu dans sa jardinière ronde, la vasque ;
+  //            à l'entrée, le portail de fer entre ses piliers de brique, les marches qui montent juste derrière, le buisson rouge ; au fond, l'arche de branches au-dessus des marches qui montent vers la colline ----------
+  const JX = 3, JZ = -24, JA = 12, JB = 8.5, JH = .9, RI = .64;   // (le centre de l'ovale, ses rayons ; la hauteur de la terrasse ; le bord du jardin creusé)
   const ell = (x, z, k = 1) => ((x - JX) / (JA * k)) ** 2 + ((z - JZ) / (JB * k)) ** 2;
   const BX = 4.2, BH = 1.5, bassin = (x, z) => ((x - JX) / 3) ** 2 + ((z - JZ) / 1.8) ** 2 < 1, surPont = (x, z) => Math.abs(z - JZ) < .62 && Math.abs(x - JX) < BX;
-  const pierreJ = motif(toile(128, 64, (x, w, h) => { x.fillStyle = "#6a6a62"; x.fillRect(0, 0, w, h); for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const v = hasard(i * 9 + j * 5); x.fillStyle = `hsl(60, 4%, ${36 + v * 16}%)`; x.fillRect(j * 32 + (i % 2) * 16 - 16 + 1, i * 21 + 1, 30, 19); } }), 1.2);
-  // le sol du jardin : un seul dessin (l'herbe sèche, les massifs de terre, les allées de gravier en anneau et en croix)
-  { const W = 1024, H = 768, c = toile(W, H, (x) => { const px = X => (X - (JX - JA)) / (2 * JA) * W, pz = Z => (Z - (JZ - JB)) / (2 * JB) * H;
-      x.fillStyle = "#3e3c30"; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2, H / 2, 0, 0, 7); x.fill();
-      for (let i = 0; i < 9000; i++) { x.fillStyle = hasard(i) > .5 ? "rgba(120,110,80,.25)" : "rgba(30,28,20,.25)"; x.fillRect(hasard(i * 3.3) * W, hasard(i * 7.1) * H, 2, 3); }
-      const anneau = (k, l, col) => { x.strokeStyle = col; x.lineWidth = l; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2 * k, H / 2 * k, 0, 0, 7); x.stroke(); };
-      anneau(.82, 70, "#8a8478"); anneau(.45, 60, "#8a8478"); x.fillStyle = "#8a8478"; x.fillRect(px(JX - 1), pz(JZ + 1.5), px(JX + 1) - px(JX - 1), H); x.fillRect(px(JX - 1), 0, px(JX + 1) - px(JX - 1), pz(JZ - 1.5));
-      x.fillRect(0, pz(JZ - .9), px(JX - 3.2), pz(JZ + .9) - pz(JZ - .9)); x.fillRect(px(JX + 3.2), pz(JZ - .9), W, pz(JZ + .9) - pz(JZ - .9));
-      for (let i = 0; i < 6000; i++) { x.fillStyle = hasard(i * 1.7) > .5 ? "rgba(200,195,180,.18)" : "rgba(60,55,45,.18)"; x.fillRect(hasard(i * 2.9) * W, hasard(i * 5.3) * H, 2, 2); }
-      x.globalCompositeOperation = "destination-in"; x.beginPath(); x.ellipse(W / 2, H / 2, W / 2, H / 2, 0, 0, 7); x.fill(); });
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-    const o = A.ajoute(new THREE.PlaneGeometry(2 * JA, 2 * JB), A.mat({ map: t, transparent: true, alphaTest: .5, roughness: 1 }), JX, .012, JZ, false); o.rotation.x = -Math.PI / 2; o.receiveShadow = true; }
-  // les murets : l'enceinte (ouverte devant, au portail, et au fond, sous l'arche) ; le muret des terrasses, plus bas (ouvert sur les allées)
-  const muret = (k, h, ep, ouvert) => { const N = 64; for (let i = 0; i < N; i++) { const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, am = (a0 + a1) / 2;
+  const axeX = x => Math.abs(x - JX) < 1.25, axeZ = z => Math.abs(z - JZ) < 1.1;   // (les passages : sur l'axe du portail et de l'arche ; sur l'axe du pont)
+  const marche = (v, n = 4) => Math.round(v / (JH / n)) * (JH / n);
+  /* la hauteur du sol, dans le jardin (null : dehors) */
+  const solJardin = (x, z) => { const r = Math.sqrt(ell(x, z)); if (r > 1.12 || (r > 1.04 && !axeX(x))) return null;
+    if (axeX(x) && z > JZ && r > .9) return r > 1 ? 0 : marche(JH * Math.min(1, (1 - r) / .1));   // (les marches derrière le portail)
+    if (axeX(x) && z < JZ && r > .9) return marche(JH + JH * Math.min(1, (r - .9) / .15), 5);   // (les marches du fond, vers la colline)
+    if (r >= RI) return JH;
+    if ((axeX(x) || axeZ(z)) && r > RI - .09) return marche(JH * (r - (RI - .09)) / .09);   // (les escaliers qui descendent dans le jardin creusé)
+    if (surPont(x, z)) return Math.max(0, BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX)));
+    return 0; };
+  const pierreJ = motif(toile(128, 64, (x, w, h) => { x.fillStyle = "#4e4c46"; x.fillRect(0, 0, w, h); for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) { const v = hasard(i * 9 + j * 5), lw = 20 + hasard(i * 3 + j) * 14;
+      x.fillStyle = `hsl(50, 4%, ${30 + v * 18}%)`; x.beginPath(); x.roundRect(j * 28 + (i % 2) * 12 - 12, i * 13 + 1, lw, 11, 4); x.fill(); } }), 1.1, { relief: 4 });   // (des pierres plates empilées)
+  const paves = (x, w, h, n) => { for (let i = 0; i < n; i++) { const px = hasard(i * 2.3) * w, pz = hasard(i * 4.1) * h, v = hasard(i * 7.7); x.fillStyle = `hsl(40, 4%, ${36 + v * 18}%)`; x.beginPath(); x.roundRect(px, pz, 9 + v * 5, 8 + v * 4, 3); x.fill(); } };
+  /* le sol : un dessin pour le jardin creusé (allées pavées en anneau et en croix, terre sèche), un autre pour la terrasse (l'allée pavée qui fait le tour) */
+  const solDessin = (terrasse) => { const W = 1024, H = 768, c = toile(W, H, (x) => { const px = X => (X - (JX - JA)) / (2 * JA) * W, pz = Z => (Z - (JZ - JB)) / (2 * JB) * H;
+      x.fillStyle = "#3a3428"; x.fillRect(0, 0, W, H); for (let i = 0; i < 9000; i++) { x.fillStyle = hasard(i) > .5 ? "rgba(130,110,80,.25)" : "rgba(25,22,16,.25)"; x.fillRect(hasard(i * 3.3) * W, hasard(i * 7.1) * H, 2, 3); }
+      const masque = (f) => { x.save(); x.beginPath(); f(); x.clip(); x.fillStyle = "#4a4840"; x.fillRect(0, 0, W, H); paves(x, W, H, 22000); x.restore(); };
+      if (terrasse) masque(() => { x.ellipse(W / 2, H / 2, W / 2 * .86, H / 2 * .86, 0, 0, 7); x.ellipse(W / 2, H / 2, W / 2 * .74, H / 2 * .74, 0, 0, 7, true); });
+      else { masque(() => { x.ellipse(W / 2, H / 2, W / 2 * .5, H / 2 * .5, 0, 0, 7); x.ellipse(W / 2, H / 2, W / 2 * .38, H / 2 * .38, 0, 0, 7, true); });
+        masque(() => { x.rect(px(JX - 1.1), 0, px(JX + 1.1) - px(JX - 1.1), H); x.rect(0, pz(JZ - 1), W, pz(JZ + 1) - pz(JZ - 1)); }); } });
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return A.mat({ map: t, roughness: 1 }); };
+  { const fond = A.ajoute(new THREE.PlaneGeometry(2 * JA * RI + .4, 2 * JB * RI + .4), solDessin(false), JX, .012, JZ, false); fond.rotation.x = -Math.PI / 2; fond.receiveShadow = true;
+    fond.material.map.repeat.set(RI + .02, RI + .02); fond.material.map.offset.set((1 - RI - .02) / 2, (1 - RI - .02) / 2);
+    // la terrasse : un anneau (deux bandes ; la bande du bord est ouverte aux deux escaliers de l'axe), à 90 cm du sol
+    const pos = [], uv = [], N = 72, quad = (a0, a1, r0, r1) => { const P = (a, r) => [JX + Math.sin(a) * JA * r, JH + .01, JZ + Math.cos(a) * JB * r], U = (a, r) => [.5 + Math.sin(a) * r / 2, .5 - Math.cos(a) * r / 2];
+      const p = [P(a0, r0), P(a1, r0), P(a1, r1), P(a0, r1)], u = [U(a0, r0), U(a1, r0), U(a1, r1), U(a0, r1)]; for (const k of [0, 2, 1, 0, 3, 2]) { pos.push(...p[k]); uv.push(...u[k]); } };
+    for (let i = 0; i < N; i++) { const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2, xm = JX + Math.sin((a0 + a1) / 2) * JA; quad(a0, a1, RI, .9); if (!axeX(xm) || Math.abs(Math.sin((a0 + a1) / 2) * JA) > 1.4) quad(a0, a1, .9, 1); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+    const te = new THREE.Mesh(g, solDessin(true)); te.material.side = THREE.DoubleSide; te.receiveShadow = true; scene.add(te); }
+  // les murets de pierres sèches : l'enceinte (55 cm au-dessus de la terrasse ; ouverte au portail et à l'arche) ; le mur de soutènement du jardin creusé (ouvert aux quatre escaliers)
+  const muret = (k, y0, h, ep, ouvert) => { const N = 72; for (let i = 0; i < N; i++) { const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2;
       const x0 = JX + Math.sin(a0) * JA * k, z0 = JZ + Math.cos(a0) * JB * k, x1 = JX + Math.sin(a1) * JA * k, z1 = JZ + Math.cos(a1) * JB * k, xm = (x0 + x1) / 2, zm = (z0 + z1) / 2;
-      if (ouvert(xm, zm, am)) continue; const l = Math.hypot(x1 - x0, z1 - z0) + .05, m = boite(l, h, ep, pierreJ, xm, h / 2, zm); m.rotation.y = -Math.atan2(z1 - z0, x1 - x0); const co = boite(l, .08, ep + .12, pierreJ, xm, h + .04, zm); co.rotation.y = m.rotation.y; } };
-  muret(1, 1.1, .4, (x) => Math.abs(x - JX) < 1.3); muret(.64, .5, .3, (x, z) => Math.abs(x - JX) < 1.2 || Math.abs(z - JZ) < 1.1);
-  // le bassin creux, au centre ; son rebord de pierre ; le pont de bois en arc qui l'enjambe, ses marches, sa rampe de fer noir
+      if (ouvert(xm, zm)) continue; const l = Math.hypot(x1 - x0, z1 - z0) + .06, m = boite(l, h, ep, pierreJ, xm, y0 + h / 2, zm); m.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
+      const co = boite(l, .1, ep + .14, pierreJ, xm, y0 + h + .05, zm); co.rotation.y = m.rotation.y; } };
+  muret(1.02, 0, JH + .55, .4, (x) => axeX(x)); muret(RI, 0, JH + .25, .35, (x, z) => axeX(x) || axeZ(z));
+  // les escaliers : derrière le portail (ils montent sur la terrasse) ; les quatre qui descendent dans le jardin creusé ; au fond, ceux qui montent vers la colline
+  { const E = (x, z, w, d, y) => boite(w, y, d, pierreJ, x, y / 2, z);
+    for (let k = 0; k < 4; k++) E(JX, JZ + JB * (.995 - k * .025), 2.4, JB * .025 + .02, (k + 1) * JH / 4);
+    for (let k = 0; k < 5; k++) E(JX, JZ - JB * (.9 + k * .03), 2.4, JB * .03 + .02, JH + (k + 1) * JH / 5);
+    for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const r = RI - .0225 * (k + .5); E(JX, JZ + s * JB * r, 2.4, JB * .0225 + .02, JH - k * JH / 4); E(JX + s * JA * r, JZ, JA * .0225 + .02, 2.2, JH - k * JH / 4); } }
+  // le bassin creux au centre, son rebord ; le pont de bois en arc qui l'enjambe, ses planches, sa rampe de fer noir
   { const fond = A.ajoute(new THREE.CircleGeometry(1, 32), M3(0x1c1a14, 1), JX, .02, JZ, false); fond.rotation.x = -Math.PI / 2; fond.scale.set(3, 1.8, 1);
     const N = 24; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, b2 = boite(.5, .3, .3, pierreJ, JX + Math.cos(a) * 3.05, .15, JZ + Math.sin(a) * 1.85); b2.rotation.y = -a + Math.PI / 2; }
-    const bois2 = M3(0x5a3e28, .8), ferN = M3(0x141414, .5, { metalness: .4 }), hP = x => BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX));
+    const bois2 = M3(0x5a4a3a, .85), ferN = M3(0x141414, .5, { metalness: .4 }), hP = x => BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX));
     for (let i = 0; i < N; i++) { const xa = JX - BX + i * 2 * BX / N, xb = xa + 2 * BX / N, ya = hP(xa), yb = hP(xb), l = Math.hypot(xb - xa, yb - ya);
       const d = boite(l + .02, .1, 1.3, bois2, (xa + xb) / 2, (ya + yb) / 2 - .05, JZ); d.rotation.z = Math.atan2(yb - ya, xb - xa); boite(.05, .03, 1.3, M3(0x3a2818, .8), xa, ya + .01, JZ);
-      const s2 = boite(l + .02, .35, .08, M3(0x3a2a1c, .8), (xa + xb) / 2, (ya + yb) / 2 - .25, JZ - .62); s2.rotation.z = d.rotation.z; const s3 = boite(l + .02, .35, .08, M3(0x3a2a1c, .8), (xa + xb) / 2, (ya + yb) / 2 - .25, JZ + .62); s3.rotation.z = d.rotation.z;
-      for (const e of [-.62, .62]) { boite(.03, .95, .03, ferN, xa, ya + .48, JZ + e); const r = boite(l, .04, .04, ferN, (xa + xb) / 2, (ya + yb) / 2 + .95, JZ + e); r.rotation.z = d.rotation.z; } }
-    for (const e of [-.62, .62]) for (const s of [-1, 1]) { const v = boite(.05, .05, .05, ferN, JX + s * BX, 1.0, JZ + e); void v; const cr = A.ajoute(new THREE.TorusGeometry(.18, .02, 6, 12, Math.PI * 1.5), ferN, JX + s * (BX + .1), .85, JZ + e, false); cr.rotation.y = Math.PI / 2; } }   // (les crosses au bout des rampes)
-  // l'arche de pierre en ruine, au fond ; la petite serre, à gauche ; le grand pot, près du pont ; le portail de fer forgé et ses piliers
-  { const az = JZ - JB + .1; for (const s of [-1, 1]) { boite(.7, 3.2, .7, pierreJ, JX + s * 1.25, 1.6, az, true); boite(.85, .2, .85, pierreJ, JX + s * 1.25, 3.25, az); ob(0, JX + s * 1.25 - .4, JX + s * 1.25 + .4, az - .4, az + .4); }
-    const arcG = new THREE.Mesh(new THREE.TorusGeometry(1.25, .32, 8, 16, Math.PI * .82), pierreJ); arcG.position.set(JX, 3.2, az); arcG.rotation.z = .02; scene.add(arcG);   // (l'arc, entamé d'un côté)
-    for (let i = 0; i < 6; i++) boite(.4 + hasard(i) * .3, .25, .35, pierreJ, JX + 1.6 + hasard(i * 3) * 1.4, .12, az + 1 + hasard(i * 7) * 1.2); }
-  { const gx = JX - 7.5, gz = JZ - 3.2, w = 3, d = 2.4, h = 2.3, verreS = new THREE.MeshStandardMaterial({ color: 0xa8c8cc, transparent: true, opacity: .3, roughness: .1, side: THREE.DoubleSide, depthWrite: false });
-    const cadre = M3(0xd8d8d0, .5); boite(w, h, d, verreS, gx, h / 2, gz); for (const s of [-1, 1]) for (const e of [-1, 1]) boite(.06, h, .06, cadre, gx + s * w / 2, h / 2, gz + e * d / 2);
-    for (let i = 1; i < 4; i++) for (const e of [-1, 1]) boite(.04, h, .04, cadre, gx - w / 2 + i * w / 4, h / 2, gz + e * d / 2); ob(0, gx - w / 2 - .1, gx + w / 2 + .1, gz - d / 2 - .1, gz + d / 2 + .1);
-    const toitS = new THREE.Mesh(new THREE.CylinderGeometry(.05, w * .75, 1.1, 4, 1).rotateY(Math.PI / 4), verreS); toitS.scale.set(1, 1, d / w); toitS.position.set(gx, h + .55, gz); scene.add(toitS);
-    for (let i = 0; i < 4; i++) A.ajoute(new THREE.CylinderGeometry(.18, .14, .3, 8), M3(0x8a4a32, .8), gx - 1 + i * .65, .15, gz - .6, false); }
-  meuble(0, JX + 5, JZ + 2.2, 0, 1.3, 1.3, true, (b, c, s) => { c(.62, .48, .9, M3(0x2a2420, .8), 0, .45 - Y0, 0, 16); c(.64, .64, .08, M3(0x3a3028, .8), 0, .9 - Y0, 0, 16);
-    for (let i = 0; i < 7; i++) { const t2 = c(.01, .025, 1.2, M3(0x5a4a30, .9), Math.cos(i) * .2, 1.4 - Y0, Math.sin(i * 1.7) * .2, 4); t2.rotation.set(Math.sin(i) * .4, 0, Math.cos(i * 2) * .4); } });
-  { const gz = JZ + JB, ferN = M3(0x141414, .5, { metalness: .4 }); for (const s of [-1, 1]) { ob(0, JX + s * 1.5 - .35, JX + s * 1.5 + .35, gz - .35, gz + .35); boite(.55, 2.2, .55, pierreJ, JX + s * 1.5, 1.1, gz, true); boite(.7, .16, .7, pierreJ, JX + s * 1.5, 2.28, gz); A.ajoute(new THREE.SphereGeometry(.2, 10, 8), pierreJ, JX + s * 1.5, 2.55, gz, false); }
-    const t = new THREE.CanvasTexture(toile(128, 256, (x, w, h) => { x.strokeStyle = "#151515"; x.lineWidth = 5; x.strokeRect(4, 30, w - 8, h - 34); for (let i = 1; i < 7; i++) { x.beginPath(); x.moveTo(i * w / 7, 30); x.lineTo(i * w / 7, h); x.stroke(); }
-      x.lineWidth = 4; x.beginPath(); x.moveTo(4, 30); x.quadraticCurveTo(w / 2, -10, w - 4, 30); x.stroke(); for (let i = 0; i < 3; i++) { x.beginPath(); x.arc(30 + i * 34, 120, 12, 0, 7); x.stroke(); } x.beginPath(); x.moveTo(4, 150); x.lineTo(w - 4, 150); x.stroke(); }));
+      for (const e of [-.62, .62]) { const s3 = boite(l + .02, .35, .08, M3(0x3a2a1c, .8), (xa + xb) / 2, (ya + yb) / 2 - .25, JZ + e); s3.rotation.z = d.rotation.z; boite(.03, .95, .03, ferN, xa, ya + .48, JZ + e); const r = boite(l, .04, .04, ferN, (xa + xb) / 2, (ya + yb) / 2 + .95, JZ + e); r.rotation.z = d.rotation.z; } } }
+  // l'arbre tordu, dans sa jardinière ronde de pierre, contre le pont ; la vasque sur pied
+  { const tx = JX + 1.2, tz = JZ + 2.6; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, b2 = boite(.45, .4, .3, pierreJ, tx + Math.cos(a) * 1.05, .2, tz + Math.sin(a) * 1.05); b2.rotation.y = -a + Math.PI / 2; }
+    const ec = M3(0x3a3028, .95); for (let i = 0; i < 9; i++) { const t = i / 9, r = .42 - t * .3, c2 = A.ajoute(new THREE.CylinderGeometry(r * .85, r, .32, 9), ec, tx + Math.sin(t * 5) * .14, .3 + i * .28, tz + Math.cos(t * 5) * .14, true); c2.rotation.set(Math.sin(i) * .25, i * .7, Math.cos(i * 1.3) * .25); }
+    for (let i = 0; i < 6; i++) { const a = i * 1.05, l = .5 + hasard(i * 3) * .6, br = A.ajoute(new THREE.CylinderGeometry(.025, .07, l, 5), ec, tx + Math.cos(a) * l * .35, 2.75 + hasard(i) * .3, tz + Math.sin(a) * l * .35, false); br.rotation.set(Math.sin(a) * 1.1, 0, -Math.cos(a) * 1.1); }
+    ob(0, tx - 1.25, tx + 1.25, tz - 1.25, tz + 1.25);
+    const vx = JX - 3.6, vz = JZ + 3.2; A.ajoute(new THREE.CylinderGeometry(.12, .2, .8, 10), pierreJ, vx, .4, vz, true); A.ajoute(new THREE.CylinderGeometry(.45, .25, .22, 14), pierreJ, vx, .9, vz, true); ob(0, vx - .45, vx + .45, vz - .45, vz + .45); }
+  // le portail : ses deux piliers de brique et leur chapeau de pierre, ses battants de fer forgé (entrouverts), l'arc de fer ; le buisson rouge, à côté
+  { const gz = JZ + JB * 1.02 + .2, ferN = M3(0x141414, .5, { metalness: .4 });
+    for (const s of [-1, 1]) { ob(0, JX + s * 1.55 - .4, JX + s * 1.55 + .4, gz - .4, gz + .4); boite(.6, 2.4, .6, brique, JX + s * 1.55, 1.2, gz, true); boite(.78, .14, .78, pierreJ, JX + s * 1.55, 2.47, gz); A.ajoute(new THREE.SphereGeometry(.2, 10, 8), pierreJ, JX + s * 1.55, 2.72, gz, false); }
+    const t = new THREE.CanvasTexture(toile(128, 256, (x, w, h) => { x.strokeStyle = "#151515"; x.lineWidth = 5; x.strokeRect(4, 30, w - 8, h - 34); for (let i = 1; i < 8; i++) { x.beginPath(); x.moveTo(i * w / 8, 18); x.lineTo(i * w / 8, h); x.stroke(); }
+      x.lineWidth = 4; x.beginPath(); x.moveTo(4, 30); x.quadraticCurveTo(w / 2, -10, w - 4, 30); x.stroke(); x.beginPath(); x.moveTo(4, 170); x.lineTo(w - 4, 170); x.stroke(); for (let i = 0; i < 4; i++) { x.beginPath(); x.arc(18 + i * 31, 185, 10, 0, 7); x.stroke(); } }));
     t.colorSpace = THREE.SRGBColorSpace; const mg = new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, metalness: .4, roughness: .5 });
-    for (const s of [-1, 1]) { const v = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.3), mg); v.position.set(JX + s * 1.15, 1.15, gz + s * .35); v.rotation.y = s * .7; scene.add(v); }   // (les deux battants, entrouverts)
-    const ar = A.ajoute(new THREE.TorusGeometry(1.5, .03, 6, 24, Math.PI), ferN, JX, 2.3, gz, false); void ar; }
-  // les massifs : des tiges sèches et des touffes, par centaines (deux dessins seulement : légers pour les petits téléphones)
-  { const tiges = new THREE.InstancedMesh(new THREE.CylinderGeometry(.008, .02, 1, 4), M3(0x7a6a48, .9), 420), touffes = new THREE.InstancedMesh(new THREE.SphereGeometry(.35, 7, 5), M3(0x4a4a34, .95), 70), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-    let n = 0, k = 0; for (let i = 0; n < 420 && i < 4000; i++) { const x = JX + (hasard(i * 1.3) - .5) * 2 * JA, z = JZ + (hasard(i * 2.7) - .5) * 2 * JB, r = ell(x, z), ri = Math.sqrt(r);
-      if (r > .9 || Math.abs(ri - .82) < .07 || Math.abs(ri - .45) < .07 || ri < .3 || Math.abs(x - JX) < 1.2 || Math.abs(z - JZ) < 1 || Math.abs(ri - .64) < .04) continue;
-      const h = .4 + hasard(i * 5.1) * 1.2; e.set((hasard(i * 7) - .5) * .4, 0, (hasard(i * 9) - .5) * .4); q.setFromEuler(e); tiges.setMatrixAt(n++, mt.compose(new THREE.Vector3(x, h / 2, z), q, new THREE.Vector3(1, h, 1)));
-      if (k < 70 && i % 6 === 0) { const s = .6 + hasard(i * 11) * .8; touffes.setMatrixAt(k++, mt.compose(new THREE.Vector3(x + .3, .2 * s, z), new THREE.Quaternion(), new THREE.Vector3(s, s * .8, s))); } }
+    for (const s of [-1, 1]) { const v = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 2.4), mg); v.position.set(JX + s * 1.15, 1.2, gz + s * .35); v.rotation.y = s * .7; scene.add(v); }
+    A.ajoute(new THREE.TorusGeometry(1.55, .03, 6, 24, Math.PI), ferN, JX, 2.4, gz, false);
+    const rouge = [0x9a2a3a, 0xb8404a, 0x7a2030, 0xc8606a]; for (let i = 0; i < 26; i++) A.ajoute(new THREE.SphereGeometry(.28 + hasard(i) * .22, 7, 5), M3(rouge[i % 4], .95), JX + 2.9 + (hasard(i * 3) - .5) * 1.6, .3 + hasard(i * 5) * 1.2, gz + .5 + (hasard(i * 7) - .5) * 1.2, false);
+    ob(0, JX + 2.1, JX + 3.7, gz - .2, gz + 1.2); }
+  // au fond : l'arche de branches tordues, sur ses piliers de pierre, au-dessus des marches qui montent vers la colline
+  { const az = JZ - JB * 1.02, ec = M3(0x2e261e, .95); for (const s of [-1, 1]) { boite(.6, 2.6 + JH, .6, pierreJ, JX + s * 1.5, (2.6 + JH) / 2, az, true); boite(.75, .14, .75, pierreJ, JX + s * 1.5, 2.6 + JH + .07, az); }
+    for (let i = 0; i < 7; i++) { const a = A.ajoute(new THREE.TorusGeometry(1.45 + (hasard(i) - .5) * .2, .025 + hasard(i * 3) * .02, 5, 16, Math.PI), ec, JX, 2.75 + JH + (hasard(i * 5) - .5) * .15, az + (hasard(i * 7) - .5) * .3, false); a.rotation.set((hasard(i * 9) - .5) * .25, (hasard(i * 11) - .5) * .3, (hasard(i * 13) - .5) * .1); } }
+  // les jardinières rondes sur la terrasse ; les plantes sèches par centaines (deux dessins seulement : légers pour les petits téléphones)
+  for (const [a, k] of [[.9, .82], [2.3, .8], [4.1, .82], [5.4, .8]]) { const cx = JX + Math.sin(a) * JA * k, cz = JZ + Math.cos(a) * JB * k; for (let i = 0; i < 16; i++) { const b = i / 16 * Math.PI * 2, p = boite(.4, .45, .25, pierreJ, cx + Math.cos(b) * .8, JH + .22, cz + Math.sin(b) * .8); p.rotation.y = -b + Math.PI / 2; } ob(0, cx - .9, cx + .9, cz - .9, cz + .9); }
+  { const tiges = new THREE.InstancedMesh(new THREE.CylinderGeometry(.008, .02, 1, 4), M3(0x8a7a52, .9), 520), touffes = new THREE.InstancedMesh(new THREE.SphereGeometry(.35, 7, 5), M3(0x4a4434, .95), 90), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    let n = 0, k = 0; for (let i = 0; n < 520 && i < 6000; i++) { const x = JX + (hasard(i * 1.3) - .5) * 2 * JA, z = JZ + (hasard(i * 2.7) - .5) * 2 * JB, r = Math.sqrt(ell(x, z));
+      if (r > .97 || (r > .74 && r < .86) || (r > .38 && r < .5) || (r > RI - .1 && r < RI + .04) || axeX(x) || axeZ(z) || bassin(x, z)) continue;
+      const y = r > RI ? JH : 0, h = .4 + hasard(i * 5.1) * 1.2; e.set((hasard(i * 7) - .5) * .4, 0, (hasard(i * 9) - .5) * .4); q.setFromEuler(e); tiges.setMatrixAt(n++, mt.compose(new THREE.Vector3(x, y + h / 2, z), q, new THREE.Vector3(1, h, 1)));
+      if (k < 90 && i % 5 === 0) { const s = .6 + hasard(i * 11) * .8; touffes.setMatrixAt(k++, mt.compose(new THREE.Vector3(x + .3, y + .2 * s, z), new THREE.Quaternion(), new THREE.Vector3(s, s * .8, s))); } }
     tiges.count = n; touffes.count = k; scene.add(tiges, touffes); }
   // l'allée de gravier, de l'arrière de la maison jusqu'au portail
   { const a = A.ajoute(new THREE.PlaneGeometry(2.2, 9.6), gravier, 4.6, .014, -10.9, false); a.rotation.set(-Math.PI / 2, 0, -.3); }
@@ -8184,8 +8209,8 @@ function construireCoraline(A, L, scene) {
     if (n >= 1) return PIECES[n].some(r => dedans(x, z, r)) || PASSAGES[n].some(r => dedans(x, z, r));
     if (dedans(x, z, FOSSE)) return true;   // (la courette, son escalier)
     if (PIECES[0].some(r => dedans(x, z, r)) || PASSAGES[0].some(r => dedans(x, z, r)) || PORCHE.some(r => dedans(x, z, r)) || MARCHES.some(r => dedans(x, z, r))) return true;
-    if (ell(x, z) < 1.12) { if (surPont(x, z)) return true; if (bassin(x, z)) return false; const r = Math.sqrt(ell(x, z));   // (le jardin : ses murets, le bassin creux ; le pont)
-      if (Math.abs(r - 1) < .06 && Math.abs(x - JX) > 1.25) return false; if (Math.abs(r - .64) < .045 && Math.abs(x - JX) > 1.15 && Math.abs(z - JZ) > 1.05) return false; }
+    if (ell(x, z) < 1.25) { const r = Math.sqrt(ell(x, z)); if (surPont(x, z)) return true; if (bassin(x, z)) return false;   // (le jardin : ses murets, ses escaliers, le bassin creux ; le pont)
+      if (Math.abs(r - 1.02) < .055 && !axeX(x)) return false; if (axeX(x) && z < JZ && r > 1.07) return false; if (Math.abs(r - RI) < .04 && !axeX(x) && !axeZ(z)) return false; }
     return x > -40 && x < 40 && z > -40 && z < 40 && !EMPRISE.some(r => dedans(x, z, r, -.4)) && d > TR + .4 && !ARBRES.some(r => dedans(x, z, r)); };
   L.hauteur = (x, z, p) => { if (p && p.corN == null) p.corN = p.g && p.g.position && p.g.position.y > (Y0 + Y1) / 2 ? 1 : 0;
     const n = p ? p.corN : niveau();
@@ -8193,7 +8218,7 @@ function construireCoraline(A, L, scene) {
     if (surSecours(x, z)) { const h = surV3(x, z) ? Y1 + Math.max(0, Math.min(1, (E3.z1 - z) / (E3.z1 - E3.z0))) * (YT - Y1) : surV2(x, z) ? E1.h + Math.max(0, Math.min(1, (E2.z1 - z) / (E2.z1 - E2.z0))) * (Y1 - E1.h) : surPal(x, z) ? E1.h : Math.max(0, Math.min(1, (x - E1.x0) / (E1.x1 - E1.x0))) * E1.h;
       if (p) p.corN = h > (Y1 + YT) / 2 ? 2 : h > (Y0 + Y1) / 2 ? 1 : 0; return h; }
     if (n === 2) return YT; if (n === 1) return Y1;
-    if (surPont(x, z)) return Math.max(0, BH * Math.sin(Math.PI * (x - (JX - BX)) / (2 * BX)));   // (sur le pont du jardin)
+    { const hj = solJardin(x, z); if (hj != null) return hj; }   // (le jardin : sa terrasse, ses escaliers, le jardin creusé, le pont)
     if (x > FX0 - .05 && x < FX1 && z > FZ0 && z < FZ1) return x > FX1 - FPAL ? FY : Math.max(FY, Math.min(0, FY + (Math.floor((FX1 - FPAL - x) / ((FX1 - FX0 - FPAL) / NF)) + 1) * -FY / NF));   // (l'escalier de la courette, marche par marche)
     if (dedans(x, z, MARCHES[0])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((z - 11.3) / .3) * Y0 / 4));
     if (dedans(x, z, MARCHES[1])) return Math.max(0, Math.min(Y0, Y0 - Math.ceil((-8.1 - x) / .3) * Y0 / 4));
