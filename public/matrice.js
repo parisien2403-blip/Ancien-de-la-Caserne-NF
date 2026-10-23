@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.98";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.99";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12886,7 +12886,10 @@ function cineEvac(m) {
   M.passerBtn = boutonPasser(fin);
   const placer = (px, py, pz, lx, ly, lz, k = .06) => { cam.position.lerp(new THREE.Vector3(px, py, pz), k); vise.lerp(new THREE.Vector3(lx, ly, lz), k); cam.lookAt(vise); };
   cam.position.set(H.x + 9, H.y + 3.5, H.z - 5); vise.set(H.x, H.y + 1, H.z);
-  const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); sc.remove(paris); }, maj: (now) => { if (fini) return; const dt = Math.min(.05, (now - prec) / 1000); c.clk = (c.clk || 0) + Math.min(.1, Math.max(0, now - prec) / 1000) * (M.vite || 1); prec = now; let u = c.clk + (c.saut || 0);   /* (l'horloge de la scène n'avance qu'avec les images : sur un téléphone lent, aucun plan n'est sauté) */
+  const c = M.cine = { t0, nettoyer: () => { fini = true; logo.remove(); motFin.remove(); noirF && noirF.remove(); sc.remove(paris); }, maj: (now) => { if (fini) return; const dt = Math.min(.05, (now - prec) / 1000);
+    /* (au tout début, on attend que tout soit chargé — les survivants, l'hélicoptère —, six secondes au plus : sinon on les voyait absents, ou invisibles) */
+    if (!c.pret) { c.pretT = c.pretT || now; if (!c.pretH) { c.pretH = 1; chargerGLB("avatars/re-helico.glb?v=2").then(() => { c.pretH = 2; }); } c.pret = (c.renfPrep && c.pretH === 2 && renf.every(p => p.av3)) || now - c.pretT > 6000; if (!c.pret && (c.clk || 0) > .5) { prec = now; } }
+    c.clk = (c.clk || 0) + (c.pret || (c.clk || 0) < .5 ? Math.min(.1, Math.max(0, now - prec) / 1000) * (M.vite || 1) : 0); prec = now; let u = c.clk + (c.saut || 0);   /* (l'horloge de la scène n'avance qu'avec les images : sur un téléphone lent, aucun plan n'est sauté) */
     /* tout le monde est monté : le temps s'arrête là (l'hélicoptère attend sur le H) — plan sur la cour d'honneur, la horde déboule par la voûte ; puis on reprend : le décollage */
     c.enPause = false; if (c.horde && !c.pauseFin && u >= 14.95) { if (c.pauseC == null) c.pauseC = c.clk; const pu = c.clk - c.pauseC; if (pu < 4.8) { c.enPause = true; c.hu = 12.2 + pu; u = 14.95; } else { c.pauseFin = true; c.saut = -pu; u = c.clk - pu; } }
     if (!c.renfPrep) { c.renfPrep = true; lancerRenforts();
@@ -12933,6 +12936,7 @@ function cineEvac(m) {
         const l0 = k ? c.escL[k - 1] : 0, f = (d - l0) / (c.escL[k] - l0), A0 = c.escP[k], B0 = c.escP[k + 1], dec = ((i % 3) - 1) * .35;
         q.g.visible = true; q.x = q.tx = A0[0] + (B0[0] - A0[0]) * f + (k === 0 || k >= 8 ? dec : 0); q.z = q.tz = A0[2] + (B0[2] - A0[2]) * f + (k > 0 && k < 8 ? dec * .6 : 0); q.y = A0[1] + (B0[1] - A0[1]) * f; q.g.position.set(q.x, q.y, q.z); if (q.z3) eclairer3D(q.z3.sc, .3); }); }
     if (!vueHorde && c.feuxH && !c.feuxR) { c.feuxR = true; for (const f of c.feuxH) f.visible = true; }   /* (en hauteur, face aux bâtiments R et S : la voûte au centre) */
+    if (u < 10 || vueHorde) { /* (l'arrivée, la descente, le plan sur la horde : réglés plus haut — sans ce garde-fou, l'embarquement partait dès le début : l'hélico déjà posé, tout le monde caché) */ }
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
       if (!monte) { monte = true; vivants.forEach((p, i) => { p.cible = new THREE.Vector3(H.x - .35 + (i % 3 - 1) * .3, p.g.position.y, H.z + 1.9); }); }
       for (const p of vivants) if (p.g.visible && Math.hypot(p.g.position.x - (H.x - .35), p.g.position.z - (H.z + 1.9)) < .7) p.g.visible = false;
@@ -13170,7 +13174,8 @@ function garderCadavre(o) { M.scene.attach(o); M.cadavres = M.cadavres || []; M.
 /* le Tyran : quand le fumigène est posé sur le cercle de la terrasse, il tombe du ciel. Grand (2,6 m), il nous fixe, court vers nous et frappe (une vie) ;
    quinze balles pour l'abattre — alors seulement l'hélicoptère peut se poser */
 let tyran3D = null; const TY = { HP: 40, H: 1.45, V: 4.4 };   // (quarante balles : il encaisse)
-function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return; M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
+function lancerTyran(c) { if (M.tyran) return; const moi = moiApo(); if (!moi) return;
+  { const used = new Set([M.perso, ...(M.equipe || []).map(e => e.id), M.toitId, M.barId].map(Number)); for (const h of [21, 26, 24, 22, 23, 25].filter(h => HEROS[h] && !used.has(h)).slice(0, 2)) if (HEROS_3D[h]) chargerAvatar3D(HEROS_3D[h]); chargerGLB("avatars/re-helico.glb?v=2"); chargerZombie3D(); }   /* (la fin se prépare dès l'arrivée de Nemesis : les survivants, l'hélicoptère, les zombies — tout est prêt quand elle commence) */ M.musFin = true; M.tyran = { tyran: true, attente: true, hp: TY.HP, mortT: 0, cine: false, x: c.x, z: c.z };
   M.ctx.surInfo && M.ctx.surInfo("🧨 Le fumigène est posé… l'hélicoptère arrive ! Mais quelque chose approche…");
   tyran3D = tyran3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/re2-nemesis.glb?v=2"), A = await chargerAnimsMX("anims/re-nemesis.json?v=3");
       if (A) { G.animations = [["idle", "n-idle"], ["walk", "n-marche"], ["run", "n-course"], ["origine0", "n-coup"], ["poing", "n-poing"], ["charge", "n-charge"], ["atterri", "n-atterri"], ["rugit", "n-rugit"], ["mort", "n-mort"]].map(([n, c]) => { const k = clipMX(A, c, G.scene); if (k) k.name = n; return k; }).filter(Boolean); G.mx = true; }   /* (ses vrais mouvements) */
