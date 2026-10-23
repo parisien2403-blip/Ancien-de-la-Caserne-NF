@@ -1,7 +1,7 @@
 // Service worker : permet d'installer l'appli (Android, iPhone, PC) et de l'ouvrir sans réseau.
 // Les pages sont servies « réseau d'abord » (toujours la dernière version), les images « cache d'abord ».
 // Le courrier et le registre (/api/) ne sont jamais mis en cache.
-const CACHE = "caserne-nf-v525";
+const CACHE = "caserne-nf-v526";
 const SHELL = ["/", "/images/garde.jpg", "/images/pierre.jpg", "/images/escaliers/brique.jpg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", e => {
