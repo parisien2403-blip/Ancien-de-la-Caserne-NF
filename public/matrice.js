@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "6.80";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "6.81";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10902,7 +10902,7 @@ function lyingAnim(m, now, dt) { const P = m.lf;
   if (P.curA && n === "walk") P.curA.timeScale = Math.max(.5, Math.min(1.3, v / 1.15)); P.mix.update(dt);
   // la traînée : un pas sur deux, du côté du pied qui se pose
   P.pas += dd; if (P.pas > .38 && m.g.visible && m.cle === "capuche") { P.pas = 0; P.pied = -P.pied; const c = Math.cos(P.ry), s2 = Math.sin(P.ry); goudron(m.x + c * .12 * P.pied, m.y, m.z - s2 * .12 * P.pied, P.ry); }
-  const rouge = performance.now() < m.flashT; if (P.rouge !== rouge) { P.rouge = rouge; P.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); }); } }
+  const rouge = false;   /* (plus de clignotement rouge quand on le touche) */ if (P.rouge !== rouge) { P.rouge = rouge; P.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); }); } }
 /* Pyramid Head en 3D (le modèle de Silent Hill 2, animé comme les autres : repos, marche) : son grand couteau dans la main droite, traîné derrière lui ;
    il le lève par-dessus sa tête et l'abat, au rythme de frappePyr. Tant que le modèle n'est pas chargé, l'image plate reste */
 let lamePyr3D = null, pyrA = null;
@@ -10943,7 +10943,7 @@ function pyr3D(m, now, dt, moi) { const P = m.ph3, A = P.A; if (!_v1) { _v1 = ne
   // arrêté net, puis effacé
   if (m.fige && m.fondu) { const f = Math.max(0, 1 - (now - m.fondu) / 1500); A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) { mt.transparent = true; mt.opacity = f; } }); if (!f) A.sc.visible = false; }
   // (touché : un éclair rouge)
-  const rouge = performance.now() < m.flashT; if (P.rouge !== rouge) { P.rouge = rouge; A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.emissive) mt.emissive.setHex(rouge ? 0xff4030 : 0xffffff); }); } }
+  const rouge = false;   /* (plus de clignotement rouge quand on le touche) */ if (P.rouge !== rouge) { P.rouge = rouge; A.sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.emissive) mt.emissive.setHex(rouge ? 0xff4030 : 0xffffff); }); } }
 function frappePyr(m, now, dJ, moi) { const voisin = M.shMonstres.find(o => o !== m && !o.mortT && !o.p && Math.hypot(o.x - m.x, o.z - m.z) < 2.2);
   if (!m.frappeT && (dJ < 2.4 || voisin) && now > m.coupT) { m.frappeT = now; const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), c = dJ < 2.4 && moi ? moi.g.position : voisin; m.cibleCote = ((c.x - m.x) * dr.x + (c.z - m.z) * dr.z) >= 0 ? 1 : -1; }
   if (!m.frappeT) return; const k = now - m.frappeT;
@@ -11027,11 +11027,11 @@ function animerBetesSH(now, dt) {
     if (m.cle === "eddie" && m.p && m.p.poses && !m.mortT) { const pr = m.p, k = (now - (m.ph || 0)) % 760, frappe = !M.cine && !m.cine && d < 3;
       const map = frappe ? (k < 380 ? pr.poses.haut : pr.poses.tir) : null; if (map && pr.corps && pr.corps.material.map !== map) { pr.corps.material.map = map; pr.corps.material.needsUpdate = true; } }   /* (le couteau levé, puis planté devant lui) */
     if (m.couteau) { const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); m.couteau.position.set(dr.x * .34, .95 + Math.sin(now / 160) * .04, dr.z * .34); m.couteau.material.rotation = -.5 + (now < m.coupT - 1000 ? 1.2 : 0); }
-    if (m.p) { m.p.g.position.x = m.x; m.p.g.position.z = m.z; m.y = m.p.g.position.y; if (m.p.corps && m.p.corps.material) m.p.corps.material.color.setRGB(1, now < m.flashT ? .35 : 1, now < m.flashT ? .35 : 1); }
+    if (m.p) { m.p.g.position.x = m.x; m.p.g.position.z = m.z; m.y = m.p.g.position.y; if (m.p.corps && m.p.corps.material) m.p.corps.material.color.setRGB(1, 1, 1); }
     else { if (!etg) { const y = M.L.hauteur ? M.L.hauteur(m.x, m.z, { g: { position: { y: m.y } } }) : 0; m.y = y; }
       m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = Math.atan2(cam.x - m.x, cam.z - m.z);
       m.mesh.rotation.z = m.cle === "infirmiere" || m.cle === "tuyau" ? (Math.sin(u * 13) > .85 ? Math.sin(u * 40) * .12 : 0) : Math.sin(u * 1.1) * .06;
-      m.mesh.material.color.setHex(now < m.flashT ? 0xff5a4a : 0xd8d4cc); if (m.bras) m.bras.material.color.copy(m.mesh.material.color);
+      m.mesh.material.color.setHex(0xd8d4cc); if (m.bras) m.bras.material.color.copy(m.mesh.material.color);
       if (m.lame) {   /* le sens de sa marche, vu de la caméra : l'épée traîne derrière lui, bras en arrière ; il frappe en la ramenant par-dessus, de l'arrière vers l'avant */
         const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), vx = m.x - (m.lx ?? m.x), vz = m.z - (m.lz ?? m.z); m.lx = m.x; m.lz = m.z;
         const vs = vx * dr.x + vz * dr.z; if (Math.abs(vs) > .002) m.sens = vs > 0 ? 1 : -1; if (m.frappeT && m.cibleCote) m.sens = m.cibleCote; const sg = m.sens || 1;
@@ -12943,7 +12943,7 @@ function animerChien3D(z, now, dt, vx, vz) { const C = z.c3, v = Math.hypot(vx, 
   C.piv.rotation.y = C.cap; const t = now / 1000 * (v > .05 ? 11 : 0), a = v > .05 ? .55 : 0;   // (le galop : les pattes en diagonale)
   for (const [k, ph] of [["AvG", 0], ["ArD", 0], ["AvD", Math.PI], ["ArG", Math.PI]]) if (C.pattes[k]) C.pattes[k].rotation.x = Math.sin(t + ph) * a;
   C.grp.position.y = v > .05 ? Math.abs(Math.sin(t)) * .05 : Math.sin(now / 500) * .006; C.grp.rotation.x = v > .05 ? Math.sin(t * 2) * .04 : 0;
-  C.mat.emissive.setHex(now < (z.flashT || 0) ? 0x880000 : 0); }
+  C.mat.emissive.setHex(0); }
 function creerZ(d) {
   const T = ZTYPES[d.ty], g = new THREE.Group(), geo = new THREE.PlaneGeometry(1, 1); g.userData.perso = true; geo.translate(0, .5, 0);
   const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: T.chien ? texChien() : null, transparent: true, alphaTest: .35, side: THREE.DoubleSide })); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; g.add(mesh);
@@ -13031,7 +13031,7 @@ function animerLickers(moi, now, dt) {
   for (const l of [...M.lickers]) { if (l.os) bougerLK(l, now, dt); else l.mix.update(dt);
     if (l.mortT) { ombreLK(l, hSol); if (!l.flaque && now - l.mortT > 900) { l.flaque = true; flaqueMort({ g: { position: l.g.position.clone() } }); }
       if (!l.compte) { l.compte = true; M.lickT = now + 30000; } continue; }   /* (abattu : son corps reste là, à plat sur le sol) */
-    const rouge = now < (l.flashT || 0); if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : o.userData.emi || 0); }); }
+    const rouge = false;   /* (plus de clignotement rouge quand on le touche) */ if (rouge !== l.rouge) { l.rouge = rouge; l.sc.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(rouge ? 0x770000 : o.userData.emi || 0); }); }
     ombreLK(l, hSol);
     if (l.etat === "mur") { const c = l.mur.c; l.mur.a += l.mur.sens * dt * .7; if (Math.abs(l.mur.a) > (c.W - 3) / 2) { l.mur.sens *= -1; l.mur.a = Math.sign(l.mur.a) * (c.W - 3) / 2; }
       poseMurLK(l); if (Math.hypot(mp.x - l.x, mp.z - l.z) < LK.VUE && !APO.zombieFin) { l.etat = "chute"; l.t0 = now; l.p0 = l.g.position.clone(); l.q0 = l.g.quaternion.clone();
@@ -13115,7 +13115,7 @@ function animerTyran(moi, now, dt) { const T = M.tyran; if (!T || !T.g) return; 
     T.g.updateMatrixWorld(true); const bal = T.cur === "walk" || T.cur === "run" ? Math.sin(performance.now() / 260) * .35 : 0;
     for (const [c, sg] of [["Left", 1], ["Right", -1]]) { const d = new THREE.Vector3(fx * (.2 + bal * sg) + rx * sg * .12, -1, fz * (.2 + bal * sg) + rz * sg * .12).normalize();
       viser3D(T, c + "Arm", c + "ForeArm", d); viser3D(T, c + "ForeArm", c + "Hand", d.clone().add(new THREE.Vector3(fx * .25, 0, fz * .25)).normalize()); } }
-  const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0x660000 : 0); }); }
+  const rouge = false;   /* (plus de clignotement rouge quand on le touche) */ if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(rouge ? 0x660000 : 0); }); }
   if (T.mortT && T.mx && T.act.mort) { if (T.cur !== "mort") jouerTY(T, "mort", true); T.mix.timeScale = 1;   // (il s'effondre pour de vrai, à genoux puis sur le dos)
     if (!T.flaque && now - T.mortT > 2600) { T.flaque = true; const h = T.os.Head, w = h ? h.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(T.x, 0, T.z); flaqueMort({ g: { position: new THREE.Vector3(w.x, T.g.position.y, w.z) } }); }
     /* (il reste là, mort, à genoux puis face contre terre — il ne disparaît plus) */
@@ -13247,7 +13247,7 @@ function reveiller(p) { if (!p || !p.lisaKO) return; p.lisaKO = false; p.info.mo
 function animerLisa(moi, now, dt) { const T = M.lisa; if (!T || !T.g) return;
   if (T.g.parent !== M.scene) { for (const p of M.gens.values()) reveiller(p); M.lisa = null; if (M.racle) { try { M.racle.src.stop(); } catch (e) {} M.racle = null; } return; }   // (on a changé de lieu)
   const A = T.A; for (let i = T.tw.length - 1; i >= 0; i--) T.tw[i][0].quaternion.copy(T.tw[i][1]); T.tw.length = 0;   // (chaque image repart de la pose de l'animation)
-  const rouge = now < (T.flashT || 0); if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) { o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); o.material.emissiveIntensity = rouge ? .6 : .12; } }); }
+  const rouge = false;   /* (plus de clignotement rouge quand on le touche) */ if (rouge !== T.rouge) { T.rouge = rouge; T.sc.traverse(o => { if (o.isMesh && o.material.emissive) { o.material.emissive.setHex(rouge ? 0xff3020 : 0xffffff); o.material.emissiveIntensity = rouge ? .6 : .12; } }); }
   T.g.position.set(T.x, 0, T.z);
   if (T.mortT) { racleChaine(0); mort3D({ info: { mortT: T.mortT }, g: T.g, corps: null }, A, dt);
     if (!T.flaque && now - T.mortT > 1300) { T.flaque = true; flaqueMort({ g: { position: new THREE.Vector3(T.x + Math.sin(T.ry) * 1.1, 0, T.z + Math.cos(T.ry) * 1.1) } }); }
@@ -13524,7 +13524,7 @@ function chargerZombie3D() { if (!zombie3D) zombie3D = (async () => { gltfMod = 
       const NZ = Z3_FICHIERS.length; modeles = L.slice(0, NZ).map(prep); rampe = prep(L[NZ]); const c = L[NZ].animations[0];
       if (c) { const k = c.clone(); for (const t of k.tracks) if (/\.position$/.test(t.name)) { const v = t.values; for (let i = 0; i < v.length; i += 3) { v[i] = v[0]; v[i + 2] = v[2]; } } rampe.clip = k; } }   // (elle rampe sur place : c'est le jeu qui la fait avancer)
     catch (e) { console.warn("zombies 3D", e); }
-    const mx = await chargerAnimsMX("anims/re-zombies.json?v=2");
+    const mx = await chargerAnimsMX("anims/re-zombies.json?v=3");
     return (zPack = { zG: g, scene: g.scene, animations: g.animations, modeles, rampe, mx, walk: demarche("walk"), idle: demarche("idle") }); })().catch(e => { console.warn("zombie 3D", e); return null; }); return zombie3D; }
 function poserZ3(z, P) { const n = [...String(z.id)].reduce((a, c) => a + c.charCodeAt(0), 0), r = rampeZ(z) && (P.mx || (P.rampe && P.rampe.clip)), mod = r && !P.mx ? P.rampe : P.modeles.length ? P.modeles[((z.ty | 0) + n) % P.modeles.length] : null;
   const sc = skelMod.clone(mod ? mod.g.scene : P.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = [].concat(o.material).map(m => m.clone()); if (o.material.length === 1) o.material = o.material[0]; } });
@@ -13564,7 +13564,7 @@ function animerZ3(z, now, dt, marche, vx, vz) { const Z = z.z3; if (!Z) return;
   let n = marche ? "walk" : "idle"; if (Z.act.att && z.coupT && now - z.coupT < 1600) n = "att"; else if (Z.act.touche && z.flashT && now < z.flashT + 300 && !marche) n = "touche";   // (il attaque ; touché, il encaisse)
   if (Z.cur !== n && Z.act[n]) { Z.act[n].reset().play(); if (Z.act[Z.cur]) Z.act[n].crossFadeFrom(Z.act[Z.cur], .25, false); Z.cur = n; }
   Z.mix.timeScale = Z.mx ? (n === "walk" ? Math.max(.8, Math.min(1.4, (ZTYPES[z.ty].v || .85) * 1.2)) : 1) : Z.rampe ? 1.6 : Z.zpose ? (ZTYPES[z.ty].v || .85) * .7 : (ZTYPES[z.ty].v || .85) * 1.1; if (Z.zpose) zPoseAvant(Z); Z.mix.update(dt); if (Z.zpose) zPoseApres(Z);
-  const touche = now < (z.flashT || 0); if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
+  const touche = false; if (touche !== Z.rouge) { Z.rouge = touche; Z.sc.traverse(m => { if (m.isMesh) m.material.emissive.setHex(touche ? 0x880000 : 0x000000); }); } }
 /* qui est en 3D : les zombies ordinaires les plus proches de la caméra (pas le chien, ni Nemesis, ni les équipiers revenus) */
 function choisirZ3(now) { if (M.z3T && now < M.z3T) return; M.z3T = now + 250; const g = zombie3D; chargerZombie3D();
   zombie3D.then(G => { if (!G || !M || !M.zomb) return; const cam = M.camera.position;
@@ -13993,7 +13993,7 @@ function animerApo(t, dt) {
     // le chien regarde là où il court
     if (z.chien && Math.hypot(vx, vz) > 1e-4) { const droite = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0); z.flip = (vx * droite.x + vz * droite.z) > 0 ? -1 : 1; }
     z.mesh.scale.set(z.W * (z.flip || 1), z.H, 1);
-    z.mesh.material.color.setRGB(1, now < (z.flashT || 0) ? .35 : 1, now < (z.flashT || 0) ? .35 : 1);
+    z.mesh.material.color.setRGB(1, 1, 1);
     if (z.c3) { animerChien3D(z, now, dt, vx, vz); z.mesh.visible = false; z.om.visible = !z.mortT; }
     if (z.z3) { const marche3 = Math.hypot(vx, vz) > 1e-4; animerZ3(z, now, dt, marche3, vx, vz); z.mesh.visible = false; if (z.mortT) continue;
       const d3 = Math.hypot(moi.g.position.x - z.x, moi.g.position.z - z.z); if (now > z.sonT && d3 < 15 && (baseLieu(M.lieu) !== "etage" || z.n === etageDe(moi))) { z.sonT = now + 6500 + Math.random() * 5000; sonPos(ZTYPES[z.ty].son, (1 - d3 / 15) * .9); } continue; }
@@ -15027,7 +15027,7 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
   return av3Cache[f]; }
 /* les héros de Resident Evil en vraie 3D (des modèles des jeux, animés : repos, marche, course) : quand on les joue, ou quand ils nous accompagnent */
 const herosSH = h => h >= 69 && h !== 95;   // (les héros de Silent Hill : 69 et au-delà — sauf Jill, 95, de Resident Evil)
-const HEROS_3D = { 23: "avatars/re2-barry.glb?v=3", 25: "avatars/re2-wesker.glb?v=4", 26: "avatars/re2-chris.glb?v=3", 95: "avatars/re2-jill.glb?v=4", 21: "avatars/re2-claire.glb?v=3", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=3", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
+const HEROS_3D = { 23: "avatars/re2-barry.glb?v=4", 25: "avatars/re2-wesker.glb?v=5", 26: "avatars/re2-chris.glb?v=4", 95: "avatars/re2-jill.glb?v=5", 21: "avatars/re2-claire.glb?v=4", 22: "avatars/re-hunk.glb?v=4", 24: "avatars/re2-leon.glb?v=4", 72: "avatars/sh-maria.glb?v=1", 71: "avatars/sh-angela.glb?v=1", 100: "avatars/sh-harry.glb?v=1", 69: "avatars/sh-james.glb?v=1", 73: "avatars/sh-lisa.glb?v=2", 110: "avatars/sh-heather.glb?v=1", 111: "avatars/sh-alessa.glb?v=1" };   // (69 : James, 71 : Angela, 72 : Maria, 73 : Lisa, 110 : Heather, 111 : Alessa, 100 : Harry Mason — celui qu'on joue — dans Silent Hill)
 const tenueAv3 = info => { if (info.heros && HEROS_3D[info.heros]) return { id: "heros" + info.heros, f: HEROS_3D[info.heros] }; const l = AVATARS_3D[info.numero]; if (!l) return null; const a = info.av3 || {}; if (a.t === "ancien") return null; return l.find(t => t.id === a.t) || l[0]; };   /* (« ancien » : il a choisi de garder son ancien bonhomme) */
 const av3OK = p => !!(tenueAv3(p.info) && M.L && (p.info.heros && HEROS_3D[p.info.heros] ? (herosSH(p.info.heros) ? !!M.L.sh : M.L.apo && !M.L.sh) : !p.info.vrai && !p.info.pnj && !M.L.apo && !M.L.lb && !M.L.gb && !M.L.sh && !estBttf(M.lieu)));
 // (la taille et le poids : plus grand ou plus petit que 1,75 m ; plus large ou plus mince selon la corpulence — l'indice de masse corporelle, comparé à celui du modèle)
