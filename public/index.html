@@ -338,7 +338,7 @@
   .mx-ambiance button.on { background: #1f3a5f; color: #fff; border-color: #1f3a5f; }
   .mx-danses { position: absolute; left: 12px; bottom: 14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 5px; max-width: calc(100% - 200px); }
   .mx-danses .mx-danse { padding: 7px 11px; font-size: 13px; }
-  .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { bottom: 74px; left: auto; right: 12px; justify-content: flex-end; max-width: calc(100% - min(70%, 420px) - 36px); }   /* (à droite : la discussion s'écrit à gauche sans les cacher ; le bouton Musique passe au-dessus) */
+  .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { bottom: calc(var(--dire-h, 56px) + 18px); left: auto; right: 12px; justify-content: flex-end; max-width: calc(100% - min(70%, 420px) - 36px); }   /* (à droite : la discussion s'écrit à gauche sans les cacher ; le bouton Musique passe au-dessus) */
   .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: 168px; }
   .mx-danse { border: 0; border-radius: 99px; padding: 9px 14px; background: rgba(31,42,55,.8); color: #fff; font: 700 14px "Lato", sans-serif; cursor: pointer; }
   .mx-danse.on { background: #c4694a; }
@@ -348,10 +348,10 @@
   .mx-dire-plein input { flex: 1; min-width: 0; border: 0; border-radius: 99px; padding: 12px 16px; font: 16px "Lato", sans-serif; background: rgba(255,255,255,.94); outline: none; }
   .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { display: flex; flex-direction: column; gap: 3px; position: absolute; left: 12px; bottom: 70px; max-width: min(70%, 420px); z-index: 3; pointer-events: none; }
   @media (max-width: 760px) {   /* (plein écran sur téléphone : les danses sur une ligne qu'on fait défiler, le bouton Musique au-dessus à droite, la discussion à gauche) */
-    .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { left: 12px; right: 12px; max-width: none; bottom: 70px; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+    .mx-scene:fullscreen .mx-danses, .mx-scene.plein-css .mx-danses { left: 12px; right: 12px; max-width: none; bottom: calc(var(--dire-h, 56px) + 14px); flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
     .mx-scene:fullscreen .mx-danses::-webkit-scrollbar, .mx-scene.plein-css .mx-danses::-webkit-scrollbar { display: none; } .mx-scene:fullscreen .mx-danses .mx-danse, .mx-scene.plein-css .mx-danses .mx-danse { flex: 0 0 auto; }
-    .mx-scene:fullscreen .mx-musique.mx-musique, .mx-scene.plein-css .mx-musique.mx-musique { bottom: 118px; }
-    .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: 118px; max-width: calc(100% - 170px); } }
+    .mx-scene:fullscreen .mx-musique.mx-musique, .mx-scene.plein-css .mx-musique.mx-musique { bottom: calc(var(--dire-h, 56px) + 62px); }
+    .mx-scene:fullscreen .mx-fil-plein, .mx-scene.plein-css .mx-fil-plein { bottom: calc(var(--dire-h, 56px) + 62px); max-width: calc(100% - 170px); } }
   .mx-fil-plein div { background: rgba(31,42,55,.72); color: #fff; border-radius: 10px; padding: 4px 10px; font: 13px "Lato", sans-serif; }
   .mx-fil-plein b { color: #f6d465; }
   .mx-scene:fullscreen .mx-musique, .mx-scene.plein-css .mx-musique { bottom: 160px; left: auto; right: 12px; transform: none; } .mx-plein[hidden], .mx-musique[hidden] { display: none; }
@@ -2618,6 +2618,9 @@
   $("mxFil").onclick = async e => { const b = e.target.closest("[data-efface]"); if (!b || !MX) return;
     if (b.dataset.efface === "tout") { if (!await garde("Effacer toute la discussion de ce lieu, pour tout le monde ?", { titre: "Effacer la discussion", annuler: "Non", ok: "Effacer" })) return; MX.effacerDit("tout"); }
     else MX.effacerDit(+b.dataset.efface); };
+  /* (la hauteur réelle de la barre « Dire quelque chose » — plus haute sur un téléphone réglé en grands caractères : les danses et le reste se placent au-dessus, sans être cachés) */
+  { const f = $("mxDirePlein"), maj = () => { const r = f.getBoundingClientRect(), sc = $("mxScene").getBoundingClientRect(); if (r.height) $("mxScene").style.setProperty("--dire-h", Math.round(sc.bottom - r.top) + "px"); };
+    if (window.ResizeObserver) new ResizeObserver(maj).observe(f); addEventListener("resize", () => setTimeout(maj, 50)); document.addEventListener("fullscreenchange", () => setTimeout(maj, 80)); }
   $("mxDirePlein").onsubmit = e => { e.preventDefault(); const t = $("mxTextePlein").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTextePlein").value = ""; };
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
@@ -3196,6 +3199,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.87", "23 octobre 2026", ["Sur téléphone, en plein écran : les boutons de danse (et le bouton Musique) se placent toujours au-dessus de la barre « Dire quelque chose », même avec les grands caractères"]],
     ["6.86", "23 octobre 2026", ["Salle des fêtes : si un clip ne peut pas s'afficher (format vidéo non pris en charge par le navigateur), un message le dit au lieu d'un écran blanc", "En ajoutant une vidéo au DJ : on vérifie d'abord que son image se lit ; sinon, elle est refusée avec l'explication"]],
     ["6.85", "23 octobre 2026", ["La télé de l'appartement : la vidéo réduite à la taille de l'écran (25 images par seconde) — en pleine définition, elle faisait ramer tout le jeu"]],
     ["6.84", "23 octobre 2026", ["Resident Evil : le canon du pistolet dans le prolongement du bras et de la main, la crosse dans le poing"]],
