@@ -570,7 +570,7 @@ export class Compteur extends DurableObject {
       const al = await this.almanach(); al.taille = Math.max(.1, Math.min(1.2, Number(m.v) || .3)); await this.ctx.storage.put("almanach", al); this.diffuserAlmanach(al);
     } else if (m.t === "perso") {
       // à l'apocalypse, on joue l'un des héros de Resident Evil (ou soi-même) : les autres le voient avec sa tête et sa tenue
-      const id = Number(m.id); a.perso = Number.isInteger(id) && id >= 21 && id <= 26 ? id : null; ws.serializeAttachment(a);
+      const id = Number(m.id); a.perso = Number.isInteger(id) && ((id >= 21 && id <= 26) || id === 95) ? id : null; ws.serializeAttachment(a);
       if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }, ws);
     } else if (m.t === "joue") {
       // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)

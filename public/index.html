@@ -2424,7 +2424,7 @@
   document.addEventListener("fullscreenchange", () => { if ($("mxDJ").classList.contains("panneau")) fermerDJ(); });
   $("mxMusique").onclick = allerAuDJ;
   // l'écran « Bienvenue en 1998 » : qui l'on joue (soi-même ou un héros de Resident Evil), et jusqu'à deux équipiers
-  const APO_JOUABLES = [25, 23, 26, 21, 22, 24];   /* (Wesker, Barry, Chris, Claire, Hunk, Leon) */
+  const APO_JOUABLES = [25, 23, 26, 21, 22, 24, 95];   /* (Wesker, Barry, Chris, Claire, Hunk, Leon, Jill) */
   const apoChoix = (() => { try { const v = JSON.parse(localStorage.getItem("apoChoix") || "null"); if (v && Array.isArray(v.equipe)) return v; } catch (e) {} return { perso: null, equipe: [] }; })();
   /* la manette de jeu : parmi les appareils vus comme des manettes (les lunettes XREAL, par exemple, en sont un), la vraie — deux joysticks, disposition standard —, celle dont on s'est servi en dernier */
   window.choisirManette = () => { const l = navigator.getGamepads ? [...navigator.getGamepads()].filter(q => q && q.connected) : []; if (!l.length) return null;
@@ -2453,7 +2453,7 @@
       if (chg) { try { localStorage.setItem("apoChoix", JSON.stringify(apoChoix)); } catch (e) {} dessinerChoixApo();
         $("mxApoEquipe").querySelectorAll("[data-e]").forEach(b => b.style.outline = +b.dataset.e === ids[vise] ? "3px solid #f6d465" : ""); } };
     requestAnimationFrame(tour); })();
-  function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => `images/re/${H[id].cle}-tete.png`, prenom = id => H[id].court;
+  function dessinerChoixApo() { if (!MX || !MX.HEROS) return; const H = MX.HEROS, tete = id => `images/re/${H[id].cle}-tete.png?v=2`, prenom = id => H[id].court;
     if (!APO_JOUABLES.includes(apoChoix.perso)) apoChoix.perso = 25;   /* (Wesker, Barry, Chris, Claire, Hunk ou Leon ; un équipier parmi les autres, toujours) */
     if (!(apoChoix.equipe.length === 1 && APO_JOUABLES.includes(apoChoix.equipe[0]) && apoChoix.equipe[0] !== apoChoix.perso)) apoChoix.equipe = [MX.APO_PAIRE[apoChoix.perso]];
     $("mxApoPerso").innerHTML = APO_JOUABLES.map(id => `<button type="button" data-p="${id}" class="${id === apoChoix.perso ? "on" : ""}"><img src="${tete(id)}" alt="">${esc(prenom(id))}</button>`).join("");
@@ -3199,6 +3199,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["6.65", "23 octobre 2026", ["Resident Evil : les héros refaits avec les modèles des jeux — Leon (R.P.D.), Claire, Chris, Wesker et Barry (S.T.A.R.S.) — et leurs nouveaux médaillons au choix des personnages", "Jill Valentine (S.T.A.R.S.) jouable, en équipe avec Chris par défaut — avec sa lettre", "Les zombies refaits : deux zombies de Resident Evil 0, le zombie nu, le zombie de l'U.S.S. et une zombie femme ; les chiens zombies reviennent dans les rues, en 3D, au galop", "Lisa Trevor refaite d'après le jeu ; sur la terrasse, le boss est maintenant Nemesis", "Les modèles sont plus légers qu'avant : ils chargent plus vite sur les petits téléphones"]],
     ["6.64", "23 octobre 2026", ["Coraline du jeu Nintendo DS : le vrai modèle du jeu, en cinq tenues (pull rayé et jean, imperméable jaune et bottes, pull violet et jupe, pull à étoiles, pyjama), chacune avec ses chaussures — à choisir dans « Mon personnage 3D » ; au repos les mains sur les hanches, la marche, la course"]],
     ["6.63", "23 octobre 2026", ["Appartement (escalier Z) : dans les toilettes, entre le lavabo et les WC, la cage du lapin gris — le bac, les barreaux, la paille, le biberon, la gamelle et le foin ; le lapin remue le nez, dresse une oreille, tourne la tête"]],
     ["6.62", "23 octobre 2026", ["Les Simpson retirés complètement : la jaquette du Video Futur, toute la ville de Springfield (la rue, le salon, le Kwik-E-Mart), ses personnages, leur réglage, sa musique et ses images"]],
