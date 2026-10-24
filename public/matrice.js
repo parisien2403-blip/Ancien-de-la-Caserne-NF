@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.10";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.11";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8319,8 +8319,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       const haut = (x, z) => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
       let n = 0; L.voituresG = []; const garer = (x, z, rot) => { if (sansVoituresGB) return;
         if (voituresRE) { const vg = voitureRE(scene, x, haut(x, z), z, rot, COULEURS_RE[n++ % COULEURS_RE.length], false); L.voituresG.push(vg); const lg = 2.25, la = .92, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); return; }   /* (à Resident Evil : la Pontiac de Silent Hill, de toutes les couleurs) */
-        const [mo, co0] = CIT[n++ % CIT.length], co = voituresLeg ? "#" + new THREE.Color(co0).lerp(new THREE.Color(0x6b4a32), .78).getHexString() : co0, g = citadine(scene, mo, co, x, z, rot);   /* (« Je suis une légende » : rouillées, ternies) */ g.position.y = haut(x, z); g.updateMatrixWorld(true);
-        for (const o of [...g.children]) { o.userData.citadine = true; scene.attach(o); } scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
+        const [mo, co] = CIT[n++ % CIT.length], g = citadine(scene, mo, co, x, z, rot); g.position.y = haut(x, z); g.updateMatrixWorld(true);
+        for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : elles se fondent avec le décor, c'est plus léger)
         const lg = mo === "clio" ? 1.9 : 1.82, la = .86, c = Math.abs(Math.cos(rot)) > .5; VO.push(c ? [x - lg, x + lg, z - la, z + la] : [x - la, x + la, z - lg, z + lg]); };
       if (!sansVoituresSH) for (const z of [.4, 2.7, 5.0]) garer(-5.0, z, Math.PI);   // côté mess : l'une à côté de l'autre, le pare-brise face au mess (on passe encore sur le trottoir, devant)
       if (!sansVoituresSH) for (const z of [.4, 2.7]) garer(5.0, z, 0);                // côté salle des fêtes, pareil (pas devant sa porte)
@@ -11632,7 +11632,7 @@ function trierLumieres(t) {
   tri.forEach(([l], i) => l.layers.set(i < (re ? (qualiteChoisie() === "haut" ? 6 : 3) : PETIT ? 4 : estSH(M.lieu) ? 6 : LAMPES_MAX) ? 0 : 31));   // (Silent Hill : six, les plus proches — la salle des fêtes en avait vingt-trois allumées à la fois)   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
-const baseLieu = id => id === "bttf-cour" || id === "gb-cour" || id === "leg-grande" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
+const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
 // une flamme (dégradé jaune → orange → rouge, en goutte), partagée par tous les feux
 let texFlamme = null, texFumee = null, texSang = [], texTrainee = [], texPas = null;
 let texFlammes = null;
@@ -11705,56 +11705,6 @@ function busApo(scene, L) { const X = -26, Z = 3.6, LG = 11, TH = Math.PI / 2 + 
   (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/re-bus.glb?v=1"); if (!M) return; const sc = g.scene;
     sc.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(sc), k = LG / ((b.max.z - b.min.z) || 1), w = new THREE.Group(); sc.scale.multiplyScalar(k); sc.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
     sc.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); w.add(sc); w.position.set(X, (L.hauteur ? L.hauteur(X, Z) : 0) || 0, Z); w.rotation.set(0, TH, .035); scene.add(w); L.busApo = w; })().catch(() => {}); }
-/* ----- « Je suis une légende » : la caserne de 1990, des années plus tard — la nature a repris le dessus (l'administrateur seul, pour l'instant) ----- */
-const LEG_CERCLE = [0, -2];
-const mergeGeos = (gs) => { const g = new THREE.BufferGeometry(), at = {}, idx = []; let off = 0;   // (des géométries simples, indexées, mises bout à bout)
-  for (const q of gs) { for (const k of ["position", "normal", "uv"]) (at[k] = at[k] || []).push(...q.attributes[k].array); for (const i of q.index.array) idx.push(i + off); off += q.attributes.position.count; }
-  g.setAttribute("position", new THREE.Float32BufferAttribute(at.position, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(at.normal, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(at.uv, 2)); g.setIndex(idx); return g; };
-function legendeNature(scene, L) {
-  const PET = typeof PETIT !== "undefined" && PETIT, h = (x, z) => L.hauteur ? L.hauteur(x, z) : 0, R0 = (i, k) => hasard(i * 12.9898 + k * 78.233);
-  const libre = (x, z, r = 0) => { if (!L.limites(x, z)) return false; for (let a = 0; a < 6 && r; a++) { const t = a / 6 * Math.PI * 2; if (!L.limites(x + Math.cos(t) * r, z + Math.sin(t) * r)) return false; } return Math.hypot(x - LEG_CERCLE[0], z - LEG_CERCLE[1]) > 1.6; };
-  // la lumière : dorée, poussiéreuse, un voile de brume chaude ; toujours le jour (pour l'instant)
-  L.toujoursJour = true; L.brumePerso = 0xd8cca6; L.cielPerso = tex(toile(512, 512, (x, w, hh) => { const g = x.createLinearGradient(0, 0, 0, hh); g.addColorStop(0, "#a9b7bd"); g.addColorStop(.45, "#cfc9b0"); g.addColorStop(.62, "#e6d7aa"); g.addColorStop(1, "#d8cca6"); x.fillStyle = g; x.fillRect(0, 0, w, hh); }));
-  L.cielPerso.mapping = THREE.EquirectangularReflectionMapping; scene.background = L.cielPerso; scene.children.forEach(o => { if (o.isSprite) o.visible = false; }); scene.fog.color.setHex(0xd8cca6); scene.fog.near = 22; scene.fog.far = 130;
-  scene.children.forEach(o => { if (o.isHemisphereLight) { o.color.setHex(0xfff0cc); o.groundColor.setHex(0x6a7a3a); } if (o.isDirectionalLight) o.color.setHex(0xffe2a8); });
-  // les herbes hautes : des touffes partout où l'on peut marcher (deux plans croisés, une seule géométrie, d'un seul tenant pour la carte graphique)
-  const texH = tex(toile(128, 128, (x) => { for (let i = 0; i < 46; i++) { const bx = 8 + R0(i, 1) * 112, hh = 50 + R0(i, 2) * 76, cb = 70 + R0(i, 3) * 70; x.strokeStyle = `rgb(${cb * .55 | 0},${cb | 0},${cb * .35 | 0})`; x.lineWidth = 2 + R0(i, 4) * 3;
-      x.beginPath(); x.moveTo(bx, 128); x.quadraticCurveTo(bx + (R0(i, 5) - .5) * 30, 128 - hh * .6, bx + (R0(i, 6) - .5) * 40, 128 - hh); x.stroke(); } }));
-  const gH = new THREE.PlaneGeometry(1, 1); gH.translate(0, .5, 0); const g2 = gH.clone(); g2.rotateY(Math.PI / 2); const gTouffe = mergeGeos([gH, g2]);
-  const mH = new THREE.MeshLambertMaterial({ map: texH, alphaTest: .45, side: THREE.DoubleSide, color: 0xd8e8b0 });
-  const NH = PET ? 1400 : 3200, touffes = new THREE.InstancedMesh(gTouffe, mH, NH), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), e4 = new THREE.Euler(), v4 = new THREE.Vector3(), s4 = new THREE.Vector3(); let n = 0;
-  for (let i = 0; i < NH * 6 && n < NH; i++) { const x = -31 + R0(i, 11) * 62, z = -134 + R0(i, 12) * 164; if (!L.limites(x, z) || Math.hypot(x - LEG_CERCLE[0], z - LEG_CERCLE[1]) < 1.2) continue;
-    const t = .45 + R0(i, 13) * .9; e4.set(0, R0(i, 14) * 6.3, 0); q4.setFromEuler(e4); s4.set(t * (.8 + R0(i, 15) * .6), t, t * (.8 + R0(i, 15) * .6)); v4.set(x, h(x, z), z); m4.compose(v4, q4, s4); touffes.setMatrixAt(n++, m4); }
-  touffes.count = n; touffes.frustumCulled = false; scene.add(touffes);
-  // la mousse et la terre : de grandes taches vertes au sol, là où le béton s'est fendu
-  const texM = tex(toile(128, 128, (x) => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, "rgba(70,96,38,.85)"); g.addColorStop(.6, "rgba(84,104,44,.55)"); g.addColorStop(1, "rgba(90,100,50,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
-    for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(${40 + R0(i, 21) * 40 | 0},${70 + R0(i, 22) * 50 | 0},30,${.3 + R0(i, 23) * .4})`; const a = R0(i, 24) * 6.3, r = R0(i, 25) * 56; x.fillRect(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 3, 3); } }));
-  const mM = new THREE.MeshLambertMaterial({ map: texM, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), gM = new THREE.PlaneGeometry(1, 1); gM.rotateX(-Math.PI / 2);
-  const NM = PET ? 60 : 120, taches = new THREE.InstancedMesh(gM, mM, NM); n = 0;
-  for (let i = 0; i < NM * 8 && n < NM; i++) { const x = -31 + R0(i, 31) * 62, z = -134 + R0(i, 32) * 164; if (!L.limites(x, z)) continue; const t = 2 + R0(i, 33) * 5; e4.set(0, R0(i, 34) * 6.3, 0); q4.setFromEuler(e4); s4.set(t, 1, t * (.6 + R0(i, 35) * .8)); v4.set(x, h(x, z) + .015 + n * .0002, z); m4.compose(v4, q4, s4); taches.setMatrixAt(n++, m4); }
-  taches.count = n; taches.frustumCulled = false; taches.renderOrder = 1; scene.add(taches);
-  // le lierre : il grimpe sur les façades, depuis le sol (des bandes de feuilles, plus ou moins hautes)
-  const texL = tex(toile(128, 256, (x) => { for (let i = 0; i < 900; i++) { const yy = 256 - Math.pow(R0(i, 41), .7) * 256, larg = 64 * (.35 + .65 * yy / 256), xx = 64 + (R0(i, 42) - .5) * 2 * larg, g = 70 + R0(i, 43) * 80;
-      x.fillStyle = `rgb(${g * .4 | 0},${g | 0},${g * .3 | 0})`; x.beginPath(); x.ellipse(xx, yy, 3 + R0(i, 44) * 4, 2 + R0(i, 45) * 3, R0(i, 46) * 3, 0, 7); x.fill(); }
-    x.strokeStyle = "rgba(60,45,30,.8)"; x.lineWidth = 2; for (let k = 0; k < 5; k++) { x.beginPath(); let xx = 30 + k * 18; x.moveTo(xx, 256); for (let yy = 256; yy > 20; yy -= 16) { xx += (R0(k, yy) - .5) * 12; x.lineTo(xx, yy); } x.stroke(); } }));
-  const mL = new THREE.MeshLambertMaterial({ map: texL, alphaTest: .4, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }), gL = new THREE.PlaneGeometry(1, 1); gL.translate(0, .5, 0);
-  const lierres = []; let k = 0;
-  for (const [, cadres] of L.facadesFen || []) for (const c of cadres) { if (c.H < 3) continue; const nb = Math.max(1, Math.round(c.W / 6));
-    for (let j = 0; j < nb; j++) { k++; if (R0(k, 51) < .3) continue; const u = (R0(k, 52) - .5) * c.W * .9, w = 1.4 + R0(k, 53) * 2.6, hh = Math.min(c.H, 2.5 + R0(k, 54) * c.H * .85);
-      lierres.push([c.o[0] + c.ux[0] * u + c.n[0] * .05, c.o[1] - c.H / 2, c.o[2] + c.ux[2] * u + c.n[2] * .05, w, hh, Math.atan2(c.n[0], c.n[2])]); } }
-  if (lierres.length) { const im = new THREE.InstancedMesh(gL, mL, lierres.length); lierres.forEach(([x, y, z, w, hh, ry], i) => { e4.set(0, ry, 0); q4.setFromEuler(e4); s4.set(w, hh, 1); v4.set(x, y, z); m4.compose(v4, q4, s4); im.setMatrixAt(i, m4); }); im.frustumCulled = false; scene.add(im); }
-  // les arbres : ils ont poussé au milieu de la cour, entre les voitures, dans les recoins
-  const tronc = new THREE.MeshLambertMaterial({ color: 0x4a3a2a }), feuilles = [0x3e6a2a, 0x4f7a30, 0x5d8a36, 0x35602a].map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
-  const gT = new THREE.CylinderGeometry(.12, .22, 1, 7); gT.translate(0, .5, 0); const gF = new THREE.IcosahedronGeometry(1, 1);
-  const NA = PET ? 16 : 30; n = 0;
-  for (let i = 0; i < NA * 20 && n < NA; i++) { const x = -30 + R0(i, 61) * 60, z = -132 + R0(i, 62) * 160; if (!libre(x, z, 2.2)) continue; n++;
-    const g = new THREE.Group(), H = 3.5 + R0(i, 63) * 4.5, y0 = h(x, z); g.position.set(x, y0, z); const t = new THREE.Mesh(gT, tronc); t.scale.set(1, H, 1); t.castShadow = true; g.add(t);
-    for (let f = 0; f < 4; f++) { const b = new THREE.Mesh(gF, feuilles[(i + f) % 4]), r = 1.1 + R0(i * 4 + f, 64) * 1.1; b.scale.set(r, r * .8, r); b.position.set((R0(i * 4 + f, 65) - .5) * 1.6, H + (R0(i * 4 + f, 66) - .3) * 1.2, (R0(i * 4 + f, 67) - .5) * 1.6); b.castShadow = true; g.add(b); }
-    scene.add(g); const lim = L.limites; L.limites = (a, b) => lim(a, b) && Math.hypot(a - x, b - z) > .45; }   /* (on ne traverse pas un tronc) */
-  // les voitures : rouillées, ternes, des années sans bouger
-  const rouiller = () => { for (const vg of [...(L.voituresG || []), ...scene.children.filter(o => o.userData.citadine)]) vg.traverse(o => { if (o.isMesh && o.material && !o.userData.rouille) { o.userData.rouille = true; o.material = [].concat(o.material).map(m => { m = m.clone(); if (m.color) { if (m.map) m.color.setHex(0x8a6a4e); else m.color.lerp(new THREE.Color(0x6b4a32), .85); } m.roughness = 1; m.metalness = 0; if (m.emissive) m.emissive.setHex(0); return m; }); if (o.material.length === 1) o.material = o.material[0]; } }); };
-  rouiller(); { const av = L.anim; let k2 = 0; L.anim = (t) => { av && av(t); if (++k2 % 90 === 0 && k2 < 3000) rouiller(); }; }   /* (leurs modèles arrivent un peu après : on repasse dessus) */
-}
 function apocalypse(scene, L, base) {
   texturesApo();
   L.apo = true; L.sansMusique = true; L.porteFete = null; L.posDJ = null; L.posBar = null; L.zoneDJ = null;
@@ -14667,7 +14617,7 @@ function corbeilleParis(A, scene, x, y, z, rot, poteau = false) {
   else aj(new THREE.BoxGeometry(.4, .5, .03), vertF, 0, yb + .35, .015);   // la platine, contre le mur
   return g;
 }
-let sansVoituresGB = false, sansVoituresSH = false, voituresRE = false, voituresLeg = false;   // (Silent Hill : plus de voitures garées dans la cour d'honneur — la Pontiac, seule)
+let sansVoituresGB = false, sansVoituresSH = false, voituresRE = false;   // (Silent Hill : plus de voitures garées dans la cour d'honneur — la Pontiac, seule)
 function construireScene(id) {
   const scene = new THREE.Scene(), T = textures();
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
@@ -14675,7 +14625,7 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
-  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); voituresLeg = id === "leg-grande"; const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = voituresLeg = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
@@ -14701,7 +14651,7 @@ function construireScene(id) {
       scene.background = L.cielPerso || (n ? cielNuit : cielJour); scene.fog.color.setHex(L.brumePerso || (n ? 0x0c1530 : 0xcfe6f7));   /* (Santa Carla : son ciel de crépuscule) */
       hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
       soleil.intensity = n ? 1.35 : 2.3; soleil.color.setHex(n ? 0xc6d4ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
-      clair.intensity = n ? .32 : 0; lune.visible = n && !L.sansLune; nuages.forEach(o => o.visible = !n && !L.legende); if (dome) dome.visible = !n && !L.legende;   /* (« Je suis une légende » : un ciel voilé, doré, sans nuages dessinés) */
+      clair.intensity = n ? .32 : 0; lune.visible = n && !L.sansLune; nuages.forEach(o => o.visible = !n); if (dome) dome.visible = !n;
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
       (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); L.grille = L.grilleAdmin = null;   // (le camion-benne : le jour seulement ; ses passages changent)
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
@@ -14711,8 +14661,6 @@ function construireScene(id) {
   }
   if (estApo(id)) { apocalypse(scene, L, baseLieu(id)); if (baseLieu(id) === "rue") busApo(scene, L); if (baseLieu(id) === "grande") portailSouffle(scene, L, 1); }   // (le portail de la voûte de l'horloge jaune, soufflé par l'explosion de notre arrivée)   // (le bus de Resident Evil 2, dans la rue)
   if (estSH(id)) silentHill(scene, L, baseLieu(id));
-  if (id === "grande") L.portails.push({ dans: (x, z) => !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin) && Math.hypot(x - LEG_CERCLE[0], z - LEG_CERCLE[1]) < .9, vers: "leg-grande", arrivee: LEG_CERCLE, yaw: 0, indice: LEG_CERCLE, vert: true });   /* (au milieu de la cour d'honneur : l'administrateur seul passe dans « Je suis une légende ») */
-  if (id === "leg-grande") { Object.assign(L, { portails: [{ dans: (x, z) => Math.hypot(x - LEG_CERCLE[0], z - LEG_CERCLE[1]) < .9, vers: "grande", arrivee: LEG_CERCLE, yaw: 0, indice: LEG_CERCLE, vert: true }], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, legende: true }); legendeNature(scene, L); }
   const repere = new THREE.Mesh(new THREE.RingGeometry(.35, .5, 32), new THREE.MeshBasicMaterial({ color: 0xf6d465, transparent: true, opacity: 0 }));
   repere.rotation.x = -Math.PI / 2; repere.position.y = .04; scene.add(repere);
   // les lampes (ampoules, lampadaires) n'ont jamais d'ombre portée : une ombre de lampe oblige à redessiner tout le décor six fois à chaque image (c'était le cas à Hill Valley)
@@ -15450,12 +15398,12 @@ function animerCercles(t) {
     if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
-      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu, vert = !!c.pt.vert;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
-      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: vert ? 0x3fbf3a : bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
+      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
+      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
       const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .07, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
-      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x8fe07a : bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
+      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
-      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x5fdc4a : bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
@@ -18352,7 +18300,7 @@ export function allerAuLieu(id) { if (M && M.lieu !== id) changerLieu(id); }
    On s'entend entre tous ceux qui ont allumé leur micro, dans le même monde (la caserne de 1990, ou celle de Resident Evil) — pas à Silent Hill ni dans les univers à une personne.
    D'un téléphone à l'autre, en direct (WebRTC) : le serveur ne fait que les présenter l'un à l'autre. On allume, on coupe, quand on veut. */
 const VX = { on: false, flux: null, pcs: new Map(), salle: null, ws: null };
-const salleVoixDe = l => !l ? null : l.startsWith("z-") ? "apo" : /^(sh-|gb-|cor-)/.test(l) || ["santacarla", "bttf-cour", "hv1955", "leg-grande"].includes(l) ? null : "1990";
+const salleVoixDe = l => !l ? null : l.startsWith("z-") ? "apo" : /^(sh-|gb-|cor-)/.test(l) || ["santacarla", "bttf-cour", "hv1955"].includes(l) ? null : "1990";
 function voixInfo() { if (M && M.ctx.surVoix) M.ctx.surVoix({ on: VX.on, n: VX.pcs.size, moi: !!VX.moiParle, autre: !!VX.autreParle }); }
 /* (qui parle : le niveau de notre micro, et celui de chaque voix reçue — le bouton s'entoure de vert quand on capte notre voix, le chiffre quand on entend quelqu'un ;
    et si notre micro ne capte rien du tout, on le dit : sur un PC, c'est souvent le mauvais micro qui est choisi) */
