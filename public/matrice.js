@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.08";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.09";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -11800,9 +11800,9 @@ function apocalypse(scene, L, base) {
   // le décor de chaque lieu
   if (base === "rue") { epave(-26, -1.2, .25); epave(-9, .8, -.5); epave(9, -.6, .35, false); epave(24, 1.2, -.2); epave(40, -1.5, .6); fut(-16, 4.2); fut(16, -5.2); fut(32, 4.6); fut(-36, 4.4); brasier(-20, 5.3); brasier(30, -5.6); }
   if (base === "grande") {   // dans la troisième cour, une voiture garée sur deux brûle ; sur la terrasse, le H de l'hélicoptère
-    { let n = 0; (L.voitures || []).forEach(([a, b, c, d], i) => { if ((c + d) / 2 >= -50 || n++ % 2) return; const x = (a + b) / 2, z = (c + d) / 2, vg = (L.voituresG || [])[i];   /* (la voiture garée là prend feu : calcinée, en flammes) */
-      if (vg) { vg.userData.brule = true; if (vg.userData.calciner) vg.userData.calciner(); feu(x, hauteurSol(x, z) + .6, z, 2); L.feuxSon.push([x, z]); } else epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); }); }
-    heliportApo(scene, L); }
+    try { heliportApo(scene, L); } catch (e) { console.warn("heliport", e); }   /* (en premier : si la suite échouait sur un téléphone, on n'avait plus ni H, ni balises, ni cercle rouge) */
+    try { let n = 0; (L.voitures || []).forEach(([a, b, c, d], i) => { if ((c + d) / 2 >= -50 || n++ % 2) return; const x = (a + b) / 2, z = (c + d) / 2, vg = (L.voituresG || [])[i];   /* (la voiture garée là prend feu : calcinée, en flammes) */
+      if (vg) { vg.userData.brule = true; if (vg.userData.calciner) vg.userData.calciner(); feu(x, hauteurSol(x, z) + .6, z, 2); L.feuxSon.push([x, z]); } else epave(x, z, b - a > d - c ? 0 : Math.PI / 2, true, hauteurSol(x, z), false); }); } catch (e) { console.warn("voitures en feu", e); } }
   L.ajouterFeu = feu;   /* (pour allumer un feu plus tard : après l'explosion du C4) */
   detritusApo(scene, L, base, hauteurSol); journauxVolants(scene, L, base, hauteurSol); tracesSang(deb, L, base, hauteurSol, libre);
   // les fenêtres des façades dessinées (la troisième cour, la rue en pente, l'immeuble…) : des planches clouées sur une sur trois (trois dessins en tout : léger)
@@ -13766,7 +13766,7 @@ function eclairDuCanon(p, dx, dz) { p.visee = Math.atan2(dx, dz); p.viseeT = per
 }
 // une morsure (ou un coup de griffe) : on recule, l'écran rougit ; à la troisième, on devient zombie
 function subirMorsure(zx, zz, deg = 1) {
-  const moi = moiApo(); if (!moi || APO.zombieFin || M.cine || M.evac || M.porteRE) return;   // (pendant une cinématique, on ne peut pas se défendre : pas de morsure)
+  const moi = moiApo(); if (!moi || APO.zombieFin || M.cine || M.evac || M.porteRE || codecOuvert() || M.codecSonne) return;   // (pendant un appel radio non plus) (pendant une cinématique, on ne peut pas se défendre : pas de morsure)
   APO.vies -= deg; M.ctx.surApoFlash && M.ctx.surApoFlash();
   const dx = moi.g.position.x - zx, dz = moi.g.position.z - zz, d = Math.hypot(dx, dz) || 1;
   for (let k = .8 * deg; k > .1; k -= .2) { const nx = moi.g.position.x + dx / d * k, nz = moi.g.position.z + dz / d * k; if (M.L.limites(nx, nz)) { moi.g.position.x = nx; moi.g.position.z = nz; break; } }
@@ -14026,7 +14026,7 @@ function simulerZ(t, dt) {
   if (t > (M.zSpawnT || 0)) { M.zSpawnT = t + (route ? 2500 : 6000); const zs = [...M.zomb.values()].filter(z => !z.mortT);   // (les corps au sol ne comptent pas : d'autres zombies arrivent)
     if (zs.filter(z => !z.chien && !z.boss && !z.revenant).length < nz) apparaitreZ(false); else if (zs.filter(z => z.chien).length < nc) apparaitreZ(true); }
   const ps = proies();
-  const figes = !!(M.cine && M.cine.gel);   /* (pendant une scène — la radio de Brad, une discussion — les monstres ne bougent plus : personne ne vient sur nous) */
+  const figes = !!(M.cine && M.cine.gel) || codecOuvert() || !!M.codecSonne;   /* (et pendant chaque appel radio : on ne voit rien, on ne peut pas se défendre) */   /* (pendant une scène — la radio de Brad, une discussion — les monstres ne bougent plus : personne ne vient sur nous) */
   for (const z of M.zomb.values()) { if (z.mortT || z.cine || figes) continue; M.zY = z.y ?? null;
     let cible = null, bd = z.boss ? 30 : z.chien ? 15 : 11;   // (ils ne repèrent les joueurs que d'assez près)
     M.zN = z.n; if (!(M.cine && M.cine.gel) && !(M.calmeT && t < M.calmeT)) for (const q of ps) { if ((base === "etage" || base === "mess") && q.n !== z.n) continue; if (z.y != null && q.p && q.p.g && Math.abs(q.p.g.position.y - z.y) > 1.5) continue;   /* (pas à un autre niveau : la terrasse au-dessus, le sous-sol) */ const d = Math.hypot(q.x - z.x, q.z - z.z); if (d < bd) { bd = d; cible = q; } }
@@ -14120,7 +14120,7 @@ function animerApo(t, dt) {
   animerEquipe(performance.now());   /* (plus de gendarmes poursuivis et dévorés, ni de héros attaqué sous l'horloge) */ animerRevenants(performance.now());
   // les équipiers des joueurs partis (ou qui ne donnent plus de nouvelles) disparaissent
   for (const [de, tt] of Object.entries(M.fantomesT || {})) if (performance.now() - tt > 4000) { for (const k of [0, 1]) retirerAncien(FANTOME(+de, k)); delete M.fantomesT[de]; }
-  const cam = M.camera.position, now = performance.now(); choisirZ3(now); animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); pluieRE(now); sursautsRE(moi, now); animerLisa(moi, now, dt); lancerLisa(); barApo(moi, now);
+  const cam = M.camera.position, now = performance.now(); choisirZ3(now); const radioOn = codecOuvert() || !!M.codecSonne; if (!radioOn) animerLickers(moi, now, dt); animerTyran(moi, now, dt); terrasseBoss(); histoireRE(moi, now); pluieRE(now); sursautsRE(moi, now); if (!radioOn) animerLisa(moi, now, dt);   /* (pendant un appel radio, les monstres ne bougent plus) */ lancerLisa(); barApo(moi, now);
   for (const z of M.zomb.values()) {
     if (!estChefZ()) { const k = Math.min(1, dt * 8); z.x += (z.tx - z.x) * k; z.z += (z.tz - z.z) * k; }
     const vx = z.x - (z.px ?? z.x), vz = z.z - (z.pz ?? z.z); z.px = z.x; z.pz = z.z;
