@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.06";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.07";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12894,7 +12894,10 @@ function cineEvac(m) {
     if (!c.renfPrep) { c.renfPrep = true; lancerRenforts();
       /* la horde : le porche a sauté (le C4) — par là, des dizaines de zombies entrent en courant et remontent la cour d'honneur, entre les bâtiments R et S */
       const nH = PETIT ? 16 : 30; c.horde = []; for (let i = 0; i < nH; i++) { const x0 = (Math.random() - .5) * 2.2, q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: i % 3, x: x0, z: 27.5, y: 0 }); q.cine = true; q.evacZ = true; q.forceZ3 = true; q.court = true; q.y = 0; q.g.visible = false;
-        c.horde.push({ q, d: (i / nH) * 2.1 + Math.random() * .25, x: x0, tx: ((i * 7) % nH / nH - .5) * 13 + (Math.random() - .5), v: 5.2 + Math.random() * .6, monte: i % 3 === 1 });   /* (tous par la voûte, puis ils se déploient dans la cour) */ } }
+        c.horde.push({ q, d: (i / nH) * 2.1 + Math.random() * .25, x: x0, tx: ((i * 7) % nH / nH - .5) * 13 + (Math.random() - .5), v: 5.2 + Math.random() * .6, monte: i % 3 === 1 });   /* (tous par la voûte, puis ils se déploient dans la cour) */ }
+      /* et une seconde vague, en masse, par les marches raides en face : droit sur le H — les premiers l'atteignent quand l'hélicoptère décolle */
+      const n2 = PETIT ? 12 : 22; c.horde2 = []; for (let i = 0; i < n2; i++) { const x0 = ((i * 5) % n2 / n2 - .5) * 4.6 + (Math.random() - .5) * .4, q = creerZ({ id: Math.floor(Math.random() * 1e9), ty: (i + 1) % 3, x: x0, z: -76, y: C3.hp }); q.cine = true; q.evacZ = true; q.forceZ3 = true; q.court = true; q.y = C3.hp; q.g.visible = false;
+        const a = i / n2 * Math.PI * 2; c.horde2.push({ q, x: x0, d: i * .42 + Math.random() * .3, fx: H.x + Math.sin(a) * (1.4 + (i % 3) * .5), fz: H.z + 1.6 + Math.abs(Math.cos(a)) * (1.2 + (i % 4) * .45), v: 4.4 + Math.random() * .7 }); } }
     if (u > 9.8 && !c.bradVite) { c.bradVite = true; bulle(`<b style="color:#e8c46a">Brad Vickers</b> : Dépêchez-vous !!! Ils arrivent !`, 2600); }
     const vueHorde = !!c.enPause, hu = c.hu ?? 0;   /* (le plan sur la cour d'honneur : face aux bâtiments R et S, la horde qui accourt) */
     if (c.horde) for (const Hd of c.horde) { const q = Hd.q, t = hu - 11.4 - Hd.d * .8; if (!vueHorde || t < 0) { q.g.visible = false; continue; } q.g.visible = true;
@@ -12935,6 +12938,12 @@ function cineEvac(m) {
       c.horde.forEach((Hd, i) => { const q = Hd.q, d = (u - 15 - i * .13) * 3.8 + 4;   /* (toute la horde, serrée, à l'assaut de l'escalier) */ if (d < 0) { q.g.visible = false; return; } let k = c.escL.findIndex(l => l >= d); if (k < 0) { q.g.visible = false; return; }
         const l0 = k ? c.escL[k - 1] : 0, f = (d - l0) / (c.escL[k] - l0), A0 = c.escP[k], B0 = c.escP[k + 1], dec = ((i % 3) - 1) * .35;
         q.g.visible = true; q.x = q.tx = A0[0] + (B0[0] - A0[0]) * f + (k === 0 || k >= 8 ? dec : 0); q.z = q.tz = A0[2] + (B0[2] - A0[2]) * f + (k > 0 && k < 8 ? dec * .6 : 0); q.y = A0[1] + (B0[1] - A0[1]) * f; q.g.position.set(q.x, q.y, q.z); if (q.z3) eclairer3D(q.z3.sc, .3); }); }
+    if (c.horde2) { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, yM = z => z > zT ? C3.hp : z > zt0 ? C3.hp + (zT - z) / (zT - zt0) * C3.NT * C3.HT2 : H.y;   /* (la hauteur : le passage, puis les marches raides, puis la terrasse) */
+      for (const Z of c.horde2) { const q = Z.q, t = u - 14.2 - Z.d * .55; if (!c.pauseFin || u > 21.5 || t < 0) { q.g.visible = false; continue; }
+        const dz = Z.fz - (-76), lg = Math.hypot(Z.fx - Z.x, dz), f = Math.min(1, t * Z.v / lg); q.g.visible = true;
+        q.x = q.tx = Z.x + (Z.fx - Z.x) * f; q.z = q.tz = -76 + dz * f; q.y = yM(q.z);
+        if (f >= 1) { if (Z.sautU == null || u - Z.sautU > 1.1) Z.sautU = u; q.saute = u - Z.sautU < .75; if (q.saute) q.y += Math.sin((u - Z.sautU) / .75 * Math.PI) * .9; }   /* (arrivés sur le H : ils sautent vers l'hélicoptère qui leur échappe) */
+        q.g.position.set(q.x, q.y, q.z); if (q.z3) eclairer3D(q.z3.sc, .3); } }
     if (!vueHorde && c.feuxH && !c.feuxR) { c.feuxR = true; for (const f of c.feuxH) f.visible = true; }   /* (en hauteur, face aux bâtiments R et S : la voûte au centre) */
     if (u < 10 || vueHorde) { /* (l'arrivée, la descente, le plan sur la horde : réglés plus haut — sans ce garde-fou, l'embarquement partait dès le début : l'hélico déjà posé, tout le monde caché) */ }
     else if (u < 15) { hel.position.copy(H); hel.rotation.set(0, 0, 0);
@@ -12945,9 +12954,9 @@ function cineEvac(m) {
       { const moiH = HEROS[M.perso] ? M.perso : 25, eqV = (M.equipe || []).find(e => !e.mort && HEROS[e.id]), rv = renf.find(p => !p.info.mortT && HEROS[p.info.heros]), autreH = eqV ? eqV.id : rv ? rv.info.heros : null, A = HEROS[moiH].court, B = autreH ? HEROS[autreH].court : "Brad Vickers",   /* (seulement quelqu'un de vivant : pas Jill, morte dans la salle des fêtes) */ L2 = [[15.6, B, "Accrochez-vous, on décolle !"], [17.6, "Le pilote", "Message radio du gouvernement… Ils ont donné l'ordre : la zone va être rasée. Ils vont tout faire sauter !"],
           [20.6, A, "Tout faire sauter ?! Mais… la caserne, le quartier… tous ces gens…"], [23.2, B, "Il n'y a plus personne à sauver là-dessous. Regardez…"]];
         for (const [tu, qui, txt] of L2) if (u > tu && !(c.dits || (c.dits = new Set())).has(tu)) { c.dits.add(tu); bulle(`<b style="color:#e8c46a">${esc(qui)}</b> : ${txt}`, 2800); } }
-      const k = Math.min(1.5, (u - 15) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60, H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);
+      const k = Math.min(1.5, Math.max(0, u - 17.2) / 6); hel.position.set(H.x + k * k * 30, H.y + k * k * 60 + (u < 17.2 ? Math.max(0, u - 16.4) * .4 : 0), H.z + k * k * 25); hel.rotation.z = -.12 * Math.min(1, k * 3);   /* (il ne décolle qu'à la dernière seconde : la horde est déjà sur la terrasse) */
       if (brouillard && sc.fog) { sc.fog.near = 60; sc.fog.far = 700; }
-      if (u < 20.5) { const loin = cam.position.distanceTo(new THREE.Vector3(H.x + 3, H.y + 7, H.z - 10)) > 8; placer(H.x + 3, H.y + 7, H.z - 10, H.x + 8, H.y + 1 + Math.min(4, (hel.position.y - H.y) * .2), H.z + 1, loin ? 1 : .08); if (loin) { vise.set(H.x + 8, H.y + 1, H.z + 1); cam.lookAt(vise); } }   /* (l'hélicoptère s'élève ; à gauche, la horde qui remonte l'escalier de la terrasse) */   /* (retour sur l'hélicoptère : d'un coup, après le plan sur la cour d'honneur) */
+      if (u < 20.5) { const loin = cam.position.distanceTo(new THREE.Vector3(H.x + 3, H.y + 7, H.z - 10)) > 8; placer(H.x + 3, H.y + 7, H.z - 10, H.x + 5, H.y + 1 + Math.min(4, (hel.position.y - H.y) * .2), H.z + 3, loin ? 1 : .08); if (loin) { vise.set(H.x + 5, H.y + 1, H.z + 3); cam.lookAt(vise); }   /* (on voit les deux escaliers : la horde qui monte en face, et celle de l'escalier en U) */ }   /* (l'hélicoptère s'élève ; à gauche, la horde qui remonte l'escalier de la terrasse) */   /* (retour sur l'hélicoptère : d'un coup, après le plan sur la cour d'honneur) */
       else placer(12, 115, -10, 0, 0, -50, .035); }   // la caserne, vue du ciel
     else { if (u < 27.5) placer(12, 115, -10, 0, 0, -50, .035); else placer(30, 230, 120, 0, 0, -60, .02);   /* (on prend de la hauteur : tout le quartier saute) */
       // et elle explose : des boules de feu, l'une après l'autre, le flash, la secousse
