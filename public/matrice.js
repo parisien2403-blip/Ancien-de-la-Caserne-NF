@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.11";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15163,6 +15163,9 @@ function chargerAvatar3D(f) { if (!av3Cache[f] && /^gen:/.test(f)) av3Cache[f] =
       if (AM) { for (const [n, c] of [["idle", fem ? "f-idle" : "h-idle"], ["walk", "h-marche"], ["run", fem ? "f-course" : "h-rcourse"], ["mortMX", "h-mort"], ["chuteMX", "h-chute"], ["idleF", "f-idle-fusil"], ["walkF", "f-marche-fusil"], ["runF", "f-course-fusil"]]) { const k = clipMXcible(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }   /* (la pose de repos de chaque modèle ramenée en T : Leon, modelé les bras en A, les avait dans le dos) */
         if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
       return { sc, mix, act, U, h: ho || hb }; }   /* (les héros de Resident Evil, modèles des jeux sur notre squelette : leurs mouvements, faits ici) */
+    if (/avatars\/sh-(harry|james|maria|angela|lisa|heather|alessa)\./.test(f)) { const AM = await chargerAnimsMX("anims/re-heros.json?v=4"), homme = /sh-(harry|james)\./.test(f);   /* (Silent Hill : les mêmes vrais mouvements que les héros de Resident Evil — le repos, la course, la chute ; la marche pistolet pour Harry et James) */
+      if (AM) for (const [n, c] of [["idle", homme ? "h-idle" : "f-idle"], ...(homme ? [["walk", "h-marche"]] : []), ["run", homme ? "h-rcourse" : "f-course"], ["mortMX", "h-mort"], ["chuteMX", "h-chute"]]) { const k = clipMXcible(AM, c, sc); if (k) { k.name = n; act[n] = mix.clipAction(k); } }
+      if (act.mortMX) { act.mortMX.setLoop(THREE.LoopOnce); act.mortMX.clampWhenFinished = true; } }
     if (/cor-ds-/.test(f)) { sc.traverse(o => { if (o.isMesh) for (const mt of [].concat(o.material)) if (mt.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .4; mt.needsUpdate = true; } });   /* (les couleurs du jeu, peu ombrées, comme sur la console) */
       clipsDS(sc, mix, act); await dansesAdmin(f, sc, mix, act); return { sc, mix, act, U, h: hb, taille0: .78 }; }
     await dansesAdmin(f, sc, mix, act);
