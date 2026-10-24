@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.13";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10879,7 +10879,10 @@ function caissesSH(scene, L, base) { let cx, cz, bloque;
     for (const [dy, ry, dx, dz] of [[0, .12, 0, 0], [.943, -.18, .03, .06]]) { const c = m.clone(); c.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); c.position.set(cx + dx, y + dy, cz + dz); c.rotation.y = ry; scene.add(c); } }).catch(() => {}); }
 const betes3D = {};   // (le Lying Figure ; Siam — le gros monstre aux bras énormes, de Silent Hill: Homecoming — même traitement, sans la traînée)
 function chargerBete3D(f) { return betes3D[f] = betes3D[f] || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); skelMod = skelMod || await import("./vendor/SkeletonUtils.js?v=1");
-  return await new gltfMod.GLTFLoader().loadAsync(f); })().catch(() => null); }
+  const G = await new gltfMod.GLTFLoader().loadAsync(f);
+  if (/sh-infirmiere/.test(f)) { const AZ = await chargerAnimsMX("anims/re-zombies.json?v=5");   /* (les infirmières : la démarche des zombies de Resident Evil) */
+    if (AZ) { const nv = [["walk", "z-marche"], ["idle", "z-idle"]].map(([n, c]) => { const k = clipMXcible(AZ, c, G.scene); if (k) k.name = n; return k; }).filter(Boolean); if (nv.length === 2) G.animations = [...nv, ...G.animations.filter(a => a.name !== "walk" && a.name !== "idle")]; } }
+  return G; })().catch(() => null); }
 function lying3D(m, f, haut) { chargerBete3D(f).then(G => { if (!G || !M || !M.shMonstres.includes(m) || m.mortT || m.lf) return;
     const sc = skelMod.clone(G.scene); sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.material = o.material.clone(); const mt = o.material; if (mt.map && mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .28; } } });
     const g = new THREE.Group(); g.add(sc); M.scene.add(g); sc.scale.setScalar(haut / (hauteurOs(sc) || 1.8)); g.userData.perso = true;
@@ -10910,7 +10913,9 @@ function lyingAnim(m, now, dt) { const P = m.lf;
 let lamePyr3D = null, pyrA = null;
 function pyramide3D(m) { const f = "avatars/sh-pyramid.glb?v=1";
   lamePyr3D = lamePyr3D || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/sh-pyramid-lame.glb?v=1"); return g.scene; })().catch(() => null);
-  Promise.all([chargerAvatar3D(f), lamePyr3D]).then(([A, L3]) => { if (!A || !M || !M.shMonstres.includes(m) || m.mortT) return;
+  Promise.all([chargerAvatar3D(f), lamePyr3D, chargerAnimsMX("anims/re-nemesis.json?v=3")]).then(([A, L3, AN]) => { if (!A || !M || !M.shMonstres.includes(m) || m.mortT) return;
+    if (AN && !A.pyrMX) { A.pyrMX = true; for (const [n, c] of [["walk", "n-marche"], ["idle", "n-idle"], ["coup", "n-coup"]]) { const k = clipMXcible(AN, c, A.sc); if (k) { k.name = n; if (A.act[n]) A.act[n].stop(); A.act[n] = A.mix.clipAction(k); } }   /* (Pyramid Head : la marche, le repos et le coup de Nemesis) */
+      if (A.act.coup) { A.act.coup.setLoop(THREE.LoopOnce); A.act.coup.clampWhenFinished = true; A.act.coup.timeScale = 1.5; } }
     if (!A.eclaire) { A.eclaire = true; A.sc.traverse(o => { if (o.isMesh) { o.castShadow = true; for (const mt of [].concat(o.material)) if (mt.map && mt.emissive) { mt.emissive.set(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; mt.needsUpdate = true; } } }); }
     for (const q of M.shMonstres) if (q !== m && q.ph3 && q.ph3.A === A) q.ph3 = null;   // (un seul modèle : au dernier venu)
     pyrA = A; A.sc.parent && A.sc.parent.remove(A.sc); M.scene.add(A.sc); A.sc.scale.setScalar(2.45 / A.h); A.sc.rotation.set(0, 0, 0); A.sc.visible = true;
@@ -10925,13 +10930,13 @@ function pyr3D(m, now, dt, moi) { const P = m.ph3, A = P.A; if (!_v1) { _v1 = ne
   // (tourné vers où il va ; s'il frappe, vers sa cible)
   const t = m.frappeT && (m.cineCible || moi) ? (m.cineCible ? { x: m.cineCible.x, z: m.cineCible.z } : { x: moi.g.position.x, z: moi.g.position.z }) : null;
   const vis = t ? Math.atan2(t.x - m.x, t.z - m.z) : v > .15 ? Math.atan2(vx, vz) : P.ry; let d = vis - P.ry; d = Math.atan2(Math.sin(d), Math.cos(d)); P.ry += d * Math.min(1, dt * 6); A.sc.rotation.y = P.ry;
-  const n = m.fige ? null : v > .25 ? "walk" : "idle";
+  const kF = m.frappeT ? now - m.frappeT : -1, n = m.fige ? null : kF >= 0 && kF < 1600 && A.act.coup ? "coup" : v > .25 ? "walk" : "idle";
   if (n && P.cur !== n && A.act[n]) { const a = A.act[n]; a.reset().play(); if (P.curA && P.curA !== a) a.crossFadeFrom(P.curA, .3, false); P.cur = n; P.curA = a; }
   if (P.curA && n === "walk") P.curA.timeScale = Math.max(.5, Math.min(1.4, v / 1.1));   // (son pas lourd, lent)
   if (!m.fige) A.mix.update(dt); A.sc.updateMatrixWorld(true);
   // la frappe : le bras droit se lève par-dessus la tête, puis s'abat devant lui
   const fw = new THREE.Vector3(Math.sin(P.ry), 0, Math.cos(P.ry)), k = m.frappeT ? now - m.frappeT : -1, e = x => x * x * (3 - 2 * x);
-  if (k >= 0 && k < 1500) { let dir;
+  if (k >= 0 && k < 1500 && !A.act.coup) { let dir;
     if (k < 380) dir = new THREE.Vector3(0, -1, 0).lerp(new THREE.Vector3(0, 1, 0).addScaledVector(fw, -.35), e(k / 380));
     else if (k < 820) { const a = Math.PI * .5 + Math.PI * .72 * e((k - 380) / 440); dir = new THREE.Vector3(0, Math.sin(a), 0).addScaledVector(fw, -Math.cos(a)); }
     else dir = new THREE.Vector3(0, -.45, 0).addScaledVector(fw, .9).lerp(new THREE.Vector3(0, -1, 0), e(Math.min(1, (k - 820) / 680)));
@@ -18507,4 +18512,4 @@ export const _evac = () => M && surEvac({}), _morsure = (x, z) => M && subirMors
 export const _sonsApo = () => [sonApo, sonFeu, sonRepos].map(a => a ? (a.paused ? "pause" : "joue") : "aucun").concat([...sonsCourts].map(a => a.src.split("/").pop() + ":" + a.volume.toFixed(2)));   // (pour les essais)
 export const _essaiRE = () => ({ lancerTyran, lancerLisa, cineToit, barApo, cineBar, bandageBras });   // (pour les essais)
 export const _essaiZ = () => ({ blesserZ, tirer });   // (pour les essais)
-export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS, parleRadio, codecDire, chargerAvatar3D });   // (pour les essais)
+export const _essaiCam = () => ({ placerCamera, C3, ouvrirGPS, parleRadio, codecDire, chargerAvatar3D, chargerBete3D, chargerAnimsMX, clipMXcible, THREE });   // (pour les essais)
