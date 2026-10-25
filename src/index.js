@@ -1364,8 +1364,13 @@ export default {
       ctx.waitUntil((async () => {
         const w = writable.getWriter();
         try {
-          for (let n = Math.floor(debut / MORCEAU); n * MORCEAU <= fin; n++) {
-            const b = new Uint8Array(await registre.morceauDeMusique(t, id, n)), d0 = n * MORCEAU;
+          // comme la télé : chaque musique (ou clip) a son coffre à elle, et trois morceaux d'avance
+          const coffre = env.COMPTEUR.get(env.COMPTEUR.idFromName("mus-" + id));
+          const lire = async n => { let d = null; try { d = await coffre.teleLire(id, n); } catch (e) {} if (d) return d; d = await registre.morceauDeMusique(t, id, n); coffre.teleEcrire(id, n, d).catch(() => {}); return d; };
+          const n0 = Math.floor(debut / MORCEAU), nMax = Math.floor(fin / MORCEAU), file = new Map(), avance = n => { if (n <= nMax && !file.has(n)) { const p = lire(n); p.catch(() => {}); file.set(n, p); } };
+          for (let k = 0; k < 3; k++) avance(n0 + k);
+          for (let n = n0; n <= nMax; n++) {
+            const b = new Uint8Array(await file.get(n)), d0 = n * MORCEAU; file.delete(n); avance(n + 3);
             await w.write(b.subarray(Math.max(0, debut - d0), Math.min(b.byteLength, fin - d0 + 1)));
           }
           await w.close();
@@ -1447,7 +1452,7 @@ export default {
       else if (route === "POST /api/tele") r = await registre.nouvelleTele(token, await corps());
       else if (request.method === "DELETE" && /^\/api\/tele\/\d+$/.test(url.pathname)) { const idv = url.pathname.split("/")[3]; r = await registre.retirerTele(token, idv); await env.COMPTEUR.get(env.COMPTEUR.idFromName("tele-" + idv)).teleVider(idv).catch(() => {}); }
       else if (route === "POST /api/musiques") r = await registre.nouvelleMusique(token, await corps());
-      else if (request.method === "DELETE" && /^\/api\/musiques\/\d+$/.test(url.pathname)) r = await registre.retirerMusique(token, url.pathname.split("/")[3]);
+      else if (request.method === "DELETE" && /^\/api\/musiques\/\d+$/.test(url.pathname)) { const idm = url.pathname.split("/")[3]; r = await registre.retirerMusique(token, idm); await env.COMPTEUR.get(env.COMPTEUR.idFromName("mus-" + idm)).teleVider(idm).catch(() => {}); }
       else if (route === "POST /api/jeux") r = await registre.nouveauJeu(token, await corps());
       else if (request.method === "PUT" && /^\/api\/jeux\/\d+\/jaquette$/.test(url.pathname)) r = await registre.jaquetteJeu(token, url.pathname.split("/")[3], await corps());
       else if (request.method === "DELETE" && /^\/api\/jeux\/\d+$/.test(url.pathname)) r = await registre.retirerJeu(token, url.pathname.split("/")[3]);
