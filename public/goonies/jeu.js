@@ -300,7 +300,8 @@ const NIVEAUX = [
     ennemis: [{ t: "squelette", x: 720, y: 620, x0: 580, x1: 1000 }, { t: "squelette", x: 1100, y: 440, x0: 880, x1: 1520 }, { t: "capitaine", x: 2200, y: 516, x0: 2020, x1: 2370 },
       { t: "chauve", x: 1000, y: 330 }, { t: "chauve", x: 1700, y: 380 }],
     boss: { t: "mama", x: 1350, y: 620, pv: 24, x0: 600, x1: 1850, declenche: 900 } }),
-    () => ({ img: "niv6b", vh: 520, depart: [1300, 640], bornes: [90, 1350], fin: { type: "xg", x: 450 },
+    () => ({ img: "niv6b", vh: 520, depart: [1300, 640], dir: -1, mus: "titre",   // (la sortie de la grotte : on arrive par la droite, face à la plage ; la chanson de Cyndi Lauper démarre)
+    bornes: [90, 1350], fin: { type: "xg", x: 450 },
     sol: [p(820, 1350, 642), p(720, 830, 745, 650), p(90, 1000, 722, 722, 1)], ech: [],
     pieces: [...ligne(500, 680, 8, 50)], pizzas: [], ennemis: [{ t: "crabe", x: 600, y: 722, x0: 300, x1: 900 }, { t: "crabe", x: 400, y: 722, x0: 150, x1: 700 }] })] }];
 
@@ -467,7 +468,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   if (def.boss) S.boss = { ...def.boss, pvMax: def.boss.pv, actif: false, tm: 0, dir: -1, vx: 0, inv: 0, x: def.boss.x, y: def.boss.y, tirT: 1.5, slothFait: false };
   if (def.voiture) S.voit = { x: def.voiture.x, actif: false, depuis: def.voiture.depuis };
   if (DEBUG && PARAM.get("dep")) def.depart = PARAM.get("dep").split(",").map(Number);
-  J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
+  J = nouveauJoueur(def.depart[0], def.depart[1]); if (def.dir) J.dir = def.dir; if (def.mus) jouerMus(def.mus); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, glisse: !!S.N.glisse, gant: null }; }
 function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 2, capitaine: 2, barriere: 99, roc: 1, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine" || e.t === "squelette") { e = { ...e, chasse: 1 }; const pl = S.sol.find(q => { const h = hauteurPlat(q, e.x); return h != null && Math.abs(h - (e.y ?? 0)) < 30; }); if (pl) { e.plat = pl; e.x0 = pl.x0 + 22; e.x1 = pl.x1 - 22; } }   // (ils parcourent toute leur plateforme pour venir sur nous)
