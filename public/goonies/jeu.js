@@ -388,13 +388,15 @@ function toboggan() {
   const sol = [], ennemis = [], pieces = [], segs = [];
   let x = 0, y = 430; const seg = (x0, x1, y0, y1) => { segs.push([x0, x1, y0, y1]); sol.push(p(x0, x1, y0, y1, 1)); };
   seg(0, 300, y, y + 20); x = 300; y += 20;
-  const motif = ["pente", "pente", "trou", "pente", "tremplin", "pente", "trou", "pente", "pente", "tremplin", "trou"]; let k = 0;
+  // toujours en descente (jamais de pente qui remonte : on passait à travers) ; les tremplins nous catapultent tout seuls par-dessus le vide
+  const kicks = [], motif = ["pente", "saut", "pente", "pente", "saut", "roc", "pente", "saut"]; let k = 0;
   while (x < L - 1300) { const t = motif[k++ % motif.length];
-    if (t === "pente") { const l = 520 + rnd() * 260, d = 150 + rnd() * 130; seg(x, x + l, y, y + d);
-      if (k % 2) ennemis.push({ t: "roc", x: x + l * .62, y: y + d * .62 }); else pieces.push(...ligne(x + 80, y + 40 - 60, 5, 60).map(([a, b], i) => [a, b + i * d / l * 60]));
-      if (k % 4 === 0) ennemis.push({ t: "chauve", x: x + l * .5, y: y + d * .5 - 240 }); x += l; y += d; }
-    else if (t === "trou") { const gp = 130 + rnd() * 60; pieces.push(...arc(x + 10, y - 50, 4, gp / 3, 70)); x += gp; y += 70; seg(x, x + 220, y, y + 40); x += 220; y += 40; }
-    else { seg(x, x + 160, y, y - 70); x += 160; y -= 70; const gp = 200 + rnd() * 50; pieces.push(...arc(x + 20, y - 90, 5, gp / 4, 110)); x += gp; y += 170; seg(x, x + 260, y, y + 60); x += 260; y += 60; } }
+    if (t === "pente") { const l = 560 + rnd() * 240, d = 140 + rnd() * 120; seg(x, x + l, y, y + d);
+      pieces.push(...ligne(x + 100, y - 30, 5, 70).map(([a, b]) => [a, b + (a - x) * d / l]));
+      if (k % 3 === 0) ennemis.push({ t: "chauve", x: x + l * .6, y: y + d * .6 - 250 }); x += l; y += d; }
+    else if (t === "saut") { seg(x, x + 200, y, y + 30); x += 200; y += 30; kicks.push([x - 10, y]);   // (le tremplin, au bout de la pente)
+      pieces.push(...arc(x + 30, y - 120, 5, 70, 110)); x += 260; y += 120; seg(x, x + 320, y, y + 50); x += 320; y += 50; }
+    else { seg(x, x + 520, y, y + 70); ennemis.push({ t: "roc", x: x + 300, y: y + 40 }); pieces.push(...arc(x + 230, y - 30, 3, 50, 90)); x += 520; y += 70; } }
   // la dernière pente, et le grand plongeon dans le lac
   seg(x, x + 500, y, y + 260); x += 500; y += 260; const lac = Math.min(H - 120, y + 360);
   sol.push(p(x + 120, L, lac, lac, 1)); pieces.push(...arc(x + 20, y - 60, 5, 60, 120));
@@ -406,10 +408,13 @@ function toboggan() {
       c.fillStyle = "#2a78b0"; c.beginPath(); c.moveTo(x0, y0 - 10); c.lineTo(x1, y1 - 10); c.lineTo(x1, y1 + 6); c.lineTo(x0, y0 + 6); c.closePath(); c.fill();
       c.strokeStyle = "#cfefff"; c.lineWidth = 3; for (let i = x0; i < x1 - 30; i += 46) { const a = (i - x0) / (x1 - x0), b = Math.min(1, (i + 26 - x0) / (x1 - x0)); c.beginPath(); c.moveTo(i, y0 + (y1 - y0) * a - 7); c.lineTo(i + 26, y0 + (y1 - y0) * b - 7); c.stroke(); }
       c.fillStyle = "rgba(190,235,255,.5)"; c.fillRect(x1 - 6, y1 - 10, 6, 70); }   // (la cascade au bout de chaque pente)
+    for (const [kx, ky] of kicks) { c.fillStyle = "#3a2c20"; c.beginPath(); c.moveTo(kx - 110, ky + 4); c.quadraticCurveTo(kx - 20, ky + 4, kx + 6, ky - 46); c.lineTo(kx + 6, ky + 80); c.lineTo(kx - 110, ky + 80); c.closePath(); c.fill();
+      c.strokeStyle = "#2a78b0"; c.lineWidth = 12; c.beginPath(); c.moveTo(kx - 110, ky - 2); c.quadraticCurveTo(kx - 20, ky - 2, kx + 6, ky - 50); c.stroke();
+      c.strokeStyle = "#cfefff"; c.lineWidth = 3; c.beginPath(); c.moveTo(kx - 80, ky - 7); c.quadraticCurveTo(kx - 20, ky - 7, kx, ky - 50); c.stroke(); }
     const gl = c.createLinearGradient(0, lac - 20, 0, H); gl.addColorStop(0, "#2e86b8"); gl.addColorStop(1, "#06223a"); c.fillStyle = gl; c.fillRect(x + 100, lac - 14, L - x - 100, H - lac + 14);
     c.fillStyle = "#d8f4ff"; for (let i = x + 110; i < L; i += 40) c.fillRect(i, lac - 14 + (i % 3) * 2, 22, 3);
     IMG[cle] = cv; }
-  return { img: cle, par: "niv4a", vh: 470, depart: [120, 430], fin: { type: "x", x: x + 260 }, sol, ech: [], pieces, pizzas: [[x - 900, y - 700]], ennemis, vide: H - 10 };
+  return { img: cle, par: "niv4a", vh: 470, depart: [120, 430], kicks: kicks.map(([a, b]) => ({ x: a, y: b })), fin: { type: "x", x: x + 260 }, sol, ech: [], pieces, pizzas: [[x - 900, y - 700]], ennemis, vide: H - 10 };
 }
 
 // ------------------------------------------------------------------ l'état du jeu
@@ -451,7 +456,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, glisse: !!S.N.glisse, gant: null }; }
-function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, capitaine: 5, barriere: 99, roc: 99, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine") e = { ...e, chasse: 1 };
+function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, capitaine: 5, barriere: 99, roc: 1, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine") e = { ...e, chasse: 1 };
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
 
 // ------------------------------------------------------------------ physique : les plateformes
@@ -474,6 +479,7 @@ function majJoueur(dt) {
   } else if (J.glisse) {   // le toboggan : on glisse tout seul, plus vite dans les pentes ; la droite pousse, la gauche freine
     const pl = J.sol && J.plat, pente = pl ? (pl.y1 - pl.y0) / Math.max(1, pl.x1 - pl.x0) : 0, cible = 380 + Math.max(0, pente) * 700 + (dirX > 0 ? 170 : dirX < 0 ? -150 : 0);   // (dans les tremplins on garde son élan)
     J.vx += (Math.max(230, cible) - J.vx) * Math.min(1, dt * (J.sol ? 2.4 : .3)); J.dir = 1; J.anim += dt * 10;
+    for (const kk of S.kicks || []) { if (J.x < kk.x - 120) kk.fait = false; if (J.sol && !kk.fait && J.x >= kk.x - 30 && J.x < kk.x + 60) { kk.fait = true; J.vy = -900; J.vx = Math.max(J.vx, 500); J.sol = false; J.plat = null; son("saut"); } }
     if (J.sol && Math.random() < dt * 30) S.eclats.push({ x: J.x - 24, y: J.y - 6, vx: -120 - Math.random() * 160, vy: -80 - Math.random() * 260, t: 0, c: Math.random() < .5 ? "#bfe8ff" : "#6ab4e0" });
   } else if (J.echelle) {
     const e = J.echelle; J.vx = 0; J.x += (((e.x0 + e.x1) / 2) - J.x) * Math.min(1, dt * 12);
@@ -555,7 +561,7 @@ function majEnnemis(dt) {
 function boiteE(e) { const T = { rat: [70, 34], araignee: [46, 40], chauve: [62, 30], chien: [84, 50], mouette: [60, 30], crabe: [76, 40], squelette: [36, 96], capitaine: [44, 110], barriere: [96, 50], roc: [54, 46], caisse: [64, 62], pneu: [50, 52] }[e.t] || [40, 40];
   if (e.t === "araignee" || e.t === "chauve" || e.t === "mouette") return [e.x - T[0] / 2, e.y - T[1] / 2 + (e.t === "araignee" ? 18 : 0), T[0], T[1]];
   return [e.x - T[0] / 2, e.y - T[1], T[0], T[1]]; }
-function touche(e, deg) { if (e.inv > 0 || e.mort || e.t === "barriere" || e.t === "roc") return;   // (la barrière de chantier : il faut sauter par-dessus)
+function touche(e, deg) { if (e.inv > 0 || e.mort || e.t === "barriere") return;   // (la barrière de chantier : il faut sauter par-dessus)
  e.pv -= deg; e.inv = .25; son("coup");
   if (e.pv <= 0) { e.mort = .01; partie.score += { rat: 200, araignee: 250, chauve: 250, chien: 300, mouette: 200, crabe: 300, squelette: 500, capitaine: 800, caisse: 300, pneu: 250 }[e.t] || 200; eclats(e.x, e.y - 30, e.t === "caisse" ? "#9c6436" : "#ffe070"); } }
 function eclats(x, y, c, n = 12) { for (let k = 0; k < n; k++) S.eclats.push({ x, y, vx: (Math.random() - .5) * 500, vy: -Math.random() * 500, t: 0, c }); }
