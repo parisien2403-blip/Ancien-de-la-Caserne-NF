@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.82";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.83";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -15792,8 +15792,8 @@ function videoDJ(c) { let v = M.videoDJ;
     v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
   const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; M.videoRelance = 0; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id); v.load(); v.playbackRate = 1; M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
   const now = Date.now();
-  if (v.readyState >= 3 || v.paused && !M.videoCalee) M.videoAttente = 0; else if (!M.videoAttente) M.videoAttente = now;   /* (le clip cale plus de 6 s : on le recharge, il se recale tout seul à la bonne seconde) */
-  if (M.videoAttente && now - M.videoAttente > 6000 && (M.videoRelance || 0) < 5) { M.videoRelance = (M.videoRelance || 0) + 1; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id) + (M.ctx.urlMusique(c.id).includes("?") ? "&" : "?") + "r=" + M.videoRelance; v.load(); M.videoCalee = false; M.videoCaleT = 0; }
+  if (v.paused || v.seeking || v.currentTime !== M.videoPos) { M.videoPos = v.currentTime; M.videoAttente = 0; } else if (!M.videoAttente) M.videoAttente = now;   /* (l'image du clip est figée depuis 8 s alors qu'il devrait tourner : on le recharge, il se recale tout seul à la bonne seconde) */
+  if (M.videoAttente && now - M.videoAttente > 8000 && (M.videoRelance || 0) < 3) { M.videoRelance = (M.videoRelance || 0) + 1; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id) + (M.ctx.urlMusique(c.id).includes("?") ? "&" : "?") + "r=" + M.videoRelance; v.load(); M.videoCalee = false; M.videoCaleT = 0; }
   if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
     if (pos >= 0 && v.readyState >= 1) { const ec = pos - v.currentTime; if (!v.seeking && (!v.duration || pos < v.duration)) {
       if (!M.videoCalee || Math.abs(ec) > 4) { if (!M.videoCalee || now > (M.videoSautT || 0)) { M.videoCalee = true; M.videoSautT = now + 8000; try { v.currentTime = pos + .3; } catch (e) {} } }   /* (calée une fois au départ ; ensuite plus de saut — sauf si elle s'est vraiment égarée) */
