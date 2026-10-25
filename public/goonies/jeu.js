@@ -157,22 +157,21 @@ const H = {
   avant3: { fond: "niv3", l: [
     ["mama", "Qu'est-ce que ces mioches fichent chez moi ? Francis ! Occupe-toi d'eux !"],
     ["francis", "Avec plaisir, Maman…"]] },
-  apres3: { fond: "cachot", mus: "sloth", l: [
-    [null, "Au fond de la cave, derrière la porte enchaînée, quelque chose grogne… La porte cède !", "cachot"],
-    ["choco", "AAAAH ! Un monstre ! Les gars… regardez-moi ce truc !", "cachot"],
-    ["sloth", "GRRRAAAAH !", "cachot"],
+  apres3: { fond: "sinok", mus: "sloth", l: [   // (dès que Sinok a ouvert la porte : la photo de Choco et Sinok, et tout le dialogue en dessous)
+    ["choco", "AAAAH ! Un monstre ! Les gars… regardez-moi ce truc !", "sinok"],
+    ["sloth", "GRRRAAAAH !", "sinok"],
     ["choco", "Attends… t'as faim, c'est ça ? Tiens, ma barre chocolatée. C'est cadeau !", "sinok"],
     ["sloth", "Mmmh… CHOCOLAT ! Encore !", "sinok"],
     ["choco", "Il aime le chocolat ! Les gars, il est gentil, en fait !", "sinok"],
     ["sloth", "CHOCO ! CHOCOOOOOO !", "sinok"],
-    ["mikey", "Choco… c'est le fils de Mama Fratelli. On ne peut pas l'emmener avec nous !", "cachot"],
-    ["bagou", "Regarde-le ! Il bave, il grogne… et il a une tête à faire peur !", "cachot"],
-    ["data", "Selon mes calculs, il pèse trois fois ton poids, Choco. Il va nous ralentir.", "cachot"],
-    ["brand", "Choco, sérieux, laisse-le là. Les Fratelli vont revenir d'une minute à l'autre.", "cachot"],
+    ["mikey", "Choco… c'est le fils de Mama Fratelli. On ne peut pas l'emmener avec nous !", "sinok"],
+    ["bagou", "Regarde-le ! Il bave, il grogne… et il a une tête à faire peur !", "sinok"],
+    ["data", "Selon mes calculs, il pèse trois fois ton poids, Choco. Il va nous ralentir.", "sinok"],
+    ["brand", "Choco, sérieux, laisse-le là. Les Fratelli vont revenir d'une minute à l'autre.", "sinok"],
     ["choco", "Non ! Ils l'ont enchaîné ici comme un chien. Il est tout seul… Il vient avec nous !", "sinok"],
     ["sloth", "Sinok… aime… Choco. Sinok… aide les amis !", "sinok"],
     [null, "SINOK rejoint les Goonies ! Tu peux maintenant le choisir pendant les missions.", "sinok"],
-    ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "cachot"]] },
+    ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "sinok"]] },
   avant4: { fond: "niv4a", l: [
     ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
     ["mikey", "Il cherchait le trésor, lui aussi. On ne s'arrête pas là."]] },
@@ -580,7 +579,7 @@ function maj(dt) {
   // ouverture de la sortie
   const F = S.fin; S.ouvert = F.type === "boss" ? S.bossMort : F.type === "orgue" ? S.orgueFait : true;
   if (F.type === "porte" && !S.porte && J.x > F.x - 60) { S.porte = { t: 0 }; son("boss"); S.ennemis = S.ennemis.filter(e => Math.abs(e.x - J.x) > 600); }
-  if (S.porte) { const P = S.porte; P.t += dt; J.vx = 0; if (P.t > 3) { S.porte = null; S.fin = { type: "x", x: -1 }; finScene(); return; } }
+  if (S.porte) { const P = S.porte; P.t += dt; J.vx = 0; if (P.t > 2.4) { S.porte = null; S.fin = { type: "x", x: -1 }; finScene(); return; } }
   if (S.ouvert && ((F.type === "x" && J.x > F.x) || (F.type === "xg" && J.x < F.x) || ((F.type === "boss" || F.type === "orgue") && J.x > F.x - 20 && (!S.boss || S.boss.mort > 1.2 || !S.boss)))) finScene();
   // la caméra
   const vw = LW / cam.z, vh = LH / cam.z;
