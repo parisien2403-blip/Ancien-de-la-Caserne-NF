@@ -15,14 +15,14 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 15;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 16;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
-  fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
-  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => { pret = true; demarre(); });
+  fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => { pret = true; demarre(); });
 
 // ------------------------------------------------------------------ les commandes : clavier, manette, tactile
 const T = {}, TP = {}, TOUCHES = { ArrowLeft: "gauche", KeyA: "gauche", KeyQ: "gauche", ArrowRight: "droite", KeyD: "droite", ArrowUp: "haut", KeyW: "haut", KeyZ: "haut", ArrowDown: "bas", KeyS: "bas",
@@ -68,7 +68,7 @@ function son(n) { try { AC = AC || new (window.AudioContext || window.webkitAudi
 // ------------------------------------------------------------------ dessin des sprites
 function spr(nom, f, x, y, flip = false, sc = 1, alpha = 1) {
   const m = META[nom]; if (!m) return; const fr = m.f[((f % m.f.length) + m.f.length) % m.f.length], im = IMG[m.img]; if (!im) return;
-  const Z = cam.z * sc, w = fr[2] * Z, h = fr[3] * Z, ax = m.a[0] * Z, ay = m.a[1] * Z, sx = (x - cam.x) * cam.z, sy = (y - cam.y) * cam.z;
+  const Z = cam.z * sc * (m.sc || 1), w = fr[2] * Z, h = fr[3] * Z, ax = m.a[0] * Z, ay = m.a[1] * Z, sx = (x - cam.x) * cam.z, sy = (y - cam.y) * cam.z;
   X.save(); X.globalAlpha = alpha; X.translate(Math.round(sx), Math.round(sy)); if (flip) X.scale(-1, 1);
   X.drawImage(im, fr[0], fr[1], fr[2], fr[3], -ax, -ay, w, h); X.restore(); }
 function sprEcran(nom, f, x, y, sc = 1, flip = false) { const m = META[nom]; if (!m) return; const fr = m.f[f % m.f.length], im = IMG[m.img];
@@ -580,7 +580,7 @@ function dTitre() {
   texte("LA CHASSE AU TRÉSOR DE WILLY LE BORGNE", LW / 2, 380, { a: "center", c: "#fff", t: 22 });
   if (Math.floor(E.t * 1.6) % 2 === 0) texte("APPUIE SUR START", LW / 2, 440, { a: "center", c: "#ffd34a", t: 30, bord: "#3a0a00", ep: 6 });
   texte(`RECORD ${String(RECORD()).padStart(7, "0")}`, LW / 2, 500, { a: "center", c: "#9fe0ff", t: 18 });
-  [["mikey", 90], ["choco", 190], ["data", 770], ["bagou", 870]].forEach(([n, x], k) => adoDessin(n, "course", E.t * 9 + k, x, 345, 120, x > LW / 2));
+  [["mikey", 90], ["choco", 190], ["data", 770], ["bagou", 870]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, .7, x > LW / 2));
 }
 function dChoix() {
   fond("niv1", .35); X.fillStyle = "rgba(0,0,0,.45)"; X.fillRect(0, 0, LW, LH);
@@ -591,7 +591,7 @@ function dChoix() {
     medaillon(A.id, x - 72, y - 92, 144);
     if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 104, y - 114, 208, 308); }
     texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: 14 });
-    adoDessin(A.id, sel ? "course" : "repos", E.t * 9, x, y + 186, 78); X.restore();
+    sprEcran(A.id, sel ? 1 + Math.floor(E.t * 9) % 4 : 0, x, y + 150, .5); X.restore();
     if (ko) texte("ÉPUISÉ", x, y + 10, { a: "center", c: "#ff6a5a", t: 26 }); });
   const A = libres[E.i]; if (A) texte(A.desc, LW / 2, 480, { a: "center", t: 17 });
   texte("◀ ▶ pour choisir · A pour valider", LW / 2, 520, { a: "center", c: "#bbb", t: 15 });
@@ -658,8 +658,7 @@ function dJeu() {
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
     else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
-      const pose = J.mal > 0 ? "mal" : J.echelle ? "echelle" : J.baisse ? "baisse" : (J.tirA > 0 || J.gant) ? "tir" : !J.sol ? "saut" : Math.abs(J.vx) > 30 ? "course" : "repos";
-      adoDessin(A.id, pose, pose === "repos" ? S.t * 3 : J.anim * 1.1, (J.x - cam.x) * cam.z, (J.y + 3 - cam.y) * cam.z, TAILLE_ADO * cam.z, J.dir < 0); } }
+      spr(A.id, f, J.x, J.y + 4, J.dir < 0, 1.12); } }
   if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
     X.strokeStyle = "#d8c050"; X.lineWidth = 3; X.beginPath(); const n = 10; for (let k = 0; k <= n; k++) { const xx = x0 + (x1 - x0) * k / n, yy = y + (k % 2 ? -7 : 7); k ? X.lineTo(xx, yy) : X.moveTo(xx, yy); } X.stroke();
     spr("gant", 0, J.x + G.dir * (26 + G.l), J.y - G.h + 14, G.dir < 0); }
