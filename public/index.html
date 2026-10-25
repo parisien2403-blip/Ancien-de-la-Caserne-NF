@@ -72,6 +72,7 @@
 
   /* ---------- Accueil (splash) ---------- */
   .splash { position: relative; height: 100%; display: flex; flex-direction: column; }
+  .mur-jump { display: none; }   /* (le mur façon 21 Jump Street : sur ordinateur seulement) */
   .banner { display: block; width: 100%; height: auto; }
   .splash .porche { position: relative; width: 100%; flex: none; height: auto; display: block;
     -webkit-mask-image: linear-gradient(#000 97%, transparent); mask-image: linear-gradient(#000 97%, transparent); box-shadow: 0 6px 18px rgba(40,30,20,.25); }
@@ -505,11 +506,27 @@
     /* accueil : à gauche l'horloge (remontée) et, dessous, le texte et « Entrer » ; à droite le mur de briques façon 21 Jump Street :
        « CASERNE » en néon bleu qui grésille, « de la Nouvelle-France » à la bombe jaune qui coule */
     .splash { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
-    .splash::before, .splash::after { content: ""; grid-column: 2; grid-row: 1; background: center / cover no-repeat; pointer-events: none; }
-    .splash::before { background-color: #2a0d07; background-image: url("images/accueil-mur.jpg"); box-shadow: inset 18px 0 30px -12px rgba(0,0,0,.6); }
-    .splash::after { background-image: url("images/accueil-neon.webp"); animation: neonGresille 9s infinite; }
+    .mur-jump { display: block; grid-column: 2; grid-row: 1; position: relative; overflow: hidden; background: #2a0d07; container-type: size; box-shadow: inset 18px 0 30px -12px rgba(0,0,0,.6); }
+    .mur-jump .boite { position: absolute; top: 50%; left: 50%; width: max(100cqw, calc(100cqh * 1100 / 1300)); aspect-ratio: 1100 / 1300; transform: translate(-50%, -50%); background: url("images/accueil-mur.jpg") center / 100% 100%; }
+    .mur-jump .boite::after { content: ""; position: absolute; inset: 0; box-shadow: inset 18px 0 30px -12px rgba(0,0,0,.6); pointer-events: none; }
+    .mur-jump .c { position: absolute; background: center / 100% 100% no-repeat; pointer-events: none; }
+    .mur-jump .neon { inset: 0; background-image: url("images/accueil-neon.webp"); animation: neonGresille 9s infinite; }
+    .mur-jump .w0 { left: 12.909%; top: 38.308%; width: 28.455%; height: 9.154%; background-image: url("images/accueil-w0.webp"); }
+    .mur-jump .w1 { left: 7.818%; top: 46%; width: 85.455%; height: 16.769%; background-image: url("images/accueil-w1.webp"); }
+    .mur-jump .w2 { left: 25.727%; top: 60.462%; width: 63.909%; height: 15.615%; background-image: url("images/accueil-w2.webp"); }
+    .mur-jump .drips { left: 11.909%; top: 43.923%; width: 79.455%; height: 34.462%; background-image: url("images/accueil-drips.webp"); }
+    /* la cinématique : les mots apparaissent comme un graffiti (la bombe passe de gauche à droite), puis la peinture coule, puis le néon s'allume */
+    .mur-jump.intro .w0, .mur-jump.intro .w1, .mur-jump.intro .w2 { -webkit-mask: linear-gradient(to right, #000 44%, transparent 56%) 100% 0 / 300% 100% no-repeat; mask: linear-gradient(to right, #000 44%, transparent 56%) 100% 0 / 300% 100% no-repeat; animation: bombeMot var(--d) cubic-bezier(.3,.1,.5,1) var(--t) both; }
+    .mur-jump.intro .w0 { --t: .3s; --d: .9s; } .mur-jump.intro .w1 { --t: 1.3s; --d: 1.5s; } .mur-jump.intro .w2 { --t: 2.9s; --d: 1.3s; }
+    .mur-jump.intro .drips { -webkit-mask: linear-gradient(#000 44%, transparent 56%) 0 100% / 100% 300% no-repeat; mask: linear-gradient(#000 44%, transparent 56%) 0 100% / 100% 300% no-repeat; animation: coule 1.6s ease-in 4.2s both; }
+    .mur-jump.intro .neon { animation: neonAllume 1.3s linear 5.6s both, neonGresille 9s 6.9s infinite; }
+    @keyframes bombeMot { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+    @keyframes coule { from { -webkit-mask-position: 0 100%; mask-position: 0 100%; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+    @keyframes neonAllume { 0%, 14%, 30%, 46% { opacity: 0; } 8%, 22%, 38% { opacity: .7; } 60%, 100% { opacity: 1; } }
+    .mur-jump .son { position: absolute; right: 18px; bottom: 18px; z-index: 3; display: none; padding: 9px 14px; border-radius: 22px; border: 1px solid rgba(255,230,160,.6); background: rgba(20,8,4,.6); color: #ffe7b0; font: 600 14px "Lato", sans-serif; cursor: pointer; }
+    .mur-jump .son.vu { display: block; }
     @keyframes neonGresille { 0%, 61%, 63.5%, 66%, 72%, 100% { opacity: 1; } 62% { opacity: .2; } 64%, 67.5% { opacity: 0; } 65% { opacity: .65; } 69% { opacity: .35; } 70% { opacity: .9; } 88% { opacity: 1; } 89% { opacity: .3; } 90% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .splash::after { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .mur-jump .c { animation: none !important; -webkit-mask: none !important; mask: none !important; } }
     .splash svg.scene { position: relative; inset: auto; grid-column: 1; grid-row: 1; height: 122%; transform: translateY(-17%); }
     .splash .content { grid-column: 1; grid-row: 1; align-self: end; justify-self: center; z-index: 2; padding: 34px 40px 30px; margin: 0 0 26px; width: min(560px, 86%);
       background: rgba(246,238,223,.94); border-radius: 22px; box-shadow: 0 12px 34px rgba(60,30,15,.35); }
@@ -993,6 +1010,7 @@
   <!-- ====== ÉCRAN D'ACCUEIL ====== -->
   <section class="screen splash" id="splash">
     <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
+    <div class="mur-jump" id="murJump" aria-hidden="true"><div class="boite"><div class="c neon"></div><div class="c drips"></div><div class="c w0"></div><div class="c w1"></div><div class="c w2"></div></div><button class="son" id="murSon" type="button">🔊 Revoir avec le son</button></div>
     <div class="content">
       <h1 class="titre3"><span>CASERNE</span><span class="dela">DE LA</span><span class="nf">NOUVELLE-FRANCE</span></h1>
       <p>Retrouvez la caserne<br>de votre enfance</p>
@@ -3224,6 +3242,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.87", "25 octobre 2026", ["Accueil (ordinateur) : cinématique sur le générique de 21 Jump Street : « de la Nouvelle-France » se tague à la bombe mot après mot, la peinture coule, puis le néon « CASERNE » s'allume en grésillant ; bouton « Revoir avec le son » si le navigateur bloque la musique"]],
     ["7.86", "25 octobre 2026", ["Accueil (ordinateur) : nouveau mur de briques façon 21 Jump Street, « CASERNE » en néon bleu qui grésille et clignote, « de la Nouvelle-France » à la bombe jaune qui coule ; l'horloge remontée à gauche avec le texte et « Entrer » dessous"]],
     ["7.85", "25 octobre 2026", ["Appartement : allongé dans le lit, le bonhomme dessiné a la tête sur l'oreiller (plus dans la tête de lit)"]],
     ["7.84", "25 octobre 2026", ["Appartement : les bonshommes dessinés (sans modèle 3D) s'allongent vraiment dans les lits, à plat sur le matelas, la tête vers la tête du lit", "Appartement : quand quelqu'un s'assoit ou s'allonge, les autres le voient aussi (avant, on le voyait debout au milieu du lit)"]],
@@ -5220,6 +5239,20 @@
     $("install").hidden = false;
     $("install").innerHTML = `Pour installer l'appli sur iPhone : touchez <b>Partager</b> ⬆︎ puis <b>« Sur l'écran d'accueil »</b>.`;
   }
+</script>
+<script>
+/* la cinématique de l'accueil (ordinateur) : le générique de 21 Jump Street, « de la Nouvelle-France » tagué à la bombe, puis le néon s'allume.
+   Si le navigateur refuse le son tant qu'on n'a rien touché : l'image se joue quand même, et « Revoir avec le son » la rejoue avec la musique */
+(() => { const mur = document.getElementById("murJump"), btn = document.getElementById("murSon"); if (!mur || !matchMedia("(min-width: 960px)").matches || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const son = new Audio("sons/accueil-jumpstreet.mp3"); son.preload = "auto"; son.volume = .8;
+  const lancer = (avecSon) => { mur.classList.remove("intro"); void mur.offsetWidth; mur.classList.add("intro");
+    if (avecSon) { son.currentTime = 0; son.volume = .8; return son.play(); } return Promise.resolve(); };
+  const couper = () => { if (son.paused) return; const f = setInterval(() => { son.volume = Math.max(0, son.volume - .08); if (son.volume <= 0) { clearInterval(f); son.pause(); } }, 60); };
+  son.play().then(() => { son.pause(); lancer(true); }).catch(() => { lancer(false); btn.classList.add("vu"); });
+  btn.addEventListener("click", () => { btn.classList.remove("vu"); lancer(true).catch(() => {}); });
+  for (const id of ["enter", "signup"]) { const b = document.getElementById(id); if (b) b.addEventListener("click", couper); }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) couper(); });
+})();
 </script>
 </body>
 </html>
