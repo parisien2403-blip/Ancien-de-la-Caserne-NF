@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 6;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 7;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2a: "niv2a.jpg", niv2b: "niv2b.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", decor: "decor.png", golf: "scene-golf.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", decor: "decor.png", golf: "scene-golf.png", carte: "scene-carte.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
@@ -49,7 +49,7 @@ const IN = {}, PREC = {};
 function lireEntrees() { const m = lireManette();
   for (const a of ACT) { const l = !!T["l" + a]; T["l" + a] = false; const v = !!(T["c" + a] || T["t" + a] || m[a]); IN[a] = v || l; IN[a + "P"] = (v && !PREC[a]) || l; PREC[a] = v; }
   IN.ok = IN.sautP || IN.tirP || IN.startP || (T.tclic && !PREC.clic); PREC.clic = T.tclic;
-  if (musVoulue && MUS.paused && ACT.some(k => IN[k + "P"])) MUS.play().catch(() => {}); }   // (à la manette aussi)
+  if (musVoulue && MUS && MUS.paused && ACT.some(k => IN[k + "P"])) MUS.play().catch(() => {}); }   // (à la manette aussi)
 function quitter() { try { parent.postMessage({ goonies: "fermer" }, "*"); } catch (e) {} }
 document.getElementById("fermer").onclick = quitter;
 
@@ -95,10 +95,17 @@ const H = {
     ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !", "golf"],
     ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !", "golf"]] },
   apres1: { fond: "niv1", l: [
-    ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !"],
-    ["data", "Le pirate ? Celui qui a caché son trésor dans les grottes de la côte ?"],
-    ["brand", "Mikey ! Maman a dit que tu ne sortais pas !"],
-    ["mikey", "Désolé, Brand… En selle, tout le monde ! Direction le vieux phare !"]] },
+    ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !", "carte"],
+    ["data", "Willy le Borgne ? Le pirate de la légende ?", "carte"],
+    ["mikey", "Mon père me l'a racontée cent fois. Il y a plus de trois cents ans, Willy et ses pirates pillaient tous les navires du roi d'Angleterre.", "carte"],
+    ["mikey", "La flotte du roi l'a poursuivi jusqu'ici, sur la côte de l'Oregon. Il a caché son bateau, l'Inferno, et tout son trésor au fond d'une grotte.", "carte"],
+    ["mikey", "Mais les soldats ont fait sauter l'entrée. Willy et son équipage sont restés enfermés dedans… pour toujours.", "carte"],
+    ["choco", "Pour toujours ? Genre… ils sont encore là-dessous ?!", "carte"],
+    ["mikey", "Avant de mourir, Willy a semé des pièges partout pour protéger son trésor. Personne ne l'a jamais retrouvé.", "carte"],
+    ["mikey", "Et cette carte montre le chemin. Si on trouve le trésor, nos familles pourront garder leurs maisons !", "carte"],
+    ["brand", "Mikey ! Maman a dit que tu ne sortais pas ! Et vous allez vous faire tuer avec vos histoires de pirates.", "carte"],
+    ["bagou", "Trop tard, Brand. On a une carte… et un trésor à trouver !", "carte"],
+    ["mikey", "En selle, tout le monde ! Direction le vieux phare !", "carte"]] },
   avant2: { fond: "ville", l: [
     [null, "Au même moment, Jake Fratelli s'évade de la prison du comté…"],
     ["bagou", "Pédale, Choco ! Les chiens du quartier nous ont repérés !"]] },
@@ -159,7 +166,7 @@ const ech = (x0, x1, y0, y1) => ({ x0, x1, y0, y1 });
 const arc = (x0, y0, n, dx = 46, h = 50) => Array.from({ length: n }, (_, k) => [x0 + k * dx, y0 - Math.sin(k / Math.max(1, n - 1) * Math.PI) * h]);
 const ligne = (x0, y0, n, dx = 46) => Array.from({ length: n }, (_, k) => [x0 + k * dx, y0]);
 const NIVEAUX = [
-  { nom: "LE GRENIER", but: "Trouve la carte au trésor !", avant: "intro", apres: "apres1", scenes: [() => ({
+  { nom: "LE GRENIER", musique: "niv1", but: "Trouve la carte au trésor !", avant: "intro", apres: "apres1", scenes: [() => ({
     img: "niv1", vh: 432, depart: [70, 700], fin: { type: "objet", x: 1300, y: 368 },
     sol: [p(0, 1408, 700, 700, 1), p(280, 475, 605), p(290, 455, 528), p(300, 380, 466), p(315, 372, 420), p(450, 632, 578), p(550, 832, 441), p(0, 318, 362), p(0, 170, 268), p(155, 205, 312), p(1072, 1405, 368), p(905, 1128, 576), p(655, 745, 570), p(678, 745, 527)],
     ech: [ech(1142, 1194, 368, 700), ech(200, 236, 362, 700)],
@@ -305,20 +312,25 @@ let S = null;                         // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre() { allerTitre(); requestAnimationFrame(boucle);
-  if (PARAM.has("direct")) { musique(false); partie = { ko: new Set(), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
+  if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; jouerMus("niv1"); histoire(PARAM.get("h"), () => allerTitre()); }
+  if (PARAM.has("direct")) { jouerMus(NIVEAUX[+(PARAM.get("niv") || 1) - 1].musique || null); partie = { ko: new Set(), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
 // la musique du début (écran titre, choix du Goonie, histoire d'ouverture) ; elle s'efface quand le premier niveau commence
-const MUS = new Audio("sons/titre.mp3?v=1"); MUS.loop = true; MUS.volume = .8; let musVoulue = false, musFondu = null;
-if (DEBUG) window.MUS_ = MUS;
-function musique(on) { musVoulue = on; clearInterval(musFondu);
-  if (on) { MUS.volume = .8; if (MUS.paused) MUS.play().catch(() => {}); return; }
-  if (MUS.paused) return; musFondu = setInterval(() => { MUS.volume = Math.max(0, MUS.volume - .05); if (MUS.volume <= 0) { clearInterval(musFondu); MUS.pause(); MUS.currentTime = 0; } }, 80); }
-addEventListener("pointerdown", () => { if (musVoulue && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
-addEventListener("keydown", () => { if (musVoulue && MUS.paused) MUS.play().catch(() => {}); }, true);
+let MUS = null, musNom = null, musVoulue = false;
+const MUSIQUES = {};
+function jouerMus(nom) {   // un seul morceau à la fois ; null : la musique s'efface
+  if (nom === musNom && MUS && !MUS.paused) return;
+  const ancien = MUS; if (ancien) { const a = ancien; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .06); if (a.volume <= 0) { clearInterval(f); a.pause(); a.currentTime = 0; } }, 80); }
+  musNom = nom; musVoulue = !!nom; MUS = null; if (!nom) return;
+  const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=1`), { loop: true }));
+  m.volume = .8; m.currentTime = 0; MUS = m; m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
+const musique = on => jouerMus(on ? "titre" : null);
+addEventListener("pointerdown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
+addEventListener("keydown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);
 function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
 function nouvellePartie() { partie = { ko: new Set(), ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
 function allerChoix(suite, msg) { etat = "choix"; const libres = ADOS.filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
 function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
-function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; musique(false); }
+function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
   S.ennemis = def.ennemis.filter(e => Math.hypot(e.x - def.depart[0], (e.y ?? e.y1 ?? 0) - def.depart[1]) > 280).map(e => nouvelEnnemi(e));   // (rien ne nous tombe dessus au départ)
