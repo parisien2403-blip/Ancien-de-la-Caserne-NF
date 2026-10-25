@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 31;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 32;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -258,11 +258,15 @@ const NIVEAUX = [
     ennemis: [{ t: "squelette", x: 520, y: 568, x0: 400, x1: 700 }, { t: "squelette", x: 1180, y: 568, x0: 1100, x1: 1290 }, { t: "chauve", x: 300, y: 200 }, { t: "chauve", x: 1250, y: 260 }, { t: "squelette", x: 250, y: 390, x0: 100, x1: 390 }],
     orgue: { x0: 700, x1: 1110, y: 568 } })] },
   { nom: "LE BATEAU DE WILLY LE BORGNE", but: "Arrache le trésor aux Fratelli !", avant: "avant6", apres: "apres6", scenes: [() => ({
-    img: "niv6a", vh: 470, depart: [260, 595], bornes: [190, 1376], fin: { type: "boss", x: 1300 },
-    sol: [p(190, 1100, 598, 598, 1), p(1100, 1376, 598, 598, 1), p(205, 480, 505), p(1150, 1376, 455), p(1050, 1150, 598, 455)],
-    ech: [], pieces: [...ligne(230, 476, 5), ...arc(600, 560, 6), ...ligne(1170, 425, 5)], pizzas: [[460, 470]],
-    ennemis: [{ t: "squelette", x: 700, y: 598, x0: 500, x1: 900 }, { t: "squelette", x: 1250, y: 455, x0: 1160, x1: 1360 }, { t: "squelette", x: 380, y: 505, x0: 220, x1: 470 }],
-    boss: { t: "mama", x: 1000, y: 598, pv: 24, x0: 420, x1: 1150, declenche: 520 } }),
+    // sur le pont de l'Inferno (le navire 3D, vu de côté) : la dunette, le pont, le gaillard d'avant, le beaupré et les nids-de-pie ; Mama nous attend au milieu du pont
+    img: "pont", vh: 470, depart: [260, 868], bornes: [140, 2480], fin: { type: "boss", x: 1500 },
+    sol: [p(140, 712, 868, 878), p(706, 1516, 1000, 1000, 1), p(1516, 1792, 927), p(1792, 2120, 976, 928), p(1880, 2470, 952, 668),
+      p(966, 1116, 166), p(1692, 1822, 234), p(560, 700, 935)],
+    ech: [ech(1048, 1094, 166, 1000), ech(1730, 1776, 234, 927)],
+    pieces: [...ligne(220, 830, 9, 50), ...arc(760, 960, 6, 50, 60), ...ligne(985, 130, 3, 45), ...ligne(1705, 200, 3, 45), ...ligne(1960, 900, 6, 80).map(([x, y], k) => [x, y - k * 38]), ...ligne(1560, 890, 5, 48)],
+    pizzas: [[1640, 880]],
+    ennemis: [{ t: "squelette", x: 520, y: 868, x0: 300, x1: 690 }, { t: "capitaine", x: 1650, y: 927, x0: 1530, x1: 1780 }, { t: "chauve", x: 1040, y: 520 }, { t: "chauve", x: 1760, y: 600 }, { t: "squelette", x: 2050, y: 950, x0: 1820, x1: 2100 }],
+    boss: { t: "mama", x: 1350, y: 1000, pv: 24, x0: 740, x1: 1500, declenche: 860 } }),
     () => ({ img: "niv6b", vh: 520, depart: [1300, 640], bornes: [90, 1350], fin: { type: "xg", x: 450 },
     sol: [p(820, 1350, 642), p(720, 830, 745, 650), p(90, 1000, 722, 722, 1)], ech: [],
     pieces: [...ligne(500, 680, 8, 50)], pizzas: [], ennemis: [{ t: "crabe", x: 600, y: 722, x0: 300, x1: 900 }, { t: "crabe", x: 400, y: 722, x0: 150, x1: 700 }] })] }];
@@ -301,6 +305,8 @@ function salle(o) {
   if (neuf && o.th === "niv6a" && IMG.navire) { const nv = IMG.navire, k = .62, w = nv.width * k, h = nv.height * k, t = document.createElement("canvas"); t.width = w; t.height = h; const tx = t.getContext("2d");
     tx.drawImage(nv, 0, 0, w, h); tx.globalCompositeOperation = "source-atop"; tx.fillStyle = "rgba(6,10,18,.5)"; tx.fillRect(0, 0, w, h);
     for (const xn of [L * .18, L * .68]) x.drawImage(t, xn, FY + 40 - h); }   // (l'Inferno, au fond de la grotte)
+  if (neuf && IMG.pendu && (o.th === "niv4a" || o.th === "niv5" || o.th === "niv6a")) { const pe = IMG.pendu, n = 2 + (rnd() < .5 ? 1 : 0);
+    for (let k = 0; k < n; k++) { const xp = L * (k + .5) / n + (rnd() - .5) * 300; x.drawImage(pe, xp, FY - 390 - rnd() * 30); } }   // (des squelettes pendus, tout en haut)
   for (const [n, dx] of deco) { const q = fr(n); if (neuf) { const t = document.createElement("canvas"); t.width = q[2]; t.height = q[3]; const tx = t.getContext("2d"); tx.drawImage(at, q[0], q[1], q[2], q[3], 0, 0, q[2], q[3]); tx.globalCompositeOperation = "source-atop"; tx.fillStyle = "rgba(10,5,2,.5)"; tx.fillRect(0, 0, q[2], q[3]); x.drawImage(t, dx, FY - q[3] + 4); } }
   for (const [t, w] of segs) { const a = X0, b = X0 + w;
     if (t === "trou") { const tw = 130 + Math.floor(rnd() * 50), tx = a + (w - tw) / 2; trous.push([tx, tx + tw]); pieces.push(...arc(tx - 20, FY - 60, 4, (tw + 40) / 3, 110));
@@ -694,9 +700,9 @@ function dJeu() {
       X.globalAlpha = .35 + .25 * Math.sin(tt * 4); X.fillStyle = "#ffe8a0"; X.beginPath(); X.ellipse(0, 0, w * .75, h * .8, 0, 0, 7); X.fill(); X.globalAlpha = 1;   // (elle brille)
       X.drawImage(cv, -w / 2, -h / 2, w, h); X.restore(); texte("LA CARTE !", sx, sy - h / 2 - 10, { a: "center", c: "#ffd34a", t: 16 }); } }
   // ennemis
-  for (const e of S.ennemis) { const f = Math.floor(e.tm * (e.t === "chauve" || e.t === "mouette" ? 8 : e.t === "capitaine" ? 13 : 6)), al = e.mort ? Math.max(0, 1 - e.mort) : e.inv > 0 ? .5 : 1;
+  for (const e of S.ennemis) { const f = Math.floor(e.tm * (e.t === "chauve" || e.t === "mouette" ? 8 : e.t === "capitaine" ? 13 : e.t === "squelette" ? 10 : 6)), al = e.mort ? Math.max(0, 1 - e.mort) : e.inv > 0 ? .5 : 1;
     if (e.t === "araignee") { X.strokeStyle = "rgba(220,220,230,.7)"; X.lineWidth = 1.5; X.beginPath(); X.moveTo((e.x - cam.x) * cam.z, (e.y0 - 200 - cam.y) * cam.z); X.lineTo((e.x - cam.x) * cam.z, (e.y - cam.y) * cam.z); X.stroke(); spr("araignee", f, e.x, e.y, false, 1, al); }
-    else if (e.t === "squelette") spr("squelette", e.att > 0 ? 4 : f % 4, e.x, e.y, e.dir < 0, 1, al);
+    else if (e.t === "squelette") spr("squelette", f % 8, e.x, e.y, e.dir < 0, 1, al);
     else spr(e.t, f, e.x, e.y, e.dir < 0, 1, al); }
   // boss
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
