@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 8;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 9;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", carte: "scene-carte.png", fratelli: "scene-fratelli.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
@@ -76,6 +76,9 @@ function sprEcran(nom, f, x, y, sc = 1, flip = false) { const m = META[nom]; if 
 const taille = nom => META[nom] ? META[nom].f[0] : [0, 0, 0, 0];
 function texte(t, x, y, o = {}) { X.save(); X.font = `${o.gras === false ? "" : "bold "}${o.t || 20}px "Courier New", monospace`; X.textAlign = o.a || "left"; X.textBaseline = "alphabetic";
   X.lineWidth = o.ep || 4; X.strokeStyle = o.bord || "#000"; X.lineJoin = "round"; X.strokeText(t, x, y); X.fillStyle = o.c || "#fff"; X.fillText(t, x, y); X.restore(); }
+function medaillon(qui, x, y, t) {   // la photo du personnage (façon borne d'arcade) ; à défaut, son visage dessiné
+  const ph = IMG["photo_" + qui]; if (ph) { X.drawImage(ph, x, y, t, t); return; }
+  const m = META["portrait_" + qui]; if (m) { const fr = m.f[0]; X.drawImage(IMG[m.img], fr[0], fr[1], fr[2], fr[3], x, y, t, t); } }
 function boite(x, y, w, h, a = .78) { X.save(); X.globalAlpha = a; X.fillStyle = "#07040c"; X.fillRect(x, y, w, h); X.globalAlpha = 1; X.strokeStyle = "#f3c64a"; X.lineWidth = 3; X.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); X.restore(); }
 
 // ------------------------------------------------------------------ les 4 ados
@@ -556,7 +559,7 @@ function dChoix() {
   const libres = ADOS.filter(a => !partie.ko.has(a.id));
   ADOS.forEach((A, k) => { const x = 120 + k * 240, y = 210, ko = partie.ko.has(A.id), sel = !ko && libres[E.i] === A;
     X.save(); if (ko) X.globalAlpha = .3; boite(x - 100, y - 110, 200, 300, .85);
-    sprEcran("portrait_" + A.id, 0, x, y - 20, 1.3);
+    medaillon(A.id, x - 72, y - 92, 144);
     if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 104, y - 114, 208, 308); }
     texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: 14 });
     sprEcran(A.id, sel ? 1 + Math.floor(E.t * 9) % 4 : 0, x, y + 150, .8); X.restore();
@@ -567,7 +570,7 @@ function dChoix() {
 function dHistoire() {
   const h = E.h, [qui, txt, illu] = h.l[E.i]; if (illu) fond(illu, 1); else { fond(h.fond, .6); X.fillStyle = "rgba(0,0,0,.25)"; X.fillRect(0, 0, LW, LH); }   // (illu : une image du film, façon borne d'arcade)
   boite(30, 340, LW - 60, 180, .85);
-  const x0 = qui ? 200 : 60; if (qui) { boite(48, 356, 140, 148, 1); sprEcran("portrait_" + qui, 0, 118, 430, 1.1);
+  const x0 = qui ? 200 : 60; if (qui) { boite(48, 356, 140, 148, 1); medaillon(qui, 54, 362, 128);
     texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SLOTH", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, 380, { c: "#ffd34a", t: 20 }); }
   const vis = txt.slice(0, Math.floor(E.c)), mots = vis.split(" "), lignes = [""]; X.font = 'bold 21px "Courier New", monospace';
   for (const m of mots) { const essai = (lignes[lignes.length - 1] + " " + m).trim(); if (X.measureText(essai).width > LW - x0 - 70) lignes.push(m); else lignes[lignes.length - 1] = essai; }
@@ -638,7 +641,7 @@ function dJeu() {
 function hud() {
   X.save(); X.globalAlpha = .72; X.fillStyle = "#000"; X.fillRect(0, 0, LW, 54); X.globalAlpha = 1; X.fillStyle = "#6a4a14"; X.fillRect(0, 54, LW, 2);
   ADOS.forEach((A, k) => { const x = 10 + k * 52, on = A.id === partie.ado, ko = partie.ko.has(A.id); X.globalAlpha = ko ? .3 : 1; X.fillStyle = on ? "#ffd040" : "#3a2a1a"; X.fillRect(x - 2, 4, 48, 48);
-    const m = META["portrait_" + A.id].f[0]; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], x, 6, 44, 44); X.globalAlpha = 1; if (ko) texte("✕", x + 22, 38, { a: "center", c: "#ff4a3a", t: 26 }); });
+    medaillon(A.id, x, 6, 44); X.globalAlpha = 1; if (ko) texte("✕", x + 22, 38, { a: "center", c: "#ff4a3a", t: 26 }); });
   for (let k = 0; k < 3; k++) { const m = META.coeur.f[0]; X.globalAlpha = k < J.pv ? 1 : .2; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 226 + k * 34, 14, 28, 25); } X.globalAlpha = 1;
   texte(parId(partie.ado).nom, 336, 35, { c: "#ffd34a", t: 20 });
   const m = META.doublon.f[0]; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 600, 12, 30, 30); texte(`× ${partie.pieces}`, 636, 36, { t: 20 });
