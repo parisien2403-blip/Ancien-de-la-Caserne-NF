@@ -769,7 +769,7 @@ function dJeu() {
     else spr(e.t, f, e.x, e.y, e.dir < 0, 1, al); }
   // boss
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
-    if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, J.x < B.x, 1, al); }   // (les dessins regardent vers la droite : on les retourne pour qu'ils nous regardent)
+    if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, (J.x < B.x ? -1 : 1) !== ({ jake: 1, francis: -1, mama: -1 }[B.t] || 1), 1, al); }   // (chaque dessin a son sens : Jake regarde à droite, Francis et Mama à gauche ; on les retourne pour qu'ils nous regardent)
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
   if (S.porte) { const P = S.porte, im = IMG.porteOuverte, tremble = P.t < .7 ? Math.sin(P.t * 60) * 4 : 0;   // (la porte du cachot cède, Sinok sort)
     if (P.t > .7 && im) X.drawImage(im, (1300 - cam.x) * cam.z, (310 - cam.y) * cam.z, im.width * cam.z, im.height * cam.z);
