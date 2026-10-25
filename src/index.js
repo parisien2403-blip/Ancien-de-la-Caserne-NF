@@ -425,7 +425,7 @@ export class Compteur extends DurableObject {
       tenue: m.av_tenue || "civil", couleur: m.av_couleur || "#22324f", bas: m.av_bas || null, pieds: m.av_pieds || null, tete_v: m.a_tete ? (m.av_v || 1) : 0, fait: (m.av_v || 0) > 0, reglage: (() => { try { return JSON.parse(m.av_reglage) || null; } catch (e) { return null; } })(),
       av3: (() => { try { return JSON.parse(m.av3) || null; } catch (e) { return null; } })() };
   }
-  publicMatrice(a) { return { av3: a.av3 || null, joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller", "saut"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, perso: a.perso || null, assis: Number.isInteger(a.assis) ? a.assis : null, slow: a.slow || null, x: a.x, z: a.z }; }
+  publicMatrice(a) { return { av3: a.av3 || null, joue: a.joue || null, numero: a.numero, nom: a.nom, initiales: a.initiales, admin: a.admin, tenue: a.tenue, couleur: a.couleur, bas: a.bas, pieds: a.pieds, tete_v: a.tete_v, reglage: a.reglage, danse: ["disco", "charleston", "madison", "thriller", "saut"].includes(a.danse) ? a.danse : a.danse ? "balance" : false, perso: a.perso || null, assis: Number.isInteger(a.assis) ? a.assis : null, installe: a.installe || null, slow: a.slow || null, x: a.x, z: a.z }; }
   // le slow à deux : on libère les deux danseurs (départ, changement de lieu, « arrêter »)
   finirSlow(ws, a) {
     if (!a.slow) return; const autre = a.slow, lieu = a.lieu; a.slow = null; try { ws.serializeAttachment(a); } catch (e) {}
@@ -469,7 +469,7 @@ export class Compteur extends DurableObject {
       const ancien = a.lieu;
       this.finirSlow(ws, a);
       if (a.voix && salleVoix(m.lieu) !== a.salleV) { this.diffuserVoix(a.salleV, { t: "voix", numero: a.numero, on: false }, ws); a.voix = false; a.salleV = null; }   // (on change de monde : le micro se coupe ; on le rallume de l'autre côté)
-      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null, joue: null }); ws.serializeAttachment(a);
+      Object.assign(a, { lieu: m.lieu, x: nb(m.x), z: nb(m.z), danse: false, assis: null, installe: null, joue: null }); ws.serializeAttachment(a);
       if (ancien && ancien !== m.lieu) this.diffuser(ancien, { t: "part", numero: a.numero });
       // les messages ne restent qu'une heure
       this.sql.exec("DELETE FROM matrice_dits WHERE cree < ?", new Date(Date.now() - DITS_DUREE).toISOString());
@@ -598,6 +598,11 @@ export class Compteur extends DurableObject {
       if (m.salle === "messcuisine" || m.salle === "messbas") { await this.ctx.storage.put("lumiere_" + m.salle, niveau); this.diffuser("mess", { t: "lumiere", salle: m.salle, niveau }); }   // (la cuisine et le sous-sol du mess : chacun sa lumière)
       else if (m.salle === "mess") { await this.ctx.storage.put("lumiere_mess", niveau); for (const l of ["mess", "grande"]) this.diffuser(l, { t: "lumiere", salle: "mess", niveau }); }   // (le mess : on voit sa lumière de la cour)
       else { await this.ctx.storage.put("lumiere_fetes", niveau); this.diffuser("fetes", { t: "lumiere", niveau }); }
+    } else if (m.t === "installe" && a.lieu === "appart") {
+      // assis ou allongé dans l'appartement (un fauteuil, un lit) : les autres le voient aussi
+      const s = m.s, n = v => Number.isFinite(Number(v)) ? Math.round(Number(v) * 1000) / 1000 : 0;
+      a.installe = s && (s.sorte === "assis" || s.sorte === "allonge") ? { sorte: s.sorte, x: n(s.x), y: n(s.y), z: n(s.z), h: n(s.h), ry: n(s.ry) } : null; ws.serializeAttachment(a);
+      this.diffuser(a.lieu, { t: "installe", numero: a.numero, s: a.installe }, ws);
     } else if (m.t === "assis" && (a.lieu === "fetes" || a.lieu === "cave")) {
       // assis sur un tabouret du bar (son numéro), ou debout (null)
       a.assis = Number.isInteger(m.i) && m.i >= 0 && m.i < 20 ? m.i : null; ws.serializeAttachment(a);

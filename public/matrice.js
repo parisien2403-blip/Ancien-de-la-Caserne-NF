@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.83";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.84";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6769,8 +6769,8 @@ function siegeAppart(x, z) { const L = M.L; if (!L || !L.meublesAppart) return n
     places.forEach(([lx, lz], k) => { const ry = m.g.rotation.y, wx = m.g.position.x + Math.cos(ry) * lx + Math.sin(ry) * lz, wz = m.g.position.z - Math.sin(ry) * lx + Math.cos(ry) * lz, d = Math.hypot(wx - x, wz - z);
       if (d < bd) { bd = d; best = { type: "installer", id: m.id, k, sorte, h, x: wx, z: wz, ry, y: m.g.position.y, label: sorte === "assis" ? "🪑 S'asseoir" : "🛏️ S'allonger" }; } }); }
   return best; }
-function installer(moi, s) { if (moi.info.danse) danser(false); moi.cible = null; moi.chemin = []; moi.installe = s; moi.g.position.set(s.x, s.y, s.z); envoyerWS({ t: "aller", x: s.x, z: s.z }); }
-function seLeverAppart(moi) { const s = moi.installe; moi.installe = null; const A = moi.av3; if (A) { A.sc.position.set(0, 0, 0); A.sc.rotation.x = 0; A.installeOK = false; }
+function installer(moi, s) { if (moi.info.danse) danser(false); moi.cible = null; moi.chemin = []; moi.installe = s; moi.g.position.set(s.x, s.y, s.z); envoyerWS({ t: "aller", x: s.x, z: s.z }); envoyerWS({ t: "installe", s: { sorte: s.sorte, x: s.x, y: s.y, z: s.z, h: s.h, ry: s.ry } }); }   // (les autres nous voient assis ou allongés)
+function seLeverAppart(moi) { const s = moi.installe; moi.installe = null; if (moi.moi) envoyerWS({ t: "installe", s: null }); const A = moi.av3; if (A) { A.sc.position.set(0, 0, 0); A.sc.rotation.x = 0; A.installeOK = false; }
   if (s) { const p = moi.g.position, f = [Math.sin(s.ry), Math.cos(s.ry)]; for (const d of [.6, .9, 1.2, -.6, -.9]) { const x = s.x + f[0] * d, z = s.z + f[1] * d; if (M.L.limites(x, z)) { p.x = x; p.z = z; break; } } if (!M.L.limites(p.x, p.z)) { const v = viserLibre(p.x, p.z); p.x = v[0]; p.z = v[1]; } p.y = M.L.hauteur ? M.L.hauteur(p.x, p.z) : 0; } }
 // la pose : assis (les cuisses à l'horizontale, les jambes pendantes, les mains sur les genoux) ou allongé sur le dos, la tête vers la tête du lit
 function installe3D(p, A) { const s = p.installe, T = (n, a, v) => tourne3D(A, n, a, v);
@@ -9572,6 +9572,9 @@ export async function ouvrir(ctx) {
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
+      /* allongé dans un lit (bonhomme dessiné) : le panneau couché à plat sur le matelas, face au plafond, la tête vers la tête du lit */
+      if (p.installe && p.installe.sorte === "allonge") { const s = p.installe, demi = p.corps.scale.y / 2; p.corps.rotation.set(-Math.PI / 2, s.ry, 0); p.corps.position.set(Math.sin(s.ry) * demi, s.y + s.h + .14 - gp.y, Math.cos(s.ry) * demi); p.allonge2D = true; if (p.poses && p.corps.material.map !== p.poses.repos) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; } continue; }
+      if (p.allonge2D) { p.allonge2D = false; p.corps.position.set(0, 0, 0); }
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
       const avance = Number.isInteger(p.info.assis) && !p.info.maman ? .3 - Math.sin(p.corps.rotation.x) * .7 : p.info.auto ? .12 : 0;   /* (maman, à table : sur sa chaise, pas avancée) */   // (+ ce que le panneau penché recule à hauteur des hanches)
       if (avance || p.avance) { const d = Math.hypot(dx, dz) || 1; p.corps.position.x = dx / d * avance; p.corps.position.z = dz / d * avance; p.avance = avance > 0; }
@@ -15421,6 +15424,7 @@ function ajouterAncien(info) {
   // (plus de nom au-dessus des personnages : ça prenait trop de place)
   M.gens.set(info.numero, p);
   if (Number.isInteger(info.assis)) asseoir(p, info.assis);
+  if (info.installe && !p.moi) { p.installe = info.installe; g.position.set(info.installe.x, info.installe.y, info.installe.z); }   // (déjà allongé ou assis quand on arrive)
   // beaucoup de monde au même endroit : on ne dessine que les plus proches (voir trierVisibles)
   if (info.numero > 0 && !p.moi && [...M.gens.values()].filter(q => q.info.numero > 0 && !q.moi && !q.differe).length > MAX_VUS) { p.differe = true; g.visible = false; }
   else dessinerCorps(p);
@@ -18524,6 +18528,7 @@ function connecter() {
     else if (m.t === "lumiere") { M.lumiere = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djVideo = M.djJoue && m.dj.courant.video ? m.dj.courant : null; M.djTitre = M.djJoue && !M.djVideo ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : "";   /* (un clip vidéo : l'écran descend, les musiciens laissent la scène) */ M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
+    else if (m.t === "installe") { const p = M.gens.get(m.numero); if (p && !p.moi) { if (p.installe && !m.s) seLeverAppart(p); p.installe = m.s || null; if (m.s) { p.cible = null; p.chemin = []; p.g.position.set(m.s.x, m.s.y, m.s.z); } } }   // (quelqu'un s'assoit, s'allonge ou se relève dans l'appartement)
     else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
     else if (m.t === "slow_demande") ctx.surInvitation && ctx.surInvitation({ de: m.de, nom: m.nom });
     else if (m.t === "slow_refus") ctx.surInfo && ctx.surInfo(`${m.nom} ne peut pas danser maintenant… une autre fois !`);
