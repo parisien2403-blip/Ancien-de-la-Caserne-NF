@@ -405,7 +405,7 @@ function toboggan() {
 // ------------------------------------------------------------------ le pont de l'Inferno en vraie 3D (le navire 3D affiché en direct derrière le jeu, vu de côté)
 // Le jeu reste en 2D : on joue sur le plan du milieu du navire. 1 unité 3D = 100 du monde ; x = (z + 10.4) × 100, y = (13 − y3D) × 100.
 let V3 = null;
-const N3 = { U: 100, Z0: -10.4, YM: 13, XP: .084, D: 14, LEVE: 2.6 };
+const N3 = { U: 100, Z0: -10.4, YM: 13, XP: 1.8, D: 14, LEVE: 4.6 };
 function prepare3D() { if (V3) return; V3 = { ok: false };
   Promise.all([import("../vendor/three.module.js"), import("../vendor/GLTFLoader.js")]).then(([T, G]) => new G.GLTFLoader().loadAsync("img/navire3d.glb?v=" + VI).then(g => {
     const R = new T.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "low-power" }); R.setClearColor(0, 0); R.outputColorSpace = T.SRGBColorSpace; R.setPixelRatio(1);
