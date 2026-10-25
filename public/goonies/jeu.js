@@ -237,7 +237,8 @@ const NIVEAUX = [
     boss: { t: "francis", x: 1150, y: 662, pv: 14, x0: 380, x1: 1300, declenche: 520 } })] },
   { nom: "LES SOUTERRAINS", musique: "grotte", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
     img: "niv4a", vh: 470, depart: [40, 520], fin: { type: "x", x: 1340 },
-    sol: [p(0, 210, 522, 478), p(205, 472, 476), p(465, 1376, 476), p(0, 305, 266), p(330, 486, 670), p(0, 330, 692), p(875, 1180, 318), p(995, 1376, 670)],
+    sol: [p(0, 210, 522, 478), p(205, 472, 476), p(465, 1376, 476), p(0, 305, 266), p(308, 408, 410),   // (le tas de rochers sert de marche : la corniche de gauche était trop haute pour un saut)
+      p(330, 486, 670), p(0, 330, 692), p(875, 1180, 318), p(995, 1376, 670)],
     ech: [ech(195, 240, 266, 476), ech(1108, 1152, 318, 476), ech(1114, 1160, 476, 670)], vide: 740,
     pieces: [...ligne(30, 236, 5), ...arc(520, 440, 6), ...arc(880, 440, 6), ...ligne(900, 290, 6), ...ligne(1040, 640, 6), ...ligne(360, 640, 3)], pizzas: [[1300, 640]],
     ennemis: [{ t: "chauve", x: 420, y: 230 }, { t: "chauve", x: 800, y: 260 }, { t: "chauve", x: 1200, y: 190 }, { t: "araignee", x: 700, y0: 90, y1: 400 }, { t: "araignee", x: 980, y0: 90, y1: 360 },
