@@ -15,14 +15,14 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 25;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 26;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
-  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => {
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 * (k === "sloth" ? 1.15 : 1) }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => {
   // les boss et Sloth : les dessins de face fournis (hauteur voulue dans le monde)
   for (const [n, H] of [["mama", 150], ["jake", 175], ["francis", 165], ["sloth", 190]]) { const im = IMG["b_" + n]; if (im) META["boss_" + n] = { f: [[0, 0, im.width, im.height]], a: [im.width / 2, im.height * .985], img: "b_" + n, sc: H / im.height }; }
   pret = true; demarre(); });
@@ -115,8 +115,10 @@ const ADOS = [
   { id: "choco", nom: "CHOCO", arme: "Barres chocolatées", tirD: .45, desc: "Lance ses barres en cloche. Lent, mais ça fait mal !" },
   { id: "data", nom: "DATA", arme: "Gant de boxe télescopique", tirD: .55, desc: "Le gant jaillit au bout d'un ressort et cogne tout sur son passage." },
   { id: "bagou", nom: "BAGOU", arme: "Peignes", tirD: .24, desc: "Le plus bavard… et le plus rapide à lancer ses peignes." },
-  { id: "brand", nom: "BRAND", arme: "Haltères", tirD: .6, desc: "Le grand frère de Mikey. Ses haltères volent lourd et cognent fort !" }];
+  { id: "brand", nom: "BRAND", arme: "Haltères", tirD: .6, desc: "Le grand frère de Mikey. Ses haltères volent lourd et cognent fort !" },
+  { id: "sloth", nom: "SINOK", arme: "Rochers", tirD: .65, desc: "Le grand costaud au grand cœur. Il lance des rochers énormes !" }];
 const parId = id => ADOS.find(a => a.id === id);
+const equipe = () => ADOS.filter(a => a.id !== "sloth" || partie.sinok);   // (Sinok : seulement une fois délivré, à la fin du restaurant)
 
 // ------------------------------------------------------------------ l'histoire (portraits : mikey, brand, bagou, choco, data, sloth, mama, jake, francis)
 const H = {
@@ -155,12 +157,22 @@ const H = {
   avant3: { fond: "niv3", l: [
     ["mama", "Qu'est-ce que ces mioches fichent chez moi ? Francis ! Occupe-toi d'eux !"],
     ["francis", "Avec plaisir, Maman…"]] },
-  apres3: { fond: "niv3", l: [
-    ["francis", "Maman ! Ils m'ont eu !"],
-    ["data", "Un passage secret, derrière la cheminée ! Vite !"],
-    [null, "Pendant ce temps, Choco découvre Sloth, enchaîné au sous-sol…"],
-    ["sloth", "Hey ! You guys !"],
-    ["choco", "Tiens, je te donne ma barre chocolatée. On est copains, maintenant !"]] },
+  apres3: { fond: "cachot", mus: "sloth", l: [
+    [null, "Au fond de la cave, derrière la porte enchaînée, quelque chose grogne… La porte cède !", "cachot"],
+    ["choco", "AAAAH ! Un monstre ! Les gars… regardez-moi ce truc !", "cachot"],
+    ["sloth", "GRRRAAAAH !", "cachot"],
+    ["choco", "Attends… t'as faim, c'est ça ? Tiens, ma barre chocolatée. C'est cadeau !", "sinok"],
+    ["sloth", "Mmmh… CHOCOLAT ! Encore !", "sinok"],
+    ["choco", "Il aime le chocolat ! Les gars, il est gentil, en fait !", "sinok"],
+    ["sloth", "CHOCO ! CHOCOOOOOO !", "sinok"],
+    ["mikey", "Choco… c'est le fils de Mama Fratelli. On ne peut pas l'emmener avec nous !", "cachot"],
+    ["bagou", "Regarde-le ! Il bave, il grogne… et il a une tête à faire peur !", "cachot"],
+    ["data", "Selon mes calculs, il pèse trois fois ton poids, Choco. Il va nous ralentir.", "cachot"],
+    ["brand", "Choco, sérieux, laisse-le là. Les Fratelli vont revenir d'une minute à l'autre.", "cachot"],
+    ["choco", "Non ! Ils l'ont enchaîné ici comme un chien. Il est tout seul… Il vient avec nous !", "sinok"],
+    ["sloth", "Sinok… aime… Choco. Sinok… aide les amis !", "sinok"],
+    [null, "SINOK rejoint les Goonies ! Tu peux maintenant le choisir pendant les missions.", "sinok"],
+    ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "cachot"]] },
   avant4: { fond: "niv4a", l: [
     ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
     ["mikey", "Il cherchait le trésor, lui aussi. On ne s'arrête pas là."]] },
@@ -180,10 +192,10 @@ const H = {
     ["mikey", "Le trésor de Willy le Borgne ! On l'a trouvé !"],
     ["mama", "Pas si vite, les mioches ! Ce trésor est à nous !"]] },
   sloth6: { fond: "niv6a", l: [
-    ["sloth", "HEY ! YOU GUYS !"],
-    ["mama", "Sloth ?! Lâche-moi, espèce de… !"]] },
+    ["sloth", "HÉ ! VOUS, LES GARS ! LAISSE CHOCO TRANQUILLE !"],
+    ["mama", "Sinok ?! Lâche-moi, espèce de… !"]] },
   apres6: { fond: "niv6a", l: [
-    ["sloth", "Mama méchante ! Sloth aime Choco !"],
+    ["sloth", "Mama méchante ! Sinok aime Choco !"],
     ["mikey", "Le bateau bouge… La grotte s'effondre ! Tous dehors !"]] },
   fin: { fond: "niv6b", l: [
     [null, "Les Goonies s'échappent par la grotte. L'Inferno prend la mer, toutes voiles dehors…"],
@@ -217,7 +229,7 @@ const NIVEAUX = [
       ennemis.push({ t: "barriere", x: o + 640 + d, y: 455 }, { t: "caisse", x: o + 1180 - d / 2, y: 455 }, { t: "pneu", x: o + 1750 + d / 3, y: 455 }, { t: "mouette", x: o + 1200, y: 200 });
       if (k % 2) ennemis.push({ t: "barriere", x: o + 1450 + d / 2, y: 455 }); else if (k) ennemis.push({ t: "pneu", x: o + 900 + d, y: 455 }, { t: "mouette", x: o + 1700, y: 180 }); }
     return { img: cle, vh: 500, depart: [260, 455], fin: { type: "x", x: W * n - 60 }, camYfixe: true, sol: [p(0, W * n, 455, 455, 1)], ech: [], pieces, pizzas, ennemis, voiture: { x: -200, depuis: 0 } }; }] },
-  { nom: "LE RESTAURANT DES FRATELLI", but: "Échappe à Francis Fratelli !", avant: "avant3", apres: "apres3", scenes: [() => ({
+  { nom: "LE RESTAURANT DES FRATELLI", musique: "sloth", but: "Échappe à Francis Fratelli !", avant: "avant3", apres: "apres3", scenes: [() => ({
     img: "niv3", vh: 470, depart: [140, 662], bornes: [62, 1346], fin: { type: "boss", x: 900 },
     sol: [p(60, 1346, 662, 662, 1), p(0, 292, 487), p(372, 540, 547), p(645, 812, 507), p(1030, 1336, 487), p(112, 345, 568),
       p(222, 462, 302), p(222, 462, 376), p(222, 462, 448), p(512, 760, 302), p(512, 760, 376), p(512, 760, 448), p(1036, 1290, 302), p(1036, 1290, 376)],
@@ -316,10 +328,14 @@ function salle(o) {
     x.globalAlpha = .45; x.drawImage(ombre, 7, 9); x.globalAlpha = 1; for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) x.drawImage(ombre, dx, dy);
     x.drawImage(sc, 0, 0); x.globalCompositeOperation = "lighter"; x.globalAlpha = ({ niv3: .34, niv5: .28, niv4a: .2 }[o.th] || .14); x.drawImage(sc, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; }
   IMG[cle] = cv;
-  return { img: cle, par: o.th === "niv1" ? "grenierMur" : o.th, vh: 470, depart: [90, FY], fin: { type: "x", x: L - 80 }, sol, ech, pieces, pizzas: [[L * .5, FY - 150]], ennemis, vide: H - 10 };
+  return { img: cle, par: { niv1: "grenierMur", niv3: "caveMur" }[o.th] || o.th, vh: 470, depart: [90, FY], fin: { type: "x", x: L - 80 }, sol, ech, pieces, pizzas: [[L * .5, FY - 150]], ennemis, vide: H - 10 };
 }
 { const N = NIVEAUX;
   const S_ = (th, graine, ennemis, L) => () => salle({ th, graine, ennemis, L });
+  // la fin du restaurant : le couloir du cachot, et la porte enchaînée de Sinok
+  N[2].scenes.push(() => ({ img: "cachot", vh: 470, depart: [90, 650], fin: { type: "porte", x: 1300 }, sol: [p(0, 1600, 650, 650, 1)], ech: [],
+    pieces: [...arc(300, 600, 5, 46, 90), ...ligne(620, 560, 5), ...arc(950, 600, 5, 46, 90)], pizzas: [[820, 600]],
+    ennemis: [{ t: "rat", x: 560, y: 650, x0: 380, x1: 900 }, { t: "chauve", x: 800, y: 380 }, { t: "araignee", x: 1100, y0: 120, y1: 520 }, { t: "rat", x: 1050, y: 650, x0: 950, x1: 1220 }] }));
   N[0].scenes.unshift(S_("niv1", 1, ["rat", "araignee", "chauve", "rat"], 3600), S_("niv1", 7, ["rat", "chauve", "araignee"], 3200));
   N[2].scenes.unshift(S_("niv3", 3, ["rat", "chauve", "araignee"], 3600), S_("niv3", 11, ["rat", "rat", "chauve"], 3000));
   N[3].scenes.unshift(S_("niv4a", 5, ["chauve", "rat", "araignee"], 3800));
@@ -336,8 +352,8 @@ let S = null; if (DEBUG) window.__G = () => ({ S, J });                        /
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre() { allerTitre(); requestAnimationFrame(boucle);
-  if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; histoire(PARAM.get("h"), () => allerTitre()); }
-  if (PARAM.has("direct")) { jouerMus(NIVEAUX[+(PARAM.get("niv") || 1) - 1].musique || null); partie = { ko: new Set(), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
+  if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), sinok: true, ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; histoire(PARAM.get("h"), () => allerTitre()); }
+  if (PARAM.has("direct")) { jouerMus(NIVEAUX[+(PARAM.get("niv") || 1) - 1].musique || null); partie = { ko: new Set(), sinok: +(PARAM.get("niv") || 1) > 3 || PARAM.has("sinok"), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
 // la musique du début (écran titre, choix du Goonie, histoire d'ouverture) ; elle s'efface quand le premier niveau commence
 let MUS = null, musNom = null, musVoulue = false;
 const MUSIQUES = {};
@@ -351,8 +367,8 @@ const musique = on => jouerMus(on ? "titre" : null);
 addEventListener("pointerdown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
 addEventListener("keydown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);
 function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
-function nouvellePartie() { partie = { ko: new Set(), ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
-function allerChoix(suite, msg) { etat = "choix"; const libres = ADOS.filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
+function nouvellePartie() { partie = { ko: new Set(), sinok: +(PARAM.get("niv") || 1) > 3, ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
+function allerChoix(suite, msg) { etat = "choix"; const libres = equipe().filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
 function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus, H[cle].musDebut || 0); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
 function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
@@ -430,6 +446,7 @@ function tirer(A) {
   if (A.id === "choco") S.tirs.push({ t: "barre", x: xh, y: yh, vx: J.dir * 600 + J.vx * .3, vy: J.baisse ? -140 : -420, g: 1400, vie: 1.6, deg: 2, rot: 0, vr: 14 * J.dir });
   if (A.id === "bagou") S.tirs.push({ t: "peigne", x: xh, y: yh, vx: J.dir * 760 + J.vx * .3, vy: 0, g: 0, vie: .9, deg: 1, rot: 0, vr: 9 * J.dir });
   if (A.id === "brand") S.tirs.push({ t: "haltere", x: xh, y: yh, vx: J.dir * 520 + J.vx * .3, vy: J.baisse ? -120 : -360, g: 1300, vie: 1.6, deg: 3, rot: 0, vr: 8 * J.dir });
+  if (A.id === "sloth") S.tirs.push({ t: "rocher", x: xh, y: yh, vx: J.dir * 560 + J.vx * .3, vy: J.baisse ? -100 : -300, g: 1300, vie: 1.6, deg: 3, rot: 0, vr: 6 * J.dir });
   if (A.id === "data") J.gant = { t: 0, l: 0, dir: J.dir, touches: new Set(), h: J.baisse ? 30 : 58 };
 }
 function blesse(n = 1, chute = false) {
@@ -485,7 +502,8 @@ function majBoss(dt) {
     if (B.t === "mama") { const rage = B.pv <= B.pvMax / 2; B.tirT = rage ? .9 : 1.4; const n = rage ? 3 : 1; for (let k = 0; k < n; k++) S.tirsE.push({ t: "balle", x: B.x + B.dir * 50, y: B.y - 70 - k * 22, vx: B.dir * 520, vy: 0, g: 0, rot: 0, vr: 0 }); }
   }
   // Mama à moitié : Sloth arrive
-  if (B.t === "mama" && !B.slothFait && B.pv <= B.pvMax / 2) { B.slothFait = true; S.sloth = { x: cam.x - 120, t: 0 }; pause("sloth6"); }
+  if (B.t === "mama" && !B.slothFait && B.pv <= B.pvMax / 2 && partie.ado !== "sloth") {   // (si c'est Sinok qu'on joue, il est déjà là)
+    B.slothFait = true; S.sloth = { x: cam.x - 120, t: 0 }; pause("sloth6"); }
   const bb = [B.x - 46, B.y - 150, 92, 150];
   if (chevauche(bb, boiteJ())) blesse(1);
 }
@@ -499,7 +517,7 @@ function majTirs(dt) {
     const bt = [t.x - 12, t.y - 10, 24, 20];
     for (const e of S.ennemis) if (!e.mort && chevauche(bt, boiteE(e))) { touche(e, t.deg); t.vie = 0; break; }
     if (t.vie > 0 && S.boss && S.boss.actif && !S.boss.mort && chevauche(bt, [S.boss.x - 46, S.boss.y - 150, 92, 150])) { toucheBoss(t.deg); t.vie = 0; }
-    if ((t.t === "barre" || t.t === "haltere") && t.vy > 0) { const s = sousPieds(t.x, t.y - t.vy * dt, t.y); if (s) t.vie = 0; } }
+    if ((t.t === "barre" || t.t === "haltere" || t.t === "rocher") && t.vy > 0) { const s = sousPieds(t.x, t.y - t.vy * dt, t.y); if (s) t.vie = 0; } }
   S.tirs = S.tirs.filter(t => t.vie > 0);
   if (J.gant) { const G = J.gant, y = J.y - G.h, x0 = J.x + G.dir * 20, x1 = x0 + G.dir * G.l, bg = [Math.min(x0, x1), y - 16, Math.abs(x1 - x0) + 20, 32];
     for (const e of S.ennemis) if (!e.mort && !G.touches.has(e) && chevauche(bg, boiteE(e))) { G.touches.add(e); touche(e, 2); }
@@ -525,7 +543,7 @@ function majTirs(dt) {
 }
 function finScene() { const N = NIVEAUX[partie.niv];
   if (partie.scene + 1 < N.scenes.length) { partie.scene++; etat = "fondu"; E = { t: 0, suite: () => chargerScene() }; return; }
-  etat = "fondu"; E = { t: 0, suite: () => histoire(N.apres, () => { partie.niv++; partie.scene = 0; if (partie.niv >= NIVEAUX.length) { histoire("fin", () => { etat = "fin"; E = { t: 0 }; enregistreRecord(); }); } else debutNiveau(); }) }; }
+  etat = "fondu"; E = { t: 0, suite: () => histoire(N.apres, () => { if (partie.niv === 2) partie.sinok = true; partie.niv++; partie.scene = 0; if (partie.niv >= NIVEAUX.length) { histoire("fin", () => { etat = "fin"; E = { t: 0 }; enregistreRecord(); }); } else debutNiveau(); }) }; }
 function enregistreRecord() { if (partie.score > RECORD()) localStorage.setItem("gooniesRecord", partie.score); }
 function majOrgue(dt) {   // l'orgue d'os : rejouer la mélodie (croix ou flèches), trois manches
   const O = S.orgue; if (!O || S.orgueFait) return;
@@ -545,14 +563,14 @@ function boucle(t) { requestAnimationFrame(boucle); const dt = Math.min(.05, (t 
   try { maj(dt); dessine(); } catch (e) { console.error(e); } }
 function maj(dt) {
   if (etat === "titre") { E.t += dt; if (IN.ok && E.t > .4) { son("bip"); nouvellePartie(); } return; }
-  if (etat === "choix") { E.t += dt; const libres = ADOS.filter(a => !partie.ko.has(a.id)); if (IN.gaucheP) { E.i = (E.i + libres.length - 1) % libres.length; son("bip0"); } if (IN.droiteP) { E.i = (E.i + 1) % libres.length; son("bip0"); }
+  if (etat === "choix") { E.t += dt; const libres = equipe().filter(a => !partie.ko.has(a.id)); if (IN.gaucheP) { E.i = (E.i + libres.length - 1) % libres.length; son("bip0"); } if (IN.droiteP) { E.i = (E.i + 1) % libres.length; son("bip0"); }
     if (T.tclic && E.zones) { /* au doigt : toucher un portrait */ }
     if (IN.ok && E.t > .3) { partie.ado = libres[E.i].id; son("bip"); const s = E.suite; s(); } return; }
   if (etat === "histoire") { E.t += dt; const ligne = E.h.l[E.i][1]; E.c = Math.min(ligne.length, E.c + dt * 45);
     if (IN.ok && E.t > .2) { if (E.c < ligne.length) E.c = ligne.length; else { E.i++; E.c = 0; E.t = 0; son("bip0"); if (E.i >= E.h.l.length) { const s = E.suite; s(); } } } return; }
   if (etat === "titreNiv") { E.t += dt; if (E.t > 2.6 || (IN.ok && E.t > .5)) { chargerScene(); } return; }
   if (etat === "fondu") { E.t += dt; if (E.t > .5 && !E.fait) { E.fait = 1; E.suite(); } return; }
-  if (etat === "ko") { E.t += dt; if (E.t > 2.2) { if (partie.ko.size >= ADOS.length) { etat = "gameover"; E = { t: 0, n: 9 }; enregistreRecord(); } else allerChoix(() => { chargerScene(); }, "Qui prend la relève ?"); } return; }
+  if (etat === "ko") { E.t += dt; if (E.t > 2.2) { if (partie.ko.size >= equipe().length) { etat = "gameover"; E = { t: 0, n: 9 }; enregistreRecord(); } else allerChoix(() => { chargerScene(); }, "Qui prend la relève ?"); } return; }
   if (etat === "gameover") { E.t += dt; E.n = Math.max(0, 9 - Math.floor(E.t)); if (IN.ok && E.t > .6) { partie.ko.clear(); partie.score = Math.floor(partie.score / 2); allerChoix(() => chargerScene(), "On continue !"); } else if (E.t > 10) allerTitre(); return; }
   if (etat === "fin") { E.t += dt; if (IN.ok && E.t > 2) allerTitre(); return; }
   if (etat === "pause") { if (IN.startP) etat = "jeu"; if (IN.retourP) quitter(); return; }
@@ -561,6 +579,8 @@ function maj(dt) {
   S.t += dt; if (!S.puz) majJoueur(dt); else { J.vx = 0; J.inv = Math.max(0, J.inv - dt); } if (etat !== "jeu") return; if (!S.puz) majEnnemis(dt); majBoss(dt); majTirs(dt); majOrgue(dt);
   // ouverture de la sortie
   const F = S.fin; S.ouvert = F.type === "boss" ? S.bossMort : F.type === "orgue" ? S.orgueFait : true;
+  if (F.type === "porte" && !S.porte && J.x > F.x - 60) { S.porte = { t: 0 }; son("boss"); S.ennemis = S.ennemis.filter(e => Math.abs(e.x - J.x) > 600); }
+  if (S.porte) { const P = S.porte; P.t += dt; J.vx = 0; if (P.t > 3) { S.porte = null; S.fin = { type: "x", x: -1 }; finScene(); return; } }
   if (S.ouvert && ((F.type === "x" && J.x > F.x) || (F.type === "xg" && J.x < F.x) || ((F.type === "boss" || F.type === "orgue") && J.x > F.x - 20 && (!S.boss || S.boss.mort > 1.2 || !S.boss)))) finScene();
   // la caméra
   const vw = LW / cam.z, vh = LH / cam.z;
@@ -598,12 +618,13 @@ function dTitre() {
 function dChoix() {
   fond("niv1", .35); X.fillStyle = "rgba(0,0,0,.45)"; X.fillRect(0, 0, LW, LH);
   texte(E.msg || "CHOISIS TON GOONIE", LW / 2, 62, { a: "center", c: "#ffd34a", t: 34, bord: "#3a0a00", ep: 6 });
-  const libres = ADOS.filter(a => !partie.ko.has(a.id));
-  ADOS.forEach((A, k) => { const x = 96 + k * 192, y = 210, ko = partie.ko.has(A.id), sel = !ko && libres[E.i] === A;
-    X.save(); if (ko) X.globalAlpha = .3; boite(x - 88, y - 110, 176, 300, .85);
-    medaillon(A.id, x - 66, y - 92, 132);
-    if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 92, y - 114, 184, 308); }
-    texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: A.arme.length > 18 ? 11 : 14 });
+  const libres = equipe().filter(a => !partie.ko.has(a.id));
+  const EQ = equipe(), six = EQ.length > 5, pas = six ? 156 : 192, L2 = six ? 74 : 88, M = six ? 116 : 132;
+  EQ.forEach((A, k) => { const x = (six ? 90 : 96) + k * pas, y = 210, ko = partie.ko.has(A.id), sel = !ko && libres[E.i] === A;
+    X.save(); if (ko) X.globalAlpha = .3; boite(x - L2, y - 110, L2 * 2, 300, .85);
+    medaillon(A.id, x - M / 2, y - 92, M);
+    if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - L2 - 4, y - 114, L2 * 2 + 8, 308); }
+    texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: A.nom.length > 6 ? 21 : 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: six ? (A.arme.length > 18 ? 8 : A.arme.length > 14 ? 10 : 13) : A.arme.length > 18 ? 11 : 14 });
     sprEcran(A.id, sel ? 1 + Math.floor(E.t * 9) % 4 : 0, x, y + 150, .5); X.restore();
     if (ko) texte("ÉPUISÉ", x, y + 10, { a: "center", c: "#ff6a5a", t: 26 }); });
   const A = libres[E.i]; if (A) texte(A.desc, LW / 2, 480, { a: "center", t: 17 });
@@ -617,7 +638,7 @@ function dHistoire() {
     X.strokeStyle = "#f3c64a"; X.lineWidth = 2; X.strokeRect((LW - w) / 2, (HI - hh) / 2, w, hh); }
   const yb = LH - HB - 2; boite(8, yb, LW - 16, HB, .9);
   const x0 = qui ? 112 : 26; if (qui) { boite(16, yb + 8, 88, 88, 1); medaillon(qui, 20, yb + 12, 80);
-    texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SLOTH", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, yb + 24, { c: "#ffd34a", t: 17 }); }
+    texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SINOK", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, yb + 24, { c: "#ffd34a", t: 17 }); }
   const vis = txt.slice(0, Math.floor(E.c)), mots = vis.split(" "), lignes = [""]; X.font = 'bold 18px "Courier New", monospace';
   for (const m of mots) { const essai = (lignes[lignes.length - 1] + " " + m).trim(); if (X.measureText(essai).width > LW - x0 - 50) lignes.push(m); else lignes[lignes.length - 1] = essai; }
   lignes.forEach((l, k) => texte(l, x0, yb + (qui ? 50 : 32) + k * 23, { t: 18, ep: 3 }));
@@ -633,7 +654,7 @@ function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
   texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 400, { a: "center", c: "#ff8a6a", t: 20 }); }
 function dJeu() {
   const im = IMG[S.img], vw = LW / cam.z, vh = LH / cam.z;
-  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
+  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" || S.par === "caveMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
   if (PARAM.has("plan")) { const k = Math.min(LW / S.w, LH / S.h); X.drawImage(im, 0, 0, S.w * k, S.h * k); X.lineWidth = 2;
     for (const pl of S.sol) { X.strokeStyle = pl.dur ? "#f0f" : "#0f0"; X.beginPath(); X.moveTo(pl.x0 * k, pl.y0 * k); X.lineTo(pl.x1 * k, pl.y1 * k); X.stroke(); }
     X.strokeStyle = "#0ff"; for (const e of S.ech || []) X.strokeRect(e.x0 * k, e.y0 * k, (e.x1 - e.x0) * k, (e.y1 - e.y0) * k);
@@ -669,6 +690,10 @@ function dJeu() {
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
     if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, B.dir > 0, 1, al); }
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
+  if (S.porte) { const P = S.porte, im = IMG.porteOuverte, tremble = P.t < .7 ? Math.sin(P.t * 60) * 4 : 0;   // (la porte du cachot cède, Sinok sort)
+    if (P.t > .7 && im) X.drawImage(im, (1300 - cam.x) * cam.z, (310 - cam.y) * cam.z, im.width * cam.z, im.height * cam.z);
+    else if (im) { X.fillStyle = "rgba(255,240,200,.15)"; X.fillRect((1330 + tremble - cam.x) * cam.z, (340 - cam.y) * cam.z, 170 * cam.z, 310 * cam.z); }
+    if (P.t > .9) spr("boss_sloth", 0, 1415 - Math.min(1, (P.t - .9) / 1.4) * 150, 652, false, 1, Math.min(1, (P.t - .9) * 3)); }
   if (S.voit && S.voit.actif) { const vx = S.voit.x, vy = S.sol[0].y0 + 14; { const v = IMG.voitureF, sx = (vx - cam.x) * cam.z, sy = (vy - cam.y) * cam.z, w = v.width * cam.z, h = v.height * cam.z, sec = Math.sin(S.t * 30) * cam.z; X.drawImage(v, sx - w / 2, sy - h + sec, w, h); }   // (la voiture noire des Fratelli)
     }
   // le joueur
@@ -688,10 +713,10 @@ function dJeu() {
 }
 function hud() {
   X.save(); X.globalAlpha = .72; X.fillStyle = "#000"; X.fillRect(0, 0, LW, 54); X.globalAlpha = 1; X.fillStyle = "#6a4a14"; X.fillRect(0, 54, LW, 2);
-  ADOS.forEach((A, k) => { const x = 10 + k * 52, on = A.id === partie.ado, ko = partie.ko.has(A.id); X.globalAlpha = ko ? .3 : 1; X.fillStyle = on ? "#ffd040" : "#3a2a1a"; X.fillRect(x - 2, 4, 48, 48);
+  const EQ = equipe(), dx = EQ.length * 52 + 16; EQ.forEach((A, k) => { const x = 10 + k * 52, on = A.id === partie.ado, ko = partie.ko.has(A.id); X.globalAlpha = ko ? .3 : 1; X.fillStyle = on ? "#ffd040" : "#3a2a1a"; X.fillRect(x - 2, 4, 48, 48);
     medaillon(A.id, x, 6, 44); X.globalAlpha = 1; if (ko) texte("✕", x + 22, 38, { a: "center", c: "#ff4a3a", t: 26 }); });
-  for (let k = 0; k < 3; k++) { const m = META.coeur.f[0]; X.globalAlpha = k < J.pv ? 1 : .2; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 276 + k * 34, 14, 28, 25); } X.globalAlpha = 1;
-  texte(parId(partie.ado).nom, 386, 35, { c: "#ffd34a", t: 20 });
+  for (let k = 0; k < 3; k++) { const m = META.coeur.f[0]; X.globalAlpha = k < J.pv ? 1 : .2; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], dx + k * 34, 14, 28, 25); } X.globalAlpha = 1;
+  texte(parId(partie.ado).nom, dx + 108, 35, { c: "#ffd34a", t: 20 });
   const m = META.doublon.f[0]; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 600, 12, 30, 30); texte(`× ${partie.pieces}`, 636, 36, { t: 20 });
   texte(String(partie.score).padStart(7, "0"), 870, 36, { a: "right", c: "#ffd34a", t: 24 });
   if (!(S.boss && S.boss.actif && !S.boss.mort) && !S.puz) texte(`${partie.niv + 1}·${S.N.nom}`, 480, 74, { a: "center", c: "#fff", t: 13, ep: 3 });
