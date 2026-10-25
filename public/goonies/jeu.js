@@ -205,7 +205,6 @@ const H = {
     ["sloth", "Bateau… GROS !", "inferno"],
     ["brand", "Tout le monde reste groupé. On monte à bord !", "inferno"]] },
   avant6: { fond: "niv6a", l: [
-    ["choco", "Un vrai bateau pirate… l'Inferno !"],
     ["mikey", "Le trésor de Willy le Borgne ! On l'a trouvé !"],
     ["mama", "Pas si vite, les mioches ! Ce trésor est à nous !"]] },
   sloth6: { fond: "niv6a", l: [
@@ -418,7 +417,7 @@ let etat = "charge", E = {};          // E : les données de l'état courant
 const cam = { x: 0, y: 0, z: 1 };
 let partie = null;                    // { ko: Set, ado, niv, scene, score, pieces }
 let J = null;                         // le joueur
-let S = null; if (DEBUG) window.__G = () => ({ S, J });                        // la scène en cours
+let S = null; if (DEBUG) window.__G = () => ({ S, J, finScene, partie });                        // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre(encore) { if (!encore) { allerTitre(); requestAnimationFrame(boucle); }
@@ -619,7 +618,7 @@ function majTirs(dt) {
 }
 function finScene() { const N = NIVEAUX[partie.niv];
   if (partie.scene + 1 < N.scenes.length) { partie.scene++; etat = "fondu"; E = { t: 0, suite: () => chargerScene() }; return; }
-  etat = "fondu"; E = { t: 0, suite: () => histoire(N.apres, () => { if (partie.niv === 2) partie.sinok = true; partie.niv++; partie.scene = 0; if (partie.niv >= NIVEAUX.length) { histoire("fin", () => { etat = "fin"; E = { t: 0 }; enregistreRecord(); }); } else debutNiveau(); }) }; }
+  etat = "fondu"; E = { t: 0, suite: () => histoire(N.apres, () => { if (partie.niv === 2) partie.sinok = true; partie.niv++; partie.scene = 0; if (partie.niv >= NIVEAUX.length) { histoire("fin", () => { etat = "fin"; E = { t: 0 }; enregistreRecord(); }); } else histoire(NIVEAUX[partie.niv].avant, () => debutNiveau()); }) }; }   // (la cinématique d'avant le niveau : les Fratelli dans la voiture, Francis au restaurant…)
 function enregistreRecord() { if (partie.score > RECORD()) localStorage.setItem("gooniesRecord", partie.score); }
 function majOrgue(dt) {   // l'orgue d'os : rejouer la mélodie (croix ou flèches), trois manches
   const O = S.orgue; if (!O || S.orgueFait) return;
