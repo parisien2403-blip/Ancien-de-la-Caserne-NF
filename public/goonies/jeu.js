@@ -249,7 +249,7 @@ const NIVEAUX = [
     pieces: [...ligne(240, 106, 6), ...ligne(360, 316, 5), ...ligne(1110, 316, 4), ...ligne(90, 420, 4)], pizzas: [[1250, 300]],
     ennemis: [{ t: "chauve", x: 700, y: 160 }, { t: "chauve", x: 1000, y: 120 }, { t: "araignee", x: 860, y0: 30, y1: 360 }],
     boss: { t: "jake", x: 1100, y: 588, pv: 18, x0: 450, x1: 1300, declenche: 600, histoire: "boss4" } })] },
-  { nom: "L'ORGUE D'OS", but: "Joue la bonne mélodie sur l'orgue !", avant: "avant5", apres: "apres5", scenes: [() => ({
+  { nom: "L'ORGUE D'OS", musique: "orgue", but: "Joue la bonne mélodie sur l'orgue !", avant: "avant5", apres: "apres5", scenes: [() => ({
     img: "niv5", vh: 470, depart: [60, 540], fin: { type: "orgue", x: 1385 }, vide: 760,
     sol: [p(0, 162, 540), p(160, 380, 548, 556), p(370, 1300, 568), p(785, 990, 606), p(1170, 1300, 588, 478), p(1295, 1408, 478), p(80, 400, 390), p(90, 360, 745)],
     ech: [],
@@ -358,11 +358,11 @@ function demarre() { allerTitre(); requestAnimationFrame(boucle);
 let MUS = null, musNom = null, musVoulue = false;
 const MUSIQUES = {};
 function jouerMus(nom, debut = 0) {   // (debut : on démarre le morceau à ce moment, en secondes)   // un seul morceau à la fois ; null : la musique s'efface
-  if (nom === musNom && MUS && !MUS.paused) return;
+  if (nom === musNom && MUS && !MUS.paused) { if (debut && MUS._debut !== debut) { MUS._debut = debut; try { MUS.currentTime = debut; } catch (e) {} } return; }   // (même morceau : on le reprend juste au bon endroit)
   const ancien = MUS; if (ancien) { const a = ancien; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .06); if (a.volume <= 0) { clearInterval(f); a.pause(); a.currentTime = 0; } }, 80); }
   musNom = nom; musVoulue = !!nom; MUS = null; if (!nom) return;
   const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=3`), { loop: true }));
-  m.volume = .8; MUS = m; const cale = () => { try { m.currentTime = debut; } catch (e) {} }; if (m.readyState >= 1) cale(); else m.addEventListener("loadedmetadata", cale, { once: true }); m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
+  m.volume = .8; MUS = m; m._debut = debut; const cale = () => { try { m.currentTime = debut; } catch (e) {} }; if (m.readyState >= 1) cale(); else m.addEventListener("loadedmetadata", cale, { once: true }); m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
 const musique = on => jouerMus(on ? "titre" : null);
 addEventListener("pointerdown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
 addEventListener("keydown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);
@@ -370,7 +370,7 @@ function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
 function nouvellePartie() { partie = { ko: new Set(), sinok: +(PARAM.get("niv") || 1) > 3, ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
 function allerChoix(suite, msg) { etat = "choix"; const libres = equipe().filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
 function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus, H[cle].musDebut || 0); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
-function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null); }
+function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null, N.musDebut || 0); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
   S.ennemis = def.ennemis.filter(e => Math.hypot(e.x - def.depart[0], (e.y ?? e.y1 ?? 0) - def.depart[1]) > 280).map(e => nouvelEnnemi(e));   // (rien ne nous tombe dessus au départ)
