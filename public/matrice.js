@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.15";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.16";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -16333,11 +16333,13 @@ function verrouRE() { try { const A = actx = actx || new (window.AudioContext ||
     g.gain.setValueAtTime(.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(.12, t0 + dt + .005); g.gain.exponentialRampToValueAtTime(.0001, t0 + dt + .07); o.connect(g).connect(A.destination); o.start(t0 + dt); o.stop(t0 + dt + .09); } } catch (e) {} }
 /* la borne d'arcade des Goonies : le jeu s'ouvre en plein écran par-dessus la Matrice ; ✕ (ou Select + Start tenus) pour revenir */
 function ouvrirArcade() {
-  if (!M || M.arcadeEl) return;
+  if (!M) return; if (M.arcadeEl) { if (M.arcadeEl.isConnected) return; M.arcadeEl = null; }
   const f = document.createElement("iframe"); f.src = "goonies/index.html?v=" + DIAG_V; f.allow = "gamepad; autoplay; fullscreen";
   f.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:5000;background:#000";
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "keydown"]) f.addEventListener(ev, e => e.stopPropagation());
-  document.body.appendChild(f); M.arcadeEl = f; jouer("arcade"); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);
+  (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); M.arcadeEl = f;   // (en plein écran, seul l'élément en plein écran est visible : le jeu s'y ouvre) jouer("arcade"); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);
+  const pe = () => { if (M && M.arcadeEl === f) (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); else document.removeEventListener("fullscreenchange", pe); };
+  document.addEventListener("fullscreenchange", pe);   // (on entre ou sort du plein écran pendant la partie : le jeu suit)
   const fin = e => { if (!e.data || e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
   addEventListener("message", fin); }
 function fermerArcade() { if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
