@@ -221,13 +221,13 @@ const NIVEAUX = [
     ennemis: [{ t: "rat", x: 420, y: 700, x0: 260, x1: 640 }, { t: "rat", x: 880, y: 700, x0: 760, x1: 1100 }, { t: "rat", x: 640, y: 441, x0: 560, x1: 820 },
       { t: "araignee", x: 610, y0: 120, y1: 330 }, { t: "araignee", x: 990, y0: 160, y1: 520 }, { t: "chauve", x: 760, y: 230 }, { t: "chauve", x: 1240, y: 200 }, { t: "rat", x: 1200, y: 368, x0: 1080, x1: 1260 }] })] },
   { nom: "LA COURSE DANS ASTORIA", musique: "fratelli", but: "Sème la voiture des Fratelli !", avant: "avant2", apres: "apres2", velo: true, scenes: [() => {
-    // le quai de la conserverie, cinq longueurs sans s'arrêter, la voiture noire aux trousses ; des barrières de chantier, des caisses de la conserverie et des pneus qui dévalent
+    // le quai de la conserverie, cinq longueurs sans s'arrêter, la voiture noire aux trousses ; des barrières de chantier, et des caisses de la conserverie
     const im = IMG.niv2c, n = 5, W = im.width, cle = "niv2c_x5"; if (!IMG[cle]) { const c = document.createElement("canvas"); c.width = W * n; c.height = im.height; const x = c.getContext("2d"); for (let k = 0; k < n; k++) x.drawImage(im, k * W, 0); IMG[cle] = c; }
     const pieces = [], ennemis = [], pizzas = [];
     for (let k = 0; k < n; k++) { const o = k * W; pieces.push(...arc(o + 300, 400, 6, 50, 100), ...ligne(o + 800, 370, 6, 55), ...arc(o + 1300, 400, 7, 50, 110)); pizzas.push([o + 1100, 340]);
       const d = (k * 173) % 260;
-      ennemis.push({ t: "barriere", x: o + 640 + d, y: 455 }, { t: "caisse", x: o + 1180 - d / 2, y: 455 }, { t: "pneu", x: o + 1750 + d / 3, y: 455 }, { t: "mouette", x: o + 1200, y: 200 });
-      if (k % 2) ennemis.push({ t: "barriere", x: o + 1450 + d / 2, y: 455 }); else if (k) ennemis.push({ t: "pneu", x: o + 900 + d, y: 455 }, { t: "mouette", x: o + 1700, y: 180 }); }
+      ennemis.push({ t: "barriere", x: o + 640 + d, y: 455 }, { t: "caisse", x: o + 1180 - d / 2, y: 455 }, { t: "mouette", x: o + 1200, y: 200 });
+      if (k % 2) ennemis.push({ t: "barriere", x: o + 1700 + d / 3, y: 455 }); else if (k) ennemis.push({ t: "caisse", x: o + 1750 + d / 3, y: 455 }); }
     return { img: cle, vh: 500, depart: [260, 455], fin: { type: "x", x: W * n - 60 }, camYfixe: true, sol: [p(0, W * n, 455, 455, 1)], ech: [], pieces, pizzas, ennemis, voiture: { x: -200, depuis: 0 } }; }] },
   { nom: "LE RESTAURANT DES FRATELLI", musique: "sloth", but: "Échappe à Francis Fratelli !", avant: "avant3", apres: "apres3", scenes: [() => ({
     img: "niv3", vh: 470, depart: [140, 662], bornes: [62, 1346], fin: { type: "boss", x: 900 },
