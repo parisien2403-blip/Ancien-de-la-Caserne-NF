@@ -15,7 +15,7 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 14;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 15;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg" };
@@ -80,18 +80,24 @@ function medaillon(qui, x, y, t) {   // la photo du personnage (façon borne d'a
   const ph = IMG["photo_" + qui]; if (ph) { X.drawImage(ph, x, y, t, t); return; }
   const m = META["portrait_" + qui]; if (m) { const fr = m.f[0]; X.drawImage(IMG[m.img], fr[0], fr[1], fr[2], fr[3], x, y, t, t); } }
 /* les 4 ados (images fournies, de face) : animés en découpant l'image — le haut du corps qui balance, les deux jambes qui avancent tour à tour */
-const HANCHE = { mikey: .72, bagou: .56, choco: .6, data: .6 };
+const HANCHE = { mikey: .75, bagou: .56, choco: .6, data: .6 };
 function adoDessin(id, pose, ph, sx, sy, haut, flip = false, alpha = 1) {   // sx, sy : les pieds, à l'écran ; haut : la taille à l'écran
   const im = IMG["ado_" + id]; if (!im) return; const k = haut / im.height, W = im.width * k, H = haut, hy = Math.round(im.height * HANCHE[id]), cx = im.width / 2;
   X.save(); X.globalAlpha = alpha; X.translate(Math.round(sx), Math.round(sy)); if (flip) X.scale(-1, 1);
   const piece = (x0, y0, w, h, dx, dy, sh = 0) => { X.save(); X.translate(dx, dy); if (sh) X.transform(1, 0, sh, 1, 0, 0); X.drawImage(im, x0, y0, w, h, (x0 - cx) * k, (y0 - im.height) * k, w * k, h * k); X.restore(); };
-  const jambe = (x0, w, ang, dy = 0) => { const px = (x0 + w / 2 - cx) * k, py = (hy - im.height) * k; X.save(); X.translate(px, py + dy); X.rotate(ang);   // (une jambe qui pivote à la hanche)
-    X.drawImage(im, x0, hy, w, im.height - hy, (x0 - cx) * k - px, 0, w * k, (im.height - hy) * k); X.restore(); };
-  if (pose === "course") { const s = Math.sin(ph), b = -Math.abs(Math.cos(ph)) * 7 * k, a = .42;
-    X.save(); X.globalAlpha = alpha * .9; jambe(0, cx, s * a, b); X.restore(); jambe(cx, im.width - cx, -s * a, b);
-    X.save(); X.translate(0, b); X.rotate(.05); piece(0, 0, im.width, hy + 3, 0, 0); X.restore(); }
-  else if (pose === "saut") { piece(0, hy, cx, im.height - hy, -6 * k * 2, -14 * k * 2); piece(cx, hy, im.width - cx, im.height - hy, 4 * k * 2, -8 * k * 2); piece(0, 0, im.width, hy + 2, 0, -6 * k * 2); }
-  else if (pose === "baisse") { X.save(); X.scale(1.08, .45); piece(0, hy, im.width, im.height - hy, 0, 0); X.restore(); piece(0, 0, im.width, hy + 2, 0, (im.height - hy) * k * .55); }
+  // les jambes en deux morceaux, cuisse et mollet, qui plient au genou ; la hanche se place pour que le pied le plus bas touche le sol
+  const ky = Math.round(hy + (im.height - hy) * .5), Lt = (ky - hy) * k, Ls = (im.height - ky) * k;
+  const corps = (j1, j2, pench = 0, dyT = 0) => {   // j : [angle de la cuisse, pliure du genou] (négatif : vers l'avant)
+    const bas = ([a, b]) => Lt * Math.cos(a) + Ls * Math.cos(a + b), hipY = -Math.max(bas(j1), bas(j2));
+    const jambe = (x0, w, [a, b], dim) => { const px = (x0 + w / 2 - cx) * k; X.save(); if (dim) X.globalAlpha = alpha * .88; X.translate(px, hipY); X.rotate(a);
+      X.drawImage(im, x0, hy, w, ky - hy + 1, (x0 - cx) * k - px, 0, w * k, (ky - hy + 1) * k); X.translate(0, Lt); X.rotate(b);
+      X.drawImage(im, x0, ky, w, im.height - ky, (x0 - cx) * k - px, 0, w * k, (im.height - ky) * k); X.restore(); };
+    jambe(0, cx, j1, true); jambe(cx, im.width - cx, j2, false);
+    X.save(); X.translate(0, hipY + (im.height - hy) * k + dyT); X.rotate(pench); X.drawImage(im, 0, 0, im.width, hy + 3, -cx * k, -im.height * k, im.width * k, (hy + 3) * k); X.restore(); };
+  if (pose === "course") { const A = .55, s1 = Math.sin(ph), c1 = Math.cos(ph);   // (la jambe de gauche reste derrière, celle de droite devant : elles ne se croisent pas)
+    corps([A * (.5 + .5 * s1), .6 * Math.max(0, c1)], [-A * (.5 - .5 * s1), .6 * Math.max(0, -c1)], .06); }
+  else if (pose === "saut") corps([-.7, 1.3], [-.2, .8]);
+  else if (pose === "baisse") corps([-1.15, 2.1], [-1.0, 1.9], .1);
   else if (pose === "tir") { X.rotate(.05); piece(0, 0, im.width, im.height, 0, 0); }
   else if (pose === "mal") { X.rotate(-.2); piece(0, 0, im.width, im.height, 0, 0); X.globalCompositeOperation = "source-atop"; X.fillStyle = "rgba(255,40,40,.35)"; X.fillRect(-W, -H, W * 2, H); }
   else if (pose === "echelle") { const s = Math.sin(ph); piece(0, 0, im.width, im.height, s * 2 * k * 2, Math.abs(s) * -3 * k * 2); }
@@ -554,6 +560,8 @@ function fond(nom, a = 1) { const im = IMG[nom]; if (!im) return; const s = Math
 function dessine() {
   X.setTransform(1, 0, 0, 1, 0, 0); X.fillStyle = "#000"; X.fillRect(0, 0, LW, LH);
   if (!pret) { texte("CHARGEMENT…", LW / 2, LH / 2, { a: "center", c: "#f3c64a", t: 26 }); return; }
+  if (DEBUG && PARAM.has("poses")) { X.fillStyle = "#406080"; X.fillRect(0, 0, LW, LH); const id = PARAM.get("poses") || "data", P = [["course", 0], ["course", .8], ["course", 1.6], ["course", 2.4], ["course", 3.2], ["baisse", 0], ["saut", 0], ["repos", 0]];
+    P.forEach(([po, ph], k) => adoDessin(id, po, ph, 60 + k * 118, 380, 260)); return; }
   if (etat === "titre") return dTitre();
   if (etat === "choix") return dChoix();
   if (etat === "histoire") return dHistoire();
