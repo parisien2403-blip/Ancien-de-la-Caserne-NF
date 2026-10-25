@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 24;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 25;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -283,7 +283,8 @@ function salle(o) {
   segs.push(["fin", reste + 260]);
   // des décorations, au fond
   for (let k = 0; k < L / 380; k++) if (D.deco.length && rnd() < .7) deco.push([choix(D.deco), 120 + k * 380 + rnd() * 200]);
-  for (const [n, dx] of deco) { const q = fr(n); if (neuf) { x.globalAlpha = .55; x.drawImage(at, q[0], q[1], q[2], q[3], dx, FY - q[3] + 4, q[2], q[3]); x.globalAlpha = 1; } }
+  // (au fond : des objets pleins mais plus sombres, plus de fantômes à moitié transparents)
+  for (const [n, dx] of deco) { const q = fr(n); if (neuf) { const t = document.createElement("canvas"); t.width = q[2]; t.height = q[3]; const tx = t.getContext("2d"); tx.drawImage(at, q[0], q[1], q[2], q[3], 0, 0, q[2], q[3]); tx.globalCompositeOperation = "source-atop"; tx.fillStyle = "rgba(10,5,2,.5)"; tx.fillRect(0, 0, q[2], q[3]); x.drawImage(t, dx, FY - q[3] + 4); } }
   for (const [t, w] of segs) { const a = X0, b = X0 + w;
     if (t === "trou") { const tw = 130 + Math.floor(rnd() * 50), tx = a + (w - tw) / 2; trous.push([tx, tx + tw]); pieces.push(...arc(tx - 20, FY - 60, 4, (tw + 40) / 3, 110));
       if (rnd() < .5) { planche(tx + 10, tw - 20, FY - 170); ennemiAir(tx + tw / 2, FY - 300); } ennemiSol(tx + tw + 20, b, FY); }
@@ -315,7 +316,7 @@ function salle(o) {
     x.globalAlpha = .45; x.drawImage(ombre, 7, 9); x.globalAlpha = 1; for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) x.drawImage(ombre, dx, dy);
     x.drawImage(sc, 0, 0); x.globalCompositeOperation = "lighter"; x.globalAlpha = ({ niv3: .34, niv5: .28, niv4a: .2 }[o.th] || .14); x.drawImage(sc, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; }
   IMG[cle] = cv;
-  return { img: cle, par: o.th, vh: 470, depart: [90, FY], fin: { type: "x", x: L - 80 }, sol, ech, pieces, pizzas: [[L * .5, FY - 150]], ennemis, vide: H - 10 };
+  return { img: cle, par: o.th === "niv1" ? "grenierMur" : o.th, vh: 470, depart: [90, FY], fin: { type: "x", x: L - 80 }, sol, ech, pieces, pizzas: [[L * .5, FY - 150]], ennemis, vide: H - 10 };
 }
 { const N = NIVEAUX;
   const S_ = (th, graine, ennemis, L) => () => salle({ th, graine, ennemis, L });
@@ -592,7 +593,7 @@ function dTitre() {
   texte("LA CHASSE AU TRÉSOR DE WILLY LE BORGNE", LW / 2, 380, { a: "center", c: "#fff", t: 22 });
   if (Math.floor(E.t * 1.6) % 2 === 0) texte("APPUIE SUR START", LW / 2, 440, { a: "center", c: "#ffd34a", t: 30, bord: "#3a0a00", ep: 6 });
   texte(`RECORD ${String(RECORD()).padStart(7, "0")}`, LW / 2, 500, { a: "center", c: "#9fe0ff", t: 18 });
-  [["mikey", 60], ["brand", 132], ["data", 800], ["bagou", 860], ["choco", 922]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, .7, x > LW / 2));
+  [["mikey", 55], ["brand", 125], ["data", 838], ["bagou", 888], ["choco", 934]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, .7, x > LW / 2));
 }
 function dChoix() {
   fond("niv1", .35); X.fillStyle = "rgba(0,0,0,.45)"; X.fillRect(0, 0, LW, LH);
@@ -632,7 +633,7 @@ function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
   texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 400, { a: "center", c: "#ff8a6a", t: 20 }); }
 function dJeu() {
   const im = IMG[S.img], vw = LW / cam.z, vh = LH / cam.z;
-  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }
+  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
   if (PARAM.has("plan")) { const k = Math.min(LW / S.w, LH / S.h); X.drawImage(im, 0, 0, S.w * k, S.h * k); X.lineWidth = 2;
     for (const pl of S.sol) { X.strokeStyle = pl.dur ? "#f0f" : "#0f0"; X.beginPath(); X.moveTo(pl.x0 * k, pl.y0 * k); X.lineTo(pl.x1 * k, pl.y1 * k); X.stroke(); }
     X.strokeStyle = "#0ff"; for (const e of S.ech || []) X.strokeRect(e.x0 * k, e.y0 * k, (e.x1 - e.x0) * k, (e.y1 - e.y0) * k);
