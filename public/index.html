@@ -1011,9 +1011,9 @@
   .splash.ouvert #enter .bloc.g { transform: translate(-40px, 150px) rotate(-28deg); opacity: 0; }
   .splash.ouvert #enter .bloc.d { transform: translate(44px, 170px) rotate(24deg); opacity: 0; }
   .splash.ouvert #enter svg.fissure { opacity: 0; transition: opacity .2s; }
-  .splash .attente { position: absolute; z-index: 3; left: 50%; top: calc(var(--h) * .55); transform: translateX(-50%); padding: 12px 20px; border-radius: 26px; border: 1px solid rgba(255,230,160,.6); background: rgba(20,8,4,.7);
+  .splash .touche-mur { position: absolute; z-index: 3; left: 50%; bottom: max(3dvh, 16px); transform: translateX(-50%); padding: 12px 20px; border-radius: 26px; border: 1px solid rgba(255,230,160,.6); background: rgba(20,8,4,.7);
     color: #ffe7b0; font: 600 16px "Lato", sans-serif; cursor: pointer; display: none; animation: pulse 1.6s ease-in-out infinite; }
-  .splash .attente.vu { display: block; }
+  .splash .touche-mur.vu { display: block; }
   @keyframes pulse { 50% { transform: translateX(-50%) scale(1.06); } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1026,7 +1026,7 @@
   <section class="screen splash" id="splash">
     <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMin slice" aria-hidden="true"></svg>
     <div class="mur-jump" id="murJump" aria-hidden="true"><div class="c tube"></div><div class="c neon"></div><canvas id="murGraff" width="1100" height="1300"></canvas><div class="c drips"></div></div>
-    <button class="attente" id="murSon" type="button">🔊 Touchez le mur pour entrer dans la caserne</button>
+    <button class="touche-mur" id="murSon" type="button">🔊 Touchez le mur pour entrer dans la caserne</button>
     <div class="content">
       <h1 class="titre3"><span>CASERNE</span><span class="dela">DE LA</span><span class="nf">NOUVELLE-FRANCE</span></h1>
       <p>Retrouvez la caserne<br>de votre enfance</p>
@@ -3258,6 +3258,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.89", "25 octobre 2026", ["Accueil : « Touchez le mur » est en bas de l'écran et ne recouvre plus le bouton « Entrer »"]],
     ["7.88", "25 octobre 2026", ["Accueil : tout l'écran devient le mur de briques (l'horloge est retirée) ; sur le générique de 21 Jump Street, « de la Nouvelle-France » se tague lettre par lettre au son de la bombe, la peinture coule, le néon « CASERNE » s'allume, puis la brique du bas se fissure, tombe, et « Entrer » apparaît", "Accueil : si le navigateur bloque le son, « Touchez le mur » lance la cinématique avec la musique"]],
     ["7.87", "25 octobre 2026", ["Accueil (ordinateur) : cinématique sur le générique de 21 Jump Street : « de la Nouvelle-France » se tague à la bombe mot après mot, la peinture coule, puis le néon « CASERNE » s'allume en grésillant ; bouton « Revoir avec le son » si le navigateur bloque la musique"]],
     ["7.86", "25 octobre 2026", ["Accueil (ordinateur) : nouveau mur de briques façon 21 Jump Street, « CASERNE » en néon bleu qui grésille et clignote, « de la Nouvelle-France » à la bombe jaune qui coule ; l'horloge remontée à gauche avec le texte et « Entrer » dessous"]],
