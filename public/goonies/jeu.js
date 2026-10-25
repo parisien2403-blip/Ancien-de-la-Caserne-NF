@@ -15,14 +15,14 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {};
+const IMG = {}, META = {}, VI = 2;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2: "niv2.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", ecran: "borne-ecran.jpg" };
 let pret = false;
-Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f)),
-  fetch("img/sprites.json").then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
-  fetch("img/sprites2.json").then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites2" }; })]).then(() => { pret = true; demarre(); });
+Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
+  fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites2" }; })]).then(() => { pret = true; demarre(); });
 
 // ------------------------------------------------------------------ les commandes : clavier, manette, tactile
 const T = {}, TP = {}, TOUCHES = { ArrowLeft: "gauche", KeyA: "gauche", KeyQ: "gauche", ArrowRight: "droite", KeyD: "droite", ArrowUp: "haut", KeyW: "haut", KeyZ: "haut", ArrowDown: "bas", KeyS: "bas",
@@ -206,6 +206,29 @@ const NIVEAUX = [
     sol: [p(820, 1350, 642), p(720, 830, 745, 650), p(90, 1000, 722, 722, 1)], ech: [],
     pieces: [...ligne(500, 680, 8, 50)], pizzas: [], ennemis: [{ t: "crabe", x: 600, y: 722, x0: 300, x1: 900 }, { t: "crabe", x: 400, y: 722, x0: 150, x1: 700 }] })] }];
 
+// ------------------------------------------------------------------ des niveaux plus longs : les mêmes décors repris en miroir (on les traverse autrement), et la rue d'Astoria vue de près
+function imgMiroir(n) { const k = n + "_m"; if (!IMG[k]) { const im = IMG[n], c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d"); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
+    for (const [px, py, pw, ph] of ({ niv6a: [[875, 110, 420, 225]] }[n] || [])) x.drawImage(im, px, py, pw, ph, im.width - px - pw, py, pw, ph);   // (les inscriptions restent à l'endroit)
+    IMG[k] = c; } return k; }
+function imgAgrandie(n, k) { const cle = n + "_x" + k; if (!IMG[cle]) { const im = IMG[n], c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext("2d"); x.imageSmoothingEnabled = false; x.drawImage(im, 0, 0, c.width, c.height); IMG[cle] = c; } return cle; }
+function miroirDef(d) { const W = IMG[d.img].width, mx = v => W - v;
+  const r = { ...d, img: imgMiroir(d.img), sol: d.sol.map(q => ({ x0: mx(q.x1), x1: mx(q.x0), y0: q.y1, y1: q.y0, dur: q.dur })), ech: (d.ech || []).map(e => ({ ...e, x0: mx(e.x1), x1: mx(e.x0) })),
+    pieces: d.pieces.map(([x, y]) => [mx(x), y]), pizzas: (d.pizzas || []).map(([x, y]) => [mx(x), y]),
+    ennemis: d.ennemis.map(e => ({ ...e, x: mx(e.x), ...(e.x0 != null ? { x0: mx(e.x1), x1: mx(e.x0) } : {}) })), bornes: d.bornes ? [mx(d.bornes[1]), mx(d.bornes[0])] : undefined };
+  delete r.boss; delete r.orgue; return r; }
+const enMiroir = (f, o) => () => ({ ...miroirDef(f()), ...o });
+{ const N = NIVEAUX;
+  N[0].scenes.unshift(enMiroir(N[0].scenes[0], { depart: [108, 368], fin: { type: "x", x: 1360 } }));
+  N[1].scenes.push(() => { const k = 2.5, img = imgAgrandie("ville", k), sx = v => v * k;
+    return { img, vh: 720, camYfixe: true, camY: 500, depart: [80, 1150], fin: { type: "x", x: 2800 }, sol: [p(0, 2900, 1150, 1150, 1)], ech: [],
+      pieces: [...arc(400, 1090, 6, 50, 100), ...ligne(900, 1060, 6, 55), ...arc(1500, 1090, 7, 50, 120), ...ligne(2100, 1060, 6, 55)], pizzas: [[1300, 1000]],
+      ennemis: [{ t: "chien", x: 1000, y: 1150, x0: 800, x1: 1300, chasse: 1 }, { t: "chien", x: 1700, y: 1150, x0: 1400, x1: 2000, chasse: 1 }, { t: "chien", x: 2400, y: 1150, x0: 2100, x1: 2700, chasse: 1 },
+        { t: "mouette", x: 1100, y: 820 }, { t: "mouette", x: 1900, y: 800 }, { t: "mouette", x: 2600, y: 840 }] }; });
+  N[2].scenes.unshift(enMiroir(N[2].scenes[0], { depart: [140, 662], fin: { type: "x", x: 1320 } }));
+  N[3].scenes.splice(1, 0, enMiroir(N[3].scenes[0], { depart: [60, 670], fin: { type: "x", x: 1340 } }));
+  N[4].scenes.unshift(enMiroir(N[3].scenes[2], { depart: [60, 588], fin: { type: "x", x: 1320 }, ennemis: [{ t: "squelette", x: 500, y: 588, x0: 300, x1: 800 }, { t: "squelette", x: 1000, y: 588, x0: 850, x1: 1250 }, { t: "chauve", x: 700, y: 160 }, { t: "chauve", x: 1100, y: 200 }, { t: "araignee", x: 860, y0: 30, y1: 360 }] }));
+  N[5].scenes.unshift(enMiroir(N[5].scenes[0], { depart: [100, 455], fin: { type: "x", x: 1150 } })); }
+
 // ------------------------------------------------------------------ l'état du jeu
 let etat = "charge", E = {};          // E : les données de l'état courant
 const cam = { x: 0, y: 0, z: 1 };
@@ -223,14 +246,14 @@ function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } etat =
 function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
-  S.ennemis = def.ennemis.map(e => nouvelEnnemi(e));
+  S.ennemis = def.ennemis.filter(e => Math.hypot(e.x - def.depart[0], (e.y ?? e.y1 ?? 0) - def.depart[1]) > 280).map(e => nouvelEnnemi(e));   // (rien ne nous tombe dessus au départ)
   S.objets = def.pieces.map(([x, y]) => ({ t: "piece", x, y })).concat((def.pizzas || []).map(([x, y]) => ({ t: "pizza", x, y })));
   if (def.fin.type === "objet") S.objets.push({ t: "carte", x: def.fin.x, y: def.fin.y - 28 });
   if (def.boss) S.boss = { ...def.boss, pvMax: def.boss.pv, actif: false, tm: 0, dir: -1, vx: 0, inv: 0, x: def.boss.x, y: def.boss.y, tirT: 1.5, slothFait: false };
   if (def.voiture) S.voit = { x: def.voiture.x, actif: false, depuis: def.voiture.depuis };
-  J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? S.h - def.vh : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
+  J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; }
-function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 1.2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
+function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
 function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3 }[e.t] || 1;
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
 
@@ -240,17 +263,17 @@ function sousPieds(x, yAvant, yApres, ignore) { let best = null, by = 1e9;
   for (const pl of S.sol) { if (pl === ignore) continue; const h = hauteurPlat(pl, x); if (h == null) continue; if (yAvant <= h + 6 && yApres >= h - 1 && h < by) { by = h; best = pl; } }
   return best ? [best, by] : null; }
 const HB = { w: 34, h: 84 };
-function boiteJ() { return J.velo ? [J.x - 40, J.y - 118, 80, 116] : [J.x - HB.w / 2, J.y - HB.h, HB.w, HB.h]; }
+function boiteJ() { return J.velo ? [J.x - 40, J.y - 118, 80, 116] : J.baisse ? [J.x - HB.w / 2, J.y - 58, HB.w, 58] : [J.x - HB.w / 2, J.y - HB.h, HB.w, HB.h]; }
 const chevauche = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
 
 // ------------------------------------------------------------------ le joueur
 const VIT = 330, GRAV = 2300, SAUT = 960;
 function majJoueur(dt) {
-  const A = parId(partie.ado);
+  const A = parId(partie.ado); J.baisse = false;
   J.inv = Math.max(0, J.inv - dt); J.tirT = Math.max(0, J.tirT - dt); J.tirA = Math.max(0, J.tirA - dt); J.mal = Math.max(0, J.mal - dt);
   const g = IN.gauche ? -1 : 0, d = IN.droite ? 1 : 0, dirX = g + d;
   if (J.velo) {   // à vélo : on roule toujours un peu, la droite accélère, la gauche freine
-    const cible = dirX > 0 ? 560 : dirX < 0 ? 90 : 280; J.vx += (cible - J.vx) * Math.min(1, dt * 2.2); J.dir = 1; J.anim += J.vx * dt / 40;
+    const cible = dirX > 0 ? 430 : dirX < 0 ? 90 : 230; J.vx += (cible - J.vx) * Math.min(1, dt * 2.2); J.dir = 1; J.anim += J.vx * dt / 40;
   } else if (J.echelle) {
     const e = J.echelle; J.vx = 0; J.x += (((e.x0 + e.x1) / 2) - J.x) * Math.min(1, dt * 12);
     const dy = (IN.bas ? 1 : 0) - (IN.haut ? 1 : 0); J.y += dy * 210 * dt; if (dy) J.anim += dt * 8;
@@ -260,7 +283,8 @@ function majJoueur(dt) {
     if (dirX) { J.echelle = null; J.dir = dirX; }
     return finJoueur(dt, A);
   } else {
-    const cible = dirX * VIT; J.vx += (cible - J.vx) * Math.min(1, dt * (J.sol ? 14 : 6)); if (dirX) J.dir = dirX;
+    J.baisse = IN.bas && J.sol && !IN.saut;   // (se baisser : pour tirer sur les rats et passer sous les tirs)
+    const cible = J.baisse ? 0 : dirX * VIT; J.vx += (cible - J.vx) * Math.min(1, dt * (J.sol ? 14 : 6)); if (dirX) J.dir = dirX;
     if (J.sol && Math.abs(J.vx) > 20) J.anim += Math.abs(J.vx) * dt / 22;
     // monter ou descendre une échelle
     for (const e of S.ech || []) { if (J.x > e.x0 - 6 && J.x < e.x1 + 6) {
@@ -288,11 +312,11 @@ function finJoueur(dt, A) {
 }
 function tirer(A) {
   J.tirT = A.tirD; J.tirA = .2; son("tir");
-  const yh = J.y - (J.velo ? 92 : 58), xh = J.x + J.dir * (J.velo ? 30 : 26);
+  const yh = J.y - (J.velo ? 92 : J.baisse ? 30 : 58), xh = J.x + J.dir * (J.velo ? 30 : 26);
   if (A.id === "mikey") S.tirs.push({ t: "caillou", x: xh, y: yh, vx: J.dir * 900 + J.vx * .3, vy: -40, g: 260, vie: 1.1, deg: 1, rot: 0 });
-  if (A.id === "choco") S.tirs.push({ t: "barre", x: xh, y: yh, vx: J.dir * 600 + J.vx * .3, vy: -420, g: 1400, vie: 1.6, deg: 2, rot: 0, vr: 14 * J.dir });
+  if (A.id === "choco") S.tirs.push({ t: "barre", x: xh, y: yh, vx: J.dir * 600 + J.vx * .3, vy: J.baisse ? -140 : -420, g: 1400, vie: 1.6, deg: 2, rot: 0, vr: 14 * J.dir });
   if (A.id === "bagou") S.tirs.push({ t: "peigne", x: xh, y: yh, vx: J.dir * 760 + J.vx * .3, vy: 0, g: 0, vie: .9, deg: 1, rot: 0, vr: 9 * J.dir });
-  if (A.id === "data") J.gant = { t: 0, l: 0, dir: J.dir, touches: new Set() };
+  if (A.id === "data") J.gant = { t: 0, l: 0, dir: J.dir, touches: new Set(), h: J.baisse ? 30 : 58 };
 }
 function blesse(n = 1, chute = false) {
   if (!chute && J.inv > 0) return;
@@ -306,7 +330,7 @@ function majEnnemis(dt) {
   for (const e of S.ennemis) { e.tm += dt; e.inv = Math.max(0, e.inv - dt);
     if (e.mort) { e.mort += dt; e.y += 300 * dt * e.mort; continue; }
     if (e.t === "rat" || e.t === "squelette" || e.t === "crabe" || e.t === "chien") {
-      const vit = { rat: 120, squelette: 70, crabe: 90, chien: 210 }[e.t] * (e.chasse && Math.abs(J.x - e.x) < 520 ? 1.6 : 1);
+      const vit = { rat: 120, squelette: 70, crabe: 90, chien: 210 }[e.t] * (e.chasse && Math.abs(J.x - e.x) < 520 ? 1.15 : 1);
       if (e.chasse && Math.abs(J.x - e.x) < 520) e.dir = Math.sign(J.x - e.x) || -1;
       else { if (e.x <= e.x0) e.dir = 1; if (e.x >= e.x1) e.dir = -1; }
       if (e.t === "squelette" && Math.abs(J.x - e.x) < 110 && Math.abs(J.y - e.y) < 60) { e.att = (e.att || 0) + dt; e.dir = Math.sign(J.x - e.x) || 1; }
@@ -360,7 +384,7 @@ function majTirs(dt) {
     if (t.vie > 0 && S.boss && S.boss.actif && !S.boss.mort && chevauche(bt, [S.boss.x - 46, S.boss.y - 150, 92, 150])) { toucheBoss(t.deg); t.vie = 0; }
     if (t.t === "barre" && t.vy > 0) { const s = sousPieds(t.x, t.y - t.vy * dt, t.y); if (s) t.vie = 0; } }
   S.tirs = S.tirs.filter(t => t.vie > 0);
-  if (J.gant) { const G = J.gant, y = J.y - 58, x0 = J.x + G.dir * 20, x1 = x0 + G.dir * G.l, bg = [Math.min(x0, x1), y - 16, Math.abs(x1 - x0) + 20, 32];
+  if (J.gant) { const G = J.gant, y = J.y - G.h, x0 = J.x + G.dir * 20, x1 = x0 + G.dir * G.l, bg = [Math.min(x0, x1), y - 16, Math.abs(x1 - x0) + 20, 32];
     for (const e of S.ennemis) if (!e.mort && !G.touches.has(e) && chevauche(bg, boiteE(e))) { G.touches.add(e); touche(e, 2); }
     if (S.boss && S.boss.actif && !G.touches.has("boss") && chevauche(bg, [S.boss.x - 46, S.boss.y - 150, 92, 150])) { G.touches.add("boss"); toucheBoss(2); } }
   for (const t of S.tirsE) { t.vy += t.g * dt; t.x += t.vx * dt; t.y += t.vy * dt; t.rot += t.vr * dt; if (chevauche([t.x - 12, t.y - 12, 24, 24], boiteJ())) { blesse(1); t.fin = 1; } if (t.y > S.h + 50 || Math.abs(t.x - J.x) > 1400) t.fin = 1;
@@ -517,11 +541,11 @@ function dJeu() {
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
-    else { let f = 0; if (J.mal > 0) f = 7; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol && !J.echelle) f = 5; else if (J.echelle) f = 5 + Math.floor(J.anim) % 2 * 0; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
+    else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
       spr(A.id, f, J.x, J.y + 4, J.dir < 0); } }
-  if (J.gant) { const G = J.gant, y = (J.y - 58 - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
+  if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
     X.strokeStyle = "#d8c050"; X.lineWidth = 3; X.beginPath(); const n = 10; for (let k = 0; k <= n; k++) { const xx = x0 + (x1 - x0) * k / n, yy = y + (k % 2 ? -7 : 7); k ? X.lineTo(xx, yy) : X.moveTo(xx, yy); } X.stroke();
-    spr("gant", 0, J.x + G.dir * (26 + G.l), J.y - 44, G.dir < 0); }
+    spr("gant", 0, J.x + G.dir * (26 + G.l), J.y - G.h + 14, G.dir < 0); }
   for (const t of S.tirs) { const sx = (t.x - cam.x) * cam.z, sy = (t.y - cam.y) * cam.z, m = META[t.t]; if (!m) continue; const fr = m.f[0]; X.save(); X.translate(sx, sy); X.rotate(t.rot); X.drawImage(IMG[m.img], fr[0], fr[1], fr[2], fr[3], -fr[2] * cam.z / 2, -fr[3] * cam.z / 2, fr[2] * cam.z, fr[3] * cam.z); X.restore(); }
   for (const t of S.tirsE) { const sx = (t.x - cam.x) * cam.z, sy = (t.y - cam.y) * cam.z, m = META[t.t]; if (!m) continue; const fr = m.f[0]; X.save(); X.translate(sx, sy); X.rotate(t.rot); X.drawImage(IMG[m.img], fr[0], fr[1], fr[2], fr[3], -fr[2] * cam.z / 2, -fr[3] * cam.z / 2, fr[2] * cam.z, fr[3] * cam.z); X.restore(); }
   for (const c of S.eclats) { X.fillStyle = c.c; X.globalAlpha = 1 - c.t / .8; X.fillRect((c.x - cam.x) * cam.z - 3, (c.y - cam.y) * cam.z - 3, 6, 6); } X.globalAlpha = 1;
