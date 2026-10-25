@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.95";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.96";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -2601,9 +2601,9 @@ function troisiemeCour(A, L, scene) {
       A.ajoute(new THREE.BoxGeometry(.5, .3, .05), A.mat({ color: 0x2a2a2a }), cb.x - .8, 20 + 1.9, cb.z - cb.d / 2 - .03, false); }   // la grille d'aération   // (à droite : il s'arrête au bout de l'immeuble)   // (de chaque côté du bâtiment du fond : le mur ferme la ruelle)
   // les trottoirs : le long du bâtiment qu'on vient de traverser, des hauts murs, et des flancs de l'immeuble dans les ruelles
   for (const sg of [-1, 1]) { trottoir(A, L, sg > 0 ? 2.4 : -X, sg > 0 ? X : -2.4, z0 - 1.4, z0, ["z0", sg > 0 ? "x0" : "x1"]);
-    trottoir(A, L, sg > 0 ? X - 1.2 : -X, sg > 0 ? X : -X + 1.2, (sg > 0 ? zTr : z1), z0 - 1.4, [sg > 0 ? "x0" : "x1"]);
+    trottoir(A, L, sg > 0 ? X - 1.6 : -X, sg > 0 ? X : -X + 1.2, (sg > 0 ? zTr : z1), z0 - 1.4, [sg > 0 ? "x0" : "x1"]);   // (à droite : aligné sur celui de la rue en pente, qu'il prolonge)
     if (sg < 0) { trottoir(A, L, -X - 6, -X - 4.8, zF, C3.zMN - 1.2, ["x1"]); trottoir(A, L, -X, -X + 1.2, C3.zMN - 1.2, z1, ["x1"]); trottoir(A, L, -X - 6, -DB - 1.2, C3.zMN - 1.2, C3.zMN, ["z0"]);   /* (le long du mur noir épais, jusqu'à son bout ; puis au coin, le long de son retour : le trottoir continue sans s'arrêter) */ const e = SOL(A.ajoute(new THREE.PlaneGeometry(6, z1 - zF), A.mat({ map: tex(textures().paves, 6 / 2, (z1 - zF) / 2) }), -X - 3, .012, (z1 + zF) / 2, false)); e.rotation.x = -Math.PI / 2; }   // (la ruelle de gauche, élargie de 6 m après la troisième cour)
-    trottoir(A, L, sg > 0 ? DB : -DB - 1.2, sg > 0 ? DB + 1.2 : -DB, (sg > 0 ? zTr : zF), z1 + C3.PB + C3.TW, [sg > 0 ? "x1" : "x0", "z1"]); }   // (il rejoint celui du bac)
+    trottoir(A, L, sg > 0 ? DB : -DB - 1.2, sg > 0 ? DB + 1.4 : -DB, (sg > 0 ? zTr : zF), z1 + C3.PB + C3.TW, [sg > 0 ? "x1" : "x0", "z1"]); }   // (il rejoint celui du bac ; à droite, de la même largeur que celui de la rue en pente qu'il prolonge : plus de décrochement)
   // contre le haut mur de droite, au milieu : un bloc de béton de la largeur du trottoir, sur 4 m, fermé par des portes métalliques
   for (const bz of [zc - 4.12, zc, zc + 4.12]) { const bx = X - .6, HB = 2.6, beton = A.mat({ map: tex(textures().betonClair, 1.2, 2.6), color: 0xd8d8d6, roughness: .95 }), acier = A.mat({ color: 0x6f767c, roughness: .45, metalness: .6 }), som = A.mat({ color: 0x2c3034, roughness: .6 });
     A.ajoute(new THREE.BoxGeometry(1.2, HB, 4), beton, bx, .12 + HB / 2, bz);
