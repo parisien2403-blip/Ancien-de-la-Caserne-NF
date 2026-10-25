@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 34;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 35;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -174,9 +174,11 @@ const H = {
     ["sloth", "Sinok… aime… Choco. Sinok… aide les amis !", "sinok"],
     [null, "SINOK rejoint les Goonies !", "sinok"],
     ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "sinok"]] },
-  avant4: { fond: "niv4a", mus: "grotte", l: [
-    ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
-    ["mikey", "Il cherchait le trésor, lui aussi. On ne s'arrête pas là."]] },
+  avant4: { fond: "chester", mus: "fratelli", l: [
+    ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !", "chester"],
+    ["bagou", "Chester Copperpot ? Celui qui cherchait le trésor de Willy il y a cinquante ans ?", "chester"],
+    ["choco", "Il est arrivé jusqu'ici… et il n'est jamais reparti. Moi, je rentre à la maison !", "chester"],
+    ["mikey", "S'il est arrivé jusqu'ici, c'est qu'on est sur la bonne piste. On ne s'arrête pas là !", "chester"]] },
   boss3: { fond: "niv3", mus: "freres", l: [
     ["francis", "Tiens, tiens… Des petits rats dans la cave de Maman."],
     ["mikey", "On s'en va, monsieur ! On a rien vu, promis !"],
@@ -252,7 +254,7 @@ const NIVEAUX = [
     ech: [], pieces: [...ligne(240, 270, 5), ...ligne(530, 270, 5), ...ligne(1060, 270, 5), ...arc(380, 500, 4), ...arc(1050, 440, 6)], pizzas: [[700, 470]],
     ennemis: [{ t: "rat", x: 300, y: 662, x0: 120, x1: 600 }, { t: "rat", x: 1100, y: 662, x0: 900, x1: 1300 }, { t: "rat", x: 1150, y: 487, x0: 1040, x1: 1320 }, { t: "chauve", x: 900, y: 240 }],
     boss: { t: "francis", x: 1150, y: 662, pv: 14, x0: 380, x1: 1300, declenche: 520, histoire: "boss3", mus: "freres" } })] },
-  { nom: "LES SOUTERRAINS", musique: "grotte", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
+  { nom: "LES SOUTERRAINS", musique: "fratelli", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
     img: "niv4a", vh: 470, depart: [40, 520], fin: { type: "x", x: 1340 },
     sol: [p(0, 210, 522, 478), p(205, 472, 476), p(465, 1376, 476), p(0, 305, 266), p(308, 408, 410),   // (le tas de rochers sert de marche : la corniche de gauche était trop haute pour un saut)
       p(330, 486, 670), p(0, 330, 692), p(875, 1180, 318), p(995, 1376, 670)],
@@ -456,7 +458,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, glisse: !!S.N.glisse, gant: null }; }
-function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, capitaine: 5, barriere: 99, roc: 1, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine") e = { ...e, chasse: 1 };
+function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 2, capitaine: 2, barriere: 99, roc: 1, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine" || e.t === "squelette") { e = { ...e, chasse: 1 }; const pl = S.sol.find(q => { const h = hauteurPlat(q, e.x); return h != null && Math.abs(h - (e.y ?? 0)) < 30; }); if (pl) { e.plat = pl; e.x0 = pl.x0 + 22; e.x1 = pl.x1 - 22; } }   // (ils parcourent toute leur plateforme pour venir sur nous)
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
 
 // ------------------------------------------------------------------ physique : les plateformes
@@ -542,12 +544,12 @@ function majEnnemis(dt) {
   for (const e of S.ennemis) { e.tm += dt; e.inv = Math.max(0, e.inv - dt);
     if (e.mort) { e.mort += dt; e.y += 300 * dt * e.mort; continue; }
     if (e.t === "rat" || e.t === "squelette" || e.t === "crabe" || e.t === "chien" || e.t === "capitaine") {
-      const vit = { rat: 120, squelette: 70, crabe: 90, chien: 210, capitaine: 175 }[e.t] * (e.chasse && Math.abs(J.x - e.x) < 520 ? 1.15 : 1);
-      if (e.chasse && Math.abs(J.x - e.x) < 520) e.dir = Math.sign(J.x - e.x) || -1;
+      const loin = e.t === "squelette" || e.t === "capitaine" ? 720 : 520, vit = { rat: 120, squelette: 120, crabe: 90, chien: 210, capitaine: 175 }[e.t] * (e.chasse && Math.abs(J.x - e.x) < loin ? 1.15 : 1);
+      if (e.chasse && Math.abs(J.x - e.x) < loin) e.dir = Math.sign(J.x - e.x) || -1;
       else { if (e.x <= e.x0) e.dir = 1; if (e.x >= e.x1) e.dir = -1; }
       if (e.t === "squelette" && Math.abs(J.x - e.x) < 110 && Math.abs(J.y - e.y) < 60) { e.att = (e.att || 0) + dt; e.dir = Math.sign(J.x - e.x) || 1; }
       else { e.att = 0; e.x += e.dir * vit * dt; }
-      e.x = Math.max(e.x0 - 2, Math.min(e.x1 + 2, e.x)); e.y = e.yb;
+      const xa = e.x; e.x = Math.max(e.x0 - 2, Math.min(e.x1 + 2, e.x)); e.arret = xa !== e.x || (e.chasse && Math.abs(J.x - e.x) < 12); e.y = e.plat ? hauteurPlat(e.plat, e.x) ?? e.yb : e.yb;   // (au bout de sa plateforme : il s'arrête, il ne court plus sur place)
     } else if (e.t === "araignee") { e.y = e.y0 + (e.y1 - e.y0) * (.5 - .5 * Math.cos(e.tm * 1.1)); }
     else if (e.t === "chauve") { const dx = J.x - e.x, dy = (J.y - 60) - e.y, pres = Math.hypot(dx, dy) < 380;
       if (pres) { e.x += Math.sign(dx) * 120 * dt; e.y += Math.sign(dy) * 90 * dt; } else { e.x = e.xb + Math.sin(e.tm * .9) * 120; e.y += ((e.yb + Math.sin(e.tm * 2.3) * 40) - e.y) * dt * 2; } e.dir = Math.sign(dx) || 1; }
@@ -765,7 +767,7 @@ function dJeu() {
   // ennemis
   for (const e of S.ennemis) { const f = Math.floor(e.tm * (e.t === "chauve" || e.t === "mouette" ? 8 : e.t === "capitaine" ? 13 : e.t === "squelette" ? 10 : 6)), al = e.mort ? Math.max(0, 1 - e.mort) : e.inv > 0 ? .5 : 1;
     if (e.t === "araignee") { X.strokeStyle = "rgba(220,220,230,.7)"; X.lineWidth = 1.5; X.beginPath(); X.moveTo((e.x - cam.x) * cam.z, (e.y0 - 200 - cam.y) * cam.z); X.lineTo((e.x - cam.x) * cam.z, (e.y - cam.y) * cam.z); X.stroke(); spr("araignee", f, e.x, e.y, false, 1, al); }
-    else if (e.t === "squelette") spr("squelette", f % 8, e.x, e.y, e.dir < 0, 1, al);
+    else if (e.t === "squelette" || e.t === "capitaine") spr(e.t, e.arret ? 0 : f % 8, e.x, e.y, e.dir < 0, 1, al);
     else spr(e.t, f, e.x, e.y, e.dir < 0, 1, al); }
   // boss
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
