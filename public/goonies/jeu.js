@@ -15,14 +15,14 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 3;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 4;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2a: "niv2a.jpg", niv2b: "niv2b.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", decor: "decor.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
-  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites2" }; })]).then(() => { pret = true; demarre(); });
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites2" }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => { pret = true; demarre(); });
 
 // ------------------------------------------------------------------ les commandes : clavier, manette, tactile
 const T = {}, TP = {}, TOUCHES = { ArrowLeft: "gauche", KeyA: "gauche", KeyQ: "gauche", ArrowRight: "droite", KeyD: "droite", ArrowUp: "haut", KeyW: "haut", KeyZ: "haut", ArrowDown: "bas", KeyS: "bas",
@@ -218,28 +218,82 @@ const NIVEAUX = [
     sol: [p(820, 1350, 642), p(720, 830, 745, 650), p(90, 1000, 722, 722, 1)], ech: [],
     pieces: [...ligne(500, 680, 8, 50)], pizzas: [], ennemis: [{ t: "crabe", x: 600, y: 722, x0: 300, x1: 900 }, { t: "crabe", x: 400, y: 722, x0: 150, x1: 700 }] })] }];
 
-// ------------------------------------------------------------------ des niveaux plus longs : les mêmes décors repris en miroir (on les traverse autrement), et la rue d'Astoria vue de près
-function imgMiroir(n) { const k = n + "_m"; if (!IMG[k]) { const im = IMG[n], c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d"); x.translate(im.width, 0); x.scale(-1, 1); x.drawImage(im, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
-    for (const [px, py, pw, ph] of ({ niv6a: [[875, 110, 420, 225]] }[n] || [])) x.drawImage(im, px, py, pw, ph, im.width - px - pw, py, pw, ph);   // (les inscriptions restent à l'endroit)
-    IMG[k] = c; } return k; }
+// ------------------------------------------------------------------ la rue d'Astoria vue de près (image agrandie)
 function imgAgrandie(n, k) { const cle = n + "_x" + k; if (!IMG[cle]) { const im = IMG[n], c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext("2d"); x.imageSmoothingEnabled = false; x.drawImage(im, 0, 0, c.width, c.height); IMG[cle] = c; } return cle; }
-function miroirDef(d) { const W = IMG[d.img].width, mx = v => W - v;
-  const r = { ...d, img: imgMiroir(d.img), sol: d.sol.map(q => ({ x0: mx(q.x1), x1: mx(q.x0), y0: q.y1, y1: q.y0, dur: q.dur })), ech: (d.ech || []).map(e => ({ ...e, x0: mx(e.x1), x1: mx(e.x0) })),
-    pieces: d.pieces.map(([x, y]) => [mx(x), y]), pizzas: (d.pizzas || []).map(([x, y]) => [mx(x), y]),
-    ennemis: d.ennemis.map(e => ({ ...e, x: mx(e.x), ...(e.x0 != null ? { x0: mx(e.x1), x1: mx(e.x0) } : {}) })), bornes: d.bornes ? [mx(d.bornes[1]), mx(d.bornes[0])] : undefined };
-  delete r.boss; delete r.orgue; return r; }
-const enMiroir = (f, o) => () => ({ ...miroirDef(f()), ...o });
+/* De nouvelles salles, construites avec les objets découpés dans chaque décor (caisses, étagères, tonneaux, coffres, échelles, planches…) :
+   une disposition différente à chaque salle (escaliers de caisses, passerelles, trous, étagères à escalader), le décor d'origine au loin, qui défile lentement */
+let DEC = null;
+function salle(o) {
+  const D = DEC.t[o.th], F = DEC.f, H = 768, FY = 650, L = o.L || 3600;
+  let g = o.graine * 9301 + 49297; const rnd = () => (g = (g * 9301 + 49297) % 233280) / 233280, choix = l => l[Math.floor(rnd() * l.length)];
+  const cle = "salle_" + o.th + "_" + o.graine; const neuf = !IMG[cle];
+  const cv = IMG[cle] || document.createElement("canvas"); if (neuf) { cv.width = L; cv.height = H; }
+  const x = cv.getContext("2d"), at = IMG.decor;
+  const sc = document.createElement("canvas"); if (neuf) { sc.width = L; sc.height = H; } const y_ = sc.getContext("2d");   // (ce qui porte le joueur : dessiné à part, pour le détacher du fond)
+  const fr = n => F[n], dessine = (n, dx, dy, w, h) => { if (!neuf) return; const q = fr(n); y_.drawImage(at, q[0], q[1], q[2], q[3], dx, dy, w ?? q[2], h ?? q[3]); };
+  const sol = [], ech = [], pieces = [], ennemis = [], trous = [], deco = [];
+  const terre = o.ennemis.filter(t => !["chauve", "araignee", "mouette"].includes(t)), air = o.ennemis.filter(t => ["chauve", "araignee"].includes(t));
+  const ennemiSol = (x0, x1, y) => { if (terre.length && x1 - x0 > 90) ennemis.push({ t: choix(terre), x: (x0 + x1) / 2, y, x0: x0 + 20, x1: x1 - 20 }); };
+  const ennemiAir = (cx, y) => { const t = choix(air.length ? air : ["chauve"]); ennemis.push(t === "araignee" ? { t, x: cx, y0: 60, y1: y } : { t, x: cx, y }); };
+  const planche = (x0, w, y) => { const [n, sf] = choix(D.planches), q = fr(n); for (let k = 0; k < w; k += q[2]) { const ww = Math.min(q[2], w - k); if (neuf) y_.drawImage(at, q[0], q[1], ww, q[3], x0 + k, y - sf, ww, q[3]); } sol.push(p(x0, x0 + w, y)); };
+  const bloc = (x0, base, b) => { const [n, sf, pl] = b, q = fr(n); dessine(n, x0, base - q[3]); sol.push(p(x0 + 4, x0 + q[2] - 4, base - q[3] + sf)); for (const y of pl) sol.push(p(x0 + 6, x0 + q[2] - 6, base - q[3] + y)); return q; };
+  const echelle = (cx, y0, y1) => { const q = fr(D.echelle), w = q[2]; dessine(D.echelle, cx - w / 2, y0 - 6, w, y1 - y0 + 6); ech.push(ech_(cx - 22, cx + 22, y0, y1)); };
+  const ech_ = (x0, x1, y0, y1) => ({ x0, x1, y0, y1 });
+  // les morceaux de la salle, de gauche à droite
+  let X0 = 0; const segs = [["depart", 340]]; let reste = L - 340 - 260;
+  const types = ["escalier", "planches", "trou", "passerelle", "meuble", "couloir", "trou", "escalier", "passerelle", "planches"];
+  let ti = Math.floor(rnd() * types.length);
+  while (reste > 380) { const t = types[ti++ % types.length], w = { escalier: 460, planches: 520, trou: 420, passerelle: 640, meuble: 420, couloir: 380 }[t]; if (w > reste) break; segs.push([t, w]); reste -= w; }
+  segs.push(["fin", reste + 260]);
+  // des décorations, au fond
+  for (let k = 0; k < L / 380; k++) if (D.deco.length && rnd() < .7) deco.push([choix(D.deco), 120 + k * 380 + rnd() * 200]);
+  for (const [n, dx] of deco) { const q = fr(n); if (neuf) { x.globalAlpha = .55; x.drawImage(at, q[0], q[1], q[2], q[3], dx, FY - q[3] + 4, q[2], q[3]); x.globalAlpha = 1; } }
+  for (const [t, w] of segs) { const a = X0, b = X0 + w;
+    if (t === "trou") { const tw = 130 + Math.floor(rnd() * 50), tx = a + (w - tw) / 2; trous.push([tx, tx + tw]); pieces.push(...arc(tx - 20, FY - 60, 4, (tw + 40) / 3, 110));
+      if (rnd() < .5) { planche(tx + 10, tw - 20, FY - 170); ennemiAir(tx + tw / 2, FY - 300); } ennemiSol(tx + tw + 20, b, FY); }
+    if (t === "escalier") { let xx = a + 40, base = FY; const n = 2 + Math.floor(rnd() * 2);
+      for (let k = 0; k < n; k++) { const bl = choix(D.blocs.filter(q => fr(q[0])[3] < 150 && !q[2].length) .concat([])) || D.blocs[0], q = fr(bl[0]);
+        bloc(xx, base, bl); pieces.push(...ligne(xx + 15, base - q[3] - 34, Math.max(1, Math.floor(q[2] / 46)), 46));
+        if (k === 0 || rnd() < .5) { base = base - q[3] + bl[1]; } else { base = FY; }
+        xx += q[2] - 10; if (xx > b - 120) break; }
+      ennemiSol(xx + 10, b, FY); }
+    if (t === "planches") { let y = FY - 130; for (let k = 0; k < 3; k++) { const px = a + 30 + k * 160, pw = 120; planche(px, pw, y); pieces.push(...ligne(px + 15, y - 34, 3, 40)); y -= 70 * (k === 1 ? -1 : 1); }
+      ennemiSol(a, b, FY); ennemiAir(a + w / 2, FY - 380); }
+    if (t === "passerelle") { const yW = FY - 230; echelle(a + 60, yW, FY); planche(a + 30, w - 60, yW); pieces.push(...ligne(a + 120, yW - 34, Math.floor((w - 160) / 46), 46));
+      ennemiSol(a + 120, b - 40, yW); ennemiSol(a + 100, b, FY); if (rnd() < .6) ennemiAir(a + w * .7, yW - 150); }
+    if (t === "meuble") { const grands = D.blocs.filter(q => q[2].length), bl = grands.length ? choix(grands) : choix(D.blocs), q = fr(bl[0]); const bx = a + (w - q[2]) / 2;
+      bloc(bx, FY, bl); pieces.push(...ligne(bx + 20, FY - q[3] + bl[1] - 34, Math.floor((q[2] - 30) / 46), 46)); if (q[3] - bl[1] > 180 && !bl[2].length) echelle(bx - 26, FY - q[3] + bl[1], FY);
+      ennemiAir(bx + q[2] / 2, FY - q[3] - 120); }
+    if (t === "couloir") { ennemiSol(a, a + w / 2, FY); ennemiSol(a + w / 2, b, FY); pieces.push(...arc(a + 60, FY - 60, 6, (w - 120) / 5, 90)); }
+    X0 = b; }
+  // le sol, sauf les trous
+  let xs = 0; for (const [t0, t1] of [...trous, [L, L]]) { if (t1 > xs) { sol.push(p(xs, t0, FY, FY, 1)); } xs = t1; }
+  if (neuf) { const [n, sf] = D.sol, q = fr(n);
+    for (let k = 0; k < L; k += q[2]) x.drawImage(at, q[0], q[1], q[2], q[3], k, FY - sf, q[2], q[3]);
+    if (o.th === "niv3" || o.th === "niv5") { x.globalCompositeOperation = "lighter"; x.globalAlpha = .18; for (let k = 0; k < L; k += q[2]) x.drawImage(at, q[0], q[1], q[2], q[3], k, FY - sf, q[2], q[3]); x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; }
+    if (FY - sf + q[3] < H) { x.fillStyle = "#0a0604"; x.fillRect(0, FY - sf + q[3], L, H); }
+    for (const [t0, t1] of trous) { x.clearRect(t0, FY - sf, t1 - t0, H); if (D.eau != null) { const e = fr(D.eau); x.drawImage(at, e[0], e[1], e[2], e[3], t0, FY + 30, t1 - t0, H - FY - 30); }
+      else { const gr = x.createLinearGradient(0, FY, 0, H); gr.addColorStop(0, "rgba(0,0,0,.6)"); gr.addColorStop(1, "#000"); x.fillStyle = gr; x.fillRect(t0, FY - sf, t1 - t0, H); } } }
+  if (neuf) {   // contour noir, ombre portée, un peu plus de lumière : comme les personnages
+    const ombre = document.createElement("canvas"); ombre.width = L; ombre.height = H; const o2 = ombre.getContext("2d"); o2.drawImage(sc, 0, 0); o2.globalCompositeOperation = "source-in"; o2.fillStyle = "#000"; o2.fillRect(0, 0, L, H);
+    x.globalAlpha = .45; x.drawImage(ombre, 7, 9); x.globalAlpha = 1; for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) x.drawImage(ombre, dx, dy);
+    x.drawImage(sc, 0, 0); x.globalCompositeOperation = "lighter"; x.globalAlpha = ({ niv3: .34, niv5: .28, niv4a: .2 }[o.th] || .14); x.drawImage(sc, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; }
+  IMG[cle] = cv;
+  return { img: cle, par: o.th, vh: 470, depart: [90, FY], fin: { type: "x", x: L - 80 }, sol, ech, pieces, pizzas: [[L * .5, FY - 150]], ennemis, vide: H - 10 };
+}
 { const N = NIVEAUX;
-  N[0].scenes.unshift(enMiroir(N[0].scenes[0], { depart: [108, 368], fin: { type: "x", x: 1360 } }));
-  N[1].scenes.push(() => { const k = 2.5, img = imgAgrandie("ville", k), sx = v => v * k;
+  const S_ = (th, graine, ennemis, L) => () => salle({ th, graine, ennemis, L });
+  N[0].scenes.unshift(S_("niv1", 1, ["rat", "araignee", "chauve", "rat"], 3600), S_("niv1", 7, ["rat", "chauve", "araignee"], 3200));
+  N[1].scenes.push(() => { const k = 2.5, img = imgAgrandie("ville", k);
     return { img, vh: 720, camYfixe: true, camY: 500, depart: [80, 1150], fin: { type: "x", x: 2800 }, sol: [p(0, 2900, 1150, 1150, 1)], ech: [],
       pieces: [...arc(400, 1090, 6, 50, 100), ...ligne(900, 1060, 6, 55), ...arc(1500, 1090, 7, 50, 120), ...ligne(2100, 1060, 6, 55)], pizzas: [[1300, 1000]],
       ennemis: [{ t: "chien", x: 1000, y: 1150, x0: 800, x1: 1300, chasse: 1 }, { t: "chien", x: 1700, y: 1150, x0: 1400, x1: 2000, chasse: 1 }, { t: "chien", x: 2400, y: 1150, x0: 2100, x1: 2700, chasse: 1 },
         { t: "mouette", x: 1100, y: 820 }, { t: "mouette", x: 1900, y: 800 }, { t: "mouette", x: 2600, y: 840 }] }; });
-  N[2].scenes.unshift(enMiroir(N[2].scenes[0], { depart: [140, 662], fin: { type: "x", x: 1320 } }));
-  N[3].scenes.splice(1, 0, enMiroir(N[3].scenes[0], { depart: [60, 670], fin: { type: "x", x: 1340 } }));
-  N[4].scenes.unshift(enMiroir(N[3].scenes[2], { depart: [60, 588], fin: { type: "x", x: 1320 }, ennemis: [{ t: "squelette", x: 500, y: 588, x0: 300, x1: 800 }, { t: "squelette", x: 1000, y: 588, x0: 850, x1: 1250 }, { t: "chauve", x: 700, y: 160 }, { t: "chauve", x: 1100, y: 200 }, { t: "araignee", x: 860, y0: 30, y1: 360 }] }));
-  N[5].scenes.unshift(enMiroir(N[5].scenes[0], { depart: [100, 455], fin: { type: "x", x: 1150 } })); }
+  N[2].scenes.unshift(S_("niv3", 3, ["rat", "chauve", "araignee"], 3600), S_("niv3", 11, ["rat", "rat", "chauve"], 3000));
+  N[3].scenes.unshift(S_("niv4a", 5, ["chauve", "rat", "araignee"], 3800));
+  N[3].scenes.splice(2, 0, S_("niv4a", 13, ["rat", "chauve", "araignee"], 3200));
+  N[4].scenes.unshift(S_("niv5", 2, ["squelette", "chauve", "squelette"], 3600));
+  N[5].scenes.unshift(S_("niv6a", 4, ["squelette", "squelette"], 3600)); }
 
 // ------------------------------------------------------------------ l'état du jeu
 let etat = "charge", E = {};          // E : les données de l'état courant
@@ -333,7 +387,8 @@ function tirer(A) {
 function blesse(n = 1, chute = false) {
   if (!chute && J.inv > 0) return;
   J.pv -= n; J.inv = 1.4; J.mal = .4; son(J.pv > 0 ? "aie" : "mort");
-  if (chute) { J.x = J.sur[0]; J.y = J.sur[1] - 2; J.vx = J.vy = 0; J.echelle = null; } else { J.vy = -420; J.vx = -J.dir * 260; J.sol = false; }
+  if (chute) { const xr = J.sur[0] - J.dir * 110, s2 = sousPieds(xr, J.sur[1] - 200, J.sur[1] + 200); if (s2) { J.sur = [xr, s2[1]]; } J.x = J.sur[0]; J.y = J.sur[1] - 2;   // (on revient un peu en arrière du trou)
+    J.vx = J.vy = 0; J.echelle = null; } else { J.vy = -420; J.vx = -J.dir * 260; J.sol = false; }
   if (J.pv <= 0) { etat = "ko"; E = { t: 0 }; partie.ko.add(partie.ado); }
 }
 
@@ -519,6 +574,7 @@ function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
   texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 400, { a: "center", c: "#ff8a6a", t: 20 }); }
 function dJeu() {
   const im = IMG[S.img], vw = LW / cam.z, vh = LH / cam.z;
+  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }
   if (PARAM.has("plan")) { const k = Math.min(LW / S.w, LH / S.h); X.drawImage(im, 0, 0, S.w * k, S.h * k); X.lineWidth = 2;
     for (const pl of S.sol) { X.strokeStyle = pl.dur ? "#f0f" : "#0f0"; X.beginPath(); X.moveTo(pl.x0 * k, pl.y0 * k); X.lineTo(pl.x1 * k, pl.y1 * k); X.stroke(); }
     X.strokeStyle = "#0ff"; for (const e of S.ech || []) X.strokeRect(e.x0 * k, e.y0 * k, (e.x1 - e.x0) * k, (e.y1 - e.y0) * k);
@@ -529,6 +585,10 @@ function dJeu() {
   if (DEBUG) { X.strokeStyle = "#0f0"; X.lineWidth = 2; for (const pl of S.sol) { X.beginPath(); X.moveTo((pl.x0 - cam.x) * cam.z, (pl.y0 - cam.y) * cam.z); X.lineTo((pl.x1 - cam.x) * cam.z, (pl.y1 - cam.y) * cam.z); X.stroke(); }
     X.strokeStyle = "#0ff"; for (const e of S.ech || []) X.strokeRect((e.x0 - cam.x) * cam.z, (e.y0 - cam.y) * cam.z, (e.x1 - e.x0) * cam.z, (e.y1 - e.y0) * cam.z); }
   const tt = S.t;
+  // le bord des plateformes où l'on peut monter : un liseré clair (sur les décors d'origine, où elles se confondent avec le fond)
+  if (!S.par) { X.save(); for (const pl of S.sol) { if (pl.dur) continue; const ax = (pl.x0 - cam.x) * cam.z, ay = (pl.y0 - cam.y) * cam.z, bx = (pl.x1 - cam.x) * cam.z, by = (pl.y1 - cam.y) * cam.z; if (bx < 0 || ax > LW) continue;
+    X.lineCap = "round"; X.strokeStyle = "rgba(0,0,0,.75)"; X.lineWidth = 9; X.beginPath(); X.moveTo(ax, ay + 2); X.lineTo(bx, by + 2); X.stroke();
+    X.strokeStyle = "rgba(255,226,140,.95)"; X.lineWidth = 4; X.beginPath(); X.moveTo(ax, ay); X.lineTo(bx, by); X.stroke(); } X.restore(); }
   // l'orgue : les touches qui s'allument
   if (S.puz) { const P = S.puz, k = P.phase === "montre" ? Math.floor(P.t / .6) : -1, n = k >= 0 && k < P.seq.length && (P.t % .6) < .45 ? P.seq[k] : P.dernier && P.phase === "joue" && P.t < .25 ? P.dernier.n : -1;
     boite(LW / 2 - 230, 70, 460, 110, .8); texte(P.phase === "montre" ? "ÉCOUTE LA MÉLODIE…" : P.phase === "faux" ? "FAUSSE NOTE ! LE SOL TREMBLE…" : P.phase === "pause" ? "BIEN JOUÉ !" : `À TOI ! (${P.i}/${P.seq.length})`, LW / 2, 100, { a: "center", c: "#ffd34a", t: 20 });
