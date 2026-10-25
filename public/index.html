@@ -2487,7 +2487,7 @@
     $("djFile").innerHTML = djEtat.file.map((f, i) => `<li>${esc(f.titre)}${f.artiste ? ` <small>· ${esc(f.artiste)}</small>` : ""} ${moi.admin ? `<button type="button" data-dj-retirer="${i}" aria-label="Retirer de la file">✕</button>` : ""}</li>`).join("");
     $("djFile").querySelectorAll("[data-dj-retirer]").forEach(b => b.onclick = () => MX && MX.dj("retirer", { i: +b.dataset.djRetirer }));
     $("mxSon").hidden = !(c && mxLieu === "grande" && djVolume > 0); $("mxSon").textContent = djEcoute ? "🔇" : "🔊 La fête";
-    if (!c || !djEcoute || (!djVolume && !djEntend()) || mxLieu === "etage") { djAudio.pause(); return; }   // (dans les étages, on n'entend pas la fête ; dans la cour, même trop loin pour l'entendre, la musique continue sans le son)
+    if (!c || !djEcoute || (!djVolume && !djEntend()) || mxLieu === "etage" || window.mxArcadeOn) { djAudio.pause(); return; }   // (devant la borne d'arcade : à l'arrêt, pas seulement à zéro — sur iPhone, le volume ne se règle pas)   // (dans les étages, on n'entend pas la fête ; dans la cour, même trop loin pour l'entendre, la musique continue sans le son)
     djAudio.volume = djV();
     const P = djEtat.prochain; if (P && !djProch.src.endsWith(djSrc(P.id))) { djProch.src = djSrc(P.id); djProch.load(); }   // le titre d'après : déjà chargé
     const src = djSrc(c.id);
@@ -2508,10 +2508,10 @@
     a.onstalled = () => setTimeout(() => { if (a === djAudio && a.readyState < 3) djRelancer(); }, 6000);
     a.ontimeupdate = () => { if (a !== djAudio) return; const d = a.duration; $("djProgres").style.width = d ? (a.currentTime / d * 100) + "%" : "0"; };
     a.onended = () => { if (a !== djAudio) return; const c = djEtat.courant, P = djEtat.prochain;
-      if (P && djProch.src.endsWith(djSrc(P.id)) && djProch.readyState >= 2) { djAudio = djProch; djProch = a; djAudio.currentTime = 0; djAudio.volume = djV(); djAudio.play().catch(() => {}); }   // la piste suivante part tout de suite, sans attendre
+      if (P && djProch.src.endsWith(djSrc(P.id)) && djProch.readyState >= 2) { djAudio = djProch; djProch = a; djAudio.currentTime = 0; djAudio.volume = djV(); if (!window.mxArcadeOn) djAudio.play().catch(() => {}); }   // la piste suivante part tout de suite, sans attendre
       if (c && djFiniEnvoye !== c.debut && MX) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }; };
   djBrancher(djAudio); djBrancher(djProch);
-  setInterval(() => { const c = djEtat.courant; if (!c || !djEcoute || !mxOuverte || !(mxLieu === "fetes" || mxLieu === "grande") || document.hidden) return;   // (de jour, dans la cour : on n'entend pas la fête)
+  setInterval(() => { const c = djEtat.courant; if (!c || !djEcoute || !mxOuverte || !(mxLieu === "fetes" || mxLieu === "grande") || document.hidden || window.mxArcadeOn) return;   // (de jour, dans la cour : on n'entend pas la fête)
     const pos = (Date.now() - c.debut) / 1000; if (pos < 0 || (c.duree && pos > c.duree)) return;
     if (djAudio.paused && djAudio.src) djAudio.play().catch(() => {}); else if (!djAudio.paused && Math.abs(djAudio.currentTime - pos) > 8) djSynchro(); }, 5000);   // (la veille : la musique repart si elle s'est arrêtée)
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
@@ -2532,7 +2532,7 @@
     if (v > .003 && bruitAudio.paused) bruitAudio.play().catch(() => {}); else if (v <= .003 && !bruitAudio.paused) bruitAudio.pause(); }
   document.addEventListener("pointerdown", () => { if (mxOuverte && bruitAudio.paused) bruitMaj(); }, true);
   // la chaîne hi-fi de la salle de judo : « Daniela » (Elmer Food Beat), en boucle, au même moment pour tous ; on ne l'entend que dans la salle
-  window.mxSonsMaj = () => { djAudio.volume = djV(); bruitMaj(); hifiMaj(); };   // (la borne d'arcade s'ouvre ou se ferme : on recalcule les volumes)
+  window.mxSonsMaj = () => { djAudio.volume = djV(); djSynchro(); bruitMaj(); hifiMaj(true); };   // (la borne d'arcade s'ouvre ou se ferme : on recalcule les volumes)
   const hifiAudio = new Audio("sons/daniela.mp3"); hifiAudio.loop = true; hifiAudio.preload = "auto"; let hifiEtat = { on: false }, hifiNiv = .6, hifiDans = false;
   function hifiMaj(caler) { const v = hifiEtat.on && hifiDans && mxOuverte && !window.mxArcadeOn ? hifiNiv : 0; hifiAudio.volume = Math.min(1, Math.max(0, v));
     if (v > .003) { if (caler && hifiAudio.duration) { const pos = ((Date.now() - hifiEtat.debut) / 1000) % hifiAudio.duration; if (pos >= 0 && Math.abs(hifiAudio.currentTime - pos) > 1.5) try { hifiAudio.currentTime = pos; } catch (e) {} }
@@ -3203,6 +3203,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.19", "25 octobre 2026", ["Borne des Goonies : la musique de la salle des fêtes s'arrête vraiment pendant la partie (elle se relançait toute seule toutes les cinq secondes, et sur iPhone ou iPad le volume ne se baisse pas) ; elle reprend en quittant la borne"]],
     ["7.18", "25 octobre 2026", ["Goonies, niveau 2 : la course à vélo traverse tes nouvelles rues d'Astoria — le centre-ville (cinéma, pharmacie, disquaire…), le musée, le port et la prison, puis le quai de la vieille conserverie (General Store, Cannery Café), et enfin la grande rue jusqu'au belvédère", "Devant la prison, Jake Fratelli s'évade : une scène avec Jake et Mama, puis leur voiture noire poursuit les Goonies sur le quai"]],
     ["7.17", "25 octobre 2026", ["Borne des Goonies : pendant la partie, la musique de la salle des fêtes (et le bruit de la salle) se coupe ; elle revient en quittant la borne", "On peut se baisser (bas) et tirer accroupi : les rats se touchent bien mieux", "Sur une échelle, le Goonie se voit de dos et grimpe en bougeant bras et jambes", "Des niveaux deux fois plus longs : le grenier, le restaurant, les souterrains, l'approche de l'orgue et le bateau ont un passage de plus, et la course à vélo continue dans la grande rue d'Astoria jusqu'au belvédère", "Plus d'ennemi qui attend juste au départ ; les chiens courent un peu moins vite que le vélo"]],
     ["7.16", "25 octobre 2026", ["La borne des Goonies se lance aussi quand la Matrice est en plein écran (le jeu s'ouvrait derrière)"]],
