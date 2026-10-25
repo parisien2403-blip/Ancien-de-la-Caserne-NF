@@ -22,7 +22,7 @@ const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
-  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 * (k === "sloth" ? 1.15 : 1) }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; }), fetch("img/pirates.json?v=" + VI).then(r => r.json()).then(j => { PIR = j; })]).then(() => {
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 * ({ sloth: 1.15, brand: 1.12 }[k] || 1) }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; }), fetch("img/pirates.json?v=" + VI).then(r => r.json()).then(j => { PIR = j; })]).then(() => {
   for (const k in PIR) META[k] = { ...PIR[k], img: "pirates" };
   if (META.rocher) META.roc = { ...META.rocher, sc: 1.8 };   // (les rochers posés sur le toboggan)   // (les modèles 3D pirates, passés en pixels : squelette pirate, capitaine, tonneaux, coffre, or…)
   // les boss et Sloth : les dessins de face fournis (hauteur voulue dans le monde)
@@ -76,7 +76,7 @@ function spr(nom, f, x, y, flip = false, sc = 1, alpha = 1) {
   const Z = cam.z * sc * (m.sc || 1), w = fr[2] * Z, h = fr[3] * Z, ax = m.a[0] * Z, ay = m.a[1] * Z, sx = (x - cam.x) * cam.z, sy = (y - cam.y) * cam.z;
   X.save(); X.globalAlpha = alpha; X.translate(Math.round(sx), Math.round(sy)); if (flip) X.scale(-1, 1);
   X.drawImage(im, fr[0], fr[1], fr[2], fr[3], -ax, -ay, w, h); X.restore(); }
-function sprEcran(nom, f, x, y, sc = 1, flip = false) { const m = META[nom]; if (!m) return; const fr = m.f[f % m.f.length], im = IMG[m.img];
+function sprEcran(nom, f, x, y, sc = 1, flip = false) { const m = META[nom]; if (!m) return; const fr = m.f[f % m.f.length], im = IMG[m.img]; if (m.img === "sprites4" && m.sc) sc *= m.sc / (1.8 / 3);   // (Brand et Sinok, plus grands, aussi à l'écran de choix)
   X.save(); X.translate(x, y); if (flip) X.scale(-1, 1); X.drawImage(im, fr[0], fr[1], fr[2], fr[3], -fr[2] * sc / 2, -fr[3] * sc / 2, fr[2] * sc, fr[3] * sc); X.restore(); }
 const taille = nom => META[nom] ? META[nom].f[0] : [0, 0, 0, 0];
 function texte(t, x, y, o = {}) { X.save(); X.font = `${o.gras === false ? "" : "bold "}${o.t || 20}px "Courier New", monospace`; X.textAlign = o.a || "left"; X.textBaseline = "alphabetic";
