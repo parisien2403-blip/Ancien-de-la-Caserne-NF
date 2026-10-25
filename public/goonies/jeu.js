@@ -285,7 +285,7 @@ const NIVEAUX = [
     pieces: [...ligne(110, 356, 6), ...arc(400, 520, 6), ...ligne(810, 575, 4), ...ligne(1310, 448, 3), ...ligne(120, 712, 5)], pizzas: [[300, 700]],
     ennemis: [{ t: "squelette", x: 520, y: 568, x0: 400, x1: 700 }, { t: "squelette", x: 1180, y: 568, x0: 1100, x1: 1290 }, { t: "chauve", x: 300, y: 200 }, { t: "chauve", x: 1250, y: 260 }, { t: "squelette", x: 250, y: 390, x0: 100, x1: 390 }],
     orgue: { x0: 700, x1: 1110, y: 568 } })] },
-  { nom: "LE BATEAU DE WILLY LE BORGNE", but: "Arrache le trésor aux Fratelli !", avant: "avant6", apres: "apres6", scenes: [() => ({
+  { nom: "LE BATEAU DE WILLY LE BORGNE", musique: "bateau", but: "Arrache le trésor aux Fratelli !", avant: "avant6", apres: "apres6", scenes: [() => ({
     // le pont de l'Inferno : la dunette (on arrive par là), le grand pont où Mama nous attend, le gaillard d'avant ; on grimpe aux haubans jusqu'aux vergues et aux hunes
     img: "pont", vh: 470, depart: [150, 496], bornes: [20, 2380], fin: { type: "boss", x: 2300 },
     sol: [p(0, 420, 496, 496, 1), p(420, 560, 496, 620), p(560, 1870, 620, 620, 1), p(1870, 2000, 620, 516), p(2000, 2400, 516, 516, 1),
