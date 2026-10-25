@@ -172,7 +172,7 @@ const H = {
     ["sloth", "Sinok… aime… Choco. Sinok… aide les amis !", "sinok"],
     [null, "SINOK rejoint les Goonies !", "sinok"],
     ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "sinok"]] },
-  avant4: { fond: "niv4a", l: [
+  avant4: { fond: "niv4a", mus: "grotte", l: [
     ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
     ["mikey", "Il cherchait le trésor, lui aussi. On ne s'arrête pas là."]] },
   boss4: { fond: "niv4b", l: [
@@ -235,7 +235,7 @@ const NIVEAUX = [
     ech: [], pieces: [...ligne(240, 270, 5), ...ligne(530, 270, 5), ...ligne(1060, 270, 5), ...arc(380, 500, 4), ...arc(1050, 440, 6)], pizzas: [[700, 470]],
     ennemis: [{ t: "rat", x: 300, y: 662, x0: 120, x1: 600 }, { t: "rat", x: 1100, y: 662, x0: 900, x1: 1300 }, { t: "rat", x: 1150, y: 487, x0: 1040, x1: 1320 }, { t: "chauve", x: 900, y: 240 }],
     boss: { t: "francis", x: 1150, y: 662, pv: 14, x0: 380, x1: 1300, declenche: 520 } })] },
-  { nom: "LES SOUTERRAINS", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
+  { nom: "LES SOUTERRAINS", musique: "grotte", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
     img: "niv4a", vh: 470, depart: [40, 520], fin: { type: "x", x: 1340 },
     sol: [p(0, 210, 522, 478), p(205, 472, 476), p(465, 1376, 476), p(0, 305, 266), p(330, 486, 670), p(0, 330, 692), p(875, 1180, 318), p(995, 1376, 670)],
     ech: [ech(195, 240, 266, 476), ech(1108, 1152, 318, 476), ech(1114, 1160, 476, 670)], vide: 740,
