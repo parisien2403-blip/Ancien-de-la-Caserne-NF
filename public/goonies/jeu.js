@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 37;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 38;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", finCalin: "fin-calin.png", finRocher: "fin-rocher.png", finBateau: "fin-bateau.png", finRubis: "fin-rubis.png", passage: "scene-passage.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", sinokMama: "scene-sinok-mama.png", finCalin: "fin-calin.png", finRocher: "fin-rocher.png", finBateau: "fin-bateau.png", finRubis: "fin-rubis.png", passage: "scene-passage.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -212,9 +212,11 @@ const H = {
   avant6: { fond: "niv6a", l: [
     ["mikey", "Le trésor de Willy le Borgne ! On l'a trouvé !"],
     ["mama", "Pas si vite, les mioches ! Ce trésor est à nous !"]] },
-  sloth6: { fond: "niv6a", l: [
-    ["sloth", "HÉ ! VOUS, LES GARS ! LAISSE CHOCO TRANQUILLE !"],
-    ["mama", "Sinok ?! Lâche-moi, espèce de… !"]] },
+  sloth6: { fond: "sinokMama", l: [
+    ["sloth", "HÉ, MAMA ! LAISSE MES COPAINS TRANQUILLES !", "sinokMama"],
+    ["mama", "Sinok ?! Qui t'a sorti de la cave, toi ? Retourne dans ton trou, sale bête !", "sinokMama"],
+    ["sloth", "Sinok… plus jamais dans la cave ! Sinok aime Choco !", "sinokMama"],
+    ["mama", "Lâche-moi, espèce de grand nigaud ! Francis ! Jake ! Au secours !", "sinokMama"]] },
   apres6: { fond: "niv6a", l: [
     ["sloth", "Mama méchante ! Sinok aime Choco !"],
     ["mikey", "Le bateau bouge… La grotte s'effondre ! Tous dehors !"]] },
