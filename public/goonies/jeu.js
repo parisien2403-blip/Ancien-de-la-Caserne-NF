@@ -85,10 +85,11 @@ function adoDessin(id, pose, ph, sx, sy, haut, flip = false, alpha = 1) {   // s
   const im = IMG["ado_" + id]; if (!im) return; const k = haut / im.height, W = im.width * k, H = haut, hy = Math.round(im.height * HANCHE[id]), cx = im.width / 2;
   X.save(); X.globalAlpha = alpha; X.translate(Math.round(sx), Math.round(sy)); if (flip) X.scale(-1, 1);
   const piece = (x0, y0, w, h, dx, dy, sh = 0) => { X.save(); X.translate(dx, dy); if (sh) X.transform(1, 0, sh, 1, 0, 0); X.drawImage(im, x0, y0, w, h, (x0 - cx) * k, (y0 - im.height) * k, w * k, h * k); X.restore(); };
-  if (pose === "course") { const s = Math.sin(ph), b = -Math.abs(Math.cos(ph)) * 4 * k * 2;
-    piece(0, hy, cx, im.height - hy, s * 7 * k * 2, -Math.max(0, s) * 5 * k * 2);
-    piece(cx, hy, im.width - cx, im.height - hy, -s * 7 * k * 2, -Math.max(0, -s) * 5 * k * 2);
-    X.rotate(.06); piece(0, 0, im.width, hy + 2, 2 * k * 2, b); }
+  const jambe = (x0, w, ang, dy = 0) => { const px = (x0 + w / 2 - cx) * k, py = (hy - im.height) * k; X.save(); X.translate(px, py + dy); X.rotate(ang);   // (une jambe qui pivote à la hanche)
+    X.drawImage(im, x0, hy, w, im.height - hy, (x0 - cx) * k - px, 0, w * k, (im.height - hy) * k); X.restore(); };
+  if (pose === "course") { const s = Math.sin(ph), b = -Math.abs(Math.cos(ph)) * 7 * k, a = .42;
+    X.save(); X.globalAlpha = alpha * .9; jambe(0, cx, s * a, b); X.restore(); jambe(cx, im.width - cx, -s * a, b);
+    X.save(); X.translate(0, b); X.rotate(.05); piece(0, 0, im.width, hy + 3, 0, 0); X.restore(); }
   else if (pose === "saut") { piece(0, hy, cx, im.height - hy, -6 * k * 2, -14 * k * 2); piece(cx, hy, im.width - cx, im.height - hy, 4 * k * 2, -8 * k * 2); piece(0, 0, im.width, hy + 2, 0, -6 * k * 2); }
   else if (pose === "baisse") { X.save(); X.scale(1.08, .45); piece(0, hy, im.width, im.height - hy, 0, 0); X.restore(); piece(0, 0, im.width, hy + 2, 0, (im.height - hy) * k * .55); }
   else if (pose === "tir") { X.rotate(.05); piece(0, 0, im.width, im.height, 0, 0); }
@@ -650,7 +651,7 @@ function dJeu() {
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
     else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
       const pose = J.mal > 0 ? "mal" : J.echelle ? "echelle" : J.baisse ? "baisse" : (J.tirA > 0 || J.gant) ? "tir" : !J.sol ? "saut" : Math.abs(J.vx) > 30 ? "course" : "repos";
-      adoDessin(A.id, pose, pose === "repos" ? S.t * 3 : J.anim * 1.6, (J.x - cam.x) * cam.z, (J.y + 3 - cam.y) * cam.z, TAILLE_ADO * cam.z, J.dir < 0); } }
+      adoDessin(A.id, pose, pose === "repos" ? S.t * 3 : J.anim * 1.1, (J.x - cam.x) * cam.z, (J.y + 3 - cam.y) * cam.z, TAILLE_ADO * cam.z, J.dir < 0); } }
   if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
     X.strokeStyle = "#d8c050"; X.lineWidth = 3; X.beginPath(); const n = 10; for (let k = 0; k <= n; k++) { const xx = x0 + (x1 - x0) * k / n, yy = y + (k % 2 ? -7 : 7); k ? X.lineTo(xx, yy) : X.moveTo(xx, yy); } X.stroke();
     spr("gant", 0, J.x + G.dir * (26 + G.l), J.y - G.h + 14, G.dir < 0); }
