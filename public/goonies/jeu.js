@@ -177,8 +177,16 @@ const H = {
   avant4: { fond: "niv4a", mus: "grotte", l: [
     ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
     ["mikey", "Il cherchait le trésor, lui aussi. On ne s'arrête pas là."]] },
-  boss4: { fond: "niv4b", l: [
-    ["jake", "Vous allez m'entendre chanter, les morveux !"]] },
+  boss3: { fond: "niv3", mus: "freres", l: [
+    ["francis", "Tiens, tiens… Des petits rats dans la cave de Maman."],
+    ["mikey", "On s'en va, monsieur ! On a rien vu, promis !"],
+    ["francis", "Trop tard. Personne ne fouine chez les Fratelli et ne ressort entier !"],
+    ["bagou", "Il a une bouteille dans chaque main… Ça va voler !"]] },
+  boss4: { fond: "niv4b", mus: "freres", l: [
+    ["jake", "Hé, Francis ! Regarde qui voilà : les morveux de la cave !"],
+    ["francis", "Cette fois, ils ne nous échapperont pas. Maman a dit : pas de témoins."],
+    ["data", "Les deux frères à la fois… Selon mes calculs, on est mal."],
+    ["jake", "Vous allez m'entendre chanter, les morveux ! Et ça va faire mal !"]] },
   apres4: { fond: "puits", l: [
     ["bagou", "On est sous le puits à vœux ! Toutes ces pièces… ce sont les vœux des gens !", "puits"],
     ["mikey", "Alors on n'y touche pas. Ce sont des vœux. On continue.", "puits"]] },
@@ -244,7 +252,7 @@ const NIVEAUX = [
       p(222, 462, 302), p(222, 462, 376), p(222, 462, 448), p(512, 760, 302), p(512, 760, 376), p(512, 760, 448), p(1036, 1290, 302), p(1036, 1290, 376)],
     ech: [], pieces: [...ligne(240, 270, 5), ...ligne(530, 270, 5), ...ligne(1060, 270, 5), ...arc(380, 500, 4), ...arc(1050, 440, 6)], pizzas: [[700, 470]],
     ennemis: [{ t: "rat", x: 300, y: 662, x0: 120, x1: 600 }, { t: "rat", x: 1100, y: 662, x0: 900, x1: 1300 }, { t: "rat", x: 1150, y: 487, x0: 1040, x1: 1320 }, { t: "chauve", x: 900, y: 240 }],
-    boss: { t: "francis", x: 1150, y: 662, pv: 14, x0: 380, x1: 1300, declenche: 520 } })] },
+    boss: { t: "francis", x: 1150, y: 662, pv: 14, x0: 380, x1: 1300, declenche: 520, histoire: "boss3", mus: "freres" } })] },
   { nom: "LES SOUTERRAINS", musique: "grotte", but: "Suis la carte à travers les grottes !", avant: "avant4", apres: "apres4", scenes: [() => ({
     img: "niv4a", vh: 470, depart: [40, 520], fin: { type: "x", x: 1340 },
     sol: [p(0, 210, 522, 478), p(205, 472, 476), p(465, 1376, 476), p(0, 305, 266), p(308, 408, 410),   // (le tas de rochers sert de marche : la corniche de gauche était trop haute pour un saut)
@@ -258,7 +266,7 @@ const NIVEAUX = [
     ech: [ech(75, 120, 26, 451), ech(530, 556, 0, 346)],
     pieces: [...ligne(240, 106, 6), ...ligne(360, 316, 5), ...ligne(1110, 316, 4), ...ligne(90, 420, 4)], pizzas: [[1250, 300]],
     ennemis: [{ t: "chauve", x: 700, y: 160 }, { t: "chauve", x: 1000, y: 120 }, { t: "araignee", x: 860, y0: 30, y1: 360 }],
-    boss: { t: "jake", x: 1100, y: 588, pv: 18, x0: 450, x1: 1300, declenche: 600, histoire: "boss4" } })] },
+    boss: { t: "jake", x: 1100, y: 588, pv: 18, x0: 450, x1: 1300, declenche: 600, histoire: "boss4", mus: "freres" } })] },
   { nom: "L'ORGUE D'OS", musique: "orgue", but: "Joue la bonne mélodie sur l'orgue !", avant: "avant5", apres: "apres5", scenes: [() => ({
     img: "niv5", vh: 470, depart: [60, 540], fin: { type: "orgue", x: 1385 }, vide: 760,
     sol: [p(0, 162, 540), p(160, 380, 548, 556), p(370, 1300, 568), p(785, 990, 606), p(1170, 1300, 588, 478), p(1295, 1408, 478), p(80, 400, 390), p(90, 360, 745)],
@@ -556,7 +564,8 @@ function eclats(x, y, c, n = 12) { for (let k = 0; k < n; k++) S.eclats.push({ x
 // ------------------------------------------------------------------ les boss (Francis, Jake, Mama Fratelli) et Sloth
 function majBoss(dt) {
   const B = S.boss; if (!B || B.mort) { if (B && B.mort) { B.mort += dt; } return; }
-  if (!B.actif) { if (Math.abs(J.x - B.x) < B.declenche) { B.actif = true; son("boss"); if (B.histoire) { const h = B.histoire; B.histoire = null; pause(h); } } return; }
+  if (!B.actif) { if (Math.abs(J.x - B.x) < B.declenche) { B.actif = true; son("boss"); if (B.mus) jouerMus(B.mus);   // (la musique des frères Fratelli pendant le combat)
+    if (B.histoire) { const h = B.histoire; B.histoire = null; pause(h); } } return; }
   B.tm += dt; B.inv = Math.max(0, B.inv - dt); B.tirT -= dt;
   const vit = B.t === "jake" ? 150 : 120; const loin = Math.abs(J.x - B.x) > 260;
   B.dir = Math.sign(J.x - B.x) || -1;
@@ -575,7 +584,7 @@ function majBoss(dt) {
   if (chevauche(bb, boiteJ())) blesse(1);
 }
 function toucheBoss(deg) { const B = S.boss; if (!B || B.mort || !B.actif || B.inv > 0) return; B.pv -= deg; B.inv = .18; son("coup");
-  if (B.pv <= 0) { B.mort = .01; partie.score += 5000; eclats(B.x, B.y - 80, "#ffd040", 40); S.bossMort = true; son("gagne"); } }
+  if (B.pv <= 0) { B.mort = .01; partie.score += 5000; eclats(B.x, B.y - 80, "#ffd040", 40); S.bossMort = true; son("gagne"); if (B.mus) jouerMus(S.N.musique || null); } }   // (puis la musique du niveau revient)
 function pause(cle) { const reprise = { etat: "jeu" }; histoire(cle, () => { etat = reprise.etat; }); }
 
 // ------------------------------------------------------------------ tirs, objets, fin de scène
