@@ -94,7 +94,7 @@ const H = {
     ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien.", "golf"],
     ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !", "golf"],
     ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !", "golf"]] },
-  apres1: { fond: "niv1", l: [
+  apres1: { fond: "niv1", mus: "willy", l: [
     ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !", "carte"],
     ["data", "Willy le Borgne ? Le pirate de la légende ?", "carte"],
     ["mikey", "Mon père me l'a racontée cent fois. Il y a plus de trois cents ans, Willy et ses pirates pillaient tous les navires du roi d'Angleterre.", "carte"],
@@ -312,7 +312,7 @@ let S = null;                         // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre() { allerTitre(); requestAnimationFrame(boucle);
-  if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; jouerMus("niv1"); histoire(PARAM.get("h"), () => allerTitre()); }
+  if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; histoire(PARAM.get("h"), () => allerTitre()); }
   if (PARAM.has("direct")) { jouerMus(NIVEAUX[+(PARAM.get("niv") || 1) - 1].musique || null); partie = { ko: new Set(), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
 // la musique du début (écran titre, choix du Goonie, histoire d'ouverture) ; elle s'efface quand le premier niveau commence
 let MUS = null, musNom = null, musVoulue = false;
@@ -329,7 +329,7 @@ addEventListener("keydown", () => { if (musVoulue && MUS && MUS.paused) MUS.play
 function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
 function nouvellePartie() { partie = { ko: new Set(), ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
 function allerChoix(suite, msg) { etat = "choix"; const libres = ADOS.filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
-function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
+function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
 function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
