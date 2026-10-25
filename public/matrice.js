@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.68";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.69";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -4138,32 +4138,29 @@ function toileLambris() {
 }
 /* la borne d'arcade des Goonies (d'après la photo) : coffre en bois, flancs noirs peints (bateau pirate, « Les Goonies »), fronton lumineux, écran allumé, panneau de commandes, monnayeur ;
    posée contre un mur, l'écran tourné vers +x. Rend son emprise au sol (obstacle) */
-function borneArcade(A, scene, x, z) {
-  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
-  const charge = (src) => { const im = new Image(), t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; im.onload = () => { t.needsUpdate = true; }; im.src = "goonies/img/" + src; return t; };
-  const bois = A.mat({ color: 0x5a3418, roughness: .55 }), noir = A.mat({ color: 0x111014, roughness: .5 }), P = .74, L = .62;   // profondeur (x), largeur (z)
-  const boite = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
-  // le coffre : le bas (porte à pièces), le panneau de commandes en avancée, le haut (écran), le fronton
-  boite(P, .9, L, bois, 0, .45, 0);
-  boite(.16, .2, L + .04, bois, P / 2 + .06, .98, 0);
-  const pan = boite(.34, .05, L + .04, A.mat({ color: 0x4a2a12, roughness: .5 }), P / 2 + .1, 1.08, 0); pan.rotation.z = -.12;
-  boite(P - .18, .78, L, bois, -.09, 1.5, 0);
-  boite(.5, .3, L, bois, -.05, 2.05, 0);
-  // les flancs peints (un de chaque côté)
-  for (const sg of [-1, 1]) { const t = charge(sg > 0 ? "borne-cote.jpg" : "borne-cote-m.jpg");
-    const f = new THREE.Mesh(new THREE.PlaneGeometry(P + .1, 2.2), new THREE.MeshStandardMaterial({ map: t, roughness: .55 })); f.position.set(0, 1.1, sg * (L / 2 + .012)); if (sg < 0) f.rotation.y = Math.PI; g.add(f); }
-  // la façade : porte à pièces, écran, fronton (lumineux)
-  const face = (src, w, h, px, py, lum, rot = 0) => { const t = charge(src), m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: .4, emissive: lum ? 0xffffff : 0, emissiveMap: lum ? t : null, emissiveIntensity: lum || 0 }));
-    m.rotation.y = Math.PI / 2; m.rotation.x = rot; m.position.set(px, py, 0); g.add(m); return m; };
-  face("borne-bas.jpg", L - .02, .86, P / 2 + .003, .45, 0);
-  face("borne-milieu.jpg", L - .02, .7, P / 2 - .085, 1.5, .55);
-  face("borne-fronton.jpg", L - .02, .22, P / 2 - .065 + .2, 2.06, 1.1);
-  const cmd = face("borne-commandes.jpg", L, .3, P / 2 + .1, 1.112, .2); cmd.rotation.order = "YXZ"; cmd.rotation.set(-Math.PI / 2 + .12, Math.PI / 2, 0);
-  // joysticks et boutons en relief
-  for (const sg of [-1, 1]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .07, 8), noir); st.position.set(P / 2 + .1, 1.15, sg * .16); g.add(st);
-    const bl = new THREE.Mesh(new THREE.SphereGeometry(.022, 12, 10), A.mat({ color: sg < 0 ? 0x111111 : 0xd02020, roughness: .3 })); bl.position.set(P / 2 + .1, 1.19, sg * .16); g.add(bl); }
-  for (let k = 0; k < 3; k++) for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .015, 12), A.mat({ color: [0xd02020, 0xe8c020, 0xe8c020][k], roughness: .3 })); b.position.set(P / 2 + .12, 1.125, sg * (.06 + k * .035) - sg * .14); g.add(b); }
-  const lueur = new THREE.PointLight(0x7ab0ff, .9, 2.2, 2); lueur.position.set(P / 2 + .5, 1.6, 0); g.add(lueur);
+function borneArcade(A, scene, x, z) {   // (le modèle 3D de la borne, habillé aux couleurs de l'affiche des Goonies ; l'écran montre l'écran titre du jeu)
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const P = .88, L = .7;
+  const tl = new THREE.TextureLoader(), tx = f => { const t = tl.load("goonies/img/" + f + "?v=1"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
+  chargerGLB("goonies/img/borne3d.glb?v=1").then(sc => { if (!sc) return; const m = sc.clone(true); m.scale.setScalar(.01); m.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(m), c = b.getCenter(new THREE.Vector3()); m.position.set(-c.x, -b.min.y, -c.z); m.updateMatrixWorld(true);
+    const plan = (o, axe) => {   // des coordonnées de texture « à plat » (de face ou de profil), sur la forme réelle de la pièce
+      const geo = o.geometry.clone(), pos = geo.attributes.position, v = new THREE.Vector3(), pts = [], bb = new THREE.Box3();
+      for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); pts.push(v.clone()); bb.expandByPoint(v); }
+      const uv = new Float32Array(pos.count * 2), sz = bb.getSize(new THREE.Vector3()), cz = (bb.min.z + bb.max.z) / 2;
+      pts.forEach((q, i) => { let u = axe === "x" ? (q.x - bb.min.x) / sz.x : (bb.max.z - q.z) / sz.z; if (axe === "x" && cz < 0) u = 1 - u; uv[i * 2] = u; uv[i * 2 + 1] = (q.y - bb.min.y) / sz.y; });
+      geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); o.geometry = geo; };
+    const mat = (map, lum) => new THREE.MeshStandardMaterial({ map, roughness: .45, emissive: lum ? 0xffffff : 0, emissiveMap: lum ? map : null, emissiveIntensity: lum || 0 });
+    const cote = tx("borne2-cote.jpg"), noir = new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: .55 });
+    m.traverse(o => { if (!o.isMesh) return; const n = o.name; o.castShadow = true;
+      if (/lateral/i.test(n)) { plan(o, "x"); o.material = mat(cote); }
+      else if (/crt_screen/i.test(n)) { plan(o, "z"); o.material = mat(tx("borne2-ecran.jpg"), 1.05); }
+      else if (/logo_haut/i.test(n)) { plan(o, "z"); o.material = mat(tx("borne2-fronton.jpg"), 1.1); }
+      else if (/bas_avant/i.test(n)) { plan(o, "z"); o.material = mat(tx("borne2-bas.jpg")); }
+      else if (/vitre/i.test(n)) o.material = new THREE.MeshStandardMaterial({ color: 0x223040, transparent: true, opacity: .14, roughness: .05, metalness: .3, depthWrite: false });
+      else if (/jooysticks_Mat25|Haut_parleurs/i.test(n)) o.material = new THREE.MeshStandardMaterial({ color: 0xc81e1e, roughness: .35 });
+      else if (/dessus|arriere|dessous|tiroir|bas_avant|oblique/i.test(n)) o.material = noir; });
+    g.add(m); });
+  const lueur = new THREE.PointLight(0x7ab0ff, .9, 2.2, 2); lueur.position.set(P / 2 + .5, 1.5, 0); g.add(lueur);
   return [x - P / 2 - .05, x + P / 2 + .3, z - L / 2 - .05, z + L / 2 + .05];
 }
 /* Le sous-sol (vestibule, grande pièce au bar, console) en coordonnées propres ; L reçoit ses limites, tabourets, console…
