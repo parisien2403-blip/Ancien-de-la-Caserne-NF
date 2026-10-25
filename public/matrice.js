@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.84";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.85";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -9573,8 +9573,9 @@ export async function ouvrir(ctx) {
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       p.corps.rotation.y = Math.atan2(dx, dz); p.corps.rotation.x = -Math.min(p.info.dj || p.info.barman ? 0 : .3, Math.max(0, Math.atan2(c.y - gp.y - 1, Math.hypot(dx, dz))));
       /* allongé dans un lit (bonhomme dessiné) : le panneau couché à plat sur le matelas, face au plafond, la tête vers la tête du lit */
-      if (p.installe && p.installe.sorte === "allonge") { const s = p.installe, demi = p.corps.scale.y / 2; p.corps.rotation.set(-Math.PI / 2, s.ry, 0); p.corps.position.set(Math.sin(s.ry) * demi, s.y + s.h + .14 - gp.y, Math.cos(s.ry) * demi); p.allonge2D = true; if (p.poses && p.corps.material.map !== p.poses.repos) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; } continue; }
-      if (p.allonge2D) { p.allonge2D = false; p.corps.position.set(0, 0, 0); }
+      if (p.installe && p.installe.sorte === "allonge") { const s = p.installe; if (!p.echLit) { p.echLit = [p.corps.scale.x, p.corps.scale.y]; p.corps.scale.set(p.echLit[0] * .86, p.echLit[1] * .86, 1); } const demi = p.corps.scale.y / 2;   /* (un peu plus petit couché : il tient sur le matelas) */
+      p.corps.rotation.set(-Math.PI / 2, s.ry, 0); p.corps.position.set(Math.sin(s.ry) * (demi + .66), s.y + s.h + .14 - gp.y, Math.cos(s.ry) * (demi + .66));   /* (décalé vers le pied du lit : la tête sur l'oreiller, pas dans la tête de lit) */ p.allonge2D = true; if (p.poses && p.corps.material.map !== p.poses.repos) { p.corps.material.map = p.poses.repos; p.corps.material.needsUpdate = true; } continue; }
+      if (p.allonge2D) { p.allonge2D = false; p.corps.position.set(0, 0, 0); if (p.echLit) { p.corps.scale.set(p.echLit[0], p.echLit[1], 1); p.echLit = null; } }
       // assis sur un tabouret : le bonhomme est avancé vers nous, devant l'assise (sinon le pouf rond passe devant ses cuisses, comme s'il était entre ses jambes)
       const avance = Number.isInteger(p.info.assis) && !p.info.maman ? .3 - Math.sin(p.corps.rotation.x) * .7 : p.info.auto ? .12 : 0;   /* (maman, à table : sur sa chaise, pas avancée) */   // (+ ce que le panneau penché recule à hauteur des hanches)
       if (avance || p.avance) { const d = Math.hypot(dx, dz) || 1; p.corps.position.x = dx / d * avance; p.corps.position.z = dz / d * avance; p.avance = avance > 0; }
