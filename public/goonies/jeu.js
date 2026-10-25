@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 13;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 14;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
@@ -79,6 +79,24 @@ function texte(t, x, y, o = {}) { X.save(); X.font = `${o.gras === false ? "" : 
 function medaillon(qui, x, y, t) {   // la photo du personnage (façon borne d'arcade) ; à défaut, son visage dessiné
   const ph = IMG["photo_" + qui]; if (ph) { X.drawImage(ph, x, y, t, t); return; }
   const m = META["portrait_" + qui]; if (m) { const fr = m.f[0]; X.drawImage(IMG[m.img], fr[0], fr[1], fr[2], fr[3], x, y, t, t); } }
+/* les 4 ados (images fournies, de face) : animés en découpant l'image — le haut du corps qui balance, les deux jambes qui avancent tour à tour */
+const HANCHE = { mikey: .72, bagou: .56, choco: .6, data: .6 };
+function adoDessin(id, pose, ph, sx, sy, haut, flip = false, alpha = 1) {   // sx, sy : les pieds, à l'écran ; haut : la taille à l'écran
+  const im = IMG["ado_" + id]; if (!im) return; const k = haut / im.height, W = im.width * k, H = haut, hy = Math.round(im.height * HANCHE[id]), cx = im.width / 2;
+  X.save(); X.globalAlpha = alpha; X.translate(Math.round(sx), Math.round(sy)); if (flip) X.scale(-1, 1);
+  const piece = (x0, y0, w, h, dx, dy, sh = 0) => { X.save(); X.translate(dx, dy); if (sh) X.transform(1, 0, sh, 1, 0, 0); X.drawImage(im, x0, y0, w, h, (x0 - cx) * k, (y0 - im.height) * k, w * k, h * k); X.restore(); };
+  if (pose === "course") { const s = Math.sin(ph), b = -Math.abs(Math.cos(ph)) * 4 * k * 2;
+    piece(0, hy, cx, im.height - hy, s * 7 * k * 2, -Math.max(0, s) * 5 * k * 2);
+    piece(cx, hy, im.width - cx, im.height - hy, -s * 7 * k * 2, -Math.max(0, -s) * 5 * k * 2);
+    X.rotate(.06); piece(0, 0, im.width, hy + 2, 2 * k * 2, b); }
+  else if (pose === "saut") { piece(0, hy, cx, im.height - hy, -6 * k * 2, -14 * k * 2); piece(cx, hy, im.width - cx, im.height - hy, 4 * k * 2, -8 * k * 2); piece(0, 0, im.width, hy + 2, 0, -6 * k * 2); }
+  else if (pose === "baisse") { X.save(); X.scale(1.08, .45); piece(0, hy, im.width, im.height - hy, 0, 0); X.restore(); piece(0, 0, im.width, hy + 2, 0, (im.height - hy) * k * .55); }
+  else if (pose === "tir") { X.rotate(.05); piece(0, 0, im.width, im.height, 0, 0); }
+  else if (pose === "mal") { X.rotate(-.2); piece(0, 0, im.width, im.height, 0, 0); X.globalCompositeOperation = "source-atop"; X.fillStyle = "rgba(255,40,40,.35)"; X.fillRect(-W, -H, W * 2, H); }
+  else if (pose === "echelle") { const s = Math.sin(ph); piece(0, 0, im.width, im.height, s * 2 * k * 2, Math.abs(s) * -3 * k * 2); }
+  else { const r = 1 + Math.sin(ph) * .012; X.scale(1, r); piece(0, 0, im.width, im.height, 0, 0); }
+  X.restore(); }
+const TAILLE_ADO = 112;   // (en unités du décor)
 function boite(x, y, w, h, a = .78) { X.save(); X.globalAlpha = a; X.fillStyle = "#07040c"; X.fillRect(x, y, w, h); X.globalAlpha = 1; X.strokeStyle = "#f3c64a"; X.lineWidth = 3; X.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); X.restore(); }
 
 // ------------------------------------------------------------------ les 4 ados
@@ -553,7 +571,7 @@ function dTitre() {
   texte("LA CHASSE AU TRÉSOR DE WILLY LE BORGNE", LW / 2, 380, { a: "center", c: "#fff", t: 22 });
   if (Math.floor(E.t * 1.6) % 2 === 0) texte("APPUIE SUR START", LW / 2, 440, { a: "center", c: "#ffd34a", t: 30, bord: "#3a0a00", ep: 6 });
   texte(`RECORD ${String(RECORD()).padStart(7, "0")}`, LW / 2, 500, { a: "center", c: "#9fe0ff", t: 18 });
-  [["mikey", 90], ["choco", 190], ["data", 770], ["bagou", 870]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, 1, x > LW / 2));
+  [["mikey", 90], ["choco", 190], ["data", 770], ["bagou", 870]].forEach(([n, x], k) => adoDessin(n, "course", E.t * 9 + k, x, 345, 120, x > LW / 2));
 }
 function dChoix() {
   fond("niv1", .35); X.fillStyle = "rgba(0,0,0,.45)"; X.fillRect(0, 0, LW, LH);
@@ -564,7 +582,7 @@ function dChoix() {
     medaillon(A.id, x - 72, y - 92, 144);
     if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 104, y - 114, 208, 308); }
     texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: 14 });
-    sprEcran(A.id, sel ? 1 + Math.floor(E.t * 9) % 4 : 0, x, y + 150, .8); X.restore();
+    adoDessin(A.id, sel ? "course" : "repos", E.t * 9, x, y + 186, 78); X.restore();
     if (ko) texte("ÉPUISÉ", x, y + 10, { a: "center", c: "#ff6a5a", t: 26 }); });
   const A = libres[E.i]; if (A) texte(A.desc, LW / 2, 480, { a: "center", t: 17 });
   texte("◀ ▶ pour choisir · A pour valider", LW / 2, 520, { a: "center", c: "#bbb", t: 15 });
@@ -631,7 +649,8 @@ function dJeu() {
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
     else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
-      spr(A.id, f, J.x, J.y + 4, J.dir < 0); } }
+      const pose = J.mal > 0 ? "mal" : J.echelle ? "echelle" : J.baisse ? "baisse" : (J.tirA > 0 || J.gant) ? "tir" : !J.sol ? "saut" : Math.abs(J.vx) > 30 ? "course" : "repos";
+      adoDessin(A.id, pose, pose === "repos" ? S.t * 3 : J.anim * 1.6, (J.x - cam.x) * cam.z, (J.y + 3 - cam.y) * cam.z, TAILLE_ADO * cam.z, J.dir < 0); } }
   if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
     X.strokeStyle = "#d8c050"; X.lineWidth = 3; X.beginPath(); const n = 10; for (let k = 0; k <= n; k++) { const xx = x0 + (x1 - x0) * k / n, yy = y + (k % 2 ? -7 : 7); k ? X.lineTo(xx, yy) : X.moveTo(xx, yy); } X.stroke();
     spr("gant", 0, J.x + G.dir * (26 + G.l), J.y - G.h + 14, G.dir < 0); }
