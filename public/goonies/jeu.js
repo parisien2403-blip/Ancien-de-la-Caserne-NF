@@ -266,7 +266,7 @@ const NIVEAUX = [
     pieces: [...ligne(110, 356, 6), ...arc(400, 520, 6), ...ligne(810, 575, 4), ...ligne(1310, 448, 3), ...ligne(120, 712, 5)], pizzas: [[300, 700]],
     ennemis: [{ t: "squelette", x: 520, y: 568, x0: 400, x1: 700 }, { t: "squelette", x: 1180, y: 568, x0: 1100, x1: 1290 }, { t: "chauve", x: 300, y: 200 }, { t: "chauve", x: 1250, y: 260 }, { t: "squelette", x: 250, y: 390, x0: 100, x1: 390 }],
     orgue: { x0: 700, x1: 1110, y: 568 } })] },
-  { nom: "LE BATEAU DE WILLY LE BORGNE", but: "Arrache le trésor aux Fratelli !", avant: "avant6", apres: "apres6", scenes: [() => ({
+  { nom: "LE BATEAU DE WILLY LE BORGNE", but: "Arrache le trésor aux Fratelli !", avant: "avant6", apres: "apres6", scenes: [() => V3 && V3.ok ? pont3d() : ({
     // sur le pont de l'Inferno (le navire 3D, vu de côté) : la dunette, le pont, le gaillard d'avant, le beaupré et les nids-de-pie ; Mama nous attend au milieu du pont
     img: "pont", vh: 470, depart: [260, 868], bornes: [140, 2480], fin: { type: "boss", x: 1500 },
     sol: [p(140, 712, 868, 878), p(706, 1516, 1000, 1000, 1), p(1516, 1792, 927), p(1792, 2120, 976, 928), p(1880, 2470, 952, 668),
@@ -402,6 +402,42 @@ function toboggan() {
   return { img: cle, par: "niv4a", vh: 470, depart: [120, 430], fin: { type: "x", x: x + 260 }, sol, ech: [], pieces, pizzas: [[x - 900, y - 700]], ennemis, vide: H - 10 };
 }
 
+// ------------------------------------------------------------------ le pont de l'Inferno en vraie 3D (le navire 3D affiché en direct derrière le jeu, vu de côté)
+// Le jeu reste en 2D : on joue sur le plan du milieu du navire. 1 unité 3D = 100 du monde ; x = (z + 10.4) × 100, y = (13 − y3D) × 100.
+let V3 = null;
+const N3 = { U: 100, Z0: -10.4, YM: 13, XP: .084, D: 14, LEVE: 2.6 };
+function prepare3D() { if (V3) return; V3 = { ok: false };
+  Promise.all([import("../vendor/three.module.js"), import("../vendor/GLTFLoader.js")]).then(([T, G]) => new G.GLTFLoader().loadAsync("img/navire3d.glb?v=" + VI).then(g => {
+    const R = new T.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "low-power" }); R.setClearColor(0, 0); R.outputColorSpace = T.SRGBColorSpace; R.setPixelRatio(1);
+    const sc = new T.Scene(); sc.add(g.scene); g.scene.traverse(m => { if (m.isMesh) m.frustumCulled = true; });
+    sc.add(new T.HemisphereLight(0xffe6c8, 0x1c2030, 1.5)); const d = new T.DirectionalLight(0xffc890, 2.2); d.position.set(-6, 14, -4); sc.add(d);
+    const f = new T.PointLight(0xff9a40, 30, 18, 2); f.position.set(-4, 6, -6); sc.add(f); const f2 = new T.PointLight(0xff9a40, 26, 16, 2); f2.position.set(-4, 5, 6); sc.add(f2);
+    const cam = new T.PerspectiveCamera(30, LW / LH, .1, 200);
+    Object.assign(V3, { ok: true, T, R, sc, cam }); })).catch(e => { V3.erreur = String(e); }); }
+function rendre3D() {   // la caméra suit celle du jeu : même cadrage sur le plan du milieu, mais avec la vraie perspective (le gréement, les bords du navire bougent en avançant)
+  const { R, sc, cam: c3 } = V3, q = .75, w = Math.round(LW * q), h = Math.round(LH * q); if (R.domElement.width !== w) R.setSize(w, h, false);
+  const vw = LW / cam.z, vh = LH / cam.z;
+  const zc = (cam.x + vw / 2) / N3.U + N3.Z0, yc = N3.YM - (cam.y + vh / 2) / N3.U, hw = vw / 2 / N3.U, hh = vh / 2 / N3.U, n = .1, k = n / N3.D;
+  c3.position.set(N3.XP - N3.D, yc + N3.LEVE, zc); c3.up.set(0, 1, 0); c3.lookAt(N3.XP, yc + N3.LEVE, zc); c3.updateMatrixWorld();
+  c3.projectionMatrix.makePerspective(-hw * k, hw * k, (hh - N3.LEVE) * k, (-hh - N3.LEVE) * k, n, 200); c3.projectionMatrixInverse.copy(c3.projectionMatrix).invert();
+  R.render(sc, c3); X.drawImage(R.domElement, 0, 0, LW, LH); }
+function pont3d() {
+  const L = 2450, H = 1400, EAU = 1340, cle = "pont3d";
+  if (!IMG[cle]) { const cv = document.createElement("canvas"); cv.width = L; cv.height = H; const c = cv.getContext("2d");   // (seulement l'eau, devant la coque)
+    const g = c.createLinearGradient(0, EAU - 10, 0, H); g.addColorStop(0, "rgba(40,110,140,.92)"); g.addColorStop(1, "#04121c"); c.fillStyle = g; c.fillRect(0, EAU - 10, L, H - EAU + 10);
+    c.fillStyle = "#cfefff"; for (let i = 0; i < L; i += 37) c.fillRect(i, EAU - 10 + (i % 5), 18, 3); IMG[cle] = cv; }
+  return { img: cle, par: "niv6a", vue3d: true, vh: 470, depart: [150, 885], bornes: [90, 2330], fin: { type: "boss", x: 1060 },
+    sol: [p(80, 262, 872, 912), p(262, 482, 990, 990), p(482, 1060, 1108, 1134, 1), p(1060, 1440, 1134, 1134, 1), p(1100, 1360, 1064, 1064), p(1440, 1650, 1000, 990),
+      p(1650, 1700, 990, 1066), p(1700, 2060, 1124, 1036, 1), p(2060, 2120, 1036, 960), p(2110, 2330, 952, 680),
+      p(365, 435, 232), p(868, 1052, 262), p(1580, 1732, 331)],
+    ech: [ech(380, 422, 232, 990), ech(924, 968, 262, 1130), ech(1668, 1712, 331, 994)],
+    pieces: [...ligne(120, 850, 3, 50), ...ligne(290, 955, 4, 46), ...ligne(890, 230, 4, 46), ...ligne(1600, 300, 3, 46), ...ligne(376, 200, 2, 30), ...ligne(1130, 1030, 5, 48),
+      ...ligne(2140, 920, 4, 50).map(([x, y], k) => [x, y - k * 60]), ...ligne(1470, 960, 4, 46), ...arc(1720, 1080, 6, 60, 60)],
+    pizzas: [[1200, 1020]],
+    ennemis: [{ t: "squelette", x: 400, y: 990, x0: 280, x1: 470 }, { t: "capitaine", x: 1560, y: 995, x0: 1450, x1: 1640 }, { t: "chauve", x: 950, y: 600 }, { t: "chauve", x: 1690, y: 650 }, { t: "squelette", x: 1250, y: 1134, x0: 1080, x1: 1420 }],
+    boss: { t: "mama", x: 860, y: 1122, pv: 24, x0: 520, x1: 1050, declenche: 600 }, vide: H + 40 };
+}
+
 // ------------------------------------------------------------------ l'état du jeu
 let etat = "charge", E = {};          // E : les données de l'état courant
 const cam = { x: 0, y: 0, z: 1 };
@@ -410,8 +446,9 @@ let J = null;                         // le joueur
 let S = null; if (DEBUG) window.__G = () => ({ S, J });                        // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
-function demarre() { allerTitre(); requestAnimationFrame(boucle);
+function demarre(encore) { if (!encore) { allerTitre(); requestAnimationFrame(boucle); }
   if (DEBUG && PARAM.get("h")) { partie = { ko: new Set(), sinok: true, ado: "mikey", niv: 0, scene: 0, score: 0, pieces: 0 }; histoire(PARAM.get("h"), () => allerTitre()); }
+  if (PARAM.has("direct") && PARAM.has("v3") && !(V3 && (V3.ok || V3.erreur))) { prepare3D(); setTimeout(() => demarre(true), 300); return; }
   if (PARAM.has("direct")) { jouerMus(NIVEAUX[+(PARAM.get("niv") || 1) - 1].musique || null); partie = { ko: new Set(), sinok: +(PARAM.get("niv") || 1) > 3 || PARAM.has("sinok"), ado: PARAM.get("ado") || "mikey", niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; chargerScene(); } }
 // la musique du début (écran titre, choix du Goonie, histoire d'ouverture) ; elle s'efface quand le premier niveau commence
 let MUS = null, musNom = null, musVoulue = false;
@@ -429,7 +466,8 @@ function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
 function nouvellePartie() { partie = { ko: new Set(), sinok: +(PARAM.get("niv") || 1) > 3, ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
 function allerChoix(suite, msg) { etat = "choix"; const libres = equipe().filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
 function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus, H[cle].musDebut || 0); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
-function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null, N.musDebut || 0); }
+function debutNiveau() { const N = NIVEAUX[partie.niv]; if (partie.niv >= 4) prepare3D();   // (le navire 3D se charge pendant l'orgue et le toboggan)
+  etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null, N.musDebut || 0); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
   S.ennemis = def.ennemis.filter(e => Math.hypot(e.x - def.depart[0], (e.y ?? e.y1 ?? 0) - def.depart[1]) > 280).map(e => nouvelEnnemi(e));   // (rien ne nous tombe dessus au départ)
@@ -718,7 +756,8 @@ function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
   texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 400, { a: "center", c: "#ff8a6a", t: 20 }); }
 function dJeu() {
   const im = IMG[S.img], vw = LW / cam.z, vh = LH / cam.z;
-  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" || S.par === "caveMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
+  if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" || S.par === "caveMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }
+  if (S.vue3d && V3 && V3.ok) rendre3D();   // (le navire en 3D, entre le fond de la grotte et l'eau)   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
   if (PARAM.has("plan")) { const k = Math.min(LW / S.w, LH / S.h); X.drawImage(im, 0, 0, S.w * k, S.h * k); X.lineWidth = 2;
     for (const pl of S.sol) { X.strokeStyle = pl.dur ? "#f0f" : "#0f0"; X.beginPath(); X.moveTo(pl.x0 * k, pl.y0 * k); X.lineTo(pl.x1 * k, pl.y1 * k); X.stroke(); }
     X.strokeStyle = "#0ff"; for (const e of S.ech || []) X.strokeRect(e.x0 * k, e.y0 * k, (e.x1 - e.x0) * k, (e.y1 - e.y0) * k);
