@@ -15,14 +15,17 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 19;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 20;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
-  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => { pret = true; demarre(); });
+  fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; })]).then(() => {
+  // les boss et Sloth : les dessins de face fournis (hauteur voulue dans le monde)
+  for (const [n, H] of [["mama", 150], ["jake", 175], ["francis", 165], ["sloth", 190]]) { const im = IMG["b_" + n]; if (im) META["boss_" + n] = { f: [[0, 0, im.width, im.height]], a: [im.width / 2, im.height * .985], img: "b_" + n, sc: H / im.height }; }
+  pret = true; demarre(); });
 
 // ------------------------------------------------------------------ les commandes : clavier, manette, tactile
 const T = {}, TP = {}, TOUCHES = { ArrowLeft: "gauche", KeyA: "gauche", KeyQ: "gauche", ArrowRight: "droite", KeyD: "droite", ArrowUp: "haut", KeyW: "haut", KeyZ: "haut", ArrowDown: "bas", KeyS: "bas",
@@ -111,7 +114,8 @@ const ADOS = [
   { id: "mikey", nom: "MIKEY", arme: "Lance-pierre", tirD: .3, desc: "Le chef de la bande. Son lance-pierre tire vite et loin." },
   { id: "choco", nom: "CHOCO", arme: "Barres chocolatées", tirD: .45, desc: "Lance ses barres en cloche. Lent, mais ça fait mal !" },
   { id: "data", nom: "DATA", arme: "Gant de boxe télescopique", tirD: .55, desc: "Le gant jaillit au bout d'un ressort et cogne tout sur son passage." },
-  { id: "bagou", nom: "BAGOU", arme: "Peignes", tirD: .24, desc: "Le plus bavard… et le plus rapide à lancer ses peignes." }];
+  { id: "bagou", nom: "BAGOU", arme: "Peignes", tirD: .24, desc: "Le plus bavard… et le plus rapide à lancer ses peignes." },
+  { id: "brand", nom: "BRAND", arme: "Haltères", tirD: .6, desc: "Le grand frère de Mikey. Ses haltères volent lourd et cognent fort !" }];
 const parId = id => ADOS.find(a => a.id === id);
 
 // ------------------------------------------------------------------ l'histoire (portraits : mikey, brand, bagou, choco, data, sloth, mama, jake, francis)
@@ -323,7 +327,7 @@ let etat = "charge", E = {};          // E : les données de l'état courant
 const cam = { x: 0, y: 0, z: 1 };
 let partie = null;                    // { ko: Set, ado, niv, scene, score, pieces }
 let J = null;                         // le joueur
-let S = null;                         // la scène en cours
+let S = null; if (DEBUG) window.__G = () => ({ S, J });                        // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre() { allerTitre(); requestAnimationFrame(boucle);
@@ -419,6 +423,7 @@ function tirer(A) {
   if (A.id === "mikey") S.tirs.push({ t: "caillou", x: xh, y: yh, vx: J.dir * 900 + J.vx * .3, vy: -40, g: 260, vie: 1.1, deg: 1, rot: 0 });
   if (A.id === "choco") S.tirs.push({ t: "barre", x: xh, y: yh, vx: J.dir * 600 + J.vx * .3, vy: J.baisse ? -140 : -420, g: 1400, vie: 1.6, deg: 2, rot: 0, vr: 14 * J.dir });
   if (A.id === "bagou") S.tirs.push({ t: "peigne", x: xh, y: yh, vx: J.dir * 760 + J.vx * .3, vy: 0, g: 0, vie: .9, deg: 1, rot: 0, vr: 9 * J.dir });
+  if (A.id === "brand") S.tirs.push({ t: "haltere", x: xh, y: yh, vx: J.dir * 520 + J.vx * .3, vy: J.baisse ? -120 : -360, g: 1300, vie: 1.6, deg: 3, rot: 0, vr: 8 * J.dir });
   if (A.id === "data") J.gant = { t: 0, l: 0, dir: J.dir, touches: new Set(), h: J.baisse ? 30 : 58 };
 }
 function blesse(n = 1, chute = false) {
@@ -486,7 +491,7 @@ function majTirs(dt) {
     const bt = [t.x - 12, t.y - 10, 24, 20];
     for (const e of S.ennemis) if (!e.mort && chevauche(bt, boiteE(e))) { touche(e, t.deg); t.vie = 0; break; }
     if (t.vie > 0 && S.boss && S.boss.actif && !S.boss.mort && chevauche(bt, [S.boss.x - 46, S.boss.y - 150, 92, 150])) { toucheBoss(t.deg); t.vie = 0; }
-    if (t.t === "barre" && t.vy > 0) { const s = sousPieds(t.x, t.y - t.vy * dt, t.y); if (s) t.vie = 0; } }
+    if ((t.t === "barre" || t.t === "haltere") && t.vy > 0) { const s = sousPieds(t.x, t.y - t.vy * dt, t.y); if (s) t.vie = 0; } }
   S.tirs = S.tirs.filter(t => t.vie > 0);
   if (J.gant) { const G = J.gant, y = J.y - G.h, x0 = J.x + G.dir * 20, x1 = x0 + G.dir * G.l, bg = [Math.min(x0, x1), y - 16, Math.abs(x1 - x0) + 20, 32];
     for (const e of S.ennemis) if (!e.mort && !G.touches.has(e) && chevauche(bg, boiteE(e))) { G.touches.add(e); touche(e, 2); }
@@ -575,22 +580,22 @@ function dessine() {
 }
 function dTitre() {
   fond("niv6b", .55); X.fillStyle = "rgba(0,0,0,.35)"; X.fillRect(0, 0, LW, LH);
-  const lg = IMG.logo, s = Math.min(1.35, 640 / lg.width), bob = Math.sin(E.t * 2) * 6; texte("LES", LW / 2 - lg.width * s / 2 + 30, 110 + bob, { c: "#ffd34a", t: 34, bord: "#5a1a0a", ep: 6 });
+  const lg = IMG.logo, s = Math.min(1.35, 640 / lg.width), bob = Math.sin(E.t * 2) * 6;
   X.drawImage(lg, LW / 2 - lg.width * s / 2, 100 + bob, lg.width * s, lg.height * s);
   texte("LA CHASSE AU TRÉSOR DE WILLY LE BORGNE", LW / 2, 380, { a: "center", c: "#fff", t: 22 });
   if (Math.floor(E.t * 1.6) % 2 === 0) texte("APPUIE SUR START", LW / 2, 440, { a: "center", c: "#ffd34a", t: 30, bord: "#3a0a00", ep: 6 });
   texte(`RECORD ${String(RECORD()).padStart(7, "0")}`, LW / 2, 500, { a: "center", c: "#9fe0ff", t: 18 });
-  [["mikey", 90], ["choco", 190], ["data", 770], ["bagou", 870]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, .7, x > LW / 2));
+  [["mikey", 60], ["brand", 132], ["data", 800], ["bagou", 860], ["choco", 922]].forEach(([n, x], k) => sprEcran(n, 1 + Math.floor(E.t * 8 + k) % 4, x, 290 + Math.sin(E.t * 3 + k) * 3, .7, x > LW / 2));
 }
 function dChoix() {
   fond("niv1", .35); X.fillStyle = "rgba(0,0,0,.45)"; X.fillRect(0, 0, LW, LH);
   texte(E.msg || "CHOISIS TON GOONIE", LW / 2, 62, { a: "center", c: "#ffd34a", t: 34, bord: "#3a0a00", ep: 6 });
   const libres = ADOS.filter(a => !partie.ko.has(a.id));
-  ADOS.forEach((A, k) => { const x = 120 + k * 240, y = 210, ko = partie.ko.has(A.id), sel = !ko && libres[E.i] === A;
-    X.save(); if (ko) X.globalAlpha = .3; boite(x - 100, y - 110, 200, 300, .85);
-    medaillon(A.id, x - 72, y - 92, 144);
-    if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 104, y - 114, 208, 308); }
-    texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: 14 });
+  ADOS.forEach((A, k) => { const x = 96 + k * 192, y = 210, ko = partie.ko.has(A.id), sel = !ko && libres[E.i] === A;
+    X.save(); if (ko) X.globalAlpha = .3; boite(x - 88, y - 110, 176, 300, .85);
+    medaillon(A.id, x - 66, y - 92, 132);
+    if (sel) { X.strokeStyle = "#fff"; X.lineWidth = 4; X.strokeRect(x - 92, y - 114, 184, 308); }
+    texte(A.nom, x, y + 80, { a: "center", c: sel ? "#ffd34a" : "#fff", t: 26 }); texte(A.arme, x, y + 108, { a: "center", c: "#9fe0ff", t: A.arme.length > 18 ? 11 : 14 });
     sprEcran(A.id, sel ? 1 + Math.floor(E.t * 9) % 4 : 0, x, y + 150, .5); X.restore();
     if (ko) texte("ÉPUISÉ", x, y + 10, { a: "center", c: "#ff6a5a", t: 26 }); });
   const A = libres[E.i]; if (A) texte(A.desc, LW / 2, 480, { a: "center", t: 17 });
@@ -656,7 +661,7 @@ function dJeu() {
     }
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
-  if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
+  if (!cl) { if (J.velo) spr(META["velo_" + A.id] ? "velo_" + A.id : "velo_mikey", Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
     else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
       spr(A.id, f, J.x, J.y + 4, J.dir < 0, 1.12); } }
   if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
@@ -673,8 +678,8 @@ function hud() {
   X.save(); X.globalAlpha = .72; X.fillStyle = "#000"; X.fillRect(0, 0, LW, 54); X.globalAlpha = 1; X.fillStyle = "#6a4a14"; X.fillRect(0, 54, LW, 2);
   ADOS.forEach((A, k) => { const x = 10 + k * 52, on = A.id === partie.ado, ko = partie.ko.has(A.id); X.globalAlpha = ko ? .3 : 1; X.fillStyle = on ? "#ffd040" : "#3a2a1a"; X.fillRect(x - 2, 4, 48, 48);
     medaillon(A.id, x, 6, 44); X.globalAlpha = 1; if (ko) texte("✕", x + 22, 38, { a: "center", c: "#ff4a3a", t: 26 }); });
-  for (let k = 0; k < 3; k++) { const m = META.coeur.f[0]; X.globalAlpha = k < J.pv ? 1 : .2; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 226 + k * 34, 14, 28, 25); } X.globalAlpha = 1;
-  texte(parId(partie.ado).nom, 336, 35, { c: "#ffd34a", t: 20 });
+  for (let k = 0; k < 3; k++) { const m = META.coeur.f[0]; X.globalAlpha = k < J.pv ? 1 : .2; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 276 + k * 34, 14, 28, 25); } X.globalAlpha = 1;
+  texte(parId(partie.ado).nom, 386, 35, { c: "#ffd34a", t: 20 });
   const m = META.doublon.f[0]; X.drawImage(IMG.sprites, m[0], m[1], m[2], m[3], 600, 12, 30, 30); texte(`× ${partie.pieces}`, 636, 36, { t: 20 });
   texte(String(partie.score).padStart(7, "0"), 870, 36, { a: "right", c: "#ffd34a", t: 24 });
   if (!(S.boss && S.boss.actif && !S.boss.mort) && !S.puz) texte(`${partie.niv + 1}·${S.N.nom}`, 480, 74, { a: "center", c: "#fff", t: 13, ep: 3 });
