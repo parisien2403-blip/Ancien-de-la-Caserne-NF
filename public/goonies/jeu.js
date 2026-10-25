@@ -15,7 +15,7 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 11;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 12;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", ecran: "borne-ecran.jpg" };
@@ -626,8 +626,7 @@ function dJeu() {
     if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, B.dir > 0, 1, al); }
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
   if (S.voit && S.voit.actif) { const vx = S.voit.x, vy = S.sol[0].y0 + 14; spr("voiture", Math.floor(S.t * 10), vx, vy);
-    for (const [qui, dx] of [["francis", -69], ["jake", 15], ["mama", 69]]) { const ph = IMG["photo_" + qui]; if (!ph) continue;   // (les visages des Fratelli aux fenêtres)
-      const cx = (vx + dx - cam.x) * cam.z, cy = (vy - 117 - cam.y) * cam.z, r = 19 * cam.z; X.save(); X.beginPath(); X.arc(cx, cy, r, 0, 7); X.clip(); X.drawImage(ph, cx - r, cy - r, r * 2, r * 2); X.restore(); } }
+    }
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
