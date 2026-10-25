@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 35;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 36;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", passage: "scene-passage.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -196,8 +196,11 @@ const H = {
     ["data", "Un orgue… en os !"],
     ["mikey", "La carte dit : « Joue la bonne mélodie, sinon le sol s'effondre. »"],
     ["choco", "Euh… quelqu'un a pris des cours de piano ?"]] },
-  apres5: { fond: "niv5", l: [
-    ["mikey", "Le passage s'ouvre ! J'entends la mer…"]] },
+  apres5: { fond: "passage", mus: "niv1", l: [
+    ["mikey", "Le passage s'ouvre ! J'entends la mer…", "passage"],
+    ["data", "Attention, le tronc est glissant ! Ne regardez pas en bas !", "passage"],
+    ["choco", "Pourquoi tu dis ça ?! Maintenant je regarde en bas !", "passage"],
+    ["bagou", "Il y a une sorte de toboggan d'eau, là-dessous… Ça descend loin.", "passage"]] },
   inferno: { fond: "inferno", l: [
     [null, "Le toboggan les recrache dans un immense lac souterrain…", "inferno"],
     ["choco", "Les gars… Regardez !", "inferno"],
@@ -380,7 +383,7 @@ function salle(o) {
   N[3].scenes.unshift(S_("niv4a", 5, ["chauve", "rat", "araignee", "capitaine"], 3800));
   N[3].scenes.splice(2, 0, S_("niv4a", 13, ["rat", "chauve", "araignee", "capitaine", "squelette"], 3200));
   N[4].scenes.unshift(S_("niv5", 2, ["squelette", "chauve", "squelette"], 3600));
-  N.splice(5, 0, { nom: "LE TOBOGGAN", musique: "orgue", but: "Glisse jusqu'au lac souterrain !", apres: "inferno", glisse: true, scenes: [() => toboggan()] });   // (entre l'orgue et le bateau)
+  N.splice(5, 0, { nom: "LE TOBOGGAN", musique: "niv1", but: "Glisse jusqu'au lac souterrain !", apres: "inferno", glisse: true, scenes: [() => toboggan()] });   // (entre l'orgue et le bateau)
   N[6].scenes.unshift(S_("niv6a", 4, ["squelette", "capitaine", "squelette", "capitaine"], 3600)); }
 
 // ------------------------------------------------------------------ le toboggan : des pentes d'eau dans les grottes, jusqu'au lac de l'Inferno
