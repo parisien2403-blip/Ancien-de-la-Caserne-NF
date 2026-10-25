@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.81";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.82";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6234,12 +6234,16 @@ function construireAppart(A, L, scene) {
     const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
     video.onended = () => zapper(1); video.addEventListener("emptied", () => { vu = false; });
     /* si la vidéo cale (réseau, morceau qui tarde), on la relance d'elle-même là où elle en était ; si elle est illisible, on passe à la chaîne suivante */
-    let cale = 0, relances = 0;
+    let cale = 0, relances = 0, tVu = 0, tPos = -1, signale = false, coupee = false;
     for (const ev of ["waiting", "stalled"]) video.addEventListener(ev, () => { if (!cale) cale = performance.now(); });
     for (const ev of ["playing", "timeupdate"]) video.addEventListener(ev, () => { if (video.readyState >= 3) { cale = 0; if (ev === "playing") relances = 0; } });
-    video.addEventListener("error", () => { if (allumee && liste && liste.length > 1) setTimeout(() => { if (allumee) zapper(1); }, 2500); });
-    const surveiller = () => { if (!allumee || !cale) return; if (performance.now() - cale > 6000 && liste && liste[ch] && relances < 5) {
-      relances++; cale = performance.now(); const t0 = video.currentTime; video.src = src(liste[ch]) + "&r=" + relances; video.addEventListener("loadedmetadata", () => { try { video.currentTime = t0; } catch (e) {} }, { once: true }); jouer(); } };   // (une autre vidéo : la neige, le temps qu'elle arrive)
+    video.addEventListener("error", () => { rapport("erreur " + (video.error && video.error.code)); if (allumee && liste && liste.length > 1) setTimeout(() => { if (allumee) zapper(1); }, 2500); });
+    /* un rapport automatique (une fois par visite) quand la télé cale ou ne lit pas : l'administrateur le retrouve dans les signalements, avec ce qu'il faut pour comprendre */
+    const rapport = (quoi) => { if (signale || !M || !M.ctx || !M.ctx.token) return; signale = true; try { const b = video.buffered, tampon = b.length ? b.end(b.length - 1) - video.currentTime : 0, v = liste && liste[ch];
+      fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: `[automatique] Télé de l'appartement : ${quoi} — « ${v ? v.titre : "?"} » (${v ? Math.round(v.taille / 1e6) + " Mo, " + v.type : "?"}) à ${video.currentTime.toFixed(1)} s, tampon ${tampon.toFixed(1)} s, état ${video.readyState}/${video.networkState}, ${video.videoWidth}×${video.videoHeight}, réseau ${(navigator.connection && navigator.connection.effectiveType) || "?"}`, appareil: navigator.userAgent.slice(0, 280) }) }).catch(() => {}); } catch (e) {} };
+    const surveiller = () => { if (!allumee || coupee || video.paused) { tVu = 0; return; } const now = performance.now();   /* (l'image n'avance plus depuis 8 s : on relance là où elle en était) */
+      if (video.currentTime !== tPos) { tPos = video.currentTime; tVu = now; return; } if (!tVu) { tVu = now; return; }
+      if (now - tVu > 8000 && liste && liste[ch] && relances < 4) { rapport("bloquée " + Math.round((now - tVu) / 1000) + " s"); relances++; tVu = now; const t0 = video.currentTime; video.src = src(liste[ch]) + "&r=" + relances; video.addEventListener("loadedmetadata", () => { try { video.currentTime = t0; } catch (e) {} }, { once: true }); jouer(); } };
     const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
     let vitreTxt = null; const finition = () => { const txt = allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
       vx.clearRect(0, 0, 320, 240); vx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) vx.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
@@ -6252,6 +6256,7 @@ function construireAppart(A, L, scene) {
     const animTV = (t) => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position, tc = L.teleCopie, dans = (p.x > XS - 1 && p.x < -XC && p.z > ZC[6] && p.z < ZC[7]) || !!(tc && tc.visible && Math.hypot(p.x - tc.position.x, p.z - tc.position.z) < 3.5);   /* (ou près de sa copie) */
       /* elle reste allumée tant qu'on est dans l'appartement : les chaînes s'enchaînent en boucle ; le son s'éloigne avec nous :
          dans le salon, plein son ; dans le couloir, on l'entend encore un peu ; dans les chambres, la salle de bain, la cuisine, plus rien */
+      if (coupee) return;   // (éteinte à la télécommande)
       if (!allumee) { allumee = true; voyant.visible = true; if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); }
       if (t - dernier < 40) return; dernier = t; surveiller();
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z), couloir = Math.abs(p.x) < XC + .3, salon = p.x < -XC + .2 && p.z > ZC[6] - .3;
@@ -6270,7 +6275,8 @@ function construireAppart(A, L, scene) {
     const telecommande = () => { if (!panneau) { panneau = document.createElement("div"); panneau.style.cssText = "position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:8000;background:rgba(20,22,26,.92);color:#fff;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;align-items:center;font:14px system-ui;box-shadow:0 6px 24px rgba(0,0,0,.5);max-width:calc(100vw - 24px)";
         const tt = document.createElement("div"); tt.className = "tt"; tt.style.cssText = "max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"; const l = document.createElement("div"); l.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
         const bs = bouton("🔊", () => { son = !son; video.muted = !son; majPanneau(); }, "Le son"); bs.className = "son";
-        l.append(bouton("◀ CH−", () => zapper(-1)), bouton("CH+ ▶", () => zapper(1)), bs);
+        const bm = bouton("⏻", () => { coupee = !coupee; if (coupee) { allumee = false; voyant.visible = false; video.pause(); eteindre(); lueur.intensity = 0; } bm.style.background = coupee ? "#7a2020" : "#2a2c30"; }, "Allumer / éteindre la télé");
+        l.append(bm, bouton("◀ CH−", () => zapper(-1)), bouton("CH+ ▶", () => zapper(1)), bs);
         if (M.ctx.moiInfo && M.ctx.moiInfo().admin) l.append(bouton("📼 Bibliothèque", bibliotheque));
         l.append(bouton("✕", () => { panneau.style.display = "none"; })); panneau.append(tt, l); document.body.appendChild(panneau); }
       hoteFS().appendChild(panneau); panneau.style.display = "flex"; if (!liste) charger().then(majPanneau); majPanneau(); };
