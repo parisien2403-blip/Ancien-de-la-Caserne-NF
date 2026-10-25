@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 36;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 37;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", passage: "scene-passage.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", finCalin: "fin-calin.png", finRocher: "fin-rocher.png", finBateau: "fin-bateau.png", finRubis: "fin-rubis.png", passage: "scene-passage.png", chester: "scene-chester.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
@@ -218,13 +218,20 @@ const H = {
   apres6: { fond: "niv6a", l: [
     ["sloth", "Mama méchante ! Sinok aime Choco !"],
     ["mikey", "Le bateau bouge… La grotte s'effondre ! Tous dehors !"]] },
-  fin: { fond: "niv6b", l: [
-    [null, "Les Goonies s'échappent par la grotte. L'Inferno prend la mer, toutes voiles dehors…"],
-    ["mikey", "Le bateau s'en va… avec le trésor."],
-    ["choco", "Pas tout ! Mikey, regarde dans ton sac !"],
-    ["mikey", "Les billes de Willy… des pierres précieuses ! On a de quoi sauver les Goon Docks !"],
-    ["data", "Les Goonies…"],
-    ["bagou", "… ne disent jamais mourir !"]] } };
+  fin: { fond: "niv6b", mus: "titre", l: [
+    [null, "Les Goonies s'échappent de la grotte et débouchent sur la plage, trempés… mais vivants !", "finRocher"],
+    ["mikey", "On a réussi ! On est dehors ! Tout le monde est là ?", "finRocher"],
+    ["sloth", "Choco ! Ami !", "finCalin"],
+    ["choco", "Toi aussi, t'es mon ami, Sinok. T'es le meilleur !", "finCalin"],
+    [null, "Au large, l'Inferno de Willy le Borgne prend la mer, toutes voiles dehors…", "finBateau"],
+    ["data", "Le bateau s'en va… avec tout le trésor.", "finBateau"],
+    ["bagou", "Tout ça pour rien. Demain, ils rasent les Goon Docks…", "finBateau"],
+    ["mikey", "Attendez… Regardez ce que j'ai dans ma poche !", "finRubis"],
+    ["mikey", "Des rubis ! Les rubis du trésor de Willy ! J'en ai rempli mes poches !", "finRubis"],
+    ["brand", "Il y en a pour une fortune… Assez pour racheter toutes les maisons !", "finRubis"],
+    ["mikey", "On reste ! Les Goon Docks sont sauvés ! Les Goonies sont sauvés !", "finRocher"],
+    ["data", "Les Goonies…", "finRocher"],
+    ["bagou", "… ne disent jamais mourir !", "finRocher"]]} };
 
 // ------------------------------------------------------------------ les niveaux
 // p(x0, x1, y0, y1 = y0, dur) : une plateforme (on la traverse par dessous ; « dur » : le sol, on ne la traverse pas en descendant)
@@ -427,7 +434,7 @@ let etat = "charge", E = {};          // E : les données de l'état courant
 const cam = { x: 0, y: 0, z: 1 };
 let partie = null;                    // { ko: Set, ado, niv, scene, score, pieces }
 let J = null;                         // le joueur
-let S = null; if (DEBUG) window.__G = () => ({ S, J, finScene, partie });                        // la scène en cours
+let S = null; if (DEBUG) window.__G = () => ({ S, J, finScene, partie, aFin: () => { etat = "fin"; E = { t: 0 }; }, E: () => E });                        // la scène en cours
 const RECORD = () => +(localStorage.getItem("gooniesRecord") || 0);
 
 function demarre(encore) { if (!encore) { allerTitre(); requestAnimationFrame(boucle); }
@@ -658,7 +665,7 @@ function maj(dt) {
   if (etat === "fondu") { E.t += dt; if (E.t > .5 && !E.fait) { E.fait = 1; E.suite(); } return; }
   if (etat === "ko") { E.t += dt; if (E.t > 2.2) { if (partie.ko.size >= equipe().length) { etat = "gameover"; E = { t: 0, n: 9 }; enregistreRecord(); } else allerChoix(() => { chargerScene(); }, "Qui prend la relève ?"); } return; }
   if (etat === "gameover") { E.t += dt; E.n = Math.max(0, 9 - Math.floor(E.t)); if (IN.ok && E.t > .6) { partie.ko.clear(); partie.score = Math.floor(partie.score / 2); allerChoix(() => chargerScene(), "On continue !"); } else if (E.t > 10) allerTitre(); return; }
-  if (etat === "fin") { E.t += dt; if (IN.ok && E.t > 2) allerTitre(); return; }
+  if (etat === "fin") { E.t += dt; if (IN.ok && E.t > 2) { if (E.t < GEN.fin) E.t = GEN.fin; else if (E.t > GEN.fin + 2) allerTitre(); } return; }   // (A : on passe le générique, puis on revient au titre)
   if (etat === "pause") { if (IN.startP) etat = "jeu"; if (IN.retourP) quitter(); return; }
   if (etat !== "jeu") return;
   if (IN.startP) { etat = "pause"; return; }
@@ -734,10 +741,28 @@ function dTitreNiv() { const N = E.N;
   const im = IMG[{ 0: "niv1", 1: "ville", 2: "niv3", 3: "niv4a", 4: "niv5", 5: "niv4a", 6: "niv6a" }[partie.niv]]; if (im) { const s = Math.max(LW / im.width, LH / im.height); X.globalAlpha = .5; X.drawImage(im, 0, 0, im.width * s, im.height * s); X.globalAlpha = 1; }
   boite(140, 170, LW - 280, 200, .85); texte(`NIVEAU ${partie.niv + 1}`, LW / 2, 230, { a: "center", c: "#ffd34a", t: 40, bord: "#3a0a00", ep: 6 });
   texte(N.nom, LW / 2, 285, { a: "center", t: 30 }); texte(N.but, LW / 2, 335, { a: "center", c: "#9fe0ff", t: 19 }); }
-function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
-  texte("FIN", LW / 2, 200, { a: "center", c: "#ffd34a", t: 60, bord: "#3a0a00", ep: 8 }); texte("LES GOON DOCKS SONT SAUVÉS !", LW / 2, 260, { a: "center", t: 26 });
-  texte(`SCORE  ${String(partie.score).padStart(7, "0")}`, LW / 2, 320, { a: "center", c: "#9fe0ff", t: 26 }); texte(`DOUBLONS  ${partie.pieces}`, LW / 2, 360, { a: "center", c: "#ffd34a", t: 22 });
-  texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 400, { a: "center", c: "#ff8a6a", t: 20 }); }
+// le générique de fin : le titre, puis chaque Goonie (et les Fratelli) défile avec son nom, en marchant ; puis « FIN »
+const GEN = { roles: [["mikey", "MIKEY", "Le chef de la bande"], ["brand", "BRAND", "Le grand frère"], ["choco", "CHOCO", "L'estomac des Goonies"], ["data", "DATA", "L'inventeur"], ["bagou", "BAGOU", "La grande gueule"],
+  ["sloth", "SINOK", "Le gentil géant"], ["boss_mama", "MAMA FRATELLI", "La terreur d'Astoria"], ["boss_jake", "JAKE FRATELLI", "Le chanteur évadé"], ["boss_francis", "FRANCIS FRATELLI", "Le fils obéissant"]], pas: 150, vit: 55 };
+GEN.fin = (420 + GEN.roles.length * GEN.pas + 300) / GEN.vit;
+function dFin() {
+  fond("niv6b", .45); X.fillStyle = "rgba(0,0,0,.55)"; X.fillRect(0, 0, LW, LH);
+  if (E.t < GEN.fin) { const y0 = LH + 40 - E.t * GEN.vit, lg = IMG.logo;   // (tout monte doucement)
+    if (lg) { const s2 = Math.min(1, 560 / lg.width); X.drawImage(lg, LW / 2 - lg.width * s2 / 2, y0, lg.width * s2, lg.height * s2); }
+    texte("LA CHASSE AU TRÉSOR DE WILLY LE BORGNE", LW / 2, y0 + 270, { a: "center", c: "#fff", t: 20 });
+    texte("AVEC", LW / 2, y0 + 370, { a: "center", c: "#9fe0ff", t: 22 });
+    GEN.roles.forEach(([id, nom, role], k) => { const y = y0 + 440 + k * GEN.pas; if (y < -120 || y > LH + 120) return; const marche = Math.floor(E.t * 8 + k) % 4, x = 300 + Math.sin(E.t * 1.3 + k) * 26;
+      if (id.startsWith("boss_")) { const m = META[id]; if (m) { const fr = m.f[0], im = IMG[m.img], h = 120, w = fr[2] * h / fr[3]; X.save(); X.translate(x, y + 60 + Math.abs(Math.sin(E.t * 6 + k)) * -3); if (Math.cos(E.t * 1.3 + k) < 0) X.scale(-1, 1); X.drawImage(im, fr[0], fr[1], fr[2], fr[3], -w / 2, -h, w, h); X.restore(); } }
+      else sprEcran(id, 1 + marche, x, y, .8, Math.cos(E.t * 1.3 + k) < 0);
+      texte(nom, 400, y + 4, { c: "#ffd34a", t: 30, bord: "#3a0a00", ep: 6 }); texte(role, 402, y + 38, { c: "#fff", t: 18 }); });
+    const yd = y0 + 440 + GEN.roles.length * GEN.pas + 40; texte("UNE BORNE DE LA CASERNE DE LA NOUVELLE FRANCE", LW / 2, yd, { a: "center", c: "#9fe0ff", t: 18 });
+    texte("A : passer", LW - 20, LH - 16, { a: "right", c: "#888", t: 14 }); return; }
+  const k = Math.min(1, (E.t - GEN.fin) / 1.2); X.globalAlpha = k; const lg = IMG.logo;
+  texte("FIN", LW / 2, 120, { a: "center", c: "#ffd34a", t: 64, bord: "#3a0a00", ep: 8 });
+  if (lg) { const s2 = Math.min(.9, 520 / lg.width); X.drawImage(lg, LW / 2 - lg.width * s2 / 2, 150, lg.width * s2, lg.height * s2); }
+  texte("LES GOONIES NE DISENT JAMAIS MOURIR !", LW / 2, 400, { a: "center", t: 22 });
+  texte(`SCORE  ${String(partie.score).padStart(7, "0")}   ·   DOUBLONS  ${partie.pieces}`, LW / 2, 445, { a: "center", c: "#9fe0ff", t: 20 });
+  texte(partie.score >= RECORD() ? "NOUVEAU RECORD !" : `RECORD ${RECORD()}`, LW / 2, 480, { a: "center", c: "#ff8a6a", t: 18 }); X.globalAlpha = 1; }
 function dJeu() {
   const im = IMG[S.img], vw = LW / cam.z, vh = LH / cam.z;
   if (S.par) { const pi = IMG[S.par], f = Math.max(0, (pi.width - vw) / Math.max(1, S.w - vw)); X.drawImage(pi, cam.x * f, Math.min(pi.height - vh, cam.y), vw, vh, 0, 0, LW, LH); X.fillStyle = S.par === "grenierMur" || S.par === "caveMur" ? "rgba(4,2,8,.12)" : "rgba(4,2,8,.62)"; X.fillRect(0, 0, LW, LH); }   // (le grenier : un vrai mur dessiné, pas la photo assombrie)
