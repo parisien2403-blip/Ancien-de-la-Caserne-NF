@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.78";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.79";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6232,7 +6232,14 @@ function construireAppart(A, L, scene) {
     const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
     const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; vu = false; video.src = src(liste[ch]); video.currentTime = 0; jouer(); osd = performance.now(); majPanneau(); };
     const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
-    video.onended = () => zapper(1); video.addEventListener("emptied", () => { vu = false; });   // (une autre vidéo : la neige, le temps qu'elle arrive)
+    video.onended = () => zapper(1); video.addEventListener("emptied", () => { vu = false; });
+    /* si la vidéo cale (réseau, morceau qui tarde), on la relance d'elle-même là où elle en était ; si elle est illisible, on passe à la chaîne suivante */
+    let cale = 0, relances = 0;
+    for (const ev of ["waiting", "stalled"]) video.addEventListener(ev, () => { if (!cale) cale = performance.now(); });
+    for (const ev of ["playing", "timeupdate"]) video.addEventListener(ev, () => { if (video.readyState >= 3) { cale = 0; if (ev === "playing") relances = 0; } });
+    video.addEventListener("error", () => { if (allumee && liste && liste.length > 1) setTimeout(() => { if (allumee) zapper(1); }, 2500); });
+    const surveiller = () => { if (!allumee || !cale) return; if (performance.now() - cale > 6000 && liste && liste[ch] && relances < 5) {
+      relances++; cale = performance.now(); const t0 = video.currentTime; video.src = src(liste[ch]) + "&r=" + relances; video.addEventListener("loadedmetadata", () => { try { video.currentTime = t0; } catch (e) {} }, { once: true }); jouer(); } };   // (une autre vidéo : la neige, le temps qu'elle arrive)
     const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
     let vitreTxt = null; const finition = () => { const txt = allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
       vx.clearRect(0, 0, 320, 240); vx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) vx.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
@@ -6247,7 +6254,7 @@ function construireAppart(A, L, scene) {
       if (dans !== allumee && (dans || t - horsT > 2000)) { allumee = dans; voyant.visible = dans;
         if (dans) { if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); osd = performance.now(); }
         else { video.pause(); eteindre(); lueur.intensity = 0; } }
-      if (!allumee || t - dernier < 40) return; dernier = t;
+      if (!allumee || t - dernier < 40) return; dernier = t; surveiller();
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z); video.volume = Math.max(.08, Math.min(1, 1.3 - dist / 6));
       if (liste && liste.length && (video.readyState >= 2 || (vu && !video.error))) { vu = true; if (video.readyState >= 2 && (video.currentTime !== petitC.t || !petitC.t)) { petitC.t = video.currentTime; try { petitX.drawImage(video, 0, 0, 480, 360); videoT.needsUpdate = true; } catch (e) {} } if (ecran.material.map !== videoT) { ecran.material.map = videoT; ecran.material.needsUpdate = true; } lueur.intensity = .5; }   // (le temps qu'elle charge la suite : la dernière image reste, pas de neige)
       else if (!vu) { ecran.material.map = ecranT; neige(); ecranT.needsUpdate = true; lueur.intensity = .25; }   /* (rien à montrer encore : la neige — la ligne était restée dans le commentaire, l'écran restait figé) */

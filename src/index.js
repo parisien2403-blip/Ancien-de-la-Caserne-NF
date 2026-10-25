@@ -884,6 +884,10 @@ export class Compteur extends DurableObject {
     if (!m) throw new Refus("Morceau manquant", 404);
     return m.data;
   }
+  // la copie d'une vidéo dans son propre « coffre » (un Durable Object par vidéo) : la lecture ne passe plus par le registre, qui sert toute la Matrice
+  teleLire(id, n) { const m = this.sql.exec("SELECT data FROM tele_morceaux WHERE v = ? AND n = ?", Number(id), Number(n)).toArray()[0]; return m ? m.data : null; }
+  teleEcrire(id, n, data) { this.sql.exec("INSERT OR REPLACE INTO tele_morceaux (v, n, data) VALUES (?, ?, ?)", Number(id), Number(n), data); return true; }
+  teleVider(id) { this.sql.exec("DELETE FROM tele_morceaux WHERE v = ?", Number(id)); return true; }
   async retirerTele(token, id) {
     if (!(await this.estAdmin(token))) throw new Refus("Réservé à l'administrateur", 403);
     this.sql.exec("DELETE FROM tele_morceaux WHERE v = ?", Number(id));
@@ -1391,9 +1395,13 @@ export default {
       ctx.waitUntil((async () => {
         const w = writable.getWriter();
         try {
-          let suivant = registre.morceauDeTele(t, id, Math.floor(debut / MORCEAU));   // (le morceau suivant se lit pendant qu'on envoie celui-ci : la vidéo ne cale plus)
-          for (let n = Math.floor(debut / MORCEAU); n * MORCEAU <= fin; n++) {
-            const b = new Uint8Array(await suivant), d0 = n * MORCEAU; if ((n + 1) * MORCEAU <= fin) { suivant = registre.morceauDeTele(t, id, n + 1); suivant.catch(() => {}); }
+          // chaque vidéo a son coffre à elle : on y lit ; ce qui manque encore est pris au registre une fois, puis rangé dans le coffre
+          const coffre = env.COMPTEUR.get(env.COMPTEUR.idFromName("tele-" + id));
+          const lire = async n => { let d = null; try { d = await coffre.teleLire(id, n); } catch (e) {} if (d) return d; d = await registre.morceauDeTele(t, id, n); coffre.teleEcrire(id, n, d).catch(() => {}); return d; };
+          const n0 = Math.floor(debut / MORCEAU), nMax = Math.floor(fin / MORCEAU), file = new Map(), avance = n => { if (n <= nMax && !file.has(n)) { const p = lire(n); p.catch(() => {}); file.set(n, p); } };
+          for (let k = 0; k < 3; k++) avance(n0 + k);   // (trois morceaux d'avance : la vidéo ne cale plus)
+          for (let n = n0; n <= nMax; n++) {
+            const b = new Uint8Array(await file.get(n)), d0 = n * MORCEAU; file.delete(n); avance(n + 3);
             await w.write(b.subarray(Math.max(0, debut - d0), Math.min(b.byteLength, fin - d0 + 1)));
           }
           await w.close();
@@ -1437,7 +1445,7 @@ export default {
       else if (route === "GET /api/appart") r = await registre.appart(token);
       else if (route === "POST /api/appart") r = await registre.majAppart(token, await corps());
       else if (route === "POST /api/tele") r = await registre.nouvelleTele(token, await corps());
-      else if (request.method === "DELETE" && /^\/api\/tele\/\d+$/.test(url.pathname)) r = await registre.retirerTele(token, url.pathname.split("/")[3]);
+      else if (request.method === "DELETE" && /^\/api\/tele\/\d+$/.test(url.pathname)) { const idv = url.pathname.split("/")[3]; r = await registre.retirerTele(token, idv); await env.COMPTEUR.get(env.COMPTEUR.idFromName("tele-" + idv)).teleVider(idv).catch(() => {}); }
       else if (route === "POST /api/musiques") r = await registre.nouvelleMusique(token, await corps());
       else if (request.method === "DELETE" && /^\/api\/musiques\/\d+$/.test(url.pathname)) r = await registre.retirerMusique(token, url.pathname.split("/")[3]);
       else if (route === "POST /api/jeux") r = await registre.nouveauJeu(token, await corps());
