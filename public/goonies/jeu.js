@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 10;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 11;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
@@ -106,10 +106,10 @@ const H = {
     ["mikey", "Mais les soldats ont fait sauter l'entrée. Willy et son équipage sont restés enfermés dedans… pour toujours.", "carte"],
     ["choco", "Pour toujours ? Genre… ils sont encore là-dessous ?!", "carte"],
     ["mikey", "Avant de mourir, Willy a semé des pièges partout pour protéger son trésor. Personne ne l'a jamais retrouvé.", "carte"],
-    ["mikey", "Et cette carte montre le chemin. Si on trouve le trésor, nos familles pourront garder leurs maisons !", "carte"],
-    ["brand", "Mikey ! Maman a dit que tu ne sortais pas ! Et vous allez vous faire tuer avec vos histoires de pirates.", "carte"],
-    ["bagou", "Trop tard, Brand. On a une carte… et un trésor à trouver !", "carte"],
-    ["mikey", "En selle, tout le monde ! Direction le vieux phare !", "carte"]] },
+    ["mikey", "Et cette carte montre le chemin. Si on trouve le trésor, nos familles pourront garder leurs maisons !", "carte2"],
+    ["brand", "Mikey ! Maman a dit que tu ne sortais pas ! Et vous allez vous faire tuer avec vos histoires de pirates.", "carte2"],
+    ["bagou", "Trop tard, Brand. On a une carte… et un trésor à trouver !", "carte2"],
+    ["mikey", "En selle, tout le monde ! Direction le vieux phare !", "carte2"]] },
   avant2: { fond: "ville", mus: "fratelli", l: [
     [null, "Au même moment, à la prison du comté, Jake Fratelli s'évade… Sa famille l'attend dans une vieille voiture noire.", "fratelli"],
     ["jake", "Merci pour l'évasion, Maman ! C'était pas trop tôt.", "fratelli"],
@@ -328,6 +328,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   if (def.fin.type === "objet") S.objets.push({ t: "carte", x: def.fin.x, y: def.fin.y - 28 });
   if (def.boss) S.boss = { ...def.boss, pvMax: def.boss.pv, actif: false, tm: 0, dir: -1, vx: 0, inv: 0, x: def.boss.x, y: def.boss.y, tirT: 1.5, slothFait: false };
   if (def.voiture) S.voit = { x: def.voiture.x, actif: false, depuis: def.voiture.depuis };
+  if (DEBUG && PARAM.get("dep")) def.depart = PARAM.get("dep").split(",").map(Number);
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
@@ -477,6 +478,7 @@ function majTirs(dt) {
   S.eclats = S.eclats.filter(c => c.t < .8);
   // la voiture des Fratelli (à vélo) : elle arrive par derrière, il faut garder de l'avance
   if (S.voit) { const V = S.voit; if (!V.actif && J.x > V.depuis) { V.actif = true; V.x = cam.x - 300; son("boss"); }
+    if (DEBUG && PARAM.has("voit")) { V.actif = true; V.x = J.x - 330; } else
     if (V.actif && S.t < 2.5) V.x = cam.x - 700;   // (elle arrive au bout de quelques secondes)
     else if (V.actif) { V.x += (J.vx > 360 ? 300 : 400) * dt; if (V.x < cam.x - 330) V.x = cam.x - 330; V.klaxon = (V.klaxon || 0) - dt; if (J.x - V.x < 260 && V.klaxon <= 0) { son("klaxon"); V.klaxon = 2.5; }
       if (chevauche([V.x - 130, S.sol[0].y0 - 70, 260, 70], boiteJ())) { blesse(1); V.x -= 750; } } }
@@ -524,7 +526,7 @@ function maj(dt) {
   if (S.ouvert && ((F.type === "x" && J.x > F.x) || (F.type === "xg" && J.x < F.x) || ((F.type === "boss" || F.type === "orgue") && J.x > F.x - 20 && (!S.boss || S.boss.mort > 1.2 || !S.boss)))) finScene();
   // la caméra
   const vw = LW / cam.z, vh = LH / cam.z;
-  const cx = Math.max(0, Math.min(S.w - vw, J.x - vw * (J.velo ? .3 : .42) + J.dir * 40)); cam.x += (cx - cam.x) * Math.min(1, dt * 5);
+  const cx = Math.max(0, Math.min(S.w - vw, J.x - vw * (J.velo ? (S.voit && S.voit.actif ? .58 : .3) : .42) + J.dir * 40)); cam.x += (cx - cam.x) * Math.min(1, dt * 5);
   if (!S.camYfixe) { const cy = Math.max(0, Math.min(S.h - vh, J.y - vh * .66)); cam.y += (cy - cam.y) * Math.min(1, dt * 4); }
 }
 
@@ -611,8 +613,9 @@ function dJeu() {
   for (const o of S.objets) { if (o.pris) continue; const yb = o.y + Math.sin(tt * 3 + o.x) * 4;
     if (o.t === "piece") spr("doublon", Math.floor(tt * 8 + o.x / 50), o.x, yb + 15);
     if (o.t === "pizza") spr("pizza", 0, o.x, yb + 18);
-    if (o.t === "carte") { const sx = (o.x - cam.x) * cam.z, sy = (yb - cam.y) * cam.z; X.save(); X.translate(sx, sy); X.rotate(Math.sin(tt * 2) * .1); X.fillStyle = "#e8cf8e"; X.fillRect(-26, -20, 52, 40); X.strokeStyle = "#6e4a22"; X.lineWidth = 3; X.strokeRect(-26, -20, 52, 40);
-      X.strokeStyle = "#a04020"; X.setLineDash([4, 3]); X.beginPath(); X.moveTo(-18, 10); X.quadraticCurveTo(0, -18, 16, 6); X.stroke(); X.setLineDash([]); texte("✕", 14, 12, { c: "#c01010", t: 16, ep: 2 }); X.restore(); texte("LA CARTE !", sx, sy - 34, { a: "center", c: "#ffd34a", t: 16 }); } }
+    if (o.t === "carte") { const sx = (o.x - cam.x) * cam.z, sy = (yb - cam.y) * cam.z, cv = IMG.carteTresor, w = 120, h = w * cv.height / cv.width; X.save(); X.translate(sx, sy); X.rotate(Math.sin(tt * 2) * .08);
+      X.globalAlpha = .35 + .25 * Math.sin(tt * 4); X.fillStyle = "#ffe8a0"; X.beginPath(); X.ellipse(0, 0, w * .75, h * .8, 0, 0, 7); X.fill(); X.globalAlpha = 1;   // (elle brille)
+      X.drawImage(cv, -w / 2, -h / 2, w, h); X.restore(); texte("LA CARTE !", sx, sy - h / 2 - 10, { a: "center", c: "#ffd34a", t: 16 }); } }
   // ennemis
   for (const e of S.ennemis) { const f = Math.floor(e.tm * (e.t === "chauve" || e.t === "mouette" ? 8 : 6)), al = e.mort ? Math.max(0, 1 - e.mort) : e.inv > 0 ? .5 : 1;
     if (e.t === "araignee") { X.strokeStyle = "rgba(220,220,230,.7)"; X.lineWidth = 1.5; X.beginPath(); X.moveTo((e.x - cam.x) * cam.z, (e.y0 - 200 - cam.y) * cam.z); X.lineTo((e.x - cam.x) * cam.z, (e.y - cam.y) * cam.z); X.stroke(); spr("araignee", f, e.x, e.y, false, 1, al); }
@@ -622,7 +625,9 @@ function dJeu() {
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
     if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, B.dir > 0, 1, al); }
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
-  if (S.voit && S.voit.actif) spr("voiture", Math.floor(S.t * 10), S.voit.x, S.sol[0].y0 + 14);
+  if (S.voit && S.voit.actif) { const vx = S.voit.x, vy = S.sol[0].y0 + 14; spr("voiture", Math.floor(S.t * 10), vx, vy);
+    for (const [qui, dx] of [["francis", -69], ["jake", 15], ["mama", 69]]) { const ph = IMG["photo_" + qui]; if (!ph) continue;   // (les visages des Fratelli aux fenêtres)
+      const cx = (vx + dx - cam.x) * cam.z, cy = (vy - 117 - cam.y) * cam.z, r = 19 * cam.z; X.save(); X.beginPath(); X.arc(cx, cy, r, 0, 7); X.clip(); X.drawImage(ph, cx - r, cy - r, r * 2, r * 2); X.restore(); } }
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
