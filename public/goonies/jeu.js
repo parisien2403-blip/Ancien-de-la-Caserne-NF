@@ -170,7 +170,7 @@ const H = {
     ["brand", "Choco, sérieux, laisse-le là. Les Fratelli vont revenir d'une minute à l'autre.", "sinok"],
     ["choco", "Non ! Ils l'ont enchaîné ici comme un chien. Il est tout seul… Il vient avec nous !", "sinok"],
     ["sloth", "Sinok… aime… Choco. Sinok… aide les amis !", "sinok"],
-    [null, "SINOK rejoint les Goonies ! Tu peux maintenant le choisir pendant les missions.", "sinok"],
+    [null, "SINOK rejoint les Goonies !", "sinok"],
     ["data", "Un passage secret, derrière la cheminée ! Vite, avant que les Fratelli reviennent !", "sinok"]] },
   avant4: { fond: "niv4a", l: [
     ["data", "Regardez ce squelette… C'est Chester Copperpot, l'explorateur disparu !"],
