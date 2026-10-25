@@ -94,7 +94,7 @@ const H = {
     ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien.", "golf"],
     ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !", "golf"],
     ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !", "golf"]] },
-  apres1: { fond: "niv1", mus: "willy", l: [
+  apres1: { fond: "niv1", mus: "willy", l: [   // (le morceau commence à sa première minute : le fichier est coupé)
     ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !", "carte"],
     ["data", "Willy le Borgne ? Le pirate de la légende ?", "carte"],
     ["mikey", "Mon père me l'a racontée cent fois. Il y a plus de trois cents ans, Willy et ses pirates pillaient tous les navires du roi d'Angleterre.", "carte"],
@@ -317,19 +317,19 @@ function demarre() { allerTitre(); requestAnimationFrame(boucle);
 // la musique du début (écran titre, choix du Goonie, histoire d'ouverture) ; elle s'efface quand le premier niveau commence
 let MUS = null, musNom = null, musVoulue = false;
 const MUSIQUES = {};
-function jouerMus(nom) {   // un seul morceau à la fois ; null : la musique s'efface
+function jouerMus(nom, debut = 0) {   // (debut : on démarre le morceau à ce moment, en secondes)   // un seul morceau à la fois ; null : la musique s'efface
   if (nom === musNom && MUS && !MUS.paused) return;
   const ancien = MUS; if (ancien) { const a = ancien; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .06); if (a.volume <= 0) { clearInterval(f); a.pause(); a.currentTime = 0; } }, 80); }
   musNom = nom; musVoulue = !!nom; MUS = null; if (!nom) return;
-  const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=1`), { loop: true }));
-  m.volume = .8; m.currentTime = 0; MUS = m; m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
+  const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=2`), { loop: true }));
+  m.volume = .8; MUS = m; const cale = () => { try { m.currentTime = debut; } catch (e) {} }; if (m.readyState >= 1) cale(); else m.addEventListener("loadedmetadata", cale, { once: true }); m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
 const musique = on => jouerMus(on ? "titre" : null);
 addEventListener("pointerdown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
 addEventListener("keydown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);
 function allerTitre() { etat = "titre"; E = { t: 0 }; musique(true); }
 function nouvellePartie() { partie = { ko: new Set(), ado: null, niv: +(PARAM.get("niv") || 1) - 1, scene: +(PARAM.get("scene") || 1) - 1, score: 0, pieces: 0 }; allerChoix(() => histoire(partie.niv === 0 && partie.scene === 0 ? "intro" : null, () => debutNiveau())); }
 function allerChoix(suite, msg) { etat = "choix"; const libres = ADOS.filter(a => !partie.ko.has(a.id)); E = { t: 0, i: Math.max(0, libres.indexOf(parId(partie.ado)) ), suite, msg }; }
-function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
+function histoire(cle, suite) { if (!cle || !H[cle]) { suite(); return; } if (H[cle].mus) jouerMus(H[cle].mus, H[cle].musDebut || 0); etat = "histoire"; E = { h: H[cle], i: 0, c: 0, t: 0, suite }; }
 function debutNiveau() { const N = NIVEAUX[partie.niv]; etat = "titreNiv"; E = { t: 0, N }; jouerMus(N.musique || null); }
 function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.scene]();
   S = { ...def, N, w: IMG[def.img].width, h: IMG[def.img].height, t: 0, ennemis: [], tirs: [], tirsE: [], objets: [], eclats: [], bossMort: false, orgueFait: false, ouvert: false };
