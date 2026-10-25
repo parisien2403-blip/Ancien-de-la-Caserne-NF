@@ -493,7 +493,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("musique_vol"); ws.send(JSON.stringify({ t: "musique_vol", niveau: typeof n === "number" ? n : 1 })); }
-      if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes", "babyfoot"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
+      if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes", "babyfoot", "goonies"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "grande") for (const jeu of ["tir", "pingpong"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
@@ -739,10 +739,10 @@ export class Compteur extends DurableObject {
   /* ----- La borne de jeux : l'administrateur seul ajoute ou retire ----- */
   // le classement du flipper : le meilleur score de chacun, les 3 premiers
   classementFlipper(jeu = "flipper") {
-    return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores WHERE COALESCE(jeu, 'flipper') = ? GROUP BY numero ORDER BY score DESC LIMIT 3", jeu).toArray().map(r => ({ nom: r.nom, score: r.score }));
+    return this.sql.exec("SELECT nom, MAX(score) AS score FROM flipper_scores WHERE COALESCE(jeu, 'flipper') = ? GROUP BY numero ORDER BY score DESC LIMIT ?", jeu, jeu === "goonies" ? 5 : 3).toArray().map(r => ({ nom: r.nom, score: r.score }));
   }
   async scoreFlipper(token, x, jeu = "flipper") {
-    jeu = ["flechettes", "tir", "pingpong", "babyfoot"].includes(jeu) ? jeu : "flipper";
+    jeu = ["flechettes", "tir", "pingpong", "babyfoot", "goonies"].includes(jeu) ? jeu : "flipper";   // (goonies : la borne d'arcade du bar)
     const moi = this.moi(token), score = Math.max(0, Math.min(jeu === "flechettes" ? 540 : jeu === "tir" ? 50 : jeu === "pingpong" || jeu === "babyfoot" ? 99 : 99999999, Math.floor(Number(x && x.score) || 0)));
     if (score > 0) this.sql.exec("INSERT INTO flipper_scores (numero, nom, score, cree, jeu) VALUES (?, ?, ?, ?, ?)", Number(moi.numero), moi.prenom, score, new Date().toISOString(), jeu);
     const top = this.classementFlipper(jeu); this.diffuser(jeu === "tir" || jeu === "pingpong" ? "grande" : "fetes", { t: "flipper", jeu, top });   // (le stand de tir et le ping-pong sont au sous-sol de la grande cour)

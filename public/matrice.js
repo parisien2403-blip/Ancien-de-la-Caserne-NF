@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.74";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.75";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -4163,6 +4163,28 @@ function borneArcade(A, scene, x, z) {   // (le modèle 3D de la borne, habillé
   const lueur = new THREE.PointLight(0x7ab0ff, .9, 2.2, 2); lueur.position.set(P / 2 + .5, 1.5, 0); g.add(lueur);
   return [x - P / 2 - .05, x + P / 2 + .3, z - L / 2 - .05, z + L / 2 + .05];
 }
+/* le panneau des records des Goonies, au mur à côté de la borne : cadre de bois, le logo, les 5 meilleurs scores (face à +x) */
+function panneauGoonies(A, x0, y0, z0) {
+  const c = document.createElement("canvas"); c.width = 768; c.height = 560; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const logo = new Image(); let top = []; logo.onload = () => maj(top); logo.src = "goonies/img/logo.png";
+  const maj = (tp = []) => { top = tp; const x = c.getContext("2d"), w = 768, h = 560;
+    const bois = x.createLinearGradient(0, 0, 0, h); bois.addColorStop(0, "#5a3416"); bois.addColorStop(.5, "#3c2010"); bois.addColorStop(1, "#5a3416"); x.fillStyle = bois; x.fillRect(0, 0, w, h);
+    x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 2; for (let y = 8; y < h; y += 23) { x.beginPath(); x.moveTo(0, y); x.bezierCurveTo(w * .3, y + 6, w * .6, y - 6, w, y + 3); x.stroke(); }
+    const fond = x.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, w * .6); fond.addColorStop(0, "#1f2a3a"); fond.addColorStop(1, "#0b0d14"); x.fillStyle = fond; x.fillRect(30, 30, w - 60, h - 60);
+    x.strokeStyle = "#c9a227"; x.lineWidth = 5; x.strokeRect(24, 24, w - 48, h - 48); x.lineWidth = 2; x.strokeRect(36, 36, w - 72, h - 72);
+    for (const [a, b] of [[24, 24], [w - 24, 24], [24, h - 24], [w - 24, h - 24]]) { x.fillStyle = "#e8c45a"; x.beginPath(); x.arc(a, b, 9, 0, 7); x.fill(); }
+    if (logo.complete && logo.naturalWidth) { const lw = 470, lh = lw * logo.naturalHeight / logo.naturalWidth; x.drawImage(logo, (w - lw) / 2, 44, lw, lh); }
+    x.textAlign = "center"; x.fillStyle = "#ffcf3a"; x.font = "bold 30px Impact, Arial Black, sans-serif"; x.fillText("☠  MEILLEURS CHASSEURS DE TRÉSOR  ☠", w / 2, 252);
+    const med = ["#ffd700", "#d9d9d9", "#cd7f32", "#8fb6d8", "#8fb6d8"];
+    for (let i = 0; i < 5; i++) { const e = top[i], y = 305 + i * 50;
+      x.fillStyle = med[i]; x.beginPath(); x.arc(92, y - 10, 18, 0, 7); x.fill(); x.fillStyle = "#14100c"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText(String(i + 1), 92, y - 2);
+      x.textAlign = "left"; x.fillStyle = "#f4ecd8"; x.font = "bold 28px Arial"; x.fillText(e ? e.nom.slice(0, 16) : "—", 128, y);
+      x.textAlign = "right"; x.fillStyle = "#ffd34a"; x.font = "bold 28px 'Courier New', monospace"; x.fillText(e ? String(e.score).padStart(7, "0") : "", w - 70, y); }
+    t.needsUpdate = true; };
+  maj([]);
+  const m = A.ajoute(new THREE.PlaneGeometry(1.32, .96), new THREE.MeshStandardMaterial({ map: t, roughness: .6, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .25 }), x0, y0, z0, false); m.rotation.y = Math.PI / 2;
+  return maj;
+}
 /* Le sous-sol (vestibule, grande pièce au bar, console) en coordonnées propres ; L reçoit ses limites, tabourets, console…
    o.fusion : construit dans la salle des fêtes (l'escalier de la salle y descend), sans l'escalier propre du vestibule */
 function construireSousSol(A, L, scene, o = {}) {
@@ -4340,7 +4362,8 @@ function construireSousSol(A, L, scene, o = {}) {
       const jour = new THREE.PointLight(0xe8f0ff, 1.4, 4, 1.6); jour.position.set(GX - .6, yf, zf); scene.add(jour);
       L.nuitFenetre = n => { verre.material.map = n ? tN : tJ; verre.material.needsUpdate = true; jour.intensity = n ? .2 : 1.4; }; }
     // la borne d'arcade des Goonies, contre le mur de gauche (à la place de la table et de ses fauteuils) : l'administrateur seul y joue
-    { const bz = -7.6, bx = -GX + .42; obstacles.push(borneArcade(A, scene, bx, bz)); L.borneArcade = [bx + .85, bz]; }
+    { const bz = -7.6, bx = -GX + .42; obstacles.push(borneArcade(A, scene, bx, bz)); L.borneArcade = [bx + .85, bz];
+      const tab = panneauGoonies(A, -GX + .015, 1.75, bz + 1.45); L.majClassementGoonies = tab; tab((M && M.classementGoonies) || []); }   // (au mur, à côté de la borne : le panneau des records)
     // le baby-foot, vers le fond à gauche (vu de la porte d'en face, de l'autre côté du bar)
     obstacles.push(babyFoot(A, 2.25, FM - 1.6)); L.babyfoot = [2.25, FM - 1.6];
     { const tab = tableauScores(A, "BABY-FOOT", 2.3, 1.95, FM - .02); L.majClassementBF = tab; tab((M && M.classementBF) || []); }   // (au mur, au-dessus du baby-foot : les 3 meilleurs)
@@ -16337,7 +16360,9 @@ function ouvrirArcade() {
   (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); M.arcadeEl = f; jouer("arcade"); window.mxArcadeOn = true; window.mxSilence && window.mxSilence(true); window.mxSonsMaj && window.mxSonsMaj(); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);   // (en plein écran, seul l'élément en plein écran est visible : le jeu s'y ouvre)
   const pe = () => { if (M && M.arcadeEl === f) (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); else document.removeEventListener("fullscreenchange", pe); };
   document.addEventListener("fullscreenchange", pe);   // (on entre ou sort du plein écran pendant la partie : le jeu suit)
-  const fin = e => { if (!e.data || e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
+  const fin = e => { if (!e.data) return;
+    if (e.data.goonies === "score" && M && M.ctx && M.ctx.token) { fetch("/api/flipper?jeu=goonies", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ score: e.data.score }) }).catch(() => {}); return; }   // (la partie est finie : le score part au panneau des records)
+    if (e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
   addEventListener("message", fin); }
 function fermerArcade() { window.mxArcadeOn = false; window.mxSilence && window.mxSilence(false); window.mxSonsMaj && window.mxSonsMaj(); if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
 function chercherAction(t) {
@@ -18532,6 +18557,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && m.p.id === 2) { ctx.surPNJDJ && ctx.surPNJDJ(m.p); if (M.gens.has(DJ)) { retirerAncien(DJ); ajouterDJ(); } }
     else if (m.t === "pnj" && m.p && m.p.id > 1) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); }   // (tout autre personnage retouché : il garde sa fiche à lui — avant, il tombait ici sur le chef de poste, qui changeait de tenue)
     else if (m.t === "pnj") { ctx.surPNJ && ctx.surPNJ(m.p); const p = M.gens.get(PNJ); if (p) { const pos = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const q = M.gens.get(PNJ); if (q) q.g.position.copy(pos); } }
+    else if (m.t === "flipper" && m.jeu === "goonies") { M.classementGoonies = m.top || []; M.L && M.L.majClassementGoonies && M.L.majClassementGoonies(M.classementGoonies); }
     else if (m.t === "flipper" && m.jeu === "babyfoot") { M.classementBF = m.top || []; M.L && M.L.majClassementBF && M.L.majClassementBF(M.classementBF); }
     else if (m.t === "flipper" && m.jeu === "pingpong") { M.classementPP = m.top || []; M.L && M.L.majClassementPP && M.L.majClassementPP(M.classementPP); }
     else if (m.t === "flipper" && m.jeu === "tir") { M.classementTir = m.top || []; M.L && M.L.majClassementTir && M.L.majClassementTir(M.classementTir); }

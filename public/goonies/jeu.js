@@ -637,7 +637,7 @@ function majTirs(dt) {
 function finScene() { const N = NIVEAUX[partie.niv];
   if (partie.scene + 1 < N.scenes.length) { partie.scene++; etat = "fondu"; E = { t: 0, suite: () => chargerScene() }; return; }
   etat = "fondu"; E = { t: 0, suite: () => histoire(N.apres, () => { if (partie.niv === 2) partie.sinok = true; partie.niv++; partie.scene = 0; if (partie.niv >= NIVEAUX.length) { histoire("fin", () => { etat = "fin"; E = { t: 0 }; enregistreRecord(); }); } else histoire(NIVEAUX[partie.niv].avant, () => debutNiveau()); }) }; }   // (la cinématique d'avant le niveau : les Fratelli dans la voiture, Francis au restaurant…)
-function enregistreRecord() { if (partie.score > RECORD()) localStorage.setItem("gooniesRecord", partie.score); }
+function enregistreRecord() { if (partie.score > RECORD()) localStorage.setItem("gooniesRecord", partie.score); if (partie.score > (partie.envoye || 0)) { partie.envoye = partie.score; try { parent.postMessage({ goonies: "score", score: partie.score }, "*"); } catch (e) {} } }   // (le score part au panneau des records du bar)
 function majOrgue(dt) {   // l'orgue d'os : rejouer la mélodie (croix ou flèches), trois manches
   const O = S.orgue; if (!O || S.orgueFait) return;
   if (!S.puz) { if (J.x > O.x0 && J.x < O.x1 && J.sol) { S.puz = { manche: 0, seq: [], i: 0, phase: "montre", t: 0 }; nouvelleManche(); } return; }
