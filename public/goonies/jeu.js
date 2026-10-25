@@ -15,9 +15,9 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 2;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 3;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
-const LISTE = { niv1: "niv1.jpg", niv2: "niv2.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
+const LISTE = { niv1: "niv1.jpg", niv2a: "niv2a.jpg", niv2b: "niv2b.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
@@ -101,6 +101,11 @@ const H = {
   avant2: { fond: "ville", l: [
     [null, "Au même moment, Jake Fratelli s'évade de la prison du comté…"],
     ["bagou", "Pédale, Choco ! Les chiens du quartier nous ont repérés !"]] },
+  jake2: { fond: "niv2b", l: [
+    [null, "Derrière eux, devant la prison du comté, une voiture noire démarre en trombe…"],
+    ["jake", "Merci pour l'évasion, Maman ! Et ces gamins… ils ont la carte ?"],
+    ["mama", "Suis-les ! Écrase-les s'il le faut !"],
+    ["mikey", "Les Fratelli ! Pédalez, vite !"]] },
   apres2: { fond: "falaise", l: [
     ["bagou", "Le vieux restaurant du phare… La carte dit qu'on doit passer par là."],
     ["choco", "Il y a une voiture noire garée devant. Ça sent mauvais."],
@@ -162,13 +167,20 @@ const NIVEAUX = [
     ennemis: [{ t: "rat", x: 420, y: 700, x0: 260, x1: 640 }, { t: "rat", x: 880, y: 700, x0: 760, x1: 1100 }, { t: "rat", x: 640, y: 441, x0: 560, x1: 820 },
       { t: "araignee", x: 610, y0: 120, y1: 330 }, { t: "araignee", x: 990, y0: 160, y1: 520 }, { t: "chauve", x: 760, y: 230 }, { t: "chauve", x: 1240, y: 200 }, { t: "rat", x: 1200, y: 368, x0: 1080, x1: 1260 }] })] },
   { nom: "LA COURSE DANS ASTORIA", but: "Rejoins le vieux phare sur la côte !", avant: "avant2", apres: "apres2", velo: true, scenes: [() => ({
-    img: "niv2", vh: 500, depart: [80, 655], fin: { type: "x", x: 4440 }, camYfixe: true,
-    sol: [p(0, 4538, 655, 655, 1)], ech: [],
-    pieces: [...arc(500, 600, 6, 50, 90), ...arc(1100, 600, 6, 50, 110), ...ligne(1600, 560, 6, 60), ...arc(2200, 600, 7, 50, 120), ...arc(2900, 600, 6, 50, 100), ...ligne(3500, 560, 8, 55), ...arc(4050, 600, 5, 50, 90)],
-    pizzas: [[2000, 520], [3300, 520]],
-    ennemis: [{ t: "chien", x: 900, y: 655, x0: 600, x1: 1300, chasse: 1 }, { t: "chien", x: 1750, y: 655, x0: 1500, x1: 2100, chasse: 1 }, { t: "chien", x: 2650, y: 655, x0: 2400, x1: 3000, chasse: 1 }, { t: "chien", x: 3800, y: 655, x0: 3500, x1: 4100, chasse: 1 },
-      { t: "mouette", x: 1300, y: 330 }, { t: "mouette", x: 2400, y: 300 }, { t: "mouette", x: 3150, y: 340 }, { t: "mouette", x: 4000, y: 320 }],
-    voiture: { x: -400, depuis: 3300 } })] },
+    img: "niv2a", vh: 500, depart: [80, 575], fin: { type: "x", x: 1440 }, camYfixe: true,
+    sol: [p(0, 1584, 575, 575, 1)], ech: [],
+    pieces: [...arc(350, 520, 6, 50, 90), ...ligne(800, 480, 6, 55), ...arc(1150, 520, 5, 50, 100)], pizzas: [[700, 440]],
+    ennemis: [{ t: "chien", x: 900, y: 575, x0: 700, x1: 1200, chasse: 1 }, { t: "mouette", x: 1100, y: 300 }, { t: "mouette", x: 1500, y: 260 }] }),
+  () => ({ img: "niv2b", vh: 500, depart: [60, 655], fin: { type: "x", x: 3190 }, camYfixe: true,
+    sol: [p(0, 3288, 655, 655, 1)], ech: [],
+    pieces: [...arc(300, 600, 6, 50, 100), ...ligne(800, 560, 6, 60), ...arc(1400, 600, 7, 50, 120), ...arc(2100, 600, 6, 50, 100), ...ligne(2700, 560, 6, 55)], pizzas: [[1200, 520], [2500, 520]],
+    ennemis: [{ t: "chien", x: 700, y: 655, x0: 450, x1: 1000, chasse: 1 }, { t: "chien", x: 1600, y: 655, x0: 1300, x1: 1900, chasse: 1 }, { t: "chien", x: 2500, y: 655, x0: 2200, x1: 2800, chasse: 1 },
+      { t: "mouette", x: 1000, y: 330 }, { t: "mouette", x: 1800, y: 300 }, { t: "mouette", x: 2600, y: 320 }] }),
+  () => ({ img: "niv2c", vh: 500, depart: [60, 455], fin: { type: "x", x: 1900 }, camYfixe: true,
+    sol: [p(0, 1952, 455, 455, 1)], ech: [],
+    pieces: [...arc(300, 400, 6, 50, 100), ...ligne(800, 370, 6, 55), ...arc(1300, 400, 7, 50, 110)], pizzas: [[1100, 340]],
+    ennemis: [{ t: "chien", x: 900, y: 455, x0: 650, x1: 1200, chasse: 1 }, { t: "chien", x: 1600, y: 455, x0: 1350, x1: 1850, chasse: 1 }, { t: "mouette", x: 1200, y: 200 }, { t: "mouette", x: 1700, y: 180 }],
+    voiture: { x: -400, depuis: 300 }, histoireDebut: "jake2" })] },
   { nom: "LE RESTAURANT DES FRATELLI", but: "Échappe à Francis Fratelli !", avant: "avant3", apres: "apres3", scenes: [() => ({
     img: "niv3", vh: 470, depart: [140, 662], bornes: [62, 1346], fin: { type: "boss", x: 900 },
     sol: [p(60, 1346, 662, 662, 1), p(0, 292, 487), p(372, 540, 547), p(645, 812, 507), p(1030, 1336, 487), p(112, 345, 568),
@@ -252,7 +264,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   if (def.boss) S.boss = { ...def.boss, pvMax: def.boss.pv, actif: false, tm: 0, dir: -1, vx: 0, inv: 0, x: def.boss.x, y: def.boss.y, tirT: 1.5, slothFait: false };
   if (def.voiture) S.voit = { x: def.voiture.x, actif: false, depuis: def.voiture.depuis };
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
-  etat = "jeu"; }
+  etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
 function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3 }[e.t] || 1;
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
@@ -399,7 +411,7 @@ function majTirs(dt) {
   S.eclats = S.eclats.filter(c => c.t < .8);
   // la voiture des Fratelli (à vélo) : elle arrive par derrière, il faut garder de l'avance
   if (S.voit) { const V = S.voit; if (!V.actif && J.x > V.depuis) { V.actif = true; V.x = cam.x - 300; son("boss"); }
-    if (V.actif) { V.x += (J.vx > 400 ? 300 : 430) * dt; if (V.x < cam.x - 320) V.x = cam.x - 320; if (chevauche([V.x - 100, 600, 200, 60], boiteJ())) { blesse(1); V.x -= 380; } } }
+    if (V.actif) { V.x += (J.vx > 400 ? 300 : 430) * dt; if (V.x < cam.x - 320) V.x = cam.x - 320; if (chevauche([V.x - 100, S.sol[0].y0 - 55, 200, 60], boiteJ())) { blesse(1); V.x -= 380; } } }
   // Sloth fonce sur Mama
   if (S.sloth) { const L2 = S.sloth; L2.t += dt; L2.x += 520 * dt; if (S.boss && !S.boss.mort && Math.abs(L2.x - S.boss.x) < 60 && !L2.frappe) { L2.frappe = 1; toucheBoss(6); S.boss.inv = 0; eclats(S.boss.x, S.boss.y - 90, "#fff", 20); } if (L2.x > cam.x + LW / cam.z + 200) S.sloth = null; }
 }
@@ -537,7 +549,7 @@ function dJeu() {
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
     if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, B.dir > 0, 1, al); }
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
-  if (S.voit && S.voit.actif) spr("voiture", 0, S.voit.x, 668);
+  if (S.voit && S.voit.actif) spr("voiture", 0, S.voit.x, S.sol[0].y0 + 13);
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr("velo_" + A.id, Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
