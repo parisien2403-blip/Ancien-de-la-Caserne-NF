@@ -12,7 +12,14 @@ X.imageSmoothingEnabled = false;
 // ------------------------------------------------------------------ l'écran : agrandi au mieux, sans déformer
 function ajuste() { const s = Math.min(innerWidth / LW, innerHeight / LH); C.style.width = Math.floor(LW * s) + "px"; C.style.height = Math.floor(LH * s) + "px"; }
 addEventListener("resize", ajuste); ajuste();
-if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
+/* les boutons à l'écran : sur téléphone et tablette ; ils s'effacent dès qu'on joue avec une manette Bluetooth (ou un clavier) branchée,
+   et reviennent si on retouche l'écran ou si la manette se débranche */
+const TACTILE = matchMedia("(pointer: coarse)").matches; let manetteVue = false;
+const majTactile = () => document.body.classList.toggle("touch", TACTILE && !manetteVue);
+const vueManette = v => { if (manetteVue !== v) { manetteVue = v; majTactile(); } };
+majTactile();
+addEventListener("gamepaddisconnected", () => { if (!(navigator.getGamepads ? [...navigator.getGamepads()] : []).some(g => g && g.connected)) vueManette(false); });
+addEventListener("pointerdown", e => { if (e.pointerType === "touch" && manetteVue) vueManette(false); }, true);
 
 // ------------------------------------------------------------------ chargement
 let PIR = {}; const IMG = {}, META = {}, VI = 38;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
@@ -32,7 +39,7 @@ Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v
 // ------------------------------------------------------------------ les commandes : clavier, manette, tactile
 const T = {}, TP = {}, TOUCHES = { ArrowLeft: "gauche", KeyA: "gauche", KeyQ: "gauche", ArrowRight: "droite", KeyD: "droite", ArrowUp: "haut", KeyW: "haut", KeyZ: "haut", ArrowDown: "bas", KeyS: "bas",
   Space: "saut", KeyK: "saut", KeyJ: "tir", KeyX: "tir", KeyL: "tir", ControlLeft: "tir", Enter: "start", Escape: "retour", KeyP: "start" };
-addEventListener("keydown", e => { const t = TOUCHES[e.code]; if (!t) return; e.preventDefault(); if (!e.repeat) T["l" + t] = true; T["c" + t] = true; if (t === "retour") quitter(); });
+addEventListener("keydown", e => { const t = TOUCHES[e.code]; if (!t) return; vueManette(true); e.preventDefault(); if (!e.repeat) T["l" + t] = true; T["c" + t] = true; if (t === "retour") quitter(); });
 addEventListener("keyup", e => { const t = TOUCHES[e.code]; if (t) T["c" + t] = false; });
 addEventListener("blur", () => { for (const k in T) T[k] = false; });
 for (const b of document.querySelectorAll("[data-t]")) {
@@ -47,6 +54,7 @@ function lireManette() {
   if (g) { const b = i => !!(g.buttons[i] && (g.buttons[i].pressed || g.buttons[i].value > .5)), ax = (g.axes[0] || 0), ay = (g.axes[1] || 0);
     m.gauche = b(14) || ax < -.45; m.droite = b(15) || ax > .45; m.haut = b(12) || ay < -.55; m.bas = b(13) || ay > .55;
     m.saut = b(0); m.tir = b(2) || b(1) || b(7) || b(5); m.start = b(9); m.retour = b(8);
+    if (g.buttons.some(x => x && x.pressed) || Math.abs(ax) > .45 || Math.abs(ay) > .55) vueManette(true);   // (on s'en sert : les boutons de l'écran s'effacent)
     if (b(8) && b(9)) { quitT += 1 / 60; if (quitT > 1) { quitT = 0; quitter(); } } else quitT = 0; }
   return m; }
 const ACT = ["gauche", "droite", "haut", "bas", "saut", "tir", "start", "retour"];
