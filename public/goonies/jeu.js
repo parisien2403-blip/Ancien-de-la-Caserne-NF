@@ -15,7 +15,7 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 23;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 24;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
@@ -141,10 +141,12 @@ const H = {
     ["mikey", "En selle, tout le monde ! Direction le vieux phare !", "carte2"]] },
   avant2: { fond: "ville", mus: "fratelli", l: [
     [null, "Au même moment, à la prison du comté, Jake Fratelli s'évade… Sa famille l'attend dans une vieille voiture noire.", "fratelli"],
-    ["jake", "Merci pour l'évasion, Maman ! C'était pas trop tôt.", "fratelli"],
-    ["mama", "Arrête de pleurnicher et monte ! Francis, démarre !", "fratelli"],
-    ["francis", "Maman… regarde, ces gamins à vélo. Ils nous ont vus !", "fratelli"],
-    ["mama", "Alors suis-les ! On ne laisse aucun témoin !", "fratelli"],
+    ["jake", "Pas trop tôt ! J'ai cru que vous m'aviez oublié là-dedans, Maman.", "fratelli"],
+    ["mama", "Baisse la tête, idiot ! Toute la police d'Astoria est à nos trousses.", "fratelli"],
+    ["francis", "Il nous faut une planque, Maman… et vite.", "fratelli"],
+    ["mama", "Le vieux restaurant près du phare. Plus personne n'y met les pieds.", "fratelli"],
+    ["jake", "Hé… et ces gamins à vélo, là-bas ? Ils nous ont vus !", "fratelli"],
+    ["mama", "Alors accrochez-vous, je vais leur coller au train ! Pas de témoins !", "fratelli"],
     ["mikey", "Les Fratelli ! Pédalez, vite !"]] },
   apres2: { fond: "falaise", l: [
     ["bagou", "Le vieux restaurant du phare… La carte dit qu'on doit passer par là."],
@@ -207,11 +209,13 @@ const NIVEAUX = [
     ennemis: [{ t: "rat", x: 420, y: 700, x0: 260, x1: 640 }, { t: "rat", x: 880, y: 700, x0: 760, x1: 1100 }, { t: "rat", x: 640, y: 441, x0: 560, x1: 820 },
       { t: "araignee", x: 610, y0: 120, y1: 330 }, { t: "araignee", x: 990, y0: 160, y1: 520 }, { t: "chauve", x: 760, y: 230 }, { t: "chauve", x: 1240, y: 200 }, { t: "rat", x: 1200, y: 368, x0: 1080, x1: 1260 }] })] },
   { nom: "LA COURSE DANS ASTORIA", musique: "fratelli", but: "Sème la voiture des Fratelli !", avant: "avant2", apres: "apres2", velo: true, scenes: [() => {
-    // le quai de la conserverie, trois fois de suite sans s'arrêter, la voiture noire aux trousses
-    const im = IMG.niv2c, n = 3, W = im.width, cle = "niv2c_x3"; if (!IMG[cle]) { const c = document.createElement("canvas"); c.width = W * n; c.height = im.height; const x = c.getContext("2d"); for (let k = 0; k < n; k++) x.drawImage(im, k * W, 0); IMG[cle] = c; }
+    // le quai de la conserverie, cinq longueurs sans s'arrêter, la voiture noire aux trousses ; des barrières de chantier, des caisses de la conserverie et des pneus qui dévalent
+    const im = IMG.niv2c, n = 5, W = im.width, cle = "niv2c_x5"; if (!IMG[cle]) { const c = document.createElement("canvas"); c.width = W * n; c.height = im.height; const x = c.getContext("2d"); for (let k = 0; k < n; k++) x.drawImage(im, k * W, 0); IMG[cle] = c; }
     const pieces = [], ennemis = [], pizzas = [];
     for (let k = 0; k < n; k++) { const o = k * W; pieces.push(...arc(o + 300, 400, 6, 50, 100), ...ligne(o + 800, 370, 6, 55), ...arc(o + 1300, 400, 7, 50, 110)); pizzas.push([o + 1100, 340]);
-      ennemis.push({ t: "chien", x: o + 900, y: 455, x0: o + 650, x1: o + 1200, chasse: 1 }, { t: "chien", x: o + 1600, y: 455, x0: o + 1350, x1: o + 1850, chasse: 1 }, { t: "mouette", x: o + 1200, y: 200 }, { t: "mouette", x: o + 1700, y: 180 }); }
+      const d = (k * 173) % 260;
+      ennemis.push({ t: "barriere", x: o + 640 + d, y: 455 }, { t: "caisse", x: o + 1180 - d / 2, y: 455 }, { t: "pneu", x: o + 1750 + d / 3, y: 455 }, { t: "mouette", x: o + 1200, y: 200 });
+      if (k % 2) ennemis.push({ t: "barriere", x: o + 1450 + d / 2, y: 455 }); else if (k) ennemis.push({ t: "pneu", x: o + 900 + d, y: 455 }, { t: "mouette", x: o + 1700, y: 180 }); }
     return { img: cle, vh: 500, depart: [260, 455], fin: { type: "x", x: W * n - 60 }, camYfixe: true, sol: [p(0, W * n, 455, 455, 1)], ech: [], pieces, pizzas, ennemis, voiture: { x: -200, depuis: 0 } }; }] },
   { nom: "LE RESTAURANT DES FRATELLI", but: "Échappe à Francis Fratelli !", avant: "avant3", apres: "apres3", scenes: [() => ({
     img: "niv3", vh: 470, depart: [140, 662], bornes: [62, 1346], fin: { type: "boss", x: 900 },
@@ -361,7 +365,7 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
 function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
-function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3 }[e.t] || 1;
+function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, barriere: 99, caisse: 2, pneu: 2 }[e.t] || 1;
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
 
 // ------------------------------------------------------------------ physique : les plateformes
@@ -419,7 +423,8 @@ function finJoueur(dt, A) {
 }
 function tirer(A) {
   J.tirT = A.tirD; J.tirA = .2; son("tir");
-  const yh = J.y - (J.velo ? 92 : J.baisse ? 30 : 58), xh = J.x + J.dir * (J.velo ? 30 : 26);
+  const yh = J.y - (J.velo ? (IN.bas ? 40 : 92) : J.baisse ? 30 : 58),   // (à vélo, bas + tir : on vise les obstacles au ras du sol)
+    xh = J.x + J.dir * (J.velo ? 30 : 26);
   if (A.id === "mikey") S.tirs.push({ t: "caillou", x: xh, y: yh, vx: J.dir * 900 + J.vx * .3, vy: -40, g: 260, vie: 1.1, deg: 1, rot: 0 });
   if (A.id === "choco") S.tirs.push({ t: "barre", x: xh, y: yh, vx: J.dir * 600 + J.vx * .3, vy: J.baisse ? -140 : -420, g: 1400, vie: 1.6, deg: 2, rot: 0, vr: 14 * J.dir });
   if (A.id === "bagou") S.tirs.push({ t: "peigne", x: xh, y: yh, vx: J.dir * 760 + J.vx * .3, vy: 0, g: 0, vie: .9, deg: 1, rot: 0, vr: 9 * J.dir });
@@ -448,17 +453,19 @@ function majEnnemis(dt) {
     } else if (e.t === "araignee") { e.y = e.y0 + (e.y1 - e.y0) * (.5 - .5 * Math.cos(e.tm * 1.1)); }
     else if (e.t === "chauve") { const dx = J.x - e.x, dy = (J.y - 60) - e.y, pres = Math.hypot(dx, dy) < 380;
       if (pres) { e.x += Math.sign(dx) * 120 * dt; e.y += Math.sign(dy) * 90 * dt; } else { e.x = e.xb + Math.sin(e.tm * .9) * 120; e.y += ((e.yb + Math.sin(e.tm * 2.3) * 40) - e.y) * dt * 2; } e.dir = Math.sign(dx) || 1; }
+    else if (e.t === "pneu") { if (!e.roule && e.x - J.x < 950) e.roule = 1; if (e.roule) { e.x -= 280 * dt; e.y = e.yb - Math.abs(Math.sin(e.tm * 7)) * 8; } }   // (il dévale le quai vers nous)
     else if (e.t === "mouette") { e.x -= 170 * dt; e.dir = -1; const dx = e.x - J.x; e.y = e.yb + (dx > -100 && dx < 360 ? Math.max(0, 1 - Math.abs(dx - 130) / 230) * (J.y - 120 - e.yb) : 0) + Math.sin(e.tm * 3) * 12; if (e.x < cam.x - 200) { e.x = cam.x + LW / cam.z + 300; } }
     // contact avec le joueur : on l'écrase en lui sautant dessus, sinon il nous blesse
     const be = boiteE(e), bj = boiteJ();
     if (chevauche(be, bj)) { if (J.vy > 120 && bj[1] + bj[3] < be[1] + be[3] * .55 && e.t !== "araignee") { touche(e, 2); J.vy = -620; son("coup"); } else blesse(1); } }
   S.ennemis = S.ennemis.filter(e => !e.mort || e.mort < 1.2);
 }
-function boiteE(e) { const T = { rat: [70, 34], araignee: [46, 40], chauve: [62, 30], chien: [84, 50], mouette: [60, 30], crabe: [76, 40], squelette: [36, 90] }[e.t] || [40, 40];
+function boiteE(e) { const T = { rat: [70, 34], araignee: [46, 40], chauve: [62, 30], chien: [84, 50], mouette: [60, 30], crabe: [76, 40], squelette: [36, 90], barriere: [96, 50], caisse: [64, 62], pneu: [50, 52] }[e.t] || [40, 40];
   if (e.t === "araignee" || e.t === "chauve" || e.t === "mouette") return [e.x - T[0] / 2, e.y - T[1] / 2 + (e.t === "araignee" ? 18 : 0), T[0], T[1]];
   return [e.x - T[0] / 2, e.y - T[1], T[0], T[1]]; }
-function touche(e, deg) { if (e.inv > 0 || e.mort) return; e.pv -= deg; e.inv = .25; son("coup");
-  if (e.pv <= 0) { e.mort = .01; partie.score += { rat: 200, araignee: 250, chauve: 250, chien: 300, mouette: 200, crabe: 300, squelette: 500 }[e.t] || 200; eclats(e.x, e.y - 30, "#ffe070"); } }
+function touche(e, deg) { if (e.inv > 0 || e.mort || e.t === "barriere") return;   // (la barrière de chantier : il faut sauter par-dessus)
+ e.pv -= deg; e.inv = .25; son("coup");
+  if (e.pv <= 0) { e.mort = .01; partie.score += { rat: 200, araignee: 250, chauve: 250, chien: 300, mouette: 200, crabe: 300, squelette: 500, caisse: 300, pneu: 250 }[e.t] || 200; eclats(e.x, e.y - 30, e.t === "caisse" ? "#9c6436" : "#ffe070"); } }
 function eclats(x, y, c, n = 12) { for (let k = 0; k < n; k++) S.eclats.push({ x, y, vx: (Math.random() - .5) * 500, vy: -Math.random() * 500, t: 0, c }); }
 
 // ------------------------------------------------------------------ les boss (Francis, Jake, Mama Fratelli) et Sloth
@@ -510,8 +517,8 @@ function majTirs(dt) {
   if (S.voit) { const V = S.voit; if (!V.actif && J.x > V.depuis) { V.actif = true; V.x = cam.x - 300; son("boss"); }
     if (DEBUG && PARAM.has("voit")) { V.actif = true; V.x = J.x - 330; } else
     if (V.actif && S.t < 2.5) V.x = cam.x - 700;   // (elle arrive au bout de quelques secondes)
-    else if (V.actif) { V.x += (J.vx > 360 ? 300 : 400) * dt; if (V.x < cam.x - 330) V.x = cam.x - 330; V.klaxon = (V.klaxon || 0) - dt; if (J.x - V.x < 260 && V.klaxon <= 0) { son("klaxon"); V.klaxon = 2.5; }
-      if (chevauche([V.x - 130, S.sol[0].y0 - 70, 260, 70], boiteJ())) { blesse(1); V.x -= 750; } } }
+    else if (V.actif) { V.recul = Math.max(0, (V.recul || 0) - dt); V.x += (J.vx > 360 ? 330 : 430) * dt; const mini = cam.x - (V.recul > 0 ? 420 : 40); if (V.x < mini) V.x = V.recul > 0 ? Math.max(V.x, mini) : V.x + (mini - V.x) * Math.min(1, dt * 3);   // (elle reste collée au bord de l'écran) V.klaxon = (V.klaxon || 0) - dt; if (J.x - V.x < 260 && V.klaxon <= 0) { son("klaxon"); V.klaxon = 2.5; }
+      if (chevauche([V.x - 190, S.sol[0].y0 - 70, 400, 70], boiteJ())) { blesse(1); V.x -= 500; V.recul = 1.6; } } }
   // Sloth fonce sur Mama
   if (S.sloth) { const L2 = S.sloth; L2.t += dt; L2.x += 520 * dt; if (S.boss && !S.boss.mort && Math.abs(L2.x - S.boss.x) < 60 && !L2.frappe) { L2.frappe = 1; toucheBoss(6); S.boss.inv = 0; eclats(S.boss.x, S.boss.y - 90, "#fff", 20); } if (L2.x > cam.x + LW / cam.z + 200) S.sloth = null; }
 }
@@ -602,14 +609,18 @@ function dChoix() {
   texte("◀ ▶ pour choisir · A pour valider", LW / 2, 520, { a: "center", c: "#bbb", t: 15 });
 }
 function dHistoire() {
-  const h = E.h, [qui, txt, illu] = h.l[E.i]; if (illu) fond(illu, 1); else { fond(h.fond, .6); X.fillStyle = "rgba(0,0,0,.25)"; X.fillRect(0, 0, LW, LH); }   // (illu : une image du film, façon borne d'arcade)
-  boite(30, 340, LW - 60, 180, .85);
-  const x0 = qui ? 200 : 60; if (qui) { boite(48, 356, 140, 148, 1); medaillon(qui, 54, 362, 128);
-    texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SLOTH", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, 380, { c: "#ffd34a", t: 20 }); }
-  const vis = txt.slice(0, Math.floor(E.c)), mots = vis.split(" "), lignes = [""]; X.font = 'bold 21px "Courier New", monospace';
-  for (const m of mots) { const essai = (lignes[lignes.length - 1] + " " + m).trim(); if (X.measureText(essai).width > LW - x0 - 70) lignes.push(m); else lignes[lignes.length - 1] = essai; }
-  lignes.forEach((l, k) => texte(l, x0, (qui ? 414 : 390) + k * 28, { t: 21, ep: 3 }));
-  if (E.c >= txt.length && Math.floor(E.t * 3) % 2) texte("▼", LW - 70, 505, { c: "#ffd34a", t: 20 });
+  // l'image en haut, en entier ; le dialogue dans un bandeau fin en dessous (il ne cache plus l'image)
+  const h = E.h, [qui, txt, illu] = h.l[E.i], im = IMG[illu || h.fond], HB = 104, HI = LH - HB - 6;
+  if (im) { fond(illu || h.fond, .28); const s = Math.min(LW / im.width, HI / im.height), w = im.width * s, hh = im.height * s;
+    X.save(); X.globalAlpha = illu ? 1 : .85; X.drawImage(im, (LW - w) / 2, (HI - hh) / 2, w, hh); X.restore();
+    X.strokeStyle = "#f3c64a"; X.lineWidth = 2; X.strokeRect((LW - w) / 2, (HI - hh) / 2, w, hh); }
+  const yb = LH - HB - 2; boite(8, yb, LW - 16, HB, .9);
+  const x0 = qui ? 112 : 26; if (qui) { boite(16, yb + 8, 88, 88, 1); medaillon(qui, 20, yb + 12, 80);
+    texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SLOTH", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, yb + 24, { c: "#ffd34a", t: 17 }); }
+  const vis = txt.slice(0, Math.floor(E.c)), mots = vis.split(" "), lignes = [""]; X.font = 'bold 18px "Courier New", monospace';
+  for (const m of mots) { const essai = (lignes[lignes.length - 1] + " " + m).trim(); if (X.measureText(essai).width > LW - x0 - 50) lignes.push(m); else lignes[lignes.length - 1] = essai; }
+  lignes.forEach((l, k) => texte(l, x0, yb + (qui ? 50 : 32) + k * 23, { t: 18, ep: 3 }));
+  if (E.c >= txt.length && Math.floor(E.t * 3) % 2) texte("▼", LW - 40, yb + HB - 12, { c: "#ffd34a", t: 18 });
 }
 function dTitreNiv() { const N = E.N;
   const im = IMG[{ 0: "niv1", 1: "ville", 2: "niv3", 3: "niv4a", 4: "niv5", 5: "niv6a" }[partie.niv]]; if (im) { const s = Math.max(LW / im.width, LH / im.height); X.globalAlpha = .5; X.drawImage(im, 0, 0, im.width * s, im.height * s); X.globalAlpha = 1; }
