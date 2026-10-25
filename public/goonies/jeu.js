@@ -15,15 +15,16 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-let PIR = {}; const IMG = {}, META = {}, VI = 32;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+let PIR = {}; const IMG = {}, META = {}, VI = 33;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", inferno: "scene-inferno.png", pont: "pont.jpg", pendu: "pendu.png", pirates: "pirates.png", navire: "navire.png", puits: "scene-puits.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (!["mikey", "choco", "data", "bagou"].includes(k)) META[k] = { ...j[k], img: "sprites" }; }),   /* (les 4 ados : la nouvelle planche, sprites4) */
   fetch("img/sprites2.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) if (k !== "voiture") META[k] = { ...j[k], img: "sprites2" }; })   /* (la voiture : la nouvelle, dans sprites3) */, fetch("img/sprites3.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites3" }; }), fetch("img/sprites4.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites4", sc: 1.8 / 3 * (k === "sloth" ? 1.15 : 1) }; }), fetch("img/decor.json?v=" + VI).then(r => r.json()).then(j => { DEC = j; }), fetch("img/pirates.json?v=" + VI).then(r => r.json()).then(j => { PIR = j; })]).then(() => {
-  for (const k in PIR) META[k] = { ...PIR[k], img: "pirates" };   // (les modèles 3D pirates, passés en pixels : squelette pirate, capitaine, tonneaux, coffre, or…)
+  for (const k in PIR) META[k] = { ...PIR[k], img: "pirates" };
+  if (META.rocher) META.roc = { ...META.rocher, sc: 1.8 };   // (les rochers posés sur le toboggan)   // (les modèles 3D pirates, passés en pixels : squelette pirate, capitaine, tonneaux, coffre, or…)
   // les boss et Sloth : les dessins de face fournis (hauteur voulue dans le monde)
   for (const [n, H] of [["mama", 150], ["jake", 175], ["francis", 165], ["sloth", 190]]) { const im = IMG["b_" + n]; if (im) META["boss_" + n] = { f: [[0, 0, im.width, im.height]], a: [im.width / 2, im.height * .985], img: "b_" + n, sc: H / im.height }; }
   pret = true; demarre(); });
@@ -187,6 +188,14 @@ const H = {
     ["choco", "Euh… quelqu'un a pris des cours de piano ?"]] },
   apres5: { fond: "niv5", l: [
     ["mikey", "Le passage s'ouvre ! J'entends la mer…"]] },
+  inferno: { fond: "inferno", l: [
+    [null, "Le toboggan les recrache dans un immense lac souterrain…", "inferno"],
+    ["choco", "Les gars… Regardez !", "inferno"],
+    ["mikey", "L'Inferno… Le bateau de Willy le Borgne ! Il existe vraiment !", "inferno"],
+    ["data", "Trois cents ans sous la terre… et il est encore entier !", "inferno"],
+    ["bagou", "Si le trésor est quelque part, il est là-dedans !", "inferno"],
+    ["sloth", "Bateau… GROS !", "inferno"],
+    ["brand", "Tout le monde reste groupé. On monte à bord !", "inferno"]] },
   avant6: { fond: "niv6a", l: [
     ["choco", "Un vrai bateau pirate… l'Inferno !"],
     ["mikey", "Le trésor de Willy le Borgne ! On l'a trouvé !"],
@@ -359,7 +368,39 @@ function salle(o) {
   N[3].scenes.unshift(S_("niv4a", 5, ["chauve", "rat", "araignee", "capitaine"], 3800));
   N[3].scenes.splice(2, 0, S_("niv4a", 13, ["rat", "chauve", "araignee", "capitaine", "squelette"], 3200));
   N[4].scenes.unshift(S_("niv5", 2, ["squelette", "chauve", "squelette"], 3600));
-  N[5].scenes.unshift(S_("niv6a", 4, ["squelette", "capitaine", "squelette", "capitaine"], 3600)); }
+  N.splice(5, 0, { nom: "LE TOBOGGAN", musique: "orgue", but: "Glisse jusqu'au lac souterrain !", apres: "inferno", glisse: true, scenes: [() => toboggan()] });   // (entre l'orgue et le bateau)
+  N[6].scenes.unshift(S_("niv6a", 4, ["squelette", "capitaine", "squelette", "capitaine"], 3600)); }
+
+// ------------------------------------------------------------------ le toboggan : des pentes d'eau dans les grottes, jusqu'au lac de l'Inferno
+function toboggan() {
+  const L = 7400, H = 2700, cle = "toboggan", neuf = !IMG[cle];
+  let g = 777; const rnd = () => (g = (g * 9301 + 49297) % 233280) / 233280;
+  const sol = [], ennemis = [], pieces = [], segs = [];
+  let x = 0, y = 430; const seg = (x0, x1, y0, y1) => { segs.push([x0, x1, y0, y1]); sol.push(p(x0, x1, y0, y1, 1)); };
+  seg(0, 300, y, y + 20); x = 300; y += 20;
+  const motif = ["pente", "pente", "trou", "pente", "tremplin", "pente", "trou", "pente", "pente", "tremplin", "trou"]; let k = 0;
+  while (x < L - 1300) { const t = motif[k++ % motif.length];
+    if (t === "pente") { const l = 520 + rnd() * 260, d = 150 + rnd() * 130; seg(x, x + l, y, y + d);
+      if (k % 2) ennemis.push({ t: "roc", x: x + l * .62, y: y + d * .62 }); else pieces.push(...ligne(x + 80, y + 40 - 60, 5, 60).map(([a, b], i) => [a, b + i * d / l * 60]));
+      if (k % 4 === 0) ennemis.push({ t: "chauve", x: x + l * .5, y: y + d * .5 - 240 }); x += l; y += d; }
+    else if (t === "trou") { const gp = 130 + rnd() * 60; pieces.push(...arc(x + 10, y - 50, 4, gp / 3, 70)); x += gp; y += 70; seg(x, x + 220, y, y + 40); x += 220; y += 40; }
+    else { seg(x, x + 160, y, y - 70); x += 160; y -= 70; const gp = 200 + rnd() * 50; pieces.push(...arc(x + 20, y - 90, 5, gp / 4, 110)); x += gp; y += 170; seg(x, x + 260, y, y + 60); x += 260; y += 60; } }
+  // la dernière pente, et le grand plongeon dans le lac
+  seg(x, x + 500, y, y + 260); x += 500; y += 260; const lac = Math.min(H - 120, y + 360);
+  sol.push(p(x + 120, L, lac, lac, 1)); pieces.push(...arc(x + 20, y - 60, 5, 60, 120));
+  if (neuf) { const cv = document.createElement("canvas"); cv.width = L; cv.height = H; const c = cv.getContext("2d");
+    for (const [x0, x1, y0, y1] of segs) {   // la roche, et l'eau qui dévale dessus
+      const gr = c.createLinearGradient(0, Math.min(y0, y1), 0, Math.max(y0, y1) + 90); gr.addColorStop(0, "#4a3a2c"); gr.addColorStop(1, "#1a120c");
+      c.fillStyle = gr; c.beginPath(); c.moveTo(x0, y0 + 4); c.lineTo(x1, y1 + 4); c.lineTo(x1, y1 + 80); c.lineTo(x0, y0 + 80); c.closePath(); c.fill();
+      c.fillStyle = "rgba(0,0,0,.35)"; for (let i = x0; i < x1; i += 23) { const yy = y0 + (y1 - y0) * (i - x0) / (x1 - x0); c.fillRect(i, yy + 30 + (i * 7 % 30), 9, 5); }
+      c.fillStyle = "#2a78b0"; c.beginPath(); c.moveTo(x0, y0 - 10); c.lineTo(x1, y1 - 10); c.lineTo(x1, y1 + 6); c.lineTo(x0, y0 + 6); c.closePath(); c.fill();
+      c.strokeStyle = "#cfefff"; c.lineWidth = 3; for (let i = x0; i < x1 - 30; i += 46) { const a = (i - x0) / (x1 - x0), b = Math.min(1, (i + 26 - x0) / (x1 - x0)); c.beginPath(); c.moveTo(i, y0 + (y1 - y0) * a - 7); c.lineTo(i + 26, y0 + (y1 - y0) * b - 7); c.stroke(); }
+      c.fillStyle = "rgba(190,235,255,.5)"; c.fillRect(x1 - 6, y1 - 10, 6, 70); }   // (la cascade au bout de chaque pente)
+    const gl = c.createLinearGradient(0, lac - 20, 0, H); gl.addColorStop(0, "#2e86b8"); gl.addColorStop(1, "#06223a"); c.fillStyle = gl; c.fillRect(x + 100, lac - 14, L - x - 100, H - lac + 14);
+    c.fillStyle = "#d8f4ff"; for (let i = x + 110; i < L; i += 40) c.fillRect(i, lac - 14 + (i % 3) * 2, 22, 3);
+    IMG[cle] = cv; }
+  return { img: cle, par: "niv4a", vh: 470, depart: [120, 430], fin: { type: "x", x: x + 260 }, sol, ech: [], pieces, pizzas: [[x - 900, y - 700]], ennemis, vide: H - 10 };
+}
 
 // ------------------------------------------------------------------ l'état du jeu
 let etat = "charge", E = {};          // E : les données de l'état courant
@@ -399,8 +440,8 @@ function chargerScene() { const N = NIVEAUX[partie.niv], def = N.scenes[partie.s
   if (DEBUG && PARAM.get("dep")) def.depart = PARAM.get("dep").split(",").map(Number);
   J = nouveauJoueur(def.depart[0], def.depart[1]); cam.z = LH / def.vh; cam.x = Math.max(0, J.x - LW / cam.z * .35); cam.y = def.camYfixe ? (def.camY ?? S.h - def.vh) : Math.max(0, Math.min(S.h - def.vh, J.y - def.vh * .65));
   etat = "jeu"; if (def.histoireDebut) pause(def.histoireDebut); }
-function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, gant: null }; }
-function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, capitaine: 5, barriere: 99, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine") e = { ...e, chasse: 1 };
+function nouveauJoueur(x, y) { return { x, y, vx: 0, vy: 0, sol: true, plat: null, echelle: null, dir: 1, inv: 2, tirT: 0, pv: 3, anim: 0, tirA: 0, mal: 0, sur: [x, y], velo: !!S.N.velo, glisse: !!S.N.glisse, gant: null }; }
+function nouvelEnnemi(e) { const pv = { rat: 1, araignee: 1, chauve: 1, chien: 2, mouette: 1, crabe: 2, squelette: 3, capitaine: 5, barriere: 99, roc: 99, caisse: 2, pneu: 2 }[e.t] || 1; if (e.t === "capitaine") e = { ...e, chasse: 1 };
   return { ...e, pv, vx: 0, dir: -1, tm: Math.random() * 3, mort: 0, inv: 0, xb: e.x, yb: e.y || e.y0 || 0, y: e.y ?? e.y0 }; }
 
 // ------------------------------------------------------------------ physique : les plateformes
@@ -409,7 +450,7 @@ function sousPieds(x, yAvant, yApres, ignore) { let best = null, by = 1e9;
   for (const pl of S.sol) { if (pl === ignore) continue; const h = hauteurPlat(pl, x); if (h == null) continue; if (yAvant <= h + 6 && yApres >= h - 1 && h < by) { by = h; best = pl; } }
   return best ? [best, by] : null; }
 const HB = { w: 34, h: 84 };
-function boiteJ() { return J.velo ? [J.x - 40, J.y - 118, 80, 116] : J.baisse ? [J.x - HB.w / 2, J.y - 58, HB.w, 58] : [J.x - HB.w / 2, J.y - HB.h, HB.w, HB.h]; }
+function boiteJ() { return J.glisse && J.sol ? [J.x - HB.w / 2, J.y - 58, HB.w, 58] : J.velo ? [J.x - 40, J.y - 118, 80, 116] : J.baisse ? [J.x - HB.w / 2, J.y - 58, HB.w, 58] : [J.x - HB.w / 2, J.y - HB.h, HB.w, HB.h]; }
 const chevauche = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
 
 // ------------------------------------------------------------------ le joueur
@@ -420,6 +461,10 @@ function majJoueur(dt) {
   const g = IN.gauche ? -1 : 0, d = IN.droite ? 1 : 0, dirX = g + d;
   if (J.velo) {   // à vélo : on roule toujours un peu, la droite accélère, la gauche freine
     const cible = dirX > 0 ? 430 : 0; J.vx += (cible - J.vx) * Math.min(1, dt * (dirX < 0 ? 4 : dirX > 0 ? 3.2 : 1.6)); J.dir = 1; J.anim += J.vx * dt / 40;   // (on pédale : il roule ; on lâche : il ralentit jusqu'à s'arrêter ; en arrière : il freine)
+  } else if (J.glisse) {   // le toboggan : on glisse tout seul, plus vite dans les pentes ; la droite pousse, la gauche freine
+    const pl = J.sol && J.plat, pente = pl ? (pl.y1 - pl.y0) / Math.max(1, pl.x1 - pl.x0) : 0, cible = 380 + Math.max(0, pente) * 700 + (dirX > 0 ? 170 : dirX < 0 ? -150 : 0);   // (dans les tremplins on garde son élan)
+    J.vx += (Math.max(230, cible) - J.vx) * Math.min(1, dt * (J.sol ? 2.4 : .3)); J.dir = 1; J.anim += dt * 10;
+    if (J.sol && Math.random() < dt * 30) S.eclats.push({ x: J.x - 24, y: J.y - 6, vx: -120 - Math.random() * 160, vy: -80 - Math.random() * 260, t: 0, c: Math.random() < .5 ? "#bfe8ff" : "#6ab4e0" });
   } else if (J.echelle) {
     const e = J.echelle; J.vx = 0; J.x += (((e.x0 + e.x1) / 2) - J.x) * Math.min(1, dt * 12);
     const dy = (IN.bas ? 1 : 0) - (IN.haut ? 1 : 0); J.y += dy * 210 * dt; if (dy) J.anim += dt * 8;
@@ -445,6 +490,7 @@ function majJoueur(dt) {
   const xAv = J.x; J.x += J.vx * dt;
   const b = S.bornes || [0, S.w]; J.x = Math.max(b[0] + 18, Math.min(b[1] - 18, J.x));
   const yAv = J.y; J.y += J.vy * dt;
+  if (J.vy >= 0 && J.sol && J.plat) { const h = hauteurPlat(J.plat, J.x); if (h != null && h - J.y < 26 && h - J.y > -8) { J.y = h; J.vy = 0; } }   // (on reste collé aux pentes qui descendent, au lieu de décoller à chaque pas)
   if (J.vy >= 0) { const s = sousPieds(J.x, yAv, J.y, J.ignore); if (s) { J.y = s[1]; J.vy = 0; if (!J.sol && J.velo) J.anim += 1; J.sol = true; J.plat = s[0]; } else J.sol = false; }
   else J.sol = false;
   if (J.sol && J.plat) { const h = hauteurPlat(J.plat, J.x); if (h == null) { J.sol = false; } else { J.y = h; J.sur = [J.x, J.y]; } }
@@ -471,7 +517,7 @@ function blesse(n = 1, chute = false) {
   if (!chute && J.inv > 0) return;
   J.pv -= n; J.inv = 1.4; J.mal = .4; son(J.pv > 0 ? "aie" : "mort");
   if (chute) { const xr = J.sur[0] - J.dir * 110, s2 = sousPieds(xr, J.sur[1] - 200, J.sur[1] + 200); if (s2) { J.sur = [xr, s2[1]]; } J.x = J.sur[0]; J.y = J.sur[1] - 2;   // (on revient un peu en arrière du trou)
-    J.vx = J.vy = 0; J.echelle = null; } else { J.vy = -420; J.vx = -J.dir * 260; J.sol = false; }
+    J.vx = J.vy = 0; J.echelle = null; } else if (J.glisse) { J.vy = -320; J.sol = false; } else { J.vy = -420; J.vx = -J.dir * 260; J.sol = false; }   // (sur le toboggan, pas de recul)
   if (J.pv <= 0) { etat = "ko"; E = { t: 0 }; partie.ko.add(partie.ado); }
 }
 
@@ -496,10 +542,10 @@ function majEnnemis(dt) {
     if (chevauche(be, bj)) { if (J.vy > 120 && bj[1] + bj[3] < be[1] + be[3] * .55 && e.t !== "araignee") { touche(e, 2); J.vy = -620; son("coup"); } else blesse(1); } }
   S.ennemis = S.ennemis.filter(e => !e.mort || e.mort < 1.2);
 }
-function boiteE(e) { const T = { rat: [70, 34], araignee: [46, 40], chauve: [62, 30], chien: [84, 50], mouette: [60, 30], crabe: [76, 40], squelette: [36, 96], capitaine: [44, 110], barriere: [96, 50], caisse: [64, 62], pneu: [50, 52] }[e.t] || [40, 40];
+function boiteE(e) { const T = { rat: [70, 34], araignee: [46, 40], chauve: [62, 30], chien: [84, 50], mouette: [60, 30], crabe: [76, 40], squelette: [36, 96], capitaine: [44, 110], barriere: [96, 50], roc: [54, 46], caisse: [64, 62], pneu: [50, 52] }[e.t] || [40, 40];
   if (e.t === "araignee" || e.t === "chauve" || e.t === "mouette") return [e.x - T[0] / 2, e.y - T[1] / 2 + (e.t === "araignee" ? 18 : 0), T[0], T[1]];
   return [e.x - T[0] / 2, e.y - T[1], T[0], T[1]]; }
-function touche(e, deg) { if (e.inv > 0 || e.mort || e.t === "barriere") return;   // (la barrière de chantier : il faut sauter par-dessus)
+function touche(e, deg) { if (e.inv > 0 || e.mort || e.t === "barriere" || e.t === "roc") return;   // (la barrière de chantier : il faut sauter par-dessus)
  e.pv -= deg; e.inv = .25; son("coup");
   if (e.pv <= 0) { e.mort = .01; partie.score += { rat: 200, araignee: 250, chauve: 250, chien: 300, mouette: 200, crabe: 300, squelette: 500, capitaine: 800, caisse: 300, pneu: 250 }[e.t] || 200; eclats(e.x, e.y - 30, e.t === "caisse" ? "#9c6436" : "#ffe070"); } }
 function eclats(x, y, c, n = 12) { for (let k = 0; k < n; k++) S.eclats.push({ x, y, vx: (Math.random() - .5) * 500, vy: -Math.random() * 500, t: 0, c }); }
@@ -602,7 +648,7 @@ function maj(dt) {
   if (S.ouvert && ((F.type === "x" && J.x > F.x) || (F.type === "xg" && J.x < F.x) || ((F.type === "boss" || F.type === "orgue") && J.x > F.x - 20 && (!S.boss || S.boss.mort > 1.2 || !S.boss)))) finScene();
   // la caméra
   const vw = LW / cam.z, vh = LH / cam.z;
-  const cx = Math.max(0, Math.min(S.w - vw, J.x - vw * (J.velo ? (S.voit && S.voit.actif ? .58 : .3) : .42) + J.dir * 40)); cam.x += (cx - cam.x) * Math.min(1, dt * 5);
+  const cx = Math.max(0, Math.min(S.w - vw, J.x - vw * (J.velo ? (S.voit && S.voit.actif ? .58 : .3) : J.glisse ? .28 : .42) + J.dir * 40)); cam.x += (cx - cam.x) * Math.min(1, dt * 5);
   if (!S.camYfixe) { const cy = Math.max(0, Math.min(S.h - vh, J.y - vh * .66)); cam.y += (cy - cam.y) * Math.min(1, dt * 4); }
 }
 
@@ -663,7 +709,7 @@ function dHistoire() {
   if (E.c >= txt.length && Math.floor(E.t * 3) % 2) texte("▼", LW - 40, yb + HB - 12, { c: "#ffd34a", t: 18 });
 }
 function dTitreNiv() { const N = E.N;
-  const im = IMG[{ 0: "niv1", 1: "ville", 2: "niv3", 3: "niv4a", 4: "niv5", 5: "niv6a" }[partie.niv]]; if (im) { const s = Math.max(LW / im.width, LH / im.height); X.globalAlpha = .5; X.drawImage(im, 0, 0, im.width * s, im.height * s); X.globalAlpha = 1; }
+  const im = IMG[{ 0: "niv1", 1: "ville", 2: "niv3", 3: "niv4a", 4: "niv5", 5: "niv4a", 6: "niv6a" }[partie.niv]]; if (im) { const s = Math.max(LW / im.width, LH / im.height); X.globalAlpha = .5; X.drawImage(im, 0, 0, im.width * s, im.height * s); X.globalAlpha = 1; }
   boite(140, 170, LW - 280, 200, .85); texte(`NIVEAU ${partie.niv + 1}`, LW / 2, 230, { a: "center", c: "#ffd34a", t: 40, bord: "#3a0a00", ep: 6 });
   texte(N.nom, LW / 2, 285, { a: "center", t: 30 }); texte(N.but, LW / 2, 335, { a: "center", c: "#9fe0ff", t: 19 }); }
 function dFin() { fond("niv6b", .7); boite(120, 120, LW - 240, 300, .85);
@@ -717,7 +763,7 @@ function dJeu() {
   // le joueur
   const A = parId(partie.ado), cl = J.inv > 0 && Math.floor(tt * 16) % 2;
   if (!cl) { if (J.velo) spr(META["velo_" + A.id] ? "velo_" + A.id : "velo_mikey", Math.floor(J.anim), J.x, J.y + 12, J.dir < 0);
-    else { let f = 0; if (J.mal > 0) f = 7; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
+    else { let f = 0; if (J.mal > 0) f = 7; else if (J.glisse) f = !J.sol && J.vy < -120 ? 5 : J.tirA > 0 ? 9 : 8; else if (J.echelle) f = 10 + Math.floor(J.anim / 2) % 2; else if (J.baisse) f = J.tirA > 0 || J.gant ? 9 : 8; else if (J.tirA > 0 || J.gant) f = 6; else if (!J.sol) f = 5; else if (Math.abs(J.vx) > 30) f = 1 + Math.floor(J.anim) % 4;
       spr(A.id, f, J.x, J.y + 4, J.dir < 0, 1.12); } }
   if (J.gant) { const G = J.gant, y = (J.y - G.h - cam.y) * cam.z, x0 = (J.x + G.dir * 26 - cam.x) * cam.z, x1 = x0 + G.dir * G.l * cam.z;
     X.strokeStyle = "#d8c050"; X.lineWidth = 3; X.beginPath(); const n = 10; for (let k = 0; k <= n; k++) { const xx = x0 + (x1 - x0) * k / n, yy = y + (k % 2 ? -7 : 7); k ? X.lineTo(xx, yy) : X.moveTo(xx, yy); } X.stroke();
