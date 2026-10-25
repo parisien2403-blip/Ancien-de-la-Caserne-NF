@@ -63,7 +63,7 @@ function lireEntrees() { const m = lireManette();
   for (const a of ACT) { const l = !!T["l" + a]; T["l" + a] = false; const v = !!(T["c" + a] || T["t" + a] || m[a]); IN[a] = v || l; IN[a + "P"] = (v && !PREC[a]) || l; PREC[a] = v; }
   IN.ok = IN.sautP || IN.tirP || IN.startP || (T.tclic && !PREC.clic); PREC.clic = T.tclic;
   if (musVoulue && MUS && MUS.paused && ACT.some(k => IN[k + "P"])) MUS.play().catch(() => {}); }   // (à la manette aussi)
-function quitter() { try { parent.postMessage({ goonies: "fermer" }, "*"); } catch (e) {} }
+function quitter() { if (typeof partie !== "undefined" && partie && partie.score > 0) enregistreRecord(); try { parent.postMessage({ goonies: "fermer" }, "*"); } catch (e) {} }   // (on quitte en pleine partie : le score compte quand même au panneau des records)
 document.getElementById("fermer").onclick = quitter;
 
 // ------------------------------------------------------------------ les sons (petits bips façon borne ; les musiques viendront plus tard)

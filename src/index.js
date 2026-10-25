@@ -493,7 +493,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("musique_vol"); ws.send(JSON.stringify({ t: "musique_vol", niveau: typeof n === "number" ? n : 1 })); }
-      if (m.lieu === "fetes") for (const jeu of ["flipper", "flechettes", "babyfoot", "goonies"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
+      if (m.lieu === "fetes" || m.lieu === "cave") for (const jeu of ["flipper", "flechettes", "babyfoot", "goonies"])   /* (cave : le bar du sous-sol, où sont la borne des Goonies et le baby-foot) */ ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "grande") for (const jeu of ["tir", "pingpong"]) ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
       if (m.lieu === "fetes") { const n = await this.ctx.storage.get("lumiere_fetes"); ws.send(JSON.stringify({ t: "lumiere", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
@@ -750,7 +750,7 @@ export class Compteur extends DurableObject {
     jeu = ["flechettes", "tir", "pingpong", "babyfoot", "goonies"].includes(jeu) ? jeu : "flipper";   // (goonies : la borne d'arcade du bar)
     const moi = this.moi(token), score = Math.max(0, Math.min(jeu === "flechettes" ? 540 : jeu === "tir" ? 50 : jeu === "pingpong" || jeu === "babyfoot" ? 99 : 99999999, Math.floor(Number(x && x.score) || 0)));
     if (score > 0) this.sql.exec("INSERT INTO flipper_scores (numero, nom, score, cree, jeu) VALUES (?, ?, ?, ?, ?)", Number(moi.numero), moi.prenom, score, new Date().toISOString(), jeu);
-    const top = this.classementFlipper(jeu); this.diffuser(jeu === "tir" || jeu === "pingpong" ? "grande" : "fetes", { t: "flipper", jeu, top });   // (le stand de tir et le ping-pong sont au sous-sol de la grande cour)
+    const top = this.classementFlipper(jeu); for (const l of jeu === "tir" || jeu === "pingpong" ? ["grande"] : ["fetes", "cave"]) this.diffuser(l, { t: "flipper", jeu, top });   // (le stand de tir et le ping-pong sont au sous-sol de la grande cour)
     const record = this.sql.exec("SELECT MAX(score) AS s FROM flipper_scores WHERE numero = ? AND COALESCE(jeu, 'flipper') = ?", Number(moi.numero), jeu).toArray()[0];
     return { top, record: (record && record.s) || 0 };
   }

@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.94";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.95";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8646,7 +8646,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       L.sousSol = SL; L.nuitSousSol = SL.nuitFenetre;
       const loc = (x, z) => [-x, FETE_SZ - z];
       L.solsPlus.push(SL.sol, ...(SL.solsPlus || []));
-      L.console = loc(...SL.console); L.borneArcade = SL.borneArcade && loc(...SL.borneArcade); L.ecranConsole = SL.ecranConsole; L.babyfoot = loc(...SL.babyfoot); L.majClassementBF = SL.majClassementBF;
+      L.console = loc(...SL.console); L.borneArcade = SL.borneArcade && loc(...SL.borneArcade); L.ecranConsole = SL.ecranConsole; L.babyfoot = loc(...SL.babyfoot); L.majClassementBF = SL.majClassementBF; L.majClassementGoonies = SL.majClassementGoonies; if (L.majClassementGoonies && M && M.classementGoonies) L.majClassementGoonies(M.classementGoonies);   /* (le panneau des records des Goonies, au bar : mis à jour aussi depuis la salle des fêtes) */
       for (const r of SL.raccourcis) if (!r.vers) L.raccourcis = [...(L.raccourcis || []), r.marche ? { ...r, marche: loc(...r.marche) } : r];
       L.tabouretsSousSol = SL.tabourets.map(t => loc(...t));
       L.comptoirSousSol = (SL.surComptoir || []).map(t => loc(...t)); L.yComptoirSousSol = yb - 4 * HM + SL.yComptoir;
@@ -16418,7 +16418,7 @@ function chercherAction(t) {
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
       const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
-      else if (M.L.borneArcade && estAdmin() && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };   // (la borne d'arcade : l'administrateur seul, pour l'instant)
+      else if (M.L.borneArcade && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };   // (la borne d'arcade : ouverte à tous)
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.babyfoot && Math.hypot(x - M.L.babyfoot[0], z - M.L.babyfoot[1]) < 1.5) a = { type: "babyfoot", label: "⚽ Jouer au baby-foot" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
