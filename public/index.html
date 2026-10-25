@@ -972,7 +972,12 @@
   .mx-porte-btn { font-size: 16px; padding: 11px 18px; width: 100%; }
   /* ====== l'accueil : le mur de briques façon 21 Jump Street (toutes tailles d'écran) ======
      « CASERNE » en néon (éteint, puis il s'allume) ; « de la Nouvelle-France » tagué lettre par lettre au son de la bombe ; puis la brique du bas se fissure et « Entrer » apparaît */
-  .splash { --h: min(80dvh, calc(94vw * 1300 / 1100)); display: block !important; position: relative; height: 100%; overflow: hidden; background: #2a0d07 url("images/accueil-mur.jpg") center / cover; }
+  .splash { --h: min(80dvh, calc((100dvh - 290px) * 1.25), calc(94vw * 1300 / 1100)); display: block !important; position: relative; height: 100%; overflow: hidden; background: #2a0d07 url("images/accueil-mur.jpg") center / cover; }
+  /* sur tablette et téléphone pliant ouvert (entre téléphone et ordinateur) : l'accueil prend tout l'écran, pas la carte arrondie */
+  @media (min-width: 560px) and (max-width: 959px) {
+    body:has(#splash:not([hidden])) { padding: 0; }
+    .app:has(#splash:not([hidden])) { max-width: none; height: 100vh; height: 100dvh; height: var(--app-h, 100dvh); max-height: none; border-radius: 0; box-shadow: none; }
+  }
   .splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 40%, rgba(0,0,0,0) 40%, rgba(10,3,1,.75) 100%); }
   .splash svg.scene { display: none !important; }
   .mur-jump { position: absolute; z-index: 1; top: -2dvh; left: 50%; height: var(--h); aspect-ratio: 1100 / 1300; transform: translateX(-50%); }
@@ -3269,6 +3274,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.91", "25 octobre 2026", ["Accueil : sur tablette et téléphone pliant ouvert, le mur prend tout l'écran et tout le texte en dessous est visible", "Accueil : plus de rectangle visible autour du trou « Entrer »"]],
     ["7.90", "25 octobre 2026", ["Accueil : la peinture coule tout de suite sous chaque lettre taguée", "Accueil : le néon « CASERNE » brille plus fort, avec un halo bleu sur les briques, et grésille plus souvent", "Accueil : le mur lui-même se fissure, des miettes de brique tombent puis les morceaux s'effondrent ; « Entrer » brille au fond d'un vrai trou aux bords cassés"]],
     ["7.89", "25 octobre 2026", ["Accueil : « Touchez le mur » est en bas de l'écran et ne recouvre plus le bouton « Entrer »"]],
     ["7.88", "25 octobre 2026", ["Accueil : tout l'écran devient le mur de briques (l'horloge est retirée) ; sur le générique de 21 Jump Street, « de la Nouvelle-France » se tague lettre par lettre au son de la bombe, la peinture coule, le néon « CASERNE » s'allume, puis la brique du bas se fissure, tombe, et « Entrer » apparaît", "Accueil : si le navigateur bloque le son, « Touchez le mur » lance la cinématique avec la musique"]],
@@ -5320,7 +5326,8 @@
     const caler = () => { const S = splash.getBoundingClientRect(), E = ent.getBoundingClientRect(); if (!S.width || !E.width) return; const k = Math.max(S.width / 2400, S.height / 1500), bw = 2400 * k, bh = 1500 * k;
       const bx = (S.width - bw) / 2 - (E.left - S.left), by = (S.height - bh) / 2 - (E.top - S.top);
       ent.style.setProperty("--bx", bx.toFixed(1) + "px"); ent.style.setProperty("--by", by.toFixed(1) + "px");
-      ent.style.setProperty("--mur", `url("images/accueil-mur.jpg") ${bx.toFixed(1)}px ${by.toFixed(1)}px / ${bw.toFixed(1)}px ${bh.toFixed(1)}px no-repeat`);
+      // (avec le même assombrissement des bords que le mur de l'écran)
+      ent.style.setProperty("--mur", `radial-gradient(ellipse 80% 70% at 50% 40%, rgba(0,0,0,0) 40%, rgba(10,3,1,.75) 100%) ${(S.left - E.left).toFixed(1)}px ${(S.top - E.top).toFixed(1)}px / ${S.width.toFixed(1)}px ${S.height.toFixed(1)}px no-repeat, url("images/accueil-mur.jpg") ${bx.toFixed(1)}px ${by.toFixed(1)}px / ${bw.toFixed(1)}px ${bh.toFixed(1)}px no-repeat`);
       for (const i of miettes.children) i.style.background = `url("images/accueil-mur.jpg") ${i.style.getPropertyValue("--mp").replace(/var\(--bx\)/, bx.toFixed(1) + "px").replace(/var\(--by\)/, by.toFixed(1) + "px")} / ${bw.toFixed(1)}px ${bh.toFixed(1)}px no-repeat`; };
     caler(); addEventListener("resize", caler); if (document.fonts) document.fonts.ready.then(caler); requestAnimationFrame(caler); }
 
