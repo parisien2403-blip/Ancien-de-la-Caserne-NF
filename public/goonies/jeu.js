@@ -201,7 +201,7 @@ const H = {
     ["data", "Attention, le tronc est glissant ! Ne regardez pas en bas !", "passage"],
     ["choco", "Pourquoi tu dis ça ?! Maintenant je regarde en bas !", "passage"],
     ["bagou", "Il y a une sorte de toboggan d'eau, là-dessous… Ça descend loin.", "passage"]] },
-  inferno: { fond: "inferno", l: [
+  inferno: { fond: "inferno", mus: "sloth", l: [
     [null, "Le toboggan les recrache dans un immense lac souterrain…", "inferno"],
     ["choco", "Les gars… Regardez !", "inferno"],
     ["mikey", "L'Inferno… Le bateau de Willy le Borgne ! Il existe vraiment !", "inferno"],
