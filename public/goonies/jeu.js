@@ -92,8 +92,8 @@ const H = {
     ["mikey", "Demain, on doit tous déménager… C'est notre dernier week-end ensemble.", "golf"],
     ["bagou", "À moins de trouver un miracle d'ici là.", "golf"],
     ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien.", "golf"],
-    ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !"],
-    ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !"]] },
+    ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !", "golf"],
+    ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !", "golf"]] },
   apres1: { fond: "niv1", l: [
     ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !"],
     ["data", "Le pirate ? Celui qui a caché son trésor dans les grottes de la côte ?"],
