@@ -2560,10 +2560,13 @@
     $("mxSon").hidden = !(c && mxLieu === "grande" && djVolume > 0); $("mxSon").textContent = djEcoute ? "🔇" : "🔊 La fête";
     if (!c || !djEcoute || (!djVolume && !djEntend()) || mxLieu === "etage" || window.mxArcadeOn) { djAudio.pause(); return; }   // (devant la borne d'arcade : à l'arrêt, pas seulement à zéro — sur iPhone, le volume ne se règle pas)   // (dans les étages, on n'entend pas la fête ; dans la cour, même trop loin pour l'entendre, la musique continue sans le son)
     djAudio.volume = djV();
-    const P = djEtat.prochain; if (P && !djProch.src.endsWith(djSrc(P.id))) { djProch.src = djSrc(P.id); djProch.load(); }   // le titre d'après : déjà chargé
+    const P = djEtat.prochain; if (P && !djProch.src.endsWith(djSrc(P.id))) { djProch.onloadedmetadata = null; djProch.src = djSrc(P.id); djProch.load(); }   // le titre d'après : déjà chargé
     const src = djSrc(c.id);
     if (!djAudio.src.endsWith(src) && djProch.src.endsWith(src) && djProch.readyState >= 2) { const a = djAudio; djAudio = djProch; djProch = a; djAudio.volume = djV(); djAudio.play().catch(() => {}); a.pause(); }   // (il est déjà prêt : on le prend tel quel)
-    const cale = () => { const pos = (Date.now() - c.debut) / 1000; if (pos < 0) { setTimeout(djSynchro, -pos * 1000); return; }
+    /* (calé seulement si c'est toujours ce lecteur et ce titre : sinon un ancien calage, resté accroché au lecteur qu'on réutilise pour précharger le titre suivant,
+       faisait sauter le titre en cours bien plus loin — il finissait trop tôt et le suivant partait : dehors une musique, dedans une autre) */
+    const el = djAudio, cale = () => { if (el.onloadedmetadata === cale) el.onloadedmetadata = null; if (el !== djAudio || djEtat.courant !== c) return;
+      const pos = (Date.now() - c.debut) / 1000; if (pos < 0) { setTimeout(djSynchro, -pos * 1000); return; }
       const joue = !djAudio.paused && djAudio.readyState >= 3;   /* (elle joue déjà : on ne la recale que si elle s'est vraiment égarée — sinon, à chaque passage d'un lieu à l'autre, un saut et un blanc) */
       if (Math.abs(djAudio.currentTime - pos) > (joue ? 8 : 1.5)) { try { djAudio.currentTime = pos; } catch (e) {} } djAudio.play().catch(() => {}); };
     if (!djAudio.src.endsWith(src)) { djAudio.src = src; djAudio.onloadedmetadata = cale; djAudio.load(); } else cale();
@@ -2584,6 +2587,7 @@
   djBrancher(djAudio); djBrancher(djProch);
   setInterval(() => { const c = djEtat.courant; if (!c || !djEcoute || !mxOuverte || !(mxLieu === "fetes" || mxLieu === "grande") || document.hidden || window.mxArcadeOn) return;   // (de jour, dans la cour : on n'entend pas la fête)
     const pos = (Date.now() - c.debut) / 1000; if (pos < 0 || (c.duree && pos > c.duree)) return;
+    if (!djAudio.src.endsWith(djSrc(c.id)) && djFiniEnvoye !== c.debut) { djSynchro(); return; }   // (ce n'est pas le titre que passe le DJ — resté sur l'ancien, ou parti trop tôt sur le suivant : on remet le bon, au bon moment)
     if (djAudio.paused && djAudio.src) djAudio.play().catch(() => {}); else if (!djAudio.paused && Math.abs(djAudio.currentTime - pos) > 8) djSynchro(); }, 5000);   // (la veille : la musique repart si elle s'est arrêtée)
   // la musique continue même si personne n'écoute : on passe au suivant d'après la durée connue
   setInterval(() => { const c = djEtat.courant; if (c && c.duree && Date.now() - c.debut > c.duree * 1000 + 2500 && djFiniEnvoye !== c.debut && MX && (mxLieu === "fetes" || mxLieu === "grande")) { djFiniEnvoye = c.debut; MX.dj("fini", { id: c.id }); } }, 3000);
@@ -3274,6 +3278,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.92", "25 octobre 2026", ["Salle des fêtes : la musique entendue depuis la cour est bien la même qu'à l'intérieur — un titre ne saute plus en avant et ne s'arrête plus avant la fin, ce qui faisait partir le suivant trop tôt", "Appartement : couché dans un lit (canapé-lit, lit superposé, lit deux places), le bonhomme a la tête sur l'oreiller et les pieds sur le matelas"]],
     ["7.91", "25 octobre 2026", ["Accueil : sur tablette et téléphone pliant ouvert, le mur prend tout l'écran et tout le texte en dessous est visible", "Accueil : plus de rectangle visible autour du trou « Entrer »"]],
     ["7.90", "25 octobre 2026", ["Accueil : la peinture coule tout de suite sous chaque lettre taguée", "Accueil : le néon « CASERNE » brille plus fort, avec un halo bleu sur les briques, et grésille plus souvent", "Accueil : le mur lui-même se fissure, des miettes de brique tombent puis les morceaux s'effondrent ; « Entrer » brille au fond d'un vrai trou aux bords cassés"]],
     ["7.89", "25 octobre 2026", ["Accueil : « Touchez le mur » est en bas de l'écran et ne recouvre plus le bouton « Entrer »"]],
