@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Les Goonies — borne d'arcade</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+  #jeu { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); image-rendering: pixelated; image-rendering: crisp-edges; background: #000; }
+  #fermer { position: fixed; top: calc(8px + env(safe-area-inset-top)); right: 10px; z-index: 5; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #f3c64a; background: rgba(0, 0, 0, .6); color: #f3c64a; font: bold 20px sans-serif; cursor: pointer; }
+  .tactile { position: fixed; z-index: 4; display: none; }
+  body.touch .tactile { display: block; }
+  .tactile button { position: absolute; width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255, 220, 120, .7); background: rgba(0, 0, 0, .35); color: #ffe7a0; font: bold 20px sans-serif; touch-action: none; }
+  #padG { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 210px; height: 150px; }
+  #padD { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 170px; height: 150px; }
+  #start { position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom)); display: none; padding: 6px 14px; border-radius: 14px; border: 2px solid rgba(255, 220, 120, .7); background: rgba(0, 0, 0, .4); color: #ffe7a0; font: bold 13px sans-serif; }
+  body.touch #start { display: block; }
+</style>
+</head>
+<body>
+<canvas id="jeu" width="960" height="540"></canvas>
+<button id="fermer" title="Quitter la borne">✕</button>
+<div class="tactile" id="padG">
+  <button data-t="gauche" style="left:0;top:43px">◀</button>
+  <button data-t="droite" style="left:140px;top:43px">▶</button>
+  <button data-t="haut" style="left:70px;top:0">▲</button>
+  <button data-t="bas" style="left:70px;top:86px">▼</button>
+</div>
+<div class="tactile" id="padD">
+  <button data-t="tir" style="left:0;top:60px;width:72px;height:72px">B</button>
+  <button data-t="saut" style="left:92px;top:20px;width:78px;height:78px">A</button>
+</div>
+<button id="start" data-t="start">START</button>
+<script src="jeu.js?v=1"></script>
+</body>
+</html>

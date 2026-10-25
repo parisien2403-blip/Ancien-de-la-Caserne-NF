@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.14";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.15";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -4136,6 +4136,36 @@ function toileLambris() {
       x.strokeStyle = "rgba(60,30,10,.25)"; x.lineWidth = 1; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(X + 6 + k * 6, 0); x.bezierCurveTo(X + 10 + k * 6, h / 3, X + 2 + k * 6, h * .66, X + 7 + k * 6, h); x.stroke(); } }
   });
 }
+/* la borne d'arcade des Goonies (d'après la photo) : coffre en bois, flancs noirs peints (bateau pirate, « Les Goonies »), fronton lumineux, écran allumé, panneau de commandes, monnayeur ;
+   posée contre un mur, l'écran tourné vers +x. Rend son emprise au sol (obstacle) */
+function borneArcade(A, scene, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  const charge = (src) => { const im = new Image(), t = new THREE.Texture(im); t.colorSpace = THREE.SRGBColorSpace; im.onload = () => { t.needsUpdate = true; }; im.src = "goonies/img/" + src; return t; };
+  const bois = A.mat({ color: 0x5a3418, roughness: .55 }), noir = A.mat({ color: 0x111014, roughness: .5 }), P = .74, L = .62;   // profondeur (x), largeur (z)
+  const boite = (w, h, d, m, px, py, pz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  // le coffre : le bas (porte à pièces), le panneau de commandes en avancée, le haut (écran), le fronton
+  boite(P, .9, L, bois, 0, .45, 0);
+  boite(.16, .2, L + .04, bois, P / 2 + .06, .98, 0);
+  const pan = boite(.34, .05, L + .04, A.mat({ color: 0x4a2a12, roughness: .5 }), P / 2 + .1, 1.08, 0); pan.rotation.z = -.12;
+  boite(P - .18, .78, L, bois, -.09, 1.5, 0);
+  boite(.5, .3, L, bois, -.05, 2.05, 0);
+  // les flancs peints (un de chaque côté)
+  for (const sg of [-1, 1]) { const t = charge(sg > 0 ? "borne-cote.jpg" : "borne-cote-m.jpg");
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(P + .1, 2.2), new THREE.MeshStandardMaterial({ map: t, roughness: .55 })); f.position.set(0, 1.1, sg * (L / 2 + .012)); if (sg < 0) f.rotation.y = Math.PI; g.add(f); }
+  // la façade : porte à pièces, écran, fronton (lumineux)
+  const face = (src, w, h, px, py, lum, rot = 0) => { const t = charge(src), m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: .4, emissive: lum ? 0xffffff : 0, emissiveMap: lum ? t : null, emissiveIntensity: lum || 0 }));
+    m.rotation.y = Math.PI / 2; m.rotation.x = rot; m.position.set(px, py, 0); g.add(m); return m; };
+  face("borne-bas.jpg", L - .02, .86, P / 2 + .003, .45, 0);
+  face("borne-milieu.jpg", L - .02, .7, P / 2 - .085, 1.5, .55);
+  face("borne-fronton.jpg", L - .02, .22, P / 2 - .065 + .2, 2.06, 1.1);
+  const cmd = face("borne-commandes.jpg", L, .3, P / 2 + .1, 1.112, .2); cmd.rotation.order = "YXZ"; cmd.rotation.set(-Math.PI / 2 + .12, Math.PI / 2, 0);
+  // joysticks et boutons en relief
+  for (const sg of [-1, 1]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .07, 8), noir); st.position.set(P / 2 + .1, 1.15, sg * .16); g.add(st);
+    const bl = new THREE.Mesh(new THREE.SphereGeometry(.022, 12, 10), A.mat({ color: sg < 0 ? 0x111111 : 0xd02020, roughness: .3 })); bl.position.set(P / 2 + .1, 1.19, sg * .16); g.add(bl); }
+  for (let k = 0; k < 3; k++) for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .015, 12), A.mat({ color: [0xd02020, 0xe8c020, 0xe8c020][k], roughness: .3 })); b.position.set(P / 2 + .12, 1.125, sg * (.06 + k * .035) - sg * .14); g.add(b); }
+  const lueur = new THREE.PointLight(0x7ab0ff, .9, 2.2, 2); lueur.position.set(P / 2 + .5, 1.6, 0); g.add(lueur);
+  return [x - P / 2 - .05, x + P / 2 + .3, z - L / 2 - .05, z + L / 2 + .05];
+}
 /* Le sous-sol (vestibule, grande pièce au bar, console) en coordonnées propres ; L reçoit ses limites, tabourets, console…
    o.fusion : construit dans la salle des fêtes (l'escalier de la salle y descend), sans l'escalier propre du vestibule */
 function construireSousSol(A, L, scene, o = {}) {
@@ -4249,7 +4279,7 @@ function construireSousSol(A, L, scene, o = {}) {
       A.ajoute(new THREE.BoxGeometry(x1 - x0, .05, z1 - z0), vernis, cx, .75, cz);
       for (const [a, b] of [[x0 + .06, z0 + .06], [x1 - .06, z0 + .06], [x0 + .06, z1 - .06], [x1 - .06, z1 - .06]]) A.ajoute(new THREE.BoxGeometry(.05, .73, .05), acajou, a, .365, b);
       obstacles.push([x0 - .05, x1 + .05, z0 - .05, z1 + .05]); };
-    for (const sg of [-1, 1]) for (const z of [-5.7, -7.6]) { if (sg < 0 && z === -5.7) continue;   // (pas de table à côté des tabourets du bar : on y circule)          // le long des murs de côté
+    for (const sg of [-1, 1]) for (const z of [-5.7, -7.6]) { if (sg < 0) continue;   // (à gauche : plus de table ; au fond, la borne d'arcade des Goonies)   // (pas de table à côté des tabourets du bar : on y circule)          // le long des murs de côté
       const xw = sg * GX, x0 = sg > 0 ? xw - .75 : xw, x1 = sg > 0 ? xw : xw + .75; table(x0, x1, z - .6, z + .6);
       for (const dz of [-.33, .33]) fauteuil(xw - sg * 1.12, z + dz, sg, 0); }
     for (const x of [-1.1, 1.1]) { table(x - .6, x + .6, GZ0, GZ0 + .75); for (const dx of [-.33, .33]) fauteuil(x + dx, GZ0 + 1.12, 0, -1); }   // contre le mur du fond
@@ -4312,6 +4342,8 @@ function construireSousSol(A, L, scene, o = {}) {
       A.ajoute(new THREE.BoxGeometry(.05, hf, .05), cadreF, GX - .03, yf, zf, false); A.ajoute(new THREE.BoxGeometry(.05, .04, wf), cadreF, GX - .03, yf + hf * .18, zf, false);   // les petits bois
       const jour = new THREE.PointLight(0xe8f0ff, 1.4, 4, 1.6); jour.position.set(GX - .6, yf, zf); scene.add(jour);
       L.nuitFenetre = n => { verre.material.map = n ? tN : tJ; verre.material.needsUpdate = true; jour.intensity = n ? .2 : 1.4; }; }
+    // la borne d'arcade des Goonies, contre le mur de gauche (à la place de la table et de ses fauteuils) : l'administrateur seul y joue
+    { const bz = -7.6, bx = -GX + .42; obstacles.push(borneArcade(A, scene, bx, bz)); L.borneArcade = [bx + .85, bz]; }
     // le baby-foot, vers le fond à gauche (vu de la porte d'en face, de l'autre côté du bar)
     obstacles.push(babyFoot(A, 2.25, FM - 1.6)); L.babyfoot = [2.25, FM - 1.6];
     { const tab = tableauScores(A, "BABY-FOOT", 2.3, 1.95, FM - .02); L.majClassementBF = tab; tab((M && M.classementBF) || []); }   // (au mur, au-dessus du baby-foot : les 3 meilleurs)
@@ -8579,7 +8611,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       L.sousSol = SL; L.nuitSousSol = SL.nuitFenetre;
       const loc = (x, z) => [-x, FETE_SZ - z];
       L.solsPlus.push(SL.sol, ...(SL.solsPlus || []));
-      L.console = loc(...SL.console); L.ecranConsole = SL.ecranConsole; L.babyfoot = loc(...SL.babyfoot); L.majClassementBF = SL.majClassementBF;
+      L.console = loc(...SL.console); L.borneArcade = SL.borneArcade && loc(...SL.borneArcade); L.ecranConsole = SL.ecranConsole; L.babyfoot = loc(...SL.babyfoot); L.majClassementBF = SL.majClassementBF;
       for (const r of SL.raccourcis) if (!r.vers) L.raccourcis = [...(L.raccourcis || []), r.marche ? { ...r, marche: loc(...r.marche) } : r];
       L.tabouretsSousSol = SL.tabourets.map(t => loc(...t));
       L.comptoirSousSol = (SL.surComptoir || []).map(t => loc(...t)); L.yComptoirSousSol = yb - 4 * HM + SL.yComptoir;
@@ -9346,7 +9378,7 @@ export async function ouvrir(ctx) {
       if ((p.info.joue || null) !== (p.iconeJeu || null)) { if (p.icone) { p.g.remove(p.icone); p.icone.material.map.dispose(); p.icone.material.dispose(); p.icone = null; }
         p.iconeJeu = p.info.joue || null;
         if (p.iconeJeu) { const H = tailleBonhomme(); p.icone = sprite(toile(128, 128, x => { x.fillStyle = "rgba(255,250,240,.95)"; x.beginPath(); x.arc(64, 64, 58, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = "#b5573c"; x.stroke();
-            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫", pingpong: "🏓", babyfoot: "⚽" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
+            x.font = "64px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText({ arcade: "🕹️", console: "🎮", flipper: "🕹️", flechettes: "🎯", tir: "🔫", pingpong: "🏓", babyfoot: "⚽" }[p.iconeJeu] || "🎮", 64, 70); }), H * .32, H * .32);
           p.icone.position.y = H * hauteurDe(p) + .32; p.g.add(p.icone); } }
       if (p.icone) p.icone.position.y = tailleBonhomme() * hauteurDe(p) + .32 + Math.sin(t / 400) * .05;
       // la danse : il se balance d'un côté à l'autre en levant les bras
@@ -16299,6 +16331,16 @@ function actionPorteRE(x, z) {
 function verrouRE() { try { const A = actx = actx || new (window.AudioContext || window.webkitAudioContext)(), t0 = A.currentTime;
   for (const [dt, f] of [[0, 900], [.09, 620], [.2, 980], [.29, 600]]) { const o = A.createOscillator(), g = A.createGain(); o.type = "square"; o.frequency.setValueAtTime(f, t0 + dt); o.frequency.exponentialRampToValueAtTime(f * .4, t0 + dt + .05);
     g.gain.setValueAtTime(.0001, t0 + dt); g.gain.exponentialRampToValueAtTime(.12, t0 + dt + .005); g.gain.exponentialRampToValueAtTime(.0001, t0 + dt + .07); o.connect(g).connect(A.destination); o.start(t0 + dt); o.stop(t0 + dt + .09); } } catch (e) {} }
+/* la borne d'arcade des Goonies : le jeu s'ouvre en plein écran par-dessus la Matrice ; ✕ (ou Select + Start tenus) pour revenir */
+function ouvrirArcade() {
+  if (!M || M.arcadeEl) return;
+  const f = document.createElement("iframe"); f.src = "goonies/index.html?v=" + DIAG_V; f.allow = "gamepad; autoplay; fullscreen";
+  f.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:5000;background:#000";
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "keydown"]) f.addEventListener(ev, e => e.stopPropagation());
+  document.body.appendChild(f); M.arcadeEl = f; jouer("arcade"); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);
+  const fin = e => { if (!e.data || e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
+  addEventListener("message", fin); }
+function fermerArcade() { if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
 function chercherAction(t) {
   if (!M || (M.actionT && t - M.actionT < 300)) return; M.actionT = t;
   const moi = M.moiNum && M.gens.get(M.moiNum); let a = null;
@@ -16327,6 +16369,7 @@ function chercherAction(t) {
       const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
       const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
+      else if (M.L.borneArcade && estAdmin() && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };   // (la borne d'arcade : l'administrateur seul, pour l'instant)
       else if (M.L.console && Math.hypot(x - M.L.console[0], z - M.L.console[1]) < 1.2) a = { type: "console", label: "🎮 Jouer à la console" };
       else if (M.L.babyfoot && Math.hypot(x - M.L.babyfoot[0], z - M.L.babyfoot[1]) < 1.5) a = { type: "babyfoot", label: "⚽ Jouer au baby-foot" };
       else if (M.L.flechettes && Math.hypot(x - M.L.flechettes[0], z - M.L.flechettes[1]) < 1.1) a = { type: "flechettes", label: "🎯 Jouer aux fléchettes" };
@@ -16396,6 +16439,7 @@ export function agir() {
     M.ctx.conteneur.appendChild(d); M.cadranEl = d; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
     if (M.L.afficheApo) M.L.afficheApo.visible = false;
     d.querySelector("button").onclick = () => { d.remove(); if (M) { M.cadranEl = null; if (M.L.afficheApo && !M.L.apo) M.L.afficheApo.visible = true; } }; }
+  else if (a.type === "arcade") ouvrirArcade();
   else if (a.type === "console") M.ctx.surConsole && M.ctx.surConsole();
   else if (a.type === "flipper") M.ctx.surFlipper && M.ctx.surFlipper();
   else if (a.type === "flechettes") M.ctx.surFlechettes && M.ctx.surFlechettes();

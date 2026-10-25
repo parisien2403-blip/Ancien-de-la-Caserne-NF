@@ -574,7 +574,7 @@ export class Compteur extends DurableObject {
       if (a.lieu) this.diffuser(a.lieu, { t: "avatar", p: this.publicMatrice(a) }, ws);
     } else if (m.t === "joue") {
       // il joue à la console, au flipper ou aux fléchettes : les autres le voient (une petite icône au-dessus de lui)
-      a.joue = ["console", "flipper", "flechettes", "tir", "pingpong", "babyfoot"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
+      a.joue = ["console", "arcade", "flipper", "flechettes", "tir", "pingpong", "babyfoot"].includes(m.jeu) ? m.jeu : null; ws.serializeAttachment(a);
       if (a.lieu) this.diffuser(a.lieu, { t: "joue", numero: a.numero, jeu: a.joue }, ws);
     } else if (m.t === "fumee" && a.lieu === "fetes") {
       // un nuage de fumée, au plus un toutes les 8 secondes
