@@ -15,7 +15,7 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 27;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 28;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", sprites4: "sprites4.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", carte2: "scene-carte2.png", carteTresor: "carte-tresor.png", caveMur: "cave-mur.png", cachot: "cachot.jpg", porteOuverte: "porte-ouverte.png", sinok: "scene-sinok.png", grenierMur: "grenier-mur.png", voitureF: "voiture-fratelli.png", ...Object.fromEntries(["mikey", "bagou", "choco", "data"].map(n => ["ado_" + n, "ados/" + n + ".png"])), ecran: "borne-ecran.jpg", ...Object.fromEntries(["mama", "jake", "francis", "sloth"].map(n => ["b_" + n, "boss/" + n + ".png"])) };
@@ -688,7 +688,7 @@ function dJeu() {
     else spr(e.t, f, e.x, e.y, e.dir < 0, 1, al); }
   // boss
   if (S.boss && (S.boss.actif || !S.boss.mort)) { const B = S.boss, al = B.mort ? Math.max(0, 1 - B.mort) : B.inv > 0 && Math.floor(tt * 20) % 2 ? .4 : 1;
-    if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, B.dir > 0, 1, al); }
+    if (!B.mort || B.mort < 1.2) spr("boss_" + B.t, 0, B.x, B.y + Math.abs(Math.sin(tt * 6)) * -4, J.x < B.x, 1, al); }   // (les dessins regardent vers la droite : on les retourne pour qu'ils nous regardent)
   if (S.sloth) spr("boss_sloth", 0, S.sloth.x, S.boss ? S.boss.y : J.y, true);
   if (S.porte) { const P = S.porte, im = IMG.porteOuverte, tremble = P.t < .7 ? Math.sin(P.t * 60) * 4 : 0;   // (la porte du cachot cède, Sinok sort)
     if (P.t > .7 && im) X.drawImage(im, (1300 - cam.x) * cam.z, (310 - cam.y) * cam.z, im.width * cam.z, im.height * cam.z);
