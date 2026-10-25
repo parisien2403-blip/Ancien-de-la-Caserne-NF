@@ -15,6 +15,11 @@
   #padD { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: 170px; height: 150px; }
   #start { position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(10px + env(safe-area-inset-bottom)); display: none; padding: 6px 14px; border-radius: 14px; border: 2px solid rgba(255, 220, 120, .7); background: rgba(0, 0, 0, .4); color: #ffe7a0; font: bold 13px sans-serif; }
   body.touch #start { display: block; }
+  /* téléphone étroit en portrait : les deux manettes un peu plus petites (sinon ▶ et B se chevauchent), START au-dessus, dans la place libre sous le jeu */
+  @media (max-width: 440px) {
+    #padG { transform: scale(.84); transform-origin: left bottom; } #padD { transform: scale(.84); transform-origin: right bottom; }
+    #start { bottom: calc(150px + env(safe-area-inset-bottom)); }
+  }
 </style>
 </head>
 <body>
