@@ -15,10 +15,10 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 4;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 5;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2a: "niv2a.jpg", niv2b: "niv2b.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
-  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", decor: "decor.png", ecran: "borne-ecran.jpg" };
+  ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", decor: "decor.png", golf: "scene-golf.png", ecran: "borne-ecran.jpg" };
 let pret = false;
 Promise.all([...Object.entries(LISTE).map(([n, f]) => charge(n, "img/" + f + "?v=" + VI)),
   fetch("img/sprites.json?v=" + VI).then(r => r.json()).then(j => { for (const k in j) META[k] = { ...j[k], img: "sprites" }; }),
@@ -87,10 +87,10 @@ const parId = id => ADOS.find(a => a.id === id);
 // ------------------------------------------------------------------ l'histoire (portraits : mikey, brand, bagou, choco, data, sloth, mama, jake, francis)
 const H = {
   intro: { fond: "ville", l: [
-    [null, "Astoria, Oregon, 1985. Les Goon Docks vont être rasés pour construire un terrain de golf."],
-    ["mikey", "Demain, on doit tous déménager… C'est notre dernier week-end ensemble."],
-    ["bagou", "À moins de trouver un miracle d'ici là."],
-    ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien."],
+    [null, "Astoria, Oregon, 1985. Les Goon Docks vont être rasés pour construire un terrain de golf.", "golf"],
+    ["mikey", "Demain, on doit tous déménager… C'est notre dernier week-end ensemble.", "golf"],
+    ["bagou", "À moins de trouver un miracle d'ici là.", "golf"],
+    ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien.", "golf"],
     ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !"],
     ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !"]] },
   apres1: { fond: "niv1", l: [
@@ -555,7 +555,7 @@ function dChoix() {
   texte("◀ ▶ pour choisir · A pour valider", LW / 2, 520, { a: "center", c: "#bbb", t: 15 });
 }
 function dHistoire() {
-  const h = E.h, [qui, txt] = h.l[E.i]; fond(h.fond, .6); X.fillStyle = "rgba(0,0,0,.25)"; X.fillRect(0, 0, LW, LH);
+  const h = E.h, [qui, txt, illu] = h.l[E.i]; if (illu) fond(illu, 1); else { fond(h.fond, .6); X.fillStyle = "rgba(0,0,0,.25)"; X.fillRect(0, 0, LW, LH); }   // (illu : une image du film, façon borne d'arcade)
   boite(30, 340, LW - 60, 180, .85);
   const x0 = qui ? 200 : 60; if (qui) { boite(48, 356, 140, 148, 1); sprEcran("portrait_" + qui, 0, 118, 430, 1.1);
     texte({ mikey: "MIKEY", brand: "BRAND", bagou: "BAGOU", choco: "CHOCO", data: "DATA", sloth: "SLOTH", mama: "MAMA FRATELLI", jake: "JAKE FRATELLI", francis: "FRANCIS FRATELLI" }[qui] || "", x0, 380, { c: "#ffd34a", t: 20 }); }
