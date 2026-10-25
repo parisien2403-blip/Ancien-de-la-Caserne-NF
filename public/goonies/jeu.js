@@ -15,7 +15,7 @@ addEventListener("resize", ajuste); ajuste();
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ------------------------------------------------------------------ chargement
-const IMG = {}, META = {}, VI = 9;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
+const IMG = {}, META = {}, VI = 10;   // (VI : la version des images, pour ne pas garder les anciennes en cache)
 const charge = (n, src) => new Promise(r => { const i = new Image(); i.onload = () => { IMG[n] = i; r(); }; i.onerror = () => r(); i.src = src; });
 const LISTE = { niv1: "niv1.jpg", niv2c: "niv2c.jpg", niv3: "niv3.jpg", niv4a: "niv4a.jpg", niv4b: "niv4b.jpg", niv5: "niv5.jpg", niv6a: "niv6a.jpg", niv6b: "niv6b.jpg",
   ville: "ville.jpg", falaise: "falaise.jpg", logo: "logo.png", sprites: "sprites.png", sprites2: "sprites2.png", sprites3: "sprites3.png", decor: "decor.png", golf: "scene-golf.png", ...Object.fromEntries(["mikey", "brand", "bagou", "choco", "data", "sloth", "mama", "jake", "francis"].map(n => ["photo_" + n, "photos/" + n + ".png"])), carte: "scene-carte.png", fratelli: "scene-fratelli.png", ecran: "borne-ecran.jpg" };
@@ -98,7 +98,7 @@ const H = {
     ["choco", "Moi, un miracle en forme de pizza, ça m'irait très bien.", "golf"],
     ["data", "Le grenier de ton père est plein de vieilleries du musée, Mikey. On y trouvera peut-être quelque chose !", "golf"],
     ["mikey", "Allons-y. Les Goonies ne disent jamais mourir !", "golf"]] },
-  apres1: { fond: "niv1", mus: "willy", l: [   // (le morceau commence à sa première minute : le fichier est coupé)
+  apres1: { fond: "niv1", mus: "willy", l: [   // (le morceau commence à 1 min 03 : le fichier est coupé)
     ["mikey", "Une carte ! Regardez… La carte de Willy le Borgne !", "carte"],
     ["data", "Willy le Borgne ? Le pirate de la légende ?", "carte"],
     ["mikey", "Mon père me l'a racontée cent fois. Il y a plus de trois cents ans, Willy et ses pirates pillaient tous les navires du roi d'Angleterre.", "carte"],
@@ -239,7 +239,7 @@ function salle(o) {
   const ennemiSol = (x0, x1, y) => { if (terre.length && x1 - x0 > 90) ennemis.push({ t: choix(terre), x: (x0 + x1) / 2, y, x0: x0 + 20, x1: x1 - 20 }); };
   const ennemiAir = (cx, y) => { const t = choix(air.length ? air : ["chauve"]); ennemis.push(t === "araignee" ? { t, x: cx, y0: 60, y1: y } : { t, x: cx, y }); };
   const planche = (x0, w, y) => { const [n, sf] = choix(D.planches), q = fr(n); for (let k = 0; k < w; k += q[2]) { const ww = Math.min(q[2], w - k); if (neuf) y_.drawImage(at, q[0], q[1], ww, q[3], x0 + k, y - sf, ww, q[3]); } sol.push(p(x0, x0 + w, y)); };
-  const bloc = (x0, base, b) => { const [n, sf, pl] = b, q = fr(n); dessine(n, x0, base - q[3]); sol.push(p(x0 + 4, x0 + q[2] - 4, base - q[3] + sf)); for (const y of pl) sol.push(p(x0 + 6, x0 + q[2] - 6, base - q[3] + y)); return q; };
+  const bloc = (x0, base, b) => { const [n, sf, pl, prof] = b, q = fr(n); dessine(n, x0, base - q[3]); if (prof && prof.length) for (const [a0, a1, y] of prof) sol.push(p(x0 + a0, x0 + a1, base - q[3] + y)); else sol.push(p(x0 + 4, x0 + q[2] - 4, base - q[3] + sf)); for (const y of pl) sol.push(p(x0 + 6, x0 + q[2] - 6, base - q[3] + y)); return q; };
   const echelle = (cx, y0, y1) => { const q = fr(D.echelle), w = q[2]; dessine(D.echelle, cx - w / 2, y0 - 6, w, y1 - y0 + 6); ech.push(ech_(cx - 22, cx + 22, y0, y1)); };
   const ech_ = (x0, x1, y0, y1) => ({ x0, x1, y0, y1 });
   // les morceaux de la salle, de gauche à droite
@@ -257,7 +257,7 @@ function salle(o) {
     if (t === "escalier") { let xx = a + 40, base = FY; const n = 2 + Math.floor(rnd() * 2);
       for (let k = 0; k < n; k++) { const bl = choix(D.blocs.filter(q => fr(q[0])[3] < 150 && !q[2].length) .concat([])) || D.blocs[0], q = fr(bl[0]);
         bloc(xx, base, bl); pieces.push(...ligne(xx + 15, base - q[3] - 34, Math.max(1, Math.floor(q[2] / 46)), 46));
-        if (k === 0 || rnd() < .5) { base = base - q[3] + bl[1]; } else { base = FY; }
+        if (k === 0 || rnd() < .5) { const pr = bl[3] && bl[3].length ? Math.min(...bl[3].map(z => z[2])) : bl[1]; base = base - q[3] + pr; } else { base = FY; }
         xx += q[2] - 10; if (xx > b - 120) break; }
       ennemiSol(xx + 10, b, FY); }
     if (t === "planches") { let y = FY - 130; for (let k = 0; k < 3; k++) { const px = a + 30 + k * 160, pw = 120; planche(px, pw, y); pieces.push(...ligne(px + 15, y - 34, 3, 40)); y -= 70 * (k === 1 ? -1 : 1); }
@@ -311,7 +311,7 @@ function jouerMus(nom, debut = 0) {   // (debut : on démarre le morceau à ce m
   if (nom === musNom && MUS && !MUS.paused) return;
   const ancien = MUS; if (ancien) { const a = ancien; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .06); if (a.volume <= 0) { clearInterval(f); a.pause(); a.currentTime = 0; } }, 80); }
   musNom = nom; musVoulue = !!nom; MUS = null; if (!nom) return;
-  const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=2`), { loop: true }));
+  const m = MUSIQUES[nom] || (MUSIQUES[nom] = Object.assign(new Audio(`sons/${nom}.mp3?v=3`), { loop: true }));
   m.volume = .8; MUS = m; const cale = () => { try { m.currentTime = debut; } catch (e) {} }; if (m.readyState >= 1) cale(); else m.addEventListener("loadedmetadata", cale, { once: true }); m.play().catch(() => {}); if (DEBUG) window.MUS_ = m; }
 const musique = on => jouerMus(on ? "titre" : null);
 addEventListener("pointerdown", () => { if (musVoulue && MUS && MUS.paused) MUS.play().catch(() => {}); }, true);   // (le navigateur attend un premier geste pour jouer du son)
