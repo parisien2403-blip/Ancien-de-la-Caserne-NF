@@ -16852,7 +16852,7 @@ function creerPickupFord(o = {}) {
    la porte ouverte, l'enseigne au néon rouge ; les fenêtres de l'étage éteintes */
 function faceTaverneKF(B) { const X0 = -4.5, X1 = 4.5;
   B.mur(X0, X1, 0, 3.6, "planche", "#3a2416", { saillie: .1 }); B.mur(X0, X1, 3.6, 7.4, "brique", "#6a3626");
-  B.vitrine(-4.0, -1.2, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3 }); B.vitrine(1.2, 4.0, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3 });
+  B.vitrine(-4.0, -1.2, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3, marchandise: "comptoir" }); B.vitrine(1.2, 4.0, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3, marchandise: "comptoir" });
   B.trou(-.62, .62, 0, 2.66, .46, { z: .1, tableau: "#1a120c" }); for (const s of [-1, 1]) B.boite(.1, 2.75, .1, s * .67, 1.37, .15, "#1a120c"); B.boite(1.44, .1, .1, 0, 2.72, .15, "#1a120c");
   B.enseigne(-2.6, 1.95, 1.7, .42, "COLD BEER", { fond: "#05070a", coul: "#40e0ff", ep: .02, z: .16, neon: true, police: "Arial Black, Arial", style: "" });
   B.enseigne(2.6, 1.95, 1.3, .42, "OPEN", { fond: "#05070a", coul: "#ff3060", ep: .02, z: .16, neon: true, police: "Arial Black, Arial", style: "" });
@@ -17480,10 +17480,9 @@ function passantsHiver(scene, L, obst) {
   // où l'on peut marcher : la place et les trottoirs ; tout droit d'un point à l'autre si rien ne barre le chemin
   const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), droit = (x0, z0, x1, z1) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / .5); for (let i = 1; i <= n; i++) if (!libre(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false; return true; };
   const Z = L.zone, tirer = () => { for (let k = 0; k < 80; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
-  // (la ville est attaquée : il ne reste que quatre passants, qui courent se mettre à l'abri ; l'un d'eux, pris par les gremlins, tourne en rond en se débattant)
-  const N = 4, gensP = [];
-  for (let i = 0; i < N; i++) { const p0 = i === 0 ? [-2, 16] : tirer(); if (!p0) continue; gensP.push({ x: p0[0], z: p0[1], k: [3, 8, 13, 6][i] % NP, v: 2.4 + Math.random() * .8, cible: null, attente: 0, ph: Math.random() * 6, s: .95 + Math.random() * .1, dx: 0, dz: 1, victime: i === 0, a: 0 }); }
-  const VIC = gensP[0], perVic = { x: 0, z: 0, y: 0, r: 0, hx: .02, hz: .02, occ: 0, cap: 1 }; if (VIC) { L.victimeKF = VIC; (L.perchesKF = L.perchesKF || []).unshift(perVic); }
+  // (la ville est attaquée : il ne reste que trois passants, qui courent se mettre à l'abri — et le père Noël, blessé, un gremlin sur le dos : voir perenoelKF)
+  const N = 3, gensP = [];
+  for (let i = 0; i < N; i++) { const p0 = tirer(); if (!p0) continue; gensP.push({ x: p0[0], z: p0[1], k: [8, 13, 6][i] % NP, v: 2.4 + Math.random() * .8, cible: null, attente: 0, ph: Math.random() * 6, s: .95 + Math.random() * .1, dx: 0, dz: 1 }); }
   const n = gensP.length, gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8), iF = [];
   for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
   gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
@@ -17496,10 +17495,7 @@ function passantsHiver(scene, L, obst) {
   L.passants = gensP;
   return (dt, t) => { const cam = M && M.camera; if (!cam) return;
     for (let i = 0; i < n; i++) { const q = gensP[i]; let marche = false;
-      if (q.victime) { // il tourne en rond, affolé, un gremlin sur le dos
-        q.a += dt * q.v / 1.8 * (1 + .4 * Math.sin(t / 700)); const nx = -2 + Math.cos(q.a) * 1.8, nz = 16 + Math.sin(q.a) * 1.8; q.dx = nx - q.x; q.dz = nz - q.z; const l = Math.hypot(q.dx, q.dz) || 1; q.dx /= l; q.dz /= l; q.x = nx; q.z = nz; marche = true;
-        Object.assign(perVic, { x: q.x - q.dx * .12, z: q.z - q.dz * .12, y: (L.hauteur ? L.hauteur(q.x, q.z) : 0) + 1.25 * q.s, r: Math.atan2(q.dx, q.dz) }); }
-      else if (q.attente > 0) q.attente -= dt;
+      if (q.attente > 0) q.attente -= dt;
       else if (!q.cible) { for (let k = 0; k < 12; k++) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 3 && droit(q.x, q.z, c[0], c[1])) { q.cible = c; break; } } if (!q.cible) q.attente = .5; }
       else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
         if (l < .2) { q.cible = null; q.attente = .1; }
@@ -17767,8 +17763,30 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         const pp = new THREE.Mesh(new THREE.SphereGeometry(.04, 10, 8), tricot(c2)); pp.position.set(0, .93, -.01); g.add(pp); }
       if (ECH[k] != null) { const e = new THREE.Mesh(new THREE.TorusGeometry(.085, .032, 8, 18), tricot(ECH[k])); e.rotation.x = Math.PI / 2; e.position.set(0, .63, .0); g.add(e);
         const pan = new THREE.Mesh(new THREE.BoxGeometry(.06, .2, .025), tricot(ECH[k])); pan.position.set(.04, .53, .08); pan.rotation.z = .15; g.add(pan); } } }
+  // ---- le père Noël (CC-BY : « Santa claus » par photon / Professor_E12) — un clin d'œil au film : blessé, il arpente les rues en traînant la jambe (la démarche
+  //      de blessé de Resident Evil), un gremlin accroché à son dos qui le mord et le griffe ; il se débat, se retourne, essaie de s'en défaire ----
+  { const NOMS = { Hips: "Hips", Spine: "Spine", Spine2: "Spine2", Neck: "Neck", Head: "Head", Shoulder_R: "RightShoulder", Arm_R: "RightArm", Forearm_R: "RightForeArm", Hand_R: "RightHand",
+      Shoulder_L: "LeftShoulder", Arm_L: "LeftArm", Forearm_L: "LeftForeArm", Hand_L: "LeftHand", Thigh_R: "RightUpLeg", Calf_R: "RightLeg", Foot_R: "RightFoot", Toe_R: "RightToeBase",
+      Thigh_L: "LeftUpLeg", Calf_L: "LeftLeg", Foot_L: "LeftFoot", Toe_L: "LeftToeBase" }, nomOs = n => NOMS[n.replace(/_\d+$/, "")] || n;
+    // son trajet : le milieu de la rue au sud de la place, puis la rue de l'est ; il va, se retourne, revient
+    const CHEMIN = [[-19, 16.3], [-6, 16.6], [6, 16.1], [19.5, 16.4], [20.3, 6], [20.1, -4], [20.4, -11]], PN = { x: CHEMIN[0][0], z: CHEMIN[0][1], dx: 1, dz: 0 };
+    const perDos = { x: 0, z: 0, y: 0, r: 0, hx: .03, hz: .03, occ: 0, cap: 1 }; (L.perchesKF = L.perchesKF || []).unshift(perDos); L.victimeKF = PN;
+    (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const [G, AM] = await Promise.all([new gltfMod.GLTFLoader().loadAsync("avatars/kingston/perenoel.glb?v=1"), chargerAnimsMX("anims/re-heros.json?v=4")]);
+      const sc = G.scene, bb = new THREE.Box3().setFromObject(sc), k = 1.82 / (bb.max.y - bb.min.y), g = new THREE.Group(), inner = new THREE.Group(); inner.add(sc); sc.position.y = -bb.min.y; inner.scale.setScalar(k); g.add(inner); scene.add(g);
+      sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+      const mix = new THREE.AnimationMixer(sc), clip = n => { const c = clipMXcible(AM, n, sc, nomOs); return c && mix.clipAction(c); }, marche = clip("h-blesse"), touche = clip("h-touche");
+      if (marche) marche.play(); if (touche) { touche.setLoop(THREE.LoopOnce); touche.clampWhenFinished = false; }
+      let seg = 0, sens = 1, u = 0, prochain = 3000, tP = 0, arret = 0;
+      L.pereNoel = (dt, t) => { mix.update(dt);
+        if (t > prochain && touche) { prochain = t + 3500 + Math.random() * 3500; touche.reset().setEffectiveWeight(1).fadeIn(.2).play(); marche && marche.fadeOut(.2); arret = .9; setTimeout(() => { if (marche) { marche.reset().fadeIn(.35).play(); touche.fadeOut(.35); } }, 900); }   // (il se débat : un coup en arrière, il se retourne)
+        if (arret > 0) arret -= dt;
+        else { const a = CHEMIN[seg], b = CHEMIN[seg + sens] || null; if (!b) { sens = -sens; } else { const l = Math.hypot(b[0] - a[0], b[1] - a[1]); u += .55 * dt / l; if (u >= 1) { u = 0; seg += sens; if (!CHEMIN[seg + sens]) sens = -sens; }
+            const A = CHEMIN[seg], B2 = CHEMIN[seg + sens]; if (B2) { PN.dx = B2[0] - A[0]; PN.dz = B2[1] - A[1]; const ll = Math.hypot(PN.dx, PN.dz) || 1; PN.dx /= ll; PN.dz /= ll; PN.x = A[0] + (B2[0] - A[0]) * u; PN.z = A[1] + (B2[1] - A[1]) * u; } } }
+        const yaw = Math.atan2(PN.dx, PN.dz), ys = L.hauteur ? L.hauteur(PN.x, PN.z) : 0; g.position.set(PN.x, ys, PN.z); let d = yaw - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, dt * 3);
+        Object.assign(perDos, { x: PN.x - Math.sin(g.rotation.y) * .32, z: PN.z - Math.cos(g.rotation.y) * .32, y: ys + 1.18, r: g.rotation.y + Math.PI }); };   // (le gremlin, sur son dos, tourné vers lui)
+    })().catch(e => console.warn("père Noël", e)); }
   // ---- l'accident : une Coccinelle repeinte, encastrée dans la vitrine du fleuriste, qui brûle ; le verre brisé sur le trottoir ----
-  { const X = -25.95, Z = 7.7, R = -Math.PI / 2 + .28, dx = Math.sin(R), dz = Math.cos(R);
+  { const X = -26.35, Z = 11.1, R = -Math.PI / 2 + .22, dx = Math.sin(R), dz = Math.cos(R);
     for (const k of [-1, 0, 1]) obst.push([X + dx * k * 1.3, Z + dz * k * 1.3, 1.0]);
     chargerKF("coccinelle").then(({ parts, t }) => { const s = 4.07 / t.z;
       poser(parts, [mt4(X, y0 + .02, Z, R, s, s, s, -.05, .04)], true, m => { if (m.name !== "base") return m; const m2 = m.clone(); m2.color.setHex(0xe0a020); return m2; }); }).catch(e => console.warn("accident", e));
@@ -17776,14 +17794,15 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const flamT = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 60); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(.25, "rgba(255,190,60,.95)"); g.addColorStop(.6, "rgba(255,80,10,.6)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 110); x.quadraticCurveTo(32, 128, 12, 110); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
     const fumT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, "rgba(40,36,34,.7)"); g.addColorStop(1, "rgba(40,36,34,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
     const fl = [], fu = [], cxF = X + dx * 1.15, czF = Z + dz * 1.15;
-    for (let i = 0; i < 16; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flamT, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); scene.add(sp);
-      fl.push({ sp, ox: (Math.random() - .5) * 1.4, oz: (Math.random() - .5) * 1.2, ph: Math.random() * 6, h: .5 + Math.random() * .7 }); }
+    for (let i = 0; i < 24; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flamT, blending: i % 3 ? THREE.NormalBlending : THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); scene.add(sp);
+      fl.push({ sp, ox: (Math.random() - .5) * 1.5, oz: (Math.random() - .5) * 1.3, ph: Math.random() * 6, h: .7 + Math.random() * 1.0, av: Math.random() }); }
     for (let i = 0; i < 12; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumT, depthWrite: false, transparent: true, opacity: .55 })); scene.add(sp); fu.push({ sp, t0: Math.random() * 4, ox: (Math.random() - .5) * .8 }); }
     const lf = new THREE.PointLight(0xff7a20, 16, 14, 1.4); lf.position.set(cxF, y0 + 1.8, czF); scene.add(lf);
     const verre = new THREE.InstancedMesh(new THREE.PlaneGeometry(.12, .08), new THREE.MeshStandardMaterial({ color: 0xcfe0ee, metalness: .8, roughness: .1, transparent: true, opacity: .7, side: THREE.DoubleSide }), 60), mv = new THREE.Matrix4();
     for (let i = 0; i < 60; i++) { const a = Math.random() * 6.28, r = Math.random() * 2.2; mv.compose(new THREE.Vector3(X + dx * 1.6 + Math.cos(a) * r * .6 + 1, y0 + .01, Z + Math.sin(a) * r), new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, Math.random() * 6)), new THREE.Vector3(.5 + Math.random(), .5 + Math.random(), 1)); verre.setMatrixAt(i, mv); } scene.add(verre);
     L.feuAccident = (t) => { const T = t / 1000; lf.intensity = 13 + 5 * Math.sin(T * 17) + 3 * Math.sin(T * 31);
-      for (const f of fl) { const k = .7 + .3 * Math.sin(T * 9 + f.ph * 3); f.sp.position.set(cxF + f.ox * .7, y0 + 1.15 + f.h * k * .5, czF + f.oz * .6); f.sp.scale.set(.55 * k + .2, f.h * 1.4 * k + .3, 1); }
+      for (const f of fl) { const k = .7 + .3 * Math.sin(T * 9 + f.ph * 3), ax = cxF - dx * f.av * 1.4, az = czF - dz * f.av * 1.4;   // (le long du capot, jusqu'au pare-brise)
+        f.sp.position.set(ax + f.ox * .5, y0 + 1.0 + f.h * k * .55, az + f.oz * .5); f.sp.scale.set(.75 * k + .3, f.h * 1.6 * k + .4, 1); }
       for (const f of fu) { const u = ((T * .35 + f.t0) % 4) / 4; f.sp.position.set(cxF + f.ox + u * 1.5, y0 + 1.8 + u * 7, czF + u * .8); f.sp.scale.setScalar(.8 + u * 3.5); f.sp.material.opacity = .55 * (1 - u); } }; }
   // ---- le carnage : les poubelles renversées, les sacs éventrés, les cartons, les canettes, les papiers ; et les journaux que le vent emporte ----
   { const metal = new THREE.MeshStandardMaterial({ color: 0x8a8e92, metalness: .7, roughness: .45 }), sacM = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .35, metalness: .1 }),
@@ -17849,7 +17868,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
     if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
     if (L.feuTour) L.feuTour.visible = (t % 1600) < 700;
-    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t);
+    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t); L.pereNoel && L.pereNoel(dt, t);
     (L.guirlandesBar || []).forEach((im, k) => { im.material.color.setHex(couleurs[k % couleurs.length]).multiplyScalar(.5 + .5 * (Math.sin(t / 300 + k * 2.3) > 0 ? 1 : .3)); });
     // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
     for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
