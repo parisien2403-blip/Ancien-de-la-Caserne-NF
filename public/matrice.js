@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.13";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -17464,13 +17464,17 @@ function gremlinsHV(scene, L) {
     const garde = setInterval(() => { if (!M || M.lieu !== "kingston") { g.gain.value = 0; if (!M) { try { sn.stop(); } catch (e) {} clearInterval(garde); } } }, 400); } catch (e) { console.warn("la chorale", e); } })();
   // touché par une flèche enflammée : deux fois, et il prend feu, se tord, disparaît… et revient plus loin sur la carte
   const flammes = []; { const ft = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 60); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(.3, "rgba(255,180,50,.95)"); g.addColorStop(.7, "rgba(255,70,10,.5)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 110); x.quadraticCurveTo(32, 128, 12, 110); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
-    const fg = new THREE.Group(); scene.add(fg); for (let i = 0; i < 15; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); } }
+    const fg = new THREE.Group(); scene.add(fg); for (let i = 0; i < 45; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); } }
   L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); crier(q, 0); };
   L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; crier(q, 0);
     if (q.pv <= 0) { q.feu = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
-  const revenir = q => { const x0 = q.x, z0 = q.z; let p = null; for (let k = 0; k < 40; k++) { const c = tirer(); if (c && Math.hypot(c[0] - x0, c[1] - z0) > 15) { p = c; break; } } if (!p) p = tirer() || [0, 18];
+  const revenir = q => { if (L.gremlinsFinis) { q.mort = 1e9; q.feu = 0; return; }   // (la lumière des projecteurs les a tous brûlés : ils ne reviennent plus)
+ const x0 = q.x, z0 = q.z; let p = null; for (let k = 0; k < 40; k++) { const c = tirer(); if (c && Math.hypot(c[0] - x0, c[1] - z0) > 15) { p = c; break; } } if (!p) p = tirer() || [0, 18];
     q.x = p[0]; q.z = p[1]; q.pv = 2; q.mort = 0; q.feu = 0; q.cible = null; q.saut = 0; q.vy = 0; q.attente = .5; };
+  // les projecteurs allumés : tous brûlent, l'un après l'autre, en quelques secondes (et aucun ne revient)
+  L.brulerTous = (duree, t0) => { L.gremlinsFinis = true; for (const q of gr) { if (q.mort > 0 && !(q.feu > 0)) { q.mort = 1e9; continue; } q.brule = t0 + Math.random() * duree; } };
   return (dt, t) => {
+    if (L.gremlinsFinis) for (const q of gr) if (q.brule && t >= q.brule) { q.brule = 0; if (q.feu > 0 || q.mort > 0) continue; if (q.ejecte) { q.ejecte = null; q.saut = 0; q.vy = 0; } q.dosNoel = false; q.pv = 1; L.toucherGremlin(q); }
     { let f = 0; for (const q of gr) { if (q.ejecte) { const E = q.ejecte; E.t -= dt; q.x += E.vx * dt; q.z += E.vz * dt; q.rot += dt * 14; q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut < 0) q.saut = 0; if (E.t <= 0) { q.ejecte = null; q.saut = 0; q.vy = 0; q.mort = 2; } continue; }   // (catapulté : il tournoie, retombe, disparaît)
         if (q.mort > 0) { q.mort -= dt; if (q.mort <= 0) revenir(q); }
         else if (q.feu > 0) { q.feu -= dt; q.rot += dt * 9; if (q.feu <= 0) q.mort = 2.5;   // (il brûle, tourne sur lui-même, puis s'effondre en cendres)
@@ -17943,7 +17947,16 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0; info("✂️ Clac ! La chaîne cède, la grille s'ouvre."); };
     const abaisser = () => { if (Q.levier) return; Q.levier = true; Q.lev = 0; L.actionKF = null; sonBruit(.18, 500, .6);
       PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.1, 260, .7); allumer(PP, true); setTimeout(() => allumer(PP, false), 90); setTimeout(() => allumer(PP, true), 200); }, 800 + i * 550));
-      setTimeout(() => info("💡 Les quatre projecteurs s'allument aux quatre coins de Kingston Falls !"), 800 + 4 * 550); };
+      setTimeout(() => { info("💡 Les quatre projecteurs s'allument aux quatre coins de Kingston Falls !"); cineBrulure(); }, 800 + 4 * 550); };
+    // la cinématique : la caméra s'élève au-dessus de la place et en fait le tour ; dans la lumière des projecteurs, les gremlins prennent feu, tous, et se tordent, et tombent en cendres
+    const cineBrulure = () => { if (!M || M.L !== L) return; const D = 11000, t0 = performance.now(), C = new THREE.Vector3(0, 1, 4), moi = M.gens.get(M.moiNum), dep = M.camera.position.clone(); let fini = false;
+      if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(7000, t0 + 1500);
+      const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; if (L.brulerTous) for (const q of L.gremlins || []) if (q.brule) q.brule = performance.now();
+        info("🎄 Plus un seul gremlin : la lumière les a tous brûlés. Kingston Falls est sauvée — bravo Gizmo !"); };
+      const v = new THREE.Vector3();
+      M.cine = { fov: [58, 70], passer: fin, maj: () => { const u = Math.min(1, (performance.now() - t0) / D), e = u * u * (3 - 2 * u), a = -Math.PI / 2 + e * Math.PI * 1.3, r = 26 - 6 * e, h = 16 - 5 * e;
+        v.set(C.x + Math.cos(a) * r, h, C.z + Math.sin(a) * r); if (u < .12) v.lerpVectors(dep, v, u / .12); M.camera.position.copy(v); M.camera.lookAt(C); if (u >= 1) fin(); } };
+      M.passerBtn = boutonPasser(fin); };
     L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
       if (L.pinceKF && !Q.pince) { const PP = L.pinceKF, k = .5 + .5 * Math.sin(t / 180); PP.gl.material.opacity = .35 + .65 * k; PP.gl.scale.setScalar(.35 + .35 * k);
         if (Math.hypot(p.x - PP.x, p.z - PP.z) < 1.1) { Q.pince = true; PP.ims.forEach(im => im.visible = false); PP.gl.visible = false; sonBruit(.08, 4200, .35); inv.style.display = "block";
