@@ -18298,46 +18298,95 @@ function construireHillValley(A, T, L, scene) {
 }
 /* ---- Kingston Falls (Gremlins) : la même place que Hill Valley, sous la neige, un soir de Noël ----
    (le studio a tourné les deux films sur le même décor : on reprend Hill Valley, on la met en hiver, avec les sapins au milieu de la place) */
-/* les gremlins : la photo du vrai, détourée, les jambes remises en mouvement (8 images de course, 2 à l'arrêt) ; ils filent partout,
-   s'arrêtent net, guettent, font un bond, repartent ; plus petits que les gens */
+/* les gremlins : de vrais modèles 3D (Sketchfab, CC-BY : « Gremlin A.I Model » par pinhead19920604 ; « Gremlins », « Gremlins Coca », « Gremlins Pelado »,
+   « Gremlins-skate » par riverlan.teixeira), allégés ; chaque modèle chargé une fois et recopié en instances. Ils ne sont pas animés : la course se fait
+   dans le shader — les jambes se balancent autour des hanches, les bras autour des épaules, à la cadence de chacun ; le skateur, lui, roule.
+   Ils filent partout en zigzag, s'arrêtent net, guettent, font un bond, repartent ; plus petits que les gens. */
+const GREMLINS_GLB = [
+  // f, nombre, hanche, épaule (x), épaule (y), amplitude, roule
+  { f: "classique", n: 14, hanche: .4, epX: .15, epY: .62, amp: .6 },
+  { f: "coca", n: 4, hanche: .38, epX: .15, epY: .6, amp: .7, queue: true },
+  { f: "queue", n: 4, hanche: .4, epX: .15, epY: .62, amp: .7, queue: true },
+  { f: "pelado", n: 3, hanche: .2, epX: 9, epY: 9, amp: .35, penche: 0 },
+  { f: "skate", n: 4, roule: true }   // (la planche dans la longueur du modèle : il roule de côté, comme un vrai skateur),
+];
 function gremlinsHV(scene, L) {
-  const tG = new THREE.TextureLoader().load("images/gremlin-course.webp"); tG.colorSpace = THREE.SRGBColorSpace; tG.anisotropy = 4;
   const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), Z = L.zone;
   const tirer = () => { for (let k = 0; k < 60; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
-  const gr = []; for (let i = 0; i < 34; i++) { const p0 = tirer(); if (p0) gr.push({ x: p0[0], z: p0[1], v: 3 + Math.random() * 2.5, s: .8 + Math.random() * .35, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, dx: 1, dz: 0, saut: 0, vy: 0, guette: Math.random() < .5 }); }
-  const n = gr.length, iF = []; for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
-  const gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8);
-  gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
-  const m = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tG, alphaTest: .5, side: THREE.DoubleSide, color: 0xd6d8dc })); m.frustumCulled = false; scene.add(m);
+  const gr = [], troupes = []; L.gremlins = gr;
   const ombreT = tex(toile(64, 32, (x) => { const g = x.createRadialGradient(32, 16, 1, 32, 16, 30); g.addColorStop(0, "rgba(40,50,70,.5)"); g.addColorStop(1, "rgba(40,50,70,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 64, 64); x.restore(); }));
-  const gO = new THREE.BufferGeometry(), pO = new Float32Array(n * 12), uO = new Float32Array(n * 8); for (let i = 0; i < n; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
-  gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF);
+  const NMAX = GREMLINS_GLB.reduce((a, t) => a + t.n, 0), iF = []; for (let i = 0; i < NMAX; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+  const gO = new THREE.BufferGeometry(), pO = new Float32Array(NMAX * 12), uO = new Float32Array(NMAX * 8); for (let i = 0; i < NMAX; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
+  gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF); gO.setDrawRange(0, 0);
   const mO = new THREE.Mesh(gO, new THREE.MeshBasicMaterial({ map: ombreT, transparent: true, depthWrite: false })); mO.frustumCulled = false; scene.add(mO);
-  const e = .5 / 1024; L.gremlins = gr;
-  return (dt, t) => { const cam = M && M.camera; if (!cam) return;
-    for (let i = 0; i < n; i++) { const q = gr[i]; let court = false;
+  // un modèle : toutes ses pièces réunies, mis debout à 1 de haut, pieds à 0, centré ; la queue (traînant au sol, loin derrière) coupée
+  const preparer = (sc, T) => { sc.updateMatrixWorld(true); const parMat = new Map();
+    sc.traverse(o => { if (!o.isMesh) return; const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); g.applyMatrix4(o.matrixWorld); for (const k of Object.keys(g.attributes)) if (!["position", "normal", "uv"].includes(k)) g.deleteAttribute(k);
+      const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!parMat.has(m)) parMat.set(m, []); parMat.get(m).push(g); });
+    const parts = [...parMat].map(([m, l]) => { const n = l.reduce((a, g) => a + g.attributes.position.count, 0), r = new THREE.BufferGeometry();
+      for (const [k, d] of [["position", 3], ["normal", 3], ["uv", 2]]) { const a = new Float32Array(n * d); let o = 0; for (const g of l) { if (g.attributes[k]) a.set(g.attributes[k].array, o * d); o += g.attributes.position.count; } r.setAttribute(k, new THREE.BufferAttribute(a, d)); }
+      return [r, m]; });
+    const bb = new THREE.Box3(); for (const [g] of parts) { g.computeBoundingBox(); bb.union(g.boundingBox); }
+    if (T.queue) { // le corps, vu par le haut : ce qui dépasse loin derrière, au ras du sol, c'est la queue
+      const H = bb.max.y - bb.min.y, haut = new THREE.Box3(); for (const [g] of parts) { const P = g.attributes.position; for (let i = 0; i < P.count; i++) if (P.getY(i) > bb.min.y + H * .45) haut.expandByPoint(new THREE.Vector3(P.getX(i), P.getY(i), P.getZ(i))); }
+      const m = H * .06, dehors = (x, y, z) => y < bb.min.y + H * .4 && (z < haut.min.z - m || z > haut.max.z + m || x < haut.min.x - m || x > haut.max.x + m);
+      for (const p of parts) { const g = p[0], P = g.attributes.position, garde = []; for (let t = 0; t < P.count; t += 3) { let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { x += P.getX(t + k); y += P.getY(t + k); z += P.getZ(t + k); } if (!dehors(x / 3, y / 3, z / 3)) garde.push(t); }
+        const r = new THREE.BufferGeometry(); for (const [k, d] of [["position", 3], ["normal", 3], ["uv", 2]]) { const s = g.attributes[k].array, a = new Float32Array(garde.length * 3 * d); garde.forEach((t, j) => a.set(s.subarray(t * d, (t + 3) * d), j * 3 * d)); r.setAttribute(k, new THREE.BufferAttribute(a, d)); }
+        p[0] = r; }
+      bb.makeEmpty(); for (const [g] of parts) { g.computeBoundingBox(); bb.union(g.boundingBox); } }
+    const H = bb.max.y - bb.min.y, k = 1 / H, cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+    for (const [g] of parts) { g.translate(-cx, -bb.min.y, -cz); g.scale(k, k, k); g.computeBoundingSphere(); }
+    return parts; };
+  // la course, dans le shader : par instance, la phase du pas et l'ampleur (0 à l'arrêt)
+  const animer = (m, T) => { m = m.clone(); m.onBeforeCompile = sh => {
+      const h = T.hanche.toFixed(3), ex = T.epX.toFixed(3), ey = T.epY.toFixed(3);
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", `#include <common>
+        attribute vec2 aPas;
+        vec3 pivote(vec3 p, float py, float a) { float c = cos(a), s = sin(a), y = p.y - py; return vec3(p.x, py + y * c - p.z * s, y * s + p.z * c); }
+        vec2 angles(vec3 p) { float cote = p.x > 0. ? 3.1416 : 0., ph = aPas.x + cote, am = aPas.y;
+          float wb = smoothstep(${ex} - .03, ${ex} + .03, abs(p.x)) * (1. - smoothstep(${ey} - .02, ${ey} + .08, p.y)) * smoothstep(${h} * .5, ${h} * .8, p.y);   // (les bras, hors des jambes)
+          float wj = (1. - smoothstep(${h} - .1, ${h}, p.y)) * smoothstep(.0, .03, abs(p.x)) * (1. - wb);   // (les jambes, sous les hanches)
+          return vec2(-am * sin(ph) * wj, am * .9 * sin(ph) * wb); }`)
+        .replace("#include <beginnormal_vertex>", `#include <beginnormal_vertex>
+          { vec2 a = angles(position); objectNormal = pivote(pivote(objectNormal, 0., a.x), 0., a.y); }`)
+        .replace("#include <begin_vertex>", `#include <begin_vertex>
+          { vec2 a = angles(position); transformed = pivote(pivote(position, ${h}, a.x), ${ey}, a.y); }`); };
+    m.customProgramCacheKey = () => "gremlin-" + T.f; return m; };
+  const charger = async T => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
+    const g = await new gltfMod.GLTFLoader().loadAsync("avatars/gremlins/" + T.f + ".glb?v=1"), parts = preparer(g.scene, T);
+    const debut = gr.length, n = T.n;
+    for (let i = 0; i < n; i++) { const p0 = tirer(); if (!p0) continue;
+      gr.push({ T, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: .62 + Math.random() * .22, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
+    const nb = gr.length - debut, aPas = new THREE.InstancedBufferAttribute(new Float32Array(nb * 2), 2); aPas.setUsage(THREE.DynamicDrawUsage);
+    const ims = parts.map(([geo, m]) => { geo.setAttribute("aPas", aPas); const im = new THREE.InstancedMesh(geo, T.roule ? m : animer(m, T), nb); im.frustumCulled = false; scene.add(im); return im; });
+    troupes.push({ T, debut, nb, ims, aPas }); gO.setDrawRange(0, gr.length * 6); };
+  GREMLINS_GLB.forEach(T => charger(T).catch(e => console.warn("gremlin", T.f, e)));
+  const mat = new THREE.Matrix4(), qt = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, "YXZ"), pos = new THREE.Vector3(), ech = new THREE.Vector3();
+  return (dt, t) => {
+    for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false;
       if (q.attente > 0) q.attente -= dt;
-      else if (!q.cible) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 2) { q.cible = c; q.guette = Math.random() < .5; } else q.attente = .2; }
+      else if (!q.cible) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 2) q.cible = c; else q.attente = .2; }
       else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
-        if (l < .3) { q.cible = null; q.attente = .3 + Math.random() * 2.2; if (Math.random() < .35) q.vy = 3.2; }   // (arrivé : il s'arrête net, parfois d'un bond)
-        else { // une course en zigzag, jamais tout droit
-          const zz = Math.sin(t / 260 + q.ph) * .55, ux = ddx / l + -ddz / l * zz, uz = ddz / l + ddx / l * zz, ul = Math.hypot(ux, uz);
+        if (l < .3) { q.cible = null; q.attente = q.T.roule ? Math.random() * .8 : .4 + Math.random() * 2.6; if (Math.random() < .3) q.vy = 3; }   // (arrivé : il s'arrête net, parfois d'un bond)
+        else { const zz = Math.sin(t / 260 + q.ph * 3) * (q.T.roule ? .15 : .5), ux = ddx / l - ddz / l * zz, uz = ddz / l + ddx / l * zz, ul = Math.hypot(ux, uz);   // (en zigzag)
           const nx = q.x + ux / ul * q.v * dt, nz = q.z + uz / ul * q.v * dt;
-          if (libre(nx, nz)) { q.x = nx; q.z = nz; q.dx = ux / ul; q.dz = uz / ul; court = true; q.ph += dt * q.v * 9.5; } else { q.cible = null; q.attente = .1; }
-          if (Math.random() < dt * .25) q.vy = 2.6; } }
+          if (libre(nx, nz)) { q.x = nx; q.z = nz; court = true; let d = Math.atan2(ux, uz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * (q.T.roule ? 5 : 12)); q.vire = d; }
+          else { q.cible = null; q.attente = .1; }
+          if (Math.random() < dt * (q.T.roule ? .12 : .2)) q.vy = 2.6; } }
       if (q.vy || q.saut > 0) { q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut <= 0) { q.saut = 0; q.vy = 0; } }
-      const y = (L.hauteur ? L.hauteur(q.x, q.z) : 0) + q.saut;
-      let cx = cam.position.x - q.x, cz = cam.position.z - q.z; const cl = Math.hypot(cx, cz) || 1; cx /= cl; cz /= cl; const rx = cz, rz = -cx;
-      const vers = q.dx * rx + q.dz * rz, miroir = vers < 0;
-      const f = court ? Math.floor(q.ph) % 8 : q.saut > 0 ? 2 : q.guette ? 9 : 8;
-      const H = .82 * q.s, W = H * .8, o = i * 12, pen = court ? .06 * H : 0;   // (en courant, penché en avant)
-      pF.set([q.x - rx * W / 2, y, q.z - rz * W / 2, q.x + rx * W / 2, y, q.z + rz * W / 2, q.x + rx * W / 2 + (miroir ? -1 : 1) * rx * pen, y + H, q.z + rz * W / 2 + (miroir ? -1 : 1) * rz * pen, q.x - rx * W / 2 + (miroir ? -1 : 1) * rx * pen, y + H, q.z - rz * W / 2 + (miroir ? -1 : 1) * rz * pen], o);
-      let u0 = (f % 4) / 4 + e, u1 = (f % 4 + 1) / 4 - e; if (miroir) [u0, u1] = [u1, u0];
-      const v1 = 1 - Math.floor(f / 4) * 320 / 1024 - e, v0 = 1 - (Math.floor(f / 4) + 1) * 320 / 1024 + e;
-      uF.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
-      const so = .3 * q.s * Math.max(.4, 1 - q.saut), y0 = y - q.saut + .025;
-      pO.set([q.x - so, y0, q.z - so * .6, q.x + so, y0, q.z - so * .6, q.x + so, y0, q.z + so * .6, q.x - so, y0, q.z + so * .6], i * 12); }
-    gF.attributes.position.needsUpdate = gF.attributes.uv.needsUpdate = gO.attributes.position.needsUpdate = true; };
+      const k = Math.min(1, dt * 8); q.am += ((court && !q.T.roule ? 1 : 0) - q.am) * k; q.pen += ((court ? (q.T.roule ? q.vire * .6 : q.T.penche ?? .22) : 0) - q.pen) * k;
+      if (court && !q.T.roule) q.ph += dt * q.v * 4.4;
+      q.y = (L.hauteur ? L.hauteur(q.x, q.z) : 0); }
+    for (const tr of troupes) { const A = tr.aPas.array;
+      for (let j = 0; j < tr.nb; j++) { const q = gr[tr.debut + j], bob = q.am * Math.abs(Math.cos(q.ph)) * .035, tremble = q.am ? 0 : Math.sin(t / 90 + q.ph) * .006;
+        if (q.T.roule) eu.set(q.pen, q.rot - Math.PI / 2, 0); else eu.set(q.pen + tremble, q.rot + (q.am < .1 && !q.cible ? Math.sin(t / 700 + q.ph) * .35 : 0), 0);
+        pos.set(q.x, q.y + q.saut + bob, q.z); ech.setScalar(q.s); mat.compose(pos, qt.setFromEuler(eu), ech);
+        for (const im of tr.ims) im.setMatrixAt(j, mat);
+        A[j * 2] = q.ph; A[j * 2 + 1] = q.am * tr.T.amp * (q.saut > 0 ? .4 : 1); }
+      for (const im of tr.ims) im.instanceMatrix.needsUpdate = true; tr.aPas.needsUpdate = true; }
+    for (let i = 0; i < gr.length; i++) { const q = gr[i], so = .26 * q.s * Math.max(.4, 1 - q.saut), y0 = q.y + .025;
+      pO.set([q.x - so, y0, q.z - so * .7, q.x + so, y0, q.z - so * .7, q.x + so, y0, q.z + so * .7, q.x - so, y0, q.z + so * .7], i * 12); }
+    gO.attributes.position.needsUpdate = true; };
 }
 /* les passants de Kingston Falls, peints comme la foule du concert de Santa Carla : de face et de dos, deux pas de marche, en anorak, doudoune, parka ou manteau de laine,
    bonnet à pompon, écharpe, moufles, après-ski — les couleurs des années 80 ; chacun va où il veut sur la place et les trottoirs, s'arrête un peu, repart */
