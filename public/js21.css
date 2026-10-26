@@ -1,0 +1,289 @@
+/* ============ La caserne façon « 21 Jump Street » ============
+   Le mur de briques (dessinées une à une), les enseignes au néon, les textes tapés à la machine sur du papier,
+   la télé encastrée dans le mur, le juke-box. (L'accueil animé et la caserne en 3D gardent leur propre décor.) */
+.inside {
+  --cream: #f3e9d6; --cream-2: #e3d6bd; --line: #5a4434; --terra: #ffd84a; --terra-dark: #ffe58a; --terra-soft: rgba(255,216,74,.14);
+  --gold: #ffd84a; --navy: #fff3dc; --text: #f1e6d2; --muted: #c9b8a0; --card: transparent;
+  --jaune: #f5e7a3; --neon: #5fd0ff; --rose: #ff4fa3; --encre: #23201c; --papier: #f3eee0;
+  color: var(--text);
+  background: #4a1d12 url("images/js21-briques.jpg") 0 0 / 768px 768px;
+}
+/* la nuit dans la rue : le mur s'assombrit sur les bords, une lumière chaude tombe d'en haut */
+.inside::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(255,190,120,.16), transparent 70%), radial-gradient(ellipse 95% 85% at 50% 40%, rgba(0,0,0,.12), rgba(8,3,1,.78)); }
+.inside > * { position: relative; z-index: 1; }
+
+/* ---------- l'enseigne du haut ---------- */
+.inside .topbar { background: transparent !important; box-shadow: none !important; display: flex; align-items: center; justify-content: center; padding: 16px 70px 8px; min-height: 86px; }
+.inside .topbar .plaque-photo { display: none; }
+.enseigne { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.enseigne .neon { position: relative; font: 42px/1 "Tilt Neon", sans-serif; letter-spacing: .1em; color: #f2fcff; padding: 10px 22px 12px;
+  background: linear-gradient(rgba(12,16,22,.78), rgba(4,6,10,.86)); border-radius: 10px; border: 1px solid rgba(160,200,230,.18);
+  text-shadow: 0 0 2px #fff, 0 0 6px #9fe0ff, 0 0 14px #2fa4ff, 0 0 30px #1a6cff, 0 0 50px rgba(26,108,255,.6);
+  box-shadow: 0 10px 22px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.08); animation: js21Gresille 6s infinite; }
+.enseigne .neon::before, .enseigne .neon::after { content: ""; position: absolute; top: 7px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8dde2, #6b7178 60%, #2a2e33); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+.enseigne .neon::before { left: 7px; } .enseigne .neon::after { right: 7px; }
+.enseigne .tag { position: relative; font: 30px "Permanent Marker", cursive; color: var(--jaune); transform: rotate(-5deg); text-shadow: 0 0 10px rgba(255,230,140,.35), 2px 2px 0 rgba(0,0,0,.6); }
+.enseigne .tag::after { content: ""; position: absolute; left: 6%; right: 8%; top: 84%; height: 20px; background: url("images/js21-coulures.svg") 0 0 / 100% 100%; opacity: .9; }
+@keyframes js21Gresille { 0%, 41%, 44%, 72%, 74.5%, 100% { opacity: 1; } 42% { opacity: .4; } 43% { opacity: .9; } 73% { opacity: .2; } 74% { opacity: .85; } }
+.inside .topbar .me { border: 3px solid var(--jaune) !important; box-shadow: 0 0 12px rgba(245,231,163,.55) !important; }
+
+/* ---------- le menu : une enseigne au néon par onglet, chacune sa couleur ; éteinte, on voit le tube de verre ----------
+   (la plaque de plexiglas fumé, ses quatre vis ; le tube allumé : le cœur blanc, le halo de couleur sur la plaque) */
+.inside .tabbar { background: rgba(6,4,3,.9) !important; border-top: 1px solid #000 !important; box-shadow: 0 -6px 18px rgba(0,0,0,.55); }
+.inside .tabbar .ico { display: none; }
+.inside .tabbar button { --n: #ff4fa3; position: relative; font: 15px/1.05 "Tilt Neon", sans-serif !important; letter-spacing: .02em; text-transform: none;
+  color: rgba(225,215,205,.38) !important; text-shadow: 0 1px 0 rgba(255,255,255,.12), 0 -1px 0 rgba(0,0,0,.6); }
+.inside .tabbar button[data-go="accueil"] { --n: #5fd0ff; } .inside .tabbar button[data-go="poste"] { --n: #ff3b3b; } .inside .tabbar button[data-go="fetes"] { --n: #ff4fa3; }
+.inside .tabbar button[data-go="membres"] { --n: #6dff7a; } .inside .tabbar button[data-go="matrice"] { --n: #ffd84a; } .inside .tabbar button[data-go="vague"] { --n: #ff9a3b; }
+.inside .tabbar button.on, .inside .tabbar button.jouer { color: #fff !important;
+  text-shadow: 0 0 1px #fff, 0 0 4px var(--n), 0 0 10px var(--n), 0 0 22px var(--n), 0 0 38px var(--n) !important; }
+.inside .tabbar button.on { animation: js21Allume .9s steps(1) both; }
+.inside .tabbar button.jouer:not(.on) { color: rgba(255,248,225,.92) !important; text-shadow: 0 0 3px var(--n), 0 0 10px var(--n) !important; opacity: .82; }
+@keyframes js21Allume { 0% { opacity: .3; } 12% { opacity: 1; } 20% { opacity: .35; } 30% { opacity: 1; } 38% { opacity: .55; } 46%, 100% { opacity: 1; } }
+.inside .tabbar .badge-jouer { display: none; }
+.inside .tabbar .dot { background: #ff3b3b; box-shadow: 0 0 8px #ff3b3b; }
+@media (min-width: 960px) {
+  .inside .tabbar { background: transparent !important; border: 0 !important; box-shadow: none; padding: 20px 16px !important; gap: 12px !important; }
+  .inside .tabbar button { justify-content: center; padding: 15px 10px 16px !important; font-size: 22px !important; border-radius: 8px !important;
+    background: linear-gradient(rgba(14,14,16,.82), rgba(4,4,6,.9)) !important; border: 1px solid rgba(255,255,255,.07) !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06) !important; }
+  .inside .tabbar button::before, .inside .tabbar button::after { content: ""; position: absolute; top: 6px; width: 6px; height: 6px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d8dde2, #6b7178 60%, #2a2e33); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+  .inside .tabbar button::before { left: 6px; } .inside .tabbar button::after { right: 6px; }
+  .inside .tabbar button.on { background: radial-gradient(ellipse 80% 90% at 50% 50%, color-mix(in srgb, var(--n) 22%, transparent), transparent 75%), linear-gradient(rgba(14,14,16,.82), rgba(4,4,6,.9)) !important; }
+  .inside .tabbar .dot { position: absolute !important; right: 8px; top: 50%; transform: translateY(-50%); }
+}
+
+/* ---------- les titres de page : tagués à la bombe ---------- */
+.inside .hello { position: relative; display: inline-block; font: 46px/1.1 "Permanent Marker", cursive; color: var(--jaune); margin: 10px 0 24px; transform: rotate(-2deg); transform-origin: left;
+  text-shadow: 0 0 12px rgba(255,230,140,.3), 3px 3px 0 rgba(0,0,0,.7); }
+.inside .hello::after { content: ""; position: absolute; left: 3%; right: 6%; top: 88%; height: 26px; background: url("images/js21-coulures.svg") 0 0 / 100% 100%; }
+.inside .hello-sub { color: #f6ead2; text-shadow: 0 1px 4px #000, 0 0 2px #000; font: 17px "Special Elite", monospace; }
+
+/* ---------- les textes : des feuilles tapées à la machine, collées au mur avec du ruban adhésif ---------- */
+.inside .card { position: relative; color: var(--encre) !important; border: 0 !important; border-radius: 1px !important; padding: 24px 24px 22px;
+  font-family: "Special Elite", "Courier Prime", monospace;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23p)'/%3E%3C/svg%3E"),
+    linear-gradient(176deg, #f7f3e7, #efe8d6 60%, #e8dfca) !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,.25), 0 12px 22px rgba(0,0,0,.5), inset 0 0 40px rgba(150,120,70,.12) !important; transform: rotate(-.5deg); }
+.inside .card:nth-of-type(2n) { transform: rotate(.6deg); }
+.inside .card::before, .inside .card::after { content: ""; position: absolute; top: -11px; width: 92px; height: 26px; pointer-events: none;
+  background: linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,0)), rgba(232,226,198,.72); box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  -webkit-mask: linear-gradient(90deg, transparent 0 2px, #000 2px calc(100% - 2px), transparent 0); }
+.inside .card::before { left: 22px; transform: rotate(-5deg); } .inside .card::after { right: 22px; transform: rotate(4deg); }
+.inside .card, .inside .card p, .inside .card small, .inside .card label, .inside .card div, .inside .card span, .inside .card li, .inside .card summary { color: var(--encre); }
+.inside .card h3, .inside .card b.titre, .inside .card .kicker { font: 17px "Special Elite", monospace !important; letter-spacing: .08em; text-transform: uppercase; color: #1b1814 !important;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-shadow: none !important; }
+.inside .card p { line-height: 1.55; }
+.inside .card b, .inside .card strong { color: #000; }
+.inside .card a:not(.btn) { color: #1d3f8a; }
+.inside .card .signe { font-family: "Mrs Saint Delafield", cursive !important; font-size: 30px; color: #1d3f8a !important; }
+/* sur le papier : les champs à remplir sont des lignes pointillées, les boutons des coups de tampon rouge */
+.inside .card .field { color: #4a4238 !important; font: 13px "Special Elite", monospace; }
+.inside .card input, .inside .card select, .inside .card textarea { background: transparent !important; color: #111 !important; font: 18px "Special Elite", monospace !important;
+  border: 0 !important; border-bottom: 1.5px dashed #6b6052 !important; border-radius: 0 !important; box-shadow: none !important; }
+.inside .card input:focus, .inside .card select:focus, .inside .card textarea:focus { border-bottom: 2px solid #1d3f8a !important; background: rgba(29,63,138,.05) !important; outline: none; }
+.inside .card ::placeholder { color: #9a8f80; }
+.inside .card .btn { background: transparent !important; color: #b3191f !important; border: 3px solid #b3191f !important; border-radius: 6px !important; box-shadow: none !important; text-shadow: none !important;
+  font: 17px "Special Elite", monospace !important; letter-spacing: .12em; text-transform: uppercase; opacity: .9; transform: rotate(-1.5deg); }
+.inside .card .btn:hover { background: rgba(179,25,31,.07) !important; }
+.inside .card .btn.alt { color: #1d3f8a !important; border-color: #1d3f8a !important; transform: rotate(1deg); }
+.inside .card .file { background: transparent !important; border: 2px dashed #6b6052 !important; color: #2b261f !important; font: 15px "Special Elite", monospace !important; border-radius: 4px !important; }
+.inside .card .file .ico { stroke: #2b261f !important; }
+
+/* les listes (anciens, musiques, lettres) : des fiches bristol, tapées elles aussi */
+.inside .list-item { background: linear-gradient(#fbf8ef, #f1ebdb) !important; color: var(--encre) !important; border: 0 !important; border-radius: 2px !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,.25), 0 8px 14px rgba(0,0,0,.45) !important; font-family: "Special Elite", monospace;
+  background-image: repeating-linear-gradient(transparent 0 23px, rgba(90,140,200,.22) 23px 24px), linear-gradient(#fbf8ef, #f1ebdb) !important; }
+.inside .list-item .t, .inside .list-item b, .inside .list-item h4 { color: #111 !important; }
+.inside .list-item .s, .inside .list-item small, .inside .list-item div { color: #4a4238; }
+.inside .list-item.unread { box-shadow: inset 5px 0 0 #b3191f, 0 8px 14px rgba(0,0,0,.45) !important; }
+.inside .list-item .btn { background: transparent !important; color: #b3191f !important; border: 2px solid #b3191f !important; box-shadow: none !important; text-shadow: none !important; font: 14px "Special Elite", monospace !important; letter-spacing: .06em; }
+.inside .list-item .btn.alt, .inside .list-item .btn.danger { color: #4a4238 !important; border-color: #4a4238 !important; }
+
+/* ---------- hors du papier : les boutons sont des tubes de néon ---------- */
+.inside .btn { background: rgba(8,6,6,.86) !important; color: #fff6cc !important; border: 2px solid #ffe27a !important; border-radius: 10px;
+  font: 18px "Tilt Neon", sans-serif !important; letter-spacing: .03em; text-shadow: 0 0 4px #ffd84a, 0 0 12px #ffb21a;
+  box-shadow: 0 0 6px #ffd84a, 0 0 18px rgba(255,178,26,.5), inset 0 0 8px rgba(255,216,74,.4) !important; }
+.inside .btn.alt { color: #e8faff !important; border-color: #a9e8ff !important; text-shadow: 0 0 4px var(--neon), 0 0 12px #1a8cff; box-shadow: 0 0 6px var(--neon), 0 0 18px rgba(26,140,255,.5), inset 0 0 8px rgba(95,208,255,.4) !important; }
+.inside .btn.danger { color: #ffe8f2 !important; border-color: #ffa8cf !important; text-shadow: 0 0 4px var(--rose), 0 0 12px var(--rose); box-shadow: 0 0 6px var(--rose), 0 0 18px rgba(255,79,163,.5), inset 0 0 8px rgba(255,79,163,.4) !important; }
+.inside .btn[disabled] { opacity: .45; }
+.inside .search, .inside > .scroll input:not(.card input) { background: rgba(6,4,3,.86) !important; color: #fff4dc !important; border: 1.5px solid #4a3a2e !important; border-radius: 6px !important; font-family: "Special Elite", monospace; }
+.inside .search:focus { border-color: var(--neon) !important; box-shadow: 0 0 10px rgba(95,208,255,.45); outline: none; }
+.inside .legal { color: #e8dcc6; text-shadow: 0 1px 3px #000; font-family: "Special Elite", monospace; }
+.inside .seg button { background: rgba(6,4,3,.86) !important; border: 1px solid rgba(255,255,255,.08) !important; color: rgba(240,230,220,.55) !important; font: 15px "Tilt Neon", sans-serif !important; border-radius: 8px !important; }
+.inside .seg button.on { color: #fff !important; border-color: #ffa8cf !important; text-shadow: 0 0 4px var(--rose), 0 0 12px var(--rose); box-shadow: 0 0 8px rgba(255,79,163,.55), inset 0 0 8px rgba(255,79,163,.35) !important; }
+.inside .bubble { background: #fffaf0 !important; color: #1d1612 !important; border: 3px solid #000; border-radius: 18px; box-shadow: 4px 4px 0 #000; font: 16px "Special Elite", monospace; }
+.inside .bubble b { color: #b3191f !important; }
+.inside .bubble::before { border-bottom-color: #000 !important; }
+
+/* ================== ACCUEIL ================== */
+.inside .acc-hero { position: relative; overflow: visible !important; background: transparent !important; border-radius: 0 !important; box-shadow: none !important;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px 30px; margin-bottom: 34px; }
+.inside .acc-hero > img { display: none !important; }
+.inside .acc-hero .meteo-pill { display: none !important; }
+.inside .acc-hero .voile { grid-column: 1; grid-row: 1; position: static !important; background: none !important; padding: 26px 0 0 !important; color: var(--text); }
+.inside .acc-hero .voile h1 { position: relative; display: inline-block; font: 54px/1.05 "Permanent Marker", cursive; color: var(--jaune); margin: 6px 0 26px; transform: rotate(-2.5deg); transform-origin: left;
+  text-shadow: 0 0 14px rgba(255,230,140,.35), 3px 3px 0 rgba(0,0,0,.7); }
+.inside .acc-hero .voile h1::after { content: ""; position: absolute; left: 3%; right: 5%; top: 88%; height: 30px; background: url("images/js21-coulures.svg") 0 0 / 100% 100%; }
+.inside .acc-hero .voile p { color: #f6ead2; text-shadow: 0 1px 4px #000; margin: 0 0 24px; font-family: "Special Elite", monospace; }
+.inside .acc-jouer { display: block; width: 100%; max-width: 560px; text-align: center; padding: 18px 18px 16px !important; border-radius: 12px !important; cursor: pointer; position: relative;
+  background: linear-gradient(rgba(14,14,16,.85), rgba(4,4,6,.92)) !important; border: 1px solid rgba(255,255,255,.07) !important; color: #fff !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.6) !important; }
+.inside .acc-jouer span { display: block; font: 30px "Tilt Neon", sans-serif; color: #fff; text-shadow: 0 0 2px #fff, 0 0 6px #ff7ac0, 0 0 16px var(--rose), 0 0 34px var(--rose); animation: js21Gresille 7s 1s infinite; }
+.inside .acc-jouer small { display: block; margin-top: 8px; color: #e8d5df; font: 13px "Special Elite", monospace; }
+/* la télé, encastrée en hauteur dans le mur : une niche au linteau de béton, l'ombre au fond, la télé dedans */
+.niche-tele { grid-column: 2; grid-row: 1; position: relative; width: 330px; padding: 16px 16px 12px; margin-top: -6px;
+  background: linear-gradient(#0d0705, #1c0e08); box-shadow: inset 0 18px 22px rgba(0,0,0,.95), inset 12px 0 16px rgba(0,0,0,.7), inset -12px 0 16px rgba(0,0,0,.7), 0 0 0 3px rgba(40,18,10,.8); }
+.niche-tele::before { content: ""; position: absolute; left: -16px; right: -16px; top: -22px; height: 22px; border-radius: 2px;
+  background: linear-gradient(#bdb6a8, #8d867a), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='40'%3E%3Cfilter id='b'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .3 0 0 0 0 .3 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='200' height='40' filter='url(%23b)'/%3E%3C/svg%3E");
+  background-blend-mode: multiply; box-shadow: 0 4px 6px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.35); }
+.niche-tele::after { content: ""; position: absolute; left: -10px; right: -10px; bottom: -12px; height: 12px; background: linear-gradient(#a8a194, #7d766a); box-shadow: 0 4px 6px rgba(0,0,0,.6); }
+.tele { position: relative; display: flex; gap: 8px; padding: 12px; border-radius: 9px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), linear-gradient(#c9c5bd, #9a958c 45%, #7d7870);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.35), 0 8px 14px rgba(0,0,0,.7); }
+.tele-cadre { position: relative; flex: 1; padding: 10px; border-radius: 6px; background: linear-gradient(#1b1b1d, #0c0c0d); box-shadow: inset 0 2px 4px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.3); }
+.ecran-meteo { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 16% / 20%; padding: 8px 10px; color: #fff; font: 15px/1.1 "VT323", monospace;
+  background: radial-gradient(120% 120% at 40% 35%, #2a5ea6, #0d244a 65%, #050b16); text-shadow: 0 0 4px rgba(150,210,255,.8);
+  display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 18px rgba(0,0,0,.85); }
+.ecran-meteo::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(rgba(0,0,0,.25) 0 1px, transparent 1px 3px), radial-gradient(130% 120% at 50% 50%, transparent 55%, rgba(0,0,0,.65)); }
+.tele-cadre .reflet { position: absolute; left: 14px; top: 12px; width: 55%; height: 38%; border-radius: 40% 20% 60% 20%; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255,255,255,.22), rgba(255,255,255,0) 70%); }
+.ecran-meteo .titre { font-size: 15px; color: #ffd84a; letter-spacing: .06em; }
+.ecran-meteo .maintenant { display: flex; align-items: center; gap: 8px; }
+.ecran-meteo .maintenant .ic { font-size: 30px; line-height: 1; }
+.ecran-meteo .maintenant b { font: 42px/1 "VT323", monospace; }
+.ecran-meteo .maintenant small { font-size: 15px; color: #cfe6ff; }
+.ecran-meteo .jours { display: flex; justify-content: space-between; font-size: 14px; color: #cfe6ff; }
+.ecran-meteo .jours span { text-align: center; } .ecran-meteo .jours i { display: block; font-style: normal; font-size: 16px; }
+.tele-panneau { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 4px; background: linear-gradient(#56534e, #3b3935); box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
+.tele-panneau .marque { font: 700 8px "Lato", sans-serif; letter-spacing: .14em; color: #e9e4d8; padding: 2px 3px; background: linear-gradient(#aaa49a, #7c776f); border-radius: 2px; text-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.tele-panneau .touches { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.tele-panneau .touches i { width: 18px; height: 11px; border-radius: 2px; background: linear-gradient(#2c2c2e, #151516); box-shadow: 0 1px 0 rgba(255,255,255,.2), inset 0 1px 0 rgba(255,255,255,.1);
+  font: 7px/11px "Lato", sans-serif; font-style: normal; color: #bbb; text-align: center; }
+.tele-panneau .marche { display: flex; align-items: center; gap: 5px; margin-top: auto; }
+.tele-panneau .marche b { width: 16px; height: 10px; border-radius: 2px; background: linear-gradient(#e6e2d8, #b5b0a6); box-shadow: 0 1px 1px rgba(0,0,0,.6); }
+.tele-panneau .led { width: 5px; height: 5px; border-radius: 50%; background: #ff3a1a; box-shadow: 0 0 4px #ff3a1a, 0 0 8px #ff3a1a; }
+.tele-panneau .hp { width: 100%; height: 46px; background: repeating-linear-gradient(#141414 0 2px, #4a4844 2px 5px); border-radius: 2px; }
+@media (max-width: 700px) {
+  .inside .acc-hero { grid-template-columns: 1fr; }
+  .niche-tele { grid-column: 1; grid-row: 1; justify-self: center; width: 290px; margin: 30px 0 6px; }
+  .inside .acc-hero .voile { grid-row: 2; padding-top: 0 !important; }
+  .inside .acc-hero .voile h1 { font-size: 40px; }
+}
+.inside .adresse-carte iframe { border-radius: 2px; filter: sepia(.25) contrast(1.05); }
+
+/* (réglages) */
+.inside .card * { font-family: inherit; }
+.inside .card .signe { font-family: "Mrs Saint Delafield", cursive !important; }
+.inside .tabbar button.on { text-shadow: 0 0 1px #fff, 0 0 3px #fff, 0 0 7px var(--n), 0 0 16px var(--n), 0 0 30px var(--n), 0 0 50px var(--n) !important; }
+.inside .tabbar button:not(.on):not(.jouer) { color: rgba(200,192,186,.32) !important; text-shadow: 0 1px 0 rgba(255,255,255,.18), 0 -1px 1px rgba(0,0,0,.8) !important; }
+.inside .acc-hero .voile h1 { white-space: nowrap; font-size: clamp(30px, 3.6vw, 52px); }
+.niche-tele { margin-top: 34px; }
+@media (max-width: 700px) { .inside .acc-hero .voile h1 { white-space: normal; } }
+@media (max-width: 700px) {
+  .inside .topbar { padding: 12px 64px 6px 14px; min-height: 0; }
+  .enseigne { gap: 6px 12px; }
+  .enseigne .neon { font-size: 30px; padding: 8px 16px 9px; }
+  .enseigne .tag { font-size: 21px; }
+  .ecran-meteo { padding: 6px 8px; font-size: 13px; }
+  .ecran-meteo .titre { font-size: 13px; }
+  .ecran-meteo .maintenant .ic { font-size: 22px; }
+  .ecran-meteo .maintenant b { font-size: 32px; }
+  .ecran-meteo .maintenant small { font-size: 12px; }
+  .ecran-meteo .jours { font-size: 11px; } .ecran-meteo .jours i { font-size: 13px; }
+  .inside .tabbar button { font-size: 12.5px !important; letter-spacing: 0; padding-top: 6px !important; }
+}
+
+/* ================== SALLE DES FÊTES : le juke-box ================== */
+.jukebox { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 34px; align-items: start; margin: 10px 0 40px; }
+.juke-machine { position: relative; width: 100%; aspect-ratio: 735 / 1203; filter: drop-shadow(0 26px 30px rgba(0,0,0,.7)); }
+.juke-machine img { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* il s'allume en arrivant : les tubes hésitent, puis tiennent ; une lueur colorée sur le mur derrière */
+.juke-machine .allume { animation: jukeAllume 2.2s .3s steps(1) both; }
+@keyframes jukeAllume { 0% { opacity: 0; } 8% { opacity: .7; } 14% { opacity: 0; } 22% { opacity: 1; } 27% { opacity: .2; } 34%, 100% { opacity: 1; } }
+.juke-machine::before { content: ""; position: absolute; inset: -12% -22% 0; z-index: -1; border-radius: 50% 50% 30% 30%; pointer-events: none;
+  background: radial-gradient(ellipse 50% 46% at 50% 40%, rgba(255,170,60,.38), rgba(255,79,163,.16) 55%, transparent 75%); animation: jukeAllume 2.2s .3s steps(1) both; }
+.jukebox.joue .juke-machine::before { animation: jukeHalo 1.6s ease-in-out infinite alternate; }
+@keyframes jukeHalo { from { opacity: .75; } to { opacity: 1; } }
+/* les étiquettes des titres, derrière la vitre du panneau éclairé */
+.juke-titres { position: absolute; left: 22.86%; top: 34.14%; width: 54.18%; height: 13.15%; padding: 2.2% 2%; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 3% 4%; overflow: hidden; }
+.juke-titres .etiquette { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 4px; min-width: 0; padding: 0 3px; border: 0; border-radius: 1px; text-align: left; cursor: pointer;
+  background: #fffaf0; border-top: 2px solid #c8202a; border-bottom: 2px solid #1d4fa0; font: 7.5px/1.05 "Special Elite", monospace; color: #1a0e06; box-shadow: 0 0 0 .5px rgba(0,0,0,.25); }
+.juke-titres .etiquette b { grid-row: 1 / 3; font: 9px "Lato", sans-serif; font-weight: 900; color: #c8202a; }
+.juke-titres .etiquette span, .juke-titres .etiquette small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.juke-titres .etiquette small { color: #6a4a2a; font-size: 6.5px; }
+.juke-titres .etiquette.joue { background: #fff2b8; box-shadow: 0 0 6px #ffd84a; }
+/* le carnet : la dépose, puis tous les titres en étiquettes de juke-box */
+.juke-carnet .fete-head .garland { display: none; }
+.juke-carnet #tracks .list-item { background: #fffaf0 !important; background-image: none !important; border-top: 4px solid #c8202a !important; border-bottom: 4px solid #1d4fa0 !important; border-radius: 1px !important; margin-bottom: 8px; }
+.juke-carnet #tracks .list-item.playing { box-shadow: 0 0 0 2px #ffd84a, 0 0 16px rgba(255,216,74,.8) !important; }
+.juke-carnet #tracks { max-height: 720px; overflow-y: auto; padding: 4px 6px 4px 2px; }
+@media (max-width: 860px) { .jukebox { grid-template-columns: 1fr; } .juke-machine { width: min(360px, 88vw); margin: 0 auto; } .juke-titres .etiquette { font-size: 6.5px; } }
+
+/* ================== POSTE DE POLICE : l'enseigne au néon bleu, le gyrophare qui balaie le mur ================== */
+.enseigne-police { position: relative; display: grid; justify-items: center; gap: 10px; padding: 26px 0 30px; }
+.enseigne-police .plaque-police { position: relative; padding: 16px 30px 18px; border-radius: 10px; background: linear-gradient(rgba(12,14,20,.86), rgba(4,5,9,.92));
+  border: 1px solid rgba(160,190,255,.15); box-shadow: 0 12px 24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.07); }
+.enseigne-police .plaque-police::before, .enseigne-police .plaque-police::after { content: ""; position: absolute; top: 8px; width: 7px; height: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8dde2, #6b7178 60%, #2a2e33); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+.enseigne-police .plaque-police::before { left: 8px; } .enseigne-police .plaque-police::after { right: 8px; }
+.enseigne-police span { font: 64px/1 "Tilt Neon", sans-serif; letter-spacing: .16em; color: #f2f6ff;
+  text-shadow: 0 0 2px #fff, 0 0 6px #8fb4ff, 0 0 14px #3a6cff, 0 0 30px #2050ff, 0 0 56px rgba(32,80,255,.7); animation: js21Allume 1.4s .2s steps(1) both, js21Gresille 8s 2s infinite; }
+.enseigne-police small { font: 14px "Special Elite", monospace; color: #e9e2d4; text-shadow: 0 1px 3px #000; letter-spacing: .06em; }
+/* le gyrophare : une lueur bleue puis rouge qui balaie le mur, doucement */
+.enseigne-police .gyro { position: absolute; inset: -40px -60px; z-index: -1; pointer-events: none; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(40,90,255,.0) 0deg, rgba(40,90,255,.28) 30deg, rgba(40,90,255,0) 70deg, transparent 180deg, rgba(255,40,40,0) 180deg, rgba(255,40,40,.24) 210deg, rgba(255,40,40,0) 250deg, transparent 360deg);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent); mask: radial-gradient(closest-side, #000 30%, transparent); animation: gyro 3.2s linear infinite; }
+@keyframes gyro { to { transform: rotate(360deg); } }
+/* la phrase du chef de poste : une note de la main courante, tapée et punaisée */
+.inside .tab[data-tab="poste"] .bubble { margin: 0 18px 20px !important; border: 0 !important; border-radius: 1px !important; box-shadow: 0 10px 18px rgba(0,0,0,.5) !important; transform: rotate(-1.2deg);
+  background: linear-gradient(#fdf6c8, #f6eba6) !important; font: 17px/1.5 "Special Elite", monospace !important; padding: 20px 18px 16px !important; }
+.inside .tab[data-tab="poste"] .bubble::before { content: ""; position: absolute; top: -8px; left: 50%; width: 16px; height: 16px; border: 0 !important; border-radius: 50%; transform: translateX(-50%);
+  background: radial-gradient(circle at 35% 35%, #ff7a7a, #b3191f 70%); box-shadow: 0 2px 3px rgba(0,0,0,.5); }
+.inside .steps span { background: rgba(0,0,0,.15); } .inside .steps span.on { background: #b3191f; }
+/* sur le papier, l'encre : les couleurs de l'appli redeviennent sombres */
+.inside .card, .inside .list-item { --muted: #5c5246; --text: #23201c; --terra: #b3191f; --terra-dark: #8e1418; --navy: #111; --line: #8a7d6c; --gold: #b07a12; }
+.inside .card .link, .inside .card button.link { color: #1d3f8a !important; text-decoration: underline; }
+
+/* ---------- les titres de page : écrits à la main, au feutre peinture blanc (plus de bombe jaune) ----------
+   (le trait un peu inégal : l'encre plus chargée par endroits, un léger voile autour ; deux petites gouttes au bout) */
+.inside .hello, .inside .acc-hero .voile h1 { font-family: "Sedgwick Ave", "Permanent Marker", cursive !important; font-weight: 400; letter-spacing: .01em;
+  color: #fbfaf5 !important; transform: rotate(-3deg);
+  background: linear-gradient(100deg, #ffffff 0%, #f1efe8 22%, #ffffff 38%, #e9e6dd 55%, #ffffff 72%, #f4f2ec 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  text-shadow: none !important; filter: drop-shadow(0 0 1px rgba(255,255,255,.55)) drop-shadow(1px 2px 1px rgba(0,0,0,.55)); }
+.inside .hello { font-size: 54px; }
+.inside .acc-hero .voile h1 { font-size: clamp(36px, 4.2vw, 62px); }
+.inside .hello::after, .inside .acc-hero .voile h1::after { left: auto; right: 4%; width: 22px; height: 22px; top: 78%;
+  background: radial-gradient(2px 9px at 30% 0, #fff 60%, transparent 65%), radial-gradient(2.5px 3px at 30% 9px, #fff 60%, transparent 65%), radial-gradient(1.6px 5px at 75% 0, #fff 60%, transparent 65%) !important; opacity: .9; }
+@media (max-width: 700px) { .inside .hello { font-size: 42px; } .inside .acc-hero .voile h1 { font-size: 44px; } }
+.inside .hello::after, .inside .acc-hero .voile h1::after { display: none !important; }
+
+/* les titres : griffonnés vite au feutre blanc — plus petits, l'écriture nerveuse, de travers */
+.inside .hello, .inside .acc-hero .voile h1 { font-family: "Rock Salt", "Sedgwick Ave", cursive !important; transform: rotate(-4deg) skewX(-6deg); letter-spacing: -.01em; line-height: 1.25;
+  filter: drop-shadow(0 0 .6px rgba(255,255,255,.7)) drop-shadow(1px 1px 0 rgba(0,0,0,.6)); }
+.inside .hello { font-size: 28px; margin: 14px 0 18px; }
+.inside .acc-hero .voile h1 { font-size: clamp(24px, 2.6vw, 34px); margin: 10px 0 20px; }
+@media (max-width: 700px) { .inside .hello { font-size: 23px; } .inside .acc-hero .voile h1 { font-size: 25px; } }
+/* « Entrer dans la caserne en 3D » : le néon passe au vert */
+.inside .acc-jouer span { text-shadow: 0 0 2px #fff, 0 0 6px #8dffa0, 0 0 16px #2bff5a, 0 0 34px #1fd94a !important; }
+
+/* ================== CASERNE EN 3D : plus de dessin du porche, juste une grande enseigne au néon vert sur le mur ================== */
+.inside .mx-porte { background: none !important; min-height: 62vh; display: grid; place-items: center; box-shadow: none !important; border-radius: 0 !important; }
+.inside .mx-porte::before, .inside .mx-porte::after { display: none !important; }
+.inside .mx-porte-carte { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; text-align: center; }
+.inside .mx-porte-carte h2, .inside .mx-porte-carte p { display: none; }
+.inside .mx-porte-btn { position: relative; padding: 34px 54px 38px !important; border-radius: 14px !important; cursor: pointer;
+  background: linear-gradient(rgba(12,14,12,.86), rgba(3,5,3,.93)) !important; border: 1px solid rgba(180,255,190,.14) !important;
+  box-shadow: 0 18px 34px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07), 0 0 90px rgba(43,255,90,.18) !important;
+  font: clamp(30px, 5vw, 66px)/1.1 "Tilt Neon", sans-serif !important; letter-spacing: .06em; color: #f2fff4 !important;
+  text-shadow: 0 0 2px #fff, 0 0 7px #8dffa0, 0 0 18px #2bff5a, 0 0 38px #1fd94a, 0 0 70px rgba(31,217,74,.7) !important;
+  animation: js21Allume 1.6s .2s steps(1) both, js21Gresille 7s 2s infinite; }
+.inside .mx-porte-btn::before, .inside .mx-porte-btn::after { content: ""; position: absolute; top: 12px; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8dde2, #6b7178 60%, #2a2e33); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+.inside .mx-porte-btn::before { left: 12px; } .inside .mx-porte-btn::after { right: 12px; }
+.inside .mx-porte-btn:hover { box-shadow: 0 18px 34px rgba(0,0,0,.7), 0 0 120px rgba(43,255,90,.32) !important; }
+.inside .mx-porte { display: flex !important; align-items: center; justify-content: center; min-height: calc(100dvh - 280px) !important; height: auto !important; aspect-ratio: auto !important; }

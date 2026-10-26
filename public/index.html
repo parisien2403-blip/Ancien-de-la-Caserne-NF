@@ -31,7 +31,8 @@
 <title>Caserne Nouvelle-France</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Permanent+Marker&family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Permanent+Marker&family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&family=VT323&family=Tilt+Neon&family=Special+Elite&family=Sedgwick+Ave&family=Rock+Salt&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="js21.css?v=1">
 <style>
   :root {
     --cream: #f6eedf;
@@ -1072,6 +1073,7 @@
   <section class="screen inside" id="inside" hidden>
     <div class="topbar">
       <img class="plaque-photo" src="images/dessin-plaque.jpg" alt="Caserne de la Nouvelle France">
+      <div class="enseigne" aria-hidden="true"><span class="neon">CASERNE</span><span class="tag">de la Nouvelle France</span></div>
       <button class="vue-btn" id="vueBtn" title="Passer en vue PC" hidden></button>
       <button class="me" title="Mon profil" id="me"><span class="ini" id="meIni">?</span><span class="statut"></span></button>
     </div>
@@ -1085,8 +1087,12 @@
           <img src="images/dessin-porche.jpg" alt="Le porche de la Caserne de la Nouvelle France : le navire sculpté et, dessous, la plaque « Caserne de la Nouvelle France »">
           <img class="calque c1" src="images/accueil-coucou1.webp" alt="" aria-hidden="true"><img class="calque c2" src="images/accueil-coucou2.webp" alt="" aria-hidden="true">
           <div class="meteo-pill" id="accMeteo" title="La météo à la caserne">…</div>
+          <div class="niche-tele" id="accTele" hidden><div class="tele" title="La météo à la caserne">
+            <div class="tele-cadre"><div class="ecran-meteo" id="accTeleEcran"></div><div class="reflet"></div></div>
+            <div class="tele-panneau"><span class="marque">SÉLECTRON</span><div class="touches"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i></div><div class="hp"></div><div class="marche"><b></b><span class="led"></span></div></div>
+          </div></div>
           <div class="voile"><h1 id="accBonjour">Bienvenue à la caserne</h1><p>82, rue du Faubourg-Poissonnière · Paris 10<sup>e</sup></p>
-            <button type="button" class="acc-jouer" data-go="matrice"><span>🎮 Entrer dans la caserne en 3D</span><small>Promène-toi dans la caserne, retrouve les anciens, danse à la salle des fêtes, joue… on t'y attend !</small></button></div>
+            <button type="button" class="acc-jouer" data-go="matrice"><span>Entrer dans la caserne en 3D</span><small>Promène-toi dans la caserne, retrouve les anciens, danse à la salle des fêtes, joue… on t'y attend !</small></button></div>
         </div>
         <div class="acc-cols">
           <div>
@@ -1140,9 +1146,7 @@
         <p class="hello-sub">Présentez-vous au chef de poste pour obtenir votre laissez-passer</p>
 
         <div class="poste-cols"><div class="poste-g">
-        <div class="card guichet">
-          <img src="images/garde-poste.jpg" alt="Le garde de faction au poste de police, bras croisés derrière son bureau">
-        </div>
+        <div class="enseigne-police" aria-hidden="true"><div class="gyro"></div><div class="plaque-police"><span>POLICE</span></div><small>Poste de garde · Caserne de la Nouvelle France</small></div>
         <div class="bubble" id="bubble"><b>Halte mon gars !</b> Vos papiers… Pas de laissez-passer ? Remplissez-moi ça, et que ça saute.</div>
         </div><div class="poste-d">
 
@@ -1257,6 +1261,23 @@
         <h1 class="hello">La Salle des fêtes</h1>
         <p class="hello-sub">Musique, vidéos et photos des soirées de la caserne</p>
 
+        <div class="jukebox" id="jukebox">
+          <div class="juke-machine" aria-label="Le juke-box de la salle des fêtes"><img class="eteint" src="images/js21-juke-off.webp" alt=""><img class="allume" src="images/js21-juke-on.webp" alt=""><div class="juke-titres" id="jukeTitres"></div></div>
+          <div class="juke-carnet">
+        <div class="card fete-head">
+          <div class="garland" id="garland"></div>
+          <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+          <h3>Ce soir, c'est vous le DJ</h3>
+          <p>Déposez vos musiques et vos clips vidéo (MP4) : ils passent chez le DJ de la salle des fêtes, dans la Matrice — les vidéos sur le grand écran de la scène</p>
+          <label class="file" style="margin-top:14px;justify-content:center"><svg class="ico" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter une musique ou un clip<input type="file" accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.m4v" id="djFichier" multiple></label>
+          <p class="erreur" id="djErreur" hidden></p>
+          <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
+        </div>
+        <p class="legal">Déposez de préférence vos propres enregistrements ou des musiques libres de droits (fanfare, fêtes, cassettes de l'époque). 50 Mo au plus par musique. Pour la passer à tout le monde : Matrice → salle des fêtes → bouton ▶ sur les platines du DJ.</p>
+        <input class="search" id="tracksRecherche" placeholder="Chercher un titre, un artiste…">
+        <div id="tracks"></div>
+        </div></div>
         <!-- ===== La borne : le jeu s'affiche dans l'écran de la télé ===== -->
         <div class="borne-zone" id="borneZone">
           <button class="quitter-borne" id="quitterBorne" type="button" aria-label="Revenir à la salle des fêtes">✕</button>
@@ -1301,19 +1322,6 @@
             <button class="btn" style="width:100%" id="jeuEnvoyer">Ranger la cartouche dans la borne</button>
           </form>
         </div>
-        <div class="card fete-head">
-          <div class="garland" id="garland"></div>
-          <svg class="ico" style="width:40px;height:40px;stroke:#f6d465" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
-          <h3>Ce soir, c'est vous le DJ</h3>
-          <p>Déposez vos musiques et vos clips vidéo (MP4) : ils passent chez le DJ de la salle des fêtes, dans la Matrice — les vidéos sur le grand écran de la scène</p>
-          <label class="file" style="margin-top:14px;justify-content:center"><svg class="ico" style="width:22px;height:22px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Ajouter une musique ou un clip<input type="file" accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.m4v" id="djFichier" multiple></label>
-          <p class="erreur" id="djErreur" hidden></p>
-          <div class="dj-envoi" id="djEnvoi" hidden><div class="progression"><div id="djEnvoiBarre"></div></div><small id="djEnvoiTxt"></small></div>
-        </div>
-        <p class="legal">Déposez de préférence vos propres enregistrements ou des musiques libres de droits (fanfare, fêtes, cassettes de l'époque). 50 Mo au plus par musique. Pour la passer à tout le monde : Matrice → salle des fêtes → bouton ▶ sur les platines du DJ.</p>
-        <input class="search" id="tracksRecherche" placeholder="Chercher un titre, un artiste…">
-        <div id="tracks"></div>
       </div>
 
       <!-- ===== MEMBRES DE LA CASERNE ===== -->
@@ -1333,7 +1341,7 @@
           <div class="mx-porte-carte">
             <h2>La grille est fermée…</h2>
             <p>De l'autre côté, la cour d'honneur, la salle des fêtes, le bar et les anciens t'attendent.</p>
-            <button class="btn mx-porte-btn" id="mxEntrer" type="button">🚪 Entrer dans la caserne</button>
+            <button class="btn mx-porte-btn" id="mxEntrer" type="button">Entrer dans la caserne</button>
           </div>
         </div>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
@@ -1551,7 +1559,6 @@
     <nav class="tabbar" id="tabbar">
       <button data-go="accueil"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/></svg><span class="lbl">Accueil</span></button>
       <button data-go="poste"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="lbl">Poste<br> de police</span></button>
-      <button data-go="biblio"><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 5l3.5-1 3 15-3.6 1z" transform="translate(-2 0)"/></svg><span class="lbl">Biblio<span class="cesure">-</span><br>thèque</span></button>
       <button data-go="fetes"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="lbl">Salle<br> des fêtes</span></button>
       <button data-go="membres"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.3 2.6 3.5 6"/></svg><span class="lbl">Membres<br> caserne</span></button>
       <button data-go="matrice" class="jouer"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Caserne<br> en 3D</span><span class="badge-jouer">Jouer</span></button>
@@ -2336,7 +2343,7 @@
   $("rQualite").onchange = () => { const v = $("rQualite").value; try { if (v === "auto") localStorage.removeItem("caserne-qualite"); else localStorage.setItem("caserne-qualite", v); } catch (e) {} };
   $("mxMicro").oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if (MX && $("mxMicro").classList.contains("on")) MX.choisirMicro(); };   // (clic droit, ou appui long : choisir le micro)
   $("mxMicro").onclick = async e => { e.stopPropagation(); if (!MX) return; const b = $("mxMicro"); b.disabled = true; try { await MX.micro(!b.classList.contains("on")); } finally { b.disabled = false; } };
-  $("mxEntrer").onclick = () => { $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
+  $("mxEntrer").onclick = () => { window.CASERNE_CINE_MAIN = true;   /* (à l'arrivée dans la cour : la main géante qui nous y pose) */ $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
   // l'appartement de l'escalier Z : l'administrateur, et les badges qu'il y invite (la même liste dans src/index.js)
   const APPART_INVITES = [2, 3, 4], appartOuvert = () => !!(moi && (moi.admin || (APPART_INVITES.includes(Number(moi.numero)) && appartLibre)));   // (les invités : seulement quand l'administrateur l'a ouvert)
   let appartLibre = false;
@@ -3278,6 +3285,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.97", "26 octobre 2026", ["Toute l'appli façon « 21 Jump Street » : un mur de briques dessinées une à une, l'enseigne néon « CASERNE » et « de la Nouvelle France » tagué, un néon par onglet (celui où l'on est s'allume), les titres griffonnés au feutre blanc, les textes tapés à la machine sur du papier scotché", "Accueil : la météo dans une télé encastrée en hauteur dans le mur ; « Entrer dans la caserne en 3D » en néon vert", "Salle des fêtes : un vrai juke-box qui s'allume ; ses étiquettes montrent les titres de la discothèque (on en touche une, elle passe) ; on y dépose musiques et clips", "Poste de police : une enseigne néon « POLICE » et son gyrophare à la place du gendarme", "L'onglet Bibliothèque est retiré du menu", "Caserne en 3D : une grande enseigne néon « Entrer dans la caserne » ; en entrant, une main géante nous tient par le col, vue du ciel, et nous pose au milieu de la cour d'honneur (main : « Hand animation test » de SantosGabriel, Sketchfab, CC-BY 4.0)"]],
     ["7.96", "25 octobre 2026", ["Caserne, ruelle de la porte N : les deux trottoirs prolongent ceux de la rue en pente sans décrochement (même largeur, bordures alignées)"]],
     ["7.95", "25 octobre 2026", ["Goonies : la borne d'arcade du bar est ouverte à tout le monde", "Goonies : le panneau des records du bar se met bien à jour avec les scores (il ne recevait rien au sous-sol) ; le score compte aussi si l'on quitte la borne en pleine partie"]],
     ["7.94", "25 octobre 2026", ["Goonies sur téléphone : avec une manette Bluetooth (ou un clavier), les boutons à l'écran disparaissent dès qu'on s'en sert ; ils reviennent si l'on retouche l'écran ou si la manette se débranche"]],
@@ -4275,6 +4283,9 @@
         ${moi && (moi.admin || +m.auteur === +moi.numero) ? `<button type="button" class="btn small danger" data-suppr-musique="${m.id}" aria-label="Retirer de la discothèque">🗑</button>` : ""}</div>`).join("")
       : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><b>${djDisco.length ? "Aucun titre ne correspond" : "La discothèque est vide"}</b>${djDisco.length ? "" : "Ajoutez la première musique de la soirée."}</div>`;
     document.querySelectorAll("#tracks .play").forEach(b => b.onclick = () => toggle(+b.dataset.i));
+    // le panneau lumineux du juke-box : les dix premiers titres sur leurs étiquettes (A1 à A5, B1 à B5) ; on en touche un, il passe
+    if ($("jukeTitres")) { $("jukeTitres").innerHTML = djDisco.slice(0, 10).map((m, i) => `<button type="button" class="etiquette ${m.id === playing ? "joue" : ""}" data-i="${m.id}"><b>${"AB"[i % 2]}${Math.floor(i / 2) + 1}</b><span>${esc(m.titre)}</span><small>${esc(m.artiste || m.auteur_nom || "")}</small></button>`).join("");
+      $("jukeTitres").querySelectorAll("[data-i]").forEach(b => b.onclick = () => toggle(+b.dataset.i)); $("jukebox").classList.toggle("joue", playing !== -1); }
     document.querySelectorAll("#tracks [data-suppr-musique]").forEach(b => b.onclick = () => retirerMusique(+b.dataset.supprMusique));
   }
   function toggle(id) {
@@ -4438,6 +4449,8 @@
         const [ic, txt] = meteoDe(m.current.weather_code);
         const prev = [1, 2, 3].map(i => { const d = new Date(m.daily.time[i] + "T12:00"); return `${jours[d.getDay()]} ${meteoDe(m.daily.weather_code[i])[1].toLowerCase()} ${Math.round(m.daily.temperature_2m_max[i])}°/${Math.round(m.daily.temperature_2m_min[i])}°`; });
         $("accMeteo").innerHTML = `<span>${ic}</span><b>${Math.round(m.current.temperature_2m)}°</b><small>${txt}</small>`;
+        $("accTeleEcran").innerHTML = `<div class="titre">MÉTÉO · PARIS 10e</div><div class="maintenant"><span class="ic">${ic}</span><b>${Math.round(m.current.temperature_2m)}°</b><small>${esc(txt)}<br>ressenti ${Math.round(m.current.apparent_temperature)}°</small></div>`
+          + `<div class="jours">${[1, 2, 3].map(i => { const d = new Date(m.daily.time[i] + "T12:00"); return `<span>${jours[d.getDay()].slice(0, 3).toUpperCase()}<i>${meteoDe(m.daily.weather_code[i])[0]}</i>${Math.round(m.daily.temperature_2m_max[i])}°</span>`; }).join("")}</div>`; $("accTele").hidden = false;
         $("accMeteo").title = `La météo à la caserne — ressenti ${Math.round(m.current.apparent_temperature)}°, vent ${Math.round(m.current.wind_speed_10m)} km/h\n` + prev.join("\n");
         meteoChargee = Date.now();
       } catch (e) { $("accMeteo").hidden = true; }

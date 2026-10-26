@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.96";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.97";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -9358,7 +9358,7 @@ export async function ouvrir(ctx) {
       if (M.lentN >= 2 && (M.allege || 0) < 2 && qualiteChoisie() === "auto") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
     preparerVoisin(); trierLumieres(t); if (PETIT || (MOBILE && modeRE())) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
-      p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0;
+      p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0; if (p.leve) p.g.position.y += p.leve;   /* (tenu en l'air : la main de l'arrivée) */
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
       else if (p.moi && modeRE() && M.L.limites && !M.cine) { const v = viserLibre(p.g.position.x, p.g.position.z);   /* (coincé « dans » un obstacle — repoussé par une morsure, une flamme : chaque pas était refusé, on ne bougeait plus du tout) : on se remet sur le point libre le plus proche */
         if (M.L.limites(v[0], v[1]) && Math.hypot(v[0] - p.g.position.x, v[1] - p.g.position.z) < 3.2) { p.g.position.x = v[0]; p.g.position.z = v[1]; } else if (p.dernierOk) { p.g.position.x = p.dernierOk[0]; p.g.position.z = p.dernierOk[1]; } }
@@ -9563,6 +9563,7 @@ export async function ouvrir(ctx) {
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) cineFinaleGB(); else cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
+    if (window.CASERNE_CINE_MAIN && M.lieu === "grande" && !M.cine && M.gens.get(M.moiNum)) { window.CASERNE_CINE_MAIN = false; cineMain(); }   // (la main géante qui nous pose dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) combatGB();   // (le combat contre Bouffe-tout)
     /* (les affiches des films, au mess : retirées — on part dans les films par le Video Futur) */
     if (M.lieu === "grande" && M.L.ecto1) { garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
@@ -9831,6 +9832,52 @@ function sireneGB(on) { if (!M) return; let a = M.sirGB;
   if (!a || a.paused) return; clearInterval(a.fondu); a.fondu = setInterval(() => { a.volume = Math.max(0, a.volume - .05); if (a.volume <= 0) { clearInterval(a.fondu); a.pause(); } }, 100); }
 const posEcto = (E, lx, lz) => E.localToWorld(new THREE.Vector3(lx, 0, lz));
 function obstacleEcto(L) { if (L.gbObstacle) return; L.gbObstacle = true; const lim = L.limites; L.limites = (x, z) => lim(x, z) && !(Math.abs(x - GARE_GB[0]) < 1.4 && Math.abs(z - GARE_GB[1]) < 3.5); }   // (on ne passe pas au travers de l'Ecto-1 garée)
+/* ---- l'arrivée : vue du ciel sur la caserne, une main géante tient notre personnage par le col, entre le pouce et l'index,
+   descend jusqu'au milieu de la cour d'honneur, le pose, ouvre les doigts et repart ; puis la caméra revient derrière nous ---- */
+let mainPince = null;
+function chargerMainPince() { return mainPince = mainPince || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
+  const g = await new gltfMod.GLTFLoader().loadAsync("avatars/main-pince.glb?v=1"), mm = g.scene, mix = new THREE.AnimationMixer(mm); mix.clipAction(g.animations[0]).play();
+  const jt = n => mm.getObjectByName(n), doigts = ["Ind_018", "Ind_019", "Ind_020", "Dedao_023", "Dedao_024"].map(k => jt("DIR_Jnt_Flng0" + { Ind_018: 1, Ind_019: 2, Ind_020: 3, Dedao_023: 1, Dedao_024: 2 }[k] + "_" + k));
+  mix.setTime(0); mm.updateMatrixWorld(true); const ouverte = doigts.map(j => j.quaternion.clone());
+  mix.setTime(1.5); mm.updateMatrixWorld(true);
+  // la pince : l'index et le pouce se plient, articulation par articulation, jusqu'à se toucher
+  const ccd = (bout, chaine, cible) => { const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), pj = new THREE.Vector3(), q = new THREE.Quaternion(), wq = new THREE.Quaternion(), pq = new THREE.Quaternion(), id = new THREE.Quaternion();
+    for (let k = 0; k < 12; k++) for (const j of chaine) { mm.updateMatrixWorld(true); j.getWorldPosition(pj); bout.getWorldPosition(v1).sub(pj).normalize(); v2.copy(cible).sub(pj).normalize();
+      q.setFromUnitVectors(v1, v2); const a = 2 * Math.acos(Math.min(1, Math.abs(q.w))); if (a > .25) q.slerp(id, 1 - .25 / a); j.getWorldQuaternion(wq); j.parent.getWorldQuaternion(pq); j.quaternion.copy(pq.invert().multiply(q.multiply(wq))); } };
+  const pT = jt("DIR_Jnt_Flng03_Dedao_025"), pI = jt("DIR_Jnt_Flng04_Ind_021"), mid = pT.getWorldPosition(new THREE.Vector3()).lerp(pI.getWorldPosition(new THREE.Vector3()), .5);
+  ccd(pI, doigts.slice(0, 3).reverse(), mid); ccd(pT, doigts.slice(3).reverse(), pI.getWorldPosition(new THREE.Vector3()));
+  const fermee = doigts.map(j => j.quaternion.clone()); mm.updateMatrixWorld(true);
+  const taille = new THREE.Box3().setFromObject(mm, true).getSize(new THREE.Vector3()).length(); mm.scale.setScalar(1 / taille); mm.updateMatrixWorld(true);
+  const bout = pT.getWorldPosition(new THREE.Vector3()).lerp(pI.getWorldPosition(new THREE.Vector3()), .5); mm.position.sub(bout);   // (la pince au centre du groupe)
+  mm.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  const grp = new THREE.Group(); grp.add(mm); return { grp, mix, doigts, ouverte, fermee }; })().catch(e => { console.warn("main", e); mainPince = null; return null; }); }
+export function prechargerMain() { if (THREE) chargerMainPince(); }
+async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine) return;
+  const lieu = M.lieu; M.cine = { maj: () => {} };   // (en attendant la main : on ne bouge pas)
+  const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { if (M) finCine(); return; }
+  const P = moi.g.position.clone(), yw = moi.g.rotation.y, av = moi.av3;
+  let col = 1.42; if (av) { moi.g.updateMatrixWorld(true); let cou = null; av.sc.traverse(o => { if (!cou && o.isBone && /neck/i.test(o.name)) cou = o; }); if (cou) col = cou.getWorldPosition(new THREE.Vector3()).y - moi.g.position.y + .04; }
+  else if (moi.corps) col = moi.corps.scale.y * .86;
+  const main = H.grp; main.scale.setScalar(6.5); main.rotation.set(0, yw + Math.PI / 2, Math.PI); M.scene.add(main);
+  const T0 = performance.now(), D = 6400, HAUT = 34, fx = Math.sin(yw), fz = Math.cos(yw);
+  const lisse = u => u * u * (3 - 2 * u), seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+  const cam = M.camera, vise = new THREE.Vector3(), c0 = new THREE.Vector3(), c1 = new THREE.Vector3();
+  let fini = false; const fin = () => { if (fini || !M) return; fini = true; moi.leve = 0; moi.g.rotation.z = 0; moi.g.rotation.x = 0; M.scene.remove(main); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i])); finCine(); placerCamera(true); };
+  M.cine = { maj: now => { if (!M || M.lieu !== lieu) { fin(); return; } const t = (now - T0) / (window.CASERNE_RALENTI || 1); window.CASERNE_CINE_T = t;
+    // la descente : de très haut jusqu'au sol, en ralentissant ; un léger balancement du personnage pendu
+    const uD = lisse(seg(t, 0, 3900)), lv = (1 - uD) * HAUT + (t < 4300 ? 0 : 0);
+    moi.leve = t < 4300 ? lv + .03 : Math.max(0, .03 - (t - 4300) / 400);
+    const bal = t < 4300 ? Math.sin(t / 330) * .16 * (1 - uD * .8) : 0; moi.g.rotation.z = bal; moi.g.rotation.x = Math.sin(t / 470) * .06 * (1 - uD);
+    // la main : elle tient le col, puis ouvre les doigts et remonte en s'écartant
+    const uO = lisse(seg(t, 4250, 4800)); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i]).slerp(H.ouverte[i], uO));
+    const uR = lisse(seg(t, 4700, 6000));
+    main.position.set(P.x - fx * uR * 5, P.y + col + Math.max(lv, 0) + uR * 30, P.z - fz * uR * 5);
+    // la caméra : vue du ciel sur la caserne, puis elle plonge et se place un peu de côté, à hauteur du personnage
+    const uC = lisse(seg(t, 300, 4200));
+    c0.set(P.x + fz * 4, P.y + 62, P.z - fx * 4 + 10); c1.set(P.x + fz * 4.5 + fx * 8, P.y + 3.2, P.z - fx * 4.5 + fz * 8);
+    cam.position.lerpVectors(c0, c1, uC); vise.set(P.x, P.y + col * .6 + moi.leve * (1 - uC * .5), P.z); cam.lookAt(vise);
+    if (t > D) fin(); } };
+  M.passerBtn = boutonPasser(fin); }
 function cineArriveeGB() { const moi = M.gens.get(M.moiNum), E = M.L.ecto1; if (!moi || !E || M.cine) return; M.L.gbIntro = true; M.gbSirCoupee = false; M.gbChef = true; M.cineSeul = CHEF_GB;
   moi.cible = null; moi.chemin = []; const mp = moi.g.position.clone(), nom = prenomSH();
   const [sx, sz] = GARE_GB, P0 = [0, 30], P1 = [0, sz + 10], P2 = [sx, sz], ROUTE = 8.5;   // (bien au milieu du porche, puis elle se range doucement)
