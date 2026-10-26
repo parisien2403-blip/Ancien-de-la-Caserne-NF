@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.14";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.15";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13699,6 +13699,8 @@ function introGremlins() { if (!M || M.cine) return; if (universOccupe("kingston
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity 1.4s;pointer-events:none";
   d.innerHTML = '<img src="images/gremlins/titre.webp" alt="Gremlins" style="width:min(78%,720px);animation:kfTitre 4.5s ease-out forwards;filter:drop-shadow(0 0 24px rgba(255,40,20,.45))">';
   M.ctx.conteneur.appendChild(d); M.kfVoile = d; musiqueLB("kf");
+  { const f = new Audio("sons/kf-titre.mp3?v=1"); f.volume = .9; f.play().catch(() => {}); M.kfFanfare = f; M.kfTitreT0 = performance.now();
+    const g = setInterval(() => { if (f.paused) return clearInterval(g); if (!M || (M.lieu !== "kingston" && performance.now() - (M.kfTitreT0 || 0) > 5000)) { f.pause(); clearInterval(g); } }, 1000); }   // (on quitte Kingston Falls : elle se tait)   // (la fanfare, dès le titre ; elle accompagne le survol de la ville, et s'efface en entrant dans le bar)
   M.cine = { maj: () => {} };
   setTimeout(() => { if (!M) { d.remove(); return; } finCine(); M.kfIntro = true; changerLieu("kingston", [-33.7, -5.8], Math.PI / 2); }, 900); }   // (la ville se charge pendant le titre)
 function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null; const V3 = THREE.Vector3;
@@ -13708,7 +13710,8 @@ function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null;
   // l'écran noir et le titre restent tant que la ville se charge (les modèles, puis la préparation de tous les matériaux par la carte graphique) : sinon, ça saccade
   M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0));
   const attente = Promise.race([Promise.allSettled(KF_ATTENTES.slice()), new Promise(r => setTimeout(r, 6000))])
-    .then(() => M && M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]) : null);
+    .then(() => M && M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]) : null)
+    .then(() => new Promise(r => setTimeout(r, Math.max(0, (M && M.kfTitreT0 || 0) + 9800 - performance.now()))));   // (le titre reste au moins 10 secondes, sur la fanfare)
   attente.then(() => new Promise(r => setTimeout(r, 200))).then(() => { if (!M || fini) return; t0 = performance.now() + 600; if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 1500); } });
   const fin = () => { if (fini) return; fini = true; M.kfSurvol = false; if (d && d.parentNode) d.remove(); billyKF(); };
   M.cine = { maj: () => { if (t0 === Infinity) { M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0)); return; } const u = Math.max(0, Math.min(1, (performance.now() - t0) / D)), e = EM * u * u * (3 - 2 * u); M.camera.position.copy(P.getPointAt(e)); vise.copy(C.getPointAt(e)); M.camera.lookAt(vise); M.camera.fov = 58; M.camera.updateProjectionMatrix(); if (u >= 1) fin(); } };
@@ -13722,6 +13725,7 @@ const BILLY_KF = [
   ["Gizmo", "Billy… ! Ouuuh…"]];
 const vidKF = src => { const v = document.createElement("video"); v.src = src; v.playsInline = true; v.preload = "auto"; v.load(); return v; };   // (chargées dès la photo de Billy : elles sont prêtes quand vient leur tour)
 function billyKF() { if (!M) return;
+  { const f = M.kfFanfare; M.kfFanfare = null; if (f) { const v0 = f.volume, t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); f.volume = v0 * (1 - u); if (u >= 1) { clearInterval(i); f.pause(); } }, 50); } }   // (la fanfare s'efface : au bar, le silence)
   M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;box-sizing:border-box;opacity:0;transition:opacity .7s;cursor:pointer";
   d.innerHTML = '<img src="images/gremlins/billy.webp" alt="Billy et Gizmo" style="max-width:min(94%,820px);max-height:58%;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.8)">'
@@ -13780,6 +13784,43 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
     M.ctx.surInfo && M.ctx.surInfo("🏹 Comme Rambo : Gizmo a son arc et son bandana ! Tirer : F, Espace ou la gâchette · Sauter : J ou A"); };
   const bpF = () => { suite(); if (!fini) M.passerBtn = boutonPasser(bpF); }; M.cine.passer = () => suite(); M.passerBtn = boutonPasser(bpF);   // (Passer : à l'étape suivante)
   const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); V.rambo.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
+// la fin : l'écran noir, « First Aid » ; un texte rouge qui monte lentement (tout est rentré dans l'ordre… ou presque), le générique ; le titre, « FIN »… et un point d'interrogation.
+// Puis on revient dans la rue, devant le Video Futur.
+const TEXTE_FIN_KF = [
+  "Cette nuit-là, à Kingston Falls, la lumière a eu raison des gremlins.",
+  "Au matin, la neige avait recouvert les carcasses des voitures, et l'on balayait des cendres jusque sur les marches du tribunal.",
+  "Billy a tenu parole : il a réparé le désordre, une vitrine après l'autre, une guirlande après l'autre.",
+  "Le père Noël a repris sa tournée — le manteau un peu déchiré, mais vivant.",
+  "La chorale s'est tue. La voiture de police est rentrée au garage. Les projecteurs, eux, sont restés allumés toute la nuit.",
+  "Gizmo a rangé son arc et son bandana rouge au fond de sa boîte, et Kingston Falls a retrouvé son calme, ses chants de Noël, ses rues tranquilles.",
+  "Tout était rentré dans l'ordre.",
+  "Pourtant…",
+  "Dans la cave du Dorry's Tavern, une vieille canalisation fuit.",
+  "Une goutte d'eau tombe sur le carrelage. Puis une autre.",
+  "Et quelque part dans le noir, une petite boule de poils frissonne…"];
+const GENERIQUE_KF = [["Gizmo", "dans son propre rôle"], ["Billy Peltzer", "le réparateur"], ["Le père Noël", "toujours debout"], ["Stripe et sa bande", "réduits en cendres"], ["La chorale de Kingston Falls", "plus jamais en mesure"],
+  ["Une aventure de", "la Caserne de la Nouvelle France"], ["Mise en scène", "Germain-Pierre"], ["Musique", "« First Aid »"], ["Aucun mogwaï n'a été mouillé", "pendant le tournage"]];
+function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true;
+  const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause();
+  const son = new Audio("sons/kf-fin.mp3?v=1"); son.volume = 1; son.play().catch(() => {});
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;opacity:0;transition:opacity 1.6s;overflow:hidden;font-family:Georgia,'Times New Roman',serif";
+  const rouge = "color:#d81818;text-shadow:0 0 14px rgba(255,20,20,.45)";
+  const defile = document.createElement("div"); defile.style.cssText = "position:absolute;left:50%;top:100%;width:min(86%,640px);transform:translateX(-50%);text-align:center;" + rouge;
+  defile.innerHTML = TEXTE_FIN_KF.map((t, i) => `<p style="margin:0 0 ${i === 6 ? 70 : 34}px;font-size:clamp(17px,2.6vw,25px);line-height:1.5;${i >= 7 ? "font-style:italic" : ""}">${t}</p>`).join("")
+    + '<div style="height:90px"></div>' + GENERIQUE_KF.map(([a, b]) => `<div style="margin:0 0 26px"><div style="font-size:clamp(13px,1.8vw,16px);letter-spacing:.18em;text-transform:uppercase;opacity:.75">${a}</div><div style="font-size:clamp(18px,2.8vw,26px);font-weight:700">${b}</div></div>`).join("");
+  d.appendChild(defile);
+  const titre = document.createElement("div"); titre.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;transition:opacity 2.4s";
+  titre.innerHTML = '<img src="images/gremlins/titre.webp" alt="Gremlins" style="width:min(74%,640px);filter:drop-shadow(0 0 24px rgba(255,40,20,.45))"><div class="fin" style="font:900 clamp(40px,10vw,76px) Georgia,serif;letter-spacing:.35em;padding-left:.35em;' + rouge + '">FIN</div>';
+  d.appendChild(titre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
+  M.cine = { maj: () => {} }; let fini = false; const T = [];
+  const fin = () => { if (fini || !M) return; fini = true; T.forEach(clearTimeout); const v0 = son.volume, t0 = performance.now(), f = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1200); son.volume = v0 * (1 - u); if (u >= 1) { clearInterval(f); son.pause(); } }, 50);
+    M.pauseRendu = false; finCine(); M.kfGenerique = false; changerLieu("rue", [19.1, 5.2], Math.PI); setTimeout(() => { d.style.transition = "opacity 1.2s"; d.style.opacity = "0"; setTimeout(() => d.remove(), 1300); }, 900); };
+  M.passerBtn = boutonPasser(fin); M.cine.passer = fin;
+  const DUREE = 70;   // (secondes : le texte, puis le générique, montent lentement)
+  T.push(setTimeout(() => { if (fini) return; M.pauseRendu = true; const h = defile.offsetHeight + d.offsetHeight; defile.style.transition = `transform ${DUREE}s linear`; defile.style.transform = `translate(-50%,-${h}px)`; }, 1800));   // (la ville n'est plus dessinée derrière le noir)
+  T.push(setTimeout(() => { if (!fini) titre.style.opacity = "1"; }, (1.8 + DUREE + 1) * 1000));
+  T.push(setTimeout(() => { if (fini) return; const f2 = titre.querySelector(".fin"); f2.textContent = "FIN ?"; f2.style.transition = "opacity .6s"; }, (1.8 + DUREE + 7) * 1000));   // (… une suite ?)
+  T.push(setTimeout(fin, (1.8 + DUREE + 13) * 1000)); }
 function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOccupe(f.lieu)) { refusUnivers(f.lieu); return; }
   if (f.cle === "grem") return introGremlins();
   const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
@@ -17952,7 +17993,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const cineBrulure = () => { if (!M || M.L !== L) return; const D = 11000, t0 = performance.now(), C = new THREE.Vector3(0, 1, 4), moi = M.gens.get(M.moiNum), dep = M.camera.position.clone(); let fini = false;
       if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(7000, t0 + 1500);
       const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; if (L.brulerTous) for (const q of L.gremlins || []) if (q.brule) q.brule = performance.now();
-        info("🎄 Plus un seul gremlin : la lumière les a tous brûlés. Kingston Falls est sauvée — bravo Gizmo !"); };
+        info("🎄 Plus un seul gremlin : la lumière les a tous brûlés. Kingston Falls est sauvée — bravo Gizmo !"); setTimeout(() => { if (M && M.L === L) generiqueKF(); }, 3000); };
       const v = new THREE.Vector3();
       M.cine = { fov: [58, 70], passer: fin, maj: () => { const u = Math.min(1, (performance.now() - t0) / D), e = u * u * (3 - 2 * u), a = -Math.PI / 2 + e * Math.PI * 1.3, r = 26 - 6 * e, h = 16 - 5 * e;
         v.set(C.x + Math.cos(a) * r, h, C.z + Math.sin(a) * r); if (u < .12) v.lerpVectors(dep, v, u / .12); M.camera.position.copy(v); M.camera.lookAt(C); if (u >= 1) fin(); } };
