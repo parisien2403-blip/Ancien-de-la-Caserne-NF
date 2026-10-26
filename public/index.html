@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Permanent+Marker&family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&family=VT323&family=Tilt+Neon&family=Special+Elite&family=Sedgwick+Ave&family=Rock+Salt&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="js21.css?v=5">
+<link rel="stylesheet" href="js21.css?v=7">
 <style>
   :root {
     --cream: #f6eedf;
@@ -1329,7 +1329,7 @@
         <h1 class="hello">Membres de la Caserne</h1>
         <p class="hello-sub">Tous les anciens qui ont leur laissez-passer</p>
         <input class="search" id="mSearch" placeholder="Rechercher un nom, une famille de Garde, un escalier…">
-        <div class="escaliers-mur" id="mMur" aria-label="Les escaliers de la caserne"></div>
+        <div class="escaliers-mur" id="mMur" aria-label="Les escaliers de la caserne" hidden></div>
         <div id="membres"></div>
       </div>
 
@@ -3301,6 +3301,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.01", "26 octobre 2026", ["Membres de la caserne : plus de rangée de lettres ; les laissez-passer des anciens sont punaisés au mur de briques, rangés par escalier — on en touche un, il s'ouvre en grand"]],
     ["8.00", "26 octobre 2026", ["Caserne en 3D : les danses et la discussion rangées derrière deux boutons, « 💃 Danser » et « 💬 Parler » ; on les ouvre, on les referme d'une croix — la caserne reste dégagée", "Passer de la vue téléphone à la vue PC (ou l'inverse) ne relance plus l'intro ni la musique de 21 Jump Street"]],
     ["7.99", "26 octobre 2026", ["Caserne en 3D : un seul geste — on touche le néon « Entrer dans la caserne » (ou « Entrer dans la caserne en 3D » depuis l'accueil) et c'est tout de suite le plein écran, avec la main qui nous dépose dans la cour", "Sous le néon : un mot de bienvenue pour les nouveaux arrivants"]],
     ["7.98", "26 octobre 2026", ["Caserne en 3D en plein écran : les onglets et l'enseigne ne passent plus par-dessus la caserne", "Le bouton « Passer » de la cinématique ne recouvre plus le bouton « Dire »"]],
@@ -4327,7 +4328,15 @@
     afficherMembres();
   }
   let escalierChoisi = "";
+  // sur le mur : le laissez-passer de l'ancien, en petit, punaisé de travers ; dessous, son nom et « Écrire »
   function ligneMembre(m) {
+    const pente = ((parseInt(m.numero, 10) || 0) * 37 % 9 - 4) * .6;
+    return `<div class="lp-mur" data-carte="${esc(m.numero)}" data-lp="${esc(m.numero)}" style="--r:${pente.toFixed(1)}deg"><div class="lp-mini"></div>
+        <div class="lp-mur-pied"><b>${esc(nomComplet(m))}</b>${m.admin ? '<span class="tag-admin">Administrateur</span>' : ""}
+        <span class="actions-m">${moi && moi.email && m.email !== moi.email ? `<button class="btn small" data-ecrire="${esc(m.email)}">Écrire</button>` : ""}
+        ${moi && moi.admin && !m.admin ? `<button class="btn small danger" data-suppr="${esc(m.numero)}" data-nom="${esc(nomComplet(m))}">Supprimer</button>` : ""}</span></div></div>`;
+  }
+  function ligneMembreListe(m) {
     return `<div class="list-item member" data-carte="${esc(m.numero)}">${photoUrl(m)
           ? `<div class="av ph" style="background-image:url('${photoUrl(m)}')"></div>` : `<div class="av">${esc(initiales(m))}</div>`}
         <div class="who"><div class="t">${esc(nomComplet(m))}${m.admin ? '<span class="tag-admin">Administrateur</span>' : ""}</div><div class="s">${esc(qualiteTxt(m))} · n° ${esc(m.numero)}</div><div class="mail">${esc(m.email)}</div></div>
@@ -4362,6 +4371,10 @@
         + (sansBat.length ? `<section class="escalier"><div class="escalier-tete"><div class="lettre-vide">?</div><div><b>Escalier pas encore indiqué</b><small>${sansBat.length} ancien${sansBat.length > 1 ? "s" : ""} · chacun peut l'ajouter dans ses réglages</small></div></div>${sansBat.map(ligneMembre).join("")}</section>` : "")
       : `<div class="card empty"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3.3-6 6.5-6s6 2 6.5 6"/></svg>
          <b>${membres.length ? (escalierChoisi ? `Personne dans l'escalier ${escalierChoisi} pour l'instant` : "Personne à ce nom") : "Le registre est vide"}</b>${membres.length ? "Essayez une autre recherche ou un autre escalier." : "Les anciens apparaîtront ici dès qu'ils auront leur laissez-passer."}</div>`;
+    // chaque laissez-passer du mur : la vraie carte, réduite
+    document.querySelectorAll("#membres [data-lp]").forEach(el => { const m = membres.find(x => x.numero === el.dataset.lp); if (!m) return;
+      const c = carteRemplie(m), boite = el.querySelector(".lp-mini"); boite.appendChild(c); const k = () => { const w = boite.clientWidth; if (w) c.style.transform = `scale(${w / 960})`; }; k(); requestAnimationFrame(k);
+      if (window.ResizeObserver) new ResizeObserver(k).observe(boite); });
     document.querySelectorAll("[data-carte]").forEach(el => el.onclick = e => {
       if (e.target.closest("button")) return;
       const m = membres.find(x => x.numero === el.dataset.carte); if (m) voirCarte(m);
@@ -4513,6 +4526,18 @@
       $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
       return;
     }
+    const carte = carteRemplie(m);
+    $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
+    const peutEcrire = moi && moi.email && m.email !== moi.email;
+    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${k || carteVue.aMoi ? "Touche la carte pour voir le verso" : esc(m.email)}</small></div>
+      <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
+      ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
+    $("cvPlein").onclick = pleinEcran;
+    if (peutEcrire) $("cvEcrire").onclick = () => { $("carteVue").hidden = true; go("vague"); ouvrirEcrire(m.email); };
+    $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
+  }
+  // le laissez-passer d'un ancien, rempli (pour l'ouvrir en grand, ou l'accrocher au mur des membres)
+  function carteRemplie(m) {
     const carte = $("lpCard").cloneNode(true);
     carte.removeAttribute("id"); carte.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     carte.classList.add("stamped");
@@ -4525,14 +4550,7 @@
     const ph = carte.querySelector(".ph div"), url = photoUrl(m);
     if (url) { ph.style.backgroundImage = `url(${url})`; ph.innerHTML = ""; }
     else { ph.style.backgroundImage = ""; ph.innerHTML = `<svg viewBox="0 0 100 100" style="width:60%;opacity:.45"><circle cx="50" cy="36" r="20" fill="#7a746a"/><path d="M12 100c4-24 20-36 38-36s34 12 38 36z" fill="#7a746a"/></svg>`; }
-    $("cvScaler").innerHTML = ""; $("cvScaler").appendChild(carte);
-    const peutEcrire = moi && moi.email && m.email !== moi.email;
-    $("cvInfo").innerHTML = `<div class="who"><b>${esc(m.prenom)} ${esc(m.nom)}${m.admin ? ' <span class="tag-admin">Administrateur</span>' : ""}</b><small>${k || carteVue.aMoi ? "Touche la carte pour voir le verso" : esc(m.email)}</small></div>
-      <button class="cv-plein" id="cvPlein">⛶ Plein écran</button>
-      ${peutEcrire ? `<button class="btn small" id="cvEcrire">Écrire</button>` : ""}`;
-    $("cvPlein").onclick = pleinEcran;
-    if (peutEcrire) $("cvEcrire").onclick = () => { $("carteVue").hidden = true; go("vague"); ouvrirEcrire(m.email); };
-    $("carteVue").hidden = false; ajusterCarte(); requestAnimationFrame(ajusterCarte);
+    return carte;
   }
   function ajusterCarte() {
     const st = $("cvStage"), sc = $("cvScaler");

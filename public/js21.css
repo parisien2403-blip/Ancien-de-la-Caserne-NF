@@ -308,3 +308,31 @@
 .mx-danses .mx-fermer-panneau { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; font-size: 13px; }
 .mx-danses .mx-fermer-panneau { position: static !important; order: -1; width: 34px !important; height: 34px !important; margin-right: 4px; }
 .mx-scene.danses-ouvertes .mx-danses { padding: 8px 10px !important; align-items: center; }
+
+/* ================== MEMBRES : les laissez-passer accrochés au mur de briques ================== */
+.inside #mMur { display: none !important; }
+.inside #membres .escalier { display: flex; flex-wrap: wrap; gap: 34px 30px; align-items: flex-start; margin: 10px 0 46px; }
+.inside #membres .escalier-tete { flex: 0 0 100%; background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; display: flex; align-items: center; gap: 12px; }
+.inside #membres .escalier-tete img { width: 46px; height: 46px; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,.6); }
+.inside #membres .escalier-tete b { font: 24px "Rock Salt", cursive; color: #fff; filter: drop-shadow(1px 1px 0 rgba(0,0,0,.7)); }
+.inside #membres .escalier-tete small { display: block; color: #e9dcc6; font: 13px "Special Elite", monospace; text-shadow: 0 1px 3px #000; }
+.inside #membres .escalier-tete .lettre-vide { width: 46px; height: 46px; display: grid; place-items: center; background: rgba(0,0,0,.6); color: #fff; font: 24px "Rock Salt"; border-radius: 6px; }
+.inside #membres .etage-tete { flex: 0 0 100%; color: #f1e6d2; font: 14px "Special Elite", monospace; text-shadow: 0 1px 3px #000; margin: 0 0 -18px; }
+.inside #membres .etage-pastille { background: rgba(0,0,0,.6) !important; color: #fff !important; }
+.lp-mur { position: relative; width: 250px; cursor: pointer; transform: rotate(var(--r, 0deg)); transition: transform .2s; }
+.lp-mur:hover { transform: rotate(0deg) scale(1.04); z-index: 2; }
+.lp-mini { position: relative; width: 100%; aspect-ratio: 960 / 660; overflow: hidden; border-radius: 4px; box-shadow: 0 2px 2px rgba(0,0,0,.35), 0 14px 22px rgba(0,0,0,.6); }
+.lp-mini .lp-card { position: absolute; left: 0; top: 0; transform-origin: top left; pointer-events: none; }
+/* la punaise, plantée en haut au milieu, et son ombre sur la carte */
+.lp-mur::before { content: ""; position: absolute; z-index: 3; top: -7px; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #ff9a9a, #d0202a 55%, #6a0a0e); box-shadow: 2px 5px 4px rgba(0,0,0,.55); }
+.lp-mur-pied { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; }
+.lp-mur-pied b { font: 15px "Special Elite", monospace; color: #fff; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+.lp-mur-pied .actions-m { display: flex; gap: 6px; margin-left: auto; }
+.lp-mur-pied .btn.small { padding: 4px 10px !important; font-size: 13px !important; }
+@media (max-width: 700px) { .inside #membres .escalier { gap: 28px 14px; justify-content: center; } .lp-mur { width: calc(50% - 10px); } .lp-mur-pied .actions-m { margin-left: 0; } }
+.inside #membres .escalier { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; }
+.inside #membres .escalier > .lp-mur { flex: 0 0 250px; }
+.inside #membres .escalier-tete b { font-size: 19px !important; line-height: 1.3; }
+@media (max-width: 700px) { .inside #membres .escalier > .lp-mur { flex: 0 0 calc(50% - 10px); } .inside #membres .escalier-tete b { font-size: 16px !important; } }
+.inside #membres { display: block !important; }
