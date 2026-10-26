@@ -17333,7 +17333,16 @@ function gremlinsHV(scene, L) {
     troupes.push({ T, debut, nb, ims, aPas }); gO.setDrawRange(0, gr.length * 6); };
   GREMLINS_GLB.forEach(T => charger(T).catch(e => console.warn("gremlin", T.f, e)));
   const mat = new THREE.Matrix4(), qt = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, "YXZ"), pos = new THREE.Vector3(), ech = new THREE.Vector3();
+  // le cri des gremlins : chacun le sien, toutes les 6 à 8 secondes, jamais tous ensemble ; plus ou moins fort selon qu'il est près ou loin de nous, à gauche ou à droite
+  let criBuf = null, voix = 0;
+  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-cri.mp3?v=1"); criBuf = await actx.decodeAudioData(await r.arrayBuffer()); } catch (e) { console.warn("cri des gremlins", e); } })();
+  const crier = (q, t) => { if (!criBuf || !actx || actx.state !== "running" || voix >= 7 || !M.camera) return; const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(q.x - o.x, q.z - o.z), D = 30;
+    if (d > D) return; const g = actx.createGain(), sn = actx.createBufferSource(); sn.buffer = criBuf; sn.playbackRate.value = .9 + Math.random() * .25; g.gain.value = .9 * Math.pow(1 - d / D, 1.7);
+    let sortie = g; if (actx.createStereoPanner) { const pn = actx.createStereoPanner(), dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), rx = dr.x, rz = dr.z, cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(q.x - cx, q.z - cz) || 1;   /* (la droite de la caméra) */
+      pn.pan.value = Math.max(-1, Math.min(1, ((q.x - cx) * rx + (q.z - cz) * rz) / l)); g.connect(pn); sortie = pn; }
+    sn.connect(g); sortie.connect(actx.destination); voix++; sn.onended = () => { voix--; try { sortie.disconnect(); } catch (e) {} }; sn.start(); };
   return (dt, t) => {
+    for (const q of gr) { if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false;
       // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
       if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
