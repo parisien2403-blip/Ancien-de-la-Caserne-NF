@@ -18298,6 +18298,47 @@ function construireHillValley(A, T, L, scene) {
 }
 /* ---- Kingston Falls (Gremlins) : la même place que Hill Valley, sous la neige, un soir de Noël ----
    (le studio a tourné les deux films sur le même décor : on reprend Hill Valley, on la met en hiver, avec les sapins au milieu de la place) */
+/* les gremlins : la photo du vrai, détourée, les jambes remises en mouvement (8 images de course, 2 à l'arrêt) ; ils filent partout,
+   s'arrêtent net, guettent, font un bond, repartent ; plus petits que les gens */
+function gremlinsHV(scene, L) {
+  const tG = new THREE.TextureLoader().load("images/gremlin-course.webp"); tG.colorSpace = THREE.SRGBColorSpace; tG.anisotropy = 4;
+  const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), Z = L.zone;
+  const tirer = () => { for (let k = 0; k < 60; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
+  const gr = []; for (let i = 0; i < 34; i++) { const p0 = tirer(); if (p0) gr.push({ x: p0[0], z: p0[1], v: 3 + Math.random() * 2.5, s: .8 + Math.random() * .35, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, dx: 1, dz: 0, saut: 0, vy: 0, guette: Math.random() < .5 }); }
+  const n = gr.length, iF = []; for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+  const gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8);
+  gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
+  const m = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tG, alphaTest: .5, side: THREE.DoubleSide, color: 0xd6d8dc })); m.frustumCulled = false; scene.add(m);
+  const ombreT = tex(toile(64, 32, (x) => { const g = x.createRadialGradient(32, 16, 1, 32, 16, 30); g.addColorStop(0, "rgba(40,50,70,.5)"); g.addColorStop(1, "rgba(40,50,70,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 64, 64); x.restore(); }));
+  const gO = new THREE.BufferGeometry(), pO = new Float32Array(n * 12), uO = new Float32Array(n * 8); for (let i = 0; i < n; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
+  gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF);
+  const mO = new THREE.Mesh(gO, new THREE.MeshBasicMaterial({ map: ombreT, transparent: true, depthWrite: false })); mO.frustumCulled = false; scene.add(mO);
+  const e = .5 / 1024; L.gremlins = gr;
+  return (dt, t) => { const cam = M && M.camera; if (!cam) return;
+    for (let i = 0; i < n; i++) { const q = gr[i]; let court = false;
+      if (q.attente > 0) q.attente -= dt;
+      else if (!q.cible) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 2) { q.cible = c; q.guette = Math.random() < .5; } else q.attente = .2; }
+      else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
+        if (l < .3) { q.cible = null; q.attente = .3 + Math.random() * 2.2; if (Math.random() < .35) q.vy = 3.2; }   // (arrivé : il s'arrête net, parfois d'un bond)
+        else { // une course en zigzag, jamais tout droit
+          const zz = Math.sin(t / 260 + q.ph) * .55, ux = ddx / l + -ddz / l * zz, uz = ddz / l + ddx / l * zz, ul = Math.hypot(ux, uz);
+          const nx = q.x + ux / ul * q.v * dt, nz = q.z + uz / ul * q.v * dt;
+          if (libre(nx, nz)) { q.x = nx; q.z = nz; q.dx = ux / ul; q.dz = uz / ul; court = true; q.ph += dt * q.v * 9.5; } else { q.cible = null; q.attente = .1; }
+          if (Math.random() < dt * .25) q.vy = 2.6; } }
+      if (q.vy || q.saut > 0) { q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut <= 0) { q.saut = 0; q.vy = 0; } }
+      const y = (L.hauteur ? L.hauteur(q.x, q.z) : 0) + q.saut;
+      let cx = cam.position.x - q.x, cz = cam.position.z - q.z; const cl = Math.hypot(cx, cz) || 1; cx /= cl; cz /= cl; const rx = cz, rz = -cx;
+      const vers = q.dx * rx + q.dz * rz, miroir = vers < 0;
+      const f = court ? Math.floor(q.ph) % 8 : q.saut > 0 ? 2 : q.guette ? 9 : 8;
+      const H = .82 * q.s, W = H * .8, o = i * 12, pen = court ? .06 * H : 0;   // (en courant, penché en avant)
+      pF.set([q.x - rx * W / 2, y, q.z - rz * W / 2, q.x + rx * W / 2, y, q.z + rz * W / 2, q.x + rx * W / 2 + (miroir ? -1 : 1) * rx * pen, y + H, q.z + rz * W / 2 + (miroir ? -1 : 1) * rz * pen, q.x - rx * W / 2 + (miroir ? -1 : 1) * rx * pen, y + H, q.z - rz * W / 2 + (miroir ? -1 : 1) * rz * pen], o);
+      let u0 = (f % 4) / 4 + e, u1 = (f % 4 + 1) / 4 - e; if (miroir) [u0, u1] = [u1, u0];
+      const v1 = 1 - Math.floor(f / 4) * 320 / 1024 - e, v0 = 1 - (Math.floor(f / 4) + 1) * 320 / 1024 + e;
+      uF.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
+      const so = .3 * q.s * Math.max(.4, 1 - q.saut), y0 = y - q.saut + .025;
+      pO.set([q.x - so, y0, q.z - so * .6, q.x + so, y0, q.z - so * .6, q.x + so, y0, q.z + so * .6, q.x - so, y0, q.z + so * .6], i * 12); }
+    gF.attributes.position.needsUpdate = gF.attributes.uv.needsUpdate = gO.attributes.position.needsUpdate = true; };
+}
 /* les passants de Kingston Falls, peints comme la foule du concert de Santa Carla : de face et de dos, deux pas de marche, en anorak, doudoune, parka ou manteau de laine,
    bonnet à pompon, écharpe, moufles, après-ski — les couleurs des années 80 ; chacun va où il veut sur la place et les trottoirs, s'arrête un peu, repart */
 function passantsHiver(scene, L, obst) {
@@ -18520,9 +18561,10 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   const anim0 = L.anim; let tP = 0;
   // ---- les passants : des gens de Kingston Falls, en tenue d'hiver des années 80, qui vont et viennent sur la place ----
   const PASS = passantsHiver(scene, L, obst);
+  const GREM = gremlinsHV(scene, L);   // et les gremlins, lâchés dans la ville
   const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight);
   L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = 1.2; hemi.color.setHex(0xdfe3ea); hemi.groundColor.setHex(0x9aa4b2); } if (sol2) { sol2.intensity = .45; sol2.color.setHex(0xe8edf5); }
-    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t);
+    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t); GREM && GREM(dt, t);
     const a = fg.attributes.position.array; for (let i = 0; i < NF; i++) { a[i * 3 + 1] -= vit[i] * dt; a[i * 3] += Math.sin(t / 900 + i) * .25 * dt; if (a[i * 3 + 1] < 0) a[i * 3 + 1] += 26; } fg.attributes.position.needsUpdate = true;
     // les guirlandes scintillent, chaque couleur à son rythme
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); }); };
