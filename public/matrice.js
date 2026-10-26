@@ -9608,7 +9608,7 @@ export async function ouvrir(ctx) {
         if (mo) { const dans = Math.hypot(cp.x - mo.g.position.x, cp.z - mo.g.position.z) < .5 && Math.abs(cp.y - mo.g.position.y - 1.4) < 1;
           if (dans && mo.g.visible) { mo.g.visible = false; M.cacheFP = true; } else if (!dans && M.cacheFP) { mo.g.visible = true; M.cacheFP = false; } } }
       if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else { M.cacheFP = false; placerCamera(false); }
-    if (M.lieu === "hv1955" && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
+    if (M.lieu === "hv1955" && !M.L.kingston && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC)) ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
@@ -18294,7 +18294,115 @@ function construireHillValley(A, T, L, scene) {
       R.p += R.sens * R.cur * dt; if (R.sens > 0 ? R.p > R.a : R.p < R.a) R.p = R.de;
       R.v.position.set(R.axe === "x" ? R.p : R.fixe, 0, R.axe === "x" ? R.fixe : R.p); }
     for (let i = 0; i < drapP.count; i++) { const ox = drap0[i * 3], oy = drap0[i * 3 + 1], u = (ox + .95) / 1.9; drapP.setZ(i, Math.sin(t / 260 + u * 5) * .18 * u); drapP.setY(i, oy - u * u * .1); } drapP.needsUpdate = true; drap.geometry.computeVertexNormals(); };
+  if (window.CASERNE_GREMLINS) hiverHV(A, L, scene, obst, trottoirH, feuilles);
 }
+/* ---- Kingston Falls (Gremlins) : la même place que Hill Valley, sous la neige, un soir de Noël ----
+   (le studio a tourné les deux films sur le même décor : on reprend Hill Valley, on la met en hiver, avec les sapins au milieu de la place) */
+function hiverHV(A, L, scene, obst, y0, feuilles) {
+  graine = 1225; L.kingston = true;
+  // plus de voitures de 1955 qui tournent autour de la place
+  for (const V of L.voituresTour || []) V.v.visible = false; for (const R of L.roulent || []) R.v.visible = false; L.voituresTour = []; L.roulent = []; if (L.delorean) L.delorean.visible = false;   // (ni la DeLorean)
+  // le sol : l'asphalte mouillé, la neige tassée en bandes, les traces de pneus ; les trottoirs et la pelouse sous la neige
+  const asphN = toile(512, 512, (x) => { x.fillStyle = "#e6eaef"; x.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 4000; i++) { const v = 205 + alea() * 50; x.fillStyle = `rgba(${v},${v + 2},${Math.min(255, v + 8)},.5)`; x.fillRect(alea() * 512, alea() * 512, 2, 2); }
+    // les traces des roues, tassées et grises, dans les deux sens
+    x.filter = "blur(3px)"; for (let i = 0; i < 4; i++) { const vert = i % 2, p0 = alea() * 512; x.strokeStyle = `rgba(140,148,160,${.06 + alea() * .06})`; x.lineWidth = 8 + alea() * 6;
+      for (const d of [0, 34]) { x.beginPath(); for (let t = 0; t <= 512; t += 32) { const o = p0 + d + Math.sin(t / 90 + i) * 6; vert ? x.lineTo(o, t) : x.lineTo(t, o); } x.stroke(); } } });
+  L.sol.material.map = tex(asphN, 26, 26); L.sol.material.roughness = .9; L.sol.material.needsUpdate = true;
+  const neigeT = toile(256, 256, (x) => { x.fillStyle = "#eef2f7"; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 3500; i++) { const v = 215 + alea() * 40; x.fillStyle = `rgba(${v},${v + 3},${Math.min(255, v + 10)},.6)`; x.fillRect(alea() * 256, alea() * 256, 2, 2); }
+    for (let i = 0; i < 18; i++) { x.fillStyle = "rgba(170,185,205,.12)"; x.beginPath(); x.ellipse(alea() * 256, alea() * 256, 14 + alea() * 30, 6 + alea() * 12, alea() * 3, 0, 7); x.fill(); } });
+  const nrmN = (() => { const N = 256, h = new Float32Array(N * N); for (let o = 0; o < 4; o++) { const f = 4 << o, a = .5 ** o, g = []; for (let i = 0; i <= f; i++) { g.push([]); for (let j = 0; j <= f; j++) g[i].push(alea()); }
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const fx = x / N * f, fy = y / N * f, i = Math.floor(fy), j = Math.floor(fx), u = fx - j, v = fy - i, s1 = u * u * (3 - 2 * u), s2 = v * v * (3 - 2 * v);
+        const q = (a2, b2) => g[a2 % f][b2 % f]; h[y * N + x] += a * ((q(i, j) * (1 - s1) + q(i, j + 1) * s1) * (1 - s2) + (q(i + 1, j) * (1 - s1) + q(i + 1, j + 1) * s1) * s2); } }
+    return toile(N, N, (x) => { const d = x.createImageData(N, N); for (let y = 0; y < N; y++) for (let xx = 0; xx < N; xx++) { const H = (a2, b2) => h[((b2 + N) % N) * N + ((a2 + N) % N)], dx = (H(xx + 1, y) - H(xx - 1, y)) * 4, dy = (H(xx, y + 1) - H(xx, y - 1)) * 4, l = Math.hypot(dx, dy, 1), k = (y * N + xx) * 4;
+      d.data[k] = (-dx / l * .5 + .5) * 255; d.data[k + 1] = (-dy / l * .5 + .5) * 255; d.data[k + 2] = (1 / l * .5 + .5) * 255; d.data[k + 3] = 255; } x.putImageData(d, 0, 0); }); })();
+  const nN = (r) => tex(nrmN, r, r);
+  const neige = new THREE.MeshStandardMaterial({ map: tex(neigeT, 6, 6), normalMap: nN(5), normalScale: new THREE.Vector2(.9, .9), roughness: .92, color: 0xffffff });
+  L.sol.material.normalMap = nN(30); L.sol.material.normalScale = new THREE.Vector2(.6, .6);
+  for (const o of L.solsPlus || []) if (o.material) { o.material = neige; }
+  // les arbres de la place : la couronne chargée de neige
+  const blob = (det = 3, amp = .16) => { const g = new THREE.IcosahedronGeometry(1, det), p = g.attributes.position, v = new THREE.Vector3(); const ph = alea() * 9;
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const k = 1 + amp * (Math.sin(v.x * 3.1 + ph) * Math.sin(v.y * 2.7 + ph * .7) * Math.sin(v.z * 3.3 + ph * 1.3)); p.setXYZ(i, v.x * k, v.y * k * .85, v.z * k); }
+    g.computeVertexNormals(); return g; };
+  const neigeArbre = new THREE.MeshStandardMaterial({ color: 0xf3f6fa, roughness: .95, normalMap: nN(1.5), normalScale: new THREE.Vector2(.7, .7) });
+  { const pts = []; scene.traverse(o => { if (o.isMesh && feuilles.includes(o.material)) { o.visible = false; pts.push([o.position.clone(), o.scale.x]); } });
+    const sel = pts.filter((_, i) => i % 2 === 0), g = blob(3, .2), im = new THREE.InstancedMesh(g, neigeArbre, sel.length), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    sel.forEach(([p, sc2], i) => { const r = .42 + sc2 * .32; e.set(alea() * 3, alea() * 3, alea() * 3); q.setFromEuler(e); mt.compose(p, q, new THREE.Vector3(r * (1 + alea() * .25), r * (.8 + alea() * .3), r)); im.setMatrixAt(i, mt); });
+    im.castShadow = true; im.receiveShadow = true; scene.add(im); }
+  // (les normales lissées : on moyenne celles des sommets confondus — les paquets de neige ronds, pas en facettes)
+  const lisser = g => { if (!g || !g.attributes || !g.attributes.normal || g.userData.lisse) return; g.userData.lisse = true; const p = g.attributes.position, n = g.attributes.normal, acc = new Map(), cle = i => `${Math.round(p.getX(i) * 200)},${Math.round(p.getY(i) * 200)},${Math.round(p.getZ(i) * 200)}`;
+    for (let i = 0; i < p.count; i++) { const k = cle(i), a = acc.get(k) || [0, 0, 0]; a[0] += n.getX(i); a[1] += n.getY(i); a[2] += n.getZ(i); acc.set(k, a); }
+    for (let i = 0; i < p.count; i++) { const a = acc.get(cle(i)), l = Math.hypot(...a) || 1; n.setXYZ(i, a[0] / l, a[1] / l, a[2] / l); } n.needsUpdate = true; };
+  // les buis, les haies, les collines au loin : tout ce qui est vert disparaît sous la neige (les buis deviennent des bourrelets de neige)
+  scene.traverse(o => { if (!o.isMesh || !o.material || feuilles.includes(o.material)) return; for (const m of [].concat(o.material)) { if (!m.color || m.isMeshBasicMaterial) continue; const c = m.color;
+    if (c.g > c.r * 1.12 && c.g > c.b * 1.12 && !(m.metalness > .2) && !m.userData.peint) { m.color.setHex(0xf1f4f8); m.map = null; m.normalMap = nN(2); m.roughness = .92; m.flatShading = false; m.needsUpdate = true; lisser(o.geometry); } } });
+  // les allées de gravier : enneigées aussi
+  scene.traverse(o => { if (o.isMesh && o.material && o.material.color && o.material.color.getHex() === 0xd8ccb0) { o.material.color.setHex(0xeef1f5); } });
+  // la neige posée : sur tout ce qui est plat et à l'air libre (toits, corniches, auvents, voitures, bancs, rebords)
+  scene.updateMatrixWorld(true);
+  const caps = [], up = new THREE.Vector3(), sc = new THREE.Vector3();
+  scene.traverse(o => { if (!o.isMesh || !o.geometry || o.geometry.type !== "BoxGeometry" || o.isInstancedMesh) return; const pr = o.geometry.parameters;
+    up.setFromMatrixColumn(o.matrixWorld, 1); const ly = up.length(); if (ly < 1e-6 || up.y / ly < .97) return;
+    sc.setFromMatrixColumn(o.matrixWorld, 0); const lx = sc.length(); sc.setFromMatrixColumn(o.matrixWorld, 2); const lz = sc.length();
+    const w = pr.width * lx, d = pr.depth * lz; if (w * d < .12 || w < .18 || d < .18) return;
+    const top = new THREE.Vector3(0, pr.height / 2, 0).applyMatrix4(o.matrixWorld).y; if (top < .35 || top > 40) return;
+    const m = o.matrixWorld.clone().multiply(new THREE.Matrix4().compose(new THREE.Vector3(0, pr.height / 2 + .035 / ly, 0), new THREE.Quaternion(), new THREE.Vector3((pr.width + .03 / lx) / pr.width, .07 / ly / pr.height, (pr.depth + .03 / lz) / pr.depth)));
+    m.multiply(new THREE.Matrix4().makeScale(pr.width, pr.height, pr.depth)); caps.push(m); });
+  if (caps.length) { const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), A.mat({ color: 0xf4f7fb, roughness: .8 }), caps.length); caps.forEach((m, i) => im.setMatrixAt(i, m)); im.receiveShadow = true; scene.add(im); }
+  // ---- les sapins de Noël, au milieu de la place : un grand, et une ronde de plus petits ----
+  const vert = A.mat({ color: 0x1d4a2a, roughness: .9, flatShading: true }), vert2 = A.mat({ color: 0x24583a, roughness: .9, flatShading: true }), blanc = A.mat({ color: 0xf6f9fc, roughness: .8, flatShading: true });
+  const troncS = A.mat({ color: 0x4a3222, roughness: 1 }), or = A.mat({ color: 0xffd34a, emissive: 0xffb820, emissiveIntensity: 1.4, metalness: .4, roughness: .3 });
+  const ampoules = [], couleurs = [0xff3030, 0xffc830, 0x3a7dff, 0x40e060, 0xff60c0, 0xfff2c0], boules = [];
+  const sapin = (x, z, H, fin = 1) => { const y = y0;
+    A.ajoute(new THREE.CylinderGeometry(.08 * H / 4, .14 * H / 4, H * .9, 8), troncS, x, y + H * .45, z);
+    const brG = new THREE.ConeGeometry(.16, 1, 6).rotateX(Math.PI / 2).translate(0, 0, .5), snG = blob(2, .25);
+    const brs = [], sns = [], mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    const niv = Math.round(H * 2.6); for (let i = 0; i < niv; i++) { const u = i / niv, yy = y + H * .1 + u * H * .84, R = (1 - u) * H * .3 * fin + .15, nb = Math.max(5, Math.round(R * 9));
+      for (let k = 0; k < nb; k++) { const a = k / nb * Math.PI * 2 + i * 2.39 + alea() * .3, pente = .35 + alea() * .2, l = R * (.85 + alea() * .3);
+        e.set(pente, 0, 0, "YXZ"); e.y = Math.PI / 2 - a; q.setFromEuler(e); mt.compose(new THREE.Vector3(x, yy, z), q, new THREE.Vector3(1 + R * .5, 1 + R * .5, l)); brs.push(mt.clone());
+        // la neige posée sur la branche
+        const px = x + Math.cos(a) * l * .55, pz = z + Math.sin(a) * l * .55, py = yy - Math.sin(pente) * l * .55 + .14; e.set(0, alea() * 3, 0); q.setFromEuler(e);
+        mt.compose(new THREE.Vector3(px, py, pz), q, new THREE.Vector3(l * .32, .07 + alea() * .04, .16)); sns.push(mt.clone());
+        if (k % 3 === 0) ampoules.push([x + Math.cos(a + .2) * l * .9, yy - Math.sin(pente) * l * .9, z + Math.sin(a + .2) * l * .9, couleurs[(k + i) % couleurs.length]]);
+        if (k % 9 === 2) boules.push([x + Math.cos(a - .2) * l * .75, yy - Math.sin(pente) * l * .75 - .12, z + Math.sin(a - .2) * l * .75, couleurs[(k * 7 + i) % 5]]); } }
+    const ib = new THREE.InstancedMesh(brG, A.mat({ color: 0x1f3d2a, roughness: .95 }), brs.length); brs.forEach((m, i) => ib.setMatrixAt(i, m)); ib.castShadow = true; scene.add(ib);
+    const is = new THREE.InstancedMesh(snG, neigeArbre, sns.length); sns.forEach((m, i) => is.setMatrixAt(i, m)); scene.add(is);
+    // l'étoile au sommet
+    const et = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + Math.PI / 2, r = (k % 2 ? .16 : .38) * H / 9; et[k ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r); }
+    const st = new THREE.Mesh(new THREE.ExtrudeGeometry(et, { depth: .06 * H / 9, bevelEnabled: false }), or); st.position.set(x, y + H * .95, z); scene.add(st); L.etoilesNoel = (L.etoilesNoel || []).concat(st);
+    obst.push([x, z, H * .3 * .9]); };
+  sapin(0, 6.4, 12, .55);                                                               // le grand sapin de la place, haut et élancé, face au palais
+  { const p = new THREE.PointLight(0xffc880, 6, 18, 1.6); p.position.set(0, y0 + 5, 6.4); scene.add(p); }
+  // les guirlandes d'ampoules, en festons, le long des façades des boutiques (en face du palais et sur les côtés)
+  const feston = (x0, z0, x1, z1, y) => { const l = Math.hypot(x1 - x0, z1 - z0), n = Math.round(l / .45);
+    for (let i = 0; i <= n; i++) { const u = i / n, f = (u * 6) % 1, creux = Math.sin(f * Math.PI) * .45; ampoules.push([x0 + (x1 - x0) * u, y - creux, z0 + (z1 - z0) * u, couleurs[i % couleurs.length]]); } };
+  feston(-24, 23.4, 24, 23.4, 3.6); feston(-27.4, 21, -27.4, -12, 3.6); feston(27.4, 21, 27.4, -12, 3.6);
+  scene.add(new THREE.AmbientLight(0xdfe6f0, .35)); scene.fog = new THREE.Fog(0xb9bec5, 28, 120);
+  { const g = new THREE.SphereGeometry(.07, 8, 6), mats = couleurs.map(c => new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
+    for (let ci = 0; ci < couleurs.length; ci++) { const l = ampoules.filter(a => a[3] === couleurs[ci]); if (!l.length) continue; const im = new THREE.InstancedMesh(g, mats[ci], l.length); const mt = new THREE.Matrix4();
+      l.forEach(([x, y, z], i) => { mt.makeTranslation(x, y, z); im.setMatrixAt(i, mt); }); scene.add(im); (L.guirlandes = L.guirlandes || []).push(im); }
+    const gb = new THREE.SphereGeometry(.13, 12, 8); for (let ci = 0; ci < 5; ci++) { const l = boules.filter(a => a[3] === couleurs[ci]); if (!l.length) continue;
+      const im = new THREE.InstancedMesh(gb, A.mat({ color: couleurs[ci], metalness: .6, roughness: .2 }), l.length); const mt = new THREE.Matrix4(); l.forEach(([x, y, z], i) => { mt.makeTranslation(x, y, z); im.setMatrixAt(i, mt); }); scene.add(im); } }
+  // ---- les flocons qui tombent ----
+  const NF = 3500, pos = new Float32Array(NF * 3), vit = new Float32Array(NF);
+  for (let i = 0; i < NF; i++) { pos[i * 3] = -45 + Math.random() * 90; pos[i * 3 + 1] = Math.random() * 26; pos[i * 3 + 2] = -35 + Math.random() * 80; vit[i] = .7 + Math.random() * .8; }
+  const fg = new THREE.BufferGeometry(); fg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const flocon = tex(toile(32, 32, (x) => { const g = x.createRadialGradient(16, 16, 0, 16, 16, 15); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.5, "rgba(255,255,255,.7)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }));
+  const flocons = new THREE.Points(fg, new THREE.PointsMaterial({ map: flocon, size: .16, transparent: true, depthWrite: false, opacity: .9 })); flocons.frustumCulled = false; scene.add(flocons);
+  // ---- un soir d'hiver : le ciel bas, bleu ardoise, la brume de neige ; les lumières de Noël partout ----
+  L.toujoursJour = true; L.brumePerso = 0xb9bec5;
+  L.cielPerso = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#7c838c"); g.addColorStop(.55, "#a3a9b0"); g.addColorStop(1, "#c4c8cc"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${alea() < .5 ? "235,238,242" : "110,116,124"},${.06 + alea() * .1})`; x.beginPath(); x.ellipse(alea() * w, alea() * h * .6, 60 + alea() * 120, 14 + alea() * 30, 0, 0, 7); x.fill(); } }));
+  const anim0 = L.anim; let tP = 0;
+  const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight);
+  L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = 1.2; hemi.color.setHex(0xdfe3ea); hemi.groundColor.setHex(0x9aa4b2); } if (sol2) { sol2.intensity = .45; sol2.color.setHex(0xe8edf5); }
+    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t;
+    const a = fg.attributes.position.array; for (let i = 0; i < NF; i++) { a[i * 3 + 1] -= vit[i] * dt; a[i * 3] += Math.sin(t / 900 + i) * .25 * dt; if (a[i * 3 + 1] < 0) a[i * 3 + 1] += 26; } fg.attributes.position.needsUpdate = true;
+    // les guirlandes scintillent, chaque couleur à son rythme
+    (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); }); };
+}
+
 
 /* --- les habitants de Hill Valley : ils se promènent ; les serveurs restent devant Lou's Cafe ; la bande à Biff rôde… et cogne --- */
 const DOUBLES_HV = [[32, "voiture"], [33, "voiture"], [34, "voiture"], [35, "voiture"], [31, "promene"], [47, "suit"], [46, "promene"], [37, "suit"], [36, "promene"], [38, "promene"], [41, "promene"], [42, "promene"], [44, "balaie"]];
@@ -18307,6 +18415,7 @@ function animerHV(now) {
   if (M && M.volCafeEl && M.lieu !== "hv1955") reglageVolumeCafe(false);
   if (!M || M.lieu !== "hv1955" || !M.L || !M.L.hv) return;
   for (const p of M.L.polesHV || []) p.rotation.y = now / 450;   // (l'enseigne du barbier tourne)
+  if (M.L.kingston) return;   // (Kingston Falls : ni les gens de 1955, ni leurs voitures)
   M.balade = false;   // (les habitants du café restent attablés ; leurs doubles se promènent dans la ville)
   if (LOU.jukeTex) LOU.jukeTex.offset.y = (now / 7000) % 1;   // (les colonnes du juke-box changent doucement de couleur)
   { const moiC = M.gens.get(M.moiNum), q = moiC && moiC.g.position, dedans = !!(q && M.L.dansLou && M.L.dansLou(q.x, q.z)) && !M.cine;
