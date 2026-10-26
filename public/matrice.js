@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.15";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.16";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13720,12 +13720,25 @@ function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null;
 const BILLY_KF = [
   ["Billy", "Gizmo, écoute-moi bien…"],
   ["Billy", "Dehors, c'est plein de monstres. Toute la ville est sens dessus dessous."],
-  ["Billy", "Toi, tu restes caché ici, au chaud. Surtout, tu ne sors pas."],
-  ["Billy", "Moi, je vais faire le nécessaire pour réparer tout ce désordre. Je reviens vite te chercher."],
-  ["Gizmo", "Billy… ! Ouuuh…"]];
+  ["Billy", "Ils ne supportent pas la lumière. Les grands lampadaires solaires, aux quatre coins de la ville, pourraient tous les griller d'un coup…"],
+  ["Billy", "…mais leur levier est près de l'antenne radio, derrière une grille fermée par une grosse chaîne."],
+  ["Billy", "M. Futterman a perdu son coupe-boulons dans la neige en passant avec son chasse-neige. Trouve-le, coupe la chaîne du portail, et abaisse le levier !"],
+  ["Billy", "Moi, je vais faire le nécessaire pour réparer tout ce désordre. Sois prudent, Gizmo."],
+  ["Gizmo", "Billy… ! Ouuuh… Gizmo… courageux !"]];
+// les messages du jeu, à la manière du film : les grosses lettres rouges cernées de noir, qui sautent à l'écran, sur un cadre vert de gremlin
+function msgKF(titre, texte, ms = 4800) { if (!M || !M.ctx || !M.ctx.conteneur) return;
+  if (!document.getElementById("styleMsgKF")) { const st = document.createElement("style"); st.id = "styleMsgKF"; st.textContent = "@font-face{font-family:'Luckiest Guy';src:url(fonts/LuckiestGuy.ttf) format('truetype');font-display:swap}"
+    + "@keyframes kfPop{0%{transform:translateX(-50%) scale(.3) rotate(-8deg);opacity:0}55%{transform:translateX(-50%) scale(1.12) rotate(2deg);opacity:1}75%{transform:translateX(-50%) scale(.96) rotate(-1.5deg)}100%{transform:translateX(-50%) scale(1) rotate(-1.5deg)}}"; document.head.appendChild(st); }
+  const old = M.kfMsg; if (old) old.remove();
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;z-index:12;max-width:min(88%,620px);padding:12px 22px 14px;text-align:center;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(40,70,20,.95),rgba(8,14,6,.95));border:3px solid #6fd23a;border-radius:18px 6px 18px 6px;box-shadow:0 0 22px rgba(110,220,60,.55),inset 0 0 18px rgba(0,0,0,.7);animation:kfPop .55s ease-out forwards;transition:opacity .6s;font-family:'Luckiest Guy','Lato',sans-serif";
+  d.innerHTML = `<div style="font-size:clamp(24px,5vw,40px);line-height:1.05;color:#ff2a1a;letter-spacing:.04em;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,40,20,.6)">${titre}</div>`
+    + (texte ? `<div style="margin-top:6px;font-size:clamp(14px,2.6vw,19px);line-height:1.25;color:#fff4d8;letter-spacing:.03em;text-shadow:2px 2px 0 #000">${texte}</div>` : "");
+  M.ctx.conteneur.appendChild(d); M.kfMsg = d; setTimeout(() => { d.style.opacity = "0"; setTimeout(() => d.remove(), 700); }, ms); }
 const vidKF = src => { const v = document.createElement("video"); v.src = src; v.playsInline = true; v.preload = "auto"; v.load(); return v; };   // (chargées dès la photo de Billy : elles sont prêtes quand vient leur tour)
+const couperFanfareKF = () => { const f = M && M.kfFanfare; if (!f) return; M.kfFanfare = null; { const v0 = f.volume, t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); f.volume = v0 * (1 - u); if (u >= 1) { clearInterval(i); f.pause(); } }, 50); } };   // (la fanfare s'efface : la télé prend le relais)
+const MALLE_ROT = Math.PI / 2;   // (l'orientation de la malle : son couvercle sur le côté — il ne cache Gizmo ni de face ni de dos)
 function billyKF() { if (!M) return;
-  { const f = M.kfFanfare; M.kfFanfare = null; if (f) { const v0 = f.volume, t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); f.volume = v0 * (1 - u); if (u >= 1) { clearInterval(i); f.pause(); } }, 50); } }   // (la fanfare s'efface : au bar, le silence)
+  M.kfMalleP = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return new gltfMod.GLTFLoader().loadAsync("avatars/kingston/malle.glb?v=1"); })().catch(e => console.warn("malle", e));   // (la malle de Resident Evil, où se cache Gizmo)
   M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;box-sizing:border-box;opacity:0;transition:opacity .7s;cursor:pointer";
   d.innerHTML = '<img src="images/gremlins/billy.webp" alt="Billy et Gizmo" style="max-width:min(94%,820px);max-height:58%;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.8)">'
@@ -13746,9 +13759,13 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   L.gizmoRambo = false;   // (ni arc ni bandana tant qu'il n'a pas vu Rambo)
   const n = T ? T.n : new THREE.Vector3(.74, 0, .67).normalize(), c = T ? T.c : new THREE.Vector3(-31.85, 2.13, -10.53), V3 = THREE.Vector3;
   const gx = c.x + n.x * 2.1, gz = c.z + n.z * 2.1; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.x = gx; moi.g.position.z = gz; }
-  M.yaw = Math.atan2(n.x, n.z); L.orienterGizmo && L.orienterGizmo(Math.atan2(-n.x, -n.z));
-  const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause();   // (le thème se tait : on écoute la télé)
-  const tv = V.tv; tv.muted = true; tv.loop = true; tv.currentTime = 0; tv.play().catch(() => {});
+  const yDos = Math.atan2(n.x, n.z), yTv = Math.atan2(-n.x, -n.z);   // (d'abord le dos à la télé ; le son le fait se retourner)
+  M.yaw = Math.atan2(n.x, n.z); L.orienterGizmo && L.orienterGizmo(yDos);
+  // Gizmo est caché dans une malle (celle de Resident Evil, à sa taille), ouverte, au milieu du bar — comme dans sa boîte à outils avec Billy
+  (M.kfMalleP || Promise.resolve(null)).then(g => { if (!g || !M || M.L !== L || L.malleKF) return; const o = g.scene, bb = new THREE.Box3().setFromObject(o), c = bb.getCenter(new THREE.Vector3()), k = .58 / Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
+    const w = new THREE.Group(), inner = new THREE.Group(); o.position.set(-c.x, -bb.min.y, -c.z); inner.add(o); inner.scale.setScalar(k); w.add(inner); w.position.set(gx, (moi ? moi.g.position.y : .12) - .01, gz); w.rotation.y = yDos + MALLE_ROT; M.scene.add(w); L.malleKF = w; });
+  const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause(); couperFanfareKF();   // (la fanfare s'efface : c'est le son de la télé qu'on entend, Rambo III)
+  const tv = V.tv; tv.loop = false; tv.currentTime = 0; tv.muted = false; tv.volume = .9; tv.play().catch(() => { tv.muted = true; tv.play().catch(() => {}); });
   if (T) { const vt = new THREE.VideoTexture(tv); vt.colorSpace = THREE.SRGBColorSpace; T.ecran.material.map = vt; T.ecran.material.color.set(0xffffff); T.ecran.material.needsUpdate = true; }
   L.tvLueur = t => .22 + .2 * Math.abs(Math.sin(t / 97) * Math.sin(t / 233 + 1));   // (la lumière de l'écran qui vacille sur son visage)
   setTimeout(() => { if (voileB) { voileB.style.opacity = "0"; setTimeout(() => voileB.remove(), 800); } }, 200);
@@ -13757,22 +13774,28 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   const A0 = new V3(), A1 = new V3(), vise = new V3(); let etape = 0, t0 = performance.now(), fini = false, ecranD = null, ramboD = null;
   const plan = (u, a, b, va, vb) => { M.camera.position.lerpVectors(a, b, u); vise.lerpVectors(va, vb, u); M.camera.lookAt(vise); };
   M.cine = { fov: [42, 55], maj: () => { const u = performance.now() - t0, y = gy();
-    if (etape === 0) {   // gros plan : Gizmo, les yeux levés vers l'écran
-      const k = Math.min(1, u / 5200), e = k * k * (3 - 2 * k);
-      plan(e, A0.set(gx - n.x * .55 + sx * .16, y + .2, gz - n.z * .55 + sz * .16), A1.set(gx - n.x * .4 + sx * .1, y + .23, gz - n.z * .4 + sz * .1), new V3(gx, y + .25, gz), new V3(gx, y + .27, gz));   // (de face, tout près : entre lui et le comptoir)
-      if (u > 5200) { etape = 1; t0 = performance.now(); } }
+    if (etape === 0) {   // Gizmo, seul dans le bar, le dos à la télé ; le son de la télé part… il se retourne
+      const k = Math.min(1, u / 3600), e = k * k * (3 - 2 * k), r = Math.max(0, Math.min(1, (u - 1100) / 900)), rr = r * r * (3 - 2 * r);
+      let dy = yTv - yDos; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); L.orienterGizmo && L.orienterGizmo(yDos + dy * rr);
+      plan(e, A0.set(gx + n.x * .8 + sx * .2, y + .26, gz + n.z * .8 + sz * .2), A1.set(gx + n.x * .6 + sx * .14, y + .24, gz + n.z * .6 + sz * .14), new V3(gx, y + .24, gz), new V3(gx, y + .25, gz));
+      if (u > 3600) { etape = .5; t0 = performance.now(); } }
+    else if (etape === .5) {   // gros plan, de face : les yeux levés vers l'écran
+      const k = Math.min(1, u / 3600), e = k * k * (3 - 2 * k); L.orienterGizmo && L.orienterGizmo(yTv);
+      plan(e, A0.set(gx - n.x * .55 + sx * .16, y + .2, gz - n.z * .55 + sz * .16), A1.set(gx - n.x * .4 + sx * .1, y + .23, gz - n.z * .4 + sz * .1), new V3(gx, y + .25, gz), new V3(gx, y + .27, gz));   // (entre lui et le comptoir)
+      if (u > 3600) { etape = 1; t0 = performance.now(); } }
     else if (etape === 1) {   // par-dessus ses oreilles, la caméra glisse vers la télé, jusqu'à l'écran
-      const k = Math.min(1, u / 3800), e = k * k * (3 - 2 * k);
+      const k = Math.min(1, u / 3200), e = k * k * (3 - 2 * k);
       plan(e, A0.set(gx + n.x * .5, y + .42, gz + n.z * .5), A1.set(c.x + n.x * .38, c.y, c.z + n.z * .38), new V3(c.x, c.y, c.z), new V3(c.x, c.y, c.z));
-      if (u > 3200 && !ecranD) ecranD = ecranTV(); } } };
+      if (u > 2700 && !ecranD) ecranD = ecranTV(); } } };
   const ecranTV = () => {   // l'écran de la télé, plein cadre : son bord arrondi, ses lignes, le son
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#050505;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
     const cadre = document.createElement("div"); cadre.style.cssText = "position:relative;width:min(94%,150vh);aspect-ratio:16/9;border-radius:6% / 9%;overflow:hidden;box-shadow:0 0 0 14px #141210,0 0 0 18px #2a241e,0 0 60px rgba(120,160,255,.25)";
     tv.style.cssText = "width:100%;height:100%;object-fit:cover;filter:saturate(1.08) contrast(1.06)"; cadre.appendChild(tv);
     const lignes = document.createElement("div"); lignes.style.cssText = "position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.18) 2px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)"; cadre.appendChild(lignes);
     d.appendChild(cadre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
-    setTimeout(() => { if (fini || etape > 1) return; etape = 2; M.pauseRendu = true; tv.loop = false; tv.currentTime = 0; tv.muted = false; tv.volume = 1; tv.play().catch(() => { tv.muted = true; tv.play().catch(() => {}); }); }, 650);
-    tv.onended = () => { if (etape === 2) suite(); }; return d; };
+    setTimeout(() => { if (fini || etape > 1) return; etape = 2; M.pauseRendu = true; if (tv.ended) return suite(); tv.volume = 1; if (tv.paused) tv.play().catch(() => {}); }, 650);   // (la vidéo continue, là où elle en était)
+    return d; };
+  tv.onended = () => { if (etape === 2) suite(); };
   const suite = () => { if (fini) return; if (etape < 2) { if (!ecranD) ecranD = ecranTV(); return; }
     if (etape === 2) { etape = 3; tv.pause(); const r = V.rambo, d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:10;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s";
       r.style.cssText = "width:100%;height:100%;object-fit:contain"; d.appendChild(r); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
@@ -13781,7 +13804,7 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   const fin = () => { if (fini) return; fini = true; V.rambo.pause(); tv.pause(); M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null;
     tv.muted = true; tv.loop = true; tv.style.cssText = ""; tv.play().catch(() => {});   // (la télé du bar continue, sans le son)
     for (const d of [ecranD, ramboD]) if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 600); }
-    M.ctx.surInfo && M.ctx.surInfo("🏹 Comme Rambo : Gizmo a son arc et son bandana ! Tirer : F, Espace ou la gâchette · Sauter : J ou A"); };
+    msgKF("GIZMO RAMBO !", "Arc et bandana : il est prêt. Trouve le coupe-boulons de M. Futterman ! — Tirer : F, Espace, gâchette · Sauter : J, A", 6500); };
   const bpF = () => { suite(); if (!fini) M.passerBtn = boutonPasser(bpF); }; M.cine.passer = () => suite(); M.passerBtn = boutonPasser(bpF);   // (Passer : à l'étape suivante)
   const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); V.rambo.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
 // la fin : l'écran noir, « First Aid » ; un texte rouge qui monte lentement (tout est rentré dans l'ordre… ou presque), le générique ; le titre, « FIN »… et un point d'interrogation.
@@ -17504,23 +17527,45 @@ function gremlinsHV(scene, L) {
     sn.connect(g); sortie.connect(bus()); sn.start(); chant = { g, pn };
     const garde = setInterval(() => { if (!M || M.lieu !== "kingston") { g.gain.value = 0; if (!M) { try { sn.stop(); } catch (e) {} clearInterval(garde); } } }, 400); } catch (e) { console.warn("la chorale", e); } })();
   // touché par une flèche enflammée : deux fois, et il prend feu, se tord, disparaît… et revient plus loin sur la carte
-  const flammes = []; { const ft = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 60); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(.3, "rgba(255,180,50,.95)"); g.addColorStop(.7, "rgba(255,70,10,.5)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 110); x.quadraticCurveTo(32, 128, 12, 110); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
-    const fg = new THREE.Group(); scene.add(fg); for (let i = 0; i < 45; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); } }
+  // les flammes : des langues de feu (un cœur jaune-blanc dans une flamme orange), qui dansent et vacillent ; une lueur orange autour ; une fumée noire qui monte
+  const flammes = [], lueurs = [], fumees = []; { const goutte = (x, w, h, cx, base, c0, c1, c2) => { const g = x.createRadialGradient(cx, base - h * .25, 1, cx, base - h * .35, h * .7); g.addColorStop(0, c0); g.addColorStop(.45, c1); g.addColorStop(1, c2); x.fillStyle = g; x.beginPath(); x.moveTo(cx, base - h); x.bezierCurveTo(cx + w * .55, base - h * .55, cx + w * .5, base - h * .1, cx, base); x.bezierCurveTo(cx - w * .5, base - h * .1, cx - w * .55, base - h * .55, cx, base - h); x.fill(); };
+    const fA = tex(toile(64, 128, x => { x.filter = "blur(2px)"; goutte(x, 54, 120, 32, 124, "rgba(255,150,40,1)", "rgba(230,60,10,.85)", "rgba(120,10,0,0)"); goutte(x, 24, 60, 32, 120, "rgba(255,240,170,1)", "rgba(255,190,60,.9)", "rgba(255,120,20,0)"); }));
+    const fB = tex(toile(64, 128, x => { x.filter = "blur(2px)"; x.translate(64, 0); x.scale(-1, 1); goutte(x, 46, 110, 36, 124, "rgba(255,130,30,1)", "rgba(220,50,8,.8)", "rgba(110,8,0,0)"); goutte(x, 20, 52, 34, 120, "rgba(255,230,150,1)", "rgba(255,170,50,.85)", "rgba(255,100,20,0)"); }));
+    const lu = tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 1, 32, 32, 31); g.addColorStop(0, "rgba(255,170,60,.9)"); g.addColorStop(.4, "rgba(255,90,20,.35)"); g.addColorStop(1, "rgba(255,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+    const fu = tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 1, 32, 32, 31); g.addColorStop(0, "rgba(40,36,34,.9)"); g.addColorStop(.6, "rgba(50,46,44,.4)"); g.addColorStop(1, "rgba(60,56,54,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+    const fg = new THREE.Group(); scene.add(fg);   // (dans un groupe : la nuit ne les cache pas)
+    for (let i = 0; i < 170; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: i % 2 ? fA : fB, blending: i % 4 < 2 ? THREE.NormalBlending : THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); }
+    for (let i = 0; i < 45; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lu, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); lueurs.push(sp); }
+    for (let i = 0; i < 90; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fu, depthWrite: false, transparent: true })); sp.visible = false; fg.add(sp); fumees.push(sp); } }
   L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); crier(q, 0); };
   L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; crier(q, 0);
-    if (q.pv <= 0) { q.feu = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
+    if (q.pv <= 0) { q.feu = q.feu0 = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
   const revenir = q => { if (L.gremlinsFinis) { q.mort = 1e9; q.feu = 0; return; }   // (la lumière des projecteurs les a tous brûlés : ils ne reviennent plus)
  const x0 = q.x, z0 = q.z; let p = null; for (let k = 0; k < 40; k++) { const c = tirer(); if (c && Math.hypot(c[0] - x0, c[1] - z0) > 15) { p = c; break; } } if (!p) p = tirer() || [0, 18];
     q.x = p[0]; q.z = p[1]; q.pv = 2; q.mort = 0; q.feu = 0; q.cible = null; q.saut = 0; q.vy = 0; q.attente = .5; };
   // les projecteurs allumés : tous brûlent, l'un après l'autre, en quelques secondes (et aucun ne revient)
   L.brulerTous = (duree, t0) => { L.gremlinsFinis = true; for (const q of gr) { if (q.mort > 0 && !(q.feu > 0)) { q.mort = 1e9; continue; } q.brule = t0 + Math.random() * duree; } };
+  // un seul gremlin à la fois s'en prend à Gizmo (dehors seulement) : il fonce, le mord, et détale ; le suivant viendra plus tard
+  let attaquant = null, prochaineAttaque = 0;
+  const choisirAttaquant = (t) => { const moi = M && M.gens.get(M.moiNum), ok = moi && M.lieu === "kingston" && !M.cine && L.gizmoDedans === false && !L.gremlinsFinis && L.gizmoRambo !== false;
+    if (attaquant && (!ok || attaquant.mort > 0 || attaquant.feu > 0 || attaquant.ejecte || t > attaquant.attaqueFin)) { attaquant.attaque = false; attaquant.cible = null; attaquant = null; prochaineAttaque = t + 3000 + Math.random() * 3000; }
+    if (attaquant || !ok || t < prochaineAttaque) return; const o = moi.g.position; let best = null, bd = 20;
+    for (const q of gr) { if (q.chorale >= 0 || q.dosNoel || q.chasse || q.mort > 0 || q.feu > 0 || q.ejecte || (q.perche && q.perche.colle)) continue; const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < bd) { bd = d; best = q; } }
+    if (!best) { prochaineAttaque = t + 2000; return; }
+    if (best.perche) { best.perche.occ--; best.perche = null; } best.grimpeur = false; best.attaque = true; best.attaqueFin = t + 14000; attaquant = best; crier(best, t); };
   return (dt, t) => {
-    if (L.gremlinsFinis) for (const q of gr) if (q.brule && t >= q.brule) { q.brule = 0; if (q.feu > 0 || q.mort > 0) continue; if (q.ejecte) { q.ejecte = null; q.saut = 0; q.vy = 0; } q.dosNoel = false; q.pv = 1; L.toucherGremlin(q); }
-    { let f = 0; for (const q of gr) { if (q.ejecte) { const E = q.ejecte; E.t -= dt; q.x += E.vx * dt; q.z += E.vz * dt; q.rot += dt * 14; q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut < 0) q.saut = 0; if (E.t <= 0) { q.ejecte = null; q.saut = 0; q.vy = 0; q.mort = 2; } continue; }   // (catapulté : il tournoie, retombe, disparaît)
+    choisirAttaquant(t);
+    if (L.gremlinsFinis) for (const q of gr) if (q.brule && t >= q.brule) { q.brule = 0; if (q.feu > 0 || q.mort > 0) continue; if (q.ejecte) { q.ejecte = null; q.saut = 0; q.vy = 0; } q.dosNoel = false; q.pv = 1; L.toucherGremlin(q); if (q.feu > 0) q.feu = q.feu0 = 2.4 + Math.random() * .8; }   // (les projecteurs : un grand feu, plus long)
+    { let f = 0, lu = 0, fm = 0; for (const q of gr) { if (q.ejecte) { const E = q.ejecte; E.t -= dt; q.x += E.vx * dt; q.z += E.vz * dt; q.rot += dt * 14; q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut < 0) q.saut = 0; if (E.t <= 0) { q.ejecte = null; q.saut = 0; q.vy = 0; q.mort = 2; } continue; }   // (catapulté : il tournoie, retombe, disparaît)
         if (q.mort > 0) { q.mort -= dt; if (q.mort <= 0) revenir(q); }
         else if (q.feu > 0) { q.feu -= dt; q.rot += dt * 9; if (q.feu <= 0) q.mort = 2.5;   // (il brûle, tourne sur lui-même, puis s'effondre en cendres)
-          for (let k = 0; k < 3 && f < flammes.length; k++, f++) { const sp = flammes[f], h = .9 + .3 * Math.sin(t / 70 + k * 2); sp.visible = true; sp.position.set(q.x + Math.sin(k * 2.1) * .12, (q.y || 0) + q.saut + .35 + k * .12, q.z + Math.cos(k * 2.1) * .12); sp.scale.set(.45 * h, .8 * h, 1); } } }
-      for (; f < flammes.length; f++) flammes[f].visible = false; }
+          // (le feu prend, enfle, puis retombe quand il ne reste presque rien de lui)
+          const u = 1 - q.feu / (q.feu0 || 1.4), I = Math.min(1, u * 5) * (1 - Math.max(0, (u - .7) / .3) * .7), S2 = q.s * (.8 + .7 * I), y = (q.y || 0) + q.saut;
+          for (let k = 0; k < 4 && f < flammes.length; k++, f++) { const sp = flammes[f], a = k * 1.571 + q.ph + t / 700, h = (.7 + .35 * Math.sin(t / 45 + k * 2.3 + q.ph * 3)) * S2; sp.visible = true;
+            sp.position.set(q.x + Math.cos(a) * .15 * q.s, y + .1 * q.s + h * .45 + (k % 2) * .08, q.z + Math.sin(a) * .15 * q.s); sp.scale.set(.36 * h, h * (1 + (k % 2) * .25), 1); sp.material.rotation = Math.sin(t / 110 + k * 1.7 + q.ph) * .22; sp.material.opacity = (.45 + .35 * I) * (k % 4 < 2 ? 1 : .7); }
+          if (lu < lueurs.length) { const sp = lueurs[lu++]; sp.visible = true; sp.position.set(q.x, y + .35 * q.s, q.z); sp.scale.setScalar(1.4 * S2 * (.9 + .1 * Math.sin(t / 60))); sp.material.opacity = .38 * I; }
+          for (let k = 0; k < 2 && fm < fumees.length; k++) { const sp = fumees[fm++], ph = ((t / 1100 + k * .5 + q.ph) % 1); sp.visible = true; sp.position.set(q.x + Math.sin(ph * 4 + k) * .12, y + .55 * q.s + ph * 1.5, q.z + Math.cos(ph * 3 + k) * .12); sp.scale.setScalar((.35 + ph * .9) * q.s * 1.4); sp.material.opacity = (1 - ph) * .45 * I; } } }
+      for (; f < flammes.length; f++) flammes[f].visible = false; for (; lu < lueurs.length; lu++) lueurs[lu].visible = false; for (; fm < fumees.length; fm++) fumees[fm].visible = false; }
     for (const q of gr) { if (q.chorale >= 0 || q.mort > 0 || q.feu > 0 || q.ejecte) continue; if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
     if (chant && M.camera) { const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(CH.x - o.x, CH.z - o.z), D = 26;
       chant.g.gain.value = !(d <= D) || L.gizmoDedans !== false ? 0 : 3.6 * Math.pow(1 - d / D, 1.6);
@@ -17532,7 +17577,13 @@ function gremlinsHV(scene, L) {
       if (q.grimpeur && q.perche && !q.perche.colle && L.perchesKF) { const P = L.perchesKF.find(p => p.colle && !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche.occ--; q.perche = P; P.occ++; } }   // (la voiture de police et le dos du père Noël d'abord)
       if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
       if (q.chorale >= 0) { q.rot = Math.sin(t / 900 + q.chorale) * .1 + (q.chorale - 2.5) * -.06; q.ph += dt * 2.2; q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; q.am += (.1 - q.am) * Math.min(1, dt * 4); continue; }   // (ils chantent : immobiles, ils se balancent)
-      if (q.chasse && L.victimeKF) { const V = L.victimeKF, a = t / 600 + q.ph * 3, tx = V.x + Math.cos(a) * .85, tz = V.z + Math.sin(a) * .85, ddx = tx - q.x, ddz = tz - q.z, l = Math.hypot(ddx, ddz);   // (ils harcèlent le passant, lui sautent dessus)
+      if (q.attaque) { const o = M.gens.get(M.moiNum).g.position, ddx = o.x - q.x, ddz = o.z - q.z, l = Math.hypot(ddx, ddz);   // (il fonce sur Gizmo, en zigzag)
+        if (l < .5) { L.blesserGizmo && L.blesserGizmo(ddx / (l || 1), ddz / (l || 1)); q.attaque = false; attaquant = null; prochaineAttaque = t + 6000 + Math.random() * 4000; q.vy = 3.2;
+          const fx = q.x - ddx / (l || 1) * 9, fz = q.z - ddz / (l || 1) * 9; q.cible = L.limites(fx, fz) ? [fx, fz] : null; q.attente = 0; }   // (il a mordu : il détale)
+        else { const zz = Math.sin(t / 200 + q.ph * 3) * .35, ux = ddx / l - ddz / l * zz, uz = ddz / l + ddx / l * zz, ul = Math.hypot(ux, uz), v = 3.3, nx = q.x + ux / ul * v * dt, nz = q.z + uz / ul * v * dt;
+          if (libre(nx, nz)) { q.x = nx; q.z = nz; } else if (libre(q.x + ux / ul * v * dt, q.z)) q.x += ux / ul * v * dt; else if (libre(q.x, q.z + uz / ul * v * dt)) q.z += uz / ul * v * dt;
+          court = true; let d = Math.atan2(ux, uz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * 12); if (q.saut === 0 && l < 2 && Math.random() < dt * 2) q.vy = 3; } }
+      else if (q.chasse && L.victimeKF) { const V = L.victimeKF, a = t / 600 + q.ph * 3, tx = V.x + Math.cos(a) * .85, tz = V.z + Math.sin(a) * .85, ddx = tx - q.x, ddz = tz - q.z, l = Math.hypot(ddx, ddz);   // (ils harcèlent le passant, lui sautent dessus)
         if (l > .05) { const v = Math.min(l, 4.6 * dt); q.x += ddx / l * v; q.z += ddz / l * v; court = true; q.ph += dt * 4.6 * 4.4; let d = Math.atan2(ddx, ddz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * 12); }
         if (q.saut === 0 && Math.random() < dt * 1.2) q.vy = 2.6 + Math.random(); }
       else if (q.perche && q.perche.colle) { const P = q.perche; q.x = P.x; q.z = P.z; q.rot = P.r; q.saut = 0; q.vy = 0; q.ox = q.oz = 0; q.ph += dt * 9; court = true; q.pen = (P.aplat ?? .35) + .12 * Math.sin(t / 90 + i); }   // (agrippé : il mord, il griffe — ou couché à plat ventre sur la voiture)
@@ -17560,7 +17611,7 @@ function gremlinsHV(scene, L) {
     for (const tr of troupes) { const A = tr.aPas.array;
       for (let j = 0; j < tr.nb; j++) { const q = gr[tr.debut + j], bob = q.am * Math.abs(Math.cos(q.ph)) * .035, tremble = q.am ? 0 : Math.sin(t / 90 + q.ph) * .006;
         if (q.T.roule) eu.set(q.pen, q.rot - Math.PI / 2, 0); else eu.set(q.pen + tremble, q.rot + (q.am < .1 && !q.cible ? Math.sin(t / 700 + q.ph) * .35 : 0), 0);
-        pos.set(q.x, (q.y || 0) + q.saut + bob, q.z); ech.setScalar(q.mort > 0 ? 0 : q.s * (q.feu > 0 ? .4 + .6 * q.feu / 1.4 : 1)); mat.compose(pos, qt.setFromEuler(eu), ech);   // (en brûlant, il se ratatine)
+        pos.set(q.x, (q.y || 0) + q.saut + bob, q.z); ech.setScalar(q.mort > 0 ? 0 : q.s * (q.feu > 0 ? .35 + .65 * q.feu / (q.feu0 || 1.4) : 1)); mat.compose(pos, qt.setFromEuler(eu), ech);   // (en brûlant, il se ratatine)
         for (const im of tr.ims) im.setMatrixAt(j, mat);
         A[j * 2] = q.ph; A[j * 2 + 1] = q.am * tr.T.amp * (q.saut > 0 ? .4 : 1); }
       for (const im of tr.ims) im.instanceMatrix.needsUpdate = true; tr.aPas.needsUpdate = true; }
@@ -17965,12 +18016,19 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       const lx = -cx * .55, lz = (4 - cz) * .55, vers = new THREE.Vector3(lx, -hM, lz).normalize(), tete = new THREE.Group(); tete.position.y = hM; tete.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), vers); p.add(tete);
       const corps = new THREE.Mesh(new THREE.CylinderGeometry(.3, .25, .45, 14), metalP); corps.rotation.x = Math.PI / 2; tete.add(corps);
       const vitre = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0x2a2c30 })); vitre.position.z = .23; tete.add(vitre);
-      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xfff4d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); gl.position.z = .35; gl.scale.setScalar(2.4); gl.visible = false; tete.add(gl);
-      const dist = Math.hypot(lx, hM, lz) * .85, gc = new THREE.ConeGeometry(2.6, dist, 20, 1, true); gc.translate(0, -dist / 2, 0); gc.rotateX(-Math.PI / 2);
-      const cm = new THREE.Mesh(gc, new THREE.MeshBasicMaterial({ color: 0xfff2d8, transparent: true, opacity: .09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cm.position.z = .25; cm.visible = false; tete.add(cm);
-      const t2 = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: halo, color: 0xfff0d0, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 })); t2.rotation.x = -Math.PI / 2; t2.position.set(lx * .9, .06, lz * .9); t2.visible = false; p.add(t2);
+      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); gl.position.z = .35; gl.scale.setScalar(5.5); gl.visible = false; tete.add(gl);
+      const dist = Math.hypot(lx, hM, lz) * .95, gc = new THREE.ConeGeometry(4.2, dist, 24, 1, true); gc.translate(0, -dist / 2, 0); gc.rotateX(-Math.PI / 2);
+      const cm = new THREE.Mesh(gc, new THREE.MeshBasicMaterial({ color: 0xfff8e8, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cm.position.z = .25; cm.visible = false; tete.add(cm);
+      const t2 = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), new THREE.MeshBasicMaterial({ map: halo, color: 0xfff6e0, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 })); t2.rotation.x = -Math.PI / 2; t2.position.set(lx * .9, .06, lz * .9); t2.visible = false; p.add(t2);
       PJ.push({ vitre, gl, cm, t2 }); }
-    const allumer = (P, on) => { P.vitre.material.color.setHex(on ? 0xfffbe8 : 0x2a2c30); P.gl.visible = P.cm.visible = P.t2.visible = on; };
+    const allumer = (P, on) => { P.vitre.material.color.setHex(on ? 0xffffff : 0x2a2c30); P.gl.visible = P.cm.visible = P.t2.visible = on; if (on) { Q.allumes = (Q.allumes || 0) + 1; } };   // (Q.allumes : la ville s'éclaire de plus en plus)
+    // les mini pansements : chaque fois que Gizmo est blessé, un pansement apparaît non loin (trois au plus) ; on marche dessus : un cœur de plus
+    const panT = tex(toile(64, 24, x => { x.fillStyle = "#e8c69c"; x.fillRect(0, 0, 64, 24); x.fillStyle = "#fffaf2"; x.fillRect(22, 3, 20, 18); x.fillStyle = "#d42020"; x.fillRect(29, 6, 6, 12); x.fillRect(26, 9, 12, 6); x.fillStyle = "rgba(0,0,0,.18)"; for (let i = 3; i < 64; i += 5) if (i < 21 || i > 43) { x.fillRect(i, 7, 1, 2); x.fillRect(i, 15, 1, 2); } }));
+    const panG = new THREE.BoxGeometry(.34, .03, .13), panM = new THREE.MeshStandardMaterial({ map: panT, roughness: .7, emissive: 0x3a2412 }), pansements = [];
+    L.poserPansement = () => { if (pansements.length >= 3 || !M) return; const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
+      for (let i = 0; i < 80; i++) { const a = Math.random() * 6.28, r = 2.5 + Math.random() * 2.5, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r; if (!L.limites(x, z) || dansGrille(x, z)) continue;
+        const g = new THREE.Group(); g.position.set(x, p.y + .2, z); const m = new THREE.Mesh(panG, panM); m.rotation.z = .5; g.add(m);
+        const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xff7070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.setScalar(.8); g.add(gl); scene.add(g); pansements.push({ g, m, gl, x, z }); return; } };
     // la pince coupante : posée dans la neige, quelque part dehors — chaque partie ailleurs ; une lueur qui scintille pour la repérer
     const P = {}; chargerKF("pince").then(({ parts, t }) => { const k = .75 / Math.max(t.x, t.y, t.z), debout = t.y > Math.max(t.x, t.z), sortie = [-26.5, -9.5];   // (debout : le modèle est dressé — on le couche dans la neige)
       for (let i = 0; i < 400 && !P.x; i++) { const x = -26 + Math.random() * 52, z = -15 + Math.random() * 38; if (L.limites(x, z) && [[1.3, 0], [-1.3, 0], [0, 1.3], [0, -1.3]].every(([a, b]) => L.limites(x + a, z + b)) && !dansGrille(x, z) && !(L.dansLou && L.dansLou(x, z)) && Math.hypot(x - sortie[0], z - sortie[1]) > 8) { P.x = x; P.z = z; } }
@@ -17979,33 +18037,36 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // l'action : un bouton (E au clavier, A à la manette) quand il y a quelque chose à faire ; et dans l'inventaire, la pince
     const ab = document.createElement("button"); ab.type = "button"; ab.style.cssText = "position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:6;padding:12px 20px;border-radius:99px;border:3px solid #ffd23a;background:rgba(30,20,4,.86);color:#fff;font:800 17px 'Lato',sans-serif;display:none;touch-action:manipulation;box-shadow:0 0 16px rgba(255,200,60,.5)";
     for (const ev of ["pointerdown", "touchstart"]) ab.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); L.actionKF && L.actionKF(); }, { passive: false });
-    const inv = document.createElement("div"); inv.style.cssText = "position:absolute;left:12px;top:80px;z-index:6;font-size:15px;color:#fff;background:rgba(0,0,0,.55);border-radius:10px;padding:4px 10px;pointer-events:none;display:none;font-family:'Lato',sans-serif"; inv.textContent = "✂️ Pince coupante";
+    const inv = document.createElement("div"); inv.style.cssText = "position:absolute;left:12px;top:80px;z-index:6;font-size:15px;color:#fff;background:rgba(0,0,0,.55);border-radius:10px;padding:4px 10px;pointer-events:none;display:none;font-family:'Lato',sans-serif"; inv.textContent = "✂️ Coupe-boulons";
     const toucheE = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if ((e.key === "e" || e.key === "E") && L.actionKF && M && M.lieu === "kingston") L.actionKF(); }; window.addEventListener("keydown", toucheE);
     const gardeQ = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !ab.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(ab); M.ctx.conteneur.appendChild(inv); }
       if (!ici) { ab.style.display = inv.style.display = "none"; } if (!M) { clearInterval(gardeQ); window.removeEventListener("keydown", toucheE); ab.remove(); inv.remove(); } }, 400);
     const info = t => M && M.ctx.surInfo && M.ctx.surInfo(t);
     const couper = () => { if (Q.coupe) return; Q.coupe = true; L.actionKF = null; sonBruit(.12, 3200, .55); setTimeout(() => sonBruit(.25, 900, .4), 120);
-      chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0; info("✂️ Clac ! La chaîne cède, la grille s'ouvre."); };
+      chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0; msgKF("CLAC !", "La chaîne cède, la grille s'ouvre… Vite, le levier !"); };
     const abaisser = () => { if (Q.levier) return; Q.levier = true; Q.lev = 0; L.actionKF = null; sonBruit(.18, 500, .6);
       PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.1, 260, .7); allumer(PP, true); setTimeout(() => allumer(PP, false), 90); setTimeout(() => allumer(PP, true), 200); }, 800 + i * 550));
-      setTimeout(() => { info("💡 Les quatre projecteurs s'allument aux quatre coins de Kingston Falls !"); cineBrulure(); }, 800 + 4 * 550); };
+      setTimeout(() => { msgKF("LUMIÈRE !", "Les quatre projecteurs s'allument aux quatre coins de Kingston Falls…"); cineBrulure(); }, 800 + 4 * 550); };
     // la cinématique : la caméra s'élève au-dessus de la place et en fait le tour ; dans la lumière des projecteurs, les gremlins prennent feu, tous, et se tordent, et tombent en cendres
     const cineBrulure = () => { if (!M || M.L !== L) return; const D = 11000, t0 = performance.now(), C = new THREE.Vector3(0, 1, 4), moi = M.gens.get(M.moiNum), dep = M.camera.position.clone(); let fini = false;
-      if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(7000, t0 + 1500);
+      if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(900, t0 + 1800); setTimeout(() => { const w = voile("background:#fff;opacity:.92;transition:opacity 1.1s ease-out"); if (w) { requestAnimationFrame(() => requestAnimationFrame(() => { w.style.opacity = "0"; })); setTimeout(() => w.remove(), 1300); } }, 1750);   // (presque tous en même temps, dans un éclair blanc)
       const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; if (L.brulerTous) for (const q of L.gremlins || []) if (q.brule) q.brule = performance.now();
-        info("🎄 Plus un seul gremlin : la lumière les a tous brûlés. Kingston Falls est sauvée — bravo Gizmo !"); setTimeout(() => { if (M && M.L === L) generiqueKF(); }, 3000); };
+        msgKF("KINGSTON FALLS EST SAUVÉE !", "Plus un seul gremlin : la lumière les a tous brûlés. Bravo Gizmo !", 3000); setTimeout(() => { if (M && M.L === L) generiqueKF(); }, 3000); };
       const v = new THREE.Vector3();
       M.cine = { fov: [58, 70], passer: fin, maj: () => { const u = Math.min(1, (performance.now() - t0) / D), e = u * u * (3 - 2 * u), a = -Math.PI / 2 + e * Math.PI * 1.3, r = 26 - 6 * e, h = 16 - 5 * e;
         v.set(C.x + Math.cos(a) * r, h, C.z + Math.sin(a) * r); if (u < .12) v.lerpVectors(dep, v, u / .12); M.camera.position.copy(v); M.camera.lookAt(C); if (u >= 1) fin(); } };
       M.passerBtn = boutonPasser(fin); };
     L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
+      for (let i = pansements.length - 1; i >= 0; i--) { const P2 = pansements[i]; P2.m.rotation.y += dt * 2; P2.g.position.y = p.y + .2 + Math.sin(t / 300 + i) * .05; P2.gl.material.opacity = .4 + .4 * Math.sin(t / 200 + i);
+        if (Math.hypot(p.x - P2.x, p.z - P2.z) < .8 && L.soignerGizmo && L.soignerGizmo()) { scene.remove(P2.g); pansements.splice(i, 1); sonBruit(.06, 5000, .3); msgKF("UN PANSEMENT !", "Gizmo reprend des forces : un cœur de plus.", 2600); } }
+      if (L.ambKF && Q.allumes) { const cible = .2 + Math.min(4, Q.allumes) * .45; L.ambKF.intensity += (cible - L.ambKF.intensity) * Math.min(1, dt * 1.5); L.ambKF.color.setHex(0xe8ecff); }   // (les projecteurs : la ville entière s'éclaire)
       if (L.pinceKF && !Q.pince) { const PP = L.pinceKF, k = .5 + .5 * Math.sin(t / 180); PP.gl.material.opacity = .35 + .65 * k; PP.gl.scale.setScalar(.35 + .35 * k);
         if (Math.hypot(p.x - PP.x, p.z - PP.z) < 1.1) { Q.pince = true; PP.ims.forEach(im => im.visible = false); PP.gl.visible = false; sonBruit(.08, 4200, .35); inv.style.display = "block";
-          info("✂️ Gizmo a trouvé une pince coupante ! Elle pourrait bien ouvrir la grille de l'antenne…"); } }
+          msgKF("LE COUPE-BOULONS !", "Celui de M. Futterman ! Maintenant, la grille de l'antenne radio…"); } }
       if (Q.ouvre != null && Q.ouvre < 1) { Q.ouvre = Math.min(1, Q.ouvre + dt * .9); const e = 1 - (1 - Q.ouvre) ** 3; porte.rotation.y = e * 1.9; }   // (elle pivote vers l'intérieur)
       if (Q.lev != null && Q.lev < 1) { Q.lev = Math.min(1, Q.lev + dt * 3); levier.rotation.x = -.35 + Q.lev * 2.3; }
       let act = null, lab = ""; const dG = Math.hypot(p.x - (GX0 + GX1) / 2, p.z - (F.z1 + .5));
-      if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } else if (!Q.dit) { Q.dit = true; info("🔒 La grille de l'antenne est fermée par une grosse chaîne… Il faudrait une pince coupante."); } }
+      if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } else if (!Q.dit) { Q.dit = true; msgKF("FERMÉ !", "Une grosse chaîne et un cadenas… Il faut le coupe-boulons de M. Futterman."); } }
       else if (Q.coupe && !Q.levier && Math.hypot(p.x - LX, p.z - (LZ + .55)) < 1.3) { act = abaisser; lab = "⚡ Abaisser le levier"; }
       if (dG > 5) Q.dit = false;
       L.actionKF = act; if (ab.textContent !== lab) ab.textContent = lab; ab.style.display = act && !M.cine ? "block" : "none"; if (Q.pince && !Q.levier) inv.style.display = "block"; else if (Q.levier) inv.style.display = "none"; }; }
@@ -18115,7 +18176,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     let nVies = 6, invul = 0, recul = null; const dessinerVies = () => { vies.textContent = "❤️".repeat(nVies) + "🖤".repeat(6 - nVies); }; dessinerVies();
     L.blesserGizmo = (dx, dz) => { const now = performance.now(); if (now < invul) return; invul = now + 2000; nVies--; recul = { dx, dz, t0: now }; dessinerVies();
       voile("background:rgba(200,0,0,.35);opacity:1", 500); sonBruit(.4, 160, .5);
-      if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); M.ctx.surInfo && M.ctx.surInfo("💔 Gizmo s'est fait renverser… il se relève au bar."); }, 700); } };
+      if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
+    L.soignerGizmo = () => { if (nVies >= 6) return false; nVies++; dessinerVies(); return true; };   // (un pansement : un cœur de plus)
     // le bouton (et la touche F)
     const bt = document.createElement("button"); bt.type = "button"; bt.textContent = "🏹"; bt.title = "Tirer une flèche enflammée (F, Espace, ou la gâchette droite de la manette)";
     bt.style.cssText = "position:absolute;right:16px;bottom:84px;z-index:6;width:68px;height:68px;border-radius:50%;border:3px solid #ffb030;background:rgba(40,12,4,.82);color:#fff;font-size:34px;box-shadow:0 0 18px rgba(255,120,30,.7);display:none;touch-action:manipulation";
@@ -18226,7 +18288,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         if (j.x > 27 || Math.abs(j.z - 4) > 20) { const p = placer(1, (x) => x < -12)[0]; if (p) { j.x = p[0]; j.z = p[1]; j.y = 0; } }
         e.set(j.rx, j.ry, j.rz, "YXZ"); mt.compose(new THREE.Vector3(j.x, sol + .02 + j.y, j.z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); jI.setMatrixAt(i, mt); }
       jI.instanceMatrix.needsUpdate = true; }; }
-  scene.add(new THREE.AmbientLight(0x8090c0, .2)); scene.fog = new THREE.Fog(0x1a2132, 22, 95);
+  L.ambKF = new THREE.AmbientLight(0x8090c0, .2); scene.add(L.ambKF); scene.fog = new THREE.Fog(0x1a2132, 22, 95);
   // les réverbères allumés : les globes brillent, quelques-uns éclairent vraiment la neige autour d'eux
   scene.traverse(o => { if (o.isMesh && o.material && o.material.emissive && [0xfff0c8, 0xfff2d0].includes(o.material.emissive.getHex())) o.material.emissiveIntensity = 2.4; });
   for (const [x, z] of [[-14.6, 10.6], [14.6, 10.6]]) { const p = new THREE.PointLight(0xffd49a, 7, 13, 1.5);   /* (deux seulement : chaque lampe coûte sur tout l'écran) */ p.position.set(x, y0 + 3.9, z); scene.add(p); }
