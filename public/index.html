@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Permanent+Marker&family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&family=VT323&family=Tilt+Neon&family=Special+Elite&family=Sedgwick+Ave&family=Rock+Salt&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="js21.css?v=3">
+<link rel="stylesheet" href="js21.css?v=5">
 <style>
   :root {
     --cream: #f6eedf;
@@ -1500,10 +1500,11 @@
           <button class="mx-lumiere" id="mxMusVol" type="button" title="Le volume de la musique qui passe" style="top:274px" hidden>🎶 100 %</button>
           <button class="mx-musique" id="mxMusique" type="button" hidden>🎧 Musique</button>
           <button class="mx-musique mx-son" id="mxSon" type="button" title="Entendre la musique de la fête" hidden>🔊 La fête</button>
-          <div class="mx-danses"><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button><button class="mx-danse" id="mxThriller" type="button">🧟 Thriller</button><button class="mx-danse" id="mxSaut" type="button">🙌 Saut</button></div>
+          <div class="mx-bas-btns"><button type="button" id="mxBtnDanses">💃 Danser</button><button type="button" id="mxBtnParler">💬 Parler</button></div>
+          <div class="mx-danses"><button type="button" class="mx-fermer-panneau" id="mxFermerDanses" aria-label="Fermer les danses">✕</button><button class="mx-danse" id="mxDanse" type="button">💃 Danser</button><button class="mx-danse" id="mxDisco" type="button">🕺 Disco</button><button class="mx-danse" id="mxCharleston" type="button">🦵 Charleston</button><button class="mx-danse" id="mxMadison" type="button">👏 Madison</button><button class="mx-danse" id="mxThriller" type="button">🧟 Thriller</button><button class="mx-danse" id="mxSaut" type="button">🙌 Saut</button></div>
           <!-- en plein écran : la discussion reste dans la scène -->
           <div class="mx-fil-plein" id="mxFilPlein"></div>
-          <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Dire</button></form>
+          <form class="mx-dire-plein" id="mxDirePlein"><input id="mxTextePlein" maxlength="140" placeholder="Dire quelque chose…" autocomplete="off"><button class="btn small">Envoyer</button><button type="button" class="mx-fermer-panneau" id="mxFermerParler" aria-label="Fermer">✕</button></form>
         </div>
         <!-- le DJ de la salle des fêtes : la musique est entendue par tous ceux qui sont dans la salle -->
         <div class="card mx-dj" id="mxDJ" hidden>
@@ -2714,6 +2715,12 @@
     if (b.dataset.efface === "tout") { if (!await garde("Effacer toute la discussion de ce lieu, pour tout le monde ?", { titre: "Effacer la discussion", annuler: "Non", ok: "Effacer" })) return; MX.effacerDit("tout"); }
     else MX.effacerDit(+b.dataset.efface); };
   /* (la hauteur réelle de la barre « Dire quelque chose » — plus haute sur un téléphone réglé en grands caractères : les danses et le reste se placent au-dessus, sans être cachés) */
+  // les danses et la discussion : rangées derrière deux boutons (« Danser », « Parler ») ; on les ouvre, on les referme — la caserne reste dégagée
+  { const sc = $("mxScene"), ouvrir = (cl, on) => { sc.classList.toggle(cl, on); dispatchEvent(new Event("resize")); };
+    $("mxBtnDanses").onclick = () => { ouvrir("parler-ouvert", false); ouvrir("danses-ouvertes", !sc.classList.contains("danses-ouvertes")); };
+    $("mxFermerDanses").onclick = () => ouvrir("danses-ouvertes", false);
+    $("mxBtnParler").onclick = () => { ouvrir("danses-ouvertes", false); ouvrir("parler-ouvert", true); setTimeout(() => $("mxTextePlein").focus(), 50); };
+    $("mxFermerParler").onclick = () => { ouvrir("parler-ouvert", false); $("mxTextePlein").blur(); }; }
   { const f = $("mxDirePlein"), maj = () => { const r = f.getBoundingClientRect(), sc = $("mxScene").getBoundingClientRect(); if (r.height) $("mxScene").style.setProperty("--dire-h", Math.round(sc.bottom - r.top) + "px"); };
     if (window.ResizeObserver) new ResizeObserver(maj).observe(f); addEventListener("resize", () => setTimeout(maj, 50)); document.addEventListener("fullscreenchange", () => setTimeout(maj, 80)); }
   $("mxDirePlein").onsubmit = e => { e.preventDefault(); const t = $("mxTextePlein").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTextePlein").value = ""; };
@@ -3294,6 +3301,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.00", "26 octobre 2026", ["Caserne en 3D : les danses et la discussion rangées derrière deux boutons, « 💃 Danser » et « 💬 Parler » ; on les ouvre, on les referme d'une croix — la caserne reste dégagée", "Passer de la vue téléphone à la vue PC (ou l'inverse) ne relance plus l'intro ni la musique de 21 Jump Street"]],
     ["7.99", "26 octobre 2026", ["Caserne en 3D : un seul geste — on touche le néon « Entrer dans la caserne » (ou « Entrer dans la caserne en 3D » depuis l'accueil) et c'est tout de suite le plein écran, avec la main qui nous dépose dans la cour", "Sous le néon : un mot de bienvenue pour les nouveaux arrivants"]],
     ["7.98", "26 octobre 2026", ["Caserne en 3D en plein écran : les onglets et l'enseigne ne passent plus par-dessus la caserne", "Le bouton « Passer » de la cinématique ne recouvre plus le bouton « Dire »"]],
     ["7.97", "26 octobre 2026", ["Toute l'appli façon « 21 Jump Street » : un mur de briques dessinées une à une, l'enseigne néon « CASERNE » et « de la Nouvelle France » tagué, un néon par onglet (celui où l'on est s'allume), les titres griffonnés au feutre blanc, les textes tapés à la machine sur du papier scotché", "Accueil : la météo dans une télé encastrée en hauteur dans le mur ; « Entrer dans la caserne en 3D » en néon vert", "Salle des fêtes : un vrai juke-box qui s'allume ; ses étiquettes montrent les titres de la discothèque (on en touche une, elle passe) ; on y dépose musiques et clips", "Poste de police : une enseigne néon « POLICE » et son gyrophare à la place du gendarme", "L'onglet Bibliothèque est retiré du menu", "Caserne en 3D : une grande enseigne néon « Entrer dans la caserne » ; en entrant, une main géante nous tient par le col, vue du ciel, et nous pose au milieu de la cour d'honneur (main : « Hand animation test » de SantosGabriel, Sketchfab, CC-BY 4.0)"]],
@@ -4830,7 +4838,7 @@
   })();
 
   // après un changement de vue, on revient directement là où on était
-  try { const t = sessionStorage.getItem("caserne-retour"); if (t && moi) { sessionStorage.removeItem("caserne-retour"); entrer(t); } } catch (e) {}
+  try { const t = sessionStorage.getItem("caserne-retour"); if (t && moi) { sessionStorage.removeItem("caserne-retour"); window.CASERNE_RETOUR = true; entrer(t); } } catch (e) {}
 
   /* ===== Écran d'attente : la demande attend la validation de l'administrateur ===== */
   function carteMembre(m) {
@@ -5410,6 +5418,7 @@
   const demarrer = () => { btn.classList.remove("vu"); son.currentTime = 0; son.volume = .8; son.play().catch(() => {}); jouer(); };
   (document.fonts ? document.fonts.load('175px "Permanent Marker"') : Promise.resolve()).catch(() => {}).then(() => { preparer();
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) { toutDeSuite(true); return; }
+    if (window.CASERNE_RETOUR || splash.hidden || !splash.offsetParent) { toutDeSuite(true); return; }   /* (on est déjà dans l'appli — rechargée pour passer en vue PC ou téléphone : ni l'intro, ni la musique de 21 Jump Street) */
     son.play().then(() => { son.pause(); demarrer(); }).catch(() => { btn.classList.add("vu"); const go = e => { if (e.target.closest("#enter, #signup")) return; splash.removeEventListener("click", go); demarrer(); }; splash.addEventListener("click", go); }); });
   for (const id of ["enter", "signup"]) { const b = document.getElementById(id); if (b) b.addEventListener("click", () => { couper(); if (!splash.classList.contains("ouvert")) toutDeSuite(); }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden) couper(); });

@@ -292,3 +292,19 @@
 .inside .mx-porte-carte .mx-bienvenue { max-width: 560px; text-align: left; transform: rotate(-.8deg); }
 .inside .mx-porte-carte .mx-bienvenue p { display: block !important; margin: 0 0 10px; }
 .inside .mx-porte-carte .mx-bienvenue h3 { display: block !important; }
+
+/* ---- dans la caserne 3D : les danses et la discussion rangées derrière deux boutons ---- */
+.mx-bas-btns { position: absolute; left: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5; display: flex; gap: 8px; }
+.mx-bas-btns button { border: 1px solid rgba(255,255,255,.12); border-radius: 99px; padding: 9px 16px; background: rgba(10,10,12,.72); color: #fff; font: 700 15px "Lato", sans-serif; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.4); }
+.mx-scene:not(:fullscreen):not(.plein-css) #mxBtnParler { display: none; }   /* (hors plein écran, la discussion est déjà sous la caserne) */
+.mx-scene .mx-danses { display: none !important; }
+.mx-scene.danses-ouvertes .mx-danses { display: flex !important; bottom: calc(64px + env(safe-area-inset-bottom)) !important; left: 12px !important; right: 12px !important; max-width: none !important; justify-content: flex-start !important;
+  padding: 10px 40px 10px 10px; border-radius: 16px; background: rgba(8,8,10,.78); }
+.mx-scene.danses-ouvertes #mxBtnDanses { background: rgba(255,79,163,.85); }
+.mx-scene:fullscreen .mx-dire-plein, .mx-scene.plein-css .mx-dire-plein { display: none !important; }
+.mx-scene.parler-ouvert:fullscreen .mx-dire-plein, .mx-scene.parler-ouvert.plein-css .mx-dire-plein { display: flex !important; }
+.mx-scene.parler-ouvert .mx-bas-btns { display: none; }
+.mx-fermer-panneau { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(10,10,12,.8); color: #fff; font: 700 16px "Lato", sans-serif; cursor: pointer; }
+.mx-danses .mx-fermer-panneau { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; font-size: 13px; }
+.mx-danses .mx-fermer-panneau { position: static !important; order: -1; width: 34px !important; height: 34px !important; margin-right: 4px; }
+.mx-scene.danses-ouvertes .mx-danses { padding: 8px 10px !important; align-items: center; }
