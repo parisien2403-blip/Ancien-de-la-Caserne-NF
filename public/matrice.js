@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.04";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.05";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -17823,8 +17823,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   { const NOMS_G = { "root hips": "Hips", "spine lower": "Spine", "spine upper": "Spine2", "head neck lower": "Neck", "head neck upper": "Head",
       "arm left shoulder 1": "LeftShoulder", "arm left shoulder 2": "LeftArm", "arm left elbow": "LeftForeArm", "arm left wrist": "LeftHand", "arm right shoulder 1": "RightShoulder", "arm right shoulder 2": "RightArm", "arm right elbow": "RightForeArm", "arm right wrist": "RightHand",
       "leg left thigh": "LeftUpLeg", "leg left knee": "LeftLeg", "leg left ankle": "LeftFoot", "leg left toes": "LeftToeBase", "leg right thigh": "RightUpLeg", "leg right knee": "RightLeg", "leg right ankle": "RightFoot", "leg right toes": "RightToeBase" },
-      nomOs = n => NOMS_G[n.replace(/_\d+$/, "").replace(/_/g, " ")] || n, HG = .62;   // (le chargeur remplace les espaces des noms d'os par « _ »)
-    L.suivi = { d: 4.4, h: 2.1, av: 2.4, vy: .75 };   // (la caméra tout près : Gizmo est petit)
+      nomOs = n => NOMS_G[n.replace(/_\d+$/, "").replace(/_/g, " ")] || n, HG = .34, KB = HG / .62;   // (Gizmo : 34 cm — tout petit à côté des gens, comme dans le film)   // (le chargeur remplace les espaces des noms d'os par « _ »)
+    L.suivi = { d: 3.0, h: 1.35, av: 1.6, vy: .42 };   // (la caméra tout près : Gizmo est petit)
     const racine = new THREE.Group(); racine.name = "gizmo"; let G = null;
     (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const [g, AM] = await Promise.all([new gltfMod.GLTFLoader().loadAsync("avatars/kingston/gizmo.glb?v=1"), chargerAnimsMX("anims/re-heros.json?v=4")]);
       const sc = g.scene, bb = new THREE.Box3().setFromObject(sc), k = HG / (bb.max.y - bb.min.y), inner = new THREE.Group(); inner.add(sc); sc.position.y = -bb.min.y; inner.scale.setScalar(k); racine.add(inner);
@@ -17832,12 +17832,12 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       const mix = new THREE.AnimationMixer(sc), act = {}; for (const [n, c] of [["idle", "h-idle"], ["walk", "h-marche"], ["run", "h-rcourse"]]) { const cl = clipMXcible(AM, c, sc, nomOs); if (cl) { act[n] = mix.clipAction(cl); act[n].play(); act[n].setEffectiveWeight(n === "idle" ? 1 : 0); } }
       let tete = null, main = null; const pieds = []; sc.traverse(o => { if (o.isBone && /head.neck.upper/.test(o.name)) tete = o; if (o.isBone && /arm.left.wrist/.test(o.name)) main = o; if (o.isBone && /leg.(left|right).toes/.test(o.name)) pieds.push(o); });
       // le bandana : un bandeau rouge serré autour du front, le nœud et ses deux pans qui flottent derrière
-      const rouge = new THREE.MeshStandardMaterial({ color: 0xc0141c, roughness: .8 }), band = new THREE.Group(); scene.add(band);
+      const rouge = new THREE.MeshStandardMaterial({ color: 0xc0141c, roughness: .8 }), band = new THREE.Group(); band.scale.setScalar(KB); scene.add(band);
       const bd = new THREE.Mesh(new THREE.CylinderGeometry(.165, .17, .055, 24, 1, true), rouge); bd.material.side = THREE.DoubleSide; band.add(bd);
       const pans = [-1, 1].map(s => { const m = new THREE.Mesh(new THREE.BoxGeometry(.04, .16, .01), rouge); m.position.set(s * .035, -.05, -.18); m.rotation.set(.5, 0, s * .25); band.add(m); return m; });
       const noeud = new THREE.Mesh(new THREE.SphereGeometry(.022, 8, 6), rouge); noeud.position.set(0, 0, -.17); band.add(noeud);
       // l'arc : le bois courbé, la corde ; et la flèche encochée
-      const arc = new THREE.Group(); scene.add(arc); { const bois = new THREE.MeshStandardMaterial({ color: 0x5a3418, roughness: .7 }), pts = []; for (let i = 0; i <= 16; i++) { const u = i / 16 - .5; pts.push(new THREE.Vector3(0, u * .42, -Math.cos(u * Math.PI) * .07)); }
+      const arc = new THREE.Group(); arc.scale.setScalar(KB); scene.add(arc); { const bois = new THREE.MeshStandardMaterial({ color: 0x5a3418, roughness: .7 }), pts = []; for (let i = 0; i <= 16; i++) { const u = i / 16 - .5; pts.push(new THREE.Vector3(0, u * .42, -Math.cos(u * Math.PI) * .07)); }
         arc.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, .009, 6), bois)); arc.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([pts[0], pts[16]]), new THREE.LineBasicMaterial({ color: 0xe8e0c8 }))); }
       G = { mix, act, tete, main, band, pans, arc, sc, pieds, inner }; L.gizmoG = G; })().catch(e => console.warn("Gizmo", e));
     // les flèches : une hampe, l'empennage, la pointe qui flambe ; elles filent vers le gremlin visé (et le suivent un peu)
@@ -17872,6 +17872,9 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       const wR = Math.min(1, Math.max(0, (v - 2.2) / 1.5)), wW = Math.min(1, v / .8) * (1 - wR), wI = 1 - wW - wR;
       if (G.act.idle) G.act.idle.setEffectiveWeight(wI); if (G.act.walk) { G.act.walk.setEffectiveWeight(wW); G.act.walk.timeScale = 1.4; } if (G.act.run) { G.act.run.setEffectiveWeight(wR); G.act.run.timeScale = 1.2; } G.mix.update(dt);
       // les pieds au sol : le mouvement emprunté le soulève ou l'enfonce un peu ; on le recale sur le plus bas de ses deux pieds
+      // (sa vraie taille : mesurée une fois animé — du bout des pieds au sommet du crâne, la tête faisant ~45 % de sa hauteur au-dessus de l'os du cou)
+      if (!G.cal && G.tete && G.pieds.length) { racine.updateMatrixWorld(true); const w = new THREE.Vector3(); let ym = 1e9; for (const b of G.pieds) ym = Math.min(ym, b.getWorldPosition(w).y); const hy = G.tete.getWorldPosition(w).y - ym;
+        if (hy > .01) { G.inner.scale.multiplyScalar(HG / (hy * 1.5)); G.cal = true; } }
       if (G.pieds.length) { racine.updateMatrixWorld(true); let ym = 1e9; const w = new THREE.Vector3(); for (const b of G.pieds) ym = Math.min(ym, b.getWorldPosition(w).y); const sol = p.y + .015; G.inner.position.y += (sol - ym) * Math.min(1, dt * 12); }
       // le bandana suit la tête, l'arc la main gauche
       const tp = new THREE.Vector3(); if (G.tete) { G.tete.getWorldPosition(tp); } else tp.set(p.x, p.y + HG * .75, p.z); G.band.position.set(tp.x, tp.y + HG * .2, tp.z); G.band.rotation.set(0, yawG, 0);
