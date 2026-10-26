@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Permanent+Marker&family=Cinzel:wght@700&family=Courier+Prime:wght@400;700&family=Lato:wght@400;700&family=Marcellus&family=Mrs+Saint+Delafield&family=VT323&family=Tilt+Neon&family=Special+Elite&family=Sedgwick+Ave&family=Rock+Salt&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="js21.css?v=2">
+<link rel="stylesheet" href="js21.css?v=3">
 <style>
   :root {
     --cream: #f6eedf;
@@ -1342,6 +1342,12 @@
             <h2>La grille est fermée…</h2>
             <p>De l'autre côté, la cour d'honneur, la salle des fêtes, le bar et les anciens t'attendent.</p>
             <button class="btn mx-porte-btn" id="mxEntrer" type="button">Entrer dans la caserne</button>
+            <div class="card mx-bienvenue">
+              <h3>Bienvenue, nouvel arrivant</h3>
+              <p>Derrière cette porte, c'est la caserne de la Nouvelle France comme en 1990 : la cour d'honneur, la salle des fêtes, le bar du sous-sol, les étages… et les anciens qui s'y promènent.</p>
+              <p>Touche l'écran pour marcher, va saluer ceux que tu croises, écris-leur un mot, danse à la salle des fêtes, joue au bar.</p>
+              <p>Touche le néon : on te dépose au milieu de la cour.</p>
+            </div>
           </div>
         </div>
         <div class="mx-tete"><div><h1 class="hello">La Matrice</h1><p class="hello-sub">Retrouve les anciens dans les cours de la caserne</p></div>
@@ -2106,6 +2112,7 @@
     if (tab === "matrice") { if (!mxOuverte) $("tab-matrice-porte").classList.add("mx-ferme"); } else fermerMatrice();
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  document.querySelectorAll(".acc-jouer").forEach(b => b.onclick = () => { go("matrice"); $("mxEntrer").click(); });   // (depuis l'accueil : directement dans la caserne, en plein écran)
 
   /* ===== Utilisateur courant ===== */
   const me = { nom: "", prenom: "" };
@@ -2343,7 +2350,9 @@
   $("rQualite").onchange = () => { const v = $("rQualite").value; try { if (v === "auto") localStorage.removeItem("caserne-qualite"); else localStorage.setItem("caserne-qualite", v); } catch (e) {} };
   $("mxMicro").oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); if (MX && $("mxMicro").classList.contains("on")) MX.choisirMicro(); };   // (clic droit, ou appui long : choisir le micro)
   $("mxMicro").onclick = async e => { e.stopPropagation(); if (!MX) return; const b = $("mxMicro"); b.disabled = true; try { await MX.micro(!b.classList.contains("on")); } finally { b.disabled = false; } };
-  $("mxEntrer").onclick = () => { window.CASERNE_CINE_MAIN = true;   /* (à l'arrivée dans la cour : la main géante qui nous y pose) */ $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
+  $("mxEntrer").onclick = () => { window.CASERNE_CINE_MAIN = true;   /* (à l'arrivée dans la cour : la main géante qui nous y pose) */
+    { const sc = $("mxScene"); if (pleinCSS) { if (!sc.classList.contains("plein-css")) { sc.classList.add("plein-css"); document.body.style.overflow = "hidden"; scrollTo(0, 0); } }   /* (d'un seul geste : plein écran tout de suite, puis la main nous dépose) */
+      else if (document.fullscreenElement !== sc) (sc.requestFullscreen || sc.webkitRequestFullscreen || (() => {})).call(sc); } $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
   // l'appartement de l'escalier Z : l'administrateur, et les badges qu'il y invite (la même liste dans src/index.js)
   const APPART_INVITES = [2, 3, 4], appartOuvert = () => !!(moi && (moi.admin || (APPART_INVITES.includes(Number(moi.numero)) && appartLibre)));   // (les invités : seulement quand l'administrateur l'a ouvert)
   let appartLibre = false;
@@ -3285,6 +3294,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["7.99", "26 octobre 2026", ["Caserne en 3D : un seul geste — on touche le néon « Entrer dans la caserne » (ou « Entrer dans la caserne en 3D » depuis l'accueil) et c'est tout de suite le plein écran, avec la main qui nous dépose dans la cour", "Sous le néon : un mot de bienvenue pour les nouveaux arrivants"]],
     ["7.98", "26 octobre 2026", ["Caserne en 3D en plein écran : les onglets et l'enseigne ne passent plus par-dessus la caserne", "Le bouton « Passer » de la cinématique ne recouvre plus le bouton « Dire »"]],
     ["7.97", "26 octobre 2026", ["Toute l'appli façon « 21 Jump Street » : un mur de briques dessinées une à une, l'enseigne néon « CASERNE » et « de la Nouvelle France » tagué, un néon par onglet (celui où l'on est s'allume), les titres griffonnés au feutre blanc, les textes tapés à la machine sur du papier scotché", "Accueil : la météo dans une télé encastrée en hauteur dans le mur ; « Entrer dans la caserne en 3D » en néon vert", "Salle des fêtes : un vrai juke-box qui s'allume ; ses étiquettes montrent les titres de la discothèque (on en touche une, elle passe) ; on y dépose musiques et clips", "Poste de police : une enseigne néon « POLICE » et son gyrophare à la place du gendarme", "L'onglet Bibliothèque est retiré du menu", "Caserne en 3D : une grande enseigne néon « Entrer dans la caserne » ; en entrant, une main géante nous tient par le col, vue du ciel, et nous pose au milieu de la cour d'honneur (main : « Hand animation test » de SantosGabriel, Sketchfab, CC-BY 4.0)"]],
     ["7.96", "25 octobre 2026", ["Caserne, ruelle de la porte N : les deux trottoirs prolongent ceux de la rue en pente sans décrochement (même largeur, bordures alignées)"]],

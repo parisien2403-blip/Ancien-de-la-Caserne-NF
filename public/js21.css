@@ -287,3 +287,8 @@
 .inside .mx-porte-btn::before { left: 12px; } .inside .mx-porte-btn::after { right: 12px; }
 .inside .mx-porte-btn:hover { box-shadow: 0 18px 34px rgba(0,0,0,.7), 0 0 120px rgba(43,255,90,.32) !important; }
 .inside .mx-porte { display: flex !important; align-items: center; justify-content: center; min-height: calc(100dvh - 280px) !important; height: auto !important; aspect-ratio: auto !important; }
+/* sous le néon : le mot de bienvenue pour les nouveaux, tapé à la machine */
+.inside .mx-porte-carte { display: grid; justify-items: center; gap: 40px; }
+.inside .mx-porte-carte .mx-bienvenue { max-width: 560px; text-align: left; transform: rotate(-.8deg); }
+.inside .mx-porte-carte .mx-bienvenue p { display: block !important; margin: 0 0 10px; }
+.inside .mx-porte-carte .mx-bienvenue h3 { display: block !important; }
