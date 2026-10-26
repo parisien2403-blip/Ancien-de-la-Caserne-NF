@@ -18298,6 +18298,129 @@ function construireHillValley(A, T, L, scene) {
 }
 /* ---- Kingston Falls (Gremlins) : la même place que Hill Valley, sous la neige, un soir de Noël ----
    (le studio a tourné les deux films sur le même décor : on reprend Hill Valley, on la met en hiver, avec les sapins au milieu de la place) */
+/* les passants de Kingston Falls, peints comme la foule du concert de Santa Carla : de face et de dos, deux pas de marche, en anorak, doudoune, parka ou manteau de laine,
+   bonnet à pompon, écharpe, moufles, après-ski — les couleurs des années 80 ; chacun va où il veut sur la place et les trottoirs, s'arrête un peu, repart */
+function passantsHiver(scene, L, obst) {
+  const NP = 18, FR = 6, atlas = document.createElement("canvas"); atlas.width = 2048; atlas.height = 2048; const ax = atlas.getContext("2d");
+  const PEAUX = ["#f2cfae", "#e8b896", "#d69a72", "#b87850", "#8e5636", "#f6dcc4", "#c88a60", "#efc4a0"];
+  const CHEV = ["#1a120c", "#3a2414", "#6a4022", "#a8743a", "#d8b060", "#8a2a1a", "#5a5650", "#c9c4bc"];
+  const MANT = ["#c8202a", "#1d3f8a", "#2a7a6a", "#e8602a", "#7a3a9a", "#ff4fa3", "#2ad8d0", "#f2c83a", "#3a3a42", "#6a4a2a", "#b89870", "#1a5a2a", "#9a1a3a", "#e8e2d6"];
+  const VIF = ["#ff2a8a", "#2ad8ff", "#ffd21a", "#5aff4a", "#ff6a1a", "#9a4aff", "#ffffff", "#c8202a", "#1d3f8a"];
+  const BAS = ["#2a3f6a", "#1a1a1e", "#3a5a8a", "#5a3a22", "#4a4a50", "#2a2a40"];
+  const gens = []; for (let k = 0; k < NP; k++) { const r = n => hasard(k * 23.7 + n * 5.3 + 400), f = k % 2 === 1, age = r(14);
+    gens.push({ f, age, peau: PEAUX[Math.floor(r(1) * 8)], chev: age > .85 ? "#c9c4bc" : CHEV[Math.floor(r(2) * 7)],
+      manteau: f ? ["doudoune", "manteau", "ski", "parka", "doudoune", "manteau"][Math.floor(r(3) * 6)] : ["parka", "doudoune", "ski", "manteau", "parka", "doudoune"][Math.floor(r(3) * 6)],
+      c1: MANT[Math.floor(r(4) * MANT.length)], c2: VIF[Math.floor(r(5) * VIF.length)], c3: VIF[Math.floor(r(13) * VIF.length)],
+      tete: ["bonnet", "bonnet", "pompon", "chapka", "cache", "cheveux", "pompon", "bonnet"][Math.floor(r(6) * 8)], cBonnet: VIF[Math.floor(r(7) * VIF.length)],
+      echarpe: r(8) > .3, cEch: VIF[Math.floor(r(9) * VIF.length)], rayEch: r(10) > .5, bas: BAS[Math.floor(r(11) * BAS.length)],
+      pieds: ["moon", "boots", "boots", "moon", "baskets"][Math.floor(r(12) * 5)], cMoon: VIF[Math.floor(r(15) * VIF.length)], large: f ? .9 + r(16) * .1 : 1 + r(16) * .14, coif: f ? ["permanente", "long", "frange", "permanente"][Math.floor(r(17) * 4)] : ["court", "court", "mulet", "moustache"][Math.floor(r(17) * 4)] }); }
+  const ombre = (x, x0, x1, k = .35) => { const g = x.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, `rgba(0,0,0,${k})`); g.addColorStop(.3, "rgba(0,0,0,0)"); g.addColorStop(.62, "rgba(255,255,255,.08)"); g.addColorStop(1, `rgba(0,0,0,${k * 1.1})`); return g; };
+  const vertical = (x, y0, y1, k = .3) => { const g = x.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, "rgba(255,255,255,.1)"); g.addColorStop(1, `rgba(0,0,0,${k})`); return g; };
+  /* un passant : de face (dos = false) ou de dos ; pas = -1, 0, 1 (la jambe qui avance) */
+  const perso = (x, P, dos, pas) => {
+    const sw = 25 * P.large * (P.f ? .9 : 1), hw = 19 * P.large * (P.f ? 1.05 : 1), long = { doudoune: -108, ski: -110, parka: -92, manteau: -66 }[P.manteau];
+    // les jambes (le pantalon), le pas : une jambe devant, l'autre derrière
+    for (const s of [-1, 1]) { const av = pas * s, hx = s * hw * .48, fx = s * hw * .46 + av * 3, fy = -2 - Math.max(0, -av) * 5, kx = s * hw * .5 + av * 2, ky = -52 - Math.max(0, av) * 3;
+      x.lineCap = "round"; x.strokeStyle = "rgba(0,0,0,.4)"; x.lineWidth = 17; x.beginPath(); x.moveTo(hx, -106); x.lineTo(kx, ky); x.lineTo(fx, fy - 10); x.stroke();
+      x.strokeStyle = P.bas; x.lineWidth = 15; x.beginPath(); x.moveTo(hx, -106); x.lineTo(kx, ky); x.lineTo(fx, fy - 10); x.stroke();
+      x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 3; x.beginPath(); x.moveTo(hx - s * 3, -100); x.lineTo(kx - s * 3, ky); x.stroke();   // (le pli du pantalon, la lumière)
+      // les chaussures : après-ski (moon boots) bien gonflés, bottes de neige, ou baskets ; un peu de neige collée
+      if (P.pieds === "moon") { x.fillStyle = P.cMoon; x.beginPath(); x.roundRect(fx - 10, fy - 26, 20, 26, 7); x.fill(); x.fillStyle = "rgba(0,0,0,.25)"; for (const yy of [-20, -13]) x.fillRect(fx - 10, fy + yy, 20, 2); x.fillStyle = "#e8e8e4"; x.fillRect(fx - 11, fy - 4, 22, 5); }
+      else if (P.pieds === "boots") { x.fillStyle = "#4a2e1a"; x.beginPath(); x.roundRect(fx - 8, fy - 24, 16, 24, 4); x.fill(); x.fillStyle = "#d8c8a8"; x.fillRect(fx - 9, fy - 25, 18, 4); x.fillStyle = "#2a1a10"; x.fillRect(fx - 9, fy - 4, 18, 4); }
+      else { x.fillStyle = "#f2f2ee"; x.beginPath(); x.roundRect(fx - 8, fy - 13, 16, 13, 4); x.fill(); x.fillStyle = P.c2; x.fillRect(fx - 8, fy - 8, 16, 2); }
+      x.fillStyle = "rgba(240,245,250,.8)"; x.beginPath(); x.ellipse(fx, fy - 1, 9, 2.5, 0, 0, 7); x.fill(); }
+    // le manteau
+    const corps = () => { x.beginPath(); x.moveTo(-sw, -186); x.quadraticCurveTo(-sw - 4, -150, -hw - (P.manteau === "manteau" ? 6 : 2), long);
+      x.lineTo(hw + (P.manteau === "manteau" ? 6 : 2), long); x.quadraticCurveTo(sw + 4, -150, sw, -186); x.quadraticCurveTo(0, -194, -sw, -186); };
+    x.fillStyle = P.c1; corps(); x.fill(); x.save(); corps(); x.clip();
+    if (P.manteau === "doudoune") { x.strokeStyle = "rgba(0,0,0,.28)"; x.lineWidth = 2; for (let y = -176; y < long; y += 13) { x.beginPath(); x.moveTo(-sw - 6, y); x.quadraticCurveTo(0, y + 4, sw + 6, y); x.stroke(); }
+      x.fillStyle = "rgba(255,255,255,.16)"; for (let y = -182; y < long; y += 13) { x.beginPath(); x.ellipse(-sw * .25, y + 4, sw * .5, 3, 0, 0, 7); x.fill(); } }   // (les boudins gonflés, leurs reflets)
+    if (P.manteau === "ski") { x.fillStyle = P.c2; x.beginPath(); x.moveTo(-sw - 6, -150); x.lineTo(sw + 6, -168); x.lineTo(sw + 6, -152); x.lineTo(-sw - 6, -134); x.fill(); x.fillStyle = P.c3; x.beginPath(); x.moveTo(-sw - 6, -134); x.lineTo(sw + 6, -152); x.lineTo(sw + 6, -144); x.lineTo(-sw - 6, -126); x.fill(); }   // (les bandes de couleur en biais)
+    if (P.manteau === "parka") { x.fillStyle = "rgba(0,0,0,.18)"; for (const s of [-1, 1]) x.fillRect(s * sw * .55 - 7, -128, 14, 12); }   // (les poches)
+    x.fillStyle = ombre(x, -sw - 4, sw + 4, .4); x.fillRect(-sw - 8, -200, sw * 2 + 16, 220); x.fillStyle = vertical(x, -190, long, .25); x.fillRect(-sw - 8, -200, sw * 2 + 16, 220); x.restore();
+    if (!dos) { if (P.manteau === "manteau") { x.fillStyle = "rgba(0,0,0,.35)"; for (let i = 0; i < 3; i++) for (const s of [-1, 1]) { x.beginPath(); x.arc(s * 7, -156 + i * 18, 2.2, 0, 7); x.fill(); }   // (le croisé, ses boutons, le col)
+        x.strokeStyle = "rgba(0,0,0,.3)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(-3, -184); x.lineTo(2, long + 2); x.stroke(); }
+      else { x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 2; x.beginPath(); x.moveTo(0, -184); x.lineTo(0, long); x.stroke(); x.fillStyle = "#c8c8c8"; x.fillRect(-1.5, -184, 3, 6); } }   // (la fermeture éclair)
+    if (P.manteau === "parka") { x.fillStyle = "#e8dcc4"; x.beginPath(); x.ellipse(0, -190, sw * .78, 9, 0, 0, 7); x.fill(); x.fillStyle = "rgba(120,100,70,.4)"; for (let i = 0; i < 18; i++) { x.beginPath(); x.arc(-sw * .7 + i * sw * .08, -190 + Math.sin(i) * 4, 2, 0, 7); x.fill(); } }   // (la capuche bordée de fourrure)
+    // les bras dans les manches, les moufles ; ils se balancent avec le pas
+    for (const s of [-1, 1]) { const b = -pas * s * .22, ex = s * (sw + 3) + Math.sin(b) * 26, ey = -150, hx = ex + Math.sin(b * 1.4) * 24 * 1 + s * 1, hy = -114;
+      x.lineCap = "round"; x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = P.manteau === "doudoune" ? 16 : 14; x.beginPath(); x.moveTo(s * (sw - 3), -182); x.lineTo(ex, ey); x.lineTo(hx, hy); x.stroke();
+      x.strokeStyle = P.c1; x.lineWidth = P.manteau === "doudoune" ? 14 : 12; x.beginPath(); x.moveTo(s * (sw - 3), -182); x.lineTo(ex, ey); x.lineTo(hx, hy); x.stroke();
+      if (P.manteau === "ski") { x.strokeStyle = P.c2; x.lineWidth = 4; x.beginPath(); x.moveTo(s * (sw - 1), -176); x.lineTo(ex + s * 2, ey); x.stroke(); }
+      x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 3; x.beginPath(); x.moveTo(s * (sw - 6), -180); x.lineTo(ex - s * 3, ey); x.stroke();
+      x.fillStyle = P.cEch; x.beginPath(); x.ellipse(hx, hy + 3, 6.5, 7.5, 0, 0, 7); x.fill(); x.fillStyle = "rgba(0,0,0,.25)"; x.beginPath(); x.ellipse(hx + 1.5, hy + 5, 4, 5, 0, 0, 7); x.fill(); }   // (les moufles, assorties à l'écharpe)
+    // le cou, la tête
+    x.fillStyle = P.peau; x.fillRect(-6, -200, 12, 14);
+    const tete = () => { x.beginPath(); x.ellipse(0, -214, 13.5, 16, 0, 0, 7); };
+    x.fillStyle = P.peau; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 13.5, -212, 3, 5, 0, 0, 7); x.fill(); } tete(); x.fill();
+    x.save(); tete(); x.clip(); x.fillStyle = ombre(x, -14, 14, .3); x.fillRect(-16, -232, 32, 36); x.restore();
+    const ch = P.chev;
+    if (!dos) { // le visage : les sourcils, les yeux, le nez, la bouche, les joues rougies par le froid
+      x.fillStyle = "rgba(220,90,90,.28)"; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 7, -207, 4, 3, 0, 0, 7); x.fill(); }
+      x.fillStyle = "#1c120c"; for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 5, -215, 1.8, 2.1, 0, 0, 7); x.fill(); } x.fillStyle = "rgba(255,255,255,.7)"; for (const s of [-1, 1]) x.fillRect(s * 5 - .3, -216.5, 1, 1);
+      x.strokeStyle = ch === "#c9c4bc" ? "#8a8680" : ch; x.lineWidth = 1.8; for (const s of [-1, 1]) { x.beginPath(); x.moveTo(s * 2.5, -220); x.lineTo(s * 8, -221); x.stroke(); }
+      x.strokeStyle = "rgba(120,60,40,.45)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(.5, -214); x.lineTo(1.5, -207); x.lineTo(-1, -206.5); x.stroke();
+      x.strokeStyle = P.f ? "#b23a3a" : "rgba(110,50,40,.7)"; x.lineWidth = P.f ? 2.4 : 1.6; x.beginPath(); x.moveTo(-4, -201.5); x.quadraticCurveTo(0, -199.5, 4, -201.5); x.stroke();
+      if (P.coif === "moustache" && !P.f) { x.fillStyle = ch; x.beginPath(); x.ellipse(0, -204, 6, 2.2, 0, 0, 7); x.fill(); } }
+    // les cheveux (permanente, long, frange ; court, mulet), puis le couvre-chef
+    x.fillStyle = ch;
+    const cheveuxVus = P.tete === "cheveux" || P.tete === "cache";
+    if (P.f && P.coif === "permanente") { for (let i = 0; i < 30; i++) { const a = Math.PI * .75 + i / 29 * Math.PI * 1.5, r = 17 + (i % 3) * 3; x.beginPath(); x.arc(Math.cos(a) * r, -214 + Math.sin(a) * r * .9 + (Math.sin(a) > .2 ? 8 : 0), 6.5, 0, 7); x.fill(); } if (dos) { x.beginPath(); x.ellipse(0, -210, 19, 20, 0, 0, 7); x.fill(); } }
+    else if (P.f && (P.coif === "long" || P.coif === "frange")) { x.beginPath(); x.ellipse(0, -218, 16, 14, 0, Math.PI, 0); x.lineTo(16, -184); x.lineTo(-16, -184); x.fill(); if (dos) { x.beginPath(); x.ellipse(0, -212, 16, 17, 0, 0, 7); x.fill(); } }
+    else if (P.coif === "mulet") { x.beginPath(); x.ellipse(0, -219, 14, 11, 0, Math.PI, 0); x.fill(); x.fillRect(-12, -206, 24, 18); if (dos) { x.beginPath(); x.ellipse(0, -212, 14, 15, 0, 0, 7); x.fill(); } }
+    else { x.beginPath(); x.ellipse(0, -220, 14, 10, 0, Math.PI, 0); x.fill(); if (dos) { x.beginPath(); x.ellipse(0, -213, 14, 15, 0, 0, 7); x.fill(); } }
+    if (!dos && cheveuxVus && P.f && P.coif === "frange") { x.fillRect(-12, -229, 24, 7); }
+    x.strokeStyle = "rgba(255,255,255,.12)"; x.lineWidth = 1; for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(-8 + i * 3, -229); x.quadraticCurveTo(-9 + i * 3.2, -218, -8 + i * 3, -208); x.stroke(); }
+    if (P.tete === "bonnet" || P.tete === "pompon") { x.fillStyle = P.cBonnet; x.beginPath(); x.ellipse(0, -221, 15.5, 12, 0, Math.PI, 0); x.lineTo(15.5, -218); x.lineTo(-15.5, -218); x.fill();
+      x.fillStyle = "rgba(0,0,0,.2)"; for (let i = -14; i < 15; i += 3) x.fillRect(i, -230, 1.2, 12); x.fillStyle = P.c2; x.fillRect(-16, -221, 32, 5);   // (les côtes du tricot, le revers rayé)
+      if (P.tete === "pompon") { x.fillStyle = P.c2; x.beginPath(); x.arc(0, -236, 6.5, 0, 7); x.fill(); x.fillStyle = "rgba(255,255,255,.25)"; x.beginPath(); x.arc(-2, -238, 3, 0, 7); x.fill(); } }
+    else if (P.tete === "chapka") { x.fillStyle = "#5a3a22"; x.beginPath(); x.ellipse(0, -223, 16, 11, 0, Math.PI, 0); x.fill(); x.fillStyle = "#c8b090"; x.fillRect(-17, -224, 34, 6); for (const s of [-1, 1]) { x.beginPath(); x.ellipse(s * 15, -210, 5, 10, 0, 0, 7); x.fill(); } }   // (la chapka, ses rabats fourrés)
+    else if (P.tete === "cache") { x.strokeStyle = "#555"; x.lineWidth = 2; x.beginPath(); x.arc(0, -214, 16, Math.PI * 1.05, Math.PI * 1.95); x.stroke(); x.fillStyle = P.cBonnet; for (const s of [-1, 1]) { x.beginPath(); x.arc(s * 15, -211, 6, 0, 7); x.fill(); } }   // (le cache-oreilles en fausse fourrure)
+    // l'écharpe : enroulée, un pan qui pend devant (ou dans le dos)
+    if (P.echarpe) { x.fillStyle = P.cEch; x.beginPath(); x.roundRect(-sw * .55, -197, sw * 1.1, 12, 5); x.fill(); x.beginPath(); x.roundRect(dos ? -2 : 5, -190, 9, 40, 3); x.fill();
+      if (P.rayEch) { x.fillStyle = P.c2 === P.cEch ? "#ffffff" : P.c2; for (const y of [-174, -164]) x.fillRect(dos ? -2 : 5, y, 9, 3); } x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(dos ? -2 : 5, -190, 9, 3); x.fillStyle = "#eee"; for (let i = 0; i < 4; i++) x.fillRect((dos ? -2 : 5) + i * 2.3, -150, 1, 4); }
+  };
+  gens.forEach((P, k) => [[0, 0], [0, -1], [0, 1], [1, 0], [1, -1], [1, 1]].forEach(([dos, pas], f) => { const idx = k * FR + f, cx = (idx % 16) * 128, cy = Math.floor(idx / 16) * 256;
+    ax.save(); ax.beginPath(); ax.rect(cx, cy, 128, 256); ax.clip(); ax.translate(cx + 64, cy + 250); const sc = P.age < .15 ? .78 : .98 + hasard(k * 5.5) * .05; ax.scale(sc, sc); perso(ax, P, !!dos, pas);
+    ax.globalCompositeOperation = "source-atop"; const g = ax.createLinearGradient(0, -240, 0, 0); g.addColorStop(0, "rgba(235,240,250,.12)"); g.addColorStop(1, "rgba(20,25,40,.25)"); ax.fillStyle = g; ax.fillRect(-64, -250, 128, 256); ax.restore(); }));
+  const tAt = new THREE.CanvasTexture(atlas); tAt.colorSpace = THREE.SRGBColorSpace; tAt.anisotropy = 4;
+  // où l'on peut marcher : la place et les trottoirs ; tout droit d'un point à l'autre si rien ne barre le chemin
+  const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), droit = (x0, z0, x1, z1) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / .5); for (let i = 1; i <= n; i++) if (!libre(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false; return true; };
+  const Z = L.zone, tirer = () => { for (let k = 0; k < 80; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
+  const N = 22, gensP = [];
+  for (let i = 0; i < N; i++) { const p0 = tirer(); if (!p0) continue; gensP.push({ x: p0[0], z: p0[1], k: i % NP, v: .75 + Math.random() * .5, cible: null, attente: Math.random() * 3, ph: Math.random() * 6, s: .95 + Math.random() * .1, dx: 0, dz: 1 }); }
+  const n = gensP.length, gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8), iF = [];
+  for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+  gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
+  const m = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tAt, alphaTest: .5, side: THREE.DoubleSide, color: 0xe2e4e8 })); m.frustumCulled = false; scene.add(m);
+  const ombreT = tex(toile(64, 32, (x) => { const g = x.createRadialGradient(32, 16, 1, 32, 16, 30); g.addColorStop(0, "rgba(40,50,70,.45)"); g.addColorStop(1, "rgba(40,50,70,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 64, 64); x.restore(); }));
+  const gO = new THREE.BufferGeometry(), pO = new Float32Array(n * 12), uO = new Float32Array(n * 8); for (let i = 0; i < n; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
+  gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF);
+  const mO = new THREE.Mesh(gO, new THREE.MeshBasicMaterial({ map: ombreT, transparent: true, depthWrite: false })); mO.frustumCulled = false; scene.add(mO);
+  const eps = .5 / 2048;
+  L.passants = gensP;
+  return (dt, t) => { const cam = M && M.camera; if (!cam) return;
+    for (let i = 0; i < n; i++) { const q = gensP[i]; let marche = false;
+      if (q.attente > 0) q.attente -= dt;
+      else if (!q.cible) { for (let k = 0; k < 12; k++) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 3 && droit(q.x, q.z, c[0], c[1])) { q.cible = c; break; } } if (!q.cible) q.attente = .5; }
+      else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
+        if (l < .2) { q.cible = null; q.attente = 1 + Math.random() * 5; }
+        else { let ux = ddx / l, uz = ddz / l;
+          // on s'écarte un peu de celui qui arrive en face (et du joueur)
+          for (const o of gensP) if (o !== q) { const ox = o.x - q.x, oz = o.z - q.z, d = Math.hypot(ox, oz); if (d < .9 && d > .01) { ux -= ox / d * .5; uz -= oz / d * .5; } }
+          const me = M.gens && M.gens.get(M.moiNum); if (me) { const ox = me.g.position.x - q.x, oz = me.g.position.z - q.z, d = Math.hypot(ox, oz); if (d < 1.1 && d > .01) { ux -= ox / d * .7; uz -= oz / d * .7; } }
+          const ul = Math.hypot(ux, uz) || 1; ux /= ul; uz /= ul; const nx = q.x + ux * q.v * dt, nz = q.z + uz * q.v * dt;
+          if (libre(nx, nz)) { q.x = nx; q.z = nz; q.dx = ux; q.dz = uz; marche = true; } else { q.cible = null; q.attente = .3; } } }
+      const y = L.hauteur ? L.hauteur(q.x, q.z) : 0;
+      let cx = cam.position.x - q.x, cz = cam.position.z - q.z; const cl = Math.hypot(cx, cz) || 1; cx /= cl; cz /= cl; const rx = cz, rz = -cx;
+      const deFace = q.dx * cx + q.dz * cz > -.15, pas = marche ? Math.round(Math.sin((t / 1000) * q.v * 5.2 + q.ph)) : 0, f = (deFace ? 0 : 3) + (pas < 0 ? 1 : pas > 0 ? 2 : 0);
+      const H = 1.76 * q.s, W = H / 2, bob = marche ? Math.abs(Math.sin((t / 1000) * q.v * 5.2 + q.ph)) * .03 : 0, o = i * 12;
+      pF.set([q.x - rx * W / 2, y + bob, q.z - rz * W / 2, q.x + rx * W / 2, y + bob, q.z + rz * W / 2, q.x + rx * W / 2, y + bob + H, q.z + rz * W / 2, q.x - rx * W / 2, y + bob + H, q.z - rz * W / 2], o);
+      const idx = q.k * FR + f, u0 = (idx % 16) / 16 + eps, u1 = (idx % 16 + 1) / 16 - eps, v1 = 1 - Math.floor(idx / 16) / 8 - eps, v0 = 1 - (Math.floor(idx / 16) + 1) / 8 + eps;
+      uF.set([u0, v0, u1, v0, u1, v1, u0, v1], i * 8);
+      pO.set([q.x - .45, y + .03, q.z - .28, q.x + .45, y + .03, q.z - .28, q.x + .45, y + .03, q.z + .28, q.x - .45, y + .03, q.z + .28], i * 12); }
+    gF.attributes.position.needsUpdate = gF.attributes.uv.needsUpdate = gO.attributes.position.needsUpdate = true; };
+}
 function hiverHV(A, L, scene, obst, y0, feuilles) {
   graine = 1225; L.kingston = true;
   // plus de voitures de 1955 qui tournent autour de la place
@@ -18395,9 +18518,11 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   L.cielPerso = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#7c838c"); g.addColorStop(.55, "#a3a9b0"); g.addColorStop(1, "#c4c8cc"); x.fillStyle = g; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${alea() < .5 ? "235,238,242" : "110,116,124"},${.06 + alea() * .1})`; x.beginPath(); x.ellipse(alea() * w, alea() * h * .6, 60 + alea() * 120, 14 + alea() * 30, 0, 0, 7); x.fill(); } }));
   const anim0 = L.anim; let tP = 0;
+  // ---- les passants : des gens de Kingston Falls, en tenue d'hiver des années 80, qui vont et viennent sur la place ----
+  const PASS = passantsHiver(scene, L, obst);
   const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight);
   L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = 1.2; hemi.color.setHex(0xdfe3ea); hemi.groundColor.setHex(0x9aa4b2); } if (sol2) { sol2.intensity = .45; sol2.color.setHex(0xe8edf5); }
-    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t;
+    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t);
     const a = fg.attributes.position.array; for (let i = 0; i < NF; i++) { a[i * 3 + 1] -= vit[i] * dt; a[i * 3] += Math.sin(t / 900 + i) * .25 * dt; if (a[i * 3 + 1] < 0) a[i * 3 + 1] += 26; } fg.attributes.position.needsUpdate = true;
     // les guirlandes scintillent, chaque couleur à son rythme
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); }); };
