@@ -17341,8 +17341,17 @@ function gremlinsHV(scene, L) {
     let sortie = g; if (actx.createStereoPanner) { const pn = actx.createStereoPanner(), dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), rx = dr.x, rz = dr.z, cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(q.x - cx, q.z - cz) || 1;   /* (la droite de la caméra) */
       pn.pan.value = Math.max(-1, Math.min(1, ((q.x - cx) * rx + (q.z - cz) * rz) / l)); g.connect(pn); sortie = pn; }
     sn.connect(g); sortie.connect(actx.destination); voix++; sn.onended = () => { voix--; try { sortie.disconnect(); } catch (e) {} }; sn.start(); };
+  // la chorale chante son chant de Noël, en boucle — elle seule ; on l'entend d'autant plus qu'on s'en approche (et plus du tout en quittant Kingston Falls)
+  const CH = { x: 10.6 + 2.5 * .56, z: 22 }; let chant = null;
+  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-chorale.mp3?v=1"), b = await actx.decodeAudioData(await r.arrayBuffer());
+    const sn = actx.createBufferSource(), g = actx.createGain(); sn.buffer = b; sn.loop = true; g.gain.value = 0; let sortie = g; const pn = actx.createStereoPanner ? actx.createStereoPanner() : null; if (pn) { g.connect(pn); sortie = pn; }
+    sn.connect(g); sortie.connect(actx.destination); sn.start(); chant = { g, pn };
+    const garde = setInterval(() => { if (!M || M.lieu !== "kingston") { g.gain.value = 0; if (!M) { try { sn.stop(); } catch (e) {} clearInterval(garde); } } }, 400); } catch (e) { console.warn("la chorale", e); } })();
   return (dt, t) => {
-    for (const q of gr) { if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
+    for (const q of gr) { if (q.chorale >= 0) continue; if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
+    if (chant && M.camera) { const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(CH.x - o.x, CH.z - o.z), D = 26;
+      chant.g.gain.value = d > D ? 0 : 1.0 * Math.pow(1 - d / D, 1.5);
+      if (chant.pn) { const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(CH.x - cx, CH.z - cz) || 1; chant.pn.pan.value = Math.max(-1, Math.min(1, ((CH.x - cx) * dr.x + (CH.z - cz) * dr.z) / l)) * .8; } }
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false;
       // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
       if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
