@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.13";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.14";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13722,7 +13722,7 @@ const BILLY_KF = [
   ["Gizmo", "Billy… ! Ouuuh…"]];
 const vidKF = src => { const v = document.createElement("video"); v.src = src; v.playsInline = true; v.preload = "auto"; v.load(); return v; };   // (chargées dès la photo de Billy : elles sont prêtes quand vient leur tour)
 function billyKF() { if (!M) return;
-  M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=2") };
+  M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;box-sizing:border-box;opacity:0;transition:opacity .7s;cursor:pointer";
   d.innerHTML = '<img src="images/gremlins/billy.webp" alt="Billy et Gizmo" style="max-width:min(94%,820px);max-height:58%;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.8)">'
     + '<div style="width:min(94%,820px);min-height:4.4em;background:rgba(14,10,6,.92);border:2px solid #b8862e;border-radius:10px;padding:10px 16px;box-sizing:border-box;color:#fff;font:600 clamp(15px,2.4vw,20px)/1.4 \'Lato\',sans-serif"><b class="qui"></b> <span class="txt"></span></div>';
@@ -13738,7 +13738,7 @@ function billyKF() { if (!M) return;
 // la cinématique de la télé : gros plan sur Gizmo qui regarde la télé du bar (sa lumière qui vacille sur lui) ; la caméra glisse jusqu'à l'écran… Rambo III, la flèche explosive ;
 // puis Gizmo se prépare comme Rambo (la scène de Gremlins 2) — et la partie commence, avec son arc et son bandana.
 // Pendant les vidéos, la ville n'est plus dessinée derrière : elles passent sans à-coups.
-function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.remove(); return; } const L = M.L, moi = M.gens.get(M.moiNum), T = tvBarKF, V = M.kfVids || { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=2") };
+function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.remove(); return; } const L = M.L, moi = M.gens.get(M.moiNum), T = tvBarKF, V = M.kfVids || { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
   L.gizmoRambo = false;   // (ni arc ni bandana tant qu'il n'a pas vu Rambo)
   const n = T ? T.n : new THREE.Vector3(.74, 0, .67).normalize(), c = T ? T.c : new THREE.Vector3(-31.85, 2.13, -10.53), V3 = THREE.Vector3;
   const gx = c.x + n.x * 2.1, gz = c.z + n.z * 2.1; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.x = gx; moi.g.position.z = gz; }
