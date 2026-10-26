@@ -17150,8 +17150,8 @@ function construireHillValley(A, T, L, scene, kf = false) { const ICI = kf ? "ki
       b.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); b.scale.setScalar((.95 + Math.random() * .7) * k); const c = .82 + Math.random() * .3; b.material = feuilles[i % 2]; b.userData.c = c; b.castShadow = true; scene.add(b); }
     obst.push([x, z, .55 * k]); };
   arbre(-6.5, -4.5, 1.25); arbre(9, 5, .85); arbre(-10, 6.5, .8); arbre(10.5, -7.5, .9);
-  // le panneau « Welcome to Hill Valley »
-  { const g = new THREE.Group(); g.position.set(-8.5, trottoirH, 8.7); g.rotation.y = .35; scene.add(g);
+  // le panneau « Welcome to Hill Valley » (pas à Kingston Falls)
+  if (!kf) { const g = new THREE.Group(); g.position.set(-8.5, trottoirH, 8.7); g.rotation.y = .35; scene.add(g);
     const p = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.4), new THREE.MeshStandardMaterial({ map: tex(toileBienvenue()), transparent: true, alphaTest: .4, side: THREE.DoubleSide })); p.position.y = 1.55; g.add(p);
     for (const sx of [-1.15, 1.15]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.09, 2.7, .09), A.mat({ color: 0xf2f2f2 })); m.position.set(sx, 1.35, -.02); g.add(m); const b = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), A.mat({ color: 0xf2f2f2 })); b.position.set(sx, 2.75, -.02); g.add(b); }
     obst.push([-8.5, 8.7, 1.4]); }
