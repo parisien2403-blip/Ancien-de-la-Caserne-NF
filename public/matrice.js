@@ -16420,7 +16420,7 @@ const IMMEUBLES_HV = {
       B.cyl(.5, .5, .15, 0, 11.4, -.05, "#2a2a2a", { rx: Math.PI / 2, seg: 24 }); B.plan(.9, .9, 0, 11.4, .03, new THREE.MeshStandardMaterial({ map: texHV(h), transparent: true, alphaTest: .5 }));
       const fr = new THREE.Shape(); fr.moveTo(-1.6, 0); fr.lineTo(1.6, 0); fr.lineTo(0, 1.6); fr.closePath(); B.boite(0, 0, 0, 0, 10.7, -.3, "#e2dccc", { geo: new THREE.ExtrudeGeometry(fr, { depth: .3, bevelEnabled: false }) }); } },
   // Lou's Cafe : l'immeuble crème et ses bandes bleues, les grandes baies, l'auvent bleu et blanc, l'enseigne lumineuse
-  loucafe: { larg: 9, corps: 7.4, creux: true, interieur: () => kfConstr ? interieurBarKF() : interieurLouHV(), f: (B) => { const X0 = -4.5, X1 = 4.5;
+  loucafe: { larg: 9, corps: 7.4, creux: true, interieur: () => kfConstr ? interieurBarKF() : interieurLouHV(), f: (B) => { if (kfConstr) return faceTaverneKF(B); const X0 = -4.5, X1 = 4.5;
       B.mur(X0, X1, 0, 3.6, "carreau", "#f0ead8", { saillie: .1, carreau: .3, joint: "#c8c0a8" }); B.mur(X0, X1, 3.6, 7.4, "brique", "#a0583a");
       B.vitrine(-4.2, -.75, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Breakfast · Lunch", imposte: false, montants: 1, prof: .46 }); B.vitrine(.75, 4.2, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Sodas · Malts", imposte: false, montants: 1, prof: .46 });
       B.trou(-.62, .62, 0, 2.66, .46, { z: .1, tableau: "#c9ccd0" }); for (const s of [-1, 1]) B.boite(.08, 2.7, .08, s * .66, 1.35, .14, "#1d4f8a"); B.boite(1.4, .08, .08, 0, 2.7, .14, "#1d4f8a");   // (la porte grande ouverte)
@@ -16847,6 +16847,18 @@ function creerPickupFord(o = {}) {
     const enj = m(new THREE.SphereGeometry(.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 3), chrome, x, RR, s * .87, s * Math.PI / 2, 0, 0); enj.scale.set(1, .45, 1); }
   return g; }
 
+/* Kingston Falls : la devanture du bar — Dorry's Tavern : planches sombres en bas, brique au-dessus, deux petites vitres où brillent les néons de bière,
+   la porte ouverte, l'enseigne au néon rouge ; les fenêtres de l'étage éteintes */
+function faceTaverneKF(B) { const X0 = -4.5, X1 = 4.5;
+  B.mur(X0, X1, 0, 3.6, "planche", "#3a2416", { saillie: .1 }); B.mur(X0, X1, 3.6, 7.4, "brique", "#6a3626");
+  B.vitrine(-4.0, -1.2, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3 }); B.vitrine(1.2, 4.0, .12, 2.6, { z: .1, cadre: "#1a120c", bas: "#2a1a10", imposte: false, montants: 1, prof: .3 });
+  B.trou(-.62, .62, 0, 2.66, .46, { z: .1, tableau: "#1a120c" }); for (const s of [-1, 1]) B.boite(.1, 2.75, .1, s * .67, 1.37, .15, "#1a120c"); B.boite(1.44, .1, .1, 0, 2.72, .15, "#1a120c");
+  B.enseigne(-2.6, 1.95, 1.7, .42, "COLD BEER", { fond: "#05070a", coul: "#40e0ff", ep: .02, z: .16, neon: true, police: "Arial Black, Arial", style: "" });
+  B.enseigne(2.6, 1.95, 1.3, .42, "OPEN", { fond: "#05070a", coul: "#ff3060", ep: .02, z: .16, neon: true, police: "Arial Black, Arial", style: "" });
+  B.enseigne(0, 2.95, 1.4, .3, "TAVERN", { fond: "#1a120c", coul: "#ffb030", ep: .04, z: .12 });
+  B.enseigne(0, 3.95, 6.6, .95, "Dorry's Tavern", { fond: "#140c08", coul: "#ff3424", bord: "#ffb030", police: "'Brush Script MT', cursive", style: "italic bold", neon: true, degrade: true });
+  for (const x of [-2.6, 0, 2.6]) B.fenetre(x, 5.0, 1.3, 1.6, { carreaux: 3, cle: true, volets: "#2a1a10" });
+  B.corniche(X0, X1, 6.9, { coul: "#4a3020", frise: .25 }); }
 /* Kingston Falls : la salle de Lou's Cafe vidée, et à sa place le vieux bar (Sketchfab, « Old bar » par katydid) — tout le bar, plus profond que la salle de Lou :
    il s'enfonce derrière la façade ; on y entre et on en sort par la même porte (percée dans le mur du modèle) */
 function interieurBarKF() { const S = .85, MX = 7.57;   // (l'échelle ; en x, le mur du modèle qui vient contre la façade)
@@ -16866,10 +16878,10 @@ function interieurBarKF() { const S = .85, MX = 7.57;   // (l'échelle ; en x, l
       if (garde.length < P.count / 3) { const r = new THREE.BufferGeometry(); for (const k of Object.keys(ge.attributes)) { const a = ge.attributes[k], d = a.itemSize, src = a.array, dst = new src.constructor(garde.length * 3 * d); garde.forEach((t, j) => dst.set(src.subarray(t * d, (t + 3) * d), j * 3 * d)); r.setAttribute(k, new THREE.BufferAttribute(dst, d)); } ge = r; }
       o.geometry = ge;
       // la salle s'éclaire elle-même (une lumière chaude de vieux bar), sans multiplier les lampes
-      for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .32; m.needsUpdate = true; } });
+      for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .07; m.needsUpdate = true; } });   // (les lumières éteintes : la salle dans la pénombre)
     const w = new THREE.Group(), inner = new THREE.Group(); inner.add(sc); sc.position.set(-c.x, -bb.min.y, -c.z); w.add(inner);
     w.rotation.y = -Math.PI / 2; w.scale.setScalar(S); w.position.set(0, DIM.Y, -MX * S - .45); g.add(w);
-    { const l = new THREE.PointLight(0xffc890, 8, 12, 1.4); l.position.set(0, DIM.H - .5, -6); g.add(l); }
+    { const l = new THREE.PointLight(0x5068a0, 1.2, 14, 1.4); l.position.set(0, DIM.H - .5, -6); g.add(l); }   // (juste le reflet bleuté de la rue)
     // les obstacles : tout ce qui se dresse entre les genoux et la poitrine (comptoir, tables, tabourets, murs), relevé sur une grille de 30 cm
     g.updateWorldMatrix(true, true); inv.copy(g.matrixWorld).invert(); const C = .3, occ = new Set(), m4 = new THREE.Matrix4(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
     sc.traverse(o => { if (!o.isMesh) return; m4.multiplyMatrices(inv, o.matrixWorld); const P = o.geometry.attributes.position;
@@ -17260,7 +17272,7 @@ function construireHillValley(A, T, L, scene, kf = false) { const ICI = kf ? "ki
    Ils filent partout en zigzag, s'arrêtent net, guettent, font un bond, repartent ; plus petits que les gens. */
 const GREMLINS_GLB = [
   // f, nombre, hanche, épaule (x), épaule (y), amplitude, roule
-  { f: "classique", n: 14, hanche: .4, epX: .15, epY: .62, amp: .6 },
+  { f: "classique", n: 20, hanche: .4, epX: .15, epY: .62, amp: .6 },   // (dont les six de la chorale)
   { f: "coca", n: 4, hanche: .38, epX: .15, epY: .6, amp: .7, queue: true },
   { f: "queue", n: 4, hanche: .4, epX: .15, epY: .62, amp: .7, queue: true },
   { f: "pelado", n: 3, hanche: .2, epX: 9, epY: 9, amp: .35, penche: 0 },
@@ -17312,7 +17324,9 @@ function gremlinsHV(scene, L) {
     const g = await new gltfMod.GLTFLoader().loadAsync("avatars/gremlins/" + T.f + ".glb?v=1"), parts = preparer(g.scene, T);
     const debut = gr.length, n = T.n;
     for (let i = 0; i < n; i++) { const p0 = tirer(); if (!p0) continue;
-      gr.push({ T, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: .62 + Math.random() * .22, grimpeur: !T.roule && T.f !== "pelado" && Math.random() < .5, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
+      const ch = T.f === "classique" && i < 6 ? i : -1, chasse = (T.f === "coca" || T.f === "queue") && i < 2;
+      if (ch >= 0) { p0[0] = 10.6 + ch * .56; p0[1] = 21.75 + Math.abs(ch - 2.5) * .16; }   // (la chorale : en arc de cercle sur le trottoir, face à la maison)
+      gr.push({ T, chorale: ch, chasse, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: ch >= 0 ? .78 : .62 + Math.random() * .22, grimpeur: ch < 0 && !chasse && !T.roule && T.f !== "pelado" && Math.random() < .5, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
     const nb = gr.length - debut, aPas = new THREE.InstancedBufferAttribute(new Float32Array(nb * 2), 2); aPas.setUsage(THREE.DynamicDrawUsage);
     const ims = parts.map(([geo, m]) => { geo.setAttribute("aPas", aPas); const im = new THREE.InstancedMesh(geo, T.roule ? m : animer(m, T), nb); im.frustumCulled = false; scene.add(im); return im; });
     troupes.push({ T, debut, nb, ims, aPas }); gO.setDrawRange(0, gr.length * 6); };
@@ -17322,7 +17336,11 @@ function gremlinsHV(scene, L) {
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false;
       // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
       if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
-      if (q.perche) { const P = q.perche;
+      if (q.chorale >= 0) { q.rot = Math.sin(t / 900 + q.chorale) * .1 + (q.chorale - 2.5) * -.06; q.ph += dt * 2.2; q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; q.am += (.1 - q.am) * Math.min(1, dt * 4); continue; }   // (ils chantent : immobiles, ils se balancent)
+      if (q.chasse && L.victimeKF) { const V = L.victimeKF, a = t / 600 + q.ph * 3, tx = V.x + Math.cos(a) * .85, tz = V.z + Math.sin(a) * .85, ddx = tx - q.x, ddz = tz - q.z, l = Math.hypot(ddx, ddz);   // (ils harcèlent le passant, lui sautent dessus)
+        if (l > .05) { const v = Math.min(l, 4.6 * dt); q.x += ddx / l * v; q.z += ddz / l * v; court = true; q.ph += dt * 4.6 * 4.4; let d = Math.atan2(ddx, ddz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * 12); }
+        if (q.saut === 0 && Math.random() < dt * 1.2) q.vy = 2.6 + Math.random(); }
+      else if (q.perche) { const P = q.perche;
         if (q.attente > 0) { q.attente -= dt; if (q.danse) q.rot += dt * 5; }
         else if (!q.cibleL) q.cibleL = [(Math.random() * 2 - 1) * P.hx, (Math.random() * 2 - 1) * P.hz];
         else { const ddx = q.cibleL[0] - q.ox, ddz = q.cibleL[1] - q.oz, l = Math.hypot(ddx, ddz);
@@ -17443,8 +17461,10 @@ function passantsHiver(scene, L, obst) {
   // où l'on peut marcher : la place et les trottoirs ; tout droit d'un point à l'autre si rien ne barre le chemin
   const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), droit = (x0, z0, x1, z1) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / .5); for (let i = 1; i <= n; i++) if (!libre(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n)) return false; return true; };
   const Z = L.zone, tirer = () => { for (let k = 0; k < 80; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
-  const N = 22, gensP = [];
-  for (let i = 0; i < N; i++) { const p0 = tirer(); if (!p0) continue; gensP.push({ x: p0[0], z: p0[1], k: i % NP, v: .75 + Math.random() * .5, cible: null, attente: Math.random() * 3, ph: Math.random() * 6, s: .95 + Math.random() * .1, dx: 0, dz: 1 }); }
+  // (la ville est attaquée : il ne reste que quatre passants, qui courent se mettre à l'abri ; l'un d'eux, pris par les gremlins, tourne en rond en se débattant)
+  const N = 4, gensP = [];
+  for (let i = 0; i < N; i++) { const p0 = i === 0 ? [-2, 16] : tirer(); if (!p0) continue; gensP.push({ x: p0[0], z: p0[1], k: [3, 8, 13, 6][i] % NP, v: 2.4 + Math.random() * .8, cible: null, attente: 0, ph: Math.random() * 6, s: .95 + Math.random() * .1, dx: 0, dz: 1, victime: i === 0, a: 0 }); }
+  const VIC = gensP[0], perVic = { x: 0, z: 0, y: 0, r: 0, hx: .02, hz: .02, occ: 0, cap: 1 }; if (VIC) { L.victimeKF = VIC; (L.perchesKF = L.perchesKF || []).unshift(perVic); }
   const n = gensP.length, gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8), iF = [];
   for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
   gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
@@ -17457,10 +17477,13 @@ function passantsHiver(scene, L, obst) {
   L.passants = gensP;
   return (dt, t) => { const cam = M && M.camera; if (!cam) return;
     for (let i = 0; i < n; i++) { const q = gensP[i]; let marche = false;
-      if (q.attente > 0) q.attente -= dt;
+      if (q.victime) { // il tourne en rond, affolé, un gremlin sur le dos
+        q.a += dt * q.v / 1.8 * (1 + .4 * Math.sin(t / 700)); const nx = -2 + Math.cos(q.a) * 1.8, nz = 16 + Math.sin(q.a) * 1.8; q.dx = nx - q.x; q.dz = nz - q.z; const l = Math.hypot(q.dx, q.dz) || 1; q.dx /= l; q.dz /= l; q.x = nx; q.z = nz; marche = true;
+        Object.assign(perVic, { x: q.x - q.dx * .12, z: q.z - q.dz * .12, y: (L.hauteur ? L.hauteur(q.x, q.z) : 0) + 1.25 * q.s, r: Math.atan2(q.dx, q.dz) }); }
+      else if (q.attente > 0) q.attente -= dt;
       else if (!q.cible) { for (let k = 0; k < 12; k++) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 3 && droit(q.x, q.z, c[0], c[1])) { q.cible = c; break; } } if (!q.cible) q.attente = .5; }
       else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
-        if (l < .2) { q.cible = null; q.attente = 1 + Math.random() * 5; }
+        if (l < .2) { q.cible = null; q.attente = .1; }
         else { let ux = ddx / l, uz = ddz / l;
           // on s'écarte un peu de celui qui arrive en face (et du joueur)
           for (const o of gensP) if (o !== q) { const ox = o.x - q.x, oz = o.z - q.z, d = Math.hypot(ox, oz); if (d < .9 && d > .01) { ux -= ox / d * .5; uz -= oz / d * .5; } }
@@ -17552,7 +17575,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   for (const [a, b] of [[[-14.6, 10.6], [-7, 10.9]], [[7, 10.9], [14.6, 10.6]], [[14.6, 10.6], [14.8, -2]], [[14.8, -2], [14.6, -14.9]], [[-14.6, 10.6], [-14.8, -2]], [[-14.8, -2], [-14.6, -14.9]], [[-14.6, -14.9], [-5.5, -15.2]], [[5.5, -15.2], [14.6, -14.9]]]) cable(a[0], a[1], y0 + 3.7, b[0], b[1], y0 + 3.7, .55);
   // ---- les modèles 3D (Sketchfab, CC-BY : feu tricolore par Sylvain Delandre, bouche d'incendie par albacaizaresalvrz, Simca 1000 et Volkswagen 1303 par
   //      Configcars / maxipub ; CC-BY-NC-SA : « Mon beau sapin » par koafranck), allégés ; chacun chargé une fois, posé en instances ----
-  const chargerKF = f => (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/" + f + ".glb?v=1");
+  const kfCache = {}, chargerKF = f => kfCache[f] || (kfCache[f] = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/" + f + ".glb?v=1");
     g.scene.updateMatrixWorld(true); const parMat = new Map();
     g.scene.traverse(o => { if (!o.isMesh) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!parMat.has(m)) parMat.set(m, []);
       // (les pièces répétées — les segments d'un mât… — sont des instances : une copie par instance)
@@ -17564,7 +17587,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (m.transparent && m.opacity > .9) { m.transparent = false; m.alphaTest = .5; } return [r, m]; });
     const bb = new THREE.Box3(); for (const [q] of parts) { q.computeBoundingBox(); bb.union(q.boundingBox); }
     const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2; for (const [q] of parts) { q.translate(-cx, -bb.min.y, -cz); q.computeBoundingBox(); q.computeBoundingSphere(); }
-    const t = bb.getSize(new THREE.Vector3()); return { parts, t }; })();
+    const t = bb.getSize(new THREE.Vector3()); return { parts, t }; })());
   const mt4 = (x, y, z, ry, sx, sy = sx, sz = sx, rx = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, "YXZ")), new THREE.Vector3(sx, sy, sz));
   const poser = (parts, mats, ombre = true, matDe = m => m) => parts.map(([g, m]) => { const im = new THREE.InstancedMesh(g, matDe(m), mats.length); mats.forEach((q, i) => im.setMatrixAt(i, q)); im.castShadow = ombre; im.receiveShadow = true; scene.add(im); return im; });
   // la neige poudrée sur les aiguilles : tout ce qui regarde le ciel blanchit (dans le shader, d'après la normale)
@@ -17693,6 +17716,85 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     chargerKF("antenne").then(({ parts, t }) => { const k = Math.min(TOUR.x1 - TOUR.x0, TOUR.z1 - TOUR.z0) / Math.max(t.x, t.z); poser(parts, [mt4(cx, y0, cz, 0, k)]);
       const feu = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: 0xff2010, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false }));
       feu.scale.set(1.6, 1.6, 1); feu.position.set(cx, y0 + t.y * k + .3, cz); scene.add(feu); L.feuTour = feu; }).catch(e => console.warn("tour", e)); }
+  // ---- dans le bar (Dorry's Tavern), lumières éteintes : la guirlande électrique au-dessus du comptoir, les couronnes de sapin aux murs, le sapin éteint dans le coin ----
+  if (L.salleLou) { const V = L.salleLou.vers, [ax, az] = V(0, 0), [bx, bz] = V(1, 0), rl = Math.atan2(bz - az, bx - ax);   // (rl : l'angle de l'axe x de la salle dans le monde)
+    const yb = L.salleLou.H ? .125 : .125, ampB = [];
+    for (let i = 0; i <= 40; i++) { const u = i / 40, bzz = -2.3 - u * 8.6, f = (u * 9) % 1; const [x, z] = V(.55, bzz); ampB.push([x, yb + 2.3 - Math.sin(f * Math.PI) * .22, z, couleurs[i % couleurs.length]]); }
+    { const g = new THREE.SphereGeometry(.045, 8, 6), mt = new THREE.Matrix4(); couleurs.forEach((c, ci) => { const l = ampB.filter(a => a[3] === c); if (!l.length) return;
+        const im = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: c, toneMapped: false }), l.length); l.forEach(([x, y, z], i) => im.setMatrixAt(i, mt.makeTranslation(x, y, z))); scene.add(im); (L.guirlandesBar = L.guirlandesBar || []).push(im); });
+      const [lx, lz] = V(.5, -6.5), lb = new THREE.PointLight(0xff9a60, 2.2, 7, 1.6); lb.position.set(lx, yb + 2.1, lz); scene.add(lb); }
+    // les couronnes : un anneau d'aiguilles, des baies rouges, le nœud rouge
+    const couronne = (ox, oz, oy, ry) => { const [x, z] = V(ox, oz), g = new THREE.Group(); g.position.set(x, yb + oy, z); g.rotation.y = rl * -1 + ry; scene.add(g);
+      const vertC = new THREE.MeshStandardMaterial({ color: 0x1f4a26, roughness: .9 }), an = new THREE.Mesh(new THREE.TorusGeometry(.26, .09, 8, 20), vertC); g.add(an);
+      const ai = new THREE.InstancedMesh(new THREE.ConeGeometry(.03, .14, 4), vertC, 70), m = new THREE.Matrix4(); for (let i = 0; i < 70; i++) { const a = i / 70 * Math.PI * 2 * 3, r = .26 + (Math.random() - .5) * .14;
+        m.compose(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, (Math.random() - .3) * .1), new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.random() * 3, Math.random() * 3, a)), new THREE.Vector3(1, 1, 1)); ai.setMatrixAt(i, m); } g.add(ai);
+      const rouge = new THREE.MeshStandardMaterial({ color: 0xb01020, roughness: .4 }); for (let i = 0; i < 9; i++) { const a = i / 9 * 6.28 + .3, b = new THREE.Mesh(new THREE.SphereGeometry(.028, 6, 5), rouge); b.position.set(Math.cos(a) * .27, Math.sin(a) * .27, .08); g.add(b); }
+      for (const s of [-1, 1]) { const n = new THREE.Mesh(new THREE.ConeGeometry(.08, .16, 4), rouge); n.rotation.z = s * Math.PI / 2; n.position.set(s * .08, -.27, .1); g.add(n); const r = new THREE.Mesh(new THREE.BoxGeometry(.04, .2, .02), rouge); r.position.set(s * .05, -.4, .1); r.rotation.z = s * .3; g.add(r); } };
+    for (const oz of [-3, -6, -9.5, -13]) couronne(-4.05, oz, 2.05, Math.PI / 2);   // (le long mur, face au comptoir)
+    couronne(-2.2, -14.85, 2.0, 0); couronne(2.2, -14.85, 2.0, 0);   // (le mur du fond)
+    // le sapin éteint, dans le coin de la salle au tapis vert : ses boules, sa guirlande d'ampoules éteintes, sans étoile allumée
+    { const [x, z] = V(-3.2, -13.8); chargerKF("sapin").then(({ parts, t }) => { const H = 2.4, k = H / t.y; poser(parts, [mt4(x, yb, z, .4, k * .85, k, k * .85)]);
+        const R = t.x / 2 * k * .85, mt = new THREE.Matrix4(), bo = new THREE.InstancedMesh(new THREE.SphereGeometry(.055, 10, 8), new THREE.MeshStandardMaterial({ color: 0xa01828, metalness: .6, roughness: .25 }), 26),
+          am = new THREE.InstancedMesh(new THREE.SphereGeometry(.025, 6, 5), new THREE.MeshStandardMaterial({ color: 0x3a3a30, roughness: .3 }), 60);
+        for (let i = 0; i < 26; i++) { const u = .12 + Math.random() * .75, a = Math.random() * 6.28, r = R * (1 - u) * .95; bo.setMatrixAt(i, mt.makeTranslation(x + Math.cos(a) * r, yb + H * u - .05, z + Math.sin(a) * r)); }
+        for (let i = 0; i < 60; i++) { const u = .1 + i / 60 * .8, a = u * 5 * 6.28, r = R * (1 - u) * 1.0 + .03; am.setMatrixAt(i, mt.makeTranslation(x + Math.cos(a) * r, yb + H * u, z + Math.sin(a) * r)); }
+        scene.add(bo, am); }).catch(e => console.warn("sapin du bar", e)); } }
+  // ---- la chorale : six gremlins en arc de cercle devant la maison (le trottoir sud, devant l'agence) ; des bonnets de laine à pompon, des écharpes ----
+  { const tricot = c => new THREE.MeshStandardMaterial({ color: c, roughness: .95 }), S = .78;
+    const BON = [[0xc81e24, 0xffffff], null, [0x1d6a2a, 0xf2e8d0], [0x2a4aa8, 0xffffff], [0xd8a020, 0xc81e24], [0xc81e24, 0x1d6a2a]], ECH = [null, 0x1d6a2a, 0xc81e24, 0xf2e8d0, null, 0x2a4aa8];
+    for (let k = 0; k < 6; k++) { const x = 10.6 + k * .56, z = 21.75 + Math.abs(k - 2.5) * .16, g = new THREE.Group(); g.position.set(x, (L.hauteur ? L.hauteur(x, z) : y0), z); g.rotation.y = (k - 2.5) * -.06; g.scale.setScalar(S); scene.add(g);
+      if (BON[k]) { const [c1, c2] = BON[k], d = new THREE.Mesh(new THREE.SphereGeometry(.105, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), tricot(c1)); d.position.set(0, .8, -.01); d.scale.set(1, 1.15, 1); g.add(d);
+        const rb = new THREE.Mesh(new THREE.TorusGeometry(.102, .028, 8, 18), tricot(c2)); rb.rotation.x = Math.PI / 2; rb.position.set(0, .805, -.01); g.add(rb);
+        const pp = new THREE.Mesh(new THREE.SphereGeometry(.04, 10, 8), tricot(c2)); pp.position.set(0, .93, -.01); g.add(pp); }
+      if (ECH[k] != null) { const e = new THREE.Mesh(new THREE.TorusGeometry(.085, .032, 8, 18), tricot(ECH[k])); e.rotation.x = Math.PI / 2; e.position.set(0, .63, .0); g.add(e);
+        const pan = new THREE.Mesh(new THREE.BoxGeometry(.06, .2, .025), tricot(ECH[k])); pan.position.set(.04, .53, .08); pan.rotation.z = .15; g.add(pan); } } }
+  // ---- l'accident : une Coccinelle repeinte, encastrée dans la vitrine du fleuriste, qui brûle ; le verre brisé sur le trottoir ----
+  { const X = -25.95, Z = 7.7, R = -Math.PI / 2 + .28, dx = Math.sin(R), dz = Math.cos(R);
+    for (const k of [-1, 0, 1]) obst.push([X + dx * k * 1.3, Z + dz * k * 1.3, 1.0]);
+    chargerKF("coccinelle").then(({ parts, t }) => { const s = 4.07 / t.z;
+      poser(parts, [mt4(X, y0 + .02, Z, R, s, s, s, -.05, .04)], true, m => { if (m.name !== "base") return m; const m2 = m.clone(); m2.color.setHex(0xe0a020); return m2; }); }).catch(e => console.warn("accident", e));
+    // les flammes : des taches de feu qui dansent sur le capot et dans la vitrine ; la fumée noire qui monte
+    const flamT = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 60); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(.25, "rgba(255,190,60,.95)"); g.addColorStop(.6, "rgba(255,80,10,.6)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 110); x.quadraticCurveTo(32, 128, 12, 110); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
+    const fumT = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, "rgba(40,36,34,.7)"); g.addColorStop(1, "rgba(40,36,34,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+    const fl = [], fu = [], cxF = X + dx * 1.15, czF = Z + dz * 1.15;
+    for (let i = 0; i < 16; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flamT, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); scene.add(sp);
+      fl.push({ sp, ox: (Math.random() - .5) * 1.4, oz: (Math.random() - .5) * 1.2, ph: Math.random() * 6, h: .5 + Math.random() * .7 }); }
+    for (let i = 0; i < 12; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fumT, depthWrite: false, transparent: true, opacity: .55 })); scene.add(sp); fu.push({ sp, t0: Math.random() * 4, ox: (Math.random() - .5) * .8 }); }
+    const lf = new THREE.PointLight(0xff7a20, 16, 14, 1.4); lf.position.set(cxF, y0 + 1.8, czF); scene.add(lf);
+    const verre = new THREE.InstancedMesh(new THREE.PlaneGeometry(.12, .08), new THREE.MeshStandardMaterial({ color: 0xcfe0ee, metalness: .8, roughness: .1, transparent: true, opacity: .7, side: THREE.DoubleSide }), 60), mv = new THREE.Matrix4();
+    for (let i = 0; i < 60; i++) { const a = Math.random() * 6.28, r = Math.random() * 2.2; mv.compose(new THREE.Vector3(X + dx * 1.6 + Math.cos(a) * r * .6 + 1, y0 + .01, Z + Math.sin(a) * r), new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, Math.random() * 6)), new THREE.Vector3(.5 + Math.random(), .5 + Math.random(), 1)); verre.setMatrixAt(i, mv); } scene.add(verre);
+    L.feuAccident = (t) => { const T = t / 1000; lf.intensity = 13 + 5 * Math.sin(T * 17) + 3 * Math.sin(T * 31);
+      for (const f of fl) { const k = .7 + .3 * Math.sin(T * 9 + f.ph * 3); f.sp.position.set(cxF + f.ox * .7, y0 + 1.15 + f.h * k * .5, czF + f.oz * .6); f.sp.scale.set(.55 * k + .2, f.h * 1.4 * k + .3, 1); }
+      for (const f of fu) { const u = ((T * .35 + f.t0) % 4) / 4; f.sp.position.set(cxF + f.ox + u * 1.5, y0 + 1.8 + u * 7, czF + u * .8); f.sp.scale.setScalar(.8 + u * 3.5); f.sp.material.opacity = .55 * (1 - u); } }; }
+  // ---- le carnage : les poubelles renversées, les sacs éventrés, les cartons, les canettes, les papiers ; et les journaux que le vent emporte ----
+  { const metal = new THREE.MeshStandardMaterial({ color: 0x8a8e92, metalness: .7, roughness: .45 }), sacM = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: .35, metalness: .1 }),
+      carton = new THREE.MeshStandardMaterial({ color: 0xa8845a, roughness: .9 }), canM = new THREE.MeshStandardMaterial({ color: 0xc81e24, metalness: .7, roughness: .3 }), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+    const placer = (n, test) => { const r = []; for (let k = 0; r.length < n && k < n * 40; k++) { const x = -26.5 + Math.random() * 53, z = -15 + Math.random() * 38; if (L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)) && (!test || test(x, z))) r.push([x, z]); } return r; };
+    const lot = (geo, mat, pts, f) => { const im = new THREE.InstancedMesh(geo, mat, pts.length); pts.forEach((p, i) => { f(p, i); im.setMatrixAt(i, mt); }); im.castShadow = true; im.receiveShadow = true; scene.add(im); return im; };
+    const trottoir = (x, z) => Math.abs(x) > 24.6 || z > 20.6 || (Math.abs(x) < 15.6 && z > -15.6 && z < 11.6);
+    const pb = placer(12, trottoir); lot(new THREE.CylinderGeometry(.3, .26, .85, 14, 1, true), metal, pb, ([x, z]) => { e.set(Math.PI / 2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, y0 + .3, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); });
+    pb.forEach(([x, z]) => obst.push([x, z, .5]));
+    lot(new THREE.CylinderGeometry(.32, .32, .05, 14), metal, placer(8, trottoir), ([x, z]) => { e.set(Math.random() * .4 + 1.2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, y0 + .15, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); });   // (les couvercles)
+    lot(blob(2, .3), sacM, placer(22), ([x, z]) => { e.set(0, Math.random() * 6, 0); mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + .15, z), q.setFromEuler(e), new THREE.Vector3(.32 + Math.random() * .1, .2, .26)); });
+    lot(new THREE.BoxGeometry(1, 1, 1), carton, placer(18), ([x, z]) => { e.set(Math.random() * .5, Math.random() * 6, Math.random() * .5); const s = .25 + Math.random() * .3; mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + s * .35, z), q.setFromEuler(e), new THREE.Vector3(s, s * .7, s * .8)); });
+    lot(new THREE.CylinderGeometry(.033, .033, .12, 8), canM, placer(50), ([x, z]) => { e.set(Math.PI / 2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + .035, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); });
+    // les journaux : une page imprimée (le titre, les colonnes), qui glisse au ras du sol, se soulève dans les rafales, retombe, tournoie
+    const jT = tex(toile(256, 180, (x) => { x.fillStyle = "#e4dfd2"; x.fillRect(0, 0, 256, 180); x.fillStyle = "#1a1a1a"; x.font = "bold 22px Georgia, serif"; x.textAlign = "center"; x.fillText("KINGSTON FALLS", 128, 26); x.fillRect(10, 32, 236, 2);
+      x.font = "bold 15px Georgia, serif"; x.fillText("STRANGE CREATURES SEEN IN TOWN", 128, 52); x.fillStyle = "#555"; for (let c = 0; c < 4; c++) for (let l = 0; l < 14; l++) x.fillRect(12 + c * 59, 64 + l * 8, 50 - (l % 5 === 4 ? 20 : 0), 3); x.fillStyle = "#888"; x.fillRect(130, 64, 110, 50); }));
+    const jM = new THREE.MeshStandardMaterial({ map: jT, side: THREE.DoubleSide, roughness: .95 }), NJ = 26, jo = [];
+    const jG = new THREE.PlaneGeometry(.56, .4, 4, 1); { const P = jG.attributes.position; for (let i = 0; i < P.count; i++) P.setZ(i, Math.sin((P.getX(i) / .56 + .5) * Math.PI) * .05); jG.computeVertexNormals(); }
+    const jI = new THREE.InstancedMesh(jG, jM, NJ); jI.frustumCulled = false; scene.add(jI);
+    for (let i = 0; i < NJ; i++) { const p = placer(1)[0] || [0, 10]; jo.push({ x: p[0], z: p[1], y: 0, vy: 0, rx: -Math.PI / 2, ry: Math.random() * 6, rz: 0, ph: Math.random() * 9 }); }
+    const vent = { x: 1, z: .35 };
+    L.journaux = (dt, t) => { const T = t / 1000, raf = Math.max(0, Math.sin(T * .7) * Math.sin(T * .23 + 1)) * 2.2;   // (le vent : des rafales)
+      for (let i = 0; i < NJ; i++) { const j = jo[i], loc = .4 + .6 * Math.max(0, Math.sin(T * 1.3 + j.ph)), v = (.6 + raf * 1.6) * loc, sol = L.hauteur ? L.hauteur(j.x, j.z) : 0;
+        j.x += vent.x * v * dt; j.z += (vent.z + Math.sin(T * .9 + j.ph) * .5) * v * dt;
+        if (raf * loc > 1.1 && j.y < .05 && Math.random() < dt * 2) j.vy = 1.2 + Math.random() * 1.5;   // (une rafale la soulève)
+        j.vy -= 2.2 * dt; j.y = Math.max(0, j.y + j.vy * dt); if (j.y === 0) j.vy = 0;
+        const vol = Math.min(1, j.y * 2); j.rx = -Math.PI / 2 + vol * Math.sin(T * 4 + j.ph) * 1.4; j.rz = vol * Math.sin(T * 3.1 + j.ph * 2) * 1.2; j.ry += dt * (.3 + vol * 3) * (i % 2 ? 1 : -1);
+        if (j.x > 27 || Math.abs(j.z - 4) > 20) { const p = placer(1, (x) => x < -12)[0]; if (p) { j.x = p[0]; j.z = p[1]; j.y = 0; } }
+        e.set(j.rx, j.ry, j.rz, "YXZ"); mt.compose(new THREE.Vector3(j.x, sol + .02 + j.y, j.z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); jI.setMatrixAt(i, mt); }
+      jI.instanceMatrix.needsUpdate = true; }; }
   scene.add(new THREE.AmbientLight(0x8090c0, .2)); scene.fog = new THREE.Fog(0x1a2132, 22, 95);
   // les réverbères allumés : les globes brillent, quelques-uns éclairent vraiment la neige autour d'eux
   scene.traverse(o => { if (o.isMesh && o.material && o.material.emissive && [0xfff0c8, 0xfff2d0].includes(o.material.emissive.getHex())) o.material.emissiveIntensity = 2.4; });
@@ -17728,6 +17830,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
     if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
     if (L.feuTour) L.feuTour.visible = (t % 1600) < 700;
+    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t);
+    (L.guirlandesBar || []).forEach((im, k) => { im.material.color.setHex(couleurs[k % couleurs.length]).multiplyScalar(.5 + .5 * (Math.sin(t / 300 + k * 2.3) > 0 ? 1 : .3)); });
     // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
     for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
 }
