@@ -17501,7 +17501,7 @@ const IMMEUBLES_HV = {
       B.cyl(.5, .5, .15, 0, 11.4, -.05, "#2a2a2a", { rx: Math.PI / 2, seg: 24 }); B.plan(.9, .9, 0, 11.4, .03, new THREE.MeshStandardMaterial({ map: texHV(h), transparent: true, alphaTest: .5 }));
       const fr = new THREE.Shape(); fr.moveTo(-1.6, 0); fr.lineTo(1.6, 0); fr.lineTo(0, 1.6); fr.closePath(); B.boite(0, 0, 0, 0, 10.7, -.3, "#e2dccc", { geo: new THREE.ExtrudeGeometry(fr, { depth: .3, bevelEnabled: false }) }); } },
   // Lou's Cafe : l'immeuble crème et ses bandes bleues, les grandes baies, l'auvent bleu et blanc, l'enseigne lumineuse
-  loucafe: { larg: 9, corps: 7.4, creux: true, interieur: () => interieurLouHV(), f: (B) => { const X0 = -4.5, X1 = 4.5;
+  loucafe: { larg: 9, corps: 7.4, creux: true, interieur: () => window.CASERNE_GREMLINS ? interieurBarKF() : interieurLouHV(), f: (B) => { const X0 = -4.5, X1 = 4.5;
       B.mur(X0, X1, 0, 3.6, "carreau", "#f0ead8", { saillie: .1, carreau: .3, joint: "#c8c0a8" }); B.mur(X0, X1, 3.6, 7.4, "brique", "#a0583a");
       B.vitrine(-4.2, -.75, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Breakfast · Lunch", imposte: false, montants: 1, prof: .46 }); B.vitrine(.75, 4.2, .12, 3.0, { z: .1, cadre: "#c9ccd0", bas: "#1d4f8a", claire: true, lettres: "Sodas · Malts", imposte: false, montants: 1, prof: .46 });
       B.trou(-.62, .62, 0, 2.66, .46, { z: .1, tableau: "#c9ccd0" }); for (const s of [-1, 1]) B.boite(.08, 2.7, .08, s * .66, 1.35, .14, "#1d4f8a"); B.boite(1.4, .08, .08, 0, 2.7, .14, "#1d4f8a");   // (la porte grande ouverte)
@@ -17636,7 +17636,7 @@ const IMMEUBLES_HV = {
 // construit un immeuble à sa place : cx, cz le milieu de la façade au sol, r l'orientation (la façade regarde vers +z local)
 function immeubleHV(scene, nom, cx, cz, r) { const D = IMMEUBLES_HV[nom]; alHV = 7 + nom.length * 131 + nom.charCodeAt(0);
   const B = chantierHV(D.larg); D.f(B); const g = B.finir(); g.position.set(cx, 0, cz); g.rotation.y = r; scene.add(g);
-  const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; if (D.creux) { const I = D.interieur(); g.add(I.g); g.userData.obstInt = I.obst; g.userData.interieur = LOU;
+  const mc = matHV(D.coulCorps || "#9a6a50", .95), mt = matHV("#5a5650", 1); const R = 1.75; if (D.creux) { const I = D.interieur(); g.add(I.g); g.userData.obstInt = I.obst; g.userData.interieur = LOU; g.userData.obstAsync = I.obstAsync;
     const haut = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, D.corps - LOU.H - .02, 9 + LOU.Z1), [mc, mc, mt, mt, mc, mc]); haut.position.set(0, (D.corps + LOU.H + .02) / 2, LOU.Z1 - (9 + LOU.Z1) / 2); haut.castShadow = true; g.add(haut);
     const fond = new THREE.Mesh(new THREE.BoxGeometry(D.larg - .06, LOU.H + .02, .1), mc); fond.position.set(0, LOU.H / 2, LOU.Z0 - .62); g.add(fond); }
   else for (const [a, b2, hc] of D.zones || [[-D.larg / 2, D.larg / 2, D.corps]]) { const w = b2 - a - .06, xm = (a + b2) / 2;
@@ -17927,6 +17927,39 @@ function creerPickupFord(o = {}) {
   for (const [x, s] of [[RAV, 1], [RAV, -1], [RAR, 1], [RAR, -1]]) { m(new THREE.CylinderGeometry(RR, RR, .24, 32), [mPn, mFl, mFl], x, RR, s * .8, Math.PI / 2, 0, 0);
     const enj = m(new THREE.SphereGeometry(.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 3), chrome, x, RR, s * .87, s * Math.PI / 2, 0, 0); enj.scale.set(1, .45, 1); }
   return g; }
+
+/* Kingston Falls : la salle de Lou's Cafe vidée, et à sa place le vieux bar (Sketchfab, « Old bar » par katydid) — tout le bar, plus profond que la salle de Lou :
+   il s'enfonce derrière la façade ; on y entre et on en sort par la même porte (percée dans le mur du modèle) */
+function interieurBarKF() { const S = .85, MX = 7.57;   // (l'échelle ; en x, le mur du modèle qui vient contre la façade)
+  Object.assign(LOU, { X0: -4.3, X1: 4.3, Z0: -15.1, Z1: -.36, H: 3.3, kf: true });
+  const g = new THREE.Group(), att = []; let pret = null;
+  // l'enveloppe, dehors : les murs et le toit de la partie qui dépasse derrière l'immeuble
+  { const brique = new THREE.MeshStandardMaterial({ color: 0x7a4430, roughness: .95 }), z0 = -9, z1 = LOU.Z0 - .7;
+    for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.2, LOU.H + .3, z0 - z1), brique); m.position.set(sx * 4.45, (LOU.H + .3) / 2, (z0 + z1) / 2); g.add(m); }
+    const t = new THREE.Mesh(new THREE.BoxGeometry(9.1, .25, z0 - z1), brique); t.position.set(0, LOU.H + .25, (z0 + z1) / 2); g.add(t); }
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/bar.glb?v=1"), sc = G.scene;
+    sc.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(sc), c = bb.getCenter(new THREE.Vector3());
+    // la porte : on retire du modèle ce qui bouche l'entrée (le mur côté façade, au milieu, à hauteur d'homme)
+    const v = new THREE.Vector3(), inv = new THREE.Matrix4();
+    sc.traverse(o => { if (!o.isMesh) return; let ge = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); const P = ge.attributes.position, garde = [];
+      for (let t = 0; t < P.count; t += 3) { let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { v.fromBufferAttribute(P, t + k).applyMatrix4(o.matrixWorld); x += v.x / 3; y += v.y / 3; z += v.z / 3; }
+        if (!(Math.abs(x - c.x - MX) < .45 && Math.abs(z - c.z) < .78 / S && y - bb.min.y < 2.6 / S)) garde.push(t); }
+      if (garde.length < P.count / 3) { const r = new THREE.BufferGeometry(); for (const k of Object.keys(ge.attributes)) { const a = ge.attributes[k], d = a.itemSize, src = a.array, dst = new src.constructor(garde.length * 3 * d); garde.forEach((t, j) => dst.set(src.subarray(t * d, (t + 3) * d), j * 3 * d)); r.setAttribute(k, new THREE.BufferAttribute(dst, d)); } ge = r; }
+      o.geometry = ge;
+      // la salle s'éclaire elle-même (une lumière chaude de vieux bar), sans multiplier les lampes
+      for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .32; m.needsUpdate = true; } });
+    const w = new THREE.Group(), inner = new THREE.Group(); inner.add(sc); sc.position.set(-c.x, -bb.min.y, -c.z); w.add(inner);
+    w.rotation.y = -Math.PI / 2; w.scale.setScalar(S); w.position.set(0, LOU.Y, -MX * S - .45); g.add(w);
+    { const l = new THREE.PointLight(0xffc890, 8, 12, 1.4); l.position.set(0, LOU.H - .5, -6); g.add(l); }
+    // les obstacles : tout ce qui se dresse entre les genoux et la poitrine (comptoir, tables, tabourets, murs), relevé sur une grille de 30 cm
+    g.updateWorldMatrix(true, true); inv.copy(g.matrixWorld).invert(); const C = .3, occ = new Set(), m4 = new THREE.Matrix4(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
+    sc.traverse(o => { if (!o.isMesh) return; m4.multiplyMatrices(inv, o.matrixWorld); const P = o.geometry.attributes.position;
+      for (let t = 0; t < P.count; t += 3) { a.fromBufferAttribute(P, t).applyMatrix4(m4); b.fromBufferAttribute(P, t + 1).applyMatrix4(m4); d.fromBufferAttribute(P, t + 2).applyMatrix4(m4);
+        const n = Math.min(40, Math.ceil(Math.max(a.distanceTo(b), b.distanceTo(d), d.distanceTo(a)) / .2));
+        for (let i = 0; i <= n; i++) for (let j = 0; j <= n - i; j++) { const u = i / n, w2 = j / n, x = a.x + (b.x - a.x) * u + (d.x - a.x) * w2, y = a.y + (b.y - a.y) * u + (d.y - a.y) * w2, z = a.z + (b.z - a.z) * u + (d.z - a.z) * w2;
+          if (y > LOU.Y + .3 && y < LOU.Y + 1.4 && !(Math.abs(x) < .8 && z > -1.3)) occ.add(Math.round(x / C) + "," + Math.round(z / C)); } } });
+    pret = [...occ].map(k => { const [i, j] = k.split(",").map(Number); return [i * C, j * C, .2]; }); att.forEach(f => f(pret)); })().catch(e => console.warn("bar", e));
+  return { g, obst: [], kf: true, obstAsync: f => pret ? f(pret) : att.push(f) }; }
 
 /* ===================== Lou's Cafe, 1955 : la salle, ouverte (on y entre par la porte) =====================
    Repère de la façade : la vitrine en z = 0 (la rue vers +z), la salle vers −z, x en travers (la porte en x = 0), le sol à y = 0,125. */
@@ -18220,7 +18253,7 @@ function construireHillValley(A, T, L, scene) {
   for (const [x, z] of [[-14.6, 10.6], [14.6, 10.6], [-14.6, -14.9], [14.6, -14.9], [-14.8, -2], [14.8, -2], [-7, 10.9], [7, 10.9], [-5.5, -15.2], [5.5, -15.2], [-25.4, 2], [25.4, 12], [-25.4, -14], [25.4, -14], [-25.4, 16], [-18, 21.5], [-6, 21.5], [6, 21.5], [18, 21.5]]) reverbere(x, z);
   // les bouches d'incendie jaunes au bord du trottoir
   { const jaune = A.mat({ color: 0xe8b01c, roughness: .45, metalness: .2 }), corps = new THREE.LatheGeometry([[0, 0], [.17, 0], [.17, .06], [.13, .1], [.12, .1], [.12, .5], [.15, .52], [.15, .58], [.13, .6], [.13, .64], [.1, .72], [.05, .78], [.04, .84], [0, .86]].map(([r, y]) => new THREE.Vector2(r, y)), 18);
-    for (const [x, z] of [[-15, 21.3], [8.8, 21.3], [15, 21.3], [-25.3, -6], [-25.3, 9.5], [25.3, -12], [25.3, 15]]) { const g = new THREE.Group(); g.position.set(x, trottoirH, z); scene.add(g);
+    for (const [x, z] of [[-15, 21.3], [8.8, 21.3], [15, 21.3], [-25.3, -6], [-25.3, 9.5], [25.3, -12], [25.3, 15]]) { const g = new THREE.Group(); g.position.set(x, trottoirH, z); scene.add(g); (L.bouchesHV = L.bouchesHV || []).push(g);
       const c = new THREE.Mesh(corps, jaune); c.castShadow = true; g.add(c);
       for (const a of [0, Math.PI]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.055, .065, .14, 10), jaune); b.rotation.z = Math.PI / 2; b.position.set(Math.cos(a) * .17, .42, Math.sin(a) * .17); b.rotation.y = a; g.add(b); const e = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .03, 6), jaune); e.rotation.z = Math.PI / 2; e.position.set(Math.cos(a) * .25, .42, 0); g.add(e); }
       const f = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, .16, 10), jaune); f.rotation.x = Math.PI / 2; f.position.set(0, .4, .17); g.add(f); obst.push([x, z, .35]); } }
@@ -18247,7 +18280,8 @@ function construireHillValley(A, T, L, scene) {
       for (const [ox, oz, orr] of [...(IMMEUBLES_HV[nom].obst || []), ...(g.userData.obstInt || [])]) obst.push([...vers(ox, oz), orr]);
       if (g.userData.interieur) { const I = g.userData.interieur, a = vers(I.X0, I.Z0), b = vers(I.X1, I.Z1), c = vers(-.55, I.Z1 + .1), d = vers(.55, .6);
         L.salleLou = { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), z0: Math.min(a[1], b[1]), z1: Math.max(a[1], b[1]), px0: Math.min(c[0], d[0]), px1: Math.max(c[0], d[0]), pz0: Math.min(c[1], d[1]), pz1: Math.max(c[1], d[1]), vers };
-        for (let k = 0; k <= 12; k++) obst.push([...vers(-2.1, -1.85 - k * .5), .42]); }
+        if (I.kf) g.userData.obstAsync(l => l.forEach(([ox, oz, orr]) => obst.push([...vers(ox, oz), orr])));   // (Kingston Falls : le vieux bar, ses obstacles une fois le modèle chargé)
+        else for (let k = 0; k <= 12; k++) obst.push([...vers(-2.1, -1.85 - k * .5), .42]); }
       x += l; } };
   rangee(["barber", "stationers", "cinema", "zales", "realty", "travel"], -32.05, 23.5, Math.PI, "x");   // au sud (face au palais)
   rangee(["banque", "loucafe", "ruth", "florist", "hardware"], -24, -27.5, Math.PI / 2, "z");   // à l'ouest
@@ -18258,7 +18292,7 @@ function construireHillValley(A, T, L, scene) {
   // ---- les Chevrolet Bel Air 1957, garées le long des trottoirs : la rouge et la jaune à hard-top blanc, et le cabriolet noir de Biff et sa bande ----
   const garer = (o, x, z, r) => { const v = creerBelAir({ ...o, rendu: M && M.rendu }); v.position.set(x, 0, z); v.rotation.y = r; scene.add(v);
     for (const k of [-1.8, 0, 1.8]) obst.push([x + Math.cos(r) * k, z - Math.sin(r) * k, 1.05]); return v; };
-  garer({}, -12, 20.15, 0); garer({ couleur: "#e3b21a" }, -23.95, 4, -Math.PI / 2);
+  L.belAirGarees = [garer({}, -12, 20.15, 0), garer({ couleur: "#e3b21a" }, -23.95, 4, -Math.PI / 2)];
   // le pick-up Ford rouge de la station Texaco, garé en long sur le trottoir, devant la porte verte du garage
   { const v = creerPickupFord({ rendu: M && M.rendu }), x = 26.15, z = .55, r = Math.PI / 2; v.position.set(x, trottoirH, z); v.rotation.y = r; scene.add(v); L.pickup = v;
     for (const k of [-1.7, 0, 1.7]) obst.push([x + Math.cos(r) * k, z - Math.sin(r) * k, 1.0]); }
@@ -18356,7 +18390,7 @@ function gremlinsHV(scene, L) {
     const g = await new gltfMod.GLTFLoader().loadAsync("avatars/gremlins/" + T.f + ".glb?v=1"), parts = preparer(g.scene, T);
     const debut = gr.length, n = T.n;
     for (let i = 0; i < n; i++) { const p0 = tirer(); if (!p0) continue;
-      gr.push({ T, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: .62 + Math.random() * .22, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
+      gr.push({ T, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: .62 + Math.random() * .22, grimpeur: !T.roule && T.f !== "pelado" && Math.random() < .5, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
     const nb = gr.length - debut, aPas = new THREE.InstancedBufferAttribute(new Float32Array(nb * 2), 2); aPas.setUsage(THREE.DynamicDrawUsage);
     const ims = parts.map(([geo, m]) => { geo.setAttribute("aPas", aPas); const im = new THREE.InstancedMesh(geo, T.roule ? m : animer(m, T), nb); im.frustumCulled = false; scene.add(im); return im; });
     troupes.push({ T, debut, nb, ims, aPas }); gO.setDrawRange(0, gr.length * 6); };
@@ -18364,7 +18398,17 @@ function gremlinsHV(scene, L) {
   const mat = new THREE.Matrix4(), qt = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, "YXZ"), pos = new THREE.Vector3(), ech = new THREE.Vector3();
   return (dt, t) => {
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false;
-      if (q.attente > 0) q.attente -= dt;
+      // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
+      if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
+      if (q.perche) { const P = q.perche;
+        if (q.attente > 0) { q.attente -= dt; if (q.danse) q.rot += dt * 5; }
+        else if (!q.cibleL) q.cibleL = [(Math.random() * 2 - 1) * P.hx, (Math.random() * 2 - 1) * P.hz];
+        else { const ddx = q.cibleL[0] - q.ox, ddz = q.cibleL[1] - q.oz, l = Math.hypot(ddx, ddz);
+          if (l < .08) { q.cibleL = null; q.attente = .3 + Math.random() * 1.8; q.danse = Math.random() < .3; if (Math.random() < .55) q.vy = 2.4 + Math.random(); }
+          else { const v = Math.min(l, 1.3 * dt); q.ox += ddx / l * v; q.oz += ddz / l * v; court = true; q.ph += dt * 1.3 * 6;
+            const cs = Math.cos(P.r), sn = Math.sin(P.r), wx = ddx * cs + ddz * sn, wz = -ddx * sn + ddz * cs; let d = Math.atan2(wx, wz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * 10); } }
+        const cs = Math.cos(P.r), sn = Math.sin(P.r); q.x = P.x + q.ox * cs + q.oz * sn; q.z = P.z - q.ox * sn + q.oz * cs; }
+      else if (q.attente > 0) q.attente -= dt;
       else if (!q.cible) { const c = tirer(); if (c && Math.hypot(c[0] - q.x, c[1] - q.z) > 2) q.cible = c; else q.attente = .2; }
       else { const ddx = q.cible[0] - q.x, ddz = q.cible[1] - q.z, l = Math.hypot(ddx, ddz);
         if (l < .3) { q.cible = null; q.attente = q.T.roule ? Math.random() * .8 : .4 + Math.random() * 2.6; if (Math.random() < .3) q.vy = 3; }   // (arrivé : il s'arrête net, parfois d'un bond)
@@ -18376,7 +18420,7 @@ function gremlinsHV(scene, L) {
       if (q.vy || q.saut > 0) { q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut <= 0) { q.saut = 0; q.vy = 0; } }
       const k = Math.min(1, dt * 8); q.am += ((court && !q.T.roule ? 1 : 0) - q.am) * k; q.pen += ((court ? (q.T.roule ? q.vire * .6 : q.T.penche ?? .22) : 0) - q.pen) * k;
       if (court && !q.T.roule) q.ph += dt * q.v * 4.4;
-      q.y = (L.hauteur ? L.hauteur(q.x, q.z) : 0); }
+      q.y = q.perche ? q.perche.y : (L.hauteur ? L.hauteur(q.x, q.z) : 0); }
     for (const tr of troupes) { const A = tr.aPas.array;
       for (let j = 0; j < tr.nb; j++) { const q = gr[tr.debut + j], bob = q.am * Math.abs(Math.cos(q.ph)) * .035, tremble = q.am ? 0 : Math.sin(t / 90 + q.ph) * .006;
         if (q.T.roule) eu.set(q.pen, q.rot - Math.PI / 2, 0); else eu.set(q.pen + tremble, q.rot + (q.am < .1 && !q.cible ? Math.sin(t / 700 + q.ph) * .35 : 0), 0);
@@ -18482,7 +18526,7 @@ function passantsHiver(scene, L, obst) {
   const n = gensP.length, gF = new THREE.BufferGeometry(), pF = new Float32Array(n * 12), uF = new Float32Array(n * 8), iF = [];
   for (let i = 0; i < n; i++) iF.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
   gF.setAttribute("position", new THREE.BufferAttribute(pF, 3)); gF.setAttribute("uv", new THREE.BufferAttribute(uF, 2)); gF.setIndex(iF);
-  const m = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tAt, alphaTest: .5, side: THREE.DoubleSide, color: 0xe2e4e8 })); m.frustumCulled = false; scene.add(m);
+  const m = new THREE.Mesh(gF, new THREE.MeshBasicMaterial({ map: tAt, alphaTest: .5, side: THREE.DoubleSide, color: L.nuitKF ? 0x8a8e9c : 0xe2e4e8 })); m.frustumCulled = false; scene.add(m);
   const ombreT = tex(toile(64, 32, (x) => { const g = x.createRadialGradient(32, 16, 1, 32, 16, 30); g.addColorStop(0, "rgba(40,50,70,.45)"); g.addColorStop(1, "rgba(40,50,70,0)"); x.fillStyle = g; x.save(); x.scale(1, .5); x.fillRect(0, 0, 64, 64); x.restore(); }));
   const gO = new THREE.BufferGeometry(), pO = new Float32Array(n * 12), uO = new Float32Array(n * 8); for (let i = 0; i < n; i++) uO.set([0, 0, 1, 0, 1, 1, 0, 1], i * 8);
   gO.setAttribute("position", new THREE.BufferAttribute(pO, 3)); gO.setAttribute("uv", new THREE.BufferAttribute(uO, 2)); gO.setIndex(iF);
@@ -18567,34 +18611,159 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   const vert = A.mat({ color: 0x1d4a2a, roughness: .9, flatShading: true }), vert2 = A.mat({ color: 0x24583a, roughness: .9, flatShading: true }), blanc = A.mat({ color: 0xf6f9fc, roughness: .8, flatShading: true });
   const troncS = A.mat({ color: 0x4a3222, roughness: 1 }), or = A.mat({ color: 0xffd34a, emissive: 0xffb820, emissiveIntensity: 1.4, metalness: .4, roughness: .3 });
   const ampoules = [], couleurs = [0xff3030, 0xffc830, 0x3a7dff, 0x40e060, 0xff60c0, 0xfff2c0], boules = [];
-  const sapin = (x, z, H, fin = 1) => { const y = y0;
-    A.ajoute(new THREE.CylinderGeometry(.08 * H / 4, .14 * H / 4, H * .9, 8), troncS, x, y + H * .45, z);
-    const brG = new THREE.ConeGeometry(.16, 1, 6).rotateX(Math.PI / 2).translate(0, 0, .5), snG = blob(2, .25);
-    const brs = [], sns = [], mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-    const niv = Math.round(H * 2.6); for (let i = 0; i < niv; i++) { const u = i / niv, yy = y + H * .1 + u * H * .84, R = (1 - u) * H * .3 * fin + .15, nb = Math.max(5, Math.round(R * 9));
-      for (let k = 0; k < nb; k++) { const a = k / nb * Math.PI * 2 + i * 2.39 + alea() * .3, pente = .35 + alea() * .2, l = R * (.85 + alea() * .3);
-        e.set(pente, 0, 0, "YXZ"); e.y = Math.PI / 2 - a; q.setFromEuler(e); mt.compose(new THREE.Vector3(x, yy, z), q, new THREE.Vector3(1 + R * .5, 1 + R * .5, l)); brs.push(mt.clone());
-        // la neige posée sur la branche
-        const px = x + Math.cos(a) * l * .55, pz = z + Math.sin(a) * l * .55, py = yy - Math.sin(pente) * l * .55 + .14; e.set(0, alea() * 3, 0); q.setFromEuler(e);
-        mt.compose(new THREE.Vector3(px, py, pz), q, new THREE.Vector3(l * .32, .07 + alea() * .04, .16)); sns.push(mt.clone());
-        if (k % 3 === 0) ampoules.push([x + Math.cos(a + .2) * l * .9, yy - Math.sin(pente) * l * .9, z + Math.sin(a + .2) * l * .9, couleurs[(k + i) % couleurs.length]]);
-        if (k % 9 === 2) boules.push([x + Math.cos(a - .2) * l * .75, yy - Math.sin(pente) * l * .75 - .12, z + Math.sin(a - .2) * l * .75, couleurs[(k * 7 + i) % 5]]); } }
-    const ib = new THREE.InstancedMesh(brG, A.mat({ color: 0x1f3d2a, roughness: .95 }), brs.length); brs.forEach((m, i) => ib.setMatrixAt(i, m)); ib.castShadow = true; scene.add(ib);
-    const is = new THREE.InstancedMesh(snG, neigeArbre, sns.length); sns.forEach((m, i) => is.setMatrixAt(i, m)); scene.add(is);
-    // l'étoile au sommet
-    const et = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + Math.PI / 2, r = (k % 2 ? .16 : .38) * H / 9; et[k ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r); }
-    const st = new THREE.Mesh(new THREE.ExtrudeGeometry(et, { depth: .06 * H / 9, bevelEnabled: false }), or); st.position.set(x, y + H * .95, z); scene.add(st); L.etoilesNoel = (L.etoilesNoel || []).concat(st);
-    obst.push([x, z, H * .3 * .9]); };
-  sapin(0, 6.4, 12, .55);                                                               // le grand sapin de la place, haut et élancé, face au palais
-  { const p = new THREE.PointLight(0xffc880, 6, 18, 1.6); p.position.set(0, y0 + 5, 6.4); scene.add(p); }
   // les guirlandes d'ampoules, en festons, le long des façades des boutiques (en face du palais et sur les côtés)
   const feston = (x0, z0, x1, z1, y) => { const l = Math.hypot(x1 - x0, z1 - z0), n = Math.round(l / .45);
     for (let i = 0; i <= n; i++) { const u = i / n, f = (u * 6) % 1, creux = Math.sin(f * Math.PI) * .45; ampoules.push([x0 + (x1 - x0) * u, y - creux, z0 + (z1 - z0) * u, couleurs[i % couleurs.length]]); } };
   feston(-24, 23.4, 24, 23.4, 3.6); feston(-27.4, 21, -27.4, -12, 3.6); feston(27.4, 21, 27.4, -12, 3.6);
-  scene.add(new THREE.AmbientLight(0xdfe6f0, .35)); scene.fog = new THREE.Fog(0xb9bec5, 28, 120);
-  { const g = new THREE.SphereGeometry(.07, 8, 6), mats = couleurs.map(c => new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
+  // un fil d'ampoules tendu d'un point à un autre, qui pend au milieu
+  const cable = (x0, z0, ya, x1, z1, yb, creux = .6) => { const l = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(l / .42));
+    for (let i = 0; i <= n; i++) { const u = i / n; ampoules.push([x0 + (x1 - x0) * u, ya + (yb - ya) * u - 4 * creux * u * (1 - u), z0 + (z1 - z0) * u, couleurs[(i * 5) % couleurs.length]]); } };
+  // au-dessus des rues : d'un réverbère du trottoir à celui de la place, en travers ; et le tour de la place, de réverbère en réverbère
+  for (const [a, b] of [[[-18, 21.5], [-14.6, 10.6]], [[-6, 21.5], [-7, 10.9]], [[6, 21.5], [7, 10.9]], [[18, 21.5], [14.6, 10.6]], [[-6, 21.5], [7, 10.9]], [[6, 21.5], [-7, 10.9]],
+      [[-25.4, 2], [-14.8, -2]], [[25.4, 12], [14.6, 10.6]], [[-25.4, -14], [-14.6, -14.9]], [[25.4, -14], [14.6, -14.9]], [[-25.4, 16], [-14.6, 10.6]]]) cable(a[0], a[1], y0 + 4.2, b[0], b[1], y0 + 4.2, 1);
+  for (const [a, b] of [[[-14.6, 10.6], [-7, 10.9]], [[7, 10.9], [14.6, 10.6]], [[14.6, 10.6], [14.8, -2]], [[14.8, -2], [14.6, -14.9]], [[-14.6, 10.6], [-14.8, -2]], [[-14.8, -2], [-14.6, -14.9]], [[-14.6, -14.9], [-5.5, -15.2]], [[5.5, -15.2], [14.6, -14.9]]]) cable(a[0], a[1], y0 + 3.7, b[0], b[1], y0 + 3.7, .55);
+  // ---- les modèles 3D (Sketchfab, CC-BY : feu tricolore par Sylvain Delandre, bouche d'incendie par albacaizaresalvrz, Simca 1000 et Volkswagen 1303 par
+  //      Configcars / maxipub ; CC-BY-NC-SA : « Mon beau sapin » par koafranck), allégés ; chacun chargé une fois, posé en instances ----
+  const chargerKF = f => (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/" + f + ".glb?v=1");
+    g.scene.updateMatrixWorld(true); const parMat = new Map();
+    g.scene.traverse(o => { if (!o.isMesh) return; let ge = o.geometry.clone(); ge.applyMatrix4(o.matrixWorld); if (ge.index) ge = ge.toNonIndexed(); for (const k of Object.keys(ge.attributes)) if (!["position", "normal", "uv"].includes(k)) ge.deleteAttribute(k);
+      const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!parMat.has(m)) parMat.set(m, []); parMat.get(m).push(ge); });
+    const parts = [...parMat].map(([m, l]) => { const n = l.reduce((a, q) => a + q.attributes.position.count, 0), r = new THREE.BufferGeometry();
+      for (const [k, d] of [["position", 3], ["normal", 3], ["uv", 2]]) { const a = new Float32Array(n * d); let o = 0; for (const q of l) { if (q.attributes[k]) a.set(q.attributes[k].array, o * d); o += q.attributes.position.count; } r.setAttribute(k, new THREE.BufferAttribute(a, d)); }
+      if (m.transparent && m.opacity > .9) { m.transparent = false; m.alphaTest = .5; } return [r, m]; });
+    const bb = new THREE.Box3(); for (const [q] of parts) { q.computeBoundingBox(); bb.union(q.boundingBox); }
+    const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2; for (const [q] of parts) { q.translate(-cx, -bb.min.y, -cz); q.computeBoundingBox(); q.computeBoundingSphere(); }
+    const t = bb.getSize(new THREE.Vector3()); return { parts, t }; })();
+  const mt4 = (x, y, z, ry, sx, sy = sx, sz = sx, rx = 0, rz = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, "YXZ")), new THREE.Vector3(sx, sy, sz));
+  const poser = (parts, mats, ombre = true, matDe = m => m) => parts.map(([g, m]) => { const im = new THREE.InstancedMesh(g, matDe(m), mats.length); mats.forEach((q, i) => im.setMatrixAt(i, q)); im.castShadow = ombre; im.receiveShadow = true; scene.add(im); return im; });
+  // la neige poudrée sur les aiguilles : tout ce qui regarde le ciel blanchit (dans le shader, d'après la normale)
+  const poudre = (m, k = .8) => { m = m.clone(); m.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying float vNeigeY;").replace("#include <begin_vertex>", `#include <begin_vertex>
+        vec3 nwN = objectNormal;
+        #ifdef USE_INSTANCING
+        nwN = mat3(instanceMatrix) * nwN;
+        #endif
+        vNeigeY = normalize(mat3(modelMatrix) * nwN).y;`);
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying float vNeigeY;").replace("#include <map_fragment>", `#include <map_fragment>
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.9, .93, .98), smoothstep(.3, .8, vNeigeY) * ${k.toFixed(2)});`); };
+    m.customProgramCacheKey = () => "poudre" + k; return m; };
+  // ---- le grand sapin de la place : il domine la ville ; la guirlande d'ampoules en spirale, les boules, l'étoile ----
+  const GS = { x: 0, z: 5.2, H: 15, R: 3.3 }, ventes = [];
+  { const { x, z, H, R } = GS;
+    for (let i = 0; i < 520; i++) { const u = .07 + i / 520 * .86, a = u * 8.5 * Math.PI * 2, r = R * (1 - u) * 1.02 + .12; ampoules.push([x + Math.cos(a) * r, y0 + H * u, z + Math.sin(a) * r, couleurs[i % couleurs.length]]); }
+    for (let i = 0; i < 160; i++) { const u = .08 + alea() * .84, a = alea() * 6.283, r = R * (1 - u) * .98 + .08; (i % 3 ? ampoules : boules).push([x + Math.cos(a) * r, y0 + H * u - (i % 3 ? 0 : .15), z + Math.sin(a) * r, couleurs[i % 5]]); }
+    const et = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 + Math.PI / 2, r = (k % 2 ? .3 : .75); et[k ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r); }
+    const st = new THREE.Mesh(new THREE.ExtrudeGeometry(et, { depth: .12, bevelEnabled: false }).translate(0, 0, -.06), or); st.position.set(x, y0 + H + .35, z); scene.add(st); L.etoilesNoel = [st];
+    const p = new THREE.PointLight(0xffc880, 14, 22, 1.5); p.position.set(x, y0 + 5, z + 4.5); scene.add(p);
+    obst.push([x, z, R * .95]); }
+  // ---- la vente de sapins, sur la place : des sapins de toutes les tailles serrés les uns contre les autres, la cabane du vendeur, les ampoules au-dessus ----
+  const VS = { x0: -14.4, x1: -9.2, z0: 4.2, z1: 10.2 };
+  { const bois = A.mat({ color: 0x6a4428, roughness: .9 }), boisC = A.mat({ color: 0x8a5a32, roughness: .85 });
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const x = VS.x0 + .8 + c * 1.25 + (alea() - .5) * .35, z = VS.z0 + 1 + r * 1.35 + (alea() - .5) * .3, h = 1.2 + alea() * 1.8;
+      ventes.push(mt4(x, y0, z, alea() * 6.28, h * .1 * (.8 + alea() * .25), h / 9.81 * 1, h * .1 * (.8 + alea() * .25), (alea() - .5) * .08, (alea() - .5) * .08)); obst.push([x, z, .45]); }
+    // ceux qui attendent, appuyés contre la barrière
+    for (let i = 0; i < 6; i++) { const z = VS.z0 + .5 + i * .95, h = 2 + alea() * .6; ventes.push(mt4(VS.x0 - .1, y0 + .05, z, alea() * 6, h * .085, h / 9.81, h * .085, 0, -.32)); }
+    // la barrière : deux lisses sur des piquets
+    for (let i = 0; i <= 6; i++) A.ajoute(new THREE.BoxGeometry(.08, 1.1, .08), bois, VS.x0 - .55, y0 + .55, VS.z0 + i * (VS.z1 - VS.z0) / 6);
+    for (const y of [.5, .95]) A.ajoute(new THREE.BoxGeometry(.05, .08, VS.z1 - VS.z0), boisC, VS.x0 - .5, y0 + y, (VS.z0 + VS.z1) / 2);
+    // la cabane du vendeur, son enseigne peinte
+    { const cx = VS.x1 - .3, cz = VS.z1 - .9; A.ajoute(new THREE.BoxGeometry(1.6, 2.1, 1.3), boisC, cx, y0 + 1.05, cz); A.ajoute(new THREE.BoxGeometry(1.9, .1, 1.6), bois, cx, y0 + 2.15, cz);
+      A.ajoute(new THREE.BoxGeometry(1.9, .14, 1.6), neige, cx, y0 + 2.27, cz); A.ajoute(new THREE.BoxGeometry(1.2, .7, .05), A.mat({ color: 0x1a120c }), cx - .1, y0 + 1.25, cz + .66);   // (le guichet ouvert)
+      const ens = tex(toile(512, 128, (x) => { x.fillStyle = "#b8141c"; x.fillRect(0, 0, 512, 128); x.strokeStyle = "#f4ead0"; x.lineWidth = 6; x.strokeRect(6, 6, 500, 116); x.fillStyle = "#f4ead0"; x.font = "bold 50px Georgia, serif"; x.textAlign = "center"; x.fillText("CHRISTMAS TREES", 256, 62); x.font = "bold 34px Georgia, serif"; x.fillText("from $15", 256, 106); }));
+      const e = new THREE.Mesh(new THREE.PlaneGeometry(2.1, .52), new THREE.MeshStandardMaterial({ map: ens, roughness: .7, emissive: 0xffffff, emissiveMap: ens, emissiveIntensity: .25 })); e.position.set(cx, y0 + 2.62, cz + .82); scene.add(e);
+      { const p = new THREE.PointLight(0xffb070, 4, 7, 1.6); p.position.set(cx - .2, y0 + 1.6, cz + 1.6); scene.add(p); }
+      obst.push([cx, cz, 1.1]); }
+    // les ampoules tendues au-dessus du lot, de piquet en piquet
+    const pq = [[VS.x0 - .55, VS.z0], [VS.x0 - .55, VS.z1], [VS.x1 + .5, VS.z1], [VS.x1 + .5, VS.z0]];
+    for (const [x, z] of pq) A.ajoute(new THREE.CylinderGeometry(.05, .06, 2.9, 8), bois, x, y0 + 1.45, z);
+    for (let i = 0; i < 4; i++) cable(...pq[i], y0 + 2.85, ...pq[(i + 1) % 4], y0 + 2.85, .35);
+    cable(pq[0][0], pq[0][1], y0 + 2.85, pq[2][0], pq[2][1], y0 + 2.85, .5); cable(pq[1][0], pq[1][1], y0 + 2.85, pq[3][0], pq[3][1], y0 + 2.85, .5); }
+  chargerKF("sapin").then(({ parts, t }) => { const k = GS.H / t.y, kx = GS.R * 2 / t.x;
+    poser(parts, [mt4(GS.x, y0, GS.z, 0, kx, k, kx), ...ventes], true, m => poudre(m, .55)); }).catch(e => console.warn("sapin", e));
+  // ---- les feux tricolores, aux quatre coins des deux carrefours ; ils passent du vert à l'orange au rouge ----
+  { const pos = []; for (const sx of [-1, 1]) { const cx = sx * 20.2, cz = 16.2; for (const [x, z] of [[sx * 15.75, 11.75], [sx * 24.65, 20.65], [sx * 15.75, 20.65], [sx * 24.65, 11.75]]) pos.push([x, z, Math.atan2(cx - x, cz - z), Math.abs(x) < 20 === z < 16 ? 0 : 1]); }
+    const H = 3.3; L.feux = [];
+    chargerKF("feu").then(({ parts, t }) => { const k = H / t.y; poser(parts, pos.map(([x, z, r]) => mt4(x, y0, z, r, k)));
+      // les trois lampes : on les rallume par-dessus le modèle (devant chaque optique)
+      let zMax = 0; for (const [g] of parts) { const P = g.attributes.position; for (let i = 0; i < P.count; i++) if (P.getY(i) > t.y * .8 && Math.abs(P.getX(i)) < t.x * .3) zMax = Math.max(zMax, P.getZ(i)); }
+      const disque = new THREE.CircleGeometry(t.x * .2 * k, 16), C3 = [0xff2a1a, 0xffb020, 0x30ff70];
+      pos.forEach(([x, z, r, phase]) => { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = r; scene.add(g);
+        const lp = C3.map((c, i) => { const m = new THREE.Mesh(disque, new THREE.MeshBasicMaterial({ color: c, toneMapped: false })); m.position.set(0, (t.y * (.955 - i * .058)) * k, zMax * k + .012); g.add(m); return m; });
+        L.feux.push({ lp, phase }); }); }).catch(e => console.warn("feu", e)); }
+  // ---- les bouches d'incendie (le modèle), à la place des jaunes ; un chapeau de neige ----
+  { (L.bouchesHV || []).forEach(g => g.visible = false); const pts = (L.bouchesHV || []).map(g => [g.position.x, g.position.z]);
+    chargerKF("borne").then(({ parts, t }) => { const k = .82 / t.y; poser(parts, pts.map(([x, z], i) => mt4(x, y0, z, i * 1.3, k)));
+      const cap = new THREE.InstancedMesh(blob(2, .2), neigeArbre, pts.length); pts.forEach(([x, z], i) => cap.setMatrixAt(i, mt4(x, y0 + .8, z, i, .13, .06, .13))); scene.add(cap); }).catch(e => console.warn("borne", e)); }
+  // ---- les voitures garées le long des trottoirs, ensevelies sous la neige (la Simca, la Coccinelle) ; les gremlins grimpent dessus ----
+  (L.belAirGarees || []).forEach(v => v.visible = false);
+  // la neige posée sur le toit, le capot, le coffre : on relève le dessus de la voiture (le plus haut point sous chaque case d'une grille), on y pose un coussin
+  const coussin = (parts, t, sc) => { const NX = 30, NZ = 64, x0 = -t.x / 2, z0 = -t.z / 2, dx = t.x / NX, dz = t.z / NZ, W = NX + 1, h = new Float32Array(W * (NZ + 1)).fill(-1);
+    for (const [g] of parts) { const P = g.attributes.position.array;
+      for (let q = 0; q < P.length; q += 9) { const ax = P[q], ay = P[q + 1], az = P[q + 2], bx = P[q + 3], by = P[q + 4], bz = P[q + 5], cx = P[q + 6], cy = P[q + 7], cz = P[q + 8];
+        const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz); if (Math.abs(d) < 1e-12) continue;
+        const i0 = Math.max(0, Math.ceil((Math.min(ax, bx, cx) - x0) / dx)), i1 = Math.min(NX, Math.floor((Math.max(ax, bx, cx) - x0) / dx)), j0 = Math.max(0, Math.ceil((Math.min(az, bz, cz) - z0) / dz)), j1 = Math.min(NZ, Math.floor((Math.max(az, bz, cz) - z0) / dz));
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const px = x0 + i * dx, pz = z0 + j * dz, l1 = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / d, l2 = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / d, l3 = 1 - l1 - l2;
+          if (l1 < -1e-4 || l2 < -1e-4 || l3 < -1e-4) continue; const y = l1 * ay + l2 * by + l3 * cy, kk = j * W + i; if (y > h[kk]) h[kk] = y; } } }
+    const ok = new Uint8Array(W * (NZ + 1)); for (let k = 0; k < ok.length; k++) ok[k] = h[k] > t.y * .6 && Math.abs(x0 + (k % W) * dx) < t.x * .43 ? 1 : 0;   // (le dessus seulement : toit, capot, coffre)
+    const dist = new Float32Array(ok.length); for (let k = 0; k < ok.length; k++) dist[k] = ok[k] ? 9 : 0;   // (la distance au bord, en cases : le coussin s'arrondit vers les bords)
+    for (let it = 0; it < 4; it++) for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) { const k = j * W + i; if (!ok[k]) continue; let m = 9; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + a, jj = j + b; m = Math.min(m, ii < 0 || jj < 0 || ii > NX || jj > NZ ? 0 : dist[jj * W + ii] + 1); } dist[k] = Math.min(dist[k], m); }
+    const ep = .085 / sc, pos = new Float32Array(ok.length * 3), uv = new Float32Array(ok.length * 2), idx = [];
+    for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) { const k = j * W + i; pos.set([x0 + i * dx, Math.max(0, h[k]) + .004 / sc + ep * Math.min(1, dist[k] / 2.6) ** .7 * (.85 + .3 * hasard(k * 1.7)), z0 + j * dz], k * 3); uv.set([i / NX * 2, j / NZ * 4], k * 2); }
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const a = j * W + i, b = a + 1, c = a + W, d2 = c + 1; if (!(ok[a] && ok[b] && ok[c] && ok[d2])) continue;
+      const hs = [h[a], h[b], h[c], h[d2]]; if (Math.max(...hs) - Math.min(...hs) > (dx + dz) * 1.1) continue; idx.push(a, c, b, b, c, d2); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    // le toit : la zone la plus haute (là où grimpent les gremlins)
+    let hm = 0; for (let k = 0; k < h.length; k++) hm = Math.max(hm, h[k]); const toit = new THREE.Box2(); for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) if (h[j * W + i] > hm * .94) toit.expandByPoint(new THREE.Vector2(x0 + i * dx, z0 + j * dz));
+    return { g, toit, hm: hm + ep }; };
+  L.perchesKF = [];
+  const GAREES = [["simca", -12, 20.15, Math.PI / 2], ["coccinelle", -6.3, 20.15, -Math.PI / 2, 0x2a5aa8], ["simca", 3.5, 12.3, -Math.PI / 2], ["coccinelle", 9, 12.3, Math.PI / 2, 0xb8241c],
+    ["coccinelle", -23.95, 4, Math.PI], ["simca", -23.95, -2.2, 0], ["coccinelle", 23.95, -8.5, 0, 0xe8dcb0], ["simca", 16.3, -6, Math.PI]];
+  for (const f of ["simca", "coccinelle"]) { const liste = GAREES.filter(v => v[0] === f), LONG = f === "simca" ? 3.8 : 4.07;
+    for (const [, x, z, r] of liste) for (const k of [-1.3, 0, 1.3]) obst.push([x + Math.sin(r) * k, z + Math.cos(r) * k, 1.0]);
+    chargerKF(f).then(({ parts, t }) => { const s = LONG / t.z, { g, toit, hm } = coussin(parts, t, s);
+      // la Coccinelle : sa carrosserie (la matière « base ») repeinte, une couleur par voiture
+      const parCouleur = new Map(); liste.forEach((v, i) => { const c = v[4] ?? -1; if (!parCouleur.has(c)) parCouleur.set(c, []); parCouleur.get(c).push(i); });
+      for (const [c, ii] of parCouleur) { const mats = ii.map(i => { const [, x, z, r] = liste[i]; return mt4(x, 0, z, r, s); });
+        poser(parts, mats, true, m => { if (c < 0 || m.name !== "base") return m; const m2 = m.clone(); m2.color.setHex(c); return m2; }); }
+      const im = new THREE.InstancedMesh(g, neige, liste.length); liste.forEach(([, x, z, r], i) => im.setMatrixAt(i, mt4(x, 0, z, r, s))); im.receiveShadow = true; im.castShadow = true; scene.add(im);
+      for (const [, x, z, r] of liste) { const c = toit.getCenter(new THREE.Vector2()), cs = Math.cos(r), sn = Math.sin(r);
+        L.perchesKF.push({ x: x + (c.x * cs + c.y * sn) * s, z: z + (-c.x * sn + c.y * cs) * s, y: hm * s, r, hx: Math.max(.15, (toit.max.x - toit.min.x) / 2 * s - .15), hz: Math.max(.2, (toit.max.y - toit.min.y) / 2 * s - .15), occ: 0 }); } }).catch(e => console.warn("voiture", f, e)); }
+  // ---- la voiture de police (CC-BY : « Police car » par Mateusz Woliński) : attaquée, des gremlins plein le capot et le pare-brise, elle tourne autour de la place
+  //      en zigzag, de travers, gyrophares rouge et bleu allumés sans arrêt — ils éclairent la neige et les façades au passage ----
+  chargerKF("police").then(({ parts, t }) => { const s = 5.4 / t.z, g = new THREE.Group(); scene.add(g);
+    let barre = null, haut = 0;
+    for (const [geo, m] of parts) { const m2 = m.name === "roof_lights" ? m.clone() : m, me = new THREE.Mesh(geo, m2); me.scale.setScalar(s); me.castShadow = true; g.add(me);
+      if (m.name === "roof_light_bar") barre = geo.boundingBox.clone(); if (m.name === "roof_lights") L.policeOptiques = m2; if (m.name === "body") haut = geo.boundingBox.max.y * s; }
+    const yb = barre ? barre.max.y * s + .12 : haut + .2, lb = barre ? (barre.max.x - barre.min.x) * s / 2 : .5, zb = barre ? (barre.min.z + barre.max.z) / 2 * s : 0;
+    const rouge = new THREE.PointLight(0xff1a1a, 0, 22, 1.3), bleu = new THREE.PointLight(0x2a5aff, 0, 22, 1.3); rouge.position.set(lb * .7, yb, zb); bleu.position.set(-lb * .7, yb, zb); g.add(rouge, bleu);
+    const lueur = c => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.scale.set(2.2, 2.2, 1); g.add(sp); return sp; };
+    const hr = lueur(0xff2020), hb = lueur(0x3060ff); hr.position.copy(rouge.position); hb.position.copy(bleu.position);
+    const phare = new THREE.SpotLight(0xfff0d0, 40, 32, .45, .6, 1.3); phare.position.set(0, .8, 2.6); phare.target.position.set(0, 0, 14); g.add(phare, phare.target);
+    // les gremlins accrochés : un sur le pare-brise, deux sur le capot, un sur le toit (des perchoirs qui roulent avec la voiture)
+    const offs = [[0, haut * .86, .55], [-.42, haut * .68, 1.35], [.42, haut * .68, 1.5], [.25, haut, -.4]];
+    const per = offs.map(() => ({ x: 0, z: 0, y: 0, r: 0, hx: .06, hz: .06, occ: 0, cap: 1 })); L.perchesKF.unshift(...per);
+    const C = L.circuit, CL = L.circuitL || 100; let u = .15;
+    L.policeMaj = (dt, tt) => { if (!C) return; u = (u + 8.5 * dt / CL) % 1; const T = tt / 1000;
+      const p = C.getPointAt(u), d = C.getTangentAt(u), zz = Math.sin(T * 1.6) * 1.5, travers = .5 * Math.sin(T * 1.6 + 1.1);   // (il zigzague d'un trottoir à l'autre, l'arrière qui chasse)
+      g.position.set(p.x + d.z * zz, 0, p.z - d.x * zz); g.rotation.set(0, Math.atan2(d.x, d.z) + travers, .035 * Math.sin(T * 3.2), "YXZ");
+      g.updateMatrixWorld(); const v = new THREE.Vector3();
+      offs.forEach(([x, y, z], k) => { v.set(x, y, z).applyMatrix4(g.matrixWorld); Object.assign(per[k], { x: v.x, z: v.z, y: v.y, r: g.rotation.y }); });
+      // les gyrophares : deux éclats rouges, deux éclats bleus, sans fin
+      const f = (T * 1.6) % 1, eclat = (Math.floor(f * 8) % 2) === 0, r = f < .5 && eclat, b = f >= .5 && eclat;
+      rouge.intensity = r ? 60 : 0; bleu.intensity = b ? 60 : 0; hr.visible = r; hb.visible = b;
+      if (L.policeOptiques && L.policeOptiques.emissive) { L.policeOptiques.emissive.setHex(r ? 0xff2020 : b ? 0x2050ff : 0); L.policeOptiques.emissiveIntensity = 3; } };
+  }).catch(e => console.warn("police", e));
+  scene.add(new THREE.AmbientLight(0x8090c0, .2)); scene.fog = new THREE.Fog(0x1a2132, 22, 95);
+  // les réverbères allumés : les globes brillent, quelques-uns éclairent vraiment la neige autour d'eux
+  scene.traverse(o => { if (o.isMesh && o.material && o.material.emissive && [0xfff0c8, 0xfff2d0].includes(o.material.emissive.getHex())) o.material.emissiveIntensity = 2.4; });
+  for (const [x, z] of [[-14.6, 10.6], [14.6, 10.6], [-14.8, -2], [14.8, -2], [-6, 21.5], [18, 21.5], [-25.4, 2]]) { const p = new THREE.PointLight(0xffd49a, 7, 13, 1.5); p.position.set(x, y0 + 3.9, z); scene.add(p); }
+  { const g = new THREE.SphereGeometry(.075, 8, 6), mats = couleurs.map(c => new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
     for (let ci = 0; ci < couleurs.length; ci++) { const l = ampoules.filter(a => a[3] === couleurs[ci]); if (!l.length) continue; const im = new THREE.InstancedMesh(g, mats[ci], l.length); const mt = new THREE.Matrix4();
       l.forEach(([x, y, z], i) => { mt.makeTranslation(x, y, z); im.setMatrixAt(i, mt); }); scene.add(im); (L.guirlandes = L.guirlandes || []).push(im); }
+    { const n = ampoules.length, pa = new Float32Array(n * 3), ca = new Float32Array(n * 3), c = new THREE.Color(); ampoules.forEach(([x, y, z, k], i) => { pa.set([x, y, z], i * 3); c.setHex(k); ca.set([c.r, c.g, c.b], i * 3); });
+      const gh = new THREE.BufferGeometry(); gh.setAttribute("position", new THREE.BufferAttribute(pa, 3)); gh.setAttribute("color", new THREE.BufferAttribute(ca, 3));
+      const halo = tex(toile(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 31); g.addColorStop(0, "rgba(255,255,255,.9)"); g.addColorStop(.2, "rgba(255,255,255,.45)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
+      L.halos = new THREE.Points(gh, new THREE.PointsMaterial({ map: halo, size: .38, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: .8 })); L.halos.frustumCulled = false; scene.add(L.halos); }
     const gb = new THREE.SphereGeometry(.13, 12, 8); for (let ci = 0; ci < 5; ci++) { const l = boules.filter(a => a[3] === couleurs[ci]); if (!l.length) continue;
       const im = new THREE.InstancedMesh(gb, A.mat({ color: couleurs[ci], metalness: .6, roughness: .2 }), l.length); const mt = new THREE.Matrix4(); l.forEach(([x, y, z], i) => { mt.makeTranslation(x, y, z); im.setMatrixAt(i, mt); }); scene.add(im); } }
   // ---- les flocons qui tombent ----
@@ -18602,21 +18771,24 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   for (let i = 0; i < NF; i++) { pos[i * 3] = -45 + Math.random() * 90; pos[i * 3 + 1] = Math.random() * 26; pos[i * 3 + 2] = -35 + Math.random() * 80; vit[i] = .7 + Math.random() * .8; }
   const fg = new THREE.BufferGeometry(); fg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const flocon = tex(toile(32, 32, (x) => { const g = x.createRadialGradient(16, 16, 0, 16, 16, 15); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.5, "rgba(255,255,255,.7)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }));
-  const flocons = new THREE.Points(fg, new THREE.PointsMaterial({ map: flocon, size: .16, transparent: true, depthWrite: false, opacity: .9 })); flocons.frustumCulled = false; scene.add(flocons);
+  const flocons = new THREE.Points(fg, new THREE.PointsMaterial({ map: flocon, size: .16, transparent: true, depthWrite: false, opacity: .9, color: 0xb8c2d8 })); flocons.frustumCulled = false; scene.add(flocons);
   // ---- un soir d'hiver : le ciel bas, bleu ardoise, la brume de neige ; les lumières de Noël partout ----
-  L.toujoursJour = true; L.brumePerso = 0xb9bec5;
-  L.cielPerso = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#7c838c"); g.addColorStop(.55, "#a3a9b0"); g.addColorStop(1, "#c4c8cc"); x.fillStyle = g; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${alea() < .5 ? "235,238,242" : "110,116,124"},${.06 + alea() * .1})`; x.beginPath(); x.ellipse(alea() * w, alea() * h * .6, 60 + alea() * 120, 14 + alea() * 30, 0, 0, 7); x.fill(); } }));
+  L.toujoursNuit = true; L.sansLune = true; L.brumePerso = 0x1a2132; L.nuitKF = true;   // (une nuit de neige : pas d'étoiles, les nuages bas que la ville éclaire par-dessous)
+  L.cielPerso = tex(toile(512, 512, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#070b16"); g.addColorStop(.5, "#141c2e"); g.addColorStop(.8, "#2a3046"); g.addColorStop(1, "#4a4048"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${alea() < .5 ? "70,78,100" : "20,24,36"},${.08 + alea() * .12})`; x.beginPath(); x.ellipse(alea() * w, alea() * h * .7, 60 + alea() * 120, 14 + alea() * 30, 0, 0, 7); x.fill(); } }));
   const anim0 = L.anim; let tP = 0;
   // ---- les passants : des gens de Kingston Falls, en tenue d'hiver des années 80, qui vont et viennent sur la place ----
   const PASS = passantsHiver(scene, L, obst);
   const GREM = gremlinsHV(scene, L);   // et les gremlins, lâchés dans la ville
   const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight);
-  L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = 1.2; hemi.color.setHex(0xdfe3ea); hemi.groundColor.setHex(0x9aa4b2); } if (sol2) { sol2.intensity = .45; sol2.color.setHex(0xe8edf5); }
-    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t); GREM && GREM(dt, t);
+  L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = .5; hemi.color.setHex(0x8a9cd0); hemi.groundColor.setHex(0x2a3040); } if (sol2) { sol2.intensity = .38; sol2.color.setHex(0xa8b8e8); }
+    const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t); L.policeMaj && L.policeMaj(dt, t); GREM && GREM(dt, t);
     const a = fg.attributes.position.array; for (let i = 0; i < NF; i++) { a[i * 3 + 1] -= vit[i] * dt; a[i * 3] += Math.sin(t / 900 + i) * .25 * dt; if (a[i * 3 + 1] < 0) a[i * 3 + 1] += 26; } fg.attributes.position.needsUpdate = true;
     // les guirlandes scintillent, chaque couleur à son rythme
-    (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); }); };
+    (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
+    if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
+    // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
+    for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
 }
 
 
