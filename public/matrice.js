@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.07";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.09";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13633,7 +13633,7 @@ function majAfficheGB() { if (!M || !M.L || M.lieu !== "mess" || M.L.afficheGB !
   gL.add(new THREE.Mesh(cadre.geometry, cadre.material)); const afL = new THREE.Mesh(new THREE.PlaneGeometry(A.w, A.h), new THREE.MeshStandardMaterial({ map: tL, emissive: 0xffffff, emissiveMap: tL, emissiveIntensity: .25, roughness: .5 })); afL.position.z = .017; gL.add(afL);
   gL.position.set(A.x, A.y, 11.984); gL.rotation.y = Math.PI; M.scene.add(gL); M.L.afficheLB = gL; }
 // les musiques de Génération perdue : « Cry Little Sister » de l'écran noir jusqu'au choix du personnage ; puis « To the Shock of Miss Louise » pour les trois premiers vampires, « The Tearing Wall » contre David
-const MUSIQUES_LB = { kf: "sons/kf-theme.mp3", intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
+const MUSIQUES_LB = { kf: "sons/kf-theme.mp3?v=2", intro: "sons/lb-cry-little-sister.mp3", combat: "sons/lb-miss-louise.mp3", david: "sons/lb-tearing-wall.mp3", fin: "sons/lb-good-times.mp3", envol: "sons/lb-people-are-strange.mp3" };   // (« Cry Little Sister » ; les trois premiers vampires ; le combat final contre David)
 const CONCERT_LB = { v: null }, now0lb = () => performance.now();   // (la vidéo du concert : coupée dès qu'une autre musique démarre)
 function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienne.cle === cle) return;
   const fondu = (a, de, vers, ms, fin) => { const t0 = performance.now(); clearInterval(a.fondu); a.fondu = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, de + (vers - de) * u)); if (u >= 1) { clearInterval(a.fondu); fin && fin(); } }, 40); };
@@ -13641,7 +13641,7 @@ function musiqueLB(cle) { const ancienne = M && M.lbMus; if (ancienne && ancienn
   const attente = ancienne && !ancienne.a.paused ? 1200 : 0; if (ancienne) fondu(ancienne.a, ancienne.a.volume, 0, 1200, () => ancienne.a.pause());
   if (cle) { try { couperMusiqueBttf(0); } catch (e) {} try { for (const a of Object.values(M.musGBs || {})) a && a.pause && a.pause(); } catch (e) {} }   // (ni la musique de Hill Valley, ni celle de S.O.S. Fantômes, ni le concert)
   M.lbMus = null; M.lbSilence = performance.now() + attente; const src = cle && MUSIQUES_LB[cle]; if (!src) return;
-  const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, .85, 1500); } }, attente);
+  const a = new Audio(src); a.loop = cle !== "intro"; a.volume = 0; M.lbMus = { cle, a }; setTimeout(() => { if (M && M.lbMus && M.lbMus.a === a) { a.play().catch(() => {}); fondu(a, 0, cle === "kf" ? .55 : .85, 1500); } }, attente);   /* (à Kingston, le thème plus bas : qu'on entende les gremlins) */
   const ici = l => cle === "kf" ? l === "kingston" : l === "santacarla";   /* (Kingston Falls : le thème des Gremlins, en boucle, tant qu'on y est) */
   let arrive = false; const garde = setInterval(() => { if (M && ici(M.lieu)) arrive = true; if (!M || (!ici(M.lieu) && (arrive || (M.lieu !== "mess" && M.lieu !== "rue")) && cle !== "envol")) { a.pause(); clearInterval(garde); if (M && M.lbMus && M.lbMus.a === a) M.lbMus = null; } else if (!M.lbMus || M.lbMus.a !== a) clearInterval(garde); }, 800); }
 // on touche « Croyez-vous aux vampires ? » : l'écran devient noir, le titre de Génération perdue apparaît ; on part à Santa Carla
@@ -13699,16 +13699,16 @@ function introGremlins() { if (!M || M.cine) return; if (universOccupe("kingston
   d.innerHTML = '<img src="images/gremlins/titre.webp" alt="Gremlins" style="width:min(78%,720px);animation:kfTitre 4.5s ease-out forwards;filter:drop-shadow(0 0 24px rgba(255,40,20,.45))">';
   M.ctx.conteneur.appendChild(d); M.kfVoile = d; musiqueLB("kf");
   M.cine = { maj: () => {} };
-  setTimeout(() => { if (!M) { d.remove(); return; } finCine(); M.kfIntro = true; changerLieu("kingston", [-33.7, -5.8], Math.PI / 2); }, 3600); }
+  setTimeout(() => { if (!M) { d.remove(); return; } finCine(); M.kfIntro = true; changerLieu("kingston", [-33.7, -5.8], Math.PI / 2); }, 900); }   // (la ville se charge pendant le titre)
 function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null; const V3 = THREE.Vector3;
   const P = new THREE.CatmullRomCurve3([[2, 26, 44], [-6, 15, 30], [-14, 7, 20], [-20, 3.2, 12.5], [-21, 2.6, 2], [-22, 2.2, -8], [-25.4, 1.7, -9.5], [-28.6, 1.5, -9.4], [-31.2, 1.25, -7.8], [-32.4, .95, -6.6]].map(a => new V3(...a)), false, "centripetal");
   const C = new THREE.CatmullRomCurve3([[0, 4, 4], [-4, 3, 10], [-10, 2, 12], [-26.5, 1.4, 10.8], [-27, 2.2, -2], [-27.5, 1.8, -9.5], [-30, 1.4, -9.5], [-33, .8, -7], [-33.7, .4, -5.8], [-33.7, .35, -5.8]].map(a => new V3(...a)), false, "centripetal");
   const D = 17000, vise = new V3(); let fini = false, t0 = Infinity;
   // l'écran noir et le titre restent tant que la ville se charge (les modèles, puis la préparation de tous les matériaux par la carte graphique) : sinon, ça saccade
   M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0));
-  const attente = Promise.race([Promise.allSettled(KF_ATTENTES.slice()), new Promise(r => setTimeout(r, 40000))])
-    .then(() => M && M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 10000))]) : null);
-  attente.then(() => new Promise(r => setTimeout(r, 400))).then(() => { if (!M || fini) return; t0 = performance.now() + 600; if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 1500); } });
+  const attente = Promise.race([Promise.allSettled(KF_ATTENTES.slice()), new Promise(r => setTimeout(r, 6000))])
+    .then(() => M && M.rendu.compileAsync ? Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]) : null);
+  attente.then(() => new Promise(r => setTimeout(r, 200))).then(() => { if (!M || fini) return; t0 = performance.now() + 600; if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 1500); } });
   const fin = () => { if (fini) return; fini = true; if (d && d.parentNode) d.remove(); finCine(); };
   M.cine = { maj: () => { if (t0 === Infinity) { M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0)); return; } const u = Math.max(0, Math.min(1, (performance.now() - t0) / D)), e = u * u * (3 - 2 * u); M.camera.position.copy(P.getPointAt(e)); vise.copy(C.getPointAt(e)); M.camera.lookAt(vise); M.camera.fov = 58; M.camera.updateProjectionMatrix(); if (u >= 1) fin(); } };
   M.cine.passer = fin; }
@@ -14888,13 +14888,14 @@ function manette() {
   const pg = M.gbCombat && M.gbCombat.piegeBtn; if (pg) { if (appui(0)) { pg.click(); fin(); return; } if (M.relief && !MAN.piegeDit) { MAN.piegeDit = true; bulle("🎮 Appuie sur A pour lancer le piège !", 5000); } } else MAN.piegeDit = false;
   if (M.cine) { fin(); return; }
   if (appui(0) && M.L.pieuManette && M.L.pieuManette()) { fin(); return; }   /* (Santa Carla : planter le pieu) */
+  if (appui(0) && M.lieu === "kingston" && M.L.sauterGizmo && !M.action && !M.cine && !M.manMenu) M.L.sauterGizmo();   // (Kingston Falls : A fait sauter Gizmo — sauf s'il y a quelque chose à faire)
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
   if (appui(3) && M.gpsBtn) M.gpsBtn.click();   /* (Y : le GPS, à Resident Evil) */
   if (appui(2) && M.radioBtn && M.L && M.L.sh) M.radioBtn.click();   /* (X : la radio — l'éteindre pour rentrer) */
   // X : les danses, l'une après l'autre (et on s'arrête) ; B arrête aussi
-  if (appui(2) && M.L && !M.L.apo && !M.L.sh && !M.L.gb) { const adm = !!(M.ctx.moiInfo && M.ctx.moiInfo().admin), D = adm ? DANSES_ADMIN : ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = adm ? NOMS_DANSES_ADMIN : { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
+  if (appui(2) && M.L && !M.L.apo && !M.L.sh && !M.L.gb && M.lieu !== "kingston") { const adm = !!(M.ctx.moiInfo && M.ctx.moiInfo().admin), D = adm ? DANSES_ADMIN : ["balance", "disco", "charleston", "madison", "thriller", "saut"], N = adm ? NOMS_DANSES_ADMIN : { balance: "💃 Danser", disco: "🕺 Disco", charleston: "🦵 Charleston", madison: "👏 Madison", thriller: "🧟 Thriller", saut: "🙌 Saut" };
     const i = D.indexOf(moi.info.danse), suiv = i + 1 < D.length ? D[i + 1] : false; danser(suiv); bulle(suiv ? N[suiv] + " <small>(X : danse suivante · B : stop)</small>" : "🛑 Fin de la danse", 1800); }
   // la vue : tourner, monter / descendre
   if (M.premiere) { M.fpYaw = (M.fpYaw || 0) - rx * dt * 2.4; M.fpPitch = Math.max(-1.3, Math.min(1.45, (M.fpPitch || 0) - ry * dt * 1.6)); }
@@ -15641,7 +15642,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { for (const f of quitt
   M.micro = null; M.projCure = null;
   if (M.garde) { M.prets[M.garde.id] = M.garde.q; M.garde = null; }
   M.enCage = false; coupeCage().constant = 1e6;   // (la vue en coupe de la cage d'escalier ne nous suit pas ailleurs)
-  M.dPortePrec = 0; M.porteVisee = null; { const cap = MOBILE && estApo(id) && !L.sh ? 1.3 : null; if (cap !== M.capRes) { M.capRes = cap; setTimeout(() => M && M.redim && M.redim(), 0); } }   /* (à l'arrivée, on ne repasse pas aussitôt la porte d'où l'on vient) */
+  M.dPortePrec = 0; M.porteVisee = null; { const cap = id === "kingston" ? (MOBILE ? .9 : 1) : MOBILE && estApo(id) && !L.sh ? 1.3 : null; if (cap !== M.capRes) { M.capRes = cap; setTimeout(() => M && M.redim && M.redim(), 0); } }   /* (à l'arrivée, on ne repasse pas aussitôt la porte d'où l'on vient) */
   M.verresBar = new Map(); M.scene = scene; M.L = L; M.repere = repere; M.lieu = id; M.camVise = null; M.passage = false; M.marcheAuto = false; M.yaw = face ? yaw + Math.PI : yaw; M.yawDehors = 0; M.camE = M.camD = null; if (M.premiere) { M.fpYaw = yaw; M.fpPitch = 0; }   /* (à la première personne : on arrive en regardant devant soi) */   // (arrivé par un cercle : la caméra face au bonhomme, pour voir où aller)
   const [x, z] = arrivee || L.depart;
   M.posEntree = [x, z];
@@ -16904,6 +16905,7 @@ function interieurBarKF() { const S = .85, MX = 7.57;   // (l'échelle ; en x, l
       if (garde.length < P.count / 3) { const r = new THREE.BufferGeometry(); for (const k of Object.keys(ge.attributes)) { const a = ge.attributes[k], d = a.itemSize, src = a.array, dst = new src.constructor(garde.length * 3 * d); garde.forEach((t, j) => dst.set(src.subarray(t * d, (t + 3) * d), j * 3 * d)); r.setAttribute(k, new THREE.BufferAttribute(dst, d)); } ge = r; }
       o.geometry = ge;
       // la salle s'éclaire elle-même (une lumière chaude de vieux bar), sans multiplier les lampes
+      for (const m of [].concat(o.material)) { m.side = THREE.DoubleSide; m.needsUpdate = true; }   // (des faces du modèle tournées vers l'extérieur : vues de dedans, on voyait à travers les murs)
       for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .13; m.needsUpdate = true; } });   // (les lumières éteintes : la salle dans la pénombre)
     { const lambris = new THREE.MeshStandardMaterial({ color: 0x3a2214, roughness: .85, emissive: 0x140a04 }), platre = new THREE.MeshStandardMaterial({ color: 0x8a7e70, roughness: .95, emissive: 0x2a241e }), zM = -.52, H = DIM.H, Y = DIM.Y;
       const pan = (x0, x1, y0, y1, m, ep = .08) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, ep), m); b.position.set((x0 + x1) / 2, Y + (y0 + y1) / 2, zM); g.add(b); };
@@ -17356,30 +17358,30 @@ function gremlinsHV(scene, L) {
     for (let i = 0; i < n; i++) { const p0 = tirer(); if (!p0) continue;
       const ch = T.f === "classique" && i < 6 ? i : -1, chasse = (T.f === "coca" || T.f === "queue") && i < 2;
       if (ch >= 0) { p0[0] = 10.6 + ch * .56; p0[1] = 21.75 + Math.abs(ch - 2.5) * .16; }   // (la chorale : en arc de cercle sur le trottoir, face à la maison)
-      gr.push({ T, chorale: ch, chasse, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: ch >= 0 ? .78 : .62 + Math.random() * .22, grimpeur: ch < 0 && !chasse && !T.roule && T.f !== "pelado" && Math.random() < .5, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
+      gr.push({ T, chorale: ch, chasse, x: p0[0], z: p0[1], v: T.roule ? 3.5 + Math.random() * 1.5 : 2.6 + Math.random() * 2.2, s: ch >= 0 ? .78 : .62 + Math.random() * .22, grimpeur: (T.f === "classique" && i === 6) || ch < 0 && !chasse && !T.roule && T.f !== "pelado" && Math.random() < .5, dosNoel: T.f === "classique" && i === 6, cible: null, attente: Math.random() * 2, ph: Math.random() * 8, rot: Math.random() * 6.3, saut: 0, vy: 0, am: 0, pen: 0, vire: 0 }); }
     const nb = gr.length - debut, aPas = new THREE.InstancedBufferAttribute(new Float32Array(nb * 2), 2); aPas.setUsage(THREE.DynamicDrawUsage);
     const ims = parts.map(([geo, m]) => { geo.setAttribute("aPas", aPas); const im = new THREE.InstancedMesh(geo, T.roule ? m : animer(m, T), nb); im.frustumCulled = false; scene.add(im); return im; });
     troupes.push({ T, debut, nb, ims, aPas }); gO.setDrawRange(0, gr.length * 6); };
   GREMLINS_GLB.forEach(T => KF_ATTENTES.push(charger(T).catch(e => console.warn("gremlin", T.f, e))));
   const mat = new THREE.Matrix4(), qt = new THREE.Quaternion(), eu = new THREE.Euler(0, 0, 0, "YXZ"), pos = new THREE.Vector3(), ech = new THREE.Vector3();
   // le cri des gremlins : chacun le sien, toutes les 6 à 8 secondes, jamais tous ensemble ; plus ou moins fort selon qu'il est près ou loin de nous, à gauche ou à droite
-  let criBuf = null, voix = 0;
-  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-cri.mp3?v=1"); criBuf = await actx.decodeAudioData(await r.arrayBuffer()); } catch (e) { console.warn("cri des gremlins", e); } })();
+  let criBuf = null, voix = 0; const bus = () => { if (!L.busKF) { const c = actx.createDynamicsCompressor(); c.threshold.value = -12; c.ratio.value = 6; c.connect(actx.destination); L.busKF = c; } return L.busKF; };   // (un compresseur : forts sans saturer)
+  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-cri.mp3?v=2"); criBuf = await actx.decodeAudioData(await r.arrayBuffer()); } catch (e) { console.warn("cri des gremlins", e); } })();
   const crier = (q, t) => { if (!criBuf || !actx || actx.state !== "running" || voix >= 7 || !M.camera) return; const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(q.x - o.x, q.z - o.z), D = 30;
-    if (d > D) return; const g = actx.createGain(), sn = actx.createBufferSource(); sn.buffer = criBuf; sn.playbackRate.value = .9 + Math.random() * .25; g.gain.value = 2.6 * Math.pow(1 - d / D, 2.2);   // (tout près : très fort ; il s'éteint vite en s'éloignant)
+    if (!(d <= D)) return; const g = actx.createGain(), sn = actx.createBufferSource(); sn.buffer = criBuf; sn.playbackRate.value = .9 + Math.random() * .25; g.gain.value = 3.6 * Math.pow(1 - d / D, 1.8);   // (tout près : très fort ; il s'éteint vite en s'éloignant)
     let sortie = g; if (actx.createStereoPanner) { const pn = actx.createStereoPanner(), dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), rx = dr.x, rz = dr.z, cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(q.x - cx, q.z - cz) || 1;   /* (la droite de la caméra) */
       pn.pan.value = Math.max(-1, Math.min(1, ((q.x - cx) * rx + (q.z - cz) * rz) / l)); g.connect(pn); sortie = pn; }
-    sn.connect(g); sortie.connect(actx.destination); voix++; sn.onended = () => { voix--; try { sortie.disconnect(); } catch (e) {} }; sn.start(); };
+    sn.connect(g); sortie.connect(bus()); voix++; sn.onended = () => { voix--; try { sortie.disconnect(); } catch (e) {} }; sn.start(); };
   // la chorale chante son chant de Noël, en boucle — elle seule ; on l'entend d'autant plus qu'on s'en approche (et plus du tout en quittant Kingston Falls)
   const CH = { x: 10.6 + 2.5 * .56, z: 22 }; let chant = null;
-  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-chorale.mp3?v=1"), b = await actx.decodeAudioData(await r.arrayBuffer());
+  (async () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const r = await fetch("sons/kf-chorale.mp3?v=2"), b = await actx.decodeAudioData(await r.arrayBuffer());
     const sn = actx.createBufferSource(), g = actx.createGain(); sn.buffer = b; sn.loop = true; g.gain.value = 0; let sortie = g; const pn = actx.createStereoPanner ? actx.createStereoPanner() : null; if (pn) { g.connect(pn); sortie = pn; }
-    sn.connect(g); sortie.connect(actx.destination); sn.start(); chant = { g, pn };
+    sn.connect(g); sortie.connect(bus()); sn.start(); chant = { g, pn };
     const garde = setInterval(() => { if (!M || M.lieu !== "kingston") { g.gain.value = 0; if (!M) { try { sn.stop(); } catch (e) {} clearInterval(garde); } } }, 400); } catch (e) { console.warn("la chorale", e); } })();
   // touché par une flèche enflammée : deux fois, et il prend feu, se tord, disparaît… et revient plus loin sur la carte
   const flammes = []; { const ft = tex(toile(64, 128, (x) => { const g = x.createRadialGradient(32, 92, 2, 32, 80, 60); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(.3, "rgba(255,180,50,.95)"); g.addColorStop(.7, "rgba(255,70,10,.5)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 110); x.quadraticCurveTo(32, 128, 12, 110); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
     const fg = new THREE.Group(); scene.add(fg); for (let i = 0; i < 15; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ft, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); } }
-  L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); crier(q, 0); };
+  L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); crier(q, 0); };
   L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; crier(q, 0);
     if (q.pv <= 0) { q.feu = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
   const revenir = q => { const x0 = q.x, z0 = q.z; let p = null; for (let k = 0; k < 40; k++) { const c = tirer(); if (c && Math.hypot(c[0] - x0, c[1] - z0) > 15) { p = c; break; } } if (!p) p = tirer() || [0, 18];
@@ -17392,12 +17394,14 @@ function gremlinsHV(scene, L) {
       for (; f < flammes.length; f++) flammes[f].visible = false; }
     for (const q of gr) { if (q.chorale >= 0 || q.mort > 0 || q.feu > 0 || q.ejecte) continue; if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
     if (chant && M.camera) { const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(CH.x - o.x, CH.z - o.z), D = 26;
-      chant.g.gain.value = d > D ? 0 : 2.6 * Math.pow(1 - d / D, 2.0);
+      chant.g.gain.value = !(d <= D) ? 0 : 3.6 * Math.pow(1 - d / D, 1.6);
       if (chant.pn) { const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(CH.x - cx, CH.z - cz) || 1; chant.pn.pan.value = Math.max(-1, Math.min(1, ((CH.x - cx) * dr.x + (CH.z - cz) * dr.z) / l)) * .8; } }
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false; if (q.mort > 0 || q.feu > 0 || q.ejecte) { q.am = 0; if (q.ejecte) q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; continue; }
       // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
-      if (q.grimpeur && q.perche && !q.perche.colle && L.perchesKF) { const P = L.perchesKF.find(p => p.colle && p.occ < (p.cap || 2)); if (P) { q.perche.occ--; q.perche = P; P.occ++; } }   // (la voiture de police et le dos du père Noël d'abord)
-      if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
+      if (q.dosNoel && q.perche !== (L.perchesKF && L.perchesKF.find(p => p.dos)) && L.perchesKF) { const P = L.perchesKF.find(p => p.dos);   // (celui-là, toujours sur le dos du père Noël — il y remonte dès qu'il revient)
+        if (P) { const o = gr.find(g => g !== q && g.perche === P); if (o) { o.perche = null; o.cible = null; P.occ--; } if (q.perche) q.perche.occ--; q.perche = P; P.occ++; q.grimpeur = true; } }
+      if (q.grimpeur && q.perche && !q.perche.colle && L.perchesKF) { const P = L.perchesKF.find(p => p.colle && !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche.occ--; q.perche = P; P.occ++; } }   // (la voiture de police et le dos du père Noël d'abord)
+      if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
       if (q.chorale >= 0) { q.rot = Math.sin(t / 900 + q.chorale) * .1 + (q.chorale - 2.5) * -.06; q.ph += dt * 2.2; q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; q.am += (.1 - q.am) * Math.min(1, dt * 4); continue; }   // (ils chantent : immobiles, ils se balancent)
       if (q.chasse && L.victimeKF) { const V = L.victimeKF, a = t / 600 + q.ph * 3, tx = V.x + Math.cos(a) * .85, tz = V.z + Math.sin(a) * .85, ddx = tx - q.x, ddz = tz - q.z, l = Math.hypot(ddx, ddz);   // (ils harcèlent le passant, lui sautent dessus)
         if (l > .05) { const v = Math.min(l, 4.6 * dt); q.x += ddx / l * v; q.z += ddz / l * v; court = true; q.ph += dt * 4.6 * 4.4; let d = Math.atan2(ddx, ddz) - q.rot; d = Math.atan2(Math.sin(d), Math.cos(d)); q.rot += d * Math.min(1, dt * 12); }
@@ -17423,7 +17427,7 @@ function gremlinsHV(scene, L) {
       if (q.vy || q.saut > 0) { q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut <= 0) { q.saut = 0; q.vy = 0; } }
       const k = Math.min(1, dt * 8); q.am += ((court && !q.T.roule ? (q.perche && q.perche.colle ? .45 : 1) : 0) - q.am) * k; if (!(q.perche && q.perche.colle)) q.pen += ((court ? (q.T.roule ? q.vire * .6 : q.T.penche ?? .22) : 0) - q.pen) * k;
       if (court && !q.T.roule) q.ph += dt * q.v * 4.4;
-      q.y = q.perche ? (q.perche.colle ? (q.perche.aplat != null ? q.perche.y : q.perche.cou - .9 * q.s) : q.perche.y) : (L.hauteur ? L.hauteur(q.x, q.z) : 0); }
+      q.y = q.perche ? (q.perche.colle ? (q.perche.aplat != null ? q.perche.y : q.perche.cou - .9 * q.s + (q.perche.dos ? .32 : 0)) : q.perche.y) : (L.hauteur ? L.hauteur(q.x, q.z) : 0); }
     for (const tr of troupes) { const A = tr.aPas.array;
       for (let j = 0; j < tr.nb; j++) { const q = gr[tr.debut + j], bob = q.am * Math.abs(Math.cos(q.ph)) * .035, tremble = q.am ? 0 : Math.sin(t / 90 + q.ph) * .006;
         if (q.T.roule) eu.set(q.pen, q.rot - Math.PI / 2, 0); else eu.set(q.pen + tremble, q.rot + (q.am < .1 && !q.cible ? Math.sin(t / 700 + q.ph) * .35 : 0), 0);
@@ -17823,7 +17827,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       Thigh_L: "LeftUpLeg", Calf_L: "LeftLeg", Foot_L: "LeftFoot", Toe_L: "LeftToeBase" }, nomOs = n => NOMS[n.replace(/_\d+$/, "")] || n;
     // son trajet : le milieu de la rue au sud de la place, puis la rue de l'est ; il va, se retourne, revient
     const CHEMIN = [[-19, 16.3], [-6, 16.6], [6, 16.1], [19.5, 16.4], [20.3, 6], [20.1, -4], [20.4, -11]], PN = { x: CHEMIN[0][0], z: CHEMIN[0][1], dx: 1, dz: 0 };
-    const perDos = { x: 0, z: 0, y: 0, r: 0, hx: .03, hz: .03, occ: 0, cap: 1 }; (L.perchesKF = L.perchesKF || []).unshift(perDos); L.victimeKF = PN;
+    const perDos = { x: 0, z: 0, y: 0, r: 0, hx: .03, hz: .03, occ: 0, cap: 1, dos: true }; (L.perchesKF = L.perchesKF || []).unshift(perDos); L.victimeKF = PN;
     KF_ATTENTES.push((async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const [G, AM] = await Promise.all([new gltfMod.GLTFLoader().loadAsync("avatars/kingston/perenoel.glb?v=1"), chargerAnimsMX("anims/re-heros.json?v=4")]);
       const sc = G.scene, bb = new THREE.Box3().setFromObject(sc), k = 1.82 / (bb.max.y - bb.min.y), g = new THREE.Group(), inner = new THREE.Group(); inner.add(sc); sc.position.y = -bb.min.y; inner.scale.setScalar(k); g.add(inner); scene.add(g);
       sc.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
@@ -17865,7 +17869,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const feuF = tex(toile(32, 32, (x) => { const g = x.createRadialGradient(16, 16, 0, 16, 16, 15); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.4, "rgba(255,150,30,.9)"); g.addColorStop(1, "rgba(255,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }));
     const vise = (o, yaw) => { let best = null, bd = 1e9; for (const q of L.gremlins || []) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - o.x, dz = q.z - o.z, d = Math.hypot(dx, dz); if (d > 26 || d < .3) continue;
         let da = Math.atan2(dx, dz) - yaw; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); const sc = d + da * 9; if (da < .9 && sc < bd) { bd = sc; best = q; } } return best; };
-    let yawG = 0, dernierTir = 0;
+    let yawG = 0, dernierTir = 0, sautG = 0, vSautG = 0;
+    L.sauterGizmo = () => { if (sautG === 0 && vSautG === 0 && M && M.lieu === "kingston") vSautG = 4.4; };   // (un bond : A à la manette, J au clavier, ou le bouton)
     const tirer = () => { const moi = M && M.gens.get(M.moiNum); if (!moi || M.lieu !== "kingston" || performance.now() - dernierTir < 450) return; dernierTir = performance.now();
       const o = moi.g.position, cible = vise(o, yawG); if (cible) yawG = Math.atan2(cible.x - o.x, cible.z - o.z);
       const g = new THREE.Group(), h = new THREE.Mesh(hampeG, hampeM); g.add(h); for (const a of [0, Math.PI / 2]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(.05, .08), plumeM); p.position.z = -.22; p.rotation.set(0, Math.PI / 2, a); g.add(p); }
@@ -17885,11 +17890,14 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const bt = document.createElement("button"); bt.type = "button"; bt.textContent = "🏹"; bt.title = "Tirer une flèche enflammée (F, Espace, ou la gâchette droite de la manette)";
     bt.style.cssText = "position:absolute;right:16px;bottom:84px;z-index:6;width:68px;height:68px;border-radius:50%;border:3px solid #ffb030;background:rgba(40,12,4,.82);color:#fff;font-size:34px;box-shadow:0 0 18px rgba(255,120,30,.7);display:none;touch-action:manipulation";
     for (const ev of ["pointerdown", "touchstart"]) bt.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); tirer(); }, { passive: false });
-    const touche = e => { if ((e.key === "f" || e.key === "F") && !/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) tirer(); }; window.addEventListener("keydown", touche);
+    const touche = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if (e.key === "f" || e.key === "F") tirer(); if (e.key === "j" || e.key === "J") L.sauterGizmo(); };
+    const bs = document.createElement("button"); bs.type = "button"; bs.textContent = "⤴️"; bs.title = "Sauter (J, ou A à la manette)";
+    bs.style.cssText = "position:absolute;right:96px;bottom:84px;z-index:6;width:56px;height:56px;border-radius:50%;border:3px solid #9fd0ff;background:rgba(6,20,40,.8);color:#fff;font-size:26px;display:none;touch-action:manipulation";
+    for (const ev of ["pointerdown", "touchstart"]) bs.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); L.sauterGizmo(); }, { passive: false }); window.addEventListener("keydown", touche);
     let pos0 = null, enPlace = false;
-    const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !bt.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(bt); M.ctx.conteneur.appendChild(vies); } bt.style.display = ici ? "block" : "none"; vies.style.display = ici && !M.cine ? "block" : "none";
+    const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !bt.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(bt); M.ctx.conteneur.appendChild(bs); M.ctx.conteneur.appendChild(vies); } bt.style.display = bs.style.display = ici ? "block" : "none"; vies.style.display = ici && !M.cine ? "block" : "none";
       if (!ici && racine.parent) { const p = racine.parent; p.remove(racine); p.children.forEach(c => { c.visible = true; c.traverse(o => o.layers.set(0)); }); enPlace = false; if (G) { G.band.visible = G.arc.visible = false; } }   // (on quitte Kingston Falls : on redevient soi-même)
-      if (!M) { clearInterval(garde); window.removeEventListener("keydown", touche); bt.remove(); vies.remove(); } }, 300);
+      if (!M) { clearInterval(garde); window.removeEventListener("keydown", touche); bt.remove(); bs.remove(); vies.remove(); } }, 300);
     L.gizmoMaj = (dt, t) => { const moi = M && M.gens.get(M.moiNum); if (!moi || !G) return;
       if (racine.parent !== moi.g) { moi.g.add(racine); enPlace = true; } for (const c of moi.g.children) if (c !== racine) { c.visible = false; c.traverse(o => o.layers.set(31)); }   // (notre bonhomme, caché — sur un calque que la caméra ne voit pas : le jeu le réaffiche à chaque image — c'est Gizmo)
       G.band.visible = G.arc.visible = true;
@@ -17902,7 +17910,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       // (sa vraie taille : mesurée une fois animé — du bout des pieds au sommet du crâne, la tête faisant ~45 % de sa hauteur au-dessus de l'os du cou)
       if (!G.cal && G.tete && G.pieds.length) { racine.updateMatrixWorld(true); const w = new THREE.Vector3(); let ym = 1e9; for (const b of G.pieds) ym = Math.min(ym, b.getWorldPosition(w).y); const hy = G.tete.getWorldPosition(w).y - ym;
         if (hy > .01) { G.inner.scale.multiplyScalar(HG / (hy * 1.5)); G.cal = true; } }
-      if (G.pieds.length) { racine.updateMatrixWorld(true); let ym = 1e9; const w = new THREE.Vector3(); for (const b of G.pieds) ym = Math.min(ym, b.getWorldPosition(w).y); const sol = p.y + .015; G.inner.position.y += (sol - ym) * Math.min(1, dt * 12); }
+      if (G.pieds.length) { racine.updateMatrixWorld(true); let ym = 1e9; const w = new THREE.Vector3(); for (const b of G.pieds) ym = Math.min(ym, b.getWorldPosition(w).y); if (vSautG || sautG > 0) { sautG += vSautG * dt; vSautG -= 13 * dt; if (sautG <= 0) { sautG = 0; vSautG = 0; } }   // (le bond : il monte, retombe)
+        const sol = p.y + .015 + sautG; G.inner.position.y += (sol - ym) * Math.min(1, dt * (sautG > 0 ? 60 : 12)); }
       // le bandana suit la tête, l'arc la main gauche
       const tp = new THREE.Vector3(); if (G.tete) { G.tete.getWorldPosition(tp); } else tp.set(p.x, p.y + HG * .75, p.z); G.band.position.set(tp.x, tp.y + HG * .2, tp.z); G.band.rotation.set(0, yawG, 0);
       G.pans.forEach((m, i) => { m.rotation.x = .5 + Math.sin(t / 120 + i) * .25 + Math.min(.6, v * .15); });
@@ -17953,7 +17962,10 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     pb.forEach(([x, z]) => obst.push([x, z, .5]));
     lot(new THREE.CylinderGeometry(.32, .32, .05, 14), metal, placer(8, trottoir), ([x, z]) => { e.set(Math.random() * .4 + 1.2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, y0 + .15, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); });   // (les couvercles)
     lot(blob(2, .3), sacM, placer(22), ([x, z]) => { e.set(0, Math.random() * 6, 0); mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + .15, z), q.setFromEuler(e), new THREE.Vector3(.32 + Math.random() * .1, .2, .26)); });
-    lot(new THREE.BoxGeometry(1, 1, 1), carton, placer(18), ([x, z]) => { e.set(Math.random() * .5, Math.random() * 6, Math.random() * .5); const s = .25 + Math.random() * .3; mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + s * .35, z), q.setFromEuler(e), new THREE.Vector3(s, s * .7, s * .8)); });
+    // les cartons : on ne les traverse pas — on les pousse, ils glissent sur la neige (comme ceux de Resident Evil)
+    const cartons = placer(18).map(([x, z]) => { const k = .25 + Math.random() * .3; return { x, z, y: L.hauteur ? L.hauteur(x, z) : 0, k, s: k * 2, ry: Math.random() * 6, rx: Math.random() * .5, rz: Math.random() * .5 }; });
+    const imC = lot(new THREE.BoxGeometry(1, 1, 1), carton, cartons, () => {}); imC.frustumCulled = false;
+    L.cartons = { im: imC, c: cartons, maj: () => { cartons.forEach((c, i) => { e.set(c.rx, c.ry, c.rz); mt.compose(new THREE.Vector3(c.x, (L.hauteur ? L.hauteur(c.x, c.z) : c.y) + c.k * .35, c.z), q.setFromEuler(e), new THREE.Vector3(c.k, c.k * .7, c.k * .8)); imC.setMatrixAt(i, mt); }); imC.instanceMatrix.needsUpdate = true; } }; L.cartons.maj();
     lot(new THREE.CylinderGeometry(.033, .033, .12, 8), canM, placer(50), ([x, z]) => { e.set(Math.PI / 2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + .035, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); });
     // les journaux : une page imprimée (le titre, les colonnes), qui glisse au ras du sol, se soulève dans les rafales, retombe, tournoie
     const jT = tex(toile(256, 180, (x) => { x.fillStyle = "#e4dfd2"; x.fillRect(0, 0, 256, 180); x.fillStyle = "#1a1a1a"; x.font = "bold 22px Georgia, serif"; x.textAlign = "center"; x.fillText("KINGSTON FALLS", 128, 26); x.fillRect(10, 32, 236, 2);
@@ -17999,7 +18011,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   // ---- les passants : des gens de Kingston Falls, en tenue d'hiver des années 80, qui vont et viennent sur la place ----
   const PASS = passantsHiver(scene, L, obst);
   const GREM = gremlinsHV(scene, L);   // et les gremlins, lâchés dans la ville
-  const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight);
+  const hemi = scene.children.find(o => o.isHemisphereLight), sol2 = scene.children.find(o => o.isDirectionalLight); if (sol2) sol2.castShadow = false;   // (la nuit : pas d'ombres portées de la lune — tout le décor redessiné une fois de moins à chaque image)
   L.anim = (t) => { anim0 && anim0(t); for (const o of scene.children) if (o.isMesh && o.renderOrder === -1 && o.visible) o.visible = false;   /* (pas les nuages bleus du beau temps : le ciel bas et gris de l'hiver) */ if (hemi) { hemi.intensity = .5; hemi.color.setHex(0x8a9cd0); hemi.groundColor.setHex(0x2a3040); } if (sol2) { sol2.intensity = .38; sol2.color.setHex(0xa8b8e8); }
     const dt = Math.min(.1, (t - (tP || t)) / 1000); tP = t; PASS && PASS(dt, t); L.policeMaj && L.policeMaj(dt, t); GREM && GREM(dt, t);
     const a = fg.attributes.position.array; for (let i = 0; i < NF; i++) { a[i * 3 + 1] -= vit[i] * dt; a[i * 3] += Math.sin(t / 900 + i) * .25 * dt; if (a[i * 3 + 1] < 0) a[i * 3 + 1] += 26; } fg.attributes.position.needsUpdate = true;
@@ -18007,7 +18019,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
     if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
     if (L.feuTour) L.feuTour.visible = (t % 1600) < 700;
-    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t); L.pereNoel && L.pereNoel(dt, t); L.gizmoMaj && L.gizmoMaj(dt, t);
+    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t); L.pereNoel && L.pereNoel(dt, t); L.gizmoMaj && L.gizmoMaj(dt, t); if (M && M.L === L) pousserCartons(Math.min(.05, dt));
     (L.guirlandesBar || []).forEach((im, k) => { im.material.color.setHex(couleurs[k % couleurs.length]).multiplyScalar(.5 + .5 * (Math.sin(t / 300 + k * 2.3) > 0 ? 1 : .3)); });
     // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
     for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
