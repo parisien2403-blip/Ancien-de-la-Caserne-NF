@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.11";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.12";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -14959,7 +14959,8 @@ function manette() {
   const pg = M.gbCombat && M.gbCombat.piegeBtn; if (pg) { if (appui(0)) { pg.click(); fin(); return; } if (M.relief && !MAN.piegeDit) { MAN.piegeDit = true; bulle("🎮 Appuie sur A pour lancer le piège !", 5000); } } else MAN.piegeDit = false;
   if (M.cine) { fin(); return; }
   if (appui(0) && M.L.pieuManette && M.L.pieuManette()) { fin(); return; }   /* (Santa Carla : planter le pieu) */
-  if (appui(0) && M.lieu === "kingston" && M.L.sauterGizmo && !M.action && !M.cine && !M.manMenu) M.L.sauterGizmo();   // (Kingston Falls : A fait sauter Gizmo — sauf s'il y a quelque chose à faire)
+  if (appui(0) && M.lieu === "kingston" && M.L.actionKF && !M.cine && !M.manMenu) M.L.actionKF();   // (Kingston Falls : A — couper la chaîne, abaisser le levier…)
+  else if (appui(0) && M.lieu === "kingston" && M.L.sauterGizmo && !M.action && !M.cine && !M.manMenu) M.L.sauterGizmo();   // (Kingston Falls : A fait sauter Gizmo — sauf s'il y a quelque chose à faire)
   if (appui(0) && M.action) agir();
   if (appui(6) && M.lampeBtn) M.lampeBtn.click();
   if (appui(3) && M.carteBtn) M.carteBtn.click();
@@ -17879,6 +17880,81 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     chargerKF("antenne").then(({ parts, t }) => { const k = Math.min(TOUR.x1 - TOUR.x0, TOUR.z1 - TOUR.z0) / Math.max(t.x, t.z); poser(parts, [mt4(cx, y0, cz, 0, k)]);
       const feu = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: 0xff2010, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false }));
       feu.scale.set(1.6, 1.6, 1); feu.position.set(cx, y0 + t.y * k + .3, cz); { const gF = new THREE.Group(); gF.add(feu); scene.add(gF); } L.feuTour = feu; }).catch(e => console.warn("tour", e)); }
+  // ---- la quête de l'antenne : une pince coupante cachée dehors (à chaque partie, ailleurs) ; une grille autour de l'antenne, fermée d'une chaîne et d'un cadenas ;
+  //      on coupe la chaîne, on entre, on abaisse le levier du boîtier électrique : les quatre projecteurs (ceux de la terrasse de Resident Evil) s'allument aux coins de la ville ----
+  { const F = { x0: 3.6, x1: 15, z0: -15.4, z1: -2.4 }, GX0 = 8.6, GX1 = 10.6, HG2 = 2.3, LX = 12.8, LZ = -3.3, Q = {};
+    const dansGrille = (x, z) => x > F.x0 - .6 && x < F.x1 + .6 && z > F.z0 - .6 && z < F.z1 + .6;
+    // le grillage : des losanges de fil de fer (on voit à travers), des poteaux, une barre en haut
+    const grT = tex(toile(64, 64, x => { x.clearRect(0, 0, 64, 64); x.strokeStyle = "#c8ccd2"; x.lineWidth = 3; x.beginPath(); x.moveTo(0, 32); x.lineTo(32, 0); x.lineTo(64, 32); x.lineTo(32, 64); x.closePath(); x.stroke(); }));
+    grT.wrapS = grT.wrapT = THREE.RepeatWrapping;
+    const grM = new THREE.MeshStandardMaterial({ map: grT, alphaTest: .4, side: THREE.DoubleSide, metalness: .6, roughness: .45, color: 0xc0c6cc }), ferM = new THREE.MeshStandardMaterial({ color: 0x7a8088, metalness: .7, roughness: .4 });
+    const grillage = (len, h) => { const g = new THREE.PlaneGeometry(len, h), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * len / .32, uv.getY(i) * h / .32); g.translate(len / 2, h / 2, 0); return new THREE.Mesh(g, grM); };
+    const seg = (ax, az, bx, bz) => { const l = Math.hypot(bx - ax, bz - az), r = -Math.atan2(bz - az, bx - ax), m = grillage(l, HG2); m.position.set(ax, y0 + .05, az); m.rotation.y = r; scene.add(m);
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, l, 6).rotateZ(Math.PI / 2).translate(l / 2, 0, 0), ferM); rail.position.set(ax, y0 + HG2 + .05, az); rail.rotation.y = r; scene.add(rail);
+      const n = Math.max(1, Math.round(l / 2.5)); for (let i = 0; i <= n; i++) { const u = i / n, po = new THREE.Mesh(new THREE.CylinderGeometry(.045, .05, HG2 + .1, 8), ferM); po.position.set(ax + (bx - ax) * u, y0 + (HG2 + .1) / 2, az + (bz - az) * u); scene.add(po); }
+      for (let d = 0; d <= l; d += .45) obst.push([ax + (bx - ax) * d / l, az + (bz - az) * d / l, .32]); };
+    seg(F.x0, F.z0, F.x1, F.z0); seg(F.x0, F.z0, F.x0, F.z1); seg(F.x1, F.z0, F.x1, F.z1); seg(F.x0, F.z1, GX0, F.z1); seg(GX1, F.z1, F.x1, F.z1);
+    // la porte de la grille (elle pivote sur son poteau de gauche), la chaîne enroulée et le gros cadenas
+    const porte = new THREE.Group(); porte.position.set(GX0, y0 + .05, F.z1); scene.add(porte);
+    { const pg = grillage(GX1 - GX0 - .1, HG2 - .1); pg.position.set(.05, .05, 0); porte.add(pg);
+      for (const [l, x, y, r] of [[GX1 - GX0, (GX1 - GX0) / 2, .06, Math.PI / 2], [GX1 - GX0, (GX1 - GX0) / 2, HG2 - .04, Math.PI / 2], [HG2, .04, HG2 / 2, 0], [HG2, GX1 - GX0 - .04, HG2 / 2, 0]]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, l, 6), ferM); b.position.set(x, y, 0); b.rotation.z = r; porte.add(b); } }
+    const chaine = new THREE.Group(); chaine.position.set(GX1 - .05, y0 + 1.15, F.z1); scene.add(chaine);
+    { const acier = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, metalness: .85, roughness: .3 }), mail = new THREE.TorusGeometry(.045, .012, 6, 12);
+      for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(mail, acier), a = i / 9 * Math.PI * 2; m.position.set(Math.cos(a) * .12, Math.sin(a) * .16 - (i % 2) * .02, Math.sin(a) * .06); m.rotation.set(i % 2 ? Math.PI / 2 : 0, a, 0); chaine.add(m); }
+      const cad = new THREE.Mesh(new THREE.BoxGeometry(.11, .13, .05), new THREE.MeshStandardMaterial({ color: 0xb08a2a, metalness: .8, roughness: .35 })); cad.position.set(.02, -.26, .07); chaine.add(cad);
+      const anse = new THREE.Mesh(new THREE.TorusGeometry(.035, .01, 6, 12, Math.PI), acier); anse.position.set(.02, -.19, .07); chaine.add(anse); }
+    const portObs = []; for (let x = GX0; x <= GX1; x += .4) { const o = [x, F.z1, .32]; portObs.push(o); obst.push(o); }
+    // le boîtier électrique, dans la cour de l'antenne, et son levier (en haut : éteint)
+    const boite = new THREE.Group(); boite.position.set(LX, y0, LZ); scene.add(boite); obst.push([LX, LZ, .4]);
+    { const vert = new THREE.MeshStandardMaterial({ color: 0x4a5a48, roughness: .6, metalness: .4 }); const b = new THREE.Mesh(new THREE.BoxGeometry(.6, .8, .3), vert); b.position.y = 1.0; boite.add(b);
+      const pied = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .6, 6), ferM); pied.position.y = .3; boite.add(pied);
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(.22, .14), new THREE.MeshBasicMaterial({ map: tex(toile(64, 40, x => { x.fillStyle = "#f2d020"; x.fillRect(0, 0, 64, 40); x.fillStyle = "#111"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText("⚡", 32, 32); })) })); pl.position.set(-.12, 1.2, .152); boite.add(pl); }
+    const levier = new THREE.Group(); levier.position.set(.2, 1.05, .17); boite.add(levier);
+    { const bras = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .32, 6), ferM); bras.position.y = .16; levier.add(bras); const bout = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 8), new THREE.MeshStandardMaterial({ color: 0xd01818, roughness: .4 })); bout.position.y = .32; levier.add(bout); }
+    levier.rotation.x = -.35;
+    // les quatre projecteurs sur leur mât, aux quatre coins : éteints (comme ceux de la terrasse de Resident Evil : la tête braquée vers la place, le cône de lumière, la tache claire au sol)
+    const halo = tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 1, 32, 32, 31); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.35, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
+    const metalP = new THREE.MeshStandardMaterial({ color: 0x3a3c40, roughness: .5, metalness: .7 }), PJ = [];
+    for (const [cx, cz] of [[-26.3, 22.3], [26.3, 22.3], [-26.3, -14.9], [26.3, -14.9]]) { const hM = 5.4, p = new THREE.Group(); p.position.set(cx, y0, cz); scene.add(p); obst.push([cx, cz, .35]);
+      { const m2 = new THREE.Mesh(new THREE.CylinderGeometry(.07, .1, hM, 8), metalP); m2.position.y = hM / 2; p.add(m2); const base = new THREE.Mesh(new THREE.BoxGeometry(.45, .14, .45), metalP); base.position.y = .07; p.add(base); }
+      const lx = -cx * .55, lz = (4 - cz) * .55, vers = new THREE.Vector3(lx, -hM, lz).normalize(), tete = new THREE.Group(); tete.position.y = hM; tete.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), vers); p.add(tete);
+      const corps = new THREE.Mesh(new THREE.CylinderGeometry(.3, .25, .45, 14), metalP); corps.rotation.x = Math.PI / 2; tete.add(corps);
+      const vitre = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0x2a2c30 })); vitre.position.z = .23; tete.add(vitre);
+      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xfff4d8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); gl.position.z = .35; gl.scale.setScalar(2.4); gl.visible = false; tete.add(gl);
+      const dist = Math.hypot(lx, hM, lz) * .85, gc = new THREE.ConeGeometry(2.6, dist, 20, 1, true); gc.translate(0, -dist / 2, 0); gc.rotateX(-Math.PI / 2);
+      const cm = new THREE.Mesh(gc, new THREE.MeshBasicMaterial({ color: 0xfff2d8, transparent: true, opacity: .09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cm.position.z = .25; cm.visible = false; tete.add(cm);
+      const t2 = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: halo, color: 0xfff0d0, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 })); t2.rotation.x = -Math.PI / 2; t2.position.set(lx * .9, .06, lz * .9); t2.visible = false; p.add(t2);
+      PJ.push({ vitre, gl, cm, t2 }); }
+    const allumer = (P, on) => { P.vitre.material.color.setHex(on ? 0xfffbe8 : 0x2a2c30); P.gl.visible = P.cm.visible = P.t2.visible = on; };
+    // la pince coupante : posée dans la neige, quelque part dehors — chaque partie ailleurs ; une lueur qui scintille pour la repérer
+    const P = {}; chargerKF("pince").then(({ parts, t }) => { const k = .75 / Math.max(t.x, t.y, t.z), debout = t.y > Math.max(t.x, t.z), sortie = [-26.5, -9.5];   // (debout : le modèle est dressé — on le couche dans la neige)
+      for (let i = 0; i < 400 && !P.x; i++) { const x = -26 + Math.random() * 52, z = -15 + Math.random() * 38; if (L.limites(x, z) && [[1.3, 0], [-1.3, 0], [0, 1.3], [0, -1.3]].every(([a, b]) => L.limites(x + a, z + b)) && !dansGrille(x, z) && !(L.dansLou && L.dansLou(x, z)) && Math.hypot(x - sortie[0], z - sortie[1]) > 8) { P.x = x; P.z = z; } }
+      if (!P.x) { P.x = 0; P.z = 18; } P.ims = poser(parts, [debout ? mt4(P.x, y0 + .02 + t.z * k / 2, P.z, Math.random() * 6, k, k, k, Math.PI / 2) : mt4(P.x, y0 + .02, P.z, Math.random() * 6, k)]);
+      const gG = new THREE.Group(); scene.add(gG); P.gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xbfe0ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); P.gl.position.set(P.x, y0 + .25, P.z); gG.add(P.gl); L.pinceKF = P; }).catch(e => console.warn("pince", e));
+    // l'action : un bouton (E au clavier, A à la manette) quand il y a quelque chose à faire ; et dans l'inventaire, la pince
+    const ab = document.createElement("button"); ab.type = "button"; ab.style.cssText = "position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:6;padding:12px 20px;border-radius:99px;border:3px solid #ffd23a;background:rgba(30,20,4,.86);color:#fff;font:800 17px 'Lato',sans-serif;display:none;touch-action:manipulation;box-shadow:0 0 16px rgba(255,200,60,.5)";
+    for (const ev of ["pointerdown", "touchstart"]) ab.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); L.actionKF && L.actionKF(); }, { passive: false });
+    const inv = document.createElement("div"); inv.style.cssText = "position:absolute;left:12px;top:80px;z-index:6;font-size:15px;color:#fff;background:rgba(0,0,0,.55);border-radius:10px;padding:4px 10px;pointer-events:none;display:none;font-family:'Lato',sans-serif"; inv.textContent = "✂️ Pince coupante";
+    const toucheE = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if ((e.key === "e" || e.key === "E") && L.actionKF && M && M.lieu === "kingston") L.actionKF(); }; window.addEventListener("keydown", toucheE);
+    const gardeQ = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !ab.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(ab); M.ctx.conteneur.appendChild(inv); }
+      if (!ici) { ab.style.display = inv.style.display = "none"; } if (!M) { clearInterval(gardeQ); window.removeEventListener("keydown", toucheE); ab.remove(); inv.remove(); } }, 400);
+    const info = t => M && M.ctx.surInfo && M.ctx.surInfo(t);
+    const couper = () => { if (Q.coupe) return; Q.coupe = true; L.actionKF = null; sonBruit(.12, 3200, .55); setTimeout(() => sonBruit(.25, 900, .4), 120);
+      chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0; info("✂️ Clac ! La chaîne cède, la grille s'ouvre."); };
+    const abaisser = () => { if (Q.levier) return; Q.levier = true; Q.lev = 0; L.actionKF = null; sonBruit(.18, 500, .6);
+      PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.1, 260, .7); allumer(PP, true); setTimeout(() => allumer(PP, false), 90); setTimeout(() => allumer(PP, true), 200); }, 800 + i * 550));
+      setTimeout(() => info("💡 Les quatre projecteurs s'allument aux quatre coins de Kingston Falls !"), 800 + 4 * 550); };
+    L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
+      if (L.pinceKF && !Q.pince) { const PP = L.pinceKF, k = .5 + .5 * Math.sin(t / 180); PP.gl.material.opacity = .35 + .65 * k; PP.gl.scale.setScalar(.35 + .35 * k);
+        if (Math.hypot(p.x - PP.x, p.z - PP.z) < 1.1) { Q.pince = true; PP.ims.forEach(im => im.visible = false); PP.gl.visible = false; sonBruit(.08, 4200, .35); inv.style.display = "block";
+          info("✂️ Gizmo a trouvé une pince coupante ! Elle pourrait bien ouvrir la grille de l'antenne…"); } }
+      if (Q.ouvre != null && Q.ouvre < 1) { Q.ouvre = Math.min(1, Q.ouvre + dt * .9); const e = 1 - (1 - Q.ouvre) ** 3; porte.rotation.y = e * 1.9; }   // (elle pivote vers l'intérieur)
+      if (Q.lev != null && Q.lev < 1) { Q.lev = Math.min(1, Q.lev + dt * 3); levier.rotation.x = -.35 + Q.lev * 2.3; }
+      let act = null, lab = ""; const dG = Math.hypot(p.x - (GX0 + GX1) / 2, p.z - (F.z1 + .5));
+      if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } else if (!Q.dit) { Q.dit = true; info("🔒 La grille de l'antenne est fermée par une grosse chaîne… Il faudrait une pince coupante."); } }
+      else if (Q.coupe && !Q.levier && Math.hypot(p.x - LX, p.z - (LZ + .55)) < 1.3) { act = abaisser; lab = "⚡ Abaisser le levier"; }
+      if (dG > 5) Q.dit = false;
+      L.actionKF = act; if (ab.textContent !== lab) ab.textContent = lab; ab.style.display = act && !M.cine ? "block" : "none"; if (Q.pince && !Q.levier) inv.style.display = "block"; else if (Q.levier) inv.style.display = "none"; }; }
   // ---- dans le bar (Dorry's Tavern), lumières éteintes : la guirlande électrique au-dessus du comptoir, les couronnes de sapin aux murs, le sapin éteint dans le coin ----
   if (L.salleLou) { const V = L.salleLou.vers, [ax, az] = V(0, 0), [bx, bz] = V(1, 0), rl = Math.atan2(bz - az, bx - ax);   // (rl : l'angle de l'axe x de la salle dans le monde)
     const yb = L.salleLou.H ? .125 : .125, ampB = [];
@@ -18131,7 +18207,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
     if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
     if (L.feuTour) L.feuTour.visible = (t % 1600) < 700;
-    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t); L.pereNoel && L.pereNoel(dt, t); L.gizmoMaj && L.gizmoMaj(dt, t); if (M && M.L === L) pousserCartons(Math.min(.05, dt));
+    L.feuAccident && L.feuAccident(t); L.journaux && L.journaux(dt, t); L.pereNoel && L.pereNoel(dt, t); L.gizmoMaj && L.gizmoMaj(dt, t); L.queteKF && L.queteKF(Math.min(.05, dt), t); if (M && M.L === L) pousserCartons(Math.min(.05, dt));
     (L.guirlandesBar || []).forEach((im, k) => { im.material.color.setHex(couleurs[k % couleurs.length]).multiplyScalar(.5 + .5 * (Math.sin(t / 300 + k * 2.3) > 0 ? 1 : .3)); });
     // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
     for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
