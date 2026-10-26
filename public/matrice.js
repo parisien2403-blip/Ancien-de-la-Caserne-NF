@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.03";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.04";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -17506,7 +17506,12 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const k = 1 + amp * (Math.sin(v.x * 3.1 + ph) * Math.sin(v.y * 2.7 + ph * .7) * Math.sin(v.z * 3.3 + ph * 1.3)); p.setXYZ(i, v.x * k, v.y * k * .85, v.z * k); }
     g.computeVertexNormals(); return g; };
   const neigeArbre = new THREE.MeshStandardMaterial({ color: 0xf3f6fa, roughness: .95, normalMap: nN(1.5), normalScale: new THREE.Vector2(.7, .7) });
-  { const pts = []; scene.traverse(o => { if (o.isMesh && feuilles.includes(o.material)) { o.visible = false; pts.push([o.position.clone(), o.scale.x]); } });
+  // le coin nord-est de la place, dégagé pour la tour radio (ses arbres, ses haies, ses obstacles)
+  const TOUR = { x0: 4.5, x1: 14.2, z0: -14.6, z1: -4.2 }, dansTour = (x, z) => x > TOUR.x0 && x < TOUR.x1 && z > TOUR.z0 && z < TOUR.z1;
+  { scene.updateMatrixWorld(true); const c = new THREE.Vector3(); scene.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.geometry) return; o.geometry.computeBoundingSphere(); c.copy(o.geometry.boundingSphere.center).applyMatrix4(o.matrixWorld);
+      if (dansTour(c.x, c.z) && c.y < 8 && o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis() < 5) o.visible = false; });
+    for (let i = obst.length - 1; i >= 0; i--) if (dansTour(obst[i][0], obst[i][1])) obst.splice(i, 1); }
+  { const pts = []; scene.traverse(o => { if (o.isMesh && feuilles.includes(o.material)) { o.visible = false; const w = o.getWorldPosition(new THREE.Vector3()); if (!dansTour(w.x, w.z)) pts.push([w, o.scale.x]); } });
     const sel = pts.filter((_, i) => i % 2 === 0), g = blob(3, .2), im = new THREE.InstancedMesh(g, neigeArbre, sel.length), mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
     sel.forEach(([p, sc2], i) => { const r = .42 + sc2 * .32; e.set(alea() * 3, alea() * 3, alea() * 3); q.setFromEuler(e); mt.compose(p, q, new THREE.Vector3(r * (1 + alea() * .25), r * (.8 + alea() * .3), r)); im.setMatrixAt(i, mt); });
     im.castShadow = true; im.receiveShadow = true; scene.add(im); }
@@ -17549,8 +17554,11 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
   //      Configcars / maxipub ; CC-BY-NC-SA : « Mon beau sapin » par koafranck), allégés ; chacun chargé une fois, posé en instances ----
   const chargerKF = f => (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const g = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/" + f + ".glb?v=1");
     g.scene.updateMatrixWorld(true); const parMat = new Map();
-    g.scene.traverse(o => { if (!o.isMesh) return; let ge = o.geometry.clone(); ge.applyMatrix4(o.matrixWorld); if (ge.index) ge = ge.toNonIndexed(); for (const k of Object.keys(ge.attributes)) if (!["position", "normal", "uv"].includes(k)) ge.deleteAttribute(k);
-      const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!parMat.has(m)) parMat.set(m, []); parMat.get(m).push(ge); });
+    g.scene.traverse(o => { if (!o.isMesh) return; const m = Array.isArray(o.material) ? o.material[0] : o.material; if (!parMat.has(m)) parMat.set(m, []);
+      // (les pièces répétées — les segments d'un mât… — sont des instances : une copie par instance)
+      const n = o.isInstancedMesh ? o.count : 1, mi = new THREE.Matrix4(), mw = new THREE.Matrix4();
+      for (let i = 0; i < n; i++) { let ge = o.geometry.clone(); if (o.isInstancedMesh) { o.getMatrixAt(i, mi); mw.multiplyMatrices(o.matrixWorld, mi); } else mw.copy(o.matrixWorld);
+        ge.applyMatrix4(mw); if (ge.index) ge = ge.toNonIndexed(); for (const k of Object.keys(ge.attributes)) if (!["position", "normal", "uv"].includes(k)) ge.deleteAttribute(k); parMat.get(m).push(ge); } });
     const parts = [...parMat].map(([m, l]) => { const n = l.reduce((a, q) => a + q.attributes.position.count, 0), r = new THREE.BufferGeometry();
       for (const [k, d] of [["position", 3], ["normal", 3], ["uv", 2]]) { const a = new Float32Array(n * d); let o = 0; for (const q of l) { if (q.attributes[k]) a.set(q.attributes[k].array, o * d); o += q.attributes.position.count; } r.setAttribute(k, new THREE.BufferAttribute(a, d)); }
       if (m.transparent && m.opacity > .9) { m.transparent = false; m.alphaTest = .5; } return [r, m]; });
@@ -17660,9 +17668,12 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const rouge = new THREE.PointLight(0xff1a1a, 0, 22, 1.3), bleu = new THREE.PointLight(0x2a5aff, 0, 22, 1.3); rouge.position.set(lb * .7, yb, zb); bleu.position.set(-lb * .7, yb, zb); g.add(rouge, bleu);
     const lueur = c => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.scale.set(2.2, 2.2, 1); g.add(sp); return sp; };
     const hr = lueur(0xff2020), hb = lueur(0x3060ff); hr.position.copy(rouge.position); hb.position.copy(bleu.position);
-    const phare = new THREE.SpotLight(0xfff0d0, 40, 32, .45, .6, 1.3); phare.position.set(0, .8, 2.6); phare.target.position.set(0, 0, 14); g.add(phare, phare.target);
+    const phare = new THREE.SpotLight(0xfff0d0, 60, 34, .5, .6, 1.2); phare.position.set(0, .8, 2.7); phare.target.position.set(0, 0, 14); g.add(phare, phare.target);
+    // les phares allumés : deux lueurs blanches devant, deux feux rouges derrière
+    for (const sx of [-1, 1]) { const ph = lueur(0xfff4dc); ph.scale.set(1.1, 1.1, 1); ph.position.set(sx * t.x * s * .34, .72, t.z * s / 2 + .02); ph.visible = true;
+      const ar = lueur(0xff1a10); ar.scale.set(.7, .7, 1); ar.position.set(sx * t.x * s * .36, .85, -t.z * s / 2 - .02); }
     // les gremlins accrochés : un sur le pare-brise, deux sur le capot, un sur le toit (des perchoirs qui roulent avec la voiture)
-    const offs = [[0, haut * .86, .55], [-.42, haut * .68, 1.35], [.42, haut * .68, 1.5], [.25, haut, -.4]];
+    const offs = [[0, haut * .76, .55], [-.42, haut * .6, 1.35], [.42, haut * .6, 1.5], [.25, haut * .96, -.4]];
     const per = offs.map(() => ({ x: 0, z: 0, y: 0, r: 0, hx: .06, hz: .06, occ: 0, cap: 1 })); L.perchesKF.unshift(...per);
     const C = L.circuit, CL = L.circuitL || 100; let u = .15;
     L.policeMaj = (dt, tt) => { if (!C) return; u = (u + 8.5 * dt / CL) % 1; const T = tt / 1000;
@@ -17671,10 +17682,17 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       g.updateMatrixWorld(); const v = new THREE.Vector3();
       offs.forEach(([x, y, z], k) => { v.set(x, y, z).applyMatrix4(g.matrixWorld); Object.assign(per[k], { x: v.x, z: v.z, y: v.y, r: g.rotation.y }); });
       // les gyrophares : deux éclats rouges, deux éclats bleus, sans fin
-      const f = (T * 1.6) % 1, eclat = (Math.floor(f * 8) % 2) === 0, r = f < .5 && eclat, b = f >= .5 && eclat;
-      rouge.intensity = r ? 60 : 0; bleu.intensity = b ? 60 : 0; hr.visible = r; hb.visible = b;
+      const f = (T * 1.6) % 1, eclat = (Math.floor(f * 8) % 2) === 0, r = f < .5 ? eclat : !eclat && Math.floor(f * 8) % 4 === 1, b = !r;   // (rouge, bleu, rouge, bleu… jamais éteints tous les deux)
+      rouge.intensity = r ? 60 : 0; bleu.intensity = b ? 60 : 0; hr.visible = r; hb.visible = b; hr.scale.setScalar(3); hb.scale.setScalar(3);
       if (L.policeOptiques && L.policeOptiques.emissive) { L.policeOptiques.emissive.setHex(r ? 0xff2020 : b ? 0x2050ff : 0); L.policeOptiques.emissiveIntensity = 3; } };
   }).catch(e => console.warn("police", e));
+  // ---- la tour radio (CC-BY : « Radio Communications Tower » par Duane's Mind), dans son enclos grillagé, au coin nord-est de la place : elle domine la ville ;
+  //      c'est là qu'il faudra aller pour électrocuter la ville (et ses gremlins). Son feu rouge clignote au sommet ----
+  { const cx = (TOUR.x0 + TOUR.x1) / 2, cz = (TOUR.z0 + TOUR.z1) / 2; L.tourRadio = { x: cx, z: cz };
+    for (let x = TOUR.x0 + .6; x < TOUR.x1; x += 1.1) for (let z = TOUR.z0 + .6; z < TOUR.z1; z += 1.1) obst.push([x, z, .78]);
+    chargerKF("antenne").then(({ parts, t }) => { const k = Math.min(TOUR.x1 - TOUR.x0, TOUR.z1 - TOUR.z0) / Math.max(t.x, t.z); poser(parts, [mt4(cx, y0, cz, 0, k)]);
+      const feu = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: 0xff2010, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false }));
+      feu.scale.set(1.6, 1.6, 1); feu.position.set(cx, y0 + t.y * k + .3, cz); scene.add(feu); L.feuTour = feu; }).catch(e => console.warn("tour", e)); }
   scene.add(new THREE.AmbientLight(0x8090c0, .2)); scene.fog = new THREE.Fog(0x1a2132, 22, 95);
   // les réverbères allumés : les globes brillent, quelques-uns éclairent vraiment la neige autour d'eux
   scene.traverse(o => { if (o.isMesh && o.material && o.material.emissive && [0xfff0c8, 0xfff2d0].includes(o.material.emissive.getHex())) o.material.emissiveIntensity = 2.4; });
@@ -17709,6 +17727,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // les guirlandes scintillent, chaque couleur à son rythme
     (L.guirlandes || []).forEach((im, k) => { im.material.color.setHex(couleurs[k]).multiplyScalar(.55 + .45 * (Math.sin(t / 380 + k * 1.9) > -.2 ? 1 : .25)); });
     if (L.halos) L.halos.material.opacity = .7 + .15 * Math.sin(t / 500);
+    if (L.feuTour) L.feuTour.visible = (t % 1600) < 700;
     // les feux : vert 7 s, orange 2 s, rouge 9 s ; les deux rues se croisent en alternance
     for (const F of L.feux || []) { const c = ((t / 1000 + F.phase * 9) % 18), e = c < 7 ? 2 : c < 9 ? 1 : 0; F.lp.forEach((m, i) => m.material.color.setHex(i === e ? [0xff2a1a, 0xffb020, 0x30ff70][i] : [0x3a0806, 0x3a2806, 0x063a14][i])); } };
 }
