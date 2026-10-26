@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "7.97";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "7.98";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -16883,6 +16883,7 @@ function titreCine(texte, ms) { const d = voile("display:grid;place-items:center
   d.textContent = texte; requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = 1; })); setTimeout(() => { d.style.opacity = 0; }, ms - 450); }
 function boutonPasser(fn) { if (!M) return; const b = document.createElement("button"); b.type = "button"; b.textContent = "Passer ⏭";
   b.style.cssText = "position:absolute;right:12px;bottom:14px;z-index:10;border:0;border-radius:99px;padding:8px 14px;background:rgba(20,20,24,.75);color:#fff;font:700 13px 'Lato',sans-serif;cursor:pointer";
+  if (M.ctx.conteneur.classList.contains("plein-css") || document.fullscreenElement) b.style.bottom = "calc(var(--dire-h, 56px) + 26px)";   /* (en plein écran : au-dessus de la barre « Dire quelque chose », pas dessus) */
   b.onclick = () => { b.remove(); fn(); }; M.ctx.conteneur.appendChild(b); return b; }
 // le tableau des circuits temporels (DESTINATION / PRESENT / LAST TIME DEPARTED), affiché dans la DeLorean avant le départ ; la destination se tape chiffre à chiffre
 function compteurTemps(ms) { const d = voile("display:grid;place-items:center;background:rgba(0,0,0,.55);opacity:0;transition:opacity .35s", ms);

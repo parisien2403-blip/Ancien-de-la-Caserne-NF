@@ -11,7 +11,7 @@
 /* la nuit dans la rue : le mur s'assombrit sur les bords, une lumière chaude tombe d'en haut */
 .inside::before { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(255,190,120,.16), transparent 70%), radial-gradient(ellipse 95% 85% at 50% 40%, rgba(0,0,0,.12), rgba(8,3,1,.78)); }
-.inside > * { position: relative; z-index: 1; }
+.inside > * { position: relative; }   /* (pas de z-index ici : la caserne 3D en plein écran doit pouvoir passer par-dessus le menu et l'enseigne) */
 
 /* ---------- l'enseigne du haut ---------- */
 .inside .topbar { background: transparent !important; box-shadow: none !important; display: flex; align-items: center; justify-content: center; padding: 16px 70px 8px; min-height: 86px; }
