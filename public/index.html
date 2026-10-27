@@ -3301,6 +3301,8 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.30", "27 octobre 2026", ["L'appli installée sur le téléphone passe en plein écran : plus de bande en haut (l'heure) ni en bas (les boutons du téléphone) — il suffit de toucher l'écran une fois"]],
+    ["8.29", "27 octobre 2026", ["Gremlins : le générique de fin redevient sobre — plus de Gizmo ni de gremlins sur les côtés"]],
     ["8.28", "27 octobre 2026", ["Caserne 1990 : à l'arrivée, un écran noir jusqu'à ce que la main géante soit prête — plus de vue de la cour vide avant elle ; en ouvrant les doigts, la main se soulève : aucun doigt ne traverse plus le sol", "Gremlins : le passage de Rambo III passe dans un vrai poste de télé (caisse en bois, haut-parleur, boutons, antenne)", "Une vraie fin : la Gazette de Kingston Falls (refaite, vieux papier, trois colonnes) arrive avec la musique du générique ; Billy et Gizmo au lit se racontent l'aventure (« Il est quelle heure ? — Minuit… et une ! ») ; la caméra survole la ville jusqu'au bar, où une petite boule de poils, les oreilles repliées, respire… ; puis le générique, avec Gizmo et des gremlins qui dansent sur les côtés"]],
     ["8.27", "27 octobre 2026", ["Gremlins : le compteur des gremlins détruits a une vraie tête de gremlin, crête blanche et yeux orange"]],
     ["8.26", "27 octobre 2026", ["Gremlins : une fois les gremlins brûlés par la lumière, la voiture de police freine et s'arrête", "Billy parle beaucoup moins : quatre appels seulement — au début (quand ça coupe), quand Gizmo trouve la pince, au levier, et pour le rejoindre au bar ; plus de messages qui disent quoi faire", "Sur téléphone : un joystick à la place des quatre flèches — on fait glisser le pouce pour déplacer Gizmo", "La musique du combat contre l'araignée-gremlin", "Le bar : aucun gremlin ne peut s'en échapper, l'araignée arrive bien une fois la salle nettoyée"]],
@@ -5468,6 +5470,14 @@
   for (const id of ["enter", "signup"]) { const b = document.getElementById(id); if (b) b.addEventListener("click", () => { couper(); if (!splash.classList.contains("ouvert")) toutDeSuite(); }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden) couper(); });
 })();
+</script>
+<script>
+  // l'appli installée sur le téléphone : en plein écran, sans la barre de l'heure en haut ni les boutons du téléphone en bas — dès qu'on touche l'écran
+  (() => { const installee = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
+    const tactile = matchMedia("(pointer: coarse)").matches;
+    const plein = () => { if (!installee() || !tactile || document.fullscreenElement || document.webkitFullscreenElement) return; const d = document.documentElement;
+      try { const r = (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d, { navigationUI: "hide" }); if (r && r.catch) r.catch(() => {}); } catch (e) {} };
+    addEventListener("pointerup", plein, true); })();
 </script>
 </body>
 </html>

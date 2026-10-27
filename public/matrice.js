@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.28";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.30";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13963,19 +13963,11 @@ function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) retur
   const son = M.kfFinSon || new Audio("sons/kf-fin.mp3?v=1"); M.kfFinSon = null; son.volume = 1; son.loop = true; if (son.paused) son.play().catch(() => {});   // (déjà partie avec le journal, le plus souvent)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;opacity:0;transition:opacity 1.6s;overflow:hidden;font-family:Georgia,'Times New Roman',serif";
   const rouge = "color:#d81818;text-shadow:0 0 14px rgba(255,20,20,.45)";
-  const defile = document.createElement("div"); defile.style.cssText = "position:absolute;left:50%;top:100%;width:min(60%,600px);transform:translateX(-50%);text-align:center;" + rouge;
+  const defile = document.createElement("div"); defile.style.cssText = "position:absolute;left:50%;top:100%;width:min(86%,640px);transform:translateX(-50%);text-align:center;" + rouge;
   defile.innerHTML = TEXTE_FIN_KF.map((t, i) => `<p style="margin:0 0 ${i === 6 ? 70 : 34}px;font-size:clamp(17px,2.6vw,25px);line-height:1.5;">${t}</p>`).join("")
     + `<div style="margin:30px 0 0;font-family:'Luckiest Guy',Georgia,serif;font-size:clamp(22px,4vw,34px);letter-spacing:.05em">Gremlins détruits par Gizmo : ${(M.L && M.L.tuesKF) || 0}</div>`
     + '<div style="height:90px"></div>' + GENERIQUE_KF.map(([a, b]) => `<div style="margin:0 0 26px"><div style="font-size:clamp(13px,1.8vw,16px);letter-spacing:.18em;text-transform:uppercase;opacity:.75">${a}</div><div style="font-size:clamp(18px,2.8vw,26px);font-weight:700">${b}</div></div>`).join("");
   d.appendChild(defile);
-  // sur les côtés, la bande : Gizmo qui danse à gauche, des gremlins qui sautillent, ricanent, se balancent à droite (et un qui passe la tête en bas à gauche)
-  if (!document.getElementById("styleGeneKF")) { const st = document.createElement("style"); st.id = "styleGeneKF"; st.textContent = "@keyframes kfDanse{0%,100%{transform:rotate(-9deg) translateY(0)}50%{transform:rotate(9deg) translateY(-16px)}}@keyframes kfSaute{0%,100%{transform:translateY(0) scale(1,1)}35%{transform:translateY(-34px) scale(.95,1.06)}55%{transform:translateY(0) scale(1.08,.9)}70%{transform:translateY(0) scale(1,1)}}@keyframes kfTete{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(14deg) scale(1.08)}}@keyframes kfCoucou{0%,30%,100%{transform:translateY(120%)}45%,85%{transform:translateY(8%) rotate(-8deg)}}"; document.head.appendChild(st); }
-  const cote = (src, css, anim) => { const i = document.createElement("img"); i.src = src; i.alt = ""; i.style.cssText = "position:absolute;pointer-events:none;filter:drop-shadow(0 0 14px rgba(255,40,20,.4));" + css + ";animation:" + anim; d.appendChild(i); return i; };
-  cote("images/gremlins/radio-gizmo.webp?v=1", "left:3%;top:30%;width:min(17vw,170px);aspect-ratio:5/6;object-fit:cover;border-radius:50% 50% 46% 46%;border:4px solid #d81818", "kfDanse 1.1s ease-in-out infinite");
-  cote("images/gremlins/compteur.webp?v=1", "right:2%;top:12%;width:min(20vw,200px)", "kfTete 1.6s ease-in-out infinite");
-  cote("images/gremlins/compteur.webp?v=1", "right:5%;top:46%;width:min(16vw,160px);transform-origin:50% 100%", "kfSaute .9s ease-in-out infinite .3s");
-  cote("images/gremlins/compteur.webp?v=1", "right:1%;bottom:4%;width:min(14vw,140px)", "kfTete 1.2s ease-in-out infinite .5s");
-  cote("images/gremlins/compteur.webp?v=1", "left:4%;bottom:0;width:min(15vw,150px)", "kfCoucou 7s ease-in-out infinite 2s");
   const titre = document.createElement("div"); titre.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;transition:opacity 2.4s";
   titre.innerHTML = '<img src="images/gremlins/titre.webp" alt="Gremlins" style="width:min(74%,640px);filter:drop-shadow(0 0 24px rgba(255,40,20,.45))"><div class="fin" style="font:900 clamp(40px,10vw,76px) Georgia,serif;letter-spacing:.35em;padding-left:.35em;' + rouge + '">FIN</div>';
   d.appendChild(titre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
