@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.27";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.28";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -9083,12 +9083,20 @@ function chargerMainPince() { return mainPince = mainPince || (async () => { glt
 export function prechargerMain() { if (THREE) chargerMainPince(); }
 async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine) return;
   const lieu = M.lieu; M.cine = { maj: () => {} };   // (en attendant la main : on ne bouge pas)
-  const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { if (M) finCine(); return; }
+  // un écran noir tant que la main n'est pas prête (chargée, ses matériaux préparés) : on ne voit plus la cour vide d'abord, puis la main qui surgit
+  const noir = voile("background:#000;opacity:1;transition:opacity .7s;z-index:9"), ouvrir = () => { if (!noir) return; noir.style.opacity = "0"; setTimeout(() => noir.remove(), 800); };
+  const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { ouvrir(); if (M) finCine(); return; }
   const P = moi.g.position.clone(), yw = moi.g.rotation.y, av = moi.av3;
   let col = 1.42; if (av) { moi.g.updateMatrixWorld(true); let cou = null; av.sc.traverse(o => { if (!cou && o.isBone && /neck/i.test(o.name)) cou = o; }); if (cou) col = cou.getWorldPosition(new THREE.Vector3()).y - moi.g.position.y + .04; }
   else if (moi.corps) col = moi.corps.scale.y * .86;
   const main = H.grp; main.scale.setScalar(6.5); main.rotation.set(0, yw + Math.PI / 2, Math.PI); M.scene.add(main);
-  const T0 = performance.now(), D = 6400, HAUT = 34, fx = Math.sin(yw), fz = Math.cos(yw);
+  const D = 6400, HAUT = 34, fx = Math.sin(yw), fz = Math.cos(yw);
+  if (!H.os) { H.os = []; main.traverse(o => { if (o.isBone) H.os.push(o); }); }   // (les os de la main : pour qu'aucun doigt ne passe sous le sol)
+  main.position.set(P.x, P.y + col + HAUT, P.z); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i])); M.camera.position.set(P.x + fz * 4, P.y + 62, P.z - fx * 4 + 10); M.camera.lookAt(P.x, P.y + HAUT * .7, P.z);
+  if (M.rendu && M.rendu.compileAsync) await Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]);
+  if (!M || M.lieu !== lieu) { ouvrir(); M.scene.remove(main); if (M) finCine(); return; }
+  const vO = new THREE.Vector3(), basOs = () => { main.updateMatrixWorld(true); let b = Infinity; for (const o of H.os) b = Math.min(b, o.getWorldPosition(vO).y); return b; }, dF = main.position.y - basOs();   // (dF : de combien la main fermée descend sous sa pince)
+  const T0 = performance.now(); ouvrir();
   const lisse = u => u * u * (3 - 2 * u), seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
   const cam = M.camera, vise = new THREE.Vector3(), c0 = new THREE.Vector3(), c1 = new THREE.Vector3();
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; moi.leve = 0; moi.g.rotation.z = 0; moi.g.rotation.x = 0; M.scene.remove(main); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i])); finCine(); placerCamera(true); };
@@ -9101,6 +9109,7 @@ async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine
     const uO = lisse(seg(t, 4250, 4800)); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i]).slerp(H.ouverte[i], uO));
     const uR = lisse(seg(t, 4700, 6000));
     main.position.set(P.x - fx * uR * 5, P.y + col + Math.max(lv, 0) + uR * 30, P.z - fz * uR * 5);
+    if (uO > 0) { const plus = main.position.y - basOs() - dF; if (plus > 0) main.position.y += plus * 1.15; }   // (les doigts qui s'ouvrent descendent plus bas que la main fermée : elle se soulève d'autant, aucun ne traverse le sol)
     // la caméra : vue du ciel sur la caserne, puis elle plonge et se place un peu de côté, à hauteur du personnage
     const uC = lisse(seg(t, 300, 4200));
     c0.set(P.x + fz * 4, P.y + 62, P.z - fx * 4 + 10); c1.set(P.x + fz * 4.5 + fx * 8, P.y + 3.2, P.z - fx * 4.5 + fz * 8);
@@ -13709,9 +13718,22 @@ function introGremlins() { if (!M || M.cine) return; if (universOccupe("kingston
     const g = setInterval(() => { if (f.paused) return clearInterval(g); if (!M || (M.lieu !== "kingston" && performance.now() - (M.kfTitreT0 || 0) > 5000)) { f.pause(); clearInterval(g); } }, 1000); }   // (on quitte Kingston Falls : elle se tait)   // (la fanfare, dès le titre ; elle accompagne le survol de la ville, et s'efface en entrant dans le bar)
   M.cine = { maj: () => {} };
   setTimeout(() => { if (!M) { d.remove(); return; } finCine(); M.kfIntro = true; changerLieu("kingston", [-33.7, -5.8], Math.PI / 2); }, 900); }   // (la ville se charge pendant le titre)
+// la petite boule de poils (un mogwaï tout neuf, roulé en boule, les oreilles repliées sur le dos) : un corps doux, des milliers de petits poils couchés vers l'arrière
+function creerBouleKF(B) { const V3 = THREE.Vector3;
+  const poil = tex(toile(256, 128, x => { const g = x.createLinearGradient(0, 0, 0, 128); g.addColorStop(0, "#6a4424"); g.addColorStop(.55, "#8a5a32"); g.addColorStop(1, "#efe4d0"); x.fillStyle = g; x.fillRect(0, 0, 256, 128);
+    for (let k = 0; k < 4000; k++) { const a = Math.random() * 256, b = Math.random() * 128; x.strokeStyle = b > 80 && Math.random() < .7 ? "#fbf4e6" : Math.random() < .5 ? "#3e2614" : "#b48654"; x.globalAlpha = .45; x.lineWidth = .8; x.beginPath(); x.moveTo(a, b); x.lineTo(a + (Math.random() - .5) * 3, b + 2 + Math.random() * 5); x.stroke(); } }));
+  const mP = new THREE.MeshStandardMaterial({ map: poil, roughness: 1, emissive: 0x3a2412, emissiveIntensity: .7 }), corps = new THREE.Mesh(new THREE.SphereGeometry(.15, 32, 20), mP); corps.scale.set(1, .78, 1.12); corps.position.y = .115; B.add(corps);
+  { const N = 1600, im = new THREE.InstancedMesh(new THREE.ConeGeometry(.0045, .03, 3).translate(0, .015, 0), new THREE.MeshStandardMaterial({ roughness: 1, emissive: 0x2a1a0e }), N), m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new V3(0, 1, 0), c = new V3(), col = new THREE.Color();
+    for (let k = 0; k < N; k++) { const n = new V3().randomDirection(); if (n.y < -.2) n.y = -n.y * .2; n.normalize(); const p = n.clone().multiply(new V3(.148, .115, .166)).add(new V3(0, .115, 0));
+      const t = new V3(0, .3, -1).projectOnPlane(n).normalize(); q.setFromUnitVectors(up, n.clone().multiplyScalar(.35).add(t).normalize());   // (couchés le long du corps, vers l'arrière)
+      m.compose(p, q, new V3(1, .7 + Math.random() * .7, 1)); im.setMatrixAt(k, m); im.setColorAt(k, col.set(n.y < .25 ? 0xf6eee0 : Math.random() < .2 ? 0xe9dcc6 : Math.random() < .5 ? 0x5c3a1e : 0x9a6a3e)); }
+    B.add(im); }
+  return [-1, 1].map(s => { const o = new THREE.Mesh(new THREE.SphereGeometry(.1, 20, 12), mP); o.scale.set(.55, .16, 1.25); o.position.set(s * .075, .2, -.04); o.rotation.set(-.45, s * .35, s * .5); B.add(o); return o; }); }   // (les grandes oreilles repliées sur le dos, comme dans le film)
+// le survol de la ville (au début, et à la fin) : le chemin de la caméra, et ce qu'elle regarde
+const KF_SURVOL_P = [[2, 28, 44], [-6, 20, 31], [-12, 14.5, 22.5], [-18, 6.5, 15], [-20, 3.2, 12.5], /* (au-dessus des toits de la rangée sud, jamais au travers) */ [-21, 2.6, 2], [-22, 2.2, -8], [-25.4, 1.7, -9.5], [-28.6, 1.5, -9.4], [-31.2, 1.25, -7.8], [-32.4, .95, -6.6]];
+const KF_SURVOL_C = [[0, 4, 4], [-4, 3, 10], [-10, 2, 12], [-26.5, 1.4, 10.8], [-27, 2.2, -2], [-27.5, 1.8, -9.5], [-30, 1.4, -9.5], [-33, .8, -7], [-33.7, .4, -5.8], [-33.7, .35, -5.8]];
 function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null; const V3 = THREE.Vector3;
-  const P = new THREE.CatmullRomCurve3([[2, 28, 44], [-6, 20, 31], [-12, 14.5, 22.5], [-18, 6.5, 15], [-20, 3.2, 12.5], /* (au-dessus des toits de la rangée sud, jamais au travers) */ [-21, 2.6, 2], [-22, 2.2, -8], [-25.4, 1.7, -9.5], [-28.6, 1.5, -9.4], [-31.2, 1.25, -7.8], [-32.4, .95, -6.6]].map(a => new V3(...a)), false, "centripetal");
-  const C = new THREE.CatmullRomCurve3([[0, 4, 4], [-4, 3, 10], [-10, 2, 12], [-26.5, 1.4, 10.8], [-27, 2.2, -2], [-27.5, 1.8, -9.5], [-30, 1.4, -9.5], [-33, .8, -7], [-33.7, .4, -5.8], [-33.7, .35, -5.8]].map(a => new V3(...a)), false, "centripetal");
+  const P = new THREE.CatmullRomCurve3(KF_SURVOL_P.map(a => new V3(...a)), false, "centripetal"), C = new THREE.CatmullRomCurve3(KF_SURVOL_C.map(a => new V3(...a)), false, "centripetal");
   const D = 12500, EM = .74, vise = new V3(); let fini = false, t0 = Infinity; M.kfSurvol = true; if (M.L) M.L.silenceKF = true;   // (EM : on s'arrête devant le bar, sans aller jusqu'à Gizmo)
   // l'écran noir et le titre restent tant que la ville se charge (les modèles, puis la préparation de tous les matériaux par la carte graphique) : sinon, ça saccade
   M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0));
@@ -13896,10 +13918,21 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
     A.eclats.forEach((e2, k) => { const ph = (u / 260 + k * .37) % 1, actif = u > 7000 && u < 12500; e2.material.opacity = actif ? (1 - ph) * .9 : 0; e2.position.set(Wk.x + n.x * .1 + Math.cos(k * 2.4 + u / 300) * .07, y + .1 + ph * .12, Wk.z + n.z * .1 + Math.sin(k * 2.4 + u / 300) * .07); }); };
   const ecranTV = () => {   // l'écran de la télé, plein cadre : son bord arrondi, ses lignes, le son
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#050505;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
-    const cadre = document.createElement("div"); cadre.style.cssText = "position:relative;width:min(94%,150vh);aspect-ratio:16/9;border-radius:6% / 9%;overflow:hidden;box-shadow:0 0 0 14px #141210,0 0 0 18px #2a241e,0 0 60px rgba(120,160,255,.25)";
+    // un vrai poste des années 80 : la caisse en bois, l'écran bombé, à droite le haut-parleur et les boutons, les pieds, l'antenne en oreilles de lapin
+    const tele = document.createElement("div"); tele.style.cssText = "position:relative;display:flex;gap:2.4%;align-items:stretch;width:min(94%,calc(70vh * 1.9));aspect-ratio:1.9/1;margin-top:6vh;padding:2.6% 2.4% 2.6% 2.8%;box-sizing:border-box;border-radius:3.5% / 6.5%;background:linear-gradient(165deg,#7a4f2a,#4f2f16 38%,#66401f 62%,#3a210f);box-shadow:inset 0 0 0 3px #26150a,inset 0 8px 18px rgba(255,220,170,.22),inset 0 -10px 18px rgba(0,0,0,.45),0 22px 60px rgba(0,0,0,.85)";
+    tele.innerHTML = `<div style="position:absolute;left:46%;top:-21%;width:.6%;height:24%;background:linear-gradient(#ccc,#666);transform-origin:bottom;transform:rotate(-28deg);border-radius:2px"></div><div style="position:absolute;left:46%;top:-21%;width:.6%;height:24%;background:linear-gradient(#ccc,#666);transform-origin:bottom;transform:rotate(26deg);border-radius:2px"></div>
+      <div style="position:absolute;left:43.5%;top:-3.5%;width:6%;height:4%;background:radial-gradient(ellipse at 50% 30%,#555,#1a1a1a);border-radius:50% 50% 10% 10%"></div>
+      <div style="position:absolute;left:9%;bottom:-6%;width:7%;height:6%;background:linear-gradient(#2a1a0c,#120a04);border-radius:0 0 30% 30%"></div><div style="position:absolute;right:9%;bottom:-6%;width:7%;height:6%;background:linear-gradient(#2a1a0c,#120a04);border-radius:0 0 30% 30%"></div>`;
+    const cadre = document.createElement("div"); cadre.style.cssText = "position:relative;flex:1;border-radius:8% / 12%;overflow:hidden;background:#000;box-shadow:0 0 0 5px #15110d,0 0 0 9px #3a332b,0 0 0 11px #120d08,0 0 40px rgba(120,160,255,.25)";
+    const pan = document.createElement("div"); pan.style.cssText = "width:17%;display:flex;flex-direction:column;align-items:center;gap:7%;padding:3% 0;box-sizing:border-box;border-radius:6px;background:linear-gradient(#2b2520,#1a1612);box-shadow:inset 0 0 0 2px #0c0a08";
+    pan.innerHTML = `<div style="color:#d8c08a;font:700 clamp(8px,1.4vw,14px) Georgia,serif;letter-spacing:.12em">ZENITH</div>
+      <div style="width:70%;flex:1;border-radius:6px;background:repeating-linear-gradient(0deg,#0b0907 0 3px,#3a322a 3px 5px)"></div>
+      ${[0, 1].map(k => `<div style="width:46%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bbb,#555 45%,#222);box-shadow:0 2px 4px #000;position:relative"><i style="position:absolute;left:47%;top:8%;width:6%;height:40%;background:#111;transform:rotate(${k ? 40 : -30}deg);transform-origin:50% 100%"></i></div>`).join("")}
+      <div style="width:12%;aspect-ratio:1;border-radius:50%;background:#ff3a1a;box-shadow:0 0 8px #ff3a1a"></div>`;
+    tele.appendChild(cadre); tele.appendChild(pan);
     tv.style.cssText = "width:100%;height:100%;object-fit:cover;filter:saturate(1.08) contrast(1.06)"; cadre.appendChild(tv);
     const lignes = document.createElement("div"); lignes.style.cssText = "position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.18) 2px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)"; cadre.appendChild(lignes);
-    d.appendChild(cadre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
+    d.appendChild(tele); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
     setTimeout(() => { if (fini || etape > 1) return; etape = 2; M.pauseRendu = true; if (tv.ended) return suite(); tv.volume = 1; if (tv.paused) lancerV(tv).catch(() => {}); }, 650);   // (la vidéo continue, là où elle en était)
     return d; };
   tv.onended = () => { if (etape === 2) suite(); };
@@ -13922,23 +13955,27 @@ const TEXTE_FIN_KF = [
   "Le père Noël a repris sa tournée — le manteau un peu déchiré, mais vivant.",
   "La chorale s'est tue. La voiture de police est rentrée au garage. Les projecteurs, eux, sont restés allumés toute la nuit.",
   "Gizmo a rangé son arc et son bandana rouge au fond de sa boîte, et Kingston Falls a retrouvé son calme, ses chants de Noël, ses rues tranquilles.",
-  "Tout était rentré dans l'ordre.",
-  "Pourtant…",
-  "Dans la cave du Dorry's Tavern, une vieille canalisation fuit.",
-  "Une goutte d'eau tombe sur le carrelage. Puis une autre.",
-  "Et quelque part dans le noir, une petite boule de poils frissonne…"];
+  "Tout était rentré dans l'ordre."];
 const GENERIQUE_KF = [["Gizmo", "dans son propre rôle"], ["Billy Peltzer", "le réparateur"], ["Le père Noël", "toujours debout"], ["Stripe et sa bande", "réduits en cendres"], ["La chorale de Kingston Falls", "plus jamais en mesure"],
   ["Une aventure de", "la Caserne de la Nouvelle France"], ["Mise en scène", "Germain-Pierre"], ["Musique", "« First Aid »"], ["Aucun mogwaï n'a été mouillé", "pendant le tournage"]];
 function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true; M.L.silenceKF = true;   // (la musique de la ville se tait : seule celle du générique)
   const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause();
-  const son = new Audio("sons/kf-fin.mp3?v=1"); son.volume = 1; son.play().catch(() => {});
+  const son = M.kfFinSon || new Audio("sons/kf-fin.mp3?v=1"); M.kfFinSon = null; son.volume = 1; son.loop = true; if (son.paused) son.play().catch(() => {});   // (déjà partie avec le journal, le plus souvent)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;opacity:0;transition:opacity 1.6s;overflow:hidden;font-family:Georgia,'Times New Roman',serif";
   const rouge = "color:#d81818;text-shadow:0 0 14px rgba(255,20,20,.45)";
-  const defile = document.createElement("div"); defile.style.cssText = "position:absolute;left:50%;top:100%;width:min(86%,640px);transform:translateX(-50%);text-align:center;" + rouge;
-  defile.innerHTML = TEXTE_FIN_KF.map((t, i) => `<p style="margin:0 0 ${i === 6 ? 70 : 34}px;font-size:clamp(17px,2.6vw,25px);line-height:1.5;${i >= 7 ? "font-style:italic" : ""}">${t}</p>`).join("")
+  const defile = document.createElement("div"); defile.style.cssText = "position:absolute;left:50%;top:100%;width:min(60%,600px);transform:translateX(-50%);text-align:center;" + rouge;
+  defile.innerHTML = TEXTE_FIN_KF.map((t, i) => `<p style="margin:0 0 ${i === 6 ? 70 : 34}px;font-size:clamp(17px,2.6vw,25px);line-height:1.5;">${t}</p>`).join("")
     + `<div style="margin:30px 0 0;font-family:'Luckiest Guy',Georgia,serif;font-size:clamp(22px,4vw,34px);letter-spacing:.05em">Gremlins détruits par Gizmo : ${(M.L && M.L.tuesKF) || 0}</div>`
     + '<div style="height:90px"></div>' + GENERIQUE_KF.map(([a, b]) => `<div style="margin:0 0 26px"><div style="font-size:clamp(13px,1.8vw,16px);letter-spacing:.18em;text-transform:uppercase;opacity:.75">${a}</div><div style="font-size:clamp(18px,2.8vw,26px);font-weight:700">${b}</div></div>`).join("");
   d.appendChild(defile);
+  // sur les côtés, la bande : Gizmo qui danse à gauche, des gremlins qui sautillent, ricanent, se balancent à droite (et un qui passe la tête en bas à gauche)
+  if (!document.getElementById("styleGeneKF")) { const st = document.createElement("style"); st.id = "styleGeneKF"; st.textContent = "@keyframes kfDanse{0%,100%{transform:rotate(-9deg) translateY(0)}50%{transform:rotate(9deg) translateY(-16px)}}@keyframes kfSaute{0%,100%{transform:translateY(0) scale(1,1)}35%{transform:translateY(-34px) scale(.95,1.06)}55%{transform:translateY(0) scale(1.08,.9)}70%{transform:translateY(0) scale(1,1)}}@keyframes kfTete{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(14deg) scale(1.08)}}@keyframes kfCoucou{0%,30%,100%{transform:translateY(120%)}45%,85%{transform:translateY(8%) rotate(-8deg)}}"; document.head.appendChild(st); }
+  const cote = (src, css, anim) => { const i = document.createElement("img"); i.src = src; i.alt = ""; i.style.cssText = "position:absolute;pointer-events:none;filter:drop-shadow(0 0 14px rgba(255,40,20,.4));" + css + ";animation:" + anim; d.appendChild(i); return i; };
+  cote("images/gremlins/radio-gizmo.webp?v=1", "left:3%;top:30%;width:min(17vw,170px);aspect-ratio:5/6;object-fit:cover;border-radius:50% 50% 46% 46%;border:4px solid #d81818", "kfDanse 1.1s ease-in-out infinite");
+  cote("images/gremlins/compteur.webp?v=1", "right:2%;top:12%;width:min(20vw,200px)", "kfTete 1.6s ease-in-out infinite");
+  cote("images/gremlins/compteur.webp?v=1", "right:5%;top:46%;width:min(16vw,160px);transform-origin:50% 100%", "kfSaute .9s ease-in-out infinite .3s");
+  cote("images/gremlins/compteur.webp?v=1", "right:1%;bottom:4%;width:min(14vw,140px)", "kfTete 1.2s ease-in-out infinite .5s");
+  cote("images/gremlins/compteur.webp?v=1", "left:4%;bottom:0;width:min(15vw,150px)", "kfCoucou 7s ease-in-out infinite 2s");
   const titre = document.createElement("div"); titre.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;transition:opacity 2.4s";
   titre.innerHTML = '<img src="images/gremlins/titre.webp" alt="Gremlins" style="width:min(74%,640px);filter:drop-shadow(0 0 24px rgba(255,40,20,.45))"><div class="fin" style="font:900 clamp(40px,10vw,76px) Georgia,serif;letter-spacing:.35em;padding-left:.35em;' + rouge + '">FIN</div>';
   d.appendChild(titre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
@@ -13946,7 +13983,7 @@ function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) retur
   const fin = () => { if (fini || !M) return; fini = true; T.forEach(clearTimeout); const v0 = son.volume, t0 = performance.now(), f = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1200); son.volume = v0 * (1 - u); if (u >= 1) { clearInterval(f); son.pause(); } }, 50);
     M.pauseRendu = false; finCine(); M.kfGenerique = false; changerLieu("rue", [19.1, 5.2], Math.PI); setTimeout(() => { d.style.transition = "opacity 1.2s"; d.style.opacity = "0"; setTimeout(() => d.remove(), 1300); }, 900); };
   M.passerBtn = boutonPasser(fin); M.cine.passer = fin;
-  const DUREE = 70;   // (secondes : le texte, puis le générique, montent lentement)
+  const DUREE = 55;   // (secondes : le texte, puis le générique, montent lentement)
   T.push(setTimeout(() => { if (fini) return; M.pauseRendu = true; const h = defile.offsetHeight + d.offsetHeight; defile.style.transition = `transform ${DUREE}s linear`; defile.style.transform = `translate(-50%,-${h}px)`; }, 1800));   // (la ville n'est plus dessinée derrière le noir)
   T.push(setTimeout(() => { if (!fini) titre.style.opacity = "1"; }, (1.8 + DUREE + 1) * 1000));
   T.push(setTimeout(() => { if (fini) return; const f2 = titre.querySelector(".fin"); f2.textContent = "FIN ?"; f2.style.transition = "opacity .6s"; }, (1.8 + DUREE + 7) * 1000));   // (… une suite ?)
@@ -18274,7 +18311,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       Bq.flash = performance.now() + 160; sonBruit(.15, 900, .35); if (Bq.pv % 5 === 0 && Bq.pv > 0) sonBruit(.6, 420, .5);
       if (Bq.pv <= 0) { const a = Bq.mus; if (a) { const v0 = a.volume, t1 = performance.now(), f = setInterval(() => { const u = Math.min(1, (performance.now() - t1) / 2500); a.volume = v0 * (1 - u); if (u >= 1) { clearInterval(f); a.pause(); sonsCourts.delete(a); } }, 60); }
         Bq.mort = performance.now(); L.colleKF = null; for (const f of Bq.fils) scene.remove(f); Bq.fils = []; sonBruit(1.4, 300, .7); msgKF("ELLE BRÛLE !", "", 2500);
-        for (let i = 0; i < 6; i++) setTimeout(() => { if (!M || M.L !== L) return; const a = i * 1.05, r = .6 * SC_B; L.foyerKF && L.foyerKF(Bq.x + Math.cos(a) * r, Bq.y + .3, Bq.z + Math.sin(a) * r, 4, 0, 1.6); }, i * 180); } };
+        for (let i = 0; i < 6; i++) setTimeout(() => { if (!M || M.L !== L) return; const a = i * 1.05, r = .6 * SC_B; const f = L.foyerKF && L.foyerKF(Bq.x + Math.cos(a) * r, Bq.y + .3, Bq.z + Math.sin(a) * r, 4, 0, 1.6); setTimeout(() => L.eteindreKF && L.eteindreKF(f), 5200 - i * 180); }, i * 180); } };   // (le feu, le temps qu'elle brûle)
     // à chaque image, pendant le combat
     L.bossMajKF = (dt, now) => { const Bq = L.bossKF; if (!Bq) return; const B = Bq.B, moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
       for (const m of B.haut.children) if (m.material && m.material.emissive) m.material.emissive.setHex(now < (Bq.flash || 0) ? 0xa01000 : 0);
@@ -18302,18 +18339,63 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
           else Bq.tapis.push({ m, fin: now + 7000 }); } } };
     // le bar nettoyé : Billy arrive ; la une du journal, et le générique
     const finBoss = () => { M.radioKFfile = [];
-      msgKF("KINGSTON FALLS EST SAUVÉE !", "Plus un seul gremlin. Bravo Gizmo !", 4000); setTimeout(() => { if (M && M.L === L) journalKF(() => { if (M && M.L === L) generiqueKF(); }); }, 7500); };
-    // la une du journal : il arrive en tournoyant, s'arrête, on lit le gros titre… et il s'efface
-    const journalKF = suite => { if (!M) return suite(); const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
-      if (!document.getElementById("styleJournalKF")) { const st = document.createElement("style"); st.id = "styleJournalKF"; st.textContent = "@keyframes kfJournal{0%{transform:scale(.05) rotate(-1080deg)}80%{transform:scale(1.04) rotate(-4deg)}100%{transform:scale(1) rotate(-3deg)}}"; document.head.appendChild(st); }
-      d.innerHTML = `<div style="width:min(86%,520px);background:#efe8d6;color:#1a1a1a;padding:16px 18px 18px;box-shadow:0 10px 40px rgba(0,0,0,.8);animation:kfJournal 1.6s ease-out forwards;font-family:Georgia,'Times New Roman',serif">
-        <div style="text-align:center;font:900 clamp(22px,5vw,34px) Georgia,serif;letter-spacing:.04em;border-bottom:3px double #1a1a1a;padding-bottom:4px">KINGSTON FALLS GAZETTE</div>
-        <div style="display:flex;justify-content:space-between;font:11px Georgia;margin:3px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:3px"><span>Édition spéciale</span><span>26 décembre</span><span>10 cents</span></div>
-        <div style="font:900 clamp(24px,6vw,40px)/1.02 Georgia,serif;text-align:center;text-transform:uppercase">Les monstres réduits en cendres !</div>
-        <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-start"><img src="images/gremlins/radio-gizmo.webp?v=1" alt="" style="width:36%;filter:grayscale(1) contrast(1.15);border:1px solid #1a1a1a">
-          <div style="font:clamp(12px,2.4vw,15px)/1.35 Georgia,serif;text-align:justify">Cette nuit, toutes les lampes UV de la ville se sont allumées d'un coup : les étranges créatures qui semaient la terreur ont fondu sous la lumière. Selon des témoins, une petite boule de poils, armée d'un arc et coiffée d'un bandeau rouge, aurait coupé la chaîne du générateur… puis terrassé, dans le Dorry's Tavern, une monstrueuse araignée.<br><b>${(M.L && M.L.tuesKF) || 0} créatures détruites.</b></div></div></div>`;
-      M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; }); sonBruit(.5, 1800, .25);
-      setTimeout(() => { d.style.opacity = "0"; setTimeout(() => { d.remove(); suite(); }, 700); }, 7000); };
+      msgKF("KINGSTON FALLS EST SAUVÉE !", "", 3500); const ok = f => () => { if (M && M.L === L) f(); };
+      setTimeout(ok(() => journalKF(ok(() => litKF(ok(() => survolFinKF(ok(generiqueKF))))))), 4500); };   // (le journal, Billy et Gizmo au lit, la boule de poils au bar, le générique)
+    // la une du journal : la Gazette de Kingston Falls, vieux papier jauni, arrive en tournoyant, on la lit (elle avance doucement vers nous)… et elle s'envole
+    const journalKF = suite => { if (!M) return suite(); L.silenceKF = true; if (!M.kfFinSon) { const a = M.kfFinSon = new Audio("sons/kf-fin.mp3?v=1"); a.volume = 1; a.loop = true; sonsCourts.add(a); a.play().catch(() => {}); }   // (la musique du générique commence avec le journal, et ne s'arrête plus jusqu'à la fin)
+      if (!document.getElementById("styleJournalKF")) { const st = document.createElement("style"); st.id = "styleJournalKF"; st.textContent = "@keyframes kfJournal{0%{transform:scale(.04) rotate(-1080deg)}78%{transform:scale(1.05) rotate(-6deg)}100%{transform:scale(1) rotate(-2.5deg)}}@keyframes kfJournalZ{from{transform:scale(1) rotate(-2.5deg)}to{transform:scale(1.07) rotate(-1deg)}}@keyframes kfJournalS{to{transform:scale(1.6) rotate(25deg) translate(60%,-40%);opacity:0}}"; document.head.appendChild(st); }
+      const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:radial-gradient(ellipse at center,rgba(20,14,8,.82),rgba(0,0,0,.96));display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
+      const n = (M.L && M.L.tuesKF) || 0, col = "font:clamp(10px,1.9vw,13.5px)/1.32 Georgia,serif;text-align:justify;hyphens:auto";
+      d.innerHTML = `<div class="j" style="position:relative;width:min(92%,640px);max-height:94%;overflow:hidden;color:#1d1810;padding:14px 18px 16px;box-sizing:border-box;box-shadow:0 14px 50px rgba(0,0,0,.9);animation:kfJournal 1.7s cubic-bezier(.2,.7,.3,1) forwards;
+          background:linear-gradient(90deg,transparent 49.6%,rgba(80,60,30,.18) 50%,transparent 50.4%),radial-gradient(ellipse at 30% 20%,#f4ecd4,#e6d8b4 60%,#cdb98c 100%);font-family:Georgia,'Times New Roman',serif">
+        <div style="display:flex;justify-content:space-between;font:italic 10px Georgia;border-bottom:1px solid #1d1810;padding-bottom:2px"><span>Vol. LXXXIV — N° 359</span><span>« Toutes les nouvelles de la vallée »</span><span>25 cents</span></div>
+        <div style="text-align:center;font:italic 900 clamp(26px,6.4vw,46px)/1 Georgia,serif;letter-spacing:.01em;margin:6px 0 2px;text-shadow:1px 1px 0 rgba(0,0,0,.15)">The Kingston Falls Gazette</div>
+        <div style="display:flex;justify-content:space-between;font:10px Georgia;border-top:3px double #1d1810;border-bottom:1px solid #1d1810;padding:2px 0;margin-bottom:8px"><span>ÉDITION SPÉCIALE</span><span>MERCREDI 26 DÉCEMBRE 1984</span><span>NEIGE, −8 °C</span></div>
+        <div style="font:900 clamp(26px,6.6vw,48px)/.98 Georgia,serif;text-align:center;text-transform:uppercase;letter-spacing:-.01em">Les monstres réduits en cendres !</div>
+        <div style="font:italic clamp(13px,2.6vw,18px) Georgia,serif;text-align:center;margin:5px 0 9px;border-bottom:1px solid #1d1810;padding-bottom:7px">Une petite boule de poils armée d'un arc aurait sauvé la ville</div>
+        <div style="display:grid;grid-template-columns:1.05fr 1.2fr 1fr;gap:12px">
+          <div><img src="images/gremlins/radio-gizmo.webp?v=1" alt="" style="width:100%;filter:grayscale(1) sepia(.35) contrast(1.2);border:1px solid #1d1810;display:block"><div style="font:italic 10px/1.25 Georgia;margin-top:3px">Le héros de la nuit, surnommé « Gizmo » par M. Peltzer. Il n'a pas souhaité répondre à nos questions.</div></div>
+          <div style="${col};border-left:1px solid #1d1810;border-right:1px solid #1d1810;padding:0 10px"><b>KINGSTON FALLS.</b> — Cette nuit, toutes les lampes UV de la ville se sont allumées d'un coup : les étranges créatures qui semaient la terreur ont fondu sous la lumière. Selon des témoins, la petite créature, coiffée d'un bandeau rouge, aurait coupé la chaîne du générateur, puis terrassé au Dorry's Tavern une monstrueuse araignée. <b>${n} créatures détruites.</b></div>
+          <div style="${col}"><div style="font:900 12px Georgia;text-transform:uppercase;border-bottom:1px solid #1d1810;margin-bottom:3px">Le père Noël témoigne</div>« J'en avais un sur le dos toute la soirée. » <div style="font:900 12px Georgia;text-transform:uppercase;border-bottom:1px solid #1d1810;margin:7px 0 3px">La police sans voiture</div>Le shérif Frank retrouve son véhicule… au milieu de la place.<div style="margin-top:7px;border:1px solid #1d1810;padding:3px;text-align:center;font:italic 10px Georgia">Dorry's Tavern : fermé jusqu'à nouvel ordre</div></div></div></div>`;
+      M.ctx.conteneur.appendChild(d); const j = d.querySelector(".j"); requestAnimationFrame(() => { d.style.opacity = "1"; }); sonBruit(.5, 1800, .25);
+      setTimeout(() => { j.style.animation = "kfJournalZ 7.5s ease-in-out forwards"; }, 1750);
+      let fini = false; const fin = () => { if (fini) return; fini = true; j.style.animation = "kfJournalS 1s ease-in forwards"; sonBruit(.4, 2200, .2); d.style.transition = "opacity 1s .3s"; d.style.opacity = "0"; setTimeout(() => { d.remove(); suite(); }, 1300); };
+      d.style.pointerEvents = "auto"; d.onclick = fin; setTimeout(fin, 10500); };
+    // Billy et Gizmo, enfin tranquilles, dans le lit : la photo, et ce qu'ils se disent (pour rire)
+    const LIT_KF = [["Billy", "Quelle aventure, hein, Gizmo…"], ["Gizmo", "Gizmo… fatigué."], ["Billy", "Une araignée géante avec une tête de gremlin. Si je raconte ça à Kate, elle va me prendre pour un fou."],
+      ["Gizmo", "Kate… pas croire !"], ["Billy", "Et toi, avec ton bandeau et ton arc… Rambo en peluche !"], ["Gizmo", "Gizmo… Rambo !"],
+      ["Billy", "Heureusement que tout est fini. Plus d'eau, pas de lumière vive… et surtout, rien à manger après minuit."], ["Gizmo", "…"], ["Billy", "Gizmo ? Pourquoi tu regardes ma canette comme ça ?"], ["Billy", "…Il est quelle heure ?"], ["Gizmo", "Minuit… et une !"], ["Billy", "Oh non."]];
+    const litKF = suite => { if (!M) return suite(); const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;box-sizing:border-box;opacity:0;transition:opacity .9s;cursor:pointer";
+      d.innerHTML = '<img src="images/gremlins/billy-lit.webp?v=1" onerror="this.onerror=null;this.src=\'images/gremlins/billy.webp\'" alt="Billy et Gizmo" style="max-width:min(94%,820px);max-height:60%;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.8)">'
+        + '<div style="width:min(94%,820px);min-height:4.4em;background:rgba(14,10,6,.92);border:2px solid #b8862e;border-radius:10px;padding:10px 16px;box-sizing:border-box;color:#fff;font:600 clamp(15px,2.4vw,20px)/1.4 \'Lato\',sans-serif"><b class="qui"></b> <span class="txt"></span></div>';
+      M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
+      const qui = d.querySelector(".qui"), txt = d.querySelector(".txt"); let i = -1, tape = null, auto = null, fini = false;
+      const fin = () => { if (fini) return; fini = true; clearInterval(tape); clearTimeout(auto); d.style.opacity = "0"; setTimeout(() => { d.remove(); suite(); }, 950); };
+      const pause = t => 1100 + t.length * 24;
+      const suivant = () => { if (fini) return; clearInterval(tape); clearTimeout(auto); i++; if (i >= LIT_KF.length) return fin();
+        const [q, t] = LIT_KF[i]; qui.textContent = q + " :"; qui.style.color = q === "Gizmo" ? "#9fe0ff" : "#ffcf5a"; let k = 0; txt.textContent = "";
+        tape = setInterval(() => { k += 2; txt.textContent = t.slice(0, k); if (k >= t.length) { clearInterval(tape); auto = setTimeout(suivant, pause(t)); } }, 24); };
+      d.onclick = () => { const t = i >= 0 && LIT_KF[i] && LIT_KF[i][1]; if (t && txt.textContent.length < t.length) { clearInterval(tape); txt.textContent = t; clearTimeout(auto); auto = setTimeout(suivant, pause(t)); } else suivant(); };
+      setTimeout(suivant, 1000); };
+    // la ville au petit matin, vue du ciel comme au début ; la caméra descend jusqu'au bar, entre… et là, par terre, une petite boule de poils, les oreilles repliées, qui respire
+    const survolFinKF = suite => { if (!M || M.L !== L || !L.salleLou) return suite(); const SL = L.salleLou, V = SL.vers, yb = .125, V3 = THREE.Vector3, moi = M.gens.get(M.moiNum);
+      if (moi) moi.g.visible = false; if (L.bossKF && L.bossKF.tapis) for (const T of L.bossKF.tapis) T.m.forEach(m => scene.remove(m));
+      const [bx, bz] = V(-.9, -5.4), B = new THREE.Group(); B.position.set(bx, yb, bz); B.rotation.y = Math.random() * 6; scene.add(B);
+      const oreilles = creerBouleKF(B);
+      const PP = new THREE.CatmullRomCurve3(KF_SURVOL_P.map(a => new V3(...a)), false, "centripetal"), CC = new THREE.CatmullRomCurve3(KF_SURVOL_C.map(a => new V3(...a)), false, "centripetal"), EM = .74;
+      const P3 = (a, b, h) => { const [x, z] = V(a, b); return new V3(x, yb + h, z); }, fin0 = PP.getPointAt(EM), dedans = new THREE.CatmullRomCurve3([fin0, P3(0, 1.4, 1.1), P3(0, -1.6, .9), P3(-.5, -3.6, .55), P3(-.75, -4.75, .32)], false, "centripetal");
+      const boule = new V3(bx, yb + .12, bz), vise = new V3(), T1 = 12000, T2 = 18500, T3 = 25000, t0 = performance.now(); let fini = false;
+      const noir = voile("background:#000;opacity:1;transition:opacity 1.2s;z-index:10"); requestAnimationFrame(() => requestAnimationFrame(() => { if (noir) noir.style.opacity = "0"; }));
+      const fin = () => { if (fini) return; fini = true; const n2 = voile("background:#000;opacity:0;transition:opacity 1.2s;z-index:10"); requestAnimationFrame(() => { if (n2) n2.style.opacity = "1"; });
+        setTimeout(() => { if (noir) noir.remove(); scene.remove(B); if (moi) moi.g.visible = true; finCine(); suite(); setTimeout(() => n2 && n2.remove(), 1600); }, 1300); };
+      M.cine = { fov: [56, 64], passer: fin, maj: () => { const u = performance.now() - t0, k = Math.sin(u / 380);
+        B.scale.set(1 + .03 * k, 1 + .055 * k, 1 + .03 * k);   // (il respire, tout doucement)
+        if (u > 21500 && u < 22300) { const e = Math.sin((u - 21500) / 800 * Math.PI); oreilles.forEach((o, s) => { o.rotation.x = -.45 - .25 * e; o.rotation.z = (s ? .5 : -.5) * (1 + .3 * e); }); }   // (une oreille qui frémit…)
+        if (u < T1) { const e = EM * (u / T1) * (u / T1) * (3 - 2 * u / T1); M.camera.position.copy(PP.getPointAt(e)); vise.copy(CC.getPointAt(e)); }
+        else if (u < T2) { const v = (u - T1) / (T2 - T1), e = v * v * (3 - 2 * v); M.camera.position.copy(dedans.getPointAt(e)); vise.copy(CC.getPointAt(EM)).lerp(boule, Math.min(1, e * 1.4)); }
+        else { const v = Math.min(1, (u - T2) / (T3 - T2)); M.camera.position.copy(dedans.getPointAt(1)).lerp(boule, .18 * v); vise.copy(boule); }   // (tout près : on le regarde respirer)
+        M.camera.lookAt(vise); if (u > T3 + 1500) fin(); } };
+      M.passerBtn = boutonPasser(fin); };
     L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
       for (let i = pansements.length - 1; i >= 0; i--) { const P2 = pansements[i]; P2.m.rotation.y += dt * 2; P2.g.position.y = p.y + .2 + Math.sin(t / 300 + i) * .05; P2.gl.material.opacity = .4 + .4 * Math.sin(t / 200 + i);
         if (Math.hypot(p.x - P2.x, p.z - P2.z) < .8 && L.soignerGizmo && L.soignerGizmo()) { scene.remove(P2.g); pansements.splice(i, 1); sonBruit(.06, 5000, .3); msgKF("UN PANSEMENT !", "", 2000); } }
@@ -18563,8 +18645,9 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     { const fT = tex(toile(64, 128, x => { const g = x.createRadialGradient(32, 96, 2, 32, 80, 62); g.addColorStop(0, "rgba(255,245,190,1)"); g.addColorStop(.3, "rgba(255,170,50,.95)"); g.addColorStop(.7, "rgba(240,60,10,.55)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 112); x.quadraticCurveTo(32, 128, 12, 112); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
       const sT = tex(toile(64, 64, x => { const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, "rgba(38,34,32,.75)"); g.addColorStop(1, "rgba(38,34,32,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }));
       const gP = new THREE.Group(); scene.add(gP); const FP = [];   // (dans un groupe : la nuit ne cache pas les sprites)
-      const foyer = (x, y, z, nf = 7, nfu = 3, sc = 1) => { for (let k = 0; k < nf; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fT, blending: k % 3 ? THREE.NormalBlending : THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); gP.add(sp); FP.push({ sp, x: x + (Math.random() - .5) * .3 * sc, z: z + (Math.random() - .5) * .3 * sc, y, ph: Math.random() * 6, h: (.45 + Math.random() * .4) * sc, fum: false, sc }); }
-        for (let k = 0; k < nfu; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sT, depthWrite: false, transparent: true })); gP.add(sp); FP.push({ sp, x, z, y, ph: k / 3, fum: true, sc }); } };
+      const foyer = (x, y, z, nf = 7, nfu = 3, sc = 1) => { const n0 = FP.length; for (let k = 0; k < nf; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fT, blending: k % 3 ? THREE.NormalBlending : THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); gP.add(sp); FP.push({ sp, x: x + (Math.random() - .5) * .3 * sc, z: z + (Math.random() - .5) * .3 * sc, y, ph: Math.random() * 6, h: (.45 + Math.random() * .4) * sc, fum: false, sc }); }
+        for (let k = 0; k < nfu; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sT, depthWrite: false, transparent: true })); gP.add(sp); FP.push({ sp, x, z, y, ph: k / 3, fum: true, sc }); } return FP.slice(n0); };
+      L.eteindreKF = l => { for (const f of l || []) { const i = FP.indexOf(f); if (i >= 0) FP.splice(i, 1); gP.remove(f.sp); f.sp.material.dispose(); } };
       pb.forEach(([x, z], i) => { if (i % 3 !== 1) return; foyer(x, (L.hauteur ? L.hauteur(x, z) : 0) + .92, z); });
       // le sapin du bar qui prend feu (quand Gizmo relève le levier) : des flammes de bas en haut, sa lueur orange qui danse sur les murs
       L.foyerKF = foyer;
