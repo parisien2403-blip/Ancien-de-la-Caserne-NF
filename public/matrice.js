@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.43";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.44";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12031,9 +12031,21 @@ function racineJumeau(scene, L, id, contenu) {
   const r = new THREE.Group(); r.userData.maison = scene; for (const o of contenu) r.add(o); scene.add(r); L.racineJ = r; L.fauxJ = []; L.porcheJ = [];
   r.updateMatrixWorld(true); const b = new THREE.Box3(), c = new THREE.Vector3();
   for (const o of r.children) { b.makeEmpty(); if (o.isInstancedMesh) { if (!o.boundingBox) o.computeBoundingBox(); b.copy(o.boundingBox).applyMatrix4(o.matrixWorld); } else b.setFromObject(o); if (b.isEmpty()) continue; b.getCenter(c);
-    if (id === "rue") { if (c.z < -26.5) L.fauxJ.push(o); else if (c.z < -11.3 && Math.abs(c.x) < 30) L.porcheJ.push(o); }   /* (la cour peinte au fond ; la façade du porche et sa voûte) */
+    if (o.isMesh && o.geometry.type === "PlaneGeometry" && Math.abs(c.y) < .005 && o.geometry.parameters.width * o.geometry.parameters.height > 5000) {   /* (le grand sol du lieu : chacun s'arrête au bout du porche — sinon bitume et pavés se disputent la même place, et clignotent) */
+      const Z = 15.65 - PORCHE_DZ, X = 24;   /* (la rue : tout, sauf derrière la façade de la caserne ; la cour : seulement entre ses bâtiments, jusqu'au porche — les rues voisines gardent leur bitume) */
+      L.solJ = { m: o, g0: o.geometry, g1: rognerSol(o, id === "rue" ? [[-1e9, 1e9, Z, 1e9], [-1e9, -X, -1e9, Z], [X, 1e9, -1e9, Z]] : [[-X, X, -1e9, 15.65]]) }; continue; }
+    if (id === "rue") { if (c.z < -26.5 && Math.abs(c.x) < 25) L.fauxJ.push(o); else if (c.z < -11.3 && Math.abs(c.x) < 30) L.porcheJ.push(o); }   /* (la cour peinte au fond ; la façade du porche et sa voûte) */
     else { if (c.z > 29.6) L.fauxJ.push(o); else if (c.z > 15 && Math.abs(c.x) < 30) L.porcheJ.push(o); } } }   /* (la rue recopiée ; la façade du porche vue de la cour, sa voûte) */
 /* cacher (quoi : "lumieres", "maillages" ou tout) ; les lumières des deux décors sont les mêmes dans les deux scènes : au passage, l'éclairage ne change pas d'un pouce */
+function rognerSol(m, rects) {   /* (le même sol, réduit à quelques rectangles : mêmes pavés, même échelle) */
+  const { width: w, height: h } = m.geometry.parameters, A = m.matrixWorld.clone(), I = A.clone().invert(), b = new THREE.Box3().setFromObject(m), v = new THREE.Vector3(), pos = [], uv = [], idx = [];
+  for (const [x0, x1, z0, z1] of rects) { const a0 = Math.max(x0, b.min.x), a1 = Math.min(x1, b.max.x), c0 = Math.max(z0, b.min.z), c1 = Math.min(z1, b.max.z); if (a1 <= a0 || c1 <= c0) continue;
+    const loc = [[a0, c0], [a1, c0], [a1, c1], [a0, c1]].map(([x, z]) => v.set(x, b.min.y, z).applyMatrix4(I).toArray()), lx = loc.map(q => q[0]), ly = loc.map(q => q[1]);
+    const x0l = Math.min(...lx), x1l = Math.max(...lx), y0l = Math.min(...ly), y1l = Math.max(...ly), n = pos.length / 3;
+    for (const [x, y] of [[x0l, y0l], [x1l, y0l], [x1l, y1l], [x0l, y1l]]) { pos.push(x, y, 0); uv.push((x + w / 2) / w, (y + h / 2) / h); }
+    idx.push(n, n + 1, n + 2, n, n + 2, n + 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute("normal", new THREE.Float32BufferAttribute(pos.map((_, i) => i % 3 === 2 ? 1 : 0), 3)); g.setIndex(idx); g.computeBoundingBox(); g.computeBoundingSphere(); return g; }
 const masquerJ = (o, cache, quoi) => o.traverse(q => { if (cache) { if (quoi && (quoi === "lumieres") !== !!q.isLight) return; if (q.userData.coucheJ == null) q.userData.coucheJ = q.layers.mask; q.layers.set(31); } else if (q.userData.coucheJ != null) { q.layers.mask = q.userData.coucheJ; q.userData.coucheJ = null; } });
 function jumelerPorche() {
   if (!M || !M.L || !M.scene || M.jumeauJ || !M.L.racineJ) return; const J = JUMEAUX[M.lieu]; if (!J) return;
@@ -12042,6 +12054,7 @@ function jumelerPorche() {
   const r = q.L.racineJ; r.position.z = J[1]; M.scene.add(r); r.updateMatrixWorld(true);
   const LR = M.lieu === "rue" ? M.L : q.L, LG = M.lieu === "rue" ? q.L : M.L;
   for (const o of [...LR.fauxJ, ...LG.fauxJ]) masquerJ(o, true);
+  for (const S of [LR.solJ, LG.solJ]) if (S) S.m.geometry = S.g1;
   if (M.lieu === "rue") for (const o of LG.porcheJ) masquerJ(o, true);   /* (dans la rue : la voûte de la rue) */
   else { for (const o of LG.porcheJ) masquerJ(o, true, "lumieres"); for (const o of LR.porcheJ) masquerJ(o, true, "maillages"); }   /* (dans la cour : la sienne, la même, éclairée pareil) */
   if (q.L.setNuit) try { q.L.setNuit(!!M.L.nuit); } catch (e) {}
@@ -12052,6 +12065,7 @@ function rentrerJumeau() {
   const j = M && M.jumeauJ; if (!j) return; M.jumeauJ = null;
   for (const q of M.loin || []) if (q.cache) { q.cache = false; q.g.visible = true; } M.loinScene = null;
   j.r.traverse(o => masquerJ(o, false)); if (M.L && M.L.racineJ) M.L.racineJ.traverse(o => masquerJ(o, false));
+  for (const S of [j.L.solJ, M.L && M.L.solJ]) if (S) S.m.geometry = S.g0;
   j.r.position.z = 0; j.r.userData.maison.add(j.r); j.r.updateMatrixWorld(true); M.lampes = null; M.lampesT = 0;
 }
 function changerLieuContinu(id, [dx, dz, dy = 0]) {
