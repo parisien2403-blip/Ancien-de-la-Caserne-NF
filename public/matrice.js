@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.21";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.22";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13746,7 +13746,7 @@ function radioKF(lignes) { if (!M || !M.ctx || !M.ctx.conteneur) return; (M.radi
       M.ctx.conteneur.appendChild(el); const txt = el.querySelector(".rt"), barres = [...el.querySelectorAll(".rb i")]; let parle = false;
       const anim = setInterval(() => { if (!el.isConnected) return clearInterval(anim); const k = parle ? 2 + Math.floor(Math.random() * 6) : 1; barres.forEach((b, i) => b.style.opacity = i < k ? 1 : .2); }, 110);
       let i = 0; const ligne = () => { if (!M || !el.isConnected) { M && (M.radioKFen = false); return; } if (i >= L2.length) { el.remove(); clearInterval(anim); setTimeout(suivant, 900); return; }
-        const [q, t] = L2[i++]; for (const p of el.querySelectorAll("[data-q]")) { const on = p.dataset.q === q; p.style.filter = on ? "none" : "grayscale(1) brightness(.45)"; p.style.borderColor = on ? "#9dff6a" : "#2a4a22"; }
+        const [q, t] = L2[i++]; for (const p of el.querySelectorAll("[data-q]")) { const on = p.dataset.q === q; p.style.filter = on ? "none" : "brightness(.6)";   /* (celui qui écoute : un peu assombri, mais en couleurs) */ p.style.borderColor = on ? "#9dff6a" : "#2a4a22"; }
         txt.innerHTML = `<b style="color:${q === "billy" ? "#ffcf5a" : "#9fe0ff"}">${q === "billy" ? "Billy" : "Gizmo"}</b> : ${esc(t)}`; parle = true; const d = Math.min(6000, 1600 + t.length * 45);
         setTimeout(() => { parle = false; }, Math.min(d - 300, 500 + t.length * 38)); setTimeout(ligne, d); };
       ligne(); }, 700); };
