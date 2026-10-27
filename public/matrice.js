@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.26";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.27";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -18441,11 +18441,9 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     L.tirerFleche = tirer;
     // ses six cœurs : la voiture de police lui en prend un (et le projette) ; à zéro, il se relève au bar, six cœurs neufs
     const vies = document.createElement("div"); vies.style.cssText = "position:absolute;left:12px;top:44px;z-index:6;font-size:26px;letter-spacing:2px;text-shadow:0 0 6px #000;pointer-events:none;display:none";
-    // le compteur des gremlins détruits : une tête de gremlin (les grandes oreilles, les yeux rouges, le sourire plein de dents), et le score — un point par gremlin
+    // le compteur des gremlins détruits : une tête de gremlin (le vrai, à crête blanche), et le score — un point par gremlin
     const tues = document.createElement("div"); tues.style.cssText = "position:absolute;left:236px;top:38px;z-index:6;display:none;align-items:center;gap:6px;padding:2px 10px 2px 4px;border-radius:20px;background:rgba(0,0,0,.5);border:2px solid #6fd23a;pointer-events:none;font:26px 'Luckiest Guy','Lato',sans-serif;color:#fff4d8;text-shadow:2px 2px 0 #000";
-    tues.innerHTML = `<svg width="52" height="41" viewBox="0 0 76 60"><path d="M2 14 L26 26 L24 34 Z" fill="#6aab34" stroke="#1c2e0e" stroke-width="2"/><path d="M74 14 L50 26 L52 34 Z" fill="#6aab34" stroke="#1c2e0e" stroke-width="2"/><path d="M8 17 L24 27 L23 31 Z" fill="#c9806a"/><path d="M68 17 L52 27 L53 31 Z" fill="#c9806a"/>
-      <ellipse cx="38" cy="34" rx="17" ry="19" fill="#7cc23c" stroke="#1c2e0e" stroke-width="2"/><path d="M30 18 Q38 10 46 18" fill="none" stroke="#2d4a14" stroke-width="3"/><ellipse cx="31" cy="31" rx="4.5" ry="3.5" fill="#ff2a10"/><ellipse cx="45" cy="31" rx="4.5" ry="3.5" fill="#ff2a10"/><circle cx="31" cy="31" r="1.4" fill="#000"/><circle cx="45" cy="31" r="1.4" fill="#000"/>
-      <path d="M27 43 Q38 52 49 43 Z" fill="#2a0a06"/><path d="M29 43 L31 46 L33 43.6 L35 46.5 L37 44 L39 46.5 L41 44 L43 46.5 L45 43.6 L47 46 L48 43" fill="#f4ecd0"/></svg><span class="n">0</span>`;
+    tues.innerHTML = `<img src="images/gremlins/compteur.webp?v=1" alt="" style="height:46px;width:auto;display:block;margin:-4px 0;filter:drop-shadow(0 1px 2px #000)"><span class="n">0</span>`;
     L.tuesKF = 0; L.tueKF = () => { L.tuesKF++; tues.querySelector(".n").textContent = L.tuesKF; tues.animate([{ transform: "scale(1.35)" }, { transform: "scale(1)" }], { duration: 300 });
       };   // (Billy ne commente plus chaque gremlin détruit)
     let nVies = 6, invul = 0, recul = null; const dessinerVies = () => { nVies = Math.max(0, Math.min(6, nVies)); vies.textContent = "❤️".repeat(nVies) + "🖤".repeat(6 - nVies); }; dessinerVies();
