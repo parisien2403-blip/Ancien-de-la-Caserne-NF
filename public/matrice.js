@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.42";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.43";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -1873,7 +1873,7 @@ function construireRue(A, T, L, scene) {
   // le passage sous le porche mène à la cour d'honneur d'un seul tenant : au milieu de la voûte, on passe dans la scène de la cour sans s'en apercevoir
   // (le porche est le même des deux côtés : z de -12 à -25,7 ici, de 29,35 à 15,65 dans la cour — un simple décalage de 41,35 ; pas de cercle jaune)
   L.porche = (x, z) => Math.abs(x) < 2.3 && z < -11.6 && z > -26;   // (sous la voûte : la caméra juste derrière soi)
-  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -12.4 && z > -25.9 && sensPorche() < 0 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "grande", continu: [0, PORCHE_DZ], centre: [0, -19] });
+  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > -25.9 && (M.jumeauJ ? z < -19.25 : z < -12.4 && sensPorche() < 0) && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "grande", continu: [0, PORCHE_DZ], centre: [0, -19] });
   raccourci(L, scene, [4.6, 4.3, .6], [0, 2.2, -25.75], { marche: [0, -25.2] });
   // la caméra reste sous la voûte quand on est dans le passage
   L.contraindreCam = (pos, moi) => { if (moi.g.position.z < -11.6) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 3.7); pos.z = Math.max(-25.6, Math.min(-3, pos.z)); return true; } };
@@ -6611,7 +6611,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
       raccourci(L, scene, [.5, 2.4, 1.5], [sg * 8.62, 1.2, 13.75], { marche: [sg * 8.72, 13.75] }); }
     L.porche = (x, z) => Math.abs(x) < 2.3 && z > 15.3 && z < PORCHE_DZ - 11.6;
-    L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 15.9 && z < 29.3 && sensPorche() > 0 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "rue", continu: [0, -PORCHE_DZ], centre: [0, PORCHE_DZ - 18.35] });   // (sous la voûte, vers la rue : d'un seul tenant, comme à l'aller)
+    L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < 29.3 && (M.jumeauJ ? z > PORCHE_DZ - 18.75 : z > 15.9 && sensPorche() > 0) && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "rue", continu: [0, -PORCHE_DZ], centre: [0, PORCHE_DZ - 18.35] });   // (sous la voûte, vers la rue : d'un seul tenant, comme à l'aller)
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
     // du vestibule, vers la grande pièce au bar ou l'escalier : on continue dans la salle des fêtes (même géométrie, simple décalage — pas de coupure)
@@ -7567,7 +7567,7 @@ export async function ouvrir(ctx) {
       /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
       const lent = moy > (PETIT ? 45 : 34) && res <= resMin + .01; M.lentN = lent ? (M.lentN || 0) + 1 : 0;
       if (M.lentN >= 2 && (M.allege || 0) < 2 && qualiteChoisie() === "auto") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
-    preparerVoisin(); trierLumieres(t); if (PETIT || (MOBILE && modeRE())) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
+    preparerVoisin(); if (!M.jumeauJ && t > (M.prepT || 0)) jumelerPorche(); trierLumieres(t); if (PETIT || (MOBILE && modeRE())) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0; if (p.leve) p.g.position.y += p.leve;   /* (tenu en l'air : la main de l'arrivée) */
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -8199,7 +8199,7 @@ const LAMPES_MAX = 8;
 function cacherLoin(t) {
   if (!M || !M.scene || !M.camera || t < (M.loinT || 0)) return; M.loinT = t + 300;
   if (M.loinScene !== M.scene) { M.loinScene = M.scene; M.loin = [];
-    for (const g of M.scene.children) { if (g.isMesh || g.isLight || g.userData.perso || !g.children.length) continue; let n = 0; g.traverse(o => { if (o.isMesh) n++; if (o.userData.perso) n = -1e9; }); if (n < 6) continue;
+    for (const g of M.scene.children.flatMap(c => c.userData.maison ? c.children : [c])) { if (g.isMesh || g.isLight || g.userData.perso || !g.children.length) continue; let n = 0; g.traverse(o => { if (o.isMesh) n++; if (o.userData.perso) n = -1e9; }); if (n < 6) continue;
       g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.isEmpty()) continue; const sp = b.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 45) continue;   // (un très grand ensemble reste toujours là)
       M.loin.push({ g, c: g.worldToLocal(sp.center.clone()), r: sp.radius }); } }
   const cam = M.camera.position, v = new THREE.Vector3(), f = M.scene.fog, lim = f && f.far ? Math.min(55, f.far + 3) : 55;   // (dans le brouillard — Silent Hill — on n'y voit pas si loin : encore moins)
@@ -8208,8 +8208,8 @@ function cacherLoin(t) {
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
   const re = modeRE();   /* (Resident Evil, comme Silent Hill : peu de lumières à la fois — elles en avaient treize, et chaque point de l'image était calculé treize fois) */
-  if (!re && ((baseLieu(M.lieu) !== "grande" && !PETIT && !estSH(M.lieu)) || estApo(M.lieu))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
-  if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight && o !== (M.L && M.L.eclair)) M.lampes.push(o); }); }
+  if (!re && ((baseLieu(M.lieu) !== "grande" && !M.jumeauJ && !PETIT && !estSH(M.lieu)) || estApo(M.lieu))) { if (M.lampes) { for (const l of M.lampes) l.layers.set(0); M.lampes = null; } return; }
+  if (!M.lampes || M.lampesScene !== M.scene) { M.lampes = []; M.lampesScene = M.scene; M.scene.traverse(o => { if (o.isPointLight && o !== (M.L && M.L.eclair) && o.userData.coucheJ == null) M.lampes.push(o); }); }
   const c = M.camera.position, v = new THREE.Vector3();
   const vu = l => { for (let o = l; o; o = o.parent) if (!o.visible) return false; return true; };   // (une lampe dans un groupe caché ne compte pas)
   const tri = M.lampes.filter(vu).map(l => [l, l.getWorldPosition(v).distanceTo(c) - (l.distance || 1e4)]).sort((a, b) => a[1] - b[1]);
@@ -10306,7 +10306,9 @@ function construireScene(id) {
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
+  const n0J = scene.children.length;
   sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
+  const contenuJ = JUMEAUX[id] ? scene.children.slice(n0J) : null;
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
@@ -10349,6 +10351,7 @@ function construireScene(id) {
   scene.traverse(o => { if ((o.isPointLight || o.isSpotLight) && o.castShadow) o.castShadow = false;
     if (GPU_MODESTE) { if (o.isDirectionalLight && o.castShadow) o.shadow.mapSize.set(1024, 1024);
       if (o.isMesh) for (const m of [].concat(o.material)) for (const k in m) { const t = m[k]; if (t && t.isTexture && t.anisotropy > 2) t.anisotropy = 2; } } });
+  if (contenuJ) racineJumeau(scene, L, id, contenuJ);
   return { scene, L, repere };
 }
 
@@ -10437,7 +10440,7 @@ function estNuit() {
   return h < lever || h >= coucher;
 }
 function majAmbiance() {
-  if (!M || !M.L || !M.L.setNuit) return; const n = estNuit(); M.L.setNuit(n);
+  if (!M || !M.L || !M.L.setNuit) return; const n = estNuit(); M.L.setNuit(n); if (M.jumeauJ && M.jumeauJ.L.setNuit) M.jumeauJ.L.setNuit(n);
   if (M.L.posDJ && M.gens) { if (n) ajouterDJ(); else if (M.gens.has(DJ)) retirerAncien(DJ); }
   M.ctx && M.ctx.surNuit && M.ctx.surNuit(n, M.lieu);
 }
@@ -11960,6 +11963,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (mondesManquants(i
   if (!estBttf(id)) couperMusiqueBttf(estBttf(M.lieu) && !(musBttf && musBttf.cafe) ? 9000 : 1500);   // (de retour de 1955 : le thème s'éteint doucement dans la cour)
   if (M.cadranEl) { M.cadranEl.remove(); M.cadranEl = null; }
   for (const n of [...M.gens.keys()]) retirerAncien(n);
+  rentrerJumeau();   /* (le décor prêté retourne dans sa scène) */
   // le lieu a peut-être été préparé à l'avance (on s'approchait de sa porte) : le passage est alors immédiat
   const pret = M.prets && M.prets[id]; if (M.prets) for (const [k, q] of Object.entries(M.prets)) if (k !== id && q) libererScene(q.scene);
   M.prets = {}; M.prepT = performance.now() + 1500;
@@ -12003,6 +12007,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (mondesManquants(i
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; MD.bttf.cineHV(); }
   if (id === "kingston" && M.kfIntro) { M.kfIntro = false; MD.kingston.cineKingston(); }
   if (id === "kingston") musiqueLB("kf"); else if (M.lbMus && M.lbMus.cle === "kf") musiqueLB(null);   /* (le thème des Gremlins — à partir de 7,5 s : le fichier commence là —, en boucle) */
+  jumelerPorche();
 }
 // on : false pour s'arrêter, "balance" (balancé, bras levés), "disco" (façon Travolta), "charleston" (mains sur les genoux) ou "madison"
 const styleDanse = v => ["disco", "charleston", "madison", "thriller", "saut", ...DANSES_ADMIN].includes(v) ? v : v ? "balance" : false;
@@ -12018,13 +12023,45 @@ const PORCHE_DZ = 41.35;   // (le porche de l'entrée : de la rue à la cour d'h
 /* le sens de la marche sous le porche (vers la cour : -1 côté rue ; vers la rue : +1 côté cour) : dès qu'on s'engage sous la voûte, on est déjà dans le lieu
    où l'on va — devant soi, c'est le vrai décor qu'on voit, jamais le décor de fond ; on ne rebascule pas tant qu'on n'a pas vraiment fait demi-tour */
 const sensPorche = () => !M || performance.now() - (M.porcheT || 0) < 900 ? 0 : M.vzP > .5 ? 1 : M.vzP < -.5 ? -1 : 0;
+/* la rue et la cour d'honneur ne font qu'un : chacune a, au bout du porche, le vrai décor de l'autre — le même, prêté d'une scène à l'autre (pas une copie : pas plus de mémoire).
+   Une seule voûte : chaque scène garde la sienne, celle de l'autre est cachée ; les faux décors de fond (la cour peinte, la rue recopiée) disparaissent.
+   Au milieu de la voûte, on passe d'une scène à l'autre : le décor est le même, rien ne bouge à l'écran */
+const JUMEAUX = { rue: ["grande", -PORCHE_DZ], grande: ["rue", PORCHE_DZ] };
+function racineJumeau(scene, L, id, contenu) {
+  const r = new THREE.Group(); r.userData.maison = scene; for (const o of contenu) r.add(o); scene.add(r); L.racineJ = r; L.fauxJ = []; L.porcheJ = [];
+  r.updateMatrixWorld(true); const b = new THREE.Box3(), c = new THREE.Vector3();
+  for (const o of r.children) { b.makeEmpty(); if (o.isInstancedMesh) { if (!o.boundingBox) o.computeBoundingBox(); b.copy(o.boundingBox).applyMatrix4(o.matrixWorld); } else b.setFromObject(o); if (b.isEmpty()) continue; b.getCenter(c);
+    if (id === "rue") { if (c.z < -26.5) L.fauxJ.push(o); else if (c.z < -11.3 && Math.abs(c.x) < 30) L.porcheJ.push(o); }   /* (la cour peinte au fond ; la façade du porche et sa voûte) */
+    else { if (c.z > 29.6) L.fauxJ.push(o); else if (c.z > 15 && Math.abs(c.x) < 30) L.porcheJ.push(o); } } }   /* (la rue recopiée ; la façade du porche vue de la cour, sa voûte) */
+/* cacher (quoi : "lumieres", "maillages" ou tout) ; les lumières des deux décors sont les mêmes dans les deux scènes : au passage, l'éclairage ne change pas d'un pouce */
+const masquerJ = (o, cache, quoi) => o.traverse(q => { if (cache) { if (quoi && (quoi === "lumieres") !== !!q.isLight) return; if (q.userData.coucheJ == null) q.userData.coucheJ = q.layers.mask; q.layers.set(31); } else if (q.userData.coucheJ != null) { q.layers.mask = q.userData.coucheJ; q.userData.coucheJ = null; } });
+function jumelerPorche() {
+  if (!M || !M.L || !M.scene || M.jumeauJ || !M.L.racineJ) return; const J = JUMEAUX[M.lieu]; if (!J) return;
+  const q = M.prets && M.prets[J[0]];
+  if (!q || !q.L.racineJ) { if (!M.prepJ && !M.cine) { M.prepJ = true; preparerLieu(J[0]).finally(() => { if (M) M.prepJ = false; }); } return; }
+  const r = q.L.racineJ; r.position.z = J[1]; M.scene.add(r); r.updateMatrixWorld(true);
+  const LR = M.lieu === "rue" ? M.L : q.L, LG = M.lieu === "rue" ? q.L : M.L;
+  for (const o of [...LR.fauxJ, ...LG.fauxJ]) masquerJ(o, true);
+  if (M.lieu === "rue") for (const o of LG.porcheJ) masquerJ(o, true);   /* (dans la rue : la voûte de la rue) */
+  else { for (const o of LG.porcheJ) masquerJ(o, true, "lumieres"); for (const o of LR.porcheJ) masquerJ(o, true, "maillages"); }   /* (dans la cour : la sienne, la même, éclairée pareil) */
+  if (q.L.setNuit) try { q.L.setNuit(!!M.L.nuit); } catch (e) {}
+  M.jumeauJ = { L: q.L, r }; M.loinScene = null; M.lampes = null; M.lampesT = 0;
+  if (M.rendu.compileAsync) compiler(M.scene).catch(() => {});
+}
+function rentrerJumeau() {
+  const j = M && M.jumeauJ; if (!j) return; M.jumeauJ = null;
+  for (const q of M.loin || []) if (q.cache) { q.cache = false; q.g.visible = true; } M.loinScene = null;
+  j.r.traverse(o => masquerJ(o, false)); if (M.L && M.L.racineJ) M.L.racineJ.traverse(o => masquerJ(o, false));
+  j.r.position.z = 0; j.r.userData.maison.add(j.r); j.r.updateMatrixWorld(true); M.lampes = null; M.lampesT = 0;
+}
 function changerLieuContinu(id, [dx, dz, dy = 0]) {
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) { changerLieu(id); return; }
   const info = moi.info, x = moi.g.position.x + dx, z = moi.g.position.z + dz;
   const but = moi.chemin && moi.chemin.length ? moi.chemin[moi.chemin.length - 1] : moi.cible, fin = but ? [but.x + dx, but.z + dz] : null;
   const yaw = M.yaw, E = M.camE, D = M.camD, num = M.moiNum, d3 = new THREE.Vector3(dx, dy, dz), vise = M.camVise && M.camVise.clone().add(d3);
-  M.porcheT = performance.now(); M.vzP = 0;
+  M.porcheT = performance.now(); M.vzP = 0; const sousVoute = M.L && M.L.porcheVu && M.L.suivi;
   M.sansPorte = true; try { changerLieu(id, [x, z], yaw); } finally { M.sansPorte = false; }   /* (un passage continu : pas de porte) */
+  if (sousVoute && M.L.porche) { M.L.suiviHors = M.L.suiviHors || M.L.suivi; M.L.suivi = sousVoute; M.L.porcheVu = true; }   /* (toujours sous la voûte : la caméra ne bouge pas) */
   M.camE = E; M.camD = D; M.moiNum = num;
   ajouterAncien({ ...info, numero: num, x, z }); M.gens.get(num).moi = true;
   M.gens.get(num).g.position.y = M.L.hauteur ? M.L.hauteur(x, z) : 0;
