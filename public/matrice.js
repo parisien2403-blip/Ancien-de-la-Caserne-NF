@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.22";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.23";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13798,7 +13798,7 @@ const couperFanfareKF = () => { const f = M && M.kfFanfare; if (!f) return; M.kf
 const MALLE_ROT = Math.PI / 2;   // (l'orientation de la malle : son couvercle sur le côté — il ne cache Gizmo ni de face ni de dos)
 function billyKF() { if (!M) return;
   M.kfMalleP = (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); return new gltfMod.GLTFLoader().loadAsync("avatars/kingston/malle.glb?v=1"); })().catch(e => console.warn("malle", e));   // (la malle de Resident Evil, où se cache Gizmo)
-  M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
+  M.kfVids = { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1") };
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px;box-sizing:border-box;opacity:0;transition:opacity .7s;cursor:pointer";
   d.innerHTML = '<img src="images/gremlins/billy.webp" alt="Billy et Gizmo" style="max-width:min(94%,820px);max-height:58%;object-fit:contain;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.8)">'
     + '<div style="width:min(94%,820px);min-height:4.4em;background:rgba(14,10,6,.92);border:2px solid #b8862e;border-radius:10px;padding:10px 16px;box-sizing:border-box;color:#fff;font:600 clamp(15px,2.4vw,20px)/1.4 \'Lato\',sans-serif"><b class="qui"></b> <span class="txt"></span></div>';
@@ -13814,7 +13814,7 @@ function billyKF() { if (!M) return;
 // la cinématique de la télé : gros plan sur Gizmo qui regarde la télé du bar (sa lumière qui vacille sur lui) ; la caméra glisse jusqu'à l'écran… Rambo III, la flèche explosive ;
 // puis Gizmo se prépare comme Rambo (la scène de Gremlins 2) — et la partie commence, avec son arc et son bandana.
 // Pendant les vidéos, la ville n'est plus dessinée derrière : elles passent sans à-coups.
-function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.remove(); return; } const L = M.L, moi = M.gens.get(M.moiNum), T = tvBarKF, V = M.kfVids || { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1"), rambo: vidKF("videos/kf-gizmo-rambo.mp4?v=3") };
+function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.remove(); return; } const L = M.L, moi = M.gens.get(M.moiNum), T = tvBarKF, V = M.kfVids || { tv: vidKF("videos/kf-rambo3-passage.mp4?v=1") };
   L.gizmoRambo = false;   // (ni arc ni bandana tant qu'il n'a pas vu Rambo)
   const n = T ? T.n : new THREE.Vector3(.74, 0, .67).normalize(), c = T ? T.c : new THREE.Vector3(-31.85, 2.13, -10.53), V3 = THREE.Vector3;
   const gx = c.x + n.x * 2.1, gz = c.z + n.z * 2.1; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.x = gx; moi.g.position.z = gz; }
@@ -13845,7 +13845,38 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
     else if (etape === 1) {   // par-dessus ses oreilles, la caméra glisse vers la télé, jusqu'à l'écran
       const k = Math.min(1, u / 3200), e = k * k * (3 - 2 * k);
       plan(e, A0.set(gx + n.x * .5, y + .42, gz + n.z * .5), A1.set(c.x + n.x * .38, c.y, c.z + n.z * .38), new V3(c.x, c.y, c.z), new V3(c.x, c.y, c.z));
-      if (u > 2700 && !ecranD) ecranD = ecranTV(); } } };
+      if (u > 2700 && !ecranD) ecranD = ecranTV(); }
+    else if (etape === 3) { const mo = moi && moi.g.position; majAtelier(u, y);
+      if (u < 3200) { let dy = yFace - yTv; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); const r = Math.max(0, Math.min(1, (u - 600) / 800)); L.orienterGizmo && L.orienterGizmo(yTv + dy * r * r * (3 - 2 * r));   // (il se retourne : il les a vus)
+        M.camera.position.set(gx - n.x * .35 - sx * .55, y + .62, gz - n.z * .35 - sz * .55); vise.set(Pob.x, y + .03, Pob.z); }   // (par-dessus son épaule : les objets, par terre, qui brillent)
+      else if (u < 5800) { const k = (u - 3200) / 2600, e = k * k * (3 - 2 * k); if (mo) { mo.x = gx + (Wk.x - gx) * e; mo.z = gz + (Wk.z - gz) * e; }   // (il y va)
+        M.camera.position.set((gx + Wk.x) / 2 - sx * 1.1 + n.x * .25, y + .55, (gz + Wk.z) / 2 - sz * 1.1 + n.z * .25); vise.set((gx + Wk.x) / 2 + n.x * .2, y + .12, (gz + Wk.z) / 2 + n.z * .2); }   // (de profil, du côté libre — la malle est de l'autre)
+      else if (u < 12800) { L.gizmoTravail = true; L.orienterGizmo && L.orienterGizmo(yFace); if (mo) { mo.x = Wk.x; mo.z = Wk.z; }   // (de dos : il bricole)
+        const k = (u - 5800) / 7000; M.camera.position.set(Wk.x - n.x * (.6 - .1 * k) - sx * .3, y + .66 - .06 * k, Wk.z - n.z * (.6 - .1 * k) - sz * .3); vise.set(Wk.x + n.x * .14, y + .14, Wk.z + n.z * .14); }   // (de dos, un peu de haut : on voit ce qu'il a dans les mains)
+      else { if (L.gizmoRambo === false) { L.gizmoRambo = true; L.gizmoTravail = false; accord(); const w = voile("background:#fff;opacity:.7;transition:opacity .7s"); if (w) { requestAnimationFrame(() => requestAnimationFrame(() => { w.style.opacity = "0"; })); setTimeout(() => w.remove(), 800); } }   // (le voilà : bandeau, arc, allumette)
+        const k = Math.min(1, (u - 12800) / 4200); M.camera.position.set(Wk.x + n.x * (.9 - .25 * k) + sx * .12, y + .26, Wk.z + n.z * (.9 - .25 * k) + sz * .12); vise.set(Wk.x, y + .24, Wk.z); if (u > 17500) fin(); }
+      M.camera.lookAt(vise); } } };
+  // la fabrication de l'arc (à la place de la vidéo) : par terre, devant lui, un trombone, un élastique, une allumette ; il les voit, il y va ; de dos, penché, il bricole —
+  // chaque objet monte vers ses mains et disparaît (le trombone grince, l'élastique claque, l'allumette craque) ; puis de face : le bandeau, l'arc bandé, l'allumette — et la musique
+  let atl = null; const Pob = new V3(gx + n.x * .68, 0, gz + n.z * .68), Wk = new V3(gx + n.x * .42, 0, gz + n.z * .42), yFace = Math.atan2(n.x, n.z);
+  const atelier = () => { const g = new THREE.Group(), y = gy(), acier = new THREE.MeshStandardMaterial({ color: 0xd8dde4, metalness: .9, roughness: .25 });
+    const pts = [[-.03, .045], [.06, .045], [.075, .03], [.075, .015], [.06, 0], [-.06, 0], [-.075, .015], [-.075, .03], [-.06, .045], [-.05, .04], [-.045, .03], [-.045, .018], [-.03, .012], [.045, .012]].map(([a, b]) => new THREE.Vector3(a, b, 0));   // (le trombone : ses boucles)
+    const clip = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, .0045, 6), acier); clip.rotation.x = -Math.PI / 2; clip.position.set(Pob.x - n.z * .2, y + .012, Pob.z + n.x * .2); g.add(clip);
+    const elas = new THREE.Mesh(new THREE.TorusGeometry(.04, .005, 6, 24), new THREE.MeshStandardMaterial({ color: 0xc8402a, roughness: .7 })); elas.rotation.x = -Math.PI / 2; elas.position.set(Pob.x, y + .015, Pob.z); g.add(elas);
+    const allu = new THREE.Group(); { const b = new THREE.Mesh(new THREE.BoxGeometry(.008, .008, .12), new THREE.MeshStandardMaterial({ color: 0xe8d2a0, roughness: .8 })); allu.add(b); const t2 = new THREE.Mesh(new THREE.SphereGeometry(.009, 8, 6), new THREE.MeshStandardMaterial({ color: 0xb01810, roughness: .5 })); t2.scale.set(1, 1, 1.4); t2.position.z = .064; allu.add(t2); }
+    allu.position.set(Pob.x + n.z * .2, y + .025, Pob.z - n.x * .2); allu.rotation.y = yFace + .6; g.add(allu);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.halos ? L.halos.material.map : null, color: 0xfff2c0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); halo.position.set(Pob.x, y + .05, Pob.z); halo.scale.setScalar(.35); g.add(halo);
+    const eclats = []; for (let k = 0; k < 8; k++) { const e2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo.material.map, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })); e2.scale.setScalar(.06); g.add(e2); eclats.push(e2); }
+    for (const o of [clip, elas, allu]) { o.scale.multiplyScalar(2.5); o.traverse(m => { if (m.isMesh) { m.material = m.material.clone(); m.material.emissive = m.material.color.clone().multiplyScalar(.35); } }); }   // (plus gros que nature : qu'on les voie bien)
+    M.scene.add(g); atl = { g, objs: [clip, elas, allu], halo, eclats, y, sons: 0 }; };
+  const sonTwang = (f0, d) => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), gn = actx.createGain(), t1 = actx.currentTime; o.type = "triangle"; o.frequency.setValueAtTime(f0, t1); o.frequency.exponentialRampToValueAtTime(f0 * .55, t1 + d); gn.gain.setValueAtTime(.18, t1); gn.gain.exponentialRampToValueAtTime(.001, t1 + d); o.connect(gn).connect(actx.destination); o.start(t1); o.stop(t1 + d); } catch (e) {} };
+  const accord = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t1 = actx.currentTime, lp = actx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200; lp.connect(actx.destination);
+      for (const [f, dt] of [[196, 0], [247, .02], [294, .04], [392, .06], [196, .5], [294, .52], [392, .54], [494, .56]]) { const o = actx.createOscillator(), gn = actx.createGain(); o.type = "sawtooth"; o.frequency.value = f; gn.gain.setValueAtTime(0, t1 + dt); gn.gain.linearRampToValueAtTime(.06, t1 + dt + .04); gn.gain.setValueAtTime(.06, t1 + dt + (dt < .4 ? .32 : 1.1)); gn.gain.linearRampToValueAtTime(0, t1 + dt + (dt < .4 ? .42 : 1.6)); o.connect(gn).connect(lp); o.start(t1 + dt); o.stop(t1 + dt + 1.7); } } catch (e) {} };   // (un petit coup de cuivres : « ta-daa ! »)
+  const majAtelier = (u, y) => { const A = atl; if (!A) return; const sx2 = sx * .14, sz2 = sz * .14;
+    A.halo.material.opacity = u < 6800 ? .5 + .4 * Math.sin(u / 160) : 0;
+    A.objs.forEach((o, k) => { const d0 = 7000 + k * 1800, d1 = d0 + 1500; if (u < d0) return; if (u > d1) { if (o.visible) { o.visible = false; A.sons++; if (k === 0) sonBruit(.25, 4200, .25); else if (k === 1) sonTwang(520, .5); else { sonBruit(.12, 6000, .3); sonTwang(1200, .15); } } return; }
+      const e = (u - d0) / 1500, c = new V3(Wk.x + n.x * .1 - sx * .14 * (k - 1) * 1.5, y + .2 + .08 * Math.sin(e * Math.PI), Wk.z + n.z * .1 - sz * .14 * (k - 1) * 1.5); o.position.lerp(c, Math.min(1, e * 1.6)); o.rotation.y += .12; o.rotation.z += .05 * (k + 1); });
+    A.eclats.forEach((e2, k) => { const ph = (u / 260 + k * .37) % 1, actif = u > 7000 && u < 12500; e2.material.opacity = actif ? (1 - ph) * .9 : 0; e2.position.set(Wk.x + n.x * .1 + Math.cos(k * 2.4 + u / 300) * .07, y + .1 + ph * .12, Wk.z + n.z * .1 + Math.sin(k * 2.4 + u / 300) * .07); }); };
   const ecranTV = () => {   // l'écran de la télé, plein cadre : son bord arrondi, ses lignes, le son
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:9;background:#050505;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
     const cadre = document.createElement("div"); cadre.style.cssText = "position:relative;width:min(94%,150vh);aspect-ratio:16/9;border-radius:6% / 9%;overflow:hidden;box-shadow:0 0 0 14px #141210,0 0 0 18px #2a241e,0 0 60px rgba(120,160,255,.25)";
@@ -13856,18 +13887,17 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
     return d; };
   tv.onended = () => { if (etape === 2) suite(); };
   const suite = () => { if (fini) return; if (etape < 2) { if (!ecranD) ecranD = ecranTV(); return; }
-    if (etape === 2) { etape = 3; tv.pause(); const r = V.rambo, d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:10;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s";
-      r.style.cssText = "width:100%;height:100%;object-fit:contain"; d.appendChild(r); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
-      ramboD = d; setTimeout(() => { if (ecranD) ecranD.remove(); ecranD = null; }, 600); r.currentTime = 0; r.muted = false; r.onended = () => suite(); lancerV(r).catch(() => { r.muted = true; lancerV(r).catch(() => suite()); }); return; }
+    if (etape === 2) { etape = 3; tv.pause(); M.pauseRendu = false; t0 = performance.now(); atelier();   // (Rambo III fini : on revient au bar — Gizmo se fabrique son arc)
+      if (ecranD) { const d = ecranD; ecranD = null; d.style.opacity = "0"; setTimeout(() => d.remove(), 600); } return; }
     fin(); };
-  const fin = () => { if (fini) return; fini = true; V.rambo.pause(); tv.pause(); M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null; L.silenceKF = false; L.apresRamboKF = true;   // (la musique peut partir)
+  const fin = () => { if (fini) return; fini = true; tv.pause(); if (atl) { M.scene.remove(atl.g); atl = null; } L.gizmoTravail = false; M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null; L.silenceKF = false; L.apresRamboKF = true;   // (la musique peut partir)
     tv.muted = true; tv.loop = true; tv.style.cssText = ""; tv.play().catch(() => {});   // (la télé du bar continue, sans le son)
     for (const d of [ecranD, ramboD]) if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 600); }
     setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo ? C'est Billy. Tu m'entends dans l'oreillette ?"], ["gizmo", "Billy !"],
       ["billy", "La pince coupante de M. Futterman est tombée de son chasse-neige, quelque part dans la rue. Cherche une petite lueur dans la neige."], ["billy", "Et fais attention à toi : ils sont partout."]]); }, 3500);
     msgKF("GIZMO RAMBO !", "Arc et bandana : il est prêt. Trouve la pince coupante de M. Futterman ! — Tirer : F, Espace, gâchette · Sauter : J, A", 6500); };
   const bpF = () => { suite(); if (!fini) M.passerBtn = boutonPasser(bpF); }; M.cine.passer = () => suite(); M.passerBtn = boutonPasser(bpF);   // (Passer : à l'étape suivante)
-  const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); V.rambo.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; L.silenceKF = false; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
+  const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; L.silenceKF = false; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
 // la fin : l'écran noir, « First Aid » ; un texte rouge qui monte lentement (tout est rentré dans l'ordre… ou presque), le générique ; le titre, « FIN »… et un point d'interrogation.
 // Puis on revient dans la rue, devant le Video Futur.
 const TEXTE_FIN_KF = [
@@ -18248,7 +18278,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         arc.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 28, .02, 7), bois));
         arc.add(new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .62, 4), new THREE.MeshBasicMaterial({ color: 0xf0e8d0 })));   // (la corde)
         const fl = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, .56, 6).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xc8a070, emissive: 0x2a2010 })); fl.position.x = -.24; arc.add(fl);   // (la flèche)
-        const pt = new THREE.Mesh(new THREE.ConeGeometry(.025, .07, 6).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xd02010, emissive: 0x501008 })); pt.position.x = -.55; arc.add(pt);
+        const pt = new THREE.Mesh(new THREE.SphereGeometry(.024, 10, 8), new THREE.MeshStandardMaterial({ color: 0xc01810, emissive: 0x400806, roughness: .5 })); pt.scale.set(1.6, 1, 1); pt.position.x = -.53; arc.add(pt);   // (une allumette : le bout rouge)
         for (const a of [0, Math.PI / 2]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(.08, .045), new THREE.MeshStandardMaterial({ color: 0xf2ece0, side: THREE.DoubleSide })); pl.position.x = .0; pl.rotation.x = a; arc.add(pl); } }
       G = { mix, act, tete, main, band, pans, arc, sc, pieds, inner }; L.gizmoG = G; })().catch(e => console.warn("Gizmo", e)));
     // les flèches : une hampe, l'empennage, la pointe qui flambe ; elles filent vers le gremlin visé (et le suivent un peu)
@@ -18310,6 +18340,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         if (mus) { if (calme) { if (!mus.paused) mus.pause(); } else if (mus.paused && !M.pauseRendu && !L.tvLueur && performance.now() > (L.musEssai || 0)) { L.musEssai = performance.now() + 1500;
           if (mus.volume < .05) { const t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); mus.volume = .55 * u; if (u >= 1) clearInterval(i); }, 50); }   // (elle avait été créée muette : on la fait monter)
           mus.play().catch(() => {}); } } }
+      if (G.inner) { const pen = L.gizmoTravail ? .32 + .07 * Math.sin(t / 140) : 0; G.inner.rotation.x += (pen - G.inner.rotation.x) * Math.min(1, dt * 6); }   // (il se penche sur son bricolage)
       if (L.gizmoMats) { const f = L.tvLueur ? L.tvLueur(t) + .2 : .28; for (const m of L.gizmoMats) m.emissiveIntensity = f; }   // (devant la télé : sa lumière vacille sur lui)   // (avant d'avoir vu Rambo à la télé : ni bandana ni arc)
       const p = moi.g.position, v = pos0 ? Math.hypot(p.x - pos0.x, p.z - pos0.z) / Math.max(dt, 1e-3) : 0; if (pos0 && v > .2) {   /* (il regarde où il va) */ const ya = Math.atan2(p.x - pos0.x, p.z - pos0.z); let d = ya - yawG; d = Math.atan2(Math.sin(d), Math.cos(d)); yawG += d * Math.min(1, dt * 10); }
       { const SL = L.salleLou, dd = !!SL && p.x > SL.x0 && p.x < SL.x1 && p.z > SL.z0 && p.z < SL.z1;   // (dans le bar : la caméra tout près, juste derrière lui — elle ne va plus dans les murs)
