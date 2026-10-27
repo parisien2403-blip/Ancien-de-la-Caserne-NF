@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.38";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.39";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -9959,7 +9959,7 @@ const FILMS_VF = [
   { cle: "lb", lieu: "santacarla", titre: "Génération perdue", annee: 1987 },
   { cle: "re", lieu: "z-grande", titre: "Resident Evil", annee: 1996, plusieurs: true },
   { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 },
-  { cle: "grem", lieu: "kingston", titre: "Gremlins", annee: 1984, admin: true }];   // (admin : la jaquette n'est proposée qu'à l'administrateur)
+  { cle: "grem", lieu: "kingston", titre: "Gremlins", annee: 1984 }];
 const ENTREE_APO = { arrivee: [25.6, -129.6], yaw: Math.PI * .75 };   // (sur la petite place, devant la voûte de l'horloge jaune : on arrive en faisant sauter son portail)
 const louesVF = f => Object.entries((M && M.qui) || {}).filter(([l]) => f.plusieurs ? estApo(l) : universDe(l) === universDe(f.lieu)).flatMap(([, n]) => n);
 function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;

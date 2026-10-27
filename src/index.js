@@ -465,7 +465,7 @@ export class Compteur extends DurableObject {
     const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
     // les univers : une seule personne à la fois (l'apocalypse de Resident Evil se joue à plusieurs) ; quelqu'un y est déjà : on refuse
     if (m.t === "entrer" && universDe(m.lieu) && universDe(a.lieu) !== universDe(m.lieu) && this.ctx.getWebSockets().some(w => { const b = w.deserializeAttachment(); return w !== ws && b && b.numero !== a.numero && universDe(b.lieu) === universDe(m.lieu); })) { ws.send(JSON.stringify({ t: "occupe", lieu: m.lieu })); return; }
-    if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "kingston" || a.admin) && (m.lieu !== "appart" || a.admin || (APPART_INVITES.includes(Number(a.numero)) && this.appartOuvert()))) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
+    if (m.t === "entrer" && LIEUX_MATRICE.includes(m.lieu) && (m.lieu !== "appart" || a.admin || (APPART_INVITES.includes(Number(a.numero)) && this.appartOuvert()))) {   // (l'appartement de l'escalier Z : l'administrateur, et ses invités)
       const ancien = a.lieu;
       this.finirSlow(ws, a);
       if (a.voix && salleVoix(m.lieu) !== a.salleV) { this.diffuserVoix(a.salleV, { t: "voix", numero: a.numero, on: false }, ws); a.voix = false; a.salleV = null; }   // (on change de monde : le micro se coupe ; on le rallume de l'autre côté)
