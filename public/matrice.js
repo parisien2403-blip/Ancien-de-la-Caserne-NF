@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.18";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.19";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13862,7 +13862,7 @@ const TEXTE_FIN_KF = [
   "Et quelque part dans le noir, une petite boule de poils frissonne…"];
 const GENERIQUE_KF = [["Gizmo", "dans son propre rôle"], ["Billy Peltzer", "le réparateur"], ["Le père Noël", "toujours debout"], ["Stripe et sa bande", "réduits en cendres"], ["La chorale de Kingston Falls", "plus jamais en mesure"],
   ["Une aventure de", "la Caserne de la Nouvelle France"], ["Mise en scène", "Germain-Pierre"], ["Musique", "« First Aid »"], ["Aucun mogwaï n'a été mouillé", "pendant le tournage"]];
-function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true;
+function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true; M.L.silenceKF = true;   // (la musique de la ville se tait : seule celle du générique)
   const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause();
   const son = new Audio("sons/kf-fin.mp3?v=1"); son.volume = 1; son.play().catch(() => {});
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;opacity:0;transition:opacity 1.6s;overflow:hidden;font-family:Georgia,'Times New Roman',serif";
@@ -14988,11 +14988,12 @@ function ecouterClavier() { if (clavierPret) return; clavierPret = true;
   const saisie = e => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "") || (e.target && e.target.isContentEditable);
   addEventListener("keydown", e => { if (!M || saisie(e) || e.ctrlKey || e.metaKey || e.altKey) return; CLAV[e.code] = true; if (/^(Space|Arrow)/.test(e.code)) e.preventDefault(); });
   addEventListener("keyup", e => { CLAV[e.code] = false; }); addEventListener("blur", () => { for (const k in CLAV) CLAV[k] = false; }); }
-function padClavier() { ecouterClavier(); const k = c => !!CLAV[c];
-  const ly = (k("KeyS") || k("ArrowDown") ? 1 : 0) - (k("KeyW") || k("KeyZ") || k("ArrowUp") ? 1 : 0), lx = (k("KeyD") || k("ArrowRight") ? 1 : 0) - (k("KeyA") || k("KeyQ") || k("ArrowLeft") ? 1 : 0);
-  const tir = k("Space"), cours = k("ShiftLeft") || k("ShiftRight");
-  if (!lx && !ly && !tir && !MAN.bouge) return null;
-  const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); if (tir) buttons[7] = { pressed: true, value: 1 }; if (cours) buttons[5] = { pressed: true, value: 1 };
+const TACT_KF = {};   // (les boutons de l'écran, à Kingston Falls, sur téléphone : la croix, A, B)
+function padClavier() { ecouterClavier(); const k = c => !!CLAV[c], T = TACT_KF;
+  const ly = (k("KeyS") || k("ArrowDown") || T.b ? 1 : 0) - (k("KeyW") || k("KeyZ") || k("ArrowUp") || T.h ? 1 : 0), lx = (k("KeyD") || k("ArrowRight") || T.d ? 1 : 0) - (k("KeyA") || k("KeyQ") || k("ArrowLeft") || T.g ? 1 : 0);
+  const tir = k("Space") || !!T.tir, saut = !!T.saut, cours = k("ShiftLeft") || k("ShiftRight");
+  if (!lx && !ly && !tir && !saut && !MAN.bouge && !MAN.prec[0]) return null;
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); if (tir) buttons[7] = { pressed: true, value: 1 }; if (saut) buttons[0] = { pressed: true, value: 1 }; if (cours) buttons[5] = { pressed: true, value: 1 };
   return { clavier: true, axes: [lx, ly, 0, 0], buttons }; }
 function manette() {
   const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
@@ -17581,8 +17582,9 @@ function gremlinsHV(scene, L) {
     for (let i = 0; i < 170; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: i % 2 ? fA : fB, blending: i % 4 < 2 ? THREE.NormalBlending : THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); flammes.push(sp); }
     for (let i = 0; i < 45; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lu, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); lueurs.push(sp); }
     for (let i = 0; i < 90; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fu, depthWrite: false, transparent: true })); sp.visible = false; fg.add(sp); fumees.push(sp); } }
-  L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); crier(q, 0); };
-  L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; crier(q, 0);
+  L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); };
+  L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; if (q.pv <= 0) crier(q, 0);   // (il crie quand il prend feu)
+   
     if (q.pv <= 0) { q.feu = q.feu0 = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
   const revenir = q => { if (L.gremlinsFinis) { q.mort = 1e9; q.feu = 0; return; }   // (la lumière des projecteurs les a tous brûlés : ils ne reviennent plus)
  const x0 = q.x, z0 = q.z; let p = null; for (let k = 0; k < 40; k++) { const c = tirer(); if (c && Math.hypot(c[0] - x0, c[1] - z0) > 15) { p = c; break; } } if (!p) p = tirer() || [0, 18];
@@ -17596,7 +17598,7 @@ function gremlinsHV(scene, L) {
     if (attaquant || !ok || t < prochaineAttaque) return; const o = moi.g.position; let best = null, bd = 20;
     for (const q of gr) { if (q.chorale >= 0 || q.dosNoel || q.chasse || q.mort > 0 || q.feu > 0 || q.ejecte || (q.perche && q.perche.colle)) continue; const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < bd) { bd = d; best = q; } }
     if (!best) { prochaineAttaque = t + 2000; return; }
-    if (best.perche) { best.perche.occ--; best.perche = null; } best.grimpeur = false; best.attaque = true; best.attaqueFin = t + 14000; attaquant = best; crier(best, t); };
+    if (best.perche) { best.perche.occ--; best.perche = null; } best.grimpeur = false; best.attaque = true; best.attaqueFin = t + 14000; attaquant = best; };
   return (dt, t) => {
     choisirAttaquant(t);
     if (L.gremlinsFinis) for (const q of gr) if (q.brule && t >= q.brule) { q.brule = 0; if (q.feu > 0 || q.mort > 0) continue; if (q.ejecte) { q.ejecte = null; q.saut = 0; q.vy = 0; } q.dosNoel = false; q.pv = 1; L.toucherGremlin(q); if (q.feu > 0) q.feu = q.feu0 = 2.4 + Math.random() * .8; }   // (les projecteurs : un grand feu, plus long)
@@ -17610,9 +17612,9 @@ function gremlinsHV(scene, L) {
           if (lu < lueurs.length) { const sp = lueurs[lu++]; sp.visible = true; sp.position.set(q.x, y + .35 * q.s, q.z); sp.scale.setScalar(1.4 * S2 * (.9 + .1 * Math.sin(t / 60))); sp.material.opacity = .38 * I; }
           for (let k = 0; k < 2 && fm < fumees.length; k++) { const sp = fumees[fm++], ph = ((t / 1100 + k * .5 + q.ph) % 1); sp.visible = true; sp.position.set(q.x + Math.sin(ph * 4 + k) * .12, y + .55 * q.s + ph * 1.5, q.z + Math.cos(ph * 3 + k) * .12); sp.scale.setScalar((.35 + ph * .9) * q.s * 1.4); sp.material.opacity = (1 - ph) * .45 * I; } } }
       for (; f < flammes.length; f++) flammes[f].visible = false; for (; lu < lueurs.length; lu++) lueurs[lu].visible = false; for (; fm < fumees.length; fm++) fumees[fm].visible = false; }
-    for (const q of gr) { if (q.chorale >= 0 || q.mort > 0 || q.feu > 0 || q.ejecte) continue; if (q.cri == null) q.cri = t + Math.random() * 8000; else if (t >= q.cri) { q.cri = t + 6000 + Math.random() * 2000; crier(q, t); } }
+    // (plus de cris à tout bout de champ : un gremlin ne crie que quand il prend feu)
     if (chant && M.camera) { const moi = M.gens && M.gens.get(M.moiNum), o = moi ? moi.g.position : M.camera.position, d = Math.hypot(CH.x - o.x, CH.z - o.z), D = 26;
-      chant.g.gain.value = !(d <= D) || L.gizmoDedans !== false ? 0 : 3.6 * Math.pow(1 - d / D, 1.6);
+      chant.g.gain.value = !(d <= D) || L.gizmoDedans !== false || L.silenceKF || L.gremlinsFinis ? 0 : 3.6 * Math.pow(1 - d / D, 1.6);
       if (chant.pn) { const dr = new THREE.Vector3().setFromMatrixColumn(M.camera.matrixWorld, 0), cx = M.camera.position.x, cz = M.camera.position.z, l = Math.hypot(CH.x - cx, CH.z - cz) || 1; chant.pn.pan.value = Math.max(-1, Math.min(1, ((CH.x - cx) * dr.x + (CH.z - cz) * dr.z) / l)) * .8; } }
     for (let i = 0; i < gr.length; i++) { const q = gr[i]; let court = false; if (q.mort > 0 || q.feu > 0 || q.ejecte) { q.am = 0; if (q.ejecte) q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; continue; }
       // les grimpeurs : dès qu'une voiture garée est là, ils sautent sur son toit (deux par voiture) et n'en descendent plus — ils y trépignent, y sautillent, y tournent
@@ -18225,17 +18227,21 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
     L.soignerGizmo = () => { if (nVies >= 6) return false; nVies++; dessinerVies(); return true; };   // (un pansement : un cœur de plus)
     // le bouton (et la touche F)
-    const bt = document.createElement("button"); bt.type = "button"; bt.textContent = "🏹"; bt.title = "Tirer une flèche enflammée (F, Espace, ou la gâchette droite de la manette)";
-    bt.style.cssText = "position:absolute;right:16px;bottom:84px;z-index:6;width:68px;height:68px;border-radius:50%;border:3px solid #ffb030;background:rgba(40,12,4,.82);color:#fff;font-size:34px;box-shadow:0 0 18px rgba(255,120,30,.7);display:none;touch-action:manipulation";
-    for (const ev of ["pointerdown", "touchstart"]) bt.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); tirer(); }, { passive: false });
-    const touche = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if (e.key === "f" || e.key === "F") tirer(); if (e.key === "j" || e.key === "J") L.sauterGizmo(); };
-    const bs = document.createElement("button"); bs.type = "button"; bs.textContent = "⤴️"; bs.title = "Sauter (J, ou A à la manette)";
-    bs.style.cssText = "position:absolute;right:96px;bottom:84px;z-index:6;width:56px;height:56px;border-radius:50%;border:3px solid #9fd0ff;background:rgba(6,20,40,.8);color:#fff;font-size:26px;display:none;touch-action:manipulation";
-    for (const ev of ["pointerdown", "touchstart"]) bs.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); L.sauterGizmo(); }, { passive: false }); window.addEventListener("keydown", touche);
+    const touche = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if (e.key === "f" || e.key === "F") tirer(); if (e.key === "j" || e.key === "J") L.sauterGizmo(); }; window.addEventListener("keydown", touche);
+    // sur téléphone, comme aux Goonies : la croix pour avancer (à gauche), A pour sauter et B pour tirer (à droite) — elles font comme une manette
+    const tactile = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches) || "ontouchstart" in window, pad = document.createElement("div");
+    pad.style.cssText = "position:absolute;inset:0;z-index:6;pointer-events:none;display:none";
+    const bouton = (txt, css, cle) => { const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.style.cssText = "position:absolute;width:62px;height:62px;border-radius:50%;border:2px solid rgba(255,220,120,.75);background:rgba(0,0,0,.4);color:#ffe7a0;font:bold 21px sans-serif;touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;" + css;
+      const on = e => { e.preventDefault(); e.stopPropagation(); TACT_KF[cle] = true; b.style.background = "rgba(255,200,80,.35)"; }, off = e => { e.preventDefault(); TACT_KF[cle] = false; b.style.background = "rgba(0,0,0,.4)"; };
+      b.addEventListener("pointerdown", on); b.addEventListener("pointerup", off); b.addEventListener("pointercancel", off); b.addEventListener("pointerleave", off); b.addEventListener("contextmenu", e => e.preventDefault()); pad.appendChild(b); return b; };
+    bouton("◀", "left:14px;bottom:calc(76px + env(safe-area-inset-bottom))", "g"); bouton("▶", "left:150px;bottom:calc(76px + env(safe-area-inset-bottom))", "d");
+    bouton("▲", "left:82px;bottom:calc(138px + env(safe-area-inset-bottom))", "h"); bouton("▼", "left:82px;bottom:calc(14px + env(safe-area-inset-bottom))", "b");
+    bouton("B", "right:104px;bottom:calc(30px + env(safe-area-inset-bottom));width:70px;height:70px", "tir"); bouton("A", "right:16px;bottom:calc(76px + env(safe-area-inset-bottom));width:78px;height:78px", "saut");
     let pos0 = null, enPlace = false;
-    const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !bt.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(bt); M.ctx.conteneur.appendChild(bs); M.ctx.conteneur.appendChild(vies); } bs.style.display = ici ? "block" : "none"; bt.style.display = ici && L.gizmoRambo !== false ? "block" : "none"; vies.style.display = ici && !M.cine ? "block" : "none";
+    const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !vies.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(pad); M.ctx.conteneur.appendChild(vies); }
+      const montre = ici && tactile && !M.cine && !M.kfGenerique; pad.style.display = montre ? "block" : "none"; if (!montre) for (const k in TACT_KF) TACT_KF[k] = false; vies.style.display = ici && !M.cine ? "block" : "none";
       if (!ici && racine.parent) { const p = racine.parent; p.remove(racine); p.children.forEach(c => { c.visible = true; c.traverse(o => o.layers.set(0)); }); enPlace = false; if (G) { G.band.visible = G.arc.visible = false; } }   // (on quitte Kingston Falls : on redevient soi-même)
-      if (!M) { clearInterval(garde); window.removeEventListener("keydown", touche); bt.remove(); bs.remove(); vies.remove(); } }, 300);
+      if (!M) { clearInterval(garde); window.removeEventListener("keydown", touche); pad.remove(); vies.remove(); } }, 300);
     L.gizmoMaj = (dt, t) => { const moi = M && M.gens.get(M.moiNum); if (!moi || !G) return;
       if (racine.parent !== moi.g) { moi.g.add(racine); enPlace = true; } for (const c of moi.g.children) if (c !== racine) { c.visible = false; c.traverse(o => o.layers.set(31)); }   // (notre bonhomme, caché — sur un calque que la caméra ne voit pas : le jeu le réaffiche à chaque image — c'est Gizmo)
       G.band.visible = G.arc.visible = L.gizmoRambo !== false;
