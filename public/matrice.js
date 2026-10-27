@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.24";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.25";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13734,7 +13734,7 @@ const BILLY_KF = [
 // radioKF([["billy", "…"], ["gizmo", "…"]]) : les répliques passent l'une après l'autre ; un appel qui arrive pendant un autre attend son tour
 function radioKF(lignes) { if (!M || !M.ctx || !M.ctx.conteneur) return; (M.radioKFfile = M.radioKFfile || []).push(lignes); if (M.radioKFen) return;
   const suivant = () => { const L2 = M && M.radioKFfile && M.radioKFfile.shift(); if (!L2) { if (M) M.radioKFen = false; return; } M.radioKFen = true; bipRadio();
-    setTimeout(() => { if (!M) return; const el = document.createElement("div"); el.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(94%,560px);z-index:11;pointer-events:none;background:linear-gradient(180deg,rgba(10,22,8,.94),rgba(4,10,4,.94));border:2px solid #6fd23a;border-radius:10px;padding:10px 12px 12px;box-shadow:0 0 18px rgba(110,220,60,.4);font-family:'Lato',Arial,sans-serif;animation:codecIn .25s ease-out";
+    setTimeout(() => { if (!M) return; const el = document.createElement("div"); const large = innerWidth > innerHeight; el.style.cssText = "position:absolute;left:50%;bottom:" + (large ? "8px" : "calc(215px + env(safe-area-inset-bottom))") + ";transform:translateX(-50%);width:" + (large ? "min(52%,560px)" : "min(94%,560px)") + ";z-index:11;pointer-events:none;background:linear-gradient(180deg,rgba(10,22,8,.94),rgba(4,10,4,.94));border:2px solid #6fd23a;border-radius:10px;padding:10px 12px 12px;box-shadow:0 0 18px rgba(110,220,60,.4);font-family:'Lato',Arial,sans-serif;animation:codecIn .25s ease-out";
       if (!document.getElementById("styleCodec")) { const st = document.createElement("style"); st.id = "styleCodec"; st.textContent = "@keyframes codecIn{from{opacity:0;transform:translateX(-50%) scaleY(.1)}to{opacity:1;transform:translateX(-50%) scaleY(1)}}"; document.head.appendChild(st); }
       const port = (q, img) => `<div data-q="${q}" style="position:relative;width:22%;aspect-ratio:5/6;border:3px solid #3f8a2a;border-radius:6px;overflow:hidden;background:#071407;transition:filter .2s,opacity .2s"><img src="${img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><canvas width="40" height="48" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;image-rendering:pixelated"></canvas></div>`;
       el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:3%">${port("billy", "images/gremlins/radio-billy.webp?v=1")}
@@ -13742,7 +13742,7 @@ function radioKF(lignes) { if (!M || !M.ctx || !M.ctx.conteneur) return; (M.radi
           <div style="display:flex;align-items:flex-end;gap:8px;background:#061206;border:2px solid #3f8a2a;padding:5px 9px;border-radius:4px"><div class="rb" style="display:flex;align-items:flex-end;gap:2px;height:28px">${[...Array(7)].map((_, i) => `<i style="display:block;width:4px;height:${6 + i * 3.4}px;background:#9dff6a;opacity:.25"></i>`).join("")}</div>
           <div style="color:#9dff6a;font:700 24px 'Courier New',monospace;text-shadow:0 0 8px rgba(150,255,110,.8)">104.5</div></div><div style="color:#8fe36a;font:700 9px Arial;letter-spacing:.25em">KINGSTON FALLS</div></div>
         ${port("gizmo", "images/gremlins/radio-gizmo.webp?v=1")}</div><div class="rt" style="margin-top:9px;min-height:2.9em;color:#fff4d8;font:15px/1.4 'Lato',Arial;text-shadow:0 1px 2px #000"></div>`;
-      M.ctx.conteneur.appendChild(el); M.radioKFel = el; if (M.kfMsg && M.kfMsg.isConnected) basMsgKF(M.kfMsg); const txt = el.querySelector(".rt"), barres = [...el.querySelectorAll(".rb i")]; let parle = false, fx = "";
+      M.ctx.conteneur.appendChild(el); M.radioKFel = el; const txt = el.querySelector(".rt"), barres = [...el.querySelectorAll(".rb i")]; let parle = false, fx = "";
       const pB = el.querySelector('[data-q="billy"]'), imB = pB.querySelector("img"), cv = pB.querySelector("canvas"), cx = cv.getContext("2d"), px = cx.createImageData(40, 48);
       const anim = setInterval(() => { if (!el.isConnected) return clearInterval(anim); const k = parle ? 2 + Math.floor(Math.random() * 6) : 1; barres.forEach((b, i) => b.style.opacity = i < k ? (fx ? Math.random() : 1) : .2);
         // le brouillage : l'image de Billy saute, se déchire, la neige passe dessus ; signal perdu : plus que la neige
@@ -13758,8 +13758,6 @@ function radioKF(lignes) { if (!M || !M.ctx || !M.ctx.conteneur) return; (M.radi
   suivant(); }
 // couper l'appel en cours (Passer) : la file est vidée, l'écran de la radio disparaît
 function couperRadioKF() { if (!M) return; M.radioKFfile = []; if (M.radioKFel) M.radioKFel.remove(); M.radioKFel = null; M.radioKFen = false; }
-// un message pendant un appel radio : il descend en bas de l'écran, pour ne pas cacher les visages
-function basMsgKF(d) { d.style.top = "auto"; d.style.bottom = "clamp(120px,22%,190px)"; }
 // les messages du jeu, à la manière du film : les grosses lettres rouges cernées de noir, qui sautent à l'écran, sur un cadre vert de gremlin
 function msgKF(titre, texte, ms = 4800) { if (!M || !M.ctx || !M.ctx.conteneur) return;
   if (!document.getElementById("styleMsgKF")) { const st = document.createElement("style"); st.id = "styleMsgKF"; st.textContent = "@font-face{font-family:'Luckiest Guy';src:url(fonts/LuckiestGuy.ttf) format('truetype');font-display:swap}"
@@ -13768,7 +13766,7 @@ function msgKF(titre, texte, ms = 4800) { if (!M || !M.ctx || !M.ctx.conteneur) 
   const d = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:14%;z-index:12;max-width:min(88%,620px);padding:12px 22px 14px;text-align:center;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,rgba(40,70,20,.95),rgba(8,14,6,.95));border:3px solid #6fd23a;border-radius:18px 6px 18px 6px;box-shadow:0 0 22px rgba(110,220,60,.55),inset 0 0 18px rgba(0,0,0,.7);animation:kfPop .55s ease-out forwards;transition:opacity .6s;font-family:'Luckiest Guy','Lato',sans-serif";
   d.innerHTML = `<div style="font-size:clamp(24px,5vw,40px);line-height:1.05;color:#ff2a1a;letter-spacing:.04em;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,40,20,.6)">${titre}</div>`
     + (texte ? `<div style="margin-top:6px;font-size:clamp(14px,2.6vw,19px);line-height:1.25;color:#fff4d8;letter-spacing:.03em;text-shadow:2px 2px 0 #000">${texte}</div>` : "");
-  M.ctx.conteneur.appendChild(d); M.kfMsg = d; if (M.radioKFen) basMsgKF(d); setTimeout(() => { d.style.opacity = "0"; setTimeout(() => d.remove(), 700); }, ms); }
+  M.ctx.conteneur.appendChild(d); M.kfMsg = d; setTimeout(() => { d.style.opacity = "0"; setTimeout(() => d.remove(), 700); }, ms); }
 /* les vidéos (la télé de l'appartement, le grand écran de la salle des fêtes, celles du jeu) : téléchargées EN ENTIER une fois, gardées sur l'appareil
    (le cache du navigateur), puis lues depuis l'appareil — plus jamais de vidéo qui cale parce que le réseau ou le serveur tarde ; la fois d'après, elle part tout de suite.
    cle : un nom stable (sans le jeton de connexion) ; prog(0..1) : l'avancement du téléchargement. Rend l'adresse locale (blob:) de la vidéo. */
@@ -17149,6 +17147,7 @@ function interieurBarKF() { tvBarKF = null; const S = .85, MX = 7.57;   // (l'é
   { const brique = new THREE.MeshStandardMaterial({ color: 0x7a4430, roughness: .95 }), z0 = -9, z1 = DIM.Z0 - .7;
     for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.2, DIM.H + .3, z0 - z1), brique); m.position.set(sx * 4.45, (DIM.H + .3) / 2, (z0 + z1) / 2); g.add(m); }
     const t = new THREE.Mesh(new THREE.BoxGeometry(9.1, .25, z0 - z1), brique); t.position.set(0, DIM.H + .25, (z0 + z1) / 2); g.add(t); }
+  BAR_KF_MATS.length = 0;   // (les matériaux du vieux bar : on les éteindra quand les gremlins l'envahissent)
   KF_ATTENTES.push((async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/bar.glb?v=1"), sc = G.scene;
     sc.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(sc), c = bb.getCenter(new THREE.Vector3());
     // la porte : on retire du modèle ce qui bouche l'entrée (le mur côté façade, au milieu, à hauteur d'homme)
@@ -17160,8 +17159,8 @@ function interieurBarKF() { tvBarKF = null; const S = .85, MX = 7.57;   // (l'é
       o.geometry = ge;
       // la salle s'éclaire elle-même (une lumière chaude de vieux bar), sans multiplier les lampes
       for (const m of [].concat(o.material)) { m.side = THREE.DoubleSide; m.needsUpdate = true; }   // (des faces du modèle tournées vers l'extérieur : vues de dedans, on voyait à travers les murs)
-      for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .42; m.needsUpdate = true; } });   // (la salle éclairée : une lumière chaude de vieux bar)
-    { const lambris = new THREE.MeshStandardMaterial({ color: 0x3a2214, roughness: .85, emissive: 0x3a2010 }), platre = new THREE.MeshStandardMaterial({ color: 0x8a7e70, roughness: .95, emissive: 0x6a5c4c }), zM = -.52, H = DIM.H, Y = DIM.Y;
+      for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .42; m.needsUpdate = true; BAR_KF_MATS.push(m); } });   // (la salle éclairée : une lumière chaude de vieux bar)
+    { const lambris = new THREE.MeshStandardMaterial({ color: 0x3a2214, roughness: .85, emissive: 0x3a2010 }), platre = new THREE.MeshStandardMaterial({ color: 0x8a7e70, roughness: .95, emissive: 0x6a5c4c }), zM = -.52, H = DIM.H, Y = DIM.Y; BAR_KF_MATS.push(lambris, platre);
       const pan = (x0, x1, y0, y1, m, ep = .08) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, ep), m); b.position.set((x0 + x1) / 2, Y + (y0 + y1) / 2, zM); g.add(b); };
       for (const [a, b] of [[-4.35, -.68], [.68, 4.35]]) { pan(a, b, 0, 1.05, lambris, .12); pan(a, b, 1.05, H, platre); }   // (de chaque côté de la porte : le lambris, le plâtre)
       pan(-.68, .68, 2.62, H, platre); for (const sx of [-1, 1]) pan(sx * .74 - .06, sx * .74 + .06, 0, 2.68, lambris, .16); pan(-.8, .8, 2.62, 2.74, lambris, .16); }   // (au-dessus de la porte ; le chambranle)
@@ -17575,6 +17574,31 @@ const GREMLINS_GLB = [
   { f: "pelado", n: 3, hanche: .2, epX: 9, epY: 9, amp: .35, penche: 0 },
   { f: "skate", n: 4, roule: true }   // (la planche dans la longueur du modèle : il roule de côté, comme un vrai skateur),
 ];
+// le monstre final : l'araignée sans tête, le haut du corps d'un gremlin à la place ; ses huit pattes qu'on anime à la main
+function creerAraigneeKF(ara, grem) {
+  const g = new THREE.Group(), corps = new THREE.Group(); g.add(corps);
+  const sc = ara.scene; corps.add(sc); sc.updateMatrixWorld(true);
+  let os = null; sc.traverse(o => { if (o.isSkinnedMesh) { o.frustumCulled = false; os = o.skeleton; o.castShadow = true; } });
+  // le haut du gremlin : chaque pièce mise à plat dans le repère du modèle, puis on garde ce qui est au-dessus de la taille
+  const gs = grem.scene; gs.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(gs), H = bb.max.y - bb.min.y, cut = bb.min.y + H * .42, haut = new THREE.Group();
+  gs.traverse(o => { if (!o.isMesh) return; let ge = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); ge.applyMatrix4(o.matrixWorld);
+    const P = ge.attributes.position, garde = []; for (let t = 0; t < P.count; t += 3) { const y = (P.getY(t) + P.getY(t + 1) + P.getY(t + 2)) / 3; if (y > cut) garde.push(t); }
+    const ng = new THREE.BufferGeometry(); for (const k of Object.keys(ge.attributes)) { if (!["position", "normal", "uv"].includes(k)) continue; const A = ge.attributes[k], s = A.itemSize, arr = new Float32Array(garde.length * 3 * s);
+      garde.forEach((t, i) => { for (let v = 0; v < 3; v++) for (let c = 0; c < s; c++) arr[(i * 3 + v) * s + c] = A.array[(t + v) * s + c]; }); ng.setAttribute(k, new THREE.BufferAttribute(arr, s)); }
+    const m = new THREE.Mesh(ng, o.material); m.castShadow = true; haut.add(m); });
+  const k = 1.8 / H; haut.scale.setScalar(k); haut.position.set(-(bb.min.x + bb.max.x) / 2 * k, .36 - cut * k, .42 - (bb.min.z + bb.max.z) / 2 * k); corps.add(haut);   // (la taille, posée là où était la tête)
+  // les pattes : la racine de chacune (.001) ; on les fait pivoter dans le repère de l'araignée
+  const pattes = []; if (os) { const P = new THREE.Quaternion(), w = new THREE.Vector3(), w2 = new THREE.Vector3();
+    for (const b of os.bones) { const n = b.name; const m = n.replace(/\./g, "").match(/^Bone(00[234])?_([LR])001_/); if (!m) continue; const fin = b.children[0] && b.children[0].children[0] && b.children[0].children[0].children[0] || b;
+      b.parent.getWorldQuaternion(P); b.getWorldPosition(w); fin.getWorldPosition(w2); const dir = w2.sub(w).setY(0).normalize(), lev = new THREE.Vector3(0, 1, 0).cross(dir).normalize();
+      const rang = { "002": 0, "003": 1, "004": 2 }[m[1]] ?? 3, cote = m[2] === "L" ? 1 : -1;
+      pattes.push({ b, q0: b.quaternion.clone(), Pi: P.clone().invert(), P: P.clone(), lev, ph: ((rang + (cote > 0 ? 0 : 1)) % 2) * Math.PI }); } }
+  const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
+  const marcher = (ph, am) => { for (const p of pattes) { const a = ph + p.ph, sw = Math.sin(a) * .28 * am, li = Math.max(0, Math.cos(a)) * .35 * am;
+      qa.setFromAxisAngle(Y, sw); qb.setFromAxisAngle(p.lev, -li); qa.premultiply(qb); p.b.quaternion.copy(p.Pi).multiply(qa).multiply(p.P).multiply(p.q0); } };
+  return { g, corps, haut, marcher, pattes };
+}
+const BAR_KF_MATS = [];
 function gremlinsHV(scene, L) {
   const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), Z = L.zone;
   const tirer = () => { for (let k = 0; k < 60; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
@@ -17656,13 +17680,14 @@ function gremlinsHV(scene, L) {
     for (let i = 0; i < 45; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: lu, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); sp.visible = false; fg.add(sp); lueurs.push(sp); }
     for (let i = 0; i < 90; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fu, depthWrite: false, transparent: true })); sp.visible = false; fg.add(sp); fumees.push(sp); } }
   L.ejecterGremlin = (q, vx, vz) => { if (q.mort > 0 || q.ejecte || q.chorale >= 0 || q.dosNoel) return; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } q.ejecte = { vx, vz, t: 1.1 }; q.vy = 6.5; q.saut = Math.max(q.saut, .05); };
-  L.toucherGremlin = q => { if (q.feu > 0 || q.mort > 0) return; if (q.plafond) { const P = q.plafond; q.plafond = null; q.pen = 0; q.cible = null; q.saut = Math.max(0, q.y - P.sol); q.y = P.sol; q.vy = 0; q.pv = 1; q.attente = .6; return; }   // (touché au plafond : il lâche prise, tombe — et file)
+  L.toucherGremlin = q => { if (q.boss) return L.toucherBoss && L.toucherBoss(); if (q.feu > 0 || q.mort > 0) return; if (q.plafond) { const P = q.plafond; q.plafond = null; q.pen = 0; q.cible = null; q.saut = Math.max(0, q.y - P.sol); q.y = P.sol; q.vy = 0; q.pv = 1; q.attente = .6; return; }   // (touché au plafond : il lâche prise, tombe — et file)
     q.pv = (q.pv ?? 2) - 1; q.vy = 2.4; q.attente = .4; if (q.pv <= 0) { crier(q, 0); L.tueKF && L.tueKF(); }   // (il crie quand il prend feu ; un point au compteur)
    
     if (q.pv <= 0) { q.feu = q.feu0 = 1.4; if (q.perche) { q.perche.occ--; q.perche = null; q.grimpeur = false; } if (q.chorale >= 0) { const a = L.choraleAcc && L.choraleAcc[q.chorale]; if (a) a.visible = false; q.chorale = -1; } } };
   // le bar envahi (une fois le levier relevé) : des gremlins pendus au plafond, au-dessus du comptoir, la tête en bas ; d'autres qui courent partout entre les tables
   const SLb = L.salleLou, libreBar = (x, z) => L.dansLou(x, z) && L.limites(x, z), tirerBar = () => { for (let k = 0; k < 40; k++) { const [x, z] = SLb.vers(-3.8 + Math.random() * 7.6, -1.3 - Math.random() * 13.3); if (libreBar(x, z)) return [x, z]; } return null; };
-  L.centreG = q => (q.y || 0) + q.saut + (q.plafond ? .5 : .32) * q.s;   // (là où la flèche le touche)
+  L.crierKF = crier; let criBar = 0;
+  L.centreG = q => q.boss ? q.y + 1.15 * 1.25 : (q.y || 0) + q.saut + (q.plafond ? .5 : .32) * q.s;   // (là où la flèche le touche)
   const guirlandeY = lz => { const u = Math.max(0, Math.min(1, (-2.3 - lz) / 8.6)), f = (u * 9) % 1; return .125 + 2.3 - Math.sin(f * Math.PI) * .22; };   // (la hauteur de la guirlande au-dessus du comptoir, là où elle pend)
   L.envahirBar = () => { if (!SLb || L.barKF) return; const ok = gr.filter(q => !q.ejecte && !(q.chorale >= 0) && !q.dosNoel), bras = ok.filter(q => !q.T.roule && q.T.epX < 1), pris = [...bras.slice(0, 6), ...ok.filter(q => !bras.slice(0, 6).includes(q)).slice(0, 8)], yb = .125; L.barKF = pris;
     const [ax, az] = SLb.vers(0, 0), [bx, bz] = SLb.vers(-1, 0), face = Math.atan2(bx - ax, bz - az);   // (face à la salle)
@@ -17685,6 +17710,7 @@ function gremlinsHV(scene, L) {
     if (best.perche) { best.perche.occ--; best.perche = null; } best.grimpeur = false; best.attaque = true; best.attaqueFin = t + 14000; attaquant = best; };
   return (dt, t) => {
     choisirAttaquant(t);
+    if (L.barKF && t > criBar) { criBar = t + 900 + Math.random() * 1800; const v = L.barKF.filter(q => !(q.mort > 0) && !(q.feu > 0)); if (v.length) crier(v[Math.floor(Math.random() * v.length)], t); }   // (le bar envahi : ils crient, ricanent, sans arrêt)
     if (L.gremlinsFinis) for (const q of gr) if (q.brule && t >= q.brule) { q.brule = 0; if (q.feu > 0 || q.mort > 0) continue; if (q.ejecte) { q.ejecte = null; q.saut = 0; q.vy = 0; } q.dosNoel = false; q.pv = 1; L.toucherGremlin(q); if (q.feu > 0) q.feu = q.feu0 = 2.4 + Math.random() * .8; }   // (les projecteurs : un grand feu, plus long)
     { let f = 0, lu = 0, fm = 0; for (const q of gr) { if (q.ejecte) { const E = q.ejecte; E.t -= dt; q.x += E.vx * dt; q.z += E.vz * dt; q.rot += dt * 14; q.saut += q.vy * dt; q.vy -= 12 * dt; if (q.saut < 0) q.saut = 0; if (E.t <= 0) { q.ejecte = null; q.saut = 0; q.vy = 0; q.mort = 2; } continue; }   // (catapulté : il tournoie, retombe, disparaît)
         if (q.mort > 0) { q.mort -= dt; if (q.mort <= 0) revenir(q); }
@@ -18203,7 +18229,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // relever le levier : les projecteurs s'éteignent un à un… et au bar, le sapin prend feu ; d'autres gremlins y ont trouvé refuge
     const relever = () => { if (Q.releve) return; Q.releve = true; Q.rel = 0; L.actionKF = null; sonBruit(.18, 500, .6);
       PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.08, 220, .5); allumer(PP, false); }, 500 + i * 320)); Q.allumes = 0; if (L.ambKF) L.ambKF.intensity = .22;
-      L.allumerSapinKF && L.allumerSapinKF(); L.envahirBar && L.envahirBar();
+      L.allumerSapinKF && L.allumerSapinKF(); L.envahirBar && L.envahirBar(); L.desordreBarKF && L.desordreBarKF();
+      for (const m of BAR_KF_MATS) m.emissiveIntensity = m.emissiveMap ? .04 : .08;   // (le bar est éteint : seules les guirlandes clignotent, et le sapin qui brûle) L.chargerBossKF && L.chargerBossKF();   // (l'araignée se charge pendant qu'on va au bar)
       setTimeout(() => { if (M && M.L === L) msgKF("AU BAR !", "Billy t'attend au Dorry's Tavern…"); }, 1800); };
     // en entrant dans le bar : la cinématique — pendus au plafond au-dessus du comptoir, d'autres qui courent partout, et le sapin en flammes
     const cineBar = () => { const SL = L.salleLou; if (!SL || !M) return; const V = SL.vers, yb = .125, t0 = performance.now(), moi = M.gens.get(M.moiNum), vise = new THREE.Vector3(); let fini = false;
@@ -18217,8 +18244,63 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         if (cour) plans[1][2].set(cour.x, (cour.y || 0) + .3, cour.z), plans[1][3].copy(plans[1][2]);
         for (const [a, b, c, d, ms] of plans) { if (u < ms) { const k = u / ms, e = k * k * (3 - 2 * k); M.camera.position.lerpVectors(a, b, e); vise.lerpVectors(c, d, e); M.camera.lookAt(vise); return; } u -= ms; } } };
       M.passerBtn = boutonPasser(fin); };
+    // le bar nettoyé… le sol tremble : au fond de la salle, l'araignée-gremlin. Elle crache des fils de toile blancs sur Gizmo (pris dedans : il ne bouge plus, un cœur de moins) ;
+    // il faut viser le gremlin, vingt flèches ; elle brûle, se recroqueville — Billy arrive enfin
+    let bossP = null; L.chargerBossKF = () => bossP = bossP || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const ld = new gltfMod.GLTFLoader();
+      const [a, g] = await Promise.all([ld.loadAsync("avatars/kingston/araignee.glb?v=1"), ld.loadAsync("avatars/gremlins/classique.glb?v=1")]); return creerAraigneeKF(a, g); })().catch(e => { console.warn("araignée", e); return null; });
+    const barFini = () => { L.chargerBossKF().then(B => { if (!M || M.L !== L) return; if (!B) return finBoss(); lancerBoss(B); }); };
+    const SC_B = 1.25, filM = new THREE.MeshBasicMaterial({ color: 0xf4f4ee, transparent: true, opacity: .9 }), filG = new THREE.CylinderGeometry(1, 1, 1, 5).translate(0, .5, 0), axeY = new THREE.Vector3(0, 1, 0);
+    const fil = (a, b, r = .012) => { const m = new THREE.Mesh(filG, filM); const d = b.clone().sub(a), l = d.length() || .01; m.position.copy(a); m.quaternion.setFromUnitVectors(axeY, d.divideScalar(l)); m.scale.set(r, l, r); scene.add(m); return m; };
+    const lancerBoss = B => { const SL = L.salleLou, V = SL.vers, yb = .125, moi = M.gens.get(M.moiNum), [x0, z0] = V(1, -12.6); L.radioBlesse = true;   // (plus de conseils sur la voiture de police : on est dans le bar)
+      B.g.scale.setScalar(SC_B); B.g.position.set(x0, yb, z0); scene.add(B.g); B.haut.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.emissive = new THREE.Color(0); } });
+      const Bq = { boss: true, B, x: x0, z: z0, y: yb, s: 1, saut: 0, mort: 0, feu: 0, pv: 20, pvMax: 20, rot: moi ? Math.atan2(moi.g.position.x - x0, moi.g.position.z - z0) : 0, ph: 0, toile: performance.now() + 4500, fils: [], tapis: [], actif: false }; L.bossKF = Bq; B.g.rotation.y = Bq.rot;
+      const barre = document.createElement("div"); barre.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(56%,420px);z-index:7;pointer-events:none;font:16px 'Luckiest Guy','Lato',sans-serif;color:#ff3a1a;text-align:center;text-shadow:2px 2px 0 #000;letter-spacing:.05em";
+      barre.innerHTML = `L'ARAIGNÉE-GREMLIN<div style="height:12px;margin-top:3px;border:2px solid #000;border-radius:7px;background:#2a0806;overflow:hidden;box-shadow:0 0 10px rgba(255,40,20,.5)"><div class="pv" style="height:100%;width:100%;background:linear-gradient(#ff5a2a,#a01008);transition:width .2s"></div></div>`;
+      M.ctx.conteneur.appendChild(barre); Bq.barre = barre;
+      // l'arrivée : le sol tremble, elle avance du fond de la salle ; gros plan sur sa tête de gremlin
+      sonBruit(1.6, 180, .7); setTimeout(() => sonBruit(1.2, 260, .6), 900); const t0 = performance.now(), vise = new THREE.Vector3(), P3 = (a, b, h) => { const [x, z] = V(a, b); return new THREE.Vector3(x, yb + h, z); };
+      const [xa, za] = V(.4, -10.2); let fini = false;
+      const fin = () => { if (fini) return; fini = true; Bq.x = xa; Bq.z = za; finCine(); M.camE = null; placerCamera(true); Bq.actif = true; Bq.toile = performance.now() + 2500;
+        msgKF("L'ARAIGNÉE-GREMLIN !", "Vise le gremlin ! Attention à ses fils de toile…", 4500);
+        setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo… qu'est-ce que c'est que cette chose ?! Kssh… Vise le gremlin, pas les pattes !", "brouille"], ["gizmo", "Gizmo… pas peur !"]]); }, 1200); };
+      M.cine = { fov: [50, 62], passer: fin, maj: () => { const u = performance.now() - t0; if (u > 7000) return fin(); const k = Math.min(1, u / 5200), e = k * k * (3 - 2 * k);
+        Bq.x = x0 + (xa - x0) * e; Bq.z = z0 + (za - z0) * e; B.marcher(u / 160, k < 1 ? 1 : .2); B.g.position.set(Bq.x, yb, Bq.z); B.corps.position.y = .03 * Math.sin(u / 80);
+        const tr = u < 5200 ? (Math.random() - .5) * .04 : 0; if (u < 4200) { M.camera.position.copy(P3(-1.2, -5.2, .45)); vise.set(Bq.x, yb + .9, Bq.z); }   // (au ras du sol : les pattes qui approchent)
+        else { const k2 = Math.min(1, (u - 4200) / 2800); M.camera.position.copy(P3(-.2 - .4 * k2, -7.6 + .4 * k2, 1.5)); vise.set(Bq.x, yb + 1.9 * SC_B * .8, Bq.z); }   // (sa tête de gremlin, qui ricane)
+        M.camera.position.x += tr; M.camera.position.y += tr; M.camera.lookAt(vise); } };
+      M.passerBtn = boutonPasser(fin); };
+    L.toucherBoss = () => { const Bq = L.bossKF; if (!Bq || Bq.mort || !Bq.actif) return; Bq.pv--; Bq.barre.querySelector(".pv").style.width = Math.max(0, Bq.pv / Bq.pvMax * 100) + "%";
+      Bq.flash = performance.now() + 160; sonBruit(.15, 900, .35); if (Bq.pv % 5 === 0 && Bq.pv > 0) sonBruit(.6, 420, .5);
+      if (Bq.pv === 10) radioKF([["billy", "Elle faiblit ! Continue, Gizmo !", "brouille"]]);
+      if (Bq.pv <= 0) { Bq.mort = performance.now(); L.colleKF = null; for (const f of Bq.fils) scene.remove(f); Bq.fils = []; sonBruit(1.4, 300, .7); msgKF("ELLE BRÛLE !", "", 2500);
+        for (let i = 0; i < 6; i++) setTimeout(() => { if (!M || M.L !== L) return; const a = i * 1.05, r = .6 * SC_B; L.foyerKF && L.foyerKF(Bq.x + Math.cos(a) * r, Bq.y + .3, Bq.z + Math.sin(a) * r, 4, 0, 1.6); }, i * 180); } };
+    // à chaque image, pendant le combat
+    L.bossMajKF = (dt, now) => { const Bq = L.bossKF; if (!Bq) return; const B = Bq.B, moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
+      for (const m of B.haut.children) if (m.material && m.material.emissive) m.material.emissive.setHex(now < (Bq.flash || 0) ? 0xa01000 : 0);
+      if (Bq.mort) { const u = Math.min(1, (now - Bq.mort) / 3800); B.g.scale.setScalar(SC_B * (1 - .75 * u)); B.g.rotation.z = Math.sin(now / 60) * .1 * (1 - u); B.marcher(now / 50, 1 - u);   // (elle se tord, se recroqueville)
+        if (u >= 1 && !Bq.fin) { Bq.fin = true; scene.remove(B.g); Bq.barre.remove(); L.tache && L.tache(Bq.x, Bq.z, true, 4); L.tueKF && L.tueKF(); setTimeout(() => { if (M && M.L === L) finBoss(); }, 1200); } return; }
+      // Gizmo pris dans la toile : il ne bouge plus
+      if (L.colleKF) { if (now > L.colleKF.fin) { for (const f of L.colleKF.fils) scene.remove(f); L.colleKF = null; } else { p.x = L.colleKF.x; p.z = L.colleKF.z; } }
+      // les fils de toile tombés par terre : ils pâlissent puis disparaissent
+      for (let i = Bq.tapis.length - 1; i >= 0; i--) { const T = Bq.tapis[i]; if (now > T.fin) { T.m.forEach(m => scene.remove(m)); Bq.tapis.splice(i, 1); } }
+      if (!Bq.actif) return; const dx = p.x - Bq.x, dz = p.z - Bq.z, d = Math.hypot(dx, dz);
+      let r = Math.atan2(dx, dz) - Bq.rot; r = Math.atan2(Math.sin(r), Math.cos(r)); Bq.rot += r * Math.min(1, dt * 2.2);
+      let v = 0; if (d > 3.4) { v = 1.15; const nx = Bq.x + Math.sin(Bq.rot) * v * dt, nz = Bq.z + Math.cos(Bq.rot) * v * dt; if (L.dansLou(nx, nz)) { Bq.x = nx; Bq.z = nz; } else v = 0; }
+      Bq.ph += dt * (v ? 6 : 1.2); B.marcher(Bq.ph, v ? 1 : .25); B.g.position.set(Bq.x, Bq.y, Bq.z); B.g.rotation.y = Bq.rot; B.corps.position.y = .03 * Math.sin(Bq.ph * 2);
+      if (d < 1.6 && L.blesserGizmo) L.blesserGizmo(dx / (d || 1), dz / (d || 1));   // (trop près : un coup de patte)
+      // le jet de toile : un fil blanc part de ses mains vers Gizmo
+      if (now > Bq.toile && d < 11 && !L.colleKF && !M.cine) { Bq.toile = now + 4500 + Math.random() * 2500; const de = B.g.localToWorld(new THREE.Vector3(0, 1.3, .75)), cible = new THREE.Vector3(p.x, p.y + .25, p.z);
+        const bl = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xffffff, transparent: true, depthWrite: false })); bl.scale.setScalar(.35); scene.add(bl); sonBruit(.25, 2400, .3);
+        Bq.jet = { de, cible, bl, t0: now, f: null }; }
+      const J = Bq.jet; if (J) { const u = Math.min(1, (now - J.t0) / 550), q = J.de.clone().lerp(J.cible, u); q.y += Math.sin(u * Math.PI) * .5; J.bl.position.copy(q); if (J.f) scene.remove(J.f); J.f = fil(J.de, q);
+        if (u >= 1) { scene.remove(J.bl); scene.remove(J.f); Bq.jet = null; const pris = Math.hypot(p.x - J.cible.x, p.z - J.cible.z) < .75;
+          const centre = pris ? new THREE.Vector3(p.x, p.y + .25, p.z) : new THREE.Vector3(J.cible.x, Bq.y + .02, J.cible.z), m = [];   // (pris : un cocon de fils autour de lui ; raté : une toile par terre)
+          for (let k = 0; k < (pris ? 9 : 7); k++) { const a = k / (pris ? 9 : 7) * 6.28, e2 = pris ? new THREE.Vector3(Math.cos(a) * .3, (Math.random() - .3) * .5, Math.sin(a) * .3) : new THREE.Vector3(Math.cos(a) * .55, 0, Math.sin(a) * .55); m.push(fil(centre.clone().sub(e2.clone().multiplyScalar(pris ? .4 : 0)), centre.clone().add(e2), pris ? .014 : .01)); }
+          if (pris) { const co = new THREE.Mesh(new THREE.SphereGeometry(.3, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .35, depthWrite: false })); co.position.copy(centre); co.scale.set(1, 1.3, 1); scene.add(co); m.push(co);
+            L.colleKF = { x: p.x, z: p.z, fin: now + 2400, fils: m }; Bq.toile = Math.max(Bq.toile, now + 2400 + 3500); /* (le temps de se dégager, et de s’éloigner) */ L.blesserGizmo && L.blesserGizmo(0, 0); msgKF("PRIS DANS LA TOILE !", "", 1800); }
+          else Bq.tapis.push({ m, fin: now + 7000 }); } } };
     // le bar nettoyé : Billy arrive ; la une du journal, et le générique
-    const barFini = () => { M.radioKFfile = []; radioKF([["billy", "Gizmo ! Je suis là… tu les as tous eus ! Tu es le plus courageux des mogwaïs."], ["gizmo", "Billy ! Gizmo… gagné !"]]);
+    const finBoss = () => { M.radioKFfile = []; radioKF([["billy", "Gizmo ! Je suis là… tu les as tous eus ! Tu es le plus courageux des mogwaïs."], ["gizmo", "Billy ! Gizmo… gagné !"]]);
       msgKF("KINGSTON FALLS EST SAUVÉE !", "Plus un seul gremlin. Bravo Gizmo !", 4000); setTimeout(() => { if (M && M.L === L) journalKF(() => { if (M && M.L === L) generiqueKF(); }); }, 7500); };
     // la une du journal : il arrive en tournoyant, s'arrête, on lit le gros titre… et il s'efface
     const journalKF = suite => { if (!M) return suite(); const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
@@ -18228,7 +18310,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         <div style="display:flex;justify-content:space-between;font:11px Georgia;margin:3px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:3px"><span>Édition spéciale</span><span>26 décembre</span><span>10 cents</span></div>
         <div style="font:900 clamp(24px,6vw,40px)/1.02 Georgia,serif;text-align:center;text-transform:uppercase">Les monstres réduits en cendres !</div>
         <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-start"><img src="images/gremlins/radio-gizmo.webp?v=1" alt="" style="width:36%;filter:grayscale(1) contrast(1.15);border:1px solid #1a1a1a">
-          <div style="font:clamp(12px,2.4vw,15px)/1.35 Georgia,serif;text-align:justify">Cette nuit, toutes les lampes UV de la ville se sont allumées d'un coup : les étranges créatures qui semaient la terreur ont fondu sous la lumière. Selon des témoins, une petite boule de poils, armée d'un arc et coiffée d'un bandeau rouge, aurait coupé la chaîne du générateur…<br><b>${(M.L && M.L.tuesKF) || 0} créatures détruites.</b></div></div></div>`;
+          <div style="font:clamp(12px,2.4vw,15px)/1.35 Georgia,serif;text-align:justify">Cette nuit, toutes les lampes UV de la ville se sont allumées d'un coup : les étranges créatures qui semaient la terreur ont fondu sous la lumière. Selon des témoins, une petite boule de poils, armée d'un arc et coiffée d'un bandeau rouge, aurait coupé la chaîne du générateur… puis terrassé, dans le Dorry's Tavern, une monstrueuse araignée.<br><b>${(M.L && M.L.tuesKF) || 0} créatures détruites.</b></div></div></div>`;
       M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; }); sonBruit(.5, 1800, .25);
       setTimeout(() => { d.style.opacity = "0"; setTimeout(() => { d.remove(); suite(); }, 700); }, 7000); };
     L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
@@ -18245,6 +18327,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (Q.rel != null && Q.rel < 1) { Q.rel = Math.min(1, Q.rel + dt * 3); levier.rotation.x = 1.95 - Q.rel * 2.3; }
       if (Q.releve && !Q.cineBar && !M.cine && L.dansLou && L.dansLou(p.x, p.z)) { Q.cineBar = true; cineBar(); }
       if (Q.cineBar && !Q.barFini && !M.cine && L.barKF && L.barKF.every(q => q.mort > 0)) { Q.barFini = true; setTimeout(() => { if (M && M.L === L) barFini(); }, 1200); }
+      L.bossMajKF && L.bossMajKF(dt, performance.now());
       let act = null, lab = ""; const dG = Math.hypot(p.x - (GX0 + GX1) / 2, p.z - (F.z1 + .5));
       if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } else if (!Q.dit) { Q.dit = true; msgKF("FERMÉ !", "Une grosse chaîne et un cadenas… Il faut la pince coupante de M. Futterman.");
           if (!Q.radioGrille) { Q.radioGrille = true; setTimeout(() => radioKF([["billy", "C'est la grille du générateur. Sans la pince coupante, tu n'y arriveras pas… cherche-la dans la rue !"]]), 2000); } } }
@@ -18340,7 +18423,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // les flèches : une hampe, l'empennage, la pointe qui flambe ; elles filent vers le gremlin visé (et le suivent un peu)
     const fleches = [], hampeG = new THREE.CylinderGeometry(.006, .006, .5, 5).rotateX(Math.PI / 2), hampeM = new THREE.MeshStandardMaterial({ color: 0x8a6a40 }), plumeM = new THREE.MeshStandardMaterial({ color: 0xe8e2d0, side: THREE.DoubleSide });
     const feuF = tex(toile(32, 32, (x) => { const g = x.createRadialGradient(16, 16, 0, 16, 16, 15); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.4, "rgba(255,150,30,.9)"); g.addColorStop(1, "rgba(255,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }));
-    const vise = (o, yaw) => { let best = null, bd = 1e9; for (const q of L.gremlins || []) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - o.x, dz = q.z - o.z, d = Math.hypot(dx, dz); if (d > 26 || d < .3) continue;
+    const cibles = () => L.bossKF && L.bossKF.actif && !L.bossKF.mort ? [...(L.gremlins || []), L.bossKF] : (L.gremlins || []);   // (avec l'araignée, pendant le combat)
+    const vise = (o, yaw) => { let best = null, bd = 1e9; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - o.x, dz = q.z - o.z, d = Math.hypot(dx, dz); if (d > 26 || d < .3) continue;
         let da = Math.atan2(dx, dz) - yaw; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); const sc = d + da * 9; if (da < .9 && sc < bd) { bd = sc; best = q; } } return best; };
     let yawG = 0, dernierTir = 0, sautG = 0, vSautG = 0;
     L.orienterGizmo = a => { yawG = a; };
@@ -18369,7 +18453,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       else if (nVies === 2 && !L.radioFaible) { L.radioFaible = true; setTimeout(() => radioKF([["billy", "Tu es à bout de forces ! Cache-toi et trouve un pansement, vite !"], ["gizmo", "Ouuuh…"]]), 900); }   // (déjà à terre : on ne frappe pas un Gizmo évanoui)
       invul = now + 2000; nVies--; recul = { dx, dz, t0: now }; dessinerVies();
       voile("background:rgba(200,0,0,.35);opacity:1", 500); sonBruit(.4, 160, .5);
-      if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
+      if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (L.colleKF) L.colleKF.fin = 0; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
     L.soignerGizmo = () => { if (nVies >= 6) return false; nVies++; dessinerVies(); return true; };   // (un pansement : un cœur de plus)
     // le bouton (et la touche F)
     const touche = e => { if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return; if (e.key === "f" || e.key === "F") tirer(); if (e.key === "j" || e.key === "J") L.sauterGizmo(); }; window.addEventListener("keydown", touche);
@@ -18421,7 +18505,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         if (f.cible && !(f.cible.mort > 0)) { const c = f.cible, d = new THREE.Vector3(c.x, L.centreG(c), c.z).sub(f.g.position), l = d.length(); if (l < 14) f.v.lerp(d.normalize().multiplyScalar(24), Math.min(1, dt * 6)); }
         else f.v.y -= 6 * dt;
         f.g.position.addScaledVector(f.v, dt); f.g.lookAt(f.g.position.clone().add(f.v));
-        let touche = null; for (const q of L.gremlins || []) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - f.g.position.x, dy = L.centreG(q) - f.g.position.y, dz = q.z - f.g.position.z; if (dx * dx + dy * dy + dz * dz < .16) { touche = q; break; } }
+        let touche = null; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - f.g.position.x, dy = L.centreG(q) - f.g.position.y, dz = q.z - f.g.position.z; if (dx * dx + dy * dy + dz * dz < (q.boss ? 1.1 : .16)) { touche = q; break; } }
         const sol = L.hauteur ? L.hauteur(f.g.position.x, f.g.position.z) : 0;
         if (touche) L.toucherGremlin(touche);
         if (touche || f.vie <= 0 || f.g.position.y < sol) { scene.remove(f.g); f.g.traverse(o => { if (o.material && o.material.dispose && o.material !== hampeM && o.material !== plumeM) o.material.dispose(); }); fleches.splice(i, 1); } } }; }
@@ -18462,6 +18546,12 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const pb = placer(12, trottoir); pb.forEach(([x, z]) => obst.push([x, z, .5]));
     // des papiers par terre, partout : des pages de journal à plat dans la neige
     { const pT = tex(toile(128, 90, x => { x.fillStyle = "#ddd6c4"; x.fillRect(0, 0, 128, 90); x.fillStyle = "#333"; x.fillRect(8, 8, 112, 8); x.fillStyle = "#777"; for (let c = 0; c < 3; c++) for (let l = 0; l < 8; l++) x.fillRect(8 + c * 40, 22 + l * 8, 34 - (l % 4 === 3 ? 14 : 0), 3); }));
+      // le bar saccagé (quand les gremlins s'y réfugient) : des papiers partout, des verres brisés, des chopes renversées
+      L.desordreBarKF = () => { const SL = L.salleLou; if (!SL || L.desordreFait) return; L.desordreFait = true; const yb = .125, pts = n => [...Array(n)].map(() => SL.vers(-4 + Math.random() * 8, -.9 - Math.random() * 13.9));
+        lot(new THREE.PlaneGeometry(.38, .27), new THREE.MeshStandardMaterial({ map: pT, roughness: 1, side: THREE.DoubleSide }), pts(45), ([x, z]) => { e.set(-Math.PI / 2 + (Math.random() - .5) * .3, 0, Math.random() * 6, "YXZ"); mt.compose(new THREE.Vector3(x, yb + .012 + Math.random() * .012, z), q.setFromEuler(e), new THREE.Vector3(.6 + Math.random() * .6, .6 + Math.random() * .6, 1)); });
+        const verre = new THREE.MeshStandardMaterial({ color: 0xcfe6f0, transparent: true, opacity: .55, roughness: .05, metalness: .3, side: THREE.DoubleSide, emissive: 0x203038 }), eclat = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(.07, 0, .02), new THREE.Vector3(.02, 0, .09)]); eclat.computeVertexNormals();
+        const tas = pts(14); lot(eclat, verre, tas.flatMap(([x, z]) => [...Array(9)].map(() => [x + (Math.random() - .5) * .6, z + (Math.random() - .5) * .6])), ([x, z]) => { e.set((Math.random() - .5) * .3, Math.random() * 6, 0); mt.compose(new THREE.Vector3(x, yb + .006, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1).multiplyScalar(.6 + Math.random())); });
+        lot(new THREE.CylinderGeometry(.045, .04, .14, 10, 1, true), verre, pts(10), ([x, z]) => { e.set(Math.PI / 2, Math.random() * 6, 0, "YXZ"); mt.compose(new THREE.Vector3(x, yb + .045, z), q.setFromEuler(e), new THREE.Vector3(1, 1, 1)); }); };   // (les chopes couchées)
       lot(new THREE.PlaneGeometry(.42, .3), new THREE.MeshStandardMaterial({ map: pT, roughness: 1, side: THREE.DoubleSide }), placer(70), ([x, z]) => { e.set(-Math.PI / 2 + (Math.random() - .5) * .25, 0, Math.random() * 6, "YXZ"); mt.compose(new THREE.Vector3(x, (L.hauteur ? L.hauteur(x, z) : 0) + .012 + Math.random() * .01, z), q.setFromEuler(e), new THREE.Vector3(.7 + Math.random() * .6, .7 + Math.random() * .6, 1)); }); }
     // le feu dans les poubelles (une sur trois, debout) : de vraies flammes qui dansent au-dessus, la fumée noire
     { const fT = tex(toile(64, 128, x => { const g = x.createRadialGradient(32, 96, 2, 32, 80, 62); g.addColorStop(0, "rgba(255,245,190,1)"); g.addColorStop(.3, "rgba(255,170,50,.95)"); g.addColorStop(.7, "rgba(240,60,10,.55)"); g.addColorStop(1, "rgba(120,10,0,0)"); x.fillStyle = g; x.beginPath(); x.moveTo(32, 2); x.quadraticCurveTo(62, 70, 52, 112); x.quadraticCurveTo(32, 128, 12, 112); x.quadraticCurveTo(2, 70, 32, 2); x.fill(); }));
@@ -18471,6 +18561,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
         for (let k = 0; k < nfu; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sT, depthWrite: false, transparent: true })); gP.add(sp); FP.push({ sp, x, z, y, ph: k / 3, fum: true, sc }); } };
       pb.forEach(([x, z], i) => { if (i % 3 !== 1) return; foyer(x, (L.hauteur ? L.hauteur(x, z) : 0) + .92, z); });
       // le sapin du bar qui prend feu (quand Gizmo relève le levier) : des flammes de bas en haut, sa lueur orange qui danse sur les murs
+      L.foyerKF = foyer;
       L.allumerSapinKF = () => { const S = L.sapinKF; if (!S || S.feu) return; S.feu = true;
         for (let i = 0; i < 10; i++) { const u = i / 10 * .88, a = i * 2.4, r = S.R * (1 - u) * .65; foyer(S.x + Math.cos(a) * r, S.yb + S.H * u, S.z + Math.sin(a) * r, 4, i % 3 === 0 ? 1 : 0, 1.5 - u * .7); }
         const hT = L.halos ? L.halos.material.map : fT, pl = new THREE.Sprite(new THREE.SpriteMaterial({ map: hT, color: 0xff7a2a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); pl.position.set(S.x, S.yb + 1.2, S.z); gP.add(pl); S.lum = pl; };   // (une grande lueur, pas une vraie lampe : ajouter une lumière ferait recompiler tous les matériaux — un gel de plusieurs secondes)
