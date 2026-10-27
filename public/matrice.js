@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.47";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.48";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7394,6 +7394,7 @@ export async function ouvrir(ctx) {
   // ctx : { conteneur, moi, token, admin, urlTete(numero, v), surFil(liste), surPresents(liste), surComptes(c), surInfo(t), surErreur(t), surLieu(id), surToucherAncien(p) }
   if (M) fermer();
   THREE = THREE || await import(window.CASERNE_THREE || THREE_URL);
+  if (window.CASERNE_CINE_MAIN) chargerMainPince().catch(() => {});   /* (la main géante de l'arrivée : chargée tout de suite, pendant que la caserne se construit) */
   const T = textures();
   // un petit téléphone (peu de mémoire, petite carte graphique : Galaxy A22, A12…) : tout est allégé, sinon le navigateur manque de mémoire et recharge la page
   PETIT = !!(navigator.deviceMemory && navigator.deviceMemory <= 4);
@@ -7782,7 +7783,11 @@ export async function ouvrir(ctx) {
     // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
     if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
     else if (M.lieu !== "appart" && M.fpAppart) { M.fpAppart = false; if (M.fpAuto && M.premiere) premiere(false); M.fpAuto = false; }
-    if (window.CASERNE_CINE_MAIN && M.lieu === "grande" && !M.cine && M.gens.get(M.moiNum)) { window.CASERNE_CINE_MAIN = false; cineMain(); }   // (la main géante qui nous pose dans la cour)
+    /* l'arrivée : l'écran « Ouverture des grilles… » reste là jusqu'à ce que la main soit prête — plus d'aperçu de la caserne, ni d'écran noir, avant qu'elle descende */
+    if (window.CASERNE_CINE_MAIN && !M.voileArrivee && !M.mainPartie) { const v = M.voileArrivee = voile("background:linear-gradient(180deg,#5fa8e6,#bfe0f7);opacity:1;transition:opacity .7s;z-index:9;display:grid;place-items:center;color:#1f2a37;font:700 16px Lato,sans-serif;text-align:center");
+      if (v) { v.textContent = "Ouverture des grilles…"; M.voileArriveeT = performance.now(); } }
+    if (M.voileArrivee && !M.cine && (!window.CASERNE_CINE_MAIN || performance.now() - M.voileArriveeT > 20000)) { window.CASERNE_CINE_MAIN = false; const v = M.voileArrivee; M.voileArrivee = null; v.style.opacity = "0"; setTimeout(() => v.remove(), 800); }   /* (pas de main, finalement : on montre le lieu) */
+    if (window.CASERNE_CINE_MAIN && M.lieu === "grande" && !M.cine && M.gens.get(M.moiNum)) { window.CASERNE_CINE_MAIN = false; M.mainPartie = true; cineMain(); }   // (la main géante qui nous pose dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) MD.sosfantomes.combatGB();   // (le combat contre Bouffe-tout)
     /* (les affiches des films, au mess : retirées — on part dans les films par le Video Futur) */
     const GBm = MD.sosfantomes;   // (S.O.S. Fantômes : seulement si son fichier est déjà là — sinon, rien de lui à animer)
@@ -7896,8 +7901,8 @@ export function prechargerMain() { if (THREE) chargerMainPince(); }
 async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine) return;
   const lieu = M.lieu; M.cine = { maj: () => {} };   // (en attendant la main : on ne bouge pas)
   // un écran noir tant que la main n'est pas prête (chargée, ses matériaux préparés) : on ne voit plus la cour vide d'abord, puis la main qui surgit
-  const noir = voile("background:#000;opacity:1;transition:opacity .7s;z-index:9"), ouvrir = () => { if (!noir) return; noir.style.opacity = "0"; setTimeout(() => noir.remove(), 800); };
-  const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { ouvrir(); if (M) finCine(); return; }
+  const noir = M.voileArrivee || voile("background:#000;opacity:1;transition:opacity .7s;z-index:9"), ouvrir = () => { if (!noir) return; noir.style.opacity = "0"; setTimeout(() => noir.remove(), 800); };
+  const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { if (M) M.voileArrivee = null; ouvrir(); if (M) finCine(); return; }
   const P = moi.g.position.clone(), yw = moi.g.rotation.y, av = moi.av3;
   let col = 1.42; if (av) { moi.g.updateMatrixWorld(true); let cou = null; av.sc.traverse(o => { if (!cou && o.isBone && /neck/i.test(o.name)) cou = o; }); if (cou) col = cou.getWorldPosition(new THREE.Vector3()).y - moi.g.position.y + .04; }
   else if (moi.corps) col = moi.corps.scale.y * .86;
@@ -7908,7 +7913,7 @@ async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine
   if (M.rendu && M.rendu.compileAsync) await Promise.race([M.rendu.compileAsync(M.scene, M.camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]);
   if (!M || M.lieu !== lieu) { ouvrir(); M.scene.remove(main); if (M) finCine(); return; }
   const vO = new THREE.Vector3(), basOs = () => { main.updateMatrixWorld(true); let b = Infinity; for (const o of H.os) b = Math.min(b, o.getWorldPosition(vO).y); return b; }, dF = main.position.y - basOs();   // (dF : de combien la main fermée descend sous sa pince)
-  const T0 = performance.now(); ouvrir();
+  const T0 = performance.now(); M.voileArrivee = null; ouvrir();
   const lisse = u => u * u * (3 - 2 * u), seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
   const cam = M.camera, vise = new THREE.Vector3(), c0 = new THREE.Vector3(), c1 = new THREE.Vector3();
   let fini = false; const fin = () => { if (fini || !M) return; fini = true; moi.leve = 0; moi.g.rotation.z = 0; moi.g.rotation.x = 0; M.scene.remove(main); H.doigts.forEach((j, i) => j.quaternion.copy(H.fermee[i])); finCine(); placerCamera(true); };
