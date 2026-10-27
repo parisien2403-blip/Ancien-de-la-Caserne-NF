@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.41";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.42";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -1872,7 +1872,8 @@ function construireRue(A, T, L, scene) {
 
   // le passage sous le porche mène à la cour d'honneur d'un seul tenant : au milieu de la voûte, on passe dans la scène de la cour sans s'en apercevoir
   // (le porche est le même des deux côtés : z de -12 à -25,7 ici, de 29,35 à 15,65 dans la cour — un simple décalage de 41,35 ; pas de cercle jaune)
-  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -19 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "grande", continu: [0, PORCHE_DZ], centre: [0, -19] });
+  L.porche = (x, z) => Math.abs(x) < 2.3 && z < -11.6 && z > -26;   // (sous la voûte : la caméra juste derrière soi)
+  L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z < -12.4 && z > -25.9 && sensPorche() < 0 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "grande", continu: [0, PORCHE_DZ], centre: [0, -19] });
   raccourci(L, scene, [4.6, 4.3, .6], [0, 2.2, -25.75], { marche: [0, -25.2] });
   // la caméra reste sous la voûte quand on est dans le passage
   L.contraindreCam = (pos, moi) => { if (moi.g.position.z < -11.6) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 3.7); pos.z = Math.max(-25.6, Math.min(-3, pos.z)); return true; } };
@@ -6609,7 +6610,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
        au bout, on sort sur le trottoir de la rue du Faubourg-Poissonnière, juste devant le porche, face à la rue */
     for (const sg of [-1, 1]) { L.portails.push({ dans: (x, z) => sg * x > 8.6 && Math.abs(z - 13.75) < .6, vers: "etage", arrivee: [sg * 11.9, -2], yaw: sg < 0 ? Math.PI / 2 : -Math.PI / 2 });
       raccourci(L, scene, [.5, 2.4, 1.5], [sg * 8.62, 1.2, 13.75], { marche: [sg * 8.72, 13.75] }); }
-    L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > PORCHE_DZ - 18.35 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "rue", continu: [0, -PORCHE_DZ], centre: [0, PORCHE_DZ - 18.35] });   // (sous la voûte, vers la rue : d'un seul tenant, comme à l'aller)
+    L.porche = (x, z) => Math.abs(x) < 2.3 && z > 15.3 && z < PORCHE_DZ - 11.6;
+    L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > 15.9 && z < 29.3 && sensPorche() > 0 && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "rue", continu: [0, -PORCHE_DZ], centre: [0, PORCHE_DZ - 18.35] });   // (sous la voûte, vers la rue : d'un seul tenant, comme à l'aller)
     raccourci(L, scene, [4.2, 4.4, 2.4], [0, 2.2, 16.4], { marche: [0, 29.35] });
     // la porte « BAR » : on entre de plain-pied dans le vestibule ; de là, la grande pièce du sous-sol (en face) ou l'escalier de la salle des fêtes (à gauche)
     // du vestibule, vers la grande pièce au bar ou l'escalier : on continue dans la salle des fêtes (même géométrie, simple décalage — pas de coupure)
@@ -7763,6 +7765,11 @@ export async function ouvrir(ctx) {
     if (M.L.pigeons) M.L.pigeons(t);
     if (M.feuHV && M.feuHV.length && !M.cine) animerFeu(M.feuHV, performance.now(), 16000);   // (les traînées de feu de la DeLorean finissent de brûler, puis s'éteignent)
     { const h = C3.enHaut() + 2 * C3.enBas(); if (h !== M.hautVu) { M.hautVu = h; if (M.L) M.L.grille = M.L.grilleAdmin = null; } }
+    // sous le porche de l'entrée : la caméra se met juste derrière soi ; on retient aussi dans quel sens on y marche
+    if (M.L && M.L.porche) { const moi = M.moiNum && M.gens.get(M.moiNum);
+      if (moi) { const z = moi.g.position.z; if (M.zPrecP != null && M.LPrecP === M.L && dt > 0) M.vzP = (M.vzP || 0) * .8 + (z - M.zPrecP) / dt * .2; else M.vzP = 0; M.zPrecP = z; M.LPrecP = M.L;
+        const dd = M.L.porche(moi.g.position.x, z); if (dd !== !!M.L.porcheVu) { M.L.porcheVu = dd; M.L.suiviHors = M.L.suiviHors || M.L.suivi; M.L.suivi = dd ? { d: 2.8, h: 1.9, av: 2.6, vy: 1.1 } : M.L.suiviHors; M.camE = null; }
+        if (dd && !glisse && Math.abs(M.vzP) > .5) { let da = (M.vzP < 0 ? 0 : Math.PI) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 3); } } }   /* (même en faisant demi-tour : la caméra repasse derrière soi) */
     if (M.L && M.L.c3) { const moi = M.moiNum && M.gens.get(M.moiNum), dd = !!C3.dedans(moi); if (dd !== M.dedansVu) { M.dedansVu = dd; M.L.suiviDehors = M.L.suiviDehors || M.L.suivi;
         M.L.suivi = dd ? { d: 2.7, h: 1.9, av: 2.6, vy: 1.1 } : M.L.suiviDehors; M.camE = null; } }   // (dedans : la caméra se rapproche, juste derrière soi)   // (sur un toit ou dessous : les passages changent)
     if (M.grainEl && !M.cine) { if (!estSH(M.lieu)) grainSH(false); else if (M.grainEl.style.opacity !== "0.025") M.grainEl.style.opacity = ".025"; }   /* (garde-fou : jamais d'image grise et brouillée qui reste après une cinématique) */
@@ -12008,11 +12015,15 @@ export function tourner(a = Math.PI) { if (M && M.L && (M.L.interieur || M.L.sui
 /* passer d'un lieu à l'autre sans coupure : les deux lieux ont la même géométrie à cet endroit (décalée de d) ;
    on garde sa position, son regard, la caméra, et l'on continue de marcher vers le même point */
 const PORCHE_DZ = 41.35;   // (le porche de l'entrée : de la rue à la cour d'honneur, le même passage, décalé de 41,35 m)
+/* le sens de la marche sous le porche (vers la cour : -1 côté rue ; vers la rue : +1 côté cour) : dès qu'on s'engage sous la voûte, on est déjà dans le lieu
+   où l'on va — devant soi, c'est le vrai décor qu'on voit, jamais le décor de fond ; on ne rebascule pas tant qu'on n'a pas vraiment fait demi-tour */
+const sensPorche = () => !M || performance.now() - (M.porcheT || 0) < 900 ? 0 : M.vzP > .5 ? 1 : M.vzP < -.5 ? -1 : 0;
 function changerLieuContinu(id, [dx, dz, dy = 0]) {
   const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) { changerLieu(id); return; }
   const info = moi.info, x = moi.g.position.x + dx, z = moi.g.position.z + dz;
   const but = moi.chemin && moi.chemin.length ? moi.chemin[moi.chemin.length - 1] : moi.cible, fin = but ? [but.x + dx, but.z + dz] : null;
   const yaw = M.yaw, E = M.camE, D = M.camD, num = M.moiNum, d3 = new THREE.Vector3(dx, dy, dz), vise = M.camVise && M.camVise.clone().add(d3);
+  M.porcheT = performance.now(); M.vzP = 0;
   M.sansPorte = true; try { changerLieu(id, [x, z], yaw); } finally { M.sansPorte = false; }   /* (un passage continu : pas de porte) */
   M.camE = E; M.camD = D; M.moiNum = num;
   ajouterAncien({ ...info, numero: num, x, z }); M.gens.get(num).moi = true;
