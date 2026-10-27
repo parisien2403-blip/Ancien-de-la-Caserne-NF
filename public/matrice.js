@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.39";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.40";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7771,6 +7771,9 @@ export async function ouvrir(ctx) {
     { const moi = M.moiNum && M.gens.get(M.moiNum), n = baseLieu(M.lieu) === "etage" && !M.L.apo ? (moi && moi.etg ? moi.etg.n : 0) : null;   // l'étage où l'on est : pour les boutons Monter / Redescendre (pas à Silent Hill ni à Resident Evil : on monte les escaliers à pied)
       if (n !== M.etageVu) { M.etageVu = n; ctx.surEtage && ctx.surEtage(n, ET.N); } }
     if (M.lieu === "gb-cour" && M.L.ecto1 && !M.L.gbIntro && !M.cine && M.gens.get(M.moiNum)) { if (M.gbActe === 2) MD.sosfantomes.cineFinaleGB(); else MD.sosfantomes.cineArriveeGB(); }   // (S.O.S. Fantômes : l'Ecto-1 entre dans la cour)
+    // l'appartement : la vue à la première personne d'elle-même en y entrant (on peut la quitter) ; en sortant, la vue normale revient
+    if (M.lieu === "appart" && !M.fpAppart && !M.cine && M.gens.get(M.moiNum)) { M.fpAppart = true; if (!M.premiere) { premiere(true); M.fpAuto = true; } }
+    else if (M.lieu !== "appart" && M.fpAppart) { M.fpAppart = false; if (M.fpAuto && M.premiere) premiere(false); M.fpAuto = false; }
     if (window.CASERNE_CINE_MAIN && M.lieu === "grande" && !M.cine && M.gens.get(M.moiNum)) { window.CASERNE_CINE_MAIN = false; cineMain(); }   // (la main géante qui nous pose dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) MD.sosfantomes.combatGB();   // (le combat contre Bouffe-tout)
     /* (les affiches des films, au mess : retirées — on part dans les films par le Video Futur) */
