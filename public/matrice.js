@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.37";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.38";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -7487,7 +7487,7 @@ export async function ouvrir(ctx) {
     // (toucher son propre bonhomme ne fait plus rien : on vise le sol où l'on veut aller ; les danses sont dans les boutons)
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps).find(q => !q.uv || (Math.abs(q.uv.x - .5) < .16 && q.uv.y > .08 && q.uv.y < .78));   // le corps seul, pas les marges
-    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { dire(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { dire(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.maman) { dire(MAMAN, PHRASES_MAMAN[Math.floor(Math.random() * PHRASES_MAMAN.length)]); return; } if (p && p.info.pnj) { dire(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { direPNJ(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { direPNJ(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.maman) { direPNJ(MAMAN, PHRASES_MAMAN[Math.floor(Math.random() * PHRASES_MAMAN.length)]); return; } if (p && p.info.pnj) { direPNJ(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     for (const b of M.L.boutonsPiste || []) if (b.visible) { const q = b.position.clone().project(M.camera);   // ⏮ / ⏭ : changer de titre
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(26, r.width * .026)) { envoyerWS({ t: "dj_" + b.userData.action }); b.scale.set(.18, .18, 1); setTimeout(() => b.scale.set(.22, .22, 1), 160); return; } }
@@ -10824,6 +10824,9 @@ function retirerAncien(numero) { const p = M && M.gens.get(numero); if (!p) retu
 // le nom de celui qui parle : à Resident Evil, celui de son héros (Chris, Claire, Leon…), pas celui du joueur
 function nomParle(p) { if (M.L && M.L.sh && SH_IDN[p.info.numero]) return SH_NOMS[SH_IDN[p.info.numero]];   /* (à Silent Hill, chacun sous son vrai nom — même si un ancien nom traîne dans les réglages) */
   if (M.L && M.L.apo && !M.L.sh) { const h = p.info.numero === M.moiNum ? M.perso : (p.info.heros || p.info.perso); if (HEROS[h]) return HEROS[h].court; } return p.info.nom || ""; }
+// les personnages de la caserne de 1990 (le chef de poste, les gendarmes, le prof de judo, les éboueurs, le DJ, le barman) : ils ne font plus de commentaires
+// (dans les films, eux ou leurs doublures parlent toujours : ce sont des dialogues de l'histoire)
+function direPNJ(numero, texte) { if (!M || !M.lieu || universDe(M.lieu) || estApo(M.lieu) || estSH(M.lieu)) dire(numero, texte); }
 function dire(numero, texte) {
   const p = M && M.gens.get(numero); if (!p) return;
   if (M.cine && M.cineSeul && numero !== M.cineSeul) return;   // (pendant certaines scènes, les autres se taisent)
@@ -10880,7 +10883,7 @@ function animerGendarme() {
   if (Math.abs(g.g.position.z - pos[1]) > .5) g.g.position.set(pos[0], 0, pos[1]);
   const vus = g.vus || (g.vus = new Map()), now = Date.now();
   for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
-    if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); dire(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
+    if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); direPNJ(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
 /* --- les gendarmes de ronde (le jour) : quatre, chacun de son côté (jamais ensemble), dans les cours, les ruelles, la rue en pente et la place ;
        ni sur la terrasse, ni dans la fosse ; ils disent bonjour à ceux qu'ils croisent --- */
 const RONDES = [[-73, 2, "Gendarme Leclerc"], [-74, 3, "Gendarme Moreau"], [-75, 4, "Gendarme Fabre"], [-76, 5, "Gendarme Girard"]];
@@ -10900,7 +10903,7 @@ function animerRondes() {
     // s'il croise quelqu'un : le salut, et « Bonjour ! » (une fois par minute pour chacun)
     const vus = g.vus || (g.vus = new Map());
     for (const [n2, q] of M.gens) { if (n2 === num || !q.g || !q.g.visible || RONDES.some(r => r[0] === n2)) continue;
-      if (q.g.position.distanceTo(g.g.position) < 2.3 && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); g.info.salutT = performance.now(); dire(num, (M.L.nuit ? ["Bonsoir !", "Bonsoir !", "Bonsoir, messieurs-dames !", "Bonne soirée !"] : ["Bonjour !", "Bonjour !", "Bonjour, messieurs-dames !", "Bonne journée !"])[Math.floor(hasard(now / 1000 + num) * 4)]); break; } } } }
+      if (q.g.position.distanceTo(g.g.position) < 2.3 && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); g.info.salutT = performance.now(); direPNJ(num, (M.L.nuit ? ["Bonsoir !", "Bonsoir !", "Bonsoir, messieurs-dames !", "Bonne soirée !"] : ["Bonjour !", "Bonjour !", "Bonjour, messieurs-dames !", "Bonne journée !"])[Math.floor(hasard(now / 1000 + num) * 4)]); break; } } } }
 function pointRonde(num, n) {
   const autres = RONDES.filter(r => r[0] !== num).map(r => M.gens.get(r[0])).filter(Boolean).flatMap(q => [[q.g.position.x, q.g.position.z], q.but].filter(Boolean));
   for (let k = 0; k < 60; k++) { const Z = ZONES_RONDE[Math.floor(hasard(n * 7.7 + num * 3.1 + k * 1.3) * ZONES_RONDE.length)];
@@ -10927,9 +10930,9 @@ function animerProf() {
   // quelqu'un monte sur le tatami : il lui rappelle les règles (une fois par minute pour chacun)
   const vus = g.vus || (g.vus = new Map());
   for (const [n2, q] of M.gens) { if (n2 === PROF || !q.g || !q.g.visible || q.info.pnj) continue; const p = q.g.position, sur = p.x > d.X0 && p.x < d.xb1 && p.z > d.Z0 && p.z < d.Z1 && Math.abs(p.y - C3.FL) < .6;
-    if (sur && !q.surTatami && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); dire(PROF, PHRASES_PROF[Math.floor(Math.random() * 3)]); }
+    if (sur && !q.surTatami && now - (vus.get(n2) || 0) > 60000) { vus.set(n2, now); direPNJ(PROF, PHRASES_PROF[Math.floor(Math.random() * 3)]); }
     q.surTatami = sur; }
-  if (!g.parle || now > g.parle) { if (g.parle && Math.random() < .35) dire(PROF, PHRASES_PROF[3 + Math.floor(Math.random() * (PHRASES_PROF.length - 3))]); g.parle = now + 25000 + Math.random() * 20000; } }
+  if (!g.parle || now > g.parle) { if (g.parle && Math.random() < .35) direPNJ(PROF, PHRASES_PROF[3 + Math.floor(Math.random() * (PHRASES_PROF.length - 3))]); g.parle = now + 25000 + Math.random() * 20000; } }
 /* --- Maman, dans l'appartement de l'escalier Z : en robe de chambre, elle boit son café à la table ronde de la cuisine ;
        de temps en temps elle se lève, fait un tour dans l'appartement (sans traverser ni murs ni meubles), puis revient s'asseoir --- */
 const MAMAN = -80, PHRASES_MAMAN = ["Tu veux un café ?", "Bonjour mon grand !", "Tu as bien dormi ?", "Il reste du pain dans la corbeille.", "Fais attention, c'est chaud !", "Range ta chambre, s'il te plaît.", "Tu as mangé ?", "Ferme la porte, il y a un courant d'air !"];
@@ -10958,7 +10961,7 @@ function animerEboueurs() {
     if (!p) { const [x, z] = pointEboueur(num, 0); p = ajouterAncien({ numero: num, nom, tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a", teteUrl: `images/${img}-tete.png`, pnj: true, x, z }); continue; }
     const n = Math.floor(Date.now() / (7000 + (num & 3) * 900));
     if (p.etape !== n) { p.etape = n; const [x, z] = pointEboueur(num, n); viser(p, x, z); }
-    const b = Math.floor(Date.now() / 23000); if (p.parole !== b) { if (p.parole !== undefined && hasard(b * 5.1 + num) < .3) dire(num, PHRASES_EBO[Math.floor(hasard(b * 2.7 + num) * PHRASES_EBO.length)]); p.parole = b; } } }
+    const b = Math.floor(Date.now() / 23000); if (p.parole !== b) { if (p.parole !== undefined && hasard(b * 5.1 + num) < .3) direPNJ(num, PHRASES_EBO[Math.floor(hasard(b * 2.7 + num) * PHRASES_EBO.length)]); p.parole = b; } } }
 function pointEboueur(num, n) {   // autour du local poubelle, de la courette et de l'arrière du camion
   const Cq = RU.courette, zc = C3.camionPos ? C3.camionPos[1] - 1.5 : RU.zA + RU.cour - 7.6;
   for (let k = 0; k < 30; k++) { const h = hasard(n * 4.3 + num * 1.7 + k), v = hasard(n * 2.9 + num * .9 + k * 3.1);
@@ -10988,7 +10991,7 @@ function animerDJ(t) {
   p.corps.position.y = Math.abs(Math.sin(ph * Math.PI)) * (M.djJoue ? .06 : .025);
   p.corps.material.rotation = Math.sin(ph * Math.PI) * (M.djJoue ? .05 : .02);
   const b = Math.floor(t / 19000);
-  if (p.parole !== b) { p.parole = b; if (hasard(b * 5.1) < .35) dire(DJ, PHRASES_DJ[Math.floor(hasard(b * 2.9) * PHRASES_DJ.length)]); }
+  if (p.parole !== b) { p.parole = b; if (hasard(b * 5.1) < .35) direPNJ(DJ, PHRASES_DJ[Math.floor(hasard(b * 2.9) * PHRASES_DJ.length)]); }
 }
 /* --- Mr Miner, le barman : derrière le grand comptoir de la salle des fêtes, il va et vient, essuie et range les verres ;
    dès que quelqu'un s'assoit au bar, il vient le voir et lui pose un verre --- */
@@ -11018,7 +11021,7 @@ function animerBarman(t) {
     const s = p.service;
     if (!client || client.info.numero !== s.numero) { p.service = null; return; }
     if (p.cible) { pose("repos"); return; }
-    if (!s.debut) { s.debut = t; dire(BARMAN, PHRASES_BAR[Math.floor(hasard(t) * 4)]); }
+    if (!s.debut) { s.debut = t; direPNJ(BARMAN, PHRASES_BAR[Math.floor(hasard(t) * 4)]); }
     pose("servir");
     if (t - s.debut > 1600) {   // le verre est posé sur le comptoir, devant lui
       const z = M.L.tabourets[s.i][1], v = new THREE.Group();
@@ -11038,7 +11041,7 @@ function animerBarman(t) {
     if (h < .4) aller(B.z0 + hasard(k * 2.11) * (B.z1 - B.z0)); else p.geste = h < .72 ? "essuyer" : "ranger"; }
   pose(p.geste || "essuyer");
   const b = Math.floor(t / 23000);
-  if (p.parole !== b) { p.parole = b; if (hasard(b * 7.7) < .25) dire(BARMAN, PHRASES_BAR[4 + Math.floor(hasard(b * 3.1) * (PHRASES_BAR.length - 4))]); }
+  if (p.parole !== b) { p.parole = b; if (hasard(b * 7.7) < .25) direPNJ(BARMAN, PHRASES_BAR[4 + Math.floor(hasard(b * 3.1) * (PHRASES_BAR.length - 4))]); }
 }
 /* --- le danseur Thriller (réglé par l'administrateur) : dès que passe un Thriller, il arrive au milieu de la piste et le danse ; il repart ensuite --- */
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
@@ -11659,12 +11662,12 @@ function animerPNJ() {
   const air = M.lieu === "fetes" && M.djJoue ? (/madison/.test(M.djTitre) ? "madison" : /thriller|jackson/.test(M.djTitre) ? "thriller" : /charleston/.test(M.djTitre) ? "charleston" : /disco|bee ?gees|travolta|stayin|night fever/.test(M.djTitre) ? "disco" : null) : null;
   p.info.danse = air || (M.lieu === "fetes" && h < .55 && (h < .12 ? "disco" : h < .24 ? "charleston" : h < .36 ? "madison" : h < .44 ? "thriller" : "balance"));
   const b = Math.floor(Date.now() / 17000);
-  if (p.parole !== b) { p.parole = b; if (p.parole !== undefined && hasard(b * 9.7 + (M.lieu === "fetes" ? 5 : 0)) < .45) dire(PNJ, phrasePNJ(b * 3.3)); }
+  if (p.parole !== b) { p.parole = b; if (p.parole !== undefined && hasard(b * 9.7 + (M.lieu === "fetes" ? 5 : 0)) < .45) direPNJ(PNJ, phrasePNJ(b * 3.3)); }
   // il salue celui qui s'approche de lui (pas plus d'une fois par minute et demie)
   const moi = M.moiNum && M.gens.get(M.moiNum);
   if (moi && moi.g.position.distanceTo(p.g.position) < 2.6 && (!p.salue || Date.now() - p.salue > 90000)) {
     p.salue = Date.now(); const nom = (M.ctx.moiInfo && M.ctx.moiInfo().nom) || "mon gars";
-    dire(PNJ, PHRASES.salut[Math.floor(Math.random() * PHRASES.salut.length)].replace("%s", nom)); }
+    direPNJ(PNJ, PHRASES.salut[Math.floor(Math.random() * PHRASES.salut.length)].replace("%s", nom)); }
 }
 
 /* --- ce qu'on peut faire là où l'on est : s'asseoir au bar, se relever, inviter quelqu'un à danser un slow, l'arrêter --- */

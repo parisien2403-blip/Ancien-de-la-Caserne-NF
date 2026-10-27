@@ -1023,6 +1023,7 @@ export class Compteur extends DurableObject {
   pushDesabonner(token, x) { const moi = this.moi(token); this.sql.exec("DELETE FROM push WHERE endpoint = ? AND email = ?", String((x && x.endpoint) || ""), moi.email); return { ok: true }; }
   async pushEssai(token) { const moi = this.moi(token); const n = await this.pousser(moi.email, { titre: "🔔 Caserne Nouvelle-France", corps: "Les notifications marchent : tu seras prévenu du courrier et des mises à jour.", tag: "essai" }); return { ok: true, appareils: n }; }
   async pousser(email, d) { let n = 0; for (const s of this.sql.exec("SELECT * FROM push WHERE email = ?", email).toArray()) if (await this.pousserUn(s, d)) n++; return n; }
+  async pousserAdmins(d) { const l = this.sql.exec("SELECT email FROM membres WHERE (admin = 1 OR numero = 1) AND email IS NOT NULL").toArray(); let n = 0; for (const e of new Set(l.map(r => r.email))) n += await this.pousser(e, d); return n; }   // (l'administrateur seul — le badge 0001)
   async pousserTous(d) { const l = this.sql.exec("SELECT * FROM push").toArray(); for (let i = 0; i < l.length; i += 20) await Promise.all(l.slice(i, i + 20).map(s => this.pousserUn(s, d))); return l.length; }
   async pousserUn(s, d) {
     try { const V = await this.clesVapid(), enc = new TextEncoder(), now = Math.floor(Date.now() / 1000);
@@ -1041,7 +1042,7 @@ export class Compteur extends DurableObject {
       return r.ok; } catch (e) { return false; } }
   // une nouvelle version est en ligne : on prévient tout le monde, une seule fois
   async verifierVersion(v) { v = String(v || ""); if (!/^[\d.]{1,12}$/.test(v)) return false; const avant = await this.ctx.storage.get("version_annoncee"); if (avant === v) return false;
-    await this.ctx.storage.put("version_annoncee", v); if (avant) await this.pousserTous({ titre: "🆕 Mise à jour disponible", corps: `La version ${v} de la caserne est arrivée. Ouvre l'appli pour la découvrir !`, tag: "maj" }); return true; }
+    await this.ctx.storage.put("version_annoncee", v); if (avant) await this.pousserAdmins({ titre: "🆕 Mise à jour disponible", corps: `La version ${v} de la caserne est arrivée. Ouvre l'appli pour la découvrir !`, tag: "maj" }); return true; }   // (seulement l'administrateur : les autres la voient en ouvrant l'appli — trop de notifications sinon)
   annoncerCourrier(moi, a) { if (a === moi.email) return; this.ctx.waitUntil(this.pousser(a, { titre: "📬 Le vaguemestre", corps: `Du courrier de ${moi.prenom} ${moi.nom} t'attend.`, tag: "courrier" }).catch(() => {})); }   // (le nom de l'expéditeur seulement, jamais le message)
   async envoyer(token, lettre) {
     const moi = this.moi(token);
