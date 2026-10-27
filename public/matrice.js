@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.25";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.26";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13842,6 +13842,7 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   const entrer0 = () => { if (etape !== -1 || fini) return; etape = 0; t0 = performance.now(); demarrerTV(); };
   const appelBilly = () => { appel = true; const l = [["billy", "Gizmo ? C'est Billy… tu m'entends ?"], ["gizmo", "Billy !"],
       ["billy", "Je vais avoir du retard… La ville, c'est le K.O. : ils sont partout, ils ont coupé les routes…", "brouille"],
+      ["billy", "Il faudrait allumer les lampes UV du générateur… mais sa grille est fermée par une chaîne, et la pince coupante de M. Futterman est tombée quelque part dans la rue…", "brouille"],
       ["billy", "Attends… qu'est-ce que… Non ! Ils sont sur le capot ! Kssshh… Gizmo, reste cach—", "brouille"], ["billy", "— SIGNAL PERDU —", "coupe"], ["gizmo", "Billy… ? BILLY !"]];
     l.onFin = () => setTimeout(entrer0, 900); M.radioKFfile = []; radioKF(l); };
   const plan = (u, a, b, va, vb) => { M.camera.position.lerpVectors(a, b, u); vise.lerpVectors(va, vb, u); M.camera.lookAt(vise); };
@@ -13909,10 +13910,7 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   const fin = () => { if (fini) return; fini = true; tv.pause(); if (atl) { M.scene.remove(atl.g); atl = null; } L.gizmoTravail = false; M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null; L.silenceKF = false; L.apresRamboKF = true;   // (la musique peut partir)
     tv.muted = true; tv.loop = true; tv.style.cssText = ""; tv.play().catch(() => {});   // (la télé du bar continue, sans le son)
     for (const d of [ecranD, ramboD]) if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 600); }
-    setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo… kssh… tu m'entends ? Je suis coincé dans la voiture… ils m'encerclent…", "brouille"], ["gizmo", "Billy ! Gizmo… vient !"],
-      ["billy", "Non, reste… Bon. Tu es plus têtu que moi. Écoute bien : la pince coupante de M. Futterman est tombée dans la rue. Cherche une petite lueur dans la neige.", "brouille"],
-      ["billy", "Le générateur des lampes UV… au pied de l'antenne radio… coupe la chaîne de la grille, et abaisse le levier… Fais attention à toi…", "brouille"]]); }, 3500);
-    msgKF("GIZMO RAMBO !", "Billy est en danger : Gizmo y va. — Tirer : F, Espace, gâchette · Sauter : J, A", 6500); };
+    msgKF("GIZMO RAMBO !", "", 4000); };
   const bpF = () => { suite(); if (!fini) M.passerBtn = boutonPasser(bpF); }; M.cine.passer = () => suite(); M.passerBtn = boutonPasser(bpF);   // (Passer : à l'étape suivante)
   const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); couperRadioKF(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; L.silenceKF = false; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
 // la fin : l'écran noir, « First Aid » ; un texte rouge qui monte lentement (tout est rentré dans l'ordre… ou presque), le générique ; le titre, « FIN »… et un point d'interrogation.
@@ -15060,7 +15058,7 @@ function ecouterClavier() { if (clavierPret) return; clavierPret = true;
   addEventListener("keyup", e => { CLAV[e.code] = false; }); addEventListener("blur", () => { for (const k in CLAV) CLAV[k] = false; }); }
 const TACT_KF = {};   // (les boutons de l'écran, à Kingston Falls, sur téléphone : la croix, A, B)
 function padClavier() { ecouterClavier(); const k = c => !!CLAV[c], T = TACT_KF;
-  const ly = (k("KeyS") || k("ArrowDown") || T.b ? 1 : 0) - (k("KeyW") || k("KeyZ") || k("ArrowUp") || T.h ? 1 : 0), lx = (k("KeyD") || k("ArrowRight") || T.d ? 1 : 0) - (k("KeyA") || k("KeyQ") || k("ArrowLeft") || T.g ? 1 : 0);
+  const ly = Math.max(-1, Math.min(1, (k("KeyS") || k("ArrowDown") || T.b ? 1 : 0) - (k("KeyW") || k("KeyZ") || k("ArrowUp") || T.h ? 1 : 0) + (+T.jy || 0))), lx = Math.max(-1, Math.min(1, (k("KeyD") || k("ArrowRight") || T.d ? 1 : 0) - (k("KeyA") || k("KeyQ") || k("ArrowLeft") || T.g ? 1 : 0) + (+T.jx || 0)));   // (+ le joystick de l'écran)
   const tir = k("Space") || !!T.tir, saut = !!T.saut, cours = k("ShiftLeft") || k("ShiftRight");
   if (!lx && !ly && !tir && !saut && !MAN.bouge && !MAN.prec[0]) return null;
   const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); if (tir) buttons[7] = { pressed: true, value: 1 }; if (saut) buttons[0] = { pressed: true, value: 1 }; if (cours) buttons[5] = { pressed: true, value: 1 };
@@ -18112,13 +18110,15 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const offs = [[-.25, haut * .74, 1.05, 1.0], [.3, haut * .74, 1.0, 1.0], [-.35, haut * .6, 2.15, 1.5], [.38, haut * .6, 2.2, 1.5], [0, haut * .97, .05, 1.5]];
     const per = offs.map(([, , , ap]) => ({ x: 0, z: 0, y: 0, r: 0, hx: .02, hz: .02, occ: 0, cap: 1, colle: true, aplat: ap })); L.perchesKF.unshift(...per);
     const C = L.circuit, CL = L.circuitL || 100; let u = .15;
-    L.policeMaj = (dt, tt) => { if (!C) return; u = (u + 8.5 * dt / CL) % 1; const T = tt / 1000;
-      const p = C.getPointAt(u), d = C.getTangentAt(u), zz = Math.sin(T * 1.6) * 1.5, travers = .5 * Math.sin(T * 1.6 + 1.1);   // (il zigzague d'un trottoir à l'autre, l'arrière qui chasse)
-      g.position.set(p.x + d.z * zz, 0, p.z - d.x * zz); g.rotation.set(0, Math.atan2(d.x, d.z) + travers, .035 * Math.sin(T * 3.2), "YXZ");
+    let vP = 8.5, zP = 0, trP = 0;
+    L.policeMaj = (dt, tt) => { if (!C) return; vP = L.gremlinsFinis ? Math.max(0, vP - dt * 4) : 8.5; u = (u + vP * dt / CL) % 1; const T = tt / 1000, kv = vP / 8.5;   // (les gremlins brûlés : la voiture freine et s'arrête, de travers, gyrophares allumés)
+      if (kv > 0) { zP = Math.sin(T * 1.6) * 1.5 * kv + zP * (1 - kv); trP = .5 * Math.sin(T * 1.6 + 1.1) * kv + trP * (1 - kv); }
+      const p = C.getPointAt(u), d = C.getTangentAt(u), zz = zP, travers = trP;   // (il zigzague d'un trottoir à l'autre, l'arrière qui chasse)
+      g.position.set(p.x + d.z * zz, 0, p.z - d.x * zz); g.rotation.set(0, Math.atan2(d.x, d.z) + travers, .035 * kv * Math.sin(T * 3.2), "YXZ");
       g.updateMatrixWorld(); const v = new THREE.Vector3();
       offs.forEach(([x, y, z], k) => { v.set(x, y, z).applyMatrix4(g.matrixWorld); Object.assign(per[k], { x: v.x, z: v.z, y: v.y, r: g.rotation.y + Math.PI }); });
       // ce qu'elle touche, elle le catapulte : les passants volent, les gremlins meurent (et reviennent ailleurs), Gizmo perd un cœur
-      { const cs = Math.cos(g.rotation.y), sn = Math.sin(g.rotation.y), fx = sn, fz = cs, dedans = (x, z, m) => { const dx = x - g.position.x, dz = z - g.position.z, lz = dx * fx + dz * fz, lx = dx * cs - dz * sn; return Math.abs(lz) < 2.75 + m && Math.abs(lx) < 1.0 + m ? Math.sign(lx) || 1 : 0; };
+      if (vP > .5) { const cs = Math.cos(g.rotation.y), sn = Math.sin(g.rotation.y), fx = sn, fz = cs, dedans = (x, z, m) => { const dx = x - g.position.x, dz = z - g.position.z, lz = dx * fx + dz * fz, lx = dx * cs - dz * sn; return Math.abs(lz) < 2.75 + m && Math.abs(lx) < 1.0 + m ? Math.sign(lx) || 1 : 0; };
         const sauf = new Set(per.map(p => p));
         for (const q of L.gremlins || []) { if (q.mort > 0 || q.ejecte || (q.perche && sauf.has(q.perche))) continue; const c = dedans(q.x, q.z, .15); if (c) L.ejecterGremlin(q, fx * 9 + c * cs * 5, fz * 9 - c * sn * 5); }
         for (const q of L.passants || []) { if (q.vole) continue; const c = dedans(q.x, q.z, .1); if (c) { q.vole = { vx: fx * 7 + c * cs * 4, vz: fz * 7 - c * sn * 4 }; q.vy = 5.5; q.sy = .05; } }
@@ -18202,11 +18202,11 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (!ici) { ab.style.display = inv.style.display = "none"; } if (!M) { clearInterval(gardeQ); window.removeEventListener("keydown", toucheE); ab.remove(); inv.remove(); } }, 400);
     const info = t => M && M.ctx.surInfo && M.ctx.surInfo(t);
     const couper = () => { if (Q.coupe) return; Q.coupe = true; L.actionKF = null; sonBruit(.12, 3200, .55); setTimeout(() => sonBruit(.25, 900, .4), 120);
-      chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0; msgKF("CLAC !", "La chaîne cède, la grille s'ouvre… Vite, le levier !");
-      setTimeout(() => radioKF([["billy", "Parfait ! Le levier est sur le boîtier électrique, dans la cour du générateur."], ["billy", "Abaisse-le, et toutes les lampes UV de la ville s'allumeront !"]]), 1800); };
+      chaine.visible = false; for (const o of portObs) { const i = obst.indexOf(o); if (i >= 0) obst.splice(i, 1); } Q.ouvre = 0;
+ };
     const abaisser = () => { if (Q.levier) return; Q.levier = true; Q.lev = 0; L.actionKF = null; sonBruit(.18, 500, .6);
       PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.1, 260, .7); allumer(PP, true); setTimeout(() => allumer(PP, false), 90); setTimeout(() => allumer(PP, true), 200); }, 800 + i * 550));
-      setTimeout(() => { msgKF("LUMIÈRE !", "Les quatre projecteurs s'allument aux quatre coins de Kingston Falls…"); cineBrulure(); }, 800 + 4 * 550); };
+      setTimeout(() => { msgKF("LUMIÈRE !", ""); cineBrulure(); }, 800 + 4 * 550); };
     // la cinématique : la caméra s'élève au-dessus de la place et en fait le tour ; dans la lumière des projecteurs, les gremlins prennent feu, tous, et se tordent, et tombent en cendres
     // la fin : deux gros plans — un gremlin pris dans la lumière, qui s'embrase ; un autre — puis la caméra s'élève au-dessus de la ville : tous brûlent, dans un éclair blanc.
     // Ensuite, la une du journal de Kingston Falls arrive en tournoyant, comme dans les vieux films ; et le générique
@@ -18214,10 +18214,10 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(900, t0 + 7900);
       const vivants = (L.gremlins || []).filter(q => !(q.mort > 0) && !(q.feu > 0) && !q.ejecte && !(q.perche && q.perche.colle)).sort((a, b) => Math.hypot(a.x, a.z - 4) - Math.hypot(b.x, b.z - 4)), A = vivants[0], B = vivants.find(q => q !== A && Math.hypot(q.x - (A ? A.x : 0), q.z - (A ? A.z : 0)) > 6) || vivants[1];
       for (const [q, dt] of [[A, 1500], [B, 4900]]) if (q) { q.brule = t0 + dt; q.attente = 99; q.cible = null; }   // (eux d'abord, devant la caméra ; ils ne bougent plus)
-      M.radioKFfile = []; setTimeout(() => radioKF([["billy", "Tu as réussi, Gizmo ! Regarde-les… la lumière les fait fondre !"], ["gizmo", "Lumière… ! Gizmo… gagné !"]]), 1200);   // (les vieux appels en attente : oubliés)
+
       setTimeout(() => { const w = voile("background:#fff;opacity:.92;transition:opacity 1.1s ease-out"); if (w) { requestAnimationFrame(() => requestAnimationFrame(() => { w.style.opacity = "0"; })); setTimeout(() => w.remove(), 1300); } }, 7850);   // (le grand embrasement : un éclair blanc)
       const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; if (L.brulerTous) for (const q of L.gremlins || []) if (q.brule) q.brule = performance.now();
-        msgKF("LA LUMIÈRE LES A BRÛLÉS !", "Relève le levier du générateur, puis rejoins le bar.", 5500); Q.aRelever = true;
+        Q.aRelever = true; M.radioKFfile = [];
         setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo… ils ont tous fondu ! J'ai pu sortir de la voiture, je n'ai rien."], ["billy", "Relève le levier, sinon le générateur va griller toute la ville. Et rejoins-moi au bar : je t'y retrouve."], ["gizmo", "Gizmo… bar !"]]); }, 2200); };
       const v = new THREE.Vector3(), vise = new THREE.Vector3(), plan = (q, k) => { const a = (q.ph || 0) * 2 + k * .5, r = 2.4 - k * .6; v.set(q.x + Math.cos(a) * r, (q.y || 0) + 1 - k * .3, q.z + Math.sin(a) * r); vise.set(q.x, (q.y || 0) + .35, q.z); };
       M.cine = { fov: [50, 62], passer: fin, maj: () => { const ms = performance.now() - t0;
@@ -18231,15 +18231,15 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       PJ.forEach((PP, i) => setTimeout(() => { if (!M || M.L !== L) return; sonBruit(.08, 220, .5); allumer(PP, false); }, 500 + i * 320)); Q.allumes = 0; if (L.ambKF) L.ambKF.intensity = .22;
       L.allumerSapinKF && L.allumerSapinKF(); L.envahirBar && L.envahirBar(); L.desordreBarKF && L.desordreBarKF();
       for (const m of BAR_KF_MATS) m.emissiveIntensity = m.emissiveMap ? .04 : .08;   // (le bar est éteint : seules les guirlandes clignotent, et le sapin qui brûle) L.chargerBossKF && L.chargerBossKF();   // (l'araignée se charge pendant qu'on va au bar)
-      setTimeout(() => { if (M && M.L === L) msgKF("AU BAR !", "Billy t'attend au Dorry's Tavern…"); }, 1800); };
+    };
     // en entrant dans le bar : la cinématique — pendus au plafond au-dessus du comptoir, d'autres qui courent partout, et le sapin en flammes
     const cineBar = () => { const SL = L.salleLou; if (!SL || !M) return; const V = SL.vers, yb = .125, t0 = performance.now(), moi = M.gens.get(M.moiNum), vise = new THREE.Vector3(); let fini = false;
       if (moi) { moi.cible = null; moi.chemin = []; } const P3 = (a, b, h) => { const [x, z] = V(a, b); return new THREE.Vector3(x, yb + h, z); };
       const BK = L.barKF || [], pend = BK.filter(q => q.plafond && !(q.mort > 0))[3] || BK[3], CB = P3(0, -6.5, 1.3), cour = BK.filter(q => !q.plafond && !(q.mort > 0)).sort((a, b) => Math.hypot(b.x - CB.x, b.z - CB.z) - Math.hypot(a.x - CB.x, a.z - CB.z))[0] || BK[7], ou = (q, dy) => q ? new THREE.Vector3(q.x, (q.y || 0) + dy, q.z) : P3(0, -6, 1);   // (on suit des yeux un pendu, puis un coureur)
       const plans = [[P3(-.6, -1.5, .7), P3(-.5, -2.2, .8), ou(pend, .7), ou(pend, .8), 3800], [CB, CB.clone().setY(CB.y - .3), ou(cour, .3), ou(cour, .3), 3400], [P3(-.6, -11, 1.5), P3(-1.3, -11.8, 1.3), P3(-3.2, -13.8, 1.4), P3(-3.2, -13.8, 1.1), 3600]];
       const D = plans.reduce((a, p) => a + p[4], 0);
-      const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; placerCamera(true); msgKF("LE BAR EST ENVAHI !", "Détruis tous les gremlins du Dorry's Tavern !", 4500);
-        setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo ! Ils se sont réfugiés dans le bar… Tiens bon, j'arrive !", "brouille"], ["gizmo", "Gizmo… Rambo !"]]); }, 1500); };
+      const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; placerCamera(true); msgKF("LE BAR EST ENVAHI !", "", 3500); };
+
       M.cine = { fov: [55, 60], passer: fin, maj: () => { let u = performance.now() - t0; if (u >= D) return fin();
         if (cour) plans[1][2].set(cour.x, (cour.y || 0) + .3, cour.z), plans[1][3].copy(plans[1][2]);
         for (const [a, b, c, d, ms] of plans) { if (u < ms) { const k = u / ms, e = k * k * (3 - 2 * k); M.camera.position.lerpVectors(a, b, e); vise.lerpVectors(c, d, e); M.camera.lookAt(vise); return; } u -= ms; } } };
@@ -18247,7 +18247,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // le bar nettoyé… le sol tremble : au fond de la salle, l'araignée-gremlin. Elle crache des fils de toile blancs sur Gizmo (pris dedans : il ne bouge plus, un cœur de moins) ;
     // il faut viser le gremlin, vingt flèches ; elle brûle, se recroqueville — Billy arrive enfin
     let bossP = null; L.chargerBossKF = () => bossP = bossP || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const ld = new gltfMod.GLTFLoader();
-      const [a, g] = await Promise.all([ld.loadAsync("avatars/kingston/araignee.glb?v=1"), ld.loadAsync("avatars/gremlins/classique.glb?v=1")]); return creerAraigneeKF(a, g); })().catch(e => { console.warn("araignée", e); return null; });
+      fetch("sons/kf-araignee.mp3?v=1").catch(() => {});   /* (la musique du combat : déjà là quand elle arrive) */ const [a, g] = await Promise.all([ld.loadAsync("avatars/kingston/araignee.glb?v=1"), ld.loadAsync("avatars/gremlins/classique.glb?v=1")]); return creerAraigneeKF(a, g); })().catch(e => { console.warn("araignée", e); return null; });
     const barFini = () => { L.chargerBossKF().then(B => { if (!M || M.L !== L) return; if (!B) return finBoss(); lancerBoss(B); }); };
     const SC_B = 1.25, filM = new THREE.MeshBasicMaterial({ color: 0xf4f4ee, transparent: true, opacity: .9 }), filG = new THREE.CylinderGeometry(1, 1, 1, 5).translate(0, .5, 0), axeY = new THREE.Vector3(0, 1, 0);
     const fil = (a, b, r = .012) => { const m = new THREE.Mesh(filG, filM); const d = b.clone().sub(a), l = d.length() || .01; m.position.copy(a); m.quaternion.setFromUnitVectors(axeY, d.divideScalar(l)); m.scale.set(r, l, r); scene.add(m); return m; };
@@ -18257,12 +18257,13 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       const barre = document.createElement("div"); barre.style.cssText = "position:absolute;left:50%;top:10px;transform:translateX(-50%);width:min(56%,420px);z-index:7;pointer-events:none;font:16px 'Luckiest Guy','Lato',sans-serif;color:#ff3a1a;text-align:center;text-shadow:2px 2px 0 #000;letter-spacing:.05em";
       barre.innerHTML = `L'ARAIGNÉE-GREMLIN<div style="height:12px;margin-top:3px;border:2px solid #000;border-radius:7px;background:#2a0806;overflow:hidden;box-shadow:0 0 10px rgba(255,40,20,.5)"><div class="pv" style="height:100%;width:100%;background:linear-gradient(#ff5a2a,#a01008);transition:width .2s"></div></div>`;
       M.ctx.conteneur.appendChild(barre); Bq.barre = barre;
+      L.silenceKF = true; try { const a = new Audio("sons/kf-araignee.mp3?v=1"); a.loop = true; a.volume = .8; sonsCourts.add(a); a.play().catch(() => {}); Bq.mus = a; } catch (e) {}   // (la musique du combat ; celle de la ville se tait)
       // l'arrivée : le sol tremble, elle avance du fond de la salle ; gros plan sur sa tête de gremlin
       sonBruit(1.6, 180, .7); setTimeout(() => sonBruit(1.2, 260, .6), 900); const t0 = performance.now(), vise = new THREE.Vector3(), P3 = (a, b, h) => { const [x, z] = V(a, b); return new THREE.Vector3(x, yb + h, z); };
       const [xa, za] = V(.4, -10.2); let fini = false;
       const fin = () => { if (fini) return; fini = true; Bq.x = xa; Bq.z = za; finCine(); M.camE = null; placerCamera(true); Bq.actif = true; Bq.toile = performance.now() + 2500;
-        msgKF("L'ARAIGNÉE-GREMLIN !", "Vise le gremlin ! Attention à ses fils de toile…", 4500);
-        setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo… qu'est-ce que c'est que cette chose ?! Kssh… Vise le gremlin, pas les pattes !", "brouille"], ["gizmo", "Gizmo… pas peur !"]]); }, 1200); };
+        msgKF("L'ARAIGNÉE-GREMLIN !", "", 3500); };
+
       M.cine = { fov: [50, 62], passer: fin, maj: () => { const u = performance.now() - t0; if (u > 7000) return fin(); const k = Math.min(1, u / 5200), e = k * k * (3 - 2 * k);
         Bq.x = x0 + (xa - x0) * e; Bq.z = z0 + (za - z0) * e; B.marcher(u / 160, k < 1 ? 1 : .2); B.g.position.set(Bq.x, yb, Bq.z); B.corps.position.y = .03 * Math.sin(u / 80);
         const tr = u < 5200 ? (Math.random() - .5) * .04 : 0; if (u < 4200) { M.camera.position.copy(P3(-1.2, -5.2, .45)); vise.set(Bq.x, yb + .9, Bq.z); }   // (au ras du sol : les pattes qui approchent)
@@ -18271,8 +18272,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       M.passerBtn = boutonPasser(fin); };
     L.toucherBoss = () => { const Bq = L.bossKF; if (!Bq || Bq.mort || !Bq.actif) return; Bq.pv--; Bq.barre.querySelector(".pv").style.width = Math.max(0, Bq.pv / Bq.pvMax * 100) + "%";
       Bq.flash = performance.now() + 160; sonBruit(.15, 900, .35); if (Bq.pv % 5 === 0 && Bq.pv > 0) sonBruit(.6, 420, .5);
-      if (Bq.pv === 10) radioKF([["billy", "Elle faiblit ! Continue, Gizmo !", "brouille"]]);
-      if (Bq.pv <= 0) { Bq.mort = performance.now(); L.colleKF = null; for (const f of Bq.fils) scene.remove(f); Bq.fils = []; sonBruit(1.4, 300, .7); msgKF("ELLE BRÛLE !", "", 2500);
+      if (Bq.pv <= 0) { const a = Bq.mus; if (a) { const v0 = a.volume, t1 = performance.now(), f = setInterval(() => { const u = Math.min(1, (performance.now() - t1) / 2500); a.volume = v0 * (1 - u); if (u >= 1) { clearInterval(f); a.pause(); sonsCourts.delete(a); } }, 60); }
+        Bq.mort = performance.now(); L.colleKF = null; for (const f of Bq.fils) scene.remove(f); Bq.fils = []; sonBruit(1.4, 300, .7); msgKF("ELLE BRÛLE !", "", 2500);
         for (let i = 0; i < 6; i++) setTimeout(() => { if (!M || M.L !== L) return; const a = i * 1.05, r = .6 * SC_B; L.foyerKF && L.foyerKF(Bq.x + Math.cos(a) * r, Bq.y + .3, Bq.z + Math.sin(a) * r, 4, 0, 1.6); }, i * 180); } };
     // à chaque image, pendant le combat
     L.bossMajKF = (dt, now) => { const Bq = L.bossKF; if (!Bq) return; const B = Bq.B, moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
@@ -18300,7 +18301,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
             L.colleKF = { x: p.x, z: p.z, fin: now + 2400, fils: m }; Bq.toile = Math.max(Bq.toile, now + 2400 + 3500); /* (le temps de se dégager, et de s’éloigner) */ L.blesserGizmo && L.blesserGizmo(0, 0); msgKF("PRIS DANS LA TOILE !", "", 1800); }
           else Bq.tapis.push({ m, fin: now + 7000 }); } } };
     // le bar nettoyé : Billy arrive ; la une du journal, et le générique
-    const finBoss = () => { M.radioKFfile = []; radioKF([["billy", "Gizmo ! Je suis là… tu les as tous eus ! Tu es le plus courageux des mogwaïs."], ["gizmo", "Billy ! Gizmo… gagné !"]]);
+    const finBoss = () => { M.radioKFfile = [];
       msgKF("KINGSTON FALLS EST SAUVÉE !", "Plus un seul gremlin. Bravo Gizmo !", 4000); setTimeout(() => { if (M && M.L === L) journalKF(() => { if (M && M.L === L) generiqueKF(); }); }, 7500); };
     // la une du journal : il arrive en tournoyant, s'arrête, on lit le gros titre… et il s'efface
     const journalKF = suite => { if (!M) return suite(); const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s";
@@ -18315,23 +18316,23 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       setTimeout(() => { d.style.opacity = "0"; setTimeout(() => { d.remove(); suite(); }, 700); }, 7000); };
     L.queteKF = (dt, t) => { const moi = M.gens.get(M.moiNum); if (!moi) return; const p = moi.g.position;
       for (let i = pansements.length - 1; i >= 0; i--) { const P2 = pansements[i]; P2.m.rotation.y += dt * 2; P2.g.position.y = p.y + .2 + Math.sin(t / 300 + i) * .05; P2.gl.material.opacity = .4 + .4 * Math.sin(t / 200 + i);
-        if (Math.hypot(p.x - P2.x, p.z - P2.z) < .8 && L.soignerGizmo && L.soignerGizmo()) { scene.remove(P2.g); pansements.splice(i, 1); sonBruit(.06, 5000, .3); msgKF("UN PANSEMENT !", "Gizmo reprend des forces : un cœur de plus.", 2600); } }
+        if (Math.hypot(p.x - P2.x, p.z - P2.z) < .8 && L.soignerGizmo && L.soignerGizmo()) { scene.remove(P2.g); pansements.splice(i, 1); sonBruit(.06, 5000, .3); msgKF("UN PANSEMENT !", "", 2000); } }
       if (L.ambKF && Q.allumes) { const cible = .2 + Math.min(4, Q.allumes) * .06;   // (à peine : la nuit reste la nuit, ce sont les projecteurs qui éclairent)
         L.ambKF.intensity += (cible - L.ambKF.intensity) * Math.min(1, dt * 1.5); }   // (les projecteurs : la ville entière s'éclaire)
       if (L.pinceKF && !Q.pince) { const PP = L.pinceKF, k = .5 + .5 * Math.sin(t / 180); PP.gl.material.opacity = .35 + .65 * k; PP.gl.scale.setScalar(.35 + .35 * k);
         if (Math.hypot(p.x - PP.x, p.z - PP.z) < 1.1) { Q.pince = true; PP.ims.forEach(im => im.visible = false); PP.gl.visible = false; sonBruit(.08, 4200, .35); inv.style.display = "block";
-          msgKF("LA PINCE COUPANTE !", "Celle de M. Futterman ! Maintenant, la grille du générateur…");
           setTimeout(() => radioKF([["billy", "Tu l'as trouvée ! Bravo, Gizmo !"], ["billy", "Maintenant, le générateur : au pied de l'antenne radio, devant le tribunal. Coupe la chaîne de la grille."], ["gizmo", "Gizmo… trouve !"]]), 2500); } }
       if (Q.ouvre != null && Q.ouvre < 1) { Q.ouvre = Math.min(1, Q.ouvre + dt * .9); const e = 1 - (1 - Q.ouvre) ** 3; porte.rotation.y = e * 1.9; }   // (elle pivote vers l'intérieur)
       if (Q.lev != null && Q.lev < 1) { Q.lev = Math.min(1, Q.lev + dt * 3); levier.rotation.x = -.35 + Q.lev * 2.3; }
       if (Q.rel != null && Q.rel < 1) { Q.rel = Math.min(1, Q.rel + dt * 3); levier.rotation.x = 1.95 - Q.rel * 2.3; }
       if (Q.releve && !Q.cineBar && !M.cine && L.dansLou && L.dansLou(p.x, p.z)) { Q.cineBar = true; cineBar(); }
+      if (L.barKF && !Q.barFini) for (const q of L.barKF) if (!(q.mort > 0) && !(q.feu > 0) && !q.plafond && !L.dansLou(q.x, q.z)) { const [x, z] = L.salleLou.vers(0, -6); q.x = x; q.z = z; q.cible = null; q.ejecte = null; }   // (aucun ne s'échappe du bar)
       if (Q.cineBar && !Q.barFini && !M.cine && L.barKF && L.barKF.every(q => q.mort > 0)) { Q.barFini = true; setTimeout(() => { if (M && M.L === L) barFini(); }, 1200); }
       L.bossMajKF && L.bossMajKF(dt, performance.now());
       let act = null, lab = ""; const dG = Math.hypot(p.x - (GX0 + GX1) / 2, p.z - (F.z1 + .5));
-      if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } else if (!Q.dit) { Q.dit = true; msgKF("FERMÉ !", "Une grosse chaîne et un cadenas… Il faut la pince coupante de M. Futterman.");
-          if (!Q.radioGrille) { Q.radioGrille = true; setTimeout(() => radioKF([["billy", "C'est la grille du générateur. Sans la pince coupante, tu n'y arriveras pas… cherche-la dans la rue !"]]), 2000); } } }
+      if (!Q.coupe && dG < 1.9) { if (Q.pince) { act = couper; lab = "✂️ Couper la chaîne"; } }
       else if (Q.coupe && !Q.levier && Math.hypot(p.x - LX, p.z - (LZ + .55)) < 1.3) { act = abaisser; lab = "⚡ Abaisser le levier"; }
+      if (Q.coupe && !Q.levier && !Q.radioLevier && Math.hypot(p.x - LX, p.z - LZ) < 3.2) { Q.radioLevier = true; M.radioKFfile = []; radioKF([["billy", "Gizmo… kssh… c'est toi ? Tu es au générateur ?! Le levier, sur le boîtier électrique…", "brouille"], ["billy", "Abaisse-le : toutes les lampes UV de la ville s'allumeront !", "brouille"], ["gizmo", "Gizmo… lumière !"]]); }
       else if (Q.aRelever && !Q.releve && !M.cine && Math.hypot(p.x - LX, p.z - (LZ + .55)) < 1.3) { act = relever; lab = "⚡ Relever le levier"; }
       if (dG > 5) Q.dit = false;
       L.actionKF = act; if (ab.textContent !== lab) ab.textContent = lab; ab.style.display = act && !M.cine ? "block" : "none"; if (Q.pince && !Q.levier) inv.style.display = "block"; else if (Q.levier) inv.style.display = "none"; }; }
@@ -18446,11 +18447,11 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       <ellipse cx="38" cy="34" rx="17" ry="19" fill="#7cc23c" stroke="#1c2e0e" stroke-width="2"/><path d="M30 18 Q38 10 46 18" fill="none" stroke="#2d4a14" stroke-width="3"/><ellipse cx="31" cy="31" rx="4.5" ry="3.5" fill="#ff2a10"/><ellipse cx="45" cy="31" rx="4.5" ry="3.5" fill="#ff2a10"/><circle cx="31" cy="31" r="1.4" fill="#000"/><circle cx="45" cy="31" r="1.4" fill="#000"/>
       <path d="M27 43 Q38 52 49 43 Z" fill="#2a0a06"/><path d="M29 43 L31 46 L33 43.6 L35 46.5 L37 44 L39 46.5 L41 44 L43 46.5 L45 43.6 L47 46 L48 43" fill="#f4ecd0"/></svg><span class="n">0</span>`;
     L.tuesKF = 0; L.tueKF = () => { L.tuesKF++; tues.querySelector(".n").textContent = L.tuesKF; tues.animate([{ transform: "scale(1.35)" }, { transform: "scale(1)" }], { duration: 300 });
-      if (L.gremlinsFinis) return; if (L.tuesKF === 5) radioKF([["billy", "Cinq de moins ! Ils commencent à te craindre, Gizmo… mais il en reste beaucoup."]]); if (L.tuesKF === 15) radioKF([["billy", "Quinze ! Tu es un vrai Rambo… n'oublie pas la pince coupante !"], ["gizmo", "Gizmo… Rambo !"]]); };
+      };   // (Billy ne commente plus chaque gremlin détruit)
     let nVies = 6, invul = 0, recul = null; const dessinerVies = () => { nVies = Math.max(0, Math.min(6, nVies)); vies.textContent = "❤️".repeat(nVies) + "🖤".repeat(6 - nVies); }; dessinerVies();
     L.blesserGizmo = (dx, dz) => { const now = performance.now(); if (now < invul || nVies <= 0) return;
-      if (!L.radioBlesse) { L.radioBlesse = true; setTimeout(() => radioKF([["billy", "Attention à la voiture de police, Gizmo ! Les gremlins l'ont prise, elle fonce sur tout ce qui bouge !"], ["billy", "Si tu es blessé, ramasse les pansements : il en traîne un peu partout."]]), 1200); }
-      else if (nVies === 2 && !L.radioFaible) { L.radioFaible = true; setTimeout(() => radioKF([["billy", "Tu es à bout de forces ! Cache-toi et trouve un pansement, vite !"], ["gizmo", "Ouuuh…"]]), 900); }   // (déjà à terre : on ne frappe pas un Gizmo évanoui)
+
+      // (Billy ne parle plus des blessures : quatre appels seulement, au début, à la pince, au levier, et pour rejoindre le bar)
       invul = now + 2000; nVies--; recul = { dx, dz, t0: now }; dessinerVies();
       voile("background:rgba(200,0,0,.35);opacity:1", 500); sonBruit(.4, 160, .5);
       if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (L.colleKF) L.colleKF.fin = 0; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
@@ -18463,8 +18464,15 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const bouton = (txt, css, cle) => { const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.style.cssText = "position:absolute;width:62px;height:62px;border-radius:50%;border:2px solid rgba(255,220,120,.75);background:rgba(0,0,0,.4);color:#ffe7a0;font:bold 21px sans-serif;touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;" + css;
       const on = e => { e.preventDefault(); e.stopPropagation(); TACT_KF[cle] = true; b.style.background = "rgba(255,200,80,.35)"; }, off = e => { e.preventDefault(); TACT_KF[cle] = false; b.style.background = "rgba(0,0,0,.4)"; };
       b.addEventListener("pointerdown", on); b.addEventListener("pointerup", off); b.addEventListener("pointercancel", off); b.addEventListener("pointerleave", off); b.addEventListener("contextmenu", e => e.preventDefault()); pad.appendChild(b); return b; };
-    bouton("◀", "left:14px;bottom:calc(76px + env(safe-area-inset-bottom))", "g"); bouton("▶", "left:150px;bottom:calc(76px + env(safe-area-inset-bottom))", "d");
-    bouton("▲", "left:82px;bottom:calc(138px + env(safe-area-inset-bottom))", "h"); bouton("▼", "left:82px;bottom:calc(14px + env(safe-area-inset-bottom))", "b");
+    // le joystick : on pose le pouce dessus et on le fait glisser ; plus on l'écarte du centre, plus Gizmo va vite
+    { const joy = document.createElement("div"), bt = document.createElement("div"), RJ = 58; let jid = null;
+      joy.style.cssText = "position:absolute;left:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:148px;height:148px;border-radius:50%;border:2px solid rgba(255,220,120,.6);background:radial-gradient(circle,rgba(0,0,0,.2),rgba(0,0,0,.45));touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none";
+      bt.style.cssText = "position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:rgba(255,215,110,.5);border:2px solid rgba(255,235,170,.9);box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none"; joy.appendChild(bt); pad.appendChild(joy);
+      const bouger = e => { const r = joy.getBoundingClientRect(); let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); const l = Math.hypot(dx, dy); if (l > RJ) { dx *= RJ / l; dy *= RJ / l; }
+        bt.style.transform = `translate(${dx}px,${dy}px)`; const mort = l < 8; TACT_KF.jx = mort ? 0 : dx / RJ; TACT_KF.jy = mort ? 0 : dy / RJ; };
+      const lacher = e => { if (e.pointerId !== jid) return; jid = null; TACT_KF.jx = TACT_KF.jy = 0; bt.style.transform = ""; };
+      joy.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); jid = e.pointerId; try { joy.setPointerCapture(jid); } catch (er) {} bouger(e); });
+      joy.addEventListener("pointermove", e => { if (e.pointerId === jid) { e.preventDefault(); bouger(e); } }); joy.addEventListener("pointerup", lacher); joy.addEventListener("pointercancel", lacher); joy.addEventListener("contextmenu", e => e.preventDefault()); }
     bouton("B", "right:104px;bottom:calc(30px + env(safe-area-inset-bottom));width:70px;height:70px", "tir"); bouton("A", "right:16px;bottom:calc(76px + env(safe-area-inset-bottom));width:78px;height:78px", "saut");
     let pos0 = null, enPlace = false;
     const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !vies.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(pad); M.ctx.conteneur.appendChild(vies); M.ctx.conteneur.appendChild(tues); }
@@ -18484,7 +18492,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (L.gizmoMats) { const f = L.tvLueur ? L.tvLueur(t) + .2 : .28; for (const m of L.gizmoMats) m.emissiveIntensity = f; }   // (devant la télé : sa lumière vacille sur lui)   // (avant d'avoir vu Rambo à la télé : ni bandana ni arc)
       const p = moi.g.position, v = pos0 ? Math.hypot(p.x - pos0.x, p.z - pos0.z) / Math.max(dt, 1e-3) : 0; if (pos0 && v > .2) {   /* (il regarde où il va) */ const ya = Math.atan2(p.x - pos0.x, p.z - pos0.z); let d = ya - yawG; d = Math.atan2(Math.sin(d), Math.cos(d)); yawG += d * Math.min(1, dt * 10); }
       { const SL = L.salleLou, dd = !!SL && p.x > SL.x0 && p.x < SL.x1 && p.z > SL.z0 && p.z < SL.z1;   // (dans le bar : la caméra tout près, juste derrière lui — elle ne va plus dans les murs)
-        if (dd !== L.gizmoDedans) { if (!dd && L.gizmoDedans === true && L.apresRamboKF && !L.radioDehors) { L.radioDehors = true; setTimeout(() => radioKF([["billy", "Tu es sorti… kssh… je t'entends marcher dans la neige. Reste près des voitures, ne te fais pas repérer…", "brouille"], ["gizmo", "Gizmo… prudent !"]]), 1500); }
+        if (dd !== L.gizmoDedans) { 
           L.gizmoDedans = dd; L.suiviRue = L.suiviRue || L.suivi; L.suivi = dd ? { d: 1.6, h: 1.25, av: 2.2, vy: .95 } : L.suiviRue; M.camE = null; } }
       if (recul) { const u = (performance.now() - recul.t0) / 500; if (u >= 1) recul = null; else { const v = (1 - u) * .22, nx = p.x + recul.dx * v, nz = p.z + recul.dz * v; if (L.limites(nx, nz)) { p.x = nx; p.z = nz; moi.cible = null; moi.chemin = []; } } }   // (projeté)
       pos0 = { x: p.x, z: p.z }; racine.rotation.y = yawG - moi.g.rotation.y;
