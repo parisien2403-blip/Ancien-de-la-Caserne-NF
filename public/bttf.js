@@ -214,72 +214,8 @@ function voitureVraie(nom) {
 // construit un immeuble à sa place : cx, cz le milieu de la façade au sol, r l'orientation (la façade regarde vers +z local)
 
 // le cadran de l'horloge du palais, net et détaillé : arrêtée à 22 h 04, le soir de la foudre
-function toileHorlogeHV() { return toile(1024, 1024, (x) => { const c = 512;
-  const g = x.createRadialGradient(c, c - 80, 60, c, c, 500); g.addColorStop(0, "#fffdf4"); g.addColorStop(1, "#ece4cc"); x.fillStyle = g; x.beginPath(); x.arc(c, c, 500, 0, 7); x.fill();
-  x.strokeStyle = "#1a1612"; x.lineWidth = 14; x.beginPath(); x.arc(c, c, 492, 0, 7); x.stroke(); x.lineWidth = 4; x.beginPath(); x.arc(c, c, 470, 0, 7); x.stroke(); x.beginPath(); x.arc(c, c, 420, 0, 7); x.stroke(); x.beginPath(); x.arc(c, c, 300, 0, 7); x.stroke();
-  for (let k = 0; k < 60; k++) { const a = k / 60 * Math.PI * 2; x.save(); x.translate(c, c); x.rotate(a); x.fillStyle = "#1a1612"; if (k % 5) x.fillRect(-2.5, -468, 5, 30); else { x.fillRect(-7, -468, 14, 48); x.beginPath(); x.arc(0, -478, 8, 0, 7); x.fill(); } x.restore(); }
-  x.fillStyle = "#1a1612"; x.font = "bold 96px 'Times New Roman', Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle";
-  ["XII", "I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "IX", "X", "XI"].forEach((n, i) => { const a = i / 12 * Math.PI * 2; x.save(); x.translate(c, c); x.rotate(a); x.translate(0, -362); x.scale(.82, 1); x.fillText(n, 0, 6); x.restore(); });
-  for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2 + Math.PI / 12; x.save(); x.translate(c, c); x.rotate(a); x.fillStyle = "#8a6a3a"; x.beginPath(); x.moveTo(0, -300); x.lineTo(10, -282); x.lineTo(0, -264); x.lineTo(-10, -282); x.fill(); x.restore(); }
-  x.strokeStyle = "rgba(138,106,58,.55)"; x.lineWidth = 3; for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; x.beginPath(); x.arc(c + Math.cos(a) * 200, c + Math.sin(a) * 200, 40, 0, 7); x.stroke(); }
-  // les aiguilles en fer de lance ajouré, et le contrepoids
-  const aig = (a, L, W, contre) => { x.save(); x.translate(c, c); x.rotate(a); x.fillStyle = "#14110e"; x.beginPath(); x.moveTo(-W * .35, contre); x.lineTo(W * .35, contre); x.lineTo(W * .3, -L * .62); x.lineTo(W, -L * .7); x.lineTo(0, -L); x.lineTo(-W, -L * .7); x.lineTo(-W * .3, -L * .62); x.closePath(); x.fill();
-    x.fillStyle = "#f6f0dc"; x.beginPath(); x.ellipse(0, -L * .72, W * .38, L * .06, 0, 0, 7); x.fill(); x.fillStyle = "#14110e"; x.beginPath(); x.arc(0, contre, W * 1.2, 0, 7); x.fill(); x.restore(); };
-  aig((10 + 4 / 60) / 12 * Math.PI * 2, 250, 26, 60); aig(4 / 60 * Math.PI * 2, 400, 18, 90);
-  x.fillStyle = "#c9a227"; x.beginPath(); x.arc(c, c, 24, 0, 7); x.fill(); x.fillStyle = "#14110e"; x.beginPath(); x.arc(c, c, 10, 0, 7); x.fill(); }); }
 // un griffon de pierre couché (comme ceux qui encadrent l'horloge)
-const PROFIL_GRIFFON = [[-.8, 0], [.75, 0], [.78, .1], [.46, .13], [.44, .5], [.5, .72], [.56, .92], [.74, .98], [.82, 1.03], [.66, 1.12], [.62, 1.24], [.52, 1.3], [.48, 1.43], [.42, 1.3], [.36, 1.12], [.24, 1.02],
-  [.16, 1.4], [.02, 1.68], [-.12, 1.82], [-.16, 1.66], [-.24, 1.6], [-.28, 1.66], [-.36, 1.48], [-.42, 1.52], [-.48, 1.3], [-.56, 1.32], [-.58, 1.1], [-.5, .96], [-.64, .78], [-.82, .55], [-.86, .3], [-.98, .4], [-1.08, .34], [-.92, .14], [-.8, .06]];
-function griffonHV(B, x, y, z, sens, coul) { const sh = new THREE.Shape(PROFIL_GRIFFON.map(([a, b]) => new THREE.Vector2(a * sens * .95, b * .95)));
-  B.boite(0, 0, 0, x, y + .1, z - .25, coul, { geo: new THREE.ExtrudeGeometry(sh, { depth: .38, bevelEnabled: true, bevelThickness: .06, bevelSize: .05, bevelSegments: 2 }), r: .7 });
-  for (const [px, py] of [[.2, .45], [-.3, .5], [-.1, 1.3], [-.25, 1.15]]) B.boite(.5, .03, .02, x + px * sens * .95, y + .1 + py * .95, z + .2, teinteHV(coul, .75), { rz: sens * .6 });   // (les plumes et les muscles gravés)
-  B.sphere(.04, x + .58 * sens * .95, y + .1 + 1.18 * .95, z + .2, "#1a1a1a");   // l'œil
-  B.boite(1.9, .1, .6, x, y + .05, z, teinteHV(coul, 1.3)); }
 // le palais de justice de Hill Valley : avant-corps sur un grand escalier, quatre colonnes, fronton et horloge, deux ailes de brique
-IMMEUBLES_HV.palais = { larg: 40, corps: 11.6, coulCorps: "#9a4a34", zones: [[-20, -8, 11.6], [-8, 8, 12.6], [8, 20, 11.6]], f: (B) => {
-  const BR = "#9a4632", PI_ = "#ebe5d6", PI2 = "#ddd5c2", A0 = .6, yP = 1.78;
-  // les ailes : soubassement de pierre, fenêtres cintrées au rez-de-chaussée, fenêtres à fronton à l'étage, chaînages, corniche
-  for (const s of [-1, 1]) { const xa = s < 0 ? -20 : 8, xb = s < 0 ? -8 : 20;
-    B.mur(xa, xb, 0, 1.4, "bossage", PI2); B.mur(xa, xb, 1.4, 11.6, "brique", BR);
-    B.bandeau(xa, xb, 1.4, { coul: PI_, haut: .2, prof: .18 }); B.bandeau(xa, xb, 5.9, { coul: PI_, haut: .3, prof: .16 });
-    for (let k = 0; k < 5; k++) { const cx = xa + 1.4 + k * 2.3; B.fenetre(cx, 2.1, 1.25, 2.7, { arc: true, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8", vitre: k % 3 }); B.fenetre(cx, 6.8, 1.25, 2.6, { fronton: true, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8", vitre: (k + 1) % 4 }); }
-    for (let h = 1.5, k = 0; h < 10.8; h += .55, k++) { const ext = s < 0 ? xa : xb; B.boite(k % 2 ? .75 : .5, .5, .08, ext - s * (k % 2 ? .375 : .25), h + .25, .04, teinteHV(PI_, .97 + (k % 3) * .02)); }
-    B.corniche(xa, xb, 10.7, { coul: PI_, consoles: Array.from({ length: 7 }, (_, i) => xa + .3 + i * (xb - xa - .6) / 6) }); B.parapet(xa, xb, 11.6, .35, PI2, {}); }
-  // l'avant-corps central, en saillie : pilastres d'angle, porte et fenêtres derrière les colonnes
-  B.mur(-8, 8, 0, 1.4, "bossage", PI2, { saillie: A0 }); B.mur(-8, 8, 1.4, 12.6, "brique", BR, { saillie: A0 });
-  for (const x of [-7.6, 7.6]) B.pilastre(x, 1.4, 11.3, .7, PI_, { z: A0 });
-  B.bandeau(-8, 8, 5.9, { coul: PI_, haut: .3, prof: .16, z: A0 });
-  B.porte(0, 2.2, 3.4, { z: A0, double: true, coul: "#5a3420", cadre: PI_, imposte: "COURTHOUSE", prof: .4 });
-  for (const x of [-3.6, 3.6]) { B.fenetre(x, 2.3, 1.3, 2.7, { z: A0, arc: true, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8" }); }
-  for (const x of [-6.2, 6.2]) { B.fenetre(x, 2.3, 1.1, 2.6, { z: A0, arc: true, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8" }); B.fenetre(x, 6.8, 1.1, 2.5, { z: A0, fronton: true, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8" }); }
-  for (const x of [-3.6, 0, 3.6]) B.fenetre(x, 6.8, 1.3, 2.6, { z: A0, carreaux: 2, rangs: 2, pierre: PI_, cadre: "#f6f2e8", corniche: true });
-  // le grand escalier et le palier
-  B.boite(16.4, yP, 2.2, 0, yP / 2, A0 + 1.1, PI2); B.boite(16.5, .06, 2.25, 0, yP - .03, A0 + 1.12, PI_); for (let i = 0; i < 6; i++) B.boite(16.4, yP - i * .3, .2, 0, (yP - i * .3) / 2, A0 + 2.3 + i * .2, i % 2 ? PI_ : PI2);
-  for (const s of [-1, 1]) { B.boite(1.3, 2, 3.4, s * 8.3, 1, A0 + 1.7, PI2); B.boite(1.45, .2, 3.5, s * 8.3, 2.05, A0 + 1.7, PI_); }   // les murets de l'escalier
-  // les quatre colonnes cannelées (galbe, base attique, chapiteau à volutes) sur leurs socles
-  const fut = new THREE.LatheGeometry([[0, 0], [.6, 0], [.6, .12], [.52, .2], [.56, .3], [.47, .4], [.46, .5], [.47, 3], [.44, 6], [.39, 7.9], [.42, 8], [0, 8]].map(([r, y]) => new THREE.Vector2(r, y)), 28);
-  for (const x of [-5.4, -1.8, 1.8, 5.4]) { const zc = A0 + 1.3; B.boite(1.5, 1.1, 1.5, x, yP + .55, zc, PI2); B.boite(1.6, .14, 1.6, x, yP + 1.12, zc, PI_); B.boite(0, 0, 0, x, yP + 1.18, zc, "#f2eee4", { geo: fut.clone(), r: .6 });
-    for (let k = 0; k < 20; k++) { const a = k / 20 * Math.PI * 2; B.boite(.05, 7.3, .05, x + Math.cos(a) * .44, yP + 1.18 + 4.2, zc + Math.sin(a) * .44, "#dcd6c8"); }
-    const yc = yP + 9.18; B.boite(1.05, .22, 1.05, x, yc + .05, zc, PI_); for (const s of [-1, 1]) B.cyl(.17, .17, 1, x + s * .5, yc - .02, zc, PI_, { rx: Math.PI / 2, seg: 14 }); B.boite(1.2, .16, 1.2, x, yc + .26, zc, PI_); }
-  // l'entablement : architrave, frise gravée, corniche à denticules
-  const yE = yP + 9.52, zE = A0 + .9;
-  B.boite(13.4, .5, 3.6, 0, yE + .25, zE, PI_); const fr = toile(2048, 120, (x, W, H) => { x.fillStyle = "#ebe5d6"; x.fillRect(0, 0, W, H); x.fillStyle = "#4a443c"; x.font = "bold 76px 'Times New Roman', Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("H I L L   V A L L E Y   C O U R T H O U S E", W / 2, H / 2 + 4); x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(0, 0, W, 4); });
-  B.boite(13.6, .75, 3.7, 0, yE + .88, zE, PI_); B.plan(13.6, .7, 0, yE + .88, zE + 1.852, new THREE.MeshStandardMaterial({ map: texHV(fr), roughness: .8 }));
-  for (let x = -6.7; x <= 6.75; x += .3) B.boite(.15, .16, .14, x, yE + 1.33, zE + 1.85, PI_); B.boite(14.2, .3, 4.1, 0, yE + 1.56, zE + .1, PI_);
-  // le fronton : rampants moulurés, tympan, l'horloge et ses deux griffons ; derrière, le toit
-  const yF = yE + 1.71, HF = 3.3, LF = 7.1, ang = Math.atan2(HF, LF);
-  const tri = new THREE.Shape(); tri.moveTo(-LF, 0); tri.lineTo(LF, 0); tri.lineTo(0, HF); tri.closePath(); B.boite(0, 0, 0, 0, yF, zE - 1.9, PI2, { geo: new THREE.ExtrudeGeometry(tri, { depth: 3.4, bevelEnabled: false }) });
-  for (const s of [-1, 1]) { const lr = Math.hypot(LF, HF) + .35; B.boite(lr, .32, .45, s * LF / 2, yF + HF / 2 + .15, zE + 1.72, PI_, { rz: -s * ang }); B.boite(lr, .12, .55, s * LF / 2, yF + HF / 2 + .34, zE + 1.72, teinteHV(PI_, 1.03), { rz: -s * ang }); }
-  const toitM = matHV("#5f6468", .85); const tr2 = new THREE.Shape(); tr2.moveTo(-LF + .2, 0); tr2.lineTo(LF - .2, 0); tr2.lineTo(0, HF - .2); tr2.closePath(); B.boite(0, 0, 0, 0, yF - .9, -9, toitM, { geo: new THREE.ExtrudeGeometry(tr2, { depth: zE - 1.9 + 9, bevelEnabled: false }) });
-  B.boite(14, 1, 9 + zE - 1.9, 0, yF - .5, (-9 + zE - 1.9) / 2, "#9a4a34");
-  // l'horloge : boîtier rond en saillie, lunette moulurée, cadran sous verre
-  const yH = yF + 1.45, zH = zE + 1.5; B.cyl(1.3, 1.3, .3, 0, yH, zH, PI_, { rx: Math.PI / 2, seg: 48 }); B.boite(0, 0, 0, 0, yH, zH + .17, "#2a2622", { geo: new THREE.TorusGeometry(1.13, .08, 10, 48), m: .5, r: .35 }); B.boite(0, 0, 0, 0, yH, zH + .17, "#c9a227", { geo: new THREE.TorusGeometry(1.24, .05, 8, 48), m: .7, r: .25 });
-  B.boite(0, 0, 0, 0, yH, zH + .05, PI_, { geo: new THREE.TorusGeometry(1.36, .1, 10, 56) }); for (let k = 0; k < 32; k++) { const a = k / 32 * Math.PI * 2; B.sphere(.05, Math.cos(a) * 1.36, yH + Math.sin(a) * 1.36, zH + .14, PI2); }
-  const cad = B.objet(new THREE.Mesh(new THREE.CircleGeometry(1.1, 64), new THREE.MeshStandardMaterial({ map: texHV(toileHorlogeHV()), roughness: .5, emissive: 0xfff6dc, emissiveIntensity: .08 }))); cad.position.set(0, yH, zH + .16);
-  const verre = B.objet(new THREE.Mesh(new THREE.SphereGeometry(1.12, 32, 12, 0, Math.PI * 2, 0, .35), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .12, roughness: .05, metalness: .5 }))); verre.rotation.x = Math.PI / 2; verre.position.set(0, yH, zH + .16 - 1.12 * Math.cos(.35)); verre.castShadow = false;
-  for (const s of [-1, 1]) griffonHV(B, s * 3.05, yF + .1, zE + 1.35, s, "#5a554c");
-  B.cyl(.03, .03, 1.6, 0, yF + HF + .8, zE - .3, "#2a2a2a", { m: .7 }); B.sphere(.08, 0, yF + HF + 1.6, zE - .3, "#2a2a2a", { m: .7 }); } };
-
 // un environnement de reflets « en ville » (ciel, soleil, façades, trottoir, chaussée), préfiltré : c'est lui qui donne à la laque et aux chromes leurs vrais reflets
 /* ===================== la Chevrolet Bel Air 1957 (cabriolet, hard-top blanc), modelée en 3D d'après les cinq vues =====================
    Repère : l'avant vers +x, la largeur sur z, le sol à y = 0. Longueur 5,1 m, largeur 1,9 m. */
