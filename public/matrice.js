@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.16";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.17";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -4967,7 +4967,7 @@ function construireSantaCarla(A, L, scene) {
     // les musiciens : le saxophoniste, torse nu et huilé, sa queue de cheval, ses chaînes, le sax doré ; derrière lui le batteur et le clavier, dans l'ombre
     const sax = new THREE.Object3D(); sax.position.set(0, 2.4, 1.5); g.add(sax);   // (là où se tient Tim Cappello, éclairé par la poursuite)
     // l'écran géant, derrière le groupe : la vidéo du concert
-    const ecranV = document.createElement("video"); ecranV.src = "videos/i-still-believe.mp4"; ecranV.loop = true; ecranV.playsInline = true; ecranV.muted = true; ecranV.preload = "auto"; ecranV.setAttribute("playsinline", ""); ecranV.setAttribute("muted", ""); ecranV.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1"; document.body.appendChild(ecranV);   /* (dans la page, invisible : l'iPhone ne décode pas l'image d'une vidéo hors de la page) */
+    const ecranV = document.createElement("video"); videoLocale("videos/i-still-believe.mp4", "videos/i-still-believe.mp4").then(u => { ecranV.src = u; }, () => { ecranV.src = "videos/i-still-believe.mp4"; });   /* (téléchargée en entier, lue depuis l'appareil) */ ecranV.loop = true; ecranV.playsInline = true; ecranV.muted = true; ecranV.preload = "auto"; ecranV.setAttribute("playsinline", ""); ecranV.setAttribute("muted", ""); ecranV.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1"; document.body.appendChild(ecranV);   /* (dans la page, invisible : l'iPhone ne décode pas l'image d'une vidéo hors de la page) */
     const sonC = new Audio("sons/lb-i-still-believe.mp3"); sonC.loop = true; sonC.preload = "auto"; sonC.volume = 0; CONCERT.son = sonC;
     CONCERT_LB.v = sonC; const tV = new THREE.VideoTexture(ecranV); tV.colorSpace = THREE.SRGBColorSpace;
     bxg(g, 11.6, 6.9, .25, A.mat({ color: 0x0a0a0c, roughness: .6 }), 0, 4.95, 5.85); const ecran = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2), new THREE.MeshBasicMaterial({ map: tV, toneMapped: false })); ecran.rotation.y = Math.PI; ecran.position.set(0, 4.95, 5.7); g.add(ecran);
@@ -6230,7 +6230,12 @@ function construireAppart(A, L, scene) {
     let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false, vu = false, horsT = 0;
     const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
     const src = v => `/api/tele/${v.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`;
-    const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; vu = false; video.src = src(liste[ch]); video.currentTime = 0; jouer(); osd = performance.now(); majPanneau(); };
+    // (chaque chaîne est d'abord téléchargée en entier sur l'appareil — « CHARGEMENT 40 % » sur l'écran —, puis lue de là : elle ne cale plus jamais)
+    let jeton = 0, chargeP = -1;
+    const poserChaine = () => { const v = liste && liste[ch]; if (!v) return; const tag = ++jeton; chargeP = 0; vu = false; video.removeAttribute("src"); video.load();
+      videoLocale(src(v), "tele-" + v.id + "-" + v.taille, p => { if (tag === jeton) chargeP = p; }).then(u => { if (tag !== jeton) return; chargeP = -1; video.src = u; video.currentTime = 0; jouer(); },
+        () => { if (tag !== jeton) return; chargeP = -1; video.src = src(v); jouer(); }); };
+    const zapper = (d) => { if (!liste || !liste.length) { osd = performance.now(); return; } ch = (ch + d + liste.length) % liste.length; vu = false; poserChaine(); osd = performance.now(); majPanneau(); };
     const jouer = () => { video.muted = !son; const p = video.play(); if (p) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); };
     video.onended = () => zapper(1); video.addEventListener("emptied", () => { vu = false; });
     /* si la vidéo cale (réseau, morceau qui tarde), on la relance d'elle-même là où elle en était ; si elle est illisible, on passe à la chaîne suivante */
@@ -6243,9 +6248,10 @@ function construireAppart(A, L, scene) {
       fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: `[automatique] Télé de l'appartement : ${quoi} — « ${v ? v.titre : "?"} » (${v ? Math.round(v.taille / 1e6) + " Mo, " + v.type : "?"}) à ${video.currentTime.toFixed(1)} s, tampon ${tampon.toFixed(1)} s, état ${video.readyState}/${video.networkState}, ${video.videoWidth}×${video.videoHeight}, réseau ${(navigator.connection && navigator.connection.effectiveType) || "?"}`, appareil: navigator.userAgent.slice(0, 280) }) }).catch(() => {}); } catch (e) {} };
     const surveiller = () => { if (!allumee || coupee || video.paused) { tVu = 0; return; } const now = performance.now();   /* (l'image n'avance plus depuis 8 s : on relance là où elle en était) */
       if (video.currentTime !== tPos) { tPos = video.currentTime; tVu = now; return; } if (!tVu) { tVu = now; return; }
+      if (now - tVu > 8000 && liste && liste[ch] && relances < 4 && /^blob:/.test(video.src)) { relances++; tVu = now; video.play().catch(() => {}); return; }   // (lue depuis l'appareil : il suffit de la relancer)
       if (now - tVu > 8000 && liste && liste[ch] && relances < 4) { rapport("bloquée " + Math.round((now - tVu) / 1000) + " s"); relances++; tVu = now; const t0 = video.currentTime; video.src = src(liste[ch]) + "&r=" + relances; video.addEventListener("loadedmetadata", () => { try { video.currentTime = t0; } catch (e) {} }, { once: true }); jouer(); } };
     const neige = () => { const id = ex.createImageData(160, 120), d = id.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } ex.putImageData(id, 0, 0); ex.drawImage(ecranC, 0, 0, 160, 120, 0, 0, 320, 240); };
-    let vitreTxt = null; const finition = () => { const txt = allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
+    let vitreTxt = null; const finition = () => { const txt = allumee && chargeP >= 0 ? `CH ${ch + 1}|Chargement ${Math.round(chargeP * 100)} %` : allumee && performance.now() - osd < 3000 ? (liste && liste.length ? `CH ${ch + 1}|` + (liste[ch] ? liste[ch].titre.slice(0, 32) : "") : "PAS DE CHAÎNE|") : ""; if (txt === vitreTxt) return; vitreTxt = txt;
       vx.clearRect(0, 0, 320, 240); vx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < 240; y += 3) vx.fillRect(0, y, 320, 1);   // (les lignes du tube, le bord plus sombre)
       const v = vx.createRadialGradient(160, 120, 80, 160, 120, 210); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)"); vx.fillStyle = v; vx.fillRect(0, 0, 320, 240);
       if (txt) { const [a, b2] = txt.split("|"); vx.font = "bold 26px 'Courier New', monospace"; vx.fillStyle = "#3aff5a"; vx.shadowColor = "#000"; vx.shadowBlur = 4; vx.fillText(a, 16, 36); if (b2) { vx.font = "bold 14px Arial"; vx.fillText(b2, 16, 222); } vx.shadowBlur = 0; }
@@ -6257,7 +6263,7 @@ function construireAppart(A, L, scene) {
       /* elle reste allumée tant qu'on est dans l'appartement : les chaînes s'enchaînent en boucle ; le son s'éloigne avec nous :
          dans le salon, plein son ; dans le couloir, on l'entend encore un peu ; dans les chambres, la salle de bain, la cuisine, plus rien */
       if (coupee) return;   // (éteinte à la télécommande)
-      if (!allumee) { allumee = true; voyant.visible = true; if (!liste) charger().then(() => { if (allumee && liste.length) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } }); else if (liste.length) jouer(); }
+      if (!allumee) { allumee = true; voyant.visible = true; if (!liste) charger().then(() => { if (allumee && liste.length) { poserChaine(); osd = performance.now(); } }); else if (liste.length) { if (video.getAttribute("src")) jouer(); else poserChaine(); } }
       if (t - dernier < 40) return; dernier = t; surveiller();
       const w = g.getWorldPosition(new THREE.Vector3()), dist = Math.hypot(p.x - w.x, p.z - w.z), couloir = Math.abs(p.x) < XC + .3, salon = p.x < -XC + .2 && p.z > ZC[6] - .3;
       const cible = dans || salon ? Math.max(.08, Math.min(1, 1.3 - dist / 6)) : couloir ? Math.max(.04, Math.min(.35, .4 - (dist - 4) / 30)) : 0;
@@ -6296,7 +6302,7 @@ function construireAppart(A, L, scene) {
         try { const titre = boite.querySelector(".ti").value.trim() || f.name.replace(/\.[^.]+$/, "");
           const r = await fetch("/api/tele", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ titre, taille: f.size, type: f.type || "video/mp4" }) }), j = await r.json(); if (!r.ok) throw new Error(j.erreur || "Refusé");
           for (let n = 0; n < j.morceaux; n++) { const rr = await fetch(`/api/tele/${j.id}/morceau/${n}`, { method: "PUT", headers: { Authorization: "Bearer " + M.ctx.token }, body: await f.slice(n * j.taille_morceau, (n + 1) * j.taille_morceau).arrayBuffer() }); if (!rr.ok) throw new Error((await rr.json().catch(() => ({}))).erreur || "Envoi interrompu"); barre.style.width = ((n + 1) / j.morceaux * 100) + "%"; }
-          await charger(); ch = liste.length - 1; if (allumee) { video.src = src(liste[ch]); jouer(); osd = performance.now(); } majPanneau(); bibliotheque(); }
+          await charger(); ch = liste.length - 1; if (allumee) { poserChaine(); osd = performance.now(); } majPanneau(); bibliotheque(); }
         catch (err) { er.textContent = err.message; } }; };
     L.objetsClic = (L.objetsClic || []).concat([{ obj: tv, action: telecommande }]);
     /* sa copie (dans l'inventaire) : la même desserte, la même télé, les mêmes chaînes — elle s'allume quand on est près d'elle */
@@ -13706,7 +13712,7 @@ function introGremlins() { if (!M || M.cine) return; if (universOccupe("kingston
 function cineKingston() { if (!M) return; const d = M.kfVoile; M.kfVoile = null; const V3 = THREE.Vector3;
   const P = new THREE.CatmullRomCurve3([[2, 26, 44], [-6, 15, 30], [-14, 7, 20], [-20, 3.2, 12.5], [-21, 2.6, 2], [-22, 2.2, -8], [-25.4, 1.7, -9.5], [-28.6, 1.5, -9.4], [-31.2, 1.25, -7.8], [-32.4, .95, -6.6]].map(a => new V3(...a)), false, "centripetal");
   const C = new THREE.CatmullRomCurve3([[0, 4, 4], [-4, 3, 10], [-10, 2, 12], [-26.5, 1.4, 10.8], [-27, 2.2, -2], [-27.5, 1.8, -9.5], [-30, 1.4, -9.5], [-33, .8, -7], [-33.7, .4, -5.8], [-33.7, .35, -5.8]].map(a => new V3(...a)), false, "centripetal");
-  const D = 12500, EM = .74, vise = new V3(); let fini = false, t0 = Infinity; M.kfSurvol = true;   // (EM : on s'arrête devant le bar, sans aller jusqu'à Gizmo)
+  const D = 12500, EM = .74, vise = new V3(); let fini = false, t0 = Infinity; M.kfSurvol = true; if (M.L) M.L.silenceKF = true;   // (EM : on s'arrête devant le bar, sans aller jusqu'à Gizmo)
   // l'écran noir et le titre restent tant que la ville se charge (les modèles, puis la préparation de tous les matériaux par la carte graphique) : sinon, ça saccade
   M.camera.position.copy(P.getPointAt(0)); M.camera.lookAt(C.getPointAt(0));
   const attente = Promise.race([Promise.allSettled(KF_ATTENTES.slice()), new Promise(r => setTimeout(r, 6000))])
@@ -13734,7 +13740,40 @@ function msgKF(titre, texte, ms = 4800) { if (!M || !M.ctx || !M.ctx.conteneur) 
   d.innerHTML = `<div style="font-size:clamp(24px,5vw,40px);line-height:1.05;color:#ff2a1a;letter-spacing:.04em;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,40,20,.6)">${titre}</div>`
     + (texte ? `<div style="margin-top:6px;font-size:clamp(14px,2.6vw,19px);line-height:1.25;color:#fff4d8;letter-spacing:.03em;text-shadow:2px 2px 0 #000">${texte}</div>` : "");
   M.ctx.conteneur.appendChild(d); M.kfMsg = d; setTimeout(() => { d.style.opacity = "0"; setTimeout(() => d.remove(), 700); }, ms); }
-const vidKF = src => { const v = document.createElement("video"); v.src = src; v.playsInline = true; v.preload = "auto"; v.load(); return v; };   // (chargées dès la photo de Billy : elles sont prêtes quand vient leur tour)
+/* les vidéos (la télé de l'appartement, le grand écran de la salle des fêtes, celles du jeu) : téléchargées EN ENTIER une fois, gardées sur l'appareil
+   (le cache du navigateur), puis lues depuis l'appareil — plus jamais de vidéo qui cale parce que le réseau ou le serveur tarde ; la fois d'après, elle part tout de suite.
+   cle : un nom stable (sans le jeton de connexion) ; prog(0..1) : l'avancement du téléchargement. Rend l'adresse locale (blob:) de la vidéo. */
+const VID_LOC = { urls: new Map(), enCours: new Map(), ordre: [] };
+function videoLocale(url, cle, prog) {
+  if (VID_LOC.urls.has(cle)) { const u = VID_LOC.urls.get(cle); VID_LOC.ordre = VID_LOC.ordre.filter(k => k !== cle).concat(cle); return Promise.resolve(u); }
+  if (VID_LOC.enCours.has(cle)) return VID_LOC.enCours.get(cle);
+  const garder = blob => { const u = URL.createObjectURL(blob); VID_LOC.urls.set(cle, u); VID_LOC.ordre.push(cle);
+    while (VID_LOC.ordre.length > 3) { const k = VID_LOC.ordre.shift(), v = VID_LOC.urls.get(k); VID_LOC.urls.delete(k); setTimeout(() => { try { URL.revokeObjectURL(v); } catch (e) {} }, 60000); }   // (en mémoire : les trois dernières ; les autres restent dans le cache, sur l'appareil)
+    return u; };
+  const p = (async () => {
+    let cache = null; try { cache = await caches.open("caserne-videos-1"); } catch (e) {}
+    const req = new Request("/__videos-locales__/" + encodeURIComponent(cle));
+    if (cache) { try { const r = await cache.match(req); if (r) { const b = await r.blob(); if (b.size > 1000) { prog && prog(1); return garder(b); } } } catch (e) {} }
+    const r = await fetch(url); if (!r.ok) throw new Error("vidéo " + r.status);
+    const total = Number(r.headers.get("Content-Length")) || 0, type = r.headers.get("Content-Type") || "video/mp4", morceaux = []; let recu = 0;
+    // (de préférence : écrite directement dans le cache, sur le disque, au fil de l'eau — une grosse vidéo ne passe pas par la mémoire)
+    if (cache && r.body && r.body.tee) { try { const [a, c] = r.body.tee(), mise = cache.put(req, new Response(a, { headers: { "Content-Type": type } })), lec = c.getReader();
+        for (;;) { const { done, value } = await lec.read(); if (done) break; recu += value.byteLength; if (total) prog && prog(Math.min(.99, recu / total)); }
+        await mise; const r2 = await cache.match(req), b = r2 && await r2.blob(); if (b && (!total || b.size >= total)) {
+          try { const cles = await cache.keys(); for (let i = 0; i < cles.length - 14; i++) await cache.delete(cles[i]); } catch (e) {}
+          prog && prog(1); return garder(b); }
+        try { await cache.delete(req); } catch (e) {} } catch (e) {}
+      const r3 = await fetch(url); if (!r3.ok) throw new Error("vidéo " + r3.status); const b3 = await r3.blob(); prog && prog(1); return garder(b3); }   // (le cache a refusé : en mémoire, tant pis)
+    if (r.body && r.body.getReader) { const lec = r.body.getReader(); for (;;) { const { done, value } = await lec.read(); if (done) break; morceaux.push(value); recu += value.byteLength; if (total) prog && prog(Math.min(.99, recu / total)); } }
+    else morceaux.push(new Uint8Array(await r.arrayBuffer()));
+    const b = new Blob(morceaux, { type }); if (total && b.size < total) throw new Error("vidéo incomplète");
+    if (cache) { try { await cache.put(req, new Response(b, { headers: { "Content-Type": type } }));
+      const cles = await cache.keys(); for (let i = 0; i < cles.length - 14; i++) await cache.delete(cles[i]); } catch (e) {} }   // (le cache plein : tant pis, on la lit quand même ; au-delà de quatorze vidéos, les plus anciennes s'en vont)
+    prog && prog(1); return garder(b); })();
+  VID_LOC.enCours.set(cle, p); p.finally(() => VID_LOC.enCours.delete(cle)).catch(() => {}); return p; }
+const vidKF = src => { const v = document.createElement("video"); v.playsInline = true; v.preload = "auto";
+  v._pret = videoLocale(src, src.split("?")[0] + "|" + (src.split("?")[1] || "")).then(u => { v.src = u; v.load(); }, () => { v.src = src; v.load(); }); return v; };   // (téléchargée en entier, puis lue depuis l'appareil)
+const lancerV = v => (v._pret || Promise.resolve()).then(() => v.play());   // (on attend qu'elle soit là pour la lancer)   // (chargées dès la photo de Billy : elles sont prêtes quand vient leur tour)
 const couperFanfareKF = () => { const f = M && M.kfFanfare; if (!f) return; M.kfFanfare = null; { const v0 = f.volume, t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); f.volume = v0 * (1 - u); if (u >= 1) { clearInterval(i); f.pause(); } }, 50); } };   // (la fanfare s'efface : la télé prend le relais)
 const MALLE_ROT = Math.PI / 2;   // (l'orientation de la malle : son couvercle sur le côté — il ne cache Gizmo ni de face ni de dos)
 function billyKF() { if (!M) return;
@@ -13761,11 +13800,11 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
   const gx = c.x + n.x * 2.1, gz = c.z + n.z * 2.1; if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.x = gx; moi.g.position.z = gz; }
   const yDos = Math.atan2(n.x, n.z), yTv = Math.atan2(-n.x, -n.z);   // (d'abord le dos à la télé ; le son le fait se retourner)
   M.yaw = Math.atan2(n.x, n.z); L.orienterGizmo && L.orienterGizmo(yDos);
-  // Gizmo est caché dans une malle (celle de Resident Evil, à sa taille), ouverte, au milieu du bar — comme dans sa boîte à outils avec Billy
+  // à côté de Gizmo, une malle (celle de Resident Evil, à sa taille), ouverte — comme sa boîte à outils avec Billy
   (M.kfMalleP || Promise.resolve(null)).then(g => { if (!g || !M || M.L !== L || L.malleKF) return; const o = g.scene, bb = new THREE.Box3().setFromObject(o), c = bb.getCenter(new THREE.Vector3()), k = .58 / Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
-    const w = new THREE.Group(), inner = new THREE.Group(); o.position.set(-c.x, -bb.min.y, -c.z); inner.add(o); inner.scale.setScalar(k); w.add(inner); w.position.set(gx, (moi ? moi.g.position.y : .12) - .01, gz); w.rotation.y = yDos + MALLE_ROT; M.scene.add(w); L.malleKF = w; });
+    const w = new THREE.Group(), inner = new THREE.Group(); o.position.set(-c.x, -bb.min.y, -c.z); inner.add(o); inner.scale.setScalar(k); w.add(inner); w.position.set(gx + sx * .62, (moi ? moi.g.position.y : .12) - .01, gz + sz * .62); w.rotation.y = yDos + MALLE_ROT; /* (posée à côté de lui, du côté où il y a de la place) */ M.scene.add(w); L.malleKF = w; });
   const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause(); couperFanfareKF();   // (la fanfare s'efface : c'est le son de la télé qu'on entend, Rambo III)
-  const tv = V.tv; tv.loop = false; tv.currentTime = 0; tv.muted = false; tv.volume = .9; tv.play().catch(() => { tv.muted = true; tv.play().catch(() => {}); });
+  const tv = V.tv; tv.loop = false; tv.currentTime = 0; tv.muted = false; tv.volume = .9; lancerV(tv).catch(() => { tv.muted = true; lancerV(tv).catch(() => {}); });
   if (T) { const vt = new THREE.VideoTexture(tv); vt.colorSpace = THREE.SRGBColorSpace; T.ecran.material.map = vt; T.ecran.material.color.set(0xffffff); T.ecran.material.needsUpdate = true; }
   L.tvLueur = t => .22 + .2 * Math.abs(Math.sin(t / 97) * Math.sin(t / 233 + 1));   // (la lumière de l'écran qui vacille sur son visage)
   setTimeout(() => { if (voileB) { voileB.style.opacity = "0"; setTimeout(() => voileB.remove(), 800); } }, 200);
@@ -13793,20 +13832,20 @@ function tvKF(voileB) { if (!M || M.lieu !== "kingston") { if (voileB) voileB.re
     tv.style.cssText = "width:100%;height:100%;object-fit:cover;filter:saturate(1.08) contrast(1.06)"; cadre.appendChild(tv);
     const lignes = document.createElement("div"); lignes.style.cssText = "position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.18) 2px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)"; cadre.appendChild(lignes);
     d.appendChild(cadre); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
-    setTimeout(() => { if (fini || etape > 1) return; etape = 2; M.pauseRendu = true; if (tv.ended) return suite(); tv.volume = 1; if (tv.paused) tv.play().catch(() => {}); }, 650);   // (la vidéo continue, là où elle en était)
+    setTimeout(() => { if (fini || etape > 1) return; etape = 2; M.pauseRendu = true; if (tv.ended) return suite(); tv.volume = 1; if (tv.paused) lancerV(tv).catch(() => {}); }, 650);   // (la vidéo continue, là où elle en était)
     return d; };
   tv.onended = () => { if (etape === 2) suite(); };
   const suite = () => { if (fini) return; if (etape < 2) { if (!ecranD) ecranD = ecranTV(); return; }
     if (etape === 2) { etape = 3; tv.pause(); const r = V.rambo, d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:10;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s";
       r.style.cssText = "width:100%;height:100%;object-fit:contain"; d.appendChild(r); M.ctx.conteneur.appendChild(d); requestAnimationFrame(() => { d.style.opacity = "1"; });
-      ramboD = d; setTimeout(() => { if (ecranD) ecranD.remove(); ecranD = null; }, 600); r.currentTime = 0; r.muted = false; r.onended = () => suite(); r.play().catch(() => { r.muted = true; r.play().catch(() => suite()); }); return; }
+      ramboD = d; setTimeout(() => { if (ecranD) ecranD.remove(); ecranD = null; }, 600); r.currentTime = 0; r.muted = false; r.onended = () => suite(); lancerV(r).catch(() => { r.muted = true; lancerV(r).catch(() => suite()); }); return; }
     fin(); };
-  const fin = () => { if (fini) return; fini = true; V.rambo.pause(); tv.pause(); M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null;
+  const fin = () => { if (fini) return; fini = true; V.rambo.pause(); tv.pause(); M.pauseRendu = false; L.tvLueur = null; finCine(); L.gizmoRambo = true; M.camE = null; L.silenceKF = false; L.apresRamboKF = true;   // (la musique peut partir)
     tv.muted = true; tv.loop = true; tv.style.cssText = ""; tv.play().catch(() => {});   // (la télé du bar continue, sans le son)
     for (const d of [ecranD, ramboD]) if (d) { d.style.opacity = "0"; setTimeout(() => d.remove(), 600); }
     msgKF("GIZMO RAMBO !", "Arc et bandana : il est prêt. Trouve le coupe-boulons de M. Futterman ! — Tirer : F, Espace, gâchette · Sauter : J, A", 6500); };
   const bpF = () => { suite(); if (!fini) M.passerBtn = boutonPasser(bpF); }; M.cine.passer = () => suite(); M.passerBtn = boutonPasser(bpF);   // (Passer : à l'étape suivante)
-  const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); V.rambo.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
+  const garde = setInterval(() => { if (fini) return clearInterval(garde); if (!M || M.lieu !== "kingston") { clearInterval(garde); fini = true; tv.pause(); V.rambo.pause(); if (M) { M.pauseRendu = false; L.tvLueur = null; L.gizmoRambo = true; L.silenceKF = false; } if (ecranD) ecranD.remove(); if (ramboD) ramboD.remove(); } }, 500); }
 // la fin : l'écran noir, « First Aid » ; un texte rouge qui monte lentement (tout est rentré dans l'ordre… ou presque), le générique ; le titre, « FIN »… et un point d'interrogation.
 // Puis on revient dans la rue, devant le Video Futur.
 const TEXTE_FIN_KF = [
@@ -14922,13 +14961,18 @@ function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(nu
   if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
 function videoDJ(c) { let v = M.videoDJ;
-  if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
+  if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; M.videoDJsrc = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
   if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
     v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
-  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; M.videoRelance = 0; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id); v.load(); v.playbackRate = 1; M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0; }
+  const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; M.videoRelance = 0; M.videoAttente = 0; v.playbackRate = 1; M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0;
+    // (le clip est d'abord téléchargé en entier sur l'appareil, puis lu de là — il ne cale plus ; la toile reste blanche le temps du téléchargement, puis il se cale à la bonne seconde)
+    if (M.videoDJsrc !== c.id) { M.videoDJsrc = c.id; v.removeAttribute("src"); v.load(); const u0 = M.ctx.urlMusique(c.id);
+      videoLocale(u0, "mus-" + c.id).then(u => { if (M && M.videoDJ === v && M.videoDJsrc === c.id) { v.src = u; v.load(); M.videoCalee = false; M.videoCaleT = 0; } }, () => { if (M && M.videoDJ === v && M.videoDJsrc === c.id) { v.src = u0; v.load(); } }); } }
+  if (!v.getAttribute("src")) return;   // (pas encore là)
   const now = Date.now();
   if (v.paused || v.seeking || v.currentTime !== M.videoPos) { M.videoPos = v.currentTime; M.videoAttente = 0; } else if (!M.videoAttente) M.videoAttente = now;   /* (l'image du clip est figée depuis 8 s alors qu'il devrait tourner : on le recharge, il se recale tout seul à la bonne seconde) */
-  if (M.videoAttente && now - M.videoAttente > 8000 && (M.videoRelance || 0) < 3) { M.videoRelance = (M.videoRelance || 0) + 1; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id) + (M.ctx.urlMusique(c.id).includes("?") ? "&" : "?") + "r=" + M.videoRelance; v.load(); M.videoCalee = false; M.videoCaleT = 0; }
+  if (M.videoAttente && now - M.videoAttente > 8000 && /^blob:/.test(v.src)) { M.videoAttente = 0; v.play().catch(() => {}); }   // (lue depuis l'appareil : on la relance, simplement)
+  else if (M.videoAttente && now - M.videoAttente > 8000 && (M.videoRelance || 0) < 3) { M.videoRelance = (M.videoRelance || 0) + 1; M.videoAttente = 0; v.src = M.ctx.urlMusique(c.id) + (M.ctx.urlMusique(c.id).includes("?") ? "&" : "?") + "r=" + M.videoRelance; v.load(); M.videoCalee = false; M.videoCaleT = 0; }
   if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
     if (pos >= 0 && v.readyState >= 1) { const ec = pos - v.currentTime; if (!v.seeking && (!v.duration || pos < v.duration)) {
       if (!M.videoCalee || Math.abs(ec) > 4) { if (!M.videoCalee || now > (M.videoSautT || 0)) { M.videoCalee = true; M.videoSautT = now + 8000; try { v.currentTime = pos + .3; } catch (e) {} } }   /* (calée une fois au départ ; ensuite plus de saut — sauf si elle s'est vraiment égarée) */
@@ -17577,6 +17621,7 @@ function gremlinsHV(scene, L) {
       if (q.grimpeur && q.perche && !q.perche.colle && L.perchesKF) { const P = L.perchesKF.find(p => p.colle && !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche.occ--; q.perche = P; P.occ++; } }   // (la voiture de police et le dos du père Noël d'abord)
       if (q.grimpeur && !q.perche && L.perchesKF) { const P = L.perchesKF.find(p => !p.dos && p.occ < (p.cap || 2)); if (P) { q.perche = P; P.occ++; q.ox = (Math.random() * 2 - 1) * P.hx; q.oz = (Math.random() * 2 - 1) * P.hz; q.vy = 3; q.cible = null; } }
       if (q.chorale >= 0) { q.rot = Math.sin(t / 900 + q.chorale) * .1 + (q.chorale - 2.5) * -.06; q.ph += dt * 2.2; q.y = L.hauteur ? L.hauteur(q.x, q.z) : 0; q.am += (.1 - q.am) * Math.min(1, dt * 4); continue; }   // (ils chantent : immobiles, ils se balancent)
+      if (q.attaque && !(M.gens.get(M.moiNum))) { q.attaque = false; attaquant = null; }
       if (q.attaque) { const o = M.gens.get(M.moiNum).g.position, ddx = o.x - q.x, ddz = o.z - q.z, l = Math.hypot(ddx, ddz);   // (il fonce sur Gizmo, en zigzag)
         if (l < .5) { L.blesserGizmo && L.blesserGizmo(ddx / (l || 1), ddz / (l || 1)); q.attaque = false; attaquant = null; prochaineAttaque = t + 6000 + Math.random() * 4000; q.vy = 3.2;
           const fx = q.x - ddx / (l || 1) * 9, fz = q.z - ddz / (l || 1) * 9; q.cible = L.limites(fx, fz) ? [fx, fz] : null; q.attente = 0; }   // (il a mordu : il détale)
@@ -18173,8 +18218,9 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     L.tirerFleche = tirer;
     // ses six cœurs : la voiture de police lui en prend un (et le projette) ; à zéro, il se relève au bar, six cœurs neufs
     const vies = document.createElement("div"); vies.style.cssText = "position:absolute;left:12px;top:44px;z-index:6;font-size:26px;letter-spacing:2px;text-shadow:0 0 6px #000;pointer-events:none;display:none";
-    let nVies = 6, invul = 0, recul = null; const dessinerVies = () => { vies.textContent = "❤️".repeat(nVies) + "🖤".repeat(6 - nVies); }; dessinerVies();
-    L.blesserGizmo = (dx, dz) => { const now = performance.now(); if (now < invul) return; invul = now + 2000; nVies--; recul = { dx, dz, t0: now }; dessinerVies();
+    let nVies = 6, invul = 0, recul = null; const dessinerVies = () => { nVies = Math.max(0, Math.min(6, nVies)); vies.textContent = "❤️".repeat(nVies) + "🖤".repeat(6 - nVies); }; dessinerVies();
+    L.blesserGizmo = (dx, dz) => { const now = performance.now(); if (now < invul || nVies <= 0) return;   // (déjà à terre : on ne frappe pas un Gizmo évanoui)
+      invul = now + 2000; nVies--; recul = { dx, dz, t0: now }; dessinerVies();
       voile("background:rgba(200,0,0,.35);opacity:1", 500); sonBruit(.4, 160, .5);
       if (nVies <= 0) { const moi = M.gens.get(M.moiNum); setTimeout(() => { if (!M || M.lieu !== "kingston") return; voile("background:#000;opacity:1", 1600); if (moi) { moi.cible = null; moi.chemin = []; moi.g.position.set(-33.7, moi.g.position.y, -5.8); } nVies = 6; dessinerVies(); msgKF("AÏE AÏE AÏE !", "Gizmo est à bout de forces… il se relève au bar."); }, 700); } else L.poserPansement && L.poserPansement(); };
     L.soignerGizmo = () => { if (nVies >= 6) return false; nVies++; dessinerVies(); return true; };   // (un pansement : un cœur de plus)
@@ -18194,8 +18240,11 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (racine.parent !== moi.g) { moi.g.add(racine); enPlace = true; } for (const c of moi.g.children) if (c !== racine) { c.visible = false; c.traverse(o => o.layers.set(31)); }   // (notre bonhomme, caché — sur un calque que la caméra ne voit pas : le jeu le réaffiche à chaque image — c'est Gizmo)
       G.band.visible = G.arc.visible = L.gizmoRambo !== false;
       // la musique : rien dans le bar (ni pendant la cinématique) ; elle commence quand Gizmo sort dans la rue
-      { const mus = M.lbMus && M.lbMus.cle === "kf" && M.lbMus.a, calme = L.gizmoDedans !== false;
-        if (mus) { if (calme) { if (!mus.paused) mus.pause(); } else if (mus.paused && !M.pauseRendu && !L.tvLueur && performance.now() > (L.musEssai || 0)) { L.musEssai = performance.now() + 1500; mus.play().catch(() => {}); } } }
+      // (silence pendant toute l'intro ; la musique part quand Gizmo a fini de se préparer comme Rambo — ou, sans l'intro, quand il sort du bar)
+      { const mus = M.lbMus && M.lbMus.cle === "kf" && M.lbMus.a, calme = !!L.silenceKF || (L.gizmoDedans !== false && !L.apresRamboKF);
+        if (mus) { if (calme) { if (!mus.paused) mus.pause(); } else if (mus.paused && !M.pauseRendu && !L.tvLueur && performance.now() > (L.musEssai || 0)) { L.musEssai = performance.now() + 1500;
+          if (mus.volume < .05) { const t0 = performance.now(), i = setInterval(() => { const u = Math.min(1, (performance.now() - t0) / 1500); mus.volume = .55 * u; if (u >= 1) clearInterval(i); }, 50); }   // (elle avait été créée muette : on la fait monter)
+          mus.play().catch(() => {}); } } }
       if (L.gizmoMats) { const f = L.tvLueur ? L.tvLueur(t) + .2 : .28; for (const m of L.gizmoMats) m.emissiveIntensity = f; }   // (devant la télé : sa lumière vacille sur lui)   // (avant d'avoir vu Rambo à la télé : ni bandana ni arc)
       const p = moi.g.position, v = pos0 ? Math.hypot(p.x - pos0.x, p.z - pos0.z) / Math.max(dt, 1e-3) : 0; if (pos0 && v > .2) {   /* (il regarde où il va) */ const ya = Math.atan2(p.x - pos0.x, p.z - pos0.z); let d = ya - yawG; d = Math.atan2(Math.sin(d), Math.cos(d)); yawG += d * Math.min(1, dt * 10); }
       { const SL = L.salleLou, dd = !!SL && p.x > SL.x0 && p.x < SL.x1 && p.z > SL.z0 && p.z < SL.z1;   // (dans le bar : la caméra tout près, juste derrière lui — elle ne va plus dans les murs)
