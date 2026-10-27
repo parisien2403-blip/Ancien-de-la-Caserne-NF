@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.46";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.47";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13286,6 +13286,14 @@ function griffonHV(B, x, y, z, sens, coul) { const sh = new THREE.Shape(PROFIL_G
   for (const [px, py] of [[.2, .45], [-.3, .5], [-.1, 1.3], [-.25, 1.15]]) B.boite(.5, .03, .02, x + px * sens * .95, y + .1 + py * .95, z + .2, teinteHV(coul, .75), { rz: sens * .6 });   // (les plumes et les muscles gravés)
   B.sphere(.04, x + .58 * sens * .95, y + .1 + 1.18 * .95, z + .2, "#1a1a1a");   // l'œil
   B.boite(1.9, .1, .6, x, y + .05, z, teinteHV(coul, 1.3)); }
+/* (gardé ici : la matrice s'en sert pour habiller son propre bonhomme à Santa Carla) les personnages de Génération perdue (81 à 87) : leur tenue par défaut, et leur tête découpée ; l'inventaire de l'administrateur a le dernier mot */
+const LB_DEF = { 81: ["lbsam", "#ecd8a0", "#4a6a9a", "#f2f2f2", "sam"], 82: ["lbedgar", "#5a6a3a", "#4a4a3a", "#f2f2f2", "edgar"], 83: ["lbalan", "#8e8e8a", "#4a6a9a", "#f2f2f2", "alan"],
+  89: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david-vamp"], 90: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul-vamp"], 91: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko-vamp"], 92: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne-vamp"],
+  93: ["lbmichael", "#151312", "#8aa2bc", "#b8b2a6", "michael"], 94: ["lbmichael", "#151312", "#8aa2bc", "#b8b2a6", "michael-vamp"],
+  88: ["lbtim", "#d89a68", "#141416", "#1a1a1a", "tim"], 84: ["lbdavid", "#141414", "#1a1a1e", "#0e0e0e", "david"], 85: ["lbpaul", "#3e5070", "#141416", "#0e0e0e", "paul"], 86: ["lbmarko", "#6a3a5a", "#3a4a6a", "#0e0e0e", "marko"], 87: ["lbdwayne", "#2a2420", "#1a1a1e", "#0e0e0e", "dwayne"] };
+function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
+  return { ...info, tenue: P.tenue || D[0], couleur: P.couleur || D[1], bas: P.tenue ? P.bas : D[2], pieds: P.pieds || D[3], reglage: P.reglage || { devant: true, ...(id >= 81 && id <= 83 ? { k: 1.3, dy: 6 } : {}) }, tete_v: null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : `images/santacarla/${D[4]}-tete.webp`, lbPerso: id, ...(id === 88 ? { peau: "#c98a5c" } : {}) }; }   // (Tim Cappello : la peau bronzée)
 /* Les mondes des films ont chacun leur fichier (kingston.js pour Gremlins, santacarla.js pour Génération perdue…) : on le charge la première fois
    qu'on va dans l'un de ses lieux (pas avant : l'appli s'ouvre plus vite), et on l'exécute ici même (eval direct), pour qu'il se serve de tout
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
