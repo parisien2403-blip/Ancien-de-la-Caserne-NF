@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.31";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.32";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -13958,7 +13958,7 @@ const TEXTE_FIN_KF = [
   "Tout était rentré dans l'ordre."];
 const GENERIQUE_KF = [["Gizmo", "dans son propre rôle"], ["Billy Peltzer", "le réparateur"], ["Le père Noël", "toujours debout"], ["Stripe et sa bande", "réduits en cendres"], ["La chorale de Kingston Falls", "plus jamais en mesure"],
   ["Une aventure de", "la Caserne de la Nouvelle France"], ["Mise en scène", "Germain-Pierre"], ["Musique", "« First Aid »"], ["Aucun mogwaï n'a été mouillé", "pendant le tournage"]];
-function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true; M.L.silenceKF = true;   // (la musique de la ville se tait : seule celle du générique)
+function generiqueKF() { if (!M || M.lieu !== "kingston" || M.kfGenerique) return; M.kfGenerique = true; M.L.silenceKF = true; { const L0 = M.L; setTimeout(() => { if (L0.noirFinKF) { L0.noirFinKF.remove(); L0.noirFinKF = null; } }, 1800); }   // (la musique de la ville se tait : seule celle du générique)
   const mus = M.lbMus && M.lbMus.a; if (mus) mus.pause();
   const son = M.kfFinSon || new Audio("sons/kf-fin.mp3?v=1"); M.kfFinSon = null; son.volume = 1; son.loop = true; if (son.paused) son.play().catch(() => {});   // (déjà partie avec le journal, le plus souvent)
   const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;background:#000;opacity:0;transition:opacity 1.6s;overflow:hidden;font-family:Georgia,'Times New Roman',serif";
@@ -17174,7 +17174,7 @@ function interieurBarKF() { tvBarKF = null; const S = .85, MX = 7.57;   // (l'é
   { const brique = new THREE.MeshStandardMaterial({ color: 0x7a4430, roughness: .95 }), z0 = -9, z1 = DIM.Z0 - .7;
     for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(.2, DIM.H + .3, z0 - z1), brique); m.position.set(sx * 4.45, (DIM.H + .3) / 2, (z0 + z1) / 2); g.add(m); }
     const t = new THREE.Mesh(new THREE.BoxGeometry(9.1, .25, z0 - z1), brique); t.position.set(0, DIM.H + .25, (z0 + z1) / 2); g.add(t); }
-  BAR_KF_MATS.length = 0;   // (les matériaux du vieux bar : on les éteindra quand les gremlins l'envahissent)
+  BAR_KF_MATS.length = 0; BAR_KF_MESHES.length = 0;   // (les matériaux du vieux bar : on les éteindra quand les gremlins l'envahissent)
   KF_ATTENTES.push((async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const G = await new gltfMod.GLTFLoader().loadAsync("avatars/kingston/bar.glb?v=1"), sc = G.scene;
     sc.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(sc), c = bb.getCenter(new THREE.Vector3());
     // la porte : on retire du modèle ce qui bouche l'entrée (le mur côté façade, au milieu, à hauteur d'homme)
@@ -17183,7 +17183,7 @@ function interieurBarKF() { tvBarKF = null; const S = .85, MX = 7.57;   // (l'é
       for (let t = 0; t < P.count; t += 3) { let x = 0, y = 0, z = 0; for (let k = 0; k < 3; k++) { v.fromBufferAttribute(P, t + k).applyMatrix4(o.matrixWorld); x += v.x / 3; y += v.y / 3; z += v.z / 3; }
         if (!(Math.abs(x - c.x - MX) < .4)) garde.push(t); }   // (tout le mur côté façade : on le remplace par le nôtre, la porte découpée net)
       if (garde.length < P.count / 3) { const r = new THREE.BufferGeometry(); for (const k of Object.keys(ge.attributes)) { const a = ge.attributes[k], d = a.itemSize, src = a.array, dst = new src.constructor(garde.length * 3 * d); garde.forEach((t, j) => dst.set(src.subarray(t * d, (t + 3) * d), j * 3 * d)); r.setAttribute(k, new THREE.BufferAttribute(dst, d)); } ge = r; }
-      o.geometry = ge;
+      o.geometry = ge; BAR_KF_MESHES.push(o);   // (pour que la caméra ne traverse pas les murs)
       // la salle s'éclaire elle-même (une lumière chaude de vieux bar), sans multiplier les lampes
       for (const m of [].concat(o.material)) { m.side = THREE.DoubleSide; m.needsUpdate = true; }   // (des faces du modèle tournées vers l'extérieur : vues de dedans, on voyait à travers les murs)
       for (const m of [].concat(o.material)) if (m.map && !m.userData.kf) { m.userData.kf = true; m.emissiveMap = m.map; m.emissive = new THREE.Color(0xffd8a8); m.emissiveIntensity = .42; m.needsUpdate = true; BAR_KF_MATS.push(m); } });   // (la salle éclairée : une lumière chaude de vieux bar)
@@ -17211,7 +17211,22 @@ function interieurBarKF() { tvBarKF = null; const S = .85, MX = 7.57;   // (l'é
           for (const q of [A, B2, C3]) { const du = e1.subVectors(q, tP).dot(u); u0 = Math.min(u0, du); u1 = Math.max(u1, du); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); } } });
       const ok = u1 > u0 + .2 && y1 > y0 + .15 && u1 - u0 < 1.8, W = ok ? u1 - u0 : .95, H = ok ? y1 - y0 : .55, c = tP.clone().addScaledVector(u, ok ? (u0 + u1) / 2 : 0); c.y = ok ? (y0 + y1) / 2 : tP.y; c.addScaledVector(nW, .02);
       const ecran = new THREE.Mesh(new THREE.PlaneGeometry(W * .94, H * .92), new THREE.MeshBasicMaterial({ color: 0x080a0e, toneMapped: false })); ecran.position.copy(c); ecran.rotation.y = Math.atan2(nW.x, nW.z); g.attach(ecran);
-      tvBarKF = { ecran, c: c.clone(), n: nW.clone() }; }
+      tvBarKF = { ecran, c: c.clone(), n: nW.clone() };
+      // le poste autour de l'écran (sinon, juste un rectangle d'image) : la caisse en bois, la lunette noire, à droite le haut-parleur, deux boutons et le voyant ; l'antenne
+      { const sw = W * .94, sh = H * .92, pw = sw * .3, bw = sw + pw + .14, bh = sh + .16, dp = .45, T = new THREE.Group(), cx = pw / 2;
+        const bois = new THREE.MeshStandardMaterial({ color: 0x6a4020, roughness: .55, emissive: 0x2a160a }), noirM = new THREE.MeshStandardMaterial({ color: 0x15110d, roughness: .5, emissive: 0x060504 }), metal = new THREE.MeshStandardMaterial({ color: 0xbdbdbd, metalness: .8, roughness: .3, emissive: 0x2a2a2a });
+        const grille = new THREE.MeshStandardMaterial({ map: tex(toile(32, 64, x => { x.fillStyle = "#1a1612"; x.fillRect(0, 0, 32, 64); x.fillStyle = "#4a4036"; for (let y = 2; y < 64; y += 4) x.fillRect(2, y, 28, 2); })), roughness: .8, emissive: 0x0a0806 });
+        BAR_KF_MATS.push(bois, noirM, metal, grille);
+        const ad = (geo, m, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); T.add(o); return o; }, e = .035;
+        ad(new THREE.BoxGeometry(bw, bh, dp), bois, cx, 0, -dp / 2 - .014);
+        ad(new THREE.BoxGeometry(sw + 2 * e, e, .03), noirM, 0, sh / 2 + e / 2, -.006); ad(new THREE.BoxGeometry(sw + 2 * e, e, .03), noirM, 0, -sh / 2 - e / 2, -.006);
+        ad(new THREE.BoxGeometry(e, sh, .03), noirM, -sw / 2 - e / 2, 0, -.006); ad(new THREE.BoxGeometry(e, sh, .03), noirM, sw / 2 + e / 2, 0, -.006);
+        const px = sw / 2 + e + .035 + (pw - .05) / 2; ad(new THREE.BoxGeometry(pw - .05, sh, .02), noirM, px, 0, -.01);
+        ad(new THREE.PlaneGeometry(pw * .62, sh * .36), grille, px, sh * .2, .002);
+        for (const yy of [-.1, -.32]) ad(new THREE.CylinderGeometry(pw * .17, pw * .19, .045, 18), metal, px, sh * yy, .012, Math.PI / 2);
+        ad(new THREE.SphereGeometry(.014, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2a10 }), px, -sh * .45, .004);
+        ad(new THREE.SphereGeometry(.05, 12, 8), noirM, cx, bh / 2 - .005, -dp / 2); for (const sg of [-1, 1]) ad(new THREE.CylinderGeometry(.005, .005, .55, 5), metal, cx + sg * .1, bh / 2 + .25, -dp / 2, 0, -sg * .4);
+        T.position.z = -.004; ecran.add(T); } }   // (accroché à l'écran : il en suit exactement la place et l'orientation)
     pret = [...occ].map(k => { const [i, j] = k.split(",").map(Number); return [i * C, j * C, .2]; }); att.forEach(f => f(pret)); })().catch(e => console.warn("bar", e)));
   return { g, obst: [], dims: DIM, obstAsync: f => pret ? f(pret) : att.push(f) }; }
 
@@ -17565,7 +17580,10 @@ function construireHillValley(A, T, L, scene, kf = false) { const ICI = kf ? "ki
   // les limites : la place, les rues, les trottoirs (pas dans les boutiques, ni sur les marches du palais) ; ni dans les arbres, les voitures…
   const SL = L.salleLou, dansLou = (x, z) => SL && x > SL.x0 + .25 && x < SL.x1 - .25 && z > SL.z0 + .25 && z < SL.z1 - .25;
   L.dansLou = (x, z) => SL && x > SL.x0 && x < SL.x1 && z > SL.z0 && z < SL.z1;
-  L.contraindreCam = (pos, moi) => { const q = moi.g.position; if (!L.dansLou(q.x, q.z)) return false; pos.x = Math.max(SL.x0 + .35, Math.min(SL.x1 - .35, pos.x)); pos.z = Math.max(SL.z0 + .35, Math.min(SL.z1 - .35, pos.z)); pos.y = Math.min(pos.y, (SL.H || LOU.H) - .3); return true; };
+  L.contraindreCam = (pos, moi) => { const q = moi.g.position; if (!L.dansLou(q.x, q.z)) return false; pos.x = Math.max(SL.x0 + .35, Math.min(SL.x1 - .35, pos.x)); pos.z = Math.max(SL.z0 + .35, Math.min(SL.z1 - .35, pos.z)); pos.y = Math.min(pos.y, (SL.H || LOU.H) - .3);
+    if (kf && BAR_KF_MESHES.length) { const o = new THREE.Vector3(q.x, q.y + .55, q.z), d = pos.clone().sub(o), l = d.length(); if (l > .1) { d.divideScalar(l); rcBarKF = rcBarKF || new THREE.Raycaster(); rcBarKF.set(o, d); rcBarKF.far = l; rcBarKF.camera = M.camera;   // (un mur, un meuble entre Gizmo et la caméra : elle se place devant)
+        const h = rcBarKF.intersectObjects(BAR_KF_MESHES, false)[0]; if (h) pos.copy(o).addScaledVector(d, Math.max(.25, h.distance - .2)); } }
+    return true; };
   L.limites = (x, z) => (Math.abs(x) < 27.2 && z > -15.4 && z < 23.2 || dansLou(x, z)) && !obst.some(([ox, oz, r]) => (x - ox) ** 2 + (z - oz) ** 2 < r * r)
     && !(Math.abs(x - dl.position.x) < 2.3 && Math.abs(z - dl.position.z) < 1.1 && dl.visible);
   L.portails = [];
@@ -17625,7 +17643,7 @@ function creerAraigneeKF(ara, grem) {
       qa.setFromAxisAngle(Y, sw); qb.setFromAxisAngle(p.lev, -li); qa.premultiply(qb); p.b.quaternion.copy(p.Pi).multiply(qa).multiply(p.P).multiply(p.q0); } };
   return { g, corps, haut, marcher, pattes };
 }
-const BAR_KF_MATS = [];
+const BAR_KF_MATS = [], BAR_KF_MESHES = []; let rcBarKF = null;
 function gremlinsHV(scene, L) {
   const libre = (x, z) => L.limites(x, z) && !(L.dansLou && L.dansLou(x, z)), Z = L.zone;
   const tirer = () => { for (let k = 0; k < 60; k++) { const x = Z[0] + 2 + Math.random() * (Z[1] - Z[0] - 4), z = Z[2] + 2 + Math.random() * (Z[3] - Z[2] - 4); if (libre(x, z)) return [x, z]; } return null; };
@@ -18239,16 +18257,21 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // la cinématique : la caméra s'élève au-dessus de la place et en fait le tour ; dans la lumière des projecteurs, les gremlins prennent feu, tous, et se tordent, et tombent en cendres
     // la fin : deux gros plans — un gremlin pris dans la lumière, qui s'embrase ; un autre — puis la caméra s'élève au-dessus de la ville : tous brûlent, dans un éclair blanc.
     // Ensuite, la une du journal de Kingston Falls arrive en tournoyant, comme dans les vieux films ; et le générique
+    // l'angle d'où l'on voit un gremlin sans rien devant (ni tas de neige, ni voiture, ni réverbère)
+    const vueLibre = q => { const rc = new THREE.Raycaster(), c = new THREE.Vector3(q.x, (q.y || 0) + .4, q.z), objs = scene.children.filter(o => !o.isSprite && !o.isPoints && !o.isLight); rc.camera = M.camera; let best = 0, bd = -1;
+      for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, dir = new THREE.Vector3(Math.cos(a) * 2.4, .65, Math.sin(a) * 2.4), l = dir.length(); dir.divideScalar(l); rc.set(c, dir); rc.far = l + .4;
+        const h = rc.intersectObjects(objs, true).find(h => h.object.isMesh && h.object.visible && !h.object.isSprite && !(h.object.geometry && h.object.geometry.attributes.aPas)); const d = h ? h.distance : 99; if (d > bd) { bd = d; best = a; } if (!h) break; }
+      return best; };
     const cineBrulure = () => { if (!M || M.L !== L) return; const D = 15000, t0 = performance.now(), C = new THREE.Vector3(0, 1, 4), moi = M.gens.get(M.moiNum); let fini = false;
       if (moi) { moi.cible = null; moi.chemin = []; } L.brulerTous && L.brulerTous(900, t0 + 7900);
       const vivants = (L.gremlins || []).filter(q => !(q.mort > 0) && !(q.feu > 0) && !q.ejecte && !(q.perche && q.perche.colle)).sort((a, b) => Math.hypot(a.x, a.z - 4) - Math.hypot(b.x, b.z - 4)), A = vivants[0], B = vivants.find(q => q !== A && Math.hypot(q.x - (A ? A.x : 0), q.z - (A ? A.z : 0)) > 6) || vivants[1];
-      for (const [q, dt] of [[A, 1500], [B, 4900]]) if (q) { q.brule = t0 + dt; q.attente = 99; q.cible = null; }   // (eux d'abord, devant la caméra ; ils ne bougent plus)
+      for (const [q, dt] of [[A, 1500], [B, 4900]]) if (q) { q.brule = t0 + dt; q.attente = 99; q.cible = null; q.vueA = vueLibre(q); }   // (eux d'abord, devant la caméra ; ils ne bougent plus)
 
       setTimeout(() => { const w = voile("background:#fff;opacity:.92;transition:opacity 1.1s ease-out"); if (w) { requestAnimationFrame(() => requestAnimationFrame(() => { w.style.opacity = "0"; })); setTimeout(() => w.remove(), 1300); } }, 7850);   // (le grand embrasement : un éclair blanc)
       const fin = () => { if (fini) return; fini = true; finCine(); M.camE = null; if (L.brulerTous) for (const q of L.gremlins || []) if (q.brule) q.brule = performance.now();
         Q.aRelever = true; M.radioKFfile = [];
         setTimeout(() => { if (M && M.L === L) radioKF([["billy", "Gizmo… ils ont tous fondu ! J'ai pu sortir de la voiture, je n'ai rien."], ["billy", "Relève le levier, sinon le générateur va griller toute la ville. Et rejoins-moi au bar : je t'y retrouve."], ["gizmo", "Gizmo… bar !"]]); }, 2200); };
-      const v = new THREE.Vector3(), vise = new THREE.Vector3(), plan = (q, k) => { const a = (q.ph || 0) * 2 + k * .5, r = 2.4 - k * .6; v.set(q.x + Math.cos(a) * r, (q.y || 0) + 1 - k * .3, q.z + Math.sin(a) * r); vise.set(q.x, (q.y || 0) + .35, q.z); };
+      const v = new THREE.Vector3(), vise = new THREE.Vector3(), plan = (q, k) => { const a = (q.vueA ?? (q.ph || 0) * 2) + k * .3, r = 2.4 - k * .6; v.set(q.x + Math.cos(a) * r, (q.y || 0) + 1 - k * .3, q.z + Math.sin(a) * r); vise.set(q.x, (q.y || 0) + .35, q.z); };
       M.cine = { fov: [50, 62], passer: fin, maj: () => { const ms = performance.now() - t0;
         if (ms < 4000 && A) plan(A, ms / 4000);   // (gros plan : le premier, dans la lumière ; il s'embrase)
         else if (ms < 7600 && (B || A)) plan(B || A, (ms - 4000) / 3600);   // (un autre)
@@ -18332,7 +18355,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     // le bar nettoyé : Billy arrive ; la une du journal, et le générique
     const finBoss = () => { M.radioKFfile = [];
       msgKF("KINGSTON FALLS EST SAUVÉE !", "", 3500); const ok = f => () => { if (M && M.L === L) f(); };
-      setTimeout(ok(() => journalKF(ok(() => litKF(ok(() => survolFinKF(ok(generiqueKF))))))), 4500); };   // (le journal, Billy et Gizmo au lit, la boule de poils au bar, le générique)
+      setTimeout(ok(() => { const nf = L.noirFinKF = voile("background:#000;opacity:0;transition:opacity .8s;z-index:10"); requestAnimationFrame(() => { if (nf) nf.style.opacity = "1"; });   // (du noir derrière, d'une scène à l'autre : on ne revoit plus le bar entre deux)
+        journalKF(ok(() => litKF(ok(() => survolFinKF(ok(generiqueKF)))))); }), 4500); };   // (le journal, Billy et Gizmo au lit, la boule de poils au bar, le générique)
     // la une du journal : la Gazette de Kingston Falls, vieux papier jauni, arrive en tournoyant, on la lit (elle avance doucement vers nous)… et elle s'envole
     const journalKF = suite => { if (!M) return suite(); L.silenceKF = true; if (!M.kfFinSon) { const a = M.kfFinSon = new Audio("sons/kf-fin.mp3?v=1"); a.volume = 1; a.loop = true; sonsCourts.add(a); a.play().catch(() => {}); }   // (la musique du générique commence avec le journal, et ne s'arrête plus jusqu'à la fin)
       if (!document.getElementById("styleJournalKF")) { const st = document.createElement("style"); st.id = "styleJournalKF"; st.textContent = "@keyframes kfJournal{0%{transform:scale(.04) rotate(-1080deg)}78%{transform:scale(1.05) rotate(-6deg)}100%{transform:scale(1) rotate(-2.5deg)}}@keyframes kfJournalZ{from{transform:scale(1) rotate(-2.5deg)}to{transform:scale(1.07) rotate(-1deg)}}@keyframes kfJournalS{to{transform:scale(1.6) rotate(25deg) translate(60%,-40%);opacity:0}}"; document.head.appendChild(st); }
@@ -18377,7 +18401,7 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       const PP = new THREE.CatmullRomCurve3(KF_SURVOL_P.map(a => new V3(...a)), false, "centripetal"), CC = new THREE.CatmullRomCurve3(KF_SURVOL_C.map(a => new V3(...a)), false, "centripetal"), EM = .74;
       const P3 = (a, b, h) => { const [x, z] = V(a, b); return new V3(x, yb + h, z); }, fin0 = PP.getPointAt(EM), dedans = new THREE.CatmullRomCurve3([fin0, P3(0, 1.4, 1.1), P3(0, -1.6, .9), P3(-.5, -3.6, .55), P3(-.75, -4.75, .32)], false, "centripetal");
       const boule = new V3(bx, yb + .12, bz), vise = new V3(), T1 = 12000, T2 = 18500, T3 = 25000, t0 = performance.now(); let fini = false;
-      const noir = voile("background:#000;opacity:1;transition:opacity 1.2s;z-index:10"); requestAnimationFrame(() => requestAnimationFrame(() => { if (noir) noir.style.opacity = "0"; }));
+      const noir = voile("background:#000;opacity:1;transition:opacity 1.2s;z-index:10"); if (L.noirFinKF) { L.noirFinKF.remove(); L.noirFinKF = null; } requestAnimationFrame(() => requestAnimationFrame(() => { if (noir) noir.style.opacity = "0"; }));
       const fin = () => { if (fini) return; fini = true; const n2 = voile("background:#000;opacity:0;transition:opacity 1.2s;z-index:10"); requestAnimationFrame(() => { if (n2) n2.style.opacity = "1"; });
         setTimeout(() => { if (noir) noir.remove(); scene.remove(B); if (moi) moi.g.visible = true; finCine(); suite(); setTimeout(() => n2 && n2.remove(), 1600); }, 1300); };
       M.cine = { fov: [56, 64], passer: fin, maj: () => { const u = performance.now() - t0, k = Math.sin(u / 380);
@@ -18499,7 +18523,8 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
     const fleches = [], hampeG = new THREE.CylinderGeometry(.006, .006, .5, 5).rotateX(Math.PI / 2), hampeM = new THREE.MeshStandardMaterial({ color: 0x8a6a40 }), plumeM = new THREE.MeshStandardMaterial({ color: 0xe8e2d0, side: THREE.DoubleSide });
     const feuF = tex(toile(32, 32, (x) => { const g = x.createRadialGradient(16, 16, 0, 16, 16, 15); g.addColorStop(0, "rgba(255,250,210,1)"); g.addColorStop(.4, "rgba(255,150,30,.9)"); g.addColorStop(1, "rgba(255,40,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }));
     const cibles = () => L.bossKF && L.bossKF.actif && !L.bossKF.mort ? [...(L.gremlins || []), L.bossKF] : (L.gremlins || []);   // (avec l'araignée, pendant le combat)
-    const vise = (o, yaw) => { let best = null, bd = 1e9; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - o.x, dz = q.z - o.z, d = Math.hypot(dx, dz); if (d > 26 || d < .3) continue;
+    const vise = (o, yaw) => { if (L.bossKF && L.bossKF.actif && !L.bossKF.mort) return L.bossKF;   // (pendant le combat : toujours sur l'araignée)
+      let best = null, bd = 1e9; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - o.x, dz = q.z - o.z, d = Math.hypot(dx, dz); if (d > 26 || d < .3) continue;
         let da = Math.atan2(dx, dz) - yaw; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da))); const sc = d + da * 9; if (da < .9 && sc < bd) { bd = sc; best = q; } } return best; };
     let yawG = 0, dernierTir = 0, sautG = 0, vSautG = 0;
     L.orienterGizmo = a => { yawG = a; };
@@ -18546,13 +18571,13 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       joy.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); jid = e.pointerId; try { joy.setPointerCapture(jid); } catch (er) {} bouger(e); });
       joy.addEventListener("pointermove", e => { if (e.pointerId === jid) { e.preventDefault(); bouger(e); } }); joy.addEventListener("pointerup", lacher); joy.addEventListener("pointercancel", lacher); joy.addEventListener("contextmenu", e => e.preventDefault()); }
     bouton("B", "right:104px;bottom:calc(30px + env(safe-area-inset-bottom));width:70px;height:70px", "tir"); bouton("A", "right:16px;bottom:calc(76px + env(safe-area-inset-bottom));width:78px;height:78px", "saut");
-    let pos0 = null, enPlace = false;
+    let pos0 = null, enPlace = false; const caches = new Set();
     const garde = setInterval(() => { const ici = !!M && M.lieu === "kingston"; if (ici && !vies.parentNode && M.ctx && M.ctx.conteneur) { M.ctx.conteneur.appendChild(pad); M.ctx.conteneur.appendChild(vies); M.ctx.conteneur.appendChild(tues); }
       const montre = ici && tactile && !M.cine && !M.kfGenerique; pad.style.display = montre ? "block" : "none"; if (!montre) for (const k in TACT_KF) TACT_KF[k] = false; vies.style.display = ici && !M.cine ? "block" : "none"; tues.style.display = ici && !M.cine && L.gizmoRambo !== false ? "flex" : "none";
-      if (!ici && racine.parent) { const p = racine.parent; p.remove(racine); p.children.forEach(c => { c.visible = true; c.traverse(o => o.layers.set(0)); }); enPlace = false; if (G) { G.band.visible = G.arc.visible = false; } }   // (on quitte Kingston Falls : on redevient soi-même)
+      if (!ici && (racine.parent || caches.size)) { if (racine.parent) racine.parent.remove(racine); for (const c of caches) { c.visible = true; c.traverse(o => o.layers.set(0)); } caches.clear(); const mo = M && M.gens.get(M.moiNum); if (mo) mo.g.visible = true; enPlace = false; if (G) { G.band.visible = G.arc.visible = false; } }   // (tout ce qu'on avait caché — même déjà passé au personnage de la rue)   // (on quitte Kingston Falls : on redevient soi-même)
       if (!M) { clearInterval(garde); window.removeEventListener("keydown", touche); pad.remove(); vies.remove(); tues.remove(); } }, 300);
     L.gizmoMaj = (dt, t) => { const moi = M && M.gens.get(M.moiNum); if (!moi || !G) return;
-      if (racine.parent !== moi.g) { moi.g.add(racine); enPlace = true; } for (const c of moi.g.children) if (c !== racine) { c.visible = false; c.traverse(o => o.layers.set(31)); }   // (notre bonhomme, caché — sur un calque que la caméra ne voit pas : le jeu le réaffiche à chaque image — c'est Gizmo)
+      if (racine.parent !== moi.g) { moi.g.add(racine); enPlace = true; } for (const c of moi.g.children) if (c !== racine) { c.visible = false; c.traverse(o => o.layers.set(31)); caches.add(c); }   // (notre bonhomme, caché — sur un calque que la caméra ne voit pas : le jeu le réaffiche à chaque image — c'est Gizmo)
       G.band.visible = G.arc.visible = L.gizmoRambo !== false;
       // la musique : rien dans le bar (ni pendant la cinématique) ; elle commence quand Gizmo sort dans la rue
       // (silence pendant toute l'intro ; la musique part quand Gizmo a fini de se préparer comme Rambo — ou, sans l'intro, quand il sort du bar)
@@ -18582,10 +18607,10 @@ function hiverHV(A, L, scene, obst, y0, feuilles) {
       if (G.main) { G.main.getWorldPosition(tp); G.arc.position.copy(tp); } G.arc.rotation.set(0, yawG + Math.PI / 2, 0);
       // les flèches
       for (let i = fleches.length - 1; i >= 0; i--) { const f = fleches[i]; f.vie -= dt;
-        if (f.cible && !(f.cible.mort > 0)) { const c = f.cible, d = new THREE.Vector3(c.x, L.centreG(c), c.z).sub(f.g.position), l = d.length(); if (l < 14) f.v.lerp(d.normalize().multiplyScalar(24), Math.min(1, dt * 6)); }
+        if (f.cible && !(f.cible.mort > 0)) { const c = f.cible, d = new THREE.Vector3(c.x, L.centreG(c), c.z).sub(f.g.position), l = d.length(); if (c.boss) f.v.copy(d.normalize().multiplyScalar(24)); else if (l < 14) f.v.lerp(d.normalize().multiplyScalar(24), Math.min(1, dt * 6)); }
         else f.v.y -= 6 * dt;
         f.g.position.addScaledVector(f.v, dt); f.g.lookAt(f.g.position.clone().add(f.v));
-        let touche = null; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - f.g.position.x, dy = L.centreG(q) - f.g.position.y, dz = q.z - f.g.position.z; if (dx * dx + dy * dy + dz * dz < (q.boss ? 1.1 : .16)) { touche = q; break; } }
+        let touche = null; for (const q of cibles()) { if (q.mort > 0 || q.feu > 0) continue; const dx = q.x - f.g.position.x, dy = L.centreG(q) - f.g.position.y, dz = q.z - f.g.position.z; if (dx * dx + dy * dy + dz * dz < (q.boss ? 2.6 : .16)) { touche = q; break; } }
         const sol = L.hauteur ? L.hauteur(f.g.position.x, f.g.position.z) : 0;
         if (touche) L.toucherGremlin(touche);
         if (touche || f.vie <= 0 || f.g.position.y < sol) { scene.remove(f.g); f.g.traverse(o => { if (o.material && o.material.dispose && o.material !== hampeM && o.material !== plumeM) o.material.dispose(); }); fleches.splice(i, 1); } } }; }
