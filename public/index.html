@@ -2498,15 +2498,17 @@
   // le bouton « Musique » : la liste des musiques s'ouvre par-dessus la salle (même en plein écran) ; la croix referme et l'on revient dans la salle
   const djPlace = { parent: null, suivant: null };
   function allerAuDJ() {
-    const d = $("mxDJ"); if (d.classList.contains("panneau")) return fermerDJ();
-    djPlace.parent = d.parentNode; djPlace.suivant = d.nextSibling;
-    (document.fullscreenElement || document.querySelector(".mx-scene.plein-css") || document.body).appendChild(d);
+    const d = $("mxDJ"), ici = document.fullscreenElement || document.querySelector(".mx-scene.plein-css") || document.body;
+    if (d.classList.contains("panneau") && d.parentNode === ici) return fermerDJ();   /* (ouvert devant nous : on le referme ; resté ouvert ailleurs — après le plein écran — : on le ramène devant nous) */
+    if (!d.classList.contains("panneau")) { djPlace.parent = d.parentNode; djPlace.suivant = d.nextSibling; }
+    ici.appendChild(d);
     d.classList.add("panneau"); d.hidden = false; d.scrollTop = 0;
   }
   function fermerDJ() { const d = $("mxDJ"); d.classList.remove("panneau"); if (djPlace.parent) djPlace.parent.insertBefore(d, djPlace.suivant); }
   $("djFermer").onclick = fermerDJ;
   document.addEventListener("fullscreenchange", () => { if ($("mxDJ").classList.contains("panneau")) fermerDJ(); });
   $("mxMusique").onclick = allerAuDJ;
+  for (const ev of ["pointerdown", "touchstart", "mousedown"]) $("mxMusique").addEventListener(ev, e => e.stopPropagation());   /* (le doigt sur le bouton n'est pas pris par la scène 3D) */
   // l'écran « Bienvenue en 1998 » : qui l'on joue (soi-même ou un héros de Resident Evil), et jusqu'à deux équipiers
   const APO_JOUABLES = [25, 23, 26, 21, 22, 24, 95];   /* (Wesker, Barry, Chris, Claire, Hunk, Leon, Jill) */
   const apoChoix = (() => { try { const v = JSON.parse(localStorage.getItem("apoChoix") || "null"); if (v && Array.isArray(v.equipe)) return v; } catch (e) {} return { perso: null, equipe: [] }; })();
@@ -3303,6 +3305,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.58", "28 octobre 2026", ["Salle des fêtes : le bouton « 🎧 Musique » ouvre toujours le panneau du DJ, même en plein écran sur téléphone"]],
     ["8.57", "28 octobre 2026", ["La caserne est rouverte à tout le monde"]],
     ["8.56", "28 octobre 2026", ["La nouvelle caserne est abandonnée : sa carte et le cercle vert de la cour d'honneur sont retirés"]],
     ["8.55", "28 octobre 2026", ["Nouvelle caserne beaucoup plus fluide : la caméra ne lance plus de rayon contre toute la carte (c'est ce qui faisait saccader la marche), la carte ne projette plus d'ombres, elle a deux fois moins de triangles et n'est dessinée que là où l'on regarde", "Côté rue : les vitres des fenêtres sont revenues (la brique du bâtiment du porche passait devant)"]],
