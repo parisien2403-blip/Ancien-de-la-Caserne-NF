@@ -3310,6 +3310,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.60", "28 octobre 2026", ["L'appli installée ne se met plus d'elle-même en plein écran : les barres du téléphone restent ; le plein écran reste là où on le choisit — les jeux de la borne et le bouton ⛶ de la caserne en 3D"]],
     ["8.59", "28 octobre 2026", ["Appli installée en plein écran : le panneau « 🎧 Musique » de la salle des fêtes (et la borne d'arcade, les panneaux de la télé) s'ouvrent devant la scène, et non plus cachés derrière"]],
     ["8.58", "28 octobre 2026", ["Salle des fêtes : le bouton « 🎧 Musique » ouvre toujours le panneau du DJ, même en plein écran sur téléphone"]],
     ["8.57", "28 octobre 2026", ["La caserne est rouverte à tout le monde"]],
@@ -5508,14 +5509,6 @@
   for (const id of ["enter", "signup"]) { const b = document.getElementById(id); if (b) b.addEventListener("click", () => { couper(); if (!splash.classList.contains("ouvert")) toutDeSuite(); }); }
   document.addEventListener("visibilitychange", () => { if (document.hidden) couper(); });
 })();
-</script>
-<script>
-  // l'appli installée sur le téléphone : en plein écran, sans la barre de l'heure en haut ni les boutons du téléphone en bas — dès qu'on touche l'écran
-  (() => { const installee = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
-    const tactile = matchMedia("(pointer: coarse)").matches;
-    const plein = () => { if (!installee() || !tactile || document.fullscreenElement || document.webkitFullscreenElement) return; const d = document.documentElement;
-      try { const r = (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d, { navigationUI: "hide" }); if (r && r.catch) r.catch(() => {}); } catch (e) {} };
-    addEventListener("pointerup", plein, true); })();
 </script>
 </body>
 </html>
