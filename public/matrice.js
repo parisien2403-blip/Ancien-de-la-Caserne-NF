@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.49";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.50";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -6683,6 +6683,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       if (P) { const c = cols5[Math.floor(temps / 1700) % 5]; P.spot.color.setHex(c); P.vide.material.color.setHex(c).lerp(new THREE.Color(0xffe0b0), .55); }
       for (const s of L.silhouettes) animerSilhouette(s, temps); };
     // on n'entre dans la salle des fêtes que par sa porte ouverte
+    // au milieu de la cour : le cercle vert du chantier de la nouvelle caserne (l'administrateur seul le voit)
+    if (!copie) L.portails.push({ dans: (x, z) => Math.hypot(x, z) < RAYON_CERCLE && !!M && M.lieu === "grande" && M.moiNum === 1, vers: "nc", arrivee: [0, 2.6], seuil: [0, 0], vert: true });
     L.portails.push({ dans: (x, z) => x > 10 && z > 5.4 && z < 7.6, vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     raccourci(L, scene, [.8, 4.8, 2.2], [12.4, 2.4, 6.5], { vers: "fetes", arrivee: [-3.4, 6], yaw: -Math.PI / 2 });
     L.depart = [0, 6]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
@@ -7296,6 +7298,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   }
 
   if (id === "cave") construireSousSol(A, L, scene);
+  if (id === "nc") construireNouvelleCaserne(L, scene);
   if (id === "hv1955" || id === "kingston") construireHillValley(A, T, L, scene, id === "kingston");   // (Kingston Falls : Hill Valley sous la neige, une nuit de Noël, envahie de gremlins)
   if (id === "mess") construireMess(A, L, scene);
   if (id === "appart") construireAppart(A, L, scene);
@@ -10808,12 +10811,12 @@ function animerCercles(t) {
     if (q.traverse && q.centre && Math.hypot(moi.g.position.x - q.centre[0], moi.g.position.z - q.centre[1]) < RAYON_CERCLE * .85) { allerVers(q.traverse[0], q.traverse[1], true); break; } }
   for (const c of M.cercles) {
     if (!c.g) { const ce = centrePortail(c.pt); if (!ce) continue;
-      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
-      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
+      const rouge = estApo(c.pt.vers) !== estApo(M.lieu), bleu = !!c.pt.bleu, vert = !!c.pt.vert;   // (le passage vers l'apocalypse, ou celui qui en ramène : en rouge ; celui de l'appartement, en bleu)
+      const g = new THREE.Group(), or = new THREE.MeshBasicMaterial({ color: vert ? 0x1fbf4a : bleu ? 0x2a7bff : rouge ? 0xd8281c : 0xf5b82e, transparent: true, opacity: .95, depthWrite: false, side: THREE.DoubleSide });
       const anneau = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE - .07, RAYON_CERCLE, 48), or); anneau.rotation.x = -Math.PI / 2; g.add(anneau);
-      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
+      const disque = new THREE.Mesh(new THREE.CircleGeometry(RAYON_CERCLE - .07, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x6ee08c : bleu ? 0x6aa8ff : rouge ? 0xff5040 : 0xffe28a, transparent: true, opacity: .35, depthWrite: false, side: THREE.DoubleSide }));
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
-      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
+      const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x2ee05a : bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
@@ -12086,6 +12089,22 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
   M.gens.get(num).g.position.y = M.L.hauteur ? M.L.hauteur(x, z) : 0;
   M.camera.position.add(d3); if (vise) M.camVise = vise; else placerCamera(true);
   if (fin) allerVers(fin[0], fin[1], true);
+}
+
+/* ===================== La nouvelle caserne (en chantier) : refaite dans Blender, à partir de l'ancienne — un bâtiment après l'autre.
+   Seul l'administrateur y va : par le cercle vert au milieu de la cour d'honneur ; au même endroit ici, un cercle vert pour revenir ===================== */
+const NC_V = 4;
+function construireNouvelleCaserne(L, scene) {
+  L.nc = true; L.sansPNJ = true; L.portails = L.portails || [];
+  const g = new THREE.Group(); scene.add(g); L.ncGroupe = g;
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
+    const r = await new gltfMod.GLTFLoader().loadAsync("modeles/nc/cour.glb?v=" + NC_V);
+    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(r.scene);
+    if (M && M.scene === scene && M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", e));
+  L.limites = (x, z) => Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6);
+  L.portails.push({ dans: (x, z) => Math.hypot(x, z) < RAYON_CERCLE, vers: "grande", arrivee: [0, 2.6], seuil: [0, 0], vert: true });
+  L.depart = [0, 2.6]; L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72];
+  L.boite = [-11.6, 11.6, -17.4, 15.1]; L.zone = [-30, 30, -30, 30]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
 }
 
 const DOC = -30, ID_DOC = 30;
