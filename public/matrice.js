@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.58";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.59";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -4609,7 +4609,7 @@ function enfiladeChene(g) {
   fusionnerParMatiere(g); return g;
 }
 /* là où poser une fenêtre par-dessus le monde : l'élément en plein écran s'il y en a un (sinon elle resterait cachée derrière), sinon la page */
-const hoteFS = () => document.fullscreenElement || document.webkitFullscreenElement || document.body;
+const hoteFS = () => (window.hotePlein ? window.hotePlein() : document.fullscreenElement || document.webkitFullscreenElement || document.body);   // (voir hotePlein, index.html : l'appli installée met toute la page en plein écran)
 function construireAppart(A, L, scene) {
   const T = texturesAppart(), HT = 3.4, H4 = .68, ZM0 = 0, ZM1 = 1.05;
   L.meublesAppart = []; const nMb = {}, mb = (g, nom) => { nMb[nom] = (nMb[nom] || 0) + 1; L.meublesAppart.push({ id: nom + "#" + nMb[nom], nom, g }); return g; };   // (les meubles qu'on peut déplacer : l'aménagement)   // (le plafond ; les quatre marches, de 17 cm, entre z = 0 et z = 1,05)
@@ -11725,8 +11725,8 @@ function ouvrirArcade() {
   const f = document.createElement("iframe"); f.src = "goonies/index.html?v=" + DIAG_V; f.allow = "gamepad; autoplay; fullscreen";
   f.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:5000;background:#000";
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "keydown"]) f.addEventListener(ev, e => e.stopPropagation());
-  (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); M.arcadeEl = f; jouer("arcade"); window.mxArcadeOn = true; window.mxSilence && window.mxSilence(true); window.mxSonsMaj && window.mxSonsMaj(); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);   // (en plein écran, seul l'élément en plein écran est visible : le jeu s'y ouvre)
-  const pe = () => { if (M && M.arcadeEl === f) (document.fullscreenElement || document.webkitFullscreenElement || document.body).appendChild(f); else document.removeEventListener("fullscreenchange", pe); };
+  hoteFS().appendChild(f); M.arcadeEl = f; jouer("arcade"); window.mxArcadeOn = true; window.mxSilence && window.mxSilence(true); window.mxSonsMaj && window.mxSonsMaj(); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);   // (en plein écran, seul l'élément en plein écran est visible : le jeu s'y ouvre)
+  const pe = () => { if (M && M.arcadeEl === f) hoteFS().appendChild(f); else document.removeEventListener("fullscreenchange", pe); };
   document.addEventListener("fullscreenchange", pe);   // (on entre ou sort du plein écran pendant la partie : le jeu suit)
   const fin = e => { if (!e.data) return;
     if (e.data.goonies === "score" && M && M.ctx && M.ctx.token) { fetch("/api/flipper?jeu=goonies", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ score: e.data.score }) }).catch(() => {}); return; }   // (la partie est finie : le score part au panneau des records)

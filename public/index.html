@@ -2386,7 +2386,7 @@
           d.style.cssText = "position:fixed;inset:0;z-index:2700;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:16px;cursor:zoom-out;animation:afficheEntree .25s ease-out";
           d.innerHTML = `<img src="${src}" alt="Affiche" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.6)">
             <button type="button" aria-label="Fermer" style="position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.55);color:#fff;font-size:20px">✕</button>`;
-          d.onclick = () => d.remove(); (document.fullscreenElement || document.body).appendChild(d); },
+          d.onclick = () => d.remove(); hotePlein().appendChild(d); },
         surFlechettes: () => { infoMatrice("🎯 Les fléchettes…", 1500);
           import("./flechettes.js?v=" + VERSION).then(f => { MX.jouer("flechettes"); f.ouvrirFlechettes({ envoyerScore: score => api("POST", "/api/flipper?jeu=flechettes", { score }), dessinerCible: MX.dessinerCibleFlechettes, secteurs: MX.SECTEURS_FLECHETTES, surFerme: () => MX && MX.jouer(null) }); })
             .catch(e => infoMatrice("Les fléchettes n'ont pas pu démarrer : " + e.message, 6000)); },
@@ -2497,8 +2497,13 @@
   const urlTetePNJ = (v, id = 1) => `/api/pnj/tete?t=${encodeURIComponent(moi.token)}&v=${v}${id !== 1 ? "&id=" + id : ""}`;
   // le bouton « Musique » : la liste des musiques s'ouvre par-dessus la salle (même en plein écran) ; la croix referme et l'on revient dans la salle
   const djPlace = { parent: null, suivant: null };
+  /* où poser un panneau pour qu'il soit au-dessus de la Matrice : dans la scène si elle est en plein écran « maison » ; sinon dans l'élément en plein écran —
+     sauf la page entière (l'appli installée se met elle-même en plein écran) : la scène, posée par-dessus, cacherait le panneau */
+  function hotePlein() { const fs = document.fullscreenElement || document.webkitFullscreenElement;
+    return document.querySelector(".mx-scene.plein-css") || (fs && fs !== document.documentElement && fs !== document.body ? fs : null) || document.body; }
+  window.hotePlein = hotePlein;
   function allerAuDJ() {
-    const d = $("mxDJ"), ici = document.fullscreenElement || document.querySelector(".mx-scene.plein-css") || document.body;
+    const d = $("mxDJ"), ici = hotePlein();
     if (d.classList.contains("panneau") && d.parentNode === ici) return fermerDJ();   /* (ouvert devant nous : on le referme ; resté ouvert ailleurs — après le plein écran — : on le ramène devant nous) */
     if (!d.classList.contains("panneau")) { djPlace.parent = d.parentNode; djPlace.suivant = d.nextSibling; }
     ici.appendChild(d);
@@ -3305,6 +3310,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.59", "28 octobre 2026", ["Appli installée en plein écran : le panneau « 🎧 Musique » de la salle des fêtes (et la borne d'arcade, les panneaux de la télé) s'ouvrent devant la scène, et non plus cachés derrière"]],
     ["8.58", "28 octobre 2026", ["Salle des fêtes : le bouton « 🎧 Musique » ouvre toujours le panneau du DJ, même en plein écran sur téléphone"]],
     ["8.57", "28 octobre 2026", ["La caserne est rouverte à tout le monde"]],
     ["8.56", "28 octobre 2026", ["La nouvelle caserne est abandonnée : sa carte et le cercle vert de la cour d'honneur sont retirés"]],
