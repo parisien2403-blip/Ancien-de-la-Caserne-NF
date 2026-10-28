@@ -4,6 +4,8 @@
 // inscriptions simultanées ne reçoivent jamais le même numéro.
 
 import { DurableObject } from "cloudflare:workers";
+// la caserne (la Matrice) fermée pour travaux : seul l'administrateur (badge 1) peut y entrer — la même chose dans public/index.html
+const CASERNE_TRAVAUX = true;
 
 const DOMAINE = "caserne-nf";
 const QUALITES = ["fils du Garde", "fille du Garde", "Gendarme"];
@@ -441,6 +443,7 @@ export class Compteur extends DurableObject {
     try { moi = this.moi(url.searchParams.get("t") || ""); } catch (e) { return new Response(e.message, { status: e.status || 401 }); }
     const s = this.sql.exec("SELECT exclu_jusqua FROM matrice_sanctions WHERE numero = ?", Number(moi.numero)).toArray()[0];
     if (s && s.exclu_jusqua && new Date(s.exclu_jusqua) > new Date()) return new Response("Exclu de la Matrice jusqu'au " + new Date(s.exclu_jusqua).toLocaleString("fr-FR", { timeZone: "Europe/Paris" }), { status: 403 });
+    if (CASERNE_TRAVAUX && Number(moi.numero) !== 1) return new Response("Toutes nos excuses : la caserne est fermée pendant quelques temps, des travaux sont en cours. Elle rouvre très bientôt !", { status: 403 });   // (pendant les travaux : l'administrateur seul)
     const p = this.personneMatrice(moi.numero);
     // un seul appareil à la fois dans la Matrice : l'ancien est fermé
     for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { try { ws.close(4000, "Ouvert sur un autre appareil"); } catch (e) {} } }

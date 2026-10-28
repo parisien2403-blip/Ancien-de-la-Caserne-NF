@@ -2357,9 +2357,11 @@
   // l'appartement de l'escalier Z : l'administrateur, et les badges qu'il y invite (la même liste dans src/index.js)
   const APPART_INVITES = [2, 3, 4], appartOuvert = () => !!(moi && (moi.admin || (APPART_INVITES.includes(Number(moi.numero)) && appartLibre)));   // (les invités : seulement quand l'administrateur l'a ouvert)
   let appartLibre = false;
+  const CASERNE_TRAVAUX = true;   // (la caserne fermée pour travaux : l'administrateur seul y entre)
   async function ouvrirMatrice() {
     if (mxOuverte) return;
     if (!enLigne || !moi || !moi.token || !estValide()) { $("mxVoile").innerHTML = "<span>Connecte-toi pour entrer dans la Matrice.</span>"; $("mxVoile").hidden = false; return; }
+    if (CASERNE_TRAVAUX && Number(moi.numero) !== 1) { $("mxVoile").innerHTML = "<span>🚧 Toutes nos excuses !<br><br>La caserne est fermée pendant quelques temps : des travaux sont en cours pour vous préparer une toute nouvelle caserne.<br><br>Elle rouvre très bientôt. Merci de votre patience !</span>"; $("mxVoile").hidden = false; return; }   /* (pendant les travaux : l'administrateur seul — la même règle côté serveur) */
     mxOuverte = true; $("mxVoile").hidden = false; $("mxVoile").innerHTML = "<span>Ouverture des grilles…</span>";
     try {
       const [m, av, pj, pd] = await Promise.all([chargerMX(), api("GET", "/api/moi/avatar"), api("GET", "/api/pnj").catch(() => null), api("GET", "/api/pnj?id=2").catch(() => null), api("GET", "/api/pnj?id=3").catch(() => null).then(x => { barInfo = x; }), api("GET", "/api/pnj?id=4").catch(() => null).then(x => { danseurInfo = trioInfo[4] = x; }), api("GET", "/api/pnj?id=5").catch(() => null).then(x => { trioInfo[5] = x; }), api("GET", "/api/pnj?id=6").catch(() => null).then(x => { trioInfo[6] = x; }), api("GET", "/api/pnj?id=7").catch(() => null).then(x => { trioInfo[7] = x; }), ...[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94].map(n => api("GET", "/api/pnj?id=" + n).catch(() => null).then(x => { trioInfo[n] = x; }))]);
@@ -3301,6 +3303,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.49", "28 octobre 2026", ["La caserne (la Matrice) est fermée pour travaux : seul l'administrateur peut y entrer en attendant la nouvelle version"]],
     ["8.48", "27 octobre 2026", ["Arrivée dans la caserne 1990 : l'écran « Ouverture des grilles… » reste jusqu'à ce que la main soit prête, puis elle descend aussitôt — plus d'aperçu de la caserne ni d'écran noir entre les deux ; la main se charge pendant que la caserne se construit"]],
     ["8.47", "27 octobre 2026", ["Génération perdue : une fois son ado choisi, la scène avec les deux autres reprend (plus d'écran vide, sans personne)"]],
     ["8.46", "27 octobre 2026", ["Caserne 1990 : la cour d'honneur et la salle des fêtes redeviennent comme en 8.44 (les trois garages et leurs cars sont de retour)"]],
