@@ -57,6 +57,12 @@ class Atelier:
             vs.append(ligne)
         for i in range(n1):
             for j in range(n2): b.faces.new((vs[i][j], vs[(i + 1) % n1][j], vs[(i + 1) % n1][(j + 1) % n2], vs[i][(j + 1) % n2]))
+    def prisme(s, m, profil, x0, x1, uv=2.0):
+        """un profil fermé [(y, z), …] extrudé de x0 à x1 (un toit, une corniche moulurée)"""
+        b = s._b(m); g = [b.verts.new((x0, y, z)) for y, z in profil]; d = [b.verts.new((x1, y, z)) for y, z in profil]; n = len(profil)
+        b.faces.new(g[::-1]); b.faces.new(d)
+        for i in range(n): b.faces.new((g[i], g[(i + 1) % n], d[(i + 1) % n], d[i]))
+        s._uv(b, g + d, uv)
     def _uv(s, b, verts, taille):
         uv = b.loops.layers.uv.active; vs = set(verts)
         for f in {f for v in verts for f in v.link_faces}:
@@ -82,68 +88,163 @@ def mur_perce(A, m, x0, x1, z0, z1, yA, yB, trous, uv=2.0):
             if any(t[0] < cx < t[1] and t[2] < cz < t[3] for t in trous): continue
             A.de(m, xs[i], xs[i + 1], yA, yB, zs[j], zs[j + 1], uv)
 
-def construire():
+def construire(sortie=None):
+    """d'après la photo de la cour d'honneur : 14 travées symétriques autour du passage —
+    depuis le milieu : N (porte-fenêtre), B (porte-fenêtre et balcon-caisson blanc), S (deux petites fenêtres jumelles cerclées de blanc), N, S, B, N ;
+    le socle de pierre (le passage des véhicules, deux portes de chaque côté), sa corniche ; sept étages de brique :
+    au 1er, la brique à refends et l'horloge au-dessus du passage ; du 2e au 5e (au 6e pour les travées B du bord), les balcons-caissons ;
+    au 6e, le grand balcon (le « sur-balcon ») du corps central, ses deux fenêtres cintrées ; deux larges bandeaux blancs ;
+    le 7e (l'attique) : le haut enduit de blanc ; la corniche, le toit mansardé en ardoise et ses cheminées."""
+    global SOCLE
     BRIQUE = mat_tex("nc_brique", "brique", .9, 1.0); SOCLEM = mat_tex("nc_socle", "socle", .85, 1.2); PIERRE = mat_tex("nc_pierre", "pierre", .7, .6)
+    ARDOISE = mat_tex("nc_ardoise", "ardoise", .6, 1.0)
     VITRE = mat("nc_vitre", (.10, .13, .17), .08, .2); MENUIS = mat("nc_menuiserie", (.94, .93, .9), .45); FER = mat("nc_fer", (.05, .05, .055), .4, .7)
     ZINC = mat("nc_zinc", (.42, .45, .48), .4, .7); CADRAN = mat("nc_cadran", (.97, .96, .93), .3); LANT = mat("nc_lanterne", (1, .93, .75), .3)
-    A = Atelier()
-    xs = [-W / 2 + (c + .5) * PAS for c in range(14)]
-    ztop = lambda r: H - (34 + r * 112) / 40          # le haut de la fenêtre de l'étage r (0 = le plus haut)
-    fen = [(x - FW / 2, x + FW / 2, ztop(r) - FH, ztop(r)) for r in range(7) for x in xs]
-    # ---- les étages de brique : la façade percée de ses 98 fenêtres, la masse derrière, les tableaux des fenêtres ----
-    mur_perce(A, BRIQUE, -W / 2, W / 2, SOCLE, H, Y0, Y0 + RET, fen)
-    A.de(BRIQUE, -W / 2, W / 2, Y0 + RET, Y0 + P - RET, SOCLE, H)   # (derrière : la façade sur la deuxième cour, verso.py)
-    for r in range(7):
-        zt = ztop(r); zb = zt - FH
-        for c, x in enumerate(xs):
-            A.de(VITRE, x - FW / 2, x + FW / 2, Y0 + RET - .03, Y0 + RET, zb, zt, 1)
-            A.de(MENUIS, x - .03, x + .03, Y0 + RET - .08, Y0 + RET - .03, zb, zt, 1); A.de(MENUIS, x - FW / 2, x + FW / 2, Y0 + RET - .08, Y0 + RET - .03, zt - .58, zt - .52, 1)
-            for s in (-1, 1): A.de(MENUIS, x + s * (FW / 2) - (.07 if s > 0 else 0), x + s * (FW / 2) + (0 if s > 0 else .07), Y0 + RET - .08, Y0 + RET - .03, zb, zt, 1)
-            A.de(MENUIS, x - FW / 2, x + FW / 2, Y0 + RET - .08, Y0 + RET - .03, zt - .07, zt, 1); A.de(MENUIS, x - FW / 2, x + FW / 2, Y0 + RET - .08, Y0 + RET - .03, zb, zb + .07, 1)
-            A.de(PIERRE, x - FW / 2 - .15, x + FW / 2 + .15, Y0 - .2, Y0 + .1, zb - .12, zb)                 # l'appui
-            A.de(PIERRE, x - FW / 2 - .17, x + FW / 2 + .17, Y0 - .1, Y0 + .02, zt, zt + .26)               # le linteau
-            A.de(PIERRE, x - .13, x + .13, Y0 - .15, Y0 + .02, zt - .04, zt + .32)                          # sa clé
-            for s in (-1, 1): A.de(PIERRE, x + s * (FW / 2 + .05) - .05, x + s * (FW / 2 + .05) + .05, Y0 - .05, Y0 + .02, zb, zt)   # le chambranle
-            if c % 2 == 1:   # le balcon : la dalle blanche sur ses consoles, la grille en fer forgé
-                A.de(PIERRE, x - 1.15, x + 1.15, Y0 - .9, Y0, zb - .16, zb)
-                for s in (-1, 1): A.de(PIERRE, x + s * .8 - .07, x + s * .8 + .07, Y0 - .5, Y0, zb - .44, zb - .16)
-                for k in range(17): A.de(FER, x - 1.09 + k * .135, x - 1.068 + k * .135, Y0 - .87, Y0 - .848, zb, zb + .9, 1)
-                A.de(FER, x - 1.12, x + 1.12, Y0 - .885, Y0 - .835, zb + .88, zb + .93, 1); A.de(FER, x - 1.12, x + 1.12, Y0 - .875, Y0 - .845, zb + .08, zb + .11, 1)
-                for s in (-1, 1): A.de(FER, x + s * 1.12 - .015, x + s * 1.12 + .015, Y0 - .87, Y0, zb + .88, zb + .93, 1)
-            else:            # une barre d'appui en fer
-                for k in range(9): A.de(FER, x - .61 + k * .15, x - .59 + k * .15, Y0 - .03, Y0 - .01, zb, zb + .55, 1)
-                A.de(FER, x - .63, x + .63, Y0 - .04, Y0 - .005, zb + .53, zb + .57, 1)
-    # ---- la corniche du socle, le bandeau ; l'acrotère et son chéneau en haut ----
-    A.de(PIERRE, -W / 2 - .15, W / 2 + .15, Y0 - .37, Y0 + .1, SOCLE - .06, SOCLE + .26); A.de(PIERRE, -W / 2 - .1, W / 2 + .1, Y0 - .28, Y0, SOCLE - .2, SOCLE - .06)
-    A.de(PIERRE, -W / 2 - .2, W / 2 + .2, Y0 - .38, Y0 + .1, H - .4, H + .05); A.de(PIERRE, -W / 2 - .15, W / 2 + .15, Y0 - .3, Y0, H - .55, H - .4)
-    A.de(ZINC, -W / 2 - .1, W / 2 + .1, Y0 - .42, Y0 - .2, H - .72, H - .55, 1)
-    for x in (-W / 2 + .18, -W / 2 + 4 * PAS, W / 2 - 4 * PAS, W / 2 - .18): A.cylindre(ZINC, .06, H - SOCLE - .75, x, Y0 - .12, SOCLE + (H - SOCLE - .75) / 2)
-    # ---- le socle de pierre : percé du passage, des portes et des baies ----
-    baies = [(s * (d + L / 2) / 40, L / 40) for s in (-1, 1) for d, L in ((124, 66), (220, 110), (400, 110), (580, 110), (760, 110))]
-    trous = [(-2.4, 2.4, 0, 4.4)] + [(x - l / 2, x + l / 2, 0 if l < 2 else 1.0, 4.5) for x, l in baies]
-    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0, Y0 + RET, trous)
-    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0 + RET, Y0 + P - RET, [(-2.4, 2.4, 0, 4.4)])
-    for x, l in baies:
-        z0 = 0 if l < 2 else 1.0
-        A.de(VITRE, x - l / 2, x + l / 2, Y0 + RET - .03, Y0 + RET, z0, 4.5, 1)
-        for xx in (x - l / 2, x - .035, x + l / 2 - .07): A.de(MENUIS, xx, xx + .07, Y0 + RET - .08, Y0 + RET - .03, z0, 4.5, 1)
-        for zz in (z0, (z0 + 4.5) / 2 + .6, 3.7, 4.43): A.de(MENUIS, x - l / 2, x + l / 2, Y0 + RET - .08, Y0 + RET - .03, zz, zz + .07, 1)
-        A.de(PIERRE, x - l / 2 - .15, x + l / 2 + .15, Y0 - .12, Y0 + .05, 4.5, 4.66)
-        if z0: A.de(PIERRE, x - l / 2 - .1, x + l / 2 + .1, Y0 - .2, Y0 + .1, .88, 1.0)
-    # ---- le passage : son linteau, son plafond ----
-    A.de(PIERRE, -2.8, 2.8, Y0 - .2, Y0 + .1, 4.45, 4.9); A.de(PIERRE, -2.4, 2.4, Y0, Y0 + P, 4.4, 4.5)
-    # ---- l'horloge, au-dessus du passage ----
-    zc = 5.65
-    A.cylindre(CADRAN, .66, .1, 0, Y0 - .05, zc, axe="y", n=48); A.tore(FER, .68, .055, 0, Y0 - .1, zc)
-    for i in range(12):
-        a = i * math.pi / 6; L = .13 if i % 3 == 0 else .07
-        A.boite(FER, .045, .02, L, .53 * math.sin(a), Y0 - .11, zc + .53 * math.cos(a), rot=Matrix.Rotation(-a, 3, "Y"), uv=1)
-    A.boite(FER, .04, .02, .36, 0, Y0 - .13, zc + .17, uv=1)                                                       # la grande aiguille (midi)
-    A.boite(FER, .055, .02, .26, .11, Y0 - .14, zc - .05, rot=Matrix.Rotation(2.0, 3, "Y"), uv=1)                  # la petite (quatre heures)
-    # ---- deux lanternes murales de part et d'autre du passage ----
+    RIDEAU = mat("nc_rideau", (.86, .84, .78), .9); STORE = mat("nc_store", (.62, .52, .38), .85); BOIS = mat("nc_bois_porte", (.20, .13, .09), .6)
+    ROUGE = mat("nc_rouge", (.55, .16, .1), .55); POT = mat("nc_pot", (.62, .27, .16), .8); PLAQUE = mat("nc_plaque", (.93, .93, .9), .5); SOMBRE = mat("nc_sombre", (.12, .11, .1), .9)
+    import random; rnd = random.Random(18)
+    A = Atelier(); SOCLE = 5.6; FL = (H - SOCLE) / 7
+    zf = lambda k: SOCLE + (k - 1) * FL                        # (le plancher de l'étage k, de 1 à 7)
+    CEN = 2 * PAS                                              # (le corps central : les quatre travées du milieu, en avant de 20 cm)
+    yF = lambda x: Y0 - .2 if abs(x) < CEN - 1e-6 else Y0       # (le nu de la façade)
+    YV = Y0 + RET - .03                                        # (les vitres)
+    TYPES = {.5: "N", 1.5: "B", 2.5: "S", 3.5: "N", 4.5: "S", 5.5: "B", 6.5: "N"}
+    baies = [((b - 6.5) * PAS, TYPES[abs(b - 6.5)], abs(b - 6.5)) for b in range(14)]
+    nuit = []                                                  # (les vitres, pour les allumer la nuit dans le jeu)
+    def ouverture(x, k, t, o):
+        z = zf(k)
+        if t == "S": return [(x - .6, x + .6, z + 1.25, z + 2.25)]
+        if k == 6 and t == "B" and o < 2: return [(x - .68, x + .68, z + .12, z + 1.9)] + [(x - .68 * math.sin(math.pi * (i + 1) / 13), x + .68 * math.sin(math.pi * (i + 1) / 13), z + 1.9, z + 1.9 + .68 * math.cos(math.pi * (i + .5) / 13 - math.pi / 2) + .001) for i in range(0)]
+        return [(x - .68, x + .68, z + .12, z + 2.25)]
+    trous = []
+    for k in range(1, 8):
+        for x, t, o in baies:
+            trous += ouverture(x, k, t, o)
+            if k == 6 and t == "B" and o < 2:   # (la fenêtre cintrée : le demi-cercle, en tranches)
+                for i in range(10):
+                    a0, a1 = i / 10, (i + 1) / 10; hw = .68 * math.sqrt(max(0, 1 - ((a0 + a1) / 2) ** 2))
+                    trous.append((x - hw, x + hw, zf(6) + 1.9 + .68 * a0, zf(6) + 1.9 + .68 * a1))
+    # ---- les étages : la brique (le haut de l'attique enduit de blanc), percée ; le corps central en avant ----
+    ZBL = zf(7) + 2.0
+    for x0, x1 in ((-W / 2, -CEN), (-CEN, CEN), (CEN, W / 2)):
+        y0 = yF((x0 + x1) / 2)
+        tr = [t for t in trous if t[1] > x0 and t[0] < x1]
+        mur_perce(A, BRIQUE, x0, x1, zf(2), ZBL, y0, Y0 + RET, tr)
+        mur_perce(A, PIERRE, x0, x1, ZBL, H, y0, Y0 + RET, tr)
+        # le 1er étage : la brique à refends (de larges assises de 38 cm, des rainures de 4 cm)
+        mur_perce(A, BRIQUE, x0, x1, zf(1), zf(2), y0 + .03, Y0 + RET, tr)
+        z = zf(1)
+        while z < zf(2) - .1:
+            for a, b, h0, h1 in __import__("porche").cases(x0, x1, z, min(z + .34, zf(2)), tr): A.de(BRIQUE, a, b, y0, y0 + .03, h0, h1)
+            z += .38
+    A.de(BRIQUE, -W / 2, W / 2, Y0 + RET, Y0 + P - RET, SOCLE, H)   # (la masse ; derrière : la façade sur la deuxième cour, verso.py)
+    for x in (-CEN, CEN): A.de(BRIQUE, x - .001, x + .001, Y0 - .2, Y0, zf(1), H)   # (les retours du corps central)
+    # ---- les fenêtres ----
+    def croisee(x0, x1, z0, z1, yv, petitsbois=3):
+        for xx in (x0, x1 - .07, (x0 + x1) / 2 - .035): A.de(MENUIS, xx, xx + .07, yv - .06, yv, z0, z1, 1)
+        for zz in [z0, z1 - .07] + [z0 + (z1 - z0) * i / petitsbois for i in range(1, petitsbois)]: A.de(MENUIS, x0, x1, yv - .06, yv, zz, zz + .05, 1)
+    def vitre(x0, x1, z0, z1):
+        r = rnd.random(); m = STORE if r < .07 else RIDEAU if r < .55 else VITRE
+        A.de(m, x0, x1, YV, YV + .03, z0, z1, 1); nuit.append([(x0 + x1) / 2, (z0 + z1) / 2, x1 - x0, z1 - z0])
+    def garde_corps(x, z, yy, larg=1.36, haut=.95):
+        for i in range(int(larg / .12) + 1): A.de(FER, x - larg / 2 + i * .12, x - larg / 2 + i * .12 + .018, yy - .04, yy - .02, z, z + haut, 1)
+        A.de(FER, x - larg / 2 - .02, x + larg / 2 + .02, yy - .05, yy - .01, z + haut - .04, z + haut, 1); A.de(FER, x - larg / 2, x + larg / 2, yy - .05, yy - .01, z + .1, z + .13, 1)
+        A.de(FER, x - larg / 2, x + larg / 2, yy - .05, yy - .01, z + haut - .3, z + haut - .27, 1)
+    for k in range(1, 8):
+        z = zf(k)
+        for x, t, o in baies:
+            yf = yF(x)
+            if t == "S":
+                # deux petites fenêtres jumelles dans un cadre de pierre blanche, un meneau au milieu
+                vitre(x - .6, x + .6, z + 1.25, z + 2.25)
+                for xx0, xx1 in ((x - .6, x - .1), (x + .1, x + .6)): croisee(xx0, xx1, z + 1.25, z + 2.25, YV, 2)
+                A.de(PIERRE, x - .1, x + .1, yf - .02, YV, z + 1.25, z + 2.25)
+                A.de(PIERRE, x - .74, x + .74, yf - .06, yf + .05, z + 2.25, z + 2.38); A.de(PIERRE, x - .78, x + .78, yf - .1, yf + .05, z + 1.12, z + 1.25)
+                for s in (-1, 1): A.de(PIERRE, x + s * .67 - .07, x + s * .67 + .07, yf - .06, yf + .05, z + 1.25, z + 2.25)
+                continue
+            arc = k == 6 and t == "B" and o < 2
+            zh = z + (1.9 if arc else 2.25)
+            vitre(x - .68, x + .68, z + .12, zh); croisee(x - .68, x + .68, z + .12, zh, YV)
+            A.de(PIERRE, x - .78, x + .78, yf - .08, yf + .05, z + .04, z + .12)                         # (l'appui, mince)
+            if arc:
+                # la fenêtre cintrée : le haut en demi-cercle (vitre et petit-bois), l'archivolte blanche, le pilastre blanc qui monte au-dessus
+                for i in range(10):
+                    a0, a1 = i / 10, (i + 1) / 10; hw = .68 * math.sqrt(max(0, 1 - ((a0 + a1) / 2) ** 2))
+                    A.de(VITRE, x - hw, x + hw, YV, YV + .03, zh + .68 * a0, zh + .68 * a1, 1)
+                for i in range(18):
+                    a = math.pi * (i + .5) / 18; c = (x - .86 * math.cos(a), zh + .86 * math.sin(a))
+                    A.boite(PIERRE, .26, .16, .32, c[0], yf - .04, c[1], rot=Matrix.Rotation(-(math.pi / 2 - a), 3, "Y"), uv=1)
+                for s in (-1, 1): A.de(PIERRE, x + s * .79 - .09, x + s * .79 + .09, yf - .12, yf + .04, z + .12, zh)
+                A.de(PIERRE, x - .14, x + .14, yf - .12, yf + .02, zh + 1.0, zf(7) - .2)
+                nuit[-1][3] += .4; nuit[-1][1] += .2
+            elif k == 6 and t == "B" or (2 <= k <= 5 and t == "B"):
+                # le balcon-caisson blanc : la dalle, le garde-corps plein, son chaperon
+                A.de(PIERRE, x - 1.15, x + 1.15, yf - .85, yf, z - .18, z); A.de(PIERRE, x - 1.15, x + 1.15, yf - .85, yf - .73, z, z + 1.0)
+                for s in (-1, 1): A.de(PIERRE, x + s * 1.15 - (.12 if s > 0 else 0), x + s * 1.15 + (0 if s > 0 else .12), yf - .73, yf, z, z + 1.0)
+                A.de(PIERRE, x - 1.2, x + 1.2, yf - .9, yf - .68, z + 1.0, z + 1.07)
+                if rnd.random() < .3:   # (des pots de fleurs sur le rebord)
+                    for i in range(3): A.de(POT, x - .6 + i * .45, x - .4 + i * .45, yf - .85, yf - .7, z + 1.07, z + 1.25); A.de(ROUGE, x - .62 + i * .45, x - .38 + i * .45, yf - .86, yf - .69, z + 1.25, z + 1.38, 1)
+            elif not (k == 6 and t == "B"):
+                garde_corps(x, z + .12, yf)                                                                 # (la barre d'appui des portes-fenêtres)
+                if k == 7 and o < 2: A.de(PIERRE, x - .9, x + .9, yf - .35, yf, z - .05, z + .1)
+    # ---- le 6e : le grand balcon du corps central (garde-corps plein ; au milieu, une grille), les deux caissons des fenêtres cintrées ----
+    z6 = zf(6); yc = Y0 - .2
+    A.de(PIERRE, -CEN - .3, CEN + .3, yc - .75, yc, z6 - .2, z6)
+    for x0, x1 in ((-CEN - .3, -PAS), (PAS, CEN + .3)): A.de(PIERRE, x0, x1, yc - .75, yc - .63, z6, z6 + .95); A.de(PIERRE, x0 - .03, x1 + .03, yc - .8, yc - .58, z6 + .95, z6 + 1.02)
+    A.de(PIERRE, -PAS, PAS, yc - .75, yc - .63, z6, z6 + .18); garde_corps(0, z6 + .18, yc - .63, 2 * PAS, .8)
     for s in (-1, 1):
-        x = s * 3.3; A.de(FER, x - .03, x + .03, Y0 - .32, Y0, 3.27, 3.33, 1)
-        A.de(LANT, x - .14, x + .14, Y0 - .5, Y0 - .22, 2.95, 3.37, 1); A.de(FER, x - .17, x + .17, Y0 - .53, Y0 - .19, 3.37, 3.43, 1); A.de(FER, x - .15, x + .15, Y0 - .51, Y0 - .21, 2.9, 2.95, 1)
-    # ---- le toit (terrasse) ----
-    A.de(ZINC, -W / 2, W / 2, Y0 + .1, Y0 + P, H, H + .1)
+        x = s * 1.5 * PAS; A.de(PIERRE, x - 1.3, x + 1.3, yc - 1.1, yc, z6 - .25, z6); A.de(PIERRE, x - 1.3, x + 1.3, yc - 1.1, yc - .98, z6, z6 + 1.0)
+        for t in (-1, 1): A.de(PIERRE, x + t * 1.3 - (.12 if t > 0 else 0), x + t * 1.3 + (0 if t > 0 else .12), yc - .98, yc - .75, z6, z6 + 1.0)
+        A.de(PIERRE, x - 1.35, x + 1.35, yc - 1.15, yc - .93, z6 + 1.0, z6 + 1.07)
+        A.de(FER, x - .7, x + .7, yc - 1.0, yc - .97, z6 + 1.07, z6 + 1.1, 1)
+        for i in range(12): A.de(FER, x - .66 + i * .12, x - .64 + i * .12, yc - .99, yc - .97, z6 + 1.07, z6 + 1.3, 1)
+    # ---- les bandeaux blancs (au 6e, au 7e), la corniche du socle, la corniche du haut ----
+    for zb, ep, sa in ((z6 - .3, .42, .45), (zf(7) - .25, .38, .4)):
+        A.de(PIERRE, -W / 2 - .1, W / 2 + .1, Y0 - sa, Y0 + .05, zb, zb + ep); A.de(PIERRE, -W / 2 - .1, W / 2 + .1, Y0 - sa - .06, Y0 - sa + .1, zb + ep - .08, zb + ep)
+        A.de(PIERRE, -CEN, CEN, Y0 - .2 - sa, Y0 - .15, zb, zb + ep)
+    A.de(PIERRE, -W / 2 - .15, W / 2 + .15, Y0 - .45, Y0 + .1, SOCLE - .14, SOCLE + .16); A.de(ZINC, -W / 2 - .15, W / 2 + .15, Y0 - .47, Y0 + .1, SOCLE + .16, SOCLE + .19, 1)
+    A.de(PIERRE, -W / 2 - .2, W / 2 + .2, Y0 - .55, Y0 + .1, H - .12, H + .3); A.de(PIERRE, -W / 2 - .12, W / 2 + .12, Y0 - .38, Y0, H - .3, H - .12)
+    A.de(ZINC, -W / 2 - .2, W / 2 + .2, Y0 - .62, Y0 - .45, H + .12, H + .3, 1)
+    for x in (-W / 2 + .2, W / 2 - .2): A.cylindre(ZINC, .065, H - SOCLE, x, Y0 - .14, SOCLE + (H - SOCLE) / 2)
+    # ---- le socle de pierre : le passage des véhicules, deux portes de chaque côté ----
+    PH, PL = 4.4, 2.7
+    portes = [(s * 5.1, s * 7.3) for s in (-1, 1)] + [(s * 8.0, s * 10.2) for s in (-1, 1)]
+    portes = [tuple(sorted(p)) for p in portes]
+    trS = [(-PL, PL, 0, PH)] + [(a, b, 0, 3.6) for a, b in portes]
+    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0, Y0 + RET, trS)
+    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0 + RET, Y0 + P - RET, [(-PL, PL, 0, PH)])
+    A.de(PIERRE, -PL, PL, Y0, Y0 + P, PH, PH + .1)                                                   # (le plafond du passage)
+    for a, b in portes:
+        vitree = abs(a) < 7.5
+        A.de(BOIS, a, b, Y0 + RET - .04, Y0 + RET, 0, 3.6, 1)
+        for xx in (a, b - .1, (a + b) / 2 - .05): A.de(BOIS, xx, xx + .1, Y0 + RET - .1, Y0 + RET - .04, 0, 3.6, 1)
+        for zz in (0, 2.75, 3.5) if vitree else (0, 2.5, 3.5): A.de(BOIS, a, b, Y0 + RET - .1, Y0 + RET - .04, zz, zz + .1, 1)
+        zv0 = 1.0 if vitree else 2.6
+        for xx0, xx1 in ((a + .1, (a + b) / 2 - .05), ((a + b) / 2 + .05, b - .1)):
+            A.de(VITRE, xx0, xx1, Y0 + RET - .05, Y0 + RET - .04, zv0, 2.75 if vitree else 3.5, 1)
+            for i in range(1, 3): A.de(BOIS, xx0, xx1, Y0 + RET - .08, Y0 + RET - .05, zv0 + (2.75 - zv0 if vitree else .9) * i / 3, zv0 + (2.75 - zv0 if vitree else .9) * i / 3 + .04, 1)
+        A.de(VITRE, a + .1, b - .1, Y0 + RET - .05, Y0 + RET - .04, 2.85, 3.5, 1)
+    # (les petites choses du socle : la plaque au-dessus du passage, le disque rouge et blanc à gauche, la plaque sombre à droite)
+    A.de(PLAQUE, -.3, .3, Y0 - .03, Y0, 4.75, 5.15, 1)
+    A.cylindre(ROUGE, .2, .03, -3.1, Y0 - .02, 2.2, axe="y", n=24); A.cylindre(PLAQUE, .15, .03, -3.1, Y0 - .03, 2.2, axe="y", n=24)
+    A.de(SOMBRE, 2.85, 3.25, Y0 - .03, Y0, 1.95, 2.2, 1)
+    # ---- l'horloge : au 1er étage, juste au-dessus du passage, entre les deux fenêtres du milieu ----
+    zc = zf(1) + 1.3; yh = Y0 - .2
+    A.cylindre(CADRAN, .45, .1, 0, yh - .05, zc, axe="y", n=48); A.tore(FER, .47, .045, 0, yh - .1, zc)
+    for i in range(12):
+        a = i * math.pi / 6; L = .09 if i % 3 == 0 else .05
+        A.boite(FER, .035, .02, L, .37 * math.sin(a), yh - .11, zc + .37 * math.cos(a), rot=Matrix.Rotation(a, 3, "Y"), uv=1)
+    A.boite(FER, .03, .02, .27, -.05, yh - .13, zc + .12, rot=Matrix.Rotation(.35, 3, "Y"), uv=1)
+    A.boite(FER, .045, .02, .19, .08, yh - .14, zc - .03, rot=Matrix.Rotation(2.1, 3, "Y"), uv=1)
+    # ---- la lanterne murale (à droite, au 2e) ----
+    x = 7.8; zl = zf(2) + 1.1
+    A.de(FER, x - .03, x + .03, Y0 - .45, Y0, zl + .45, zl + .5, 1); A.de(LANT, x - .13, x + .13, Y0 - .58, Y0 - .32, zl, zl + .42, 1)
+    A.de(FER, x - .16, x + .16, Y0 - .61, Y0 - .29, zl + .42, zl + .47, 1); A.de(FER, x - .05, x + .05, Y0 - .5, Y0 - .4, zl - .12, zl, 1)
+    # ---- le toit mansardé en ardoise, ses cheminées de brique et leurs pots ----
+    A.prisme(ARDOISE, [(Y0 - .3, H + .3), (Y0 + 1.3, H + 3.2), (Y0 + P - 1.3, H + 3.2), (Y0 + P + .3, H + .3)], -W / 2, W / 2)
+    for x in (-17.5, -9.0, 3.5, 14.0):
+        A.de(BRIQUE, x - .7, x + .7, Y0 + 2.5, Y0 + 3.3, H + 1.5, H + 4.6); A.de(PIERRE, x - .78, x + .78, Y0 + 2.42, Y0 + 3.38, H + 4.6, H + 4.75)
+        for i in range(3): A.cylindre(POT, .1, .45, x - .4 + i * .4, Y0 + 2.9, H + 4.98, n=10)
+    if sortie:
+        import json; open(sortie, "w").write(json.dumps([[round(v, 3) for v in f] for f in nuit]))
     return A.objets("horloge")

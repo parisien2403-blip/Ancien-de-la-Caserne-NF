@@ -81,3 +81,25 @@ def platre():
     g = bruit(N / 60, oct=3) - .5; t = bruit(N / 4, oct=2) - .5
     ecrire("platre", np.full((N, N, 3), .8), g * .5 + t * .8, 1.6)
 platre(); print("platre ok")
+
+# la tôle nervurée des toits des garages (gris clair) : les nervures à l'horizontale de l'image (elles suivent la pente une fois posées), tous les 25 cm
+def tole():
+    yy, xx = np.mgrid[0:N, 0:N] / PX
+    f = (yy % .25) / .25; h = np.clip(1 - np.abs(f - .5) * 8, 0, 1) ** .5 + .3 * np.clip(1 - np.abs(f - .1) * 30, 0, 1)
+    g = bruit(N / 20, oct=3) - .5; sale = bruit(N / 3, oct=2) - .5
+    col = np.array([.70, .71, .70]) * (1 + .10 * g[..., None] + .14 * sale[..., None]) * (1 - .1 * h[..., None])
+    ecrire("tole", np.clip(col, 0, 1), h * 1.2, 3.0)
+tole(); print("tole ok")
+
+# la pierre en bossage rustique (l'entrée) : face piquée, criblée de petits creux
+def bossage():
+    g = bruit(N / 90, oct=3); creux = np.clip((g - .55) * 6, 0, 1); gros = bruit(N / 10, oct=2) - .5
+    h = -creux * .8 + gros * .5 + (bruit(N / 200, oct=2) - .5) * .4
+    col = np.array([.80, .77, .71]) * (1 + .12 * gros[..., None] - .18 * creux[..., None])
+    ecrire("bossage", np.clip(col, 0, 1), h, 3.0)
+bossage(); print("bossage ok")
+
+# l'ardoise du toit mansardé : rangs de 20 cm, ardoises de 30 cm décalées
+def ardoise():
+    c, h = appareil(.3, .2, .006, base=(.30, .33, .37), varie=.08, chanfrein=.004); ecrire("ardoise", c, h, 2.0)
+ardoise(); print("ardoise ok")

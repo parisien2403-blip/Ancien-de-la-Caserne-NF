@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.53";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.54";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12108,7 +12108,7 @@ function portailsNC(liste, dz) {
     if (dz) { if (q.dans) n.dans = (x, z) => q.dans(x, z - dz); for (const k of ["seuil", "centre", "traverse", "indice", "marche"]) if (q[k]) n[k] = sh(q[k]); delete n.zc; }
     out.push(n); }
   return out; }
-const NC_V = 9;
+const NC_V = 11;
 /* un intérieur de la nouvelle caserne : il est construit comme en 1990 (portes, lumières, télés, boule à facettes… tout ce qui bouge ou s'allume reste tel quel) ;
    ses morceaux immobiles, eux, sont repris et retouchés dans Blender (modeles/nc/<lieu>.glb) : une fois le modèle chargé, il prend leur place.
    Chaque morceau est reconnu à sa signature (sa forme, sa place) : la liste <lieu>.json dit lesquels sont dans le modèle */
@@ -12147,11 +12147,17 @@ function construireNouvelleCaserne(L, scene) {
   // la nuit : les fenêtres qui s'allument, leurs silhouettes, les lumières — celles de 1990, aux mêmes places (sans celles des décors de fond)
   G.updateMatrixWorld(true); R.updateMatrixWorld(true);
   const ou = o => o.getWorldPosition(new THREE.Vector3());
-  const nuit = [...(LG.nuitObjets || []).filter(o => ou(o).z < 29.6), ...(LR.nuitObjets || []).filter(o => ou(o).z > 15.4)];
+  const horl = p => Math.abs(p.z + 18) < .8 && Math.abs(p.x) < 22.6 && p.y > 0;   /* (le bâtiment de l'horloge est refait d'après la photo : ses fenêtres ne sont plus aux places de 1990) */
+  const nuit = [...(LG.nuitObjets || []).filter(o => { const p = ou(o); return p.z < 29.6 && !horl(p); }), ...(LR.nuitObjets || []).filter(o => ou(o).z > 15.4)];
   const sil = new Set([...(LG.silhouettes || []), ...(LR.silhouettes || [])]);
   for (const o of nuit) scene.attach(o);
   L.nuitObjets = nuit; L.silhouettes = nuit.filter(o => sil.has(o));
   L.anim = t => { if (L.nuit) for (const s of L.silhouettes) animerSilhouette(s, t); };
+  /* ses fenêtres à lui, allumées la nuit (une sur trois, parfois quelqu'un derrière) : leur liste vient de Blender (horloge.py) */
+  fetch("modeles/nc/fenetres-horloge.json?v=" + NC_V).then(r => r.json()).then(fs => { graine = 18;
+    for (const [x, y, w, h] of fs) { if (alea() > .33) continue;
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lumiere()); f.position.set(x, y, -18.2); f.visible = !!L.nuit; f.renderOrder = 2; scene.add(f); L.nuitObjets.push(f);
+      if (alea() < .35) { const q = silhouette(w, h); q.position.set(x, y, -18.19); q.visible = !!L.nuit; q.renderOrder = 3; scene.add(q); L.nuitObjets.push(q); L.silhouettes.push(q); } } }).catch(() => {});
   // (le reste de ces plans n'est jamais dessiné ; leurs images, partagées avec les autres lieux, restent telles quelles)
   L.limites = (x, z) => (enRue(z) ? !!LR.limites && LR.limites(x, z - DZ) : !!LG.limites && LG.limites(x, z)) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25);
   L.hauteur = (x, z, p) => enRue(z) ? (LR.hauteur ? LR.hauteur(x, z - DZ, p) : 0) : (LG.hauteur ? LG.hauteur(x, z, p) : 0);

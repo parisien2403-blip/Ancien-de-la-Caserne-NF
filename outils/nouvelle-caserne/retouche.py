@@ -15,7 +15,9 @@ def relief_image(img, force):
     gx = (np.roll(l, -1, 1) - np.roll(l, 1, 1)) * k; gy = (np.roll(l, -1, 0) - np.roll(l, 1, 0)) * k
     n = np.dstack([-gx, -gy, np.ones_like(l)]); n /= np.linalg.norm(n, axis=2, keepdims=True)
     out = np.dstack([n * .5 + .5, np.ones_like(l)]).astype(np.float32)
-    im = bpy.data.images.new(img.name + "_relief", w, h); im.pixels.foreach_set(out.ravel()); im.colorspace_settings.name = "Non-Color"; im.pack()
+    im = bpy.data.images.new(img.name + "_relief", w, h); im.pixels.foreach_set(out.ravel()); im.colorspace_settings.name = "Non-Color"
+    if max(w, h) > 512: k = 512 / max(w, h); im.scale(max(1, int(w * k)), max(1, int(h * k)))
+    im.pack()
     return im
 
 def brancher(mat, im, force, uvmap=None):
@@ -37,6 +39,7 @@ def retoucher(sc):
         for s in o.material_slots:
             m = s.material
             if not m or not m.use_nodes or m.name in faits: continue
+            if m.name.startswith("nc_porche_photo"): faits[m.name] = 0; continue   # (la photo du navire et des casques : déjà en relief, et son ombre est dans la photo)
             b = next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
             if not b: faits[m.name] = 0; continue
             transp = m.blend_method != "OPAQUE" or b.inputs["Alpha"].is_linked or b.inputs["Alpha"].default_value < .99

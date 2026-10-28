@@ -77,23 +77,36 @@ for o in sols:
 # ---------- 2 bis) les pavés posés au hasard, en relief (texture et carte de relief) : la cour d'honneur, la deuxième cour ----------
 import horloge
 PAVES = horloge.mat_tex("nc_paves", "paves", .9, 1.0)
-for o in [o for o in sc.objects if o.type == "MESH" and src(o) == "g"]:
-    b = boite_de(o)
-    grand_sol = o in sols
-    deuxieme = abs(b[0] + 11) < .2 and abs(b[1] - 11) < .2 and abs(b[2] - 30) < .5 and abs(b[3] - 44) < .5 and b[5] - b[4] < .02
-    if grand_sol or deuxieme:
-        o.data.materials.clear(); o.data.materials.append(PAVES); horloge.uv_boite_monde(o, 2.0); print("pavés posés au hasard :", o.name)
+def image_de(o):
+    m = o.active_material
+    if m and m.use_nodes:
+        for n in m.node_tree.nodes:
+            if n.type == "TEX_IMAGE" and n.image: return n.image
+    return None
+plats = [o for o in sc.objects if o.type == "MESH" and src(o) == "g" and (lambda b: b[5] - b[4] < .02 and abs(b[4]) < .05 and (b[1] - b[0]) * (b[3] - b[2]) > 150)(boite_de(o))]
+ref = image_de(max(plats, key=lambda o: (lambda b: (b[1] - b[0]) * (b[3] - b[2]))(boite_de(o))))   # (l'image des pavés de 1990, celle du plus grand sol de la cour)
+for o in plats:
+    if ref and image_de(o) == ref:
+        o.data.materials.clear(); o.data.materials.append(PAVES)
+        for a in list(o.data.color_attributes): o.data.color_attributes.remove(a)
+        horloge.uv_boite_monde(o, 2.0); print("pavés posés au hasard :", o.name, [round(v, 1) for v in boite_de(o)[:4]])
 
 # ---------- 3) les bâtiments refaits en relief ----------
 import horloge, cotes, porche
-retirer(lambda o: src(o) == "g" and (lambda b: b[0] >= -22.7 and b[1] <= 22.7 and b[2] >= 17.2 and b[3] <= 30.7 and b[4] >= -.2 and b[5] <= 28.5)(boite_de(o)), "horloge : anciens morceaux")
-horloge.construire()
+retirer(lambda o: src(o) == "g" and (lambda b: b[0] >= -22.7 and b[1] <= 22.7 and b[2] >= 16.2 and b[3] <= 30.7 and b[4] >= -.2 and b[5] <= 28.5)(boite_de(o)), "horloge : anciens morceaux")
+horloge.construire(os.path.join(OUT, "fenetres-horloge.json"))
 for cote in (-1, 1):
     f = cotes.envergure(cote); retirer(lambda o: src(o) == "g" and f([Vector(c) for c in o.bound_box]), "côté %+d : anciens morceaux" % cote)
 cotes.construire()
 for nom, f in [("porche", porche.envergure_porche), ("aile S", porche.envergure_aile(-1)), ("aile R", porche.envergure_aile(1))]:
     retirer(lambda o: src(o) == "g" and f([Vector(c) for c in o.bound_box]), nom + " : anciens morceaux")
 porche.construire()
+import facade_rue
+retirer(lambda o: src(o) == "r" and facade_rue.envergure(boite_de(o)), "rue : la façade de 1990, son toit")
+facade_rue.construire()
+import entree
+retirer(lambda o: src(o) == "r" and entree.ancienne_photo(o, boite_de(o)), "entrée : la photo plate du porche")
+entree.construire()
 import verso
 retirer(lambda o: src(o) == "g" and verso.envergure_face([Vector(c) for c in o.bound_box]), "bâtiment d'en face (2e cour) : anciens morceaux")
 verso.construire()

@@ -1,6 +1,6 @@
 """La deuxième cour : le dos du bâtiment de l'horloge et le bâtiment d'en face (ses deux façades : deuxième et troisième cour), en vrai relief —
 mêmes cotes que toileVerso (matrice.js) : brique rouge, rez-de-chaussée de 5,4 m avec son soubassement blanc de 60 cm, fenêtres de 1,7 × 2,5 m cerclées de
-pierre blanche avec leur balconnet noir, portes vitrées, appliques et boîtiers rouges, le passage carré (4,8 × 4,4) au centre.
+pierre blanche avec leur balconnet noir, portes vitrées, appliques et boîtiers rouges, le passage carré (4,8 × 4,4) au centre (la brique un peu en retrait : les murs du passage de 1990 restent devant).
 Repère de Blender : y = -z du jeu. Une façade est décrite par sa ligne y = Yf et son sens (sortant : +1 vers +y, -1 vers -y)."""
 from horloge import Atelier, mat, mat_tex
 from porche import cases
@@ -65,11 +65,11 @@ def construire():
     A = Atelier()
     # le dos du bâtiment de l'horloge (face à la deuxième cour) : 44 × 27, quatre colonnes de fenêtres, cinq étages
     pasV = min(150, (1080 - 216 - 30) / 5) / 40
-    facade(A, -C2Z0, +1, 44.0, 27.0, [-8.25, -2.75, 2.75, 8.25], 5, pasV)
+    facade(A, -C2Z0, +1, 44.0, 27.0, [-8.25, -2.75, 2.75, 8.25], 5, pasV, lp=2.7)
     # le bâtiment d'en face : 44 × 24, sept colonnes, six étages ; sa façade sur la deuxième cour, et l'autre sur la troisième
     pasF = min(120, (960 - 216 - 30) / 6) / 40; cols = cols_par_cote(44.0, 7)
-    facade(A, -C2Z1, -1, 44.0, 24.0, cols, 6, pasF, P=6.0)
-    facade(A, -C2Z1 + 12.0, +1, 44.0, 24.0, cols, 6, pasF, P=6.0)
+    facade(A, -C2Z1, -1, 44.0, 24.0, cols, 6, pasF, lp=2.5, P=6.0)
+    facade(A, -C2Z1 + 12.0, +1, 44.0, 24.0, cols, 6, pasF, lp=2.5, P=6.0)
     # (sous le passage du bâtiment d'en face : le plafond)
     PIERRE = mat_tex("nc_pierre", "pierre", .7, .6); A.de(PIERRE, -2.4, 2.4, 44.0, 56.0, 4.4, 4.6)
     return A.objets("verso")

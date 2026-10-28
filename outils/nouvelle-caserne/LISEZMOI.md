@@ -10,7 +10,8 @@ La nouvelle caserne (lieux « nc », « nc-fetes », « nc-mess », « nc-etage 
    Il faut aussi `GLTFExporter.patch.js` et `TextureUtils.patch.js` (ceux de three r160).
 2. `python3 textures.py` fabrique les textures (brique, pierre du socle, pierre claire, pavés carrés posés au hasard, plâtre) et leurs cartes de relief, dans `tex/`.
 3. **La carte** : `FMT=WEBP blender -b -P nc_carte.py -- <sortie> [--rendu]` : la rue posée à sa place (PORCHE_DZ), les doublons et décors de fond retirés,
-   les pavés, les bâtiments refaits en relief (`horloge.py`, `cotes.py`, `porche.py`, `verso.py`), puis toute la carte retouchée (`retouche.py`) ; exporte `carte.glb`.
+   les pavés, les bâtiments refaits en relief (`horloge.py` d'après la photo de la cour d'honneur, `cotes.py`, `porche.py`, `verso.py`), la gravure de l'entrée en relief (`entree.py`, d'après `images/porche.jpg`, à copier dans `tex/`), puis toute la carte retouchée (`retouche.py`) ; exporte `carte.glb` et `fenetres-horloge.json` (les fenêtres du bâtiment de l'horloge, allumées la nuit par le jeu ; à copier dans `public/modeles/nc/`).
+   `test_rapide.py` : les bâtiments neufs seuls, rendus en quelques minutes pour vérifier.
 4. **Un intérieur** : `blender -b -P nc_lieu.py -- <lieu> <sortie>` : importé, regroupé par matière, retouché (`retouche.py`) ; exporte `<lieu>.glb`.
 5. Compression : `gltfpack -i <in> -o public/modeles/nc/<nom>.glb -cc -kn -km` (meshopt ; le jeu a `vendor/meshopt_decoder.module.js`),
    copier aussi `<lieu>.json`, et augmenter `NC_V` dans `public/matrice.js`.
