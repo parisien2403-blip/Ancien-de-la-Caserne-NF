@@ -11,4 +11,4 @@ La cour d'honneur de la nouvelle caserne (lieu « nc », administrateur seul) se
    déjà refaits, construit les nouveaux (`horloge.py`, …), regroupe par matière, exporte `cour.glb`
    à copier dans `public/modeles/nc/` (et augmenter `NC_V` dans `public/matrice.js`).
 
-Bâtiments refaits en relief : le bâtiment de l'horloge (`horloge.py`).
+Bâtiments refaits en relief : le bâtiment de l'horloge (`horloge.py`), les deux bâtiments à garages (`cotes.py`), la façade du porche et les ailes R et S (`porche.py`).

@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.51";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.52";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12093,7 +12093,7 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
 
 /* ===================== La nouvelle caserne (en chantier) : refaite dans Blender, à partir de l'ancienne — un bâtiment après l'autre.
    Seul l'administrateur y va : par le cercle vert au milieu de la cour d'honneur ; au même endroit ici, un cercle vert pour revenir ===================== */
-const NC_V = 5;
+const NC_V = 6;
 function construireNouvelleCaserne(L, scene) {
   L.nc = true; L.sansPNJ = true; L.portails = L.portails || [];
   const g = new THREE.Group(); scene.add(g); L.ncGroupe = g;
@@ -12101,7 +12101,11 @@ function construireNouvelleCaserne(L, scene) {
     const r = await new gltfMod.GLTFLoader().loadAsync("modeles/nc/cour.glb?v=" + NC_V);
     r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(r.scene);
     if (M && M.scene === scene && M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", e));
-  L.limites = (x, z) => Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6);
+  // les voitures garées (Clio et 106), comme dans la cour de 1990 : côté mess, côté salle des fêtes
+  const VO = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]); let n = 0;
+  for (const [x, z, rot] of [[-5, .4, Math.PI], [-5, 2.7, Math.PI], [-5, 5, Math.PI], [5, .4, 0], [5, 2.7, 0]]) {
+    const [mo, co] = CIT[n++ % CIT.length]; citadine(scene, mo, co, x, z, rot); VO.push([x - 1.9, x + 1.9, z - .86, z + .86]); }
+  L.limites = (x, z) => Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25);
   L.portails.push({ dans: (x, z) => Math.hypot(x, z) < RAYON_CERCLE, vers: "grande", arrivee: [0, 2.6], seuil: [0, 0], vert: true });
   L.depart = [0, 2.6]; L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72];
   L.boite = [-11.6, 11.6, -17.4, 15.1]; L.zone = [-30, 30, -30, 30]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };

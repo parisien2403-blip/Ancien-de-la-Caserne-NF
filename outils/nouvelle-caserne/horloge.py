@@ -11,6 +11,7 @@ Y0 = 18.0; W = 44.0; H = 27.0; P = 12.0; SOCLE = 6.4
 PAS = W / 14; FW, FH = 1.5, 1.85; RET = .25          # (RET : le retrait des fenêtres dans le mur)
 
 def mat_tex(nom, image, rug=.85, force=1.0):
+    if nom in bpy.data.materials: return bpy.data.materials[nom]   # (une seule fois par matière, pour tous les bâtiments)
     m = bpy.data.materials.new(nom); m.use_nodes = True; nt = m.node_tree; p = nt.nodes["Principled BSDF"]
     ti = nt.nodes.new("ShaderNodeTexImage"); ti.image = bpy.data.images.load(os.path.join(TEX, image + ".png")); nt.links.new(ti.outputs["Color"], p.inputs["Base Color"])
     tn = nt.nodes.new("ShaderNodeTexImage"); tn.image = bpy.data.images.load(os.path.join(TEX, image + "_n.png")); tn.image.colorspace_settings.name = "Non-Color"
@@ -18,6 +19,7 @@ def mat_tex(nom, image, rug=.85, force=1.0):
     p.inputs["Roughness"].default_value = rug; return m
 
 def mat(nom, c, rug=.6, met=0.0):
+    if nom in bpy.data.materials: return bpy.data.materials[nom]
     m = bpy.data.materials.new(nom); m.use_nodes = True; p = m.node_tree.nodes["Principled BSDF"]
     p.inputs["Base Color"].default_value = list(c) + [1]; p.inputs["Roughness"].default_value = rug; p.inputs["Metallic"].default_value = met; return m
 
