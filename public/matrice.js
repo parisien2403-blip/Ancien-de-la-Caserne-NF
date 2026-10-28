@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.60";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.61";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -10045,6 +10045,7 @@ function videoLocale(url, cle, prog) {
     prog && prog(1); return garder(b); })();
   VID_LOC.enCours.set(cle, p); p.finally(() => VID_LOC.enCours.delete(cle)).catch(() => {}); return p; }
 function louerFilm(f) { if (!M || M.cine) return; if (!f.plusieurs && universOccupe(f.lieu)) { refusUnivers(f.lieu); return; }
+  M.ctx.pleinJeu && M.ctx.pleinJeu(true);   // (on part dans un film : plein écran, sans les barres du téléphone ; on en sort en revenant à la caserne)
   if (f.cle === "grem") { chargerKingston().then(k => k.introGremlins()).catch(e => console.warn("kingston", e)); return; }
   const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
   sonBruit(.25, 900, .25);
@@ -11725,6 +11726,7 @@ function ouvrirArcade() {
   const f = document.createElement("iframe"); f.src = "goonies/index.html?v=" + DIAG_V; f.allow = "gamepad; autoplay; fullscreen";
   f.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:5000;background:#000";
   for (const ev of ["pointerdown", "touchstart", "mousedown", "click", "keydown"]) f.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.pleinJeu && M.ctx.pleinJeu(true);   /* (la borne : plein écran, sans les barres du téléphone) */
   hoteFS().appendChild(f); M.arcadeEl = f; jouer("arcade"); window.mxArcadeOn = true; window.mxSilence && window.mxSilence(true); window.mxSonsMaj && window.mxSonsMaj(); setTimeout(() => { try { f.focus(); } catch (e) {} }, 200);   // (en plein écran, seul l'élément en plein écran est visible : le jeu s'y ouvre)
   const pe = () => { if (M && M.arcadeEl === f) hoteFS().appendChild(f); else document.removeEventListener("fullscreenchange", pe); };
   document.addEventListener("fullscreenchange", pe);   // (on entre ou sort du plein écran pendant la partie : le jeu suit)
@@ -11732,7 +11734,7 @@ function ouvrirArcade() {
     if (e.data.goonies === "score" && M && M.ctx && M.ctx.token) { fetch("/api/flipper?jeu=goonies", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + M.ctx.token }, body: JSON.stringify({ score: e.data.score }) }).catch(() => {}); return; }   // (la partie est finie : le score part au panneau des records)
     if (e.data.goonies !== "fermer") return; removeEventListener("message", fin); fermerArcade(); };
   addEventListener("message", fin); }
-function fermerArcade() { window.mxArcadeOn = false; window.mxSilence && window.mxSilence(false); window.mxSonsMaj && window.mxSonsMaj(); if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
+function fermerArcade() { if (M && M.ctx.pleinJeu && !M.ctx.estFilm(M.lieu)) M.ctx.pleinJeu(false); window.mxArcadeOn = false; window.mxSilence && window.mxSilence(false); window.mxSonsMaj && window.mxSonsMaj(); if (!M || !M.arcadeEl) return; M.arcadeEl.remove(); M.arcadeEl = null; jouer(null); }
 function chercherAction(t) {
   if (!M || (M.actionT && t - M.actionT < 300)) return; M.actionT = t;
   const moi = M.moiNum && M.gens.get(M.moiNum); let a = null;
