@@ -51,3 +51,33 @@ c, h = appareil(1.0, .5, .018, base=(.86, .82, .74), varie=.05, chanfrein=.02, b
 g = bruit(N / 8) - .5; c = np.clip(np.dstack([np.full((N, N), v) for v in (.90, .88, .83)]) * (1 + .08 * g[..., None]), 0, 1)
 ecrire("pierre", c, g * .4, 1.0)
 print("ok")
+
+# les pavés (granit gris) : des carrés, tous de la même taille (11 cm), un peu irréguliers (bords taillés à la main, coins émoussés, légèrement de travers),
+# posés simplement au sol : rang après rang, chaque rang décalé au hasard — pas d'arcs, pas de cercles ; joints de sable creusés
+def paves():
+    n = 18; c = 2.0 / n; cote = c * .86                     # (18 × 18 pavés sur les 2 m de l'image)
+    yy, xx = np.mgrid[0:N, 0:N] / PX
+    dec = rng.random(n) * c                                  # (le décalage de chaque rang)
+    ang = (rng.random((n, n)) - .5) * .14; jx = (rng.random((n, n, 2)) - .5) * c * .08; tt = rng.random((n, n)); ec = 1 + (rng.random((n, n, 2)) - .5) * .06
+    r = np.floor(yy / c).astype(int) % n; xo = (xx + dec[r]) % 2.0; j = np.floor(xo / c).astype(int) % n
+    u0 = xo - (j + .5) * c - jx[r, j, 0]; v0 = yy - (np.floor(yy / c) + .5) * c - jx[r, j, 1]
+    a = ang[r, j]; u = np.cos(a) * u0 + np.sin(a) * v0; v = -np.sin(a) * u0 + np.cos(a) * v0
+    hu = cote / 2 * ec[r, j, 0]; hv = cote / 2 * ec[r, j, 1]
+    g = bruit(N / 30, oct=3) - .5; gb = bruit(N / 12, oct=2) - .5
+    # (un carré aux coins émoussés : distance au bord, avec un bord un peu irrégulier)
+    ru = .012; du = np.abs(u) - (hu - ru); dv = np.abs(v) - (hv - ru)
+    ext = np.hypot(np.maximum(du, 0), np.maximum(dv, 0)) + np.minimum(np.maximum(du, dv), 0) - ru + gb * .008
+    dans = ext < 0; e = -ext
+    t = tt[r, j]
+    base = np.array([.52, .51, .50]) * (.74 + .42 * t[..., None]) * (1 + .22 * g[..., None])
+    h = np.where(dans, np.clip(e / .025, 0, 1) ** .6 + .2 * g, 0)
+    sable = np.array([.40, .37, .32]) * (1 + .2 * g[..., None])
+    col = np.where(dans[..., None], base, sable)
+    ecrire("paves", np.clip(col, 0, 1), h, 3.5)
+paves(); print("paves ok")
+
+# le plâtre des murs intérieurs, peint : un grain très fin, quelques reprises à la taloche (relief seul)
+def platre():
+    g = bruit(N / 60, oct=3) - .5; t = bruit(N / 4, oct=2) - .5
+    ecrire("platre", np.full((N, N, 3), .8), g * .5 + t * .8, 1.6)
+platre(); print("platre ok")

@@ -23,6 +23,15 @@ def mat(nom, c, rug=.6, met=0.0):
     m = bpy.data.materials.new(nom); m.use_nodes = True; p = m.node_tree.nodes["Principled BSDF"]
     p.inputs["Base Color"].default_value = list(c) + [1]; p.inputs["Roughness"].default_value = rug; p.inputs["Metallic"].default_value = met; return m
 
+def uv_boite_monde(o, taille=2.0):
+    """des coordonnées de texture « en boîte », en mètres, sur un objet déjà en coordonnées du monde"""
+    bm = bmesh.new(); bm.from_mesh(o.data); uv = bm.loops.layers.uv.verify()
+    for f in bm.faces:
+        n = f.normal; ax = max(range(3), key=lambda i: abs(n[i]))
+        for l in f.loops:
+            v = l.vert.co; a, c = ((v.y, v.z) if ax == 0 else (v.x, v.z) if ax == 1 else (v.x, v.y)); l[uv].uv = (a / taille, c / taille)
+    bm.to_mesh(o.data); bm.free()
+
 class Atelier:
     """des boîtes (et quelques cylindres), rangées par matière, chacune dans son maillage"""
     def __init__(s): s.bm = {}
@@ -83,7 +92,7 @@ def construire():
     fen = [(x - FW / 2, x + FW / 2, ztop(r) - FH, ztop(r)) for r in range(7) for x in xs]
     # ---- les étages de brique : la façade percée de ses 98 fenêtres, la masse derrière, les tableaux des fenêtres ----
     mur_perce(A, BRIQUE, -W / 2, W / 2, SOCLE, H, Y0, Y0 + RET, fen)
-    A.de(BRIQUE, -W / 2, W / 2, Y0 + RET, Y0 + P, SOCLE, H)
+    A.de(BRIQUE, -W / 2, W / 2, Y0 + RET, Y0 + P - RET, SOCLE, H)   # (derrière : la façade sur la deuxième cour, verso.py)
     for r in range(7):
         zt = ztop(r); zb = zt - FH
         for c, x in enumerate(xs):
@@ -113,7 +122,7 @@ def construire():
     baies = [(s * (d + L / 2) / 40, L / 40) for s in (-1, 1) for d, L in ((124, 66), (220, 110), (400, 110), (580, 110), (760, 110))]
     trous = [(-2.4, 2.4, 0, 4.4)] + [(x - l / 2, x + l / 2, 0 if l < 2 else 1.0, 4.5) for x, l in baies]
     mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0, Y0 + RET, trous)
-    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0 + RET, Y0 + P, [(-2.4, 2.4, 0, 4.4)])
+    mur_perce(A, SOCLEM, -W / 2, W / 2, 0, SOCLE, Y0 + RET, Y0 + P - RET, [(-2.4, 2.4, 0, 4.4)])
     for x, l in baies:
         z0 = 0 if l < 2 else 1.0
         A.de(VITRE, x - l / 2, x + l / 2, Y0 + RET - .03, Y0 + RET, z0, 4.5, 1)

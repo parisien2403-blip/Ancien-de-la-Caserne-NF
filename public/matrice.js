@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.52";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.53";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -8224,7 +8224,7 @@ function trierLumieres(t) {
   tri.forEach(([l], i) => l.layers.set(i < (re ? (qualiteChoisie() === "haut" ? 6 : 3) : PETIT ? 4 : estSH(M.lieu) ? 6 : LAMPES_MAX) ? 0 : 31));   // (Silent Hill : six, les plus proches — la salle des fêtes en avait vingt-trois allumées à la fois)   // (petit téléphone : les quatre lampes les plus proches seulement, partout)
   if (M.L.groupeSousSol) M.L.groupeSousSol.visible = c.y < 0 || Math.hypot(c.x - 2.5, c.z + 84) < 16;   // (le sous-sol : seulement de près, ou d'en bas)
 }
-const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh)-/, ""), estApo = id => /^z-/.test(id || "");
+const baseLieu = id => id === "bttf-cour" || id === "gb-cour" ? "grande" : id === "gb-mess" ? "mess" : String(id || "").replace(/^(z|sh|nc)-/, ""), estApo = id => /^z-/.test(id || "");
 // une flamme (dégradé jaune → orange → rouge, en goutte), partagée par tous les feux
 let texFlamme = null, texFumee = null, texSang = [], texTrainee = [], texPas = null;
 let texFlammes = null;
@@ -10321,6 +10321,7 @@ function construireScene(id) {
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
   { const sil = new Set(L.silhouettes || []); for (const o of L.nuitObjets || []) { if (!o.isMesh || !o.material || !o.material.isMeshBasicMaterial || !o.material.transparent) continue;
       const si = sil.has(o); o.renderOrder = si ? 3 : 2; o.material.depthWrite = false; o.material.polygonOffset = true; o.material.polygonOffsetFactor = si ? -6 : -4; o.material.polygonOffsetUnits = si ? -12 : -8; } }   // (la cour de l'Ecto-1 : sans les voitures garées)
+  if (/^nc-/.test(id)) { L.portails = portailsNC(L.portails, 0); L.raccourcis = portailsNC(L.raccourcis, 0); L.sansPNJ = true; habillerNC(id, scene, n0J); }   // (un intérieur de la nouvelle caserne : ses portes mènent à la nouvelle caserne)
   if (id === "bttf-cour") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, bttf: true });
   if (id === "gb-cour" || id === "gb-mess") Object.assign(L, { portails: [], raccourcis: [], porteFete: null, posDJ: null, posBar: null, sansPNJ: true, gb: true });   // (S.O.S. Fantômes : la cour et le mess rien qu'à soi)   // (la cour d'honneur rien qu'à soi, pour la DeLorean)
   if (L.interieur) { soleil.intensity = 0; soleil.castShadow = false; scene.children.filter(o => o.isHemisphereLight).forEach(h => h.intensity = .35); scene.fog = null; scene.background = new THREE.Color(0x2a2420); }
@@ -12093,22 +12094,86 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
 
 /* ===================== La nouvelle caserne (en chantier) : refaite dans Blender, à partir de l'ancienne — un bâtiment après l'autre.
    Seul l'administrateur y va : par le cercle vert au milieu de la cour d'honneur ; au même endroit ici, un cercle vert pour revenir ===================== */
-const NC_V = 6;
+/* les passages de la caserne de 1990, menés vers la nouvelle : la cour, la rue → « nc » (une seule carte ; la rue y est décalée de PORCHE_DZ) ;
+   les intérieurs → « nc-fetes », « nc-mess »… ; le reste (films, apocalypse) n'existe pas dans le chantier. dz : le décalage du lieu d'où l'on part (la rue : PORCHE_DZ) */
+const NC_INTERIEURS = ["fetes", "mess", "etage", "cave", "appart"];
+function portailsNC(liste, dz) {
+  const out = [], sh = a => Array.isArray(a) && a.length >= 2 ? [a[0], a[1] + dz, ...a.slice(2)] : a;
+  for (const q of liste || []) {
+    if (!q.vers) { out.push(dz && q.marche ? { ...q, marche: sh(q.marche) } : q); continue; }
+    const base = String(q.vers).replace(/^nc-/, ""), v = base === "grande" || base === "rue" ? "nc" : NC_INTERIEURS.includes(base) ? "nc-" + base : null;
+    if (!v) continue;
+    const n = { ...q, vers: v };
+    if (base === "rue" && Array.isArray(q.arrivee)) n.arrivee = [q.arrivee[0], q.arrivee[1] + PORCHE_DZ];
+    if (dz) { if (q.dans) n.dans = (x, z) => q.dans(x, z - dz); for (const k of ["seuil", "centre", "traverse", "indice", "marche"]) if (q[k]) n[k] = sh(q[k]); delete n.zc; }
+    out.push(n); }
+  return out; }
+const NC_V = 9;
+/* un intérieur de la nouvelle caserne : il est construit comme en 1990 (portes, lumières, télés, boule à facettes… tout ce qui bouge ou s'allume reste tel quel) ;
+   ses morceaux immobiles, eux, sont repris et retouchés dans Blender (modeles/nc/<lieu>.glb) : une fois le modèle chargé, il prend leur place.
+   Chaque morceau est reconnu à sa signature (sa forme, sa place) : la liste <lieu>.json dit lesquels sont dans le modèle */
+const cleNC = (o, v) => { v.setFromMatrixPosition(o.matrixWorld); const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+  return (o.isInstancedMesh ? "i" + o.count + ":" : "") + (a ? a.count : 0) + "|" + Math.round(v.x * 50) + "," + Math.round(v.y * 50) + "," + Math.round(v.z * 50); };
+function habillerNC(id, scene, n0) {
+  const ms = []; for (const o of scene.children.slice(n0)) o.traverse(q => { if (q.isMesh) { q.userData.ncI = ms.length; ms.push(q); } });
+  const nom = id.replace(/^nc-/, "");
+  (async () => { const j = await (await fetch("modeles/nc/" + nom + ".json?v=" + NC_V)).json();
+    gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
+    const { MeshoptDecoder } = await import("./vendor/meshopt_decoder.module.js?v=1");
+    const ld = new gltfMod.GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder);
+    const r = await ld.loadAsync("modeles/nc/" + nom + ".glb?v=" + NC_V);
+    if (!M || M.scene !== scene) return;
+    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    scene.updateMatrixWorld(true); const cles = new Set(j.cles), v = new THREE.Vector3(), caches = ms.filter(o => cles.has(cleNC(o, v)));
+    r.scene.name = "ncModele"; r.scene.userData.caches = caches; scene.add(r.scene); for (const o of caches) o.visible = false;
+    if (M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", nom, e)); }
 function construireNouvelleCaserne(L, scene) {
   L.nc = true; L.sansPNJ = true; L.portails = L.portails || [];
   const g = new THREE.Group(); scene.add(g); L.ncGroupe = g;
   (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
-    const r = await new gltfMod.GLTFLoader().loadAsync("modeles/nc/cour.glb?v=" + NC_V);
+    const { MeshoptDecoder } = await import("./vendor/meshopt_decoder.module.js?v=1");   /* (la carte est compressée — gltfpack — : 44 Mo → 9 Mo) */
+    const ld = new gltfMod.GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder);
+    const r = await ld.loadAsync("modeles/nc/carte.glb?v=" + NC_V);
     r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(r.scene);
     if (M && M.scene === scene && M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", e));
   // les voitures garées (Clio et 106), comme dans la cour de 1990 : côté mess, côté salle des fêtes
   const VO = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]); let n = 0;
   for (const [x, z, rot] of [[-5, .4, Math.PI], [-5, 2.7, Math.PI], [-5, 5, Math.PI], [5, .4, 0], [5, 2.7, 0]]) {
     const [mo, co] = CIT[n++ % CIT.length]; citadine(scene, mo, co, x, z, rot); VO.push([x - 1.9, x + 1.9, z - .86, z + .86]); }
-  L.limites = (x, z) => Math.abs(x) < 10.2 && z > -17.4 && z < 14.8 && !(Math.abs(x) > 8.2 && z > 11.6) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25);
+  /* où l'on peut marcher, à quelle hauteur, où va la caméra : la même logique que la caserne de 1990 (la cour et les cours de derrière ; la rue, décalée de PORCHE_DZ),
+     reprise de ses plans — construits à part, jamais dessinés (leurs images sont libérées aussitôt) */
+  const DZ = PORCHE_DZ, enRue = z => z > 15.6;
+  const G = new THREE.Group(), LG = construireLieu("grande", G), R = new THREE.Group(); R.position.z = DZ; const LR = construireLieu("rue", R);
+  // la nuit : les fenêtres qui s'allument, leurs silhouettes, les lumières — celles de 1990, aux mêmes places (sans celles des décors de fond)
+  G.updateMatrixWorld(true); R.updateMatrixWorld(true);
+  const ou = o => o.getWorldPosition(new THREE.Vector3());
+  const nuit = [...(LG.nuitObjets || []).filter(o => ou(o).z < 29.6), ...(LR.nuitObjets || []).filter(o => ou(o).z > 15.4)];
+  const sil = new Set([...(LG.silhouettes || []), ...(LR.silhouettes || [])]);
+  for (const o of nuit) scene.attach(o);
+  L.nuitObjets = nuit; L.silhouettes = nuit.filter(o => sil.has(o));
+  L.anim = t => { if (L.nuit) for (const s of L.silhouettes) animerSilhouette(s, t); };
+  // (le reste de ces plans n'est jamais dessiné ; leurs images, partagées avec les autres lieux, restent telles quelles)
+  L.limites = (x, z) => (enRue(z) ? !!LR.limites && LR.limites(x, z - DZ) : !!LG.limites && LG.limites(x, z)) && !VO.some(([a, b, c, d]) => x > a - .25 && x < b + .25 && z > c - .25 && z < d + .25);
+  L.hauteur = (x, z, p) => enRue(z) ? (LR.hauteur ? LR.hauteur(x, z - DZ, p) : 0) : (LG.hauteur ? LG.hauteur(x, z, p) : 0);
+  /* la caméra : d'abord les règles de 1990 (passages, voûtes) ; puis elle ne rentre jamais dans un bâtiment — les bâtiments de la nouvelle caserne sont pleins :
+     un rayon de la tête vers la caméra, contre le modèle (dix fois par seconde au plus) ; touché : la caméra s'avance devant le mur */
+  const ray = new THREE.Raycaster(), tete = new THREE.Vector3(), dir = new THREE.Vector3(); let rayT = 0, rayD = Infinity;
+  L.contraindreCam = (pos, moi) => { const mp = moi.g.position; let r = false;
+    if (enRue(mp.z)) { if (LR.contraindreCam) { pos.z -= DZ; mp.z -= DZ; r = LR.contraindreCam(pos, moi); pos.z += DZ; mp.z += DZ; } }
+    else if (LG.contraindreCam) r = LG.contraindreCam(pos, moi);
+    tete.set(mp.x, mp.y + 1.5, mp.z); dir.copy(pos).sub(tete); const d = dir.length(); if (d < .3 || !g.children.length) return r; dir.divideScalar(d);
+    const now = performance.now(); if (now - rayT > 100) { rayT = now; ray.set(tete, dir); ray.far = d + .5; const h = ray.intersectObjects(g.children, true).find(q => !(q.object.material && q.object.material.transparent) && q.point.y > .2); rayD = h ? h.distance : Infinity; }
+    if (rayD < d + .3) { pos.copy(tete).addScaledVector(dir, Math.max(.4, rayD - .6)); return true; }
+    return r; };
+  // le sol, pour toucher l'endroit où aller (invisible : le vrai sol est dans le modèle)
+  const solT = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); solT.rotation.x = -Math.PI / 2; solT.position.y = .001; scene.add(solT);
+  L.sol = solT; L.solsPlus = [...(LG.solsPlus || []), ...(LR.solsPlus || [])];
   L.portails.push({ dans: (x, z) => Math.hypot(x, z) < RAYON_CERCLE, vers: "grande", arrivee: [0, 2.6], seuil: [0, 0], vert: true });
+  // les portes de 1990 (la cour et ses cours, la rue), menées vers les intérieurs de la nouvelle caserne ; leurs zones à toucher aussi
+  L.portails.push(...portailsNC((LG.portails || []).filter(q => q.vers !== "nc" && q.vers !== "rue"), 0), ...portailsNC((LR.portails || []).filter(q => q.vers !== "grande"), DZ));
+  L.raccourcis = [...portailsNC((LG.raccourcis || []).filter(q => q.vers !== "rue"), 0), ...portailsNC((LR.raccourcis || []).filter(q => q.vers !== "grande"), DZ)];
   L.depart = [0, 2.6]; L.taille = 1.85; L.suivi = { d: 8.5, h: 3.9, av: 6, vy: 3.3 }; L.fov = [60, 72];
-  L.boite = [-11.6, 11.6, -17.4, 15.1]; L.zone = [-30, 30, -30, 30]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] };
+  L.zone = [-60, 60, -150, 100]; L.cam = { pos: [0, 8, 30], vise: [0, 7.5, -10] }; L.loin = 400;
 }
 
 const DOC = -30, ID_DOC = 30;

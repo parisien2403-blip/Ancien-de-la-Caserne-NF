@@ -5,7 +5,8 @@ const fs = require('fs');
   const c = await b.newContext({ viewport: { width: 1280, height: 760 }, hasTouch: false, serviceWorkers: 'block' });
   await c.route('**/__exp/GLTFExporter.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(__dirname + '/GLTFExporter.patch.js', 'utf8') }));
   await c.route('**/__exp/TextureUtils.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(__dirname + '/TextureUtils.patch.js', 'utf8') }));
-  await c.route('**/three@0.160.0/**', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(__dirname + '/../../public/vendor/three.module.js', 'utf8') }));
+  await c.route('**/three@0.160.0/**', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(__dirname + '/dbgsrv/three.module.js', 'utf8') }));
+  await c.route('**/modeles/nc/*.json*', r => r.fulfill({ status: 404, body: '' }));
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => { errs.push(e.message + ' @ ' + (e.stack || '').split('\n').slice(1, 3).join(' ')); console.log('ERR', e.message); }); p.on('console', m => { if (m.type() === 'error' && !/Failed to load/.test(m.text())) errs.push(m.text().slice(0, 300) + ' @' + JSON.stringify(m.location())); }); p.on('console', m => { if (m.type() === 'error') errs.push(m.text().slice(0, 300)); }); p.on('dialog', d => d.accept());
   await p.addInitScript(() => { window.CASERNE_KFAC = 2; window.CASERNE_GREMLINS = true; }); await p.goto('http://localhost:8797/'); await p.waitForTimeout(800);
   await p.click('#enter'); await p.waitForTimeout(400);
@@ -28,21 +29,33 @@ const fs = require('fs');
   const pos = () => E("JSON.stringify({ lieu: M.lieu, p: (()=>{const q=M.gens.get(M.moiNum).g.position; return [+q.x.toFixed(2), +q.z.toFixed(2)]})(), cercles: (M.cercles||[]).filter(c=>c.g&&c.g.visible).length })");
   await E("(()=>{const q=M.gens.get(M.moiNum); q.cible=null; q.chemin=[]; q.g.position.set(0, q.g.position.y, -10); return 1})()"); await W(2000);
   const shot = async n => { await W(1500); await p.locator('#mxScene').screenshot({ path: '/home/user/apercus/j-' + n + '.png', timeout: 300000 }); };
-  await E("(m.ambiance('jour'), 1)"); await E("(m.allerAuLieu('grande'), 1)"); for (let k = 0; k < 60 && (await E("M.lieu")) !== 'grande'; k++) await W(500); await W(6000);
-  const b64 = await p.evaluate(async V => { const m = await import(V), M = m._etatMatrice(); const { GLTFExporter } = await import('/__exp/GLTFExporter.js');
-    const T = await import('/vendor/three.module.js?v=160');
-    const racine = M.L.racineJ || M.scene, b = new T.Box3(), c = new T.Vector3(), garde = [];
-    racine.updateMatrixWorld(true);
-    // (ce qui ne se voit pas dans le jeu — zones à toucher invisibles, objets de nuit éteints, objets cachés : on ne l'emporte pas)
-    racine.traverse(o => { if (!o.isMesh) return; const ms = [].concat(o.material || []); if (ms.length && ms.every(m => !m || m.visible === false || m.colorWrite === false || (m.transparent && m.opacity < .06)) || o.layers.mask !== 1) o.visible = false; });
-    for (const o of racine.children) { if (o.isLight || o.isSprite || !o.visible) continue; b.makeEmpty(); if (o.isInstancedMesh) { o.computeBoundingBox(); b.copy(o.boundingBox).applyMatrix4(o.matrixWorld); } else b.setFromObject(o); if (b.isEmpty()) continue; b.getCenter(c);
-      if (Math.abs(c.x) < 34 && c.z > -31 && c.z < 30 && b.max.y - b.min.y < 60 && (b.max.x - b.min.x) < 80) garde.push(o); }
-    // les objets répétés (InstancedMesh) : remis en objets simples (Blender les lit sans souci)
-    const liste = []; const mm = new T.Matrix4();
-    for (const o of garde) { if (!o.isInstancedMesh) { liste.push(o); continue; } const g = new T.Group(); g.matrix.copy(o.matrix); g.matrixAutoUpdate = false;
-      for (let i = 0; i < Math.min(o.count, 4000); i++) { o.getMatrixAt(i, mm); const q = new T.Mesh(o.geometry, o.material); mm.decompose(q.position, q.quaternion, q.scale); g.add(q); } g.position.setFromMatrixPosition(o.matrixWorld); g.matrixAutoUpdate = true; liste.push(g); }
+  await E("(m.ambiance('jour'), 1)"); const LIEU = 'nc-' + process.env.LIEU; await E(`(m.allerAuLieu('${LIEU}'), 1)`); for (let k = 0; k < 60 && (await E("M.lieu")) !== LIEU; k++) await W(500); await W(8000);
+  const etat = () => p.evaluate(async V => { const m = await import(V), M = m._etatMatrice(); const out = [];
+    M.scene.traverse(o => { if (!o.isMesh || o.userData.ncI === undefined) return; let v = true; for (let q = o; q; q = q.parent) if (!q.visible) v = false;
+      const ms = [].concat(o.material || []).map(x => x ? [x.visible, x.opacity, x.color && x.color.getHex(), x.emissive && x.emissive.getHex(), x.emissiveIntensity, x.map && x.map.uuid, x.map && x.map.offset.x.toFixed(3) + ',' + x.map.offset.y.toFixed(3), x.map && x.map.version].join('|') : '');
+      let im = ''; if (o.isInstancedMesh) { im = o.count + ':' + Array.from(o.instanceMatrix.array.slice(0, 64)).map(x => x.toFixed(3)).join(','); }
+      out[o.userData.ncI] = [v, o.matrixWorld.elements.map(x => x.toFixed(3)).join(','), ms.join('/'), im].join('#'); }); return out; }, V);
+  const s1 = await etat(); await E("(m.ambiance('nuit'), 1)"); await W(3000); const s2 = await etat(); await E("(m.ambiance('jour'), 1)"); await W(5000); const s3 = await etat();
+  const bouge = new Set(); for (let i = 0; i < s1.length; i++) if (s1[i] !== s2[i] || s1[i] !== s3[i]) bouge.add(i);
+  console.log('MORCEAUX', s1.length, 'QUI BOUGENT', bouge.size);
+  const b64 = await p.evaluate(async ([V, bougeL]) => { const m = await import(V), M = m._etatMatrice(); const { GLTFExporter } = await import('/__exp/GLTFExporter.js');
+    const T = await import('/vendor/three.module.js?v=160'); const bouge = new Set(bougeL);
+    M.scene.updateMatrixWorld(true);
+    // (ce que la logique du lieu tient en main — portes, télés, sol à toucher… — et ce qui s'allume la nuit : reste au jeu)
+    const tenus = new Set(), vus = new Set();
+    const marquer = o => o.traverse(q => tenus.add(q));
+    const fouiller = (v, d) => { if (!v || typeof v !== 'object' || vus.has(v) || d > 3) return; vus.add(v); if (v.isObject3D) { if (v !== M.scene) marquer(v); return; } if (v.isMaterial || v.isTexture || v.isBufferGeometry) return; for (const k of Object.keys(v)) { try { fouiller(v[k], d + 1); } catch (e) {} } };
+    fouiller(M.L, 0); for (const c of M.cercles || []) if (c.g) marquer(c.g); if (M.repere) marquer(M.repere); for (const q of M.gens.values()) marquer(q.g);
+    let n = 0; const statiques = [], cles = [], vv = new T.Vector3(), cleNC = o => { vv.setFromMatrixPosition(o.matrixWorld); const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position; return (o.isInstancedMesh ? 'i' + o.count + ':' : '') + (a ? a.count : 0) + '|' + Math.round(vv.x * 50) + ',' + Math.round(vv.y * 50) + ',' + Math.round(vv.z * 50); }; const liste = []; const mm = new T.Matrix4(), mw = new T.Matrix4();
+    M.scene.traverse(o => { if (!o.isMesh || o.userData.ncI === undefined) return; n++;
+      let v = true; for (let q = o; q; q = q.parent) if (!q.visible) v = false; if (!v || tenus.has(o) || bouge.has(o.userData.ncI) || o.isSkinnedMesh || o.layers.mask !== 1) return;
+      const mats = [].concat(o.material || []); if (!mats.length || mats.some(x => !x || x.visible === false || x.colorWrite === false || (x.transparent && x.opacity < .06) || x.isShaderMaterial)) return;
+      if (o.isInstancedMesh) { for (let i = 0; i < Math.min(o.count, 6000); i++) { o.getMatrixAt(i, mm); mw.multiplyMatrices(o.matrixWorld, mm); const q = new T.Mesh(o.geometry, o.material); mw.decompose(q.position, q.quaternion, q.scale); liste.push(q); } }
+      else { const q = new T.Mesh(o.geometry, o.material); o.matrixWorld.decompose(q.position, q.quaternion, q.scale); liste.push(q); }
+      statiques.push(o.userData.ncI); cles.push(cleNC(o)); });
     const ab = await new GLTFExporter().parseAsync(liste, { binary: true, onlyVisible: true, maxTextureSize: 2048 });
-    let s = ''; const u = new Uint8Array(ab); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return [btoa(s), garde.length, liste.length]; }, V);
-  require('fs').writeFileSync(__dirname + '/blender/cour-1990.glb', Buffer.from(b64[0], 'base64')); console.log('EXPORT', b64[1], b64[2], b64[0].length);
+    let s = ''; const u = new Uint8Array(ab); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return [s ? btoa(s) : '', JSON.stringify({ n, statiques: statiques.length, cles: [...new Set(cles)] }), liste.length]; }, [V, [...bouge]]);
+  require('fs').writeFileSync(__dirname + '/blender/' + process.env.LIEU + '.json', b64[1]); console.log('STATIQUES', JSON.parse(b64[1]).statiques, 'sur', JSON.parse(b64[1]).n, 'objets exportés', b64[2]);
+  require('fs').writeFileSync(__dirname + '/blender/' + process.env.LIEU + '-1990.glb', Buffer.from(b64[0], 'base64'));
   console.log('ERRS', JSON.stringify(errs.filter(e=>!/uv1|Failed to load|ERR_TUNNEL/.test(e)).slice(0, 4)));
   await b.close(); })();
