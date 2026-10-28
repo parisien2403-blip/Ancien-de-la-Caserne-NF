@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.54";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.55";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12108,7 +12108,7 @@ function portailsNC(liste, dz) {
     if (dz) { if (q.dans) n.dans = (x, z) => q.dans(x, z - dz); for (const k of ["seuil", "centre", "traverse", "indice", "marche"]) if (q[k]) n[k] = sh(q[k]); delete n.zc; }
     out.push(n); }
   return out; }
-const NC_V = 11;
+const NC_V = 12;
 /* un intérieur de la nouvelle caserne : il est construit comme en 1990 (portes, lumières, télés, boule à facettes… tout ce qui bouge ou s'allume reste tel quel) ;
    ses morceaux immobiles, eux, sont repris et retouchés dans Blender (modeles/nc/<lieu>.glb) : une fois le modèle chargé, il prend leur place.
    Chaque morceau est reconnu à sa signature (sa forme, sa place) : la liste <lieu>.json dit lesquels sont dans le modèle */
@@ -12123,7 +12123,7 @@ function habillerNC(id, scene, n0) {
     const ld = new gltfMod.GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder);
     const r = await ld.loadAsync("modeles/nc/" + nom + ".glb?v=" + NC_V);
     if (!M || M.scene !== scene) return;
-    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; } });
     scene.updateMatrixWorld(true); const cles = new Set(j.cles), v = new THREE.Vector3(), caches = ms.filter(o => cles.has(cleNC(o, v)));
     r.scene.name = "ncModele"; r.scene.userData.caches = caches; scene.add(r.scene); for (const o of caches) o.visible = false;
     if (M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", nom, e)); }
@@ -12134,7 +12134,7 @@ function construireNouvelleCaserne(L, scene) {
     const { MeshoptDecoder } = await import("./vendor/meshopt_decoder.module.js?v=1");   /* (la carte est compressée — gltfpack — : 44 Mo → 9 Mo) */
     const ld = new gltfMod.GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder);
     const r = await ld.loadAsync("modeles/nc/carte.glb?v=" + NC_V);
-    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.add(r.scene);
+    r.scene.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; o.matrixAutoUpdate = false; o.updateMatrix(); } }); g.add(r.scene);   /* (la carte ne projette pas d'ombre : un million de triangles de plus à dessiner à chaque image, c'était trop pour le téléphone) */
     if (M && M.scene === scene && M.rendu && M.rendu.compileAsync) compiler(scene).catch(() => {}); })().catch(e => console.warn("nouvelle caserne", e));
   // les voitures garées (Clio et 106), comme dans la cour de 1990 : côté mess, côté salle des fêtes
   const VO = [], CIT = COULEURS_90.map((c, i) => [i % 2 ? "106" : "clio", COULEURS_90[(i * 7) % COULEURS_90.length]]); let n = 0;
@@ -12163,13 +12163,19 @@ function construireNouvelleCaserne(L, scene) {
   L.hauteur = (x, z, p) => enRue(z) ? (LR.hauteur ? LR.hauteur(x, z - DZ, p) : 0) : (LG.hauteur ? LG.hauteur(x, z, p) : 0);
   /* la caméra : d'abord les règles de 1990 (passages, voûtes) ; puis elle ne rentre jamais dans un bâtiment — les bâtiments de la nouvelle caserne sont pleins :
      un rayon de la tête vers la caméra, contre le modèle (dix fois par seconde au plus) ; touché : la caméra s'avance devant le mur */
-  const ray = new THREE.Raycaster(), tete = new THREE.Vector3(), dir = new THREE.Vector3(); let rayT = 0, rayD = Infinity;
+  /* la caméra : d'abord les règles de 1990 (passages, voûtes) ; puis elle ne rentre jamais dans un bâtiment — les bâtiments de la nouvelle caserne sont pleins.
+     Le long du segment tête → caméra, on avance par pas de 25 cm sur le plan des endroits où l'on peut marcher : dès qu'on entre dans du « plein »
+     (un mur, sur au moins 50 cm : les grilles et les murets ne comptent pas), la caméra s'arrête devant. Peu coûteux, au contraire d'un rayon contre le modèle entier */
+  const tete = new THREE.Vector3(), dir = new THREE.Vector3(); let camT = 0, camS = Infinity;
+  const plein = (x, z) => enRue(z) ? !!LR.limites && !LR.limites(x, z - DZ) : !!LG.limites && !LG.limites(x, z);
   L.contraindreCam = (pos, moi) => { const mp = moi.g.position; let r = false;
     if (enRue(mp.z)) { if (LR.contraindreCam) { pos.z -= DZ; mp.z -= DZ; r = LR.contraindreCam(pos, moi); pos.z += DZ; mp.z += DZ; } }
     else if (LG.contraindreCam) r = LG.contraindreCam(pos, moi);
-    tete.set(mp.x, mp.y + 1.5, mp.z); dir.copy(pos).sub(tete); const d = dir.length(); if (d < .3 || !g.children.length) return r; dir.divideScalar(d);
-    const now = performance.now(); if (now - rayT > 100) { rayT = now; ray.set(tete, dir); ray.far = d + .5; const h = ray.intersectObjects(g.children, true).find(q => !(q.object.material && q.object.material.transparent) && q.point.y > .2); rayD = h ? h.distance : Infinity; }
-    if (rayD < d + .3) { pos.copy(tete).addScaledVector(dir, Math.max(.4, rayD - .6)); return true; }
+    tete.set(mp.x, mp.y + 1.5, mp.z); dir.copy(pos).sub(tete); const d = dir.length(); if (d < .3) return r; dir.divideScalar(d);
+    const now = performance.now();
+    if (now - camT > 60) { camT = now; camS = Infinity; let n = 0;
+      for (let t = .5; t < d + .3; t += .25) { if (plein(tete.x + dir.x * t, tete.z + dir.z * t) && tete.y + dir.y * t < 12) { if (++n >= 2) { camS = t - .25; break; } } else n = 0; } }
+    if (camS < d + .3) { pos.copy(tete).addScaledVector(dir, Math.max(.4, camS - .5)); return true; }
     return r; };
   // le sol, pour toucher l'endroit où aller (invisible : le vrai sol est dans le modèle)
   const solT = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); solT.rotation.x = -Math.PI / 2; solT.position.y = .001; scene.add(solT);

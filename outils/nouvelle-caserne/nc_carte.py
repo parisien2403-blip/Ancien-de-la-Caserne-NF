@@ -111,21 +111,22 @@ import verso
 retirer(lambda o: src(o) == "g" and verso.envergure_face([Vector(c) for c in o.bound_box]), "bâtiment d'en face (2e cour) : anciens morceaux")
 verso.construire()
 
-# ---------- 4) regroupé par matière (beaucoup moins d'objets à dessiner), images de 1024 px au plus ----------
+# ---------- 4) regroupé par matière et par carré de 30 m (moins d'objets à dessiner, et ce qui est hors de vue n'est pas dessiné), images de 1024 px au plus ----------
 objs = [o for o in sc.objects if o.type == "MESH"]
 print("OBJETS", len(objs), "MATIERES", len(bpy.data.materials), "IMAGES", len(bpy.data.images))
 parMat = {}
 for o in objs:
     m = o.active_material.name if o.active_material else "_"
     if len(o.material_slots) > 1: m = "multi:" + o.name
-    parMat.setdefault(m, []).append(o)
+    b = boite_de(o); cel = (int((b[0] + b[1]) / 2 // 30), int((b[2] + b[3]) / 2 // 30))   # (et par carré de 30 m : le téléphone ne dessine que ce qui est devant la caméra)
+    parMat.setdefault((m, cel), []).append(o)
 for m, liste in parMat.items():
     if len(liste) < 2: continue
     bpy.ops.object.select_all(action="DESELECT")
     for o in liste: o.select_set(True)
     bpy.context.view_layer.objects.active = liste[0]; bpy.ops.object.join()
 # ---------- 4 bis) la retouche de tout le reste (rue, troisième cour, toits, trottoirs…) : chaque matière son relief, chaque arête son chanfrein ----------
-import retouche; retouche.retoucher(sc)
+import retouche; retouche.retoucher(sc, chanfreins=False)   # (sans chanfreins sur la carte : deux fois plus de triangles, trop lourd pour le téléphone)
 print("APRES REGROUPEMENT", len([o for o in sc.objects if o.type == "MESH"]))
 for im in bpy.data.images:
     if im.size[0] > 1024 or im.size[1] > 1024:

@@ -32,7 +32,7 @@ def brancher(mat, im, force, uvmap=None):
     nm = nt.nodes.new("ShaderNodeNormalMap"); nm.inputs["Strength"].default_value = force
     nt.links.new(t.outputs["Color"], nm.inputs["Color"]); nt.links.new(nm.outputs["Normal"], b.inputs["Normal"]); return True
 
-def retoucher(sc):
+def retoucher(sc, chanfreins=True):
     platre = bpy.data.images.load(os.path.join(D, "tex", "platre_n.png")); platre.colorspace_settings.name = "Non-Color"
     faits = {}; nI = nU = 0
     for o in [o for o in sc.objects if o.type == "MESH"]:
@@ -58,7 +58,7 @@ def retoucher(sc):
             uv_boite_monde(o, 2.0); o.data.uv_layers.active = act
     # les arêtes : un petit chanfrein (1 cm) sur tout ce qui est plein — tables, chaises, boiseries, plinthes, encadrements accrochent la lumière
     nB = 0
-    for o in [o for o in sc.objects if o.type == "MESH"]:
+    for o in [o for o in sc.objects if o.type == "MESH" and chanfreins]:
         if any(faits.get(s.name, 0) == 0 and s.material and s.material.blend_method != "OPAQUE" for s in o.material_slots): continue
         # (les boîtes du jeu ont chaque face à part : on soude les sommets, on lisse selon l'angle — les arêtes vives restent vives)
         bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=.0005); bm.to_mesh(o.data); bm.free()

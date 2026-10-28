@@ -39,7 +39,7 @@ def construire():
     baies = [(CF[2], 1.7), (CF[5], 1.7)]
     trous = [(-2.4, 2.4, 0, 4.4)] + [(x - l / 2, x + l / 2, .9, 3.15) for x, l in baies]
     for i, (x0, x1, h0, h1) in enumerate(cases(-LF / 2, LF / 2, 0, HSOC, trous)): de(SOCLEM, x0, x1, 0, RET, h0, h1)
-    for x0, x1, h0, h1 in cases(-LF / 2, LF / 2, 0, HSOC, [(-2.4, 2.4, 0, 4.4)]): de(SOMBRE, x0, x1, RET, PF2 - .2, h0, h1)
+    for x0, x1, h0, h1 in cases(-LF / 2, LF / 2, 0, HSOC, [(-2.4, 2.4, 0, 4.4)]): de(SOMBRE, x0, x1, RET, PF2 - .6, h0, h1)
     for x, l in baies:
         de(VITRE, x - l / 2, x + l / 2, RET - .03, RET, .9, 3.15, 1)
         for xx in (x - l / 2, x - .035, x + l / 2 - .07): de(MENUIS, xx, xx + .07, RET - .09, RET - .03, .9, 3.15, 1)
@@ -52,7 +52,7 @@ def construire():
     # les cinq étages de brique : 25 fenêtres cerclées de pierre blanche
     fen = [(cx - .72, cx + .73, HSOC + .55 + f * 3, HSOC + .55 + f * 3 + 1.75) for f in range(5) for cx in C5]
     for x0, x1, h0, h1 in cases(-LF / 2, LF / 2, HSOC + .25, HB, fen): de(BRIQUE, x0, x1, 0, RET, h0, h1)
-    de(BRIQUE, -LF / 2, LF / 2, RET, PF2 - .2, HSOC, HB)   # (s'arrête juste avant la façade côté rue)
+    de(BRIQUE, -LF / 2, LF / 2, RET, PF2 - .6, HSOC, HB)   # (s'arrête juste avant la façade côté rue)
     for x0, x1, h0, h1 in fen:
         cx = (x0 + x1) / 2
         de(VITRE, x0, x1, RET - .03, RET, h0, h1, 1)
