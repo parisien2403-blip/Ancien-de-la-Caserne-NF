@@ -855,7 +855,7 @@ const tex = (c, rx = 1, ry = 1) => { c = toileReduite(c); const t = new THREE.Ca
 
 /* --- textures des façades : les vraies matières, d'après les photos : la brique fine à joints clairs, la pierre blanche en assises, la patine (salissures, coulures),
    les descentes d'eau en zinc. Les façades de brique sont dessinées plus finement (K_FAC fois 40 px/m) sur une bonne carte graphique. --- */
-let K_FAC = 1; const DIAG_V = "8.50";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
+let K_FAC = 1; const DIAG_V = "8.51";   // (la version de la fiche technique : une nouvelle fiche à chaque version)
 let fensT = null;   // (pendant qu'on dessine une façade : la place de ses fenêtres, pour les allumer le soir)
 const noteFen = (X, Y, W, H) => { if (fensT) fensT.push([X, Y, W, H]); };
 const toileF = (w, h, dessin) => { const k = K_FAC, f = []; fensT = f; const c = toile(Math.round(w * k), Math.round(h * k), (x) => { x.scale(k, k); dessin(x, w, h); patine(x, w, h); }); fensT = null;
@@ -12093,7 +12093,7 @@ function changerLieuContinu(id, [dx, dz, dy = 0]) {
 
 /* ===================== La nouvelle caserne (en chantier) : refaite dans Blender, à partir de l'ancienne — un bâtiment après l'autre.
    Seul l'administrateur y va : par le cercle vert au milieu de la cour d'honneur ; au même endroit ici, un cercle vert pour revenir ===================== */
-const NC_V = 4;
+const NC_V = 5;
 function construireNouvelleCaserne(L, scene) {
   L.nc = true; L.sansPNJ = true; L.portails = L.portails || [];
   const g = new THREE.Group(); scene.add(g); L.ncGroupe = g;
