@@ -5,7 +5,7 @@
 
 import { DurableObject } from "cloudflare:workers";
 // la caserne (la Matrice) fermée pour travaux : seul l'administrateur (badge 1) peut y entrer — la même chose dans public/index.html
-const CASERNE_TRAVAUX = true;
+const CASERNE_TRAVAUX = false;
 
 const DOMAINE = "caserne-nf";
 const QUALITES = ["fils du Garde", "fille du Garde", "Gendarme"];
