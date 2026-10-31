@@ -11210,6 +11210,8 @@ function interfaceVR(V) { const r = M.rendu;
   if (U.ecran.visible && !U.place) { U.place = true; const cam = r.xr.getCamera(), p = new THREE.Vector3(), q = new THREE.Quaternion(); cam.getWorldPosition(p); cam.getWorldQuaternion(q);
     const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
     const w = p.clone().addScaledVector(f, 1.4); w.y = p.y - .12; U.ecran.position.copy(V.rig.worldToLocal(w.clone())); U.ecran.lookAt(p.x, w.y, p.z); }
+  // (la poignée gauche cache l'écran flottant ; il revient dès que ce qu'il montre change)
+  { const pg = V.padG, sq = !!(pg && pg.buttons[1] && pg.buttons[1].pressed); if (sq && !U.sqAvant && U.ecran.visible) U.cache = U.cle; U.sqAvant = sq; if (U.cache && U.cache === U.cle) U.ecran.visible = false; }
   if (!U.ecran.visible) U.place = false;
   U.quitter.visible = !!(U.quitter.parent && U.quitter.parent !== V.rig);
   // le laser de la main droite (ou de la seule main connectée)
@@ -11231,9 +11233,11 @@ function interfaceVR(V) { const r = M.rendu;
 function capturerUI(U) { const sc = M.ctx.conteneur, R0 = sc.getBoundingClientRect(), cv3 = M.rendu.domElement; U.rect = R0;
   const recouvre = q => q.width > 2 && q.height > 2 && q.right > R0.left && q.left < R0.right && q.bottom > R0.top && q.top < R0.bottom;
   const visible = el => { if (el.hidden || el === cv3 || el.contains(cv3) || (M.vr && el === M.vr.bouton) || el.tagName === "SCRIPT" || el.tagName === "STYLE") return false; const s = getComputedStyle(el); return s.display !== "none" && s.visibility !== "hidden" && +s.opacity > .05; };
+  // (un calque de décor — fond, voile, étoiles — n'a ni texte, ni bouton, ni image : on ne le recopie pas, sinon c'est un grand panneau noir devant les yeux)
+  const contenu = el => (el.innerText || "").trim().length > 0 || !!el.querySelector("button,img,canvas,video,input") || /^(CANVAS|VIDEO|IMG)$/.test(el.tagName);
   const L = [];
-  for (const el of document.body.children) { if (!visible(el)) continue; const s = getComputedStyle(el); if (s.position !== "fixed" && s.position !== "absolute") continue; const q = el.getBoundingClientRect(); if (recouvre(q)) L.push([el, q]); }
-  for (const el of sc.children) { if (!visible(el)) continue; const q = el.getBoundingClientRect(); if (recouvre(q)) L.push([el, q]); }
+  for (const el of document.body.children) { if (!visible(el)) continue; const s = getComputedStyle(el); if (s.position !== "fixed" && s.position !== "absolute") continue; const q = el.getBoundingClientRect(); if (recouvre(q) && contenu(el)) L.push([el, q]); }
+  for (const el of sc.children) { if (!visible(el) || !contenu(el)) continue; const q = el.getBoundingClientRect(); if (recouvre(q)) L.push([el, q]); }
   if (!L.length) { U.ecran.visible = false; U.cle = ""; return; }
   const cle = L.map(([el, q]) => [q.left | 0, q.top | 0, q.width | 0, q.height | 0, el.innerHTML].join(",")).join("|"); if (cle === U.cle) return; U.cle = cle;
   U.occupe = true; const k = Math.min(1.5, 1600 / R0.width), W = Math.round(R0.width * k), H = Math.round(R0.height * k); U.k = k;
