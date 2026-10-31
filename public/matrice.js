@@ -11164,14 +11164,21 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
     b.type = "button"; b.textContent = "🥽 Casque VR";
     b.style.cssText = "position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;padding:12px 16px;border-radius:14px;border:2px solid #f0e4be;background:rgba(20,16,10,.85);color:#f0e4be;font:600 15px system-ui,sans-serif";
     b.onclick = () => { const s0 = rendu.xr.getSession(); if (s0) { s0.end(); return; }
-      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s);
+      /* une image plus nette dans le casque : plus de points (×1,4), les bords de l'image presque pas floutés (le flou des bords, c'est la « fovéation »),
+         et les textures vues de biais (sols, murs) bien filtrées */
+      try { rendu.xr.setFramebufferScaleFactor(1.4); } catch (e) {}
+      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s); try { rendu.xr.setFoveation(.1); } catch (e) {} affinerTextures();
+        if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 90).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
         const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0; M.vr.parent = M.camera.parent;
         if (!rig.parent) M.scene.add(rig); rig.add(M.camera); b.textContent = "Quitter la VR";
         s.addEventListener("end", () => { if (!M) return; if (M.vr.parent) M.vr.parent.add(M.camera); else rig.remove(M.camera); M.camera.position.set(0, 0, 0); const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
       }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
     document.body.appendChild(b); }).catch(() => {}); }
+/* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
+function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
+  M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; const moi = M.gens.get(M.moiNum); if (!moi) return;
+function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
   if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
 /* les manettes Touch, vues comme une manette de jeu (la disposition « standard ») */
