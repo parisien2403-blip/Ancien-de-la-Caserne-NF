@@ -321,6 +321,7 @@
   .mx-3d { right: 56px; font-size: 19px; }
   .mx-1p { right: 102px; font-size: 19px; } .mx-1p.on { background: #c4694a; }
   .mx-ciel { right: 148px; font-size: 18px; }
+  .mx-vr { right: 194px; font-size: 19px; } .mx-vr[hidden] { display: none; }
   .mx-relief-barre { display: none; }
   .mx-scene.relief > :not(canvas):not(.mx-relief-barre):not(.relief-ok) { display: none !important; }   /* (sauf les écrans par-dessus le jeu — l'affiche, le cadenas, le téléphone —, doublés pour chaque œil) */
   .mx-scene.relief .mx-relief-barre { display: flex; gap: 8px; position: absolute; left: 10px; bottom: 10px; z-index: 9; opacity: .55; }
@@ -1457,6 +1458,7 @@
           <div class="mx-info" id="mxInfo" hidden></div>
           <button class="mx-plein" id="mxPlein" type="button" title="Plein écran" aria-label="Plein écran">⛶</button>
           <button class="mx-plein mx-3d" id="mx3D" type="button" title="Relief 3D (lunettes XREAL…)" aria-label="Relief 3D pour lunettes" hidden>👓</button>
+          <button class="mx-plein mx-vr" id="mxVR" type="button" title="Casque VR (Meta Quest…)" aria-label="Entrer dans le casque VR" hidden>🥽</button>
           <button class="mx-plein mx-1p" id="mx1P" type="button" title="Vue à la première personne" aria-label="Vue à la première personne" hidden>👁</button>
           <button class="mx-plein mx-ciel" id="mxCiel" type="button" title="Le ciel : automatique, jour, nuit" aria-label="Le ciel : automatique, jour ou nuit" hidden>🕒</button>
           <div class="mx-relief-barre" id="mxReliefBarre"><button type="button" id="mxReliefProf">Relief : normal</button><button type="button" id="mxReliefSortir">✕ Quitter la 3D</button></div>
@@ -2752,11 +2754,11 @@
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
   let mxPleinVoulu = false, mxProf = 1;
-  setInterval(() => { $("mx3D").hidden = !(moi && moi.admin) || /^z-/.test(mxLieu || ""); $("mxCiel").hidden = !(moi && moi.admin) || /^(sh|z)-/.test(mxLieu || ""); $("mxPresents").hidden = /^(sh|z)-/.test(mxLieu || "");   /* (en jeu — Resident Evil, Silent Hill — ni le ciel, ni les noms) */   /* (à Silent Hill, pas de soleil ni de lune : le brouillard, toujours) */ $("mx1P").hidden = !moi || /^z-/.test(mxLieu || ""); }, 2000);   /* (la vue à la première personne : pour tout le monde) */
+  setInterval(() => { $("mxVR").hidden = !window.mxVRdispo; $("mx3D").hidden = !(moi && moi.admin) || /^z-/.test(mxLieu || ""); $("mxCiel").hidden = !(moi && moi.admin) || /^(sh|z)-/.test(mxLieu || ""); $("mxPresents").hidden = /^(sh|z)-/.test(mxLieu || "");   /* (en jeu — Resident Evil, Silent Hill — ni le ciel, ni les noms) */   /* (à Silent Hill, pas de soleil ni de lune : le brouillard, toujours) */ $("mx1P").hidden = !moi || /^z-/.test(mxLieu || ""); }, 2000);   /* (la vue à la première personne : pour tout le monde) */
   // le ciel, directement sur l'écran (l'administrateur) : un appui passe d'automatique à jour, puis à nuit
   $("mxCiel").onclick = () => { if (!MX) return; const s2 = { auto: "jour", jour: "nuit", nuit: "auto" }[window.mxCielMode || "auto"] || "auto"; MX.ambiance(s2); };
   let mx1P = false; $("mx1P").onclick = () => MX && MX.premiere(!mx1P);   // (le relief : l'administrateur seul, le temps des essais)
-  $("mx3D").onclick = () => { mxPleinVoulu = !!document.fullscreenElement; MX && MX.relief(true); };
+  $("mx3D").onclick = () => { mxPleinVoulu = !!document.fullscreenElement; MX && MX.relief(true); }; $("mxVR").onclick = () => { MX && MX.entrerVR && MX.entrerVR(); };   /* (dans un casque : la VR d'un toucher) */
   $("mxReliefSortir").onclick = () => MX && MX.relief(false);
   $("mxReliefProf").onclick = () => { const N = [1, 1.6, 2.3, .6], i = N.indexOf(mxProf); mxProf = N[(i + 1) % N.length]; MX && MX.reliefProfondeur(mxProf);
     $("mxReliefProf").textContent = "Relief : " + ({ 1: "normal", 1.6: "fort", 2.3: "très fort", .6: "doux" })[mxProf]; };
@@ -3326,6 +3328,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["8.77", "31 octobre 2026", ["Casque VR : un bouton 🥽 en haut à droite de la scène, avec les autres — dans un casque (Meta Quest…), il fait entrer dans la VR d'un toucher"]],
     ["8.76", "31 octobre 2026", ["Casque VR : le joystick droit fait pivoter en douceur, comme on avance (plus on le pousse, plus on tourne vite), au lieu de tourner par à-coups"]],
     ["8.75", "31 octobre 2026", ["Casque VR plus fluide : 72 images par seconde bien tenues, un peu moins de points à calculer, les ombres recalculées une image sur trois, les petits objets lointains cachés", "Casque VR : le choix du héros de Resident Evil et celui de l'ado de The Lost Boys s'affichent avec les portraits — joystick pour choisir, A pour prendre ; on reste sur le même portrait après un choix"]],
     ["8.74", "31 octobre 2026", ["Salle des fêtes : quand passe Thriller, Michael Jackson et ses zombies dansent Thriller tout seuls (tout le monde voit les mêmes pas) ; si l'on danse, ils font comme nous", "Casque VR : chaque scène filmée de chaque jeu passe sur l'écran de cinéma, même celles qui prennent la caméra sans le dire ; un fondu au noir à l'entrée et à la sortie, puis on reprend son personnage", "Casque VR : la radio de Resident Evil (Brad) et celle de Gremlins (Billy) s'affichent devant soi — les deux portraits, la fréquence et ce qui se dit"]],

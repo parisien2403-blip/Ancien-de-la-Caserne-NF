@@ -11174,7 +11174,9 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
         if (!rig.parent) M.scene.add(rig); b.textContent = "Quitter la VR"; M.vr.fpAuto = !M.premiere; if (M.vr.fpAuto) premiere(true);
         s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } finCinemaVR(M.vr); if (M.vr.ombresAuto) { M.rendu.shadowMap.autoUpdate = true; M.vr.ombresAuto = false; } if (M.vr.fpAuto) { M.vr.fpAuto = false; premiere(false); } const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
       }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
-    document.body.appendChild(b); }).catch(() => {}); }
+    document.body.appendChild(b); window.mxVRdispo = true; }).catch(() => {}); }
+/* (le bouton 🥽 en haut à droite de la scène fait la même chose que celui du bas) */
+export function entrerVR() { if (M && M.vr && M.vr.bouton) M.vr.bouton.click(); }
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
   M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
