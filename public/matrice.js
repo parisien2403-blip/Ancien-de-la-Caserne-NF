@@ -11178,9 +11178,14 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
   M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
+function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
   if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
+/* quitter la VR : maintenir une seconde B + Y (les deux boutons du haut), ou les deux joysticks enfoncés */
+function sortieVR(V) { const s = M.rendu.xr.getSession(); if (!s) return; let G = null, D = null;
+  for (const src of s.inputSources) { if (!src.gamepad) continue; if (src.handedness === "left") G = src.gamepad; else if (src.handedness === "right") D = src.gamepad; }
+  const p = (g, i) => !!(g && g.buttons[i] && g.buttons[i].pressed), ok = (p(D, 5) && p(G, 5)) || (p(D, 3) && p(G, 3));
+  if (!ok) { V.sortieT = 0; return; } const now = performance.now(); V.sortieT = V.sortieT || now; if (now - V.sortieT > 1000) { V.sortieT = 0; s.end(); } }
 /* les manettes Touch, vues comme une manette de jeu (la disposition « standard ») */
 function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr) return null; const s = r.xr.getSession(); if (!s) return null;
   let G = null, D = null; for (const src of s.inputSources) { if (!src.gamepad) continue; if (src.handedness === "left") G = src.gamepad; else if (src.handedness === "right") D = src.gamepad; }
@@ -11190,8 +11195,7 @@ function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr
   buttons[0] = b(D, 4); buttons[1] = b(D, 5); buttons[2] = b(G, 4); buttons[3] = b(G, 5);   // (A, B ; X, Y)
   buttons[7] = b(D, 0); buttons[6] = b(G, 0); buttons[5] = b(D, 1); buttons[4] = b(G, 1);   // (les gâchettes ; les poignées)
   buttons[10] = b(G, 3); buttons[11] = b(D, 3);
-  // (pour quitter la VR : maintenir B et Y ensemble une seconde)
-  if (b(D, 5).pressed && b(G, 5).pressed) { M.vr.sortieT = M.vr.sortieT || performance.now(); if (performance.now() - M.vr.sortieT > 1000) { M.vr.sortieT = 0; s.end(); return null; } } else M.vr.sortieT = 0;
+
   // le joystick droit fait pivoter par crans de 30° (en douceur, on a vite mal au cœur)
   const rx = a(D, 2); if (Math.abs(rx) > .7) { if (!M.vr.tourne) { M.vr.cap -= Math.sign(rx) * Math.PI / 6; M.vr.tourne = true; } } else if (Math.abs(rx) < .3) M.vr.tourne = false;
   return { axes: [a(G, 2), a(G, 3), 0, 0], buttons, vr: true }; }
