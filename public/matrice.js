@@ -11167,7 +11167,7 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
       /* une image plus nette dans le casque : plus de points (×1,4), les bords de l'image presque pas floutés (le flou des bords, c'est la « fovéation »),
          et les textures vues de biais (sols, murs) bien filtrées */
       try { rendu.xr.setFramebufferScaleFactor(1.4); } catch (e) {}
-      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s); try { rendu.xr.setFoveation(.1); } catch (e) {} affinerTextures();
+      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { try { interfaceVR(M.vr); } catch (e) {} rendu.xr.setSession(s); try { rendu.xr.setFoveation(.1); } catch (e) {} affinerTextures();
         if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 90).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
         const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0; M.vr.parent = M.camera.parent;
         if (!rig.parent) M.scene.add(rig); rig.add(M.camera); b.textContent = "Quitter la VR";
@@ -11177,19 +11177,89 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
   M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
+function signalerErreurVR(e) { if (!signalerErreurVR.vu) { signalerErreurVR.vu = true; console.error(e); M && M.signalerErreur && M.signalerErreur(e); } }
+/* l'interface dans le casque :
+   - un écran flottant devant soi, qui recopie ce qui s'affiche normalement par-dessus la scène (menus du Video Futur, choix du jeu, dialogues, messages) ;
+   - un laser qui sort de la manette droite : on vise un bouton de l'écran et l'on appuie sur la gâchette ;
+   - au-dessus de la manette gauche, le bouton « Quitter la VR ». */
+function etiquetteVR(texte) { const c = document.createElement("canvas"); c.width = 512; c.height = 128; const x = c.getContext("2d");
+  x.fillStyle = "rgba(20,16,10,.92)"; x.beginPath(); x.roundRect(4, 4, 504, 120, 28); x.fill(); x.lineWidth = 6; x.strokeStyle = "#f0e4be"; x.stroke();
+  x.fillStyle = "#f0e4be"; x.font = "600 54px system-ui,sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(texte, 256, 66);
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx; }
+function interfaceVR(V) { const r = M.rendu;
+  if (!V.ui) { const U = V.ui = { ctrl: [], vis: false, dirty: true, occupe: false, derniere: 0, ray: new THREE.Raycaster(), m4: new THREE.Matrix4() };
+    // l'écran : une toile de la taille de la scène à l'écran, transparente là où il n'y a rien
+    U.cv = document.createElement("canvas"); U.tex = new THREE.CanvasTexture(U.cv); U.tex.colorSpace = THREE.SRGBColorSpace;
+    U.ecran = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: U.tex, transparent: true, depthTest: false, toneMapped: false, side: THREE.DoubleSide }));
+    U.ecran.renderOrder = 999; U.ecran.visible = false; V.rig.add(U.ecran);
+    U.quitter = new THREE.Mesh(new THREE.PlaneGeometry(.2, .05), new THREE.MeshBasicMaterial({ map: etiquetteVR("Quitter la VR"), transparent: true, depthTest: false, toneMapped: false }));
+    U.quitter.renderOrder = 1000;
+    for (let i = 0; i < 2; i++) { const c = r.xr.getController(i), g = r.xr.getControllerGrip(i); V.rig.add(c); V.rig.add(g);
+      const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .8, depthTest: false }));
+      laser.renderOrder = 1001; laser.visible = false; c.add(laser);
+      const point = new THREE.Mesh(new THREE.SphereGeometry(.008, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd23a, depthTest: false })); point.renderOrder = 1002; point.visible = false; V.rig.add(point);
+      const o = { c, g, laser, point, main: "" }; U.ctrl.push(o);
+      c.addEventListener("connected", e => { o.main = e.data.handedness; if (o.main === "left") { U.quitter.position.set(0, .07, -.02); U.quitter.rotation.x = -.6; g.add(U.quitter); } });
+      c.addEventListener("disconnected", () => { o.main = ""; }); }
+    new MutationObserver(() => { U.dirty = true; }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class", "style"] });
+    V.rig.add(U.quitter); U.quitter.visible = false; }
+  const U = V.ui, now = performance.now();
+  if (U.dirty && !U.occupe && now - U.derniere > 450 && window.html2canvas) { U.dirty = false; U.derniere = now; capturerUI(U); }
+  else if (U.ecran.visible && U.vivants && U.vivants.length && !U.occupe) composerUI(U);
+  // l'écran apparaît devant soi (à 1,4 m, un peu sous les yeux)
+  if (U.ecran.visible && !U.place) { U.place = true; const cam = r.xr.getCamera(), p = new THREE.Vector3(), q = new THREE.Quaternion(); cam.getWorldPosition(p); cam.getWorldQuaternion(q);
+    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize();
+    const w = p.clone().addScaledVector(f, 1.4); w.y = p.y - .12; U.ecran.position.copy(V.rig.worldToLocal(w.clone())); U.ecran.lookAt(p.x, w.y, p.z); }
+  if (!U.ecran.visible) U.place = false;
+  U.quitter.visible = !!(U.quitter.parent && U.quitter.parent !== V.rig);
+  // le laser de la main droite (ou de la seule main connectée)
+  V.vise = false; const droite = U.ctrl.find(o => o.main === "right") || U.ctrl.find(o => o.main);
+  for (const o of U.ctrl) { o.laser.visible = false; o.point.visible = false; }
+  if (!droite) return;
+  U.m4.identity().extractRotation(droite.c.matrixWorld); U.ray.ray.origin.setFromMatrixPosition(droite.c.matrixWorld); U.ray.ray.direction.set(0, 0, -1).applyMatrix4(U.m4);
+  const cibles = [U.quitter.visible && U.quitter, U.ecran.visible && U.ecran].filter(Boolean), hit = cibles.length ? U.ray.intersectObjects(cibles, false)[0] : null;
+  droite.laser.visible = true; droite.laser.scale.z = hit ? hit.distance / V.rig.scale.x : 1.2;
+  const gp = V.padD || V.padG, appui = !!(gp && gp.buttons[0] && gp.buttons[0].pressed), front = appui && !U.appui; U.appui = appui;
+  if (!hit) return;
+  V.vise = true; droite.point.visible = true; droite.point.position.copy(V.rig.worldToLocal(hit.point.clone()));
+  if (!front) return;
+  if (hit.object === U.quitter) { const s = r.xr.getSession(); if (s) s.end(); return; }
+  // un « clic » sur l'écran : à l'endroit de la page qui correspond
+  const R0 = U.rect; if (!R0 || !hit.uv) return; const x = R0.left + hit.uv.x * R0.width, y = R0.top + (1 - hit.uv.y) * R0.height, el = document.elementFromPoint(x, y);
+  if (el) { const o = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window }; try { el.dispatchEvent(new PointerEvent("pointerdown", o)); el.dispatchEvent(new PointerEvent("pointerup", o)); } catch (e) {} el.click(); U.dirty = true; } }
+/* la recopie : ce qui est par-dessus la scène (les fenêtres, menus, bulles, sous-titres), chacun à sa place, sur une toile transparente */
+function capturerUI(U) { const sc = M.ctx.conteneur, R0 = sc.getBoundingClientRect(), cv3 = M.rendu.domElement; U.rect = R0;
+  const recouvre = q => q.width > 2 && q.height > 2 && q.right > R0.left && q.left < R0.right && q.bottom > R0.top && q.top < R0.bottom;
+  const visible = el => { if (el.hidden || el === cv3 || el.contains(cv3) || (M.vr && el === M.vr.bouton) || el.tagName === "SCRIPT" || el.tagName === "STYLE") return false; const s = getComputedStyle(el); return s.display !== "none" && s.visibility !== "hidden" && +s.opacity > .05; };
+  const L = [];
+  for (const el of document.body.children) { if (!visible(el)) continue; const s = getComputedStyle(el); if (s.position !== "fixed" && s.position !== "absolute") continue; const q = el.getBoundingClientRect(); if (recouvre(q)) L.push([el, q]); }
+  for (const el of sc.children) { if (!visible(el)) continue; const q = el.getBoundingClientRect(); if (recouvre(q)) L.push([el, q]); }
+  if (!L.length) { U.ecran.visible = false; U.cle = ""; return; }
+  const cle = L.map(([el, q]) => [q.left | 0, q.top | 0, q.width | 0, q.height | 0, el.innerHTML].join(",")).join("|"); if (cle === U.cle) return; U.cle = cle;
+  U.occupe = true; const k = Math.min(1.5, 1600 / R0.width), W = Math.round(R0.width * k), H = Math.round(R0.height * k); U.k = k;
+  // (les jeux et les films : une image qui bouge sans que la page change — on la recopie à chaque image)
+  U.vivants = L.flatMap(([el]) => [...(/^(CANVAS|VIDEO)$/.test(el.tagName) ? [el] : []), ...el.querySelectorAll("canvas,video")]).filter(v => v !== cv3);
+  Promise.all(L.map(([el, q]) => window.html2canvas(el, { backgroundColor: null, scale: k, logging: false, useCORS: true, ignoreElements: e => e === cv3 }).then(c => [c, q]).catch(() => null))).then(res => {
+    U.occupe = false; if (!M || !M.vr) return; if (U.cv.width !== W || U.cv.height !== H) { U.cv.width = W; U.cv.height = H; U.tex.dispose(); }
+    U.fixe = U.fixe || document.createElement("canvas"); U.fixe.width = W; U.fixe.height = H; const x = U.fixe.getContext("2d"); x.clearRect(0, 0, W, H); let n = 0;
+    for (const r of res) { if (!r) continue; const [c, q] = r; x.drawImage(c, (q.left - R0.left) * k, (q.top - R0.top) * k, q.width * k, q.height * k); n++; }
+    composerUI(U); U.ecran.scale.set(1.3, 1.3 * H / W, 1); U.ecran.visible = n > 0; }); }
+function composerUI(U) { if (!U.fixe) return; const x = U.cv.getContext("2d"), R0 = U.rect, k = U.k; x.clearRect(0, 0, U.cv.width, U.cv.height); x.drawImage(U.fixe, 0, 0);
+  for (const v of U.vivants || []) { if (!v.isConnected) continue; const q = v.getBoundingClientRect(); if (q.width < 2 || (v.tagName === "VIDEO" && v.readyState < 2)) continue; try { x.drawImage(v, (q.left - R0.left) * k, (q.top - R0.top) * k, q.width * k, q.height * k); } catch (e) {} }
+  U.tex.needsUpdate = true; }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
+function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } try { interfaceVR(V); } catch (e) { signalerErreurVR(e); } const moi = M.gens.get(M.moiNum); if (!moi) return;
   if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
 /* les manettes Touch, vues comme une manette de jeu (la disposition « standard ») */
 function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr) return null; const s = r.xr.getSession(); if (!s) return null;
   let G = null, D = null; for (const src of s.inputSources) { if (!src.gamepad) continue; if (src.handedness === "left") G = src.gamepad; else if (src.handedness === "right") D = src.gamepad; }
-  if (!G && !D) return null;
+  M.vr.padG = G; M.vr.padD = D; if (!G && !D) return null;
   const b = (g, i) => (g && g.buttons[i]) || { pressed: false, value: 0 }, a = (g, i) => (g && g.axes[i]) || 0;
   const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
   buttons[0] = b(D, 4); buttons[1] = b(D, 5); buttons[2] = b(G, 4); buttons[3] = b(G, 5);   // (A, B ; X, Y)
   buttons[7] = b(D, 0); buttons[6] = b(G, 0); buttons[5] = b(D, 1); buttons[4] = b(G, 1);   // (les gâchettes ; les poignées)
-  buttons[10] = b(G, 3); buttons[11] = b(D, 3);
+  buttons[10] = b(G, 3); buttons[11] = b(D, 3); if (M.vr.vise) buttons[7] = { pressed: false, value: 0 };
   // le joystick droit fait pivoter par crans de 30° (en douceur, on a vite mal au cœur)
   const rx = a(D, 2); if (Math.abs(rx) > .7) { if (!M.vr.tourne) { M.vr.cap -= Math.sign(rx) * Math.PI / 6; M.vr.tourne = true; } } else if (Math.abs(rx) < .3) M.vr.tourne = false;
   return { axes: [a(G, 2), a(G, 3), 0, 0], buttons, vr: true }; }
