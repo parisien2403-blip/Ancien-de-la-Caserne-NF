@@ -8209,7 +8209,7 @@ function cacherLoin(t) {
   if (!M || !M.scene || !M.camera || t < (M.loinT || 0)) return; M.loinT = t + 300;
   if (M.loinScene !== M.scene) { M.loinScene = M.scene; M.loin = [];
     for (const g of M.scene.children.flatMap(c => c.userData.maison ? c.children : [c])) { if (g.isMesh || g.isLight || g.userData.perso || !g.children.length) continue; let n = 0; g.traverse(o => { if (o.isMesh) n++; if (o.userData.perso) n = -1e9; }); if (n < 6) continue;
-      g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.isEmpty()) continue; const sp = b.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 45) continue;   // (un très grand ensemble reste toujours là)
+      g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.isEmpty()) continue; const sp = b.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 9) continue;   // (seuls les petits ensembles lointains — voitures, mobilier — sont cachés ; un immeuble, lui, reste toujours là : sinon, au bout d'une longue rue, un trou dans le paysage)
       M.loin.push({ g, c: g.worldToLocal(sp.center.clone()), r: sp.radius }); } }
   const cam = M.camera.position, v = new THREE.Vector3(), f = M.scene.fog, lim = f && f.far ? Math.min(55, f.far + 3) : 55;   // (dans le brouillard — Silent Hill — on n'y voit pas si loin : encore moins)
   for (const q of M.loin) { const loin = q.g.localToWorld(v.copy(q.c)).distanceTo(cam) - q.r > lim;
