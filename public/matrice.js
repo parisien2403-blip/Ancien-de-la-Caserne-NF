@@ -11194,13 +11194,15 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
   let etat = null; const vf = M.vfMenu && M.vfMenu.d && M.vfMenu.d.isConnected ? M.vfMenu : null, mm = M.manMenu && M.manMenu.d && M.manMenu.d.isConnected ? M.manMenu : null, bl = M.bulleEl && M.bulleEl.isConnected ? M.bulleEl : null;
   if (vf) etat = { t: "vf", i: vf.i || 0, k: [...vf.d.querySelectorAll(".vf-k")].map(k => { const im = k.querySelector("img"); return { titre: (k.querySelector("h3") || k).innerText.trim(), loue: k.classList.contains("loue"), img: im, ok: !!(im && im.complete && im.naturalWidth) }; }) };
   else if (mm) { const bs = [...mm.d.querySelectorAll("button")].filter(b => !b.disabled && b.offsetParent); let txt = mm.d.innerText; for (const b of bs) txt = txt.replace(b.innerText, ""); etat = { t: "man", txt: txt.replace(/\n{2,}/g, "\n").trim(), b: bs.map(b => (b.innerText || b.getAttribute("aria-label") || "").trim()), s: bs.indexOf(mm.sel) }; }
+  else if ((M.codec && M.codec.el && M.codec.el.isConnected) || (M.radioKFel && M.radioKFel.isConnected)) { const el = M.codec && M.codec.el && M.codec.el.isConnected ? M.codec.el : M.radioKFel, im = [...el.querySelectorAll("img")];
+    const tx = el.querySelector(".codec-txt,.rt"); etat = { t: "radio", re: el !== M.radioKFel, g: im[0], d: im[im.length - 1], ok: im.map(i => i.complete && i.naturalWidth > 0).join(), txt: ((tx && tx.innerText) || "").trim() }; }
   else if (bl && (bl.innerText || "").trim()) etat = { t: "txt", txt: bl.innerText.trim() };
   else if (M.action && M.action.label) etat = { t: "act", txt: M.action.label };
-  const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" ? undefined : v) : "";
+  const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" || k === "g" || k === "d" ? undefined : v) : "";
   if (!etat) { P.m.visible = false; P.s.visible = false; P.cle = ""; return; }
   // il apparaît devant soi, là où l'on regarde (à 1,3 m, un peu sous les yeux)
   if (P.m.parent !== V.cam) V.cam.add(P.m); if (P.s.parent !== V.cam) V.cam.add(P.s);
-  const sous = etat.t === "txt" || etat.t === "act"; P.m.position.set(0, -.04, -1.3); P.m.scale.setScalar(etat.t === "man" ? .8 : 1); P.s.position.set(0, -.36, -1.3);
+  const sous = etat.t === "txt" || etat.t === "act"; P.m.position.set(0, etat.t === "radio" ? -.2 : -.04, -1.3); P.m.scale.setScalar(etat.t === "man" ? .8 : etat.t === "radio" ? .62 : 1); P.s.position.set(0, -.36, -1.3);
   P.m.visible = !sous; P.s.visible = sous;
   if (cle === P.cle) return; P.cle = cle;
   if (sous) { const x = P.sc.getContext("2d"), W = 1024, H = 200; x.clearRect(0, 0, W, H); x.fillStyle = "rgba(0,0,0,.6)"; x.beginPath(); x.roundRect(0, 0, W, H, 22); x.fill();
@@ -11220,6 +11222,11 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
       if (k.ok && k.img) { try { x.globalAlpha = k.loue ? .35 : 1; x.drawImage(k.img, cx, cy, cw, ch - 46); x.globalAlpha = 1; } catch (e) {} } else { x.fillStyle = "#11183a"; x.fillRect(cx, cy, cw, ch - 46); }
       x.fillStyle = k.loue ? "#8890a8" : "#fff"; x.font = "700 17px system-ui,sans-serif"; lignes(k.titre + (k.loue ? " — loué" : ""), cx, cy + ch - 42, cw, 20, 2);
       if (j === etat.i) { x.lineWidth = 7; x.strokeStyle = "#ffd23a"; x.strokeRect(cx - 5, cy - 5, cw + 10, ch + 4); } } }
+  else if (etat.t === "radio") {   // l'écran radio : les deux portraits, la fréquence au milieu, ce qui se dit dessous
+    x.fillStyle = "#000"; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 26); x.fill(); x.lineWidth = 6; x.strokeStyle = etat.re ? "#7a1010" : "#2f6a3a"; x.stroke();
+    const pw = 230, ph = 276, py = 36; for (const [im, px] of [[etat.g, 40], [etat.d, W - 40 - pw]]) { x.fillStyle = "#061206"; x.fillRect(px, py, pw, ph); if (im && im.complete && im.naturalWidth) try { x.drawImage(im, px, py, pw, ph); } catch (e) {} x.lineWidth = 6; x.strokeStyle = "#2f6a3a"; x.strokeRect(px, py, pw, ph); }
+    x.textAlign = "center"; x.fillStyle = "#5fc06f"; x.font = "700 26px Arial"; x.fillText(etat.re ? "S.T.A.R.S." : "RADIO", W / 2, py + 60); x.fillStyle = "#7dff8a"; x.font = "700 72px 'Courier New',monospace"; x.fillText(etat.re ? "141.12" : "• • •", W / 2, py + 120);
+    x.fillStyle = "#f2f2f2"; x.font = "600 34px Arial"; x.textAlign = "left"; lignes(etat.txt, 44, py + ph + 24, W - 88, 42, 6); }
   else if (etat.t === "act") { x.fillStyle = "#fff"; x.font = "800 64px system-ui,sans-serif"; x.textAlign = "center"; lignes(etat.txt, W / 2, 200, W - 120, 76, 2); x.fillStyle = "#ffd23a"; x.font = "900 54px system-ui,sans-serif"; x.fillText("A", W / 2, 420); x.textAlign = "left"; }
   else { x.fillStyle = "#fff"; x.font = "600 30px system-ui,sans-serif"; let y = lignes(etat.txt || "", 40, 36, W - 80, 38, etat.t === "man" ? 7 : 13);
     if (etat.t === "man") { y += 12; x.font = "700 28px system-ui,sans-serif";
@@ -11240,18 +11247,32 @@ function signalerErreurVR(e) { if (!signalerErreurVR.vu) { signalerErreurVR.vu =
    - pendant une cinématique (ou la porte de Resident Evil, ou l'écran noir du début) : la caméra du film filme la scène, et l'on regarde son image
      sur un grand écran, dans une salle sombre — le monde ne bouge pas tout seul autour de nous (sinon, mal au cœur garanti). */
 function rendreVR(rendu) { const V = M.vr;
-  const src = M.porteRE ? { sc: M.porteRE.sc, cam: M.porteRE.cam } : M.cine ? { sc: M.scene, cam: M.camera } : (M.apoIntro && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) ? { noir: true } : null;
+  /* une scène qui prend la caméra sans passer par une cinématique déclarée (beaucoup de passages des jeux le font) : on le voit à ce que la caméra
+     n'est plus là où nous l'avions laissée (sur nos yeux) ; quelques images de suite, pour ne pas confondre avec une secousse */
+  { const cm = M.camera; cm.updateMatrixWorld(true); let pris = false;
+    if (V.sync && !M.cine && !M.porteRE) { const p = new THREE.Vector3().setFromMatrixPosition(cm.matrixWorld), q = new THREE.Quaternion().setFromRotationMatrix(cm.matrixWorld); pris = p.distanceTo(V.sync.p) > .12 || q.angleTo(V.sync.q) > .08; }
+    if (pris) { V.prisN = (V.prisN || 0) + 1; V.libreN = 0; } else { V.libreN = (V.libreN || 0) + 1; if (V.libreN > 8) V.prisN = 0; } }
+  const detourne = (V.prisN || 0) >= 2;
+  const src = M.porteRE ? { sc: M.porteRE.sc, cam: M.porteRE.cam } : (M.cine || detourne) ? { sc: M.scene, cam: M.camera, detourne: !M.cine } : (M.apoIntro && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) ? { noir: true } : null;
   if (!src) { if (V.th && V.th.on) finCinemaVR(V);
     rendu.render(M.scene, V.cam);
     // (la caméra du jeu prend la place de nos yeux)
     const xc = rendu.xr.getCamera(); xc.matrixWorld.decompose(M.camera.position, M.camera.quaternion, V.tmpS || (V.tmpS = new THREE.Vector3()));
     if (M.camera.parent && M.camera.parent !== M.scene) { M.camera.parent.updateMatrixWorld(true); const iv = M.camera.parent.matrixWorld.clone().invert(); M.camera.position.applyMatrix4(iv); M.camera.quaternion.premultiply(new THREE.Quaternion().setFromRotationMatrix(iv)); }
-    M.camera.updateMatrixWorld(true); return; }
+    M.camera.updateMatrixWorld(true); V.sync = { p: new THREE.Vector3().setFromMatrixPosition(M.camera.matrixWorld), q: new THREE.Quaternion().setFromRotationMatrix(M.camera.matrixWorld) }; fonduVR(V, rendu); return; }
   const T = cinemaVR(V);
   if (!src.noir) { const cam = src.cam, a = cam.aspect; cam.aspect = 16 / 9; cam.updateProjectionMatrix();
     const xr = rendu.xr.enabled, rt0 = rendu.getRenderTarget(); rendu.xr.enabled = false; rendu.setRenderTarget(T.rt); rendu.clear(); rendu.render(src.sc, cam); rendu.setRenderTarget(rt0); rendu.xr.enabled = xr;
     cam.aspect = a; cam.updateProjectionMatrix(); T.ecran.material.color.set(0xffffff); } else T.ecran.material.color.set(0x000000);
-  rendu.render(T.sc, V.cam); }
+  // (une prise de caméra sans cinématique déclarée : après l'image, on remet la caméra sur nos yeux — si la scène la reprend, c'est qu'elle continue)
+  if (src.detourne) { const xc = rendu.xr.getCamera(); xc.matrixWorld.decompose(M.camera.position, M.camera.quaternion, V.tmpS || (V.tmpS = new THREE.Vector3())); M.camera.updateMatrixWorld(true);
+    V.sync = { p: new THREE.Vector3().setFromMatrixPosition(M.camera.matrixWorld), q: new THREE.Quaternion().setFromRotationMatrix(M.camera.matrixWorld) }; }
+  rendu.render(T.sc, V.cam); fonduVR(V, rendu); }
+/* un fondu au noir quand on passe du jeu au cinéma (et retour) : un voile noir collé aux yeux, qui s'efface en un quart de seconde */
+function fonduVR(V, rendu) { const F = V.fondu || (V.fondu = (() => { const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0, depthTest: false, depthWrite: false })); m.renderOrder = 2000; m.position.z = -.15; m.frustumCulled = false; return { m, etat: null, a: 0 }; })());
+  if (F.m.parent !== V.cam) V.cam.add(F.m);
+  const etat = !!(V.th && V.th.on); if (F.etat !== null && etat !== F.etat) F.a = 1; F.etat = etat;
+  F.a = Math.max(0, F.a - .07); F.m.material.opacity = F.a; F.m.visible = F.a > .01; }
 /* la salle de cinéma : un écran 16/9 de 4 m, à 3,2 m devant nous, à hauteur des yeux ; on y entre au début de la cinématique, on en sort à la fin */
 function cinemaVR(V) { const T = V.th || (V.th = (() => { const sc = new THREE.Scene(); sc.background = new THREE.Color(0x050508);
     const rt = new THREE.WebGLRenderTarget(1280, 720, { samples: 2 });
@@ -11640,11 +11661,12 @@ function animerMJ() { const T = M && M.troupe;
   if (T.g.parent !== M.scene) { const [x, z] = M.L.pisteCentre, S = M.L.scene, sz = S ? S.centre[1] : z + 3, sens = sz > z ? -1 : 1;   /* (dos à la scène, face à la salle) */
     T.g.position.set(x, M.L.hauteur ? M.L.hauteur(x, z) : 0, z); T.g.rotation.y = sens > 0 ? 0 : Math.PI; for (const m of T.membres) m.sc.position.z = -Math.abs(m.sc.position.z); M.scene.add(T.g); }
   T.g.visible = true; const now = performance.now(), dt = Math.min(.1, (now - (T.prec || now)) / 1000); T.prec = now;
-  // ils ne dansent que quand on danse : la même danse, au même instant ; sinon, ils attendent sur place
-  const d = dMoi || "repos", aMoi = dMoi && A.act[dMoi];
-  for (const m of T.membres) { const a = m.act[d] || m.act.repos; if (!a) continue;
+  // quand on danse, ils dansent comme nous : la même danse, au même instant
+  // (sans nous, sur Thriller : ils dansent Thriller tout seuls, réglés sur l'horloge — tout le monde voit les mêmes pas au même moment)
+  const seuls = !dMoi, d = dMoi || "thriller", aMoi = dMoi && A.act[dMoi];
+  for (const m of T.membres) { const a = m.act[d] || m.act.thriller2 || m.act.repos; if (!a) continue;
     if (m.cur !== a) { a.reset().play(); if (m.cur) a.crossFadeFrom(m.cur, .25, false); m.cur = a; }
-    m.mix.update(dt); if (aMoi) { a.time = aMoi.time % a.getClip().duration; m.mix.update(0); } } }
+    m.mix.update(dt); if (aMoi) { a.time = aMoi.time % a.getClip().duration; m.mix.update(0); } else if (seuls && a !== m.act.repos) { a.time = (Date.now() / 1000) % a.getClip().duration; m.mix.update(0); } } }
 const SMITH = -16;
 function animerSmith() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
