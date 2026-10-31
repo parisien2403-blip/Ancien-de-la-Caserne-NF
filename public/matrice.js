@@ -7428,7 +7428,7 @@ export async function ouvrir(ctx) {
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
   const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
-  const appliquerRes = () => { const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
+  const appliquerRes = () => { if (rendu.xr.isPresenting) return; const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
     rendu.setPixelRatio(Math.max(resMin, Math.min(res, M && M.capRes || 9, Math.sqrt(budget / (w * h))))); };   /* (capRes : Resident Evil sur téléphone, une image un peu moins fine, pour rester fluide) */
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
   appliquerRes();
@@ -7544,7 +7544,7 @@ export async function ouvrir(ctx) {
     else { const d = ray.ray.direction, o = ray.ray.origin; allerVers(o.x + d.x * 40, o.z + d.z * 40, true); }   // vers le haut d'un mur : dans sa direction
   });
   rendu.domElement.addEventListener("pointercancel", () => { glisse = null; });
-  M.redim = () => { if (!M) return; const w = ctx.conteneur.clientWidth, h = ctx.conteneur.clientHeight; if (!w || !h) return; appliquerRes(); rendu.setSize(w, h); M.camera.aspect = w / h; placerCamera(true); };
+  M.redim = () => { if (!M || rendu.xr.isPresenting) return; const w = ctx.conteneur.clientWidth, h = ctx.conteneur.clientHeight; if (!w || !h) return; appliquerRes(); rendu.setSize(w, h); M.camera.aspect = w / h; placerCamera(true); };
   addEventListener("resize", M.redim);
   M.ro = new ResizeObserver(M.redim); M.ro.observe(ctx.conteneur);
   connecter();
@@ -7553,7 +7553,8 @@ export async function ouvrir(ctx) {
   // (une erreur dans une image ne doit jamais arrêter la boucle : three.js ne redemande l'image suivante qu'après celle-ci, une erreur figeait tout l'écran)
   let erreurVue = 0;
   let dernImg = 0;
-  rendu.setAnimationLoop(t => { if (PETIT && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
+  activerVR(rendu);
+  rendu.setAnimationLoop(t => { if (PETIT && !rendu.xr.isPresenting && t - dernImg < 30) return; dernImg = t;   // (petit téléphone : 30 images par seconde, pas plus — il chauffe moins, ne ralentit plus, et la batterie tient)
     try { image(t); } catch (e) { signalerErreur(e); } });
   /* une erreur : envoyée à l'administrateur (une fois toutes les 8 secondes au plus) */
   function signalerErreur(e) { if (performance.now() - erreurVue > 8000) { erreurVue = performance.now(); console.error(e); try { fetch("/api/signalements", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + ctx.token }, body: JSON.stringify({ categorie: "Affichage", texte: "[automatique] Erreur dans la Matrice (" + (M && M.lieu) + ") : " + String(e && e.stack || e).slice(0, 1500), appareil: navigator.userAgent }) }).catch(() => {}); } catch (x) {} } }
@@ -7841,6 +7842,7 @@ export async function ouvrir(ctx) {
     if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
+    else if (rendu.xr.isPresenting) { suivreVR(); rendu.render(M.scene, M.camera); }
     else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
@@ -7857,6 +7859,7 @@ export function fermer() {
   try { M.ws && M.ws.close(1000, "Fermé"); } catch (e) {}
   clearTimeout(M.reco); clearInterval(M.minuteur);
   removeEventListener("resize", M.redim); M.ro && M.ro.disconnect();
+  if (M.vr) { try { M.vr.bouton.remove(); const s = M.rendu.xr.getSession(); if (s) s.end(); } catch (e) {} }
   M.rendu.setAnimationLoop(null); M.rendu.dispose(); M.rendu.domElement.remove();
   M = null;
 }
@@ -10364,7 +10367,8 @@ function construireScene(id) {
 
 // (un objet qui fait partie d'un personnage ou d'un monstre — un bonhomme, sa tenue en 3D, un zombie… — ni un toit ni un mur, pour la caméra)
 function dansPerso(o) { for (let q = o; q; q = q.parent) if (q.userData.perso) return true; return false; }
-function placerCamera(net) {
+function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return;   // (dans le casque, c'est la tête qui place la vue)
+
   if (!M || !M.L) return;
   const portrait = M.camera.aspect < 1, c = M.L.cam, moi = M.moiNum && M.gens.get(M.moiNum);
   // à la première personne : la caméra à la place des yeux, notre bonhomme caché (on ne voit pas sa propre tête)
@@ -11150,6 +11154,38 @@ function videoDJ(c) { let v = M.videoDJ;
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
    Le relief : deux images côte à côte, une par œil, pour les lunettes en mode 3D (XREAL…) ; les sous-titres flottent devant nous, en relief eux aussi. */
 const MAN = { prec: [], allerT: 0, tirT: 0, mire: null, bouge: false, vu: false, t: 0 };
+/* la VR (Meta Quest…) : un bouton « Casque VR » quand le navigateur sait l'ouvrir. Dans le casque, on voit par les yeux du personnage ;
+   les deux manettes Touch font comme une manette de jeu : joystick gauche pour marcher (dans la direction où l'on regarde), joystick droit pour pivoter,
+   A agir, B passer, gâchette droite tirer, gâchette gauche la lampe, X danser, Y la carte. */
+function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupported) return;
+  rendu.xr.enabled = true; rendu.xr.setReferenceSpaceType("local-floor");
+  navigator.xr.isSessionSupported("immersive-vr").then(ok => { if (!ok || !M || M.rendu !== rendu) return;
+    const rig = new THREE.Group(), b = document.createElement("button"); M.vr = { rig, bouton: b, cap: 0, tourne: false };
+    b.type = "button"; b.textContent = "🥽 Casque VR";
+    b.style.cssText = "position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;padding:12px 16px;border-radius:14px;border:2px solid #f0e4be;background:rgba(20,16,10,.85);color:#f0e4be;font:600 15px system-ui,sans-serif";
+    b.onclick = () => { const s0 = rendu.xr.getSession(); if (s0) { s0.end(); return; }
+      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s);
+        const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0; M.vr.parent = M.camera.parent;
+        if (!rig.parent) M.scene.add(rig); rig.add(M.camera); b.textContent = "Quitter la VR";
+        s.addEventListener("end", () => { if (!M) return; if (M.vr.parent) M.vr.parent.add(M.camera); else rig.remove(M.camera); M.camera.position.set(0, 0, 0); const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
+      }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
+    document.body.appendChild(b); }).catch(() => {}); }
+/* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
+function suivreVR() { const V = M.vr; if (!V) return; const moi = M.gens.get(M.moiNum); if (!moi) return;
+  if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
+  V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
+/* les manettes Touch, vues comme une manette de jeu (la disposition « standard ») */
+function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr) return null; const s = r.xr.getSession(); if (!s) return null;
+  let G = null, D = null; for (const src of s.inputSources) { if (!src.gamepad) continue; if (src.handedness === "left") G = src.gamepad; else if (src.handedness === "right") D = src.gamepad; }
+  if (!G && !D) return null;
+  const b = (g, i) => (g && g.buttons[i]) || { pressed: false, value: 0 }, a = (g, i) => (g && g.axes[i]) || 0;
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+  buttons[0] = b(D, 4); buttons[1] = b(D, 5); buttons[2] = b(G, 4); buttons[3] = b(G, 5);   // (A, B ; X, Y)
+  buttons[7] = b(D, 0); buttons[6] = b(G, 0); buttons[5] = b(D, 1); buttons[4] = b(G, 1);   // (les gâchettes ; les poignées)
+  buttons[10] = b(G, 3); buttons[11] = b(D, 3);
+  // le joystick droit fait pivoter par crans de 30° (en douceur, on a vite mal au cœur)
+  const rx = a(D, 2); if (Math.abs(rx) > .7) { if (!M.vr.tourne) { M.vr.cap -= Math.sign(rx) * Math.PI / 6; M.vr.tourne = true; } } else if (Math.abs(rx) < .3) M.vr.tourne = false;
+  return { axes: [a(G, 2), a(G, 3), 0, 0], buttons, vr: true }; }
 /* le clavier, sur ordinateur : il fait comme une manette — Z Q S D (ou W A S D, ou les flèches) pour marcher, Maj pour courir, Espace pour tirer */
 const CLAV = {}; let clavierPret = false;
 function ecouterClavier() { if (clavierPret) return; clavierPret = true;
@@ -11166,7 +11202,7 @@ function padClavier() { ecouterClavier(); const k = c => !!CLAV[c], T = TACT_KF;
 function manette() {
   const now = performance.now(), dt = Math.min(.1, (now - (MAN.t || now)) / 1000); MAN.t = now;
   if (!M) return;   // (pour tout le monde)
-  const g = (window.choisirManette ? window.choisirManette() : null) || padClavier(); if (!g || !M || !M.L) { mireGB(null); return; }
+  const g = padVR() || (window.choisirManette ? window.choisirManette() : null) || padClavier(); if (!g || !M || !M.L) { mireGB(null); return; }
   if (!MAN.vu && !g.clavier) { MAN.vu = true; M.ctx.surInfo && M.ctx.surInfo("🎮 Manette connectée : joystick gauche pour marcher, joystick droit pour la vue, A pour agir, B pour passer, gâchette droite pour tirer, Y la carte, Select la vue à la première personne, Start le relief 3D. Dans les menus : la croix pour choisir, A pour valider, B pour fermer.", 9000); }
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
