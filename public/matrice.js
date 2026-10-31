@@ -11166,20 +11166,21 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
     b.onclick = () => { const s0 = rendu.xr.getSession(); if (s0) { s0.end(); return; }
       /* une image plus nette dans le casque : plus de points (×1,4), les bords de l'image presque pas floutés (le flou des bords, c'est la « fovéation »),
          et les textures vues de biais (sols, murs) bien filtrées */
-      try { rendu.xr.setFramebufferScaleFactor(1.4); } catch (e) {}
-      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s); try { rendu.xr.setFoveation(.1); } catch (e) {} affinerTextures();
-        if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 90).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
+      try { rendu.xr.setFramebufferScaleFactor(1.2); } catch (e) {}
+      navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s); try { rendu.xr.setFoveation(.35); } catch (e) {} affinerTextures();
+        if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 72).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
         const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0;
         if (!M.vr.cam) { M.vr.cam = new THREE.PerspectiveCamera(70, 1, .05, 300); rig.add(M.vr.cam); }
         if (!rig.parent) M.scene.add(rig); b.textContent = "Quitter la VR"; M.vr.fpAuto = !M.premiere; if (M.vr.fpAuto) premiere(true);
-        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } finCinemaVR(M.vr); if (M.vr.fpAuto) { M.vr.fpAuto = false; premiere(false); } const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
+        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } finCinemaVR(M.vr); if (M.vr.ombresAuto) { M.rendu.shadowMap.autoUpdate = true; M.vr.ombresAuto = false; } if (M.vr.fpAuto) { M.vr.fpAuto = false; premiere(false); } const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
       }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
     document.body.appendChild(b); }).catch(() => {}); }
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
   M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); viseeVR(V); try { panneauVR(V); } catch (e) { if (!V.errP) { V.errP = true; M.signalerErreur && M.signalerErreur(e); } } if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
+function suivreVR() { const V = M.vr; if (!V) return;
+  { const sm = M.rendu.shadowMap; if (sm.autoUpdate) { sm.autoUpdate = false; V.ombresAuto = true; } V.n = (V.n || 0) + 1; if (V.n % 3 === 0) sm.needsUpdate = true; cacherLoin(performance.now()); } sortieVR(V); viseeVR(V); try { panneauVR(V); } catch (e) { if (!V.errP) { V.errP = true; M.signalerErreur && M.signalerErreur(e); } } if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
   if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (V.cam.parent !== V.rig && V.cam.parent !== (V.th && V.th.rig)) V.rig.add(V.cam);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
 /* dans le casque, la page n'est pas visible : le Video Futur, les fenêtres de choix et les dialogues sont redessinés sur un panneau devant soi
@@ -11190,15 +11191,18 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
     const sc = document.createElement("canvas"); sc.width = 1024; sc.height = 200; const stx = new THREE.CanvasTexture(sc); stx.colorSpace = THREE.SRGBColorSpace;
     const s = new THREE.Mesh(new THREE.PlaneGeometry(.9, .176), new THREE.MeshBasicMaterial({ map: stx, transparent: true, depthTest: false, toneMapped: false })); s.renderOrder = 999; s.visible = false; s.frustumCulled = false;
     return { cv, tex, m, cle: "", sc, stx, s }; })());
+  // (le choix du héros de Resident Evil est un écran de la page : on le confie à la manette comme une fenêtre de choix)
+  { const ai = document.getElementById("mxApoIntro"); if (ai && !ai.hidden) { if (!M.manMenu || M.manMenu.d !== ai) M.manMenu = { d: ai, apo: true }; } else if (M.manMenu && M.manMenu.apo) M.manMenu = null; }
   // ce qu'il y a à montrer
   let etat = null; const vf = M.vfMenu && M.vfMenu.d && M.vfMenu.d.isConnected ? M.vfMenu : null, mm = M.manMenu && M.manMenu.d && M.manMenu.d.isConnected ? M.manMenu : null, bl = M.bulleEl && M.bulleEl.isConnected ? M.bulleEl : null;
   if (vf) etat = { t: "vf", i: vf.i || 0, k: [...vf.d.querySelectorAll(".vf-k")].map(k => { const im = k.querySelector("img"); return { titre: (k.querySelector("h3") || k).innerText.trim(), loue: k.classList.contains("loue"), img: im, ok: !!(im && im.complete && im.naturalWidth) }; }) };
-  else if (mm) { const bs = [...mm.d.querySelectorAll("button")].filter(b => !b.disabled && b.offsetParent); let txt = mm.d.innerText; for (const b of bs) txt = txt.replace(b.innerText, ""); etat = { t: "man", txt: txt.replace(/\n{2,}/g, "\n").trim(), b: bs.map(b => (b.innerText || b.getAttribute("aria-label") || "").trim()), s: bs.indexOf(mm.sel) }; }
+  else if (mm) { const bs = [...mm.d.querySelectorAll("button")].filter(b => !b.disabled && b.offsetParent); let txt = mm.apo ? "🎭 Choisis ton personnage, puis ton équipier — joystick : choisir · A : prendre · puis « Entrer »" : mm.d.innerText; if (!mm.apo) for (const b of bs) txt = txt.replace(b.innerText, "");
+    const pics = bs.map(b => b.querySelector("img,canvas")); etat = { t: "man", txt: txt.replace(/\n{2,}/g, "\n").trim(), b: bs.map(b => (b.innerText || b.getAttribute("aria-label") || "").trim()), s: bs.indexOf(mm.sel), on: bs.map(b => b.classList.contains("on")), pics, ok: pics.map(i => !!i && (i.tagName === "CANVAS" || (i.complete && i.naturalWidth > 0))).join() }; }
   else if ((M.codec && M.codec.el && M.codec.el.isConnected) || (M.radioKFel && M.radioKFel.isConnected)) { const el = M.codec && M.codec.el && M.codec.el.isConnected ? M.codec.el : M.radioKFel, im = [...el.querySelectorAll("img")];
     const tx = el.querySelector(".codec-txt,.rt"); etat = { t: "radio", re: el !== M.radioKFel, g: im[0], d: im[im.length - 1], ok: im.map(i => i.complete && i.naturalWidth > 0).join(), txt: ((tx && tx.innerText) || "").trim() }; }
   else if (bl && (bl.innerText || "").trim()) etat = { t: "txt", txt: bl.innerText.trim() };
   else if (M.action && M.action.label) etat = { t: "act", txt: M.action.label };
-  const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" || k === "g" || k === "d" ? undefined : v) : "";
+  const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" || k === "g" || k === "d" || k === "pics" ? undefined : v) : "";
   if (!etat) { P.m.visible = false; P.s.visible = false; P.cle = ""; return; }
   // il apparaît devant soi, là où l'on regarde (à 1,3 m, un peu sous les yeux)
   if (P.m.parent !== V.cam) V.cam.add(P.m); if (P.s.parent !== V.cam) V.cam.add(P.s);
@@ -11230,7 +11234,14 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
   else if (etat.t === "act") { x.fillStyle = "#fff"; x.font = "800 64px system-ui,sans-serif"; x.textAlign = "center"; lignes(etat.txt, W / 2, 200, W - 120, 76, 2); x.fillStyle = "#ffd23a"; x.font = "900 54px system-ui,sans-serif"; x.fillText("A", W / 2, 420); x.textAlign = "left"; }
   else { x.fillStyle = "#fff"; x.font = "600 30px system-ui,sans-serif"; let y = lignes(etat.txt || "", 40, 36, W - 80, 38, etat.t === "man" ? 7 : 13);
     if (etat.t === "man") { y += 12; x.font = "700 28px system-ui,sans-serif";
-      etat.b.forEach((b, j) => { if (y > H - 60) return; const on = j === etat.s; x.fillStyle = on ? "#ffd23a" : "#26305e"; x.beginPath(); x.roundRect(40, y, W - 80, 50, 12); x.fill(); x.fillStyle = on ? "#14215a" : "#fff"; x.fillText(b, 60, y + 11); y += 62; });
+      // (les choix avec un portrait : en vignettes, sur une ou deux rangées ; le reste en boutons dessous)
+      const avec = etat.b.map((b, j) => j).filter(j => etat.pics[j]); if (avec.length >= 2) { const n = avec.length, parL = Math.min(n, 8), tw = Math.min(130, (W - 80 - (parL - 1) * 12) / parL), th = tw * 1.25;
+        avec.forEach((j, r) => { const cx = 40 + (r % parL) * (tw + 12), cy = y + Math.floor(r / parL) * (th + 46), im = etat.pics[j]; x.fillStyle = "#1a1f3a"; x.fillRect(cx, cy, tw, th);
+          try { if (im.tagName === "CANVAS" || (im.complete && im.naturalWidth)) { const k = Math.min(tw / (im.width || im.naturalWidth), th / (im.height || im.naturalHeight)), w2 = (im.width || im.naturalWidth) * k, h2 = (im.height || im.naturalHeight) * k; x.drawImage(im, cx + (tw - w2) / 2, cy + (th - h2) / 2, w2, h2); } } catch (e) {}
+          if (etat.on[j]) { x.lineWidth = 6; x.strokeStyle = "#ffd23a"; x.strokeRect(cx - 3, cy - 3, tw + 6, th + 6); } if (j === etat.s) { x.lineWidth = 4; x.strokeStyle = "#fff"; x.strokeRect(cx - 8, cy - 8, tw + 16, th + 16); }
+          x.fillStyle = etat.on[j] ? "#ffd23a" : "#fff"; x.font = "700 20px system-ui,sans-serif"; x.textAlign = "center"; x.fillText(etat.b[j].slice(0, 14), cx + tw / 2, cy + th + 8); x.textAlign = "left"; });
+        y += Math.ceil(n / parL) * (th + 46) + 6; x.font = "700 28px system-ui,sans-serif"; }
+      etat.b.forEach((b, j) => { if (etat.pics[j] && avec.length >= 2) return; if (y > H - 60) return; const on = j === etat.s; x.fillStyle = on ? "#ffd23a" : "#26305e"; x.beginPath(); x.roundRect(40, y, W - 80, 50, 12); x.fill(); x.fillStyle = on ? "#14215a" : "#fff"; x.fillText(b, 60, y + 11); y += 62; });
       x.fillStyle = "#c8d0e8"; x.font = "600 20px system-ui,sans-serif"; x.fillText("joystick : choisir · A : valider · B : fermer", 40, H - 40); } }
   P.tex.needsUpdate = true; }
 /* la manette droite est le pistolet : sa position et sa direction, dans le monde (à partir de la pose que donne le casque) */
@@ -11332,11 +11343,11 @@ function manette() {
   if (M.manMenu && !M.manMenu.d.isConnected) M.manMenu = null;
   if (M.manMenu) { const Q = M.manMenu, bs = [...Q.d.querySelectorAll("button")].filter(b => !b.disabled && b.offsetParent && b.getClientRects().length); if (bs.length) {
       const dx = appui(15) || (lx > .6 && !MAN.cadX) ? 1 : appui(14) || (lx < -.6 && !MAN.cadX) ? -1 : 0, dy = appui(13) || (ly > .6 && !MAN.cadY) ? 1 : appui(12) || (ly < -.6 && !MAN.cadY) ? -1 : 0; MAN.cadX = Math.abs(lx) > .6; MAN.cadY = Math.abs(ly) > .6;
-      let cur = bs.indexOf(Q.sel); if (cur < 0) cur = 0;
+      let cur = bs.indexOf(Q.sel); if (cur < 0) cur = Math.min(Q.iSel || 0, bs.length - 1);
       if (dx || dy) { const r0 = bs[cur].getBoundingClientRect(), c0 = [r0.left + r0.width / 2, r0.top + r0.height / 2]; let best = -1, bsc = 1e9;
         bs.forEach((b, j) => { if (j === cur) return; const r = b.getBoundingClientRect(), vx = r.left + r.width / 2 - c0[0], vy = r.top + r.height / 2 - c0[1], av = vx * dx + vy * dy; if (av <= 4) return; const sc = av + Math.abs(vx * dy - vy * dx) * 2.5; if (sc < bsc) { bsc = sc; best = j; } });
         if (best < 0) best = (cur + (dx + dy > 0 ? 1 : bs.length - 1)) % bs.length; cur = best; }
-      if (Q.sel !== bs[cur]) { if (Q.sel) { Q.sel.style.outline = Q.sel.dataset.manO || ""; Q.sel.style.transform = Q.sel.dataset.manT || ""; } Q.sel = bs[cur]; Q.sel.dataset.manO = Q.sel.style.outline; Q.sel.dataset.manT = Q.sel.style.transform; Q.sel.style.outline = Q.sh ? "2px solid rgba(240,228,190,.85)" : "4px solid #ffd23a"; Q.sel.style.outlineOffset = "2px"; Q.sel.scrollIntoView({ block: "nearest" }); }
+      Q.iSel = cur; if (Q.sel !== bs[cur]) { if (Q.sel) { Q.sel.style.outline = Q.sel.dataset.manO || ""; Q.sel.style.transform = Q.sel.dataset.manT || ""; } Q.sel = bs[cur]; Q.sel.dataset.manO = Q.sel.style.outline; Q.sel.dataset.manT = Q.sel.style.transform; Q.sel.style.outline = Q.sh ? "2px solid rgba(240,228,190,.85)" : "4px solid #ffd23a"; Q.sel.style.outlineOffset = "2px"; Q.sel.scrollIntoView({ block: "nearest" }); }
       if (appui(0)) Q.sel.click(); else if (appui(1)) { if (Q.fermer) Q.fermer(); else { const x = bs.find(b => /✕|fermer|ranger|non/i.test(b.textContent + " " + (b.getAttribute("aria-label") || ""))); if (x) x.click(); } } }
     fin(); return; }
   if (M.cadenasMan && M.cadenasMan.d.isConnected) { const C = M.cadenasMan;
