@@ -7839,10 +7839,10 @@ export async function ouvrir(ctx) {
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
     if (M.trace1) trace("avant 1re image " + M.lieu);
-    if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
+    if (rendu.xr.isPresenting && M.vr && M.vr.cam) { if (M.porteRE) M.porteRE.maj(performance.now()); suivreVR(); try { rendreVR(rendu); } catch (e) { signalerErreurVR(e); if (M.vr.th) finCinemaVR(M.vr); rendu.xr.enabled = true; rendu.setRenderTarget(null); rendu.render(M.scene, M.vr.cam); } }
+    else if (M.pauseRendu) {}   /* (une vidéo plein écran passe : on ne dessine pas la scène derrière, la vidéo reste fluide) */
     else if (M.porteRE) { M.porteRE.maj(performance.now()); if (M.porteRE) rendu.render(M.porteRE.sc, M.porteRE.cam); }   /* (la porte qui s'ouvre, à la place du jeu) */
     else if (M.apoIntro && !M.cine && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) { const cc = rendu.getClearColor(new THREE.Color()), ca = rendu.getClearAlpha(); rendu.setClearColor(0x000000, 1); rendu.clear(); rendu.setClearColor(cc, ca); }   /* (Resident Evil, l'arrivée : écran noir jusqu'au début de la cinématique — pas d'image fugace avant) */
-    else if (rendu.xr.isPresenting) { suivreVR(); rendu.render(M.scene, M.camera); }
     else if (M.relief) rendreRelief(rendu); else if (!rendrePost(rendu, performance.now())) rendu.render(M.scene, M.camera);   /* (à Resident Evil : avec les effets d'image) */
     if (M.trace1) { trace("1re image OK " + M.lieu); M.trace1 = false; try { localStorage.removeItem("caserne-trace"); } catch (e) {} }
   }
@@ -11169,17 +11169,18 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
       try { rendu.xr.setFramebufferScaleFactor(1.4); } catch (e) {}
       navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor"] }).then(s => { rendu.xr.setSession(s); try { rendu.xr.setFoveation(.1); } catch (e) {} affinerTextures();
         if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 90).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
-        const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0; M.vr.parent = M.camera.parent;
-        if (!rig.parent) M.scene.add(rig); rig.add(M.camera); b.textContent = "Quitter la VR";
-        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } if (M.vr.parent) M.vr.parent.add(M.camera); else rig.remove(M.camera); M.camera.position.set(0, 0, 0); const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
+        const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0;
+        if (!M.vr.cam) { M.vr.cam = new THREE.PerspectiveCamera(70, 1, .05, 300); rig.add(M.vr.cam); }
+        if (!rig.parent) M.scene.add(rig); b.textContent = "Quitter la VR"; M.vr.fpAuto = !M.premiere; if (M.vr.fpAuto) premiere(true);
+        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } finCinemaVR(M.vr); if (M.vr.fpAuto) { M.vr.fpAuto = false; premiere(false); } const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
       }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
     document.body.appendChild(b); }).catch(() => {}); }
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
   M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); try { panneauVR(V); } catch (e) { if (!V.errP) { V.errP = true; M.signalerErreur && M.signalerErreur(e); } } if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
-  if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
+function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); viseeVR(V); try { panneauVR(V); } catch (e) { if (!V.errP) { V.errP = true; M.signalerErreur && M.signalerErreur(e); } } if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } const moi = M.gens.get(M.moiNum); if (!moi) return;
+  if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (V.cam.parent !== V.rig && V.cam.parent !== (V.th && V.th.rig)) V.rig.add(V.cam);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
 /* dans le casque, la page n'est pas visible : le Video Futur, les fenêtres de choix et les dialogues sont redessinés sur un panneau devant soi
    (dessinés à la main, en texte et en images : c'est léger ; recopier la page, elle, figeait le casque). On choisit comme à la manette : joystick, A, B. */
@@ -11198,7 +11199,7 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
   const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" ? undefined : v) : "";
   if (!etat) { P.m.visible = false; P.s.visible = false; P.cle = ""; return; }
   // il apparaît devant soi, là où l'on regarde (à 1,3 m, un peu sous les yeux)
-  if (P.m.parent !== M.camera) M.camera.add(P.m); if (P.s.parent !== M.camera) M.camera.add(P.s);
+  if (P.m.parent !== V.cam) V.cam.add(P.m); if (P.s.parent !== V.cam) V.cam.add(P.s);
   const sous = etat.t === "txt" || etat.t === "act"; P.m.position.set(0, -.04, -1.3); P.m.scale.setScalar(etat.t === "man" ? .8 : 1); P.s.position.set(0, -.36, -1.3);
   P.m.visible = !sous; P.s.visible = sous;
   if (cle === P.cle) return; P.cle = cle;
@@ -11225,6 +11226,44 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
       etat.b.forEach((b, j) => { if (y > H - 60) return; const on = j === etat.s; x.fillStyle = on ? "#ffd23a" : "#26305e"; x.beginPath(); x.roundRect(40, y, W - 80, 50, 12); x.fill(); x.fillStyle = on ? "#14215a" : "#fff"; x.fillText(b, 60, y + 11); y += 62; });
       x.fillStyle = "#c8d0e8"; x.font = "600 20px system-ui,sans-serif"; x.fillText("joystick : choisir · A : valider · B : fermer", 40, H - 40); } }
   P.tex.needsUpdate = true; }
+/* la manette droite est le pistolet : sa position et sa direction, dans le monde (à partir de la pose que donne le casque) */
+function viseeVR(V) { V.viseurOn = false; const r = M.rendu, s = r.xr.getSession(), f = r.xr.getFrame && r.xr.getFrame(), ref = r.xr.getReferenceSpace(); if (!s || !f || !ref || (V.th && V.th.on)) return;
+  let src = null; for (const i of s.inputSources) if (i.handedness === "right" && i.targetRaySpace) src = i; if (!src) return;
+  const pose = f.getPose(src.targetRaySpace, ref); if (!pose) return;
+  const v = V.viseur || (V.viseur = new THREE.PerspectiveCamera()); V.rig.updateMatrixWorld(true);
+  v.matrixWorld.multiplyMatrices(V.rig.matrixWorld, (V.m4 || (V.m4 = new THREE.Matrix4())).fromArray(pose.transform.matrix)); v.matrixWorld.decompose(v.position, v.quaternion, v.scale);
+  v.matrixAutoUpdate = false; v.matrix.copy(v.matrixWorld); V.viseurOn = true; }
+const viseurVR = () => M && M.vr && M.vr.viseurOn && M.rendu.xr.isPresenting ? M.vr.viseur : null;
+function signalerErreurVR(e) { if (!signalerErreurVR.vu) { signalerErreurVR.vu = true; console.error(e); M && M.signalerErreur && M.signalerErreur(e); } }
+/* l'image dans le casque.
+   - en jeu : la scène vue par nos yeux ; la caméra du jeu suit notre tête (la marche, la visée, l'arme de la première personne s'en servent) ;
+   - pendant une cinématique (ou la porte de Resident Evil, ou l'écran noir du début) : la caméra du film filme la scène, et l'on regarde son image
+     sur un grand écran, dans une salle sombre — le monde ne bouge pas tout seul autour de nous (sinon, mal au cœur garanti). */
+function rendreVR(rendu) { const V = M.vr;
+  const src = M.porteRE ? { sc: M.porteRE.sc, cam: M.porteRE.cam } : M.cine ? { sc: M.scene, cam: M.camera } : (M.apoIntro && estApo(M.lieu) && performance.now() - (M.apoIntroT || (M.apoIntroT = performance.now())) < 10000) ? { noir: true } : null;
+  if (!src) { if (V.th && V.th.on) finCinemaVR(V);
+    rendu.render(M.scene, V.cam);
+    // (la caméra du jeu prend la place de nos yeux)
+    const xc = rendu.xr.getCamera(); xc.matrixWorld.decompose(M.camera.position, M.camera.quaternion, V.tmpS || (V.tmpS = new THREE.Vector3()));
+    if (M.camera.parent && M.camera.parent !== M.scene) { M.camera.parent.updateMatrixWorld(true); const iv = M.camera.parent.matrixWorld.clone().invert(); M.camera.position.applyMatrix4(iv); M.camera.quaternion.premultiply(new THREE.Quaternion().setFromRotationMatrix(iv)); }
+    M.camera.updateMatrixWorld(true); return; }
+  const T = cinemaVR(V);
+  if (!src.noir) { const cam = src.cam, a = cam.aspect; cam.aspect = 16 / 9; cam.updateProjectionMatrix();
+    const xr = rendu.xr.enabled, rt0 = rendu.getRenderTarget(); rendu.xr.enabled = false; rendu.setRenderTarget(T.rt); rendu.clear(); rendu.render(src.sc, cam); rendu.setRenderTarget(rt0); rendu.xr.enabled = xr;
+    cam.aspect = a; cam.updateProjectionMatrix(); T.ecran.material.color.set(0xffffff); } else T.ecran.material.color.set(0x000000);
+  rendu.render(T.sc, V.cam); }
+/* la salle de cinéma : un écran 16/9 de 4 m, à 3,2 m devant nous, à hauteur des yeux ; on y entre au début de la cinématique, on en sort à la fin */
+function cinemaVR(V) { const T = V.th || (V.th = (() => { const sc = new THREE.Scene(); sc.background = new THREE.Color(0x050508);
+    const rt = new THREE.WebGLRenderTarget(1280, 720, { samples: 2 });
+    const ecran = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.25), new THREE.MeshBasicMaterial({ map: rt.texture })), cadre = new THREE.Mesh(new THREE.PlaneGeometry(4.16, 2.41), new THREE.MeshBasicMaterial({ color: 0x15151c }));
+    cadre.position.z = -.01; const g = new THREE.Group(); g.add(cadre, ecran); const rig = new THREE.Group(); sc.add(rig); rig.add(g);
+    return { sc, rt, ecran, g, rig, on: false }; })());
+  T.rig.position.copy(V.rig.position); T.rig.rotation.copy(V.rig.rotation);
+  if (!T.on) { T.on = true; const c = V.cam, yaw = new THREE.Euler().setFromQuaternion(c.quaternion, "YXZ").y;
+    T.g.position.set(c.position.x - Math.sin(yaw) * 3.2, Math.max(1.1, c.position.y), c.position.z - Math.cos(yaw) * 3.2); T.g.rotation.set(0, yaw, 0);
+    T.rig.add(V.cam); }
+  return T; }
+function finCinemaVR(V) { if (!V || !V.th || !V.th.on) return; V.th.on = false; if (V.cam) V.rig.add(V.cam); }
 /* quitter la VR : maintenir une seconde B + Y (les deux boutons du haut), ou les deux joysticks enfoncés */
 function sortieVR(V) { const s = M.rendu.xr.getSession(); if (!s) return; let G = null, D = null;
   for (const src of s.inputSources) { if (!src.gamepad) continue; if (src.handedness === "left") G = src.gamepad; else if (src.handedness === "right") D = src.gamepad; }
@@ -11241,6 +11280,7 @@ function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr
   buttons[10] = b(G, 3); buttons[11] = b(D, 3);
 
   // le joystick droit fait pivoter par crans de 30° (en douceur, on a vite mal au cœur)
+  if (M.vr.th && M.vr.th.on) return { axes: [a(G, 2), a(G, 3), a(D, 2), a(D, 3)], buttons, vr: true };
   const rx = a(D, 2); if (Math.abs(rx) > .7) { if (!M.vr.tourne) { M.vr.cap -= Math.sign(rx) * Math.PI / 6; M.vr.tourne = true; } } else if (Math.abs(rx) < .3) M.vr.tourne = false;
   return { axes: [a(G, 2), a(G, 3), 0, 0], buttons, vr: true }; }
 /* le clavier, sur ordinateur : il fait comme une manette — Z Q S D (ou W A S D, ou les flèches) pour marcher, Maj pour courir, Espace pour tirer */
@@ -11451,10 +11491,10 @@ function laserFP(cacher) { let A = M.armeFP;
       flash.position.set(0, .032, -.22); flash.scale.setScalar(.12); flash.visible = false; g.add(flash);
       A = M.armeFP = { g, ray, pt, flash, rc: new THREE.Raycaster(), t: 0, hit: null, kick: 0, kt: performance.now() }; }
   const sc = M.scene; for (const o of [A.g, A.ray, A.pt]) { if (o.parent !== sc) sc.add(o); o.visible = true; }
-  const cam = M.camera; cam.updateMatrixWorld(); const f = cam.getWorldDirection(new THREE.Vector3()), r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
+  const vv = viseurVR(), cam = vv || M.camera; if (!vv) cam.updateMatrixWorld(); const f = cam.getWorldDirection(new THREE.Vector3()), r = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
   const now0 = performance.now(), dk = Math.min(.1, (now0 - A.kt) / 1000); A.kt = now0; A.kick = Math.max(0, A.kick - dk * 6);   // (le recul : il remonte, puis revient)
   const bal = MAN.bouge ? Math.sin(now0 / 140) * .006 : 0;   // (en marchant, la main se balance un peu)
-  A.g.position.copy(cam.position).addScaledVector(f, .4 - A.kick * .05).addScaledVector(r, .15).addScaledVector(u, -.14 + bal + A.kick * .015); A.g.quaternion.copy(cam.quaternion); A.g.rotateY(.07); A.g.rotateX(A.kick * .35);
+  if (vv) A.g.position.copy(cam.position).addScaledVector(f, .08 - A.kick * .05).addScaledVector(u, -.03 + A.kick * .015); else A.g.position.copy(cam.position).addScaledVector(f, .4 - A.kick * .05).addScaledVector(r, .15).addScaledVector(u, -.14 + bal + A.kick * .015); A.g.quaternion.copy(cam.quaternion); A.g.rotateY(.07); A.g.rotateX(A.kick * .35);
   A.flash.visible = A.kick > .7; A.flash.material.rotation = Math.random() * 6;
   const now = performance.now(); if (now > A.t) { A.t = now + 90; A.rc.set(cam.position, f); A.rc.far = 40; A.rc.camera = cam;   // (ce que vise le centre de l'écran : un zombie, un monstre, un mur…)
     const h = A.rc.intersectObjects(sc.children, true).find(q => { const o = q.object; if (o === A.ray || o === A.pt || !o.visible || o.isSprite) return false; for (let a = o; a; a = a.parent) if (a === A.g || !a.visible) return false; const m = Array.isArray(o.material) ? o.material[0] : o.material; return o.isMesh && m && !(m.transparent && (m.opacity ?? 1) < .5) && m.blending !== THREE.AdditiveBlending; });
@@ -11462,7 +11502,7 @@ function laserFP(cacher) { let A = M.armeFP;
   const o0 = A.g.localToWorld(new THREE.Vector3(0, .012, -.18)), d = A.hit.clone().sub(o0), L = d.length(); A.ray.position.copy(o0); A.ray.scale.set(1, 1, L); A.ray.lookAt(A.hit);
   A.pt.position.copy(A.hit).addScaledVector(f, -.05); const s2 = Math.max(.05, Math.min(.5, A.hit.distanceTo(cam.position) * .012)); A.pt.scale.set(s2, s2, 1); }
 /* tirer à la première personne : sur ce que vise le laser (avec un peu d'aide : ce qui est presque dans le viseur) */
-function cibleFP(liste) { const cam = M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
+function cibleFP(liste) { const cam = viseurVR() || M.camera, f = cam.getWorldDirection(new THREE.Vector3()); let best = null, ba = .14;
   for (const z of liste) { const y = (z.y || 0) + 1.1, v = new THREE.Vector3(z.x - cam.position.x, y - cam.position.y, z.z - cam.position.z), d = v.length(); if (d > 25) continue; const a = v.normalize().angleTo(f); if (a < ba) { ba = a; best = z; } }
   return best; }
 export function premiere(on) { if (!M) return;   /* (pour tout le monde) */ const moi = M.gens.get(M.moiNum);
