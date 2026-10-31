@@ -11185,19 +11185,19 @@ function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); try { panneau
    (dessinés à la main, en texte et en images : c'est léger ; recopier la page, elle, figeait le casque). On choisit comme à la manette : joystick, A, B. */
 function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) < 120) return; V.panT = now;
   const P = V.pan || (V.pan = (() => { const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 640; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .875), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false, side: THREE.DoubleSide })); m.renderOrder = 999; m.visible = false; V.rig.add(m);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .875), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false, side: THREE.DoubleSide })); m.renderOrder = 999; m.visible = false; m.frustumCulled = false;
     return { cv, tex, m, cle: "" }; })());
   // ce qu'il y a à montrer
   let etat = null; const vf = M.vfMenu && M.vfMenu.d && M.vfMenu.d.isConnected ? M.vfMenu : null, mm = M.manMenu && M.manMenu.d && M.manMenu.d.isConnected ? M.manMenu : null, bl = M.bulleEl && M.bulleEl.isConnected ? M.bulleEl : null;
   if (vf) etat = { t: "vf", i: vf.i || 0, k: [...vf.d.querySelectorAll(".vf-k")].map(k => { const im = k.querySelector("img"); return { titre: (k.querySelector("h3") || k).innerText.trim(), loue: k.classList.contains("loue"), img: im, ok: !!(im && im.complete && im.naturalWidth) }; }) };
   else if (mm) { const bs = [...mm.d.querySelectorAll("button")].filter(b => !b.disabled && b.offsetParent); let txt = mm.d.innerText; for (const b of bs) txt = txt.replace(b.innerText, ""); etat = { t: "man", txt: txt.replace(/\n{2,}/g, "\n").trim(), b: bs.map(b => (b.innerText || b.getAttribute("aria-label") || "").trim()), s: bs.indexOf(mm.sel) }; }
   else if (bl && (bl.innerText || "").trim()) etat = { t: "txt", txt: bl.innerText.trim() };
+  else if (M.action && M.action.label) etat = { t: "act", txt: M.action.label };
   const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" ? undefined : v) : "";
   if (!etat) { P.m.visible = false; P.cle = ""; return; }
   // il apparaît devant soi, là où l'on regarde (à 1,3 m, un peu sous les yeux)
-  if (!P.m.visible) { const cam = M.rendu.xr.getCamera(), p = new THREE.Vector3(), q = new THREE.Quaternion(); cam.getWorldPosition(p); cam.getWorldQuaternion(q);
-    const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q); f.y = 0; if (f.lengthSq() < 1e-4) f.set(0, 0, -1); f.normalize(); const w = p.clone().addScaledVector(f, 1.3); w.y = p.y - .1;
-    P.m.position.copy(V.rig.worldToLocal(w.clone())); P.m.lookAt(p.x, w.y, p.z); P.m.visible = true; }
+  if (P.m.parent !== M.camera) M.camera.add(P.m);
+  const petit = etat.t === "act"; P.m.position.set(0, petit ? -.32 : -.06, -1.3); P.m.scale.setScalar(petit ? .45 : 1); P.m.visible = true;
   if (cle === P.cle) return; P.cle = cle;
   const x = P.cv.getContext("2d"), W = 1024, H = 640; x.clearRect(0, 0, W, H);
   x.fillStyle = "rgba(10,14,34,.94)"; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#ffd23a"; x.stroke();
@@ -11209,6 +11209,7 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
       if (k.ok && k.img) { try { x.globalAlpha = k.loue ? .35 : 1; x.drawImage(k.img, cx, cy, cw, ch - 46); x.globalAlpha = 1; } catch (e) {} } else { x.fillStyle = "#11183a"; x.fillRect(cx, cy, cw, ch - 46); }
       x.fillStyle = k.loue ? "#8890a8" : "#fff"; x.font = "700 17px system-ui,sans-serif"; lignes(k.titre + (k.loue ? " — loué" : ""), cx, cy + ch - 42, cw, 20, 2);
       if (j === etat.i) { x.lineWidth = 7; x.strokeStyle = "#ffd23a"; x.strokeRect(cx - 5, cy - 5, cw + 10, ch + 4); } } }
+  else if (etat.t === "act") { x.fillStyle = "#fff"; x.font = "800 64px system-ui,sans-serif"; x.textAlign = "center"; lignes(etat.txt, W / 2, 200, W - 120, 76, 2); x.fillStyle = "#ffd23a"; x.font = "900 54px system-ui,sans-serif"; x.fillText("A", W / 2, 420); x.textAlign = "left"; }
   else { x.fillStyle = "#fff"; x.font = "600 30px system-ui,sans-serif"; let y = lignes(etat.txt || "", 40, 36, W - 80, 38, etat.t === "man" ? 7 : 13);
     if (etat.t === "man") { y += 12; x.font = "700 28px system-ui,sans-serif";
       etat.b.forEach((b, j) => { if (y > H - 60) return; const on = j === etat.s; x.fillStyle = on ? "#ffd23a" : "#26305e"; x.beginPath(); x.roundRect(40, y, W - 80, 50, 12); x.fill(); x.fillStyle = on ? "#14215a" : "#fff"; x.fillText(b, 60, y + 11); y += 62; });
