@@ -11176,7 +11176,10 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
     document.body.appendChild(b); }).catch(() => {}); }
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
 function affinerTextures() { if (!M || !M.scene) return; const a = M.rendu.capabilities.getMaxAnisotropy(), vus = new Set();
-  M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) { vus.add(tx); tx.anisotropy = a; tx.needsUpdate = true; } } }); }
+  M.scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) for (const k of ["map", "normalMap", "roughnessMap", "emissiveMap", "aoMap"]) { const tx = m[k]; if (tx && !vus.has(tx) && tx.anisotropy < a) vus.add(tx); } });
+  // (petit à petit : quelques textures par image — tout renvoyer d'un coup à la carte graphique figeait le casque, écran noir)
+  M.vrTex = [...vus]; M.vrTexA = a; }
+function affinerUnPeu() { const l = M.vrTex; if (!l || !l.length) return; for (let i = 0; i < 4 && l.length; i++) { const tx = l.pop(); tx.anisotropy = M.vrTexA; tx.needsUpdate = true; } }
 function signalerErreurVR(e) { if (!signalerErreurVR.vu) { signalerErreurVR.vu = true; console.error(e); M && M.signalerErreur && M.signalerErreur(e); } }
 /* l'interface dans le casque :
    - un écran flottant devant soi, qui recopie ce qui s'affiche normalement par-dessus la scène (menus du Video Futur, choix du jeu, dialogues, messages) ;
@@ -11187,7 +11190,7 @@ function etiquetteVR(texte) { const c = document.createElement("canvas"); c.widt
   x.fillStyle = "#f0e4be"; x.font = "600 54px system-ui,sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(texte, 256, 66);
   const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx; }
 function interfaceVR(V) { const r = M.rendu;
-  if (!V.ui) { const U = V.ui = { ctrl: [], vis: false, dirty: true, occupe: false, derniere: 0, ray: new THREE.Raycaster(), m4: new THREE.Matrix4() };
+  if (!V.ui) { const U = V.ui = { ctrl: [], vis: false, dirty: true, occupe: false, derniere: performance.now() + 2500, ray: new THREE.Raycaster(), m4: new THREE.Matrix4() };
     // l'écran : une toile de la taille de la scène à l'écran, transparente là où il n'y a rien
     U.cv = document.createElement("canvas"); U.tex = new THREE.CanvasTexture(U.cv); U.tex.colorSpace = THREE.SRGBColorSpace;
     U.ecran = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: U.tex, transparent: true, depthTest: false, toneMapped: false, side: THREE.DoubleSide }));
@@ -11204,7 +11207,7 @@ function interfaceVR(V) { const r = M.rendu;
     new MutationObserver(() => { U.dirty = true; }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden", "class", "style"] });
     V.rig.add(U.quitter); U.quitter.visible = false; }
   const U = V.ui, now = performance.now();
-  if (U.dirty && !U.occupe && now - U.derniere > 450 && window.html2canvas) { U.dirty = false; U.derniere = now; capturerUI(U); }
+  if (r.xr.isPresenting && U.dirty && !U.occupe && now - U.derniere > 450 && window.html2canvas) { U.dirty = false; U.derniere = now; capturerUI(U); }
   else if (U.ecran.visible && U.vivants && U.vivants.length && !U.occupe) composerUI(U);
   // l'écran apparaît devant soi (à 1,4 m, un peu sous les yeux)
   if (U.ecran.visible && !U.place) { U.place = true; const cam = r.xr.getCamera(), p = new THREE.Vector3(), q = new THREE.Quaternion(); cam.getWorldPosition(p); cam.getWorldQuaternion(q);
@@ -11252,7 +11255,7 @@ function composerUI(U) { if (!U.fixe) return; const x = U.cv.getContext("2d"), R
   for (const v of U.vivants || []) { if (!v.isConnected) continue; const q = v.getBoundingClientRect(); if (q.width < 2 || (v.tagName === "VIDEO" && v.readyState < 2)) continue; try { x.drawImage(v, (q.left - R0.left) * k, (q.top - R0.top) * k, q.width * k, q.height * k); } catch (e) {} }
   U.tex.needsUpdate = true; }
 /* à chaque image, dans le casque : le « plateau » (où sont nos pieds) suit le personnage ; on ne voit pas son propre corps */
-function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } try { interfaceVR(V); } catch (e) { signalerErreurVR(e); } const moi = M.gens.get(M.moiNum); if (!moi) return;
+function suivreVR() { const V = M.vr; if (!V) return; if (V.scene !== M.scene) { V.scene = M.scene; affinerTextures(); } try { interfaceVR(V); affinerUnPeu(); } catch (e) { signalerErreurVR(e); } const moi = M.gens.get(M.moiNum); if (!moi) return;
   if (V.rig.parent !== M.scene) M.scene.add(V.rig); if (M.camera.parent !== V.rig) V.rig.add(M.camera);
   V.rig.position.copy(moi.g.position); V.rig.rotation.set(0, V.cap, 0); moi.g.visible = false; }
 /* les manettes Touch, vues comme une manette de jeu (la disposition « standard ») */
