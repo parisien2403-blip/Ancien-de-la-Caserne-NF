@@ -11171,7 +11171,7 @@ function activerVR(rendu) { if (!navigator.xr || !navigator.xr.isSessionSupporte
         if (s.supportedFrameRates && s.updateTargetFrameRate) { const f = [...s.supportedFrameRates].filter(x => x <= 90).sort((a, b) => b - a)[0]; if (f) s.updateTargetFrameRate(f).catch(() => {}); }
         const moi = M && M.gens.get(M.moiNum); M.vr.cap = moi ? moi.g.rotation.y + Math.PI : 0; M.vr.parent = M.camera.parent;
         if (!rig.parent) M.scene.add(rig); rig.add(M.camera); b.textContent = "Quitter la VR";
-        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.cle = ""; } if (M.vr.parent) M.vr.parent.add(M.camera); else rig.remove(M.camera); M.camera.position.set(0, 0, 0); const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
+        s.addEventListener("end", () => { if (!M) return; if (M.vr.pan) { M.vr.pan.m.visible = false; M.vr.pan.s.visible = false; M.vr.pan.cle = ""; } if (M.vr.parent) M.vr.parent.add(M.camera); else rig.remove(M.camera); M.camera.position.set(0, 0, 0); const m = M.gens.get(M.moiNum); if (m) m.g.visible = true; b.textContent = "🥽 Casque VR"; M.redim && M.redim(); });
       }).catch(e => M && M.ctx.surInfo && M.ctx.surInfo("La VR n'a pas pu s'ouvrir : " + e.message, 6000)); };
     document.body.appendChild(b); }).catch(() => {}); }
 /* les textures vues de biais restent nettes (filtrage anisotrope au plus fort) : dans un casque, on regarde le sol et les murs de très près */
@@ -11186,7 +11186,9 @@ function suivreVR() { const V = M.vr; if (!V) return; sortieVR(V); try { panneau
 function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) < 120) return; V.panT = now;
   const P = V.pan || (V.pan = (() => { const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 640; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, .875), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false, side: THREE.DoubleSide })); m.renderOrder = 999; m.visible = false; m.frustumCulled = false;
-    return { cv, tex, m, cle: "" }; })());
+    const sc = document.createElement("canvas"); sc.width = 1024; sc.height = 200; const stx = new THREE.CanvasTexture(sc); stx.colorSpace = THREE.SRGBColorSpace;
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(.9, .176), new THREE.MeshBasicMaterial({ map: stx, transparent: true, depthTest: false, toneMapped: false })); s.renderOrder = 999; s.visible = false; s.frustumCulled = false;
+    return { cv, tex, m, cle: "", sc, stx, s }; })());
   // ce qu'il y a à montrer
   let etat = null; const vf = M.vfMenu && M.vfMenu.d && M.vfMenu.d.isConnected ? M.vfMenu : null, mm = M.manMenu && M.manMenu.d && M.manMenu.d.isConnected ? M.manMenu : null, bl = M.bulleEl && M.bulleEl.isConnected ? M.bulleEl : null;
   if (vf) etat = { t: "vf", i: vf.i || 0, k: [...vf.d.querySelectorAll(".vf-k")].map(k => { const im = k.querySelector("img"); return { titre: (k.querySelector("h3") || k).innerText.trim(), loue: k.classList.contains("loue"), img: im, ok: !!(im && im.complete && im.naturalWidth) }; }) };
@@ -11194,11 +11196,19 @@ function panneauVR(V) { const now = performance.now(); if (now - (V.panT || 0) <
   else if (bl && (bl.innerText || "").trim()) etat = { t: "txt", txt: bl.innerText.trim() };
   else if (M.action && M.action.label) etat = { t: "act", txt: M.action.label };
   const cle = etat ? JSON.stringify(etat, (k, v) => k === "img" ? undefined : v) : "";
-  if (!etat) { P.m.visible = false; P.cle = ""; return; }
+  if (!etat) { P.m.visible = false; P.s.visible = false; P.cle = ""; return; }
   // il apparaît devant soi, là où l'on regarde (à 1,3 m, un peu sous les yeux)
-  if (P.m.parent !== M.camera) M.camera.add(P.m);
-  const petit = etat.t === "act"; P.m.position.set(0, petit ? -.32 : -.06, -1.3); P.m.scale.setScalar(petit ? .45 : 1); P.m.visible = true;
+  if (P.m.parent !== M.camera) M.camera.add(P.m); if (P.s.parent !== M.camera) M.camera.add(P.s);
+  const sous = etat.t === "txt" || etat.t === "act"; P.m.position.set(0, -.04, -1.3); P.m.scale.setScalar(etat.t === "man" ? .8 : 1); P.s.position.set(0, -.36, -1.3);
+  P.m.visible = !sous; P.s.visible = sous;
   if (cle === P.cle) return; P.cle = cle;
+  if (sous) { const x = P.sc.getContext("2d"), W = 1024, H = 200; x.clearRect(0, 0, W, H); x.fillStyle = "rgba(0,0,0,.6)"; x.beginPath(); x.roundRect(0, 0, W, H, 22); x.fill();
+    x.fillStyle = "#fff"; x.textAlign = "center"; x.textBaseline = "top"; let taille = 46, l = [];
+    // (le texte rentre en 3 lignes au plus : on réduit la taille s'il le faut, puis on coupe)
+    const couper = () => { l = []; let li = ""; for (const m of etat.txt.replace(/\s+/g, " ").split(" ")) { const e = li ? li + " " + m : m; if (x.measureText(e).width > W - 60 && li) { l.push(li); li = m; } else li = e; } if (li) l.push(li); };
+    do { x.font = `600 ${taille}px system-ui,sans-serif`; couper(); taille -= 4; } while (l.length > 3 && taille > 28);
+    if (l.length > 3) { l = l.slice(0, 3); l[2] += " …"; } const h = taille + 10, y0 = (H - l.length * h) / 2;
+    l.forEach((s, i) => { if (etat.t === "act" && i === l.length - 1) s += "  —  A"; x.fillText(s, W / 2, y0 + i * h); }); P.stx.needsUpdate = true; return; }
   const x = P.cv.getContext("2d"), W = 1024, H = 640; x.clearRect(0, 0, W, H);
   x.fillStyle = "rgba(10,14,34,.94)"; x.beginPath(); x.roundRect(4, 4, W - 8, H - 8, 26); x.fill(); x.lineWidth = 5; x.strokeStyle = "#ffd23a"; x.stroke();
   const lignes = (s, x0, y0, l, h, max) => { const mots = s.replace(/\s+/g, " ").split(" "); let li = "", y = y0, n = 0; for (const m of mots) { const e = li ? li + " " + m : m; if (x.measureText(e).width > l && li) { x.fillText(li, x0, y); y += h; li = m; if (++n >= max) return y; } else li = e; } if (li) { x.fillText(li, x0, y); y += h; } return y; };
