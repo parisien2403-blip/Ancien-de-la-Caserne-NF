@@ -11313,7 +11313,9 @@ function padVR() { const r = M && M.rendu; if (!r || !r.xr.isPresenting || !M.vr
 
   // le joystick droit fait pivoter par crans de 30° (en douceur, on a vite mal au cœur)
   if (M.vr.th && M.vr.th.on) return { axes: [a(G, 2), a(G, 3), a(D, 2), a(D, 3)], buttons, vr: true };
-  const rx = a(D, 2); if (Math.abs(rx) > .7) { if (!M.vr.tourne) { M.vr.cap -= Math.sign(rx) * Math.PI / 6; M.vr.tourne = true; } } else if (Math.abs(rx) < .3) M.vr.tourne = false;
+  // le joystick droit fait pivoter en douceur, comme on avance : plus on le pousse, plus on tourne vite (jusqu'à un demi-tour en 1,7 s)
+  { const now = performance.now(), dt = Math.min(.05, (now - (M.vr.tT || now)) / 1000); M.vr.tT = now; let rx = a(D, 2); rx = Math.abs(rx) < .15 ? 0 : (rx - Math.sign(rx) * .15) / .85;
+    M.vr.cap -= rx * Math.abs(rx) * 1.85 * dt; }
   return { axes: [a(G, 2), a(G, 3), 0, 0], buttons, vr: true }; }
 /* le clavier, sur ordinateur : il fait comme une manette — Z Q S D (ou W A S D, ou les flèches) pour marcher, Maj pour courir, Espace pour tirer */
 const CLAV = {}; let clavierPret = false;
