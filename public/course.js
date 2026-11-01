@@ -563,7 +563,7 @@ function recuK(m) { if (!M) return; const de = m.de;
 
 /* ---------- l'écran : tour, position, objet, chrono, boutons du téléphone ---------- */
 function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.hud = d;
-  d.style.cssText = "position:absolute;inset:0;z-index:20;pointer-events:auto;touch-action:none;font-family:'Arial Black',Arial,sans-serif;color:#fff;text-shadow:0 2px 4px #000";
+  d.style.cssText = "position:absolute;inset:0;z-index:20;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:'Arial Black',Arial,sans-serif;color:#fff;text-shadow:0 2px 4px #000";
   const tactile = matchMedia("(pointer: coarse)").matches;
   d.innerHTML = `<div style="position:absolute;left:10px;top:38px;font:italic 900 40px 'Arial Black',Arial;letter-spacing:-1px;color:#ffd23a;-webkit-text-stroke:2px #111;text-shadow:0 3px 0 #b8520a,0 5px 8px rgba(0,0,0,.6)" id="kPos"></div><div style="position:absolute;left:12px;top:86px;font:800 15px Arial;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,.45)" id="kTour"></div><canvas id="kCarte" width="220" height="220" style="position:absolute;left:8px;top:150px;width:110px;height:110px;opacity:.92"></canvas>
     <div id="kVitesse" style="position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .25s;background:repeating-conic-gradient(from 0deg at 50% 55%,rgba(255,255,255,.5) 0deg .6deg,transparent .6deg 7deg);-webkit-mask-image:radial-gradient(circle at 50% 55%,transparent 38%,#000 75%);mask-image:radial-gradient(circle at 50% 55%,transparent 38%,#000 75%)"></div>
@@ -584,14 +584,20 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
           <button type="button" data-k="dera" style="width:66px;height:66px;border-radius:50%;border:3px solid #7ad0ff;background:rgba(20,60,110,.6);color:#bfe8ff;font:700 11px Arial">DÉRAPER</button>
           <button type="button" data-k="frein" style="width:66px;height:66px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(160,30,30,.6);color:#fff;font:700 13px Arial">FREIN</button></div>
         <button type="button" data-k="gaz" style="width:104px;height:104px;border-radius:50%;border:4px solid #9dff7a;background:radial-gradient(circle at 40% 35%,rgba(80,200,60,.85),rgba(20,110,20,.85));color:#fff;font:900 14px Arial;text-shadow:0 1px 3px #000">ACCÉLÉRER</button></div>` : `<div style="position:absolute;left:12px;bottom:12px;font:700 13px Arial;opacity:.85">⬆ accélérer · ⬇ freiner · ⬅ ➡ tourner · Maj déraper (tenu dans le virage : turbo) · Espace objet (+ ⬇ : derrière) — Manette : RT/A accélérer · LT/B freiner · stick gauche · R1 déraper · X/L1 objet</div>`}`;
-  for (const b of d.querySelectorAll("[data-k]")) { const k = b.dataset.k, on = v => e => { e.preventDefault(); e.stopPropagation(); KT[k] = v; };
-    b.addEventListener("pointerdown", on(1)); b.addEventListener("pointerup", on(0)); b.addEventListener("pointercancel", on(0)); b.addEventListener("pointerleave", on(0)); }
+  /* les boutons de l'écran : un appui long ne doit jamais sélectionner le texte ni ouvrir le menu du téléphone (sinon l'appui s'interrompt et le kart s'arrête) ;
+     le bouton garde le doigt même s'il glisse un peu (capture), et l'on relâche seulement en levant le doigt */
+  for (const b of d.querySelectorAll("[data-k]")) { const k = b.dataset.k; let id = null; b.style.touchAction = "none"; b.style.userSelect = b.style.webkitUserSelect = "none"; b.style.webkitTouchCallout = "none";
+    b.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); id = e.pointerId; try { b.setPointerCapture(id); } catch (er) {} KT[k] = 1; b.style.filter = "brightness(1.35)"; });
+    const lacher = e => { if (id !== null && e.pointerId !== id) return; id = null; KT[k] = 0; b.style.filter = ""; };
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, lacher);
+    b.addEventListener("touchstart", e => e.preventDefault(), { passive: false }); }
+  for (const ev of ["contextmenu", "selectstart", "dragstart"]) d.addEventListener(ev, e => e.preventDefault());
   d.querySelector("#kQuitter").onclick = e => { e.stopPropagation(); quitterCourse(); };
   { const pal = d.querySelector("#kPalette"), bou = d.querySelector("#kManette"); if (pal) { let id = null;
     const viser = e => { const r = pal.getBoundingClientRect(), demi = r.width / 2 - 36, v = Math.max(-1, Math.min(1, (e.clientX - r.left - r.width / 2) / demi)); KT.vol = v; bou.style.transform = `translateX(${v * demi}px)`; };
     const lacher = e => { if (e.pointerId !== id) return; id = null; KT.vol = 0; bou.style.transition = "transform .12s"; bou.style.transform = ""; };
     pal.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); id = e.pointerId; try { pal.setPointerCapture(id); } catch (er) {} bou.style.transition = ""; viser(e); });
-    pal.addEventListener("pointermove", e => { if (e.pointerId === id) { e.preventDefault(); viser(e); } });
+    pal.addEventListener("pointermove", e => { if (e.pointerId === id) { e.preventDefault(); viser(e); } }); pal.addEventListener("touchstart", e => e.preventDefault(), { passive: false });
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) pal.addEventListener(ev, lacher); } }
   d.addEventListener("pointerdown", e => { if (KR.cer && !KR.podium && e.target === d) { podiumK(); return; } if (KR.intro && e.target === d || e.target.id === "kIntro" || (e.target.closest && e.target.closest("#kIntro"))) KR.passer = true; });
   for (const ev of ["pointerdown", "pointerup", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
