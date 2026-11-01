@@ -237,7 +237,7 @@ function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.sce
   if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", t0, perso: KR.perso || "moi" });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
-  M.course = KR; KR.passer = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true);
+  M.course = KR; KR.passer = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
   // la cinématique d'ouverture : la caméra survole tout le circuit, de haut, et vient se poser derrière notre kart sur la grille
   const D = Math.min(9500, t0 - Date.now() - 2600); KR.intro = D > 3000 ? { t: performance.now(), D } : null; KR.camPrete = false; }
 function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil = [];
@@ -267,11 +267,46 @@ function majCotillons(dt) { const C = KR.cot; C.t += dt;
   for (const m of C.parts) { const u = m.userData; u.v.y -= 9.8 * dt * .5; u.v.x *= Math.pow(.5, dt); u.v.z *= Math.pow(.5, dt); if (u.v.y < -1.2) u.v.y = -1.2; m.position.addScaledVector(u.v, dt); m.rotation.x += u.r.x * dt; m.rotation.y += u.r.y * dt; m.rotation.z += u.r.z * dt; }
   if (C.t > 7) finCotillons(); }
 function finCotillons() { if (KR.cot) { KR.cot.G.parent && KR.cot.G.parent.remove(KR.cot.G); KR.cot = null; } }
+/* les spectateurs aux fenêtres : le long du circuit, on cherche les façades (un rayon part de la piste, sur le côté) ; à chaque fois,
+   une fenêtre ouverte, éclairée de l'intérieur, et un personnage qui se penche, agite les bras, un petit drapeau à damier à la main */
+function spectateursK() { finSpectateurs(); if (!M || !M.scene) return; const G = new THREE.Group(); G.name = "spectateurs-karts"; KC.scene.add(G);
+  const cibles = M.scene.children.filter(o => o !== KC.G && o !== G && o.visible && !(KR.pil || []).some(p => p.K.g === o) && (o.isMesh || o.isGroup));
+  const ray = new THREE.Raycaster(), dirV = new THREE.Vector3(), orig = new THREE.Vector3(), nW = new THREE.Vector3(), places = [];
+  const TETES = ["gendarme", "cantiniere", "pigeon", "gargouille", "chat", "mamie", "clairon", "pave"], loader = new THREE.TextureLoader();
+  const texT = TETES.map(n => { const t = loader.load("images/karts/" + n + ".png"); t.colorSpace = THREE.SRGBColorSpace; return t; });
+  for (let i = 0, k = 0; i < KC.N; i += 30, k++) { const q = KC.pts[i], n = KC.nor[i];
+    for (const sd of (k % 2 ? [1, -1] : [-1, 1])) { const y = q.y + (k % 3 === 0 ? 6.4 : 3.6); orig.set(q.x, y, q.z); dirV.set(n.x * sd, 0, n.z * sd); ray.set(orig, dirV); ray.far = 13; ray.near = KC.lar[i] / 2 + .8;
+      const tous = []; for (const o of cibles) { try { o.raycast && ray.intersectObject(o, true, tous); } catch (e) {} } tous.sort((u, v) => u.distance - v.distance);
+      const grand = o => { const g2 = o.geometry; if (!g2) return false; if (!g2.boundingSphere) g2.computeBoundingSphere(); const sc = new THREE.Vector3(); o.getWorldScale(sc); return g2.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z) > 4.5; };   // (une façade : un grand morceau de bâtiment, pas un camion ni un muret)
+      const h = tous.find(r => r.face && r.object.material && !r.object.material.transparent && !r.object.isSkinnedMesh); if (!h || !grand(h.object)) continue;
+      nW.copy(h.face.normal).transformDirection(h.object.matrixWorld); nW.y = 0; if (nW.lengthSq() < .5) continue; nW.normalize(); if (nW.dot(dirV) > -.5) continue;   // (une vraie façade, tournée vers la piste)
+      if (places.some(p2 => p2.distanceTo(h.point) < 6)) continue; places.push(h.point.clone()); break; } }
+  const cadreM = new THREE.MeshStandardMaterial({ color: 0xf0e8d8, roughness: .6 }), dedansM = new THREE.MeshBasicMaterial({ color: 0xffb860 }), vitreM = new THREE.MeshStandardMaterial({ color: 0x9ab8d0, roughness: .1, metalness: .3, transparent: true, opacity: .55 });
+  const COMBIS = [0xc8102e, 0x1e64d8, 0x2aa84a, 0xf2c21a, 0x9b3ad6, 0xf07a1a, 0xe8e8e8, 0x20b8c8], damier = tex(toile(32, 24, x => { for (let a = 0; a < 4; a++) for (let b = 0; b < 3; b++) { x.fillStyle = (a + b) % 2 ? "#111" : "#fff"; x.fillRect(a * 8, b * 8, 8, 8); } }));
+  KR.spect = []; places.forEach((P, j) => { const w = new THREE.Group(); w.position.copy(P); G.add(w); const ray2 = new THREE.Raycaster(new THREE.Vector3(P.x, P.y, P.z), new THREE.Vector3(0, 0, 0));
+    // (on retrouve la normale de cette façade : on regarde vers la piste la plus proche)
+    let bi = 0, bd = 1e9; for (let i = 0; i < KC.N; i += 4) { const d = KC.pts[i].distanceTo(P); if (d < bd) { bd = d; bi = i; } } const vers = KC.pts[bi].clone(); vers.y = P.y; w.lookAt(vers);
+    // la fenêtre : l'encadrement, l'intérieur éclairé, le rebord, un volet ouvert
+    const L = 1.3, Ht = 1.6; const fond = new THREE.Mesh(new THREE.PlaneGeometry(L, Ht), dedansM); fond.position.z = .04; w.add(fond);
+    for (const [px, py, sx, sy] of [[0, Ht / 2 + .06, L + .24, .12], [0, -Ht / 2 - .06, L + .24, .12], [-L / 2 - .06, 0, .12, Ht], [L / 2 + .06, 0, .12, Ht]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, .12), cadreM); b.position.set(px, py, .08); w.add(b); }
+    const rebord = new THREE.Mesh(new THREE.BoxGeometry(L + .4, .08, .34), cadreM); rebord.position.set(0, -Ht / 2 - .1, .2); w.add(rebord);
+    const volet = new THREE.Mesh(new THREE.BoxGeometry(L / 2, Ht, .04), vitreM); volet.position.set(-L / 2 - L / 4 - .1, 0, .22); volet.rotation.y = -1.2; w.add(volet);
+    // le personnage : le buste à la fenêtre, la tête dessinée, deux bras qui s'agitent ; un drapeau à damier dans une main
+    const pers = new THREE.Group(); pers.position.set(0, -Ht / 2 + .1, .3); w.add(pers); const habit = new THREE.MeshStandardMaterial({ color: COMBIS[j % COMBIS.length], roughness: .7 });
+    const buste = new THREE.Mesh(new THREE.CapsuleGeometry(.24, .3, 4, 10), habit); buste.position.y = .38; pers.add(buste);
+    const tete = new THREE.Mesh(new THREE.PlaneGeometry(.78, .78), new THREE.MeshBasicMaterial({ map: texT[j % texT.length], transparent: true, alphaTest: .1 })); tete.position.set(0, 1.0, .06); pers.add(tete);
+    const bras = [-1, 1].map(sx => { const pv = new THREE.Group(); pv.position.set(sx * .27, .6, .02); const b = new THREE.Mesh(new THREE.CapsuleGeometry(.06, .4, 4, 8), habit); b.position.y = .26; pv.add(b);
+      const main = new THREE.Mesh(new THREE.SphereGeometry(.075, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffd0a8 })); main.position.y = .52; pv.add(main); pers.add(pv); return pv; });
+    if (j % 2) { const dr = new THREE.Mesh(new THREE.PlaneGeometry(.36, .26), new THREE.MeshBasicMaterial({ map: damier, side: THREE.DoubleSide })); dr.position.set(.18, .7, 0); bras[1].add(dr); const hampe = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .5, 6), cadreM); hampe.position.set(0, .64, 0); bras[1].add(hampe); }
+    KR.spect.push({ pers, bras, ph: Math.random() * 6, v: 5 + Math.random() * 4 }); });
+  KR.spectG = G; }
+function majSpectateurs(t) { for (const S of KR.spect || []) { const a = t / 1000 * S.v + S.ph; S.bras[0].rotation.z = .5 + Math.sin(a) * .6; S.bras[1].rotation.z = -.5 - Math.sin(a + 1.3) * .6; S.pers.position.y = -.7 + Math.abs(Math.sin(a * .5)) * .08; S.pers.rotation.z = Math.sin(a * .5) * .06; } }
+function finSpectateurs() { if (KR.spectG) { KR.spectG.parent && KR.spectG.parent.remove(KR.spectG); KR.spectG = null; } KR.spect = []; }
 function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR.pil) KC.scene && KC.scene.remove(p.K.g); for (const o of KR.objets) o.m && o.m.parent && o.m.parent.remove(o.m); KR.pil = []; KR.objets = [];
   if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
-  finCeremonie(); finCotillons(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
+  finCeremonie(); finCotillons(); finSpectateurs(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
 const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
@@ -396,7 +431,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
     majKart(p, dt); }
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = surPiste(cs.s, cs.d).y + .8 + Math.sin(t / 300 + cs.s) * .1; }
   if (KC.ledTex) KC.ledTex.offset.x -= dt * .5; if (M.L && M.L.nuit === false && (!KR.nuitT || t - KR.nuitT > 2000)) { KR.nuitT = t; nuitK(true); }
-  if (KR.cer) majCeremonie(dt); if (KR.cot) majCotillons(dt);
+  if (KR.cer) majCeremonie(dt); if (KR.cot) majCotillons(dt); majSpectateurs(t);
   if (!avant) { majObjets(dt); chocsKarts();
     for (const p of KR.pil) if ((p.moi || p.bot) && !p.fini) for (const b of KC.boosts || []) if (Math.abs(p.s - b.s) < 1.2 && Math.abs(p.d) < b.w / 2) { if (p.turbo < .5 && p.moi) sonK("turbo"); p.turbo = Math.max(p.turbo, .9); } }
   // notre position, pour les autres (8 fois par seconde)
