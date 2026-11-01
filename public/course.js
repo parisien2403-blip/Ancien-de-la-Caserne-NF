@@ -398,13 +398,32 @@ function mettreTete(K, P) { if (!P) return; if (P.couleur) K.corps.material.colo
   const c = toile(img.width, img.height, x => x.drawImage(img, 0, 0)), h = 1.05, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, alphaTest: .05 }));
   sp.scale.set(h * img.width / img.height, h, 1); sp.position.set(0, 1.0 + h / 2 - .1, -.34); sp.renderOrder = 2; K.corpsK.add(sp); K.tete = sp; K.casque.visible = K.vis.visible = false; }).catch(() => {}); }
 function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale.setScalar(EK); KC.scene.add(K.g); mettreTete(K, o.tete);
-  return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: .86 + Math.random() * .1 }; }
+  return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: (() => { const D = DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]; return D.v[0] + Math.random() * (D.v[1] - D.v[0]); })() }; }
 
 /* ---------- la course : l'état, la grille, le compte à rebours ---------- */
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
 function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.lapS[0] - 2 - r * 1.8, e = Math.min(.7, largeur(s) / 2 - .5); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
-function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; choisirPilote(id => { KR.perso = id; lancerCourse(); }); }
+function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; ecranTitre(() => choisirPilote(id => { KR.perso = id; choisirDifficulte(n => { KR.diff = n; lancerCourse(); }); })); }
+/* l'écran titre « NF Kart » : l'affiche en plein écran, un gros bouton JOUER qui palpite (au doigt, Entrée, ou A à la manette) */
+function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl = d;
+  d.style.cssText = "position:absolute;inset:0;z-index:22;background:#0a0e1e url(images/karts/titre.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:7%;font-family:Arial,sans-serif;user-select:none;-webkit-user-select:none";
+  d.innerHTML = `<style>@keyframes kPulse { 0%,100% { transform: scale(1); box-shadow: 0 8px 0 #8a3a00, 0 12px 30px rgba(255,170,0,.55) } 50% { transform: scale(1.07); box-shadow: 0 8px 0 #8a3a00, 0 12px 44px rgba(255,200,0,.9) } }</style>
+    <button type="button" id="kJouer" style="border:4px solid #111;border-radius:22px;padding:14px 46px;background:linear-gradient(#ffe25a,#ff9a1a);color:#14234a;font:italic 900 34px 'Arial Black',Arial;letter-spacing:1px;cursor:pointer;animation:kPulse 1.3s ease-in-out infinite">▶ JOUER</button>
+    <button type="button" id="kTitreFermer" style="position:absolute;top:12px;right:12px;border:0;border-radius:99px;padding:7px 14px;background:rgba(0,0,0,.6);color:#fff;font:700 14px Arial">✕ Fermer</button>`;
+  d.querySelector("#kJouer").onclick = e => { e.stopPropagation(); sonK("go"); d.remove(); KR.choixEl = null; fin(); };
+  d.querySelector("#kTitreFermer").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kTitreFermer").click(), iSel: 0 }; }
+/* le niveau de difficulté : il règle la vitesse des karts de la caserne et la fréquence à laquelle ils lancent leurs objets */
+const DIFF_K = [{ id: "facile", nom: "Facile", txt: "Les adversaires roulent tranquille", coul: "#3ac85a", e: "🟢", v: [.74, .82], obj: .15 }, { id: "normal", nom: "Normal", txt: "Une vraie course", coul: "#ffb21a", e: "🟠", v: [.86, .96], obj: .35 }, { id: "difficile", nom: "Difficile", txt: "Ils ne te feront aucun cadeau", coul: "#e8361a", e: "🔴", v: [.99, 1.06], obj: .7 }];
+function choisirDifficulte(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-diff"); } catch (e) {}
+  d.style.cssText = "position:absolute;inset:0;z-index:22;background:linear-gradient(rgba(6,10,26,.82),rgba(6,10,26,.92)),url(images/karts/titre.jpg) center/cover;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;box-sizing:border-box";
+  d.innerHTML = `<div style="font:italic 900 30px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #8a3a00">CHOISIS LA DIFFICULTÉ</div>` + DIFF_K.map(q => `<button type="button" data-n="${q.id}" style="width:min(86vw,380px);border:4px solid ${q.id === (pris || "normal") ? "#ffd23a" : "rgba(255,255,255,.25)"};border-radius:18px;padding:12px 16px;background:linear-gradient(90deg,${q.coul}cc,${q.coul}55);color:#fff;text-align:left;cursor:pointer"><div style="font:italic 900 26px 'Arial Black',Arial;-webkit-text-stroke:1px #111">${q.e} ${q.nom}</div><div style="font:700 14px Arial;opacity:.9">${q.txt}</div></button>`).join("") + `<button type="button" id="kDiffRetour" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button>`;
+  for (const b of d.querySelectorAll("[data-n]")) b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-diff", b.dataset.n); } catch (er) {} d.remove(); KR.choixEl = null; fin(b.dataset.n); };
+  d.querySelector("#kDiffRetour").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kDiffRetour").click(), iSel: Math.max(0, DIFF_K.findIndex(q => q.id === (pris || "normal"))) }; }
 /* l'écran du choix du pilote : son bonhomme, ou un personnage de la caserne */
 function choisirPilote(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-perso"); } catch (e) {}
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:radial-gradient(circle at 50% 30%,rgba(30,50,110,.92),rgba(6,10,26,.97));color:#fff;font-family:Arial,sans-serif;overflow:auto;padding:16px 12px;box-sizing:border-box";
@@ -600,7 +619,7 @@ function piloteBot(p, dt, auto) { const devant = p.s + 9, cap = capPiste(devant)
   // (éviter une banane ou une flaque juste devant)
   for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1) p.voie = o.d > 0 ? o.d - 1.4 : o.d + 1.4;
   const vise = Math.atan2(-(p.voie - p.d), 9), voulu = cap + vise; const e = Math.atan2(Math.sin(voulu - p.h), Math.cos(voulu - p.h));
-  const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && !auto && Math.random() < dt * .35) utiliserObjet(p);
+  const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && !auto && Math.random() < dt * ((DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]).obj)) utiliserObjet(p);
   return { dir: Math.max(-1, Math.min(1, -e * 2.2)), gaz: ralentir ? 0 : 1, frein: ralentir ? .4 : 0, dera: false }; }
 
 /* ---------- les objets, façon dessin animé (contour noir, couleurs franches) ----------
