@@ -29,6 +29,22 @@ const TRACE_K = [
   [17.6, 0, -69, VA], [18.3, 0, -76, VA], [18.3, 0, -82, VA]];
 const TOIT_K = (x, z) => Math.abs(x) > 12.6 && Math.abs(x) < 24.4 && z > -17.8 && z < 7.8;   // (là où la piste roule sur un toit : pas de piliers dessous)
 const COULEURS_K = [0xd8261e, 0x1e64d8, 0xf2c21a, 0x2aa84a, 0x9b3ad6, 0xf07a1a, 0x20b8c8, 0xe8e8e8];
+/* les pilotes qu'on peut choisir : son propre bonhomme, ou un personnage de la caserne (ce sont aussi les adversaires, quand on court seul) */
+const PERSOS_K = [
+  { id: "moi", nom: "Mon bonhomme" },
+  { id: "chef", nom: "Le chef de poste", url: "images/pere-tete.png", combi: "#1c2541" },
+  { id: "manu", nom: "Manu le DJ", url: "images/manu-tete.png", combi: "#2a2a2e" },
+  { id: "barman", nom: "Le barman", url: "images/miner-tete.png", combi: "#5a2a1a" },
+  { id: "thriller", nom: "Le danseur Thriller", url: "images/danseur-tete.png", combi: "#c8102e" },
+  { id: "mariee", nom: "La mariée", url: "images/mariee-tete.png", combi: "#f4f1ea" },
+  { id: "judo", nom: "Le prof de judo", url: "images/prof-judo-tete.png", combi: "#f2f2f2" },
+  { id: "hernandez", nom: "Hernandez", url: "images/hernandez-tete.png", combi: "#2f5fa8" },
+  { id: "zombie", nom: "Le zombie", url: "images/zombie-tete.png", combi: "#5d6168" },
+  { id: "batteuse", nom: "La batteuse", url: "images/batteuse-tete.png", combi: "#7a2a8a" },
+  { id: "guitariste", nom: "Le guitariste", url: "images/guitariste-tete.png", combi: "#3a3a3a" },
+  { id: "disco", nom: "Le roi du disco", url: "images/travolta-tete.png", combi: "#f4f1ea" },
+  { id: "brigadier", nom: "Le brigadier", url: "images/gendarme-tete.png", combi: "#1c2541" }];
+const persoK = id => PERSOS_K.find(q => q.id === id) || PERSOS_K[0];
 const NOMS_BOTS = ["Le brigadier", "Le maréchal des logis", "L'adjudant", "Le trompette"];
 const TETES_BOTS = ["images/gendarme-tete.png", "images/gendarme2-tete.png", "images/gendarme3-tete.png", "images/gendarme4-tete.png"];
 const OBJETS_K = { banane: "🍌", huile: "🛢️", fumi: "💨", boule: "🎱", gyro: "🚨", turbo: "⚡" };
@@ -188,22 +204,11 @@ let texNe = null; function texNeon() { return texNe = texNe || tex(toile(64, 128
 let texEt = null; function texEtincelle() { return texEt = texEt || tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.3, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
   x.strokeStyle = "rgba(255,255,255,.9)"; x.lineWidth = 3; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; x.beginPath(); x.moveTo(32, 32); x.lineTo(32 + Math.cos(a) * 30, 32 + Math.sin(a) * 30); x.stroke(); } })); }
 // (la tête du pilote : la photo du bonhomme, à la place du casque ; sans photo, on garde le casque)
-/* la tête du pilote, en relief : la photo du bonhomme posée sur l'avant d'une tête ronde (une cagoule de course dessous),
-   dans un casque ouvert à la couleur du kart, avec sa visière relevée ; elle tourne avec le kart (plus de visage plat qui nous suit des yeux) */
-function mettreTete(K, P) { if (!P) return; if (P.couleur) K.corps.material.color.set(P.couleur);   // (la combinaison : la couleur de son bonhomme)
+/* la tête du pilote : la photo détourée, posée sur les épaules (elle fait face à la caméra), en grand comme dans les jeux de karts */
+function mettreTete(K, P) { if (!P) return; if (P.couleur) K.corps.material.color.set(P.couleur);   // (la combinaison)
   chargerTete(P.numero, P.tete_v, P.teteUrl).then(img => { if (!img || !img.width || !K.g.parent) return;
-  // (on recadre le visage : la photo est un portrait détouré ; on garde le haut, sans le cou)
-  const w = img.width, h = img.height, c = toile(256, 320, x => { x.drawImage(img, 0, 0, w, h, 0, 0, 256, 320); }), t = tex(c);
-  const G = new THREE.Group(), R = .21; G.position.set(0, 1.21, -.33); K.corpsK.add(G);
-  const cagoule = new THREE.Mesh(new THREE.SphereGeometry(R * .97, 24, 18), new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: .9 })); G.add(cagoule);
-  const pl = Math.PI * 1.05, visage = new THREE.Mesh(new THREE.SphereGeometry(R, 32, 24, Math.PI / 2 - pl / 2, pl, .05, 2.85), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .35 }));
-  G.add(visage);
-  // le casque ouvert : la coque (derrière et dessus), le front, la visière relevée
-  const mc = new THREE.MeshStandardMaterial({ color: K.coul, roughness: .12, metalness: .3 });
-  const coque = new THREE.Mesh(new THREE.SphereGeometry(R * 1.16, 28, 18, Math.PI / 2 + 1.05, Math.PI * 2 - 2.1, 0, 2.15), mc); G.add(coque);
-  const front = new THREE.Mesh(new THREE.SphereGeometry(R * 1.16, 28, 10, 0, Math.PI * 2, 0, .34), mc); G.add(front);
-  G.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  K.tete = G; K.casque.visible = K.vis.visible = false; }).catch(() => {}); }
+  const c = toile(img.width, img.height, x => x.drawImage(img, 0, 0)), h = 1.05, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, alphaTest: .05 }));
+  sp.scale.set(h * img.width / img.height, h, 1); sp.position.set(0, 1.0 + h / 2 - .1, -.34); sp.renderOrder = 2; K.corpsK.add(sp); K.tete = sp; K.casque.visible = K.vis.visible = false; }).catch(() => {}); }
 function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale.setScalar(EK); KC.scene.add(K.g); mettreTete(K, o.tete);
   return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s - KC.L, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: .86 + Math.random() * .1 }; }
 
@@ -211,11 +216,28 @@ function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
 function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2 - r * 1.8, e = Math.min(.7, largeur(s) / 2 - .5); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
-function entrerCourse() { if (KR.on || !M || M.lieu !== "grande" || !adminK()) return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
+function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; choisirPilote(id => { KR.perso = id; lancerCourse(); }); }
+/* l'écran du choix du pilote : son bonhomme, ou un personnage de la caserne */
+function choisirPilote(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-perso"); } catch (e) {}
+  d.style.cssText = "position:absolute;inset:0;z-index:22;background:radial-gradient(circle at 50% 30%,rgba(30,50,110,.92),rgba(6,10,26,.97));color:#fff;font-family:Arial,sans-serif;overflow:auto;padding:16px 12px;box-sizing:border-box";
+  d.innerHTML = `<div style="text-align:center;font:900 26px 'Arial Black',Arial;color:#ffd23a;margin:4px 0 2px">🏁 CHOISIS TON PILOTE</div><div style="text-align:center;font-size:13px;opacity:.8;margin-bottom:12px">Les autres pilotes de la caserne seront tes adversaires</div>
+    <div id="kGrille" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;max-width:760px;margin:0 auto"></div>
+    <div style="text-align:center;margin-top:14px"><button type="button" id="kChoixAnnuler" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button></div>`;
+  const G = d.querySelector("#kGrille"), moi = M.gens.get(M.moiNum);
+  for (const q of PERSOS_K) { const b = document.createElement("button"); b.type = "button"; b.dataset.id = q.id;
+    b.style.cssText = `border:3px solid ${q.id === (pris || "moi") ? "#ffd23a" : "rgba(255,255,255,.25)"};border-radius:14px;background:rgba(255,255,255,.08);color:#fff;padding:8px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 12px Arial`;
+    b.innerHTML = `<div style="height:84px;display:flex;align-items:flex-end"><img alt="" style="max-height:84px;max-width:92px;object-fit:contain"></div><span>${q.nom}</span>`;
+    const im = b.querySelector("img"); if (q.url) im.src = q.url; else if (moi && moi.info) chargerTete(moi.info.numero, moi.info.tete_v, moi.info.teteUrl).then(i => { if (i) im.src = i.src; else im.replaceWith(Object.assign(document.createElement("div"), { textContent: "🧑", style: "font-size:56px" })); }).catch(() => {});
+    b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-perso", q.id); } catch (er) {} d.remove(); KR.choixEl = null; fin(q.id); }; G.appendChild(b); }
+  d.querySelector("#kChoixAnnuler").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
+  M.ctx.conteneur.appendChild(d); }
+function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true); KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
   const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
   const t0 = ann ? ann.t0 : Date.now() + KC.grilleT; KR.t0 = t0; KR.on = true; KR.fin = []; KR.objets = []; KR.obs = [];
   KR.humains = ann ? [...ann.ids] : []; if (!KR.humains.includes(M.moiNum)) KR.humains.push(M.moiNum);
-  if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains }); else envoyerWS({ t: "k_rejoint", t0 });
+  KR.persos = Object.assign(ann && ann.persos ? { ...ann.persos } : {}, { [M.moiNum]: KR.perso || "moi" });
+  if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", t0, perso: KR.perso || "moi" });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
   M.course = KR; KR.passer = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true);
@@ -225,10 +247,12 @@ function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil
   const hs = [...KR.humains].sort((a, b) => a - b); KR.solo = hs.length <= 1;
   hs.forEach((id, i) => { const g = grilleK(i), moi = id === M.moiNum, P = M.gens.get(id), nom = moi ? KR.moiInfo.nom : (P && P.info && P.info.nom ? P.info.nom.split(" ")[0] : "Joueur");
     if (P && !moi) { P.g.visible = false; KR.caches = KR.caches || new Set(); KR.caches.add(P); }
-    const inf = P && P.info ? { numero: P.info.numero ?? id, tete_v: P.info.tete_v, teteUrl: P.info.teteUrl, couleur: P.info.couleur } : null;
+    const q = persoK((KR.persos || {})[id]);
+    const inf = q.url ? { teteUrl: q.url, couleur: q.combi } : P && P.info ? { numero: P.info.numero ?? id, tete_v: P.info.tete_v, teteUrl: P.info.teteUrl, couleur: P.info.couleur } : null;
     const p = nouveauPilote({ id, nom, moi, humain: true, tete: inf, couleur: COULEURS_K[(Number(id) || 0) % COULEURS_K.length], ...g }); KR.pil.push(p); if (moi) KR.moi = p; });
   if (KR.moi) { const L2 = new THREE.SpotLight(0xfff0d0, 40, 26, .55, .6, 1.4), cible = new THREE.Object3D(); L2.position.set(0, .6, 1.3); cible.position.set(0, -.5, 12); KR.moi.K.g.add(L2, cible); L2.target = cible; }
-  if (KR.solo) NOMS_BOTS.forEach((nom, i) => { const g = grilleK(hs.length + i); KR.pil.push(nouveauPilote({ id: "b" + i, nom, bot: true, tete: { teteUrl: TETES_BOTS[i], couleur: "#1c2541" }, couleur: COULEURS_K[(i + 3) % COULEURS_K.length], ...g })); });
+  if (KR.solo) { const dispo = PERSOS_K.filter(q => q.url && q.id !== KR.perso).sort(() => Math.random() - .5).slice(0, 4);
+    dispo.forEach((q, i) => { const g = grilleK(hs.length + i); KR.pil.push(nouveauPilote({ id: "b" + i, nom: q.nom, bot: true, tete: { teteUrl: q.url, couleur: q.combi }, couleur: COULEURS_K[(i + 3) % COULEURS_K.length], ...g })); }); }
   for (const p of KR.pil) majKart(p, 0); }
 /* la nuit, pendant la course : le clair de lune de la caserne ; les LED des murets et les phares font le reste */
 function nuitK(on) { if (!M || !M.L || !M.L.setNuit) return; if (on) { if (KR.nuitAvant === undefined) KR.nuitAvant = !!M.L.nuit; M.L.setNuit(true); }
@@ -391,8 +415,9 @@ function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
 function recuK(m) { if (!M) return; const de = m.de;
-  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de] }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : va sur la grille de départ pour la rejoindre !", 5000); } return; }
-  if (m.t === "k_rejoint") { if (KR.attente && KR.attente.t0 === m.t0 && !KR.attente.ids.includes(de)) KR.attente.ids.push(de);
+  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de], persos: { [de]: m.perso || "moi" } }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : va sur la grille de départ pour la rejoindre !", 5000); } return; }
+  if (m.t === "k_rejoint") { if (KR.attente && KR.attente.t0 === m.t0) { if (!KR.attente.ids.includes(de)) KR.attente.ids.push(de); (KR.attente.persos = KR.attente.persos || {})[de] = m.perso || "moi"; }
+    if (KR.on && m.t0 === KR.t0) (KR.persos = KR.persos || {})[de] = m.perso || "moi";
     if (KR.on && m.t0 === KR.t0 && !KR.humains.includes(de)) { KR.humains.push(de); if (Date.now() < KR.t0) placerGrille(); } return; }
   if (!KR.on) return; const p = KR.pil.find(q => q.id === de);
   if (m.t === "k_pos" && p) { p.s = m.s; p.d = m.d; p.h = m.h; p.v = m.v; p.tour = m.tour; p.prog = m.tour * KC.L + m.s; p.tourne = m.sp ? performance.now() / 70 : 0; p.gyro = m.g ? 1 : 0; p.derive = m.dr || 0; p.charge = m.ch || 0; p.dirS = m.st || 0; p.turbo = m.tu ? .2 : 0; p.vu = Date.now(); }
@@ -454,7 +479,7 @@ function figurePilote(p, haut) { const g = new THREE.Group(), combi = new THREE.
   for (const sx of [-.11, .11]) { const j = new THREE.Mesh(new THREE.CapsuleGeometry(.08, .5, 4, 8), combi); j.position.set(sx, .37, 0); g.add(j); const c2 = new THREE.Mesh(new THREE.BoxGeometry(.13, .08, .24), noir); c2.position.set(sx, .04, .04); g.add(c2); }
   const torse = new THREE.Mesh(new THREE.CapsuleGeometry(.2, .36, 4, 12), combi); torse.position.y = .98; g.add(torse);
   const bras = [-1, 1].map(sx => { const pv = new THREE.Group(); pv.position.set(sx * .27, 1.2, 0); const b = new THREE.Mesh(new THREE.CapsuleGeometry(.065, .46, 4, 8), combi); b.position.y = -.28; pv.add(b); const m = new THREE.Mesh(new THREE.SphereGeometry(.075, 8, 6), noir); m.position.y = -.56; pv.add(m); g.add(pv); return pv; });
-  let tete; if (p.K.tete) { tete = p.K.tete.clone(true); tete.position.set(0, 1.5, 0); } else { tete = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshStandardMaterial({ color: p.K.coul, roughness: .15, metalness: .3 })); tete.position.y = 1.5; } g.add(tete);
+  let tete; if (p.K.tete) { tete = p.K.tete.clone(true); tete.scale.multiplyScalar(.6); tete.position.set(0, 1.58, 0); } else { tete = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshStandardMaterial({ color: p.K.coul, roughness: .15, metalness: .3 })); tete.position.y = 1.5; } g.add(tete);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return { g, bras, base: haut }; }
 function coupeK() { const g = new THREE.Group(), or = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 1, roughness: .18, emissive: 0x3a2600, emissiveIntensity: .4 });
   const prof = [[0, 0], [.13, 0], [.13, .05], [.05, .08], [.04, .2], [.05, .24], [.17, .32], [.2, .48], [.19, .5], [0, .5]].map(([x, y]) => new THREE.Vector2(x, y));
@@ -494,7 +519,7 @@ function podiumK() { KR.podium = true; const d = document.createElement("div"); 
     `<div style="display:flex;gap:10px;justify-content:center;margin-top:12px"><button type="button" id="kRejouer" style="border:0;border-radius:99px;padding:9px 16px;background:#ffd23a;color:#14215a;font:900 15px Arial">Rejouer</button><button type="button" id="kSortir" style="border:0;border-radius:99px;padding:9px 16px;background:#3a3f55;color:#fff;font:700 15px Arial">Quitter</button></div>`;
   for (const ev of ["pointerdown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d };
-  d.querySelector("#kRejouer").onclick = () => { d.remove(); quitterCourse(); KR.attente = null; setTimeout(entrerCourse, 50); };
+  d.querySelector("#kRejouer").onclick = () => { d.remove(); quitterCourse(); KR.attente = null; setTimeout(lancerCourse, 50); };
   d.querySelector("#kSortir").onclick = () => { d.remove(); quitterCourse(); }; }
 
 /* ---------- les sons (sans fichier : le moteur, les bips, la sirène) ---------- */
