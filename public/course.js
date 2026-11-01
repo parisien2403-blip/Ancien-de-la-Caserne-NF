@@ -511,7 +511,7 @@ function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl =
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kTitreFermer").click(), iSel: 0 }; }
 /* le niveau de difficulté : il règle la vitesse des karts de la caserne et la fréquence à laquelle ils lancent leurs objets */
-const DIFF_K = [{ id: "facile", nom: "Facile", txt: "Les adversaires roulent tranquille", coul: "#3ac85a", e: "🟢", v: [.74, .82], obj: .15 }, { id: "normal", nom: "Normal", txt: "Une vraie course", coul: "#ffb21a", e: "🟠", v: [.86, .96], obj: .35 }, { id: "difficile", nom: "Difficile", txt: "Ils ne te feront aucun cadeau", coul: "#e8361a", e: "🔴", v: [.99, 1.06], obj: .7 }];
+const DIFF_K = [{ id: "facile", nom: "Facile", txt: "Les adversaires roulent tranquille", coul: "#3ac85a", e: "🟢", v: [.9, .97], obj: .25, el: .5 }, { id: "normal", nom: "Normal", txt: "Une vraie course", coul: "#ffb21a", e: "🟠", v: [1.03, 1.1], obj: .5, el: 1 }, { id: "difficile", nom: "Difficile", txt: "Ils ne te feront aucun cadeau", coul: "#e8361a", e: "🔴", v: [1.13, 1.2], obj: .9, el: 1.4 }];
 function choisirDifficulte(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-diff"); } catch (e) {}
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:linear-gradient(rgba(6,10,26,.82),rgba(6,10,26,.92)),url(images/karts/titre.jpg) center/cover;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;box-sizing:border-box";
   d.innerHTML = `<style>.k-carte:hover, .k-carte:focus-visible, .k-carte:active { border-color: #ffd23a !important; transform: scale(1.03); } .k-carte { transition: transform .12s, border-color .12s }</style><div style="font:italic 900 30px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #8a3a00">CHOISIS LA DIFFICULTÉ</div>` + DIFF_K.map(q => `<button type="button" data-n="${q.id}" class="k-carte" style="width:min(86vw,380px);border:4px solid rgba(255,255,255,.25);border-radius:18px;padding:12px 16px;background:linear-gradient(90deg,${q.coul}cc,${q.coul}55);color:#fff;text-align:left;cursor:pointer"><div style="font:italic 900 26px 'Arial Black',Arial;-webkit-text-stroke:1px #111">${q.e} ${q.nom}</div><div style="font:700 14px Arial;opacity:.9">${q.txt}</div></button>`).join("") + `<button type="button" id="kDiffRetour" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button>`;
@@ -633,7 +633,7 @@ function conduire(p, c, dt) { const W2 = Math.max(.25, largeur(p.s) / 2 - (.6 * 
   if (p.creme > 0) { p.creme -= dt; c = { ...c, dir: Math.max(-1, Math.min(1, (c.dir || 0) + Math.sin(performance.now() / 160 + p.s) * .45)) }; if (p.creme <= 0 && p.K.creme) p.K.creme.visible = false; }   // (on n'y voit plus rien : le volant part de travers)
   p.etoiles = Math.max(0, (p.etoiles || 0) - dt); p.secoue = Math.max(0, (p.secoue || 0) - dt);
   if (p.spin > 0) { p.spin -= dt; p.v *= Math.pow(.18, dt); p.tourne = (p.tourne || 0) + dt * 14; c = { dir: 0, gaz: 0, frein: 0 }; p.derive = 0; p.charge = 0; } else p.tourne = 0;
-  let vmax = KC.vmax * (p.bot ? p.bv : 1) * (p.gyro > 0 ? 1.2 : 1) * (p.turbo > 0 ? 1.38 : 1) * (p.fumee > 0 ? .78 : 1) * (p.creme > 0 ? .8 : 1);
+  let vmax = KC.vmax * (p.bot ? p.bv * elastiqueK(p) : 1) * (p.gyro > 0 ? 1.2 : 1) * (p.turbo > 0 ? 1.38 : 1) * (p.fumee > 0 ? .78 : 1) * (p.creme > 0 ? .8 : 1);
   if (p.fini) { c = { ...c, gaz: 1, frein: 0, dera: false }; vmax *= .55; }   // (la course finie : le kart continue tout seul, en roue libre, vers l'avant)
   // le volant : on ne braque pas d'un coup
   p.dirS = (p.dirS || 0) + (c.dir - (p.dirS || 0)) * Math.min(1, dt * (Math.abs(c.dir) > Math.abs(p.dirS || 0) ? 7 : 10));
@@ -709,13 +709,16 @@ function majKart(p, dt) { const pos = surPiste(p.s, p.d, p.K.g.position), pente 
   K.gy.visible = p.gyro > 0; if (p.gyro > 0) K.gy.material.color.setHex(Math.floor(t / 120) % 2 ? 0x2a5cff : 0xff2a2a); }
 
 /* ---------- les adversaires de la caserne (seul) ---------- */
+/* (les adversaires ne lâchent rien : loin derrière nous, ils accélèrent ; loin devant, ils lèvent un peu le pied) */
+function elastiqueK(p) { const moi = KR.moi; if (!moi || p.fini || moi.fini) return 1; const D = DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1], ecart = moi.s - p.s;
+  return 1 + Math.max(-.1, Math.min(.28, ecart / 70 * .2)) * D.el; }
 function piloteBot(p, dt, auto) { const devant = p.s + 9, cap = capPiste(devant), cb = courbure(p.s + 4);
   p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 1.4); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .5); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
   // (éviter une banane ou une flaque juste devant)
   for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1) p.voie = o.d > 0 ? o.d - 1.4 : o.d + 1.4;
   const vise = Math.atan2(-(p.voie - p.d), 9), voulu = cap + vise; const e = Math.atan2(Math.sin(voulu - p.h), Math.cos(voulu - p.h));
-  const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && !auto && Math.random() < dt * ((DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]).obj)) utiliserObjet(p);
-  return { dir: Math.max(-1, Math.min(1, -e * 2.2)), gaz: ralentir ? 0 : 1, frein: ralentir ? .4 : 0, dera: false }; }
+  const ralentir = cb > .7 && p.v > KC.vmax * .8; if (p.objet && !auto && Math.random() < dt * ((DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]).obj)) utiliserObjet(p);
+  return { dir: Math.max(-1, Math.min(1, -e * 2.2)), gaz: ralentir ? .6 : 1, frein: ralentir ? .15 : 0, dera: false }; }
 
 /* ---------- les objets, façon dessin animé (contour noir, couleurs franches) ----------
    🍌 la peau de banane (posée derrière : tête-à-queue)      🛢️ la flaque d'huile (on glisse)       💨 le fumigène (on n'y voit plus rien)
@@ -733,7 +736,7 @@ function tirerObjet(p) { const rang = classement().indexOf(p) + 1, n = KR.pil.le
 function voisinK(p, sens) { const L2 = classement(), i = L2.indexOf(p), q = L2[i + (sens > 0 ? -1 : 1)]; return q && !q.fini ? q : null; }
 function utiliserObjet(p, freine) { const o = p.objet; if (!o) return;
   if (o === "cafe") { p.cafes = (p.cafes || 3) - 1; p.turbo = Math.max(p.turbo, 1.1); if (p.moi) sonK("turbo"); if (p.cafes <= 0) { p.objet = null; p.cafes = 0; } majHUD(); return; }
-  p.objet = null;
+  p.objet = null; p.caisseBloc = Date.now() + 1200;   /* (pas d'objet « en réserve » : une caisse cassée en tenant déjà un objet, ou juste après l'avoir lancé, ne donne rien) */
   if (o === "gyro") { p.gyro = 6; if (p.moi) sireneK(); }
   else if (o === "turbo") { p.turbo = 1.8; if (p.moi) sonK("turbo"); }
   else { const arriere = ["boule", "tarte"].includes(o) ? (classement()[0] === p || !!freine) : true;   // (posés : toujours derrière ; lancés : derrière si l'on est premier, ou en freinant)
@@ -824,7 +827,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   for (const p of KR.pil) { if (avant) { majKart(p, 0); continue; }
     if (p.moi) conduire(p, p.fini ? piloteBot(p, dt, true) : c, dt); else if (p.bot) conduire(p, piloteBot(p, dt, !!p.fini), dt); else { /* un autre joueur : on avance sa dernière position */ p.s += p.v * dt; if (p.s >= KC.L - 2) p.s -= KC.LA; }
     // les caisses
-    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.K.g.position.y - cs.pos.y) < 1.5 && Math.hypot(p.K.g.position.x - cs.pos.x, p.K.g.position.z - cs.pos.z) < .85) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
+    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.K.g.position.y - cs.pos.y) < 1.5 && Math.hypot(p.K.g.position.x - cs.pos.x, p.K.g.position.z - cs.pos.z) < .85) { cs.m.visible = false; cs.retour = now + 3500; if (p.objet || now < (p.caisseBloc || 0)) p.caisseBloc = now + 1500; else { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
     if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; setTimeout(() => { if (KR.on) musiqueK("titre"); }, 1200); KR.cielT = now + 2600; } }
     majKart(p, dt); if (dt > 0 && (p.moi || p.bot || p.vu)) fxK(p, dt); }
