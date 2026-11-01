@@ -319,7 +319,7 @@ function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR
   if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
-  finCeremonie(); finCotillons(); finSpectateurs(); finFx(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
+  finCiel(); finCeremonie(); finCotillons(); finSpectateurs(); finFx(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
 const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
@@ -511,7 +511,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
     // les caisses
     if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < .8 && Math.abs(p.d - cs.d) < .7) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
-    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; } }
+    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; KR.cielT = now + 2600; } }
     majKart(p, dt); if (dt > 0 && (p.moi || p.bot || p.vu)) fxK(p, dt); }
   if (KC.cm) KC.cm.emissive.setHSL((t / 2400) % 1, .9, .3);
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = surPiste(cs.s, cs.d).y + .8 + Math.sin(t / 300 + cs.s) * .1; }
@@ -524,7 +524,8 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   // notre bonhomme (invisible) suit le kart : c'est lui que suivent la caméra du casque et la carte
   const moiG = M.gens.get(M.moiNum); if (moiG && KR.moi) { moiG.g.position.copy(KR.moi.K.g.position); moiG.g.visible = false; if (M.vr && M.rendu.xr.isPresenting) M.vr.cap = KR.moi.h + Math.PI; }
   cameraK(dt); majHUD(t); moteurK(KR.moi ? Math.abs(KR.moi.v) / KC.vmax : 0);
-  if (KR.moi && KR.moi.fini && KR.pil.every(p => p.fini || (!p.bot && !p.moi && now - (p.vu || 0) > 8000)) && !KR.podium && !KR.cer) ceremonieK(); }
+  if (KR.cielT && now > KR.cielT && !KR.ciel && !KR.cer && !KR.podium) { KR.cielT = 0; cielK(); }   // (la caméra monte au ciel : le nom du vainqueur en étoiles, le feu d'artifice)
+  if (KR.ciel) majCiel(dt); }
 const cv3 = new THREE.Vector3(), cv4 = new THREE.Vector3(), cv5 = new THREE.Vector3();
 function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.now() - I.t) / I.D);
   if (u >= 1 || KR.passer) { KR.intro = null; KR.passer = false; KR.camH = p.h; return false; }   // (fini : la caméra de course reprend, en glissant depuis là où l'on est)
@@ -535,6 +536,7 @@ function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.
   cam.position.lerp(pos, KR.camPrete ? 1 - Math.exp(-dt * 10) : 1); KR.camPrete = true; cam.lookAt(vise); cam.fov += (66 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
 function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
   if (KR.cer) { cameraCeremonie(cam, dt); return; }
+  if (KR.ciel) { cameraCiel(cam, dt); return; }
   if (p.fini) { KR.arrT = (KR.arrT || 0) + dt; const u = Math.min(1, KR.arrT / 1.8), e = u * u * (3 - 2 * u), th = p.h + Math.PI * (1 - e), dist = 3.3 - .9 * e;
     const voulu = cv4.set(p.K.g.position.x + Math.sin(th) * dist, p.K.g.position.y + 1.35 - .5 * e, p.K.g.position.z + Math.cos(th) * dist); cam.position.lerp(voulu, 1 - Math.exp(-dt * 6));
     cam.lookAt(p.K.g.position.x, p.K.g.position.y + .55, p.K.g.position.z); cam.fov += (58 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return; }
@@ -618,6 +620,50 @@ const chronoK = ms => { const s = ms / 1000; return Math.floor(s / 60) + ":" + (
 function voileFumee() { sonK("fumi"); }
 function arriveeK() { const p = KR.moi, rang = classement().indexOf(p) + 1; bulle(`🏁 Arrivée ! ${rang}${rang === 1 ? "er" : "e"} en ${chronoK(p.fini)}`, 4000);
   try { const r = JSON.parse(localStorage.getItem("karts-record") || "null"); if (!r || p.fini < r) { localStorage.setItem("karts-record", JSON.stringify(p.fini)); KR.record = true; } } catch (e) {} }
+/* ---------- la victoire, dans le ciel de la caserne : la caméra monte, le nom du vainqueur s'écrit en étoiles, un feu d'artifice éclate de partout ---------- */
+const CIEL = { x: 0, y: 92, z: -70, larg: 96 };
+let texPt = null; function texPoint() { return texPt = texPt || tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.25, "rgba(255,255,255,.85)"); gr.addColorStop(.6, "rgba(255,255,255,.22)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+  x.strokeStyle = "rgba(255,255,255,.7)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(32, 2); x.lineTo(32, 62); x.moveTo(2, 32); x.lineTo(62, 32); x.stroke(); })); }
+function nuageEtoiles(texte, taille, y0, n0) { const W = 1400, H = 220, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"); let f = taille; x.font = `900 ${f}px Arial Black,Arial`; while (x.measureText(texte).width > W - 40 && f > 40) { f -= 6; x.font = `900 ${f}px Arial Black,Arial`; }
+  x.fillStyle = "#fff"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(texte, W / 2, H / 2); const d = x.getImageData(0, 0, W, H).data, pts = [], pas = Math.max(5, Math.round(f / 16));
+  for (let j = 0; j < H; j += pas) for (let i = 0; i < W; i += pas) if (d[(j * W + i) * 4 + 3] > 128) pts.push([i + (Math.random() - .5) * pas * .5, j + (Math.random() - .5) * pas * .5]);
+  const k = CIEL.larg / W, pos = new Float32Array(pts.length * 3), col = new Float32Array(pts.length * 3), info = [];
+  pts.forEach(([i, j], n) => { pos[n * 3] = (i - W / 2) * k; pos[n * 3 + 1] = y0 - (j - H / 2) * k; pos[n * 3 + 2] = 0; info.push({ app: .4 + (i / W) * 2.6 + Math.random() * .3, ph: Math.random() * 6, v: .8 + Math.random() * 2 }); });
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const m = new THREE.Points(g, new THREE.PointsMaterial({ size: n0, map: texPoint(), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, sizeAttenuation: true })); m.frustumCulled = false; m.userData.info = info; return m; }
+function cacherCommandes() { const d = KR.hud; if (!d) return; for (const id of ["kPos", "kTour", "kObj", "kChrono", "kDecompte", "kPalette", "kCarte", "kVitesse"]) { const e = d.querySelector("#" + id); if (e) e.style.visibility = "hidden"; } for (const e of d.querySelectorAll("[data-k]")) e.style.visibility = "hidden"; }
+function cielK() { finCiel(); CIEL.larg = 96 * Math.max(.5, Math.min(1, M.camera.aspect * 1.05)); cacherCommandes(); const G = new THREE.Group(); G.position.set(CIEL.x, 0, CIEL.z); KC.scene.add(G); const gagnant = classement()[0], nom = (gagnant ? gagnant.nom : "").toUpperCase();
+  const titre = nuageEtoiles(nom, 190, CIEL.y, 1.5), sous = nuageEtoiles("★ VAINQUEUR ★", 110, CIEL.y - 17, 1.1); sous.userData.dore = true; G.add(titre, sous);
+  // le feu d'artifice : un seul nuage de points pour toutes les gerbes (léger)
+  const N = 2600, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const fw = new THREE.Points(g, new THREE.PointsMaterial({ size: 1.3, map: texPoint(), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); fw.frustumCulled = false; KC.scene.add(fw);
+  const parts = Array.from({ length: N }, () => ({ vie: 0 })); KR.ciel = { G, titre, sous, fw, parts, fusees: [], t: 0, prochaine: .2, nom, cam0: M.camera.position.clone(), q0: M.camera.quaternion.clone(), i: 0 };
+  sonK("arrivee"); }
+const COUL_FW = [[1, .3, .35], [1, .85, .25], [.35, .8, 1], [.5, 1, .45], [1, .5, 1], [1, 1, 1], [1, .6, .2]];
+function gerbeK(x0, y0, z0) { const C = KR.ciel, c = COUL_FW[Math.floor(Math.random() * COUL_FW.length)], c2 = Math.random() < .35 ? COUL_FW[Math.floor(Math.random() * COUL_FW.length)] : c, n = 150 + Math.floor(Math.random() * 90), vit = 11 + Math.random() * 9, anneau = Math.random() < .25;
+  for (let k = 0; k < n; k++) { const P = C.parts[C.i++ % C.parts.length]; const th = Math.random() * Math.PI * 2, ph = anneau ? Math.PI / 2 + (Math.random() - .5) * .15 : Math.acos(2 * Math.random() - 1), v = vit * (anneau ? 1 : .75 + Math.random() * .25);
+    P.x = x0; P.y = y0; P.z = z0; P.vx = Math.sin(ph) * Math.cos(th) * v; P.vy = Math.cos(ph) * v; P.vz = Math.sin(ph) * Math.sin(th) * v; P.vie = P.max = 1.6 + Math.random() * .9; P.c = k % 3 ? c : c2; P.scint = Math.random() < .3; }
+  sonK(Math.random() < .5 ? "boum" : "pan"); }
+function majCiel(dt) { const C = KR.ciel; C.t += dt; const t = C.t;
+  // les étoiles du nom apparaissent de gauche à droite, puis scintillent
+  for (const S of [C.titre, C.sous]) { const col = S.geometry.attributes.color, inf = S.userData.info, dore = S.userData.dore;
+    for (let n = 0; n < inf.length; n++) { const I = inf[n], a = Math.max(0, Math.min(1, (t - I.app) * 2.5)), sc = .75 + .25 * Math.sin(t * I.v * 3 + I.ph), b = a * sc * (a < 1 ? 1.6 - .6 * a : 1);
+      if (dore) col.setXYZ(n, b, b * .82, b * .35); else col.setXYZ(n, b, b * .96, b * .85); } col.needsUpdate = true; }
+  // les fusées : elles montent en traînant des étincelles, puis éclatent
+  C.prochaine -= dt; if (C.prochaine <= 0 && t < 11) { C.prochaine = .25 + Math.random() * .45; const x = (Math.random() - .5) * 90, z = CIEL.z + 10 + (Math.random() - .5) * 70; C.fusees.push({ x, y: 2, z, vy: 32 + Math.random() * 10, h: 38 + Math.random() * 42 }); sonK("fuse"); }
+  for (const F of C.fusees) { F.y += F.vy * dt; const P = C.parts[C.i++ % C.parts.length]; P.x = F.x + (Math.random() - .5) * .3; P.y = F.y; P.z = F.z; P.vx = (Math.random() - .5); P.vy = -2; P.vz = (Math.random() - .5); P.vie = P.max = .5; P.c = [1, .8, .5]; P.scint = false; if (F.y >= F.h) { F.fini = true; gerbeK(F.x, F.y, F.z); } }
+  C.fusees = C.fusees.filter(F => !F.fini);
+  const pos = C.fw.geometry.attributes.position, col = C.fw.geometry.attributes.color;
+  for (let n = 0; n < C.parts.length; n++) { const P = C.parts[n]; if (P.vie > 0) { P.vie -= dt; P.vy -= 7 * dt; const fr = Math.pow(.35, dt); P.vx *= fr; P.vy *= fr; P.vz *= fr; P.x += P.vx * dt; P.y += P.vy * dt; P.z += P.vz * dt;
+      const u = Math.max(0, P.vie / P.max), b = (P.scint ? (Math.random() < .5 ? 1.4 : .3) : 1) * Math.min(1, u * 1.6); pos.setXYZ(n, P.x, P.y, P.z); col.setXYZ(n, P.c[0] * b, P.c[1] * b, P.c[2] * b); } else { col.setXYZ(n, 0, 0, 0); pos.setXYZ(n, 0, -999, 0); } }
+  pos.needsUpdate = col.needsUpdate = true;
+  if (t > 12.5 && !KR.cer && !KR.podium) { finCiel(); ceremonieK(); } }
+function cameraCiel(cam, dt) { const C = KR.ciel, t = C.t, u = Math.min(1, t / 3.2), e = u * u * (3 - 2 * u);
+  // (elle monte tout droit au-dessus de la caserne, et se tourne vers le ciel, face au nom)
+  const fin = cv4.set(CIEL.x, 48 + t * .6, CIEL.z + 72); cam.position.lerpVectors(C.cam0, fin, e);
+  const regard = cv5.set(CIEL.x, CIEL.y - 6, CIEL.z); if (e < 1) { const q = new THREE.Quaternion(); const m = new THREE.Matrix4().lookAt(cam.position, regard, cam.up); q.setFromRotationMatrix(m); cam.quaternion.slerpQuaternions(C.q0, q, e); } else cam.lookAt(regard);
+  cam.fov += (62 - cam.fov) * Math.min(1, dt * 2); if (cam.far < 600) { cam.far = 600; } cam.updateProjectionMatrix(); }
+function finCiel() { const C = KR.ciel; if (!C) return; C.G.parent && C.G.parent.remove(C.G); C.fw.parent && C.fw.parent.remove(C.fw); KR.ciel = null; }
 /* ---------- la cérémonie : le podium dans la cour d'honneur, le gagnant qui saute les bras en l'air avec la coupe, des confettis, la caméra qui tourne autour ---------- */
 const POD = { x: 0, z: -5 };
 function figurePilote(p, haut) { const g = new THREE.Group(), combi = new THREE.MeshStandardMaterial({ color: p.K.corps.material.color.clone(), roughness: .6 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
@@ -630,7 +676,7 @@ function coupeK() { const g = new THREE.Group(), or = new THREE.MeshStandardMate
   const prof = [[0, 0], [.13, 0], [.13, .05], [.05, .08], [.04, .2], [.05, .24], [.17, .32], [.2, .48], [.19, .5], [0, .5]].map(([x, y]) => new THREE.Vector2(x, y));
   g.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 28), or)); for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.TorusGeometry(.08, .018, 8, 16, Math.PI * 1.2), or); a.position.set(sx * .2, .38, 0); a.rotation.z = sx > 0 ? -Math.PI * .6 : Math.PI * 1.4; g.add(a); }
   const socle = new THREE.Mesh(new THREE.BoxGeometry(.24, .08, .24), new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: .5 })); socle.position.y = -.04; g.add(socle); return g; }
-function ceremonieK() { const L2 = classement().filter(p => p.fini).slice(0, 3); if (!L2.length) { podiumK(); return; }
+function ceremonieK() { const L2 = classement().slice(0, 3); if (!L2.length) { podiumK(); return; }
   const G = new THREE.Group(); G.position.set(POD.x, 0, POD.z); KC.scene.add(G); const blanc = new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: .5 });
   // le tapis rouge, les trois marches (numérotées), la lumière
   const tapis = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), new THREE.MeshStandardMaterial({ color: 0xa8141c, roughness: .9 })); tapis.rotation.x = -Math.PI / 2; tapis.position.set(0, .02, .8); G.add(tapis);
@@ -685,6 +731,8 @@ function sonK(q) { const a = audioK(); if (!a) return; const t0 = a.currentTime 
   else if (q === "klaxon") { bip(392, .25, "sawtooth", .09); bip(330, .35, "sawtooth", .09, .25); }
   else if (q === "meche") { const b = a.createBuffer(1, a.sampleRate * .5, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * (Math.random() < .3 ? 1 : .2); const s2 = a.createBufferSource(), g = a.createGain(); g.gain.value = .05; s2.buffer = b; s2.connect(g); g.connect(a.destination); s2.start(); }
   else if (q === "boum") { const b = a.createBuffer(1, a.sampleRate * .9, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / c.length, 2); const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900; g.gain.value = .35; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(a.destination); s2.start(); }
+  else if (q === "fuse") { const o = bip(500, .9, "sine", .025); o.frequency.exponentialRampToValueAtTime(2400, t0 + .9); }
+  else if (q === "pan") { const b = a.createBuffer(1, a.sampleRate * .5, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / c.length, 4); const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 600; g.gain.value = .22; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(a.destination); s2.start(); }
   else if (q === "splat") { const o = bip(260, .25, "triangle", .12); o.frequency.exponentialRampToValueAtTime(70, t0 + .25); }
   else if (q === "glisse") { const o = bip(900, .5, "triangle", .08); o.frequency.exponentialRampToValueAtTime(300, t0 + .5); }
   else if (q === "turbo") { const o = bip(200, .7, "sawtooth", .1); o.frequency.exponentialRampToValueAtTime(900, t0 + .7); }
@@ -696,7 +744,8 @@ function sireneK() { const a = audioK(); if (!a) return; const o = a.createOscil
 
 /* la grille de départ : on vient la chercher dans la cour d'honneur, devant un garage (un panneau et un cercle l'indiquent) ; la course elle-même part du fond de la caserne */
 const GRILLE_K = [-9.9, -9.8];   // (devant le garage du milieu, à gauche en regardant l'horloge : un cercle au sol devant le car de la Gendarmerie)
-const adminK = () => !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (pour l'instant : l'administrateur seul)
+const FAMILLE_K = [2, 3, 4];   // (la course est ouverte à l'administrateur et à la famille : les mêmes badges que les invités de l'appartement)
+const adminK = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || FAMILLE_K.includes(Number(M.ctx.moiInfo().numero ?? M.moiNum))));
 const presGrille = (x, z) => adminK() && Math.hypot(x - GRILLE_K[0], z - GRILLE_K[1]) < 2;
 // (pendant la course, les voitures garées sur le circuit s'effacent ; elles reviennent après)
 function cacherVoitures(on) {
