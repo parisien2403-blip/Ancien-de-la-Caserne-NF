@@ -8,7 +8,7 @@
    Seul : contre quatre karts de la caserne. À plusieurs : ceux qui viennent à la grille de départ (dans la cour d'honneur) pendant le compte à rebours courent ensemble.
    Ce fichier n'est pas un module : la matrice le charge et l'exécute chez elle (eval direct) ; il se sert de M, THREE, tex, toile, envoyerWS… */
 
-const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 2, vmax: 16, grilleT: 12000, ech: .62 };   // (ech : les karts et leurs pilotes, en plus petit — la piste est étroite sous les porches et dans les allées)
+const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 2, vmax: 16, grilleT: 12000, ech: .46 };   // (ech : les karts et leurs pilotes, en plus petit — la piste est étroite sous les porches et dans les allées)
 const EK = KC.ech;
 /* le tracé : des points de passage (x, hauteur, z, largeur de la piste), reliés par une courbe douce */
 const VP = 2.3, VA = 3.7, VC = 5;   // (les largeurs : une voie sous les porches, les allées autour des bâtiments, la cour d'honneur et les toits)
@@ -76,6 +76,16 @@ function construirePisteK(scene) { preparerTraceK(); const G = new THREE.Group()
       p3.push(x, p.y, z, x, p.y + h, z); u3.push(i * KC.pas / 2, 0, i * KC.pas / 2, 1); if (i < N) { const a = n0; i3.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } n0 += 2; }
     const g3 = new THREE.BufferGeometry(); g3.setAttribute("position", new THREE.Float32BufferAttribute(p3, 3)); g3.setAttribute("uv", new THREE.Float32BufferAttribute(u3, 2)); g3.setIndex(i3); g3.computeVertexNormals();
     G.add(new THREE.Mesh(g3, Object.assign(muretM.clone(), { side: THREE.DoubleSide }))); }
+  // les LED : une bande de lumière sur le haut des murets, de toutes les couleurs, qui défile (on la fait avancer à chaque image) ; un halo autour
+  KC.ledTex = tex(toile(512, 8, x => { const C = ["#ff2a6a", "#ff9a1a", "#ffe23a", "#3aff7a", "#2ad8ff", "#5a6aff", "#c03aff"]; for (let i = 0; i < 64; i++) { x.fillStyle = C[i % C.length]; x.fillRect(i * 8, 0, 6, 8); } })); KC.ledTex.wrapS = THREE.RepeatWrapping;
+  const ledM = new THREE.MeshBasicMaterial({ map: KC.ledTex, side: THREE.DoubleSide }), haloT = tex(toile(8, 64, x => { const gr = x.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 8, 64); }));
+  const haloM = new THREE.MeshBasicMaterial({ map: KC.ledTex, alphaMap: haloT, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (const sd of [-1, 1]) { const pl2 = [], u4 = [], i4 = [], ph = [], uh = [], ih = []; let n0 = 0;
+    for (let i = 0; i <= N; i++) { const k = i % N, p = KC.pts[k], n = KC.nor[k], W = LA[k], hm = p.y > .4 ? .9 : .55, e = W / 2 + .1, x = p.x + n.x * e * sd, z = p.z + n.z * e * sd, y = p.y + hm, u = i * KC.pas / 4;
+      pl2.push(x, y - .02, z, x, y + .045, z); u4.push(u, 0, u, 1); ph.push(x, y - .12, z, x, y + .16, z); uh.push(u, 0, u, 1);
+      if (i < N) { const a = n0; i4.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); ih.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } n0 += 2; }
+    const mk = (P, U, I, m) => { const g4 = new THREE.BufferGeometry(); g4.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g4.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g4.setIndex(I); const me = new THREE.Mesh(g4, m); me.frustumCulled = false; G.add(me); return me; };
+    mk(pl2, u4, i4, ledM); mk(ph, uh, ih, haloM); }
   // les piliers sous la piste, quand elle est en l'air et pas sur un toit
   const pilM = new THREE.MeshStandardMaterial({ color: 0x9a968c, roughness: .9 });
   const surRouteBasse = (x, z) => { for (let j = 0; j < N; j += 2) { const q = KC.pts[j]; if (q.y < 1.5 && Math.hypot(q.x - x, q.z - z) < LA[j] / 2 + .6) return true; } return false; };
@@ -153,6 +163,10 @@ function fabriquerKart(couleur, nom) { const g = new THREE.Group(), num = ++numK
   // les étincelles du dérapage (bleues, puis orange), sous les roues arrière ; la flamme du turbo, au pot d'échappement
   const etin = [-.66, .66].map(x => { const sp2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: texEtincelle(), color: 0x6ab8ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); sp2.position.set(x, .12, -.95); sp2.scale.setScalar(.5); sp2.visible = false; g.add(sp2); return sp2; });
   const flamme = new THREE.Mesh(new THREE.ConeGeometry(.12, .6, 10), new THREE.MeshBasicMaterial({ color: 0xffa020, transparent: true, opacity: .85, depthWrite: false, blending: THREE.AdditiveBlending })); flamme.rotation.x = -Math.PI / 2; flamme.position.set(.18, .4, -1.38); flamme.visible = false; g.add(flamme);
+  // les phares (deux petites lampes blanches devant), le néon sous le kart (à sa couleur), les feux arrière
+  const phareM = new THREE.MeshBasicMaterial({ color: 0xfff6dd }); for (const sx of [-.16, .16]) ajout(new THREE.SphereGeometry(.045, 10, 8), phareM, sx, .4, 1.2);
+  const rougeM = new THREE.MeshBasicMaterial({ color: 0xff2020 }); for (const sx of [-.4, .4]) ajout(new THREE.BoxGeometry(.1, .05, .02), rougeM, sx, .34, -1.13);
+  const neon = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.6), new THREE.MeshBasicMaterial({ map: texNeon(), color: couleur, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false })); neon.rotation.x = -Math.PI / 2; neon.position.y = .03; g.add(neon);
   // le pilote : la combinaison (à la couleur de son bonhomme), les bras au volant, les jambes dans le nez ; le casque s'il n'a pas de photo
   const combi = new THREE.MeshStandardMaterial({ color: 0x1d2a44, roughness: .7 });
   const corps = ajout(new THREE.CapsuleGeometry(.19, .32, 4, 12), combi, 0, .74, -.36, -.22, 0, 0);
@@ -168,8 +182,9 @@ function fabriquerKart(couleur, nom) { const g = new THREE.Group(), num = ++numK
   // le gyrophare (allumé quand il est invincible)
   const gy = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), new THREE.MeshBasicMaterial({ color: 0x2a5cff })); gy.position.set(0, 1.78, -.34); gy.visible = false; g.add(gy);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const corpsK = new THREE.Group(); for (const o of [...g.children]) if (!roues.includes(o) && !pivots.includes(o) && !etin.includes(o) && o !== sp) corpsK.add(o); g.add(corpsK);
+  const corpsK = new THREE.Group(); for (const o of [...g.children]) if (!roues.includes(o) && !pivots.includes(o) && !etin.includes(o) && o !== sp && o.material !== undefined && !(o.material && o.material.map === texNe)) corpsK.add(o); g.add(corpsK);
   return { g, roues, pivots, etin, flamme, corpsK, gy, casque, vis, corps, et: sp, coul: couleur }; }
+let texNe = null; function texNeon() { return texNe = texNe || tex(toile(64, 128, x => { const gr = x.createRadialGradient(32, 64, 4, 32, 64, 60); gr.addColorStop(0, "rgba(255,255,255,.9)"); gr.addColorStop(.5, "rgba(255,255,255,.35)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.scale(1, 2); x.fillRect(0, 0, 64, 64); })); }
 let texEt = null; function texEtincelle() { return texEt = texEt || tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.3, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
   x.strokeStyle = "rgba(255,255,255,.9)"; x.lineWidth = 3; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; x.beginPath(); x.moveTo(32, 32); x.lineTo(32 + Math.cos(a) * 30, 32 + Math.sin(a) * 30); x.stroke(); } })); }
 // (la tête du pilote : la photo du bonhomme, à la place du casque ; sans photo, on garde le casque)
@@ -194,7 +209,7 @@ function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale
 
 /* ---------- la course : l'état, la grille, le compte à rebours ---------- */
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
-function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2 - r * 2.3, e = Math.min(.9, largeur(s) / 2 - .6); return { s, d: c ? e : -e }; }
+function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2 - r * 1.8, e = Math.min(.7, largeur(s) / 2 - .5); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
 function entrerCourse() { if (KR.on || !M || M.lieu !== "grande" || !adminK()) return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
   const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
@@ -203,7 +218,7 @@ function entrerCourse() { if (KR.on || !M || M.lieu !== "grande" || !adminK()) r
   if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains }); else envoyerWS({ t: "k_rejoint", t0 });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
-  M.course = KR; KR.passer = false; ouvrirHUD(); placerGrille(); bulle(null);
+  M.course = KR; KR.passer = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true);
   // la cinématique d'ouverture : la caméra survole tout le circuit, de haut, et vient se poser derrière notre kart sur la grille
   const D = Math.min(9500, t0 - Date.now() - 2600); KR.intro = D > 3000 ? { t: performance.now(), D } : null; KR.camPrete = false; }
 function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil = [];
@@ -212,13 +227,17 @@ function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil
     if (P && !moi) { P.g.visible = false; KR.caches = KR.caches || new Set(); KR.caches.add(P); }
     const inf = P && P.info ? { numero: P.info.numero ?? id, tete_v: P.info.tete_v, teteUrl: P.info.teteUrl, couleur: P.info.couleur } : null;
     const p = nouveauPilote({ id, nom, moi, humain: true, tete: inf, couleur: COULEURS_K[(Number(id) || 0) % COULEURS_K.length], ...g }); KR.pil.push(p); if (moi) KR.moi = p; });
+  if (KR.moi) { const L2 = new THREE.SpotLight(0xfff0d0, 40, 26, .55, .6, 1.4), cible = new THREE.Object3D(); L2.position.set(0, .6, 1.3); cible.position.set(0, -.5, 12); KR.moi.K.g.add(L2, cible); L2.target = cible; }
   if (KR.solo) NOMS_BOTS.forEach((nom, i) => { const g = grilleK(hs.length + i); KR.pil.push(nouveauPilote({ id: "b" + i, nom, bot: true, tete: { teteUrl: TETES_BOTS[i], couleur: "#1c2541" }, couleur: COULEURS_K[(i + 3) % COULEURS_K.length], ...g })); });
   for (const p of KR.pil) majKart(p, 0); }
+/* la nuit, pendant la course : le clair de lune de la caserne ; les LED des murets et les phares font le reste */
+function nuitK(on) { if (!M || !M.L || !M.L.setNuit) return; if (on) { if (KR.nuitAvant === undefined) KR.nuitAvant = !!M.L.nuit; M.L.setNuit(true); }
+  else if (KR.nuitAvant !== undefined) { M.L.setNuit(KR.nuitAvant); KR.nuitAvant = undefined; } }
 function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR.pil) KC.scene && KC.scene.remove(p.K.g); for (const o of KR.objets) o.m && o.m.parent && o.m.parent.remove(o.m); KR.pil = []; KR.objets = [];
   if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
-  envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
+  finCeremonie(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
 const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
@@ -268,7 +287,7 @@ function conduire(p, c, dt) { const W2 = Math.max(.25, largeur(p.s) / 2 - (.6 * 
   p.prog = p.tour * KC.L + p.s; }
 // (les karts se cognent : on s'écarte l'un de l'autre ; celui qui a le gyrophare envoie l'autre en tête-à-queue)
 function chocsKarts() { const P = KR.pil; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const a = P[i], b = P[j];
-  if (!(a.moi || a.bot) && !(b.moi || b.bot)) continue; const ds = ((b.s - a.s + KC.L * 1.5) % KC.L) - KC.L / 2, dd = b.d - a.d, Ls = 1.35 * EK * 1.6, Ld = .78;
+  if (!(a.moi || a.bot) && !(b.moi || b.bot)) continue; const ds = ((b.s - a.s + KC.L * 1.5) % KC.L) - KC.L / 2, dd = b.d - a.d, Ls = 1.35 * EK * 1.6, Ld = 1.25 * EK;
   if (Math.abs(ds) > Ls || Math.abs(dd) > Ld) continue;
   if (a.gyro > 0 && b.gyro <= 0 && b.spin <= 0) { b.spin = 1; continue; } if (b.gyro > 0 && a.gyro <= 0 && a.spin <= 0) { a.spin = 1; continue; }
   const pen = Ld - Math.abs(dd), sg = Math.sign(dd) || 1; if (a.moi || a.bot) a.d -= sg * pen * .5; if (b.moi || b.bot) b.d += sg * pen * .5;
@@ -290,7 +309,7 @@ function majKart(p, dt) { const pos = surPiste(p.s, p.d, p.K.g.position), pente 
 
 /* ---------- les adversaires de la caserne (seul) ---------- */
 function piloteBot(p, dt) { const devant = p.s + 9, cap = capPiste(devant), cb = courbure(p.s + 4);
-  p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 1.8); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .6); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
+  p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 1.4); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .5); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
   // (éviter une banane ou une flaque juste devant)
   for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1) p.voie = o.d > 0 ? o.d - 1.4 : o.d + 1.4;
   const vise = Math.atan2(-(p.voie - p.d), 9), voulu = cap + vise; const e = Math.atan2(Math.sin(voulu - p.h), Math.cos(voulu - p.h));
@@ -337,11 +356,13 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   for (const p of KR.pil) { if (avant) { majKart(p, 0); continue; }
     if (p.moi) conduire(p, c, dt); else if (p.bot) conduire(p, piloteBot(p, dt), dt); else { /* un autre joueur : on avance sa dernière position */ p.s += p.v * dt; if (p.s >= KC.L) p.s -= KC.L; }
     // les caisses
-    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < .9 && Math.abs(p.d - cs.d) < .85) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
+    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < .8 && Math.abs(p.d - cs.d) < .7) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
     if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); } }
     majKart(p, dt); }
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = surPiste(cs.s, cs.d).y + .8 + Math.sin(t / 300 + cs.s) * .1; }
+  if (KC.ledTex) KC.ledTex.offset.x -= dt * .5; if (M.L && M.L.nuit === false && (!KR.nuitT || t - KR.nuitT > 2000)) { KR.nuitT = t; nuitK(true); }
+  if (KR.cer) majCeremonie(dt);
   if (!avant) { majObjets(dt); chocsKarts();
     for (const p of KR.pil) if ((p.moi || p.bot) && !p.fini) for (const b of KC.boosts || []) if (Math.abs(p.s - b.s) < 1.2 && Math.abs(p.d) < b.w / 2) { if (p.turbo < .5 && p.moi) sonK("turbo"); p.turbo = Math.max(p.turbo, .9); } }
   // notre position, pour les autres (8 fois par seconde)
@@ -349,7 +370,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   // notre bonhomme (invisible) suit le kart : c'est lui que suivent la caméra du casque et la carte
   const moiG = M.gens.get(M.moiNum); if (moiG && KR.moi) { moiG.g.position.copy(KR.moi.K.g.position); moiG.g.visible = false; if (M.vr && M.rendu.xr.isPresenting) M.vr.cap = KR.moi.h + Math.PI; }
   cameraK(dt); majHUD(t); moteurK(KR.moi ? Math.abs(KR.moi.v) / KC.vmax : 0);
-  if (KR.moi && KR.moi.fini && KR.pil.every(p => p.fini || (!p.bot && !p.moi && now - (p.vu || 0) > 8000)) && !KR.podium) podiumK(); }
+  if (KR.moi && KR.moi.fini && KR.pil.every(p => p.fini || (!p.bot && !p.moi && now - (p.vu || 0) > 8000)) && !KR.podium && !KR.cer) ceremonieK(); }
 const cv3 = new THREE.Vector3(), cv4 = new THREE.Vector3(), cv5 = new THREE.Vector3();
 function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.now() - I.t) / I.D);
   if (u >= 1 || KR.passer) { KR.intro = null; KR.passer = false; KR.camH = p.h; return false; }   // (fini : la caméra de course reprend, en glissant depuis là où l'on est)
@@ -358,13 +379,14 @@ function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.
   const pos = surPiste(sc, cote, cv4); pos.y += h; const vise = surPiste(sc + 9 + 22 * (1 - e), 0, cv5); vise.y += .6;
   cam.position.lerp(pos, KR.camPrete ? 1 - Math.exp(-dt * 6) : 1); KR.camPrete = true; cam.lookAt(vise); cam.fov += (60 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
 function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
+  if (KR.cer) { cameraCeremonie(cam, dt); return; }
   if (KR.intro && survolK(p, cam, dt)) return;
   // (la caméra suit le cap du kart avec un peu de retard : dans un dérapage, on voit le kart de travers)
   const voulu0 = p.h + (p.travers || 0) * .35; if (KR.camH === undefined || !KR.camPrete) KR.camH = voulu0; KR.camH += Math.atan2(Math.sin(voulu0 - KR.camH), Math.cos(voulu0 - KR.camH)) * Math.min(1, dt * 4.5);
-  const f = cv3.set(Math.sin(KR.camH), 0, Math.cos(KR.camH)), recul = 4.1 + Math.min(1.2, Math.max(0, p.v - 10) * .12) + (p.turbo > 0 ? .5 : 0);
-  const voulu = cv4.copy(p.K.g.position).addScaledVector(f, -recul); voulu.y = Math.max(voulu.y + 1.85, surPiste(p.s - recul, p.d, cv5).y + 1.6);   /* (dans la descente : la piste, derrière, est plus haute que le kart ; la caméra reste au-dessus) */
+  const f = cv3.set(Math.sin(KR.camH), 0, Math.cos(KR.camH)), recul = 3.3 + Math.min(1, Math.max(0, p.v - 10) * .1) + (p.turbo > 0 ? .4 : 0);
+  const voulu = cv4.copy(p.K.g.position).addScaledVector(f, -recul); voulu.y = Math.max(voulu.y + 1.45, surPiste(p.s - recul, p.d, cv5).y + 1.3);   /* (dans la descente : la piste, derrière, est plus haute que le kart ; la caméra reste au-dessus) */
   const k = 1 - Math.exp(-dt * 8); cam.position.lerp(voulu, KR.camPrete ? k : 1); KR.camPrete = true;
-  cam.lookAt(p.K.g.position.x + f.x * 3.5, p.K.g.position.y + .7, p.K.g.position.z + f.z * 3.5);
+  cam.lookAt(p.K.g.position.x + f.x * 3, p.K.g.position.y + .5, p.K.g.position.z + f.z * 3);
   const fov = 66 + Math.min(9, Math.max(0, p.v - 10) * .9) + (p.turbo > 0 ? 7 : 0); cam.fov += (fov - cam.fov) * Math.min(1, dt * 4); cam.updateProjectionMatrix(); }
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
@@ -407,7 +429,7 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
     pal.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); id = e.pointerId; try { pal.setPointerCapture(id); } catch (er) {} bou.style.transition = ""; viser(e); });
     pal.addEventListener("pointermove", e => { if (e.pointerId === id) { e.preventDefault(); viser(e); } });
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) pal.addEventListener(ev, lacher); } }
-  d.addEventListener("pointerdown", e => { if (KR.intro && e.target === d || e.target.id === "kIntro" || (e.target.closest && e.target.closest("#kIntro"))) KR.passer = true; });
+  d.addEventListener("pointerdown", e => { if (KR.cer && !KR.podium && e.target === d) { podiumK(); return; } if (KR.intro && e.target === d || e.target.id === "kIntro" || (e.target.closest && e.target.closest("#kIntro"))) KR.passer = true; });
   for (const ev of ["pointerdown", "pointerup", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); majHUD(0);
   if (!document.getElementById("kStyle")) { const st = document.createElement("style"); st.id = "kStyle"; st.textContent = "body.en-course .mx-bas-btns, body.en-course .mx-danses, body.en-course .mx-parler, body.en-course #mxBtnDanses, body.en-course #mxBtnParler { display: none !important; }"; document.head.appendChild(st); }
@@ -426,6 +448,43 @@ const chronoK = ms => { const s = ms / 1000; return Math.floor(s / 60) + ":" + (
 function voileFumee() { sonK("fumi"); }
 function arriveeK() { const p = KR.moi, rang = classement().indexOf(p) + 1; bulle(`🏁 Arrivée ! ${rang}${rang === 1 ? "er" : "e"} en ${chronoK(p.fini)}`, 4000);
   try { const r = JSON.parse(localStorage.getItem("karts-record") || "null"); if (!r || p.fini < r) { localStorage.setItem("karts-record", JSON.stringify(p.fini)); KR.record = true; } } catch (e) {} }
+/* ---------- la cérémonie : le podium dans la cour d'honneur, le gagnant qui saute les bras en l'air avec la coupe, des confettis, la caméra qui tourne autour ---------- */
+const POD = { x: 0, z: -5 };
+function figurePilote(p, haut) { const g = new THREE.Group(), combi = new THREE.MeshStandardMaterial({ color: p.K.corps.material.color.clone(), roughness: .6 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
+  for (const sx of [-.11, .11]) { const j = new THREE.Mesh(new THREE.CapsuleGeometry(.08, .5, 4, 8), combi); j.position.set(sx, .37, 0); g.add(j); const c2 = new THREE.Mesh(new THREE.BoxGeometry(.13, .08, .24), noir); c2.position.set(sx, .04, .04); g.add(c2); }
+  const torse = new THREE.Mesh(new THREE.CapsuleGeometry(.2, .36, 4, 12), combi); torse.position.y = .98; g.add(torse);
+  const bras = [-1, 1].map(sx => { const pv = new THREE.Group(); pv.position.set(sx * .27, 1.2, 0); const b = new THREE.Mesh(new THREE.CapsuleGeometry(.065, .46, 4, 8), combi); b.position.y = -.28; pv.add(b); const m = new THREE.Mesh(new THREE.SphereGeometry(.075, 8, 6), noir); m.position.y = -.56; pv.add(m); g.add(pv); return pv; });
+  let tete; if (p.K.tete) { tete = p.K.tete.clone(true); tete.position.set(0, 1.5, 0); } else { tete = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshStandardMaterial({ color: p.K.coul, roughness: .15, metalness: .3 })); tete.position.y = 1.5; } g.add(tete);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return { g, bras, base: haut }; }
+function coupeK() { const g = new THREE.Group(), or = new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 1, roughness: .18, emissive: 0x3a2600, emissiveIntensity: .4 });
+  const prof = [[0, 0], [.13, 0], [.13, .05], [.05, .08], [.04, .2], [.05, .24], [.17, .32], [.2, .48], [.19, .5], [0, .5]].map(([x, y]) => new THREE.Vector2(x, y));
+  g.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 28), or)); for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.TorusGeometry(.08, .018, 8, 16, Math.PI * 1.2), or); a.position.set(sx * .2, .38, 0); a.rotation.z = sx > 0 ? -Math.PI * .6 : Math.PI * 1.4; g.add(a); }
+  const socle = new THREE.Mesh(new THREE.BoxGeometry(.24, .08, .24), new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: .5 })); socle.position.y = -.04; g.add(socle); return g; }
+function ceremonieK() { const L2 = classement().filter(p => p.fini).slice(0, 3); if (!L2.length) { podiumK(); return; }
+  const G = new THREE.Group(); G.position.set(POD.x, 0, POD.z); KC.scene.add(G); const blanc = new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: .5 });
+  // le tapis rouge, les trois marches (numérotées), la lumière
+  const tapis = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), new THREE.MeshStandardMaterial({ color: 0xa8141c, roughness: .9 })); tapis.rotation.x = -Math.PI / 2; tapis.position.set(0, .02, .8); G.add(tapis);
+  const marches = [[0, 1.0, "1"], [-1.45, .65, "2"], [1.45, .42, "3"]]; for (const [x, h, n] of marches) { const t = tex(toile(128, 128, c => { c.fillStyle = "#f4f4f4"; c.fillRect(0, 0, 128, 128); c.fillStyle = n === "1" ? "#d4a017" : n === "2" ? "#9aa3ad" : "#b0703a"; c.font = "900 90px Arial Black,Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(n, 64, 70); }));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(1.4, h, 1.2), [blanc, blanc, blanc, blanc, new THREE.MeshStandardMaterial({ map: t, roughness: .5 }), blanc]); b.position.set(x, h / 2, 0); b.castShadow = b.receiveShadow = true; G.add(b); }
+  const spot = new THREE.SpotLight(0xfff4e0, 120, 30, .6, .5, 1.2); spot.position.set(0, 9, 6); spot.target = G; G.add(spot); const pl = new THREE.PointLight(0xffd080, 8, 12, 1.5); pl.position.set(0, 3, 3); G.add(pl);
+  const figs = L2.map((p, i) => { const f = figurePilote(p, marches[i][1]); f.g.position.set(marches[i][0], marches[i][1], 0); G.add(f.g); return f; });
+  const coupe = coupeK(); figs[0].g.add(coupe); coupe.position.set(0, 2.2, .05); coupe.scale.setScalar(1.3);
+  // les confettis
+  const conf = [], geo = new THREE.PlaneGeometry(.08, .05), C = [0xff3a5a, 0xffd23a, 0x3ad0ff, 0x6aff6a, 0xffffff, 0xff8a1a]; for (let i = 0; i < 160; i++) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: C[i % C.length], side: THREE.DoubleSide })); m.position.set((Math.random() - .5) * 6, 3 + Math.random() * 5, (Math.random() - .5) * 4); m.userData.v = .6 + Math.random() * .8; m.userData.r = Math.random() * 6; G.add(m); conf.push(m); }
+  KR.cer = { G, figs, coupe, conf, t: 0, gagnant: L2[0] }; sonK("arrivee"); setTimeout(() => sonK("arrivee"), 700);
+  // la bannière
+  const d = KR.hud; if (d) { const b2 = document.createElement("div"); b2.id = "kCer"; b2.style.cssText = "position:absolute;left:0;right:0;top:16%;text-align:center;pointer-events:none"; b2.innerHTML = `<div style="display:inline-block;padding:10px 24px;border-radius:14px;background:rgba(20,35,74,.85);font:900 28px 'Arial Black',Arial;color:#ffd23a">🏆 ${L2[0].nom.toUpperCase()} GAGNE !</div><div style="font:700 13px Arial;opacity:.85;margin-top:6px">Toucher l'écran pour voir le classement</div>`; d.appendChild(b2);
+    for (const id of ["kPos", "kTour", "kObj", "kChrono", "kDecompte", "kPalette"]) { const e = d.querySelector("#" + id); if (e) e.style.visibility = "hidden"; } for (const e of d.querySelectorAll("[data-k]")) e.style.visibility = "hidden"; }
+  KR.cerFin = setTimeout(() => { if (KR.cer && !KR.podium) podiumK(); }, 9000); }
+function majCeremonie(dt) { const C = KR.cer; C.t += dt; const t = C.t;
+  C.figs.forEach((f, i) => { if (i === 0) { const saut = Math.abs(Math.sin(t * 4.2)) * .45; f.g.position.y = f.base + saut; f.bras[0].rotation.z = -2.7 + Math.sin(t * 8.4) * .15; f.bras[1].rotation.z = 2.7 - Math.sin(t * 8.4) * .15; }
+    else { f.bras[1].rotation.z = 1.4 + Math.sin(t * 5 + i) * .6; f.bras[0].rotation.z = -.2; } f.g.rotation.y = Math.sin(t * .8 + i) * .15; });
+  C.coupe.rotation.y += dt * 1.5;
+  for (const m of C.conf) { m.position.y -= m.userData.v * dt; m.rotation.x += dt * 3 + m.userData.r * .01; m.rotation.y += dt * 2; m.position.x += Math.sin(t * 2 + m.userData.r) * dt * .3; if (m.position.y < 0) m.position.y = 6 + Math.random() * 2; } }
+function cameraCeremonie(cam, dt) { const t = KR.cer.t, a = .55 + Math.sin(t * .25) * .6, r = 7.2 - Math.min(2.4, t * .5), h = 2.6 + Math.max(0, 4 - t * 1.2);
+  const voulu = cv4.set(POD.x + Math.sin(a) * r, h, POD.z + Math.cos(a) * r); cam.position.lerp(voulu, KR.cerCam ? 1 - Math.exp(-dt * 3) : 1); KR.cerCam = true;
+  cam.lookAt(POD.x, 1.5, POD.z); cam.fov += (50 - cam.fov) * Math.min(1, dt * 2); cam.updateProjectionMatrix(); }
+function finCeremonie() { clearTimeout(KR.cerFin); if (KR.cer) { KR.cer.G.parent && KR.cer.G.parent.remove(KR.cer.G); KR.cer = null; } KR.cerCam = false; const b = document.getElementById("kCer"); if (b) b.remove(); }
 function podiumK() { KR.podium = true; const d = document.createElement("div"); d.id = "kFin";
   d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:21;background:rgba(10,14,34,.94);border:3px solid #ffd23a;border-radius:16px;padding:16px 20px;color:#fff;font:16px Arial;min-width:260px;max-width:88%";
   const L2 = classement(); let rec = null; try { rec = JSON.parse(localStorage.getItem("karts-record") || "null"); } catch (e) {}
