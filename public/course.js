@@ -62,7 +62,27 @@ function preparerTraceK() { if (KC.pts) return;
     for (let r = 0; r < 3; r++) for (let i = 0; i < N; i++) { const a = KC.pts[(i - 1 + N) % N], b = KC.pts[(i + 1) % N], p = KC.pts[i]; if (p.y > 3) continue; p.y = Math.max(p.y, (a.y + b.y) / 2 - .01); } }
   // (on lisse la largeur, pour qu'elle change en douceur)
   for (let r = 0; r < 6; r++) KC.lar = KC.lar.map((w, i) => (KC.lar[(i - 1 + N) % N] + 2 * w + KC.lar[(i + 1) % N]) / 4);
+  try { eviterMursK(); } catch (e) { console.warn("murs", e); }
   KC.courbe = c; }
+/* jamais à travers un coin d'immeuble : de chaque point de la piste au sol, un rayon part à gauche et à droite (à 2 m de haut : les murs, pas les voitures ni les murets) ;
+   s'il touche un mur plus près que le bord de la piste, la piste s'écarte du mur et se rétrécit juste ce qu'il faut */
+function eviterMursK() { if (!M || !M.scene) return; const N = KC.N, T0 = performance.now();
+  const avatars = new Set([...M.gens.values()].map(p => p.g)), cibles = M.scene.children.filter(o => (o.isMesh || o.isGroup) && o.visible && !avatars.has(o) && o.name !== "piste-karts" && o.name !== "spectateurs-karts");
+  const R = [...(M.L && M.L.voitures || [])]; try { if (typeof C3 !== "undefined" && C3.camion) R.push(C3.camion); } catch (e) {}
+  const dansVoiture = (x, z) => R.some(([a, b, c, d]) => x > a - .3 && x < b + .3 && z > c - .3 && z < d + .3);
+  const ray = new THREE.Raycaster(), o = new THREE.Vector3(), dv = new THREE.Vector3(), PAS = 2, dec = new Float32Array(N), lar = KC.lar.slice(), fait = new Uint8Array(N);
+  const dist = (p, n, sd, loin) => { o.set(p.x, p.y + 2, p.z); dv.set(n.x * sd, 0, n.z * sd); ray.set(o, dv); ray.near = 0; ray.far = loin; const hits = [];
+    for (const c of cibles) { try { ray.intersectObject(c, true, hits); } catch (e) {} }
+    hits.sort((a, b) => a.distance - b.distance); for (const h of hits) { const m = h.object.material; if (!h.face || (m && (m.transparent || m.visible === false)) || h.object.isSprite || h.object.isPoints || h.object.isLine) continue; if (dansVoiture(h.point.x, h.point.z)) continue; return h.distance; } return 99; };
+  for (let i = 0; i < N; i += PAS) { const p = KC.pts[i]; if (p.y > 3.2) continue; const n = KC.nor[i], w2 = lar[i] / 2, loin = w2 + 1.2;
+    const dp = dist(p, n, 1, loin), dm = dist(p, n, -1, loin); fait[i] = 1; if (dp > w2 + .35 && dm > w2 + .35) continue;
+    let hp = Math.min(w2, dp - .35), hm = Math.min(w2, dm - .35); if (hp + hm < 1.7) { const libre = dp + dm - .7; hp = hm = Math.max(.85, libre / 2); const mil = (dp - dm) / 2; dec[i] = mil; lar[i] = Math.max(1.7, libre); continue; }
+    dec[i] = (hp - hm) / 2; lar[i] = hp + hm; }
+  for (let i = 0; i < N; i++) if (!fait[i] && KC.pts[i].y <= 3.2) { const a = (i - 1 + N) % N, b = (i + 1) % N; dec[i] = (dec[a] + dec[b]) / 2; lar[i] = Math.min(lar[a], lar[b]); }
+  // (en douceur : le décalage et le rétrécissement se font progressivement, avant et après le coin)
+  let D = Array.from(dec), W = lar.slice(); for (let r = 0; r < 10; r++) { D = D.map((v, i) => { const a = D[(i - 1 + N) % N], b = D[(i + 1) % N]; return Math.abs(v) >= Math.max(Math.abs(a), Math.abs(b)) ? v : (a + 2 * v + b) / 4; }); W = W.map((v, i) => Math.min(v, (W[(i - 1 + N) % N] + W[(i + 1) % N]) / 2 + .12)); }
+  for (let i = 0; i < N; i++) { if (D[i]) { const n = KC.nor[i]; KC.pts[i].x += n.x * D[i]; KC.pts[i].z += n.z * D[i]; } KC.lar[i] = Math.min(KC.lar[i], W[i]); }
+  KC.mursMs = Math.round(performance.now() - T0); }
 // (un point de la piste : s le long du tracé, d sur le côté — à droite positif)
 function surPiste(s, d, out) { const N = KC.N, k = ((s / KC.pas) % N + N) % N, i = Math.floor(k), f = k - i, j = (i + 1) % N;
   const p = out || new THREE.Vector3(); p.lerpVectors(KC.pts[i], KC.pts[j], f); const n = KC.nor[i]; p.x += n.x * d; p.z += n.z * d; return p; }
@@ -100,14 +120,17 @@ function construirePisteK(scene) { preparerTraceK(); const G = new THREE.Group()
     G.add(new THREE.Mesh(g3, Object.assign(muretM.clone(), { side: THREE.DoubleSide }))); }
   // les LED : une bande de lumière sur le haut des murets, de toutes les couleurs, qui défile (on la fait avancer à chaque image) ; un halo autour
   KC.ledTex = tex(toile(512, 8, x => { const C = ["#ff2a6a", "#ff9a1a", "#ffe23a", "#3aff7a", "#2ad8ff", "#5a6aff", "#c03aff"]; for (let i = 0; i < 64; i++) { x.fillStyle = C[i % C.length]; x.fillRect(i * 8, 0, 6, 8); } })); KC.ledTex.wrapS = THREE.RepeatWrapping;
-  const ledM = new THREE.MeshBasicMaterial({ map: KC.ledTex, side: THREE.DoubleSide }), haloT = tex(toile(8, 64, x => { const gr = x.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 8, 64); }));
-  const haloM = new THREE.MeshBasicMaterial({ map: KC.ledTex, alphaMap: haloT, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const ledM = new THREE.MeshBasicMaterial({ map: KC.ledTex, side: THREE.DoubleSide, toneMapped: false }); ledM.color.setScalar(2.6); const haloT = tex(toile(8, 64, x => { const gr = x.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(.5, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 8, 64); }));
+  const haloM = new THREE.MeshBasicMaterial({ map: KC.ledTex, alphaMap: haloT, transparent: true, opacity: .42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }); haloM.color.setScalar(1.4);
   for (const sd of [-1, 1]) { const pl2 = [], u4 = [], i4 = [], ph = [], uh = [], ih = []; let n0 = 0;
     for (let i = 0; i <= N; i++) { const k = i % N, p = KC.pts[k], n = KC.nor[k], W = LA[k], hm = p.y > .4 ? .9 : .55, e = W / 2 + .1, x = p.x + n.x * e * sd, z = p.z + n.z * e * sd, y = p.y + hm, u = i * KC.pas / 4;
-      pl2.push(x, y - .02, z, x, y + .045, z); u4.push(u, 0, u, 1); ph.push(x, y - .12, z, x, y + .16, z); uh.push(u, 0, u, 1);
+      pl2.push(x, y - .04, z, x, y + .1, z); u4.push(u, 0, u, 1); ph.push(x, y - .2, z, x, y + .26, z); uh.push(u, 0, u, 1);
       if (i < N) { const a = n0; i4.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); ih.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } n0 += 2; }
     const mk = (P, U, I, m) => { const g4 = new THREE.BufferGeometry(); g4.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g4.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g4.setIndex(I); const me = new THREE.Mesh(g4, m); me.frustumCulled = false; G.add(me); return me; };
-    mk(pl2, u4, i4, ledM); mk(ph, uh, ih, haloM); }
+    mk(pl2, u4, i4, ledM); mk(ph, uh, ih, haloM);
+    // (une deuxième rangée de LED, au pied du muret, qui défile en sens inverse)
+    const pb = pl2.map((v, j) => j % 3 === 1 ? v - (j % 6 === 1 ? 0 : 0) : v); for (let j = 0; j < pb.length; j += 6) { const yb = KC.pts[Math.min(N, j / 6) % N].y; pb[j + 1] = yb + .08; pb[j + 4] = yb + .16; }
+    mk(pb, u4.map((v, j) => j % 2 ? v : -v), i4, ledM); }
   // les piliers sous la piste, quand elle est en l'air et pas sur un toit
   const pilM = new THREE.MeshStandardMaterial({ color: 0x9a968c, roughness: .9 });
   const surRouteBasse = (x, z) => { for (let j = 0; j < N; j += 2) { const q = KC.pts[j]; if (q.y < 1.5 && Math.hypot(q.x - x, q.z - z) < LA[j] / 2 + .6) return true; } return false; };
@@ -495,7 +518,28 @@ function majObjets(dt) { const now = performance.now();
   KR.objets = KR.objets.filter(o => { if (o.vie > 0) return true; KC.scene.remove(o.m); return false; });
   for (const e of KR.effets || []) { e.t += dt; e.maj(e, Math.min(1, e.t / e.dur)); } KR.effets = (KR.effets || []).filter(e => { if (e.t < e.dur) return true; KC.scene.remove(e.g); return false; }); }
 // (de la crème plein la figure : sur la tête du pilote ; et, pour nous, sur l'écran)
-function splatK(p) { const K = p.K; if (!K.creme) { K.creme = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(128, 128, x => { x.fillStyle = "#fffaf0"; x.strokeStyle = "#111"; x.lineWidth = 5; for (const [a, b, r] of [[64, 64, 40], [30, 50, 20], [98, 46, 22], [44, 96, 18], [92, 94, 20]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); x.stroke(); } x.fillStyle = "#fffaf0"; x.beginPath(); x.arc(64, 64, 38, 0, 7); x.fill(); })), depthTest: true }));
+/* la crème sur l'écran : de grosses giclées de chantilly (en relief, avec des reflets), des coulures qui descendent, des morceaux de pâte dorée, quelques fraises */
+let imgCreme = null;
+function imageCreme() { if (imgCreme) return imgCreme; const W = 720, H = 1080, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"), R = Math.random;
+  const blob = (cx, cy, r, n) => { x.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2, rr = r * (1 + .07 * Math.sin(a * n + cx) + .045 * Math.sin(a * (n + 3) + cy) + (Math.sin(a * 2 + cy) > .92 ? .12 : 0)); x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .92); } x.closePath(); };
+  const creme = (cx, cy, r) => { x.save(); x.shadowColor = "rgba(90,60,20,.45)"; x.shadowBlur = r * .25; x.shadowOffsetY = r * .08; blob(cx, cy, r, 5 + Math.floor(R() * 4)); const g = x.createRadialGradient(cx - r * .3, cy - r * .35, r * .05, cx, cy, r * 1.05); g.addColorStop(0, "#ffffff"); g.addColorStop(.55, "#fffbf2"); g.addColorStop(.88, "#f6ead2"); g.addColorStop(1, "#e8d4ae"); x.fillStyle = g; x.fill(); x.restore();
+    // (le relief : des tourbillons de crème, des reflets brillants)
+    for (let k = 0; k < 5; k++) { const a = R() * 6.28, d = R() * r * .55; x.beginPath(); x.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, r * (.18 + R() * .16), r * (.1 + R() * .1), R() * 3, 0, 7); x.fillStyle = "rgba(255,255,255,.7)"; x.fill(); x.strokeStyle = "rgba(210,185,140,.18)"; x.lineWidth = 3; x.stroke(); }
+    x.beginPath(); x.ellipse(cx - r * .35, cy - r * .4, r * .2, r * .09, -.5, 0, 7); x.fillStyle = "rgba(255,255,255,.95)"; x.fill(); };
+  const coulure = (cx, cy, w, L) => { const g = x.createLinearGradient(cx - w, 0, cx + w, 0); g.addColorStop(0, "#e9d6b0"); g.addColorStop(.35, "#fffaf0"); g.addColorStop(1, "#e2cca2"); x.fillStyle = g; x.beginPath(); x.moveTo(cx - w, cy); x.bezierCurveTo(cx - w * .8, cy + L * .6, cx - w * .5, cy + L * .9, cx - w * .45, cy + L); x.arc(cx, cy + L, w * .62, Math.PI, 0, true); x.bezierCurveTo(cx + w * .5, cy + L * .9, cx + w * .8, cy + L * .6, cx + w, cy); x.closePath(); x.fill();
+    x.beginPath(); x.ellipse(cx - w * .2, cy + L * .95, w * .18, w * .28, 0, 0, 7); x.fillStyle = "rgba(255,255,255,.9)"; x.fill(); };
+  const pate = (cx, cy, r) => { x.save(); x.translate(cx, cy); x.rotate(R() * 6); x.beginPath(); const n = 5 + Math.floor(R() * 3); for (let i = 0; i < n; i++) { const a = i / n * 6.28, rr = r * (.6 + R() * .5); x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } x.closePath();
+    const g = x.createLinearGradient(-r, -r, r, r); g.addColorStop(0, "#f2c070"); g.addColorStop(.6, "#c8822e"); g.addColorStop(1, "#8a4e18"); x.fillStyle = g; x.fill(); x.strokeStyle = "rgba(90,45,10,.6)"; x.lineWidth = 2; x.stroke(); for (let k = 0; k < 4; k++) { x.fillStyle = "rgba(255,230,170,.7)"; x.fillRect((R() - .5) * r, (R() - .5) * r, 2, 2); } x.restore(); };
+  const fraise = (cx, cy, r) => { x.save(); x.translate(cx, cy); x.rotate((R() - .5) * 1.2); x.beginPath(); x.moveTo(0, r); x.bezierCurveTo(-r * 1.1, r * .2, -r * .9, -r * .9, 0, -r * .75); x.bezierCurveTo(r * .9, -r * .9, r * 1.1, r * .2, 0, r); const g = x.createRadialGradient(-r * .3, -r * .3, r * .1, 0, 0, r * 1.2); g.addColorStop(0, "#ff6a6a"); g.addColorStop(1, "#b80a1a"); x.fillStyle = g; x.fill();
+    x.fillStyle = "#ffe08a"; for (let k = 0; k < 14; k++) { x.beginPath(); x.ellipse((R() - .5) * r * 1.1, (R() - .4) * r * 1.2, 2, 3, 0, 0, 7); x.fill(); } x.fillStyle = "#2a8a2a"; for (let k = 0; k < 5; k++) { x.beginPath(); x.ellipse(Math.cos(k * 1.26) * r * .3, -r * .8 + Math.sin(k * 1.26) * r * .12, r * .3, r * .1, k * 1.26, 0, 7); x.fill(); } x.restore(); };
+  const G = [[200, 300, 150], [470, 230, 120], [560, 560, 170], [180, 690, 140], [360, 470, 110], [610, 860, 100], [110, 960, 80], [420, 900, 90]];
+  for (const [cx, cy, r] of G) { if (R() < .9) coulure(cx + (R() - .5) * r * .6, cy + r * .5, r * (.12 + R() * .08), r * (.9 + R() * 1.3)); }
+  for (const [cx, cy, r] of G) creme(cx, cy, r);
+  for (const [cx, cy, r] of G) for (let k = 0; k < 3; k++) { const a = R() * 6.28; pate(cx + Math.cos(a) * r * (.9 + R() * .4), cy + Math.sin(a) * r * (.9 + R() * .4), 10 + R() * 16); }
+  for (let k = 0; k < 40; k++) { x.beginPath(); x.arc(R() * W, R() * H, 3 + R() * 10, 0, 7); x.fillStyle = `rgba(255,250,236,${.6 + R() * .4})`; x.fill(); }   // (des éclaboussures)
+  fraise(240, 250, 34); fraise(540, 600, 30); fraise(400, 470, 22);
+  imgCreme = c.toDataURL("image/png"); return imgCreme; }
+function splatK(p) { if (p.moi && KR.hud) { const cr = KR.hud.querySelector("#kCreme"); if (cr) { cr.style.backgroundImage = `url(${imageCreme()})`; imgCreme = null; } } const K = p.K; if (!K.creme) { K.creme = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(toile(128, 128, x => { x.fillStyle = "#fffaf0"; x.strokeStyle = "#111"; x.lineWidth = 5; for (const [a, b, r] of [[64, 64, 40], [30, 50, 20], [98, 46, 22], [44, 96, 18], [92, 94, 20]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); x.stroke(); } x.fillStyle = "#fffaf0"; x.beginPath(); x.arc(64, 64, 38, 0, 7); x.fill(); })), depthTest: true }));
     K.creme.scale.set(.9, .9, 1); K.creme.position.set(0, 1.5, -.1); K.creme.renderOrder = 3; K.corpsK.add(K.creme); } K.creme.visible = true; }
 /* ---------- le classement, la boucle ---------- */
 const classement = () => [...KR.pil].sort((a, b) => (b.fini ? 1e9 - b.fini : b.prog) - (a.fini ? 1e9 - a.fini : a.prog));
@@ -573,7 +617,7 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
     <style>@keyframes kPop { 0% { transform: translate(-50%,-50%) scale(2.2); opacity: 0 } 25% { transform: translate(-50%,-50%) scale(.9); opacity: 1 } 40% { transform: translate(-50%,-50%) scale(1.05) } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1 } }</style>
     <div id="kIntro" style="position:absolute;left:0;right:0;bottom:18%;text-align:center;pointer-events:auto"><div style="display:inline-block;padding:10px 22px;border-radius:14px;background:linear-gradient(90deg,rgba(20,35,74,0),rgba(20,35,74,.85) 20%,rgba(20,35,74,.85) 80%,rgba(20,35,74,0));font:900 30px 'Arial Black',Arial;color:#ffd23a;letter-spacing:.04em">🏁 LES 24 TOURS DE LA CASERNE</div><div style="font:700 13px Arial;opacity:.8;margin-top:6px">Toucher l'écran pour passer</div></div>
     <div style="position:absolute;inset:0;background:radial-gradient(circle,rgba(200,40,30,.2),rgba(200,40,30,.75));opacity:0;transition:opacity .4s" id="kFumee"></div>
-    <div id="kCreme" style="position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none;background:radial-gradient(ellipse 22% 18% at 30% 38%,#fffaf0 92%,transparent 96%),radial-gradient(ellipse 16% 14% at 64% 30%,#fff6e6 92%,transparent 96%),radial-gradient(ellipse 20% 16% at 70% 64%,#fffaf0 92%,transparent 96%),radial-gradient(ellipse 12% 10% at 40% 70%,#fff6e6 92%,transparent 96%),radial-gradient(ellipse 9% 8% at 52% 50%,#d8102a 90%,transparent 94%)"></div>
+    <div id="kCreme" style="position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none;background-size:cover;background-position:center"></div>
     <button type="button" id="kQuitter" style="pointer-events:auto;position:absolute;left:12px;top:114px;border:0;border-radius:99px;padding:6px 12px;background:rgba(0,0,0,.55);color:#fff;font:700 13px Arial">✕ Quitter la course</button>
     ${tactile ? `<div id="kPalette" style="position:absolute;left:12px;bottom:22px;width:min(46vw,260px);height:74px;border-radius:40px;border:3px solid rgba(255,255,255,.75);background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,.3) 50%,rgba(0,0,0,.55));pointer-events:auto;touch-action:none">
         <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">◀</div><div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">▶</div>
@@ -784,5 +828,5 @@ function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse();
   { const [x0, z0] = GRILLE_K, h = (x, z) => { try { return M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { x, y: 0, z } }, info: {} }) || 0 : 0; } catch (e) { return 0; } }; let y = 0; for (const [a, b] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]]) y = Math.max(y, h(x0 + a, z0 + b)); rond.position.set(-2.4, y + .03, -1.4); }   // (le cercle passe sur le trottoir : posé à la hauteur du plus haut) g.add(rond);
   M.scene.add(g); KC.pan = g; }
 
-KR.KC = KC; KR.capPiste = capPiste;   // (pour les essais)
+KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK;   // (pour les essais)
 ({ entrerCourse, quitterCourse, majCourse, recuK, presGrille, decorCourse, KR });
