@@ -254,11 +254,24 @@ function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil
 /* la nuit, pendant la course : le clair de lune de la caserne ; les LED des murets et les phares font le reste */
 function nuitK(on) { if (!M || !M.L || !M.L.setNuit) return; if (on) { if (KR.nuitAvant === undefined) KR.nuitAvant = !!M.L.nuit; M.L.setNuit(true); }
   else if (KR.nuitAvant !== undefined) { M.L.setNuit(KR.nuitAvant); KR.nuitAvant = undefined; } }
+/* le jet de cotillons, à l'arrivée : deux gerbes de part et d'autre du kart, des confettis et des serpentins de toutes les couleurs */
+function cotillonsK(p) { finCotillons(); const G = new THREE.Group(); KC.scene.add(G);
+  KR.cot = { G, parts: [], t: 0, p, reste: 0, geo: new THREE.PlaneGeometry(.07, .045), geoS: new THREE.PlaneGeometry(.025, .3), mats: [0xff3a5a, 0xffd23a, 0x3ad0ff, 0x6aff6a, 0xffffff, 0xff8a1a, 0xc04aff].map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })) }; sonK("fumi"); }
+// (les deux canons, de part et d'autre du kart, tirent pendant 2,5 s ; les confettis retombent en tournoyant)
+function majCotillons(dt) { const C = KR.cot; C.t += dt;
+  if (C.t < 2.5 && C.parts.length < 320) { C.reste += dt * 120; const p = C.p, o = p.K.g.position, f = new THREE.Vector3(Math.sin(p.h), 0, Math.cos(p.h)), n = new THREE.Vector3(f.z, 0, -f.x);
+    while (C.reste >= 1) { C.reste--; const i = C.parts.length, sd = i % 2 ? 1 : -1, m = new THREE.Mesh(i % 7 === 0 ? C.geoS : C.geo, C.mats[i % C.mats.length]);
+      m.position.copy(o).addScaledVector(n, sd * .5).addScaledVector(f, .3); m.position.y += .4;
+      const v = new THREE.Vector3().addScaledVector(n, sd * (.6 + Math.random() * 1.6)).addScaledVector(f, p.v * .9 + Math.random() * 2); v.y = 4 + Math.random() * 4;
+      m.userData = { v, r: new THREE.Vector3(Math.random() * 9, Math.random() * 9, Math.random() * 9) }; C.G.add(m); C.parts.push(m); } }
+  for (const m of C.parts) { const u = m.userData; u.v.y -= 9.8 * dt * .5; u.v.x *= Math.pow(.5, dt); u.v.z *= Math.pow(.5, dt); if (u.v.y < -1.2) u.v.y = -1.2; m.position.addScaledVector(u.v, dt); m.rotation.x += u.r.x * dt; m.rotation.y += u.r.y * dt; m.rotation.z += u.r.z * dt; }
+  if (C.t > 7) finCotillons(); }
+function finCotillons() { if (KR.cot) { KR.cot.G.parent && KR.cot.G.parent.remove(KR.cot.G); KR.cot = null; } }
 function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR.pil) KC.scene && KC.scene.remove(p.K.g); for (const o of KR.objets) o.m && o.m.parent && o.m.parent.remove(o.m); KR.pil = []; KR.objets = [];
   if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
-  finCeremonie(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
+  finCeremonie(); finCotillons(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
 const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
@@ -277,7 +290,7 @@ function commandesK() { const k = c => !!(typeof CLAV !== "undefined" && CLAV[c]
 function conduire(p, c, dt) { const W2 = Math.max(.25, largeur(p.s) / 2 - (.6 * EK + .12));
   if (p.spin > 0) { p.spin -= dt; p.v *= Math.pow(.18, dt); p.tourne = (p.tourne || 0) + dt * 14; c = { dir: 0, gaz: 0, frein: 0 }; p.derive = 0; p.charge = 0; } else p.tourne = 0;
   let vmax = KC.vmax * (p.bot ? p.bv : 1) * (p.gyro > 0 ? 1.2 : 1) * (p.turbo > 0 ? 1.38 : 1) * (p.fumee > 0 ? .78 : 1);
-  if (p.fini) { c = { dir: 0, gaz: 0, frein: 1 }; vmax *= .5; }
+  if (p.fini) { c = { ...c, gaz: 1, frein: 0, dera: false }; vmax *= .55; }   // (la course finie : le kart continue tout seul, en roue libre, vers l'avant)
   // le volant : on ne braque pas d'un coup
   p.dirS = (p.dirS || 0) + (c.dir - (p.dirS || 0)) * Math.min(1, dt * (Math.abs(c.dir) > Math.abs(p.dirS || 0) ? 7 : 10));
   // l'élan : une accélération forte au départ, plus douce en haut ; le frein, l'air, la pente
@@ -329,12 +342,12 @@ function majKart(p, dt) { const pos = surPiste(p.s, p.d, p.K.g.position), pente 
   K.gy.visible = p.gyro > 0; if (p.gyro > 0) K.gy.material.color.setHex(Math.floor(t / 120) % 2 ? 0x2a5cff : 0xff2a2a); }
 
 /* ---------- les adversaires de la caserne (seul) ---------- */
-function piloteBot(p, dt) { const devant = p.s + 9, cap = capPiste(devant), cb = courbure(p.s + 4);
+function piloteBot(p, dt, auto) { const devant = p.s + 9, cap = capPiste(devant), cb = courbure(p.s + 4);
   p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 1.4); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .5); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
   // (éviter une banane ou une flaque juste devant)
   for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1) p.voie = o.d > 0 ? o.d - 1.4 : o.d + 1.4;
   const vise = Math.atan2(-(p.voie - p.d), 9), voulu = cap + vise; const e = Math.atan2(Math.sin(voulu - p.h), Math.cos(voulu - p.h));
-  const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && Math.random() < dt * .35) utiliserObjet(p);
+  const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && !auto && Math.random() < dt * .35) utiliserObjet(p);
   return { dir: Math.max(-1, Math.min(1, -e * 2.2)), gaz: ralentir ? 0 : 1, frein: ralentir ? .4 : 0, dera: false }; }
 
 /* ---------- les objets ---------- */
@@ -375,15 +388,15 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   if (KR.intro && c.obj && !KR.objPrec) KR.passer = true;
   KR.objPrec = c.obj;
   for (const p of KR.pil) { if (avant) { majKart(p, 0); continue; }
-    if (p.moi) conduire(p, c, dt); else if (p.bot) conduire(p, piloteBot(p, dt), dt); else { /* un autre joueur : on avance sa dernière position */ p.s += p.v * dt; if (p.s >= KC.L) p.s -= KC.L; }
+    if (p.moi) conduire(p, p.fini ? piloteBot(p, dt, true) : c, dt); else if (p.bot) conduire(p, piloteBot(p, dt, !!p.fini), dt); else { /* un autre joueur : on avance sa dernière position */ p.s += p.v * dt; if (p.s >= KC.L) p.s -= KC.L; }
     // les caisses
     if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < .8 && Math.abs(p.d - cs.d) < .7) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
-    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); } }
+    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; } }
     majKart(p, dt); }
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = surPiste(cs.s, cs.d).y + .8 + Math.sin(t / 300 + cs.s) * .1; }
   if (KC.ledTex) KC.ledTex.offset.x -= dt * .5; if (M.L && M.L.nuit === false && (!KR.nuitT || t - KR.nuitT > 2000)) { KR.nuitT = t; nuitK(true); }
-  if (KR.cer) majCeremonie(dt);
+  if (KR.cer) majCeremonie(dt); if (KR.cot) majCotillons(dt);
   if (!avant) { majObjets(dt); chocsKarts();
     for (const p of KR.pil) if ((p.moi || p.bot) && !p.fini) for (const b of KC.boosts || []) if (Math.abs(p.s - b.s) < 1.2 && Math.abs(p.d) < b.w / 2) { if (p.turbo < .5 && p.moi) sonK("turbo"); p.turbo = Math.max(p.turbo, .9); } }
   // notre position, pour les autres (8 fois par seconde)
@@ -401,6 +414,9 @@ function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.
   cam.position.lerp(pos, KR.camPrete ? 1 - Math.exp(-dt * 6) : 1); KR.camPrete = true; cam.lookAt(vise); cam.fov += (60 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
 function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
   if (KR.cer) { cameraCeremonie(cam, dt); return; }
+  if (p.fini) { KR.arrT = (KR.arrT || 0) + dt; const u = Math.min(1, KR.arrT / 1.8), e = u * u * (3 - 2 * u), th = p.h + Math.PI * (1 - e), dist = 3.3 - .9 * e;
+    const voulu = cv4.set(p.K.g.position.x + Math.sin(th) * dist, p.K.g.position.y + 1.35 - .5 * e, p.K.g.position.z + Math.cos(th) * dist); cam.position.lerp(voulu, 1 - Math.exp(-dt * 6));
+    cam.lookAt(p.K.g.position.x, p.K.g.position.y + .55, p.K.g.position.z); cam.fov += (58 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return; }
   if (KR.intro && survolK(p, cam, dt)) return;
   // (la caméra suit le cap du kart avec un peu de retard : dans un dérapage, on voit le kart de travers)
   const voulu0 = p.h + (p.travers || 0) * .35; if (KR.camH === undefined || !KR.camPrete) KR.camH = voulu0; KR.camH += Math.atan2(Math.sin(voulu0 - KR.camH), Math.cos(voulu0 - KR.camH)) * Math.min(1, dt * 4.5);
