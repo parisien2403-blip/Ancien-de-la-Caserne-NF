@@ -125,11 +125,15 @@ function fabriquerKart(couleur, nom) { const g = new THREE.Group(), num = ++numK
   tube(-.32, .2, .95, .32, .2, .95); tube(-.62, .22, -.7, .62, .22, -.7, .035); tube(-.58, .2, .72, .58, .2, .72); tube(-.32, .2, -.2, .32, .2, -.2);
   ajout(new THREE.BoxGeometry(.62, .025, 1.5), noir, 0, .19, .1);
   // les pontons (à la couleur de l'équipe) et le pare-chocs arrière
-  for (const sx of [-1, 1]) { const pt = ajout(new THREE.CapsuleGeometry(.11, .7, 4, 10), c, sx * .5, .27, -.02, Math.PI / 2, 0, 0); pt.scale.set(1.25, 1, .75); }
-  tube(-.55, .3, -1.08, .55, .3, -1.08, .045, noir); for (const sx of [-.4, .4]) tube(sx, .3, -1.08, sx, .22, -.72, .03, noir);
+  for (const sx of [-1, 1]) { const pt = ajout(new THREE.CapsuleGeometry(.12, .72, 4, 12), c, sx * .52, .28, -.02, Math.PI / 2, 0, 0); pt.scale.set(1.45, 1, .9);
+    const num2 = toile(128, 80, x => { x.fillStyle = "#fff"; x.beginPath(); x.ellipse(64, 40, 58, 36, 0, 0, 7); x.fill(); x.fillStyle = "#111"; x.font = "900 54px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(num), 64, 44); });
+    ajout(new THREE.PlaneGeometry(.3, .19), new THREE.MeshStandardMaterial({ map: tex(num2), transparent: true, roughness: .4, polygonOffset: true, polygonOffsetFactor: -2 }), sx * .7, .3, -.05, 0, sx * Math.PI / 2, 0); }
+  tube(-.55, .3, -1.08, .55, .3, -1.08, .05, c); tube(-.42, .24, 1.3, .42, .24, 1.3, .035, chrome); for (const sx of [-.4, .4]) tube(sx, .3, -1.08, sx, .22, -.72, .03, noir);
   // le carénage avant (le nez), le spoiler, la plaque à numéro
   const nez = ajout(new THREE.CapsuleGeometry(.2, .45, 4, 12), c, 0, .3, 1.02, Math.PI / 2, 0, 0); nez.scale.set(1.9, 1, .7);
   ajout(new THREE.BoxGeometry(1.05, .07, .16), c, 0, .2, 1.32);
+  const auto = toile(256, 64, x => { x.fillStyle = "#14234a"; x.beginPath(); x.roundRect(0, 0, 256, 64, 12); x.fill(); x.fillStyle = "#ffd23a"; x.font = "900 34px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("CASERNE NF", 128, 34); });
+  ajout(new THREE.PlaneGeometry(.36, .09), new THREE.MeshStandardMaterial({ map: tex(auto), roughness: .4, polygonOffset: true, polygonOffsetFactor: -2 }), 0, .45, .86, -Math.PI / 2 + .35, 0, 0);
   const pl = toile(128, 96, x => { x.fillStyle = "#fff"; x.beginPath(); x.roundRect(2, 2, 124, 92, 14); x.fill(); x.fillStyle = "#111"; x.font = "900 70px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(num), 64, 52); });
   const plaque = ajout(new THREE.PlaneGeometry(.34, .25), new THREE.MeshStandardMaterial({ map: tex(pl), roughness: .5 }), 0, .44, 1.13, -.55, 0, 0);
   // le baquet, la colonne de direction, le volant
@@ -164,14 +168,26 @@ function fabriquerKart(couleur, nom) { const g = new THREE.Group(), num = ++numK
   const gy = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), new THREE.MeshBasicMaterial({ color: 0x2a5cff })); gy.position.set(0, 1.78, -.34); gy.visible = false; g.add(gy);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   const corpsK = new THREE.Group(); for (const o of [...g.children]) if (!roues.includes(o) && !pivots.includes(o) && !etin.includes(o) && o !== sp) corpsK.add(o); g.add(corpsK);
-  return { g, roues, pivots, etin, flamme, corpsK, gy, casque, vis, corps, et: sp }; }
+  return { g, roues, pivots, etin, flamme, corpsK, gy, casque, vis, corps, et: sp, coul: couleur }; }
 let texEt = null; function texEtincelle() { return texEt = texEt || tex(toile(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.3, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
   x.strokeStyle = "rgba(255,255,255,.9)"; x.lineWidth = 3; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; x.beginPath(); x.moveTo(32, 32); x.lineTo(32 + Math.cos(a) * 30, 32 + Math.sin(a) * 30); x.stroke(); } })); }
 // (la tête du pilote : la photo du bonhomme, à la place du casque ; sans photo, on garde le casque)
-function mettreTete(K, P) { if (!P) return; chargerTete(P.numero, P.tete_v, P.teteUrl).then(img => { if (!img || !img.width || !K.g.parent) return;
-  const c = toile(img.width, img.height, x => x.drawImage(img, 0, 0)), h = .76, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, alphaTest: .05 }));
-  sp.scale.set(h * img.width / img.height, h, 1); sp.position.set(0, 1.04 + h / 2 - .1, -.36); sp.renderOrder = 2; sp.center.set(.5, .5); K.corpsK.add(sp); K.tete = sp; K.casque.visible = K.vis.visible = false; }).catch(() => {});
-  if (P.couleur) K.corps.material.color.set(P.couleur); }   // (le blouson : la couleur de son bonhomme)
+/* la tête du pilote, en relief : la photo du bonhomme posée sur l'avant d'une tête ronde (une cagoule de course dessous),
+   dans un casque ouvert à la couleur du kart, avec sa visière relevée ; elle tourne avec le kart (plus de visage plat qui nous suit des yeux) */
+function mettreTete(K, P) { if (!P) return; if (P.couleur) K.corps.material.color.set(P.couleur);   // (la combinaison : la couleur de son bonhomme)
+  chargerTete(P.numero, P.tete_v, P.teteUrl).then(img => { if (!img || !img.width || !K.g.parent) return;
+  // (on recadre le visage : la photo est un portrait détouré ; on garde le haut, sans le cou)
+  const w = img.width, h = img.height, c = toile(256, 320, x => { x.drawImage(img, 0, 0, w, h, 0, 0, 256, 320); }), t = tex(c);
+  const G = new THREE.Group(), R = .21; G.position.set(0, 1.21, -.33); K.corpsK.add(G);
+  const cagoule = new THREE.Mesh(new THREE.SphereGeometry(R * .97, 24, 18), new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: .9 })); G.add(cagoule);
+  const pl = Math.PI * 1.05, visage = new THREE.Mesh(new THREE.SphereGeometry(R, 32, 24, Math.PI / 2 - pl / 2, pl, .05, 2.85), new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: .4, roughness: .7, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .35 }));
+  G.add(visage);
+  // le casque ouvert : la coque (derrière et dessus), le front, la visière relevée
+  const mc = new THREE.MeshStandardMaterial({ color: K.coul, roughness: .12, metalness: .3 });
+  const coque = new THREE.Mesh(new THREE.SphereGeometry(R * 1.16, 28, 18, Math.PI / 2 + 1.05, Math.PI * 2 - 2.1, 0, 2.15), mc); G.add(coque);
+  const front = new THREE.Mesh(new THREE.SphereGeometry(R * 1.16, 28, 10, 0, Math.PI * 2, 0, .34), mc); G.add(front);
+  G.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  K.tete = G; K.casque.visible = K.vis.visible = false; }).catch(() => {}); }
 function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale.setScalar(EK); KC.scene.add(K.g); mettreTete(K, o.tete);
   return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s - KC.L, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: .86 + Math.random() * .1 }; }
 
@@ -204,13 +220,12 @@ function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR
   envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
-const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0 };   // (les boutons de l'écran)
+const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
 function commandesK() { const k = c => !!(typeof CLAV !== "undefined" && CLAV[c]), P = KR.pad || { axes: [0, 0, 0, 0], buttons: [] };
   const bt = i => { const b = P.buttons && P.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
-  let dir = (k("ArrowRight") || k("KeyD") ? 1 : 0) - (k("ArrowLeft") || k("KeyA") || k("KeyQ") ? 1 : 0) + KT.d - KT.g + (Math.abs(P.axes[0] || 0) > .15 ? P.axes[0] : 0);
+  let dir = (k("ArrowRight") || k("KeyD") ? 1 : 0) - (k("ArrowLeft") || k("KeyA") || k("KeyQ") ? 1 : 0) + KT.d - KT.g + (KT.vol || 0) + (Math.abs(P.axes[0] || 0) > .15 ? P.axes[0] : 0);
   dir = Math.max(-1, Math.min(1, dir));
-  const tactile = matchMedia("(pointer: coarse)").matches && !P.vr;
-  const gaz = k("ArrowUp") || k("KeyW") || k("KeyZ") || bt(7) || bt(0) || KT.gaz || (tactile && !KT.frein) || (P.vr && bt(7));
+  const gaz = k("ArrowUp") || k("KeyW") || k("KeyZ") || bt(7) || bt(0) || KT.gaz || (P.vr && bt(7));
   const frein = k("ArrowDown") || k("KeyS") || bt(6) || bt(1) || KT.frein;
   const obj = k("Space") || k("KeyE") || bt(2) || bt(4) || KT.obj, dera = k("ShiftLeft") || k("ShiftRight") || k("KeyX") || bt(5) || !!KT.dera;
   return { dir, gaz: gaz ? 1 : 0, frein: frein ? 1 : 0, obj, dera }; }
@@ -341,7 +356,7 @@ function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.
   const h = 2.4 + 24 * Math.pow(1 - e, 1.4), cote = Math.sin(u * Math.PI * 3) * 7 * (1 - e);
   const pos = surPiste(sc, cote, cv4); pos.y += h; const vise = surPiste(sc + 9 + 22 * (1 - e), 0, cv5); vise.y += .6;
   cam.position.lerp(pos, KR.camPrete ? 1 - Math.exp(-dt * 6) : 1); KR.camPrete = true; cam.lookAt(vise); cam.fov += (60 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
-function cameraK(dt) { const p = KR.moi; if (!p || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
+function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
   if (KR.intro && survolK(p, cam, dt)) return;
   // (la caméra suit le cap du kart avec un peu de retard : dans un dérapage, on voit le kart de travers)
   const voulu0 = p.h + (p.travers || 0) * .35; if (KR.camH === undefined || !KR.camPrete) KR.camH = voulu0; KR.camH += Math.atan2(Math.sin(voulu0 - KR.camH), Math.cos(voulu0 - KR.camH)) * Math.min(1, dt * 4.5);
@@ -373,20 +388,29 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
     <div id="kIntro" style="position:absolute;left:0;right:0;bottom:18%;text-align:center;pointer-events:auto"><div style="display:inline-block;padding:10px 22px;border-radius:14px;background:linear-gradient(90deg,rgba(20,35,74,0),rgba(20,35,74,.85) 20%,rgba(20,35,74,.85) 80%,rgba(20,35,74,0));font:900 30px 'Arial Black',Arial;color:#ffd23a;letter-spacing:.04em">🏁 LES 24 TOURS DE LA CASERNE</div><div style="font:700 13px Arial;opacity:.8;margin-top:6px">Toucher l'écran pour passer</div></div>
     <div style="position:absolute;inset:0;background:radial-gradient(circle,rgba(200,40,30,.2),rgba(200,40,30,.75));opacity:0;transition:opacity .4s" id="kFumee"></div>
     <button type="button" id="kQuitter" style="pointer-events:auto;position:absolute;left:12px;top:106px;border:0;border-radius:99px;padding:6px 12px;background:rgba(0,0,0,.55);color:#fff;font:700 13px Arial">✕ Quitter la course</button>
-    ${tactile ? `<div style="position:absolute;left:10px;bottom:14px;display:flex;gap:10px;pointer-events:auto">
-      <button type="button" data-k="g" style="width:74px;height:74px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(0,0,0,.4);color:#fff;font-size:32px">◀</button>
-      <button type="button" data-k="d" style="width:74px;height:74px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(0,0,0,.4);color:#fff;font-size:32px">▶</button></div>
-      <div style="position:absolute;right:10px;bottom:14px;display:flex;gap:10px;pointer-events:auto">
-      <button type="button" data-k="dera" style="width:74px;height:74px;border-radius:50%;border:3px solid #7ad0ff;background:rgba(20,60,110,.55);color:#bfe8ff;font:700 12px Arial">DÉRAPER</button>
-      <button type="button" data-k="frein" style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(160,30,30,.55);color:#fff;font:700 14px Arial">FREIN</button>
-      <button type="button" data-k="obj" style="width:74px;height:74px;border-radius:50%;border:3px solid #ffd23a;background:rgba(0,0,0,.45);color:#ffd23a;font:700 15px Arial">OBJET</button></div>` : `<div style="position:absolute;left:12px;bottom:12px;font:700 13px Arial;opacity:.85">⬆ accélérer · ⬇ freiner · ⬅ ➡ tourner · Maj (tenu dans le virage) déraper : les étincelles bleues puis orange donnent un turbo · Espace objet</div>`}`;
+    ${tactile ? `<div id="kPalette" style="position:absolute;left:12px;bottom:22px;width:min(46vw,260px);height:74px;border-radius:40px;border:3px solid rgba(255,255,255,.75);background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,.3) 50%,rgba(0,0,0,.55));pointer-events:auto;touch-action:none">
+        <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">◀</div><div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">▶</div>
+        <div id="kManette" style="position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9ced6 55%,#8a919c);box-shadow:0 3px 10px rgba(0,0,0,.6)"></div></div>
+      <div style="position:absolute;right:12px;bottom:18px;display:grid;grid-template-columns:auto auto;gap:10px;align-items:end;pointer-events:auto">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <button type="button" data-k="obj" style="width:66px;height:66px;border-radius:50%;border:3px solid #ffd23a;background:rgba(0,0,0,.5);color:#ffd23a;font:700 13px Arial">OBJET</button>
+          <button type="button" data-k="dera" style="width:66px;height:66px;border-radius:50%;border:3px solid #7ad0ff;background:rgba(20,60,110,.6);color:#bfe8ff;font:700 11px Arial">DÉRAPER</button>
+          <button type="button" data-k="frein" style="width:66px;height:66px;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(160,30,30,.6);color:#fff;font:700 13px Arial">FREIN</button></div>
+        <button type="button" data-k="gaz" style="width:104px;height:104px;border-radius:50%;border:4px solid #9dff7a;background:radial-gradient(circle at 40% 35%,rgba(80,200,60,.85),rgba(20,110,20,.85));color:#fff;font:900 14px Arial;text-shadow:0 1px 3px #000">ACCÉLÉRER</button></div>` : `<div style="position:absolute;left:12px;bottom:12px;font:700 13px Arial;opacity:.85">⬆ accélérer · ⬇ freiner · ⬅ ➡ tourner · Maj (tenu dans le virage) déraper : les étincelles bleues puis orange donnent un turbo · Espace objet</div>`}`;
   for (const b of d.querySelectorAll("[data-k]")) { const k = b.dataset.k, on = v => e => { e.preventDefault(); e.stopPropagation(); KT[k] = v; };
     b.addEventListener("pointerdown", on(1)); b.addEventListener("pointerup", on(0)); b.addEventListener("pointercancel", on(0)); b.addEventListener("pointerleave", on(0)); }
   d.querySelector("#kQuitter").onclick = e => { e.stopPropagation(); quitterCourse(); };
+  { const pal = d.querySelector("#kPalette"), bou = d.querySelector("#kManette"); if (pal) { let id = null;
+    const viser = e => { const r = pal.getBoundingClientRect(), demi = r.width / 2 - 36, v = Math.max(-1, Math.min(1, (e.clientX - r.left - r.width / 2) / demi)); KT.vol = v; bou.style.transform = `translateX(${v * demi}px)`; };
+    const lacher = e => { if (e.pointerId !== id) return; id = null; KT.vol = 0; bou.style.transition = "transform .12s"; bou.style.transform = ""; };
+    pal.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); id = e.pointerId; try { pal.setPointerCapture(id); } catch (er) {} bou.style.transition = ""; viser(e); });
+    pal.addEventListener("pointermove", e => { if (e.pointerId === id) { e.preventDefault(); viser(e); } });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) pal.addEventListener(ev, lacher); } }
   d.addEventListener("pointerdown", e => { if (KR.intro && e.target === d || e.target.id === "kIntro" || (e.target.closest && e.target.closest("#kIntro"))) KR.passer = true; });
   for (const ev of ["pointerdown", "pointerup", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
-  M.ctx.conteneur.appendChild(d); majHUD(0); }
-function fermerHUD() { if (KR.hud) { KR.hud.remove(); KR.hud = null; } if (M && M.manMenu && M.manMenu.d && M.manMenu.d.id === "kFin") M.manMenu = null; for (const k in KT) KT[k] = 0; const f = document.getElementById("kFin"); if (f) f.remove(); KR.podium = false; }
+  M.ctx.conteneur.appendChild(d); majHUD(0);
+  KR.caches2 = [...document.querySelectorAll(".mx-bas-btns, .mx-danses, .mx-parler")].filter(e => e.style.display !== "none"); for (const e of KR.caches2) e.style.display = "none"; }
+function fermerHUD() { if (KR.hud) { KR.hud.remove(); KR.hud = null; } for (const e of KR.caches2 || []) e.style.display = ""; KR.caches2 = null; if (M && M.manMenu && M.manMenu.d && M.manMenu.d.id === "kFin") M.manMenu = null; for (const k in KT) KT[k] = 0; const f = document.getElementById("kFin"); if (f) f.remove(); KR.podium = false; }
 function majHUD(t) { const d = KR.hud, p = KR.moi; if (!d || !p) return; const now = Date.now(), q = d.querySelector.bind(d);
   const rang = classement().indexOf(p) + 1; q("#kPos").textContent = rang + (rang === 1 ? "er" : "e") + " / " + KR.pil.length;
   q("#kTour").textContent = "Tour " + Math.max(1, Math.min(KC.tours, p.tour + 1)) + " / " + KC.tours; q("#kObj").textContent = p.objet ? OBJETS_K[p.objet] : "";
