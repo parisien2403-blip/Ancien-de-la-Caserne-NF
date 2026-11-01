@@ -398,7 +398,7 @@ function mettreTete(K, P) { if (!P) return; if (P.couleur) K.corps.material.colo
   const c = toile(img.width, img.height, x => x.drawImage(img, 0, 0)), h = 1.05, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, alphaTest: .05 }));
   sp.scale.set(h * img.width / img.height, h, 1); sp.position.set(0, 1.0 + h / 2 - .1, -.34); sp.renderOrder = 2; K.corpsK.add(sp); K.tete = sp; K.casque.visible = K.vis.visible = false; }).catch(() => {}); }
 function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale.setScalar(EK); KC.scene.add(K.g); mettreTete(K, o.tete);
-  return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: (() => { const D = DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]; return D.v[0] + Math.random() * (D.v[1] - D.v[0]); })() }; }
+  return { teteInfo: o.tete, id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: (() => { const D = DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]; return D.v[0] + Math.random() * (D.v[1] - D.v[0]); })() }; }
 
 /* ---------- la course : l'état, la grille, le compte à rebours ---------- */
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
@@ -406,13 +406,13 @@ function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.lapS[0] - 2
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
 function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; ecranTitre(() => choisirPilote(id => { KR.perso = id; choisirDifficulte(n => { KR.diff = n; lancerCourse(); }); })); }
 /* l'écran titre « NF Kart » : l'affiche en plein écran, un gros bouton JOUER qui palpite (au doigt, Entrée, ou A à la manette) */
-function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl = d;
+function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl = d; musiqueK("titre");
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:#0a0e1e url(images/karts/titre.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:7%;font-family:Arial,sans-serif;user-select:none;-webkit-user-select:none";
   d.innerHTML = `<style>@keyframes kPulse { 0%,100% { transform: scale(1); box-shadow: 0 8px 0 #8a3a00, 0 12px 30px rgba(255,170,0,.55) } 50% { transform: scale(1.07); box-shadow: 0 8px 0 #8a3a00, 0 12px 44px rgba(255,200,0,.9) } }</style>
     <button type="button" id="kJouer" style="border:4px solid #111;border-radius:22px;padding:14px 46px;background:linear-gradient(#ffe25a,#ff9a1a);color:#14234a;font:italic 900 34px 'Arial Black',Arial;letter-spacing:1px;cursor:pointer;animation:kPulse 1.3s ease-in-out infinite">▶ JOUER</button>
     <button type="button" id="kTitreFermer" style="position:absolute;top:12px;right:12px;border:0;border-radius:99px;padding:7px 14px;background:rgba(0,0,0,.6);color:#fff;font:700 14px Arial">✕ Fermer</button>`;
   d.querySelector("#kJouer").onclick = e => { e.stopPropagation(); sonK("go"); d.remove(); KR.choixEl = null; fin(); };
-  d.querySelector("#kTitreFermer").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  d.querySelector("#kTitreFermer").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; arreterMusique(); };
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kTitreFermer").click(), iSel: 0 }; }
 /* le niveau de difficulté : il règle la vitesse des karts de la caserne et la fréquence à laquelle ils lancent leurs objets */
@@ -421,7 +421,7 @@ function choisirDifficulte(fin) { const d = document.createElement("div"); KR.ch
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:linear-gradient(rgba(6,10,26,.82),rgba(6,10,26,.92)),url(images/karts/titre.jpg) center/cover;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;box-sizing:border-box";
   d.innerHTML = `<div style="font:italic 900 30px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #8a3a00">CHOISIS LA DIFFICULTÉ</div>` + DIFF_K.map(q => `<button type="button" data-n="${q.id}" style="width:min(86vw,380px);border:4px solid ${q.id === (pris || "normal") ? "#ffd23a" : "rgba(255,255,255,.25)"};border-radius:18px;padding:12px 16px;background:linear-gradient(90deg,${q.coul}cc,${q.coul}55);color:#fff;text-align:left;cursor:pointer"><div style="font:italic 900 26px 'Arial Black',Arial;-webkit-text-stroke:1px #111">${q.e} ${q.nom}</div><div style="font:700 14px Arial;opacity:.9">${q.txt}</div></button>`).join("") + `<button type="button" id="kDiffRetour" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button>`;
   for (const b of d.querySelectorAll("[data-n]")) b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-diff", b.dataset.n); } catch (er) {} d.remove(); KR.choixEl = null; fin(b.dataset.n); };
-  d.querySelector("#kDiffRetour").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  d.querySelector("#kDiffRetour").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; arreterMusique(); };
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kDiffRetour").click(), iSel: Math.max(0, DIFF_K.findIndex(q => q.id === (pris || "normal"))) }; }
 /* l'écran du choix du pilote : son bonhomme, ou un personnage de la caserne */
@@ -436,7 +436,7 @@ function choisirPilote(fin) { const d = document.createElement("div"); KR.choixE
     b.innerHTML = `<div style="height:84px;display:flex;align-items:flex-end"><img alt="" style="max-height:84px;max-width:92px;object-fit:contain"></div><span>${q.nom}</span>`;
     const im = b.querySelector("img"); if (q.url) im.src = q.url; else if (moi && moi.info) chargerTete(moi.info.numero, moi.info.tete_v, moi.info.teteUrl).then(i => { if (i) im.src = i.src; else im.replaceWith(Object.assign(document.createElement("div"), { textContent: "🧑", style: "font-size:56px" })); }).catch(() => {});
     b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-perso", q.id); } catch (er) {} d.remove(); KR.choixEl = null; fin(q.id); }; G.appendChild(b); }
-  d.querySelector("#kChoixAnnuler").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; };
+  d.querySelector("#kChoixAnnuler").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; arreterMusique(); };
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kChoixAnnuler").click() };   // (à la manette : le joystick ou la croix pour choisir, A pour prendre, B pour annuler)
   const deja = d.querySelector(`[data-id="${pris || "moi"}"]`); if (deja) M.manMenu.iSel = [...d.querySelectorAll("button")].indexOf(deja); }
@@ -448,7 +448,7 @@ function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.sce
   if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", t0, perso: KR.perso || "moi" });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
-  M.course = KR; KR.passer = false; KR.dernierVu = false; if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } if (KC.pan) KC.pan.visible = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
+  M.course = KR; KR.passer = false; KR.dernierVu = false; musiqueK("course"); if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } if (KC.pan) KC.pan.visible = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
   // la cinématique d'ouverture : la caméra survole tout le circuit, de haut, et vient se poser derrière notre kart sur la grille
   const D = Math.min(10500, t0 - Date.now() - 2200); KR.intro = D > 3000 ? { t: performance.now(), D } : null; KR.camPrete = false; }
 function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil = [];
@@ -517,7 +517,7 @@ function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR
   if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
-  if (KC.pan) KC.pan.visible = true; if (KR.farAvant && M && M.camera) { M.camera.far = KR.farAvant; M.camera.updateProjectionMatrix(); KR.farAvant = 0; } finCiel(); finCeremonie(); finCotillons(); finSpectateurs(); finFx(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
+  arreterMusique(); if (KC.pan) KC.pan.visible = true; if (KR.farAvant && M && M.camera) { M.camera.far = KR.farAvant; M.camera.updateProjectionMatrix(); KR.farAvant = 0; } finCiel(); finCeremonie(); finCotillons(); finSpectateurs(); finFx(); nuitK(false); envoyerWS({ t: "k_part" }); if (M) M.course = null; fermerHUD(); moteurK(0); }
 
 /* ---------- les commandes : clavier, manette (et manettes du casque), boutons à l'écran ---------- */
 const KT = { g: 0, d: 0, gaz: 0, frein: 0, obj: 0, dera: 0, vol: 0 };   // (les boutons de l'écran)
@@ -731,7 +731,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
     // les caisses
     if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.K.g.position.y - cs.pos.y) < 1.5 && Math.hypot(p.K.g.position.x - cs.pos.x, p.K.g.position.z - cs.pos.z) < .85) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
-    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; KR.cielT = now + 2600; } }
+    if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); cotillonsK(p); KR.arrT = 0; setTimeout(() => { if (KR.on) musiqueK("titre"); }, 1200); KR.cielT = now + 2600; } }
     majKart(p, dt); if (dt > 0 && (p.moi || p.bot || p.vu)) fxK(p, dt); }
   if (KC.cm) KC.cm.emissive.setHSL((t / 2400) % 1, .9, .3);
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = cs.pos.y + .8 + Math.sin(t / 300 + cs.s) * .1; }
@@ -827,7 +827,7 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
 function fermerHUD() { if (KR.hud) { KR.hud.remove(); KR.hud = null; } document.body.classList.remove("en-course"); if (M && M.manMenu && M.manMenu.d && M.manMenu.d.id === "kFin") M.manMenu = null; for (const k in KT) KT[k] = 0; const f = document.getElementById("kFin"); if (f) f.remove(); KR.podium = false; }
 function majHUD(t) { const d = KR.hud, p = KR.moi; if (!d || !p) return; const now = Date.now(), q = d.querySelector.bind(d);
   const rang = classement().indexOf(p) + 1; q("#kPos").textContent = rang + (rang === 1 ? "er" : "e") + " / " + KR.pil.length;
-  q("#kTour").textContent = "Tour " + Math.max(1, Math.min(KC.tours, p.tour + 1)) + " / " + KC.tours; if (p.tour === KC.tours - 1 && !KR.dernierVu && !p.fini) { KR.dernierVu = true; banniereK("DERNIER TOUR !", "Par les toits… attention au dragon 🐉"); sonK("dernier"); } q("#kObj").textContent = p.objet ? OBJETS_K[p.objet] + (p.objet === "cafe" ? "×" + (p.cafes || 3) : "") : ""; { const cr = q("#kCreme"); if (cr) cr.style.opacity = p.creme > 0 ? Math.min(.82, p.creme / 1.4) : 0; }
+  q("#kTour").textContent = "Tour " + Math.max(1, Math.min(KC.tours, p.tour + 1)) + " / " + KC.tours; if (p.tour === KC.tours - 1 && !KR.dernierVu && !p.fini) { KR.dernierVu = true; banniereK("DERNIER TOUR !", "Par les toits… attention au dragon 🐉"); sonK("dernier"); MUS.tempo = 1.14; } q("#kObj").textContent = p.objet ? OBJETS_K[p.objet] + (p.objet === "cafe" ? "×" + (p.cafes || 3) : "") : ""; { const cr = q("#kCreme"); if (cr) cr.style.opacity = p.creme > 0 ? Math.min(.82, p.creme / 1.4) : 0; }
   const ms = p.fini || Math.max(0, now - KR.t0); q("#kChrono").textContent = chronoK(ms);
   const r = Math.ceil((KR.t0 - now) / 1000), dc = q("#kDecompte"), txt = r > 0 ? (r > 3 ? "" : String(r)) : now - KR.t0 < 900 ? "GO !" : ""; if (dc.dataset.v !== txt) { dc.dataset.v = txt; dc.textContent = txt; dc.style.color = txt === "GO !" ? "#7dff5a" : "#ffd23a"; dc.style.animation = "none"; void dc.offsetWidth; if (txt) dc.style.animation = "kPop .6s ease-out"; }
   if (r > 3) dc.dataset.v = "x", q("#kDecompte").innerHTML = `<div style="font:700 22px Arial;text-align:center;-webkit-text-stroke:0;color:#fff;text-shadow:0 2px 4px #000">Départ dans ${r} s<br><small style="font-size:15px">les autres peuvent encore rejoindre la grille</small></div>`;
@@ -966,17 +966,57 @@ function cameraCeremonie(cam, dt) { const t = KR.cer.t, a = .55 + Math.sin(t * .
   const voulu = cv4.set(POD.x + Math.sin(a) * r, h, POD.z + Math.cos(a) * r); cam.position.lerp(voulu, KR.cerCam ? 1 - Math.exp(-dt * 3) : 1); KR.cerCam = true;
   cam.lookAt(POD.x, 1.5, POD.z); cam.fov += (50 - cam.fov) * Math.min(1, dt * 2); cam.updateProjectionMatrix(); }
 function finCeremonie() { clearTimeout(KR.cerFin); if (KR.cer) { KR.cer.G.parent && KR.cer.G.parent.remove(KR.cer.G); KR.cer = null; } KR.cerCam = false; const b = document.getElementById("kCer"); if (b) b.remove(); }
-function podiumK() { KR.podium = true; const d = document.createElement("div"); d.id = "kFin";
-  d.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:21;background:rgba(10,14,34,.94);border:3px solid #ffd23a;border-radius:16px;padding:16px 20px;color:#fff;font:16px Arial;min-width:260px;max-width:88%";
-  const L2 = classement(); let rec = null; try { rec = JSON.parse(localStorage.getItem("karts-record") || "null"); } catch (e) {}
-  d.innerHTML = `<div style="font:900 24px 'Arial Black',Arial;color:#ffd23a;text-align:center;margin-bottom:8px">🏆 CLASSEMENT</div>` +
-    L2.map((p, i) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:3px 0;${p.moi ? "color:#7ef0ff;font-weight:700" : ""}"><span>${["🥇", "🥈", "🥉"][i] || (i + 1) + "."} ${p.nom}</span><span style="font-family:'Courier New',monospace">${p.fini ? chronoK(p.fini) : "—"}</span></div>`).join("") +
-    (rec ? `<div style="margin-top:8px;text-align:center;opacity:.85">Ton record : ${chronoK(rec)}${KR.record ? " — nouveau record !" : ""}</div>` : "") +
-    `<div style="display:flex;gap:10px;justify-content:center;margin-top:12px"><button type="button" id="kRejouer" style="border:0;border-radius:99px;padding:9px 16px;background:#ffd23a;color:#14215a;font:900 15px Arial">Rejouer</button><button type="button" id="kSortir" style="border:0;border-radius:99px;padding:9px 16px;background:#3a3f55;color:#fff;font:700 15px Arial">Quitter</button></div>`;
-  for (const ev of ["pointerdown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
+/* le tableau des résultats : les lignes arrivent une à une, avec la place (or, argent, bronze), la tête du coureur, son nom, son temps,
+   l'écart avec le premier et les points gagnés ; notre ligne est mise en avant ; le record personnel ; Rejouer, Quitter */
+const POINTS_K = [15, 12, 10, 8, 7, 6, 5, 4];
+function podiumK() { KR.podium = true; const d = document.createElement("div"); d.id = "kFin"; const L2 = classement(), t1 = (L2[0] && L2[0].fini) || 0; let rec = null; try { rec = JSON.parse(localStorage.getItem("karts-record") || "null"); } catch (e) {}
+  d.style.cssText = "position:absolute;inset:0;z-index:21;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,rgba(30,60,140,.75),rgba(4,8,22,.92));font-family:Arial,sans-serif;color:#fff;user-select:none;-webkit-user-select:none";
+  const coulRang = i => i === 0 ? ["#fff3a0", "#e8a810"] : i === 1 ? ["#f4f6fa", "#9aa6b8"] : i === 2 ? ["#ffd0a0", "#c0702a"] : ["#ffffff", "#5a6a8a"];
+  d.innerHTML = `<style>@keyframes kLigne { from { transform: translateX(110%); opacity: 0 } to { transform: none; opacity: 1 } } @keyframes kMoi { 0%,100% { box-shadow: 0 0 0 3px #7ef0ff, 0 0 18px rgba(126,240,255,.6) } 50% { box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(126,240,255,.95) } }</style>
+    <div style="width:min(94vw,560px);max-height:96%;overflow:auto;padding:6px">
+      <div style="text-align:center;font:italic 900 40px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:2px #111;text-shadow:0 4px 0 #8a3a00,0 8px 16px rgba(0,0,0,.6);margin-bottom:10px">RÉSULTATS</div>
+      ${L2.map((p, i) => { const [c1, c2] = coulRang(i), ec = p.fini && t1 && i ? "+" + ((p.fini - t1) / 1000).toFixed(2) + " s" : "";
+        return `<div style="display:flex;align-items:center;gap:10px;margin:7px 0;padding:6px 12px 6px 6px;border-radius:14px;background:linear-gradient(90deg,${p.moi ? "rgba(40,140,200,.95)" : "rgba(20,32,70,.92)"},${p.moi ? "rgba(20,80,140,.9)" : "rgba(12,20,48,.88)"});border:2px solid rgba(255,255,255,.18);animation:kLigne .45s ${.15 + i * .22}s both cubic-bezier(.2,1.3,.4,1)${p.moi ? `,kMoi 1.2s ${1 + i * .22}s infinite` : ""}">
+          <div style="width:46px;text-align:center;font:italic 900 34px 'Arial Black',Arial;background:linear-gradient(${c1},${c2});-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.5px #111">${i + 1}</div>
+          <div style="width:58px;height:58px;border-radius:12px;background:linear-gradient(#ffffff22,#00000033);border:2px solid ${c2};display:grid;place-items:center;overflow:hidden;flex:none"><img data-t="${i}" alt="" style="max-width:56px;max-height:56px;object-fit:contain"></div>
+          <div style="flex:1;min-width:0"><div style="font:900 18px Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nom}${p.moi ? " <span style='font-size:12px;opacity:.85'>(toi)</span>" : ""}</div><div style="font:700 13px Arial;opacity:.75">${ec || (p.fini ? "Vainqueur" : "En course…")}</div></div>
+          <div style="text-align:right"><div style="font:900 20px 'Courier New',monospace">${p.fini ? chronoK(p.fini) : "—"}</div><div style="font:900 13px Arial;color:#ffd23a">+${POINTS_K[i] || 0} pts</div></div></div>`; }).join("")}
+      ${rec ? `<div style="margin-top:10px;text-align:center;font:700 15px Arial;opacity:.9">⏱️ Ton record : <b>${chronoK(rec)}</b>${KR.record ? ` <span style="color:#7dff5a">— nouveau record !</span>` : ""}</div>` : ""}
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:14px"><button type="button" id="kRejouer" style="border:3px solid #111;border-radius:16px;padding:10px 26px;background:linear-gradient(#ffe25a,#ff9a1a);color:#14234a;font:italic 900 20px 'Arial Black',Arial">↻ Rejouer</button><button type="button" id="kSortir" style="border:3px solid #111;border-radius:16px;padding:10px 22px;background:#3a3f55;color:#fff;font:900 18px Arial">Quitter</button></div></div>`;
+  // les têtes : la photo du bonhomme, ou le personnage choisi
+  L2.forEach((p, i) => { const im = d.querySelector(`img[data-t="${i}"]`), T = p.teteInfo; if (!im) return; if (T && T.teteUrl && !T.tete_v) im.src = T.teteUrl; else if (T) chargerTete(T.numero, T.tete_v, T.teteUrl).then(x => { if (x) im.src = x.src; else im.replaceWith(Object.assign(document.createElement("div"), { textContent: "🏎️", style: "font-size:30px" })); }).catch(() => {}); });
+  for (const ev of ["pointerdown", "click", "touchstart"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); M.manMenu = { d };
+  [523, 659, 784].forEach((f, i) => setTimeout(() => sonK("bip"), 200 + i * 220));
   d.querySelector("#kRejouer").onclick = () => { d.remove(); quitterCourse(); KR.attente = null; setTimeout(lancerCourse, 50); };
   d.querySelector("#kSortir").onclick = () => { d.remove(); quitterCourse(); }; }
+
+/* ---------- les musiques de NF Kart : composées pour le jeu, jouées par le navigateur (sans fichier) ----------
+   « titre » : joyeuse et sautillante (la page de garde, le choix du pilote, la fin de course) ; « course » : rapide et entraînante (elle accélère au dernier tour) */
+const MUS_K = (() => { const n = s2 => { if (!s2 || s2 === "-") return null; const m = s2.match(/^([A-G])(#?)(\d)$/), b = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] ? 1 : 0); return 440 * Math.pow(2, (b + (+m[3] + 1) * 12 - 69) / 12); };
+  const seq = txt => { const out = []; for (const tok of txt.trim().split(/\s+/)) { const [no, l] = tok.split(":"); out.push(n(no)); for (let i = 1; i < +l; i++) out.push(undefined); } return out; };   // (une note, puis sa durée en doubles croches)
+  return {
+    titre: { bpm: 128, lead: seq("E5:2 G5:2 C6:2 G5:2 A5:4 G5:2 E5:2 F5:2 A5:2 D6:2 A5:2 G5:6 -:2 E5:2 G5:2 C6:2 E6:2 D6:2 C6:2 A5:2 G5:2 F5:2 E5:2 D5:2 G5:2 C5:6 -:2"),
+      basse: seq("C3:4 G2:4 C3:4 G2:4 D3:4 A2:4 G2:4 D3:4 C3:4 G2:4 A2:4 E3:4 F2:4 C3:4 G2:4 G2:4"), arp: [[60, 64, 67], [62, 65, 69], [60, 64, 69], [65, 67, 71]], bat: "titre" },
+    course: { bpm: 150, lead: seq("A4:1 C5:1 E5:2 A5:2 G5:2 E5:2 D5:2 C5:2 D5:2 E5:3 E5:1 G5:2 E5:2 D5:4 C5:2 B4:2 F5:1 A5:1 C6:2 A5:2 F5:2 G5:2 B5:2 D6:2 B5:2 C6:2 B5:2 A5:2 G5:2 E5:4 -:2 E5:1 G5:1"),
+      basse: seq("A2:2 A3:2 A2:2 A3:2 A2:2 A3:2 G2:2 G3:2 E2:2 E3:2 E2:2 E3:2 G2:2 G3:2 B2:2 B3:2 F2:2 F3:2 F2:2 F3:2 G2:2 G3:2 G2:2 G3:2 A2:2 A3:2 G2:2 G3:2 E2:2 E3:2 E2:2 E3:2"), arp: [[57, 60, 64], [52, 55, 59], [53, 57, 60], [55, 59, 62]], bat: "course" } }; })();
+const MUS = { nom: null, timer: 0, pas: 0, t: 0, gain: null, tempo: 1 };
+function musiqueK(nom) { const a = audioK(); if (!a) return; if (MUS.nom === nom) return; arreterMusique(true);
+  const T = MUS_K[nom]; if (!T) return; MUS.nom = nom; MUS.pas = 0; MUS.tempo = 1; MUS.gain = a.createGain(); MUS.gain.gain.value = 0; MUS.gain.connect(a.destination); MUS.gain.gain.linearRampToValueAtTime(nom === "course" ? .14 : .16, a.currentTime + .6); MUS.t = a.currentTime + .1;
+  const note = (f, t0, d, type, v) => { if (!f) return; const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + .01); g.gain.setTargetAtTime(v * .55, t0 + .03, .06); g.gain.setTargetAtTime(0, t0 + d * .92, .03); o.connect(g); g.connect(MUS.gain); o.start(t0); o.stop(t0 + d + .15); };
+  const bruit = (t0, d, v, hp) => { const b = a.createBuffer(1, Math.max(1, a.sampleRate * d), a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * (1 - i / c.length); const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "highpass"; f.frequency.value = hp; g.gain.value = v; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(MUS.gain); s2.start(t0); };
+  const kick = t0 => { const o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(150, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + .12); g.gain.setValueAtTime(.9, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + .16); o.connect(g); g.connect(MUS.gain); o.start(t0); o.stop(t0 + .2); };
+  MUS.timer = setInterval(() => { if (!MUS.gain) return; const L = T.lead.length;
+    while (MUS.t < a.currentTime + .2) { const p = MUS.pas % L, dt = 60 / (T.bpm * MUS.tempo) / 4, t0 = MUS.t, mesure = Math.floor(p / 16) % 4;
+      // (la mélodie, la basse : chaque note dure jusqu'à la suivante)
+      for (const [voix, type, v, oct] of [[T.lead, "square", .32, 1], [T.basse, "triangle", .55, 1]]) { const f = voix[p]; if (f) { let k = 1; while (voix[(p + k) % L] === undefined && k < 16) k++; note(f * oct, t0, dt * k, type, v); } }
+      // (l'arpège, tout doux, en doubles croches)
+      const acc = T.arp[mesure]; note(440 * Math.pow(2, (acc[p % 3] + 12 - 69) / 12), t0, dt * .9, "square", .07);
+      // (la batterie)
+      const q = p % 16; if (T.bat === "course") { if (q % 4 === 0 || q === 10) kick(t0); if (q === 4 || q === 12) bruit(t0, .12, .35, 1200); if (q % 2 === 0) bruit(t0, .03, .12, 7000); }
+      else { if (q % 8 === 0) kick(t0); if (q === 4 || q === 12) bruit(t0, .09, .25, 1500); if (q % 4 === 2) bruit(t0, .025, .08, 8000); }
+      MUS.pas++; MUS.t += dt; } }, 30); }
+function arreterMusique(vite) { const a = kAudio; clearInterval(MUS.timer); MUS.timer = 0; if (MUS.gain && a) { const g = MUS.gain; g.gain.cancelScheduledValues(a.currentTime); g.gain.setTargetAtTime(0, a.currentTime, vite ? .05 : .3); setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 1500); } MUS.gain = null; MUS.nom = null; }
 
 /* ---------- les sons (sans fichier : le moteur, les bips, la sirène) ---------- */
 let kAudio = null, kMoteur = null;
@@ -987,7 +1027,7 @@ function moteurK(n) { const a = audioK(); if (!a) return;
   if (!KR.on && n === 0) { try { kMoteur.o.stop(); kMoteur.o2.stop(); } catch (e) {} kMoteur = null; } }
 function sonK(q) { const a = audioK(); if (!a) return; const t0 = a.currentTime + .01;
   const bip = (f, d, type = "square", v = .1, dt = 0) => { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0 + dt); g.gain.setValueAtTime(v, t0 + dt); g.gain.exponentialRampToValueAtTime(.001, t0 + dt + d); o.connect(g); g.connect(a.destination); o.start(t0 + dt); o.stop(t0 + dt + d + .02); return o; };
-  if (q === "bip") bip(660, .25); else if (q === "go") bip(1320, .6);
+  if (q === "bip") { bip(523, .28, "square", .3); bip(1046, .28, "triangle", .12); } else if (q === "go") { bip(1046, .75, "square", .32); bip(1568, .75, "triangle", .14); }
   else if (q === "caisse") { bip(880, .08, "square", .08); bip(1175, .08, "square", .08, .08); bip(1568, .12, "square", .08, .16); }
   else if (q === "aie") { const o = bip(400, .6, "sawtooth", .12); o.frequency.exponentialRampToValueAtTime(80, t0 + .6); }
   else if (q === "saut") { const o = bip(300, .12, "triangle", .07); o.frequency.exponentialRampToValueAtTime(600, t0 + .12); }
@@ -1047,5 +1087,5 @@ function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse();
   { const [x0, z0] = GRILLE_K, h = (x, z) => { try { return M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { x, y: 0, z } }, info: {} }) || 0 : 0; } catch (e) { return 0; } }; let y = 0; for (const [a, b] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]]) y = Math.max(y, h(x0 + a, z0 + b)); rond.position.set(-2.4, y + .03, -1.4); }   // (le cercle passe sur le trottoir : posé à la hauteur du plus haut) g.add(rond);
   M.scene.add(g); KC.pan = g; }
 
-KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK;   // (pour les essais)
+KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK;   // (pour les essais)
 ({ entrerCourse, quitterCourse, majCourse, recuK, presGrille, decorCourse, KR });
