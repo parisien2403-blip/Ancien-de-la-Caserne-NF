@@ -1254,8 +1254,9 @@ function sireneK() { const a = audioK(); if (!a) return; const o = a.createOscil
 const GRILLE_K = [-9.9, -9.8];   // (devant le garage du milieu, à gauche en regardant l'horloge : un cercle au sol devant le car de la Gendarmerie)
 const FAMILLE_K = [2, 3, 4];   // (la course est ouverte à l'administrateur et à la famille : les mêmes badges que les invités de l'appartement)
 const adminK = () => !!(M && M.ctx);   /* (la course est ouverte à tout le monde) */
-const AFFICHE_K = { x: -9.5, z: -18, y: 2.7, l: 3.4 };   // (l'affiche NF Kart, sur le mur du bâtiment de l'horloge, juste à côté des garages des bus)
-const presGrille = (x, z) => adminK() && Math.abs(x - AFFICHE_K.x) < AFFICHE_K.l / 2 + .6 && z > AFFICHE_K.z && z < AFFICHE_K.z + 3.2;
+const AFFICHE_K = { x: -11, z: -15, rot: 1.04, l: 2.8 };   // (le panneau NF Kart : sur pieds, devant le garage des bus, tourné vers la cour — à l'écart de la piste)
+const devantAffiche = () => ({ x: AFFICHE_K.x + Math.sin(AFFICHE_K.rot) * 1.8, z: AFFICHE_K.z + Math.cos(AFFICHE_K.rot) * 1.8 });
+const presGrille = (x, z) => { const d = devantAffiche(); return adminK() && Math.hypot(x - d.x, z - d.z) < 2.2; };
 // (pendant la course, les voitures garées sur le circuit s'effacent ; elles reviennent après)
 function cacherVoitures(on) {
   if (!on) { for (const [attr, copie] of KR.geoCachees || []) { attr.array.set(copie); attr.needsUpdate = true; } KR.geoCachees = null; return; }
@@ -1278,16 +1279,20 @@ function cacherVoitures(on) {
     if (copie) { pos.needsUpdate = true; KR.geoCachees.push([pos, copie]); } }); }
 // (dans la cour d'honneur : le panneau de la grille de départ)
 function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse(); if (!M || M.lieu !== "grande" || (M.L && (M.L.apo || M.L.sh)) || !adminK()) return; if (KC.pan && KC.pan.parent === M.scene) return;
-  // l'affiche NF Kart, encadrée, accrochée au mur ; un petit spot au-dessus ; une plaque dessous qui invite à s'approcher
-  const A = AFFICHE_K, h = A.l * 768 / 1376, g = new THREE.Group(); g.position.set(A.x, A.y, A.z + .06);
+  // le panneau NF Kart : l'affiche encadrée sur deux pieds, une petite lampe au-dessus, une plaque dessous qui invite à s'approcher
+  const A = AFFICHE_K, h = A.l * 768 / 1376, bas = 1.15, g = new THREE.Group(); let y0 = 0; try { y0 = M.L.hauteur ? M.L.hauteur(A.x, A.z, { g: { position: { x: A.x, y: 0, z: A.z } }, info: {} }) || 0 : 0; } catch (e) { }
+  g.position.set(A.x, y0, A.z); g.rotation.y = A.rot;
   const t = new THREE.TextureLoader().load("images/karts/titre.jpg"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  const img = new THREE.Mesh(new THREE.PlaneGeometry(A.l, h), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); img.position.z = .05; g.add(img);
   const cadreM = new THREE.MeshStandardMaterial({ color: 0x1a1a22, metalness: .4, roughness: .45 }), orM = new THREE.MeshStandardMaterial({ color: 0xe8b830, metalness: .8, roughness: .3 });
-  for (const [x, y, w2, h2] of [[0, h / 2 + .06, A.l + .24, .12], [0, -h / 2 - .06, A.l + .24, .12], [-A.l / 2 - .06, 0, .12, h], [A.l / 2 + .06, 0, .12, h]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(w2, h2, .1), cadreM); c.position.set(x, y, .03); g.add(c); const l = new THREE.Mesh(new THREE.BoxGeometry(w2 * (w2 > h2 ? 1 : .3), h2 * (h2 > w2 ? 1 : .3), .02), orM); l.position.set(x, y, .085); g.add(l); }
+  const yc = bas + h / 2, dos = new THREE.Mesh(new THREE.BoxGeometry(A.l + .24, h + .24, .1), cadreM); dos.position.set(0, yc, 0); g.add(dos);
+  const img = new THREE.Mesh(new THREE.PlaneGeometry(A.l, h), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); img.position.set(0, yc, .056); g.add(img);
+  const dosImg = new THREE.Mesh(new THREE.PlaneGeometry(A.l, h), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); dosImg.position.set(0, yc, -.056); dosImg.rotation.y = Math.PI; g.add(dosImg);   /* (l'affiche des deux côtés) */
+  for (const [x, y, w2, h2] of [[0, h / 2 + .1, A.l + .24, .04], [0, -h / 2 - .1, A.l + .24, .04], [-A.l / 2 - .1, 0, .04, h + .24], [A.l / 2 + .1, 0, .04, h + .24]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(w2, h2, .12), orM); l.position.set(x, yc + y, 0); g.add(l); }
+  for (const sx of [-1, 1]) { const pied = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, bas + h, 10), cadreM); pied.position.set(sx * (A.l / 2 - .2), (bas + h) / 2, -.09); g.add(pied); const sab = new THREE.Mesh(new THREE.CylinderGeometry(.16, .2, .1, 12), cadreM); sab.position.set(sx * (A.l / 2 - .2), .05, -.09); g.add(sab); }
   const plq = toile(512, 96, x => { x.fillStyle = "#14234a"; x.fillRect(0, 0, 512, 96); x.strokeStyle = "#e8b830"; x.lineWidth = 6; x.strokeRect(3, 3, 506, 90); x.fillStyle = "#ffd23a"; x.font = "900 40px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🏁 APPROCHE-TOI POUR JOUER", 256, 50); });
-  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .36), new THREE.MeshBasicMaterial({ map: tex(plq), toneMapped: false })); plaque.position.set(0, -h / 2 - .45, .05); g.add(plaque);
-  const lampe = new THREE.Mesh(new THREE.CylinderGeometry(.06, .14, .22, 12), cadreM); lampe.rotation.x = Math.PI / 2.6; lampe.position.set(0, h / 2 + .32, .35); g.add(lampe);
-  const lueur = new THREE.Mesh(new THREE.PlaneGeometry(A.l + 1.2, h + 1.4), new THREE.MeshBasicMaterial({ map: texPoint(), color: 0xffe0a0, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending })); lueur.position.z = .02; g.add(lueur);
+  const plaque = new THREE.Mesh(new THREE.BoxGeometry(1.9, .36, .05), [cadreM, cadreM, cadreM, cadreM, new THREE.MeshBasicMaterial({ map: tex(plq), toneMapped: false }), cadreM]); plaque.position.set(0, bas - .32, -.02); g.add(plaque);
+  const lampe = new THREE.Mesh(new THREE.CylinderGeometry(.05, .12, .2, 12), cadreM); lampe.rotation.x = Math.PI / 2.6; lampe.position.set(0, bas + h + .3, .3); g.add(lampe); const bras = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .4), cadreM); bras.position.set(0, bas + h + .22, .12); g.add(bras);
+  const lueur = new THREE.Mesh(new THREE.PlaneGeometry(A.l + 1.2, h + 1.4), new THREE.MeshBasicMaterial({ map: texPoint(), color: 0xffe0a0, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending })); lueur.position.set(0, yc, .07); g.add(lueur);
   M.scene.add(g); KC.pan = g; }
 
 KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK; KR.cielK = cielK; KR.RC = THREE.Raycaster; KR.majCer = majCeremonie; KR.MUS = MUS;   // (pour les essais)
