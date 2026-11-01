@@ -8,7 +8,8 @@
    Seul : contre quatre karts de la caserne. À plusieurs : ceux qui viennent à la grille de départ (dans la cour d'honneur) pendant le compte à rebours courent ensemble.
    Ce fichier n'est pas un module : la matrice le charge et l'exécute chez elle (eval direct) ; il se sert de M, THREE, tex, toile, envoyerWS… */
 
-const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 2, vmax: 17, grilleT: 12000 };
+const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 2, vmax: 16, grilleT: 12000, ech: .62 };   // (ech : les karts et leurs pilotes, en plus petit — la piste est étroite sous les porches et dans les allées)
+const EK = KC.ech;
 /* le tracé : des points de passage (x, hauteur, z, largeur de la piste), reliés par une courbe douce */
 const VP = 2.3, VA = 3.7, VC = 5;   // (les largeurs : une voie sous les porches, les allées autour des bâtiments, la cour d'honneur et les toits)
 const TRACE_K = [
@@ -117,7 +118,7 @@ function fabriquerKart(couleur, nom) { const g = new THREE.Group(), c = new THRE
   const vis = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 8, -Math.PI / 2, Math.PI, Math.PI / 3, Math.PI / 3), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: .1, metalness: .6 })); vis.position.set(0, 1.28, -.05); vis.rotation.y = Math.PI; g.add(vis);
   // son nom au-dessus
   const et = toile(256, 48, x => { x.fillStyle = "rgba(0,0,0,.55)"; x.beginPath(); x.roundRect(0, 0, 256, 48, 14); x.fill(); x.fillStyle = "#fff"; x.font = "700 26px Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(nom.slice(0, 18), 128, 25); });
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(et), depthTest: false })); sp.scale.set(1.3, .25, 1); sp.position.y = 2.3; sp.renderOrder = 5; g.add(sp);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(et), depthTest: false })); sp.scale.set(1.3 / EK * .8, .25 / EK * .8, 1); sp.position.y = 2.3; sp.renderOrder = 5; g.add(sp);
   // le gyrophare (allumé quand il est invincible)
   const gy = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), new THREE.MeshBasicMaterial({ color: 0x2a5cff })); gy.position.set(0, 1.98, -.12); gy.visible = false; g.add(gy);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
@@ -127,12 +128,12 @@ function mettreTete(K, P) { if (!P) return; chargerTete(P.numero, P.tete_v, P.te
   const c = toile(img.width, img.height, x => x.drawImage(img, 0, 0)), h = .95, sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c), transparent: true, alphaTest: .05 }));
   sp.scale.set(h * img.width / img.height, h, 1); sp.position.set(0, 1.12 + h / 2 - .14, -.12); sp.renderOrder = 2; sp.center.set(.5, .5); K.g.add(sp); K.tete = sp; K.casque.visible = K.vis.visible = false; }).catch(() => {});
   if (P.couleur) K.corps.material.color.set(P.couleur); }   // (le blouson : la couleur de son bonhomme)
-function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); KC.scene.add(K.g); mettreTete(K, o.tete);
+function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale.setScalar(EK); KC.scene.add(K.g); mettreTete(K, o.tete);
   return { id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s - KC.L, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: .86 + Math.random() * .1 }; }
 
 /* ---------- la course : l'état, la grille, le compte à rebours ---------- */
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
-function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2.5 - r * 3.4, e = Math.min(1.2, largeur(s) / 2 - .85); return { s, d: c ? e : -e }; }
+function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2 - r * 2.3, e = Math.min(.9, largeur(s) / 2 - .6); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
 function entrerCourse() { if (KR.on || !M || M.lieu !== "grande" || !adminK()) return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
   const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
@@ -169,7 +170,7 @@ function commandesK() { const k = c => !!(typeof CLAV !== "undefined" && CLAV[c]
   return { dir, gaz: gaz ? 1 : 0, frein: frein ? 1 : 0, obj, dera }; }
 
 /* ---------- la conduite (la même pour nous, les karts de la caserne… et, de loin, pour les autres joueurs) ---------- */
-function conduire(p, c, dt) { const W2 = Math.max(.25, largeur(p.s) / 2 - .75);
+function conduire(p, c, dt) { const W2 = Math.max(.25, largeur(p.s) / 2 - (.6 * EK + .12));
   if (p.spin > 0) { p.spin -= dt; p.v *= Math.pow(.18, dt); p.tourne = (p.tourne || 0) + dt * 14; c = { dir: 0, gaz: 0, frein: 0 }; } else p.tourne = 0;
   let vmax = KC.vmax * (p.bot ? p.bv : 1) * (p.gyro > 0 ? 1.22 : 1) * (p.turbo > 0 ? 1.45 : 1) * (p.fumee > 0 ? .78 : 1);
   if (p.fini) { c = { dir: 0, gaz: 0, frein: 1 }; vmax *= .5; }
@@ -193,9 +194,9 @@ function majKart(p, dt) { const pos = surPiste(p.s, p.d, p.K.g.position), pente 
 
 /* ---------- les adversaires de la caserne (seul) ---------- */
 function piloteBot(p, dt) { const devant = p.s + 9, cap = capPiste(devant), cb = courbure(p.s + 4);
-  p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 2.6); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .9); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
+  p.voieT = (p.voieT || 0) - dt; if (p.voieT <= 0) { p.voieT = 2 + Math.random() * 3; p.voie = (Math.random() - .5) * Math.max(0, largeur(p.s + 12) - 1.8); } { const lim = Math.max(0, largeur(p.s + 9) / 2 - .6); p.voie = Math.max(-lim, Math.min(lim, p.voie)); }
   // (éviter une banane ou une flaque juste devant)
-  for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1.4) p.voie = o.d > 0 ? o.d - 2.2 : o.d + 2.2;
+  for (const o of KR.objets) if ((o.type === "banane" || o.type === "huile") && o.s > p.s && o.s - p.s < 12 && Math.abs(o.d - p.voie) < 1) p.voie = o.d > 0 ? o.d - 1.4 : o.d + 1.4;
   const vise = Math.atan2(-(p.voie - p.d), 9), voulu = cap + vise; const e = Math.atan2(Math.sin(voulu - p.h), Math.cos(voulu - p.h));
   const ralentir = cb > .55 && p.v > KC.vmax * .7; if (p.objet && Math.random() < dt * .35) utiliserObjet(p);
   return { dir: Math.max(-1, Math.min(1, -e * 2.2)), gaz: ralentir ? 0 : 1, frein: ralentir ? .4 : 0, dera: false }; }
@@ -211,13 +212,13 @@ function utiliserObjet(p) { const o = p.objet; if (!o) return; p.objet = null;
   majHUD(); }
 function poserObjet(o) { let m;
   if (o.type === "banane") { m = new THREE.Mesh(new THREE.TorusGeometry(.3, .1, 6, 12, Math.PI * 1.2), new THREE.MeshStandardMaterial({ color: 0xf5d13a, roughness: .5 })); m.rotation.x = -Math.PI / 2; }
-  else if (o.type === "huile") { m = new THREE.Mesh(new THREE.CircleGeometry(1.5, 20), new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: .05, metalness: .8, transparent: true, opacity: .9 })); m.rotation.x = -Math.PI / 2; }
+  else if (o.type === "huile") { m = new THREE.Mesh(new THREE.CircleGeometry(1.1, 20), new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: .05, metalness: .8, transparent: true, opacity: .9 })); m.rotation.x = -Math.PI / 2; }
   else if (o.type === "fumi") { m = new THREE.Group(); const mt = new THREE.MeshBasicMaterial({ color: 0xd8342a, transparent: true, opacity: .45, depthWrite: false }); for (let i = 0; i < 9; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(1 + Math.random() * .8, 10, 8), mt); b.position.set((Math.random() - .5) * 4, .8 + Math.random() * 1.8, (Math.random() - .5) * 3); m.add(b); } }
   else if (o.type === "boule") { m = new THREE.Mesh(new THREE.SphereGeometry(.28, 16, 12), new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: .9, roughness: .25 })); }
   o.m = m; KC.scene.add(m); surPiste(o.s, o.d, m.position); m.position.y += o.type === "boule" ? .3 : o.type === "huile" ? .08 : o.type === "fumi" ? 0 : .12; KR.objets.push(o); }
 function touche(p, o) { if (p.gyro > 0 || p.spin > 0) return false;
-  const ds = Math.abs(((p.s - o.s + KC.L * 1.5) % KC.L) - KC.L / 2), dd = Math.abs(p.d - o.d), r = o.type === "huile" ? 1.6 : o.type === "fumi" ? 2.6 : 1;
-  return ds < r && dd < r + .5; }
+  const ds = Math.abs(((p.s - o.s + KC.L * 1.5) % KC.L) - KC.L / 2), dd = Math.abs(p.d - o.d), r = o.type === "huile" ? 1.2 : o.type === "fumi" ? 2.4 : .75;
+  return ds < r && dd < r + .5 * EK; }
 function majObjets(dt) { const now = performance.now();
   for (const o of KR.objets) { o.vie -= dt;
     if (o.type === "boule") { o.s = (o.s + o.v * dt) % KC.L; surPiste(o.s, o.d, o.m.position); o.m.position.y += .3; o.m.rotation.x += dt * 12; }
@@ -239,7 +240,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   for (const p of KR.pil) { if (avant) { majKart(p, 0); continue; }
     if (p.moi) conduire(p, c, dt); else if (p.bot) conduire(p, piloteBot(p, dt), dt); else { /* un autre joueur : on avance sa dernière position */ p.s += p.v * dt; if (p.s >= KC.L) p.s -= KC.L; }
     // les caisses
-    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < 1.1 && Math.abs(p.d - cs.d) < 1.1) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
+    if (p.moi || p.bot) for (const cs of KC.caisses) if (cs.m.visible && Math.abs(p.s - cs.s) < .9 && Math.abs(p.d - cs.d) < .85) { cs.m.visible = false; cs.retour = now + 3500; if (!p.objet) { p.objet = tirerObjet(p); if (p.moi) { sonK("caisse"); majHUD(); } } }
     // l'arrivée
     if ((p.moi || p.bot) && !p.fini && p.tour >= KC.tours) { p.fini = now - KR.t0; if (p.moi) { envoyerWS({ t: "k_fin", temps: p.fini }); sonK("arrivee"); arriveeK(); } }
     majKart(p, dt); }
@@ -253,8 +254,8 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   if (KR.moi && KR.moi.fini && KR.pil.every(p => p.fini || (!p.bot && !p.moi && now - (p.vu || 0) > 8000)) && !KR.podium) podiumK(); }
 const cv3 = new THREE.Vector3(), cv4 = new THREE.Vector3(), cv5 = new THREE.Vector3();
 function cameraK(dt) { const p = KR.moi; if (!p || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera, f = cv3.set(Math.sin(p.h), 0, Math.cos(p.h));
-  const voulu = cv4.copy(p.K.g.position).addScaledVector(f, -5.6); voulu.y = Math.max(voulu.y + 2.5, surPiste(p.s - 5.6, p.d, cv5).y + 2.2);   /* (dans la descente : la piste, derrière, est plus haute que le kart ; la caméra reste au-dessus) */ const k = 1 - Math.exp(-dt * 7); cam.position.lerp(voulu, KR.camPrete ? k : 1); KR.camPrete = true;
-  cam.lookAt(p.K.g.position.x + f.x * 4, p.K.g.position.y + 1, p.K.g.position.z + f.z * 4); cam.fov = 68 + Math.min(10, Math.max(0, p.v - 12)); cam.updateProjectionMatrix(); }
+  const voulu = cv4.copy(p.K.g.position).addScaledVector(f, -4.1); voulu.y = Math.max(voulu.y + 1.85, surPiste(p.s - 4.1, p.d, cv5).y + 1.6);   /* (dans la descente : la piste, derrière, est plus haute que le kart ; la caméra reste au-dessus) */ const k = 1 - Math.exp(-dt * 7); cam.position.lerp(voulu, KR.camPrete ? k : 1); KR.camPrete = true;
+  cam.lookAt(p.K.g.position.x + f.x * 3.5, p.K.g.position.y + .7, p.K.g.position.z + f.z * 3.5); cam.fov = 68 + Math.min(10, Math.max(0, p.v - 12)); cam.updateProjectionMatrix(); }
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
 function recuK(m) { if (!M) return; const de = m.de;
