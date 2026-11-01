@@ -539,6 +539,11 @@ export class Compteur extends DurableObject {
       if (!["z_etat", "z_tir", "z_mord", "z_zombi", "z_ramasse", "z_equipe"].includes(m.t)) return;
       const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 30000) return;
       for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
+    } else if (typeof m.t === "string" && m.t.startsWith("k_") && a.lieu === "grande") {
+      // la course de karts de la cour d'honneur : l'annonce d'un départ, les positions, les objets lâchés, les arrivées… relayés aux autres joueurs de la cour
+      if (!["k_annonce", "k_rejoint", "k_pos", "k_obj", "k_fin", "k_part"].includes(m.t)) return;
+      const t = JSON.stringify({ ...m, de: a.numero }); if (t.length > 2000) return;
+      for (const [w] of this.presents(a.lieu, ws)) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "radio_prendre") {   // (tout le monde peut la ramasser)
       // la radio rouge : le premier qui la ramasse part seul à Silent Hill ; elle réapparaît aussitôt ailleurs, pour les autres
       const r = await this.radio(); if (r.lieu !== a.lieu) return;

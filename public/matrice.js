@@ -7834,7 +7834,9 @@ export async function ouvrir(ctx) {
       if (M.premiere && M.cine && !(M.gbCombat && !M.gbCombat.fini)) { const mo = M.gens.get(M.moiNum), cp = M.camera.position;   /* (à la première personne : si la caméra est restée à la place des yeux, on cache le bonhomme — sinon on verrait l'intérieur de sa tête) */
         if (mo) { const dans = Math.hypot(cp.x - mo.g.position.x, cp.z - mo.g.position.z) < .5 && Math.abs(cp.y - mo.g.position.y - 1.4) < 1;
           if (dans && mo.g.visible) { mo.g.visible = false; M.cacheFP = true; } else if (!dans && M.cacheFP) { mo.g.visible = true; M.cacheFP = false; } } }
-      if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else { M.cacheFP = false; placerCamera(false); }
+      if (!(M.premiere && protonFP())) M.camera.fov = M.cine && M.cine.fov ? M.cine.fov[M.camera.aspect < 1 ? 1 : 0] : M.camera.aspect < 1 ? 70 : 55;   /* (la scène a pu se terminer pendant son propre calcul) */ M.camera.updateProjectionMatrix(); } else if (!M.course) { M.cacheFP = false; placerCamera(false); }
+    if (MD.course) MD.course.decorCourse(); else if (M.lieu === "grande" && !MD_P.course) chargerMonde("course").catch(() => {});   // (les 24 tours de la caserne : la piste, en décor, dans la cour)
+    if (M.course && MD.course) MD.course.majCourse(t, dt);
     if (M.lieu === "hv1955" && !M.L.kingston && !M.cine && M.L.delorean && M.L.delorean.visible && !M.gens.has(DOC) && MD.bttf) MD.bttf.ajouterDoc(-8.7, 15.6);   // (Doc attend près de la DeLorean)
     if (M.L.placerCour) M.L.placerCour(M.camera.position.z);
     if (!M.cine && M.armeGB) M.armeGB.visible = false;
@@ -11340,6 +11342,7 @@ function manette() {
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
+  if (M.course) { M.course.pad = g.clavier ? null : g; fin(); return; }   // (la course de karts : la manette conduit le kart)
   if (moi.info.joue) { fin(); return; }   // (on joue à la console, au flipper… : la manette est à eux)
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
   if (M.lieu === "kingston" && M.L.tirerFleche && !M.cine && !M.vfMenu && !M.manMenu && (tire || appui(2))) M.L.tirerFleche();   // (Kingston Falls : Gizmo tire — gâchette droite, X, ou Espace au clavier ; une flèche toutes les 0,45 s)
@@ -11919,6 +11922,7 @@ function chercherAction(t) {
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.L.afficheGB && Math.hypot(x - AFFICHE_GB.x, z - (AFFICHE_GB.z + .7)) < 1.25) a = { type: "gbAffiche", label: "👻 As-tu peur des fantômes ?" };   // (l'affiche du film, au mess)
     else if (M.L.videoFutur && M.lieu === "rue" && Math.abs(x - M.L.videoFutur.x) < 4.6 && z < M.L.videoFutur.z && z > M.L.videoFutur.z - 3) a = { type: "videoFutur", label: "📼 Louer un film" };   // (le Video Futur, en face de la caserne)
+    else if (M.lieu === "grande" && !M.course && MD.course && MD.course.presGrille(x, z)) a = { type: "karts", label: "🏁 Course de karts" };   // (les 24 tours de la caserne : la grille de départ, dans la cour)
     else if (M.L.afficheLB && Math.hypot(x - AFFICHE_GB.x, z - (M.L.afficheLB.position.z - .7)) < 1.25) a = { type: "lbAffiche", label: "🧛 Croyez-vous aux vampires ?" };   // (l'affiche de Génération perdue, en face : ouverte à tous, une personne à la fois)
     else if (M.almMesh && M.almMesh.visible && Math.hypot(x - M.alm.x, z - M.alm.z) < Math.max(.55, (M.alm.taille || .3) * .9)) a = { type: "almanach", label: "📕 Ramasser" };
     else if (M.radioObj && M.radio && Math.hypot(x - M.radio.x, z - M.radio.z) < 1.1) a = { type: "radio", label: "📻 Ramasser la radio" };
@@ -11971,6 +11975,7 @@ function asseoir(p, i) {
 export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
+  if (a.type === "karts") { chargerMonde("course").then(C => C.entrerCourse()).catch(e => console.warn("course", e)); return; }
   if (a.type === "fermeRE") { if (!M.fermeDitT || performance.now() - M.fermeDitT > 2500) { M.fermeDitT = performance.now(); verrouRE(); dire(M.moiNum, a.dit || "C'est fermé… de l'autre côté."); } return; }
   if (a.type === "installer") { installer(moi, a); return; }
   if (a.type === "leverAppart") { seLeverAppart(moi); return; }
@@ -13853,6 +13858,7 @@ function connecter() {
     else if (m.t === "slow_fin") { for (const n of [m.a, m.b]) { const p = M.gens.get(n); if (p) p.info.slow = null; } }
     else if (m.t === "z_chef") { const avant = estChefZ(); M.chefZ = m.numero; if (!avant && estChefZ()) { M.zInit = !!(M.zomb && M.zomb.size);   /* (sans zombies connus, le nouveau chef en lâche une horde neuve, au lieu de tout vider) */ for (const z of M.zomb ? M.zomb.values() : []) { z.x = z.tx; z.z = z.tz; } } }
     else if (m.t === "z_etat") recevoirEtatZ(m.l || []);
+    else if (typeof m.t === "string" && m.t.startsWith("k_")) chargerMonde("course").then(C => C.recuK(m)).catch(() => {});   // (la course de karts)
     else if (m.t === "z_tir") { const z = M.zomb && M.zomb.get(m.id), p = M.gens.get(Number.isInteger(m.eq) ? FANTOME(m.de, m.eq) : m.de); if (p) { p.tirT = performance.now(); if (z && Number.isInteger(m.eq)) eclairDuCanon(p, +m.dx || 0, +m.dz || 0); } sonTir(.55);
       if (z) { impactZ(z, +m.dx || 0, +m.dz || 0); if (estChefZ()) blesserZ(z, +m.dx || 0, +m.dz || 0); } }
     else if (m.t === "z_mord") { if (m.numero === M.moiNum) { if (Number.isInteger(m.eq)) blesserEquipier(m.eq, m.d === 2 ? 2 : 1, +m.x || 0, +m.z || 0); else subirMorsure(+m.x || 0, +m.z || 0, m.d === 2 ? 2 : 1); } }
