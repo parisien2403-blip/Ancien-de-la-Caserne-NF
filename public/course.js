@@ -134,7 +134,7 @@ function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); KC.scene.
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
 function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.L - 2.5 - r * 3.4, e = Math.min(1.2, largeur(s) / 2 - .85); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
-function entrerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
+function entrerCourse() { if (KR.on || !M || M.lieu !== "grande" || !adminK()) return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true);
   const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
   const t0 = ann ? ann.t0 : Date.now() + KC.grilleT; KR.t0 = t0; KR.on = true; KR.fin = []; KR.objets = []; KR.obs = [];
   KR.humains = ann ? [...ann.ids] : []; if (!KR.humains.includes(M.moiNum)) KR.humains.push(M.moiNum);
@@ -258,7 +258,7 @@ function cameraK(dt) { const p = KR.moi; if (!p || (M.rendu && M.rendu.xr.isPres
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
 function recuK(m) { if (!M) return; const de = m.de;
-  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de] }; if (M.lieu === "grande") bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : va sur la grille de départ pour la rejoindre !", 5000); } return; }
+  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de] }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : va sur la grille de départ pour la rejoindre !", 5000); } return; }
   if (m.t === "k_rejoint") { if (KR.attente && KR.attente.t0 === m.t0 && !KR.attente.ids.includes(de)) KR.attente.ids.push(de);
     if (KR.on && m.t0 === KR.t0 && !KR.humains.includes(de)) { KR.humains.push(de); if (Date.now() < KR.t0) placerGrille(); } return; }
   if (!KR.on) return; const p = KR.pil.find(q => q.id === de);
@@ -333,9 +333,10 @@ function sonK(q) { const a = audioK(); if (!a) return; const t0 = a.currentTime 
 function sireneK() { const a = audioK(); if (!a) return; const o = a.createOscillator(), g = a.createGain(), t0 = a.currentTime; o.type = "square"; g.gain.value = .05;
   for (let i = 0; i < 12; i++) o.frequency.setValueAtTime(i % 2 ? 640 : 960, t0 + i * .5); g.gain.setValueAtTime(.05, t0 + 5.6); g.gain.linearRampToValueAtTime(0, t0 + 6); o.connect(g); g.connect(a.destination); o.start(); o.stop(t0 + 6.1); }
 
-/* la grille de départ : on vient la chercher dans la cour d'honneur, devant le porche (un panneau l'indique) ; la course elle-même part du fond de la caserne */
-const GRILLE_K = [0, 8.5];
-const presGrille = (x, z) => Math.hypot(x - GRILLE_K[0], z - GRILLE_K[1]) < 2.2;
+/* la grille de départ : on vient la chercher dans la cour d'honneur, devant un garage (un panneau et un cercle l'indiquent) ; la course elle-même part du fond de la caserne */
+const GRILLE_K = [-9.9, -9.8];   // (devant le garage du milieu, à gauche en regardant l'horloge : un cercle au sol devant le car de la Gendarmerie)
+const adminK = () => !!(M && M.ctx && M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (pour l'instant : l'administrateur seul)
+const presGrille = (x, z) => adminK() && Math.hypot(x - GRILLE_K[0], z - GRILLE_K[1]) < 2;
 // (pendant la course, les voitures garées sur le circuit s'effacent ; elles reviennent après)
 function cacherVoitures(on) { if (!on) { for (const o of KR.cachees || []) o.visible = true; KR.cachees = null; return; } if (!M || !M.L || !M.scene) return;
   const R = (M.L.voitures || []).filter(([a, b, c, d]) => { const x = (a + b) / 2, z = (c + d) / 2, r = Math.hypot(b - a, d - c) / 2;
@@ -344,13 +345,14 @@ function cacherVoitures(on) { if (!on) { for (const o of KR.cachees || []) o.vis
   for (const o of M.scene.children) { if (o === KC.G || !(o.isMesh || o.isGroup) || !o.visible || o.userData.avatar) continue; if (o.isMesh) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); sp.copy(o.geometry.boundingSphere).applyMatrix4(o.matrixWorld); } else new THREE.Box3().setFromObject(o).getBoundingSphere(sp);
     if (sp.radius > 3 || sp.center.y > 2.4) continue; if (R.some(([a, b, c, d]) => sp.center.x > a - .3 && sp.center.x < b + .3 && sp.center.z > c - .3 && sp.center.z < d + .3)) { o.visible = false; KR.cachees.push(o); } } }
 // (dans la cour d'honneur : le panneau de la grille de départ)
-function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse(); if (!M || M.lieu !== "grande" || (M.L && (M.L.apo || M.L.sh))) return; if (KC.pan && KC.pan.parent === M.scene) return;
-  const g = new THREE.Group(); g.position.set(GRILLE_K[0] + 2.6, 0, GRILLE_K[1]); const fer = new THREE.MeshStandardMaterial({ color: 0x24262c, metalness: .5, roughness: .4 });
-  const mat = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 2.6, 8), fer); mat.position.y = 1.3; g.add(mat);
+function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse(); if (!M || M.lieu !== "grande" || (M.L && (M.L.apo || M.L.sh)) || !adminK()) return; if (KC.pan && KC.pan.parent === M.scene) return;
+  const g = new THREE.Group(); g.position.set(GRILLE_K[0] + 2.4, 0, GRILLE_K[1] + 1.4); const fer = new THREE.MeshStandardMaterial({ color: 0x24262c, metalness: .5, roughness: .4 });
+  const mat = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 2.2, 8), fer); mat.position.y = 1.1; g.add(mat);
   const c = toile(512, 256, x => { x.fillStyle = "#14234a"; x.fillRect(0, 0, 512, 256); for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? "#111" : "#f4f4f4"; x.fillRect(i * 32, 0, 32, 22); x.fillRect(i * 32 + (i % 2 ? -32 : 32) * 0, 234, 32, 22); }
     x.fillStyle = "#ffd23a"; x.font = "900 54px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🏁 KARTS", 256, 92); x.fillStyle = "#fff"; x.font = "700 30px Arial"; x.fillText("Les 24 tours de la caserne", 256, 150); x.font = "700 24px Arial"; x.fillStyle = "#cfe3ff"; x.fillText("Viens ici pour courir", 256, 196); });
   const m = new THREE.MeshBasicMaterial({ map: tex(c) }), pan = new THREE.Mesh(new THREE.BoxGeometry(1.7, .85, .05), [fer, fer, fer, fer, m, m]); pan.position.y = 2.6; g.add(pan);
-  const rond = new THREE.Mesh(new THREE.RingGeometry(1.6, 2, 40), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .55, depthWrite: false })); rond.rotation.x = -Math.PI / 2; rond.position.set(-2.6, .03, 0); g.add(rond);
+  const rond = new THREE.Mesh(new THREE.RingGeometry(1.6, 2, 40), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .55, depthWrite: false })); rond.rotation.x = -Math.PI / 2;
+  { const [x0, z0] = GRILLE_K, h = (x, z) => { try { return M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { x, y: 0, z } }, info: {} }) || 0 : 0; } catch (e) { return 0; } }; let y = 0; for (const [a, b] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]]) y = Math.max(y, h(x0 + a, z0 + b)); rond.position.set(-2.4, y + .03, -1.4); }   // (le cercle passe sur le trottoir : posé à la hauteur du plus haut) g.add(rond);
   M.scene.add(g); KC.pan = g; }
 
 KR.KC = KC; KR.capPiste = capPiste;   // (pour les essais)
