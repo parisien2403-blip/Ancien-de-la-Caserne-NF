@@ -11342,7 +11342,7 @@ function manette() {
   const ax = i => { const v = g.axes[i] || 0; return Math.abs(v) < .2 ? 0 : (v - Math.sign(v) * .2) / .8; }, bt = i => { const b = g.buttons[i]; return !!(b && (b.pressed || b.value > .4)); };
   const appui = i => bt(i) && !MAN.prec[i]; const fin = () => { MAN.prec = g.buttons.map((b, i) => bt(i)); };
   const moi = M.gens.get(M.moiNum); if (!moi) { fin(); return; }
-  if (M.course) { M.course.pad = g.clavier ? null : g; fin(); return; }   // (la course de karts : la manette conduit le kart)
+  if (M.course) { M.course.pad = g.clavier ? null : g; if (!(M.manMenu && M.manMenu.d.isConnected)) { fin(); return; } }   // (la course de karts : la manette conduit le kart ; le classement de la fin se choisit à la manette)
   if (moi.info.joue) { fin(); return; }   // (on joue à la console, au flipper… : la manette est à eux)
   const lx = ax(0), ly = ax(1), rx = ax(2), ry = ax(3), tire = bt(7);
   if (M.lieu === "kingston" && M.L.tirerFleche && !M.cine && !M.vfMenu && !M.manMenu && (tire || appui(2))) M.L.tirerFleche();   // (Kingston Falls : Gizmo tire — gâchette droite, X, ou Espace au clavier ; une flèche toutes les 0,45 s)
@@ -11560,13 +11560,13 @@ function ecranRelief() { const d = M.cadranEl, C = M.copieRelief;
    À Resident Evil, en qualité « Moyen » ou « Haut » : la lueur des feux, des lampes et des explosions (bloom), un étalonnage de film
    (ombres froides et bleutées, lumières chaudes, un peu de contraste), une vignette et un grain léger. En qualité « Bas » : rien, l'image d'avant */
 let postMods = null; const POST = { comp: null, rp: null, bloom: null, grade: null, w: 0, h: 0, pr: 0 };
-const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 }, uGrain: { value: .035 }, uVignette: { value: .38 } },
+const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 }, uGrain: { value: .035 }, uVignette: { value: .38 }, uSat: { value: .82 }, uTeinte: { value: 1 } },
   vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTemps, uGrain, uVignette; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTemps, uGrain, uVignette, uSat, uTeinte; varying vec2 vUv;
     float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + uTemps) * 43758.5453); }
     void main() { vec4 c = texture2D(tDiffuse, vUv); vec3 col = c.rgb; float l = dot(col, vec3(.2126, .7152, .0722));
-      col = mix(vec3(l), col, .82);   /* (un peu moins de couleur : la nuit de Raccoon City) */
-      col *= mix(vec3(.82, .9, 1.08), vec3(1.08, 1.0, .9), smoothstep(.05, .6, l));   /* (les ombres bleutées, les lumières chaudes) */
+      col = mix(vec3(l), col, uSat);   /* (un peu moins de couleur : la nuit de Raccoon City ; plus, pour les karts) */
+      col *= mix(vec3(1.0), mix(vec3(.82, .9, 1.08), vec3(1.08, 1.0, .9), smoothstep(.05, .6, l)), uTeinte);   /* (les ombres bleutées, les lumières chaudes) */
       col = max(col - .008, 0.0) * 1.04;   /* (des noirs un peu plus profonds) */
       vec2 d = vUv - .5; col *= 1.0 - uVignette * smoothstep(.25, .75, length(d) * 1.25);
       col += (h(vUv * 913.0) - .5) * uGrain * (.4 + l);
@@ -11574,7 +11574,8 @@ const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 },
 function alleger(n) { M.allege = n;
   if (n >= 1) { if (M.rendu.shadowMap.enabled) { M.rendu.shadowMap.enabled = false; M.scene && M.scene.traverse(o => { if (o.isLight) o.castShadow = false; if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); } }
   if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; } }
-function postActif() { return !!(M && qualiteChoisie() === "haut" && !(M.allege >= 1) &&   /* (la lueur des flammes : seulement en « Haut », choisi soi-même — Silent Hill s'en passe, et il est fluide) */   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
+function postActif() { if (M && M.course && M.course.on && M.L && !M.relief && !(M.allege >= 1)) return qualiteChoisie() !== "bas";   /* (la course de karts : la lueur des LED, des phares, des turbos — sauf en « Bas ») */
+  return !!(M && qualiteChoisie() === "haut" && !(M.allege >= 1) &&   /* (la lueur des flammes : seulement en « Haut », choisi soi-même — Silent Hill s'en passe, et il est fluide) */   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
     .then(([a, b, c, d, e]) => ({ ...a, ...b, ...c, ...d, ...e })).catch(e => { console.warn("post", e); return null; }); return postMods; }
 // rend l'image : avec les effets si on est à Resident Evil (et qu'ils sont prêts), sinon comme avant ; vrai si les effets ont servi
@@ -11587,7 +11588,8 @@ function rendrePost(rendu, now) { if (!postActif()) return false; if (!POST.comp
   if (s.x !== POST.w || s.y !== POST.h || pr !== POST.pr) { POST.w = s.x; POST.h = s.y; POST.pr = pr; POST.comp.setPixelRatio(pr); POST.comp.setSize(s.x, s.y);
     const k = QUALITE === "haut" ? .5 : .33; POST.bloom.setSize(Math.max(64, Math.round(s.x * pr * k)), Math.max(64, Math.round(s.y * pr * k))); }   /* (la lueur se calcule sur une image réduite : bien plus léger) */
   POST.rp.scene = M.scene; POST.rp.camera = M.camera; POST.grade.uniforms.uTemps.value = (now % 10000) / 1000;
-  { const dedans = !!M.L.interieur; POST.bloom.threshold = dedans ? .95 : .86; POST.bloom.strength = (QUALITE === "haut" ? .85 : .6) * (dedans ? .45 : 1); }   /* (dedans, les murs clairs et les projecteurs ne doivent pas tout voiler) */
+  if (M.course && M.course.on) { POST.bloom.threshold = .9; POST.bloom.strength = QUALITE === "haut" ? .55 : .45; POST.bloom.radius = .35; const u = POST.grade.uniforms; u.uSat.value = 1.14; u.uTeinte.value = .35; u.uGrain.value = .006; u.uVignette.value = .3; }   /* (les karts : couleurs vives, les LED qui rayonnent) */
+  else { const dedans = !!M.L.interieur; POST.bloom.threshold = dedans ? .95 : .86; POST.bloom.strength = (QUALITE === "haut" ? .85 : .6) * (dedans ? .45 : 1); POST.bloom.radius = .55; const u = POST.grade.uniforms; u.uSat.value = .82; u.uTeinte.value = 1; u.uGrain.value = QUALITE === "haut" ? .035 : .02; u.uVignette.value = .38; }   /* (dedans, les murs clairs et les projecteurs ne doivent pas tout voiler) */
   POST.comp.render(); return true; }
 function rendreRelief(rendu) { ecranRelief(); const st = M.stereo || (M.stereo = new THREE.StereoCamera()), cam = M.camera; st.eyeSep = M.reliefSep || .064; cam.updateMatrixWorld(); st.update(cam);
   const b = M.bulle3D; if (b) { if (b.parent !== M.scene) M.scene.add(b); const f = cam.getWorldDirection(new THREE.Vector3()), up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion); b.position.copy(cam.position).addScaledVector(f, 2.2).addScaledVector(up, .62); }
