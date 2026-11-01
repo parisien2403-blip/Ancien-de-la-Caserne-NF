@@ -786,7 +786,7 @@ function recuK(m) { if (!M) return; const de = m.de;
 function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.hud = d;
   d.style.cssText = "position:absolute;inset:0;z-index:20;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:'Arial Black',Arial,sans-serif;color:#fff;text-shadow:0 2px 4px #000";
   const tactile = matchMedia("(pointer: coarse)").matches;
-  d.innerHTML = `<div style="position:absolute;left:10px;top:38px;font:italic 900 40px 'Arial Black',Arial;letter-spacing:-1px;color:#ffd23a;-webkit-text-stroke:2px #111;text-shadow:0 3px 0 #b8520a,0 5px 8px rgba(0,0,0,.6)" id="kPos"></div><div style="position:absolute;left:12px;top:86px;font:800 15px Arial;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,.45)" id="kTour"></div><canvas id="kCarte" width="220" height="220" style="position:absolute;left:8px;top:150px;width:110px;height:110px;opacity:.92"></canvas>
+  d.innerHTML = `<div style="position:absolute;left:10px;top:38px;font:italic 900 40px 'Arial Black',Arial;letter-spacing:-1px;color:#ffd23a;-webkit-text-stroke:2px #111;text-shadow:0 3px 0 #b8520a,0 5px 8px rgba(0,0,0,.6)" id="kPos"></div><div style="position:absolute;left:12px;top:86px;font:800 15px Arial;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,.45)" id="kTour"></div><canvas id="kCarte" width="260" height="640" style="position:absolute;right:4px;top:226px;height:min(320px,46vh);width:calc(min(320px,46vh) * 0.40625);border-radius:18px;background:radial-gradient(circle,rgba(10,20,50,.55),rgba(10,20,50,.15) 70%,transparent);filter:drop-shadow(0 3px 6px rgba(0,0,0,.6))"></canvas>
     <div id="kVitesse" style="position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .25s;background:repeating-conic-gradient(from 0deg at 50% 55%,rgba(255,255,255,.5) 0deg .6deg,transparent .6deg 7deg);-webkit-mask-image:radial-gradient(circle at 50% 55%,transparent 38%,#000 75%);mask-image:radial-gradient(circle at 50% 55%,transparent 38%,#000 75%)"></div>
     <div style="position:absolute;left:50%;top:38px;transform:translateX(-50%);width:60px;height:60px;border-radius:14px;background:rgba(0,0,0,.45);border:3px solid #ffd23a;display:grid;place-items:center;font-size:36px" id="kObj"></div>
     <div style="position:absolute;left:50%;top:10px;transform:translateX(-50%);font:700 18px 'Courier New',monospace" id="kChrono"></div>
@@ -840,15 +840,29 @@ function majHUD(t) { const d = KR.hud, p = KR.moi; if (!d || !p) return; const n
   q("#kFumee").style.opacity = p.fumee > 0 ? 1 : 0; q("#kVitesse").style.opacity = p.turbo > 0 ? .85 : p.v > KC.vmax * .95 ? .25 : 0; q("#kIntro").style.display = KR.intro ? "" : "none";
   if (KR.intro) q("#kDecompte").innerHTML = ""; }
 /* la mini-carte : le circuit vu du dessus, les karts en points de couleur (le nôtre plus gros, cerclé de blanc) */
-function minicarteK() { const cv = KR.hud && KR.hud.querySelector("#kCarte"); if (!cv || !KC.A) return; const x = cv.getContext("2d"), A = KC.A, B = KC.B;
+/* le plan du circuit : vu du dessus, avec la tête de chaque coureur à sa place (cerclée à la couleur de son kart, sa position à côté) ; la nôtre, plus grosse, toujours par-dessus */
+function teteMini(p) { if (p.mini !== undefined) return p.mini; p.mini = null; const T = p.teteInfo, im = new Image(); im.crossOrigin = "anonymous";
+  if (T && T.teteUrl && !T.tete_v) { im.onload = () => { p.mini = im; }; im.src = T.teteUrl; } else if (T) chargerTete(T.numero, T.tete_v, T.teteUrl).then(x => { if (x) p.mini = x; }).catch(() => {}); return null; }
+function minicarteK() { const cv = KR.hud && KR.hud.querySelector("#kCarte"); if (!cv || !KC.A) return; const x = cv.getContext("2d"), A = KC.A, B = KC.B, SW = 260, SH = 640;
   if (!KC.bornes) { let a = 1e9, b = -1e9, c = 1e9, d = -1e9; for (const q of A.pts) { a = Math.min(a, q.x); b = Math.max(b, q.x); c = Math.min(c, q.z); d = Math.max(d, q.z); } KC.bornes = [a, b, c, d]; }
-  const [a, b, c, d] = KC.bornes, k = 200 / Math.max(b - a, d - c), px = X => 10 + (X - a) * k + (200 - (b - a) * k) / 2, pz = Z => 10 + (Z - c) * k + (200 - (d - c) * k) / 2;
-  x.clearRect(0, 0, 220, 220); x.lineJoin = x.lineCap = "round"; const dernier = KR.moi && KR.moi.tour === KC.tours - 1;
+  const [a, b, c, d] = KC.bornes, k = Math.min((SW - 70) / (b - a), (SH - 70) / (d - c)), px = X => 35 + (X - a) * k + ((SW - 70) - (b - a) * k) / 2, pz = Z => 35 + (Z - c) * k + ((SH - 70) - (d - c) * k) / 2;
+  x.clearRect(0, 0, SW, SH); { x.fillStyle = "rgba(8,14,36,.45)"; x.beginPath(); x.roundRect(2, 2, SW - 4, SH - 4, 26); x.fill(); } x.lineJoin = x.lineCap = "round"; const dernier = KR.moi && KR.moi.tour === KC.tours - 1;
   const trace = (R, ferme) => { x.beginPath(); R.pts.forEach((q, i) => { if (i % 3 && i !== R.N - 1) return; i ? x.lineTo(px(q.x), pz(q.z)) : x.moveTo(px(q.x), pz(q.z)); }); if (ferme) x.closePath(); };
-  for (const [w, col] of [[14, "rgba(0,0,0,.55)"], [8, "#e8e8e8"], [5, "#3a3d44"]]) { trace(A, true); x.lineWidth = w; x.strokeStyle = col; x.stroke(); }
-  for (const [w, col] of [[12, "rgba(0,0,0,.55)"], [7, dernier ? "#ffd23a" : "rgba(255,210,58,.45)"], [3, "#3a3d44"]]) { trace(B, false); x.lineWidth = w; x.strokeStyle = col; x.stroke(); }
-  const q0 = A.pts[0]; x.fillStyle = "#fff"; x.fillRect(px(q0.x) - 5, pz(q0.z) - 2, 10, 4);
-  for (const p of KR.pil) { const g = p.K.g.position, col = "#" + p.K.coul.toString(16).padStart(6, "0"); x.beginPath(); x.arc(px(g.x), pz(g.z), p.moi ? 8 : 5.5, 0, 7); x.fillStyle = col; x.fill(); x.lineWidth = p.moi ? 3 : 2; x.strokeStyle = p.moi ? "#fff" : "#111"; x.stroke(); } }
+  for (const [w, col] of [[26, "rgba(0,0,0,.6)"], [17, "#f2f2f2"], [11, "#4a4e58"]]) { trace(A, true); x.lineWidth = w; x.strokeStyle = col; x.stroke(); }
+  for (const [w, col] of [[22, "rgba(0,0,0,.6)"], [13, dernier ? "#ffd23a" : "rgba(255,210,58,.5)"], [5, dernier ? "#c88a10" : "#4a4e58"]]) { trace(B, false); x.lineWidth = w; x.strokeStyle = col; x.stroke(); }
+  // (la ligne d'arrivée en damier)
+  { const q0 = A.pts[0], t0 = A.tan[0], ang = Math.atan2(t0.z, t0.x) + Math.PI / 2; x.save(); x.translate(px(q0.x), pz(q0.z)); x.rotate(ang); for (let i = -2; i < 2; i++) for (let j = 0; j < 2; j++) { x.fillStyle = (i + j) % 2 ? "#111" : "#fff"; x.fillRect(i * 4, j * 4 - 4, 4, 4); } x.restore(); }
+  // (le dragon, sur le bâtiment de l'horloge)
+  if (KC.dragon) { const g = KC.dragon.D.position; x.font = "34px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🐉", px(g.x), pz(g.z)); }
+  const L2 = classement(), liste = [...KR.pil].sort((p, q) => (p.moi ? 1 : 0) - (q.moi ? 1 : 0));
+  for (const p of liste) { const g = p.K.g.position, X = px(g.x), Z = pz(g.z), r = p.moi ? 30 : 22, col = "#" + p.K.coul.toString(16).padStart(6, "0"), im = teteMini(p) || p.mini, rang = L2.indexOf(p) + 1;
+    x.beginPath(); x.arc(X, Z, r + 4, 0, 7); x.fillStyle = "#111"; x.fill(); x.beginPath(); x.arc(X, Z, r + 2.5, 0, 7); x.fillStyle = p.moi ? "#ffffff" : col; x.fill();
+    x.save(); x.beginPath(); x.arc(X, Z, r, 0, 7); x.clip(); x.fillStyle = col; x.fillRect(X - r, Z - r, r * 2, r * 2);
+    if (im && im.width) { const sc = Math.max(r * 2 / im.width, r * 2 / im.height) * 1.05; x.drawImage(im, X - im.width * sc / 2, Z - im.height * sc / 2 + r * .1, im.width * sc, im.height * sc); } else { x.fillStyle = "#fff"; x.font = `900 ${r}px Arial`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText((p.nom || "?")[0], X, Z + 1); }
+    x.restore();
+    // (la position, dans une petite pastille)
+    const bx = X + r * .85, by = Z + r * .85; x.beginPath(); x.arc(bx, by, 12, 0, 7); x.fillStyle = rang === 1 ? "#ffd23a" : rang === 2 ? "#d8dde6" : rang === 3 ? "#e09a5a" : "#2a3a6a"; x.fill(); x.lineWidth = 2.5; x.strokeStyle = "#111"; x.stroke();
+    x.fillStyle = rang <= 3 ? "#111" : "#fff"; x.font = "900 16px Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(rang, bx, by + .5); } }
 function banniereK(titre, sous) { const d = KR.hud; if (!d) return; const b = document.createElement("div"); b.style.cssText = "position:absolute;left:0;right:0;top:28%;text-align:center;pointer-events:none;animation:kPop .6s ease-out";
   b.innerHTML = `<div style="display:inline-block;font:italic 900 46px 'Arial Black',Arial;color:#ff4a3a;-webkit-text-stroke:3px #111;text-shadow:0 5px 0 #7a1010,0 8px 16px rgba(0,0,0,.6)">${titre}</div><div style="font:800 17px Arial;color:#fff;text-shadow:0 2px 4px #000;margin-top:4px">${sous}</div>`;
   d.appendChild(b); setTimeout(() => b.remove(), 3200); }
