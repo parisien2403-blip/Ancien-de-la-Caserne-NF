@@ -187,6 +187,13 @@ function construirePisteK(scene) { preparerTraceK(); const G = new THREE.Group()
 /* ---------- le dragon, perché sur le toit du bâtiment de l'horloge, qui surveille la course et crache du feu sur la voie des toits ----------
    tout en volumes « dessin animé » (contour noir) : le corps, le ventre, les pattes griffues, le long cou, la tête avec ses cornes, ses yeux jaunes à pupille fendue,
    sa mâchoire qui s'ouvre (des crocs, une langue), les ailes de chauve-souris qui battent, la queue qui ondule, les piquants du dos */
+/* un tube qui s'effile le long d'une courbe (la queue, les os des ailes) ; « geo » donné : on met à jour ses points (pour l'animer) */
+function tubeEffile(courbe, r0, r1, n = 24, nr = 10, geo) { const fr = courbe.computeFrenetFrames(n, false), P = new Float32Array((n + 1) * (nr + 1) * 3), v = new THREE.Vector3();
+  for (let i = 0; i <= n; i++) { const u = i / n, c = courbe.getPointAt(u), r = r0 + (r1 - r0) * Math.pow(u, .8), N = fr.normals[i], B = fr.binormals[i];
+    for (let j = 0; j <= nr; j++) { const a = j / nr * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a); v.set(c.x + r * (ca * N.x + sa * B.x), c.y + r * (ca * N.y + sa * B.y), c.z + r * (ca * N.z + sa * B.z)); const k = (i * (nr + 1) + j) * 3; P[k] = v.x; P[k + 1] = v.y; P[k + 2] = v.z; } }
+  if (geo) { geo.attributes.position.array.set(P); geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); return geo; }
+  const g = new THREE.BufferGeometry(), I = []; for (let i = 0; i < n; i++) for (let j = 0; j < nr; j++) { const a = i * (nr + 1) + j, b = a + nr + 1; I.push(a, a + 1, b, b, a + 1, b + 1); }
+  g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setIndex(I); g.computeVertexNormals(); return g; }
 const DRG = { x: 0, z: -15.8, y: 12.6, cible: new THREE.Vector3(2.6, 17.8, -4.6) };
 function dragonK(G) {
   // (son perchoir : un grand balcon de pierre accroché à la façade du bâtiment de l'horloge, au-dessus du pont, avec ses consoles et sa balustrade)
@@ -228,19 +235,35 @@ function dragonK(G) {
   // la mâchoire du bas : ronde, quatre gros crocs, la langue rose
   const mach = new THREE.Group(); mach.position.set(0, -.55, .6); tete.add(mach); T(boule(1, 20), VERT, 0, -.25, .95, 1.1, .5, 1.15, mach); T(boule(1, 16), ROSE, 0, 0, 1.1, .85, .2, .95, mach, 1.0);
   for (const sx of [-1, 1]) { const c1 = T(new THREE.ConeGeometry(.16, .5, 8), 0xffffff, sx * .62, .2, 1.75, 1, 1, 1, mach, 1.12); const c2 = T(new THREE.ConeGeometry(.16, .5, 8), 0xffffff, sx * .55, -.75, 2.3, 1, 1, 1, tete, 1.12); c2.rotation.x = Math.PI; }
-  // les ailes : un bras, trois doigts, la membrane violette à bord festonné
-  const ailes = [-1, 1].map(sx => { const ai = new THREE.Group(); ai.position.set(sx * 1.7, 5, 1); D.add(ai); const os = new THREE.MeshToonMaterial({ color: VERT2 });
-    const bouts = [[sx * 4.6, 3.2], [sx * 8.8, 1.6], [sx * 8, -2.4], [sx * 4.8, -3.8]];
-    for (const [x2, y2] of bouts) { const L = Math.hypot(x2, y2), b = new THREE.Mesh(new THREE.CylinderGeometry(.13, .26, L, 8), os); b.position.set(x2 / 2, y2 / 2, 0); b.rotation.z = Math.atan2(y2, x2) - Math.PI / 2; ai.add(b); }
-    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(...bouts[0]); for (let i = 0; i < bouts.length - 1; i++) { const [ax, ay] = bouts[i], [bx, by] = bouts[i + 1], mx = (ax + bx) / 2 * .78, my = (ay + by) / 2 * .78; sh.quadraticCurveTo(mx, my, bx, by); } sh.quadraticCurveTo(sx * 2.2, -2.6, 0, -1.2); sh.lineTo(0, 0);
-    const grad = tex(toile(128, 128, x => { const g2 = x.createRadialGradient(0, 64, 10, 0, 64, 128); g2.addColorStop(0, "#ffb85a"); g2.addColorStop(.5, "#c060ff"); g2.addColorStop(1, "#7a2aba"); x.fillStyle = g2; x.fillRect(0, 0, 128, 128); }));
-    const geo = new THREE.ShapeGeometry(sh, 12); const pos = geo.attributes.position, uv = geo.attributes.uv; for (let i = 0; i < pos.count; i++) uv.setXY(i, Math.abs(pos.getX(i)) / 9, (pos.getY(i) + 4) / 8);
-    const mem = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: grad, side: THREE.DoubleSide })); ai.add(mem); const bord = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide })); bord.scale.setScalar(1.025); bord.position.z = -.03; ai.add(bord); return ai; });
-  // la queue : une chaîne de boules qui s'affinent, des piquants, un fer de pique au bout
-  const queue = new THREE.Group(); queue.position.set(0, 2.6, -3); D.add(queue); let par = queue; const anneauxQ = [];
-  for (let i = 0; i < 9; i++) { const seg = new THREE.Group(); seg.position.set(0, i ? -.12 : 0, i ? -.95 : 0); par.add(seg); T(boule(1.05 - i * .1), VERT, 0, 0, 0, 1, 1, 1, seg); if (i % 2) { const pk = T(new THREE.ConeGeometry(.28, .6, 8), ORANGE, 0, .95 - i * .09, 0, 1, 1, .5, seg); pk.rotation.x = -.3; } anneauxQ.push(seg); par = seg; }
-  const pique = new THREE.Shape(); pique.moveTo(0, .9); pique.quadraticCurveTo(.9, .4, .2, -.6); pique.lineTo(0, -.3); pique.lineTo(-.2, -.6); pique.quadraticCurveTo(-.9, .4, 0, .9);
-  const pq = T(new THREE.ExtrudeGeometry(pique, { depth: .25, bevelEnabled: true, bevelSize: .05, bevelThickness: .05 }), ORANGE, 0, 0, -1.1, 1.1, 1.1, 1.1, par); pq.rotation.x = -Math.PI / 2;
+  // les ailes : le bras osseux sur le bord d'attaque (épaule, coude, poignet et sa griffe), trois doigts en éventail ; la membrane tendue entre eux, au bord festonné, un peu creusée, nervurée, en dégradé
+  const memTex = tex(toile(256, 256, x => { const g2 = x.createLinearGradient(0, 0, 256, 256); g2.addColorStop(0, "#ffb050"); g2.addColorStop(.45, "#e060c8"); g2.addColorStop(1, "#7a2ab8"); x.fillStyle = g2; x.fillRect(0, 0, 256, 256);
+    x.strokeStyle = "rgba(90,20,110,.55)"; x.lineWidth = 5; x.lineCap = "round"; for (const [a2, b2] of [[250, 120], [230, 230], [150, 250], [60, 240]]) { x.beginPath(); x.moveTo(10, 20); x.quadraticCurveTo(a2 * .5, b2 * .3, a2, b2); x.stroke(); }
+    x.strokeStyle = "rgba(255,255,255,.25)"; x.lineWidth = 3; for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(40 + i * 30, 60 + i * 25, 30, 0, 1.2); x.stroke(); } }));
+  const osM = new THREE.MeshToonMaterial({ color: VERT2 }), noirM = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide });
+  const os = (par, a2, b2, r0, r1) => { const c = new THREE.CatmullRomCurve3([a2, a2.clone().lerp(b2, .5).add(new THREE.Vector3(0, .15, 0)), b2]); for (const [m, k] of [[osM, 1], [noirM, 1]]) { const g2 = tubeEffile(c, r0 * (m === noirM ? 1.25 : 1) + (m === noirM ? .04 : 0), r1 * (m === noirM ? 1.3 : 1) + (m === noirM ? .03 : 0), 16, 10); par.add(new THREE.Mesh(g2, m)); } };
+  const ailes = [-1, 1].map(sx => { const ai = new THREE.Group(); ai.position.set(sx * 1.7, 5.1, 1.1); D.add(ai);
+    const V = (x2, z2) => new THREE.Vector3(sx * x2, 0, z2), epaule = V(0, 0), coude = V(2.4, .9), poignet = V(4.8, .3), bouts = [V(9, -.8), V(8.2, -3.6), V(5.8, -5.4)], racine = V(.6, -3.4);
+    os(ai, epaule, coude, .34, .26); os(ai, coude, poignet, .26, .18); for (const b2 of bouts) os(ai, poignet, b2, .17, .05);
+    const gr = T(new THREE.ConeGeometry(.16, .6, 8), IVOIRE, sx * 4.9, .2, 1, 1, 1, 1, ai); gr.rotation.z = -sx * .4;
+    // (la membrane : bord festonné entre les doigts — chaque arc se creuse vers le poignet)
+    const sh = new THREE.Shape(), P2 = v => [v.x, v.z]; sh.moveTo(...P2(epaule)); sh.lineTo(...P2(coude)); sh.lineTo(...P2(poignet)); sh.lineTo(...P2(bouts[0]));
+    const seq2 = [bouts[0], bouts[1], bouts[2], racine]; for (let i = 0; i < 3; i++) { const a2 = seq2[i], b2 = seq2[i + 1], m = a2.clone().add(b2).multiplyScalar(.5).lerp(poignet, .32); sh.quadraticCurveTo(m.x, m.z, b2.x, b2.z); } sh.lineTo(...P2(epaule));
+    const geo = new THREE.ShapeGeometry(sh, 16); geo.rotateX(Math.PI / 2); const pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) { const x2 = pos.getX(i), z2 = pos.getZ(i), d2 = Math.abs(x2); pos.setY(i, -.006 * d2 * d2 + .1 * Math.sin(d2 * .7) - .03 * Math.max(0, -z2)); uv.setXY(i, d2 / 9.2, 1 - (z2 + 5.6) / 6.8); }
+    geo.computeVertexNormals(); const mem = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: memTex, side: THREE.DoubleSide })); ai.add(mem);
+    const bord = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide })); bord.scale.set(1.025, 1, 1.025); bord.position.y = -.04; ai.add(bord); return ai; });
+  // la queue : un seul tube lisse qui s'effile jusqu'à la pointe, des piquants sur le dessus, un fer de pique au bout ; elle ondule (on la recalcule à chaque image)
+  const queueG = new THREE.Group(); queueG.position.set(0, 2.7, -2.9); D.add(queueG);
+  const qPts = Array.from({ length: 7 }, (_, i) => new THREE.Vector3(0, -i * .28 + (i > 3 ? (i - 3) * .3 : 0), -i * 1.45)), qCourbe = new THREE.CatmullRomCurve3(qPts);
+  const qMesh = new THREE.Mesh(tubeEffile(qCourbe, 1.15, .14, 40, 14), new THREE.MeshToonMaterial({ color: VERT })), qBord = new THREE.Mesh(tubeEffile(qCourbe, 1.24, .2, 40, 14), noirM); queueG.add(qMesh, qBord);
+  const qPiq = Array.from({ length: 6 }, (_, i) => { const c = T(new THREE.ConeGeometry(.3 - i * .035, .75 - i * .07, 8), ORANGE, 0, 0, 0, 1, 1, .55, queueG); return c; });
+  const pique = new THREE.Shape(); pique.moveTo(0, 1); pique.quadraticCurveTo(1, .45, .22, -.62); pique.lineTo(0, -.32); pique.lineTo(-.22, -.62); pique.quadraticCurveTo(-1, .45, 0, 1);
+  const pq = T(new THREE.ExtrudeGeometry(pique, { depth: .22, bevelEnabled: true, bevelSize: .05, bevelThickness: .05 }), ORANGE, 0, 0, 0, 1.1, 1.1, 1.1, queueG);
+  const majQueue = (T2, amp) => { for (let i = 1; i < qPts.length; i++) { const k = i / (qPts.length - 1); qPts[i].x = Math.sin(T2 * 1.7 - i * .7) * amp * k * k * 2.2; qPts[i].y = -i * .28 + (i > 3 ? (i - 3) * .3 : 0) + Math.sin(T2 * 1.2 - i * .5) * .25 * k; }
+    tubeEffile(qCourbe, 1.15, .14, 40, 14, qMesh.geometry); tubeEffile(qCourbe, 1.24, .2, 40, 14, qBord.geometry);
+    qPiq.forEach((c, i) => { const u2 = .12 + i * .13, p2 = qCourbe.getPointAt(u2), t2 = qCourbe.getTangentAt(u2), r2 = 1.15 + (.14 - 1.15) * Math.pow(u2, .8); c.position.set(p2.x, p2.y + r2 * .9, p2.z); c.rotation.set(-.4, Math.atan2(t2.x, t2.z) + Math.PI, 0); });
+    const pf = qCourbe.getPointAt(1), tf = qCourbe.getTangentAt(1); pq.position.copy(pf).addScaledVector(tf, .55); pq.rotation.set(Math.PI / 2, 0, -Math.atan2(tf.x, -tf.z)); pq.rotation.order = "XZY"; };
+  majQueue(0, .3);
   // le feu, façon dessin animé : un jet en trois couches (rouge, orange, jaune) aux bords nets qui ondulent, des flammèches dessinées, des nuages de fumée
   const bruit = tex(toile(64, 256, x => { const im = x.createImageData(64, 256); for (let j = 0; j < 256; j++) for (let i = 0; i < 64; i++) { const v = 165 + 55 * Math.sin(i / 64 * Math.PI * 4 + j * .045) + 35 * Math.sin(j * .07 + i / 64 * Math.PI * 2) - Math.max(0, j - 200) * 2.2;   /* (des vagues larges, pas des éclats ; le bout du jet s'effiloche) */ const k = (j * 64 + i) * 4; im.data[k] = im.data[k + 1] = im.data[k + 2] = Math.max(0, Math.min(255, v)); im.data[k + 3] = 255; } x.putImageData(im, 0, 0); }));
   bruit.wrapS = bruit.wrapT = THREE.RepeatWrapping;
@@ -254,22 +277,22 @@ function dragonK(G) {
   const flam = Array.from({ length: 22 }, () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: flTex, transparent: true, depthWrite: false, toneMapped: false })); sp.material.color.setScalar(1.3); sp.visible = false; G.add(sp); return { sp, vie: 0 }; });
   const fumees = Array.from({ length: 12 }, () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fuTex, transparent: true, depthWrite: false })); sp.visible = false; G.add(sp); return { sp, vie: 0 }; });
   const lum = new THREE.PointLight(0xff7a1a, 0, 40, 1.4); G.add(lum);
-  KC.dragon = { D, corps, cou, tete, mach, ailes, queue: anneauxQ, jet, couches, flam, fumees, lum, t: Math.random() * 3, touches: new Set(), bouche: new THREE.Vector3() }; }
+  KC.dragon = { D, corps, cou, tete, mach, ailes, majQueue, jet, couches, flam, fumees, lum, t: Math.random() * 3, touches: new Set(), bouche: new THREE.Vector3() }; }
 /* pendant le final dans le ciel : le dragon quitte son balcon et traverse le ciel devant le nom du vainqueur, en grand, ailes déployées, en piqué puis en remontée */
 function volDragon(Dg, dt) { const C = KR.ciel, D = Dg.D, t = C.t; if (!Dg.sauve) Dg.sauve = { p: D.position.clone(), r: D.rotation.clone(), s: D.scale.x };
   const u = Math.max(0, Math.min(1, (t - 2.2) / 8.5)), x = -95 + u * 190, y = 78 + Math.sin(u * Math.PI * 2) * 7 - Math.sin(u * Math.PI) * 4, z = CIEL.z + 26 + Math.sin(u * Math.PI) * 10;
   const pente = Math.cos(u * Math.PI * 2) * .28; D.position.set(x, y, z); D.scale.setScalar(2.6); D.rotation.set(0, Math.PI / 2, 0); D.rotation.order = "YXZ"; D.rotation.x = -pente; D.rotation.z = .55 + Math.sin(t * 3.4) * .08;   /* (il s'incline vers nous : on voit son dos et ses ailes, pas son ventre) */
   D.visible = u > 0 && u < 1; Dg.cou.rotation.x = 1.0 + Math.sin(t * 3) * .06; Dg.cou.rotation.y = Math.sin(t * 1.3) * .2; Dg.tete.rotation.x = -.35; Dg.mach.rotation.x = .25 + Math.max(0, Math.sin(t * 2.2)) * .3;
-  Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = -.15; a.rotation.y = sx * -.1; a.rotation.z = sx * (.15 + Math.sin(t * 6.5) * .75); });
-  Dg.queue.forEach((q, i) => { q.rotation.y = Math.sin(t * 3 - i * .6) * .22; q.rotation.x = -.05 + Math.sin(t * 2.2 - i * .4) * .08; });
+  Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = .1; a.rotation.y = sx * .1; a.rotation.z = sx * (.15 + Math.sin(t * 6.5) * .65); });
+  Dg.majQueue(t * 1.6, .55);
   Dg.jet.visible = false; for (const F of Dg.flam) { F.vie = 0; F.sp.visible = false; } Dg.lum.intensity = 0; }
 function retourDragon() { const Dg = KC.dragon; if (!Dg || !Dg.sauve) return; Dg.D.position.copy(Dg.sauve.p); Dg.D.rotation.copy(Dg.sauve.r); Dg.D.scale.setScalar(Dg.sauve.s); Dg.D.visible = true; Dg.sauve = null; }
 function majDragon(dt, t) { const Dg = KC.dragon; if (!Dg) return; Dg.t += dt; if (KR.ciel) { volDragon(Dg, dt); return; } if (Dg.sauve) retourDragon(); const T = Dg.t, cyc = T % 7, D = Dg.D;
   // (de quoi il a l'air : il respire, la queue ondule, les ailes battent ; toutes les 7 s, il se cabre, rugit, et crache le feu sur la voie des toits)
   Dg.corps.scale.set(1, 1 + Math.sin(T * 2.2) * .025, 1);
-  Dg.queue.forEach((q, i) => { q.rotation.y = Math.sin(T * 1.6 - i * .55) * .16; q.rotation.x = .06 + Math.sin(T * 1.1 - i * .4) * .05; });
+  Dg.majQueue(T, .35);
   const cabre = cyc < 1.4 ? Math.sin(cyc / 1.4 * Math.PI / 2) : cyc < 4.2 ? 1 - (cyc - 1.4) / 2.8 * .7 : Math.max(0, .3 - (cyc - 4.2) * .2), crache = cyc > 1.7 && cyc < 4.1;
-  const bat = crache ? .9 : .35; Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = -.95; a.rotation.y = sx * -.35; a.rotation.z = sx * (.2 + Math.sin(T * (crache ? 6 : 2.4)) * bat); });   /* (les ailes levées, la membrane bien visible, qui battent) */
+  const bat = crache ? .55 : .22; Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = .25; a.rotation.y = sx * .35; a.rotation.z = sx * (.55 + Math.sin(T * (crache ? 6 : 2.2)) * bat); });   /* (les ailes levées en V, un peu repliées vers l'arrière, qui battent) */
   // (la tête : elle suit le kart le plus proche quand il n'y a pas de feu, et vise la voie des toits quand il crache)
   let cible = DRG.cible; if (!crache) { let best = null, bd = 1e9; for (const p of KR.pil || []) { const d = p.K.g.position.distanceTo(D.position); if (d < bd) { bd = d; best = p; } } if (best && bd < 60) cible = best.K.g.position; }
   const dx = cible.x - D.position.x, dz = cible.z - (D.position.z + 6), dy = cible.y - (D.position.y + 7);
