@@ -187,7 +187,7 @@ function construirePisteK(scene) { preparerTraceK(); const G = new THREE.Group()
 /* ---------- le dragon, perché sur le toit du bâtiment de l'horloge, qui surveille la course et crache du feu sur la voie des toits ----------
    tout en volumes « dessin animé » (contour noir) : le corps, le ventre, les pattes griffues, le long cou, la tête avec ses cornes, ses yeux jaunes à pupille fendue,
    sa mâchoire qui s'ouvre (des crocs, une langue), les ailes de chauve-souris qui battent, la queue qui ondule, les piquants du dos */
-const DRG = { x: 0, z: -15.8, y: 15.2, cible: new THREE.Vector3(2.6, 17.8, -4.6) };
+const DRG = { x: 0, z: -15.8, y: 12.6, cible: new THREE.Vector3(2.6, 17.8, -4.6) };
 function dragonK(G) {
   // (son perchoir : un grand balcon de pierre accroché à la façade du bâtiment de l'horloge, au-dessus du pont, avec ses consoles et sa balustrade)
   const toit = DRG.y; { const pierre = new THREE.MeshStandardMaterial({ color: 0xd8cbb0, roughness: .85 }), P = new THREE.Group(); P.position.set(DRG.x, toit, -18); G.add(P);
@@ -255,7 +255,16 @@ function dragonK(G) {
   const fumees = Array.from({ length: 12 }, () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: fuTex, transparent: true, depthWrite: false })); sp.visible = false; G.add(sp); return { sp, vie: 0 }; });
   const lum = new THREE.PointLight(0xff7a1a, 0, 40, 1.4); G.add(lum);
   KC.dragon = { D, corps, cou, tete, mach, ailes, queue: anneauxQ, jet, couches, flam, fumees, lum, t: Math.random() * 3, touches: new Set(), bouche: new THREE.Vector3() }; }
-function majDragon(dt, t) { const Dg = KC.dragon; if (!Dg) return; Dg.t += dt; const T = Dg.t, cyc = T % 7, D = Dg.D;
+/* pendant le final dans le ciel : le dragon quitte son balcon et traverse le ciel devant le nom du vainqueur, en grand, ailes déployées, en piqué puis en remontée */
+function volDragon(Dg, dt) { const C = KR.ciel, D = Dg.D, t = C.t; if (!Dg.sauve) Dg.sauve = { p: D.position.clone(), r: D.rotation.clone(), s: D.scale.x };
+  const u = Math.max(0, Math.min(1, (t - 2.2) / 8.5)), x = -95 + u * 190, y = 78 + Math.sin(u * Math.PI * 2) * 7 - Math.sin(u * Math.PI) * 4, z = CIEL.z + 26 + Math.sin(u * Math.PI) * 10;
+  const pente = Math.cos(u * Math.PI * 2) * .28; D.position.set(x, y, z); D.scale.setScalar(2.6); D.rotation.set(0, Math.PI / 2, 0); D.rotation.order = "YXZ"; D.rotation.x = -pente; D.rotation.z = .55 + Math.sin(t * 3.4) * .08;   /* (il s'incline vers nous : on voit son dos et ses ailes, pas son ventre) */
+  D.visible = u > 0 && u < 1; Dg.cou.rotation.x = 1.0 + Math.sin(t * 3) * .06; Dg.cou.rotation.y = Math.sin(t * 1.3) * .2; Dg.tete.rotation.x = -.35; Dg.mach.rotation.x = .25 + Math.max(0, Math.sin(t * 2.2)) * .3;
+  Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = -.15; a.rotation.y = sx * -.1; a.rotation.z = sx * (.15 + Math.sin(t * 6.5) * .75); });
+  Dg.queue.forEach((q, i) => { q.rotation.y = Math.sin(t * 3 - i * .6) * .22; q.rotation.x = -.05 + Math.sin(t * 2.2 - i * .4) * .08; });
+  Dg.jet.visible = false; for (const F of Dg.flam) { F.vie = 0; F.sp.visible = false; } Dg.lum.intensity = 0; }
+function retourDragon() { const Dg = KC.dragon; if (!Dg || !Dg.sauve) return; Dg.D.position.copy(Dg.sauve.p); Dg.D.rotation.copy(Dg.sauve.r); Dg.D.scale.setScalar(Dg.sauve.s); Dg.D.visible = true; Dg.sauve = null; }
+function majDragon(dt, t) { const Dg = KC.dragon; if (!Dg) return; Dg.t += dt; if (KR.ciel) { volDragon(Dg, dt); return; } if (Dg.sauve) retourDragon(); const T = Dg.t, cyc = T % 7, D = Dg.D;
   // (de quoi il a l'air : il respire, la queue ondule, les ailes battent ; toutes les 7 s, il se cabre, rugit, et crache le feu sur la voie des toits)
   Dg.corps.scale.set(1, 1 + Math.sin(T * 2.2) * .025, 1);
   Dg.queue.forEach((q, i) => { q.rotation.y = Math.sin(T * 1.6 - i * .55) * .16; q.rotation.x = .06 + Math.sin(T * 1.1 - i * .4) * .05; });
@@ -1146,5 +1155,5 @@ function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse();
   { const [x0, z0] = GRILLE_K, h = (x, z) => { try { return M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { x, y: 0, z } }, info: {} }) || 0 : 0; } catch (e) { return 0; } }; let y = 0; for (const [a, b] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]]) y = Math.max(y, h(x0 + a, z0 + b)); rond.position.set(-2.4, y + .03, -1.4); }   // (le cercle passe sur le trottoir : posé à la hauteur du plus haut) g.add(rond);
   M.scene.add(g); KC.pan = g; }
 
-KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK;   // (pour les essais)
+KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK; KR.cielK = cielK;   // (pour les essais)
 ({ entrerCourse, quitterCourse, majCourse, recuK, presGrille, decorCourse, KR });
