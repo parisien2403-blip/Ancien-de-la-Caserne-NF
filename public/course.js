@@ -14,8 +14,9 @@ const EK = KC.ech;
 const VP = 2.3, VA = 3.7, VC = 5;   // (les largeurs : une voie sous les porches, les allées autour des bâtiments, la cour d'honneur et les toits)
 const TRACE_K = [
   // l'allée de droite, dans la grande cour du fond (le départ), puis la cour du fond, l'allée de gauche
-  [18.3, -.16, -90, VA], [18.3, -.42, -100, VA], [18.3, -.68, -110, VA], [18, -.98, -120, VA], [15.5, -1.1, -125.4, VA], [8, -1.13, -126.6, VA], [-5, -1.13, -126.6, VA],
-  [-14.5, -1.1, -126.1, VA], [-17.8, -1, -121.5, VA], [-18, -.88, -116, VA], [-18, -.06, -106, VA], [-18, 0, -96, VA], [-18, 0, -84, VA], [-17.5, 0, -72.5, VA],
+  [18.3, -.16, -90, VA], [18.3, -.42, -100, VA], [18.3, -.68, -110, VA], [18, -.98, -120, VA], [15.5, -1.1, -125.4, VA], [8, -1.13, -126.6, VA], [-3, -1.13, -126.6, VA],
+  // (par-dessus le local poubelle, au coin de l'allée de gauche : une rampe monte sur son toit, et redescend dans l'allée)
+  [-9, -.2, -126.6, VA], [-14.5, 1.75, -126, VA], [-17.8, 2.05, -121.5, VA], [-18, 2.05, -116, VA], [-18, 1.2, -110.5, VA], [-18, .1, -105, VA], [-18, 0, -96, VA], [-18, 0, -84, VA], [-17.5, 0, -72.5, VA],
   // la troisième cour, le porche (voie du retour), la deuxième cour, le porche de l'horloge
   [-14, 0, -66.6, VA], [-8, 0, -65.4, VA], [-3.4, 0, -62.4, VA], [-1.25, 0, -57, VP], [-1.25, 0, -50, VP], [-1.25, 0, -44, VP], [-1.25, 0, -38, VP], [-1.25, 0, -30, VP], [-1.25, 0, -24, VP],
   // la cour d'honneur : la rampe de gauche, la terrasse, le pont, le toit de droite, la rampe de droite
@@ -409,8 +410,9 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
   d.addEventListener("pointerdown", e => { if (KR.intro && e.target === d || e.target.id === "kIntro" || (e.target.closest && e.target.closest("#kIntro"))) KR.passer = true; });
   for (const ev of ["pointerdown", "pointerup", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
   M.ctx.conteneur.appendChild(d); majHUD(0);
-  KR.caches2 = [...document.querySelectorAll(".mx-bas-btns, .mx-danses, .mx-parler")].filter(e => e.style.display !== "none"); for (const e of KR.caches2) e.style.display = "none"; }
-function fermerHUD() { if (KR.hud) { KR.hud.remove(); KR.hud = null; } for (const e of KR.caches2 || []) e.style.display = ""; KR.caches2 = null; if (M && M.manMenu && M.manMenu.d && M.manMenu.d.id === "kFin") M.manMenu = null; for (const k in KT) KT[k] = 0; const f = document.getElementById("kFin"); if (f) f.remove(); KR.podium = false; }
+  if (!document.getElementById("kStyle")) { const st = document.createElement("style"); st.id = "kStyle"; st.textContent = "body.en-course .mx-bas-btns, body.en-course .mx-danses, body.en-course .mx-parler, body.en-course #mxBtnDanses, body.en-course #mxBtnParler { display: none !important; }"; document.head.appendChild(st); }
+  document.body.classList.add("en-course"); }
+function fermerHUD() { if (KR.hud) { KR.hud.remove(); KR.hud = null; } document.body.classList.remove("en-course"); if (M && M.manMenu && M.manMenu.d && M.manMenu.d.id === "kFin") M.manMenu = null; for (const k in KT) KT[k] = 0; const f = document.getElementById("kFin"); if (f) f.remove(); KR.podium = false; }
 function majHUD(t) { const d = KR.hud, p = KR.moi; if (!d || !p) return; const now = Date.now(), q = d.querySelector.bind(d);
   const rang = classement().indexOf(p) + 1; q("#kPos").textContent = rang + (rang === 1 ? "er" : "e") + " / " + KR.pil.length;
   q("#kTour").textContent = "Tour " + Math.max(1, Math.min(KC.tours, p.tour + 1)) + " / " + KC.tours; q("#kObj").textContent = p.objet ? OBJETS_K[p.objet] : "";
