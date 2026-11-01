@@ -32,18 +32,15 @@ const COULEURS_K = [0xd8261e, 0x1e64d8, 0xf2c21a, 0x2aa84a, 0x9b3ad6, 0xf07a1a, 
 /* les pilotes qu'on peut choisir : son propre bonhomme, ou un personnage de la caserne (ce sont aussi les adversaires, quand on court seul) */
 const PERSOS_K = [
   { id: "moi", nom: "Mon bonhomme" },
-  { id: "chef", nom: "Le chef de poste", url: "images/pere-tete.png", combi: "#1c2541" },
-  { id: "manu", nom: "Manu le DJ", url: "images/manu-tete.png", combi: "#2a2a2e" },
-  { id: "barman", nom: "Le barman", url: "images/miner-tete.png", combi: "#5a2a1a" },
-  { id: "thriller", nom: "Le danseur Thriller", url: "images/danseur-tete.png", combi: "#c8102e" },
-  { id: "mariee", nom: "La mariée", url: "images/mariee-tete.png", combi: "#f4f1ea" },
-  { id: "judo", nom: "Le prof de judo", url: "images/prof-judo-tete.png", combi: "#f2f2f2" },
-  { id: "hernandez", nom: "Hernandez", url: "images/hernandez-tete.png", combi: "#2f5fa8" },
-  { id: "zombie", nom: "Le zombie", url: "images/zombie-tete.png", combi: "#5d6168" },
-  { id: "batteuse", nom: "La batteuse", url: "images/batteuse-tete.png", combi: "#7a2a8a" },
-  { id: "guitariste", nom: "Le guitariste", url: "images/guitariste-tete.png", combi: "#3a3a3a" },
-  { id: "disco", nom: "Le roi du disco", url: "images/travolta-tete.png", combi: "#f4f1ea" },
-  { id: "brigadier", nom: "Le brigadier", url: "images/gendarme-tete.png", combi: "#1c2541" }];
+  // (des personnages dessinés pour la caserne, façon dessin animé)
+  { id: "gendarme", nom: "Le gendarme Moustache", url: "images/karts/gendarme.png", combi: "#1c2a6a" },
+  { id: "cantiniere", nom: "La cantinière", url: "images/karts/cantiniere.png", combi: "#f4f4f4" },
+  { id: "pigeon", nom: "Le pigeon de la cour", url: "images/karts/pigeon.png", combi: "#7a8090" },
+  { id: "gargouille", nom: "La gargouille", url: "images/karts/gargouille.png", combi: "#4a4e5a" },
+  { id: "chat", nom: "Le chat de gouttière", url: "images/karts/chat.png", combi: "#d8701e" },
+  { id: "mamie", nom: "La mamie du 3e", url: "images/karts/mamie.png", combi: "#c84a7a" },
+  { id: "clairon", nom: "Le clairon", url: "images/karts/clairon.png", combi: "#2a5a2a" },
+  { id: "pave", nom: "Le pavé de la cour", url: "images/karts/pave.png", combi: "#5a564e" }];
 const persoK = id => PERSOS_K.find(q => q.id === id) || PERSOS_K[0];
 const NOMS_BOTS = ["Le brigadier", "Le maréchal des logis", "L'adjudant", "Le trompette"];
 const TETES_BOTS = ["images/gendarme-tete.png", "images/gendarme2-tete.png", "images/gendarme3-tete.png", "images/gendarme4-tete.png"];
@@ -220,7 +217,7 @@ function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" |
 /* l'écran du choix du pilote : son bonhomme, ou un personnage de la caserne */
 function choisirPilote(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-perso"); } catch (e) {}
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:radial-gradient(circle at 50% 30%,rgba(30,50,110,.92),rgba(6,10,26,.97));color:#fff;font-family:Arial,sans-serif;overflow:auto;padding:16px 12px;box-sizing:border-box";
-  d.innerHTML = `<div style="text-align:center;font:900 26px 'Arial Black',Arial;color:#ffd23a;margin:4px 0 2px">🏁 CHOISIS TON PILOTE</div><div style="text-align:center;font-size:13px;opacity:.8;margin-bottom:12px">Les autres pilotes de la caserne seront tes adversaires</div>
+  d.innerHTML = `<div style="text-align:center;font:900 26px 'Arial Black',Arial;color:#ffd23a;margin:4px 0 2px">🏁 CHOISIS TON PILOTE</div><div style="text-align:center;font-size:13px;opacity:.8;margin-bottom:12px">Les autres seront tes adversaires</div>
     <div id="kGrille" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;max-width:760px;margin:0 auto"></div>
     <div style="text-align:center;margin-top:14px"><button type="button" id="kChoixAnnuler" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button></div>`;
   const G = d.querySelector("#kGrille"), moi = M.gens.get(M.moiNum);
