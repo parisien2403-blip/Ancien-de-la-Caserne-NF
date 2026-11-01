@@ -13484,7 +13484,7 @@ function habillerLB(info, id) { const D = LB_DEF[id], P = (M.ctx.pnjTrio && M.ct
    ce que la matrice a (M, THREE, voile, sonBruit…) sans rien changer à son code. MD[monde] : ce que le fichier rend (ses points d'entrée). */
 const MD = {}, MD_P = {}, MONDE_LIEUX = { kingston: id => id === "kingston", santacarla: id => id === "santacarla", sosfantomes: id => /^gb-/.test(id), silenthill: id => /^sh-/.test(id), bttf: id => id === "hv1955" || id === "bttf-cour", residentevil: id => /^z-/.test(id) };
 function chargerMonde(nom) { if (MD[nom]) return Promise.resolve(MD[nom]);
-  return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + DIAG_V).then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
+  return MD_P[nom] = MD_P[nom] || fetch(nom + ".js?v=" + (new URL(import.meta.url).searchParams.get("v") || DIAG_V))   /* (la version du site : chaque mise à jour recharge les mondes) */.then(r => { if (!r.ok) throw new Error(nom + ".js : " + r.status); return r.text(); })
     .then(src => (MD[nom] = eval(src + "\n//# sourceURL=" + nom + ".js"))).catch(e => { MD_P[nom] = null; throw e; }); }
 const chargerKingston = () => chargerMonde("kingston");
 const mondesManquants = id => Object.keys(MONDE_LIEUX).filter(n => !MD[n] && (MONDE_LIEUX[n](id || "") || MONDE_LIEUX[n](baseLieu(id) || "")));   // (le nom tel quel : sh-grande, gb-cour… sont des copies de la caserne)
