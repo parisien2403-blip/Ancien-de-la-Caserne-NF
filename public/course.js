@@ -567,7 +567,7 @@ function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.sce
   if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", t0, perso: KR.perso || "moi" });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
-  M.course = KR; KR.passer = false; KR.dernierVu = false; musiqueK("course"); if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } if (KC.pan) KC.pan.visible = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
+  M.course = KR; KR.passer = false; KR.dernierVu = false; musiqueK("course"); if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
   // la cinématique d'ouverture : la caméra survole tout le circuit, de haut, et vient se poser derrière notre kart sur la grille
   const D = Math.min(9000, t0 - Date.now() - 2200); KR.intro = D > 3000 ? { u: 0, D, t0, pret: false } : null; prechauffeK().catch(e => console.warn("prechauffe", e)).finally(() => { const I = KR.intro; if (I) { I.pret = true; I.D = Math.max(2500, Math.min(I.D, I.t0 - Date.now() - 2200)); } }); KR.camPrete = false; KR.introVise = null; }
 /* tout préparer AVANT que la caméra ne parte : les effets de lumière (chargés et montés), et chaque matière de la course compilée d'avance —
@@ -912,7 +912,7 @@ function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
 function recuK(m) { if (!M) return; const de = m.de;
-  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de], persos: { [de]: m.perso || "moi" } }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : va sur la grille de départ pour la rejoindre !", 5000); } return; }
+  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de], persos: { [de]: m.perso || "moi" } }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : approche-toi de l'affiche NF Kart, près des bus, pour la rejoindre !", 5000); } return; }
   if (m.t === "k_rejoint") { if (KR.attente && KR.attente.t0 === m.t0) { if (!KR.attente.ids.includes(de)) KR.attente.ids.push(de); (KR.attente.persos = KR.attente.persos || {})[de] = m.perso || "moi"; }
     if (KR.on && m.t0 === KR.t0) (KR.persos = KR.persos || {})[de] = m.perso || "moi";
     if (KR.on && m.t0 === KR.t0 && !KR.humains.includes(de)) { KR.humains.push(de); if (Date.now() < KR.t0) placerGrille(); } return; }
@@ -1253,8 +1253,9 @@ function sireneK() { const a = audioK(); if (!a) return; const o = a.createOscil
 /* la grille de départ : on vient la chercher dans la cour d'honneur, devant un garage (un panneau et un cercle l'indiquent) ; la course elle-même part du fond de la caserne */
 const GRILLE_K = [-9.9, -9.8];   // (devant le garage du milieu, à gauche en regardant l'horloge : un cercle au sol devant le car de la Gendarmerie)
 const FAMILLE_K = [2, 3, 4];   // (la course est ouverte à l'administrateur et à la famille : les mêmes badges que les invités de l'appartement)
-const adminK = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || FAMILLE_K.includes(Number(M.ctx.moiInfo().numero ?? M.moiNum))));
-const presGrille = (x, z) => adminK() && Math.hypot(x - GRILLE_K[0], z - GRILLE_K[1]) < 2;
+const adminK = () => !!(M && M.ctx);   /* (la course est ouverte à tout le monde) */
+const AFFICHE_K = { x: -9.5, z: -18, y: 2.7, l: 3.4 };   // (l'affiche NF Kart, sur le mur du bâtiment de l'horloge, juste à côté des garages des bus)
+const presGrille = (x, z) => adminK() && Math.abs(x - AFFICHE_K.x) < AFFICHE_K.l / 2 + .6 && z > AFFICHE_K.z && z < AFFICHE_K.z + 3.2;
 // (pendant la course, les voitures garées sur le circuit s'effacent ; elles reviennent après)
 function cacherVoitures(on) {
   if (!on) { for (const [attr, copie] of KR.geoCachees || []) { attr.array.set(copie); attr.needsUpdate = true; } KR.geoCachees = null; return; }
@@ -1277,13 +1278,16 @@ function cacherVoitures(on) {
     if (copie) { pos.needsUpdate = true; KR.geoCachees.push([pos, copie]); } }); }
 // (dans la cour d'honneur : le panneau de la grille de départ)
 function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse(); if (!M || M.lieu !== "grande" || (M.L && (M.L.apo || M.L.sh)) || !adminK()) return; if (KC.pan && KC.pan.parent === M.scene) return;
-  const g = new THREE.Group(); g.position.set(GRILLE_K[0] + 2.4, 0, GRILLE_K[1] + 1.4); const fer = new THREE.MeshStandardMaterial({ color: 0x24262c, metalness: .5, roughness: .4 });
-  const mat = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 2.2, 8), fer); mat.position.y = 1.1; g.add(mat);
-  const c = toile(512, 256, x => { x.fillStyle = "#14234a"; x.fillRect(0, 0, 512, 256); for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? "#111" : "#f4f4f4"; x.fillRect(i * 32, 0, 32, 22); x.fillRect(i * 32 + (i % 2 ? -32 : 32) * 0, 234, 32, 22); }
-    x.fillStyle = "#ffd23a"; x.font = "900 54px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🏁 KARTS", 256, 92); x.fillStyle = "#fff"; x.font = "700 30px Arial"; x.fillText("Les 24 tours de la caserne", 256, 150); x.font = "700 24px Arial"; x.fillStyle = "#cfe3ff"; x.fillText("Viens ici pour courir", 256, 196); });
-  const m = new THREE.MeshBasicMaterial({ map: tex(c) }), pan = new THREE.Mesh(new THREE.BoxGeometry(1.7, .85, .05), [fer, fer, fer, fer, m, m]); pan.position.y = 2.6; g.add(pan);
-  const rond = new THREE.Mesh(new THREE.RingGeometry(1.6, 2, 40), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .55, depthWrite: false })); rond.rotation.x = -Math.PI / 2;
-  { const [x0, z0] = GRILLE_K, h = (x, z) => { try { return M.L.hauteur ? M.L.hauteur(x, z, { g: { position: { x, y: 0, z } }, info: {} }) || 0 : 0; } catch (e) { return 0; } }; let y = 0; for (const [a, b] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2]]) y = Math.max(y, h(x0 + a, z0 + b)); rond.position.set(-2.4, y + .03, -1.4); }   // (le cercle passe sur le trottoir : posé à la hauteur du plus haut) g.add(rond);
+  // l'affiche NF Kart, encadrée, accrochée au mur ; un petit spot au-dessus ; une plaque dessous qui invite à s'approcher
+  const A = AFFICHE_K, h = A.l * 768 / 1376, g = new THREE.Group(); g.position.set(A.x, A.y, A.z + .06);
+  const t = new THREE.TextureLoader().load("images/karts/titre.jpg"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const img = new THREE.Mesh(new THREE.PlaneGeometry(A.l, h), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); img.position.z = .05; g.add(img);
+  const cadreM = new THREE.MeshStandardMaterial({ color: 0x1a1a22, metalness: .4, roughness: .45 }), orM = new THREE.MeshStandardMaterial({ color: 0xe8b830, metalness: .8, roughness: .3 });
+  for (const [x, y, w2, h2] of [[0, h / 2 + .06, A.l + .24, .12], [0, -h / 2 - .06, A.l + .24, .12], [-A.l / 2 - .06, 0, .12, h], [A.l / 2 + .06, 0, .12, h]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(w2, h2, .1), cadreM); c.position.set(x, y, .03); g.add(c); const l = new THREE.Mesh(new THREE.BoxGeometry(w2 * (w2 > h2 ? 1 : .3), h2 * (h2 > w2 ? 1 : .3), .02), orM); l.position.set(x, y, .085); g.add(l); }
+  const plq = toile(512, 96, x => { x.fillStyle = "#14234a"; x.fillRect(0, 0, 512, 96); x.strokeStyle = "#e8b830"; x.lineWidth = 6; x.strokeRect(3, 3, 506, 90); x.fillStyle = "#ffd23a"; x.font = "900 40px Arial Black,Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🏁 APPROCHE-TOI POUR JOUER", 256, 50); });
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .36), new THREE.MeshBasicMaterial({ map: tex(plq), toneMapped: false })); plaque.position.set(0, -h / 2 - .45, .05); g.add(plaque);
+  const lampe = new THREE.Mesh(new THREE.CylinderGeometry(.06, .14, .22, 12), cadreM); lampe.rotation.x = Math.PI / 2.6; lampe.position.set(0, h / 2 + .32, .35); g.add(lampe);
+  const lueur = new THREE.Mesh(new THREE.PlaneGeometry(A.l + 1.2, h + 1.4), new THREE.MeshBasicMaterial({ map: texPoint(), color: 0xffe0a0, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending })); lueur.position.z = .02; g.add(lueur);
   M.scene.add(g); KC.pan = g; }
 
 KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK; KR.cielK = cielK; KR.RC = THREE.Raycaster; KR.majCer = majCeremonie; KR.MUS = MUS;   // (pour les essais)
