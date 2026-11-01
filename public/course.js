@@ -8,7 +8,7 @@
    Seul : contre quatre karts de la caserne. À plusieurs : ceux qui viennent à la grille de départ (dans la cour d'honneur) pendant le compte à rebours courent ensemble.
    Ce fichier n'est pas un module : la matrice le charge et l'exécute chez elle (eval direct) ; il se sert de M, THREE, tex, toile, envoyerWS… */
 
-const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 5, vmax: 15, grilleT: 12000, ech: .46 };   // (ech : les karts et leurs pilotes, en plus petit — la piste est étroite sous les porches et dans les allées)
+const KC = { L: 0, pts: null, N: 0, pas: .5, tours: 4, vmax: 15, grilleT: 12000, ech: .46 };   // (ech : les karts et leurs pilotes, en plus petit — la piste est étroite sous les porches et dans les allées)
 const EK = KC.ech;
 /* le tracé : des points de passage (x, hauteur, z, largeur de la piste), reliés par une courbe douce */
 const VP = 2.35, VA = 4.2, VC = 6;   // (les largeurs : une voie sous les porches, les allées autour des bâtiments, la cour d'honneur et les toits)
@@ -50,8 +50,11 @@ const OBJETS_K = { banane: "🍌", huile: "🛢️", fumi: "💨", boule: "🎱"
 /* la déviation du dernier tour : on quitte la terrasse (le toit de gauche) par une rampe qui monte au-dessus des toits ; une voie suspendue passe
    devant le bâtiment de l'horloge (le dragon, perché sur son toit, crache du feu dessus), longe le toit de droite et redescend rejoindre la piste */
 const VB = 4.6;
-const TRACE_B = [[-21, 7.6, 3, VC], [-20.6, 7.75, -.6, VB], [-18.6, 8.9, -5, VB], [-16, 10.9, -9, VB], [-12.6, 13, -12, VB], [-6.5, 14, -13.3, VB], [0, 14.3, -13.5, VB], [6.5, 14, -13.3, VB],
-  [12.6, 13.3, -12, VB], [15.6, 12, -8, VB], [16.2, 10.4, -3, VB], [15.8, 8.8, 1.6, VB], [14.4, 7.9, 4.6, VB], [11.5, 7.6, 4.6, VC]];
+const TRACE_B = [[-21, 7.6, 3, VC], [-20.6, 7.9, -1.6, VB], [-18.6, 8.6, -5.4, VB], [-15.6, 9.6, -5.6, VB], [-12.2, 11, -2.4, VB], [-8.6, 12.6, 3.4, VB], [-4.4, 14.2, 8.4, VB], [.4, 15.4, 9.6, VB],
+  [2, 16.5, 5.4, VB], [2.2, 17.2, -.6, VB], [2.8, 17.4, -4.8, VB], [6.2, 17, -8.4, VB], [11, 15.6, -9.2, VB], [14.8, 13.6, -7.2, VB], [15.6, 11.6, -3.8, VB], [15.4, 9.4, -.4, VB],
+  [15, 7.85, 2.2, VB], [13.4, 7.7, 4.6, VB], [11.5, 7.6, 4.6, VC]];
+// (la piscine sur le toit de droite, au bas de la descente : on y plonge en gerbe d'eau)
+const PISCINE = { x: 15.2, z: 1.6, lx: 4.6, lz: 4.4, y: 7.42 };
 // (une bande de piste : ses points, ses directions, ses côtés, sa largeur ; fermée (le circuit) ou ouverte (la déviation))
 function echantillonner(ctrl, ferme) { const V = ctrl.map(([x, y, z]) => new THREE.Vector3(x, y, z)), c = new THREE.CatmullRomCurve3(V, ferme, "centripetal", .5);
   const L = c.getLength(), N = Math.ceil(L / KC.pas), R = { pts: [], tan: [], nor: [], lar: [], N, ferme };
@@ -172,23 +175,27 @@ function construirePisteK(scene) { preparerTraceK(); const G = new THREE.Group()
   // les caisses de bonus (repérées par leur place dans la caserne : elles servent à chaque tour)
   KC.caisses = []; const cm = KC.cm = new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, x => { const gr = x.createLinearGradient(0, 0, 64, 64); gr.addColorStop(0, "#ffe25a"); gr.addColorStop(1, "#ff8a1a"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); x.strokeStyle = "#7a3a00"; x.lineWidth = 4; x.strokeRect(2, 2, 60, 60); x.fillStyle = "#fff"; x.font = "900 44px Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("?", 32, 35); })), emissive: 0x553300, emissiveIntensity: .6, transparent: true, opacity: .9 });
   const posSur = (R, i, d) => { const q = R.pts[i], n = R.nor[i]; return new THREE.Vector3(q.x + n.x * d, q.y, q.z + n.z * d); };
-  for (const [R, x, y, z] of [[A, 18.3, -.6, -106], [A, -18, 0, -100], [A, -21, 7.6, -2], [A, 21, 7.6, -2], [A, 1.25, 0, -64], [B, -9, 13.6, -13]]) { const i = procheDe(R, x, y, z), W = R.lar[i];
+  for (const [R, x, y, z] of [[A, 18.3, -.6, -106], [A, -18, 0, -100], [A, -21, 7.6, -2], [A, 21, 7.6, -2], [A, 1.25, 0, -64], [B, 2.2, 17.2, -.6]]) { const i = procheDe(R, x, y, z), W = R.lar[i];
     for (const f of [-.36, -.12, .12, .36]) { const pos = posSur(R, i, f * W * 1.1), m = new THREE.Mesh(new THREE.BoxGeometry(.8, .8, .8), cm); m.position.copy(pos); m.position.y += .8; G.add(m); KC.caisses.push({ pos, m, retour: 0 }); } }
   // les plaques turbo : des flèches jaunes au sol, sur les lignes droites
   KC.boosts = []; const tb = tex(toile(128, 256, x => { x.fillStyle = "#1a1a1a"; x.fillRect(0, 0, 128, 256); for (let i = 0; i < 3; i++) { const y = 200 - i * 80; const gr = x.createLinearGradient(0, y, 0, y - 60); gr.addColorStop(0, "#ff8a00"); gr.addColorStop(1, "#ffe24a"); x.fillStyle = gr; x.beginPath(); x.moveTo(10, y); x.lineTo(64, y - 60); x.lineTo(118, y); x.lineTo(118, y + 22); x.lineTo(64, y - 36); x.lineTo(10, y + 22); x.closePath(); x.fill(); } }));
-  for (const [R, x, y, z] of [[A, 18.3, -.3, -95], [A, 0, -1.13, -126.6], [A, 0, 8.1, -14.7], [A, -18, 0, -88], [B, -16, 10.9, -9]]) { const i = procheDe(R, x, y, z), W = R.lar[i], q = R.pts[i], t = R.tan[i], w = Math.min(2.2, W - .6), m = new THREE.Mesh(new THREE.PlaneGeometry(w, 2.4), new THREE.MeshBasicMaterial({ map: tb, transparent: true, opacity: .95, polygonOffset: true, polygonOffsetFactor: -6 }));
+  for (const [R, x, y, z] of [[A, 18.3, -.3, -95], [A, 0, -1.13, -126.6], [A, 0, 8.1, -14.7], [A, -18, 0, -88], [B, -8.6, 12.6, 3.4]]) { const i = procheDe(R, x, y, z), W = R.lar[i], q = R.pts[i], t = R.tan[i], w = Math.min(2.2, W - .6), m = new THREE.Mesh(new THREE.PlaneGeometry(w, 2.4), new THREE.MeshBasicMaterial({ map: tb, transparent: true, opacity: .95, polygonOffset: true, polygonOffsetFactor: -6 }));
     m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2 + Math.asin(Math.max(-1, Math.min(1, t.y))), Math.atan2(t.x, t.z) + Math.PI, 0); m.position.set(q.x, q.y + .09, q.z); G.add(m); KC.boosts.push({ pos: q.clone(), w, m }); }
-  try { dragonK(G); } catch (e) { console.warn("dragon", e); } try { parisK(G); } catch (e) { console.warn("paris", e); }
+  try { piscineK(G); } catch (e) { console.warn("piscine", e); } try { dragonK(G); } catch (e) { console.warn("dragon", e); } try { parisK(G); } catch (e) { console.warn("paris", e); }
   scene.add(G); KC.G = G; return G; }
 
 /* ---------- le dragon, perché sur le toit du bâtiment de l'horloge, qui surveille la course et crache du feu sur la voie des toits ----------
    tout en volumes « dessin animé » (contour noir) : le corps, le ventre, les pattes griffues, le long cou, la tête avec ses cornes, ses yeux jaunes à pupille fendue,
    sa mâchoire qui s'ouvre (des crocs, une langue), les ailes de chauve-souris qui battent, la queue qui ondule, les piquants du dos */
-const DRG = { x: 0, z: -25, cible: new THREE.Vector3(0, 14.6, -13.5) };
+const DRG = { x: 0, z: -15.8, y: 15.2, cible: new THREE.Vector3(2.6, 17.8, -4.6) };
 function dragonK(G) {
-  // (le haut du bâtiment de l'horloge : on le cherche avec un rayon qui descend du ciel)
-  let toit = 27; try { const r = new THREE.Raycaster(new THREE.Vector3(DRG.x, 90, DRG.z), new THREE.Vector3(0, -1, 0)); const hits = []; for (const o of M.scene.children) { if (o === G || !(o.isMesh || o.isGroup)) continue; try { r.intersectObject(o, true, hits); } catch (e) {} } hits.sort((a, b) => a.distance - b.distance); const h = hits.find(q => q.face && !(q.object.material && q.object.material.transparent)); if (h && h.point.y > 12 && h.point.y < 60) toit = h.point.y; } catch (e) {}
-  const D = new THREE.Group(); D.position.set(DRG.x, toit, DRG.z); D.scale.setScalar(1.25); G.add(D);
+  // (son perchoir : un grand balcon de pierre accroché à la façade du bâtiment de l'horloge, au-dessus du pont, avec ses consoles et sa balustrade)
+  const toit = DRG.y; { const pierre = new THREE.MeshStandardMaterial({ color: 0xd8cbb0, roughness: .85 }), P = new THREE.Group(); P.position.set(DRG.x, toit, -18); G.add(P);
+    const dalle = new THREE.Mesh(new THREE.BoxGeometry(11, .9, 6.4), pierre); dalle.position.set(0, -.45, 3.2); P.add(dalle);
+    for (const sx of [-4.2, -1.4, 1.4, 4.2]) { const co = new THREE.Mesh(new THREE.BoxGeometry(.8, 2.6, 1.8), pierre); co.position.set(sx, -2.1, .9); co.rotation.x = .5; P.add(co); }
+    for (let i = -10; i <= 10; i++) { if (Math.abs(i) < 3) continue; const ba = new THREE.Mesh(new THREE.CylinderGeometry(.12, .16, .8, 8), pierre); ba.position.set(i * .5, .4, 6.2); P.add(ba); } const ma = new THREE.Mesh(new THREE.BoxGeometry(11, .18, .4), pierre); ma.position.set(0, .85, 6.2); P.add(ma);
+    P.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); }
+  const D = new THREE.Group(); D.position.set(DRG.x, toit, DRG.z); D.scale.setScalar(1.05); G.add(D);
   const VERT = 0x3cc85a, VERT2 = 0x2a9a46, CREME = 0xffe7a0, ORANGE = 0xff9a2a, IVOIRE = 0xfff4d6, VIOLET = 0xb048e0, ROSE = 0xff6a8a;
   // (tout en « dessin animé » : des volumes ronds, une couleur franche, un contour noir épais)
   const T = (geo, c, x, y, z, sx = 1, sy = 1, sz = 1, par = D, ep = 1.08) => { const m = toonK(geo, c, ep); m.position.set(x, y, z); m.scale.set(sx, sy, sz); par.add(m); return m; };
@@ -255,10 +262,10 @@ function majDragon(dt, t) { const Dg = KC.dragon; if (!Dg) return; Dg.t += dt; c
   const cabre = cyc < 1.4 ? Math.sin(cyc / 1.4 * Math.PI / 2) : cyc < 4.2 ? 1 - (cyc - 1.4) / 2.8 * .7 : Math.max(0, .3 - (cyc - 4.2) * .2), crache = cyc > 1.7 && cyc < 4.1;
   const bat = crache ? .9 : .35; Dg.ailes.forEach((a, i) => { const sx = i ? 1 : -1; a.rotation.order = "YXZ"; a.rotation.x = -.95; a.rotation.y = sx * -.35; a.rotation.z = sx * (.2 + Math.sin(T * (crache ? 6 : 2.4)) * bat); });   /* (les ailes levées, la membrane bien visible, qui battent) */
   // (la tête : elle suit le kart le plus proche quand il n'y a pas de feu, et vise la voie des toits quand il crache)
-  let cible = DRG.cible; if (!crache) { let best = null, bd = 1e9; for (const p of KR.pil || []) { const d = p.K.g.position.distanceTo(D.position); if (d < bd) { bd = d; best = p; } } if (best && bd < 70) cible = best.K.g.position; }
-  const dx = cible.x - D.position.x, dz = cible.z - (D.position.z + 6), dy = cible.y - (D.position.y + 10);
+  let cible = DRG.cible; if (!crache) { let best = null, bd = 1e9; for (const p of KR.pil || []) { const d = p.K.g.position.distanceTo(D.position); if (d < bd) { bd = d; best = p; } } if (best && bd < 60) cible = best.K.g.position; }
+  const dx = cible.x - D.position.x, dz = cible.z - (D.position.z + 6), dy = cible.y - (D.position.y + 7);
   const yaw = Math.max(-.9, Math.min(.9, Math.atan2(dx, dz))), pitch = Math.max(-.2, Math.min(1.1, -Math.atan2(dy, Math.hypot(dx, dz)) * .9));
-  Dg.cou.rotation.y += (yaw * .6 - Dg.cou.rotation.y) * Math.min(1, dt * 3); Dg.cou.rotation.x += ((pitch * .55 - cabre * .5) - Dg.cou.rotation.x) * Math.min(1, dt * 3);
+  Dg.cou.rotation.y += (yaw * .6 - Dg.cou.rotation.y) * Math.min(1, dt * 3); Dg.cou.rotation.x += ((.45 + pitch * .35 - cabre * .45) - Dg.cou.rotation.x) * Math.min(1, dt * 3);
   Dg.tete.rotation.y += (yaw * .4 - Dg.tete.rotation.y) * Math.min(1, dt * 3); Dg.tete.rotation.x += ((pitch * .45 - cabre * .35) - Dg.tete.rotation.x) * Math.min(1, dt * 3);
   const ouvre = cyc > 1.2 && cyc < 4.3 ? (crache ? .62 + Math.sin(T * 30) * .04 : .5) : .05 + Math.max(0, Math.sin(T * .9)) * .06; Dg.mach.rotation.x += (ouvre - Dg.mach.rotation.x) * Math.min(1, dt * 10);
   // (le rugissement, si l'on est assez près pour l'entendre)
@@ -282,6 +289,33 @@ function majDragon(dt, t) { const Dg = KC.dragon; if (!Dg) return; Dg.t += dt; c
     F.sp.position.copy(bouche).addScaledVector(dir, u * l); F.sp.position.x += F.dx * a * 1.5; F.sp.position.y += F.dy * a + a * 2; F.sp.position.z += F.dx * a * .5;
     const tl = (1 + u * 2.6) * (a < .2 ? a / .2 : 1 - (a - .2) * .6); F.sp.scale.set(tl * .8, tl, 1); F.sp.material.rotation = F.rot * a; F.sp.material.opacity = Math.min(1, F.vie * 4); }
   for (const F of Dg.fumees) { if (F.vie <= 0) { F.sp.visible = false; continue; } F.vie -= dt; const a = 1 - F.vie / F.max; F.sp.position.y += dt * 2.2; F.sp.scale.setScalar(1.5 + a * 3); F.sp.material.opacity = Math.min(1, F.vie * 1.5); } }
+
+/* ---------- la piscine sur le toit : au bas de la descente des toits, on y plonge — une grande gerbe d'eau dessinée, des gouttes, de la mousse ---------- */
+function piscineK(G) { const P = PISCINE, g = new THREE.Group(); g.position.set(P.x, P.y, P.z); G.add(g);
+  const carreau = tex(toile(64, 64, x => { x.fillStyle = "#e8f4fa"; x.fillRect(0, 0, 64, 64); x.strokeStyle = "#7ab8d8"; x.lineWidth = 3; x.strokeRect(0, 0, 32, 32); x.strokeRect(32, 32, 32, 32); x.strokeRect(32, 0, 32, 32); x.strokeRect(0, 32, 32, 32); })); carreau.wrapS = carreau.wrapT = THREE.RepeatWrapping; carreau.repeat.set(4, 1);
+  const bord = new THREE.MeshStandardMaterial({ map: carreau, roughness: .4 });
+  for (const [x, z, lx, lz] of [[-P.lx / 2 - .25, 0, .5, P.lz], [P.lx / 2 + .25, 0, .5, P.lz]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(lx, .55, lz), bord); m.position.set(x, .28, z); g.add(m); }
+  // l'eau : un bleu turquoise de dessin animé, des vaguelettes blanches qui bougent, un peu transparente
+  const eauT = tex(toile(128, 128, x => { x.fillStyle = "#3ac8e8"; x.fillRect(0, 0, 128, 128); x.strokeStyle = "rgba(255,255,255,.75)"; x.lineWidth = 4; x.lineCap = "round"; for (let i = 0; i < 9; i++) { const cx = Math.random() * 128, cy = Math.random() * 128; x.beginPath(); x.arc(cx, cy, 10 + Math.random() * 8, Math.PI * 1.15, Math.PI * 1.85); x.stroke(); } }));
+  eauT.wrapS = eauT.wrapT = THREE.RepeatWrapping; eauT.repeat.set(2, 2); const eau = new THREE.Mesh(new THREE.PlaneGeometry(P.lx, P.lz), new THREE.MeshBasicMaterial({ map: eauT, transparent: true, opacity: .88, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -8 })); eau.rotation.x = -Math.PI / 2; eau.position.y = .5; g.add(eau);
+  // une bouée, un plongeoir, un parasol : c'est une piscine !
+  const bouee = new THREE.Mesh(new THREE.TorusGeometry(.42, .16, 10, 20), new THREE.MeshToonMaterial({ color: 0xff4a3a })); bouee.rotation.x = Math.PI / 2; bouee.position.set(1.4, .56, -1.2); g.add(bouee);
+  const plong = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a6aa8 })); plong.position.set(-P.lx / 2 - .2, .75, -1.4); g.add(plong);
+  const gouttes = tex(toile(64, 64, x => { x.fillStyle = "#e8faff"; x.strokeStyle = "#1a6a98"; x.lineWidth = 5; x.beginPath(); x.moveTo(32, 4); x.bezierCurveTo(52, 30, 54, 44, 32, 58); x.bezierCurveTo(10, 44, 12, 30, 32, 4); x.fill(); x.stroke(); x.fillStyle = "#ffffff"; x.beginPath(); x.ellipse(26, 38, 5, 8, -.4, 0, 7); x.fill(); }));
+  const mousse = tex(toile(64, 64, x => { x.fillStyle = "#ffffff"; x.strokeStyle = "#7ac8e8"; x.lineWidth = 4; for (const [a, b, r] of [[32, 34, 18], [18, 40, 12], [46, 40, 13], [32, 22, 12]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); x.stroke(); } x.fillStyle = "#ffffff"; for (const [a, b, r] of [[32, 34, 15], [18, 40, 9], [46, 40, 10], [32, 22, 9]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); } }));
+  KC.piscine = { eau: eauT, gouttes: Array.from({ length: 70 }, () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: gouttes, transparent: true, depthWrite: false })); sp.visible = false; G.add(sp); return { sp, vie: 0 }; }),
+    mousse: Array.from({ length: 16 }, () => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: mousse, transparent: true, depthWrite: false })); sp.visible = false; G.add(sp); return { sp, vie: 0 }; }) }; }
+function dansPiscine(P3) { const P = PISCINE; return Math.abs(P3.x - P.x) < P.lx / 2 && Math.abs(P3.z - P.z) < P.lz / 2 && P3.y < P.y + 1.2; }
+function gercheK(pos, v, fort) { const Pi = KC.piscine; if (!Pi) return; const n = fort ? 34 : 3;
+  for (let k = 0; k < n; k++) { const G2 = Pi.gouttes.find(q => q.vie <= 0); if (!G2) break; const a = Math.random() * Math.PI * 2, f = fort ? 2 + Math.random() * 3.5 : 1 + Math.random(); G2.vie = G2.max = .8 + Math.random() * .5; G2.sp.visible = true; G2.sp.position.copy(pos); G2.sp.position.y += .3; G2.vx = Math.cos(a) * f + v.x * .2; G2.vz = Math.sin(a) * f + v.z * .2; G2.vy = (fort ? 5 : 2.5) + Math.random() * 3; G2.t = .14 + Math.random() * .12; }
+  if (fort) for (let k = 0; k < 8; k++) { const F = Pi.mousse.find(q => q.vie <= 0); if (!F) break; F.vie = F.max = 1.2; F.sp.visible = true; F.sp.position.copy(pos).add(new THREE.Vector3((Math.random() - .5) * 2, .5, (Math.random() - .5) * 2)); } }
+function majPiscine(dt, t) { const Pi = KC.piscine; if (!Pi) return; Pi.eau.offset.set(Math.sin(t / 1400) * .1, t / 9000);
+  for (const G2 of Pi.gouttes) { if (G2.vie <= 0) { G2.sp.visible = false; continue; } G2.vie -= dt; G2.vy -= 14 * dt; G2.sp.position.x += G2.vx * dt; G2.sp.position.y += G2.vy * dt; G2.sp.position.z += G2.vz * dt; G2.sp.scale.setScalar(G2.t * (1 + (1 - G2.vie / G2.max) * .5)); G2.sp.material.rotation = Math.atan2(G2.vx, G2.vy) * -1; }
+  for (const F of Pi.mousse) { if (F.vie <= 0) { F.sp.visible = false; continue; } F.vie -= dt; const a = 1 - F.vie / F.max; F.sp.scale.setScalar(.35 + a * .75); F.sp.material.opacity = Math.min(1, F.vie * 2.5); }
+  for (const p of KR.pil || []) { const P3 = p.K.g.position; if (dansPiscine(P3) && Math.abs(p.v) > 1.5) { if (!p.mouille) { p.mouille = true; gercheK(P3, new THREE.Vector3(Math.sin(p.h) * p.v, 0, Math.cos(p.h) * p.v), true);
+        if (p.moi) { sonK("plouf"); const e = KR.hud && KR.hud.querySelector("#kEau"); if (e) { e.style.transition = "none"; e.style.opacity = 1; requestAnimationFrame(() => { e.style.transition = "opacity 2.2s"; e.style.opacity = 0; }); } } }
+      else if (Math.random() < dt * 25) gercheK(P3, new THREE.Vector3(), false); }
+    else if (p.mouille && !dansPiscine(P3)) p.mouille = false; } }
 
 /* ---------- Paris, au loin : la tour Eiffel illuminée (qui scintille), le Sacré-Cœur sur sa butte, l'Arc de Triomphe, la tour Montparnasse, Notre-Dame, et des centaines de toits ---------- */
 function parisK(G) { const P = new THREE.Group(); P.name = "paris"; G.add(P); const sombre = c => new THREE.MeshBasicMaterial({ color: c, fog: false });
@@ -451,7 +485,7 @@ function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.sce
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
   M.course = KR; KR.passer = false; KR.dernierVu = false; musiqueK("course"); if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } if (KC.pan) KC.pan.visible = false; ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
   // la cinématique d'ouverture : la caméra survole tout le circuit, de haut, et vient se poser derrière notre kart sur la grille
-  const D = Math.min(10500, t0 - Date.now() - 2200); KR.intro = D > 3000 ? { t: performance.now(), D } : null; KR.camPrete = false; }
+  const D = Math.min(9000, t0 - Date.now() - 2200); KR.intro = D > 3000 ? { t: performance.now(), D } : null; KR.camPrete = false; KR.introVise = null; }
 function placerGrille() { for (const p of KR.pil) KC.scene.remove(p.K.g); KR.pil = [];
   const hs = [...KR.humains].sort((a, b) => a - b); KR.solo = hs.length <= 1;
   hs.forEach((id, i) => { const g = grilleK(i), moi = id === M.moiNum, P = M.gens.get(id), nom = moi ? KR.moiInfo.nom : (P && P.info && P.info.nom ? P.info.nom.split(" ")[0] : "Joueur");
@@ -737,7 +771,7 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
   if (KC.cm) KC.cm.emissive.setHSL((t / 2400) % 1, .9, .3);
   for (const cs of KC.caisses) { if (!cs.m.visible && now > cs.retour) cs.m.visible = true; cs.m.rotation.y += dt * 1.5; cs.m.position.y = cs.pos.y + .8 + Math.sin(t / 300 + cs.s) * .1; }
   if (KC.ledTex) KC.ledTex.offset.x -= dt * .5; if (M.L && M.L.nuit === false && (!KR.nuitT || t - KR.nuitT > 2000)) { KR.nuitT = t; nuitK(true); }
-  if (KR.cer) majCeremonie(dt); if (KR.cot) majCotillons(dt); majSpectateurs(t); majFx(dt); minicarteK(); majDragon(dt, t); majParis(t);
+  if (KR.cer) majCeremonie(dt); if (KR.cot) majCotillons(dt); majSpectateurs(t); majFx(dt); minicarteK(); majDragon(dt, t); majParis(t); majPiscine(dt, t);
   if (!avant) { majObjets(dt); chocsKarts();
     for (const p of KR.pil) if ((p.moi || p.bot) && !p.fini) for (const b of KC.boosts || []) if (Math.abs(p.K.g.position.y - b.pos.y) < 1.5 && Math.hypot(p.K.g.position.x - b.pos.x, p.K.g.position.z - b.pos.z) < Math.max(1.2, b.w / 2)) { if (p.turbo < .5 && p.moi) sonK("turbo"); p.turbo = Math.max(p.turbo, .9); } }
   // notre position, pour les autres (8 fois par seconde)
@@ -750,11 +784,15 @@ function majCourse(t, dt) { if (!KR.on || !M || !KC.G) return; dt = Math.min(.05
 const cv3 = new THREE.Vector3(), cv4 = new THREE.Vector3(), cv5 = new THREE.Vector3();
 function survolK(p, cam, dt) { const I = KR.intro, u = Math.min(1, (performance.now() - I.t) / I.D);
   if (u >= 1 || KR.passer) { KR.intro = null; KR.passer = false; KR.camH = p.h; return false; }   // (fini : la caméra de course reprend, en glissant depuis là où l'on est)
-  // (la caméra suit la piste, à quelques mètres au-dessus, sur tout un tour, et arrive derrière notre kart sur la grille : elle ne traverse plus les bâtiments)
-  const e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, fin = p.s - 5, sc = fin - KC.LA * .97 * (1 - e);
-  const h = 1.7 + 1.6 * Math.sin(Math.min(1, u * 1.15) * Math.PI) + (1 - e) * .6, cote = Math.sin(u * Math.PI * 4) * Math.min(1, largeur(sc) / 2 - .4) * (1 - e);
-  const pos = surPiste(sc, cote, cv4); pos.y += h; const vise = surPiste(sc + 7, 0, cv5); vise.y += .9 + (1 - e) * .5;
-  cam.position.lerp(pos, KR.camPrete ? 1 - Math.exp(-dt * 10) : 1); KR.camPrete = true; cam.lookAt(vise); cam.fov += (66 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
+  /* la caméra remonte les 260 derniers mètres de la piste jusqu'à la grille : à vitesse régulière (un peu plus lente au début et à la fin),
+     toujours au-dessus du milieu de la piste, le regard posé loin devant et lissé — plus d'à-coups */
+  const e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2, fin = p.s - 6, L0 = Math.min(260, KC.LA * .6), sc = fin - L0 * (1 - e);
+  const pos = surPiste(sc, 0, cv4); pos.y += 2.2 + (1 - e) * 1.2;
+  const vise = surPiste(sc + 14, 0, cv5); vise.y += 1;
+  if (!KR.introVise || !KR.camPrete) { KR.introVise = vise.clone(); cam.position.copy(pos); }
+  KR.introVise.lerp(vise, 1 - Math.exp(-dt * 4)); cam.position.lerp(pos, 1 - Math.exp(-dt * 14)); KR.camPrete = true;
+  if (u > .85) { const k = (u - .85) / .15, f = cv3.set(Math.sin(p.h), 0, Math.cos(p.h)), der = new THREE.Vector3().copy(p.K.g.position).addScaledVector(f, -3.3); der.y += 1.45; cam.position.lerp(der, k * k); }   // (sur la fin, elle se pose derrière notre kart)
+  cam.lookAt(KR.introVise); cam.fov += (64 - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); return true; }
 function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.rendu.xr.isPresenting)) return; const cam = M.camera;
   if (KR.cer) { cameraCeremonie(cam, dt); return; }
   if (KR.ciel) { cameraCiel(cam, dt); return; }
@@ -795,6 +833,7 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
     <div id="kIntro" style="position:absolute;left:0;right:0;bottom:18%;text-align:center;pointer-events:auto"><div style="display:inline-block;padding:10px 22px;border-radius:14px;background:linear-gradient(90deg,rgba(20,35,74,0),rgba(20,35,74,.85) 20%,rgba(20,35,74,.85) 80%,rgba(20,35,74,0));font:900 30px 'Arial Black',Arial;color:#ffd23a;letter-spacing:.04em">🏁 LES 24 TOURS DE LA CASERNE</div><div style="font:700 13px Arial;opacity:.8;margin-top:6px">Toucher l'écran pour passer</div></div>
     <div style="position:absolute;inset:0;background:radial-gradient(circle,rgba(200,40,30,.2),rgba(200,40,30,.75));opacity:0;transition:opacity .4s" id="kFumee"></div>
     <div id="kFleche" style="display:none;position:absolute;left:50%;top:22%;transform:translateX(-50%);text-align:center;pointer-events:none;font:italic 900 26px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #8a3a00;animation:kPop 1s ease-in-out infinite alternate">⬆ PAR LES TOITS ⬆<div style="font:800 14px Arial;color:#fff;-webkit-text-stroke:0">la voie monte sur la terrasse</div></div>
+    <div id="kEau" style="position:absolute;inset:0;opacity:0;pointer-events:none;background:radial-gradient(ellipse 7% 9% at 22% 30%,rgba(200,240,255,.55) 70%,rgba(255,255,255,.9) 76%,transparent 82%),radial-gradient(ellipse 5% 7% at 70% 22%,rgba(200,240,255,.55) 70%,rgba(255,255,255,.9) 76%,transparent 82%),radial-gradient(ellipse 9% 11% at 62% 62%,rgba(200,240,255,.5) 70%,rgba(255,255,255,.9) 76%,transparent 82%),radial-gradient(ellipse 4% 6% at 35% 72%,rgba(200,240,255,.55) 70%,rgba(255,255,255,.9) 76%,transparent 82%),radial-gradient(ellipse 6% 8% at 84% 48%,rgba(200,240,255,.55) 70%,rgba(255,255,255,.9) 76%,transparent 82%),linear-gradient(rgba(80,180,230,.18),rgba(80,180,230,.18))"></div>
     <div id="kFeu" style="position:absolute;inset:0;opacity:0;pointer-events:none;background:radial-gradient(circle at 50% 40%,rgba(255,200,60,.25),rgba(255,90,10,.7) 70%,rgba(120,20,0,.85))"></div>
     <div id="kCreme" style="position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none;background-size:cover;background-position:center"></div>
     <button type="button" id="kQuitter" style="pointer-events:auto;position:absolute;left:12px;top:114px;border:0;border-radius:99px;padding:6px 12px;background:rgba(0,0,0,.55);color:#fff;font:700 13px Arial">✕ Quitter la course</button>
@@ -1061,6 +1100,7 @@ function sonK(q) { const a = audioK(); if (!a) return; const t0 = a.currentTime 
   else if (q === "rugit") { const b = a.createBuffer(1, a.sampleRate * 1.6, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) { const u = i / c.length; c[i] = (Math.random() * 2 - 1) * Math.sin(u * Math.PI) * (.6 + .4 * Math.sin(i / 90)); }
     const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 420; g.gain.value = .5; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(a.destination); s2.start(); const o = bip(70, 1.4, "sawtooth", .12); o.frequency.exponentialRampToValueAtTime(45, t0 + 1.4); }
   else if (q === "souffle") { const b = a.createBuffer(1, a.sampleRate * 2, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.min(1, i / 4000) * (1 - i / c.length); const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 700; f.Q.value = .6; g.gain.value = .35; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(a.destination); s2.start(); }
+  else if (q === "plouf") { const b = a.createBuffer(1, a.sampleRate * 1.1, a.sampleRate), c = b.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / c.length, 2.5); const s2 = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.setValueAtTime(2400, t0); f.frequency.exponentialRampToValueAtTime(300, t0 + 1); g.gain.value = .45; s2.buffer = b; s2.connect(f); f.connect(g); g.connect(a.destination); s2.start(); const o = bip(180, .3, "sine", .2); o.frequency.exponentialRampToValueAtTime(90, t0 + .3); }
   else if (q === "splat") { const o = bip(260, .25, "triangle", .12); o.frequency.exponentialRampToValueAtTime(70, t0 + .25); }
   else if (q === "glisse") { const o = bip(900, .5, "triangle", .08); o.frequency.exponentialRampToValueAtTime(300, t0 + .5); }
   else if (q === "turbo") { const o = bip(200, .7, "sawtooth", .1); o.frequency.exponentialRampToValueAtTime(900, t0 + .7); }
