@@ -503,7 +503,27 @@ function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale
 const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
 function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.lapS[0] - 2 - r * 1.8, e = Math.min(.7, largeur(s) / 2 - .5); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
-function entrerCourse() { if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; try { chargerPost(); musiqueFichierK().load(); } catch (e) { }   /* (les effets de lumière : chargés pendant l'écran titre, prêts au départ) */ ecranTitre(() => choisirPilote(id => { KR.perso = id; choisirDifficulte(n => { KR.diff = n; lancerCourse(); }); })); }
+/* l'affichage s'adapte à la taille de l'écran : petit téléphone couché, téléphone debout, tablette */
+function styleEcransK() { if (document.getElementById("kResp")) return; const st = document.createElement("style"); st.id = "kResp"; st.textContent = `
+@media (orientation: landscape) and (max-height: 430px) {
+  #kPos { font-size: 30px !important; top: 30px !important } #kTour { top: 68px !important; font-size: 13px !important } #kQuitter { top: 92px !important; font-size: 12px !important; padding: 4px 10px !important }
+  #kCarte { top: 64px !important; height: max(96px, calc(100vh - 230px)) !important; width: calc(max(96px, calc(100vh - 230px)) * .40625) !important }
+  #kBoutons { bottom: 10px !important; right: 8px !important; gap: 8px !important } #kBoutons [data-k=gaz] { width: 86px !important; height: 86px !important; font-size: 12px !important } #kBoutons [data-k=obj] { width: 56px !important; height: 56px !important; font-size: 11px !important }
+  #kPalette { height: 62px !important; bottom: 12px !important } #kManette { width: 54px !important; height: 54px !important; margin: -27px 0 0 -27px !important }
+  #kObj { width: 50px !important; height: 50px !important; top: 32px !important; font-size: 28px !important } #kDecompte { font-size: 80px !important }
+  }
+@media (orientation: portrait) {
+  #kChrono { left: 12px !important; transform: none !important; top: 148px !important; font-size: 16px !important }
+  #kCarte { top: 178px !important; height: min(300px, max(110px, calc(100vh - 430px))) !important; width: calc(min(300px, max(110px, calc(100vh - 430px))) * .40625) !important }
+  #kBoutons { grid-template-columns: auto auto !important; align-items: center !important } }
+@media (orientation: portrait) and (max-width: 360px) { #kBoutons [data-k=gaz] { width: 90px !important; height: 90px !important } #kPalette { width: 50vw !important } }`; document.head.appendChild(st); }
+/* un écran (choix, résultats) trop haut pour un petit téléphone : on le réduit pour que tout tienne, boutons compris ; recalculé si l'on tourne le téléphone */
+function ajusterEcranK(d, boite) { const faire = () => { if (!d.isConnected) { removeEventListener("resize", faire); return; }
+    const enfants = boite ? [boite] : [...d.children]; for (const e of enfants) e.style.zoom = ""; if (boite) boite.style.maxHeight = "none";
+    const dispo = d.clientHeight - 8, besoin = boite ? boite.scrollHeight + 12 : d.scrollHeight, k = Math.max(.5, Math.min(1, dispo / besoin));
+    for (const e of enfants) e.style.zoom = k < .99 ? k.toFixed(3) : ""; if (boite) boite.style.maxHeight = (dispo / k).toFixed(0) + "px"; };
+  faire(); setTimeout(faire, 120); setTimeout(faire, 700); addEventListener("resize", faire); }
+function entrerCourse() { styleEcransK(); if (KR.on || KR.choixEl || !M || M.lieu !== "grande" || !adminK()) return; try { chargerPost(); musiqueFichierK().load(); } catch (e) { }   /* (les effets de lumière : chargés pendant l'écran titre, prêts au départ) */ ecranTitre(() => choisirPilote(id => { KR.perso = id; choisirDifficulte(n => { KR.diff = n; lancerCourse(); }); })); }
 /* l'écran titre « NF Kart » : l'affiche en plein écran, un gros bouton JOUER qui palpite (au doigt, Entrée, ou A à la manette) */
 function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl = d; musiqueK("titre");
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:#0a0e1e url(images/karts/titre.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:7%;font-family:Arial,sans-serif;user-select:none;-webkit-user-select:none";
@@ -517,12 +537,12 @@ function ecranTitre(fin) { const d = document.createElement("div"); KR.choixEl =
 /* le niveau de difficulté : il règle la vitesse des karts de la caserne et la fréquence à laquelle ils lancent leurs objets */
 const DIFF_K = [{ id: "facile", nom: "Facile", txt: "Les adversaires roulent tranquille", coul: "#3ac85a", e: "🟢", v: [.9, .97], obj: .25, el: .5 }, { id: "normal", nom: "Normal", txt: "Une vraie course", coul: "#ffb21a", e: "🟠", v: [1.03, 1.1], obj: .5, el: 1 }, { id: "difficile", nom: "Difficile", txt: "Ils ne te feront aucun cadeau", coul: "#e8361a", e: "🔴", v: [1.13, 1.2], obj: .9, el: 1.4 }];
 function choisirDifficulte(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-diff"); } catch (e) {}
-  d.style.cssText = "position:absolute;inset:0;z-index:22;background:linear-gradient(rgba(6,10,26,.82),rgba(6,10,26,.92)),url(images/karts/titre.jpg) center/cover;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;box-sizing:border-box";
+  d.style.cssText = "position:absolute;inset:0;z-index:22;background:linear-gradient(rgba(6,10,26,.82),rgba(6,10,26,.92)),url(images/karts/titre.jpg) center/cover;color:#fff;font-family:Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow:auto;gap:14px;padding:16px;box-sizing:border-box";
   d.innerHTML = `<style>.k-carte:hover, .k-carte:focus-visible, .k-carte:active { border-color: #ffd23a !important; transform: scale(1.03); } .k-carte { transition: transform .12s, border-color .12s }</style><div style="font:italic 900 30px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:1.5px #111;text-shadow:0 3px 0 #8a3a00">CHOISIS LA DIFFICULTÉ</div>` + DIFF_K.map(q => `<button type="button" data-n="${q.id}" class="k-carte" style="width:min(86vw,380px);border:4px solid rgba(255,255,255,.25);border-radius:18px;padding:12px 16px;background:linear-gradient(90deg,${q.coul}cc,${q.coul}55);color:#fff;text-align:left;cursor:pointer"><div style="font:italic 900 26px 'Arial Black',Arial;-webkit-text-stroke:1px #111">${q.e} ${q.nom}</div><div style="font:700 14px Arial;opacity:.9">${q.txt}</div></button>`).join("") + `<button type="button" id="kDiffRetour" style="border:0;border-radius:99px;padding:8px 18px;background:#3a3f55;color:#fff;font:700 14px Arial">Annuler</button>`;
   for (const b of d.querySelectorAll("[data-n]")) b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-diff", b.dataset.n); } catch (er) {} d.remove(); KR.choixEl = null; fin(b.dataset.n); };
   d.querySelector("#kDiffRetour").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; arreterMusique(); };
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
-  M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kDiffRetour").click(), iSel: Math.max(0, DIFF_K.findIndex(q => q.id === (pris || "normal"))) }; }
+  M.ctx.conteneur.appendChild(d); ajusterEcranK(d); M.manMenu = { d, fermer: () => d.querySelector("#kDiffRetour").click(), iSel: Math.max(0, DIFF_K.findIndex(q => q.id === (pris || "normal"))) }; }
 /* l'écran du choix du pilote : son bonhomme, ou un personnage de la caserne */
 function choisirPilote(fin) { const d = document.createElement("div"); KR.choixEl = d; let pris = null; try { pris = localStorage.getItem("karts-perso"); } catch (e) {}
   d.style.cssText = "position:absolute;inset:0;z-index:22;background:radial-gradient(circle at 50% 30%,rgba(30,50,110,.92),rgba(6,10,26,.97));color:#fff;font-family:Arial,sans-serif;overflow:auto;padding:16px 12px;box-sizing:border-box";
@@ -537,7 +557,7 @@ function choisirPilote(fin) { const d = document.createElement("div"); KR.choixE
     b.onclick = e => { e.stopPropagation(); try { localStorage.setItem("karts-perso", q.id); } catch (er) {} d.remove(); KR.choixEl = null; fin(q.id); }; G.appendChild(b); }
   d.querySelector("#kChoixAnnuler").onclick = e => { e.stopPropagation(); d.remove(); KR.choixEl = null; arreterMusique(); };
   for (const ev of ["pointerdown", "click", "touchstart", "wheel"]) d.addEventListener(ev, e => e.stopPropagation());
-  M.ctx.conteneur.appendChild(d); M.manMenu = { d, fermer: () => d.querySelector("#kChoixAnnuler").click() };   // (à la manette : le joystick ou la croix pour choisir, A pour prendre, B pour annuler)
+  M.ctx.conteneur.appendChild(d); ajusterEcranK(d); M.manMenu = { d, fermer: () => d.querySelector("#kChoixAnnuler").click() };   // (à la manette : le joystick ou la croix pour choisir, A pour prendre, B pour annuler)
   const deja = d.querySelector(`[data-id="${pris || "moi"}"]`); if (deja) M.manMenu.iSel = [...d.querySelectorAll("button")].indexOf(deja); }
 function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true); pisteVisibleK(true);
   const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
@@ -922,7 +942,7 @@ function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.
     ${tactile ? `<div id="kPalette" style="position:absolute;left:12px;bottom:22px;width:min(46vw,260px);height:74px;border-radius:40px;border:3px solid rgba(255,255,255,.75);background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,.3) 50%,rgba(0,0,0,.55));pointer-events:auto;touch-action:none">
         <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">◀</div><div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:22px;opacity:.6">▶</div>
         <div id="kManette" style="position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9ced6 55%,#8a919c);box-shadow:0 3px 10px rgba(0,0,0,.6)"></div></div>
-      <div style="position:absolute;right:12px;bottom:18px;display:grid;grid-template-columns:auto auto;gap:10px;align-items:end;pointer-events:auto">
+      <div id="kBoutons" style="position:absolute;right:12px;bottom:18px;display:grid;grid-template-columns:auto auto;gap:10px;align-items:end;pointer-events:auto">
         <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
           <button type="button" data-k="obj" style="width:66px;height:66px;border-radius:50%;border:3px solid #ffd23a;background:rgba(0,0,0,.5);color:#ffd23a;font:700 13px Arial">OBJET</button>
 </div>
@@ -1148,7 +1168,7 @@ function podiumK() { KR.podium = true; const d = document.createElement("div"); 
   d.style.cssText = "position:absolute;inset:0;z-index:21;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,rgba(30,60,140,.75),rgba(4,8,22,.92));font-family:Arial,sans-serif;color:#fff;user-select:none;-webkit-user-select:none";
   const coulRang = i => i === 0 ? ["#fff3a0", "#e8a810"] : i === 1 ? ["#f4f6fa", "#9aa6b8"] : i === 2 ? ["#ffd0a0", "#c0702a"] : ["#ffffff", "#5a6a8a"];
   d.innerHTML = `<style>@keyframes kLigne { from { transform: translateX(110%); opacity: 0 } to { transform: none; opacity: 1 } } @keyframes kMoi { 0%,100% { box-shadow: 0 0 0 3px #7ef0ff, 0 0 18px rgba(126,240,255,.6) } 50% { box-shadow: 0 0 0 3px #fff, 0 0 30px rgba(126,240,255,.95) } }</style>
-    <div style="width:min(94vw,560px);max-height:96%;overflow:auto;padding:6px">
+    <div class="k-res" style="width:min(94vw,560px);max-height:96%;overflow:auto;padding:6px">
       <div style="text-align:center;font:italic 900 40px 'Arial Black',Arial;color:#ffd23a;-webkit-text-stroke:2px #111;text-shadow:0 4px 0 #8a3a00,0 8px 16px rgba(0,0,0,.6);margin-bottom:10px">RÉSULTATS</div>
       ${L2.map((p, i) => { const [c1, c2] = coulRang(i), ec = p.fini && t1 && i ? "+" + ((p.fini - t1) / 1000).toFixed(2) + " s" : "";
         return `<div style="display:flex;align-items:center;gap:10px;margin:7px 0;padding:6px 12px 6px 6px;border-radius:14px;background:linear-gradient(90deg,${p.moi ? "rgba(40,140,200,.95)" : "rgba(20,32,70,.92)"},${p.moi ? "rgba(20,80,140,.9)" : "rgba(12,20,48,.88)"});border:2px solid rgba(255,255,255,.18);animation:kLigne .45s ${.15 + i * .22}s both cubic-bezier(.2,1.3,.4,1)${p.moi ? `,kMoi 1.2s ${1 + i * .22}s infinite` : ""}">
@@ -1161,7 +1181,7 @@ function podiumK() { KR.podium = true; const d = document.createElement("div"); 
   // les têtes : la photo du bonhomme, ou le personnage choisi
   L2.forEach((p, i) => { const im = d.querySelector(`img[data-t="${i}"]`), T = p.teteInfo; if (!im) return; if (T && T.teteUrl && !T.tete_v) im.src = T.teteUrl; else if (T) chargerTete(T.numero, T.tete_v, T.teteUrl).then(x => { if (x) im.src = x.src; else im.replaceWith(Object.assign(document.createElement("div"), { textContent: "🏎️", style: "font-size:30px" })); }).catch(() => {}); });
   for (const ev of ["pointerdown", "click", "touchstart"]) d.addEventListener(ev, e => e.stopPropagation());
-  M.ctx.conteneur.appendChild(d); M.manMenu = { d };
+  M.ctx.conteneur.appendChild(d); ajusterEcranK(d, d.querySelector(".k-res")); M.manMenu = { d };
   [523, 659, 784].forEach((f, i) => setTimeout(() => sonK("bip"), 200 + i * 220));
   d.querySelector("#kRejouer").onclick = () => { d.remove(); quitterCourse(); KR.attente = null; setTimeout(lancerCourse, 50); };
   d.querySelector("#kSortir").onclick = () => { d.remove(); quitterCourse(); }; }
