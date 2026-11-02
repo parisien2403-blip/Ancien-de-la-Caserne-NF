@@ -166,14 +166,25 @@ function chercherCadran(dt) {
       if (!ra(e)) e = ra(brut) ? brut : null;   // (la mesure fine a déraillé sur cette image : on garde la mesure simple)
       if (e && e.a / cadran.a0 > .6 && e.a / cadran.a0 < 1.6 && e.b / e.a > .38) { cadran.vit = { x: (e.x - cadran.suiv.x) * .6, y: (e.y - cadran.suiv.y) * .6 }; cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .1; e = "ok"; } }
     else e = affiner(P, .8, 1.22, .12, 22);
-    if (e === "ok") { }
+    if (e === "ok") { }   // (déjà rangé)
     else if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .9 && e.a / P.a < 1.12 && e.b / e.a > .38 && e.a / cadran.a0 > .75 && e.a / cadran.a0 < 1.35) { cadran.vit = { x: (e.x - cadran.suiv.x) * .6, y: (e.y - cadran.suiv.y) * .6 }; cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .03; }   // (la largeur du cadran ne change presque pas quand on incline le poignet — seule sa hauteur)
     else { cadran.perdu += dt || .03; cadran.vit = null; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; cadran.cible = false; } } }
   else if (cam.currentTime !== cadran.t) { cadran.t = cam.currentTime;
     const I = imageGrise(), { g, w, h } = I, N = w * h;
     // (le cadran « NF » affiché sur la montre : un anneau bleu lumineux, reconnu à coup sûr)
-    const ci = chercherCible(I); if (ci) { const k = LARG / cam.videoWidth, e = affiner({ x: ci.x / k, y: ci.y / k, a: ci.a / k, b: ci.b / k, ang: ci.ang }, .75, 1.3, .3, 40, ci.sorte);
-      if (e) { cadran.suiv = e; cadran.a0 = e.a; cadran.cible = ci.sorte; cadran.perdu = 0; return chercherCadran(0); } }
+    /* (ce qu'on a suivi en dernier, il y a moins de 8 s : on ne cherche que la même chose — l'hologramme ne part pas sur autre chose quand la montre sort de l'image) */
+    const M = cadran.mem && Date.now() - cadran.mem.t < 8000 ? cadran.mem : null, k = LARG / cam.videoWidth;
+    const ci = chercherCible(I);
+    if (ci && (!M || M.sorte === "noir" || ci.sorte === M.sorte)) {
+      // (pour l'accepter : vu 3 images de suite au même endroit — ou bien tout près de là où était la montre à l'instant)
+      const pres = M && M.sorte === ci.sorte && Math.hypot(ci.x / k - M.x, ci.y / k - M.y) < M.a * 2.5, P0 = cadran.ciPrec;
+      cadran.ciVu = P0 && Math.hypot(ci.x - P0.x, ci.y - P0.y) < ci.a * .8 ? cadran.ciVu + 1 : 1; cadran.ciPrec = ci;
+      const taille = !M || (ci.a / k / M.a > .6 && ci.a / k / M.a < 1.6);   // (pas deux fois plus petit ou plus grand que la montre qu'on vient de voir)
+      if (pres || (taille && cadran.ciVu >= (M ? 20 : 3))) { const e = affiner({ x: ci.x / k, y: ci.y / k, a: ci.a / k, b: ci.b / k, ang: ci.ang }, .75, 1.3, .3, 40, ci.sorte);
+        if (e) { cadran.suiv = e; cadran.a0 = e.a; cadran.cible = ci.sorte; cadran.perdu = 0; cadran.ciVu = 0; return chercherCadran(0); } }
+      return null; }
+    cadran.ciPrec = null;
+    if (M && M.sorte !== "noir") { cadran.perdu += dt || .03; return null; }   // (la lampe torche n'est plus vue : on attend qu'elle revienne, sans prendre une ombre pour la montre)
     const hist = new Uint32Array(256); for (let i = 0; i < N; i++) hist[g[i] | 0]++;
     const seuils = []; let cum = 0, q = [.04, .08, .13, .2, .28], qi = 0; for (let v = 0; v < 256 && qi < q.length; v++) { cum += hist[v]; while (qi < q.length && cum >= q[qi] * N) { seuils.push(v + .5); qi++; } }
     const lab = new Int32Array(N), pile = new Int32Array(N), mk = new Uint8Array(N), m2 = new Uint8Array(N); let best = null;
@@ -206,7 +217,10 @@ function chercherCadran(dt) {
   if (!cadran.suiv && cadran.perdu > .6) { cadran.vu = 0; cadran.der = null; }
   if (!cadran.suiv) {   // (pas encore de contour mesuré : l'ovale trouvé grossièrement, s'il est vu plusieurs images de suite au même endroit)
     if (!cadran.der || cadran.vu < 4 || cadran.perdu > .6) return null;
+    const M = cadran.mem && Date.now() - cadran.mem.t < 8000 ? cadran.mem : null, kk = LARG / cam.videoWidth;
+    if (M && Math.hypot(cadran.der.x / kk - M.x, cadran.der.y / kk - M.y) > M.a * 3 && cadran.vu < 10) return null;   // (loin de là où était la montre : il faut le voir plus longtemps pour y croire)
     const C = couverture(), k = LARG / C.vw, d = cadran.der, s = C.s / k; return { x: C.ox + d.x * s, y: C.oy + d.y * s, ech: d.a * s * .75, ea: d.a * s, eb: d.b * s, ang: d.ang, auto: true }; }
+  cadran.mem = { sorte: cadran.cible || "noir", x: cadran.suiv.x, y: cadran.suiv.y, a: cadran.suiv.a, t: Date.now() };
   const C = couverture(), f = cadran.suiv; return { x: C.ox + f.x * C.s, y: C.oy + f.y * C.s, ech: f.a * C.s * .75, ea: f.a * C.s, eb: f.b * C.s, ang: f.ang, auto: true }; }
 
 /* ---------- au millimètre : le vrai bord du cadran, mesuré en pleine définition ----------
@@ -337,6 +351,7 @@ function boucle() {
   try { majSource(now); } catch (e) { console.warn(e); }
   let m = null; try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
   if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
+  if (m && holo.x && Math.hypot(m.x - holo.x, m.y - holo.y) > Math.max(160, (holo.ea || 40) * 3)) { holo.filt = {}; holo.x = m.x; holo.y = m.y; if (m.ea) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang }); }   // (un saut : pas de glissade à travers l'écran)
   if (m && m.ea) { if (!holo.ea || holo.k < .05) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang, filt: {} });
     holo.ea = lisse("ea", m.ea, dt, 2, .05); holo.eb = lisse("eb", m.eb, dt, 2, .05);
     let da = m.ang - holo.ang; da = Math.atan2(Math.sin(2 * da), Math.cos(2 * da)) / 2; holo.ang += da * Math.min(1, dt * (m.eb / m.ea > .93 ? 2 : 10)); }   // (presque rond : l'inclinaison ne veut rien dire, on la laisse tranquille)
