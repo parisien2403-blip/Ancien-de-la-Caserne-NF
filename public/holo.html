@@ -33,6 +33,7 @@
   <h1>Hologramme</h1>
   <p>Filme ta montre avec la caméra, puis <b>touche-la sur l'écran</b> : la personne qui t'appelle en sort en hologramme.</p>
   <p style="font-size:14px;opacity:.7">Ça marche aussi sur une table ou un objet : touche l'endroit d'où elle doit sortir.</p>
+  <p style="font-size:14px"><a href="images/holo/cadran-ultra.png" download="cadran-NF.png" style="color:var(--cyan)">⌚ Télécharger le cadran NF pour ta montre</a> — mets-le en fond « Photo » avec Galaxy Wearable : il sera repéré bien mieux.</p>
   <button class="gros" id="go" type="button">▶ Démarrer</button>
   <p id="erreur"></p>
 </div>
@@ -128,7 +129,7 @@ let suivi = { on: false };
 function imageGrise() { const vw = cam.videoWidth, vh = cam.videoHeight, h = Math.round(LARG * vh / vw);
   if (petitC.width !== LARG || petitC.height !== h) { petitC.width = LARG; petitC.height = h; }
   pg.drawImage(cam, 0, 0, LARG, h); const d = pg.getImageData(0, 0, LARG, h).data, g = new Float32Array(LARG * h);
-  for (let i = 0; i < g.length; i++) g[i] = d[i * 4] * .3 + d[i * 4 + 1] * .59 + d[i * 4 + 2] * .11; return { g, w: LARG, h }; }
+  for (let i = 0; i < g.length; i++) g[i] = d[i * 4] * .3 + d[i * 4 + 1] * .59 + d[i * 4 + 2] * .11; return { g, d, w: LARG, h }; }
 // (un carré de T pixels, un sur deux, sans sa luminosité moyenne : on supporte mieux les changements de lumière)
 function carre(I, cx, cy, T) { const n = T >> 1, t = new Float32Array(n * n), r = T >> 1; let m = 0;
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const x = Math.min(I.w - 1, Math.max(0, cx - r + i * 2)), y = Math.min(I.h - 1, Math.max(0, cy - r + j * 2)), v = I.g[y * I.w + x]; t[j * n + i] = v; m += v; }
@@ -154,11 +155,14 @@ function chercherCadran(dt) {
   if (cam.readyState < 2) return null;
   if (cam.currentTime !== cadran.t && cadran.suiv) { cadran.t = cam.currentTime;
     // (déjà trouvé : on ne cherche plus dans toute l'image, on suit son contour d'une image à l'autre — il peut s'incliner, s'ovaliser, grandir)
-    const P = cadran.suiv, e = affiner(P, .8, 1.22, .12, 22);
+    const P = cadran.suiv, e = cadran.cible ? affiner(P, .85, 1.18, .12, 40, true) : affiner(P, .8, 1.22, .12, 22);
     if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .9 && e.a / P.a < 1.12 && e.b / e.a > .38 && e.a / cadran.a0 > .75 && e.a / cadran.a0 < 1.35) { cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .03; }   // (la largeur du cadran ne change presque pas quand on incline le poignet — seule sa hauteur)
-    else { cadran.perdu += dt || .03; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; } } }
+    else { cadran.perdu += dt || .03; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; cadran.cible = false; } } }
   else if (cam.currentTime !== cadran.t) { cadran.t = cam.currentTime;
     const I = imageGrise(), { g, w, h } = I, N = w * h;
+    // (le cadran « NF » affiché sur la montre : un anneau bleu lumineux, reconnu à coup sûr)
+    const ci = chercherCible(I); if (ci) { const k = LARG / cam.videoWidth, e = affiner({ x: ci.x / k, y: ci.y / k, a: ci.a / k, b: ci.b / k, ang: ci.ang }, .75, 1.3, .3, 40, true);
+      if (e) { cadran.suiv = e; cadran.a0 = e.a; cadran.cible = true; cadran.perdu = 0; return chercherCadran(0); } }
     const hist = new Uint32Array(256); for (let i = 0; i < N; i++) hist[g[i] | 0]++;
     const seuils = []; let cum = 0, q = [.04, .08, .13, .2, .28], qi = 0; for (let v = 0; v < 256 && qi < q.length; v++) { cum += hist[v]; while (qi < q.length && cum >= q[qi] * N) { seuils.push(v + .5); qi++; } }
     const lab = new Int32Array(N), pile = new Int32Array(N), mk = new Uint8Array(N), m2 = new Uint8Array(N); let best = null;
@@ -197,18 +201,18 @@ function chercherCadran(dt) {
 /* ---------- au millimètre : le vrai bord du cadran, mesuré en pleine définition ----------
    64 rayons partent du centre ; sur chacun, l'endroit où l'image passe le plus nettement du sombre au clair ; puis l'ovale qui passe au mieux par ces points (les points aberrants — le bracelet, un reflet — sont écartés) */
 const fineC = document.createElement("canvas"), fg = fineC.getContext("2d", { willReadFrequently: true }), RF = 220;
-function affiner(d, lo, hi, sig, contraste = 14) {
+function affiner(d, lo, hi, sig, contraste = 14, cible = false) {
   if (!d || cam.readyState < 2) return null;
   const vx = d.x, vy = d.y, va = d.a, cote = va * 3.2, f = RF / cote, x0 = vx - cote / 2, y0 = vy - cote / 2;
   fineC.width = fineC.height = RF; fg.drawImage(cam, x0, y0, cote, cote, 0, 0, RF, RF);
-  const px = fg.getImageData(0, 0, RF, RF).data, G = new Float32Array(RF * RF); for (let i = 0; i < G.length; i++) G[i] = px[i * 4] * .3 + px[i * 4 + 1] * .59 + px[i * 4 + 2] * .11;
+  const px = fg.getImageData(0, 0, RF, RF).data, G = new Float32Array(RF * RF); for (let i = 0; i < G.length; i++) G[i] = cible ? bleuCible(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]) : px[i * 4] * .3 + px[i * 4 + 1] * .59 + px[i * 4 + 2] * .11;
   const lire = (x, y) => { if (x < 0 || y < 0 || x >= RF - 1 || y >= RF - 1) return -1; const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, i = yi * RF + xi;
     return (G[i] * (1 - fx) + G[i + 1] * fx) * (1 - fy) + (G[i + RF] * (1 - fx) + G[i + RF + 1] * fx) * fy; };
   const c = RF / 2, A = va * f, B = d.b * f, pts = [];
   for (let n = 0; n < 64; n++) { const t = n / 64 * Math.PI * 2, ux = Math.cos(t), uy = Math.sin(t);
     // (le rayon attendu dans cette direction, d'après l'ovale grossier)
     const ct = Math.cos(t - d.ang), st = Math.sin(t - d.ang), re = A * B / Math.hypot(B * ct, A * st);
-    let mg = 0, mr = 0; for (let r = re * lo; r < re * hi; r += .5) { const a1 = lire(c + ux * (r + 2), c + uy * (r + 2)), a0 = lire(c + ux * (r - 2), c + uy * (r - 2)); if (a1 < 0 || a0 < 0) break; const gr = (a1 - a0) * Math.exp(-(((r - re) / (sig * re)) ** 2)); if (gr > mg) { mg = gr; mr = r; } }   // (le bord le plus net, et le plus près de celui qu'on attend)
+    let mg = 0, mr = 0; for (let r = re * lo; r < re * hi; r += .5) { const a1 = lire(c + ux * (r + 2), c + uy * (r + 2)), a0 = lire(c + ux * (r - 2), c + uy * (r - 2)); if (a1 < 0 || a0 < 0) break; const gr = (cible ? a0 - a1 : a1 - a0) * Math.exp(-(((r - re) / (sig * re)) ** 2)); if (gr > mg) { mg = gr; mr = r; } }   // (le bord le plus net, et le plus près de celui qu'on attend)
     if (mg > 9) pts.push([ux * mr, uy * mr]); }
   if (pts.length < 22) return null;
   let e = ajusterOvale(pts, A); if (!e) return null; let gard = pts;
@@ -216,11 +220,35 @@ function affiner(d, lo, hi, sig, contraste = 14) {
     const err = pts.map(([x, y]) => Math.abs(Math.hypot(x - e.x, y - e.y) - rayonOvale(e, Math.atan2(y - e.y, x - e.x)))), med = err.slice().sort((a, b) => a - b)[err.length >> 1];
     const g2 = pts.filter((p, i) => err[i] <= Math.max(1.5, med * 2.5)); if (g2.length < 20) break; const e2 = ajusterOvale(g2, A); if (!e2) break; e = e2; gard = g2; }
   if (gard.length < 22 || Math.hypot(e.x, e.y) > A * .35 || e.a < A * .65 || e.a > A * 1.5 || e.b / e.a < .3) return null;   // (trop peu de points sur le bord : on ne croit pas cette image)
+  if (cible) {   // (le cadran NF : l'anneau bleu juste à l'intérieur du bord, le noir juste à l'extérieur)
+    let dans = 0, hors = 0, n1 = 0, n2 = 0; for (let n = 0; n < 48; n++) { const t = n / 48 * Math.PI * 2, r = rayonOvale(e, t);
+      const v1 = lire(c + e.x + Math.cos(t) * r * .95, c + e.y + Math.sin(t) * r * .95), v2 = lire(c + e.x + Math.cos(t) * r * 1.12, c + e.y + Math.sin(t) * r * 1.12); if (v1 >= 0) { dans += v1; n1++; } if (v2 >= 0) { hors += v2; n2++; } }
+    if (!n1 || !n2 || dans / n1 - hors / n2 < contraste) return null;
+    return { x: x0 + (c + e.x) / f, y: y0 + (c + e.y) / f, a: e.a / f, b: e.b / f, ang: e.ang }; }
   // (un vrai cadran : sombre dedans, nettement plus clair autour)
   let dedans = 0, autour = 0, nd = 0, na = 0; for (let n = 0; n < 48; n++) { const t = n / 48 * Math.PI * 2, r = rayonOvale(e, t);
     for (const [q, dans] of [[.35, 1], [.6, 1], [1.25, 0], [1.4, 0]]) { const v = lire(c + e.x + Math.cos(t) * r * q, c + e.y + Math.sin(t) * r * q); if (v < 0) continue; if (dans) { dedans += v; nd++; } else { autour += v; na++; } } }
   if (!nd || !na || dedans / nd > 130 || autour / na - dedans / nd < contraste || e.a / f > cam.videoWidth * .33) return null;
   return { x: x0 + (c + e.x) / f, y: y0 + (c + e.y) / f, a: e.a / f, b: e.b / f, ang: e.ang }; }
+// (à quel point un pixel est « bleu cadran » : lumineux, bleu, peu de rouge — résiste à un écran un peu surexposé)
+const bleuCible = (r, g, b) => Math.max(0, Math.min(255, (b - r) * 1.4 + (b > 150 ? 30 : 0) - Math.max(0, r - 200)));
+/* repérer le cadran NF : la plus grande tache bleu lumineux en forme d'anneau (creuse au milieu) ; puis son bord extérieur, rayon par rayon */
+function chercherCible(I) { const { d, w, h } = I, N = w * h, mk = new Uint8Array(N);
+  for (let i = 0; i < N; i++) mk[i] = bleuCible(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) > 90 ? 1 : 0;
+  const lab = new Int32Array(N), pile = new Int32Array(N); let best = null, id = 0;
+  for (let i0 = 0; i0 < N; i0++) { if (!mk[i0] || lab[i0]) continue; id++; let sp = 0, n = 0, sx = 0, sy = 0, x0 = w, x1 = 0, y0 = h, y1 = 0; pile[sp++] = i0; lab[i0] = id;
+    while (sp) { const i = pile[--sp], x = i % w, y = (i / w) | 0; n++; sx += x; sy += y; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) if (j >= 0 && j < N && mk[j] && !lab[j]) { lab[j] = id; pile[sp++] = j; } }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1; if (n < N * .002 || bw < 10 || bh < 6 || bh / bw > 2.5 || bw / bh > 2.5) continue;
+    const mx = Math.round(sx / n), my = Math.round(sy / n); if (lab[my * w + mx] === id) continue;   // (un anneau : creux au milieu)
+    if (n / (bw * bh) > .6) continue;
+    if (!best || n > best.n) best = { id, n, mx, my, bw, bh }; }
+  if (!best) return null; const pts = [], R = Math.max(best.bw, best.bh);
+  for (let k = 0; k < 72; k++) { const t = k / 72 * Math.PI * 2, ux = Math.cos(t), uy = Math.sin(t); let rr = -1;
+    for (let r = 1; r < R; r += .5) { const x = Math.round(best.mx + ux * r), y = Math.round(best.my + uy * r); if (x < 0 || y < 0 || x >= w || y >= h) break; if (lab[y * w + x] === best.id) rr = r; }
+    if (rr > 0) pts.push([ux * rr, uy * rr]); }
+  if (pts.length < 30) return null; const e = ajusterOvale(pts, R / 2); if (!e || e.b / e.a < .3) return null;
+  return { x: best.mx + e.x, y: best.my + e.y, a: e.a, b: e.b, ang: e.ang }; }
 const rayonOvale = (e, t) => { const ct = Math.cos(t - e.ang), st = Math.sin(t - e.ang); return e.a * e.b / Math.hypot(e.b * ct, e.a * st); };
 // (l'ovale par les moindres carrés : A x² + B xy + C y² + D x + E y = 1, en coordonnées réduites)
 function ajusterOvale(pts, s) { const M = Array.from({ length: 5 }, () => new Float64Array(6));
