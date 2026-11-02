@@ -112,38 +112,38 @@ public class HologrammeVue extends View implements SensorEventListener {
     }
 
     // un point (x, y, z) au-dessus du cadran, en rayons d'écran → le point de l'écran sur la même ligne que l'œil
-    private float R, C;
+    private float RA, C;
     private void ecran(double x, double y, double z, float[] out, int i) {
         double c = Math.cos(th), ex = DIST * c * Math.cos(ph), ey = DIST * c * Math.sin(ph), ez = DIST * Math.sin(th);
         double t = ez / (ez - z), px = ex + t * (x - ex), py = ey + t * (y - ey);
-        out[i] = (float) (C + px * R); out[i + 1] = (float) (C - py * R);
+        out[i] = (float) (C + px * RA); out[i + 1] = (float) (C - py * RA);
     }
 
     @Override protected void onDraw(Canvas cv) {
         long n = System.nanoTime(); float dt = dernier == 0 ? .016f : Math.min(.1f, (n - dernier) / 1e9f); dernier = n;
         majVue(dt);
-        int W = Math.min(getWidth(), getHeight()); R = W / 2f; C = R;
+        int W = Math.min(getWidth(), getHeight()); RA = W / 2f; C = RA;
         double vx = Math.cos(ph), vy = Math.sin(ph), ux = -vy, uy = vx;
         double fx = vx * .3, fy = vy * .3, H = 1.02 + .012 * Math.sin(n / 9e8), L = H * bw / bh;
         float[] q = new float[6];
-        ecran(fx, fy, 0, q, 0); float sx = q[0], sy = q[1], rs = R * .5f;
+        ecran(fx, fy, 0, q, 0); float sx = q[0], sy = q[1], rs = RA * .5f;
 
         // le sol lumineux et ses anneaux qui tournent (dans le plan de l'écran : pas déformés)
         pSol.setShader(new RadialGradient(sx, sy, rs, new int[]{Color.argb(97, 120, 235, 255), Color.argb(30, 60, 180, 255), Color.TRANSPARENT}, new float[]{0, .7f, 1}, Shader.TileMode.CLAMP));
         cv.drawCircle(sx, sy, rs, pSol);
-        pAnneau.setStrokeWidth(R * .012f);
+        pAnneau.setStrokeWidth(RA * .012f);
         for (int i = 0; i < 3; i++) {
             pAnneau.setColor(Color.argb((int) ((.75 - i * .22) * 255), 120, 240, 255));
-            pAnneau.setPathEffect(i == 1 ? new DashPathEffect(new float[]{R * .04f, R * .05f}, (float) (n / 2.5e7 * (i + 1)) % (R * .09f)) : null);
+            pAnneau.setPathEffect(i == 1 ? new DashPathEffect(new float[]{RA * .04f, RA * .05f}, (float) (n / 2.5e7 * (i + 1)) % (RA * .09f)) : null);
             cv.drawCircle(sx, sy, rs * (.55f + i * .2f), pAnneau);
         }
-        pBord.setStrokeWidth(R * .02f); cv.drawCircle(C, C, R * .985f, pBord);
+        pBord.setStrokeWidth(RA * .02f); cv.drawCircle(C, C, RA * .985f, pBord);
 
         // son ombre, étirée à l'opposé de nous
         ecran(fx - vx * .16, fy - vy * .16, 0, q, 0);
         cv.save(); cv.translate(q[0], q[1]); cv.rotate((float) Math.toDegrees(-Math.atan2(vy, vx))); cv.scale(1.25f, .55f);
-        pOmbre.setShader(new RadialGradient(0, 0, R * .26f, Color.argb(215, 0, 0, 0), Color.TRANSPARENT, Shader.TileMode.CLAMP));
-        cv.drawCircle(0, 0, R * .26f, pOmbre); cv.restore();
+        pOmbre.setShader(new RadialGradient(0, 0, RA * .26f, Color.argb(215, 0, 0, 0), Color.TRANSPARENT, Shader.TileMode.CLAMP));
+        cv.drawCircle(0, 0, RA * .26f, pOmbre); cv.restore();
 
         // la personne : chaque bande posée à sa place projetée
         int a = (int) (255 * (.86 + Math.random() * .08 - (Math.random() < .03 ? .3 : 0))); pBande.setAlpha(Math.max(60, a));
