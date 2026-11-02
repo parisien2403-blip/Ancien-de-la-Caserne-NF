@@ -65,6 +65,7 @@
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
   <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
+  <button type="button" id="bCouleurs">🎨 Couleurs</button>
   <button type="button" id="bLunettes">🕶️ Lunettes</button>
   <button type="button" id="bGhost">👻 Plexiglas</button>
   <button type="button" class="g-seul" id="bMoins">➖</button><button type="button" class="g-seul" id="bPlus">➕</button>
@@ -350,20 +351,20 @@ function dessinerHolo(now, dt) {
   const resp = holo.parle ? 1 + Math.sin(now / 90) * .006 : 1 + Math.sin(now / 900) * .004;   // (elle respire ; un peu plus quand elle parle)
   tx.drawImage(src.c, b.x, b.y, b.w, b.h, 0, th * (1 - resp), tw, th * resp);
   tx.globalCompositeOperation = "source-atop";
-  tx.fillStyle = "rgba(60,190,255,.38)"; tx.fillRect(0, 0, tw, th);
+  if (!couleurs) { tx.fillStyle = "rgba(60,190,255,.38)"; tx.fillRect(0, 0, tw, th);   /* (en vraies couleurs : ni teinte bleue, ni lignes, ni bande) */
   tx.fillStyle = "rgba(0,10,25,.35)"; const pas = Math.max(3, th / 110), dec = (now / 40) % pas; for (let ly = -pas + dec; ly < th; ly += pas) tx.fillRect(0, ly, tw, pas * .45);
-  const bande = (now / 7) % (th * 1.6) - th * .3; const gb = tx.createLinearGradient(0, bande - 20, 0, bande + 20); gb.addColorStop(0, "rgba(160,250,255,0)"); gb.addColorStop(.5, "rgba(160,250,255,.35)"); gb.addColorStop(1, "rgba(160,250,255,0)"); tx.fillStyle = gb; tx.fillRect(0, bande - 20, tw, 40);
+  const bande = (now / 7) % (th * 1.6) - th * .3; const gb = tx.createLinearGradient(0, bande - 20, 0, bande + 20); gb.addColorStop(0, "rgba(160,250,255,0)"); gb.addColorStop(.5, "rgba(160,250,255,.35)"); gb.addColorStop(1, "rgba(160,250,255,0)"); tx.fillStyle = gb; tx.fillRect(0, bande - 20, tw, 40); }
   // (elle sort du faisceau : le bas se fond dans la lumière)
   tx.globalCompositeOperation = "destination-out"; const gf = tx.createLinearGradient(0, th, 0, th * .82); gf.addColorStop(0, "rgba(0,0,0,.85)"); gf.addColorStop(1, "rgba(0,0,0,0)"); tx.fillStyle = gf; tx.fillRect(0, th * .82, tw, th * .18);
 
-  const scint = .82 + Math.random() * .1 - (Math.random() < .03 ? .35 : 0);
+  const scint = couleurs ? .97 : .82 + Math.random() * .1 - (Math.random() < .03 ? .35 : 0);
   const px = x - w / 2, py = y - lev - h;
-  cx.save(); cx.globalAlpha = scint * Math.min(1, k * 1.4); cx.shadowColor = "rgba(94,230,255,.9)"; cx.shadowBlur = 18;
-  if (Math.random() < .05) {   // (un petit accroc : une tranche décalée)
+  cx.save(); cx.globalAlpha = scint * Math.min(1, k * 1.4); cx.shadowColor = "rgba(94,230,255,.9)"; cx.shadowBlur = couleurs ? 6 : 18;
+  if (!couleurs && Math.random() < .05) {   // (un petit accroc : une tranche décalée)
     const sy = Math.random() * th, sh = 4 + Math.random() * th * .08, d = (Math.random() - .5) * w * .12;
     cx.drawImage(tampon, 0, 0, tw, sy, px, py, w, sy); cx.drawImage(tampon, 0, sy, tw, sh, px + d, py + sy, w, sh); cx.drawImage(tampon, 0, sy + sh, tw, th - sy - sh, px, py + sy + sh, w, th - sy - sh);
   } else cx.drawImage(tampon, px, py, w, h);
-  cx.shadowBlur = 0; cx.globalCompositeOperation = "lighter"; cx.globalAlpha = .25 * scint; cx.drawImage(tampon, px, py, w, h);   // (la lueur)
+  if (!couleurs) { cx.shadowBlur = 0; cx.globalCompositeOperation = "lighter"; cx.globalAlpha = .25 * scint; cx.drawImage(tampon, px, py, w, h); }   // (la lueur)
   cx.restore();
 }
 
@@ -414,6 +415,10 @@ $("#bDemo").onclick = async () => { holo.demoAuto = true; if (src.video) { src.v
 $("#bFin").onclick = () => { if (L.autre) { envoyerL({ t: "a_fin", a: L.autre.de }); return finLigne("Appel terminé"); } if (holo.etat !== "ouvert") return; holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); taire(); info("Appel terminé", 2000); $("#bFin").style.display = "none"; };   // (et ça ne resonne pas tout de suite)
 // (le mode lunettes : fond noir, plein écran, les boutons se cachent — un toucher les fait revenir quelques secondes)
 let lunettes = false, cacheBarreT = 0, ghost = false, tailleG = 1;
+// (hologramme bleu, ou la personne dans ses vraies couleurs ; le choix est gardé)
+let couleurs = false; try { couleurs = localStorage.getItem("holo-couleurs") === "1"; } catch (e) { }
+$("#bCouleurs").classList.toggle("actif", couleurs);
+$("#bCouleurs").onclick = e => { e.stopPropagation(); couleurs = !couleurs; $("#bCouleurs").classList.toggle("actif", couleurs); try { localStorage.setItem("holo-couleurs", couleurs ? "1" : "0"); } catch (er) { } info(couleurs ? "🎨 Vraies couleurs" : "💠 Hologramme bleu", 1500); };
 function montrerBarre() { document.body.classList.add("montrer"); clearTimeout(cacheBarreT); cacheBarreT = setTimeout(() => document.body.classList.remove("montrer"), 3500); }
 $("#bLunettes").onclick = e => { e.stopPropagation(); lunettes = !lunettes; document.body.classList.toggle("lunettes", lunettes); $("#bLunettes").classList.toggle("actif", lunettes);
   holo.filt = {}; holo.x = 0;
