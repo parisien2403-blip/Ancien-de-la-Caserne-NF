@@ -22,6 +22,15 @@
   #barre .actif { background: rgba(94,230,255,.3); }
   #info { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 4; max-width: calc(100% - 32px); padding: 8px 16px; border-radius: 999px; background: rgba(0,20,30,.65); border: 1px solid rgba(94,230,255,.45); font: 600 15px system-ui, Arial; text-align: center; display: none; }
   #erreur { color: #ffb4a8; }
+  #entrant { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 8; width: min(92vw, 420px); box-sizing: border-box; display: none;
+    padding: 16px; border-radius: 22px; background: rgba(2,24,36,.92); border: 1px solid rgba(94,230,255,.6); box-shadow: 0 0 30px rgba(94,230,255,.35); text-align: center; animation: pulse 1.6s ease-in-out infinite; }
+  #entrant .qui { font-size: 22px; font-weight: 700; }
+  #entrant .sous { margin: 4px 0 14px; opacity: .8; }
+  #entrant .btns { display: flex; gap: 12px; justify-content: center; }
+  #entrant button { border: 0; border-radius: 999px; padding: 12px 20px; font: 700 17px system-ui, Arial; color: #fff; cursor: pointer; }
+  #bDecrocher { background: #2fa85a; } #bRefuser { background: #c8392f; }
+  #autreVideo { position: fixed; width: 2px; height: 2px; opacity: 0; pointer-events: none; left: 0; top: 0; }
+  #ligneInfo { font-size: 13px; opacity: .7; }
 </style>
 </head>
 <body>
@@ -35,9 +44,13 @@
   <p style="font-size:14px;opacity:.7">Ça marche aussi sur une table ou un objet : touche l'endroit d'où elle doit sortir.</p>
   <p style="font-size:14px">⌚ Le plus simple : allume la <b>lampe torche</b> de ta montre (écran tout blanc), elle sera repérée à coup sûr.<br><a href="images/holo/cadran-ultra.jpg" download="cadran-NF.jpg" style="color:var(--cyan)">Ou télécharge le cadran NF</a> à mettre en fond « Photos » avec Galaxy Wearable.</p>
   <button class="gros" id="go" type="button">▶ Démarrer</button>
+  <p id="ligneInfo"></p>
   <p id="erreur"></p>
 </div>
 <div id="info"></div>
+<div id="entrant"><div class="qui" id="entrantQui"></div><div class="sous">t'appelle en hologramme 📞</div>
+  <div class="btns"><button type="button" id="bRefuser">Refuser</button><button type="button" id="bDecrocher">✅ Décrocher</button></div></div>
+<video id="autreVideo" playsinline autoplay></video>
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
   <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
@@ -83,7 +96,7 @@ async function chargerDemo() {
 function choisirVideo(fichier) {
   if (src.video) { src.video.pause(); URL.revokeObjectURL(src.video.src); }
   const v = document.createElement("video"); v.src = URL.createObjectURL(fichier); v.loop = true; v.playsInline = true; v.muted = true;
-  v.onloadeddata = () => { src.video = v; src.demo = false; src.boite = null; src.pret = true; v.play().catch(() => {}); info("Vidéo chargée : montre ta montre ⌚", 3000); };
+  holo.demoAuto = true; v.onloadeddata = () => { src.video = v; src.demo = false; src.boite = null; src.pret = true; v.play().catch(() => {}); info("Vidéo chargée : montre ta montre ⌚", 3000); };
   $("#bDemo").classList.remove("actif");
 }
 
@@ -363,7 +376,7 @@ function boucle() {
     else { const a = 1 - Math.exp(-dt * 14); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; } holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
   else { holo.perdu += dt; if (holo.perdu > .25) holo.vu = 0; }
   // l'appel : le poignet reste à l'image → ça sonne, puis la personne apparaît ; le bras baissé → elle se replie dans la montre
-  if (holo.etat === "attente" && holo.vu > .35) { holo.etat = "sonne"; holo.t = 0; sonnerie(); info("📞 Appel entrant…"); }
+  if (holo.etat === "attente" && holo.vu > .35 && holo.demoAuto) {   /* (la démo ou « Ma vidéo » ; connecté à l'appli, la montre attend les vrais appels) */ holo.etat = "sonne"; holo.t = 0; sonnerie(); info("📞 Appel entrant…"); }
   else if (holo.etat === "sonne") { holo.t += dt; if (!m && holo.perdu > .8) { holo.etat = "attente"; info(""); } else if (holo.t > 1) { holo.etat = "ouvert"; ouverture(); bourdonner(true); info(src.demo ? "Le chef de poste" : "", 2500); setTimeout(() => holo.etat === "ouvert" && parler(), 700); $("#bFin").style.display = ""; } }
   // (pendant l'appel : la montre sort de l'image → l'hologramme se replie, mais la conversation continue ; on y revient → il ressort aussitôt)
   else if (holo.etat === "ouvert") { const cache = !m && holo.perdu > .4; if (cache !== !!holo.cache) { holo.cache = cache; bourdonner(!cache); if (cache) { fermeture(); info("📞 En ligne : reviens sur ta montre", 2500); } else ouverture(); } }
@@ -380,18 +393,20 @@ addEventListener("resize", taille); taille();
 scene.addEventListener("pointerdown", e => verrouiller(e.clientX, e.clientY));
 
 $("#fichier").addEventListener("change", e => { const f = e.target.files[0]; if (f) choisirVideo(f); });
-$("#bDemo").onclick = async () => { if (src.video) { src.video.pause(); src.video = null; } src.demo = true; $("#bDemo").classList.add("actif"); await chargerDemo(); };
-$("#bFin").onclick = () => { if (holo.etat !== "ouvert") return; holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); taire(); info("Appel terminé", 2000); $("#bFin").style.display = "none"; };   // (et ça ne resonne pas tout de suite)
+$("#bDemo").onclick = async () => { holo.demoAuto = true; if (src.video) { src.video.pause(); src.video = null; } src.demo = true; $("#bDemo").classList.add("actif"); await chargerDemo(); };
+$("#bFin").onclick = () => { if (L.autre) { envoyerL({ t: "a_fin", a: L.autre.de }); return finLigne("Appel terminé"); } if (holo.etat !== "ouvert") return; holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); taire(); info("Appel terminé", 2000); $("#bFin").style.display = "none"; };   // (et ça ne resonne pas tout de suite)
 $("#bQuit").onclick = () => { location.href = "/"; };
 
-$("#go").onclick = async () => {
+let demarre = false;
+$("#go").onclick = () => demarrer();
+async function demarrer() { if (demarre) return true;
   const go = $("#go"); go.disabled = true; go.textContent = "Chargement…"; $("#erreur").textContent = "";
   try { AC = new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch (e) { }
   try { speechSynthesis.getVoices(); } catch (e) { }
   try {
     const flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     cam.srcObject = flux; await cam.play();
-  } catch (e) { $("#erreur").textContent = "Je n'ai pas accès à la caméra : autorise-la dans le navigateur, puis réessaie."; go.disabled = false; go.textContent = "▶ Démarrer"; return; }
+  } catch (e) { $("#erreur").textContent = "Je n'ai pas accès à la caméra : autorise-la dans le navigateur, puis réessaie."; go.disabled = false; go.textContent = "▶ Démarrer"; return false; }
   try {
     const vision = await FilesetResolver.forVisionTasks("vendor/mediapipe/wasm");
     const creer = async (delegate) => {
@@ -400,11 +415,57 @@ $("#go").onclick = async () => {
     };
     try { await creer("GPU"); } catch (e) { console.warn("GPU indisponible, on passe au processeur", e); await creer("CPU"); }
     await chargerDemo();
-  } catch (e) { console.error(e); $("#erreur").textContent = "Le chargement a échoué : " + (e.message || e); go.disabled = false; go.textContent = "▶ Démarrer"; return; }
-  $("#accueil").style.display = "none"; $("#barre").style.display = "flex";
-  info("⌚ Filme ta montre (si elle n'est pas repérée, touche-la)", 6000);
-  requestAnimationFrame(boucle);
-};
+  } catch (e) { console.error(e); $("#erreur").textContent = "Le chargement a échoué : " + (e.message || e); go.disabled = false; go.textContent = "▶ Démarrer"; return false; }
+  $("#accueil").style.display = "none"; $("#barre").style.display = "flex"; demarre = true;
+  info(holo.demoAuto ? "⌚ Filme ta montre (si elle n'est pas repérée, touche-la)" : "📞 En attente d'appel — 🎬 Démo pour essayer", 6000);
+  requestAnimationFrame(boucle); return true;
+}
+
+/* ---------- les vrais appels : quelqu'un appelle depuis l'appli (appel.html) ; on décroche ici, et il sort de la montre en direct ----------
+   Sa vidéo arrive par WebRTC et passe par le même détourage que les vidéos ; il entend notre micro (notre caméra, elle, filme la montre). */
+const ICE = { iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] };
+const L = { ws: null, entrant: null, autre: null, pc: null, micro: null, sonI: 0 };
+let compte = null; try { compte = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) { }
+holo.demoAuto = !(compte && compte.token);
+function connecterLigne() {
+  if (!compte || !compte.token) { $("#ligneInfo").textContent = "Connecte-toi dans l'appli de la caserne pour recevoir des appels."; return; }
+  const ws = L.ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/appel?t=" + encodeURIComponent(compte.token));
+  ws.onopen = () => { ws.send(JSON.stringify({ t: "a_bonjour", holo: true })); $("#ligneInfo").textContent = "📞 Prêt à recevoir des appels"; };
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (er) { return; } recuLigne(m); };
+  ws.onclose = () => { if (L.ws === ws) setTimeout(connecterLigne, 3000); };
+}
+const envoyerL = o => { try { L.ws.send(JSON.stringify(o)); } catch (e) { } };
+function recuLigne(m) {
+  if (m.t === "a_sonne") { if (L.autre) return envoyerL({ t: "a_repondre", id: m.id, ok: false });   // (déjà en ligne : occupé)
+    L.entrant = m; $("#entrantQui").textContent = m.nom; $("#entrant").style.display = "block";
+    clearInterval(L.sonI); const sonner = () => { sonnerie(); try { navigator.vibrate && navigator.vibrate([300, 200, 300]); } catch (e) { } }; sonner(); L.sonI = setInterval(sonner, 2600);
+    clearTimeout(L.manqueT); L.manqueT = setTimeout(() => { if (L.entrant === m) { finSonnerie(); info("📞 Appel manqué de " + m.nom, 4000); } }, 60000); return; }
+  if (m.t === "a_sig" && L.autre && m.de === L.autre.de && L.pc) { const d = m.d;
+    if (d.sdp) (async () => { await L.pc.setRemoteDescription(d.sdp); if (d.sdp.type === "offer") { const r = await L.pc.createAnswer(); await L.pc.setLocalDescription(r); envoyerL({ t: "a_sig", a: L.autre.de, d: { sdp: L.pc.localDescription } }); } })().catch(e => console.warn(e));
+    else if (d.ice) L.pc.addIceCandidate(d.ice).catch(() => { });
+    return; }
+  if (m.t === "a_fin") { if (L.entrant && m.de === L.entrant.de) { finSonnerie(); info("📞 Appel manqué de " + m.nom, 4000); } else if (L.autre && m.de === L.autre.de) finLigne(L.autre.nom + " a raccroché"); }
+}
+function finSonnerie() { clearInterval(L.sonI); clearTimeout(L.manqueT); L.entrant = null; $("#entrant").style.display = "none"; }
+$("#bRefuser").onclick = () => { const m = L.entrant; if (!m) return; envoyerL({ t: "a_repondre", id: m.id, ok: false, de: m.de }); finSonnerie(); };
+$("#bDecrocher").onclick = async () => { const m = L.entrant; if (!m) return; finSonnerie();
+  if (!demarre) { info("Démarrage de la caméra…"); if (!await demarrer()) return; }
+  try { L.micro = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { L.micro = null; info("Micro refusé : il ne t'entendra pas", 3000); }
+  L.autre = m; const pc = L.pc = new RTCPeerConnection(ICE);
+  if (L.micro) for (const t of L.micro.getTracks()) pc.addTrack(t, L.micro);
+  pc.onicecandidate = e => { if (e.candidate) envoyerL({ t: "a_sig", a: m.de, d: { ice: e.candidate } }); };
+  pc.ontrack = e => { const flux = e.streams[0]; if (!flux) return; const v = $("#autreVideo"); if (v.srcObject !== flux) { v.srcObject = flux; v.muted = false; v.play().catch(() => { }); }
+    if (flux.getVideoTracks().length) { if (src.video && src.video !== v) src.video.pause(); src.video = v; src.demo = false; src.boite = null; src.pret = false; v.onloadeddata = () => { src.pret = true; }; if (v.readyState >= 2) src.pret = true; $("#bDemo").classList.remove("actif"); } };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "connected") info("🟢 En ligne avec " + m.nom + " : filme ta montre", 4000); else if (pc.connectionState === "failed") finLigne("La connexion n'a pas pu s'établir (réseau)"); };
+  envoyerL({ t: "a_repondre", id: m.id, ok: true, de: m.de });
+  // (l'appel est ouvert : la personne apparaît dès que la montre est à l'image, et la conversation continue quand on regarde ailleurs)
+  taire(); holo.etat = "ouvert"; holo.cache = true; holo.direct = true; $("#bFin").style.display = ""; info("Connexion avec " + m.nom + "…", 3000); };
+function finLigne(msg) {
+  if (L.pc) { try { L.pc.close(); } catch (e) { } L.pc = null; } if (L.micro) { L.micro.getTracks().forEach(t => t.stop()); L.micro = null; }
+  const v = $("#autreVideo"); v.pause(); v.srcObject = null; L.autre = null;
+  if (src.video === v) { src.video = null; src.demo = true; $("#bDemo").classList.add("actif"); chargerDemo().catch(() => { }); }
+  holo.direct = false; holo.demoAuto = !(compte && compte.token); if (holo.etat === "ouvert") { holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); } $("#bFin").style.display = "none"; info(msg || "Appel terminé", 3000); }
+connecterLigne();
 </script>
 </body>
 </html>

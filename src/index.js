@@ -444,13 +444,58 @@ export class Compteur extends DurableObject {
     const s = this.sql.exec("SELECT exclu_jusqua FROM matrice_sanctions WHERE numero = ?", Number(moi.numero)).toArray()[0];
     if (s && s.exclu_jusqua && new Date(s.exclu_jusqua) > new Date()) return new Response("Exclu de la Matrice jusqu'au " + new Date(s.exclu_jusqua).toLocaleString("fr-FR", { timeZone: "Europe/Paris" }), { status: 403 });
     if (CASERNE_TRAVAUX && Number(moi.numero) !== 1) return new Response("Toutes nos excuses : la caserne est fermée pendant quelques temps, des travaux sont en cours. Elle rouvre très bientôt !", { status: 403 });   // (pendant les travaux : l'administrateur seul)
+    if (url.pathname === "/api/appel") return this.ouvrirAppel(moi);   // (l'appel en hologramme : une ligne à part, qui ne ferme pas la Matrice)
     const p = this.personneMatrice(moi.numero);
     // un seul appareil à la fois dans la Matrice : l'ancien est fermé
-    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.numero === p.numero) { try { ws.close(4000, "Ouvert sur un autre appareil"); } catch (e) {} } }
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && !a.appel && a.numero === p.numero) { try { ws.close(4000, "Ouvert sur un autre appareil"); } catch (e) {} } }
     const [client, serveur] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(serveur);
     serveur.serializeAttachment({ ...p, lieu: null, x: 0, z: 0 });
     return new Response(null, { status: 101, webSocket: client });
+  }
+  /* ----- L'appel en hologramme : quelqu'un appelle depuis l'appli, l'autre décroche sur la page de l'hologramme (holo.html) -----
+     Le serveur ne fait que mettre les deux en relation (la sonnerie, le oui ou le non, puis l'échange WebRTC) ; l'image et la voix passent d'un téléphone à l'autre.
+     Si la personne appelée n'a pas la page ouverte : une notification « 📞 … t'appelle », et l'appel l'attend une minute. */
+  ouvrirAppel(moi) {
+    const [client, serveur] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(serveur);
+    const a = { appel: true, numero: Number(moi.numero), prenom: moi.prenom, nom: moi.nom, email: moi.email, holo: false, appelle: null };
+    serveur.serializeAttachment(a);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+  lignesAppel(numero) { return this.ctx.getWebSockets().filter(w => { const b = w.deserializeAttachment(); return b && b.appel && b.numero === Number(numero); }); }
+  envoyerAppel(numero, msg, seulHolo = false) { const t = JSON.stringify(msg); let n = 0;
+    for (const w of this.lignesAppel(numero)) { const b = w.deserializeAttachment(); if (seulHolo && !b.holo) continue; try { w.send(t); n++; } catch (e) {} } return n; }
+  async messageAppel(ws, a, m) {
+    const repondre = o => { try { ws.send(JSON.stringify(o)); } catch (e) {} };
+    if (m.t === "a_bonjour") {   // (qui je suis ; la page de l'hologramme dit qu'elle peut recevoir ; la liste des membres à appeler)
+      a.holo = !!m.holo; ws.serializeAttachment(a);
+      const joignables = new Set(this.ctx.getWebSockets().map(w => w.deserializeAttachment()).filter(b => b && b.appel && b.holo).map(b => b.numero));
+      const membres = this.sql.exec("SELECT numero, prenom, nom FROM membres WHERE COALESCE(statut, 'valide') = 'valide' AND numero != ? ORDER BY prenom, nom", a.numero).toArray()
+        .map(r => ({ numero: r.numero, nom: (r.prenom || "") + " " + (r.nom || ""), en_ligne: joignables.has(r.numero) }));
+      repondre({ t: "a_bonjour", moi: { numero: a.numero, nom: a.prenom + " " + a.nom }, membres });
+      // (un appel qui attendait cette personne : il sonne maintenant)
+      if (a.holo) for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.appel && b.appelle && b.appelle.a === a.numero && Date.now() - b.appelle.t < 60000) repondre({ t: "a_sonne", de: b.numero, nom: b.prenom + " " + b.nom, id: b.appelle.id }); }
+      return; }
+    if (m.t === "a_appeler") {
+      const cible = Number(m.a), id = crypto.randomUUID(); if (!cible || cible === a.numero) return;
+      const c = this.sql.exec("SELECT numero, prenom, nom, email FROM membres WHERE numero = ?", cible).toArray()[0]; if (!c) return repondre({ t: "a_etat", etat: "inconnu" });
+      a.appelle = { a: cible, id, t: Date.now() }; ws.serializeAttachment(a);
+      const n = this.envoyerAppel(cible, { t: "a_sonne", de: a.numero, nom: a.prenom + " " + a.nom, id }, true);
+      if (!n && c.email) this.ctx.waitUntil(this.pousser(c.email, { titre: "📞 " + a.prenom + " t'appelle", corps: "Appel en hologramme : touche pour décrocher (sors ta montre !)", tag: "appel-" + id, url: "/holo.html?appel=" + id }));
+      return repondre({ t: "a_etat", etat: n ? "sonne" : "notifie", id, nom: c.prenom + " " + c.nom }); }
+    if (m.t === "a_repondre") {   // (oui ou non, de la part de l'appelé)
+      for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (b && b.appel && b.appelle && b.appelle.id === m.id && b.appelle.a === a.numero) {
+        try { w.send(JSON.stringify({ t: "a_reponse", ok: !!m.ok, de: a.numero, nom: a.prenom + " " + a.nom, id: m.id })); } catch (e) {}
+        if (!m.ok) { b.appelle = null; w.serializeAttachment(b); } } }
+      if (m.ok) { a.en_appel = Number(m.de) || null; ws.serializeAttachment(a); }
+      return; }
+    if (m.t === "a_sig") {   // (l'échange WebRTC, transmis tel quel)
+      const t = JSON.stringify({ t: "a_sig", de: a.numero, d: m.d }); if (t.length > 60000) return;
+      for (const w of this.lignesAppel(m.a)) { try { w.send(t); } catch (e) {} } return; }
+    if (m.t === "a_fin") {
+      if (a.appelle) { a.appelle = null; ws.serializeAttachment(a); }
+      this.envoyerAppel(m.a, { t: "a_fin", de: a.numero, id: m.id }); return; }
   }
   presents(lieu, sauf) {
     return this.ctx.getWebSockets().map(ws => [ws, ws.deserializeAttachment()]).filter(([ws, a]) => a && a.lieu === lieu && ws !== sauf);
@@ -465,6 +510,7 @@ export class Compteur extends DurableObject {
   async webSocketMessage(ws, brut) {
     let m; try { m = JSON.parse(brut); } catch (e) { return; }
     const a = ws.deserializeAttachment(); if (!a) return;
+    if (a.appel) return this.messageAppel(ws, a, m);
     const nb = v => Math.max(-200, Math.min(200, Number(v) || 0));   // (les cours de la caserne vont jusqu'à une centaine de mètres)
     // les univers : une seule personne à la fois (l'apocalypse de Resident Evil se joue à plusieurs) ; quelqu'un y est déjà : on refuse
     if (m.t === "entrer" && universDe(m.lieu) && universDe(a.lieu) !== universDe(m.lieu) && this.ctx.getWebSockets().some(w => { const b = w.deserializeAttachment(); return w !== ws && b && b.numero !== a.numero && universDe(b.lieu) === universDe(m.lieu); })) { ws.send(JSON.stringify({ t: "occupe", lieu: m.lieu })); return; }
@@ -688,7 +734,9 @@ export class Compteur extends DurableObject {
     const ta = await this.ctx.storage.get("affiche_taille"); if (typeof ta === "number") ws.send(JSON.stringify({ t: "affiche", taille: ta }));
   }
   quitter(ws) {
-    const a = ws.deserializeAttachment(); if (!a || !a.lieu) return;
+    const a = ws.deserializeAttachment();
+    if (a && a.appel) { const autre = a.appelle ? a.appelle.a : a.en_appel; if (autre) this.envoyerAppel(autre, { t: "a_fin", de: a.numero, id: a.appelle && a.appelle.id }); return; }   // (une page d'appel fermée : l'autre est prévenu)
+    if (!a || !a.lieu) return;
     if (LIEUX_BTTF.includes(a.lieu)) this.almanach().then(al => { if (al.pris === Number(a.numero)) return this.reposerAlmanach(); }).catch(() => {});
     this.finirSlow(ws, a);
     if (a.voix) { this.diffuserVoix(a.salleV, { t: "voix", numero: a.numero, on: false }, ws); a.voix = false; a.salleV = null; }   // (parti : son micro aussi)
@@ -1282,7 +1330,7 @@ export default {
     const route = `${request.method} ${url.pathname}`;
 
     // la Matrice : connexion en direct (WebSocket) vers le registre
-    if (url.pathname === "/api/matrice" && request.headers.get("Upgrade") === "websocket") return registre.fetch(request);
+    if ((url.pathname === "/api/matrice" || url.pathname === "/api/appel") && request.headers.get("Upgrade") === "websocket") return registre.fetch(request);
     // tête du chef de poste (réglée par l'administrateur)
     if (request.method === "GET" && url.pathname === "/api/pnj/tete") {
       let data; try { data = await registre.tetePNJ(url.searchParams.get("t") || "", Number(url.searchParams.get("id")) || 1); } catch (e) { return new Response("Connexion requise", { status: 401 }); }

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02121d">
+<title>Appel hologramme</title>
+<style>
+  :root { --cyan: #5ee6ff; --fond: #02121d; --carte: rgba(255,255,255,.06); --texte: #e8fbff; --doux: rgba(232,251,255,.65); --vert: #3ad06a; --rouge: #e0453a; }
+  html, body { margin: 0; min-height: 100%; background: var(--fond); color: var(--texte); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  body { background: radial-gradient(circle at 50% 0%, #0b3550 0%, #02121d 60%) fixed; }
+  .page { max-width: 560px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 24px; box-sizing: border-box; }
+  h1 { margin: 6px 0 4px; font-size: 26px; color: var(--cyan); text-shadow: 0 0 14px rgba(94,230,255,.55); }
+  p.sous { margin: 0 0 16px; color: var(--doux); line-height: 1.45; }
+  input[type=search] { width: 100%; box-sizing: border-box; border: 1px solid rgba(94,230,255,.4); background: rgba(0,0,0,.3); color: #fff; border-radius: 12px; padding: 12px 14px; font-size: 16px; margin-bottom: 12px; }
+  .liste { display: flex; flex-direction: column; gap: 8px; }
+  .membre { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--carte); border: 1px solid rgba(255,255,255,.08); color: #fff; font: 600 16px system-ui, Arial; text-align: left; cursor: pointer; width: 100%; }
+  .membre:active { background: rgba(94,230,255,.15); }
+  .pastille { width: 10px; height: 10px; border-radius: 50%; background: #555; flex: none; }
+  .pastille.on { background: var(--vert); box-shadow: 0 0 8px var(--vert); }
+  .membre small { display: block; font-weight: 400; color: var(--doux); font-size: 13px; margin-top: 2px; }
+  .membre .tel { margin-left: auto; font-size: 22px; }
+  .titre-liste { margin: 16px 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--doux); }
+  #ecranAppel { position: fixed; inset: 0; display: none; background: #000; }
+  #moiVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  #bandeau { position: absolute; left: 0; right: 0; top: 0; padding: calc(18px + env(safe-area-inset-top)) 16px 30px; text-align: center; background: linear-gradient(rgba(0,0,0,.75), transparent); }
+  #bandeau .qui { font-size: 24px; font-weight: 700; }
+  #bandeau .etat { margin-top: 6px; color: var(--cyan); font-size: 16px; }
+  #bas { position: absolute; left: 0; right: 0; bottom: 0; padding: 20px 16px calc(28px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 18px; background: linear-gradient(transparent, rgba(0,0,0,.7)); }
+  .rond { width: 68px; height: 68px; border-radius: 50%; border: 0; font-size: 28px; color: #fff; cursor: pointer; }
+  #bRaccrocher { background: var(--rouge); }
+  #bMicro { background: rgba(255,255,255,.18); }
+  #bMicro.coupe { background: #fff; color: #000; }
+  .conseil { position: absolute; left: 16px; right: 16px; bottom: calc(118px + env(safe-area-inset-bottom)); text-align: center; color: var(--doux); font-size: 14px; }
+  .bloc { padding: 18px; border-radius: 16px; background: var(--carte); line-height: 1.5; }
+  a { color: var(--cyan); }
+</style>
+</head>
+<body>
+<div class="page" id="ecranListe">
+  <h1>📞 Appel hologramme</h1>
+  <p class="sous">Choisis qui appeler : tu apparaîtras en hologramme au-dessus de sa montre. Mets-toi face à la caméra, dans un endroit bien éclairé.</p>
+  <div id="contenu" class="bloc">Connexion…</div>
+</div>
+
+<div id="ecranAppel">
+  <video id="moiVideo" playsinline autoplay muted></video>
+  <audio id="sonAutre" autoplay></audio>
+  <div id="bandeau"><div class="qui" id="qui"></div><div class="etat" id="etat"></div></div>
+  <div class="conseil" id="conseil">Reste bien dans le cadre, de la tête à la taille : c'est cette image qui sort de sa montre.</div>
+  <div id="bas">
+    <button class="rond" id="bMicro" type="button" aria-label="Couper le micro">🎙️</button>
+    <button class="rond" id="bRaccrocher" type="button" aria-label="Raccrocher">📵</button>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const ICE = { iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] };
+let moi = null; try { moi = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) {}
+const contenu = $("#contenu");
+let ws = null, membres = [], appel = null, flux = null, pc = null, minuterie = null, bip = null;
+
+if (!moi || !moi.token) contenu.innerHTML = `Pour appeler, connecte-toi d'abord dans l'appli de la caserne, puis reviens ici.<br><br><a href="/">Ouvrir l'appli</a>`;
+else connecter();
+
+function connecter() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/appel?t=" + encodeURIComponent(moi.token));
+  ws.onopen = () => ws.send(JSON.stringify({ t: "a_bonjour", holo: false }));
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (er) { return; } recu(m); };
+  ws.onclose = () => { if (appel) finAppel("La ligne a été coupée."); setTimeout(connecter, 2500); };
+}
+const envoyer = o => { try { ws.send(JSON.stringify(o)); } catch (e) {} };
+
+function afficherListe() {
+  const q = ($("#cherche") && $("#cherche").value || "").toLowerCase();
+  const l = membres.filter(m => !q || m.nom.toLowerCase().includes(q));
+  const on = l.filter(m => m.en_ligne), off = l.filter(m => !m.en_ligne);
+  const ligne = m => `<button class="membre" data-n="${m.numero}" type="button"><span class="pastille ${m.en_ligne ? "on" : ""}"></span><span>${echap(m.nom)}<small>${m.en_ligne ? "Hologramme ouvert : ça sonne tout de suite" : "Recevra une notification"}</small></span><span class="tel">📞</span></button>`;
+  $("#liste").innerHTML = (on.length ? `<div class="titre-liste">Prêts à décrocher</div>` + on.map(ligne).join("") : "") + (off.length ? `<div class="titre-liste">Les autres</div>` + off.map(ligne).join("") : "") || `<p class="sous">Personne à ce nom.</p>`;
+  for (const b of $("#liste").querySelectorAll(".membre")) b.onclick = () => appeler(+b.dataset.n);
+}
+const echap = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function recu(m) {
+  if (m.t === "a_bonjour") { membres = m.membres || [];
+    contenu.className = ""; contenu.innerHTML = `<input type="search" id="cherche" placeholder="Chercher un nom…" autocomplete="off"><div class="liste" id="liste"></div>`;
+    $("#cherche").oninput = afficherListe; afficherListe(); return; }
+  if (!appel) return;
+  if (m.t === "a_etat") { appel.id = m.id;
+    etat(m.etat === "sonne" ? "Ça sonne…" : m.etat === "notifie" ? "La personne n'a pas la page ouverte : une notification lui est envoyée. Ça sonnera dès qu'elle l'ouvrira…" : "Introuvable");
+    return; }
+  if (m.t === "a_reponse" && m.id === appel.id) { if (!m.ok) return finAppel("Pas disponible pour l'instant."); demarrerRTC(); etat("Connexion…"); return; }
+  if (m.t === "a_sig" && m.de === appel.a && pc) { const d = m.d;
+    if (d.sdp) pc.setRemoteDescription(d.sdp).catch(e => console.warn(e));
+    else if (d.ice) pc.addIceCandidate(d.ice).catch(() => {});
+    return; }
+  if (m.t === "a_fin" && m.de === appel.a) finAppel("L'autre a raccroché.");
+}
+
+async function appeler(n) {
+  const qui = membres.find(m => m.numero === n); if (!qui) return;
+  try { flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { alert("Autorise la caméra et le micro pour appeler."); return; }
+  appel = { a: n, nom: qui.nom, id: null };
+  $("#moiVideo").srcObject = flux; $("#ecranListe").style.display = "none"; $("#ecranAppel").style.display = "block";
+  $("#qui").textContent = qui.nom; etat("Appel…"); sonnerieSortante(true);
+  envoyer({ t: "a_appeler", a: n });
+  minuterie = setTimeout(() => { if (appel && !pc) { envoyer({ t: "a_fin", a: appel.a, id: appel.id }); finAppel("Pas de réponse."); } }, 60000);
+}
+function etat(t) { $("#etat").textContent = t; }
+
+async function demarrerRTC() {
+  sonnerieSortante(false); clearTimeout(minuterie);
+  pc = new RTCPeerConnection(ICE);
+  for (const t of flux.getTracks()) pc.addTrack(t, flux);
+  pc.onicecandidate = e => { if (e.candidate) envoyer({ t: "a_sig", a: appel.a, d: { ice: e.candidate } }); };
+  pc.ontrack = e => { const s = e.streams[0]; if (s && s.getAudioTracks().length) { $("#sonAutre").srcObject = s; $("#sonAutre").play().catch(() => {}); } };
+  pc.onconnectionstatechange = () => { const c = pc && pc.connectionState;
+    if (c === "connected") { etat("🟢 En ligne : tu es en hologramme sur sa montre"); $("#conseil").style.display = "block"; }
+    else if (c === "failed") finAppel("La connexion n'a pas pu s'établir (réseau)."); };
+  const offre = await pc.createOffer(); await pc.setLocalDescription(offre);
+  envoyer({ t: "a_sig", a: appel.a, d: { sdp: pc.localDescription } });
+}
+
+function finAppel(msg) {
+  sonnerieSortante(false); clearTimeout(minuterie);
+  if (pc) { try { pc.close(); } catch (e) {} pc = null; }
+  if (flux) { flux.getTracks().forEach(t => t.stop()); flux = null; }
+  etat(msg || "Appel terminé");
+  setTimeout(() => { $("#ecranAppel").style.display = "none"; $("#ecranListe").style.display = "block"; appel = null; }, 1800);
+}
+$("#bRaccrocher").onclick = () => { if (appel) envoyer({ t: "a_fin", a: appel.a, id: appel.id }); finAppel("Appel terminé"); };
+$("#bMicro").onclick = () => { if (!flux) return; const a = flux.getAudioTracks()[0]; if (!a) return; a.enabled = !a.enabled; $("#bMicro").classList.toggle("coupe", !a.enabled); };
+
+// la tonalité d'attente, pendant que ça sonne chez l'autre
+function sonnerieSortante(on) {
+  if (!on) { if (bip) { clearInterval(bip.i); try { bip.ac.close(); } catch (e) {} bip = null; } return; }
+  try { const ac = new (window.AudioContext || window.webkitAudioContext)(), joue = () => { const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.frequency.value = 440; g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.08, t + .05); g.gain.setValueAtTime(.08, t + 1.2); g.gain.linearRampToValueAtTime(.0001, t + 1.3); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 1.35); };
+    joue(); bip = { ac, i: setInterval(joue, 4000) }; } catch (e) {}
+}
+</script>
+</body>
+</html>
