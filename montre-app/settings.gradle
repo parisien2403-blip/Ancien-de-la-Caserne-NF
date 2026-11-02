@@ -1,0 +1,6 @@
+// L'appli de la montre (Galaxy Watch Ultra, Wear OS) : elle ouvre la page de l'hologramme en plein écran.
+// Elle est fabriquée par GitHub (voir .github/workflows/montre-apk.yml) : pas besoin d'Android Studio.
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+rootProject.name = "hologramme-montre"
+include ":app"
