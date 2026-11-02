@@ -6,8 +6,8 @@ android {
         applicationId "fr.caserne.hologramme"
         minSdk 30          // (Wear OS 3 et plus : Galaxy Watch 4 et suivantes)
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
