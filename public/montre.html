@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000">
+<title>Montre hologramme</title>
+<style>
+  /* la page de la montre (Galaxy Watch Ultra : écran rond 480 × 480) — tout est noir : sur un écran AMOLED, le noir est éteint */
+  :root { --cyan: #5ee6ff; --fond: #000; --texte: #e8fbff; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte); font-family: system-ui, Roboto, Arial, sans-serif; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; }
+  #accueil { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 18%; box-sizing: border-box; }
+  #accueil b { color: var(--cyan); font-size: 15px; letter-spacing: .04em; text-shadow: 0 0 10px rgba(94,230,255,.7); }
+  #accueil span { font-size: 11px; opacity: .75; line-height: 1.35; }
+  #go { margin-top: 6px; border: 2px solid var(--cyan); border-radius: 999px; padding: 8px 18px; background: rgba(94,230,255,.15); color: #fff; font: 700 13px system-ui, Arial; }
+  #aide { position: fixed; left: 0; right: 0; bottom: 12%; text-align: center; font-size: 10px; opacity: 0; transition: opacity .5s; color: var(--cyan); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="accueil"><b>⌚ HOLOGRAMME</b><span>Regarde ta montre de biais, comme pour lire l'heure : il se tient debout sur le cadran.</span><button id="go" type="button">▶ Démarrer</button></div>
+<div id="aide"></div>
+<script>
+/* Le trompe-l'œil (« anamorphose ») : la personne est dessinée à plat sur l'écran, mais déformée exactement comme le serait
+   l'image d'une petite personne debout sur le cadran, vue depuis notre œil. Vue sous le bon angle, elle semble sortir de la montre.
+   Le gyroscope de la montre dit comment le poignet est tourné : on recalcule la déformation pour que l'illusion tienne.
+   Toucher l'écran = « je regarde ma montre comme ça » (le réglage de départ). */
+const $ = s => document.querySelector(s), cv = $("#c"), cx = cv.getContext("2d");
+let T = 0, R = 0;   // (taille du canevas en pixels, rayon de l'écran)
+function taille() { const d = devicePixelRatio || 1, cote = Math.min(innerWidth, innerHeight); cv.style.width = cv.style.height = cote + "px"; T = Math.round(cote * d); cv.width = cv.height = T; R = T / 2; }
+addEventListener("resize", taille); taille();
+
+// la personne : le chef de poste détouré (la démo)
+const perso = new Image(); perso.src = "images/holo/chef-detoure.png";
+const tampon = document.createElement("canvas"), tx = tampon.getContext("2d");
+
+/* ---------- d'où on regarde : élévation θ (au-dessus du plan de l'écran) et direction φ (dans le plan de l'écran) ---------- */
+const VUE = { th: 50 * Math.PI / 180, ph: -Math.PI / 2 };   // (de départ : depuis le côté de 6 h, à 50°)
+let oeilMonde = null, ori = null;
+// la rotation de la montre (alpha, beta, gamma → matrice), d'après la norme des capteurs d'orientation
+function matrice(a, b, g) { const r = Math.PI / 180, ca = Math.cos(a * r), sa = Math.sin(a * r), cb = Math.cos(b * r), sb = Math.sin(b * r), cg = Math.cos(g * r), sg = Math.sin(g * r);
+  return [ca * cg - sa * sb * sg, -cb * sa, ca * sg + cg * sa * sb, cg * sa + ca * sb * sg, ca * cb, sa * sg - ca * cg * sb, -cb * sg, sb, cb * cg]; }
+const fois = (M, v) => [M[0] * v[0] + M[1] * v[1] + M[2] * v[2], M[3] * v[0] + M[4] * v[1] + M[5] * v[2], M[6] * v[0] + M[7] * v[1] + M[8] * v[2]];
+const foisT = (M, v) => [M[0] * v[0] + M[3] * v[1] + M[6] * v[2], M[1] * v[0] + M[4] * v[1] + M[7] * v[2], M[2] * v[0] + M[5] * v[1] + M[8] * v[2]];
+addEventListener("deviceorientation", e => { if (e.beta == null) return; ori = matrice(e.alpha || 0, e.beta, e.gamma || 0); if (!oeilMonde) caler(); });
+function caler() {   // (la position actuelle du poignet = regarder depuis 6 h, à 50°)
+  if (!ori) return; const th = 50 * Math.PI / 180, ph = -Math.PI / 2;
+  oeilMonde = fois(ori, [Math.cos(th) * Math.cos(ph), Math.cos(th) * Math.sin(ph), Math.sin(th)]); aide("Réglé : regarde ta montre comme ça", 1600); }
+function majVue(dt) {
+  let th = 50 * Math.PI / 180, ph = -Math.PI / 2;
+  if (ori && oeilMonde) { const e = foisT(ori, oeilMonde); th = Math.asin(Math.max(-1, Math.min(1, e[2]))); ph = Math.atan2(e[1], e[0]); }
+  else { const t = performance.now() / 1000; th += Math.sin(t * .5) * .08; ph += Math.sin(t * .37) * .25; }   // (sans gyroscope : un léger balancement)
+  th = Math.max(22 * Math.PI / 180, Math.min(72 * Math.PI / 180, th));
+  const k = 1 - Math.exp(-dt * 8); VUE.th += (th - VUE.th) * k; let d = ph - VUE.ph; d = Math.atan2(Math.sin(d), Math.cos(d)); VUE.ph += d * k; }
+
+/* ---------- la projection : un point (x, y, z) au-dessus du cadran (en rayons d'écran) → le point de l'écran sur la même ligne que l'œil ---------- */
+const DIST = 13;   // (l'œil à ~30 cm, l'écran fait ~2,3 cm de rayon)
+function proj(P) { const c = Math.cos(VUE.th), E = [DIST * c * Math.cos(VUE.ph), DIST * c * Math.sin(VUE.ph), DIST * Math.sin(VUE.th)];
+  const t = E[2] / (E[2] - P[2]); return [E[0] + t * (P[0] - E[0]), E[1] + t * (P[1] - E[1])]; }
+const ecran = p => [R + p[0] * R, R - p[1] * R];   // (y vers 12 h)
+
+function dessiner(now) {
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, T, T);
+  const ph = VUE.ph, vx = Math.cos(ph), vy = Math.sin(ph);   // (vers l'œil, dans le plan de l'écran)
+  const ux = -vy, uy = vx;   // (la largeur de la personne : perpendiculaire à la direction du regard)
+  const pied = [vx * .3, vy * .3];   // (elle se tient un peu vers nous : sa tête, projetée vers l'arrière, reste dans l'écran)
+  const H = 1.02 + .012 * Math.sin(now / 900), ratio = perso.naturalWidth ? perso.naturalWidth / perso.naturalHeight : .8, L = H * ratio;
+
+  // le sol lumineux : un disque bleuté sur le cadran (dans le plan de l'écran, il n'est pas déformé), avec ses anneaux qui tournent
+  const [sx, sy] = ecran(pied), rs = R * .5;
+  let g = cx.createRadialGradient(sx, sy, 0, sx, sy, rs); g.addColorStop(0, "rgba(120,235,255,.38)"); g.addColorStop(.7, "rgba(60,180,255,.12)"); g.addColorStop(1, "rgba(60,180,255,0)");
+  cx.fillStyle = g; cx.beginPath(); cx.arc(sx, sy, rs, 0, Math.PI * 2); cx.fill();
+  cx.lineWidth = R * .012; for (let i = 0; i < 3; i++) { cx.strokeStyle = `rgba(120,240,255,${.75 - i * .22})`; cx.setLineDash(i === 1 ? [R * .04, R * .05] : []); cx.lineDashOffset = -now / 25 * (i + 1);
+    cx.beginPath(); cx.arc(sx, sy, rs * (.55 + i * .2), 0, Math.PI * 2); cx.stroke(); } cx.setLineDash([]);
+  cx.strokeStyle = "rgba(94,230,255,.55)"; cx.lineWidth = R * .02; cx.beginPath(); cx.arc(R, R, R * .985, 0, Math.PI * 2); cx.stroke();   // (le bord du cadran)
+
+  // son ombre sur le sol lumineux : l'ombre de ses pieds, étirée à l'opposé de nous (un indice de relief très fort)
+  const om = ecran([pied[0] - vx * .16, pied[1] - vy * .16]); cx.save(); cx.translate(om[0], om[1]); cx.rotate(-Math.atan2(vy, vx));
+  g = cx.createRadialGradient(0, 0, 0, 0, 0, R * .26); g.addColorStop(0, "rgba(0,0,0,.85)"); g.addColorStop(1, "rgba(0,0,0,0)"); cx.fillStyle = g; cx.scale(1.25, .55); cx.beginPath(); cx.arc(0, 0, R * .26, 0, Math.PI * 2); cx.fill(); cx.restore();
+
+  if (!perso.naturalWidth) return;
+  // la personne teintée hologramme (une fois par image), puis découpée en bandes horizontales, chacune posée à sa place projetée
+  const iw = 210, ih = Math.round(iw / ratio); if (tampon.width !== iw) { tampon.width = iw; tampon.height = ih; }
+  tx.globalCompositeOperation = "source-over"; tx.clearRect(0, 0, iw, ih); tx.drawImage(perso, 0, 0, iw, ih);
+  tx.globalCompositeOperation = "source-atop"; tx.fillStyle = "rgba(60,190,255,.35)"; tx.fillRect(0, 0, iw, ih);
+  tx.fillStyle = "rgba(0,10,25,.3)"; for (let ly = (now / 50) % 3; ly < ih; ly += 3) tx.fillRect(0, ly, iw, 1.2);
+  tx.globalCompositeOperation = "destination-out"; const gf = tx.createLinearGradient(0, ih, 0, ih * .85); gf.addColorStop(0, "rgba(0,0,0,.8)"); gf.addColorStop(1, "rgba(0,0,0,0)"); tx.fillStyle = gf; tx.fillRect(0, ih * .85, iw, ih * .15);
+  const N = 48, scint = .86 + Math.random() * .08 - (Math.random() < .03 ? .3 : 0);
+  cx.globalAlpha = scint;
+  for (let k = 0; k < N; k++) {
+    const z0 = H * k / N, z1 = H * (k + 1) / N, sy0 = ih * (1 - (k + 1) / N), sh = ih / N + .6;   // (la bande du haut de l'image = le haut de la personne)
+    const P = (s, z) => ecran(proj([pied[0] + ux * s * L / 2, pied[1] + uy * s * L / 2, z]));
+    const a = P(-1, z1), b = P(1, z1), c = P(-1, z0);   // (en haut à gauche, en haut à droite, en bas à gauche)
+    cx.setTransform((b[0] - a[0]) / iw, (b[1] - a[1]) / iw, (c[0] - a[0]) / sh, (c[1] - a[1]) / sh, a[0], a[1]);
+    cx.drawImage(tampon, 0, sy0, iw, sh, 0, 0, iw, sh); }
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalAlpha = 1;
+  // un faisceau léger qui monte du sol
+  const hb = ecran(proj([pied[0], pied[1], H * .9])); g = cx.createLinearGradient(sx, sy, hb[0], hb[1]); g.addColorStop(0, "rgba(94,230,255,.22)"); g.addColorStop(1, "rgba(94,230,255,0)");
+  cx.globalCompositeOperation = "lighter"; cx.fillStyle = g; const l0 = ecran(proj([pied[0] - ux * L * .7, pied[1] - uy * L * .7, H])), l1 = ecran(proj([pied[0] + ux * L * .7, pied[1] + uy * L * .7, H]));
+  cx.beginPath(); cx.moveTo(sx - ux * rs * .35, sy + uy * rs * .35); cx.lineTo(sx + ux * rs * .35, sy - uy * rs * .35); cx.lineTo(l1[0], l1[1]); cx.lineTo(l0[0], l0[1]); cx.closePath(); cx.fill(); cx.globalCompositeOperation = "source-over";
+}
+
+let dernier = 0;
+function boucle(now) { const dt = Math.min(.1, (now - (dernier || now)) / 1000); dernier = now; majVue(dt); dessiner(now); requestAnimationFrame(boucle); }
+function aide(t, ms) { const a = $("#aide"); a.textContent = t; a.style.opacity = 1; clearTimeout(aide.t); aide.t = setTimeout(() => a.style.opacity = 0, ms || 2000); }
+
+$("#go").onclick = async () => {
+  $("#accueil").style.display = "none";
+  try { if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) await DeviceOrientationEvent.requestPermission(); } catch (e) { }
+  try { await navigator.wakeLock.request("screen"); } catch (e) { }   // (l'écran reste allumé)
+  try { const u = new SpeechSynthesisUtterance("Allô ? Ici le chef de poste. Je te reçois cinq sur cinq, depuis ta montre !"); u.lang = "fr-FR"; u.pitch = .8; speechSynthesis.speak(u); } catch (e) { }
+  setTimeout(() => { if (!ori) aide("Pas de gyroscope : effet fixe", 2500); }, 1500);
+  requestAnimationFrame(boucle);
+};
+cv.addEventListener("pointerdown", () => { caler(); });   // (un toucher : « je regarde ma montre comme ça »)
+</script>
+</body>
+</html>
