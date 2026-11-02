@@ -452,7 +452,7 @@ async function demarrer() { if (demarre) return true;
     try { await creer("GPU"); } catch (e) { console.warn("GPU indisponible, on passe au processeur", e); await creer("CPU"); }
     await chargerDemo();
   } catch (e) { console.error(e); $("#erreur").textContent = "Le chargement a échoué : " + (e.message || e); go.disabled = false; go.textContent = "▶ Démarrer"; return false; }
-  $("#accueil").style.display = "none"; $("#barre").style.display = "flex"; demarre = true;
+  $("#accueil").style.display = "none"; $("#barre").style.display = "flex"; demarre = true; garderEveil();
   info(holo.demoAuto ? "⌚ Filme ta montre (si elle n'est pas repérée, touche-la)" : "📞 En attente d'appel — 🎬 Démo pour essayer", 6000);
   requestAnimationFrame(boucle); return true;
 }
@@ -463,6 +463,11 @@ const ICE = { iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.
 const L = { ws: null, entrant: null, autre: null, pc: null, micro: null, sonI: 0 };
 let compte = null; try { compte = JSON.parse(localStorage.getItem("caserne-moi")); } catch (e) { }
 holo.demoAuto = !(compte && compte.token);
+/* (la page doit rester éveillée pour qu'un appel puisse sonner : l'écran ne s'éteint pas, et la ligne se rebranche dès que la page revient au premier plan) */
+let eveil = null;
+async function garderEveil() { try { if (navigator.wakeLock && (!eveil || eveil.released)) eveil = await navigator.wakeLock.request("screen"); } catch (e) { } }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") return; if (demarre) garderEveil();
+  if (!L.ws || L.ws.readyState > 1) connecterLigne(); else envoyerL({ t: "a_bonjour", holo: true }); });   // (un appel qui attendait sonne alors aussitôt)
 function connecterLigne() {
   if (!compte || !compte.token) { $("#ligneInfo").textContent = "Connecte-toi dans l'appli de la caserne pour recevoir des appels."; return; }
   const ws = L.ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/appel?t=" + encodeURIComponent(compte.token));
