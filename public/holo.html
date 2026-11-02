@@ -154,8 +154,8 @@ function chercherCadran(dt) {
   if (cam.readyState < 2) return null;
   if (cam.currentTime !== cadran.t && cadran.suiv) { cadran.t = cam.currentTime;
     // (déjà trouvé : on ne cherche plus dans toute l'image, on suit son contour d'une image à l'autre — il peut s'incliner, s'ovaliser, grandir)
-    const P = cadran.suiv, e = affiner(P, .8, 1.22, .12);
-    if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .75 && e.a / P.a < 1.33 && e.b / e.a > .38 && e.a / cadran.a0 > .5 && e.a / cadran.a0 < 1.8) { cadran.suiv = e; cadran.perdu = 0; }
+    const P = cadran.suiv, e = affiner(P, .8, 1.22, .12, 22);
+    if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .9 && e.a / P.a < 1.12 && e.b / e.a > .38 && e.a / cadran.a0 > .75 && e.a / cadran.a0 < 1.35) { cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .03; }   // (la largeur du cadran ne change presque pas quand on incline le poignet — seule sa hauteur)
     else { cadran.perdu += dt || .03; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; } } }
   else if (cam.currentTime !== cadran.t) { cadran.t = cam.currentTime;
     const I = imageGrise(), { g, w, h } = I, N = w * h;
@@ -189,13 +189,15 @@ function chercherCadran(dt) {
       if (cadran.vu >= 3) { const k = LARG / cam.videoWidth, e = affiner({ x: best.x / k, y: best.y / k, a: best.a / k, b: best.b / k, ang: best.ang }, .6, 1.45, .35); if (e) { cadran.suiv = e; cadran.a0 = e.a; } } }
     else cadran.perdu += dt || .03; }
   if (!cadran.suiv && cadran.perdu > .6) { cadran.vu = 0; cadran.der = null; }
-  if (!cadran.suiv) return null;   // (vu plusieurs images de suite au même endroit, et son contour mesuré : c'est bien lui)
+  if (!cadran.suiv) {   // (pas encore de contour mesuré : l'ovale trouvé grossièrement, s'il est vu plusieurs images de suite au même endroit)
+    if (!cadran.der || cadran.vu < 4 || cadran.perdu > .6) return null;
+    const C = couverture(), k = LARG / C.vw, d = cadran.der, s = C.s / k; return { x: C.ox + d.x * s, y: C.oy + d.y * s, ech: d.a * s * .75, ea: d.a * s, eb: d.b * s, ang: d.ang, auto: true }; }
   const C = couverture(), f = cadran.suiv; return { x: C.ox + f.x * C.s, y: C.oy + f.y * C.s, ech: f.a * C.s * .75, ea: f.a * C.s, eb: f.b * C.s, ang: f.ang, auto: true }; }
 
 /* ---------- au millimètre : le vrai bord du cadran, mesuré en pleine définition ----------
    64 rayons partent du centre ; sur chacun, l'endroit où l'image passe le plus nettement du sombre au clair ; puis l'ovale qui passe au mieux par ces points (les points aberrants — le bracelet, un reflet — sont écartés) */
 const fineC = document.createElement("canvas"), fg = fineC.getContext("2d", { willReadFrequently: true }), RF = 220;
-function affiner(d, lo, hi, sig) {
+function affiner(d, lo, hi, sig, contraste = 14) {
   if (!d || cam.readyState < 2) return null;
   const vx = d.x, vy = d.y, va = d.a, cote = va * 3.2, f = RF / cote, x0 = vx - cote / 2, y0 = vy - cote / 2;
   fineC.width = fineC.height = RF; fg.drawImage(cam, x0, y0, cote, cote, 0, 0, RF, RF);
@@ -207,17 +209,17 @@ function affiner(d, lo, hi, sig) {
     // (le rayon attendu dans cette direction, d'après l'ovale grossier)
     const ct = Math.cos(t - d.ang), st = Math.sin(t - d.ang), re = A * B / Math.hypot(B * ct, A * st);
     let mg = 0, mr = 0; for (let r = re * lo; r < re * hi; r += .5) { const a1 = lire(c + ux * (r + 2), c + uy * (r + 2)), a0 = lire(c + ux * (r - 2), c + uy * (r - 2)); if (a1 < 0 || a0 < 0) break; const gr = (a1 - a0) * Math.exp(-(((r - re) / (sig * re)) ** 2)); if (gr > mg) { mg = gr; mr = r; } }   // (le bord le plus net, et le plus près de celui qu'on attend)
-    if (mg > 14) pts.push([ux * mr, uy * mr]); }
-  if (pts.length < 24) return null;
+    if (mg > 9) pts.push([ux * mr, uy * mr]); }
+  if (pts.length < 22) return null;
   let e = ajusterOvale(pts, A); if (!e) return null; let gard = pts;
   for (let it = 0; it < 2; it++) {   // (on écarte les points trop loin de l'ovale, et on recommence)
     const err = pts.map(([x, y]) => Math.abs(Math.hypot(x - e.x, y - e.y) - rayonOvale(e, Math.atan2(y - e.y, x - e.x)))), med = err.slice().sort((a, b) => a - b)[err.length >> 1];
     const g2 = pts.filter((p, i) => err[i] <= Math.max(1.5, med * 2.5)); if (g2.length < 20) break; const e2 = ajusterOvale(g2, A); if (!e2) break; e = e2; gard = g2; }
-  if (gard.length < 28 || Math.hypot(e.x, e.y) > A * .35 || e.a < A * .65 || e.a > A * 1.5 || e.b / e.a < .3) return null;   // (trop peu de points sur le bord : on ne croit pas cette image)
+  if (gard.length < 22 || Math.hypot(e.x, e.y) > A * .35 || e.a < A * .65 || e.a > A * 1.5 || e.b / e.a < .3) return null;   // (trop peu de points sur le bord : on ne croit pas cette image)
   // (un vrai cadran : sombre dedans, nettement plus clair autour)
   let dedans = 0, autour = 0, nd = 0, na = 0; for (let n = 0; n < 48; n++) { const t = n / 48 * Math.PI * 2, r = rayonOvale(e, t);
     for (const [q, dans] of [[.35, 1], [.6, 1], [1.25, 0], [1.4, 0]]) { const v = lire(c + e.x + Math.cos(t) * r * q, c + e.y + Math.sin(t) * r * q); if (v < 0) continue; if (dans) { dedans += v; nd++; } else { autour += v; na++; } } }
-  if (!nd || !na || dedans / nd > 95 || autour / na - dedans / nd < 28 || e.a / f > cam.videoWidth * .33) return null;
+  if (!nd || !na || dedans / nd > 130 || autour / na - dedans / nd < contraste || e.a / f > cam.videoWidth * .33) return null;
   return { x: x0 + (c + e.x) / f, y: y0 + (c + e.y) / f, a: e.a / f, b: e.b / f, ang: e.ang }; }
 const rayonOvale = (e, t) => { const ct = Math.cos(t - e.ang), st = Math.sin(t - e.ang); return e.a * e.b / Math.hypot(e.b * ct, e.a * st); };
 // (l'ovale par les moindres carrés : A x² + B xy + C y² + D x + E y = 1, en coordonnées réduites)
