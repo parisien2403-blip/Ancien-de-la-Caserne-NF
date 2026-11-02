@@ -156,11 +156,9 @@ function chercherCadran(dt) {
     const I = imageGrise(), { g, w, h } = I, N = w * h;
     const hist = new Uint32Array(256); for (let i = 0; i < N; i++) hist[g[i] | 0]++;
     const seuils = []; let cum = 0, q = [.04, .08, .13, .2, .28], qi = 0; for (let v = 0; v < 256 && qi < q.length; v++) { cum += hist[v]; while (qi < q.length && cum >= q[qi] * N) { seuils.push(v + .5); qi++; } }
-    const lab = new Int32Array(N), pile = new Int32Array(N), mk = new Uint8Array(N), m2 = new Uint8Array(N), E = 3; let best = null;
-    for (const S of seuils) { lab.fill(0); let id = 0;
-      // (le masque des pixels sombres, rogné de 3 pixels : le cadran se détache de ce qui le touche — le bracelet, une ombre)
-      for (let i = 0; i < N; i++) mk[i] = g[i] < S ? 1 : 0;
-      for (let e = 0; e < E; e++) { for (let i = 0; i < N; i++) { const x = i % w; m2[i] = mk[i] && x > 0 && x < w - 1 && i >= w && i < N - w && mk[i - 1] && mk[i + 1] && mk[i - w] && mk[i + w] ? 1 : 0; } mk.set(m2); }
+    const lab = new Int32Array(N), pile = new Int32Array(N), mk = new Uint8Array(N), m2 = new Uint8Array(N); let best = null;
+    const roger = k => { for (let e = 0; e < k; e++) { for (let i = 0; i < N; i++) { const x = i % w; m2[i] = mk[i] && x > 0 && x < w - 1 && i >= w && i < N - w && mk[i - 1] && mk[i + 1] && mk[i - w] && mk[i + w] ? 1 : 0; } mk.set(m2); } };
+    const taches = E => { lab.fill(0); let id = 0;
       for (let i0 = 0; i0 < N; i0++) { if (lab[i0] || !mk[i0]) continue; id++;
         let sp = 0, n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, bord = 0; pile[sp++] = i0; lab[i0] = id;
         while (sp) { const i = pile[--sp], x = i % w, y = (i / w) | 0; n++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y;
@@ -176,14 +174,54 @@ function chercherCadran(dt) {
         if (rond < .45 || plein < .78 || plein > 1.08) continue;   // (une tache allongée, ou trouée, ou découpée : pas un cadran)
         let score = Math.abs(1 - plein) * 2 + (1 - rond) * .4 - Math.min(.2, a / w);   // (et, à forme égale, le plus grand)
         if (cadran.der && Math.hypot(mx - cadran.der.x, my - cadran.der.y) < cadran.der.a * .6 && Math.abs((a + E) / cadran.der.a - 1) < .35) score -= .1;   // (on préfère celui qu'on suivait déjà)
-        if (!best || score < best.score) best = { x: mx, y: my, a: a + E, b: b + E, ang: .5 * Math.atan2(2 * vxy, vxx - vyy), score }; } }
+        if (!best || score < best.score) best = { x: mx, y: my, a: a + E, b: b + E, ang: .5 * Math.atan2(2 * vxy, vxx - vyy), score }; } };
+    for (const S of seuils) {
+      // (le masque des pixels sombres, rogné de 3 pixels puis de 6 : le cadran se détache de ce qui le touche — le bracelet, une ombre)
+      for (let i = 0; i < N; i++) mk[i] = g[i] < S ? 1 : 0;
+      roger(3); taches(3); roger(3); taches(6); }
     if (best && best.score < .45) { const d = cadran.der;
-      cadran.vu = d && Math.hypot(best.x - d.x, best.y - d.y) < best.a * .8 ? cadran.vu + 1 : 1; cadran.der = best; cadran.perdu = 0; }
+      cadran.vu = d && Math.hypot(best.x - d.x, best.y - d.y) < best.a * .8 ? cadran.vu + 1 : 1; cadran.der = best; cadran.perdu = 0; try { affiner(); } catch (e) { cadran.fin = null; } }
     else cadran.perdu += dt || .03; }
   if (cadran.perdu > .6) { cadran.vu = 0; cadran.der = null; }
   if (!cadran.der || cadran.vu < 4 || cadran.perdu > 0 && cadran.perdu > .6) return null;   // (vu plusieurs images de suite au même endroit : c'est bien lui)
-  const C = couverture(), k = LARG / C.vw, d = cadran.der, s = C.s / k;
-  return { x: C.ox + d.x * s, y: C.oy + d.y * s, ech: d.a * s * .75, ea: d.a * s, eb: d.b * s, ang: d.ang, auto: true }; }
+  const C = couverture(), k = LARG / C.vw, d = cadran.der;
+  if (cadran.fin && cadran.fin.t === cadran.t) { const f = cadran.fin; return { x: C.ox + f.x * C.s, y: C.oy + f.y * C.s, ech: f.a * C.s * .75, ea: f.a * C.s, eb: f.b * C.s, ang: f.ang, auto: true }; }
+  const s = C.s / k; return { x: C.ox + d.x * s, y: C.oy + d.y * s, ech: d.a * s * .75, ea: d.a * s, eb: d.b * s, ang: d.ang, auto: true }; }
+
+/* ---------- au millimètre : le vrai bord du cadran, mesuré en pleine définition ----------
+   64 rayons partent du centre ; sur chacun, l'endroit où l'image passe le plus nettement du sombre au clair ; puis l'ovale qui passe au mieux par ces points (les points aberrants — le bracelet, un reflet — sont écartés) */
+const fineC = document.createElement("canvas"), fg = fineC.getContext("2d", { willReadFrequently: true }), RF = 220;
+function affiner() {
+  const d = cadran.der; if (!d || cam.readyState < 2) return; const k = LARG / cam.videoWidth;
+  const vx = d.x / k, vy = d.y / k, va = d.a / k, cote = va * 3.2, f = RF / cote, x0 = vx - cote / 2, y0 = vy - cote / 2;
+  fineC.width = fineC.height = RF; fg.drawImage(cam, x0, y0, cote, cote, 0, 0, RF, RF);
+  const px = fg.getImageData(0, 0, RF, RF).data, G = new Float32Array(RF * RF); for (let i = 0; i < G.length; i++) G[i] = px[i * 4] * .3 + px[i * 4 + 1] * .59 + px[i * 4 + 2] * .11;
+  const lire = (x, y) => { if (x < 0 || y < 0 || x >= RF - 1 || y >= RF - 1) return -1; const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, i = yi * RF + xi;
+    return (G[i] * (1 - fx) + G[i + 1] * fx) * (1 - fy) + (G[i + RF] * (1 - fx) + G[i + RF + 1] * fx) * fy; };
+  const c = RF / 2, A = va * f, B = d.b / k * f, pts = [];
+  for (let n = 0; n < 64; n++) { const t = n / 64 * Math.PI * 2, ux = Math.cos(t), uy = Math.sin(t);
+    // (le rayon attendu dans cette direction, d'après l'ovale grossier)
+    const ct = Math.cos(t - d.ang), st = Math.sin(t - d.ang), re = A * B / Math.hypot(B * ct, A * st);
+    let mg = 0, mr = 0; for (let r = re * .6; r < re * 1.45; r += .5) { const a1 = lire(c + ux * (r + 2), c + uy * (r + 2)), a0 = lire(c + ux * (r - 2), c + uy * (r - 2)); if (a1 < 0 || a0 < 0) break; const gr = a1 - a0; if (gr > mg) { mg = gr; mr = r; } }
+    if (mg > 14) pts.push([ux * mr, uy * mr]); }
+  if (pts.length < 20) { cadran.fin = null; return; }
+  let e = ajusterOvale(pts, A); if (!e) { cadran.fin = null; return; }
+  for (let it = 0; it < 2; it++) {   // (on écarte les points trop loin de l'ovale, et on recommence)
+    const err = pts.map(([x, y]) => Math.abs(Math.hypot(x - e.x, y - e.y) - rayonOvale(e, Math.atan2(y - e.y, x - e.x)))), med = err.slice().sort((a, b) => a - b)[err.length >> 1];
+    const gard = pts.filter((p, i) => err[i] <= Math.max(1.5, med * 2.5)); if (gard.length < 16) break; const e2 = ajusterOvale(gard, A); if (!e2) break; e = e2; }
+  if (Math.hypot(e.x, e.y) > A * .35 || e.a < A * .65 || e.a > A * 1.5 || e.b / e.a < .35) { cadran.fin = null; return; }
+  cadran.fin = { t: cadran.t, x: x0 + (c + e.x) / f, y: y0 + (c + e.y) / f, a: e.a / f, b: e.b / f, ang: e.ang }; }
+const rayonOvale = (e, t) => { const ct = Math.cos(t - e.ang), st = Math.sin(t - e.ang); return e.a * e.b / Math.hypot(e.b * ct, e.a * st); };
+// (l'ovale par les moindres carrés : A x² + B xy + C y² + D x + E y = 1, en coordonnées réduites)
+function ajusterOvale(pts, s) { const M = Array.from({ length: 5 }, () => new Float64Array(6));
+  for (const [X, Y] of pts) { const x = X / s, y = Y / s, v = [x * x, x * y, y * y, x, y]; for (let i = 0; i < 5; i++) { for (let j = 0; j < 5; j++) M[i][j] += v[i] * v[j]; M[i][5] += v[i]; } }
+  for (let i = 0; i < 5; i++) { let p = i; for (let r = i + 1; r < 5; r++) if (Math.abs(M[r][i]) > Math.abs(M[p][i])) p = r; [M[i], M[p]] = [M[p], M[i]]; if (Math.abs(M[i][i]) < 1e-12) return null;
+    for (let r = 0; r < 5; r++) if (r !== i) { const q = M[r][i] / M[i][i]; for (let cc = i; cc < 6; cc++) M[r][cc] -= q * M[i][cc]; } }
+  const [a, b, cq, dq, eq] = M.map((r, i) => r[5] / r[i]), F = -1, den = b * b - 4 * a * cq; if (den >= 0) return null;
+  const x0 = (2 * cq * dq - b * eq) / den, y0 = (2 * a * eq - b * dq) / den, Fc = F + (dq * x0 + eq * y0) / 2;
+  const ang = .5 * Math.atan2(b, a - cq), l1 = a * Math.cos(ang) ** 2 + b * Math.cos(ang) * Math.sin(ang) + cq * Math.sin(ang) ** 2, l2 = a * Math.sin(ang) ** 2 - b * Math.cos(ang) * Math.sin(ang) + cq * Math.cos(ang) ** 2;
+  if (-Fc / l1 <= 0 || -Fc / l2 <= 0) return null; let r1 = Math.sqrt(-Fc / l1), r2 = Math.sqrt(-Fc / l2), an = ang; if (r2 > r1) { [r1, r2] = [r2, r1]; an += Math.PI / 2; }
+  return { x: x0 * s, y: y0 * s, a: r1 * s, b: r2 * s, ang: an }; }
 
 function dessinerHolo(now, dt) {
   const W = scene.width / devicePixelRatio, H = scene.height / devicePixelRatio;
@@ -203,7 +241,7 @@ function dessinerHolo(now, dt) {
   const auto = holo.ea > 0, rr = auto ? holo.ea : Math.max(14, w * .32), rb = auto ? holo.eb : rr * .28, ang = auto ? holo.ang : 0, ap = Math.min(1, k * 2 + (holo.etat === "sonne" ? .5 : 0));
   for (let i = 0; i < 3; i++) { const f = auto ? [1, .82, 1.18][i] : 1 + i * .35; cx.strokeStyle = `rgba(120,240,255,${(.85 - i * .2) * ap})`; cx.lineWidth = auto ? 3 - i : 2 - i * .5; cx.setLineDash(i === 1 ? [8, 10] : []); cx.lineDashOffset = -now / 30 * (i + 1);
     cx.shadowColor = "rgba(94,230,255,.9)"; cx.shadowBlur = auto ? 10 : 0; cx.beginPath(); cx.ellipse(x, y, rr * f, rb * f, ang, 0, Math.PI * 2); cx.stroke(); }
-  cx.shadowBlur = 0; cx.setLineDash([]); const halo = cx.createRadialGradient(x, y, 0, x, y, rr); halo.addColorStop(0, "rgba(160,250,255,.65)"); halo.addColorStop(1, "rgba(94,230,255,.08)");
+  cx.shadowBlur = 0; cx.setLineDash([]); const halo = cx.createRadialGradient(x, y, 0, x, y, rr); halo.addColorStop(0, "rgba(160,250,255,.38)"); halo.addColorStop(1, "rgba(94,230,255,.04)");
   cx.fillStyle = halo; cx.beginPath(); cx.ellipse(x, y, rr * (auto ? 1 : 1.4), rb * (auto ? 1 : 1.6), ang, 0, Math.PI * 2); cx.fill(); cx.restore();
 
   if (h < 4) return;
@@ -235,13 +273,13 @@ function boucle() {
   try { majSource(now); } catch (e) { console.warn(e); }
   let m = null; try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
   if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
-  if (m && m.ea) { const a = 1 - Math.exp(-dt * 12); if (!holo.ea) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang });
+  if (m && m.ea) { const a = 1 - Math.exp(-dt * 18); if (!holo.ea) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang });
     holo.ea += (m.ea - holo.ea) * a; holo.eb += (m.eb - holo.eb) * a; let da = m.ang - holo.ang; da = Math.atan2(Math.sin(2 * da), Math.cos(2 * da)) / 2; holo.ang += da * a; }
   else if (m) holo.ea = 0;
   if (m) { holo.vu += dt; holo.perdu = 0;
     const cible = Math.max(110, Math.min(innerHeight * .6, (m.ech || 0) * 4.2));
     if (holo.etat === "attente" || !holo.x || holo.k < .05) { holo.x = m.x; holo.y = m.y; holo.taille = cible; }   // (de retour sur la montre : il repart d'elle)
-    const a = 1 - Math.exp(-dt * 14); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
+    const a = 1 - Math.exp(-dt * (m.ea ? 30 : 14)); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
   else { holo.perdu += dt; if (holo.perdu > .25) holo.vu = 0; }
   // l'appel : le poignet reste à l'image → ça sonne, puis la personne apparaît ; le bras baissé → elle se replie dans la montre
   if (holo.etat === "attente" && holo.vu > .35) { holo.etat = "sonne"; holo.t = 0; sonnerie(); info("📞 Appel entrant…"); }
