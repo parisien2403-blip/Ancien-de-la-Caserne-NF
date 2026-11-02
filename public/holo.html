@@ -50,7 +50,9 @@
 <div id="info"></div>
 <div id="entrant"><div class="qui" id="entrantQui"></div><div class="sous">t'appelle en hologramme 📞</div>
   <div class="btns"><button type="button" id="bRefuser">Refuser</button><button type="button" id="bDecrocher">✅ Décrocher</button></div></div>
-<video id="autreVideo" playsinline autoplay></video>
+<video id="autreVideo" playsinline autoplay muted></video>
+<audio id="autreSon" autoplay></audio>
+<button type="button" id="bSon" style="display:none;position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:9;border:2px solid var(--cyan);border-radius:999px;padding:16px 26px;background:rgba(2,24,36,.92);color:#fff;font:700 19px system-ui,Arial;box-shadow:0 0 24px rgba(94,230,255,.5)">🔊 Touche pour entendre</button>
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
   <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
@@ -127,7 +129,7 @@ function parler() {
     u.lang = "fr-FR"; u.rate = 1; u.pitch = .8; const voix = speechSynthesis.getVoices().filter(v => /^fr/i.test(v.lang)); const h = voix.find(v => /male|homme|thomas|paul|henri|guillaume/i.test(v.name)); if (h || voix[0]) u.voice = h || voix[0];
     u.onstart = () => holo.parle = true; u.onend = () => holo.parle = false; speechSynthesis.speak(u); } catch (e) { }
 }
-function taire() { try { speechSynthesis.cancel(); } catch (e) { } holo.parle = false; if (src.video) src.video.muted = true; }
+function taire() { try { speechSynthesis.cancel(); } catch (e) { } holo.parle = false; if (src.video && src.video.id !== "autreVideo") src.video.muted = true; }
 
 /* ---------- l'hologramme : il sort de la montre quand le poignet est à l'image, et s'y replie quand on baisse le bras ---------- */
 const holo = { etat: "attente", t: 0, vu: 0, perdu: 0, x: 0, y: 0, taille: 0, k: 0, fixe: null, parle: false };
@@ -454,13 +456,20 @@ $("#bDecrocher").onclick = async () => { const m = L.entrant; if (!m) return; fi
   L.autre = m; const pc = L.pc = new RTCPeerConnection(ICE);
   if (L.micro) for (const t of L.micro.getTracks()) pc.addTrack(t, L.micro);
   pc.onicecandidate = e => { if (e.candidate) envoyerL({ t: "a_sig", a: m.de, d: { ice: e.candidate } }); };
-  pc.ontrack = e => { const flux = e.streams[0]; if (!flux) return; const v = $("#autreVideo"); if (v.srcObject !== flux) { v.srcObject = flux; v.muted = false; v.play().catch(() => { }); }
-    if (flux.getVideoTracks().length) { if (src.video && src.video !== v) src.video.pause(); src.video = v; src.demo = false; src.boite = null; src.pret = false; v.onloadeddata = () => { src.pret = true; }; if (v.readyState >= 2) src.pret = true; $("#bDemo").classList.remove("actif"); } };
-  pc.onconnectionstatechange = () => { if (pc.connectionState === "connected") info("🟢 En ligne avec " + m.nom + " : filme ta montre", 4000); else if (pc.connectionState === "failed") finLigne("La connexion n'a pas pu s'établir (réseau)"); };
+  pc.ontrack = e => { const flux = e.streams[0]; if (!flux) return;
+    // (sa voix : un lecteur audio à part, toujours actif — même quand l'hologramme est replié ; sa vidéo : muette, juste pour l'image)
+    if (e.track.kind === "audio") { const a = $("#autreSon"); a.srcObject = new MediaStream([e.track]); a.muted = false; a.volume = 1; jouerSon(); }
+    const v = $("#autreVideo"); if (e.track.kind === "video" && v.srcObject !== flux) { v.srcObject = flux; v.muted = true; v.play().catch(() => { });
+      if (src.video && src.video !== v) src.video.pause(); src.video = v; src.demo = false; src.boite = null; src.pret = false; v.onloadeddata = () => { src.pret = true; }; if (v.readyState >= 2) src.pret = true; $("#bDemo").classList.remove("actif"); } };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "connected") { info("🟢 En ligne avec " + m.nom + " : filme ta montre", 4000); jouerSon(); } else if (pc.connectionState === "failed") finLigne("La connexion n'a pas pu s'établir (réseau)"); };
   envoyerL({ t: "a_repondre", id: m.id, ok: true, de: m.de });
   // (l'appel est ouvert : la personne apparaît dès que la montre est à l'image, et la conversation continue quand on regarde ailleurs)
   taire(); holo.etat = "ouvert"; holo.cache = true; holo.direct = true; $("#bFin").style.display = ""; info("Connexion avec " + m.nom + "…", 3000); };
-function finLigne(msg) {
+// (le navigateur peut bloquer le son tant qu'on n'a pas touché l'écran : alors un bouton le débloque)
+function jouerSon() { const a = $("#autreSon"); try { AC && AC.resume(); } catch (e) { }
+  a.play().then(() => { $("#bSon").style.display = "none"; }).catch(() => { $("#bSon").style.display = "block"; }); }
+$("#bSon").onclick = e => { e.stopPropagation(); jouerSon(); };
+function finLigne(msg) { const a = $("#autreSon"); a.pause(); a.srcObject = null; $("#bSon").style.display = "none";
   if (L.pc) { try { L.pc.close(); } catch (e) { } L.pc = null; } if (L.micro) { L.micro.getTracks().forEach(t => t.stop()); L.micro = null; }
   const v = $("#autreVideo"); v.pause(); v.srcObject = null; L.autre = null;
   if (src.video === v) { src.video = null; src.demo = true; $("#bDemo").classList.add("actif"); chargerDemo().catch(() => { }); }
