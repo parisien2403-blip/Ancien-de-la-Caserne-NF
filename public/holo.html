@@ -155,9 +155,20 @@ function chercherCadran(dt) {
   if (cam.readyState < 2) return null;
   if (cam.currentTime !== cadran.t && cadran.suiv) { cadran.t = cam.currentTime;
     // (déjà trouvé : on ne cherche plus dans toute l'image, on suit son contour d'une image à l'autre — il peut s'incliner, s'ovaliser, grandir)
-    const P = cadran.suiv, e = cadran.cible ? affiner(P, .85, 1.18, .12, 40, cadran.cible) : affiner(P, .8, 1.22, .12, 22);
-    if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .9 && e.a / P.a < 1.12 && e.b / e.a > .38 && e.a / cadran.a0 > .75 && e.a / cadran.a0 < 1.35) { cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .03; }   // (la largeur du cadran ne change presque pas quand on incline le poignet — seule sa hauteur)
-    else { cadran.perdu += dt || .03; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; cadran.cible = false; } } }
+    // (on anticipe : la montre continue sur sa lancée)
+    const v = cadran.vit || { x: 0, y: 0 }, P = { ...cadran.suiv, x: cadran.suiv.x + v.x, y: cadran.suiv.y + v.y };
+    let e = null;
+    if (cadran.cible) {   // (la lampe torche ou le cadran NF : on le retrouve dans toute l'image à chaque fois — rien ne le perd, même un geste rapide)
+      const ci = chercherCible(imageGrise()), k = LARG / cam.videoWidth;
+      const brut = ci && ci.sorte === cadran.cible ? { x: ci.x / k, y: ci.y / k, a: ci.a / k, b: ci.b / k, ang: ci.ang } : null, ra = x => x && x.a / cadran.suiv.a > .85 && x.a / cadran.suiv.a < 1.18;
+      if (brut) e = affiner(brut, .8, 1.25, .2, 40, ci.sorte);
+      if (!ra(e)) e = affiner(P, .8, 1.25, .15, 40, cadran.cible);
+      if (!ra(e)) e = ra(brut) ? brut : null;   // (la mesure fine a déraillé sur cette image : on garde la mesure simple)
+      if (e && e.a / cadran.a0 > .6 && e.a / cadran.a0 < 1.6 && e.b / e.a > .38) { cadran.vit = { x: (e.x - cadran.suiv.x) * .6, y: (e.y - cadran.suiv.y) * .6 }; cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .1; e = "ok"; } }
+    else e = affiner(P, .8, 1.22, .12, 22);
+    if (e === "ok") { }
+    else if (e && Math.hypot(e.x - P.x, e.y - P.y) < P.a * .6 && e.a / P.a > .9 && e.a / P.a < 1.12 && e.b / e.a > .38 && e.a / cadran.a0 > .75 && e.a / cadran.a0 < 1.35) { cadran.vit = { x: (e.x - cadran.suiv.x) * .6, y: (e.y - cadran.suiv.y) * .6 }; cadran.suiv = e; cadran.perdu = 0; cadran.a0 += (e.a - cadran.a0) * .03; }   // (la largeur du cadran ne change presque pas quand on incline le poignet — seule sa hauteur)
+    else { cadran.perdu += dt || .03; cadran.vit = null; if (cadran.perdu > .5) { cadran.suiv = null; cadran.der = null; cadran.vu = 0; cadran.cible = false; } } }
   else if (cam.currentTime !== cadran.t) { cadran.t = cam.currentTime;
     const I = imageGrise(), { g, w, h } = I, N = w * h;
     // (le cadran « NF » affiché sur la montre : un anneau bleu lumineux, reconnu à coup sûr)
@@ -318,7 +329,7 @@ function dessinerHolo(now, dt) {
 /* le filtre « un euro » : immobile, on lisse fort (plus de tremblote) ; quand ça bouge vite, on suit sans retard */
 function lisse(cle, v, dt, coupMin, beta) { const F = holo.filt = holo.filt || {}, s = F[cle]; dt = Math.max(dt, 1e-3);
   if (!s) { F[cle] = { v, d: 0 }; return v; }
-  const ad = 1 / (1 + 1 / (2 * Math.PI * 1 * dt)), dv = (v - s.v) / dt; s.d += (dv - s.d) * ad;
+  const ad = 1 / (1 + 1 / (2 * Math.PI * 3 * dt)), dv = (v - s.v) / dt; s.d += (dv - s.d) * ad;
   const coup = coupMin + beta * Math.abs(s.d), al = 1 / (1 + 1 / (2 * Math.PI * coup * dt)); s.v += (v - s.v) * al; return s.v; }
 
 function boucle() {
@@ -327,13 +338,13 @@ function boucle() {
   let m = null; try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
   if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
   if (m && m.ea) { if (!holo.ea || holo.k < .05) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang, filt: {} });
-    holo.ea = lisse("ea", m.ea, dt, 1.5, .02); holo.eb = lisse("eb", m.eb, dt, 1.5, .02);
+    holo.ea = lisse("ea", m.ea, dt, 2, .05); holo.eb = lisse("eb", m.eb, dt, 2, .05);
     let da = m.ang - holo.ang; da = Math.atan2(Math.sin(2 * da), Math.cos(2 * da)) / 2; holo.ang += da * Math.min(1, dt * (m.eb / m.ea > .93 ? 2 : 10)); }   // (presque rond : l'inclinaison ne veut rien dire, on la laisse tranquille)
   else if (m) holo.ea = 0;
   if (m) { holo.vu += dt; holo.perdu = 0;
     const cible = Math.max(110, Math.min(innerHeight * .6, (m.ech || 0) * 4.2));
     if (holo.etat === "attente" || !holo.x || holo.k < .05) { holo.x = m.x; holo.y = m.y; holo.taille = cible; }   // (de retour sur la montre : il repart d'elle)
-    if (m.ea) { holo.x = lisse("x", m.x, dt, 2, .015); holo.y = lisse("y", m.y, dt, 2, .015); }
+    if (m.ea) { holo.x = lisse("x", m.x, dt, 2.5, .05); holo.y = lisse("y", m.y, dt, 2.5, .05); }
     else { const a = 1 - Math.exp(-dt * 14); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; } holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
   else { holo.perdu += dt; if (holo.perdu > .25) holo.vu = 0; }
   // l'appel : le poignet reste à l'image → ça sonne, puis la personne apparaît ; le bras baissé → elle se replie dans la montre
