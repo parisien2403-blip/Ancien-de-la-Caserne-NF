@@ -52,6 +52,7 @@
   <div class="btns"><button type="button" id="bRefuser">Refuser</button><button type="button" id="bDecrocher">✅ Décrocher</button></div></div>
 <video id="autreVideo" playsinline autoplay muted></video>
 <audio id="autreSon" autoplay></audio>
+<div id="niveau" style="display:none;position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:7;padding:6px 10px;border-radius:999px;background:rgba(0,20,30,.7);border:1px solid rgba(94,230,255,.45);font:600 13px system-ui,Arial"></div>
 <button type="button" id="bSon" style="display:none;position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:9;border:2px solid var(--cyan);border-radius:999px;padding:16px 26px;background:rgba(2,24,36,.92);color:#fff;font:700 19px system-ui,Arial;box-shadow:0 0 24px rgba(94,230,255,.5)">🔊 Touche pour entendre</button>
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
@@ -458,7 +459,7 @@ $("#bDecrocher").onclick = async () => { const m = L.entrant; if (!m) return; fi
   pc.onicecandidate = e => { if (e.candidate) envoyerL({ t: "a_sig", a: m.de, d: { ice: e.candidate } }); };
   pc.ontrack = e => { const flux = e.streams[0]; if (!flux) return;
     // (sa voix : un lecteur audio à part, toujours actif — même quand l'hologramme est replié ; sa vidéo : muette, juste pour l'image)
-    if (e.track.kind === "audio") { const a = $("#autreSon"); a.srcObject = new MediaStream([e.track]); a.muted = false; a.volume = 1; jouerSon(); }
+    if (e.track.kind === "audio") { const a = $("#autreSon"); a.srcObject = new MediaStream([e.track]); a.muted = false; a.volume = 1; jouerSon(); mesurerSon(e.track); }
     const v = $("#autreVideo"); if (e.track.kind === "video" && v.srcObject !== flux) { v.srcObject = flux; v.muted = true; v.play().catch(() => { });
       if (src.video && src.video !== v) src.video.pause(); src.video = v; src.demo = false; src.boite = null; src.pret = false; v.onloadeddata = () => { src.pret = true; }; if (v.readyState >= 2) src.pret = true; $("#bDemo").classList.remove("actif"); } };
   pc.onconnectionstatechange = () => { if (pc.connectionState === "connected") { info("🟢 En ligne avec " + m.nom + " : filme ta montre", 4000); jouerSon(); } else if (pc.connectionState === "failed") finLigne("La connexion n'a pas pu s'établir (réseau)"); };
@@ -469,7 +470,12 @@ $("#bDecrocher").onclick = async () => { const m = L.entrant; if (!m) return; fi
 function jouerSon() { const a = $("#autreSon"); try { AC && AC.resume(); } catch (e) { }
   a.play().then(() => { $("#bSon").style.display = "none"; }).catch(() => { $("#bSon").style.display = "block"; }); }
 $("#bSon").onclick = e => { e.stopPropagation(); jouerSon(); };
-function finLigne(msg) { const a = $("#autreSon"); a.pause(); a.srcObject = null; $("#bSon").style.display = "none";
+// (un petit indicateur : est-ce que sa voix arrive bien jusqu'au téléphone ?)
+function mesurerSon(piste) { try { if (!AC) return; const an = AC.createAnalyser(); an.fftSize = 512; AC.createMediaStreamSource(new MediaStream([piste])).connect(an);
+  const buf = new Uint8Array(an.fftSize), el = $("#niveau"); el.style.display = "block"; clearInterval(L.nivI);
+  L.nivI = setInterval(() => { an.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); const n = Math.min(5, Math.round(m / 10));
+    el.textContent = "🔊 " + "▮".repeat(n) + "▯".repeat(5 - n) + (piste.muted ? " (coupé)" : ""); }, 150); } catch (e) { } }
+function finLigne(msg) { clearInterval(L.nivI); $("#niveau").style.display = "none"; const a = $("#autreSon"); a.pause(); a.srcObject = null; $("#bSon").style.display = "none";
   if (L.pc) { try { L.pc.close(); } catch (e) { } L.pc = null; } if (L.micro) { L.micro.getTracks().forEach(t => t.stop()); L.micro = null; }
   const v = $("#autreVideo"); v.pause(); v.srcObject = null; L.autre = null;
   if (src.video === v) { src.video = null; src.demo = true; $("#bDemo").classList.add("actif"); chargerDemo().catch(() => { }); }
