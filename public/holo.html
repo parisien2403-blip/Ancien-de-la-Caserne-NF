@@ -20,6 +20,11 @@
   #barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(0,0,0,.65)); }
   #barre button, #barre label { border: 1px solid rgba(94,230,255,.6); border-radius: 999px; padding: 10px 16px; background: rgba(0,20,30,.6); color: #fff; font: 600 15px system-ui, Arial; cursor: pointer; backdrop-filter: blur(6px); }
   #barre .actif { background: rgba(94,230,255,.3); }
+  /* le mode lunettes : tout le noir est transparent dans les lunettes — on n'affiche que l'hologramme, qui flotte dans la pièce */
+  body.lunettes #cam { visibility: hidden; }
+  body.lunettes #barre { opacity: 0; transition: opacity .4s; }
+  body.lunettes.montrer #barre { opacity: 1; }
+  body.lunettes #info { opacity: .55; }
   #info { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 4; max-width: calc(100% - 32px); padding: 8px 16px; border-radius: 999px; background: rgba(0,20,30,.65); border: 1px solid rgba(94,230,255,.45); font: 600 15px system-ui, Arial; text-align: center; display: none; }
   #erreur { color: #ffb4a8; }
   #entrant { position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 8; width: min(92vw, 420px); box-sizing: border-box; display: none;
@@ -57,6 +62,7 @@
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
   <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
+  <button type="button" id="bLunettes">🕶️ Lunettes</button>
   <button type="button" id="bFin" style="display:none;background:rgba(200,40,40,.75);border-color:#ff8a8a">📴 Raccrocher</button>
   <button type="button" id="bQuit">✕ Quitter</button>
 </div>
@@ -365,8 +371,11 @@ function lisse(cle, v, dt, coupMin, beta) { const F = holo.filt = holo.filt || {
 function boucle() {
   const now = performance.now(), dt = Math.min(.1, (now - (boucle.t || now)) / 1000); boucle.t = now;
   try { majSource(now); } catch (e) { console.warn(e); }
-  let m = null; try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
-  if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
+  let m = null;
+  if (lunettes) { const W = innerWidth, H = innerHeight, r = Math.min(W, H) * .11;   /* (en lunettes : l'hologramme flotte devant soi, en bas au centre — pas de montre à chercher) */
+    m = { x: W / 2, y: H * .84, ech: r * 1.25, ea: r, eb: r * .3, ang: 0, auto: true }; }
+  else try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
+  if (lunettes) { } else if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
   if (m && holo.x && Math.hypot(m.x - holo.x, m.y - holo.y) > Math.max(160, (holo.ea || 40) * 3)) { holo.filt = {}; holo.x = m.x; holo.y = m.y; if (m.ea) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang }); }   // (un saut : pas de glissade à travers l'écran)
   if (m && m.ea) { if (!holo.ea || holo.k < .05) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang, filt: {} });
     holo.ea = lisse("ea", m.ea, dt, 2, .05); holo.eb = lisse("eb", m.eb, dt, 2, .05);
@@ -393,11 +402,19 @@ function taille() { scene.width = innerWidth * devicePixelRatio; scene.height = 
 addEventListener("resize", taille); taille();
 
 // toucher sa montre sur l'écran : le téléphone la suit, et l'hologramme en sort (ça marche aussi sur une table, un objet…)
-scene.addEventListener("pointerdown", e => verrouiller(e.clientX, e.clientY));
+scene.addEventListener("pointerdown", e => { if (!lunettes) verrouiller(e.clientX, e.clientY); });
 
 $("#fichier").addEventListener("change", e => { const f = e.target.files[0]; if (f) choisirVideo(f); });
 $("#bDemo").onclick = async () => { holo.demoAuto = true; if (src.video) { src.video.pause(); src.video = null; } src.demo = true; $("#bDemo").classList.add("actif"); await chargerDemo(); };
 $("#bFin").onclick = () => { if (L.autre) { envoyerL({ t: "a_fin", a: L.autre.de }); return finLigne("Appel terminé"); } if (holo.etat !== "ouvert") return; holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); taire(); info("Appel terminé", 2000); $("#bFin").style.display = "none"; };   // (et ça ne resonne pas tout de suite)
+// (le mode lunettes : fond noir, plein écran, les boutons se cachent — un toucher les fait revenir quelques secondes)
+let lunettes = false, cacheBarreT = 0;
+function montrerBarre() { document.body.classList.add("montrer"); clearTimeout(cacheBarreT); cacheBarreT = setTimeout(() => document.body.classList.remove("montrer"), 3500); }
+$("#bLunettes").onclick = e => { e.stopPropagation(); lunettes = !lunettes; document.body.classList.toggle("lunettes", lunettes); $("#bLunettes").classList.toggle("actif", lunettes);
+  holo.filt = {}; holo.x = 0;
+  if (lunettes) { try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => { }); } catch (er) { } montrerBarre(); info("🕶️ Mode lunettes : touche l'écran pour les boutons", 3500); }
+  else { try { document.fullscreenElement && document.exitFullscreen(); } catch (er) { } } };
+document.addEventListener("pointerdown", () => { if (lunettes) montrerBarre(); }, true);
 $("#bQuit").onclick = () => { location.href = "/"; };
 
 let demarre = false;
