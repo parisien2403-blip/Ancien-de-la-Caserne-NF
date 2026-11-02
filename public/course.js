@@ -500,7 +500,7 @@ function nouveauPilote(o) { const K = fabriquerKart(o.couleur, o.nom); K.g.scale
   return { teteInfo: o.tete, id: o.id, nom: o.nom, bot: !!o.bot, humain: !!o.humain, moi: !!o.moi, K, s: o.s, d: o.d, h: capPiste(o.s), v: 0, tour: -1, prog: o.s, fini: 0, spin: 0, glisse: 0, gyro: 0, turbo: 0, fumee: 0, objet: null, voie: o.d, bv: (() => { const D = DIFF_K.find(q => q.id === KR.diff) || DIFF_K[1]; return D.v[0] + Math.random() * (D.v[1] - D.v[0]); })() }; }
 
 /* ---------- la course : l'état, la grille, le compte à rebours ---------- */
-const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null };
+const KR = { on: false, pil: [], moi: null, t0: 0, objets: [], obs: [], fin: [], hud: null, dern: 0, envoiT: 0, solo: true, attente: null, vus: {} };
 function grilleK(n) { const r = Math.floor(n / 2), c = n % 2, s = KC.lapS[0] - 2 - r * 1.8, e = Math.min(.7, largeur(s) / 2 - .5); return { s, d: c ? e : -e }; }
 // (entrer sur la grille : on rejoint une course annoncée il y a peu ; sinon on en lance une)
 /* l'affichage s'adapte à la taille de l'écran : petit téléphone couché, téléphone debout, tablette */
@@ -560,11 +560,12 @@ function choisirPilote(fin) { const d = document.createElement("div"); KR.choixE
   M.ctx.conteneur.appendChild(d); ajusterEcranK(d); M.manMenu = { d, fermer: () => d.querySelector("#kChoixAnnuler").click() };   // (à la manette : le joystick ou la croix pour choisir, A pour prendre, B pour annuler)
   const deja = d.querySelector(`[data-id="${pris || "moi"}"]`); if (deja) M.manMenu.iSel = [...d.querySelectorAll("button")].indexOf(deja); }
 function lancerCourse() { if (KR.on || !M || M.lieu !== "grande") return; KC.scene = M.scene; if (!KC.G || KC.G.parent !== M.scene) construirePisteK(M.scene); cacherVoitures(true); pisteVisibleK(true);
-  const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 ? KR.attente : null;
+  const moi = M.gens.get(M.moiNum); const ann = KR.attente && KR.attente.t0 > Date.now() + 1500 && KR.attente.de !== M.moiNum ? KR.attente : null; finInviteK();
   const t0 = ann ? ann.t0 : Date.now() + KC.grilleT; KR.t0 = t0; KR.on = true; KR.fin = []; KR.objets = []; KR.obs = [];
-  KR.humains = ann ? [...ann.ids] : []; if (!KR.humains.includes(M.moiNum)) KR.humains.push(M.moiNum);
-  KR.persos = Object.assign(ann && ann.persos ? { ...ann.persos } : {}, { [M.moiNum]: KR.perso || "moi" });
-  if (!ann) envoyerWS({ t: "k_annonce", t0, ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", t0, perso: KR.perso || "moi" });
+  KR.rid = ann ? ann.rid : M.moiNum + "-" + t0; KR.chefK = ann ? ann.de : M.moiNum; KR.attente = null;   /* (la course : son numéro, et celui qui l'a lancée) */
+  KR.humains = ann ? [...ann.ids] : []; KR.persos = Object.assign(ann && ann.persos ? { ...ann.persos } : {}, KR.vus[KR.rid] || {}, { [M.moiNum]: KR.perso || "moi" });
+  for (const id of Object.keys(KR.vus[KR.rid] || {})) if (!KR.humains.some(h => String(h) === id)) KR.humains.push(isNaN(+id) ? id : +id); if (!KR.humains.includes(M.moiNum)) KR.humains.push(M.moiNum);
+  if (!ann) envoyerWS({ t: "k_annonce", rid: KR.rid, dans: t0 - Date.now(), ids: KR.humains, perso: KR.perso || "moi" }); else envoyerWS({ t: "k_rejoint", rid: KR.rid, perso: KR.perso || "moi" });
   KR.moiInfo = { id: M.moiNum, nom: (moi && moi.info && moi.info.nom ? moi.info.nom.split(" ")[0] : "Moi"), couleur: COULEURS_K[(Number(M.moiNum) || 0) % COULEURS_K.length] };
   if (moi) { KR.moiPos = moi.g.position.clone(); moi.cible = null; moi.chemin = []; moi.g.visible = false; }
   M.course = KR; KR.passer = false; KR.dernierVu = false; musiqueK("course"); if (M.camera.far < 1600) { KR.farAvant = M.camera.far; M.camera.far = 1600; M.camera.updateProjectionMatrix(); } ouvrirHUD(); placerGrille(); bulle(null); nuitK(true); try { spectateursK(); } catch (e) { console.warn("spectateurs", e); }
@@ -641,7 +642,7 @@ function spectateursK() { finSpectateurs(); if (!M || !M.scene) return; const G 
   KR.spectG = G; }
 function majSpectateurs(t) { for (const S of KR.spect || []) { const a = t / 1000 * S.v + S.ph; S.bras[0].rotation.z = .5 + Math.sin(a) * .6; S.bras[1].rotation.z = -.5 - Math.sin(a + 1.3) * .6; S.pers.position.y = -.7 + Math.abs(Math.sin(a * .5)) * .08; S.pers.rotation.z = Math.sin(a * .5) * .06; } }
 function finSpectateurs() { if (KR.spectG) { KR.spectG.parent && KR.spectG.parent.remove(KR.spectG); KR.spectG = null; } KR.spect = []; }
-function quitterCourse() { if (!KR.on) return; KR.on = false; for (const p of KR.pil) KC.scene && KC.scene.remove(p.K.g); for (const o of KR.objets) o.m && o.m.parent && o.m.parent.remove(o.m); KR.pil = []; KR.objets = [];
+function quitterCourse() { if (!KR.on) return; KR.on = false; KR.resEl = null; for (const p of KR.pil) KC.scene && KC.scene.remove(p.K.g); for (const o of KR.objets) o.m && o.m.parent && o.m.parent.remove(o.m); KR.pil = []; KR.objets = [];
   pisteVisibleK(true); if (KC.G && KC.G.parent) KC.G.parent.remove(KC.G); cacherVoitures(false);
   for (const P of KR.caches || []) P.g.visible = true; KR.caches = null;
   const moi = M && M.gens.get(M.moiNum); if (moi) { moi.g.visible = true; if (KR.moiPos) moi.g.position.copy(KR.moiPos); }
@@ -912,15 +913,40 @@ function cameraK(dt) { const p = KR.moi; if (!p || KR.camLibre || (M.rendu && M.
 
 /* ---------- les autres joueurs (par le serveur) ---------- */
 function recuK(m) { if (!M) return; const de = m.de;
-  if (m.t === "k_annonce") { if (!KR.on) { KR.attente = { t0: m.t0, ids: m.ids || [de], persos: { [de]: m.perso || "moi" } }; if (M.lieu === "grande" && adminK()) bulle("🏁 Une course de karts part dans " + Math.max(1, Math.round((m.t0 - Date.now()) / 1000)) + " s : approche-toi de l'affiche NF Kart, près des bus, pour la rejoindre !", 5000); } return; }
-  if (m.t === "k_rejoint") { if (KR.attente && KR.attente.t0 === m.t0) { if (!KR.attente.ids.includes(de)) KR.attente.ids.push(de); (KR.attente.persos = KR.attente.persos || {})[de] = m.perso || "moi"; }
-    if (KR.on && m.t0 === KR.t0) (KR.persos = KR.persos || {})[de] = m.perso || "moi";
-    if (KR.on && m.t0 === KR.t0 && !KR.humains.includes(de)) { KR.humains.push(de); if (Date.now() < KR.t0) placerGrille(); } return; }
-  if (!KR.on) return; const p = KR.pil.find(q => q.id === de);
+  /* une course annoncée par un autre joueur de la cour (le départ : dans « dans » millisecondes, compté sur notre horloge — les téléphones ne sont pas tous à l'heure) */
+  if (m.t === "k_annonce") { if (!m.rid || de === M.moiNum) return; const A = { rid: m.rid, de, t0: Date.now() + Math.max(0, Math.min(30000, +m.dans || 0)) - 80, ids: (m.ids || [de]).filter(h => h !== M.moiNum), persos: { [de]: m.perso || "moi" } };
+    if (!KR.on) { KR.attente = A; inviteK(A); return; }
+    // (chacun avait lancé la sienne, presque en même temps : tout le monde se range derrière celle du joueur au plus petit numéro)
+    if (KR.rid !== A.rid && Date.now() < KR.t0 && Number(de) < Number(KR.chefK) && A.t0 > Date.now() + 1500) { fusionK(A); return; }
+    if (!KR.humains.includes(de)) { KR.attente = A; if (KR.resEl) inviteK(A); } return; }   // (on court déjà : « Rejouer », à la fin, la rejoindra)
+  if (m.t === "k_rejoint") { if (!m.rid) return; (KR.vus[m.rid] = KR.vus[m.rid] || {})[de] = m.perso || "moi";
+    if (KR.attente && KR.attente.rid === m.rid) { if (!KR.attente.ids.includes(de) && de !== M.moiNum) KR.attente.ids.push(de); KR.attente.persos[de] = m.perso || "moi"; }
+    if (KR.on && m.rid === KR.rid) { (KR.persos = KR.persos || {})[de] = m.perso || "moi"; if (!KR.humains.includes(de)) { KR.humains.push(de); if (Date.now() < KR.t0) placerGrille(); bulle("🏁 " + nomK(de) + " rejoint la course !", 2500); } } return; }
+  if (m.t === "k_part") { if (KR.attente) KR.attente.ids = KR.attente.ids.filter(h => h !== de); for (const r in KR.vus) delete KR.vus[r][de]; }
+  if (!KR.on || !KR.humains.includes(de) || de === M.moiNum) return; const p = KR.pil.find(q => q.id === de);   // (seulement les joueurs de NOTRE course)
   if (m.t === "k_pos" && p) { p.s = m.s; p.d = m.d; p.h = m.h; p.v = m.v; p.tour = m.tour; p.prog = m.s; p.tourne = m.sp ? performance.now() / 70 : 0; p.gyro = m.g ? 1 : 0; p.derive = m.dr || 0; p.charge = m.ch || 0; p.dirS = m.st || 0; p.turbo = m.tu ? .2 : 0; p.vu = Date.now(); }
   else if (m.t === "k_obj" && m.o) poserObjet({ ...m.o, de, t: performance.now() });
   else if (m.t === "k_fin" && p) { p.fini = m.temps; }
-  else if (m.t === "k_part" && p) { KC.scene.remove(p.K.g); KR.pil = KR.pil.filter(q => q !== p); } }
+  else if (m.t === "k_part") { KR.humains = KR.humains.filter(h => h !== de); if (Date.now() < KR.t0) placerGrille(); else if (p) { KC.scene.remove(p.K.g); KR.pil = KR.pil.filter(q => q !== p); } } }
+const nomK = id => { const P = M && M.gens.get(id); return P && P.info && P.info.nom ? P.info.nom.split(" ")[0] : "Un joueur"; };
+// passer de notre course (encore sur la grille) à celle d'un autre : même départ, même grille, plus de karts de la caserne
+function fusionK(A) { KR.rid = A.rid; KR.chefK = A.de; KR.t0 = A.t0; const I = KR.intro; if (I) { I.t0 = A.t0; I.D = Math.max(2500, Math.min(I.D, A.t0 - Date.now() - 2200)); }
+  const vus = KR.vus[A.rid] || {}; KR.humains = [...new Set([...A.ids, A.de, ...Object.keys(vus).map(h => isNaN(+h) ? h : +h), M.moiNum])];
+  KR.persos = Object.assign({ ...A.persos }, vus, { [M.moiNum]: KR.perso || "moi" }); KR.attente = null;
+  envoyerWS({ t: "k_rejoint", rid: A.rid, perso: KR.perso || "moi" }); placerGrille(); bulle("🏁 " + nomK(A.de) + " lance aussi une course : vous partez ensemble !", 3500); }
+/* l'invitation : un gros bouton en haut de l'écran, partout dans la cour, avec le compte à rebours — un toucher, et on est sur la grille (avec son dernier pilote) */
+function inviteK(A) { finInviteK(); if (!M || M.lieu !== "grande" || !adminK() || !M.ctx || !M.ctx.conteneur) return; styleEcransK();
+  const b = document.createElement("button"); b.type = "button"; b.id = "kInvite"; KR.invEl = b;
+  b.style.cssText = "position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;max-width:calc(100% - 24px);border:3px solid #111;border-radius:16px;padding:10px 18px;background:linear-gradient(#ffe25a,#ff9a1a);color:#14234a;font:900 16px Arial;box-shadow:0 6px 18px rgba(0,0,0,.5);cursor:pointer;animation:kPop2 .4s ease-out";
+  for (const ev of ["pointerdown", "touchstart", "wheel"]) b.addEventListener(ev, e => e.stopPropagation());
+  const maj = () => { const r = Math.round((A.t0 - Date.now()) / 1000); if (r < 2 || (KR.on && !KR.resEl) || KR.attente !== A) { finInviteK(); return; } b.textContent = "🏁 " + nomK(A.de) + " lance une course : REJOINDRE (" + r + " s)"; };
+  b.onclick = e => { e.stopPropagation(); finInviteK(); if (KR.attente !== A || A.t0 < Date.now() + 1500) return;
+    if (KR.resEl) { const r = KR.resEl.querySelector("#kRejouer"); if (r) r.click(); return; }
+    if (KR.choixEl) { KR.choixEl.remove(); KR.choixEl = null; M.manMenu = null; }
+    if (!KR.perso) { try { KR.perso = localStorage.getItem("karts-perso") || "moi"; } catch (er) { KR.perso = "moi"; } }
+    try { chargerPost(); musiqueFichierK().load(); } catch (er) { } lancerCourse(); };
+  M.ctx.conteneur.appendChild(b); maj(); KR.invT = setInterval(maj, 500); sonK("klaxon"); }
+function finInviteK() { if (KR.invT) clearInterval(KR.invT); KR.invT = 0; if (KR.invEl) KR.invEl.remove(); KR.invEl = null; }
 
 /* ---------- l'écran : tour, position, objet, chrono, boutons du téléphone ---------- */
 function ouvrirHUD() { fermerHUD(); const d = document.createElement("div"); KR.hud = d;
@@ -1181,10 +1207,10 @@ function podiumK() { KR.podium = true; const d = document.createElement("div"); 
   // les têtes : la photo du bonhomme, ou le personnage choisi
   L2.forEach((p, i) => { const im = d.querySelector(`img[data-t="${i}"]`), T = p.teteInfo; if (!im) return; if (T && T.teteUrl && !T.tete_v) im.src = T.teteUrl; else if (T) chargerTete(T.numero, T.tete_v, T.teteUrl).then(x => { if (x) im.src = x.src; else im.replaceWith(Object.assign(document.createElement("div"), { textContent: "🏎️", style: "font-size:30px" })); }).catch(() => {}); });
   for (const ev of ["pointerdown", "click", "touchstart"]) d.addEventListener(ev, e => e.stopPropagation());
-  M.ctx.conteneur.appendChild(d); ajusterEcranK(d, d.querySelector(".k-res")); M.manMenu = { d };
+  M.ctx.conteneur.appendChild(d); ajusterEcranK(d, d.querySelector(".k-res")); M.manMenu = { d }; KR.resEl = d; if (KR.attente && KR.attente.rid !== KR.rid) inviteK(KR.attente);
   [523, 659, 784].forEach((f, i) => setTimeout(() => sonK("bip"), 200 + i * 220));
-  d.querySelector("#kRejouer").onclick = () => { d.remove(); quitterCourse(); KR.attente = null; setTimeout(lancerCourse, 50); };
-  d.querySelector("#kSortir").onclick = () => { d.remove(); quitterCourse(); }; }
+  d.querySelector("#kRejouer").onclick = () => { const A = KR.attente && KR.attente.rid !== KR.rid ? KR.attente : null; d.remove(); KR.resEl = null; finInviteK(); quitterCourse(); KR.attente = A; setTimeout(lancerCourse, 50); };   // (si quelqu'un vient d'en lancer une, on la rejoint)
+  d.querySelector("#kSortir").onclick = () => { const A = KR.attente && KR.attente.rid !== KR.rid ? KR.attente : null; d.remove(); KR.resEl = null; finInviteK(); quitterCourse(); KR.attente = A; if (A) inviteK(A); }; }
 
 /* ---------- les musiques de NF Kart : composées pour le jeu, jouées par le navigateur (sans fichier) ----------
    « titre » : joyeuse et sautillante (la page de garde, le choix du pilote, la fin de course) ; « course » : rapide et entraînante (elle accélère au dernier tour) */
@@ -1295,5 +1321,5 @@ function decorCourse() { if (KR.on && M && M.lieu !== "grande") quitterCourse();
   const lueur = new THREE.Mesh(new THREE.PlaneGeometry(A.l + 1.2, h + 1.4), new THREE.MeshBasicMaterial({ map: texPoint(), color: 0xffe0a0, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending })); lueur.position.set(0, yc, .07); g.add(lueur);
   M.scene.add(g); KC.pan = g; }
 
-KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK; KR.cielK = cielK; KR.RC = THREE.Raycaster; KR.majCer = majCeremonie; KR.MUS = MUS;   // (pour les essais)
+KR.KC = KC; KR.capPiste = capPiste; KR.splatK = splatK; KR.ceremonieK = ceremonieK; KR.podiumK = podiumK; KR.cielK = cielK; KR.RC = THREE.Raycaster; KR.majCer = majCeremonie; KR.MUS = MUS; KR.recuK = recuK;   // (pour les essais)
 ({ entrerCourse, quitterCourse, majCourse, recuK, presGrille, decorCourse, KR });
