@@ -420,7 +420,7 @@ let couleurs = false; try { couleurs = localStorage.getItem("holo-couleurs") ===
 $("#bCouleurs").classList.toggle("actif", couleurs);
 $("#bCouleurs").onclick = e => { e.stopPropagation(); couleurs = !couleurs; $("#bCouleurs").classList.toggle("actif", couleurs); try { localStorage.setItem("holo-couleurs", couleurs ? "1" : "0"); } catch (er) { } info(couleurs ? "🎨 Vraies couleurs" : "💠 Hologramme bleu", 1500); };
 function montrerBarre() { document.body.classList.add("montrer"); clearTimeout(cacheBarreT); cacheBarreT = setTimeout(() => document.body.classList.remove("montrer"), 3500); }
-$("#bLunettes").onclick = e => { e.stopPropagation(); lunettes = !lunettes; document.body.classList.toggle("lunettes", lunettes); $("#bLunettes").classList.toggle("actif", lunettes);
+$("#bLunettes").onclick = e => { e.stopPropagation(); lunettes = !lunettes; try { localStorage.setItem("holo-mode", lunettes ? "lunettes" : "montre"); } catch (er) { } document.body.classList.toggle("lunettes", lunettes); $("#bLunettes").classList.toggle("actif", lunettes);
   holo.filt = {}; holo.x = 0;
   if (lunettes) { try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => { }); } catch (er) { } montrerBarre(); info("🕶️ Mode lunettes : touche l'écran pour les boutons", 3500); }
   else { try { document.fullscreenElement && document.exitFullscreen(); } catch (er) { } if (ghost) { ghost = false; document.body.classList.remove("ghost"); $("#bGhost").classList.remove("actif"); } } };
@@ -479,6 +479,7 @@ const envoyerL = o => { try { L.ws.send(JSON.stringify(o)); } catch (e) { } };
 function recuLigne(m) {
   if (m.t === "a_sonne") { if (L.autre) return envoyerL({ t: "a_repondre", id: m.id, ok: false });   // (déjà en ligne : occupé)
     L.entrant = m; $("#entrantQui").textContent = m.nom; $("#entrant").style.display = "block";
+    if (L.autoId && L.autoId === m.id) { L.autoId = null; setTimeout(() => $("#bDecrocher").click(), 50); return; }   // (déjà « Décroché » depuis la notification)
     clearInterval(L.sonI); const sonner = () => { sonnerie(); try { navigator.vibrate && navigator.vibrate([300, 200, 300]); } catch (e) { } }; sonner(); L.sonI = setInterval(sonner, 2600);
     clearTimeout(L.manqueT); L.manqueT = setTimeout(() => { if (L.entrant === m) { finSonnerie(); info("📞 Appel manqué de " + m.nom, 4000); } }, 60000); return; }
   if (m.t === "a_sig" && L.autre && m.de === L.autre.de && L.pc) { const d = m.d;
@@ -490,7 +491,8 @@ function recuLigne(m) {
 function finSonnerie() { clearInterval(L.sonI); clearTimeout(L.manqueT); L.entrant = null; $("#entrant").style.display = "none"; }
 $("#bRefuser").onclick = () => { const m = L.entrant; if (!m) return; envoyerL({ t: "a_repondre", id: m.id, ok: false, de: m.de }); finSonnerie(); };
 $("#bDecrocher").onclick = async () => { const m = L.entrant; if (!m) return; finSonnerie();
-  if (!demarre) { info("Démarrage de la caméra…"); if (!await demarrer()) return; }
+  if (!demarre) { info("Démarrage…"); if (!await demarrer()) return; }
+  if (L.autoMode) { L.autoMode = false; reprendreMode(); }   // (décroché depuis la notification : directement dans le dernier mode, lunettes ou montre)
   try { L.micro = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { L.micro = null; info("Micro refusé : il ne t'entendra pas", 3000); }
   L.autre = m; const pc = L.pc = new RTCPeerConnection(ICE);
   if (L.micro) for (const t of L.micro.getTracks()) pc.addTrack(t, L.micro);
@@ -519,6 +521,12 @@ function finLigne(msg) { clearInterval(L.nivI); $("#niveau").style.display = "no
   if (src.video === v) { src.video = null; src.demo = true; $("#bDemo").classList.add("actif"); chargerDemo().catch(() => { }); }
   holo.direct = false; holo.demoAuto = !(compte && compte.token); if (holo.etat === "ouvert") { holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); } $("#bFin").style.display = "none"; info(msg || "Appel terminé", 3000); }
 connecterLigne();
+/* « ✅ Décrocher » touché dans la notification : la page démarre toute seule, se met dans le dernier mode utilisé, et décroche dès que l'appel arrive */
+function decrocherAuto(id) { L.autoId = id || null; L.autoMode = true;   // (la page décroche dès que l'appel arrive — il arrive aussitôt la ligne branchée)
+  if (L.entrant && (!id || L.entrant.id === id)) { L.autoId = null; $("#bDecrocher").click(); } }
+function reprendreMode() { try { if (localStorage.getItem("holo-mode") === "lunettes" && !lunettes) $("#bLunettes").click(); } catch (e) { } }
+{ const q = new URLSearchParams(location.search); if (q.get("decrocher")) decrocherAuto(q.get("appel")); }
+navigator.serviceWorker && navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.t === "decrocher") decrocherAuto(e.data.id); });
 </script>
 </body>
 </html>

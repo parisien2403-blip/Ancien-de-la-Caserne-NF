@@ -1,7 +1,7 @@
 // Service worker : permet d'installer l'appli (Android, iPhone, PC) et de l'ouvrir sans réseau.
 // Les pages sont servies « réseau d'abord » (toujours la dernière version), les images « cache d'abord ».
 // Le courrier et le registre (/api/) ne sont jamais mis en cache.
-const CACHE = "caserne-nf-v756";
+const CACHE = "caserne-nf-v757";
 const SHELL = ["/", "/images/garde.jpg", "/images/pierre.jpg", "/images/escaliers/brique.jpg", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", e => {
@@ -35,17 +35,23 @@ self.addEventListener("fetch", e => {
 // une notification arrive (courrier, mise à jour) : même appli fermée
 self.addEventListener("push", e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (er) { d = { corps: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.titre || "Caserne Nouvelle-France", { body: d.corps || "", icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || "/" } }));
+  const appel = /^appel-/.test(d.tag || "");   // (un appel en hologramme : comme un vrai appel — deux boutons, et la notification reste jusqu'à la réponse)
+  e.waitUntil(self.registration.showNotification(d.titre || "Caserne Nouvelle-France", { body: d.corps || "", icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || "/" },
+    ...(appel ? { requireInteraction: true, vibrate: [500, 250, 500, 250, 500, 250, 500], actions: [{ action: "decrocher", title: "✅ Décrocher" }, { action: "refuser", title: "Refuser" }] } : {}) }));
 });
 // toucher une notification (courrier du vaguemestre) : ouvre ou ramène l'appli
 self.addEventListener("notificationclick", e => {
   e.notification.close();
+  if (e.action === "refuser") return;   // (refuser : la notification disparaît ; l'appel s'arrête de lui-même)
+  const dec = e.action === "decrocher";
+  if (dec && e.notification.data && e.notification.data.url) e.notification.data.url += "&decrocher=1";
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(liste => {
     const ouverte = liste.find(c => new URL(c.url).origin === location.origin);
     const url = (e.notification.data && e.notification.data.url) || "/";
     if (url !== "/") {   // (un appel en hologramme : la page de l'hologramme déjà ouverte revient au premier plan — elle se rebranche et l'appel y sonne ; sinon on l'ouvre)
       const holo = liste.find(c => /\/holo(\.html)?(\?|$)/.test(new URL(c.url).pathname + new URL(c.url).search));
-      return holo ? holo.focus() : self.clients.openWindow(url); }
+      if (holo) { if (dec) holo.postMessage({ t: "decrocher", id: new URL(url, location.origin).searchParams.get("appel") }); return holo.focus(); }
+      return self.clients.openWindow(url); }
     return ouverte ? ouverte.focus() : self.clients.openWindow("/");
   }));
 });
