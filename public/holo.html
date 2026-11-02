@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000">
+<title>Hologramme</title>
+<style>
+  :root { --cyan: #5ee6ff; --fond: #000; --texte: #e8fbff; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #cam, #scene { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #cam { object-fit: cover; background: #000; }
+  #accueil { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; box-sizing: border-box; text-align: center;
+    background: radial-gradient(circle at 50% 35%, #0b3550 0%, #02121d 55%, #000 100%); }
+  #accueil h1 { margin: 0; font-size: clamp(28px, 7vw, 44px); letter-spacing: 1px; color: var(--cyan); text-shadow: 0 0 18px rgba(94,230,255,.7); }
+  #accueil p { margin: 0; max-width: 460px; line-height: 1.45; font-size: 16px; opacity: .9; }
+  .montre { font-size: 64px; filter: drop-shadow(0 0 16px rgba(94,230,255,.8)); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+  .gros { border: 2px solid var(--cyan); border-radius: 999px; padding: 14px 34px; background: rgba(94,230,255,.15); color: #fff; font: 700 19px system-ui, Arial; box-shadow: 0 0 22px rgba(94,230,255,.45); cursor: pointer; }
+  #barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(0,0,0,.65)); }
+  #barre button, #barre label { border: 1px solid rgba(94,230,255,.6); border-radius: 999px; padding: 10px 16px; background: rgba(0,20,30,.6); color: #fff; font: 600 15px system-ui, Arial; cursor: pointer; backdrop-filter: blur(6px); }
+  #barre .actif { background: rgba(94,230,255,.3); }
+  #info { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 4; max-width: calc(100% - 32px); padding: 8px 16px; border-radius: 999px; background: rgba(0,20,30,.65); border: 1px solid rgba(94,230,255,.45); font: 600 15px system-ui, Arial; text-align: center; display: none; }
+  #erreur { color: #ffb4a8; }
+</style>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay></video>
+<canvas id="scene"></canvas>
+
+<div id="accueil">
+  <div class="montre">⌚</div>
+  <h1>Hologramme</h1>
+  <p>Dirige la caméra vers ton poignet, celui de la montre : la personne qui t'appelle en sort en hologramme.</p>
+  <p style="font-size:14px;opacity:.7">Sans main à l'image, touche l'écran pour la poser où tu veux.</p>
+  <button class="gros" id="go" type="button">▶ Démarrer</button>
+  <p id="erreur"></p>
+</div>
+<div id="info"></div>
+<div id="barre">
+  <button type="button" id="bDemo" class="actif">🎬 Démo</button>
+  <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
+  <button type="button" id="bQuit">✕ Quitter</button>
+</div>
+
+<script type="module">
+import { FilesetResolver, HandLandmarker, ImageSegmenter } from "./vendor/mediapipe/vision_bundle.mjs";
+
+const $ = s => document.querySelector(s);
+const cam = $("#cam"), scene = $("#scene"), cx = scene.getContext("2d");
+const info = (t, ms) => { const e = $("#info"); e.textContent = t; e.style.display = t ? "block" : "none"; clearTimeout(info.t); if (t && ms) info.t = setTimeout(() => info(""), ms); };
+
+/* ---------- la source de l'hologramme : la démo (le chef de poste) ou une vidéo du téléphone, détourée en direct ---------- */
+const src = { c: document.createElement("canvas"), video: null, demo: true, boite: null, pret: false };
+const masqueC = document.createElement("canvas"), mx = masqueC.getContext("2d");
+let mains = null, segImg = null, segVid = null;
+
+// le masque de la personne (ce que l'IA juge « humain ») → la transparence de l'image
+function appliquerMasque(ctx, w, h, masque) {
+  const mw = masque.width, mh = masque.height, f = masque.getAsFloat32Array();
+  if (masqueC.width !== mw || masqueC.height !== mh) { masqueC.width = mw; masqueC.height = mh; }
+  const id = mx.createImageData(mw, mh), d = id.data;
+  let x0 = mw, y0 = mh, x1 = 0, y1 = 0;
+  for (let i = 0; i < f.length; i++) { const a = Math.max(0, Math.min(1, (f[i] - .35) / .4)); d[i * 4 + 3] = a * 255;
+    if (a > .5) { const x = i % mw, y = (i / mw) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  mx.putImageData(id, 0, 0);
+  ctx.save(); ctx.globalCompositeOperation = "destination-in"; ctx.filter = "blur(1.5px)"; ctx.drawImage(masqueC, 0, 0, w, h); ctx.restore();
+  if (x1 > x0) { const b = { x: x0 / mw * w, y: y0 / mh * h, w: (x1 - x0 + 1) / mw * w, h: (y1 - y0 + 1) / mh * h };
+    src.boite = src.boite ? { x: src.boite.x + (b.x - src.boite.x) * .2, y: src.boite.y + (b.y - src.boite.y) * .2, w: src.boite.w + (b.w - src.boite.w) * .2, h: src.boite.h + (b.h - src.boite.h) * .2 } : b; }
+}
+
+async function chargerDemo() {
+  const im = new Image(); im.src = "images/garde-poste.jpg"; await im.decode();
+  const cadre = { x: 290, y: 95, w: 420, h: 450 };   // (le chef de poste, derrière son comptoir)
+  const c = src.c; c.width = cadre.w; c.height = cadre.h; const g = c.getContext("2d");
+  g.drawImage(im, cadre.x, cadre.y, cadre.w, cadre.h, 0, 0, cadre.w, cadre.h);
+  const r = segImg.segment(c); appliquerMasque(g, c.width, c.height, r.confidenceMasks[0]); r.close && r.close();
+  src.boite = { x: 0, y: 0, w: c.width, h: c.height }; src.pret = true;
+}
+
+function choisirVideo(fichier) {
+  if (src.video) { src.video.pause(); URL.revokeObjectURL(src.video.src); }
+  const v = document.createElement("video"); v.src = URL.createObjectURL(fichier); v.loop = true; v.playsInline = true; v.muted = true;
+  v.onloadeddata = () => { src.video = v; src.demo = false; src.boite = null; src.pret = true; v.play().catch(() => {}); info("Vidéo chargée : montre ta montre ⌚", 3000); };
+  $("#bDemo").classList.remove("actif");
+}
+
+let dernierSeg = -1;
+function majSource(t) {
+  const v = src.video; if (src.demo || !v || v.readyState < 2) return;
+  if (v.currentTime === dernierSeg) return; dernierSeg = v.currentTime;
+  const c = src.c, s = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight)), w = Math.round(v.videoWidth * s), h = Math.round(v.videoHeight * s);
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const g = c.getContext("2d"); g.clearRect(0, 0, w, h); g.drawImage(v, 0, 0, w, h);
+  const r = segVid.segmentForVideo(c, t); appliquerMasque(g, w, h, r.confidenceMasks[0]); r.close && r.close();
+}
+
+/* ---------- le son : la sonnerie, le souffle de l'ouverture, le bourdonnement ---------- */
+let AC = null, bourdon = null;
+const son = (f, d, type = "sine", vol = .15, f2) => { if (!AC) return; const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .05); };
+const sonnerie = () => { [0, .18, .5, .68].forEach((d, i) => setTimeout(() => son(i % 2 ? 1320 : 1760, .14, "sine", .12), d * 1000)); };
+const ouverture = () => { son(180, .6, "sawtooth", .05, 1400); son(900, .5, "sine", .06, 2400); };
+const fermeture = () => son(1600, .35, "sine", .06, 160);
+function bourdonner(on) { if (!AC) return;
+  if (on && !bourdon) { const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(); o.frequency.value = 110; o2.frequency.value = 111.5; o.type = o2.type = "triangle"; g.gain.value = 0; g.gain.linearRampToValueAtTime(.025, AC.currentTime + .4); o.connect(g); o2.connect(g); g.connect(AC.destination); o.start(); o2.start(); bourdon = { o, o2, g }; }
+  if (!on && bourdon) { const b = bourdon; bourdon = null; b.g.gain.linearRampToValueAtTime(0, AC.currentTime + .3); setTimeout(() => { b.o.stop(); b.o2.stop(); }, 400); } }
+function parler() {
+  if (!src.demo) { if (src.video) { src.video.muted = false; src.video.currentTime = 0; src.video.play().catch(() => {}); } return; }
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance("Allô ? Ici le chef de poste de la caserne Nouvelle-France. Je te reçois cinq sur cinq ! Rendez-vous dans la cour d'honneur : la course de karts va commencer.");
+    u.lang = "fr-FR"; u.rate = 1; u.pitch = .8; const voix = speechSynthesis.getVoices().filter(v => /^fr/i.test(v.lang)); const h = voix.find(v => /male|homme|thomas|paul|henri|guillaume/i.test(v.name)); if (h || voix[0]) u.voice = h || voix[0];
+    u.onstart = () => holo.parle = true; u.onend = () => holo.parle = false; speechSynthesis.speak(u); } catch (e) { }
+}
+function taire() { try { speechSynthesis.cancel(); } catch (e) { } holo.parle = false; if (src.video) src.video.muted = true; }
+
+/* ---------- l'hologramme : il sort de la montre quand le poignet est à l'image, et s'y replie quand on baisse le bras ---------- */
+const holo = { etat: "attente", t: 0, vu: 0, perdu: 0, x: 0, y: 0, taille: 0, k: 0, fixe: null, parle: false };
+const tampon = document.createElement("canvas"), tx = tampon.getContext("2d");
+
+function couverture() { const W = innerWidth, H = innerHeight, vw = cam.videoWidth || W, vh = cam.videoHeight || H, s = Math.max(W / vw, H / vh);
+  return { s, ox: (W - vw * s) / 2, oy: (H - vh * s) / 2, vw, vh }; }
+
+function suivreMain(t) {
+  if (!mains || cam.readyState < 2) return null;
+  if (cam.currentTime === suivreMain.dt) return suivreMain.der; suivreMain.dt = cam.currentTime;
+  const r = mains.detectForVideo(cam, t); let best = null;
+  const C = couverture();
+  for (const lm of r.landmarks || []) {
+    const p = i => ({ x: C.ox + lm[i].x * C.vw * C.s, y: C.oy + lm[i].y * C.vh * C.s });
+    const w = p(0), m = p(9), ech = Math.hypot(m.x - w.x, m.y - w.y);
+    // (la montre : juste en dessous du poignet, côté avant-bras)
+    const montre = { x: w.x - (m.x - w.x) * .3, y: w.y - (m.y - w.y) * .3, ech };
+    if (!best || ech > best.ech) best = montre;
+  }
+  suivreMain.der = best; return best;
+}
+
+function dessinerHolo(now, dt) {
+  const W = scene.width / devicePixelRatio, H = scene.height / devicePixelRatio;
+  cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); cx.clearRect(0, 0, W, H);
+  if (holo.k <= .001 || !src.pret || !src.boite) return;
+  const k = holo.k, b = src.boite, ratio = b.w / b.h;
+  const h = holo.taille * k, w = h * ratio, x = holo.x, y = holo.y;   // (x, y : la montre ; la personne se tient au-dessus)
+  const lev = 10 + holo.taille * .06;   // (elle flotte un peu au-dessus du cadran)
+
+  // le faisceau, du cadran jusqu'à la personne
+  cx.save(); cx.globalCompositeOperation = "lighter";
+  const fh = h + lev, gr = cx.createLinearGradient(x, y, x, y - fh);
+  gr.addColorStop(0, `rgba(94,230,255,${.55 * Math.min(1, k * 2)})`); gr.addColorStop(.25, "rgba(94,230,255,.18)"); gr.addColorStop(1, "rgba(94,230,255,0)");
+  cx.fillStyle = gr; cx.beginPath(); cx.moveTo(x - 6, y); cx.lineTo(x + 6, y); cx.lineTo(x + w * .62, y - fh); cx.lineTo(x - w * .62, y - fh); cx.closePath(); cx.fill();
+  // le socle : des anneaux lumineux qui tournent sur le cadran
+  const rr = Math.max(14, w * .32);
+  for (let i = 0; i < 3; i++) { cx.strokeStyle = `rgba(120,240,255,${(.75 - i * .2) * Math.min(1, k * 2)})`; cx.lineWidth = 2 - i * .5; cx.setLineDash(i === 1 ? [6, 8] : []); cx.lineDashOffset = -now / 30 * (i + 1);
+    cx.beginPath(); cx.ellipse(x, y, rr * (1 + i * .35), rr * (1 + i * .35) * .28, 0, 0, Math.PI * 2); cx.stroke(); }
+  cx.setLineDash([]); const halo = cx.createRadialGradient(x, y, 0, x, y, rr * 1.4); halo.addColorStop(0, "rgba(160,250,255,.7)"); halo.addColorStop(1, "rgba(94,230,255,0)");
+  cx.fillStyle = halo; cx.beginPath(); cx.ellipse(x, y, rr * 1.4, rr * .45, 0, 0, Math.PI * 2); cx.fill(); cx.restore();
+
+  if (h < 4) return;
+  // la personne, teintée de bleu, rayée de lignes, qui scintille
+  const tw = Math.ceil(w), th = Math.ceil(h); if (tampon.width !== tw || tampon.height !== th) { tampon.width = tw; tampon.height = th; }
+  tx.globalCompositeOperation = "source-over"; tx.globalAlpha = 1; tx.clearRect(0, 0, tw, th);
+  const resp = holo.parle ? 1 + Math.sin(now / 90) * .006 : 1 + Math.sin(now / 900) * .004;   // (elle respire ; un peu plus quand elle parle)
+  tx.drawImage(src.c, b.x, b.y, b.w, b.h, 0, th * (1 - resp), tw, th * resp);
+  tx.globalCompositeOperation = "source-atop";
+  tx.fillStyle = "rgba(60,190,255,.38)"; tx.fillRect(0, 0, tw, th);
+  tx.fillStyle = "rgba(0,10,25,.35)"; const pas = Math.max(3, th / 110), dec = (now / 40) % pas; for (let ly = -pas + dec; ly < th; ly += pas) tx.fillRect(0, ly, tw, pas * .45);
+  const bande = (now / 7) % (th * 1.6) - th * .3; const gb = tx.createLinearGradient(0, bande - 20, 0, bande + 20); gb.addColorStop(0, "rgba(160,250,255,0)"); gb.addColorStop(.5, "rgba(160,250,255,.35)"); gb.addColorStop(1, "rgba(160,250,255,0)"); tx.fillStyle = gb; tx.fillRect(0, bande - 20, tw, 40);
+  // (elle sort du faisceau : le bas se fond dans la lumière)
+  tx.globalCompositeOperation = "destination-out"; const gf = tx.createLinearGradient(0, th, 0, th * .82); gf.addColorStop(0, "rgba(0,0,0,.85)"); gf.addColorStop(1, "rgba(0,0,0,0)"); tx.fillStyle = gf; tx.fillRect(0, th * .82, tw, th * .18);
+
+  const scint = .82 + Math.random() * .1 - (Math.random() < .03 ? .35 : 0);
+  const px = x - w / 2, py = y - lev - h;
+  cx.save(); cx.globalAlpha = scint * Math.min(1, k * 1.4); cx.shadowColor = "rgba(94,230,255,.9)"; cx.shadowBlur = 18;
+  if (Math.random() < .05) {   // (un petit accroc : une tranche décalée)
+    const sy = Math.random() * th, sh = 4 + Math.random() * th * .08, d = (Math.random() - .5) * w * .12;
+    cx.drawImage(tampon, 0, 0, tw, sy, px, py, w, sy); cx.drawImage(tampon, 0, sy, tw, sh, px + d, py + sy, w, sh); cx.drawImage(tampon, 0, sy + sh, tw, th - sy - sh, px, py + sy + sh, w, th - sy - sh);
+  } else cx.drawImage(tampon, px, py, w, h);
+  cx.shadowBlur = 0; cx.globalCompositeOperation = "lighter"; cx.globalAlpha = .25 * scint; cx.drawImage(tampon, px, py, w, h);   // (la lueur)
+  cx.restore();
+}
+
+function boucle() {
+  const now = performance.now(), dt = Math.min(.1, (now - (boucle.t || now)) / 1000); boucle.t = now;
+  try { majSource(now); } catch (e) { console.warn(e); }
+  let m = null; try { m = suivreMain(now); } catch (e) { console.warn(e); }
+  if (holo.fixe) m = holo.fixe;
+  if (m) { holo.vu += dt; holo.perdu = 0;
+    const cible = Math.max(110, Math.min(innerHeight * .78, (m.ech || 0) * 4.2));
+    if (holo.etat === "attente" || !holo.x) { holo.x = m.x; holo.y = m.y; holo.taille = cible; }
+    const a = 1 - Math.exp(-dt * 14); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
+  else { holo.perdu += dt; if (holo.perdu > .25) holo.vu = 0; }
+  // l'appel : le poignet reste à l'image → ça sonne, puis la personne apparaît ; le bras baissé → elle se replie dans la montre
+  if (holo.etat === "attente" && holo.vu > .35) { holo.etat = "sonne"; holo.t = 0; sonnerie(); info("📞 Appel entrant…"); }
+  else if (holo.etat === "sonne") { holo.t += dt; if (!m && holo.perdu > .8) { holo.etat = "attente"; info(""); } else if (holo.t > 1) { holo.etat = "ouvert"; ouverture(); bourdonner(true); info(src.demo ? "Le chef de poste" : "", 2500); setTimeout(() => holo.etat === "ouvert" && parler(), 700); } }
+  else if (holo.etat === "ouvert" && !m && holo.perdu > .8) { holo.etat = "attente"; fermeture(); bourdonner(false); taire(); info(""); }
+  const voulu = holo.etat === "ouvert" ? 1 : holo.etat === "sonne" ? .06 : 0;
+  holo.k += (voulu - holo.k) * (1 - Math.exp(-dt * (voulu > holo.k ? 4.5 : 9))); if (holo.k < .002 && !voulu) holo.k = 0;
+  dessinerHolo(now, dt);
+  requestAnimationFrame(boucle);
+}
+
+function taille() { scene.width = innerWidth * devicePixelRatio; scene.height = innerHeight * devicePixelRatio; }
+addEventListener("resize", taille); taille();
+
+// sans main à l'image : un toucher pose la personne à cet endroit (un autre toucher la renvoie)
+scene.addEventListener("pointerdown", e => { if (holo.fixe) { holo.fixe = null; return; } holo.fixe = { x: e.clientX, y: e.clientY, ech: innerHeight * .1 }; });
+
+$("#fichier").addEventListener("change", e => { const f = e.target.files[0]; if (f) choisirVideo(f); });
+$("#bDemo").onclick = async () => { if (src.video) { src.video.pause(); src.video = null; } src.demo = true; $("#bDemo").classList.add("actif"); await chargerDemo(); };
+$("#bQuit").onclick = () => { location.href = "/"; };
+
+$("#go").onclick = async () => {
+  const go = $("#go"); go.disabled = true; go.textContent = "Chargement…"; $("#erreur").textContent = "";
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch (e) { }
+  try { speechSynthesis.getVoices(); } catch (e) { }
+  try {
+    const flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    cam.srcObject = flux; await cam.play();
+  } catch (e) { $("#erreur").textContent = "Je n'ai pas accès à la caméra : autorise-la dans le navigateur, puis réessaie."; go.disabled = false; go.textContent = "▶ Démarrer"; return; }
+  try {
+    const vision = await FilesetResolver.forVisionTasks("vendor/mediapipe/wasm");
+    const creer = async (delegate) => {
+      mains = await HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/hand_landmarker.task", delegate }, runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: .5, minTrackingConfidence: .5 });
+      segImg = await ImageSegmenter.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/selfie_segmenter.tflite", delegate }, runningMode: "IMAGE", outputConfidenceMasks: true, outputCategoryMask: false });
+      segVid = await ImageSegmenter.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/selfie_segmenter.tflite", delegate }, runningMode: "VIDEO", outputConfidenceMasks: true, outputCategoryMask: false });
+    };
+    try { await creer("GPU"); } catch (e) { console.warn("GPU indisponible, on passe au processeur", e); await creer("CPU"); }
+    await chargerDemo();
+  } catch (e) { console.error(e); $("#erreur").textContent = "Le chargement a échoué : " + (e.message || e); go.disabled = false; go.textContent = "▶ Démarrer"; return; }
+  $("#accueil").style.display = "none"; $("#barre").style.display = "flex";
+  info("Montre ton poignet à la caméra ⌚", 4000);
+  requestAnimationFrame(boucle);
+};
+</script>
+</body>
+</html>
