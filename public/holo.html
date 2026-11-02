@@ -40,11 +40,12 @@
 <div id="barre">
   <button type="button" id="bDemo" class="actif">🎬 Démo</button>
   <label>📁 Ma vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
+  <button type="button" id="bFin" style="display:none;background:rgba(200,40,40,.75);border-color:#ff8a8a">📴 Raccrocher</button>
   <button type="button" id="bQuit">✕ Quitter</button>
 </div>
 
 <script type="module">
-import { FilesetResolver, HandLandmarker, ImageSegmenter } from "./vendor/mediapipe/vision_bundle.mjs";
+import { FilesetResolver, ImageSegmenter } from "./vendor/mediapipe/vision_bundle.mjs";
 
 const $ = s => document.querySelector(s);
 const cam = $("#cam"), scene = $("#scene"), cx = scene.getContext("2d");
@@ -53,7 +54,7 @@ const info = (t, ms) => { const e = $("#info"); e.textContent = t; e.style.displ
 /* ---------- la source de l'hologramme : la démo (le chef de poste) ou une vidéo du téléphone, détourée en direct ---------- */
 const src = { c: document.createElement("canvas"), video: null, demo: true, boite: null, pret: false };
 const masqueC = document.createElement("canvas"), mx = masqueC.getContext("2d");
-let mains = null, segImg = null, segVid = null;
+let segImg = null, segVid = null;
 
 // le masque de la personne (ce que l'IA juge « humain ») → la transparence de l'image
 function appliquerMasque(ctx, w, h, masque) {
@@ -121,21 +122,6 @@ const tampon = document.createElement("canvas"), tx = tampon.getContext("2d");
 function couverture() { const W = innerWidth, H = innerHeight, vw = cam.videoWidth || W, vh = cam.videoHeight || H, s = Math.max(W / vw, H / vh);
   return { s, ox: (W - vw * s) / 2, oy: (H - vh * s) / 2, vw, vh }; }
 
-function suivreMain(t) {
-  if (!mains || cam.readyState < 2) return null;
-  if (cam.currentTime === suivreMain.dt) return suivreMain.der; suivreMain.dt = cam.currentTime;
-  const r = mains.detectForVideo(cam, t); let best = null;
-  const C = couverture();
-  for (const lm of r.landmarks || []) {
-    const p = i => ({ x: C.ox + lm[i].x * C.vw * C.s, y: C.oy + lm[i].y * C.vh * C.s });
-    const w = p(0), m = p(9), ech = Math.hypot(m.x - w.x, m.y - w.y);
-    // (la montre : juste en dessous du poignet, côté avant-bras)
-    const montre = { x: w.x - (m.x - w.x) * .3, y: w.y - (m.y - w.y) * .3, ech };
-    if (!best || ech > best.ech) best = montre;
-  }
-  suivreMain.der = best; return best;
-}
-
 /* ---------- suivre la montre elle-même : on la touche sur l'écran, puis on retrouve ce petit morceau d'image d'une image à l'autre ---------- */
 const LARG = 240, petitC = document.createElement("canvas"), pg = petitC.getContext("2d", { willReadFrequently: true });
 let suivi = { on: false };
@@ -183,13 +169,13 @@ function chercherCadran(dt) {
           if (x < w - 1 && !lab[i + 1] && mk[i + 1]) { lab[i + 1] = id; pile[sp++] = i + 1; }
           if (y > 0 && !lab[i - w] && mk[i - w]) { lab[i - w] = id; pile[sp++] = i - w; }
           if (y < h - 1 && !lab[i + w] && mk[i + w]) { lab[i + w] = id; pile[sp++] = i + w; } }
-        if (n < N * .01 || n > N * .3 || bord > 2) continue;
+        if (n < N * .005 || n > N * .3 || bord > Math.sqrt(n) * .6) continue;
         const mx = sx / n, my = sy / n, vxx = sxx / n - mx * mx, vyy = syy / n - my * my, vxy = sxy / n - mx * my;
         const tr = (vxx + vyy) / 2, dd = Math.sqrt(Math.max(0, tr * tr - (vxx * vyy - vxy * vxy))), l1 = tr + dd, l2 = Math.max(1e-6, tr - dd);
         const a = 2 * Math.sqrt(l1), b = 2 * Math.sqrt(l2), plein = n / (Math.PI * a * b), rond = b / a;
         if (rond < .45 || plein < .78 || plein > 1.08) continue;   // (une tache allongée, ou trouée, ou découpée : pas un cadran)
         let score = Math.abs(1 - plein) * 2 + (1 - rond) * .4 - Math.min(.2, a / w);   // (et, à forme égale, le plus grand)
-        if (cadran.der) score += Math.hypot(mx - cadran.der.x, my - cadran.der.y) / w * 1.5;   // (on préfère celui qu'on suivait déjà)
+        if (cadran.der && Math.hypot(mx - cadran.der.x, my - cadran.der.y) < cadran.der.a * .6 && Math.abs((a + E) / cadran.der.a - 1) < .35) score -= .1;   // (on préfère celui qu'on suivait déjà)
         if (!best || score < best.score) best = { x: mx, y: my, a: a + E, b: b + E, ang: .5 * Math.atan2(2 * vxy, vxx - vyy), score }; } }
     if (best && best.score < .45) { const d = cadran.der;
       cadran.vu = d && Math.hypot(best.x - d.x, best.y - d.y) < best.a * .8 ? cadran.vu + 1 : 1; cadran.der = best; cadran.perdu = 0; }
@@ -248,20 +234,21 @@ function boucle() {
   const now = performance.now(), dt = Math.min(.1, (now - (boucle.t || now)) / 1000); boucle.t = now;
   try { majSource(now); } catch (e) { console.warn(e); }
   let m = null; try { m = chercherCadran(dt); } catch (e) { console.warn(e); }
-  if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : suivreMain(now); } catch (e) { console.warn(e); }
+  if (m) suivi.on = false; else try { m = suivi.on ? suivreMontre(dt) : null; } catch (e) { console.warn(e); }   // (le cadran pas trouvé : celui qu'on a touché à l'écran)
   if (m && m.ea) { const a = 1 - Math.exp(-dt * 12); if (!holo.ea) Object.assign(holo, { ea: m.ea, eb: m.eb, ang: m.ang });
     holo.ea += (m.ea - holo.ea) * a; holo.eb += (m.eb - holo.eb) * a; let da = m.ang - holo.ang; da = Math.atan2(Math.sin(2 * da), Math.cos(2 * da)) / 2; holo.ang += da * a; }
   else if (m) holo.ea = 0;
   if (m) { holo.vu += dt; holo.perdu = 0;
-    const cible = Math.max(110, Math.min(innerHeight * .78, (m.ech || 0) * 4.2));
-    if (holo.etat === "attente" || !holo.x) { holo.x = m.x; holo.y = m.y; holo.taille = cible; }
+    const cible = Math.max(110, Math.min(innerHeight * .6, (m.ech || 0) * 4.2));
+    if (holo.etat === "attente" || !holo.x || holo.k < .05) { holo.x = m.x; holo.y = m.y; holo.taille = cible; }   // (de retour sur la montre : il repart d'elle)
     const a = 1 - Math.exp(-dt * 14); holo.x += (m.x - holo.x) * a; holo.y += (m.y - holo.y) * a; holo.taille += (cible - holo.taille) * (1 - Math.exp(-dt * 4)); }
   else { holo.perdu += dt; if (holo.perdu > .25) holo.vu = 0; }
   // l'appel : le poignet reste à l'image → ça sonne, puis la personne apparaît ; le bras baissé → elle se replie dans la montre
   if (holo.etat === "attente" && holo.vu > .35) { holo.etat = "sonne"; holo.t = 0; sonnerie(); info("📞 Appel entrant…"); }
-  else if (holo.etat === "sonne") { holo.t += dt; if (!m && holo.perdu > .8) { holo.etat = "attente"; info(""); } else if (holo.t > 1) { holo.etat = "ouvert"; ouverture(); bourdonner(true); info(src.demo ? "Le chef de poste" : "", 2500); setTimeout(() => holo.etat === "ouvert" && parler(), 700); } }
-  else if (holo.etat === "ouvert" && !m && holo.perdu > .8) { holo.etat = "attente"; fermeture(); bourdonner(false); taire(); info(""); }
-  const voulu = holo.etat === "ouvert" ? 1 : holo.etat === "sonne" ? .06 : 0;
+  else if (holo.etat === "sonne") { holo.t += dt; if (!m && holo.perdu > .8) { holo.etat = "attente"; info(""); } else if (holo.t > 1) { holo.etat = "ouvert"; ouverture(); bourdonner(true); info(src.demo ? "Le chef de poste" : "", 2500); setTimeout(() => holo.etat === "ouvert" && parler(), 700); $("#bFin").style.display = ""; } }
+  // (pendant l'appel : la montre sort de l'image → l'hologramme se replie, mais la conversation continue ; on y revient → il ressort aussitôt)
+  else if (holo.etat === "ouvert") { const cache = !m && holo.perdu > .4; if (cache !== !!holo.cache) { holo.cache = cache; bourdonner(!cache); if (cache) { fermeture(); info("📞 En ligne : reviens sur ta montre", 2500); } else ouverture(); } }
+  const voulu = holo.etat === "ouvert" ? (holo.cache ? 0 : 1) : holo.etat === "sonne" ? .06 : 0;
   holo.k += (voulu - holo.k) * (1 - Math.exp(-dt * (voulu > holo.k ? 4.5 : 9))); if (holo.k < .002 && !voulu) holo.k = 0;
   dessinerHolo(now, dt);
   requestAnimationFrame(boucle);
@@ -275,6 +262,7 @@ scene.addEventListener("pointerdown", e => verrouiller(e.clientX, e.clientY));
 
 $("#fichier").addEventListener("change", e => { const f = e.target.files[0]; if (f) choisirVideo(f); });
 $("#bDemo").onclick = async () => { if (src.video) { src.video.pause(); src.video = null; } src.demo = true; $("#bDemo").classList.add("actif"); await chargerDemo(); };
+$("#bFin").onclick = () => { if (holo.etat !== "ouvert") return; holo.etat = "attente"; holo.cache = false; holo.vu = -1.5; fermeture(); bourdonner(false); taire(); info("Appel terminé", 2000); $("#bFin").style.display = "none"; };   // (et ça ne resonne pas tout de suite)
 $("#bQuit").onclick = () => { location.href = "/"; };
 
 $("#go").onclick = async () => {
@@ -288,7 +276,6 @@ $("#go").onclick = async () => {
   try {
     const vision = await FilesetResolver.forVisionTasks("vendor/mediapipe/wasm");
     const creer = async (delegate) => {
-      mains = await HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/hand_landmarker.task", delegate }, runningMode: "VIDEO", numHands: 2, minHandDetectionConfidence: .5, minTrackingConfidence: .5 });
       segImg = await ImageSegmenter.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/selfie_segmenter.tflite", delegate }, runningMode: "IMAGE", outputConfidenceMasks: true, outputCategoryMask: false });
       segVid = await ImageSegmenter.createFromOptions(vision, { baseOptions: { modelAssetPath: "vendor/mediapipe/selfie_segmenter.tflite", delegate }, runningMode: "VIDEO", outputConfidenceMasks: true, outputCategoryMask: false });
     };
