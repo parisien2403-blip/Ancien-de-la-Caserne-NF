@@ -2160,10 +2160,11 @@ function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeau
    - la longue façade de la rue des Messageries : brique rouge, soubassement de pierre claire, grandes fenêtres à barreaux au rez-de-chaussée,
      linteaux et appuis de pierre, allèges en brique en saillie, petits balcons de fer, descentes d'eau ; au bout, l'immeuble de pierre du n° 7 ;
    - en face, des immeubles parisiens ; la rue d'Hauteville en travers, fermée de chaque côté. Le portail est ouvert (seulement dans la vraie caserne). */
-const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 40.3, XF: 46.7, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -46, Z7: -74, DX: 6.5, DZ: 42 };   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
+const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 40.3, XF: 46.7, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -46, Z7: -74, DX: 6.5, DZ: 42, XC: -40, DC: 2.3 };   // (XC : rue d'Hauteville, le bout de la caserne ; après le mur blanc en biais, les immeubles avancent de DC vers la rue)
+DH_.bord = x => DH_.ZN - Math.max(0, Math.min(DH_.DC, (DH_.XC - x) * .92));   // (le nu des façades, côté caserne, rue d'Hauteville)   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
 DH_.zone = (x, z) => RU.lz(x, z) < -7.9 || (x > DH_.XE && z < DH_.ZS) || z < DH_.ZN;   // (au-delà de la grille)
 DH_.dedans = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 && z < DH_.ZS - .5)          // la rue des Messageries
-  || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.ZN - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
+  || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.bord(x) - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
   || (x - z > DH_.C + .35 && x <= DH_.XE + .3 && z >= DH_.ZN - .3)                                          // devant le pan coupé
   || (Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= -7.4 && RU.lz(x, z) >= -10.6 && (!M || !M.L || !M.L.porcheHorloge || M.L.porcheHorloge.ouv > .75 || Math.abs(RU.lz(x, z) + 9.2) > .5));   // le bout de la voûte (on passe la grille quand elle est ouverte)
 DH_.h = (x, z) => RU.lz(x, z) > -10.05 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && z > DH_.ZR) || z < DH_.ZF ? DH_.Y0 + .12 : DH_.Y0;
@@ -2289,8 +2290,14 @@ function ruesDehors(A, L, scene) {
   const zE0 = XE - C, xN0 = C + ZN;   // (où la façade de la rue rejoint le pan coupé : z = -134,8 côté Messageries, x = 30,8 côté Hauteville)
   facade(Z7 - zE0, 22.4, XE + .02, (zE0 + Z7) / 2, Math.PI / 2, { pas: 3.7 });
   facade(xN0 - (-26.6), 25.7, (xN0 - 26.6) / 2, ZN - .02, Math.PI, { pas: 3.7, hauteville: true });
-  { const lg = -26.6 - XW, t = tex(toileMessageries(lg, 25.7, { pas: 3.7, hauteville: true })), b = A.mat({ color: 0x8a4a36, roughness: .95 });   // (la suite de la caserne, rue d'Hauteville)
-    A.ajoute(new THREE.BoxGeometry(lg, 25.7, 8), [b, b, A.mat({ color: 0x6f6f72 }), b, b, A.mat({ map: t, roughness: .92 })], (XW - 26.6) / 2, Y0 + 12.85, ZN + 4); }
+  { const XC = DH_.XC, lg = -26.6 - XC, t = tex(toileMessageries(lg, 25.7, { pas: 3.7, hauteville: true })), b = A.mat({ color: 0x8a4a36, roughness: .95 });   // (la suite de la caserne, rue d'Hauteville)
+    A.ajoute(new THREE.BoxGeometry(lg, 25.7, 8), [b, b, A.mat({ color: 0x6f6f72 }), b, b, A.mat({ map: t, roughness: .92 })], (XC - 26.6) / 2, Y0 + 12.85, ZN + 4);
+    // au bout : le mur de brique peinte en blanc, en biais, qui avance vers la rue ; puis les immeubles parisiens, alignés plus près de la chaussée
+    const lb = Math.hypot(DH_.DC / .92, DH_.DC), blancB = tex(toile(160, 880, (c, w, h) => { c.fillStyle = "#ebe8e1"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(120,115,105,.25)";
+      for (let y = 0; y < h; y += 8) { c.fillRect(0, y, w, 1); for (let x = (y / 8) % 2 ? 0 : 10; x < w; x += 20) c.fillRect(x, y, 1, 8); } for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(90,85,75,${alea() * .08})`; c.fillRect(alea() * w, alea() * h, 4 + alea() * 30, 20 + alea() * 120); } }));
+    const mb = new THREE.Mesh(new THREE.PlaneGeometry(lb, 22), A.mat({ map: blancB, roughness: .95 })); mb.position.set(XC - DH_.DC / .92 / 2, Y0 + 11, ZN - DH_.DC / 2); mb.rotation.y = Math.PI - Math.atan2(DH_.DC, DH_.DC / .92); scene.add(mb);
+    const xa = XC - DH_.DC / .92, za = ZN - DH_.DC;
+    [[xa - 4.5, 9, 340], [xa - 13.25, 8.5, 341]].forEach(([xc, l, g], k) => { const o = A.haussmann({ x: xc, z: za, largeur: l, etages: 6, rot: Math.PI, teinte: k ? "#e8dcc2" : "#e6dbc4", graine: g }); o.position.y = Y0; L.nuitObjets.push(...o.userData.nuit); L.silhouettes.push(...o.userData.silhouettes); }); }
   // les avancées de pierre en encorbellement, près de l'angle, une sur chaque rue (du 1er au 4e étage)
   { const pr = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#dcd6ca", 34, 80)), 1, 3), roughness: .85 });
     const fen = A.mat({ map: tex(toile(80, 400, (c, w, h) => { pierre(c, 0, 0, w, h, "#dcd6ca", 34, 80); for (let e = 0; e < 4; e++) { const Y = 20 + e * 98; const g = c.createLinearGradient(0, Y, 0, Y + 62); g.addColorStop(0, "#6d7d86"); g.addColorStop(1, "#2c363e"); c.fillStyle = g; c.fillRect(14, Y, 52, 62); c.fillStyle = "#eeeae2"; c.fillRect(38, Y, 4, 62); } })), roughness: .8 });
@@ -2300,7 +2307,7 @@ function ruesDehors(A, L, scene) {
     oriel(XE, zE0 + 9.5, Math.PI / 2); oriel(xN0 - 9.5, ZN, Math.PI); }
   // les arbres, sur le trottoir de la caserne, rue d'Hauteville
   { const tronc = A.mat({ color: 0x5b4a3a, roughness: 1 }), verts = [0x4f7f36, 0x5e8f3e, 0x46732f, 0x6a9a48].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), grille = A.mat({ color: 0x2a2c2e, metalness: .4 });
-    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
+    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x > DH_.XC - 2 && x < DH_.XC + 1.5 || x < DH_.XC - 2) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
       for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; } } }
   // au bout, du même côté : l'immeuble de pierre du n° 7
   numero7(A, scene, XE, Y0, Z7);
@@ -2347,7 +2354,7 @@ function ruesDehors(A, L, scene) {
   const h0 = L.hauteur; L.hauteur = (x, z, p) => DH_.zone(x, z) ? DH_.h(x, z) : h0 ? h0(x, z, p) : 0;
   const cam0 = L.contraindreCam; L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
     if (DH_.zone(mp.x, mp.z) && RU.lz(mp.x, mp.z) < -10.05) {   // dehors : la caméra reste dans la rue (rapprochée de son bonhomme si elle entrerait dans un mur)
-      const ok = (x, z) => (x > XE + .2 && x < XO - .2 && z > ZO + .2 && z < ZS - .4) || (x > XW + .4 && x < XEst - .4 && z > ZO + .2 && z < ZN - .2) || (x - z > C + .2 && x <= XE + .2 && z >= ZN - .2);
+      const ok = (x, z) => (x > XE + .2 && x < XO - .2 && z > ZO + .2 && z < ZS - .4) || (x > XW + .4 && x < XEst - .4 && z > ZO + .2 && z < DH_.bord(x) - .2) || (x - z > C + .2 && x <= XE + .2 && z >= ZN - .2);
       if (!ok(pos.x, pos.z)) { let a = 0, b = 1; for (let k = 0; k < 10; k++) { const t = (a + b) / 2; if (ok(mp.x + (pos.x - mp.x) * t, mp.z + (pos.z - mp.z) * t)) a = t; else b = t; } pos.x = mp.x + (pos.x - mp.x) * a; pos.z = mp.z + (pos.z - mp.z) * a; pos.y = Math.max(pos.y, mp.y + 2.4); }
       pos.y = Math.min(pos.y, mp.y + 14); return true; }
     return cam0 ? cam0(pos, moi) : false; };
