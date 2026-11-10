@@ -2355,8 +2355,8 @@ function ruesDehors(A, L, scene) {
     oriel(XE, zE0 + 9.5, Math.PI / 2); oriel(xN0 - 9.5, ZN, Math.PI); }
   // les arbres, sur le trottoir de la caserne, rue d'Hauteville
   { const tronc = A.mat({ color: 0x5b4a3a, roughness: 1 }), verts = [0x4f7f36, 0x5e8f3e, 0x46732f, 0x6a9a48].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), grille = A.mat({ color: 0x2a2c2e, metalness: .4 });
-    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x < DH_.XC + 1.5) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
-      for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; } } }
+    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x < DH_.XC + 1.5) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z).userData.perso = true;   // (perso : la caméra passe à travers les arbres, au lieu de sauter devant soi) A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
+      for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; f.userData.perso = true; } } }
   // au bout, du même côté : l'immeuble de pierre du n° 7
   numero7(A, scene, XE, Y0, Z7);
   // les plaques de rue (émail bleu de Paris) et le numéro 2
@@ -2391,7 +2391,7 @@ function ruesDehors(A, L, scene) {
   L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && x > XE && x < XO && z > -57.5 && z < ZS, vers: "rue", continu: [DH_.DX, DH_.DZ, -Y0], centre: [(XE + XO) / 2, -58] });
   /* --- les candélabres --- */
   const fonte = A.mat({ color: 0x1c2226, roughness: .5, metalness: .5 });
-  const cand = (x, z, dx, dz) => { A.ajoute(new THREE.CylinderGeometry(.06, .12, 6.6, 10), fonte, x, Y0 + 3.3, z); A.ajoute(new THREE.CylinderGeometry(.16, .2, .6, 10), fonte, x, Y0 + .3, z);
+  const cand = (x, z, dx, dz) => { A.ajoute(new THREE.CylinderGeometry(.06, .12, 6.6, 10), fonte, x, Y0 + 3.3, z).userData.perso = true; A.ajoute(new THREE.CylinderGeometry(.16, .2, .6, 10), fonte, x, Y0 + .3, z);
     const lx = x + dx * 1.1, lz = z + dz * 1.1; A.ajoute(new THREE.BoxGeometry(Math.abs(dx) * 1.1 + .06, .06, Math.abs(dz) * 1.1 + .06), fonte, x + dx * .55, Y0 + 6.75, z + dz * .55); A.ajoute(new THREE.CylinderGeometry(.1, .28, .45, 8), fonte, lx, Y0 + 6.9, lz);
     const v = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshStandardMaterial({ color: 0xf3ead2, roughness: .3 })); v.position.set(lx, Y0 + 6.55, lz); scene.add(v);
     const halo = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshBasicMaterial({ color: 0xffd99a })); halo.position.copy(v.position); halo.visible = false; scene.add(halo); L.nuitObjets.push(halo);
