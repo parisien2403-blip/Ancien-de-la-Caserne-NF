@@ -1800,16 +1800,28 @@ function construireRue(A, T, L, scene) {
   im({ x: -46, z: 6.8, largeur: 18, etages: 6, rot: Math.PI, teinte: teintes[1], graine: 67, rdc: RDC.yoji });
   // côté caserne : le voisin de droite, la suite de la rue, et l'autre coin de la rue La Fayette
   im({ x: 25, z: -7.5, largeur: 18, etages: 6, rot: 0, teinte: teintes[4], graine: 68 });
-  im({ x: 43, z: -7.5, largeur: 18, etages: 6, rot: 0, teinte: teintes[0], graine: 69 });
+  im({ x: 39.25, z: -7.5, largeur: 10.5, etages: 6, rot: 0, teinte: teintes[0], graine: 69 });   // (l'angle de la rue des Messageries)
   im({ x: -46, z: -7.5, largeur: 18, etages: 6, rot: 0, teinte: teintes[3], graine: 70, rdc: RDC.metro });
   // au bout de la rue, et le long de la rue La Fayette
   // (rapprochés : ils ferment la rue, on ne peut plus partir à gauche ni à droite au bout)
-  im({ x: 54, z: 0, largeur: 30, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 71 });
+  im({ x: 55.5, z: 0, largeur: 30, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 71 });
   im({ x: -55, z: 0, largeur: 30, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 72 });
   // au pied de ces deux immeubles, un passage cochère sombre où la circulation entre et d'où elle ressort
-  for (const sg of [-1, 1]) { const xf = sg > 0 ? 53.97 : -54.97;
+  for (const sg of [-1, 1]) { const xf = sg > 0 ? 55.47 : -54.97;
     const tr = A.ajoute(new THREE.PlaneGeometry(5.2, 4.3), new THREE.MeshBasicMaterial({ color: 0x0c0c0e }), xf, 2.15, .55, false); tr.rotation.y = -sg * Math.PI / 2;
     const li = A.ajoute(new THREE.BoxGeometry(.3, .5, 5.8), pierreM, xf - sg * .1, 4.5, .55, false); }
+  /* l'amorce de la rue des Messageries, à l'angle de la caserne voisine : la même rue que derrière le portail de l'horloge (décalée de DH_.DX, DH_.DZ) ;
+     on la remonte d'un seul tenant jusqu'au pan coupé « GARDE RÉPUBLICAINE » */
+  { const dx = DH_.DX, xe = DH_.XE + dx, xr = DH_.XR + dx, xf = DH_.XF + dx, xo = DH_.XO + dx, zB = -36;
+    const bitM = A.mat({ map: tex(T.bitume, 1, 4), color: 0x75757a }); plan(xf - xr, -7.5 - zB, (xr + xf) / 2, (zB - 7.5) / 2, bitM, .012);
+    for (const [a, b] of [[xe, xr], [xf, xo]]) { plan(b - a, -7.5 - zB, (a + b) / 2, (zB - 7.5) / 2, trottoir, .012); A.ajoute(new THREE.BoxGeometry(.24, .12, -7.5 - zB), granit, a === xe ? xr : xf, .06, (zB - 7.5) / 2, false); }
+    numero7(A, scene, xe, 0, DH_.Z7 + DH_.DZ);
+    { const t = tex(toileMessageries(6, 22.4)), m = new THREE.Mesh(new THREE.PlaneGeometry(6, 22.4), A.mat({ map: t, roughness: .92 })); m.position.set(xe + .02, 11.2, DH_.Z7 + DH_.DZ - 3); m.rotation.y = Math.PI / 2; scene.add(m); }   // (et le début de la brique de la caserne)
+    im({ x: xo, z: -28, largeur: 16, etages: 5, rot: -Math.PI / 2, teinte: teintes[4], graine: 314 });
+    im({ x: xo, z: -17.5, largeur: 5, etages: 6, rot: -Math.PI / 2, teinte: teintes[0], graine: 315 });
+    im({ x: (xe + xo) / 2, z: zB, largeur: 12, etages: 6, rot: 0, teinte: teintes[2], graine: 333 });
+    L.messageries = { xe, xo, zB };
+    L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > xe && x < xo && z < -17 && z > zB, vers: "grande", continu: [-dx, -DH_.DZ, DH_.Y0], centre: [(xe + xo) / 2, -16] }); }
   // la rue La Fayette est fermée juste après ses passages piétons
   im({ x: -32.4, z: -7.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[3], graine: 73 });
   im({ x: -32.5, z: 6.8, largeur: 9, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 75 });
@@ -1866,6 +1878,7 @@ function construireRue(A, T, L, scene) {
   /* --- où l'on peut marcher, la caméra, les passages --- */
   // la grille noire (z = -7,5) ne s'ouvre qu'au portillon (x de 0,2 à 1,4)
   L.limites = (x, z) => (x > -54.4 && x < 53.4 && z > -7.2 && z < 6.4)
+    || (L.messageries && x > L.messageries.xe + .3 && x < L.messageries.xo - .3 && z > L.messageries.zB + .5 && z <= -7.1)   // (la rue des Messageries)
     || (Math.abs(x) < 2.3 && z > -12.9 && z <= -7.9) || (x > .25 && x < 1.35 && z > -7.95 && z <= -7.15)
     // le passage sous le porche (sans traverser les plantes, l'armoire rouge ni la borne de la barrière)
     || (Math.abs(x) < 2.0 && z <= -12 && z > -25.7 && !(Math.abs(x) > 1.45 && z < -24.6) && !(x > 1.6 && z < -23.2 && z > -24.6) && !(x > 1.3 && Math.abs(z + 15.2) < .3));
@@ -1876,7 +1889,8 @@ function construireRue(A, T, L, scene) {
   L.portails.push({ dans: (x, z) => Math.abs(x) < 2.3 && z > -25.9 && (M.jumeauJ ? z < -19.25 : z < -12.4 && sensPorche() < 0) && (!estApo(M.lieu) || !!M.porcheOuvert), vers: "grande", continu: [0, PORCHE_DZ], centre: [0, -19] });
   raccourci(L, scene, [4.6, 4.3, .6], [0, 2.2, -25.75], { marche: [0, -25.2] });
   // la caméra reste sous la voûte quand on est dans le passage
-  L.contraindreCam = (pos, moi) => { if (moi.g.position.z < -11.6) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 3.7); pos.z = Math.max(-25.6, Math.min(-3, pos.z)); return true; } };
+  L.contraindreCam = (pos, moi) => { const Me = L.messageries; if (Me && moi.g.position.x > Me.xe && moi.g.position.z < -7.2) { pos.x = Math.max(Me.xe + .3, Math.min(Me.xo - .3, pos.x)); pos.z = Math.max(Me.zB + .5, pos.z); return true; }
+    if (moi.g.position.z < -11.6) { pos.x = Math.max(-2.1, Math.min(2.1, pos.x)); pos.y = Math.min(pos.y, 3.7); pos.z = Math.max(-25.6, Math.min(-3, pos.z)); return true; } };
   L.anim = (temps) => {
     // le drapeau ondule
     const p = geoD.attributes.position; for (let i = 0; i < p.count; i++) { const u = (baseD[i * 3] + 1.1) / 2.2; p.array[i * 3 + 2] = Math.sin(temps / 380 - u * 5 + baseD[i * 3 + 1] * .8) * .16 * u; }
@@ -2141,6 +2155,203 @@ function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeau
       if (o.arcs) { const aw = 1.1 * P, ah = 2.6 * P, ay = h - 1.2 * P; x.fillStyle = "#ece6d6"; x.beginPath(); x.moveTo(cx - aw / 2 - 4, ay); x.lineTo(cx - aw / 2 - 4, ay - ah + aw / 2); x.arc(cx, ay - ah + aw / 2, aw / 2 + 4, Math.PI, 0); x.lineTo(cx + aw / 2 + 4, ay); x.fill();
         x.fillStyle = "#4a2a1c"; x.beginPath(); x.moveTo(cx - aw / 2, ay); x.lineTo(cx - aw / 2, ay - ah + aw / 2); x.arc(cx, ay - ah + aw / 2, aw / 2, Math.PI, 0); x.lineTo(cx + aw / 2, ay); x.fill(); } }
     cheneau(x, 0, w, 3); for (let X = 3; X < w; X += 14 * P) descente(x, X, 0, h, 2.2, P); descente(x, w - 3, 0, h, 2.2, P); }); }
+/* ---------- Dehors, derrière le portail de l'horloge : l'angle de la rue des Messageries et de la rue d'Hauteville (d'après les vues de la rue) ----------
+   - le pan coupé, vu de la rue : la grande arcade en brique et, au-dessus, le linteau de pierre « GARDE RÉPUBLICAINE » ;
+   - la longue façade de la rue des Messageries : brique rouge, soubassement de pierre claire, grandes fenêtres à barreaux au rez-de-chaussée,
+     linteaux et appuis de pierre, allèges en brique en saillie, petits balcons de fer, descentes d'eau ; au bout, l'immeuble de pierre du n° 7 ;
+   - en face, des immeubles parisiens ; la rue d'Hauteville en travers, fermée de chaque côté. Le portail est ouvert (seulement dans la vraie caserne). */
+const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 40.3, XF: 46.7, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -46, Z7: -74, DX: 6.5, DZ: 42 };   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
+DH_.zone = (x, z) => RU.lz(x, z) < -7.9 || (x > DH_.XE && z < DH_.ZS) || z < DH_.ZN;   // (au-delà de la grille)
+DH_.dedans = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 && z < DH_.ZS - .5)          // la rue des Messageries
+  || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.ZN - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
+  || (x - z > DH_.C + .35 && x <= DH_.XE + .3 && z >= DH_.ZN - .3)                                          // devant le pan coupé
+  || (Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= -7.4 && RU.lz(x, z) >= -10.6 && (!M || !M.L || !M.L.porcheHorloge || M.L.porcheHorloge.ouv > .75 || Math.abs(RU.lz(x, z) + 9.2) > .5));   // le bout de la voûte (on passe la grille quand elle est ouverte)
+DH_.h = (x, z) => RU.lz(x, z) > -10.05 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && z > DH_.ZR) || z < DH_.ZF ? DH_.Y0 + .12 : DH_.Y0;
+let ouvrirDehors = false;
+/* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
+const RDC_HV = {
+  mode: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h);
+    for (const [X, W] of [[w * .05, w * .4], [w * .55, w * .4]]) { x.fillStyle = "#2a2622"; x.fillRect(X - 5, yr + 18, W + 10, h - 18);
+      const g = x.createLinearGradient(0, yr + 24, 0, yr + h); g.addColorStop(0, "#d8cfbd"); g.addColorStop(1, "#9c8f78"); x.fillStyle = g; x.fillRect(X, yr + 24, W, h - 28);
+      for (let k = 0; k < 4; k++) { const cx = X + (k + .5) * W / 4, cy = yr + h * .45; x.fillStyle = ["#c23b3b", "#2f4f8f", "#e8d24a", "#7a9a5a"][k]; x.fillRect(cx - 9, cy, 18, 34); x.fillStyle = "#d9c3a8"; x.beginPath(); x.arc(cx, cy - 7, 6, 0, 7); x.fill(); x.fillStyle = "#3a342e"; x.fillRect(cx - 1, cy + 34, 2, h - (cy - yr) - 40); }
+      x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(X + 4, yr + 26, 6, h - 34); }
+    x.fillStyle = "#1e1c1a"; x.fillRect(w * .46, yr + 10, w * .08, 70); x.fillStyle = "#efe9dc"; x.font = "bold 11px Georgia"; x.textAlign = "center"; for (const [k, l] of [..."MODE"].entries()) x.fillText(l, w / 2, yr + 26 + k * 14); },
+  resto: (x, w, yr, h) => { x.fillStyle = "#e3d9c3"; x.fillRect(0, yr, w, h); x.fillStyle = "#3a2a20"; x.fillRect(w * .04, yr + 22, w * .92, h - 22);
+    for (let k = 0; k < 3; k++) { const X = w * .06 + k * w * .31, W = w * .27; const g = x.createLinearGradient(0, yr + 60, 0, yr + h); g.addColorStop(0, "#f6d9a0"); g.addColorStop(1, "#8a5a30"); x.fillStyle = g; x.fillRect(X, yr + 64, W, h - 70);
+      x.fillStyle = "#a3171f"; x.beginPath(); x.moveTo(X - 6, yr + 30); x.lineTo(X + W + 6, yr + 30); x.lineTo(X + W + 16, yr + 66); x.lineTo(X - 16, yr + 66); x.fill();
+      x.fillStyle = "#86121a"; for (let s = 0; s < 8; s++) x.fillRect(X - 16 + s * (W + 32) / 8, yr + 62, (W + 32) / 16, 8);
+      x.fillStyle = "#f2e6c8"; x.font = "italic bold 12px Georgia"; x.textAlign = "center"; x.fillText("Restaurant", X + W / 2, yr + 52); } },
+  porte: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h); x.fillStyle = "#24453a"; x.beginPath(); x.moveTo(w * .4, yr + h); x.lineTo(w * .4, yr + 50); x.arc(w / 2, yr + 50, w * .1, Math.PI, 0); x.lineTo(w * .6, yr + h); x.fill();
+    x.strokeStyle = "#16302a"; x.lineWidth = 3; x.beginPath(); x.moveTo(w / 2, yr + 40); x.lineTo(w / 2, yr + h); x.stroke();
+    for (const [X, W] of [[w * .06, w * .28], [w * .66, w * .28]]) { x.fillStyle = "#2a2622"; x.fillRect(X, yr + 30, W, h - 30); const g = x.createLinearGradient(X, yr + 36, X + W, yr + h); g.addColorStop(0, "#8fa3ae"); g.addColorStop(.5, "#3d4b55"); g.addColorStop(1, "#59666e"); x.fillStyle = g; x.fillRect(X + 5, yr + 36, W - 10, h - 44);
+      x.fillStyle = "rgba(255,240,210,.35)"; for (let k = 0; k < 3; k++) x.fillRect(X + 10 + k * (W - 20) / 3, yr + h * .55, (W - 20) / 4, h * .3); x.fillStyle = "#b08a3a"; x.font = "bold 10px Georgia"; x.textAlign = "center"; x.fillText("ÉPICERIE FINE", X + W / 2, yr + 26); } },
+};
+function toileMessageries(Lm, Hm, o = {}) {   // la façade de brique de la caserne, côté rue (20 px par mètre, le bas = le trottoir)
+  return toileF(Math.round(Lm * 20), Math.round(Hm * 20), (x, w, h) => { const P = 20, sol = h;
+    murBrique(x, 0, 0, w, h, "rouge", P);
+    if (o.hauteville) { murBrique(x, 0, sol - 2.6 * P, w, 2.6 * P, "rouge", P); x.fillStyle = "rgba(60,66,80,.55)"; x.fillRect(0, sol - 2.6 * P, w, 2.6 * P); pierre(x, 0, sol - .5 * P, w, .5 * P, "#8d8f8c", 10, 34); }   // (rue d'Hauteville : la brique sombre, gris-bleu, en bas)
+    else pierre(x, 0, sol - 1.0 * P, w, 1.0 * P, "#e3dccb", 10, 34);                                       // le soubassement de pierre claire
+    const bande = (ey, e = .35) => { pierre(x, 0, sol - ey * P, w, e * P, "#e6dfcf", 7, 40); x.fillStyle = "rgba(40,25,18,.35)"; x.fillRect(0, sol - (ey - e) * P, w, 2); };
+    bande(4.6); bande(17.5, .3);
+    const pas = (o.pas || 3.7) * P, n = Math.floor(w / pas), x0 = (w - n * pas) / 2;
+    const vitre = (X, Y, W, H) => { const g = x.createLinearGradient(0, Y, 0, Y + H); g.addColorStop(0, "#6d7d86"); g.addColorStop(1, "#2c363e"); x.fillStyle = g; x.fillRect(X, Y, W, H); rideau(x, X, Y, W, H); noteFen(X, Y, W, H);
+      x.fillStyle = "#eeeae2"; x.fillRect(X, Y, W, 2); x.fillRect(X, Y + H - 2, W, 2); x.fillRect(X, Y, 2, H); x.fillRect(X + W - 2, Y, 2, H); x.fillRect(X + W / 2 - 1.5, Y, 3, H); };
+    const persienne = (X, Y, W, H) => { x.fillStyle = "#e9e6de"; x.fillRect(X, Y, W, H); x.fillStyle = "rgba(90,90,85,.35)"; for (let yy = Y + 3; yy < Y + H; yy += 3) x.fillRect(X, yy, W, 1); x.fillRect(X + W / 2 - .5, Y, 1, H); };
+    const linteau = (cx, Y, W, e = .32) => { pierre(x, cx - W / 2, Y, W, e * P, "#ebe5d8", 6, 60); x.fillStyle = "rgba(30,20,15,.35)"; x.fillRect(cx - W / 2, Y + e * P, W, 2); };
+    const allege = (cx, Y, W, H) => { x.fillStyle = "rgba(60,25,15,.28)"; for (let yy = Y; yy < Y + H; yy += 3.2) { x.fillRect(cx - W / 2, yy, W, 1); for (let xx = cx - W / 2 + ((yy / 3.2) % 2 ? 0 : 3); xx < cx + W / 2; xx += 6) x.fillRect(xx, yy, 1, 3.2); }
+      x.fillStyle = "rgba(255,230,210,.10)"; x.fillRect(cx - W / 2, Y, W, H); };
+    for (let c = 0; c < n; c++) { const cx = x0 + (c + .5) * pas; if (o.saut && o.saut(c)) continue;
+      // le rez-de-chaussée : la grande fenêtre à barreaux sous son linteau de pierre (des persiennes fermées, une fois sur trois)
+      { const W = 1.55 * P, H = 2.5 * P, Y = sol - 3.7 * P; linteau(cx, Y - .4 * P, W + .5 * P); if (c % 3 === 1) persienne(cx - W / 2, Y, W, H); else vitre(cx - W / 2, Y, W, H);
+        x.fillStyle = "#e5dfd2"; x.fillRect(cx - W / 2 - 4, Y + H, W + 8, 4);
+        x.fillStyle = "#1a1b1d"; for (let k = 0; k <= 8; k++) x.fillRect(cx - W / 2 + k * W / 8 - 1, Y - 4, 2, H + 6); x.fillRect(cx - W / 2 - 3, Y + 6, W + 6, 2); x.fillRect(cx - W / 2 - 3, Y + H - 8, W + 6, 2);
+        for (let k = 0; k <= 8; k++) { x.beginPath(); x.moveTo(cx - W / 2 + k * W / 8 - 2.5, Y - 4); x.lineTo(cx - W / 2 + k * W / 8, Y - 9); x.lineTo(cx - W / 2 + k * W / 8 + 2.5, Y - 4); x.fill(); } }
+      // la petite meurtrière, entre deux travées (une sur deux)
+      if (c % 2 === 0 && c < n - 1) { const mx = cx + pas / 2; for (const ey of [2.2, 6.2, 9.2, 12.2, 15.2]) { const Y = sol - (ey + 1.1) * P; x.fillStyle = "#2b2422"; x.fillRect(mx - 3.5, Y, 7, 1.1 * P); linteau(mx, Y - 4, 18, .2); x.fillStyle = "#e5dfd2"; x.fillRect(mx - 9, Y + 1.1 * P, 18, 3); } }
+      // les étages : fenêtre, linteau, appui et allège de brique en saillie ; un petit balcon de fer, çà et là
+      for (const [e, ey] of [[1, 5.4], [2, 8.4], [3, 11.4], [4, 14.4], [5, 18.2]]) { if (ey + 2 > h / P) continue; const W = 1.3 * P, H = 1.85 * P, Y = sol - (ey + H / P) * P;
+        linteau(cx, Y - .38 * P, W + .5 * P); vitre(cx - W / 2, Y, W, H);
+        const bal = (c * 7 + e * 3) % (o.hauteville ? 2 : 5) === 0 || e === 5 && c % 2 === 0;
+        if (bal) { balconFer(x, cx - W / 2 - 3, Y + H * .55, W + 6, H * .42); x.fillStyle = "#e5dfd2"; x.fillRect(cx - W / 2 - 5, Y + H, W + 10, 4); }
+        else { x.fillStyle = "#e5dfd2"; x.fillRect(cx - W / 2 - 4, Y + H, W + 8, 5); if (e < 5) allege(cx, Y + H + 5, W + 8, .65 * P); } } }
+    cheneau(x, 0, w, 3); for (let X = x0 + pas; X < w - 10; X += 3 * pas) descente(x, X, 0, h, 2.2, P); }); }
+function toilePanCoupe(Wm, Hm, AW, AH) {   // le pan coupé, vu de la rue (d'après la photo) : l'arc à trois rangs de briques, la colonne de fenêtres à balcon au-dessus
+  return toileF(Math.round(Wm * 20), Math.round(Hm * 20), (x, w, h) => { const P = 20, cx = w / 2, yA = h - (AH - AW / 2) * P;
+    murBrique(x, 0, 0, w, h, "rouge", P); pierre(x, 0, h - .6 * P, w, .6 * P, "#8d8f8c", 10, 34);          // (le socle de pierre grise)
+    for (let r = 0; r < 3; r++) { const r0 = (AW / 2 + r * .34) * P; x.fillStyle = r % 2 ? "#9a4430" : "#ab5038"; x.beginPath(); x.arc(cx, yA, r0 + .34 * P, Math.PI, 0); x.arc(cx, yA, r0, 0, Math.PI, true); x.fill();
+      x.fillRect(cx - r0 - .34 * P, yA, .34 * P, (AH - AW / 2) * P - .6 * P); x.fillRect(cx + r0, yA, .34 * P, (AH - AW / 2) * P - .6 * P);
+      x.strokeStyle = "rgba(55,22,14,.5)"; x.lineWidth = .8; for (let a = Math.PI; a <= 2 * Math.PI + .01; a += Math.PI / (20 + r * 5)) { x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, yA + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * (r0 + .34 * P), yA + Math.sin(a) * (r0 + .34 * P)); x.stroke(); }
+      for (let yy = yA; yy < h - .6 * P; yy += 3.4) for (const X of [cx - r0 - .34 * P, cx + r0]) { x.fillStyle = "rgba(55,22,14,.35)"; x.fillRect(X, yy, .34 * P, .8); } }
+    x.strokeStyle = "rgba(30,15,10,.4)"; x.lineWidth = 2; x.beginPath(); x.arc(cx, yA, (AW / 2 + 1.02) * P, Math.PI, 0); x.stroke();
+    // au-dessus du linteau : une fenêtre par étage, encadrement de pierre, son balcon de fer (les dalles des balcons sont en relief)
+    for (const ey of [9.9, 12.9, 15.9, 18.9]) { if (ey + 2.2 > Hm) continue; const W = 1.8 * P, H = 2.0 * P, Y = h - (ey + 2.0) * P;
+      pierre(x, cx - W / 2 - 9, Y - 9, W + 18, H + 9, "#e9e3d6", 12, 40);
+      const g = x.createLinearGradient(0, Y, 0, Y + H); g.addColorStop(0, "#6d7d86"); g.addColorStop(1, "#2c363e"); x.fillStyle = g; x.fillRect(cx - W / 2, Y, W, H); rideau(x, cx - W / 2, Y, W, H); noteFen(cx - W / 2, Y, W, H);
+      x.fillStyle = "#eeeae2"; x.fillRect(cx - 1.5, Y, 3, H); x.fillRect(cx - W / 2, Y + H * .3, W, 2); balconFer(x, cx - W / 2 - 14, Y + H * .55, W + 28, H * .45); }
+    cheneau(x, 0, w, 3); }); }
+function numero7(A, scene, xe, y0, z7) {   // l'immeuble de pierre du n° 7, collé à la caserne (12,5 m, jusqu'à l'immeuble de l'angle)
+  const t = tex(toileHaussmann(12.5, 6, "#e6dbc4", 87)), m = new THREE.Mesh(new THREE.PlaneGeometry(12.5, 22.8), A.mat({ map: t })); m.position.set(xe + .02, y0 + 11.4, z7 + 6.25); m.rotation.y = Math.PI / 2; A.scene.add(m);
+  A.ajoute(new THREE.BoxGeometry(.5, .5, 12.5), A.mat({ color: 0xd8cdb6 }), xe + .2, y0 + 22.6, z7 + 6.25); }
+function ruesDehors(A, L, scene) {
+  const T = textures(), { Y0, XE, ZN, C, XR, XF, XO, ZR, ZF, ZO, XW, XEst, ZS, Z7 } = DH_, P0 = L.porcheHorloge; if (!P0) return;
+  graine = 302; L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || [];
+  const { ga, gp, yb } = P0, A0 = A, AG = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
+  P0.jour.visible = false;   // (plus de « jour » peint derrière la grille : la vraie rue)
+  if (ouvrirDehors) { gp.position.z -= 1.4; P0.zg -= 1.4; gp.children.forEach(o => { if (o.geometry && o.geometry.type === "CircleGeometry") o.visible = false; });   // (la grille, au nu de la rue ; l'imposte sans vitre, à claire-voie, comme sur la photo)
+    const fer = A.mat({ color: 0x1c1e20, roughness: .5, metalness: .55 });
+    for (const sg of [-1, 1]) for (const y of [.54, 1.64]) { const m = new THREE.Mesh(new THREE.TorusGeometry(y > 1 ? .34 : .26, .035, 6, 28), fer); m.position.set(sg * 1.15, y, -.06); gp.add(m);   // les médaillons ronds des panneaux pleins
+      const c = new THREE.Mesh(new THREE.TorusGeometry(y > 1 ? .18 : .13, .025, 6, 20), fer); c.position.set(sg * 1.15, y, -.07); gp.add(c); } }
+  /* --- le bout de la voûte, prolongé de 2 m jusqu'au nu de la rue, et la façade du pan coupé --- */
+  const AW = 4.6, AH = 5.6, H = 24, WP = 10.54, sh = new THREE.Shape();
+  sh.moveTo(-WP / 2, 0); sh.lineTo(WP / 2, 0); sh.lineTo(WP / 2, H); sh.lineTo(-WP / 2, H); sh.closePath();
+  const tr = new THREE.Path(); tr.moveTo(-AW / 2, 0); tr.lineTo(-AW / 2, AH - AW / 2); tr.absarc(0, AH - AW / 2, AW / 2, Math.PI, 0, true); tr.lineTo(AW / 2, 0); tr.closePath(); sh.holes.push(tr);
+  const tP = tex(toilePanCoupe(WP, H, AW, AH)); tP.repeat.set(-1 / WP, 1 / H); tP.offset.set(.5, 0);
+  const brique = A.mat({ color: 0x8a4a36, roughness: .95 });
+  AG.ajoute(new THREE.ExtrudeGeometry(sh, { depth: 2, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: tP }), brique], 0, yb, -10);
+  // le linteau de pierre « GARDE RÉPUBLICAINE », en relief : ses ressauts aux deux bouts, la rangée de denticules dessous
+  { const LW = 8.4, LH = 1.75, y0 = yb + AH + 1.05, blanc = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#e8e2d5", 40, 120)), 1, 1), roughness: .85 });
+    // les lettres en relief, taillées dans la même pierre blanche : l'ombre portée en bas à droite, la lumière en haut à gauche (et le relief, par la carte de bosses)
+    const lettresL = (c, w, couleur, ombre, lum) => { c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 74px Georgia, serif";
+      const ligne = (t, y, esp) => { const n = t.length; for (let k = 0; k < n; k++) { const X = w / 2 + (k - (n - 1) / 2) * esp;
+        if (ombre) { c.fillStyle = ombre; c.fillText(t[k], X + 4, y + 5); } if (lum) { c.fillStyle = lum; c.fillText(t[k], X - 1.5, y - 1.5); } c.fillStyle = couleur; c.fillText(t[k], X, y); } };
+      ligne("GARDE", 48, 92); ligne("RÉPUBLICAINE", 130, 66);
+      for (const sg of [-1, 1]) for (const dy of [-9, 7]) { const X = w / 2 + sg * 300 - 75; if (ombre) { c.fillStyle = ombre; c.fillRect(X + 3, 48 + dy + 4, 150, 7); } c.fillStyle = couleur; c.fillRect(X, 48 + dy, 150, 7); } };
+    const tL = tex(toile(840, 175, (c, w, h) => { pierre(c, 0, 0, w, h, "#ece8de", 60, 170); lettresL(c, w, "#f6f3ec", "rgba(70,60,45,.45)", "rgba(255,255,255,.9)"); }));
+    const bL = tex(toile(840, 175, (c, w, h) => { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); c.filter = "blur(1.5px)"; lettresL(c, w, "#fff"); c.filter = "none"; }));
+    const matL = new THREE.MeshStandardMaterial({ map: tL, bumpMap: bL, bumpScale: 6, roughness: .8 });
+    const li = AG.ajoute(new THREE.BoxGeometry(LW, LH, .4), [blanc, blanc, blanc, blanc, blanc, matL], 0, y0 + LH / 2, -10.2);
+    for (const sg of [-1, 1]) { AG.ajoute(new THREE.BoxGeometry(.5, .5, .32), blanc, sg * (LW / 2 - .25), y0 - .25, -10.16); AG.ajoute(new THREE.BoxGeometry(.3, .35, .25), blanc, sg * (LW / 2 - .2), y0 - .67, -10.12); }
+    for (let k = 0; k < 14; k++) AG.ajoute(new THREE.BoxGeometry(.22, .2, .18), blanc, -LW / 2 + .9 + k * (LW - 1.8) / 13, y0 - .1, -10.09, false);
+    AG.ajoute(new THREE.BoxGeometry(LW + .3, .14, .5), blanc, 0, y0 + LH + .07, -10.22);
+    for (const ey of [9.9, 12.9, 15.9, 18.9]) AG.ajoute(new THREE.BoxGeometry(2.9, .16, .55), blanc, 0, yb + ey + .02, -10.27); }   // (les dalles des balcons)
+  // sur le pilier de droite : la boîte aux lettres jaune de La Poste et le panneau d'interdiction de stationner ; et les potelets au bord du trottoir
+  { const ja = A.mat({ color: 0xf2c418, roughness: .45 }); AG.ajoute(new THREE.BoxGeometry(.55, .62, .3), ja, -3.4, yb + 1.25, -10.15); AG.ajoute(new THREE.BoxGeometry(.6, .08, .36), ja, -3.4, yb + 1.6, -10.17);
+    const pn = AG.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 24), [A.mat({ color: 0xc22a2a }), A.mat({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#c22a2a"; c.beginPath(); c.arc(32, 32, 32, 0, 7); c.fill(); c.fillStyle = "#2a4fa8"; c.beginPath(); c.arc(32, 32, 25, 0, 7); c.fill(); c.strokeStyle = "#c22a2a"; c.lineWidth = 7; c.beginPath(); c.moveTo(14, 14); c.lineTo(50, 50); c.moveTo(50, 14); c.lineTo(14, 50); c.stroke(); })) }), A.mat({ color: 0x888888 })], -3.0, yb + 2.5, -10.03);
+    pn.rotation.x = Math.PI / 2;
+    const noir = A.mat({ color: 0x1a1a1a, roughness: .5 }); for (let k = -4; k <= 4; k++) { if (Math.abs(k) < 2) continue; AG.ajoute(new THREE.CylinderGeometry(.06, .07, .9, 8), noir, k * 1.3, yb + .57, -13.2); } }
+  { const v = AG.ajoute(new THREE.PlaneGeometry(AW, 2.2), A.mat({ map: tex(T.paves, 1.2, .6) }), 0, yb + .012, -9, false); v.rotation.x = -Math.PI / 2; }
+  // les deux massifs de brique qui comblent l'angle, entre le pan coupé et les deux longs bâtiments
+  for (const sg of [-1, 1]) { const s = new THREE.Shape(), pts = [[5.27, -10], [9.62, -5.66], [3.96, 0], [4.1, -8]];
+    pts.forEach(([a, b], k) => k ? s.lineTo(sg * a, -b) : s.moveTo(sg * a, -b)); s.closePath();
+    const m = AG.ajoute(new THREE.ExtrudeGeometry(s, { depth: H - .2, bevelEnabled: false }), [A.mat({ color: 0x6f6f72, roughness: .8 }), brique], 0, yb, 0); m.rotation.x = -Math.PI / 2; }
+  // le portail : ses deux battants s'ouvrent, rabattus contre les murs de la voûte (le haut, l'imposte en demi-lune, reste en place)
+  if (ouvrirDehors) { const R = AW / 2, GH = AH - AW / 2, bat = [new THREE.Group(), new THREE.Group()]; bat[0].position.set(-R + .06, 0, 0); bat[1].position.set(R - .06, 0, 0); gp.add(...bat);
+    for (const o of [...gp.children]) { if (bat.includes(o) || o.position.y > GH + .3) continue; const k = o.position.x < -.02 ? 0 : 1; bat[k].attach(o); }
+    L.dehorsOuvert = true; P0.ouv = 0;
+    // il s'ouvre tout seul quand quelqu'un s'en approche (d'un côté ou de l'autre), et se referme derrière
+    const cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2, gx = cx + (0 - (-9.2)) / Math.SQRT2, gz = cz + (0 + -9.2) / Math.SQRT2; let tPrec = 0;
+    const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t;
+      let pres = !M; if (M && M.gens) for (const q of M.gens.values()) { const g = q.g.position; if (Math.hypot(g.x - gx, g.z - gz) < 6.5) { pres = true; break; } }
+      P0.ouv = Math.max(0, Math.min(1, P0.ouv + (pres ? 1 : -1) * dt / 2.2)); const k = P0.ouv * P0.ouv * (3 - 2 * P0.ouv); bat[0].rotation.y = -1.5 * k; bat[1].rotation.y = 1.5 * k; }; }
+  /* --- les façades de brique sur rue --- */
+  const facade = (larg, haut, x, z, ry, o) => { const t = tex(toileMessageries(larg, haut, o)), m = new THREE.Mesh(new THREE.PlaneGeometry(larg, haut), A.mat({ map: t, roughness: .92 }));
+    m.position.set(x, Y0 + haut / 2, z); m.rotation.y = ry; m.receiveShadow = true; scene.add(m); return m; };
+  const zE0 = XE - C, xN0 = C + ZN;   // (où la façade de la rue rejoint le pan coupé : z = -134,8 côté Messageries, x = 30,8 côté Hauteville)
+  facade(Z7 - zE0, 22.4, XE + .02, (zE0 + Z7) / 2, Math.PI / 2, { pas: 3.7 });
+  facade(xN0 - (-26.6), 25.7, (xN0 - 26.6) / 2, ZN - .02, Math.PI, { pas: 3.7, hauteville: true });
+  { const lg = -26.6 - XW, t = tex(toileMessageries(lg, 25.7, { pas: 3.7, hauteville: true })), b = A.mat({ color: 0x8a4a36, roughness: .95 });   // (la suite de la caserne, rue d'Hauteville)
+    A.ajoute(new THREE.BoxGeometry(lg, 25.7, 8), [b, b, A.mat({ color: 0x6f6f72 }), b, b, A.mat({ map: t, roughness: .92 })], (XW - 26.6) / 2, Y0 + 12.85, ZN + 4); }
+  // les avancées de pierre en encorbellement, près de l'angle, une sur chaque rue (du 1er au 4e étage)
+  { const pr = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#dcd6ca", 34, 80)), 1, 3), roughness: .85 });
+    const fen = A.mat({ map: tex(toile(80, 400, (c, w, h) => { pierre(c, 0, 0, w, h, "#dcd6ca", 34, 80); for (let e = 0; e < 4; e++) { const Y = 20 + e * 98; const g = c.createLinearGradient(0, Y, 0, Y + 62); g.addColorStop(0, "#6d7d86"); g.addColorStop(1, "#2c363e"); c.fillStyle = g; c.fillRect(14, Y, 52, 62); c.fillStyle = "#eeeae2"; c.fillRect(38, Y, 4, 62); } })), roughness: .8 });
+    const oriel = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, Y0, z); g.rotation.y = ry; scene.add(g);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(2.6, 11.8, .75), [pr, pr, pr, pr, fen, pr]); b.position.set(0, 5.0 + 5.9, .375); b.castShadow = true; g.add(b);
+      [[2.6, .3, .62], [2.0, .3, .45], [1.4, .3, .28]].forEach(([w, h, d], k) => { const c = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), pr); c.position.set(0, 5.0 - .15 - k * .3, d / 2); g.add(c); }); };
+    oriel(XE, zE0 + 9.5, Math.PI / 2); oriel(xN0 - 9.5, ZN, Math.PI); }
+  // les arbres, sur le trottoir de la caserne, rue d'Hauteville
+  { const tronc = A.mat({ color: 0x5b4a3a, roughness: 1 }), verts = [0x4f7f36, 0x5e8f3e, 0x46732f, 0x6a9a48].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), grille = A.mat({ color: 0x2a2c2e, metalness: .4 });
+    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
+      for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; } } }
+  // au bout, du même côté : l'immeuble de pierre du n° 7
+  numero7(A, scene, XE, Y0, Z7);
+  // les plaques de rue (émail bleu de Paris) et le numéro 2
+  const plaque = (lignes, x, y, z, ry, w = 1.5) => { const t = tex(toile(300, 100, (c, W, Hh) => { c.fillStyle = "#2b6e4f"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#1d3f73"; c.fillRect(6, 6, W - 12, Hh - 12); c.strokeStyle = "#f4f1e6"; c.lineWidth = 2; c.strokeRect(11, 11, W - 22, Hh - 22);
+      c.fillStyle = "#f4f1e6"; c.textAlign = "center"; c.textBaseline = "middle"; const l = lignes.split("|"); l.forEach((s, k) => { c.font = `bold ${k === l.length - 1 ? 34 : 20}px Arial`; c.fillText(s, W / 2, Hh / 2 + (k - (l.length - 1) / 2) * 30); }); }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 3), A.mat({ map: t, roughness: .3 })); m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); };
+  plaque("8e Arr.t|RUE DES|MESSAGERIES", XE + .04, Y0 + 3.0, zE0 + 1.6, Math.PI / 2);
+  plaque("10e Arr.t|RUE|D'HAUTEVILLE", xN0 - 1.6, Y0 + 3.0, ZN - .04, Math.PI);
+  plaque("2", XE + .04, Y0 + 3.0, zE0 + 3.1, Math.PI / 2, .45);
+  /* --- le sol : chaussées, trottoirs (bordures de granit) --- */
+  const bit = A.mat({ map: tex(T.bitume, 1, 1), color: 0x6f6f74 }), plat = (x0, x1, z0, z1) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0); const t = bit.map.clone(); t.repeat.set((x1 - x0) / 6, (z1 - z0) / 6); t.needsUpdate = true;
+    const o = A.ajoute(g, A.mat({ map: t, color: 0x6f6f74 }), (x0 + x1) / 2, Y0 + .004, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(o); };
+  plat(XR, XF, ZR, ZS); plat(XW, XEst, ZF, ZR);
+  const dessus = A.mat({ map: tex(T.trottoir, .5, .5), roughness: .92 }), bord = A.mat({ map: tex(T.granit, .5, .5), roughness: .85 });
+  const dalle = (pts) => { const s = new THREE.Shape(); pts.forEach(([x, z], k) => k ? s.lineTo(x, -z) : s.moveTo(x, -z)); s.closePath();
+    const o = A.ajoute(new THREE.ExtrudeGeometry(s, { depth: .12, bevelEnabled: false }), [dessus, bord], 0, Y0, 0, false); o.rotation.x = -Math.PI / 2; o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); };
+  dalle([[XW, ZN], [xN0, ZN], [XE, zE0], [XE, ZS], [XR, ZS], [XR, ZR], [XW, ZR]]);              // le trottoir de la caserne, qui tourne l'angle
+  dalle([[XF, ZR], [XEst, ZR], [XEst, ZN], [XO, ZN], [XO, ZS], [XF, ZS]]);                       // celui d'en face, rue des Messageries
+  dalle([[XW, ZO], [XEst, ZO], [XEst, ZF], [XW, ZF]]);                                         // celui d'en face, rue d'Hauteville
+  /* --- les immeubles d'en face --- */
+  const im = (o) => { const g = A.haussmann(o); g.position.y = Y0; L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); return g; };
+  const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"];
+  [[-134, 16], [-118, 16], [-102, 16], [-86, 16], [-70, 16], [-59.5, 5]].forEach(([zc, l], k) => im({ x: XO, z: zc, largeur: l, etages: 6 - (k % 3 === 1), rot: -Math.PI / 2, teinte: teintes[k % 5], graine: 310 + k }));
+  [-52, -36, -20, -4, 12, 28, 44, 60, 74].forEach((xc, k) => im({ x: xc, z: ZO, largeur: k === 8 ? 12 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] }));
+  im({ x: XW, z: (ZO + ZN) / 2, largeur: 14, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 330 });       // la rue d'Hauteville, fermée de chaque côté
+  im({ x: XEst, z: (ZO + ZN) / 2, largeur: 14, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 331 });
+  // au bout, la rue du Faubourg (les mêmes immeubles que dans sa scène, décalés de DX, DZ) : l'angle, l'immeuble qui la ferme, celui d'en face
+  im({ x: 39.25 - DH_.DX, z: -7.5 - DH_.DZ, largeur: 10.5, etages: 6, rot: 0, teinte: teintes[0], graine: 69 });
+  im({ x: XO, z: -51.5, largeur: 11, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 71 });
+  im({ x: (XE + XO) / 2, z: ZS + .2, largeur: 14, etages: 6, rot: Math.PI, teinte: teintes[2], graine: 66 });
+  // le passage, d'un seul tenant, vers la rue du Faubourg (dans la vraie caserne)
+  L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && x > XE && x < XO && z > -57.5 && z < ZS, vers: "rue", continu: [DH_.DX, DH_.DZ, -Y0], centre: [(XE + XO) / 2, -58] });
+  /* --- les candélabres --- */
+  const fonte = A.mat({ color: 0x1c2226, roughness: .5, metalness: .5 });
+  const cand = (x, z, dx, dz) => { A.ajoute(new THREE.CylinderGeometry(.06, .12, 6.6, 10), fonte, x, Y0 + 3.3, z); A.ajoute(new THREE.CylinderGeometry(.16, .2, .6, 10), fonte, x, Y0 + .3, z);
+    const lx = x + dx * 1.1, lz = z + dz * 1.1; A.ajoute(new THREE.BoxGeometry(Math.abs(dx) * 1.1 + .06, .06, Math.abs(dz) * 1.1 + .06), fonte, x + dx * .55, Y0 + 6.75, z + dz * .55); A.ajoute(new THREE.CylinderGeometry(.1, .28, .45, 8), fonte, lx, Y0 + 6.9, lz);
+    const v = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshStandardMaterial({ color: 0xf3ead2, roughness: .3 })); v.position.set(lx, Y0 + 6.55, lz); scene.add(v);
+    const halo = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshBasicMaterial({ color: 0xffd99a })); halo.position.copy(v.position); halo.visible = false; scene.add(halo); L.nuitObjets.push(halo);
+    const l = new THREE.PointLight(0xffcf8a, 60, 22, 1.4); l.position.set(lx, Y0 + 6.2, lz); l.visible = false; scene.add(l); L.nuitObjets.push(l); };
+  for (const x of [-44, -16, 12, 40, 66]) cand(x, ZF - .45, 0, 1);
+  /* --- on peut y marcher : les limites, la hauteur, la caméra --- */
+  const lim0 = L.limites; L.limites = (x, z) => (lim0 && lim0(x, z)) || (!!L.dehorsOuvert && DH_.dedans(x, z));
+  const h0 = L.hauteur; L.hauteur = (x, z, p) => DH_.zone(x, z) ? DH_.h(x, z) : h0 ? h0(x, z, p) : 0;
+  const cam0 = L.contraindreCam; L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
+    if (DH_.zone(mp.x, mp.z) && RU.lz(mp.x, mp.z) < -10.05) {   // dehors : la caméra reste dans la rue (rapprochée de son bonhomme si elle entrerait dans un mur)
+      const ok = (x, z) => (x > XE + .2 && x < XO - .2 && z > ZO + .2 && z < ZS - .4) || (x > XW + .4 && x < XEst - .4 && z > ZO + .2 && z < ZN - .2) || (x - z > C + .2 && x <= XE + .2 && z >= ZN - .2);
+      if (!ok(pos.x, pos.z)) { let a = 0, b = 1; for (let k = 0; k < 10; k++) { const t = (a + b) / 2; if (ok(mp.x + (pos.x - mp.x) * t, mp.z + (pos.z - mp.z) * t)) a = t; else b = t; } pos.x = mp.x + (pos.x - mp.x) * a; pos.z = mp.z + (pos.z - mp.z) * a; pos.y = Math.max(pos.y, mp.y + 2.4); }
+      pos.y = Math.min(pos.y, mp.y + 14); return true; }
+    return cam0 ? cam0(pos, moi) : false; };
+}
 function rueEnPente(A, L, scene, SOL, zT, DB) {
   RU.zT = zT; RU.x0 = DB; const { zA, xR, xB, drop } = RU, Lz = zT - zA, ang = Math.atan2(drop, Lz), Lp = Math.hypot(Lz, drop), xc = (DB + xR) / 2, zc = (zT + zA) / 2;
   graine = 61;
@@ -6628,7 +6839,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           { const cible = dz > 0 ? 0 : Math.PI, d = Math.atan2(Math.sin(cible - yw), Math.cos(cible - yw)); M.yaw = yw + d * .12; }   // (la vue se tourne doucement dans l'axe du passage)
           pos.x = Math.max(-1.9, Math.min(1.9, mp.x * .6)); pos.z = mp.z + dz * 3.6; pos.y = Math.min(Math.max(pos.y, mp.y + 2.2), 3.9); return true; }
         if (mp.z < C3.z1 - C3.PP && mp.z > RU.zA + RU.cour && mp.y > -.3 && mp.y < 2) { pos.x = Math.max((mp.z < C3.zMN ? -C3.x - 6 : -C3.x) + .3, Math.min(RU.xB - .3, pos.x)); pos.z = Math.max((mp.x < -C3.LB / 2 ? RU.zA : RU.zA + RU.cour) + .3, Math.min(pos.z, C3.z1 - C3.PP + 6)); return true; }   // (tout le chantier, dehors : une vue large, comme ailleurs, sans à-coups)
-        if ((mp.x > C3.LB / 2 + .2 && mp.z < RU.zT + .2) || (mp.x > -C3.x - 6 && mp.z < RU.zA + RU.cour)) { if (RU.lz(mp.x, mp.z) < .5 && mp.x > RU.xB - RU.pc - 3) { const lx = Math.max(-1.9, Math.min(1.9, RU.lx(pos.x, pos.z))), lz = Math.max(-7.5, RU.lz(pos.x, pos.z)), cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2; pos.x = cx + (lx - lz) / Math.SQRT2; pos.z = cz + (lx + lz) / Math.SQRT2; pos.y = Math.min(pos.y, RU.y(RU.zA) + 5); } else pos.x = Math.max(mp.z < RU.zA + RU.cour ? -C3.x - 6 + .3 : C3.LB / 2 + .3, Math.min(RU.xB - .4, pos.x)); pos.z = Math.max(RU.zA - 6, Math.min(pos.z, C3.z1)); }   // (dans la rue en pente, sous l'arcade)
+        if ((mp.x > C3.LB / 2 + .2 && mp.z < RU.zT + .2) || (mp.x > -C3.x - 6 && mp.z < RU.zA + RU.cour)) { if (RU.lz(mp.x, mp.z) < .5 && mp.x > RU.xB - RU.pc - 3) { const lx = Math.max(-1.9, Math.min(1.9, RU.lx(pos.x, pos.z))), lz = Math.max(M.L && M.L.dehorsOuvert ? -12 : -7.5, RU.lz(pos.x, pos.z)), cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2; pos.x = cx + (lx - lz) / Math.SQRT2; pos.z = cz + (lx + lz) / Math.SQRT2; pos.y = Math.min(pos.y, RU.y(RU.zA) + 5); } else pos.x = Math.max(mp.z < RU.zA + RU.cour ? -C3.x - 6 + .3 : C3.LB / 2 + .3, Math.min(RU.xB - .4, pos.x)); pos.z = Math.max(RU.zA - 6, Math.min(pos.z, C3.z1)); }   // (dans la rue en pente, sous l'arcade)
         else if (Math.abs(mp.x) > C3.LB / 2 + .2 && mp.z < C3.z1 + .3) { const sg = Math.sign(mp.x); pos.x = sg * Math.max(C3.LB / 2 + .3, Math.min((sg < 0 && mp.z < C3.zMN ? C3.x + 6 : C3.x) - .3, Math.abs(pos.x))); pos.z = Math.max(C3.zFond + .3, Math.min(pos.z, C3.z0 - .3)); }   // (dans une ruelle)
         else if (mp.z < C3.z1 - C3.PP - .3) { const zt0 = C3.z1 - C3.PP - C3.NT * C3.PT; pos.x = Math.max(-C3.LT / 2 + .3, Math.min(C3.LT / 2 - .3, pos.x)); pos.z = Math.max((C3.zFond ?? zt0 - C3.PTr - 6) + .3, Math.min(pos.z, C3.z1 - C3.PP + 4)); if (pos.z > C3.z1 - C3.PP - .2) { pos.x = Math.max(-C3.LM + .3, Math.min(C3.LM - .3, pos.x)); pos.y = Math.min(pos.y, C3.hp + 4.1); } }   // (les marches raides, la terrasse)
         else if (mp.z < C3.z1 + .2) { pos.x = Math.max(-C3.LM + .3, Math.min(C3.LM - .3, pos.x)); pos.y = Math.min(pos.y, C3.hp + 4.1); pos.z = Math.min(pos.z, C3.z1 + 7); }   // (dans le passage)
@@ -7350,6 +7561,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
 
+  if (id === "grande" && !copie) ruesDehors(A, L, scene);   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
   if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return b;   // (déjà compté)
     return tr.some(t => x > t[0] && x < t[1] && z > t[2] && z < t[3]) || (C3.phareT && C3.phareT(x, z)) ? b + .12 : b; }; }
@@ -10319,7 +10531,7 @@ function construireScene(id) {
   Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
   scene.add(soleil);
   const n0J = scene.children.length;
-  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); const L = construireLieu(baseLieu(id), scene); sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
+  sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); ouvrirDehors = id === "grande"; const L = construireLieu(baseLieu(id), scene); ouvrirDehors = false; sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
   const contenuJ = JUMEAUX[id] ? scene.children.slice(n0J) : null;
   // les fenêtres allumées et les silhouettes, posées à quelques centimètres des façades : poussées vers nous à l'affichage, et dessinées dans un ordre fixe
   // (façade, puis vitre, puis silhouette) — sinon, de loin, elles clignotent quand on bouge
