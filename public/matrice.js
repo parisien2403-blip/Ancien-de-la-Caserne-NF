@@ -505,9 +505,9 @@ export function dessinerBonhomme(o, tete) {
         x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 2; x.beginPath(); x.moveTo(72, 236); x.lineTo(90, 234); x.moveTo(110, 234); x.lineTo(128, 236); x.stroke();   // les poches
         x.fillStyle = "#dcd6c4"; for (let k = 0; k < 5; k++) { x.beginPath(); x.arc(102, 214 + k * 11, 2.8, 0, 7); x.fill(); } } }
     // le barman : le grand tablier bleu, noué à la taille, qui descend sous les genoux (et ses bretelles)
-    if (t === "barman" && !profil && o.pose !== "dos") { x.fillStyle = "#2f5276"; x.beginPath(); x.roundRect(72, 158, 56, 60, 6); x.fill();
+    if (t === "barman" && !profil && o.pose !== "dos") { x.fillStyle = o.tablier || "#2f5276"; x.beginPath(); x.roundRect(72, 158, 56, 60, 6); x.fill();
       x.beginPath(); x.moveTo(60, 214); x.lineTo(140, 214); x.lineTo(146, 318); x.lineTo(54, 318); x.closePath(); x.fill();
-      x.strokeStyle = "#2f5276"; x.lineWidth = 5; x.beginPath(); x.moveTo(76, 160); x.lineTo(84, 142); x.moveTo(124, 160); x.lineTo(116, 142); x.stroke();
+      x.strokeStyle = o.tablier || "#2f5276"; x.lineWidth = 5; x.beginPath(); x.moveTo(76, 160); x.lineTo(84, 142); x.moveTo(124, 160); x.lineTo(116, 142); x.stroke();
       x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(60, 212, 80, 4); x.fillStyle = "rgba(255,255,255,.06)"; for (let k = 0; k < 4; k++) x.fillRect(70 + k * 18, 222, 3, 90); }
     // les bras : pendants, ou levés pour danser (o.pose = "haut") ; en disco, le bras droit pointe le doigt en l'air puis vers le sol
     const DISCO = { disco1: [.42, -2.8], disco2: [.75, -.36] };
@@ -4536,7 +4536,8 @@ function construireSousSol(A, L, scene, o = {}) {
     const laitonB = A.mat({ color: 0xc9a227, metalness: .75, roughness: .25 });
     const repose = A.ajoute(new THREE.CylinderGeometry(.025, .025, CLg, 10), laitonB, CC, .2, CZ - .38, false); repose.rotation.z = Math.PI / 2;
     obstacles.push([C1, C0 + .15, CZ - .5, CZ + .4]);
-    L.surComptoir = [C1 + .35, C1 + .85, C1 + 1.4, C1 + 1.9].map(x => [x, CZ - .12]); L.yComptoir = 1.11;   // (le monde apocalyptique y pose munitions et plantes)
+    L.surComptoir = [C1 + .35, C1 + .85, C1 + 1.4, C1 + 1.9].map(x => [x, CZ - .12]); L.yComptoir = 1.11;
+    L.posBarSS = { x0: C1 + .45, x1: C0 - .45, z: CZ + .62, zVerre: CZ - .1, y: 0, yVerre: 1.11 };   // (le barman du sous-sol : derrière ce comptoir, il va et vient en x)   // (le monde apocalyptique y pose munitions et plantes)
     // deux tabourets devant le comptoir : on s'y assoit et on boit un verre (comme au bar de la salle des fêtes)
     L.tabourets = [];
     for (const tx of [C1 + .85, C1 + 1.65]) { const tz = CZ - .72; L.tabourets.push([tx, tz]);
@@ -7137,6 +7138,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
       for (const r of SL.raccourcis) if (!r.vers) L.raccourcis = [...(L.raccourcis || []), r.marche ? { ...r, marche: loc(...r.marche) } : r];
       L.tabouretsSousSol = SL.tabourets.map(t => loc(...t));
       L.comptoirSousSol = (SL.surComptoir || []).map(t => loc(...t)); L.yComptoirSousSol = yb - 4 * HM + SL.yComptoir;
+      if (SL.posBarSS) { const B = SL.posBarSS; L.posBarSS = { x0: -B.x1, x1: -B.x0, z: FETE_SZ - B.z, zVerre: FETE_SZ - B.zVerre, y: yb - 4 * HM, yVerre: yb - 4 * HM + B.yVerre }; }
       const HSS = yb - 4 * HM;
       // la caméra : dans le couloir, le vestibule ou la grande pièce, elle reste dedans
       L.contraindreCam = (pos, moi) => { const mp = moi.g.position; if (mp.z < CZ0 - .1) return false;
@@ -7770,7 +7772,7 @@ export async function ouvrir(ctx) {
     // (toucher son propre bonhomme ne fait plus rien : on vise le sol où l'on veut aller ; les danses sont dans les boutons)
     const corps = [...M.gens.values()].filter(p => !p.moi && p.corps).map(p => p.corps);
     const h = ray.intersectObjects(corps).find(q => !q.uv || (Math.abs(q.uv.x - .5) < .16 && q.uv.y > .08 && q.uv.y < .78));   // le corps seul, pas les marges
-    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barman) { direPNJ(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { direPNJ(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.maman) { direPNJ(MAMAN, PHRASES_MAMAN[Math.floor(Math.random() * PHRASES_MAMAN.length)]); return; } if (p && p.info.pnj) { direPNJ(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
+    if (h) { const p = [...M.gens.values()].find(q => q.corps === h.object); if (p && p.info.barmanSS) { direPNJ(BARMAN_SS, PHRASES_BAR_SS[Math.floor(Math.random() * PHRASES_BAR_SS.length)]); return; } if (p && p.info.barman) { direPNJ(BARMAN, PHRASES_BAR[Math.floor(Math.random() * PHRASES_BAR.length)]); return; } if (p && p.info.dj) { direPNJ(DJ, PHRASES_DJ[Math.floor(Math.random() * PHRASES_DJ.length)]); return; } if (p && p.info.maman) { direPNJ(MAMAN, PHRASES_MAMAN[Math.floor(Math.random() * PHRASES_MAMAN.length)]); return; } if (p && p.info.pnj) { direPNJ(PNJ, phrasePNJ(Math.random() * 1000)); return; } if (p) { ctx.surToucherAncien && ctx.surToucherAncien(p.info); return; } }
     // le bouton ▶ / ⏹ des platines : touché si le doigt tombe tout près de lui à l'écran (plus facile qu'au pixel près)
     for (const b of M.L.boutonsPiste || []) if (b.visible) { const q = b.position.clone().project(M.camera);   // ⏮ / ⏭ : changer de titre
       if (q.z < 1 && Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < Math.max(26, r.width * .026)) { envoyerWS({ t: "dj_" + b.userData.action }); b.scale.set(.18, .18, 1); setTimeout(() => b.scale.set(.22, .22, 1), 160); return; } }
@@ -8074,7 +8076,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -11349,6 +11351,40 @@ function animerBarman(t) {
   if (p.parole !== b) { p.parole = b; if (hasard(b * 7.7) < .25) direPNJ(BARMAN, PHRASES_BAR[4 + Math.floor(hasard(b * 3.1) * (PHRASES_BAR.length - 4))]); }
 }
 /* --- le danseur Thriller (réglé par l'administrateur) : dès que passe un Thriller, il arrive au milieu de la piste et le danse ; il repart ensuite --- */
+/* --- le barman du sous-sol (le bar des Goonies) : un autre chef de poste, chemise blanche et tablier bleu marine ; dès qu'on s'assoit sur un tabouret, il vient et pose une bière --- */
+const BARMAN_SS = -86, PHRASES_BAR_SS = ["Et une bière, une !", "Bien fraîche, comme il faut.", "Santé, mon grand !", "Elle est pour moi, celle-là.", "Qu'est-ce que je te sers ?", "Tu as vu les Goonies ? La borne est juste là."];
+function ajouterBarmanSS() {
+  if (!M || !M.L || !M.L.posBarSS || M.gens.has(BARMAN_SS) || M.L.apo || M.L.sh) return;
+  const P = (M.ctx.pnj && M.ctx.pnj()) || {}, B = M.L.posBarSS;
+  ajouterAncien({ numero: BARMAN_SS, nom: "Le chef de poste", tenue: "barman", couleur: "#ffffff", tablier: "#1b2a4a", bas: "#1d1d1f", pieds: P.pieds, reglage: P.reglage || null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, barman: true, barmanSS: true, x: (B.x0 + B.x1) / 2, z: B.z });
+  M.verresBar = M.verresBar || new Map(); }
+function animerBarmanSS(t) {
+  const p = M && M.gens.get(BARMAN_SS), B = M && M.L && M.L.posBarSS; if (!p || !B) return;
+  const dt = p.tSS ? Math.min(.1, (t - p.tSS) / 1000) : 0; p.tSS = t; p.cible = null; p.chemin = [];
+  const g = p.g.position; g.z = B.z; g.x = Math.max(B.x0, Math.min(B.x1, g.x)); g.y = B.y;   // (toujours derrière son comptoir)
+  if (!p.corps || !p.poses) return;
+  const pose = n => { const m = p.poses[n] || p.poses.repos; if (p.corps.material.map !== m) { p.corps.material.map = m; p.corps.material.needsUpdate = true; } };
+  const verres = M.verresBar || (M.verresBar = new Map()), n0 = M.L.nbTabouretsSalle || 0, T = M.L.tabourets || [];
+  for (const [cle, v] of verres) { if (!v.userData.ss) continue; const [num, i] = cle.split(":"), c = [...M.gens.values()].find(q => String(q.info.numero) === num); if (!c || c.info.assis !== +i) { if (v.parent) v.parent.remove(v); verres.delete(cle); } }
+  const client = [...M.gens.values()].find(q => !q.info.pnj && Number.isInteger(q.info.assis) && q.info.assis >= n0 && T[q.info.assis] && !verres.has(q.info.numero + ":" + q.info.assis));
+  const vers = (x) => { const d = x - g.x; if (Math.abs(d) < .05) return true; g.x += Math.sign(d) * Math.min(Math.abs(d), 1.3 * dt); pose("repos"); return false; };
+  if (client) { const i = client.info.assis, xc = Math.max(B.x0, Math.min(B.x1, T[i][0]));
+    if (!p.ssService || p.ssService.n !== client.info.numero) p.ssService = { n: client.info.numero, debut: 0 };
+    const s = p.ssService; if (!vers(xc)) return;
+    if (!s.debut) { s.debut = t; direPNJ(BARMAN_SS, PHRASES_BAR_SS[Math.floor(hasard(t) * 5)]); }
+    pose("servir");
+    if (t - s.debut > 1500) { const v = new THREE.Group(); v.userData.ss = true;
+      const verre = new THREE.Mesh(new THREE.CylinderGeometry(.045, .038, .16, 14), new THREE.MeshStandardMaterial({ color: 0xe8f2f5, transparent: true, opacity: .45, roughness: .05 }));
+      const biere = new THREE.Mesh(new THREE.CylinderGeometry(.04, .034, .11, 14), new THREE.MeshStandardMaterial({ color: 0xe3a92c, roughness: .3 }));
+      const mousse = new THREE.Mesh(new THREE.CylinderGeometry(.042, .04, .03, 14), new THREE.MeshStandardMaterial({ color: 0xfbf6e8, roughness: .8 }));
+      verre.position.y = .08; biere.position.y = .06; mousse.position.y = .13; v.add(verre, biere, mousse); v.position.set(xc, B.yVerre, B.zVerre); M.scene.add(v);
+      verres.set(client.info.numero + ":" + i, v); p.ssService = null; p.ssRepos = t + 2500; }
+    return; }
+  p.ssService = null;
+  // sinon, il va et vient le long du comptoir, essuie un verre de temps en temps
+  if (!p.ssBut || (t > (p.ssRepos || 0) && vers(p.ssBut))) { if (t > (p.ssRepos || 0)) { p.ssBut = B.x0 + hasard(Math.floor(t / 4000) + 3) * (B.x1 - B.x0); p.ssRepos = t + 2500 + hasard(t) * 2500; } }
+  if (t < (p.ssRepos || 0) && p.ssBut != null && Math.abs(g.x - p.ssBut) < .06) pose(Math.floor(t / 900) % 3 === 0 ? "essuyer" : "repos"); }
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
@@ -14098,7 +14134,7 @@ function connecter() {
       if (!dejaLa) ajouterAncien({ ...ctx.moiInfo(), numero: m.moi, x: M.posEntree[0], z: M.posEntree[1] });   // (déjà là après un passage sans coupure)
       m.gens.forEach(q => { if (dejaLa && q.numero === m.moi) return; ajouterAncien(q); });   /* (une coupure de réseau, puis la reconnexion : on reste où l'on est — pas de saut au milieu de la cour, la cinématique continue) */
       if (dejaLa) envoyerWS({ t: "aller", x: dejaLa.g.position.x, z: dejaLa.g.position.z });
-      ajouterPNJ(); ajouterDJ(); ajouterBarman();
+      ajouterPNJ(); ajouterDJ(); ajouterBarman(); ajouterBarmanSS();
       M.fil = m.dits || []; ctx.surFil && ctx.surFil(M.fil);
       ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info));
     } else if (m.t === "arrive") { ajouterAncien(m.p); ctx.surPresents && ctx.surPresents([...M.gens.values()].map(p => p.info)); }
