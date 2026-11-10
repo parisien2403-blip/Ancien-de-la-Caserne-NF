@@ -1812,14 +1812,8 @@ function construireRue(A, T, L, scene) {
     const li = A.ajoute(new THREE.BoxGeometry(.3, .5, 5.8), pierreM, xf - sg * .1, 4.5, .55, false); }
   /* l'amorce de la rue des Messageries, à l'angle de la caserne voisine : la même rue que derrière le portail de l'horloge (décalée de DH_.DX, DH_.DZ) ;
      on la remonte d'un seul tenant jusqu'au pan coupé « GARDE RÉPUBLICAINE » */
-  { const dx = DH_.DX, xe = DH_.XE + dx, xr = DH_.XR + dx, xf = DH_.XF + dx, xo = DH_.XO + dx, zB = -36;
-    const bitM = A.mat({ map: tex(T.bitume, 1, 4), color: 0x75757a }); plan(xf - xr, -7.5 - zB, (xr + xf) / 2, (zB - 7.5) / 2, bitM, .012);
-    for (const [a, b] of [[xe, xr], [xf, xo]]) { plan(b - a, -7.5 - zB, (a + b) / 2, (zB - 7.5) / 2, trottoir, .012); A.ajoute(new THREE.BoxGeometry(.24, .12, -7.5 - zB), granit, a === xe ? xr : xf, .06, (zB - 7.5) / 2, false); }
-    numero7(A, scene, xe, 0, DH_.Z7 + DH_.DZ);
-    { const t = tex(toileMessageries(6, 22.4)), m = new THREE.Mesh(new THREE.PlaneGeometry(6, 22.4), A.mat({ map: t, roughness: .92 })); m.position.set(xe + .02, 11.2, DH_.Z7 + DH_.DZ - 3); m.rotation.y = Math.PI / 2; scene.add(m); }   // (et le début de la brique de la caserne)
-    im({ x: xo, z: -28, largeur: 16, etages: 5, rot: -Math.PI / 2, teinte: teintes[4], graine: 314 });
-    im({ x: xo, z: -17.5, largeur: 5, etages: 6, rot: -Math.PI / 2, teinte: teintes[0], graine: 315 });
-    im({ x: (xe + xo) / 2, z: zB, largeur: 12, etages: 6, rot: 0, teinte: teintes[2], graine: 333 });
+  { const dx = DH_.DX, xe = DH_.XE + dx, xo = DH_.XO + dx, zB = DH_.ZN + DH_.DZ;
+    decorMessageriesLoin(A, L, scene, [dx, -DH_.Y0, DH_.DZ]);   // (on voit toute la rue, jusqu'au portail « GARDE RÉPUBLICAINE » au bout)
     L.messageries = { xe, xo, zB };
     L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > xe && x < xo && z < -17 && z > zB, vers: "grande", continu: [-dx, -DH_.DZ, DH_.Y0], centre: [(xe + xo) / 2, -16] }); }
   // la rue La Fayette est fermée juste après ses passages piétons
@@ -2161,7 +2155,7 @@ function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeau
      linteaux et appuis de pierre, allèges en brique en saillie, petits balcons de fer, descentes d'eau ; au bout, l'immeuble de pierre du n° 7 ;
    - en face, des immeubles parisiens ; la rue d'Hauteville en travers, fermée de chaque côté. Le portail est ouvert (seulement dans la vraie caserne). */
 const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 40.3, XF: 46.7, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -46, Z7: -74, DX: 6.5, DZ: 42, XC: -40, DC: 2.3 };   // (XC : rue d'Hauteville, le bout de la caserne ; après le mur blanc en biais, les immeubles avancent de DC vers la rue)
-DH_.bord = x => DH_.ZN - Math.max(0, Math.min(DH_.DC, (DH_.XC - x) * .92));   // (le nu des façades, côté caserne, rue d'Hauteville)   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
+DH_.bord = x => x < DH_.XC + .3 ? DH_.ZN - DH_.DC : DH_.ZN;   // (le décroché, à angle droit)   // (le nu des façades, côté caserne, rue d'Hauteville)   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
 DH_.zone = (x, z) => RU.lz(x, z) < -7.9 || (x > DH_.XE && z < DH_.ZS) || z < DH_.ZN;   // (au-delà de la grille)
 DH_.dedans = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 && z < DH_.ZS - .5)          // la rue des Messageries
   || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.bord(x) - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
@@ -2230,6 +2224,88 @@ function toilePanCoupe(Wm, Hm, AW, AH) {   // le pan coupé, vu de la rue (d'apr
       const g = x.createLinearGradient(0, Y, 0, Y + H); g.addColorStop(0, "#6d7d86"); g.addColorStop(1, "#2c363e"); x.fillStyle = g; x.fillRect(cx - W / 2, Y, W, H); rideau(x, cx - W / 2, Y, W, H); noteFen(cx - W / 2, Y, W, H);
       x.fillStyle = "#eeeae2"; x.fillRect(cx - 1.5, Y, 3, H); x.fillRect(cx - W / 2, Y + H * .3, W, 2); balconFer(x, cx - W / 2 - 14, Y + H * .55, W + 28, H * .45); }
     cheneau(x, 0, w, 3); }); }
+/* ---------- Sur la terrasse : cinq enfants qui font du roller (ils tournent en rond, se croisent, se penchent dans les virages) ---------- */
+function toileEnfantRoller(k, pas) {   // un enfant de face, en rollers : casque, genouillères, coudières ; pas : la jambe qui pousse (0 ou 1)
+  const T = [["#e2443b", "#2f5fae", "#f2c94c", "#5a3a22"], ["#3a9d5d", "#26324e", "#e2443b", "#d9a066"], ["#f08c2e", "#3d5a80", "#2f9fd8", "#2a1a12"], ["#9b59b6", "#1d1d1f", "#f2f2f2", "#e8c27a"], ["#2f9fd8", "#6b6b6b", "#3a9d5d", "#7a4a2a"]][k % 5];
+  const [maillot, short, casque, cheveux] = T, peau = ["#f0c8a6", "#d9a57e", "#f3d2b5", "#a9714b", "#e9c4a0"][k % 5];
+  return toile(200, 420, (x) => { x.lineCap = "round"; x.lineJoin = "round";
+    // les jambes (l'une pousse de côté), les genouillères, les rollers et leurs quatre roues
+    const jambes = pas ? [[86, 250, 62, 330, 52, 388], [114, 250, 118, 330, 120, 390]] : [[86, 250, 82, 330, 80, 390], [114, 250, 138, 330, 148, 388]];
+    for (const [hx, hy, kx, ky, fx, fy] of jambes) { x.strokeStyle = peau; x.lineWidth = 15; x.beginPath(); x.moveTo(hx, hy); x.lineTo(kx, ky); x.lineTo(fx, fy - 12); x.stroke();
+      x.fillStyle = "#222"; x.beginPath(); x.ellipse(kx, ky, 11, 9, 0, 0, 7); x.fill();
+      x.fillStyle = casque; x.beginPath(); x.roundRect(fx - 15, fy - 24, 30, 26, 6); x.fill(); x.fillStyle = "#1a1a1a"; x.fillRect(fx - 16, fy, 32, 5);
+      x.fillStyle = "#f2f2f2"; for (const dx of [-12, -4, 4, 12]) { x.beginPath(); x.arc(fx + dx, fy + 9, 4.5, 0, 7); x.fill(); } }
+    // le short, le maillot, les bras écartés pour l'équilibre, les coudières
+    x.fillStyle = short; x.beginPath(); x.roundRect(72, 228, 56, 40, 8); x.fill();
+    x.fillStyle = maillot; x.beginPath(); x.roundRect(66, 150, 68, 86, 14); x.fill();
+    x.fillStyle = "rgba(255,255,255,.8)"; x.font = "bold 26px Arial"; x.textAlign = "center"; x.fillText(String(k + 3), 100, 205);
+    for (const sg of [-1, 1]) { x.strokeStyle = maillot; x.lineWidth = 15; x.beginPath(); x.moveTo(100 + sg * 30, 160); x.lineTo(100 + sg * 58, 196); x.stroke();
+      x.strokeStyle = peau; x.lineWidth = 12; x.beginPath(); x.moveTo(100 + sg * 58, 196); x.lineTo(100 + sg * 82, 222 - (pas ? sg * 10 : -sg * 10)); x.stroke();
+      x.fillStyle = "#222"; x.beginPath(); x.arc(100 + sg * 58, 196, 8, 0, 7); x.fill(); }
+    // le cou, la tête, le visage, les cheveux qui dépassent, le casque
+    x.fillStyle = peau; x.fillRect(92, 132, 16, 22); x.beginPath(); x.ellipse(100, 104, 33, 37, 0, 0, 7); x.fill();
+    x.fillStyle = cheveux; x.beginPath(); x.ellipse(100, 92, 35, 22, 0, Math.PI, 0); x.fill(); x.fillRect(66, 92, 10, 26); x.fillRect(124, 92, 10, 26);
+    x.fillStyle = casque; x.beginPath(); x.ellipse(100, 82, 39, 34, 0, Math.PI, 0); x.fill(); x.fillRect(61, 80, 78, 8);
+    x.fillStyle = "rgba(255,255,255,.35)"; for (const dx of [-14, 0, 14]) x.fillRect(96 + dx, 54, 6, 22);
+    x.strokeStyle = "#333"; x.lineWidth = 2; x.beginPath(); x.moveTo(66, 88); x.lineTo(84, 136); x.moveTo(134, 88); x.lineTo(116, 136); x.stroke();
+    x.fillStyle = "#2a1a12"; for (const ex of [88, 112]) { x.beginPath(); x.ellipse(ex, 106, 4, 5, 0, 0, 7); x.fill(); }
+    x.strokeStyle = "#8a3a2a"; x.lineWidth = 3; x.beginPath(); x.arc(100, 118, 10, .25, Math.PI - .25); x.stroke();
+    x.fillStyle = "rgba(230,120,110,.35)"; for (const ex of [80, 120]) { x.beginPath(); x.arc(ex, 120, 6, 0, 7); x.fill(); } }); }
+function enfantsRollers(L, scene) {
+  const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, yT = C3.hp + C3.NT * C3.HT2, cz = (zt0 + zt1) / 2;
+  const RX = C3.LT / 2 - 2.2, RZ = (zt0 - zt1) / 2 - 1.6, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), enf = [];
+  for (let k = 0; k < 5; k++) { const t = [0, 1].map(p => tex(toileEnfantRoller(k, p))), m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+    m.renderOrder = 2; scene.add(m);
+    const o = new THREE.Mesh(new THREE.CircleGeometry(.28, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);   // (l'ombre au sol)
+    enf.push({ m, o, t, k, sens: k % 2 ? -1 : 1, r: .55 + .45 * ((k * 37) % 10) / 10, v: .42 + k * .05, ph: k * 1.3, huit: k === 2 }); }
+  const place = (t) => { const s = t / 1000, cam = M && M.camera;
+    for (const e of enf) { const a = e.ph + e.sens * s * e.v; let x, z;
+      if (e.huit) { x = Math.sin(a) * RX * .8; z = Math.sin(a) * Math.cos(a) * RZ * 1.6; } else { x = Math.cos(a) * RX * e.r; z = Math.sin(a) * RZ * (.5 + .5 * e.r); }
+      e.m.position.set(x, yT + .02 + Math.abs(Math.sin(s * 5 + e.k)) * .025, cz + z); e.o.position.set(x, yT + .015, cz + z);
+      e.m.material.map = e.t[Math.floor(s * 2.6 + e.k) % 2];
+      if (cam) e.m.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - (cz + z)); e.m.rotation.z = Math.sin(a * 2) * .08 * e.sens; } };
+  L.enfantsRollers = enf; place(1000); const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); place(t); }; }
+/* ---------- Le toit du local poubelle : une échelle de fer contre sa face, côté place ; on y grimpe et on marche sur la dalle ---------- */
+function toitPoubelle(A, L, scene) {
+  const LP = C3.localPoub; if (!LP || !LP.blocs) return;
+  const { blocs, top } = LP, b2 = blocs[1], xe = (b2[0] + b2[1]) / 2, ze = b2[3], yh = top + .12, PR = .8;   // (l'échelle : au milieu de la face du bout, côté place)
+  const y0 = RU.y(ze + PR), fer = A.mat({ color: 0x2a2d30, roughness: .5, metalness: .6 }), Hh = yh + 1.0 - y0;
+  for (const dx of [-.24, .24]) A.ajoute(new THREE.BoxGeometry(.05, Hh, .05), fer, xe + dx, y0 + Hh / 2, ze + .12);
+  for (let y = y0 + .3; y < yh + .05; y += .3) A.ajoute(new THREE.CylinderGeometry(.018, .018, .48, 6).rotateZ(Math.PI / 2), fer, xe, y, ze + .12, false);
+  for (const dx of [-.24, .24]) A.ajoute(new THREE.BoxGeometry(.05, .05, .45), fer, xe + dx, yh + .97, ze - .1);   // (les crosses, au-dessus du toit, pour s'aider)
+  // le dessus des deux blocs : on peut y cliquer pour y aller
+  const surToit = (x, z) => blocs.some(([a, b, c, d]) => x > a + .25 && x < b - .25 && z > c + .25 && z < d - .25);
+  const surEchelle = (x, z) => Math.abs(x - xe) < .4 && z >= ze - .3 && z < ze + PR;
+  for (const [a, b, c, d] of blocs) { const o = A.ajoute(new THREE.PlaneGeometry(b - a, d - c), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), (a + b) / 2, yh + .005, (c + d) / 2, false); o.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(o); }
+  const haut = (p) => { const q = p && p.g ? p : (M && M.moiNum && M.gens && M.gens.get(M.moiNum)); return !!(q && q.g && q.g.position.y > yh - .8); };
+  L.toitPoub = { surToit, surEchelle, yh, xe, ze };
+  const lim0 = L.limites; L.limites = (x, z) => surEchelle(x, z) || (surToit(x, z) && haut()) || (!(surToit(x, z) && haut()) && lim0(x, z));
+  const h0 = L.hauteur; L.hauteur = (x, z, p) => { if (surEchelle(x, z)) { const t = Math.max(0, Math.min(1, (ze + PR - z) / (PR + .3))); return RU.y(z) + (yh - RU.y(z)) * t; }
+    if (surToit(x, z) && haut(p)) return yh; return h0 ? h0(x, z, p) : 0; }; }
+/* la rue des Messageries vue depuis la rue du Faubourg : la même rue (chaussée, trottoirs, façades, immeubles d'en face), au loin le pan coupé et la rue d'Hauteville ;
+   seulement pour le regard — on y marche jusqu'au passage, puis on est dans la vraie (derrière le portail de l'horloge) */
+function decorMessageriesLoin(A, L, scene, [ox, oy, oz]) {
+  const G = new THREE.Group(); G.position.set(ox, oy, oz); scene.add(G);
+  const AG = { ...A, ajoute: (...g) => { const o = A.ajoute(...g); G.add(o); return o; } }, T = textures(), { Y0, XE, ZN, C, XR, XF, XO, ZR, ZF, ZO, ZS, Z7 } = DH_, zE0 = XE - C, xN0 = C + ZN, z1 = ZS - 3.5;
+  const plat = (x0, x1, z0, z1, m, y) => { const o = AG.ajoute(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m, (x0 + x1) / 2, y, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; };
+  const bit = A.mat({ map: tex(T.bitume, 2, 14), color: 0x6f6f74 }), tro = A.mat({ map: tex(T.trottoir, 1, 40), roughness: .92 }), granit = A.mat({ color: 0xa9a59d });
+  plat(XR, XF, ZF, z1, bit, Y0 + .004); plat(XE, XR, zE0, z1, tro, Y0 + .12); plat(XF, XO, ZR, z1, tro, Y0 + .12); plat(22, 60, ZF, ZR, A.mat({ map: tex(T.bitume, 6, 1), color: 0x6f6f74 }), Y0 + .004); plat(22, 60, ZO, ZF, tro, Y0 + .12);
+  for (const x of [XR, XF]) AG.ajoute(new THREE.BoxGeometry(.24, .12, z1 - ZR), granit, x, Y0 + .06, (ZR + z1) / 2, false);
+  { const t = tex(toileMessageries(Z7 - zE0, 22.4, { pas: 3.7 })), m = new THREE.Mesh(new THREE.PlaneGeometry(Z7 - zE0, 22.4), A.mat({ map: t, roughness: .92 })); m.position.set(XE + .02, Y0 + 11.2, (zE0 + Z7) / 2); m.rotation.y = Math.PI / 2; G.add(m); }
+  { const t = tex(toileHaussmann(12.5, 6, "#e6dbc4", 87)), m = new THREE.Mesh(new THREE.PlaneGeometry(12.5, 22.8), A.mat({ map: t })); m.position.set(XE + .02, Y0 + 11.4, Z7 + 6.25); m.rotation.y = Math.PI / 2; G.add(m); }
+  // au bout : le pan coupé (l'arcade, le linteau « GARDE RÉPUBLICAINE »), et le début de la façade rue d'Hauteville
+  { const WP = 10.54, H = 24, t = tex(toilePanCoupe(WP, H, 4.6, 5.6)), m = new THREE.Mesh(new THREE.PlaneGeometry(WP, H), A.mat({ map: t, roughness: .92 }));
+    m.position.set((XE + xN0) / 2, Y0 + H / 2, (zE0 + ZN) / 2); m.rotation.y = Math.PI * .75; G.add(m);
+    const tL = tex(toile(420, 90, (c, w, h) => { pierre(c, 0, 0, w, h, "#ebe5d9", 30, 90); c.fillStyle = "#8a8377"; c.textAlign = "center"; c.font = "bold 30px Georgia"; c.fillText("G A R D E", w / 2, 30); c.fillText("R É P U B L I C A I N E", w / 2, 68); }));
+    const li = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.75), A.mat({ map: tL })); li.position.set((XE + xN0) / 2 + .2, Y0 + 7.5, (zE0 + ZN) / 2 - .2); li.rotation.y = Math.PI * .75; G.add(li);
+    const ar = new THREE.Mesh(new THREE.CircleGeometry(2.3, 24, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x1a1512 })); ar.position.set((XE + xN0) / 2 + .1, Y0 + 3.3, (zE0 + ZN) / 2 - .1); ar.rotation.y = Math.PI * .75; G.add(ar);
+    const po = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.3), new THREE.MeshBasicMaterial({ color: 0x1a1512 })); po.position.set(ar.position.x, Y0 + 1.65, ar.position.z); po.rotation.y = Math.PI * .75; G.add(po);
+    const tN = tex(toileMessageries(20, 25.7, { pas: 3.7, hauteville: true })), n = new THREE.Mesh(new THREE.PlaneGeometry(20, 25.7), A.mat({ map: tN, roughness: .92 })); n.position.set(xN0 - 10, Y0 + 12.85, ZN - .02); n.rotation.y = Math.PI; G.add(n); }
+  // les immeubles d'en face, et ceux de la rue d'Hauteville, au fond
+  const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"], im = (o) => { const g = A.haussmann(o); G.add(g); g.position.y = Y0; L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); };
+  [[-134, 16], [-118, 16], [-102, 16], [-86, 16], [-70, 16], [-59.5, 5]].forEach(([zc, l], k) => im({ x: XO, z: zc, largeur: l, etages: 6 - (k % 3 === 1), rot: -Math.PI / 2, teinte: teintes[k % 5], graine: 310 + k }));
+  [28, 44, 60].forEach((xc, k) => im({ x: xc, z: ZO, largeur: 16, etages: 6 - ((k + 5) % 2), rot: 0, teinte: teintes[(k + 7) % 5], graine: 325 + k }));
+  im({ x: 39.25 - DH_.DX, z: -7.5 - DH_.DZ, largeur: 10.5, etages: 6, rot: 0, teinte: teintes[0], graine: 69 }); }
 function numero7(A, scene, xe, y0, z7) {   // l'immeuble de pierre du n° 7, collé à la caserne (12,5 m, jusqu'à l'immeuble de l'angle)
   const t = tex(toileHaussmann(12.5, 6, "#e6dbc4", 87)), m = new THREE.Mesh(new THREE.PlaneGeometry(12.5, 22.8), A.mat({ map: t })); m.position.set(xe + .02, y0 + 11.4, z7 + 6.25); m.rotation.y = Math.PI / 2; A.scene.add(m);
   A.ajoute(new THREE.BoxGeometry(.5, .5, 12.5), A.mat({ color: 0xd8cdb6 }), xe + .2, y0 + 22.6, z7 + 6.25); }
@@ -2293,10 +2369,10 @@ function ruesDehors(A, L, scene) {
   { const XC = DH_.XC, lg = -26.6 - XC, t = tex(toileMessageries(lg, 25.7, { pas: 3.7, hauteville: true })), b = A.mat({ color: 0x8a4a36, roughness: .95 });   // (la suite de la caserne, rue d'Hauteville)
     A.ajoute(new THREE.BoxGeometry(lg, 25.7, 8), [b, b, A.mat({ color: 0x6f6f72 }), b, b, A.mat({ map: t, roughness: .92 })], (XC - 26.6) / 2, Y0 + 12.85, ZN + 4);
     // au bout : le mur de brique peinte en blanc, en biais, qui avance vers la rue ; puis les immeubles parisiens, alignés plus près de la chaussée
-    const lb = Math.hypot(DH_.DC / .92, DH_.DC), blancB = tex(toile(160, 880, (c, w, h) => { c.fillStyle = "#ebe8e1"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(120,115,105,.25)";
-      for (let y = 0; y < h; y += 8) { c.fillRect(0, y, w, 1); for (let x = (y / 8) % 2 ? 0 : 10; x < w; x += 20) c.fillRect(x, y, 1, 8); } for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(90,85,75,${alea() * .08})`; c.fillRect(alea() * w, alea() * h, 4 + alea() * 30, 20 + alea() * 120); } }));
-    const mb = new THREE.Mesh(new THREE.PlaneGeometry(lb, 22), A.mat({ map: blancB, roughness: .95 })); mb.position.set(XC - DH_.DC / .92 / 2, Y0 + 11, ZN - DH_.DC / 2); mb.rotation.y = Math.PI - Math.atan2(DH_.DC, DH_.DC / .92); scene.add(mb);
-    const xa = XC - DH_.DC / .92, za = ZN - DH_.DC;
+    // au bout : le mur de pierre blanche, à angle droit, qui avance vers la rue ; puis les immeubles parisiens, alignés plus près de la chaussée
+    { const tb = tex(toile(120, 880, (c, w, h) => pierre(c, 0, 0, w, h, "#ecebe5", 34, 70))), mb = new THREE.Mesh(new THREE.PlaneGeometry(DH_.DC, 22), A.mat({ map: tb, roughness: .9 }));
+      mb.position.set(XC + .03, Y0 + 11, ZN - DH_.DC / 2); mb.rotation.y = Math.PI / 2; scene.add(mb); }
+    const xa = XC, za = ZN - DH_.DC;
     [[xa - 4.5, 9, 340], [xa - 13.25, 8.5, 341]].forEach(([xc, l, g], k) => { const o = A.haussmann({ x: xc, z: za, largeur: l, etages: 6, rot: Math.PI, teinte: k ? "#e8dcc2" : "#e6dbc4", graine: g }); o.position.y = Y0; L.nuitObjets.push(...o.userData.nuit); L.silhouettes.push(...o.userData.silhouettes); }); }
   // les avancées de pierre en encorbellement, près de l'angle, une sur chaque rue (du 1er au 4e étage)
   { const pr = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#dcd6ca", 34, 80)), 1, 3), roughness: .85 });
@@ -2307,7 +2383,7 @@ function ruesDehors(A, L, scene) {
     oriel(XE, zE0 + 9.5, Math.PI / 2); oriel(xN0 - 9.5, ZN, Math.PI); }
   // les arbres, sur le trottoir de la caserne, rue d'Hauteville
   { const tronc = A.mat({ color: 0x5b4a3a, roughness: 1 }), verts = [0x4f7f36, 0x5e8f3e, 0x46732f, 0x6a9a48].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), grille = A.mat({ color: 0x2a2c2e, metalness: .4 });
-    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x > DH_.XC - 2 && x < DH_.XC + 1.5 || x < DH_.XC - 2) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
+    for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x < DH_.XC + 1.5) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z); A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
       for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; } } }
   // au bout, du même côté : l'immeuble de pierre du n° 7
   numero7(A, scene, XE, Y0, Z7);
@@ -2315,9 +2391,9 @@ function ruesDehors(A, L, scene) {
   const plaque = (lignes, x, y, z, ry, w = 1.5) => { const t = tex(toile(300, 100, (c, W, Hh) => { c.fillStyle = "#2b6e4f"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#1d3f73"; c.fillRect(6, 6, W - 12, Hh - 12); c.strokeStyle = "#f4f1e6"; c.lineWidth = 2; c.strokeRect(11, 11, W - 22, Hh - 22);
       c.fillStyle = "#f4f1e6"; c.textAlign = "center"; c.textBaseline = "middle"; const l = lignes.split("|"); l.forEach((s, k) => { c.font = `bold ${k === l.length - 1 ? 34 : 20}px Arial`; c.fillText(s, W / 2, Hh / 2 + (k - (l.length - 1) / 2) * 30); }); }));
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 3), A.mat({ map: t, roughness: .3 })); m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); };
-  plaque("8e Arr.t|RUE DES|MESSAGERIES", XE + .04, Y0 + 3.0, zE0 + 1.6, Math.PI / 2);
-  plaque("10e Arr.t|RUE|D'HAUTEVILLE", xN0 - 1.6, Y0 + 3.0, ZN - .04, Math.PI);
-  plaque("2", XE + .04, Y0 + 3.0, zE0 + 3.1, Math.PI / 2, .45);
+  plaque("8e Arr.t|RUE DES|MESSAGERIES", XE + .04, Y0 + 3.2, zE0 + .95, Math.PI / 2, .75);   // (petite, sur la brique, entre l'angle et la première fenêtre)
+  plaque("10e Arr.t|RUE|D'HAUTEVILLE", xN0 - 1.0, Y0 + 3.2, ZN - .04, Math.PI, .75);
+  plaque("2", XE + .04, Y0 + 2.55, zE0 + .95, Math.PI / 2, .3);
   /* --- le sol : chaussées, trottoirs (bordures de granit) --- */
   const bit = A.mat({ map: tex(T.bitume, 1, 1), color: 0x6f6f74 }), plat = (x0, x1, z0, z1) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0); const t = bit.map.clone(); t.repeat.set((x1 - x0) / 6, (z1 - z0) / 6); t.needsUpdate = true;
     const o = A.ajoute(g, A.mat({ map: t, color: 0x6f6f74 }), (x0 + x1) / 2, Y0 + .004, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(o); };
@@ -2350,11 +2426,20 @@ function ruesDehors(A, L, scene) {
     const l = new THREE.PointLight(0xffcf8a, 60, 22, 1.4); l.position.set(lx, Y0 + 6.2, lz); l.visible = false; scene.add(l); L.nuitObjets.push(l); };
   for (const x of [-44, -16, 12, 40, 66]) cand(x, ZF - .45, 0, 1);
   /* --- on peut y marcher : les limites, la hauteur, la caméra --- */
+  // dehors, la caméra suit derrière soi et tourne avec la vue (dans la caserne, elle est fixe : dans une rue étroite, elle restait coincée dans un angle)
+  { const anim1 = L.anim; L.anim = (t) => { anim1 && anim1(t); if (!M || M.L !== L || !M.camera) return; const moi = M.moiNum && M.gens.get(M.moiNum); if (!moi) return;
+      const p = moi.g.position, d = DH_.zone(p.x, p.z) && RU.lz(p.x, p.z) < -8.5;
+      if (d !== !!L.suiviDH) { L.suiviDH = d;
+        if (d) { L.suiviAvantDH = L.suivi; L.suivi = { d: 6.5, h: 4.4, av: 4, vy: 1.8 }; const v = new THREE.Vector3(); M.camera.getWorldDirection(v); M.yaw = Math.atan2(-v.x, -v.z); }
+        else { if (L.suiviAvantDH) L.suivi = L.suiviAvantDH; else delete L.suivi; M.yawDehors = 0; }
+        M.camE = null; } }; }
   const lim0 = L.limites; L.limites = (x, z) => (lim0 && lim0(x, z)) || (!!L.dehorsOuvert && DH_.dedans(x, z));
   const h0 = L.hauteur; L.hauteur = (x, z, p) => DH_.zone(x, z) ? DH_.h(x, z) : h0 ? h0(x, z, p) : 0;
   const cam0 = L.contraindreCam; L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
     if (DH_.zone(mp.x, mp.z) && RU.lz(mp.x, mp.z) < -10.05) {   // dehors : la caméra reste dans la rue (rapprochée de son bonhomme si elle entrerait dans un mur)
       const ok = (x, z) => (x > XE + .2 && x < XO - .2 && z > ZO + .2 && z < ZS - .4) || (x > XW + .4 && x < XEst - .4 && z > ZO + .2 && z < DH_.bord(x) - .2) || (x - z > C + .2 && x <= XE + .2 && z >= ZN - .2);
+      if (mp.x > XE && mp.z > ZN - .5) { pos.x = Math.max(XE + .4, Math.min(XO - .4, pos.x)); pos.z = Math.max(ZO + .4, Math.min(ZS - .6, pos.z)); if (pos.z < ZN) pos.x = Math.max(XE + .4, pos.x); }   // (rue des Messageries : la caméra reste entre les deux façades, et tourne librement)
+      else if (mp.z < ZN - .3 && mp.x - mp.z < C + 3) { pos.z = Math.max(ZO + .4, Math.min(DH_.bord(pos.x) - .4, pos.z)); pos.x = Math.max(XW + .6, Math.min(XEst - .6, pos.x)); }   // (rue d'Hauteville : de même)
       if (!ok(pos.x, pos.z)) { let a = 0, b = 1; for (let k = 0; k < 10; k++) { const t = (a + b) / 2; if (ok(mp.x + (pos.x - mp.x) * t, mp.z + (pos.z - mp.z) * t)) a = t; else b = t; } pos.x = mp.x + (pos.x - mp.x) * a; pos.z = mp.z + (pos.z - mp.z) * a; pos.y = Math.max(pos.y, mp.y + 2.4); }
       pos.y = Math.min(pos.y, mp.y + 14); return true; }
     return cam0 ? cam0(pos, moi) : false; };
@@ -2472,7 +2557,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   // à l'angle de l'immeuble du fond (côté ruelle de gauche) : le local poubelle de la caserne, bas, en brique, qui épouse l'angle (d'après la photo)
   { const zb = zA + RU.cour, P = 4.0, Lx = 4, Lz = 4, y0 = -1.6, top = RU.y(zb) + 2.0, H = top - y0, x0 = -DB - P;
     const brk = (w, h) => A.mat({ map: tex(tuileBrique("rouge", K_FAC), w / 9.2, h / 6.75), roughness: .9 }), dalle = A.mat({ map: tex(textures().betonClair, 2, 2), color: 0xc4c4c0, roughness: .9 }), noir = A.mat({ color: 0x141210, roughness: 1 });
-    const blocs = [[x0, -DB + Lx, zb - P, zb], [x0, -DB, zb, zb + Lz]]; C3.poub = [...blocs, [-DB + Lx + 2.3, -DB + Lx + 17, zb - P, zb - P + .4]]; C3.localPoub = { x0, zb, P, Lz };
+    const blocs = [[x0, -DB + Lx, zb - P, zb], [x0, -DB, zb, zb + Lz]]; C3.poub = [...blocs, [-DB + Lx + 2.3, -DB + Lx + 17, zb - P, zb - P + .4]]; C3.localPoub = { x0, zb, P, Lz, blocs, top };
     for (const [xa, xb, za, zc] of blocs) { const w = xb - xa, d = zc - za, cx = (xa + xb) / 2, cz = (za + zc) / 2;
       A.ajoute(new THREE.BoxGeometry(w, H, d), [brk(d, H), brk(d, H), dalle, dalle, brk(w, H), brk(w, H)], cx, y0 + H / 2, cz);
       const hb = -.35 - y0; A.ajoute(new THREE.BoxGeometry(w + .06, hb, d + .06), A.mat({ map: tex(textures().granit, Math.max(w, d) / 2, .5), color: 0xb0a698, roughness: .85 }), cx, y0 + hb / 2, cz);   // le soubassement de granit
@@ -7568,7 +7653,9 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
     L.contraindreCam = (pos, moi) => { const p0 = moi.g.position.z; pos.z = mz(pos.z); moi.g.position.z = mz(p0); const r = E.contraindreCam(pos, moi); moi.g.position.z = p0; pos.z = mz(pos.z); return r; };
   }
 
-  if (id === "grande" && !copie) ruesDehors(A, L, scene);   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
+  if (id === "grande" && !copie) ruesDehors(A, L, scene);
+  if (id === "grande" && !copie) enfantsRollers(L, scene);
+  if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
   if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return b;   // (déjà compté)
     return tr.some(t => x > t[0] && x < t[1] && z > t[2] && z < t[3]) || (C3.phareT && C3.phareT(x, z)) ? b + .12 : b; }; }
