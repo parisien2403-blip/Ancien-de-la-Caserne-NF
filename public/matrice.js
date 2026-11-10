@@ -11355,9 +11355,9 @@ function animerBarman(t) {
 const BARMAN_SS = -86, PHRASES_BAR_SS = ["Et une bière, une !", "Bien fraîche, comme il faut.", "Santé, mon grand !", "Elle est pour moi, celle-là.", "Qu'est-ce que je te sers ?", "Tu as vu les Goonies ? La borne est juste là."];
 function ajouterBarmanSS() {
   if (!M || !M.L || !M.L.posBarSS || M.gens.has(BARMAN_SS) || M.L.apo || M.L.sh) return;
-  const P = (M.ctx.pnj && M.ctx.pnj()) || {}, B = M.L.posBarSS;
-  ajouterAncien({ numero: BARMAN_SS, nom: "Le chef de poste", tenue: "barman", couleur: "#ffffff", tablier: "#1b2a4a", bas: "#1d1d1f", pieds: P.pieds, reglage: P.reglage || null,
-    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, barman: true, barmanSS: true, x: (B.x0 + B.x1) / 2, z: B.z });
+  const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(97)) || {}, Q = (M.ctx.pnj && M.ctx.pnj()) || {}, B = M.L.posBarSS;   // (sa fiche à lui, réglée par l'administrateur ; sinon, la tête du chef de poste)
+  ajouterAncien({ numero: BARMAN_SS, nom: P.nom || "Le chef de poste", tenue: "barman", couleur: P.couleur || "#ffffff", tablier: "#1b2a4a", bas: P.bas || "#1d1d1f", pieds: P.pieds || Q.pieds, reglage: P.reglage || (P.tete_v ? null : Q.reglage) || null,
+    teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 97) : Q.tete_v ? M.ctx.urlTetePNJ(Q.tete_v) : "images/pere-tete.png", pnj: true, barman: true, barmanSS: true, x: (B.x0 + B.x1) / 2, z: B.z });
   M.verresBar = M.verresBar || new Map(); }
 function animerBarmanSS(t) {
   const p = M && M.gens.get(BARMAN_SS), B = M && M.L && M.L.posBarSS; if (!p || !B) return;
@@ -14188,6 +14188,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
+    else if (m.t === "pnj" && m.p && m.p.id === 97) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(BARMAN_SS)) { retirerAncien(BARMAN_SS); ajouterBarmanSS(); } }   // (le barman du sous-sol retouché : redessiné)
     else if (m.t === "pnj" && m.p && ((m.p.id >= 21 && m.p.id <= 26) || m.p.id === 95)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p);   // un héros de Resident Evil retouché : ceux qui le jouent, et les équipiers, sont redessinés
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
         const q = ajouterAncien(p.info.equipier ? infoEquipier(m.p.id, p.info.numero, pos.x, pos.z, p.info.proprio, p.info.slot) : { ...base }); if (q) { q.g.position.copy(pos); q.etg = p.etg; } } }
