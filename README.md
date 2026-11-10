@@ -96,6 +96,7 @@ Le numéro de version est dans `public/index.html` (tableau `VERSIONS`, la plus 
 
 Les anciens se retrouvent en 3D devant l'entrée, rue du Faubourg-Poissonnière (le porche mène à la cour d'honneur), dans la cour d'honneur et dans la salle des fêtes (on y entre par les portes vitrées du bâtiment de droite). L'arc au navire et la plaque de l'entrée sont la vraie photo `public/images/porche.jpg`.
 
+- Derrière le portail de l'horloge (pan coupé « GARDE RÉPUBLICAINE ») : la rue des Messageries et la rue d'Hauteville, dans la scène de la cour ; le bout de la rue des Messageries rejoint d'un seul tenant la rue du Faubourg. Au bar du sous-sol, un second barman (fiche n° 97, réglable par l'administrateur).
 - `public/matrice.js` : les décors (three.js 0.160, fourni avec le site dans `public/vendor/`), les bonshommes, la connexion en direct.
 - Le bonhomme : tenue, couleur et tête détourée **dans le téléphone** (MediaPipe, modèle `selfie_multiclass_256x256` chargé depuis storage.googleapis.com) ; seule la tête découpée (PNG) est envoyée (`PUT /api/moi/avatar`).
 - Présence et discussion : WebSocket `/api/matrice` vers le Durable Object (API « hibernation ») ; les messages s'effacent au bout d'une heure (20 au plus par lieu), chacun peut retirer les siens et l'administrateur tous. L'administrateur peut faire taire (1 h) ou exclure (24 h).
