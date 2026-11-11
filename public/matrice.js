@@ -4380,6 +4380,15 @@ function circulationRue(L, scene, O) {
     box(g, .14, .2, l2 + .04, noir, L2 / 2 + .05, .45, 0); box(g, .14, .2, l2 + .04, noir, -L2 / 2 - .05, .45, 0);
     return { g, r: ajouterRoues(g, [L2 / 2 - 2.2, -L2 / 2 + 2.6], l2 / 2 - .1), v: 6.5, L: L2, bus: true }; };
   // le vrai bus RATP SC10 (d'après la planche), et les Clio et 106 des années 90 (d'après les photos), au milieu des autres voitures
+  // une moto ou un scooter, et son pilote casqué
+  const moto = () => { const g = new THREE.Group(), c = new THREE.MeshStandardMaterial({ color: [0xc8102e, 0x1a1a1a, 0x2448a8, 0xe8e2d6, 0xe2b11f][Math.floor(Math.random() * 5)], roughness: .35, metalness: .3 });
+    box(g, 1.3, .32, .32, c, 0, .62, 0); box(g, .55, .12, .3, noir, -.2, .82, 0); box(g, .3, .3, .28, chrome, .1, .45, 0); box(g, .05, .5, .05, chrome, .62, .85, 0); box(g, .05, .05, .62, noir, .62, 1.1, 0); box(g, .03, .12, .14, phare, .72, .9, 0);
+    const r = []; for (const x of [.62, -.6]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .12, 14), noir); w.rotation.x = Math.PI / 2; w.position.set(x, .3, 0); g.add(w); r.push(w); }
+    const vet = new THREE.MeshStandardMaterial({ color: [0x1a1a1a, 0x3a3020, 0x2a3a5a][Math.floor(Math.random() * 3)], roughness: .7 });
+    box(g, .3, .55, .36, vet, -.15, 1.15, 0); for (const s2 of [-1, 1]) { box(g, .5, .12, .12, vet, .12, 1.25, s2 * .18); box(g, .38, .14, .14, vet, .05, .85, s2 * .16); box(g, .14, .4, .12, vet, .22, .62, s2 * .16); }
+    const cq = new THREE.Mesh(new THREE.SphereGeometry(.15, 12, 10), new THREE.MeshStandardMaterial({ color: [0xf2f2f0, 0xc8102e, 0x111111][Math.floor(Math.random() * 3)], roughness: .2, metalness: .3 })); cq.position.set(-.08, 1.55, 0); g.add(cq);
+    box(g, .06, .1, .2, vitre, .05, 1.55, 0);
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return { g, r, v: 10 + Math.random() * 3, L: 1.9 }; };
   const busVrai = () => ({ g: busCaserne(scene, "ratp", 0, 0, 0), r: [], v: 6.5, L: 11, bus: true });
   const CIT = COULEURS_90.flatMap(c => [["clio", c], ["106", c]]);
   const citadineVraie = () => { const [mo, co] = CIT[Math.floor(Math.random() * CIT.length)]; return { g: citadine(scene, mo, co, 0, 0, 0), r: [], v: 8.5 + Math.random() * 3, L: mo === "clio" ? 3.71 : 3.56 }; };
@@ -4388,7 +4397,7 @@ function circulationRue(L, scene, O) {
   L.anim = (t) => { animAvant && animAvant(t);
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
     if (t > prochain && !L.apo) { const dernier = enRoute[enRoute.length - 1];
-      if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .17 ? busVrai() : r0 < .55 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
+      if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .14 ? busVrai() : r0 < .32 ? moto() : r0 < .6 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
@@ -8595,7 +8604,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerPassants(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -12140,6 +12149,17 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
     if (pres && tm > vu0) { vu0 = tm + 9000; peindreBulle(bc, PHRASES_CLOCH[Math.floor(Math.random() * PHRASES_CLOCH.length)]); bt.needsUpdate = true; bs.visible = true; fin = tm + 3500; }
     if (bs.visible && tm > fin) bs.visible = false; };
   L.clochard = m; }
+/* le bruit de la ville (Paris, la circulation, les passants), en boucle : dès qu'on est dehors — rue du Faubourg, rue des Messageries, rue d'Hauteville ; il s'efface quand on rentre dans la caserne. L'administrateur règle son volume pour tout le monde */
+let sonRue = null;
+function animerSonRue() {
+  if (!M || !M.L) { if (sonRue) sonRue.pause(); return; } const moi = M.moiNum && M.gens.get(M.moiNum), p = moi && moi.g.position;
+  const dehors = !!p && !M.cine && !M.L.apo && !M.L.sh && (M.lieu === "rue" || (M.lieu === "grande" && typeof DH_ !== "undefined" && DH_.rue(p.x, p.z)));
+  const cible = dehors ? (M.rueVol ?? .5) : 0;
+  if (!sonRue) { if (!cible) return; sonRue = new Audio("sons/ville-paris.mp3"); sonRue.loop = true; sonRue.volume = 0; }
+  if (cible > 0 && sonRue.paused) sonRue.play().catch(() => {});
+  sonRue.volume = Math.max(0, Math.min(1, sonRue.volume + (cible - sonRue.volume) * .04));
+  if (!cible && sonRue.volume < .01 && !sonRue.paused) sonRue.pause(); }
+quitterLieu.add((id) => { if (sonRue && id !== "rue" && id !== "grande") { sonRue.pause(); sonRue.volume = 0; } });
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
@@ -14872,6 +14892,7 @@ export function lasers(on) { envoyerWS({ t: "lasers", on: !!on }); }
 export function hifiVol(niveau) { envoyerWS({ t: "hifi_vol", niveau }); }
 export function bruitFete(niveau) { envoyerWS({ t: "bruit_fete", niveau }); }
 export function musiqueVol(niveau) { envoyerWS({ t: "musique_vol", niveau }); }
+export function rueVol(niveau) { envoyerWS({ t: "rue_vol", niveau }); }
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
@@ -14913,6 +14934,7 @@ function connecter() {
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
+    else if (m.t === "rue_vol") { M.rueVol = Number.isFinite(+m.niveau) ? +m.niveau : .5; ctx.surRueVol && ctx.surRueVol(M.rueVol); }
     else if (m.t === "musique_vol") ctx.surMusVol && ctx.surMusVol(Number.isFinite(+m.niveau) ? +m.niveau : 1);
     else if (m.t === "lumiere" && m.salle === "mess") { const k = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.lumiereMess = k;
       if (M.L && baseLieu(M.lieu) === "mess") M.L.setLumiereZone ? M.L.setLumiereZone("mess", k) : M.L.setLumiere && M.L.setLumiere(k);
