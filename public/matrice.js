@@ -2425,26 +2425,57 @@ function poussette(scene) {   // une poussette des années 80 : châssis chromé
   const bonnet = new THREE.Mesh(new THREE.SphereGeometry(.08, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff })); bonnet.position.set(-.22, .84, 0); bonnet.rotation.z = .6; g.add(bonnet);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); g.userData.couv = couv; return g; }
 const PHRASES_MAMANS = ["Il a fait ses nuits, enfin !", "Doucement avec le ballon, les enfants !", "Tu as vu le prix du pain ?", "Elle est mignonne, ta petite !", "Kevin, ne tire pas les cheveux de ta sœur !", "On rentre bientôt, il va pleuvoir."];
+/* une personne en volume (corps, bras et jambes articulés, tête, yeux, cheveux) ; l'avant vers +z ; poses : debout, assis, marche, lance */
+function personne3D(o) {
+  const T = o.taille || 1.65, enf = !!o.enfant, mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: .75 }), P = mat(o.peau), H = mat(o.haut), B = mat(o.bas), S = mat(o.chaussures || "#2a1a14"), C = mat(o.ch);
+  const g = new THREE.Group(), hipY = T * (enf ? .42 : .5), cuisse = T * (enf ? .2 : .245), tibia = T * (enf ? .2 : .245), tr = T * (enf ? .26 : .3), rTete = T * (enf ? .085 : .062), larg = T * (enf ? .07 : .06);
+  const caps = (r, l, m) => { const x = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 10), m); x.position.y = -l / 2 - r * .3; return x; };
+  const bassin = new THREE.Group(); bassin.position.y = hipY; g.add(bassin);
+  const jambes = [-1, 1].map(sg => { const h = new THREE.Group(); h.position.set(sg * larg, 0, 0); bassin.add(h); h.add(caps(T * .033, cuisse * .8, o.robe ? P : B));
+    const gen = new THREE.Group(); gen.position.y = -cuisse; h.add(gen); gen.add(caps(T * .027, tibia * .8, P)); const pied = new THREE.Mesh(new THREE.BoxGeometry(T * .055, T * .035, T * .12), S); pied.position.set(0, -tibia - T * .01, T * .03); gen.add(pied); return { h, gen }; });
+  const buste = new THREE.Group(); bassin.add(buste);
+  const torse = new THREE.Mesh(new THREE.CapsuleGeometry(T * (enf ? .085 : .075), tr * .6, 4, 12), H); torse.position.y = tr * .5; torse.scale.z = .7; buste.add(torse);
+  if (o.robe) { const jupe = new THREE.Mesh(new THREE.CylinderGeometry(T * .08, T * .13, T * .2, 14, 1, true), mat(o.bas)); jupe.material.side = THREE.DoubleSide; jupe.position.y = -T * .06; jupe.scale.z = .85; buste.add(jupe); g.userData.jupe = jupe; }
+  else { const sh = new THREE.Mesh(new THREE.CylinderGeometry(T * .08, T * .085, T * .08, 12), B); sh.position.y = T * .01; sh.scale.z = .75; buste.add(sh); }
+  const bras = [-1, 1].map(sg => { const e = new THREE.Group(); e.position.set(sg * T * (enf ? .1 : .095), tr * .9, 0); buste.add(e); e.add(caps(T * .025, T * .14, H));
+    const c = new THREE.Group(); c.position.y = -T * .17; e.add(c); c.add(caps(T * .021, T * .13, P)); const m = new THREE.Mesh(new THREE.SphereGeometry(T * .025, 8, 6), P); m.position.y = -T * .16; c.add(m); return { e, c }; });
+  const cou = new THREE.Mesh(new THREE.CylinderGeometry(T * .022, T * .025, T * .05, 8), P); cou.position.y = tr + T * .02; buste.add(cou);
+  const tete = new THREE.Group(); tete.position.y = tr + T * .05 + rTete; buste.add(tete); tete.add(new THREE.Mesh(new THREE.SphereGeometry(rTete, 16, 12), P));
+  const noir = mat("#1a120c"), blanc = mat("#ffffff"); for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.SphereGeometry(rTete * .2, 8, 6), blanc); b.position.set(sg * rTete * .38, rTete * .1, rTete * .85); b.scale.z = .5; tete.add(b); const pu = new THREE.Mesh(new THREE.SphereGeometry(rTete * .11, 8, 6), noir); pu.position.set(sg * rTete * .38, rTete * .1, rTete * .95); tete.add(pu); const ore = new THREE.Mesh(new THREE.SphereGeometry(rTete * .22, 8, 6), P); ore.position.set(sg * rTete * .98, 0, 0); tete.add(ore); }
+  const nez = new THREE.Mesh(new THREE.SphereGeometry(rTete * .14, 8, 6), P); nez.position.set(0, -rTete * .12, rTete * .98); tete.add(nez);
+  const bouche = new THREE.Mesh(new THREE.TorusGeometry(rTete * .2, rTete * .045, 6, 12, Math.PI), mat(o.levres || "#a04038")); bouche.rotation.z = Math.PI; bouche.position.set(0, -rTete * .38, rTete * .9); tete.add(bouche);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(rTete * 1.08, 16, 10, 0, Math.PI * 2, 0, Math.PI * .55), C); cap.position.y = rTete * .05; cap.rotation.x = -.25; tete.add(cap);
+  if (o.coif === "long" || o.coif === "queue") { const ar = new THREE.Mesh(new THREE.BoxGeometry(rTete * 2, rTete * (o.coif === "long" ? 2.6 : 1.4), rTete * .6), C); ar.position.set(0, -rTete * (o.coif === "long" ? .7 : .1), -rTete * .75); tete.add(ar); }
+  if (o.coif === "carre") for (const sg of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(rTete * .35, rTete * 1.5, rTete * 1.4), C); m.position.set(sg * rTete * .95, -rTete * .3, -rTete * .1); tete.add(m); }
+  g.traverse(x => { if (x.isMesh) { x.castShadow = true; x.userData.perso = true; } }); g.userData.perso = true;
+  g.userData.poser = (pose, t = 0) => { const s2 = Math.sin(t / 230);
+    for (const [i, J] of jambes.entries()) { const sg = i ? 1 : -1; if (pose === "assis") { J.h.rotation.x = -Math.PI / 2 + .08; J.gen.rotation.x = Math.PI / 2 + Math.sin(t / 600 + i) * .05; } else if (pose === "marche") { J.h.rotation.x = sg * s2 * .5; J.gen.rotation.x = Math.max(0, -sg * s2) * .6; } else { J.h.rotation.x = 0; J.gen.rotation.x = 0; } }
+    for (const [i, A] of bras.entries()) { const sg = i ? 1 : -1; A.e.rotation.z = sg * .08;
+      if (pose === "assis") { A.e.rotation.x = -.5; A.c.rotation.x = -.9; if (i && o.parle) { A.e.rotation.x = -.7 - Math.abs(Math.sin(t / 300)) * .5; A.c.rotation.x = -1.4; } }
+      else if (pose === "lance") { A.e.rotation.x = -1.3; A.c.rotation.x = -.2; } else if (pose === "marche") { A.e.rotation.x = -sg * s2 * .5; A.c.rotation.x = -.25; } else { A.e.rotation.x = 0; A.c.rotation.x = -.1; } }
+    tete.rotation.y = o.parle ? Math.sin(t / 900) * .25 : 0; bouche.scale.y = o.parle && Math.floor(t / 180) % 2 ? .4 : 1; };
+  g.userData.hipY = hipY; return g; }
 function mamansBanc(L, scene) {
   const F = C3.trotFG; if (!F || !F.yT) return; const zb = (F.zB + -115.05) / 2, xb = F.x0 + .38, y = F.yT(zb), E = [];
   const sprite = (t, w, h) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.renderOrder = 2; scene.add(m); return m; };
   // les deux mamans, assises (le bassin au niveau de l'assise, 46 cm)
-  const mam = [0, 1].map(k => { const t = [0, 1].map(f => tex(toileMaman(k, f))), m = sprite(t[0], .58, 1.34); m.position.set(xb + .08, y + .46 - 1.34 * 150 / 460, zb + (k ? .48 : -.48)); return { m, t, k }; });
+  const mam = [{ peau: "#f0c9a6", ch: "#6a3a1e", haut: "#e8e2f0", bas: "#3a5a8a", coif: "carre" }, { peau: "#dcae86", ch: "#1e1410", haut: "#c8404a", bas: "#c8404a", robe: true, coif: "long" }].map((o, k) => {
+    const m = personne3D({ ...o, taille: 1.65, chaussures: "#2a1a14" }); m.rotation.y = Math.PI / 2 + (k ? -.25 : .25); m.position.set(xb + .02, y + .5 - m.userData.hipY, zb + (k ? .5 : -.5)); scene.add(m); m.userData.poser("assis"); return { m, k, o }; });
   const pou = poussette(scene); pou.position.set(xb + .9, y, zb - 1.5); pou.rotation.y = -.4;
   // les deux tout-petits et leur ballon
-  const pt = [3, 5].map((k, i) => { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), tend: tex(toileGamin(k, "face", 9)) }, h = i ? .86 : .96, m = sprite(t.face[0], .42, h); return { m, t, x: xb + 2.2, z: zb + (i ? 1.2 : -1.0) }; });
+  const pt = [{ peau: "#f6d6bc", ch: "#a5532a", haut: "#2f9fd8", bas: "#6b5a3a", chaussures: "#f4f4f2", coif: "court", taille: 1.02 }, { peau: "#e8bd95", ch: "#e2c27a", haut: "#f2a93b", bas: "#3d5a80", chaussures: "#e86a9a", coif: "queue", taille: .94 }].map((o, i) => { const m = personne3D({ ...o, enfant: true }); scene.add(m); return { m, x: xb + 2.2, z: zb + (i ? 1.2 : -1.0) }; });
   const ballon = new THREE.Mesh(new THREE.SphereGeometry(.11, 14, 10), new THREE.MeshStandardMaterial({ map: tex(toile(64, 32, (c) => { c.fillStyle = "#e8302a"; c.fillRect(0, 0, 64, 32); c.fillStyle = "#f2d22a"; c.fillRect(0, 10, 64, 6); c.fillStyle = "#fff"; c.fillRect(0, 22, 64, 4); })), roughness: .5 })); ballon.castShadow = true; scene.add(ballon);
   const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.visible = false; scene.add(bs);
   let prochain = 0, fin = 0, parle = 0;
   const tous = [...mam.map(o => o.m), pou, ...pt.map(o => o.m), ballon];
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const o of tous) o.visible = vu; if (!vu) { bs.visible = false; return; } const cam = M.camera;
     const tourne = (m, base) => { const a = Math.atan2(cam.position.x - m.position.x, cam.position.z - m.position.z); let d = Math.atan2(Math.sin(a - base), Math.cos(a - base)); m.rotation.y = base + Math.max(-1.1, Math.min(1.1, d)); };
-    for (const o of mam) { const mp = o.t[o.k === parle && Math.floor(tm / 260) % 2 ? 1 : 0]; if (o.m.material.map !== mp) { o.m.material.map = mp; o.m.material.needsUpdate = true; } tourne(o.m, Math.PI / 2); }
+    for (const o of mam) { o.o.parle = o.k === parle; o.m.userData.poser("assis", tm); }
     // le ballon : d'un petit à l'autre, en rebondissant (un aller-retour toutes les 3,6 s)
     const T = 3600, u = (tm % T) / T, aller = u < .5, v = aller ? u * 2 : (u - .5) * 2, A = pt[0], B = pt[1], [p0, p1] = aller ? [A, B] : [B, A], e = v * v * (3 - 2 * v);
     ballon.position.set(p0.x + .25 + (p1.x - p0.x) * e, y + .12 + .11 + Math.abs(Math.sin(v * Math.PI * 2)) * .35 * (1 - v * .5), p0.z + (p1.z - p0.z) * e); ballon.rotation.x += .1;
-    pt.forEach((o, i) => { const lance = (i === 0) === aller ? v < .25 : v > .8, sautille = Math.abs(Math.sin(tm / 240 + i)) * .03; o.m.position.set(o.x, y + .12 + sautille, o.z);
-      const mp = lance ? o.t.tend : o.t.face[Math.floor(tm / 300 + i) % 3]; if (o.m.material.map !== mp) { o.m.material.map = mp; o.m.material.needsUpdate = true; } tourne(o.m, -Math.PI / 2 + (i ? -.5 : .5)); });
+    pt.forEach((o, i) => { const lance = (i === 0) === aller ? v < .25 : v > .8, sautille = Math.abs(Math.sin(tm / 240 + i)) * .03, au = pt[1 - i]; o.m.position.set(o.x, y + sautille, o.z); o.m.rotation.y = Math.atan2(au.x - o.x, au.z - o.z);
+      o.m.userData.poser(lance ? "lance" : "debout", tm); });
     pou.userData.couv.position.y = .79 + Math.sin(tm / 900) * .006;   // (le bébé respire)
     if (tm > prochain) { prochain = tm + 8000 + Math.random() * 8000; parle = Math.random() < .5 ? 0 : 1; const m = mam[parle].m; peindreBulle(bc, PHRASES_MAMANS[Math.floor(Math.random() * PHRASES_MAMANS.length)]); bt.needsUpdate = true; bs.position.set(m.position.x, y + 1.6, m.position.z); bs.visible = true; fin = tm + 3500; }
     if (bs.visible && (tm > fin || Math.hypot(cam.position.x - xb, cam.position.z - zb) > 25)) { bs.visible = false; parle = -1; } };
@@ -2456,11 +2487,12 @@ function deliDelo(L, scene) {
     geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
   const bulle = (e, txt, t) => { peindreBulle(e.bc, txt); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
   const hasardDD = (l) => l[Math.floor(Math.random() * l.length)];
-  for (let k = 0; k < 10; k++) { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), dos: [0, 1, 2].map(f => tex(toileGamin(k, "dos", f))), profil: [0, 1, 2, 3].map(f => tex(toileGamin(k, "profil", f))), tend: tex(toileGamin(k, "face", 9)) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+  for (let k = 0; k < 11; k++) { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), dos: [0, 1, 2].map(f => tex(toileGamin(k, "dos", f))), profil: [0, 1, 2, 3].map(f => tex(toileGamin(k, "profil", f))), tend: tex(toileGamin(k, "face", 9)) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     m.renderOrder = 2; scene.add(m); const o = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);
     const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
     const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: true, depthWrite: false }));   // (cachée par les murs : on ne la voit plus à travers la caserne) bs.scale.set(2.2, .55, 1); bs.renderOrder = 9; bs.visible = false; scene.add(bs);
-    E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0 }); }
+    E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0, dehors: k === 10 }); }   // (le onzième : le copain qui arrive en renfort quand tout le monde est pris)
+  const renfort = E[10];
   let cand = null, prison = [], tPrec = 0, pret = false, delivreur = null;
   const permis = (x, z) => { try { return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
   /* leurs chemins : une carte à eux, à mailles d'un mètre (dix fois plus légère que celle des joueurs), et un seul calcul par image — plus d'à-coups */
@@ -2484,27 +2516,30 @@ function deliDelo(L, scene) {
     const [tx, tz] = e.chem[0], d = Math.hypot(tx - e.x, tz - e.z), st = Math.min(d, v * dt); e.vx = (tx - e.x) / d; e.vz = (tz - e.z) / d; e.x += e.vx * st; e.z += e.vz * st; e.marche = true; return true; };
   const prendre = (e, chat, t) => { e.pris = prison.length; prison.push(e); e.chem = []; chemin(e, ...posChaine(e.pris)); bulle(e, hasardDD(PHRASES_DD.touche), t); if (chat) setTimeout(() => chat.bFin < performance.now() && bulle(chat, hasardDD(PHRASES_DD.chat), performance.now()), 900);
     if (delivreur === e) delivreur = null;
-    if (prison.length >= 8) { const [a, b] = prison; setTimeout(() => { for (const q of E) if (q.role !== "souris") q.role = "souris"; a.role = "chasse"; b.role = "garde"; bulle(a, hasardDD(PHRASES_DD.change), performance.now()); reset(); }, 4000); } };
+    if (prison.length >= 8 && renfort.dehors) setTimeout(() => {   // (tout le monde est pris : un copain arrive en courant de loin, touche la main du dernier de la chaîne, et tout le monde est délivré)
+      if (!renfort.dehors || prison.length < 8) return; const bout = posChaine(prison.length - 1); let c = null; for (let i = 0; i < 40 && !c; i++) { const q = cand[Math.floor(Math.random() * cand.length)]; if (Math.hypot(q[0] - bout[0], q[1] - bout[1]) > 22) c = q; }
+      c = c || cand[0]; renfort.x = c[0]; renfort.z = c[1]; renfort.chem = []; renfort.dehors = false; renfort.part = false; renfort.pris = -1; delivreur = renfort; renfort.prochain = 0; bulle(renfort, "J'arrive !! Deli-delo !", performance.now()); }, 3000); };
   const anim = (t) => { const vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf) && !!M && M.L === L;
-    for (const e of E) e.m.visible = e.o.visible = vu && !!cand; if (!vu) { for (const e of E) e.bs.visible = false; tPrec = 0; return; }
+    for (const e of E) e.m.visible = e.o.visible = vu && !!cand && !e.dehors; if (!vu) { for (const e of E) e.bs.visible = false; tPrec = 0; return; }
     if (!cand) { cand = []; for (let x = -40; x <= 48; x += 1.5) for (let z = -140; z <= -19; z += 1.5) if (permis(x, z)) cand.push([x, z]); if (cand.length < 20) { cand = null; return; } reset(true); }
     const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t; if (!dt) return; budget = 1;
-    const chasse = E.find(e => e.role === "chasse"), garde = E.find(e => e.role === "garde"), libres = E.filter(e => e.role === "souris" && e.pris < 0);
+    const chasse = E.find(e => e.role === "chasse"), garde = E.find(e => e.role === "garde"), libres = E.filter(e => e.role === "souris" && e.pris < 0 && !e.dehors && !e.part), libresC = libres.filter(e => e !== renfort);
     // le chat chasseur : la souris libre la plus proche
-    { const c = chasse; let cible = null, bd = 1e9; for (const s of libres) { const d = Math.hypot(s.x - c.x, s.z - c.z); if (d < bd) { bd = d; cible = s; } }
+    { const c = chasse; let cible = null, bd = 1e9; for (const s of libresC) { const d = Math.hypot(s.x - c.x, s.z - c.z); if (d < bd) { bd = d; cible = s; } }
       if (cible) { if (t > c.prochain || !c.chem.length) { c.prochain = t + 1100; chemin(c, cible.x, cible.z); } avance(c, dt, 3.5); if (bd < .6) prendre(cible, c, t); } }
     // le chat gardien : il tourne près de la chaîne ; il fonce sur une souris qui approche
-    { const g = garde, bout = posChaine(Math.max(0, prison.length)); let menace = null, bd = 7; for (const s of libres) { const d = Math.hypot(s.x - bout[0], s.z - bout[1]); if (d < bd) { bd = d; menace = s; } }
+    { const g = garde, bout = posChaine(Math.max(0, prison.length)); let menace = null, bd = 7; for (const s of libresC) { const d = Math.hypot(s.x - bout[0], s.z - bout[1]); if (d < bd) { bd = d; menace = s; } }
       if (menace) { if (t > g.prochain || !g.chem.length) { g.prochain = t + 900; chemin(g, menace.x, menace.z); } avance(g, dt, 3.3); if (Math.hypot(menace.x - g.x, menace.z - g.z) < .6) { prendre(menace, g, t); setTimeout(() => bulle(g, hasardDD(PHRASES_DD.chat), performance.now()), 800); } }
       else { if (!g.chem.length || t > g.prochain) { const a = Math.random() * 6.28; const p = [bout[0] - 1.5 + Math.cos(a) * 2, bout[1] + Math.sin(a) * 2.5]; if (permis(...p)) chemin(g, ...p); g.prochain = t + 2500; } avance(g, dt, 1.4); } }
     // les souris
-    if (prison.length && !delivreur && libres.length && Math.random() < dt * .08) { delivreur = libres[Math.floor(Math.random() * libres.length)]; delivreur.prochain = 0; }
-    for (const s of E) { if (s.role !== "souris") continue;
+    if (prison.length && prison.length < 8 && !delivreur && libresC.length && Math.random() < dt * .08) { delivreur = libresC[Math.floor(Math.random() * libresC.length)]; delivreur.prochain = 0; }
+    for (const s of E) { if (s.role !== "souris" || s.dehors) continue;
+      if (s.part) { if (!s.chem.length) { s.dehors = true; s.part = false; } else avance(s, dt, 3.6); continue; }   // (le renfort repart chez lui en courant)
       if (s.pris >= 0) { const [px, pz] = posChaine(s.pris); if (Math.hypot(px - s.x, pz - s.z) > .15) { if (!s.chem.length) chemin(s, px, pz); avance(s, dt, 2.4); } else { s.x = px; s.z = pz; s.marche = false; } continue; }
       const dc = Math.hypot(chasse.x - s.x, chasse.z - s.z);
       if (s === delivreur) { const [px, pz] = posChaine(prison.length - 1 + .8); if (t > s.prochain || !s.chem.length) { chemin(s, px, pz); s.prochain = t + 900; } avance(s, dt, 3.4);
         if (prison.length && Math.hypot(px - s.x, pz - s.z) < .7) { bulle(s, hasardDD(PHRASES_DD.delivre), t); setTimeout(() => bulle(garde, hasardDD(PHRASES_DD.gardien), performance.now()), 700);
-          for (const q of prison) { q.pris = -1; q.chem = []; const c = loin(q, garde); chemin(q, ...c); } prison = []; delivreur = null; }
+          for (const q of prison) { q.pris = -1; q.chem = []; q.prochain = 0; const c = loin(q, garde); chemin(q, ...c); } prison = []; delivreur = null; if (s === renfort) { s.part = true; let c = null; for (let i = 0; i < 30 && !c; i++) { const q = cand[Math.floor(Math.random() * cand.length)]; if (Math.hypot(q[0] - s.x, q[1] - s.z) > 25) c = q; } budget++; chemin(s, ...(c || cand[0])); } }
         continue; }
       if (dc < 6 && t > s.prochain) { chemin(s, ...loin(s, chasse)); s.prochain = t + 1200; if (Math.random() < .15 && s.bFin < t) bulle(s, hasardDD(PHRASES_DD.nargue), t); }
       else if (!s.chem.length && t > s.prochain) { chemin(s, ...loin(s, null)); s.prochain = t + 1500 + Math.random() * 3000; }
@@ -2520,7 +2555,8 @@ function deliDelo(L, scene) {
       if (e.m.material.map !== map) { e.m.material.map = map; e.m.material.needsUpdate = true; } e.m.scale.x = flip; e.marche = false;
       e.m.rotation.y = Math.atan2(cx, cz);
       e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && (t > e.bFin || cd > 25)) e.bs.visible = false; } };
-  L.deliDelo = E; const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); anim(t); }; }
+  L.deliDelo = E; L.deliDeloTout = () => { for (const e of E) if (e.role === "souris" && e.pris < 0 && !e.dehors) prendre(e, null, performance.now()); };   // (pour essayer : tout le monde pris)
+  const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); anim(t); }; }
 function enfantsRollers(L, scene) {
   const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, yT = C3.hp + C3.NT * C3.HT2, cz = (zt0 + zt1) / 2;
   const RX = C3.LT / 2 - 2.2, RZ = (zt0 - zt1) / 2 - 1.6, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), enf = [];
@@ -2552,6 +2588,7 @@ function ruesDehors(A, L, scene) { const n0R = scene.children.length; try { rues
   // les immeubles des rues : posés à plat dans la scène (leurs pièces se fusionnent avec le décor : bien moins d'appels de dessin, la rue est plus fluide)
   for (const g of scene.children.slice(n0R)) if (g.isGroup && g.userData.nuit && !g.userData.perso) { g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g); } } }
 function ruesDehors0(A, L, scene) {
+  DH_.voit = [];   // (les obstacles des rues : refaits à chaque construction)
   const T = textures(), { Y0, XE, ZN, C, XR, XF, XO, ZR, ZF, ZO, XW, XEst, ZS, Z7 } = DH_, P0 = L.porcheHorloge; if (!P0) return;
   graine = 302; L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || [];
   const { ga, gp, yb } = P0, A0 = A, AG = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
@@ -2656,7 +2693,7 @@ function ruesDehors0(A, L, scene) {
   const dessus = A.mat({ map: tex(T.trottoir, .5, .5), roughness: .92 }), bord = A.mat({ map: tex(T.granit, .5, .5), roughness: .85 });
   const dalle = (pts) => { const s = new THREE.Shape(); pts.forEach(([x, z], k) => k ? s.lineTo(x, -z) : s.moveTo(x, -z)); s.closePath();
     const o = A.ajoute(new THREE.ExtrudeGeometry(s, { depth: .12, bevelEnabled: false }), [dessus, bord], 0, Y0, 0, false); o.rotation.x = -Math.PI / 2; o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); };
-  dalle([[XW, ZN], [xN0, ZN], [XE, zE0], [XE, ZS], [XR, ZS], [XR, ZR], [XW, ZR]]);              // le trottoir de la caserne, qui tourne l'angle
+  dalle([[XW, ZN], [xN0 - .35, ZN], [XE, zE0 + .35], [XE, ZS], [XR, ZS], [XR, ZR], [XW, ZR]]);   // (jusque sous la façade du pan coupé : plus de jour au pied du mur)              // le trottoir de la caserne, qui tourne l'angle
   { const RC = 2.5, arc = []; for (let k = 0; k <= 8; k++) { const a = Math.PI + k / 8 * Math.PI / 2; arc.push([XF + RC + Math.cos(a) * RC, ZR + RC + Math.sin(a) * RC]); }   // (l'angle du trottoir, arrondi ; puis il se resserre en douceur, d'après la photo)
     dalle([...arc, [52, ZR], [56, DH_.ZR2], [XEst, DH_.ZR2], [XEst, ZN], [XO, ZN], [XO, ZS], [XF, ZS]]); plat(XF, XF + RC, ZR, ZR + RC); }   // celui d'en face, rue des Messageries (et, après le carrefour, plus étroit)
   plat(XO + 3, XEst, ZR, DH_.ZR2);
@@ -2715,12 +2752,17 @@ function ruesDehors0(A, L, scene) {
     const bitS = A.mat({ map: tex(T.bitume, 1, 1), color: 0x6f6f74 }), troS = A.mat({ map: tex(T.trottoir, 1, 1), roughness: .92 }), bordM = A.mat({ map: tex(T.granit, 1, 1), roughness: .85, side: THREE.DoubleSide });
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
+  // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
+  { const tr = A.ajoute(new THREE.PlaneGeometry(6.4, 4.6), new THREE.MeshBasicMaterial({ color: 0x0c0c0e }), XW + .06, Y0 + 2.3, (ZR + ZF) / 2, false); tr.rotation.y = Math.PI / 2;
+    A.ajoute(new THREE.BoxGeometry(.3, .5, 7), A.mat({ color: 0xd2cbbd }), XW + .1, Y0 + 4.75, (ZR + ZF) / 2, false);
+    circulationRue(L, scene, { x0: XEst - .6, x1: XW + 1.5, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
+  clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
   // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
   { const VOM = []; let n = 0;
     for (const [xv, rot] of [[XR + .95, Math.PI / 2], [XF - .95, -Math.PI / 2]]) for (let z = -132; z < 24; z += 4.7) { if (Math.random() < .18 || (z > -50 && z < -40)) continue;
       const mo = n % 2 ? "106" : "clio", g = citadine(scene, mo, COULEURS_90[(n * 5 + 3) % COULEURS_90.length], xv, z, rot); n++; g.position.y = DH_.y(z); g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : fusionnées avec le décor, bien plus léger)
       VOM.push([xv - .9, xv + .9, z - 1.95, z + 1.95]); }
-    DH_.voit = VOM; L.voituresMess = VOM; }
+    DH_.voit = (DH_.voit || []).concat(VOM); L.voituresMess = VOM; }
   // au bout, d'un seul tenant, la rue du Faubourg (le même passage que sous le porche, décalé de 41,35 m)
   L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && x > DH_.XE2 && x < XO && z > DH_.ZP, vers: "rue", continu: [0, -41.35, 0], centre: [(XE + XO) / 2, DH_.ZP + .5], messageries: true });
   /* --- les candélabres --- */
@@ -4173,7 +4215,8 @@ function deuxiemeCour(A, L, scene) {
 }
 /* la circulation de la rue du Faubourg-Poissonnière (sens unique) : des voitures des années 80-90 (couleurs au hasard)
    et, plus rarement, le bus parisien de l'époque (vert jade et blanc) ; jamais en continu, de temps en temps */
-function circulation(L, scene) {
+function circulation(L, scene) { circulationRue(L, scene, { x0: -72, x1: 75, z: .55, y: 0, sens: 1 }); }
+function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
   const phare = new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), feu = new THREE.MeshBasicMaterial({ color: 0xc8102e }), chrome = new THREE.MeshStandardMaterial({ color: 0xd8dadd, metalness: .8, roughness: .25 });
@@ -4214,18 +4257,18 @@ function circulation(L, scene) {
   L.anim = (t) => { animAvant && animAvant(t);
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
     if (t > prochain && !L.apo) { const dernier = enRoute[enRoute.length - 1];
-      if (!dernier || dernier.g.position.x > -60 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .17 ? busVrai() : r0 < .55 ? citadineVraie() : voiture(); v.g.position.set(-72, 0, .55); scene.add(v.g); enRoute.push(v);
+      if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .17 ? busVrai() : r0 < .55 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
       // la vitesse voulue : on freine et on s'arrête devant quelqu'un sur la chaussée (≈ 1 m avant), et derrière le véhicule qui précède (pas de dépassement) ; on repart quand c'est libre
-      let cible = v.v; const nez = v.g.position.x + v.L / 2, demi = (v.bus ? 1.25 : .81) + .45;
-      if (M && M.gens) for (const p of M.gens.values()) { if (!p.g || !p.g.visible) continue; const q = p.g.position; if (Math.abs(q.z - .55) > demi) continue;
-        const d = q.x - nez; if (d > -.5 && d < 9) cible = Math.min(cible, Math.max(0, (d - 1.1) * 1.8)); }
-      if (dev) { const ecart = dev.g.position.x - dev.L / 2 - nez; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
+      let cible = v.v; const nez = v.g.position.x + O.sens * v.L / 2, demi = (v.bus ? 1.25 : .81) + .45;
+      if (M && M.gens && M.L === L) for (const p of M.gens.values()) { if (!p.g || !p.g.visible) continue; const q = p.g.position; if (Math.abs(q.z - O.z) > demi) continue;
+        const d = (q.x - nez) * O.sens; if (d > -.5 && d < 9) cible = Math.min(cible, Math.max(0, (d - 1.1) * 1.8)); }
+      if (dev) { const ecart = (dev.g.position.x - O.sens * dev.L / 2 - nez) * O.sens; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
       v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); const vit = v.cur;
-      v.g.position.x += vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
-      if (v.g.position.x > 75) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (m && m.map) m.map.dispose(); } }); enRoute.splice(i, 1); } }
+      v.g.position.x += O.sens * vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
+      if ((v.g.position.x - O.x1) * O.sens > 0) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (m && m.map) m.map.dispose(); } }); enRoute.splice(i, 1); } }
   };
 }
 /* ===================== les cabines téléphoniques qui voyagent dans le temps =====================
@@ -8420,7 +8463,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerPassants(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -9187,7 +9230,7 @@ function ouvrirGPS() { if (!M || M.cadranEl || M.cine) return;
   bloc(0, 864, 1280, 64, `background:linear-gradient(180deg,#8e9e8b,#4b574a);border-top:${u(3)} solid #c9d6c6`); bloc(468, 870, 812, 26, `border:${u(3)} solid #c9d6c6;background:#3f4b3e`);
   // les objets qu'on porte
   const objets = [{ k: "pistolet", nom: M.mitra ? "Mitraillette" : "Pistolet", n: "∞" }, ...(M.pompe ? [{ k: "pompe", nom: "Fusil à pompe", n: "∞" }] : []), ...(M.c4 && !M.c4Pose ? [{ k: "c4", nom: "C4 et son détonateur", n: "" }] : [])];
-  const arme = pompeEnMain() ? objets[1] : objets[0], img = (k, css) => `<img src="images/re/inv-${k}.${k === "pistolet" ? "webp" : "svg"}?v=2" alt="" style="max-width:${css};max-height:${css};object-fit:contain;filter:drop-shadow(0 ${u(3)} ${u(3)} rgba(0,0,0,.6))">`, chiffre = n => n ? `<b style="position:absolute;left:${u(14)};bottom:${u(6)};color:#4dff4d;font:${u(40)} 'Courier New',monospace;font-weight:700">${n}</b>` : "";
+  const arme = pompeEnMain() ? objets[1] : objets[0], img = (k, css) => `<img src="images/re/inv-${k}.${k === "pistolet" ? "webp" : "svg"}?v=2" alt="" style="position:absolute;left:calc((100% - ${css}) / 2);top:calc((100% - ${css}) / 2);width:${css};height:${css};object-fit:contain;filter:drop-shadow(0 ${u(3)} ${u(3)} rgba(0,0,0,.6))">`, chiffre = n => n ? `<b style="position:absolute;left:${u(14)};bottom:${u(6)};color:#4dff4d;font:${u(40)} 'Courier New',monospace;font-weight:700">${n}</b>` : "";
   equip.innerHTML = img(arme.k, "86%") + chiffre(arme.n);
   const cases = []; objets.forEach((o, i) => { const c = document.createElement("div"); c.style.cssText = `position:absolute;left:${u(16 + (i % 2) * 160)};top:${u(14 + Math.floor(i / 2) * 124)};width:${u(158)};height:${u(118)};display:grid;place-items:center;cursor:pointer;border:${u(3)} solid transparent`; c.innerHTML = img(o.k, "90%") + chiffre(o.n); c.voir = () => voirObjet(o, c); c.onclick = () => { voirObjet(o, c); if (o.k === "pistolet" || o.k === "pompe") { M.armeChoisie = o.k; equip.innerHTML = img(o.k, "86%") + chiffre(o.n); nom.textContent = o.nom + " — équipé"; sonBruit(.07, 1800, .45); majHudApo(); } }; inv.appendChild(c); cases.push(c); });   /* (toucher une arme : on la prend en main) */
   // le grand écran : la carte
@@ -11791,6 +11834,84 @@ function animerPromeneur(t) {
   D.position.x += (xc - D.position.x) * Math.min(1, dt * 4); D.position.z += (zc - D.position.z) * Math.min(1, dt * 4); D.position.y = L.hauteur ? L.hauteur(D.position.x, D.position.z) : 0; D.rotation.y = S.sens > 0 ? -Math.PI / 2 : Math.PI / 2;
   D.userData.anim(t, marche, acc);
   const pos = L.laisseProm.geometry.attributes.position; pos.setXYZ(0, g.x - .25, g.y + 1.0, g.z + S.sens * .1); pos.setXYZ(1, D.position.x, D.position.y + .42, D.position.z - S.sens * .2); pos.needsUpdate = true; }
+/* --- les passants des rues (le jour) : des mamans qui poussent leur poussette, un monsieur en costume qui tire sa valise, un promeneur ;
+   chacun va et vient sur son trottoir, d'un bout à l'autre ; des bonshommes du jeu, avec une tête dessinée --- */
+const TETES_PASSANTS = {};
+function tetePassant(cle, o) { return TETES_PASSANTS[cle] || (TETES_PASSANTS[cle] = toile(224, 248, (x) => { const P = o.peau;
+  if (o.coif === "long") { x.fillStyle = o.ch; x.beginPath(); x.ellipse(112, 150, 92, 100, 0, 0, 7); x.fill(); }
+  x.fillStyle = P; x.beginPath(); x.ellipse(112, 136, 76, 94, 0, 0, 7); x.fill(); for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(112 + sg * 76, 140, 14, 24, 0, 0, 7); x.fill(); }
+  x.fillStyle = o.ch; if (o.coif !== "chauve") { x.beginPath(); x.ellipse(112, 84, 84, 50, 0, Math.PI, 0); x.fill(); x.fillRect(28, 80, 168, o.coif === "court" ? 14 : 26); }
+  if (o.coif === "carre") { x.fillRect(28, 80, 30, 120); x.fillRect(166, 80, 30, 120); }
+  if (o.coif === "long") { x.fillRect(30, 80, 26, 150); x.fillRect(168, 80, 26, 150); }
+  if (o.coif === "chauve") { x.fillStyle = o.ch; x.fillRect(32, 110, 20, 60); x.fillRect(172, 110, 20, 60); }
+  x.fillStyle = "#fff"; for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(112 + sg * 30, 132, 13, 10, 0, 0, 7); x.fill(); } x.fillStyle = o.yeux || "#3a2a1e"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(112 + sg * 30, 133, 7, 0, 7); x.fill(); }
+  x.strokeStyle = o.sourcils || "#4a3020"; x.lineWidth = 6; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(112 + sg * 14, 114); x.lineTo(112 + sg * 46, 110); x.stroke(); }
+  if (o.lunettes) { x.strokeStyle = "#222"; x.lineWidth = 4; for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(112 + sg * 30, 132, 22, 17, 0, 0, 7); x.stroke(); } x.beginPath(); x.moveTo(104, 132); x.lineTo(120, 132); x.stroke(); }
+  x.fillStyle = assombrir(P, .9); x.beginPath(); x.moveTo(112, 136); x.lineTo(124, 172); x.lineTo(100, 172); x.fill();
+  if (o.moustache) { x.fillStyle = o.ch; x.beginPath(); x.ellipse(112, 186, 34, 10, 0, 0, 7); x.fill(); }
+  x.strokeStyle = o.levres || "#9a4038"; x.lineWidth = o.femme ? 7 : 4; x.beginPath(); x.arc(112, 192, 18, .35, Math.PI - .35); x.stroke();
+  if (o.femme) { x.fillStyle = "rgba(230,110,110,.3)"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(112 + sg * 46, 168, 14, 0, 7); x.fill(); } x.fillStyle = "#e8c64a"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(112 + sg * 78, 168, 6, 0, 7); x.fill(); } } }).toDataURL()); }
+function valise(scene) {   // une valise à roulettes, sa poignée tirée
+  const g = new THREE.Group(), c = new THREE.MeshStandardMaterial({ color: 0x3a2a4e, roughness: .5 }), n = new THREE.MeshStandardMaterial({ color: 0x151515 });
+  const b = new THREE.Mesh(new THREE.BoxGeometry(.24, .62, .42), c); b.position.y = .38; g.add(b); for (const z of [-.15, .15]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .03, 10), n); r.rotation.x = Math.PI / 2; r.position.set(-.1, .04, z); g.add(r); }
+  for (const z of [-.12, .12]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .45, 6), n); t.position.set(.08, .9, z); g.add(t); } const p = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .28), n); p.position.set(.08, 1.12, 0); g.add(p);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
+const PASSANTS = [
+  { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -154.2, 72, -154.2] },
+  { num: -90, nom: "Un monsieur pressé", tenue: "costume", couleur: "#4a4e56", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["costume", { peau: "#efc7a4", ch: "#3a2a1e", coif: "court", lunettes: true }], acc: "valise", trajet: [-36, -143.5, 27, -143.5] },
+  { num: -91, nom: "Une maman", tenue: "jupe", couleur: "#2f6fae", bas: "#2a2a30", pieds: "#5a2a1a", tete: ["mamanB", { peau: "#d9a882", ch: "#1e1410", coif: "carre", femme: true }], acc: "poussette", trajet: [39.4, -128, 39.4, -50] },
+  { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -155, -50, -155] }];
+function animerPassants(t) {
+  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert && !L.nuit;
+  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {});
+    if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
+    const [x0, z0, x1, z1] = P.trajet;
+    if (!p) { const k = (P.num * 7 + 3) % 10 / 10; ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); continue; }
+    const S = p.pass || (p.pass = { sens: (P.num & 1) ? 1 : -1, pause: 0 }), g = p.g.position;
+    if (!p.cible && t > S.pause) { const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0]; if (Math.hypot(tx - g.x, tz - g.z) < .8) { S.sens = -S.sens; S.pause = t + 1500; } else viser(p, tx, tz); }
+    // l'accessoire : la poussette devant soi, la valise qui roule derrière
+    if (P.acc && (!A[P.num] || A[P.num].parent !== M.scene)) A[P.num] = P.acc === "poussette" ? poussette(M.scene) : valise(M.scene);
+    const o = A[P.num]; if (!o) continue; o.visible = true; const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0], d = Math.hypot(tx - x0 - (S.sens > 0 ? 0 : x1 - x0), 1), dx = Math.sign(S.sens) * Math.sign((x1 - x0) || 0), dz = Math.sign(S.sens) * Math.sign((z1 - z0) || 0);
+    const av = P.acc === "poussette" ? .95 : -.55, lat = P.acc === "poussette" ? 0 : .3, ox = g.x + dx * av - dz * lat, oz = g.z + dz * av + dx * lat;
+    o.position.set(ox, L.hauteur ? L.hauteur(ox, oz) : g.y, oz); o.rotation.y = Math.atan2(-dz, dx) + (P.acc === "poussette" ? Math.PI : 0); } }
+/* --- le clochard : assis sur son carton contre le mur de la caserne, rue d'Hauteville ; dreadlocks, barbe, vieux manteau ; un gobelet pour les pièces --- */
+function toileClochard(f) {
+  return toile(220, 300, (x) => { x.lineCap = "round"; x.lineJoin = "round"; const P = "#c89a76", man = "#5a5a3a", jean = "#3a4048", trait = (pts, c, l) => { x.strokeStyle = c; x.lineWidth = l; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
+    // les genoux relevés, les vieilles baskets
+    for (const sg of [-1, 1]) { trait([[110 + sg * 22, 250], [110 + sg * 30, 190], [110 + sg * 36, 270]], jean, 30); x.fillStyle = "#4a4038"; x.beginPath(); x.ellipse(110 + sg * 38, 284, 20, 11, 0, 0, 7); x.fill(); }
+    x.fillStyle = "rgba(120,100,70,.5)"; x.beginPath(); x.ellipse(80, 220, 9, 6, 0, 0, 7); x.fill();
+    // le manteau, sale et rapiécé
+    x.fillStyle = man; x.beginPath(); x.moveTo(62, 120); x.lineTo(158, 120); x.lineTo(172, 262); x.lineTo(48, 262); x.closePath(); x.fill();
+    x.fillStyle = "rgba(40,30,20,.35)"; for (const [a, b, r] of [[80, 160, 10], [140, 200, 14], [96, 236, 9], [150, 150, 7]]) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); }
+    x.fillStyle = "#8a6a3a"; x.fillRect(128, 176, 24, 20); x.strokeStyle = "#2a2018"; x.lineWidth = 1.5; x.strokeRect(128, 176, 24, 20);   // (une pièce cousue)
+    // les bras sur les genoux, une main tendue (f : elle s'avance)
+    trait([[70, 132], [76, 196], [96, 194]], man, 22); trait([[150, 132], [150 + (f ? 18 : 6), 196], [132 + (f ? 30 : 0), 202 - (f ? 8 : 0)]], man, 22);
+    x.fillStyle = P; x.beginPath(); x.arc(98, 194, 9, 0, 7); x.fill(); x.beginPath(); x.arc(134 + (f ? 30 : 0), 200 - (f ? 8 : 0), 9, 0, 7); x.fill();
+    // la tête, la barbe, les dreadlocks
+    x.fillStyle = "#3e2a1a"; for (let k = 0; k < 14; k++) { const a = Math.PI * (.9 + k / 13 * 1.2); trait([[110 + Math.cos(a) * 24, 62 + Math.sin(a) * 26], [110 + Math.cos(a) * 34 + (k % 2 ? 4 : -4), 62 + Math.sin(a) * 18 + 70 + (k % 3) * 8]], k % 2 ? "#3e2a1a" : "#5a3e26", 9); }
+    x.fillStyle = P; x.beginPath(); x.ellipse(110, 64, 27, 32, 0, 0, 7); x.fill();
+    x.fillStyle = "#3e2a1a"; x.beginPath(); x.ellipse(110, 44, 30, 20, 0, Math.PI, 0); x.fill();
+    x.fillStyle = "#4a3624"; x.beginPath(); x.moveTo(84, 70); x.quadraticCurveTo(110, 130, 136, 70); x.lineTo(130, 78); x.quadraticCurveTo(110, 96, 90, 78); x.fill();   // (la barbe)
+    x.fillStyle = "#2a1a12"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(110 + sg * 10, 60, 3, 0, 7); x.fill(); } x.strokeStyle = "#5a3a2a"; x.lineWidth = 3; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(110 + sg * 4, 52); x.lineTo(110 + sg * 16, 54); x.stroke(); }
+    x.fillStyle = "#c83030"; x.fillRect(82, 32, 56, 8); }); }   // (un vieux bandeau rouge dans les cheveux)
+const PHRASES_CLOCH = ["Une petite pièce, s'il vous plaît…", "Merci, que Dieu vous bénisse !", "Bonne journée quand même…", "Un ticket resto, monsieur ?", "Il fait froid cette nuit…"];
+function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tourné vers la rue (-z)
+  const Y = DH_.Y0 + .12, carton = new THREE.Mesh(new THREE.BoxGeometry(1.1, .03, 1.0), new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#b08a5a"; c.fillRect(0, 0, 64, 64); c.strokeStyle = "rgba(90,60,30,.5)"; for (let k = 0; k < 8; k++) { c.beginPath(); c.moveTo(0, k * 8); c.lineTo(64, k * 8 + 2); c.stroke(); } c.fillStyle = "rgba(60,40,20,.4)"; c.fillRect(30, 20, 18, 14); })), roughness: 1 }));
+  carton.position.set(x, Y + .015, z - .55); scene.add(carton);
+  const t = [0, 1].map(f => tex(toileClochard(f))), m = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.2).translate(0, .6, 0), new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.renderOrder = 2; m.position.set(x, Y + .03, z - .4); scene.add(m);
+  const gob = new THREE.Group(), gm = new THREE.Mesh(new THREE.CylinderGeometry(.05, .04, .11, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xf2efe6, side: THREE.DoubleSide })); gm.position.y = .055; gob.add(gm);
+  for (let k = 0; k < 3; k++) { const pc = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .004, 10), new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: .8, roughness: .3 })); pc.position.set(-.01 + k * .01, .02 + k * .004, .005 * k); gob.add(pc); }
+  gob.position.set(x + .3, Y + .03, z - 1.0); scene.add(gob);
+  const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, Y + 1.5, z - .4); bs.visible = false; scene.add(bs);
+  (DH_.voit = DH_.voit || []).push([x - .6, x + .6, z - 1.1, z]);   // (on ne lui marche pas dessus)
+  let fin = 0, vu0 = 0;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; return; } const cam = M.camera;
+    const a = Math.atan2(cam.position.x - x, cam.position.z - m.position.z); let d = Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI)); m.rotation.y = Math.PI + Math.max(-1, Math.min(1, d));
+    const moi = M.moiNum && M.gens.get(M.moiNum), pres = moi && Math.hypot(moi.g.position.x - x, moi.g.position.z - z) < 4;
+    const mp = t[pres && Math.floor(tm / 700) % 2 ? 1 : 0]; if (m.material.map !== mp) { m.material.map = mp; m.material.needsUpdate = true; }
+    if (pres && tm > vu0) { vu0 = tm + 9000; peindreBulle(bc, PHRASES_CLOCH[Math.floor(Math.random() * PHRASES_CLOCH.length)]); bt.needsUpdate = true; bs.visible = true; fin = tm + 3500; }
+    if (bs.visible && tm > fin) bs.visible = false; };
+  L.clochard = m; }
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
