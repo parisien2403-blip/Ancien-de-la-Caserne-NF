@@ -4565,6 +4565,70 @@ function hwFin() {
   if (M.scene && M.scene.fog === H.fog) { M.scene.fog = H.fog0 || null; if (H.bg0) M.scene.background = H.bg0; } for (const v of H.voiles || []) v.remove();
   if (HW.son) HW.son.pause(); majAmbiance(); if (M.L && M.L.masqueHW) M.L.masqueHW.visible = true; }
 setTimeout(() => quitterLieu.add(() => { if (M && M.halloween) hwFin(); }), 0);   /* (après le chargement : quitterLieu est déclaré plus loin) */
+/* ---------- les gens de la soirée, dans la salle des fêtes (le soir seulement) : chacun unique ---------- */
+const GENS_FETE = [
+ // danseurs
+ { r: "danse", f: false, o: { taille: 1.8, peau: "#e8bd95", ch: "#2a1a12", haut: "#e8e2d6", bas: "#1d2a44", chaussures: "#1a1a1a", coif: "court", pantalon: true }, pose: "d1" },
+ { r: "danse", f: true, o: { taille: 1.66, peau: "#f2cfb0", ch: "#c8a050", haut: "#c8102e", bas: "#c8102e", chaussures: "#c8102e", coif: "long", robe: true, levres: "#c8102e" }, pose: "d2" },
+ { r: "danse", f: false, o: { taille: 1.76, peau: "#8d5a3b", ch: "#120c0a", haut: "#f2c94c", bas: "#2a2a30", chaussures: "#f2f2f2", coif: "chauve", pantalon: true }, pose: "d3" },
+ { r: "danse", f: true, o: { taille: 1.62, peau: "#d9a882", ch: "#141010", haut: "#2f8a6a", bas: "#14181c", chaussures: "#14181c", coif: "carre", pantalon: true, levres: "#b0306a" }, pose: "d4" },
+ { r: "danse", f: false, o: { taille: 1.72, peau: "#f0c9a6", ch: "#a5532a", haut: "#3a5aa8", bas: "#c8b48a", chaussures: "#5a3a22", coif: "court", pantalon: true }, pose: "d5" },
+ { r: "danse", f: true, o: { taille: 1.7, peau: "#c78f62", ch: "#2a1a12", haut: "#e86a9a", bas: "#e8e2d6", chaussures: "#e8e2d6", coif: "queue", robe: true, levres: "#d84a6a" }, pose: "d6" },
+ // ils parlent, un verre à la main
+ { r: "parle", f: false, o: { taille: 1.78, peau: "#efc7a4", ch: "#5a5a5a", haut: "#4a4e56", bas: "#3a3e46", chaussures: "#1a1a1a", coif: "court", pantalon: true, parle: true }, pose: "p1", verre: "biere" },
+ { r: "parle", f: true, o: { taille: 1.64, peau: "#f6d6bc", ch: "#6a3a1e", haut: "#7a4a8a", bas: "#2a2a30", chaussures: "#2a1a14", coif: "long", pantalon: true }, pose: "p2", verre: "vin" },
+ { r: "parle", f: true, o: { taille: 1.68, peau: "#8d5a3b", ch: "#141010", haut: "#f2f0ea", bas: "#c8404a", chaussures: "#c8404a", coif: "carre", robe: true, levres: "#a02030" }, pose: "p1", verre: "cocktail" },
+ { r: "parle", f: false, o: { taille: 1.74, peau: "#c78f62", ch: "#1e1410", haut: "#2e7a4a", bas: "#26324e", chaussures: "#2a1a12", coif: "court", pantalon: true, parle: true }, pose: "p2", verre: "biere" },
+ // au bar, assis sur les tabourets
+ { r: "bar", f: false, o: { taille: 1.75, peau: "#e8bd95", ch: "#e2c27a", haut: "#8a2a2a", bas: "#2a3040", chaussures: "#1a1a1a", coif: "court", pantalon: true, parle: true }, pose: "assis", verre: "biere" },
+ { r: "bar", f: true, o: { taille: 1.63, peau: "#f0c9a6", ch: "#a5532a", haut: "#1f3a6a", bas: "#14181c", chaussures: "#14181c", coif: "long", robe: true, levres: "#c8102e" }, pose: "assis", verre: "vin" },
+ { r: "bar", f: false, o: { taille: 1.8, peau: "#d9a882", ch: "#141010", haut: "#f2f2f2", bas: "#3a3a40", chaussures: "#2a1a14", coif: "chauve", pantalon: true }, pose: "assis", verre: "whisky" } ];
+function verreFete(type) { const g = new THREE.Group(), vitre = new THREE.MeshStandardMaterial({ color: 0xdfe8ee, transparent: true, opacity: .45, roughness: .05 });
+  const liq = { biere: 0xe3a92c, vin: 0x6a0a1e, cocktail: 0xe86a3a, whisky: 0xb8762a }[type];
+  if (type === "vin" || type === "cocktail") { const pied = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .08, 6), vitre); pied.position.y = .04; g.add(pied); const coupe = new THREE.Mesh(new THREE.CylinderGeometry(type === "cocktail" ? .05 : .035, .01, .07, 12), vitre); coupe.position.y = .115; g.add(coupe); const l = new THREE.Mesh(new THREE.CylinderGeometry(type === "cocktail" ? .04 : .03, .01, .045, 12), new THREE.MeshStandardMaterial({ color: liq })); l.position.y = .105; g.add(l); }
+  else { const hh = type === "whisky" ? .07 : .13, v = new THREE.Mesh(new THREE.CylinderGeometry(.032, .028, hh, 12), vitre); v.position.y = hh / 2; g.add(v); const l = new THREE.Mesh(new THREE.CylinderGeometry(.029, .026, hh * .75, 12), new THREE.MeshStandardMaterial({ color: liq })); l.position.y = hh * .38; g.add(l); if (type === "biere") { const m = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .02, 12), new THREE.MeshStandardMaterial({ color: 0xf8f4e8 })); m.position.y = hh * .8; g.add(m); } }
+  return g; }
+function poserFete(m, pose, t) { const P = m.userData.parts, J = P.jambes, B = P.bras; const s = Math.sin(t), c = Math.cos(t);
+  if (pose === "assis") { m.userData.poser("assis", t * 1000); return; }
+  m.userData.poser("debout", t * 1000);
+  if (pose === "d1") { B[0].e.rotation.set(-2.6, 0, -.3); B[0].c.rotation.x = -.3; B[1].e.rotation.set(-.4, 0, .3); B[1].c.rotation.x = -1.2; J[0].h.rotation.x = -.35; J[0].gen.rotation.x = .5; P.buste.rotation.z = .12; P.tete.rotation.z = -.15; }   // (le bras levé, disco)
+  if (pose === "d2") { B[0].e.rotation.set(-1.8, 0, -.9); B[1].e.rotation.set(-1.8, 0, .9); B[0].c.rotation.x = -.6; B[1].c.rotation.x = -.6; J[1].h.rotation.x = -.25; J[1].gen.rotation.x = .4; P.bassin.rotation.y = .3; P.buste.rotation.y = -.25; }   // (les deux bras en l'air)
+  if (pose === "d3") { B[0].e.rotation.set(-.9, 0, -.5); B[0].c.rotation.x = -1.4; B[1].e.rotation.set(-.9, 0, .5); B[1].c.rotation.x = -1.4; J[0].h.rotation.x = .3; J[1].h.rotation.x = -.3; J[1].gen.rotation.x = .6; P.buste.rotation.x = .15; }   // (les poings serrés, il balance)
+  if (pose === "d4") { B[0].e.rotation.set(-.3, 0, -1.2); B[0].c.rotation.x = -.3; B[1].e.rotation.set(-2.9, 0, .1); B[1].c.rotation.x = -.2; J[0].h.rotation.z = -.25; P.bassin.rotation.z = .12; P.tete.rotation.y = .4; }   // (un doigt pointé au ciel)
+  if (pose === "d5") { B[0].e.rotation.set(-1.2, 0, -.2); B[0].c.rotation.x = -1.6; B[1].e.rotation.set(.3, 0, .6); B[1].c.rotation.x = -.5; J[0].h.rotation.x = -.6; J[0].gen.rotation.x = .9; P.buste.rotation.z = -.15; }   // (il tourne, la jambe levée)
+  if (pose === "d6") { B[0].e.rotation.set(-1.4, 0, -1.3); B[0].c.rotation.x = -.4; B[1].e.rotation.set(-1.4, 0, 1.3); B[1].c.rotation.x = -.4; J[1].h.rotation.z = .3; P.bassin.rotation.y = -.4; P.tete.rotation.z = .2; }   // (les bras ouverts)
+  if (pose === "p1") { B[1].e.rotation.set(-.6, 0, .15); B[1].c.rotation.x = -1.5; B[0].e.rotation.set(-.3, 0, -.1); B[0].c.rotation.x = -.8; P.tete.rotation.y = .3; }   // (le verre à hauteur de poitrine ; l'autre main qui parle)
+  if (pose === "p2") { B[1].e.rotation.set(-.4, 0, .1); B[1].c.rotation.x = -1.3; P.tete.rotation.y = -.3; P.buste.rotation.y = .1; }
+}
+
+const DANSE_PLACES = [[-1.6, 5.2], [1.4, 5.6], [-.8, 7.9], [1.2, 8.3], [-2.5, 6.9], [.2, 4.3]], THRILLER_PLACES = [[-4.6, 4.0], [-4.6, 5.3], [-4.6, 6.6], [-4.6, 7.9], [-4.6, 9.2], [-3.4, 3.4]];   /* (sur Thriller : le long du mur, la piste laissée au danseur zombie et à sa troupe) */
+const PARLE_PLACES = [[-4.3, 10.4, 1.0], [-3.55, 10.9, -2.2], [1.5, 2.4, .9], [2.1, 2.9, -2.3]];
+function gensFete(L, scene) {
+  const tous = [], gens = []; let id = 0, ip = 0, ib = 0; const T = L.tabourets || [], nS = L.nbTabouretsSalle || T.length; L.tabPNJ = new Set();
+  for (const G of GENS_FETE) { const m = personne3D(G.o); scene.add(m); tous.push(m); const E = { G, m, k: id + ip + ib };
+    if (G.r === "danse") { const [x, z] = DANSE_PLACES[id]; Object.assign(E, { i: id++, x, z }); }
+    else if (G.r === "parle") { const [x, z, ry] = PARLE_PLACES[ip++]; Object.assign(E, { x, z, ry }); }
+    else { const k = nS - 1 - ib++, [x, z] = T[k]; L.tabPNJ.add(k); Object.assign(E, { x, z, ry: Math.PI / 2, assis: true }); }
+    if (G.verre) { const v = verreFete(G.verre), B = m.userData.parts.bras[1]; v.position.set(0, -G.o.taille * .17, .03); B.c.add(v); E.verre = v; }
+    m.position.set(E.x, E.assis ? .66 - m.userData.hipY + .02 : 0, E.z); m.rotation.y = E.ry || 0; gens.push(E); }
+  L.gensFete = gens;
+  // personne ne se rentre dedans : on ne traverse pas les gens de la soirée
+  const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(L.gensFeteVus && gens.some(E => !E.assis && Math.hypot(x - E.m.position.x, z - E.m.position.z) < .38));
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = estNuit() && !L.apo && !L.sh; L.gensFeteVus = vu; for (const m of tous) m.visible = vu; if (!vu) return;
+    const thr = !!(M.djJoue && /thriller/.test(M.djTitre || "")), mus = !!M.djJoue, dt = Math.min(.05, (tm - (L.gfT || tm)) / 1000); L.gfT = tm; const t = tm / 1000, [cx, cz] = L.pisteCentre || [0, 6.5];
+    for (const E of gens) { const m = E.m, P = m.userData.parts;
+      if (E.G.r === "danse") {   // ils dansent sur la piste ; sur Thriller, ils s'écartent et regardent le danseur zombie
+        const [bx, bz] = thr ? THRILLER_PLACES[E.i] : DANSE_PLACES[E.i], dx = bx - m.position.x, dz = bz - m.position.z, d = Math.hypot(dx, dz);
+        if (d > .05) { const v = Math.min(d, 1.4 * dt); m.position.x += dx / d * v; m.position.z += dz / d * v; m.rotation.y = Math.atan2(dx, dz); m.userData.poser("marche", tm); m.position.y = 0; continue; }
+        if (thr) { m.userData.poser("debout", tm); m.rotation.y += (Math.atan2(cx - m.position.x, cz - m.position.z) - m.rotation.y) * .1; const cl = Math.abs(Math.sin(t * 4.2 + E.k)) * .35; P.bras[0].e.rotation.set(-1.1, 0, -.2 + cl); P.bras[1].e.rotation.set(-1.1, 0, .2 - cl); P.bras[0].c.rotation.x = P.bras[1].c.rotation.x = -.6; m.position.y = 0; continue; }   /* (ils applaudissent) */
+        poserFete(m, E.G.pose, t); const f = mus ? 1 : .35, b = t * (mus ? 4.4 : 2) + E.k * 1.3;
+        for (const [i, B] of P.bras.entries()) { B.e.rotation.x += Math.sin(b + i * Math.PI) * .35 * f; B.e.rotation.z += Math.cos(b * .5 + i) * .2 * f; }
+        for (const [i, J] of P.jambes.entries()) J.h.rotation.x += Math.sin(b + i * Math.PI) * .18 * f;
+        P.bassin.rotation.y += Math.sin(b * .5) * .3 * f; P.tete.rotation.z = Math.sin(b * .5) * .12 * f; m.position.y = Math.abs(Math.sin(b)) * .06 * f; m.rotation.y = Math.sin(t * .3 + E.k) * .8; }
+      else if (E.G.r === "parle") { m.userData.poser("debout", tm); poserFete(m, E.G.pose, t); const b = t * 1.3 + E.k;   // (ils discutent : le verre, l'autre main qui parle, de temps en temps une gorgée)
+        m.rotation.y = E.ry + Math.sin(b * .4) * .15; P.bras[0].e.rotation.x += Math.sin(b * 2.3) * .25; P.bras[0].c.rotation.x += Math.sin(b * 3.1) * .3; if ((t + E.k * 2) % 9 < 1.4) { P.bras[1].e.rotation.x = -1.1; P.bras[1].c.rotation.x = -2; P.tete.rotation.x = -.2; } else P.tete.rotation.x = 0; }
+      else { m.userData.poser("assis", tm); m.rotation.y = E.ry; const b = t + E.k * 3; if (b % 8 < 1.3) { P.bras[1].e.rotation.x = -1.1; P.bras[1].c.rotation.x = -2.0; P.tete.rotation.x = -.25; } else { P.bras[1].e.rotation.x = -.5; P.bras[1].c.rotation.x = -1.1; P.tete.rotation.x = 0; P.tete.rotation.y = Math.sin(b * .5) * .5; } } } };
+}
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -8374,6 +8438,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) { mamansBanc(L, scene); masqueHalloween(L, scene); }
+  if (id === "fetes" && !copie) gensFete(L, scene);
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
@@ -13362,7 +13427,7 @@ function chercherAction(t) {
     else if (M.L.radioSortie && estSH(M.lieu) && !M.shRadio && Math.hypot(x - M.L.radioSortie[0], z - M.L.radioSortie[1]) < 1.4) a = { type: "radioSH", label: "📻 Prendre la radio" };
     else if (!moi.cible) {
       const pris = new Set([...M.gens.values()].filter(p => Number.isInteger(p.info.assis)).map(p => p.info.assis));
-      const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && Math.hypot(x - a2, z - b) < 1.1);
+      const i = (M.L.tabourets || []).findIndex(([a2, b], k) => !pris.has(k) && !(M.L.tabPNJ && M.L.tabPNJ.has(k) && estNuit()) && Math.hypot(x - a2, z - b) < 1.1);
       const ot = M.L.apo && !APO.zombieFin && (M.objets || []).filter(q => q.table && !q.cache && Math.hypot(q.x - x, q.z - z) < 1.3).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z))[0];   // (sur le comptoir du bar, monde apocalyptique)
       if (ot) a = { type: "prendre", id: ot.id, label: ot.type === "plante" ? "🌿 Prendre la plante" : "🔫 Prendre les munitions" };
       else if (M.L.borneArcade && Math.hypot(x - M.L.borneArcade[0], z - M.L.borneArcade[1]) < 1.0) a = { type: "arcade", label: "🕹️ Jouer aux Goonies" };   // (la borne d'arcade : ouverte à tous)
