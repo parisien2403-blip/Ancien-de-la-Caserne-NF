@@ -2166,6 +2166,13 @@ DH_.h = (x, z) => RU.lz(x, z) > -10.05 && Math.abs(RU.lx(x, z)) < 3 && x - z < D
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
 const RDC_HV = {
+  porteVerte: (x, w, yr, h) => { x.fillStyle = "#d3c3a0"; x.fillRect(0, yr, w, h); x.fillStyle = "#bfae8a"; for (let k = 0; k < 6; k++) x.fillRect(0, yr + k * 28, w, 2);   // (la grande porte cochère vert foncé, le n° 69, le panneau de stationnement)
+    const dw = Math.min(w * .42, 130), dx = w * .55 - dw / 2, dy = yr + 26; x.fillStyle = "#a8977a"; x.fillRect(dx - 10, dy - 10, dw + 20, h - 16); x.fillStyle = "#1f3d36"; x.beginPath(); x.moveTo(dx, yr + h); x.lineTo(dx, dy + 30); x.quadraticCurveTo(dx + dw / 2, dy - 14, dx + dw, dy + 30); x.lineTo(dx + dw, yr + h); x.fill();
+    x.strokeStyle = "#13261f"; x.lineWidth = 3; x.beginPath(); x.moveTo(dx + dw / 2, dy + 14); x.lineTo(dx + dw / 2, yr + h); x.stroke(); for (const sx of [dx + 10, dx + dw / 2 + 8]) { x.strokeRect(sx, dy + 40, dw / 2 - 18, (h - 70) * .45); x.strokeRect(sx, dy + 50 + (h - 70) * .45, dw / 2 - 18, (h - 70) * .4); }
+    x.fillStyle = "#c9a227"; x.beginPath(); x.arc(dx + dw / 2 - 8, yr + h * .55, 3, 0, 7); x.arc(dx + dw / 2 + 8, yr + h * .55, 3, 0, 7); x.fill();
+    x.fillStyle = "#1d3f73"; x.fillRect(w * .86, yr + 24, 26, 14); x.fillStyle = "#fff"; x.font = "bold 11px Arial"; x.textAlign = "center"; x.fillText("69", w * .86 + 13, yr + 35);
+    x.fillStyle = "#c22a2a"; x.beginPath(); x.arc(w * .93, yr + 50, 13, 0, 7); x.fill(); x.fillStyle = "#2a4fa8"; x.beginPath(); x.arc(w * .93, yr + 50, 10, 0, 7); x.fill(); x.strokeStyle = "#c22a2a"; x.lineWidth = 3; x.beginPath(); x.moveTo(w * .93 - 7, yr + 43); x.lineTo(w * .93 + 7, yr + 57); x.stroke();
+    for (const X of [10, w - 60]) { x.fillStyle = "#2a2622"; x.fillRect(X, yr + 40, 50, h - 46); x.fillStyle = "#55606a"; x.fillRect(X + 4, yr + 44, 42, h - 54); } },
   mode: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h);
     for (const [X, W] of [[w * .05, w * .4], [w * .55, w * .4]]) { x.fillStyle = "#2a2622"; x.fillRect(X - 5, yr + 18, W + 10, h - 18);
       const g = x.createLinearGradient(0, yr + 24, 0, yr + h); g.addColorStop(0, "#d8cfbd"); g.addColorStop(1, "#9c8f78"); x.fillStyle = g; x.fillRect(X, yr + 24, W, h - 28);
@@ -2182,6 +2189,20 @@ const RDC_HV = {
     for (const [X, W] of [[w * .06, w * .28], [w * .66, w * .28]]) { x.fillStyle = "#2a2622"; x.fillRect(X, yr + 30, W, h - 30); const g = x.createLinearGradient(X, yr + 36, X + W, yr + h); g.addColorStop(0, "#8fa3ae"); g.addColorStop(.5, "#3d4b55"); g.addColorStop(1, "#59666e"); x.fillStyle = g; x.fillRect(X + 5, yr + 36, W - 10, h - 44);
       x.fillStyle = "rgba(255,240,210,.35)"; for (let k = 0; k < 3; k++) x.fillRect(X + 10 + k * (W - 20) / 3, yr + h * .55, (W - 20) / 4, h * .3); x.fillStyle = "#b08a3a"; x.font = "bold 10px Georgia"; x.textAlign = "center"; x.fillText("ÉPICERIE FINE", X + W / 2, yr + 26); } },
 };
+function toileVolets(L, etages) {   // l'immeuble blanc d'en face (d'après la photo) : enduit blanc, volets gris à toutes les fenêtres, grandes baies à barreaux au rez-de-chaussée
+  const P = 40, H = 4.2 + etages * 3.1, n = Math.max(3, Math.round(L / 3.4)), pas = L / n;
+  return toile(Math.round(L * P), Math.round(H * P), (x, w, h) => { graine = 515;
+    x.fillStyle = "#efece5"; x.fillRect(0, 0, w, h); for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(120,115,105,${alea() * .05})`; x.fillRect(alea() * w, alea() * h, 3 + alea() * 40, 2 + alea() * 30); }
+    x.fillStyle = "#e3dfd5"; for (let e = 0; e <= etages; e++) x.fillRect(0, (e * 3.1) * P - 4, w, 5);   // (les cordons, à chaque étage)
+    for (let e = 0; e < etages; e++) for (let c = 0; c < n; c++) { const cx = (c + .5) * pas * P, y0 = (e * 3.1 + .55) * P, fw = 1.1 * P, fh = 1.55 * P;
+      const g = x.createLinearGradient(0, y0, 0, y0 + fh); g.addColorStop(0, "#56626c"); g.addColorStop(1, "#2a323a"); x.fillStyle = g; x.fillRect(cx - fw / 2, y0, fw, fh); rideau(x, cx - fw / 2, y0, fw, fh);
+      x.fillStyle = "#f6f4ef"; x.fillRect(cx - 1.5, y0, 3, fh); x.fillRect(cx - fw / 2 - 3, y0 + fh, fw + 6, 4);
+      for (const sg of [-1, 1]) { const vx = cx + sg * (fw / 2 + fw / 4 + 2) - fw / 4; x.fillStyle = "#a9aeb0"; x.fillRect(vx, y0 - 2, fw / 2, fh + 2); x.fillStyle = "rgba(60,64,66,.45)"; for (let yy = y0 + 2; yy < y0 + fh; yy += 4) x.fillRect(vx + 2, yy, fw / 2 - 4, 1.5); }   // (les volets gris, ouverts)
+      x.strokeStyle = "#2a2a2a"; x.lineWidth = 1.5; x.strokeRect(cx - fw / 2, y0 + fh * .62, fw, fh * .38); for (let k = 1; k < 8; k++) { x.beginPath(); x.moveTo(cx - fw / 2 + k * fw / 8, y0 + fh * .62); x.lineTo(cx - fw / 2 + k * fw / 8, y0 + fh); x.stroke(); } }
+    const yr = etages * 3.1 * P; x.fillStyle = "#e6e2d8"; x.fillRect(0, yr, w, h - yr); x.fillStyle = "#c9c4b8"; for (let k = 0; k < 6; k++) x.fillRect(0, yr + k * 28, w, 2);   // (le rez-de-chaussée à refends)
+    for (let c = 0; c < n; c++) { const cx = (c + .5) * pas * P, bw = pas * P * .62, by = yr + .5 * P, bh = h - by - 6;
+      x.fillStyle = "#1e2226"; x.fillRect(cx - bw / 2, by, bw, bh); const g = x.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, "#5b6670"); g.addColorStop(1, "#2a3036"); x.fillStyle = g; x.fillRect(cx - bw / 2 + 4, by + 4, bw - 8, bh - 8);
+      x.fillStyle = "#151515"; for (let k = 0; k <= 9; k++) x.fillRect(cx - bw / 2 + 4 + k * (bw - 10) / 9, by + 4, 2, bh - 8); x.fillRect(cx - bw / 2 + 4, by + bh * .5, bw - 8, 2); } }); }
 function toileRueLoin(W, H, oeil) {   // un mur peint en trompe-l'œil : la rue qui continue, au loin (W, H en mètres ; oeil : la hauteur du regard)
   const P = 40, w = W * P, h = H * P, vx = w / 2, vy = h - oeil * P;
   return toile(w, h, (x) => { graine = 404;
@@ -2404,15 +2425,23 @@ function ruesDehors(A, L, scene) {
   const im = (o) => { const g = A.haussmann(o); g.position.y = Y0; L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); return g; };
   const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"];
   [[-132.4, 12.8], [-118, 16], [-102, 16], [-86, 16], [-70, 16], [-59.5, 5], [-49, 16], [-33, 16], [-17, 16], [-1, 16], [15, 16], [28.43, 10.85]].forEach(([zc, l], k) => { const g = im({ x: XO, z: zc, largeur: l, etages: 6 - (k % 3 === 1), rot: -Math.PI / 2, teinte: teintes[k % 5], graine: 310 + k, rdc: k > 5 ? [RDC_HV.porte, null, RDC_HV.resto, null, RDC_HV.mode, null][k - 6] : null }); g.position.y = Math.min(DH_.y(zc - l / 2), DH_.y(zc + l / 2)); });
-  im({ x: 56.6, z: ZN, largeur: 8.8, etages: 6, rot: Math.PI, teinte: teintes[0], graine: 336 });   // (le même immeuble de l'angle, sa façade sur la rue d'Hauteville)
-  [-52, -36, -20, -4, 12, 28, 44, 60, 74].forEach((xc, k) => im({ x: xc, z: ZO, largeur: k === 8 ? 12 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] }));
+  im({ x: 56.6, z: ZN, largeur: 8.8, etages: 6, rot: Math.PI, teinte: "#d8c8a4", graine: 336, rdc: RDC_HV.porteVerte });   // (le même immeuble de l'angle, sa façade sur la rue d'Hauteville)
+  [-52, -36, -20, -4, 12, 28, 44, 60, 74].forEach((xc, k) => { const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
+    if (k === 6 || k === 7) { const c = g.children.find(o => o.isMesh && o.geometry.type === "BoxGeometry"); if (c && Array.isArray(c.material)) { c.material = c.material.slice(); c.material[4] = A.mat({ map: tex(toileVolets(16, 6 - (k % 2))) }); } } });   // (en face du carrefour : l'immeuble blanc à volets gris, d'après la photo)
   im({ x: XW, z: (ZO + ZN) / 2, largeur: 14, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 330 });       // la rue d'Hauteville, fermée de chaque côté
   // au bout, à l'est : la rue d'Hauteville continue de descendre — un mur peint en trompe-l'œil (on ne va pas plus loin), et les immeubles côté caserne jusque-là
   { const t = tex(toileRueLoin(ZN - ZO + 6, 28, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(ZN - ZO + 6, 28), A.mat({ map: t, roughness: 1 })); m.position.set(XEst - .3, Y0 + 14, (ZO + ZN) / 2); m.rotation.y = -Math.PI / 2; scene.add(m); }
-  [[66.5, 11], [76, 8]].forEach(([xc, l], k) => im({ x: xc, z: ZN, largeur: l, etages: 6, rot: Math.PI, teinte: teintes[(k + 1) % 5], graine: 334 + k }));
+  [[66.5, 11], [76, 8]].forEach(([xc, l], k) => im({ x: xc, z: ZN, largeur: l, etages: 6, rot: Math.PI, teinte: k ? teintes[2] : "#d5c39e", graine: 334 + k, rdc: k ? null : RDC_HV.porte }));
+  // les potelets noirs, au bord des trottoirs de la rue d'Hauteville après le carrefour ; des vélos accrochés à leurs arceaux
+  { const noir = A.mat({ color: 0x1a1a1a, roughness: .5 }), tete = A.mat({ color: 0xd8d8d4, roughness: .4, metalness: .3 });
+    for (let x = 33; x < XEst - 1; x += 2.6) for (const z of [ZR - .25, ZF + .25]) { if (z > ZR - 1 && x > XR - 1 && x < XF + 1) continue; A.ajoute(new THREE.CylinderGeometry(.055, .065, .9, 8), noir, x, Y0 + .57, z); A.ajoute(new THREE.SphereGeometry(.07, 8, 6), tete, x, Y0 + 1.03, z, false); }
+    const fer = A.mat({ color: 0x2b2d30, metalness: .5, roughness: .4 }), roue = A.mat({ color: 0x151515, roughness: .7 }), cadres = [0x3a6ea5, 0x1e1e1e, 0x7a8a3a, 0xb03a2e];
+    for (let k = 0; k < 4; k++) { const x = 37.5 + k * .9, z = ZF + .9; const a = A.ajoute(new THREE.TorusGeometry(.38, .025, 6, 16, Math.PI), fer, x, Y0 + .12, z, false); a.rotation.y = Math.PI / 2;
+      for (const dz of [-.45, .45]) { const r = A.ajoute(new THREE.TorusGeometry(.32, .03, 6, 18), roue, x + .12, Y0 + .44, z + dz, false); r.rotation.y = Math.PI / 2; }
+      const f = A.ajoute(new THREE.BoxGeometry(.04, .05, .9), A.mat({ color: cadres[k] }), x + .12, Y0 + .62, z, false); A.ajoute(new THREE.BoxGeometry(.04, .3, .04), A.mat({ color: cadres[k] }), x + .12, Y0 + .78, z + .3, false); } }
   // l'immeuble de l'angle, en face du portail : son angle arrondi, et son dôme de zinc (d'après la photo)
   { const R = 3.2, cx = XO + R, cz = ZN + R, H = 4.2 + 6 * 3.1, y0 = Y0;
-    const tr = tex(toileHaussmann(2 * Math.PI * R / 4 + .4, 6, "#e3d6ba", 337)), tour = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 24, 1, true, Math.PI, Math.PI / 2), A.mat({ map: tr, side: THREE.DoubleSide }));
+    const tr = tex(toileHaussmann(2 * Math.PI * R / 4 + .4, 6, "#d8c8a4", 337, (x, w, yr, h) => { x.fillStyle = "#d3c3a0"; x.fillRect(0, yr, w, h); x.fillStyle = "#bfae8a"; for (let k = 0; k < 6; k++) x.fillRect(0, yr + k * 28, w, 2); x.fillStyle = "#2a2622"; x.fillRect(w * .3, yr + 40, w * .4, h - 46); x.fillStyle = "#55606a"; x.fillRect(w * .3 + 4, yr + 44, w * .4 - 8, h - 54); })), tour = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 24, 1, true, Math.PI, Math.PI / 2), A.mat({ map: tr, side: THREE.DoubleSide }));
     tour.position.set(cx, y0 + H / 2, cz); tour.castShadow = true; scene.add(tour);
     const zinc = A.mat({ color: 0x8e979c, roughness: .45, metalness: .35 }), dome = new THREE.Mesh(new THREE.SphereGeometry(R + .3, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), zinc); dome.scale.y = 1.25; dome.position.set(cx, y0 + H + .2, cz); scene.add(dome);
     A.ajoute(new THREE.CylinderGeometry(R + .45, R + .45, .35, 24), A.mat({ color: 0xe8dcc2 }), cx, y0 + H + .05, cz);   // (la corniche)
