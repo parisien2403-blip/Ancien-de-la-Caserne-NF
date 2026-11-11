@@ -64,6 +64,7 @@ const PNJ_DEFAUT = {
   65: { nom: "Gendarme Moreau", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 66: { nom: "Gendarme Fabre", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 67: { nom: "Gendarme Girard", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
+  95: { nom: "Saïd", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" }, 96: { nom: "Julien", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" },   // (les éboueurs de la cour)
   98: { nom: "Le monsieur au chien", tenue: "tshirt", couleur: "#2f5fae", bas: "#3a3a40", pieds: "#2a1a12" },   // (rue des Messageries)
   97: { nom: "Le chef de poste", tenue: "barman", couleur: "#ffffff", bas: "#1d1d1f", pieds: "#1a1a1a" },   // (le barman du sous-sol, au bar des Goonies)
   4: { nom: "Le danseur Thriller", tenue: "thriller", couleur: "#c8102e", bas: "#c8102e", pieds: "#111111" },

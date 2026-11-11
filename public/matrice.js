@@ -3206,7 +3206,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(k, 64, 70); });
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
         if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur et ses invités voient seuls ; il mène à l'appartement (une carte à part)
-          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || (M.ctx.moiInfo().appart && M.appartOuvert)));   /* (les invités : seulement quand l'administrateur l'a ouvert) */ PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
+          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart));   /* (l'administrateur et les laissez-passer 02, 03, 04) */   /* (les invités : seulement quand l'administrateur l'a ouvert) */ PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
           L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: 0, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
@@ -11655,7 +11655,7 @@ function animerCercles(t) {
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
       g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
-    c.g.visible = !modeRE() && (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && !lisaVivante() && !(c.pt.vers === "z-rue" && !M.porcheOuvert);   // (le porche bouché : pas de cercle)   // (Lisa debout : les portes de la salle des fêtes restent closes)
+    c.g.visible = !modeRE() && (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && (!lisaVivante() || c.pt.vers === "appart") && !(c.pt.vers === "z-rue" && !M.porcheOuvert);   // (le porche bouché : pas de cercle)   // (Lisa debout : les portes de la salle des fêtes restent closes)
     const b = .5 + .5 * Math.sin(t / 420);
     c.anneau.material.opacity = .75 + .25 * b; c.halo.material.opacity = .25 + .3 * b; c.disque.material.opacity = .25 + .2 * b;
     c.halo.scale.setScalar(1 + .08 * b);
@@ -11828,7 +11828,9 @@ function animerEboueurs() {
   const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
   for (const [num, img, nom] of EBOUEURS) { let p = M.gens.get(num);
     if (!ici) { if (p) retirerAncien(num); continue; }
-    if (!p) { const [x, z] = pointEboueur(num, 0); p = ajouterAncien({ numero: num, nom, tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a", teteUrl: `images/${img}-tete.png`, pnj: true, x, z }); continue; }
+    if (!p) { const [x, z] = pointEboueur(num, 0), idT = num === -70 ? 95 : 96, P = (M.ctx.pnjTrio && M.ctx.pnjTrio(idT)) || {};   /* (réglables par l'administrateur : 95, Saïd ; 96, Julien) */
+      p = ajouterAncien({ numero: num, nom: P.nom || nom, tenue: P.tenue && P.tenue !== "civil" ? P.tenue : "eboueur", couleur: P.tenue && P.tenue !== "civil" ? P.couleur : "#1f7a3a", bas: P.bas || "#1f7a3a", pieds: P.pieds || "#1a1a1a", reglage: P.reglage || null,
+        teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, idT) : `images/${img}-tete.png`, pnj: true, x, z }); continue; }
     const n = Math.floor(Date.now() / (7000 + (num & 3) * 900));
     if (p.etape !== n) { p.etape = n; const [x, z] = pointEboueur(num, n); viser(p, x, z); }
     const b = Math.floor(Date.now() / 23000); if (p.parole !== b) { if (p.parole !== undefined && hasard(b * 5.1 + num) < .3) direPNJ(num, PHRASES_EBO[Math.floor(hasard(b * 2.7 + num) * PHRASES_EBO.length)]); p.parole = b; } } }
@@ -12168,10 +12170,10 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
   const gob = new THREE.Group(), gm = new THREE.Mesh(new THREE.CylinderGeometry(.05, .04, .11, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xf2efe6, side: THREE.DoubleSide })); gm.position.y = .055; gob.add(gm);
   for (let k = 0; k < 3; k++) { const pc = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .004, 10), new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: .8, roughness: .3 })); pc.position.set(-.01 + k * .01, .02 + k * .004, .005 * k); gob.add(pc); }
   gob.position.set(x + .3, Y + .03, z - 1.0); scene.add(gob);
-  const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, Y + 1.5, z - .4); bs.visible = false; scene.add(bs);
+  const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false, depthTest: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, Y + 1.5, z - .4); bs.visible = false; scene.add(bs);
   (DH_.voit = DH_.voit || []).push([x - .6, x + .6, z - 1.1, z]);   // (on ne lui marche pas dessus)
   // à côté de lui, son caddie : des cartons pliés et une couverture dedans
-  { const g = new THREE.Group(); g.position.set(x + 1.35, Y, z - .5); scene.add(g); const fil = new THREE.MeshStandardMaterial({ color: 0xb8bcc0, metalness: .7, roughness: .35 }), noir = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .8 });
+  { const g = new THREE.Group(); g.position.set(x + 1.9, Y, z - .42); scene.add(g); const fil = new THREE.MeshStandardMaterial({ color: 0xb8bcc0, metalness: .7, roughness: .35 }), noir = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .8 });
     const m = (geo, mat, px, py, pz) => { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
     const W = .56, Lg = .9, y0 = .42, H = .45;
     for (let k = 0; k <= 10; k++) { const t = -Lg / 2 + k * Lg / 10; for (const sz of [-1, 1]) m(new THREE.BoxGeometry(.012, H, .012), fil, t, y0 + H / 2, sz * W / 2); }   // (les parois de fil de fer)
@@ -12186,7 +12188,7 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
     const cv = new THREE.Mesh(new THREE.PlaneGeometry(.8, .9, 6, 6), couv); const pa = cv.geometry.attributes.position; for (let i = 0; i < pa.count; i++) pa.setZ(i, Math.sin(pa.getX(i) * 9) * .04 + Math.cos(pa.getY(i) * 7) * .04); cv.geometry.computeVertexNormals();
     cv.rotation.x = -Math.PI / 2 + .25; cv.position.set(-.05, y0 + H + .03, .02); cv.castShadow = true; g.add(cv);
     const pend = new THREE.Mesh(new THREE.PlaneGeometry(.6, .35), couv); pend.position.set(-.1, y0 + H - .12, W / 2 + .03); pend.rotation.x = .15; g.add(pend);   // (un pan qui pend par-dessus le bord)
-    (DH_.voit = DH_.voit || []).push([x + .8, x + 2.0, z - .9, z - .1]); }
+    (DH_.voit = DH_.voit || []).push([x + 1.35, x + 2.55, z - .8, z - .05]); }
   let fin = 0, vu0 = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; return; } const cam = M.camera;
 
