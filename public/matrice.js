@@ -4643,6 +4643,57 @@ function gensFete(L, scene) {
         P.buste.rotation.x = .22; P.jambes.forEach((J, i) => { J.h.rotation.z = (i ? 1 : -1) * .12; }); P.tete.rotation.x = .3; m.position.y = E.y0 + Math.abs(Math.sin(b * .5)) * .015; }
       else { m.userData.poser("assis", tm); m.rotation.y = E.ry; const b = t + E.k * 3; if (b % 8 < 1.3) { P.bras[1].e.rotation.x = -1.1; P.bras[1].c.rotation.x = -2.0; P.tete.rotation.x = -.25; } else { P.bras[1].e.rotation.x = -.5; P.bras[1].c.rotation.x = -1.1; P.tete.rotation.x = 0; P.tete.rotation.y = Math.sin(b * .5) * .5; } } } };
 }
+/* ---------- le mess à l'heure du repas : les couverts mis sur toutes les tables, des convives attablés (chacun différent), et deux serveurs — le portrait de Mr Miner —
+   qui vont chercher les assiettes sur le passe de la cuisine, derrière, et les apportent aux tables ---------- */
+const SERVEURS = [-120, -121], PASSE_MESS = { x: -4.25, z: 15.4, px: -3.37, py: .98 };
+function repasMess(L, scene) {
+  const T = L.tablesMess, TM = L.tableMess; if (!T || !TM) return; const { TW, TD, TH } = TM, Y = TH + .025;
+  const blanc = new THREE.MeshStandardMaterial({ color: 0xf8f6f0, roughness: .35 }), inoxC = new THREE.MeshStandardMaterial({ color: 0xd0d4d8, metalness: .8, roughness: .25 }), verreM = new THREE.MeshStandardMaterial({ color: 0xdfe8ee, transparent: true, opacity: .45, roughness: .05 });
+  const places = []; T.forEach(([x, z], ti) => { for (const cx of [-.42, .42]) for (const sz of [-1, 1]) places.push({ ti, x: x + cx, z: z + sz * (TD / 2 - .17), sz, tx: x, tz: z }); });
+  const mm = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), un = new THREE.Vector3(1, 1, 1);
+  const inst = (geo, mat, f) => { const im = new THREE.InstancedMesh(geo, mat, places.length); places.forEach((P, i) => { f(P); im.setMatrixAt(i, mm.compose(v, q, un)); }); im.instanceMatrix.needsUpdate = true; scene.add(im); return im; };
+  inst(new THREE.CylinderGeometry(.13, .1, .02, 20), blanc, P => { v.set(P.x, Y + .01, P.z); q.identity(); });   // les assiettes
+  inst(new THREE.BoxGeometry(.018, .006, .19), inoxC, P => { v.set(P.x - .17, Y + .004, P.z); q.identity(); });   // les fourchettes
+  inst(new THREE.BoxGeometry(.018, .006, .2), inoxC, P => { v.set(P.x + .17, Y + .004, P.z); q.identity(); });   // les couteaux
+  inst(new THREE.CylinderGeometry(.035, .03, .1, 12), verreM, P => { v.set(P.x + .17, Y + .05, P.z - P.sz * .16); q.identity(); });   // les verres
+  { const carafe = new THREE.InstancedMesh(new THREE.CylinderGeometry(.05, .07, .24, 14), verreM, T.length), pain = new THREE.InstancedMesh(new THREE.SphereGeometry(.09, 10, 6), new THREE.MeshStandardMaterial({ color: 0xc8904a, roughness: .9 }), T.length);   // une carafe d'eau, une corbeille de pain
+    T.forEach(([x, z], i) => { carafe.setMatrixAt(i, mm.makeTranslation(x - .05, Y + .12, z)); pain.setMatrixAt(i, mm.compose(v.set(x + .1, Y + .04, z), q.identity(), new THREE.Vector3(1.2, .5, 1))); }); scene.add(carafe, pain); }
+  // la pile d'assiettes garnies, sur le passe de la cuisine
+  const plat = () => { const g = new THREE.Group(), a = new THREE.Mesh(new THREE.CylinderGeometry(.13, .1, .02, 20), blanc); g.add(a); const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: [0x8a4a2a, 0xd8a040, 0x6a8a3a][Math.floor(Math.random() * 3)], roughness: .7 })); f.scale.y = .5; f.position.y = .01; g.add(f);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(.07, .03, .05), new THREE.MeshStandardMaterial({ color: 0x3a8a3a })); l.position.set(.05, .02, .03); g.add(l); return g; };
+  for (let k = 0; k < 5; k++) { const p = plat(); p.position.set(PASSE_MESS.px + (k % 2 ? .12 : -.12), PASSE_MESS.py + Math.floor(k / 2) * .045, PASSE_MESS.z - .35 + (k % 3) * .3); scene.add(p); }
+  // les convives : une vingtaine, attablés ici et là, chacun différent
+  let gr = 4711; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647;
+  const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#d9a882"], CH = ["#5a3a22", "#141010", "#e2c27a", "#2a1a12", "#a5532a", "#8a8a8a"], HAUTS = ["#2f5fae", "#c8404a", "#e8e2d6", "#3a7a4a", "#7a4a8a", "#e8d24a", "#4a4e56", "#2e7a4a", "#b0306a", "#f2f0ea", "#1c2541", "#5a6a3a"];
+  const pris = new Set(), conv = [];
+  for (let k = 0; k < 22; k++) { let i; do i = Math.floor(r() * places.length); while (pris.has(i)); pris.add(i); const P = places[i], f = r() < .45;
+    const m = personne3D({ taille: f ? 1.62 + r() * .1 : 1.72 + r() * .12, peau: PEAUX[k % 6], ch: CH[(k * 5) % 6], haut: HAUTS[k % 12], bas: ["#2a3040", "#3a3a40", "#26324e", "#14181c"][k % 4], chaussures: "#1a1a1a", coif: f ? ["long", "carre", "queue"][k % 3] : k % 5 === 0 ? "chauve" : "court", pantalon: !f || k % 2 === 0, robe: f && k % 2 === 1, parle: k % 3 === 0 });
+    const sx = P.z + P.sz * .44; m.position.set(P.x, .48 - m.userData.hipY + .02, sx); m.rotation.y = P.sz > 0 ? Math.PI : 0; scene.add(m);
+    const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9 }); }
+  L.convives = conv;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = !L.apo && !L.sh && !L.gb; for (const c of conv) { c.m.visible = vu; c.assiette.visible = vu && c.assiette.userData.servi !== false && c.assiette.visible; } if (!vu) return; const t = tm / 1000;
+    for (const c of conv) { const P = c.m.userData.parts; c.m.userData.poser("assis", tm); const b = (t + c.ph) % 6;   // (ils mangent : la fourchette à la bouche, de temps en temps)
+      if (c.assiette.visible && b < 1.2) { P.bras[1].e.rotation.x = -1.2; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.1; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.6; P.bras[0].e.rotation.x = -.7; P.bras[0].c.rotation.x = -.6; P.tete.rotation.x = .15; } } };
+}
+function animerServeurs() {
+  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "mess" && L.convives && !L.apo && !L.sh && !L.gb;
+  for (const [k, num] of SERVEURS.entries()) { let p = M.gens.get(num);
+    if (!ici) { if (p) retirerAncien(num); continue; }
+    if (!p) { const P = (M.ctx.pnjBar && M.ctx.pnjBar()) || {};   // (le double de Mr Miner, le barman de la salle des fêtes)
+      p = ajouterAncien({ numero: num, nom: P.nom || "Mr Miner", tenue: P.tenue || "barman", couleur: P.couleur || "#efe8d2", bas: P.bas || "#4a4636", pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 3) : "images/miner-tete.png", pnj: true, x: PASSE_MESS.x, z: PASSE_MESS.z - 1 + k * 2 });
+      if (!p) continue; p.serv = { etat: "passe", t: performance.now() + k * 4000 }; }
+    const S = p.serv || (p.serv = { etat: "passe", t: 0 }), now = performance.now(), g = p.g.position;
+    if (!S.plat) { S.plat = new THREE.Mesh(new THREE.CylinderGeometry(.13, .1, .02, 20), new THREE.MeshStandardMaterial({ color: 0xf8f6f0 })); const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8a4a2a })); f.scale.y = .5; f.position.y = .01; S.plat.add(f); S.plat.position.set(0, 1.12, .32); p.g.add(S.plat); }
+    S.plat.visible = S.etat === "porte";
+    if (p.cible) continue;   // (il marche)
+    if (S.etat === "passe") { if (Math.hypot(g.x - PASSE_MESS.x, g.z - (PASSE_MESS.z + k * .6)) > .4) { viser(p, PASSE_MESS.x, PASSE_MESS.z + k * .6); continue; }   // il va au passe…
+      if (!S.t) S.t = now + 1800; if (now < S.t) continue;   // …prend une assiette garnie
+      const vides = L.convives.filter(c => !c.assiette.visible && !c.reserve), c = vides.length ? vides[Math.floor(Math.random() * vides.length)] : L.convives[Math.floor(Math.random() * L.convives.length)];
+      c.reserve = true; S.c = c; S.etat = "porte"; S.t = 0; const P = c.P; viser(p, P.x + (P.x > P.tx ? .55 : -.55), P.z); }
+    else if (S.etat === "porte") { const c = S.c; if (!S.t) S.t = now + 900; if (now < S.t) continue;   // il pose l'assiette devant le convive
+      c.assiette.visible = true; c.reserve = false; S.etat = "retour"; S.t = 0; if (Math.random() < .5) dire(num, ["Bon appétit !", "Et voilà, c'est chaud !", "Attention, l'assiette est brûlante.", "Le plat du jour, messieurs dames."][Math.floor(Math.random() * 4)]);
+      const autre = L.convives.filter(x => x.assiette.visible && x !== c); if (autre.length && Math.random() < .5) { const d = autre[Math.floor(Math.random() * autre.length)]; setTimeout(() => { d.assiette.visible = false; }, 20000 + Math.random() * 20000); } }   // (ailleurs, quelqu'un finit son assiette)
+    else { S.etat = "passe"; S.t = 0; viser(p, PASSE_MESS.x, PASSE_MESS.z + k * .6); } } }
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -8453,6 +8504,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) { mamansBanc(L, scene); masqueHalloween(L, scene); }
   if (id === "fetes" && !copie) gensFete(L, scene);
+  if (id === "mess" && !copie) repasMess(L, scene);
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
@@ -8902,7 +8954,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerHalloween(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerHalloween(t); animerServeurs(); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
