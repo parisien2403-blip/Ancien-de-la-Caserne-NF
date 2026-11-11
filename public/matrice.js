@@ -2353,6 +2353,11 @@ function toileGamin(k, vue, f) {   // vue : "face", "dos", "profil" ; f : l'imag
         x.fillStyle = "rgba(232,110,100,.3)"; for (const s2 of [-1, 1]) { x.beginPath(); x.arc(cx + s2 * 21, ey + 14, 7, 0, 7); x.fill(); }
         x.fillStyle = "rgba(120,80,60,.25)"; for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(cx - 16 + (i % 3) * 5 + (i > 2 ? 26 : 0), ey + 9 + (i % 2) * 3, 1.3, 0, 7); x.fill(); } } };   // (et quelques taches de rousseur)
     const ombreSol = () => { x.fillStyle = "rgba(0,0,0,.0)"; };
+    if (vue === "assis") {   // assis sur un rebord, de face : les cuisses vers nous, les jambes qui pendent et se balancent (f : 0 ou 1), les mains posées à côté
+      for (const sg of [-1, 1]) { const bal = (f ? 1 : -1) * sg * 10, gx = 100 + sg * 13; x.fillStyle = G.fille && G.coiffe !== "queue" ? G.bas : G.bas; x.beginPath(); x.roundRect(gx - 12, 262, 24, 22, 8); x.fill();
+        trait([[gx, 282], [gx + bal * .4, 340]], G.peau, 15); trait([[gx + bal * .4, 326], [gx + bal * .5, 352]], "#f6f4ee", 16); x.strokeStyle = G.ch2; x.lineWidth = 3; x.beginPath(); x.moveTo(gx - 8 + bal * .4, 332); x.lineTo(gx + 8 + bal * .4, 332); x.stroke();
+        x.fillStyle = "#f4f4f2"; x.beginPath(); x.ellipse(gx + bal * .5, 358, 12, 9, 0, 0, 7); x.fill(); x.fillStyle = "#555"; x.fillRect(gx - 12 + bal * .5, 364, 24, 3); }
+      torse(100, 62, .72); for (const s3 of [-1, 1]) bras([100 + s3 * 30, 164], [100 + s3 * 44, 210], [100 + s3 * 48, 262], true); tete(100, 100, false, false); return; }
     if (vue === "profil") {   // en pleine course : le corps penché en avant, les bras et les jambes qui alternent
       const ph = f / 4 * Math.PI * 2, s2 = Math.sin(ph), c2 = Math.cos(ph), hx = 96, hy = 268, sol = 404 - Math.abs(c2) * 10;
       const pied = (sg) => { const a = sg * s2; return [[hx + a * 46, sol - Math.max(0, -sg * c2) * 46], [hx + a * 30 + 10 - (sg * c2 > 0 ? 0 : 14), hy + 72 - Math.max(0, -sg * c2) * 26]]; };
@@ -2367,12 +2372,89 @@ function toileGamin(k, vue, f) {   // vue : "face", "dos", "profil" ; f : l'imag
       torse(100, 62, .72); if (dos) { x.fillStyle = "rgba(255,255,255,.75)"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText(String(k + 3), 100, 214); }
       for (const s3 of [-1, 1]) { const e = [100 + s3 * 30, 164]; if (tend) bras(e, [100 + s3 * 62, 190], [100 + s3 * 90, 196], true); else if (cours) { const av = s3 * sg; bras(e, [100 + s3 * 40, 200 - av * 18], [100 + s3 * 38, 226 - av * 36], true); } else bras(e, [100 + s3 * 40, 206], [100 + s3 * 42, 246], true); }
       tete(100, 100, false, dos); } }); }
+/* trois enfants assis sur le rebord du toit du local poubelle, côté place : ils balancent les jambes et bavardent (le jour) */
+function peindreBulle(c, txt) {   // une bulle de paroles : le texte rétrécit s'il est long (il ne déborde plus)
+  const x = c.getContext("2d"); x.clearRect(0, 0, 512, 128); let fs = 34; x.font = `bold ${fs}px Arial`; while (x.measureText(txt).width > 460 && fs > 16) { fs -= 2; x.font = `bold ${fs}px Arial`; }
+  const w = Math.min(500, x.measureText(txt).width + 40); x.fillStyle = "rgba(255,255,255,.95)"; x.beginPath(); x.roundRect(256 - w / 2, 14, w, 74, 22); x.fill(); x.beginPath(); x.moveTo(246, 86); x.lineTo(256, 112); x.lineTo(268, 86); x.fill();
+  x.fillStyle = "#222"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(txt, 256, 52); }
+const PHRASES_TOIT = ["On voit tout d'ici !", "Chut, le chef de poste arrive !", "T'as vu la DeLorean ?", "On joue à la deli-delo après ?", "Moi j'ai le nouveau Panini !", "Descends pas, tu vas te faire gronder !"];
+function enfantsToit(L, scene) {
+  const LP = C3.localPoub; if (!LP || !LP.blocs) return; const b = LP.blocs[1], ze = b[3] + .06, top = LP.top + .12, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
+  [[2, b[0] + .9], [4, (b[0] + b[1]) / 2 + .1], [6, b[1] - .8]].forEach(([k, x], i) => { const t = [0, 1].map(f => tex(toileGamin(k, "assis", f))), m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+    m.renderOrder = 2; m.position.set(x, top - 1.3 * 150 / 420, ze); scene.add(m);
+    const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, top + 1.25, ze); bs.visible = false; scene.add(bs);
+    E.push({ m, t, ph: i * 1.7, bc, bt, bs, fin: 0 }); });
+  let prochain = 0;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const e of E) { e.m.visible = vu; if (!vu) e.bs.visible = false; } if (!vu) return; const cam = M.camera;
+    for (const e of E) { const mp = e.t[Math.floor(tm / 420 + e.ph) % 2]; if (e.m.material.map !== mp) { e.m.material.map = mp; e.m.material.needsUpdate = true; }
+      const a = Math.atan2(cam.position.x - e.m.position.x, cam.position.z - e.m.position.z); e.m.rotation.y = Math.max(-1, Math.min(1, a));   // (tournés vers la place ; un peu vers nous)
+      if (e.bs.visible && (tm > e.fin || Math.hypot(cam.position.x - e.m.position.x, cam.position.z - e.m.position.z) > 25)) e.bs.visible = false; }
+    if (tm > prochain) { prochain = tm + 7000 + Math.random() * 9000; const e = E[Math.floor(Math.random() * E.length)]; peindreBulle(e.bc, PHRASES_TOIT[Math.floor(Math.random() * PHRASES_TOIT.length)]); e.bt.needsUpdate = true; e.bs.visible = true; e.fin = tm + 3000; } };
+  L.enfantsToit = E; }
+/* sur le banc vert (portes F et G) : deux mamans qui bavardent, la poussette et le bébé qui dort ; devant elles, deux tout-petits (3 et 4 ans) se renvoient un ballon (le jour) */
+function toileMaman(k, f) {   // une maman assise, de face : f = 0 ou 1 (elle parle : la bouche, la main qui bouge)
+  const T = [{ peau: "#f0c9a6", ch: "#6a3a1e", haut: "#e8e2f0", bas: "#3a5a8a", robe: false, coif: "carre" }, { peau: "#dcae86", ch: "#1e1410", haut: "#c8404a", bas: "#c8404a", robe: true, coif: "long" }][k];
+  return toile(200, 460, (x) => { x.lineCap = "round"; x.lineJoin = "round"; const trait = (pts, c, l) => { x.strokeStyle = c; x.lineWidth = l; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
+    // les jambes : cuisses vers nous (raccourcies), mollets qui descendent, chaussures
+    for (const sg of [-1, 1]) { const gx = 100 + sg * 17; x.fillStyle = T.bas; x.beginPath(); x.roundRect(gx - 16, 300, 32, 34, 12); x.fill(); trait([[gx, 330], [gx + sg * 3, 430]], T.robe ? T.peau : T.bas, 22); if (T.robe) trait([[gx, 330], [gx, 360]], T.bas, 24);
+      x.fillStyle = "#2a1a14"; x.beginPath(); x.ellipse(gx + sg * 3, 440, 15, 9, 0, 0, 7); x.fill(); }
+    // le buste, la jupe ou le pantalon
+    const g = x.createLinearGradient(56, 0, 144, 0); g.addColorStop(0, assombrir(T.haut, .8)); g.addColorStop(.4, T.haut); g.addColorStop(1, assombrir(T.haut, .78)); x.fillStyle = g; x.beginPath(); x.roundRect(62, 150, 76, 120, 18); x.fill();
+    x.fillStyle = T.bas; x.beginPath(); x.moveTo(60, 262); x.lineTo(140, 262); x.lineTo(150, 312); x.lineTo(50, 312); x.closePath(); x.fill();
+    if (!T.robe) { x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(64, 262, 72, 6); x.strokeStyle = assombrir(T.haut, .7); x.lineWidth = 2; x.beginPath(); x.moveTo(100, 156); x.lineTo(100, 262); x.stroke(); }
+    // les bras : l'un posé sur les genoux, l'autre qui parle avec la main (f)
+    trait([[70, 168], [58, 238], [84, 286]], assombrir(T.haut, .9), 18); x.fillStyle = T.peau; x.beginPath(); x.arc(88, 288, 9, 0, 7); x.fill();
+    if (f) { trait([[130, 168], [146, 222], [132, 196]], assombrir(T.haut, .9), 18); x.fillStyle = T.peau; x.beginPath(); x.arc(128, 190, 9, 0, 7); x.fill(); } else { trait([[130, 168], [142, 238], [116, 286]], assombrir(T.haut, .9), 18); x.fillStyle = T.peau; x.beginPath(); x.arc(112, 288, 9, 0, 7); x.fill(); }
+    // le cou, la tête, les cheveux, le visage
+    x.fillStyle = T.peau; x.fillRect(91, 126, 18, 28); x.beginPath(); x.ellipse(100, 96, 30, 36, 0, 0, 7); x.fill();
+    x.fillStyle = T.ch; x.beginPath(); x.ellipse(100, 82, 34, 30, 0, Math.PI, 0); x.fill(); x.fillRect(66, 80, 12, T.coif === "long" ? 90 : 46); x.fillRect(122, 80, 12, T.coif === "long" ? 90 : 46); if (T.coif === "long") { x.beginPath(); x.ellipse(100, 150, 36, 22, 0, 0, Math.PI); x.fill(); }
+    x.fillStyle = "#fff"; for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(100 + sg * 11, 96, 5.5, 4.5, 0, 0, 7); x.fill(); } x.fillStyle = "#3a2a1e"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(100 + sg * 11, 96.5, 3, 0, 7); x.fill(); }
+    x.strokeStyle = assombrir(T.ch, .8); x.lineWidth = 2.5; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(100 + sg * 5, 87); x.lineTo(100 + sg * 17, 86); x.stroke(); }
+    x.fillStyle = "#b8483e"; if (f) { x.beginPath(); x.ellipse(100, 114, 6, 4.5, 0, 0, 7); x.fill(); } else { x.fillRect(93, 113, 14, 3); }
+    x.fillStyle = "rgba(230,120,110,.3)"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(100 + sg * 18, 108, 6, 0, 7); x.fill(); }
+    x.fillStyle = "#e8d070"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(100 + sg * 31, 108, 3, 0, 7); x.fill(); } }); }   // (les boucles d'oreilles)
+function poussette(scene) {   // une poussette des années 80 : châssis chromé, nacelle bleu marine, capote, roues à rayons ; le bébé qui dort sous sa couverture
+  const g = new THREE.Group(), chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: .8, roughness: .25 }), tissu = new THREE.MeshStandardMaterial({ color: 0x1f2f5a, roughness: .8 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .7 });
+  const nac = new THREE.Mesh(new THREE.BoxGeometry(.78, .32, .4), tissu); nac.position.y = .62; g.add(nac);
+  const capote = new THREE.Mesh(new THREE.CylinderGeometry(.22, .22, .4, 16, 1, true, 0, Math.PI), tissu.clone()); capote.material.side = THREE.DoubleSide; capote.rotation.x = Math.PI / 2; capote.rotation.y = Math.PI / 2; capote.position.set(-.27, .78, 0); g.add(capote);
+  for (const [px, pz] of [[-.3, .2], [-.3, -.2], [.3, .2], [.3, -.2]]) { const r = new THREE.Mesh(new THREE.TorusGeometry(.14, .025, 8, 20), noir); r.position.set(px, .15, pz * 1.25); g.add(r); const ax = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .3, 6), chrome); ax.position.set(px, .15, pz * 1.25); g.add(ax); }
+  for (const pz of [-.22, .22]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .75, 6), chrome); t.position.set(0, .42, pz); t.rotation.z = Math.PI / 2; g.add(t); const p = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .6, 6), chrome); p.position.set(.52, .82, pz); p.rotation.z = .7; g.add(p); }
+  const poig = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, .5, 8), noir); poig.rotation.x = Math.PI / 2; poig.position.set(.72, 1.04, 0); g.add(poig);
+  const couv = new THREE.Mesh(new THREE.BoxGeometry(.5, .05, .36), new THREE.MeshStandardMaterial({ color: 0xf2d6e0, roughness: .9 })); couv.position.set(.08, .79, 0); g.add(couv);
+  const tete = new THREE.Mesh(new THREE.SphereGeometry(.075, 12, 10), new THREE.MeshStandardMaterial({ color: 0xf3d2b8, roughness: .8 })); tete.position.set(-.2, .82, 0); g.add(tete);
+  const bonnet = new THREE.Mesh(new THREE.SphereGeometry(.08, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff })); bonnet.position.set(-.22, .84, 0); bonnet.rotation.z = .6; g.add(bonnet);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); g.userData.couv = couv; return g; }
+const PHRASES_MAMANS = ["Il a fait ses nuits, enfin !", "Doucement avec le ballon, les enfants !", "Tu as vu le prix du pain ?", "Elle est mignonne, ta petite !", "Kevin, ne tire pas les cheveux de ta sœur !", "On rentre bientôt, il va pleuvoir."];
+function mamansBanc(L, scene) {
+  const F = C3.trotFG; if (!F || !F.yT) return; const zb = (F.zB + -115.05) / 2, xb = F.x0 + .38, y = F.yT(zb), E = [];
+  const sprite = (t, w, h) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.renderOrder = 2; scene.add(m); return m; };
+  // les deux mamans, assises (le bassin au niveau de l'assise, 46 cm)
+  const mam = [0, 1].map(k => { const t = [0, 1].map(f => tex(toileMaman(k, f))), m = sprite(t[0], .58, 1.34); m.position.set(xb + .08, y + .46 - 1.34 * 150 / 460, zb + (k ? .48 : -.48)); return { m, t, k }; });
+  const pou = poussette(scene); pou.position.set(xb + .9, y, zb - 1.5); pou.rotation.y = -.4;
+  // les deux tout-petits et leur ballon
+  const pt = [3, 5].map((k, i) => { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), tend: tex(toileGamin(k, "face", 9)) }, h = i ? .86 : .96, m = sprite(t.face[0], .42, h); return { m, t, x: xb + 2.2, z: zb + (i ? 1.2 : -1.0) }; });
+  const ballon = new THREE.Mesh(new THREE.SphereGeometry(.11, 14, 10), new THREE.MeshStandardMaterial({ map: tex(toile(64, 32, (c) => { c.fillStyle = "#e8302a"; c.fillRect(0, 0, 64, 32); c.fillStyle = "#f2d22a"; c.fillRect(0, 10, 64, 6); c.fillStyle = "#fff"; c.fillRect(0, 22, 64, 4); })), roughness: .5 })); ballon.castShadow = true; scene.add(ballon);
+  const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.visible = false; scene.add(bs);
+  let prochain = 0, fin = 0, parle = 0;
+  const tous = [...mam.map(o => o.m), pou, ...pt.map(o => o.m), ballon];
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const o of tous) o.visible = vu; if (!vu) { bs.visible = false; return; } const cam = M.camera;
+    const tourne = (m, base) => { const a = Math.atan2(cam.position.x - m.position.x, cam.position.z - m.position.z); let d = Math.atan2(Math.sin(a - base), Math.cos(a - base)); m.rotation.y = base + Math.max(-1.1, Math.min(1.1, d)); };
+    for (const o of mam) { const mp = o.t[o.k === parle && Math.floor(tm / 260) % 2 ? 1 : 0]; if (o.m.material.map !== mp) { o.m.material.map = mp; o.m.material.needsUpdate = true; } tourne(o.m, Math.PI / 2); }
+    // le ballon : d'un petit à l'autre, en rebondissant (un aller-retour toutes les 3,6 s)
+    const T = 3600, u = (tm % T) / T, aller = u < .5, v = aller ? u * 2 : (u - .5) * 2, A = pt[0], B = pt[1], [p0, p1] = aller ? [A, B] : [B, A], e = v * v * (3 - 2 * v);
+    ballon.position.set(p0.x + .25 + (p1.x - p0.x) * e, y + .12 + .11 + Math.abs(Math.sin(v * Math.PI * 2)) * .35 * (1 - v * .5), p0.z + (p1.z - p0.z) * e); ballon.rotation.x += .1;
+    pt.forEach((o, i) => { const lance = (i === 0) === aller ? v < .25 : v > .8, sautille = Math.abs(Math.sin(tm / 240 + i)) * .03; o.m.position.set(o.x, y + .12 + sautille, o.z);
+      const mp = lance ? o.t.tend : o.t.face[Math.floor(tm / 300 + i) % 3]; if (o.m.material.map !== mp) { o.m.material.map = mp; o.m.material.needsUpdate = true; } tourne(o.m, -Math.PI / 2 + (i ? -.5 : .5)); });
+    pou.userData.couv.position.y = .79 + Math.sin(tm / 900) * .006;   // (le bébé respire)
+    if (tm > prochain) { prochain = tm + 8000 + Math.random() * 8000; parle = Math.random() < .5 ? 0 : 1; const m = mam[parle].m; peindreBulle(bc, PHRASES_MAMANS[Math.floor(Math.random() * PHRASES_MAMANS.length)]); bt.needsUpdate = true; bs.position.set(m.position.x, y + 1.6, m.position.z); bs.visible = true; fin = tm + 3500; }
+    if (bs.visible && (tm > fin || Math.hypot(cam.position.x - xb, cam.position.z - zb) > 25)) { bs.visible = false; parle = -1; } };
+  // (on ne marche pas dans la poussette ni sur les petits)
+  const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(Math.abs(x - pou.position.x) < .55 && Math.abs(z - pou.position.z) < .55) && !pt.some(o => Math.hypot(x - o.x, z - o.z) < .35);
+  L.mamans = { mam, pou, pt, ballon }; }
 function deliDelo(L, scene) {
   const MUR = [20.2, -75], PAS_CH = -.62,   // (le mur noir de la troisième cour, juste après les armoires électriques ; la chaîne part vers la gauche)
     geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
-  const bulle = (e, txt, t) => { const c = e.bc, x = c.getContext("2d"); x.clearRect(0, 0, 512, 128); x.font = "bold 34px Arial"; const w = Math.min(500, x.measureText(txt).width + 40);
-    x.fillStyle = "rgba(255,255,255,.95)"; x.beginPath(); x.roundRect(256 - w / 2, 14, w, 74, 22); x.fill(); x.beginPath(); x.moveTo(246, 86); x.lineTo(256, 112); x.lineTo(268, 86); x.fill();
-    x.fillStyle = "#222"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(txt, 256, 52); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
+  const bulle = (e, txt, t) => { peindreBulle(e.bc, txt); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
   const hasardDD = (l) => l[Math.floor(Math.random() * l.length)];
   for (let k = 0; k < 10; k++) { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), dos: [0, 1, 2].map(f => tex(toileGamin(k, "dos", f))), profil: [0, 1, 2, 3].map(f => tex(toileGamin(k, "profil", f))), tend: tex(toileGamin(k, "face", 9)) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     m.renderOrder = 2; scene.add(m); const o = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);
@@ -2485,6 +2567,13 @@ function ruesDehors0(A, L, scene) {
   const tP = tex(toilePanCoupe(WP, H, AW, AH)); tP.repeat.set(-1 / WP, 1 / H); tP.offset.set(.5, 0);
   const brique = A.mat({ color: 0x8a4a36, roughness: .95 });
   AG.ajoute(new THREE.ExtrudeGeometry(sh, { depth: 2, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: tP }), brique], 0, yb, -10);
+  // sous la voûte, dans le mur de droite (en allant vers le portail) : la porte du poste de garde, où se tient le gendarme
+  { const bois = A.mat({ color: 0x3b2618, roughness: .6 }), cadre = A.mat({ color: 0xe6e0d4, roughness: .75 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 });
+    const fr = AG.ajoute(new THREE.BoxGeometry(.12, 2.5, 1.3), cadre, 2.27, yb + 1.25, -3.4, false);
+    const po = AG.ajoute(new THREE.BoxGeometry(.06, 2.3, 1.06), bois, 2.24, yb + 1.15, -3.4, false);
+    for (const [y, h] of [[.6, .8], [1.65, .9]]) AG.ajoute(new THREE.BoxGeometry(.03, h, .8), A.mat({ color: 0x2e1d12, roughness: .6 }), 2.2, yb + y, -3.4, false);
+    AG.ajoute(new THREE.SphereGeometry(.035, 8, 6), laiton, 2.18, yb + 1.1, -3.0, false);
+    const pq = AG.ajoute(new THREE.PlaneGeometry(.5, .16), A.mat({ map: tex(toile(160, 52, (c) => { c.fillStyle = "#1d3f73"; c.fillRect(0, 0, 160, 52); c.fillStyle = "#f4f1e6"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("POSTE", 80, 34); })) }), 2.2, yb + 2.6, -3.4, false); pq.rotation.y = -Math.PI / 2; }
   // le linteau de pierre « GARDE RÉPUBLICAINE », en relief : ses ressauts aux deux bouts, la rangée de denticules dessous
   { const LW = 8.4, LH = 1.75, y0 = yb + AH + 1.05, blanc = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#e8e2d5", 40, 120)), 1, 1), roughness: .85 });
     // les lettres en relief, taillées dans la même pierre blanche : l'ombre portée en bas à droite, la lumière en haut à gauche (et le relief, par la carte de bosses)
@@ -7881,6 +7970,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
+  if (id === "grande" && !copie) enfantsToit(L, scene);
+  if (id === "grande" && !copie) mamansBanc(L, scene);   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
@@ -8329,7 +8420,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -11444,6 +11535,18 @@ function animerGendarme() {
   const vus = g.vus || (g.vus = new Map()), now = Date.now();
   for (const [num, q] of M.gens) { if (num === GENDARME || !q.g || !q.g.visible || num === PNJ) continue;
     if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); direPNJ(GENDARME, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
+/* --- le second gendarme de faction : sous la voûte du portail de l'horloge (rue des Messageries), devant la porte du poste ; le même que celui de l'entrée, qui salue chaque passant --- */
+const GENDARME2 = -88;
+function animerGendarme2() {
+  if (!M || !M.L) return; const ici = M.lieu === "grande" && !M.L.apo && !!M.L.porcheHorloge; let g = M.gens.get(GENDARME2);
+  if (!ici) { if (g) retirerAncien(GENDARME2); return; }
+  const lx = 1.55, lz = -3.4, cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2, pos = [cx + (lx - lz) / Math.SQRT2, cz + (lx + lz) / Math.SQRT2];
+  const cle = infoGendarme(63, "images/gendarme-tete.png"); if (g && g.cleInfo !== cle.cle) { retirerAncien(GENDARME2); g = null; }
+  if (!g) { g = ajouterAncien({ ...cle.info, numero: GENDARME2, pnj: true, salue: true, x: pos[0], z: pos[1] }); if (g) g.cleInfo = cle.cle; return; }
+  if (Math.hypot(g.g.position.x - pos[0], g.g.position.z - pos[1]) > .5) { g.g.position.x = pos[0]; g.g.position.z = pos[1]; g.cible = null; g.chemin = []; }
+  const vus = g.vus || (g.vus = new Map()), now = Date.now();
+  for (const [num, q] of M.gens) { if (num === GENDARME2 || !q.g || !q.g.visible || num === PNJ || (q.info && q.info.pnj && num < -60)) continue;
+    if (q.g.position.distanceTo(g.g.position) < 2.4 && now - (vus.get(num) || 0) > 60000) { vus.set(num, now); g.info.salutT = performance.now(); direPNJ(GENDARME2, M.L.nuit ? "Bonsoir !" : "Bonjour !"); break; } } }
 /* --- les gendarmes de ronde (le jour) : quatre, chacun de son côté (jamais ensemble), dans les cours, les ruelles, la rue en pente et la place ;
        ni sur la terrasse, ni dans la fosse ; ils disent bonjour à ceux qu'ils croisent --- */
 const RONDES = [[-73, 2, "Gendarme Leclerc"], [-74, 3, "Gendarme Moreau"], [-75, 4, "Gendarme Fabre"], [-76, 5, "Gendarme Girard"]];
