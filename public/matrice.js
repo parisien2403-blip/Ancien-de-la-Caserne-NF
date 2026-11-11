@@ -11287,8 +11287,7 @@ const FILMS_VF = [
   { cle: "lb", lieu: "santacarla", titre: "Génération perdue", annee: 1987 },
   { cle: "re", lieu: "z-grande", titre: "Resident Evil", annee: 1996, plusieurs: true },
   { cle: "sh", lieu: "sh-fetes", titre: "Silent Hill", annee: 1999 },
-  { cle: "grem", lieu: "kingston", titre: "Gremlins", annee: 1984 },
-  { cle: "hw", lieu: "fetes", titre: "Halloween", annee: 1978, plusieurs: true }];   /* (Halloween : on est Michael, dans la salle des fêtes) */
+  { cle: "grem", lieu: "kingston", titre: "Gremlins", annee: 1984 }];   /* (Halloween : retiré) */
 const ENTREE_APO = { arrivee: [25.6, -129.6], yaw: Math.PI * .75 };   // (sur la petite place, devant la voûte de l'horloge jaune : on arrive en faisant sauter son portail)
 const louesVF = f => Object.entries((M && M.qui) || {}).filter(([l]) => f.plusieurs ? estApo(l) : universDe(l) === universDe(f.lieu)).flatMap(([, n]) => n);
 function menuVideoFutur() { if (!M || M.vfMenu || M.cine) return;
