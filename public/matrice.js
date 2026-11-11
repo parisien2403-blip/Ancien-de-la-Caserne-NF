@@ -4469,7 +4469,9 @@ async function hwMichael(src) {
   const moi = M.gens.get(M.moiNum); if (!moi) return; const R = riggerMichael(src); M.scene.add(R.root);
   const [AN, AH] = await Promise.all([chargerAnimsMX("anims/re-nemesis.json?v=3"), chargerAnimsMX("anims/re-heros.json?v=4")]); if (!M || !M.halloween) { R.root.parent && R.root.parent.remove(R.root); return; }
   const mix = new THREE.AnimationMixer(R.root), act = {};
-  for (const [n, A, c] of [["walk", AN, "n-marche"], ["idle", AN, "n-idle"], ["coup", AN, "n-coup"]]) { const k = clipMXcible(A, c, R.root); if (k) { k.name = n; act[n] = mix.clipAction(k); } }   /* (la marche d'un héros, l'attente et le coup du Tyran) */
+  for (const [n, A, c] of [["walk", AH, "h-marche"], ["idle", AN, "n-idle"], ["coup", AN, "n-coup"]]) { const k = clipMXcible(A, c, R.root); if (k) { k.name = n; act[n] = mix.clipAction(k); } }   /* (la marche d'un héros, l'attente et le coup du Tyran) */
+  for (const n of ["walk", "idle"]) if (act[n]) { const c = act[n].getClip(); c.tracks = c.tracks.filter(tr => !/(Shoulder|Arm|Hand)/.test(tr.name)); }   /* (la marche d'un héros : ses bras tenaient une arme — on les laisse pendre et se balancer) */
+  R.root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (o.material.map) { o.material.emissive = new THREE.Color(0xffffff); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .38; } } });   /* (dans la nuit, on le voit : un peu éclairé de lui-même) */
   if (act.coup) { act.coup.setLoop(THREE.LoopOnce, 1); act.coup.clampWhenFinished = true; act.coup.timeScale = 1.7; } if (act.walk) act.walk.timeScale = .75;
   const p = moi.g.position, q = hwPointPres(p.x, p.z, 8, 11, true) || hwPointPres(p.x, p.z, 6, 12, false) || [p.x + 8, p.z];
   M.halloween.mi = { ...R, mix, act, cur: null, x: q[0], z: q[1], etat: "guette", t: performance.now(), chemin: [], cheminT: 0, teleT: performance.now(), vu: false, coup: 0 };
@@ -4500,7 +4502,9 @@ function animerHalloween(t) {
       const ox = mi.x, oz = mi.z; mi.x += ex / l * pas; mi.z += ez / l * pas; if (Math.hypot(mi.x - ox, mi.z - oz) < .2 * dt) { mi.bloqueT = mi.bloqueT || t; } else mi.bloqueT = 0; hwJouer(mi, "walk"); } }
   // il nous fait face, lentement
   const cap = Math.atan2(dx, dz); let dc = cap - mi.root.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); mi.root.rotation.y += dc * Math.min(1, dt * 4);
-  mi.root.position.set(mi.x, M.L.hauteur ? M.L.hauteur(mi.x, mi.z, {}) : 0, mi.z); mi.mix.update(dt); }
+  mi.root.position.set(mi.x, M.L.hauteur ? M.L.hauteur(mi.x, mi.z, {}) : 0, mi.z); mi.mix.update(dt);
+  if (mi.cur !== "coup") { const w = mi.act.walk, ph = w && mi.cur === "walk" ? w.time / w.getClip().duration * Math.PI * 2 : 0, a = mi.cur === "walk" ? .32 : 0, O = mi.os;   /* (les bras le long du corps, qui se balancent avec les pas ; le couteau, pointe en bas) */
+    for (const [s, sg] of [["Left", 1], ["Right", -1]]) { if (O[s + "Shoulder"]) O[s + "Shoulder"].quaternion.identity(); if (O[s + "Arm"]) O[s + "Arm"].rotation.set(Math.sin(ph) * a * sg, 0, -sg * .5); if (O[s + "ForeArm"]) O[s + "ForeArm"].rotation.set(-.22 - Math.max(0, -Math.sin(ph) * sg) * .2, 0, 0); if (O[s + "Hand"]) O[s + "Hand"].quaternion.identity(); } } }
 function hwMort() {   // touché : l'écran rougit, « Tu es mort » — et l'on se relève là, dans la caserne de tous les jours
   const H = M.halloween; if (!H || H.mort) return; H.mort = true; const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
   hwFlash("rgba(200,0,0,.8)", 900);
@@ -4561,7 +4565,8 @@ function circulationRue(L, scene, O) {
   const animAvant = L.anim;
   L.anim = (t) => { animAvant && animAvant(t);
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
-    if (t > prochain && !L.apo) { const dernier = enRoute[enRoute.length - 1];
+    for (const v of enRoute) v.g.visible = !(M && M.halloween);
+    if (t > prochain && !L.apo && !(M && M.halloween)) { const dernier = enRoute[enRoute.length - 1];
       if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .14 ? busVrai() : r0 < .32 ? moto() : r0 < .6 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
@@ -6170,7 +6175,7 @@ function construireAppart(A, L, scene) {
     antenne(.5); antenne(-.45); b(.1, .03, .07, noirT, 0, TH + .025, -.2, tv);   // (l'antenne en V, posée dessus)
     const lueur = new THREE.PointLight(0x9ab8ff, 0, 3, 2); lueur.position.set(0, TH / 2, .6); tv.add(lueur);
     // la lecture : une vidéo par chaîne (la bibliothèque de l'administrateur) ; la neige quand il n'y a rien
-    const video = document.createElement("video"); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous"; video.setAttribute("playsinline", "");
+    const video = vivreVideo(document.createElement("video")); video.playsInline = true; video.preload = "auto"; video.crossOrigin = "anonymous"; video.setAttribute("playsinline", "");
     const petitC = document.createElement("canvas"); petitC.width = 480; petitC.height = 360; const petitX = petitC.getContext("2d"); const videoT = new THREE.CanvasTexture(petitC); videoT.colorSpace = THREE.SRGBColorSpace; videoT.generateMipmaps = false; videoT.minFilter = THREE.LinearFilter;   /* (la vidéo réduite à la taille de l'écran de la télé, 25 images par seconde : envoyée en pleine définition à chaque image, elle faisait ramer tout le jeu) */   // (la vidéo va droit sur l'écran, image par image, en pleine définition)
     let liste = null, ch = 0, son = true, allumee = false, osd = 0, dernier = 0, chargement = false, vu = false, horsT = 0;
     const charger = async () => { if (chargement) return; chargement = true; try { const r = await fetch("/api/tele", { headers: { Authorization: "Bearer " + M.ctx.token } }); liste = r.ok ? await r.json() : []; } catch (e) { liste = []; } chargement = false; if (ch >= (liste.length || 1)) ch = 0; };
@@ -10994,6 +10999,7 @@ const echapper = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "
 /* les vidéos (la télé de l'appartement, le grand écran de la salle des fêtes, celles du jeu) : téléchargées EN ENTIER une fois, gardées sur l'appareil
    (le cache du navigateur), puis lues depuis l'appareil — plus jamais de vidéo qui cale parce que le réseau ou le serveur tarde ; la fois d'après, elle part tout de suite.
    cle : un nom stable (sans le jeton de connexion) ; prog(0..1) : l'avancement du téléchargement. Rend l'adresse locale (blob:) de la vidéo. */
+const vivreVideo = v => { try { v.style.cssText = "position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1"; document.body.appendChild(v); } catch (e) {} return v; };   /* (une vidéo muette hors de la page : le navigateur la met en veille — le son du DJ passe, l'image reste figée ; posée dans la page, minuscule, elle tourne) */
 const VID_LOC = { urls: new Map(), enCours: new Map(), ordre: [] };
 function videoLocale(url, cle, prog) {
   if (VID_LOC.urls.has(cle)) { const u = VID_LOC.urls.get(cle); VID_LOC.ordre = VID_LOC.ordre.filter(k => k !== cle).concat(cle); return Promise.resolve(u); }
@@ -11903,7 +11909,7 @@ const RONDES = [[-73, 2, "Gendarme Leclerc"], [-74, 3, "Gendarme Moreau"], [-75,
 const ZONES_RONDE = [[-10, 10, -16, 12], [-10, 10, -43, -31], [-19, 19, -71, -57], [15.5, 23, -116, -86], [-20, 23, -132, -118], [-25, -16, -116, -86]];   // (la cour d'honneur, la 2e, la 3e cour, la rue en pente, la place, la ruelle de gauche)
 function animerRondes() {
   if (!M || !M.L) return;
-  const ici = M.lieu === "grande" && !M.L.apo;   // (le jour comme le soir)
+  const ici = M.lieu === "grande" && !M.L.apo && !M.halloween;   // (le jour comme le soir ; pas à Halloween)
   const moi = M.moiNum && M.gens.get(M.moiNum), now = Date.now();
   for (const [num, k, nom] of RONDES) { let g = M.gens.get(num);
     if (!ici) { if (g) retirerAncien(num); continue; }
@@ -12122,7 +12128,7 @@ function chienVolume(scene) {   // un chien en volume : corps, pattes qui marche
     if (!marche) pattes[2].rotation.z = pattes[3].rotation.z = acc * .9; corps.position.y = .36 - acc * .1; corps.rotation.z = acc * .35; queue.rotation.z = .9 + Math.sin(t / 120) * .3 + acc * .5; };
   return g; }
 function animerPromeneur(t) {
-  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert;
+  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert && !M.halloween;
   let p = M.gens.get(PROMENEUR);
   if (!ici) { if (p) retirerAncien(PROMENEUR); return; }
   const XP = 48.1, Z0 = -133, Z1 = 25;
@@ -12289,6 +12295,7 @@ function terrasseGalinette(A, L, scene, Y, zf) {
       E.push({ p, ph: j * 2.3 }); });
     (DH_.voit = DH_.voit || []).push([xt - 1, xt + 1, zt - .45, zt + .45]); });
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return;
+    for (const e of E) e.p.visible = !M.halloween;
     for (const e of E) { const P = e.p.userData.parts; e.p.userData.poser("assis", tm); const c = (tm / 1000 + e.ph) % 9, boit = c < 1.6;   // (de temps en temps, ils portent leur verre à la bouche)
       P.bras[1].e.rotation.x = boit ? -1.1 : -.55; P.bras[1].c.rotation.x = boit ? -2.0 : -.9; P.tete.rotation.x = boit ? -.25 : 0; P.tete.rotation.y = boit ? 0 : Math.sin(tm / 1500 + e.ph) * .4; } };
   L.terrasse = E; }
@@ -12353,7 +12360,13 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
     const pend = new THREE.Mesh(new THREE.PlaneGeometry(.6, .35), couv); pend.position.set(-.1, y0 + H - .12, W / 2 + .03); pend.rotation.x = .15; g.add(pend);   // (un pan qui pend par-dessus le bord)
     (DH_.voit = DH_.voit || []).push([x + 1.35, x + 2.55, z - .8, z - .05]); }
   let fin = 0, vu0 = 0;
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; return; } const cam = M.camera;
+  // Halloween : il est mort, allongé sur le dos dans son sang
+  const flaque = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), new THREE.MeshStandardMaterial({ map: tex(toile(128, 128, (c) => { for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, d = Math.random() * 30, R = 8 + Math.random() * (i < 4 ? 40 : 16); c.fillStyle = `rgba(${70 + Math.random() * 40},2,6,${.7 + Math.random() * .3})`; c.beginPath(); c.ellipse(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, R, R * .8, a, 0, 7); c.fill(); } })), transparent: true, depthWrite: false, roughness: .15, polygonOffset: true, polygonOffsetFactor: -2 }));
+  flaque.rotation.x = -Math.PI / 2; flaque.position.set(x, Y + .02, z - 1.1); flaque.visible = false; scene.add(flaque); const pos0 = m.position.clone();
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; flaque.visible = false; return; } const cam = M.camera;
+    const mort = !!M.halloween; flaque.visible = mort; if (mort) { bs.visible = false; m.rotation.set(-Math.PI / 2, 0, 0); m.position.set(x, Y + .12, z - .2);
+      Pm.jambes.forEach((J, i) => { J.h.rotation.set(0, 0, (i ? 1 : -1) * .15); J.gen.rotation.x = 0; }); Pm.buste.rotation.x = 0; Pm.bras.forEach((b, i) => { b.e.rotation.set(0, 0, (i ? 1 : -1) * .9); b.c.rotation.x = -.2; }); Pm.tete.rotation.set(0, .6, 0); return; }
+    if (m.rotation.x) { m.rotation.set(0, Math.PI, 0); m.position.copy(pos0); }
 
     const moi = M.moiNum && M.gens.get(M.moiNum), pres = moi && Math.hypot(moi.g.position.x - x, moi.g.position.z - z) < 4;
     poser(tm, pres);
@@ -12476,11 +12489,12 @@ function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = 
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
   const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
-  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
+  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (v.readyState >= 2) E.vt.needsUpdate = true;   /* (l'image suivante, à chaque fois : si le navigateur ne la signale pas) */
+    if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
 function videoDJ(c) { let v = M.videoDJ;
-  if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); M.videoDJ = null; M.videoDJid = null; M.videoDJsrc = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
-  if (!v) { v = M.videoDJ = document.createElement("video"); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
+  if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); v.remove(); M.videoDJ = null; M.videoDJid = null; M.videoDJsrc = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
+  if (!v) { v = M.videoDJ = vivreVideo(document.createElement("video")); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
     v.addEventListener("error", () => { if (!M || M.videoErrId === M.videoDJid) return; M.videoErrId = M.videoDJid; console.warn("clip", v.error && v.error.message); M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip ne peut pas être affiché sur ce navigateur : son format vidéo n'est pas pris en charge (il faut un MP4 en H.264). La musique, elle, passe."); }); }
   const cle = c.id + ":" + c.debut; if (M.videoDJid !== cle) { M.videoDJid = cle; M.videoRelance = 0; M.videoAttente = 0; v.playbackRate = 1; M.videoCaleT = 0; M.videoCalee = false; M.videoSautT = 0;
     // (le clip est d'abord téléchargé en entier sur l'appareil, puis lu de là — il ne cale plus ; la toile reste blanche le temps du téléchargement, puis il se cale à la bonne seconde)
@@ -13513,7 +13527,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (mondesManquants(i
   trace("construit " + id); M.trace1 = true;
   /* le lieu qu'on quitte : dans la vraie caserne, on le garde tout prêt (on y revient souvent, et on arrive près de sa porte : le reconstruire tout de suite figeait l'image
      quelques secondes en entrant) ; ailleurs, il est libéré un peu plus tard */
-  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && !(baseLieu(lieuAvant) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(id))) &&   /* (vers la salle des fêtes, la cave ou l'appartement — là où passent des vidéos : la cour et ses rues ne restent pas en mémoire, sinon la carte graphique est pleine et les vidéos n'ont plus d'image) */ ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : ancL.apo ? estApo(id) : true);   // (à Resident Evil aussi, d'un lieu à l'autre : la grande cour se reconstruisait à chaque retour, de longues secondes)   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
+  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && !(PETIT && baseLieu(lieuAvant) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(id))) &&   /* (vers la salle des fêtes, la cave ou l'appartement — là où passent des vidéos : la cour et ses rues ne restent pas en mémoire, sinon la carte graphique est pleine et les vidéos n'ont plus d'image) */ ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : ancL.apo ? estApo(id) : true);   // (à Resident Evil aussi, d'un lieu à l'autre : la grande cour se reconstruisait à chaque retour, de longues secondes)   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
     if (garder && ancL.apo) { for (const o of [...(M.zomb ? [...M.zomb.values()].map(z => z.g) : []), ...(M.lickers || []).map(l => l.g), M.tyran && M.tyran.g, M.lisa && M.lisa.g, ...(M.cadavres || [])]) if (o && o.parent) o.parent.remove(o); M.cadavres = [];   // (zombies, Lickers, boss : remis à neuf en revenant)
       if (M.lisa && !M.lisa.mortT) M.lisa = null; if (M.tyran && !M.tyran.mortT) M.tyran = null; M.lickers = []; M.lickL = null; M.zombL = null; }
     if (garder && ancL.sh) { for (const m of M.shMonstres || []) for (const o of [!m.p && m.g, m.lf && m.lf.g]) if (o && o.parent) o.parent.remove(o); M.shMonstres = []; M.shPopL = null; }   // (ses monstres ne restent pas plantés là : on les remet en arrivant)
@@ -15048,7 +15062,7 @@ function preparerVoisin() {
     if (modeRE() && !q.continu) continue;   /* (Resident Evil : le lieu suivant se prépare derrière la porte qui s'ouvre — plus pendant qu'on joue, où l'image se figeait d'un coup ; seuls les passages sans porte sont préparés à l'avance) */
     const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
     const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
-  if (best && baseLieu(best) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(M.lieu)) && (bd > 3.5 || M.lieu === "appart")) return;   /* (la cour et ses rues, préparées seulement tout près de la porte : sinon la carte graphique est pleine, et les vidéos n'ont plus d'image) */
+  if (PETIT && best && baseLieu(best) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(M.lieu)) && (bd > 3.5 || M.lieu === "appart")) return;   /* (la cour et ses rues, préparées seulement tout près de la porte : sinon la carte graphique est pleine, et les vidéos n'ont plus d'image) */
   if (!best || Object.keys(M.prets).length >= (PETIT ? 1 : 2)) return;
   if (mondesManquants(best).length) { chargerMondes(best).catch(() => {}); return; }   // (son code d'abord ; on le préparera au tour suivant)   // (petit téléphone : un seul lieu préparé à l'avance — la mémoire)
   M.preparation = true; const lieu = M.lieu;
