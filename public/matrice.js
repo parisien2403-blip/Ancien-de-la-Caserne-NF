@@ -2165,7 +2165,7 @@ DH_.dedans0 = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 &
   || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.bord(x) - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
   || (x - z > DH_.C + .35 && x <= DH_.XE + .3 && z >= DH_.ZN - .3)                                          // devant le pan coupé
   || (Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= -7.4 && RU.lz(x, z) >= -10.6 && (!M || !M.L || !M.L.porcheHorloge || M.L.porcheHorloge.ouv > .75 || Math.abs(RU.lz(x, z) + 9.2) > .5));   // le bout de la voûte (on passe la grille quand elle est ouverte)
-DH_.h = (x, z) => z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : RU.lz(x, z) > -10.05 && Math.abs(RU.lx(x, z)) < 3 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && !(x > DH_.XR - DH_.RA && z < DH_.ZR + DH_.RA && Math.hypot(x - DH_.XR + DH_.RA, z - DH_.ZR - DH_.RA) > DH_.RA) && z > (x > 56 ? DH_.ZR2 : x > 52 ? DH_.ZR + (DH_.ZR2 - DH_.ZR) * (x - 52) / 4 : DH_.ZR)) || z < DH_.ZF ? DH_.y(z) + .12 : DH_.y(z);
+DH_.h = (x, z) => z < DH_.ZF && Math.abs(x - DH_.CX) < 3.6 ? (z < DH_.ZO - .1 && Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : RU.lz(x, z) > -10.05 && Math.abs(RU.lx(x, z)) < 3 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && !(x > DH_.XR - DH_.RA && z < DH_.ZR + DH_.RA && Math.hypot(x - DH_.XR + DH_.RA, z - DH_.ZR - DH_.RA) > DH_.RA) && z > (x > 56 ? DH_.ZR2 : x > 52 ? DH_.ZR + (DH_.ZR2 - DH_.ZR) * (x - 52) / 4 : DH_.ZR)) || z < DH_.ZF ? DH_.y(z) + .12 : DH_.y(z);
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
 const RDC_HV = {
@@ -2788,7 +2788,7 @@ function ruesDehors0(A, L, scene) {
   plat(XO + 3, XEst, ZR, DH_.ZR2);
   { const f = A.ajoute(new THREE.PlaneGeometry(4.2, 4.2), dessus, XO + 2, Y0 + .123, ZN + 2, false); f.rotation.x = -Math.PI / 2; }   // (sous l'angle arrondi de l'immeuble au dôme : plus de trou dans le sol)
   { const c = A.ajoute(new THREE.CircleGeometry(DH_.AR, 32, 0, Math.PI), dessus, DH_.AX, Y0 + .121, ZO, false); c.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(c); }   // (le sol du renfoncement)
-  dalle([[XW, ZO], [XEst, ZO], [XEst, ZF], [XW, ZF]]);                                         // celui d'en face, rue d'Hauteville
+  dalle([[XW, ZO], [DH_.CX - 3.6, ZO], [DH_.CX - 3.6, ZF], [XW, ZF]]); dalle([[DH_.CX + 3.6, ZO], [XEst, ZO], [XEst, ZF], [DH_.CX + 3.6, ZF]]);   // (le trottoir d'en face, coupé par l'entrée de la Cité d'Hauteville : une rue, les voitures y tournent)                                         // celui d'en face, rue d'Hauteville
   /* --- les immeubles d'en face --- */
   const im = (o) => { const g = A.haussmann(o); g.position.y = Y0; L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); return g; };
   const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"];
@@ -2802,7 +2802,9 @@ function ruesDehors0(A, L, scene) {
     if (k === 7) { const c = g.children.find(o => o.isMesh && o.geometry.type === "BoxGeometry"); if (c && Array.isArray(c.material)) { c.material = c.material.slice(); c.material[4] = A.mat({ map: tex(toileVolets(16, 5)) }); } } });   // (en face du carrefour : l'immeuble blanc à volets gris, d'après la photo)
   // la Cité d'Hauteville, en face de la caserne (d'après la photo) : une petite rue entre deux immeubles, son passage piété, et au bout un mur peint en trompe-l'œil
   { const cx = DH_.CX, z0 = ZO, z1 = ZO - DH_.CL;
-    plat(cx - 2.9, cx + 2.9, z1, z0); for (const sg of [-1, 1]) { const f = A.ajoute(new THREE.PlaneGeometry(1.6, 1.6), dessus, cx + sg * 3.6, Y0 + .119, z0, false); f.rotation.x = -Math.PI / 2; }   // (aux deux coins de la Cité : plus de jour dans le sol) for (const sg of [-1, 1]) { const o = A.ajoute(new THREE.BoxGeometry(.7, .12, DH_.CL), dessus, cx + sg * 3.25, Y0 + .06, (z0 + z1) / 2); o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); }
+    plat(cx - 2.9, cx + 2.9, z1, z0); plat(cx - 3.6, cx + 3.6, z0 - .01, ZF);   // (la chaussée de la Cité, et son débouché sur la rue d'Hauteville)
+    for (const sg of [-1, 1]) { const o = A.ajoute(new THREE.BoxGeometry(.7, .12, DH_.CL), dessus, cx + sg * 3.25, Y0 + .06, (z0 + z1) / 2); o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); }   // (ses deux petits trottoirs)
+    for (const sg of [-1, 1]) { const f = A.ajoute(new THREE.PlaneGeometry(.9, .9), dessus, cx + sg * 3.75, Y0 + .121, z0 + .1, false); f.rotation.x = -Math.PI / 2; }   // (au pied des deux coins : plus de jour dans le sol)
     im({ x: cx - 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 340 });
     im({ x: cx + 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.bains });
     const t = tex(toileRueLoin(7.2, 26, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 26), A.mat({ map: t, roughness: 1 })); m.position.set(cx, Y0 + 13, z1 + .05); scene.add(m);
