@@ -2378,10 +2378,23 @@ function deliDelo(L, scene) {
     E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0 }); }
   let cand = null, prison = [], tPrec = 0, pret = false, delivreur = null;
   const permis = (x, z) => { try { return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
-  const chemin = (e, x, z) => { let p = []; try { p = itineraire(L, e.x, e.z, x, z); } catch (er) {} e.chem = p && p.length ? p.map(([a, b]) => [a, b]) : []; };
+  /* leurs chemins : une carte à eux, à mailles d'un mètre (dix fois plus légère que celle des joueurs), et un seul calcul par image — plus d'à-coups */
+  const GX0 = -40, GZ0 = -141, GN = 90, GM = 124; let grille = null, budget = 0;
+  const libreL = (x0, z0, x1, z1) => { const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .3); for (let i = 1; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; if (!permis(x, z)) return false; } return true; };
+  const cellule = (x, z) => [Math.round(x - GX0), Math.round(z - GZ0)];
+  const astar = (x0, z0, x1, z1) => { if (!grille) { grille = new Uint8Array(GN * GM); for (let i = 0; i < GN; i++) for (let j = 0; j < GM; j++) { const x = GX0 + i, z = GZ0 + j; grille[j * GN + i] = permis(x, z) && permis(x + .35, z) && permis(x - .35, z) && permis(x, z + .35) && permis(x, z - .35) ? 1 : 0; } }
+    const proche = (x, z) => { const [i0, j0] = cellule(x, z); for (let r = 0; r < 4; r++) for (let i = i0 - r; i <= i0 + r; i++) for (let j = j0 - r; j <= j0 + r; j++) if (i >= 0 && j >= 0 && i < GN && j < GM && grille[j * GN + i]) return j * GN + i; return -1; };
+    const s0 = proche(x0, z0), g = proche(x1, z1); if (s0 < 0 || g < 0) return [];
+    const cout = new Float32Array(GN * GM).fill(1e9), de = new Int32Array(GN * GM).fill(-1), ouv = [s0], gx = g % GN, gz = (g / GN) | 0; cout[s0] = 0;
+    while (ouv.length) { let bi = 0, bf = 1e9; for (let k = 0; k < ouv.length; k++) { const c = ouv[k], f = cout[c] + Math.hypot(c % GN - gx, ((c / GN) | 0) - gz); if (f < bf) { bf = f; bi = k; } } const c = ouv[bi]; ouv[bi] = ouv[ouv.length - 1]; ouv.pop(); if (c === g) break;
+      const ci = c % GN, cj = (c / GN) | 0; for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) { if (!di && !dj) continue; const ni = ci + di, nj = cj + dj; if (ni < 0 || nj < 0 || ni >= GN || nj >= GM) continue; const n = nj * GN + ni; if (!grille[n]) continue; if (di && dj && (!grille[cj * GN + ni] || !grille[nj * GN + ci])) continue;
+        const nc = cout[c] + (di && dj ? 1.414 : 1); if (nc < cout[n]) { if (cout[n] >= 1e9) ouv.push(n); cout[n] = nc; de[n] = c; } } }
+    if (de[g] < 0 && g !== s0) return []; const pts = []; for (let c = g; c >= 0 && c !== s0; c = de[c]) pts.push([GX0 + c % GN, GZ0 + ((c / GN) | 0)]); pts.reverse(); pts.push([x1, z1]);
+    const out = []; let cx = x0, cz = z0, k = 0; while (k < pts.length) { let j = pts.length - 1; while (j > k && !libreL(cx, cz, pts[j][0], pts[j][1])) j--; out.push(pts[j]); [cx, cz] = pts[j]; k = j + 1; } return out; };
+  const chemin = (e, x, z) => { if (libreL(e.x, e.z, x, z)) { e.chem = [[x, z]]; return; } if (budget <= 0) { e.prochain = 0; return; } budget--; try { e.chem = astar(e.x, e.z, x, z); } catch (er) { e.chem = []; } };
   const loin = (e, de) => { let best = null, bd = -1; for (let i = 0; i < 14; i++) { const c = cand[Math.floor(Math.random() * cand.length)], d0 = Math.hypot(c[0] - e.x, c[1] - e.z); if (d0 > 22) continue; const d = de ? Math.hypot(c[0] - de.x, c[1] - de.z) : Math.random(); if (d > bd) { bd = d; best = c; } } return best || cand[Math.floor(Math.random() * cand.length)]; };
   const posChaine = i => [MUR[0] + i * PAS_CH, MUR[1]];
-  const reset = () => { prison = []; delivreur = null; for (const e of E) { e.pris = -1; const c = cand[Math.floor(Math.random() * cand.length)]; e.x = c[0]; e.z = c[1]; e.chem = []; } };
+  const reset = (debut) => { prison = []; delivreur = null; for (const e of E) { e.pris = -1; e.chem = []; e.prochain = 0; if (debut) { const c = cand[Math.floor(Math.random() * cand.length)]; e.x = c[0]; e.z = c[1]; } } };   // (une nouvelle partie : chacun repart d'où il est — personne ne disparaît)
   const avance = (e, dt, v) => { while (e.chem.length && Math.hypot(e.chem[0][0] - e.x, e.chem[0][1] - e.z) < .2) e.chem.shift(); if (!e.chem.length) return false;
     const [tx, tz] = e.chem[0], d = Math.hypot(tx - e.x, tz - e.z), st = Math.min(d, v * dt); e.vx = (tx - e.x) / d; e.vz = (tz - e.z) / d; e.x += e.vx * st; e.z += e.vz * st; e.marche = true; return true; };
   const prendre = (e, chat, t) => { e.pris = prison.length; prison.push(e); e.chem = []; chemin(e, ...posChaine(e.pris)); bulle(e, hasardDD(PHRASES_DD.touche), t); if (chat) setTimeout(() => chat.bFin < performance.now() && bulle(chat, hasardDD(PHRASES_DD.chat), performance.now()), 900);
@@ -2389,15 +2402,15 @@ function deliDelo(L, scene) {
     if (prison.length >= 8) { const [a, b] = prison; setTimeout(() => { for (const q of E) if (q.role !== "souris") q.role = "souris"; a.role = "chasse"; b.role = "garde"; bulle(a, hasardDD(PHRASES_DD.change), performance.now()); reset(); }, 4000); } };
   const anim = (t) => { const vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf) && !!M && M.L === L;
     for (const e of E) e.m.visible = e.o.visible = vu && !!cand; if (!vu) { for (const e of E) e.bs.visible = false; tPrec = 0; return; }
-    if (!cand) { cand = []; for (let x = -40; x <= 48; x += 1.5) for (let z = -140; z <= -19; z += 1.5) if (permis(x, z)) cand.push([x, z]); if (cand.length < 20) { cand = null; return; } reset(); }
-    const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t; if (!dt) return;
+    if (!cand) { cand = []; for (let x = -40; x <= 48; x += 1.5) for (let z = -140; z <= -19; z += 1.5) if (permis(x, z)) cand.push([x, z]); if (cand.length < 20) { cand = null; return; } reset(true); }
+    const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t; if (!dt) return; budget = 1;
     const chasse = E.find(e => e.role === "chasse"), garde = E.find(e => e.role === "garde"), libres = E.filter(e => e.role === "souris" && e.pris < 0);
     // le chat chasseur : la souris libre la plus proche
     { const c = chasse; let cible = null, bd = 1e9; for (const s of libres) { const d = Math.hypot(s.x - c.x, s.z - c.z); if (d < bd) { bd = d; cible = s; } }
-      if (cible) { if (t > c.prochain || !c.chem.length) { chemin(c, cible.x, cible.z); c.prochain = t + 700; } avance(c, dt, 3.5); if (bd < .6) prendre(cible, c, t); } }
+      if (cible) { if (t > c.prochain || !c.chem.length) { c.prochain = t + 1100; chemin(c, cible.x, cible.z); } avance(c, dt, 3.5); if (bd < .6) prendre(cible, c, t); } }
     // le chat gardien : il tourne près de la chaîne ; il fonce sur une souris qui approche
     { const g = garde, bout = posChaine(Math.max(0, prison.length)); let menace = null, bd = 7; for (const s of libres) { const d = Math.hypot(s.x - bout[0], s.z - bout[1]); if (d < bd) { bd = d; menace = s; } }
-      if (menace) { if (t > g.prochain || !g.chem.length) { chemin(g, menace.x, menace.z); g.prochain = t + 500; } avance(g, dt, 3.3); if (Math.hypot(menace.x - g.x, menace.z - g.z) < .6) { prendre(menace, g, t); setTimeout(() => bulle(g, hasardDD(PHRASES_DD.chat), performance.now()), 800); } }
+      if (menace) { if (t > g.prochain || !g.chem.length) { g.prochain = t + 900; chemin(g, menace.x, menace.z); } avance(g, dt, 3.3); if (Math.hypot(menace.x - g.x, menace.z - g.z) < .6) { prendre(menace, g, t); setTimeout(() => bulle(g, hasardDD(PHRASES_DD.chat), performance.now()), 800); } }
       else { if (!g.chem.length || t > g.prochain) { const a = Math.random() * 6.28; const p = [bout[0] - 1.5 + Math.cos(a) * 2, bout[1] + Math.sin(a) * 2.5]; if (permis(...p)) chemin(g, ...p); g.prochain = t + 2500; } avance(g, dt, 1.4); } }
     // les souris
     if (prison.length && !delivreur && libres.length && Math.random() < dt * .08) { delivreur = libres[Math.floor(Math.random() * libres.length)]; delivreur.prochain = 0; }
@@ -2418,7 +2431,7 @@ function deliDelo(L, scene) {
       let map = e.t.face[0], flip = 1; const cx = cam.position.x - e.x, cz = cam.position.z - e.z, cd = Math.hypot(cx, cz) || 1;
       if (e.pris >= 0 && !e.marche) map = e.t.tend;
       else if (e.marche) { const av = (e.vx * cx + e.vz * cz) / cd, la = (e.vx * cz - e.vz * cx) / cd, img = Math.floor(t / 110 + e.k);
-        if (Math.abs(la) > .55) { map = e.t.profil[img % 4]; flip = la > 0 ? -1 : 1; } else map = (av > 0 ? e.t.face : e.t.dos)[1 + img % 2]; }
+        if (Math.abs(la) > .55) { map = e.t.profil[img % 4]; flip = la > 0 ? 1 : -1; }   // (vers la droite de l'écran : de profil tourné à droite) else map = (av > 0 ? e.t.face : e.t.dos)[1 + img % 2]; }
       if (e.m.material.map !== map) { e.m.material.map = map; e.m.material.needsUpdate = true; } e.m.scale.x = flip; e.marche = false;
       e.m.rotation.y = Math.atan2(cx, cz);
       e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && (t > e.bFin || cd > 25)) e.bs.visible = false; } };
@@ -2450,7 +2463,10 @@ function toitPoubelle(A, L, scene) {
   const h0 = L.hauteur; L.hauteur = (x, z, p) => { if (surMontee(x, z)) { const y0 = RU.y(z), t = Math.max(0, Math.min(1, (x - XG) / (x0 - XG))), yb = y0 + 1.3;   // (d'abord sur le conteneur, puis sur le toit)
       return t < .55 ? y0 + (yb - y0) * Math.min(1, t / .3) : yb + (yh - yb) * Math.min(1, (t - .55) / .3); }
     if (surToit(x, z) && haut(p)) return yh; return h0 ? h0(x, z, p) : 0; }; }
-function ruesDehors(A, L, scene) {
+function ruesDehors(A, L, scene) { const n0R = scene.children.length; try { ruesDehors0(A, L, scene); } finally {
+  // les immeubles des rues : posés à plat dans la scène (leurs pièces se fusionnent avec le décor : bien moins d'appels de dessin, la rue est plus fluide)
+  for (const g of scene.children.slice(n0R)) if (g.isGroup && g.userData.nuit && !g.userData.perso) { g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g); } } }
+function ruesDehors0(A, L, scene) {
   const T = textures(), { Y0, XE, ZN, C, XR, XF, XO, ZR, ZF, ZO, XW, XEst, ZS, Z7 } = DH_, P0 = L.porcheHorloge; if (!P0) return;
   graine = 302; L.nuitObjets = L.nuitObjets || []; L.silhouettes = L.silhouettes || [];
   const { ga, gp, yb } = P0, A0 = A, AG = { ...A0, ajoute: (...g) => { const o = A0.ajoute(...g); ga.add(o); return o; } };
@@ -2610,7 +2626,8 @@ function ruesDehors(A, L, scene) {
   // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
   { const VOM = []; let n = 0;
     for (const [xv, rot] of [[XR + .95, Math.PI / 2], [XF - .95, -Math.PI / 2]]) for (let z = -132; z < 24; z += 4.7) { if (Math.random() < .18 || (z > -50 && z < -40)) continue;
-      const mo = n % 2 ? "106" : "clio", g = citadine(scene, mo, COULEURS_90[(n * 5 + 3) % COULEURS_90.length], xv, z, rot); n++; g.position.y = DH_.y(z); VOM.push([xv - .9, xv + .9, z - 1.95, z + 1.95]); }
+      const mo = n % 2 ? "106" : "clio", g = citadine(scene, mo, COULEURS_90[(n * 5 + 3) % COULEURS_90.length], xv, z, rot); n++; g.position.y = DH_.y(z); g.updateMatrixWorld(true); for (const o of [...g.children]) scene.attach(o); scene.remove(g);   // (posées à plat dans la scène : fusionnées avec le décor, bien plus léger)
+      VOM.push([xv - .9, xv + .9, z - 1.95, z + 1.95]); }
     DH_.voit = VOM; L.voituresMess = VOM; }
   // au bout, d'un seul tenant, la rue du Faubourg (le même passage que sous le porche, décalé de 41,35 m)
   L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && x > DH_.XE2 && x < XO && z > DH_.ZP, vers: "rue", continu: [0, -41.35, 0], centre: [(XE + XO) / 2, DH_.ZP + .5], messageries: true });
