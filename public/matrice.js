@@ -1820,7 +1820,8 @@ function construireRue(A, T, L, scene) {
   im({ x: -36.98, z: -13.55, largeur: 11.9, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 734, rdc: RDC_HV.resto });   // (le long de la rue La Fayette, contre l'immeuble du métro)
   im({ x: -37, z: -27.5, largeur: 16, etages: 6, rot: Math.PI / 2, teinte: teintes[2], graine: 731, rdc: RDC_HV.mode }); im({ x: -22.36, z: -7.45, largeur: 12, etages: 6, rot: 0, teinte: "#e2d8c4", graine: 735, rdc: RDC_PN.dm });   // (à l'angle, côté caserne : D&M Outlet, d'après la photo)
   im({ x: -28.4, z: -21.5, largeur: 28, etages: 6, rot: -Math.PI / 2, teinte: "#e9dfc8", graine: 732, rdc: RDC_PN.rallye }); storeRouge(A, scene, -28.42, -13, 10, -Math.PI / 2, 0); storeRouge(A, scene, -28.42, -24, 11.6, -Math.PI / 2, 0);   // (Le Rallye du Nord : l'immeuble de D&M Outlet, côté caserne)
-  im({ x: -32.7, z: -35.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[4], graine: 733, rdc: RDC_PN.bistrot });
+  [-43.5, -59.5, -75.5].forEach((zc, k) => { im({ x: -37, z: zc, largeur: 16, etages: 6 - (k % 2), rot: Math.PI / 2, teinte: teintes[k % 5], graine: 740 + k }); im({ x: -28.4, z: zc, largeur: 16, etages: 6 - ((k + 1) % 2), rot: -Math.PI / 2, teinte: teintes[(k + 2) % 5], graine: 750 + k, rdc: [RDC_PN.square, RDC_HV.mode, RDC_HV.porte][k] }); });   // (la rue La Fayette continue, au loin)
+  im({ x: -32.7, z: -83.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[4], graine: 733, rdc: RDC_PN.bistrot });
   L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > -37 && x < -24 && z < -16, vers: "grande", arrivee: NV_.P(43, 0), yaw: -3 * Math.PI / 4, sansCercle: true });
   im({ x: -32.5, z: 6.8, largeur: 9, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 75 });
   // le grand mur pignon du voisin, et son décor (un panneau miroir entre deux colonnes de demi-lunes)
@@ -13554,8 +13555,8 @@ function racineJumeau(scene, L, id, contenu) {
   for (const o of r.children) { b.makeEmpty(); if (o.isInstancedMesh) { if (!o.boundingBox) o.computeBoundingBox(); b.copy(o.boundingBox).applyMatrix4(o.matrixWorld); } else b.setFromObject(o); if (b.isEmpty()) continue; b.getCenter(c);
     if (o.isMesh && o.geometry.type === "PlaneGeometry" && Math.abs(c.y) < .005 && o.geometry.parameters.width * o.geometry.parameters.height > 5000) {   /* (le grand sol du lieu : chacun s'arrête au bout du porche — sinon bitume et pavés se disputent la même place, et clignotent) */
       const Z = 15.65 - PORCHE_DZ, X = 24;   /* (la rue : tout, sauf derrière la façade de la caserne ; la cour : seulement entre ses bâtiments, jusqu'au porche — les rues voisines gardent leur bitume) */
-      L.solJ = { m: o, g0: o.geometry, g1: rognerSol(o, id === "rue" ? [[-1e9, 1e9, Z, 1e9], [-1e9, -X, -1e9, Z], [X, 1e9, -1e9, Z]] : [[-X, X, -1e9, 15.65]]) }; continue; }
-    if (id === "rue") { if (c.z < -26.5 && Math.abs(c.x) < 25) L.fauxJ.push(o); else if (c.z < -11.3 && Math.abs(c.x) < 30) L.porcheJ.push(o); }   /* (la cour peinte au fond ; la façade du porche et sa voûte) */
+      L.solJ = { m: o, g0: o.geometry, g1: rognerSol(o, id === "rue" ? [[-42, 1e9, Z, 1e9], [-42, -X, -1e9, Z], [X, 1e9, -1e9, Z], [-62, -42, -12, 12]] : [[-X, X, -1e9, 15.65]])   /* (pas au-delà de x = -42 : la rue de Chabrol et la rue La Fayette sont là, plus bas) */ }; continue; }
+    if (id === "rue") { if (c.z < -7.4 && c.x < -16 && c.x > -45.5) (L.cacheCour = L.cacheCour || []).push(o); else if (c.z < -26.5 && Math.abs(c.x) < 25) L.fauxJ.push(o);   /* (cacheCour : la rue La Fayette, côté caserne — vue de la cour, elle passerait dans les bâtiments) */ else if (c.z < -11.3 && Math.abs(c.x) < 30) L.porcheJ.push(o); }   /* (la cour peinte au fond ; la façade du porche et sa voûte) */
     else { if (c.z > 29.6) L.fauxJ.push(o); else if (c.z > 15 && Math.abs(c.x) < 30) L.porcheJ.push(o); } } }   /* (la rue recopiée ; la façade du porche vue de la cour, sa voûte) */
 /* cacher (quoi : "lumieres", "maillages" ou tout) ; les lumières des deux décors sont les mêmes dans les deux scènes : au passage, l'éclairage ne change pas d'un pouce */
 function rognerSol(m, rects) {   /* (le même sol, réduit à quelques rectangles : mêmes pavés, même échelle) */
@@ -13576,6 +13577,7 @@ function jumelerPorche() {
   const LR = M.lieu === "rue" ? M.L : q.L, LG = M.lieu === "rue" ? q.L : M.L;
   for (const o of [...LR.fauxJ, ...LG.fauxJ]) masquerJ(o, true);
   for (const S of [LR.solJ, LG.solJ]) if (S) S.m.geometry = S.g1;
+  if (M.lieu !== "rue") for (const o of LR.cacheCour || []) masquerJ(o, true);
   if (M.lieu === "rue") for (const o of LG.porcheJ) masquerJ(o, true);   /* (dans la rue : la voûte de la rue) */
   else { for (const o of LG.porcheJ) masquerJ(o, true, "lumieres"); for (const o of LR.porcheJ) masquerJ(o, true, "maillages"); }   /* (dans la cour : la sienne, la même, éclairée pareil) */
   if (q.L.setNuit) try { q.L.setNuit(!!M.L.nuit); } catch (e) {}
