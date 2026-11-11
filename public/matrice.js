@@ -2772,6 +2772,18 @@ function ruesDehors0(A, L, scene) {
   { const tronc = A.mat({ color: 0x5b4a3a, roughness: 1 }), verts = [0x4f7f36, 0x5e8f3e, 0x46732f, 0x6a9a48].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), grille = A.mat({ color: 0x2a2c2e, metalness: .4 });
     for (let x = XW + 6; x < xN0 - 14; x += 8.5) { if (x < DH_.XC + 1.5) continue; const z = ZR + 1.25; A.ajoute(new THREE.CylinderGeometry(.13, .18, 4.4, 8), tronc, x, Y0 + 2.2, z).userData.perso = true;   // (perso : la caméra passe à travers les arbres, au lieu de sauter devant soi) A.ajoute(new THREE.BoxGeometry(1.3, .03, 1.3), grille, x, Y0 + .135, z, false);
       for (let k = 0; k < 5; k++) { const r = 1.3 + alea() * .9; const f = A.ajoute(new THREE.IcosahedronGeometry(r, 1), verts[Math.floor(alea() * 4)], x + (alea() - .5) * 1.8, Y0 + 5.2 + alea() * 2.2, z + (alea() - .5) * 1.6); f.scale.y = .85; f.userData.perso = true; } } }
+  // entre les arbres : les bancs doubles de Paris (deux assises dos à dos, pieds de fonte, lattes de bois vertes) ; on peut s'y asseoir, d'un côté ou de l'autre
+  { const fonteB = A.mat({ color: 0x1f3326, roughness: .45, metalness: .5 }), latte = A.mat({ color: 0x2f5a3c, roughness: .7 }), zc = ZR + 1.25, Yb = Y0 + .12;
+    L.tabourets = L.tabourets || [];
+    for (let x = XW + 6 + 4.25, k = 0; x < xN0 - 14; x += 8.5, k++) { if (x < DH_.XC + 2 || Math.abs(x + 12) < 5) continue;
+      const g = new THREE.Group(); g.position.set(x, Yb, zc); scene.add(g); const m = (geo, mat, px, py, pz, rx = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.rotation.x = rx; o.castShadow = true; g.add(o); return o; };
+      for (const sz of [-1, 1]) { for (let j = 0; j < 3; j++) m(new THREE.BoxGeometry(2.0, .035, .11), latte, 0, .44, sz * (.12 + j * .13));   // (les assises)
+        for (let j = 0; j < 3; j++) m(new THREE.BoxGeometry(2.0, .1, .03), latte, 0, .58 + j * .13, sz * (.05 + j * .02), sz * -.12); }   // (les dossiers, légèrement inclinés)
+      for (const lx of [-.88, .88]) { m(new THREE.BoxGeometry(.06, .06, 1.0), fonteB, lx, .41, 0); m(new THREE.BoxGeometry(.07, .9, .07), fonteB, lx, .45, 0);
+        for (const sz of [-1, 1]) { const pied = m(new THREE.BoxGeometry(.05, .44, .06), fonteB, lx, .21, sz * .38); pied.rotation.x = sz * .18; m(new THREE.BoxGeometry(.05, .05, .32), fonteB, lx, .62, sz * .3, sz * -.5); } }
+      m(new THREE.BoxGeometry(1.9, .05, .05), fonteB, 0, .9, 0);
+      (DH_.voit = DH_.voit || []).push([x - 1.05, x + 1.05, zc - .55, zc + .55]);
+      for (const sx of [-.5, .5]) L.tabourets.push([x + sx, zc - .3, Math.PI, .4], [x + sx, zc + .3, 0, .4]); } }   // (la place, le sens où l'on regarde, la hauteur de l'assise)
   // au bout, du même côté : l'immeuble de pierre du n° 7
   // la suite de la rue, côté caserne : deux immeubles de pierre (le n° 7…), un petit décroché, puis les immeubles jusqu'à l'angle de la rue du Faubourg
   { const XE2 = DH_.XE2, ZJ = DH_.ZJ, ZB = DH_.ZB, pan = (x, z0, z1, g, ry = Math.PI / 2) => { const l = Math.abs(z1 - z0), t = tex(toileHaussmann(l, 6, ["#e6dbc4", "#e3d6ba", "#eae1cc"][g % 3], 87 + g)), y0 = Math.min(DH_.y(z0), DH_.y(z1));
@@ -11533,7 +11545,7 @@ function arme3D(p, A) { if (!_v1) { _v1 = new THREE.Vector3(); _v2 = new THREE.V
   A.arme.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, dir)).premultiply(_qb.invert()); }
 /* assis sur un tabouret du bar : tourné vers le comptoir (le côté où l'on ne peut pas avancer), les cuisses à l'horizontale, les jambes pendantes ; de temps en temps, il boit une gorgée */
 function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.rotation.y;
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (M.L.limites && !M.L.limites(tb[0] + dx * .5, tb[1] + dz * .5)) { A.cap = Math.atan2(dx, dz); break; } }
+    if (tb[2] != null) A.cap = tb[2]; else for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (M.L.limites && !M.L.limites(tb[0] + dx * .5, tb[1] + dz * .5)) { A.cap = Math.atan2(dx, dz); break; } }   /* (un banc : on sait de quel côté on regarde) */
   A.sc.rotation.y = A.cap; const T = (n, a, v) => tourne3D(A, n, a, v), k = A.sc.scale.y * A.h;
   if (!A.rep) { A.rep = {}; for (const n of ["LeftUpLeg", "RightUpLeg", "LeftLeg", "RightLeg", "LeftArm", "RightArm", "LeftForeArm", "RightForeArm", "Head"]) { const b = os3D(A, n); if (b) A.rep[n] = b.quaternion.clone(); } }
   for (const n in A.rep) os3D(A, n).quaternion.copy(A.rep[n]);   // (on repart chaque fois de la pose de départ : sinon un os que l'animation ne remet pas en place tourne sur lui-même)
@@ -11541,7 +11553,7 @@ function assis3D(p, A, tb) { if (A.assisT !== tb) { A.assisT = tb; A.cap = A.sc.
   T("RightArm", "x", -.5); T("RightForeArm", "x", -.9); T("LeftArm", "x", -.35); T("LeftForeArm", "x", -.6);   // (les avant-bras posés sur le comptoir)
   // (le bassin posé sur l'assise : le haut des cuisses au-dessus du centre du tabouret, un peu en arrière ; les cuisses vers le comptoir)
   const h = os3D(A, "Hips"); if (h) { A.sc.position.set(0, 0, 0); A.sc.updateMatrixWorld(true); const v = h.getWorldPosition(new THREE.Vector3()); p.g.worldToLocal(v);
-    A.sc.position.set(-Math.sin(A.cap) * .07 * k - v.x, .66 + .05 * k - v.y, -Math.cos(A.cap) * .07 * k - v.z); }
+    A.sc.position.set(-Math.sin(A.cap) * .07 * k - v.x, (tb[3] ?? .66) + .05 * k - v.y, -Math.cos(A.cap) * .07 * k - v.z); }
  }
 /* les danses, sur le vrai squelette : par-dessus la pose de repos, chaque os tourne autour des axes du personnage (droite, haut, devant) */
 let AX = null, _q, _qp, _qs, _ax;   /* (créés au premier pas de danse : le moteur 3D se charge après ce fichier) */
@@ -12158,6 +12170,23 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
   gob.position.set(x + .3, Y + .03, z - 1.0); scene.add(gob);
   const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, Y + 1.5, z - .4); bs.visible = false; scene.add(bs);
   (DH_.voit = DH_.voit || []).push([x - .6, x + .6, z - 1.1, z]);   // (on ne lui marche pas dessus)
+  // à côté de lui, son caddie : des cartons pliés et une couverture dedans
+  { const g = new THREE.Group(); g.position.set(x + 1.35, Y, z - .5); scene.add(g); const fil = new THREE.MeshStandardMaterial({ color: 0xb8bcc0, metalness: .7, roughness: .35 }), noir = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .8 });
+    const m = (geo, mat, px, py, pz) => { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+    const W = .56, Lg = .9, y0 = .42, H = .45;
+    for (let k = 0; k <= 10; k++) { const t = -Lg / 2 + k * Lg / 10; for (const sz of [-1, 1]) m(new THREE.BoxGeometry(.012, H, .012), fil, t, y0 + H / 2, sz * W / 2); }   // (les parois de fil de fer)
+    for (let k = 0; k <= 6; k++) { const t = -W / 2 + k * W / 6; for (const sx of [-1, 1]) m(new THREE.BoxGeometry(.012, H, .012), fil, sx * Lg / 2, y0 + H / 2, t); }
+    for (const yy of [y0, y0 + H / 2, y0 + H]) { for (const sz of [-1, 1]) m(new THREE.BoxGeometry(Lg, .014, .014), fil, 0, yy, sz * W / 2); for (const sx of [-1, 1]) m(new THREE.BoxGeometry(.014, .014, W), fil, sx * Lg / 2, yy, 0); }
+    for (let k = 0; k <= 6; k++) m(new THREE.BoxGeometry(Lg, .01, .01), fil, 0, y0, -W / 2 + k * W / 6);   // (le fond)
+    for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) { m(new THREE.BoxGeometry(.025, y0 - .06, .025), fil, sx * (Lg / 2 - .05), (y0 - .06) / 2 + .06, sz * (W / 2 - .04)); const r = m(new THREE.CylinderGeometry(.05, .05, .04, 12), noir, sx * (Lg / 2 - .05), .05, sz * (W / 2 - .04)); r.rotation.x = Math.PI / 2; }
+    m(new THREE.BoxGeometry(.03, .03, W + .04), new THREE.MeshStandardMaterial({ color: 0xc8202a, roughness: .5 }), Lg / 2 + .12, y0 + H + .08, 0); for (const sz of [-1, 1]) m(new THREE.BoxGeometry(.14, .02, .02), fil, Lg / 2 + .06, y0 + H + .05, sz * W / 2);   // (la poignée rouge)
+    const carton = new THREE.MeshStandardMaterial({ color: 0xa8804e, roughness: 1 }), carton2 = new THREE.MeshStandardMaterial({ color: 0x8e6a3e, roughness: 1 });
+    [[-.18, .62, .05, .5, .6, .5, .2], [.12, .7, -.08, .02, .7, .5, -.25], [.25, .64, .1, .35, .45, .3, .1]].forEach(([px, py, pz, a, b, c, r], k) => { const o = m(new THREE.BoxGeometry(a, b, c), k % 2 ? carton2 : carton, px, py, pz); o.rotation.z = r; });   // (des cartons, dépliés ou en boîte, qui dépassent)
+    const couv = new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#6a2a2a"; c.fillRect(0, 0, 64, 64); c.fillStyle = "rgba(30,40,60,.6)"; for (let k = 0; k < 64; k += 16) { c.fillRect(k, 0, 6, 64); c.fillRect(0, k, 64, 6); } })), roughness: 1, side: THREE.DoubleSide });
+    const cv = new THREE.Mesh(new THREE.PlaneGeometry(.8, .9, 6, 6), couv); const pa = cv.geometry.attributes.position; for (let i = 0; i < pa.count; i++) pa.setZ(i, Math.sin(pa.getX(i) * 9) * .04 + Math.cos(pa.getY(i) * 7) * .04); cv.geometry.computeVertexNormals();
+    cv.rotation.x = -Math.PI / 2 + .25; cv.position.set(-.05, y0 + H + .03, .02); cv.castShadow = true; g.add(cv);
+    const pend = new THREE.Mesh(new THREE.PlaneGeometry(.6, .35), couv); pend.position.set(-.1, y0 + H - .12, W / 2 + .03); pend.rotation.x = .15; g.add(pend);   // (un pan qui pend par-dessus le bord)
+    (DH_.voit = DH_.voit || []).push([x + .8, x + 2.0, z - .9, z - .1]); }
   let fin = 0, vu0 = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; return; } const cam = M.camera;
 
