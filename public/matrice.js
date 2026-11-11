@@ -11668,7 +11668,7 @@ function animerPromeneur(t) {
   if (!ici) { if (p) retirerAncien(PROMENEUR); return; }
   const XP = 48.1, Z0 = -133, Z1 = 25;
   if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(98)) || {};
-    ajouterAncien({ numero: PROMENEUR, nom: P.nom || "Le monsieur au chien", tenue: P.tenue || "civil", couleur: P.couleur || "#8a6a44", bas: P.bas || "#3a3a40", pieds: P.pieds || "#2a1a12", reglage: P.reglage || null,
+    ajouterAncien({ numero: PROMENEUR, nom: P.nom || "Le monsieur au chien", tenue: P.tenue && P.tenue !== "civil" ? P.tenue : "tshirt", couleur: P.tenue && P.tenue !== "civil" ? P.couleur : "#2f5fae", bas: P.bas || "#3a3a40",   /* (tee-shirt et pantalon) */ pieds: P.pieds || "#2a1a12", reglage: P.reglage || null,
       teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 98) : tetePromeneur(), pnj: true, x: XP, z: -60 }); return; }
   const S = p.prom || (p.prom = { sens: 1, arret: 0, prochain: t + 15000 }), g = p.g.position;
   if (!L.chienProm || L.chienProm.parent !== M.scene) { L.chienProm = chienVolume(M.scene); L.chienProm.position.set(XP - .55, 0, g.z);
