@@ -12489,7 +12489,7 @@ function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = 
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
   const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
-  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (v.readyState >= 2) E.vt.needsUpdate = true;   /* (l'image suivante, à chaque fois : si le navigateur ne la signale pas) */
+  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (!("requestVideoFrameCallback" in v) && v.readyState >= 2 && v.currentTime !== E.vtT) { E.vtT = v.currentTime; E.vt.needsUpdate = true; }   /* (sans le signal du navigateur : seulement quand l'image a changé — pas 60 fois par seconde la même) */
     if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
 function videoDJ(c) { let v = M.videoDJ;
@@ -12508,7 +12508,7 @@ function videoDJ(c) { let v = M.videoDJ;
   if (now > (M.videoCaleT || 0)) { M.videoCaleT = now + 1000; const pos = (now - c.debut) / 1000;   // (calée sur l'heure de départ commune, comme la musique)
     if (pos >= 0 && v.readyState >= 1) { const ec = pos - v.currentTime; if (!v.seeking && (!v.duration || pos < v.duration)) {
       if (!M.videoCalee || Math.abs(ec) > 4) { if (!M.videoCalee || now > (M.videoSautT || 0)) { M.videoCalee = true; M.videoSautT = now + 8000; try { v.currentTime = pos + .3; } catch (e) {} } }   /* (calée une fois au départ ; ensuite plus de saut — sauf si elle s'est vraiment égarée) */
-      else v.playbackRate = Math.abs(ec) < .15 ? 1 : Math.max(.92, Math.min(1.08, 1 + ec * .12)); }   /* (le petit décalage, rattrapé en douceur : un poil plus vite ou plus lent, sans que l'image saute) */ if (v.paused) v.play().catch(() => {}); } } }
+      else v.playbackRate = Math.abs(ec) < .6 ? 1 : Math.max(.96, Math.min(1.04, 1 + ec * .05)); }   /* (on ne touche plus à la vitesse pour un petit écart : ça faisait hoqueter l'image) */   /* (le petit décalage, rattrapé en douceur : un poil plus vite ou plus lent, sans que l'image saute) */ if (v.paused) v.play().catch(() => {}); } } }
 /* ===================== la manette (Bluetooth) et les lunettes 3D =====================
    Une manette de jeu (GameSir, Xbox, PlayStation…) : joystick gauche pour marcher, joystick droit pour tourner la vue,
    A agir, B passer / se relever, gâchette droite tirer (pistolet, faisceau), gâchette gauche la lampe, Y la carte, X danser, Start le relief.
