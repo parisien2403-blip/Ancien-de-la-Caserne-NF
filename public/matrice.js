@@ -8221,7 +8221,7 @@ export async function ouvrir(ctx) {
   const rendu = new THREE.WebGLRenderer({ antialias: !PETIT, powerPreference: "high-performance" }); rendu.localClippingEnabled = true;
   try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     if (/Mali-(G31|G51|G52|G57|G68|T\d)|Adreno \(TM\) ([3-5]\d\d|60\d|61\d)|PowerVR/i.test(nom)) PETIT = true;
-    GPU_MODESTE = PETIT || (/Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom)); M_GPU = nom; } catch (e) {}
+    GPU_MODESTE = PETIT || (/Intel|SwiftShader|llvmpipe|Microsoft Basic/i.test(nom) && !/Arc/i.test(nom)) || /Mali-G7[0-7]|Adreno \(TM\) 6[2-4]\d/i.test(nom);   /* (les téléphones moyens : Mali-G72/G76, Adreno 618…) */ M_GPU = nom; } catch (e) {}
   if (choixQ === "haut" && !(navigator.deviceMemory <= 2)) PETIT = false;   // (« Haut » : on fait confiance à l'appareil — sauf s'il n'a vraiment presque pas de mémoire)
   QUALITE = choixQ !== "auto" ? choixQ : PETIT ? "bas" : GPU_MODESTE ? "moyen" : "haut";
   LK.N = PETIT ? 1 : 3;   // (les Lickers : un seul à la fois sur un petit téléphone)
@@ -8240,17 +8240,17 @@ export async function ouvrir(ctx) {
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
-  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : 1.5) * (PETIT ? .85 : 1); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
+  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : MOBILE ? 1.25 : 1.5) * (PETIT ? .85 : 1); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
-  const budget = logiciel ? 4e5 : PETIT ? 9e5 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
+  const budget = logiciel ? 4e5 : PETIT ? 9e5 : MOBILE || GPU_MODESTE ? 1.4e6 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { if (rendu.xr.isPresenting) return; const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
     rendu.setPixelRatio(Math.max(resMin, Math.min(res, M && M.capRes || 9, Math.sqrt(budget / (w * h))))); };   /* (capRes : Resident Evil sur téléphone, une image un peu moins fine, pour rester fluide) */
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
   appliquerRes();
-  rendu.shadowMap.enabled = !logiciel && !PETIT; rendu.shadowMap.type = THREE.PCFSoftShadowMap;   // (ni sans carte graphique, ni sur un petit téléphone : pas d'ombres portées)
+  rendu.shadowMap.enabled = !logiciel && !PETIT; rendu.shadowMap.type = GPU_MODESTE || MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   /* (ombres douces : seulement sur une bonne carte d'ordinateur) */   // (ni sans carte graphique, ni sur un petit téléphone : pas d'ombres portées)
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
@@ -8386,9 +8386,9 @@ export async function ouvrir(ctx) {
       if (r < res) M.resBaisseT = t;
       if (r !== res) { res = r; M.redim && M.redim(); }
       /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
-      const lent = moy > (PETIT ? 45 : 34) && res <= resMin + .01; M.lentN = lent ? (M.lentN || 0) + 1 : 0;
-      if (M.lentN >= 2 && (M.allege || 0) < 2 && qualiteChoisie() === "auto") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
-    preparerVoisin(); if (!M.jumeauJ && t > (M.prepT || 0)) jumelerPorche(); trierLumieres(t); if (PETIT || (MOBILE && modeRE())) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
+      const lent = moy > (PETIT ? 45 : 34) && (res <= resMin + .01 || moy > 50); M.lentN = lent ? (M.lentN || 0) + 1 : 0;   /* (très lent — moins de 20 images par seconde — : on n'attend pas que l'image soit au plus bas) */
+      if (M.lentN >= 2 && (M.allege || 0) < 3 && qualiteChoisie() !== "haut") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
+    preparerVoisin(); if (!M.jumeauJ && t > (M.prepT || 0)) jumelerPorche(); trierLumieres(t); if (PETIT || (MOBILE && modeRE()) || M.allege >= 2) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0; if (p.leve) p.g.position.y += p.leve;   /* (tenu en l'air : la main de l'arrivée) */
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -11134,7 +11134,7 @@ function construireScene(id) {
   scene.background = tex(T.ciel); scene.fog = new THREE.Fog(0xcfe6f7, 70, 160);
   scene.add(new THREE.HemisphereLight(0xdcefff, 0x8a7a66, 1.1));
   const soleil = new THREE.DirectionalLight(0xfff2dd, 2.3); soleil.position.set(-18, 30, 14); soleil.castShadow = true;
-  Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(2048, 2048); soleil.shadow.bias = -.0005;
+  Object.assign(soleil.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 120 }); soleil.shadow.mapSize.set(GPU_MODESTE ? 1024 : 2048, GPU_MODESTE ? 1024 : 2048);   /* (carte graphique modeste : une carte des ombres quatre fois plus légère) */ soleil.shadow.bias = -.0005;
   scene.add(soleil);
   const n0J = scene.children.length;
   sansVoituresGB = id === "gb-cour"; sansVoituresSH = id === "sh-grande"; voituresRE = estApo(id); ouvrirDehors = id === "grande"; const L = construireLieu(baseLieu(id), scene); ouvrirDehors = false; sansVoituresGB = sansVoituresSH = voituresRE = false; decorCaserne(scene, L, baseLieu(id), /^(sh|z)-/.test(id));   /* (les climatiseurs : à Silent Hill et à l'apocalypse, pas dans la caserne de tous les jours) */
@@ -12022,7 +12022,7 @@ const PASSANTS = [
   { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -153.4, -50, -153.4] }];
 function animerPassants(t) {
   if (!M || !M.L) return; const L = M.L;
-  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);
+  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && !M.sansFigurants && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);
     if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
     const [x0, z0, x1, z1] = P.trajet;
     if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); continue; }
@@ -12188,7 +12188,7 @@ function pigeon3D() {
   g.userData = { tete, ailes }; return g;
 }
 function animerPigeons(t) {
-  if (!M || !M.L || !M.scene) return; const L = M.L, ici = !L.apo && !L.sh && !M.cine && (M.lieu === "rue" || (M.lieu === "grande" && L.dehorsOuvert));
+  if (!M || !M.L || !M.scene) return; const L = M.L, ici = !L.apo && !L.sh && !M.cine && !M.sansFigurants && (M.lieu === "rue" || (M.lieu === "grande" && L.dehorsOuvert));
   if (L.pigR && L.pigR.scene !== M.scene) L.pigR = null;
   if (!ici) { if (L.pigR) L.pigR.tous.forEach((b) => b.g.visible = false); return; }
   if (!L.pigR) { const tous = []; PIGEONS.forEach(([lieu, cx, cz], k) => { if (lieu !== M.lieu) return; const n = 3 + (k % 3);
@@ -12723,7 +12723,8 @@ const ETALON_RE = { uniforms: { tDiffuse: { value: null }, uTemps: { value: 0 },
       gl_FragColor = vec4(col, c.a); }` };
 function alleger(n) { M.allege = n;
   if (n >= 1) { if (M.rendu.shadowMap.enabled) { M.rendu.shadowMap.enabled = false; M.scene && M.scene.traverse(o => { if (o.isLight) o.castShadow = false; if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); } }
-  if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; } }
+  if (n >= 2) { LK.N = 1; if (M.L && M.L.pluie) M.L.pluie.visible = false; }
+  if (n >= 3) M.sansFigurants = true; }   /* (encore trop lent : plus de passants ni de pigeons dans les rues) */
 function postActif() { if (M && M.course && M.course.on && M.L && !M.relief && !(M.allege >= 1)) return qualiteChoisie() !== "bas";   /* (la course de karts : la lueur des LED, des phares, des turbos — sauf en « Bas ») */
   return !!(M && qualiteChoisie() === "haut" && !(M.allege >= 1) &&   /* (la lueur des flammes : seulement en « Haut », choisi soi-même — Silent Hill s'en passe, et il est fluide) */   /* (sur téléphone, pas d'effets d'image — sauf si l'on a choisi « Haut » soi-même) */ !M.relief && M.L && M.L.apo && !M.L.sh && estApo(M.lieu)); }
 function chargerPost() { if (postMods) return postMods; postMods = Promise.all(["EffectComposer", "RenderPass", "ShaderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`./vendor/post/${n}.js?v=1`)))
