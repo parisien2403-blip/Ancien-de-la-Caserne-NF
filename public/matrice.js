@@ -2168,7 +2168,19 @@ DH_.dedans0 = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 &
 DH_.h = (x, z) => z < DH_.ZF && Math.abs(x - DH_.CX) < 3.6 ? (z < DH_.ZO - .1 && Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : RU.lz(x, z) > -10.05 && Math.abs(RU.lx(x, z)) < 3 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && !(x > DH_.XR - DH_.RA && z < DH_.ZR + DH_.RA && Math.hypot(x - DH_.XR + DH_.RA, z - DH_.ZR - DH_.RA) > DH_.RA) && z > (x > 56 ? DH_.ZR2 : x > 52 ? DH_.ZR + (DH_.ZR2 - DH_.ZR) * (x - 52) / 4 : DH_.ZR)) || z < DH_.ZF ? DH_.y(z) + .12 : DH_.y(z);
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
+const vitrineCafe = (x, X, Y, W, H) => {   // une devanture de café : cadre alu gris, grandes vitres, tables et chaises de bistrot dedans, une porte vitrée
+  x.fillStyle = "#8e9296"; x.fillRect(X, Y, W, H); const n = Math.max(2, Math.round(W / 70)), pw = (W - 8) / n;
+  for (let k = 0; k < n; k++) { const X0 = X + 4 + k * pw; const g = x.createLinearGradient(0, Y, 0, Y + H); g.addColorStop(0, "#5a4a3c"); g.addColorStop(1, "#2e2620"); x.fillStyle = g; x.fillRect(X0 + 3, Y + 4, pw - 6, H - 8);
+    x.fillStyle = "rgba(255,225,170,.35)"; x.fillRect(X0 + 3, Y + 4, pw - 6, (H - 8) * .35);
+    x.fillStyle = "#d8a050"; for (const t of [.3, .7]) { const tx = X0 + pw * t; x.fillRect(tx - 9, Y + H * .62, 18, 3); x.fillRect(tx - 1, Y + H * .62, 2, H * .3); for (const s2 of [-1, 1]) { x.fillRect(tx + s2 * 13, Y + H * .72, 2, H * .22); x.fillRect(tx + s2 * 13 - 4, Y + H * .72, 8, 2); } }
+    x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(X0 + 6, Y + 6, 4, H - 14); x.fillStyle = "#8e9296"; x.fillRect(X0 + 3, Y + H * .22, pw - 6, 3); } };
 const RDC_HV = {
+  galinette: (x, w, yr, h) => { x.fillStyle = "#cdb994"; x.fillRect(0, yr, w, h); x.fillStyle = "#bfae8a"; for (let k = 0; k < 6; k++) x.fillRect(0, yr + k * 28, w, 2);   // (la porte cochère verte, puis le café « La Galinette cendrée » jusqu'à l'angle)
+    const dw = w * .2, dx = w * .04, dy = yr + 26; x.fillStyle = "#a8977a"; x.fillRect(dx - 8, dy - 8, dw + 16, h - 18); x.fillStyle = "#1f3d36"; x.beginPath(); x.moveTo(dx, yr + h); x.lineTo(dx, dy + 30); x.quadraticCurveTo(dx + dw / 2, dy - 14, dx + dw, dy + 30); x.lineTo(dx + dw, yr + h); x.fill();
+    x.strokeStyle = "#13261f"; x.lineWidth = 3; x.beginPath(); x.moveTo(dx + dw / 2, dy + 14); x.lineTo(dx + dw / 2, yr + h); x.stroke(); x.fillStyle = "#c9a227"; for (const s2 of [-8, 8]) { x.beginPath(); x.arc(dx + dw / 2 + s2, yr + h * .58, 4, 0, 7); x.fill(); }
+    x.fillStyle = "#1d3f73"; x.fillRect(dx + dw + 14, yr + 70, 26, 14); x.fillStyle = "#fff"; x.font = "bold 11px Arial"; x.textAlign = "center"; x.fillText("69", dx + dw + 27, yr + 81);
+    x.fillStyle = "#f2efe6"; x.fillRect(w * .3, yr + 6, w * .7, 50); vitrineCafe(x, w * .32, yr + 58, w * .66, h - 60); },
+
   bains: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h);   // (le magasin de salles de bains : enseigne, grandes vitrines éclairées — baignoires, lavabos, robinets —, portes d'entrée en verre)
     x.fillStyle = "#1d2a3a"; x.fillRect(w * .03, yr + 6, w * .94, 30); x.fillStyle = "#e8eef2"; x.font = "bold 20px Georgia"; x.textAlign = "center"; x.fillText("BAINS & SANITAIRES  —  Salles de bains", w / 2, yr + 28);
     const doors = [w * .44, w * .56];
@@ -2798,7 +2810,7 @@ function ruesDehors0(A, L, scene) {
     const pn = A.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 24), [A.mat({ color: 0xc22a2a }), A.mat({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#c22a2a"; c.beginPath(); c.arc(32, 32, 32, 0, 7); c.fill(); c.fillStyle = "#2a4fa8"; c.beginPath(); c.arc(32, 32, 25, 0, 7); c.fill(); c.strokeStyle = "#c22a2a"; c.lineWidth = 7; c.beginPath(); c.moveTo(14, 14); c.lineTo(50, 50); c.stroke(); })) }), A.mat({ color: 0x888888 })], x - .05, Y0 + 2.5, z); pn.rotation.z = Math.PI / 2; }
   for (let k = 1; k < 8; k += 2) { const a = Math.PI + k / 8 * Math.PI / 2; A.ajoute(new THREE.CylinderGeometry(.055, .065, .9, 8), A.mat({ color: 0x1a1a1a }), XF + 2.5 + Math.cos(a) * 2.25, Y0 + .57, ZR + 2.5 + Math.sin(a) * 2.25); }   // (les potelets, autour de l'angle)
     // (le même immeuble de l'angle, sa façade sur la rue d'Hauteville)
-  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.porteVerte : k === 1 ? RDC_HV.superette : k === 4 ? RDC_HV.bains : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
+  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.galinette : k === 1 ? RDC_HV.superette : k === 4 ? RDC_HV.bains : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
     if (k === 7) { const c = g.children.find(o => o.isMesh && o.geometry.type === "BoxGeometry"); if (c && Array.isArray(c.material)) { c.material = c.material.slice(); c.material[4] = A.mat({ map: tex(toileVolets(16, 5)) }); } } });   // (en face du carrefour : l'immeuble blanc à volets gris, d'après la photo)
   // la Cité d'Hauteville, en face de la caserne (d'après la photo) : une petite rue entre deux immeubles, son passage piété, et au bout un mur peint en trompe-l'œil
   { const cx = DH_.CX, z0 = ZO, z1 = ZO - DH_.CL;
@@ -2809,6 +2821,16 @@ function ruesDehors0(A, L, scene) {
     im({ x: cx + 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.bains });
     const t = tex(toileRueLoin(7.2, 26, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 26), A.mat({ map: t, roughness: 1 })); m.position.set(cx, Y0 + 13, z1 + .05); scene.add(m);
   }
+  // à l'angle, le café « La Galinette cendrée » (d'après la photo) : ses stores rouges, et sa devanture qui tourne sur l'immeuble en demi-cercle
+  { const rouge = A.mat({ color: 0x9e1a24, roughness: .7, side: THREE.DoubleSide }), bandeau = (lg) => A.mat({ map: tex(toile(Math.round(lg * 60), 40, (c, w, h) => { c.fillStyle = "#9e1a24"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4ead8"; c.font = "bold 22px Georgia"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("LA GALINETTE CENDRÉE", w / 2, h / 2 + 1); })), side: THREE.DoubleSide });
+    const store = (xc, lg, z0, ry, lettres) => { const g = new THREE.Group(); g.position.set(xc, Y0 + 3.55, z0); g.rotation.y = ry; scene.add(g);
+      const t = new THREE.Mesh(new THREE.PlaneGeometry(lg, 1.15), rouge); t.rotation.x = -Math.PI / 2 + .55; t.position.set(0, -.25, .5); g.add(t);
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(lg, .32), lettres ? bandeau(lg) : rouge); b.position.set(0, -.68, .98); g.add(b); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); };
+    store(31.6, 8.4, ZO + .02, 0, true);
+    // la devanture qui continue sur l'immeuble en demi-cercle, sur 4 m
+    const R = DH_.AR, a0 = 3 * Math.PI / 2 - .5, tc = tex(toile(300, 170, (c, w, h) => { c.fillStyle = "#f2efe6"; c.fillRect(0, 0, w, 40); vitrineCafe(c, 6, 42, w - 12, h - 44); })); tc.wrapS = THREE.RepeatWrapping; tc.repeat.x = -1;
+    const dv = new THREE.Mesh(new THREE.CylinderGeometry(R - .04, R - .04, 3.4, 12, 1, true, a0, .5), A.mat({ map: tc, side: THREE.BackSide })); dv.position.set(DH_.AX, Y0 + 1.7, ZO); scene.add(dv);
+    { const a = a0 + .25, xa = DH_.AX + Math.sin(a) * (R - .1), za = ZO + Math.cos(a) * (R - .1); store(xa, 3.9, za, a + Math.PI, true); } }
   // l'immeuble blanc d'en face : sa façade se creuse en demi-cercle, le trottoir s'y élargit (d'après la photo)
   { const R = DH_.AR, H = 4.2 + 6 * 3.1, t = tex(toileVolets(Math.PI * R, 6)); t.wrapS = THREE.ClampToEdgeWrapping;
     const arc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ map: t, side: THREE.BackSide })); arc.position.set(DH_.AX, Y0 + H / 2, ZO); arc.receiveShadow = true; scene.add(arc);
