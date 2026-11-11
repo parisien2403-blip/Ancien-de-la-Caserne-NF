@@ -4410,27 +4410,57 @@ function hwDecor(mod) {
   const L = M.L, sc = M.scene, g = new THREE.Group(); sc.add(g); M.halloween.decor = g; M.halloween.fog0 = sc.fog; sc.fog = M.halloween.fog = new THREE.Fog(0x08090d, 5, 34);
   let gr = 9871; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647, h = (x, z) => L.hauteur ? L.hauteur(x, z, {}) : 0;
   const zones = [[-22, 31, -142, 29], [-58, 78, -156, -143], [38, 49, -140, 28]], pts = [];
-  for (let k = 0; k < 4000 && pts.length < 260; k++) { const Z = zones[k % 3 === 2 ? 2 : k % 3], x = Z[0] + r() * (Z[1] - Z[0]), z = Z[2] + r() * (Z[3] - Z[2]); if (L.limites(x, z)) pts.push([x, z]); }
-  const pris = () => pts.splice(Math.floor(r() * pts.length), 1)[0];
-  // le sang : quelques taches, des éclaboussures, des traînées
+  for (let k = 0; k < 6000 && pts.length < 420; k++) { const Z = zones[k % 3 === 2 ? 2 : k % 3], x = Z[0] + r() * (Z[1] - Z[0]), z = Z[2] + r() * (Z[3] - Z[2]); if (L.limites(x, z)) pts.push([x, z]); }
+  const pris = () => pts.splice(Math.floor(r() * pts.length), 1)[0], mm = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v3 = new THREE.Vector3(), un = new THREE.Vector3();
+  // (tout ce qui se répète — sang, papiers, cartons, flammes — est dessiné d'un seul coup : bien plus léger)
+  const semer = (geo, mat, n, f) => { const im = new THREE.InstancedMesh(geo, mat, n); let k = 0; for (; k < n; k++) { const p = pris(); if (!p) break; f(p, k); im.setMatrixAt(k, mm.compose(v3, q, un)); } im.count = k; im.instanceMatrix.needsUpdate = true; g.add(im); return im; };
+  // le sang : de grandes flaques, des éclaboussures, des traînées
   const sangs = [0, 1, 2].map(v => hwToile((c, w, hh) => { c.clearRect(0, 0, w, hh); const col = ["rgba(90,4,8,", "rgba(120,8,10,", "rgba(70,2,6,"][v];
     for (let i = 0; i < 26; i++) { const a = r() * 6.28, d = r() * (v === 2 ? 50 : 34), R = (v === 2 ? 6 : 3) + r() * (i < 3 ? 26 : 9); c.fillStyle = col + (.55 + r() * .4) + ")"; c.beginPath(); c.ellipse(64 + Math.cos(a) * d, 64 + Math.sin(a) * d * (v === 2 ? .35 : 1), R, R * (v === 2 ? .5 : .8), a, 0, 7); c.fill(); } }));
-  for (let k = 0; k < 55; k++) { const p = pris(); if (!p) break; const s = .5 + r() * 1.8, m = new THREE.Mesh(new THREE.PlaneGeometry(s * (k % 3 === 2 ? 2.2 : 1), s), new THREE.MeshStandardMaterial({ map: sangs[k % 3], transparent: true, depthWrite: false, roughness: .25, polygonOffset: true, polygonOffsetFactor: -2 }));
-    m.rotation.set(-Math.PI / 2, 0, r() * 6.28); m.position.set(p[0], h(p[0], p[1]) + .012, p[1]); g.add(m); }
+  sangs.forEach((t, v) => semer(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: .2, polygonOffset: true, polygonOffsetFactor: -2 }), 45,
+    (p) => { const s = .6 + r() * 2.2; v3.set(p[0], h(p[0], p[1]) + .012, p[1]); q.setFromEuler(e.set(0, r() * 6.28, 0)); un.set(s * (v === 2 ? 2.4 : 1), 1, s); }));
   // les papiers, les cartons
   const papier = hwToile((c, w, hh) => { c.fillStyle = "#d8d4c8"; c.fillRect(0, 0, w, hh); c.fillStyle = "rgba(60,60,70,.55)"; for (let y = 14; y < hh - 8; y += 9) c.fillRect(10, y, w - 20 - r() * 40, 3); c.fillStyle = "rgba(90,70,40,.25)"; c.fillRect(0, 0, w, hh); });
-  const papM = new THREE.MeshStandardMaterial({ map: papier, side: THREE.DoubleSide, roughness: 1 }), cartM = new THREE.MeshStandardMaterial({ color: 0x8e6a3e, roughness: 1 });
-  for (let k = 0; k < 60; k++) { const p = pris(); if (!p) break; const m = new THREE.Mesh(new THREE.PlaneGeometry(.21, .3), papM); m.rotation.set(-Math.PI / 2 + (r() - .5) * .3, 0, r() * 6.28); m.position.set(p[0], h(p[0], p[1]) + .02, p[1]); g.add(m); }
-  for (let k = 0; k < 18; k++) { const p = pris(); if (!p) break; const plat = k % 2, m = new THREE.Mesh(new THREE.BoxGeometry(.4 + r() * .4, plat ? .02 : .3 + r() * .2, .3 + r() * .4), cartM); m.rotation.y = r() * 6.28; m.position.set(p[0], h(p[0], p[1]) + (plat ? .01 : .2), p[1]); m.castShadow = true; g.add(m); }
-  // les citrouilles : une flamme dedans, et quelques vraies lueurs orangées
-  if (mod && mod.citrouille) { const base = mod.citrouille, b = new THREE.Box3().setFromObject(base), s = .42 / (b.max.y - b.min.y), flamme = new THREE.MeshBasicMaterial({ color: 0xffa12a }); let nl = 0;
-    for (let k = 0; k < 30; k++) { const p = pris(); if (!p) break; const c = base.clone(); c.scale.setScalar(s * (.8 + r() * .5)); c.rotation.y = r() * 6.28; c.position.set(p[0], h(p[0], p[1]), p[1]); c.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.add(c);
-      const f = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), flamme); f.position.set(p[0], h(p[0], p[1]) + .17, p[1]); g.add(f);
-      if (nl < 6 && k % 4 === 0) { const l = new THREE.PointLight(0xff8a20, 5, 7, 1.6); l.position.set(p[0], h(p[0], p[1]) + .5, p[1]); g.add(l); nl++; } } }
+  semer(new THREE.PlaneGeometry(.21, .3).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: papier, side: THREE.DoubleSide, roughness: 1 }), 140, (p) => { v3.set(p[0], h(p[0], p[1]) + .02, p[1]); q.setFromEuler(e.set((r() - .5) * .3, r() * 6.28, 0)); un.set(1, 1, 1); });
+  semer(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x8e6a3e, roughness: 1 }), 26, (p, k) => { const plat = k % 2, hy = plat ? .02 : .3 + r() * .2; v3.set(p[0], h(p[0], p[1]) + hy / 2, p[1]); q.setFromEuler(e.set(0, r() * 6.28, 0)); un.set(.4 + r() * .4, hy, .3 + r() * .4); }).castShadow = true;
+  // les citrouilles : une flamme dedans (sans vraies lumières : elles ralentissaient tout)
+  if (mod && mod.citrouille) { const base = mod.citrouille, b = new THREE.Box3().setFromObject(base), s = .42 / (b.max.y - b.min.y), fl = [];
+    for (let k = 0; k < 30; k++) { const p = pris(); if (!p) break; const c = base.clone(); c.scale.setScalar(s * (.8 + r() * .5)); c.rotation.y = r() * 6.28; c.position.set(p[0], h(p[0], p[1]), p[1]); g.add(c); fl.push(p); }
+    const im = new THREE.InstancedMesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffa12a }), fl.length); fl.forEach((p, k) => im.setMatrixAt(k, mm.makeTranslation(p[0], h(p[0], p[1]) + .17, p[1]))); g.add(im); }
+  // des corps, allongés dans leur sang
+  const habits = [["#2f5fae", "#2a3040"], ["#c8404a", "#3a3a40"], ["#e8e2d6", "#2a2a30"], ["#3a7a4a", "#3d5a80"], ["#7a4a6a", "#2a2a30"], ["#e8d24a", "#26324e"], ["#5a5a5a", "#1a1a1a"], ["#a5532a", "#3a3028"]];
+  const flaqueM = new THREE.MeshStandardMaterial({ map: sangs[0], transparent: true, depthWrite: false, roughness: .15, polygonOffset: true, polygonOffsetFactor: -3 });
+  for (let k = 0; k < 9; k++) { const p = pris(); if (!p) break; const [hc, bc] = habits[k % 8], y = h(p[0], p[1]);
+    const m = personne3D({ taille: 1.62 + r() * .2, peau: ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b"][k % 4], ch: ["#5a3a22", "#141010", "#e2c27a", "#2a1a12"][k % 4], haut: hc, bas: bc, chaussures: "#1a1a1a", coif: k % 3 ? "court" : "long", pantalon: k % 3 !== 0, robe: k % 3 === 0 });
+    const P = m.userData.parts; P.jambes.forEach((J, i) => { J.h.rotation.set(0, 0, (i ? 1 : -1) * (.1 + r() * .3)); J.gen.rotation.x = r() * .6; }); P.bras.forEach((bb, i) => { bb.e.rotation.set(r() - .5, 0, (i ? 1 : -1) * (.4 + r() * 1.2)); bb.c.rotation.x = -r() * .8; }); P.tete.rotation.set(0, (r() - .5) * 1.4, 0);
+    const ventre = k % 2; m.rotation.set(ventre ? Math.PI / 2 : -Math.PI / 2, 0, r() * 6.28, "YXZ"); m.rotation.order = "YXZ"; m.rotation.y = r() * 6.28; m.position.set(p[0], y + .1, p[1]); g.add(m);
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), flaqueM); f.rotation.set(-Math.PI / 2, 0, r() * 6.28); f.position.set(p[0], y + .015, p[1]); g.add(f); }
+  // des enfants déguisés, immobiles, tachés de sang : ils nous montrent du doigt quand on passe, et nous parlent
+  M.halloween.enfants = []; const bulleK = () => { const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false, depthTest: false })); bs.scale.set(2.2, .55, 1); bs.visible = false; bs.renderOrder = 9; g.add(bs); return { bc, bt, bs }; };
+  const sangM = new THREE.MeshStandardMaterial({ color: 0x6a0408, roughness: .3 });
+  for (let k = 0; k < 8; k++) { const p = pris(); if (!p) break; const type = ["fantome", "sorciere", "vampire", "squelette"][k % 4], y = h(p[0], p[1]);
+    const m = personne3D({ enfant: true, taille: 1.2 + r() * .15, peau: ["#f6d6bc", "#c78f62", "#e8bd95", "#8d5a3b"][k % 4], ch: ["#a5532a", "#141010", "#e2c27a", "#2a1a12"][k % 4], haut: type === "sorciere" || type === "vampire" || type === "squelette" ? "#141216" : "#e8e8e4", bas: "#141216", chaussures: "#1a1a1a", coif: type === "sorciere" ? "long" : "court", pantalon: type !== "sorciere", robe: type === "sorciere" });
+    const P = m.userData.parts, hT = 1.2;
+    if (type === "fantome") { const drap = new THREE.Mesh(new THREE.CylinderGeometry(.14, .34, 1.05, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0xf0f0ec, roughness: .9, side: THREE.DoubleSide })); drap.position.y = .62; m.add(drap);
+      const capuche = new THREE.Mesh(new THREE.SphereGeometry(.15, 14, 10), drap.material); capuche.position.y = 1.15; m.add(capuche); for (const sx of [-.05, .05]) { const o = new THREE.Mesh(new THREE.CircleGeometry(.025, 10), new THREE.MeshBasicMaterial({ color: 0x050505 })); o.position.set(sx, 1.17, .148); m.add(o); } P.tete.visible = false; }
+    if (type === "sorciere") { const noir = new THREE.MeshStandardMaterial({ color: 0x141216, roughness: .8 }), bord = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .015, 20), noir), pointe = new THREE.Mesh(new THREE.ConeGeometry(.09, .3, 16), noir); bord.position.y = .1; pointe.position.y = .25; pointe.rotation.z = .15; P.tete.add(bord, pointe); }
+    if (type === "vampire") { const cape = new THREE.Mesh(new THREE.CylinderGeometry(.16, .3, .75, 14, 1, true, Math.PI * .6, Math.PI * .8), new THREE.MeshStandardMaterial({ color: 0x8a0a12, roughness: .6, side: THREE.DoubleSide })); cape.position.set(0, .7, -.02); m.add(cape);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(.15, .1, .14, 12, 1, true, Math.PI * .5, Math.PI), cape.material); col.position.set(0, .98, -.03); m.add(col); }
+    if (type === "squelette") { const os = new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }); for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(.16 - i * .015, .02, .02), os); c.position.set(0, .3 - i * .055, .1); P.buste.add(c); } const cr = new THREE.Mesh(new THREE.BoxGeometry(.02, .24, .02), os); cr.position.set(0, .22, .105); P.buste.add(cr); }
+    for (let i = 0; i < 5; i++) { const t = new THREE.Mesh(new THREE.SphereGeometry(.03 + r() * .03, 8, 6), sangM); t.scale.z = .3; t.position.set((r() - .5) * .18, .15 + r() * .25, .1); P.buste.add(t); }   // (du sang sur eux)
+    m.rotation.y = r() * 6.28; m.position.set(p[0], y, p[1]); g.add(m); M.halloween.enfants.push({ m, P, x: p[0], z: p[1], y, ...bulleK(), parleT: 0, finT: 0 }); }
   // la brume, en nappes au ras du sol, qui glissent lentement
   const brume = hwToile((c, w, hh) => { const gd = c.createRadialGradient(w / 2, hh / 2, 0, w / 2, hh / 2, w / 2); gd.addColorStop(0, "rgba(190,200,215,.55)"); gd.addColorStop(1, "rgba(190,200,215,0)"); c.fillStyle = gd; c.fillRect(0, 0, w, hh); });
-  M.halloween.brumes = []; for (let k = 0; k < 18; k++) { const p = pris(); if (!p) break; const m = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: brume, transparent: true, depthWrite: false, opacity: .5, fog: false }));
+  const brM = new THREE.MeshBasicMaterial({ map: brume, transparent: true, depthWrite: false, opacity: .5, fog: false });
+  M.halloween.brumes = []; for (let k = 0; k < 10; k++) { const p = pris(); if (!p) break; const m = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), brM);
     m.rotation.x = -Math.PI / 2; m.position.set(p[0], h(p[0], p[1]) + .35 + r() * .5, p[1]); m.renderOrder = 3; g.add(m); M.halloween.brumes.push({ m, x: p[0], z: p[1], ph: r() * 6 }); } }
+const PHRASES_ENF_HW = ["Courir ne sert à rien…", "Michael te rattrapera.", "Il est juste derrière toi…", "Tu cours… lui, il marche. Et il gagne toujours.", "Des bonbons ou un sort ? Trop tard.", "Ne te retourne pas…", "Ici, on ne fait pas de vieux os.", "Il a toujours un coup de couteau d'avance.", "Tu as une peur bleue ? Lui, il voit rouge.", "Ça va trancher entre vous deux…", "On t'attendait… pour jouer avec lui.", "Tu es mort de peur ? Bientôt mort tout court."];
+function animerEnfantsHW(t) { const H = M.halloween, moi = M.gens.get(M.moiNum); if (!H || !H.enfants || !moi) return; const p = moi.g.position;
+  for (const E of H.enfants) { const d = Math.hypot(p.x - E.x, p.z - E.z), pres = d < 5;
+    if (pres) { let dc = Math.atan2(p.x - E.x, p.z - E.z) - E.m.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); E.m.rotation.y += dc * .1; E.P.bras[1].e.rotation.x += (-1.5 - E.P.bras[1].e.rotation.x) * .15; E.P.bras[1].c.rotation.x = 0; }   /* (il nous montre du doigt) */
+    else E.P.bras[1].e.rotation.x += (0 - E.P.bras[1].e.rotation.x) * .1;
+    if (pres && t > E.parleT) { E.parleT = t + 7000 + Math.random() * 4000; peindreBulle(E.bc, PHRASES_ENF_HW[Math.floor(Math.random() * PHRASES_ENF_HW.length)]); E.bt.needsUpdate = true; E.bs.visible = true; E.finT = t + 3500; }
+    E.bs.position.set(E.x, E.y + 1.55, E.z); if (E.bs.visible && (t > E.finT || d > 9)) E.bs.visible = false; } }
 /* Michael : un seul bloc, sans os — on lui pose ici un vrai squelette (aux noms de Mixamo, comme les personnages de Resident Evil), ajusté à son corps (bras en A, couteau dans la main droite),
    on attache chaque point de son corps aux deux os les plus proches de sa région ; puis il reprend les mouvements de Resident Evil (la marche, le coup du Tyran) */
 function riggerMichael(src) {
@@ -4483,6 +4513,7 @@ function animerHalloween(t) {
   if (M.L.masqueHW && !M.L.masqueHW.userData.pose && M.L.hauteur) { const [x, z] = HW.masque; M.L.masqueHW.position.y = M.L.hauteur(x, z, {}); M.L.masqueHW.userData.pose = true; }
   const H = M.halloween; if (!H) return; if (M.lieu !== "grande") { hwFin(); return; }
   const dt = Math.min(.05, (t - (H.tp || t)) / 1000); H.tp = t; if (H.fog && M.scene.fog !== H.fog) M.scene.fog = H.fog;
+  animerEnfantsHW(t);
   for (const b of H.brumes || []) { b.m.position.x = b.x + Math.sin(t / 7000 + b.ph) * 3; b.m.position.z = b.z + Math.cos(t / 9000 + b.ph) * 2; }
   const mi = H.mi, moi = M.gens.get(M.moiNum); if (!mi || !moi || H.mort) return;
   const p = moi.g.position, dx = p.x - mi.x, dz = p.z - mi.z, d = Math.hypot(dx, dz);
@@ -4496,7 +4527,7 @@ function animerHalloween(t) {
     if (a > du * .45 && !mi.frappe) { mi.frappe = true; if (d < 1.8) { hwMort(); } }
     if (a >= du) { mi.etat = "chasse"; mi.frappe = false; } }
   else { if (d < 1.35) { mi.etat = "coup"; mi.coup = t; mi.frappe = false; mi.cur = null; hwJouer(mi, "coup"); }
-    else { if (t > mi.cheminT) { mi.cheminT = t + 600; const c = itineraire(M.L, mi.x, mi.z, p.x, p.z); mi.chemin = c && c.length ? c.slice() : [[p.x, p.z]]; }
+    else { if (t > mi.cheminT) { mi.cheminT = t + 1000; const c = itineraire(M.L, mi.x, mi.z, p.x, p.z); mi.chemin = c && c.length ? c.slice() : [[p.x, p.z]]; }
       while (mi.chemin.length > 1 && Math.hypot(mi.chemin[0][0] - mi.x, mi.chemin[0][1] - mi.z) < .3) mi.chemin.shift();
       const c = mi.chemin[0] || [p.x, p.z], ex = c[0] - mi.x, ez = c[1] - mi.z, l = Math.hypot(ex, ez) || 1; vit = 1.7; const pas = Math.min(l, vit * dt);
       const ox = mi.x, oz = mi.z; mi.x += ex / l * pas; mi.z += ez / l * pas; if (Math.hypot(mi.x - ox, mi.z - oz) < .2 * dt) { mi.bloqueT = mi.bloqueT || t; } else mi.bloqueT = 0; hwJouer(mi, "walk"); } }
@@ -8801,7 +8832,7 @@ export async function ouvrir(ctx) {
     const moiP = M.moiNum && M.gens.get(M.moiNum), P = M.L.porteFete;
     let vol = M.L.interieur && !M.L.sansMusique ? 1 : 0;
     if (P && M.L.nuit && moiP) { const d = Math.hypot(moiP.g.position.x - P.x, moiP.g.position.z - P.z); vol = .38 * Math.max(0, 1 - d / 22) + .07 * Math.max(0, 1 - d / 50); if (vol < .004) vol = 0; }   // (au loin, elle s'éteint : à peine audible passé le porche de l'horloge, plus rien dans les cours d'après)
-    vol *= M.muetFete ?? 1;   /* (la radio de Silent Hill : la fête s'efface) */ if (M.lbMus) vol = 0;   /* (Génération perdue : une seule musique à la fois) */
+    vol *= M.muetFete ?? 1; if (M.halloween) vol = 0;   /* (Halloween : la fête se tait) */   /* (la radio de Silent Hill : la fête s'efface) */ if (M.lbMus) vol = 0;   /* (Génération perdue : une seule musique à la fois) */
     if (Math.abs(vol - (M.volume ?? -1)) > Math.min(.015, Math.max(.003, vol * .2))) { M.volume = vol; M.ctx.surVolume && M.ctx.surVolume(vol); }
     // le bouton ▶ / ⏹ des platines (toujours au premier plan) : seulement quand on est dans la salle, pas dans l'escalier ni au sous-sol
     if (M.L.boutonDJ && moiP) M.L.boutonDJ.visible = moiP.g.position.z < 15.2 && !!(M.ctx.moiInfo && M.ctx.moiInfo().admin);   // (l'administrateur seul)
@@ -11883,7 +11914,7 @@ function infoGendarme(id, tete, nom = "Gendarme") { const P = (M.ctx.pnjTrio && 
 function animerGendarme() {
   if (!M || !M.L) return;
   // (le même, à la même place, qu'on vienne de la rue ou de la cour d'honneur : dans la cour, le passage est recopié 41,5 m plus loin)
-  const pos = M.lieu === "rue" ? [-1.55, -13.4] : M.lieu === "grande" ? [-1.55, 28.1] : null, ici = pos && !M.L.apo; let g = M.gens.get(GENDARME);
+  const pos = M.lieu === "rue" ? [-1.55, -13.4] : M.lieu === "grande" ? [-1.55, 28.1] : null, ici = pos && !M.L.apo && !M.halloween; let g = M.gens.get(GENDARME);
   if (!ici) { if (g) retirerAncien(GENDARME); return; }
   const cle = infoGendarme(63, "images/gendarme-tete.png"); if (g && g.cleInfo !== cle.cle) { retirerAncien(GENDARME); g = null; }   // (l'administrateur a changé sa tête, sa taille, sa tenue)
   if (!g) { g = ajouterAncien({ ...cle.info, numero: GENDARME, pnj: true, salue: true, x: pos[0], z: pos[1] }); if (g) g.cleInfo = cle.cle; return; }
@@ -11894,7 +11925,7 @@ function animerGendarme() {
 /* --- le second gendarme de faction : sous la voûte du portail de l'horloge (rue des Messageries), devant la porte du poste ; le même que celui de l'entrée, qui salue chaque passant --- */
 const GENDARME2 = -88;
 function animerGendarme2() {
-  if (!M || !M.L) return; const ici = M.lieu === "grande" && !M.L.apo && !!M.L.porcheHorloge; let g = M.gens.get(GENDARME2);
+  if (!M || !M.L) return; const ici = M.lieu === "grande" && !M.L.apo && !!M.L.porcheHorloge && !M.halloween; let g = M.gens.get(GENDARME2);
   if (!ici) { if (g) retirerAncien(GENDARME2); return; }
   const lx = 1.55, lz = -3.4, cx = RU.xB - RU.pc / 2, cz = RU.zA + RU.pc / 2, pos = [cx + (lx - lz) / Math.SQRT2, cz + (lx + lz) / Math.SQRT2];
   const cle = infoGendarme(63, "images/gendarme-tete.png"); if (g && g.cleInfo !== cle.cle) { retirerAncien(GENDARME2); g = null; }
@@ -11937,7 +11968,7 @@ const PROF = -77, PHRASES_PROF = ["Pas de chaussures sur le tatami !", "On salue
   "On ne court pas sur le tatami !", "Tenez-vous droit, on salue le tapis.", "Hajime !", "Matte !", "Ceinture bien nouée, jeune homme !"];
 function animerProf() {
   if (!M || !M.L) return;
-  const d = C3.dojo, ici = M.lieu === "grande" && !M.L.apo && d; let g = M.gens.get(PROF);
+  const d = C3.dojo, ici = M.lieu === "grande" && !M.L.apo && d && !M.halloween; let g = M.gens.get(PROF);
   if (!ici) { if (g) retirerAncien(PROF); return; }
   const ci = infoGendarme(68, "images/prof-judo-tete.png", "Le professeur de judo"); ci.info.tenue = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).tenue || "judogi"; ci.info.couleur = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).couleur || "#f4f2ec"; ci.info.bas = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).bas || "#f4f2ec"; ci.info.pieds = ((M.ctx.pnjTrio && M.ctx.pnjTrio(68)) || {}).pieds || null; ci.cle = JSON.stringify(ci.info);
   if (g && g.cleInfo !== ci.cle) { const q = g.g.position.clone(); retirerAncien(PROF); g = ajouterAncien({ ...ci.info, numero: PROF, pnj: true, allure: .3, x: q.x, z: q.z }); if (g) { g.cleInfo = ci.cle; g.g.position.y = C3.FL; } return; }
@@ -13206,7 +13237,7 @@ function choreAlive() {
 function animerPNJ() {
   if (!M || !M.L) return;
   if (M.gbChef) { if (M.gens.has(PNJ)) retirerAncien(PNJ); return; }   // (il est avec les Ghostbusters)
-  const ici = lieuPNJ() === M.lieu && !M.L.sansPNJ, p0 = M.gens.get(PNJ);
+  const ici = lieuPNJ() === M.lieu && !M.L.sansPNJ && !M.halloween, p0 = M.gens.get(PNJ);
   if (!ici && p0) { retirerAncien(PNJ); return; }        // il est parti ailleurs
   if (ici && !p0) { ajouterPNJ(); return; }              // il arrive
   const p = p0; if (!p) return;
