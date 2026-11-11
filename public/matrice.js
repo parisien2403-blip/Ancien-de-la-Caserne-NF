@@ -2846,6 +2846,7 @@ function ruesDehors0(A, L, scene) {
   // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
   { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
+  eboueurCaniveau(L, scene, -30, 30, ZR);   // (l'éboueur qui balaie le caniveau, le long du trottoir de la caserne)
   arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
   // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
   { const VOM = []; let n = 0;
@@ -12027,6 +12028,30 @@ function arabeDuCoin(L, scene, xc, zf) {
     if (d < 5 && tm > vu0) { vu0 = tm + 10000; peindreBulle(bc, PHR[Math.floor(Math.random() * PHR.length)]); bt.needsUpdate = true; bs.visible = true; fin = tm + 3500; }
     if (bs.visible && tm > fin) bs.visible = false; };
   L.arabeDuCoin = m; }
+/* l'éboueur de la Ville de Paris, rue d'Hauteville : tenue verte à bandes réfléchissantes, il pousse l'eau et les papiers dans le caniveau avec son balai aux poils verts, le long du trottoir de la caserne (le jour) */
+function eboueurCaniveau(L, scene, x0, x1, zc) {
+  const m = personne3D({ taille: 1.78, peau: "#5a3a26", ch: "#141010", haut: "#2f7a3a", bas: "#2f7a3a", chaussures: "#1a1a1a", coif: "court", pantalon: true }), P = m.userData.parts, T = 1.78;
+  const refl = new THREE.MeshStandardMaterial({ color: 0xd8dcd0, emissive: 0x555a50, roughness: .3, metalness: .4 });
+  for (const y of [.12, .22]) { const b = new THREE.Mesh(new THREE.TorusGeometry(T * .082, .012, 6, 18), refl); b.rotation.x = Math.PI / 2; b.scale.z = .72; b.position.y = y; P.buste.add(b); }   // (les bandes réfléchissantes)
+  for (const J of P.jambes) { const b = new THREE.Mesh(new THREE.TorusGeometry(T * .03, .01, 6, 12), refl); b.rotation.x = Math.PI / 2; b.position.y = -T * .2; J.gen.add(b); }
+  const cas = new THREE.Mesh(new THREE.SphereGeometry(T * .068, 14, 8, 0, Math.PI * 2, 0, Math.PI * .5), new THREE.MeshStandardMaterial({ color: 0x2f7a3a, roughness: .6 })); cas.position.y = T * .015; P.tete.add(cas);   // (la casquette verte)
+  const vis = new THREE.Mesh(new THREE.BoxGeometry(T * .08, .01, T * .05), cas.material); vis.position.set(0, T * .02, T * .07); P.tete.add(vis);
+  // le balai : long manche, tête large aux poils verts
+  const bal = new THREE.Group(); const manche = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x8a6438 })); manche.position.y = .75; bal.add(manche);
+  const tete = new THREE.Mesh(new THREE.BoxGeometry(.08, .06, .5), new THREE.MeshStandardMaterial({ color: 0x3a3a3a })); bal.add(tete);
+  const poils = new THREE.Mesh(new THREE.BoxGeometry(.1, .14, .48), new THREE.MeshStandardMaterial({ color: 0x3fbf4a, roughness: 1 })); poils.position.y = -.08; bal.add(poils);
+  bal.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(bal); scene.add(m);
+  const Y = DH_.Y0; let x = (x0 + x1) / 2, sens = -1, tp = 0;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); m.visible = bal.visible = ok; if (!ok) { tp = 0; return; }
+    const dt = tp ? Math.min(.1, (tm - tp) / 1000) : 0; tp = tm; const cyc = tm / 650, coup = Math.sin(cyc * Math.PI * 2);
+    x += sens * .35 * dt * (coup > 0 ? 1 : .2); if (x < x0) { x = x0; sens = 1; } if (x > x1) { x = x1; sens = -1; }
+    m.position.set(x, Y + .12, zc + .55); m.rotation.y = sens > 0 ? Math.PI / 2 - .5 : -Math.PI / 2 + .5;   // (sur le bord du trottoir, tourné vers le caniveau)
+    m.userData.poser(Math.abs(coup) > .2 ? "marche" : "debout", tm * .5);
+    P.buste.rotation.x = .25; P.bras.forEach((b, i) => { b.e.rotation.x = -.9 + coup * .25; b.c.rotation.x = -.5; b.e.rotation.z = (i ? 1 : -1) * .15; });
+    // le balai, dans les mains, qui balaie le caniveau d'avant en arrière
+    const fx = Math.sin(m.rotation.y), fz = Math.cos(m.rotation.y), bx = x + fx * .55 + sens * coup * .25, bz = zc - .05;
+    bal.position.set(bx, Y + .1, bz); bal.rotation.set(0, 0, 0); bal.lookAt(x + fx * .2, Y + 1.2, zc + .55 + fz * .2); bal.rotateX(Math.PI / 2); };
+  L.eboueurCaniveau = m; }
 function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tourné vers la rue (-z)
   const Y = DH_.Y0 + .12, carton = new THREE.Mesh(new THREE.BoxGeometry(1.1, .03, 1.0), new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#b08a5a"; c.fillRect(0, 0, 64, 64); c.strokeStyle = "rgba(90,60,30,.5)"; for (let k = 0; k < 8; k++) { c.beginPath(); c.moveTo(0, k * 8); c.lineTo(64, k * 8 + 2); c.stroke(); } c.fillStyle = "rgba(60,40,20,.4)"; c.fillRect(30, 20, 18, 14); })), roughness: 1 }));
   carton.position.set(x, Y + .015, z - .55); scene.add(carton);
