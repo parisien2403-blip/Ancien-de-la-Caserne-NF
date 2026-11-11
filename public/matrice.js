@@ -4444,7 +4444,8 @@ function hwDecor(mod) {
   // des corps, allongés dans leur sang
   const habits = [["#2f5fae", "#2a3040"], ["#c8404a", "#3a3a40"], ["#e8e2d6", "#2a2a30"], ["#3a7a4a", "#3d5a80"], ["#7a4a6a", "#2a2a30"], ["#e8d24a", "#26324e"], ["#5a5a5a", "#1a1a1a"], ["#a5532a", "#3a3028"]];
   const flaqueM = new THREE.MeshStandardMaterial({ map: sangs[0], transparent: true, depthWrite: false, roughness: .15, polygonOffset: true, polygonOffsetFactor: -3 });
-  const corps = new THREE.Group(); for (let k = 0; k < 24; k++) { const p = pris(); if (!p) break; const [hc, bc] = habits[k % 8], y = h(p[0], p[1]);
+  const libreAutour = ([x, z], R) => { for (let a = 0; a < 12; a++) if (!L.limites(x + Math.cos(a * .52) * R, z + Math.sin(a * .52) * R)) return false; return true; };   /* (un corps allongé : 1 m de libre tout autour — plus de corps à moitié dans un mur ni sous une voiture) */
+  const corps = new THREE.Group(); for (let k = 0, essai = 0; k < 24 && essai < 200; essai++) { const p = pris(); if (!p) break; if (!libreAutour(p, 1.05)) continue; k++; const [hc, bc] = habits[k % 8], y = h(p[0], p[1]);
     const m = personne3D({ taille: 1.62 + r() * .2, peau: ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b"][k % 4], ch: ["#5a3a22", "#141010", "#e2c27a", "#2a1a12"][k % 4], haut: hc, bas: bc, chaussures: "#1a1a1a", coif: k % 3 ? "court" : "long", pantalon: k % 3 !== 0, robe: k % 3 === 0 });
     const P = m.userData.parts; P.jambes.forEach((J, i) => { J.h.rotation.set(0, 0, (i ? 1 : -1) * (.1 + r() * .3)); J.gen.rotation.x = r() * .6; }); P.bras.forEach((bb, i) => { bb.e.rotation.set(r() - .5, 0, (i ? 1 : -1) * (.4 + r() * 1.2)); bb.c.rotation.x = -r() * .8; }); P.tete.rotation.set(0, (r() - .5) * 1.4, 0);
     const ventre = k % 2; m.rotation.set(ventre ? Math.PI / 2 : -Math.PI / 2, 0, r() * 6.28, "YXZ"); m.rotation.order = "YXZ"; m.rotation.y = r() * 6.28; m.position.set(p[0], y + .1, p[1]); corps.add(m);
@@ -4462,7 +4463,11 @@ function hwDecor(mod) {
     if (type === "vampire") { const cape = new THREE.Mesh(new THREE.CylinderGeometry(.16, .3, .75, 14, 1, true, Math.PI * .6, Math.PI * .8), new THREE.MeshStandardMaterial({ color: 0x8a0a12, roughness: .6, side: THREE.DoubleSide })); cape.position.set(0, .7, -.02); m.add(cape);
       const col = new THREE.Mesh(new THREE.CylinderGeometry(.15, .1, .14, 12, 1, true, Math.PI * .5, Math.PI), cape.material); col.position.set(0, .98, -.03); m.add(col); }
     if (type === "squelette") { const os = new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }); for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(.16 - i * .015, .02, .02), os); c.position.set(0, .3 - i * .055, .1); P.buste.add(c); } const cr = new THREE.Mesh(new THREE.BoxGeometry(.02, .24, .02), os); cr.position.set(0, .22, .105); P.buste.add(cr); }
-    for (let i = 0; i < 5; i++) { const t = new THREE.Mesh(new THREE.SphereGeometry(.03 + r() * .03, 8, 6), sangM); t.scale.z = .3; t.position.set((r() - .5) * .18, .15 + r() * .25, .1); P.buste.add(t); }   // (du sang sur eux)
+    for (let i = 0; i < 9; i++) { const t = new THREE.Mesh(new THREE.SphereGeometry(.035 + r() * .045, 8, 6), sangM); t.scale.z = .3; t.position.set((r() - .5) * .2, .05 + r() * .32, .1); P.buste.add(t); }   // (du sang sur eux : la poitrine, le ventre…)
+    for (let i = 0; i < 4; i++) { const t = new THREE.Mesh(new THREE.SphereGeometry(.025 + r() * .02, 8, 6), sangM); t.scale.set(1, 2.2, .4); t.position.set((r() - .5) * .1, -.02 - r() * .05, .09); P.tete.add(t); }   // (…le visage, qui coule)
+    { const coulee = new THREE.Mesh(new THREE.BoxGeometry(.03, .5, .02), sangM); coulee.position.set(.04, .05, .11); P.buste.add(coulee); }
+    // ce sont des fantômes : les victimes de Michael, revenues — pâles, un peu transparents, une lueur bleutée
+    sangM.color.setHex(0xa00810); sangM.emissive = new THREE.Color(0x500006); sangM.emissiveIntensity = .7; m.traverse(o => { if (o.isMesh) o.castShadow = false; });   /* (des enfants comme les autres — mais couverts de sang : les victimes de Michael, revenues) */
     m.rotation.y = r() * 6.28; m.position.set(p[0], y, p[1]); g.add(m); M.halloween.enfants.push({ m, P, x: p[0], z: p[1], y, ...bulleK(), parleT: 0, finT: 0 }); }
   // la brume, en nappes au ras du sol, qui glissent lentement
   const brume = hwToile((c, w, hh) => { const gd = c.createRadialGradient(w / 2, hh / 2, 0, w / 2, hh / 2, w / 2); gd.addColorStop(0, "rgba(190,200,215,.55)"); gd.addColorStop(1, "rgba(190,200,215,0)"); c.fillStyle = gd; c.fillRect(0, 0, w, hh); });
@@ -7850,7 +7855,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           const d = (temps / 5200 + w) % 1, x = xF - .3 - d * 5.5, y = x > xF - 2 ? .7 * (1 - (xF - x) / 2) + .02 : .02;
           vC.set(x, y, zb); const k = r * (1 + d) * (d < .85 ? 1 : (1 - d) / .15); sC.set(k, k, 1); refC.setMatrixAt(i, mC.compose(vC, qC, sC)); });
         refC.instanceMatrix.needsUpdate = true; }
-      const las = !!L.lasers && !!L.nuit;
+      const las = !!L.lasers && !!L.nuit && !(M && M.halloween);   /* (Halloween : plus de lasers de la fête dans la cour) */
       for (const [r, pt, i] of rayonsC) { r.visible = pt.visible = las; if (!las) continue;
         const z0 = baies.length ? baies[(i * 3) % baies.length] : 0, src = new THREE.Vector3(xF, 3.2, z0);
         const a = Math.sin(temps / 900 + i) * .6, b = .28 + .18 * Math.sin(temps / 1300 + i * .7);
@@ -9405,13 +9410,14 @@ const LAMPES_MAX = 8;
    ils coûtaient pourtant autant que s'ils étaient devant nous. Les bâtiments, eux, restent toujours là ; ce qu'un autre a caché n'est jamais remontré */
 function cacherLoin(t) {
   if (!M || !M.scene || !M.camera || t < (M.loinT || 0)) return; M.loinT = t + 300;
-  if (M.loinScene !== M.scene) { M.loinScene = M.scene; M.loin = [];
+  if (M.loinScene !== M.scene) { for (const q of M.loin || []) if (q.cache) { q.cache = false; q.g.visible = true; q.g.userData.loinCache = false; }   /* (on change de lieu : ce qu'on avait caché réapparaît — sinon, de retour dans la cour, le banc ou la porte Z restaient invisibles pour toujours) */
+    M.loinScene = M.scene; M.loin = [];
     for (const g of M.scene.children.flatMap(c => c.userData.maison ? c.children : [c])) { if (g.isMesh || g.isLight || g.userData.perso || !g.children.length) continue; let n = 0; g.traverse(o => { if (o.isMesh) n++; if (o.userData.perso) n = -1e9; }); if (n < 6) continue;
       g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g); if (b.isEmpty()) continue; const sp = b.getBoundingSphere(new THREE.Sphere()); if (sp.radius > 9) continue;   // (seuls les petits ensembles lointains — voitures, mobilier — sont cachés ; un immeuble, lui, reste toujours là : sinon, au bout d'une longue rue, un trou dans le paysage)
       M.loin.push({ g, c: g.worldToLocal(sp.center.clone()), r: sp.radius }); } }
   const cam = M.camera.position, v = new THREE.Vector3(), f = M.scene.fog, lim = f && f.far ? Math.min(55, f.far + 3) : 55;   // (dans le brouillard — Silent Hill — on n'y voit pas si loin : encore moins)
   for (const q of M.loin) { const loin = q.g.localToWorld(v.copy(q.c)).distanceTo(cam) - q.r > lim;
-    if (loin && q.g.visible) { q.g.visible = false; q.cache = true; } else if (!loin && q.cache) { q.cache = false; q.g.visible = true; } } }
+    if (loin && q.g.visible) { q.g.visible = false; q.cache = true; q.g.userData.loinCache = true; } else if (!loin && (q.cache || q.g.userData.loinCache)) { q.cache = false; q.g.userData.loinCache = false; q.g.visible = true; } } }
 function trierLumieres(t) {
   if (!M || !M.scene || !M.camera || t < (M.lampesT || 0)) return; M.lampesT = t + 250;
   const re = modeRE();   /* (Resident Evil, comme Silent Hill : peu de lumières à la fois — elles en avaient treize, et chaque point de l'image était calculé treize fois) */
