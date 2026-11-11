@@ -7545,9 +7545,20 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
           const plq = A.ajoute(new THREE.PlaneGeometry(1.1, .3), A.mat({ map: tex(toile(256, 70, (x, w, h) => { x.fillStyle = "#e9e1cf"; x.fillRect(0, 0, w, h); x.fillStyle = "rgba(120,70,40,.75)"; x.font = "bold 40px Georgia"; x.textAlign = "center"; x.fillText("M E S S", w / 2, 50); })) }), XM, yP + PH + .5, ZM + .02, false);
           L.portails.push({ dans: (x, z) => x < fx + .1 && x > RX + .2 && z < ZM + 2.9 && z > ZM + 1.6, vers: "mess", arrivee: [0, 10.4], yaw: 0, indice: [XM, ZM + 2.3], seuil: [XM, ZM + 2.45] });   // (le cercle, au pied des marches)
           // la lumière du mess, vue de la cour : derrière chaque baie vitrée du bâtiment, une lueur (selon ce que l'administrateur a réglé)
-          const lueur = new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0, depthWrite: false }); L.messVitres = lueur;
+          const lueur = new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0, depthWrite: false }); L.messVitres = lueur; const zsV = [];
           for (let i = 0; i < 11; i++) { const X = 40 + i * 142, u = (X + 50) / 50 - 16, z = -u - 2; if (us.some(v => Math.abs(u - v) < 3) || z > 7.2 || z < -17.5) continue;
-            const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), lueur); pl.rotation.y = Math.PI / 2; pl.position.set(fx + .035, 3.05, z); scene.add(pl); } }
+            const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 4.8), lueur); pl.rotation.y = Math.PI / 2; pl.position.set(fx + .035, 3.05, z); scene.add(pl); zsV.push(z); }
+          // derrière les vitres, des ombres qui passent : des convives, un serveur et son plateau — ça vit, au mess
+          const sils = [0, 1, 2].map(v => toile(384, 400, (c) => { c.clearRect(0, 0, 384, 400); c.filter = "blur(7px)"; c.fillStyle = "rgba(45,30,20,.8)"; const x = 192, k = 1.55;
+            c.beginPath(); c.arc(x, 48, 19 * k / 1.3, 0, 7); c.fill(); c.beginPath(); c.moveTo(x - 46, 102); c.quadraticCurveTo(x, 80, x + 46, 102); c.lineTo(x + 40, 255); c.lineTo(x - 40, 255); c.fill(); c.fillRect(x - 32, 250, 26, 140); c.fillRect(x + 6, 250, 26, 140);
+            c.fillRect(x - 58, 108, 18, 120); if (v !== 1) c.fillRect(x + 40, 108, 18, 120);
+            if (v === 1) { c.fillRect(x + 40, 112, 60, 16); c.fillRect(x + 64, 96, 64, 10); }   /* (le serveur, le plateau à bout de bras) */ if (v === 2) { c.beginPath(); c.moveTo(x - 44, 225); c.lineTo(x + 44, 225); c.lineTo(x + 64, 330); c.lineTo(x - 64, 330); c.fill(); c.fillRect(x - 32, 40, 64, 64); } }));   /* (une femme, en robe, les cheveux longs) */
+          L.ombresMess = zsV.map((z, i) => { const t = new THREE.CanvasTexture(sils[i % 3]); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.ClampToEdgeWrapping; t.repeat.set(1, 1);
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.98), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false })); m.rotation.y = Math.PI / 2; m.position.set(fx + .05, yP + .62 + .99, z); m.renderOrder = 3; scene.add(m);
+            return { m, t, debut: performance.now() + Math.random() * 12000, dur: 3500 + Math.random() * 3000, sens: Math.random() < .5 ? 1 : -1 }; });
+          for (const O of L.ombresMess) O.m.onBeforeRender = () => { const now = performance.now(), u = (now - O.debut) / O.dur;   /* (chacune se met à jour quand on la dessine) */
+            if (u > 1) { O.debut = now + 2000 + Math.random() * 9000; O.dur = 3500 + Math.random() * 3000; O.sens = Math.random() < .5 ? 1 : -1; }
+            O.t.offset.x = O.sens * (.62 - 1.24 * Math.max(0, Math.min(1, u))); O.m.material.opacity = u >= 0 && u <= 1 ? Math.min(1, lueur.opacity * .9) : 0; }; }
       }
       // le long des marches : le trottoir de bitume, sa bordure de granit côté cour (et le caniveau au pied)
       trottoir(A, L, cote > 0 ? 7.5 : -10.5, cote > 0 ? 10.5 : -7.5, -18, 15, [cote > 0 ? "x0" : "x1"]);
