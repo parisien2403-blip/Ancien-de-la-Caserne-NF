@@ -2158,7 +2158,8 @@ DH_.bord = x => x < DH_.XC + .3 ? DH_.ZN - DH_.DC : DH_.ZN;   // (le décroché,
 DH_.zone = (x, z) => RU.lz(x, z) < -7.9 || (x > DH_.XE && z < DH_.ZJ) || (x > 40 && z >= DH_.ZJ && z < 40) || z < DH_.ZN;   // (au-delà de la grille)
 DH_.y = z => z <= -75 ? DH_.Y0 : z >= -45 ? 0 : DH_.Y0 * (-45 - z) / 30;   // (la rue des Messageries remonte doucement, de 1,30 m, jusqu'au niveau de la cour et de la rue du Faubourg)
 DH_.rue = (x, z) => DH_.zone(x, z) && !(Math.abs(RU.lx(x, z)) < 3 && RU.lz(x, z) > -10.05);   // (dans les rues : dehors, mais pas sous la voûte)
-DH_.dedans = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 && z < DH_.ZJ - .3) || (x > DH_.XE2 + .3 && x < DH_.XO - .3 && z >= DH_.ZJ - .3 && z < DH_.ZP + 1.2)          // la rue des Messageries, jusqu'au Faubourg
+DH_.dedans = (x, z) => DH_.dedans0(x, z) && !(DH_.voit || []).some(([a, b, c, d]) => x > a - .2 && x < b + .2 && z > c - .2 && z < d + .2);   // (on ne traverse pas les voitures garées)
+DH_.dedans0 = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 && z < DH_.ZJ - .3) || (x > DH_.XE2 + .3 && x < DH_.XO - .3 && z >= DH_.ZJ - .3 && z < DH_.ZP + 1.2)          // la rue des Messageries, jusqu'au Faubourg
   || (Math.abs(x - DH_.CX) < 3.6 && z <= DH_.ZO + .3 && z > DH_.ZO - DH_.CL + .4)   // (la Cité d'Hauteville)
   || (Math.hypot(x - DH_.AX, z - DH_.ZO) < DH_.AR - .4 && z <= DH_.ZO + .3)   // (le renfoncement en demi-cercle, en face du carrefour)
   || (x > DH_.XW + .6 && x < DH_.XEst - .6 && z > DH_.ZO + .3 && z < DH_.bord(x) - .3 && !(x < 17.5 && Math.abs(z - (DH_.ZR + 1.25)) < .35 && (r => Math.min(r, 8.5 - r))(((x - DH_.XW - 6) % 8.5 + 8.5) % 8.5) < .4))   // la rue d'Hauteville (pas à travers les troncs)
@@ -2302,16 +2303,78 @@ function toileEnfantRoller(k, pas, roller = true) {   // un enfant de face, en r
 const PHRASES_DD = { touche: ["C'est de la triche !", "Même pas vrai, t'as pas touché !", "J'étais pas prêt !", "Pouce ! J'avais dit pouce !", "C'est pas juste !", "T'as triché, t'as poussé !", "Ça compte pas, j'étais en pause !"],
   chat: ["Touché !", "T'es pris !", "Au mur !", "Je t'ai eu !"], nargue: ["Tu m'auras pas !", "Nananère !", "Trop lent !", "Même pas cap !", "Hé, le chat, par ici !"],
   delivre: ["Délivrés !!", "Tout le monde est libre !", "Deli-delo !!"], gardien: ["Ça compte pas !", "T'avais pas le droit !", "C'est de la triche, ça !"], change: ["On change !", "À nous d'être chats !"] };
+/* un enfant des années 80, dessiné avec soin : de face, de dos, ou de profil en pleine course (quatre images) ; tenue, coiffure et couleurs propres à chacun */
+const GAMINS = [
+  { peau: "#f2cfb0", ch: "#5a3a22", coiffe: "court", haut: "#d23c3c", bas: "#1f3a6b", ch2: "#c8202a", fille: false },
+  { peau: "#e8bd95", ch: "#e2c27a", coiffe: "queue", haut: "#f2a93b", bas: "#3d5a80", ch2: "#2f5fae", fille: true },
+  { peau: "#c78f62", ch: "#1d1410", coiffe: "frise", haut: "#3a9d5d", bas: "#2b2b2b", ch2: "#3a9d5d", fille: false },
+  { peau: "#f6d6bc", ch: "#a5532a", coiffe: "bol", haut: "#2f9fd8", bas: "#6b5a3a", ch2: "#e8c22a", fille: false },
+  { peau: "#efc7a4", ch: "#2a1a12", coiffe: "nattes", haut: "#9b59b6", bas: "#e4e0d6", ch2: "#9b59b6", fille: true },
+  { peau: "#8d5a3b", ch: "#120c0a", coiffe: "court", haut: "#f2e14a", bas: "#26324e", ch2: "#1d1d1f", fille: false },
+  { peau: "#f2d0b4", ch: "#d9a35a", coiffe: "long", haut: "#e86a9a", bas: "#26324e", ch2: "#e86a9a", fille: true },
+  { peau: "#e3b48c", ch: "#3d2616", coiffe: "casquette", haut: "#f4f2ec", bas: "#2a4f8a", ch2: "#c8202a", fille: false },
+  { peau: "#f5d2b6", ch: "#7a4a22", coiffe: "court", haut: "#1e7a8a", bas: "#3a3a3c", ch2: "#f28a2e", fille: false },
+  { peau: "#d7a07a", ch: "#2a1a12", coiffe: "queue", haut: "#c8202a", bas: "#1d1d1f", ch2: "#f4f2ec", fille: true }];
+function toileGamin(k, vue, f) {   // vue : "face", "dos", "profil" ; f : l'image (0 à 3)
+  const G = GAMINS[k % GAMINS.length];
+  return toile(200, 420, (x) => { x.lineCap = "round"; x.lineJoin = "round";
+    const fonce = (c, k2 = .72) => assombrir(c, k2), trait = (pts, c, l) => { x.strokeStyle = c; x.lineWidth = l; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
+    const jambe = (h, g, p, devant) => {   // hanche, genou, pied : la jambe, la chaussette rayée, la basket
+      const sk = devant ? G.peau : fonce(G.peau, .86); trait([h, g], G.fille && G.coiffe !== "queue" ? G.bas : sk, 17); trait([g, [p[0], p[1] - 14]], sk, 15);
+      const cy = p[1] - 30; trait([[p[0] + (g[0] - p[0]) * .45, cy], [p[0], p[1] - 10]], "#f6f4ee", 16); x.strokeStyle = G.ch2; x.lineWidth = 3; x.beginPath(); x.moveTo(p[0] - 8 + (g[0] - p[0]) * .4, cy + 3); x.lineTo(p[0] + 8 + (g[0] - p[0]) * .4, cy + 3); x.stroke();
+      x.fillStyle = "#f4f4f2"; x.beginPath(); x.ellipse(p[0] + (vue === "profil" ? 7 : 0), p[1] - 4, vue === "profil" ? 17 : 12, 9, 0, 0, 7); x.fill(); x.fillStyle = G.ch2; x.fillRect(p[0] - 8 + (vue === "profil" ? 7 : 0), p[1] - 6, 16, 3); x.fillStyle = "#555"; x.fillRect(p[0] - 12 + (vue === "profil" ? 7 : 0), p[1] + 2, vue === "profil" ? 34 : 24, 3); };
+    const bras = (e, c, m, devant) => { const tee = devant ? G.haut : fonce(G.haut); trait([e, [e[0] + (c[0] - e[0]) * .45, e[1] + (c[1] - e[1]) * .45]], tee, 17); trait([[e[0] + (c[0] - e[0]) * .4, e[1] + (c[1] - e[1]) * .4], c, m], devant ? G.peau : fonce(G.peau, .86), 12);
+      x.fillStyle = devant ? G.peau : fonce(G.peau, .86); x.beginPath(); x.arc(m[0], m[1], 7.5, 0, 7); x.fill(); };
+    const torse = (cx, w, ombre) => { const g = x.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0); g.addColorStop(0, fonce(G.haut, .8)); g.addColorStop(.35, G.haut); g.addColorStop(1, fonce(G.haut, ombre)); x.fillStyle = g; x.beginPath(); x.roundRect(cx - w / 2, 152, w, 92, 16); x.fill();
+      if (G.fille && G.coiffe !== "queue") { x.fillStyle = G.bas; x.beginPath(); x.moveTo(cx - w / 2 - 2, 236); x.lineTo(cx + w / 2 + 2, 236); x.lineTo(cx + w / 2 + 12, 288); x.lineTo(cx - w / 2 - 12, 288); x.fill(); }
+      else { x.fillStyle = G.bas; x.beginPath(); x.roundRect(cx - w / 2 + 1, 234, w - 2, 40, 6); x.fill(); x.fillStyle = fonce(G.bas); x.fillRect(cx - 1, 250, 2, 24); } };
+    const tete = (cx, cy, profil, dos) => { const P = G.peau;
+      if (!dos) { x.fillStyle = P; x.beginPath(); x.ellipse(cx, cy + 4, profil ? 31 : 33, 37, 0, 0, 7); x.fill(); if (!profil) for (const s2 of [-1, 1]) { x.beginPath(); x.ellipse(cx + s2 * 33, cy + 6, 7, 10, 0, 0, 7); x.fill(); } else { x.beginPath(); x.ellipse(cx - 2, cy + 6, 7, 10, 0, 0, 7); x.fill(); x.beginPath(); x.moveTo(cx + 28, cy); x.lineTo(cx + 37, cy + 12); x.lineTo(cx + 29, cy + 15); x.fill(); } }
+      else { x.fillStyle = P; x.beginPath(); x.ellipse(cx, cy + 4, 33, 37, 0, 0, 7); x.fill(); }
+      // les cheveux
+      x.fillStyle = G.ch; const c = G.coiffe;
+      if (c === "frise") { for (let i = 0; i < 22; i++) { const a = Math.PI * (1 + i / 21); x.beginPath(); x.arc(cx + Math.cos(a) * 31, cy - 2 + Math.sin(a) * 34, 11, 0, 7); x.fill(); } if (dos) { x.beginPath(); x.ellipse(cx, cy, 38, 36, 0, 0, 7); x.fill(); } }
+      else { x.beginPath(); x.ellipse(cx + (profil ? -4 : 0), cy - 10, 36, 30, 0, Math.PI, 0); x.fill(); x.fillRect(cx - 36 + (profil ? -2 : 0), cy - 12, profil ? 34 : 72, c === "bol" ? 22 : 12);
+        if (dos) { x.beginPath(); x.ellipse(cx, cy + 4, 35, c === "long" || c === "nattes" ? 44 : 34, 0, 0, 7); x.fill(); }
+        if (profil) { x.beginPath(); x.ellipse(cx - 18, cy + 4, 18, 26, 0, 0, 7); x.fill(); } }
+      if (c === "long") { x.fillRect(cx - 38, cy - 6, 14, profil ? 0 : 66); if (!profil) x.fillRect(cx + 24, cy - 6, 14, 66); if (profil) x.fillRect(cx - 34, cy - 6, 22, 70); }
+      if (c === "queue") { x.beginPath(); x.ellipse(cx - (profil ? 40 : 0), cy + (dos ? 40 : profil ? 10 : -38), 11, 26, profil ? .5 : 0, 0, 7); x.fill(); x.fillStyle = G.ch2; x.beginPath(); x.arc(cx - (profil ? 30 : 0), cy + (dos ? 18 : profil ? 0 : -30), 5, 0, 7); x.fill(); }
+      if (c === "nattes") for (const s2 of profil ? [-1] : [-1, 1]) { x.fillStyle = G.ch; for (let i = 0; i < 4; i++) { x.beginPath(); x.ellipse(cx + s2 * 36, cy + 14 + i * 14, 8, 9, 0, 0, 7); x.fill(); } x.fillStyle = G.ch2; x.fillRect(cx + s2 * 36 - 6, cy + 70, 12, 5); }
+      if (c === "casquette") { x.fillStyle = G.ch2; x.beginPath(); x.ellipse(cx, cy - 12, 36, 28, 0, Math.PI, 0); x.fill(); x.fillRect(cx - 36, cy - 14, 72, 6); if (!dos) { x.beginPath(); x.ellipse(cx + (profil ? 34 : 0), cy - 10, profil ? 22 : 30, 7, 0, 0, 7); x.fill(); } }
+      if (dos) return;
+      // le visage
+      const ey = cy + 4; x.fillStyle = "#2a1a12";
+      if (profil) { x.beginPath(); x.ellipse(cx + 18, ey, 3.5, 4.5, 0, 0, 7); x.fill(); x.strokeStyle = "#8a3a2a"; x.lineWidth = 2.5; x.beginPath(); x.arc(cx + 22, ey + 18, 6, .3, 1.8); x.stroke(); }
+      else { for (const s2 of [-1, 1]) { x.fillStyle = "#fff"; x.beginPath(); x.ellipse(cx + s2 * 12, ey, 6, 6.5, 0, 0, 7); x.fill(); x.fillStyle = "#2a1a12"; x.beginPath(); x.arc(cx + s2 * 12, ey + 1, 3.6, 0, 7); x.fill(); x.strokeStyle = fonce(G.ch, .8); x.lineWidth = 3; x.beginPath(); x.moveTo(cx + s2 * 6, ey - 11); x.lineTo(cx + s2 * 18, ey - 12); x.stroke(); }
+        x.fillStyle = fonce(P, .86); x.beginPath(); x.ellipse(cx, ey + 10, 3.5, 4.5, 0, 0, 7); x.fill(); x.fillStyle = "#9a3a30"; x.beginPath(); x.arc(cx, ey + 19, 9, .1, Math.PI - .1); x.fill(); x.fillStyle = "#fff"; x.fillRect(cx - 6, ey + 19, 12, 3);
+        x.fillStyle = "rgba(232,110,100,.3)"; for (const s2 of [-1, 1]) { x.beginPath(); x.arc(cx + s2 * 21, ey + 14, 7, 0, 7); x.fill(); }
+        x.fillStyle = "rgba(120,80,60,.25)"; for (let i = 0; i < 6; i++) { x.beginPath(); x.arc(cx - 16 + (i % 3) * 5 + (i > 2 ? 26 : 0), ey + 9 + (i % 2) * 3, 1.3, 0, 7); x.fill(); } } };   // (et quelques taches de rousseur)
+    const ombreSol = () => { x.fillStyle = "rgba(0,0,0,.0)"; };
+    if (vue === "profil") {   // en pleine course : le corps penché en avant, les bras et les jambes qui alternent
+      const ph = f / 4 * Math.PI * 2, s2 = Math.sin(ph), c2 = Math.cos(ph), hx = 96, hy = 268, sol = 404 - Math.abs(c2) * 10;
+      const pied = (sg) => { const a = sg * s2; return [[hx + a * 46, sol - Math.max(0, -sg * c2) * 46], [hx + a * 30 + 10 - (sg * c2 > 0 ? 0 : 14), hy + 72 - Math.max(0, -sg * c2) * 26]]; };
+      const [pA, gA] = pied(1), [pB, gB] = pied(-1); jambe([hx, hy], gB, pB, false);
+      bras([hx + 2, 170], [hx - s2 * 30, 214], [hx - s2 * 38 + 12, 240], false);
+      x.save(); x.translate(hx, 240); x.rotate(.12); x.translate(-hx, -240); torse(hx, 56, .7); x.restore();
+      jambe([hx, hy], gA, pA, true); tete(hx + 10, 102, true, false); bras([hx + 2, 170], [hx + s2 * 30, 214], [hx + s2 * 38 + 14, 236], true); }
+    else {   // de face ou de dos : debout, ou qui court sur place (bras et jambes qui alternent), ou les bras tendus (la chaîne)
+      const tend = f === 9, cours = f === 1 || f === 2, sg = f === 2 ? -1 : 1, dos = vue === "dos";
+      jambe([88, 266], [86 - (cours ? sg * 6 : 0), 332 - (cours && sg > 0 ? 14 : 0)], [84 - (cours ? sg * 4 : 0), 404 - (cours && sg > 0 ? 18 : 0)], true);
+      jambe([112, 266], [114 + (cours ? sg * 6 : 0), 332 - (cours && sg < 0 ? 14 : 0)], [116 + (cours ? sg * 4 : 0), 404 - (cours && sg < 0 ? 18 : 0)], true);
+      torse(100, 62, .72); if (dos) { x.fillStyle = "rgba(255,255,255,.75)"; x.font = "bold 30px Arial"; x.textAlign = "center"; x.fillText(String(k + 3), 100, 214); }
+      for (const s3 of [-1, 1]) { const e = [100 + s3 * 30, 164]; if (tend) bras(e, [100 + s3 * 62, 190], [100 + s3 * 90, 196], true); else if (cours) { const av = s3 * sg; bras(e, [100 + s3 * 40, 200 - av * 18], [100 + s3 * 38, 226 - av * 36], true); } else bras(e, [100 + s3 * 40, 206], [100 + s3 * 42, 246], true); }
+      tete(100, 100, false, dos); } }); }
 function deliDelo(L, scene) {
-  const MUR = [-26.1, -104.2], PAS_CH = .62, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
+  const MUR = [20.2, -75], PAS_CH = -.62,   // (le mur noir de la troisième cour, juste après les armoires électriques ; la chaîne part vers la gauche)
+    geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
   const bulle = (e, txt, t) => { const c = e.bc, x = c.getContext("2d"); x.clearRect(0, 0, 512, 128); x.font = "bold 34px Arial"; const w = Math.min(500, x.measureText(txt).width + 40);
     x.fillStyle = "rgba(255,255,255,.95)"; x.beginPath(); x.roundRect(256 - w / 2, 14, w, 74, 22); x.fill(); x.beginPath(); x.moveTo(246, 86); x.lineTo(256, 112); x.lineTo(268, 86); x.fill();
     x.fillStyle = "#222"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(txt, 256, 52); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
   const hasardDD = (l) => l[Math.floor(Math.random() * l.length)];
-  for (let k = 0; k < 10; k++) { const t = [0, 1].map(p => tex(toileEnfantRoller(k + 2, p, false))), m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+  for (let k = 0; k < 10; k++) { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), dos: [0, 1, 2].map(f => tex(toileGamin(k, "dos", f))), profil: [0, 1, 2, 3].map(f => tex(toileGamin(k, "profil", f))), tend: tex(toileGamin(k, "face", 9)) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     m.renderOrder = 2; scene.add(m); const o = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);
     const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
-    const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: false })); bs.scale.set(2.2, .55, 1); bs.renderOrder = 9; bs.visible = false; scene.add(bs);
+    const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: true, depthWrite: false }));   // (cachée par les murs : on ne la voit plus à travers la caserne) bs.scale.set(2.2, .55, 1); bs.renderOrder = 9; bs.visible = false; scene.add(bs);
     E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0 }); }
   let cand = null, prison = [], tPrec = 0, pret = false, delivreur = null;
   const permis = (x, z) => { try { return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
@@ -2320,7 +2383,7 @@ function deliDelo(L, scene) {
   const posChaine = i => [MUR[0] + i * PAS_CH, MUR[1]];
   const reset = () => { prison = []; delivreur = null; for (const e of E) { e.pris = -1; const c = cand[Math.floor(Math.random() * cand.length)]; e.x = c[0]; e.z = c[1]; e.chem = []; } };
   const avance = (e, dt, v) => { while (e.chem.length && Math.hypot(e.chem[0][0] - e.x, e.chem[0][1] - e.z) < .2) e.chem.shift(); if (!e.chem.length) return false;
-    const [tx, tz] = e.chem[0], d = Math.hypot(tx - e.x, tz - e.z), st = Math.min(d, v * dt); e.x += (tx - e.x) / d * st; e.z += (tz - e.z) / d * st; e.marche = true; return true; };
+    const [tx, tz] = e.chem[0], d = Math.hypot(tx - e.x, tz - e.z), st = Math.min(d, v * dt); e.vx = (tx - e.x) / d; e.vz = (tz - e.z) / d; e.x += e.vx * st; e.z += e.vz * st; e.marche = true; return true; };
   const prendre = (e, chat, t) => { e.pris = prison.length; prison.push(e); e.chem = []; chemin(e, ...posChaine(e.pris)); bulle(e, hasardDD(PHRASES_DD.touche), t); if (chat) setTimeout(() => chat.bFin < performance.now() && bulle(chat, hasardDD(PHRASES_DD.chat), performance.now()), 900);
     if (delivreur === e) delivreur = null;
     if (prison.length >= 8) { const [a, b] = prison; setTimeout(() => { for (const q of E) if (q.role !== "souris") q.role = "souris"; a.role = "chasse"; b.role = "garde"; bulle(a, hasardDD(PHRASES_DD.change), performance.now()); reset(); }, 4000); } };
@@ -2335,7 +2398,7 @@ function deliDelo(L, scene) {
     // le chat gardien : il tourne près de la chaîne ; il fonce sur une souris qui approche
     { const g = garde, bout = posChaine(Math.max(0, prison.length)); let menace = null, bd = 7; for (const s of libres) { const d = Math.hypot(s.x - bout[0], s.z - bout[1]); if (d < bd) { bd = d; menace = s; } }
       if (menace) { if (t > g.prochain || !g.chem.length) { chemin(g, menace.x, menace.z); g.prochain = t + 500; } avance(g, dt, 3.3); if (Math.hypot(menace.x - g.x, menace.z - g.z) < .6) { prendre(menace, g, t); setTimeout(() => bulle(g, hasardDD(PHRASES_DD.chat), performance.now()), 800); } }
-      else { if (!g.chem.length || t > g.prochain) { const a = Math.random() * 6.28; const p = [bout[0] + 1.5 + Math.cos(a) * 2, bout[1] + Math.sin(a) * 2.5]; if (permis(...p)) chemin(g, ...p); g.prochain = t + 2500; } avance(g, dt, 1.4); } }
+      else { if (!g.chem.length || t > g.prochain) { const a = Math.random() * 6.28; const p = [bout[0] - 1.5 + Math.cos(a) * 2, bout[1] + Math.sin(a) * 2.5]; if (permis(...p)) chemin(g, ...p); g.prochain = t + 2500; } avance(g, dt, 1.4); } }
     // les souris
     if (prison.length && !delivreur && libres.length && Math.random() < dt * .08) { delivreur = libres[Math.floor(Math.random() * libres.length)]; delivreur.prochain = 0; }
     for (const s of E) { if (s.role !== "souris") continue;
@@ -2351,8 +2414,14 @@ function deliDelo(L, scene) {
     // l'affichage
     const cam = M.camera;
     for (const e of E) { const y = L.hauteur ? L.hauteur(e.x, e.z) : 0; e.m.position.set(e.x, y + .02 + (e.marche ? Math.abs(Math.sin(t / 110 + e.k)) * .05 : 0), e.z); e.o.position.set(e.x, y + .015, e.z);
-      e.m.material.map = e.t[e.marche ? Math.floor(t / 160 + e.k) % 2 : 0]; e.marche = false; if (cam) e.m.rotation.y = Math.atan2(cam.position.x - e.x, cam.position.z - e.z);
-      e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && t > e.bFin) e.bs.visible = false; } };
+      // l'image : de face, de dos ou de profil, selon le sens de la course par rapport à la caméra ; les bras tendus dans la chaîne
+      let map = e.t.face[0], flip = 1; const cx = cam.position.x - e.x, cz = cam.position.z - e.z, cd = Math.hypot(cx, cz) || 1;
+      if (e.pris >= 0 && !e.marche) map = e.t.tend;
+      else if (e.marche) { const av = (e.vx * cx + e.vz * cz) / cd, la = (e.vx * cz - e.vz * cx) / cd, img = Math.floor(t / 110 + e.k);
+        if (Math.abs(la) > .55) { map = e.t.profil[img % 4]; flip = la > 0 ? -1 : 1; } else map = (av > 0 ? e.t.face : e.t.dos)[1 + img % 2]; }
+      if (e.m.material.map !== map) { e.m.material.map = map; e.m.material.needsUpdate = true; } e.m.scale.x = flip; e.marche = false;
+      e.m.rotation.y = Math.atan2(cx, cz);
+      e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && (t > e.bFin || cd > 25)) e.bs.visible = false; } };
   L.deliDelo = E; const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); anim(t); }; }
 function enfantsRollers(L, scene) {
   const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, yT = C3.hp + C3.NT * C3.HT2, cz = (zt0 + zt1) / 2;
@@ -2538,6 +2607,11 @@ function ruesDehors(A, L, scene) {
     const bitS = A.mat({ map: tex(T.bitume, 1, 1), color: 0x6f6f74 }), troS = A.mat({ map: tex(T.trottoir, 1, 1), roughness: .92 }), bordM = A.mat({ map: tex(T.granit, 1, 1), roughness: .85, side: THREE.DoubleSide });
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
+  // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
+  { const VOM = []; let n = 0;
+    for (const [xv, rot] of [[XR + .95, Math.PI / 2], [XF - .95, -Math.PI / 2]]) for (let z = -132; z < 24; z += 4.7) { if (Math.random() < .18 || (z > -50 && z < -40)) continue;
+      const mo = n % 2 ? "106" : "clio", g = citadine(scene, mo, COULEURS_90[(n * 5 + 3) % COULEURS_90.length], xv, z, rot); n++; g.position.y = DH_.y(z); VOM.push([xv - .9, xv + .9, z - 1.95, z + 1.95]); }
+    DH_.voit = VOM; L.voituresMess = VOM; }
   // au bout, d'un seul tenant, la rue du Faubourg (le même passage que sous le porche, décalé de 41,35 m)
   L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && x > DH_.XE2 && x < XO && z > DH_.ZP, vers: "rue", continu: [0, -41.35, 0], centre: [(XE + XO) / 2, DH_.ZP + .5], messageries: true });
   /* --- les candélabres --- */
@@ -2585,7 +2659,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
     { const n = 16, P = [], U = [], I = [], x0 = xR + .4, x1 = xB, F = [];   // au bout, côté place : la pente douce qui remonte la contre-allée jusqu'à la place
       for (let k = 0; k <= n; k++) { const z = zE + RU.LR * k / n, y = RU.yC(z) + .01; P.push(x0, y, z, x1, y, z); U.push(0, z / 2, (x1 - x0) / 2, z / 2); F.push(x0, y, z, x0, RU.y(z) - DH - .05, z); if (k) { const a = 2 * k - 2; I.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } }
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); g.computeVertexNormals();
-      SOL(A.ajoute(g, A.mat({ map: tex(textures().trottoir, 1, 1), roughness: .92, side: THREE.DoubleSide }), 0, 0, 0, false));
+      SOL(A.ajoute(g, A.mat({ map: tex(textures().paves, .25, .25), roughness: .92, side: THREE.DoubleSide }), 0, 0, 0, false));
       const J = []; for (let k = 0; k < n; k++) { const a = 2 * k; J.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } const f = new THREE.BufferGeometry(); f.setAttribute("position", new THREE.Float32BufferAttribute(F, 3)); f.setIndex(J); f.computeVertexNormals();
       A.ajoute(f, A.mat({ map: tex(textures().betonClair, 1, 1), color: 0xcfcfcf, roughness: .95, side: THREE.DoubleSide }), 0, 0, 0, false); }   // (son flanc, côté contrebas)
     { const Lt = (RU.zS[0] - zE) / Math.cos(ang), zt = (RU.zS[0] + zE) / 2, d = DT - DH;   // le creux : sa paroi côté contre-allée, et celle du pied des marches
@@ -2652,7 +2726,9 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           f.setAttribute("position", new THREE.Float32BufferAttribute(Q, 3)); f.setIndex(J); f.computeVertexNormals(); A.ajoute(f, bord, 0, 0, 0, false); }
         for (let k = 0; k < 3; k++) { const z0 = zS - k * .3, top = sol(zS) + hS - (k + 1) * .17 + .17, bas = sol(z0 - .3) - .05; SOL(A.ajoute(new THREE.BoxGeometry(x1 - x0, top - bas, .3), bc, (x0 + x1) / 2, (top + bas) / 2, z0 - .15)); }   // les trois marches, côté F
         /* côté G : pas de marches, la pente puis le plat */ } } }   // (derrière le bâtiment du fond, à gauche : la ruelle remonte doucement vers la place)   // (la place devant l'arcade, à gauche de la chaussée)
-  planP(xR, xB, zA, zE, 0, textures().trottoir); planP(xR + .4, xB, zE + RU.LR, zT, DH, textures().trottoir);   // la contre-allée (en contrebas, le long du bâtiment)
+  planP(xR, xB, zA, zE, 0, textures().paves); planP(xR + .4, xB, zE + RU.LR, zT, DH, textures().paves);   // la place devant l'escalier Z et la contre-allée : des pavés
+  { const zb0 = zA + RU.pc, seg = (z0, z1, y) => { const a = Math.atan((y(z1) - y(z0)) / (z1 - z0)); trottoir(A, L, xB - 1.6, xB, z0, z1, ["x0"], { ang: a, y }); };   // le long du bâtiment de l'escalier Z, tout du long : un trottoir (avec sa bordure)
+    seg(zb0, zE, z => RU.y(z)); seg(zE, zE + RU.LR, z => RU.yC(z)); seg(zE + RU.LR, zT, z => RU.y(z) - DH); }
   { const t0 = zT - C3.NT * C3.PT, ta = t0 - C3.PTr - (zT - t0), pe = { ang, y: z => RU.y(z) };   // (le long de la terrasse, à plat, dans la continuité du gris d'à côté)
     trottoir(A, L, DB, DB + 1.4, zA + RU.cour, ta, ["x1"], pe); trottoir(A, L, DB, DB + 1.4, t0, zT, ["x1"], pe);
     { const pe2 = { ang, y: z => RU.y(z) + .004 }; trottoir(A, L, DB, DB + 1.4, ta, t0, ["x1"], pe2); L.trottoirs.pop(); }   /* (et entre les deux, le long de la terrasse : le trottoir et sa bordure continuent — le sol y est déjà à sa hauteur) */
@@ -7784,7 +7860,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
 
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
-  if (id === "grande" && !copie) deliDelo(L, scene);   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
+  if (id === "grande" && !copie) deliDelo(L, scene);
+  // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
   if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return b;   // (déjà compté)
@@ -8232,7 +8309,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -11541,6 +11618,56 @@ function animerBarmanSS(t) {
   // sinon, il va et vient le long du comptoir, essuie un verre de temps en temps
   if (!p.ssBut || (t > (p.ssRepos || 0) && vers(p.ssBut))) { if (t > (p.ssRepos || 0)) { p.ssBut = B.x0 + hasard(Math.floor(t / 4000) + 3) * (B.x1 - B.x0); p.ssRepos = t + 2500 + hasard(t) * 2500; } }
   if (t < (p.ssRepos || 0) && p.ssBut != null && Math.abs(g.x - p.ssBut) < .06) pose(Math.floor(t / 900) % 3 === 0 ? "essuyer" : "repos"); }
+/* --- rue des Messageries (la « rue du pipi ») : un monsieur promène son chien en laisse sur le trottoir, monte et descend la rue, s'arrête de temps en temps : le chien fait ses besoins
+   (un petit caca apparaît ; le précédent disparaît). Le monsieur est un bonhomme du jeu (fiche n° 98, réglable par l'administrateur) ; le chien est en volume. --- */
+const PROMENEUR = -87, PHRASES_PROM = ["Allez, Pupuce, on se dépêche !", "Bonjour !", "Il est gentil, il ne mord pas.", "Allez, fais ta commission…", "Ne t'occupe pas de lui."];
+let teteProm = null;
+function tetePromeneur() { return teteProm || (teteProm = toile(224, 248, (x) => { const P = "#eec5a2";   // (une tête dessinée par défaut : casquette, cheveux gris, moustache)
+  x.fillStyle = P; x.beginPath(); x.ellipse(112, 136, 78, 96, 0, 0, 7); x.fill(); for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(112 + sg * 78, 140, 16, 26, 0, 0, 7); x.fill(); }
+  x.fillStyle = "#b8b4ac"; for (const sg of [-1, 1]) x.fillRect(112 + sg * 66 - (sg > 0 ? 18 : 0), 92, 18, 70);
+  x.fillStyle = "#4e5056"; x.beginPath(); x.ellipse(112, 74, 88, 50, 0, Math.PI, 0); x.fill(); x.fillRect(24, 70, 176, 16); x.beginPath(); x.ellipse(112, 84, 82, 16, 0, 0, Math.PI); x.fill();
+  x.fillStyle = "#fff"; for (const sg of [-1, 1]) { x.beginPath(); x.ellipse(112 + sg * 30, 128, 13, 10, 0, 0, 7); x.fill(); } x.fillStyle = "#3a2a1e"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(112 + sg * 30, 129, 6.5, 0, 7); x.fill(); }
+  x.strokeStyle = "#8a8680"; x.lineWidth = 6; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(112 + sg * 14, 110); x.lineTo(112 + sg * 46, 106); x.stroke(); }
+  x.fillStyle = "#d9a888"; x.beginPath(); x.moveTo(112, 128); x.lineTo(124, 168); x.lineTo(100, 168); x.fill();
+  x.fillStyle = "#8a8680"; x.beginPath(); x.ellipse(112, 184, 40, 12, 0, 0, 7); x.fill(); x.strokeStyle = "#8a3a2a"; x.lineWidth = 4; x.beginPath(); x.arc(112, 196, 16, .4, Math.PI - .4); x.stroke(); }).toDataURL()); }
+function chienVolume(scene) {   // un chien en volume : corps, pattes qui marchent, tête, oreilles tombantes, queue ; il s'accroupit (acc : 0 à 1)
+  const g = new THREE.Group(), poil = new THREE.MeshStandardMaterial({ color: 0xa0703a, roughness: .9 }), fonce = new THREE.MeshStandardMaterial({ color: 0x6e4a24, roughness: .9 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515 });
+  const corps = new THREE.Group(); corps.position.y = .36; g.add(corps);
+  const tronc = new THREE.Mesh(new THREE.CapsuleGeometry(.12, .34, 4, 10), poil); tronc.rotation.z = Math.PI / 2; corps.add(tronc);
+  const tete = new THREE.Group(); tete.position.set(.3, .12, 0); corps.add(tete);
+  tete.add(new THREE.Mesh(new THREE.SphereGeometry(.11, 12, 10), poil)); const mus = new THREE.Mesh(new THREE.CapsuleGeometry(.055, .08, 4, 8), poil); mus.rotation.z = Math.PI / 2; mus.position.set(.11, -.03, 0); tete.add(mus);
+  const truffe = new THREE.Mesh(new THREE.SphereGeometry(.025, 8, 6), noir); truffe.position.set(.2, -.02, 0); tete.add(truffe);
+  for (const sg of [-1, 1]) { const o = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 6), fonce); o.scale.set(.5, 1.4, .9); o.position.set(-.02, .0, sg * .1); o.rotation.x = sg * .3; tete.add(o); const oe = new THREE.Mesh(new THREE.SphereGeometry(.018, 6, 6), noir); oe.position.set(.08, .04, sg * .05); tete.add(oe); }
+  const col = new THREE.Mesh(new THREE.TorusGeometry(.085, .015, 6, 14), new THREE.MeshStandardMaterial({ color: 0xc8202a })); col.rotation.y = Math.PI / 2; col.position.set(.22, .06, 0); corps.add(col);
+  const queue = new THREE.Mesh(new THREE.CylinderGeometry(.018, .03, .22, 6), poil); queue.position.set(-.27, .1, 0); queue.rotation.z = .9; corps.add(queue);
+  const pattes = []; for (const [px, pz] of [[.17, .07], [.17, -.07], [-.17, .07], [-.17, -.07]]) { const pv = new THREE.Group(); pv.position.set(px, -.02, pz); corps.add(pv); const m = new THREE.Mesh(new THREE.CylinderGeometry(.03, .025, .34, 6), poil); m.position.y = -.17; pv.add(m); pattes.push(pv); }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.userData.perso = true; scene.add(g);
+  g.userData.anim = (t, marche, acc) => { pattes.forEach((pv, i) => { pv.rotation.z = marche ? Math.sin(t / 90 + (i === 0 || i === 3 ? 0 : Math.PI)) * .5 : 0; });
+    if (!marche) pattes[2].rotation.z = pattes[3].rotation.z = acc * .9; corps.position.y = .36 - acc * .1; corps.rotation.z = acc * .35; queue.rotation.z = .9 + Math.sin(t / 120) * .3 + acc * .5; };
+  return g; }
+function animerPromeneur(t) {
+  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert;
+  let p = M.gens.get(PROMENEUR);
+  if (!ici) { if (p) retirerAncien(PROMENEUR); return; }
+  const XP = 48.1, Z0 = -133, Z1 = 25;
+  if (!p) { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(98)) || {};
+    ajouterAncien({ numero: PROMENEUR, nom: P.nom || "Le monsieur au chien", tenue: P.tenue || "civil", couleur: P.couleur || "#8a6a44", bas: P.bas || "#3a3a40", pieds: P.pieds || "#2a1a12", reglage: P.reglage || null,
+      teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 98) : tetePromeneur(), pnj: true, x: XP, z: -60 }); return; }
+  const S = p.prom || (p.prom = { sens: 1, arret: 0, prochain: t + 15000 }), g = p.g.position;
+  if (!L.chienProm || L.chienProm.parent !== M.scene) { L.chienProm = chienVolume(M.scene); L.chienProm.position.set(XP - .55, 0, g.z);
+    L.laisseProm = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xc8202a })); M.scene.add(L.laisseProm);
+    const c = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: 0x4a2e14, roughness: .5 }); [[.06, 0], [.045, .045], [.03, .085]].forEach(([r, y]) => { const b = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), m); b.scale.y = .7; b.position.y = y + r * .5; c.add(b); }); c.visible = false; M.scene.add(c); L.cacaProm = c; }
+  const D = L.chienProm, dt = S.tp ? Math.min(.1, (t - S.tp) / 1000) : 0; S.tp = t;
+  let acc = 0;
+  if (t < S.arret) { p.cible = null; p.chemin = []; const r = S.arret - t; acc = r > 1200 && r < 5600 ? Math.min(1, (5600 - r) / 600, (r - 1200) / 400) : 0;
+    if (r < 1300 && !S.poser) { S.poser = true; const c = L.cacaProm; c.position.set(D.position.x, D.position.y + .005, D.position.z - S.sens * .3); c.visible = true; if (hasard(t) < .4) direPNJ(PROMENEUR, PHRASES_PROM[Math.floor(hasard(t * 1.3) * PHRASES_PROM.length)]); } }   // (un nouveau petit caca : l'ancien a disparu)
+  else { S.poser = false; if ((S.sens > 0 && g.z > Z1 - .5) || (S.sens < 0 && g.z < Z0 + .5)) { S.sens = -S.sens; p.cible = null; }
+    if (!p.cible) viser(p, XP, S.sens > 0 ? Z1 : Z0); if (t > S.prochain) { S.arret = t + 7000; S.prochain = t + 22000 + hasard(t) * 25000; } }
+  // le chien : devant son maître, côté bordure, au bout de sa laisse
+  const marche = !!p.cible, zc = g.z + S.sens * 1.3, xc = XP - .55;
+  D.position.x += (xc - D.position.x) * Math.min(1, dt * 4); D.position.z += (zc - D.position.z) * Math.min(1, dt * 4); D.position.y = L.hauteur ? L.hauteur(D.position.x, D.position.z) : 0; D.rotation.y = S.sens > 0 ? -Math.PI / 2 : Math.PI / 2;
+  D.userData.anim(t, marche, acc);
+  const pos = L.laisseProm.geometry.attributes.position; pos.setXYZ(0, g.x - .25, g.y + 1.0, g.z + S.sens * .1); pos.setXYZ(1, D.position.x, D.position.y + .42, D.position.z - S.sens * .2); pos.needsUpdate = true; }
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
@@ -14352,6 +14479,7 @@ function connecter() {
     else if (m.t === "pnj" && m.p && (m.p.id >= 12 && m.p.id <= 15 || m.p.id === 17)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); const ty = { 12: 0, 13: 1, 14: 2, 17: 3, 15: 4 }[m.p.id]; if (M.zTexB) delete M.zTexB[ty];
       for (const z of M.zomb ? [...M.zomb.values()] : []) if (z.ty === ty) { if (ty < 4) { const d = { id: z.id, ty, x: z.x, z: z.z, n: z.n, hp: z.hp }; const k = { tx: z.tx, tz: z.tz, mortT: z.mortT, chemin: z.chemin }; retirerZ(z); Object.assign(creerZ(d), k); } else { z.mesh.material.map = texChien(); z.mesh.material.needsUpdate = true; tailleZ(z); } } }
     else if (m.t === "pnj" && m.p && m.p.id === 16) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); retirerAncien(SMITH); }
+    else if (m.t === "pnj" && m.p && m.p.id === 98) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(PROMENEUR)) retirerAncien(PROMENEUR); }
     else if (m.t === "pnj" && m.p && m.p.id === 97) { ctx.surPNJTrio && ctx.surPNJTrio(m.p); if (M.gens.has(BARMAN_SS)) { retirerAncien(BARMAN_SS); ajouterBarmanSS(); } }   // (le barman du sous-sol retouché : redessiné)
     else if (m.t === "pnj" && m.p && ((m.p.id >= 21 && m.p.id <= 26) || m.p.id === 95)) { ctx.surPNJTrio && ctx.surPNJTrio(m.p);   // un héros de Resident Evil retouché : ceux qui le jouent, et les équipiers, sont redessinés
       for (const p of [...M.gens.values()]) if (p.info.heros === m.p.id) { const pos = p.g.position.clone(), base = p.info.vrai || p.info;
