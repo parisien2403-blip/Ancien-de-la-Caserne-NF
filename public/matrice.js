@@ -2431,7 +2431,7 @@ function deliDelo(L, scene) {
       let map = e.t.face[0], flip = 1; const cx = cam.position.x - e.x, cz = cam.position.z - e.z, cd = Math.hypot(cx, cz) || 1;
       if (e.pris >= 0 && !e.marche) map = e.t.tend;
       else if (e.marche) { const av = (e.vx * cx + e.vz * cz) / cd, la = (e.vx * cz - e.vz * cx) / cd, img = Math.floor(t / 110 + e.k);
-        if (Math.abs(la) > .55) { map = e.t.profil[img % 4]; flip = la > 0 ? 1 : -1; }   // (vers la droite de l'écran : de profil tourné à droite) else map = (av > 0 ? e.t.face : e.t.dos)[1 + img % 2]; }
+        if (Math.abs(la) > .55) { map = e.t.profil[img % 4]; flip = la > 0 ? 1 : -1; } else map = (av > 0 ? e.t.face : e.t.dos)[1 + img % 2]; }   // (vers la droite de l'écran : de profil tourné à droite)
       if (e.m.material.map !== map) { e.m.material.map = map; e.m.material.needsUpdate = true; } e.m.scale.x = flip; e.marche = false;
       e.m.rotation.y = Math.atan2(cx, cz);
       e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && (t > e.bFin || cd > 25)) e.bs.visible = false; } };
