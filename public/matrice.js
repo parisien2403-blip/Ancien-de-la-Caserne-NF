@@ -2169,6 +2169,14 @@ DH_.h = (x, z) => z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
 const RDC_HV = {
+  superette: (x, w, yr, h) => { x.fillStyle = "#e3d9c3"; x.fillRect(0, yr, w, h);   // (la supérette de l'arabe du coin : enseigne verte, vitrines pleines de rayons)
+    x.fillStyle = "#1f7a3a"; x.fillRect(w * .04, yr + 6, w * .92, 34); x.fillStyle = "#f4f2ec"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText("ALIMENTATION GÉNÉRALE  •  FRUITS & LÉGUMES", w / 2, yr + 31);
+    x.fillStyle = "#2a2622"; x.fillRect(w * .04, yr + 44, w * .92, h - 44);
+    for (const [X, W] of [[w * .06, w * .38], [w * .56, w * .38]]) { x.fillStyle = "#f2eee2"; x.fillRect(X, yr + 50, W, h - 56);
+      for (let r = 0; r < 4; r++) { const y = yr + 62 + r * (h - 72) / 4; x.fillStyle = "#b8b0a0"; x.fillRect(X + 4, y + (h - 72) / 4 - 6, W - 8, 4);
+        for (let k = 0; k < 12; k++) { x.fillStyle = ["#c8202a", "#2f5fae", "#f2c94c", "#3a9d5d", "#e86a3a", "#f4f2ec", "#7a4a2a"][(k * 3 + r) % 7]; x.fillRect(X + 8 + k * (W - 16) / 12, y + 4, (W - 16) / 12 - 3, (h - 72) / 4 - 12); } }
+      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(X + 6, yr + 52, 8, h - 60); }
+    x.fillStyle = "#3a2a1c"; x.fillRect(w * .45, yr + 50, w * .1, h - 50); x.fillStyle = "#c9d3d8"; x.fillRect(w * .46, yr + 56, w * .08, h * .5); },
   porteVerte: (x, w, yr, h) => { x.fillStyle = "#d3c3a0"; x.fillRect(0, yr, w, h); x.fillStyle = "#bfae8a"; for (let k = 0; k < 6; k++) x.fillRect(0, yr + k * 28, w, 2);   // (la grande porte cochère vert foncé, le n° 69, le panneau de stationnement)
     const dw = Math.min(w * .3, 120), dx = w * .86 - dw / 2, dy = yr + 26; x.fillStyle = "#a8977a"; x.fillRect(dx - 10, dy - 10, dw + 20, h - 16); x.fillStyle = "#1f3d36"; x.beginPath(); x.moveTo(dx, yr + h); x.lineTo(dx, dy + 30); x.quadraticCurveTo(dx + dw / 2, dy - 14, dx + dw, dy + 30); x.lineTo(dx + dw, yr + h); x.fill();
     x.strokeStyle = "#13261f"; x.lineWidth = 3; x.beginPath(); x.moveTo(dx + dw / 2, dy + 14); x.lineTo(dx + dw / 2, yr + h); x.stroke(); for (const sx of [dx + 10, dx + dw / 2 + 8]) { x.strokeRect(sx, dy + 40, dw / 2 - 18, (h - 70) * .45); x.strokeRect(sx, dy + 50 + (h - 70) * .45, dw / 2 - 18, (h - 70) * .4); }
@@ -2730,7 +2738,7 @@ function ruesDehors0(A, L, scene) {
     const pn = A.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 24), [A.mat({ color: 0xc22a2a }), A.mat({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#c22a2a"; c.beginPath(); c.arc(32, 32, 32, 0, 7); c.fill(); c.fillStyle = "#2a4fa8"; c.beginPath(); c.arc(32, 32, 25, 0, 7); c.fill(); c.strokeStyle = "#c22a2a"; c.lineWidth = 7; c.beginPath(); c.moveTo(14, 14); c.lineTo(50, 50); c.stroke(); })) }), A.mat({ color: 0x888888 })], x - .05, Y0 + 2.5, z); pn.rotation.z = Math.PI / 2; }
   for (let k = 1; k < 8; k += 2) { const a = Math.PI + k / 8 * Math.PI / 2; A.ajoute(new THREE.CylinderGeometry(.055, .065, .9, 8), A.mat({ color: 0x1a1a1a }), XF + 2.5 + Math.cos(a) * 2.25, Y0 + .57, ZR + 2.5 + Math.sin(a) * 2.25); }   // (les potelets, autour de l'angle)
     // (le même immeuble de l'angle, sa façade sur la rue d'Hauteville)
-  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.porteVerte : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
+  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.porteVerte : k === 1 ? RDC_HV.superette : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
     if (k === 7) { const c = g.children.find(o => o.isMesh && o.geometry.type === "BoxGeometry"); if (c && Array.isArray(c.material)) { c.material = c.material.slice(); c.material[4] = A.mat({ map: tex(toileVolets(16, 5)) }); } } });   // (en face du carrefour : l'immeuble blanc à volets gris, d'après la photo)
   // la Cité d'Hauteville, en face de la caserne (d'après la photo) : une petite rue entre deux immeubles, son passage piété, et au bout un mur peint en trompe-l'œil
   { const cx = DH_.CX, z0 = ZO, z1 = ZO - DH_.CL;
@@ -2778,6 +2786,7 @@ function ruesDehors0(A, L, scene) {
     A.ajoute(new THREE.BoxGeometry(.3, .5, 7), A.mat({ color: 0xd2cbbd }), XW + .1, Y0 + 4.75, (ZR + ZF) / 2, false);
     circulationRue(L, scene, { x0: XEst - .6, x1: XW + 1.5, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
+  arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
   // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
   { const VOM = []; let n = 0;
     for (const [xv, rot] of [[XR + .95, Math.PI / 2], [XF - .95, -Math.PI / 2]]) for (let z = -132; z < 24; z += 4.7) { if (Math.random() < .18 || (z > -50 && z < -40)) continue;
@@ -11880,10 +11889,10 @@ function valise(scene) {   // une valise à roulettes, sa poignée tirée
   for (const z of [-.12, .12]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .45, 6), n); t.position.set(.08, .9, z); g.add(t); } const p = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .28), n); p.position.set(.08, 1.12, 0); g.add(p);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
 const PASSANTS = [
-  { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -154.2, 72, -154.2] },
+  { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -153.5, 72, -153.5] },
   { num: -90, nom: "Un monsieur pressé", tenue: "costume", couleur: "#4a4e56", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["costume", { peau: "#efc7a4", ch: "#3a2a1e", coif: "court", lunettes: true }], acc: "valise", trajet: [-36, -143.5, 27, -143.5] },
   { num: -91, nom: "Une maman", tenue: "jupe", couleur: "#2f6fae", bas: "#2a2a30", pieds: "#5a2a1a", tete: ["mamanB", { peau: "#d9a882", ch: "#1e1410", coif: "carre", femme: true }], acc: "poussette", trajet: [39.4, -128, 39.4, -50] },
-  { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -155, -50, -155] }];
+  { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -153.4, -50, -153.4] }];
 function animerPassants(t) {
   if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert && !L.nuit;
   for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {});
@@ -11918,6 +11927,42 @@ function toileClochard(f) {
     x.fillStyle = "#2a1a12"; for (const sg of [-1, 1]) { x.beginPath(); x.arc(110 + sg * 10, 60, 3, 0, 7); x.fill(); } x.strokeStyle = "#5a3a2a"; x.lineWidth = 3; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(110 + sg * 4, 52); x.lineTo(110 + sg * 16, 54); x.stroke(); }
     x.fillStyle = "#c83030"; x.fillRect(82, 32, 56, 8); }); }   // (un vieux bandeau rouge dans les cheveux)
 const PHRASES_CLOCH = ["Une petite pièce, s'il vous plaît…", "Merci, que Dieu vous bénisse !", "Bonne journée quand même…", "Un ticket resto, monsieur ?", "Il fait froid cette nuit…"];
+/* l'arabe du coin : devant la supérette, l'étalage de fruits et légumes sous son store rayé, et le patron, la soixantaine, grosse moustache, blouse grise */
+function arabeDuCoin(L, scene, xc, zf) {
+  const Y = DH_.Y0 + .12, bois = new THREE.MeshStandardMaterial({ color: 0x8a6438, roughness: .8 }), vert = new THREE.MeshStandardMaterial({ color: 0x1f7a3a, roughness: .6 }), blanc = new THREE.MeshStandardMaterial({ color: 0xf2efe6, roughness: .6 });
+  const ajoute = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; scene.add(o); return o; };
+  // le store à rayures vertes et blanches, au-dessus de l'étalage
+  const store = new THREE.Mesh(new THREE.PlaneGeometry(10, 1.6), new THREE.MeshStandardMaterial({ map: tex(toile(256, 64, (c) => { for (let k = 0; k < 16; k++) { c.fillStyle = k % 2 ? "#f2efe6" : "#1f7a3a"; c.fillRect(k * 16, 0, 16, 64); } c.fillStyle = "#1f7a3a"; for (let k = 0; k < 16; k++) { c.beginPath(); c.arc(k * 16 + 8, 60, 8, 0, Math.PI); c.fill(); } })), side: THREE.DoubleSide, roughness: .7 }));
+  store.rotation.x = -Math.PI / 2 + .45; store.position.set(xc, Y + 3.0, zf + .75); scene.add(store);
+  // l'étalage : deux tréteaux en gradins, des cagettes pleines
+  const FR = [[0xe8302a, .05, "pommes"], [0xf28a1e, .055, "oranges"], [0xf2d22a, .045, "citrons"], [0x3a9d3a, .05, "pommes vertes"], [0x6a2a6a, .03, "raisins"], [0xe86a3a, .03, "tomates"], [0x3a7a2a, .07, "salades"], [0xf2e2a0, .06, "melons"], [0xd8a030, .05, "poires"], [0x2a5a1a, .04, "courgettes"]];
+  let n = 0;
+  for (const cx of [xc - 2.6, xc + 2.6]) { for (const [dz, hy] of [[.35, .55], [.95, .8]]) { ajoute(new THREE.BoxGeometry(3.2, .05, .55), bois, cx, Y + hy, zf + dz); }
+    for (const dx of [-1.5, 1.5]) for (const dz of [.15, 1.2]) ajoute(new THREE.BoxGeometry(.05, dz > 1 ? .55 : .8, .05), bois, cx + dx, Y + (dz > 1 ? .27 : .4), zf + dz);
+    for (const [dz, hy] of [[.35, .8], [.95, .55]]) for (let k = 0; k < 4; k++) { const [col, r] = FR[n++ % FR.length], x = cx - 1.2 + k * .8, z = zf + dz;
+      const cag = ajoute(new THREE.BoxGeometry(.72, .14, .48), bois, x, Y + hy + .1, z); const mf = new THREE.MeshStandardMaterial({ color: col, roughness: .45 });
+      const im = new THREE.InstancedMesh(new THREE.SphereGeometry(Math.min(.065, r * 1.3), 8, 6), mf, 30), mt = new THREE.Matrix4(); for (let i = 0; i < 30; i++) { mt.makeTranslation(x - .3 + (i % 6) * .12 + Math.random() * .02, Y + hy + .2 + Math.floor(i / 18) * r, z - .18 + Math.floor(i / 6) % 3 * .14 + Math.random() * .02); im.setMatrixAt(i, mt); } im.castShadow = true; scene.add(im);
+      const et = new THREE.Mesh(new THREE.PlaneGeometry(.22, .12), new THREE.MeshBasicMaterial({ map: tex(toile(64, 36, (c) => { c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, 64, 36); c.fillStyle = "#f4f2ec"; c.font = "bold 16px Arial"; c.textAlign = "center"; c.fillText((1 + (k * 7 + n) % 9) + "F", 32, 25); })) })); et.position.set(x, Y + hy + .26, z + .25); et.rotation.x = -.3; scene.add(et); } }
+  (DH_.voit = DH_.voit || []).push([xc - 4.4, xc - .8, zf, zf + 1.4], [xc + .8, xc + 4.4, zf, zf + 1.4]);
+  // le patron
+  const m = personne3D({ taille: 1.7, peau: "#b98563", ch: "#a8a49c", haut: "#7c7c7a", bas: "#5c5c5e", chaussures: "#2a1a14", coif: "court", pantalon: true }), P = m.userData.parts, r = 1.7 * .062;
+  const mous = new THREE.Mesh(new THREE.CapsuleGeometry(r * .2, r * .9, 4, 8), new THREE.MeshStandardMaterial({ color: 0x3a3430, roughness: 1 })); mous.rotation.z = Math.PI / 2; mous.position.set(0, -r * .25, r * .95); P.tete.add(mous);   // (la grosse moustache)
+  for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.SphereGeometry(r * .2, 8, 6), mous.material); b.position.set(sg * r * .55, -r * .38, r * .85); P.tete.add(b); }
+  for (const sg of [-1, 1]) { const so = new THREE.Mesh(new THREE.BoxGeometry(r * .5, r * .12, r * .1), mous.material); so.position.set(sg * r * .38, r * .38, r * .9); P.tete.add(so); }   // (les sourcils épais)
+  const blouse = new THREE.Mesh(new THREE.CylinderGeometry(.15, .21, .55, 14, 1, true), new THREE.MeshStandardMaterial({ color: 0x8a8a88, roughness: .9, side: THREE.DoubleSide })); blouse.position.y = -.12; blouse.scale.z = .8; P.buste.add(blouse);   // (la blouse grise)
+  const ventre = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 10), new THREE.MeshStandardMaterial({ color: 0x7c7c7a, roughness: .9 })); ventre.position.set(0, .14, .05); ventre.scale.set(1, 1.1, .9); P.buste.add(ventre);
+  m.position.set(xc, Y, zf + 1.9); scene.add(m);
+  const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(xc, Y + 2.15, zf + 1.9); bs.visible = false; scene.add(bs);
+  const PHR = ["Bonjour mon ami !", "Elles sont belles, mes oranges !", "Deux kilos de tomates pour dix francs !", "Ouvert jusqu'à minuit !", "Tu veux du pain ? Il reste des baguettes.", "Ça va la famille ?"]; let fin = 0, vu0 = 0;
+  (DH_.voit = DH_.voit || []).push([xc - .35, xc + .35, zf + 1.55, zf + 2.25]);
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = ok; if (!ok) { bs.visible = false; return; }
+    const moi = M.moiNum && M.gens.get(M.moiNum), d = moi ? Math.hypot(moi.g.position.x - xc, moi.g.position.z - (zf + 1.9)) : 99;
+    m.userData.poser("debout", tm); P.bras.forEach((b, i) => { b.e.rotation.x = -.35; b.c.rotation.x = -1.1; b.e.rotation.z = (i ? 1 : -1) * .35; });   // (les mains croisées sur le ventre)
+    if (d < 5 && moi) { m.rotation.y = Math.atan2(moi.g.position.x - xc, moi.g.position.z - (zf + 1.9)); P.bras[1].e.rotation.x = -1.2 - Math.abs(Math.sin(tm / 300)) * .3; P.bras[1].c.rotation.x = -.4; }
+    else m.rotation.y = Math.sin(tm / 4000) * .6;
+    if (d < 5 && tm > vu0) { vu0 = tm + 10000; peindreBulle(bc, PHR[Math.floor(Math.random() * PHR.length)]); bt.needsUpdate = true; bs.visible = true; fin = tm + 3500; }
+    if (bs.visible && tm > fin) bs.visible = false; };
+  L.arabeDuCoin = m; }
 function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tourné vers la rue (-z)
   const Y = DH_.Y0 + .12, carton = new THREE.Mesh(new THREE.BoxGeometry(1.1, .03, 1.0), new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#b08a5a"; c.fillRect(0, 0, 64, 64); c.strokeStyle = "rgba(90,60,30,.5)"; for (let k = 0; k < 8; k++) { c.beginPath(); c.moveTo(0, k * 8); c.lineTo(64, k * 8 + 2); c.stroke(); } c.fillStyle = "rgba(60,40,20,.4)"; c.fillRect(30, 20, 18, 14); })), roughness: 1 }));
   carton.position.set(x, Y + .015, z - .55); scene.add(carton);
