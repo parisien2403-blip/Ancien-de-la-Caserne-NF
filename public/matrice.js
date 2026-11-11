@@ -2913,7 +2913,7 @@ function ruesDehors0(A, L, scene) {
     const v = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshStandardMaterial({ color: 0xf3ead2, roughness: .3 })); v.position.set(lx, Y0 + 6.55, lz); scene.add(v);
     const halo = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshBasicMaterial({ color: 0xffd99a })); halo.position.copy(v.position); halo.visible = false; scene.add(halo); L.nuitObjets.push(halo);
     const l = new THREE.PointLight(0xffcf8a, 60, 22, 1.4); l.position.set(lx, Y0 + 6.2, lz); l.visible = false; scene.add(l); L.nuitObjets.push(l); };
-  for (const x of [-44, -16, 15.4, 40, 66]) cand(x, ZF - .45, 0, 1);
+  for (const x of [-44, -16, 19, 40, 66]) cand(x, ZF - .45, 0, 1);
   // les passages de la cour (salle des fêtes, vestibule, étages…) ont été tracés sans limite de côté : jamais depuis les rues (on entrait dans la salle des fêtes en descendant la rue des Messageries)
   for (const pt of L.portails) { if (pt.messageries) continue; const d0 = pt.dans; pt.dans = (x, z) => !DH_.rue(x, z) && d0(x, z); }
   // la carte des passages (pour aller où l'on touche, en contournant les murs) couvre aussi les rues
