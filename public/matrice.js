@@ -2216,6 +2216,35 @@ function toileVolets(L, etages) {   // l'immeuble blanc d'en face (d'après la p
     for (let c = 0; c < n; c++) { const cx = (c + .5) * pas * P, bw = pas * P * .62, by = yr + .5 * P, bh = h - by - 6;
       x.fillStyle = "#1e2226"; x.fillRect(cx - bw / 2, by, bw, bh); const g = x.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, "#5b6670"); g.addColorStop(1, "#2a3036"); x.fillStyle = g; x.fillRect(cx - bw / 2 + 4, by + 4, bw - 8, bh - 8);
       x.fillStyle = "#151515"; for (let k = 0; k <= 9; k++) x.fillRect(cx - bw / 2 + 4 + k * (bw - 10) / 9, by + 4, 2, bh - 8); x.fillRect(cx - bw / 2 + 4, by + bh * .5, bw - 8, 2); } }); }
+function toileEglise(W, H) {   // la rue d'Hauteville qui file, en trompe-l'œil, jusqu'à l'église Saint-Vincent-de-Paul : son perron, sa colonnade, son fronton, ses deux tours carrées
+  const P = 40, w = W * P, h = H * P, vx = w / 2, vy = h - 1.7 * P - 4 * P;
+  return toile(w, h, (x) => { graine = 707;
+    const g = x.createLinearGradient(0, 0, 0, h * .6); g.addColorStop(0, "#9cc4e6"); g.addColorStop(1, "#e4ecf0"); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 6; i++) { x.fillStyle = "rgba(255,255,255,.7)"; x.beginPath(); x.ellipse(alea() * w, 40 + alea() * h * .25, 80 + alea() * 120, 22 + alea() * 20, 0, 0, 7); x.fill(); }
+    // l'église, au bout, sur sa butte : les deux tours, le fronton, la colonnade, le grand escalier
+    const ew = w * .2, ex = vx - ew / 2, eb = vy + 10, coul = "#d8d0bc", ombre = "#a89f8a";
+    for (const sg of [-1, 1]) { const tx = vx + sg * ew * .38 - ew * .1; x.fillStyle = coul; x.fillRect(tx, eb - ew * 1.35, ew * .2, ew * 1.0); x.fillStyle = ombre; x.fillRect(tx + ew * .03, eb - ew * 1.28, ew * .05, ew * .12); x.fillRect(tx + ew * .12, eb - ew * 1.28, ew * .05, ew * .12);
+      x.fillStyle = "#c9c0aa"; x.fillRect(tx - 4, eb - ew * 1.38, ew * .2 + 8, 8); x.fillStyle = "#3a3a3a"; x.beginPath(); x.arc(tx + ew * .1, eb - ew * 1.12, ew * .045, 0, 7); x.fill(); }   // (les tours, l'horloge)
+    x.fillStyle = coul; x.fillRect(ex, eb - ew * .62, ew, ew * .62); x.beginPath(); x.moveTo(ex - 6, eb - ew * .6); x.lineTo(vx, eb - ew * .86); x.lineTo(ex + ew + 6, eb - ew * .6); x.fill();
+    x.strokeStyle = ombre; x.lineWidth = 3; x.beginPath(); x.moveTo(ex + 10, eb - ew * .62); x.lineTo(vx, eb - ew * .8); x.lineTo(ex + ew - 10, eb - ew * .62); x.stroke();
+    for (let k = 0; k < 8; k++) { const cx = ex + ew * .06 + k * ew * .126; x.fillStyle = "#efe9da"; x.fillRect(cx, eb - ew * .56, ew * .05, ew * .48); x.fillStyle = "rgba(60,50,40,.35)"; x.fillRect(cx + ew * .05, eb - ew * .56, ew * .07, ew * .48); }
+    x.fillStyle = "#cfc6b0"; for (let k = 0; k < 7; k++) x.fillRect(ex - k * 10, eb - ew * .08 + k * 6, ew + k * 20, 6);   // (le perron)
+    // la place et ses arbres, devant
+    for (const sg of [-1, 1]) for (let k = 0; k < 3; k++) { x.fillStyle = ["#4f7f36", "#5e8f3e", "#46732f"][k]; x.beginPath(); x.ellipse(vx + sg * (ew * .7 + k * 40), eb + 10 - k * 6, 60 - k * 8, 46, 0, 0, 7); x.fill(); }
+    // les deux rangées d'immeubles qui fuient vers l'église
+    const pt = (xb, yb, t) => [xb + (vx - xb) * t, yb + (vy + 30 - yb) * t];
+    for (const sg of [-1, 1]) { const bx = sg < 0 ? 0 : w, tm = .72;
+      const quad = (y0, y1, c) => { x.fillStyle = c; x.beginPath(); x.moveTo(...pt(bx, y0, 0)); x.lineTo(...pt(bx, y0, tm)); x.lineTo(...pt(bx, y1, tm)); x.lineTo(...pt(bx, y1, 0)); x.closePath(); x.fill(); };
+      quad(0, h - .6 * P, sg < 0 ? "#efece5" : "#dccfb2"); quad(0, 2 * P, "#7a838a");
+      for (let k = 0; k < 40; k++) { const t0 = 1 - 1 / (1 + k * .16), t1 = 1 - 1 / (1 + (k + .5) * .16); if (t1 > tm) break;
+        for (let e = 0; e < 6; e++) { const fy0 = (3 + e * 3.6) * P, fy1 = fy0 + 2 * P, [a0, b0] = pt(bx, fy0, t0), [a1, b1] = pt(bx, fy0, t1), [, c0] = pt(bx, fy1, t0), [, c1] = pt(bx, fy1, t1);
+          x.fillStyle = sg < 0 && e % 2 ? "#a9aeb0" : "#3e4a55"; x.beginPath(); x.moveTo(a0, b0); x.lineTo(a1, b1); x.lineTo(a1, c1); x.lineTo(a0, c0); x.closePath(); x.fill(); }
+        if (k % 2 === 0) { const [a0, b0] = pt(bx, h - 4 * P, t0), [a1, b1] = pt(bx, h - 4 * P, t1), [, c0] = pt(bx, h - .7 * P, t0), [, c1] = pt(bx, h - .7 * P, t1); x.fillStyle = ["#1d2a5a", "#2a2622", "#7a2020", "#1f4a32"][k / 2 % 4]; x.beginPath(); x.moveTo(a0, b0); x.lineTo(a1, b1); x.lineTo(a1, c1); x.lineTo(a0, c0); x.closePath(); x.fill(); } } }
+    // la chaussée et les trottoirs qui montent vers la place
+    const pr = (xb, t) => [xb + (vx - xb) * t, h + (eb + 20 - h) * t];
+    for (const [a, b, c] of [[0, w * .22, "#9a968e"], [w * .22, w * .78, "#55565a"], [w * .78, w, "#9a968e"]]) { x.fillStyle = c; x.beginPath(); x.moveTo(a, h); x.lineTo(b, h); x.lineTo(...pr(b, .74)); x.lineTo(...pr(a, .74)); x.closePath(); x.fill(); }
+    x.fillStyle = "rgba(240,240,236,.8)"; for (let k = 0; k < 6; k++) { const t0 = .1 + k * .1, [a, b] = pr(w * .3, t0), [c, d] = pr(w * .7, t0); x.fillRect(a, b, c - a, 5 * (1 - t0)); }   // (les passages piétons)
+    x.fillStyle = "rgba(30,30,30,.85)"; for (let k = 1; k < 10; k++) { const t = 1 - 1 / (1 + k * .4); for (const xb of [w * .18, w * .82]) { const [a, b] = pr(xb, t), hh = 1 * P * (1 - t); x.fillRect(a - 2, b - hh, 4, hh); } } }); }   // (les potelets)
 function toileRueLoin(W, H, oeil) {   // un mur peint en trompe-l'œil : la rue qui continue, au loin (W, H en mètres ; oeil : la hauteur du regard)
   const P = 40, w = W * P, h = H * P, vx = w / 2, vy = h - oeil * P;
   return toile(w, h, (x) => { graine = 404;
@@ -2635,11 +2664,11 @@ function ruesDehors0(A, L, scene) {
   AG.ajoute(new THREE.ExtrudeGeometry(sh, { depth: 2, bevelEnabled: false, curveSegments: 20 }), [A.mat({ map: tP }), brique], 0, yb, -10);
   // sous la voûte, dans le mur de droite (en allant vers le portail) : la porte du poste de garde, où se tient le gendarme
   { const bois = A.mat({ color: 0x3b2618, roughness: .6 }), cadre = A.mat({ color: 0xe6e0d4, roughness: .75 }), laiton = A.mat({ color: 0xc9a227, metalness: .7, roughness: .3 });
-    const fr = AG.ajoute(new THREE.BoxGeometry(.12, 2.5, 1.3), cadre, 2.27, yb + 1.25, -3.4, false);
-    const po = AG.ajoute(new THREE.BoxGeometry(.06, 2.3, 1.06), bois, 2.24, yb + 1.15, -3.4, false);
-    for (const [y, h] of [[.6, .8], [1.65, .9]]) AG.ajoute(new THREE.BoxGeometry(.03, h, .8), A.mat({ color: 0x2e1d12, roughness: .6 }), 2.2, yb + y, -3.4, false);
-    AG.ajoute(new THREE.SphereGeometry(.035, 8, 6), laiton, 2.18, yb + 1.1, -3.0, false);
-    const pq = AG.ajoute(new THREE.PlaneGeometry(.5, .16), A.mat({ map: tex(toile(160, 52, (c) => { c.fillStyle = "#1d3f73"; c.fillRect(0, 0, 160, 52); c.fillStyle = "#f4f1e6"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("POSTE", 80, 34); })) }), 2.2, yb + 2.6, -3.4, false); pq.rotation.y = -Math.PI / 2; }
+    const fr = AG.ajoute(new THREE.BoxGeometry(.12, 2.5, 1.3), cadre, 2.29, yb + 1.25, -3.4, false);
+    const po = AG.ajoute(new THREE.BoxGeometry(.05, 2.3, 1.06), bois, 2.205, yb + 1.15, -3.4, false);
+    for (const [y, h] of [[.6, .8], [1.65, .9]]) AG.ajoute(new THREE.BoxGeometry(.03, h, .8), A.mat({ color: 0x2e1d12, roughness: .6 }), 2.165, yb + y, -3.4, false);
+    AG.ajoute(new THREE.SphereGeometry(.035, 8, 6), laiton, 2.13, yb + 1.1, -3.0, false);
+    const pq = AG.ajoute(new THREE.PlaneGeometry(.5, .16), A.mat({ map: tex(toile(160, 52, (c) => { c.fillStyle = "#1d3f73"; c.fillRect(0, 0, 160, 52); c.fillStyle = "#f4f1e6"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("POSTE", 80, 34); })) }), 2.22, yb + 2.6, -3.4, false); pq.rotation.y = -Math.PI / 2; }
   // le linteau de pierre « GARDE RÉPUBLICAINE », en relief : ses ressauts aux deux bouts, la rangée de denticules dessous
   { const LW = 8.4, LH = 1.75, y0 = yb + AH + 1.05, blanc = A.mat({ map: tex(toile(256, 256, (c) => pierre(c, 0, 0, 256, 256, "#e8e2d5", 40, 120)), 1, 1), roughness: .85 });
     // les lettres en relief, taillées dans la même pierre blanche : l'ombre portée en bas à droite, la lumière en haut à gauche (et le relief, par la carte de bosses)
@@ -2753,7 +2782,8 @@ function ruesDehors0(A, L, scene) {
     const toit = new THREE.Mesh(new THREE.CylinderGeometry(R, R + .9, 3.2, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ color: 0x7c858b, roughness: .5, metalness: .3, side: THREE.DoubleSide })); toit.position.set(DH_.AX, Y0 + H + 1.6, ZO); scene.add(toit);
     const corn = new THREE.Mesh(new THREE.CylinderGeometry(R - .25, R - .25, .3, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ color: 0xe8e4da, side: THREE.DoubleSide })); corn.position.set(DH_.AX, Y0 + H, ZO); scene.add(corn);
     const lan = A.mat({ color: 0x1d1f22, metalness: .4, roughness: .5 }); A.ajoute(new THREE.CylinderGeometry(.07, .12, 6.4, 10), lan, DH_.AX + 2.5, Y0 + 3.3, ZF - .5); A.ajoute(new THREE.BoxGeometry(.4, .55, .4), A.mat({ color: 0xf3ead2, emissive: 0x332a18 }), DH_.AX + 2.5, Y0 + 6.7, ZF - .5); }
-  im({ x: XW, z: (ZO + ZN) / 2, largeur: 14, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 330 });       // la rue d'Hauteville, fermée de chaque côté
+  // au bout, à l'ouest : la rue d'Hauteville monte vers l'église Saint-Vincent-de-Paul (un mur peint en trompe-l'œil : on ne va pas plus loin)
+  { const W = ZN - ZO + 6, t = tex(toileEglise(W, 30)), m = new THREE.Mesh(new THREE.PlaneGeometry(W, 30), A.mat({ map: t, roughness: 1 })); m.position.set(XW + .3, Y0 + 15, (ZO + ZN) / 2); m.rotation.y = Math.PI / 2; scene.add(m); }
   // au bout, à l'est : la rue d'Hauteville continue de descendre — un mur peint en trompe-l'œil (on ne va pas plus loin), et les immeubles côté caserne jusque-là
   { const t = tex(toileRueLoin(ZN - ZO + 6, 28, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(ZN - ZO + 6, 28), A.mat({ map: t, roughness: 1 })); m.position.set(XEst - .3, Y0 + 14, (ZO + ZN) / 2); m.rotation.y = -Math.PI / 2; scene.add(m); }
   [[66.5, 11], [76, 8]].forEach(([xc, l], k) => im({ x: xc, z: ZN, largeur: l, etages: 6, rot: Math.PI, teinte: k ? teintes[2] : "#d5c39e", graine: 334 + k, rdc: k ? null : RDC_HV.porte }));
@@ -2782,9 +2812,7 @@ function ruesDehors0(A, L, scene) {
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
   // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
-  { const tr = A.ajoute(new THREE.PlaneGeometry(6.4, 4.6), new THREE.MeshBasicMaterial({ color: 0x0c0c0e }), XW + .06, Y0 + 2.3, (ZR + ZF) / 2, false); tr.rotation.y = Math.PI / 2;
-    A.ajoute(new THREE.BoxGeometry(.3, .5, 7), A.mat({ color: 0xd2cbbd }), XW + .1, Y0 + 4.75, (ZR + ZF) / 2, false);
-    circulationRue(L, scene, { x0: XEst - .6, x1: XW + 1.5, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
+  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
   arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
   // les voitures garées en file, des deux côtés de la rue des Messageries (des Clio et des 106)
@@ -11945,12 +11973,16 @@ function arabeDuCoin(L, scene, xc, zf) {
       const et = new THREE.Mesh(new THREE.PlaneGeometry(.22, .12), new THREE.MeshBasicMaterial({ map: tex(toile(64, 36, (c) => { c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, 64, 36); c.fillStyle = "#f4f2ec"; c.font = "bold 16px Arial"; c.textAlign = "center"; c.fillText((1 + (k * 7 + n) % 9) + "F", 32, 25); })) })); et.position.set(x, Y + hy + .26, z + .25); et.rotation.x = -.3; scene.add(et); } }
   (DH_.voit = DH_.voit || []).push([xc - 4.4, xc - .8, zf, zf + 1.4], [xc + .8, xc + 4.4, zf, zf + 1.4]);
   // le patron
-  const m = personne3D({ taille: 1.7, peau: "#b98563", ch: "#a8a49c", haut: "#7c7c7a", bas: "#5c5c5e", chaussures: "#2a1a14", coif: "court", pantalon: true }), P = m.userData.parts, r = 1.7 * .062;
+  const m = personne3D({ taille: 1.7, peau: "#b98563", ch: "#141010", haut: "#7c7c7a", bas: "#5c5c5e", chaussures: "#2a1a14", coif: "court", pantalon: true }), P = m.userData.parts, r = 1.7 * .062;
+  P.tete.scale.setScalar(1.6); P.tete.position.y += .06;   // (une grosse tête, bien posée sur son corps)
+  { const fr = new THREE.MeshStandardMaterial({ color: 0x141010, roughness: 1 }); for (let k = 0; k < 40; k++) { const a = Math.random() * Math.PI * 2, b = Math.random() * 1.15; const c = new THREE.Mesh(new THREE.SphereGeometry(r * (.22 + Math.random() * .1), 6, 5), fr);   // (les cheveux crépus, noirs)
+      c.position.set(Math.cos(a) * Math.sin(b) * r * 1.08, Math.cos(b) * r * 1.02 + r * .05, Math.sin(a) * Math.sin(b) * r * 1.08 - r * .05); if (c.position.z > r * .55 && c.position.y < r * .55) continue; P.tete.add(c); } }
+  P.buste.scale.set(1.35, 1, 1.35); P.jambes.forEach(J => J.h.scale.set(1.3, 1, 1.3));   // (il est gros)
   const mous = new THREE.Mesh(new THREE.CapsuleGeometry(r * .2, r * .9, 4, 8), new THREE.MeshStandardMaterial({ color: 0x3a3430, roughness: 1 })); mous.rotation.z = Math.PI / 2; mous.position.set(0, -r * .25, r * .95); P.tete.add(mous);   // (la grosse moustache)
   for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.SphereGeometry(r * .2, 8, 6), mous.material); b.position.set(sg * r * .55, -r * .38, r * .85); P.tete.add(b); }
   for (const sg of [-1, 1]) { const so = new THREE.Mesh(new THREE.BoxGeometry(r * .5, r * .12, r * .1), mous.material); so.position.set(sg * r * .38, r * .38, r * .9); P.tete.add(so); }   // (les sourcils épais)
   const blouse = new THREE.Mesh(new THREE.CylinderGeometry(.15, .21, .55, 14, 1, true), new THREE.MeshStandardMaterial({ color: 0x8a8a88, roughness: .9, side: THREE.DoubleSide })); blouse.position.y = -.12; blouse.scale.z = .8; P.buste.add(blouse);   // (la blouse grise)
-  const ventre = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 10), new THREE.MeshStandardMaterial({ color: 0x7c7c7a, roughness: .9 })); ventre.position.set(0, .14, .05); ventre.scale.set(1, 1.1, .9); P.buste.add(ventre);
+  const ventre = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 10), new THREE.MeshStandardMaterial({ color: 0x7c7c7a, roughness: .9 })); ventre.position.set(0, .14, .05); ventre.scale.set(1, 1.1, .9); P.buste.add(ventre);
   m.position.set(xc, Y, zf + 1.9); scene.add(m);
   const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(xc, Y + 2.15, zf + 1.9); bs.visible = false; scene.add(bs);
   const PHR = ["Bonjour mon ami !", "Elles sont belles, mes oranges !", "Deux kilos de tomates pour dix francs !", "Ouvert jusqu'à minuit !", "Tu veux du pain ? Il reste des baguettes.", "Ça va la famille ?"]; let fin = 0, vu0 = 0;
