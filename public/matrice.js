@@ -2189,7 +2189,10 @@ const RDC_HV = {
   porte: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h); x.fillStyle = "#24453a"; x.beginPath(); x.moveTo(w * .4, yr + h); x.lineTo(w * .4, yr + 50); x.arc(w / 2, yr + 50, w * .1, Math.PI, 0); x.lineTo(w * .6, yr + h); x.fill();
     x.strokeStyle = "#16302a"; x.lineWidth = 3; x.beginPath(); x.moveTo(w / 2, yr + 40); x.lineTo(w / 2, yr + h); x.stroke();
     for (const [X, W] of [[w * .06, w * .28], [w * .66, w * .28]]) { x.fillStyle = "#2a2622"; x.fillRect(X, yr + 30, W, h - 30); const g = x.createLinearGradient(X, yr + 36, X + W, yr + h); g.addColorStop(0, "#8fa3ae"); g.addColorStop(.5, "#3d4b55"); g.addColorStop(1, "#59666e"); x.fillStyle = g; x.fillRect(X + 5, yr + 36, W - 10, h - 44);
-      x.fillStyle = "rgba(255,240,210,.35)"; for (let k = 0; k < 3; k++) x.fillRect(X + 10 + k * (W - 20) / 3, yr + h * .55, (W - 20) / 4, h * .3); x.fillStyle = "#b08a3a"; x.font = "bold 10px Georgia"; x.textAlign = "center"; x.fillText("ÉPICERIE FINE", X + W / 2, yr + 26); } },
+      x.fillStyle = "rgba(255,240,210,.35)"; for (let k = 0; k < 3; k++) x.fillRect(X + 10 + k * (W - 20) / 3, yr + h * .55, (W - 20) / 4, h * .3); x.fillStyle = "#b08a3a"; x.font = "bold 13px Georgia"; x.textAlign = "center"; x.fillText(X < w / 2 ? "HÔTEL" : "★ ★ ★", X + W / 2, yr + 24); }
+    // l'enseigne de l'hôtel, en drapeau au-dessus de la porte, et sa marquise
+    x.fillStyle = "#1d2a4a"; x.fillRect(w * .44, yr + 4, w * .12, 22); x.fillStyle = "#e8c66a"; x.font = "bold 12px Georgia"; x.textAlign = "center"; x.fillText("HÔTEL", w / 2, yr + 20);
+    x.fillStyle = "#1d2a4a"; x.beginPath(); x.moveTo(w * .36, yr + 28); x.lineTo(w * .64, yr + 28); x.lineTo(w * .67, yr + 40); x.lineTo(w * .33, yr + 40); x.fill(); },
 };
 function toileVolets(L, etages) {   // l'immeuble blanc d'en face (d'après la photo) : enduit blanc, volets gris à toutes les fenêtres, grandes baies à barreaux au rez-de-chaussée
   const P = 40, H = 4.2 + etages * 3.1, n = Math.max(3, Math.round(L / 3.4)), pas = L / n;
