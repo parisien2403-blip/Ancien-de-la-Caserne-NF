@@ -12166,7 +12166,26 @@ function valise(scene) {   // une valise à roulettes, sa poignée tirée
   const b = new THREE.Mesh(new THREE.BoxGeometry(.24, .62, .42), c); b.position.y = .38; g.add(b); for (const z of [-.15, .15]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .03, 10), n); r.rotation.x = Math.PI / 2; r.position.set(-.1, .04, z); g.add(r); }
   for (const z of [-.12, .12]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .45, 6), n); t.position.set(.08, .9, z); g.add(t); } const p = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .28), n); p.position.set(.08, 1.12, 0); g.add(p);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
+function caddieTissu(scene) {   // le caddie de courses de grand-mère : un sac en tissu écossais sur deux roues, tiré par sa poignée
+  const g = new THREE.Group(), tissu = new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#2a4a7a"; c.fillRect(0, 0, 64, 64); c.fillStyle = "rgba(200,40,50,.7)"; for (let k = 4; k < 64; k += 16) { c.fillRect(k, 0, 5, 64); c.fillRect(0, k, 64, 5); } c.fillStyle = "rgba(240,220,120,.5)"; for (let k = 10; k < 64; k += 16) { c.fillRect(k, 0, 2, 64); c.fillRect(0, k, 64, 2); } })), roughness: 1 });
+  const fer = new THREE.MeshStandardMaterial({ color: 0x9a9ea4, metalness: .6, roughness: .4 }), n = new THREE.MeshStandardMaterial({ color: 0x151515 });
+  const sac = new THREE.Mesh(new THREE.CylinderGeometry(.17, .19, .58, 14), tissu); sac.scale.z = .75; sac.position.set(0, .4, 0); sac.rotation.z = -.22; g.add(sac);
+  const rabat = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), tissu); rabat.scale.set(1, .35, .75); rabat.position.set(-.07, .69, 0); rabat.rotation.z = -.22; g.add(rabat);
+  for (const z of [-.16, .16]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .035, 14), n); r.rotation.x = Math.PI / 2; r.position.set(.06, .08, z); g.add(r); }
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .34, 6), fer); ax.rotation.x = Math.PI / 2; ax.position.set(.06, .08, 0); g.add(ax);
+  for (const z of [-.1, .1]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .95, 6), fer); t.position.set(-.03, .52, z); t.rotation.z = -.22; g.add(t); }
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .26, 8), n); p.rotation.x = Math.PI / 2; p.position.set(-.13, .97, 0); g.add(p);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
 const PASSANTS = [
+  { num: -110, nom: "Une grand-mère", tenue: "tailleur", couleur: "#6a5a7a", pieds: "#2a1a14", tete: ["mamie1", { peau: "#f0d0b4", ch: "#e8e4dc", coif: "carre", femme: true, lunettes: true }], acc: "caddie", trajet: [-50, -154.8, 70, -154.8] },
+  { num: -111, nom: "Une grand-mère", tenue: "robe", couleur: "#3a5a4a", pieds: "#3a2a1a", tete: ["mamie2", { peau: "#e8bd95", ch: "#cfcac0", coif: "court", femme: true }], acc: "caddie", trajet: [45, 5.0, -45, 5.0], lieu: "rue" },
+  { num: -112, nom: "Un garçon", tenue: "tshirt", couleur: "#e8a020", bas: "#2f5fae", pieds: "#f2f2f2", tete: ["gamin1", { peau: "#c78f62", ch: "#141010", coif: "court" }], acc: null, enfant: true, trajet: [-30, -143.3, 25, -143.3] },
+  { num: -113, nom: "Une fillette", tenue: "robe", couleur: "#e85a8a", pieds: "#c8202a", tete: ["gamine1", { peau: "#f6d6bc", ch: "#a5532a", coif: "long", femme: true }], acc: null, enfant: true, trajet: [-44, -5.4, 44, -5.4], lieu: "rue" },
+  { num: -114, nom: "Un voyageur", tenue: "costume", couleur: "#5a4a3a", bas: "#3a3028", pieds: "#2a1a12", tete: ["voyageur2", { peau: "#f0c9a6", ch: "#8a8a8a", coif: "court", lunettes: true }], acc: "valise", trajet: [-45, 4.8, 45, 4.8], lieu: "rue" },
+  { num: -115, nom: "Une maman", tenue: "chemisier", couleur: "#f2f0ea", bas: "#2a3040", pieds: "#2a1a14", tete: ["mamanD", { peau: "#8d5a3b", ch: "#120c0a", coif: "long", femme: true }], acc: "poussette", trajet: [68, -154.4, -48, -154.4] },
+  { num: -116, nom: "Un garçon", tenue: "polo", couleur: "#2e7a4a", bas: "#3a3a40", pieds: "#1a1a1a", tete: ["gamin2", { peau: "#efc7a4", ch: "#e2c27a", coif: "court" }], acc: null, enfant: true, trajet: [48.4, 18, 48.4, -100] },
+  { num: -117, nom: "Une fillette", tenue: "jupe", couleur: "#8a4ab0", bas: "#f2f0ea", pieds: "#1a1a1a", tete: ["gamine2", { peau: "#d9a882", ch: "#2a1a12", coif: "carre", femme: true }], acc: null, enfant: true, trajet: [60, -154.2, -40, -154.2] },
+  { num: -118, nom: "Une voyageuse", tenue: "tailleur", couleur: "#2a4a6a", pieds: "#1a1a1a", tete: ["voyageuse", { peau: "#e8bd95", ch: "#6a3a1e", coif: "long", femme: true }], acc: "valise", trajet: [26, -143.7, -36, -143.7] },
   { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -153.5, 72, -153.5] },
   { num: -90, nom: "Un monsieur pressé", tenue: "costume", couleur: "#4a4e56", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["costume", { peau: "#efc7a4", ch: "#3a2a1e", coif: "court", lunettes: true }], acc: "valise", trajet: [-36, -143.5, 27, -143.5] },
   { num: -91, nom: "Une maman", tenue: "jupe", couleur: "#2f6fae", bas: "#2a2a30", pieds: "#5a2a1a", tete: ["mamanB", { peau: "#d9a882", ch: "#1e1410", coif: "carre", femme: true }], acc: "poussette", trajet: [39.4, -128, 39.4, -50] },
@@ -12183,11 +12202,11 @@ function animerPassants(t) {
   for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && !M.sansFigurants && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);
     if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
     const [x0, z0, x1, z1] = P.trajet;
-    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); continue; }
+    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); const q = M.gens.get(P.num); if (q && P.enfant) { q.g.scale.setScalar(.64); q.info.allure = .8; } continue; }   /* (les enfants : petits, à petits pas) */
     const S = p.pass || (p.pass = { sens: (P.num & 1) ? 1 : -1, pause: 0 }), g = p.g.position;
     if (!p.cible && t > S.pause) { const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0]; if (Math.hypot(tx - g.x, tz - g.z) < .8) { S.sens = -S.sens; S.pause = t + 1500; } else viser(p, tx, tz); }
     // l'accessoire : la poussette devant soi, la valise qui roule derrière
-    if (P.acc && (!A[P.num] || A[P.num].parent !== M.scene)) A[P.num] = P.acc === "poussette" ? poussette(M.scene) : valise(M.scene);
+    if (P.acc && (!A[P.num] || A[P.num].parent !== M.scene)) A[P.num] = P.acc === "poussette" ? poussette(M.scene) : P.acc === "caddie" ? caddieTissu(M.scene) : valise(M.scene);
     const o = A[P.num]; if (!o) continue; o.visible = true; const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0], d = Math.hypot(tx - x0 - (S.sens > 0 ? 0 : x1 - x0), 1), dx = Math.sign(S.sens) * Math.sign((x1 - x0) || 0), dz = Math.sign(S.sens) * Math.sign((z1 - z0) || 0);
     const av = P.acc === "poussette" ? .95 : -.55, lat = P.acc === "poussette" ? 0 : .3, ox = g.x + dx * av - dz * lat, oz = g.z + dz * av + dx * lat;
     o.position.set(ox, L.hauteur ? L.hauteur(ox, oz) : g.y, oz); o.rotation.y = Math.atan2(-dz, dx) + (P.acc === "poussette" ? Math.PI : 0); } }
