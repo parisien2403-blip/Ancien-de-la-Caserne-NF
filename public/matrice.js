@@ -4682,19 +4682,20 @@ function animerServeurs() {
     if (!p) { const B = (M.ctx.pnjBar && M.ctx.pnjBar()) || {}, id = [3, 112, 113][k], P = k ? (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {} : B;   // (Mr Miner, le barman de la salle des fêtes ; et deux serveurs habillés comme lui, Paulo et Momo, réglables par l'administrateur)
       const tete = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : k ? tetePassant(k === 1 ? "paulo" : "momo", k === 1 ? { peau: "#e8bd95", ch: "#2a1a12", coif: "court", moustache: true } : { peau: "#8d5a3b", ch: "#120c0a", coif: "court" }) : "images/miner-tete.png";
       p = ajouterAncien({ numero: num, nom: P.nom || ["Mr Miner", "Le serveur Paulo", "Le serveur Momo"][k], tenue: P.tenue && P.tenue !== "civil" ? P.tenue : "barman", couleur: P.tenue && P.tenue !== "civil" && P.couleur ? P.couleur : B.couleur || "#efe8d2", bas: P.bas || B.bas || "#4a4636", pieds: P.pieds || B.pieds, reglage: P.reglage || null, teteUrl: tete, pnj: true, x: PASSE_MESS.x, z: PASSE_MESS.z - 1 + k * 1.3 });
-      if (!p) continue; p.serv = { etat: "passe", t: performance.now() + k * 5000 }; }
+      if (!p) continue; p.serv = { etat: "passe", t: performance.now() + k * 9000 }; }   /* (ils partent l'un après l'autre) */
     const S = p.serv || (p.serv = { etat: "passe", t: 0 }), now = performance.now(), g = p.g.position;
     if (!S.plat) { S.plat = new THREE.Mesh(new THREE.CylinderGeometry(.13, .1, .02, 20), new THREE.MeshStandardMaterial({ color: 0xf8f6f0 })); const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8a4a2a })); f.scale.y = .5; f.position.y = .01; S.plat.add(f); S.plat.position.set(0, 1.12, .32); p.g.add(S.plat); }
     S.plat.visible = S.etat === "porte";
-    if (p.cible) continue;   // (il marche)
-    if (S.etat === "passe") { if (Math.hypot(g.x - PASSE_MESS.x, g.z - (PASSE_MESS.z - .6 + k * .6)) > .4) { viser(p, PASSE_MESS.x, PASSE_MESS.z - .6 + k * .6); continue; }   // il va au passe…
-      if (!S.t) S.t = now + 1800; if (now < S.t) continue;   // …prend une assiette garnie
+    if (p.cible) { for (const [j, n2] of SERVEURS.entries()) { if (j >= k) break; const q = M.gens.get(n2); if (q && Math.hypot(q.g.position.x - g.x, q.g.position.z - g.z) < .8) { if (now > (S.cedeT || 0) + 4000) { p.cible = null; p.chemin = []; S.reprendre = true; S.cedeT = now; } break; } } continue; }   // (il marche ; trop près d'un collègue : il le laisse passer)
+    if (S.reprendre) { if (now < S.cedeT + 1300) continue; S.reprendre = false; const c = S.etat === "porte" && S.c ? S.c.P : null; if (c) viser(p, c.x + (c.x > c.tx ? .55 : -.55), c.z); else viser(p, PASSE_MESS.x, PASSE_MESS.z - .9 + k * .9); if (p.cible) continue; }
+    if (S.etat === "passe") { if (Math.hypot(g.x - PASSE_MESS.x, g.z - (PASSE_MESS.z - .9 + k * .9)) > .4) { viser(p, PASSE_MESS.x, PASSE_MESS.z - .9 + k * .9); continue; }   // il va au passe…
+      if (!S.t) S.t = now + 1800 + Math.random() * 5000; if (now < S.t) continue;   // …prend une assiette garnie (le temps de la dresser : chacun le sien, ils ne repartent plus ensemble)
       const vides = L.convives.filter(c => !c.assiette.visible && !c.reserve), c = vides.length ? vides[Math.floor(Math.random() * vides.length)] : L.convives[Math.floor(Math.random() * L.convives.length)];
       c.reserve = true; S.c = c; S.etat = "porte"; S.t = 0; const P = c.P; viser(p, P.x + (P.x > P.tx ? .55 : -.55), P.z); }
     else if (S.etat === "porte") { const c = S.c; if (!S.t) S.t = now + 900; if (now < S.t) continue;   // il pose l'assiette devant le convive
       c.assiette.visible = true; c.reserve = false; S.etat = "retour"; S.t = 0; if (Math.random() < .5) dire(num, ["Bon appétit !", "Et voilà, c'est chaud !", "Attention, l'assiette est brûlante.", "Le plat du jour, messieurs dames."][Math.floor(Math.random() * 4)]);
       const autre = L.convives.filter(x => x.assiette.visible && x !== c); if (autre.length && Math.random() < .5) { const d = autre[Math.floor(Math.random() * autre.length)]; setTimeout(() => { d.assiette.visible = false; }, 20000 + Math.random() * 20000); } }   // (ailleurs, quelqu'un finit son assiette)
-    else { S.etat = "passe"; S.t = 0; viser(p, PASSE_MESS.x, PASSE_MESS.z - .6 + k * .6); } } }
+    else { S.etat = "passe"; S.t = 0; viser(p, PASSE_MESS.x, PASSE_MESS.z - .9 + k * .9); } } }
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
