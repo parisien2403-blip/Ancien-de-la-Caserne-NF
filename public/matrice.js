@@ -4369,6 +4369,149 @@ function deuxiemeCour(A, L, scene) {
 /* la circulation de la rue du Faubourg-Poissonnière (sens unique) : des voitures des années 80-90 (couleurs au hasard)
    et, plus rarement, le bus parisien de l'époque (vert jade et blanc) ; jamais en continu, de temps en temps */
 function circulation(L, scene) { circulationRue(L, scene, { x0: -72, x1: 75, z: .55, y: 0, sens: 1 }); }
+/* ---------- Halloween : un masque de clown traîne au sol, dans la cour. On le ramasse, on le met : écran noir, le titre, la musique —
+   la caserne devient un cauchemar (la nuit, la brume, des citrouilles, du sang, des papiers), et Michael Myers nous poursuit.
+   Il marche, nous court ; il nous retrouve toujours. Un coup de couteau, et c'est fini : on se relève là où l'on est tombé, dans la caserne de tous les jours. ---------- */
+const HW = { masque: [3.5, -63] };
+let hwModeles = null;
+function hwCharger() { return hwModeles = hwModeles || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const Ld = new gltfMod.GLTFLoader();
+  const [mi, ci] = await Promise.all(["michael", "citrouille"].map(n => Ld.loadAsync(`halloween/${n}.glb?v=1`))); return { michael: mi.scene, citrouille: ci.scene }; })().catch(e => { hwModeles = null; throw e; }); }
+function masqueHalloween(L, scene) {   // le masque, posé au sol dans la cour (seulement dans la vraie caserne)
+  const g = new THREE.Group(), [x, z] = HW.masque; g.position.set(x, 0, z); scene.add(g); L.masqueHW = g;
+  (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const m = (await new gltfMod.GLTFLoader().loadAsync("halloween/masque.glb?v=1")).scene;
+    const b = new THREE.Box3().setFromObject(m), s = .3 / Math.max(...b.getSize(new THREE.Vector3()).toArray()); m.scale.setScalar(s); m.rotation.set(-Math.PI / 2 + .1, 0, .5); m.position.y = .05;
+    m.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.add(m); })().catch(e => console.warn("masque", e)); }
+function hwProposer() {   // ramassé : on le voit en grand — « Voulez-vous le mettre ? »
+  if (!M || M.cadranEl || M.halloween) return; const masque = M.L.masqueHW;
+  const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.82);padding:16px;box-sizing:border-box";
+  const bt = "border:0;border-radius:12px;padding:12px 30px;font:800 20px sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.5)";
+  d.innerHTML = `<img src="halloween/masque.webp" alt="Un vieux masque de clown" style="max-height:55%;max-width:80%;object-fit:contain;filter:drop-shadow(0 12px 30px #000);transform:rotate(-5deg)">
+    <div style="color:#f2f2f2;font:800 23px sans-serif;text-align:center;text-shadow:0 2px 8px #000">Voulez-vous le mettre ?</div>
+    <div style="display:flex;gap:18px"><button type="button" data-r="1" style="${bt};background:#c8501e;color:#fff">Oui</button><button type="button" data-r="0" style="${bt};background:#eee;color:#222">Non</button></div>`;
+  M.ctx.conteneur.appendChild(d); M.cadranEl = d; for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) d.addEventListener(ev, e => e.stopPropagation());
+  if (masque) masque.visible = false;
+  for (const b of d.querySelectorAll("button")) b.onclick = () => { d.remove(); if (!M) return; M.cadranEl = null; if (b.dataset.r === "1") hwDemarrer(); else if (masque) masque.visible = true; }; }
+function hwVoile(html, z = 12) { const v = document.createElement("div"); v.style.cssText = `position:absolute;inset:0;z-index:${z};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity 1.2s`; v.innerHTML = html;
+  for (const ev of ["pointerdown", "touchstart", "mousedown", "click"]) v.addEventListener(ev, e => e.stopPropagation()); M.ctx.conteneur.appendChild(v); return v; }
+async function hwDemarrer() {
+  if (!M || M.halloween || M.lieu !== "grande") return;
+  const noir = hwVoile(`<img src="halloween/titre.webp" alt="Halloween" style="width:min(86%,900px);opacity:0;transition:opacity 2.5s">`); noir.style.background = "#000";
+  const son = HW.son || (HW.son = new Audio("halloween/musique.mp3")); son.loop = true; son.currentTime = 0; son.volume = .9; son.play().catch(() => {});
+  setTimeout(() => { const im = noir.querySelector("img"); if (im) im.style.opacity = 1; }, 300);
+  M.halloween = { t0: performance.now(), voiles: [noir] }; const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
+  let mod = null; try { mod = await hwCharger(); } catch (e) { console.warn("halloween", e); }
+  await new Promise(r => setTimeout(r, 4300)); if (!M || !M.halloween) { noir.remove(); return; }
+  hwDecor(mod); majAmbiance();
+  noir.style.opacity = 0; setTimeout(() => noir.remove(), 1300);
+  if (mod) setTimeout(() => { if (M && M.halloween && !M.halloween.mi) hwMichael(mod.michael); }, 1800); }
+/* le décor du cauchemar : citrouilles (une petite flamme dedans), flaques et traînées de sang, papiers et cartons au sol, nappes de brume */
+function hwToile(f, w = 128, h = 128) { const t = tex(toile(w, h, f)); return t; }
+function hwDecor(mod) {
+  const L = M.L, sc = M.scene, g = new THREE.Group(); sc.add(g); M.halloween.decor = g; M.halloween.fog0 = sc.fog; sc.fog = M.halloween.fog = new THREE.Fog(0x08090d, 5, 34);
+  let gr = 9871; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647, h = (x, z) => L.hauteur ? L.hauteur(x, z, {}) : 0;
+  const zones = [[-22, 31, -142, 29], [-58, 78, -156, -143], [38, 49, -140, 28]], pts = [];
+  for (let k = 0; k < 4000 && pts.length < 260; k++) { const Z = zones[k % 3 === 2 ? 2 : k % 3], x = Z[0] + r() * (Z[1] - Z[0]), z = Z[2] + r() * (Z[3] - Z[2]); if (L.limites(x, z)) pts.push([x, z]); }
+  const pris = () => pts.splice(Math.floor(r() * pts.length), 1)[0];
+  // le sang : quelques taches, des éclaboussures, des traînées
+  const sangs = [0, 1, 2].map(v => hwToile((c, w, hh) => { c.clearRect(0, 0, w, hh); const col = ["rgba(90,4,8,", "rgba(120,8,10,", "rgba(70,2,6,"][v];
+    for (let i = 0; i < 26; i++) { const a = r() * 6.28, d = r() * (v === 2 ? 50 : 34), R = (v === 2 ? 6 : 3) + r() * (i < 3 ? 26 : 9); c.fillStyle = col + (.55 + r() * .4) + ")"; c.beginPath(); c.ellipse(64 + Math.cos(a) * d, 64 + Math.sin(a) * d * (v === 2 ? .35 : 1), R, R * (v === 2 ? .5 : .8), a, 0, 7); c.fill(); } }));
+  for (let k = 0; k < 55; k++) { const p = pris(); if (!p) break; const s = .5 + r() * 1.8, m = new THREE.Mesh(new THREE.PlaneGeometry(s * (k % 3 === 2 ? 2.2 : 1), s), new THREE.MeshStandardMaterial({ map: sangs[k % 3], transparent: true, depthWrite: false, roughness: .25, polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.rotation.set(-Math.PI / 2, 0, r() * 6.28); m.position.set(p[0], h(p[0], p[1]) + .012, p[1]); g.add(m); }
+  // les papiers, les cartons
+  const papier = hwToile((c, w, hh) => { c.fillStyle = "#d8d4c8"; c.fillRect(0, 0, w, hh); c.fillStyle = "rgba(60,60,70,.55)"; for (let y = 14; y < hh - 8; y += 9) c.fillRect(10, y, w - 20 - r() * 40, 3); c.fillStyle = "rgba(90,70,40,.25)"; c.fillRect(0, 0, w, hh); });
+  const papM = new THREE.MeshStandardMaterial({ map: papier, side: THREE.DoubleSide, roughness: 1 }), cartM = new THREE.MeshStandardMaterial({ color: 0x8e6a3e, roughness: 1 });
+  for (let k = 0; k < 60; k++) { const p = pris(); if (!p) break; const m = new THREE.Mesh(new THREE.PlaneGeometry(.21, .3), papM); m.rotation.set(-Math.PI / 2 + (r() - .5) * .3, 0, r() * 6.28); m.position.set(p[0], h(p[0], p[1]) + .02, p[1]); g.add(m); }
+  for (let k = 0; k < 18; k++) { const p = pris(); if (!p) break; const plat = k % 2, m = new THREE.Mesh(new THREE.BoxGeometry(.4 + r() * .4, plat ? .02 : .3 + r() * .2, .3 + r() * .4), cartM); m.rotation.y = r() * 6.28; m.position.set(p[0], h(p[0], p[1]) + (plat ? .01 : .2), p[1]); m.castShadow = true; g.add(m); }
+  // les citrouilles : une flamme dedans, et quelques vraies lueurs orangées
+  if (mod && mod.citrouille) { const base = mod.citrouille, b = new THREE.Box3().setFromObject(base), s = .42 / (b.max.y - b.min.y), flamme = new THREE.MeshBasicMaterial({ color: 0xffa12a }); let nl = 0;
+    for (let k = 0; k < 30; k++) { const p = pris(); if (!p) break; const c = base.clone(); c.scale.setScalar(s * (.8 + r() * .5)); c.rotation.y = r() * 6.28; c.position.set(p[0], h(p[0], p[1]), p[1]); c.traverse(o => { if (o.isMesh) o.castShadow = true; }); g.add(c);
+      const f = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), flamme); f.position.set(p[0], h(p[0], p[1]) + .17, p[1]); g.add(f);
+      if (nl < 6 && k % 4 === 0) { const l = new THREE.PointLight(0xff8a20, 5, 7, 1.6); l.position.set(p[0], h(p[0], p[1]) + .5, p[1]); g.add(l); nl++; } } }
+  // la brume, en nappes au ras du sol, qui glissent lentement
+  const brume = hwToile((c, w, hh) => { const gd = c.createRadialGradient(w / 2, hh / 2, 0, w / 2, hh / 2, w / 2); gd.addColorStop(0, "rgba(190,200,215,.55)"); gd.addColorStop(1, "rgba(190,200,215,0)"); c.fillStyle = gd; c.fillRect(0, 0, w, hh); });
+  M.halloween.brumes = []; for (let k = 0; k < 18; k++) { const p = pris(); if (!p) break; const m = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: brume, transparent: true, depthWrite: false, opacity: .5, fog: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(p[0], h(p[0], p[1]) + .35 + r() * .5, p[1]); m.renderOrder = 3; g.add(m); M.halloween.brumes.push({ m, x: p[0], z: p[1], ph: r() * 6 }); } }
+/* Michael : un seul bloc, sans os — on lui pose ici un vrai squelette (aux noms de Mixamo, comme les personnages de Resident Evil), ajusté à son corps (bras en A, couteau dans la main droite),
+   on attache chaque point de son corps aux deux os les plus proches de sa région ; puis il reprend les mouvements de Resident Evil (la marche, le coup du Tyran) */
+function riggerMichael(src) {
+  const sc = src.clone(true); sc.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(sc), k = 1.86 / (box.max.y - box.min.y), cx = (box.min.x + box.max.x) / 2;
+  const geos = []; sc.traverse(o => { if (!o.isMesh || !o.geometry.attributes.position) return; const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-cx, -box.min.y, 0); g.scale(k, k, k); geos.push([g, o.material]); });
+  // le milieu du buste, en profondeur (le couteau, tenu devant, ne compte pas)
+  let sz = 0, nz = 0; for (const [g] of geos) { const p = g.attributes.position; for (let i = 0; i < p.count; i += 3) { const x = p.getX(i), y = p.getY(i); if (Math.abs(x) < .15 && y > 1 && y < 1.4) { sz += p.getZ(i); nz++; } } }
+  const z0 = nz ? sz / nz : 0; for (const [g] of geos) g.translate(0, 0, -z0);
+  // les articulations (gauche : +x ; le personnage regarde vers +z)
+  const J = { Hips: [0, .98, 0], Spine: [0, 1.1, 0], Spine1: [0, 1.24, 0], Spine2: [0, 1.38, 0], Neck: [0, 1.57, .01], Head: [0, 1.67, .02], HeadTop_End: [0, 1.86, .02] };
+  for (const [s, sg] of [["Left", 1], ["Right", -1]]) Object.assign(J, { [s + "Shoulder"]: [sg * .05, 1.48, 0], [s + "Arm"]: [sg * .17, 1.47, 0], [s + "ForeArm"]: [sg * .34, 1.24, .06], [s + "Hand"]: [sg * .43, 1.05, .14], [s + "HandEnd"]: [sg * .47, .92, .18],
+    [s + "UpLeg"]: [sg * .1, .93, 0], [s + "Leg"]: [sg * .1, .5, .01], [s + "Foot"]: [sg * .1, .09, -.03], [s + "ToeBase"]: [sg * .1, .02, .1], [s + "Toe_End"]: [sg * .1, .02, .19] });
+  const parent = { Spine: "Hips", Spine1: "Spine", Spine2: "Spine1", Neck: "Spine2", Head: "Neck", HeadTop_End: "Head" };
+  for (const s of ["Left", "Right"]) Object.assign(parent, { [s + "Shoulder"]: "Spine2", [s + "Arm"]: s + "Shoulder", [s + "ForeArm"]: s + "Arm", [s + "Hand"]: s + "ForeArm", [s + "HandEnd"]: s + "Hand", [s + "UpLeg"]: "Hips", [s + "Leg"]: s + "UpLeg", [s + "Foot"]: s + "Leg", [s + "ToeBase"]: s + "Foot", [s + "Toe_End"]: s + "ToeBase" });
+  const os = {}, liste = []; for (const n in J) { const b = new THREE.Bone(); b.name = n; os[n] = b; liste.push(b); }
+  for (const n in J) { const b = os[n], p = parent[n], w = J[n]; if (p) { os[p].add(b); b.position.set(w[0] - J[p][0], w[1] - J[p][1], w[2] - J[p][2]); } else b.position.set(...w); }
+  const root = new THREE.Group(); root.add(os.Hips); root.updateMatrixWorld(true); const squel = new THREE.Skeleton(liste);
+  // chaque os, un segment (de lui à son enfant) ; on n'attache un point qu'aux os de sa région (un bras ne tire pas le buste)
+  const enf = { Hips: "Spine", Spine: "Spine1", Spine1: "Spine2", Spine2: "Neck", Neck: "Head", Head: "HeadTop_End" }; for (const s of ["Left", "Right"]) Object.assign(enf, { [s + "Shoulder"]: s + "Arm", [s + "Arm"]: s + "ForeArm", [s + "ForeArm"]: s + "Hand", [s + "Hand"]: s + "HandEnd", [s + "UpLeg"]: s + "Leg", [s + "Leg"]: s + "Foot", [s + "Foot"]: s + "ToeBase", [s + "ToeBase"]: s + "Toe_End" });
+  const seg = n => [new THREE.Vector3(...J[n]), new THREE.Vector3(...J[enf[n]])], SEG = {}; for (const n in enf) SEG[n] = seg(n);
+  const region = (x, y) => y > .66 && Math.abs(x) > (y < 1.28 ? .27 : .19) ?   /* (aux hanches, le corps est large : ce n'est pas encore le bras) */ (x > 0 ? ["LeftArm", "LeftForeArm", "LeftHand", "LeftShoulder"] : ["RightArm", "RightForeArm", "RightHand", "RightShoulder"])
+    : y < .86 ? (x > 0 ? ["LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase", "Hips"] : ["RightUpLeg", "RightLeg", "RightFoot", "RightToeBase", "Hips"]) : ["Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "LeftShoulder", "RightShoulder", "LeftUpLeg", "RightUpLeg"];
+  const idx = n => liste.indexOf(os[n]), v = new THREE.Vector3(), t = new THREE.Vector3(), dSeg = (p, [a, b]) => { t.subVectors(b, a); const l = t.lengthSq() || 1, u = Math.max(0, Math.min(1, v.subVectors(p, a).dot(t) / l)); return p.distanceTo(t.multiplyScalar(u).add(a)); };
+  const p = new THREE.Vector3();
+  for (const [g, mat] of geos) { const pos = g.attributes.position, n = pos.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { p.fromBufferAttribute(pos, i); const c = region(p.x, p.y).map(nm => [nm, dSeg(p, SEG[nm])]).sort((a, b) => a[1] - b[1]);
+      const w0 = 1 / Math.pow(c[0][1] + .01, 4), w1 = 1 / Math.pow(c[1][1] + .01, 4), s = w0 + w1; si[i * 4] = idx(c[0][0]); si[i * 4 + 1] = idx(c[1][0]); sw[i * 4] = w0 / s; sw[i * 4 + 1] = w1 / s; }
+    g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(sw, 4));
+    const m = new THREE.SkinnedMesh(g, mat); m.castShadow = true; m.frustumCulled = false; root.add(m); m.bind(squel, new THREE.Matrix4()); }
+  return { root, os }; }
+function hwPointPres(px, pz, dmin, dmax, devant) {   // un endroit libre, pas loin : devant soi (là où l'on regarde) ou dans le dos
+  const v = new THREE.Vector3(); M.camera.getWorldDirection(v); const a0 = Math.atan2(v.x, v.z) + (devant ? 0 : Math.PI);
+  for (let k = 0; k < 60; k++) { const a = a0 + (Math.random() - .5) * (devant ? .7 : 1.6) * (1 + k / 30), d = dmin + Math.random() * (dmax - dmin), x = px + Math.sin(a) * d, z = pz + Math.cos(a) * d; if (M.L.limites(x, z)) return [x, z]; }
+  return null; }
+async function hwMichael(src) {
+  const moi = M.gens.get(M.moiNum); if (!moi) return; const R = riggerMichael(src); M.scene.add(R.root);
+  const [AN, AH] = await Promise.all([chargerAnimsMX("anims/re-nemesis.json?v=3"), chargerAnimsMX("anims/re-heros.json?v=4")]); if (!M || !M.halloween) { R.root.parent && R.root.parent.remove(R.root); return; }
+  const mix = new THREE.AnimationMixer(R.root), act = {};
+  for (const [n, A, c] of [["walk", AN, "n-marche"], ["idle", AN, "n-idle"], ["coup", AN, "n-coup"]]) { const k = clipMXcible(A, c, R.root); if (k) { k.name = n; act[n] = mix.clipAction(k); } }   /* (la marche d'un héros, l'attente et le coup du Tyran) */
+  if (act.coup) { act.coup.setLoop(THREE.LoopOnce, 1); act.coup.clampWhenFinished = true; act.coup.timeScale = 1.7; } if (act.walk) act.walk.timeScale = .75;
+  const p = moi.g.position, q = hwPointPres(p.x, p.z, 8, 11, true) || hwPointPres(p.x, p.z, 6, 12, false) || [p.x + 8, p.z];
+  M.halloween.mi = { ...R, mix, act, cur: null, x: q[0], z: q[1], etat: "guette", t: performance.now(), chemin: [], cheminT: 0, teleT: performance.now(), vu: false, coup: 0 };
+  R.root.position.set(q[0], M.L.hauteur ? M.L.hauteur(q[0], q[1], {}) : 0, q[1]); hwJouer(M.halloween.mi, "idle"); }
+function hwJouer(mi, n) { if (mi.cur === n || !mi.act[n]) return; const a = mi.act[n], b = mi.cur && mi.act[mi.cur]; a.reset().play(); if (b) a.crossFadeFrom(b, .25, false); mi.cur = n; }
+function hwFlash(couleur = "rgba(140,0,0,.55)", ms = 450) { const f = hwVoile("", 13); f.style.background = couleur; f.style.transition = `opacity ${ms}ms`; f.style.pointerEvents = "none"; requestAnimationFrame(() => { f.style.opacity = 0; }); setTimeout(() => f.remove(), ms + 60); }
+function animerHalloween(t) {
+  if (!M || !M.L) return;
+  if (M.L.masqueHW && !M.L.masqueHW.userData.pose && M.L.hauteur) { const [x, z] = HW.masque; M.L.masqueHW.position.y = M.L.hauteur(x, z, {}); M.L.masqueHW.userData.pose = true; }
+  const H = M.halloween; if (!H) return; if (M.lieu !== "grande") { hwFin(); return; }
+  const dt = Math.min(.05, (t - (H.tp || t)) / 1000); H.tp = t; if (H.fog && M.scene.fog !== H.fog) M.scene.fog = H.fog;
+  for (const b of H.brumes || []) { b.m.position.x = b.x + Math.sin(t / 7000 + b.ph) * 3; b.m.position.z = b.z + Math.cos(t / 9000 + b.ph) * 2; }
+  const mi = H.mi, moi = M.gens.get(M.moiNum); if (!mi || !moi || H.mort) return;
+  const p = moi.g.position, dx = p.x - mi.x, dz = p.z - mi.z, d = Math.hypot(dx, dz);
+  // il nous a perdus de vue : il réapparaît, pas loin, dans notre dos
+  if ((d > 24 || (mi.bloqueT && t - mi.bloqueT > 4000)) && t - mi.teleT > 5000) { const q = hwPointPres(p.x, p.z, 9, 13, false); if (q) { mi.x = q[0]; mi.z = q[1]; mi.teleT = t; mi.vu = false; mi.chemin = []; mi.bloqueT = 0; } }
+  // il nous voit : un frisson rouge, la première fois qu'il entre dans l'image
+  { const v = new THREE.Vector3(mi.x, mi.root.position.y + 1.6, mi.z).project(M.camera), dedans = v.z < 1 && Math.abs(v.x) < .9 && Math.abs(v.y) < .9 && d < 15; if (dedans && !mi.vu) { mi.vu = true; hwFlash(); } }
+  let vit = 0;
+  if (mi.etat === "guette") { hwJouer(mi, "idle"); if (t - mi.t > 2600) mi.etat = "chasse"; }
+  else if (mi.etat === "coup") { const a = (t - mi.coup) / 1000, du = mi.act.coup ? mi.act.coup.getClip().duration / 1.7 : .8;
+    if (a > du * .45 && !mi.frappe) { mi.frappe = true; if (d < 1.8) { hwMort(); } }
+    if (a >= du) { mi.etat = "chasse"; mi.frappe = false; } }
+  else { if (d < 1.35) { mi.etat = "coup"; mi.coup = t; mi.frappe = false; mi.cur = null; hwJouer(mi, "coup"); }
+    else { if (t > mi.cheminT) { mi.cheminT = t + 600; const c = itineraire(M.L, mi.x, mi.z, p.x, p.z); mi.chemin = c && c.length ? c.slice() : [[p.x, p.z]]; }
+      while (mi.chemin.length > 1 && Math.hypot(mi.chemin[0][0] - mi.x, mi.chemin[0][1] - mi.z) < .3) mi.chemin.shift();
+      const c = mi.chemin[0] || [p.x, p.z], ex = c[0] - mi.x, ez = c[1] - mi.z, l = Math.hypot(ex, ez) || 1; vit = 1.7; const pas = Math.min(l, vit * dt);
+      const ox = mi.x, oz = mi.z; mi.x += ex / l * pas; mi.z += ez / l * pas; if (Math.hypot(mi.x - ox, mi.z - oz) < .2 * dt) { mi.bloqueT = mi.bloqueT || t; } else mi.bloqueT = 0; hwJouer(mi, "walk"); } }
+  // il nous fait face, lentement
+  const cap = Math.atan2(dx, dz); let dc = cap - mi.root.rotation.y; dc = Math.atan2(Math.sin(dc), Math.cos(dc)); mi.root.rotation.y += dc * Math.min(1, dt * 4);
+  mi.root.position.set(mi.x, M.L.hauteur ? M.L.hauteur(mi.x, mi.z, {}) : 0, mi.z); mi.mix.update(dt); }
+function hwMort() {   // touché : l'écran rougit, « Tu es mort » — et l'on se relève là, dans la caserne de tous les jours
+  const H = M.halloween; if (!H || H.mort) return; H.mort = true; const moi = M.gens.get(M.moiNum); if (moi) { moi.cible = null; moi.chemin = []; }
+  hwFlash("rgba(200,0,0,.8)", 900);
+  const v = hwVoile(`<img src="halloween/titre.webp" alt="" style="width:min(60%,520px);opacity:.85"><div style="color:#e8e8e8;font:900 34px Georgia,serif;letter-spacing:2px;text-shadow:0 0 18px #900">Tu es mort…</div>`); v.style.background = "radial-gradient(rgba(60,0,0,.75), rgba(0,0,0,.95))"; v.style.opacity = 0;
+  H.voiles.push(v); requestAnimationFrame(() => { v.style.opacity = 1; }); setTimeout(() => { v.style.opacity = 0; setTimeout(() => { v.remove(); hwFin(); }, 1200); }, 3200); }
+function hwFin() {
+  const H = M && M.halloween; if (!H) return; M.halloween = null;
+  if (H.decor && H.decor.parent) H.decor.parent.remove(H.decor); if (H.mi && H.mi.root.parent) H.mi.root.parent.remove(H.mi.root);
+  if (M.scene && M.scene.fog === H.fog) M.scene.fog = H.fog0 || null; for (const v of H.voiles || []) v.remove();
+  if (HW.son) HW.son.pause(); majAmbiance(); if (M.L && M.L.masqueHW) M.L.masqueHW.visible = true; }
+setTimeout(() => quitterLieu.add(() => { if (M && M.halloween) hwFin(); }), 0);   /* (après le chargement : quitterLieu est déclaré plus loin) */
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -8176,7 +8319,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
-  if (id === "grande" && !copie) mamansBanc(L, scene);
+  if (id === "grande" && !copie) { mamansBanc(L, scene); masqueHalloween(L, scene); }
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
@@ -8442,7 +8585,7 @@ export async function ouvrir(ctx) {
           if (p.corps && !p.info.danse && !Number.isInteger(p.info.assis)) p.corps.position.y = Math.abs(Math.sin(p.pasT * 3.4)) * .045 * Math.min(1, p.vit / 1.5);
           if (p.moi && (M.L.interieur || M.L.suivi) && !glisse) { let da = Math.atan2(-d.x, -d.z) - (M.yaw || 0); da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.6) M.yaw = (M.yaw || 0) + da * Math.min(1, dt * 2.2); }   // la caméra se tourne d'elle-même dans le sens de la marche if (p.corps) p.corps.position.y = Math.abs(Math.sin(t / 90)) * .06;
           if (p.moi) { const px = p.g.position.x, pz = p.g.position.z;
-            const pt = !lisaVivante() && M.L.portails.find(q => (q.continu || !modeRE()) && (q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85)); if (pt && !M.passage) { M.passage = true;
+            const pt = !lisaVivante() && !M.halloween && M.L.portails.find(q => (q.continu || !modeRE()) && (q.continu || !q.centre ? q.dans(px, pz) : M.cerclePret && q.dans(q.zc[0], q.zc[1]) && Math.hypot(px - q.centre[0], pz - q.centre[1]) < RAYON_CERCLE * .85)); if (pt && !M.passage) { M.passage = true;
               if (pt.entreeApo && !estApo(M.lieu) && M.ctx.surAvantApo) { p.cible = null; p.chemin = [];
                 M.ctx.surAvantApo(ok => { if (!M) return; if (ok) { M.apoIntro = true; changerLieu(pt.vers, pt.arrivee, pt.yaw, true); }
                   else { const moi2 = M.gens.get(M.moiNum); if (moi2) { moi2.g.position.x += 2.2; moi2.cible = null; envoyerWS({ t: "aller", x: moi2.g.position.x, z: moi2.g.position.z }); } M.cerclePret = false; M.passage = false; } }); }
@@ -8626,7 +8769,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerHalloween(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -11273,6 +11416,7 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
 /* --- jour ou nuit : d'après l'heure réelle à Paris, sauf si l'administrateur l'a imposé --- */
 const SOLEIL_PARIS = [[8.7, 17.3], [8.1, 18.1], [7.3, 18.8], [7.2, 20.5], [6.4, 21.2], [5.8, 21.9], [6.1, 21.8], [6.8, 21.1], [7.6, 20.1], [8.3, 19.0], [8.2, 17.3], [8.7, 16.9]];
 function estNuit() {
+  if (M && M.halloween && M.halloween.decor) return true;   // (Halloween : la nuit)
   if (M && estApo(M.lieu)) return true;   // (l'apocalypse : toujours la nuit)
   if (M && estSH(M.lieu)) return false;   // (Silent Hill : le jour blanc du brouillard)
   const mode = M && M.ambiance || "auto";
@@ -12246,7 +12390,7 @@ function animerPigeons(t) {
 function animerSonRue() {
   if (!M || !M.L) { if (sonRue) sonRue.pause(); return; } const moi = M.moiNum && M.gens.get(M.moiNum), p = moi && moi.g.position;
   const dehors = !!p && !M.cine && !M.L.apo && !M.L.sh && (M.lieu === "rue" || (M.lieu === "grande" && typeof DH_ !== "undefined" && DH_.rue(p.x, p.z)));
-  const cible = dehors ? (M.rueVol ?? .5) : 0;
+  const cible = dehors && !M.halloween ? (M.rueVol ?? .5) : 0;
   if (!sonRue) { if (!cible) return; sonRue = new Audio("sons/ville-paris.mp3"); sonRue.loop = true; sonRue.volume = 0; }
   if (cible > 0 && sonRue.paused) sonRue.play().catch(() => {});
   sonRue.volume = Math.max(0, Math.min(1, sonRue.volume + (cible - sonRue.volume) * .04));
@@ -13102,6 +13246,7 @@ function chercherAction(t) {
     else if (M.cine) a = null;
     else if (modeRE() && ((a = actionPorteRE(x, z)), passagesRE(moi, a), a)) ;   /* (Resident Evil : plus de cercles, une phrase près des portes ; au bout d'un passage, on le passe) */
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
+    else if (M.L.masqueHW && M.L.masqueHW.visible && !M.halloween && !M.L.apo && !M.L.sh && Math.hypot(x - M.L.masqueHW.position.x, z - M.L.masqueHW.position.z) < 1.1) a = { type: "masqueHW", label: "🎭 Ramasser le masque" };
     else if (M.L.afficheApo && M.L.afficheApo.visible && !M.L.apo && Math.hypot(x - M.L.afficheApo.position.x, z - M.L.afficheApo.position.z) < Math.max(.7, M.L.afficheApo.scale.x * .7)) a = { type: "affiche1996", label: "📰 Ramasser l'affiche" };
     else if (M.L.cabineTel && !estApo(M.lieu) && !moi.cible && (!moi.etg || moi.etg.n === 0) && Math.hypot(x - M.L.cabineTel[0], z - M.L.cabineTel[1]) < 1.15) a = { type: "composer", label: "☎️ Composer un numéro" };
     else if (M.L.afficheGB && Math.hypot(x - AFFICHE_GB.x, z - (AFFICHE_GB.z + .7)) < 1.25) a = { type: "gbAffiche", label: "👻 As-tu peur des fantômes ?" };   // (l'affiche du film, au mess)
@@ -13185,6 +13330,7 @@ export function agir() {
   else if (a.type === "rentrer2026") MD.bttf.cineRetour();
   else if (a.type === "composer") composerNumero(M.L.telDest);
   else if (a.type === "cadenas") ouvrirCadenas();
+  else if (a.type === "masqueHW") hwProposer();
   else if (a.type === "affiche1996") { if (M.cadranEl) return;   // l'affiche ramassée : on la lit en grand ; la croix la repose au sol
     const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;z-index:11;display:grid;grid-template-rows:100%;place-items:center;background:rgba(0,0,0,.75);padding:16px;box-sizing:border-box";
     d.innerHTML = `<div style="position:relative;height:100%;min-height:0;display:flex;align-items:center;justify-content:center;overflow:visible"><img src="images/apo/affiche-re-1996.webp" alt="Affiche Micromania : Resident Evil, disponible le 1er août 1996" style="height:100%;max-width:100%;object-fit:contain;border-radius:6px;box-shadow:0 10px 40px #000;transform:rotate(-1.5deg)">
