@@ -2269,7 +2269,7 @@ function toilePanCoupe(Wm, Hm, AW, AH) {   // le pan coupé, vu de la rue (d'apr
       x.fillStyle = "#eeeae2"; x.fillRect(cx - 1.5, Y, 3, H); x.fillRect(cx - W / 2, Y + H * .3, W, 2); balconFer(x, cx - W / 2 - 14, Y + H * .55, W + 28, H * .45); }
     cheneau(x, 0, w, 3); }); }
 /* ---------- Sur la terrasse : cinq enfants qui font du roller (ils tournent en rond, se croisent, se penchent dans les virages) ---------- */
-function toileEnfantRoller(k, pas) {   // un enfant de face, en rollers : casque, genouillères, coudières ; pas : la jambe qui pousse (0 ou 1)
+function toileEnfantRoller(k, pas, roller = true) {   // un enfant de face, en rollers : casque, genouillères, coudières ; pas : la jambe qui pousse (0 ou 1)
   const T = [["#e2443b", "#2f5fae", "#f2c94c", "#5a3a22"], ["#3a9d5d", "#26324e", "#e2443b", "#d9a066"], ["#f08c2e", "#3d5a80", "#2f9fd8", "#2a1a12"], ["#9b59b6", "#1d1d1f", "#f2f2f2", "#e8c27a"], ["#2f9fd8", "#6b6b6b", "#3a9d5d", "#7a4a2a"]][k % 5];
   const [maillot, short, casque, cheveux] = T, peau = ["#f0c8a6", "#d9a57e", "#f3d2b5", "#a9714b", "#e9c4a0"][k % 5];
   return toile(200, 420, (x) => { x.lineCap = "round"; x.lineJoin = "round";
@@ -2277,8 +2277,9 @@ function toileEnfantRoller(k, pas) {   // un enfant de face, en rollers : casque
     const jambes = pas ? [[86, 250, 62, 330, 52, 388], [114, 250, 118, 330, 120, 390]] : [[86, 250, 82, 330, 80, 390], [114, 250, 138, 330, 148, 388]];
     for (const [hx, hy, kx, ky, fx, fy] of jambes) { x.strokeStyle = peau; x.lineWidth = 15; x.beginPath(); x.moveTo(hx, hy); x.lineTo(kx, ky); x.lineTo(fx, fy - 12); x.stroke();
       x.fillStyle = "#222"; x.beginPath(); x.ellipse(kx, ky, 11, 9, 0, 0, 7); x.fill();
-      x.fillStyle = casque; x.beginPath(); x.roundRect(fx - 15, fy - 24, 30, 26, 6); x.fill(); x.fillStyle = "#1a1a1a"; x.fillRect(fx - 16, fy, 32, 5);
-      x.fillStyle = "#f2f2f2"; for (const dx of [-12, -4, 4, 12]) { x.beginPath(); x.arc(fx + dx, fy + 9, 4.5, 0, 7); x.fill(); } }
+      if (roller) { x.fillStyle = casque; x.beginPath(); x.roundRect(fx - 15, fy - 24, 30, 26, 6); x.fill(); x.fillStyle = "#1a1a1a"; x.fillRect(fx - 16, fy, 32, 5);
+        x.fillStyle = "#f2f2f2"; for (const dx of [-12, -4, 4, 12]) { x.beginPath(); x.arc(fx + dx, fy + 9, 4.5, 0, 7); x.fill(); } }
+      else { x.fillStyle = "#f2f2f0"; x.beginPath(); x.ellipse(fx, fy + 4, 15, 8, 0, 0, 7); x.fill(); x.fillStyle = "#c33"; x.fillRect(fx - 14, fy + 6, 28, 3); } }   // (des baskets)
     // le short, le maillot, les bras écartés pour l'équilibre, les coudières
     x.fillStyle = short; x.beginPath(); x.roundRect(72, 228, 56, 40, 8); x.fill();
     x.fillStyle = maillot; x.beginPath(); x.roundRect(66, 150, 68, 86, 14); x.fill();
@@ -2289,12 +2290,71 @@ function toileEnfantRoller(k, pas) {   // un enfant de face, en rollers : casque
     // le cou, la tête, le visage, les cheveux qui dépassent, le casque
     x.fillStyle = peau; x.fillRect(92, 132, 16, 22); x.beginPath(); x.ellipse(100, 104, 33, 37, 0, 0, 7); x.fill();
     x.fillStyle = cheveux; x.beginPath(); x.ellipse(100, 92, 35, 22, 0, Math.PI, 0); x.fill(); x.fillRect(66, 92, 10, 26); x.fillRect(124, 92, 10, 26);
-    x.fillStyle = casque; x.beginPath(); x.ellipse(100, 82, 39, 34, 0, Math.PI, 0); x.fill(); x.fillRect(61, 80, 78, 8);
-    x.fillStyle = "rgba(255,255,255,.35)"; for (const dx of [-14, 0, 14]) x.fillRect(96 + dx, 54, 6, 22);
-    x.strokeStyle = "#333"; x.lineWidth = 2; x.beginPath(); x.moveTo(66, 88); x.lineTo(84, 136); x.moveTo(134, 88); x.lineTo(116, 136); x.stroke();
+    if (roller) { x.fillStyle = casque; x.beginPath(); x.ellipse(100, 82, 39, 34, 0, Math.PI, 0); x.fill(); x.fillRect(61, 80, 78, 8);
+      x.fillStyle = "rgba(255,255,255,.35)"; for (const dx of [-14, 0, 14]) x.fillRect(96 + dx, 54, 6, 22);
+      x.strokeStyle = "#333"; x.lineWidth = 2; x.beginPath(); x.moveTo(66, 88); x.lineTo(84, 136); x.moveTo(134, 88); x.lineTo(116, 136); x.stroke(); }
+    else { x.fillStyle = cheveux; x.beginPath(); x.ellipse(100, 84, 37, 26, 0, Math.PI, 0); x.fill(); }
     x.fillStyle = "#2a1a12"; for (const ex of [88, 112]) { x.beginPath(); x.ellipse(ex, 106, 4, 5, 0, 0, 7); x.fill(); }
     x.strokeStyle = "#8a3a2a"; x.lineWidth = 3; x.beginPath(); x.arc(100, 118, 10, .25, Math.PI - .25); x.stroke();
     x.fillStyle = "rgba(230,120,110,.35)"; for (const ex of [80, 120]) { x.beginPath(); x.arc(ex, 120, 6, 0, 7); x.fill(); } }); }
+/* ---------- La deli-delo (le chat et la souris de la caserne) : dix enfants, le jour, partout sauf la cour d'honneur et la terrasse ----------
+   deux chats (un qui chasse, un qui garde la prison), huit souris ; une souris touchée va mettre la main au mur noir, la suivante donne la main à la dernière (une chaîne) ;
+   une souris libre qui touche la main du dernier de la chaîne délivre tout le monde. Quand les huit sont prises, les deux premières deviennent chats. Ça ne finit jamais. */
+const PHRASES_DD = { touche: ["C'est de la triche !", "Même pas vrai, t'as pas touché !", "J'étais pas prêt !", "Pouce ! J'avais dit pouce !", "C'est pas juste !", "T'as triché, t'as poussé !", "Ça compte pas, j'étais en pause !"],
+  chat: ["Touché !", "T'es pris !", "Au mur !", "Je t'ai eu !"], nargue: ["Tu m'auras pas !", "Nananère !", "Trop lent !", "Même pas cap !", "Hé, le chat, par ici !"],
+  delivre: ["Délivrés !!", "Tout le monde est libre !", "Deli-delo !!"], gardien: ["Ça compte pas !", "T'avais pas le droit !", "C'est de la triche, ça !"], change: ["On change !", "À nous d'être chats !"] };
+function deliDelo(L, scene) {
+  const MUR = [-26.1, -104.2], PAS_CH = .62, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
+  const bulle = (e, txt, t) => { const c = e.bc, x = c.getContext("2d"); x.clearRect(0, 0, 512, 128); x.font = "bold 34px Arial"; const w = Math.min(500, x.measureText(txt).width + 40);
+    x.fillStyle = "rgba(255,255,255,.95)"; x.beginPath(); x.roundRect(256 - w / 2, 14, w, 74, 22); x.fill(); x.beginPath(); x.moveTo(246, 86); x.lineTo(256, 112); x.lineTo(268, 86); x.fill();
+    x.fillStyle = "#222"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(txt, 256, 52); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
+  const hasardDD = (l) => l[Math.floor(Math.random() * l.length)];
+  for (let k = 0; k < 10; k++) { const t = [0, 1].map(p => tex(toileEnfantRoller(k + 2, p, false))), m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+    m.renderOrder = 2; scene.add(m); const o = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);
+    const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
+    const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: false })); bs.scale.set(2.2, .55, 1); bs.renderOrder = 9; bs.visible = false; scene.add(bs);
+    E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0 }); }
+  let cand = null, prison = [], tPrec = 0, pret = false, delivreur = null;
+  const permis = (x, z) => { try { return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
+  const chemin = (e, x, z) => { let p = []; try { p = itineraire(L, e.x, e.z, x, z); } catch (er) {} e.chem = p && p.length ? p.map(([a, b]) => [a, b]) : []; };
+  const loin = (e, de) => { let best = null, bd = -1; for (let i = 0; i < 14; i++) { const c = cand[Math.floor(Math.random() * cand.length)], d0 = Math.hypot(c[0] - e.x, c[1] - e.z); if (d0 > 22) continue; const d = de ? Math.hypot(c[0] - de.x, c[1] - de.z) : Math.random(); if (d > bd) { bd = d; best = c; } } return best || cand[Math.floor(Math.random() * cand.length)]; };
+  const posChaine = i => [MUR[0] + i * PAS_CH, MUR[1]];
+  const reset = () => { prison = []; delivreur = null; for (const e of E) { e.pris = -1; const c = cand[Math.floor(Math.random() * cand.length)]; e.x = c[0]; e.z = c[1]; e.chem = []; } };
+  const avance = (e, dt, v) => { while (e.chem.length && Math.hypot(e.chem[0][0] - e.x, e.chem[0][1] - e.z) < .2) e.chem.shift(); if (!e.chem.length) return false;
+    const [tx, tz] = e.chem[0], d = Math.hypot(tx - e.x, tz - e.z), st = Math.min(d, v * dt); e.x += (tx - e.x) / d * st; e.z += (tz - e.z) / d * st; e.marche = true; return true; };
+  const prendre = (e, chat, t) => { e.pris = prison.length; prison.push(e); e.chem = []; chemin(e, ...posChaine(e.pris)); bulle(e, hasardDD(PHRASES_DD.touche), t); if (chat) setTimeout(() => chat.bFin < performance.now() && bulle(chat, hasardDD(PHRASES_DD.chat), performance.now()), 900);
+    if (delivreur === e) delivreur = null;
+    if (prison.length >= 8) { const [a, b] = prison; setTimeout(() => { for (const q of E) if (q.role !== "souris") q.role = "souris"; a.role = "chasse"; b.role = "garde"; bulle(a, hasardDD(PHRASES_DD.change), performance.now()); reset(); }, 4000); } };
+  const anim = (t) => { const vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf) && !!M && M.L === L;
+    for (const e of E) e.m.visible = e.o.visible = vu && !!cand; if (!vu) { for (const e of E) e.bs.visible = false; tPrec = 0; return; }
+    if (!cand) { cand = []; for (let x = -40; x <= 48; x += 1.5) for (let z = -140; z <= -19; z += 1.5) if (permis(x, z)) cand.push([x, z]); if (cand.length < 20) { cand = null; return; } reset(); }
+    const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t; if (!dt) return;
+    const chasse = E.find(e => e.role === "chasse"), garde = E.find(e => e.role === "garde"), libres = E.filter(e => e.role === "souris" && e.pris < 0);
+    // le chat chasseur : la souris libre la plus proche
+    { const c = chasse; let cible = null, bd = 1e9; for (const s of libres) { const d = Math.hypot(s.x - c.x, s.z - c.z); if (d < bd) { bd = d; cible = s; } }
+      if (cible) { if (t > c.prochain || !c.chem.length) { chemin(c, cible.x, cible.z); c.prochain = t + 700; } avance(c, dt, 3.5); if (bd < .6) prendre(cible, c, t); } }
+    // le chat gardien : il tourne près de la chaîne ; il fonce sur une souris qui approche
+    { const g = garde, bout = posChaine(Math.max(0, prison.length)); let menace = null, bd = 7; for (const s of libres) { const d = Math.hypot(s.x - bout[0], s.z - bout[1]); if (d < bd) { bd = d; menace = s; } }
+      if (menace) { if (t > g.prochain || !g.chem.length) { chemin(g, menace.x, menace.z); g.prochain = t + 500; } avance(g, dt, 3.3); if (Math.hypot(menace.x - g.x, menace.z - g.z) < .6) { prendre(menace, g, t); setTimeout(() => bulle(g, hasardDD(PHRASES_DD.chat), performance.now()), 800); } }
+      else { if (!g.chem.length || t > g.prochain) { const a = Math.random() * 6.28; const p = [bout[0] + 1.5 + Math.cos(a) * 2, bout[1] + Math.sin(a) * 2.5]; if (permis(...p)) chemin(g, ...p); g.prochain = t + 2500; } avance(g, dt, 1.4); } }
+    // les souris
+    if (prison.length && !delivreur && libres.length && Math.random() < dt * .08) { delivreur = libres[Math.floor(Math.random() * libres.length)]; delivreur.prochain = 0; }
+    for (const s of E) { if (s.role !== "souris") continue;
+      if (s.pris >= 0) { const [px, pz] = posChaine(s.pris); if (Math.hypot(px - s.x, pz - s.z) > .15) { if (!s.chem.length) chemin(s, px, pz); avance(s, dt, 2.4); } else { s.x = px; s.z = pz; s.marche = false; } continue; }
+      const dc = Math.hypot(chasse.x - s.x, chasse.z - s.z);
+      if (s === delivreur) { const [px, pz] = posChaine(prison.length - 1 + .8); if (t > s.prochain || !s.chem.length) { chemin(s, px, pz); s.prochain = t + 900; } avance(s, dt, 3.4);
+        if (prison.length && Math.hypot(px - s.x, pz - s.z) < .7) { bulle(s, hasardDD(PHRASES_DD.delivre), t); setTimeout(() => bulle(garde, hasardDD(PHRASES_DD.gardien), performance.now()), 700);
+          for (const q of prison) { q.pris = -1; q.chem = []; const c = loin(q, garde); chemin(q, ...c); } prison = []; delivreur = null; }
+        continue; }
+      if (dc < 6 && t > s.prochain) { chemin(s, ...loin(s, chasse)); s.prochain = t + 1200; if (Math.random() < .15 && s.bFin < t) bulle(s, hasardDD(PHRASES_DD.nargue), t); }
+      else if (!s.chem.length && t > s.prochain) { chemin(s, ...loin(s, null)); s.prochain = t + 1500 + Math.random() * 3000; }
+      avance(s, dt, dc < 6 ? s.vit + .5 : s.vit * .6); }
+    // l'affichage
+    const cam = M.camera;
+    for (const e of E) { const y = L.hauteur ? L.hauteur(e.x, e.z) : 0; e.m.position.set(e.x, y + .02 + (e.marche ? Math.abs(Math.sin(t / 110 + e.k)) * .05 : 0), e.z); e.o.position.set(e.x, y + .015, e.z);
+      e.m.material.map = e.t[e.marche ? Math.floor(t / 160 + e.k) % 2 : 0]; e.marche = false; if (cam) e.m.rotation.y = Math.atan2(cam.position.x - e.x, cam.position.z - e.z);
+      e.bs.position.set(e.x, y + 1.75, e.z); if (e.bs.visible && t > e.bFin) e.bs.visible = false; } };
+  L.deliDelo = E; const anim0 = L.anim; L.anim = (t) => { anim0 && anim0(t); anim(t); }; }
 function enfantsRollers(L, scene) {
   const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr, yT = C3.hp + C3.NT * C3.HT2, cz = (zt0 + zt1) / 2;
   const RX = C3.LT / 2 - 2.2, RZ = (zt0 - zt1) / 2 - 1.6, geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), enf = [];
@@ -2302,8 +2362,8 @@ function enfantsRollers(L, scene) {
     m.renderOrder = 2; scene.add(m);
     const o = new THREE.Mesh(new THREE.CircleGeometry(.28, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);   // (l'ombre au sol)
     enf.push({ m, o, t, k, sens: k % 2 ? -1 : 1, r: .55 + .45 * ((k * 37) % 10) / 10, v: .42 + k * .05, ph: k * 1.3, huit: k === 2 }); }
-  const place = (t) => { const s = t / 1000, cam = M && M.camera;
-    for (const e of enf) { const a = e.ph + e.sens * s * e.v; let x, z;
+  const place = (t) => { const s = t / 1000, cam = M && M.camera, vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf);
+    for (const e of enf) { e.m.visible = e.o.visible = vu; if (!vu) continue; const a = e.ph + e.sens * s * e.v; let x, z;
       if (e.huit) { x = Math.sin(a) * RX * .8; z = Math.sin(a) * Math.cos(a) * RZ * 1.6; } else { x = Math.cos(a) * RX * e.r; z = Math.sin(a) * RZ * (.5 + .5 * e.r); }
       e.m.position.set(x, yT + .02 + Math.abs(Math.sin(s * 5 + e.k)) * .025, cz + z); e.o.position.set(x, yT + .015, cz + z);
       e.m.material.map = e.t[Math.floor(s * 2.6 + e.k) % 2];
@@ -2437,10 +2497,10 @@ function ruesDehors(A, L, scene) {
   // la Cité d'Hauteville, en face de la caserne (d'après la photo) : une petite rue entre deux immeubles, son passage piété, et au bout un mur peint en trompe-l'œil
   { const cx = DH_.CX, z0 = ZO, z1 = ZO - DH_.CL;
     plat(cx - 2.9, cx + 2.9, z1, z0); for (const sg of [-1, 1]) { const o = A.ajoute(new THREE.BoxGeometry(.7, .12, DH_.CL), dessus, cx + sg * 3.25, Y0 + .06, (z0 + z1) / 2); o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); }
-    im({ x: cx - 3.6, z: (z0 + z1) / 2, largeur: DH_.CL, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 340 });
-    im({ x: cx + 3.6, z: (z0 + z1) / 2, largeur: DH_.CL, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.mode });
+    im({ x: cx - 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 340 });
+    im({ x: cx + 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.mode });
     const t = tex(toileRueLoin(7.2, 26, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 26), A.mat({ map: t, roughness: 1 })); m.position.set(cx, Y0 + 13, z1 + .05); scene.add(m);
-    const blanc = new THREE.MeshBasicMaterial({ color: 0xeeeeea }); for (let k = 0; k < 7; k++) { const b = A.ajoute(new THREE.PlaneGeometry(.5, 3.4), blanc, cx - 2.6 + k * .85, Y0 + .015, ZF + 2.2, false); b.rotation.x = -Math.PI / 2; } }   // (le passage piéton, devant)
+  }
   // l'immeuble blanc d'en face : sa façade se creuse en demi-cercle, le trottoir s'y élargit (d'après la photo)
   { const R = DH_.AR, H = 4.2 + 6 * 3.1, t = tex(toileVolets(Math.PI * R, 6)); t.wrapS = THREE.ClampToEdgeWrapping;
     const arc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ map: t, side: THREE.BackSide })); arc.position.set(DH_.AX, Y0 + H / 2, ZO); arc.receiveShadow = true; scene.add(arc);
@@ -7721,6 +7781,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
 
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
+  if (id === "grande" && !copie) deliDelo(L, scene);   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
   if (L.trottoirs) { const h0 = L.hauteur, tr = L.trottoirs; L.hauteur = (x, z, p) => { const b = h0 ? h0(x, z, p) : 0; const F = C3.trotFG; if (F && x > F.x0 && x < F.x1 + .05 && z > F.zB && z < F.zG) return b;   // (déjà compté)
