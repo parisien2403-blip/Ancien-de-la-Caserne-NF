@@ -8614,7 +8614,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -12168,6 +12168,50 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
   L.clochard = m; }
 /* le bruit de la ville (Paris, la circulation, les passants), en boucle : dès qu'on est dehors — rue du Faubourg, rue des Messageries, rue d'Hauteville ; il s'efface quand on rentre dans la caserne. L'administrateur règle son volume pour tout le monde */
 let sonRue = null;
+/* ---------- Les pigeons de Paris : en petites bandes sur les trottoirs ; ils picorent, et s'envolent quand on s'approche ---------- */
+const PIGEONS = [["grande", 24, -154.6], ["grande", -22, -154.4], ["grande", -8, -144.4], ["grande", 39.4, -112], ["grande", 48, -78], ["grande", 39.6, -30], ["rue", -22, -5.9], ["rue", 26, 5.0], ["rue", 4, -6.1]];
+function pigeon3D() {
+  const g = new THREE.Group(), gris = new THREE.MeshStandardMaterial({ color: 0x8a909c, roughness: .8 }), fonce = new THREE.MeshStandardMaterial({ color: 0x5a606c, roughness: .8 }),
+    cou = new THREE.MeshStandardMaterial({ color: 0x4f6a5e, roughness: .4, metalness: .35, emissive: 0x2a1a3a, emissiveIntensity: .25 }), rose = new THREE.MeshStandardMaterial({ color: 0xd0707a, roughness: .7 }), noir = new THREE.MeshBasicMaterial({ color: 0x151010 });
+  const m = (geo, mat, x, y, z, par = g) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
+  const corps = m(new THREE.SphereGeometry(.1, 12, 10), gris, 0, .15, 0); corps.scale.set(1.55, .95, 1);
+  const tete = new THREE.Group(); tete.position.set(.12, .22, 0); g.add(tete);
+  m(new THREE.SphereGeometry(.058, 10, 8), cou, -.03, -.03, 0, tete).scale.set(1, 1.1, 1);
+  m(new THREE.SphereGeometry(.045, 10, 8), fonce, .02, .03, 0, tete);
+  const bec = m(new THREE.ConeGeometry(.012, .04, 6), new THREE.MeshStandardMaterial({ color: 0x3a3030 }), .075, .025, 0, tete); bec.rotation.z = -Math.PI / 2;
+  for (const sz of [-1, 1]) m(new THREE.SphereGeometry(.009, 6, 5), noir, .045, .045, sz * .032, tete);
+  const queue = m(new THREE.BoxGeometry(.13, .015, .08), fonce, -.2, .15, 0); queue.rotation.z = .25;
+  const ailes = [];
+  for (const sz of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(0, .2, sz * .06); g.add(piv); const a = m(new THREE.BoxGeometry(.2, .012, .17), gris, -.02, 0, sz * .08, piv);
+    for (const dx of [-.04, -.09]) m(new THREE.BoxGeometry(.018, .014, .15), fonce, dx, .002, sz * .08, piv); piv.userData.sz = sz; piv.rotation.x = sz * .55; piv.scale.z = .45; ailes.push(piv); }
+  for (const sz of [-1, 1]) m(new THREE.CylinderGeometry(.006, .006, .07, 5), rose, .01, .035, sz * .03);
+  g.userData = { tete, ailes }; return g;
+}
+function animerPigeons(t) {
+  if (!M || !M.L || !M.scene) return; const L = M.L, ici = !L.apo && !L.sh && !M.cine && (M.lieu === "rue" || (M.lieu === "grande" && L.dehorsOuvert));
+  if (L.pigR && L.pigR.scene !== M.scene) L.pigR = null;
+  if (!ici) { if (L.pigR) L.pigR.tous.forEach((b) => b.g.visible = false); return; }
+  if (!L.pigR) { const tous = []; PIGEONS.forEach(([lieu, cx, cz], k) => { if (lieu !== M.lieu) return; const n = 3 + (k % 3);
+      for (let i = 0; i < n; i++) { const g = pigeon3D(), a = i * 2.4 + k, r = .3 + (i % 3) * .35; M.scene.add(g);
+        tous.push({ g, cx, cz, x: cx + Math.cos(a) * r, z: cz + Math.sin(a) * r * .5, dir: a, etat: "sol", t0: t + i * 300, vol: 0, ph: i * 1.7 }); } });
+    L.pigR = { scene: M.scene, tous }; }
+  const moi = M.moiNum && M.gens.get(M.moiNum), mp = moi && moi.g.position, h = (x, z) => (L.hauteur ? L.hauteur(x, z, {}) : 0), dt = Math.min(.05, (t - (L.pigR.tp || t)) / 1000); L.pigR.tp = t;
+  for (const b of L.pigR.tous) { const g = b.g, U = g.userData; g.visible = true;
+    if (b.etat === "sol") {
+      if (mp && Math.hypot(mp.x - b.x, mp.z - b.z) < 2.6) { b.etat = "vol"; b.vol = 0; b.fx = b.x - mp.x; b.fz = b.z - mp.z; const l = Math.hypot(b.fx, b.fz) || 1; b.fx /= l; b.fz /= l; b.tr = t + 9000 + Math.random() * 5000; }
+      else { const c = ((t + b.ph * 1000) / 1000) % 4;   /* (il marche à petits pas en hochant la tête, puis picore) */
+        if (c < 1.6) { b.x += Math.cos(b.dir) * .25 * dt; b.z += Math.sin(b.dir) * .25 * dt; U.tete.position.x = .12 + Math.sin(t / 90) * .02; U.tete.rotation.z = 0; }
+        else { U.tete.rotation.z = Math.max(0, Math.sin(t / 130)) * -1.1; U.tete.position.x = .12; if (c > 3.9) b.dir += (Math.random() - .5) * 2; }
+        if (Math.hypot(b.x - b.cx, b.z - b.cz) > 1.4) b.dir = Math.atan2(b.cz - b.z, b.cx - b.x);
+        g.position.set(b.x, h(b.x, b.z), b.z); g.rotation.set(0, -b.dir, 0); U.ailes.forEach((a) => { a.rotation.x = a.userData.sz * .55; a.scale.z = .45; }); } }   /* (au sol : les ailes repliées le long du corps) */
+    else { b.vol += dt; const y0 = h(b.x, b.z);   /* (l'envol : il fuit en montant, les ailes battent, puis il revient se poser) */
+      if (b.etat === "vol") { b.x += b.fx * 3.5 * dt; b.z += b.fz * 3.5 * dt; g.position.set(b.x, y0 + Math.min(7, b.vol * 3.2), b.z); g.rotation.set(0, -Math.atan2(b.fz, b.fx), .3);
+        if (b.vol > 3) { g.visible = false; if (t > b.tr) { b.etat = "retour"; b.vol = 0; b.x = b.cx - b.fx * 8; b.z = b.cz - b.fz * 8; } } }
+      else { const dx = b.cx - b.x, dz = b.cz - b.z, d = Math.hypot(dx, dz); if (mp && Math.hypot(mp.x - b.cx, mp.z - b.cz) < 4) { g.visible = false; continue; }
+        if (d < .3) { b.etat = "sol"; g.rotation.z = 0; }
+        else { const v = Math.min(d, 3 * dt); b.x += dx / d * v; b.z += dz / d * v; g.position.set(b.x, h(b.x, b.z) + Math.min(5, d * .6), b.z); g.rotation.set(0, -Math.atan2(dz, dx), -.15); } }
+      U.ailes.forEach((a) => { a.rotation.x = a.userData.sz * Math.sin(t / 40) * .9; a.scale.z = 1; }); } }
+}
 function animerSonRue() {
   if (!M || !M.L) { if (sonRue) sonRue.pause(); return; } const moi = M.moiNum && M.gens.get(M.moiNum), p = moi && moi.g.position;
   const dehors = !!p && !M.cine && !M.L.apo && !M.L.sh && (M.lieu === "rue" || (M.lieu === "grande" && typeof DH_ !== "undefined" && DH_.rue(p.x, p.z)));
