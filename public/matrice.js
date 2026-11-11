@@ -2432,7 +2432,7 @@ function personne3D(o) {
   const caps = (r, l, m) => { const x = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 10), m); x.position.y = -l / 2 - r * .3; return x; };
   const bassin = new THREE.Group(); bassin.position.y = hipY; g.add(bassin);
   const jambes = [-1, 1].map(sg => { const h = new THREE.Group(); h.position.set(sg * larg, 0, 0); bassin.add(h); h.add(caps(T * .033, cuisse * .8, o.robe ? P : B));
-    const gen = new THREE.Group(); gen.position.y = -cuisse; h.add(gen); gen.add(caps(T * .027, tibia * .8, P)); const pied = new THREE.Mesh(new THREE.BoxGeometry(T * .055, T * .035, T * .12), S); pied.position.set(0, -tibia - T * .01, T * .03); gen.add(pied); return { h, gen }; });
+    const gen = new THREE.Group(); gen.position.y = -cuisse; h.add(gen); gen.add(caps(T * .027, tibia * .8, o.pantalon ? B : P)); const pied = new THREE.Mesh(new THREE.BoxGeometry(T * .055, T * .035, T * .12), S); pied.position.set(0, -tibia - T * .01, T * .03); gen.add(pied); return { h, gen }; });
   const buste = new THREE.Group(); bassin.add(buste);
   const torse = new THREE.Mesh(new THREE.CapsuleGeometry(T * (enf ? .085 : .075), tr * .6, 4, 12), H); torse.position.y = tr * .5; torse.scale.z = .7; buste.add(torse);
   if (o.robe) { const jupe = new THREE.Mesh(new THREE.CylinderGeometry(T * .08, T * .13, T * .2, 14, 1, true), mat(o.bas)); jupe.material.side = THREE.DoubleSide; jupe.position.y = -T * .06; jupe.scale.z = .85; buste.add(jupe); g.userData.jupe = jupe; }
@@ -2454,7 +2454,27 @@ function personne3D(o) {
       if (pose === "assis") { A.e.rotation.x = -.5; A.c.rotation.x = -.9; if (i && o.parle) { A.e.rotation.x = -.7 - Math.abs(Math.sin(t / 300)) * .5; A.c.rotation.x = -1.4; } }
       else if (pose === "lance") { A.e.rotation.x = -1.3; A.c.rotation.x = -.2; } else if (pose === "marche") { A.e.rotation.x = -sg * s2 * .5; A.c.rotation.x = -.25; } else { A.e.rotation.x = 0; A.c.rotation.x = -.1; } }
     tete.rotation.y = o.parle ? Math.sin(t / 900) * .25 : 0; bouche.scale.y = o.parle && Math.floor(t / 180) % 2 ? .4 : 1; };
-  g.userData.hipY = hipY; return g; }
+  g.userData.hipY = hipY; g.userData.parts = { bassin, buste, jambes, bras, tete }; return g; }
+/* le cours de judo : huit enfants en kimono, en deux rangs face au professeur ; ils saluent, s'échauffent (bras, flexions, sautillements), et recommencent (le jour) */
+function coursJudo(L, scene) {
+  const d = C3.dojo; if (!d) return; const xc = (d.X0 + d.xb0) / 2, zc = (d.Z0 + d.Z1) / 2, E = [], ceint = ["#f4f2ec", "#f2d22a", "#f28a2e", "#3a9d5d", "#f2d22a", "#f4f2ec", "#f28a2e", "#2f5fae"];
+  const PEAUX = ["#f2cfb0", "#e8bd95", "#c78f62", "#f6d6bc", "#efc7a4", "#8d5a3b", "#f2d0b4", "#e3b48c"], CH = ["#5a3a22", "#e2c27a", "#1d1410", "#a5532a", "#2a1a12", "#120c0a", "#d9a35a", "#3d2616"];
+  for (let k = 0; k < 8; k++) { const m = personne3D({ enfant: true, taille: 1.15 + (k % 3) * .06, peau: PEAUX[k], ch: CH[k], haut: "#f6f4ee", bas: "#f6f4ee", chaussures: PEAUX[k], coif: k % 3 === 1 ? "queue" : "court" });
+    const ce = new THREE.Mesh(new THREE.TorusGeometry(.105, .018, 6, 16), new THREE.MeshStandardMaterial({ color: ceint[k] })); ce.rotation.x = Math.PI / 2; ce.scale.z = .75; ce.position.y = .02; m.userData.parts.buste.add(ce);
+    const rang = Math.floor(k / 4), col = k % 4; m.position.set(xc - 1.2 + rang * 1.4, C3.FL, zc - 2.4 + col * 1.6); scene.add(m); E.push({ m, k }); }
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const e of E) e.m.visible = vu; if (!vu) return;
+    const prof = M.gens && M.gens.get(PROF), px = prof ? prof.g.position.x : d.X0 + .8, pz = prof ? prof.g.position.z : zc;
+    const cyc = (tm / 1000) % 40, ex = cyc < 4 ? "salut" : cyc < 14 ? "bras" : cyc < 24 ? "flexion" : cyc < 34 ? "saut" : cyc < 36 ? "repos" : "salut";
+    for (const e of E) { const P = e.m.userData.parts, ph = tm / 420 + e.k * .07; e.m.userData.poser("debout", tm); e.m.rotation.y = Math.atan2(px - e.m.position.x, pz - e.m.position.z); let y = C3.FL;
+      P.buste.rotation.x = 0; P.bassin.position.y = e.m.userData.hipY;
+      if (ex === "salut") { P.buste.rotation.x = Math.max(0, Math.sin(Math.min(1, (cyc % 4) / 2) * Math.PI)) * .6; for (const b of P.bras) { b.e.rotation.x = 0; b.c.rotation.x = 0; } }
+      else if (ex === "bras") { const a = (Math.sin(ph * 2) + 1) / 2; P.bras.forEach((b, i) => { b.e.rotation.z = (i ? 1 : -1) * (.1 + a * 2.6); b.e.rotation.x = 0; b.c.rotation.x = 0; }); }
+      else if (ex === "flexion") { const a = (Math.sin(ph * 1.6) + 1) / 2, fl = a * .9; P.jambes.forEach(J => { J.h.rotation.x = -fl; J.gen.rotation.x = fl * 1.9; }); P.bassin.position.y = e.m.userData.hipY - a * .16; P.bras.forEach(b => { b.e.rotation.x = -1.4 * a; b.e.rotation.z = 0; }); }
+      else if (ex === "saut") { y += Math.abs(Math.sin(ph * 3)) * .14; P.bras.forEach((b, i) => { b.e.rotation.z = (i ? 1 : -1) * Math.abs(Math.sin(ph * 3)) * 1.2; }); }
+      e.m.position.y = y; } };
+  // on ne marche pas sur les élèves
+  const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !E.some(e => Math.abs(e.m.position.x - x) < .3 && Math.abs(e.m.position.z - z) < .3 && Math.abs((L.hauteur ? L.hauteur(x, z) : 0) - C3.FL) < .5);
+  L.coursJudo = E; }
 function mamansBanc(L, scene) {
   const F = C3.trotFG; if (!F || !F.yT) return; const zb = (F.zB + -115.05) / 2, xb = F.x0 + .38, y = F.yT(zb), E = [];
   const sprite = (t, w, h) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.renderOrder = 2; scene.add(m); return m; };
@@ -2494,7 +2514,8 @@ function deliDelo(L, scene) {
     E.push({ k, m, o, t, bc, bt, bs, bFin: 0, x: 0, z: 0, chem: [], role: k < 2 ? (k ? "garde" : "chasse") : "souris", pris: -1, vit: 2.6 + Math.random() * .6, prochain: 0, dehors: k === 10 }); }   // (le onzième : le copain qui arrive en renfort quand tout le monde est pris)
   const renfort = E[10];
   let cand = null, prison = [], tPrec = 0, pret = false, delivreur = null;
-  const permis = (x, z) => { try { return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
+  const permis = (x, z) => { try { const d = C3.dojo; if (d && x > d.X0 - 1.5 && x < d.X1 + 1.5 && z > d.Z0 - 1.5 && z < d.Z1 + 1.5) return false;   // (pas dans la salle de judo)
+    return L.limites(x, z) && Math.abs(L.hauteur ? L.hauteur(x, z) : 0) < .7 && z < -18.6 && !DH_.zone(x, z); } catch (e) { return false; } };
   /* leurs chemins : une carte à eux, à mailles d'un mètre (dix fois plus légère que celle des joueurs), et un seul calcul par image — plus d'à-coups */
   const GX0 = -40, GZ0 = -141, GN = 90, GM = 124; let grille = null, budget = 0;
   const libreL = (x0, z0, x1, z1) => { const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .3); for (let i = 1; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; if (!permis(x, z)) return false; } return true; };
@@ -8014,7 +8035,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
-  if (id === "grande" && !copie) mamansBanc(L, scene);   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
+  if (id === "grande" && !copie) mamansBanc(L, scene);
+  if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
   // (la deli-delo : dix enfants jouent au chat et à la souris, le jour)
   if (id === "grande" && !copie) toitPoubelle(A, L, scene);   // (on peut grimper sur le toit du local poubelle)   // (sur la terrasse : cinq enfants en rollers)   // (derrière le portail de l'horloge : la rue des Messageries et la rue d'Hauteville)
   // sur les trottoirs, on marche 12 cm plus haut
@@ -11632,7 +11654,8 @@ function animerProf() {
   const now = Date.now();
   // il marche d'un point à l'autre du tapis, s'arrête, observe, repart (tout droit : le tapis est dégagé)
   if (!g.cible && (!g.repos || now > g.repos)) { if (!g.repos) { g.repos = now + 3000 + Math.random() * 6000; }
-    else { g.repos = 0; const x = d.X0 + 1.2 + Math.random() * (d.xb0 - d.X0 - 2.4), z = d.Z0 + 1.2 + Math.random() * (d.Z1 - d.Z0 - 2.4); g.cible = new THREE.Vector3(x, 0, z); g.chemin = []; } }
+    else { g.repos = 0; const xc = (d.X0 + d.xb0) / 2, cours = M.L.coursJudo && M.L.coursJudo[0].m.visible, x = cours ? d.X0 + 1 + Math.random() * Math.max(.2, xc - 2.4 - d.X0 - 1) : d.X0 + 1.2 + Math.random() * (d.xb0 - d.X0 - 2.4),   // (pendant le cours : il reste devant ses élèves)
+      z = d.Z0 + 1.2 + Math.random() * (d.Z1 - d.Z0 - 2.4); g.cible = new THREE.Vector3(x, 0, z); g.chemin = []; } }
   // quelqu'un monte sur le tatami : il lui rappelle les règles (une fois par minute pour chacun)
   const vus = g.vus || (g.vus = new Map());
   for (const [n2, q] of M.gens) { if (n2 === PROF || !q.g || !q.g.visible || q.info.pnj) continue; const p = q.g.position, sur = p.x > d.X0 && p.x < d.xb1 && p.z > d.Z0 && p.z < d.Z1 && Math.abs(p.y - C3.FL) < .6;
@@ -11898,7 +11921,18 @@ const PHRASES_CLOCH = ["Une petite pièce, s'il vous plaît…", "Merci, que Die
 function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tourné vers la rue (-z)
   const Y = DH_.Y0 + .12, carton = new THREE.Mesh(new THREE.BoxGeometry(1.1, .03, 1.0), new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#b08a5a"; c.fillRect(0, 0, 64, 64); c.strokeStyle = "rgba(90,60,30,.5)"; for (let k = 0; k < 8; k++) { c.beginPath(); c.moveTo(0, k * 8); c.lineTo(64, k * 8 + 2); c.stroke(); } c.fillStyle = "rgba(60,40,20,.4)"; c.fillRect(30, 20, 18, 14); })), roughness: 1 }));
   carton.position.set(x, Y + .015, z - .55); scene.add(carton);
-  const t = [0, 1].map(f => tex(toileClochard(f))), m = new THREE.Mesh(new THREE.PlaneGeometry(.88, 1.2).translate(0, .6, 0), new THREE.MeshBasicMaterial({ map: t[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide })); m.renderOrder = 2; m.position.set(x, Y + .03, z - .4); scene.add(m);
+  // lui, en volume : assis par terre, le dos au mur, les genoux relevés ; vieux manteau kaki taché, jean sale, dreadlocks, barbe, bonnet rouge
+  const m = personne3D({ taille: 1.74, pantalon: true, peau: "#c89a76", ch: "#4a3220", haut: "#5a5a3a", bas: "#3a4048", chaussures: "#3a3028", coif: "court" }), Pm = m.userData.parts;
+  m.rotation.y = Math.PI; m.position.set(x, Y + .04 - m.userData.hipY + .08, z - .32); scene.add(m);
+  { const th = Pm.tete, r = 1.74 * .062, ch = new THREE.MeshStandardMaterial({ color: 0x4a3220, roughness: 1 }), ch2 = new THREE.MeshStandardMaterial({ color: 0x5e4428, roughness: 1 });
+    for (let k = 0; k < 16; k++) { const a = Math.PI * (.15 + k / 15 * 1.7) + Math.PI / 2, l = r * (2.4 + (k % 3) * .5), dr = new THREE.Mesh(new THREE.CylinderGeometry(r * .13, r * .1, l, 5), k % 2 ? ch : ch2);   // (les dreadlocks, qui tombent dans le dos et sur les épaules)
+      dr.position.set(Math.cos(a) * r * .85, -l / 2 + r * .3, Math.sin(a) * r * .85 - r * .15); dr.rotation.z = Math.cos(a) * .25; dr.rotation.x = -Math.sin(a) * .25; th.add(dr); }
+    const barbe = new THREE.Mesh(new THREE.SphereGeometry(r * .75, 12, 10), ch); barbe.scale.set(1.05, 1.15, .7); barbe.position.set(0, -r * .7, r * .55); th.add(barbe);
+    const bonnet = new THREE.Mesh(new THREE.SphereGeometry(r * 1.12, 14, 8, 0, Math.PI * 2, 0, Math.PI * .5), new THREE.MeshStandardMaterial({ color: 0xa82a2a, roughness: 1 })); bonnet.position.y = r * .25; th.add(bonnet);
+    for (const [px, py] of [[.06, .12], [-.04, .2], [.03, .3]]) { const t2 = new THREE.Mesh(new THREE.CircleGeometry(.035, 8), new THREE.MeshBasicMaterial({ color: 0x2e2a1a, transparent: true, opacity: .6 })); t2.position.set(px, py, .09); Pm.buste.add(t2); }   // (des taches sur le manteau)
+    const pans = new THREE.Mesh(new THREE.CylinderGeometry(.14, .2, .3, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0x5a5a3a, roughness: 1, side: THREE.DoubleSide })); pans.position.y = -.08; pans.scale.z = .8; Pm.buste.add(pans); }   // (le bas du manteau)
+  const poser = (tm, tend) => { Pm.jambes.forEach((J, i) => { J.h.rotation.x = -1.85; J.h.rotation.z = (i ? 1 : -1) * .15; J.gen.rotation.x = 1.55; });   // (les genoux relevés, les pieds à plat devant lui)
+    Pm.buste.rotation.x = -.12; Pm.bras.forEach((b, i) => { b.e.rotation.z = (i ? 1 : -1) * .1; if (i === 1 && tend) { b.e.rotation.x = -1.1 - Math.sin(tm / 300) * .1; b.c.rotation.x = -.2; } else { b.e.rotation.x = -.9; b.c.rotation.x = -.9; } }); Pm.tete.rotation.x = tend ? -.1 : .25; };
   const gob = new THREE.Group(), gm = new THREE.Mesh(new THREE.CylinderGeometry(.05, .04, .11, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xf2efe6, side: THREE.DoubleSide })); gm.position.y = .055; gob.add(gm);
   for (let k = 0; k < 3; k++) { const pc = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .004, 10), new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: .8, roughness: .3 })); pc.position.set(-.01 + k * .01, .02 + k * .004, .005 * k); gob.add(pc); }
   gob.position.set(x + .3, Y + .03, z - 1.0); scene.add(gob);
@@ -11906,9 +11940,9 @@ function clochard(L, scene, x, z) {   // contre le mur (z : le pied du mur), tou
   (DH_.voit = DH_.voit || []).push([x - .6, x + .6, z - 1.1, z]);   // (on ne lui marche pas dessus)
   let fin = 0, vu0 = 0;
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = carton.visible = gob.visible = ok; if (!ok) { bs.visible = false; return; } const cam = M.camera;
-    const a = Math.atan2(cam.position.x - x, cam.position.z - m.position.z); let d = Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI)); m.rotation.y = Math.PI + Math.max(-1, Math.min(1, d));
+
     const moi = M.moiNum && M.gens.get(M.moiNum), pres = moi && Math.hypot(moi.g.position.x - x, moi.g.position.z - z) < 4;
-    const mp = t[pres && Math.floor(tm / 700) % 2 ? 1 : 0]; if (m.material.map !== mp) { m.material.map = mp; m.material.needsUpdate = true; }
+    poser(tm, pres);
     if (pres && tm > vu0) { vu0 = tm + 9000; peindreBulle(bc, PHRASES_CLOCH[Math.floor(Math.random() * PHRASES_CLOCH.length)]); bt.needsUpdate = true; bs.visible = true; fin = tm + 3500; }
     if (bs.visible && tm > fin) bs.visible = false; };
   L.clochard = m; }
