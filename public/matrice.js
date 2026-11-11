@@ -2217,7 +2217,7 @@ function toileVolets(L, etages) {   // l'immeuble blanc d'en face (d'après la p
       x.fillStyle = "#1e2226"; x.fillRect(cx - bw / 2, by, bw, bh); const g = x.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, "#5b6670"); g.addColorStop(1, "#2a3036"); x.fillStyle = g; x.fillRect(cx - bw / 2 + 4, by + 4, bw - 8, bh - 8);
       x.fillStyle = "#151515"; for (let k = 0; k <= 9; k++) x.fillRect(cx - bw / 2 + 4 + k * (bw - 10) / 9, by + 4, 2, bh - 8); x.fillRect(cx - bw / 2 + 4, by + bh * .5, bw - 8, 2); } }); }
 function toileEglise(W, H) {   // la rue d'Hauteville qui file, en trompe-l'œil, jusqu'à l'église Saint-Vincent-de-Paul : son perron, sa colonnade, son fronton, ses deux tours carrées
-  const P = 40, w = W * P, h = H * P, vx = w / 2, vy = h - 1.7 * P - 4 * P;
+  const P = 24, w = W * P, h = H * P, vx = w / 2, vy = h - 1.7 * P - 4 * P;
   return toile(w, h, (x) => { graine = 707;
     const g = x.createLinearGradient(0, 0, 0, h * .6); g.addColorStop(0, "#9cc4e6"); g.addColorStop(1, "#e4ecf0"); x.fillStyle = g; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 6; i++) { x.fillStyle = "rgba(255,255,255,.7)"; x.beginPath(); x.ellipse(alea() * w, 40 + alea() * h * .25, 80 + alea() * 120, 22 + alea() * 20, 0, 0, 7); x.fill(); }
@@ -2246,7 +2246,7 @@ function toileEglise(W, H) {   // la rue d'Hauteville qui file, en trompe-l'œil
     x.fillStyle = "rgba(240,240,236,.8)"; for (let k = 0; k < 6; k++) { const t0 = .1 + k * .1, [a, b] = pr(w * .3, t0), [c, d] = pr(w * .7, t0); x.fillRect(a, b, c - a, 5 * (1 - t0)); }   // (les passages piétons)
     x.fillStyle = "rgba(30,30,30,.85)"; for (let k = 1; k < 10; k++) { const t = 1 - 1 / (1 + k * .4); for (const xb of [w * .18, w * .82]) { const [a, b] = pr(xb, t), hh = 1 * P * (1 - t); x.fillRect(a - 2, b - hh, 4, hh); } } }); }   // (les potelets)
 function toileRueLoin(W, H, oeil) {   // un mur peint en trompe-l'œil : la rue qui continue, au loin (W, H en mètres ; oeil : la hauteur du regard)
-  const P = 40, w = W * P, h = H * P, vx = w / 2, vy = h - oeil * P;
+  const P = 24, w = W * P, h = H * P, vx = w / 2, vy = h - oeil * P;
   return toile(w, h, (x) => { graine = 404;
     const g = x.createLinearGradient(0, 0, 0, vy); g.addColorStop(0, "#7fb2e0"); g.addColorStop(1, "#d9e6ee"); x.fillStyle = g; x.fillRect(0, 0, w, h);
     const sol = h, haut = 0, cote = (sg) => {   // une rangée d'immeubles qui fuit vers le point de fuite
@@ -2355,6 +2355,7 @@ const GAMINS = [
   { peau: "#e3b48c", ch: "#3d2616", coiffe: "casquette", haut: "#f4f2ec", bas: "#2a4f8a", ch2: "#c8202a", fille: false },
   { peau: "#f5d2b6", ch: "#7a4a22", coiffe: "court", haut: "#1e7a8a", bas: "#3a3a3c", ch2: "#f28a2e", fille: false },
   { peau: "#d7a07a", ch: "#2a1a12", coiffe: "queue", haut: "#c8202a", bas: "#1d1d1f", ch2: "#f4f2ec", fille: true }];
+const moitie = (c) => toile(c.width >> 1, c.height >> 1, (x, w, h) => x.drawImage(c, 0, 0, w, h));   // (une image à moitié de sa taille : quatre fois moins de mémoire dans la carte graphique)
 function toileGamin(k, vue, f) {   // vue : "face", "dos", "profil" ; f : l'image (0 à 3)
   const G = GAMINS[k % GAMINS.length];
   return toile(200, 420, (x) => { x.lineCap = "round"; x.lineJoin = "round";
@@ -2544,7 +2545,7 @@ function deliDelo(L, scene) {
     geo = new THREE.PlaneGeometry(.62, 1.3).translate(0, .65, 0), E = [];
   const bulle = (e, txt, t) => { peindreBulle(e.bc, txt); e.bt.needsUpdate = true; e.bs.visible = true; e.bFin = t + 2600; };
   const hasardDD = (l) => l[Math.floor(Math.random() * l.length)];
-  for (let k = 0; k < 11; k++) { const t = { face: [0, 1, 2].map(f => tex(toileGamin(k, "face", f))), dos: [0, 1, 2].map(f => tex(toileGamin(k, "dos", f))), profil: [0, 1, 2, 3].map(f => tex(toileGamin(k, "profil", f))), tend: tex(toileGamin(k, "face", 9)) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
+  for (let k = 0; k < 11; k++) { const t = { face: [0, 1, 2].map(f => tex(moitie(toileGamin(k, "face", f)))), dos: [0, 1, 2].map(f => tex(moitie(toileGamin(k, "dos", f)))), profil: [0, 1, 2, 3].map(f => tex(moitie(toileGamin(k, "profil", f)))), tend: tex(moitie(toileGamin(k, "face", 9))) }, m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t.face[0], transparent: true, alphaTest: .4, side: THREE.DoubleSide }));
     m.renderOrder = 2; scene.add(m); const o = new THREE.Mesh(new THREE.CircleGeometry(.26, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);
     const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace;
     const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: true, depthWrite: false }));   // (cachée par les murs : on ne la voit plus à travers la caserne) bs.scale.set(2.2, .55, 1); bs.renderOrder = 9; bs.visible = false; scene.add(bs);
@@ -2686,9 +2687,20 @@ function ruesDehors0(A, L, scene) {
     AG.ajoute(new THREE.BoxGeometry(LW + .3, .14, .5), blanc, 0, y0 + LH + .07, -10.22);
     for (const ey of [9.9, 12.9, 15.9, 18.9]) AG.ajoute(new THREE.BoxGeometry(2.9, .16, .55), blanc, 0, yb + ey + .02, -10.27); }   // (les dalles des balcons)
   // sur le pilier de droite : la boîte aux lettres jaune de La Poste et le panneau d'interdiction de stationner ; et les potelets au bord du trottoir
-  { const ja = A.mat({ color: 0xf2c418, roughness: .45 }); AG.ajoute(new THREE.BoxGeometry(.55, .62, .3), ja, -3.4, yb + 1.25, -10.15); AG.ajoute(new THREE.BoxGeometry(.6, .08, .36), ja, -3.4, yb + 1.6, -10.17);
-    const pn = AG.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 24), [A.mat({ color: 0xc22a2a }), A.mat({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#c22a2a"; c.beginPath(); c.arc(32, 32, 32, 0, 7); c.fill(); c.fillStyle = "#2a4fa8"; c.beginPath(); c.arc(32, 32, 25, 0, 7); c.fill(); c.strokeStyle = "#c22a2a"; c.lineWidth = 7; c.beginPath(); c.moveTo(14, 14); c.lineTo(50, 50); c.moveTo(50, 14); c.lineTo(14, 50); c.stroke(); })) }), A.mat({ color: 0x888888 })], -3.0, yb + 2.5, -10.03);
-    pn.rotation.x = Math.PI / 2;
+  { const ja = A.mat({ color: 0xf2c418, roughness: .4 }), jaF = A.mat({ color: 0xd8ac10, roughness: .5 });
+    // la boîte aux lettres de La Poste : jaune, toit arrondi, la fente, le logo (l'oiseau bleu), les heures de levée
+    const face = A.mat({ map: tex(toile(220, 248, (c, w, h) => { c.fillStyle = "#f2c418"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1a1a"; c.beginPath(); c.roundRect(30, 26, 160, 16, 8); c.fill();
+      c.fillStyle = "#e0b010"; c.fillRect(0, 50, w, 3); c.fillStyle = "#1d3f8a"; c.beginPath(); c.arc(110, 104, 34, 0, 7); c.fill();
+      c.fillStyle = "#f2c418"; c.beginPath(); c.moveTo(82, 110); c.quadraticCurveTo(100, 82, 132, 92); c.lineTo(122, 100); c.quadraticCurveTo(140, 104, 136, 118); c.quadraticCurveTo(112, 106, 92, 120); c.closePath(); c.fill();   // (l'oiseau stylisé)
+      c.fillStyle = "#1d3f8a"; c.font = "bold 26px Arial"; c.textAlign = "center"; c.fillText("LA POSTE", 110, 166);
+      c.fillStyle = "#fff"; c.fillRect(46, 180, 128, 50); c.strokeStyle = "#1d3f8a"; c.lineWidth = 2; c.strokeRect(46, 180, 128, 50); c.fillStyle = "#1a1a1a"; c.font = "bold 11px Arial"; c.fillText("LEVÉE", 110, 194); c.font = "10px Arial"; c.fillText("Lun - Ven : 16 h 30", 110, 208); c.fillText("Sam : 12 h", 110, 222); })), roughness: .45 });
+    AG.ajoute(new THREE.BoxGeometry(.55, .62, .3), [ja, ja, ja, ja, ja, face], -3.4, yb + 1.25, -10.15);
+    const toit = AG.ajoute(new THREE.CylinderGeometry(.15, .15, .55, 16, 1, false, 0, Math.PI), ja, -3.4, yb + 1.56, -10.15); toit.rotation.z = Math.PI / 2;
+    AG.ajoute(new THREE.BoxGeometry(.6, .04, .34), jaF, -3.4, yb + .93, -10.15); AG.ajoute(new THREE.BoxGeometry(.08, .18, .08), A.mat({ color: 0x2a2a2a }), -3.4, yb + .85, -10.22);   // (le rebord, la fixation)
+    // le panneau « 30 » : vitesse limitée à 30 km/h
+    const pn = new THREE.Mesh(new THREE.CircleGeometry(.3, 32), A.mat({ map: tex(toile(128, 128, (c) => { c.fillStyle = "#c8202a"; c.beginPath(); c.arc(64, 64, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.beginPath(); c.arc(64, 64, 50, 0, 7); c.fill();
+      c.fillStyle = "#111"; c.font = "bold 58px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("30", 64, 68); })), side: THREE.DoubleSide, roughness: .4 })); pn.position.set(-3.0, yb + 2.5, -10.025); pn.rotation.y = Math.PI; ga.add(pn);
+    AG.ajoute(new THREE.CylinderGeometry(.3, .3, .02, 32), A.mat({ color: 0x9a9a9a, metalness: .5 }), -3.0, yb + 2.5, -10.0).rotation.x = Math.PI / 2;   // (le dos du panneau)
     const noir = A.mat({ color: 0x1a1a1a, roughness: .5 }); for (let k = -4; k <= 4; k++) { if (Math.abs(k) < 2) continue; AG.ajoute(new THREE.CylinderGeometry(.06, .07, .9, 8), noir, k * 1.3, yb + .57, -13.2); } }
   { const v = AG.ajoute(new THREE.PlaneGeometry(AW, 2.2), A.mat({ map: tex(T.paves, 1.2, .6) }), 0, yb + .012, -9, false); v.rotation.x = -Math.PI / 2; }
   // les deux massifs de brique qui comblent l'angle, entre le pan coupé et les deux longs bâtiments
