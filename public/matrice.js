@@ -4403,7 +4403,7 @@ async function hwDemarrer() {
   await new Promise(r => setTimeout(r, 4300)); if (!M || !M.halloween) { noir.remove(); return; }
   hwDecor(mod); majAmbiance();
   noir.style.opacity = 0; setTimeout(() => noir.remove(), 1300);
-  if (mod) setTimeout(() => { if (M && M.halloween && !M.halloween.mi) hwMichael(mod.michael); }, 1800); }
+  if (mod) setTimeout(() => { if (M && M.halloween && !M.halloween.mi) hwCinematique(mod.michael); }, 1500); }
 /* le décor du cauchemar : citrouilles (une petite flamme dedans), flaques et traînées de sang, papiers et cartons au sol, nappes de brume */
 function hwToile(f, w = 128, h = 128) { const t = tex(toile(w, h, f)); return t; }
 function hwFondre(grp, BGU) { if (!BGU) return grp; grp.updateMatrixWorld(true); const paquets = new Map();
@@ -4510,7 +4510,32 @@ function hwPointPres(px, pz, dmin, dmax, devant) {   // un endroit libre, pas lo
   const v = new THREE.Vector3(); M.camera.getWorldDirection(v); const a0 = Math.atan2(v.x, v.z) + (devant ? 0 : Math.PI);
   for (let k = 0; k < 60; k++) { const a = a0 + (Math.random() - .5) * (devant ? .7 : 1.6) * (1 + k / 30), d = dmin + Math.random() * (dmax - dmin), x = px + Math.sin(a) * d, z = pz + Math.cos(a) * d; if (M.L.limites(x, z)) return [x, z]; }
   return null; }
-async function hwMichael(src) {
+/* la cinématique : on voit par les yeux de Michael, à travers les trous de son masque ; il remonte la rue, lentement, en respirant fort, jusque dans notre dos — et là, ça commence */
+function hwCinematique(src) {
+  const moi = M.gens.get(M.moiNum); if (!moi || !M.halloween) return; const L = M.L, p = moi.g.position, h = (x, z) => L.hauteur ? L.hauteur(x, z, {}) : 0;
+  const cp = M.camera.position, a0 = Math.atan2(cp.x - p.x, cp.z - p.z); let dep = null;   // (il arrive de derrière nous, du côté de la caméra)
+  for (const d of [15, 12, 9, 7]) { for (let k = 0; k < 13 && !dep; k++) { const a = a0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * .22, x = p.x + Math.sin(a) * d, z = p.z + Math.cos(a) * d; if (L.limites(x, z) && ligneLibre(L, x, z, p.x, p.z)) dep = [x, z]; } if (dep) break; }
+  if (!dep) { hwMichael(src); return; }
+  const dx = p.x - dep[0], dz = p.z - dep[1], D = Math.hypot(dx, dz), fin = [p.x - dx / D * 2.4, p.z - dz / D * 2.4], L0 = D - 2.4, V = 1.25;
+  moi.cible = null; moi.chemin = []; const dos = Math.atan2(dx, dz); if (moi.av3 && moi.av3.sc) moi.av3.sc.rotation.y = dos; M.yaw = dos;   /* (on lui tourne le dos, sans le savoir) */
+  // le masque : tout est noir, sauf deux trous pour les yeux
+  const cv = document.createElement("canvas"); cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:9;pointer-events:none;transition:opacity 1.2s"; M.ctx.conteneur.appendChild(cv); M.halloween.voiles.push(cv);
+  const dessine = () => { const w = cv.width = M.ctx.conteneur.clientWidth || 800, hh = cv.height = M.ctx.conteneur.clientHeight || 600, x = cv.getContext("2d"); x.fillStyle = "#020202"; x.fillRect(0, 0, w, hh); x.globalCompositeOperation = "destination-out";
+    for (const sx of [.33, .67]) { const cx = w * sx, cy = hh * .47, rx = w * .19, ry = hh * .27, g = x.createRadialGradient(cx, cy, 0, cx, cy, 1); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(.72, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.save(); x.translate(cx, cy); x.scale(rx, ry); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, 1, 0, 7); x.fill(); x.restore(); }
+    x.globalCompositeOperation = "source-over"; };
+  dessine();
+  // sa respiration, lourde, derrière le masque
+  let ac = null; try { ac = new (window.AudioContext || window.webkitAudioContext)(); const n = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = n.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src2 = ac.createBufferSource(); src2.buffer = n; src2.loop = true; const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 500; f.Q.value = .7; const g = ac.createGain(); g.gain.value = 0; src2.connect(f).connect(g).connect(ac.destination); src2.start();
+    const t0a = ac.currentTime; for (let k = 0; k < 14; k++) { const t = t0a + k * 2.4; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.32, t + .9); g.gain.linearRampToValueAtTime(.05, t + 1.3); g.gain.linearRampToValueAtTime(.22, t + 1.9); g.gain.linearRampToValueAtTime(0, t + 2.35); } } catch (e) { ac = null; }
+  const t0 = performance.now(), tFin = (L0 / V + 1.8) * 1000; let fini = false;
+  const finir = () => { if (fini) return; fini = true; cv.style.opacity = 0; setTimeout(() => cv.remove(), 1300); if (ac) setTimeout(() => ac.close().catch(() => {}), 800); if (!M) return; finCine(); placerCamera(true); if (M.halloween) hwMichael(src, fin); };
+  setTimeout(finir, tFin + 600);   /* (au cas où l'image ne tournerait plus : la cinématique finit quand même) */
+  M.cine = { gel: true, fov: [70, 82], maj: (now) => { if (!M || !M.halloween) { finir(); return; } const t = (now - t0) / 1000, u = Math.min(1, t * V / L0), x = dep[0] + (fin[0] - dep[0]) * u, z = dep[1] + (fin[1] - dep[1]) * u, pas = u < 1 ? 1 : 0;
+      M.camera.position.set(x + Math.cos(t * 2.6) * .04 * pas, h(x, z) + 1.74 + Math.abs(Math.sin(t * 2.6)) * .05 * pas, z);
+      M.camera.lookAt(p.x + Math.sin(t * .7) * .3 * pas, p.y + 1.35, p.z); if (now - t0 > tFin) finir(); } };
+}
+async function hwMichael(src, ou) {
   const moi = M.gens.get(M.moiNum); if (!moi) return; const R = riggerMichael(src); M.scene.add(R.root);
   const [AN, AH] = await Promise.all([chargerAnimsMX("anims/re-nemesis.json?v=3"), chargerAnimsMX("anims/re-heros.json?v=4")]); if (!M || !M.halloween) { R.root.parent && R.root.parent.remove(R.root); return; }
   const mix = new THREE.AnimationMixer(R.root), act = {};
@@ -4518,8 +4543,8 @@ async function hwMichael(src) {
   for (const n of ["walk", "idle"]) if (act[n]) { const c = act[n].getClip(); c.tracks = c.tracks.filter(tr => !/(Shoulder|Arm|Hand)/.test(tr.name)); }   /* (la marche d'un héros : ses bras tenaient une arme — on les laisse pendre et se balancer) */
   R.root.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (o.material.map) { o.material.emissive = new THREE.Color(0xffffff); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .38; } } });   /* (dans la nuit, on le voit : un peu éclairé de lui-même) */
   if (act.coup) { act.coup.setLoop(THREE.LoopOnce, 1); act.coup.clampWhenFinished = true; act.coup.timeScale = 1.7; } if (act.walk) act.walk.timeScale = .75;
-  const p = moi.g.position, q = hwPointPres(p.x, p.z, 8, 11, true) || hwPointPres(p.x, p.z, 6, 12, false) || [p.x + 8, p.z];
-  M.halloween.mi = { ...R, mix, act, cur: null, x: q[0], z: q[1], etat: "guette", t: performance.now(), chemin: [], cheminT: 0, teleT: performance.now(), vu: false, coup: 0 };
+  const p = moi.g.position, q = ou || hwPointPres(p.x, p.z, 8, 11, true) || hwPointPres(p.x, p.z, 6, 12, false) || [p.x + 8, p.z];
+  M.halloween.mi = { ...R, mix, act, cur: null, x: q[0], z: q[1], etat: "guette", t: performance.now() - (ou ? 900 : 0), chemin: [], cheminT: 0, teleT: performance.now(), vu: !!ou, coup: 0 };   /* (après la cinématique : il est déjà dans notre dos, il frappe vite) */
   R.root.position.set(q[0], M.L.hauteur ? M.L.hauteur(q[0], q[1], {}) : 0, q[1]); hwJouer(M.halloween.mi, "idle"); }
 function hwJouer(mi, n) { if (mi.cur === n || !mi.act[n]) return; const a = mi.act[n], b = mi.cur && mi.act[mi.cur]; a.reset().play(); if (b) a.crossFadeFrom(b, .25, false); mi.cur = n; }
 function hwFlash(couleur = "rgba(140,0,0,.55)", ms = 450) { const f = hwVoile("", 13); f.style.background = couleur; f.style.transition = `opacity ${ms}ms`; f.style.pointerEvents = "none"; requestAnimationFrame(() => { f.style.opacity = 0; }); setTimeout(() => f.remove(), ms + 60); }
@@ -12695,7 +12720,9 @@ function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(nu
     if (v.currentTime !== E.vtT) { E.vtT = v.currentTime; try { E.cx.drawImage(v, 0, 0, w, h); E.vt.needsUpdate = true; E.nImg = (E.nImg || 0) + 1; } catch (e) { E.errImg = String(e && e.message || e).slice(0, 60); } }
     if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
   else if (E.toile.material.map && !(v && E.k > .9)) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; }
-  diagClip(v, E); }
+  diagClip(v, E);
+  if (v && v.getAttribute("src") && !v.paused && v.currentTime > 4 && v.readyState < 2 && !E.illisible) { E.illisible = true; M.ctx.surInfo && M.ctx.surInfo("📽️ Ce clip passe, mais son image ne peut pas être affichée par ce navigateur : sa vidéo est dans un ancien format (MPEG-4/XviD, ou HEVC). Il faut le convertir en MP4 H.264 et le remettre. La musique, elle, passe."); }
+  if (!v) E.illisible = false; }
 function diagClip(v, E) {   // (pour l'administrateur : l'état du clip, en petit, en haut de l'écran — pour comprendre ce qui coince sur son ordinateur)
   const adm = M.ctx.moiInfo && M.ctx.moiInfo().admin; let d = M.diagClipEl;
   if (!adm || !v) { if (d) { d.remove(); M.diagClipEl = null; } return; }
