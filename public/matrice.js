@@ -4611,6 +4611,17 @@ function gensFete(L, scene) {
     else { const k = nS - 1 - ib++, [x, z] = T[k]; L.tabPNJ.add(k); Object.assign(E, { x, z, ry: Math.PI / 2, assis: true }); }
     if (G.verre) { const v = verreFete(G.verre), B = m.userData.parts.bras[1]; v.position.set(0, -G.o.taille * .17, .03); B.c.add(v); E.verre = v; }
     m.position.set(E.x, E.assis ? .66 - m.userData.hipY + .02 : 0, E.z); m.rotation.y = E.ry || 0; gens.push(E); }
+  // au bar du sous-sol (celui des Goonies) : un client au tabouret de droite, deux au baby-foot (un de chaque côté), deux qui discutent debout, une bière à la main
+  if (L.babyfoot && L.tabouretsSousSol) { const Y = FETE_HSS, [bx, bz] = L.babyfoot, [tx, tz] = L.tabouretsSousSol[0];
+    const SS = [{ r: "bar", o: { taille: 1.77, peau: "#d9a882", ch: "#2a1a12", haut: "#3a6aa8", bas: "#2a2a30", chaussures: "#1a1a1a", coif: "court", pantalon: true }, verre: "biere", x: tx, z: tz, ry: Math.PI },
+      { r: "baby", o: { taille: 1.74, peau: "#f0c9a6", ch: "#e2c27a", haut: "#c8202a", bas: "#3d5a80", chaussures: "#f2f2f2", coif: "court", pantalon: true }, x: bx, z: bz + .72, ry: Math.PI },
+      { r: "baby", o: { taille: 1.7, peau: "#8d5a3b", ch: "#141010", haut: "#2a4ab0", bas: "#2a2a30", chaussures: "#1a1a1a", coif: "chauve", pantalon: true }, x: bx, z: bz - .72, ry: 0 },
+      { r: "parle", G: { pose: "p1" }, o: { taille: 1.75, peau: "#e8bd95", ch: "#5a3a22", haut: "#5a6a3a", bas: "#3a3a40", chaussures: "#2a1a14", coif: "court", pantalon: true, parle: true }, verre: "biere", x: .7, z: 27.4, ry: 2.1 },
+      { r: "parle", G: { pose: "p2" }, o: { taille: 1.66, peau: "#f6d6bc", ch: "#a5532a", haut: "#e8e2d6", bas: "#26324e", chaussures: "#2a1a14", coif: "long", pantalon: true }, verre: "biere", x: 1.45, z: 26.95, ry: -1.0 }];
+    if (L.tabPNJ) L.tabPNJ.add((L.nbTabouretsSalle || 0) + 0);
+    for (const S of SS) { const m = personne3D(S.o); scene.add(m); tous.push(m); const E = { G: { r: S.r === "bar" ? "bar" : S.r, pose: S.G ? S.G.pose : "p1", o: S.o }, m, k: gens.length, x: S.x, z: S.z, ry: S.ry, assis: S.r === "bar", y0: Y };
+      if (S.verre) { const v = verreFete(S.verre), B = m.userData.parts.bras[1]; v.position.set(0, -S.o.taille * .17, .03); B.c.add(v); }
+      m.position.set(S.x, S.r === "bar" ? Y + .66 - m.userData.hipY + .02 : Y, S.z); m.rotation.y = S.ry; gens.push(E); } }
   L.gensFete = gens;
   // personne ne se rentre dedans : on ne traverse pas les gens de la soirée
   const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(L.gensFeteVus && gens.some(E => !E.assis && Math.hypot(x - E.m.position.x, z - E.m.position.z) < .38));
@@ -4627,6 +4638,9 @@ function gensFete(L, scene) {
         P.bassin.rotation.y += Math.sin(b * .5) * .3 * f; P.tete.rotation.z = Math.sin(b * .5) * .12 * f; m.position.y = Math.abs(Math.sin(b)) * .06 * f; m.rotation.y = Math.sin(t * .3 + E.k) * .8; }
       else if (E.G.r === "parle") { m.userData.poser("debout", tm); poserFete(m, E.G.pose, t); const b = t * 1.3 + E.k;   // (ils discutent : le verre, l'autre main qui parle, de temps en temps une gorgée)
         m.rotation.y = E.ry + Math.sin(b * .4) * .15; P.bras[0].e.rotation.x += Math.sin(b * 2.3) * .25; P.bras[0].c.rotation.x += Math.sin(b * 3.1) * .3; if ((t + E.k * 2) % 9 < 1.4) { P.bras[1].e.rotation.x = -1.1; P.bras[1].c.rotation.x = -2; P.tete.rotation.x = -.2; } else P.tete.rotation.x = 0; }
+      else if (E.G.r === "baby") { m.userData.poser("debout", tm); m.rotation.y = E.ry; const b = t * 7 + E.k;   // (au baby-foot : les deux mains sur les barres, ça tourne et ça frappe)
+        for (const [i, B] of P.bras.entries()) { B.e.rotation.set(-1.15 + Math.sin(b + i * 2) * .12, 0, (i ? 1 : -1) * (.25 + Math.sin(b * .7 + i) * .1)); B.c.rotation.x = -.35; }
+        P.buste.rotation.x = .22; P.jambes.forEach((J, i) => { J.h.rotation.z = (i ? 1 : -1) * .12; }); P.tete.rotation.x = .3; m.position.y = E.y0 + Math.abs(Math.sin(b * .5)) * .015; }
       else { m.userData.poser("assis", tm); m.rotation.y = E.ry; const b = t + E.k * 3; if (b % 8 < 1.3) { P.bras[1].e.rotation.x = -1.1; P.bras[1].c.rotation.x = -2.0; P.tete.rotation.x = -.25; } else { P.bras[1].e.rotation.x = -.5; P.bras[1].c.rotation.x = -1.1; P.tete.rotation.x = 0; P.tete.rotation.y = Math.sin(b * .5) * .5; } } } };
 }
 function circulationRue(L, scene, O) {
