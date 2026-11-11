@@ -1817,8 +1817,9 @@ function construireRue(A, T, L, scene) {
     L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > xe && x < xo && z < zP - .35, vers: "grande", continu: [0, 41.35, 0], centre: [(xe + xo) / 2, zP - .5] }); }
   // la rue La Fayette est fermée juste après ses passages piétons
   // (côté caserne, on peut maintenant la remonter : elle mène à la rue de Chabrol et à la rue d'Hauteville)
-  im({ x: -37, z: -27.5, largeur: 16, etages: 6, rot: Math.PI / 2, teinte: teintes[2], graine: 731, rdc: RDC_PN.manpower }); im({ x: -28.4, z: -24, largeur: 23, etages: 6, rot: -Math.PI / 2, teinte: teintes[1], graine: 732, rdc: RDC_PN.dm });
-  im({ x: -32.7, z: -35.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[4], graine: 733, rdc: RDC_PN.rallye });
+  im({ x: -36.98, z: -13.55, largeur: 11.9, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 734, rdc: RDC_HV.resto });   // (le long de la rue La Fayette, contre l'immeuble du métro)
+  im({ x: -37, z: -27.5, largeur: 16, etages: 6, rot: Math.PI / 2, teinte: teintes[2], graine: 731, rdc: RDC_HV.mode }); im({ x: -28.4, z: -24, largeur: 23, etages: 6, rot: -Math.PI / 2, teinte: "#e9dfc8", graine: 732, rdc: RDC_PN.rallye }); storeRouge(A, scene, -28.42, -18.5, 11.9, -Math.PI / 2, 0); storeRouge(A, scene, -28.42, -30.4, 9.8, -Math.PI / 2, 0);   // (Le Rallye du Nord : l'immeuble de D&M Outlet, côté caserne)
+  im({ x: -32.7, z: -35.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[4], graine: 733, rdc: RDC_PN.bistrot });
   L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > -37 && x < -24 && z < -16, vers: "grande", arrivee: NV_.P(43, 0), yaw: -3 * Math.PI / 4, sansCercle: true });
   im({ x: -32.5, z: 6.8, largeur: 9, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 75 });
   // le grand mur pignon du voisin, et son décor (un panneau miroir entre deux colonnes de demi-lunes)
@@ -2179,7 +2180,7 @@ NV_.st = (x, z) => [((x - NV_.OX) + (z - NV_.OZ)) * Math.SQRT1_2, (-(x - NV_.OX)
 NV_.P = (s, t) => [NV_.OX + (s - t) * Math.SQRT1_2, NV_.OZ + (s + t) * Math.SQRT1_2];
 NV_.zone = (x, z) => (x < -59.4 || (z > -140 && x < -45)) && x > -165 && z > -182 && z < 32;
 NV_.marche = (x, z, m = .3) => { if (!NV_.zone(x, z)) return false; const [s, t] = NV_.st(x, z);
-  if (s > 11.6 && s < 18.4 && t > 6.2 && t < 9.4) return false;   // (la bouche du métro)
+  if (s > 11.6 && s < 18.4 && t < -6.2 && t > -9.4) return false;   // (la bouche du métro)
   return (x > NV_.XW2 + m && x < -59.2 && z > DH_.ZO + m && z < NV_.ZC - m)   // la suite de la rue d'Hauteville
     || (x > NV_.FA + m && x < NV_.FB - m && z > -172 + m && z < -41.4)   // la rue de Chabrol (et son bout, de l'autre côté)
     || (s > -37 + m && s < 48.2 && t > -10 + m && t < 10 - m)   // la rue La Fayette
@@ -2947,7 +2948,11 @@ function ruesDehors0(A, L, scene) {
       if (d !== !!L.suiviDH) { L.suiviDH = d;
         if (d) { L.suiviAvantDH = L.suivi; L.suivi = { d: 6.5, h: 4.4, av: 4, vy: 1.8 }; const v = new THREE.Vector3(); M.camera.getWorldDirection(v); M.yaw = Math.atan2(-v.x, -v.z); }
         else { if (L.suiviAvantDH) L.suivi = L.suiviAvantDH; else delete L.suivi; M.yawDehors = 0; }
-        M.camE = null; } }; }
+        M.camE = null; }
+      // dehors, la zone des ombres du soleil suit son bonhomme (elle ne couvre que 80 m : au-delà, une limite nette coupait les ombres en biais sur les trottoirs)
+      const so = L.soleilDH || (L.soleilDH = M.scene.children.find(o => o.isDirectionalLight && o.castShadow)); if (so) { const c = L.ombreC || (L.ombreC = [0, 0]), cx = d ? Math.round(p.x / 4) * 4 : 0, cz = d ? Math.round(p.z / 4) * 4 : 0;
+        if (cx !== c[0] || cz !== c[1]) { so.position.x += cx - c[0]; so.position.z += cz - c[1]; c[0] = cx; c[1] = cz; }
+        if (so.target.position.x !== cx || so.target.position.z !== cz) { so.target.position.set(cx, 0, cz); so.target.updateMatrixWorld(); } } }; }
   const lim0 = L.limites; L.limites = (x, z) => (lim0 && lim0(x, z)) || (!!L.dehorsOuvert && DH_.dedans(x, z));
   const h0 = L.hauteur; L.hauteur = (x, z, p) => DH_.zone(x, z) ? DH_.h(x, z) : h0 ? h0(x, z, p) : 0;
   const cam0 = L.contraindreCam; L.contraindreCam = (pos, moi) => { const mp = moi.g.position;
@@ -4425,6 +4430,12 @@ const RDC_PN = {
     x.fillStyle = "#a81e22"; x.beginPath(); x.moveTo(6, yr + 20); x.lineTo(w - 6, yr + 20); x.lineTo(w - 2, yr + 60); x.lineTo(2, yr + 60); x.fill(); x.fillStyle = "#f4ece0"; x.font = "italic bold 22px Georgia"; x.textAlign = "center"; x.fillText("Bar  •  Bistrot  •  Restaurant", w / 2, yr + 48);
     x.fillStyle = "#2a1a14"; x.fillRect(4, yr + 62, w - 8, h - 62); for (let X = 10; X < w - 50; X += 70) vitreRDC(x, X, yr + 68, 62, h - 72, "#7a5232"); },
 };
+/* un store rouge de café, en relief au-dessus de la devanture (largeur l, façade en x, z, tournée selon rot) */
+function storeRouge(A, scene, x, z, l, rot, y0) { const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = rot; scene.add(g);
+  const rouge = A.mat({ color: 0xa01c20, roughness: .8 }), m = (geo, px, py, pz, rx = 0) => { const o = new THREE.Mesh(geo, rouge); o.position.set(px, py, pz); o.rotation.x = rx; o.castShadow = true; g.add(o); return o; };
+  m(new THREE.BoxGeometry(l - .4, .05, 1.6), 0, 3.25, .74, .38); m(new THREE.BoxGeometry(l - .4, .32, .04), 0, 2.84, 1.48);
+  for (const sx of [-1, 1]) { const sh = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(1.5, -.55), new THREE.Vector2(1.5, -.87), new THREE.Vector2(0, -.05)]); const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .04, bevelEnabled: false }), rouge); o.rotation.y = -Math.PI / 2; o.position.set(sx * (l / 2 - .2), 3.55, 0); g.add(o); }
+  return g; }
 function ruesPoissonniere(A, L, scene, O) {
   const { im, dalle, plat, cand, plaque } = O, { Y0, ZR, ZF, ZO } = DH_, { P, XW2, CA, CB, FA, FB, ZC } = NV_, S2 = Math.SQRT1_2;
   graine = 4242;
@@ -4450,17 +4461,18 @@ function ruesPoissonniere(A, L, scene, O) {
   bat([FA - .06, ZO], [-134.5, ZO], PZ, RDC_PN.bistrot); bat([-134.5, ZO], [XW2, ZO], PZ, null, 5);
   // la rue de Chabrol : côté impair (le pressing, la Vélib', John Foster à l'angle de La Fayette), côté pair (la trattoria, à l'angle)
   bat([FB, ZC + .06], [FB, -132.3], NX, RDC_PN.connexion, 6, "#ece8e0"); bat([FB, -132.3], [FB, -116.3], NX, RDC_PN.pressing); bat([FB, -116.3], [FB, -100.3], NX, PR, 5);
-  bat([FB, -100.3], [FB, -84.3], NX, MO); bat([FB, -84.3], [FB, -68.3], NX, RE, 5); bat([FB, -68.3], [FB, -53.6], NX, PR); bat([FB, -53.6], [FB, -41.64], NX, RDC_PN.johnFoster, 6, "#e2d6bc");
-  bat([FA, ZC + .06], [FA, -132.3], PX, RDC_PN.trattoria, 5, "#f0ede6"); bat([FA, -132.3], [FA, -116.3], PX, RE); bat([FA, -116.3], [FA, -100.3], PX, PR, 5); bat([FA, -100.3], [FA, -84.3], PX, MO); bat([FA, -84.3], [FA, -66.6], PX, null);
+  bat([FB, -100.3], [FB, -84.3], NX, MO); bat([FB, -84.3], [FB, -68.3], NX, RE, 5); bat([FB, -68.3], [FB, -53.6], NX, PR); bat([FB, -53.6], [FB, -41.64], NX, RDC_PN.outlet, 6, "#ece6da");
+  bat([FA, ZC + .06], [FA, -132.3], PX, RDC_PN.trattoria, 5, "#f0ede6"); bat([FA, -132.3], [FA, -116.3], PX, RE); bat([FA, -116.3], [FA, -100.3], PX, PR, 5); bat([FA, -100.3], [FA, -84.3], PX, MO); bat([FA, -84.3], [FA, -66.6], PX, RDC_PN.johnFoster, 6, "#e2d6bc");
   bat([FA, -66.6], P(-31.2, -10), [.378, .926], PR, 6);   // (le pan coupé, à l'angle obtus)
   bat([FB, ZO - .06], [FB, -172], NX, MO, 5); bat([FA, -172], [FA, ZO - .06], PX, RE); bat([FA, -172], [FB, -172], PZ, PR, 6);   // (le bout de la rue de Chabrol, de l'autre côté)
   // la rue La Fayette : côté Chabrol (John Foster, l'angle du Faubourg et D&M Outlet), côté pair (Outlet Market, Manpower, la pharmacie, Le Square, Le Rallye du Nord)
-  bat(P(-37, -10), P(-31.2, -10), SE, null); bat(P(-.8, -10), P(11.2, -10), SE, RDC_PN.johnFoster, 6, "#e2d6bc"); bat(P(11.2, -10), P(27.2, -10), SE, MO); bat(P(27.2, -10), P(36, -10), SE, PR); bat(P(36, -10), P(47.94, -10), SE, RDC_PN.dm, 6, "#ddd6c8");
-  bat(P(-20, 10), P(-37, 10), NO, PR); bat(P(-6, 10), P(-20, 10), NO, MO, 5); bat(P(6, 10), P(-6, 10), NO, RDC_PN.outlet); bat(P(16, 10), P(6, 10), NO, RDC_PN.manpower, 6, "#ece6da");
-  bat(P(24, 10), P(16, 10), NO, RDC_PN.pharmacie); bat(P(36, 10), P(24, 10), NO, RDC_PN.square, 6, "#ece6da"); bat(P(47.94, 10), P(36, 10), NO, RDC_PN.rallye, 6, "#e9dfc8");
+  bat(P(-37, -10), P(-31.2, -10), SE, null); bat(P(-.8, -10), P(9, -10), SE, RDC_PN.outlet, 6, "#ece6da"); bat(P(9, -10), P(17, -10), SE, RDC_PN.manpower, 6, "#ece6da"); bat(P(17, -10), P(25, -10), SE, RDC_PN.pharmacie);
+  bat(P(25, -10), P(36, -10), SE, RDC_PN.square, 6, "#ece6da"); bat(P(36, -10), P(47.94, -10), SE, RDC_PN.rallye, 6, "#e9dfc8");
+  bat(P(-20, 10), P(-37, 10), NO, PR); bat(P(-6, 10), P(-20, 10), NO, MO, 5); bat(P(6, 10), P(-6, 10), NO, RDC_PN.johnFoster, 6, "#e2d6bc"); bat(P(16, 10), P(6, 10), NO, RE);
+  bat(P(24, 10), P(16, 10), NO, PR); bat(P(36, 10), P(24, 10), NO, MO, 5); bat(P(47.94, 10), P(36, 10), NO, RDC_PN.bistrot);
   bat(P(-37, 10), P(-37, -10), VU, PR);   // (on ne va pas plus loin : un immeuble ferme la rue)
   // le carrefour du Faubourg-Poissonnière
-  bat(P(48, -10.06), P(48, -20), VU, RDC_PN.dm, 6, "#ddd6c8"); bat(P(48, 22), P(48, 10.06), VU, RDC_PN.rallye, 6, "#e9dfc8");
+  bat(P(48, -10.06), P(48, -20), VU, RDC_PN.dm, 6, "#ddd6c8"); bat(P(48, 22), P(48, 10.06), VU, RDC_PN.bistrot);
   bat(P(62, -20), P(48, -20), SE, PR); bat(P(48, 22), P(62, 22), NO, MO);
   bat(P(62, -20), P(62, -6), VUm, PR); bat(P(62, -6), P(62, 8), VUm, RDC_PN.bistrot); bat(P(62, 8), P(62, 22), VUm, MO);
   /* --- les passages piétons --- */
@@ -4489,7 +4501,7 @@ function ruesPoissonniere(A, L, scene, O) {
     const b = A.ajoute(new THREE.BoxGeometry(.5, 1.6, .5), A.mat({ color: 0x8a8a84, roughness: .6 }), CB + .55, Y0 + .92, -130.2); A.ajoute(new THREE.PlaneGeometry(.36, .7), A.mat({ color: 0x6ac0e0, emissive: 0x204050 }), CB + .19, Y0 + 1.2, -130.2, false).rotation.y = -Math.PI / 2;
     DH_.voit = (DH_.voit || []).concat([[CB - 1.7, CB - .3, -129.5, -120]]); }
   /* --- la bouche du métro Poissonnière, sur le trottoir de la rue La Fayette : la balustrade verte, et le mât au « M » jaune --- */
-  { const vert = A.mat({ color: 0x2f5a3a, roughness: .5, metalness: .3 }), g = new THREE.Group(), [x0, z0] = P(15, 7.8); g.position.set(x0, Y0 + .12, z0); g.rotation.y = -Math.PI / 4; scene.add(g);
+  { const vert = A.mat({ color: 0x2f5a3a, roughness: .5, metalness: .3 }), g = new THREE.Group(), [x0, z0] = P(15, -7.8); g.position.set(x0, Y0 + .12, z0); g.rotation.y = -Math.PI / 4; scene.add(g);
     const m = (geo, mat, px, py, pz) => { const o = new THREE.Mesh(geo, mat); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
     const trou = m(new THREE.PlaneGeometry(6.4, 2.8), new THREE.MeshBasicMaterial({ color: 0x0c0c0e }), 0, .006, 0); trou.rotation.x = -Math.PI / 2;
     for (const [sx, sz, lx, lz] of [[0, -1.42, 6.4, .05], [0, 1.42, 6.4, .05], [3.2, 0, .05, 2.84]]) { m(new THREE.BoxGeometry(lx, .05, lz), vert, sx, 1.0, sz); m(new THREE.BoxGeometry(lx, .04, lz), vert, sx, .1, sz);
@@ -4500,7 +4512,7 @@ function ruesPoissonniere(A, L, scene, O) {
     const tP = tex(toile(256, 48, (c) => { c.fillStyle = "#1d3f73"; c.fillRect(0, 0, 256, 48); c.fillStyle = "#f4f1e6"; c.font = "bold 28px Arial"; c.textAlign = "center"; c.fillText("Poissonnière", 128, 34); }));
     m(new THREE.BoxGeometry(1.1, .22, .04), [vert, vert, vert, vert, A.mat({ map: tP }), A.mat({ map: tP })], -3.3, 3.12, -1.2); }
   /* --- la croix verte de la pharmacie, en drapeau sur la façade --- */
-  { const [x, z] = P(17.5, 9.95), g = new THREE.Group(); g.position.set(x, Y0 + 5.2, z); g.rotation.y = 3 * Math.PI / 4; scene.add(g);
+  { const [x, z] = P(21, -9.95), g = new THREE.Group(); g.position.set(x, Y0 + 5.2, z); g.rotation.y = -Math.PI / 4; scene.add(g);
     const croix = new THREE.MeshStandardMaterial({ color: 0x2ad84a, emissive: 0x1aa83a, emissiveIntensity: .8 }); for (const [a, b] of [[.34, 1.0], [1.0, .34]]) { const o = new THREE.Mesh(new THREE.BoxGeometry(.12, a, b), croix); o.position.set(0, 0, .85); g.add(o); }
     const p = new THREE.Mesh(new THREE.BoxGeometry(.06, .06, .5), noirF); p.position.set(0, 0, .25); g.add(p); }
   /* --- la terrasse du Rallye du Nord (tables rondes, chaises de rotin) --- */
@@ -4508,12 +4520,13 @@ function ruesPoissonniere(A, L, scene, O) {
     const table = (x, z) => { A.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 18), plateau, x, Y0 + .86, z); A.ajoute(new THREE.CylinderGeometry(.03, .03, .72, 8), fonte, x, Y0 + .5, z);
       for (let k = 0; k < 2; k++) { const a = k * Math.PI + Math.PI / 4, cx = x + Math.cos(a) * .55, cz = z + Math.sin(a) * .55; A.ajoute(new THREE.CylinderGeometry(.2, .2, .05, 12), rotin, cx, Y0 + .58, cz);
         const d = A.ajoute(new THREE.BoxGeometry(.36, .34, .05), rotin, cx + Math.cos(a) * .17, Y0 + .78, cz + Math.sin(a) * .17); d.rotation.y = -a + Math.PI / 2; for (const [ex, ez] of [[.12, .12], [-.12, -.12]]) A.ajoute(new THREE.CylinderGeometry(.012, .012, .46, 5), fonte, cx + ex, Y0 + .35, cz + ez); } };
-    for (let s = 38.5; s < 47; s += 1.7) { const [x, z] = P(s, 8.6); table(x, z); } for (let t = 12; t < 21; t += 1.7) { const [x, z] = P(49.3, t); table(x, z); } }
+    { const [x, z] = P(41.97, -10); storeRouge(A, scene, x, z, 11.9, -Math.PI / 4, Y0); }
+    for (let s = 37.5; s < 47; s += 1.7) { const [x, z] = P(s, -8.6); table(x, z); } }
   /* --- les candélabres, les plaques de rue --- */
   for (const x of [-72, -98, -128, -146]) cand(x, ZF - .45, 0, 1);
   for (const z of [-136, -110, -84, -58]) cand(CB + .45, z, -1, 0);
   plaque("10e Arr.t|RUE DE|CHABROL", FB - .04, Y0 + 3.2, ZC + 2.2, -Math.PI / 2, .75); plaque("10e Arr.t|RUE|D'HAUTEVILLE", FB + 2.2, Y0 + 3.2, ZC - .04, Math.PI, .75);
-  { const [x, z] = P(46.6, 9.96); plaque("9e Arr.t|RUE|LA FAYETTE", x, Y0 + 3.6, z, 3 * Math.PI / 4, .75); const [a, b] = P(48.04, -11.5); plaque("10e Arr.t|RUE DU FAUBOURG|POISSONNIÈRE", a, Y0 + 3.6, b, Math.PI / 4, .9); }
+  { const [x, z] = P(46.6, -9.96); plaque("10e Arr.t|RUE|LA FAYETTE", x, Y0 + 3.6, z, -Math.PI / 4, .75); const [c, d] = P(.4, -9.96); plaque("10e Arr.t|RUE|LA FAYETTE", c, Y0 + 3.6, d, -Math.PI / 4, .75); const [a, b] = P(48.04, -11.5); plaque("10e Arr.t|RUE DU FAUBOURG|POISSONNIÈRE", a, Y0 + 3.6, b, Math.PI / 4, .9); }
   /* --- au bout de la rue La Fayette, le Faubourg : on rejoint la rue de la caserne, au carrefour du métro --- */
   L.portails.push({ dans: (x, z) => !!L.dehorsOuvert && !L.apo && NV_.zone(x, z) && (([s, t]) => s > 50.6 && s < 63 && t > -21 && t < 23)(NV_.st(x, z)), vers: "rue", arrivee: [-32, -11], yaw: 0, messageries: true, sansCercle: true });
   if (L.zone) L.zone = [Math.min(L.zone[0], XW2 - 1), L.zone[1], Math.min(L.zone[2], -173), L.zone[3]];
@@ -12182,7 +12195,7 @@ const PASSANTS = [
   { num: -99, nom: "Une passante", tenue: "jupe", couleur: "#2f5fae", bas: "#2a2a30", pieds: "#1a1a1a", tete: ["passanteR", { peau: "#d9a882", ch: "#141010", coif: "carre", femme: true }], acc: null, trajet: [48, -5.2, -48, -5.2], lieu: "rue" },
   { num: -100, nom: "Un monsieur", tenue: "costume", couleur: "#3a3a42", bas: "#3a3a42", pieds: "#1a1a1a", tete: ["monsieurC", { peau: "#e8bd95", ch: "#8a8a8a", coif: "court" }], acc: null, trajet: [-106.8, -140, -106.8, -52] },
   { num: -101, nom: "Une étudiante", tenue: "jupe", couleur: "#c8404a", bas: "#2a2a30", pieds: "#e8e2d6", tete: ["etudianteC", { peau: "#c78f62", ch: "#2a1a12", coif: "long", femme: true }], acc: null, trajet: [-145, -154.6, -64, -154.6] },
-  { num: -102, nom: "Un passant", tenue: "tshirt", couleur: "#2f8a6a", bas: "#2a3040", pieds: "#2a2a2a", tete: ["passantLF", { peau: "#8d5a3b", ch: "#141010", coif: "court" }], acc: null, trajet: [-106.3, -39.7, -78.1, -11.4] },
+  { num: -102, nom: "Un passant", tenue: "tshirt", couleur: "#2f8a6a", bas: "#2a3040", pieds: "#2a2a2a", tete: ["passantLF", { peau: "#8d5a3b", ch: "#141010", coif: "court" }], acc: null, trajet: [-117.66, -28.34, -89.4, -0.1] },
   { num: -103, nom: "Une dame", tenue: "robe", couleur: "#6a4a8a", pieds: "#2a1a14", tete: ["dameLF", { peau: "#f0c9a6", ch: "#e2c27a", coif: "carre", femme: true }], acc: null, trajet: [-117, -140, -117, -60] },
   { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -153.4, -50, -153.4] }];
 function animerPassants(t) {
