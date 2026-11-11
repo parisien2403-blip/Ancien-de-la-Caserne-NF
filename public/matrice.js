@@ -2169,6 +2169,23 @@ DH_.h = (x, z) => z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
 const RDC_HV = {
+  bains: (x, w, yr, h) => { x.fillStyle = "#e6dcc6"; x.fillRect(0, yr, w, h);   // (le magasin de salles de bains : enseigne, grandes vitrines éclairées — baignoires, lavabos, robinets —, portes d'entrée en verre)
+    x.fillStyle = "#1d2a3a"; x.fillRect(w * .03, yr + 6, w * .94, 30); x.fillStyle = "#e8eef2"; x.font = "bold 20px Georgia"; x.textAlign = "center"; x.fillText("BAINS & SANITAIRES  —  Salles de bains", w / 2, yr + 28);
+    const doors = [w * .44, w * .56];
+    for (const [X, W] of [[w * .04, w * .36], [w * .6, w * .36]]) { x.fillStyle = "#2a2e32"; x.fillRect(X - 4, yr + 40, W + 8, h - 40);
+      const g = x.createLinearGradient(0, yr + 44, 0, yr + h); g.addColorStop(0, "#f6f4ee"); g.addColorStop(1, "#d8dde0"); x.fillStyle = g; x.fillRect(X, yr + 44, W, h - 48);
+      const fy = yr + h - 10; x.fillStyle = "#c9ccd0"; x.fillRect(X, fy - 4, W, 4);
+      // une baignoire blanche sur pieds, un lavabo sur colonne, un miroir, des robinets chromés
+      x.fillStyle = "#ffffff"; x.beginPath(); x.ellipse(X + W * .32, fy - 34, W * .24, 24, 0, 0, Math.PI); x.fill(); x.fillRect(X + W * .08, fy - 40, W * .48, 8); x.strokeStyle = "#b8bcc0"; x.lineWidth = 2; x.stroke();
+      x.fillStyle = "#c9a227"; for (const dx of [.14, .5]) x.fillRect(X + W * dx, fy - 12, 5, 10);
+      x.fillStyle = "#c9ccd0"; x.fillRect(X + W * .5, fy - 58, 4, 18); x.fillRect(X + W * .46, fy - 60, 16, 4);
+      x.fillStyle = "#ffffff"; x.fillRect(X + W * .76, fy - 50, 10, 48); x.beginPath(); x.ellipse(X + W * .78, fy - 54, W * .1, 10, 0, 0, 7); x.fill();
+      x.fillStyle = "#9fc4d8"; x.fillRect(X + W * .7, yr + 56, W * .18, h * .3); x.strokeStyle = "#c9ccd0"; x.lineWidth = 3; x.strokeRect(X + W * .7, yr + 56, W * .18, h * .3);
+      x.fillStyle = "rgba(255,240,200,.25)"; x.fillRect(X, yr + 44, W, 14);   // (l'éclairage de la vitrine)
+      x.fillStyle = "rgba(255,255,255,.22)"; x.beginPath(); x.moveTo(X + W * .1, yr + 44); x.lineTo(X + W * .2, yr + 44); x.lineTo(X + W * .05, yr + h - 4); x.lineTo(X, yr + h - 4); x.fill(); }
+    // les deux portes en verre, cadre alu, poignées verticales
+    for (const X of doors) { x.fillStyle = "#9aa2a8"; x.fillRect(X - w * .055, yr + 40, w * .11, h - 40); x.fillStyle = "rgba(170,200,215,.85)"; x.fillRect(X - w * .05, yr + 46, w * .1, h - 50);
+      x.fillStyle = "#e8eaec"; x.fillRect(X + (X < w / 2 ? w * .035 : -w * .04), yr + h * .45, 4, h * .3); x.fillStyle = "rgba(255,255,255,.3)"; x.fillRect(X - w * .04, yr + 50, 4, h - 60); } },
   superette: (x, w, yr, h) => { x.fillStyle = "#e3d9c3"; x.fillRect(0, yr, w, h);   // (la supérette de l'arabe du coin : enseigne verte, vitrines pleines de rayons)
     x.fillStyle = "#1f7a3a"; x.fillRect(w * .04, yr + 6, w * .92, 34); x.fillStyle = "#f4f2ec"; x.font = "bold 22px Arial"; x.textAlign = "center"; x.fillText("ALIMENTATION GÉNÉRALE  •  FRUITS & LÉGUMES", w / 2, yr + 31);
     x.fillStyle = "#2a2622"; x.fillRect(w * .04, yr + 44, w * .92, h - 44);
@@ -2779,13 +2796,13 @@ function ruesDehors0(A, L, scene) {
     const pn = A.ajoute(new THREE.CylinderGeometry(.3, .3, .03, 24), [A.mat({ color: 0xc22a2a }), A.mat({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#c22a2a"; c.beginPath(); c.arc(32, 32, 32, 0, 7); c.fill(); c.fillStyle = "#2a4fa8"; c.beginPath(); c.arc(32, 32, 25, 0, 7); c.fill(); c.strokeStyle = "#c22a2a"; c.lineWidth = 7; c.beginPath(); c.moveTo(14, 14); c.lineTo(50, 50); c.stroke(); })) }), A.mat({ color: 0x888888 })], x - .05, Y0 + 2.5, z); pn.rotation.z = Math.PI / 2; }
   for (let k = 1; k < 8; k += 2) { const a = Math.PI + k / 8 * Math.PI / 2; A.ajoute(new THREE.CylinderGeometry(.055, .065, .9, 8), A.mat({ color: 0x1a1a1a }), XF + 2.5 + Math.cos(a) * 2.25, Y0 + .57, ZR + 2.5 + Math.sin(a) * 2.25); }   // (les potelets, autour de l'angle)
     // (le même immeuble de l'angle, sa façade sur la rue d'Hauteville)
-  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.porteVerte : k === 1 ? RDC_HV.superette : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
+  [-52, -36, -20, -8, 12, 28, 44, 60, 74].forEach((xc, k) => { if (k === 6) return; const g = im({ x: xc, z: ZO, largeur: k === 8 ? 12 : k === 3 ? 8 : 16, etages: 6 - (k % 2), rot: 0, teinte: teintes[(k + 2) % 5], graine: 320 + k, rdc: k === 5 ? RDC_HV.porteVerte : k === 1 ? RDC_HV.superette : k === 4 ? RDC_HV.bains : [RDC_HV.mode, RDC_HV.resto, RDC_HV.porte, null][k % 4] });
     if (k === 7) { const c = g.children.find(o => o.isMesh && o.geometry.type === "BoxGeometry"); if (c && Array.isArray(c.material)) { c.material = c.material.slice(); c.material[4] = A.mat({ map: tex(toileVolets(16, 5)) }); } } });   // (en face du carrefour : l'immeuble blanc à volets gris, d'après la photo)
   // la Cité d'Hauteville, en face de la caserne (d'après la photo) : une petite rue entre deux immeubles, son passage piété, et au bout un mur peint en trompe-l'œil
   { const cx = DH_.CX, z0 = ZO, z1 = ZO - DH_.CL;
-    plat(cx - 2.9, cx + 2.9, z1, z0); for (const sg of [-1, 1]) { const o = A.ajoute(new THREE.BoxGeometry(.7, .12, DH_.CL), dessus, cx + sg * 3.25, Y0 + .06, (z0 + z1) / 2); o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); }
+    plat(cx - 2.9, cx + 2.9, z1, z0); for (const sg of [-1, 1]) { const f = A.ajoute(new THREE.PlaneGeometry(1.6, 1.6), dessus, cx + sg * 3.6, Y0 + .119, z0, false); f.rotation.x = -Math.PI / 2; }   // (aux deux coins de la Cité : plus de jour dans le sol) for (const sg of [-1, 1]) { const o = A.ajoute(new THREE.BoxGeometry(.7, .12, DH_.CL), dessus, cx + sg * 3.25, Y0 + .06, (z0 + z1) / 2); o.receiveShadow = true; (L.solsPlus = L.solsPlus || []).push(o); }
     im({ x: cx - 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: Math.PI / 2, teinte: teintes[1], graine: 340 });
-    im({ x: cx + 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.mode });
+    im({ x: cx + 3.6, z: (z0 - .4 + z1) / 2, largeur: DH_.CL - .4, etages: 6, rot: -Math.PI / 2, teinte: teintes[3], graine: 341, rdc: RDC_HV.bains });
     const t = tex(toileRueLoin(7.2, 26, 1.7)), m = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 26), A.mat({ map: t, roughness: 1 })); m.position.set(cx, Y0 + 13, z1 + .05); scene.add(m);
   }
   // l'immeuble blanc d'en face : sa façade se creuse en demi-cercle, le trottoir s'y élargit (d'après la photo)
