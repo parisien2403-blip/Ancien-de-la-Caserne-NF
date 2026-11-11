@@ -2831,9 +2831,25 @@ function ruesDehors0(A, L, scene) {
     const R = DH_.AR, a0 = 3 * Math.PI / 2 - .5, tc = tex(toile(300, 170, (c, w, h) => { c.fillStyle = "#f2efe6"; c.fillRect(0, 0, w, 40); vitrineCafe(c, 6, 42, w - 12, h - 44); })); tc.wrapS = THREE.RepeatWrapping; tc.repeat.x = -1;
     const dv = new THREE.Mesh(new THREE.CylinderGeometry(R - .04, R - .04, 3.4, 12, 1, true, a0, .5), A.mat({ map: tc, side: THREE.BackSide })); dv.position.set(DH_.AX, Y0 + 1.7, ZO); scene.add(dv);
     { const a = a0 + .25, xa = DH_.AX + Math.sin(a) * (R - .1), za = ZO + Math.cos(a) * (R - .1); store(xa, 3.9, za, a + Math.PI, true); } }
+  // la terrasse du café : tables rondes, chaises de bistrot, et des clients qui boivent un verre ; le soir, le café et la supérette sont allumés
+  terrasseGalinette(A, L, scene, Y0 + .12, ZO);
+  // les jardinières fleuries aux fenêtres et aux balcons de l'immeuble du café (d'après la photo), et la verdure sur son toit
+  { const terre = [A.mat({ color: 0xa8552e, roughness: .9 }), A.mat({ color: 0x3a5a2a, roughness: .9 }), A.mat({ color: 0xe8e2d6, roughness: .8 })], feuil = [0x3f7a2e, 0x4f8f3a, 0x2f6a26].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), fleur = [0xd8203a, 0xe85a8a, 0xf2f2f0, 0xe8a020].map(c => A.mat({ color: c, roughness: .8 }));
+    const H = 4.2 + 6 * 3.1; let gk = 7;
+    for (let e = 0; e < 6; e++) for (let c = 0; c < 5; c++) { gk = (gk * 16807) % 2147483647; if (gk % 10 < 4) continue; const x = 20 + 1.6 + c * 3.2, y = Y0 + H - (e * 3.1 + .55 + .78) - .82, z = ZO + .16;
+      A.ajoute(new THREE.BoxGeometry(1.0, .18, .22), terre[gk % 3], x, y, z);
+      for (let k = 0; k < 4; k++) { const b = A.ajoute(new THREE.IcosahedronGeometry(.16 + (k % 2) * .05, 0), feuil[(gk + k) % 3], x - .36 + k * .24, y + .17, z + .02, false); b.scale.y = .8;
+        if ((gk + k) % 2) A.ajoute(new THREE.SphereGeometry(.05, 6, 4), fleur[(gk >> 3) % 4], x - .36 + k * .24, y + .27, z + .1, false); } }
+    for (let k = 0; k < 7; k++) { const b = A.ajoute(new THREE.IcosahedronGeometry(.7 + (k % 3) * .25, 1), feuil[k % 3], 21 + k * 2.3, Y0 + H + 1.0 + (k % 2) * .4, ZO - 2.2, false); b.scale.y = .9; } }
+  for (const [xa, xb] of [[25.3, 35.6], [-43.2, -28.8]]) { const v = new THREE.Mesh(new THREE.PlaneGeometry(xb - xa, 2.75), new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: .32, blending: THREE.AdditiveBlending, depthWrite: false }));
+    v.position.set((xa + xb) / 2, Y0 + 1.5, ZO + .04); v.visible = false; scene.add(v); L.nuitObjets.push(v);
+    const l = new THREE.PointLight(0xffc880, 40, 9, 1.6); l.position.set((xa + xb) / 2, Y0 + 2.4, ZO + 1.6); l.visible = false; scene.add(l); L.nuitObjets.push(l); }
   // l'immeuble blanc d'en face : sa façade se creuse en demi-cercle, le trottoir s'y élargit (d'après la photo)
   { const R = DH_.AR, H = 4.2 + 6 * 3.1, t = tex(toileVolets(Math.PI * R, 6)); t.wrapS = THREE.ClampToEdgeWrapping;
     const arc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ map: t, side: THREE.BackSide })); arc.position.set(DH_.AX, Y0 + H / 2, ZO); arc.receiveShadow = true; scene.add(arc);
+    { const tl = tex(toile(64, 80, (c) => { c.fillStyle = "#f2efe6"; c.fillRect(0, 0, 64, 80); const g = c.createLinearGradient(0, 10, 0, 76); g.addColorStop(0, "#5a6670"); g.addColorStop(1, "#2a323a"); c.fillStyle = g; c.fillRect(10, 12, 44, 60); c.fillStyle = "#f2efe6"; c.fillRect(30, 12, 4, 60); c.fillRect(10, 36, 44, 3); })), mf = A.mat({ map: tl }), blancL = A.mat({ color: 0xf2efe6 }), zincL = A.mat({ color: 0x5e676d, roughness: .5, metalness: .3 });   // (les lucarnes du toit de zinc, tout le long du demi-cercle)
+      for (let k = 0; k < 9; k++) { const th = Math.PI / 2 + .22 + k * (Math.PI - .44) / 8, r = R + .4, g = new THREE.Group(); g.position.set(DH_.AX + Math.sin(th) * r, Y0 + H + 1.35, ZO + Math.cos(th) * r); g.rotation.y = th + Math.PI; scene.add(g);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.25, .9), [blancL, blancL, blancL, blancL, mf, blancL]); g.add(b); const tt = new THREE.Mesh(new THREE.CylinderGeometry(.01, .65, .5, 4, 1), zincL); tt.rotation.y = Math.PI / 4; tt.scale.z = .75; tt.position.y = .85; g.add(tt); } }
     const toit = new THREE.Mesh(new THREE.CylinderGeometry(R, R + .9, 3.2, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ color: 0x7c858b, roughness: .5, metalness: .3, side: THREE.DoubleSide })); toit.position.set(DH_.AX, Y0 + H + 1.6, ZO); scene.add(toit);
     const corn = new THREE.Mesh(new THREE.CylinderGeometry(R - .25, R - .25, .3, 40, 1, true, Math.PI / 2, Math.PI), A.mat({ color: 0xe8e4da, side: THREE.DoubleSide })); corn.position.set(DH_.AX, Y0 + H, ZO); scene.add(corn);
     const lan = A.mat({ color: 0x1d1f22, metalness: .4, roughness: .5 }); A.ajoute(new THREE.CylinderGeometry(.07, .12, 6.4, 10), lan, DH_.AX + 2.5, Y0 + 3.3, ZF - .5); A.ajoute(new THREE.BoxGeometry(.4, .55, .4), A.mat({ color: 0xf3ead2, emissive: 0x332a18 }), DH_.AX + 2.5, Y0 + 6.7, ZF - .5); }
@@ -12053,6 +12069,26 @@ function arabeDuCoin(L, scene, xc, zf) {
     if (bs.visible && tm > fin) bs.visible = false; };
   L.arabeDuCoin = m; }
 /* l'éboueur de la Ville de Paris, rue d'Hauteville : tenue verte à bandes réfléchissantes, il pousse l'eau et les papiers dans le caniveau avec son balai aux poils verts, le long du trottoir de la caserne (le jour) */
+function terrasseGalinette(A, L, scene, Y, zf) {
+  const fonte = A.mat({ color: 0x1e1e1e, metalness: .5, roughness: .4 }), plateau = A.mat({ color: 0xd8d4cc, roughness: .3, metalness: .2 }), rotin = A.mat({ color: 0xb8823e, roughness: .8 });
+  const aj = (g, geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  const chaise = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, Y, z); g.rotation.y = ry; scene.add(g);
+    aj(g, new THREE.CylinderGeometry(.2, .2, .04, 14), rotin, 0, .46, 0); for (const [a, b] of [[.13, .13], [-.13, .13], [.13, -.13], [-.13, -.13]]) aj(g, new THREE.CylinderGeometry(.012, .012, .46, 6), fonte, a, .23, b);
+    const d = aj(g, new THREE.TorusGeometry(.19, .025, 6, 14, Math.PI), rotin, 0, .72, -.17); d.rotation.x = .15; aj(g, new THREE.BoxGeometry(.32, .24, .03), rotin, 0, .6, -.19); };
+  const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b"], HAUTS = ["#2f5fae", "#c8404a", "#e8e2d6", "#3a7a4a"], CH = ["#5a3a22", "#141010", "#e2c27a", "#2a1a12"], E = [];
+  [[27.6, 0], [32.4, 1]].forEach(([xt, k]) => { const zt = zf + 1.5; const g = new THREE.Group(); g.position.set(xt, Y, zt); scene.add(g);
+    aj(g, new THREE.CylinderGeometry(.32, .32, .03, 20), plateau, 0, .74, 0); aj(g, new THREE.CylinderGeometry(.03, .03, .72, 8), fonte, 0, .37, 0); aj(g, new THREE.CylinderGeometry(.22, .25, .03, 14), fonte, 0, .015, 0);
+    for (const dx of [-.12, .12]) { const v = aj(g, new THREE.CylinderGeometry(.03, .025, .1, 10), new THREE.MeshStandardMaterial({ color: 0xe3a92c, transparent: true, opacity: .85, roughness: .1 }), dx, .8, 0); }
+    [[-.62, 0, Math.PI / 2], [.62, 0, -Math.PI / 2]].forEach(([dx, dz, ry], i) => { chaise(xt + dx, zt + dz, ry);
+      const j = k * 2 + i, p = personne3D({ taille: 1.7, peau: PEAUX[j], ch: CH[j], haut: HAUTS[j], bas: "#2a3040", chaussures: "#1a1a1a", coif: j === 2 ? "long" : "court", pantalon: true });
+      p.rotation.y = ry; p.position.set(xt + dx, Y + .5 - p.userData.hipY, zt + dz); scene.add(p);
+      const verre = new THREE.Mesh(new THREE.CylinderGeometry(.03, .025, .1, 10), new THREE.MeshStandardMaterial({ color: 0xe3a92c, transparent: true, opacity: .85 })); verre.position.y = -1.7 * .17; p.userData.parts.bras[1].c.add(verre);
+      E.push({ p, ph: j * 2.3 }); });
+    (DH_.voit = DH_.voit || []).push([xt - 1, xt + 1, zt - .45, zt + .45]); });
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return;
+    for (const e of E) { const P = e.p.userData.parts; e.p.userData.poser("assis", tm); const c = (tm / 1000 + e.ph) % 9, boit = c < 1.6;   // (de temps en temps, ils portent leur verre à la bouche)
+      P.bras[1].e.rotation.x = boit ? -1.1 : -.55; P.bras[1].c.rotation.x = boit ? -2.0 : -.9; P.tete.rotation.x = boit ? -.25 : 0; P.tete.rotation.y = boit ? 0 : Math.sin(tm / 1500 + e.ph) * .4; } };
+  L.terrasse = E; }
 function eboueurCaniveau(L, scene, x0, x1, zc) {
   const m = personne3D({ taille: 1.78, peau: "#5a3a26", ch: "#141010", haut: "#2f7a3a", bas: "#2f7a3a", chaussures: "#1a1a1a", coif: "court", pantalon: true }), P = m.userData.parts, T = 1.78;
   const refl = new THREE.MeshStandardMaterial({ color: 0xd8dcd0, emissive: 0x555a50, roughness: .3, metalness: .4 });
