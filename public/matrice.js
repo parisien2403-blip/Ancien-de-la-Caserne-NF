@@ -4375,7 +4375,7 @@ function circulation(L, scene) { circulationRue(L, scene, { x0: -72, x1: 75, z: 
 const HW = { masque: [3.5, -63] };
 let hwModeles = null;
 function hwCharger() { return hwModeles = hwModeles || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const Ld = new gltfMod.GLTFLoader();
-  const [mi, ci] = await Promise.all(["michael", "citrouille"].map(n => Ld.loadAsync(`halloween/${n}.glb?v=1`))); return { michael: mi.scene, citrouille: ci.scene }; })().catch(e => { hwModeles = null; throw e; }); }
+  const [mi, ci, BGU] = await Promise.all([...["michael", "citrouille"].map(n => Ld.loadAsync(`halloween/${n}.glb?v=1`)), import("./vendor/BufferGeometryUtils.js?v=1")]); return { michael: mi.scene, citrouille: ci.scene, BGU }; })().catch(e => { hwModeles = null; throw e; }); }
 function masqueHalloween(L, scene) {   // le masque, posé au sol dans la cour (seulement dans la vraie caserne)
   const g = new THREE.Group(), [x, z] = HW.masque; g.position.set(x, 0, z); scene.add(g); L.masqueHW = g;
   (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1"); const m = (await new gltfMod.GLTFLoader().loadAsync("halloween/masque.glb?v=1")).scene;
@@ -4406,8 +4406,19 @@ async function hwDemarrer() {
   if (mod) setTimeout(() => { if (M && M.halloween && !M.halloween.mi) hwMichael(mod.michael); }, 1800); }
 /* le décor du cauchemar : citrouilles (une petite flamme dedans), flaques et traînées de sang, papiers et cartons au sol, nappes de brume */
 function hwToile(f, w = 128, h = 128) { const t = tex(toile(w, h, f)); return t; }
+function hwFondre(grp, BGU) { if (!BGU) return grp; grp.updateMatrixWorld(true); const paquets = new Map();
+  grp.traverse(o => { if (!o.isMesh || !o.visible) return; let vis = true; for (let q = o; q; q = q.parent) if (!q.visible) vis = false; if (!vis) return; const m = o.material, cle = m.map ? m.uuid : m.type + (m.color ? m.color.getHexString() : "") + m.side;
+    let gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); gg.applyMatrix4(o.matrixWorld); for (const a of Object.keys(gg.attributes)) if (a !== "position" && a !== "normal" && a !== "uv") gg.deleteAttribute(a);
+    if (!gg.attributes.normal) gg.computeVertexNormals(); (paquets.get(cle) || paquets.set(cle, { m, l: [] }).get(cle)).l.push(gg); });
+  const out = new THREE.Group(); for (const { m, l } of paquets.values()) { const avecUv = l.every(x => x.attributes.uv); if (!avecUv) l.forEach(x => x.deleteAttribute("uv")); const fg = BGU.mergeGeometries(l, false); if (fg) out.add(new THREE.Mesh(fg, m)); }
+  return out; }
 function hwDecor(mod) {
-  const L = M.L, sc = M.scene, g = new THREE.Group(); sc.add(g); M.halloween.decor = g; M.halloween.fog0 = sc.fog; sc.fog = M.halloween.fog = new THREE.Fog(0x08090d, 5, 34);
+  const L = M.L, sc = M.scene, g = new THREE.Group(); sc.add(g); M.halloween.decor = g; M.halloween.fog0 = sc.fog; sc.fog = M.halloween.fog = new THREE.Fog(0x55585c, 1.5, 21); M.halloween.bg0 = sc.background; sc.background = M.halloween.bg = new THREE.Color(0x55585c);   /* (comme à Silent Hill : un brouillard gris, épais ; tout s'efface à vingt mètres) */
+  { const N = 1400, pos = new Float32Array(N * 3); for (let i = 0; i < N * 3; i++) pos[i] = (Math.random() - .5) * 30;   // des cendres qui tombent, lentement
+    const gg = new THREE.BufferGeometry(); gg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pt = new THREE.Points(gg, new THREE.PointsMaterial({ color: 0xd8d8d4, size: .06, transparent: true, opacity: .85, depthWrite: false })); pt.frustumCulled = false; g.add(pt); M.halloween.cendres = pt; }
+  { const gr = hwVoile("", 5); gr.style.pointerEvents = "none"; const c = document.createElement("canvas"); c.width = c.height = 160; const x = c.getContext("2d"), id = x.createImageData(160, 160); for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 34; } x.putImageData(id, 0, 0);
+    gr.style.background = `radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.55) 100%), url(${c.toDataURL()})`; gr.style.transition = "none"; M.halloween.grain = gr; M.halloween.voiles.push(gr); }   // (le grain de l'image, et les bords assombris)
   let gr = 9871; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647, h = (x, z) => L.hauteur ? L.hauteur(x, z, {}) : 0;
   const zones = [[-22, 31, -142, 29], [-58, 78, -156, -143], [38, 49, -140, 28]], pts = [];
   for (let k = 0; k < 6000 && pts.length < 420; k++) { const Z = zones[k % 3 === 2 ? 2 : k % 3], x = Z[0] + r() * (Z[1] - Z[0]), z = Z[2] + r() * (Z[3] - Z[2]); if (L.limites(x, z)) pts.push([x, z]); }
@@ -4425,16 +4436,20 @@ function hwDecor(mod) {
   semer(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x8e6a3e, roughness: 1 }), 26, (p, k) => { const plat = k % 2, hy = plat ? .02 : .3 + r() * .2; v3.set(p[0], h(p[0], p[1]) + hy / 2, p[1]); q.setFromEuler(e.set(0, r() * 6.28, 0)); un.set(.4 + r() * .4, hy, .3 + r() * .4); }).castShadow = true;
   // les citrouilles : une flamme dedans (sans vraies lumières : elles ralentissaient tout)
   if (mod && mod.citrouille) { const base = mod.citrouille, b = new THREE.Box3().setFromObject(base), s = .42 / (b.max.y - b.min.y), fl = [];
-    for (let k = 0; k < 30; k++) { const p = pris(); if (!p) break; const c = base.clone(); c.scale.setScalar(s * (.8 + r() * .5)); c.rotation.y = r() * 6.28; c.position.set(p[0], h(p[0], p[1]), p[1]); g.add(c); fl.push(p); }
+    let me = null; base.updateMatrixWorld(true); base.traverse(o => { if (o.isMesh && !me) me = o; });
+    const ic = me && new THREE.InstancedMesh(me.geometry, me.material, 30); let n = 0;   /* (les trente citrouilles d'un seul coup) */
+    for (let k = 0; k < 30 && ic; k++) { const p = pris(); if (!p) break; const c = new THREE.Object3D(); c.scale.setScalar(s * (.8 + r() * .5)); c.rotation.y = r() * 6.28; c.position.set(p[0], h(p[0], p[1]), p[1]); c.updateMatrix(); ic.setMatrixAt(n++, c.matrix.clone().multiply(me.matrixWorld)); fl.push(p); }
+    if (ic) { ic.count = n; ic.instanceMatrix.needsUpdate = true; g.add(ic); }
     const im = new THREE.InstancedMesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffa12a }), fl.length); fl.forEach((p, k) => im.setMatrixAt(k, mm.makeTranslation(p[0], h(p[0], p[1]) + .17, p[1]))); g.add(im); }
   // des corps, allongés dans leur sang
   const habits = [["#2f5fae", "#2a3040"], ["#c8404a", "#3a3a40"], ["#e8e2d6", "#2a2a30"], ["#3a7a4a", "#3d5a80"], ["#7a4a6a", "#2a2a30"], ["#e8d24a", "#26324e"], ["#5a5a5a", "#1a1a1a"], ["#a5532a", "#3a3028"]];
   const flaqueM = new THREE.MeshStandardMaterial({ map: sangs[0], transparent: true, depthWrite: false, roughness: .15, polygonOffset: true, polygonOffsetFactor: -3 });
-  for (let k = 0; k < 9; k++) { const p = pris(); if (!p) break; const [hc, bc] = habits[k % 8], y = h(p[0], p[1]);
+  const corps = new THREE.Group(); for (let k = 0; k < 24; k++) { const p = pris(); if (!p) break; const [hc, bc] = habits[k % 8], y = h(p[0], p[1]);
     const m = personne3D({ taille: 1.62 + r() * .2, peau: ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b"][k % 4], ch: ["#5a3a22", "#141010", "#e2c27a", "#2a1a12"][k % 4], haut: hc, bas: bc, chaussures: "#1a1a1a", coif: k % 3 ? "court" : "long", pantalon: k % 3 !== 0, robe: k % 3 === 0 });
     const P = m.userData.parts; P.jambes.forEach((J, i) => { J.h.rotation.set(0, 0, (i ? 1 : -1) * (.1 + r() * .3)); J.gen.rotation.x = r() * .6; }); P.bras.forEach((bb, i) => { bb.e.rotation.set(r() - .5, 0, (i ? 1 : -1) * (.4 + r() * 1.2)); bb.c.rotation.x = -r() * .8; }); P.tete.rotation.set(0, (r() - .5) * 1.4, 0);
-    const ventre = k % 2; m.rotation.set(ventre ? Math.PI / 2 : -Math.PI / 2, 0, r() * 6.28, "YXZ"); m.rotation.order = "YXZ"; m.rotation.y = r() * 6.28; m.position.set(p[0], y + .1, p[1]); g.add(m);
+    const ventre = k % 2; m.rotation.set(ventre ? Math.PI / 2 : -Math.PI / 2, 0, r() * 6.28, "YXZ"); m.rotation.order = "YXZ"; m.rotation.y = r() * 6.28; m.position.set(p[0], y + .1, p[1]); corps.add(m);
     const f = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), flaqueM); f.rotation.set(-Math.PI / 2, 0, r() * 6.28); f.position.set(p[0], y + .015, p[1]); g.add(f); }
+  g.add(hwFondre(corps, mod && mod.BGU));   /* (tous les corps en quelques morceaux seulement : sinon des centaines d'objets à dessiner) */
   // des enfants déguisés, immobiles, tachés de sang : ils nous montrent du doigt quand on passe, et nous parlent
   M.halloween.enfants = []; const bulleK = () => { const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false, depthTest: false })); bs.scale.set(2.2, .55, 1); bs.visible = false; bs.renderOrder = 9; g.add(bs); return { bc, bt, bs }; };
   const sangM = new THREE.MeshStandardMaterial({ color: 0x6a0408, roughness: .3 });
@@ -4512,8 +4527,11 @@ function animerHalloween(t) {
   if (!M || !M.L) return;
   if (M.L.masqueHW && !M.L.masqueHW.userData.pose && M.L.hauteur) { const [x, z] = HW.masque; M.L.masqueHW.position.y = M.L.hauteur(x, z, {}); M.L.masqueHW.userData.pose = true; }
   const H = M.halloween; if (!H) return; if (M.lieu !== "grande") { hwFin(); return; }
-  const dt = Math.min(.05, (t - (H.tp || t)) / 1000); H.tp = t; if (H.fog && M.scene.fog !== H.fog) M.scene.fog = H.fog;
+  const dt = Math.min(.05, (t - (H.tp || t)) / 1000); H.tp = t; if (H.fog && M.scene.fog !== H.fog) M.scene.fog = H.fog; if (H.bg && M.scene.background !== H.bg) M.scene.background = H.bg;
   animerEnfantsHW(t);
+  if (H.cendres) { const c = H.cendres, a = c.geometry.attributes.position, cam = M.camera.position; c.position.set(cam.x, cam.y, cam.z);
+    for (let i = 0; i < a.count; i++) { let y = a.getY(i) - dt * (.5 + (i % 7) * .08); if (y < -15) y += 30; a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(t / 2000 + i) * dt * .15); } a.needsUpdate = true; }
+  if (H.grain && t > (H.grainT || 0)) H.grainT = t + 90, H.grain.style.backgroundPosition = `0 0, ${(Math.random() * 160) | 0}px ${(Math.random() * 160) | 0}px`;
   for (const b of H.brumes || []) { b.m.position.x = b.x + Math.sin(t / 7000 + b.ph) * 3; b.m.position.z = b.z + Math.cos(t / 9000 + b.ph) * 2; }
   const mi = H.mi, moi = M.gens.get(M.moiNum); if (!mi || !moi || H.mort) return;
   const p = moi.g.position, dx = p.x - mi.x, dz = p.z - mi.z, d = Math.hypot(dx, dz);
@@ -4544,7 +4562,7 @@ function hwMort() {   // touché : l'écran rougit, « Tu es mort » — et l'on
 function hwFin() {
   const H = M && M.halloween; if (!H) return; M.halloween = null;
   if (H.decor && H.decor.parent) H.decor.parent.remove(H.decor); if (H.mi && H.mi.root.parent) H.mi.root.parent.remove(H.mi.root);
-  if (M.scene && M.scene.fog === H.fog) M.scene.fog = H.fog0 || null; for (const v of H.voiles || []) v.remove();
+  if (M.scene && M.scene.fog === H.fog) { M.scene.fog = H.fog0 || null; if (H.bg0) M.scene.background = H.bg0; } for (const v of H.voiles || []) v.remove();
   if (HW.son) HW.son.pause(); majAmbiance(); if (M.L && M.L.masqueHW) M.L.masqueHW.visible = true; }
 setTimeout(() => quitterLieu.add(() => { if (M && M.halloween) hwFin(); }), 0);   /* (après le chargement : quitterLieu est déclaré plus loin) */
 function circulationRue(L, scene, O) {
@@ -12300,7 +12318,13 @@ function arabeDuCoin(L, scene, xc, zf) {
   const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(xc, Y + 2.15, zf + 1.9); bs.visible = false; scene.add(bs);
   const PHR = ["Bonjour mon ami !", "Elles sont belles, mes oranges !", "Deux kilos de tomates pour dix francs !", "Ouvert jusqu'à minuit !", "Tu veux du pain ? Il reste des baguettes.", "Ça va la famille ?"]; let fin = 0, vu0 = 0;
   (DH_.voit = DH_.voit || []).push([xc - .35, xc + .35, zf + 1.55, zf + 2.25]);
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = ok; if (!ok) { bs.visible = false; return; }
+  const flaque = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshStandardMaterial({ map: tex(toile(128, 128, (c) => { for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, d = Math.random() * 30, R = 8 + Math.random() * (i < 4 ? 40 : 16); c.fillStyle = `rgba(${70 + Math.random() * 40},2,6,${.7 + Math.random() * .3})`; c.beginPath(); c.ellipse(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, R, R * .8, a, 0, 7); c.fill(); } })), transparent: true, depthWrite: false, roughness: .15, polygonOffset: true, polygonOffsetFactor: -2 }));
+  flaque.rotation.x = -Math.PI / 2; flaque.position.set(xc + .6, Y + .02, zf + 2.4); flaque.visible = false; scene.add(flaque);
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const ok = !!M && M.L === L && !(L.apo || L.sh || L.gb || L.bttf); m.visible = ok; if (!ok) { bs.visible = false; flaque.visible = false; return; }
+    const mort = !!M.halloween; flaque.visible = mort;   /* (Halloween : le patron gît devant son étalage, dans son sang) */
+    if (mort) { bs.visible = false; m.rotation.set(-Math.PI / 2, 0, -1.2, "YXZ"); m.rotation.order = "YXZ"; m.rotation.y = 1.4; m.position.set(xc + .2, Y + .2, zf + 2.3);
+      P.jambes.forEach((J, i) => { J.h.rotation.set(0, 0, (i ? 1 : -1) * .2); J.gen.rotation.x = .3 * i; }); P.bras.forEach((b, i) => { b.e.rotation.set(-.3, 0, (i ? 1 : -1) * 1.2); b.c.rotation.x = -.3; }); P.tete.rotation.set(0, -.7, 0); return; }
+    if (m.rotation.x) { m.rotation.set(0, 0, 0); m.rotation.order = "XYZ"; m.position.set(xc, Y, zf + 1.9); }
     const moi = M.moiNum && M.gens.get(M.moiNum), d = moi ? Math.hypot(moi.g.position.x - xc, moi.g.position.z - (zf + 1.9)) : 99;
     m.userData.poser("debout", tm); P.bras.forEach((b, i) => { b.e.rotation.x = -.35; b.c.rotation.x = -1.1; b.e.rotation.z = (i ? 1 : -1) * .35; });   // (les mains croisées sur le ventre)
     if (d < 5 && moi) { m.rotation.y = Math.atan2(moi.g.position.x - xc, moi.g.position.z - (zf + 1.9)); P.bras[1].e.rotation.x = -1.2 - Math.abs(Math.sin(tm / 300)) * .3; P.bras[1].c.rotation.x = -.4; }
@@ -12520,9 +12544,20 @@ function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = 
 function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
   const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
-  if (v && E.k > .9 && (v.readyState >= 2 || E.vt)) { if (!E.vt) { E.vt = new THREE.VideoTexture(v); E.vt.colorSpace = THREE.SRGBColorSpace; } if (!("requestVideoFrameCallback" in v) && v.readyState >= 2 && v.currentTime !== E.vtT) { E.vtT = v.currentTime; E.vt.needsUpdate = true; }   /* (sans le signal du navigateur : seulement quand l'image a changé — pas 60 fois par seconde la même) */
+  /* l'image du clip : recopiée nous-mêmes dans une toile, dès qu'elle change (sans attendre le signal du navigateur, qui ne venait pas toujours : l'écran restait figé, seul le son passait) */
+  if (v && E.k > .9 && v.readyState >= 2 && v.videoWidth) { if (!E.cv) { E.cv = document.createElement("canvas"); E.cx = E.cv.getContext("2d"); }
+    const w = Math.min(960, v.videoWidth), h = Math.round(w * v.videoHeight / v.videoWidth); if (E.cv.width !== w || E.cv.height !== h) { E.cv.width = w; E.cv.height = h; if (E.vt) { E.vt.dispose(); E.vt = null; } }
+    if (!E.vt) { E.vt = new THREE.CanvasTexture(E.cv); E.vt.colorSpace = THREE.SRGBColorSpace; E.vt.generateMipmaps = false; E.vt.minFilter = THREE.LinearFilter; E.vtT = -1; }
+    if (v.currentTime !== E.vtT) { E.vtT = v.currentTime; try { E.cx.drawImage(v, 0, 0, w, h); E.vt.needsUpdate = true; E.nImg = (E.nImg || 0) + 1; } catch (e) { E.errImg = String(e && e.message || e).slice(0, 60); } }
     if (E.toile.material.map !== E.vt) { E.toile.material.map = E.vt; E.toile.material.color.setHex(0xffffff); E.toile.material.needsUpdate = true; } }
-  else if (E.toile.material.map) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; } }
+  else if (E.toile.material.map && !(v && E.k > .9)) { E.toile.material.map = null; E.toile.material.color.setHex(0xf2f2ee); E.toile.material.needsUpdate = true; }
+  diagClip(v, E); }
+function diagClip(v, E) {   // (pour l'administrateur : l'état du clip, en petit, en haut de l'écran — pour comprendre ce qui coince sur son ordinateur)
+  const adm = M.ctx.moiInfo && M.ctx.moiInfo().admin; let d = M.diagClipEl;
+  if (!adm || !v) { if (d) { d.remove(); M.diagClipEl = null; } return; }
+  if (!d) { d = M.diagClipEl = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:8;background:rgba(0,0,0,.6);color:#9f9;font:11px monospace;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap"; M.ctx.conteneur.appendChild(d); }
+  const now = performance.now(); if (now < (M.diagClipT || 0)) return; M.diagClipT = now + 500;
+  d.textContent = `clip : prêt ${v.readyState} · ${v.paused ? "PAUSE" : "lecture"} · ${v.currentTime.toFixed(1)}/${(v.duration || 0).toFixed(0)} s · ${v.videoWidth}×${v.videoHeight} · ${/^blob:/.test(v.src) ? "local" : v.getAttribute("src") ? "réseau" : "téléchargement…"} · images ${E.nImg || 0}${v.error ? " · ERREUR " + v.error.code : ""}${E.errImg ? " · " + E.errImg : ""} · écran ${E.k.toFixed(2)}`; }
 function videoDJ(c) { let v = M.videoDJ;
   if (!c) { if (v) { v.pause(); v.removeAttribute("src"); v.load(); v.remove(); M.videoDJ = null; M.videoDJid = null; M.videoDJsrc = null; if (M.L && M.L.ecran && M.L.ecran.vt) { M.L.ecran.vt.dispose(); M.L.ecran.vt = null; } } return; }
   if (!v) { v = M.videoDJ = vivreVideo(document.createElement("video")); v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
