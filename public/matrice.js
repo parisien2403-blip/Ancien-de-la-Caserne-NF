@@ -2153,7 +2153,7 @@ function toileBriqueBandes(L, H, o = {}) {   // une façade de brique à bandeau
    - la longue façade de la rue des Messageries : brique rouge, soubassement de pierre claire, grandes fenêtres à barreaux au rez-de-chaussée,
      linteaux et appuis de pierre, allèges en brique en saillie, petits balcons de fer, descentes d'eau ; au bout, l'immeuble de pierre du n° 7 ;
    - en face, des immeubles parisiens ; la rue d'Hauteville en travers, fermée de chaque côté. Le portail est ouvert (seulement dans la vraie caserne). */
-const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 41, XF: 47, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -75, Z7: -74, XC: -40, DC: 2.3, XE2: 40.05, ZJ: -46, ZB: 33.85, ZP: 30.3, AX: 44, AR: 8, ZR2: -144.3, CX: 0, CL: 20, RA: 4.5 };   // (RA : le grand arrondi de l'angle du trottoir de la caserne)   // (CX : la Cité d'Hauteville, en face de la caserne, 8 m de large ; CL : on y entre de 20 m)   // (AX, AR : le renfoncement en demi-cercle de l'immeuble blanc, en face du carrefour ; ZR2 : le trottoir, plus étroit, après le carrefour côté sud)   // (ZS : la fin du plat ; puis la rue monte jusqu'au niveau de la cour, et continue jusqu'à la rue du Faubourg : ZB, le bord de son trottoir — le même repère que le porche, décalé de 41,35 m ; ZP : le passage d'une scène à l'autre ; XE2 : le nu des façades côté caserne, après le décroché en ZJ)   // (XC : rue d'Hauteville, le bout de la caserne ; après le mur blanc en biais, les immeubles avancent de DC vers la rue)
+const DH_ = { Y0: -1.3, XE: 38, ZN: -142, C: 172.8, XR: 41, XF: 47, XO: 49, ZR: -146.5, ZF: -153, ZO: -156, XW: -60, XEst: 80, ZS: -75, Z7: -74, XC: -40, DC: 2.3, XE2: 40.05, ZJ: -46, ZB: 33.85, ZP: 30.3, AX: 44, AR: 8, ZR2: -144.3, CX: 0, CL: 20, RA: 4.5, LA: 5.8, LB: 13.6, LP: 1.8 };   // (RA : le grand arrondi de l'angle du trottoir de la caserne)   // (CX : la Cité d'Hauteville, en face de la caserne, 8 m de large ; CL : on y entre de 20 m)   // (AX, AR : le renfoncement en demi-cercle de l'immeuble blanc, en face du carrefour ; ZR2 : le trottoir, plus étroit, après le carrefour côté sud)   // (ZS : la fin du plat ; puis la rue monte jusqu'au niveau de la cour, et continue jusqu'à la rue du Faubourg : ZB, le bord de son trottoir — le même repère que le porche, décalé de 41,35 m ; ZP : le passage d'une scène à l'autre ; XE2 : le nu des façades côté caserne, après le décroché en ZJ)   // (XC : rue d'Hauteville, le bout de la caserne ; après le mur blanc en biais, les immeubles avancent de DC vers la rue)
 DH_.bord = x => x < DH_.XC + .3 ? DH_.ZN - DH_.DC : DH_.ZN;   // (le décroché, à angle droit)   // (le nu des façades, côté caserne, rue d'Hauteville)   // (DX, DZ : de la rue des Messageries d'ici à son bout, dans la scène de la rue du Faubourg)
 DH_.zone = (x, z) => RU.lz(x, z) < -7.9 || (x > DH_.XE && z < DH_.ZJ) || (x > 40 && z >= DH_.ZJ && z < 40) || z < DH_.ZN;   // (au-delà de la grille)
 DH_.y = z => z <= -75 ? DH_.Y0 : z >= -45 ? 0 : DH_.Y0 * (-45 - z) / 30;   // (la rue des Messageries remonte doucement, de 1,30 m, jusqu'au niveau de la cour et de la rue du Faubourg)
@@ -2166,6 +2166,7 @@ DH_.dedans0 = (x, z) => (x > DH_.XE + .3 && x < DH_.XO - .3 && z > DH_.ZO + .3 &
   || (x - z > DH_.C + .35 && x <= DH_.XE + .3 && z >= DH_.ZN - .3)                                          // devant le pan coupé
   || (Math.abs(RU.lx(x, z)) < 1.9 && RU.lz(x, z) <= -7.4 && RU.lz(x, z) >= -10.6 && (!M || !M.L || !M.L.porcheHorloge || M.L.porcheHorloge.ouv > .75 || Math.abs(RU.lz(x, z) + 9.2) > .5));   // le bout de la voûte (on passe la grille quand elle est ouverte)
 DH_.h = (x, z) => z < DH_.ZF && Math.abs(x - DH_.CX) < 3.6 ? (z < DH_.ZO - .1 && Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : z < DH_.ZO - .1 && Math.abs(x - DH_.CX) < 4 ? (Math.abs(x - DH_.CX) > 2.9 ? DH_.Y0 + .12 : DH_.Y0) : RU.lz(x, z) > -10.05 && Math.abs(RU.lx(x, z)) < 3 && x - z < DH_.C ? DH_.Y0 : ((x < DH_.XR || x > DH_.XF) && !(x > DH_.XR - DH_.RA && z < DH_.ZR + DH_.RA && Math.hypot(x - DH_.XR + DH_.RA, z - DH_.ZR - DH_.RA) > DH_.RA) && z > (x > 56 ? DH_.ZR2 : x > 52 ? DH_.ZR + (DH_.ZR2 - DH_.ZR) * (x - 52) / 4 : DH_.ZR)) || z < DH_.ZF ? DH_.y(z) + .12 : DH_.y(z);
+{ const h0 = DH_.h; DH_.h = (x, z) => z < DH_.ZF && z > DH_.ZF - DH_.LP + .05 && x > DH_.LA - .4 && x < DH_.LB + .4 ? DH_.y(z) : h0(x, z); }   /* (l'aire de livraison, au niveau de la chaussée) */
 let ouvrirDehors = false;
 /* les rez-de-chaussée d'en face, rue d'Hauteville (d'après la photo) : une boutique de mode à grandes vitrines, un restaurant aux stores rouges */
 const vitrineCafe = (x, X, Y, W, H) => {   // une devanture de café : cadre alu gris, grandes vitres, tables et chaises de bistrot dedans, une porte vitrée
@@ -2800,7 +2801,14 @@ function ruesDehors0(A, L, scene) {
   plat(XO + 3, XEst, ZR, DH_.ZR2);
   { const f = A.ajoute(new THREE.PlaneGeometry(4.2, 4.2), dessus, XO + 2, Y0 + .123, ZN + 2, false); f.rotation.x = -Math.PI / 2; }   // (sous l'angle arrondi de l'immeuble au dôme : plus de trou dans le sol)
   { const c = A.ajoute(new THREE.CircleGeometry(DH_.AR, 32, 0, Math.PI), dessus, DH_.AX, Y0 + .121, ZO, false); c.rotation.x = -Math.PI / 2; (L.solsPlus = L.solsPlus || []).push(c); }   // (le sol du renfoncement)
-  dalle([[XW, ZO], [DH_.CX - 3.6, ZO], [DH_.CX - 3.6, ZF], [XW, ZF]]); dalle([[DH_.CX + 3.6, ZO], [XEst, ZO], [XEst, ZF], [DH_.CX + 3.6, ZF]]);   // (le trottoir d'en face, coupé par l'entrée de la Cité d'Hauteville : une rue, les voitures y tournent)                                         // celui d'en face, rue d'Hauteville
+  dalle([[XW, ZO], [DH_.CX - 3.6, ZO], [DH_.CX - 3.6, ZF], [XW, ZF]]); dalle([[DH_.CX + 3.6, ZO], [XEst, ZO], [XEst, ZF], [DH_.LB + .8, ZF], [DH_.LB, ZF - DH_.LP], [DH_.LA, ZF - DH_.LP], [DH_.LA - .8, ZF], [DH_.CX + 3.6, ZF]]);   /* (avec le renfoncement de l'aire de livraison, d'après la photo) */
+  { const LA = DH_.LA, LB = DH_.LB, LP = DH_.LP, z0 = ZF - LP, sol = A.mat({ color: 0x2f2d2b, roughness: .95 }), jaune = new THREE.MeshBasicMaterial({ color: 0xe0b52a });
+    const s0 = new THREE.Shape([new THREE.Vector2(LA - .8, -ZF), new THREE.Vector2(LB + .8, -ZF), new THREE.Vector2(LB, -z0), new THREE.Vector2(LA, -z0)]); const fo = A.ajoute(new THREE.ShapeGeometry(s0), sol, 0, Y0 + .004, 0, false); fo.rotation.x = -Math.PI / 2; fo.receiveShadow = true;
+    const trait = (x1, z1, x2, z2) => { const l = Math.hypot(x2 - x1, z2 - z1), t = A.ajoute(new THREE.PlaneGeometry(l, .1), jaune, (x1 + x2) / 2, Y0 + .012, (z1 + z2) / 2, false); t.rotation.set(-Math.PI / 2, 0, -Math.atan2(z2 - z1, x2 - x1)); };
+    trait(LA - .8, ZF + .05, LB + .8, ZF + .05); trait(LA, z0 + .08, LB, z0 + .08); trait(LA - .75, ZF, LA + .05, z0); trait(LB + .75, ZF, LB - .05, z0);
+    for (let x = LA + .3; x < LB - .6; x += 1.1) trait(x, ZF, x + 1.2, z0 + .1);
+    const tx = toile(256, 64, (c) => { c.fillStyle = "#e0b52a"; c.font = "bold 44px Arial"; c.textAlign = "center"; c.fillText("LIVRAISON", 128, 48); });
+    const ec = A.ajoute(new THREE.PlaneGeometry(2.4, .6), new THREE.MeshBasicMaterial({ map: tex(tx), transparent: true }), (LA + LB) / 2, Y0 + .014, ZF + .8, false); ec.rotation.set(-Math.PI / 2, 0, 0); }   // (le trottoir d'en face, coupé par l'entrée de la Cité d'Hauteville : une rue, les voitures y tournent)                                         // celui d'en face, rue d'Hauteville
   /* --- les immeubles d'en face --- */
   const im = (o) => { const g = A.haussmann(o); g.position.y = Y0; L.nuitObjets.push(...g.userData.nuit); L.silhouettes.push(...g.userData.silhouettes); return g; };
   const teintes = ["#e3d6ba", "#e8dcc2", "#d9c9a6", "#e6dbc4", "#eae1cc"];
@@ -2833,6 +2841,8 @@ function ruesDehors0(A, L, scene) {
     { const a = a0 + .25, xa = DH_.AX + Math.sin(a) * (R - .1), za = ZO + Math.cos(a) * (R - .1); store(xa, 3.9, za, a + Math.PI, true); } }
   // la terrasse du café : tables rondes, chaises de bistrot, et des clients qui boivent un verre ; le soir, le café et la supérette sont allumés
   terrasseGalinette(A, L, scene, Y0 + .12, ZO);
+  { const bl = new THREE.MeshBasicMaterial({ color: 0xeeeeea }); for (let x = XR + .45; x < XF - .3; x += .95) { const b = A.ajoute(new THREE.PlaneGeometry(.5, 2.6), bl, x, Y0 + .016, ZN + 2.6, false); b.rotation.x = -Math.PI / 2; } }   // (le passage piéton de la rue des Messageries, juste après le carrefour, d'après la photo)
+  { const bl = new THREE.MeshBasicMaterial({ color: 0xeeeeea }); for (let z = ZF + .5; z < ZR - .3; z += .95) { const b = A.ajoute(new THREE.PlaneGeometry(2.6, .5), bl, 34.3, Y0 + .016, z, false); b.rotation.x = -Math.PI / 2; } }   /* (et celui de la rue d'Hauteville, devant le portail et le café) */
   // les jardinières fleuries aux fenêtres et aux balcons de l'immeuble du café (d'après la photo), et la verdure sur son toit
   { const terre = [A.mat({ color: 0xa8552e, roughness: .9 }), A.mat({ color: 0x3a5a2a, roughness: .9 }), A.mat({ color: 0xe8e2d6, roughness: .8 })], feuil = [0x3f7a2e, 0x4f8f3a, 0x2f6a26].map(c => A.mat({ color: c, roughness: 1, flatShading: true })), fleur = [0xd8203a, 0xe85a8a, 0xf2f2f0, 0xe8a020].map(c => A.mat({ color: c, roughness: .8 }));
     const H = 4.2 + 6 * 3.1; let gk = 7;
@@ -2903,7 +2913,7 @@ function ruesDehors0(A, L, scene) {
     const v = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshStandardMaterial({ color: 0xf3ead2, roughness: .3 })); v.position.set(lx, Y0 + 6.55, lz); scene.add(v);
     const halo = new THREE.Mesh(new THREE.CylinderGeometry(.24, .18, .35, 8), new THREE.MeshBasicMaterial({ color: 0xffd99a })); halo.position.copy(v.position); halo.visible = false; scene.add(halo); L.nuitObjets.push(halo);
     const l = new THREE.PointLight(0xffcf8a, 60, 22, 1.4); l.position.set(lx, Y0 + 6.2, lz); l.visible = false; scene.add(l); L.nuitObjets.push(l); };
-  for (const x of [-44, -16, 12, 40, 66]) cand(x, ZF - .45, 0, 1);
+  for (const x of [-44, -16, 15.4, 40, 66]) cand(x, ZF - .45, 0, 1);
   // les passages de la cour (salle des fêtes, vestibule, étages…) ont été tracés sans limite de côté : jamais depuis les rues (on entrait dans la salle des fêtes en descendant la rue des Messageries)
   for (const pt of L.portails) { if (pt.messageries) continue; const d0 = pt.dans; pt.dans = (x, z) => !DH_.rue(x, z) && d0(x, z); }
   // la carte des passages (pour aller où l'on touche, en contournant les murs) couvre aussi les rues
@@ -12002,13 +12012,20 @@ const PASSANTS = [
   { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -153.5, 72, -153.5] },
   { num: -90, nom: "Un monsieur pressé", tenue: "costume", couleur: "#4a4e56", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["costume", { peau: "#efc7a4", ch: "#3a2a1e", coif: "court", lunettes: true }], acc: "valise", trajet: [-36, -143.5, 27, -143.5] },
   { num: -91, nom: "Une maman", tenue: "jupe", couleur: "#2f6fae", bas: "#2a2a30", pieds: "#5a2a1a", tete: ["mamanB", { peau: "#d9a882", ch: "#1e1410", coif: "carre", femme: true }], acc: "poussette", trajet: [39.4, -128, 39.4, -50] },
+  { num: -93, nom: "Une dame", tenue: "tailleur", couleur: "#7a4a6a", pieds: "#2a1a14", tete: ["dame", { peau: "#f0d0b4", ch: "#c8c4bc", coif: "carre", femme: true, lunettes: true }], acc: null, trajet: [48.1, -125, 48.1, 20] },
+  { num: -94, nom: "Un étudiant", tenue: "civil", couleur: "#3a5a8a", bas: "#3d5a80", pieds: "#f2f2f2", tete: ["etudiant", { peau: "#8d5a3b", ch: "#120c0a", coif: "court" }], acc: null, trajet: [39.6, 20, 39.6, -60] },
+  { num: -95, nom: "Une jeune femme", tenue: "chemisier", couleur: "#e8d24a", bas: "#26324e", pieds: "#c8202a", tete: ["jeune", { peau: "#e8bd95", ch: "#1e1410", coif: "long", femme: true }], acc: null, trajet: [-55, -143.6, 30, -143.6] },
+  { num: -96, nom: "Un voyageur", tenue: "costume", couleur: "#2a3040", bas: "#2a3040", pieds: "#1a1a1a", tete: ["voyageur", { peau: "#c78f62", ch: "#2a1a12", coif: "court", moustache: true }], acc: "valise", trajet: [-45, -5.6, 45, -5.6], lieu: "rue" },
+  { num: -97, nom: "Une maman", tenue: "robe", couleur: "#2f8a6a", pieds: "#2a1a14", tete: ["mamanC", { peau: "#f6d6bc", ch: "#a5532a", coif: "long", femme: true }], acc: "poussette", trajet: [40, 4.6, -45, 4.6], lieu: "rue" },
+  { num: -98, nom: "Un passant", tenue: "polo", couleur: "#c8404a", bas: "#3a3a40", pieds: "#2a1a14", tete: ["passantR", { peau: "#efc7a4", ch: "#5a3a22", coif: "court", lunettes: true }], acc: null, trajet: [-48, 5.4, 48, 5.4], lieu: "rue" },
+  { num: -99, nom: "Une passante", tenue: "jupe", couleur: "#2f5fae", bas: "#2a2a30", pieds: "#1a1a1a", tete: ["passanteR", { peau: "#d9a882", ch: "#141010", coif: "carre", femme: true }], acc: null, trajet: [48, -5.2, -48, -5.2], lieu: "rue" },
   { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -153.4, -50, -153.4] }];
 function animerPassants(t) {
-  if (!M || !M.L) return; const L = M.L, ici = M.lieu === "grande" && !L.apo && !L.sh && L.dehorsOuvert && !L.nuit;
-  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {});
+  if (!M || !M.L) return; const L = M.L;
+  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);
     if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
     const [x0, z0, x1, z1] = P.trajet;
-    if (!p) { const k = (P.num * 7 + 3) % 10 / 10; ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); continue; }
+    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); continue; }
     const S = p.pass || (p.pass = { sens: (P.num & 1) ? 1 : -1, pause: 0 }), g = p.g.position;
     if (!p.cible && t > S.pause) { const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0]; if (Math.hypot(tx - g.x, tz - g.z) < .8) { S.sens = -S.sens; S.pause = t + 1500; } else viser(p, tx, tz); }
     // l'accessoire : la poussette devant soi, la valise qui roule derrière
@@ -13255,7 +13272,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (mondesManquants(i
   trace("construit " + id); M.trace1 = true;
   /* le lieu qu'on quitte : dans la vraie caserne, on le garde tout prêt (on y revient souvent, et on arrive près de sa porte : le reconstruire tout de suite figeait l'image
      quelques secondes en entrant) ; ailleurs, il est libéré un peu plus tard */
-  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : ancL.apo ? estApo(id) : true);   // (à Resident Evil aussi, d'un lieu à l'autre : la grande cour se reconstruisait à chaque retour, de longues secondes)   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
+  { const ancienne = M.scene, ancL = M.L, ancRep = M.repere, garder = ancienne && ancL && lieuAvant !== id && !(baseLieu(lieuAvant) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(id))) &&   /* (vers la salle des fêtes, la cave ou l'appartement — là où passent des vidéos : la cour et ses rues ne restent pas en mémoire, sinon la carte graphique est pleine et les vidéos n'ont plus d'image) */ ["rue", "grande", "fetes", "etage", "mess", "cave"].includes(baseLieu(lieuAvant)) && !ancL.gb && (ancL.sh ? estSH(id) : ancL.apo ? estApo(id) : true);   // (à Resident Evil aussi, d'un lieu à l'autre : la grande cour se reconstruisait à chaque retour, de longues secondes)   // (à Silent Hill aussi, d'un lieu à l'autre : la cour se reconstruisait à chaque passage — plusieurs secondes figées sur un petit téléphone)
     if (garder && ancL.apo) { for (const o of [...(M.zomb ? [...M.zomb.values()].map(z => z.g) : []), ...(M.lickers || []).map(l => l.g), M.tyran && M.tyran.g, M.lisa && M.lisa.g, ...(M.cadavres || [])]) if (o && o.parent) o.parent.remove(o); M.cadavres = [];   // (zombies, Lickers, boss : remis à neuf en revenant)
       if (M.lisa && !M.lisa.mortT) M.lisa = null; if (M.tyran && !M.tyran.mortT) M.tyran = null; M.lickers = []; M.lickL = null; M.zombL = null; }
     if (garder && ancL.sh) { for (const m of M.shMonstres || []) for (const o of [!m.p && m.g, m.lf && m.lf.g]) if (o && o.parent) o.parent.remove(o); M.shMonstres = []; M.shPopL = null; }   // (ses monstres ne restent pas plantés là : on les remet en arrivant)
@@ -14790,6 +14807,7 @@ function preparerVoisin() {
     if (modeRE() && !q.continu) continue;   /* (Resident Evil : le lieu suivant se prépare derrière la porte qui s'ouvre — plus pendant qu'on joue, où l'image se figeait d'un coup ; seuls les passages sans porte sont préparés à l'avance) */
     const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
     const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
+  if (best && baseLieu(best) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(M.lieu)) && (bd > 3.5 || M.lieu === "appart")) return;   /* (la cour et ses rues, préparées seulement tout près de la porte : sinon la carte graphique est pleine, et les vidéos n'ont plus d'image) */
   if (!best || Object.keys(M.prets).length >= (PETIT ? 1 : 2)) return;
   if (mondesManquants(best).length) { chargerMondes(best).catch(() => {}); return; }   // (son code d'abord ; on le préparera au tour suivant)   // (petit téléphone : un seul lieu préparé à l'avance — la mémoire)
   M.preparation = true; const lieu = M.lieu;
