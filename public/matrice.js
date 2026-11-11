@@ -1818,7 +1818,8 @@ function construireRue(A, T, L, scene) {
   // la rue La Fayette est fermée juste après ses passages piétons
   // (côté caserne, on peut maintenant la remonter : elle mène à la rue de Chabrol et à la rue d'Hauteville)
   im({ x: -36.98, z: -13.55, largeur: 11.9, etages: 6, rot: Math.PI / 2, teinte: teintes[0], graine: 734, rdc: RDC_HV.resto });   // (le long de la rue La Fayette, contre l'immeuble du métro)
-  im({ x: -37, z: -27.5, largeur: 16, etages: 6, rot: Math.PI / 2, teinte: teintes[2], graine: 731, rdc: RDC_HV.mode }); im({ x: -28.4, z: -24, largeur: 23, etages: 6, rot: -Math.PI / 2, teinte: "#e9dfc8", graine: 732, rdc: RDC_PN.rallye }); storeRouge(A, scene, -28.42, -18.5, 11.9, -Math.PI / 2, 0); storeRouge(A, scene, -28.42, -30.4, 9.8, -Math.PI / 2, 0);   // (Le Rallye du Nord : l'immeuble de D&M Outlet, côté caserne)
+  im({ x: -37, z: -27.5, largeur: 16, etages: 6, rot: Math.PI / 2, teinte: teintes[2], graine: 731, rdc: RDC_HV.mode }); im({ x: -22.36, z: -7.45, largeur: 12, etages: 6, rot: 0, teinte: "#e2d8c4", graine: 735, rdc: RDC_PN.dm });   // (à l'angle, côté caserne : D&M Outlet, d'après la photo)
+  im({ x: -28.4, z: -21.5, largeur: 28, etages: 6, rot: -Math.PI / 2, teinte: "#e9dfc8", graine: 732, rdc: RDC_PN.rallye }); storeRouge(A, scene, -28.42, -13, 10, -Math.PI / 2, 0); storeRouge(A, scene, -28.42, -24, 11.6, -Math.PI / 2, 0);   // (Le Rallye du Nord : l'immeuble de D&M Outlet, côté caserne)
   im({ x: -32.7, z: -35.5, largeur: 8.6, etages: 6, rot: 0, teinte: teintes[4], graine: 733, rdc: RDC_PN.bistrot });
   L.portails.push({ dans: (x, z) => M && M.lieu === "rue" && x > -37 && x < -24 && z < -16, vers: "grande", arrivee: NV_.P(43, 0), yaw: -3 * Math.PI / 4, sansCercle: true });
   im({ x: -32.5, z: 6.8, largeur: 9, etages: 6, rot: Math.PI, teinte: teintes[4], graine: 75 });
