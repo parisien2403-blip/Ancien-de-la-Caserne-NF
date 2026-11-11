@@ -4779,7 +4779,22 @@ function hwTuer(E) { const H = M.hwFete; if (!H || H.etat !== "jeu" || E.mort) r
   if (H.couteau) { H.couteau.style.transform = "rotate(-55deg) translate(-40%,-30%)"; setTimeout(() => { if (H.couteau) H.couteau.style.transform = "rotate(-18deg)"; }, 260); }
   hwBruit("coup"); setTimeout(() => hwBruit("cri"), 80); const f = hwVoile("", 7); f.style.background = "rgba(150,0,0,.45)"; f.style.pointerEvents = "none"; f.style.transition = "opacity .6s"; requestAnimationFrame(() => { f.style.opacity = 0; }); setTimeout(() => f.remove(), 700);
   const c = H.compte && H.compte.firstElementChild; if (c) c.textContent = `🔪 ${H.tues} / ${H.total}`;
+  hwGiclee(E);
   if (H.tues >= H.total) setTimeout(hwLoomis, 2500); }
+function hwGiclee(E) {   // à chaque coup de couteau : le sang gicle — sur le masque (l'écran), et en l'air, depuis la victime
+  const cv = document.createElement("canvas"), w = cv.width = 640, h = cv.height = 400; cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none;transition:opacity 5s";
+  const x = cv.getContext("2d"), cx = w * (.3 + Math.random() * .4), cy = h * (.3 + Math.random() * .35);
+  for (let i = 0; i < 70; i++) { const a = Math.random() * 6.28, d = Math.pow(Math.random(), 1.6) * 210, R = 2 + Math.random() * (i < 6 ? 34 : 11); x.fillStyle = `rgba(${110 + Math.random() * 60},0,${Math.random() * 12},${.7 + Math.random() * .3})`; x.beginPath(); x.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d * .7, R, R * (.6 + Math.random() * .5), a, 0, 7); x.fill(); }
+  for (let i = 0; i < 9; i++) { const sx = cx + (Math.random() - .5) * 220, sy = cy + (Math.random() - .3) * 120, l = 40 + Math.random() * 160; x.fillStyle = "rgba(120,0,4,.85)"; x.fillRect(sx, sy, 3 + Math.random() * 4, l); x.beginPath(); x.arc(sx + 3, sy + l, 4 + Math.random() * 3, 0, 7); x.fill(); }   // (des coulures)
+  M.ctx.conteneur.appendChild(cv); requestAnimationFrame(() => setTimeout(() => { cv.style.opacity = 0; }, 2500)); setTimeout(() => cv.remove(), 8000);
+  const H = M.hwFete; if (H) H.voiles.push(cv);
+  // en l'air : des gouttes qui jaillissent de la victime et retombent
+  const m = E.m, sc = m.parent, n = 60, pos = new Float32Array(n * 3), vit = []; const o = m.position;
+  for (let i = 0; i < n; i++) { pos[i * 3] = o.x; pos[i * 3 + 1] = (E.y0 || 0) + 1.25; pos[i * 3 + 2] = o.z; vit.push([(Math.random() - .5) * 3, 1 + Math.random() * 2.5, (Math.random() - .5) * 3]); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); const pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9a0008, size: .07 })); sc.add(pts);
+  const t0 = performance.now(); let prec = t0; const anim = () => { const now = performance.now(), dt = Math.min(.05, (now - prec) / 1000); prec = now; const a = g.attributes.position;
+    for (let i = 0; i < n; i++) { const v = vit[i]; v[1] -= 9.8 * dt; let y = a.getY(i) + v[1] * dt; if (y < (E.y0 || 0) + .02) { y = (E.y0 || 0) + .02; v[0] = v[1] = v[2] = 0; } a.setXYZ(i, a.getX(i) + v[0] * dt, y, a.getZ(i) + v[2] * dt); } a.needsUpdate = true;
+    if (now - t0 < 6000 && M && M.hwFete) requestAnimationFrame(anim); else { sc.remove(pts); g.dispose(); } }; requestAnimationFrame(anim); }
 function hwLoomis() {   // le docteur Loomis entre, et parle à Michael
   const H = M.hwFete; if (!H || H.etat !== "jeu") return; H.etat = "loomis"; const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(114)) || {};
   const l = ajouterAncien({ numero: LOOMIS, nom: P.nom || "Docteur Loomis", tenue: P.tenue && P.tenue !== "civil" ? P.tenue : "loomis", couleur: P.couleur || "#c9b07a", bas: P.bas || "#5a3a22", pieds: P.pieds || "#3a2414", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 114) : "images/loomis-tete.png", pnj: true, x: HW_SORTIE[0], z: HW_SORTIE[1] });
