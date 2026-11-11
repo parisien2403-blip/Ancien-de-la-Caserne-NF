@@ -4645,7 +4645,7 @@ function gensFete(L, scene) {
 }
 /* ---------- le mess à l'heure du repas : les couverts mis sur toutes les tables, des convives attablés (chacun différent), et deux serveurs — le portrait de Mr Miner —
    qui vont chercher les assiettes sur le passe de la cuisine, derrière, et les apportent aux tables ---------- */
-const SERVEURS = [-120, -121], PASSE_MESS = { x: -4.25, z: 15.4, px: -3.37, py: .98 };
+const SERVEURS = [-120, -121, -122], PASSE_MESS = { x: -4.25, z: 15.4, px: -3.37, py: .98 };
 function repasMess(L, scene) {
   const T = L.tablesMess, TM = L.tableMess; if (!T || !TM) return; const { TW, TD, TH } = TM, Y = TH + .025;
   const blanc = new THREE.MeshStandardMaterial({ color: 0xf8f6f0, roughness: .35 }), inoxC = new THREE.MeshStandardMaterial({ color: 0xd0d4d8, metalness: .8, roughness: .25 }), verreM = new THREE.MeshStandardMaterial({ color: 0xdfe8ee, transparent: true, opacity: .45, roughness: .05 });
@@ -4679,21 +4679,22 @@ function animerServeurs() {
   if (!M || !M.L) return; const L = M.L, ici = M.lieu === "mess" && L.convives && !L.apo && !L.sh && !L.gb;
   for (const [k, num] of SERVEURS.entries()) { let p = M.gens.get(num);
     if (!ici) { if (p) retirerAncien(num); continue; }
-    if (!p) { const P = (M.ctx.pnjBar && M.ctx.pnjBar()) || {};   // (le double de Mr Miner, le barman de la salle des fêtes)
-      p = ajouterAncien({ numero: num, nom: P.nom || "Mr Miner", tenue: P.tenue || "barman", couleur: P.couleur || "#efe8d2", bas: P.bas || "#4a4636", pieds: P.pieds, reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, 3) : "images/miner-tete.png", pnj: true, x: PASSE_MESS.x, z: PASSE_MESS.z - 1 + k * 2 });
-      if (!p) continue; p.serv = { etat: "passe", t: performance.now() + k * 4000 }; }
+    if (!p) { const B = (M.ctx.pnjBar && M.ctx.pnjBar()) || {}, id = [3, 112, 113][k], P = k ? (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {} : B;   // (Mr Miner, le barman de la salle des fêtes ; et deux serveurs habillés comme lui, Paulo et Momo, réglables par l'administrateur)
+      const tete = P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : k ? tetePassant(k === 1 ? "paulo" : "momo", k === 1 ? { peau: "#e8bd95", ch: "#2a1a12", coif: "court", moustache: true } : { peau: "#8d5a3b", ch: "#120c0a", coif: "court" }) : "images/miner-tete.png";
+      p = ajouterAncien({ numero: num, nom: P.nom || ["Mr Miner", "Le serveur Paulo", "Le serveur Momo"][k], tenue: P.tenue && P.tenue !== "civil" ? P.tenue : "barman", couleur: P.tenue && P.tenue !== "civil" && P.couleur ? P.couleur : B.couleur || "#efe8d2", bas: P.bas || B.bas || "#4a4636", pieds: P.pieds || B.pieds, reglage: P.reglage || null, teteUrl: tete, pnj: true, x: PASSE_MESS.x, z: PASSE_MESS.z - 1 + k * 1.3 });
+      if (!p) continue; p.serv = { etat: "passe", t: performance.now() + k * 5000 }; }
     const S = p.serv || (p.serv = { etat: "passe", t: 0 }), now = performance.now(), g = p.g.position;
     if (!S.plat) { S.plat = new THREE.Mesh(new THREE.CylinderGeometry(.13, .1, .02, 20), new THREE.MeshStandardMaterial({ color: 0xf8f6f0 })); const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x8a4a2a })); f.scale.y = .5; f.position.y = .01; S.plat.add(f); S.plat.position.set(0, 1.12, .32); p.g.add(S.plat); }
     S.plat.visible = S.etat === "porte";
     if (p.cible) continue;   // (il marche)
-    if (S.etat === "passe") { if (Math.hypot(g.x - PASSE_MESS.x, g.z - (PASSE_MESS.z + k * .6)) > .4) { viser(p, PASSE_MESS.x, PASSE_MESS.z + k * .6); continue; }   // il va au passe…
+    if (S.etat === "passe") { if (Math.hypot(g.x - PASSE_MESS.x, g.z - (PASSE_MESS.z - .6 + k * .6)) > .4) { viser(p, PASSE_MESS.x, PASSE_MESS.z - .6 + k * .6); continue; }   // il va au passe…
       if (!S.t) S.t = now + 1800; if (now < S.t) continue;   // …prend une assiette garnie
       const vides = L.convives.filter(c => !c.assiette.visible && !c.reserve), c = vides.length ? vides[Math.floor(Math.random() * vides.length)] : L.convives[Math.floor(Math.random() * L.convives.length)];
       c.reserve = true; S.c = c; S.etat = "porte"; S.t = 0; const P = c.P; viser(p, P.x + (P.x > P.tx ? .55 : -.55), P.z); }
     else if (S.etat === "porte") { const c = S.c; if (!S.t) S.t = now + 900; if (now < S.t) continue;   // il pose l'assiette devant le convive
       c.assiette.visible = true; c.reserve = false; S.etat = "retour"; S.t = 0; if (Math.random() < .5) dire(num, ["Bon appétit !", "Et voilà, c'est chaud !", "Attention, l'assiette est brûlante.", "Le plat du jour, messieurs dames."][Math.floor(Math.random() * 4)]);
       const autre = L.convives.filter(x => x.assiette.visible && x !== c); if (autre.length && Math.random() < .5) { const d = autre[Math.floor(Math.random() * autre.length)]; setTimeout(() => { d.assiette.visible = false; }, 20000 + Math.random() * 20000); } }   // (ailleurs, quelqu'un finit son assiette)
-    else { S.etat = "passe"; S.t = 0; viser(p, PASSE_MESS.x, PASSE_MESS.z + k * .6); } } }
+    else { S.etat = "passe"; S.t = 0; viser(p, PASSE_MESS.x, PASSE_MESS.z - .6 + k * .6); } } }
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -15363,6 +15364,7 @@ export function hifiVol(niveau) { envoyerWS({ t: "hifi_vol", niveau }); }
 export function bruitFete(niveau) { envoyerWS({ t: "bruit_fete", niveau }); }
 export function musiqueVol(niveau) { envoyerWS({ t: "musique_vol", niveau }); }
 export function rueVol(niveau) { envoyerWS({ t: "rue_vol", niveau }); }
+export function messVol(niveau) { envoyerWS({ t: "mess_vol", niveau }); }
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
@@ -15404,6 +15406,7 @@ function connecter() {
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
+    else if (m.t === "mess_vol") { ctx.surMessVol && ctx.surMessVol(Number.isFinite(+m.niveau) ? +m.niveau : .5); }
     else if (m.t === "rue_vol") { M.rueVol = Number.isFinite(+m.niveau) ? +m.niveau : .5; ctx.surRueVol && ctx.surRueVol(M.rueVol); }
     else if (m.t === "musique_vol") ctx.surMusVol && ctx.surMusVol(Number.isFinite(+m.niveau) ? +m.niveau : 1);
     else if (m.t === "lumiere" && m.salle === "mess") { const k = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.lumiereMess = k;

@@ -64,6 +64,7 @@ const PNJ_DEFAUT = {
   65: { nom: "Gendarme Moreau", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 66: { nom: "Gendarme Fabre", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" }, 67: { nom: "Gendarme Girard", tenue: "garde", couleur: "#1c2541", bas: "#26324e", pieds: "#111111" },
   1: { nom: "Le chef de poste", tenue: "garde", couleur: "#1c2541", bas: null }, 2: { nom: "Manu", tenue: "polo", couleur: "#e8e2d6", bas: "#c8b48a" },
   3: { nom: "Mr Miner", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636" },
+  112: { nom: "Le serveur Paulo", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636", pieds: "#1a1a1a" }, 113: { nom: "Le serveur Momo", tenue: "barman", couleur: "#efe8d2", bas: "#4a4636", pieds: "#1a1a1a" },   // (les serveurs du mess)
   95: { nom: "Saïd", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" }, 96: { nom: "Julien", tenue: "eboueur", couleur: "#1f7a3a", bas: "#1f7a3a", pieds: "#1a1a1a" },   // (les éboueurs de la cour)
   98: { nom: "Le monsieur au chien", tenue: "tshirt", couleur: "#2f5fae", bas: "#3a3a40", pieds: "#2a1a12" },   // (rue des Messageries)
   97: { nom: "Le chef de poste", tenue: "barman", couleur: "#ffffff", bas: "#1d1d1f", pieds: "#1a1a1a" },   // (le barman du sous-sol, au bar des Goonies)
@@ -544,6 +545,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
+      if (m.lieu === "mess") { const n = await this.ctx.storage.get("mess_vol"); ws.send(JSON.stringify({ t: "mess_vol", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "rue" || m.lieu === "grande") { const n = await this.ctx.storage.get("rue_vol"); ws.send(JSON.stringify({ t: "rue_vol", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("musique_vol"); ws.send(JSON.stringify({ t: "musique_vol", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "fetes" || m.lieu === "cave") for (const jeu of ["flipper", "flechettes", "babyfoot", "goonies"])   /* (cave : le bar du sous-sol, où sont la borne des Goonies et le baby-foot) */ ws.send(JSON.stringify({ t: "flipper", jeu, top: this.classementFlipper(jeu) }));
@@ -647,6 +649,9 @@ export class Compteur extends DurableObject {
     } else if (m.t === "bruit_fete" && a.admin) {   // le brouhaha des invités dans la salle des fêtes : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("bruit_fetes", niveau); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "bruit_fete", niveau });
+    } else if (m.t === "mess_vol" && a.admin) {   // le brouhaha du mess : l'administrateur seul règle son volume, pour tout le monde
+      const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
+      await this.ctx.storage.put("mess_vol", niveau); this.diffuser("mess", { t: "mess_vol", niveau });
     } else if (m.t === "rue_vol" && a.admin) {   // le bruit de la ville, dans les rues : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("rue_vol", niveau); for (const l of ["rue", "grande"]) this.diffuser(l, { t: "rue_vol", niveau });
