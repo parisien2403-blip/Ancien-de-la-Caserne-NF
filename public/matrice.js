@@ -4831,7 +4831,7 @@ function hwCostume(m, k) {   // les déguisés de la soirée d'Halloween : un ch
   if (type === "squelette") { const os = new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }); for (let i = 0; i < 4; i++) { const c = sur(new THREE.Mesh(new THREE.BoxGeometry(.17 - i * .015, .02, .02), os), P.buste); c.position.set(0, .32 - i * .055, .12); } }
   g.userData.basculer = (on) => { for (const o of g.userData.l || []) o.visible = on; if (type === "fantome") P.tete.visible = !on; }; g.userData.basculer(false); return g; }
 /* ---------- la blague : le laissez-passer 003 est déposé par la main géante dans une cage, au milieu de la cour, et ne peut plus en sortir (l'administrateur l'enferme ou la libère : bouton 🔒) ---------- */
-const CAGE = { x: 3.5, z: -63, c: .85 };
+const CAGE = { x: -4, z: 10, c: .85 };   /* (dans la cour d'honneur, en entrant par le porche) */
 const enCage = () => !!(M && M.cage && M.ctx.moiInfo && Number(M.ctx.moiInfo().numero) === 3);
 function cage3D(L, scene) {
   const g = new THREE.Group(), fer = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, metalness: .6, roughness: .4 }), H = 2.5, c = CAGE.c; g.position.set(CAGE.x, 0, CAGE.z); g.visible = false; scene.add(g);
@@ -4849,6 +4849,20 @@ function cage3D(L, scene) {
     if (Math.abs(p.x - CAGE.x) > lim || Math.abs(p.z - CAGE.z) > lim) { if (Math.abs(p.x - CAGE.x) > 3 || Math.abs(p.z - CAGE.z) > 3) { p.x = CAGE.x; p.z = CAGE.z; } else { p.x = CAGE.x + Math.max(-lim, Math.min(lim, p.x - CAGE.x)); p.z = CAGE.z + Math.max(-lim, Math.min(lim, p.z - CAGE.z)); }
       moi.cible = null; moi.chemin = []; if (tm > (L.cageDitT || 0)) { L.cageDitT = tm + 6000; dire(M.moiNum, ["Au secours ! Je suis enfermée !", "Qui a la clé de ce cadenas ?!", "Ce n'est pas drôle !", "Libérez-moi !!", "Ouvrez cette cage !"][Math.floor(Math.random() * 5)]); } } };
 }
+/* les pierres, à côté de la cage : on en ramasse une (« 🪨 Ramasser une pierre »), puis on la lance sur la cage (« 🪨 Lancer sur 003 ») — tout le monde la voit voler */
+const PIERRES = { x: CAGE.x + 2.1, z: CAGE.z + .6 };
+function tasPierres(L, scene) { const g = new THREE.Group(); g.position.set(PIERRES.x, 0, PIERRES.z); scene.add(g); const mat = new THREE.MeshStandardMaterial({ color: 0x8a8580, roughness: .95, flatShading: true });
+  for (let k = 0; k < 14; k++) { const o = new THREE.Mesh(new THREE.DodecahedronGeometry(.07 + Math.random() * .06, 0), mat); const a = Math.random() * 6.28, d = Math.random() * .35; o.position.set(Math.cos(a) * d, .06 + (k > 9 ? .09 : 0), Math.sin(a) * d); o.rotation.set(Math.random() * 3, Math.random() * 3, 0); o.castShadow = true; g.add(o); }
+  L.tasPierres = g; const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (M && M.L === L) g.visible = !!M.cage && !L.apo && !L.sh; }; }
+function lancerPierre(x0, z0, moiLance) {   // la pierre vole en cloche jusqu'à la cage ; à l'arrivée, un « tac » — et, si c'est nous dans la cage, aïe
+  if (!M || M.lieu !== "grande") return; const o = new THREE.Mesh(new THREE.DodecahedronGeometry(.09, 0), new THREE.MeshStandardMaterial({ color: 0x8a8580, roughness: .95, flatShading: true })); M.scene.add(o);
+  const h0 = M.L.hauteur ? M.L.hauteur(x0, z0, {}) : 0, cx = CAGE.x + (Math.random() - .5) * .9, cz = CAGE.z + (Math.random() - .5) * .9, d = Math.hypot(cx - x0, cz - z0), D = 450 + d * 70, t0 = performance.now();
+  const vol = () => { if (!M || !o.parent) return; const u = Math.min(1, (performance.now() - t0) / D); o.position.set(x0 + (cx - x0) * u, h0 + 1.5 + Math.sin(u * Math.PI) * (1 + d * .15) - u * .3, z0 + (cz - z0) * u); o.rotation.x += .3; o.rotation.z += .2;
+    if (u < 1) { requestAnimationFrame(vol); return; } hwBruit("coup");
+    if (enCage()) { const f = document.createElement("div"); f.style.cssText = "position:absolute;inset:0;z-index:7;pointer-events:none;background:radial-gradient(transparent 40%,rgba(200,0,0,.45));transition:opacity .6s"; M.ctx.conteneur.appendChild(f); requestAnimationFrame(() => { f.style.opacity = 0; }); setTimeout(() => f.remove(), 700);
+      dire(M.moiNum, ["Aïe !", "Ouch ! Arrêtez !", "Hé ! Ça fait mal !", "Méchants !!", "Aïe aïe aïe !"][Math.floor(Math.random() * 5)]); }
+    const t1 = performance.now(), y1 = o.position.y, tombe = () => { if (!o.parent) return; const v = Math.min(1, (performance.now() - t1) / 400); o.position.y = y1 + (h0 + .06 - y1) * v; if (v < 1) requestAnimationFrame(tombe); else setTimeout(() => { if (o.parent) o.parent.remove(o); }, 6000); }; tombe(); };
+  vol(); }
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -8668,7 +8682,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
-  if (id === "grande" && !copie) { mamansBanc(L, scene); cage3D(L, scene); }   /* (plus de masque au sol : Halloween se loue au Video Futur) */
+  if (id === "grande" && !copie) { mamansBanc(L, scene); cage3D(L, scene); tasPierres(L, scene); }   /* (plus de masque au sol : Halloween se loue au Video Futur) */
   if (id === "fetes" && !copie) gensFete(L, scene);
   if (id === "mess" && !copie) repasMess(L, scene);
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
@@ -13646,6 +13660,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
+    else if (M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
     else if (M.hwFete && M.hwFete.etat === "jeu") { const G = M.L.gensFete || [], i = G.findIndex(E => E.G.r === "danse" && !E.mort && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.6); a = i >= 0 ? { type: "hwTuer", i, label: "🔪 Frapper" } : null; }
     else if (modeRE() && ((a = actionPorteRE(x, z)), passagesRE(moi, a), a)) ;   /* (Resident Evil : plus de cercles, une phrase près des portes ; au bout d'un passage, on le passe) */
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
@@ -13708,6 +13723,8 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "hwTuer") { hwTuer(M.L.gensFete[a.i]); return; }
+  if (a.type === "pierre") { M.pierreMain = true; M.actionCle = null; dire(M.moiNum, "🪨 Une belle pierre…"); return; }
+  if (a.type === "lancerPierre") { M.pierreMain = false; M.actionCle = null; const p = moi.g.position; envoyerWS({ t: "pierre", x: p.x, z: p.z }); lancerPierre(p.x, p.z, true); return; }
   if (a.type === "karts") { chargerMonde("course").then(C => C.entrerCourse()).catch(e => console.warn("course", e)); return; }
   if (a.type === "fermeRE") { if (!M.fermeDitT || performance.now() - M.fermeDitT > 2500) { M.fermeDitT = performance.now(); verrouRE(); dire(M.moiNum, a.dit || "C'est fermé… de l'autre côté."); } return; }
   if (a.type === "installer") { installer(moi, a); return; }
@@ -15580,6 +15597,7 @@ function connecter() {
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
+    else if (m.t === "pierre") lancerPierre(+m.x, +m.z, false);
     else if (m.t === "cage") { M.cage = !!m.on; ctx.surCage && ctx.surCage(M.cage); }
     else if (m.t === "mess_vol") { ctx.surMessVol && ctx.surMessVol(Number.isFinite(+m.niveau) ? +m.niveau : .5); }
     else if (m.t === "rue_vol") { M.rueVol = Number.isFinite(+m.niveau) ? +m.niveau : .5; ctx.surRueVol && ctx.surRueVol(M.rueVol); }

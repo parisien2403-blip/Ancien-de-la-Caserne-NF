@@ -651,6 +651,8 @@ export class Compteur extends DurableObject {
     } else if (m.t === "bruit_fete" && a.admin) {   // le brouhaha des invités dans la salle des fêtes : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("bruit_fetes", niveau); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "bruit_fete", niveau });
+    } else if (m.t === "pierre" && a.lieu === "grande") {   // une pierre lancée sur la cage : tous ceux de la cour la voient voler
+      const x = Number(m.x), z = Number(m.z); if (Number.isFinite(x) && Number.isFinite(z)) this.diffuser("grande", { t: "pierre", x, z, de: a.numero }, ws);
     } else if (m.t === "cage" && a.admin) {   // l'administrateur enferme (ou libère) le laissez-passer 003 : tout le monde voit la cage
       const on = !!m.on; await this.ctx.storage.put("cage003", on); const t = JSON.stringify({ t: "cage", on }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "mess_vol" && a.admin) {   // le brouhaha du mess : l'administrateur seul règle son volume, pour tout le monde
