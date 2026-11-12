@@ -655,6 +655,7 @@ export class Compteur extends DurableObject {
       const x = Number(m.x), z = Number(m.z); if (Number.isFinite(x) && Number.isFinite(z)) this.diffuser("grande", { t: "pierre", x, z, de: a.numero }, ws);
     } else if (m.t === "cage" && a.admin) {   // l'administrateur enferme (ou libère) le laissez-passer 003 : tout le monde voit la cage
       const on = !!m.on; await this.ctx.storage.put("cage003", on); const t = JSON.stringify({ t: "cage", on }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
+      if (on) this.diffuser("grande", { t: "aller", numero: 3, x: -4, z: 10 });   // (déjà dans la cour : on la remet dans la cage)
     } else if (m.t === "mess_vol" && a.admin) {   // le brouhaha du mess : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("mess_vol", niveau); this.diffuser("mess", { t: "mess_vol", niveau });
@@ -705,7 +706,9 @@ export class Compteur extends DurableObject {
       const t = JSON.stringify({ t: "rtc", de: a.numero, d: m.d }); if (t.length > 40000) return;
       for (const w of this.ctx.getWebSockets()) { const b = w.deserializeAttachment(); if (w !== ws && b && b.voix && b.salleV === a.salleV && String(b.numero) === String(m.a)) { try { w.send(t); } catch (e) {} } }
     } else if (m.t === "aller" && a.lieu) {
-      Object.assign(a, { x: nb(m.x), z: nb(m.z) }); ws.serializeAttachment(a);
+      Object.assign(a, { x: nb(m.x), z: nb(m.z) });
+      if (Number(a.numero) === 3 && a.lieu === "grande" && await this.ctx.storage.get("cage003")) { a.x = Math.max(-4.55, Math.min(-3.45, a.x)); a.z = Math.max(9.45, Math.min(10.55, a.z)); }   // (enfermée : elle reste dans la cage, pour tout le monde)
+      ws.serializeAttachment(a);
       this.diffuser(a.lieu, { t: "aller", numero: a.numero, x: a.x, z: a.z }, ws);
     } else if (m.t === "dire" && a.lieu) {
       const texte = texte_(m.texte, 140); if (!texte) return;

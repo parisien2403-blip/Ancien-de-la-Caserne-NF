@@ -4847,7 +4847,7 @@ function cage3D(L, scene) {
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; g.visible = !!M.cage && !L.apo && !L.sh; toit.visible = !M.cine;   // (le toit, une fois qu'elle est dedans : la main est passée)
     const moi = enCage() && M.gens.get(M.moiNum); if (!moi || M.cine) return; const p = moi.g.position, lim = c - .28;   // (elle ne sort pas)
     if (Math.abs(p.x - CAGE.x) > lim || Math.abs(p.z - CAGE.z) > lim) { if (Math.abs(p.x - CAGE.x) > 3 || Math.abs(p.z - CAGE.z) > 3) { p.x = CAGE.x; p.z = CAGE.z; } else { p.x = CAGE.x + Math.max(-lim, Math.min(lim, p.x - CAGE.x)); p.z = CAGE.z + Math.max(-lim, Math.min(lim, p.z - CAGE.z)); }
-      moi.cible = null; moi.chemin = []; if (tm > (L.cageDitT || 0)) { L.cageDitT = tm + 6000; dire(M.moiNum, ["Au secours ! Je suis enfermée !", "Qui a la clé de ce cadenas ?!", "Ce n'est pas drôle !", "Libérez-moi !!", "Ouvrez cette cage !"][Math.floor(Math.random() * 5)]); } } };
+      moi.cible = null; moi.chemin = []; envoyerWS({ t: "aller", x: p.x, z: p.z }); if (tm > (L.cageDitT || 0)) { L.cageDitT = tm + 6000; dire(M.moiNum, ["Au secours ! Je suis enfermée !", "Qui a la clé de ce cadenas ?!", "Ce n'est pas drôle !", "Libérez-moi !!", "Ouvrez cette cage !"][Math.floor(Math.random() * 5)]); } } };
 }
 /* les pierres, à côté de la cage : on en ramasse une (« 🪨 Ramasser une pierre »), puis on la lance sur la cage (« 🪨 Lancer sur 003 ») — tout le monde la voit voler */
 const PIERRES = { x: CAGE.x + 2.1, z: CAGE.z + .6 };
@@ -15598,7 +15598,7 @@ function connecter() {
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
     else if (m.t === "pierre") lancerPierre(+m.x, +m.z, false);
-    else if (m.t === "cage") { M.cage = !!m.on; ctx.surCage && ctx.surCage(M.cage); }
+    else if (m.t === "cage") { M.cage = !!m.on; if (enCage() && M.lieu === "grande") { const q = M.gens.get(M.moiNum); if (q) { q.cible = null; q.chemin = []; q.g.position.set(CAGE.x, q.g.position.y, CAGE.z); envoyerWS({ t: "aller", x: CAGE.x, z: CAGE.z }); } } ctx.surCage && ctx.surCage(M.cage); }
     else if (m.t === "mess_vol") { ctx.surMessVol && ctx.surMessVol(Number.isFinite(+m.niveau) ? +m.niveau : .5); }
     else if (m.t === "rue_vol") { M.rueVol = Number.isFinite(+m.niveau) ? +m.niveau : .5; ctx.surRueVol && ctx.surRueVol(M.rueVol); }
     else if (m.t === "musique_vol") ctx.surMusVol && ctx.surMusVol(Number.isFinite(+m.niveau) ? +m.niveau : 1);
