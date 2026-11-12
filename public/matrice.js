@@ -4830,6 +4830,25 @@ function hwCostume(m, k) {   // les déguisés de la soirée d'Halloween : un ch
   if (type === "fantome") { const d = sur(new THREE.Mesh(new THREE.CylinderGeometry(.16, .4, 1.2, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0xf0f0ec, roughness: .9, side: THREE.DoubleSide })), m); d.position.y = .75; const c = sur(new THREE.Mesh(new THREE.SphereGeometry(.17, 14, 10), d.material), m); c.position.y = 1.45; for (const sx of [-.06, .06]) { const o = sur(new THREE.Mesh(new THREE.CircleGeometry(.028, 10), new THREE.MeshBasicMaterial({ color: 0x050505 })), m); o.position.set(sx, 1.48, .168); } }
   if (type === "squelette") { const os = new THREE.MeshBasicMaterial({ color: 0xe8e4d8 }); for (let i = 0; i < 4; i++) { const c = sur(new THREE.Mesh(new THREE.BoxGeometry(.17 - i * .015, .02, .02), os), P.buste); c.position.set(0, .32 - i * .055, .12); } }
   g.userData.basculer = (on) => { for (const o of g.userData.l || []) o.visible = on; if (type === "fantome") P.tete.visible = !on; }; g.userData.basculer(false); return g; }
+/* ---------- la blague : le laissez-passer 003 est déposé par la main géante dans une cage, au milieu de la cour, et ne peut plus en sortir (l'administrateur l'enferme ou la libère : bouton 🔒) ---------- */
+const CAGE = { x: 3.5, z: -63, c: .85 };
+const enCage = () => !!(M && M.cage && M.ctx.moiInfo && Number(M.ctx.moiInfo().numero) === 3);
+function cage3D(L, scene) {
+  const g = new THREE.Group(), fer = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, metalness: .6, roughness: .4 }), H = 2.5, c = CAGE.c; g.position.set(CAGE.x, 0, CAGE.z); g.visible = false; scene.add(g);
+  const b = (w, h, d, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fer); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) b(.07, H, .07, sx * c, H / 2, sz * c);
+  for (let k = -5; k <= 5; k++) { const t = k / 6 * c; for (const s of [-1, 1]) { b(.025, H, .025, t, H / 2, s * c); b(.025, H, .025, s * c, H / 2, t); } }
+  for (const y of [.06, H / 2, H]) for (const s of [-1, 1]) { b(2 * c + .07, .05, .05, 0, y, s * c); b(.05, .05, 2 * c + .07, s * c, y, 0); }
+  b(2 * c + .1, .05, 2 * c + .1, 0, .025, 0);
+  const toit = new THREE.Group(); g.add(toit); for (let k = -5; k <= 5; k++) { const t = k / 6 * c, o = new THREE.Mesh(new THREE.BoxGeometry(.025, .025, 2 * c), fer); o.position.set(t, H, 0); toit.add(o); const o2 = new THREE.Mesh(new THREE.BoxGeometry(2 * c, .025, .025), fer); o2.position.set(0, H, t); toit.add(o2); }
+  const pan = new THREE.Mesh(new THREE.PlaneGeometry(.9, .32), new THREE.MeshStandardMaterial({ map: tex(toile(256, 92, (x) => { x.fillStyle = "#f2e6c4"; x.fillRect(0, 0, 256, 92); x.strokeStyle = "#7a1a10"; x.lineWidth = 6; x.strokeRect(4, 4, 248, 84); x.fillStyle = "#7a1a10"; x.font = "bold 30px Georgia"; x.textAlign = "center"; x.fillText("NE PAS NOURRIR", 128, 42); x.font = "italic 20px Georgia"; x.fillText("(espèce rare)", 128, 72); })) }));
+  pan.position.set(0, 1.55, c + .03); g.add(pan); const cad = new THREE.Mesh(new THREE.BoxGeometry(.12, .14, .05), new THREE.MeshStandardMaterial({ color: 0xc8a030, metalness: .8, roughness: .3 })); cad.position.set(c + .04, 1.0, 0); g.add(cad);   // (le cadenas)
+  L.cage3D = { g, toit };
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; g.visible = !!M.cage && !L.apo && !L.sh; toit.visible = !M.cine;   // (le toit, une fois qu'elle est dedans : la main est passée)
+    const moi = enCage() && M.gens.get(M.moiNum); if (!moi || M.cine) return; const p = moi.g.position, lim = c - .28;   // (elle ne sort pas)
+    if (Math.abs(p.x - CAGE.x) > lim || Math.abs(p.z - CAGE.z) > lim) { if (Math.abs(p.x - CAGE.x) > 3 || Math.abs(p.z - CAGE.z) > 3) { p.x = CAGE.x; p.z = CAGE.z; } else { p.x = CAGE.x + Math.max(-lim, Math.min(lim, p.x - CAGE.x)); p.z = CAGE.z + Math.max(-lim, Math.min(lim, p.z - CAGE.z)); }
+      moi.cible = null; moi.chemin = []; if (tm > (L.cageDitT || 0)) { L.cageDitT = tm + 6000; dire(M.moiNum, ["Au secours ! Je suis enfermée !", "Qui a la clé de ce cadenas ?!", "Ce n'est pas drôle !", "Libérez-moi !!", "Ouvrez cette cage !"][Math.floor(Math.random() * 5)]); } } };
+}
 function circulationRue(L, scene, O) {
   const roues = new THREE.CylinderGeometry(.31, .31, .2, 14), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 });
   const jante = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: .6, roughness: .4 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
@@ -8649,7 +8668,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
-  if (id === "grande" && !copie) mamansBanc(L, scene);   /* (plus de masque au sol : Halloween se loue au Video Futur) */
+  if (id === "grande" && !copie) { mamansBanc(L, scene); cage3D(L, scene); }   /* (plus de masque au sol : Halloween se loue au Video Futur) */
   if (id === "fetes" && !copie) gensFete(L, scene);
   if (id === "mess" && !copie) repasMess(L, scene);
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
@@ -9214,6 +9233,7 @@ async function cineMain() { const moi = M.gens.get(M.moiNum); if (!moi || M.cine
   // un écran noir tant que la main n'est pas prête (chargée, ses matériaux préparés) : on ne voit plus la cour vide d'abord, puis la main qui surgit
   const noir = M.voileArrivee || voile("background:#000;opacity:1;transition:opacity .7s;z-index:9"), ouvrir = () => { if (!noir) return; noir.style.opacity = "0"; setTimeout(() => noir.remove(), 800); };
   const H = await chargerMainPince(); if (!M || M.lieu !== lieu || !H) { if (M) M.voileArrivee = null; ouvrir(); if (M) finCine(); return; }
+  if (enCage()) { moi.cible = null; moi.chemin = []; moi.g.position.set(CAGE.x, 0, CAGE.z); envoyerWS({ t: "aller", x: CAGE.x, z: CAGE.z }); }   /* (le laissez-passer 003 : la main la dépose dans la cage) */
   const P = moi.g.position.clone(), yw = moi.g.rotation.y, av = moi.av3;
   let col = 1.42; if (av) { moi.g.updateMatrixWorld(true); let cou = null; av.sc.traverse(o => { if (!cou && o.isBone && /neck/i.test(o.name)) cou = o; }); if (cou) col = cou.getWorldPosition(new THREE.Vector3()).y - moi.g.position.y + .04; }
   else if (moi.corps) col = moi.corps.scale.y * .86;
@@ -13849,7 +13869,7 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) { if (mondesManquants(id).length) { chargerMondes(id).then(() => changerLieu(id, arrivee, yaw, face)).catch(e => console.warn("monde", id, e)); return; }   // (le code du monde d'abord)
+function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.lieu === "grande" && id !== "grande" && enCage()) { dire(M.moiNum, "Je ne peux pas sortir… je suis enfermée dans une cage !"); M.passage = false; return; } if (mondesManquants(id).length) { chargerMondes(id).then(() => changerLieu(id, arrivee, yaw, face)).catch(e => console.warn("monde", id, e)); return; }   // (le code du monde d'abord)
  for (const f of quitterLieu) try { f(id); } catch (e) {} if (M && M.choix) choixObjets(false); if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
@@ -15518,6 +15538,7 @@ export function bruitFete(niveau) { envoyerWS({ t: "bruit_fete", niveau }); }
 export function musiqueVol(niveau) { envoyerWS({ t: "musique_vol", niveau }); }
 export function rueVol(niveau) { envoyerWS({ t: "rue_vol", niveau }); }
 export function messVol(niveau) { envoyerWS({ t: "mess_vol", niveau }); }
+export function cage(on) { envoyerWS({ t: "cage", on: !!on }); }
 export function lumiereSalle(niveau) { envoyerWS({ t: "lumiere", niveau, salle: M && baseLieu(M.lieu) === "mess" ? (M.L && M.L.zoneLumiere ? M.L.zoneLumiere() : "mess") : "fetes" }); }
 export function sanction(type, numero) { envoyerWS({ t: type, numero }); }
 // retirer un message (le sien, ou n'importe lequel pour l'administrateur) ; "tout" vide la discussion du lieu
@@ -15559,6 +15580,7 @@ function connecter() {
     else if (m.t === "hifi") { M.hifiOn = !!m.on; ctx.surHifi && ctx.surHifi(m); }
     else if (m.t === "hifi_vol") ctx.surHifiVol && ctx.surHifiVol(Number.isFinite(+m.niveau) ? +m.niveau : .6);
     else if (m.t === "bruit_fete") ctx.surBruitFete && ctx.surBruitFete(Number.isFinite(+m.niveau) ? +m.niveau : .5);
+    else if (m.t === "cage") { M.cage = !!m.on; ctx.surCage && ctx.surCage(M.cage); }
     else if (m.t === "mess_vol") { ctx.surMessVol && ctx.surMessVol(Number.isFinite(+m.niveau) ? +m.niveau : .5); }
     else if (m.t === "rue_vol") { M.rueVol = Number.isFinite(+m.niveau) ? +m.niveau : .5; ctx.surRueVol && ctx.surRueVol(M.rueVol); }
     else if (m.t === "musique_vol") ctx.surMusVol && ctx.surMusVol(Number.isFinite(+m.niveau) ? +m.niveau : 1);

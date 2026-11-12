@@ -546,6 +546,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "fetes" || m.lieu === "grande") ws.send(JSON.stringify({ t: "lasers", on: !!(await this.ctx.storage.get("lasers_fetes")) }));
       if (m.lieu === "grande") { const e = (await this.ctx.storage.get("hifi_judo")) || { on: false }, n = await this.ctx.storage.get("hifi_vol"); ws.send(JSON.stringify({ t: "hifi", ...e })); ws.send(JSON.stringify({ t: "hifi_vol", niveau: typeof n === "number" ? n : .6 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("bruit_fetes"); ws.send(JSON.stringify({ t: "bruit_fete", niveau: typeof n === "number" ? n : .5 })); }
+      ws.send(JSON.stringify({ t: "cage", on: !!(await this.ctx.storage.get("cage003")) }));   // (la blague : laissez-passer 003 enfermée dans une cage, dans la cour)
       if (m.lieu === "mess") { const n = await this.ctx.storage.get("mess_vol"); ws.send(JSON.stringify({ t: "mess_vol", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "rue" || m.lieu === "grande") { const n = await this.ctx.storage.get("rue_vol"); ws.send(JSON.stringify({ t: "rue_vol", niveau: typeof n === "number" ? n : .5 })); }
       if (m.lieu === "fetes" || m.lieu === "grande") { const n = await this.ctx.storage.get("musique_vol"); ws.send(JSON.stringify({ t: "musique_vol", niveau: typeof n === "number" ? n : 1 })); }
@@ -650,6 +651,8 @@ export class Compteur extends DurableObject {
     } else if (m.t === "bruit_fete" && a.admin) {   // le brouhaha des invités dans la salle des fêtes : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("bruit_fetes", niveau); for (const l of ["fetes", "grande"]) this.diffuser(l, { t: "bruit_fete", niveau });
+    } else if (m.t === "cage" && a.admin) {   // l'administrateur enferme (ou libère) le laissez-passer 003 : tout le monde voit la cage
+      const on = !!m.on; await this.ctx.storage.put("cage003", on); const t = JSON.stringify({ t: "cage", on }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "mess_vol" && a.admin) {   // le brouhaha du mess : l'administrateur seul règle son volume, pour tout le monde
       const v = Number(m.niveau), niveau = Math.max(0, Math.min(1, Number.isFinite(v) ? v : .5));
       await this.ctx.storage.put("mess_vol", niveau); this.diffuser("mess", { t: "mess_vol", niveau });
