@@ -8909,7 +8909,7 @@ export async function ouvrir(ctx) {
       /* toujours trop lent, alors que l'image est déjà au plus bas : on allège le reste, pas à pas (les effets d'image et les ombres ; puis la pluie, les monstres en trop) — pour que ça reste fluide sur tous les téléphones */
       const lent = moy > (PETIT ? 45 : 34) && (res <= resMin + .01 || moy > 50); M.lentN = lent ? (M.lentN || 0) + 1 : 0;   /* (très lent — moins de 20 images par seconde — : on n'attend pas que l'image soit au plus bas) */
       if (M.lentN >= 2 && (M.allege || 0) < 3 && qualiteChoisie() !== "haut") { M.lentN = 0; alleger((M.allege || 0) + 1); } } }
-    preparerVoisin(); if (!M.jumeauJ && t > (M.prepT || 0)) jumelerPorche(); trierLumieres(t); if (PETIT || (MOBILE && modeRE()) || M.allege >= 2) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
+    preparerVoisin(); if (!PETIT && !M.jumeauJ && t > (M.prepT || 0)) jumelerPorche();   /* (petit téléphone : pas de rue recopiée dans la cour — deux décors entiers en mémoire, il plantait) */ trierLumieres(t); if (PETIT || (MOBILE && modeRE()) || M.allege >= 2) cacherLoin(t);   /* (comme à Silent Hill : ce qui est loin, dans la nuit, n'est pas dessiné) */
     for (const p of M.gens.values()) {
       p.g.position.y = M.L.hauteur ? M.L.hauteur(p.g.position.x, p.g.position.z, p) : 0; if (p.leve) p.g.position.y += p.leve;   /* (tenu en l'air : la main de l'arrivée) */
       if (M.L.limites && M.L.limites(p.g.position.x, p.g.position.z)) p.dernierOk = [p.g.position.x, p.g.position.z];
@@ -9128,6 +9128,7 @@ export async function ouvrir(ctx) {
     if (window.CASERNE_CINE_MAIN && !M.voileArrivee && !M.mainPartie) { const v = M.voileArrivee = voile("background:linear-gradient(180deg,#5fa8e6,#bfe0f7);opacity:1;transition:opacity .7s;z-index:9;display:grid;place-items:center;color:#1f2a37;font:700 16px Lato,sans-serif;text-align:center");
       if (v) { v.textContent = "Ouverture des grilles…"; M.voileArriveeT = performance.now(); } }
     if (M.voileArrivee && !M.cine && (!window.CASERNE_CINE_MAIN || performance.now() - M.voileArriveeT > 20000)) { window.CASERNE_CINE_MAIN = false; const v = M.voileArrivee; M.voileArrivee = null; v.style.opacity = "0"; setTimeout(() => v.remove(), 800); }   /* (pas de main, finalement : on montre le lieu) */
+    if (window.CASERNE_CINE_MAIN && PETIT) window.CASERNE_CINE_MAIN = false;   /* (petit téléphone : pas de main géante à l'arrivée — 3D lourde, au pire moment) */
     if (window.CASERNE_CINE_MAIN && M.lieu === "grande" && !M.cine && M.gens.get(M.moiNum)) { window.CASERNE_CINE_MAIN = false; M.mainPartie = true; cineMain(); }   // (la main géante qui nous pose dans la cour)
     if (M.lieu === "gb-mess" && M.L.tablesMess && !M.L.gbMess && !M.cine && M.gens.get(M.moiNum)) MD.sosfantomes.combatGB();   // (le combat contre Bouffe-tout)
     /* (les affiches des films, au mess : retirées — on part dans les films par le Video Futur) */
@@ -15452,7 +15453,7 @@ function preparerVoisin() {
     const c = q.seuil || q.centre || (q.dans ? centrePortail(q) : null) || q.marche; if (!c) continue;
     const d = Math.hypot(c[0] - moi.g.position.x, c[1] - moi.g.position.z); if (d < bd) { bd = d; best = q.vers; } }
   if (PETIT && best && baseLieu(best) === "grande" && ["fetes", "appart", "cave"].includes(baseLieu(M.lieu)) && (bd > 3.5 || M.lieu === "appart")) return;   /* (la cour et ses rues, préparées seulement tout près de la porte : sinon la carte graphique est pleine, et les vidéos n'ont plus d'image) */
-  if (!best || Object.keys(M.prets).length >= (PETIT ? 1 : 2)) return;
+  if (!best || Object.keys(M.prets).length >= (PETIT ? 0 : 2)) return;   /* (petit téléphone : rien de préparé à l'avance — la mémoire ; le passage prend une seconde de plus, mais il ne plante plus) */
   if (mondesManquants(best).length) { chargerMondes(best).catch(() => {}); return; }   // (son code d'abord ; on le préparera au tour suivant)   // (petit téléphone : un seul lieu préparé à l'avance — la mémoire)
   M.preparation = true; const lieu = M.lieu;
   setTimeout(() => { try { if (!M || M.lieu !== lieu) return;
