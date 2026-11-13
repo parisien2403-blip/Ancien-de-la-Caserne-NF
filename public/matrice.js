@@ -4640,14 +4640,14 @@ const DANSE_PLACES = [[-1.6, 5.2], [1.4, 5.6], [-.8, 7.9], [1.2, 8.3], [-2.5, 6.
 const PARLE_PLACES = [[-4.3, 10.4, 1.0], [-3.55, 10.9, -2.2], [1.5, 2.4, .9], [2.1, 2.9, -2.3]];
 function gensFete(L, scene) {
   const tous = [], gens = []; let id = 0, ip = 0, ib = 0; const T = L.tabourets || [], nS = L.nbTabouretsSalle || T.length; L.tabPNJ = new Set();
-  for (const G of GENS_FETE) { const m = personne3D(G.o); scene.add(m); tous.push(m); const E = { G, m, k: id + ip + ib };
+  for (const G of GENS_FETE.filter((G, i) => !PETIT || i % 2 === 0)) { const m = personne3D(G.o);   /* (petit téléphone : la moitié des gens) */ scene.add(m); tous.push(m); const E = { G, m, k: id + ip + ib };
     if (G.r === "danse") { const [x, z] = DANSE_PLACES[id]; Object.assign(E, { i: id++, x, z }); }
     else if (G.r === "parle") { const [x, z, ry] = PARLE_PLACES[ip++]; Object.assign(E, { x, z, ry }); }
     else { const k = nS - 1 - ib++, [x, z] = T[k]; L.tabPNJ.add(k); Object.assign(E, { x, z, ry: Math.PI / 2, assis: true }); }
     if (G.verre) { const v = verreFete(G.verre), B = m.userData.parts.bras[1]; v.position.set(0, -G.o.taille * .17, .03); B.c.add(v); E.verre = v; }
     m.position.set(E.x, E.assis ? .66 - m.userData.hipY + .02 : 0, E.z); m.rotation.y = E.ry || 0; E.cost = hwCostume(m, gens.length); gens.push(E); }
   // au bar du sous-sol (celui des Goonies) : un client au tabouret de droite, deux au baby-foot (un de chaque côté), deux qui discutent debout, une bière à la main
-  if (L.babyfoot && L.tabouretsSousSol) { const Y = FETE_HSS, [bx, bz] = L.babyfoot, [tx, tz] = L.tabouretsSousSol[0];
+  if (!PETIT && L.babyfoot && L.tabouretsSousSol) { const Y = FETE_HSS, [bx, bz] = L.babyfoot, [tx, tz] = L.tabouretsSousSol[0];
     const SS = [{ r: "bar", o: { taille: 1.77, peau: "#d9a882", ch: "#2a1a12", haut: "#3a6aa8", bas: "#2a2a30", chaussures: "#1a1a1a", coif: "court", pantalon: true }, verre: "biere", x: tx, z: tz, ry: Math.PI },
       { r: "baby", o: { taille: 1.74, peau: "#f0c9a6", ch: "#e2c27a", haut: "#c8202a", bas: "#3d5a80", chaussures: "#f2f2f2", coif: "court", pantalon: true }, x: bx, z: bz + .72, ry: Math.PI },
       { r: "baby", o: { taille: 1.7, peau: "#8d5a3b", ch: "#141010", haut: "#2a4ab0", bas: "#2a2a30", chaussures: "#1a1a1a", coif: "chauve", pantalon: true }, x: bx, z: bz - .72, ry: 0 },
@@ -4660,7 +4660,7 @@ function gensFete(L, scene) {
   L.gensFete = gens;
   // personne ne se rentre dedans : on ne traverse pas les gens de la soirée
   const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(L.gensFeteVus && gens.some(E => !E.assis && !E.mort && Math.hypot(x - E.m.position.x, z - E.m.position.z) < .38));
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = estNuit() && !L.apo && !L.sh; L.gensFeteVus = vu; for (const m of tous) m.visible = vu; if (!vu) return;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = estNuit() && !L.apo && !L.sh && !M.sansFigurants; L.gensFeteVus = vu; for (const m of tous) m.visible = vu; if (!vu) return;
     const thr = !!(M.djJoue && /thriller/.test(M.djTitre || "")), mus = !!M.djJoue, dt = Math.min(.05, (tm - (L.gfT || tm)) / 1000); L.gfT = tm; const t = tm / 1000, [cx, cz] = L.pisteCentre || [0, 6.5];
     for (const E of gens) { const m = E.m, P = m.userData.parts;
       const dg = !!M.hwFete; if (E.cost && E.cost.userData.on !== dg) { E.cost.userData.on = dg; E.cost.userData.basculer(dg); }   // (Halloween : tout le monde est déguisé)
@@ -4706,12 +4706,13 @@ function repasMess(L, scene) {
   let gr = 4711; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647;
   const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#d9a882"], CH = ["#5a3a22", "#141010", "#e2c27a", "#2a1a12", "#a5532a", "#8a8a8a"], HAUTS = ["#2f5fae", "#c8404a", "#e8e2d6", "#3a7a4a", "#7a4a8a", "#e8d24a", "#4a4e56", "#2e7a4a", "#b0306a", "#f2f0ea", "#1c2541", "#5a6a3a"];
   const pris = new Set(), conv = [];
-  for (let k = 0; k < 22; k++) { let i; do i = Math.floor(r() * places.length); while (pris.has(i)); pris.add(i); const P = places[i], f = r() < .45;
+  const NC = PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 11 : 22;   /* (chaque convive, c'est une trentaine de pièces à dessiner : moins sur un téléphone ou une petite carte graphique) */
+  for (let k = 0; k < NC; k++) { let i; do i = Math.floor(r() * places.length); while (pris.has(i)); pris.add(i); const P = places[i], f = r() < .45;
     const m = personne3D({ taille: f ? 1.62 + r() * .1 : 1.72 + r() * .12, peau: PEAUX[k % 6], ch: CH[(k * 5) % 6], haut: HAUTS[k % 12], bas: ["#2a3040", "#3a3a40", "#26324e", "#14181c"][k % 4], chaussures: "#1a1a1a", coif: f ? ["long", "carre", "queue"][k % 3] : k % 5 === 0 ? "chauve" : "court", pantalon: !f || k % 2 === 0, robe: f && k % 2 === 1, parle: k % 3 === 0 });
     const sx = P.z + P.sz * .44; m.position.set(P.x, .48 - m.userData.hipY + .02, sx); m.rotation.y = P.sz > 0 ? Math.PI : 0; scene.add(m);
     const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9 }); }
   L.convives = conv;
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = !L.apo && !L.sh && !L.gb; for (const c of conv) { c.m.visible = vu; c.assiette.visible = vu && c.assiette.userData.servi !== false && c.assiette.visible; } if (!vu) return; const t = tm / 1000;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = !L.apo && !L.sh && !L.gb && !M.sansFigurants; for (const c of conv) { c.m.visible = vu; c.assiette.visible = vu && c.assiette.userData.servi !== false && c.assiette.visible; } if (!vu) return; const t = tm / 1000;
     for (const c of conv) { const P = c.m.userData.parts; c.m.userData.poser("assis", tm); const b = (t + c.ph) % 6;   // (ils mangent : la fourchette à la bouche, de temps en temps)
       if (c.assiette.visible && b < 1.2) { P.bras[1].e.rotation.x = -1.2; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.1; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.6; P.bras[0].e.rotation.x = -.7; P.bras[0].c.rotation.x = -.6; P.tete.rotation.x = .15; } } };
 }
@@ -4832,7 +4833,7 @@ function hwCostume(m, k) {   // les déguisés de la soirée d'Halloween : un ch
   g.userData.basculer = (on) => { for (const o of g.userData.l || []) o.visible = on; if (type === "fantome") P.tete.visible = !on; }; g.userData.basculer(false); return g; }
 /* ---------- la blague : le laissez-passer 003 est déposé par la main géante dans une cage, au milieu de la cour, et ne peut plus en sortir (l'administrateur l'enferme ou la libère : bouton 🔒) ---------- */
 const CAGE = { x: -4, z: 10, c: .85 };   /* (dans la cour d'honneur, en entrant par le porche) */
-const enCage = () => !!(M && M.cage && M.ctx.moiInfo && Number(M.ctx.moiInfo().numero) === 3);
+const enCage = () => false;   /* (la blague de la cage : terminée) */
 function cage3D(L, scene) {
   const g = new THREE.Group(), fer = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, metalness: .6, roughness: .4 }), H = 2.5, c = CAGE.c; g.position.set(CAGE.x, 0, CAGE.z); g.visible = false; scene.add(g);
   const b = (w, h, d, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fer); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
@@ -8682,7 +8683,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) enfantsToit(L, scene);
-  if (id === "grande" && !copie) { mamansBanc(L, scene); cage3D(L, scene); tasPierres(L, scene); }   /* (plus de masque au sol : Halloween se loue au Video Futur) */
+  if (id === "grande" && !copie) mamansBanc(L, scene);   /* (la cage et les pierres : retirées) */   /* (plus de masque au sol : Halloween se loue au Video Futur) */
   if (id === "fetes" && !copie) gensFete(L, scene);
   if (id === "mess" && !copie) repasMess(L, scene);
   if (id === "grande" && !copie) coursJudo(L, scene);   // (le cours de judo : huit enfants en kimono)   // (sur le banc vert : deux mamans, la poussette, deux tout-petits et leur ballon)   // (trois enfants assis sur le rebord du toit du local poubelle)
@@ -13660,7 +13661,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
-    else if (M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
+    else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
     else if (M.hwFete && M.hwFete.etat === "jeu") { const G = M.L.gensFete || [], i = G.findIndex(E => E.G.r === "danse" && !E.mort && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.6); a = i >= 0 ? { type: "hwTuer", i, label: "🔪 Frapper" } : null; }
     else if (modeRE() && ((a = actionPorteRE(x, z)), passagesRE(moi, a), a)) ;   /* (Resident Evil : plus de cercles, une phrase près des portes ; au bout d'un passage, on le passe) */
     else if (M.L.hv && M.L.delorean && M.L.delorean.visible && Math.hypot(x - M.L.posDelorean[0], z - M.L.posDelorean[1]) < 3) a = { type: "rentrer2026", label: "⚡ Rentrer en 1990 avec Doc" };
