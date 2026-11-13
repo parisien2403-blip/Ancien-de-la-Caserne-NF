@@ -5459,7 +5459,7 @@ function toileLambris() {
 function borneArcade(A, scene, x, z) {   // (le modèle 3D de la borne, habillé aux couleurs de l'affiche des Goonies ; l'écran montre l'écran titre du jeu)
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); const P = .88, L = .7;
   const tl = new THREE.TextureLoader(), tx = f => { const t = tl.load("goonies/img/" + f + "?v=1"); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
-  chargerGLB("goonies/img/borne3d.glb?v=1").then(sc => { if (!sc) return; const m = sc.clone(true); m.scale.setScalar(.01); m.updateMatrixWorld(true);
+  chargerGLB("goonies/img/borne3d.glb?v=1b").then(sc => { if (!sc) return; const m = sc.clone(true); m.scale.setScalar(.01); m.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(m), c = b.getCenter(new THREE.Vector3()); m.position.set(-c.x, -b.min.y, -c.z); m.updateMatrixWorld(true);
     const plan = (o, axe) => {   // des coordonnées de texture « à plat » (de face ou de profil), sur la forme réelle de la pièce
       const geo = o.geometry.clone(), pos = geo.attributes.position, v = new THREE.Vector3(), pts = [], bb = new THREE.Box3();
@@ -9227,7 +9227,7 @@ const posEcto = (E, lx, lz) => E.localToWorld(new THREE.Vector3(lx, 0, lz));
    descend jusqu'au milieu de la cour d'honneur, le pose, ouvre les doigts et repart ; puis la caméra revient derrière nous ---- */
 let mainPince = null;
 function chargerMainPince() { return mainPince = mainPince || (async () => { gltfMod = gltfMod || await import("./vendor/GLTFLoader.js?v=1");
-  const g = await new gltfMod.GLTFLoader().loadAsync("avatars/main-pince.glb?v=1"), mm = g.scene, mix = new THREE.AnimationMixer(mm); mix.clipAction(g.animations[0]).play();
+  const g = await new gltfMod.GLTFLoader().loadAsync("avatars/main-pince.glb?v=2"), mm = g.scene, mix = new THREE.AnimationMixer(mm); mix.clipAction(g.animations[0]).play();
   const jt = n => mm.getObjectByName(n), doigts = ["Ind_018", "Ind_019", "Ind_020", "Dedao_023", "Dedao_024"].map(k => jt("DIR_Jnt_Flng0" + { Ind_018: 1, Ind_019: 2, Ind_020: 3, Dedao_023: 1, Dedao_024: 2 }[k] + "_" + k));
   mix.setTime(0); mm.updateMatrixWorld(true); const ouverte = doigts.map(j => j.quaternion.clone());
   mix.setTime(1.5); mm.updateMatrixWorld(true);
@@ -9996,7 +9996,7 @@ function decorCaserne(scene, L, base, sh) { if (base !== "grande" && base !== "r
       const g = clim(x, y, z, ry); n++;
       for (const s of [-.3, .3]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .56), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: .6, metalness: .5 })); e.position.set(s, -.02, 0); g.add(e); } } }
   if (base === "grande" && C3.localPoub) { const { x0, zb } = C3.localPoub;   // (contre le mur de la ruelle du local poubelle, en évitant la corbeille)
-    for (const z of [zb - 3.3, zb - .1, zb + 1.35, zb + 2.8]) { poser("avatars/deco-poubelle.glb?v=1", x0 - .56, RU.y(z), z, -Math.PI / 2 + (hasard(z) - .5) * .12); C3.poub.push([x0 - 1.1, x0, z - .65, z + .65]); } } }
+    for (const z of [zb - 3.3, zb - .1, zb + 1.35, zb + 2.8]) { poser("avatars/deco-poubelle.glb?v=1b", x0 - .56, RU.y(z), z, -Math.PI / 2 + (hasard(z) - .5) * .12); C3.poub.push([x0 - 1.1, x0, z - .65, z + .65]); } } }
 /* ===================== la partie de zombies (caserne de l'apocalypse) =====================
    L'un des joueurs présents (le « chef », désigné par le serveur) fait vivre les zombies et les chiens et envoie leur état aux autres
    cinq fois par seconde ; chacun tire de son côté (touche un zombie), le chef compte les balles reçues : deux balles, il tombe.
