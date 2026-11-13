@@ -8761,12 +8761,12 @@ export async function ouvrir(ctx) {
   // la carte graphique décroche (mémoire pleine, pilote) : au lieu de rester sur une image figée, on attend qu'elle revienne et l'on reconstruit le lieu
   rendu.domElement.addEventListener("webglcontextlost", e => { e.preventDefault(); trace("carte graphique perdue"); if (M) { M.ctxPerdu = true; ctx.surInfo && ctx.surInfo("L'image se recharge…"); } }, false);
   rendu.domElement.addEventListener("webglcontextrestored", () => { if (!M) return; M.ctxPerdu = false; if (M.cine) finCine(); const moi = M.gens.get(M.moiNum), p = moi ? [moi.g.position.x, moi.g.position.z] : null; const id = M.lieu; M.lieu = null; changerLieu(id, p, M.yaw || 0); }, false);
-  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : MOBILE ? 1.25 : 1.5) * (PETIT ? .85 : 1); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
+  const resMax = Math.min(devicePixelRatio, GPU_MODESTE ? 1 : MOBILE ? 1.25 : 1.5) * (PETIT ? .7 : 1); let res = resMax, perf = { n: 0, s: 0 };   // la finesse de l'image : elle baisse toute seule si l'ordinateur peine
   // sur ordinateur, la scène est bien plus grande que sur un téléphone : on calcule au plus ~1,1 million de points par image (comme un grand téléphone),
   // l'image est simplement agrandie à l'écran ; sans carte graphique (rendu logiciel), encore moins
   let logiciel = false; try { const gl = rendu.getContext(), dbg = gl.getExtension("WEBGL_debug_renderer_info"), nom = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
     logiciel = /swiftshader|llvmpipe|software|basic render/i.test(nom); } catch (e) {}
-  const budget = logiciel ? 4e5 : PETIT ? 9e5 : MOBILE || GPU_MODESTE ? 1.4e6 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .6 : Math.min(1, resMax);   // (en plein écran sur PC : environ la pleine définition de l'écran)
+  const budget = logiciel ? 4e5 : PETIT ? 5e5 : MOBILE || GPU_MODESTE ? 1.4e6 : 2.4e6, resMin = logiciel ? .5 : PETIT ? .45 : Math.min(1, resMax);   /* (petit téléphone : une image moins fine, mais fluide) */   // (en plein écran sur PC : environ la pleine définition de l'écran)
   const appliquerRes = () => { if (rendu.xr.isPresenting) return; const w = ctx.conteneur.clientWidth || 400, h = ctx.conteneur.clientHeight || 400;
     rendu.setPixelRatio(Math.max(resMin, Math.min(res, M && M.capRes || 9, Math.sqrt(budget / (w * h))))); };   /* (capRes : Resident Evil sur téléphone, une image un peu moins fine, pour rester fluide) */
   if (logiciel) { res = Math.min(res, 1); rendu.shadowMap.enabled = false; }   // (sans carte graphique, pas d'ombres portées)
@@ -8775,6 +8775,7 @@ export async function ouvrir(ctx) {
   rendu.outputColorSpace = THREE.SRGBColorSpace; rendu.toneMapping = THREE.ACESFilmicToneMapping; rendu.toneMappingExposure = 1.05;
   ctx.conteneur.prepend(rendu.domElement);
   M = { ctx, rendu, gens: new Map(), lieu: null, scene: null, camera: new THREE.PerspectiveCamera(50, 1, .1, 300), ws: null, ouvert: true, teteCache: new Map(), moiNum: null };
+  if (PETIT) { M.sansFigurants = true; M.allege = 2; M.camera.far = 140; }   /* (petit téléphone : d'emblée sans passants, pigeons ni figurants, et allégé — on n'attend plus que ça rame pour alléger) */
   M.appartOuvert = false; if (ctx.moiInfo && ctx.moiInfo().appart) setTimeout(() => M && chargerEtatAppart(null), 0);
   if (ctx.surInfo && !ctx.surInfoRE) { const o = ctx.surInfo; ctx.surInfoRE = true; ctx.surInfo = (...x) => { if (M && M.L && M.L.apo && !M.L.sh) return; return o(...x); }; }   /* (Resident Evil : aucun petit message d'aide — le jeu parle par les personnages, pas par des bandeaux) */
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2();
@@ -13946,7 +13947,7 @@ function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.lieu === "
   if (estSH(id) && M.shReveilBas) { M.shReveilBas = false; MD.silenthill.cineReveilBas(); }
   if (id === "bttf-cour") MD.bttf.cineCour();
   if (id === "santacarla" && M.lbIntro) { M.lbIntro = false; cineSurvolSC(); }
-  M.camera.far = (M.L && M.L.loin) || 300; M.camera.updateProjectionMatrix();
+  M.camera.far = Math.min((M.L && M.L.loin) || 300, PETIT ? 140 : 1e9);   /* (petit téléphone : on ne dessine pas au-delà de 140 m) */ M.camera.updateProjectionMatrix();
   if (id === "hv1955" && M.arriveeHV) { M.arriveeHV = false; MD.bttf.cineHV(); }
   if (id === "kingston" && M.kfIntro) { M.kfIntro = false; MD.kingston.cineKingston(); }
   if (id === "kingston") musiqueLB("kf"); else if (M.lbMus && M.lbMus.cle === "kf") musiqueLB(null);   /* (le thème des Gremlins — à partir de 7,5 s : le fichier commence là —, en boucle) */
