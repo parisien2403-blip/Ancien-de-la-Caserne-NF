@@ -321,6 +321,7 @@
   .mx-3d { right: 56px; font-size: 19px; }
   .mx-1p { right: 102px; font-size: 19px; } .mx-1p.on { background: #c4694a; }
   .mx-ciel { right: 148px; font-size: 18px; }
+  .mx-hiver { right: 148px; top: 56px; font-size: 18px; } .mx-hiver[hidden] { display: none; }   /* (sous le ciel : avant, il était caché derrière) */
   .mx-vr { right: 194px; font-size: 19px; } .mx-vr[hidden] { display: none; }
   .mx-relief-barre { display: none; }
   .mx-scene.relief > :not(canvas):not(.mx-relief-barre):not(.relief-ok) { display: none !important; }   /* (sauf les écrans par-dessus le jeu — l'affiche, le cadenas, le téléphone —, doublés pour chaque œil) */
@@ -1471,7 +1472,7 @@
           <button class="mx-plein mx-3d" id="mx3D" type="button" title="Relief 3D (lunettes XREAL…)" aria-label="Relief 3D pour lunettes" hidden>👓</button>
           <button class="mx-plein mx-vr" id="mxVR" type="button" title="Casque VR (Meta Quest…)" aria-label="Entrer dans le casque VR" hidden>🥽</button>
           <button class="mx-plein mx-1p" id="mx1P" type="button" title="Vue à la première personne" aria-label="Vue à la première personne" hidden>👁</button>
-          <button class="mx-plein mx-ciel" id="mxHiver" type="button" title="Le mode hiver : neige et bataille de boules de neige" aria-label="Le mode hiver" hidden style="opacity:.55">❄️</button>
+          <button class="mx-plein mx-hiver" id="mxHiver" type="button" title="Le mode hiver : neige et bataille de boules de neige" aria-label="Le mode hiver" hidden style="opacity:.55">❄️</button>
           <button class="mx-plein mx-ciel" id="mxCiel" type="button" title="Le ciel : automatique, jour, nuit" aria-label="Le ciel : automatique, jour ou nuit" hidden>🕒</button>
           <div class="mx-relief-barre" id="mxReliefBarre"><button type="button" id="mxReliefProf">Relief : normal</button><button type="button" id="mxReliefSortir">✕ Quitter la 3D</button></div>
           <button class="mx-plein mx-micro" id="mxMicro" type="button" title="Micro : parler aux autres (on l'allume, on le coupe) — clic droit ou appui long : choisir le micro" aria-label="Micro : allumer ou couper" hidden>🎙️<span class="mx-micro-n" id="mxMicroN" hidden></span></button>
@@ -3362,6 +3363,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["9.99", "15 novembre 2026", ["Le bouton ❄️ du mode hiver n'est plus caché derrière le bouton du ciel : il est juste en dessous"]],
     ["9.98", "15 novembre 2026", ["Mode hiver (bouton ❄️, à côté du ciel) : la neige tombe, le sol, les toits des voitures et les rebords sont blancs, ciel gris ; plus de camion-poubelle, plus de deli-delo ni de rollers : une quinzaine d'enfants en bonnet, écharpe et anorak se font une bataille de boules de neige dans la cour (la neige prise sur les voitures), et d'autres sur la terrasse ; depuis l'appartement, la cour enneigée par les fenêtres et la neige qui tombe dehors", "Rue d'Hauteville : un camion de livraison vient se garer sur l'aire de livraison, le livreur porte ses cartons à la boutique, puis il repart", "Nouveaux passants : joggeur, joggeuse, hommes d'affaires et leur mallette, une ménagère et son cabas, une maman et un papa avec leur enfant à côté, une vieille dame et son caddie", "Le mess, la salle des fêtes et le bar du sous-sol : du monde de jour comme de nuit ; sur ordinateur, quand le jeu s'allège, la moitié des passants et des convives restent (avant, ils disparaissaient tous)"]],
     ["9.97", "13 novembre 2026", ["Petits téléphones : beaucoup plus léger — image un peu moins fine, pas de passants ni de figurants, on ne dessine pas au loin"]],
     ["9.96", "13 novembre 2026", ["Petits téléphones (Galaxy A22, A12…) : l'appli ne devrait plus planter à l'arrivée — pas de main géante, pas de rue recopiée dans la cour, aucun lieu préparé à l'avance"]],
