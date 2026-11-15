@@ -11859,6 +11859,19 @@ function batailleNeige(L, scene, Z) {
   const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(1.8, .45, 1); bs.visible = false; scene.add(bs); let bFin = 0;
   const CRIS = ["Touché !", "Raté !!", "Bataille !!", "Prends ça !", "Même pas mal !", "À l'attaque !", "Ha ha ha !", "Elle est glacée !"];
   let avant = 0;
+  // (10.01) nous aussi : on ramasse la neige sur une voiture, on vise un enfant ; et ils nous la renvoient
+  const moiP = () => { const q = M && M.moiNum && M.gens.get(M.moiNum); return q && q.g.position; };
+  const J = { joueur: true, T: 1.75, etat: "", boule: { visible: false }, get x() { const q = moiP(); return q ? q.x : 0; }, get z() { const q = moiP(); return q ? q.z : 0; } };
+  const lancer = (a, c, tx, tz, ty, d, rate, deJoueur) => { let b = boules.find(o => !o.m.visible); if (!b) { b = { m: new THREE.Mesh(gb, blanc) }; scene.add(b.m); boules.push(b); }
+    Object.assign(b, { a: a.clone(), c: new THREE.Vector3(tx, ty, tz), t0: performance.now(), dur: 380 + d * 70, h: .6 + d * .08, vise: c, rate, deJoueur }); b.m.visible = true; b.m.position.copy(a); };
+  if (Z.voitures) L.neigeB = { proche: (x, z) => { if (!M || !M.hiver || L.nuit) return null; const r = .9; return voitures().find(v => x > v[0] - r && x < v[1] + r && z > v[2] - r && z < v[3] + r) || null; },
+    cible: (x, z) => { let best = null, bd = 16; for (const e of E) { const d = Math.hypot(e.x - x, e.z - z); if (d < bd) { bd = d; best = e; } } return best; },
+    lancer: () => { const q = moiP(); if (!q) return false; let c = null, bd = 16; for (const e of E) { const d = Math.hypot(e.x - q.x, e.z - q.z); if (d < bd) { bd = d; c = e; } } if (!c) return false;
+      const mo = M.gens.get(M.moiNum); if (mo && mo.av3 && mo.av3.sc) mo.av3.sc.rotation.y = Math.atan2(c.x - q.x, c.z - q.z);
+      const rate = Math.random() < .25; lancer(new THREE.Vector3(q.x, q.y + 1.5, q.z), c, c.x + (rate ? hasard(-1, 1) : 0), c.z + (rate ? hasard(-1, 1) : 0), hY(c.x, c.z) + c.T * .75, bd, rate, true);
+      M.neigeGuerreT = performance.now(); return true; } };
+  const eclabousser = () => { const d = document.createElement("div"); d.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:50;opacity:1;transition:opacity 1.4s ease-out;background:radial-gradient(circle at " + (30 + Math.random() * 40) + "% " + (30 + Math.random() * 40) + "%, rgba(255,255,255,.95) 0, rgba(255,255,255,.85) 12%, rgba(240,246,255,.35) 26%, rgba(255,255,255,0) 40%)";
+    document.body.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => { d.style.opacity = "0"; })); setTimeout(() => d.remove(), 1600); };
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
     const vu = !!M && M.L === L && !!M.hiver && !L.nuit && !L.apo && !L.sh && !L.gb && !L.bttf;   // (le jour)
     for (const e of E) e.m.visible = vu; if (!vu) { for (const b of boules) b.m.visible = false; bs.visible = false; return; }
@@ -11875,12 +11888,12 @@ function batailleNeige(L, scene, Z) {
         e.m.userData.poser("debout", tm); const pench = e.surVoiture ? .55 : 1.0; P.buste.rotation.x = pench * Math.sin(k2 * Math.PI); P.bras.forEach(B => { B.e.rotation.x = -1.1 * Math.sin(k2 * Math.PI) - .2; B.c.rotation.x = -.5; });
         if (!e.surVoiture) P.jambes.forEach(J => { J.h.rotation.x = -.7 * Math.sin(k2 * Math.PI); J.gen.rotation.x = 1.1 * Math.sin(k2 * Math.PI); });
         if (e.surVoiture && e.but) e.ry = Math.atan2(0, (VO.some(v => Math.abs(e.z - v[3]) < .8) ? -1 : 1));
-        if (k2 >= 1) { P.buste.rotation.x = 0; e.boule.visible = true; e.etat = "vise"; e.t = tm; e.cible = ad.length ? ad[Math.floor(Math.random() * ad.length)] : null; } }
+        if (k2 >= 1) { P.buste.rotation.x = 0; e.boule.visible = true; e.etat = "vise"; e.t = tm; e.cible = ad.length ? ad[Math.floor(Math.random() * ad.length)] : null; const q = moiP(); if (q && tm < (M.neigeGuerreT || -1e9) + 60000 && Math.hypot(q.x - e.x, q.z - e.z) < 16 && Math.random() < .45) e.cible = J; } }   // (on leur a lancé de la neige : ils ripostent)
       else if (e.etat === "vise") { const c = e.cible; if (!c) { e.etat = "pense"; continue; } const dx = c.x - e.x, dz = c.z - e.z, d = Math.hypot(dx, dz);
         if (d > 9) { const ok = allerVers(e.x + dx / d * 2, e.z + dz / d * 2); if (!ok) continue; }
         e.ry = Math.atan2(dx, dz); e.m.userData.poser("debout", tm); const k2 = Math.min(1, (tm - e.t) / 700); P.bras[1].e.rotation.x = -2.6 * k2; P.bras[1].c.rotation.x = -.6 * k2; P.buste.rotation.y = -.35 * k2;
         if (k2 >= 1) { e.etat = "lance"; e.t = tm;   // (la boule part : une parabole vers l'autre, parfois à côté)
-          const q = new THREE.Vector3(); e.boule.getWorldPosition(q); const rate = Math.random() < .4, tx = c.x + (rate ? hasard(-1.2, 1.2) : 0), tz = c.z + (rate ? hasard(-1.2, 1.2) : 0), ty = hY(tx, tz) + c.T * .75;
+          const q = new THREE.Vector3(); e.boule.getWorldPosition(q); const rate = Math.random() < .4, tx = c.x + (rate ? hasard(-1.2, 1.2) : 0), tz = c.z + (rate ? hasard(-1.2, 1.2) : 0), ty = c.joueur && moiP() ? moiP().y + 1.5 : hY(tx, tz) + c.T * .75;
           let b = boules.find(o => !o.m.visible); if (!b) { b = { m: new THREE.Mesh(gb, blanc) }; scene.add(b.m); boules.push(b); }
           Object.assign(b, { a: q.clone(), c: new THREE.Vector3(tx, ty, tz), t0: tm, dur: 380 + d * 70, h: .6 + d * .08, vise: c, rate }); b.m.visible = true; b.m.position.copy(q); e.boule.visible = false; } }
       else if (e.etat === "lance") { const k2 = Math.min(1, (tm - e.t) / 350); P.bras[1].e.rotation.x = -2.6 + 3.4 * k2; P.bras[1].c.rotation.x = -.6 + .5 * k2; P.buste.rotation.y = -.35 + .6 * k2;
@@ -11892,7 +11905,8 @@ function batailleNeige(L, scene, Z) {
     for (const b of boules) { if (!b.m.visible) continue; const k2 = (tm - b.t0) / b.dur; if (k2 >= 1) { b.m.visible = false;   // (l'impact : un petit nuage de neige)
         let pf = pouf.find(o => !o.visible); if (!pf) { pf = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, depthWrite: false })); scene.add(pf); pouf.push(pf); }
         pf.position.copy(b.c); pf.visible = true; pf.userData.t0 = tm; const c = b.vise;
-        if (!b.rate && c && c.etat !== "ramasse") { c.etat = "touche"; c.t = tm; c.boule.visible = false; }
+        if (!b.rate && c && c.joueur) { eclabousser(); if (M && M.moiNum) dire(M.moiNum, ["Aïe ! Elle est froide !", "Hé !!", "Brrr !", "Tu vas voir !"][Math.floor(Math.random() * 4)]); }
+        else if (!b.rate && c && c.etat !== "ramasse") { c.etat = "touche"; c.t = tm; c.boule.visible = false; }
         if (M && M.moiNum) { const moi = M.gens.get(M.moiNum); if (moi && moi.g.position.distanceTo(b.c) < 9 && tm > bFin + 2500) { peindreBulle(bulleC, b.rate ? "Raté !!" : CRIS[Math.floor(Math.random() * CRIS.length)]); bt.needsUpdate = true; bs.position.set(b.c.x, b.c.y + 1.2, b.c.z); bs.visible = true; bFin = tm + 1800; } }
         continue; }
       b.m.position.lerpVectors(b.a, b.c, k2); b.m.position.y += Math.sin(k2 * Math.PI) * b.h; }
@@ -13858,6 +13872,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
+    else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
     else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
     else if (M.hwFete && M.hwFete.etat === "jeu") { const G = M.L.gensFete || [], i = G.findIndex(E => E.G.r === "danse" && !E.mort && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.6); a = i >= 0 ? { type: "hwTuer", i, label: "🔪 Frapper" } : null; }
     else if (modeRE() && ((a = actionPorteRE(x, z)), passagesRE(moi, a), a)) ;   /* (Resident Evil : plus de cercles, une phrase près des portes ; au bout d'un passage, on le passe) */
@@ -13921,6 +13936,8 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "hwTuer") { hwTuer(M.L.gensFete[a.i]); return; }
+  if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
+  if (a.type === "neigeLancer") { if (M.L.neigeB && M.L.neigeB.lancer()) M.bouleMain = false; M.actionCle = null; return; }
   if (a.type === "pierre") { M.pierreMain = true; M.actionCle = null; dire(M.moiNum, "🪨 Une belle pierre…"); return; }
   if (a.type === "lancerPierre") { M.pierreMain = false; M.actionCle = null; const p = moi.g.position; envoyerWS({ t: "pierre", x: p.x, z: p.z }); lancerPierre(p.x, p.z, true); return; }
   if (a.type === "karts") { chargerMonde("course").then(C => C.entrerCourse()).catch(e => console.warn("course", e)); return; }

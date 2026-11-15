@@ -1168,6 +1168,7 @@
             <select id="fQual">
               <option value="fils du Garde">Fils du Garde</option>
               <option value="fille du Garde">Fille du Garde</option>
+              <option value="épouse du Garde">Épouse du Garde</option>
               <option value="Gendarme">Gendarme</option>
             </select>
           </label>
@@ -3363,6 +3364,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["10.01", "15 novembre 2026", ["Mode hiver : approche-toi d'une voiture couverte de neige, « ❄️ Ramasser de la neige », puis « ❄️ Lancer la boule de neige » sur l'enfant le plus proche ; pendant une minute, les enfants te visent aussi (et l'écran se prend la neige !)", "Nouvelle qualité : Épouse du Garde (inscription et création de compte)"]],
     ["10.00", "15 novembre 2026", ["Mode hiver : la terrasse est couverte de neige ; plus d'enfants sur la terrasse, plus de mamans ni d'enfants sur le banc, plus d'enfants assis sur le toit du local poubelle"]],
     ["9.99", "15 novembre 2026", ["Le bouton ❄️ du mode hiver n'est plus caché derrière le bouton du ciel : il est juste en dessous"]],
     ["9.98", "15 novembre 2026", ["Mode hiver (bouton ❄️, à côté du ciel) : la neige tombe, le sol, les toits des voitures et les rebords sont blancs, ciel gris ; plus de camion-poubelle, plus de deli-delo ni de rollers : une quinzaine d'enfants en bonnet, écharpe et anorak se font une bataille de boules de neige dans la cour (la neige prise sur les voitures), et d'autres sur la terrasse ; depuis l'appartement, la cour enneigée par les fenêtres et la neige qui tombe dehors", "Rue d'Hauteville : un camion de livraison vient se garer sur l'aire de livraison, le livreur porte ses cartons à la boutique, puis il repart", "Nouveaux passants : joggeur, joggeuse, hommes d'affaires et leur mallette, une ménagère et son cabas, une maman et un papa avec leur enfant à côté, une vieille dame et son caddie", "Le mess, la salle des fêtes et le bar du sous-sol : du monde de jour comme de nuit ; sur ordinateur, quand le jeu s'allège, la moitié des passants et des convives restent (avant, ils disparaissaient tous)"]],
@@ -4980,7 +4982,7 @@
     const creer = `<div class="card" id="ccCarte"><b style="font-size:17px;color:var(--navy)">➕ Créer un compte</b>
         <p class="s" style="font-size:13px;color:var(--muted);margin:4px 0 10px">Le compte est validé tout de suite : tu donnes ensuite le prénom, le nom et le mot de passe à la personne, elle se connecte directement.</p>
         <div class="row2"><label class="field">Prénom<input id="ccPrenom" autocomplete="off"></label><label class="field">Nom<input id="ccNom" autocomplete="off"></label></div>
-        <label class="field">Qualité<select id="ccQual"><option value="fils du Garde">Fils du Garde</option><option value="fille du Garde">Fille du Garde</option><option value="Gendarme">Gendarme</option></select></label>
+        <label class="field">Qualité<select id="ccQual"><option value="fils du Garde">Fils du Garde</option><option value="fille du Garde">Fille du Garde</option><option value="épouse du Garde">Épouse du Garde</option><option value="Gendarme">Gendarme</option></select></label>
         <label class="field">Nom du Garde (facultatif)<input id="ccParent" autocomplete="off"></label>
         <label class="field">Mot de passe (8 caractères minimum)<input id="ccMdp" autocomplete="off" value="${motAuHasard()}"></label>
         <button class="btn small" id="ccOk" type="button">Créer le compte</button><div id="ccRes"></div><div id="ccListe"></div></div>`;

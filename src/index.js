@@ -8,7 +8,7 @@ import { DurableObject } from "cloudflare:workers";
 const CASERNE_TRAVAUX = false;
 
 const DOMAINE = "caserne-nf";
-const QUALITES = ["fils du Garde", "fille du Garde", "Gendarme"];
+const QUALITES = ["fils du Garde", "fille du Garde", "épouse du Garde", "Gendarme"];
 
 const texte = (v, max) => String(v ?? "").trim().slice(0, max);
 const slug = v => texte(v, 40).normalize("NFD").replace(/[̀-ͯ]/g, "")
