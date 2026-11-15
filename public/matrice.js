@@ -8253,7 +8253,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
         const cadre = new THREE.Mesh(new THREE.PlaneGeometry(EW + .16, 1), new THREE.MeshBasicMaterial({ color: 0x111113 })); cadre.geometry.translate(0, -.5, 0); cadre.position.z = .005; g.add(cadre);
         const toile = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xf2f2ee, toneMapped: false })); toile.position.z = .012; g.add(toile);
         const barre = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, EW + .2, 10), A.mat({ color: 0x1a1a1c, roughness: .5 })); barre.rotation.z = Math.PI / 2; barre.position.z = .02; g.add(barre);   // (la barre de lestage, au bas de la toile)
-        L.ecran = { g, toile, cadre, barre, EW, EH, k: 0 }; majEcran(L, 0); }
+        L.ecran = { g, toile, cadre, barre, EW, EH, k: 0, retire: true }; g.visible = false; }   // (10.03 : l'écran est retiré, il ne servait à rien)
       // la batterie : grosse caisse, deux toms, caisse claire, tom basse, charleston, deux crashs et une ride, le tabouret
       const kit = new THREE.Group(); kit.position.set(sx, SH, Z0 + 1.38); scene.add(kit); L.kit = kit;
       const coque = A.mat({ color: 0x7a0d16, metalness: .35, roughness: .28 }), chrome = A.mat({ color: 0xd4d8dc, metalness: .9, roughness: .18 }), peauF = A.mat({ color: 0xf1ece0, roughness: .6 }), cuivre = A.mat({ color: 0xc9a440, metalness: .85, roughness: .3 });
@@ -8685,6 +8685,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
+  if (id === "grande" && !copie) sapinNoel(L, scene, SAPIN[0], SAPIN[1]);
   if (id === "grande" && !copie) { batailleNeige(L, scene, { x0: -15, x1: 21, z0: -128.1, z1: -118.6, n: PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 15, voitures: true }); }   // (l'hiver, dans la cour sous les fenêtres de l'appartement Z ; pas sur la terrasse)
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) mamansBanc(L, scene);   /* (la cage et les pierres : retirées) */   /* (plus de masque au sol : Halloween se loue au Video Futur) */
@@ -11794,6 +11795,7 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
 
 /* ===================== (9.98) l'hiver : la neige — sur le sol, les toits des voitures, les rebords (tout ce qui est à plat), et qui tombe ; ni camion-benne, ni rollers, ni deli-delo :
    une bataille de boules de neige dans la cour sous les fenêtres de l'appartement Z, et sur la terrasse. L'administrateur l'allume (❄️), en plus du jour et de la nuit ===================== */
+let SAPIN = [10.5, -10];   // (le grand sapin de Noël : dans la cour d'honneur, à droite en regardant l'horloge)
 const NEIGE = { u: { value: 0 }, boites: { value: null }, hauts: { value: [1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4] }, pts: null, lieux: new Set(["grande", "rue", "appart"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
 function neigerMateriau(m) {   // le blanc de la neige sur les faces tournées vers le ciel (un seul calcul par matière ; ensuite, un simple réglage)
   if (!m || m.userData.neige || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial)) return; m.userData.neige = true;
@@ -11830,6 +11832,51 @@ function animerNeige(t) { const P = NEIGE.pts; if (!P || !P.visible || !M || !M.
     if (v[k + 1] < y0) v[k + 1] += 24; else if (v[k + 1] > y0 + 24) v[k + 1] -= 24;
     let x = v[k] + ox; if (x < c.x - 25) v[k] += 50; else if (x > c.x + 25) v[k] -= 50; let z = v[k + 2] + oz; if (z < c.z - 25) v[k + 2] += 50; else if (z > c.z + 25) v[k + 2] -= 50; }
   a.needsUpdate = true; }
+/* (10.03) le grand sapin de Noël de la cour d'honneur, l'hiver : douze mètres, des branches étagées et enneigées, une guirlande dorée en spirale,
+   des boules rouges, dorées et bleues, des ampoules qui scintillent (la nuit surtout), l'étoile au sommet, et des paquets au pied */
+function sapinNoel(L, scene, x, z, H = 12) {
+  const y0 = (() => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } })(), g = new THREE.Group(); g.position.set(x, y0, z); g.visible = false; scene.add(g);
+  const vert = new THREE.MeshStandardMaterial({ color: 0x1f5a2e, roughness: .85 }), vert2 = new THREE.MeshStandardMaterial({ color: 0x2a6e38, roughness: .85 }), neige = new THREE.MeshStandardMaterial({ color: 0xf4f7fc, roughness: .9 });
+  const tronc = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, 1.6, 12), new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: .9 })); tronc.position.y = .8; g.add(tronc);
+  const N = 7, R0 = H * .33; const etages = [];
+  for (let i = 0; i < N; i++) { const k = i / N, r = R0 * (1 - k * .82), h = H * .26, yb = 1.2 + k * (H - 2.6);
+    const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 18, 1, false), i % 2 ? vert2 : vert); c.position.y = yb + h / 2; c.rotation.y = i * .4; c.castShadow = true; g.add(c);
+    const n = new THREE.Mesh(new THREE.ConeGeometry(r * .62, h * .45, 18, 1, false), neige); n.position.y = yb + h * .78; n.rotation.y = i * .4; g.add(n); etages.push([yb, r, h]); }
+  const rayon = (y) => { const k = Math.max(0, Math.min(1, (y - 1.2) / (H - 1.4))); return R0 * (1 - k * .9) * .93; };
+  // la guirlande dorée, en spirale
+  const pts = []; for (let i = 0; i <= 220; i++) { const t = i / 220, y = 1.6 + t * (H - 2.6), a = t * Math.PI * 2 * 5.5; const r = rayon(y) * .98 + .05; pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r)); }
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 400, .06, 6, false), new THREE.MeshStandardMaterial({ color: 0xe8c040, metalness: .8, roughness: .3, emissive: 0x6a4a08, emissiveIntensity: .4 })));
+  // les boules
+  const COUL = [0xc8102e, 0xe8b830, 0x2a5ad8, 0xc8102e, 0xf2f2f2, 0x8a1ab0], nb = 90, boules = new THREE.InstancedMesh(new THREE.SphereGeometry(.22, 12, 8), new THREE.MeshStandardMaterial({ roughness: .2, metalness: .6 }), nb), mt = new THREE.Matrix4(), col = new THREE.Color();
+  for (let i = 0; i < nb; i++) { const y = 1.8 + Math.random() * (H - 3.5), a = Math.random() * Math.PI * 2, r = rayon(y) * (.82 + Math.random() * .1); mt.makeTranslation(Math.cos(a) * r, y, Math.sin(a) * r); boules.setMatrixAt(i, mt); boules.setColorAt(i, col.setHex(COUL[i % COUL.length])); }
+  g.add(boules);
+  // les ampoules : elles scintillent
+  const na = 160, amp = new THREE.InstancedMesh(new THREE.SphereGeometry(.07, 6, 4), new THREE.MeshBasicMaterial({ toneMapped: false }), na), AC = [0xfff2b0, 0xffd060, 0xff6a5a, 0x8ad0ff, 0xfff2b0];
+  for (let i = 0; i < na; i++) { const y = 1.6 + Math.random() * (H - 3), a = Math.random() * Math.PI * 2, r = rayon(y) * (.95 + Math.random() * .06); mt.makeTranslation(Math.cos(a) * r, y, Math.sin(a) * r); amp.setMatrixAt(i, mt); amp.setColorAt(i, col.setHex(AC[i % AC.length])); }
+  g.add(amp); const base = Array.from({ length: na }, (_, i) => new THREE.Color(AC[i % AC.length]));
+  // la guirlande lumineuse : un fil d'ampoules en spirale (l'autre sens que la guirlande dorée), qui scintille par vagues
+  const ng = 320, gl = new THREE.InstancedMesh(new THREE.SphereGeometry(.09, 6, 4), new THREE.MeshBasicMaterial({ toneMapped: false }), ng), GC = [0xfff4c0, 0xff3a3a, 0x3aff6a, 0x4a8aff, 0xffd040];
+  for (let i = 0; i < ng; i++) { const t = i / ng, y = 1.5 + t * (H - 2.4), a = -t * Math.PI * 2 * 7 + .8, r = rayon(y) * .99 + .1; mt.makeTranslation(Math.cos(a) * r, y, Math.sin(a) * r); gl.setMatrixAt(i, mt); gl.setColorAt(i, col.setHex(GC[i % GC.length])); }
+  g.add(gl); const baseG = Array.from({ length: ng }, (_, i) => new THREE.Color(GC[i % GC.length]));
+  { const pts2 = []; for (let i = 0; i <= 160; i++) { const t = i / 160, y = 1.5 + t * (H - 2.4), a = -t * Math.PI * 2 * 7 + .8, r = rayon(y) * .99 + .08; pts2.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r)); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 500, .015, 4, false), new THREE.MeshBasicMaterial({ color: 0x0e2a12 }))); }   // (le fil)
+  // l'étoile
+  const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .38 : .9; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+  const etoile = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .18, bevelEnabled: false }), new THREE.MeshBasicMaterial({ color: 0xffd84a, toneMapped: false })); etoile.position.set(0, H + .35, -.09); g.add(etoile);
+  const lueur = new THREE.PointLight(0xffd890, 0, 26, 1.6); lueur.position.set(0, H * .5, 0); g.add(lueur);
+  // les paquets au pied
+  const PQ = [[0xc8102e, 0xf2d24a], [0x1f4e8c, 0xf2f2f2], [0x2f8a4a, 0xc8102e], [0xf2d24a, 0xc8102e], [0x8a1ab0, 0xf2d24a], [0xf2f2f2, 0xc8102e]];
+  for (let i = 0; i < 10; i++) { const [c1, c2] = PQ[i % PQ.length], w = .5 + (i * 37 % 10) / 10 * .5, a = i / 10 * Math.PI * 2 + .3, r = 1.2 + (i % 3) * .5;
+    const p = new THREE.Group(); p.position.set(Math.cos(a) * r, w / 2, Math.sin(a) * r); p.rotation.y = a * 2; g.add(p);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, w, w), new THREE.MeshStandardMaterial({ color: c1, roughness: .6 })); b.castShadow = true; p.add(b);
+    const rm = new THREE.MeshStandardMaterial({ color: c2, roughness: .4 }); p.add(new THREE.Mesh(new THREE.BoxGeometry(w + .02, w + .02, .08), rm)); p.add(new THREE.Mesh(new THREE.BoxGeometry(.08, w + .02, w + .02), rm)); }
+  g.traverse(o => { if (o.isMesh) o.userData.perso = true; });   // (pas de neige « peinte » dessus : elle y est déjà)
+  const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < d * .55); }   // (on ne traverse pas le sapin)
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; g.visible = vu; if (!vu) return;
+    const n = !!L.nuit; lueur.intensity = n ? 3.2 : 0; etoile.material.color.setHex(n ? 0xfff0a0 : 0xffd84a);
+    if (Math.floor(tm / 120) !== g.userData.tic) { g.userData.tic = Math.floor(tm / 120); for (let i = 0; i < na; i++) { const f = .35 + .65 * (.5 + .5 * Math.sin(tm / 260 + i * 2.39)); amp.setColorAt(i, col.copy(base[i]).multiplyScalar(n ? f * 1.6 : f * .9)); } amp.instanceColor.needsUpdate = true;
+      for (let i = 0; i < ng; i++) { const w = .5 + .5 * Math.sin(tm / 180 - i * .35), f = .25 + .75 * w * w; gl.setColorAt(i, col.copy(baseG[i]).multiplyScalar(n ? f * 1.8 : f * 1.1)); } gl.instanceColor.needsUpdate = true; } };
+  L.sapin = g; }
 /* la bataille de boules de neige : des enfants en bonnet, écharpe et anorak, en deux camps ; ils ramassent la neige (sur le toit des voitures, ou par terre), la tassent, visent, lancent ;
    touché : un nuage de neige, et l'enfant se secoue en riant */
 function batailleNeige(L, scene, Z) {
@@ -13068,7 +13115,7 @@ const EI = [[-54, 54, "chant", "Le chanteur", "eichant", "chanteur", 0, 3.18], [
 /* le grand écran de la salle des fêtes : il descend (son moteur, quelques secondes) quand un clip vidéo passe, remonte après ; la vidéo, muette (le son passe par la musique du DJ), est calée sur le même moment pour tous */
 function majEcran(L, k) { const E = L.ecran; if (!E) return; E.k = k; const h = Math.max(.001, k) * E.EH;
   E.toile.scale.y = Math.max(.001, k); E.toile.visible = k > .002; E.cadre.scale.y = h + .08; E.cadre.visible = k > .002; E.barre.position.y = -h - .02; }
-function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(null); return; }
+function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E || E.retire) { videoDJ(null); diagClip(null, E); return; }
   const c = L.apo ? null : M.djVideo, cible = c ? 1 : 0;   /* (à l'apocalypse, plus de courant : pas de clip) */ if (E.k !== cible) majEcran(L, cible > E.k ? Math.min(1, E.k + dt / 4.5) : Math.max(0, E.k - dt / 3.5));
   videoDJ(c && E.k > .1 ? c : null); const v = M.videoDJ;
   /* l'image du clip : recopiée nous-mêmes dans une toile, dès qu'elle change (sans attendre le signal du navigateur, qui ne venait pas toujours : l'écran restait figé, seul le son passait) */
@@ -13083,7 +13130,7 @@ function animerEcran(dt) { const L = M.L, E = L && L.ecran; if (!E) { videoDJ(nu
   if (!v) E.illisible = false; }
 function diagClip(v, E) {   // (pour l'administrateur : l'état du clip, en petit, en haut de l'écran — pour comprendre ce qui coince sur son ordinateur)
   const adm = M.ctx.moiInfo && M.ctx.moiInfo().admin; let d = M.diagClipEl;
-  if (!adm || !v) { if (d) { d.remove(); M.diagClipEl = null; } return; }
+  if (true || !adm || !v) { if (d) { d.remove(); M.diagClipEl = null; } return; }   // (10.03 : plus d'écritures de test)
   if (!d) { d = M.diagClipEl = document.createElement("div"); d.style.cssText = "position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:8;background:rgba(0,0,0,.6);color:#9f9;font:11px monospace;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap"; M.ctx.conteneur.appendChild(d); }
   const now = performance.now(); if (now < (M.diagClipT || 0)) return; M.diagClipT = now + 500;
   d.textContent = `clip : prêt ${v.readyState} · ${v.paused ? "PAUSE" : "lecture"} · ${v.currentTime.toFixed(1)}/${(v.duration || 0).toFixed(0)} s · ${v.videoWidth}×${v.videoHeight} · ${/^blob:/.test(v.src) ? "local" : v.getAttribute("src") ? "réseau" : "téléchargement…"} · images ${E.nImg || 0}${v.error ? " · ERREUR " + v.error.code : ""}${E.errImg ? " · " + E.errImg : ""} · écran ${E.k.toFixed(2)}`; }
