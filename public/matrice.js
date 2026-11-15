@@ -49,7 +49,7 @@ export function dessinerBonhomme(o, tete) {
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
-    const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
+    const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" || t === "manteauG" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const peignoirAssis = t === "peignoir" && (o.pose === "assis" || o.pose === "boire");
     const bas = peignoirAssis ? (o.bas || c) : t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
@@ -86,16 +86,17 @@ export function dessinerBonhomme(o, tete) {
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
     const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "");
     const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
-    if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
+    if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "manteauG" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
     const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
     const PY = o.pose === "slow" ? [404, 404] : profil ? [352, 404] : assis ? [352, 352] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
     if (t === "thriller") { x.fillStyle = "#f4f4f2"; x.fillRect(PD[0] - 9, PY[0] - 14, 18, 9); x.fillRect(PD[1] - 9, PY[1] - 14, 18, 9); }   // les chaussettes blanches
     x.fillStyle = pieds; x.beginPath(); x.ellipse(PD[0], PY[0], 20, 10, o.pose === "madison1" ? -.25 : 0, 0, 7); x.ellipse(PD[1], PY[1], 20, 10, o.pose === "madison3" ? .25 : 0, 0, 7); x.fill();
     if (pieds === "#f2f2f2") { x.fillStyle = "#cfcfcf"; x.fillRect(PD[0] - 20, PY[0] + 4, 40, 3); x.fillRect(PD[1] - 20, PY[1] + 4, 40, 3); }   // semelle des baskets
-    const haut = t === "garde" ? "#1c2541" : c;
+    const haut = t === "garde" ? "#1c2541" : t === "manteauG" ? "#1a2134" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "nemesis" || t === "lbdavid") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
+    if (t === "manteauG") { x.moveTo(52, 146); x.lineTo(148, 146); x.lineTo(150, 236); x.lineTo(158, 350); x.lineTo(42, 350); x.lineTo(50, 236); }   // (10.04) le manteau d'hiver de la Gendarmerie : long, jusqu'aux mollets
+    else if (t === "nemesis" || t === "lbdavid") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
     else if (t === "ecossaise") { x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(160, 352); x.lineTo(40, 352); x.lineTo(62, 236); }   // la longue jupe écossaise
@@ -587,6 +588,7 @@ export function dessinerBonhomme(o, tete) {
       if ((t === "barry" || t === "chris" || t === "wesker") && !profil) { x.fillStyle = "#1c1c1e"; x.beginPath(); x.arc(0, 96, 11.5, 0, 7); x.fill(); }   // les mitaines
       if (t === "rebecca") { x.fillStyle = "rgba(255,255,255,.08)"; x.fillRect(-12, 20, 24, 3); x.fillRect(-12, 60, 24, 3); }
       if (t === "garde") { x.fillStyle = "#f2f2f0"; x.fillRect(-12, 20, 24, 9); }
+      if (t === "manteauG") { x.fillStyle = "#121827"; x.fillRect(-12, 80, 24, 10); x.fillStyle = "#c9ccd2"; x.beginPath(); x.arc(0, 72, 2.2, 0, 7); x.fill(); }   // (le revers de manche, le bouton)
       if (t === "beegees") { x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(-7, -4, 5, 76); x.fillStyle = "#7d6d34"; x.fillRect(-12, 74, 24, 14); }
       if (t === "thriller") { x.fillStyle = "#141414"; x.fillRect(-12, 2, 24, 6); x.fillRect(-12, 80, 24, 6); }
       if (t === "nemesis") { x.fillStyle = "rgba(255,255,255,.08)"; for (let k = 6; k < 90; k += 12) x.fillRect(-12, k, 24, 4); x.fillStyle = "#d8c23a"; x.fillRect(-12, 60, 24, 7); }
@@ -698,6 +700,18 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = assombrir(c, .9); x.fillRect(97, 150, 6, 26); x.fillStyle = "#f4f1ea"; for (const yb of [156, 166]) { x.beginPath(); x.arc(100, yb, 2, 0, 7); x.fill(); } }
     if (!dos && t === "costume") { x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 190); x.lineTo(114, 146); x.fill(); x.fillStyle = "#8a1f2b"; x.fillRect(97, 152, 6, 40); }
     if (!dos && t === "civil") { x.fillStyle = "#e9e2d0"; x.beginPath(); x.moveTo(88, 146); x.lineTo(100, 168); x.lineTo(112, 146); x.fill(); x.fillStyle = assombrir(c, .8); x.fillRect(98, 168, 4, 92); }
+    if (t === "manteauG") {   // (10.04) le manteau d'hiver : croisé, deux rangées de boutons argentés, la ceinture, les pattes d'épaule, le col rabattu
+      x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(64, 150, 4, 196); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(132, 150, 5, 196);   // (le volume)
+      if (!dos) { x.fillStyle = "rgba(0,0,0,.28)"; x.beginPath(); x.moveTo(100, 168); x.lineTo(118, 236); x.lineTo(114, 346); x.lineTo(110, 346); x.lineTo(112, 236); x.lineTo(96, 170); x.fill();   // (le pan croisé)
+        x.fillStyle = "#c9ccd2"; for (const bx of [86, 114]) for (const by of [184, 206, 252, 276]) { x.beginPath(); x.arc(bx, by, 3.6, 0, 7); x.fill(); x.fillStyle = "#8a8e96"; x.beginPath(); x.arc(bx + 1, by + 1, 1.6, 0, 7); x.fill(); x.fillStyle = "#c9ccd2"; } }
+      else { x.fillStyle = "rgba(0,0,0,.22)"; x.fillRect(98, 240, 4, 110); }   // (dans le dos : la fente)
+      x.fillStyle = "#121722"; x.fillRect(52, 226, 96, 13); if (!dos) { x.fillStyle = "#c9ccd2"; x.fillRect(93, 227, 14, 11); x.fillStyle = "#121722"; x.fillRect(97, 230, 6, 5); }   // (la ceinture, sa boucle)
+      for (const ex of [62, 116]) { x.fillStyle = "#0f1424"; x.beginPath(); x.roundRect(ex, 160, 22, 11, 3); x.fill(); x.strokeStyle = "#d4b24a"; x.lineWidth = 2.6; x.beginPath(); x.moveTo(ex + 5, 163); x.lineTo(ex + 11, 168); x.lineTo(ex + 17, 163); x.stroke(); }   // (les galons dorés, comme sur le pull)
+      // le col : en drap, rabattu, avec ses deux revers (sans fourrure)
+      x.fillStyle = "#121827"; x.beginPath(); x.moveTo(70, 142); x.lineTo(130, 142); x.lineTo(136, 156); x.lineTo(64, 156); x.closePath(); x.fill();
+      if (!dos) { x.fillStyle = "#a9c4e0"; x.beginPath(); x.moveTo(90, 142); x.lineTo(100, 156); x.lineTo(110, 142); x.fill();   // (le col de chemise bleu clair)
+        x.fillStyle = "#121827"; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(100 + sg * 10, 142); x.lineTo(100 + sg * 30, 150); x.lineTo(100 + sg * 22, 178); x.lineTo(100 + sg * 2, 168); x.closePath(); x.fill(); } }
+    }
     if (!dos && t === "garde") {
       // col de chemise bleu clair
       x.fillStyle = "#a9c4e0"; x.beginPath(); x.moveTo(84, 145); x.lineTo(100, 166); x.lineTo(116, 145); x.lineTo(108, 141); x.lineTo(100, 152); x.lineTo(92, 141); x.fill();
@@ -11815,6 +11829,7 @@ function majHiver() {
     const b = NEIGE.boites.value, d = typeof C3 !== "undefined" && C3.dojo; b.forEach(v => v.set(0, 0, 0, 0)); if (d && M.lieu === "grande") { b[0].set(d.X0, d.X1, d.Z0, d.Z1); NEIGE.hauts.value[0] = C3.hp + C3.NT * C3.HT2 - .3; }   // (sous le toit-terrasse : la salle de judo)
     if (M.L.boiteAppart) { const B = M.L.boiteAppart; b[0].set(B[0], B[1], B[2], B[3]); NEIGE.hauts.value[0] = 1e4; } }   // (l'appartement : pas de neige dedans ; elle tombe dehors, devant les fenêtres)
   NEIGE.dehors = on && M.L.boiteAppart ? M.L.boiteAppart : null;
+  { const p = M.gens && M.gens.get(PNJ); if (p && p.info.tenue !== hiverTenue((M.ctx.pnj && M.ctx.pnj() || {}).tenue || "garde")) { const q = p.g.position.clone(); retirerAncien(PNJ); ajouterPNJ(); const p2 = M.gens.get(PNJ); if (p2) p2.g.position.copy(q); } }   // (le chef de poste se change : manteau l'hiver)
   NEIGE.u.value = on ? 1 : 0; if (M.L.setNuit && !!M.L.hiverCiel !== on && !M.L.cielPerso) M.L.setNuit(!!M.L.nuit);   // (le ciel d'hiver, ou le ciel d'avant)
   if (M.L.camionBenne) M.L.camionBenne.visible = !on && !M.L.nuit;
   if (on && !NEIGE.pts) {   // les flocons : un pavé de neige autour de nous, qui tombe et se répète
@@ -11876,7 +11891,7 @@ function sapinNoel(L, scene, x, z, H = 12) {
       const pan = new THREE.Mesh(new THREE.BoxGeometry(w * .1, .03, w * .35), rm); pan.position.set(sg * w * .1, .01, w * .14); pan.rotation.y = sg * .5; nb2.add(pan); }
     const coeur = new THREE.Mesh(new THREE.SphereGeometry(w * .08, 10, 8), rm); coeur.position.y = w * .07; nb2.add(coeur); }
   g.traverse(o => { if (o.isMesh) o.userData.perso = true; });   // (pas de neige « peinte » dessus : elle y est déjà)
-  const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < d * .55); }   // (on ne traverse pas le sapin)
+  const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < d + 1.2); }   // (ni les cadeaux)   // (on ne traverse pas le sapin)
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; g.visible = vu; if (!vu) return;
     const n = !!L.nuit; lueur.intensity = n ? 3.2 : 0; etoile.material.color.setHex(n ? 0xfff0a0 : 0xffd84a);
     if (Math.floor(tm / 120) !== g.userData.tic) { g.userData.tic = Math.floor(tm / 120); for (let i = 0; i < na; i++) { const f = .35 + .65 * (.5 + .5 * Math.sin(tm / 260 + i * 2.39)); amp.setColorAt(i, col.copy(base[i]).multiplyScalar(n ? f * 1.6 : f * .9)); } amp.instanceColor.needsUpdate = true;
@@ -11965,6 +11980,7 @@ function batailleNeige(L, scene, Z) {
     for (const pf of pouf) { if (!pf.visible) continue; const k2 = (tm - pf.userData.t0) / 450; if (k2 >= 1) { pf.visible = false; continue; } pf.scale.setScalar(.4 + k2 * 1.6); pf.material.opacity = .9 * (1 - k2); }
     if (bs.visible && tm > bFin) bs.visible = false; };
 }
+const hiverTenue = t => M && M.hiver && (t === "garde" || !t) ? "manteauG" : t;   // (10.04, l'hiver : le manteau de la Gendarmerie)
 /* --- jour ou nuit : d'après l'heure réelle à Paris, sauf si l'administrateur l'a imposé --- */
 const SOLEIL_PARIS = [[8.7, 17.3], [8.1, 18.1], [7.3, 18.8], [7.2, 20.5], [6.4, 21.2], [5.8, 21.9], [6.1, 21.8], [6.8, 21.1], [7.6, 20.1], [8.3, 19.0], [8.2, 17.3], [8.7, 16.9]];
 function estNuit() {
@@ -12417,7 +12433,7 @@ function ajouterPNJ() {
   if (!M || !M.L || M.gens.has(PNJ) || M.L.sansPNJ || lieuPNJ() !== M.lieu) return;      // (jamais au sous-sol, ni dans la rue ou les étages)
   const [x, z] = pointPNJ(Math.floor(Date.now() / 9000) - 1);
   const P = (M.ctx.pnj && M.ctx.pnj()) || {};
-  ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
+  ajouterAncien({ numero: PNJ, nom: P.nom || "Le chef de poste", tenue: hiverTenue(P.tenue || "garde"), couleur: P.couleur || "#1c2541", bas: P.bas, pieds: P.pieds, reglage: P.reglage || null,
     teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v) : "images/pere-tete.png", pnj: true, x, z });
 }
 /* --- les deux éboueurs de la Propreté de Paris : le jour seulement, ils vont et viennent entre le local poubelle et le camion-benne --- */
@@ -12426,7 +12442,7 @@ const EBOUEURS = [[-70, "eboueur1", "Saïd"], [-71, "eboueur2", "Julien"]], PHRA
 const GENDARME = -72;
 // un gendarme : tel que l'administrateur l'a réglé (sa tête, sa taille, sa tenue, son nom), sinon par défaut
 function infoGendarme(id, tete, nom = "Gendarme") { const P = (M.ctx.pnjTrio && M.ctx.pnjTrio(id)) || {};
-  const info = { nom: P.nom || nom, tenue: P.tenue || "garde", couleur: P.couleur || "#1c2541", bas: P.bas || "#26324e", pieds: P.pieds || "#111", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete };
+  const info = { nom: P.nom || nom, tenue: hiverTenue(P.tenue || "garde"), couleur: P.couleur || "#1c2541", bas: P.bas || "#26324e", pieds: P.pieds || "#111", reglage: P.reglage || null, teteUrl: P.tete_v ? M.ctx.urlTetePNJ(P.tete_v, id) : tete };
   return { info, cle: JSON.stringify(info) }; }
 function animerGendarme() {
   if (!M || !M.L) return;
