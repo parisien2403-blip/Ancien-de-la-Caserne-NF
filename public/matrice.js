@@ -1921,6 +1921,7 @@ function construireRue(A, T, L, scene) {
   L.horsPNJ = (x, z) => z > -8.2; L.departPNJ = [0, -10.5];
   // la circulation : de temps en temps une voiture des années 80-90, ou un bus parisien, descend la rue
   circulation(L, scene);
+  busLigne(L, scene, { ax: 10, az: -4.7, ry: 0, voie: .55, sens: 1, x0: -70, x1: 74, vers: "grande", arrivee: [22, -154.6], yawA: 0 });   // (10.07, l'arrêt de bus devant la caserne, rue du Faubourg-Poissonnière)
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.boite = [-55, 54, -11.8, 6.3]; L.zone = [-54.4, 53.4, -26, 6.4];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
@@ -2933,7 +2934,7 @@ function ruesDehors0(A, L, scene) {
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
   // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
-  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1, nom: "circH" }); livraisonRue(L, scene); }
+  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1, nom: "circH" }); livraisonRue(L, scene); busLigne(L, scene, { ax: 22, az: -154.6, ry: Math.PI, voie: (ZR + ZF) / 2, sens: -1, x0: XEst - .6, x1: XW + 6, vers: "rue", arrivee: [10, -4.7], yawA: Math.PI }); }   // (10.07, l'arrêt de bus d'en face, rue d'Hauteville)
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
   eboueurCaniveau(L, scene, -30, 30, ZR);   // (l'éboueur qui balaie le caniveau, le long du trottoir de la caserne)
   arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
@@ -12955,6 +12956,51 @@ function livraisonRue(L, scene) {
     G.position.set(T.x, Y, T.z); const dx = T.x - px, dz = T.z - pz; if (Math.hypot(dx, dz) > 1e-4) G.rotation.y = Math.atan2(dz, -dx) + Math.PI;
     for (const w of U.roues) w.rotation.y -= Math.hypot(dx, dz) / .38; obst.x = T.x; obst.z = T.z; };
 }
+/* (10.07) le bus : un abribus de chaque côté — rue d'Hauteville, en face ; rue du Faubourg-Poissonnière, devant l'entrée de la caserne.
+   À l'arrêt, « 🚌 Prendre le bus » : le bus parisien arrive, on monte, il remonte la rue… et l'on descend à l'autre arrêt. Pour aller plus vite d'une rue à l'autre */
+function abribus(scene, x, y, z, ry) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
+  const vertF = new THREE.MeshStandardMaterial({ color: 0x1e3a2c, roughness: .5, metalness: .3 }), verre = new THREE.MeshStandardMaterial({ color: 0xcfe2ea, transparent: true, opacity: .3, roughness: .05 }), add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; };
+  for (const sx of [-1.7, 1.7]) for (const sz of [-.55, .55]) add(new THREE.BoxGeometry(.07, 2.4, .07), vertF, sx, 1.2, sz);
+  add(new THREE.BoxGeometry(3.7, .1, 1.5), vertF, 0, 2.45, 0);   // (le toit)
+  add(new THREE.BoxGeometry(3.4, 2.1, .02), verre, 0, 1.25, -.55);   // (la vitre du fond)
+  add(new THREE.BoxGeometry(.02, 2.1, 1.0), verre, -1.7, 1.25, 0);
+  const pub = add(new THREE.BoxGeometry(.06, 1.75, 1.15), new THREE.MeshBasicMaterial({ map: tex(toile(128, 192, (c) => { const G = c.createLinearGradient(0, 0, 0, 192); G.addColorStop(0, "#e8f0f6"); G.addColorStop(1, "#b8d0e0"); c.fillStyle = G; c.fillRect(0, 0, 128, 192); c.fillStyle = "#c8102e"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.fillText("NOËL", 64, 70); c.fillStyle = "#1e3a2c"; c.font = "bold 14px Arial"; c.fillText("à Paris", 64, 94); c.fillStyle = "#e8b830"; c.beginPath(); c.arc(64, 140, 22, 0, 7); c.fill(); })), toneMapped: false }), 1.7, 1.25, 0);
+  add(new THREE.BoxGeometry(2.2, .06, .4), new THREE.MeshStandardMaterial({ color: 0x8a8e94, metalness: .6, roughness: .4 }), -.3, .5, -.32);   // (le banc)
+  for (const sx of [-1.2, .6]) add(new THREE.BoxGeometry(.05, .5, .05), vertF, sx, .25, -.35);
+  // le poteau d'arrêt, son disque « BUS » et les numéros de ligne
+  add(new THREE.CylinderGeometry(.04, .04, 2.8, 8), vertF, 2.4, 1.4, .5);
+  const plaque = add(new THREE.CylinderGeometry(.28, .28, .03, 20), new THREE.MeshBasicMaterial({ map: tex(toile(128, 128, (c) => { c.fillStyle = "#1e3a2c"; c.beginPath(); c.arc(64, 64, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("BUS", 64, 78); })) }), 2.4, 2.75, .5); plaque.rotation.x = Math.PI / 2;
+  const nums = add(new THREE.BoxGeometry(.5, .3, .03), new THREE.MeshBasicMaterial({ map: tex(toile(128, 64, (c) => { c.fillStyle = "#f2f0ea"; c.fillRect(0, 0, 128, 64); c.fillStyle = "#2a8a5a"; c.fillRect(6, 10, 52, 44); c.fillStyle = "#c8202a"; c.fillRect(70, 10, 52, 44); c.fillStyle = "#fff"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("39", 32, 44); c.fillText("48", 96, 44); })) }), 2.4, 2.3, .5);
+  return g; }
+function busLigne(L, scene, C) {
+  const y0 = (() => { try { return L.hauteur ? L.hauteur(C.ax, C.az) : 0; } catch (e) { return 0; } })();
+  abribus(scene, C.ax, y0, C.az - .3, 0);   // (le dos de l'abribus vers les façades)
+  if (L.limites) { const lim0 = L.limites, zv = C.az - .85; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.85 && Math.abs(b - zv) < .12); }   // (on ne traverse pas la vitre du fond)
+  const B = L.busL = { C, phase: "rien", g: null, x: C.x0, v: 0, t: 0 }, xs = C.ax - C.sens * 4.2, obst = { x: C.x0, z: C.voie, L: 11 };
+  let avant = 0;
+  const fin = () => { if (B.g) { scene.remove(B.g); B.g = null; } L.obstRue = (L.obstRue || []).filter(o => o !== obst); B.phase = "rien"; };
+  const moi = () => M && M.moiNum && M.gens.get(M.moiNum);
+  const coller = (cache) => { const p = moi(); if (!p) return; p.cible = null; p.chemin = []; p.g.position.set(B.x - C.sens * 3, p.g.position.y, C.voie); if (cache) p.g.visible = false; };
+  B.appeler = () => { if (B.phase !== "rien") return; B.phase = "vient"; B.monte = false; };
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
+    if (!M || M.L !== L || L.apo || L.sh || L.gb || L.bttf) { if (B.phase !== "rien" && B.phase !== "attend") fin(); return; }
+    if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { M.busArrive = null; B.phase = "amene"; }   // (on arrive en bus d'une autre rue)
+    if (B.phase === "rien") return;
+    if (!B.g) { B.g = busCaserne(scene, "ratp", C.x0, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.x = C.x0; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); }
+    const circ = L.circH || L.circR;
+    const freine = () => { if (circ) for (const o of circ.enRoute) { const e = (o.g.position.x - B.x) * C.sens - 5.5 - o.L / 2; if (e > -2 && e < 14) B.v = Math.min(B.v, Math.max(0, (e - 2) * 1.5)); } };
+    if (B.phase === "vient" || B.phase === "amene") { const d = (xs - B.x) * C.sens; B.v += (Math.min(9, Math.max(.4, d * .6)) - B.v) * Math.min(1, dt * 2); freine(); B.x += C.sens * Math.min(B.v * dt, Math.max(0, d));
+      if (B.phase === "amene") coller(true);
+      if (d < .05) { B.x = xs; B.t = tm; B.phase = B.phase === "vient" ? "monte" : "descend"; } }
+    else if (B.phase === "monte") { if (tm - B.t > 1300 && !B.monte) { B.monte = true; const p = moi(); if (p && Math.hypot(p.g.position.x - C.ax, p.g.position.z - C.az) < 6) { coller(true); dire(M.moiNum, "🚌 En voiture !"); B.avecMoi = true; } else B.avecMoi = false; }
+      if (B.avecMoi) coller(true); if (tm - B.t > 2600) { B.phase = "part"; B.t = tm; B.v = 0; } }
+    else if (B.phase === "descend") { coller(true); if (tm - B.t > 1200) { const p = moi(); if (p) { p.g.position.set(C.ax, p.g.position.y, C.az); p.g.visible = true; envoyerWS({ t: "aller", x: C.ax, z: C.az }); } B.phase = "repart"; B.t = tm; B.v = 0; } }
+    else if (B.phase === "part" || B.phase === "repart") { B.v += (10 - B.v) * Math.min(1, dt * .7); freine(); B.x += C.sens * B.v * dt;
+      if (B.phase === "part" && B.avecMoi) { coller(true); if (tm - B.t > 4200) { M.busArrive = { vers: C.vers }; const p = moi(); if (p) p.g.visible = true; fin(); changerLieu(C.vers, C.arrivee, C.yawA || 0); return; } }
+      if ((B.x - C.x1) * C.sens > 0) { fin(); return; } }
+    B.g.position.x = B.x; obst.x = B.x; };
+}
 /* --- le clochard : assis sur son carton contre le mur de la caserne, rue d'Hauteville ; dreadlocks, barbe, vieux manteau ; un gobelet pour les pièces --- */
 function toileClochard(f) {
   return toile(220, 300, (x) => { x.lineCap = "round"; x.lineJoin = "round"; const P = "#c89a76", man = "#5a5a3a", jean = "#3a4048", trait = (pts, c, l) => { x.strokeStyle = c; x.lineWidth = l; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
@@ -14035,6 +14081,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
+    else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
     else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
     else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
     else if (M.hwFete && M.hwFete.etat === "jeu") { const G = M.L.gensFete || [], i = G.findIndex(E => E.G.r === "danse" && !E.mort && Math.hypot(E.m.position.x - x, E.m.position.z - z) < 1.6); a = i >= 0 ? { type: "hwTuer", i, label: "🔪 Frapper" } : null; }
@@ -14099,6 +14146,7 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "hwTuer") { hwTuer(M.L.gensFete[a.i]); return; }
+  if (a.type === "bus") { if (M.L.busL) M.L.busL.appeler(); M.actionCle = null; dire(M.moiNum, "🚌 J'attends le bus…"); return; }
   if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
   if (a.type === "neigeLancer") { if (M.L.neigeB && M.L.neigeB.lancer()) M.bouleMain = false; M.actionCle = null; return; }
   if (a.type === "pierre") { M.pierreMain = true; M.actionCle = null; dire(M.moiNum, "🪨 Une belle pierre…"); return; }
