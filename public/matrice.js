@@ -49,7 +49,7 @@ export function dessinerBonhomme(o, tete) {
     const LG = Math.max(.7, Math.min(1.6, (o.reglage && o.reglage.l) || 1));
     x.translate(100, 0); x.scale(LG, 1); x.translate(-100, 0);
     const c = o.couleur || "#22324f", t = o.tenue || "civil", peau = o.peau || (t === "nemesis" ? "#8f7f93" : "#e9c4a0");   // (Nemesis : la peau grise violacée)
-    const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" || t === "manteauG" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
+    const basDefaut = t === "soie" ? "#1d1d1f" : t === "garde" || t === "manteauG" || t === "manteauC" ? "#26324e" : t === "survet" ? c : t === "costume" ? assombrir(c, .75) : "#3d5a80";
     const peignoirAssis = t === "peignoir" && (o.pose === "assis" || o.pose === "boire");
     const bas = peignoirAssis ? (o.bas || c) : t === "robe" || t === "jupe" || t === "robelongue" || t === "peignoir" || t === "tailleur" || t === "mariee" || t === "nemesis" || t === "jill" || t === "pois" || t === "ecossaise" || t === "serveuse" || t === "lorraine" ? null : (o.bas || basDefaut), pieds = o.pieds || (t === "judogi" ? peau : "#2a2522");   // (en kimono : pieds nus)
     // le Charleston : accroupi, les mains sur les genoux, qui s'ouvrent (genoux1) puis se croisent (genoux2)
@@ -86,7 +86,7 @@ export function dessinerBonhomme(o, tete) {
     else { x.fillStyle = peau; x.beginPath(); x.roundRect(80, 330, 16, 70, 7); x.roundRect(104, 330, 16, 70, 7); x.fill(); }
     const profil = o.pose === "profil" || o.pose === "slow", assis = o.pose === "assis" || o.pose === "boire" || /^batterie/.test(o.pose || "");
     const jambesDroites = !accroupi && !profil && !assis && !/^madison[1345]$/.test(o.pose || "");
-    if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "manteauG" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
+    if (jambesDroites && bas && t !== "survet" && t !== "garde" && t !== "manteauG" && t !== "manteauC" && t !== "costume") { x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(77, 262, 2, 130); x.fillRect(121, 262, 2, 130); }   // couture du jean
     const PD = o.pose === "slow" ? [86, 104] : profil ? [60, 102] : assis ? [74, 126] : [o.pose === "madison1" ? 46 : o.pose === "madison4" ? 66 : 82, o.pose === "madison3" ? 154 : o.pose === "madison5" ? 134 : 118];
     const PY = o.pose === "slow" ? [404, 404] : profil ? [352, 404] : assis ? [352, 352] : [o.pose === "madison4" ? 352 : 404, o.pose === "madison5" ? 352 : 404];
     if (t === "thriller") { x.fillStyle = "#f4f4f2"; x.fillRect(PD[0] - 9, PY[0] - 14, 18, 9); x.fillRect(PD[1] - 9, PY[1] - 14, 18, 9); }   // les chaussettes blanches
@@ -95,7 +95,8 @@ export function dessinerBonhomme(o, tete) {
     const haut = t === "garde" ? "#1c2541" : t === "manteauG" ? "#1a2134" : c;
     if (accroupi) { x.save(); x.translate(0, DY); }
     x.fillStyle = haut; x.beginPath();
-    if (t === "manteauG") { x.moveTo(52, 146); x.lineTo(148, 146); x.lineTo(150, 236); x.lineTo(158, 350); x.lineTo(42, 350); x.lineTo(50, 236); }   // (10.04) le manteau d'hiver de la Gendarmerie : long, jusqu'aux mollets
+    if (t === "manteauC") { x.moveTo(54, 146); x.lineTo(146, 146); x.lineTo(148, 236); x.lineTo(154, 340); x.lineTo(46, 340); x.lineTo(52, 236); }   // (10.06) le manteau d'hiver des passants
+    else if (t === "manteauG") { x.moveTo(52, 146); x.lineTo(148, 146); x.lineTo(150, 236); x.lineTo(158, 350); x.lineTo(42, 350); x.lineTo(50, 236); }   // (10.04) le manteau d'hiver de la Gendarmerie : long, jusqu'aux mollets
     else if (t === "nemesis" || t === "lbdavid") { x.moveTo(50, 146); x.lineTo(150, 146); x.lineTo(152, 250); x.lineTo(160, 392); x.lineTo(40, 392); x.lineTo(48, 250); }   // le long manteau noir, jusqu'aux bottes
     else if (t === "mariee") { x.moveTo(66, 150); x.lineTo(134, 150); x.lineTo(140, 230); x.lineTo(176, 345); x.lineTo(24, 345); x.lineTo(60, 230); }   // la robe de mariée, longue et évasée
     else if (t === "pois" || t === "serveuse" || t === "lorraine") { const lg = t !== "serveuse"; x.moveTo(64, 148); x.lineTo(136, 148); x.lineTo(138, 236); x.lineTo(lg ? 168 : 158, lg ? 330 : 300); x.lineTo(lg ? 32 : 42, lg ? 330 : 300); x.lineTo(62, 236); }   // la robe des années 50, jupe bien évasée
@@ -700,6 +701,13 @@ export function dessinerBonhomme(o, tete) {
       x.fillStyle = assombrir(c, .9); x.fillRect(97, 150, 6, 26); x.fillStyle = "#f4f1ea"; for (const yb of [156, 166]) { x.beginPath(); x.arc(100, yb, 2, 0, 7); x.fill(); } }
     if (!dos && t === "costume") { x.fillStyle = "#f4f1ea"; x.beginPath(); x.moveTo(86, 146); x.lineTo(100, 190); x.lineTo(114, 146); x.fill(); x.fillStyle = "#8a1f2b"; x.fillRect(97, 152, 6, 40); }
     if (!dos && t === "civil") { x.fillStyle = "#e9e2d0"; x.beginPath(); x.moveTo(88, 146); x.lineTo(100, 168); x.lineTo(112, 146); x.fill(); x.fillStyle = assombrir(c, .8); x.fillRect(98, 168, 4, 92); }
+    if (t === "manteauC") {   // (10.06) le manteau des passants : une rangée de boutons, les poches, et l'écharpe
+      x.fillStyle = "rgba(0,0,0,.16)"; x.fillRect(130, 150, 5, 186); x.fillStyle = "rgba(255,255,255,.06)"; x.fillRect(64, 150, 4, 186);
+      if (!dos) { x.fillStyle = "rgba(0,0,0,.25)"; x.fillRect(99, 166, 2, 172); x.fillStyle = assombrir(c, .55); for (const by of [180, 204, 228, 252, 276]) { x.beginPath(); x.arc(106, by, 3.2, 0, 7); x.fill(); }
+        x.fillStyle = "rgba(0,0,0,.2)"; x.fillRect(66, 262, 22, 3); x.fillRect(112, 262, 22, 3); }
+      const ec = o.echarpe || "#c8202a"; x.fillStyle = ec; x.beginPath(); x.roundRect(68, 140, 64, 18, 8); x.fill();
+      if (!dos) { x.beginPath(); x.roundRect(110, 150, 14, 52, 5); x.fill(); x.fillStyle = "rgba(255,255,255,.35)"; for (const yy of [190, 196]) x.fillRect(110, yy, 14, 2); }
+      x.fillStyle = "rgba(0,0,0,.15)"; x.fillRect(68, 152, 64, 3); }
     if (t === "manteauG") {   // (10.04) le manteau d'hiver : croisé, deux rangées de boutons argentés, la ceinture, les pattes d'épaule, le col rabattu
       x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(64, 150, 4, 196); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(132, 150, 5, 196);   // (le volume)
       if (!dos) { x.fillStyle = "rgba(0,0,0,.28)"; x.beginPath(); x.moveTo(100, 168); x.lineTo(118, 236); x.lineTo(114, 346); x.lineTo(110, 346); x.lineTo(112, 236); x.lineTo(96, 170); x.fill();   // (le pan croisé)
@@ -4387,7 +4395,7 @@ function deuxiemeCour(A, L, scene) {
 }
 /* la circulation de la rue du Faubourg-Poissonnière (sens unique) : des voitures des années 80-90 (couleurs au hasard)
    et, plus rarement, le bus parisien de l'époque (vert jade et blanc) ; jamais en continu, de temps en temps */
-function circulation(L, scene) { circulationRue(L, scene, { x0: -72, x1: 75, z: .55, y: 0, sens: 1 }); }
+function circulation(L, scene) { circulationRue(L, scene, { x0: -72, x1: 75, z: .55, y: 0, sens: 1, nom: "circR" }); }
 /* ---------- Halloween : un masque de clown traîne au sol, dans la cour. On le ramasse, on le met : écran noir, le titre, la musique —
    la caserne devient un cauchemar (la nuit, la brume, des citrouilles, du sang, des papiers), et Michael Myers nous poursuit.
    Il marche, nous court ; il nous retrouve toujours. Un coup de couteau, et c'est fini : on se relève là où l'on est tombé, dans la caserne de tous les jours. ---------- */
@@ -11840,7 +11848,49 @@ function majHiver() {
     const t = tex(toile(32, 32, (c) => { const r = c.createRadialGradient(16, 16, 0, 16, 16, 16); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.5, "rgba(255,255,255,.8)"); r.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = r; c.fillRect(0, 0, 32, 32); }));
     NEIGE.pts = new THREE.Points(g, new THREE.PointsMaterial({ map: t, size: .15, transparent: true, depthWrite: false, sizeAttenuation: true })); NEIGE.pts.frustumCulled = false; NEIGE.pts.renderOrder = 8; }
   if (NEIGE.pts) { if (on && NEIGE.pts.parent !== M.scene) M.scene.add(NEIGE.pts); NEIGE.pts.visible = on; } }
-function animerNeige(t) { const P = NEIGE.pts; if (!P || !P.visible || !M || !M.camera) return;
+/* (10.06) les traces de pas dans la neige : chaque personnage qui marche dehors laisse ses empreintes (gauche, droite), qui s'effacent en une dizaine de secondes */
+const PAS = { im: null, n: 0, N: 320, t: null, scene: null, der: new Map(), c0: null, c1: null };
+function tracesNeige(t) {
+  const on = NEIGE.u.value > 0 && M.lieu !== "appart"; if (!on) { if (PAS.im) PAS.im.visible = false; if (ROU.im) ROU.im.visible = false; return; }
+  if (!PAS.im || PAS.scene !== M.scene) { if (!PAS.im) { const g = new THREE.CircleGeometry(.085, 10); g.scale(1, 1.75, 1); g.rotateX(-Math.PI / 2);
+      PAS.im = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .95, polygonOffset: true, polygonOffsetFactor: -2 }), PAS.N); PAS.im.frustumCulled = false; PAS.im.userData.perso = true; PAS.t = new Float32Array(PAS.N).fill(-1e9);
+      PAS.c0 = new THREE.Color(.42, .47, .58); PAS.c1 = new THREE.Color(.93, .95, 1); const m = new THREE.Matrix4().makeTranslation(0, -999, 0); for (let i = 0; i < PAS.N; i++) { PAS.im.setMatrixAt(i, m); PAS.im.setColorAt(i, PAS.c1); } }
+    M.scene.add(PAS.im); PAS.scene = M.scene; PAS.der.clear(); }
+  PAS.im.visible = true; const B = NEIGE.boites.value && NEIGE.boites.value[0], H0 = NEIGE.hauts.value[0], mm = PAS.mm || (PAS.mm = new THREE.Matrix4()), q = PAS.q || (PAS.q = new THREE.Quaternion()), ax = PAS.ax || (PAS.ax = new THREE.Vector3(0, 1, 0)), v = PAS.v || (PAS.v = new THREE.Vector3()), un = PAS.un || (PAS.un = new THREE.Vector3(1, 1, 1)), col = PAS.col || (PAS.col = new THREE.Color());
+  let maj = false;
+  for (const p of M.gens.values()) { if (!p.g || !p.g.visible || p.info.assis != null && Number.isInteger(p.info.assis)) continue; const g = p.g.position, d = PAS.der.get(p);
+    if (!d) { PAS.der.set(p, { x: g.x, z: g.z, k: 0 }); continue; }
+    const dx = g.x - d.x, dz = g.z - d.z, l = Math.hypot(dx, dz); if (l > 3) { d.x = g.x; d.z = g.z; continue; } if (l < .55) continue;
+    if (B && g.x > B.x && g.x < B.y && g.z > B.z && g.z < B.w && g.y < H0) { d.x = g.x; d.z = g.z; continue; }   // (sous un toit : pas de trace)
+    const ux = dx / l, uz = dz / l, sg = (d.k++ % 2) ? 1 : -1, sc = p.g.scale.x || 1; q.setFromAxisAngle(ax, Math.atan2(ux, uz)); v.set(g.x - uz * .11 * sg * sc, g.y + .016, g.z + ux * .11 * sg * sc);
+    const i = PAS.n++ % PAS.N; PAS.im.setMatrixAt(i, mm.compose(v, q, un.set(sc, 1, sc))); PAS.t[i] = t; d.x = g.x; d.z = g.z; maj = true; }
+  // les enfants de la bataille de boules de neige (pas dans M.gens)
+  for (const e of (M.L && M.L.enfantsNeige) || []) { if (!e.m.visible) continue; const g = e.m.position, d = PAS.der.get(e); if (!d) { PAS.der.set(e, { x: g.x, z: g.z, k: 0 }); continue; }
+    const dx = g.x - d.x, dz = g.z - d.z, l = Math.hypot(dx, dz); if (l > 3) { d.x = g.x; d.z = g.z; continue; } if (l < .4) continue;
+    const ux = dx / l, uz = dz / l, sg = (d.k++ % 2) ? 1 : -1, sc = .75; q.setFromAxisAngle(ax, Math.atan2(ux, uz)); v.set(g.x - uz * .08 * sg, g.y + .016, g.z + ux * .08 * sg); // (petits pieds)
+    const i = PAS.n++ % PAS.N; PAS.im.setMatrixAt(i, mm.compose(v, q, un.set(sc, 1, sc))); PAS.t[i] = t; d.x = g.x; d.z = g.z; maj = true; }
+  if (maj) PAS.im.instanceMatrix.needsUpdate = true;
+  tracesRoues(t);
+  if (Math.floor(t / 150) !== PAS.tic) { PAS.tic = Math.floor(t / 150); for (let i = 0; i < PAS.N; i++) { const k = Math.min(1, Math.max(0, (t - PAS.t[i]) / 10000)); PAS.im.setColorAt(i, col.copy(PAS.c0).lerp(PAS.c1, k * k)); } PAS.im.instanceColor.needsUpdate = true; } }
+/* (10.06) les traces de pneus : voitures, bus, motos, le camion de livraison — deux sillons (un seul pour la moto), qui s'effacent aussi */
+const ROU = { im: null, n: 0, N: 700, t: null, scene: null, der: new Map() };
+function tracesRoues(t) {
+  if (!ROU.im || ROU.scene !== M.scene) { if (!ROU.im) { const g = new THREE.PlaneGeometry(.22, .72); g.rotateX(-Math.PI / 2);
+      ROU.im = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .95, polygonOffset: true, polygonOffsetFactor: -2 }), ROU.N); ROU.im.frustumCulled = false; ROU.im.userData.perso = true; ROU.t = new Float32Array(ROU.N).fill(-1e9);
+      const m = new THREE.Matrix4().makeTranslation(0, -999, 0); for (let i = 0; i < ROU.N; i++) { ROU.im.setMatrixAt(i, m); ROU.im.setColorAt(i, PAS.c1); } }
+    M.scene.add(ROU.im); ROU.scene = M.scene; ROU.der.clear(); }
+  ROU.im.visible = PAS.im.visible; if (!ROU.im.visible) return;
+  const L = M.L, V = []; for (const c of [L.circH, L.circR]) if (c) for (const o of c.enRoute) V.push([o.g, o.bus ? 1.05 : o.L < 2.2 ? 0 : .72]);
+  if (L.livraison && L.livraison.g) V.push([L.livraison.g, .93]);
+  const mm = PAS.mm, q = PAS.q, ax = PAS.ax, v = PAS.v, un = PAS.un, col = PAS.col; let maj = false;
+  for (const [g, demi] of V) { if (!g.visible) continue; const p = g.position, d = ROU.der.get(g); if (!d) { ROU.der.set(g, { x: p.x, z: p.z }); continue; }
+    const dx = p.x - d.x, dz = p.z - d.z, l = Math.hypot(dx, dz); if (l > 4) { d.x = p.x; d.z = p.z; continue; } if (l < .6) continue;
+    const ux = dx / l, uz = dz / l; q.setFromAxisAngle(ax, Math.atan2(ux, uz)); const mx = (p.x + d.x) / 2, mz = (p.z + d.z) / 2;
+    for (const sg of demi ? [-1, 1] : [0]) { v.set(mx - uz * demi * sg, p.y + .014, mz + ux * demi * sg); const i = ROU.n++ % ROU.N; ROU.im.setMatrixAt(i, mm.compose(v, q, un.set(1, 1, l / .72))); ROU.t[i] = t; }
+    d.x = p.x; d.z = p.z; maj = true; }
+  if (maj) ROU.im.instanceMatrix.needsUpdate = true;
+  if (Math.floor(t / 150) !== ROU.tic) { ROU.tic = Math.floor(t / 150); for (let i = 0; i < ROU.N; i++) { const k = Math.min(1, Math.max(0, (t - ROU.t[i]) / 12000)); ROU.im.setColorAt(i, col.copy(PAS.c0).lerp(PAS.c1, k * k)); } ROU.im.instanceColor.needsUpdate = true; } }
+function animerNeige(t) { if (M && M.scene) tracesNeige(t); const P = NEIGE.pts; if (!P || !P.visible || !M || !M.camera) return;
   const dt = Math.min(.1, (t - (NEIGE.tp || t)) / 1000); NEIGE.tp = t; const c = M.camera.position, a = P.geometry.attributes.position, v = a.array, n = v.length / 3;
   P.position.set(Math.floor(c.x / 50) * 50, 0, Math.floor(c.z / 50) * 50); const ox = P.position.x, oz = P.position.z, y0 = c.y - 10;
   const B = NEIGE.dehors;
@@ -11973,6 +12023,7 @@ function batailleNeige(L, scene, Z) {
   const J = { joueur: true, T: 1.75, etat: "", boule: { visible: false }, get x() { const q = moiP(); return q ? q.x : 0; }, get z() { const q = moiP(); return q ? q.z : 0; } };
   const lancer = (a, c, tx, tz, ty, d, rate, deJoueur) => { let b = boules.find(o => !o.m.visible); if (!b) { b = { m: new THREE.Mesh(gb, blanc) }; scene.add(b.m); boules.push(b); }
     Object.assign(b, { a: a.clone(), c: new THREE.Vector3(tx, ty, tz), t0: performance.now(), dur: 380 + d * 70, h: .6 + d * .08, vise: c, rate, deJoueur }); b.m.visible = true; b.m.position.copy(a); };
+  (L.enfantsNeige = L.enfantsNeige || []).push(...E);
   if (Z.voitures) L.neigeB = { proche: (x, z) => { if (!M || !M.hiver || L.nuit) return null; const r = .9; return voitures().find(v => x > v[0] - r && x < v[1] + r && z > v[2] - r && z < v[3] + r) || null; },
     cible: (x, z) => { let best = null, bd = 16; for (const e of E) { const d = Math.hypot(e.x - x, e.z - z); if (d < bd) { bd = d; best = e; } } return best; },
     lancer: () => { const q = moiP(); if (!q) return false; let c = null, bd = 16; for (const e of E) { const d = Math.hypot(e.x - q.x, e.z - q.z); if (d < bd) { bd = d; c = e; } } if (!c) return false;
@@ -12839,10 +12890,12 @@ const PASSANTS = [
   { num: -127, nom: "Une vieille dame", tenue: "tailleur", couleur: "#4a4a6a", pieds: "#2a1a14", tete: ["mamie3", { peau: "#f0d0b4", ch: "#f2f0ea", coif: "court", femme: true, lunettes: true }], acc: "caddie", allure: .55, trajet: [60, -144.0, -40, -144.0] }];
 function animerPassants(t) {
   if (!M || !M.L) return; const L = M.L;
-  for (const [iP, P] of PASSANTS.entries()) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && (!M.sansFigurants || (!PETIT && (P.suit ? PASSANTS.findIndex(q => q.num === P.suit) : iP) % 2 === 0)) && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);   /* (allégé sur ordinateur : un passant sur deux, plus aucun ; petit téléphone : aucun) */
+  for (const [iP, P] of PASSANTS.entries()) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && (!L.nuit || (M.hiver && !P.enfant && !P.suit && iP % 3 === 0)) && (!M.sansFigurants || (!PETIT && (P.suit ? PASSANTS.findIndex(q => q.num === P.suit) : iP) % 2 === 0)) && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);   /* (allégé sur ordinateur : un passant sur deux, plus aucun ; petit téléphone : aucun) */
+    const tenueH = M.hiver && P.tenue !== "survet" ? "manteauC" : P.tenue;   // (10.06 : l'hiver, les passants en manteau et écharpe)
+    if (p && p.info.tenue !== tenueH) { retirerAncien(P.num); p = null; }
     if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
     const [x0, z0, x1, z1] = P.trajet;
-    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); const q = M.gens.get(P.num); if (q && P.enfant) { q.g.scale.setScalar(.64); q.info.allure = .8; } if (q && P.allure) q.info.allure = P.allure; continue; }   /* (les enfants : petits, à petits pas) */
+    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: tenueH, echarpe: ["#c8202a", "#e8c040", "#2f8a4a", "#f2f0ea", "#2a5ac8", "#8a1ab0"][Math.abs(P.num) % 6], couleur: tenueH === "manteauC" ? ["#3a3028", "#22324f", "#5a3a2a", "#3a3a40", "#6a5a4a", "#2a2a30", "#4a2a3a"][Math.abs(P.num) % 7] : P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); const q = M.gens.get(P.num); if (q && P.enfant) { q.g.scale.setScalar(.64); q.info.allure = .8; } if (q && P.allure) q.info.allure = P.allure; continue; }   /* (les enfants : petits, à petits pas) */
     if (P.suit) { const m = M.gens.get(P.suit); if (!m || !m.pass) continue; const mp = m.g.position, sx = Math.sign(P.trajet[2] - P.trajet[0]) * m.pass.sens, sz = Math.sign(P.trajet[3] - P.trajet[1]) * m.pass.sens;   /* (l'enfant : à côté de son parent, côté rue, à son pas) */
       const zc = P.lieu === "rue" ? 0 : -149.75, lat = .62 * (Math.sign(zc - mp.z) || 1); p.cible = null; p.chemin = []; p.g.position.set(mp.x - sz * .1 + (sx ? 0 : lat), mp.y, mp.z + sx * 0 + (sx ? lat : 0)); continue; }
     const S = p.pass || (p.pass = { sens: (P.num & 1) ? 1 : -1, pause: 0 }), g = p.g.position;
