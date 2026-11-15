@@ -4943,7 +4943,7 @@ function circulationRue(L, scene, O) {
     const obst = O.nom && L.obstRue || []; if (obst.some(o => Math.abs(o.z - O.z) < 2 && Math.abs(o.x - O.x0) < 16)) prochain = Math.max(prochain, t + 600);   /* (le camion de livraison s'engage : on attend qu'il soit passé) */
     if (t > prochain && !L.apo && !(M && M.halloween)) { const dernier = enRoute[enRoute.length - 1];
       if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .14 ? busVrai() : r0 < .32 ? moto() : r0 < .6 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
-        prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
+        prochain = t + (O.dense ? (Math.random() < .5 ? 1300 + Math.random() * 1800 : 3000 + Math.random() * 4500) : Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
       else prochain = t + 800; }
     for (let i = enRoute.length - 1; i >= 0; i--) { const v = enRoute[i], dev = enRoute[i - 1];
       // la vitesse voulue : on freine et on s'arrête devant quelqu'un sur la chaussée (≈ 1 m avant), et derrière le véhicule qui précède (pas de dépassement) ; on repart quand c'est libre
@@ -12992,7 +12992,9 @@ function abribus(scene, x, y, z, ry, affiche) {
   for (const sx of [-1.2, .6]) add(new THREE.BoxGeometry(.05, .5, .05), vertF, sx, .25, -.35);
   // le poteau d'arrêt, son disque « BUS » et les numéros de ligne
   add(new THREE.CylinderGeometry(.04, .04, 2.8, 8), vertF, 2.4, 1.4, .5);
-  const plaque = add(new THREE.CylinderGeometry(.28, .28, .03, 20), new THREE.MeshBasicMaterial({ map: tex(toile(128, 128, (c) => { c.fillStyle = "#1e3a2c"; c.beginPath(); c.arc(64, 64, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("BUS", 64, 78); })) }), 2.4, 2.75, .5); plaque.rotation.x = Math.PI / 2;
+  const plaque = add(new THREE.CylinderGeometry(.28, .28, .03, 20), new THREE.MeshBasicMaterial({ color: 0x1e3a2c }), 2.4, 2.75, .5); plaque.rotation.x = Math.PI / 2;   // (10.18) la plaque ronde ; « BUS » à l'endroit, des deux côtés
+  { const mB = new THREE.MeshBasicMaterial({ map: tex(toile(128, 128, (c) => { c.fillStyle = "#1e3a2c"; c.beginPath(); c.arc(64, 64, 64, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 4; c.beginPath(); c.arc(64, 64, 58, 0, 7); c.stroke(); c.fillStyle = "#fff"; c.font = "bold 40px Arial"; c.textAlign = "center"; c.fillText("BUS", 64, 78); })) });
+    for (const sg of [1, -1]) { const f = new THREE.Mesh(new THREE.CircleGeometry(.28, 24), mB); f.position.set(2.4, 2.75, .5 + sg * .017); if (sg < 0) f.rotation.y = Math.PI; plaque.parent.add(f); } }
   const nums = add(new THREE.BoxGeometry(.5, .3, .03), new THREE.MeshBasicMaterial({ map: tex(toile(128, 64, (c) => { c.fillStyle = "#f2f0ea"; c.fillRect(0, 0, 128, 64); c.fillStyle = "#2a8a5a"; c.fillRect(6, 10, 52, 44); c.fillStyle = "#c8202a"; c.fillRect(70, 10, 52, 44); c.fillStyle = "#fff"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("39", 32, 44); c.fillText("48", 96, 44); })) }), 2.4, 2.3, .5);
   return g; }
 /* l'intérieur du bus (vu de dedans pendant le trajet) : le plancher, les sièges en vis-à-vis, les barres jaunes, les bas de caisse et le plafond ; les vitres, c'est la rue */
@@ -13363,7 +13365,7 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
       const pt = (px, pz) => { box(.3, .04, .3, or, px, .02, pz, e); add(new THREE.CylinderGeometry(.035, .035, .95, 10), or, px, .5, pz, e); add(new THREE.SphereGeometry(.07, 10, 8), or, px, 1.0, pz, e); };
       for (const sx of [-1.25, 1.25]) { pt(sx, .7); pt(sx, 2.6);
         const cv = new THREE.CatmullRomCurve3([new THREE.Vector3(sx, .92, .7), new THREE.Vector3(sx, .72, 1.65), new THREE.Vector3(sx, .92, 2.6)]); add(new THREE.TubeGeometry(cv, 16, .03, 6, false), velours, 0, 0, 0, e); }
-      const f = FILMS_VF.find(f => f.cle === c); if (f) L.portesRex.push({ x: x + Math.sin(ry) * 1.2, z: z + Math.cos(ry) * 1.2, f });
+      const f = FILMS_VF.find(f => f.cle === c); if (f) L.portesRex.push({ x: x + Math.sin(ry) * 1.2, z: z + Math.cos(ry) * 1.2, ry, f });
       // (10.17) la file d'attente, entre les cordons : des spectateurs qui attendent, tournés vers la porte
       const nQ = (ry === Math.PI ? { lb: 5, gb: 4, bttf: 3 } : { sh: 3, grem: 2 })[c] || 0, PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c"];
       for (let i = 0; i < nQ; i++) { const k = i * 3 + c.length, f2 = k % 2 === 1, m = personne3D({ taille: f2 ? 1.64 : 1.76, peau: PE[k % 5], ch: ["#2a1a12", "#5a3a22", "#141010", "#e2c27a"][k % 4], haut: HA[k % 8], bas: ["#26324e", "#2a2a30", "#3a3028"][k % 3], chaussures: "#1a1a1a", coif: f2 ? "long" : "court", pantalon: !f2, robe: f2, parle: i % 2 === 0 });
@@ -13489,10 +13491,12 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
      le tapis rouge, les cordons, la malle de tournée ; à l'entresol, les fenêtres aux cadres rouges (des néons, la nuit) sur les panneaux bruns, le logo rond au milieu ;
      l'enseigne ronde en drapeau ; la terrasse, ses paravents, les oliviers en bacs ; et le videur, à la porte, qui filtre les entrées */
   { const HX = -90, HZ = -14, lg = 18, G = new THREE.Group(); G.position.set(HX, 0, HZ); scene.add(G);
-    const logoHR = (c, x, y, r) => { c.save(); const gr = c.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); gr.addColorStop(0, "#ffe070"); gr.addColorStop(1, "#e8901a"); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
-      c.strokeStyle = "#5a2a0a"; c.lineWidth = r * .07; c.beginPath(); c.arc(x, y, r * .96, 0, 7); c.stroke(); c.lineWidth = r * .025; c.beginPath(); c.arc(x, y, r * .82, 0, 7); c.stroke();
-      c.textAlign = "center"; c.textBaseline = "middle"; c.font = `italic bold ${Math.round(r * .52)}px Georgia, serif`; c.lineJoin = "round"; c.strokeStyle = "#fff"; c.lineWidth = r * .1; c.strokeText("Hard Rock", x, y - r * .08); c.fillStyle = "#c8102e"; c.fillText("Hard Rock", x, y - r * .08);
-      c.font = `bold ${Math.round(r * .26)}px Arial`; c.fillStyle = "#c8102e"; c.fillText("CAFE", x, y + r * .52); c.restore(); };
+    const logoHR = (c, x, y, r) => { c.save(); const gr = c.createRadialGradient(x - r * .3, y - r * .35, r * .1, x, y, r); gr.addColorStop(0, "#fff27a"); gr.addColorStop(1, "#f5c400"); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+      const tube = (f) => { c.strokeStyle = "#6a0010"; c.lineWidth = r * .13; f("s"); c.fillStyle = "#d4142c"; f("f"); c.strokeStyle = "rgba(255,150,160,.9)"; c.lineWidth = r * .022; f("s"); };   // (le tube de néon rouge, son reflet clair)
+      c.lineWidth = r * .1; c.strokeStyle = "#7a0010"; c.beginPath(); c.arc(x, y, r * .95, 0, 7); c.stroke(); c.lineWidth = r * .065; c.strokeStyle = "#d4142c"; c.stroke(); c.lineWidth = r * .015; c.strokeStyle = "rgba(255,160,170,.9)"; c.stroke();
+      c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
+      c.font = `italic bold ${Math.round(r * .66)}px Georgia, serif`; tube((m) => m === "s" ? c.strokeText("Hard Rock", x, y - r * .1) : c.fillText("Hard Rock", x, y - r * .1));
+      c.font = `bold ${Math.round(r * .32)}px Georgia, serif`; tube((m) => m === "s" ? c.strokeText("CAFE", x, y + r * .5) : c.fillText("CAFE", x, y + r * .5)); c.restore(); };
     const orM = mat({ color: 0xd4a840, metalness: .9, roughness: .22 }), rouge = mat({ color: 0xc8102e, roughness: .6 }), noir = mat({ color: 0x141414, roughness: .5 });
     // le rez-de-chaussée : le cadre bronze, les vitres sur la salle (les guitares aux murs, les disques d'or, les clients), l'entrée dorée au centre
     const W = 900, sc = W / lg, X = (u) => (u + lg / 2) * sc;
@@ -13523,16 +13527,16 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const tEj = tE(false), tEn = tE(true), mE = lum(mat({ map: tEj, emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: tEn }), .05, 1.5); box(lg, H2, .32, mE, 0, Y2, .16, G);
     box(lg + .2, .18, .5, mat({ color: 0x4a4440 }), 0, RDC + H2 + .06, .25, G);   // (la corniche, au-dessus)
     // le logo rond, au milieu de l'entresol ; et l'enseigne ronde en drapeau, en haut à droite
-    const tLg = tT(256, 256, (c) => logoHR(c, 128, 128, 112)), mLg = lum(mat({ map: tLg, transparent: true, emissive: 0xffffff, emissiveIntensity: .1, emissiveMap: tLg }), .1, 1.1);
-    const lgP = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), mLg); lgP.position.set(0, RDC + .95, .36); G.add(lgP);
-    box(.08, .08, 1.3, noir, lg / 2 - .9, RDC + H2 + 2.4, .65, G); for (const sz of [1, -1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), mLg); d.position.set(lg / 2 - .9 + sz * .04, RDC + H2 + 1.45, 1.1); d.rotation.y = sz * Math.PI / 2; G.add(d); }
+    const tLg = tT(640, 360, (c) => logoHR(c, 320, 180, 160)), mLg = lum(mat({ map: tLg, transparent: true, emissive: 0xffffff, emissiveIntensity: .1, emissiveMap: tLg }), .1, 1.1);
+    const lgP = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.8), mLg); lgP.position.set(0, RDC + .95, .36); G.add(lgP);
+    box(.08, .08, 1.3, noir, lg / 2 - .9, RDC + H2 + 2.4, .65, G); for (const sz of [1, -1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.46), mLg); d.position.set(lg / 2 - .9 + sz * .04, RDC + H2 + 1.45, 1.1); d.rotation.y = sz * Math.PI / 2; G.add(d); }
     const ann = add(new THREE.TorusGeometry(.86, .045, 8, 40), lum(mat({ color: 0x30c060, emissive: 0x30ff70, emissiveIntensity: .1 }), .1, 1.6), lg / 2 - .9, RDC + H2 + 1.45, 1.1, G); ann.rotation.y = Math.PI / 2;
     // le grand store rouge : la pente (le logo en filigrane, « PARIS »), le lambrequin (« Hard Rock Cafe », éclairé la nuit)
     const tS = tT(1024, 128, (c, w, h) => { c.fillStyle = "#b8121e"; c.fillRect(0, 0, w, h); c.save(); c.globalAlpha = .35; c.textAlign = "center"; c.font = "italic bold 58px Georgia"; c.fillStyle = "#e8d0c0"; c.fillText("Hard Rock", w / 2, 60); c.globalAlpha = .3; c.beginPath(); c.ellipse(w / 2, 50, 150, 44, 0, 0, 7); c.lineWidth = 4; c.strokeStyle = "#e8d0c0"; c.stroke(); c.restore();
       c.fillStyle = "#f4f2ec"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("P A R I S", w / 2, 116); });
     const pente = new THREE.Mesh(new THREE.PlaneGeometry(lg + .2, 1.75), mat({ map: tS, side: THREE.DoubleSide, roughness: .7 })); pente.position.set(0, RDC - .32, 1.15); pente.rotation.x = -1.21; pente.castShadow = true; G.add(pente);
     const lamb = (neon) => tT(1024, 64, (c, w, h) => { c.fillStyle = neon ? "#000" : "#b8121e"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "italic bold 34px Georgia";
-      for (const x of [.3, .7]) c.fillText("Hard Rock Cafe", w * x, h / 2 + 2); for (const x of [.08, .5, .92]) { c.lineWidth = 3; c.strokeStyle = "#fff"; c.beginPath(); c.ellipse(w * x, h / 2, 38, 20, 0, 0, 7); c.stroke(); c.font = "italic bold 14px Georgia"; c.fillText("Hard Rock", w * x, h / 2 - 2); c.font = "italic bold 34px Georgia"; } });
+      for (const x of [.3, .7]) c.fillText("Hard Rock Cafe", w * x, h / 2 + 2); for (const x of [.075, .5, .925]) { c.lineWidth = 3; c.strokeStyle = "#fff"; c.beginPath(); c.ellipse(w * x, h / 2, 64, 26, 0, 0, 7); c.stroke(); c.font = "italic bold 22px Georgia"; c.fillText("Hard Rock", w * x, h / 2 + 1); c.font = "italic bold 34px Georgia"; } });
     const mLb = lum(mat({ map: lamb(false), emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: lamb(true) }), .05, 1.3);
     const lb = new THREE.Mesh(new THREE.PlaneGeometry(lg + .2, .5), mLb); lb.position.set(0, RDC - .87, 1.95); G.add(lb); for (const sx of [-1, 1]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.7, .5), rouge); f.position.set(sx * (lg / 2 + .1), RDC - .87, 1.1); f.rotation.y = Math.PI / 2; G.add(f); }
     // le tapis rouge, les poteaux dorés et leurs cordons, la malle de tournée
@@ -13676,22 +13680,28 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const pl = new THREE.PointLight(0xffd060, 0, 10, 1.8); pl.position.set(0, 4.1, 0); mt.add(pl); NUIT.push([{ set emissiveIntensity(v) { pl.intensity = v; } }, 0, 6]); };
   boucheMetro(-70.5, 9.8, 0);   // (devant le Starbucks)
   boucheMetro(-43.6, -10.4, 0);   // (devant le McDonald's, près du kiosque)
+  // (10.18) les grilles d'aération du métro, au ras du trottoir : le cadre de fonte, les barreaux serrés, le noir dessous
+  { const tG = tT(256, 128, (c, w, h) => { c.fillStyle = "#08090a"; c.fillRect(0, 0, w, h); c.fillStyle = "#5a5c60"; c.fillRect(0, 0, w, 10); c.fillRect(0, h - 10, w, 10); c.fillRect(0, 0, 10, h); c.fillRect(w - 10, 0, 10, h);
+      for (let x = 14; x < w - 10; x += 7) { c.fillStyle = "#4a4c50"; c.fillRect(x, 10, 3, h - 20); c.fillStyle = "#6a6c70"; c.fillRect(x, 10, 1, h - 20); } c.fillStyle = "#3a3c40"; for (const x of [w / 3, w * 2 / 3]) c.fillRect(x - 3, 10, 6, h - 20); });
+    const mG = mat({ map: tG, roughness: .5, metalness: .6 });
+    for (const [x, z] of [[-50.6, -10.2], [-53.4, -10.2], [-56.2, -10.2], [-37.5, -13.2]]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), mG); p.rotation.x = -Math.PI / 2; p.position.set(x, .126, z); p.receiveShadow = true; scene.add(p); } }
   // la circulation du boulevard : vers l'ouest (côté McDonald's), vers l'est (côté Rex)
-  circulationRue(L, scene, { x0: 118, x1: -118, z: -2.4, y: .12, sens: -1, nom: "circR" });
-  circulationRue(L, scene, { x0: -118, x1: 118, z: 2.4, y: .12, sens: 1, nom: "circR2" });
+  circulationRue(L, scene, { x0: 118, x1: -118, z: -2.4, y: .12, sens: -1, nom: "circR", dense: true });
+  circulationRue(L, scene, { x0: -118, x1: 118, z: 2.4, y: .12, sens: 1, nom: "circR2", dense: true });   // (10.18) plus de voitures sur le boulevard
   // l'arrêt de bus, devant le McDonald's : on repart vers la caserne, ou vers la rue d'Hauteville
   busLigne(L, scene, { ax: -26, az: -10.2, affiche: "pere-noel", voie: -6.3, sens: -1, x0: 118, x1: -118, dest: [{ vers: "rue", nom: "Rue du Faubourg-Poissonnière (la caserne)", arrivee: [10, -4.7], yawA: 0 }, { vers: "grande", nom: "Rue d'Hauteville", arrivee: [-6, -154.6], yawA: Math.PI }] });
   { const TOUR = [[-11, -11], [11, -11], [11, 11], [-11, 11]];   // (le tour du carrefour, par les quatre passages piétons)
-    const LEGS = [[[-12, -13.1], [-100, -13.1]], [[12, -9.4], [100, -9.4]], [[12, 9.4], [100, 9.4]], [[-12, 10.8], [-100, 10.8]], [[-7, -12], [-7, -100]], [[5.75, -12], [5.75, -100]], [[-4.6, 12], [-4.6, 100]], [[4.6, 12], [4.6, 100]]];
-    const choix = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 17, 18, 19].map(k => PASSANTS[k]).filter(Boolean);
+    const NO = [[-12, -13.1], [-80, -13.1], [-82, -9.5], [-100, -9.5]], SO = [[-12, 10.8], [-15, 9.3], [-57, 9.3], [-60, 10.8], [-67, 10.8], [-68.5, 11.6], [-72.5, 11.6], [-74, 10.8], [-100, 10.8]];   // (10.17) on contourne la terrasse du Hard Rock, la bouche de métro du Starbucks ; (10.18) côté Rex, au bord du trottoir : ni dans les files du cinéma, ni dans les barrières du Rex Club
+    const LEGS = [NO, [[12, -9.4], [100, -9.4]], [[12, 9.4], [100, 9.4]], SO, [[-7, -12], [-7, -100]], [[5.4, -12], [5.4, -100]], [[-4.6, 12], [-4.6, 100]], [[4.6, 12], [4.6, 100]]];
+    const choix = [0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 17, 18, 19].map(k => PASSANTS[k]).filter(P => P && P.acc !== "poussette");   // (10.17) pas de poussette au Rex
     L.passRex = choix.map((P, k) => ({ P, num: -170 - k, route: k < 4 ? TOUR.map(([x, z]) => [x + (k % 2 ? .6 : -.6), z + (k > 1 ? .6 : -.6)]) : LEGS[(k - 4) % LEGS.length], boucle: k < 4, i: k < 4 ? k : 0, sens: 1 }));
     // (10.13) le clochard, sa veste kaki et son caddie de supermarché plein de détritus ; des passants avec leur chien en laisse
-    L.passRex.push({ P: { nom: "Le clochard", tenue: "civil", couleur: "#5e5c34", bas: "#3a3a30", pieds: "#3a3028", tete: ["clochardBN", { peau: "#c89a76", ch: "#3e2a1a", coif: "long", moustache: true, sourcils: "#2a1a10" }], acc: "chariot", allure: .5, chaud: true }, num: -190, route: [[-12, -13.1], [-100, -13.1]], boucle: false, i: 0, sens: 1 },
+    L.passRex.push({ P: { nom: "Le clochard", tenue: "civil", couleur: "#5e5c34", bas: "#3a3a30", pieds: "#3a3028", tete: ["clochardBN", { peau: "#c89a76", ch: "#3e2a1a", coif: "long", moustache: true, sourcils: "#2a1a10" }], acc: "chariot", allure: .5, chaud: true }, num: -190, route: NO, boucle: false, i: 0, sens: 1 },
       { P: { nom: "Une dame et son chien", tenue: "tailleur", couleur: "#6a3a4a", pieds: "#2a1a14", tete: ["dameChien", { peau: "#f0d0b4", ch: "#a5532a", coif: "carre", femme: true }], acc: "chien", allure: .75 }, num: -191, route: [[12, -9.4], [100, -9.4]], boucle: false, i: 0, sens: 1 },
-      { P: { nom: "Un monsieur et son chien", tenue: "civil", couleur: "#2a3a2a", bas: "#3a3a40", pieds: "#2a1a14", tete: ["msChien", { peau: "#c78f62", ch: "#8a8a8a", coif: "court", lunettes: true }], acc: "chien", allure: .75 }, num: -192, route: [[-12, 10.8], [-100, 10.8]], boucle: false, i: 0, sens: 1 },
+      { P: { nom: "Un monsieur et son chien", tenue: "civil", couleur: "#2a3a2a", bas: "#3a3a40", pieds: "#2a1a14", tete: ["msChien", { peau: "#c78f62", ch: "#8a8a8a", coif: "court", lunettes: true }], acc: "chien", allure: .75 }, num: -192, route: SO, boucle: false, i: 0, sens: 1 },
       { P: { nom: "Une jeune femme et son chien", tenue: "chemisier", couleur: "#e8a020", bas: "#26324e", pieds: "#f2f2f2", tete: ["jfChien", { peau: "#8d5a3b", ch: "#120c0a", coif: "long", femme: true }], acc: "chien", allure: .8 }, num: -193, route: [[-7, -12], [-7, -100]], boucle: false, i: 0, sens: 1 });
     quitterLieu.add(() => { for (const Q of L.passRex) { if (M && M.gens.get(Q.num)) retirerAncien(Q.num); if (Q.acc) Q.acc.visible = false; if (Q.laisse) Q.laisse.visible = false; } }); }
-  const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
+  const BARS = [[11, 16], [22, 11.5], [6.5, 26], [11, -16], [24, -11.5], [7, -28], [-72, 11.5], [-94, -11.5], [-86, -11.5]];   // (le bar Madeleine, le Gymnase Café, le Starbucks)
   let sonBar = null; quitterLieu.add(() => { if (sonBar) { sonBar.pause(); sonBar.volume = 0; } });
   const majSonBar = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonBar) sonBar.pause(); return; } const p = moi.g.position; let d = 99; for (const [x, z] of BARS) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
     const cible = Math.max(0, Math.min(1, (16 - d) / 12)) * (M.barVol ?? .7);   // (à 4 m d'un bar : le volume plein ; plus rien au-delà de 16 m)
@@ -14876,7 +14886,9 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "hwTuer") { hwTuer(M.L.gensFete[a.i]); return; }
-  if (a.type === "rexFilm") { const f = FILMS_VF.find(f => f.cle === a.cle); M.actionCle = null; if (f) louerFilm(f); return; }
+  if (a.type === "rexFilm") { const f = FILMS_VF.find(f => f.cle === a.cle); M.actionCle = null; if (!f) return;
+    const p = (M.L.portesRex || []).find(p => p.f.cle === f.cle); if (p) M.retourFilm = { lieu: M.lieu, pos: [p.x + Math.sin(p.ry) * .9, p.z + Math.cos(p.ry) * .9], yaw: p.ry };   // (10.17) à la fin du film, on ressort devant la porte du Rex
+    louerFilm(f); return; }
   if (a.type === "bus") { const B = M.L.busL; if (!B) return; M.actionCle = null; choixBus(B); return; }
   if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
   if (a.type === "neigeLancer") { if (M.L.neigeB && M.L.neigeB.lancer()) M.bouleMain = false; M.actionCle = null; return; }
@@ -15043,7 +15055,9 @@ function porteRE(apres) { const P = scenePorteRE(), cam = new THREE.PerspectiveC
     if (u > .3 && !M.porteRE.son) { M.porteRE.son = true; grincementPorte(); }
     if (u > .95 && !passe) { passe = true; apres(); }
     if (u > 3.2 && !fini) { fini = true; M.porteRE = null; const n = voile("background:#000;opacity:1"); setTimeout(() => { if (n) { n.style.transition = "opacity .5s"; n.style.opacity = "0"; setTimeout(() => n.remove(), 550); } }, 30); } } }; }
-function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.lieu === "grande" && id !== "grande" && enCage()) { dire(M.moiNum, "Je ne peux pas sortir… je suis enfermée dans une cage !"); M.passage = false; return; } if (mondesManquants(id).length) { chargerMondes(id).then(() => changerLieu(id, arrivee, yaw, face)).catch(e => console.warn("monde", id, e)); return; }   // (le code du monde d'abord)
+function changerLieu(id, arrivee, yaw = 0, face = false) { if (M && M.retourFilm && (universDe(M.lieu) || estApo(M.lieu)) && !universDe(id) && !estApo(id)) { const R = M.retourFilm; M.retourFilm = null; id = R.lieu; arrivee = R.pos; yaw = R.yaw; face = false; }   // (10.17) le film fini : on revient là où on l'a pris
+  else if (M && M.retourFilm && !universDe(M.lieu) && !estApo(M.lieu) && !universDe(id) && !estApo(id)) M.retourFilm = null;   // (on n'est jamais entré dans le film)
+  if (M && M.lieu === "grande" && id !== "grande" && enCage()) { dire(M.moiNum, "Je ne peux pas sortir… je suis enfermée dans une cage !"); M.passage = false; return; } if (mondesManquants(id).length) { chargerMondes(id).then(() => changerLieu(id, arrivee, yaw, face)).catch(e => console.warn("monde", id, e)); return; }   // (le code du monde d'abord)
  for (const f of quitterLieu) try { f(id); } catch (e) {} if (M && M.choix) choixObjets(false); if (M && M.amen) amenager(false); if (M && M.place) finPlacement(false);
   if (!M) return; const lieuAvant = M.lieu;
   if (M.lieu !== id) remettreTetes();   /* (le modèle de l'équipier retrouve sa tête ; celle qui avait roulé disparaît) */
