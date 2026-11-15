@@ -2458,7 +2458,7 @@ function enfantsToit(L, scene) {
     const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.position.set(x, top + 1.25, ze); bs.visible = false; scene.add(bs);
     E.push({ m, t, ph: i * 1.7, bc, bt, bs, fin: 0 }); });
   let prochain = 0;
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const e of E) { e.m.visible = vu; if (!vu) e.bs.visible = false; } if (!vu) return; const cam = M.camera;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf || M.hiver); for (const e of E) { e.m.visible = vu; if (!vu) e.bs.visible = false; } if (!vu) return; const cam = M.camera;
     for (const e of E) { const mp = e.t[Math.floor(tm / 420 + e.ph) % 2]; if (e.m.material.map !== mp) { e.m.material.map = mp; e.m.material.needsUpdate = true; }
       const a = Math.atan2(cam.position.x - e.m.position.x, cam.position.z - e.m.position.z); e.m.rotation.y = Math.max(-1, Math.min(1, a));   // (tournés vers la place ; un peu vers nous)
       if (e.bs.visible && (tm > e.fin || Math.hypot(cam.position.x - e.m.position.x, cam.position.z - e.m.position.z) > 25)) e.bs.visible = false; }
@@ -2561,7 +2561,7 @@ function mamansBanc(L, scene) {
   const bc = document.createElement("canvas"); bc.width = 512; bc.height = 128; const bt = new THREE.CanvasTexture(bc); bt.colorSpace = THREE.SRGBColorSpace; const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(2.2, .55, 1); bs.visible = false; scene.add(bs);
   let prochain = 0, fin = 0, parle = 0;
   const tous = [...mam.map(o => o.m), pou, ...pt.map(o => o.m), ballon];
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf); for (const o of tous) o.visible = vu; if (!vu) { bs.visible = false; return; } const cam = M.camera;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !(L.nuit || L.apo || L.sh || L.gb || L.bttf || M.hiver); for (const o of tous) o.visible = vu; if (!vu) { bs.visible = false; return; } const cam = M.camera;
     const tourne = (m, base) => { const a = Math.atan2(cam.position.x - m.position.x, cam.position.z - m.position.z); let d = Math.atan2(Math.sin(a - base), Math.cos(a - base)); m.rotation.y = base + Math.max(-1.1, Math.min(1.1, d)); };
     for (const o of mam) { o.o.parle = o.k === parle; o.m.userData.poser("assis", tm); }
     // le ballon : d'un petit à l'autre, en rebondissant (un aller-retour toutes les 3,6 s)
@@ -8685,8 +8685,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
-  if (id === "grande" && !copie) { batailleNeige(L, scene, { x0: -15, x1: 21, z0: -128.1, z1: -118.6, n: PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 15, voitures: true });   // (l'hiver, dans la cour sous les fenêtres de l'appartement Z)
-    { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr; if (!PETIT) batailleNeige(L, scene, { x0: -C3.LT / 2 + 1.5, x1: C3.LT / 2 - 1.5, z0: zt1 + 1, z1: zt0 - 1, y: C3.hp + C3.NT * C3.HT2, n: 6 }); } }   // (et sur la terrasse, à la place des rollers)
+  if (id === "grande" && !copie) { batailleNeige(L, scene, { x0: -15, x1: 21, z0: -128.1, z1: -118.6, n: PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 15, voitures: true }); }   // (l'hiver, dans la cour sous les fenêtres de l'appartement Z ; pas sur la terrasse)
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) mamansBanc(L, scene);   /* (la cage et les pierres : retirées) */   /* (plus de masque au sol : Halloween se loue au Video Futur) */
   if (id === "fetes" && !copie) gensFete(L, scene);
@@ -11795,15 +11794,15 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
 
 /* ===================== (9.98) l'hiver : la neige — sur le sol, les toits des voitures, les rebords (tout ce qui est à plat), et qui tombe ; ni camion-benne, ni rollers, ni deli-delo :
    une bataille de boules de neige dans la cour sous les fenêtres de l'appartement Z, et sur la terrasse. L'administrateur l'allume (❄️), en plus du jour et de la nuit ===================== */
-const NEIGE = { u: { value: 0 }, boites: { value: null }, pts: null, lieux: new Set(["grande", "rue", "appart"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
+const NEIGE = { u: { value: 0 }, boites: { value: null }, hauts: { value: [1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4, 1e4] }, pts: null, lieux: new Set(["grande", "rue", "appart"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
 function neigerMateriau(m) {   // le blanc de la neige sur les faces tournées vers le ciel (un seul calcul par matière ; ensuite, un simple réglage)
   if (!m || m.userData.neige || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial)) return; m.userData.neige = true;
-  const avant = m.onBeforeCompile; m.onBeforeCompile = (sh, r) => { avant && avant.call(m, sh, r); sh.uniforms.uNeige = NEIGE.u; sh.uniforms.uNeigeB = NEIGE.boites;
+  const avant = m.onBeforeCompile; m.onBeforeCompile = (sh, r) => { avant && avant.call(m, sh, r); sh.uniforms.uNeige = NEIGE.u; sh.uniforms.uNeigeB = NEIGE.boites; sh.uniforms.uNeigeH = NEIGE.hauts;
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vNeigeW;").replace("#include <begin_vertex>", "#include <begin_vertex>\n{ vec4 nw = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nnw = instanceMatrix * nw;\n#endif\nvNeigeW = (modelMatrix * nw).xyz; }");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vNeigeW; uniform float uNeige; uniform vec4 uNeigeB[8];")
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vNeigeW; uniform float uNeige; uniform vec4 uNeigeB[8]; uniform float uNeigeH[8];")
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
       if (uNeige > 0.0) { float nh = (vec4(normal, 0.0) * viewMatrix).y; float sn = smoothstep(.5, .8, nh) * uNeige;
-        for (int i = 0; i < 8; i++) { vec4 b = uNeigeB[i]; if (vNeigeW.x > b.x && vNeigeW.x < b.y && vNeigeW.z > b.z && vNeigeW.z < b.w) sn = 0.0; }   // (sous un toit : pas de neige)
+        for (int i = 0; i < 8; i++) { vec4 b = uNeigeB[i]; if (vNeigeW.x > b.x && vNeigeW.x < b.y && vNeigeW.z > b.z && vNeigeW.z < b.w && vNeigeW.y < uNeigeH[i]) sn = 0.0; }   // (sous un toit : pas de neige)
         float br = fract(sin(dot(floor(vNeigeW.xz * 1.7), vec2(12.9898, 78.233))) * 43758.5453); sn *= .82 + .18 * br;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.93, .95, 1.0), sn); }`); };
   const cle = m.customProgramCacheKey; m.customProgramCacheKey = () => (cle ? cle.call(m) : "") + "|neige"; m.needsUpdate = true; }
@@ -11811,8 +11810,8 @@ function majHiver() {
   if (!M || !M.scene) return; if (!NEIGE.boites.value) NEIGE.boites.value = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); const on = !!M.hiver && !!M.L && NEIGE.lieux.has(M.lieu) && !M.L.apo && !M.L.sh && !M.L.gb && !M.L.bttf;
   if (on && M.L.solsAppart && !M.L.boiteAppart && M.L.solsAppart.length) { const bx = new THREE.Box3(); for (const o of M.L.solsAppart) bx.expandByObject(o); M.L.boiteAppart = [bx.min.x - .4, bx.max.x + .4, bx.min.z - .4, bx.max.z + .4]; }   // (l'emprise de l'appartement : ses sols, et l'épaisseur des murs)
   if (on) { M.scene.traverse(o => { if (o.isMesh && !o.userData.perso) for (const m of [].concat(o.material)) neigerMateriau(m); });
-    const b = NEIGE.boites.value, d = typeof C3 !== "undefined" && C3.dojo; b.forEach(v => v.set(0, 0, 0, 0)); if (d && M.lieu === "grande") b[0].set(d.X0, d.X1, d.Z0, d.Z1);
-    if (M.L.boiteAppart) { const B = M.L.boiteAppart; b[0].set(B[0], B[1], B[2], B[3]); } }   // (l'appartement : pas de neige dedans ; elle tombe dehors, devant les fenêtres)
+    const b = NEIGE.boites.value, d = typeof C3 !== "undefined" && C3.dojo; b.forEach(v => v.set(0, 0, 0, 0)); if (d && M.lieu === "grande") { b[0].set(d.X0, d.X1, d.Z0, d.Z1); NEIGE.hauts.value[0] = C3.hp + C3.NT * C3.HT2 - .3; }   // (sous le toit-terrasse : la salle de judo)
+    if (M.L.boiteAppart) { const B = M.L.boiteAppart; b[0].set(B[0], B[1], B[2], B[3]); NEIGE.hauts.value[0] = 1e4; } }   // (l'appartement : pas de neige dedans ; elle tombe dehors, devant les fenêtres)
   NEIGE.dehors = on && M.L.boiteAppart ? M.L.boiteAppart : null;
   NEIGE.u.value = on ? 1 : 0; if (M.L.setNuit && !!M.L.hiverCiel !== on && !M.L.cielPerso) M.L.setNuit(!!M.L.nuit);   // (le ciel d'hiver, ou le ciel d'avant)
   if (M.L.camionBenne) M.L.camionBenne.visible = !on && !M.L.nuit;
