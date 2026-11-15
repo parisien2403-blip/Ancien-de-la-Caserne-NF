@@ -13373,7 +13373,7 @@ const disque = (x, z, ry, f, h = 2.6) => { const g = new THREE.Group(); g.positi
 const sensInterdit = (c) => { c.fillStyle = "#d81e2a"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.fillStyle = "#fff"; c.fillRect(16, 52, 96, 24); };
 const flecheD = (c) => { c.fillStyle = "#1e5ac8"; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill(); c.fillStyle = "#fff"; c.fillRect(24, 56, 60, 16); c.beginPath(); c.moveTo(80, 36); c.lineTo(108, 64); c.lineTo(80, 92); c.fill(); };
 disque(-5.6, -16, Math.PI, sensInterdit); disque(5.6, 15.5, 0, sensInterdit); disque(-7.5, 15.5, Math.PI / 4, flecheD);
-for (const [x, z] of [[-11, 0], [11, 0]]) { box(1.2, .2, 5, mat({ color: 0xb4b0a6 }), x, .2, z); const b = add(new THREE.CylinderGeometry(.18, .22, 1.1, 12), mat({ color: 0xf2f2f0 }), x, .75, z - 2); add(new THREE.CircleGeometry(.16, 16), new THREE.MeshBasicMaterial({ map: tT(64, 64, (c) => { c.fillStyle = "#1e5ac8"; c.beginPath(); c.arc(32, 32, 31, 0, 7); c.fill(); c.fillStyle = "#fff"; c.beginPath(); c.moveTo(18, 22); c.lineTo(44, 36); c.lineTo(18, 46); c.fill(); }) }), x, .9, z - 1.78); }
+// (les îlots et leurs bornes, au milieu des passages piétons du boulevard : retirés)
 // les réverbères parisiens (double crosse), les potelets, la colonne Morris, le kiosque à journaux, l'horloge
 const reverb = (x, z, ry) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); add(new THREE.CylinderGeometry(.09, .16, 7, 10), fonte, 0, 3.5, 0, g);
   for (const s of [-1, 1]) { const b = box(1.2, .07, .07, fonte, s * .55, 7, 0, g); const l = add(new THREE.SphereGeometry(.28, 12, 8), lum(new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xffe0a0, emissiveIntensity: .2 }), .2, 1.6), s * 1.1, 6.75, 0, g); } };
