@@ -12994,15 +12994,19 @@ function busLigne(L, scene, C) {
   abribus(scene, C.ax, y0, C.az - .3, 0);   // (le dos de l'abribus vers les façades)
   if (L.limites) { const lim0 = L.limites, zv = C.az - .85; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.85 && Math.abs(b - zv) < .12); }   // (on ne traverse pas la vitre du fond)
   const B = L.busL = { C, phase: "rien", g: null, x: C.x0, v: 0, t: 0 }, xs = C.ax - C.sens * 4.2, obst = { x: C.x0, z: C.voie, L: 11 };
-  const SIEGE = [1.2, -.52];   // (notre place : à l'avant, côté couloir — bien en vue)
+  const PLACE = [.45, .05];   // (notre place : debout dans le couloir, la main sur la barre jaune)
   let avant = 0;
   const moi = () => M && M.moiNum && M.gens.get(M.moiNum);
-  const assoir = (on) => { const p = moi(); if (!p) return;
-    if (!on) { p.installe = null; const A = p.av3; if (A) { A.sc.position.set(0, 0, 0); A.sc.rotation.set(0, A.sc.rotation.y, 0); A.installeOK = false; A.repI = null; } p.g.visible = true; return; }
-    const w = B.g.localToWorld(new THREE.Vector3(SIEGE[0], .62, SIEGE[1])); let yS = w.y - .5; try { yS = L.hauteur ? L.hauteur(w.x, w.z) : yS; } catch (e) { } p.cible = null; p.chemin = []; p.chute = null; p.g.position.set(w.x, yS, w.z); p.g.visible = true; p.g.updateMatrixWorld(true);   // (les pieds au niveau de la chaussée : sinon il « tombait » ; le siège, lui, est plus haut)
-    p.installe = { sorte: "assis", x: w.x, y: w.y, z: w.z, h: .45, ry: C.sens > 0 ? Math.PI / 2 : -Math.PI / 2 }; if (p.av3 && p.av3.sc && p.av3.sc.parent === p.g) { p.av3.sc.visible = true; if (p.corps) p.corps.visible = false; installe3D(p, p.av3); } };   // (pendant la vue de l'intérieur, le jeu est en « cinématique » : la pose assise, on la fait nous-mêmes à chaque image)
-  const camera = () => { M.cine = { gel: true, fov: [72, 84], maj: () => { if (!B.g) return; const c = B.g.localToWorld(new THREE.Vector3(3.5, 2.05, .75)), l = B.g.localToWorld(new THREE.Vector3(.2, 1.15, -.55)); M.camera.position.copy(c); M.camera.lookAt(l); assoir(true); } }; };   // (la vue de l'intérieur, jusqu'à l'arrêt)
-  const passagers = () => { const I = B.g.userData.int, S = I.userData.sieges.filter(([x, z]) => x < SIEGE[0] - .5);   // (les passagers derrière nous) const P = [];
+  const debout = (on) => { const p = moi(); if (!p) return; p.installe = null;
+    if (!on) { const A = p.av3; if (A) { A.sc.position.set(0, 0, 0); A.repI = null; } return; }
+    const w = B.g.localToWorld(new THREE.Vector3(PLACE[0], .62, PLACE[1])); p.cible = null; p.chemin = []; p.g.position.set(w.x, w.y, w.z); p.g.visible = true; p.g.updateMatrixWorld(true);
+    const A = p.av3; if (A && A.sc && A.sc.parent === p.g) { A.sc.visible = true; if (p.corps) p.corps.visible = false; A.sc.position.set(0, 0, 0); A.sc.rotation.set(0, C.sens > 0 ? Math.PI / 2 : -Math.PI / 2, 0); A.sc.updateMatrixWorld(true);
+      try { const haut = new THREE.Vector3(0, 1, 0), bas = new THREE.Vector3(0, -1, 0); viser3D(A, "RightArm", "RightForeArm", haut.clone().addScaledVector(new THREE.Vector3(C.sens, 0, 0), .15).normalize()); viser3D(A, "RightForeArm", "RightHand", haut); viser3D(A, "LeftArm", "LeftForeArm", bas); viser3D(A, "LeftForeArm", "LeftHand", bas); } catch (e) { } } };   // (le bras levé, la main sur la barre)
+  const cacher = (c) => { const p = moi(); if (p) { p.g.visible = !c; if (c) { p.cible = null; p.chemin = []; } } };
+  const camInt = () => { M.cine = { gel: true, fov: [72, 84], maj: () => { if (!B.g) return; debout(true); const c = B.g.localToWorld(new THREE.Vector3(3.5, 2.05, .75)), l = B.g.localToWorld(new THREE.Vector3(PLACE[0], 1.35, PLACE[1])); M.camera.position.copy(c); M.camera.lookAt(l); } }; };   // (la vue de l'intérieur, pendant le trajet)
+  const camExt = (cache) => { const cp = new THREE.Vector3(C.ax + C.sens * 5.5, y0 + 2.4, C.az + .6), cl = new THREE.Vector3(C.ax - C.sens * 10, y0 + 1.1, C.voie);   // (sur le trottoir, à côté de l'abribus : on voit le bus arriver, s'arrêter)
+    M.cine = { gel: true, fov: [62, 76], maj: () => { M.camera.position.copy(cp); M.camera.lookAt(cl); if (B.cache) cacher(true); const p = moi(); if (p && !B.cache) { p.cible = null; p.chemin = []; } } }; };
+  const passagers = () => { const I = B.g.userData.int, S = I.userData.sieges.filter(([x, z]) => x < PLACE[0] - .4);   // (les passagers derrière nous) const P = [];
     const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"], HAUTS = ["#3a3028", "#22324f", "#5a3a2a", "#6a5a4a", "#7a2a3a", "#2f5a4a"];
     for (let k = 0; k < (PETIT ? 3 : 7); k++) { const [x, z] = S[(k * 11 + 3) % S.length], f = k % 2 === 1;
       const m = personne3D({ taille: f ? 1.62 : 1.74, peau: PEAUX[k % 5], ch: ["#2a1a12", "#8a8a8a", "#5a3a22", "#141010"][k % 4], haut: HAUTS[k % 6], bas: ["#26324e", "#2a2a30"][k % 2], chaussures: "#1a1a1a", coif: f ? "long" : k % 3 ? "court" : "chauve", pantalon: !f, robe: f, parle: k === 2 });
@@ -13011,22 +13015,24 @@ function busLigne(L, scene, C) {
   const creer = (x) => { B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
     B.g.userData.int = interieurBus(B.g); passagers(); B.x = x; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); };
   const fin = () => { if (B.g) { scene.remove(B.g); B.g = null; } L.obstRue = (L.obstRue || []).filter(o => o !== obst); B.phase = "rien"; };
-  B.appeler = () => { if (B.phase !== "rien") return; B.phase = "vient"; B.avecMoi = false; };
+  B.appeler = () => { if (B.phase !== "rien") return; B.phase = "vient"; B.avecMoi = true; B.cache = false; camExt(); };   // (on ne bouge plus : comme une cinématique)
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
     if (!M || M.L !== L || L.apo || L.sh || L.gb || L.bttf) { if (B.phase !== "rien") fin(); return; }
-    if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { M.busArrive = null; B.phase = "amene"; creer(xs - C.sens * 45); camera(); }   // (on arrive en bus d'une autre rue : il part de plus haut dans la rue, pas du bout de la carte)
+    if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { M.busArrive = null; B.phase = "amene"; B.avecMoi = true; B.cache = true; cacher(true); creer(xs - C.sens * 45); camExt(); }   // (on arrive en bus d'une autre rue : il part de plus haut dans la rue, pas du bout de la carte)
     if (B.phase === "rien") return;
     const circ = L.circH || L.circR;
     if (!B.g) { if (circ && circ.enRoute.some(o => { const e = (o.g.position.x - C.x0) * C.sens; return e > -6 && e < 30; })) return; creer(C.x0); }   // (on attend que la voie soit libre au départ)
+    if (B.avecMoi && !M.cine) { if (B.phase === "part") camInt(); else if (B.phase !== "repart") camExt(); }   // (le changement de lieu, ou autre chose, a coupé la vue : on la remet)
     const freine = () => { if (circ) for (const o of circ.enRoute) { const e = (o.g.position.x - B.x) * C.sens - 5.5 - o.L / 2; if (e > -2 && e < 14) B.v = Math.min(B.v, Math.max(0, (e - 2) * 1.5)); } };
     if (B.phase === "vient" || B.phase === "amene") { const d = (xs - B.x) * C.sens; B.v += (Math.min(9, Math.max(.4, d * .6)) - B.v) * Math.min(1, dt * 2); freine(); B.x += C.sens * Math.min(B.v * dt, Math.max(0, d));
       if (d < .05) { B.x = xs; B.t = tm; B.phase = B.phase === "vient" ? "monte" : "descend"; } }
-    else if (B.phase === "monte") { if (tm - B.t > 1300 && !B.avecMoi) { const p = moi(); if (p && Math.hypot(p.g.position.x - C.ax, p.g.position.z - C.az) < 6) { B.avecMoi = true; dire(M.moiNum, "🚌 En voiture !"); camera(); } }
-      if (tm - B.t > 2800) { B.phase = "part"; B.t = tm; B.v = 0; } }
-    else if (B.phase === "descend") { if (tm - B.t > 1400) { assoir(false); finCine(); const p = moi(); if (p) { p.g.position.set(C.ax, y0, C.az); envoyerWS({ t: "aller", x: C.ax, z: C.az }); } placerCamera(true); B.phase = "repart"; B.t = tm; B.v = 0; } }
+    else if (B.phase === "monte") { if (tm - B.t > 1200 && !B.cache) { B.cache = true; cacher(true); }   // (il monte : on ne le voit plus, il est dans le bus)
+      if (tm - B.t > 2600) { B.phase = "part"; B.t = tm; B.v = 0; if (B.avecMoi) camInt(); } }
+    else if (B.phase === "descend") { if (tm - B.t > 1000 && B.cache) { B.cache = false; const p = moi(); if (p) { p.g.position.set(C.ax, y0, C.az); p.g.visible = true; envoyerWS({ t: "aller", x: C.ax, z: C.az }); } }   // (les portes s'ouvrent : on apparaît à l'arrêt)
+      if (tm - B.t > 2600) { B.avecMoi = false; finCine(); placerCamera(true); B.phase = "repart"; B.t = tm; B.v = 0; } }
     else if (B.phase === "part" || B.phase === "repart") { B.v += (10 - B.v) * Math.min(1, dt * .7); freine(); B.x += C.sens * B.v * dt;
-      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { M.busArrive = { vers: C.vers }; assoir(false); finCine(); fin(); changerLieu(C.vers, C.arrivee, C.yawA || 0); return; }
-      if ((B.x - C.x1) * C.sens > 0) { if (B.avecMoi) { assoir(false); finCine(); } fin(); return; } }
+      if (B.phase === "part" && B.avecMoi && tm - B.t > 6000) { M.busArrive = { vers: C.vers }; debout(false); finCine(); fin(); changerLieu(C.vers, C.arrivee, C.yawA || 0); return; }
+      if ((B.x - C.x1) * C.sens > 0) { fin(); return; } }
     B.g.position.x = B.x; obst.x = B.x; for (const m of B.g.userData.pass || []) { const P = m.userData.parts; P.tete.rotation.y = Math.sin(tm / 1500 + m.id) * .3; } };
 }
 /* --- le clochard : assis sur son carton contre le mur de la caserne, rue d'Hauteville ; dreadlocks, barbe, vieux manteau ; un gobelet pour les pièces --- */
