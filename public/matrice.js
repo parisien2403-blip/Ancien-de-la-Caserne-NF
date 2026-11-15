@@ -4720,13 +4720,14 @@ function repasMess(L, scene) {
   let gr = 4711; const r = () => (gr = (gr * 16807) % 2147483647) / 2147483647;
   const PEAUX = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc", "#d9a882"], CH = ["#5a3a22", "#141010", "#e2c27a", "#2a1a12", "#a5532a", "#8a8a8a"], HAUTS = ["#2f5fae", "#c8404a", "#e8e2d6", "#3a7a4a", "#7a4a8a", "#e8d24a", "#4a4e56", "#2e7a4a", "#b0306a", "#f2f0ea", "#1c2541", "#5a6a3a"];
   const pris = new Set(), conv = [];
-  const NC = PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 11 : 22;   /* (chaque convive, c'est une trentaine de pièces à dessiner : moins sur un téléphone ou une petite carte graphique) */
+  const NC0 = PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 11 : 22, NC = NC0 + (PETIT ? 0 : (MOBILE || GPU_MODESTE) ? 8 : 20);   // (10.05 : l'hiver, le dîner de Noël — une vingtaine de convives en plus)   /* (chaque convive, c'est une trentaine de pièces à dessiner : moins sur un téléphone ou une petite carte graphique) */
   for (let k = 0; k < NC; k++) { let i; do i = Math.floor(r() * places.length); while (pris.has(i)); pris.add(i); const P = places[i], f = r() < .45;
     const m = personne3D({ taille: f ? 1.62 + r() * .1 : 1.72 + r() * .12, peau: PEAUX[k % 6], ch: CH[(k * 5) % 6], haut: HAUTS[k % 12], bas: ["#2a3040", "#3a3a40", "#26324e", "#14181c"][k % 4], chaussures: "#1a1a1a", coif: f ? ["long", "carre", "queue"][k % 3] : k % 5 === 0 ? "chauve" : "court", pantalon: !f || k % 2 === 0, robe: f && k % 2 === 1, parle: k % 3 === 0 });
     const sx = P.z + P.sz * .44; m.position.set(P.x, .48 - m.userData.hipY + .02, sx); m.rotation.y = P.sz > 0 ? Math.PI : 0; scene.add(m);
-    const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9, plein: assiette.visible, k }); }
+    const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9, plein: assiette.visible || k >= NC0, k, hv: k >= NC0 }); }
   L.convives = conv;
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu0 = !L.apo && !L.sh && !L.gb, vu = vu0 && (!M.sansFigurants || !PETIT); for (const c of conv) { const ok = vu0 && (!M.sansFigurants || (!PETIT && c.k % 2 === 0)); c.m.visible = ok; c.assiette.visible = ok && c.assiette.userData.servi !== false && c.plein; } if (!vu) return;   /* (allégé sur ordinateur : la moitié des convives reste à table, de jour comme de nuit) */ const t = tm / 1000;
+  noelMess(L, scene, places, Y);
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu0 = !L.apo && !L.sh && !L.gb, vu = vu0 && (!M.sansFigurants || !PETIT); for (const c of conv) { const ok = vu0 && (!c.hv || M.hiver) && (!M.sansFigurants || (!PETIT && c.k % 2 === 0)); c.m.visible = ok; c.assiette.visible = ok && c.assiette.userData.servi !== false && c.plein; } if (!vu) return;   /* (allégé sur ordinateur : la moitié des convives reste à table, de jour comme de nuit) */ const t = tm / 1000;
     for (const c of conv) { const P = c.m.userData.parts; c.m.userData.poser("assis", tm); const b = (t + c.ph) % 6;   // (ils mangent : la fourchette à la bouche, de temps en temps)
       if (c.assiette.visible && b < 1.2) { P.bras[1].e.rotation.x = -1.2; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.1; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.6; P.bras[0].e.rotation.x = -.7; P.bras[0].c.rotation.x = -.6; P.tete.rotation.x = .15; } } };
 }
@@ -8700,6 +8701,7 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
   if (id === "grande" && !copie) sapinNoel(L, scene, SAPIN[0], SAPIN[1]);
+  if (id === "grande" && !copie) guirlandesCour(L, scene);
   if (id === "grande" && !copie) { batailleNeige(L, scene, { x0: -15, x1: 21, z0: -128.1, z1: -118.6, n: PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 15, voitures: true }); }   // (l'hiver, dans la cour sous les fenêtres de l'appartement Z ; pas sur la terrasse)
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) mamansBanc(L, scene);   /* (la cage et les pierres : retirées) */   /* (plus de masque au sol : Halloween se loue au Video Futur) */
@@ -11849,8 +11851,8 @@ function animerNeige(t) { const P = NEIGE.pts; if (!P || !P.visible || !M || !M.
   a.needsUpdate = true; }
 /* (10.03) le grand sapin de Noël de la cour d'honneur, l'hiver : douze mètres, des branches étagées et enneigées, une guirlande dorée en spirale,
    des boules rouges, dorées et bleues, des ampoules qui scintillent (la nuit surtout), l'étoile au sommet, et des paquets au pied */
-function sapinNoel(L, scene, x, z, H = 12) {
-  const y0 = (() => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } })(), g = new THREE.Group(); g.position.set(x, y0, z); g.visible = false; scene.add(g);
+function sapinNoel(L, scene, x, z, HV = 12) { const H = 12, KS = 1, ECH = HV / 12;   // (ECH : un petit sapin — celui du mess — est le grand, réduit)
+  const y0 = (() => { try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } })(), g = new THREE.Group(); g.position.set(x, y0, z); g.scale.setScalar(ECH); g.visible = false; scene.add(g);
   const vert = new THREE.MeshStandardMaterial({ color: 0x1f5a2e, roughness: .85 }), vert2 = new THREE.MeshStandardMaterial({ color: 0x2a6e38, roughness: .85 }), neige = new THREE.MeshStandardMaterial({ color: 0xf4f7fc, roughness: .9 });
   const tronc = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, 1.6, 12), new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: .9 })); tronc.position.y = .8; g.add(tronc);
   const N = 7, R0 = H * .33; const etages = [];
@@ -11878,10 +11880,10 @@ function sapinNoel(L, scene, x, z, H = 12) {
   // l'étoile
   const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .38 : .9; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
   const etoile = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .18, bevelEnabled: false }), new THREE.MeshBasicMaterial({ color: 0xffd84a, toneMapped: false })); etoile.position.set(0, H + .35, -.09); g.add(etoile);
-  const lueur = new THREE.PointLight(0xffd890, 0, 26, 1.6); lueur.position.set(0, H * .5, 0); g.add(lueur);
+  const lueur = new THREE.PointLight(0xffd890, 0, 26 * ECH, 1.6); lueur.position.set(0, H * .5, 0); g.add(lueur);
   // les gros cadeaux au pied : chacun sa couleur, son ruban, et un gros nœud dessus
   const PQ = [[0xc8102e, 0xf2d24a], [0x1f4e8c, 0xf2f2f2], [0x2f8a4a, 0xc8102e], [0xf2d24a, 0xc8102e], [0x8a1ab0, 0xf2d24a], [0xf2f2f2, 0xc8102e], [0xe85a8a, 0xf2f2f2], [0x1e9a9a, 0xf2d24a], [0xe8801e, 0x1f4e8c], [0x3a2a8a, 0xe8c040], [0xd8202a, 0x2f8a4a], [0x7ac8f0, 0xc8102e]];
-  for (let i = 0; i < 12; i++) { const [c1, c2] = PQ[i], w = .8 + (i * 37 % 10) / 10 * .7, hh = w * (.7 + (i * 53 % 10) / 10 * .5), a = i / 12 * Math.PI * 2 + .2, r = R0 * .55 + 1.1 + (i % 2) * .9;
+  for (let i = 0; i < 12; i++) { const [c1, c2] = PQ[i], w = (.8 + (i * 37 % 10) / 10 * .7) * KS, hh = w * (.7 + (i * 53 % 10) / 10 * .5), a = i / 12 * Math.PI * 2 + .2, r = R0 * .55 + (1.1 + (i % 2) * .9) * KS;
     const p = new THREE.Group(); p.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); p.rotation.y = a * 1.7 + i; g.add(p);
     const b = new THREE.Mesh(new THREE.BoxGeometry(w, hh, w * .9), new THREE.MeshStandardMaterial({ color: c1, roughness: .55 })); b.position.y = hh / 2; b.castShadow = true; p.add(b);
     const rm = new THREE.MeshStandardMaterial({ color: c2, roughness: .35, metalness: .2 });
@@ -11891,12 +11893,52 @@ function sapinNoel(L, scene, x, z, H = 12) {
       const pan = new THREE.Mesh(new THREE.BoxGeometry(w * .1, .03, w * .35), rm); pan.position.set(sg * w * .1, .01, w * .14); pan.rotation.y = sg * .5; nb2.add(pan); }
     const coeur = new THREE.Mesh(new THREE.SphereGeometry(w * .08, 10, 8), rm); coeur.position.y = w * .07; nb2.add(coeur); }
   g.traverse(o => { if (o.isMesh) o.userData.perso = true; });   // (pas de neige « peinte » dessus : elle y est déjà)
-  const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < d + 1.2); }   // (ni les cadeaux)   // (on ne traverse pas le sapin)
+  const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < (d + 1.2) * ECH); }   // (ni les cadeaux)   // (on ne traverse pas le sapin)
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; g.visible = vu; if (!vu) return;
-    const n = !!L.nuit; lueur.intensity = n ? 3.2 : 0; etoile.material.color.setHex(n ? 0xfff0a0 : 0xffd84a);
+    const n = !!L.nuit || ECH < .5; lueur.intensity = n ? 3.2 * Math.max(.4, ECH) : 0; etoile.material.color.setHex(n ? 0xfff0a0 : 0xffd84a);
     if (Math.floor(tm / 120) !== g.userData.tic) { g.userData.tic = Math.floor(tm / 120); for (let i = 0; i < na; i++) { const f = .35 + .65 * (.5 + .5 * Math.sin(tm / 260 + i * 2.39)); amp.setColorAt(i, col.copy(base[i]).multiplyScalar(n ? f * 1.6 : f * .9)); } amp.instanceColor.needsUpdate = true;
       for (let i = 0; i < ng; i++) { const w = .5 + .5 * Math.sin(tm / 180 - i * .35), f = .25 + .75 * w * w; gl.setColorAt(i, col.copy(baseG[i]).multiplyScalar(n ? f * 1.8 : f * 1.1)); } gl.instanceColor.needsUpdate = true; } };
-  L.sapin = g; }
+  (L.sapins = L.sapins || []).push(g); L.sapin = g; }
+/* (10.05) l'hiver : quatre guirlandes d'ampoules tendues d'un toit à l'autre, de la salle des fêtes au mess, au-dessus de la cour d'honneur ;
+   chacune ses couleurs : blanc chaud ; multicolore ; bleu et blanc ; rouge, vert et or. Allumées, avec un léger scintillement */
+function guirlandesCour(L, scene, O = {}) {
+  const X = O.X || 12.2, Y = O.Y || 7.4, FL = O.FL || 1.7, XC = O.XC || 0, G = new THREE.Group(); G.visible = false; scene.add(G);
+  const JEUX = [[0xffe6a8, 0xfff0c8], [0xff3a3a, 0x3aff6a, 0x4a8aff, 0xffd040, 0xff6ad0], [0x6aa8ff, 0xffffff], [0xff2a2a, 0x2ad04a, 0xffc830]];
+  const fil = new THREE.MeshBasicMaterial({ color: 0x14181c }), mt = new THREE.Matrix4(), col = new THREE.Color(), tout = [];
+  (O.Z || [-14, -6.5, 1, 8.5]).forEach((z, k) => { const pts = [], n = O.n || 56;
+    for (let i = 0; i <= 40; i++) { const u = i / 40, x = XC - X + 2 * X * u; pts.push(new THREE.Vector3(x, Y - FL * 4 * u * (1 - u), z + Math.sin(u * Math.PI) * .3)); }
+    const cb = new THREE.CatmullRomCurve3(pts); G.add(new THREE.Mesh(new THREE.TubeGeometry(cb, 80, .018, 4, false), fil));
+    const amp = new THREE.InstancedMesh(new THREE.SphereGeometry((O.r || 1) * (k === 0 ? .1 : .12), 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), n), J = JEUX[k], base = [];
+    for (let i = 0; i < n; i++) { const p = cb.getPoint((i + .5) / n); mt.makeTranslation(p.x, p.y - .1 * (O.r || 1), p.z); amp.setMatrixAt(i, mt); const c = new THREE.Color(J[i % J.length]); base.push(c); amp.setColorAt(i, c); }
+    amp.frustumCulled = false; G.add(amp); tout.push({ amp, base, k });
+    for (const sx of [-1, 1]) { const cr = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, .12), fil); cr.position.set(XC + sx * X, Y, z); G.add(cr); } });   // (les crochets, sous la corniche)
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; G.visible = vu; if (!vu) return;
+    if (Math.floor(tm / 140) === G.userData.tic) return; G.userData.tic = Math.floor(tm / 140); const n = !!L.nuit;
+    for (const T of tout) { for (let i = 0; i < T.base.length; i++) { const f = .78 + .22 * Math.sin(tm / (300 + T.k * 70) + i * 1.7); T.amp.setColorAt(i, col.copy(T.base[i]).multiplyScalar((n ? 1.5 : 1) * f)); } T.amp.instanceColor.needsUpdate = true; } };
+  L.guirlandesCour = G; }
+/* (10.05) le mess à Noël (l'hiver) : un sapin dans le coin, près de la cloison du passe ; des guirlandes lumineuses d'un mur à l'autre ;
+   des couronnes de houx au mur ; sur chaque table, un chemin de table rouge, une bougie allumée et un brin de houx */
+function noelMess(L, scene, places, Y) {
+  const G = new THREE.Group(); G.visible = false; scene.add(G);
+  sapinNoel(L, scene, 4.75, 7.35, 4.4);
+  guirlandesCour(L, scene, { X: 8, XC: -2, Y: 4.6, FL: .9, Z: [-9, -4.5, 0, 4.5], n: 70, r: .45 });
+  const T = L.tablesMess || [], TM = L.tableMess, mm = new THREE.Matrix4(), n = T.length;
+  if (TM) { const ch = new THREE.InstancedMesh(new THREE.BoxGeometry(TM.TW + .14, .006, .3), new THREE.MeshStandardMaterial({ color: 0xa8101e, roughness: .6 }), n);
+    const bo = new THREE.InstancedMesh(new THREE.CylinderGeometry(.03, .03, .16, 10), new THREE.MeshStandardMaterial({ color: 0xf4efe0, roughness: .5 }), n);
+    const fl = new THREE.InstancedMesh(new THREE.SphereGeometry(.022, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffc860, toneMapped: false }), n);
+    const ho = new THREE.InstancedMesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshStandardMaterial({ color: 0x1f6a2e, roughness: .6 }), n * 2), ba = new THREE.InstancedMesh(new THREE.SphereGeometry(.018, 6, 4), new THREE.MeshStandardMaterial({ color: 0xd8101e, roughness: .3 }), n * 3);
+    T.forEach(([x, z], i) => { mm.makeTranslation(x, Y + .004, z); ch.setMatrixAt(i, mm); mm.makeTranslation(x + .3, Y + .08, z); bo.setMatrixAt(i, mm); mm.makeTranslation(x + .3, Y + .175, z); fl.setMatrixAt(i, mm);
+      for (let k = 0; k < 2; k++) { mm.makeScale(1.4, .5, .8).setPosition(x + .42 + k * .07, Y + .03, z + (k ? .04 : -.03)); ho.setMatrixAt(i * 2 + k, mm); }
+      for (let k = 0; k < 3; k++) { mm.makeTranslation(x + .45 + (k - 1) * .025, Y + .06, z + (k % 2) * .025); ba.setMatrixAt(i * 3 + k, mm); } });
+    G.add(ch, bo, fl, ho, ba); G.userData.fl = fl; }
+  // les couronnes de houx, sur le mur d'en face des fenêtres (x = −10), entre les tables
+  for (const z of [-8, -3, 2, 7]) { const c = new THREE.Group(); c.position.set(-9.93, 2.7, z); c.rotation.y = Math.PI / 2; G.add(c);
+    c.add(new THREE.Mesh(new THREE.TorusGeometry(.32, .1, 8, 20), new THREE.MeshStandardMaterial({ color: 0x1f5a2e, roughness: .8 })));
+    for (let k = 0; k < 8; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 4), new THREE.MeshStandardMaterial({ color: 0xd8101e, roughness: .3 })); const a = k / 8 * Math.PI * 2; b.position.set(Math.cos(a) * .32, Math.sin(a) * .32, .09); c.add(b); }
+    const nd = new THREE.MeshStandardMaterial({ color: 0xc8102e, roughness: .4 }); for (const sg of [-1, 1]) { const bo = new THREE.Mesh(new THREE.TorusGeometry(.08, .025, 6, 12), nd); bo.position.set(sg * .08, -.32, .1); bo.scale.y = .7; c.add(bo); const pa = new THREE.Mesh(new THREE.BoxGeometry(.04, .22, .01), nd); pa.position.set(sg * .05, -.46, .1); pa.rotation.z = sg * .3; c.add(pa); } }
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; G.visible = vu; if (!vu) return;
+    const f = G.userData.fl; if (f) f.scale.y = 1; };
+  L.noelMess = G; }
 /* la bataille de boules de neige : des enfants en bonnet, écharpe et anorak, en deux camps ; ils ramassent la neige (sur le toit des voitures, ou par terre), la tassent, visent, lancent ;
    touché : un nuage de neige, et l'enfant se secoue en riant */
 function batailleNeige(L, scene, Z) {

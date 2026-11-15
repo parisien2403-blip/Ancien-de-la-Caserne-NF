@@ -29442,7 +29442,7 @@ class WebGLRenderer {
 						const materialProperties = properties.get( material );
 						const program = materialProperties.currentProgram;
 
-						if ( program.isReady() ) {
+						if ( program === undefined || program.isReady() ) {   // (caserne : une matière recompilée entre-temps — la neige — n'a plus de programme : on ne l'attend plus)
 
 							// remove any programs that report they're ready to use from the list
 							materials.delete( material );
