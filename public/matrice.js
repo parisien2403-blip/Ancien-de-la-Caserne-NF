@@ -13066,7 +13066,8 @@ function choixBus(B) { if (M.choixBusEl) M.choixBusEl.remove(); const d = docume
   for (const D of B.C.dest) { const b = document.createElement("button"); b.type = "button"; b.textContent = "➜ " + D.nom; b.style.cssText = "display:block;width:100%;text-align:left;margin:6px 0;padding:11px 12px;border:0;border-radius:10px;background:#2a8a5a;color:#fff;font:600 15px Lato,Arial,sans-serif;cursor:pointer";
     b.onclick = () => { d.remove(); M.choixBusEl = null; dire(M.moiNum, "🚌 J'attends le bus…"); B.appeler(D); }; d.appendChild(b); }
   const x = document.createElement("button"); x.type = "button"; x.textContent = "Annuler"; x.style.cssText = "display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:14px Lato,Arial,sans-serif;cursor:pointer"; x.onclick = () => { d.remove(); M.choixBusEl = null; }; d.appendChild(x);
-  (M.ctx.conteneur || document.body).appendChild(d); }
+  (M.ctx.conteneur || document.body).appendChild(d); M.manMenu = { d, fermer: () => { d.remove(); M.choixBusEl = null; M.manMenu = null; } };   // (10.15 : à la manette — la croix ou le joystick choisit, A valide, B annule)
+  const tx = document.createElement("div"); tx.style.cssText = "margin-top:8px;font-size:12px;opacity:.7"; tx.textContent = "🎮 Croix : choisir · A : valider · B : annuler"; d.appendChild(tx); }
 /* ===================== (10.11) le carrefour Bonne-Nouvelle : le Grand Rex, le McDonald's, Marie Belle, le bar d'angle — d'après les photos =====================
    le boulevard (est-ouest), la rue du Faubourg-Poissonnière (au nord), la rue Poissonnière (au sud) ; on y vient en bus (l'arrêt devant le McDonald's) */
 function construireRex(A, L, scene) {
