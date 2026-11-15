@@ -13076,7 +13076,7 @@ function construireRex(A, L, scene) {
   const add = (geo, m, x, y, z, par = scene, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true; par.add(o); return o; };
   const box = (w, h, d, m, x, y, z, par = scene, ry = 0) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z, par, ry);
   let graine = 11; const al = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
-  const NUIT = [], FILE = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
+  const NUIT = [], FILE = [], VID = []; const lum = (m, j, n) => { NUIT.push([m, j, n]); return m; };
 /* ===================== le sol ===================== */
 // le boulevard (Poissonnière à l'ouest, Bonne-Nouvelle à l'est) : est-ouest, chaussée z ∈ [-8, 8] ; trottoirs jusqu'à ±14
 // la rue du Faubourg-Poissonnière (au nord) : chaussée x ∈ [-5, 5], trottoirs jusqu'à ±9 ; la rue Poissonnière (au sud) : chaussée x ∈ [-4, 4], trottoirs jusqu'à ±8
@@ -13185,15 +13185,33 @@ const devanture = (g, lg, x, z, ry, o) => { const d = new THREE.Group(); d.posit
 const monde = (c, x, y, w, h, i) => { const C = ["rgba(40,22,12,.85)", "rgba(70,30,30,.85)", "rgba(30,30,50,.85)", "rgba(60,50,30,.85)"]; for (let k = 0; k < 3; k++) { const px = x + w * (.18 + k * .3 + ((i * 7 + k) % 3) * .03), py = y + h * (.42 + (k % 2) * .06), r = 8 + (k % 2) * 2;
     c.fillStyle = C[(i + k) % 4]; c.beginPath(); c.arc(px, py, r, 0, 7); c.fill(); c.beginPath(); c.ellipse(px, py + r * 2.6, r * 1.5, r * 1.8, 0, Math.PI, 0); c.fill(); c.fillRect(px - r * 1.5, py + r * 2.5, r * 3, r * 1.2);
     if ((i + k) % 2) { c.fillStyle = "rgba(255,210,120,.9)"; c.fillRect(px + r * 1.2, py + r * 1.4, 4, 9); } } };   // (les clients : attablés, un verre à la main)
+// (10.17) le logo : les arches dorées (deux arcs qui se rejoignent au milieu), en (x, y) = coin haut-gauche, h = hauteur
+const archesM = (c, x, y, h, col = "#ffc72c") => { const W = h * 1.18, yb = y + h, yv = y + h * .5, lw = W * .115, xm = x + W / 2, l = x + lw / 2, r = x + W - lw / 2, yt = y + lw / 2, k = (8 * yt - yb - yv) / 6;
+  c.save(); c.strokeStyle = col; c.lineWidth = lw; c.lineCap = "butt"; c.lineJoin = "miter"; c.beginPath(); c.moveTo(l, yb); c.bezierCurveTo(l + W * .02, k, xm - W * .02, k, xm, yv); c.bezierCurveTo(xm + W * .02, k, r - W * .02, k, r, yb); c.stroke(); c.restore(); };
 const mcdoD = { fond: "#cfcac0", bandeau: "#cfcac0", pasV: 3.0, vitre: "rgba(245,205,140,.92)", store: ["#2a2c30", "#30333a"], storeTxt: "McDonald's",
-  enseigne: (c, w) => { for (let x = 60; x < w; x += 420) { c.fillStyle = "#f2b820"; c.font = "bold 46px Arial Black, Arial"; c.fillText("M", x, 44); c.fillStyle = "#3a3c42"; c.font = "bold 40px Arial"; c.fillText("McDonald's", x + 56, 42); } },
+  enseigne: (c, w) => { for (let x = 60; x < w; x += 420) { archesM(c, x, 8, 40, "#f2b820"); c.fillStyle = "#3a3c42"; c.font = "bold 40px Arial"; c.fillText("McDonald's", x + 60, 42); } },
   vitrine: (c, x, y, w, h, i) => { c.fillStyle = "#8a5a32"; c.fillRect(x, y + h * .62, w, h * .38); c.fillStyle = "#6a4024"; for (let k = 0; k < 2; k++) c.fillRect(x + w * (.15 + k * .45), y + h * .55, w * .3, 5);   // (le bois, les tables)
     c.fillStyle = "#2f7a3a"; c.beginPath(); c.arc(x + w * .85, y + h * .5, w * .1, 0, 7); c.fill(); c.fillStyle = "rgba(255,250,230,.8)"; for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(x + w * (.2 + k * .3), y + 10, 6, 0, 7); c.fill(); }   // (une plante, les suspensions)
     if (i % 2) { c.fillStyle = "rgba(40,30,24,.75)"; c.beginPath(); c.arc(x + w * .4, y + h * .4, 9, 0, 7); c.fill(); c.fillRect(x + w * .4 - 10, y + h * .46, 20, 26); }
     c.strokeStyle = "#1a1a1c"; c.lineWidth = 6; c.strokeRect(x, y, w, h); } };
 immeubleAngle(-9, -14, -1, -1, { R: 4, la: 36, lb: 36, devanture: (g, q) => { devanture(g, q.LA, q.ax, q.cz, 0, mcdoD); devanture(g, q.LB, q.cx, q.bz, Math.PI / 2, mcdoD);
-  const t = tT(400, 180, (c, w, h) => { c.fillStyle = "#cfcac0"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(245,205,140,.92)"; c.fillRect(20, 54, w - 40, 120); c.strokeStyle = "#1a1a1c"; c.lineWidth = 6; c.strokeRect(20, 54, w - 40, 120); c.fillStyle = "#f2b820"; c.font = "bold 46px Arial Black"; c.fillText("M", 180, 44); });
-  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(q.R + .15, q.R + .15, RDC, 20, 1, true, q.a0, Math.PI / 2), lum(mat({ map: t, emissive: 0xffffff, emissiveIntensity: .12, emissiveMap: t, side: THREE.DoubleSide }), .12, .9)); cyl.position.set(q.ccx, RDC / 2, q.ccz); g.add(cyl); } });
+  const t = tT(400, 180, (c, w, h) => { c.fillStyle = "#cfcac0"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(245,205,140,.92)"; c.fillRect(20, 54, w - 40, 120); c.strokeStyle = "#1a1a1c"; c.lineWidth = 6; c.strokeRect(20, 54, w - 40, 120); });
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(q.R + .15, q.R + .15, RDC, 20, 1, true, q.a0, Math.PI / 2), lum(mat({ map: t, emissive: 0xffffff, emissiveIntensity: .12, emissiveMap: t, side: THREE.DoubleSide }), .12, .9)); cyl.position.set(q.ccx, RDC / 2, q.ccz); g.add(cyl);
+  // (10.17) l'entrée, dans l'arrondi : des portes vitrées comme celles des bars (cadre sombre, barres de poussée dorées), l'intérieur éclairé derrière, les arches dorées au-dessus
+  const iM = tT(256, 280, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#f6e2b8"); gr.addColorStop(1, "#c89a5e"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    c.fillStyle = "#2a2c30"; c.fillRect(20, 30, w - 40, 62); for (let k = 0; k < 3; k++) { c.fillStyle = "#fff6dc"; c.fillRect(28 + k * 70, 36, 62, 50); c.fillStyle = ["#c8302a", "#e8a23a", "#5a8a3a"][k]; c.beginPath(); c.arc(59 + k * 70, 58, 14, 0, 7); c.fill(); }   // (les menus éclairés)
+    archesM(c, w / 2 - 22, 100, 38, "#ffc72c"); c.fillStyle = "#6a4024"; c.fillRect(0, 168, w, 40); c.fillStyle = "#8a5a32"; c.fillRect(0, 160, w, 10); c.fillStyle = "#d8d4cc"; c.fillRect(40, 140, 30, 20); c.fillRect(180, 144, 26, 16);   // (le comptoir, les caisses)
+    c.fillStyle = "rgba(40,30,24,.8)"; for (const [px, py] of [[70, 196], [150, 200], [210, 192]]) { c.beginPath(); c.arc(px, py, 13, 0, 7); c.fill(); c.fillRect(px - 15, py + 12, 30, 60); }   // (des clients, de dos, qui commandent)
+    c.fillStyle = "#9a9488"; c.fillRect(0, h - 22, w, 22); });
+  const am = Math.atan2(1, 1), dg = new THREE.Group(); dg.position.set(q.ccx + Math.sin(am) * (q.R + .17), .12, q.ccz + Math.cos(am) * (q.R + .17)); dg.rotation.y = am; g.add(dg);
+  const fM = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.6), lum(mat({ map: iM, emissive: 0xffffff, emissiveIntensity: .35, emissiveMap: iM }), .4, 1.1)); fM.position.set(0, 1.35, .03); dg.add(fM);
+  const kM = mat({ color: 0x2a2c30, roughness: .45, metalness: .3 }), vM = new THREE.MeshStandardMaterial({ color: 0xc8dce4, transparent: true, opacity: .18, roughness: .02, metalness: .3 }), oM = mat({ color: 0xd8b048, metalness: .85, roughness: .25 });
+  box(2.7, .25, .2, kM, 0, 2.78, .12, dg); for (const sx of [-1.3, 1.3]) box(.2, 2.9, .2, kM, sx, 1.45, .12, dg);
+  for (const sx of [-.58, .58]) { box(1.1, 2.6, .03, vM, sx, 1.35, .15, dg); box(.06, 2.6, .06, kM, sx + (sx > 0 ? .55 : -.55), 1.35, .15, dg); box(1.1, .12, .05, kM, sx, .1, .15, dg);
+    const bar = add(new THREE.CylinderGeometry(.025, .025, .9, 10), oM, sx * .55, 1.1, .23, dg); bar.rotation.z = Math.PI / 2; for (const bx of [sx * .55 - .4, sx * .55 + .4]) box(.03, .03, .1, oM, bx, 1.1, .19, dg);
+    add(new THREE.CylinderGeometry(.02, .02, .7, 10), oM, sx > 0 ? .1 : -.1, 1.35, .23, dg); }
+  const tL = tT(256, 128, (c, w, h) => { c.fillStyle = "#c8102e"; c.beginPath(); c.roundRect(4, 4, w - 8, h - 8, 14); c.fill(); archesM(c, w / 2 - 50, 16, 85, "#ffc72c"); });
+  const lg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .8), lum(mat({ map: tL, emissive: 0xffffff, emissiveIntensity: .25, emissiveMap: tL }), .25, 1.2)); lg.position.set(0, 3.4, .1); dg.add(lg); } });
 { const mPiedK = mat({ color: 0x1a1a1c, metalness: .5, roughness: .4 }); /* (10.13) le kiosque à journaux parisien (d'après la photo) : une cabine vert sombre, la crête moulurée découpée tout autour du toit, le petit dôme et son épi ;
      côté trottoir, ouvert sous le store vert, les magazines éclairés, les panneaux « Presse » et leurs affiches, les présentoirs de cartes postales ; derrière, côté rue, fermé, des moulures */
   const g = new THREE.Group(); g.position.set(-35.6, .12, -10.3); g.rotation.y = Math.PI; scene.add(g);   // (local : +z = vers le McDonald's, le côté ouvert)
@@ -13345,13 +13363,17 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
       const pt = (px, pz) => { box(.3, .04, .3, or, px, .02, pz, e); add(new THREE.CylinderGeometry(.035, .035, .95, 10), or, px, .5, pz, e); add(new THREE.SphereGeometry(.07, 10, 8), or, px, 1.0, pz, e); };
       for (const sx of [-1.25, 1.25]) { pt(sx, .7); pt(sx, 2.6);
         const cv = new THREE.CatmullRomCurve3([new THREE.Vector3(sx, .92, .7), new THREE.Vector3(sx, .72, 1.65), new THREE.Vector3(sx, .92, 2.6)]); add(new THREE.TubeGeometry(cv, 16, .03, 6, false), velours, 0, 0, 0, e); }
-      const f = FILMS_VF.find(f => f.cle === c); if (f) L.portesRex.push({ x: x + Math.sin(ry) * 1.2, z: z + Math.cos(ry) * 1.2, f }); };
+      const f = FILMS_VF.find(f => f.cle === c); if (f) L.portesRex.push({ x: x + Math.sin(ry) * 1.2, z: z + Math.cos(ry) * 1.2, f });
+      // (10.17) la file d'attente, entre les cordons : des spectateurs qui attendent, tournés vers la porte
+      const nQ = (ry === Math.PI ? { lb: 5, gb: 4, bttf: 3 } : { sh: 3, grem: 2 })[c] || 0, PE = ["#f0c9a6", "#c78f62", "#e8bd95", "#8d5a3b", "#f6d6bc"], HA = ["#2a3a5a", "#7a2a3a", "#3a3a40", "#e8e2d6", "#5a4636", "#2f5a4a", "#c8a040", "#1a1a1c"];
+      for (let i = 0; i < nQ; i++) { const k = i * 3 + c.length, f2 = k % 2 === 1, m = personne3D({ taille: f2 ? 1.64 : 1.76, peau: PE[k % 5], ch: ["#2a1a12", "#5a3a22", "#141010", "#e2c27a"][k % 4], haut: HA[k % 8], bas: ["#26324e", "#2a2a30", "#3a3028"][k % 3], chaussures: "#1a1a1a", coif: f2 ? "long" : "court", pantalon: !f2, robe: f2, parle: i % 2 === 0 });
+        m.position.set((i % 2 ? .18 : -.15), 0, .95 + i * .7); m.rotation.y = Math.PI + (i % 3 - 1) * .25; m.userData.poser("debout", 0); e.add(m); FILE.push(m); } };
     F.forEach((c, k) => { entree(-19 - k * pas, 13.95, Math.PI, c); entree(-7.95, 28 + k * pas, Math.PI / 2, c); }); } }
 /* ===================== le mobilier urbain ===================== */
 const tronc = mat({ color: 0x6a5a4a }), feuil = mat({ color: 0x5f7a44, roughness: 1, flatShading: true }), branche = mat({ color: 0x4a3c30 });
 const platane = (x, z, nu) => { add(new THREE.CylinderGeometry(.22, .3, 6, 8), tronc, x, 3, z); if (nu) { for (let i = 0; i < 6; i++) { const b = add(new THREE.CylinderGeometry(.05, .1, 3.5, 5), branche, x, 6.5, z); b.rotation.z = (al() - .5) * 1.4; b.rotation.x = (al() - .5) * 1.4; } return; }
   for (let i = 0; i < 3; i++) { const f = add(new THREE.IcosahedronGeometry(2.2 + al(), 0), feuil, x + (al() - .5) * 2, 7.5 + al() * 1.5, z + (al() - .5) * 2); f.scale.y = .75; } };
-for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; platane(x, -12.2, false); platane(x, 12.2, Math.abs(x) < 30); }
+for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; if (x !== -91) platane(x, -12.2, false); platane(x, 12.2, Math.abs(x) < 30); }
 // les feux tricolores : à chaque passage piéton, un pour les voitures, un petit pour les piétons
 /* (10.13) les feux tricolores : sur les trottoirs ; pour les piétons, le bonhomme rouge (arrêté) et le bonhomme vert (qui marche), comme les vrais.
    Ils changent ensemble : le boulevard, puis les rues ; les voitures s'arrêtent au feu rouge, les passants attendent le bonhomme vert */
@@ -13438,7 +13460,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const ryF = Math.atan2(-uz, ux);   // (un paravent parallèle à la façade)
     for (const [t0, t1] of panneaux) { if ((t0 / 1.6) % 4 === 3) { const [x, z] = ex((t0 + t1) / 2, pd); bac(x, z, t1 - t0 - .1, ryF); continue; } paravent(ex(t0, pd), ex(t1, pd), ryF); }   // (un bac à plantes tous les quatre panneaux)
     const ryC = Math.atan2(-nz, nx); for (const t of [.05, lg - .05]) { paravent(ex(t, .2), ex(t, pd * .55), ryC); const [x, z] = ex(t, pd * .8); bac(x, z, pd * .4, ryC); } };   // (les bouts : un paravent, et un bac à plantes)
-  const ARB = []; for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; ARB.push([x, -12.2], [x, 12.2]); }   // (les platanes : pas de table dedans)
+  const ARB = []; for (let x = -125; x <= 125; x += 8.5) { if (Math.abs(x) < 16) continue; ARB.push([x, 12.2]); if (x !== -91) ARB.push([x, -12.2]); }   // (devant le Hard Rock, pas d'arbre : l'entrée)   // (les platanes : pas de table dedans)
   ARB.push([14, -9.5], [40, -9.5], [14, 9.5], [40, 9.5]);
   /* (10.13) les portes des bars : grandes portes vitrées à deux battants, cadre de bois sombre, barres de poussée dorées ; derrière la vitre, l'intérieur — le comptoir en zinc,
      les bouteilles sur les étagères éclairées, le miroir, les suspensions, le barman, des clients */
@@ -13462,7 +13484,79 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   terrasseP(12.8, -13.85, 1, 0, 0, 1, 30, 3.3, 0x1a2238, ARB);   // (le Gymnase Café, côté boulevard)
   terrasseP(8.85, -17.6, 0, -1, -1, 0, 22, 2.8, 0x1a2238, ARB);   // (le Gymnase Café, côté rue du Faubourg-Poissonnière)
   terrasseP(11.8, 13.85, 1, 0, 0, -1, 30, 3.3, 0x4a4038, ARB);   // (le bar Madeleine, côté boulevard)
-  terrasseP(7.85, 17.6, 0, 1, -1, 0, 22, 2.6, 0x4a4038, ARB); }   // (le bar Madeleine, côté rue Poissonnière)
+  terrasseP(7.85, 17.6, 0, 1, -1, 0, 22, 2.6, 0x4a4038, ARB);
+  /* (10.17) le Hard Rock Café, sur le boulevard (d'après les photos, de jour et de nuit) : au rez-de-chaussée, le grand store rouge « Hard Rock Cafe · PARIS », les portes dorées au centre,
+     le tapis rouge, les cordons, la malle de tournée ; à l'entresol, les fenêtres aux cadres rouges (des néons, la nuit) sur les panneaux bruns, le logo rond au milieu ;
+     l'enseigne ronde en drapeau ; la terrasse, ses paravents, les oliviers en bacs ; et le videur, à la porte, qui filtre les entrées */
+  { const HX = -90, HZ = -14, lg = 18, G = new THREE.Group(); G.position.set(HX, 0, HZ); scene.add(G);
+    const logoHR = (c, x, y, r) => { c.save(); const gr = c.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); gr.addColorStop(0, "#ffe070"); gr.addColorStop(1, "#e8901a"); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+      c.strokeStyle = "#5a2a0a"; c.lineWidth = r * .07; c.beginPath(); c.arc(x, y, r * .96, 0, 7); c.stroke(); c.lineWidth = r * .025; c.beginPath(); c.arc(x, y, r * .82, 0, 7); c.stroke();
+      c.textAlign = "center"; c.textBaseline = "middle"; c.font = `italic bold ${Math.round(r * .52)}px Georgia, serif`; c.lineJoin = "round"; c.strokeStyle = "#fff"; c.lineWidth = r * .1; c.strokeText("Hard Rock", x, y - r * .08); c.fillStyle = "#c8102e"; c.fillText("Hard Rock", x, y - r * .08);
+      c.font = `bold ${Math.round(r * .26)}px Arial`; c.fillStyle = "#c8102e"; c.fillText("CAFE", x, y + r * .52); c.restore(); };
+    const orM = mat({ color: 0xd4a840, metalness: .9, roughness: .22 }), rouge = mat({ color: 0xc8102e, roughness: .6 }), noir = mat({ color: 0x141414, roughness: .5 });
+    // le rez-de-chaussée : le cadre bronze, les vitres sur la salle (les guitares aux murs, les disques d'or, les clients), l'entrée dorée au centre
+    const W = 900, sc = W / lg, X = (u) => (u + lg / 2) * sc;
+    const tR = tT(W, 230, (c, w, h) => { c.fillStyle = "#2e2a28"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1716"; c.fillRect(0, 0, w, 34);
+      const baie = (u0, u1, k) => { const x0 = X(u0), x1 = X(u1), y0 = 44, y1 = h - 14; const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, "#f4d8a0"); g.addColorStop(.6, "#c87a4a"); g.addColorStop(1, "#7a3a2a"); c.fillStyle = g; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+        c.fillStyle = "#5a2a1e"; c.fillRect(x0, y0, x1 - x0, 70);   // (le mur aux souvenirs)
+        for (let i = 0; i < 4; i++) { const gx = x0 + 18 + i * (x1 - x0 - 30) / 4; if ((i + k) % 2) { c.fillStyle = ["#c8102e", "#f2f0ea", "#1a1a1a", "#2a5ac8"][(i + k) % 4]; c.beginPath(); c.ellipse(gx + 10, y0 + 50, 10, 14, 0, 0, 7); c.fill(); c.fillRect(gx + 8, y0 + 8, 4, 32); }   // (une guitare)
+          else { c.fillStyle = "#c8a040"; c.fillRect(gx, y0 + 10, 30, 36); c.fillStyle = "#e8d070"; c.beginPath(); c.arc(gx + 15, y0 + 28, 11, 0, 7); c.fill(); } }   // (un disque d'or, encadré)
+        c.fillStyle = "rgba(255,240,200,.9)"; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(x0 + (x1 - x0) * (.2 + i * .3), y0 + 76, 6, 0, 7); c.fill(); }
+        c.fillStyle = "#3a1e14"; c.fillRect(x0, y0 + 120, x1 - x0, 14); c.fillStyle = "rgba(30,20,16,.85)"; for (let i = 0; i < 3; i++) { const px = x0 + (x1 - x0) * (.18 + i * .32) + (k * 13) % 20; c.beginPath(); c.arc(px, y0 + 104, 11, 0, 7); c.fill(); c.fillRect(px - 13, y0 + 114, 26, 30); }
+        c.strokeStyle = "#c8a040"; c.lineWidth = 7; c.strokeRect(x0, y0, x1 - x0, y1 - y0); c.lineWidth = 3; c.beginPath(); c.moveTo((x0 + x1) / 2, y0); c.lineTo((x0 + x1) / 2, y1); c.stroke(); };
+      baie(-8.8, -6.1, 0); baie(-5.9, -2.5, 1); baie(2.5, 5.9, 2); baie(6.1, 8.8, 3);
+      // l'entrée : le hall doré, les vitrines de la boutique, une lumière rose et violette
+      const x0 = X(-2.3), x1 = X(2.3), g = c.createLinearGradient(0, 44, 0, h); g.addColorStop(0, "#f8e4c0"); g.addColorStop(.5, "#d88ac8"); g.addColorStop(1, "#6a3a5a"); c.fillStyle = g; c.fillRect(x0, 44, x1 - x0, h - 44);
+      c.fillStyle = "#c8a040"; for (let i = 0; i < 5; i++) c.fillRect(x0 + 8 + i * (x1 - x0 - 24) / 4, 44, 8, h - 44); c.fillStyle = "#ff5aa8"; c.fillRect(x0 + 50, 90, 36, 80); c.fillStyle = "#3a2a4a"; c.fillRect(x1 - 90, 96, 40, 90); });
+    const mR = lum(mat({ map: tR, emissive: 0xffffff, emissiveIntensity: .18, emissiveMap: tR }), .18, 1.0); box(lg, RDC, .3, mR, 0, RDC / 2, .15, G);
+    // les portes dorées : le cadre, quatre battants vitrés, les poignées
+    box(4.8, .3, .25, orM, 0, 3.75, .42, G); for (const sx of [-2.3, -1.15, 0, 1.15, 2.3]) box(.12, 3.6, .2, orM, sx, 1.92, .42, G);
+    const vit = new THREE.MeshStandardMaterial({ color: 0xe8d8b0, transparent: true, opacity: .16, roughness: .02, metalness: .4 });
+    for (const sx of [-1.72, -.57, .57, 1.72]) { box(1.05, 3.4, .03, vit, sx, 1.85, .44, G); add(new THREE.CylinderGeometry(.025, .025, 1.0, 10), orM, sx + (sx > 0 ? -.4 : .4), 1.3, .56, G); }
+    for (const sx of [-2.7, 2.7]) { add(new THREE.CylinderGeometry(.13, .15, 1.0, 16), noir, sx, .62, .7, G); add(new THREE.SphereGeometry(.13, 12, 8), orM, sx, 1.14, .7, G); }   // (les deux bornes, de chaque côté)
+    // l'entresol : les fenêtres aux cadres rouges (des néons, la nuit), les panneaux bruns dessous
+    const H2 = ETG + .3, Y2 = RDC + H2 / 2, nF = 7, tE = (neon) => tT(W, 160, (c, w, h) => { c.fillStyle = neon ? "#000" : "#6a625a"; c.fillRect(0, 0, w, h);
+      for (let i = 0; i < nF; i++) { const x0 = 14 + i * (w - 20) / nF, wf = (w - 20) / nF - 14; if (!neon) { const g = c.createLinearGradient(0, 10, 0, 100); g.addColorStop(0, "#3a2a2a"); g.addColorStop(1, "#8a4a3a"); c.fillStyle = g; c.fillRect(x0, 10, wf, 92);
+          c.fillStyle = "rgba(255,220,170,.6)"; c.beginPath(); c.arc(x0 + wf / 2, 26, 6, 0, 7); c.fill(); c.fillStyle = "#5a3e30"; c.fillRect(x0, 110, wf, 42); c.strokeStyle = "#3a281e"; c.lineWidth = 3; c.strokeRect(x0 + 6, 116, wf - 12, 30); }
+        else { c.fillStyle = "rgba(255,120,90,.35)"; c.fillRect(x0, 10, wf, 92); }
+        c.strokeStyle = neon ? "#ff2a2a" : "#c8102e"; c.lineWidth = neon ? 9 : 8; c.strokeRect(x0 + 4, 14, wf - 8, 86); c.beginPath(); c.moveTo(x0 + wf / 2, 14); c.lineTo(x0 + wf / 2, 100); c.stroke(); } });
+    const tEj = tE(false), tEn = tE(true), mE = lum(mat({ map: tEj, emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: tEn }), .05, 1.5); box(lg, H2, .32, mE, 0, Y2, .16, G);
+    box(lg + .2, .18, .5, mat({ color: 0x4a4440 }), 0, RDC + H2 + .06, .25, G);   // (la corniche, au-dessus)
+    // le logo rond, au milieu de l'entresol ; et l'enseigne ronde en drapeau, en haut à droite
+    const tLg = tT(256, 256, (c) => logoHR(c, 128, 128, 112)), mLg = lum(mat({ map: tLg, transparent: true, emissive: 0xffffff, emissiveIntensity: .1, emissiveMap: tLg }), .1, 1.1);
+    const lgP = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), mLg); lgP.position.set(0, RDC + .95, .36); G.add(lgP);
+    box(.08, .08, 1.3, noir, lg / 2 - .9, RDC + H2 + 2.4, .65, G); for (const sz of [1, -1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), mLg); d.position.set(lg / 2 - .9 + sz * .04, RDC + H2 + 1.45, 1.1); d.rotation.y = sz * Math.PI / 2; G.add(d); }
+    const ann = add(new THREE.TorusGeometry(.86, .045, 8, 40), lum(mat({ color: 0x30c060, emissive: 0x30ff70, emissiveIntensity: .1 }), .1, 1.6), lg / 2 - .9, RDC + H2 + 1.45, 1.1, G); ann.rotation.y = Math.PI / 2;
+    // le grand store rouge : la pente (le logo en filigrane, « PARIS »), le lambrequin (« Hard Rock Cafe », éclairé la nuit)
+    const tS = tT(1024, 128, (c, w, h) => { c.fillStyle = "#b8121e"; c.fillRect(0, 0, w, h); c.save(); c.globalAlpha = .35; c.textAlign = "center"; c.font = "italic bold 58px Georgia"; c.fillStyle = "#e8d0c0"; c.fillText("Hard Rock", w / 2, 60); c.globalAlpha = .3; c.beginPath(); c.ellipse(w / 2, 50, 150, 44, 0, 0, 7); c.lineWidth = 4; c.strokeStyle = "#e8d0c0"; c.stroke(); c.restore();
+      c.fillStyle = "#f4f2ec"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("P A R I S", w / 2, 116); });
+    const pente = new THREE.Mesh(new THREE.PlaneGeometry(lg + .2, 1.75), mat({ map: tS, side: THREE.DoubleSide, roughness: .7 })); pente.position.set(0, RDC - .32, 1.15); pente.rotation.x = -1.21; pente.castShadow = true; G.add(pente);
+    const lamb = (neon) => tT(1024, 64, (c, w, h) => { c.fillStyle = neon ? "#000" : "#b8121e"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "italic bold 34px Georgia";
+      for (const x of [.3, .7]) c.fillText("Hard Rock Cafe", w * x, h / 2 + 2); for (const x of [.08, .5, .92]) { c.lineWidth = 3; c.strokeStyle = "#fff"; c.beginPath(); c.ellipse(w * x, h / 2, 38, 20, 0, 0, 7); c.stroke(); c.font = "italic bold 14px Georgia"; c.fillText("Hard Rock", w * x, h / 2 - 2); c.font = "italic bold 34px Georgia"; } });
+    const mLb = lum(mat({ map: lamb(false), emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: lamb(true) }), .05, 1.3);
+    const lb = new THREE.Mesh(new THREE.PlaneGeometry(lg + .2, .5), mLb); lb.position.set(0, RDC - .87, 1.95); G.add(lb); for (const sx of [-1, 1]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.7, .5), rouge); f.position.set(sx * (lg / 2 + .1), RDC - .87, 1.1); f.rotation.y = Math.PI / 2; G.add(f); }
+    // le tapis rouge, les poteaux dorés et leurs cordons, la malle de tournée
+    const tapis = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 3.2), mat({ color: 0xb0101c, roughness: .95 })); tapis.rotation.x = -Math.PI / 2; tapis.position.set(0, .135, 2.0); G.add(tapis);
+    const cordM = mat({ color: 0x8a0a14, roughness: .7 });
+    for (const sx of [-1.3, 1.3]) { for (const z of [.9, 2.0, 3.1]) { add(new THREE.CylinderGeometry(.025, .025, .95, 10), orM, sx, .6, z, G); add(new THREE.CylinderGeometry(.14, .16, .03, 16), orM, sx, .14, z, G); add(new THREE.SphereGeometry(.045, 10, 8), orM, sx, 1.08, z, G); }
+      for (const z of [1.45, 2.55]) { const cd = add(new THREE.CylinderGeometry(.022, .022, 1.12, 8), cordM, sx, .92, z, G); cd.rotation.x = Math.PI / 2; } }
+    const tM = tT(256, 160, (c, w, h) => { c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#9a9a9a"; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = "#9a9a9a"; for (const [x, y] of [[0, 0], [w - 26, 0], [0, h - 26], [w - 26, h - 26]]) c.fillRect(x, y, 26, 26);
+      c.fillStyle = "#f4f2ec"; c.textAlign = "center"; c.font = "italic bold 34px Georgia"; c.fillText("Hard Rock", w / 2, 78); c.font = "bold 20px Arial"; c.fillText("CAFE", w / 2, 106); });
+    box(.95, 1.0, .6, [noir, noir, noir, noir, mat({ map: tM }), noir], -1.95, .62, 1.0, G);
+    // les oliviers, dans leurs bacs de bois, de chaque côté du tapis
+    const boisB = mat({ color: 0x5a3e28, roughness: .8 }), oli = mat({ color: 0x6a7a4a, roughness: 1, flatShading: true });
+    for (const sx of [-2.25, 2.25]) { box(.7, .7, .7, boisB, sx, .47, 3.2, G); add(new THREE.CylinderGeometry(.05, .07, 1.2, 8), mat({ color: 0x5a4a3a }), sx, 1.4, 3.2, G); for (const [dx, dy, r] of [[0, 2.15, .48], [.25, 1.95, .34], [-.25, 2.0, .36], [0, 2.45, .3]]) add(new THREE.IcosahedronGeometry(r, 1), oli, sx + dx, dy, 3.2, G); }
+    // la terrasse, de chaque côté de l'entrée (les paravents au bas rouge)
+    terrasseP(HX - 8.8, HZ + .3, 1, 0, 0, 1, 6.2, 3.4, 0xc8102e, ARB); terrasseP(HX + 2.6, HZ + .3, 1, 0, 0, 1, 6.2, 3.4, 0xc8102e, ARB);
+    // le videur : costaud, tout en noir, bras croisés devant la porte ; un couple attend qu'il les laisse entrer
+    const vd = personne3D({ taille: 1.96, peau: "#8d5a3b", ch: "#141010", haut: "#121212", bas: "#121212", chaussures: "#0a0a0a", coif: "chauve", pantalon: true });
+    vd.scale.x = vd.scale.z = 1.18; vd.position.set(1.0, .12, 1.15); vd.rotation.y = -.35; vd.userData.poser("debout", 0); G.add(vd); VID.push(vd);
+    for (const [i, sx] of [[0, -.25], [1, .3]]) { const m = personne3D({ taille: i ? 1.66 : 1.8, peau: ["#f0c9a6", "#e8bd95"][i], ch: ["#2a1a12", "#e2c27a"][i], haut: ["#3a3a40", "#7a2a3a"][i], bas: ["#26324e", "#1a1a1c"][i], chaussures: "#1a1a1a", coif: i ? "long" : "court", pantalon: !i, robe: !!i, parle: true });
+      m.position.set(sx, .12, 2.5 + i * .15); m.rotation.y = Math.PI + (i ? -.2 : .15); m.userData.poser("debout", 0); G.add(m); FILE.push(m); }
+    const pl = new THREE.PointLight(0xff3a3a, 0, 12, 1.6); pl.position.set(0, RDC + 1.4, 2.2); G.add(pl); const pl2 = new THREE.PointLight(0xffc888, 0, 10, 1.8); pl2.position.set(0, 2.6, 2.4); G.add(pl2);
+    NUIT.push([{ set emissiveIntensity(v) { pl.intensity = v; pl2.intensity = v * .8; } }, 0, 14]);
+    ARB.push([HX + 1.0, HZ + 1.15], [HX - 1.95, HZ + 1.0], [HX - 2.25, HZ + 3.2], [HX + 2.25, HZ + 3.2]); }
+  }   // (le bar Madeleine, côté rue Poissonnière)
 
 
   // où l'on marche : partout, sauf dans les immeubles
@@ -13473,9 +13567,19 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
     const PIER = ["#e6dfcf", "#ddd3be", "#ebe5d8", "#d8cdb6", "#e2d9c6"]; let n = 0;
     /* le Starbucks du boulevard (d'après la photo) : la devanture gris anthracite, « STARBUCKS COFFEE » en lettres blanches sur le bandeau noir, les grandes vitres sur la salle chaleureuse
        (le mur de bois, les étagères de tasses et de paquets, les suspensions, le comptoir, les ardoises vertes), l'enseigne ronde verte de la sirène, la terrasse, les arceaux à vélos, la poubelle bleue */
+    const sireneSB = (c, X, Y, R) => { const k = R / 128, B = "#00704a", Wt = "#ffffff"; c.save(); c.translate(X - 128 * k, Y - 128 * k); c.scale(k, k);
+      c.fillStyle = B; c.beginPath(); c.arc(128, 128, 128, 0, 7); c.fill(); c.save(); c.beginPath(); c.arc(128, 128, 127, 0, 7); c.clip();
+      c.fillStyle = Wt; for (const sg of [-1, 1]) { c.beginPath(); c.moveTo(128 + sg * 70, 118); c.lineTo(128 + sg * 118, 72); c.lineTo(128 + sg * 108, 112); c.lineTo(128 + sg * 128, 128); c.lineTo(128 + sg * 96, 138); c.closePath(); c.fill(); }   // (les queues, relevées)
+      c.strokeStyle = Wt; c.lineWidth = 7.5; c.lineCap = "round"; for (const sg of [-1, 1]) for (let i = 0; i < 5; i++) { const x0 = 128 + sg * (24 + i * 11); c.beginPath(); c.moveTo(x0, 100 + i * 4);
+        for (let y = 100 + i * 4; y <= 262; y += 6) c.lineTo(x0 + sg * (Math.sin((y - 100) / 16 + i * .6) * 6 + (y - 100) * .06 * (i > 2 ? 1 : -.4)), y); c.stroke(); }   // (les cheveux, ondulés)
+      c.fillStyle = Wt; c.beginPath(); c.moveTo(78, 92); c.lineTo(70, 62); c.lineTo(98, 78); c.lineTo(112, 54); c.lineTo(128, 74); c.lineTo(144, 54); c.lineTo(158, 78); c.lineTo(186, 62); c.lineTo(178, 92); c.quadraticCurveTo(128, 82, 78, 92); c.fill();   // (la couronne)
+      c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 7 : 17; c.lineTo(128 + Math.cos(a) * r, 44 + Math.sin(a) * r); } c.fill();   // (l'étoile)
+      c.beginPath(); c.ellipse(128, 124, 25, 31, 0, 0, 7); c.fill(); c.fillStyle = B; c.beginPath(); c.ellipse(128, 96, 27, 7, 0, 0, 7); c.fill();   // (le visage, le front sous la couronne)
+      c.strokeStyle = B; c.lineWidth = 3; for (const sg of [-1, 1]) { c.beginPath(); c.arc(128 + sg * 10, 116, 6, .2, Math.PI - .2); c.stroke(); } c.beginPath(); c.moveTo(128, 120); c.lineTo(126, 132); c.lineTo(130, 133); c.stroke(); c.beginPath(); c.arc(128, 136, 8, .4, Math.PI - .4); c.stroke();
+      c.restore(); c.restore(); };
     const starbucks = (lg, px, pz, ry) => { const G = new THREE.Group(); G.position.set(px, 0, pz); G.rotation.y = ry; scene.add(G);
       const sb = tT(Math.round(lg * 60), 300, (c, w, h) => { c.fillStyle = "#2a2c2e"; c.fillRect(0, 0, w, h); c.fillStyle = "#121314"; c.fillRect(0, 10, w, 58);
-          c.fillStyle = "#f4f2ec"; c.font = "bold 40px Georgia"; c.textAlign = "center"; for (const x of [w * .27, w * .73]) c.fillText("STARBUCKS COFFEE", x, 54);
+          c.fillStyle = "#f4f2ec"; c.font = "bold 40px Georgia"; c.textAlign = "center"; for (const x of [w * .27, w * .73]) c.fillText("STARBUCKS COFFEE", x, 54); sireneSB(c, w / 2, 39, 30);
           const nv = Math.round(lg / 3.4), pv = (w - 20) / nv;
           for (let i = 0; i < nv; i++) { const x0 = 14 + i * pv, wv = pv - 12, y0 = 80, hv = h - 92;
             const gr = c.createLinearGradient(0, y0, 0, y0 + hv); gr.addColorStop(0, "#f2c888"); gr.addColorStop(1, "#c88a4a"); c.fillStyle = gr; c.fillRect(x0, y0, wv, hv);   // (la salle, éclairée)
@@ -13488,9 +13592,8 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
             c.strokeStyle = "#1a1b1c"; c.lineWidth = 8; c.strokeRect(x0, y0, wv, hv); c.lineWidth = 4; c.beginPath(); c.moveTo(x0, y0 + hv * .3); c.lineTo(x0 + wv, y0 + hv * .3); c.stroke(); } });
       box(lg, RDC, .3, lum(mat({ map: sb, emissive: 0xffffff, emissiveIntensity: .22, emissiveMap: sb }), .22, 1.15), 0, RDC / 2, .15, G);
       // l'enseigne ronde verte, en drapeau, avec la sirène
-      const sir = tT(256, 256, (c) => { c.fillStyle = "#00704a"; c.beginPath(); c.arc(128, 128, 126, 0, 7); c.fill(); c.strokeStyle = "#f4f2ec"; c.lineWidth = 10; c.beginPath(); c.arc(128, 128, 104, 0, 7); c.stroke();
-        c.fillStyle = "#f4f2ec"; c.beginPath(); c.arc(128, 128, 62, 0, 7); c.fill(); c.fillStyle = "#00704a"; c.beginPath(); c.arc(128, 132, 26, 0, 7); c.fill(); c.beginPath(); c.moveTo(96, 92); c.lineTo(110, 70); c.lineTo(128, 88); c.lineTo(146, 70); c.lineTo(160, 92); c.closePath(); c.fill();   // (la couronne, le visage)
-        c.fillRect(84, 120, 14, 50); c.fillRect(158, 120, 14, 50); c.beginPath(); c.arc(128, 128, 104, 0, 7); });
+      // (10.17) la sirène, comme le logo : le disque vert, la couronne et son étoile, le visage, les longs cheveux ondulés, les deux queues relevées de chaque côté
+      const sir = tT(256, 256, (c) => sireneSB(c, 128, 128, 126));
       const mS = lum(mat({ map: sir, emissive: 0xffffff, emissiveIntensity: .2, emissiveMap: sir }), .2, 1.2);
       for (const x of [-lg / 2 + 1.2, lg / 2 - 1.2]) { box(.06, .06, 1.0, fonte, x, 3.9, .7, G); const d = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .06, 32), mS); d.rotation.z = Math.PI / 2; d.position.set(x, 3.45, 1.1); G.add(d); }
       // la terrasse : petites tables carrées, chaises noires, quelques clients et leurs gobelets
@@ -13514,6 +13617,7 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
         { const ox = axe === "x" ? 0 : sens, oz = axe === "x" ? sens : 0; for (const tt of [t + .3, t + lg - .3]) gouttiere(axe === "x" ? tt : f, axe === "x" ? f : tt, hh, ox, oz);   // (une descente de chaque côté de l'immeuble)
           const ch = new THREE.Mesh(new THREE.BoxGeometry(axe === "x" ? lg : .16, .16, axe === "x" ? .16 : lg), zincG); ch.position.set(px + ox * .1, hh - .08, pz + oz * .1); scene.add(ch); }   // (le chéneau, sous la corniche)
         if (axe === "x" && f === 14 && t === -81) { starbucks(lg, px, pz, ry); continue; }
+        if (axe === "x" && f === -14 && t === -99) continue;   // (10.17) ici, le Hard Rock Café (plus haut)
         devanture(scene, lg, px, pz, ry, { fond: fc, bandeau: fc, pasV: 3.2, store: n % 2 ? [fc, "#f2efe6"] : null, enseigne: (c, w2) => { c.fillStyle = "#f2e8c8"; c.font = "bold 30px Georgia"; c.textAlign = "center"; c.fillText(nom, w2 / 2, 38); } }); } };
     rangee(-117, -50, -14, "x", 1); rangee(49, 117, -14, "x", 1); rangee(48, 117, 14, "x", -1); rangee(-117, -55, 14, "x", -1);
     rangee(-117, -51, -9, "z", 1); rangee(-117, -51, 9, "z", -1); rangee(51, 117, 8, "z", -1); rangee(62, 117, -8, "z", 1); }
@@ -13616,6 +13720,9 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
           Q.laisse.visible = true; const ps = Q.laisse.geometry.attributes.position; ps.setXYZ(0, g.x + hz * .25, g.y + 1.0, g.z - hx * .25); ps.setXYZ(1, D.position.x - hx * .25, D.position.y + .42, D.position.z - hz * .25); ps.needsUpdate = true; }
         else { Q.acc.visible = true; Q.acc.position.set(g.x + hx * av - hz * lat, g.y, g.z + hz * av + hx * lat); Q.acc.rotation.y = Math.atan2(-hz, hx) + (P.acc === "poussette" ? Math.PI : 0); } } }
     for (const [k, m] of FILE.entries()) { const P = m.userData.parts; m.userData.poser("debout", tm); if (k % 2 === 0) { P.bras[0].e.rotation.x = -.5 + Math.sin(tm / 400 + k) * .2; P.tete.rotation.y = Math.sin(tm / 1100 + k) * .4; } }
+    for (const m of VID) { const P = m.userData.parts, c = (tm / 1000) % 9; m.userData.poser("debout", tm);
+      if (c < 2.2) { P.bras[1].e.rotation.set(-1.5, 0, .25); P.bras[1].c.rotation.x = -.25; P.tete.rotation.y = .5; }   // (la main levée : « une minute… »)
+      else { for (const [i, sg] of [[0, 1], [1, -1]]) { P.bras[i].e.rotation.set(-.75, 0, sg * -.55); P.bras[i].c.rotation.x = -1.75; } P.tete.rotation.y = Math.sin(tm / 1700) * .5; } }   // (les bras croisés, il surveille)
     for (const [k, m] of TERR.entries()) { const P = m.userData.parts, b = (tm / 1000 + k * 1.7) % 7; m.userData.poser("assis", tm); if (b < 1.3) { P.bras[1].e.rotation.x = -1.3; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.15; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.9; P.tete.rotation.x = 0; } }
     for (const P of MARCHE) { P.t += dt * P.v / P.L; const u = (Math.sin(P.t * Math.PI) + 1) / 2, sens = Math.cos(P.t * Math.PI) > 0 ? 1 : -1, g = P.g, dx = Math.cos(P.ry), dz = -Math.sin(P.ry);
       g.position.x = P.x0 + dx * (u - .5) * P.L; g.position.z = P.z0 + dz * (u - .5) * P.L; g.rotation.y = P.ry + (sens > 0 ? 0 : Math.PI) + Math.PI / 2;
