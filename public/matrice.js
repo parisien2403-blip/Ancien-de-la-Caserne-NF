@@ -3211,7 +3211,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
           x.strokeStyle = "#e8e4da"; x.lineWidth = 3; x.beginPath(); x.roundRect(15, 15, 98, 98, 10); x.stroke(); x.fillStyle = "#f4f2ea"; x.font = "bold 78px Arial, Helvetica, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(k, 64, 70); });
         const pl = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), A.mat({ map: tex(pq), roughness: .4 })); pl.position.set(0, 3.0, .11); g.add(pl);
         if (k === "Z") {   // l'escalier Z : un cercle bleu devant la porte, que l'administrateur et ses invités voient seuls ; il mène à l'appartement (une carte à part)
-          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart));   /* (l'administrateur et les laissez-passer 02, 03, 04) */   /* (les invités : seulement quand l'administrateur l'a ouvert) */ PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
+          const xc = xB - .95, adm = () => !!(M && M.ctx && M.ctx.moiInfo && (M.ctx.moiInfo().admin || M.ctx.moiInfo().appart));   /* (l'administrateur et les laissez-passer 02, 03, 04, 0011) */   /* (les invités : seulement quand l'administrateur l'a ouvert) */ PORTE_Z = { arrivee: [xB - 1.6, z], yaw: Math.PI / 2 };
           L.portails.push({ dans: (x, zz) => adm() && Math.abs(x - xc) < .6 && Math.abs(zz - z) < .6, seuil: [xc, z], y: y0, vers: "appart", arrivee: [0, 7.7], yaw: 0, bleu: true, pasApo: true }); } }
       else {   // une fenêtre du rez-de-chaussée : encadrement blanc, vitre, meneau et traverse, appui
         b(1.3, 1.7, .08, pierreC, 0, 2.0, .04); b(1.06, 1.46, .06, vitre, 0, 2.0, .07); b(.05, 1.46, .07, pierreC, 0, 2.0, .09); b(1.06, .05, .07, pierreC, 0, 2.35, .09); b(1.45, .1, .22, pierreC, 0, 1.1, .11); } } }
@@ -12299,7 +12299,7 @@ function animerCercles(t) {
       disque.rotation.x = -Math.PI / 2; disque.position.y = -.002; g.add(disque);
       const halo = new THREE.Mesh(new THREE.RingGeometry(RAYON_CERCLE, RAYON_CERCLE + .15, 48), new THREE.MeshBasicMaterial({ color: vert ? 0x2ee05a : bleu ? 0x3d8bff : rouge ? 0xff2a1a : 0xffd25a, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }));
       halo.rotation.x = -Math.PI / 2; g.add(halo); g.renderOrder = 3;
-      g.position.set(ce[0], (c.pt.y != null ? c.pt.y : M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0) + .04, ce[1]); M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
+      { let h = 0; try { h = M.L.hauteur ? M.L.hauteur(ce[0], ce[1], moi || {}) : 0; } catch (e) { h = null; } const y = c.pt.y != null ? (h != null && h > c.pt.y && h - c.pt.y < .3 ? h : c.pt.y) : (h || 0); g.position.set(ce[0], y + .04, ce[1]); } /* (10.02 : au-dessus du trottoir — le cercle de l'escalier Z était caché dessous) */ M.scene.add(g); c.g = g; c.anneau = anneau; c.halo = halo; c.disque = disque; }
     // il bat doucement, comme une lumière qui respire ; caché quand la porte n'est pas utilisable d'ici (les étages)
     c.g.visible = !modeRE() && (c.pt.continu ? true : c.pt.dans(c.pt.zc[0], c.pt.zc[1])) && !(c.pt.secret && !estApo(M.lieu)) && (!lisaVivante() || c.pt.vers === "appart") && !(c.pt.vers === "z-rue" && !M.porcheOuvert);   // (le porche bouché : pas de cercle)   // (Lisa debout : les portes de la salle des fêtes restent closes)
     const b = .5 + .5 * Math.sin(t / 420);

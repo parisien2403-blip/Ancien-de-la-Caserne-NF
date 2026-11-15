@@ -2374,7 +2374,7 @@
     { const sc = $("mxScene"); if (pleinCSS) { if (!sc.classList.contains("plein-css")) { sc.classList.add("plein-css"); document.body.style.overflow = "hidden"; scrollTo(0, 0); } }   /* (d'un seul geste : plein écran tout de suite, puis la main nous dépose) */
       else if (document.fullscreenElement !== sc) (sc.requestFullscreen || sc.webkitRequestFullscreen || (() => {})).call(sc); } $("tab-matrice-porte").classList.remove("mx-ferme"); $("scroll").scrollTop = 0; ouvrirMatrice(); };
   // l'appartement de l'escalier Z : l'administrateur, et les badges qu'il y invite (la même liste dans src/index.js)
-  const APPART_INVITES = [2, 3, 4], appartOuvert = () => !!(moi && (moi.admin || APPART_INVITES.includes(Number(moi.numero))));   /* (les laissez-passer 02, 03, 04 : toujours) */   // (les invités : seulement quand l'administrateur l'a ouvert)
+  const APPART_INVITES = [2, 3, 4, 11], appartOuvert = () => !!(moi && (moi.admin || APPART_INVITES.includes(Number(moi.numero))));   /* (les laissez-passer 02, 03, 04, 0011 : toujours) */   // (les invités : seulement quand l'administrateur l'a ouvert)
   let appartLibre = false;
   const CASERNE_TRAVAUX = false;   // (la caserne fermée pour travaux : l'administrateur seul y entre)
   async function ouvrirMatrice() {
@@ -3364,6 +3364,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["10.02", "15 novembre 2026", ["Le cercle bleu de l'escalier Z est de nouveau visible : il était caché sous le trottoir", "Le laissez-passer 0011 peut entrer dans l'appartement de l'escalier Z"]],
     ["10.01", "15 novembre 2026", ["Mode hiver : approche-toi d'une voiture couverte de neige, « ❄️ Ramasser de la neige », puis « ❄️ Lancer la boule de neige » sur l'enfant le plus proche ; pendant une minute, les enfants te visent aussi (et l'écran se prend la neige !)", "Nouvelle qualité : Épouse du Garde (inscription et création de compte)"]],
     ["10.00", "15 novembre 2026", ["Mode hiver : la terrasse est couverte de neige ; plus d'enfants sur la terrasse, plus de mamans ni d'enfants sur le banc, plus d'enfants assis sur le toit du local poubelle"]],
     ["9.99", "15 novembre 2026", ["Le bouton ❄️ du mode hiver n'est plus caché derrière le bouton du ciel : il est juste en dessous"]],
