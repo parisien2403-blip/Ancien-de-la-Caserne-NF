@@ -13175,9 +13175,9 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   box(16, 20, 38, [creme, mat({ map: ailT }), creme, creme, creme, creme], -16, 10, 42, g); box(10, 4, 30, creme, -19, 22, 44, g);
   // le soubassement : rez-de-chaussée crème, son bandeau noir ; la marquise rouge qui fait le tour de l'angle (arrondie)
   const rdc = tT(1024, 160, (c) => { c.fillStyle = "#e8e0cc"; c.fillRect(0, 0, 1024, 160); for (let x = 20; x < 1024; x += 150) { c.fillStyle = "#2a1a14"; c.fillRect(x, 40, 90, 120); c.fillStyle = "#b8202a"; c.fillRect(x + 100, 50, 36, 60); } });
-  box(38, 4.4, .3, lum(mat({ map: rdc, emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: rdc }), .05, .5), -35, 2.2, 14.1, g); box(.3, 4.4, 38, mat({ map: rdc }), -8.1, 2.2, 42, g);
-  box(38, 1.0, 1.4, rouge, -35, 4.9, 13.4, g); box(1.4, 1.0, 38, rouge, -7.4, 4.9, 42, g);
-  { const c = add(new THREE.CylinderGeometry(9.6, 9.6, 1.0, 40, 1, false, Math.PI * .5, Math.PI / 2), rouge, -16.6, 4.9, 22.6, g); const b = add(new THREE.CylinderGeometry(9.3, 9.3, 1.6, 40, 1, false, Math.PI * .5, Math.PI / 2), noirM, -16.6, 3.6, 22.6, g); }   // (l'angle : la marquise courbe, son bandeau noir)
+  box(38, 6.0, .3, lum(mat({ map: rdc, emissive: 0xffffff, emissiveIntensity: .05, emissiveMap: rdc }), .05, .5), -35, 3.0, 14.1, g); box(.3, 6.0, 38, mat({ map: rdc }), -8.1, 3.0, 42, g);   // (le rez-de-chaussée, plus haut : les portes, et les affiches au-dessus)
+  box(38, 1.0, 1.4, rouge, -35, 6.5, 13.4, g); box(1.4, 1.0, 38, rouge, -7.4, 6.5, 42, g);
+  { const c = add(new THREE.CylinderGeometry(9.6, 9.6, 1.0, 40, 1, false, Math.PI * .5, Math.PI / 2), rouge, -16.6, 6.5, 22.6, g); const b = add(new THREE.CylinderGeometry(9.3, 9.3, 1.6, 40, 1, false, Math.PI * .5, Math.PI / 2), noirM, -16.6, 5.2, 22.6, g); }   // (l'angle : la marquise courbe, son bandeau noir)
   // la tour d'angle : un pylône à fronton plat, face au carrefour
   const T = new THREE.Group(); T.position.set(-14, 0, 20); T.rotation.y = Math.PI * .75; g.add(T);
   box(14, 24, 8, creme, 0, 17, -1, T);   // (le corps du pylône, de 5 à 29 m)
@@ -13211,10 +13211,22 @@ immeubleAngle(8, 14, 1, 1, { R: 3.5, la: 36, lb: 36, pierreC: 0xd8ccb4, A: { pie
   const rc = tT(512, 128, (c) => { c.fillStyle = "#c01a24"; c.fillRect(0, 0, 512, 128); c.fillStyle = "#f2eee4"; c.font = "bold 80px Arial"; c.fillText("REX CLUB", 40, 96); });
   box(8, 1.8, .6, lum(mat({ map: rc, emissive: 0xff3030, emissiveIntensity: 0, emissiveMap: rc }), 0, .9), -50, 4.2, 13.6, g);
   // sous la marquise rouge, les affiches de tous les films du vidéo club (Video Futur), côté boulevard et côté rue, éclairées le soir
-  { const F = ["gb", "bttf", "grem", "re", "sh", "lb"], ph = 3.2, pw = ph * 600 / 850;
-    F.forEach((c, k) => { const m = lum(mat({ map: jaq(c), emissive: 0xffffff, emissiveIntensity: .04, emissiveMap: jaq(c), roughness: .6 }), .04, .7);
-      const a = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), m); a.position.set(-19 - k * (pw + .5), 2.6, 13.9); a.rotation.y = Math.PI; g.add(a);
-      const b = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), m); b.position.set(-7.9, 2.6, 28 + k * (pw + .5)); b.rotation.y = -Math.PI / 2; g.add(b); }); } }
+  /* (10.11) les entrées du cinéma : une double porte vitrée à cadre doré par film, l'affiche au-dessus ; devant, les files d'attente entre des cordons de velours rouge sur des poteaux dorés.
+     On entre dans le film par sa porte (comme au vidéo club) */
+  { const F = ["gb", "bttf", "grem", "re", "sh", "lb"], ph = 2.5, pw = ph * 600 / 850, pas = 2.9, or = mat({ color: 0xd8b048, metalness: .85, roughness: .25 }), velours = mat({ color: 0x9a0e1e, roughness: .9 }), verre = new THREE.MeshStandardMaterial({ color: 0x9ab8c8, transparent: true, opacity: .35, roughness: .05, metalness: .2 }), fondP = mat({ color: 0x1a1410, emissive: 0xffc070, emissiveIntensity: .05 });
+    L.portesRex = [];
+    const entree = (x, z, ry, c) => { const e = new THREE.Group(); e.position.set(x, 0, z); e.rotation.y = ry; g.add(e);
+      const m = lum(mat({ map: jaq(c), emissive: 0xffffff, emissiveIntensity: .04, emissiveMap: jaq(c), roughness: .6 }), .04, .75);
+      const a = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), m); a.position.set(0, 4.6, .05); e.add(a); box(pw + .16, ph + .16, .06, or, 0, 4.6, 0, e);   // (l'affiche, son cadre doré)
+      box(2.3, 3.1, .08, fondP, 0, 1.55, -.02, e);   // (l'embrasure, éclairée)
+      for (const sx of [-.55, .55]) { box(1.0, 2.9, .04, verre, sx, 1.5, .06, e); box(.08, 2.9, .1, or, sx - .5, 1.5, .06, e); box(.08, 2.9, .1, or, sx + .5, 1.5, .06, e); box(.06, .5, .06, or, sx * .25, 1.4, .14, e); }   // (les deux battants vitrés, leurs montants dorés, les poignées)
+      box(2.3, .1, .12, or, 0, 3.0, .06, e); box(2.3, .1, .12, or, 0, .05, .06, e);
+      // la file d'attente : deux cordons de velours rouge, de part et d'autre, sur quatre poteaux dorés
+      const pt = (px, pz) => { box(.3, .04, .3, or, px, .02, pz, e); add(new THREE.CylinderGeometry(.035, .035, .95, 10), or, px, .5, pz, e); add(new THREE.SphereGeometry(.07, 10, 8), or, px, 1.0, pz, e); };
+      for (const sx of [-1.25, 1.25]) { pt(sx, .7); pt(sx, 2.6);
+        const cv = new THREE.CatmullRomCurve3([new THREE.Vector3(sx, .92, .7), new THREE.Vector3(sx, .72, 1.65), new THREE.Vector3(sx, .92, 2.6)]); add(new THREE.TubeGeometry(cv, 16, .03, 6, false), velours, 0, 0, 0, e); }
+      const f = FILMS_VF.find(f => f.cle === c); if (f) L.portesRex.push({ x: x + Math.sin(ry) * 1.2, z: z + Math.cos(ry) * 1.2, f }); };
+    F.forEach((c, k) => { entree(-19 - k * pas, 13.95, Math.PI, c); entree(-7.95, 28 + k * pas, Math.PI / 2, c); }); } }
 /* ===================== le mobilier urbain ===================== */
 const tronc = mat({ color: 0x6a5a4a }), feuil = mat({ color: 0x5f7a44, roughness: 1, flatShading: true }), branche = mat({ color: 0x4a3c30 });
 const platane = (x, z, nu) => { add(new THREE.CylinderGeometry(.22, .3, 6, 8), tronc, x, 3, z); if (nu) { for (let i = 0; i < 6; i++) { const b = add(new THREE.CylinderGeometry(.05, .1, 3.5, 5), branche, x, 6.5, z); b.rotation.z = (al() - .5) * 1.4; b.rotation.x = (al() - .5) * 1.4; } return; }
@@ -14387,6 +14399,7 @@ function chercherAction(t) {
     if (Number.isInteger(moi.info.assis)) a = { type: "lever", label: "🧍 Se relever" };
     else if (moi.info.slow) a = { type: "finslow", label: "💔 Arrêter le slow" };
     else if (M.cine) a = null;
+    else if (M.L.portesRex && M.L.portesRex.some(p => Math.hypot(x - p.x, z - p.z) < 1.1)) { const p = M.L.portesRex.find(p => Math.hypot(x - p.x, z - p.z) < 1.1); a = { type: "rexFilm", cle: p.f.cle, id: p.f.cle, label: `🎬 Entrer dans « ${p.f.titre} »` }; }   // (10.11, le Grand Rex : on entre dans le film par sa porte)
     else if (M.L.busL && Math.hypot(x - M.L.busL.C.ax, z - M.L.busL.C.az) < 2.4 && !M.L.apo && !M.L.sh) a = M.L.busL.phase === "rien" ? { type: "bus", label: "🚌 Prendre le bus" } : null;   // (10.07, l'arrêt de bus)
     else if (M.hiver && M.lieu === "grande" && M.L.neigeB && !M.L.nuit && (M.bouleMain ? M.L.neigeB.cible(x, z) : M.L.neigeB.proche(x, z))) a = M.bouleMain ? { type: "neigeLancer", label: "❄️ Lancer la boule de neige" } : { type: "neigeRamasser", label: "❄️ Ramasser de la neige" };   // (10.01, l'hiver : la neige des voitures)
     else if (false && M.cage && M.lieu === "grande" && !enCage() && (Math.hypot(x - PIERRES.x, z - PIERRES.z) < 1.4 || (M.pierreMain && Math.hypot(x - CAGE.x, z - CAGE.z) < 14))) a = M.pierreMain ? { type: "lancerPierre", label: "🪨 Lancer sur 003" } : { type: "pierre", label: "🪨 Ramasser une pierre" };
@@ -14452,6 +14465,7 @@ export function agir() {
   const a = M && M.action, moi = M && M.moiNum && M.gens.get(M.moiNum); if (!a || !moi) return;
   if (a.type === "porteRE") { agirPorteRE(moi, a.pt); return; }
   if (a.type === "hwTuer") { hwTuer(M.L.gensFete[a.i]); return; }
+  if (a.type === "rexFilm") { const f = FILMS_VF.find(f => f.cle === a.cle); M.actionCle = null; if (f) louerFilm(f); return; }
   if (a.type === "bus") { const B = M.L.busL; if (!B) return; M.actionCle = null; choixBus(B); return; }
   if (a.type === "neigeRamasser") { M.bouleMain = true; M.actionCle = null; dire(M.moiNum, "❄️ Une belle boule de neige…"); return; }
   if (a.type === "neigeLancer") { if (M.L.neigeB && M.L.neigeB.lancer()) M.bouleMain = false; M.actionCle = null; return; }
