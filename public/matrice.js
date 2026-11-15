@@ -13061,9 +13061,9 @@ function construireRex(A, L, scene) {
 // la rue du Faubourg-Poissonnière (au nord) : chaussée x ∈ [-5, 5], trottoirs jusqu'à ±9 ; la rue Poissonnière (au sud) : chaussée x ∈ [-4, 4], trottoirs jusqu'à ±8
 const asphT = tT(256, 256, (c) => { c.fillStyle = "#47484c"; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 2500; i++) { c.fillStyle = `rgba(${al() < .5 ? 0 : 255},${al() < .5 ? 0 : 255},${al() < .5 ? 0 : 255},${al() * .05})`; c.fillRect(al() * 256, al() * 256, 2, 2); } }); asphT.wrapS = asphT.wrapT = THREE.RepeatWrapping; asphT.repeat.set(40, 40);
 const trotT = tT(256, 256, (c) => { c.fillStyle = "#a29d93"; c.fillRect(0, 0, 256, 256); c.strokeStyle = "rgba(60,55,50,.25)"; c.lineWidth = 2; for (let x = 0; x < 256; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 256); c.stroke(); } for (let y = 0; y < 256; y += 32) { c.beginPath(); c.moveTo(0, y); c.lineTo(256, y); c.stroke(); } }); trotT.wrapS = trotT.wrapT = THREE.RepeatWrapping; trotT.repeat.set(60, 60);
-add(new THREE.BoxGeometry(260, .2, 260), mat({ map: trotT }), 0, .02, 0);
+L.sol = add(new THREE.BoxGeometry(260, .2, 260), mat({ map: trotT }), 0, .02, 0);   // (le sol qu'on touche pour y aller)
 const asph = mat({ map: asphT, roughness: .95 });
-const route = (x, z, w, d) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), asph); p.rotation.x = -Math.PI / 2; p.position.set(x, .16, z); p.receiveShadow = true; scene.add(p); };
+const route = (x, z, w, d) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), asph); p.rotation.x = -Math.PI / 2; p.position.set(x, .16, z); p.receiveShadow = true; scene.add(p); (L.solsPlus = L.solsPlus || []).push(p); };
 route(0, 0, 260, 16); route(0, -70, 10, 124); route(0, 70, 8, 124);
 const bord = mat({ color: 0xb4b0a6 });
 for (const [x, z, w, d] of [[-70.5, -8, 121, .3], [70.5, -8, 121, .3], [-70, 8, 122, .3], [70, 8, 122, .3], [-5, -70, .3, 124], [5, -70, .3, 124], [-4, 70, .3, 124], [4, 70, .3, 124]]) box(w, .16, d, bord, x, .1, z);
@@ -13530,13 +13530,13 @@ function animerPigeons(t) {
 }
 function animerSonRue() {
   if (!M || !M.L) { if (sonRue) sonRue.pause(); return; } const moi = M.moiNum && M.gens.get(M.moiNum), p = moi && moi.g.position;
-  const dehors = !!p && !M.cine && !M.L.apo && !M.L.sh && (M.lieu === "rue" || (M.lieu === "grande" && typeof DH_ !== "undefined" && DH_.rue(p.x, p.z)));
+  const dehors = !!p && (!M.cine || (M.L.busL && M.L.busL.phase !== "rien")) && !M.L.apo && !M.L.sh && (M.lieu === "rue" || M.lieu === "rex" || (M.lieu === "grande" && typeof DH_ !== "undefined" && (DH_.rue(p.x, p.z) || (M.L.busL && M.L.busL.phase !== "rien"))));   // (10.12 : aussi pendant le trajet en bus, et au carrefour du Grand Rex)
   const cible = dehors && !M.halloween ? (M.rueVol ?? .5) : 0;
   if (!sonRue) { if (!cible) return; sonRue = new Audio("sons/ville-paris.mp3"); sonRue.loop = true; sonRue.volume = 0; }
   if (cible > 0 && sonRue.paused) sonRue.play().catch(() => {});
   sonRue.volume = Math.max(0, Math.min(1, sonRue.volume + (cible - sonRue.volume) * .04));
   if (!cible && sonRue.volume < .01 && !sonRue.paused) sonRue.pause(); }
-quitterLieu.add((id) => { if (sonRue && id !== "rue" && id !== "grande") { sonRue.pause(); sonRue.volume = 0; } });
+quitterLieu.add((id) => { if (sonRue && id !== "rue" && id !== "grande" && id !== "rex") { sonRue.pause(); sonRue.volume = 0; } });
 const DANSEUR = -4, ZOMBIE = -5, MARIEE = -6;
 function animerDanseur() {
   if (!M || !M.L || M.lieu !== "fetes" || !M.L.pisteCentre) return;
