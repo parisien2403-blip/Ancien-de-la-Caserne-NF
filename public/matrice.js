@@ -2911,7 +2911,7 @@ function ruesDehors0(A, L, scene) {
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
   // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
-  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1 }); }
+  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1, nom: "circH" }); livraisonRue(L, scene); }
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
   eboueurCaniveau(L, scene, -30, 30, ZR);   // (l'éboueur qui balaie le caniveau, le long du trottoir de la caserne)
   arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
@@ -4710,9 +4710,9 @@ function repasMess(L, scene) {
   for (let k = 0; k < NC; k++) { let i; do i = Math.floor(r() * places.length); while (pris.has(i)); pris.add(i); const P = places[i], f = r() < .45;
     const m = personne3D({ taille: f ? 1.62 + r() * .1 : 1.72 + r() * .12, peau: PEAUX[k % 6], ch: CH[(k * 5) % 6], haut: HAUTS[k % 12], bas: ["#2a3040", "#3a3a40", "#26324e", "#14181c"][k % 4], chaussures: "#1a1a1a", coif: f ? ["long", "carre", "queue"][k % 3] : k % 5 === 0 ? "chauve" : "court", pantalon: !f || k % 2 === 0, robe: f && k % 2 === 1, parle: k % 3 === 0 });
     const sx = P.z + P.sz * .44; m.position.set(P.x, .48 - m.userData.hipY + .02, sx); m.rotation.y = P.sz > 0 ? Math.PI : 0; scene.add(m);
-    const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9 }); }
+    const assiette = plat(); assiette.position.set(P.x, Y + .01, P.z); assiette.visible = r() < .5; scene.add(assiette); conv.push({ m, P, assiette, ph: r() * 9, plein: assiette.visible, k }); }
   L.convives = conv;
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = !L.apo && !L.sh && !L.gb && !M.sansFigurants; for (const c of conv) { c.m.visible = vu; c.assiette.visible = vu && c.assiette.userData.servi !== false && c.assiette.visible; } if (!vu) return; const t = tm / 1000;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu0 = !L.apo && !L.sh && !L.gb, vu = vu0 && (!M.sansFigurants || !PETIT); for (const c of conv) { const ok = vu0 && (!M.sansFigurants || (!PETIT && c.k % 2 === 0)); c.m.visible = ok; c.assiette.visible = ok && c.assiette.userData.servi !== false && c.plein; } if (!vu) return;   /* (allégé sur ordinateur : la moitié des convives reste à table, de jour comme de nuit) */ const t = tm / 1000;
     for (const c of conv) { const P = c.m.userData.parts; c.m.userData.poser("assis", tm); const b = (t + c.ph) % 6;   // (ils mangent : la fourchette à la bouche, de temps en temps)
       if (c.assiette.visible && b < 1.2) { P.bras[1].e.rotation.x = -1.2; P.bras[1].c.rotation.x = -1.9; P.tete.rotation.x = -.1; } else { P.bras[1].e.rotation.x = -.7; P.bras[1].c.rotation.x = -.6; P.bras[0].e.rotation.x = -.7; P.bras[0].c.rotation.x = -.6; P.tete.rotation.x = .15; } } };
 }
@@ -4910,10 +4910,12 @@ function circulationRue(L, scene, O) {
   const CIT = COULEURS_90.flatMap(c => [["clio", c], ["106", c]]);
   const citadineVraie = () => { const [mo, co] = CIT[Math.floor(Math.random() * CIT.length)]; return { g: citadine(scene, mo, co, 0, 0, 0), r: [], v: 8.5 + Math.random() * 3, L: mo === "clio" ? 3.71 : 3.56 }; };
   const enRoute = []; let prochain = performance.now() + 2500 + Math.random() * 5000, avant = 0;
+  if (O.nom) L[O.nom] = { enRoute, O };
   const animAvant = L.anim;
   L.anim = (t) => { animAvant && animAvant(t);
     const dt = avant ? Math.min(.1, (t - avant) / 1000) : 0; avant = t;
     for (const v of enRoute) v.g.visible = !(M && M.halloween);
+    const obst = O.nom && L.obstRue || []; if (obst.some(o => Math.abs(o.z - O.z) < 2 && Math.abs(o.x - O.x0) < 16)) prochain = Math.max(prochain, t + 600);   /* (le camion de livraison s'engage : on attend qu'il soit passé) */
     if (t > prochain && !L.apo && !(M && M.halloween)) { const dernier = enRoute[enRoute.length - 1];
       if (!dernier || (dernier.g.position.x - O.x0) * O.sens > 12 + dernier.L + 6) { const r0 = Math.random(), v = r0 < .14 ? busVrai() : r0 < .32 ? moto() : r0 < .6 ? citadineVraie() : voiture(); v.g.position.set(O.x0, O.y, O.z); v.g.rotation.y = O.sens > 0 ? 0 : Math.PI; scene.add(v.g); enRoute.push(v);
         prochain = t + (Math.random() < .3 ? 1500 + Math.random() * 2500 : 7000 + Math.random() * 16000); }   // parfois deux ou trois à la suite, souvent rien pendant un moment
@@ -4924,6 +4926,7 @@ function circulationRue(L, scene, O) {
       if (M && M.gens && M.L === L) for (const p of M.gens.values()) { if (!p.g || !p.g.visible) continue; const q = p.g.position; if (Math.abs(q.z - O.z) > demi) continue;
         const d = (q.x - nez) * O.sens; if (d > -.5 && d < 9) cible = Math.min(cible, Math.max(0, (d - 1.1) * 1.8)); }
       if (dev) { const ecart = (dev.g.position.x - O.sens * dev.L / 2 - nez) * O.sens; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
+      for (const o of obst) { if (Math.abs(o.z - O.z) > 2.1) continue; const ecart = (o.x - O.sens * o.L / 2 - nez) * O.sens; if (ecart > -1) cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
       v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); const vit = v.cur;
       v.g.position.x += O.sens * vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
       if ((v.g.position.x - O.x1) * O.sens > 0) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (m && m.map) m.map.dispose(); } }); enRoute.splice(i, 1); } }
@@ -12539,6 +12542,19 @@ function valise(scene) {   // une valise à roulettes, sa poignée tirée
   const b = new THREE.Mesh(new THREE.BoxGeometry(.24, .62, .42), c); b.position.y = .38; g.add(b); for (const z of [-.15, .15]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .03, 10), n); r.rotation.x = Math.PI / 2; r.position.set(-.1, .04, z); g.add(r); }
   for (const z of [-.12, .12]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .45, 6), n); t.position.set(.08, .9, z); g.add(t); } const p = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .28), n); p.position.set(.08, 1.12, 0); g.add(p);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
+function mallette(scene) {   // l'attaché-case en cuir noir, tenu à bout de bras
+  const g = new THREE.Group(), c = new THREE.MeshStandardMaterial({ color: 0x1e1612, roughness: .45 }), o = new THREE.MeshStandardMaterial({ color: 0xc8a640, metalness: .7, roughness: .3 });
+  const b = new THREE.Mesh(new THREE.BoxGeometry(.44, .32, .1), c); b.position.y = .5; g.add(b); const p = new THREE.Mesh(new THREE.TorusGeometry(.055, .012, 6, 12, Math.PI), c); p.position.y = .66; g.add(p);
+  for (const x of [-.13, .13]) { const f = new THREE.Mesh(new THREE.BoxGeometry(.05, .03, .11), o); f.position.set(x, .64, 0); g.add(f); }
+  g.traverse(m => { if (m.isMesh) m.castShadow = true; }); scene.add(g); return g; }
+function cabas(scene) {   // le cabas en osier de la ménagère : une baguette et des poireaux qui dépassent
+  const g = new THREE.Group(), os = new THREE.MeshStandardMaterial({ color: 0xb08a4a, roughness: .9 }), pain = new THREE.MeshStandardMaterial({ color: 0xd8a050, roughness: .8 }), vert = new THREE.MeshStandardMaterial({ color: 0x3a8a3a, roughness: .8 });
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(.2, .16, .3, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xb08a4a, roughness: .9, side: THREE.DoubleSide })); c.scale.z = .55; c.position.y = .45; g.add(c);
+  const f = new THREE.Mesh(new THREE.CircleGeometry(.16, 12), os); f.rotation.x = -Math.PI / 2; f.scale.y = .55; f.position.y = .31; g.add(f);
+  const an = new THREE.Mesh(new THREE.TorusGeometry(.15, .012, 6, 14, Math.PI), os); an.position.y = .6; g.add(an);
+  const ba = new THREE.Mesh(new THREE.CapsuleGeometry(.03, .5, 4, 8), pain); ba.position.set(.08, .7, 0); ba.rotation.z = -.35; g.add(ba);
+  for (const z of [-.03, .03]) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.018, .022, .4, 6), vert); po.position.set(-.08, .66, z); po.rotation.z = .3; g.add(po); }
+  g.traverse(m => { if (m.isMesh) m.castShadow = true; }); scene.add(g); return g; }
 function caddieTissu(scene) {   // le caddie de courses de grand-mère : un sac en tissu écossais sur deux roues, tiré par sa poignée
   const g = new THREE.Group(), tissu = new THREE.MeshStandardMaterial({ map: tex(toile(64, 64, (c) => { c.fillStyle = "#2a4a7a"; c.fillRect(0, 0, 64, 64); c.fillStyle = "rgba(200,40,50,.7)"; for (let k = 4; k < 64; k += 16) { c.fillRect(k, 0, 5, 64); c.fillRect(0, k, 64, 5); } c.fillStyle = "rgba(240,220,120,.5)"; for (let k = 10; k < 64; k += 16) { c.fillRect(k, 0, 2, 64); c.fillRect(0, k, 64, 2); } })), roughness: 1 });
   const fer = new THREE.MeshStandardMaterial({ color: 0x9a9ea4, metalness: .6, roughness: .4 }), n = new THREE.MeshStandardMaterial({ color: 0x151515 });
@@ -12550,16 +12566,16 @@ function caddieTissu(scene) {   // le caddie de courses de grand-mère : un sac 
   const p = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .26, 8), n); p.rotation.x = Math.PI / 2; p.position.set(-.13, .97, 0); g.add(p);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g; }
 const PASSANTS = [
-  { num: -110, nom: "Une grand-mère", tenue: "tailleur", couleur: "#6a5a7a", pieds: "#2a1a14", tete: ["mamie1", { peau: "#f0d0b4", ch: "#e8e4dc", coif: "carre", femme: true, lunettes: true }], acc: "caddie", trajet: [-50, -154.8, 70, -154.8] },
+  { num: -110, nom: "Une grand-mère", tenue: "tailleur", couleur: "#6a5a7a", pieds: "#2a1a14", tete: ["mamie1", { peau: "#f0d0b4", ch: "#e8e4dc", coif: "carre", femme: true, lunettes: true }], acc: "caddie", trajet: [-28, -155.4, 70, -155.4] },
   { num: -111, nom: "Une grand-mère", tenue: "robe", couleur: "#3a5a4a", pieds: "#3a2a1a", tete: ["mamie2", { peau: "#e8bd95", ch: "#cfcac0", coif: "court", femme: true }], acc: "caddie", trajet: [45, 5.0, -45, 5.0], lieu: "rue" },
   { num: -112, nom: "Un garçon", tenue: "tshirt", couleur: "#e8a020", bas: "#2f5fae", pieds: "#f2f2f2", tete: ["gamin1", { peau: "#c78f62", ch: "#141010", coif: "court" }], acc: null, enfant: true, trajet: [-30, -143.3, 25, -143.3] },
   { num: -113, nom: "Une fillette", tenue: "robe", couleur: "#e85a8a", pieds: "#c8202a", tete: ["gamine1", { peau: "#f6d6bc", ch: "#a5532a", coif: "long", femme: true }], acc: null, enfant: true, trajet: [-44, -5.4, 44, -5.4], lieu: "rue" },
   { num: -114, nom: "Un voyageur", tenue: "costume", couleur: "#5a4a3a", bas: "#3a3028", pieds: "#2a1a12", tete: ["voyageur2", { peau: "#f0c9a6", ch: "#8a8a8a", coif: "court", lunettes: true }], acc: "valise", trajet: [-45, 4.8, 45, 4.8], lieu: "rue" },
-  { num: -115, nom: "Une maman", tenue: "chemisier", couleur: "#f2f0ea", bas: "#2a3040", pieds: "#2a1a14", tete: ["mamanD", { peau: "#8d5a3b", ch: "#120c0a", coif: "long", femme: true }], acc: "poussette", trajet: [68, -154.4, -48, -154.4] },
+  { num: -115, nom: "Une maman", tenue: "chemisier", couleur: "#f2f0ea", bas: "#2a3040", pieds: "#2a1a14", tete: ["mamanD", { peau: "#8d5a3b", ch: "#120c0a", coif: "long", femme: true }], acc: "poussette", trajet: [68, -155.3, -28, -155.3] },
   { num: -116, nom: "Un garçon", tenue: "polo", couleur: "#2e7a4a", bas: "#3a3a40", pieds: "#1a1a1a", tete: ["gamin2", { peau: "#efc7a4", ch: "#e2c27a", coif: "court" }], acc: null, enfant: true, trajet: [48.4, 18, 48.4, -100] },
-  { num: -117, nom: "Une fillette", tenue: "jupe", couleur: "#8a4ab0", bas: "#f2f0ea", pieds: "#1a1a1a", tete: ["gamine2", { peau: "#d9a882", ch: "#2a1a12", coif: "carre", femme: true }], acc: null, enfant: true, trajet: [60, -154.2, -40, -154.2] },
+  { num: -117, nom: "Une fillette", tenue: "jupe", couleur: "#8a4ab0", bas: "#f2f0ea", pieds: "#1a1a1a", tete: ["gamine2", { peau: "#d9a882", ch: "#2a1a12", coif: "carre", femme: true }], acc: null, enfant: true, trajet: [60, -155.5, -28, -155.5] },
   { num: -118, nom: "Une voyageuse", tenue: "tailleur", couleur: "#2a4a6a", pieds: "#1a1a1a", tete: ["voyageuse", { peau: "#e8bd95", ch: "#6a3a1e", coif: "long", femme: true }], acc: "valise", trajet: [26, -143.7, -36, -143.7] },
-  { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-52, -153.5, 72, -153.5] },
+  { num: -89, nom: "Une maman", tenue: "robe", couleur: "#b0306a", pieds: "#2a1a14", tete: ["mamanA", { peau: "#f2cfb0", ch: "#6a3a1e", coif: "long", femme: true }], acc: "poussette", trajet: [-27, -155.2, 72, -155.2] },
   { num: -90, nom: "Un monsieur pressé", tenue: "costume", couleur: "#4a4e56", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["costume", { peau: "#efc7a4", ch: "#3a2a1e", coif: "court", lunettes: true }], acc: "valise", trajet: [-36, -143.5, 27, -143.5] },
   { num: -91, nom: "Une maman", tenue: "jupe", couleur: "#2f6fae", bas: "#2a2a30", pieds: "#5a2a1a", tete: ["mamanB", { peau: "#d9a882", ch: "#1e1410", coif: "carre", femme: true }], acc: "poussette", trajet: [39.4, -128, 39.4, -50] },
   { num: -93, nom: "Une dame", tenue: "tailleur", couleur: "#7a4a6a", pieds: "#2a1a14", tete: ["dame", { peau: "#f0d0b4", ch: "#c8c4bc", coif: "carre", femme: true, lunettes: true }], acc: null, trajet: [48.1, -125, 48.1, 20] },
@@ -12569,20 +12585,87 @@ const PASSANTS = [
   { num: -97, nom: "Une maman", tenue: "robe", couleur: "#2f8a6a", pieds: "#2a1a14", tete: ["mamanC", { peau: "#f6d6bc", ch: "#a5532a", coif: "long", femme: true }], acc: "poussette", trajet: [40, 4.6, -45, 4.6], lieu: "rue" },
   { num: -98, nom: "Un passant", tenue: "polo", couleur: "#c8404a", bas: "#3a3a40", pieds: "#2a1a14", tete: ["passantR", { peau: "#efc7a4", ch: "#5a3a22", coif: "court", lunettes: true }], acc: null, trajet: [-48, 5.4, 48, 5.4], lieu: "rue" },
   { num: -99, nom: "Une passante", tenue: "jupe", couleur: "#2f5fae", bas: "#2a2a30", pieds: "#1a1a1a", tete: ["passanteR", { peau: "#d9a882", ch: "#141010", coif: "carre", femme: true }], acc: null, trajet: [48, -5.2, -48, -5.2], lieu: "rue" },
-  { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -153.4, -50, -153.4] }];
+  { num: -92, nom: "Un passant", tenue: "polo", couleur: "#2e7a4a", bas: "#c8b48a", pieds: "#5a3a22", tete: ["polo", { peau: "#c78f62", ch: "#2a1a12", coif: "chauve", moustache: true }], acc: null, trajet: [70, -155.6, -27, -155.6] },
+  // (9.98) le joggeur, la joggeuse : en survêtement, au pas de course
+  { num: -119, nom: "Un joggeur", tenue: "survet", couleur: "#1f4e8c", bas: "#1f4e8c", pieds: "#f2f2f2", tete: ["joggeur", { peau: "#e8bd95", ch: "#3a2a1e", coif: "court" }], acc: null, allure: 1.7, trajet: [-50, -145.2, 74, -145.2] },
+  { num: -131, nom: "Une joggeuse", tenue: "survet", couleur: "#c8304a", bas: "#26324e", pieds: "#f2f2f2", tete: ["joggeuse", { peau: "#f2cfb0", ch: "#a5532a", coif: "long", femme: true }], acc: null, allure: 1.6, trajet: [46, 5.0, -46, 5.0], lieu: "rue" },
+  // l'homme d'affaires et sa mallette
+  { num: -132, nom: "Un homme d'affaires", tenue: "costume", couleur: "#22324f", bas: "#22324f", pieds: "#1a1a1a", tete: ["affaires1", { peau: "#efc7a4", ch: "#2a1a12", coif: "court" }], acc: "mallette", allure: 1.15, trajet: [62, -144.4, -46, -144.4] },
+  { num: -128, nom: "Un homme d'affaires", tenue: "costume", couleur: "#3a3e46", bas: "#3a3e46", pieds: "#1a1a1a", tete: ["affaires2", { peau: "#8d5a3b", ch: "#120c0a", coif: "chauve" }], acc: "mallette", allure: 1.15, trajet: [-44, -4.9, 44, -4.9], lieu: "rue" },
+  // la ménagère et son cabas (la baguette qui dépasse)
+  { num: -133, nom: "Une ménagère", tenue: "robe", couleur: "#9a6a3a", pieds: "#2a1a14", tete: ["menagere", { peau: "#f0d0b4", ch: "#6a3a1e", coif: "carre", femme: true }], acc: "cabas", allure: .85, trajet: [70, -155.3, -26, -155.3] },
+  // la maman et son petit, le papa et sa fille : l'enfant marche à côté, à leur pas
+  { num: -123, nom: "Une maman", tenue: "chemisier", couleur: "#e8a0b0", bas: "#3d5a80", pieds: "#2a1a14", tete: ["mamanE", { peau: "#e8bd95", ch: "#2a1a12", coif: "long", femme: true }], acc: null, allure: .72, trajet: [-46, -143.6, 66, -143.6] },
+  { num: -124, nom: "Un petit garçon", tenue: "tshirt", couleur: "#2fa04a", bas: "#26324e", pieds: "#c8202a", tete: ["gaminE", { peau: "#e8bd95", ch: "#2a1a12", coif: "court" }], enfant: true, suit: -123, trajet: [-46, -143.6, 66, -143.6] },
+  { num: -125, nom: "Un papa", tenue: "civil", couleur: "#5a4a3a", bas: "#3d5a80", pieds: "#5a3a22", tete: ["papaF", { peau: "#c78f62", ch: "#141010", coif: "court", moustache: true }], acc: null, allure: .72, trajet: [64, -155.5, -26, -155.5] },
+  { num: -126, nom: "Une fillette", tenue: "robe", couleur: "#f2d24a", pieds: "#e85a8a", tete: ["gamineF", { peau: "#c78f62", ch: "#141010", coif: "long", femme: true }], enfant: true, suit: -125, trajet: [64, -155.5, -26, -155.5] },
+  // la vieille dame et son caddie, côté caserne
+  { num: -127, nom: "Une vieille dame", tenue: "tailleur", couleur: "#4a4a6a", pieds: "#2a1a14", tete: ["mamie3", { peau: "#f0d0b4", ch: "#f2f0ea", coif: "court", femme: true, lunettes: true }], acc: "caddie", allure: .55, trajet: [60, -144.0, -40, -144.0] }];
 function animerPassants(t) {
   if (!M || !M.L) return; const L = M.L;
-  for (const P of PASSANTS) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && !M.sansFigurants && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);
+  for (const [iP, P] of PASSANTS.entries()) { let p = M.gens.get(P.num); const A = L.passAcc || (L.passAcc = {}), ici = !L.apo && !L.sh && !L.nuit && (!M.sansFigurants || (!PETIT && (P.suit ? PASSANTS.findIndex(q => q.num === P.suit) : iP) % 2 === 0)) && (P.lieu === "rue" ? M.lieu === "rue" : M.lieu === "grande" && L.dehorsOuvert);   /* (allégé sur ordinateur : un passant sur deux, plus aucun ; petit téléphone : aucun) */
     if (!ici) { if (p) retirerAncien(P.num); if (A[P.num]) A[P.num].visible = false; continue; }
     const [x0, z0, x1, z1] = P.trajet;
-    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); const q = M.gens.get(P.num); if (q && P.enfant) { q.g.scale.setScalar(.64); q.info.allure = .8; } continue; }   /* (les enfants : petits, à petits pas) */
+    if (!p) { const k = Math.abs(P.num * 7 + 3) % 10 / 10;   /* (en positif : sinon ils apparaissaient hors de la rue) */ ajouterAncien({ numero: P.num, nom: P.nom, tenue: P.tenue, couleur: P.couleur, bas: P.bas, pieds: P.pieds, teteUrl: tetePassant(...P.tete), pnj: true, x: x0 + (x1 - x0) * k, z: z0 + (z1 - z0) * k }); const q = M.gens.get(P.num); if (q && P.enfant) { q.g.scale.setScalar(.64); q.info.allure = .8; } if (q && P.allure) q.info.allure = P.allure; continue; }   /* (les enfants : petits, à petits pas) */
+    if (P.suit) { const m = M.gens.get(P.suit); if (!m || !m.pass) continue; const mp = m.g.position, sx = Math.sign(P.trajet[2] - P.trajet[0]) * m.pass.sens, sz = Math.sign(P.trajet[3] - P.trajet[1]) * m.pass.sens;   /* (l'enfant : à côté de son parent, côté rue, à son pas) */
+      const zc = P.lieu === "rue" ? 0 : -149.75, lat = .62 * (Math.sign(zc - mp.z) || 1); p.cible = null; p.chemin = []; p.g.position.set(mp.x - sz * .1 + (sx ? 0 : lat), mp.y, mp.z + sx * 0 + (sx ? lat : 0)); continue; }
     const S = p.pass || (p.pass = { sens: (P.num & 1) ? 1 : -1, pause: 0 }), g = p.g.position;
     if (!p.cible && t > S.pause) { const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0]; if (Math.hypot(tx - g.x, tz - g.z) < .8) { S.sens = -S.sens; S.pause = t + 1500; } else viser(p, tx, tz); }
     // l'accessoire : la poussette devant soi, la valise qui roule derrière
-    if (P.acc && (!A[P.num] || A[P.num].parent !== M.scene)) A[P.num] = P.acc === "poussette" ? poussette(M.scene) : P.acc === "caddie" ? caddieTissu(M.scene) : valise(M.scene);
+    if (P.acc && (!A[P.num] || A[P.num].parent !== M.scene)) A[P.num] = P.acc === "poussette" ? poussette(M.scene) : P.acc === "caddie" ? caddieTissu(M.scene) : P.acc === "mallette" ? mallette(M.scene) : P.acc === "cabas" ? cabas(M.scene) : valise(M.scene);
     const o = A[P.num]; if (!o) continue; o.visible = true; const [tx, tz] = S.sens > 0 ? [x1, z1] : [x0, z0], d = Math.hypot(tx - x0 - (S.sens > 0 ? 0 : x1 - x0), 1), dx = Math.sign(S.sens) * Math.sign((x1 - x0) || 0), dz = Math.sign(S.sens) * Math.sign((z1 - z0) || 0);
-    const av = P.acc === "poussette" ? .95 : -.55, lat = P.acc === "poussette" ? 0 : .3, ox = g.x + dx * av - dz * lat, oz = g.z + dz * av + dx * lat;
+    const tenu = P.acc === "mallette" || P.acc === "cabas", av = P.acc === "poussette" ? .95 : tenu ? .02 : -.55, lat = P.acc === "poussette" ? 0 : tenu ? (P.acc === "cabas" ? -.3 : .3) : .3, ox = g.x + dx * av - dz * lat, oz = g.z + dz * av + dx * lat;
     o.position.set(ox, L.hauteur ? L.hauteur(ox, oz) : g.y, oz); o.rotation.y = Math.atan2(-dz, dx) + (P.acc === "poussette" ? Math.PI : 0); } }
+/* --- (9.98) le camion de livraison, rue d'Hauteville : le jour, il arrive du fond de la rue, se gare sur l'aire de livraison ;
+   le livreur ouvre les portes arrière, porte deux cartons à la boutique, referme, et le camion repart quand la voie est libre --- */
+function camionLivraison() {   // un fourgon à caisse des années 90 : cabine blanche, caisse blanche à bande bleue ; l'avant vers +x
+  const g = new THREE.Group(), blanc = new THREE.MeshStandardMaterial({ color: 0xf0efea, roughness: .5 }), noir = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .8 }), vitre = new THREE.MeshStandardMaterial({ color: 0x2c3a46, roughness: .1, metalness: .3 });
+  const box = (w, h, d, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
+  const flanc = new THREE.MeshStandardMaterial({ map: tex(toile(512, 128, (c) => { c.fillStyle = "#f0efea"; c.fillRect(0, 0, 512, 128); c.fillStyle = "#1f4e8c"; c.fillRect(0, 84, 512, 22); c.fillStyle = "#c8202a"; c.fillRect(0, 106, 512, 6); c.fillStyle = "#1f4e8c"; c.font = "bold 46px Arial"; c.textAlign = "center"; c.fillText("LIVRAISONS", 256, 58); c.font = "bold 16px Arial"; c.fillStyle = "#f0efea"; c.fillText("TRANSPORTS RAPIDES  ·  PARIS 10e", 256, 101); })), roughness: .5 });
+  box(.1, .2, 2.12, noir, -3.32, .5, 0); box(4.5, .25, 2.1, noir, -1.05, .62, 0);   // (le châssis)
+  const caisse = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.35, 2.1), [blanc, blanc, blanc, blanc, flanc, flanc]); caisse.position.set(-1.05, 1.95, 0); caisse.castShadow = true; g.add(caisse);
+  box(1.95, 1.2, 2.0, blanc, 2.25, 1.2, 0); box(1.3, .85, 1.96, blanc, 1.95, 2.2, 0); box(.02, .7, 1.8, vitre, 2.61, 2.2, 0);   // (la cabine)
+  for (const sz of [-1, 1]) { box(.9, .55, .01, vitre, 1.95, 2.25, sz * .985); box(.03, .12, .3, new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), 3.23, .95, sz * .7); box(.04, .18, .2, new THREE.MeshBasicMaterial({ color: 0xc8102e }), -3.29, .75, sz * .85); }
+  box(.12, .25, 2.06, noir, 3.25, .62, 0); box(.02, .3, 1.2, noir, 3.22, 1.15, 0);   // (le pare-chocs, la calandre)
+  const portes = []; for (const sz of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(-3.31, 1.95, sz * 1.04); g.add(piv); box(.04, 2.3, 1.03, blanc, 0, 0, -sz * .515, piv); box(.05, 2.0, .03, noir, -.01, 0, -sz * .96, piv); portes.push([piv, sz]); }
+  const roues = []; for (const x of [2.15, -2.2]) for (const sz of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.38, .38, .24, 16), noir); w.rotation.x = Math.PI / 2; w.position.set(x, .38, sz * .93); g.add(w); roues.push(w); }
+  g.userData = { portes, roues }; return g; }
+function livraisonRue(L, scene) {
+  const Y = DH_.Y0, ZV = (DH_.ZR + DH_.ZF) / 2, ZB = DH_.ZF - DH_.LP / 2 - .05, XP = (DH_.LA + DH_.LB) / 2, LG = 6.6, X0 = DH_.XEst - .6, X1 = DH_.XW + 6, LIV = -129;
+  const T = L.livraison = { phase: "attente", t: performance.now() + 15000 + Math.random() * 20000, g: null, x: X0, z: ZV, v: 0, tours: 0 };
+  const carton = new THREE.Mesh(new THREE.BoxGeometry(.5, .38, .4), new THREE.MeshStandardMaterial({ color: 0xb8864a, roughness: .9 })); carton.castShadow = true; carton.visible = false; scene.add(carton);
+  const obst = { x: X0, z: ZV, L: LG }; let avant = 0;
+  const zSur = (x, a, b) => { const k = Math.max(0, Math.min(1, (a - x) / (a - b))); return k * k * (3 - 2 * k); };   // (l'entrée et la sortie de l'aire : une courbe en S)
+  const fin = () => { if (T.g) { scene.remove(T.g); T.g = null; } carton.visible = false; if (M && M.gens && M.gens.get(LIV)) retirerAncien(LIV); L.obstRue = []; T.phase = "attente"; T.t = performance.now() + 70000 + Math.random() * 60000; };
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
+    const ok = !!M && M.L === L && !L.apo && !L.sh && !L.nuit && !L.gb && !L.bttf && !PETIT && L.dehorsOuvert;
+    if (!ok) { if (T.phase !== "attente") fin(); return; }
+    const C = L.circH, voie = (a, b) => !C || !C.enRoute.some(v => v.g.position.x > a && v.g.position.x < b);
+    if (T.phase === "attente") { if (tm > T.t && voie(X0 - 30, X0 + 5)) { T.g = camionLivraison(); scene.add(T.g); T.x = X0; T.z = ZV; T.v = 7; T.phase = "arrive"; L.obstRue = [obst]; } else return; }
+    const G = T.g, U = G.userData, px = T.x, pz = T.z;
+    if (T.phase === "arrive") { const d = T.x - XP; T.v += (Math.min(7, Math.max(.5, d * .55)) - T.v) * Math.min(1, dt * 2);
+      // (il ralentit derrière une voiture arrêtée devant lui)
+      if (C) for (const v of C.enRoute) { const e = T.x - LG / 2 - (v.g.position.x + v.L / 2); if (e > -1 && Math.abs(T.z - ZV) < 1.5) T.v = Math.min(T.v, Math.max(0, (e - 2.5) * 1.5)); }
+      T.x -= T.v * dt; T.z = ZV + (ZB - ZV) * zSur(T.x, XP + 13, XP); if (T.x <= XP + .03) { T.x = XP; T.z = ZB; T.phase = "gare"; T.t = tm; } }
+    else if (T.phase === "gare") { const k = Math.min(1, (tm - T.t - 1500) / 1200); for (const [piv, sz] of U.portes) piv.rotation.y = sz * Math.max(0, k) * 1.7;
+      if (k >= 1) { T.phase = "livre"; T.t = tm; T.etape = 0; T.tours = 0; } }
+    else if (T.phase === "livre") { let p = M.gens.get(LIV); const R = [XP + LG / 2 + .5, DH_.ZO + .7], B = [XP + LG / 2 + 3.2, DH_.ZO + .35];   /* (derrière le camion ; la porte de la boutique) */
+      if (!p) { p = ajouterAncien({ numero: LIV, nom: "Le livreur", tenue: "salopette", couleur: "#1f4e8c", bas: "#1f4e8c", pieds: "#2a1a14", teteUrl: tetePassant("livreur", { peau: "#d9a882", ch: "#2a1a12", coif: "court", moustache: true }), pnj: true, x: R[0], z: R[1] }); T.etape = 0; T.t = tm; }
+      if (p) { const q = p.g.position, ry = p.av3 && p.av3.sc ? p.av3.sc.rotation.y : 0;
+        if (T.etape === 0 && tm > T.t + 900) { viser(p, B[0], B[1]); T.etape = 1; }   // (il prend un carton, va à la boutique…)
+        else if (T.etape === 1 && !p.cible && Math.hypot(q.x - B[0], q.z - B[1]) < .9) { T.etape = 2; T.t = tm; }
+        else if (T.etape === 2 && tm > T.t + 1500) { viser(p, R[0], R[1]); T.etape = 3; }   // (… le pose, revient)
+        else if (T.etape === 3 && !p.cible && Math.hypot(q.x - R[0], q.z - R[1]) < .9) { T.tours++; T.etape = T.tours < 2 ? 0 : 4; T.t = tm; }
+        else if (T.etape === 4 && tm > T.t + 800) { retirerAncien(LIV); T.phase = "ferme"; T.t = tm; }
+        if (tm > T.t + 25000 && T.etape !== 4) { T.etape = 4; T.t = tm; }   // (coincé quelque part : on termine)
+        const porte = T.etape === 1 || (T.etape === 0 && tm > T.t + 500); carton.visible = porte; if (porte) carton.position.set(q.x + Math.sin(ry) * .32, q.y + 1.0, q.z + Math.cos(ry) * .32), carton.rotation.y = ry; } }
+    else if (T.phase === "ferme") { carton.visible = false; const k = Math.min(1, (tm - T.t) / 1000); for (const [piv, sz] of U.portes) piv.rotation.y = sz * (1 - k) * 1.7; if (k >= 1 && tm > T.t + 2500 && voie(XP - 4, XP + 30)) { T.phase = "repart"; T.v = 0; } }
+    else if (T.phase === "repart") { T.v += (8 - T.v) * Math.min(1, dt * .8); T.x -= T.v * dt; T.z = ZB + (ZV - ZB) * zSur(T.x, XP, XP - 12);
+      if (C) for (const v of C.enRoute) { const e = T.x - LG / 2 - (v.g.position.x + v.L / 2); if (e > -1 && e < 12) T.v = Math.min(T.v, Math.max(0, (e - 2.5) * 1.5)); }
+      if (T.x < X1) { fin(); return; } }
+    G.position.set(T.x, Y, T.z); const dx = T.x - px, dz = T.z - pz; if (Math.hypot(dx, dz) > 1e-4) G.rotation.y = Math.atan2(dz, -dx) + Math.PI;
+    for (const w of U.roues) w.rotation.y -= Math.hypot(dx, dz) / .38; obst.x = T.x; obst.z = T.z; };
+}
 /* --- le clochard : assis sur son carton contre le mur de la caserne, rue d'Hauteville ; dreadlocks, barbe, vieux manteau ; un gobelet pour les pièces --- */
 function toileClochard(f) {
   return toile(220, 300, (x) => { x.lineCap = "round"; x.lineJoin = "round"; const P = "#c89a76", man = "#5a5a3a", jean = "#3a4048", trait = (pts, c, l) => { x.strokeStyle = c; x.lineWidth = l; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
