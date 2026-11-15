@@ -4950,8 +4950,8 @@ function circulationRue(L, scene, O) {
       if (M && M.gens && M.L === L) for (const p of M.gens.values()) { if (!p.g || !p.g.visible) continue; const q = p.g.position; if (Math.abs(q.z - O.z) > demi) continue;
         const d = (q.x - nez) * O.sens; if (d > -.5 && d < 9) cible = Math.min(cible, Math.max(0, (d - 1.1) * 1.8)); }
       if (dev) { const ecart = (dev.g.position.x - O.sens * dev.L / 2 - nez) * O.sens; cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
-      for (const o of obst) { if (Math.abs(o.z - O.z) > 2.1) continue; const ecart = (o.x - O.sens * o.L / 2 - nez) * O.sens; if (ecart > -1) cible = Math.min(cible, Math.max(0, (ecart - 2.2) * 1.5)); }
-      v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); const vit = v.cur;
+      let colle = false; for (const o of obst) { if (Math.abs(o.z - O.z) > 2.1) continue; const ecart = (o.x - O.sens * o.L / 2 - nez) * O.sens; if (ecart > -o.L) { cible = Math.min(cible, Math.max(0, (ecart - 2.5) * 1.2)); if (ecart < 1.5) colle = true; } }   // (derrière le bus ou le camion : on freine, et l'on s'arrête net tout près — jamais au travers)
+      v.cur = v.cur ?? v.v; v.cur += (cible - v.cur) * Math.min(1, dt * (cible < v.cur ? 4 : 1.2)); if (colle) v.cur = Math.min(v.cur, 0); const vit = v.cur;
       v.g.position.x += O.sens * vit * dt; for (const r of v.r) r.rotation.y -= vit * dt / .31;
       if ((v.g.position.x - O.x1) * O.sens > 0) { scene.remove(v.g); v.g.traverse(o => { if (o.geometry && o.geometry !== roues) o.geometry.dispose(); for (const m of [].concat(o.material || [])) { if (m && m.map) m.map.dispose(); } }); enRoute.splice(i, 1); } }
   };
@@ -12992,7 +12992,7 @@ function interieurBus(g) {
 function busLigne(L, scene, C) {
   const y0 = (() => { try { return L.hauteur ? L.hauteur(C.ax, C.az) : 0; } catch (e) { return 0; } })();
   abribus(scene, C.ax, y0, C.az - .3, 0);   // (le dos de l'abribus vers les façades)
-  if (L.limites) { const lim0 = L.limites, zv = C.az - .85; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.85 && Math.abs(b - zv) < .12); }   // (on ne traverse pas la vitre du fond)
+  if (L.limites) { const lim0 = L.limites, z0 = C.az - 1.15, z1 = C.az - .2; L.limites = (a, b) => lim0(a, b) && !(Math.abs(a - C.ax) < 1.95 && b > z0 && b < z1); }   // (l'abribus : sa vitre, son banc — on ne passe pas au travers ; on le contourne par devant, côté rue, où l'on attend le bus)
   const B = L.busL = { C, phase: "rien", g: null, x: C.x0, v: 0, t: 0 }, xs = C.ax - C.sens * 4.2, obst = { x: C.x0, z: C.voie, L: 11 };
   const PLACE = [.45, .05];   // (notre place : debout dans le couloir, la main sur la barre jaune)
   let avant = 0;
@@ -13012,7 +13012,8 @@ function busLigne(L, scene, C) {
       const m = personne3D({ taille: f ? 1.62 : 1.74, peau: PEAUX[k % 5], ch: ["#2a1a12", "#8a8a8a", "#5a3a22", "#141010"][k % 4], haut: HAUTS[k % 6], bas: ["#26324e", "#2a2a30"][k % 2], chaussures: "#1a1a1a", coif: f ? "long" : k % 3 ? "court" : "chauve", pantalon: !f, robe: f, parle: k === 2 });
       m.position.set(x, 1.1 - m.userData.hipY + .02, z); m.rotation.y = Math.PI / 2; m.userData.poser("assis", 0); I.add(m); P.push(m); }
     B.g.userData.pass = P; };
-  const creer = (x) => { B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
+  const creer = (x) => { const cc = L.circH || L.circR; if (cc) for (let i = cc.enRoute.length - 1; i >= 0; i--) { const o = cc.enRoute[i]; if (Math.abs(o.g.position.x - x) < 13) { scene.remove(o.g); cc.enRoute.splice(i, 1); } }   // (pas de voiture « dans » le bus quand il apparaît)
+    B.g = busCaserne(scene, "ratp", x, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.g.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m) m.side = THREE.FrontSide; });
     B.g.userData.int = interieurBus(B.g); passagers(); B.x = x; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); };
   const fin = () => { if (B.g) { scene.remove(B.g); B.g = null; } L.obstRue = (L.obstRue || []).filter(o => o !== obst); B.phase = "rien"; };
   B.appeler = () => { if (B.phase !== "rien") return; B.phase = "vient"; B.avecMoi = true; B.cache = false; camExt(); };   // (on ne bouge plus : comme une cinématique)
