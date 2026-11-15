@@ -2613,7 +2613,7 @@ function deliDelo(L, scene) {
     if (prison.length >= 8 && renfort.dehors) setTimeout(() => {   // (tout le monde est pris : un copain arrive en courant de loin, touche la main du dernier de la chaîne, et tout le monde est délivré)
       if (!renfort.dehors || prison.length < 8) return; const bout = posChaine(prison.length - 1); let c = null; for (let i = 0; i < 40 && !c; i++) { const q = cand[Math.floor(Math.random() * cand.length)]; if (Math.hypot(q[0] - bout[0], q[1] - bout[1]) > 22) c = q; }
       c = c || cand[0]; renfort.x = c[0]; renfort.z = c[1]; renfort.chem = []; renfort.dehors = false; renfort.part = false; renfort.pris = -1; delivreur = renfort; renfort.prochain = 0; bulle(renfort, "J'arrive !! Deli-delo !", performance.now()); }, 3000); };
-  const anim = (t) => { const vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf) && !!M && M.L === L;
+  const anim = (t) => { const vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf) && !!M && M.L === L && !M.hiver;   /* (l'hiver : la bataille de boules de neige à la place) */
     for (const e of E) e.m.visible = e.o.visible = vu && !!cand && !e.dehors; if (!vu) { for (const e of E) e.bs.visible = false; tPrec = 0; return; }
     if (!cand) { cand = []; for (let x = -40; x <= 48; x += 1.5) for (let z = -140; z <= -19; z += 1.5) if (permis(x, z)) cand.push([x, z]); if (cand.length < 20) { cand = null; return; } reset(true); }
     const dt = tPrec ? Math.min(.1, (t - tPrec) / 1000) : 0; tPrec = t; if (!dt) return; budget = 1;
@@ -2658,7 +2658,7 @@ function enfantsRollers(L, scene) {
     m.renderOrder = 2; scene.add(m);
     const o = new THREE.Mesh(new THREE.CircleGeometry(.28, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25, depthWrite: false })); o.rotation.x = -Math.PI / 2; scene.add(o);   // (l'ombre au sol)
     enf.push({ m, o, t, k, sens: k % 2 ? -1 : 1, r: .55 + .45 * ((k * 37) % 10) / 10, v: .42 + k * .05, ph: k * 1.3, huit: k === 2 }); }
-  const place = (t) => { const s = t / 1000, cam = M && M.camera, vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf);
+  const place = (t) => { const s = t / 1000, cam = M && M.camera, vu = !(L.nuit || L.apo || L.sh || L.gb || L.bttf || (M && M.hiver));
     for (const e of enf) { e.m.visible = e.o.visible = vu; if (!vu) continue; const a = e.ph + e.sens * s * e.v; let x, z;
       if (e.huit) { x = Math.sin(a) * RX * .8; z = Math.sin(a) * Math.cos(a) * RZ * 1.6; } else { x = Math.cos(a) * RX * e.r; z = Math.sin(a) * RZ * (.5 + .5 * e.r); }
       e.m.position.set(x, yT + .02 + Math.abs(Math.sin(s * 5 + e.k)) * .025, cz + z); e.o.position.set(x, yT + .015, cz + z);
@@ -3245,7 +3245,7 @@ function rueEnPente(A, L, scene, SOL, zT, DB) {
   // (accrochées là où était le bonhomme sur les photos : sur le long mur de brique du local poubelle, et sur la barrière noire au bout du creux)
   { const zq = RU.zA + RU.cour - 4 + 2.2; corbeilleParis(A, scene, -C3.LB / 2 - 4 - .02, RU.y(zq) + .25, zq, -Math.PI / 2); }
   corbeilleParis(A, scene, C3.x - .2 + .55, RU.y(RU.zA + RU.cour) + .3, RU.zA + RU.cour + .15, Math.PI);
-  { const zc = RU.zA + RU.cour - 4 - 1.9, xc = -9.6; C3.camionPos = [xc, zc]; (L.jourObjets = L.jourObjets || []).push(camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
+  { const zc = RU.zA + RU.cour - 4 - 1.9, xc = -9.6; C3.camionPos = [xc, zc]; (L.jourObjets = L.jourObjets || []).push(L.camionBenne = camionPoubelle(A, scene, xc, RU.y(zc), zc, 0)); C3.camion = [xc - 6.8, xc + 4.8, zc - 1.4, zc + 1.4]; }   // (le jour seulement)   // le camion-benne de la Propreté de Paris, garé devant le local poubelle, l'arrière vers lui
   // les toits des immeubles autour de la place, comme sur les photos : brisis de tuiles, terrasson de zinc, garde-corps, souches de cheminée
   { const xw = -C3.x - 6, xa = xB - RU.pc;
     toitParisien(A, scene, xw, xa, zA, zA - 8, 24);                                              // le mur du fond de la place
@@ -4660,7 +4660,7 @@ function gensFete(L, scene) {
   L.gensFete = gens;
   // personne ne se rentre dedans : on ne traverse pas les gens de la soirée
   const lim0 = L.limites; L.limites = (x, z) => lim0(x, z) && !(L.gensFeteVus && gens.some(E => !E.assis && !E.mort && Math.hypot(x - E.m.position.x, z - E.m.position.z) < .38));
-  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = estNuit() && !L.apo && !L.sh && !M.sansFigurants; L.gensFeteVus = vu; for (const m of tous) m.visible = vu; if (!vu) return;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); if (!M || M.L !== L) return; const vu = !L.apo && !L.sh && (!M.sansFigurants || !PETIT); L.gensFeteVus = vu;   /* (9.98 : de jour comme de nuit ; sur ordinateur, même allégé) */ for (const m of tous) m.visible = vu; if (!vu) return;
     const thr = !!(M.djJoue && /thriller/.test(M.djTitre || "")), mus = !!M.djJoue, dt = Math.min(.05, (tm - (L.gfT || tm)) / 1000); L.gfT = tm; const t = tm / 1000, [cx, cz] = L.pisteCentre || [0, 6.5];
     for (const E of gens) { const m = E.m, P = m.userData.parts;
       const dg = !!M.hwFete; if (E.cost && E.cost.userData.on !== dg) { E.cost.userData.on = dg; E.cost.userData.basculer(dg); }   // (Halloween : tout le monde est déguisé)
@@ -5940,7 +5940,7 @@ function construireAppart(A, L, scene) {
       for (let k = 0; k < 220; k++) { x.fillStyle = `rgba(${fonce ? "150,140,125" : "120,60,30"},${.06 + .08 * hasard(k * 3.1 + i * 7 + j * 13)})`; x.fillRect(i * c + c * hasard(k * 1.3 + i), j * c + c * hasard(k * 2.7 + j), 2, 2); } }
     x.strokeStyle = "#a89a88"; x.lineWidth = 2; for (let k = 0; k <= 2; k++) { x.beginPath(); x.moveTo(k * c, 0); x.lineTo(k * c, w); x.moveTo(0, k * c); x.lineTo(w, k * c); x.stroke(); } });
   const matSol = { damier: (w, d) => A.mat({ map: tex(damier, w / .4, d / .4), roughness: .35 }), carreaux: (w, d) => A.mat({ map: tex(T.carreaux, w / 1.6, d / 1.6), roughness: .45 }), fonce: (w, d) => A.mat({ map: tex(T.fonce, w / 2.2, d / 2.2), roughness: .2, metalness: .05 }), clair: (w, d) => A.mat({ map: tex(T.clair, w / 2.2, d / 2.2), roughness: .5 }) };
-  const sols = [];
+  const sols = []; L.solsAppart = sols;
   const sol = (x0, x1, z0, z1, y, genre) => { const w = x1 - x0, d = z1 - z0, o = A.ajoute(new THREE.PlaneGeometry(w, d), matSol[genre](w, d), (x0 + x1) / 2, y + .002, (z0 + z1) / 2, false); o.rotation.x = -Math.PI / 2; sols.push(o); return o; };
   /* une pièce : son sol, et ses quatre murs (posés à l'intérieur de son rectangle, 10 cm d'épaisseur : deux pièces voisines font un mur de 20 cm)
      trous : { x0: [...], x1: [...], z0: [...], z1: [...] } — chaque trou { c (le milieu, le long du mur), w, y0 (au-dessus du sol de la pièce), h } */
@@ -6107,8 +6107,8 @@ function construireAppart(A, L, scene) {
      Prise dans le jeu, dans les six directions autour de ce point (de jour, de nuit), elle entoure l'appartement comme un décor sans bord : le ciel du jeu compris */
   let vueCour = null;
   { const cube = k => { const t = new THREE.CubeTextureLoader().load([0, 1, 2, 3, 4, 5].map(i => `images/appart/cour/${k}${i}.webp`)); t.colorSpace = THREE.SRGBColorSpace; return t; };
-    const cJ = cube("j"); let cN = null;
-    vueCour = n => { scene.background = n ? (cN = cN || cube("n")) : cJ; }; }
+    const cJ = cube("j"); let cN = null, cH = null, cHN = null;
+    vueCour = n => { const h = !!(M && M.hiver); L.hiverCiel = h; scene.background = h ? (n ? (cHN = cHN || cube("hn")) : (cH = cH || cube("h"))) : n ? (cN = cN || cube("n")) : cJ; }; }   // (9.98, l'hiver : la cour sous la neige, la bataille de boules de neige)
   // dehors, côté rue (les salons, les chambres 1 et 2, les toilettes) : on est au cinquième étage ; en face, de vieux immeubles parisiens et leurs toits mansardés
   const rue = vueSurRue(A, scene, XS - .9, H4);
   L.setNuit = n => { L.nuit = n; rue.setNuit(n); vueCour(n); };   // (par les fenêtres : le jour, la nuit, comme le réglage de la caserne)
@@ -8685,6 +8685,8 @@ function construireLieu(id, scene, copie = false) {   // copie : la cour vue dep
   if (id === "grande" && !copie) ruesDehors(A, L, scene);
   if (id === "grande" && !copie) enfantsRollers(L, scene);
   if (id === "grande" && !copie) deliDelo(L, scene);
+  if (id === "grande" && !copie) { batailleNeige(L, scene, { x0: -15, x1: 21, z0: -128.1, z1: -118.6, n: PETIT ? 6 : (MOBILE || GPU_MODESTE) ? 10 : 15, voitures: true });   // (l'hiver, dans la cour sous les fenêtres de l'appartement Z)
+    { const zT = C3.z1 - C3.PP, zt0 = zT - C3.NT * C3.PT, zt1 = zt0 - C3.PTr; if (!PETIT) batailleNeige(L, scene, { x0: -C3.LT / 2 + 1.5, x1: C3.LT / 2 - 1.5, z0: zt1 + 1, z1: zt0 - 1, y: C3.hp + C3.NT * C3.HT2, n: 6 }); } }   // (et sur la terrasse, à la place des rollers)
   if (id === "grande" && !copie) enfantsToit(L, scene);
   if (id === "grande" && !copie) mamansBanc(L, scene);   /* (la cage et les pierres : retirées) */   /* (plus de masque au sol : Halloween se loue au Video Futur) */
   if (id === "fetes" && !copie) gensFete(L, scene);
@@ -9140,7 +9142,7 @@ export async function ouvrir(ctx) {
     if (GBm && M.lieu === "grande" && M.L.ecto1) { GBm.garerGB(); if (M.gbGare) gyroEcto(M.L.ecto1, true, performance.now()); }
     if (GBm) { GBm.animerGB(dt); if (M.L.gbMess) { GBm.animerSlimer(Math.min(.05, dt), performance.now()); GBm.animerCombatGB(Math.min(.05, dt), performance.now()); } }
     if (GBm && M.gbCombat && M.gbCombat.sp) GBm.animerCombatSP(Math.min(.05, dt), performance.now());
-    animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerHalloween(t); animerServeurs(); animerHwFete(); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
+    animerNeige(t); animerPNJ(); animerMaman(); animerEboueurs(); animerGendarme(); animerGendarme2(); animerRondes(); animerProf(); animerDJ(t); animerBarman(t); animerBarmanSS(t); animerPromeneur(t); animerSonRue(); animerPassants(t); animerPigeons(t); animerHalloween(t); animerServeurs(); animerHwFete(); animerDanseur(); animerMJ(); animerHernandez(); animerBeeGees(); animerVillagePeople(); animerSmith(); animerGroupe(); animerEcran(Math.min(.1, (performance.now() - (M.ecranT || performance.now())) / 1000)); M.ecranT = performance.now(); (MD.bttf && MD.bttf.animerHV(performance.now())); M.L && M.L.parImage && M.L.parImage();
     for (const p of M.gens.values()) if (p.av3) animerAvatar3D(p, dt); else if (p.corps && (herosSH(p.info.heros) || (p.av3T && !p.av3Rate && performance.now() - p.av3T < 8000))) p.corps.visible = false;   /* (en attendant son modèle 3D : pas l'ancien bonhomme, qui apparaissait puis disparaissait) */   // (Maria, Angela : pas de silhouette plate en attendant son modèle 3D)
     for (const p of M.gens.values()) if (p.corps && p.corps.droit) { const c = M.camera.position, gp = p.g.position, dx = c.x - gp.x, dz = c.z - gp.z;
       if (p.corps.rotation.order !== "YXZ") p.corps.rotation.order = "YXZ";   // (d'abord tourné vers la caméra, puis penché en arrière autour de son propre axe : dans l'autre ordre, le panneau basculait de côté dès qu'on prenait une direction)
@@ -11694,7 +11696,10 @@ function construireScene(id) {
       scene.background = L.cielPerso || (n ? cielNuit : cielJour); scene.fog.color.setHex(L.brumePerso || (n ? 0x0c1530 : 0xcfe6f7));   /* (Santa Carla : son ciel de crépuscule) */
       hemi.intensity = n ? .5 : 1.1; hemi.color.setHex(n ? 0x7d93d6 : 0xdcefff);   // (la nuit : un beau clair de lune, argenté, qui découpe les façades et les ombres)
       soleil.intensity = n ? 1.35 : 2.3; soleil.color.setHex(n ? 0xc6d4ff : 0xfff2dd); soleil.position.set(n ? 30 : -18, n ? 40 : 30, n ? -30 : 14);
-      clair.intensity = n ? .32 : 0; lune.visible = n && !L.sansLune; nuages.forEach(o => o.visible = !n); if (dome) dome.visible = !n;
+      const hv = !!(M && M.hiver && NEIGE.lieux.has(id) && !L.cielPerso); L.hiverCiel = hv;   // (9.98, l'hiver : un ciel bas et gris, une lumière blanche et douce, la brume de neige)
+      if (hv && !n) { scene.background = L.cielHiver || (L.cielHiver = new THREE.Color(0xc4cbd3)); scene.fog.color.setHex(0xc4cbd3); hemi.intensity = 1.25; hemi.color.setHex(0xeef3fa); soleil.intensity = 1.1; soleil.color.setHex(0xe8eef6); }
+      if (hv && n) { scene.fog.color.setHex(0x1a2235); }
+      clair.intensity = n ? .32 : 0; lune.visible = n && !L.sansLune && !hv; nuages.forEach(o => o.visible = !n && !hv); if (dome) dome.visible = !n && !hv;
       if (L.messVitres) L.messVitres.opacity = (M && M.lumiereMess != null ? M.lumiereMess : 1) * (n ? .85 : .28);
       (L.nuitObjets || []).forEach(o => o.visible = n); (L.jourObjets || []).forEach(o => o.visible = !n); L.grille = L.grilleAdmin = null;   // (le camion-benne : le jour seulement ; ses passages changent)
       if (L.lumiereJour) L.lumiereJour.visible = !n; if (L.vueCour) L.vueCour(n);
@@ -11788,6 +11793,113 @@ function placerCamera(net) { if (M && M.rendu && M.rendu.xr.isPresenting) return
   M.camera.fov = M.L.fov ? M.L.fov[portrait ? 1 : 0] : portrait ? (M.L.interieur ? 74 : 66) : (M.L.interieur ? 62 : 50); M.camera.updateProjectionMatrix(); M.camera.lookAt(M.camVise);
 }
 
+/* ===================== (9.98) l'hiver : la neige — sur le sol, les toits des voitures, les rebords (tout ce qui est à plat), et qui tombe ; ni camion-benne, ni rollers, ni deli-delo :
+   une bataille de boules de neige dans la cour sous les fenêtres de l'appartement Z, et sur la terrasse. L'administrateur l'allume (❄️), en plus du jour et de la nuit ===================== */
+const NEIGE = { u: { value: 0 }, boites: { value: null }, pts: null, lieux: new Set(["grande", "rue", "appart"]), dehors: null };   // (les boîtes : créées au premier hiver — THREE n'est pas encore chargé ici)
+function neigerMateriau(m) {   // le blanc de la neige sur les faces tournées vers le ciel (un seul calcul par matière ; ensuite, un simple réglage)
+  if (!m || m.userData.neige || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial)) return; m.userData.neige = true;
+  const avant = m.onBeforeCompile; m.onBeforeCompile = (sh, r) => { avant && avant.call(m, sh, r); sh.uniforms.uNeige = NEIGE.u; sh.uniforms.uNeigeB = NEIGE.boites;
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vNeigeW;").replace("#include <begin_vertex>", "#include <begin_vertex>\n{ vec4 nw = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nnw = instanceMatrix * nw;\n#endif\nvNeigeW = (modelMatrix * nw).xyz; }");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vNeigeW; uniform float uNeige; uniform vec4 uNeigeB[8];")
+      .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+      if (uNeige > 0.0) { float nh = (vec4(normal, 0.0) * viewMatrix).y; float sn = smoothstep(.5, .8, nh) * uNeige;
+        for (int i = 0; i < 8; i++) { vec4 b = uNeigeB[i]; if (vNeigeW.x > b.x && vNeigeW.x < b.y && vNeigeW.z > b.z && vNeigeW.z < b.w) sn = 0.0; }   // (sous un toit : pas de neige)
+        float br = fract(sin(dot(floor(vNeigeW.xz * 1.7), vec2(12.9898, 78.233))) * 43758.5453); sn *= .82 + .18 * br;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.93, .95, 1.0), sn); }`); };
+  const cle = m.customProgramCacheKey; m.customProgramCacheKey = () => (cle ? cle.call(m) : "") + "|neige"; m.needsUpdate = true; }
+function majHiver() {
+  if (!M || !M.scene) return; if (!NEIGE.boites.value) NEIGE.boites.value = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); const on = !!M.hiver && !!M.L && NEIGE.lieux.has(M.lieu) && !M.L.apo && !M.L.sh && !M.L.gb && !M.L.bttf;
+  if (on && M.L.solsAppart && !M.L.boiteAppart && M.L.solsAppart.length) { const bx = new THREE.Box3(); for (const o of M.L.solsAppart) bx.expandByObject(o); M.L.boiteAppart = [bx.min.x - .4, bx.max.x + .4, bx.min.z - .4, bx.max.z + .4]; }   // (l'emprise de l'appartement : ses sols, et l'épaisseur des murs)
+  if (on) { M.scene.traverse(o => { if (o.isMesh && !o.userData.perso) for (const m of [].concat(o.material)) neigerMateriau(m); });
+    const b = NEIGE.boites.value, d = typeof C3 !== "undefined" && C3.dojo; b.forEach(v => v.set(0, 0, 0, 0)); if (d && M.lieu === "grande") b[0].set(d.X0, d.X1, d.Z0, d.Z1);
+    if (M.L.boiteAppart) { const B = M.L.boiteAppart; b[0].set(B[0], B[1], B[2], B[3]); } }   // (l'appartement : pas de neige dedans ; elle tombe dehors, devant les fenêtres)
+  NEIGE.dehors = on && M.L.boiteAppart ? M.L.boiteAppart : null;
+  NEIGE.u.value = on ? 1 : 0; if (M.L.setNuit && !!M.L.hiverCiel !== on && !M.L.cielPerso) M.L.setNuit(!!M.L.nuit);   // (le ciel d'hiver, ou le ciel d'avant)
+  if (M.L.camionBenne) M.L.camionBenne.visible = !on && !M.L.nuit;
+  if (on && !NEIGE.pts) {   // les flocons : un pavé de neige autour de nous, qui tombe et se répète
+    const N = PETIT ? 1500 : 5000, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - .5) * 50; pos[i * 3 + 1] = Math.random() * 24; pos[i * 3 + 2] = (Math.random() - .5) * 50; }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const t = tex(toile(32, 32, (c) => { const r = c.createRadialGradient(16, 16, 0, 16, 16, 16); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.5, "rgba(255,255,255,.8)"); r.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = r; c.fillRect(0, 0, 32, 32); }));
+    NEIGE.pts = new THREE.Points(g, new THREE.PointsMaterial({ map: t, size: .15, transparent: true, depthWrite: false, sizeAttenuation: true })); NEIGE.pts.frustumCulled = false; NEIGE.pts.renderOrder = 8; }
+  if (NEIGE.pts) { if (on && NEIGE.pts.parent !== M.scene) M.scene.add(NEIGE.pts); NEIGE.pts.visible = on; } }
+function animerNeige(t) { const P = NEIGE.pts; if (!P || !P.visible || !M || !M.camera) return;
+  const dt = Math.min(.1, (t - (NEIGE.tp || t)) / 1000); NEIGE.tp = t; const c = M.camera.position, a = P.geometry.attributes.position, v = a.array, n = v.length / 3;
+  P.position.set(Math.floor(c.x / 50) * 50, 0, Math.floor(c.z / 50) * 50); const ox = P.position.x, oz = P.position.z, y0 = c.y - 10;
+  const B = NEIGE.dehors;
+  for (let i = 0; i < n; i++) { const k = i * 3; v[k + 1] -= dt * (.9 + (i % 7) * .08);
+    if (B) { const x = v[k] + ox, z = v[k + 2] + oz; if (x > B[0] && x < B[1] && z > B[2] && z < B[3]) { const g = x - B[0] < B[1] - x ? -(x - B[0]) - 1 - (i % 9) : (B[1] - x) + 1 + (i % 9); v[k] += g; } }   // (pas de flocons dans l'appartement) v[k] += Math.sin(t / 900 + i) * dt * .25;
+    if (v[k + 1] < y0) v[k + 1] += 24; else if (v[k + 1] > y0 + 24) v[k + 1] -= 24;
+    let x = v[k] + ox; if (x < c.x - 25) v[k] += 50; else if (x > c.x + 25) v[k] -= 50; let z = v[k + 2] + oz; if (z < c.z - 25) v[k + 2] += 50; else if (z > c.z + 25) v[k + 2] -= 50; }
+  a.needsUpdate = true; }
+/* la bataille de boules de neige : des enfants en bonnet, écharpe et anorak, en deux camps ; ils ramassent la neige (sur le toit des voitures, ou par terre), la tassent, visent, lancent ;
+   touché : un nuage de neige, et l'enfant se secoue en riant */
+function batailleNeige(L, scene, Z) {
+  const n = Z.n || 0; if (!n) return; const E = [], boules = [], pouf = [];
+  const ANORAKS = ["#c8202a", "#1f4e8c", "#2f8a4a", "#e8a020", "#7a3a9a", "#1e7a8a", "#e85a8a", "#3a3a40", "#f2d24a", "#2a4a7a"], BONNETS = ["#f2f0ea", "#c8202a", "#1f4e8c", "#e8a020", "#2f8a4a", "#e85a8a"];
+  const PEAUX = ["#f5d2b6", "#d7a07a", "#8d5a3b", "#e8bd95", "#c78f62", "#f0c9a6"], CHX = ["#5a3a22", "#141010", "#e2c27a", "#a5532a", "#2a1a12"];
+  const blanc = new THREE.MeshStandardMaterial({ color: 0xf6f8ff, roughness: .9 }), gb = new THREE.SphereGeometry(.07, 8, 6);
+  const hY = (x, z) => { if (Z.y != null) return Z.y; try { return L.hauteur ? L.hauteur(x, z) : 0; } catch (e) { return 0; } };
+  const libre = (x, z) => { try { return x > Z.x0 && x < Z.x1 && z > Z.z0 && z < Z.z1 && (Z.y != null || L.limites(x, z)); } catch (e) { return false; } };
+  const hasard = (a, b) => a + Math.random() * (b - a);
+  const placeLibre = (camp) => { for (let k = 0; k < 30; k++) { const xm = (Z.x0 + Z.x1) / 2, x = camp ? hasard(xm + 1.5, Z.x1) : hasard(Z.x0, xm - 1.5), z = hasard(Z.z0, Z.z1); if (libre(x, z)) return [x, z]; } return [(Z.x0 + Z.x1) / 2, (Z.z0 + Z.z1) / 2]; };
+  const voitures = () => Z.voitures && L.voitures ? L.voitures.filter(b => b[1] > Z.x0 && b[0] < Z.x1 && b[3] > Z.z0 - 1 && b[2] < Z.z1 + 1) : [];
+  for (let k = 0; k < n; k++) { const f = k % 2 === 1, T = 1.22 + (k * 37 % 10) / 10 * .3;
+    const m = personne3D({ taille: T, enfant: true, peau: PEAUX[k % 6], ch: CHX[k % 5], haut: ANORAKS[k % ANORAKS.length], bas: ["#26324e", "#3a3a40", "#1d1d1f", "#5a3a22"][k % 4], chaussures: ["#4a2a1a", "#1a1a1a", "#c8202a"][k % 3], coif: f ? "long" : "court", pantalon: true });
+    const P = m.userData.parts, rT = T * .085, bon = new THREE.MeshStandardMaterial({ color: BONNETS[(k * 3) % BONNETS.length], roughness: 1 });
+    const bonnet = new THREE.Mesh(new THREE.SphereGeometry(rT * 1.14, 14, 8, 0, Math.PI * 2, 0, Math.PI * .5), bon); bonnet.position.y = rT * .1; P.tete.add(bonnet);   // (le bonnet, son revers, son pompon)
+    const rev = new THREE.Mesh(new THREE.TorusGeometry(rT * 1.08, rT * .16, 6, 16), bon); rev.rotation.x = Math.PI / 2; rev.position.y = rT * .12; P.tete.add(rev);
+    const pomp = new THREE.Mesh(new THREE.SphereGeometry(rT * .32, 8, 6), new THREE.MeshStandardMaterial({ color: BONNETS[(k * 3 + 2) % BONNETS.length], roughness: 1 })); pomp.position.y = rT * 1.25; P.tete.add(pomp);
+    const ech = new THREE.Mesh(new THREE.TorusGeometry(T * .045, T * .022, 6, 14), new THREE.MeshStandardMaterial({ color: BONNETS[(k + 1) % BONNETS.length], roughness: 1 })); ech.rotation.x = Math.PI / 2; ech.position.y = T * .3; P.buste.add(ech);   // (l'écharpe)
+    const pan = new THREE.Mesh(new THREE.CylinderGeometry(T * .09, T * .105, T * .14, 12, 1, true), new THREE.MeshStandardMaterial({ color: ANORAKS[k % ANORAKS.length], roughness: .7, side: THREE.DoubleSide })); pan.position.y = -T * .02; pan.scale.z = .8; P.buste.add(pan);   // (le bas de l'anorak)
+    for (const B of P.bras) { const mouf = new THREE.Mesh(new THREE.SphereGeometry(T * .032, 8, 6), bon); mouf.position.y = -T * .16; B.c.add(mouf); }   // (les moufles)
+    const boule = new THREE.Mesh(gb, blanc); boule.visible = false; P.bras[1].c.add(boule); boule.position.y = -T * .19;
+    m.traverse(o => { if (o.isMesh) o.userData.perso = true; });
+    const camp = k % 2, [x, z] = placeLibre(camp); m.position.set(x, hY(x, z), z); m.visible = false; scene.add(m);
+    E.push({ k, m, P, T, camp, x, z, etat: "pense", t: 0, but: null, boule, cible: null, vit: 1.6 + Math.random() * .7, ry: camp ? -Math.PI / 2 : Math.PI / 2, rire: 0 }); }
+  const bulleC = document.createElement("canvas"); bulleC.width = 512; bulleC.height = 128; const bt = new THREE.CanvasTexture(bulleC); bt.colorSpace = THREE.SRGBColorSpace;
+  const bs = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthWrite: false })); bs.scale.set(1.8, .45, 1); bs.visible = false; scene.add(bs); let bFin = 0;
+  const CRIS = ["Touché !", "Raté !!", "Bataille !!", "Prends ça !", "Même pas mal !", "À l'attaque !", "Ha ha ha !", "Elle est glacée !"];
+  let avant = 0;
+  const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const dt = avant ? Math.min(.1, (tm - avant) / 1000) : 0; avant = tm;
+    const vu = !!M && M.L === L && !!M.hiver && !L.nuit && !L.apo && !L.sh && !L.gb && !L.bttf;   // (le jour)
+    for (const e of E) e.m.visible = vu; if (!vu) { for (const b of boules) b.m.visible = false; bs.visible = false; return; }
+    const VO = voitures();
+    for (const e of E) { const P = e.P, ad = E.filter(o => o.camp !== e.camp);
+      const allerVers = (tx, tz) => { const dx = tx - e.x, dz = tz - e.z, d = Math.hypot(dx, dz); if (d < .15) return true; const pas = Math.min(d, e.vit * dt), nx = e.x + dx / d * pas, nz = e.z + dz / d * pas;
+        if (libre(nx, nz)) { e.x = nx; e.z = nz; } else { e.but = null; e.etat = "pense"; return true; } e.ry = Math.atan2(dx, dz); e.m.userData.poser("marche", tm * 1.6); return false; };
+      if (e.etat === "pense") { e.boule.visible = false;   // (où prendre la neige : le toit d'une voiture tout près, sinon par terre)
+        const v = VO.length && Math.random() < .55 ? VO[Math.floor(Math.random() * VO.length)] : null;
+        if (v) { const cx = Math.max(v[0] + .3, Math.min(v[1] - .3, (v[0] + v[1]) / 2 + hasard(-.6, .6))), cz = v[3] + .45 < Z.z1 ? v[3] + .45 : v[2] - .45; if (libre(cx, cz)) { e.but = [cx, cz]; e.surVoiture = true; e.etat = "va"; continue; } }
+        e.but = placeLibre(e.camp); e.surVoiture = false; e.etat = "va"; }
+      else if (e.etat === "va") { if (allerVers(e.but[0], e.but[1])) { e.etat = "ramasse"; e.t = tm; } }
+      else if (e.etat === "ramasse") { const k2 = Math.min(1, (tm - e.t) / 1400);   // (penché en avant, les mains dans la neige, il fait sa boule)
+        e.m.userData.poser("debout", tm); const pench = e.surVoiture ? .55 : 1.0; P.buste.rotation.x = pench * Math.sin(k2 * Math.PI); P.bras.forEach(B => { B.e.rotation.x = -1.1 * Math.sin(k2 * Math.PI) - .2; B.c.rotation.x = -.5; });
+        if (!e.surVoiture) P.jambes.forEach(J => { J.h.rotation.x = -.7 * Math.sin(k2 * Math.PI); J.gen.rotation.x = 1.1 * Math.sin(k2 * Math.PI); });
+        if (e.surVoiture && e.but) e.ry = Math.atan2(0, (VO.some(v => Math.abs(e.z - v[3]) < .8) ? -1 : 1));
+        if (k2 >= 1) { P.buste.rotation.x = 0; e.boule.visible = true; e.etat = "vise"; e.t = tm; e.cible = ad.length ? ad[Math.floor(Math.random() * ad.length)] : null; } }
+      else if (e.etat === "vise") { const c = e.cible; if (!c) { e.etat = "pense"; continue; } const dx = c.x - e.x, dz = c.z - e.z, d = Math.hypot(dx, dz);
+        if (d > 9) { const ok = allerVers(e.x + dx / d * 2, e.z + dz / d * 2); if (!ok) continue; }
+        e.ry = Math.atan2(dx, dz); e.m.userData.poser("debout", tm); const k2 = Math.min(1, (tm - e.t) / 700); P.bras[1].e.rotation.x = -2.6 * k2; P.bras[1].c.rotation.x = -.6 * k2; P.buste.rotation.y = -.35 * k2;
+        if (k2 >= 1) { e.etat = "lance"; e.t = tm;   // (la boule part : une parabole vers l'autre, parfois à côté)
+          const q = new THREE.Vector3(); e.boule.getWorldPosition(q); const rate = Math.random() < .4, tx = c.x + (rate ? hasard(-1.2, 1.2) : 0), tz = c.z + (rate ? hasard(-1.2, 1.2) : 0), ty = hY(tx, tz) + c.T * .75;
+          let b = boules.find(o => !o.m.visible); if (!b) { b = { m: new THREE.Mesh(gb, blanc) }; scene.add(b.m); boules.push(b); }
+          Object.assign(b, { a: q.clone(), c: new THREE.Vector3(tx, ty, tz), t0: tm, dur: 380 + d * 70, h: .6 + d * .08, vise: c, rate }); b.m.visible = true; b.m.position.copy(q); e.boule.visible = false; } }
+      else if (e.etat === "lance") { const k2 = Math.min(1, (tm - e.t) / 350); P.bras[1].e.rotation.x = -2.6 + 3.4 * k2; P.bras[1].c.rotation.x = -.6 + .5 * k2; P.buste.rotation.y = -.35 + .6 * k2;
+        if (k2 >= 1) { P.buste.rotation.y = 0; e.etat = Math.random() < .4 ? "pense" : "esquive"; e.t = tm; e.but = placeLibre(e.camp); } }
+      else if (e.etat === "esquive") { if (allerVers(e.but[0], e.but[1]) || tm - e.t > 4000) e.etat = "pense"; }
+      else if (e.etat === "touche") { const k2 = (tm - e.t) / 900; e.m.userData.poser("debout", tm); P.buste.rotation.x = -.25 * Math.sin(k2 * Math.PI); P.buste.rotation.z = Math.sin(k2 * 18) * .12; P.bras.forEach((B, i) => { B.e.rotation.z = (i ? 1 : -1) * .9 * Math.sin(k2 * Math.PI); });
+        if (k2 >= 1) { P.buste.rotation.set(0, 0, 0); P.bras.forEach((B, i) => B.e.rotation.z = (i ? 1 : -1) * .08); e.etat = "pense"; } }
+      e.m.position.set(e.x, hY(e.x, e.z), e.z); let dr = e.ry - e.m.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); e.m.rotation.y += dr * Math.min(1, dt * 8); }
+    for (const b of boules) { if (!b.m.visible) continue; const k2 = (tm - b.t0) / b.dur; if (k2 >= 1) { b.m.visible = false;   // (l'impact : un petit nuage de neige)
+        let pf = pouf.find(o => !o.visible); if (!pf) { pf = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, depthWrite: false })); scene.add(pf); pouf.push(pf); }
+        pf.position.copy(b.c); pf.visible = true; pf.userData.t0 = tm; const c = b.vise;
+        if (!b.rate && c && c.etat !== "ramasse") { c.etat = "touche"; c.t = tm; c.boule.visible = false; }
+        if (M && M.moiNum) { const moi = M.gens.get(M.moiNum); if (moi && moi.g.position.distanceTo(b.c) < 9 && tm > bFin + 2500) { peindreBulle(bulleC, b.rate ? "Raté !!" : CRIS[Math.floor(Math.random() * CRIS.length)]); bt.needsUpdate = true; bs.position.set(b.c.x, b.c.y + 1.2, b.c.z); bs.visible = true; bFin = tm + 1800; } }
+        continue; }
+      b.m.position.lerpVectors(b.a, b.c, k2); b.m.position.y += Math.sin(k2 * Math.PI) * b.h; }
+    for (const pf of pouf) { if (!pf.visible) continue; const k2 = (tm - pf.userData.t0) / 450; if (k2 >= 1) { pf.visible = false; continue; } pf.scale.setScalar(.4 + k2 * 1.6); pf.material.opacity = .9 * (1 - k2); }
+    if (bs.visible && tm > bFin) bs.visible = false; };
+}
 /* --- jour ou nuit : d'après l'heure réelle à Paris, sauf si l'administrateur l'a imposé --- */
 const SOLEIL_PARIS = [[8.7, 17.3], [8.1, 18.1], [7.3, 18.8], [7.2, 20.5], [6.4, 21.2], [5.8, 21.9], [6.1, 21.8], [6.8, 21.1], [7.6, 20.1], [8.3, 19.0], [8.2, 17.3], [8.7, 16.9]];
 function estNuit() {
@@ -11803,11 +11915,12 @@ function estNuit() {
   return h < lever || h >= coucher;
 }
 function majAmbiance() {
-  if (!M || !M.L || !M.L.setNuit) return; const n = estNuit(); M.L.setNuit(n); if (M.jumeauJ && M.jumeauJ.L.setNuit) M.jumeauJ.L.setNuit(n);
+  if (!M || !M.L || !M.L.setNuit) { majHiver(); return; } const n = estNuit(); M.L.setNuit(n); if (M.jumeauJ && M.jumeauJ.L.setNuit) M.jumeauJ.L.setNuit(n);
   if (M.L.posDJ && M.gens) { if (n) ajouterDJ(); else if (M.gens.has(DJ)) retirerAncien(DJ); }
-  M.ctx && M.ctx.surNuit && M.ctx.surNuit(n, M.lieu);
+  M.ctx && M.ctx.surNuit && M.ctx.surNuit(n, M.lieu); majHiver();   // (après la nuit : le camion-benne reste caché l'hiver)
 }
 export function ambiance(mode) { envoyerWS({ t: "ambiance", mode }); }
+export function hiver(on) { envoyerWS({ t: "hiver", on: !!on }); }
 
 /* --- les bonshommes dans la scène --- */
 const hauteurDe = p => p.info.hLibre || Math.max(.75, Math.min(1.3, (p.info.reglage && p.info.reglage.h) || 1));   // (hLibre : une taille fixée, sans réglage)   // le réglage « h » : plus grand, plus petit
@@ -12345,7 +12458,7 @@ function animerMaman() {
   if (g.etat === "retour") { if (Math.hypot(g.g.position.x - T.x, g.g.position.z - T.z) < .5) assise(); else { viser(g, T.x, T.z); if (!g.cible) assise(); } } }
 function animerEboueurs() {
   if (!M || !M.L) return;
-  const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette;
+  const ici = M.lieu === "grande" && !M.L.apo && !M.L.nuit && RU.courette && !M.hiver;   // (l'hiver : pas de camion-benne)
   for (const [num, img, nom] of EBOUEURS) { let p = M.gens.get(num);
     if (!ici) { if (p) retirerAncien(num); continue; }
     if (!p) { const [x, z] = pointEboueur(num, 0), idT = num === -70 ? 95 : 96, P = (M.ctx.pnjTrio && M.ctx.pnjTrio(idT)) || {};   /* (réglables par l'administrateur : 95, Saïd ; 96, Julien) */
@@ -15695,6 +15808,7 @@ function connecter() {
     else if (m.t === "lumiere") { M.lumiere = Number.isFinite(+m.niveau) ? +m.niveau : 1; M.L && M.L.setLumiere && M.L.setLumiere(M.lumiere); ctx.surLumiere && ctx.surLumiere(M.lumiere); }
     else if (m.t === "dj") { M.djJoue = !!(m.dj && m.dj.courant); M.djVideo = M.djJoue && m.dj.courant.video ? m.dj.courant : null; M.djTitre = M.djJoue && !M.djVideo ? normTitre(`${m.dj.courant.titre || ""} ${m.dj.courant.artiste || ""}`) : "";   /* (un clip vidéo : l'écran descend, les musiciens laissent la scène) */ M.L && M.L.majBoutonDJ && M.L.majBoutonDJ(!!(m.dj && m.dj.courant)); ctx.surDJ && ctx.surDJ(m.dj); }
     else if (m.t === "ambiance") { M.ambiance = m.mode; majAmbiance(); ctx.surAmbiance && ctx.surAmbiance(m.mode); }
+    else if (m.t === "hiver") { M.hiver = !!m.on; majHiver(); ctx.surHiver && ctx.surHiver(M.hiver); }
     else if (m.t === "installe") { const p = M.gens.get(m.numero); if (p && !p.moi) { if (p.installe && !m.s) seLeverAppart(p); p.installe = m.s || null; if (m.s) { p.cible = null; p.chemin = []; p.g.position.set(m.s.x, m.s.y, m.s.z); } } }   // (quelqu'un s'assoit, s'allonge ou se relève dans l'appartement)
     else if (m.t === "assis") { const p = M.gens.get(m.numero); if (p) { if (Number.isInteger(m.i)) asseoir(p, m.i); else p.info.assis = null; } }
     else if (m.t === "slow_demande") ctx.surInvitation && ctx.surInvitation({ de: m.de, nom: m.nom });

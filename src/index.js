@@ -556,6 +556,7 @@ export class Compteur extends DurableObject {
       if (m.lieu === "mess" || m.lieu === "grande") { const n = await this.ctx.storage.get("lumiere_mess"); ws.send(JSON.stringify({ t: "lumiere", salle: "mess", niveau: typeof n === "number" ? n : 1 })); }
       if (m.lieu === "mess") for (const z of ["messcuisine", "messbas"]) { const n = await this.ctx.storage.get("lumiere_" + z); ws.send(JSON.stringify({ t: "lumiere", salle: z, niveau: typeof n === "number" ? n : 1 })); }
       ws.send(JSON.stringify({ t: "ambiance", mode: (await this.ctx.storage.get("ambiance")) || "auto" }));
+      ws.send(JSON.stringify({ t: "hiver", on: !!(await this.ctx.storage.get("hiver")) }));   // (le mode hiver : la neige, la bataille de boules de neige)
       this.diffuserComptes();
     } else if (m.t && m.t.startsWith("dj_") && (a.lieu === "fetes" || ((m.t === "dj_fini" || m.t === "dj_auto") && a.lieu === "grande"))) {
       const dj = await this.etatDJ();
@@ -579,6 +580,9 @@ export class Compteur extends DurableObject {
       else if (m.t === "dj_retirer") { if (!a.admin) return; dj.file.splice(Number(m.i), 1); }
       else return;
       await this.majDJ(dj);
+    } else if (m.t === "hiver" && a.admin) {
+      await this.ctx.storage.put("hiver", !!m.on);
+      const t = JSON.stringify({ t: "hiver", on: !!m.on }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }
     } else if (m.t === "ambiance" && a.admin && ["auto", "jour", "nuit"].includes(m.mode)) {
       await this.ctx.storage.put("ambiance", m.mode);
       const t = JSON.stringify({ t: "ambiance", mode: m.mode }); for (const w of this.ctx.getWebSockets()) { try { w.send(t); } catch (e) {} }

@@ -1461,7 +1461,7 @@
           <button class="btn small alt" id="mxPNJNemesis" type="button" hidden data-retire>☠️ Nemesis</button>
           <button class="btn small alt" id="mxPNJZombies" type="button" hidden data-retire>🐕 Le chien zombie</button></div></div></div>
         <div class="mx-ambiance" id="mxAmbiance" hidden><span>Ciel de la cour :</span>
-          <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button></div>
+          <button type="button" data-ambiance="auto">🕒 Auto</button><button type="button" data-ambiance="jour">☀️ Jour</button><button type="button" data-ambiance="nuit">🌙 Nuit</button><button type="button" id="mxHiverB">❄️ Hiver</button></div>
         <div class="mx-lieux" id="mxLieux"></div>
         <div class="mx-scene" id="mxScene">
           <div class="mx-voile" id="mxVoile"><span>Ouverture des grilles…</span></div>
@@ -1471,6 +1471,7 @@
           <button class="mx-plein mx-3d" id="mx3D" type="button" title="Relief 3D (lunettes XREAL…)" aria-label="Relief 3D pour lunettes" hidden>👓</button>
           <button class="mx-plein mx-vr" id="mxVR" type="button" title="Casque VR (Meta Quest…)" aria-label="Entrer dans le casque VR" hidden>🥽</button>
           <button class="mx-plein mx-1p" id="mx1P" type="button" title="Vue à la première personne" aria-label="Vue à la première personne" hidden>👁</button>
+          <button class="mx-plein mx-ciel" id="mxHiver" type="button" title="Le mode hiver : neige et bataille de boules de neige" aria-label="Le mode hiver" hidden style="opacity:.55">❄️</button>
           <button class="mx-plein mx-ciel" id="mxCiel" type="button" title="Le ciel : automatique, jour, nuit" aria-label="Le ciel : automatique, jour ou nuit" hidden>🕒</button>
           <div class="mx-relief-barre" id="mxReliefBarre"><button type="button" id="mxReliefProf">Relief : normal</button><button type="button" id="mxReliefSortir">✕ Quitter la 3D</button></div>
           <button class="mx-plein mx-micro" id="mxMicro" type="button" title="Micro : parler aux autres (on l'allume, on le coupe) — clic droit ou appui long : choisir le micro" aria-label="Micro : allumer ou couper" hidden>🎙️<span class="mx-micro-n" id="mxMicroN" hidden></span></button>
@@ -2389,6 +2390,7 @@
         conteneur: $("mxScene"), token: moi.token, urlTete, urlTetePNJ, pnj: () => pnjInfo, surPNJ: p => { pnjInfo = p; }, pnjDJ: () => djInfo, surPNJDJ: p => { djInfo = p; }, pnjBar: () => barInfo, surPNJBar: p => { barInfo = p; }, pnjTrio: id => trioInfo[id], surPNJTrio: p => { trioInfo[p.id] = p; },
         surToucherDJ: allerAuDJ,
         surAmbiance: mode => { document.querySelectorAll("[data-ambiance]").forEach(b => b.classList.toggle("on", b.dataset.ambiance === mode)); window.mxCielMode = mode; $("mxCiel").textContent = { auto: "🕒", jour: "☀️", nuit: "🌙" }[mode] || "🕒"; },
+        surHiver: on => { window.mxHiverOn = on; $("mxHiverB").classList.toggle("on", on); $("mxHiver").style.opacity = on ? "1" : ".55"; },
         surDanse: on => { jeDanse = on; majBoutonsDanse(); },
         moiInfo: () => ({ appart: appartOuvert(), nom: moi.prenom, initiales: ((moi.prenom[0] || "") + (moi.nom[0] || "")).toUpperCase(), admin: !!moi.admin, tenue: monAvatar.tenue, couleur: monAvatar.couleur, bas: monAvatar.bas, pieds: monAvatar.pieds, tete_v: monAvatar.tete_v, reglage: monAvatar.reglage, av3: monAvatar.av3 || null }),
         surVoix: v => { $("mxMicro").classList.toggle("on", !!v.on); $("mxMicro").title = v.on ? "Micro allumé — touche pour le couper (clic droit ou appui long : choisir le micro)" : "Micro coupé — touche pour parler aux autres"; $("mxMicroN").hidden = !v.on || !v.n; $("mxMicroN").textContent = v.n || ""; $("mxMicro").classList.toggle("parle", !!v.moi); $("mxMicroN").classList.toggle("parle", !!v.autre); },
@@ -2782,8 +2784,9 @@
   $("mxDire").onsubmit = e => { e.preventDefault(); const t = $("mxTexte").value.trim(); if (!t || !MX) return; MX.direDansLaCour(t); $("mxTexte").value = ""; };
   $("mxTourner").onclick = () => MX && MX.tourner(Math.PI);
   let mxPleinVoulu = false, mxProf = 1;
-  setInterval(() => { $("mxVR").hidden = !window.mxVRdispo; $("mx3D").hidden = !(moi && moi.admin) || /^z-/.test(mxLieu || ""); $("mxCiel").hidden = !(moi && moi.admin) || /^(sh|z)-/.test(mxLieu || ""); $("mxPresents").hidden = /^(sh|z)-/.test(mxLieu || "");   /* (en jeu — Resident Evil, Silent Hill — ni le ciel, ni les noms) */   /* (à Silent Hill, pas de soleil ni de lune : le brouillard, toujours) */ $("mx1P").hidden = !moi || /^z-/.test(mxLieu || ""); }, 2000);   /* (la vue à la première personne : pour tout le monde) */
+  setInterval(() => { $("mxVR").hidden = !window.mxVRdispo; $("mx3D").hidden = !(moi && moi.admin) || /^z-/.test(mxLieu || ""); $("mxCiel").hidden = !(moi && moi.admin) || /^(sh|z)-/.test(mxLieu || ""); $("mxHiver").hidden = $("mxCiel").hidden; $("mxPresents").hidden = /^(sh|z)-/.test(mxLieu || "");   /* (en jeu — Resident Evil, Silent Hill — ni le ciel, ni les noms) */   /* (à Silent Hill, pas de soleil ni de lune : le brouillard, toujours) */ $("mx1P").hidden = !moi || /^z-/.test(mxLieu || ""); }, 2000);   /* (la vue à la première personne : pour tout le monde) */
   // le ciel, directement sur l'écran (l'administrateur) : un appui passe d'automatique à jour, puis à nuit
+  $("mxHiver").onclick = $("mxHiverB").onclick = () => { if (MX && MX.hiver) MX.hiver(!window.mxHiverOn); };
   $("mxCiel").onclick = () => { if (!MX) return; const s2 = { auto: "jour", jour: "nuit", nuit: "auto" }[window.mxCielMode || "auto"] || "auto"; MX.ambiance(s2); };
   let mx1P = false; $("mx1P").onclick = () => MX && MX.premiere(!mx1P);   // (le relief : l'administrateur seul, le temps des essais)
   $("mx3D").onclick = () => { mxPleinVoulu = !!document.fullscreenElement; MX && MX.relief(true); }; $("mxVR").onclick = () => { MX && MX.entrerVR && MX.entrerVR(); };   /* (dans un casque : la VR d'un toucher) */
@@ -3359,6 +3362,7 @@
 
   /* ===== Version de l'appli et nouveautés (la plus récente en premier) ===== */
   const VERSIONS = [
+    ["9.98", "15 novembre 2026", ["Mode hiver (bouton ❄️, à côté du ciel) : la neige tombe, le sol, les toits des voitures et les rebords sont blancs, ciel gris ; plus de camion-poubelle, plus de deli-delo ni de rollers : une quinzaine d'enfants en bonnet, écharpe et anorak se font une bataille de boules de neige dans la cour (la neige prise sur les voitures), et d'autres sur la terrasse ; depuis l'appartement, la cour enneigée par les fenêtres et la neige qui tombe dehors", "Rue d'Hauteville : un camion de livraison vient se garer sur l'aire de livraison, le livreur porte ses cartons à la boutique, puis il repart", "Nouveaux passants : joggeur, joggeuse, hommes d'affaires et leur mallette, une ménagère et son cabas, une maman et un papa avec leur enfant à côté, une vieille dame et son caddie", "Le mess, la salle des fêtes et le bar du sous-sol : du monde de jour comme de nuit ; sur ordinateur, quand le jeu s'allège, la moitié des passants et des convives restent (avant, ils disparaissaient tous)"]],
     ["9.97", "13 novembre 2026", ["Petits téléphones : beaucoup plus léger — image un peu moins fine, pas de passants ni de figurants, on ne dessine pas au loin"]],
     ["9.96", "13 novembre 2026", ["Petits téléphones (Galaxy A22, A12…) : l'appli ne devrait plus planter à l'arrivée — pas de main géante, pas de rue recopiée dans la cour, aucun lieu préparé à l'avance"]],
     ["9.95", "13 novembre 2026", ["Entrée dans la caserne plus rapide : la main géante, la borne d'arcade et les poubelles pèsent 3 Mo de moins à télécharger"]],
