@@ -1921,7 +1921,7 @@ function construireRue(A, T, L, scene) {
   L.horsPNJ = (x, z) => z > -8.2; L.departPNJ = [0, -10.5];
   // la circulation : de temps en temps une voiture des années 80-90, ou un bus parisien, descend la rue
   circulation(L, scene);
-  busLigne(L, scene, { ax: 10, az: -4.7, ry: 0, voie: .55, sens: 1, x0: -70, x1: 74, vers: "grande", arrivee: [22, -154.6], yawA: 0 });   // (10.07, l'arrêt de bus devant la caserne, rue du Faubourg-Poissonnière)
+  busLigne(L, scene, { ax: 10, az: -4.7, ry: 0, voie: .55, sens: 1, x0: -70, x1: 74, vers: "grande", arrivee: [-6, -154.6], yawA: 0 });   // (10.07, l'arrêt de bus devant la caserne, rue du Faubourg-Poissonnière)
   L.depart = [.8, -5.2]; L.taille = 1.85; L.suivi = { d: 7.5, h: 8.5, av: 3, vy: 2 }; L.fov = [60, 72];
   L.boite = [-55, 54, -11.8, 6.3]; L.zone = [-54.4, 53.4, -26, 6.4];
   L.cam = { pos: [.8, 8.5, 2.3], vise: [.8, 2, -8] };
@@ -2934,7 +2934,7 @@ function ruesDehors0(A, L, scene) {
     for (const [z0, z1] of [[ZS, -45], [-45, DH_.ZB]]) { quad(XR, XF, z0, z1, bitS, .012, 6); quad(XF, XO, z0, z1, troS, .12); bord(XF, z0, z1); }
     quad(XE, XR, ZS, DH_.ZJ, troS, .12); quad(DH_.XE2, XR, DH_.ZJ, -45, troS, .12); quad(DH_.XE2, XR, -45, DH_.ZB, troS, .12); bord(XR, ZS, -45); bord(XR, -45, DH_.ZB); }
   // la circulation de la rue d'Hauteville (sens unique) : voitures et bus sortent du fond de la rue, passent devant le carrefour, et repartent sous la porte cochère, à l'autre bout
-  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1, nom: "circH" }); livraisonRue(L, scene); busLigne(L, scene, { ax: 22, az: -154.6, ry: Math.PI, voie: (ZR + ZF) / 2, sens: -1, x0: XEst - .6, x1: XW + 6, vers: "rue", arrivee: [10, -4.7], yawA: Math.PI }); }   // (10.07, l'arrêt de bus d'en face, rue d'Hauteville)
+  { circulationRue(L, scene, { x0: XEst - .6, x1: XW + 6, z: (ZR + ZF) / 2, y: Y0, sens: -1, nom: "circH" }); livraisonRue(L, scene); busLigne(L, scene, { ax: -6, az: -154.6, ry: Math.PI, voie: (ZR + ZF) / 2, sens: -1, x0: XEst - .6, x1: XW + 6, vers: "rue", arrivee: [10, -4.7], yawA: Math.PI }); }   // (10.07, l'arrêt de bus d'en face, rue d'Hauteville, devant la supérette NRF)
   clochard(L, scene, -12, ZN);   // (contre le mur de la caserne, rue d'Hauteville)
   eboueurCaniveau(L, scene, -30, 30, ZR);   // (l'éboueur qui balaie le caniveau, le long du trottoir de la caserne)
   arabeDuCoin(L, scene, -36, ZO);   // (en face : la supérette, son étalage de fruits et légumes, et son patron)
@@ -12987,6 +12987,7 @@ function busLigne(L, scene, C) {
     if (!M || M.L !== L || L.apo || L.sh || L.gb || L.bttf) { if (B.phase !== "rien" && B.phase !== "attend") fin(); return; }
     if (B.phase === "rien" && M.busArrive && M.busArrive.vers === M.lieu) { M.busArrive = null; B.phase = "amene"; }   // (on arrive en bus d'une autre rue)
     if (B.phase === "rien") return;
+    const circ0 = L.circH || L.circR; if (!B.g && circ0 && circ0.enRoute.some(o => { const e = (o.g.position.x - C.x0) * C.sens; return e > -6 && e < 30; })) return;   // (on attend que la voie soit libre au départ)
     if (!B.g) { B.g = busCaserne(scene, "ratp", C.x0, C.voie, C.sens > 0 ? 0 : Math.PI); B.g.position.y = y0 - .12; B.x = C.x0; B.v = 9; (L.obstRue = L.obstRue || []).push(obst); }
     const circ = L.circH || L.circR;
     const freine = () => { if (circ) for (const o of circ.enRoute) { const e = (o.g.position.x - B.x) * C.sens - 5.5 - o.L / 2; if (e > -2 && e < 14) B.v = Math.min(B.v, Math.max(0, (e - 2) * 1.5)); } };
