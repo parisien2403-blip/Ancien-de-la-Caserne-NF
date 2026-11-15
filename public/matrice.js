@@ -13119,6 +13119,14 @@ const facadeT = (lg, o = {}) => { const F = [], t = facadeT0(lg, o, F), W = t.im
     if (al() < .45) { c.fillStyle = "rgba(40,24,14,.85)"; const sx = x + w * (.3 + al() * .4); c.beginPath(); c.arc(sx, y + h * .42, w * .16, 0, 7); c.fill(); c.beginPath(); c.ellipse(sx, y + h * .9, w * .3, h * .3, 0, Math.PI, 0); c.fill(); } } });
   return t; };
 const facM = (t, x = {}) => lum(mat({ map: t, emissive: 0xffffff, emissiveIntensity: 0, emissiveMap: t.userData.nuit, ...x }), 0, 1.1);
+const zincG = new THREE.MeshStandardMaterial({ color: 0x8a9098, metalness: .55, roughness: .4 }), fonteG = new THREE.MeshStandardMaterial({ color: 0x2a2c30, metalness: .5, roughness: .5 });
+/* (10.13) une descente de gouttière : le tuyau de zinc le long de la façade, le coude sous le chéneau, les colliers, et le dauphin de fonte en bas (ox, oz : vers l'extérieur) */
+const gouttiere = (x, z, h, ox, oz) => { const g = new THREE.Group(); g.position.set(x + ox * .12, 0, z + oz * .12); scene.add(g);
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, h - 1.2, 8), zincG); t.position.y = 1.2 + (h - 1.2) / 2; g.add(t);
+  const co = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .3, 8), zincG); co.position.set(-ox * .1, h - .05, -oz * .1); co.rotation.set(oz * .9, 0, -ox * .9); g.add(co);
+  for (let y = 2.5; y < h - .5; y += 3.15) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .05, 8), fonteG); c.position.y = y; g.add(c); }
+  const d = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, 1.2, 8), fonteG); d.position.y = .72; g.add(d); const pied = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .22, 8), fonteG); pied.position.set(ox * .1, .16, oz * .1); pied.rotation.set(oz * 1.2, 0, -ox * 1.2); g.add(pied);
+  t.castShadow = true; return g; };
 const zinc = mat({ color: 0x6a727c, roughness: .45, metalness: .3 }), fonte = mat({ color: 0x141618, roughness: .5, metalness: .4 }), pierreM = (p) => mat({ color: p || 0xe0d8c6, roughness: .9 });
 // un balcon filant (au 2e et au 5e), le long d'une façade : la dalle et sa rambarde ouvragée
 const balconT = tT(256, 64, (c) => { c.clearRect(0, 0, 256, 64); c.strokeStyle = "#141414"; c.lineWidth = 3; c.strokeRect(2, 4, 252, 56); for (let x = 8; x < 256; x += 16) { c.beginPath(); c.arc(x + 4, 32, 7, 0, 7); c.stroke(); c.beginPath(); c.moveTo(x, 4); c.lineTo(x, 60); c.stroke(); } });
@@ -13141,6 +13149,7 @@ const immeubleAngle = (cx, cz, sx, sz, o = {}) => { const R = o.R ?? 4, P = 13, 
   const tA = facadeT(R * 1.6, o.C || o.A || {}); add(new THREE.CylinderGeometry(R, R, HT, 24, 1, true, a0, Math.PI / 2), facM(tA, { side: THREE.DoubleSide }), ccx, HT / 2, ccz, g);
   box(P - R, HT, P - R, pierre, cx + sx * (R + (P - R) / 2), HT / 2, cz + sz * (R + (P - R) / 2), g);   // (le cœur, derrière l'arrondi)
   box(P - R, HT, P, pierre, cx + sx * (R + (P - R) / 2), HT / 2, cz + sz * (R + P / 2), g); box(P, HT, P - R, pierre, cx + sx * (R + P / 2), HT / 2, cz + sz * (R + (P - R) / 2), g);
+  for (const u of [.5, 1]) { gouttiere(cx + sx * (R + LA * u - .35), cz, HT, 0, -sz); gouttiere(cx, cz + sz * (R + LB * u - .35), HT, -sx, 0); }   // (les descentes de gouttière)
   // les balcons filants (2e et 5e étages)
   for (const e of [1, 4]) { const y = RDC + e * ETG + .1;
     balcon(g, LA, y, sz < 0 ? 0 : Math.PI, ax, sz < 0 ? cz : cz, 0); balcon(g, LB, y, sx < 0 ? Math.PI / 2 : -Math.PI / 2, cx, bz);
@@ -13497,6 +13506,8 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
         const b = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), faces); b.position.set(cx, hh / 2, cz); b.castShadow = true; b.receiveShadow = true; scene.add(b);
         const toit = new THREE.Mesh(new THREE.BoxGeometry(w - 1.6, 3, d - 1.6), zinc); toit.position.set(cx, hh + 1.5, cz); scene.add(toit);
         const ry = axe === "x" ? (sens > 0 ? 0 : Math.PI) : (sens > 0 ? Math.PI / 2 : -Math.PI / 2), px = axe === "x" ? cx : f, pz = axe === "x" ? f : cz;
+        { const ox = axe === "x" ? 0 : sens, oz = axe === "x" ? sens : 0; for (const tt of [t + .3, t + lg - .3]) gouttiere(axe === "x" ? tt : f, axe === "x" ? f : tt, hh, ox, oz);   // (une descente de chaque côté de l'immeuble)
+          const ch = new THREE.Mesh(new THREE.BoxGeometry(axe === "x" ? lg : .16, .16, axe === "x" ? .16 : lg), zincG); ch.position.set(px + ox * .1, hh - .08, pz + oz * .1); scene.add(ch); }   // (le chéneau, sous la corniche)
         if (axe === "x" && f === 14 && t === -81) { starbucks(lg, px, pz, ry); continue; }
         devanture(scene, lg, px, pz, ry, { fond: fc, bandeau: fc, pasV: 3.2, store: n % 2 ? [fc, "#f2efe6"] : null, enseigne: (c, w2) => { c.fillStyle = "#f2e8c8"; c.font = "bold 30px Georgia"; c.textAlign = "center"; c.fillText(nom, w2 / 2, 38); } }); } };
     rangee(-117, -50, -14, "x", 1); rangee(49, 117, -14, "x", 1); rangee(48, 117, 14, "x", -1); rangee(-117, -55, 14, "x", -1);
