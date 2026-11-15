@@ -11864,12 +11864,17 @@ function sapinNoel(L, scene, x, z, H = 12) {
   const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .38 : .9; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
   const etoile = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .18, bevelEnabled: false }), new THREE.MeshBasicMaterial({ color: 0xffd84a, toneMapped: false })); etoile.position.set(0, H + .35, -.09); g.add(etoile);
   const lueur = new THREE.PointLight(0xffd890, 0, 26, 1.6); lueur.position.set(0, H * .5, 0); g.add(lueur);
-  // les paquets au pied
-  const PQ = [[0xc8102e, 0xf2d24a], [0x1f4e8c, 0xf2f2f2], [0x2f8a4a, 0xc8102e], [0xf2d24a, 0xc8102e], [0x8a1ab0, 0xf2d24a], [0xf2f2f2, 0xc8102e]];
-  for (let i = 0; i < 10; i++) { const [c1, c2] = PQ[i % PQ.length], w = .5 + (i * 37 % 10) / 10 * .5, a = i / 10 * Math.PI * 2 + .3, r = 1.2 + (i % 3) * .5;
-    const p = new THREE.Group(); p.position.set(Math.cos(a) * r, w / 2, Math.sin(a) * r); p.rotation.y = a * 2; g.add(p);
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, w, w), new THREE.MeshStandardMaterial({ color: c1, roughness: .6 })); b.castShadow = true; p.add(b);
-    const rm = new THREE.MeshStandardMaterial({ color: c2, roughness: .4 }); p.add(new THREE.Mesh(new THREE.BoxGeometry(w + .02, w + .02, .08), rm)); p.add(new THREE.Mesh(new THREE.BoxGeometry(.08, w + .02, w + .02), rm)); }
+  // les gros cadeaux au pied : chacun sa couleur, son ruban, et un gros nœud dessus
+  const PQ = [[0xc8102e, 0xf2d24a], [0x1f4e8c, 0xf2f2f2], [0x2f8a4a, 0xc8102e], [0xf2d24a, 0xc8102e], [0x8a1ab0, 0xf2d24a], [0xf2f2f2, 0xc8102e], [0xe85a8a, 0xf2f2f2], [0x1e9a9a, 0xf2d24a], [0xe8801e, 0x1f4e8c], [0x3a2a8a, 0xe8c040], [0xd8202a, 0x2f8a4a], [0x7ac8f0, 0xc8102e]];
+  for (let i = 0; i < 12; i++) { const [c1, c2] = PQ[i], w = .8 + (i * 37 % 10) / 10 * .7, hh = w * (.7 + (i * 53 % 10) / 10 * .5), a = i / 12 * Math.PI * 2 + .2, r = R0 * .55 + 1.1 + (i % 2) * .9;
+    const p = new THREE.Group(); p.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); p.rotation.y = a * 1.7 + i; g.add(p);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, hh, w * .9), new THREE.MeshStandardMaterial({ color: c1, roughness: .55 })); b.position.y = hh / 2; b.castShadow = true; p.add(b);
+    const rm = new THREE.MeshStandardMaterial({ color: c2, roughness: .35, metalness: .2 });
+    const r1 = new THREE.Mesh(new THREE.BoxGeometry(w + .02, hh + .02, .14), rm); r1.position.y = hh / 2; p.add(r1); const r2 = new THREE.Mesh(new THREE.BoxGeometry(.14, hh + .02, w * .9 + .02), rm); r2.position.y = hh / 2; p.add(r2);
+    const nb2 = new THREE.Group(); nb2.position.y = hh + .02; p.add(nb2); const tg = new THREE.TorusGeometry(w * .2, w * .055, 8, 16);   // (le nœud : deux grosses boucles, deux pans, le cœur)
+    for (const sg of [-1, 1]) { const bo = new THREE.Mesh(tg, rm); bo.position.set(sg * w * .18, w * .14, 0); bo.rotation.set(0, Math.PI / 2, sg * .55); bo.scale.set(1, 1, .6); nb2.add(bo);
+      const pan = new THREE.Mesh(new THREE.BoxGeometry(w * .1, .03, w * .35), rm); pan.position.set(sg * w * .1, .01, w * .14); pan.rotation.y = sg * .5; nb2.add(pan); }
+    const coeur = new THREE.Mesh(new THREE.SphereGeometry(w * .08, 10, 8), rm); coeur.position.y = w * .07; nb2.add(coeur); }
   g.traverse(o => { if (o.isMesh) o.userData.perso = true; });   // (pas de neige « peinte » dessus : elle y est déjà)
   const d = Math.max(R0, 1) + .4; (DH_.voit = DH_.voit || []); { const lim0 = L.limites; L.limites = (a, b) => lim0(a, b) && !(g.visible && Math.hypot(a - x, b - z) < d * .55); }   // (on ne traverse pas le sapin)
   const anim0 = L.anim; L.anim = (tm) => { anim0 && anim0(tm); const vu = !!M && M.L === L && !!M.hiver && !L.apo && !L.sh && !L.gb && !L.bttf; g.visible = vu; if (!vu) return;
