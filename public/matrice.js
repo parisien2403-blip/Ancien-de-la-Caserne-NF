@@ -14006,9 +14006,9 @@ function construireJouffroy(A, L, scene) {
   L.hauteur = (x) => x >= GX0 ? 0 : x <= GXB ? Y2 : -GH * Math.min(NM, Math.max(0, (GX0 - x) / GP));
   L.contraindreCam = (pos, moi) => { const q = moi.g.position;
     if (q.z < ZC0 - .1) { pos.x = Math.max(-2.45, Math.min(2.45, pos.x)); pos.z = Math.max(ZC0 - 6.05, Math.min(ZC0 - .15, pos.z)); pos.y = Math.max(.6, Math.min(pos.y, 4.2)); return true; }   // (dans le hall de l'Hôtel Chopin)
-    if (q.x > -1.7) { pos.x = Math.max(-1.75, Math.min(1.75, pos.x)); pos.z = Math.max(ZC0 + .2, Math.min(3, pos.z)); pos.y = Math.min(pos.y, pos.z > -7 ? 3.95 : 8.4); }
+    if (q.x > -1.7) { pos.x = Math.max(-1.45, Math.min(1.45, pos.x)); pos.z = Math.max(ZC0 + .2, Math.min(3, pos.z)); pos.y = Math.min(pos.y, pos.z > -7 ? 3.95 : 8.4); }
     else if (q.x > XB1 - .1) { pos.x = Math.max(XB0 + .2, Math.min(1.7, pos.x)); pos.z = Math.max(ZC0 + .2, Math.min(ZC1 - .2, pos.z)); pos.y = Math.min(pos.y, 4.8); }
-    else { pos.x = Math.max(XB0 + .2, Math.min(XB1 - .2, pos.x)); pos.z = Math.max(ZFIN + .3, Math.min(ZC1 - .2, pos.z)); pos.y = Math.min(pos.y, pos.z > -116 ? Y2 + 6.6 : Y2 + 4.0); }
+    else { const xm = (XB0 + XB1) / 2; pos.x = xm + (pos.x - xm) * .45; pos.x = Math.max(XB0 + .7, Math.min(XB1 - .7, pos.x)); pos.z = Math.max(ZFIN + .3, Math.min(ZC1 - .2, pos.z));   /* (10.36 : galerie étroite — la caméra reste au milieu, jamais collée au mur) */ pos.y = Math.min(pos.y, pos.z > -116 ? Y2 + 6.6 : Y2 + 4.0); }
     pos.y = Math.max(pos.y, L.hauteur(pos.x) + .6); return true; };
   L.portails.push({ dans: (x, z) => Math.abs(x) < 1.6 && z > -.2, vers: "rex", arrivee: [-103.5, -12.4], yaw: 0, indice: [0, -.4] });   // (on ressort sur le boulevard Montmartre)
   L.interieur = true; L.sansPNJ = true; L.sansMusique = true; L.zone = [XB0 - .5, 2.5, ZFIN - 1, 3]; L.boite = [XB0, 2, ZFIN, 3]; L.plafond = 8.4;
