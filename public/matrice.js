@@ -13716,18 +13716,23 @@ const TERR = []; const terrasse = (x0, z0, nx, nz, dx, dz) => { for (let i = 0; 
   const chargerRC = () => { if (listeRC) return; listeRC = []; fetch("/api/musiques", { headers: { Authorization: "Bearer " + M.ctx.token } }).then(r => r.ok ? r.json() : []).then(l => {
       const n = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/['’]/g, "");
       listeRC = (Array.isArray(l) ? l : []).filter(m => /depeche/.test(n(m.artiste)) || AIR_DM.test(n(m.titre))); iRC = Math.floor(Math.random() * Math.max(1, listeRC.length)); }).catch(() => {}); };
-  const pisteRC = () => { if (!listeRC || !listeRC.length) return; const m = listeRC[iRC % listeRC.length]; iRC++; const v = sonRC ? sonRC.volume : 0; if (sonRC) sonRC.pause();
-    sonRC = new Audio(`/api/musiques/${m.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`); sonRC.volume = v; sonRC.addEventListener("ended", () => { if (M && M.L === L) { pisteRC(); sonRC.play().catch(() => {}); } }); };
+  const pisteRC = () => { if (!listeRC || !listeRC.length) return; const m = listeRC[iRC % listeRC.length]; iRC++; const v = sonRC ? sonRC._v || 0 : 0; if (sonRC) sonRC.pause();
+    sonRC = new Audio(`/api/musiques/${m.id}/fichier?t=${encodeURIComponent(M.ctx.token)}`); sonRC._v = v; sonRC.addEventListener("ended", () => { if (M && M.L === L) pisteRC(); }); };
   const majSonRC = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonRC) sonRC.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 50, p.z - 12);
     const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (cible > 0) chargerRC(); if (!sonRC) { if (!cible) return; pisteRC(); if (!sonRC) return; }
-    if (cible > 0 && sonRC.paused) sonRC.play().catch(() => {}); sonRC.volume = Math.max(0, Math.min(1, sonRC.volume + (cible - sonRC.volume) * .06)); if (!cible && sonRC.volume < .01 && !sonRC.paused) sonRC.pause(); };
+    volSon(sonRC, cible); };
   const majSonHR = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonHR) sonHR.pause(); return; } const p = moi.g.position, d = Math.hypot(p.x + 90, p.z + 11.5);
     const cible = Math.max(0, Math.min(1, (22 - d) / 17)) * .6; if (!sonHR) { if (!cible) return; sonHR = new Audio("sons/hardrock.mp3"); sonHR.loop = true; sonHR.volume = 0; }
-    if (cible > 0 && sonHR.paused) sonHR.play().catch(() => {}); sonHR.volume = Math.max(0, Math.min(1, sonHR.volume + (cible - sonHR.volume) * .06)); if (!cible && sonHR.volume < .01 && !sonHR.paused) sonHR.pause(); };
+    volSon(sonHR, cible); };
+  /* (10.20) le volume d'un son qu'on approche : on suit notre propre niveau (sur iPhone, le volume d'un son ne se règle pas — il reste à fond) ;
+     on coupe le son quand on s'éloigne, et sur iPhone, on ne le joue que tout près de sa source */
+  const volSon = (a, cible) => { a._v = (a._v || 0) + (cible - (a._v || 0)) * .06; try { a.volume = Math.max(0, Math.min(1, a._v)); } catch (e) {}
+    const fige = Math.abs(a.volume - Math.max(0, Math.min(1, a._v))) > .05, jouer = fige ? cible > .25 : a._v > .01;
+    if (jouer && a.paused) a.play().catch(() => {}); else if (!jouer && !a.paused) a.pause(); };
   const majSonBar = () => { const moi = M && M.moiNum && M.gens.get(M.moiNum); if (!moi || M.L !== L) { if (sonBar) sonBar.pause(); return; } const p = moi.g.position; let d = 99; for (const [x, z] of BARS) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
     const cible = Math.max(0, Math.min(1, (16 - d) / 12)) * (M.barVol ?? .7);   // (à 4 m d'un bar : le volume plein ; plus rien au-delà de 16 m)
     if (!sonBar) { if (!cible) return; sonBar = new Audio("sons/fete-discussions.mp3"); sonBar.loop = true; sonBar.volume = 0; }
-    if (cible > 0 && sonBar.paused) sonBar.play().catch(() => {}); sonBar.volume = Math.max(0, Math.min(1, sonBar.volume + (cible - sonBar.volume) * .06)); if (!cible && sonBar.volume < .01 && !sonBar.paused) sonBar.pause(); };
+    volSon(sonBar, cible); };
   const stopO = { x: 13.6, z: -2.4, L: .2 }, stopE = { x: -13.6, z: 2.4, L: .2 }; L.obstRue = L.obstRue || [];   // (les lignes d'arrêt : avant les passages piétons ouest et est)
   // le soir : les enseignes, les vitrines, le Rex s'allument ; les passants marchent
   let nV = null, tp = 0;
