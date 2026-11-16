@@ -13987,9 +13987,11 @@ function construireJouffroy(A, L, scene) {
   { const gB = new THREE.Group(); gB.position.y = Y2; scene.add(gB); const sc = scene; scene = gB;   // (la seconde galerie : 1,4 m plus bas)
     tourniquet(-11.35, -75.2); tourniquet(-11.35, -79.5); tourniquet(-11.35, -82.2);
     // les chevalets d'estampes, devant la galerie d'affiches et Paris de Photo
-    for (const z of [-88, -91, -103.5, -106, -109]) {
-      const t = tT(96, 128, (c, w, h) => { c.fillStyle = "#f4f2ee"; c.fillRect(0, 0, w, h); c.fillStyle = "#1a1a1a"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = ["#e8c050", "#c83a2a", "#3a6ab0", "#e8e0c8"][Math.abs(z | 0) % 4]; c.fillRect(12, 12, w - 24, h - 24); });
-      chevalet2(gB, -11.0, z, Math.PI / 2, mat({ map: t }), boisT); OB.push([-11.0, z, .65]); }
+    // (10.43) sur les cinq chevalets, devant Paris de Photo : de vraies photographies en noir et blanc, sous passe-partout blanc et cadre noir
+    [-88, -91, -103.5, -106, -109].forEach((z, k) => {
+      const t = tT(320, 416, (c, w, h) => { c.fillStyle = "#121212"; c.fillRect(0, 0, w, h); c.fillStyle = "#f4f2ee"; c.fillRect(10, 10, w - 20, h - 20); });
+      { const im = new Image(); im.onload = () => { const c = t.image.getContext("2d"), W = t.image.width - 60, Hh = t.image.height - 60, r = Math.min(W / im.width, Hh / im.height), w2 = im.width * r, h2 = im.height * r; c.drawImage(im, (t.image.width - w2) / 2, (t.image.height - h2) / 2, w2, h2); t.needsUpdate = true; }; im.src = `images/photo-passage-${k + 1}.jpg`; }
+      chevalet2(gB, -11.0, z, Math.PI / 2, mat({ map: t }), boisT); OB.push([-11.0, z, .65]); });
     { const t = tT(160, 120, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2f0ea"; c.font = "bold 18px Arial"; c.textAlign = "center"; c.fillText("Expo photo à l'étage", w / 2, 28); c.font = "italic 12px Arial"; c.fillText("Photo exhibition upstairs", w / 2, 46); for (let k = 0; k < 4; k++) { c.fillStyle = "#f2f0ea"; c.fillRect(14 + k * 36, 62, 30, 40); c.fillStyle = "#666"; c.fillRect(18 + k * 36, 66, 22, 24); } });
       const g = new THREE.Group(); g.position.set(-11.3, 0, -98.6); g.rotation.y = Math.PI / 2; gB.add(g); box(.9, .8, .4, mat({ color: 0x14161a }), 0, .4, 0, g); pl(.9, .65, mat({ map: t }), 0, 1.0, .1, 0, g).rotation.x = -.3; OB.push([-11.3, -98.6, .5]); }
     // les tables de livres, devant la Librairie du Passage
